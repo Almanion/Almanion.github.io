@@ -54,7 +54,7 @@
 
         .subjects-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 2rem;
             margin-bottom: 3rem;
         }
@@ -64,6 +64,10 @@
         }
 
         @media (max-width: 1200px) {
+            .subjects-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
             .subjects-grid.coming-soon {
                 grid-template-columns: repeat(2, 1fr);
             }
@@ -286,7 +290,9 @@
             
             <div class="stats">
                 <div class="stat-item">
-                    <span class="number">@Almanion239</span>
+                    <a href="https://t.me/Almanion239" target="_blank" style="text-decoration: none;">
+                        <span class="number">@Almanion239</span>
+                    </a>
                 </div>
             </div>
         </div>
@@ -331,6 +337,25 @@
                         </div>
                     </div>
                 </a>
+
+                <!-- Геометрия -->
+                <a href="geometry.html" class="subject-card">
+                    <div class="card-header">
+                        <div class="subject-icon">📐</div>
+                    </div>
+                    <div class="card-body">
+                        <h2>Геометрия 9 класс</h2>
+                        <div class="card-info">
+                            <div class="last-update">
+                                <span>🕒</span>
+                                <span>Обновлено: 10.11.2025</span>
+                            </div>
+                            <div style="text-align: center;">
+                                <span class="status-badge status-active">✓ Активно</span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
             </div>
         </div>
 
@@ -338,23 +363,8 @@
         <div class="subjects-section">
             <h3 class="section-title">⏳ Скоро будет</h3>
             <div class="subjects-grid coming-soon">
-                <!-- Геометрия -->
-                <a href="template.html" class="subject-card coming-soon-card">
-                    <div class="card-header">
-                        <div class="subject-icon">📐</div>
-                    </div>
-                    <div class="card-body">
-                        <h2>Геометрия 9 класс</h2>
-                        <div class="card-info">
-                            <div style="text-align: center;">
-                                <span class="status-badge status-coming">⌛ Скоро</span>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-
                 <!-- Химия -->
-                <a href="template.html" class="subject-card coming-soon-card">
+                <a href="#" class="subject-card coming-soon-card" onclick="return false;" style="cursor: not-allowed; opacity: 0.7;">
                     <div class="card-header">
                         <div class="subject-icon">🧪</div>
                     </div>
@@ -362,7 +372,7 @@
                         <h2>Химия 9 класс</h2>
                         <div class="card-info">
                             <div style="text-align: center;">
-                                <span class="status-badge status-coming">⌛ Скоро</span>
+                                <span class="status-badge status-coming">⌛ В разработке</span>
                             </div>
                         </div>
                     </div>
