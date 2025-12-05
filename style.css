@@ -39,6 +39,35 @@
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Темная тема */
+body.dark-theme {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --accent-color: #3b82f6;
+    --accent-hover: #60a5fa;
+    --border-color: #334155;
+    
+    /* Цвета для блоков - темная тема */
+    --definition-bg: #1e3a5f;
+    --definition-border: #3b82f6;
+    --formula-bg: #1e3a5f;
+    --formula-border: #60a5fa;
+    --remark-bg: #4a3f1f;
+    --remark-border: #fbbf24;
+    --experiment-bg: #4a1f1f;
+    --experiment-border: #f87171;
+    --derivation-bg: #1f3f2f;
+    --derivation-border: #4ade80;
+    
+    /* Тени - темная тема */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
 
 * {
     margin: 0;
@@ -214,6 +243,36 @@ body {
 .menu-toggle:hover {
     background: var(--accent-hover);
     transform: scale(1.05);
+}
+
+/* Кнопка переключения темы */
+.theme-toggle {
+    position: fixed;
+    top: 1rem;
+    left: calc(var(--sidebar-width) + 1rem);
+    width: 48px;
+    height: 48px;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    cursor: pointer;
+    z-index: 1001;
+    box-shadow: var(--shadow-lg);
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-toggle:hover {
+    background: var(--accent-hover);
+    transform: scale(1.1) rotate(15deg);
+}
+
+.theme-toggle:active {
+    transform: scale(0.95) rotate(0deg);
 }
 
 /* ============================================
@@ -632,6 +691,13 @@ em {
     
     .menu-toggle {
         display: block;
+        left: auto;
+        right: 1rem;
+    }
+    
+    .theme-toggle {
+        left: 1rem;
+        top: 1rem;
     }
     
     .main-content {
@@ -723,6 +789,21 @@ em {
     color: black;
     padding: 2px 4px;
     border-radius: 3px;
+}
+
+body.dark-theme .highlight {
+    background-color: #fbbf24;
+    color: #1e293b;
+}
+
+/* Прогресс-бар в темной теме */
+body.dark-theme #progressBar {
+    background: var(--accent-color);
+}
+
+/* KaTeX формулы в темной теме */
+body.dark-theme .katex {
+    color: var(--text-primary);
 }
 
 /* ============================================
