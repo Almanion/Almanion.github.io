@@ -13,6 +13,61 @@
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             font-family: 'Segoe UI', sans-serif;
+            transition: background 0.3s ease;
+        }
+
+        /* Темная тема для главной страницы */
+        body.dark-theme {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+
+        body.dark-theme .subject-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+        }
+
+        body.dark-theme .card-header {
+            background: linear-gradient(135deg, #334155 0%, #475569 100%);
+        }
+
+        body.dark-theme .subject-card h2 {
+            color: #f1f5f9;
+        }
+
+        body.dark-theme .subject-card p {
+            color: #cbd5e1;
+        }
+
+        body.dark-theme .topics-count {
+            background: linear-gradient(135deg, #334155, #475569);
+            color: #e2e8f0;
+        }
+
+        body.dark-theme .last-update {
+            color: #94a3b8;
+            border-top-color: #334155;
+        }
+
+        body.dark-theme .status-active {
+            background: linear-gradient(135deg, #064e3b, #065f46);
+            color: #6ee7b7;
+        }
+
+        body.dark-theme .status-coming {
+            background: linear-gradient(135deg, #78350f, #92400e);
+            color: #fcd34d;
+        }
+
+        body.dark-theme .coming-soon-card .card-header {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        }
+
+        /* Кнопка переключения темы на главной странице */
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 9999;
         }
 
         .home-container {
@@ -283,6 +338,8 @@
     </style>
 </head>
 <body>
+    <!-- Кнопка переключения темы -->
+    <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">🌙</button>
 
     <div class="home-container">
         <div class="home-header">
@@ -290,7 +347,7 @@
             
             <div class="stats">
                 <div class="stat-item">
-                    <a href="https://t.me/Almanion239" target="_blank" style="text-decoration: none;">
+                    <a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">
                         <span class="number">@Almanion239</span>
                     </a>
                 </div>
@@ -402,6 +459,7 @@
         </div>
     </div>
 
+    <script src="script.js"></script>
     <script>
         // Анимация карточек при загрузке
         document.addEventListener('DOMContentLoaded', () => {
