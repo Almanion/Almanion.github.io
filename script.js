@@ -3,6 +3,7 @@
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     initMath();
     initNavigation();
     initSearch();
@@ -10,6 +11,49 @@ document.addEventListener('DOMContentLoaded', () => {
     initDerivationToggles();
     initMobileMenu();
 });
+
+// ============================================
+// ПЕРЕКЛЮЧЕНИЕ ТЕМЫ
+// ============================================
+
+function initTheme() {
+    const themeToggle = document.getElementById('themeToggle');
+    
+    // Проверяем сохранённую тему в localStorage
+    const savedTheme = localStorage.getItem('theme');
+    
+    // Применяем сохранённую тему или используем светлую по умолчанию
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+        if (themeToggle) {
+            themeToggle.textContent = '☀️';
+        }
+    } else {
+        document.body.classList.remove('dark-theme');
+        if (themeToggle) {
+            themeToggle.textContent = '🌙';
+        }
+    }
+    
+    // Обработчик клика на кнопку переключения темы
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            const isDark = document.body.classList.toggle('dark-theme');
+            
+            // Сохраняем выбранную тему в localStorage
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            
+            // Меняем иконку кнопки
+            themeToggle.textContent = isDark ? '☀️' : '🌙';
+            
+            // Добавляем небольшую анимацию
+            themeToggle.style.transform = 'scale(0.8)';
+            setTimeout(() => {
+                themeToggle.style.transform = '';
+            }, 150);
+        });
+    }
+}
 
 // ============================================
 // МАТЕМАТИЧЕСКИЕ ФОРМУЛЫ (KaTeX)
