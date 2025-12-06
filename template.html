@@ -15,6 +15,8 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h2><a href="index.html" style="color: white; text-decoration: none;">📚 Конспекты</a></h2>
+            <!-- Кнопка переключения темы -->
+            <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">🌙</button>
             <button class="close-sidebar" id="closeSidebar">✕</button>
         </div>
         
@@ -26,18 +28,43 @@
             <div class="nav-section">
                 <h3>[ПРЕДМЕТ] [КЛАСС]</h3>
                 <ul>
-                    <!-- Добавьте свои разделы здесь -->
-                    <li><a href="#section1" class="nav-link active">Раздел 1</a></li>
-                    <li><a href="#section2" class="nav-link">Раздел 2</a></li>
-                    <li><a href="#section3" class="nav-link">Раздел 3</a></li>
+                    <!-- Простые ссылки -->
+                    <li><a href="#intro" class="nav-link active">Введение</a></li>
+                    
+                    <!-- Пример раскрывающейся группы -->
+                    <li class="nav-group">
+                        <button class="nav-group-toggle">
+                            <span class="toggle-icon">▼</span>
+                            Часть I: [Название части]
+                        </button>
+                        <ul class="nav-submenu">
+                            <li><a href="#section1" class="nav-link">1. Раздел 1</a></li>
+                            <li><a href="#section2" class="nav-link">2. Раздел 2</a></li>
+                            <li><a href="#section3" class="nav-link">3. Раздел 3</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Ещё одна группа -->
+                    <li class="nav-group">
+                        <button class="nav-group-toggle">
+                            <span class="toggle-icon">▼</span>
+                            Часть II: [Название части]
+                        </button>
+                        <ul class="nav-submenu">
+                            <li><a href="#section4" class="nav-link">4. Раздел 4</a></li>
+                            <li><a href="#section5" class="nav-link">5. Раздел 5</a></li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
             
             <!-- Ссылка на другие предметы -->
-            <div class="nav-section">
+            <div class="nav-section other-subjects">
                 <h3>Другие предметы</h3>
                 <ul>
                     <li><a href="physics.html">Физика 9 класс</a></li>
+                    <li><a href="math.html">Алгебра 9 класс</a></li>
+                    <li><a href="geometry.html">Геометрия 9 класс</a></li>
                     <!-- Добавьте ссылки на другие конспекты -->
                 </ul>
             </div>
@@ -52,7 +79,7 @@
     <main class="main-content">
         <header class="page-header">
             <h1>[ПРЕДМЕТ] [КЛАСС]</h1>
-            <p class="subtitle">Конспекты | 2025-2026 | Almanion</p>
+            <p class="subtitle">Конспекты | 2025-2026 | <a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a></p>
         </header>
 
         <!-- ПРИМЕР 1: ПРОСТОЕ ОПРЕДЕЛЕНИЕ -->
@@ -93,11 +120,11 @@
                     <button class="toggle-derivation">📖 Показать вывод формулы</button>
                     <div class="derivation-content">
                         <p>Шаг 1: Начнём с...</p>
-                        \[\begin{align}
+                        \[\begin{align*}
                         a &= b + c \\
                         d &= e \cdot f \\
                         g &= \frac{h}{i}
-                        \end{align}\]
+                        \end{align*}\]
                         <p>Таким образом, получаем конечную формулу.</p>
                     </div>
                 </div>
@@ -152,5 +179,4 @@
     <script src="script.js"></script>
 </body>
 </html>
-
 
