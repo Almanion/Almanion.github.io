@@ -42,7 +42,7 @@
 /* Темная тема */
 body.dark-theme {
     --bg-primary: #0f172a;
-    --bg-secondary: #1e293b;
+    --bg-secondary: #141b27;
     --bg-tertiary: #334155;
     --text-primary: #f1f5f9;
     --text-secondary: #94a3b8;
@@ -51,13 +51,13 @@ body.dark-theme {
     --border-color: #334155;
     
     /* Цвета для блоков - темная тема */
-    --definition-bg: #1e3a5f;
-    --definition-border: #3b82f6;
+    --definition-bg: #19365d31;
+    --definition-border: #438bff;
     --formula-bg: #1e3a5f;
     --formula-border: #60a5fa;
     --remark-bg: #4a3f1f;
-    --remark-border: #fbbf24;
-    --experiment-bg: #4a1f1f;
+    --remark-border: #fbbe24a2;
+    --experiment-bg: #5a292998;
     --experiment-border: #f87171;
     --derivation-bg: #1f3f2f;
     --derivation-border: #4ade80;
@@ -126,11 +126,13 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 1rem;
 }
 
 .sidebar-header h2 {
     font-size: 1.4rem;
     font-weight: 600;
+    flex: 0 0 auto;
 }
 
 .close-sidebar {
@@ -144,6 +146,7 @@ body {
     cursor: pointer;
     font-size: 1.2rem;
     transition: var(--transition);
+    flex-shrink: 0;
 }
 
 .close-sidebar:hover {
@@ -220,6 +223,79 @@ body {
     font-weight: 600;
 }
 
+/* Раскрывающиеся группы в навигации */
+.nav-group {
+    margin: 0.5rem 0;
+}
+
+.nav-group-toggle {
+    width: 100%;
+    padding: 0.75rem var(--spacing);
+    background: var(--bg-tertiary);
+    border: none;
+    border-left: 3px solid transparent;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-group-toggle:hover {
+    background: var(--bg-primary);
+    border-left-color: var(--accent-color);
+}
+
+.nav-group-toggle .toggle-icon {
+    font-size: 0.7rem;
+    transition: transform 0.3s ease;
+    display: inline-block;
+}
+
+.nav-group.open .toggle-icon {
+    transform: rotate(-90deg);
+}
+
+.nav-submenu {
+    list-style: none;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: var(--bg-primary);
+}
+
+.nav-group.open .nav-submenu {
+    max-height: 1000px;
+}
+
+.nav-submenu .nav-link {
+    padding-left: calc(var(--spacing) + 1rem);
+    font-size: 0.9rem;
+}
+
+.nav-submenu .nav-link:hover {
+    padding-left: calc(var(--spacing) + 1.5rem);
+}
+
+/* Ссылки на другие предметы - всегда белые */
+.nav-section.other-subjects a {
+    color: white !important;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.nav-section.other-subjects a:hover {
+    opacity: 0.8;
+}
+
+.nav-section.other-subjects a.current-subject {
+    font-weight: 600;
+    opacity: 1;
+}
 
 /* Кнопка меню (мобильные) */
 .menu-toggle {
@@ -247,27 +323,24 @@ body {
 
 /* Кнопка переключения темы */
 .theme-toggle {
-    position: fixed;
-    top: 1rem;
-    left: calc(var(--sidebar-width) + 1rem);
-    width: 48px;
-    height: 48px;
-    background: var(--accent-color);
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.2);
     color: white;
     border: none;
     border-radius: 50%;
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     cursor: pointer;
-    z-index: 1001;
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-sm);
     transition: var(--transition);
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 .theme-toggle:hover {
-    background: var(--accent-hover);
+    background: rgba(255, 255, 255, 0.3);
     transform: scale(1.1) rotate(15deg);
 }
 
@@ -693,11 +766,6 @@ em {
         display: block;
         left: auto;
         right: 1rem;
-    }
-    
-    .theme-toggle {
-        left: 1rem;
-        top: 1rem;
     }
     
     .main-content {
