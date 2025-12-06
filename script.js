@@ -80,6 +80,21 @@ function initMath() {
 function initNavigation() {
     const navLinks = document.querySelectorAll('.nav-link');
     const topics = document.querySelectorAll('.topic');
+    const navGroupToggles = document.querySelectorAll('.nav-group-toggle');
+    
+    // Раскрываем все группы по умолчанию
+    document.querySelectorAll('.nav-group').forEach(group => {
+        group.classList.add('open');
+    });
+    
+    // Обработка кликов по кнопкам раскрытия групп
+    navGroupToggles.forEach(toggle => {
+        toggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            const navGroup = toggle.closest('.nav-group');
+            navGroup.classList.toggle('open');
+        });
+    });
     
     // Клик по ссылке навигации
     navLinks.forEach(link => {
