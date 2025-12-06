@@ -281,20 +281,29 @@ body {
     padding-left: calc(var(--spacing) + 1.5rem);
 }
 
-/* Ссылки на другие предметы - всегда белые */
+/* Ссылки на другие предметы - адаптивные к теме */
 .nav-section.other-subjects a {
-    color: white !important;
+    color: #1f2937 !important;
     text-decoration: none;
     transition: var(--transition);
 }
 
 .nav-section.other-subjects a:hover {
-    opacity: 0.8;
+    opacity: 0.7;
 }
 
 .nav-section.other-subjects a.current-subject {
     font-weight: 600;
     opacity: 1;
+}
+
+/* В темной теме ссылки белые */
+body.dark-theme .nav-section.other-subjects a {
+    color: white !important;
+}
+
+body.dark-theme .nav-section.other-subjects a:hover {
+    opacity: 0.8;
 }
 
 /* Кнопка меню (мобильные) */
