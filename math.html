@@ -11,13 +11,12 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 </head>
 <body>
-    <!-- Кнопка переключения темы -->
-    <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">🌙</button>
-
     <!-- Боковая панель навигации -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h2><a href="index.html" style="color: white; text-decoration: none;">📚 Конспекты</a></h2>
+            <!-- Кнопка переключения темы -->
+            <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">🌙</button>
             <button class="close-sidebar" id="closeSidebar">✕</button>
         </div>
         
@@ -41,11 +40,11 @@
                 </ul>
             </div>
             
-            <div class="nav-section">
+            <div class="nav-section other-subjects">
                 <h3>Другие предметы</h3>
                 <ul>
                     <li><a href="physics.html">Физика 9 класс</a></li>
-                    <li><a href="math.html" style="color: var(--accent-color); font-weight: 600;">Алгебра 9 класс</a></li>
+                    <li><a href="math.html" class="current-subject">Алгебра 9 класс</a></li>
                     <li><a href="geometry.html">Геометрия 9 класс</a></li>
                 </ul>
             </div>
