@@ -85,6 +85,30 @@ body {
     transition: var(--transition);
 }
 
+/* Предотвращение прокрутки body когда sidebar открыт на мобильных */
+body.sidebar-open {
+    overflow: hidden;
+}
+
+/* Оверлей для sidebar на мобильных */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
 /* ============================================
    БОКОВАЯ ПАНЕЛЬ НАВИГАЦИИ
    ============================================ */
@@ -264,12 +288,13 @@ body {
     list-style: none;
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease;
+    transition: max-height 0.4s ease-out;
     background: var(--bg-primary);
+    padding: 0;
 }
 
 .nav-group.open .nav-submenu {
-    max-height: 1000px;
+    max-height: 2000px;
 }
 
 .nav-submenu .nav-link {
@@ -454,6 +479,9 @@ body.dark-theme .nav-section.other-subjects a:hover {
     box-shadow: var(--shadow-md);
     transition: var(--transition);
     scroll-margin-top: 2rem;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .topic:hover {
@@ -499,6 +527,8 @@ body.dark-theme .nav-section.other-subjects a:hover {
     border-radius: 8px;
     box-shadow: var(--shadow-sm);
     transition: var(--transition);
+    overflow-wrap: break-word;
+    word-wrap: break-word;
 }
 
 .definition-box:hover {
@@ -520,9 +550,9 @@ body.dark-theme .nav-section.other-subjects a:hover {
     border-radius: 8px;
     box-shadow: var(--shadow-sm);
     position: relative;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
 }
-
 
 .formula-box p {
     margin-bottom: 0.75rem;
@@ -761,6 +791,8 @@ em {
 @media (max-width: 768px) {
     .sidebar {
         transform: translateX(-100%);
+        width: 85vw;
+        max-width: 320px;
     }
     
     .sidebar.open {
@@ -775,6 +807,44 @@ em {
         display: block;
         left: auto;
         right: 1rem;
+    }
+    
+    .sidebar-header {
+        flex-wrap: nowrap;
+        gap: 0.5rem;
+    }
+    
+    .sidebar-header h2 {
+        font-size: 1.2rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .theme-toggle {
+        width: 36px;
+        height: 36px;
+        font-size: 1.1rem;
+    }
+    
+    .close-sidebar {
+        width: 36px;
+        height: 36px;
+        font-size: 1.1rem;
+    }
+    
+    .nav-group-toggle {
+        padding: 0.65rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .nav-submenu .nav-link {
+        padding-left: 2rem;
+        font-size: 0.85rem;
+    }
+    
+    .nav-submenu .nav-link:hover {
+        padding-left: 2.5rem;
     }
     
     .main-content {
@@ -808,15 +878,76 @@ em {
         width: 45px;
         height: 45px;
     }
+    
+    /* Улучшение отображения формул на мобильных */
+    .formula-box {
+        padding: 1rem;
+        overflow-x: auto;
+    }
+    
+    .katex {
+        font-size: 0.95em;
+    }
 }
 
 @media (max-width: 480px) {
+    .sidebar {
+        width: 90vw;
+    }
+    
+    .sidebar-header {
+        padding: 1rem;
+    }
+    
+    .sidebar-header h2 {
+        font-size: 1.1rem;
+    }
+    
+    .theme-toggle {
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
+    }
+    
+    .close-sidebar {
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
+    }
+    
+    .search-box {
+        padding: 0.75rem 1rem;
+    }
+    
+    .search-box input {
+        font-size: 0.9rem;
+        padding: 0.65rem 0.85rem;
+    }
+    
+    .nav-group-toggle {
+        font-size: 0.85rem;
+        padding: 0.6rem 1rem;
+    }
+    
+    .nav-submenu .nav-link {
+        font-size: 0.8rem;
+    }
+    
     .page-header h1 {
         font-size: 1.5rem;
     }
     
     .topic {
         padding: 1rem;
+    }
+    
+    .topic-title {
+        font-size: 1.2rem;
+    }
+    
+    .subsection-title {
+        font-size: 1.1rem;
+        padding: 0.75rem 1rem;
     }
     
     .definition-box,
@@ -827,7 +958,20 @@ em {
     }
     
     .katex {
-        font-size: 1em;
+        font-size: 0.9em;
+    }
+    
+    .menu-toggle {
+        width: 44px;
+        height: 44px;
+        font-size: 1.3rem;
+    }
+    
+    .scroll-to-top {
+        width: 40px;
+        height: 40px;
+        bottom: 0.75rem;
+        right: 0.75rem;
     }
 }
 
@@ -881,6 +1025,51 @@ body.dark-theme #progressBar {
 /* KaTeX формулы в темной теме */
 body.dark-theme .katex {
     color: var(--text-primary);
+}
+
+/* ============================================
+   ACCESSIBILITY И FOCUS STATES
+   ============================================ */
+
+/* Улучшение focus states для клавиатурной навигации */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+/* Убираем outline для мышки, но оставляем для клавиатуры */
+a:focus:not(:focus-visible),
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Улучшение контрастности для текста */
+.nav-link,
+.nav-group-toggle {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Предотвращение FOUT (Flash of Unstyled Text) */
+.katex {
+    visibility: visible;
+}
+
+/* Улучшение производительности анимаций */
+.sidebar,
+.nav-submenu,
+.toggle-icon,
+.sidebar-overlay {
+    will-change: transform;
+}
+
+.sidebar:not(.open),
+.nav-group:not(.open) .nav-submenu,
+.sidebar-overlay:not(.active) {
+    will-change: auto;
 }
 
 /* ============================================

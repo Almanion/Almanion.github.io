@@ -47,7 +47,7 @@ function initTheme() {
             themeToggle.textContent = isDark ? '☀️' : '🌙';
             
             // Добавляем небольшую анимацию
-            themeToggle.style.transform = 'scale(0.8)';
+            themeToggle.style.transform = 'scale(0.9)';
             setTimeout(() => {
                 themeToggle.style.transform = '';
             }, 150);
@@ -128,36 +128,34 @@ function initNavigation() {
     });
     
     // Автоматическое выделение активной секции при скролле
-    let isScrolling = false;
+    let scrollTimeout;
+    
+    function updateActiveSection() {
+        let currentSection = '';
+        
+        topics.forEach(topic => {
+            const topicTop = topic.offsetTop;
+            
+            if (window.pageYOffset >= topicTop - 100) {
+                currentSection = topic.getAttribute('id');
+            }
+        });
+        
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            
+            if (link.getAttribute('href') === `#${currentSection}`) {
+                link.classList.add('active');
+            }
+        });
+    }
     
     window.addEventListener('scroll', () => {
-        if (isScrolling) return;
-        
-        isScrolling = true;
-        
-        setTimeout(() => {
-            let currentSection = '';
-            
-            topics.forEach(topic => {
-                const topicTop = topic.offsetTop;
-                const topicHeight = topic.clientHeight;
-                
-                if (window.pageYOffset >= topicTop - 100) {
-                    currentSection = topic.getAttribute('id');
-                }
-            });
-            
-            navLinks.forEach(link => {
-                link.classList.remove('active');
-                
-                if (link.getAttribute('href') === `#${currentSection}`) {
-                    link.classList.add('active');
-                }
-            });
-            
-            isScrolling = false;
-        }, 100);
-    });
+        if (scrollTimeout) {
+            cancelAnimationFrame(scrollTimeout);
+        }
+        scrollTimeout = requestAnimationFrame(updateActiveSection);
+    }, { passive: true });
 }
 
 // ============================================
@@ -259,20 +257,31 @@ function initScrollEffects() {
     // Кнопка "Наверх"
     const scrollToTopBtn = document.getElementById('scrollToTop');
     
-    window.addEventListener('scroll', () => {
-        if (window.pageYOffset > 300) {
-            scrollToTopBtn.classList.add('visible');
-        } else {
-            scrollToTopBtn.classList.remove('visible');
+    if (scrollToTopBtn) {
+        let scrollBtnTimeout;
+        
+        function updateScrollButton() {
+            if (window.pageYOffset > 300) {
+                scrollToTopBtn.classList.add('visible');
+            } else {
+                scrollToTopBtn.classList.remove('visible');
+            }
         }
-    });
-    
-    scrollToTopBtn.addEventListener('click', () => {
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
+        
+        window.addEventListener('scroll', () => {
+            if (scrollBtnTimeout) {
+                cancelAnimationFrame(scrollBtnTimeout);
+            }
+            scrollBtnTimeout = requestAnimationFrame(updateScrollButton);
+        }, { passive: true });
+        
+        scrollToTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
         });
-    });
+    }
     
     // Плавное появление элементов
     const observerOptions = {
@@ -348,11 +357,24 @@ function initMobileMenu() {
     const closeSidebar = document.getElementById('closeSidebar');
     const sidebar = document.getElementById('sidebar');
     
+    // Создаём оверлей, если его ещё нет
+    let overlay = document.querySelector('.sidebar-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'sidebar-overlay';
+        document.body.appendChild(overlay);
+    }
+    
     menuToggle.addEventListener('click', () => {
-        sidebar.classList.add('open');
+        openMobileMenu();
     });
     
     closeSidebar.addEventListener('click', () => {
+        closeMobileMenu();
+    });
+    
+    // Закрытие при клике на оверлей
+    overlay.addEventListener('click', () => {
         closeMobileMenu();
     });
     
@@ -366,9 +388,32 @@ function initMobileMenu() {
     });
 }
 
+function openMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    
+    sidebar.classList.add('open');
+    if (overlay) {
+        overlay.classList.add('active');
+    }
+    
+    // Блокируем прокрутку на мобильных
+    if (window.innerWidth <= 768) {
+        document.body.classList.add('sidebar-open');
+    }
+}
+
 function closeMobileMenu() {
     const sidebar = document.getElementById('sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    
     sidebar.classList.remove('open');
+    if (overlay) {
+        overlay.classList.remove('active');
+    }
+    
+    // Разблокируем прокрутку
+    document.body.classList.remove('sidebar-open');
 }
 
 // ============================================
@@ -380,14 +425,19 @@ document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         const searchInput = document.getElementById('searchInput');
-        searchInput.focus();
+        if (searchInput) {
+            searchInput.focus();
+            searchInput.select();
+        }
     }
     
     // Escape для закрытия мобильного меню
     if (e.key === 'Escape') {
-        closeMobileMenu();
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar && sidebar.classList.contains('open')) {
+            closeMobileMenu();
+        }
     }
-    
 });
 
 // ============================================
@@ -481,12 +531,14 @@ if (footer) {
 // ============================================
 
 function updateProgress() {
-    const topics = document.querySelectorAll('.topic');
     const windowHeight = window.innerHeight;
     const documentHeight = document.documentElement.scrollHeight;
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
     
-    const progress = (scrollTop / (documentHeight - windowHeight)) * 100;
+    // Предотвращаем деление на ноль
+    const progress = documentHeight > windowHeight 
+        ? Math.min(100, (scrollTop / (documentHeight - windowHeight)) * 100)
+        : 0;
     
     // Можно добавить прогресс-бар
     let progressBar = document.getElementById('progressBar');
@@ -505,11 +557,20 @@ function updateProgress() {
         `;
         document.body.appendChild(progressBar);
     } else {
-        progressBar.style.width = progress + '%';
+        progressBar.style.width = Math.round(progress) + '%';
     }
 }
 
-window.addEventListener('scroll', updateProgress);
+// Дебаунс для оптимизации производительности
+let progressTimeout;
+function debouncedUpdateProgress() {
+    if (progressTimeout) {
+        cancelAnimationFrame(progressTimeout);
+    }
+    progressTimeout = requestAnimationFrame(updateProgress);
+}
+
+window.addEventListener('scroll', debouncedUpdateProgress, { passive: true });
 updateProgress();
 
 // ============================================
@@ -543,3 +604,4 @@ console.log('✅ Сайт конспектов загружен успешно!'
 console.log('💡 Горячие клавиши:');
 console.log('   • Ctrl/Cmd + K - Поиск');
 console.log('   • Escape - Закрыть меню');
+
