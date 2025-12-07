@@ -501,9 +501,9 @@ function updateStatistics(tasks) {
     const unsolved = current + postponed;
     
     document.getElementById('totalTasks').textContent = total;
-    document.getElementById('solvedTasks').textContent = solved;
+    document.getElementById('solvedTasks').textContent = current + unsolved;
     document.getElementById('currentSeries').textContent = current;
-    document.getElementById('postponedTasks').textContent = postponed;
+    document.getElementById('postponedTasks').textContent = unsolved;
     
     // Обновляем заголовки секций
     updateSectionTitle('current-series', `Текущая серия (${current})`);
