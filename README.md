@@ -43,7 +43,6 @@ Almanion.github.io/
 ├── physics.html            # Конспекты по физике
 ├── math.html               # Конспекты по алгебре
 ├── geometry.html           # Конспекты по геометрии
-├── matcenter.html          # МатЦентр (задачи)
 ├── style.css               # Общие стили
 ├── script.js               # Основной JavaScript
 ├── matcenter.js            # JavaScript для МатЦентра
