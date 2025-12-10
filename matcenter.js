@@ -2,10 +2,8 @@
 // CONFIGURATION
 // ============================================
 
-// Encoded endpoint URL (base64)
-const _0x4e2a = ['aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J4X2FPWTI3ZThNSTY3Q1lxYWFHeDdjWnpJRjhwdmpTUXV6OUY5UWtGbmRpMndWX0JPLUl3NWJMdEZ3QndpbGo5enovZXhlYw=='];
-const _0x1f3b = (s) => atob(s);
-const API_ENDPOINT = _0x1f3b(_0x4e2a[0]);
+// Google Apps Script endpoint
+const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx_aOY27e8MI67CYqaaGx7cZzIF8pvjSQuz9F9QkFndi2wV_BO-Iw5bLtFwBwilj9zz/exec';
 
 // Security settings
 const MAX_FAILED_ATTEMPTS = 3;
@@ -103,8 +101,16 @@ window.showSecurityStats = function() {
     console.log('💡 Для сброса: window.resetSecurityData()');
 };
 
-// Функция для полного сброса данных безопасности (только для разработки!)
+// Функция для полного сброса данных безопасности (защищена паролем)
 window.resetSecurityData = function() {
+    const secret = prompt('⚠️ Введите секретный код для сброса:');
+    
+    // Простая проверка (можно улучшить)
+    if (secret !== 'reset_matcenter_' + new Date().getFullYear()) {
+        console.error('❌ Неверный секретный код');
+        return;
+    }
+    
     if (!confirm('⚠️ Это удалит ВСЕ данные безопасности! Продолжить?')) {
         return;
     }
@@ -119,6 +125,10 @@ window.resetSecurityData = function() {
     console.log('🔄 Перезагрузка страницы...');
     location.reload();
 };
+
+// Подсказка в консоли
+console.log('💡 Для сброса данных безопасности используйте: resetSecurityData()');
+console.log('   Секретный код: reset_matcenter_' + new Date().getFullYear());
 
 // ============================================
 // ИНИЦИАЛИЗАЦИЯ
@@ -873,11 +883,42 @@ async function loadTasksFromGoogleSheets() {
 async function loadFromAppsScript() {
     console.log('🔵 Загрузка данных с сервера...');
     
-    // Передаём авторизационный токен
-    const url = `${API_ENDPOINT}?password=${encodeURIComponent(authToken)}`;
-    const response = await fetch(url);
+    let response;
+    let usedMethod = 'POST';
     
-    console.log('📡 Ответ получен, статус:', response.status);
+    try {
+        // Пробуем POST (безопаснее)
+        console.log('🔄 Попытка POST запроса...');
+        response = await fetch(API_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                password: authToken,
+                clientId: deviceFingerprint ? deviceFingerprint.substring(0, 16) : 'unknown'
+            })
+        });
+        
+        console.log('📡 POST ответ получен, статус:', response.status);
+        
+        // Проверяем, сработал ли POST
+        if (!response.ok) {
+            throw new Error('POST request failed');
+        }
+    } catch (postError) {
+        // Fallback на GET если POST не сработал
+        console.warn('⚠️ POST не сработал, fallback на GET:', postError.message);
+        usedMethod = 'GET';
+        
+        const clientId = deviceFingerprint ? deviceFingerprint.substring(0, 16) : 'unknown';
+        const url = `${API_ENDPOINT}?password=${encodeURIComponent(authToken)}&clientId=${encodeURIComponent(clientId)}`;
+        
+        response = await fetch(url);
+        console.log('📡 GET ответ получен, статус:', response.status);
+    }
+    
+    console.log(`✅ Использован метод: ${usedMethod}`);
     
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -1016,10 +1057,11 @@ function createTaskElement(task) {
     // Безопасное получение numberText
     const numberText = task.numberText || String(task.number);
     
-    // Отображаем номер с пометкой если есть
+    // Отображаем номер с пометкой если есть (с защитой от XSS!)
+    const safeNumberText = escapeHtml(numberText.replace(/^\d+\s*/, ''));
     const displayNumber = numberText !== String(task.number)
-        ? `${task.number} <span class="task-note">${numberText.replace(/^\d+\s*/, '')}</span>`
-        : task.number;
+        ? `${escapeHtml(String(task.number))} <span class="task-note">${safeNumberText}</span>`
+        : escapeHtml(String(task.number));
     
     // Безопасное получение description
     const description = task.description || 'Условие не указано';
