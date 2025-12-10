@@ -9,12 +9,116 @@ const API_ENDPOINT = _0x1f3b(_0x4e2a[0]);
 
 // Security settings
 const MAX_FAILED_ATTEMPTS = 3;
-const LOCKOUT_DURATION = 5 * 60 * 1000; // 5 минут в миллисекундах
+const LOCKOUT_DURATIONS = [
+    5 * 60 * 1000,      // 1-я блокировка: 5 минут
+    15 * 60 * 1000,     // 2-я блокировка: 15 минут
+    60 * 60 * 1000,     // 3-я блокировка: 1 час
+    24 * 60 * 60 * 1000 // 4-я+ блокировка: 24 часа
+];
+const SESSION_DURATION = Infinity; // Неистекающие сессии (до явного выхода)
+const FINGERPRINT_SALT = 'matcenter_v1_2024'; // Соль для отпечатка
 
 let allTasks = [];
 let currentFilter = 'all';
 let authToken = null;
 let lockoutTimer = null;
+let deviceFingerprint = null;
+
+// ============================================
+// SECURITY STATS & MONITORING
+// ============================================
+
+// Функция для просмотра статистики безопасности (доступна в консоли)
+window.showSecurityStats = function() {
+    console.log('═══════════════════════════════════════');
+    console.log('🔒 СТАТИСТИКА БЕЗОПАСНОСТИ');
+    console.log('═══════════════════════════════════════');
+    
+    const session = getSessionData();
+    if (session) {
+        console.log('📱 Текущая сессия:');
+        console.log(`   ✓ Создана: ${new Date(session.createdAt).toLocaleString()}`);
+        if (session.expiresAt === Infinity) {
+            console.log(`   ✓ Бессрочная (не истекает)`);
+        } else {
+            console.log(`   ✓ Истекает: ${new Date(session.expiresAt).toLocaleString()}`);
+            const remaining = session.expiresAt - Date.now();
+            const hours = Math.floor(remaining / 3600000);
+            console.log(`   ✓ Осталось: ${hours} часов`);
+        }
+    } else {
+        console.log('📱 Активная сессия: нет');
+    }
+    
+    console.log('');
+    console.log('🔍 Отпечаток устройства:');
+    console.log(`   ${deviceFingerprint || 'не сгенерирован'}`);
+    
+    console.log('');
+    console.log('⚠️ Неудачные попытки:');
+    const failed = getFailedAttempts();
+    console.log(`   Текущий счётчик: ${failed}/${MAX_FAILED_ATTEMPTS}`);
+    
+    const lockoutCount = getLockoutCount();
+    console.log(`   Всего блокировок: ${lockoutCount}`);
+    
+    if (isLockedOut()) {
+        const remaining = getRemainingLockoutTime();
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+        console.log(`   🔒 ЗАБЛОКИРОВАНО: ${minutes}:${seconds.toString().padStart(2, '0')}`);
+    } else {
+        console.log(`   ✓ Не заблокировано`);
+    }
+    
+    console.log('');
+    console.log('📊 История попыток входа:');
+    const history = getAttemptHistory();
+    if (history.length > 0) {
+        const last10 = history.slice(-10);
+        last10.forEach((attempt, i) => {
+            const time = new Date(attempt.timestamp).toLocaleTimeString();
+            const status = attempt.success ? '✓' : '✗';
+            const fp = attempt.fingerprint.substring(0, 8);
+            console.log(`   ${status} ${time} - устройство ${fp}...`);
+        });
+        
+        const successCount = history.filter(a => a.success).length;
+        const failCount = history.filter(a => !a.success).length;
+        console.log('');
+        console.log(`   Успешных: ${successCount} | Неудачных: ${failCount}`);
+    } else {
+        console.log('   История пуста');
+    }
+    
+    console.log('');
+    const suspicious = detectSuspiciousActivity();
+    if (suspicious) {
+        console.log('🚨 ПОДОЗРИТЕЛЬНАЯ АКТИВНОСТЬ ОБНАРУЖЕНА!');
+    } else {
+        console.log('✅ Подозрительной активности не обнаружено');
+    }
+    
+    console.log('═══════════════════════════════════════');
+    console.log('💡 Для сброса: window.resetSecurityData()');
+};
+
+// Функция для полного сброса данных безопасности (только для разработки!)
+window.resetSecurityData = function() {
+    if (!confirm('⚠️ Это удалит ВСЕ данные безопасности! Продолжить?')) {
+        return;
+    }
+    
+    localStorage.removeItem('matcenter_failed_attempts');
+    localStorage.removeItem('matcenter_lockout_until');
+    localStorage.removeItem('matcenter_lockout_count');
+    localStorage.removeItem('matcenter_attempt_history');
+    clearSession();
+    
+    console.log('✅ Все данные безопасности сброшены');
+    console.log('🔄 Перезагрузка страницы...');
+    location.reload();
+};
 
 // ============================================
 // ИНИЦИАЛИЗАЦИЯ
@@ -86,6 +190,68 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ============================================
+// CRYPTOGRAPHY & FINGERPRINTING
+// ============================================
+
+// SHA-256 хеширование
+async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Генерация отпечатка браузера/устройства
+async function generateFingerprint() {
+    const components = [
+        navigator.userAgent,
+        navigator.language,
+        screen.width + 'x' + screen.height,
+        screen.colorDepth,
+        new Date().getTimezoneOffset(),
+        !!window.sessionStorage,
+        !!window.localStorage,
+        navigator.platform,
+        navigator.hardwareConcurrency || 'unknown',
+        navigator.deviceMemory || 'unknown'
+    ];
+    
+    const fingerprintString = components.join('|') + FINGERPRINT_SALT;
+    return await hashPassword(fingerprintString);
+}
+
+// Простое XOR шифрование для localStorage (достаточно для базовой обфускации)
+function encryptData(data, key) {
+    const dataStr = JSON.stringify(data);
+    let result = '';
+    for (let i = 0; i < dataStr.length; i++) {
+        result += String.fromCharCode(dataStr.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+    }
+    return btoa(result);
+}
+
+function decryptData(encrypted, key) {
+    try {
+        const decoded = atob(encrypted);
+        let result = '';
+        for (let i = 0; i < decoded.length; i++) {
+            result += String.fromCharCode(decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+        }
+        return JSON.parse(result);
+    } catch (e) {
+        return null;
+    }
+}
+
+// Генерация случайного session token
+function generateSessionToken() {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+// ============================================
 // SECURITY & LOCKOUT
 // ============================================
 
@@ -103,6 +269,123 @@ function getLockoutUntil() {
 
 function setLockoutUntil(timestamp) {
     localStorage.setItem('matcenter_lockout_until', timestamp.toString());
+}
+
+function getLockoutCount() {
+    return parseInt(localStorage.getItem('matcenter_lockout_count') || '0');
+}
+
+function incrementLockoutCount() {
+    const count = getLockoutCount() + 1;
+    localStorage.setItem('matcenter_lockout_count', count.toString());
+    return count;
+}
+
+function resetLockoutCount() {
+    localStorage.setItem('matcenter_lockout_count', '0');
+}
+
+function getLockoutDuration() {
+    const count = getLockoutCount();
+    const index = Math.min(count, LOCKOUT_DURATIONS.length - 1);
+    return LOCKOUT_DURATIONS[index];
+}
+
+function getAttemptHistory() {
+    const encrypted = localStorage.getItem('matcenter_attempt_history');
+    if (!encrypted) return [];
+    return decryptData(encrypted, deviceFingerprint || 'fallback') || [];
+}
+
+function addAttemptToHistory(success, fingerprint) {
+    const history = getAttemptHistory();
+    history.push({
+        timestamp: Date.now(),
+        success: success,
+        fingerprint: fingerprint
+    });
+    
+    // Храним только последние 50 попыток
+    if (history.length > 50) {
+        history.shift();
+    }
+    
+    const encrypted = encryptData(history, deviceFingerprint || 'fallback');
+    localStorage.setItem('matcenter_attempt_history', encrypted);
+}
+
+function detectSuspiciousActivity() {
+    const history = getAttemptHistory();
+    if (history.length < 5) return false;
+    
+    const recentAttempts = history.slice(-10);
+    const uniqueFingerprints = new Set(recentAttempts.map(a => a.fingerprint));
+    const failedAttempts = recentAttempts.filter(a => !a.success).length;
+    
+    // Подозрительно, если:
+    // 1. Много разных устройств пытаются войти
+    // 2. Очень много неудачных попыток
+    if (uniqueFingerprints.size > 3 || failedAttempts > 7) {
+        console.warn('🚨 ПОДОЗРИТЕЛЬНАЯ АКТИВНОСТЬ ОБНАРУЖЕНА!');
+        console.warn(`   - Уникальных устройств: ${uniqueFingerprints.size}`);
+        console.warn(`   - Неудачных попыток: ${failedAttempts}`);
+        return true;
+    }
+    
+    return false;
+}
+
+// Управление сессиями
+function getSessionData() {
+    const encrypted = localStorage.getItem('matcenter_session');
+    if (!encrypted) return null;
+    
+    const session = decryptData(encrypted, deviceFingerprint || 'fallback');
+    if (!session) return null;
+    
+    // Проверяем срок действия (если сессия не бессрочная)
+    if (session.expiresAt !== Infinity && session.expiresAt < Date.now()) {
+        console.warn('⏰ Сессия истекла');
+        clearSession();
+        return null;
+    }
+    
+    // Проверяем отпечаток устройства
+    if (session.fingerprint !== deviceFingerprint) {
+        console.warn('🚨 Несоответствие отпечатка устройства! Возможная кража токена.');
+        clearSession();
+        return null;
+    }
+    
+    return session;
+}
+
+function createSession(passwordHash) {
+    const session = {
+        token: generateSessionToken(),
+        passwordHash: passwordHash,
+        fingerprint: deviceFingerprint,
+        createdAt: Date.now(),
+        expiresAt: SESSION_DURATION === Infinity ? Infinity : Date.now() + SESSION_DURATION
+    };
+    
+    const encrypted = encryptData(session, deviceFingerprint || 'fallback');
+    localStorage.setItem('matcenter_session', encrypted);
+    
+    console.log('✅ Новая сессия создана');
+    if (session.expiresAt === Infinity) {
+        console.log('   - Бессрочная (до явного выхода)');
+    } else {
+        console.log(`   - Истекает: ${new Date(session.expiresAt).toLocaleString()}`);
+    }
+    
+    return session;
+}
+
+function clearSession() {
+    localStorage.removeItem('matcenter_session');
+    localStorage.removeItem('matcenter_auth'); // Удаляем старый пароль
+    console.log('🗑️ Сессия очищена');
 }
 
 function isLockedOut() {
@@ -125,15 +408,43 @@ function getRemainingLockoutTime() {
 }
 
 function startLockout() {
-    const lockoutUntil = Date.now() + LOCKOUT_DURATION;
+    const lockoutCount = incrementLockoutCount();
+    const duration = getLockoutDuration();
+    const lockoutUntil = Date.now() + duration;
     setLockoutUntil(lockoutUntil);
-    console.warn('🔒 Блокировка активирована на 5 минут');
+    
+    const minutes = Math.floor(duration / 60000);
+    const hours = Math.floor(minutes / 60);
+    
+    let timeStr;
+    if (hours > 0) {
+        timeStr = `${hours} ${hours === 1 ? 'час' : hours < 5 ? 'часа' : 'часов'}`;
+    } else {
+        timeStr = `${minutes} ${minutes === 1 ? 'минуту' : minutes < 5 ? 'минуты' : 'минут'}`;
+    }
+    
+    console.warn(`🔒 Блокировка #${lockoutCount} активирована на ${timeStr}`);
+    
+    if (lockoutCount > 2) {
+        console.warn('⚠️ ВНИМАНИЕ: Повторные блокировки увеличивают время блокировки!');
+    }
 }
 
 function resetFailedAttempts() {
     setFailedAttempts(0);
     setLockoutUntil(0);
-    console.log('✅ Счётчик неудачных попыток сброшен');
+    
+    // Сбрасываем lockout count только если прошло достаточно времени
+    const lastLockout = getLockoutUntil();
+    const timeSinceLastLockout = Date.now() - lastLockout;
+    const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
+    
+    if (timeSinceLastLockout > ONE_WEEK || getLockoutCount() === 0) {
+        resetLockoutCount();
+        console.log('✅ Счётчики полностью сброшены (прошло больше недели)');
+    } else {
+        console.log('✅ Счётчик неудачных попыток сброшен (lockout count сохранён)');
+    }
 }
 
 function updateLockoutUI() {
@@ -176,7 +487,7 @@ function updateLockoutUI() {
 // АВТОРИЗАЦИЯ
 // ============================================
 
-function initAuth() {
+async function initAuth() {
     const authForm = document.getElementById('authForm');
     const passwordInput = document.getElementById('passwordInput');
     const authError = document.getElementById('authError');
@@ -185,6 +496,34 @@ function initAuth() {
     const submitSpinner = authSubmit.querySelector('.submit-spinner');
     const authModal = document.getElementById('authModal');
     const logoutButton = document.getElementById('logoutButton');
+    
+    // 🔒 Генерируем отпечаток устройства
+    console.log('🔍 Генерация отпечатка устройства...');
+    deviceFingerprint = await generateFingerprint();
+    console.log(`✅ Отпечаток: ${deviceFingerprint.substring(0, 16)}...`);
+    
+    // 🔍 Проверяем подозрительную активность
+    if (detectSuspiciousActivity()) {
+        console.warn('⚠️ Обнаружена подозрительная активность! Рекомендуется усиленная защита.');
+    }
+    
+    // 🔐 Проверяем существующую сессию
+    const existingSession = getSessionData();
+    if (existingSession) {
+        console.log('✅ Найдена действительная сессия');
+        authToken = localStorage.getItem('matcenter_auth');
+        if (authToken) {
+            try {
+                await loadTasksFromGoogleSheets();
+                hideAuthForm();
+                console.log('✅ Автоматический вход выполнен через сессию');
+                return;
+            } catch (error) {
+                console.warn('⚠️ Сессия недействительна, требуется повторный вход');
+                clearSession();
+            }
+        }
+    }
     
     // Проверка блокировки при загрузке
     if (isLockedOut()) {
@@ -220,32 +559,60 @@ function initAuth() {
         authSubmit.disabled = true;
         passwordInput.disabled = true;
         
+        // Хешируем пароль
+        const passwordHash = await hashPassword(password);
+        
         // Пробуем загрузить данные с этим паролем
         try {
             authToken = password;
             await loadTasksFromGoogleSheets();
             
-            // Если успешно - сбрасываем счётчик и сохраняем пароль
-            resetFailedAttempts();
+            // Если успешно:
+            // 1. Создаём сессию
+            createSession(passwordHash);
+            
+            // 2. Сохраняем пароль (для API)
             localStorage.setItem('matcenter_auth', password);
+            
+            // 3. Логируем успешную попытку
+            addAttemptToHistory(true, deviceFingerprint);
+            console.log('✅ Успешный вход');
+            
+            // 4. Сбрасываем счётчики
+            resetFailedAttempts();
+            
+            // 5. Скрываем форму
             hideAuthForm();
             
         } catch (error) {
-            // Если ошибка - увеличиваем счётчик неудачных попыток
+            // Если ошибка:
             authToken = null;
             
+            // 1. Логируем неудачную попытку
+            addAttemptToHistory(false, deviceFingerprint);
+            
+            // 2. Увеличиваем счётчик
             const failedAttempts = getFailedAttempts() + 1;
             setFailedAttempts(failedAttempts);
             
             console.warn(`⚠️ Неудачная попытка входа: ${failedAttempts}/${MAX_FAILED_ATTEMPTS}`);
             
-            // Анимация тряски
+            // 3. Анимация тряски
             authModal.classList.add('shake');
             setTimeout(() => {
                 authModal.classList.remove('shake');
             }, 400);
             
-            // Проверяем, нужно ли блокировать
+            // 4. Проверяем подозрительную активность
+            if (detectSuspiciousActivity()) {
+                authError.querySelector('.error-icon').textContent = '🚨';
+                authError.querySelector('.error-text').textContent = 
+                    'Обнаружена подозрительная активность!';
+                authError.style.display = 'flex';
+                authError.style.background = 'rgba(239, 68, 68, 0.2)';
+            }
+            
+            // 5. Проверяем, нужно ли блокировать
             if (failedAttempts >= MAX_FAILED_ATTEMPTS) {
                 startLockout();
                 updateLockoutUI();
@@ -261,6 +628,7 @@ function initAuth() {
             } else {
                 // Показываем обычную ошибку
                 authError.style.display = 'flex';
+                authError.style.background = 'rgba(239, 68, 68, 0.1)';
                 authError.querySelector('.error-icon').textContent = '🚫';
                 authError.querySelector('.error-text').textContent = 
                     `Неверный пароль. Осталось попыток: ${MAX_FAILED_ATTEMPTS - failedAttempts}`;
@@ -381,7 +749,9 @@ function hideAuthForm() {
 
 function logout() {
     authToken = null;
-    localStorage.removeItem('matcenter_auth');
+    
+    // Очищаем сессию
+    clearSession();
     
     // Очищаем данные
     allTasks = [];
@@ -395,6 +765,8 @@ function logout() {
     document.getElementById('solvedTasks').textContent = '0';
     document.getElementById('currentSeries').textContent = '0';
     document.getElementById('postponedTasks').textContent = '0';
+    
+    console.log('👋 Выход выполнен');
     
     showAuthForm();
 }
