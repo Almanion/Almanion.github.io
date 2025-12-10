@@ -10,7 +10,7 @@
     <!-- Боковая панель навигации -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h2><a href="index.html" style="color: white; text-decoration: none;">📚 Конспекты</a></h2>
+            <h2><a href="index.html" style="color: white; text-decoration: none;">📚 Главная</a></h2>
             <!-- Кнопка переключения темы -->
             <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">🌙</button>
             <button class="close-sidebar" id="closeSidebar">✕</button>
@@ -30,17 +30,53 @@
                     <li><a href="#unsolved" class="nav-link">Неразобранные</a></li>
                 </ul>
             </div>
+            
+            <div class="nav-section logout-section" id="logoutSection" style="display: none;">
+                <button id="logoutButton" class="logout-button-sidebar">
+                    <span class="logout-icon">🚪</span>
+                    <span>Выйти</span>
+                </button>
+            </div>
         </nav>
     </aside>
 
     <!-- Кнопка открытия меню (для мобильных) -->
     <button class="menu-toggle" id="menuToggle">☰</button>
 
+    <!-- Форма авторизации -->
+    <div class="auth-overlay hidden" id="authOverlay">
+        <div class="auth-modal" id="authModal">
+            <div class="auth-icon">🔐</div>
+            <h2>Введите пароль</h2>
+            <form id="authForm">
+                <input 
+                    type="password" 
+                    id="passwordInput" 
+                    placeholder="Введите пароль..."
+                    autocomplete="off"
+                    required
+                >
+                <div class="auth-error" id="authError" style="display: none;">
+                    <span class="error-icon">🚫</span>
+                    <span class="error-text">Неверный пароль.</span>
+                </div>
+                <button type="submit" class="auth-submit" id="authSubmit">
+                    <span class="submit-text">Войти</span>
+                    <span class="submit-spinner" style="display: none;">
+                        <span class="spinner-dot"></span>
+                        <span class="spinner-dot"></span>
+                        <span class="spinner-dot"></span>
+                    </span>
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Основной контент -->
     <main class="main-content">
         <header class="page-header">
             <h1>МатЦентр 2025/2026</h1>
-            <p class="subtitle">Задачи | <a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a></p>
+            <p class="subtitle"><a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a></p>
         </header>
 
         <!-- Статистика -->
@@ -95,15 +131,6 @@
             <h2 class="part-title">Неразобранные задачи</h2>
             <div id="unsolvedContainer" class="tasks-container"></div>
         </section>
-
-        <!-- Футер -->
-        <footer class="page-footer">
-            <p style="font-size: 0.9rem; margin-top: 0.5rem;">
-                <a href="https://docs.google.com/spreadsheets/d/1K7Phvgrzu_RyzoCGiVMZOq3PQK2VxXQA6OJV6kgs1Ug/edit?gid=0#gid=0" target="_blank" style="color: var(--accent-color); text-decoration: none;">
-                    📊 Открыть таблицу
-                </a>
-            </p>
-        </footer>
     </main>
 
     <!-- Кнопка "Наверх" -->
@@ -113,6 +140,4 @@
     <script src="matcenter.js"></script>
 </body>
 </html>
-
-
 

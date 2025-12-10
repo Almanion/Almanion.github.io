@@ -1,24 +1,59 @@
 // ============================================
-// МАТЦЕНТР - РАБОТА С GOOGLE SHEETS
+// CONFIGURATION
 // ============================================
 
-const SPREADSHEET_ID = '1K7Phvgrzu_RyzoCGiVMZOq3PQK2VxXQA6OJV6kgs1Ug';
+// Encoded endpoint URL (base64)
+const _0x4e2a = ['aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J4X2FPWTI3ZThNSTY3Q1lxYWFHeDdjWnpJRjhwdmpTUXV6OUY5UWtGbmRpMndWX0JPLUl3NWJMdEZ3QndpbGo5enovZXhlYw=='];
+const _0x1f3b = (s) => atob(s);
+const API_ENDPOINT = _0x1f3b(_0x4e2a[0]);
 
-// URL вашего Google Apps Script Web App (если настроен)
-// Оставьте пустым, чтобы использовать прямой CSV экспорт
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxR1AIjejjyLXzb03Q6FkgfI9MwtQ_-8MhG-NzmM4GIwWalZHF971vWPRMR8y__7nA/exec';
+// Security settings
+const MAX_FAILED_ATTEMPTS = 3;
+const LOCKOUT_DURATION = 5 * 60 * 1000; // 5 минут в миллисекундах
 
 let allTasks = [];
 let currentFilter = 'all';
+let authToken = null;
+let lockoutTimer = null;
 
 // ============================================
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================
 
-document.addEventListener('DOMContentLoaded', () => {
-    loadTasksFromGoogleSheets();
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('=================================');
+    console.log('🚀 МатЦентр инициализация');
+    console.log('=================================');
+    
+    // Проверяем, есть ли сохранённый пароль
+    const savedPassword = localStorage.getItem('matcenter_auth');
+    console.log('🔑 Сохранённый пароль:', savedPassword ? 'найден ✅' : 'не найден ❌');
+    
+    if (savedPassword) {
+        authToken = savedPassword;
+        // Сразу скрываем форму и показываем меню
+        hideAuthForm();
+        
+        try {
+            // Пробуем загрузить данные с сохранённым паролем
+            console.log('🔄 Попытка загрузки с сохранённым паролем...');
+            await loadTasksFromGoogleSheets();
+            console.log('✅ Загрузка успешна! Пользователь авторизован.');
+        } catch (error) {
+            // Если ошибка (например, пароль изменился) - показываем форму входа обратно
+            console.warn('⚠️ Сохранённый пароль недействителен:', error.message);
+            authToken = null;
+            localStorage.removeItem('matcenter_auth');
+            showAuthForm();
+        }
+    } else {
+        console.log('📋 Показываем форму авторизации...');
+        showAuthForm();
+    }
+    
     initMatCenterNavigation();
     initMatCenterSearch();
+    initAuth();
     
     // Кнопка обновления в заголовке
     const refreshButton = document.getElementById('refreshButton');
@@ -27,19 +62,345 @@ document.addEventListener('DOMContentLoaded', () => {
             refreshButton.disabled = true;
             refreshButton.textContent = '⏳ Обновление...';
             
-            loadTasksFromGoogleSheets().finally(() => {
-                refreshButton.disabled = false;
-                refreshButton.textContent = '🔄 Обновить данные';
-            });
+            loadTasksFromGoogleSheets()
+                .catch(err => {
+                    console.error('Ошибка обновления данных:', err);
+                    alert('Не удалось обновить данные. Проверьте соединение.');
+                })
+                .finally(() => {
+                    refreshButton.disabled = false;
+                    refreshButton.textContent = '🔄 Обновить данные';
+                });
         });
     }
     
-    // Автообновление каждые 5 минут
-    setInterval(loadTasksFromGoogleSheets, 5 * 60 * 1000);
+    // Автообновление каждые 5 минут (только если авторизован)
+    setInterval(() => {
+        if (authToken) {
+            loadTasksFromGoogleSheets().catch(err => {
+                console.error('Ошибка автообновления:', err);
+                // При ошибке автообновления не разлогиниваем пользователя
+            });
+        }
+    }, 5 * 60 * 1000);
 });
 
 // ============================================
-// ЗАГРУЗКА ДАННЫХ ИЗ GOOGLE SHEETS
+// SECURITY & LOCKOUT
+// ============================================
+
+function getFailedAttempts() {
+    return parseInt(localStorage.getItem('matcenter_failed_attempts') || '0');
+}
+
+function setFailedAttempts(count) {
+    localStorage.setItem('matcenter_failed_attempts', count.toString());
+}
+
+function getLockoutUntil() {
+    return parseInt(localStorage.getItem('matcenter_lockout_until') || '0');
+}
+
+function setLockoutUntil(timestamp) {
+    localStorage.setItem('matcenter_lockout_until', timestamp.toString());
+}
+
+function isLockedOut() {
+    const lockoutUntil = getLockoutUntil();
+    if (lockoutUntil > Date.now()) {
+        return true;
+    }
+    // Если время блокировки истекло, сбрасываем
+    if (lockoutUntil > 0) {
+        setLockoutUntil(0);
+        setFailedAttempts(0);
+    }
+    return false;
+}
+
+function getRemainingLockoutTime() {
+    const lockoutUntil = getLockoutUntil();
+    const remaining = lockoutUntil - Date.now();
+    return remaining > 0 ? remaining : 0;
+}
+
+function startLockout() {
+    const lockoutUntil = Date.now() + LOCKOUT_DURATION;
+    setLockoutUntil(lockoutUntil);
+    console.warn('🔒 Блокировка активирована на 5 минут');
+}
+
+function resetFailedAttempts() {
+    setFailedAttempts(0);
+    setLockoutUntil(0);
+    console.log('✅ Счётчик неудачных попыток сброшен');
+}
+
+function updateLockoutUI() {
+    const authError = document.getElementById('authError');
+    const passwordInput = document.getElementById('passwordInput');
+    const authSubmit = document.getElementById('authSubmit');
+    const submitText = authSubmit?.querySelector('.submit-text');
+    const submitSpinner = authSubmit?.querySelector('.submit-spinner');
+    
+    if (isLockedOut()) {
+        const remaining = getRemainingLockoutTime();
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+        
+        if (authError) {
+            authError.style.display = 'flex';
+            authError.querySelector('.error-icon').textContent = '⏱️';
+            authError.querySelector('.error-text').textContent = 
+                `Слишком много попыток. Повторите через ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        if (passwordInput) passwordInput.disabled = true;
+        if (authSubmit) {
+            authSubmit.disabled = true;
+            if (submitText) submitText.textContent = 'Заблокировано';
+        }
+        
+        return true;
+    } else {
+        if (passwordInput) passwordInput.disabled = false;
+        if (authSubmit) {
+            authSubmit.disabled = false;
+            if (submitText) submitText.textContent = 'Войти';
+        }
+        return false;
+    }
+}
+
+// ============================================
+// АВТОРИЗАЦИЯ
+// ============================================
+
+function initAuth() {
+    const authForm = document.getElementById('authForm');
+    const passwordInput = document.getElementById('passwordInput');
+    const authError = document.getElementById('authError');
+    const authSubmit = document.getElementById('authSubmit');
+    const submitText = authSubmit.querySelector('.submit-text');
+    const submitSpinner = authSubmit.querySelector('.submit-spinner');
+    const authModal = document.getElementById('authModal');
+    const logoutButton = document.getElementById('logoutButton');
+    
+    // Проверка блокировки при загрузке
+    if (isLockedOut()) {
+        updateLockoutUI();
+        // Запускаем таймер обновления
+        lockoutTimer = setInterval(() => {
+            if (!updateLockoutUI()) {
+                // Блокировка снята
+                clearInterval(lockoutTimer);
+                lockoutTimer = null;
+            }
+        }, 1000);
+    }
+    
+    // Форма входа
+    authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Проверяем блокировку
+        if (isLockedOut()) {
+            updateLockoutUI();
+            return;
+        }
+        
+        const password = passwordInput.value;
+        
+        // Скрываем ошибку
+        authError.style.display = 'none';
+        
+        // Показываем спиннер
+        submitText.style.display = 'none';
+        submitSpinner.style.display = 'flex';
+        authSubmit.disabled = true;
+        passwordInput.disabled = true;
+        
+        // Пробуем загрузить данные с этим паролем
+        try {
+            authToken = password;
+            await loadTasksFromGoogleSheets();
+            
+            // Если успешно - сбрасываем счётчик и сохраняем пароль
+            resetFailedAttempts();
+            localStorage.setItem('matcenter_auth', password);
+            hideAuthForm();
+            
+        } catch (error) {
+            // Если ошибка - увеличиваем счётчик неудачных попыток
+            authToken = null;
+            
+            const failedAttempts = getFailedAttempts() + 1;
+            setFailedAttempts(failedAttempts);
+            
+            console.warn(`⚠️ Неудачная попытка входа: ${failedAttempts}/${MAX_FAILED_ATTEMPTS}`);
+            
+            // Анимация тряски
+            authModal.classList.add('shake');
+            setTimeout(() => {
+                authModal.classList.remove('shake');
+            }, 400);
+            
+            // Проверяем, нужно ли блокировать
+            if (failedAttempts >= MAX_FAILED_ATTEMPTS) {
+                startLockout();
+                updateLockoutUI();
+                
+                // Запускаем таймер обновления
+                if (lockoutTimer) clearInterval(lockoutTimer);
+                lockoutTimer = setInterval(() => {
+                    if (!updateLockoutUI()) {
+                        clearInterval(lockoutTimer);
+                        lockoutTimer = null;
+                    }
+                }, 1000);
+            } else {
+                // Показываем обычную ошибку
+                authError.style.display = 'flex';
+                authError.querySelector('.error-icon').textContent = '🚫';
+                authError.querySelector('.error-text').textContent = 
+                    `Неверный пароль. Осталось попыток: ${MAX_FAILED_ATTEMPTS - failedAttempts}`;
+                
+                // Возвращаем кнопку в исходное состояние
+                submitText.style.display = 'inline';
+                submitSpinner.style.display = 'none';
+                authSubmit.disabled = false;
+                passwordInput.disabled = false;
+            }
+            
+            // Очищаем и фокусируем поле
+            passwordInput.value = '';
+            if (!isLockedOut()) {
+                passwordInput.focus();
+            }
+        }
+    });
+    
+    // Кнопка выхода
+    if (logoutButton) {
+        logoutButton.addEventListener('click', () => {
+            if (confirm('Вы уверены, что хотите выйти из МатЦентра?')) {
+                logout();
+            }
+        });
+    }
+}
+
+function showAuthForm() {
+    console.log('📋 showAuthForm() вызвана');
+    
+    const authOverlay = document.getElementById('authOverlay');
+    const logoutSection = document.getElementById('logoutSection');
+    const passwordInput = document.getElementById('passwordInput');
+    const authError = document.getElementById('authError');
+    const authSubmit = document.getElementById('authSubmit');
+    const submitText = authSubmit?.querySelector('.submit-text');
+    const submitSpinner = authSubmit?.querySelector('.submit-spinner');
+    
+    if (authOverlay) {
+        authOverlay.classList.remove('hidden');
+        console.log('✅ Форма авторизации показана');
+    }
+    
+    // Очищаем поле пароля
+    if (passwordInput) {
+        passwordInput.value = '';
+    }
+    
+    // Возвращаем кнопку в нормальное состояние
+    if (submitText && submitSpinner && authSubmit) {
+        submitText.style.display = 'inline';
+        submitSpinner.style.display = 'none';
+    }
+    
+    // Проверяем блокировку
+    if (isLockedOut()) {
+        console.warn('⚠️ Форма заблокирована из-за предыдущих неудачных попыток');
+        updateLockoutUI();
+        
+        // Запускаем таймер обновления
+        if (lockoutTimer) clearInterval(lockoutTimer);
+        lockoutTimer = setInterval(() => {
+            if (!updateLockoutUI()) {
+                clearInterval(lockoutTimer);
+                lockoutTimer = null;
+                // После снятия блокировки фокусируем поле
+                if (passwordInput) passwordInput.focus();
+            }
+        }, 1000);
+    } else {
+        // Скрываем ошибку
+        if (authError) {
+            authError.style.display = 'none';
+        }
+        
+        if (passwordInput) {
+            passwordInput.disabled = false;
+            setTimeout(() => {
+                passwordInput.focus();
+            }, 200);
+        }
+        
+        if (authSubmit) {
+            authSubmit.disabled = false;
+        }
+    }
+    
+    if (logoutSection) {
+        logoutSection.style.display = 'none';
+        console.log('✅ Кнопка "Выйти" скрыта');
+    }
+}
+
+function hideAuthForm() {
+    console.log('📋 hideAuthForm() вызвана');
+    
+    const authOverlay = document.getElementById('authOverlay');
+    const logoutSection = document.getElementById('logoutSection');
+    
+    // Останавливаем таймер блокировки
+    if (lockoutTimer) {
+        clearInterval(lockoutTimer);
+        lockoutTimer = null;
+    }
+    
+    if (authOverlay) {
+        authOverlay.classList.add('hidden');
+        console.log('✅ Форма авторизации скрыта');
+    }
+    
+    if (logoutSection) {
+        logoutSection.style.display = 'block';
+        console.log('✅ Кнопка "Выйти" показана');
+    }
+}
+
+function logout() {
+    authToken = null;
+    localStorage.removeItem('matcenter_auth');
+    
+    // Очищаем данные
+    allTasks = [];
+    document.getElementById('tasksContainer').innerHTML = '';
+    document.getElementById('currentSeriesContainer').innerHTML = '';
+    document.getElementById('postponedContainer').innerHTML = '';
+    document.getElementById('unsolvedContainer').innerHTML = '';
+    
+    // Сбрасываем статистику
+    document.getElementById('totalTasks').textContent = '0';
+    document.getElementById('solvedTasks').textContent = '0';
+    document.getElementById('currentSeries').textContent = '0';
+    document.getElementById('postponedTasks').textContent = '0';
+    
+    showAuthForm();
+}
+
+// ============================================
+// DATA FETCHING
 // ============================================
 
 async function loadTasksFromGoogleSheets() {
@@ -51,28 +412,22 @@ async function loadTasksFromGoogleSheets() {
         loadingMessage.style.display = 'block';
         loadingMessage.innerHTML = `
             <div class="spinner"></div>
-            <p>Загрузка задач из Google Таблицы...</p>
+            <p>Загрузка задач...</p>
         `;
     }
     
     console.log('=================================');
     console.log('🚀 Начало загрузки данных');
-    console.log('Apps Script URL:', APPS_SCRIPT_URL ? 'настроен ✅' : 'не настроен ❌');
+    console.log('Endpoint:', API_ENDPOINT ? 'настроен ✅' : 'не настроен ❌');
     console.log('=================================');
     
     try {
         let tasks = [];
         
-        // Пробуем загрузить через Apps Script (если настроен)
-        if (APPS_SCRIPT_URL) {
-            console.log('📍 Метод загрузки: Apps Script');
-            console.log('URL:', APPS_SCRIPT_URL);
-            tasks = await loadFromAppsScript();
-        } else {
-            // Используем публичный доступ к таблице (экспорт в CSV)
-            console.log('📍 Метод загрузки: CSV Export');
-            tasks = await loadFromCSVExport();
-        }
+        // Загружаем данные с проверкой пароля
+        console.log('📍 Метод загрузки: Авторизованный доступ');
+        console.log('Endpoint:', API_ENDPOINT.substring(0, 30) + '...');
+        tasks = await loadFromAppsScript();
         
         console.log('=================================');
         console.log('📊 РЕЗУЛЬТАТ ЗАГРУЗКИ:');
@@ -129,43 +484,26 @@ async function loadTasksFromGoogleSheets() {
         console.error('Стек:', error.stack);
         console.error('=================================');
         
-        // Определяем тип ошибки
-        const isCorsError = error.message.includes('Failed to fetch') || 
-                           error.message.includes('CORS') ||
-                           error.message.includes('NetworkError');
-                // Другая ошибка
-                loadingMessage.innerHTML = `
-                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                        <button id="retryButtonInline" class="retry-button">
-                            🔄 Обновить данные
-                        </button>
-                    </div>
-                `;
-                
-                // Обработчик для встроенной кнопки retry
-                setTimeout(() => {
-                    const retryButtonInline = document.getElementById('retryButtonInline');
-                    if (retryButtonInline) {
-                        retryButtonInline.addEventListener('click', () => {
-                            loadingMessage.innerHTML = `
-                                <div class="spinner"></div>
-                                <p>Повторная загрузка данных...</p>
-                            `;
-                            setTimeout(() => loadTasksFromGoogleSheets(), 100);
-                        });
-                    }
-                }, 100);
+        // Скрываем сообщение загрузки
+        if (loadingMessage) {
+            loadingMessage.style.display = 'none';
+        }
+        
+        // Пробрасываем ошибку дальше (для обработки в initAuth)
+        throw error;
     }
 }
 
 // ============================================
-// ЗАГРУЗКА ЧЕРЕЗ APPS SCRIPT
+// DATA LOADING
 // ============================================
 
 async function loadFromAppsScript() {
-    console.log('🔵 Загрузка через Apps Script:', APPS_SCRIPT_URL);
+    console.log('🔵 Загрузка данных с сервера...');
     
-    const response = await fetch(APPS_SCRIPT_URL);
+    // Передаём авторизационный токен
+    const url = `${API_ENDPOINT}?password=${encodeURIComponent(authToken)}`;
+    const response = await fetch(url);
     
     console.log('📡 Ответ получен, статус:', response.status);
     
@@ -182,17 +520,17 @@ async function loadFromAppsScript() {
     } catch (e) {
         console.error('❌ Ошибка парсинга JSON:', e);
         console.log('Полный ответ:', text);
-        throw new Error('Не удалось распарсить ответ от Apps Script');
+        throw new Error('Не удалось распарсить ответ от сервера');
     }
     
     console.log('📊 Данные распарсены:', data);
     
     if (!data.success) {
-        console.error('❌ Apps Script вернул ошибку:', data.error);
-        throw new Error(data.error || 'Ошибка загрузки из Apps Script');
+        console.error('❌ Сервер вернул ошибку:', data.error);
+        throw new Error(data.error || 'Ошибка загрузки данных');
     }
     
-    console.log('✅ Apps Script вернул задач:', data.count);
+    console.log('✅ Сервер вернул задач:', data.count);
     console.log('Первая задача:', data.tasks[0]);
     
     // Логируем уникальные статусы
@@ -221,139 +559,10 @@ async function loadFromAppsScript() {
     return tasks;
 }
 
-// ============================================
-// ЗАГРУЗКА ЧЕРЕЗ CSV EXPORT
-// ============================================
-
-async function loadFromCSVExport() {
-    const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=0`;
-    
-    console.log('Загрузка CSV из:', url);
-    
-    const response = await fetch(url, {
-        method: 'GET',
-        mode: 'cors',
-        cache: 'no-cache'
-    });
-    
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const csvText = await response.text();
-    console.log('CSV загружен, длина:', csvText.length);
-    
-    if (!csvText || csvText.length < 50) {
-        throw new Error('Пустой или слишком короткий ответ');
-    }
-    
-    const tasks = parseCSV(csvText);
-    
-    if (tasks.length === 0) {
-        throw new Error('Не удалось распарсить задачи из CSV');
-    }
-    
-    return tasks;
-}
-
-// ============================================
-// ПАРСИНГ CSV
-// ============================================
-
-function parseCSV(csvText) {
-    const lines = csvText.split('\n');
-    const tasks = [];
-    
-    console.log('Всего строк в CSV:', lines.length);
-    console.log('Первая строка (заголовок):', lines[0]);
-    
-    // Пропускаем заголовок (первая строка)
-    for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-        
-        // Парсим CSV с учетом кавычек
-        const columns = parseCSVLine(line);
-        
-        // Отладка для первых нескольких строк
-        if (i <= 5) {
-            console.log(`Строка ${i}:`, columns);
-        }
-        
-        // Структура: A - Номер, B - Статус, C - Текст задачи
-        if (columns.length >= 3) {
-            const number = columns[0].trim();
-            const status = columns[1].trim();
-            const description = columns[2].trim();
-            
-            // Пропускаем строки без номера или статуса
-            if (!number || !status) {
-                if (i <= 10) console.log(`Пропускаем строку ${i}: пустой номер или статус`);
-                continue;
-            }
-            
-            // Пропускаем заголовки вроде "Номер", "Статус"
-            if (number.toLowerCase() === 'номер' || status.toLowerCase() === 'статус') {
-                console.log(`Пропускаем заголовок в строке ${i}`);
-                continue;
-            }
-            
-            // Извлекаем чистый номер (может быть "98 (ЛЗ 36)" или просто "98")
-            const cleanNumber = extractNumber(number);
-            if (!cleanNumber) {
-                if (i <= 10) console.log(`Не удалось извлечь номер из "${number}" в строке ${i}`);
-                continue;
-            }
-            
-            tasks.push({
-                number: cleanNumber,
-                numberText: number, // Оригинальный текст с пометками
-                status: status,
-                description: description || 'Условие не указано'
-            });
-        }
-    }
-    
-    console.log('Итого задач распарсено:', tasks.length);
-    if (tasks.length > 0) {
-        console.log('Первая задача:', tasks[0]);
-        console.log('Последняя задача:', tasks[tasks.length - 1]);
-    }
-    
-    return tasks;
-}
-
 // Извлечение номера из текста типа "98 (ЛЗ 36)"
 function extractNumber(text) {
     const match = text.match(/^(\d+)/);
     return match ? parseInt(match[1]) : null;
-}
-
-function parseCSVLine(line) {
-    const result = [];
-    let current = '';
-    let inQuotes = false;
-    
-    for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        
-        if (char === '"') {
-            if (inQuotes && line[i + 1] === '"') {
-                current += '"';
-                i++;
-            } else {
-                inQuotes = !inQuotes;
-            }
-        } else if (char === ',' && !inQuotes) {
-            result.push(current);
-            current = '';
-        } else {
-            current += char;
-        }
-    }
-    
-    result.push(current);
-    return result;
 }
 
 // ============================================
