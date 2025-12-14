@@ -152,6 +152,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log(`✅ Отпечаток: ${fp.substring(0, 16)}...`);
     });
     
+    const cachedFP = localStorage.getItem('matcenter_fp');
+    if (cachedFP) {
+      deviceFingerprint = cachedFP;
+      console.log('🔑 Загружен cached fingerprint');
+    }
+    
     // Проверяем, есть ли сохранённый пароль
     const savedPassword = localStorage.getItem('matcenter_auth');
     console.log('🔑 Сохранённый пароль:', savedPassword ? 'найден ✅' : 'не найден ❌');
@@ -177,11 +183,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 displayTasks(allTasks);
             }
             
-            // Создаём сессию параллельно (не блокирует UI)
-            fingerprintPromise.then(async () => {
+            // Создаём сессию сразу (важно для сохранения между перезагрузками)
+            try {
+                await fingerprintPromise; // Ждём отпечаток
                 const passwordHash = await hashPassword(savedPassword);
                 createSession(passwordHash);
-            }).catch(err => console.warn('⚠️ Ошибка создания сессии:', err));
+                console.log('✅ Сессия создана');
+            } catch (err) {
+                console.warn('⚠️ Ошибка создания сессии:', err);
+            }
             
         } catch (error) {
             // Если ошибка (например, пароль изменился) - показываем форму входа обратно
@@ -242,9 +252,25 @@ async function hashPassword(password) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Генерация отпечатка браузера/устройства (оптимизированная версия)
-async function generateFingerprint() {
-    // Используем только самые важные компоненты для ускорения
+// Добавляем функцию для получения или создания отпечатка
+function getOrCreateFingerprint() {
+    // 1. Пытаемся взять из localStorage, если уже создан
+    let fp = localStorage.getItem('matcenter_fp');
+    if (fp) return Promise.resolve(fp);
+
+    // 2. Если нет – генерируем и сохраняем
+    return generateFingerprintAlgo().then(generated => {
+        try {
+            localStorage.setItem('matcenter_fp', generated);
+        } catch (e) {
+            console.warn('Не удалось сохранить отпечаток:', e);
+        }
+        return generated;
+    });
+}
+
+// Старый generateFingerprint переименовываем во внутренний алгоритм
+async function generateFingerprintAlgo() {
     const components = [
         navigator.userAgent,
         navigator.language,
@@ -252,9 +278,13 @@ async function generateFingerprint() {
         new Date().getTimezoneOffset(),
         navigator.platform
     ];
-    
     const fingerprintString = components.join('|') + FINGERPRINT_SALT;
     return await hashPassword(fingerprintString);
+}
+
+// Новый generateFingerprint делает кеширование
+async function generateFingerprint() {
+    return await getOrCreateFingerprint();
 }
 
 // Простое XOR шифрование для localStorage (достаточно для базовой обфускации)
@@ -376,7 +406,9 @@ function getSessionData() {
     const encrypted = localStorage.getItem('matcenter_session');
     if (!encrypted) return null;
     
-    const session = decryptData(encrypted, deviceFingerprint || 'fallback');
+    // Используем fallback для расшифровки, если отпечаток еще не готов
+    const fingerprint = deviceFingerprint || 'fallback';
+    const session = decryptData(encrypted, fingerprint);
     if (!session) return null;
     
     // Проверяем срок действия (если сессия не бессрочная)
@@ -386,8 +418,8 @@ function getSessionData() {
         return null;
     }
     
-    // Проверяем отпечаток устройства
-    if (session.fingerprint !== deviceFingerprint) {
+    // Проверяем отпечаток устройства (только если он уже сгенерирован)
+    if (deviceFingerprint && session.fingerprint !== deviceFingerprint) {
         console.warn('🚨 Несоответствие отпечатка устройства! Возможная кража токена.');
         clearSession();
         return null;

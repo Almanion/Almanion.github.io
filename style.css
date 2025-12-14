@@ -1845,54 +1845,79 @@ input:focus:not(:focus-visible) {
 }
 
 /* Стили для подсказок в карточках задач */
+/* ============================================
+   СТИЛИ ДЛЯ ПОДСКАЗОК
+   ============================================ */
+
 .task-hint {
-    background: linear-gradient(135deg, rgba(255, 193, 7, 0.08) 0%, rgba(255, 152, 0, 0.12) 100%);
+    background: rgba(255, 193, 7, 0.1);
     border-left: 4px solid #ffc107;
-    border-radius: 8px;
+    border-radius: 6px;
     padding: 0;
     max-height: 0;
     overflow: hidden;
     opacity: 0;
     margin: 0;
-    transform: translateY(-10px) scaleY(0.8);
-    filter: blur(2px);
-    transition: max-height 0.35s cubic-bezier(0.4, 0, 1, 1),
-                opacity 0.2s ease-out,
-                transform 0.3s cubic-bezier(0.4, 0, 1, 1),
-                filter 0.2s ease-out,
-                padding 0.3s ease-out;
+    transition: max-height 0.3s ease,
+                opacity 0.2s ease,
+                padding 0.2s ease;
     white-space: pre-wrap;
     color: var(--text-primary);
     word-wrap: break-word;
     word-break: break-word;
     overflow-wrap: break-word;
-    transform-origin: top left;
-    will-change: max-height, opacity, transform;
     line-height: 1.6;
     text-align: left;
     text-indent: 0;
-    position: relative;
-    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.1);
+    font-size: 0.95rem;
+    display: block;
 }
 
-/* Убираем все возможные отступы у текста внутри подсказки */
-.task-hint::before,
-.task-hint::after {
-    content: none;
+/* Убираем все возможные отступы у первого элемента */
+.task-hint::first-line {
+    text-indent: 0;
+    margin: 0;
+    padding: 0;
 }
 
+.task-card.hint-open .task-hint {
+    max-height: 2000px;
+    opacity: 1;
+    padding-top: 0 !important;
+    padding-right: 1rem;
+    padding-bottom: 0.75rem;
+    padding-left: 0.5rem;
+    margin: 0.25rem 0 0 0;
+    display: block;
+    line-height: 1.4;
+}
+
+/* Убираем все отступы у дочерних элементов */
 .task-hint > * {
     margin: 0;
     padding: 0;
     text-align: left !important;
 }
 
-/* Улучшаем отображение текста в подсказке */
-.task-hint {
-    font-size: 0.95rem;
+/* Убираем отступы у первого и последнего дочернего элемента */
+.task-hint > *:first-child {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
 }
 
-/* Улучшаем отображение формул KaTeX */
+.task-hint > *:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* Убираем отступы у текстовых узлов */
+.task-hint {
+    margin-block-start: 0;
+    margin-block-end: 0;
+    padding-block-start: 0;
+}
+
+/* Стили для формул KaTeX */
 .task-hint .katex {
     text-align: left !important;
     margin: 0.25rem 0 !important;
@@ -1908,111 +1933,64 @@ input:focus:not(:focus-visible) {
     text-align: left !important;
 }
 
-/* Улучшаем отображение переносов строк */
-.task-hint {
-    white-space: pre-wrap;
-    word-spacing: 0.05em;
-}
-
-.task-card.hint-open .task-hint {
-    max-height: 2000px;
-    opacity: 1;
-    transform: translateY(0) scaleY(1);
-    filter: blur(0);
-    padding: 0.75rem 1rem 0.75rem 0.75rem;
-    margin: 0.25rem 0 0 0;
-    transition: max-height 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
-                opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.1s,
-                transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s,
-                filter 0.25s ease-out 0.05s,
-                padding 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                box-shadow 0.3s ease-out;
-    animation: slideInHint 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
-/* Анимация появления подсказки */
-@keyframes slideInHint {
-    0% {
-        opacity: 0;
-        transform: translateY(-10px) scaleY(0.8);
-        filter: blur(2px);
-    }
-    60% {
-        opacity: 0.9;
-        filter: blur(0);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0) scaleY(1);
-        filter: blur(0);
-    }
-}
-
+/* Кнопка раскрытия подсказки */
 .hint-toggle {
-    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    background: #ffc107;
     color: white;
     margin: 0.4rem 0 0 0;
-    padding: 0.7rem 1rem;
+    padding: 0.65rem 1rem;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
+    width: 100%;
 }
 
 .hint-toggle:hover {
-    background: linear-gradient(135deg, #ffb300 0%, #f57c00 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+    background: #ffb300;
 }
 
 .hint-toggle:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
+    background: #ff9800;
 }
 
 .hint-toggle .toggle-icon {
     font-size: 0.8rem;
-    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    transition: transform 0.2s ease;
     display: inline-block;
-    will-change: transform;
-}
-
-.task-card.hint-open .hint-toggle .toggle-icon {
-    transform: rotate(180deg) scale(1.1);
 }
 
 .task-card.hint-open .hint-toggle {
-    background: linear-gradient(135deg, #ffb300 0%, #f57c00 100%);
-    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.35);
-    border: 1px solid rgba(255, 193, 7, 0.3);
+    background: #ffb300;
+}
+
+.task-card.hint-open .hint-toggle .toggle-icon {
+    transform: rotate(180deg);
 }
 
 /* Кнопка для админа */
 .admin-hint-button {
-    margin: 0.35rem 0 0 0;
+    margin: 0.4rem 0 0 0;
     padding: 0.65rem 1rem;
     background: rgba(139, 92, 246, 0.1);
     color: #8b5cf6;
     border: 2px dashed rgba(139, 92, 246, 0.3);
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 0.95rem;
     font-weight: 500;
     width: 100%;
-    transition: all 0.2s;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .admin-hint-button:hover {
-    background: rgba(139, 92, 246, 0.2);
+    background: rgba(139, 92, 246, 0.15);
     border-color: rgba(139, 92, 246, 0.5);
-    transform: translateY(-1px);
 }
 
 /* ============================================
