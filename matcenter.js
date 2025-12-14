@@ -3,7 +3,7 @@
 // ============================================
 
 // Google Apps Script endpoint
-const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwpsVhVUVChSVIUxnv8_Fe5PwoIxajJPSgSjJOAccGN07cKg9V4J8PAbDpf0OvS3-IH/exec';
+const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyoxpge4Lp98uFmaCNGQH4LhbIZDAOvs23k0h6adbfNQHl1vr_N0Xfni4DS5fFV0OE/exec';
 
 // Security settings
 const MAX_FAILED_ATTEMPTS = 3;
@@ -22,7 +22,7 @@ let authToken = null;
 let lockoutTimer = null;
 let deviceFingerprint = null;
 let isAdmin = false;
-let taskHints = {}; // Хранилище подсказок: { taskNumber: "текст подсказки" }
+// Подсказки теперь хранятся в Google Sheet (столбец Hint)
 
 // ============================================
 // SECURITY STATS & MONITORING
@@ -164,9 +164,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     if (savedPassword) {
         authToken = savedPassword;
-        
-        // Загружаем подсказки сразу (быстрая операция)
-        loadHintsFromLocalStorage();
         
         // Сразу скрываем форму и показываем меню
         hideAuthForm();
@@ -602,9 +599,6 @@ async function initAuth() {
                 // isAdmin будет установлен внутри loadTasksFromGoogleSheets()
                 hideAuthForm();
                 
-                // Загружаем подсказки
-                loadHintsFromLocalStorage();
-                
                 // Перерисовываем задачи чтобы отобразить подсказки
                 if (allTasks.length > 0) {
                     displayTasks(allTasks);
@@ -670,10 +664,7 @@ async function initAuth() {
             // 2. Сохраняем пароль (для API)
             localStorage.setItem('matcenter_auth', password);
             
-            // 3. Загружаем подсказки
-            loadHintsFromLocalStorage();
-            
-            // 4. Логируем успешную попытку
+            // 3. Логируем успешную попытку
             addAttemptToHistory(true, deviceFingerprint);
             console.log(isAdmin ? '✅ Успешный вход (АДМИН)' : '✅ Успешный вход');
             
@@ -986,37 +977,15 @@ async function loadFromAppsScript() {
     let response;
     let usedMethod = 'POST';
     
-    try {
-        // Пробуем POST (безопаснее)
-        console.log('🔄 Попытка POST запроса...');
-        response = await fetch(API_ENDPOINT, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                password: authToken,
-                clientId: deviceFingerprint ? deviceFingerprint.substring(0, 16) : 'unknown'
-            })
-        });
-        
-        console.log('📡 POST ответ получен, статус:', response.status);
-        
-        // Проверяем, сработал ли POST
-        if (!response.ok) {
-            throw new Error('POST request failed');
-        }
-    } catch (postError) {
-        // Fallback на GET если POST не сработал
-        console.warn('⚠️ POST не сработал, fallback на GET:', postError.message);
-        usedMethod = 'GET';
-        
-        const clientId = deviceFingerprint ? deviceFingerprint.substring(0, 16) : 'unknown';
-        const url = `${API_ENDPOINT}?password=${encodeURIComponent(authToken)}&clientId=${encodeURIComponent(clientId)}`;
-        
-        response = await fetch(url);
-        console.log('📡 GET ответ получен, статус:', response.status);
-    }
+    // Используем только GET (обходит CORS preflight)
+    console.log('🔄 Используем GET запрос...');
+    usedMethod = 'GET';
+    
+    const clientId = deviceFingerprint ? deviceFingerprint.substring(0, 16) : 'unknown';
+    const url = `${API_ENDPOINT}?password=${encodeURIComponent(authToken)}&clientId=${encodeURIComponent(clientId)}`;
+    
+    response = await fetch(url);
+    console.log('📡 GET ответ получен, статус:', response.status);
     
     console.log(`✅ Использован метод: ${usedMethod}`);
     
@@ -1063,8 +1032,9 @@ async function loadFromAppsScript() {
         return {
             number: cleanNumber,
             numberText: task.number,
-            status: task.status.trim(), // Дополнительный trim на всякий случай
-            description: task.description || 'Условие не указано'
+            status: task.status.trim(),
+            description: task.description || 'Условие не указано',
+            hint: task.hint || ''
         };
     });
     
@@ -1171,7 +1141,7 @@ function createTaskElement(task) {
     const description = task.description || 'Условие не указано';
     
     // Проверяем наличие подсказки
-    const hint = getTaskHint(task.number);
+    const hint = task.hint || null;
     const hasHint = hint !== null;
     
     // Формируем HTML подсказки
@@ -1435,29 +1405,7 @@ function renderLatexInElement(element, attempts = 0) {
     }
 }
 
-// Загрузка подсказок из localStorage
-function loadHintsFromLocalStorage() {
-    try {
-        const hintsJSON = localStorage.getItem('matcenter_hints');
-        if (hintsJSON) {
-            taskHints = JSON.parse(hintsJSON);
-            console.log('📝 Загружено подсказок:', Object.keys(taskHints).length);
-        }
-    } catch (error) {
-        console.error('❌ Ошибка загрузки подсказок:', error);
-        taskHints = {};
-    }
-}
-
-// Сохранение подсказок в localStorage
-function saveHintsToLocalStorage() {
-    try {
-        localStorage.setItem('matcenter_hints', JSON.stringify(taskHints));
-        console.log('💾 Подсказки сохранены');
-    } catch (error) {
-        console.error('❌ Ошибка сохранения подсказок:', error);
-    }
-}
+// Подсказки теперь хранятся в Google Sheet и загружаются вместе с задачами
 
 // Добавление/обновление подсказки
 function setTaskHint(taskNumber, hintText) {
@@ -1466,20 +1414,19 @@ function setTaskHint(taskNumber, hintText) {
         return false;
     }
     
-    if (hintText && hintText.trim()) {
-        taskHints[taskNumber] = hintText.trim();
+    // Обновляем allTasks локально
+    const t = allTasks.find(t => t.number === taskNumber);
+    if (t) {
+        t.hint = hintText.trim();
+        console.log(`✅ Подсказка для задачи №${taskNumber} обновлена локально`);
     } else {
-        delete taskHints[taskNumber];
+        console.warn(`⚠️ Задача №${taskNumber} не найдена в allTasks`);
     }
     
-    saveHintsToLocalStorage();
     return true;
 }
 
-// Получение подсказки для задачи
-function getTaskHint(taskNumber) {
-    return taskHints[taskNumber] || null;
-}
+// Подсказка берётся напрямую из task.hint
 
 // Показать модальное окно добавления подсказки
 function showHintModal(taskNumber, currentHint = '') {
@@ -1518,30 +1465,72 @@ function initHintModal() {
     
     // Сохранение подсказки
     if (saveBtn) {
-        saveBtn.addEventListener('click', () => {
+        saveBtn.addEventListener('click', async () => {
             const taskNumber = parseInt(document.getElementById('hintTaskNumber').textContent);
             const hintText = document.getElementById('hintTextarea').value;
             
-            if (setTaskHint(taskNumber, hintText)) {
-                hideHintModal();
-                // Перезагружаем отображение задач
-                displayTasks(allTasks);
-                console.log(`✅ Подсказка для задачи №${taskNumber} сохранена`);
+            // Блокируем кнопку и показываем загрузку
+            const originalText = saveBtn.innerHTML;
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner-small"></span> Сохранение...';
+            saveBtn.style.opacity = '0.7';
+            
+            try {
+                if (setTaskHint(taskNumber, hintText)) {
+                    await pushHintToServer(taskNumber, hintText);
+                    
+                    // Показываем успех
+                    saveBtn.innerHTML = '✓ Сохранено!';
+                    saveBtn.style.opacity = '1';
+                    
+                    // Через 500ms закрываем модалку
+                    setTimeout(() => {
+                        hideHintModal();
+                        displayTasks(allTasks);
+                        console.log(`✅ Подсказка для задачи №${taskNumber} сохранена`);
+                    }, 500);
+                }
+            } catch (error) {
+                // В случае ошибки возвращаем кнопку в исходное состояние
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+                saveBtn.style.opacity = '1';
+                console.error('Ошибка сохранения:', error);
             }
         });
     }
     
     // Удаление подсказки
     if (deleteBtn) {
-        deleteBtn.addEventListener('click', () => {
+        deleteBtn.addEventListener('click', async ()=>{
             const taskNumber = parseInt(document.getElementById('hintTaskNumber').textContent);
-            
-            if (confirm(`Удалить подсказку для задачи №${taskNumber}?`)) {
-                if (setTaskHint(taskNumber, '')) {
-                    hideHintModal();
-                    // Перезагружаем отображение задач
-                    displayTasks(allTasks);
-                    console.log(`🗑️ Подсказка для задачи №${taskNumber} удалена`);
+            if(confirm(`Удалить подсказку для задачи №${taskNumber}?`)){
+                // Блокируем кнопку и показываем загрузку
+                const originalText = deleteBtn.innerHTML;
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = '<span class="spinner-small"></span> Удаление...';
+                deleteBtn.style.opacity = '0.7';
+                
+                try {
+                    if(setTaskHint(taskNumber,'')){
+                        await pushHintToServer(taskNumber,'');
+                        
+                        // Показываем успех
+                        deleteBtn.innerHTML = '✓ Удалено!';
+                        deleteBtn.style.opacity = '1';
+                        
+                        // Через 500ms закрываем модалку
+                        setTimeout(() => {
+                            hideHintModal();
+                            displayTasks(allTasks);
+                        }, 500);
+                    }
+                } catch (error) {
+                    // В случае ошибки возвращаем кнопку в исходное состояние
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = originalText;
+                    deleteBtn.style.opacity = '1';
+                    console.error('Ошибка удаления:', error);
                 }
             }
         });
@@ -1567,10 +1556,40 @@ function initHintModal() {
     }
 }
 
-// ============================================
-// ТЕСТОВЫЕ ДАННЫЕ (для демонстрации)
-// ============================================
+async function pushHintToServer(taskNumber, hintText) {
+    console.log(`🔄 Отправка подсказки для задачи №${taskNumber} на сервер...`);
+    console.log(`   Пароль: ${authToken ? 'есть' : 'нет'}, taskNumber: ${taskNumber}, hintText length: ${hintText.length}`);
+    
+    try {
+        // Используем GET вместо POST (обходит CORS)
+        const url = `${API_ENDPOINT}?password=${encodeURIComponent(authToken)}&action=setHint&taskNumber=${encodeURIComponent(taskNumber)}&hintText=${encodeURIComponent(hintText)}`;
+        const response = await fetch(url);
+        
+        const responseText = await response.text();
+        console.log('📥 Ответ сервера (raw):', responseText);
+        
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('❌ Ошибка парсинга ответа сервера:', parseError);
+            throw new Error('Сервер вернул некорректный JSON: ' + responseText);
+        }
+        
+        if (!data.success) {
+            console.error('❌ Сервер вернул ошибку:', data.error || 'неизвестная ошибка');
+            throw new Error(data.error || 'Ошибка при сохранении подсказки на сервере');
+        }
+        
+        console.log('✅ Подсказка успешно сохранена на сервере');
+        return data;
+        
+    } catch (error) {
+        console.error('❌ Не удалось отправить подсказку на сервер:', error);
+        alert('Не удалось сохранить подсказку: ' + error.message);
+        throw error;
+    }
+}
 
-
-console.log('✅ МатЦентр загружен успешно!');
+console.log('✅ Сайт загружен успешно!');
 
