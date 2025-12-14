@@ -745,7 +745,7 @@ async function initAuth() {
     // Кнопка выхода
     if (logoutButton) {
         logoutButton.addEventListener('click', () => {
-            if (confirm('Вы уверены, что хотите выйти из МатЦентра?')) {
+            if (confirm('Вы уверены, что хотите выйти?')) {
                 logout();
             }
         });
