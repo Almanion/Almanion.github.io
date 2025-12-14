@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data:; font-src 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net;">
     <title>МатЦентр 2025/2026 | Almanion</title>
     <link rel="stylesheet" href="style.css">
+    <!-- KaTeX для математических формул -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 </head>
 <body>
     <!-- Боковая панель навигации -->
@@ -70,6 +74,26 @@
                     </span>
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно для добавления подсказки (Админ) -->
+    <div class="auth-overlay hidden" id="hintOverlay">
+        <div class="hint-modal" id="hintModal">
+            <div class="hint-modal-header">
+                <h3>💡 Подсказка к задаче №<span id="hintTaskNumber"></span></h3>
+                <button class="hint-close-btn" id="hintCloseBtn">✕</button>
+            </div>
+            <textarea 
+                id="hintTextarea" 
+                placeholder="Введите текст подсказки..."
+                rows="6"
+            ></textarea>
+            <div class="hint-modal-actions">
+                <button class="hint-save-btn" id="hintSaveBtn">💾 Сохранить</button>
+                <button class="hint-delete-btn" id="hintDeleteBtn">🗑️ Удалить подсказку</button>
+                <button class="hint-cancel-btn" id="hintCancelBtn">Отмена</button>
+            </div>
         </div>
     </div>
 

@@ -3,7 +3,7 @@
 // ============================================
 
 // Google Apps Script endpoint
-const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx_aOY27e8MI67CYqaaGx7cZzIF8pvjSQuz9F9QkFndi2wV_BO-Iw5bLtFwBwilj9zz/exec';
+const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwpsVhVUVChSVIUxnv8_Fe5PwoIxajJPSgSjJOAccGN07cKg9V4J8PAbDpf0OvS3-IH/exec';
 
 // Security settings
 const MAX_FAILED_ATTEMPTS = 3;
@@ -21,6 +21,8 @@ let currentFilter = 'all';
 let authToken = null;
 let lockoutTimer = null;
 let deviceFingerprint = null;
+let isAdmin = false;
+let taskHints = {}; // Хранилище подсказок: { taskNumber: "текст подсказки" }
 
 // ============================================
 // SECURITY STATS & MONITORING
@@ -37,7 +39,7 @@ window.showSecurityStats = function() {
         console.log('📱 Текущая сессия:');
         console.log(`   ✓ Создана: ${new Date(session.createdAt).toLocaleString()}`);
         if (session.expiresAt === Infinity) {
-            console.log(`   ✓ Бессрочная (не истекает)`);
+            console.log(`   ✓ Бессрочная`);
         } else {
             console.log(`   ✓ Истекает: ${new Date(session.expiresAt).toLocaleString()}`);
             const remaining = session.expiresAt - Date.now();
@@ -139,24 +141,53 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 МатЦентр инициализация');
     console.log('=================================');
     
+    // Инициализируем UI компоненты сразу (неблокирующие операции)
+    initMatCenterNavigation();
+    initMatCenterSearch();
+    initHintModal();
+    
+    // Запускаем генерацию отпечатка параллельно (не блокирует загрузку)
+    const fingerprintPromise = generateFingerprint().then(fp => {
+        deviceFingerprint = fp;
+        console.log(`✅ Отпечаток: ${fp.substring(0, 16)}...`);
+    });
+    
     // Проверяем, есть ли сохранённый пароль
     const savedPassword = localStorage.getItem('matcenter_auth');
     console.log('🔑 Сохранённый пароль:', savedPassword ? 'найден ✅' : 'не найден ❌');
     
     if (savedPassword) {
         authToken = savedPassword;
+        
+        // Загружаем подсказки сразу (быстрая операция)
+        loadHintsFromLocalStorage();
+        
         // Сразу скрываем форму и показываем меню
         hideAuthForm();
         
         try {
             // Пробуем загрузить данные с сохранённым паролем
             console.log('🔄 Попытка загрузки с сохранённым паролем...');
-            await loadTasksFromGoogleSheets();
-            console.log('✅ Загрузка успешна! Пользователь авторизован.');
+            const result = await loadTasksFromGoogleSheets();
+            // isAdmin будет установлен внутри loadTasksFromGoogleSheets()
+            console.log(isAdmin ? '✅ Загрузка успешна! (АДМИН)' : '✅ Загрузка успешна! Пользователь авторизован.');
+            
+            // Перерисовываем задачи сразу
+            if (allTasks.length > 0) {
+                displayTasks(allTasks);
+            }
+            
+            // Создаём сессию параллельно (не блокирует UI)
+            fingerprintPromise.then(async () => {
+                const passwordHash = await hashPassword(savedPassword);
+                createSession(passwordHash);
+            }).catch(err => console.warn('⚠️ Ошибка создания сессии:', err));
+            
         } catch (error) {
             // Если ошибка (например, пароль изменился) - показываем форму входа обратно
             console.warn('⚠️ Сохранённый пароль недействителен:', error.message);
             authToken = null;
+            isAdmin = false;
             localStorage.removeItem('matcenter_auth');
             showAuthForm();
         }
@@ -165,8 +196,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         showAuthForm();
     }
     
-    initMatCenterNavigation();
-    initMatCenterSearch();
+    // Инициализируем авторизацию (проверка сессии будет внутри)
     initAuth();
     
     // Кнопка обновления в заголовке
@@ -212,19 +242,15 @@ async function hashPassword(password) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Генерация отпечатка браузера/устройства
+// Генерация отпечатка браузера/устройства (оптимизированная версия)
 async function generateFingerprint() {
+    // Используем только самые важные компоненты для ускорения
     const components = [
         navigator.userAgent,
         navigator.language,
         screen.width + 'x' + screen.height,
-        screen.colorDepth,
         new Date().getTimezoneOffset(),
-        !!window.sessionStorage,
-        !!window.localStorage,
-        navigator.platform,
-        navigator.hardwareConcurrency || 'unknown',
-        navigator.deviceMemory || 'unknown'
+        navigator.platform
     ];
     
     const fingerprintString = components.join('|') + FINGERPRINT_SALT;
@@ -394,7 +420,7 @@ function createSession(passwordHash) {
 
 function clearSession() {
     localStorage.removeItem('matcenter_session');
-    localStorage.removeItem('matcenter_auth'); // Удаляем старый пароль
+    // НЕ удаляем matcenter_auth - пароль должен сохраняться для автовхода
     console.log('🗑️ Сессия очищена');
 }
 
@@ -507,26 +533,42 @@ async function initAuth() {
     const authModal = document.getElementById('authModal');
     const logoutButton = document.getElementById('logoutButton');
     
-    // 🔒 Генерируем отпечаток устройства
-    console.log('🔍 Генерация отпечатка устройства...');
-    deviceFingerprint = await generateFingerprint();
-    console.log(`✅ Отпечаток: ${deviceFingerprint.substring(0, 16)}...`);
+    // 🔒 Проверяем, есть ли уже отпечаток (если был сгенерирован ранее)
+    if (!deviceFingerprint) {
+        console.log('🔍 Генерация отпечатка устройства...');
+        deviceFingerprint = await generateFingerprint();
+        console.log(`✅ Отпечаток: ${deviceFingerprint.substring(0, 16)}...`);
+    }
     
-    // 🔍 Проверяем подозрительную активность
+    // 🔍 Проверяем подозрительную активность (неблокирующая проверка)
     if (detectSuspiciousActivity()) {
         console.warn('⚠️ Обнаружена подозрительная активность! Рекомендуется усиленная защита.');
     }
     
-    // 🔐 Проверяем существующую сессию
+    // 🔐 Проверяем существующую сессию (только если не было автозагрузки)
+    if (authToken) {
+        return; // Уже загружено в DOMContentLoaded
+    }
+    
     const existingSession = getSessionData();
     if (existingSession) {
         console.log('✅ Найдена действительная сессия');
         authToken = localStorage.getItem('matcenter_auth');
         if (authToken) {
             try {
-                await loadTasksFromGoogleSheets();
+                const result = await loadTasksFromGoogleSheets();
+                // isAdmin будет установлен внутри loadTasksFromGoogleSheets()
                 hideAuthForm();
-                console.log('✅ Автоматический вход выполнен через сессию');
+                
+                // Загружаем подсказки
+                loadHintsFromLocalStorage();
+                
+                // Перерисовываем задачи чтобы отобразить подсказки
+                if (allTasks.length > 0) {
+                    displayTasks(allTasks);
+                }
+                
+                console.log(isAdmin ? '✅ Автоматический вход выполнен через сессию (АДМИН)' : '✅ Автоматический вход выполнен через сессию');
                 return;
             } catch (error) {
                 console.warn('⚠️ Сессия недействительна, требуется повторный вход');
@@ -575,24 +617,34 @@ async function initAuth() {
         // Пробуем загрузить данные с этим паролем
         try {
             authToken = password;
-            await loadTasksFromGoogleSheets();
+            const response = await loadTasksFromGoogleSheets();
             
             // Если успешно:
             // 1. Создаём сессию
             createSession(passwordHash);
             
+            // isAdmin уже установлен внутри loadTasksFromGoogleSheets()
+            
             // 2. Сохраняем пароль (для API)
             localStorage.setItem('matcenter_auth', password);
             
-            // 3. Логируем успешную попытку
-            addAttemptToHistory(true, deviceFingerprint);
-            console.log('✅ Успешный вход');
+            // 3. Загружаем подсказки
+            loadHintsFromLocalStorage();
             
-            // 4. Сбрасываем счётчики
+            // 4. Логируем успешную попытку
+            addAttemptToHistory(true, deviceFingerprint);
+            console.log(isAdmin ? '✅ Успешный вход (АДМИН)' : '✅ Успешный вход');
+            
+            // 5. Сбрасываем счётчики
             resetFailedAttempts();
             
-            // 5. Скрываем форму
+            // 6. Скрываем форму
             hideAuthForm();
+            
+            // 7. Перерисовываем задачи чтобы отобразить подсказки
+            if (allTasks.length > 0) {
+                displayTasks(allTasks);
+            }
             
         } catch (error) {
             // Если ошибка:
@@ -759,9 +811,11 @@ function hideAuthForm() {
 
 function logout() {
     authToken = null;
+    isAdmin = false;
     
-    // Очищаем сессию
+    // Очищаем сессию и пароль
     clearSession();
+    localStorage.removeItem('matcenter_auth'); // Удаляем сохранённый пароль
     
     // Очищаем данные
     allTasks = [];
@@ -805,11 +859,14 @@ async function loadTasksFromGoogleSheets() {
     
     try {
         let tasks = [];
+        let adminFlag = false;
         
         // Загружаем данные с проверкой пароля
         console.log('📍 Метод загрузки: Авторизованный доступ');
         console.log('Endpoint:', API_ENDPOINT.substring(0, 30) + '...');
-        tasks = await loadFromAppsScript();
+        const result = await loadFromAppsScript();
+        tasks = result.tasks;
+        adminFlag = result.isAdmin;
         
         console.log('=================================');
         console.log('📊 РЕЗУЛЬТАТ ЗАГРУЗКИ:');
@@ -827,6 +884,7 @@ async function loadTasksFromGoogleSheets() {
         }
         
         allTasks = tasks;
+        isAdmin = adminFlag;
         
         // Детальная статистика по загруженным задачам
         console.log('=================================');
@@ -944,6 +1002,7 @@ async function loadFromAppsScript() {
     }
     
     console.log('✅ Сервер вернул задач:', data.count);
+    console.log('🔑 Статус админа:', data.isAdmin ? 'ДА' : 'НЕТ');
     console.log('Первая задача:', data.tasks[0]);
     
     // Логируем уникальные статусы
@@ -969,7 +1028,10 @@ async function loadFromAppsScript() {
     
     console.log('🎉 Преобразовано задач:', tasks.length);
     
-    return tasks;
+    return {
+        tasks: tasks,
+        isAdmin: data.isAdmin || false
+    };
 }
 
 // Извлечение номера из текста типа "98 (ЛЗ 36)"
@@ -1066,22 +1128,54 @@ function createTaskElement(task) {
     // Безопасное получение description
     const description = task.description || 'Условие не указано';
     
+    // Проверяем наличие подсказки
+    const hint = getTaskHint(task.number);
+    const hasHint = hint !== null;
+    
+    // Формируем HTML подсказки
+    let hintHTML = '';
+    if (hasHint) {
+        // Обрезаем начальные и конечные пробелы/переносы, но сохраняем внутренние переносы
+        const trimmedHint = hint.trim();
+        hintHTML = `
+            <button class="task-toggle hint-toggle">
+                <span class="toggle-icon">💡</span>
+                Показать подсказку
+            </button>
+            <div class="task-hint" data-hint-id="hint-${task.number}">
+                ${escapeHtml(trimmedHint)}
+            </div>
+        `;
+    }
+    
+    // Формируем HTML кнопки для админа
+    let adminButtonHTML = '';
+    if (isAdmin) {
+        adminButtonHTML = `
+            <button class="admin-hint-button" title="${hasHint ? 'Изменить подсказку' : 'Добавить подсказку'}">
+                ${hasHint ? '✏️ Изменить подсказку' : '➕ Добавить подсказку'}
+            </button>
+        `;
+    }
+    
     taskCard.innerHTML = `
         <div class="task-header">
             <div class="task-number">Задача ${displayNumber}</div>
             <div class="task-status-badge">${getStatusText(task.status)}</div>
         </div>
-        <button class="task-toggle">
+        <button class="task-toggle task-condition-toggle">
             <span class="toggle-icon">▼</span>
             Показать условие
         </button>
         <div class="task-description">
             ${escapeHtml(description)}
         </div>
+        ${hintHTML}
+        ${adminButtonHTML}
     `;
     
-    // Обработчик раскрытия/скрытия
-    const toggleBtn = taskCard.querySelector('.task-toggle');
+    // Обработчик раскрытия/скрытия условия
+    const toggleBtn = taskCard.querySelector('.task-condition-toggle');
     
     if (toggleBtn) {
         toggleBtn.addEventListener('click', () => {
@@ -1089,6 +1183,35 @@ function createTaskElement(task) {
             toggleBtn.innerHTML = isOpen
                 ? '<span class="toggle-icon">▲</span> Скрыть условие'
                 : '<span class="toggle-icon">▼</span> Показать условие';
+        });
+    }
+    
+    // Обработчик раскрытия/скрытия подсказки
+    const hintToggleBtn = taskCard.querySelector('.hint-toggle');
+    if (hintToggleBtn) {
+        hintToggleBtn.addEventListener('click', () => {
+            const isOpen = taskCard.classList.toggle('hint-open');
+            hintToggleBtn.innerHTML = isOpen
+                ? '<span class="toggle-icon">💡</span> Скрыть подсказку'
+                : '<span class="toggle-icon">💡</span> Показать подсказку';
+            
+            // Рендерим LaTeX формулы при первом открытии
+            if (isOpen) {
+                const hintElement = taskCard.querySelector('.task-hint');
+                if (hintElement && !hintElement.dataset.latexRendered) {
+                    renderLatexInElement(hintElement);
+                    hintElement.dataset.latexRendered = 'true';
+                }
+            }
+        });
+    }
+    
+    // Обработчик кнопки админа для добавления/изменения подсказки
+    const adminButton = taskCard.querySelector('.admin-hint-button');
+    if (adminButton) {
+        adminButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showHintModal(task.number, hint || '');
         });
     }
     
@@ -1232,6 +1355,173 @@ function initMatCenterSearch() {
             });
             
             displayTasks(filteredTasks);
+        });
+    }
+}
+
+// ============================================
+// СИСТЕМА ПОДСКАЗОК (АДМИН)
+// ============================================
+
+// Рендеринг LaTeX формул в элементе
+function renderLatexInElement(element, attempts = 0) {
+    const maxAttempts = 50; // Максимум 5 секунд ожидания (50 * 100ms)
+    
+    if (typeof renderMathInElement === 'undefined') {
+        if (attempts < maxAttempts) {
+            console.warn(`⚠️ KaTeX auto-render ещё не загружен, попытка ${attempts + 1}/${maxAttempts}...`);
+            setTimeout(() => renderLatexInElement(element, attempts + 1), 100);
+        } else {
+            console.error('❌ KaTeX не загрузился за 5 секунд');
+        }
+        return;
+    }
+    
+    try {
+        renderMathInElement(element, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '\\[', right: '\\]', display: true},
+                {left: '$', right: '$', display: false},
+                {left: '\\(', right: '\\)', display: false}
+            ],
+            throwOnError: false,
+            trust: false
+        });
+        console.log('✅ LaTeX отрендерен в подсказке');
+    } catch (error) {
+        console.error('❌ Ошибка рендеринга LaTeX:', error);
+    }
+}
+
+// Загрузка подсказок из localStorage
+function loadHintsFromLocalStorage() {
+    try {
+        const hintsJSON = localStorage.getItem('matcenter_hints');
+        if (hintsJSON) {
+            taskHints = JSON.parse(hintsJSON);
+            console.log('📝 Загружено подсказок:', Object.keys(taskHints).length);
+        }
+    } catch (error) {
+        console.error('❌ Ошибка загрузки подсказок:', error);
+        taskHints = {};
+    }
+}
+
+// Сохранение подсказок в localStorage
+function saveHintsToLocalStorage() {
+    try {
+        localStorage.setItem('matcenter_hints', JSON.stringify(taskHints));
+        console.log('💾 Подсказки сохранены');
+    } catch (error) {
+        console.error('❌ Ошибка сохранения подсказок:', error);
+    }
+}
+
+// Добавление/обновление подсказки
+function setTaskHint(taskNumber, hintText) {
+    if (!isAdmin) {
+        console.error('❌ Только админы могут добавлять подсказки');
+        return false;
+    }
+    
+    if (hintText && hintText.trim()) {
+        taskHints[taskNumber] = hintText.trim();
+    } else {
+        delete taskHints[taskNumber];
+    }
+    
+    saveHintsToLocalStorage();
+    return true;
+}
+
+// Получение подсказки для задачи
+function getTaskHint(taskNumber) {
+    return taskHints[taskNumber] || null;
+}
+
+// Показать модальное окно добавления подсказки
+function showHintModal(taskNumber, currentHint = '') {
+    const modal = document.getElementById('hintModal');
+    const overlay = document.getElementById('hintOverlay');
+    const textarea = document.getElementById('hintTextarea');
+    const taskNumberSpan = document.getElementById('hintTaskNumber');
+    
+    if (!modal || !overlay || !textarea || !taskNumberSpan) {
+        console.error('❌ Элементы модального окна не найдены');
+        return;
+    }
+    
+    taskNumberSpan.textContent = taskNumber;
+    textarea.value = currentHint;
+    overlay.classList.remove('hidden');
+    
+    setTimeout(() => textarea.focus(), 100);
+}
+
+// Скрыть модальное окно подсказки
+function hideHintModal() {
+    const overlay = document.getElementById('hintOverlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+    }
+}
+
+// Инициализация обработчиков модального окна подсказок
+function initHintModal() {
+    const saveBtn = document.getElementById('hintSaveBtn');
+    const deleteBtn = document.getElementById('hintDeleteBtn');
+    const cancelBtn = document.getElementById('hintCancelBtn');
+    const closeBtn = document.getElementById('hintCloseBtn');
+    const overlay = document.getElementById('hintOverlay');
+    
+    // Сохранение подсказки
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            const taskNumber = parseInt(document.getElementById('hintTaskNumber').textContent);
+            const hintText = document.getElementById('hintTextarea').value;
+            
+            if (setTaskHint(taskNumber, hintText)) {
+                hideHintModal();
+                // Перезагружаем отображение задач
+                displayTasks(allTasks);
+                console.log(`✅ Подсказка для задачи №${taskNumber} сохранена`);
+            }
+        });
+    }
+    
+    // Удаление подсказки
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => {
+            const taskNumber = parseInt(document.getElementById('hintTaskNumber').textContent);
+            
+            if (confirm(`Удалить подсказку для задачи №${taskNumber}?`)) {
+                if (setTaskHint(taskNumber, '')) {
+                    hideHintModal();
+                    // Перезагружаем отображение задач
+                    displayTasks(allTasks);
+                    console.log(`🗑️ Подсказка для задачи №${taskNumber} удалена`);
+                }
+            }
+        });
+    }
+    
+    // Отмена
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', hideHintModal);
+    }
+    
+    // Закрытие через крестик
+    if (closeBtn) {
+        closeBtn.addEventListener('click', hideHintModal);
+    }
+    
+    // Закрытие по клику на фон
+    if (overlay) {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                hideHintModal();
+            }
         });
     }
 }
