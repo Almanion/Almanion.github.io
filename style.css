@@ -1883,13 +1883,9 @@ input:focus:not(:focus-visible) {
 .task-card.hint-open .task-hint {
     max-height: 2000px;
     opacity: 1;
-    padding-top: 0 !important;
-    padding-right: 1rem;
-    padding-bottom: 0.75rem;
-    padding-left: 0.5rem;
-    margin: 0.25rem 0 0 0;
+    padding: 0.5rem 1rem 0.5rem 0.5rem;
+    margin: 0.2rem 0 0 0;
     display: block;
-    line-height: 1.4;
 }
 
 /* Убираем все отступы у дочерних элементов */
@@ -1957,6 +1953,10 @@ input:focus:not(:focus-visible) {
 
 .hint-toggle:active {
     background: #ff9800;
+}
+
+.hint-toggle.active {
+    background: #ffb300;
 }
 
 .hint-toggle .toggle-icon {

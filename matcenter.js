@@ -1174,9 +1174,7 @@ function createTaskElement(task) {
                 <span class="toggle-icon">💡</span>
                 Показать подсказку
             </button>
-            <div class="task-hint" data-hint-id="hint-${task.number}">
-                ${escapeHtml(trimmedHint)}
-            </div>
+            <div class="task-hint" data-hint-id="hint-${task.number}">${escapeHtml(trimmedHint)}</div>
         `;
     }
     
@@ -1226,6 +1224,7 @@ function createTaskElement(task) {
             hintToggleBtn.innerHTML = isOpen
                 ? '<span class="toggle-icon">💡</span> Скрыть подсказку'
                 : '<span class="toggle-icon">💡</span> Показать подсказку';
+            if(isOpen){hintToggleBtn.classList.add('active');}else{hintToggleBtn.classList.remove('active');}
             
             // Рендерим LaTeX формулы при первом открытии
             if (isOpen) {
