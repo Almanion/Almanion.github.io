@@ -1428,6 +1428,24 @@ function setTaskHint(taskNumber, hintText) {
 
 // Подсказка берётся напрямую из task.hint
 
+// Сброс состояния кнопок модального окна
+function resetHintModalButtons() {
+    const saveBtn = document.getElementById('hintSaveBtn');
+    const deleteBtn = document.getElementById('hintDeleteBtn');
+    
+    if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '💾 Сохранить';
+        saveBtn.style.opacity = '1';
+    }
+    
+    if (deleteBtn) {
+        deleteBtn.disabled = false;
+        deleteBtn.innerHTML = '🗑️ Удалить подсказку';
+        deleteBtn.style.opacity = '1';
+    }
+}
+
 // Показать модальное окно добавления подсказки
 function showHintModal(taskNumber, currentHint = '') {
     const modal = document.getElementById('hintModal');
@@ -1439,6 +1457,9 @@ function showHintModal(taskNumber, currentHint = '') {
         console.error('❌ Элементы модального окна не найдены');
         return;
     }
+    
+    // Сбрасываем состояние кнопок перед открытием
+    resetHintModalButtons();
     
     taskNumberSpan.textContent = taskNumber;
     textarea.value = currentHint;
@@ -1453,6 +1474,9 @@ function hideHintModal() {
     if (overlay) {
         overlay.classList.add('hidden');
     }
+    
+    // Сбрасываем состояние кнопок после закрытия
+    resetHintModalButtons();
 }
 
 // Инициализация обработчиков модального окна подсказок
