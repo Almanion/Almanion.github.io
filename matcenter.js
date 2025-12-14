@@ -564,7 +564,17 @@ async function initAuth() {
     const submitSpinner = authSubmit.querySelector('.submit-spinner');
     const authModal = document.getElementById('authModal');
     const logoutButton = document.getElementById('logoutButton');
-    
+
+    // Сразу вешаем обработчик выхода, чтобы он работал в любом случае
+    if (logoutButton && !logoutButton.dataset.listenerAttached) {
+        logoutButton.addEventListener('click', () => {
+            if (confirm('Вы уверены, что хотите выйти?')) {
+                logout();
+            }
+        });
+        logoutButton.dataset.listenerAttached = 'true';
+    }
+
     // 🔒 Проверяем, есть ли уже отпечаток (если был сгенерирован ранее)
     if (!deviceFingerprint) {
         console.log('🔍 Генерация отпечатка устройства...');
