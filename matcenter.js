@@ -3,7 +3,7 @@
 // ============================================
 
 // Google Apps Script endpoint
-const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyoxpge4Lp98uFmaCNGQH4LhbIZDAOvs23k0h6adbfNQHl1vr_N0Xfni4DS5fFV0OE/exec';
+const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyLEHByZZLwoB6y1an3SbAelZyZEFWtroFLOSHEje1MMGiAX7vrVDKxlU86HHz_oXRQ/exec';
 
 // Security settings
 const MAX_FAILED_ATTEMPTS = 3;
@@ -908,7 +908,7 @@ async function loadTasksFromGoogleSheets() {
             'Р (разобрано)': tasks.filter(t => t.status === 'Р').length,
             'Н (текущая серия)': tasks.filter(t => t.status === 'Н').length,
             'П (отложены с подсказкой)': tasks.filter(t => t.status === 'П').length,
-            'От (откладыши)': tasks.filter(t => t.status === 'От').length
+            'От (отложены)': tasks.filter(t => t.status === 'От').length
         });
         console.log('=================================');
         
@@ -1115,7 +1115,7 @@ function createTaskElement(task) {
     // Определяем класс по статусу
     let statusClass = '';
     if (task.status === 'От') {
-        statusClass = 'postponed'; // Откладыши: "От" (красный)
+        statusClass = 'postponed'; // Отложены: "От" (красный)
     } else if (task.status === 'П') {
         statusClass = 'with-hint'; // С подсказкой: "П" (фиолетовый)
     } else if (task.status === 'Н') {
@@ -1147,7 +1147,6 @@ function createTaskElement(task) {
     // Формируем HTML подсказки
     let hintHTML = '';
     if (hasHint) {
-        // Обрезаем начальные и конечные пробелы/переносы, но сохраняем внутренние переносы
         const trimmedHint = hint.trim();
         hintHTML = `
             <button class="task-toggle hint-toggle">
@@ -1168,10 +1167,15 @@ function createTaskElement(task) {
         `;
     }
     
+    // Для админов добавляем возможность изменения статуса
+    const statusBadgeHTML = isAdmin 
+        ? `<div class="task-status-badge clickable" data-task-number="${task.number}">${getStatusText(task.status)}</div>`
+        : `<div class="task-status-badge">${getStatusText(task.status)}</div>`;
+    
     taskCard.innerHTML = `
         <div class="task-header">
             <div class="task-number">Задача ${displayNumber}</div>
-            <div class="task-status-badge">${getStatusText(task.status)}</div>
+            ${statusBadgeHTML}
         </div>
         <button class="task-toggle task-condition-toggle">
             <span class="toggle-icon">▼</span>
@@ -1226,6 +1230,17 @@ function createTaskElement(task) {
         });
     }
     
+    // Обработчик клика на статус для админов
+    if (isAdmin) {
+        const statusBadge = taskCard.querySelector('.task-status-badge.clickable');
+        if (statusBadge) {
+            statusBadge.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showStatusDropdown(statusBadge, task);
+            });
+        }
+    }
+    
     return taskCard;
 }
 
@@ -1234,9 +1249,120 @@ function getStatusText(status) {
         'Р': 'Разобрано',
         'П': 'Подсказка',
         'Н': 'Новая',
-        'От': 'Откладыш'
+        'От': 'Отложена'
     };
     return statusMap[status] || status;
+}
+
+// Показать выпадающий список выбора статуса
+function showStatusDropdown(badgeElement, task) {
+    // Удаляем существующий dropdown, если есть
+    const existingDropdown = document.querySelector('.status-dropdown');
+    if (existingDropdown) {
+        existingDropdown.remove();
+    }
+    
+    // Создаём dropdown
+    const dropdown = document.createElement('div');
+    dropdown.className = 'status-dropdown';
+    
+    const statuses = [
+        { code: 'Р', text: 'Разобрано' },
+        { code: 'П', text: 'Подсказка' },
+        { code: 'От', text: 'Отложена' }
+    ];
+    
+    statuses.forEach(status => {
+        const option = document.createElement('div');
+        option.className = 'status-option';
+        if (status.code === task.status) {
+            option.classList.add('current');
+        }
+        option.textContent = status.text;
+        option.dataset.statusCode = status.code;
+        
+        option.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            
+            // Показываем загрузку
+            option.innerHTML = '<span class="spinner-small"></span> Сохранение...';
+            option.style.pointerEvents = 'none';
+            
+            try {
+                await changeTaskStatus(task.number, status.code);
+                
+                // Успех - обновляем UI
+                dropdown.remove();
+                
+                // Обновляем статус в массиве задач
+                const taskIndex = allTasks.findIndex(t => t.number === task.number);
+                if (taskIndex !== -1) {
+                    allTasks[taskIndex].status = status.code;
+                }
+                
+                // Перерисовываем задачи
+                displayTasks(allTasks);
+                
+            } catch (error) {
+                option.innerHTML = status.text;
+                option.style.pointerEvents = 'auto';
+                alert('Ошибка изменения статуса: ' + error.message);
+            }
+        });
+        
+        dropdown.appendChild(option);
+    });
+    
+    // Позиционируем dropdown под бейджем
+    const rect = badgeElement.getBoundingClientRect();
+    dropdown.style.position = 'fixed';
+    dropdown.style.top = `${rect.bottom + 5}px`;
+    dropdown.style.left = `${rect.left}px`;
+    
+    document.body.appendChild(dropdown);
+    
+    // Закрытие dropdown при клике вне его
+    setTimeout(() => {
+        const closeDropdown = (e) => {
+            if (!dropdown.contains(e.target) && e.target !== badgeElement) {
+                dropdown.remove();
+                document.removeEventListener('click', closeDropdown);
+            }
+        };
+        document.addEventListener('click', closeDropdown);
+    }, 0);
+}
+
+// Изменить статус задачи на сервере
+async function changeTaskStatus(taskNumber, newStatus) {
+    console.log(`🔄 Изменение статуса задачи №${taskNumber} на "${newStatus}"...`);
+    
+    const url = `${API_ENDPOINT}?password=${encodeURIComponent(authToken)}&action=changeStatus&taskNumber=${encodeURIComponent(taskNumber)}&newStatus=${encodeURIComponent(newStatus)}`;
+    
+    try {
+        const response = await fetch(url);
+        const responseText = await response.text();
+        
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('❌ Ошибка парсинга ответа сервера:', parseError);
+            throw new Error('Сервер вернул некорректный JSON: ' + responseText);
+        }
+        
+        if (!data.success) {
+            console.error('❌ Сервер вернул ошибку:', data.error);
+            throw new Error(data.error || 'Ошибка при изменении статуса');
+        }
+        
+        console.log('✅ Статус успешно изменён на сервере');
+        return data;
+        
+    } catch (error) {
+        console.error('❌ Не удалось изменить статус на сервере:', error);
+        throw error;
+    }
 }
 
 // Экранирование HTML для безопасности
@@ -1264,7 +1390,7 @@ function updateStatistics(tasks) {
     
     // Обновляем заголовки секций
     updateSectionTitle('current-series', `Текущая серия (${current})`);
-    updateSectionTitle('postponed', `Откладыши (${postponed})`);
+    updateSectionTitle('postponed', `Отложенные задачи (${postponed})`);
     updateSectionTitle('unsolved', `Неразобранные задачи (${unsolved})`);
 }
 
@@ -1321,6 +1447,9 @@ function filterAndDisplayTasks(filterId) {
     let filteredTasks = [];
     let containerId = '';
     
+    // Сохраняем текущий фильтр
+    currentFilter = filterId;
+    
     switch (filterId) {
         case 'all-tasks':
             filteredTasks = allTasks;
@@ -1343,6 +1472,22 @@ function filterAndDisplayTasks(filterId) {
     displayTasks(filteredTasks, containerId);
 }
 
+// Получить задачи для текущего фильтра
+function getTasksForCurrentFilter() {
+    switch (currentFilter) {
+        case 'all-tasks':
+            return allTasks;
+        case 'current-series':
+            return allTasks.filter(t => t.status === 'Н');
+        case 'postponed':
+            return allTasks.filter(t => t.status === 'От' || t.status === 'П');
+        case 'unsolved':
+            return allTasks.filter(t => t.status === 'Н' || t.status === 'От' || t.status === 'П');
+        default:
+            return allTasks;
+    }
+}
+
 // ============================================
 // ПОИСК
 // ============================================
@@ -1354,12 +1499,17 @@ function initMatCenterSearch() {
         searchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase().trim();
             
+            // Получаем задачи для текущего фильтра
+            const currentTasks = getTasksForCurrentFilter();
+            
             if (searchTerm === '') {
-                displayTasks(allTasks);
+                // Если поиск пустой, показываем все задачи текущего фильтра
+                displayTasks(currentTasks);
                 return;
             }
             
-            const filteredTasks = allTasks.filter(task => {
+            // Ищем только среди задач текущего фильтра
+            const filteredTasks = currentTasks.filter(task => {
                 const numberMatch = task.number.toString().includes(searchTerm);
                 const descriptionMatch = task.description.toLowerCase().includes(searchTerm);
                 return numberMatch || descriptionMatch;
@@ -1578,6 +1728,7 @@ function initHintModal() {
             }
         });
     }
+    
 }
 
 async function pushHintToServer(taskNumber, hintText) {
