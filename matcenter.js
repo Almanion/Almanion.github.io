@@ -3,7 +3,7 @@
 // ============================================
 
 // Google Apps Script endpoint
-const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyLEHByZZLwoB6y1an3SbAelZyZEFWtroFLOSHEje1MMGiAX7vrVDKxlU86HHz_oXRQ/exec';
+const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyrCOkEgIgkz2rpdcyZ9NprNLUPE2PraZTK0PBuRJgLviuFwJsD8xe6BQ5cnpsOTpKL/exec';
 
 // Security settings
 const MAX_FAILED_ATTEMPTS = 3;
@@ -1147,6 +1147,7 @@ function createTaskElement(task) {
     // Формируем HTML подсказки
     let hintHTML = '';
     if (hasHint) {
+        // Обрезаем начальные и конечные пробелы/переносы, но сохраняем внутренние переносы
         const trimmedHint = hint.trim();
         hintHTML = `
             <button class="task-toggle hint-toggle">
@@ -1447,9 +1448,6 @@ function filterAndDisplayTasks(filterId) {
     let filteredTasks = [];
     let containerId = '';
     
-    // Сохраняем текущий фильтр
-    currentFilter = filterId;
-    
     switch (filterId) {
         case 'all-tasks':
             filteredTasks = allTasks;
@@ -1472,22 +1470,6 @@ function filterAndDisplayTasks(filterId) {
     displayTasks(filteredTasks, containerId);
 }
 
-// Получить задачи для текущего фильтра
-function getTasksForCurrentFilter() {
-    switch (currentFilter) {
-        case 'all-tasks':
-            return allTasks;
-        case 'current-series':
-            return allTasks.filter(t => t.status === 'Н');
-        case 'postponed':
-            return allTasks.filter(t => t.status === 'От' || t.status === 'П');
-        case 'unsolved':
-            return allTasks.filter(t => t.status === 'Н' || t.status === 'От' || t.status === 'П');
-        default:
-            return allTasks;
-    }
-}
-
 // ============================================
 // ПОИСК
 // ============================================
@@ -1499,17 +1481,12 @@ function initMatCenterSearch() {
         searchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase().trim();
             
-            // Получаем задачи для текущего фильтра
-            const currentTasks = getTasksForCurrentFilter();
-            
             if (searchTerm === '') {
-                // Если поиск пустой, показываем все задачи текущего фильтра
-                displayTasks(currentTasks);
+                displayTasks(allTasks);
                 return;
             }
             
-            // Ищем только среди задач текущего фильтра
-            const filteredTasks = currentTasks.filter(task => {
+            const filteredTasks = allTasks.filter(task => {
                 const numberMatch = task.number.toString().includes(searchTerm);
                 const descriptionMatch = task.description.toLowerCase().includes(searchTerm);
                 return numberMatch || descriptionMatch;
@@ -1728,7 +1705,6 @@ function initHintModal() {
             }
         });
     }
-    
 }
 
 async function pushHintToServer(taskNumber, hintText) {

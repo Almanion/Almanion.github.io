@@ -997,14 +997,8 @@ em {
     animation: pulse 2s ease-in-out infinite;
 }
 
-/* Плавное появление элементов при скролле */
+/* Плавное появление элементов при скролле - анимация отключена */
 .fade-in {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
-}
-
-.fade-in.visible {
     opacity: 1;
     transform: translateY(0);
 }
@@ -1236,16 +1230,6 @@ input:focus:not(:focus-visible) {
     color: var(--text-secondary);
 }
 
-.task-status-badge.clickable {
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.task-status-badge.clickable:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
 .task-card.solved .task-status-badge {
     background: #22c55e;
     color: white;
@@ -1264,6 +1248,62 @@ input:focus:not(:focus-visible) {
 .task-card.with-hint .task-status-badge {
     background: #f65c5c;
     color: white;
+}
+
+.task-status-badge.clickable {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.task-status-badge.clickable:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ============================================
+   ВЫПАДАЮЩИЙ СПИСОК СТАТУСОВ
+   ============================================ */
+
+.status-dropdown {
+    background: var(--bg-primary);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    z-index: 10000;
+    min-width: 150px;
+    animation: fadeIn 0.2s ease-out;
+    border: 1px solid var(--border-color);
+}
+
+.status-option {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.status-option:hover {
+    background: var(--bg-secondary);
+}
+
+.status-option.current {
+    background: var(--bg-tertiary);
+    font-weight: 600;
+}
+
+.status-option.current::after {
+    content: '✓';
+    margin-left: auto;
+    color: var(--accent-color);
+    font-weight: bold;
+}
+
+.status-option:not(:last-child) {
+    border-bottom: 1px solid var(--border-color);
 }
 
 /* Кнопка раскрытия */
@@ -1305,11 +1345,11 @@ input:focus:not(:focus-visible) {
     will-change: transform;
 }
 
-.task-card.open .task-condition-toggle .toggle-icon {
+.task-card.open .task-toggle .toggle-icon {
     transform: rotate(180deg) scale(1.1);
 }
 
-.task-card.open .task-condition-toggle {
+.task-card.open .task-toggle {
     background: var(--accent-color);
     color: white;
     box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.3);
@@ -1720,6 +1760,15 @@ input:focus:not(:focus-visible) {
         font-size: 0.85rem;
         padding: 0.6rem 0.8rem;
     }
+    
+    .status-dropdown {
+        min-width: 140px;
+        font-size: 0.9rem;
+    }
+    
+    .status-option {
+        padding: 0.65rem 0.85rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1747,6 +1796,16 @@ input:focus:not(:focus-visible) {
     .auth-modal p {
         font-size: 0.85rem;
         margin-bottom: 1.25rem;
+    }
+    
+    .status-dropdown {
+        min-width: 140px;
+        font-size: 0.9rem;
+    }
+    
+    .status-option {
+        padding: 0.65rem 0.85rem;
+        font-size: 0.85rem;
     }
 }
 
@@ -2014,210 +2073,6 @@ input:focus:not(:focus-visible) {
 .admin-hint-button:hover {
     background: rgba(139, 92, 246, 0.15);
     border-color: rgba(139, 92, 246, 0.5);
-}
-
-/* ============================================
-   ВЫПАДАЮЩИЙ СПИСОК СТАТУСОВ
-   ============================================ */
-
-.status-dropdown {
-    background: var(--bg-primary);
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    overflow: hidden;
-    z-index: 10000;
-    min-width: 150px;
-    animation: fadeIn 0.2s ease-out;
-}
-
-.status-option {
-    padding: 0.75rem 1rem;
-    cursor: pointer;
-    transition: background 0.2s ease;
-    font-size: 0.9rem;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-}
-
-.status-option:hover {
-    background: var(--bg-secondary);
-}
-
-.status-option.current {
-    background: var(--bg-tertiary);
-    font-weight: 600;
-}
-
-.status-option.current::after {
-    content: '✓';
-    margin-left: auto;
-    color: var(--accent-color);
-    font-weight: bold;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-5px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* ============================================
-   АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ
-   ============================================ */
-
-@media (max-width: 768px) {
-    .page-header h1 {
-        font-size: 1.5rem;
-    }
-    
-    .menu-toggle {
-        padding: 0.6rem;
-        font-size: 1.2rem;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
-    }
-    
-    .stats-card {
-        padding: 0.75rem;
-    }
-    
-    .stats-card h3 {
-        font-size: 0.85rem;
-    }
-    
-    .stats-card .number {
-        font-size: 1.5rem;
-    }
-    
-    .task-card {
-        padding: 0.75rem;
-    }
-    
-    .task-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
-    
-    .task-number {
-        font-size: 1rem;
-    }
-    
-    .task-status-badge {
-        font-size: 0.75rem;
-        padding: 0.2rem 0.6rem;
-    }
-    
-    .task-toggle {
-        padding: 0.65rem 0.85rem;
-        font-size: 0.9rem;
-    }
-    
-    .task-description,
-    .task-hint {
-        font-size: 0.9rem;
-        padding: 0.75rem;
-    }
-    
-    .admin-hint-button {
-        font-size: 0.8rem;
-        padding: 0.4rem 0.7rem;
-        margin-top: 0.5rem;
-    }
-    
-    .auth-modal {
-        width: 95%;
-        padding: 1.5rem 1rem;
-    }
-    
-    .auth-form input {
-        font-size: 1rem; /* Предотвращает зум на iOS */
-    }
-    
-    .hint-modal {
-        width: 95%;
-        max-width: none;
-        margin: 0.5rem;
-        max-height: 90vh;
-        overflow-y: auto;
-    }
-    
-    .hint-modal-header {
-        padding: 1rem;
-    }
-    
-    .hint-modal-header h2 {
-        font-size: 1.1rem;
-    }
-    
-    #hintTextarea {
-        min-height: 150px;
-        font-size: 1rem; /* Предотвращает зум на iOS */
-    }
-    
-    .hint-modal-actions {
-        flex-wrap: wrap;
-    }
-    
-    .hint-save-btn,
-    .hint-delete-btn,
-    .hint-cancel-btn {
-        padding: 0.75rem 1rem;
-        font-size: 0.9rem;
-    }
-    
-    .status-dropdown {
-        min-width: 140px;
-        font-size: 0.9rem;
-    }
-    
-    .status-option {
-        padding: 0.65rem 0.85rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .page-header h1 {
-        font-size: 1.3rem;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-        gap: 0.5rem;
-    }
-    
-    .task-card {
-        padding: 0.65rem;
-    }
-    
-    .task-toggle {
-        padding: 0.6rem 0.75rem;
-        font-size: 0.85rem;
-    }
-    
-    .hint-modal-actions {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
-    .hint-save-btn,
-    .hint-delete-btn,
-    .hint-cancel-btn {
-        width: 100%;
-    }
-    
-    .status-dropdown {
-        min-width: 130px;
-    }
 }
 
 /* ============================================
