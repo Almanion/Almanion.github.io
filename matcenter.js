@@ -3,7 +3,7 @@
 // ============================================
 
 // Google Apps Script endpoint
-const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyrCOkEgIgkz2rpdcyZ9NprNLUPE2PraZTK0PBuRJgLviuFwJsD8xe6BQ5cnpsOTpKL/exec';
+const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyR_Iz_fyg2s-bviRtkvF1Zz_KMdRCUgpoIVT1CF-lG6UiNkVfvor_nMXILPzk8xslA/exec';
 
 // Security settings
 const MAX_FAILED_ATTEMPTS = 3;
@@ -1290,7 +1290,10 @@ function showStatusDropdown(badgeElement, task) {
             option.style.pointerEvents = 'none';
             
             try {
-                await changeTaskStatus(task.number, status.code);
+                // Убеждаемся, что номер задачи передается как строка
+                const taskNumberStr = String(task.number || '');
+                console.log(`🔄 Изменение статуса: task.number="${task.number}", taskNumberStr="${taskNumberStr}"`);
+                await changeTaskStatus(taskNumberStr, status.code);
                 
                 // Успех - обновляем UI
                 dropdown.remove();
