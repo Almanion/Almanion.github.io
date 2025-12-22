@@ -2,7 +2,7 @@
    ОСНОВНЫЕ СТИЛИ И ПЕРЕМЕННЫЕ
    ============================================ */
 
-   :root {
+:root {
     /* Цветовая схема - светлая тема */
     --bg-primary: #ffffff;
     --bg-secondary: #f8f9fa;
@@ -479,8 +479,6 @@ body.dark-theme .nav-section.other-subjects a:hover {
     position: relative;
 }
 
-
-/* Бесячая анимация
 .part-title::after {
     content: '';
     position: absolute;
@@ -495,7 +493,7 @@ body.dark-theme .nav-section.other-subjects a:hover {
 @keyframes expandLine {
     0%, 100% { width: 100px; }
     50% { width: 150px; }
-}*/
+}
 
 /* Топики/Статьи */
 .topic {
@@ -1998,7 +1996,7 @@ input:focus:not(:focus-visible) {
 .task-hint {
     background: rgba(255, 193, 7, 0.1);
     border-left: 4px solid #ffc107;
-    border-radius: var(--border-radius-sm);
+    border-radius: 6px;
     padding: 0;
     max-height: 0;
     overflow: hidden;

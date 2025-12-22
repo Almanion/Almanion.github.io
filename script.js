@@ -79,7 +79,8 @@ function initMath() {
 
 function initNavigation() {
     const navLinks = document.querySelectorAll('.nav-link');
-    const topics = document.querySelectorAll('.topic');
+    // Поддерживаем оба варианта: .topic и .content-section
+    const topics = document.querySelectorAll('.topic, .content-section');
     const navGroupToggles = document.querySelectorAll('.nav-group-toggle');
     
     // Раскрываем все группы по умолчанию
@@ -164,7 +165,8 @@ function initNavigation() {
 
 function initSearch() {
     const searchInput = document.getElementById('searchInput');
-    const topics = document.querySelectorAll('.topic');
+    // Поддерживаем оба варианта: .topic и .content-section
+    const topics = document.querySelectorAll('.topic, .content-section');
     
     searchInput.addEventListener('input', (e) => {
         const searchTerm = e.target.value.toLowerCase().trim();
@@ -297,7 +299,8 @@ function initScrollEffects() {
         });
     }, observerOptions);
     
-    const topics = document.querySelectorAll('.topic');
+    // Поддерживаем оба варианта: .topic и .content-section
+    const topics = document.querySelectorAll('.topic, .content-section');
     topics.forEach(topic => {
         topic.classList.add('fade-in');
         observer.observe(topic);
