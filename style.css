@@ -27,16 +27,22 @@
     
     /* Размеры */
     --sidebar-width: 320px;
-    --border-radius: 12px;
+    --border-radius: 16px;
+    --border-radius-sm: 12px;
+    --border-radius-lg: 20px;
     --spacing: 1.5rem;
     
-    /* Тени */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+    /* Тени - более мягкие и дружелюбные */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+    --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.15);
+    --shadow-hover: 0 6px 24px rgba(37, 99, 235, 0.2);
     
-    /* Анимации */
+    /* Анимации - более плавные */
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 /* Темная тема */
@@ -62,10 +68,12 @@ body.dark-theme {
     --derivation-bg: #1f3f2f;
     --derivation-border: #4ade80;
     
-    /* Тени - темная тема */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+    /* Тени - темная тема (более мягкие) */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.6);
+    --shadow-hover: 0 6px 24px rgba(59, 130, 246, 0.3);
 }
 
 
@@ -80,9 +88,12 @@ body {
         'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    line-height: 1.7;
+    line-height: 1.8;
     overflow-x: hidden;
     transition: var(--transition);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: 0.01em;
 }
 
 /* Предотвращение прокрутки body когда sidebar открыт на мобильных */
@@ -123,10 +134,11 @@ body.sidebar-open {
     border-right: 1px solid var(--border-color);
     overflow-y: auto;
     z-index: 1000;
-    transition: var(--transition);
-    box-shadow: var(--shadow-lg);
+    transition: var(--transition-smooth);
+    box-shadow: var(--shadow-xl);
     display: flex;
     flex-direction: column;
+    backdrop-filter: blur(10px);
 }
 
 .sidebar::-webkit-scrollbar {
@@ -144,7 +156,7 @@ body.sidebar-open {
 
 .sidebar-header {
     padding: var(--spacing);
-    background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
     color: white;
     position: sticky;
     top: 0;
@@ -153,6 +165,7 @@ body.sidebar-open {
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.2);
 }
 
 .sidebar-header h2 {
@@ -231,25 +244,30 @@ body.sidebar-open {
 
 .nav-link {
     display: block;
-    padding: 0.75rem var(--spacing);
+    padding: 0.85rem var(--spacing);
     color: var(--text-primary);
     text-decoration: none;
-    transition: var(--transition);
+    transition: var(--transition-smooth);
     border-left: 3px solid transparent;
     font-size: 0.95rem;
+    border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+    margin: 0.15rem 0;
 }
 
 .nav-link:hover {
     background: var(--bg-tertiary);
     border-left-color: var(--accent-color);
     padding-left: calc(var(--spacing) + 0.5rem);
+    transform: translateX(4px);
+    box-shadow: var(--shadow-sm);
 }
 
 .nav-link.active {
-    background: linear-gradient(90deg, rgba(37, 99, 235, 0.1), transparent);
+    background: linear-gradient(90deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0.05));
     border-left-color: var(--accent-color);
     color: var(--accent-color);
     font-weight: 600;
+    box-shadow: var(--shadow-sm);
 }
 
 /* Раскрывающиеся группы в навигации */
@@ -401,12 +419,12 @@ body.dark-theme .nav-section.other-subjects a:hover {
 /* Заголовок страницы */
 .page-header {
     text-align: center;
-    padding: 3rem 0;
-    background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+    padding: 3.5rem 0;
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
     color: white;
-    border-radius: var(--border-radius);
-    margin-bottom: 2rem;
-    box-shadow: var(--shadow-lg);
+    border-radius: var(--border-radius-lg);
+    margin-bottom: 2.5rem;
+    box-shadow: var(--shadow-xl);
     position: relative;
     overflow: hidden;
 }
@@ -433,10 +451,12 @@ body.dark-theme .nav-section.other-subjects a:hover {
 }
 
 .page-header h1 {
-    font-size: 2.5rem;
+    font-size: 2.75rem;
     font-weight: 700;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
     position: relative;
+    letter-spacing: -0.02em;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .subtitle {
@@ -509,14 +529,23 @@ body.dark-theme .nav-section.other-subjects a:hover {
 }
 
 .subsection-title {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     color: var(--accent-color);
-    margin: 2rem 0 1rem;
-    padding: 1rem 1.5rem;
-    background: linear-gradient(90deg, rgba(37, 99, 235, 0.1), transparent);
+    margin: 2.5rem 0 1.25rem;
+    padding: 1.25rem 1.75rem;
+    background: linear-gradient(90deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0.05));
     border-left: 5px solid var(--accent-color);
-    border-radius: 0 8px 8px 0;
-    font-weight: 600;
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-smooth);
+}
+
+.subsection-title:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateX(4px);
+    background: linear-gradient(90deg, rgba(37, 99, 235, 0.15), rgba(37, 99, 235, 0.08));
 }
 
 /* ============================================
@@ -527,18 +556,20 @@ body.dark-theme .nav-section.other-subjects a:hover {
 .definition-box {
     background: var(--definition-bg);
     border-left: 4px solid var(--definition-border);
-    padding: 1.25rem;
-    margin: 1rem 0;
-    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.25rem 0;
+    border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
-    transition: var(--transition);
+    transition: var(--transition-smooth);
     overflow-wrap: break-word;
     word-wrap: break-word;
+    position: relative;
 }
 
 .definition-box:hover {
     box-shadow: var(--shadow-md);
-    transform: translateX(4px);
+    transform: translateX(6px) translateY(-2px);
+    border-left-width: 5px;
 }
 
 .definition-box strong {
@@ -550,13 +581,20 @@ body.dark-theme .nav-section.other-subjects a:hover {
 .formula-box {
     background: var(--formula-bg);
     border: 2px solid var(--formula-border);
-    padding: 1.5rem;
-    margin: 1rem 0;
-    border-radius: 8px;
+    padding: 1.75rem;
+    margin: 1.25rem 0;
+    border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
     position: relative;
     overflow-x: auto;
     overflow-y: hidden;
+    transition: var(--transition-smooth);
+}
+
+.formula-box:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-width: 3px;
 }
 
 .formula-box p {
@@ -567,12 +605,19 @@ body.dark-theme .nav-section.other-subjects a:hover {
 .remark-box {
     background: var(--remark-bg);
     border-left: 4px solid var(--remark-border);
-    padding: 1rem;
-    margin: 1rem 0;
-    border-radius: 8px;
+    padding: 1.25rem;
+    margin: 1.25rem 0;
+    border-radius: var(--border-radius);
     font-style: italic;
     box-shadow: var(--shadow-sm);
     position: relative;
+    transition: var(--transition-smooth);
+}
+
+.remark-box:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateX(6px) translateY(-2px);
+    border-left-width: 5px;
 }
 
 .remark-box::before {
@@ -588,10 +633,17 @@ body.dark-theme .nav-section.other-subjects a:hover {
 .experiment-box {
     background: var(--experiment-bg);
     border: 2px solid var(--experiment-border);
-    padding: 1.5rem;
+    padding: 1.75rem;
     margin: 1.5rem 0;
-    border-radius: 12px;
+    border-radius: var(--border-radius);
     box-shadow: var(--shadow-md);
+    transition: var(--transition-smooth);
+}
+
+.experiment-box:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+    border-width: 3px;
 }
 
 .experiment-box h4 {
@@ -618,19 +670,39 @@ body.dark-theme .nav-section.other-subjects a:hover {
 .derivation-box {
     background: var(--derivation-bg);
     border: 2px solid var(--derivation-border);
-    padding: 1rem;
-    margin: 1rem 0;
-    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.25rem 0;
+    border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
+    transition: var(--transition-smooth);
+}
+
+.derivation-box:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-width: 3px;
 }
 
 .toggle-derivation {
-    background: var(--derivation-border);
+    background: linear-gradient(135deg, var(--derivation-border), #16a34a);
     color: white;
     border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 6px;
+    padding: 0.85rem 1.75rem;
+    border-radius: var(--border-radius-sm);
     cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition-smooth);
+    box-shadow: var(--shadow-sm);
+    letter-spacing: 0.02em;
+}
+
+.toggle-derivation:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.toggle-derivation:active {
+    transform: translateY(0);
     font-size: 0.95rem;
     font-weight: 500;
     transition: var(--transition);
@@ -1312,7 +1384,7 @@ input:focus:not(:focus-visible) {
     padding: 0.75rem 1rem;
     background: var(--bg-tertiary);
     border: none;
-    border-radius: 8px;
+    border-radius: var(--border-radius-sm);
     color: var(--text-primary);
     font-size: 0.95rem;
     font-weight: 500;
@@ -1455,22 +1527,12 @@ input:focus:not(:focus-visible) {
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
-    border-radius: 8px;
+    border-radius: var(--border-radius-sm);
     font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
     transition: var(--transition);
     box-shadow: var(--shadow-sm);
-}
-
-.retry-button:hover {
-    background: var(--accent-hover);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-}
-
-.retry-button:active {
-    transform: translateY(0);
 }
 
 /* ============================================
@@ -1498,7 +1560,7 @@ input:focus:not(:focus-visible) {
 
 .auth-modal {
     background: var(--bg-primary);
-    border-radius: 16px;
+    border-radius: var(--border-radius);
     padding: 2rem;
     max-width: 400px;
     width: 90%;
@@ -1815,7 +1877,7 @@ input:focus:not(:focus-visible) {
 
 .hint-modal {
     background: var(--bg-primary);
-    border-radius: 16px;
+    border-radius: var(--border-radius);
     padding: 0;
     max-width: 600px;
     width: 90%;
@@ -1888,7 +1950,7 @@ input:focus:not(:focus-visible) {
 .hint-cancel-btn {
     padding: 0.75rem 1.5rem;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--border-radius-sm);
     font-size: 1rem;
     cursor: pointer;
     transition: all 0.2s;
@@ -1934,7 +1996,7 @@ input:focus:not(:focus-visible) {
 .task-hint {
     background: rgba(255, 193, 7, 0.1);
     border-left: 4px solid #ffc107;
-    border-radius: 6px;
+    border-radius: var(--border-radius-sm);
     padding: 0;
     max-height: 0;
     overflow: hidden;
@@ -2062,7 +2124,7 @@ input:focus:not(:focus-visible) {
     background: rgba(139, 92, 246, 0.1);
     color: #8b5cf6;
     border: 2px dashed rgba(139, 92, 246, 0.3);
-    border-radius: 6px;
+    border-radius: var(--border-radius-sm);
     cursor: pointer;
     font-size: 0.95rem;
     font-weight: 500;
