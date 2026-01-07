@@ -2,7 +2,7 @@
    ОСНОВНЫЕ СТИЛИ И ПЕРЕМЕННЫЕ
    ============================================ */
 
-:root {
+   :root {
     /* Цветовая схема - светлая тема */
     --bg-primary: #ffffff;
     --bg-secondary: #f8f9fa;
@@ -90,7 +90,8 @@ body {
     color: var(--text-primary);
     line-height: 1.8;
     overflow-x: hidden;
-    transition: var(--transition);
+    transition: background-color 0.15s ease,
+                color 0.15s ease;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: 0.01em;
@@ -134,7 +135,9 @@ body.sidebar-open {
     border-right: 1px solid var(--border-color);
     overflow-y: auto;
     z-index: 1000;
-    transition: var(--transition-smooth);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0.15s ease,
+                border-color 0.15s ease;
     box-shadow: var(--shadow-xl);
     display: flex;
     flex-direction: column;
@@ -208,7 +211,7 @@ body.sidebar-open {
     background: var(--bg-primary);
     color: var(--text-primary);
     font-size: 0.95rem;
-    transition: var(--transition);
+    transition: all 0.3s ease;
 }
 
 .search-box input:focus {
@@ -247,7 +250,7 @@ body.sidebar-open {
     padding: 0.85rem var(--spacing);
     color: var(--text-primary);
     text-decoration: none;
-    transition: var(--transition-smooth);
+    transition: all 0.3s ease;
     border-left: 3px solid transparent;
     font-size: 0.95rem;
     border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
@@ -389,20 +392,40 @@ body.dark-theme .nav-section.other-subjects a:hover {
     font-size: 1.3rem;
     cursor: pointer;
     box-shadow: var(--shadow-sm);
-    transition: var(--transition);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    position: relative;
+    overflow: visible;
+}
+
+.theme-toggle::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(0);
+    opacity: 0;
+    transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+.theme-toggle:hover::before {
+    transform: scale(1.3);
+    opacity: 1;
 }
 
 .theme-toggle:hover {
     background: rgba(255, 255, 255, 0.3);
-    transform: scale(1.1) rotate(15deg);
+    transform: scale(1.1);
 }
 
 .theme-toggle:active {
-    transform: scale(0.95) rotate(0deg);
+    transform: scale(0.95);
 }
 
 /* ============================================
@@ -427,6 +450,8 @@ body.dark-theme .nav-section.other-subjects a:hover {
     box-shadow: var(--shadow-xl);
     position: relative;
     overflow: hidden;
+    transition: background 0.3s ease,
+                box-shadow 0.3s ease;
 }
 
 .page-header::before {
@@ -468,6 +493,8 @@ body.dark-theme .nav-section.other-subjects a:hover {
 /* Разделы контента */
 .content-section {
     margin-bottom: 2rem;
+    transition: background-color 0.3s ease,
+                color 0.3s ease;
 }
 
 .part-title {
@@ -502,7 +529,10 @@ body.dark-theme .nav-section.other-subjects a:hover {
     border-radius: var(--border-radius);
     margin-bottom: 2rem;
     box-shadow: var(--shadow-md);
-    transition: var(--transition);
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease,
+                background-color 0.3s ease,
+                color 0.3s ease;
     scroll-margin-top: 2rem;
     overflow-wrap: break-word;
     word-wrap: break-word;
@@ -560,7 +590,11 @@ body.dark-theme .nav-section.other-subjects a:hover {
     margin: 1.25rem 0;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
-    transition: var(--transition-smooth);
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease,
+                border-width 0.3s ease,
+                background-color 0.3s ease,
+                border-color 0.3s ease;
     overflow-wrap: break-word;
     word-wrap: break-word;
     position: relative;
@@ -568,8 +602,7 @@ body.dark-theme .nav-section.other-subjects a:hover {
 
 .definition-box:hover {
     box-shadow: var(--shadow-md);
-    transform: translateX(6px) translateY(-2px);
-    border-left-width: 5px;
+    transform: translateX(2px) translateY(-2px);
 }
 
 .definition-box strong {
@@ -588,13 +621,17 @@ body.dark-theme .nav-section.other-subjects a:hover {
     position: relative;
     overflow-x: auto;
     overflow-y: hidden;
-    transition: var(--transition-smooth);
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease,
+                border-width 0.3s ease,
+                background-color 0.3s ease,
+                border-color 0.3s ease;
 }
 
 .formula-box:hover {
     box-shadow: var(--shadow-md);
     transform: translateY(-2px);
-    border-width: 3px;
+    border-width: 2.5px;
 }
 
 .formula-box p {
@@ -611,13 +648,16 @@ body.dark-theme .nav-section.other-subjects a:hover {
     font-style: italic;
     box-shadow: var(--shadow-sm);
     position: relative;
-    transition: var(--transition-smooth);
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease,
+                border-width 0.3s ease,
+                background-color 0.3s ease,
+                border-color 0.3s ease;
 }
 
 .remark-box:hover {
     box-shadow: var(--shadow-md);
-    transform: translateX(6px) translateY(-2px);
-    border-left-width: 5px;
+    transform: translateX(2px) translateY(-2px);
 }
 
 .remark-box::before {
@@ -625,6 +665,7 @@ body.dark-theme .nav-section.other-subjects a:hover {
     position: absolute;
     top: 1rem;
     right: 1rem;
+    font-style: normal;
     font-size: 1.5rem;
     opacity: 0.6;
 }
@@ -637,13 +678,17 @@ body.dark-theme .nav-section.other-subjects a:hover {
     margin: 1.5rem 0;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-md);
-    transition: var(--transition-smooth);
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease,
+                border-width 0.3s ease,
+                background-color 0.3s ease,
+                border-color 0.3s ease;
 }
 
 .experiment-box:hover {
     box-shadow: var(--shadow-lg);
     transform: translateY(-2px);
-    border-width: 3px;
+    border-width: 2.5px;
 }
 
 .experiment-box h4 {
@@ -674,13 +719,17 @@ body.dark-theme .nav-section.other-subjects a:hover {
     margin: 1.25rem 0;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
-    transition: var(--transition-smooth);
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease,
+                border-width 0.3s ease,
+                background-color 0.3s ease,
+                border-color 0.3s ease;
 }
 
 .derivation-box:hover {
     box-shadow: var(--shadow-md);
     transform: translateY(-2px);
-    border-width: 3px;
+    border-width: 2.5px;
 }
 
 .toggle-derivation {
@@ -699,22 +748,11 @@ body.dark-theme .nav-section.other-subjects a:hover {
 .toggle-derivation:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
+    opacity: 0.9;
 }
 
 .toggle-derivation:active {
     transform: translateY(0);
-    font-size: 0.95rem;
-    font-weight: 500;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.toggle-derivation:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-    opacity: 0.9;
 }
 
 .derivation-content {
@@ -921,7 +959,7 @@ em {
     }
     
     .nav-submenu .nav-link:hover {
-        padding-left: 2.5rem;
+        padding-left: 1.5rem;
     }
     
     .main-content {
@@ -1069,6 +1107,54 @@ em {
     animation: pulse 2s ease-in-out infinite;
 }
 
+/* Анимации для смены темы */
+@keyframes themeButtonSpin {
+    0% {
+        transform: scale(1) rotate(0deg);
+    }
+    50% {
+        transform: scale(1.2) rotate(180deg);
+    }
+    100% {
+        transform: scale(1) rotate(360deg);
+    }
+}
+
+@keyframes themeFadeIn {
+    0% {
+        opacity: 0.3;
+        filter: brightness(0.8);
+    }
+    100% {
+        opacity: 1;
+        filter: brightness(1);
+    }
+}
+
+/* Плавный переход для всех цветных элементов */
+.sidebar,
+.main-content,
+.page-header,
+.stat-card,
+.task-card,
+.topic,
+.content-section,
+.definition-box,
+.formula-box,
+.remark-box,
+.experiment-box,
+.derivation-box,
+.nav-link,
+.task-toggle,
+.auth-modal,
+.hint-modal {
+    transition: background-color 0.15s ease,
+                color 0.15s ease,
+                border-color 0.15s ease,
+                box-shadow 0.3s ease,
+                transform 0.3s ease;
+}
+
 /* Плавное появление элементов при скролле - анимация отключена */
 .fade-in {
     opacity: 1;
@@ -1161,11 +1247,14 @@ input:focus:not(:focus-visible) {
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-md);
     text-align: center;
-    transition: var(--transition);
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease,
+                background-color 0.15s ease,
+                color 0.15s ease;
 }
 
 .stat-card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-3px);
     box-shadow: var(--shadow-lg);
 }
 
@@ -1217,7 +1306,9 @@ input:focus:not(:focus-visible) {
     border-radius: var(--border-radius);
     padding: 1rem;
     box-shadow: var(--shadow-sm);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0.3s ease,
+                border-color 0.3s ease;
     border-left: 4px solid var(--border-color);
     position: relative;
     overflow: hidden;
@@ -1241,7 +1332,7 @@ input:focus:not(:focus-visible) {
 
 .task-card:hover {
     box-shadow: var(--shadow-md);
-    transform: translateX(4px);
+    transform: translateX(3px);
 }
 
 .task-card.open {
@@ -1389,7 +1480,10 @@ input:focus:not(:focus-visible) {
     font-size: 0.95rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease,
+                background-color 0.3s ease,
+                color 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1567,6 +1661,8 @@ input:focus:not(:focus-visible) {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
     animation: slideUp 0.3s ease-out;
     position: relative;
+    transition: background-color 0.3s ease,
+                color 0.3s ease;
 }
 
 .auth-modal.shake {
@@ -1885,6 +1981,8 @@ input:focus:not(:focus-visible) {
     animation: slideUp 0.3s ease-out;
     position: relative;
     overflow: hidden;
+    transition: background-color 0.3s ease,
+                color 0.3s ease;
 }
 
 .hint-modal-header {
@@ -2138,6 +2236,41 @@ input:focus:not(:focus-visible) {
 }
 
 /* ============================================
+   ОПТИМИЗАЦИЯ ДЛЯ МЕДЛЕННЫХ УСТРОЙСТВ
+   ============================================ */
+
+/* Упрощаем анимации на устройствах с ограниченными ресурсами */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .theme-ripple {
+        display: none !important;
+    }
+}
+
+/* Отключаем сложные анимации на мобильных для производительности */
+@media (max-width: 768px) {
+    .theme-ripple {
+        animation-duration: 0.4s !important;
+    }
+    
+    @keyframes themeFadeIn {
+        0% {
+            opacity: 0.8;
+        }
+        100% {
+            opacity: 1;
+        }
+    }
+}
+
+/* ============================================
    ПЕЧАТЬ
    ============================================ */
 
@@ -2145,7 +2278,8 @@ input:focus:not(:focus-visible) {
     .sidebar,
     .menu-toggle,
     .scroll-to-top,
-    .admin-hint-button {
+    .admin-hint-button,
+    .theme-ripple {
         display: none !important;
     }
     
@@ -2162,5 +2296,255 @@ input:focus:not(:focus-visible) {
     .page-header {
         background: none !important;
         color: black !important;
+    }
+}
+
+/* ============================================
+   НОВОГОДНИЙ ВАЙБ
+   ============================================ */
+
+/* Кнопка новогоднего режима */
+.ny-toggle {
+    background: linear-gradient(135deg, #2d5016 0%, #4a7c2e 100%);
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+}
+
+.ny-toggle:hover {
+    transform: scale(1.15) rotate(5deg);
+    box-shadow: 0 4px 16px rgba(74, 124, 46, 0.4);
+}
+
+.ny-toggle:active {
+    transform: scale(0.95);
+}
+
+/* Контейнер для снега */
+.snow-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+}
+
+/* Снежинка */
+.snowflake {
+    position: absolute;
+    color: #a0c4e8;
+    font-size: 1em;
+    pointer-events: none;
+    user-select: none;
+    animation: snowflake-twinkle 3s ease-in-out infinite;
+    text-shadow: 0 0 5px rgba(160, 196, 232, 0.6);
+    will-change: transform;
+}
+
+/* Снежинки для тёмной темы */
+body.dark-theme .snowflake {
+    color: #fff;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+}
+
+@keyframes snowflake-twinkle {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+}
+
+/* Контейнер для пасхалок */
+.easter-eggs-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10000;
+    overflow: hidden;
+}
+
+/* Пасхалка (всплывающий emoji) */
+.easter-egg {
+    position: fixed;
+    font-size: 2rem;
+    pointer-events: none;
+    user-select: none;
+    animation: float-up 2s ease-out forwards;
+    z-index: 10001;
+}
+
+@keyframes float-up {
+    0% {
+        transform: translateY(0) scale(0.5) rotate(0deg);
+        opacity: 1;
+    }
+    50% {
+        transform: translateY(-100px) scale(1.2) rotate(180deg);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(-200px) scale(0.8) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Уведомление о включении режима */
+.ny-notification {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    background: linear-gradient(135deg, #2d5016 0%, #4a7c2e 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transform: translateX(400px);
+    transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    z-index: 10002;
+    pointer-events: none;
+}
+
+.ny-notification.show {
+    transform: translateX(0);
+}
+
+/* Новогодние украшения для карточек статистики */
+body.new-year-mode .stat-card.ny-decorated {
+    position: relative;
+    overflow: visible;
+}
+
+body.new-year-mode .stat-card.ny-decorated::before {
+    content: '✨';
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 1.5rem;
+    animation: sparkle 2s ease-in-out infinite;
+}
+
+body.new-year-mode .stat-card.ny-decorated:nth-child(2)::before {
+    content: '🎁';
+}
+
+body.new-year-mode .stat-card.ny-decorated:nth-child(3)::before {
+    content: '⭐';
+}
+
+body.new-year-mode .stat-card.ny-decorated:nth-child(4)::before {
+    content: '🎄';
+}
+
+@keyframes sparkle {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.3) rotate(180deg);
+        opacity: 1;
+    }
+}
+
+/* Новогодний эффект для header */
+body.new-year-mode .page-header {
+    position: relative;
+}
+
+body.new-year-mode .page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 20% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 50%, rgba(74, 124, 46, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+/* Анимация для кнопки новогоднего режима в активном состоянии */
+body.new-year-mode .ny-toggle {
+    animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.9);
+    }
+}
+
+/* Адаптация для мобильных устройств */
+@media (max-width: 768px) {
+    .ny-notification {
+        top: 80px;
+        right: 10px;
+        left: 10px;
+        text-align: center;
+        font-size: 1rem;
+        padding: 0.8rem 1rem;
+    }
+
+    .easter-egg {
+        font-size: 1.5rem;
+    }
+
+    .snowflake {
+        font-size: 0.8em;
+    }
+}
+
+/* Темная тема для новогодних элементов */
+body.dark-theme .ny-notification {
+    background: linear-gradient(135deg, #1a3310 0%, #2d5016 100%);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme .ny-toggle {
+    background: linear-gradient(135deg, #1a3310 0%, #2d5016 100%);
+}
+
+body.dark-theme .ny-toggle:hover {
+    box-shadow: 0 4px 16px rgba(42, 74, 26, 0.6);
+}
+
+/* Эффект снега на задачах при наведении */
+body.new-year-mode .task-card:hover::after {
+    content: '❄️';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 1.2rem;
+    opacity: 0;
+    animation: fade-in-snow 0.5s ease forwards;
+}
+
+@keyframes fade-in-snow {
+    to {
+        opacity: 0.7;
     }
 }

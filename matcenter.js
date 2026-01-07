@@ -1077,8 +1077,8 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
     });
     console.log('Статусы отображаемых задач:', statusCounts);
     
-    // Сортировка задач по номеру
-    const sortedTasks = [...tasks].sort((a, b) => a.number - b.number);
+    // Сортировка задач по номеру (от большего к меньшему)
+    const sortedTasks = [...tasks].sort((a, b) => b.number - a.number);
     
     container.innerHTML = '';
     
@@ -1382,15 +1382,14 @@ function escapeHtml(text) {
 
 function updateStatistics(tasks) {
     const total = tasks.length;
-    const solved = tasks.filter(t => t.status === 'Р').length;
     const current = tasks.filter(t => t.status === 'Н').length; // Текущая серия: "Н"
     const postponed = tasks.filter(t => t.status === 'От' || t.status === 'П').length; // Откладыши: "От" + "П"
     const unsolved = current + postponed;
     
     document.getElementById('totalTasks').textContent = total;
-    document.getElementById('solvedTasks').textContent = current + unsolved;
+    document.getElementById('solvedTasks').textContent = unsolved;
     document.getElementById('currentSeries').textContent = current;
-    document.getElementById('postponedTasks').textContent = unsolved;
+    document.getElementById('postponedTasks').textContent = postponed;
     
     // Обновляем заголовки секций
     updateSectionTitle('current-series', `Текущая серия (${current})`);
@@ -1746,4 +1745,3 @@ async function pushHintToServer(taskNumber, hintText) {
 }
 
 console.log('✅ Сайт загружен успешно!');
-

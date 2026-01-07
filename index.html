@@ -340,6 +340,8 @@
 <body>
     <!-- Кнопка переключения темы -->
     <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">🌙</button>
+    <!-- Кнопка новогоднего вайба -->
+    <button class="ny-toggle" id="nyToggle" aria-label="Новогодний вайб" style="position: fixed; top: 1rem; left: 5rem; z-index: 9999;">🎄</button>
 
     <div class="home-container">
         <div class="home-header">
@@ -444,7 +446,14 @@
         </div>
     </div>
 
+    <!-- Контейнер для снега -->
+    <div class="snow-container" id="snowContainer"></div>
+    
+    <!-- Контейнер для пасхалок -->
+    <div class="easter-eggs-container" id="easterEggsContainer"></div>
+
     <script src="script.js"></script>
+    <script src="newyear.js"></script>
     <script>
         // Анимация карточек при загрузке
         document.addEventListener('DOMContentLoaded', () => {

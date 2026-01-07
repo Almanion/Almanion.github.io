@@ -55,6 +55,7 @@ function initTheme() {
     }
 }
 
+
 // ============================================
 // МАТЕМАТИЧЕСКИЕ ФОРМУЛЫ (KaTeX)
 // ============================================
@@ -533,7 +534,32 @@ if (footer) {
 // СТАТИСТИКА ПРОГРЕССА (опционально)
 // ============================================
 
+// Создаём прогресс-бар один раз при загрузке
+let progressBarElement = null;
+
+function initProgressBar() {
+    if (!progressBarElement) {
+        progressBarElement = document.createElement('div');
+        progressBarElement.id = 'progressBar';
+        progressBarElement.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 4px;
+            background: var(--accent-color);
+            z-index: 9999;
+            transition: width 0.3s ease;
+        `;
+        document.body.appendChild(progressBarElement);
+    }
+}
+
 function updateProgress() {
+    if (!progressBarElement) {
+        initProgressBar();
+    }
+    
     const windowHeight = window.innerHeight;
     const documentHeight = document.documentElement.scrollHeight;
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -543,25 +569,7 @@ function updateProgress() {
         ? Math.min(100, (scrollTop / (documentHeight - windowHeight)) * 100)
         : 0;
     
-    // Можно добавить прогресс-бар
-    let progressBar = document.getElementById('progressBar');
-    if (!progressBar) {
-        progressBar = document.createElement('div');
-        progressBar.id = 'progressBar';
-        progressBar.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: ${progress}%;
-            height: 4px;
-            background: var(--accent-color);
-            z-index: 9999;
-            transition: width 0.3s ease;
-        `;
-        document.body.appendChild(progressBar);
-    } else {
-        progressBar.style.width = Math.round(progress) + '%';
-    }
+    progressBarElement.style.width = Math.round(progress) + '%';
 }
 
 // Дебаунс для оптимизации производительности
@@ -574,6 +582,7 @@ function debouncedUpdateProgress() {
 }
 
 window.addEventListener('scroll', debouncedUpdateProgress, { passive: true });
+initProgressBar();
 updateProgress();
 
 // ============================================
@@ -595,12 +604,12 @@ window.addEventListener('load', () => {
 // АНИМАЦИЯ ПРИ ЗАГРУЗКЕ
 // ============================================
 
+// Убираем потенциальное мерцание - устанавливаем opacity только если он не был установлен
 window.addEventListener('load', () => {
-    document.body.style.opacity = '0';
-    setTimeout(() => {
+    if (!document.body.style.opacity) {
         document.body.style.transition = 'opacity 0.5s ease';
         document.body.style.opacity = '1';
-    }, 100);
+    }
 });
 
 console.log('✅ Сайт конспектов загружен успешно!');
