@@ -5,17 +5,19 @@
 let isNewYearMode = false;
 let snowflakes = [];
 let animationFrame = null;
+let collisionCheckCounter = 0; // Счётчик для оптимизации проверки столкновений
 
 // Настройки снегопада (по умолчанию)
 let snowSettings = {
-    count: 60,        // Количество снежинок
+    count: 60,         // Количество снежинок
     speed: 1,          // Скорость падения (множитель)
     size: 1,           // Размер снежинок (множитель)
     drift: 1,          // Дрейф по горизонтали (множитель)
-    opacity: 0.8       // Прозрачность
+    opacity: 0.8,      // Прозрачность
+    mergeEnabled: false // Слияние снежинок (по умолчанию выключено)
 };
 
-// Тройной клик
+// Двойной клик
 let clickCount = 0;
 let clickTimer = null;
 
@@ -128,6 +130,8 @@ function startSnowfall() {
 
     // Создаём снежинки
     snowflakes = [];
+    collisionCheckCounter = 0; // Сбрасываем счётчик
+    
     for (let i = 0; i < snowSettings.count; i++) {
         createSnowflake();
     }
@@ -139,7 +143,7 @@ function startSnowfall() {
 function createSnowflake() {
     const baseSize = Math.random() * 3 + 2; // 2-5px
     const baseSpeed = Math.random() * 1 + 0.5; // 0.5-1.5
-    const baseDrift = Math.random() * 0.5 - 0.25; // -0.25 до 0.25
+    const baseDrift = Math.random() * 0.3 - 0.15; // -0.15 до 0.15 (уменьшенный дрейф)
     
     const baseOpacity = Math.random() * 0.6 + 0.3;
     
@@ -150,6 +154,10 @@ function createSnowflake() {
         speed: baseSpeed * snowSettings.speed,
         drift: baseDrift * snowSettings.drift,
         opacity: baseOpacity * snowSettings.opacity,
+        swing: Math.random() * Math.PI * 2, // Фаза для покачивания
+        swingSpeed: 0.01 + Math.random() * 0.02, // Скорость покачивания
+        swingAmount: 0.3 + Math.random() * 0.7, // Амплитуда покачивания (уменьшена)
+        merged: false, // Флаг для отслеживания слияния
         element: null
     };
 
@@ -157,8 +165,7 @@ function createSnowflake() {
     const div = document.createElement('div');
     div.className = 'snowflake';
     div.style.cssText = `
-        left: ${snowflake.x}px;
-        top: ${snowflake.y}px;
+        transform: translate(${snowflake.x}px, ${snowflake.y}px);
         font-size: ${snowflake.size * 5}px;
         opacity: ${snowflake.opacity};
     `;
@@ -173,34 +180,141 @@ function createSnowflake() {
     snowflakes.push(snowflake);
 }
 
+let frameCount = 0; // Счётчик кадров для оптимизации
+
 function animateSnow() {
     if (!isNewYearMode) return;
 
-    snowflakes.forEach(flake => {
-        if (!flake.element) return;
+    frameCount++;
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
 
-        // Обновляем позицию
+    for (let i = 0; i < snowflakes.length; i++) {
+        const flake = snowflakes[i];
+        if (!flake.element || flake.merged) continue;
+
+        // Обновляем позицию по вертикали
         flake.y += flake.speed;
-        flake.x += flake.drift;
+        
+        // Добавляем синусоидальное покачивание по горизонтали
+        flake.swing += flake.swingSpeed;
+        const swingOffset = Math.sin(flake.swing) * flake.swingAmount * snowSettings.drift;
+        flake.x += flake.drift + swingOffset;
 
-        // Если снежинка упала за экран, возвращаем наверх
-        if (flake.y > window.innerHeight) {
+        // Если снежинка упала за экран, возвращаем наверх в случайное место
+        if (flake.y > windowHeight + 20) {
             flake.y = -20;
-            flake.x = Math.random() * window.innerWidth;
+            flake.x = Math.random() * windowWidth;
+            // Обновляем дрейф для разнообразия
+            const baseDrift = Math.random() * 0.3 - 0.15;
+            flake.drift = baseDrift * snowSettings.drift;
+            flake.swing = Math.random() * Math.PI * 2;
         }
 
-        // Если снежинка ушла за край экрана по горизонтали
-        if (flake.x > window.innerWidth) {
-            flake.x = 0;
-        } else if (flake.x < 0) {
-            flake.x = window.innerWidth;
+        // Если снежинка ушла за край экрана по горизонтали, возвращаем в случайное место
+        if (flake.x > windowWidth + 20) {
+            flake.x = -10;
+            flake.y = Math.random() * windowHeight;
+        } else if (flake.x < -20) {
+            flake.x = windowWidth + 10;
+            flake.y = Math.random() * windowHeight;
         }
 
-        // Применяем позицию
+        // Применяем позицию через transform (оптимизировано)
         flake.element.style.transform = `translate(${flake.x}px, ${flake.y}px)`;
-    });
+        
+        // Обновляем размер и прозрачность только при необходимости (каждый 5-й кадр)
+        if (frameCount % 5 === 0) {
+            flake.element.style.fontSize = `${flake.size * 5}px`;
+            flake.element.style.opacity = flake.opacity;
+        }
+    }
+
+    // Проверяем столкновения снежинок (если включено)
+    if (snowSettings.mergeEnabled) {
+        checkCollisions();
+    }
 
     animationFrame = requestAnimationFrame(animateSnow);
+}
+
+// Проверка столкновений и слияние снежинок (оптимизировано)
+function checkCollisions() {
+    // Проверяем столкновения не каждый кадр для производительности
+    collisionCheckCounter++;
+    if (collisionCheckCounter % 5 !== 0) return; // Увеличил с 3 до 5 для производительности
+
+    const activeFlakes = snowflakes.filter(f => f.element && !f.merged);
+    
+    for (let i = 0; i < activeFlakes.length; i++) {
+        const flake1 = activeFlakes[i];
+
+        for (let j = i + 1; j < activeFlakes.length; j++) {
+            const flake2 = activeFlakes[j];
+
+            // Быстрая проверка: сначала проверяем по одной оси (дешевле)
+            const dx = flake1.x - flake2.x;
+            if (Math.abs(dx) > 50) continue; // Слишком далеко по X
+            
+            const dy = flake1.y - flake2.y;
+            if (Math.abs(dy) > 50) continue; // Слишком далеко по Y
+
+            // Теперь точная проверка расстояния
+            const distanceSq = dx * dx + dy * dy; // Квадрат расстояния (без sqrt)
+            
+            // Радиус столкновения (сумма размеров)
+            const collisionRadius = (flake1.size + flake2.size) * 4;
+            const collisionRadiusSq = collisionRadius * collisionRadius;
+
+            // Если снежинки достаточно близко - сливаем
+            if (distanceSq < collisionRadiusSq) {
+                mergeSnowflakes(flake1, flake2);
+                break; // Выходим из внутреннего цикла после слияния
+            }
+        }
+    }
+    
+    // Периодически очищаем массив от слитых снежинок
+    if (collisionCheckCounter % 600 === 0) { // Увеличил с 300 до 600
+        snowflakes = snowflakes.filter(flake => !flake.merged);
+        collisionCheckCounter = 0; // Сбрасываем счётчик
+    }
+}
+
+// Слияние двух снежинок
+function mergeSnowflakes(flake1, flake2) {
+    // Увеличиваем размер первой снежинки (складываем размеры)
+    const newSize = flake1.size + flake2.size * 0.6;
+    flake1.size = Math.min(newSize, 12); // Ограничиваем максимальный размер
+    
+    // Немного замедляем большую снежинку (более тяжёлая = медленнее)
+    flake1.speed = Math.max(flake1.speed * 0.98, 0.4);
+    
+    // Увеличиваем прозрачность (но не больше максимума)
+    flake1.opacity = Math.min(flake1.opacity + flake2.opacity * 0.2, 1);
+    
+    // Помечаем вторую снежинку как слитую и удаляем её элемент
+    flake2.merged = true;
+    if (flake2.element && flake2.element.parentNode) {
+        flake2.element.parentNode.removeChild(flake2.element);
+    }
+    flake2.element = null; // Освобождаем ссылку
+    
+    // Анимация слияния с эффектом "вспышки"
+    if (flake1.element) {
+        flake1.element.style.transition = 'font-size 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55), opacity 0.2s ease';
+        
+        // Временно увеличиваем прозрачность для эффекта
+        const oldOpacity = flake1.opacity;
+        flake1.element.style.opacity = Math.min(flake1.opacity + 0.3, 1);
+        
+        setTimeout(() => {
+            if (flake1.element) {
+                flake1.element.style.opacity = flake1.opacity;
+                flake1.element.style.transition = '';
+            }
+        }, 200);
+    }
 }
 
 function stopSnowfall() {
@@ -409,7 +523,7 @@ function initSettingsModal() {
             <div class="ny-settings-body">
                 <div class="ny-setting-item">
                     <label>
-                        <span>❄️ Количество снежинок(для 100+ требуется мощный проц)</span>
+                        <span>❄️ Количество снежинок</span>
                         <input type="range" id="snowCount" min="10" max="200" step="10" value="${snowSettings.count}">
                         <span class="ny-setting-value" id="snowCountValue">${snowSettings.count}</span>
                     </label>
@@ -441,10 +555,22 @@ function initSettingsModal() {
                 
                 <div class="ny-setting-item">
                     <label>
-                        <span>✨ Прозрачность</span>
-                        <input type="range" id="snowOpacity" min="0" max="0.95" step="0.05" value="${snowSettings.opacity}">
+                        <span>✨ Непрозрачность</span>
+                        <input type="range" id="snowOpacity" min="0.05" max="1" step="0.05" value="${snowSettings.opacity}">
                         <span class="ny-setting-value" id="snowOpacityValue">${Math.round(snowSettings.opacity * 100)}%</span>
                     </label>
+                </div>
+                
+                <div class="ny-setting-item">
+                    <label class="ny-setting-checkbox">
+                        <input type="checkbox" id="snowMerge" ${snowSettings.mergeEnabled ? 'checked' : ''}>
+                        <span>🔗 Слияние снежинок при столкновении</span>
+                    </label>
+                    <p class="ny-setting-hint">Снежинки будут объединяться, создавая более крупные хлопья</p>
+                </div>
+                
+                <div class="ny-setting-warning" id="perfWarning" style="display: none; font-size: 0.72rem;">
+                    ⚠️ При большом количестве снежинок требуется мощный процессор
                 </div>
             </div>
             <div class="ny-settings-footer">
@@ -463,7 +589,19 @@ function initSettingsModal() {
     
     // Обновление значений при изменении слайдеров
     document.getElementById('snowCount').addEventListener('input', (e) => {
-        document.getElementById('snowCountValue').textContent = e.target.value;
+        const value = parseInt(e.target.value);
+        document.getElementById('snowCountValue').textContent = value;
+        
+        // Показываем/скрываем предупреждение
+        const warning = document.getElementById('perfWarning');
+        const slider = e.target;
+        if (value > 100) {
+            warning.style.display = 'block';
+            slider.classList.add('high-count');
+        } else {
+            warning.style.display = 'none';
+            slider.classList.remove('high-count');
+        }
     });
     
     document.getElementById('snowSpeed').addEventListener('input', (e) => {
@@ -480,6 +618,11 @@ function initSettingsModal() {
     
     document.getElementById('snowOpacity').addEventListener('input', (e) => {
         document.getElementById('snowOpacityValue').textContent = Math.round(parseFloat(e.target.value) * 100) + '%';
+    });
+    
+    // Обработчик для чекбокса слияния
+    document.getElementById('snowMerge').addEventListener('change', (e) => {
+        // Обновление происходит при применении настроек
     });
     
     // Закрытие по клику вне модального окна
@@ -499,12 +642,24 @@ function openSettingsModal() {
         document.getElementById('snowSize').value = snowSettings.size;
         document.getElementById('snowDrift').value = snowSettings.drift;
         document.getElementById('snowOpacity').value = snowSettings.opacity;
+        document.getElementById('snowMerge').checked = snowSettings.mergeEnabled;
         
         document.getElementById('snowCountValue').textContent = snowSettings.count;
         document.getElementById('snowSpeedValue').textContent = snowSettings.speed.toFixed(1) + 'x';
         document.getElementById('snowSizeValue').textContent = snowSettings.size.toFixed(1) + 'x';
         document.getElementById('snowDriftValue').textContent = snowSettings.drift.toFixed(1) + 'x';
         document.getElementById('snowOpacityValue').textContent = Math.round(snowSettings.opacity * 100) + '%';
+        
+        // Проверяем предупреждение
+        const warning = document.getElementById('perfWarning');
+        const slider = document.getElementById('snowCount');
+        if (snowSettings.count > 100) {
+            warning.style.display = 'block';
+            slider.classList.add('high-count');
+        } else {
+            warning.style.display = 'none';
+            slider.classList.remove('high-count');
+        }
         
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
@@ -526,6 +681,7 @@ function applySettings() {
     snowSettings.size = parseFloat(document.getElementById('snowSize').value);
     snowSettings.drift = parseFloat(document.getElementById('snowDrift').value);
     snowSettings.opacity = parseFloat(document.getElementById('snowOpacity').value);
+    snowSettings.mergeEnabled = document.getElementById('snowMerge').checked;
     
     // Сохраняем
     saveSettings();
@@ -559,11 +715,12 @@ function applySettings() {
 function resetSettings() {
     // Сбрасываем на значения по умолчанию
     snowSettings = {
-        count: 100,
+        count: 60,
         speed: 1,
         size: 1,
         drift: 1,
-        opacity: 0.8
+        opacity: 0.8,
+        mergeEnabled: false
     };
     
     // Обновляем UI
@@ -572,12 +729,17 @@ function resetSettings() {
     document.getElementById('snowSize').value = snowSettings.size;
     document.getElementById('snowDrift').value = snowSettings.drift;
     document.getElementById('snowOpacity').value = snowSettings.opacity;
+    document.getElementById('snowMerge').checked = snowSettings.mergeEnabled;
     
     document.getElementById('snowCountValue').textContent = snowSettings.count;
     document.getElementById('snowSpeedValue').textContent = snowSettings.speed.toFixed(1) + 'x';
     document.getElementById('snowSizeValue').textContent = snowSettings.size.toFixed(1) + 'x';
     document.getElementById('snowDriftValue').textContent = snowSettings.drift.toFixed(1) + 'x';
     document.getElementById('snowOpacityValue').textContent = Math.round(snowSettings.opacity * 100) + '%';
+    
+    // Скрываем предупреждение
+    document.getElementById('perfWarning').style.display = 'none';
+    document.getElementById('snowCount').classList.remove('high-count');
 }
 
 // ============================================
