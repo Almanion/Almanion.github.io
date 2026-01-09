@@ -20,6 +20,7 @@ let allTasks = [];
 let currentFilter = 'all';
 let authToken = null;
 let lockoutTimer = null;
+let autoRefreshTimer = null; // Таймер автообновления
 let deviceFingerprint = null;
 let isAdmin = false;
 // Подсказки теперь хранятся в Google Sheet (столбец Hint)
@@ -129,8 +130,8 @@ window.resetSecurityData = function() {
 };
 
 // Подсказка в консоли
-console.log('💡 Для сброса данных безопасности используйте: resetSecurityData()');
-console.log('   Секретный код: reset_matcenter_' + new Date().getFullYear());
+console.log('💡 Для просмотра статистики безопасности используйте: showSecurityStats()');
+console.log('   Для сброса данных безопасности используйте: resetSecurityData()');
 
 // ============================================
 // ИНИЦИАЛИЗАЦИЯ
@@ -146,17 +147,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     initMatCenterSearch();
     initHintModal();
     
-    // Запускаем генерацию отпечатка параллельно (не блокирует загрузку)
-    const fingerprintPromise = generateFingerprint().then(fp => {
-        deviceFingerprint = fp;
-        console.log(`✅ Отпечаток: ${fp.substring(0, 16)}...`);
-    });
-    
+    // Загружаем или генерируем отпечаток
     const cachedFP = localStorage.getItem('matcenter_fp');
     if (cachedFP) {
       deviceFingerprint = cachedFP;
       console.log('🔑 Загружен cached fingerprint');
     }
+    
+    // Запускаем генерацию отпечатка параллельно (не блокирует загрузку)
+    // Только если кеша нет
+    const fingerprintPromise = !cachedFP ? generateFingerprint().then(fp => {
+        deviceFingerprint = fp;
+        console.log(`✅ Отпечаток: ${fp.substring(0, 16)}...`);
+    }) : Promise.resolve();
     
     // Проверяем, есть ли сохранённый пароль
     const savedPassword = localStorage.getItem('matcenter_auth');
@@ -226,7 +229,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     // Автообновление каждые 5 минут (только если авторизован)
-    setInterval(() => {
+    // Очищаем старый таймер если существует
+    if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+    }
+    
+    autoRefreshTimer = setInterval(() => {
         if (authToken) {
             loadTasksFromGoogleSheets().catch(err => {
                 console.error('Ошибка автообновления:', err);
@@ -743,14 +751,8 @@ async function initAuth() {
         }
     });
     
-    // Кнопка выхода
-    if (logoutButton) {
-        logoutButton.addEventListener('click', () => {
-            if (confirm('Вы уверены, что хотите выйти?')) {
-                logout();
-            }
-        });
-    }
+    // Обработчик кнопки выхода уже добавлен выше (строка 566-573)
+    // Не дублируем обработчик здесь
 }
 
 function showAuthForm() {
@@ -845,6 +847,16 @@ function hideAuthForm() {
 function logout() {
     authToken = null;
     isAdmin = false;
+    
+    // Очищаем таймеры
+    if (lockoutTimer) {
+        clearInterval(lockoutTimer);
+        lockoutTimer = null;
+    }
+    if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+    }
     
     // Очищаем сессию и пароль
     clearSession();
@@ -984,8 +996,13 @@ async function loadFromAppsScript() {
     const clientId = deviceFingerprint ? deviceFingerprint.substring(0, 16) : 'unknown';
     const url = `${API_ENDPOINT}?password=${encodeURIComponent(authToken)}&clientId=${encodeURIComponent(clientId)}`;
     
-    response = await fetch(url);
-    console.log('📡 GET ответ получен, статус:', response.status);
+    try {
+        response = await fetch(url);
+        console.log('📡 GET ответ получен, статус:', response.status);
+    } catch (error) {
+        console.error('❌ Ошибка сети при загрузке данных:', error);
+        throw new Error('Не удалось подключиться к серверу. Проверьте интернет-соединение.');
+    }
     
     console.log(`✅ Использован метод: ${usedMethod}`);
     
@@ -1026,17 +1043,39 @@ async function loadFromAppsScript() {
                     '- Пример:', example ? `#${example.number}` : 'нет');
     });
     
-    // Преобразуем данные в нужный формат
-    const tasks = data.tasks.map(task => {
+    // Валидация данных перед преобразованием
+    if (!Array.isArray(data.tasks)) {
+        console.error('❌ Неверный формат данных: tasks не является массивом');
+        throw new Error('Неверный формат данных от сервера');
+    }
+    
+    // Преобразуем данные в нужный формат с валидацией
+    const tasks = data.tasks.map((task, index) => {
+        // Валидация обязательных полей
+        if (!task || typeof task !== 'object') {
+            console.warn(`⚠️ Пропускаем некорректную задачу на позиции ${index}`);
+            return null;
+        }
+        
+        if (!task.number || !task.status) {
+            console.warn(`⚠️ Пропускаем задачу без номера или статуса на позиции ${index}`);
+            return null;
+        }
+        
         const cleanNumber = extractNumber(task.number);
+        if (cleanNumber === null || isNaN(cleanNumber)) {
+            console.warn(`⚠️ Пропускаем задачу с некорректным номером: ${task.number}`);
+            return null;
+        }
+        
         return {
             number: cleanNumber,
-            numberText: task.number,
-            status: task.status.trim(),
-            description: task.description || 'Условие не указано',
-            hint: task.hint || ''
+            numberText: String(task.number),
+            status: String(task.status).trim(),
+            description: task.description ? String(task.description) : 'Условие не указано',
+            hint: task.hint ? String(task.hint) : ''
         };
-    });
+    }).filter(task => task !== null); // Удаляем null значения
     
     console.log('🎉 Преобразовано задач:', tasks.length);
     
@@ -1060,6 +1099,11 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
     const container = document.getElementById(containerId);
     if (!container) {
         console.warn(`⚠️ Контейнер ${containerId} не найден!`);
+        return;
+    }
+    
+    if (!tasks || !Array.isArray(tasks)) {
+        console.warn(`⚠️ Некорректный массив задач`);
         return;
     }
     
@@ -1154,7 +1198,7 @@ function createTaskElement(task) {
                 <span class="toggle-icon">💡</span>
                 Показать подсказку
             </button>
-            <div class="task-hint" data-hint-id="hint-${task.number}">${escapeHtml(trimmedHint)}</div>
+            <div class="task-hint" data-hint-id="hint-${escapeHtml(String(task.number))}">${escapeHtml(trimmedHint)}</div>
         `;
     }
     
@@ -1170,7 +1214,7 @@ function createTaskElement(task) {
     
     // Для админов добавляем возможность изменения статуса
     const statusBadgeHTML = isAdmin 
-        ? `<div class="task-status-badge clickable" data-task-number="${task.number}">${getStatusText(task.status)}</div>`
+        ? `<div class="task-status-badge clickable" data-task-number="${escapeHtml(String(task.number))}">${getStatusText(task.status)}</div>`
         : `<div class="task-status-badge">${getStatusText(task.status)}</div>`;
     
     taskCard.innerHTML = `

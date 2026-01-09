@@ -166,6 +166,8 @@ function initNavigation() {
 
 function initSearch() {
     const searchInput = document.getElementById('searchInput');
+    if (!searchInput) return; // Защита от null
+    
     // Поддерживаем оба варианта: .topic и .content-section
     const topics = document.querySelectorAll('.topic, .content-section');
     
@@ -360,6 +362,12 @@ function initMobileMenu() {
     const menuToggle = document.getElementById('menuToggle');
     const closeSidebar = document.getElementById('closeSidebar');
     const sidebar = document.getElementById('sidebar');
+    
+    // Проверяем наличие элементов
+    if (!menuToggle || !closeSidebar || !sidebar) {
+        console.warn('⚠️ Не найдены элементы мобильного меню');
+        return;
+    }
     
     // Создаём оверлей, если его ещё нет
     let overlay = document.querySelector('.sidebar-overlay');

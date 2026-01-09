@@ -6,6 +6,9 @@ let isNewYearMode = false;
 let snowflakes = [];
 let animationFrame = null;
 let collisionCheckCounter = 0; // Счётчик для оптимизации проверки столкновений
+let lastFrameTime = performance.now();
+let fps = 60;
+let fpsCheckCounter = 0;
 
 // Настройки снегопада (по умолчанию)
 let snowSettings = {
@@ -21,6 +24,12 @@ let snowSettings = {
 let clickCount = 0;
 let clickTimer = null;
 
+// Определение мобильного устройства
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+        || window.innerWidth < 768;
+}
+
 // ============================================
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================
@@ -28,6 +37,9 @@ let clickTimer = null;
 document.addEventListener('DOMContentLoaded', () => {
     // Загружаем настройки из localStorage
     loadSettings();
+    
+    // Оптимизируем для мобильных устройств
+    optimizeForMobile();
     
     // Проверяем сохранённое состояние (по умолчанию включён)
     const savedState = localStorage.getItem('newYearMode');
@@ -181,17 +193,46 @@ function createSnowflake() {
 }
 
 let frameCount = 0; // Счётчик кадров для оптимизации
+let healthCheckCounter = 0; // Счётчик для проверки "здоровья" снежинок
 
 function animateSnow() {
     if (!isNewYearMode) return;
 
+    // Измеряем FPS для адаптивной оптимизации
+    const currentTime = performance.now();
+    const deltaTime = currentTime - lastFrameTime;
+    lastFrameTime = currentTime;
+    
+    fpsCheckCounter++;
+    if (fpsCheckCounter % 30 === 0) {
+        fps = Math.round(1000 / deltaTime);
+        
+        // Если FPS упал слишком низко на мобильном устройстве, уменьшаем нагрузку
+        if (fps < 30 && isMobileDevice() && snowflakes.length > 30) {
+            const toRemove = Math.floor(snowflakes.length * 0.2); // Удаляем 20%
+            for (let i = 0; i < toRemove; i++) {
+                const flake = snowflakes.pop();
+                if (flake && flake.element) {
+                    flake.element.remove();
+                }
+            }
+        }
+    }
+
     frameCount++;
+    healthCheckCounter++;
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
 
     for (let i = 0; i < snowflakes.length; i++) {
         const flake = snowflakes[i];
         if (!flake.element || flake.merged) continue;
+
+        // Проверяем, что элемент всё ещё в DOM
+        if (!document.body.contains(flake.element)) {
+            flake.merged = true; // Помечаем как удалённую
+            continue;
+        }
 
         // Обновляем позицию по вертикали
         flake.y += flake.speed;
@@ -235,7 +276,30 @@ function animateSnow() {
         checkCollisions();
     }
 
+    // Периодическая проверка и восстановление снежинок (каждые 5 секунд)
+    if (healthCheckCounter > 300) { // ~5 секунд при 60 fps
+        healthCheckCounter = 0;
+        checkSnowflakesHealth();
+    }
+
     animationFrame = requestAnimationFrame(animateSnow);
+}
+
+// Проверка "здоровья" снежинок и восстановление при необходимости
+function checkSnowflakesHealth() {
+    // Очищаем массив от удалённых снежинок
+    const activeFlakes = snowflakes.filter(flake => !flake.merged && flake.element && document.body.contains(flake.element));
+    const missingCount = snowSettings.count - activeFlakes.length;
+    
+    // Если потеряли больше 20% снежинок, восстанавливаем
+    if (missingCount > snowSettings.count * 0.2) {
+        snowflakes = activeFlakes;
+        
+        // Создаём недостающие снежинки
+        for (let i = 0; i < missingCount; i++) {
+            createSnowflake();
+        }
+    }
 }
 
 // Проверка столкновений и слияние снежинок (оптимизировано)
@@ -305,7 +369,6 @@ function mergeSnowflakes(flake1, flake2) {
         flake1.element.style.transition = 'font-size 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55), opacity 0.2s ease';
         
         // Временно увеличиваем прозрачность для эффекта
-        const oldOpacity = flake1.opacity;
         flake1.element.style.opacity = Math.min(flake1.opacity + 0.3, 1);
         
         setTimeout(() => {
@@ -325,8 +388,10 @@ function stopSnowfall() {
 
     // Удаляем все снежинки
     snowflakes.forEach(flake => {
-        if (flake.element && flake.element.parentNode) {
-            flake.element.parentNode.removeChild(flake.element);
+        if (flake.element) {
+            // Освобождаем ссылку на элемент
+            flake.element.remove();
+            flake.element = null;
         }
     });
     snowflakes = [];
@@ -335,6 +400,11 @@ function stopSnowfall() {
     if (container) {
         container.innerHTML = '';
     }
+    
+    // Сбрасываем счётчики
+    frameCount = 0;
+    healthCheckCounter = 0;
+    collisionCheckCounter = 0;
 }
 
 // ============================================
@@ -480,12 +550,13 @@ function showNewYearNotification() {
     // Скрываем и удаляем
     setTimeout(() => {
         notification.classList.remove('show');
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 300);
     }, 3000);
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 3300);
 }
 
 // ============================================
@@ -702,14 +773,12 @@ function applySettings() {
     document.body.appendChild(notification);
     
     setTimeout(() => notification.classList.add('show'), 100);
+    setTimeout(() => notification.classList.remove('show'), 2000);
     setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 300);
-    }, 2000);
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 2300);
 }
 
 function resetSettings() {
@@ -743,14 +812,82 @@ function resetSettings() {
 }
 
 // ============================================
-// ОБРАБОТКА ИЗМЕНЕНИЯ РАЗМЕРА ОКНА
+// ОБРАБОТКА ИЗМЕНЕНИЯ РАЗМЕРА ОКНА И ВИДИМОСТИ
 // ============================================
 
+let resizeTimer = null;
+let lastWidth = window.innerWidth;
+let lastHeight = window.innerHeight;
+
 window.addEventListener('resize', () => {
-    if (isNewYearMode && snowflakes.length > 0) {
-        // Пересоздаём снежинки при изменении размера окна
-        stopSnowfall();
-        startSnowfall();
+    if (!isNewYearMode || snowflakes.length === 0) return;
+    
+    const currentWidth = window.innerWidth;
+    const currentHeight = window.innerHeight;
+    
+    // Игнорируем мелкие изменения (прокрутка адресной строки на мобильных)
+    const widthChange = Math.abs(currentWidth - lastWidth);
+    const heightChange = Math.abs(currentHeight - lastHeight);
+    
+    if (widthChange < 50 && heightChange < 100) {
+        return; // Слишком маленькое изменение, игнорируем
+    }
+    
+    // Используем debounce для избежания частых пересозданий
+    if (resizeTimer) {
+        clearTimeout(resizeTimer);
+    }
+    
+    resizeTimer = setTimeout(() => {
+        lastWidth = currentWidth;
+        lastHeight = currentHeight;
+        
+        // Корректируем позиции существующих снежинок вместо пересоздания
+        adjustSnowflakesPositions(currentWidth, currentHeight);
+    }, 250); // Ждём 250мс после последнего resize
+});
+
+// Корректировка позиций снежинок при изменении размера окна
+function adjustSnowflakesPositions(newWidth, newHeight) {
+    for (let i = 0; i < snowflakes.length; i++) {
+        const flake = snowflakes[i];
+        if (!flake.element || flake.merged) continue;
+        
+        // Пропорционально корректируем X координату
+        if (lastWidth > 0) {
+            flake.x = (flake.x / lastWidth) * newWidth;
+        }
+        
+        // Если снежинка вышла за пределы, возвращаем её
+        if (flake.x < 0) flake.x = 0;
+        if (flake.x > newWidth) flake.x = newWidth;
+        
+        // Y координату оставляем как есть, снежинки продолжат падать естественно
+    }
+}
+
+// Обработка изменения видимости страницы (переключение вкладок)
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        // Страница скрыта - останавливаем анимацию для экономии ресурсов
+        if (animationFrame) {
+            cancelAnimationFrame(animationFrame);
+            animationFrame = null;
+        }
+    } else {
+        // Страница снова видна - возобновляем анимацию
+        if (isNewYearMode && !animationFrame) {
+            animateSnow();
+        }
     }
 });
+
+// Автоматическая оптимизация настроек для мобильных
+function optimizeForMobile() {
+    if (isMobileDevice() && !localStorage.getItem('snowSettings')) {
+        // Если на мобильном и настройки не были изменены пользователем
+        snowSettings.count = Math.min(snowSettings.count, 40); // Максимум 40 снежинок
+        snowSettings.speed = Math.max(snowSettings.speed, 1.2); // Быстрее падают
+    }
+}
 

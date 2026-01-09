@@ -2374,6 +2374,24 @@ body.dark-theme .snowflake {
     text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
 }
 
+/* Оптимизация для мобильных устройств */
+@media (max-width: 768px) {
+    .snowflake {
+        /* Упрощаем анимацию на мобильных для лучшей производительности */
+        will-change: transform;
+        transform: translateZ(0); /* Включаем аппаратное ускорение */
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+    }
+    
+    /* Немного уменьшаем размер на очень маленьких экранах */
+    @media (max-width: 480px) {
+        .snowflake {
+            font-size: 0.9em !important;
+        }
+    }
+}
+
 /* Контейнер для пасхалок */
 .easter-eggs-container {
     position: fixed;
