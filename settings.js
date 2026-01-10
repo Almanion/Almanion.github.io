@@ -79,19 +79,58 @@ function applyAnimationLevel(level) {
 // ============================================
 
 function initSettingsButton() {
-    // Проверяем, не создана ли уже кнопка
-    if (document.getElementById('settingsButton')) return;
+    // Создаём фиксированную кнопку (для десктопа)
+    if (!document.getElementById('settingsButton')) {
+        const button = document.createElement('button');
+        button.id = 'settingsButton';
+        button.className = 'settings-button';
+        button.setAttribute('aria-label', 'Настройки');
+        button.innerHTML = '⚙️';
+        button.title = 'Настройки сайта';
+        
+        button.addEventListener('click', openSettingsModal);
+        
+        document.body.appendChild(button);
+    }
     
-    const button = document.createElement('button');
-    button.id = 'settingsButton';
-    button.className = 'settings-button';
-    button.setAttribute('aria-label', 'Настройки');
-    button.innerHTML = '⚙️';
-    button.title = 'Настройки сайта';
-    
-    button.addEventListener('click', openSettingsModal);
-    
-    document.body.appendChild(button);
+    // Создаём кнопку в sidebar (для мобильных)
+    const sidebarHeader = document.querySelector('.sidebar-header');
+    if (sidebarHeader && !document.getElementById('settingsButtonSidebar')) {
+        // Проверяем, есть ли уже контейнер для кнопок
+        let buttonsContainer = sidebarHeader.querySelector('.sidebar-header-buttons');
+        
+        if (!buttonsContainer) {
+            // Создаём контейнер для кнопок
+            buttonsContainer = document.createElement('div');
+            buttonsContainer.className = 'sidebar-header-buttons';
+            
+            // Перемещаем существующие кнопки в контейнер
+            const existingButtons = sidebarHeader.querySelectorAll('.close-sidebar, .theme-toggle, .ny-toggle');
+            existingButtons.forEach(btn => {
+                buttonsContainer.appendChild(btn);
+            });
+            
+            sidebarHeader.appendChild(buttonsContainer);
+        }
+        
+        // Создаём кнопку настроек
+        const sidebarButton = document.createElement('button');
+        sidebarButton.id = 'settingsButtonSidebar';
+        sidebarButton.className = 'settings-button-sidebar';
+        sidebarButton.setAttribute('aria-label', 'Настройки');
+        sidebarButton.innerHTML = '⚙️';
+        sidebarButton.title = 'Настройки сайта';
+        
+        sidebarButton.addEventListener('click', openSettingsModal);
+        
+        // Вставляем перед кнопкой закрытия (она должна быть последней)
+        const closeButton = buttonsContainer.querySelector('.close-sidebar');
+        if (closeButton) {
+            buttonsContainer.insertBefore(sidebarButton, closeButton);
+        } else {
+            buttonsContainer.appendChild(sidebarButton);
+        }
+    }
 }
 
 // ============================================
