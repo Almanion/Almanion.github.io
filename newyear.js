@@ -143,9 +143,23 @@ function startSnowfall() {
     // Создаём снежинки
     snowflakes = [];
     collisionCheckCounter = 0; // Сбрасываем счётчик
+    frameCount = 0; // Сбрасываем счётчик кадров
+    healthCheckCounter = 0; // Сбрасываем счётчик здоровья
     
     for (let i = 0; i < snowSettings.count; i++) {
         createSnowflake();
+    }
+    
+    // На мобильных принудительно обновляем размеры сразу после создания
+    if (isMobileDevice()) {
+        setTimeout(() => {
+            snowflakes.forEach(flake => {
+                if (flake.element && !flake.merged) {
+                    flake.element.style.fontSize = `${flake.size * 5}px`;
+                    flake.element.style.opacity = flake.opacity;
+                }
+            });
+        }, 50);
     }
 
     // Запускаем анимацию
@@ -170,6 +184,7 @@ function createSnowflake() {
         swingSpeed: 0.01 + Math.random() * 0.02, // Скорость покачивания
         swingAmount: 0.3 + Math.random() * 0.7, // Амплитуда покачивания (уменьшена)
         merged: false, // Флаг для отслеживания слияния
+        needsUpdate: false, // Флаг для принудительного обновления стилей
         element: null
     };
 
@@ -264,10 +279,11 @@ function animateSnow() {
         // Применяем позицию через transform (оптимизировано)
         flake.element.style.transform = `translate(${flake.x}px, ${flake.y}px)`;
         
-        // Обновляем размер и прозрачность только при необходимости (каждый 5-й кадр)
-        if (frameCount % 5 === 0) {
+        // Обновляем размер и прозрачность только при необходимости (каждый 5-й кадр или при флаге needsUpdate)
+        if (frameCount % 5 === 0 || flake.needsUpdate) {
             flake.element.style.fontSize = `${flake.size * 5}px`;
             flake.element.style.opacity = flake.opacity;
+            flake.needsUpdate = false;
         }
     }
 
@@ -306,11 +322,17 @@ function checkSnowflakesHealth() {
 function checkCollisions() {
     // Проверяем столкновения не каждый кадр для производительности
     collisionCheckCounter++;
-    if (collisionCheckCounter % 5 !== 0) return; // Увеличил с 3 до 5 для производительности
+    
+    // На мобильных проверяем реже для экономии ресурсов
+    const checkInterval = isMobileDevice() ? 8 : 5;
+    if (collisionCheckCounter % checkInterval !== 0) return;
 
     const activeFlakes = snowflakes.filter(f => f.element && !f.merged);
     
-    for (let i = 0; i < activeFlakes.length; i++) {
+    // На мобильных ограничиваем количество проверяемых пар
+    const maxChecks = isMobileDevice() ? Math.min(activeFlakes.length, 30) : activeFlakes.length;
+    
+    for (let i = 0; i < maxChecks; i++) {
         const flake1 = activeFlakes[i];
 
         for (let j = i + 1; j < activeFlakes.length; j++) {
@@ -339,7 +361,7 @@ function checkCollisions() {
     }
     
     // Периодически очищаем массив от слитых снежинок
-    if (collisionCheckCounter % 600 === 0) { // Увеличил с 300 до 600
+    if (collisionCheckCounter % 600 === 0) {
         snowflakes = snowflakes.filter(flake => !flake.merged);
         collisionCheckCounter = 0; // Сбрасываем счётчик
     }
@@ -357,6 +379,9 @@ function mergeSnowflakes(flake1, flake2) {
     // Увеличиваем прозрачность (но не больше максимума)
     flake1.opacity = Math.min(flake1.opacity + flake2.opacity * 0.2, 1);
     
+    // Устанавливаем флаг для принудительного обновления стилей
+    flake1.needsUpdate = true;
+    
     // Помечаем вторую снежинку как слитую и удаляем её элемент
     flake2.merged = true;
     if (flake2.element && flake2.element.parentNode) {
@@ -366,6 +391,8 @@ function mergeSnowflakes(flake1, flake2) {
     
     // Анимация слияния с эффектом "вспышки"
     if (flake1.element) {
+        // Сразу обновляем размер и прозрачность
+        flake1.element.style.fontSize = `${flake1.size * 5}px`;
         flake1.element.style.transition = 'font-size 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55), opacity 0.2s ease';
         
         // Временно увеличиваем прозрачность для эффекта
@@ -654,9 +681,9 @@ function initSettingsModal() {
     document.body.appendChild(modal);
     
     // Привязываем обработчики
-    document.getElementById('nySettingsClose').addEventListener('click', closeSettingsModal);
-    document.getElementById('nySettingsApply').addEventListener('click', applySettings);
-    document.getElementById('nySettingsReset').addEventListener('click', resetSettings);
+    document.getElementById('nySettingsClose').addEventListener('click', () => nyCloseSnowSettings());
+    document.getElementById('nySettingsApply').addEventListener('click', applySnowSettings);
+    document.getElementById('nySettingsReset').addEventListener('click', resetSnowSettings);
     
     // Обновление значений при изменении слайдеров
     document.getElementById('snowCount').addEventListener('input', (e) => {
@@ -699,12 +726,27 @@ function initSettingsModal() {
     // Закрытие по клику вне модального окна
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
-            closeSettingsModal();
+            nyCloseSnowSettings();
+        }
+    });
+    
+    // Закрытие по нажатию Escape (только если это окно открыто)
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const nyModal = document.getElementById('nySettingsModal');
+            const settingsModalElement = document.getElementById('settingsModal');
+            
+            // Закрываем только если наше окно открыто и окно настроек сайта закрыто
+            if (nyModal && 
+                !nyModal.classList.contains('hidden') &&
+                (!settingsModalElement || settingsModalElement.classList.contains('hidden'))) {
+                nyCloseSnowSettings();
+            }
         }
     });
 }
 
-function openSettingsModal() {
+function nyOpenSnowSettings() {
     const modal = document.getElementById('nySettingsModal');
     if (modal) {
         // Обновляем значения перед открытием
@@ -737,7 +779,7 @@ function openSettingsModal() {
     }
 }
 
-function closeSettingsModal() {
+function nyCloseSnowSettings() {
     const modal = document.getElementById('nySettingsModal');
     if (modal) {
         modal.classList.add('hidden');
@@ -745,7 +787,11 @@ function closeSettingsModal() {
     }
 }
 
-function applySettings() {
+// Экспортируем функции глобально для доступа из других модулей
+window.nyOpenSettingsModal = nyOpenSnowSettings;
+window.nyCloseSettingsModal = nyCloseSnowSettings;
+
+function applySnowSettings() {
     // Получаем новые значения
     snowSettings.count = parseInt(document.getElementById('snowCount').value);
     snowSettings.speed = parseFloat(document.getElementById('snowSpeed').value);
@@ -764,7 +810,7 @@ function applySettings() {
     }
     
     // Закрываем модальное окно
-    closeSettingsModal();
+    nyCloseSnowSettings();
     
     // Показываем уведомление
     const notification = document.createElement('div');
@@ -781,7 +827,7 @@ function applySettings() {
     }, 2300);
 }
 
-function resetSettings() {
+function resetSnowSettings() {
     // Сбрасываем на значения по умолчанию
     snowSettings = {
         count: 60,

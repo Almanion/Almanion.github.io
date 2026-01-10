@@ -2383,13 +2383,6 @@ body.dark-theme .snowflake {
         backface-visibility: hidden;
         -webkit-backface-visibility: hidden;
     }
-    
-    /* Немного уменьшаем размер на очень маленьких экранах */
-    @media (max-width: 480px) {
-        .snowflake {
-            font-size: 0.9em !important;
-        }
-    }
 }
 
 /* Контейнер для пасхалок */
@@ -2871,4 +2864,1021 @@ body.new-year-mode .task-card:hover::after {
 
 .ny-setting-item input[type="range"].high-count::-moz-range-thumb:hover {
     box-shadow: 0 4px 12px rgba(220, 38, 38, 0.6);
+}
+
+/* ============================================
+   TELEGRAM КОММУНИКАЦИЯ
+   ============================================ */
+
+/* Контейнер для уведомлений */
+.telegram-notifications-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10005;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 380px;
+    pointer-events: none;
+}
+
+/* Уведомление */
+.telegram-notification {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transform: translateX(400px);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    pointer-events: auto;
+    position: relative;
+    max-width: 380px;
+    word-wrap: break-word;
+}
+
+.telegram-notification.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.telegram-notification-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.telegram-notification-icon {
+    font-size: 1.2rem;
+}
+
+.telegram-notification-title {
+    font-size: 0.95rem;
+}
+
+.telegram-notification-body {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    opacity: 0.95;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.telegram-notification-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.telegram-notification-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Плавающая кнопка чата */
+.telegram-chat-button {
+    position: fixed;
+    bottom: 2rem;
+    left: 2rem;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.8rem;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.telegram-chat-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 32px rgba(102, 126, 234, 0.6);
+}
+
+.telegram-chat-button:active {
+    transform: scale(0.95);
+}
+
+/* Диалоговое окно */
+.telegram-dialog {
+    position: fixed;
+    bottom: 100px;
+    left: 20px;
+    width: 400px;
+    max-width: calc(100vw - 40px);
+    height: 500px;
+    max-height: calc(100vh - 140px);
+    background: var(--bg-primary);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.telegram-dialog.hidden {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+    pointer-events: none;
+}
+
+.telegram-dialog-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 20px 20px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.telegram-dialog-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.telegram-close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.telegram-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.telegram-dialog-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+.telegram-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.telegram-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.telegram-messages::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+}
+
+.telegram-messages::-webkit-scrollbar-thumb {
+    background: var(--accent-color);
+    border-radius: 3px;
+}
+
+.telegram-welcome-message {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    color: var(--text-primary);
+    padding: 1rem;
+    border-radius: 12px;
+    border-left: 4px solid #667eea;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.telegram-message {
+    max-width: 80%;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    word-wrap: break-word;
+    animation: messageSlideIn 0.3s ease;
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.telegram-message-user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px 12px 4px 12px;
+}
+
+.telegram-message-admin {
+    align-self: flex-start;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px 12px 12px 4px;
+}
+
+.telegram-message-system {
+    align-self: center;
+    background: rgba(102, 126, 234, 0.1);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    max-width: 90%;
+    text-align: center;
+}
+
+.telegram-message-text {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 0.25rem;
+}
+
+.telegram-message-time {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    text-align: right;
+}
+
+.telegram-input-container {
+    padding: 1rem;
+    background: var(--bg-primary);
+    border-top: 2px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+#telegramMessageInput {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: none;
+    transition: border-color 0.3s ease;
+}
+
+#telegramMessageInput:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.telegram-send-btn {
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.telegram-send-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.telegram-send-btn:active {
+    transform: translateY(0);
+}
+
+/* Адаптация для мобильных */
+@media (max-width: 768px) {
+    .telegram-notifications-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+    
+    .telegram-notification {
+        max-width: 100%;
+    }
+    
+    .telegram-chat-button {
+        bottom: 1rem;
+        left: 1rem;
+        width: 56px;
+        height: 56px;
+        font-size: 1.6rem;
+    }
+    
+    .telegram-dialog {
+        bottom: 80px;
+        left: 10px;
+        right: 10px;
+        width: calc(100vw - 20px);
+        height: 450px;
+        max-height: calc(100vh - 100px);
+    }
+    
+    .telegram-dialog-header h3 {
+        font-size: 1rem;
+    }
+    
+    .telegram-message {
+        max-width: 85%;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .telegram-chat-button {
+        width: 52px;
+        height: 52px;
+        font-size: 1.5rem;
+    }
+    
+    .telegram-dialog {
+        bottom: 70px;
+        height: 400px;
+    }
+    
+    .telegram-dialog-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .telegram-dialog-header h3 {
+        font-size: 0.95rem;
+    }
+    
+    .telegram-messages {
+        padding: 0.75rem;
+    }
+    
+    .telegram-input-container {
+        padding: 0.75rem;
+    }
+    
+    #telegramMessageInput {
+        font-size: 0.9rem;
+        padding: 0.65rem;
+    }
+    
+    .telegram-send-btn {
+        padding: 0.65rem 1.25rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Темная тема */
+body.dark-theme .telegram-welcome-message {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+}
+
+/* ============================================
+   МЕНЮ НАСТРОЕК
+   ============================================ */
+
+/* Кнопка настроек */
+.settings-button {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.6rem;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    transition: var(--transition);
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse-subtle 3s ease-in-out infinite;
+}
+
+@keyframes pulse-subtle {
+    0%, 100% {
+        box-shadow: var(--shadow-lg);
+    }
+    50% {
+        box-shadow: 0 8px 32px rgba(37, 99, 235, 0.4);
+    }
+}
+
+.settings-button:hover {
+    transform: scale(1.1) rotate(90deg);
+    box-shadow: 0 12px 40px rgba(37, 99, 235, 0.5);
+}
+
+.settings-button:active {
+    transform: scale(0.95);
+}
+
+/* Модальное окно настроек */
+.settings-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.settings-modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.settings-modal-content {
+    background: var(--bg-primary);
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    max-width: 650px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: modalSlideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    transition: background-color 0.3s ease;
+}
+
+.settings-modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.settings-modal-content::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+}
+
+.settings-modal-content::-webkit-scrollbar-thumb {
+    background: var(--accent-color);
+    border-radius: 4px;
+}
+
+.settings-modal-header {
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+    color: white;
+    padding: 1.75rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 24px 24px 0 0;
+}
+
+.settings-modal-header h2 {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.settings-close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+
+.settings-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.settings-modal-body {
+    padding: 2rem;
+}
+
+/* Секция настроек */
+.settings-section {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.settings-section:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.settings-section h3 {
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.settings-option {
+    margin-top: 1rem;
+}
+
+/* Выбор темы */
+.theme-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.theme-option {
+    background: var(--bg-secondary);
+    border: 3px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.theme-option:hover {
+    border-color: var(--accent-color);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+
+.theme-option.active {
+    border-color: var(--accent-color);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.theme-preview {
+    width: 100%;
+    height: 80px;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-sm);
+}
+
+.light-preview {
+    background: #ffffff;
+}
+
+.dark-preview {
+    background: #0f172a;
+}
+
+.preview-header {
+    height: 25px;
+}
+
+.light-preview .preview-header {
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+}
+
+.dark-preview .preview-header {
+    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+}
+
+.preview-content {
+    flex: 1;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.light-preview .preview-content {
+    background: #f8f9fa;
+}
+
+.dark-preview .preview-content {
+    background: #1e293b;
+}
+
+.light-preview .preview-content::before,
+.light-preview .preview-content::after,
+.dark-preview .preview-content::before,
+.dark-preview .preview-content::after {
+    content: '';
+    height: 6px;
+    border-radius: 3px;
+}
+
+.light-preview .preview-content::before,
+.light-preview .preview-content::after {
+    background: #dee2e6;
+}
+
+.dark-preview .preview-content::before,
+.dark-preview .preview-content::after {
+    background: #334155;
+}
+
+.theme-option span {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+
+.toggle-switch input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 56px;
+    height: 32px;
+    background: var(--bg-tertiary);
+    border-radius: 16px;
+    transition: var(--transition);
+    flex-shrink: 0;
+    border: 2px solid var(--border-color);
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    background: white;
+    border-radius: 50%;
+    transition: var(--transition);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    border-color: #22c55e;
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(24px);
+}
+
+.toggle-label {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    flex: 1;
+}
+
+/* Кнопка дополнительных настроек снега */
+.ny-advanced-settings {
+    padding: 0.65rem 1.25rem;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    width: 100%;
+}
+
+.ny-advanced-settings:hover {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Выбор уровня анимаций */
+.animation-level-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.animation-level-option {
+    background: var(--bg-secondary);
+    border: 3px solid var(--border-color);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-align: left;
+}
+
+.animation-level-option:hover {
+    border-color: var(--accent-color);
+    transform: translateX(5px);
+    box-shadow: var(--shadow-sm);
+}
+
+.animation-level-option.active {
+    border-color: var(--accent-color);
+    background: linear-gradient(90deg, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.level-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.level-title {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 1.05rem;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.level-desc {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    display: block;
+}
+
+/* Кнопки действий */
+.settings-actions {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid var(--border-color);
+    display: flex;
+    justify-content: center;
+}
+
+.settings-reset-btn {
+    padding: 0.85rem 2rem;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.settings-reset-btn:hover {
+    background: #ef4444;
+    color: white;
+    border-color: #ef4444;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Уведомление настроек */
+.settings-notification {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transform: translateX(400px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    z-index: 10001;
+    pointer-events: none;
+    max-width: 350px;
+}
+
+.settings-notification.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+/* ============================================
+   УРОВНИ АНИМАЦИЙ
+   ============================================ */
+
+/* Максимальный уровень (по умолчанию - все анимации) */
+body.animations-max {
+    /* Все анимации включены - никаких ограничений */
+    --animation-state: enabled;
+}
+
+/* Средний уровень (упрощенные анимации) */
+body.animations-medium .page-header::before,
+body.animations-medium .part-title::after,
+body.animations-medium .theme-toggle::before,
+body.animations-medium .task-card::before,
+body.animations-medium .subject-card::before {
+    animation: none !important;
+}
+
+body.animations-medium .topic:hover,
+body.animations-medium .task-card:hover,
+body.animations-medium .subject-card:hover {
+    transform: translateY(-2px);
+}
+
+body.animations-medium {
+    --transition: all 0.2s ease;
+    --transition-smooth: all 0.2s ease;
+    --transition-bounce: all 0.2s ease;
+}
+
+/* Выключенные анимации */
+body.animations-off *,
+body.animations-off *::before,
+body.animations-off *::after {
+    animation: none !important;
+    transition: none !important;
+}
+
+/* Отключаем все трансформации при наведении */
+body.animations-off .topic:hover,
+body.animations-off .task-card:hover,
+body.animations-off .subject-card:hover,
+body.animations-off .definition-box:hover,
+body.animations-off .formula-box:hover,
+body.animations-off .remark-box:hover,
+body.animations-off .experiment-box:hover,
+body.animations-off .derivation-box:hover,
+body.animations-off .stat-card:hover,
+body.animations-off .theme-toggle:hover,
+body.animations-off .ny-toggle:hover,
+body.animations-off .settings-button:hover,
+body.animations-off .menu-toggle:hover,
+body.animations-off .scroll-to-top:hover,
+body.animations-off .theme-option:hover,
+body.animations-off .animation-level-option:hover,
+body.animations-off .task-toggle:hover,
+body.animations-off .toggle-derivation:hover,
+body.animations-off .hint-toggle:hover,
+body.animations-off .settings-reset-btn:hover,
+body.animations-off .ny-advanced-settings:hover,
+body.animations-off .settings-close-btn:hover,
+body.animations-off .close-sidebar:hover,
+body.animations-off .auth-submit:hover,
+body.animations-off .telegram-chat-button:hover,
+body.animations-off .telegram-send-btn:hover,
+body.animations-off .hint-save-btn:hover,
+body.animations-off .retry-button:hover {
+    transform: none !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+/* Разрешаем только изменение цвета фона для навигационных ссылок */
+body.animations-off .nav-link:hover {
+    transform: none !important;
+    /* Цвет фона изменяется через стандартные стили */
+}
+
+/* Адаптивность для настроек */
+@media (max-width: 768px) {
+    .settings-button {
+        width: 52px;
+        height: 52px;
+        font-size: 1.5rem;
+        top: 0.75rem;
+        right: 0.75rem;
+    }
+    
+    .settings-modal-content {
+        width: 95%;
+        max-height: 90vh;
+    }
+    
+    .settings-modal-header {
+        padding: 1.25rem 1.5rem;
+    }
+    
+    .settings-modal-header h2 {
+        font-size: 1.3rem;
+    }
+    
+    .settings-modal-body {
+        padding: 1.5rem;
+    }
+    
+    .theme-selector {
+        grid-template-columns: 1fr;
+    }
+    
+    .theme-preview {
+        height: 70px;
+    }
+    
+    .settings-notification {
+        bottom: 1rem;
+        right: 1rem;
+        left: 1rem;
+        max-width: none;
+        text-align: center;
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .settings-button {
+        width: 48px;
+        height: 48px;
+        font-size: 1.4rem;
+    }
+    
+    .settings-modal-header h2 {
+        font-size: 1.15rem;
+    }
+    
+    .settings-section h3 {
+        font-size: 1.05rem;
+    }
+    
+    .settings-close-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 1.1rem;
+    }
+    
+    .animation-level-option {
+        padding: 0.85rem 1rem;
+    }
+    
+    .level-icon {
+        font-size: 1.75rem;
+    }
+    
+    .level-title {
+        font-size: 0.95rem;
+    }
+    
+    .level-desc {
+        font-size: 0.8rem;
+    }
 }
