@@ -3782,8 +3782,6 @@ body.animations-off *::after {
     transition: none !important;
 }
 
-/* Отключаем все трансформации при наведении */
-body.animations-off .topic:hover,
 body.animations-off .task-card:hover,
 body.animations-off .subject-card:hover,
 body.animations-off .definition-box:hover,
@@ -3808,11 +3806,21 @@ body.animations-off .settings-close-btn:hover,
 body.animations-off .close-sidebar:hover,
 body.animations-off .auth-submit:hover,
 body.animations-off .telegram-chat-button:hover,
-body.animations-off .telegram-send-btn:hover,
 body.animations-off .hint-save-btn:hover,
 body.animations-off .retry-button:hover {
     transform: none !important;
     box-shadow: var(--shadow-sm) !important;
+}
+
+/* Отключаем изменения при наведении на content-section */
+body.animations-off .content-section:hover {
+    transform: none !important;
+}
+
+/* Отключаем изменения при наведении на topic */
+body.animations-off .topic:hover {
+    transform: none !important;
+    box-shadow: var(--shadow-md) !important;
 }
 
 /* Разрешаем только изменение цвета фона для навигационных ссылок */
