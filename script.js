@@ -459,6 +459,24 @@ document.addEventListener('keydown', (e) => {
 document.querySelectorAll('.formula-box').forEach(formulaBox => {
     formulaBox.style.position = 'relative';
     
+    // Сохраняем исходный LaTeX код до рендеринга KaTeX
+    const originalHTML = formulaBox.innerHTML;
+    let latexCode = '';
+    
+    // Извлекаем LaTeX код из исходного HTML
+    const latexBlocks = originalHTML.match(/\\\[([\s\S]*?)\\\]|\\\(([\s\S]*?)\\\)/g);
+    if (latexBlocks && latexBlocks.length > 0) {
+        latexCode = latexBlocks.map(block => {
+            // Убираем обрамляющие символы \[ и \] или \( и \)
+            return block.replace(/^\\[\[\]()]|\\[\[\]()]$/g, '').trim();
+        }).join('\n');
+    }
+    
+    // Сохраняем LaTeX код в data-атрибут
+    if (latexCode) {
+        formulaBox.dataset.latexCode = latexCode;
+    }
+    
     const copyBtn = document.createElement('button');
     copyBtn.textContent = '📋';
     copyBtn.style.cssText = `
@@ -489,10 +507,26 @@ document.querySelectorAll('.formula-box').forEach(formulaBox => {
     copyBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         
-        const formulaText = formulaBox.textContent
-            .replace('📋', '')
-            .replace(/\s+/g, ' ')
-            .trim();
+        // Используем сохраненный LaTeX код или пытаемся извлечь из HTML
+        let formulaText = formulaBox.dataset.latexCode || '';
+        
+        if (!formulaText) {
+            // Если не сохранили заранее, пытаемся извлечь из текущего HTML
+            const innerHTML = formulaBox.innerHTML;
+            const latexBlocks = innerHTML.match(/\\\[([\s\S]*?)\\\]|\\\(([\s\S]*?)\\\)/g);
+            
+            if (latexBlocks && latexBlocks.length > 0) {
+                formulaText = latexBlocks.map(block => {
+                    return block.replace(/^\\[\[\]()]|\\[\[\]()]$/g, '').trim();
+                }).join('\n');
+            } else {
+                // Fallback: используем textContent
+                formulaText = formulaBox.textContent
+                    .replace('📋', '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+            }
+        }
         
         navigator.clipboard.writeText(formulaText).then(() => {
             copyBtn.textContent = '✅';
