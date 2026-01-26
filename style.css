@@ -1,4 +1,323 @@
 /* ============================================
+   ОПОВЕЩЕНИЕ О НОВОЙ ФУНКЦИИ
+   ============================================ */
+
+.new-feature-modal {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius-lg);
+    padding: 2.5rem 2rem;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: var(--shadow-xl);
+    animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    text-align: center;
+}
+
+.new-feature-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: var(--transition);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.new-feature-close:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    transform: rotate(90deg);
+}
+
+.new-feature-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation: bounce 0.8s ease-in-out;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+
+.new-feature-modal h2 {
+    margin: 0 0 1.5rem 0;
+    color: var(--text-primary);
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.new-feature-content {
+    text-align: left;
+    margin-bottom: 1.5rem;
+}
+
+.new-feature-highlight {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
+    color: white;
+}
+
+.new-feature-emoji {
+    font-size: 2.5rem;
+}
+
+.new-feature-highlight h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.new-feature-content p {
+    color: var(--text-primary);
+    line-height: 1.6;
+    margin: 1rem 0;
+}
+
+.new-feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+}
+
+.new-feature-list li {
+    padding: 0.5rem 0;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.new-feature-list li::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--accent-color);
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.new-feature-hint {
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    border-left: 4px solid var(--accent-color);
+}
+
+.new-feature-button {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    margin-bottom: 0.75rem;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+}
+
+.new-feature-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+}
+
+.new-feature-button:active {
+    transform: translateY(0);
+}
+
+.new-feature-dismiss {
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.new-feature-dismiss:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+/* Темная тема */
+body.dark-theme .new-feature-modal {
+    background: var(--bg-primary);
+}
+
+body.dark-theme .new-feature-highlight {
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+}
+
+body.dark-theme .new-feature-list li::before {
+    background: var(--accent-color);
+}
+
+/* ============================================
+   КНОПКА ПРОВЕРКИ ЗНАНИЙ
+   ============================================ */
+
+.knowledge-check-btn {
+    display: block;
+    width: 100%;
+    padding: 0.6rem 0.85rem;
+    margin: 0.5rem 0;
+    background: var(--accent-color);
+    color: white;
+    border: 2px solid var(--accent-color);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-align: center;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+
+.knowledge-check-btn:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateX(2px);
+}
+
+.knowledge-check-btn:active {
+    transform: scale(0.98);
+}
+
+/* Тёмная тема */
+body.dark-theme .knowledge-check-btn {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+body.dark-theme .knowledge-check-btn:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+}
+
+/* Кнопки "Помню" / "Не помню" */
+.memory-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.memory-btn {
+    flex: 1;
+    max-width: 200px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.memory-btn-remember {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+}
+
+.memory-btn-remember:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+}
+
+.memory-btn-forget {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.memory-btn-forget:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+.memory-btn:active {
+    transform: scale(0.95);
+}
+
+.memory-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Статистика запоминания */
+.memory-stats {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+}
+
+.memory-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.memory-stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.memory-stat-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.memory-stat.remember .memory-stat-value {
+    color: #22c55e;
+}
+
+.memory-stat.forget .memory-stat-value {
+    color: #ef4444;
+}
+
+.memory-stat.total .memory-stat-value {
+    color: var(--accent-color);
+}
+
+/* ============================================
    ОСНОВНЫЕ СТИЛИ И ПЕРЕМЕННЫЕ
    ============================================ */
 
