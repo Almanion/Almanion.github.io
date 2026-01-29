@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Комикс: Как избежать конфликта</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .messenger-container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            max-height: 800px;
+        }
+
+        .messenger-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease-out;
+            display: flex;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.sent {
+            justify-content: flex-end;
+        }
+
+        .message.received {
+            justify-content: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            position: relative;
+        }
+
+        .message.sent .message-bubble {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.received .message-bubble {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .message.received .message-time {
+            text-align: left;
+        }
+
+        .input-area {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .rating-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .rating-btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 12px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .rating-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 18px;
+            width: fit-content;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #999;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .emoji {
+            font-size: 24px;
+            margin: 0 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="messenger-container">
+        <div class="messenger-header">
+            💬 Диалог: Как избежать конфликта
+        </div>
+        <div class="messages-container" id="messagesContainer">
+            <!-- Сообщения будут добавлены динамически -->
+        </div>
+        <div class="input-area" id="inputArea">
+            <div class="input-container">
+                <div class="rating-buttons" id="ratingButtons">
+                    <!-- Кнопки рейтинга появятся позже -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const messages = [
+            { text: "Привет! Слушай, у нас тут небольшая проблема...", sender: "received", delay: 1000 },
+            { text: "Привет! Что случилось?", sender: "sent", delay: 2000 },
+            { text: "Ты обещал помочь мне с проектом, но так и не появился. Я прождал тебя целый час!", sender: "received", delay: 3000 },
+            { text: "Ой, извини! У меня срочные дела были, забыл предупредить...", sender: "sent", delay: 4000 },
+            { text: "Забыл?! Это уже второй раз! Ты вообще считаешься с моим временем?", sender: "received", delay: 5000 },
+            { text: "Слушай, не нужно так резко. Я же извинился!", sender: "sent", delay: 6000 },
+            { text: "Извинился? Это не извинение, это отговорка!", sender: "received", delay: 7000 },
+            { text: "Хорошо, давай остановимся. Я понимаю, что подвел тебя, и мне действительно жаль.", sender: "sent", delay: 8000 },
+            { text: "Давай я прямо сейчас помогу тебе с проектом, и в следующий раз обязательно предупрежу заранее, если что-то изменится.", sender: "sent", delay: 9000 },
+            { text: "Хм... Спасибо, что признал ошибку. Это важно.", sender: "received", delay: 10000 },
+            { text: "Конечно! Я ценю твое время и нашу дружбу. Давай договоримся: если что-то пойдет не так, я сразу напишу или позвоню.", sender: "sent", delay: 11000 },
+            { text: "Хорошо, договорились. И я тоже постараюсь быть более терпеливым. Давай начнем работу?", sender: "received", delay: 12000 },
+            { text: "Отлично! Начинаем! 😊", sender: "sent", delay: 13000 },
+            { text: "Кстати, а какую оценку ты бы поставил этому диалогу? Мы смогли избежать конфликта благодаря открытому общению и взаимному уважению.", sender: "received", delay: 14000 },
+        ];
+
+        let currentMessageIndex = 0;
+        const messagesContainer = document.getElementById('messagesContainer');
+        const inputArea = document.getElementById('inputArea');
+        const ratingButtons = document.getElementById('ratingButtons');
+
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = text;
+            
+            const time = document.createElement('div');
+            time.className = 'message-time';
+            const now = new Date();
+            time.textContent = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            messageDiv.appendChild(bubble);
+            bubble.appendChild(time);
+            messagesContainer.appendChild(messageDiv);
+            
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message received';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = `
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function showRatingButtons() {
+            ratingButtons.innerHTML = '';
+            const ratings = [
+                { value: 5, emoji: '⭐⭐⭐⭐⭐', text: '5' },
+                { value: 4, emoji: '⭐⭐⭐⭐', text: '4' },
+                { value: 3, emoji: '⭐⭐⭐', text: '3' },
+                { value: 2, emoji: '⭐⭐', text: '2' },
+                { value: 1, emoji: '⭐', text: '1' }
+            ];
+
+            ratings.forEach(rating => {
+                const btn = document.createElement('button');
+                btn.className = 'rating-btn';
+                btn.innerHTML = `${rating.emoji} ${rating.text}`;
+                btn.onclick = () => handleRating(rating.value);
+                ratingButtons.appendChild(btn);
+            });
+        }
+
+        function handleRating(rating) {
+            hideTypingIndicator();
+            addMessage(`Я ставлю оценку ${rating}`, 'sent');
+            
+            setTimeout(() => {
+                showTypingIndicator();
+                setTimeout(() => {
+                    hideTypingIndicator();
+                    let response = '';
+                    
+                    if (rating >= 4) {
+                        response = `Спасибо за высокую оценку! Я рад, что диалог получился конструктивным. Главное - мы смогли найти общий язык и решить проблему без конфликта!`;
+                    } else if (rating === 3) {
+                        response = `Понятно, есть над чем поработать. Спасибо за честную оценку! В следующий раз постараюсь быть более внимательным и предупредительным.`;
+                    } else if(rating === 2){
+                        response = `2? 😒`;
+                    } else{
+                        response = `??? 😒`;
+                    }
+                    
+                    addMessage(response, 'received');
+                    
+                    setTimeout(() => {
+                        addMessage('Спасибо за участие в этом диалоге! Надеюсь, мы оба извлекли урок о важности открытого общения. 🙏', 'received');
+                    }, 2000);
+                }, 1500);
+            }, 500);
+            
+            ratingButtons.innerHTML = '';
+        }
+
+        function displayMessages() {
+            if (currentMessageIndex < messages.length) {
+                const message = messages[currentMessageIndex];
+                
+                setTimeout(() => {
+                    addMessage(message.text, message.sender);
+                    currentMessageIndex++;
+                    
+                    if (currentMessageIndex === messages.length) {
+                        setTimeout(() => {
+                            showRatingButtons();
+                        }, 1000);
+                    } else {
+                        displayMessages();
+                    }
+                }, message.delay);
+            }
+        }
+
+        // Начинаем показ сообщений
+        displayMessages();
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Как избежать конфликта - Комикс</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .comic-container {
+            max-width: 1200px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .comic-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: #f8f9fa;
+            border: 4px solid #333;
+            border-radius: 15px;
+            padding: 25px;
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: slideIn 0.6s ease-out;
+            animation-fill-mode: both;
+        }
+
+        .panel:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .panel:nth-child(1) { animation-delay: 0.1s; }
+        .panel:nth-child(2) { animation-delay: 0.2s; }
+        .panel:nth-child(3) { animation-delay: 0.3s; }
+        .panel:nth-child(4) { animation-delay: 0.4s; }
+        .panel:nth-child(5) { animation-delay: 0.5s; }
+        .panel:nth-child(6) { animation-delay: 0.6s; }
+
+        .panel-number {
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: #667eea;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            border: 3px solid #333;
+        }
+
+        .character {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .character-emoji {
+            font-size: 80px;
+            margin-bottom: 10px;
+            display: inline-block;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .character-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .speech-bubble {
+            background: white;
+            border: 3px solid #333;
+            border-radius: 20px;
+            padding: 15px;
+            margin-top: 15px;
+            position: relative;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .speech-bubble::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 30px;
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 15px solid #333;
+        }
+
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: 33px;
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-bottom: 12px solid white;
+        }
+
+        .speech-text {
+            color: #333;
+            font-size: 1em;
+            line-height: 1.6;
+        }
+
+        .tip-box {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            border: 3px solid #333;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .tip-title {
+            font-weight: bold;
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .tip-text {
+            color: #333;
+            font-size: 1.1em;
+            line-height: 1.8;
+        }
+
+        .navigation {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .nav-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid #333;
+            font-weight: bold;
+        }
+
+        .nav-button:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+
+        .nav-button:active {
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 768px) {
+            .comic-panel {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .character-emoji {
+                font-size: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="comic-container">
+        <h1>🎭 Как избежать конфликта 🎭</h1>
+        
+        <div class="comic-panel">
+            <div class="panel">
+                <div class="panel-number">1</div>
+                <div class="character">
+                    <div class="character-emoji">😤</div>
+                    <div class="character-name">Ситуация</div>
+                </div>
+                <div class="speech-bubble">
+                    <div class="speech-text">
+                        Два человека имеют разные мнения и начинают спорить. Напряжение растёт...
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-number">2</div>
+                <div class="character">
+                    <div class="character-emoji">🧘</div>
+                    <div class="character-name">Шаг 1: Дыши</div>
+                </div>
+                <div class="speech-bubble">
+                    <div class="speech-text">
+                        Сделай глубокий вдох. Пауза помогает успокоиться и подумать, прежде чем реагировать.
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-number">3</div>
+                <div class="character">
+                    <div class="character-emoji">👂</div>
+                    <div class="character-name">Шаг 2: Слушай</div>
+                </div>
+                <div class="speech-bubble">
+                    <div class="speech-text">
+                        Внимательно выслушай другую сторону. Постарайся понять их точку зрения, не перебивая.
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-number">4</div>
+                <div class="character">
+                    <div class="character-emoji">💬</div>
+                    <div class="character-name">Шаг 3: Говори мягко</div>
+                </div>
+                <div class="speech-bubble">
+                    <div class="speech-text">
+                        Выражай своё мнение спокойно и уважительно. Используй "Я-высказывания": "Я чувствую..." вместо "Ты всегда..."
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-number">5</div>
+                <div class="character">
+                    <div class="character-emoji">🤝</div>
+                    <div class="character-name">Шаг 4: Ищи компромисс</div>
+                </div>
+                <div class="speech-bubble">
+                    <div class="speech-text">
+                        Вместо того чтобы настаивать на своём, ищите решение, которое устроит обе стороны.
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-number">6</div>
+                <div class="character">
+                    <div class="character-emoji">✨</div>
+                    <div class="character-name">Результат</div>
+                </div>
+                <div class="speech-bubble">
+                    <div class="speech-text">
+                        Конфликт разрешён мирно! Обе стороны чувствуют себя услышанными и понятыми.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tip-box">
+            <div class="tip-title">💡 Помни:</div>
+            <div class="tip-text">
+                Конфликт - это не война. Это возможность лучше понять друг друга и найти общее решение.
+                Главное - сохранять уважение и искать компромисс, а не победу любой ценой.
+            </div>
+        </div>
+    </div>
+</body>
+</html>
