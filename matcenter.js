@@ -1516,6 +1516,22 @@ function filterAndDisplayTasks(filterId) {
     displayTasks(filteredTasks, containerId);
 }
 
+// Получить задачи для текущего фильтра
+function getTasksForCurrentFilter() {
+    switch (currentFilter) {
+        case 'all-tasks':
+            return allTasks;
+        case 'current-series':
+            return allTasks.filter(t => t.status === 'Н');
+        case 'postponed':
+            return allTasks.filter(t => t.status === 'От' || t.status === 'П');
+        case 'unsolved':
+            return allTasks.filter(t => t.status === 'Н' || t.status === 'От' || t.status === 'П');
+        default:
+            return allTasks;
+    }
+}
+
 // ============================================
 // ПОИСК
 // ============================================
@@ -1527,12 +1543,17 @@ function initMatCenterSearch() {
         searchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase().trim();
             
+            // Получаем задачи для текущего фильтра
+            const currentTasks = getTasksForCurrentFilter();
+            
             if (searchTerm === '') {
-                displayTasks(allTasks);
+                // Если поиск пустой, показываем все задачи текущего фильтра
+                displayTasks(currentTasks);
                 return;
             }
             
-            const filteredTasks = allTasks.filter(task => {
+            // Ищем только среди задач текущего фильтра
+            const filteredTasks = currentTasks.filter(task => {
                 const numberMatch = task.number.toString().includes(searchTerm);
                 const descriptionMatch = task.description.toLowerCase().includes(searchTerm);
                 return numberMatch || descriptionMatch;

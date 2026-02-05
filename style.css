@@ -2621,7 +2621,13 @@ input:focus:not(:focus-visible) {
     .menu-toggle,
     .scroll-to-top,
     .admin-hint-button,
-    .theme-ripple {
+    .theme-ripple,
+    .knowledge-check-btn,
+    .auth-overlay,
+    .snow-container,
+    .easter-eggs-container,
+    .theme-toggle,
+    .close-sidebar {
         display: none !important;
     }
     
@@ -2638,6 +2644,15 @@ input:focus:not(:focus-visible) {
     .page-header {
         background: none !important;
         color: black !important;
+    }
+    
+    .toggle-derivation {
+        display: none !important;
+    }
+    
+    .derivation-content {
+        display: block !important;
+        max-height: none !important;
     }
 }
 

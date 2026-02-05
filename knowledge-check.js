@@ -4,6 +4,7 @@
 
 // Структура тем с их ID
 const TOPICS = [
+    { id: 'main-definitions', name: '0. Главные определения' },
     { id: 'intro', name: '1. Введение в механику' },
     { id: 'kinematics', name: '2.1 Введение в кинематику' },
     { id: 'coordinates', name: '2.2 Координаты' },
@@ -22,7 +23,9 @@ const TOPICS = [
     { id: 'momentum', name: '3.5 Импульс тела. Импульс силы' },
     { id: 'reactive-motion', name: '3.6 Реактивное движение' },
     { id: 'center-of-mass', name: '3.7 Центр масс' },
-    { id: 'work-power', name: '3.8 Механическая работа. Мощность' }
+    { id: 'work-power', name: '3.8 Механическая работа. Мощность' },
+    { id: 'kinetic-energy', name: '3.9 Кинетическая энергия' },
+    { id: 'potential-energy', name: '3.10 Потенциальная энергия' }
 ];
 
 let selectedTopics = [];
@@ -117,8 +120,6 @@ function initKnowledgeCheck() {
     const startBtn = document.getElementById('startKnowledgeCheckBtn');
     const cancelBtn = document.getElementById('cancelTopicSelectionBtn');
     const closeBtn = document.getElementById('closeKnowledgeCheckBtn');
-    const prevBtn = document.getElementById('prevTermBtn');
-    const nextBtn = document.getElementById('nextTermBtn');
 
     // Создаём список тем для выбора
     createTopicSelectionList();
@@ -163,27 +164,11 @@ function initKnowledgeCheck() {
 
     if (closeBtn) {
         closeBtn.addEventListener('click', () => {
-            knowledgeCheckOverlay.classList.add('hidden');
-        });
-    }
-
-    if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
-            if (currentIndex > 0) {
-                currentIndex--;
-                showCurrentDefinition();
-            }
-        });
-    }
-
-    if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-            if (currentIndex < currentDefinitions.length - 1) {
-                currentIndex++;
-                showCurrentDefinition();
+            // Показываем финальные результаты перед закрытием
+            if (rememberCount + forgetCount > 0) {
+                showFinalStatistics();
             } else {
-                // Показываем результаты
-                showResults();
+                knowledgeCheckOverlay.classList.add('hidden');
             }
         });
     }
@@ -210,7 +195,7 @@ function createTopicSelectionList() {
     
     TOPICS.forEach(topic => {
         const label = document.createElement('label');
-        label.style.cssText = 'display: flex; align-items: center; padding: 0.75rem; margin-bottom: 0.5rem; cursor: pointer; border-radius: var(--border-radius); transition: background 0.2s;';
+        label.style.cssText = 'display: flex; align-items: center; padding: 0.75rem; margin-bottom: 0.5rem; cursor: pointer; border-radius: var(--border-radius-sm); transition: background 0.2s;';
         label.addEventListener('mouseenter', () => {
             label.style.background = 'var(--bg-secondary)';
         });
@@ -224,6 +209,8 @@ function createTopicSelectionList() {
         checkbox.id = `topic-${topic.id}`;
         checkbox.style.marginRight = '0.75rem';
         checkbox.style.cursor = 'pointer';
+        checkbox.style.width = '18px';
+        checkbox.style.height = '18px';
 
         checkbox.addEventListener('change', () => {
             if (checkbox.checked) {
@@ -239,6 +226,7 @@ function createTopicSelectionList() {
         const span = document.createElement('span');
         span.textContent = topic.name;
         span.style.flex = '1';
+        span.style.userSelect = 'none';
 
         label.appendChild(checkbox);
         label.appendChild(span);
@@ -416,32 +404,23 @@ function shuffleWithSpacing(array) {
 
 function showCurrentDefinition() {
     if (currentIndex >= currentDefinitions.length) {
-        showResults();
+        // Автоматически переходим к следующему кругу
+        nextDefinition();
         return;
     }
 
     const def = currentDefinitions[currentIndex];
     const content = document.getElementById('knowledgeCheckContent');
     const progress = document.getElementById('knowledgeCheckProgress');
-    const prevBtn = document.getElementById('prevTermBtn');
-    const nextBtn = document.getElementById('nextTermBtn');
 
     if (progress) {
         progress.innerHTML = `
             <div style="display: flex; align-items: center; gap: 1rem;">
-                <span style="font-weight: 600;">${currentIndex + 1} / ${currentDefinitions.length}</span>
+                <span style="font-weight: 600;">Круг ${totalRounds}</span>
                 <span style="color: #22c55e;">✓ ${rememberCount}</span>
                 <span style="color: #ef4444;">✗ ${forgetCount}</span>
             </div>
         `;
-    }
-
-    if (prevBtn) {
-        prevBtn.style.display = 'none'; // Скрываем кнопку "Назад" в умной системе
-    }
-
-    if (nextBtn) {
-        nextBtn.style.display = 'none'; // Скрываем стандартную кнопку "Далее"
     }
 
     revealed = false;
@@ -586,104 +565,17 @@ function nextDefinition() {
     if (currentIndex < currentDefinitions.length) {
         showCurrentDefinition();
     } else {
-        // Закончился круг - проверяем, нужно ли продолжать
-        checkIfNeedAnotherRound();
+        // Закончились определения - автоматически создаём новый круг
+        totalRounds++;
+        currentDefinitions = createSmartDefinitionList(allDefinitions);
+        currentIndex = 0;
+        showCurrentDefinition();
     }
 }
 
-function checkIfNeedAnotherRound() {
-    // Подсчитываем, сколько определений нужно повторить
-    let needRepeat = 0;
-    
-    allDefinitions.forEach(def => {
-        const stats = sessionMemoryStats[def.id];
-        if (stats && (stats.remember + stats.forget) > 0) {
-            const forgetRatio = stats.forget / (stats.remember + stats.forget);
-            // Если процент ошибок больше 30%, нужно повторить
-            if (forgetRatio > 0.3) {
-                needRepeat++;
-            }
-        }
-    });
-    
-    // Если есть что повторять и не прошли слишком много кругов (максимум 5)
-    if (needRepeat > 0 && totalRounds < 5) {
-        // Показываем промежуточные результаты и кнопку "Продолжить"
-        showRoundResults();
-    } else {
-        // Завершаем полностью
-        showFinalResults();
-    }
-}
 
-function showRoundResults() {
-    const content = document.getElementById('knowledgeCheckContent');
-    const progress = document.getElementById('knowledgeCheckProgress');
-    
-    if (progress) {
-        progress.innerHTML = `Круг ${totalRounds} завершён`;
-    }
-    
-    const successRate = rememberCount / Math.max(1, rememberCount + forgetCount);
-    const successPercent = Math.round(successRate * 100);
-    
-    // Подсчитываем, сколько определений с ошибками
-    let problemDefinitions = 0;
-    allDefinitions.forEach(def => {
-        const stats = sessionMemoryStats[def.id];
-        if (stats && (stats.remember + stats.forget) > 0) {
-            const forgetRatio = stats.forget / (stats.remember + stats.forget);
-            if (forgetRatio > 0.3) {
-                problemDefinitions++;
-            }
-        }
-    });
-    
-    if (content) {
-        content.innerHTML = `
-            <div style="text-align: center; padding: 2rem;">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">🔄</div>
-                <h3 style="margin-bottom: 1rem;">Круг ${totalRounds} завершён!</h3>
-                
-                <div class="memory-stats">
-                    <div class="memory-stat remember">
-                        <div class="memory-stat-value">${rememberCount}</div>
-                        <div class="memory-stat-label">Помню</div>
-                    </div>
-                    <div class="memory-stat forget">
-                        <div class="memory-stat-value">${forgetCount}</div>
-                        <div class="memory-stat-label">Не помню</div>
-                    </div>
-                    <div class="memory-stat total">
-                        <div class="memory-stat-value">${successPercent}%</div>
-                        <div class="memory-stat-label">Успешность</div>
-                    </div>
-                </div>
-                
-                <p style="color: var(--text-secondary); margin: 1.5rem 0;">
-                    ${problemDefinitions > 0 
-                        ? `Найдено ${problemDefinitions} ${getPluralForm(problemDefinitions, 'определение', 'определения', 'определений')} с ошибками. Рекомендуется повторить!`
-                        : 'Отличный результат! Можете завершить или продолжить для закрепления.'}
-                </p>
-                
-                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                    <button onclick="window.continueNextRound()" class="auth-submit" style="background: var(--accent-color); font-size: 1.1rem; padding: 0.85rem 1.5rem;">
-                        🔄 Продолжить (ещё круг)
-                    </button>
-                    <button onclick="window.showFinalResults()" class="auth-submit" style="background: var(--primary-color);">
-                        ✓ Завершить
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-}
 
-function continueNextRound() {
-    startNewRound();
-}
-
-function showFinalResults() {
+function showFinalStatistics() {
     const content = document.getElementById('knowledgeCheckContent');
     const progress = document.getElementById('knowledgeCheckProgress');
 
@@ -730,14 +622,18 @@ function showFinalResults() {
                     Всего проверено: <strong>${rememberCount + forgetCount}</strong> ответов
                 </p>
                 
-                <button onclick="window.restartKnowledgeCheck()" class="auth-submit" style="background: var(--accent-color);">
-                    Начать новую проверку
+                <button onclick="window.closeKnowledgeCheck()" class="auth-submit" style="background: var(--accent-color);">
+                    Закрыть
                 </button>
             </div>
         `;
     }
 }
 
+function closeKnowledgeCheck() {
+    const knowledgeCheckOverlay = document.getElementById('knowledgeCheckOverlay');
+    knowledgeCheckOverlay.classList.add('hidden');
+}
 
 function restartKnowledgeCheck() {
     const knowledgeCheckOverlay = document.getElementById('knowledgeCheckOverlay');
@@ -775,6 +671,5 @@ window.revealDefinition = revealDefinition;
 window.restartKnowledgeCheck = restartKnowledgeCheck;
 window.markAsRemember = markAsRemember;
 window.markAsForget = markAsForget;
-window.continueNextRound = continueNextRound;
-window.showFinalResults = showFinalResults;
+window.closeKnowledgeCheck = closeKnowledgeCheck;
 

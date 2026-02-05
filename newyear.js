@@ -936,4 +936,3 @@ function optimizeForMobile() {
         snowSettings.speed = Math.max(snowSettings.speed, 1.2); // Быстрее падают
     }
 }
-
