@@ -685,6 +685,18 @@ body.dark-theme .nav-section.other-subjects a:hover {
     opacity: 0.8;
 }
 
+/* Стили для кнопки зачёта в темной теме */
+body.dark-theme .nav-link[href="physics 07.02.html"] {
+    background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 100%) !important;
+    color: white !important;
+}
+
+body.dark-theme .nav-link[href="physics 07.02.html"]:hover {
+    background: linear-gradient(135deg, #5b21b6 0%, #6d28d9 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
 /* Кнопка меню (мобильные) */
 .menu-toggle {
     display: none;

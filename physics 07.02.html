@@ -54,7 +54,6 @@
                         </button>
                         <ul class="nav-submenu">
                             <li><a href="#work-def" class="nav-link">Механическая работа</a></li>
-                            <li><a href="#work-properties" class="nav-link">Свойства работы</a></li>
                             <li><a href="#variable-force-work" class="nav-link">Работа переменной силы</a></li>
                             <li><a href="#power" class="nav-link">Мощность</a></li>
                             <li><a href="#efficiency" class="nav-link">Коэффициент полезного действия</a></li>
@@ -85,6 +84,12 @@
                 </ul>
             </div>
             
+            <div class="nav-section">
+                <button id="knowledgeCheckBtn" class="knowledge-check-btn">
+                    📚 Проверка знаний
+                </button>
+            </div>
+            
             <div class="nav-section other-subjects">
                 <h3>Другие предметы</h3>
                 <ul>
@@ -99,6 +104,45 @@
 
     <!-- Кнопка открытия меню (для мобильных) -->
     <button class="menu-toggle" id="menuToggle">☰</button>
+
+    <!-- Модальное окно выбора тем -->
+    <div class="auth-overlay hidden" id="topicSelectionOverlay">
+        <div class="auth-modal" style="max-width: 600px;">
+            <h2 style="margin-bottom: 1.5rem;">Выберите темы для проверки</h2>
+            <div id="topicSelectionList" style="max-height: 400px; overflow-y: auto; margin-bottom: 1.5rem;">
+                <!-- Список тем будет добавлен через JavaScript -->
+            </div>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button id="selectAllTopicsBtn" class="auth-submit" style="flex: 1; min-width: 150px; background: var(--text-secondary);">
+                    Выбрать всё
+                </button>
+                <button id="startKnowledgeCheckBtn" class="auth-submit" style="flex: 1; min-width: 150px;">
+                    Начать проверку
+                </button>
+                <button id="cancelTopicSelectionBtn" class="auth-cancel" style="flex: 1; min-width: 150px;">
+                    Отмена
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно проверки знаний -->
+    <div class="auth-overlay hidden" id="knowledgeCheckOverlay">
+        <div class="auth-modal" id="knowledgeCheckModal" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0;">Проверка знаний</h2>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <span id="knowledgeCheckProgress" style="font-size: 0.9rem; color: var(--text-secondary);">
+                        1 / 0
+                    </span>
+                    <button id="closeKnowledgeCheckBtn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-primary);">✕</button>
+                </div>
+            </div>
+            <div id="knowledgeCheckContent" style="min-height: 300px;">
+                <!-- Контент проверки будет добавлен через JavaScript -->
+            </div>
+        </div>
+    </div>
 
     <!-- Основной контент -->
     <main class="main-content">
@@ -880,5 +924,6 @@
     <script src="newyear.js"></script>
     <script src="settings.js"></script>
     <script src="telegram.js"></script>
+    <script src="knowledge-check-exam.js"></script>
 </body>
 </html>
