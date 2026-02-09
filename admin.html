@@ -683,6 +683,132 @@
             border-color: var(--accent);
         }
 
+        /* ============ ПРОФИЛЬ ПОСЕТИТЕЛЯ ============ */
+        .profile-modal {
+            max-width: 580px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .profile-modal .modal-body {
+            overflow-y: auto;
+            flex: 1;
+            margin: 0 -2rem;
+            padding: 0 2rem;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .profile-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: rgba(59,130,246,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        .profile-info h3 {
+            font-size: 1.15rem;
+            margin: 0 0 0.2rem 0;
+        }
+
+        .profile-info .profile-id {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-family: monospace;
+        }
+
+        .profile-section {
+            margin-bottom: 1.25rem;
+        }
+
+        .profile-section-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.6rem;
+        }
+
+        .history-item {
+            padding: 0.65rem 0.75rem;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.03);
+            margin-bottom: 0.5rem;
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .history-item .history-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.3rem;
+        }
+
+        .history-item .history-type {
+            font-size: 0.75rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .history-type-msg {
+            background: rgba(59,130,246,0.15);
+            color: var(--accent-hover);
+        }
+
+        .history-type-poll {
+            background: rgba(167,139,250,0.15);
+            color: #a78bfa;
+        }
+
+        .history-type-vote {
+            background: rgba(34,197,94,0.15);
+            color: var(--success);
+        }
+
+        .history-type-dm-poll {
+            background: rgba(249,115,22,0.15);
+            color: #fb923c;
+        }
+
+        .history-item .history-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .history-item .history-text {
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .history-item .history-answer {
+            margin-top: 0.25rem;
+            font-size: 0.85rem;
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .history-empty {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 1rem;
+            font-size: 0.9rem;
+        }
+
         /* Скроллбар */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
@@ -853,11 +979,14 @@
             const name = prompt(`Имя для посетителя ${shortId}…\n(оставьте пустым чтобы убрать)`, currentName);
             if (name === null) return; // Отмена
 
-            if (name.trim() === '') {
-                db.ref('visitorNames/' + visitorId).remove();
-            } else {
-                db.ref('visitorNames/' + visitorId).set(name.trim());
-            }
+            const action = name.trim() === ''
+                ? db.ref('visitorNames/' + visitorId).remove()
+                : db.ref('visitorNames/' + visitorId).set(name.trim());
+
+            action.catch(err => {
+                console.error('Ошибка переименования:', err);
+                alert('❌ Ошибка: ' + err.message + '\n\nПроверь правила Firebase — нужен узел visitorNames');
+            });
         }
 
         // ============================================
@@ -1004,7 +1133,8 @@
                     <td><span class="page-badge">${escapeHtml(pageDisplay)}</span></td>
                     <td><span class="device-badge ${deviceClass}">${deviceLabel}</span></td>
                     <td style="color:var(--text-secondary)">${timeAgo}</td>
-                    <td>
+                    <td style="white-space:nowrap;">
+                        <button class="action-btn" onclick="openVisitorProfile('${vid}')" title="Профиль посетителя">📋</button>
                         <button class="action-btn" onclick="openDirectMessage('${vid}')" title="Написать сообщение">✉️</button>
                     </td>
                 </tr>`;
@@ -1035,6 +1165,180 @@
                 const data = snapshot.val() || {};
                 document.getElementById('todayCount').textContent = Object.keys(data).length;
             });
+        }
+
+        // ============================================
+        // ПРОФИЛЬ ПОСЕТИТЕЛЯ (ИСТОРИЯ)
+        // ============================================
+
+        function openVisitorProfile(visitorId) {
+            const name = getVisitorDisplayName(visitorId);
+            const displayName = name || visitorId.substring(0, 20) + '…';
+            const existing = document.querySelector('.modal-overlay');
+            if (existing) existing.remove();
+
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+
+            overlay.innerHTML = `
+                <div class="modal profile-modal">
+                    <div class="profile-header">
+                        <div class="profile-avatar">👤</div>
+                        <div class="profile-info">
+                            <h3>${escapeHtml(displayName)}
+                                <span class="edit-icon" style="cursor:pointer; font-size:0.8rem; opacity:0.5;" onclick="renameVisitor('${visitorId}')" title="Переименовать">✏️</span>
+                            </h3>
+                            <div class="profile-id">${escapeHtml(visitorId)}</div>
+                        </div>
+                    </div>
+                    <div class="modal-body" id="profileBody">
+                        <div class="history-empty pulse">Загрузка истории...</div>
+                    </div>
+                    <div class="modal-actions" style="padding-top:1rem; border-top: 1px solid var(--border);">
+                        <button class="btn btn-outline btn-sm" onclick="openDirectMessage('${visitorId}'); this.closest('.modal-overlay').remove();">✉️ Написать</button>
+                        <button class="btn btn-outline btn-sm" onclick="this.closest('.modal-overlay').remove()">Закрыть</button>
+                    </div>
+                </div>
+            `;
+
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) overlay.remove();
+            });
+
+            document.body.appendChild(overlay);
+            loadVisitorProfile(visitorId);
+        }
+
+        async function loadVisitorProfile(visitorId) {
+            const body = document.getElementById('profileBody');
+            if (!body) return;
+
+            const allItems = [];
+
+            try {
+                // 1. Загружаем отправленные личные сообщения
+                const dmSnap = await db.ref('directMessages/' + visitorId).once('value');
+                const dms = dmSnap.val() || {};
+                Object.entries(dms).forEach(([msgId, msg]) => {
+                    if (msg.type === 'poll') {
+                        allItems.push({
+                            time: msg.timestamp || 0,
+                            type: 'dm-poll',
+                            typeLabel: '📊 Личный опрос',
+                            text: msg.message,
+                            extra: 'Варианты: ' + (msg.options || []).join(', '),
+                            read: msg.read
+                        });
+                    } else {
+                        allItems.push({
+                            time: msg.timestamp || 0,
+                            type: 'msg',
+                            typeLabel: '💬 Сообщение',
+                            text: msg.message,
+                            extra: null,
+                            read: msg.read
+                        });
+                    }
+                });
+
+                // 2. Загружаем ответы на глобальные опросы
+                const pollsSnap = await db.ref('polls').once('value');
+                const polls = pollsSnap.val() || {};
+
+                for (const [pollId, poll] of Object.entries(polls)) {
+                    const respSnap = await db.ref('pollResponses/' + pollId + '/' + visitorId).once('value');
+                    const resp = respSnap.val();
+                    if (resp) {
+                        allItems.push({
+                            time: resp.timestamp || 0,
+                            type: 'vote',
+                            typeLabel: '✅ Ответ на опрос',
+                            text: poll.question || '(без вопроса)',
+                            extra: resp.optionText || (poll.options ? poll.options[resp.optionIndex] : '?'),
+                            read: null
+                        });
+                    }
+                }
+
+                // Сортируем по времени (новые сверху)
+                allItems.sort((a, b) => b.time - a.time);
+
+                if (allItems.length === 0) {
+                    body.innerHTML = '<div class="history-empty">Нет истории для этого посетителя</div>';
+                    return;
+                }
+
+                // Группируем: сообщения и ответы
+                const messagesHtml = allItems.filter(i => i.type === 'msg' || i.type === 'dm-poll').map(item => renderHistoryItem(item)).join('');
+                const votesHtml = allItems.filter(i => i.type === 'vote').map(item => renderHistoryItem(item)).join('');
+
+                let html = '';
+
+                if (messagesHtml) {
+                    html += `<div class="profile-section">
+                        <div class="profile-section-title">📨 Отправленные сообщения (${allItems.filter(i => i.type === 'msg' || i.type === 'dm-poll').length})</div>
+                        ${messagesHtml}
+                    </div>`;
+                }
+
+                if (votesHtml) {
+                    html += `<div class="profile-section">
+                        <div class="profile-section-title">📊 Ответы на опросы (${allItems.filter(i => i.type === 'vote').length})</div>
+                        ${votesHtml}
+                    </div>`;
+                }
+
+                body.innerHTML = html;
+
+            } catch (err) {
+                console.error('Ошибка загрузки профиля:', err);
+                body.innerHTML = `<div class="history-empty">❌ Ошибка: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        function renderHistoryItem(item) {
+            const time = item.time ? formatDate(item.time) : '—';
+            const typeClass = 'history-type-' + item.type.replace('-', '-');
+            const readBadge = item.read === true ? ' ✓' : (item.read === false ? ' (не прочитано)' : '');
+
+            let extraHtml = '';
+            if (item.type === 'vote') {
+                extraHtml = `<div class="history-answer">→ ${escapeHtml(item.extra)}</div>`;
+            } else if (item.extra) {
+                extraHtml = `<div style="font-size:0.8rem; color:var(--text-secondary); margin-top:0.25rem;">${escapeHtml(item.extra)}</div>`;
+            }
+
+            return `
+                <div class="history-item">
+                    <div class="history-meta">
+                        <span class="history-type ${typeClass}">${item.typeLabel}${readBadge}</span>
+                        <span class="history-time">${time}</span>
+                    </div>
+                    <div class="history-text">${escapeHtml(item.text)}</div>
+                    ${extraHtml}
+                </div>
+            `;
+        }
+
+        function formatDate(timestamp) {
+            const d = new Date(timestamp);
+            const now = new Date();
+            const day = d.getDate().toString().padStart(2, '0');
+            const month = (d.getMonth() + 1).toString().padStart(2, '0');
+            const hours = d.getHours().toString().padStart(2, '0');
+            const mins = d.getMinutes().toString().padStart(2, '0');
+
+            if (d.toDateString() === now.toDateString()) {
+                return `Сегодня, ${hours}:${mins}`;
+            }
+
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            if (d.toDateString() === yesterday.toDateString()) {
+                return `Вчера, ${hours}:${mins}`;
+            }
+
+            return `${day}.${month}, ${hours}:${mins}`;
         }
 
         // ============================================
@@ -1125,10 +1429,12 @@
 
         function sendDirectMessage(visitorId) {
             const isMessageMode = document.getElementById('dmMessageForm').style.display !== 'none';
+            const sendBtn = document.querySelector('.modal-actions .btn-primary');
+            if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Отправка...'; }
 
             if (isMessageMode) {
                 const text = document.getElementById('dmText').value.trim();
-                if (!text) { alert('Введите текст'); return; }
+                if (!text) { alert('Введите текст'); if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Отправить'; } return; }
 
                 db.ref('directMessages/' + visitorId).push({
                     message: text,
@@ -1136,8 +1442,13 @@
                     timestamp: firebase.database.ServerValue.TIMESTAMP,
                     read: false
                 }).then(() => {
-                    document.querySelector('.modal-overlay').remove();
+                    const overlay = document.querySelector('.modal-overlay');
+                    if (overlay) overlay.remove();
                     alert('✅ Сообщение отправлено!');
+                }).catch(err => {
+                    console.error('Ошибка отправки:', err);
+                    alert('❌ Ошибка: ' + err.message + '\n\nПроверь правила Firebase — нужен узел directMessages');
+                    if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Отправить'; }
                 });
             } else {
                 const question = document.getElementById('dmPollQuestion').value.trim();
@@ -1147,8 +1458,8 @@
                     if (input.value.trim()) options.push(input.value.trim());
                 });
 
-                if (!question) { alert('Введите вопрос'); return; }
-                if (options.length < 2) { alert('Минимум 2 варианта'); return; }
+                if (!question) { alert('Введите вопрос'); if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Отправить'; } return; }
+                if (options.length < 2) { alert('Минимум 2 варианта'); if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Отправить'; } return; }
 
                 db.ref('directMessages/' + visitorId).push({
                     message: question,
@@ -1158,8 +1469,13 @@
                     timestamp: firebase.database.ServerValue.TIMESTAMP,
                     read: false
                 }).then(() => {
-                    document.querySelector('.modal-overlay').remove();
+                    const overlay = document.querySelector('.modal-overlay');
+                    if (overlay) overlay.remove();
                     alert('✅ Опрос отправлен посетителю!');
+                }).catch(err => {
+                    console.error('Ошибка отправки:', err);
+                    alert('❌ Ошибка: ' + err.message + '\n\nПроверь правила Firebase — нужен узел directMessages');
+                    if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Отправить'; }
                 });
             }
         }
