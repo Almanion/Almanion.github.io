@@ -137,14 +137,14 @@
     cursor: pointer;
     transition: var(--transition);
     margin-bottom: 0.75rem;
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 4px 15px rgba(var(--accent-rgb), 0.3);
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
 }
 
 .new-feature-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+    box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.4);
 }
 
 .new-feature-button:active {
@@ -338,6 +338,7 @@ body.dark-theme .knowledge-check-btn:hover {
     --text-secondary: #6c757d;
     --accent-color: #2563eb;
     --accent-hover: #1e40af;
+    --accent-rgb: 37, 99, 235;
     --border-color: #dee2e6;
     
     /* Цвета для блоков */
@@ -347,8 +348,8 @@ body.dark-theme .knowledge-check-btn:hover {
     --formula-border: #2563eb;
     --remark-bg: #fef3c7;
     --remark-border: #f59e0b;
-    --experiment-bg: #fef2f2;
-    --experiment-border: #ef4444;
+    --experiment-bg: #f5f3ff;
+    --experiment-border: #8b5cf6;
     --derivation-bg: #dcfce7;
     --derivation-border: #22c55e;
     
@@ -364,7 +365,7 @@ body.dark-theme .knowledge-check-btn:hover {
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
     --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.15);
-    --shadow-hover: 0 6px 24px rgba(37, 99, 235, 0.2);
+    --shadow-hover: 0 6px 24px rgba(var(--accent-rgb), 0.2);
     
     /* Анимации - более плавные */
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -378,9 +379,10 @@ body.dark-theme {
     --bg-secondary: #141b27;
     --bg-tertiary: #334155;
     --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
+    --text-secondary: #a8b8cc;
     --accent-color: #3b82f6;
     --accent-hover: #60a5fa;
+    --accent-rgb: 59, 130, 246;
     --border-color: #334155;
     
     /* Цвета для блоков - темная тема */
@@ -390,8 +392,8 @@ body.dark-theme {
     --formula-border: #60a5fa;
     --remark-bg: #4a3f1f;
     --remark-border: #fbbe24a2;
-    --experiment-bg: #5a292998;
-    --experiment-border: #f87171;
+    --experiment-bg: #2e106598;
+    --experiment-border: #a78bfa;
     --derivation-bg: #1f3f2f;
     --derivation-border: #4ade80;
     
@@ -400,14 +402,20 @@ body.dark-theme {
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
     --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.6);
-    --shadow-hover: 0 6px 24px rgba(59, 130, 246, 0.3);
+    --shadow-hover: 0 6px 24px rgba(var(--accent-rgb), 0.3);
 }
+
 
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
 }
 
 body {
@@ -500,7 +508,7 @@ body.sidebar-open {
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
-    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.2);
+    box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.2);
 }
 
 .sidebar-header h2 {
@@ -558,7 +566,7 @@ body.sidebar-open {
 .search-box input:focus {
     outline: none;
     border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
 }
 
 /* Навигационное меню */
@@ -607,7 +615,7 @@ body.sidebar-open {
 }
 
 .nav-link.active {
-    background: linear-gradient(90deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0.05));
+    background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.12), rgba(var(--accent-rgb), 0.05));
     border-left-color: var(--accent-color);
     color: var(--accent-color);
     font-weight: 600;
@@ -964,7 +972,6 @@ body.sidebar-collapsed .main-content {
 
 .topic:hover {
     box-shadow: var(--shadow-lg);
-    transform: translateY(-2px);
 }
 
 .topic-title {
@@ -986,7 +993,7 @@ body.sidebar-collapsed .main-content {
     color: var(--accent-color);
     margin: 2.5rem 0 1.25rem;
     padding: 1.25rem 1.75rem;
-    background: linear-gradient(90deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0.05));
+    background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.12), rgba(var(--accent-rgb), 0.05));
     border-left: 5px solid var(--accent-color);
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
     font-weight: 700;
@@ -998,7 +1005,7 @@ body.sidebar-collapsed .main-content {
 .subsection-title:hover {
     box-shadow: var(--shadow-md);
     transform: translateX(4px);
-    background: linear-gradient(90deg, rgba(37, 99, 235, 0.15), rgba(37, 99, 235, 0.08));
+    background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.15), rgba(var(--accent-rgb), 0.08));
 }
 
 /* ============================================
@@ -1250,7 +1257,7 @@ em {
 
 /* KaTeX формулы */
 .katex {
-    font-size: 1.1em;
+    font-size: 1.18em;
 }
 
 .katex-display {
@@ -1444,9 +1451,15 @@ em {
         height: 45px;
     }
     
-    /* Улучшение отображения формул на мобильных */
+    /* Улучшение отображения контент-блоков на мобильных */
+    .formula-box,
+    .definition-box,
+    .remark-box,
+    .experiment-box {
+        padding: 1.1rem;
+    }
+    
     .formula-box {
-        padding: 1rem;
         overflow-x: auto;
     }
     
@@ -2744,6 +2757,7 @@ input:focus:not(:focus-visible) {
 
 @media print {
     .sidebar,
+    .sidebar-overlay,
     .menu-toggle,
     .scroll-to-top,
     .admin-hint-button,
@@ -2755,18 +2769,26 @@ input:focus:not(:focus-visible) {
     .theme-toggle,
     .close-sidebar,
     .sidebar-collapse-btn,
-    .sidebar-expand-btn {
+    .sidebar-expand-btn,
+    .progress-bar,
+    .settings-button,
+    .settings-button-sidebar,
+    .telegram-notification,
+    .ny-toggle,
+    .formula-copy-btn {
         display: none !important;
     }
     
     .main-content {
         margin-left: 0;
         max-width: 100%;
+        padding: 0;
     }
     
     .topic {
         page-break-inside: avoid;
         box-shadow: none;
+        border: 1px solid #ddd;
     }
     
     .page-header {
@@ -2781,6 +2803,44 @@ input:focus:not(:focus-visible) {
     .derivation-content {
         display: block !important;
         max-height: none !important;
+    }
+    
+    /* Контент-боксы при печати */
+    .formula-box,
+    .definition-box,
+    .remark-box,
+    .experiment-box {
+        page-break-inside: avoid;
+        box-shadow: none !important;
+        border: 1px solid #999 !important;
+        background: #fff !important;
+        color: #000 !important;
+    }
+    
+    .formula-box::before,
+    .definition-box::before,
+    .experiment-box::before {
+        color: #333 !important;
+    }
+    
+    /* Изображения при печати */
+    img {
+        max-width: 100% !important;
+        page-break-inside: avoid;
+    }
+    
+    /* Цвет текста для печати */
+    body,
+    .topic,
+    .topic-title,
+    .subsection-title,
+    p, li, span {
+        color: #000 !important;
+    }
+    
+    a {
+        color: #000 !important;
+        text-decoration: underline;
     }
 }
 
@@ -3793,13 +3853,13 @@ body.dark-theme .telegram-welcome-message {
         box-shadow: var(--shadow-lg);
     }
     50% {
-        box-shadow: 0 8px 32px rgba(37, 99, 235, 0.4);
+        box-shadow: 0 8px 32px rgba(var(--accent-rgb), 0.4);
     }
 }
 
 .settings-button:hover {
     transform: scale(1.1) rotate(90deg);
-    box-shadow: 0 12px 40px rgba(37, 99, 235, 0.5);
+    box-shadow: 0 12px 40px rgba(var(--accent-rgb), 0.5);
 }
 
 .settings-button:active {
@@ -3952,8 +4012,8 @@ body.dark-theme .telegram-welcome-message {
 
 .theme-option.active {
     border-color: var(--accent-color);
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1), rgba(var(--accent-rgb), 0.05));
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2);
 }
 
 .theme-preview {
@@ -4134,8 +4194,8 @@ body.dark-theme .telegram-welcome-message {
 
 .animation-level-option.active {
     border-color: var(--accent-color);
-    background: linear-gradient(90deg, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.1), rgba(var(--accent-rgb), 0.05));
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
 }
 
 .level-icon {

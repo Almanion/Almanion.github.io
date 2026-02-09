@@ -5,7 +5,7 @@
 // Настройки по умолчанию
 const defaultSettings = {
     theme: 'light',           // light или dark
-    newYearMode: true,        // true или false
+    newYearMode: false,        // true или false
     animationLevel: 'max'     // max, medium, off
 };
 

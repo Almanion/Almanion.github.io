@@ -130,39 +130,83 @@ function initNavigation() {
         });
     });
     
-    // Автоматическое выделение активной секции при скролле
-    let scrollTimeout;
+    // Автоматическое выделение активной секции через IntersectionObserver
+    let currentSection = '';
     
-    function updateActiveSection() {
-        let currentSection = '';
-        
-        topics.forEach(topic => {
-            // Пропускаем элементы без id (например, .content-section)
-            const id = topic.getAttribute('id');
-            if (!id) return;
-            
-            // getBoundingClientRect().top — точная позиция относительно viewport
-            const rect = topic.getBoundingClientRect();
-            if (rect.top <= 120) {
-                currentSection = id;
-            }
-        });
+    function setActiveLink(sectionId) {
+        if (currentSection === sectionId) return;
+        currentSection = sectionId;
         
         navLinks.forEach(link => {
             link.classList.remove('active');
             
-            if (link.getAttribute('href') === `#${currentSection}`) {
+            if (link.getAttribute('href') === `#${sectionId}`) {
                 link.classList.add('active');
+                
+                // Автоматически раскрываем группу навигации с активной ссылкой
+                const parentGroup = link.closest('.nav-group');
+                if (parentGroup && !parentGroup.classList.contains('open')) {
+                    parentGroup.classList.add('open');
+                }
             }
         });
     }
     
-    window.addEventListener('scroll', () => {
-        if (scrollTimeout) {
-            cancelAnimationFrame(scrollTimeout);
+    // Собираем только секции с id
+    const observedTopics = Array.from(topics).filter(t => t.getAttribute('id'));
+    
+    if ('IntersectionObserver' in window && observedTopics.length > 0) {
+        const observer = new IntersectionObserver((entries) => {
+            // Находим самую верхнюю видимую секцию
+            let bestEntry = null;
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    if (!bestEntry || entry.boundingClientRect.top < bestEntry.boundingClientRect.top) {
+                        bestEntry = entry;
+                    }
+                }
+            });
+            
+            if (bestEntry) {
+                setActiveLink(bestEntry.target.getAttribute('id'));
+            } else {
+                // Если ни одна секция не видна — берём ближайшую выше viewport
+                let closest = null;
+                let closestDist = Infinity;
+                observedTopics.forEach(topic => {
+                    const rect = topic.getBoundingClientRect();
+                    if (rect.top <= 120 && (120 - rect.top) < closestDist) {
+                        closestDist = 120 - rect.top;
+                        closest = topic;
+                    }
+                });
+                if (closest) {
+                    setActiveLink(closest.getAttribute('id'));
+                }
+            }
+        }, {
+            rootMargin: '-80px 0px -60% 0px',
+            threshold: [0, 0.1]
+        });
+        
+        observedTopics.forEach(topic => observer.observe(topic));
+    } else {
+        // Fallback для старых браузеров
+        let scrollTimeout;
+        function updateActiveSection() {
+            let section = '';
+            observedTopics.forEach(topic => {
+                if (topic.getBoundingClientRect().top <= 120) {
+                    section = topic.getAttribute('id');
+                }
+            });
+            setActiveLink(section);
         }
-        scrollTimeout = requestAnimationFrame(updateActiveSection);
-    }, { passive: true });
+        window.addEventListener('scroll', () => {
+            if (scrollTimeout) cancelAnimationFrame(scrollTimeout);
+            scrollTimeout = requestAnimationFrame(updateActiveSection);
+        }, { passive: true });
+    }
 }
 
 // ============================================
@@ -176,11 +220,16 @@ function initSearch() {
     // Поддерживаем оба варианта: .topic и .content-section
     const topics = document.querySelectorAll('.topic, .content-section');
     
+    let searchDebounce = null;
+    
     searchInput.addEventListener('input', (e) => {
         const searchTerm = e.target.value.toLowerCase().trim();
         
+        // Отменяем предыдущий таймер
+        if (searchDebounce) clearTimeout(searchDebounce);
+        
         if (searchTerm === '') {
-            // Показываем все топики и убираем подсветку
+            // Показываем все топики и убираем подсветку сразу
             topics.forEach(topic => {
                 topic.style.display = 'block';
                 removeHighlights(topic);
@@ -188,17 +237,20 @@ function initSearch() {
             return;
         }
         
-        topics.forEach(topic => {
-            const text = topic.textContent.toLowerCase();
-            
-            if (text.includes(searchTerm)) {
-                topic.style.display = 'block';
-                highlightText(topic, searchTerm);
-            } else {
-                topic.style.display = 'none';
-                removeHighlights(topic);
-            }
-        });
+        // Дебаунс 200мс для поиска
+        searchDebounce = setTimeout(() => {
+            topics.forEach(topic => {
+                const text = topic.textContent.toLowerCase();
+                
+                if (text.includes(searchTerm)) {
+                    topic.style.display = 'block';
+                    highlightText(topic, searchTerm);
+                } else {
+                    topic.style.display = 'none';
+                    removeHighlights(topic);
+                }
+            });
+        }, 200);
     });
 }
 
@@ -430,7 +482,8 @@ function openMobileMenu() {
     if (window.innerWidth <= 768) {
         document.body.classList.add('sidebar-open');
         // Исправление высоты на мобильных (iOS Safari и т.п.)
-        sidebar.style.height = window.innerHeight + 'px';
+        const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        sidebar.style.height = vh + 'px';
     }
 }
 
@@ -451,18 +504,33 @@ function closeMobileMenu() {
     document.body.classList.remove('sidebar-open');
 }
 
-// Обновляем высоту сайдбара при изменении размера окна (поворот экрана)
-window.addEventListener('resize', () => {
+// Обновление высоты сайдбара при изменении размера / повороте экрана
+function updateSidebarHeight() {
     const sidebar = document.getElementById('sidebar');
     if (sidebar && sidebar.classList.contains('open') && window.innerWidth <= 768) {
-        sidebar.style.height = window.innerHeight + 'px';
+        // Используем visualViewport.height если доступно (точнее на iOS Safari)
+        const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        sidebar.style.height = vh + 'px';
     }
     // На десктопе убираем collapsed при переключении на мобильный вид
     if (window.innerWidth <= 768) {
-        if (sidebar) sidebar.classList.remove('collapsed');
+        if (document.getElementById('sidebar')) {
+            document.getElementById('sidebar').classList.remove('collapsed');
+        }
         document.body.classList.remove('sidebar-collapsed');
     }
+}
+
+window.addEventListener('resize', updateSidebarHeight);
+window.addEventListener('orientationchange', () => {
+    // Небольшая задержка, чтобы браузер успел обновить размеры
+    setTimeout(updateSidebarHeight, 150);
 });
+
+// Обновление при изменении визуального viewport (клавиатура на мобильных и т.п.)
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', updateSidebarHeight);
+}
 
 // ============================================
 // СВОРАЧИВАНИЕ САЙДБАРА (ДЕСКТОП)
@@ -773,11 +841,13 @@ updateProgress();
 // ============================================
 
 window.addEventListener('beforeunload', () => {
-    localStorage.setItem('scrollPosition', window.pageYOffset);
+    const key = 'scrollPosition_' + location.pathname;
+    localStorage.setItem(key, window.pageYOffset);
 });
 
 window.addEventListener('load', () => {
-    const savedPosition = localStorage.getItem('scrollPosition');
+    const key = 'scrollPosition_' + location.pathname;
+    const savedPosition = localStorage.getItem(key);
     if (savedPosition) {
         window.scrollTo(0, parseInt(savedPosition));
     }
