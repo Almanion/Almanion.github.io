@@ -265,6 +265,101 @@
     }
 
     // ============================================
+    // ЛИЧНЫЕ СООБЩЕНИЯ ОТ АДМИНИСТРАТОРА
+    // ============================================
+
+    function listenForDirectMessages() {
+        const dmRef = db.ref('directMessages/' + visitorId);
+
+        dmRef.on('child_added', (snapshot) => {
+            const msg = snapshot.val();
+            const msgId = snapshot.key;
+            if (!msg || msg.read) return;
+
+            // Помечаем как прочитанное
+            dmRef.child(msgId).update({ read: true, readAt: firebase.database.ServerValue.TIMESTAMP });
+
+            // Если это опрос — показываем как опрос
+            if (msg.options && msg.options.length > 0) {
+                showPoll('dm_' + msgId, {
+                    question: msg.message,
+                    description: msg.description || null,
+                    options: msg.options
+                });
+            } else {
+                // Простое сообщение — показываем уведомление
+                showDirectMessage(msgId, msg);
+            }
+        });
+    }
+
+    function showDirectMessage(msgId, msg) {
+        const existing = document.getElementById('almanion-dm-overlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'almanion-dm-overlay';
+        overlay.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6); z-index: 100000;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem; backdrop-filter: blur(4px);
+            animation: pollFadeIn 0.3s ease;
+        `;
+
+        const isDark = document.body.classList.contains('dark-theme');
+
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            background: ${isDark ? '#1e293b' : '#ffffff'};
+            border-radius: 16px; padding: 2rem; max-width: 480px; width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            color: ${isDark ? '#f1f5f9' : '#1e293b'};
+            text-align: center;
+        `;
+
+        modal.innerHTML = `
+            <div style="font-size: 2rem; margin-bottom: 1rem;">💬</div>
+            <h3 style="margin: 0 0 1rem 0; font-size: 1.2rem; font-weight: 700;">Сообщение от администратора</h3>
+            <p style="margin: 0 0 1.5rem 0; font-size: 1rem; line-height: 1.6; color: ${isDark ? '#cbd5e1' : '#374151'};">${msg.message.replace(/\n/g, '<br>')}</p>
+            <button style="
+                padding: 0.7rem 2rem; border: none; border-radius: 10px;
+                background: #3b82f6; color: white; font-size: 1rem;
+                cursor: pointer; font-family: inherit; font-weight: 600;
+            ">Понятно</button>
+        `;
+
+        modal.querySelector('button').addEventListener('click', () => {
+            overlay.style.opacity = '0';
+            overlay.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => overlay.remove(), 300);
+        });
+
+        // Добавляем CSS анимацию если нет
+        if (!document.getElementById('poll-animation-style')) {
+            const style = document.createElement('style');
+            style.id = 'poll-animation-style';
+            style.textContent = `
+                @keyframes pollFadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes pollSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+            `;
+            document.head.appendChild(style);
+        }
+        modal.style.animation = 'pollSlideUp 0.3s ease';
+
+        overlay.appendChild(modal);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.style.opacity = '0';
+                overlay.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => overlay.remove(), 300);
+            }
+        });
+
+        document.body.appendChild(overlay);
+    }
+
+    // ============================================
     // ЗАПУСК
     // ============================================
 
@@ -273,6 +368,7 @@
             trackPresence();
             registerVisitor();
             listenForPolls();
+            listenForDirectMessages();
         } catch (e) {
             console.warn('⚠️ Ошибка инициализации аналитики:', e);
         }

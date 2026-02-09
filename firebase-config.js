@@ -17,28 +17,44 @@
 // {
 //   "rules": {
 //     "presence": {
+//       ".read": true,
 //       "$uid": {
-//         ".read": true,
-//         ".write": "auth != null || $uid === 'anonymous_' + root.child('presence').child($uid).child('visitorId').val()"
-//       },
-//       ".read": true
+//         ".write": true
+//       }
 //     },
 //     "polls": {
 //       ".read": true,
 //       ".write": "auth != null"
 //     },
 //     "pollResponses": {
+//       ".read": true,
 //       "$pollId": {
 //         "$visitorId": {
-//           ".read": true,
 //           ".write": true
-//         },
-//         ".read": true
+//         }
 //       }
 //     },
 //     "visitors": {
 //       ".read": "auth != null",
 //       ".write": true
+//     },
+//     "dailyStats": {
+//       ".read": "auth != null",
+//       ".write": true
+//     },
+//     "visitorNames": {
+//       ".read": "auth != null",
+//       ".write": "auth != null"
+//     },
+//     "directMessages": {
+//       ".read": true,
+//       ".write": "auth != null",
+//       "$visitorId": {
+//         "$msgId": {
+//           "read": { ".write": true },
+//           "readAt": { ".write": true }
+//         }
+//       }
 //     }
 //   }
 // }
