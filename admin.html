@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель | Almanion</title>
+    <meta name="robots" content="noindex, nofollow">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #0f172a;
+            --text: #f1f5f9;
+            --text-secondary: #a8b8cc;
+            --accent: #3b82f6;
+            --accent-hover: #60a5fa;
+            --border: #334155;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ============ ЭКРАН ВХОДА ============ */
+        .login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .login-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+
+        .login-card h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-card p {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-input);
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #16a34a;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 2px solid var(--border);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--text-secondary);
+            color: var(--text);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .login-error {
+            color: var(--danger);
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        /* ============ DASHBOARD ============ */
+        .dashboard {
+            display: none;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        .dashboard-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .dashboard-header h1 {
+            font-size: 1.6rem;
+        }
+
+        .dashboard-header .header-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        /* ============ СТАТИСТИКА ============ */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 14px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 3px;
+        }
+
+        .stat-card.online::before { background: var(--success); }
+        .stat-card.unique::before { background: var(--accent); }
+        .stat-card.today::before { background: var(--warning); }
+        .stat-card.pages::before { background: #a78bfa; }
+
+        .stat-card .stat-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .stat-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 0.3rem;
+        }
+
+        .stat-card.online .stat-value { color: var(--success); }
+        .stat-card.unique .stat-value { color: var(--accent); }
+        .stat-card.today .stat-value { color: var(--warning); }
+        .stat-card.pages .stat-value { color: #a78bfa; }
+
+        .stat-card .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* ============ СЕКЦИИ ============ */
+        .section {
+            background: var(--bg-card);
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .section-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* ============ ТАБЛИЦА ОНЛАЙН ============ */
+        .online-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .online-table th, .online-table td {
+            padding: 0.7rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        .online-table th {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .online-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .online-table .device-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .device-mobile {
+            background: rgba(249, 115, 22, 0.15);
+            color: #fb923c;
+        }
+
+        .device-desktop {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+        }
+
+        .page-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.05);
+            font-size: 0.85rem;
+        }
+
+        .no-data {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 2rem;
+            font-size: 0.95rem;
+        }
+
+        /* ============ СОЗДАНИЕ ОПРОСА ============ */
+        .poll-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .option-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .option-row input {
+            flex: 1;
+        }
+
+        .option-row .remove-option {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .option-row .remove-option:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .add-option-btn {
+            align-self: flex-start;
+            padding: 0.5rem 1rem;
+            border: 2px dashed var(--border);
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .add-option-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .poll-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+
+        /* ============ АКТИВНЫЕ ОПРОСЫ ============ */
+        .poll-card {
+            background: var(--bg-input);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border);
+        }
+
+        .poll-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            gap: 1rem;
+        }
+
+        .poll-card h4 {
+            font-size: 1.05rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .poll-card .poll-status {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .poll-active {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--success);
+        }
+
+        .poll-closed {
+            background: rgba(148, 163, 184, 0.15);
+            color: var(--text-secondary);
+        }
+
+        .poll-results {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .poll-result-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .poll-result-label {
+            min-width: 120px;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .poll-result-bar-container {
+            flex: 1;
+            height: 24px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .poll-result-bar {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.5s ease;
+            min-width: 2px;
+        }
+
+        .poll-result-bar.c0 { background: var(--accent); }
+        .poll-result-bar.c1 { background: var(--success); }
+        .poll-result-bar.c2 { background: var(--warning); }
+        .poll-result-bar.c3 { background: #a78bfa; }
+        .poll-result-bar.c4 { background: #f472b6; }
+        .poll-result-bar.c5 { background: #34d399; }
+
+        .poll-result-count {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            min-width: 50px;
+            text-align: right;
+        }
+
+        /* ============ RESPONSIVE ============ */
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .online-table {
+                font-size: 0.8rem;
+            }
+
+            .online-table th, .online-table td {
+                padding: 0.5rem;
+            }
+
+            .poll-result-label {
+                min-width: 80px;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ============ LOADING ============ */
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            margin-right: 0.5rem;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Скроллбар */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+    <!-- ============ ЭКРАН ВХОДА ============ -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-card">
+            <h1>🔒 Админ-панель</h1>
+            <p>Almanion Analytics</p>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="loginEmail" placeholder="admin@example.com" autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label>Пароль</label>
+                <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <button class="btn btn-primary" id="loginBtn">Войти</button>
+            <p class="login-error" id="loginError"></p>
+        </div>
+    </div>
+
+    <!-- ============ DASHBOARD ============ -->
+    <div class="dashboard" id="dashboard">
+        <div class="dashboard-header">
+            <h1>📊 Панель управления</h1>
+            <div class="header-actions">
+                <span style="font-size: 0.85rem; color: var(--text-secondary);" id="adminEmail"></span>
+                <button class="btn btn-outline btn-sm" id="logoutBtn">Выйти</button>
+            </div>
+        </div>
+
+        <!-- Статистика -->
+        <div class="stats-grid">
+            <div class="stat-card online">
+                <div class="stat-icon">🟢</div>
+                <div class="stat-value" id="onlineCount">—</div>
+                <div class="stat-label">Сейчас онлайн</div>
+            </div>
+            <div class="stat-card unique">
+                <div class="stat-icon">👥</div>
+                <div class="stat-value" id="uniqueCount">—</div>
+                <div class="stat-label">Всего уникальных</div>
+            </div>
+            <div class="stat-card today">
+                <div class="stat-icon">📅</div>
+                <div class="stat-value" id="todayCount">—</div>
+                <div class="stat-label">Сегодня посетило</div>
+            </div>
+            <div class="stat-card pages">
+                <div class="stat-icon">📄</div>
+                <div class="stat-value" id="pagesCount">—</div>
+                <div class="stat-label">Страниц просмотрено</div>
+            </div>
+        </div>
+
+        <!-- Кто онлайн -->
+        <div class="section">
+            <div class="section-title">
+                <span class="status-dot"></span>
+                Посетители онлайн
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="online-table" id="onlineTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Страница</th>
+                            <th>Устройство</th>
+                            <th>Время</th>
+                        </tr>
+                    </thead>
+                    <tbody id="onlineTableBody">
+                        <tr><td colspan="4" class="no-data">Загрузка...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Создание опроса -->
+        <div class="section">
+            <div class="section-title">📝 Создать опрос</div>
+            <div class="poll-form" id="pollForm">
+                <div class="form-group">
+                    <label>Вопрос</label>
+                    <input type="text" id="pollQuestion" placeholder="Что вы думаете о новом дизайне?">
+                </div>
+                <div class="form-group">
+                    <label>Описание (необязательно)</label>
+                    <input type="text" id="pollDescription" placeholder="Краткое пояснение к опросу...">
+                </div>
+                <div class="form-group">
+                    <label>Варианты ответов</label>
+                    <div class="options-list" id="optionsList">
+                        <div class="option-row">
+                            <input type="text" placeholder="Вариант 1" class="poll-option">
+                            <button class="remove-option" title="Удалить">×</button>
+                        </div>
+                        <div class="option-row">
+                            <input type="text" placeholder="Вариант 2" class="poll-option">
+                            <button class="remove-option" title="Удалить">×</button>
+                        </div>
+                    </div>
+                    <button class="add-option-btn" id="addOptionBtn">+ Добавить вариант</button>
+                </div>
+                <div class="poll-actions">
+                    <button class="btn btn-success" id="sendPollBtn">🚀 Отправить опрос</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Активные опросы -->
+        <div class="section">
+            <div class="section-title">📊 Опросы и результаты</div>
+            <div id="pollsList">
+                <div class="no-data">Загрузка...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script>
+        // ============================================
+        // ИНИЦИАЛИЗАЦИЯ
+        // ============================================
+
+        if (firebaseConfig.apiKey === "ВСТАВЬ_СВОЙ_API_KEY") {
+            document.querySelector('.login-card').innerHTML = `
+                <h1>⚠️ Настройка</h1>
+                <p style="color: #f59e0b;">Firebase конфиг не заполнен.<br>Отредактируй <code>firebase-config.js</code></p>
+            `;
+        }
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        // ============================================
+        // АВТОРИЗАЦИЯ
+        // ============================================
+
+        const loginScreen = document.getElementById('loginScreen');
+        const dashboard = document.getElementById('dashboard');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const loginError = document.getElementById('loginError');
+
+        loginBtn.addEventListener('click', login);
+        document.getElementById('loginPassword').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') login();
+        });
+        document.getElementById('loginEmail').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') document.getElementById('loginPassword').focus();
+        });
+        logoutBtn.addEventListener('click', () => auth.signOut());
+
+        function login() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                showLoginError('Заполните все поля');
+                return;
+            }
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Вход...';
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    loginError.style.display = 'none';
+                })
+                .catch((error) => {
+                    let msg = 'Ошибка входа';
+                    if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                        msg = 'Неверный email или пароль';
+                    } else if (error.code === 'auth/too-many-requests') {
+                        msg = 'Слишком много попыток. Попробуйте позже';
+                    } else if (error.code === 'auth/invalid-credential') {
+                        msg = 'Неверный email или пароль';
+                    }
+                    showLoginError(msg);
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Войти';
+                });
+        }
+
+        function showLoginError(msg) {
+            loginError.textContent = msg;
+            loginError.style.display = 'block';
+        }
+
+        // Слушаем состояние авторизации
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                loginScreen.style.display = 'none';
+                dashboard.style.display = 'block';
+                document.getElementById('adminEmail').textContent = user.email;
+                initDashboard();
+            } else {
+                loginScreen.style.display = 'flex';
+                dashboard.style.display = 'none';
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Войти';
+            }
+        });
+
+        // ============================================
+        // DASHBOARD: СТАТИСТИКА РЕАЛЬНОГО ВРЕМЕНИ
+        // ============================================
+
+        let dashboardInitialized = false;
+
+        function initDashboard() {
+            if (dashboardInitialized) return;
+            dashboardInitialized = true;
+
+            listenOnlineUsers();
+            loadUniqueVisitors();
+            loadTodayVisitors();
+            listenPolls();
+            initPollForm();
+        }
+
+        // --- Онлайн пользователи ---
+        function listenOnlineUsers() {
+            db.ref('presence').on('value', (snapshot) => {
+                const data = snapshot.val() || {};
+                const users = Object.values(data);
+
+                document.getElementById('onlineCount').textContent = users.length;
+
+                // Считаем уникальные страницы
+                const pages = new Set(users.map(u => u.page));
+                document.getElementById('pagesCount').textContent = pages.size;
+
+                // Таблица
+                const tbody = document.getElementById('onlineTableBody');
+                if (users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="no-data">Никого нет онлайн</td></tr>';
+                    return;
+                }
+
+                // Сортируем по времени (новые сверху)
+                users.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+                tbody.innerHTML = users.map(user => {
+                    const isMobile = /Mobile|Android|iPhone|iPad/i.test(user.userAgent || '');
+                    const deviceClass = isMobile ? 'device-mobile' : 'device-desktop';
+                    const deviceLabel = isMobile ? '📱 Мобильный' : '💻 Десктоп';
+                    const page = (user.page || '/').replace(/^\//, '') || 'index';
+                    const pageDisplay = page.replace('.html', '');
+                    const timeAgo = getTimeAgo(user.timestamp);
+                    const shortId = (user.visitorId || '?').substring(0, 12);
+
+                    return `<tr>
+                        <td><code style="font-size:0.8rem; color:var(--text-secondary)">${shortId}…</code></td>
+                        <td><span class="page-badge">${pageDisplay}</span></td>
+                        <td><span class="device-badge ${deviceClass}">${deviceLabel}</span></td>
+                        <td style="color:var(--text-secondary)">${timeAgo}</td>
+                    </tr>`;
+                }).join('');
+            });
+        }
+
+        function getTimeAgo(timestamp) {
+            if (!timestamp) return '—';
+            const diff = Math.floor((Date.now() - timestamp) / 1000);
+            if (diff < 10) return 'только что';
+            if (diff < 60) return `${diff}с назад`;
+            if (diff < 3600) return `${Math.floor(diff / 60)}м назад`;
+            return `${Math.floor(diff / 3600)}ч назад`;
+        }
+
+        // --- Уникальные посетители ---
+        function loadUniqueVisitors() {
+            db.ref('visitors').on('value', (snapshot) => {
+                const data = snapshot.val() || {};
+                document.getElementById('uniqueCount').textContent = Object.keys(data).length;
+            });
+        }
+
+        // --- Посетители сегодня ---
+        function loadTodayVisitors() {
+            const today = new Date().toISOString().split('T')[0];
+            db.ref('dailyStats/' + today).on('value', (snapshot) => {
+                const data = snapshot.val() || {};
+                document.getElementById('todayCount').textContent = Object.keys(data).length;
+            });
+        }
+
+        // ============================================
+        // DASHBOARD: ОПРОСЫ
+        // ============================================
+
+        function initPollForm() {
+            const addBtn = document.getElementById('addOptionBtn');
+            const sendBtn = document.getElementById('sendPollBtn');
+            const optionsList = document.getElementById('optionsList');
+
+            addBtn.addEventListener('click', () => {
+                const count = optionsList.querySelectorAll('.option-row').length;
+                if (count >= 6) {
+                    alert('Максимум 6 вариантов');
+                    return;
+                }
+                const row = document.createElement('div');
+                row.className = 'option-row';
+                row.innerHTML = `
+                    <input type="text" placeholder="Вариант ${count + 1}" class="poll-option">
+                    <button class="remove-option" title="Удалить">×</button>
+                `;
+                optionsList.appendChild(row);
+                bindRemoveButtons();
+            });
+
+            sendBtn.addEventListener('click', sendPoll);
+            bindRemoveButtons();
+        }
+
+        function bindRemoveButtons() {
+            document.querySelectorAll('.remove-option').forEach(btn => {
+                btn.onclick = function() {
+                    const rows = document.querySelectorAll('.option-row');
+                    if (rows.length <= 2) {
+                        alert('Минимум 2 варианта');
+                        return;
+                    }
+                    this.closest('.option-row').remove();
+                };
+            });
+        }
+
+        function sendPoll() {
+            const question = document.getElementById('pollQuestion').value.trim();
+            const description = document.getElementById('pollDescription').value.trim();
+            const optionInputs = document.querySelectorAll('.poll-option');
+            const options = [];
+
+            optionInputs.forEach(input => {
+                const val = input.value.trim();
+                if (val) options.push(val);
+            });
+
+            if (!question) {
+                alert('Введите вопрос');
+                return;
+            }
+            if (options.length < 2) {
+                alert('Нужно минимум 2 варианта ответа');
+                return;
+            }
+
+            const pollData = {
+                question: question,
+                description: description || null,
+                options: options,
+                active: true,
+                createdAt: firebase.database.ServerValue.TIMESTAMP,
+                createdBy: auth.currentUser.email
+            };
+
+            db.ref('polls').push(pollData)
+                .then(() => {
+                    // Очищаем форму
+                    document.getElementById('pollQuestion').value = '';
+                    document.getElementById('pollDescription').value = '';
+                    document.querySelectorAll('.poll-option').forEach(input => input.value = '');
+                    alert('✅ Опрос отправлен! Все онлайн-посетители увидят его.');
+                })
+                .catch(err => {
+                    alert('Ошибка: ' + err.message);
+                });
+        }
+
+        // --- Список опросов ---
+        function listenPolls() {
+            db.ref('polls').orderByChild('createdAt').on('value', (snapshot) => {
+                const pollsList = document.getElementById('pollsList');
+                const polls = [];
+
+                snapshot.forEach(childSnap => {
+                    polls.push({ id: childSnap.key, ...childSnap.val() });
+                });
+
+                if (polls.length === 0) {
+                    pollsList.innerHTML = '<div class="no-data">Опросов пока нет</div>';
+                    return;
+                }
+
+                // Новые сверху
+                polls.reverse();
+
+                pollsList.innerHTML = polls.map(poll => {
+                    const statusClass = poll.active ? 'poll-active' : 'poll-closed';
+                    const statusText = poll.active ? '● Активен' : '○ Закрыт';
+
+                    return `
+                        <div class="poll-card" id="poll-${poll.id}">
+                            <div class="poll-card-header">
+                                <div>
+                                    <h4>${escapeHtml(poll.question)}</h4>
+                                    ${poll.description ? `<p style="font-size:0.85rem; color:var(--text-secondary); margin-top:0.25rem;">${escapeHtml(poll.description)}</p>` : ''}
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0;">
+                                    <span class="poll-status ${statusClass}">${statusText}</span>
+                                    ${poll.active ?
+                                        `<button class="btn btn-danger btn-sm" onclick="closePoll('${poll.id}')">Закрыть</button>` :
+                                        `<button class="btn btn-outline btn-sm" onclick="deletePoll('${poll.id}')">Удалить</button>`
+                                    }
+                                </div>
+                            </div>
+                            <div class="poll-results" id="results-${poll.id}">
+                                <div class="no-data pulse" style="padding: 0.5rem;">Загрузка результатов...</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Загружаем результаты для каждого опроса
+                polls.forEach(poll => loadPollResults(poll));
+            });
+        }
+
+        function loadPollResults(poll) {
+            db.ref('pollResponses/' + poll.id).on('value', (snapshot) => {
+                const responses = snapshot.val() || {};
+                const container = document.getElementById('results-' + poll.id);
+                if (!container) return;
+
+                const options = poll.options || [];
+                const counts = new Array(options.length).fill(0);
+                let total = 0;
+
+                Object.values(responses).forEach(resp => {
+                    if (resp.optionIndex >= 0 && resp.optionIndex < options.length) {
+                        counts[resp.optionIndex]++;
+                        total++;
+                    }
+                });
+
+                if (total === 0) {
+                    container.innerHTML = '<div class="no-data" style="padding: 0.5rem;">Ответов пока нет</div>';
+                    return;
+                }
+
+                container.innerHTML = options.map((opt, i) => {
+                    const percent = total > 0 ? (counts[i] / total * 100) : 0;
+                    return `
+                        <div class="poll-result-row">
+                            <span class="poll-result-label">${escapeHtml(opt)}</span>
+                            <div class="poll-result-bar-container">
+                                <div class="poll-result-bar c${i % 6}" style="width: ${percent}%"></div>
+                            </div>
+                            <span class="poll-result-count">${counts[i]} (${Math.round(percent)}%)</span>
+                        </div>
+                    `;
+                }).join('') + `<div style="text-align:right; font-size:0.8rem; color:var(--text-secondary); margin-top:0.5rem;">Всего ответов: ${total}</div>`;
+            });
+        }
+
+        function closePoll(pollId) {
+            if (confirm('Закрыть опрос? Посетители больше не будут его видеть.')) {
+                db.ref('polls/' + pollId + '/active').set(false);
+            }
+        }
+
+        function deletePoll(pollId) {
+            if (confirm('Удалить опрос и все ответы?')) {
+                db.ref('polls/' + pollId).remove();
+                db.ref('pollResponses/' + pollId).remove();
+            }
+        }
+
+        // ============================================
+        // УТИЛИТЫ
+        // ============================================
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
