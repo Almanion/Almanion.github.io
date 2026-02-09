@@ -1212,6 +1212,7 @@
             });
 
             document.body.appendChild(overlay);
+            currentProfileVisitorId = visitorId;
             loadVisitorProfile(visitorId);
         }
 
@@ -1233,7 +1234,8 @@
                             typeLabel: '📊 Личный опрос',
                             text: msg.message,
                             extra: 'Варианты: ' + (msg.options || []).join(', '),
-                            read: msg.read
+                            read: msg.read,
+                            deletePath: 'directMessages/' + visitorId + '/' + msgId
                         });
                     } else {
                         allItems.push({
@@ -1242,7 +1244,8 @@
                             typeLabel: '💬 Сообщение',
                             text: msg.message,
                             extra: null,
-                            read: msg.read
+                            read: msg.read,
+                            deletePath: 'directMessages/' + visitorId + '/' + msgId
                         });
                     }
                 });
@@ -1261,7 +1264,8 @@
                             typeLabel: '✅ Ответ на опрос',
                             text: poll.question || '(без вопроса)',
                             extra: resp.optionText || (poll.options ? poll.options[resp.optionIndex] : '?'),
-                            read: null
+                            read: null,
+                            deletePath: 'pollResponses/' + pollId + '/' + visitorId
                         });
                     }
                 }
@@ -1302,6 +1306,9 @@
             }
         }
 
+        // Текущий visitorId профиля (для перезагрузки после удаления)
+        let currentProfileVisitorId = null;
+
         function renderHistoryItem(item) {
             const time = item.time ? formatDate(item.time) : '—';
             const typeClass = 'history-type-' + item.type.replace('-', '-');
@@ -1314,16 +1321,37 @@
                 extraHtml = `<div style="font-size:0.8rem; color:var(--text-secondary); margin-top:0.25rem;">${escapeHtml(item.extra)}</div>`;
             }
 
+            const deleteBtn = item.deletePath
+                ? `<button class="action-btn" style="width:24px; height:24px; font-size:0.7rem;" onclick="deleteHistoryItem('${item.deletePath}')" title="Удалить">🗑️</button>`
+                : '';
+
             return `
                 <div class="history-item">
                     <div class="history-meta">
                         <span class="history-type ${typeClass}">${item.typeLabel}${readBadge}</span>
-                        <span class="history-time">${time}</span>
+                        <span style="display:flex; align-items:center; gap:0.4rem;">
+                            ${deleteBtn}
+                            <span class="history-time">${time}</span>
+                        </span>
                     </div>
                     <div class="history-text">${escapeHtml(item.text)}</div>
                     ${extraHtml}
                 </div>
             `;
+        }
+
+        function deleteHistoryItem(path) {
+            if (!confirm('Удалить эту запись?')) return;
+            db.ref(path).remove()
+                .then(() => {
+                    // Перезагружаем профиль
+                    if (currentProfileVisitorId) {
+                        loadVisitorProfile(currentProfileVisitorId);
+                    }
+                })
+                .catch(err => {
+                    alert('❌ Ошибка удаления: ' + err.message);
+                });
         }
 
         function formatDate(timestamp) {
