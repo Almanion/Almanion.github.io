@@ -78,19 +78,15 @@
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         const visitorRef = db.ref('visitors/' + visitorId);
 
-        visitorRef.transaction((data) => {
-            if (!data) {
-                return {
-                    firstVisit: firebase.database.ServerValue.TIMESTAMP,
-                    lastVisit: firebase.database.ServerValue.TIMESTAMP,
-                    visitCount: 1,
-                    lastPage: location.pathname
-                };
-            }
-            data.lastVisit = firebase.database.ServerValue.TIMESTAMP;
-            data.visitCount = (data.visitCount || 0) + 1;
-            data.lastPage = location.pathname;
-            return data;
+        // set() гарантированно создаёт/обновляет узел без необходимости чтения
+        visitorRef.child('lastVisit').set(firebase.database.ServerValue.TIMESTAMP);
+        visitorRef.child('lastPage').set(location.pathname);
+        visitorRef.child('visitCount').set(firebase.database.ServerValue.increment(1));
+
+        visitorRef.child('id').set(visitorId).then(() => {
+            console.log('✅ Visitor registered:', visitorId);
+        }).catch(err => {
+            console.error('❌ Visitor registration failed:', err.message);
         });
 
         // Счётчик уникальных посетителей за день
