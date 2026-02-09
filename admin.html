@@ -1226,14 +1226,26 @@
                 // 1. Загружаем отправленные личные сообщения
                 const dmSnap = await db.ref('directMessages/' + visitorId).once('value');
                 const dms = dmSnap.val() || {};
-                Object.entries(dms).forEach(([msgId, msg]) => {
+                for (const [msgId, msg] of Object.entries(dms)) {
                     if (msg.type === 'poll') {
+                        // Проверяем, ответил ли посетитель на личный опрос
+                        let answerText = null;
+                        try {
+                            const dmRespSnap = await db.ref('pollResponses/dm_' + msgId + '/' + visitorId).once('value');
+                            const dmResp = dmRespSnap.val();
+                            if (dmResp) {
+                                answerText = dmResp.optionText || (msg.options ? msg.options[dmResp.optionIndex] : '?');
+                            }
+                        } catch (e) { /* нет доступа — пропускаем */ }
+
                         allItems.push({
                             time: msg.timestamp || 0,
                             type: 'dm-poll',
                             typeLabel: '📊 Личный опрос',
                             text: msg.message,
-                            extra: 'Варианты: ' + (msg.options || []).join(', '),
+                            extra: answerText
+                                ? '✅ Ответ: ' + answerText
+                                : '⏳ Варианты: ' + (msg.options || []).join(', ') + ' (нет ответа)',
                             read: msg.read,
                             deletePath: 'directMessages/' + visitorId + '/' + msgId
                         });
@@ -1248,7 +1260,7 @@
                             deletePath: 'directMessages/' + visitorId + '/' + msgId
                         });
                     }
-                });
+                }
 
                 // 2. Загружаем ответы на глобальные опросы
                 const pollsSnap = await db.ref('polls').once('value');
