@@ -1,36 +1,31 @@
 // ============================================
-// ПРОВЕРКА ЗНАНИЙ - Зачёт 07.02
+// ПРОВЕРКА ЗНАНИЙ
 // ============================================
 
 // Структура тем с их ID
 const TOPICS = [
-    { id: 'main-definitions', name: '0. Обязательные определения' },
-    // Билет №10
-    { id: 'system-of-bodies', name: '10.1 Система тел' },
-    { id: 'center-of-mass-def', name: '10.2 Центр масс' },
-    { id: 'center-2mt', name: '10.3 Центр масс 2х МТ' },
-    { id: 'center-nmt', name: '10.4 Центр масс N МТ' },
-    { id: 'velocity-momentum', name: '10.5 Скорость и импульс ЦМ' },
-    { id: 'theorem-cm', name: '10.6 Теорема о движении ЦМ' },
-    { id: 'plane-parallel', name: '10.7 Плоскопараллельное движение' },
-    // Билет №11
-    { id: 'work-def', name: '11.1 Механическая работа' },
-    { id: 'variable-force-work', name: '11.2 Работа переменной силы' },
-    { id: 'power', name: '11.3 Мощность' },
-    { id: 'efficiency', name: '11.4 КПД' },
-    // Билет №12
-    { id: 'work-derivation-1d', name: '12.1 Вывод работы (1D)' },
-    { id: 'work-derivation-2d', name: '12.2 Вывод работы (2D)' },
-    { id: 'work-derivation-curve', name: '12.3 Вывод работы (кривол.)' },
-    { id: 'kinetic-energy', name: '12.4 Кинетическая энергия' },
-    { id: 'kinetic-system', name: '12.5 КЭ системы тел' },
-    { id: 'kinetic-momentum', name: '12.6 КЭ через импульс' },
-    { id: 'theorem-kinetic', name: '12.7 Теорема о КЭ' },
-    { id: 'kinetic-meaning', name: '12.8 Физический смысл КЭ' },
-    { id: 'energy-law-derivation', name: '12.9 Вывод закона изменения' },
-    { id: 'energy-law', name: '12.10 Закон изменения энергии' },
-    { id: 'energy-conservation', name: '12.11 Закон сохранения энергии' },
-    { id: 'energy-transition', name: '12.12 Переход энергии' }
+    { id: 'main-definitions', name: '0. Главные определения' },
+    { id: 'intro', name: '1. Введение в механику' },
+    { id: 'kinematics', name: '2.1 Введение в кинематику' },
+    { id: 'coordinates', name: '2.2 Координаты' },
+    { id: 'basic-concepts', name: '2.3 Основные понятия' },
+    { id: 'uniform-motion', name: '2.4 Равномерное движение' },
+    { id: 'accelerated-motion', name: '2.5 Равноускоренное движение' },
+    { id: 'free-fall', name: '2.6 Свободное падение' },
+    { id: 'projectile', name: '2.7 Тело под углом' },
+    { id: 'tangential', name: '2.8 Тангенциальное ускорение' },
+    { id: 'circular', name: '2.9 Движение по окружности' },
+    { id: 'relative', name: '2.10 Относительность движения' },
+    { id: 'dynamics', name: '3.1 Законы Ньютона' },
+    { id: 'friction', name: '3.2 Сила трения' },
+    { id: 'elastic-force', name: '3.3 Сила упругости' },
+    { id: 'gravitation', name: '3.4 Закон всемирного тяготения' },
+    { id: 'momentum', name: '3.5 Импульс тела. Импульс силы' },
+    { id: 'reactive-motion', name: '3.6 Реактивное движение' },
+    { id: 'center-of-mass', name: '3.7 Центр масс' },
+    { id: 'work-power', name: '3.8 Механическая работа. Мощность' },
+    { id: 'kinetic-energy', name: '3.9 Кинетическая энергия' },
+    { id: 'potential-energy', name: '3.10 Потенциальная энергия' }
 ];
 
 let selectedTopics = [];
@@ -46,7 +41,99 @@ let allDefinitions = []; // Все извлечённые определения
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
     initKnowledgeCheck();
+    checkNewFeatureNotification();
 });
+
+// Проверка и показ оповещения о новой функции
+function checkNewFeatureNotification() {
+    const featureVersion = 'knowledge-check-v1'; // Версия функции
+    const hasSeenFeature = localStorage.getItem(featureVersion);
+    
+    if (!hasSeenFeature) {
+        // Показываем оповещение через небольшую задержку для лучшего UX
+        setTimeout(() => {
+            showNewFeatureNotification();
+        }, 1000);
+    }
+}
+
+function showNewFeatureNotification() {
+    const overlay = document.getElementById('newFeatureOverlay');
+    const closeBtn = document.getElementById('closeNewFeatureBtn');
+    const tryBtn = document.getElementById('tryNewFeatureBtn');
+    const dismissBtn = document.getElementById('dismissNewFeatureBtn');
+    
+    if (overlay) {
+        overlay.classList.remove('hidden');
+    }
+    
+    // Используем вспомогательную функцию для привязки обработчиков (click + touchend)
+    // чтобы на мобильных точно срабатывало
+    function onTapOrClick(element, handler) {
+        if (!element) return;
+        // Удаляем старые обработчики через клонирование (на случай повторного вызова)
+        const newEl = element.cloneNode(true);
+        element.parentNode.replaceChild(newEl, element);
+        
+        let touchMoved = false;
+        newEl.addEventListener('touchstart', () => { touchMoved = false; }, { passive: true });
+        newEl.addEventListener('touchmove', () => { touchMoved = true; }, { passive: true });
+        newEl.addEventListener('touchend', (e) => {
+            if (!touchMoved) {
+                e.preventDefault();
+                handler(e);
+            }
+        });
+        newEl.addEventListener('click', (e) => {
+            handler(e);
+        });
+        return newEl;
+    }
+    
+    // Закрытие по крестику
+    onTapOrClick(closeBtn, () => {
+        closeNewFeatureNotification();
+    });
+    
+    // Попробовать сейчас
+    onTapOrClick(tryBtn, () => {
+        closeNewFeatureNotification();
+        // Открываем меню выбора тем
+        const knowledgeCheckBtn = document.getElementById('knowledgeCheckBtn');
+        if (knowledgeCheckBtn) {
+            knowledgeCheckBtn.click();
+        }
+    });
+    
+    // Понятно, спасибо
+    onTapOrClick(dismissBtn, () => {
+        closeNewFeatureNotification();
+    });
+    
+    // Закрытие по клику на overlay (за пределами модалки)
+    if (overlay) {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                closeNewFeatureNotification();
+            }
+        });
+        overlay.addEventListener('touchend', (e) => {
+            if (e.target === overlay) {
+                e.preventDefault();
+                closeNewFeatureNotification();
+            }
+        });
+    }
+}
+
+function closeNewFeatureNotification() {
+    const overlay = document.getElementById('newFeatureOverlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+    }
+    // Сохраняем, что пользователь видел оповещение
+    localStorage.setItem('knowledge-check-v1', 'seen');
+}
 
 function initKnowledgeCheck() {
     const knowledgeCheckBtn = document.getElementById('knowledgeCheckBtn');
@@ -509,6 +596,8 @@ function nextDefinition() {
     }
 }
 
+
+
 function showFinalStatistics() {
     const content = document.getElementById('knowledgeCheckContent');
     const progress = document.getElementById('knowledgeCheckProgress');
@@ -577,10 +666,27 @@ function restartKnowledgeCheck() {
     topicSelectionOverlay.classList.remove('hidden');
 }
 
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function getPluralForm(n, one, few, many) {
+    if (n % 10 === 1 && n % 100 !== 11) {
+        return one;
+    } else if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) {
+        return few;
+    } else {
+        return many;
+    }
 }
 
 // Экспортируем функции для использования в HTML

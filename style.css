@@ -2,7 +2,7 @@
    ОПОВЕЩЕНИЕ О НОВОЙ ФУНКЦИИ
    ============================================ */
 
-.new-feature-modal {
+   .new-feature-modal {
     background: var(--bg-primary);
     border-radius: var(--border-radius-lg);
     padding: 2.5rem 2rem;
@@ -24,12 +24,16 @@
     cursor: pointer;
     color: var(--text-secondary);
     transition: var(--transition);
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Улучшение тач-взаимодействия */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 1;
 }
 
 .new-feature-close:hover {
@@ -134,6 +138,8 @@
     transition: var(--transition);
     margin-bottom: 0.75rem;
     box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .new-feature-button:hover {
@@ -156,6 +162,8 @@
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .new-feature-dismiss:hover {
@@ -429,10 +437,13 @@ body.sidebar-open {
     left: 0;
     width: 100%;
     height: 100%;
+    height: 100dvh;
     background: rgba(0, 0, 0, 0.5);
     z-index: 999;
     opacity: 0;
     transition: opacity 0.3s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .sidebar-overlay.active {
@@ -450,11 +461,13 @@ body.sidebar-open {
     top: 0;
     width: var(--sidebar-width);
     height: 100vh;
+    height: 100dvh;
     background: var(--bg-secondary);
     border-right: 1px solid var(--border-color);
     overflow-y: auto;
     z-index: 1000;
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
                 background-color 0.15s ease,
                 border-color 0.15s ease;
     box-shadow: var(--shadow-xl);
@@ -695,6 +708,76 @@ body.dark-theme .nav-link[href="physics 07.02.html"]:hover {
     background: linear-gradient(135deg, #5b21b6 0%, #6d28d9 100%) !important;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+/* Кнопка сворачивания сайдбара (внутри хедера, десктоп) */
+.sidebar-collapse-btn {
+    display: none;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: var(--transition);
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+}
+
+.sidebar-collapse-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Кнопка открытия свёрнутого сайдбара (появляется когда сайдбар скрыт) */
+.sidebar-expand-btn {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    width: 40px;
+    height: 40px;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    z-index: 1001;
+    box-shadow: var(--shadow-md);
+    transition: background-color 0.2s ease,
+                transform 0.2s ease,
+                opacity 0.3s ease;
+    line-height: 1;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.sidebar-expand-btn:hover {
+    background: var(--accent-hover);
+    transform: scale(1.08);
+}
+
+/* Состояние свёрнутого сайдбара */
+.sidebar.collapsed {
+    transform: translateX(-100%);
+}
+
+body.sidebar-collapsed .sidebar-expand-btn {
+    display: flex;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+body.sidebar-collapsed .main-content {
+    margin-left: 0;
 }
 
 /* Кнопка меню (мобильные) */
@@ -960,7 +1043,7 @@ body.dark-theme .nav-link[href="physics 07.02.html"]:hover {
     box-shadow: var(--shadow-sm);
     position: relative;
     overflow-x: auto;
-    overflow-y: hidden;
+    overflow-y: visible;
     transition: transform 0.3s ease,
                 box-shadow 0.3s ease,
                 border-width 0.3s ease,
@@ -1229,6 +1312,13 @@ em {
    АДАПТИВНОСТЬ
    ============================================ */
 
+/* Показ кнопки сворачивания на широких экранах */
+@media (min-width: 769px) {
+    .sidebar-collapse-btn {
+        display: flex;
+    }
+}
+
 @media (max-width: 1024px) {
     :root {
         --sidebar-width: 280px;
@@ -1248,14 +1338,28 @@ em {
         transform: translateX(-100%);
         width: 85vw;
         max-width: 320px;
+        height: 100vh;
+        height: 100dvh;
+        /* iOS: предотвращаем баунс и обеспечиваем нормальную прокрутку */
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
     }
     
     .sidebar.open {
         transform: translateX(0);
     }
     
+    /* Скрываем десктопные кнопки сворачивания на мобильных */
+    .sidebar-collapse-btn,
+    .sidebar-expand-btn {
+        display: none !important;
+    }
+    
     .close-sidebar {
         display: block;
+        /* Увеличиваем область нажатия для тач-устройств */
+        min-width: 44px;
+        min-height: 44px;
     }
     
     .menu-toggle {
@@ -1993,6 +2097,7 @@ input:focus:not(:focus-visible) {
     left: 0;
     width: 100%;
     height: 100%;
+    height: 100dvh;
     background: rgba(0, 0, 0, 0.75);
     backdrop-filter: blur(10px);
     display: flex;
@@ -2000,10 +2105,19 @@ input:focus:not(:focus-visible) {
     align-items: center;
     z-index: 10000;
     animation: fadeIn 0.2s ease-out;
+    /* Улучшение тач-взаимодействия на мобильных */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
 }
 
 .auth-overlay.hidden {
     display: none;
+}
+
+/* Предотвращаем закрытие при клике на модальное окно внутри оверлея */
+.auth-overlay > * {
+    cursor: default;
 }
 
 .auth-modal {
@@ -2639,7 +2753,9 @@ input:focus:not(:focus-visible) {
     .snow-container,
     .easter-eggs-container,
     .theme-toggle,
-    .close-sidebar {
+    .close-sidebar,
+    .sidebar-collapse-btn,
+    .sidebar-expand-btn {
         display: none !important;
     }
     
@@ -3664,6 +3780,12 @@ body.dark-theme .telegram-welcome-message {
     align-items: center;
     justify-content: center;
     animation: pulse-subtle 3s ease-in-out infinite;
+    /* Точное центрирование эмодзи для корректного вращения */
+    line-height: 1;
+    text-align: center;
+    padding: 0;
+    text-indent: 0;
+    transform-origin: center center;
 }
 
 @keyframes pulse-subtle {
@@ -4190,6 +4312,11 @@ body.animations-off .nav-link:hover {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    /* Точное центрирование эмодзи для корректного вращения */
+    line-height: 1;
+    text-align: center;
+    padding: 0;
+    transform-origin: center center;
 }
 
 .settings-button-sidebar:hover {

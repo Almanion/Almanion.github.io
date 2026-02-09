@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initScrollEffects();
     initDerivationToggles();
     initMobileMenu();
+    initSidebarCollapse();
 });
 
 // ============================================
@@ -136,10 +137,14 @@ function initNavigation() {
         let currentSection = '';
         
         topics.forEach(topic => {
-            const topicTop = topic.offsetTop;
+            // Пропускаем элементы без id (например, .content-section)
+            const id = topic.getAttribute('id');
+            if (!id) return;
             
-            if (window.pageYOffset >= topicTop - 100) {
-                currentSection = topic.getAttribute('id');
+            // getBoundingClientRect().top — точная позиция относительно viewport
+            const rect = topic.getBoundingClientRect();
+            if (rect.top <= 120) {
+                currentSection = id;
             }
         });
         
@@ -385,8 +390,18 @@ function initMobileMenu() {
         closeMobileMenu();
     });
     
-    // Закрытие при клике на оверлей
+    // Поддержка touchend для надёжного закрытия на мобильных
+    closeSidebar.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        closeMobileMenu();
+    });
+    
+    // Закрытие при клике/тапе на оверлей
     overlay.addEventListener('click', () => {
+        closeMobileMenu();
+    });
+    overlay.addEventListener('touchend', (e) => {
+        e.preventDefault();
         closeMobileMenu();
     });
     
@@ -405,6 +420,8 @@ function openMobileMenu() {
     const overlay = document.querySelector('.sidebar-overlay');
     
     sidebar.classList.add('open');
+    // Убираем collapsed если был (на случай ресайза)
+    sidebar.classList.remove('collapsed');
     if (overlay) {
         overlay.classList.add('active');
     }
@@ -412,6 +429,8 @@ function openMobileMenu() {
     // Блокируем прокрутку на мобильных
     if (window.innerWidth <= 768) {
         document.body.classList.add('sidebar-open');
+        // Исправление высоты на мобильных (iOS Safari и т.п.)
+        sidebar.style.height = window.innerHeight + 'px';
     }
 }
 
@@ -419,13 +438,125 @@ function closeMobileMenu() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.querySelector('.sidebar-overlay');
     
-    sidebar.classList.remove('open');
+    if (sidebar) {
+        sidebar.classList.remove('open');
+        // Сбрасываем инлайновую высоту
+        sidebar.style.height = '';
+    }
     if (overlay) {
         overlay.classList.remove('active');
     }
     
     // Разблокируем прокрутку
     document.body.classList.remove('sidebar-open');
+}
+
+// Обновляем высоту сайдбара при изменении размера окна (поворот экрана)
+window.addEventListener('resize', () => {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar && sidebar.classList.contains('open') && window.innerWidth <= 768) {
+        sidebar.style.height = window.innerHeight + 'px';
+    }
+    // На десктопе убираем collapsed при переключении на мобильный вид
+    if (window.innerWidth <= 768) {
+        if (sidebar) sidebar.classList.remove('collapsed');
+        document.body.classList.remove('sidebar-collapsed');
+    }
+});
+
+// ============================================
+// СВОРАЧИВАНИЕ САЙДБАРА (ДЕСКТОП)
+// ============================================
+
+function initSidebarCollapse() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    
+    // Не инициализируем на страницах без сайдбара (например, index.html)
+    const mainContent = document.querySelector('.main-content');
+    if (!mainContent) return;
+    
+    // Вставляем кнопку сворачивания в хедер сайдбара (рядом с другими кнопками)
+    const sidebarHeader = sidebar.querySelector('.sidebar-header');
+    
+    let collapseBtn = document.querySelector('.sidebar-collapse-btn');
+    if (!collapseBtn && sidebarHeader) {
+        collapseBtn = document.createElement('button');
+        collapseBtn.className = 'sidebar-collapse-btn';
+        collapseBtn.title = 'Свернуть меню (горячая клавиша [)';
+        collapseBtn.setAttribute('aria-label', 'Свернуть меню навигации');
+        collapseBtn.textContent = '←';
+        
+        // Вставляем в контейнер кнопок если он уже есть, иначе в хедер
+        // (settings.js позже подхватит кнопку в контейнер)
+        const headerButtons = sidebarHeader.querySelector('.sidebar-header-buttons');
+        if (headerButtons) {
+            headerButtons.insertBefore(collapseBtn, headerButtons.firstChild);
+        } else {
+            // Вставляем перед кнопкой закрытия
+            const closeBtn = sidebarHeader.querySelector('.close-sidebar');
+            if (closeBtn) {
+                sidebarHeader.insertBefore(collapseBtn, closeBtn);
+            } else {
+                sidebarHeader.appendChild(collapseBtn);
+            }
+        }
+    }
+    
+    // Создаём кнопку для разворачивания (отдельная, за пределами сайдбара)
+    let expandBtn = document.querySelector('.sidebar-expand-btn');
+    if (!expandBtn) {
+        expandBtn = document.createElement('button');
+        expandBtn.className = 'sidebar-expand-btn';
+        expandBtn.title = 'Развернуть меню (горячая клавиша [)';
+        expandBtn.setAttribute('aria-label', 'Развернуть меню навигации');
+        expandBtn.textContent = '☰';
+        document.body.appendChild(expandBtn);
+    }
+    
+    // Восстанавливаем состояние из localStorage
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (isCollapsed && window.innerWidth > 768) {
+        sidebar.classList.add('collapsed');
+        document.body.classList.add('sidebar-collapsed');
+    }
+    
+    collapseBtn.addEventListener('click', () => {
+        collapseSidebar();
+    });
+    
+    expandBtn.addEventListener('click', () => {
+        expandSidebar();
+    });
+}
+
+function collapseSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    
+    sidebar.classList.add('collapsed');
+    document.body.classList.add('sidebar-collapsed');
+    localStorage.setItem('sidebarCollapsed', 'true');
+}
+
+function expandSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    
+    sidebar.classList.remove('collapsed');
+    document.body.classList.remove('sidebar-collapsed');
+    localStorage.setItem('sidebarCollapsed', 'false');
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    
+    if (sidebar.classList.contains('collapsed')) {
+        expandSidebar();
+    } else {
+        collapseSidebar();
+    }
 }
 
 // ============================================
@@ -449,6 +580,16 @@ document.addEventListener('keydown', (e) => {
         if (sidebar && sidebar.classList.contains('open')) {
             closeMobileMenu();
         }
+    }
+    
+    // [ для сворачивания/разворачивания сайдбара (только десктоп)
+    if (e.key === '[' && !e.ctrlKey && !e.metaKey && !e.altKey && window.innerWidth > 768) {
+        const searchInput = document.getElementById('searchInput');
+        // Не срабатываем если фокус на поле ввода
+        if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+            return;
+        }
+        toggleSidebar();
     }
 });
 
@@ -658,3 +799,4 @@ console.log('✅ Сайт конспектов загружен успешно!'
 console.log('💡 Горячие клавиши:');
 console.log('   • Ctrl/Cmd + K - Поиск');
 console.log('   • Escape - Закрыть меню');
+console.log('   • [ - Свернуть/развернуть боковое меню');

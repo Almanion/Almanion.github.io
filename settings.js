@@ -85,7 +85,7 @@ function initSettingsButton() {
         button.id = 'settingsButton';
         button.className = 'settings-button';
         button.setAttribute('aria-label', 'Настройки');
-        button.innerHTML = '⚙️';
+        button.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;width:100%;height:100%;">⚙️</span>';
         button.title = 'Настройки сайта';
         
         button.addEventListener('click', openSettingsModal);
@@ -105,7 +105,7 @@ function initSettingsButton() {
             buttonsContainer.className = 'sidebar-header-buttons';
             
             // Перемещаем существующие кнопки в контейнер
-            const existingButtons = sidebarHeader.querySelectorAll('.close-sidebar, .theme-toggle, .ny-toggle');
+            const existingButtons = sidebarHeader.querySelectorAll('.sidebar-collapse-btn, .close-sidebar, .theme-toggle, .ny-toggle');
             existingButtons.forEach(btn => {
                 buttonsContainer.appendChild(btn);
             });
@@ -118,7 +118,7 @@ function initSettingsButton() {
         sidebarButton.id = 'settingsButtonSidebar';
         sidebarButton.className = 'settings-button-sidebar';
         sidebarButton.setAttribute('aria-label', 'Настройки');
-        sidebarButton.innerHTML = '⚙️';
+        sidebarButton.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;width:100%;height:100%;">⚙️</span>';
         sidebarButton.title = 'Настройки сайта';
         
         sidebarButton.addEventListener('click', openSettingsModal);
@@ -454,4 +454,3 @@ window.closeSettingsModal = closeSettingsModal;
 window.siteSettings = siteSettings;
 
 console.log('⚙️ Система настроек загружена');
-
