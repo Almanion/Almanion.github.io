@@ -689,14 +689,20 @@
             max-height: 85vh;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
         .profile-modal .modal-body {
             overflow-y: auto;
-            flex: 1;
+            flex: 1 1 auto;
+            min-height: 0;
             margin: 0 -2rem;
-            padding: 0 2rem;
+            padding: 0 2rem 1rem;
+            scrollbar-width: thin;
         }
+
+        .profile-modal .modal-body::-webkit-scrollbar { width: 4px; }
+        .profile-modal .modal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
         .profile-header {
             display: flex;
@@ -1194,7 +1200,7 @@
                     <div class="modal-body" id="profileBody">
                         <div class="history-empty pulse">Загрузка истории...</div>
                     </div>
-                    <div class="modal-actions" style="padding-top:1rem; border-top: 1px solid var(--border);">
+                    <div class="modal-actions" style="padding-top:1rem; border-top: 1px solid var(--border); flex-shrink:0;">
                         <button class="btn btn-outline btn-sm" onclick="openDirectMessage('${visitorId}'); this.closest('.modal-overlay').remove();">✉️ Написать</button>
                         <button class="btn btn-outline btn-sm" onclick="this.closest('.modal-overlay').remove()">Закрыть</button>
                     </div>
