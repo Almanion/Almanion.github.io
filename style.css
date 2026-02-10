@@ -786,6 +786,7 @@ body.sidebar-collapsed .sidebar-expand-btn {
 
 body.sidebar-collapsed .main-content {
     margin-left: 0;
+    max-width: 100%;
 }
 
 /* Кнопка меню (мобильные) */
@@ -867,7 +868,7 @@ body.sidebar-collapsed .main-content {
     margin-left: var(--sidebar-width);
     padding: 2rem;
     max-width: 1200px;
-    transition: var(--transition);
+    transition: margin-left 0.3s ease, max-width 0.3s ease;
 }
 
 /* Заголовок страницы */

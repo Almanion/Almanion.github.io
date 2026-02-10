@@ -62,17 +62,36 @@ function initTheme() {
 // ============================================
 
 function initMath() {
+    const katexOptions = {
+        delimiters: [
+            {left: '\\[', right: '\\]', display: true},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false,
+        trust: true
+    };
+
     if (typeof renderMathInElement !== 'undefined') {
-        renderMathInElement(document.body, {
-            delimiters: [
-                {left: '\\[', right: '\\]', display: true},
-                {left: '\\(', right: '\\)', display: false},
-                {left: '$', right: '$', display: false}
-            ],
-            throwOnError: false,
-            trust: true
-        });
+        renderMathInElement(document.body, katexOptions);
+        return;
     }
+
+    // KaTeX ещё не загружен (медленный CDN на мобильных) — ждём
+    let attempts = 0;
+    const maxAttempts = 30; // до 15 секунд
+
+    const waitForKaTeX = setInterval(() => {
+        attempts++;
+        if (typeof renderMathInElement !== 'undefined') {
+            clearInterval(waitForKaTeX);
+            renderMathInElement(document.body, katexOptions);
+            console.log('📐 KaTeX загружен (попытка ' + attempts + ')');
+        } else if (attempts >= maxAttempts) {
+            clearInterval(waitForKaTeX);
+            console.warn('⚠️ KaTeX не удалось загрузить за 15 секунд');
+        }
+    }, 500);
 }
 
 // ============================================

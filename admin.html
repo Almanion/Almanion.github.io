@@ -931,11 +931,46 @@
             </div>
         </div>
 
+        <!-- Массовое сообщение всем онлайн -->
+        <div class="section">
+            <div class="section-title">📢 Сообщение всем онлайн</div>
+            <div class="form-group">
+                <textarea id="broadcastText" rows="2" placeholder="Текст сообщения для всех, кто сейчас на сайте..." style="resize:vertical;"></textarea>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.8rem; color:var(--text-secondary);">Получат: <strong id="broadcastCount">0</strong> человек</span>
+                <button class="btn btn-primary btn-sm" id="broadcastBtn">📢 Отправить всем</button>
+            </div>
+        </div>
+
         <!-- Активные опросы -->
         <div class="section">
             <div class="section-title">📊 Опросы и результаты</div>
             <div id="pollsList">
                 <div class="no-data">Загрузка...</div>
+            </div>
+        </div>
+
+        <!-- Журнал всех посетителей -->
+        <div class="section">
+            <div class="section-title">📒 Все посетители</div>
+            <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <button class="btn btn-outline btn-sm" onclick="loadAllVisitors('all')" style="font-size:0.8rem;">Все</button>
+                <button class="btn btn-outline btn-sm" onclick="loadAllVisitors('today')" style="font-size:0.8rem;">Сегодня</button>
+                <button class="btn btn-outline btn-sm" onclick="loadAllVisitors('week')" style="font-size:0.8rem;">За неделю</button>
+            </div>
+            <div id="allVisitorsList">
+                <div class="no-data">Нажмите кнопку для загрузки</div>
+            </div>
+        </div>
+
+        <!-- Управление данными -->
+        <div class="section">
+            <div class="section-title">⚙️ Управление данными</div>
+            <div style="display:flex; flex-wrap:wrap; gap:0.75rem;">
+                <button class="btn btn-outline btn-sm" onclick="clearDailyStats()">🗑️ Очистить дневную статистику</button>
+                <button class="btn btn-outline btn-sm" onclick="clearAllPresence()">🔄 Сбросить онлайн</button>
+                <button class="btn btn-danger btn-sm" onclick="clearAllData()">⚠️ Удалить ВСЕ данные</button>
             </div>
         </div>
     </div>
@@ -970,8 +1005,9 @@
         function loadVisitorNames() {
             db.ref('visitorNames').on('value', (snapshot) => {
                 visitorNamesCache = snapshot.val() || {};
-                // Перерисовываем таблицу при обновлении имён
+                // Перерисовываем таблицы при обновлении имён
                 if (lastOnlineSnapshot) renderOnlineTable(lastOnlineSnapshot);
+                if (lastVisitorsSnapshot) renderAllVisitors(lastVisitorsSnapshot, visitorsListPeriod);
             });
         }
 
@@ -1081,6 +1117,7 @@
             loadTodayVisitors();
             listenPolls();
             initPollForm();
+            loadAllVisitors('all');
         }
 
         // --- Онлайн пользователи ---
@@ -1763,6 +1800,226 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // ============================================
+        // МАССОВАЯ РАССЫЛКА
+        // ============================================
+
+        // Обновляем счётчик получателей
+        let onlineVisitorIds = [];
+
+        // Подписка на онлайн для счётчика рассылки + обновление списка посетителей
+        db.ref('presence').on('value', (snap) => {
+            const data = snap.val() || {};
+            onlineVisitorIds = Object.values(data).map(u => u.visitorId).filter(Boolean);
+            const el = document.getElementById('broadcastCount');
+            if (el) el.textContent = onlineVisitorIds.length;
+            // Перерисовываем список всех посетителей — обновить онлайн-точки
+            if (lastVisitorsSnapshot) renderAllVisitors(lastVisitorsSnapshot, visitorsListPeriod);
+        });
+
+        document.getElementById('broadcastBtn')?.addEventListener('click', () => {
+            const text = document.getElementById('broadcastText').value.trim();
+            if (!text) { alert('Введите текст сообщения'); return; }
+            if (onlineVisitorIds.length === 0) { alert('Нет посетителей онлайн'); return; }
+
+            if (!confirm(`Отправить сообщение ${onlineVisitorIds.length} посетителям?`)) return;
+
+            const btn = document.getElementById('broadcastBtn');
+            btn.disabled = true;
+            btn.textContent = 'Отправка...';
+
+            const promises = onlineVisitorIds.map(vid =>
+                db.ref('directMessages/' + vid).push({
+                    message: text,
+                    type: 'message',
+                    timestamp: firebase.database.ServerValue.TIMESTAMP,
+                    read: false,
+                    broadcast: true
+                })
+            );
+
+            Promise.all(promises)
+                .then(() => {
+                    document.getElementById('broadcastText').value = '';
+                    alert(`✅ Отправлено ${onlineVisitorIds.length} посетителям!`);
+                })
+                .catch(err => alert('❌ Ошибка: ' + err.message))
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.textContent = '📢 Отправить всем';
+                });
+        });
+
+        // ============================================
+        // ВСЕ ПОСЕТИТЕЛИ (ЖУРНАЛ) — REAL-TIME
+        // ============================================
+
+        let visitorsListPeriod = 'all';
+        let visitorsListener = null;
+        let lastVisitorsSnapshot = null;
+
+        function loadAllVisitors(period) {
+            visitorsListPeriod = period;
+
+            // Снимаем старый слушатель
+            if (visitorsListener) {
+                db.ref('visitors').off('value', visitorsListener);
+            }
+
+            const container = document.getElementById('allVisitorsList');
+            container.innerHTML = '<div class="no-data pulse">Загрузка...</div>';
+
+            // Подписываемся на real-time обновления
+            visitorsListener = db.ref('visitors').on('value', (snap) => {
+                lastVisitorsSnapshot = snap.val() || {};
+                renderAllVisitors(lastVisitorsSnapshot, visitorsListPeriod);
+            });
+
+            // Подсветим активную кнопку
+            document.querySelectorAll('#allVisitorsList').forEach(() => {
+                const section = container.closest('.section');
+                if (section) {
+                    section.querySelectorAll('.btn-outline').forEach(btn => {
+                        btn.style.background = '';
+                        btn.style.color = '';
+                        btn.style.borderColor = '';
+                    });
+                    // Подсветка через data-period невозможна, подсветим по тексту
+                    const labels = { all: 'Все', today: 'Сегодня', week: 'За неделю' };
+                    section.querySelectorAll('.btn-outline').forEach(btn => {
+                        if (btn.textContent.trim() === labels[period]) {
+                            btn.style.background = 'rgba(59,130,246,0.15)';
+                            btn.style.color = 'var(--accent-hover)';
+                            btn.style.borderColor = 'var(--accent)';
+                        }
+                    });
+                }
+            });
+        }
+
+        function renderAllVisitors(data, period) {
+            const container = document.getElementById('allVisitorsList');
+
+            let visitors = Object.entries(data).map(([id, v]) => ({
+                id,
+                name: getVisitorDisplayName(id),
+                lastVisit: v.lastVisit || 0,
+                visitCount: v.visitCount || 0,
+                lastPage: v.lastPage || '/'
+            }));
+
+            const now = Date.now();
+            if (period === 'today') {
+                const todayStart = new Date().setHours(0, 0, 0, 0);
+                visitors = visitors.filter(v => v.lastVisit >= todayStart);
+            } else if (period === 'week') {
+                visitors = visitors.filter(v => v.lastVisit >= now - 7 * 24 * 60 * 60 * 1000);
+            }
+
+            visitors.sort((a, b) => b.lastVisit - a.lastVisit);
+
+            if (visitors.length === 0) {
+                container.innerHTML = '<div class="no-data">Нет посетителей за этот период</div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.75rem;">
+                    Найдено: ${visitors.length} · <span style="color:var(--success);">● live</span>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="online-table">
+                        <thead>
+                            <tr>
+                                <th>Посетитель</th>
+                                <th>Посл. визит</th>
+                                <th>Визитов</th>
+                                <th>Посл. страница</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${visitors.map(v => {
+                                const displayName = v.name || v.id.substring(0, 14) + '…';
+                                const nameClass = v.name ? 'color:var(--accent-hover); font-weight:600;' : 'color:var(--text-secondary); font-size:0.8rem;';
+                                const page = (v.lastPage || '/').replace(/^\//, '').replace('.html', '') || 'index';
+                                const time = v.lastVisit ? formatDate(v.lastVisit) : '—';
+                                const isOnline = onlineVisitorIds.includes(v.id);
+                                const onlineDot = isOnline ? '<span class="status-dot" style="margin-right:0.3rem;"></span>' : '';
+                                return `<tr>
+                                    <td>
+                                        ${onlineDot}<span style="${nameClass} cursor:pointer;" onclick="renameVisitor('${v.id}')" title="Переименовать">
+                                            ${escapeHtml(displayName)}
+                                        </span>
+                                    </td>
+                                    <td style="color:var(--text-secondary); font-size:0.85rem;">${time}</td>
+                                    <td style="text-align:center;">${v.visitCount}</td>
+                                    <td><span class="page-badge">${escapeHtml(page)}</span></td>
+                                    <td style="white-space:nowrap;">
+                                        <button class="action-btn" onclick="openVisitorProfile('${v.id}')" title="Профиль">📋</button>
+                                        <button class="action-btn" onclick="openDirectMessage('${v.id}')" title="Написать">✉️</button>
+                                        <button class="action-btn" onclick="deleteVisitor('${v.id}')" title="Удалить" style="color:var(--danger);">🗑️</button>
+                                    </td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function deleteVisitor(visitorId) {
+            const name = getVisitorDisplayName(visitorId) || visitorId.substring(0, 20);
+            if (!confirm(`Удалить посетителя "${name}" и все его данные?`)) return;
+
+            Promise.all([
+                db.ref('visitors/' + visitorId).remove(),
+                db.ref('visitorNames/' + visitorId).remove(),
+                db.ref('directMessages/' + visitorId).remove()
+            ]).then(() => {
+                alert('✅ Посетитель удалён');
+            }).catch(err => {
+                alert('❌ Ошибка: ' + err.message);
+            });
+        }
+
+        // ============================================
+        // УПРАВЛЕНИЕ ДАННЫМИ
+        // ============================================
+
+        function clearDailyStats() {
+            if (!confirm('Очистить дневную статистику? Счётчик "Сегодня посетило" обнулится.')) return;
+            db.ref('dailyStats').remove()
+                .then(() => alert('✅ Дневная статистика очищена'))
+                .catch(err => alert('❌ ' + err.message));
+        }
+
+        function clearAllPresence() {
+            if (!confirm('Сбросить список онлайн? Все текущие подключения обновятся автоматически.')) return;
+            db.ref('presence').remove()
+                .then(() => alert('✅ Онлайн сброшен'))
+                .catch(err => alert('❌ ' + err.message));
+        }
+
+        function clearAllData() {
+            const code = prompt('⚠️ ВНИМАНИЕ: Это удалит ВСЕ данные!\n\nВведите "УДАЛИТЬ" для подтверждения:');
+            if (code !== 'УДАЛИТЬ') { alert('Отменено'); return; }
+
+            Promise.all([
+                db.ref('visitors').remove(),
+                db.ref('dailyStats').remove(),
+                db.ref('visitorNames').remove(),
+                db.ref('directMessages').remove(),
+                db.ref('polls').remove(),
+                db.ref('pollResponses').remove(),
+                db.ref('presence').remove()
+            ]).then(() => {
+                alert('✅ Все данные удалены');
+            }).catch(err => {
+                alert('❌ Ошибка: ' + err.message);
+            });
         }
     </script>
 </body>
