@@ -41,9 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Оптимизируем для мобильных устройств
     optimizeForMobile();
     
-    // Проверяем сохранённое состояние (по умолчанию включён)
+    // Проверяем сохранённое состояние (по умолчанию ВЫКЛЮЧЕН)
     const savedState = localStorage.getItem('newYearMode');
-    if (savedState === null || savedState === 'true') {
+    if (savedState === 'true') {
         isNewYearMode = true;
         enableNewYearMode();
     }

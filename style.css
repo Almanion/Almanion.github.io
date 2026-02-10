@@ -4282,25 +4282,88 @@ body.animations-max {
     --animation-state: enabled;
 }
 
-/* Средний уровень (упрощенные анимации) */
+/* Средний уровень (только базовые переходы, без декоративных анимаций и hover-трансформаций) */
+
+/* Убираем все @keyframes-анимации */
 body.animations-medium .page-header::before,
 body.animations-medium .part-title::after,
 body.animations-medium .theme-toggle::before,
 body.animations-medium .task-card::before,
-body.animations-medium .subject-card::before {
+body.animations-medium .subject-card::before,
+body.animations-medium .progress-fill::after,
+body.animations-medium .ny-decorated::after {
     animation: none !important;
 }
 
-body.animations-medium .topic:hover,
-body.animations-medium .task-card:hover,
-body.animations-medium .subject-card:hover {
-    transform: translateY(-2px);
+/* Убираем hover-трансформации с контент-боксов */
+body.animations-medium .definition-box:hover,
+body.animations-medium .formula-box:hover,
+body.animations-medium .remark-box:hover,
+body.animations-medium .experiment-box:hover,
+body.animations-medium .derivation-box:hover {
+    transform: none !important;
+    border-width: inherit !important;
 }
 
+/* Убираем hover-трансформации со stat-card */
+body.animations-medium .stat-card:hover {
+    transform: none !important;
+}
+
+/* Упрощаем hover для карточек и тем — только тень, без подъёма */
+body.animations-medium .topic:hover {
+    transform: none !important;
+}
+
+body.animations-medium .task-card:hover {
+    transform: none !important;
+}
+
+body.animations-medium .subject-card:hover {
+    transform: none !important;
+}
+
+/* Отключаем сложные box-shadow переходы при наведении (только лёгкая тень) */
+body.animations-medium .topic:hover,
+body.animations-medium .task-card:hover,
+body.animations-medium .subject-card:hover,
+body.animations-medium .definition-box:hover,
+body.animations-medium .formula-box:hover,
+body.animations-medium .remark-box:hover,
+body.animations-medium .experiment-box:hover,
+body.animations-medium .derivation-box:hover,
+body.animations-medium .stat-card:hover {
+    box-shadow: var(--shadow-md) !important;
+}
+
+/* Сокращаем длительность всех переходов */
 body.animations-medium {
-    --transition: all 0.2s ease;
-    --transition-smooth: all 0.2s ease;
-    --transition-bounce: all 0.2s ease;
+    --transition: all 0.15s ease;
+    --transition-smooth: all 0.15s ease;
+    --transition-bounce: all 0.15s ease;
+}
+
+/* Упрощаем переходы на элементах — убираем border-width, transform */
+body.animations-medium .definition-box,
+body.animations-medium .formula-box,
+body.animations-medium .remark-box,
+body.animations-medium .experiment-box,
+body.animations-medium .derivation-box {
+    transition: box-shadow 0.15s ease, background-color 0.15s ease !important;
+}
+
+/* Упрощаем hover на кнопках — без transform, только цвет/тень */
+body.animations-medium .scroll-to-top:hover,
+body.animations-medium .settings-button:hover,
+body.animations-medium .menu-toggle:hover,
+body.animations-medium .theme-toggle:hover,
+body.animations-medium .ny-toggle:hover {
+    transform: none !important;
+}
+
+/* Отключаем новогодний снежинка-эффект при наведении на карточки задач */
+body.animations-medium.new-year-mode .task-card:hover::after {
+    content: none !important;
 }
 
 /* Выключенные анимации */
