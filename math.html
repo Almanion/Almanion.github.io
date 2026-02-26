@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Конспекты по Алгебре 9 класс | Almanion</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <!-- KaTeX для математических формул -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+    <!-- Боковая панель навигации -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2><a href="index.html" style="color: white; text-decoration: none;">📚 Конспекты</a></h2>
+            <!-- Кнопка настроек создается автоматически через settings.js -->
+            <button class="close-sidebar" id="closeSidebar">✕</button>
+        </div>
+        
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="🔍 Поиск...">
+        </div>
+
+        <nav class="nav-menu">
+            <div class="nav-section">
+                <h3>Алгебра 9 класс</h3>
+                <ul>
+                    <li><a href="#function" class="nav-link active">Функция</a></li>
+                    <li><a href="#bounded" class="nav-link">Ограниченность функции</a></li>
+                    <li><a href="#monotonic" class="nav-link">Монотонная функция</a></li>
+                    <li><a href="#composition" class="nav-link">Композиция функций</a></li>
+                    <li><a href="#monotonic-composition" class="nav-link">Монотонность композиции</a></li>
+                    <li><a href="#periodicity" class="nav-link">Периодичность</a></li>
+                    <li><a href="#fractional-linear" class="nav-link">Дробно-линейная функция</a></li>
+                    <li><a href="#transformations" class="nav-link">Равносильные переходы в уравнениях</a></li>
+                    <li><a href="#irrational" class="nav-link">Иррациональные неравенства</a></li>
+                </ul>
+            </div>
+            
+            <div class="nav-section other-subjects">
+                <h3>Другие предметы</h3>
+                <ul>
+                    <li><a href="physics.html">Физика 9 класс</a></li>
+                    <li><a href="math.html" class="current-subject">Алгебра 9 класс</a></li>
+                    <li><a href="geometry.html">Геометрия 9 класс</a></li>
+                </ul>
+            </div>
+        </nav>
+
+    </aside>
+
+    <!-- Кнопка открытия меню (для мобильных) -->
+    <button class="menu-toggle" id="menuToggle">☰</button>
+
+    <!-- Основной контент -->
+    <main class="main-content">
+        <header class="page-header">
+            <h1>Алгебра 9 класс</h1>
+            <p class="subtitle">Конспекты | 2025–2026 | <a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a></p>
+        </header>
+
+        <section class="content-section">
+            <h2 class="part-title">Функции и их свойства</h2>
+
+            <!-- 1. Функция -->
+            <article id="function" class="topic">
+                <h3 class="topic-title">1. Функция</h3>
+                
+                <div class="definition-box">
+                    <strong>Функция</strong> — это правило \(f\), сопоставляющее каждому элементу \(x\) из множества \(X\) единственный элемент \(y\) из множества \(Y\), обозначается \(f: X \to Y\).
+                </div>
+
+                <div class="remark-box">
+                    💡 <strong>Обозначения:</strong><br>
+                    • \(x\) — аргумент (независимая переменная)<br>
+                    • \(y\) — значение функции (зависимая переменная)<br>
+                    • \(X\) — область определения (множество допустимых значений \(x\))<br>
+                    • \(Y\) — область значений (множество всех значений \(f(x)\))
+                </div>
+
+                <div class="definition-box">
+                    <strong>Область определения функции</strong> \(D(f)\) — множество всех значений аргумента, при которых функция имеет смысл.
+                </div>
+
+                <div class="definition-box">
+                    <strong>Область значений функции</strong> \(E(f)\) — множество всех значений, которые принимает функция.
+                </div>
+
+                <div class="definition-box">
+                    <strong>Отображение "на" или "суръекция"</strong> — это функция, которая отображает множество \(X\) на множество \(Y\) так, что во множестве \(Y\) нет "лишних" элементов \((Y = E(f))\).
+                </div>
+
+                <div class="definition-box">
+                    <strong>Инъекция</strong> — это функция, которая отображает множество \(X\) на множество \(Y\) так, что у каждого элемента из множества \(X\) "свой" элемент из множества \(Y\) и они не повторяются.
+                </div>
+
+                <div class="definition-box">
+                    <strong>Биекция</strong> — это функция, являющаяся одновременно инъекцией и суръекцией.
+                </div>
+
+                <div class="definition-box">
+                    <strong>Образ \(x_0\) под действием \(f\)</strong> — это значение функции \(f(x_0)\).
+                </div>
+
+                <div class="definition-box">
+                    <strong>Прообраз \(y_0\) под действием \(f\)</strong> — это элемент \(x_0\) из множества \(X\), такой что \(f(x_0) = y_0\). Обозначается \(f^{-1}(y_0)\).
+                </div>
+
+            </article>
+
+            <!-- 2. Ограниченность функции -->
+            <article id="bounded" class="topic">
+                <h3 class="topic-title">2. Ограниченность функции</h3>
+                
+                <div class="definition-box">
+                    Функция \(f(x)\) называется <strong>ограниченной сверху</strong> на множестве \(X\), если существует число \(M\) такое, что для всех \(x \in X\) выполняется \(f(x) \leq M\).
+                </div>
+
+                <div class="definition-box">
+                    Функция \(f(x)\) называется <strong>ограниченной снизу</strong> на множестве \(X\), если существует число \(m\) такое, что для всех \(x \in X\) выполняется \(f(x) \geq m\).
+                </div>
+
+                <div class="definition-box">
+                    Функция \(f(x)\) называется <strong>ограниченной</strong> на множестве \(X\), если она ограничена и сверху, и снизу, то есть существует число \(C > 0\) такое, что \(|f(x)| \leq C\) для всех \(x \in X\).
+                </div>
+
+                <div class="properties-box">
+                    <strong>Свойства ограниченных функций:</strong>
+                    <ul>
+                        <li>Если функция ограничена сверху и снизу, то она ограничена</li>
+                        <li>Сумма ограниченных функций — ограниченная функция</li>
+                        <li>Произведение ограниченных функций — ограниченная функция</li>
+                        <li>Если \(|f(x)| \leq C\) на \(X\), то \(-C \leq f(x) \leq C\) для всех \(x \in X\)</li>
+                    </ul>
+                </div>
+
+            </article>
+
+            <!-- 3. Свойства монотонной функции -->
+            <article id="monotonic" class="topic">
+                <h3 class="topic-title">3. Монотонная функция</h3>
+                
+                <div class="definition-box">
+                    Функция \(f(x)\) называется <strong>возрастающей</strong> на множестве \(X\), если для любых \(x_1, x_2 \in X\) таких, что \(x_1 < x_2\), выполняется \(f(x_1) < f(x_2)\).
+                </div>
+
+                <div class="definition-box">
+                    Функция \(f(x)\) называется <strong>убывающей</strong> на множестве \(X\), если для любых \(x_1, x_2 \in X\) таких, что \(x_1 < x_2\), выполняется \(f(x_1) > f(x_2)\).
+                </div>
+
+                <div class="remark-box">
+                    💡 Если неравенства нестрогие (\(f(x_1) \leq f(x_2)\) или \(f(x_1) \geq f(x_2)\)), то функция называется <strong>неубывающей</strong> или <strong>невозрастающей</strong> соответственно.
+                </div>
+
+                <div class="properties-box">
+                    <strong>Свойства монотонных функций:</strong>
+                    <ol>
+                        <li>Монотонная функция каждое своё значение принимает ровно один раз.</li>
+                        <li>Если функция \(f\) возрастает на \(X\), то \(-f\) убывает на \(X\).</li>
+                        <li>Если функции \(f\) и \(g\) возрастают на \(X\), то \(f + g\) также возрастает на \(X\).</li>
+                        <li>Если функции \(f\) и \(g\) возрастают на \(X\), \(k_1>0\), \(k_2>0\), то \(k_1f + k_2g\) также возрастает на \(X\).</li>
+                        <li>Если \(f\) возрастает и сохраняет знак на \(X\), то \(\frac{1}{f}\) убывает на \(X\).</li>
+                    </ol>
+                </div>
+            </article>
+
+            <!-- 4. Композиция функций -->
+            <article id="composition" class="topic">
+                <h3 class="topic-title">4. Композиция функций</h3>
+                
+                <div class="definition-box">
+                    <strong>Композицией</strong> функций \(f\) и \(g\) называется функция \(h(x) = f(g(x))\), обозначается \((f \circ g)(x)\) или \(f(g(x))\).
+                </div>
+
+                <div class="formula-box">
+                    <p><strong>Область определения композиции:</strong></p>
+                    <p>Для функции \(h(x) = f(g(x))\) область определения состоит из тех \(x\), для которых:</p>
+                    <ol>
+                        <li>\(x \in D(g)\) — \(x\) принадлежит области определения \(g\)</li>
+                        <li>\(g(x) \in D(f)\) — значение \(g(x)\) принадлежит области определения \(f\)</li>
+                    </ol>
+                </div>
+            </article>
+
+            <!-- 5. Монотонность композиции -->
+            <article id="monotonic-composition" class="topic">
+                <h3 class="topic-title">5. Монотонность композиции функций</h3>
+                
+                <div class="definition-box">
+                    <p>Пусть функция \(f(x)\) монотонна на \(A\), \(g(x)\) монотонна на \(B\). Пусть функция \(\varphi(x) = g(f(x))\). Тогда:</p>
+                    <ul>
+                        <li>Если \(f(x)\) возрастает на \(A\), \(g(x)\) возрастает на \(B\) , то \(\varphi(x)\) возрастает на \(A\);</li>
+                        <li>Если \(f(x)\) убывает на \(A\), \(g(x)\) убывает на \(B\) , то \(\varphi(x)\) возрастает на \(A\);</li>
+                        <li>Если \(f(x)\) убывает на \(A\), \(g(x)\) возрастает на \(B\) , то \(\varphi(x)\) убывает на \(A\).</li>
+                    </ul>
+                </div>
+            </article>
+
+            <!-- 6. Периодичность -->
+            <article id="periodicity" class="topic">
+                <h3 class="topic-title">6. Периодичность функции</h3>
+                
+                <div class="definition-box">
+                    Функция \(f(x)\) называется <strong>периодической</strong> с периодом \(T > 0\), если для всех \(x\) из области определения, \(x + T\) и \(x - T\) также принадлежат области определения, и выполняется:
+                    \[f(x + T) = f(x - T)\]
+                </div>
+
+                <div class="remark-box">
+                    <strong>Основной период</strong> — наименьший период.
+                </div>
+
+            </article>
+
+            <!-- 7. Дробно-линейная функция -->
+            <article id="fractional-linear" class="topic">
+                <h3 class="topic-title">7. Дробно-линейная функция</h3>
+                
+                <div class="definition-box">
+                    <strong>Дробно-линейная функция</strong> — функция вида
+                    \[f(x) = \frac{ax + b}{cx + d}\]
+                    где \(a, b, c, d\) — действительные числа, причём \(c \neq 0\) и \(ad - bc \neq 0\).
+                </div>
+
+                <div class="formula-box">
+                    <p><strong>Преобразование к стандартному виду:</strong></p>
+                    \[f(x) = \frac{ax + b}{cx + d} = \frac{a}{c} + \frac{bc - ad}{c(cx + d)}\]
+                    
+                    <p>При \(bc - ad \neq 0\) это преобразуется к виду:</p>
+                    \[f(x) = A + \frac{B}{x - x_0}\]
+                    где \(A = \frac{a}{c}\), \(x_0 = -\frac{d}{c}\), \(B = \frac{bc - ad}{c^2}\).
+                </div>
+
+            </article>
+
+            <!-- 9. Равносильные переходы в неравенствах -->
+            <article id="transformations" class="topic">
+                <h3 class="topic-title">9. Равносильные переходы в уравнениях</h3>
+                    <div class="system-box">
+                        \[\sqrt{f(x)} = g(x) \Leftrightarrow \begin{cases}
+                            f(x) = g^2(x) \\
+                            g(x) \geq 0
+                        \end{cases}\]
+                        \[\sqrt{f(x)} = \sqrt{g(x)} \Leftrightarrow \begin{cases}
+                        f(x) = g(x) \\
+                        f(x) \geq 0
+                        \end{cases} \Leftrightarrow \begin{cases}]
+                        f(x) = g(x) \\
+                        g(x) \geq 0
+                    \end{cases}\]
+                    </div>
+
+            </article>
+
+            <!-- 10. Иррациональные неравенства -->
+            <article id="irrational" class="topic">
+                <h3 class="topic-title">10. Иррациональные неравенства</h3>
+
+                <div class="system-box">
+                    \[\sqrt{f(x)} > \sqrt{g(x)} \Leftrightarrow \begin{cases}
+                    f(x) > g(x) \\
+                    g(x) \geq 0
+                    \end{cases} \qquad
+                    \sqrt{f(x)} \geq \sqrt{g(x)} \Leftrightarrow \begin{cases}
+                    f(x) \geq g(x) \\
+                    g(x) \geq 0
+                    \end{cases}\]
+                </div>
+
+                <div class="system-box">
+                    \[
+                    \sqrt{f(x)} > g(x) \Leftrightarrow
+                    \left[
+                    \begin{array}{l}
+                    \begin{cases}
+                    f(x) \geq 0 \\
+                    g(x) < 0
+                    \end{cases} \\
+                    \begin{cases}
+                    f(x) > g^2(x) \\
+                    g(x) \geq 0
+                    \end{cases}
+                    \end{array}
+                    \right.
+                    \qquad
+                    \sqrt{f(x)} \geq g(x) \Leftrightarrow
+                    \left[
+                    \begin{array}{l}
+                    \begin{cases}
+                    f(x) \geq 0 \\
+                    g(x) \leq 0
+                    \end{cases} \\
+                    \begin{cases}
+                    f(x) \geq g^2(x) \\
+                    g(x) \geq 0
+                    \end{cases}
+                    \end{array}
+                    \right.
+                    \]
+                </div>
+
+                <div class="system-box">
+                    \[\sqrt{f(x)} < g(x) \Leftrightarrow \begin{cases}
+                    f(x) < g^2(x) \\
+                    f(x) \geq 0 \\
+                    g(x) \geq 0
+                    \end{cases} \qquad
+                    \sqrt{f(x)} \leq g(x) \Leftrightarrow \begin{cases}
+                    f(x) \leq g^2(x) \\
+                    f(x) \geq 0 \\
+                    g(x) \geq 0
+                    \end{cases}\]
+                </div>
+
+            </article>
+        </section>
+
+        <!-- Футер -->
+        <footer class="page-footer">
+            <p>© 2025–2026 Almanion | Конспекты по алгебре 9 класс</p>
+        </footer>
+    </main>
+
+    <!-- Кнопка "Наверх" -->
+    <button class="scroll-to-top" id="scrollToTop">↑</button>
+
+    <!-- Контейнер для снега -->
+    <div class="snow-container" id="snowContainer"></div>
+    
+    <!-- Контейнер для пасхалок -->
+    <div class="easter-eggs-container" id="easterEggsContainer"></div>
+
+    <!-- Firebase Analytics -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-analytics.js"></script>
+
+    <script src="script.js"></script>
+    <script src="newyear.js"></script>
+    <script src="settings.js"></script>
+    <script src="telegram.js"></script>
+</body>
+</html>
