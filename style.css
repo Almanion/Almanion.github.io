@@ -867,7 +867,7 @@ body.sidebar-collapsed .main-content {
 .main-content {
     margin-left: var(--sidebar-width);
     padding: 2rem;
-    max-width: 1200px;
+    max-width: calc(100vw - var(--sidebar-width) - 4rem); /* по ширине экрана минус сайдбар и отступы */
     transition: margin-left 0.3s ease, max-width 0.3s ease;
 }
 
