@@ -1423,6 +1423,8 @@ em {
     .main-content {
         margin-left: 0;
         padding: 1rem;
+        max-width: 100%;
+        width: 100%;
     }
     
     .page-header {
