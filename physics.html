@@ -72,6 +72,8 @@
                             <li><a href="#friction-work" class="nav-link">3.12 Работа силы трения</a></li>
                             <li><a href="#gravitational-potential" class="nav-link">3.13 Потенциальная энергия гравитационного поля</a></li>
                             <li><a href="#impact" class="nav-link">3.14 Удар</a></li>
+                            <li><a href="#rotation-dynamics" class="nav-link">3.15 Динамика вращательного движения</a></li>
+                            <li><a href="#moment-of-inertia" class="nav-link">3.16 Момент инерции</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -2424,6 +2426,159 @@
                     </div>
                     <div class="remark-box">
                         При абсолютно неупругом ударе не выполняется закон сохранения механической энергии, так как часть энергии уходит на деформацию тел.
+                    </div>
+                </div>
+            </article>
+
+            <!-- Основное уравнение динамики вращательного движения -->
+            <article id="rotation-dynamics" class="topic">
+                <h3 class="topic-title">3.15 Основное уравнение динамики вращательного движения</h3>
+
+                <div class="definition-box">
+                    Рассмотрим тело на закреплённой оси, к которому приложена произвольная сила \(\vec{F}\). Разложим эту силу на 2 компоненты \(\vec{F}_{\parallel}\) и \(\vec{F}_{\perp}\) (рис. 10).
+                    <br><br>
+                    \(\vec{F}_{\parallel}\) лежит в плоскости, параллельной оси, не влияет на вращение тела, а лишь способствует линейной деформации оси. Только \(\vec{F}_{\perp}\) обеспечивает вращение тела вокруг оси с угловым ускорением \(\beta\).
+                    <br><br>
+                    Выделим плоскость, перпендикулярную оси и содержащую \(\vec{F}_{\perp}\).<br>
+                    Пусть тело повернётся на малый угол \(\Delta\varphi\). Разложим силу на компоненты: \(\vec{F}_n\) и \(\vec{F}_\tau\) (рис. 11).
+                    \[\Delta A_{F_\perp} = \Delta A_{F_n} + \Delta A_{F_\tau}.\]
+                    \(\vec{F}_n \perp \Delta\vec{l}\), поэтому \(\Delta A_{F_n} = 0\). Работа равна работе тангенциальной компоненты:
+                    \[\Delta A_{F_\perp} = \Delta A_{F_\tau} = F_\tau \cdot \Delta l.\]
+                    Поскольку \(\Delta l = r \cdot \Delta\varphi\), получаем формулу работы вращения:
+                    \[\Delta A_{F_\perp} = F_\tau \cdot r \cdot \Delta\varphi.\]
+                </div>
+
+                <div style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; margin: 1.5rem 0;">
+                    <figure style="flex: 1; min-width: 220px; max-width: 45%; text-align: center; margin: 0;">
+                        <img src="images/force-decomp-axis.jpg" alt="Разложение силы на компоненты" loading="lazy" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <figcaption style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-secondary); font-style: italic;">Разложение силы \(\vec{F}\) на компоненты \(\vec{F}_{\parallel}\) и \(\vec{F}_{\perp}\).</figcaption>
+                    </figure>
+                    <figure style="flex: 1; min-width: 220px; max-width: 45%; text-align: center; margin: 0;">
+                        <img src="images/force-decomp-rotation-work.jpg" alt="Поворот на угол Δφ" loading="lazy" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <figcaption style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-secondary); font-style: italic;">Поворот на угол \(\Delta\varphi\).</figcaption>
+                    </figure>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Момент силы</strong> — векторная физическая величина, равная векторному произведению радиус-вектора, проведённого от оси вращения до точки приложения силы, на вектор силы.
+                    <div class="formula-box">
+                        \[\vec{M} = \vec{r} \times \vec{F}\]
+                        \[M = r \cdot F \cdot \sin\alpha\]
+                    </div>
+                    <strong>Правило правого винта:</strong> если от вектора перемещения \(\vec{r}\) вращать по кратчайшему пути к вектору силы \(\vec{F}\) правый винт, то его поступательное движение совпадает с направлением вектора момента силы \(\vec{M}\).
+                    <br><br>
+                    Момент силы считают <strong>положительным</strong>, если сила вызывает вращение тела по часовой стрелке, и <strong>отрицательным</strong>, если против.
+                </div>
+
+                <div class="definition-box">
+                    <strong>Плечо силы</strong> — кратчайшее расстояние от оси вращения до прямой, вдоль которой направлена сила.
+                    <div class="formula-box">
+                        \[l = r \cdot \sin\alpha\]
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <div class="derivation-box">
+                        <button class="toggle-derivation">📖 Показать вывод</button>
+                        <div class="derivation-content">
+                            \[\boxed{\Delta A = M \cdot \Delta\varphi, \qquad \Delta A = \sum M_i \cdot \Delta\varphi}\]
+                            Разобьём АТТ на множество материальных точек. Кинетическая энергия системы равна:
+                            \[W_k = \sum W_{k_i} = \sum \frac{m_i v_i^2}{2}\]
+                            \[v_i = \omega \cdot r_i\]
+                            \[W_k = \sum \frac{\omega^2}{2} \cdot m_i r_i^2 = \frac{\omega^2}{2} \cdot \sum m_i r_i^2\]
+                            Момент инерции АТТ относительно заданной оси вращения:
+                            \[I = \sum m_i r_i^2\]
+                        </div>
+                    </div>
+                    <strong>Момент инерции МТ</strong> — скалярная физическая величина, равная произведению массы материальной точки на квадрат расстояния до центра вращения.
+                    <div class="formula-box">
+                        \[I = mr^2\]
+                    </div>
+                    <strong>Момент инерции АТТ</strong> — скалярная физическая величина, равная сумме моментов инерции всех МТ тела относительно оси вращения.
+                    <div class="formula-box">
+                        \[W_{\text{кин. вращ.}} = \frac{I \cdot \omega^2}{2}\]
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Основное уравнение динамики вращательного движения АТТ:</strong> угловое ускорение АТТ относительно заданной оси вращения прямо пропорционально векторной сумме моментов внешних сил и обратно пропорционально моменту инерции относительно заданной оси вращения.
+                    <div class="formula-box">
+                        \[I \cdot \vec{\beta} = \sum \vec{M}\]
+                    </div>
+                    <div class="derivation-box">
+                        <button class="toggle-derivation">📖 Показать вывод</button>
+                        <div class="derivation-content">
+                            \[A = \Delta W_k\]
+                            \[M_0 \Delta\varphi = \Delta\!\left(\frac{I \cdot \omega^2}{2}\right) \Rightarrow M_0 \Delta\varphi = \frac{I}{2} \cdot \Delta(\omega^2)\]
+                            \[\frac{d(\omega^2)}{d\omega} = 2\omega \Rightarrow \Delta(\omega^2) = 2\omega \cdot \Delta\omega\]
+                            \[M_0 \lim_{\Delta t \to 0}\frac{\Delta\varphi}{\Delta t} = \frac{I}{2} \cdot 2\omega \cdot \lim_{\Delta t \to 0}\frac{\Delta\omega}{\Delta t}\]
+                            \[M_0 \omega = I \cdot \omega \cdot \beta \Rightarrow M_0 = I \cdot \beta\]
+                        </div>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Момент инерции -->
+            <article id="moment-of-inertia" class="topic">
+                <h3 class="topic-title">3.16 Момент инерции</h3>
+
+                <div class="definition-box">
+                    <strong>Центральный момент инерции АТТ</strong> — момент инерции АТТ относительно оси, проходящей через центр масс тела.
+                    <br><br>
+                    <strong>Зависит от:</strong>
+                    <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                        <li>Массы тела</li>
+                        <li>Формы тела</li>
+                        <li>Размеров тела</li>
+                        <li>Положения тела по отношению к оси вращения</li>
+                    </ul>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Центральный момент тонкого кольца:</strong>
+                    <div class="derivation-box">
+                        <button class="toggle-derivation">📖 Показать вывод</button>
+                        <div class="derivation-content">
+                            \[\Delta I_i = \Delta m_i \cdot r^2\]
+                            \[I = \sum \Delta m_i \cdot r^2 = m \cdot r^2\]
+                            Здесь мы учли, что расстояние \(r\) для всех МТ одинаково и сумма масс МТ равна массе кольца.
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin: 1.5rem 0;">
+                        <img src="images/thin-ring-moment-inertia.jpg" alt="Тонкое кольцо: момент инерции" loading="lazy" style="max-width: 60%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <p style="margin-top: 0.75rem; font-size: 0.9rem; color: var(--text-secondary); font-style: italic;">Тонкое кольцо: центр \(O\), ось вращения, радиус \(R\), элемент массы \(\Delta m_i\).</p>
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Теорема о взаимно перпендикулярных осях:</strong> сумма моментов инерции плоского тела относительно любой пары взаимно перпендикулярных осей в плоскости этого тела равна моменту инерции относительно оси, перпендикулярной плоскости тела и проходящей через точку пересечения этих осей.
+                    <div class="derivation-box">
+                        <button class="toggle-derivation">📖 Показать формулу</button>
+                        <div class="derivation-content">
+                            \[I_x + I_y = I_z\]
+                        </div>
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Теорема Штейнера:</strong> момент инерции тела \(I\) относительно произвольной оси равен сумме центрального момента инерции \(I_0\) относительно оси, проходящей параллельно рассматриваемой через центр масс, и произведения массы тела \(m\) на квадрат расстояния \(d\) между осями.
+                    <div class="formula-box">
+                        \[I = I_0 + m \cdot d^2\]
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    Любое плоское движение АТТ можно представить в виде суммы поступательного движения центра масс и вращательного движения относительно оси, проходящей через центр масс тела.
+                </div>
+
+                <div class="definition-box">
+                    <strong>Теорема Кёнига:</strong> при плоском движении кинетическая энергия движущегося АТТ равна сумме кинетической энергии поступательного движения центра масс и кинетической энергии вращательного движения относительно оси, проходящей через центр масс и перпендикулярной плоскости, в которой движутся все точки тела.
+                    <div class="formula-box">
+                        \[W_k = W_{k_c} + W_{k_0} = \frac{m \cdot v_c^2}{2} + \frac{I_0 \cdot \omega^2}{2}\]
+                    </div>
+                    <strong>Обобщение:</strong> кинетическая энергия механической системы есть энергия движения центра масс плюс энергия движения тела относительно центра масс.
+                    <div class="formula-box">
+                        \[T = T_0 + T_c\]
                     </div>
                 </div>
             </article>
