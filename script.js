@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initScrollEffects();
     initDerivationToggles();
     initMobileMenu();
+    initBottomSheetSwipe();
     initSidebarCollapse();
 });
 
@@ -491,18 +492,14 @@ function openMobileMenu() {
     const overlay = document.querySelector('.sidebar-overlay');
     
     sidebar.classList.add('open');
-    // Убираем collapsed если был (на случай ресайза)
     sidebar.classList.remove('collapsed');
+    sidebar.style.transform = '';
     if (overlay) {
         overlay.classList.add('active');
     }
     
-    // Блокируем прокрутку на мобильных
     if (window.innerWidth <= 768) {
         document.body.classList.add('sidebar-open');
-        // Исправление высоты на мобильных (iOS Safari и т.п.)
-        const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-        sidebar.style.height = vh + 'px';
     }
 }
 
@@ -512,29 +509,65 @@ function closeMobileMenu() {
     
     if (sidebar) {
         sidebar.classList.remove('open');
-        // Сбрасываем инлайновую высоту
-        sidebar.style.height = '';
+        sidebar.style.transform = '';
     }
     if (overlay) {
         overlay.classList.remove('active');
     }
     
-    // Разблокируем прокрутку
     document.body.classList.remove('sidebar-open');
 }
 
-// Обновление высоты сайдбара при изменении размера / повороте экрана
-function updateSidebarHeight() {
+function initBottomSheetSwipe() {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && sidebar.classList.contains('open') && window.innerWidth <= 768) {
-        // Используем visualViewport.height если доступно (точнее на iOS Safari)
-        const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-        sidebar.style.height = vh + 'px';
-    }
-    // На десктопе убираем collapsed при переключении на мобильный вид
+    if (!sidebar) return;
+
+    let startY = 0;
+    let currentY = 0;
+    let isDragging = false;
+
+    sidebar.addEventListener('touchstart', (e) => {
+        if (window.innerWidth > 768 || !sidebar.classList.contains('open')) return;
+        if (sidebar.scrollTop > 5) return;
+        startY = e.touches[0].clientY;
+        currentY = startY;
+        isDragging = true;
+        sidebar.style.transition = 'none';
+    }, { passive: true });
+
+    sidebar.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        currentY = e.touches[0].clientY;
+        const deltaY = currentY - startY;
+        if (deltaY > 0) {
+            sidebar.style.transform = `translateY(${deltaY}px)`;
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (overlay) {
+                overlay.style.opacity = Math.max(0, 1 - deltaY / 300);
+            }
+        }
+    }, { passive: true });
+
+    sidebar.addEventListener('touchend', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        sidebar.style.transition = '';
+        const overlay = document.querySelector('.sidebar-overlay');
+        if (overlay) overlay.style.opacity = '';
+        const deltaY = currentY - startY;
+        if (deltaY > 80) {
+            closeMobileMenu();
+        } else {
+            sidebar.style.transform = '';
+        }
+    });
+}
+
+function updateSidebarHeight() {
     if (window.innerWidth <= 768) {
-        if (document.getElementById('sidebar')) {
-            document.getElementById('sidebar').classList.remove('collapsed');
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            sidebar.classList.remove('collapsed');
         }
         document.body.classList.remove('sidebar-collapsed');
     }
