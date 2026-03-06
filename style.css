@@ -1341,224 +1341,492 @@ em {
     }
 }
 
+/* ============================================
+   МОБИЛЬНЫЙ ДИЗАЙН: CLEAN READER
+   ============================================ */
+
 @media (max-width: 768px) {
+    :root {
+        --m-pad: 0.875rem;
+    }
+
+    body {
+        font-size: 15px;
+        line-height: 1.6;
+    }
+
+    /* --- SIDEBAR --- */
     .sidebar {
         transform: translateX(-100%);
         width: 85vw;
         max-width: 320px;
         height: 100vh;
         height: 100dvh;
-        /* iOS: предотвращаем баунс и обеспечиваем нормальную прокрутку */
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
     }
-    
+
     .sidebar.open {
         transform: translateX(0);
     }
-    
-    /* Скрываем десктопные кнопки сворачивания на мобильных */
+
     .sidebar-collapse-btn,
     .sidebar-expand-btn {
         display: none !important;
     }
-    
+
     .close-sidebar {
         display: block;
-        /* Увеличиваем область нажатия для тач-устройств */
         min-width: 44px;
         min-height: 44px;
+        width: 36px;
+        height: 36px;
+        font-size: 1.1rem;
     }
-    
+
     .menu-toggle {
         display: block;
         left: auto;
-        right: 1rem;
+        right: 0.75rem;
+        top: 0.75rem;
     }
-    
+
     .sidebar-header {
         flex-wrap: nowrap;
         gap: 0.5rem;
+        padding: 0.75rem 1rem;
     }
-    
+
     .sidebar-header h2 {
-        font-size: 1.2rem;
+        font-size: 1.15rem;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    
+
     .theme-toggle {
-        width: 36px;
-        height: 36px;
+        width: 34px;
+        height: 34px;
         font-size: 1.1rem;
     }
-    
-    .close-sidebar {
-        width: 36px;
-        height: 36px;
-        font-size: 1.1rem;
-    }
-    
+
     .settings-button-sidebar {
-        width: 36px;
-        height: 36px;
-        font-size: 1.2rem;
+        width: 34px;
+        height: 34px;
+        font-size: 1.1rem;
     }
-    
+
+    .search-box {
+        padding: 0.5rem var(--m-pad);
+    }
+
+    .search-box input {
+        padding: 0.6rem 0.875rem;
+        font-size: 0.9rem;
+        border-radius: 8px;
+    }
+
     .nav-group-toggle {
-        padding: 0.65rem 1rem;
+        padding: 0.6rem var(--m-pad);
         font-size: 0.9rem;
     }
-    
+
     .nav-submenu .nav-link {
-        padding-left: 2rem;
+        padding: 0.7rem var(--m-pad) 0.7rem 1.75rem;
         font-size: 0.85rem;
     }
-    
+
     .nav-submenu .nav-link:hover {
-        padding-left: 1.5rem;
+        padding-left: 1.75rem;
+        transform: none;
     }
-    
+
+    .nav-link:hover {
+        transform: none;
+    }
+
+    /* --- MAIN CONTENT: EDGE-TO-EDGE --- */
     .main-content {
         margin-left: 0;
-        padding: 1rem;
+        padding: 0;
         max-width: 100%;
         width: 100%;
     }
-    
+
+    /* --- PAGE HEADER: COMPACT STRIP --- */
     .page-header {
-        padding: 2rem 1rem;
+        border-radius: 0;
+        padding: 1.25rem var(--m-pad);
+        margin-bottom: 0;
+        box-shadow: none;
     }
-    
+
+    .page-header::before {
+        display: none;
+    }
+
     .page-header h1 {
-        font-size: 1.75rem;
+        font-size: 1.3rem;
+        letter-spacing: -0.01em;
+        margin-bottom: 0.25rem;
     }
-    
+
     .subtitle {
+        font-size: 0.85rem;
+        opacity: 0.85;
+    }
+
+    /* --- CONTENT SECTIONS --- */
+    .content-section {
+        margin-bottom: 0;
+    }
+
+    /* --- PART TITLE: STICKY SECTION HEADER --- */
+    .part-title {
+        font-size: 1.15rem;
+        padding: 0.625rem var(--m-pad);
+        margin-bottom: 0;
+        border-bottom: 2px solid var(--accent-color);
+        background: var(--bg-secondary);
+        border-radius: 0;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .part-title::after {
+        display: none;
+    }
+
+    /* --- TOPICS: FLAT SECTIONS --- */
+    .topic {
+        padding: 0.75rem var(--m-pad);
+        border-radius: 0;
+        margin-bottom: 0;
+        box-shadow: none;
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .topic:hover {
+        box-shadow: none;
+        transform: none;
+    }
+
+    .topic-title {
+        font-size: 1.1rem;
+        margin-bottom: 0.625rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .topic-title::before {
         font-size: 1rem;
     }
-    
-    .topic {
-        padding: 1.5rem;
+
+    /* --- SUBSECTION TITLE: FULL WIDTH --- */
+    .subsection-title {
+        font-size: 1rem;
+        padding: 0.5rem var(--m-pad);
+        margin: 0.75rem calc(-1 * var(--m-pad));
+        width: calc(100% + 2 * var(--m-pad));
+        border-radius: 0;
+        border-left-width: 4px;
     }
-    
-    .topic-title {
-        font-size: 1.3rem;
+
+    .subsection-title:hover {
+        transform: none;
     }
-    
+
+    /* --- CONTENT BOXES: DEFAULTS (for nested boxes) --- */
+    .definition-box,
+    .formula-box,
+    .remark-box,
+    .experiment-box,
+    .derivation-box {
+        padding: 0.625rem;
+        border-radius: 6px;
+        margin: 0.5rem 0;
+    }
+
+    .properties-box,
+    .system-box {
+        padding: 0.625rem;
+        border-radius: 6px;
+    }
+
+    /* --- CONTENT BOXES: EDGE-TO-EDGE (direct children of .topic) --- */
+    .topic > .definition-box,
+    .topic > .remark-box {
+        margin-left: calc(-1 * var(--m-pad));
+        margin-right: calc(-1 * var(--m-pad));
+        padding: 0.625rem var(--m-pad);
+        border-radius: 0;
+        border-left-width: 4px;
+    }
+
+    .topic > .formula-box {
+        margin-left: calc(-1 * var(--m-pad));
+        margin-right: calc(-1 * var(--m-pad));
+        padding: 0.625rem var(--m-pad);
+        border-radius: 0;
+        overflow-x: auto;
+        border-left: none;
+        border-right: none;
+        border-width: 1.5px 0;
+    }
+
+    .topic > .experiment-box,
+    .topic > .derivation-box {
+        margin-left: calc(-1 * var(--m-pad));
+        margin-right: calc(-1 * var(--m-pad));
+        padding: 0.625rem var(--m-pad);
+        border-radius: 0;
+        border-width: 1.5px 0;
+    }
+
+    .topic > .properties-box,
+    .topic > .system-box {
+        margin-left: calc(-1 * var(--m-pad));
+        margin-right: calc(-1 * var(--m-pad));
+        padding: 0.625rem var(--m-pad);
+        border-radius: 0;
+    }
+
+    /* Nested boxes stay within their parent */
+    .definition-box .formula-box,
+    .definition-box .derivation-box,
+    .definition-box .remark-box,
+    .remark-box .formula-box,
+    .experiment-box .formula-box,
+    .derivation-box .formula-box,
+    .derivation-content .formula-box {
+        margin-left: 0;
+        margin-right: 0;
+        border-radius: 6px;
+        padding: 0.5rem;
+        border-width: 1.5px;
+    }
+
+    /* --- DISABLE HOVER EFFECTS (touch devices) --- */
+    .definition-box:hover,
+    .formula-box:hover,
+    .remark-box:hover,
+    .experiment-box:hover,
+    .derivation-box:hover {
+        transform: none;
+        border-width: inherit;
+    }
+
+    .experiment-box h4 {
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .exp-section {
+        padding: 0.625rem;
+        margin: 0.5rem 0;
+    }
+
+    .remark-box::before {
+        font-size: 1rem;
+        top: 0.4rem;
+        right: 0.5rem;
+    }
+
+    .definition-box strong {
+        font-size: 1rem;
+    }
+
+    /* --- IMAGES: FULL WIDTH --- */
+    .topic img,
+    .content-section img {
+        max-width: 100% !important;
+        border-radius: 4px !important;
+        margin: 0.5rem 0;
+    }
+
+    /* --- TYPOGRAPHY --- */
+    .katex {
+        font-size: 0.9em;
+    }
+
+    .katex-display {
+        margin: 0.375rem 0;
+        padding: 0.125rem 0;
+    }
+
+    ol, ul {
+        padding-left: 1.25rem;
+        margin: 0.5rem 0;
+    }
+
+    /* --- BUTTONS --- */
+    .toggle-derivation {
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
+        border-radius: 8px;
+        width: 100%;
+    }
+
+    .knowledge-check-btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+        border-radius: 8px;
+    }
+
+    /* --- SCROLL-TO-TOP --- */
     .scroll-to-top {
         bottom: 1rem;
-        right: 1rem;
-        width: 45px;
-        height: 45px;
+        right: 0.75rem;
+        width: 42px;
+        height: 42px;
+        font-size: 1.2rem;
     }
-    
-    /* Улучшение отображения контент-блоков на мобильных */
-    .formula-box,
-    .definition-box,
-    .remark-box,
-    .experiment-box {
-        padding: 1.1rem;
+
+    /* --- FOOTER --- */
+    .page-footer {
+        padding: 1rem var(--m-pad);
+        margin-top: 0;
+        border-top-width: 1px;
     }
-    
-    .formula-box {
-        overflow-x: auto;
-    }
-    
-    .katex {
-        font-size: 0.95em;
+
+    .page-footer p {
+        font-size: 0.85rem;
     }
 }
 
+/* --- SMALL PHONES (<=480px) --- */
 @media (max-width: 480px) {
+    :root {
+        --m-pad: 0.75rem;
+    }
+
+    body {
+        line-height: 1.55;
+    }
+
     .sidebar {
         width: 90vw;
     }
-    
+
     .sidebar-header {
-        padding: 1rem;
+        padding: 0.625rem 0.75rem;
     }
-    
+
     .sidebar-header h2 {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
     }
-    
+
     .theme-toggle {
         width: 32px;
         height: 32px;
         font-size: 1rem;
     }
-    
+
     .close-sidebar {
         width: 32px;
         height: 32px;
         font-size: 1rem;
     }
-    
+
     .settings-button-sidebar {
         width: 32px;
         height: 32px;
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
-    
-    .search-box {
-        padding: 0.75rem 1rem;
-    }
-    
-    .search-box input {
-        font-size: 0.9rem;
-        padding: 0.65rem 0.85rem;
-    }
-    
+
     .nav-group-toggle {
         font-size: 0.85rem;
-        padding: 0.6rem 1rem;
+        padding: 0.55rem 0.75rem;
     }
-    
+
     .nav-submenu .nav-link {
         font-size: 0.8rem;
+        padding-left: 1.5rem;
     }
-    
+
+    .page-header {
+        padding: 1rem var(--m-pad);
+    }
+
     .page-header h1 {
-        font-size: 1.5rem;
-    }
-    
-    .topic {
-        padding: 1rem;
-    }
-    
-    .topic-title {
         font-size: 1.2rem;
     }
-    
+
+    .subtitle {
+        font-size: 0.8rem;
+    }
+
+    .part-title {
+        font-size: 1.05rem;
+        padding: 0.5rem var(--m-pad);
+    }
+
+    .topic {
+        padding: 0.625rem var(--m-pad);
+    }
+
+    .topic-title {
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.375rem;
+    }
+
+    .topic-title::before {
+        font-size: 0.95rem;
+    }
+
     .subsection-title {
-        font-size: 1.1rem;
-        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        padding: 0.4rem var(--m-pad);
     }
-    
-    .definition-box,
-    .formula-box,
-    .remark-box,
-    .experiment-box {
-        padding: 1rem;
-    }
-    
+
     .katex {
-        font-size: 0.9em;
+        font-size: 0.85em;
     }
-    
+
     .menu-toggle {
-        width: 44px;
-        height: 44px;
+        width: 42px;
+        height: 42px;
         font-size: 1.3rem;
+        top: 0.625rem;
+        right: 0.625rem;
     }
-    
+
     .scroll-to-top {
-        width: 40px;
-        height: 40px;
-        bottom: 0.75rem;
-        right: 0.75rem;
+        width: 38px;
+        height: 38px;
+        bottom: 0.625rem;
+        right: 0.625rem;
+        font-size: 1.1rem;
+    }
+}
+
+/* --- ULTRA-NARROW SCREENS (<=360px): iPhone SE, Galaxy Fold --- */
+@media (max-width: 360px) {
+    :root {
+        --m-pad: 0.625rem;
+    }
+
+    .page-header h1 {
+        font-size: 1.1rem;
+    }
+
+    .part-title {
+        font-size: 1rem;
+    }
+
+    .topic-title {
+        font-size: 0.95rem;
+    }
+
+    .subsection-title {
+        font-size: 0.9rem;
+    }
+
+    .katex {
+        font-size: 0.8em;
     }
 }
 
@@ -2367,31 +2635,44 @@ input:focus:not(:focus-visible) {
 @media (max-width: 768px) {
     .stats-container {
         grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
+        gap: 0.75rem;
     }
     
     .stat-card {
-        padding: 1rem;
+        padding: 0.75rem;
+        border-radius: 12px;
     }
     
     .stat-number {
-        font-size: 2rem;
+        font-size: 1.75rem;
+    }
+    
+    .stat-label {
+        font-size: 0.85rem;
     }
     
     .task-card {
-        padding: 1rem;
+        padding: 0.75rem;
+        border-radius: 12px;
     }
     
     .task-number {
-        font-size: 1.1rem;
+        font-size: 1rem;
+    }
+    
+    .task-toggle {
+        padding: 0.6rem 0.75rem;
+        font-size: 0.9rem;
+        border-radius: 8px;
     }
     
     .auth-modal {
-        padding: 1.75rem 1.25rem;
+        padding: 1.5rem 1rem;
+        border-radius: 14px;
     }
     
     .auth-icon {
-        font-size: 2.25rem;
+        font-size: 2rem;
     }
     
     .auth-modal h2 {
@@ -2411,42 +2692,99 @@ input:focus:not(:focus-visible) {
     .status-option {
         padding: 0.65rem 0.85rem;
     }
+    
+    .memory-buttons {
+        gap: 0.5rem;
+        margin-top: 1.25rem;
+    }
+    
+    .memory-btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .memory-stats {
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-radius: 10px;
+    }
 }
 
 @media (max-width: 480px) {
     .stats-container {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+    
+    .stat-card {
+        padding: 0.625rem;
+        border-radius: 10px;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.8rem;
+    }
+    
+    .task-card {
+        padding: 0.625rem;
+        border-radius: 10px;
     }
     
     .task-header {
         flex-direction: column;
         align-items: flex-start;
+        gap: 0.35rem;
+    }
+    
+    .task-toggle {
+        padding: 0.5rem 0.625rem;
+        font-size: 0.85rem;
     }
     
     .auth-modal {
-        padding: 1.5rem 1rem;
+        padding: 1.25rem 0.875rem;
+        border-radius: 12px;
     }
     
     .auth-icon {
-        font-size: 2rem;
+        font-size: 1.75rem;
     }
     
     .auth-modal h2 {
-        font-size: 1.2rem;
+        font-size: 1.15rem;
     }
     
     .auth-modal p {
         font-size: 0.85rem;
-        margin-bottom: 1.25rem;
+        margin-bottom: 1rem;
+    }
+    
+    #passwordInput {
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        border-radius: 10px;
     }
     
     .status-dropdown {
-        min-width: 140px;
-        font-size: 0.9rem;
+        min-width: 130px;
+        font-size: 0.85rem;
     }
     
     .status-option {
-        padding: 0.65rem 0.85rem;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+    }
+    
+    .memory-buttons {
+        gap: 0.375rem;
+    }
+    
+    .memory-btn {
+        padding: 0.5rem 0.75rem;
         font-size: 0.85rem;
     }
 }
