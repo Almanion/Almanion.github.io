@@ -1604,6 +1604,7 @@ em {
 
     .topic > .remark-box {
         background: var(--remark-bg);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
     .topic > .formula-box {
@@ -1613,12 +1614,11 @@ em {
         border-radius: 0;
         overflow-x: auto;
         background: var(--formula-bg);
-        border-top: 1.5px solid var(--formula-border);
-        border-bottom: 1.5px solid var(--formula-border);
-        border-left: none;
-        border-right: none;
+        border: none;
+        border-left: 5px solid var(--formula-border);
         margin-top: 0.75rem;
         margin-bottom: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
     .topic > .experiment-box {
@@ -1627,12 +1627,11 @@ em {
         padding: 0.75rem var(--m-pad);
         border-radius: 0;
         background: var(--experiment-bg);
-        border-top: 1.5px solid var(--experiment-border);
-        border-bottom: 1.5px solid var(--experiment-border);
-        border-left: none;
-        border-right: none;
+        border: none;
+        border-left: 5px solid var(--experiment-border);
         margin-top: 0.75rem;
         margin-bottom: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
     .topic > .derivation-box {
@@ -1641,22 +1640,35 @@ em {
         padding: 0.75rem var(--m-pad);
         border-radius: 0;
         background: var(--derivation-bg);
-        border-top: 1.5px solid var(--derivation-border);
-        border-bottom: 1.5px solid var(--derivation-border);
-        border-left: none;
-        border-right: none;
+        border: none;
+        border-left: 5px solid var(--derivation-border);
         margin-top: 0.75rem;
         margin-bottom: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
-    .topic > .properties-box,
+    .topic > .properties-box {
+        margin-left: calc(-1 * var(--m-pad));
+        margin-right: calc(-1 * var(--m-pad));
+        padding: 0.75rem var(--m-pad);
+        border-radius: 0;
+        border: none;
+        border-left: 5px solid var(--accent-color);
+        margin-top: 0.75rem;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
     .topic > .system-box {
         margin-left: calc(-1 * var(--m-pad));
         margin-right: calc(-1 * var(--m-pad));
         padding: 0.75rem var(--m-pad);
         border-radius: 0;
+        border: none;
+        border-left: 5px solid var(--accent-color);
         margin-top: 0.75rem;
         margin-bottom: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
     /* Nested boxes stay within their parent */
