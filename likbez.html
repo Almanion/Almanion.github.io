@@ -157,53 +157,53 @@
                 <div class="theorem-box">
                     <strong>Теорема (Критерий интегрируемости):</strong>
                     \(f: [a, b] \to \mathbb{R}\) — ограничена. Тогда \(f\) интегрируема на \([a, b] \Leftrightarrow \forall \varepsilon > 0 \; \exists \delta > 0 \colon \forall T \; \Delta(T) < \delta \Rightarrow S(f, T) - s(f, T) < \varepsilon\).
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>\(\Rightarrow)\) \(\varepsilon > 0\). Возьмём \(\delta > 0\) из определения интегрируемости для \(\frac{\varepsilon}{3} \colon \Delta(T) < \delta \Rightarrow\)<br>
+                            \(\Rightarrow \forall C \; |\sigma(f, T, C) - I| < \frac{\varepsilon}{3}\)<br>
+                            \(I - \frac{\varepsilon}{3} < \sigma(f, T, C) < I + \frac{\varepsilon}{3}\)<br>
+                            \(I - \frac{\varepsilon}{3} \le s(f, T) \le I_* \le I^* \le S(f, T) \le I + \frac{\varepsilon}{3}\)<br>
+                            Тогда \(S(f, T) - s(f, T) \le \frac{2\varepsilon}{3} < \varepsilon\).</p>
+                            <p>\(\Leftarrow)\) \(s(f, T) \le I_* \le I^* \le S(f, T) \Rightarrow I^* - I_* \le S(f, T) - s(f, T)\) (может быть сколь угодно малым).<br>
+                            \(I^* = I_* \overset{\text{def}}{=} I\).<br>
+                            \(\varepsilon > 0\). Подберём \(\delta > 0\) из \((*)\)<br>
+                            \(T \colon \Delta(T) < \delta\), \(C\) — произвольное<br>
+                            \(s(f, T) \le \sigma(f, T, C) \le S(f, T)\)<br>
+                            \(s(f, T) \le I = I_* = I^* \le S(f, T) \Rightarrow |I - \sigma(f, T, C)| \le S(f, T) - s(f, T) < \varepsilon\).</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
+                    </div>
                 </div>
                 <div class="remark-box">
                     \(I_* \le I^*\)
                 </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>\(\Rightarrow)\) \(\varepsilon > 0\). Возьмём \(\delta > 0\) из определения интегрируемости для \(\frac{\varepsilon}{3} \colon \Delta(T) < \delta \Rightarrow\)<br>
-                        \(\Rightarrow \forall C \; |\sigma(f, T, C) - I| < \frac{\varepsilon}{3}\)<br>
-                        \(I - \frac{\varepsilon}{3} < \sigma(f, T, C) < I + \frac{\varepsilon}{3}\)<br>
-                        \(I - \frac{\varepsilon}{3} \le s(f, T) \le I_* \le I^* \le S(f, T) \le I + \frac{\varepsilon}{3}\)<br>
-                        Тогда \(S(f, T) - s(f, T) \le \frac{2\varepsilon}{3} < \varepsilon\).</p>
-                        <p>\(\Leftarrow)\) \(s(f, T) \le I_* \le I^* \le S(f, T) \Rightarrow I^* - I_* \le S(f, T) - s(f, T)\) (может быть сколь угодно малым).<br>
-                        \(I^* = I_* \overset{\text{def}}{=} I\).<br>
-                        \(\varepsilon > 0\). Подберём \(\delta > 0\) из \((*)\)<br>
-                        \(T \colon \Delta(T) < \delta\), \(C\) — произвольное<br>
-                        \(s(f, T) \le \sigma(f, T, C) \le S(f, T)\)<br>
-                        \(s(f, T) \le I = I_* = I^* \le S(f, T) \Rightarrow |I - \sigma(f, T, C)| \le S(f, T) - s(f, T) < \varepsilon\).</p>
-                        <div class="proof-qed">∎</div>
-                    </div>
-                </div>
 
                 <div class="theorem-box">
                     <strong>Теорема:</strong> \(f\) непрерывна на \([a, b] \Rightarrow f\) интегрируема на \([a, b]\).
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>\(\varepsilon > 0\). По теореме Кантора о равномерной непрерывности найдём такое \(\delta \colon |t_1 - t_2| < \delta \Rightarrow |f(t_1) - f(t_2)| < \frac{\varepsilon}{b-a}\).<br>
-                        Возьмём разбиение \(T\) с \(\Delta(T) < \frac{\delta}{2}\).<br>
-                        Тогда \(\forall k \; M_k - m_k < \varepsilon\) (по теореме Вейерштрасса).<br>
-                        \(S(f, T) - s(f, T) = \sum_{k=1}^n (M_k - m_k)\Delta_k < \varepsilon \cdot \sum_{k=1}^n \Delta_k = \varepsilon \cdot (b-a)\).</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>\(\varepsilon > 0\). По теореме Кантора о равномерной непрерывности найдём такое \(\delta \colon |t_1 - t_2| < \delta \Rightarrow |f(t_1) - f(t_2)| < \frac{\varepsilon}{b-a}\).<br>
+                            Возьмём разбиение \(T\) с \(\Delta(T) < \frac{\delta}{2}\).<br>
+                            Тогда \(\forall k \; M_k - m_k < \varepsilon\) (по теореме Вейерштрасса).<br>
+                            \(S(f, T) - s(f, T) = \sum_{k=1}^n (M_k - m_k)\Delta_k < \varepsilon \cdot \sum_{k=1}^n \Delta_k = \varepsilon \cdot (b-a)\).</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="theorem-box">
                     <strong>Теорема:</strong> \(f\) монотонна на \([a, b] \Rightarrow f\) интегрируема на \([a, b]\).
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>Без ограничения общности \(f \uparrow\). \(M_k = f(x_k), m_k = f(x_{k-1})\).<br>
-                        \(S(f, T) - s(f, T) = \sum_{k=1}^n (f(x_k) - f(x_{k-1})) \Delta_k < \delta \cdot \sum_{k=1}^n (f(x_k) - f(x_{k-1})) = \delta \cdot (f(b) - f(a))\).<br>
-                        Подойдёт \(\delta = \frac{\varepsilon}{f(b) - f(a)}\).<br>
-                        При \(f(b) = f(a)\), так как \(f\) монотонна на \([a, b]\), \(f \equiv f(a)\) на \([a, b]\).</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>Без ограничения общности \(f \uparrow\). \(M_k = f(x_k), m_k = f(x_{k-1})\).<br>
+                            \(S(f, T) - s(f, T) = \sum_{k=1}^n (f(x_k) - f(x_{k-1})) \Delta_k < \delta \cdot \sum_{k=1}^n (f(x_k) - f(x_{k-1})) = \delta \cdot (f(b) - f(a))\).<br>
+                            Подойдёт \(\delta = \frac{\varepsilon}{f(b) - f(a)}\).<br>
+                            При \(f(b) = f(a)\), так как \(f\) монотонна на \([a, b]\), \(f \equiv f(a)\) на \([a, b]\).</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
 
@@ -220,13 +220,13 @@
 
                 <div class="remark-box">
                     Если изменить значение функции в конечном наборе точек, то интегрируемость сохранится, и интеграл не изменится.
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>Пусть значение изменено в \(m\) точках. Была \(f\), стала \(\widetilde{f}\). \(|f| \le C_1 \Rightarrow |\widetilde{f}| \le \widetilde{C}_1\).<br>
-                        \(|\sigma(f, T, C) - \sigma(\widetilde{f}, T, C)| \le \underbrace{2m(C_1 + \widetilde{C}_1)}_{\text{const}} \Delta(T) \xrightarrow{\Delta(T) \to 0} 0\).</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>Пусть значение изменено в \(m\) точках. Была \(f\), стала \(\widetilde{f}\). \(|f| \le C_1 \Rightarrow |\widetilde{f}| \le \widetilde{C}_1\).<br>
+                            \(|\sigma(f, T, C) - \sigma(\widetilde{f}, T, C)| \le \underbrace{2m(C_1 + \widetilde{C}_1)}_{\text{const}} \Delta(T) \xrightarrow{\Delta(T) \to 0} 0\).</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
 
@@ -234,18 +234,18 @@
                     <strong>Теорема (Интегрируемость на подотрезках):</strong><br>
                     1) \(f\) интегрируема на \([a, b]\), \([c, d] \subset [a, b] \Rightarrow f\) интегрируема на \([c, d]\).<br>
                     2) \(c \in [a, b]\), \(f\) интегрируема на \([a, c]\) и на \([c, b] \Rightarrow f\) интегрируема на \([a, b]\).
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>1. \(\varepsilon > 0\). Найдём \(\delta > 0\) для \([a, b] \colon \forall T \; \Delta(T) < \delta \Rightarrow S(f, T) - s(f, T) < \varepsilon\).<br>
-                        Проверим, что это \(\delta\) подходит для \([c, d]\).<br>
-                        \(T_1\) — разбиение \([c, d]\) с \(\Delta(T_1) < \delta\). Тогда \(S(f, T_1) - s(f, T_1) \le S(f, T) - s(f, T) < \varepsilon\).</p>
-                        <p>2. \(\varepsilon > 0\). Найдём \(\delta > 0 \colon \forall T_1\) — разбиение \([a, c]\), \(\forall T_2\) — разбиение \([c, b]\): \(\Delta(T_i) < \delta \Rightarrow S(f, T_i) - s(f, T_i) < \frac{\varepsilon}{3}\).<br>
-                        Пусть \(T\) — разбиение \([a, b]\), \(\Delta(T) < \delta\), \(c \in [x_{k-1}, x_k]\).<br>
-                        \(S(f, T) - s(f, T) = \Sigma_1 + \underbrace{(M_k - m_k)}_{\le 2M}\underbrace{\Delta_k}_{< \delta < \frac{\varepsilon}{6M}} + \Sigma_2 < \frac{\varepsilon}{3} + \frac{\varepsilon}{3} + \frac{\varepsilon}{3} = \varepsilon\).<br>
-                        \(|f| \le M\).</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>1. \(\varepsilon > 0\). Найдём \(\delta > 0\) для \([a, b] \colon \forall T \; \Delta(T) < \delta \Rightarrow S(f, T) - s(f, T) < \varepsilon\).<br>
+                            Проверим, что это \(\delta\) подходит для \([c, d]\).<br>
+                            \(T_1\) — разбиение \([c, d]\) с \(\Delta(T_1) < \delta\). Тогда \(S(f, T_1) - s(f, T_1) \le S(f, T) - s(f, T) < \varepsilon\).</p>
+                            <p>2. \(\varepsilon > 0\). Найдём \(\delta > 0 \colon \forall T_1\) — разбиение \([a, c]\), \(\forall T_2\) — разбиение \([c, b]\): \(\Delta(T_i) < \delta \Rightarrow S(f, T_i) - s(f, T_i) < \frac{\varepsilon}{3}\).<br>
+                            Пусть \(T\) — разбиение \([a, b]\), \(\Delta(T) < \delta\), \(c \in [x_{k-1}, x_k]\).<br>
+                            \(S(f, T) - s(f, T) = \Sigma_1 + \underbrace{(M_k - m_k)}_{\le 2M}\underbrace{\Delta_k}_{< \delta < \frac{\varepsilon}{6M}} + \Sigma_2 < \frac{\varepsilon}{3} + \frac{\varepsilon}{3} + \frac{\varepsilon}{3} = \varepsilon\).<br>
+                            \(|f| \le M\).</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
 
@@ -261,16 +261,16 @@
                 <p><strong>1. Аддитивность по отрезку.</strong></p>
                 <div class="theorem-box">
                     <strong>Теорема:</strong> \(f\) интегрируема на \([a, b]\), \(c \in (a, b)\). Тогда \(\int_a^b f = \int_a^c f + \int_c^b f\).
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>По теореме из §2 \(f\) интегрируема на \([a, c]\) и на \([c, b]\).<br>
-                        Разобьём отрезки \([a, c]\) и \([c, b]\) на \(n\) равных частей.<br>
-                        \(\sigma_n'\) — интегральная сумма для \([a, c]\), \(\sigma_n''\) — для \([c, b]\).<br>
-                        \(\sigma_n = \sigma_n' + \sigma_n''\) — интегральная сумма для \([a, b]\).<br>
-                        При \(n \to \infty\): \(\int_a^b f = \int_a^c f + \int_c^b f\).</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>По теореме из §2 \(f\) интегрируема на \([a, c]\) и на \([c, b]\).<br>
+                            Разобьём отрезки \([a, c]\) и \([c, b]\) на \(n\) равных частей.<br>
+                            \(\sigma_n'\) — интегральная сумма для \([a, c]\), \(\sigma_n''\) — для \([c, b]\).<br>
+                            \(\sigma_n = \sigma_n' + \sigma_n''\) — интегральная сумма для \([a, b]\).<br>
+                            При \(n \to \infty\): \(\int_a^b f = \int_a^c f + \int_c^b f\).</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
                 <div class="remark-box">
@@ -298,14 +298,14 @@
                 <p><strong>2. Линейность по функции.</strong></p>
                 <div class="theorem-box">
                     <strong>Теорема:</strong> \(f, g\) интегрируемы на \([a, b]\), \(\alpha, \beta \in \mathbb{R} \Rightarrow \int_a^b (\alpha f + \beta g) = \alpha \int_a^b f + \beta \int_a^b g\).
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>Разобьём отрезок на \(n\) частей.<br>
-                        \(\sigma_n(\alpha f + \beta g) = \alpha \sigma_n(f) + \beta \sigma_n(g)\)<br>
-                        \(\sum (\alpha f(c_k) + \beta g(c_k)) \Delta_k = \alpha \sum f(c_k) \Delta_k + \beta \sum g(c_k) \Delta_k\)</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>Разобьём отрезок на \(n\) частей.<br>
+                            \(\sigma_n(\alpha f + \beta g) = \alpha \sigma_n(f) + \beta \sigma_n(g)\)<br>
+                            \(\sum (\alpha f(c_k) + \beta g(c_k)) \Delta_k = \alpha \sum f(c_k) \Delta_k + \beta \sum g(c_k) \Delta_k\)</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
 
@@ -321,48 +321,48 @@
                 </div>
                 <div class="corollary-box">
                     <strong>Следствие 3:</strong> \(f \ge 0\), \(f(x_0) > 0\), \(f\) непрерывна в точке \(x_0 \Rightarrow \int_a^b f > 0\).
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>\(f\) непрерывна в \(x_0\), \(f(x_0) > 0 \Rightarrow \exists U(x_0) \colon f(x) > \varepsilon > 0 \; \forall x \in U(x_0)\).<br>
-                        \(\int_a^b f = \underbrace{\int_a^\alpha f}_{\ge 0} + \underbrace{\int_\alpha^\beta f}_{> \varepsilon(\beta - \alpha)} + \underbrace{\int_\beta^b f}_{\ge 0} > 0\).</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>\(f\) непрерывна в \(x_0\), \(f(x_0) > 0 \Rightarrow \exists U(x_0) \colon f(x) > \varepsilon > 0 \; \forall x \in U(x_0)\).<br>
+                            \(\int_a^b f = \underbrace{\int_a^\alpha f}_{\ge 0} + \underbrace{\int_\alpha^\beta f}_{> \varepsilon(\beta - \alpha)} + \underbrace{\int_\beta^b f}_{\ge 0} > 0\).</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
 
                 <p><strong>4.</strong></p>
                 <div class="theorem-box">
                     <strong>Теорема:</strong> \(f\) интегрируема на \([a, b] \Rightarrow \left| \int_a^b f \right| \le \int_a^b |f|\).
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>\(-|f| \le f \le |f|\) и воспользуемся монотонностью интеграла.</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>\(-|f| \le f \le |f|\) и воспользуемся монотонностью интеграла.</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="theorem-box">
-                    <strong>Теорема:</strong> Пусть \(f\) и \(g\) интегрируемы на \([a, b]\), \(m \le f(x) \le M\) на \([a, b]\). Тогда \(\int_a^b f(x)g(x)\,dx = \mu \int_a^b g(x)\,dx, \; \mu \in [m, M]\).
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>\(mg(x) \le f(x)g(x) \le Mg(x)\)<br>
-                        \(m \int_a^b g(x)\,dx \le \int_a^b f(x)g(x)\,dx \le M \int_a^b g(x)\,dx\).</p>
-                        <div class="proof-qed">∎</div>
+                    <strong>Теорема:</strong> Пусть \(f\) и \(g\) интегрируемы на \([a, b]\), \(m \le f(x) \le M\) на \([a, b]\).                 Тогда \(\int_a^b f(x)g(x)\,dx = \mu \int_a^b g(x)\,dx, \; \mu \in [m, M]\).
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>\(mg(x) \le f(x)g(x) \le Mg(x)\)<br>
+                            \(m \int_a^b g(x)\,dx \le \int_a^b f(x)g(x)\,dx \le M \int_a^b g(x)\,dx\).</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="remark-box">
                     \(f, g\) интегрируемы на \([a, b] \Rightarrow fg\) — тоже.
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>\(|f(x)g(x) - f(y)g(y)| = |f(x)g(x) - f(x)g(y) + f(x)g(y) - f(y)g(y)| \le |f(x)| \cdot |g(x) - g(y)| + |g(y)| \cdot |f(x) - f(y)|\).</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>\(|f(x)g(x) - f(y)g(y)| = |f(x)g(x) - f(x)g(y) + f(x)g(y) - f(y)g(y)| \le |f(x)| \cdot |g(x) - g(y)| + |g(y)| \cdot |f(x) - f(y)|\).</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
 
@@ -389,16 +389,16 @@
 
                 <div class="theorem-box">
                     <strong>Теорема (Барроу):</strong> \(f\) непрерывна в точке \(x_0\), \(\Phi\) определена в окрестности \(x_0 \Rightarrow \Phi'(x_0) = f(x_0)\).
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>Докажем по определению:<br>
-                        \(\left| \frac{\Phi(x_0 + h) - \Phi(x_0)}{h} - f(x_0) \right| = \left| \frac{1}{h} \left( \int_a^{x_0+h} f - \int_a^{x_0} f \right) - \frac{1}{h} \int_{x_0}^{x_0+h} f(x_0) \right| =\)<br>
-                        \(= \left| \frac{1}{h} \int_{x_0}^{x_0+h} (f(x) - f(x_0))\,dx \right| \le \frac{1}{|h|} \cdot \left| \int_{x_0}^{x_0+h} |f(x) - f(x_0)|\,dx \right| \quad (*)\)<br>
-                        По непрерывности в \(x_0 \; \forall \varepsilon > 0 \; \exists \delta > 0 \colon |x - x_0| < \delta \Rightarrow |f(x) - f(x_0)| < \varepsilon\)<br>
-                        \(|h| < \delta \Rightarrow (*) \le \frac{1}{|h|} \cdot |h| \cdot \varepsilon = \varepsilon\).</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>Докажем по определению:<br>
+                            \(\left| \frac{\Phi(x_0 + h) - \Phi(x_0)}{h} - f(x_0) \right| = \left| \frac{1}{h} \left( \int_a^{x_0+h} f - \int_a^{x_0} f \right) - \frac{1}{h} \int_{x_0}^{x_0+h} f(x_0) \right| =\)<br>
+                            \(= \left| \frac{1}{h} \int_{x_0}^{x_0+h} (f(x) - f(x_0))\,dx \right| \le \frac{1}{|h|} \cdot \left| \int_{x_0}^{x_0+h} |f(x) - f(x_0)|\,dx \right| \quad (*)\)<br>
+                            По непрерывности в \(x_0 \; \forall \varepsilon > 0 \; \exists \delta > 0 \colon |x - x_0| < \delta \Rightarrow |f(x) - f(x_0)| < \varepsilon\)<br>
+                            \(|h| < \delta \Rightarrow (*) \le \frac{1}{|h|} \cdot |h| \cdot \varepsilon = \varepsilon\).</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
 
@@ -409,25 +409,25 @@
 
                 <div class="statement-box">
                     <strong>Утверждение:</strong> Пусть \(F_1\) и \(F_2\) — первообразные \(f\) на \(\langle a, b \rangle\). Тогда \(F_1 - F_2 = \text{const}\).
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>\(g(x) = F_1(x) - F_2(x)\). Тогда \(\forall x \in \langle a, b \rangle \; g'(x) = F_1'(x) - F_2'(x) = 0\).<br>
-                        \(x_1, x_2 \in \langle a, b \rangle \; \exists c \in \langle x_1, x_2 \rangle \colon g(x_1) - g(x_2) = g'(c)(x_1 - x_2) = 0 \Rightarrow g(x) = \text{const}\).</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>\(g(x) = F_1(x) - F_2(x)\). Тогда \(\forall x \in \langle a, b \rangle \; g'(x) = F_1'(x) - F_2'(x) = 0\).<br>
+                            \(x_1, x_2 \in \langle a, b \rangle \; \exists c \in \langle x_1, x_2 \rangle \colon g(x_1) - g(x_2) = g'(c)(x_1 - x_2) = 0 \Rightarrow g(x) = \text{const}\).</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="theorem-box">
-                    <strong>Теорема (Формула Ньютона-Лейбница):</strong> Пусть \(F\) — первообразная \(f\) на \([a, b]\), \(f\) интегрируема на \([a, b]\). Тогда \(\int_a^b f(x)\,dx = F(b) - F(a) = F(x) \big|_a^b\).
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>Заметим, что \(\Phi(x) = \int_a^x f\) — первообразная \(f \Rightarrow \Phi = F + C\) \(\Rightarrow\)<br>
-                        \(\Rightarrow F(b) - F(a) = \Phi(b) - \Phi(a) = \int_a^b f\).</p>
-                        <div class="proof-qed">∎</div>
+                    <strong>Теорема (Формула Ньютона-Лейбница):</strong> Пусть \(F\) — первообразная \(f\) на \([a, b]\), \(f\) интегрируема на \([a, b]\).                 Тогда \(\int_a^b f(x)\,dx = F(b) - F(a) = F(x) \big|_a^b\).
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>Заметим, что \(\Phi(x) = \int_a^x f\) — первообразная \(f \Rightarrow \Phi = F + C\) \(\Rightarrow\)<br>
+                            \(\Rightarrow F(b) - F(a) = \Phi(b) - \Phi(a) = \int_a^b f\).</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
 
@@ -470,14 +470,14 @@
                 <div class="statement-box">
                     <strong>Утверждение (Линейность неопределённого интеграла):</strong>
                     \(f, g\) имеют первообразные на \(\langle a, b \rangle\), \(\alpha, \beta \in \mathbb{R}\), \(\alpha^2 + \beta^2 > 0 \Rightarrow \alpha f + \beta g\) имеет первообразную и \(\int (\alpha f + \beta g) = \alpha \int f + \beta \int g\).
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>Пусть \(H \in \text{правой части} \Rightarrow H = \alpha F + \beta G\), где \(F' = f, G' = g \Rightarrow H' = \alpha f + \beta g \Rightarrow H \in \text{левой части}\).<br>
-                        Пусть \(H \in \text{левой части}\), \(F\) — первообразная \(f\), б.о.о. \(\beta \neq 0\).<br>
-                        \(G = \frac{H - \alpha F}{\beta}\), \(G' = \frac{H' - \alpha F'}{\beta} = \frac{\alpha f + \beta g - \alpha f}{\beta} = g\). Таким образом, \(H = \alpha F + \beta G\).</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>Пусть \(H \in \text{правой части} \Rightarrow H = \alpha F + \beta G\), где \(F' = f, G' = g \Rightarrow H' = \alpha f + \beta g \Rightarrow H \in \text{левой части}\).<br>
+                            Пусть \(H \in \text{левой части}\), \(F\) — первообразная \(f\), б.о.о. \(\beta \neq 0\).<br>
+                            \(G = \frac{H - \alpha F}{\beta}\), \(G' = \frac{H' - \alpha F'}{\beta} = \frac{\alpha f + \beta g - \alpha f}{\beta} = g\). Таким образом, \(H = \alpha F + \beta G\).</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
 
@@ -488,13 +488,13 @@
                 <div class="theorem-box">
                     <strong>Теорема (О замене переменной в неопределённом интеграле):</strong>
                     \(\varphi\) — непрерывно дифференцируема. Тогда \(\int f(\varphi(t)) \varphi'(t)\,dt = \int f(x)\,dx \quad (x = \varphi(t))\).
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>\(F\) — первообразная \(f \Rightarrow \int f(x)\,dx = F(x) + C\)<br>
-                        \((F(x))' = (F(\varphi(t)))' = F'(\varphi(t)) \cdot \varphi'(t) = f(\varphi(t)) \cdot \varphi'(t)\).</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>\(F\) — первообразная \(f \Rightarrow \int f(x)\,dx = F(x) + C\)<br>
+                            \((F(x))' = (F(\varphi(t)))' = F'(\varphi(t)) \cdot \varphi'(t) = f(\varphi(t)) \cdot \varphi'(t)\).</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
 
@@ -508,14 +508,14 @@
                 <div class="theorem-box">
                     <strong>Теорема (Интегрирование по частям):</strong>
                     \(f, g\) — дифференцируемы, функция \(fg'\) имеет первообразную, тогда \(f'g\) — тоже и \(\int f'g = fg - \int fg'\).
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>\((fg)' = f'g + fg' \Rightarrow f'g = (fg)' - fg'\).<br>
-                        \(\int g(x) \underbrace{f'(x)\,dx}_{df} = f(x)g(x) - \int f(x) \underbrace{g'(x)\,dx}_{dg}\)<br>
-                        \(\int g \, df = fg - \int f \, dg\)</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>\((fg)' = f'g + fg' \Rightarrow f'g = (fg)' - fg'\).<br>
+                            \(\int g(x) \underbrace{f'(x)\,dx}_{df} = f(x)g(x) - \int f(x) \underbrace{g'(x)\,dx}_{dg}\)<br>
+                            \(\int g \, df = fg - \int f \, dg\)</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
 
@@ -536,13 +536,13 @@
                     <strong>Теорема (Замена переменной в определённом интеграле):</strong>
                     \(\varphi: [\alpha, \beta] \to [A, B]\), \(\varphi\) дифференцируема на \([\alpha, \beta]\), \(f\) непрерывна на \([A, B]\). Тогда
                     \[\int_\alpha^\beta f(\varphi(t)) \cdot \varphi'(t)\,dt = \int_{\varphi(\alpha)}^{\varphi(\beta)} f(x)\,dx\]
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>\(F\) — первообразная \(f\) на \([A, B] \Rightarrow (F(\varphi(t)))' = F'(\varphi(t)) \cdot \varphi'(t) = f(\varphi(t)) \cdot \varphi'(t)\)<br>
-                        \(\int_\alpha^\beta f(\varphi(t))\varphi'(t)\,dt = F(\varphi(t)) \big|_\alpha^\beta = F(x) \big|_{\varphi(\alpha)}^{\varphi(\beta)} = \int_{\varphi(\alpha)}^{\varphi(\beta)} f(x)\,dx\)</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>\(F\) — первообразная \(f\) на \([A, B] \Rightarrow (F(\varphi(t)))' = F'(\varphi(t)) \cdot \varphi'(t) = f(\varphi(t)) \cdot \varphi'(t)\)<br>
+                            \(\int_\alpha^\beta f(\varphi(t))\varphi'(t)\,dt = F(\varphi(t)) \big|_\alpha^\beta = F(x) \big|_{\varphi(\alpha)}^{\varphi(\beta)} = \int_{\varphi(\alpha)}^{\varphi(\beta)} f(x)\,dx\)</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
 
@@ -572,23 +572,23 @@
                     <strong>Утверждение:</strong><br>
                     1. \(f\) нечётная \(\Rightarrow \int_{-a}^a f = 0\)<br>
                     2. \(f\) чётная \(\Rightarrow \int_{-a}^a f = 2 \int_0^a f\)
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>1. \(\int_{-a}^0 f(x)\,dx = \left[ \begin{array}{l} x = -t \\ dx = -dt \end{array} \right] = -\int_a^0 f(-t)\,dt = \int_0^a -f(t)\,dt = -\int_0^a f(t)\,dt\)</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>1. \(\int_{-a}^0 f(x)\,dx = \left[ \begin{array}{l} x = -t \\ dx = -dt \end{array} \right] = -\int_a^0 f(-t)\,dt = \int_0^a -f(t)\,dt = -\int_0^a f(t)\,dt\)</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="statement-box">
                     <strong>Утверждение:</strong> \(f\) периодическая с периодом \(T\). Тогда \(\forall a \; \int_a^{a+T} f = \int_0^T f\).
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>\(\int_a^{a+T} f(x)\,dx \overset{x \to x+kT}{=} \int_{a_0}^{a_0+T} f(x)\,dx = \int_{a_0}^0 f(x)\,dx + \int_0^{a_0+T} f = \int_{a_0+T}^T f + \int_0^{a_0+T} f\)</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>\(\int_a^{a+T} f(x)\,dx \overset{x \to x+kT}{=} \int_{a_0}^{a_0+T} f(x)\,dx = \int_{a_0}^0 f(x)\,dx + \int_0^{a_0+T} f = \int_{a_0+T}^T f + \int_0^{a_0+T} f\)</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
             </article>
@@ -620,12 +620,12 @@
 
                 <div class="theorem-box">
                     <strong>Теорема:</strong> Пусть \(f\) интегрируема на \([a, b]\) и неотрицательна на \([a, b]\). Тогда подграфик \(f\) квадрируем, и \(S_{\text{подгр}} = \int_a^b f(x)\,dx\).
-                </div>
-                <div class="proof-box">
-                    <button class="toggle-proof">📖 Показать доказательство</button>
-                    <div class="proof-content">
-                        <p>\(\varepsilon > 0\). Выберем такое разбиение \([a, b]\), что \(S(f, T) - s(f, T) < \varepsilon\).</p>
-                        <div class="proof-qed">∎</div>
+                    <div class="proof-box">
+                        <button class="toggle-proof">📖 Показать доказательство</button>
+                        <div class="proof-content">
+                            <p>\(\varepsilon > 0\). Выберем такое разбиение \([a, b]\), что \(S(f, T) - s(f, T) < \varepsilon\).</p>
+                            <div class="proof-qed">∎</div>
+                        </div>
                     </div>
                 </div>
             </article>
