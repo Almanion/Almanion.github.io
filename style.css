@@ -1347,7 +1347,7 @@ em {
 
 @media (max-width: 768px) {
     :root {
-        --m-pad: 1.75rem;
+        --m-pad: 1.59rem;
     }
 
     html {
@@ -1576,7 +1576,7 @@ em {
     .derivation-box {
         padding: 0.625rem;
         border-radius: 6px;
-        margin: 0.625rem 0;
+        margin: 0.875rem 0;
     }
 
     .properties-box,
@@ -1593,8 +1593,8 @@ em {
         padding: 0.75rem var(--m-pad);
         border-radius: 0;
         border-left-width: 5px;
-        margin-top: 0.75rem;
-        margin-bottom: 0.75rem;
+        margin-top: 1.05rem;
+        margin-bottom: 1.05rem;
     }
 
     .topic > .definition-box {
@@ -1616,8 +1616,8 @@ em {
         background: var(--formula-bg);
         border: none;
         border-left: 5px solid var(--formula-border);
-        margin-top: 0.75rem;
-        margin-bottom: 0.75rem;
+        margin-top: 1.05rem;
+        margin-bottom: 1.05rem;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
@@ -1629,8 +1629,8 @@ em {
         background: var(--experiment-bg);
         border: none;
         border-left: 5px solid var(--experiment-border);
-        margin-top: 0.75rem;
-        margin-bottom: 0.75rem;
+        margin-top: 1.05rem;
+        margin-bottom: 1.05rem;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
@@ -1642,8 +1642,8 @@ em {
         background: var(--derivation-bg);
         border: none;
         border-left: 5px solid var(--derivation-border);
-        margin-top: 0.75rem;
-        margin-bottom: 0.75rem;
+        margin-top: 1.05rem;
+        margin-bottom: 1.05rem;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
@@ -1654,8 +1654,8 @@ em {
         border-radius: 0;
         border: none;
         border-left: 5px solid var(--accent-color);
-        margin-top: 0.75rem;
-        margin-bottom: 0.75rem;
+        margin-top: 1.05rem;
+        margin-bottom: 1.05rem;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
@@ -1666,8 +1666,8 @@ em {
         border-radius: 0;
         border: none;
         border-left: 5px solid var(--accent-color);
-        margin-top: 0.75rem;
-        margin-bottom: 0.75rem;
+        margin-top: 1.05rem;
+        margin-bottom: 1.05rem;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
@@ -1784,7 +1784,7 @@ em {
 /* --- SMALL PHONES (<=480px) --- */
 @media (max-width: 480px) {
     :root {
-        --m-pad: 1.5rem;
+        --m-pad: 1.36rem;
     }
 
     body {
@@ -1893,7 +1893,7 @@ em {
 /* --- ULTRA-NARROW SCREENS (<=360px): iPhone SE, Galaxy Fold --- */
 @media (max-width: 360px) {
     :root {
-        --m-pad: 0.75rem;
+        --m-pad: 0.68rem;
     }
 
     .page-header {
