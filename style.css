@@ -1345,10 +1345,6 @@ em {
         --m-pad: 1.59rem;
     }
 
-    html {
-        overflow-x: hidden;
-    }
-
     body {
         font-size: 15px;
         line-height: 1.6;
