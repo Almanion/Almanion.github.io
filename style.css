@@ -1434,6 +1434,100 @@ body.sidebar-collapsed .main-content {
     color: var(--proof-border);
 }
 
+/* Вложенные доказательства внутри блоков */
+.theorem-box > .proof-box,
+.statement-box > .proof-box,
+.remark-box > .proof-box,
+.corollary-box > .proof-box,
+.lemma-box > .proof-box {
+    background: transparent;
+    border: none;
+    border-top: 1.5px dashed var(--proof-border);
+    border-radius: 0;
+    box-shadow: none;
+    margin: 1rem -0.25rem 0;
+    padding: 0.85rem 0.25rem 0.25rem;
+}
+
+.theorem-box > .proof-box:hover,
+.statement-box > .proof-box:hover,
+.remark-box > .proof-box:hover,
+.corollary-box > .proof-box:hover,
+.lemma-box > .proof-box:hover {
+    transform: none;
+    box-shadow: none;
+    border-width: 1.5px;
+}
+
+.theorem-box > .proof-box .toggle-proof,
+.statement-box > .proof-box .toggle-proof,
+.remark-box > .proof-box .toggle-proof,
+.corollary-box > .proof-box .toggle-proof,
+.lemma-box > .proof-box .toggle-proof {
+    padding: 0.55rem 1.2rem;
+    font-size: 0.88rem;
+    border-radius: 6px;
+    box-shadow: none;
+    opacity: 0.85;
+}
+
+.theorem-box > .proof-box .toggle-proof:hover,
+.statement-box > .proof-box .toggle-proof:hover,
+.remark-box > .proof-box .toggle-proof:hover,
+.corollary-box > .proof-box .toggle-proof:hover,
+.lemma-box > .proof-box .toggle-proof:hover {
+    opacity: 1;
+    transform: none;
+    box-shadow: var(--shadow-sm);
+}
+
+.theorem-box > .proof-box .proof-content,
+.statement-box > .proof-box .proof-content,
+.remark-box > .proof-box .proof-content,
+.corollary-box > .proof-box .proof-content,
+.lemma-box > .proof-box .proof-content {
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: none;
+}
+
+/* Вложенные доказательства в списках (properties-box) */
+li > .proof-box {
+    background: transparent;
+    border: none;
+    border-top: 1px dashed var(--proof-border);
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0.75rem 0 0.25rem;
+    padding: 0.75rem 0 0.25rem;
+}
+
+li > .proof-box:hover {
+    transform: none;
+    box-shadow: none;
+    border-width: 1px;
+}
+
+li > .proof-box .toggle-proof {
+    padding: 0.45rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    box-shadow: none;
+    opacity: 0.85;
+}
+
+li > .proof-box .toggle-proof:hover {
+    opacity: 1;
+    transform: none;
+    box-shadow: var(--shadow-sm);
+}
+
+li > .proof-box .proof-content {
+    margin-top: 0.5rem;
+    padding-top: 0.35rem;
+    border-top: none;
+}
+
 /* Системы уравнений */
 .system-box {
     background: var(--formula-bg);
@@ -1977,10 +2071,8 @@ em {
     .derivation-box .formula-box,
     .derivation-content .formula-box,
     .theorem-box .formula-box,
-    .theorem-box .proof-box,
     .theorem-box .remark-box,
     .lemma-box .formula-box,
-    .lemma-box .proof-box,
     .lemma-box .remark-box,
     .statement-box .formula-box,
     .corollary-box .formula-box,
@@ -1991,6 +2083,30 @@ em {
         border-radius: 6px;
         padding: 0.5rem;
         border-width: 1.5px;
+    }
+
+    .theorem-box > .proof-box,
+    .lemma-box > .proof-box,
+    .statement-box > .proof-box,
+    .remark-box > .proof-box,
+    .corollary-box > .proof-box {
+        background: transparent;
+        border: none;
+        border-top: 1.5px dashed var(--proof-border);
+        border-radius: 0;
+        box-shadow: none;
+        margin: 0.75rem 0 0;
+        padding: 0.6rem 0 0.15rem;
+    }
+
+    li > .proof-box {
+        background: transparent;
+        border: none;
+        border-top: 1px dashed var(--proof-border);
+        border-radius: 0;
+        box-shadow: none;
+        margin: 0.5rem 0 0.15rem;
+        padding: 0.5rem 0 0.15rem;
     }
 
     /* --- DISABLE HOVER EFFECTS (touch devices) --- */
