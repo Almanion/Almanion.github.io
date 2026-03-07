@@ -1347,7 +1347,7 @@ em {
 
 @media (max-width: 768px) {
     :root {
-        --m-pad: 0.875rem;
+        --m-pad: 1.75rem;
     }
 
     html {
@@ -1784,7 +1784,7 @@ em {
 /* --- SMALL PHONES (<=480px) --- */
 @media (max-width: 480px) {
     :root {
-        --m-pad: 0.75rem;
+        --m-pad: 1.5rem;
     }
 
     body {
@@ -1893,7 +1893,7 @@ em {
 /* --- ULTRA-NARROW SCREENS (<=360px): iPhone SE, Galaxy Fold --- */
 @media (max-width: 360px) {
     :root {
-        --m-pad: 0.375rem;
+        --m-pad: 0.75rem;
     }
 
     .page-header {
