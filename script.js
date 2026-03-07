@@ -852,7 +852,7 @@ function initProgressBar() {
             height: 4px;
             background: var(--accent-color);
             z-index: 9999;
-            transition: width 0.3s ease;
+            transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
         `;
         document.body.appendChild(progressBarElement);
     }

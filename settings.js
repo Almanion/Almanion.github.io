@@ -175,8 +175,8 @@ function createSettingsModal() {
                     </div>
                 </div>
 
-                <!-- Новогодний вайб -->
-                <div class="settings-section">
+                <!-- Новогодний вайб (скрыт, код сохранён) -->
+                <div class="settings-section" id="nySettingsSection" style="display: none;">
                     <h3>🎄 Новогодний вайб</h3>
                     <div class="settings-option">
                         <label class="toggle-switch">
