@@ -445,10 +445,64 @@ function showNotification(message) {
 }
 
 // ============================================
+// SWIPE-TO-DISMISS ДЛЯ МОДАЛКИ НАСТРОЕК
+// ============================================
+
+function initSettingsSwipe() {
+    const modal = document.getElementById('settingsModal');
+    if (!modal) return;
+
+    let startY = 0;
+    let currentY = 0;
+    let isDragging = false;
+
+    function getContent() {
+        return modal.querySelector('.settings-modal-content');
+    }
+
+    modal.addEventListener('touchstart', (e) => {
+        if (window.innerWidth > 768) return;
+        const content = getContent();
+        if (!content || content.scrollTop > 5) return;
+        startY = e.touches[0].clientY;
+        currentY = startY;
+        isDragging = true;
+        content.style.transition = 'none';
+    }, { passive: true });
+
+    modal.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const content = getContent();
+        if (!content) return;
+        currentY = e.touches[0].clientY;
+        const deltaY = currentY - startY;
+        if (deltaY > 0) {
+            content.style.transform = `translateY(${deltaY}px)`;
+            modal.style.background = `rgba(0, 0, 0, ${Math.max(0, 0.75 - deltaY / 400)})`;
+        }
+    }, { passive: true });
+
+    modal.addEventListener('touchend', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        const content = getContent();
+        if (!content) return;
+        content.style.transition = '';
+        modal.style.background = '';
+        const deltaY = currentY - startY;
+        if (deltaY > 80) {
+            closeSettingsModal();
+        }
+        content.style.transform = '';
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initSettingsSwipe);
+
+// ============================================
 // ЭКСПОРТ ДЛЯ СОВМЕСТИМОСТИ
 // ============================================
 
-// Делаем функции доступными глобально
 window.openSettingsModal = openSettingsModal;
 window.closeSettingsModal = closeSettingsModal;
 window.siteSettings = siteSettings;

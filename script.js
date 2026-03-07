@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initSearch();
     initScrollEffects();
     initDerivationToggles();
+    initProofToggles();
     initMobileMenu();
     initBottomSheetSwipe();
     initSidebarCollapse();
@@ -417,6 +418,42 @@ function initDerivationToggles() {
                 // Рендерим формулы в выводе, если они ещё не отрендерены
                 if (derivationContent.classList.contains('show') && typeof renderMathInElement !== 'undefined') {
                     renderMathInElement(derivationContent, {
+                        delimiters: [
+                            {left: '\\[', right: '\\]', display: true},
+                            {left: '\\(', right: '\\)', display: false},
+                            {left: '$', right: '$', display: false}
+                        ],
+                        throwOnError: false,
+                        trust: true
+                    });
+                }
+            }
+        });
+    });
+}
+
+// ============================================
+// TOGGLE ДОКАЗАТЕЛЬСТВ
+// ============================================
+
+function initProofToggles() {
+    const toggleButtons = document.querySelectorAll('.toggle-proof');
+    
+    toggleButtons.forEach(button => {
+        const proofContent = button.nextElementSibling;
+        
+        button.addEventListener('click', () => {
+            if (proofContent && proofContent.classList.contains('proof-content')) {
+                proofContent.classList.toggle('show');
+                
+                if (proofContent.classList.contains('show')) {
+                    button.textContent = '📖 Скрыть доказательство';
+                } else {
+                    button.textContent = '📖 Показать доказательство';
+                }
+                
+                if (proofContent.classList.contains('show') && typeof renderMathInElement !== 'undefined') {
+                    renderMathInElement(proofContent, {
                         delimiters: [
                             {left: '\\[', right: '\\]', display: true},
                             {left: '\\(', right: '\\)', display: false},

@@ -347,6 +347,20 @@ body.dark-theme .knowledge-check-btn:hover {
     --experiment-border: #8b5cf6;
     --derivation-bg: #dcfce7;
     --derivation-border: #22c55e;
+    --theorem-bg: #f5f3ff;
+    --theorem-border: #8b5cf6;
+    --lemma-bg: #ecfdf5;
+    --lemma-border: #14b8a6;
+    --example-bg: #fff7ed;
+    --example-border: #f97316;
+    --statement-bg: #eef2ff;
+    --statement-border: #6366f1;
+    --corollary-bg: #f1f5f9;
+    --corollary-border: #64748b;
+    --proof-bg: #f0fdf4;
+    --proof-border: #16a34a;
+    --exercise-bg: #f8fafc;
+    --exercise-border: #475569;
     
     /* Размеры */
     --sidebar-width: 320px;
@@ -391,6 +405,20 @@ body.dark-theme {
     --experiment-border: #a78bfa;
     --derivation-bg: #1f3f2f;
     --derivation-border: #4ade80;
+    --theorem-bg: #2e1065a0;
+    --theorem-border: #a78bfa;
+    --lemma-bg: #1a3a3a;
+    --lemma-border: #5eead4;
+    --example-bg: #3a2a1a;
+    --example-border: #fb923c;
+    --statement-bg: #1e1b4b80;
+    --statement-border: #818cf8;
+    --corollary-bg: #1e293b80;
+    --corollary-border: #94a3b8;
+    --proof-bg: #1f3f2f;
+    --proof-border: #4ade80;
+    --exercise-bg: #1e293b80;
+    --exercise-border: #94a3b8;
     
     /* Тени - темная тема (более мягкие) */
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -1193,6 +1221,219 @@ body.sidebar-collapsed .main-content {
     display: block;
 }
 
+/* Теоремы */
+.theorem-box {
+    background: var(--theorem-bg);
+    border-left: 4px solid var(--theorem-border);
+    padding: 1.5rem;
+    margin: 1.25rem 0;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease,
+                border-width 0.3s ease,
+                background-color 0.3s ease,
+                border-color 0.3s ease;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    position: relative;
+}
+
+.theorem-box:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateX(2px) translateY(-2px);
+}
+
+.theorem-box strong {
+    color: var(--theorem-border);
+    font-size: 1.1rem;
+}
+
+/* Леммы */
+.lemma-box {
+    background: var(--lemma-bg);
+    border-left: 4px solid var(--lemma-border);
+    padding: 1.5rem;
+    margin: 1.25rem 0;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease,
+                border-width 0.3s ease,
+                background-color 0.3s ease,
+                border-color 0.3s ease;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    position: relative;
+}
+
+.lemma-box:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateX(2px) translateY(-2px);
+}
+
+.lemma-box strong {
+    color: var(--lemma-border);
+    font-size: 1.1rem;
+}
+
+/* Примеры */
+.example-box {
+    background: var(--example-bg);
+    border-left: 4px solid var(--example-border);
+    padding: 1.5rem;
+    margin: 1.25rem 0;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease,
+                border-width 0.3s ease,
+                background-color 0.3s ease,
+                border-color 0.3s ease;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    position: relative;
+}
+
+.example-box:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateX(2px) translateY(-2px);
+}
+
+.example-box strong {
+    color: var(--example-border);
+    font-size: 1.1rem;
+}
+
+.example-box::before {
+    content: '📝';
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-style: normal;
+    font-size: 1.5rem;
+    opacity: 0.6;
+}
+
+/* Утверждения */
+.statement-box {
+    background: var(--statement-bg);
+    border-left: 4px solid var(--statement-border);
+    padding: 1.5rem;
+    margin: 1.25rem 0;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease,
+                border-width 0.3s ease,
+                background-color 0.3s ease,
+                border-color 0.3s ease;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    position: relative;
+}
+
+.statement-box:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateX(2px) translateY(-2px);
+}
+
+.statement-box strong {
+    color: var(--statement-border);
+    font-size: 1.1rem;
+}
+
+/* Следствия */
+.corollary-box {
+    background: var(--corollary-bg);
+    border-left: 4px solid var(--corollary-border);
+    padding: 1.5rem;
+    margin: 1.25rem 0;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease,
+                border-width 0.3s ease,
+                background-color 0.3s ease,
+                border-color 0.3s ease;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    position: relative;
+}
+
+.corollary-box:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateX(2px) translateY(-2px);
+}
+
+.corollary-box strong {
+    color: var(--corollary-border);
+    font-size: 1.1rem;
+}
+
+/* Доказательства */
+.proof-box {
+    background: var(--proof-bg);
+    border: 2px solid var(--proof-border);
+    padding: 1.5rem;
+    margin: 1.25rem 0;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease,
+                border-width 0.3s ease,
+                background-color 0.3s ease,
+                border-color 0.3s ease;
+}
+
+.proof-box:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-width: 2.5px;
+}
+
+.toggle-proof {
+    background: linear-gradient(135deg, var(--proof-border), #16a34a);
+    color: white;
+    border: none;
+    padding: 0.85rem 1.75rem;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition-smooth);
+    box-shadow: var(--shadow-sm);
+    letter-spacing: 0.02em;
+}
+
+.toggle-proof:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    opacity: 0.9;
+}
+
+.toggle-proof:active {
+    transform: translateY(0);
+}
+
+.proof-content {
+    display: none;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--proof-border);
+    animation: fadeIn 0.3s ease;
+}
+
+.proof-content.show {
+    display: block;
+}
+
+.proof-qed {
+    text-align: right;
+    font-size: 1.2rem;
+    margin-top: 0.5rem;
+    color: var(--proof-border);
+}
+
 /* Системы уравнений */
 .system-box {
     background: var(--formula-bg);
@@ -1219,6 +1460,25 @@ body.sidebar-collapsed .main-content {
 }
 
 .properties-box li {
+    margin: 0.75rem 0;
+}
+
+/* Упражнения */
+.exercise-box {
+    background: var(--exercise-bg);
+    border-left: 4px solid var(--exercise-border);
+    padding: 1.25rem;
+    margin: 1rem 0;
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+}
+
+.exercise-box ol,
+.exercise-box ul {
+    margin-top: 0.5rem;
+}
+
+.exercise-box li {
     margin: 0.75rem 0;
 }
 
@@ -1564,13 +1824,20 @@ em {
     .formula-box,
     .remark-box,
     .experiment-box,
-    .derivation-box {
+    .derivation-box,
+    .theorem-box,
+    .lemma-box,
+    .example-box,
+    .statement-box,
+    .corollary-box,
+    .proof-box {
         padding: 0.625rem;
         border-radius: 6px;
         margin: 0.875rem 0;
     }
 
     .properties-box,
+    .exercise-box,
     .system-box {
         padding: 0.625rem;
         border-radius: 6px;
@@ -1638,7 +1905,46 @@ em {
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
-    .topic > .properties-box {
+    .topic > .theorem-box,
+    .topic > .lemma-box,
+    .topic > .statement-box,
+    .topic > .corollary-box {
+        margin-left: calc(-1 * var(--m-pad));
+        margin-right: calc(-1 * var(--m-pad));
+        padding: 0.75rem var(--m-pad);
+        border-radius: 0;
+        border-left-width: 5px;
+        margin-top: 1.05rem;
+        margin-bottom: 1.05rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .topic > .example-box {
+        margin-left: calc(-1 * var(--m-pad));
+        margin-right: calc(-1 * var(--m-pad));
+        padding: 0.75rem var(--m-pad);
+        border-radius: 0;
+        border-left-width: 5px;
+        margin-top: 1.05rem;
+        margin-bottom: 1.05rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .topic > .proof-box {
+        margin-left: calc(-1 * var(--m-pad));
+        margin-right: calc(-1 * var(--m-pad));
+        padding: 0.75rem var(--m-pad);
+        border-radius: 0;
+        background: var(--proof-bg);
+        border: none;
+        border-left: 5px solid var(--proof-border);
+        margin-top: 1.05rem;
+        margin-bottom: 1.05rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .topic > .properties-box,
+    .topic > .exercise-box {
         margin-left: calc(-1 * var(--m-pad));
         margin-right: calc(-1 * var(--m-pad));
         padding: 0.75rem var(--m-pad);
@@ -1669,7 +1975,17 @@ em {
     .remark-box .formula-box,
     .experiment-box .formula-box,
     .derivation-box .formula-box,
-    .derivation-content .formula-box {
+    .derivation-content .formula-box,
+    .theorem-box .formula-box,
+    .theorem-box .proof-box,
+    .theorem-box .remark-box,
+    .lemma-box .formula-box,
+    .lemma-box .proof-box,
+    .lemma-box .remark-box,
+    .statement-box .formula-box,
+    .corollary-box .formula-box,
+    .example-box .formula-box,
+    .proof-content .formula-box {
         margin-left: 0;
         margin-right: 0;
         border-radius: 6px;
@@ -1682,7 +1998,13 @@ em {
     .formula-box:hover,
     .remark-box:hover,
     .experiment-box:hover,
-    .derivation-box:hover {
+    .derivation-box:hover,
+    .theorem-box:hover,
+    .lemma-box:hover,
+    .example-box:hover,
+    .statement-box:hover,
+    .corollary-box:hover,
+    .proof-box:hover {
         transform: none;
         border-width: inherit;
     }
@@ -1703,7 +2025,18 @@ em {
         right: 0.5rem;
     }
 
-    .definition-box strong {
+    .example-box::before {
+        font-size: 1rem;
+        top: 0.4rem;
+        right: 0.5rem;
+    }
+
+    .definition-box strong,
+    .theorem-box strong,
+    .lemma-box strong,
+    .example-box strong,
+    .statement-box strong,
+    .corollary-box strong {
         font-size: 1rem;
     }
 
