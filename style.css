@@ -404,87 +404,96 @@ body.dark-theme .knowledge-check-btn:hover {
 }
 
 .bookmarks-section-title {
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-size: 0.8rem;
+    font-weight: 700;
     color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.03em;
-    margin-bottom: 0.5rem;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.6rem;
 }
 
-.bookmarks-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
+.bm-card {
+    border-left: 4px solid var(--accent-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: box-shadow 0.15s ease;
+    overflow: hidden;
 }
 
-.bookmark-entry {
+.bm-card:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.bm-card-header {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.6rem 0.75rem;
-    border-radius: 10px;
-    background: var(--bg-secondary);
-    cursor: pointer;
-    transition: all 0.15s ease;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
 }
 
-.bookmark-entry:hover {
-    background: rgba(var(--accent-rgb), 0.08);
-}
-
-.bookmark-color {
-    width: 4px;
-    min-width: 4px;
-    height: 100%;
-    min-height: 32px;
-    border-radius: 2px;
-    align-self: stretch;
-}
-
-.bookmark-body {
-    flex: 1;
-    min-width: 0;
-}
-
-.bookmark-type {
+.bm-card-type {
     font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    margin-bottom: 0.15rem;
 }
 
-.bookmark-preview {
-    font-size: 0.85rem;
-    color: var(--text-primary);
-    white-space: nowrap;
+.bm-card-page {
+    flex: 1;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-align: right;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.bookmark-page {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    margin-top: 0.15rem;
-}
-
-.bookmark-delete {
+.bm-card-delete {
     background: none;
     border: none;
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     cursor: pointer;
-    padding: 0.25rem;
+    padding: 0.2rem 0.35rem;
     border-radius: 4px;
-    opacity: 0.5;
+    opacity: 0.4;
     transition: all 0.15s;
+    margin-left: auto;
 }
 
-.bookmark-delete:hover {
+.bm-card-delete:hover {
     opacity: 1;
     color: #ef4444;
     background: rgba(239, 68, 68, 0.1);
+}
+
+.bm-card-content {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    max-height: 200px;
+    overflow-y: auto;
+    line-height: 1.5;
+}
+
+.bm-card-content .definition-box,
+.bm-card-content .formula-box,
+.bm-card-content .theorem-box,
+.bm-card-content .remark-box,
+.bm-card-content .lemma-box,
+.bm-card-content .example-box,
+.bm-card-content .statement-box,
+.bm-card-content .corollary-box {
+    background: none !important;
+    padding: 0 !important;
+}
+
+.bm-card-content img {
+    max-width: 100%;
+    height: auto;
 }
 
 /* ============================================
@@ -2644,31 +2653,28 @@ em {
 }
 
 /* Подсветка при поиске */
-.highlight {
-    background-color: rgba(250, 204, 21, 0.4);
+mark.search-hl {
+    background: rgba(250, 204, 21, 0.35);
     color: inherit;
-    padding: 1px 0;
+    padding: 0;
     border-radius: 2px;
-    box-decoration-break: clone;
-    -webkit-box-decoration-break: clone;
 }
 
-.highlight-active {
-    background-color: #facc15;
+mark.search-hl-active {
+    background: #facc15;
     color: #000;
     outline: 2px solid #f59e0b;
     outline-offset: 1px;
 }
 
-body.dark-theme .highlight {
-    background-color: rgba(251, 191, 36, 0.3);
+body.dark-theme mark.search-hl {
+    background: rgba(251, 191, 36, 0.25);
     color: inherit;
 }
 
-body.dark-theme .highlight-active {
-    background-color: #fbbf24;
+body.dark-theme mark.search-hl-active {
+    background: #fbbf24;
     color: #1e293b;
-    outline-color: #f59e0b;
 }
 
 /* ============ Search navigation bar ============ */

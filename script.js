@@ -238,12 +238,13 @@ function initNavigation() {
 // ПОИСК (Ctrl+F стиль)
 // ============================================
 
-let searchState = {
+const searchState = {
     matches: [],
     currentIndex: -1,
     term: '',
     bar: null,
-    debounce: null
+    debounce: null,
+    active: false
 };
 
 function initSearch() {
@@ -252,29 +253,23 @@ function initSearch() {
 
     createSearchBar();
 
-    searchInput.addEventListener('input', (e) => {
-        const term = e.target.value.trim();
+    searchInput.addEventListener('input', () => {
         if (searchState.debounce) clearTimeout(searchState.debounce);
-
+        const term = searchInput.value.trim();
         if (term.length < 2) {
             clearSearch();
             return;
         }
-
         searchState.debounce = setTimeout(() => {
             performSearch(term.toLowerCase());
-        }, 200);
+        }, 300);
     });
 
     searchInput.addEventListener('keydown', (e) => {
-        if (searchState.matches.length === 0) return;
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && searchState.matches.length > 0) {
             e.preventDefault();
-            if (e.shiftKey) {
-                navigateMatch(-1);
-            } else {
-                navigateMatch(1);
-            }
+            closeMobileMenu();
+            navigateMatch(e.shiftKey ? -1 : 1);
         }
     });
 }
@@ -284,23 +279,20 @@ function createSearchBar() {
     const bar = document.createElement('div');
     bar.id = 'searchNavBar';
     bar.className = 'search-nav-bar hidden';
-    bar.innerHTML = `
-        <div class="search-nav-info">
-            <span class="search-nav-count"></span>
-        </div>
-        <div class="search-nav-sections"></div>
-        <div class="search-nav-controls">
-            <button class="search-nav-btn" id="searchPrev" aria-label="Предыдущее">▲</button>
-            <button class="search-nav-btn" id="searchNext" aria-label="Следующее">▼</button>
-            <button class="search-nav-btn search-nav-close" id="searchClose" aria-label="Закрыть">✕</button>
-        </div>
-    `;
+    bar.innerHTML =
+        '<span class="search-nav-count"></span>' +
+        '<div class="search-nav-sections"></div>' +
+        '<div class="search-nav-controls">' +
+            '<button class="search-nav-btn" id="searchPrev" aria-label="Предыдущее">▲</button>' +
+            '<button class="search-nav-btn" id="searchNext" aria-label="Следующее">▼</button>' +
+            '<button class="search-nav-btn search-nav-close" id="searchClose" aria-label="Закрыть">✕</button>' +
+        '</div>';
     document.body.appendChild(bar);
     searchState.bar = bar;
 
-    document.getElementById('searchPrev').addEventListener('click', () => navigateMatch(-1));
-    document.getElementById('searchNext').addEventListener('click', () => navigateMatch(1));
-    document.getElementById('searchClose').addEventListener('click', () => {
+    bar.querySelector('#searchPrev').addEventListener('click', () => navigateMatch(-1));
+    bar.querySelector('#searchNext').addEventListener('click', () => navigateMatch(1));
+    bar.querySelector('#searchClose').addEventListener('click', () => {
         const input = document.getElementById('searchInput');
         if (input) input.value = '';
         clearSearch();
@@ -312,140 +304,130 @@ function performSearch(term) {
     searchState.matches = [];
     searchState.currentIndex = -1;
     searchState.term = term;
+    searchState.active = true;
 
-    const mainContent = document.querySelector('.main-content') || document.body;
-    const walker = document.createTreeWalker(
-        mainContent,
-        NodeFilter.SHOW_TEXT,
-        {
-            acceptNode: (node) => {
-                const parent = node.parentElement;
-                if (!parent) return NodeFilter.FILTER_REJECT;
-                if (parent.closest('.katex, .sidebar, .search-nav-bar, script, style, .highlight')) {
-                    return NodeFilter.FILTER_REJECT;
-                }
-                return NodeFilter.FILTER_ACCEPT;
+    const root = document.querySelector('.main-content') || document.body;
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+            const p = node.parentElement;
+            if (!p) return NodeFilter.FILTER_REJECT;
+            if (p.closest('.katex, .sidebar, .search-nav-bar, script, style, noscript')) {
+                return NodeFilter.FILTER_REJECT;
             }
-        }
-    );
-
-    const textNodes = [];
-    while (walker.nextNode()) {
-        textNodes.push(walker.currentNode);
-    }
-
-    textNodes.forEach(node => {
-        const text = node.textContent;
-        const lower = text.toLowerCase();
-        let startPos = 0;
-        const fragments = [];
-        let hasMatch = false;
-
-        while (true) {
-            const idx = lower.indexOf(term, startPos);
-            if (idx === -1) break;
-            hasMatch = true;
-            fragments.push({ start: startPos, end: idx, type: 'text' });
-            fragments.push({ start: idx, end: idx + term.length, type: 'match' });
-            startPos = idx + term.length;
-        }
-
-        if (!hasMatch) return;
-        fragments.push({ start: startPos, end: text.length, type: 'text' });
-
-        const container = document.createDocumentFragment();
-        fragments.forEach(f => {
-            const chunk = text.substring(f.start, f.end);
-            if (f.type === 'match') {
-                const span = document.createElement('span');
-                span.className = 'highlight';
-                span.textContent = chunk;
-                searchState.matches.push(span);
-                container.appendChild(span);
-            } else if (chunk) {
-                container.appendChild(document.createTextNode(chunk));
+            if (node.textContent.toLowerCase().indexOf(term) === -1) {
+                return NodeFilter.FILTER_REJECT;
             }
-        });
-        node.parentNode.replaceChild(container, node);
+            return NodeFilter.FILTER_ACCEPT;
+        }
     });
 
-    updateSearchBar();
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+
+    nodes.forEach(node => {
+        const text = node.textContent;
+        const lower = text.toLowerCase();
+        const parent = node.parentNode;
+        if (!parent) return;
+
+        const frag = document.createDocumentFragment();
+        let pos = 0;
+        let idx;
+        while ((idx = lower.indexOf(term, pos)) !== -1) {
+            if (idx > pos) frag.appendChild(document.createTextNode(text.slice(pos, idx)));
+            const mark = document.createElement('mark');
+            mark.className = 'search-hl';
+            mark.textContent = text.slice(idx, idx + term.length);
+            searchState.matches.push(mark);
+            frag.appendChild(mark);
+            pos = idx + term.length;
+        }
+        if (pos < text.length) frag.appendChild(document.createTextNode(text.slice(pos)));
+        parent.replaceChild(frag, node);
+    });
+
+    showSearchBar();
 
     if (searchState.matches.length > 0) {
         searchState.currentIndex = 0;
-        setActiveMatch(0);
+        searchState.matches[0].classList.add('search-hl-active');
     }
 }
 
-function navigateMatch(direction) {
-    if (searchState.matches.length === 0) return;
-    const len = searchState.matches.length;
-    const newIdx = (searchState.currentIndex + direction + len) % len;
-    setActiveMatch(newIdx);
-}
-
-function setActiveMatch(idx) {
-    if (searchState.currentIndex >= 0 && searchState.currentIndex < searchState.matches.length) {
-        searchState.matches[searchState.currentIndex].classList.remove('highlight-active');
-    }
-    searchState.currentIndex = idx;
-    const el = searchState.matches[idx];
-    if (!el) return;
-    el.classList.add('highlight-active');
+function navigateMatch(dir) {
+    const m = searchState.matches;
+    if (!m.length) return;
+    m[searchState.currentIndex]?.classList.remove('search-hl-active');
+    searchState.currentIndex = (searchState.currentIndex + dir + m.length) % m.length;
+    const el = m[searchState.currentIndex];
+    el.classList.add('search-hl-active');
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    updateSearchBar();
+    showSearchBar();
 }
 
-function updateSearchBar() {
+function showSearchBar() {
     const bar = searchState.bar;
     if (!bar) return;
-
     const total = searchState.matches.length;
     const countEl = bar.querySelector('.search-nav-count');
-    const sectionsEl = bar.querySelector('.search-nav-sections');
-
-    if (total === 0 && searchState.term) {
-        bar.classList.remove('hidden');
-        countEl.textContent = 'Ничего не найдено';
-        sectionsEl.innerHTML = '';
-        return;
-    }
+    const secEl = bar.querySelector('.search-nav-sections');
 
     if (total === 0) {
-        bar.classList.add('hidden');
+        bar.classList.remove('hidden');
+        countEl.textContent = searchState.term ? 'Ничего не найдено' : '';
+        secEl.innerHTML = '';
         return;
     }
 
     bar.classList.remove('hidden');
-    countEl.textContent = `${searchState.currentIndex + 1} из ${total}`;
+    countEl.textContent = (searchState.currentIndex + 1) + ' / ' + total;
 
-    const sectionMap = new Map();
-    searchState.matches.forEach((m, i) => {
-        const topic = m.closest('.topic, .content-section');
-        if (!topic) return;
-        if (!sectionMap.has(topic)) {
-            const titleEl = topic.querySelector('.topic-title');
-            const name = titleEl ? titleEl.childNodes[0]?.textContent?.trim() || titleEl.textContent.trim() : (topic.id || '');
-            sectionMap.set(topic, { name, count: 0, firstIdx: i });
+    const map = new Map();
+    searchState.matches.forEach((el, i) => {
+        const sec = el.closest('.topic, .content-section');
+        if (!sec) return;
+        if (!map.has(sec)) {
+            const tEl = sec.querySelector('.topic-title, h3');
+            let name = '';
+            if (tEl) {
+                tEl.childNodes.forEach(n => {
+                    if (n.nodeType === Node.TEXT_NODE) name += n.textContent;
+                });
+                name = name.trim() || tEl.textContent.trim();
+            }
+            if (!name) name = sec.id || '?';
+            map.set(sec, { name, count: 0, first: i });
         }
-        sectionMap.get(topic).count++;
+        map.get(sec).count++;
     });
 
     let html = '';
-    sectionMap.forEach((info, topic) => {
-        const isActive = searchState.currentIndex >= info.firstIdx &&
-            searchState.currentIndex < info.firstIdx + info.count;
-        html += `<button class="search-nav-section ${isActive ? 'active' : ''}" data-idx="${info.firstIdx}">${info.name} <span class="search-section-badge">${info.count}</span></button>`;
+    map.forEach((info) => {
+        const cur = searchState.currentIndex;
+        const active = cur >= info.first && cur < info.first + info.count;
+        html += '<button class="search-nav-section' + (active ? ' active' : '') +
+            '" data-i="' + info.first + '">' +
+            escapeSearchHtml(info.name) +
+            ' <span class="search-section-badge">' + info.count + '</span></button>';
     });
-    sectionsEl.innerHTML = html;
+    secEl.innerHTML = html;
 
-    sectionsEl.querySelectorAll('.search-nav-section').forEach(btn => {
+    secEl.querySelectorAll('.search-nav-section').forEach(btn => {
         btn.addEventListener('click', () => {
-            const idx = parseInt(btn.dataset.idx);
-            setActiveMatch(idx);
+            const i = parseInt(btn.dataset.i);
+            searchState.matches[searchState.currentIndex]?.classList.remove('search-hl-active');
+            searchState.currentIndex = i;
+            searchState.matches[i].classList.add('search-hl-active');
+            searchState.matches[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
             closeMobileMenu();
+            showSearchBar();
         });
     });
+}
+
+function escapeSearchHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 }
 
 function clearSearch() {
@@ -453,22 +435,25 @@ function clearSearch() {
     searchState.matches = [];
     searchState.currentIndex = -1;
     searchState.term = '';
-    if (searchState.bar) {
-        searchState.bar.classList.add('hidden');
-    }
+    searchState.active = false;
+    if (searchState.bar) searchState.bar.classList.add('hidden');
 }
 
 function clearHighlights() {
-    document.querySelectorAll('.highlight').forEach(el => {
-        const text = el.textContent;
-        el.replaceWith(text);
+    document.querySelectorAll('mark.search-hl').forEach(mark => {
+        const parent = mark.parentNode;
+        if (!parent) return;
+        mark.replaceWith(document.createTextNode(mark.textContent));
+        parent.normalize();
     });
 }
 
 function removeHighlights(element) {
-    element.querySelectorAll('.highlight').forEach(el => {
-        el.replaceWith(el.textContent);
+    if (!element) return;
+    element.querySelectorAll('mark.search-hl').forEach(mark => {
+        mark.replaceWith(document.createTextNode(mark.textContent));
     });
+    element.normalize();
 }
 
 // ============================================

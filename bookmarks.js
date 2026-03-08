@@ -302,6 +302,16 @@
         });
     }
 
+    function findBoxById(bmId) {
+        const parts = bmId.split('_');
+        const idx = parseInt(parts.pop());
+        const topicId = parts.join('_');
+        const topic = document.getElementById(topicId);
+        if (!topic) return null;
+        const boxes = topic.querySelectorAll('.definition-box, .formula-box, .theorem-box, .remark-box, .lemma-box, .example-box, .statement-box, .corollary-box');
+        return boxes[idx] || null;
+    }
+
     function renderBookmarksPanel() {
         let overlay = document.getElementById('bookmarksOverlay');
         if (!overlay) {
@@ -317,7 +327,7 @@
             const modal = document.createElement('div');
             modal.id = 'bookmarksModal';
             modal.className = 'auth-modal';
-            modal.style.cssText = 'max-width: 600px; max-height: 80vh; overflow-y: auto;';
+            modal.style.cssText = 'max-width: 700px; max-height: 85vh; overflow-y: auto;';
             overlay.appendChild(modal);
             document.body.appendChild(overlay);
             initBookmarksSwipe();
@@ -332,93 +342,129 @@
         const thisPage = entries.filter(e => e.page === currentPage);
         const otherPages = entries.filter(e => e.page !== currentPage);
 
-        let html = '<h2 style="margin-top: 0; margin-bottom: 1rem;">🔖 Закладки</h2>';
+        modal.innerHTML = '';
+
+        const header = document.createElement('h2');
+        header.style.cssText = 'margin-top: 0; margin-bottom: 1rem;';
+        header.textContent = '🔖 Закладки';
+        modal.appendChild(header);
 
         if (entries.length === 0) {
-            html += '<p style="color: var(--text-secondary); text-align: center; padding: 2rem 0;">Нет закладок.<br>Нажмите ☆ на любом блоке, чтобы добавить.</p>';
+            const empty = document.createElement('p');
+            empty.style.cssText = 'color: var(--text-secondary); text-align: center; padding: 2rem 0;';
+            empty.innerHTML = 'Нет закладок.<br>Нажмите ☆ на любом блоке, чтобы добавить.';
+            modal.appendChild(empty);
         } else {
             if (thisPage.length > 0) {
-                html += '<div class="bookmarks-section-title">На этой странице</div>';
-                html += renderBookmarksList(thisPage, true);
+                modal.appendChild(createSectionTitle('На этой странице'));
+                thisPage.forEach(bm => {
+                    modal.appendChild(createBookmarkCard(bm, true));
+                });
             }
             if (otherPages.length > 0) {
-                html += '<div class="bookmarks-section-title" style="margin-top: 1rem;">Другие страницы</div>';
-                html += renderBookmarksList(otherPages, false);
+                const title = createSectionTitle('Другие страницы');
+                if (thisPage.length > 0) title.style.marginTop = '1.2rem';
+                modal.appendChild(title);
+                otherPages.forEach(bm => {
+                    modal.appendChild(createBookmarkCard(bm, false));
+                });
             }
         }
 
-        html += '<div style="text-align: center; margin-top: 1.5rem;">';
-        html += '<button id="closeBookmarksBtn" class="auth-submit" style="background: var(--text-secondary);">Закрыть</button>';
-        html += '</div>';
+        const closeWrap = document.createElement('div');
+        closeWrap.style.cssText = 'text-align: center; margin-top: 1.5rem;';
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'auth-submit';
+        closeBtn.style.background = 'var(--text-secondary)';
+        closeBtn.textContent = 'Закрыть';
+        closeBtn.addEventListener('click', () => closeBookmarksPanel());
+        closeWrap.appendChild(closeBtn);
+        modal.appendChild(closeWrap);
 
-        modal.innerHTML = html;
         overlay.classList.remove('hidden');
+    }
 
-        modal.querySelectorAll('.bookmark-entry').forEach(entry => {
-            entry.addEventListener('click', () => {
-                const id = entry.dataset.bmId;
-                const bm = bookmarks[id];
-                if (!bm) return;
-                if (bm.page === currentPage) {
-                    const topic = document.getElementById(bm.topicId);
-                    if (topic) {
-                        const boxes = topic.querySelectorAll('.definition-box, .formula-box, .theorem-box, .remark-box, .lemma-box, .example-box, .statement-box, .corollary-box');
-                        const idx = parseInt(id.split('_').pop());
-                        const target = boxes[idx];
-                        if (target) {
-                            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            target.classList.add('nav-highlight');
-                            setTimeout(() => target.classList.remove('nav-highlight'), 1500);
-                        }
-                    }
+    function createSectionTitle(text) {
+        const el = document.createElement('div');
+        el.className = 'bookmarks-section-title';
+        el.textContent = text;
+        return el;
+    }
+
+    function createBookmarkCard(bm, isCurrentPage) {
+        const card = document.createElement('div');
+        card.className = 'bm-card';
+        const color = getTypeColor(bm.type);
+        card.style.borderLeftColor = color;
+
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'bm-card-header';
+
+        const typeSpan = document.createElement('span');
+        typeSpan.className = 'bm-card-type';
+        typeSpan.style.color = color;
+        typeSpan.textContent = getTypeLabel(bm.type);
+        headerDiv.appendChild(typeSpan);
+
+        if (!isCurrentPage) {
+            const pageSpan = document.createElement('span');
+            pageSpan.className = 'bm-card-page';
+            pageSpan.textContent = bm.topicTitle || bm.pageTitle || '';
+            headerDiv.appendChild(pageSpan);
+        }
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'bm-card-delete';
+        delBtn.title = 'Удалить';
+        delBtn.textContent = '✕';
+        delBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            removeBookmark(bm.id);
+            refreshAllButtons();
+            renderBookmarksPanel();
+        });
+        headerDiv.appendChild(delBtn);
+        card.appendChild(headerDiv);
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'bm-card-content';
+
+        if (isCurrentPage) {
+            const box = findBoxById(bm.id);
+            if (box) {
+                const clone = box.cloneNode(true);
+                clone.querySelectorAll('.bookmark-btn').forEach(b => b.remove());
+                clone.style.cssText = 'margin: 0; border: none; box-shadow: none; border-radius: 0; border-left: none;';
+                contentDiv.appendChild(clone);
+            } else {
+                contentDiv.textContent = bm.preview || '';
+            }
+        } else {
+            contentDiv.textContent = bm.preview || '';
+        }
+
+        card.appendChild(contentDiv);
+
+        card.addEventListener('click', () => {
+            if (isCurrentPage) {
+                const box = findBoxById(bm.id);
+                if (box) {
                     closeBookmarksPanel();
                     if (typeof window.closeMobileMenu === 'function') {
                         window.closeMobileMenu();
                     }
-                } else {
-                    window.location.href = bm.page + '#' + bm.topicId;
+                    setTimeout(() => {
+                        box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        box.classList.add('nav-highlight');
+                        setTimeout(() => box.classList.remove('nav-highlight'), 1500);
+                    }, 100);
                 }
-            });
+            } else {
+                window.location.href = bm.page + '#' + bm.topicId;
+            }
         });
 
-        modal.querySelectorAll('.bookmark-delete').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const id = btn.dataset.bmId;
-                removeBookmark(id);
-                refreshAllButtons();
-                renderBookmarksPanel();
-            });
-        });
-
-        document.getElementById('closeBookmarksBtn')?.addEventListener('click', () => {
-            closeBookmarksPanel();
-        });
-    }
-
-    function renderBookmarksList(items, isCurrentPage) {
-        let html = '<div class="bookmarks-list">';
-        items.forEach(bm => {
-            const color = getTypeColor(bm.type);
-            const label = getTypeLabel(bm.type);
-            html += `<div class="bookmark-entry" data-bm-id="${bm.id}">
-                <div class="bookmark-color" style="background: ${color};"></div>
-                <div class="bookmark-body">
-                    <div class="bookmark-type" style="color: ${color};">${label}</div>
-                    <div class="bookmark-preview">${escapeHtml(bm.preview || '')}</div>
-                    ${!isCurrentPage ? `<div class="bookmark-page">${escapeHtml(bm.topicTitle || bm.pageTitle || '')}</div>` : ''}
-                </div>
-                <button class="bookmark-delete" data-bm-id="${bm.id}" title="Удалить">✕</button>
-            </div>`;
-        });
-        html += '</div>';
-        return html;
-    }
-
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+        return card;
     }
 
     document.addEventListener('DOMContentLoaded', () => {
