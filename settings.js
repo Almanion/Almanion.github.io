@@ -34,9 +34,11 @@ function loadSettings() {
         try {
             siteSettings = { ...defaultSettings, ...JSON.parse(saved) };
         } catch (e) {
-            console.error('Ошибка загрузки настроек:', e);
             siteSettings = { ...defaultSettings };
         }
+    }
+    if (!saved && (('ontouchstart' in window) || window.innerWidth <= 768)) {
+        siteSettings.hoverEffects = false;
     }
 }
 

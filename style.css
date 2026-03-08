@@ -5804,6 +5804,51 @@ body.no-hover .hint-toggle:hover {
     box-shadow: inherit !important;
 }
 
+@media (hover: none) {
+    .definition-box:hover,
+    .formula-box:hover,
+    .remark-box:hover,
+    .theorem-box:hover,
+    .lemma-box:hover,
+    .example-box:hover,
+    .statement-box:hover,
+    .corollary-box:hover,
+    .experiment-box:hover,
+    .derivation-box:hover,
+    .properties-box:hover,
+    .system-box:hover,
+    .content-section:hover,
+    .topic:hover,
+    .subject-card:hover,
+    .task-card:hover,
+    .stat-card:hover,
+    .subsection-title:hover {
+        transform: none !important;
+        box-shadow: inherit !important;
+    }
+
+    .nav-link:hover {
+        transform: none !important;
+    }
+
+    .theme-option:hover,
+    .animation-level-option:hover,
+    .settings-reset-btn:hover,
+    .settings-close-btn:hover,
+    .auth-submit:hover,
+    .knowledge-check-btn:hover,
+    .topic-select-card:hover,
+    .menu-toggle:hover,
+    .scroll-to-top:hover,
+    .settings-button:hover,
+    .toggle-derivation:hover,
+    .task-toggle:hover,
+    .hint-toggle:hover {
+        transform: none !important;
+        box-shadow: inherit !important;
+    }
+}
+
 /* Кнопка настроек в сайдбаре (для мобильных) */
 .settings-button-sidebar {
     display: none;
