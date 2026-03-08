@@ -2,31 +2,22 @@
 // ПРОВЕРКА ЗНАНИЙ
 // ============================================
 
-// Структура тем с их ID
-const TOPICS = [
-    { id: 'main-definitions', name: '0. Главные определения' },
-    { id: 'intro', name: '1. Введение в механику' },
-    { id: 'kinematics', name: '2.1 Введение в кинематику' },
-    { id: 'coordinates', name: '2.2 Координаты' },
-    { id: 'basic-concepts', name: '2.3 Основные понятия' },
-    { id: 'uniform-motion', name: '2.4 Равномерное движение' },
-    { id: 'accelerated-motion', name: '2.5 Равноускоренное движение' },
-    { id: 'free-fall', name: '2.6 Свободное падение' },
-    { id: 'projectile', name: '2.7 Тело под углом' },
-    { id: 'tangential', name: '2.8 Тангенциальное ускорение' },
-    { id: 'circular', name: '2.9 Движение по окружности' },
-    { id: 'relative', name: '2.10 Относительность движения' },
-    { id: 'dynamics', name: '3.1 Законы Ньютона' },
-    { id: 'friction', name: '3.2 Сила трения' },
-    { id: 'elastic-force', name: '3.3 Сила упругости' },
-    { id: 'gravitation', name: '3.4 Закон всемирного тяготения' },
-    { id: 'momentum', name: '3.5 Импульс тела. Импульс силы' },
-    { id: 'reactive-motion', name: '3.6 Реактивное движение' },
-    { id: 'center-of-mass', name: '3.7 Центр масс' },
-    { id: 'work-power', name: '3.8 Механическая работа. Мощность' },
-    { id: 'kinetic-energy', name: '3.9 Кинетическая энергия' },
-    { id: 'potential-energy', name: '3.10 Потенциальная энергия' }
-];
+// Автоматическое сканирование тем из DOM
+function discoverTopics() {
+    const topics = [];
+    document.querySelectorAll('article.topic[id]').forEach(article => {
+        const titleEl = article.querySelector('.topic-title');
+        if (titleEl) {
+            topics.push({
+                id: article.id,
+                name: titleEl.textContent.trim()
+            });
+        }
+    });
+    return topics;
+}
+
+let TOPICS = [];
 
 let selectedTopics = [];
 let currentDefinitions = [];
@@ -40,6 +31,7 @@ let allDefinitions = []; // Все извлечённые определения
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
+    TOPICS = discoverTopics();
     initKnowledgeCheck();
     checkNewFeatureNotification();
 });
