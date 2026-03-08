@@ -454,7 +454,9 @@ function initSettingsSwipe() {
 
     let startY = 0;
     let currentY = 0;
-    let isDragging = false;
+    let activated = false;
+    let tracking = false;
+    const DEAD_ZONE = 15;
 
     function getContent() {
         return modal.querySelector('.settings-modal-content');
@@ -463,33 +465,50 @@ function initSettingsSwipe() {
     modal.addEventListener('touchstart', (e) => {
         if (window.innerWidth > 768) return;
         const content = getContent();
-        if (!content || content.scrollTop > 5) return;
+        if (!content) return;
+        if (content.scrollTop > 5) return;
         startY = e.touches[0].clientY;
         currentY = startY;
-        isDragging = true;
-        content.style.transition = 'none';
+        tracking = true;
+        activated = false;
     }, { passive: true });
 
     modal.addEventListener('touchmove', (e) => {
-        if (!isDragging) return;
+        if (!tracking) return;
         const content = getContent();
         if (!content) return;
         currentY = e.touches[0].clientY;
         const deltaY = currentY - startY;
-        if (deltaY > 0) {
-            content.style.transform = `translateY(${deltaY}px)`;
-            modal.style.background = `rgba(0, 0, 0, ${Math.max(0, 0.75 - deltaY / 400)})`;
+
+        if (!activated) {
+            if (deltaY > DEAD_ZONE) {
+                activated = true;
+                startY = currentY;
+                content.style.transition = 'none';
+            }
+            return;
         }
-    }, { passive: true });
+
+        const swipeDelta = currentY - startY;
+        if (swipeDelta > 0) {
+            e.preventDefault();
+            content.style.transform = `translateY(${swipeDelta}px)`;
+            modal.style.background = `rgba(0, 0, 0, ${Math.max(0, 0.75 - swipeDelta / 400)})`;
+        }
+    }, { passive: false });
 
     modal.addEventListener('touchend', () => {
-        if (!isDragging) return;
-        isDragging = false;
+        if (!tracking) return;
+        tracking = false;
+
+        if (!activated) return;
+        activated = false;
+
         const content = getContent();
         if (!content) return;
         const deltaY = currentY - startY;
 
-        if (deltaY > 80) {
+        if (deltaY > 60) {
             content.style.transition = 'transform 0.25s ease-out';
             content.style.transform = 'translateY(100vh)';
             modal.style.transition = 'background 0.25s ease-out';

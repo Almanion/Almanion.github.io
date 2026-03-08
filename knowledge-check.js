@@ -703,7 +703,9 @@ function initOverlaySwipe(overlayId, modalId, onClose) {
 
     let startY = 0;
     let currentY = 0;
-    let isDragging = false;
+    let activated = false;
+    let tracking = false;
+    const DEAD_ZONE = 15;
 
     function getModal() {
         return document.getElementById(modalId);
@@ -712,33 +714,50 @@ function initOverlaySwipe(overlayId, modalId, onClose) {
     overlay.addEventListener('touchstart', (e) => {
         if (window.innerWidth > 768) return;
         const modal = getModal();
-        if (!modal || modal.scrollTop > 5) return;
+        if (!modal) return;
+        if (modal.scrollTop > 5) return;
         startY = e.touches[0].clientY;
         currentY = startY;
-        isDragging = true;
-        modal.style.transition = 'none';
+        tracking = true;
+        activated = false;
     }, { passive: true });
 
     overlay.addEventListener('touchmove', (e) => {
-        if (!isDragging) return;
+        if (!tracking) return;
         const modal = getModal();
         if (!modal) return;
         currentY = e.touches[0].clientY;
         const deltaY = currentY - startY;
-        if (deltaY > 0) {
-            modal.style.transform = `translateY(${deltaY}px)`;
-            overlay.style.background = `rgba(0, 0, 0, ${Math.max(0, 0.75 - deltaY / 400)})`;
+
+        if (!activated) {
+            if (deltaY > DEAD_ZONE) {
+                activated = true;
+                startY = currentY;
+                modal.style.transition = 'none';
+            }
+            return;
         }
-    }, { passive: true });
+
+        const swipeDelta = currentY - startY;
+        if (swipeDelta > 0) {
+            e.preventDefault();
+            modal.style.transform = `translateY(${swipeDelta}px)`;
+            overlay.style.background = `rgba(0, 0, 0, ${Math.max(0, 0.75 - swipeDelta / 400)})`;
+        }
+    }, { passive: false });
 
     overlay.addEventListener('touchend', () => {
-        if (!isDragging) return;
-        isDragging = false;
+        if (!tracking) return;
+        tracking = false;
+
+        if (!activated) return;
+        activated = false;
+
         const modal = getModal();
         if (!modal) return;
         const deltaY = currentY - startY;
 
-        if (deltaY > 80) {
+        if (deltaY > 60) {
             modal.style.transition = 'transform 0.25s ease-out';
             modal.style.transform = 'translateY(100vh)';
             overlay.style.transition = 'background 0.25s ease-out';
