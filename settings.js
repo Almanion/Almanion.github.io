@@ -4,9 +4,10 @@
 
 // Настройки по умолчанию
 const defaultSettings = {
-    theme: 'light',           // light или dark
-    newYearMode: false,        // true или false
-    animationLevel: 'max'     // max, medium, off
+    theme: 'light',
+    newYearMode: false,
+    animationLevel: 'max',
+    hoverEffects: true
 };
 
 // Текущие настройки
@@ -50,7 +51,15 @@ function saveSettings() {
 function applyAllSettings() {
     applyTheme(siteSettings.theme);
     applyAnimationLevel(siteSettings.animationLevel);
-    // Новогодний режим применяется через newyear.js
+    applyHoverEffects(siteSettings.hoverEffects);
+}
+
+function applyHoverEffects(enabled) {
+    if (enabled) {
+        document.body.classList.remove('no-hover');
+    } else {
+        document.body.classList.add('no-hover');
+    }
 }
 
 function applyTheme(theme) {
@@ -214,6 +223,18 @@ function createSettingsModal() {
                     </div>
                 </div>
 
+                <!-- Hover-эффекты -->
+                <div class="settings-section">
+                    <h3>👆 Hover-эффекты</h3>
+                    <div class="settings-option">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="hoverToggle" ${siteSettings.hoverEffects ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Эффекты при наведении курсора (масштабирование, подсветка, тени)</span>
+                        </label>
+                    </div>
+                </div>
+
                 <!-- Кнопки действий -->
                 <div class="settings-actions">
                     <button class="settings-reset-btn" id="settingsResetBtn">
@@ -344,6 +365,17 @@ function bindSettingsHandlers() {
         });
     });
     
+    // Hover-эффекты
+    const hoverToggle = document.getElementById('hoverToggle');
+    if (hoverToggle) {
+        hoverToggle.addEventListener('change', (e) => {
+            siteSettings.hoverEffects = e.target.checked;
+            applyHoverEffects(e.target.checked);
+            saveSettings();
+            showNotification(e.target.checked ? 'Hover-эффекты включены 👆' : 'Hover-эффекты выключены');
+        });
+    }
+
     // Сброс настроек
     const resetBtn = document.getElementById('settingsResetBtn');
     resetBtn.addEventListener('click', resetAllSettings);
@@ -368,10 +400,13 @@ function openSettingsModal() {
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
         
-        // Обновляем состояние чекбокса новогоднего режима
         const newYearToggle = document.getElementById('newYearToggle');
         if (newYearToggle && typeof isNewYearMode !== 'undefined') {
             newYearToggle.checked = isNewYearMode;
+        }
+        const hoverToggle = document.getElementById('hoverToggle');
+        if (hoverToggle) {
+            hoverToggle.checked = siteSettings.hoverEffects;
         }
     }
 }

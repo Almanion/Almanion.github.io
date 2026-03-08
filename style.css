@@ -5635,6 +5635,54 @@ body.animations-off .nav-link:hover {
     /* Цвет фона изменяется через стандартные стили */
 }
 
+/* ============================================
+   NO-HOVER MODE
+   ============================================ */
+body.no-hover .definition-box:hover,
+body.no-hover .formula-box:hover,
+body.no-hover .remark-box:hover,
+body.no-hover .theorem-box:hover,
+body.no-hover .lemma-box:hover,
+body.no-hover .example-box:hover,
+body.no-hover .statement-box:hover,
+body.no-hover .corollary-box:hover,
+body.no-hover .experiment-box:hover,
+body.no-hover .derivation-box:hover,
+body.no-hover .properties-box:hover,
+body.no-hover .system-box:hover,
+body.no-hover .content-section:hover,
+body.no-hover .topic:hover,
+body.no-hover .subject-card:hover,
+body.no-hover .task-card:hover,
+body.no-hover .stat-card:hover,
+body.no-hover .subsection-title:hover {
+    transform: none !important;
+    box-shadow: inherit !important;
+}
+
+body.no-hover .nav-link:hover {
+    transform: none !important;
+}
+
+body.no-hover .theme-option:hover,
+body.no-hover .animation-level-option:hover,
+body.no-hover .settings-reset-btn:hover,
+body.no-hover .ny-advanced-settings:hover,
+body.no-hover .settings-close-btn:hover,
+body.no-hover .auth-submit:hover,
+body.no-hover .knowledge-check-btn:hover,
+body.no-hover .topic-select-card:hover,
+body.no-hover .menu-toggle:hover,
+body.no-hover .scroll-to-top:hover,
+body.no-hover .settings-button:hover,
+body.no-hover .theme-toggle:hover,
+body.no-hover .toggle-derivation:hover,
+body.no-hover .task-toggle:hover,
+body.no-hover .hint-toggle:hover {
+    transform: none !important;
+    box-shadow: inherit !important;
+}
+
 /* Кнопка настроек в сайдбаре (для мобильных) */
 .settings-button-sidebar {
     display: none;
