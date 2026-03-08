@@ -44,6 +44,12 @@
 //           "readAt": { ".write": true }
 //         }
 //       }
+//     },
+//     "bookmarks": {
+//       "$visitorId": {
+//         ".read": true,
+//         ".write": true
+//       }
 //     }
 //   }
 // }

@@ -2,6 +2,10 @@
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================
 
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/docs/sw.js').catch(() => {});
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     initMath();
@@ -125,18 +129,18 @@ function initNavigation() {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             
-            // Удаляем активный класс у всех ссылок
             navLinks.forEach(l => l.classList.remove('active'));
-            
-            // Добавляем активный класс к кликнутой ссылке
             link.classList.add('active');
             
-            // Прокрутка к секции
             const targetId = link.getAttribute('href').substring(1);
             const targetElement = document.getElementById(targetId);
             
             if (targetElement) {
-                const offset = 20;
+                closeMobileMenu();
+
+                const stickyHeader = document.querySelector('.topic-title');
+                const headerHeight = stickyHeader ? stickyHeader.offsetHeight + 8 : 20;
+                const offset = window.innerWidth <= 768 ? headerHeight : 20;
                 const elementPosition = targetElement.getBoundingClientRect().top;
                 const offsetPosition = elementPosition + window.pageYOffset - offset;
                 
@@ -144,9 +148,9 @@ function initNavigation() {
                     top: offsetPosition,
                     behavior: 'smooth'
                 });
-                
-                // Закрываем мобильное меню
-                closeMobileMenu();
+
+                targetElement.classList.add('nav-highlight');
+                setTimeout(() => targetElement.classList.remove('nav-highlight'), 1500);
             }
         });
     });
@@ -236,42 +240,83 @@ function initNavigation() {
 
 function initSearch() {
     const searchInput = document.getElementById('searchInput');
-    if (!searchInput) return; // Защита от null
+    if (!searchInput) return;
     
-    // Поддерживаем оба варианта: .topic и .content-section
     const topics = document.querySelectorAll('.topic, .content-section');
-    
     let searchDebounce = null;
+
+    let resultsInfo = document.getElementById('searchResultsInfo');
+    if (!resultsInfo) {
+        resultsInfo = document.createElement('div');
+        resultsInfo.id = 'searchResultsInfo';
+        resultsInfo.className = 'search-results-info';
+        searchInput.parentNode.appendChild(resultsInfo);
+    }
     
     searchInput.addEventListener('input', (e) => {
         const searchTerm = e.target.value.toLowerCase().trim();
         
-        // Отменяем предыдущий таймер
         if (searchDebounce) clearTimeout(searchDebounce);
         
         if (searchTerm === '') {
-            // Показываем все топики и убираем подсветку сразу
             topics.forEach(topic => {
                 topic.style.display = 'block';
                 removeHighlights(topic);
             });
+            resultsInfo.style.display = 'none';
+            resultsInfo.innerHTML = '';
             return;
         }
+
+        if (searchTerm.length < 2) return;
         
-        // Дебаунс 200мс для поиска
         searchDebounce = setTimeout(() => {
+            let matchCount = 0;
+            const matchedTopics = [];
+
             topics.forEach(topic => {
                 const text = topic.textContent.toLowerCase();
-                
                 if (text.includes(searchTerm)) {
                     topic.style.display = 'block';
                     highlightText(topic, searchTerm);
+                    matchCount += topic.querySelectorAll('.highlight').length;
+                    const title = topic.querySelector('.topic-title, .subsection-title, h3, h4');
+                    matchedTopics.push({
+                        el: topic,
+                        name: title ? title.textContent.trim() : topic.id
+                    });
                 } else {
                     topic.style.display = 'none';
                     removeHighlights(topic);
                 }
             });
-        }, 200);
+
+            if (matchedTopics.length > 0) {
+                resultsInfo.style.display = 'block';
+                let html = `<div class="search-results-count">${matchCount} совпад. в ${matchedTopics.length} разд.</div>`;
+                html += '<div class="search-results-list">';
+                matchedTopics.forEach(t => {
+                    html += `<a class="search-result-item" data-id="${t.el.id}">${t.name}</a>`;
+                });
+                html += '</div>';
+                resultsInfo.innerHTML = html;
+
+                resultsInfo.querySelectorAll('.search-result-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const target = document.getElementById(item.dataset.id);
+                        if (target) {
+                            const first = target.querySelector('.highlight');
+                            const el = first || target;
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            closeMobileMenu();
+                        }
+                    });
+                });
+            } else {
+                resultsInfo.style.display = 'block';
+                resultsInfo.innerHTML = '<div class="search-results-count">Ничего не найдено</div>';
+            }
+        }, 250);
     });
 }
 
