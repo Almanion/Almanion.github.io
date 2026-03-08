@@ -190,7 +190,7 @@ function createTopicSelectionList() {
     list.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;';
 
     TOPICS.forEach(topic => {
-        const card = document.createElement('label');
+        const card = document.createElement('div');
         card.className = 'topic-select-card';
         card.setAttribute('data-topic', topic.id);
 
