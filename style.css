@@ -496,6 +496,25 @@ body.dark-theme .knowledge-check-btn:hover {
     height: auto;
 }
 
+.bm-sortable-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.bm-dragging {
+    opacity: 0.9;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25) !important;
+    border-radius: 8px;
+    pointer-events: none;
+}
+
+.bm-drag-placeholder {
+    border: 2px dashed var(--accent-color);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    opacity: 0.4;
+}
+
 /* ============================================
    ОСНОВНЫЕ СТИЛИ И ПЕРЕМЕННЫЕ
    ============================================ */
@@ -5757,7 +5776,7 @@ body.animations-off .nav-link:hover {
 }
 
 /* ============================================
-   NO-HOVER MODE
+   NO-HOVER MODE (body.no-hover + touch devices)
    ============================================ */
 body.no-hover .definition-box:hover,
 body.no-hover .formula-box:hover,
@@ -5776,12 +5795,31 @@ body.no-hover .topic:hover,
 body.no-hover .subject-card:hover,
 body.no-hover .task-card:hover,
 body.no-hover .stat-card:hover,
-body.no-hover .subsection-title:hover {
+body.no-hover .subsection-title:hover,
+body.no-hover .definition-box:active,
+body.no-hover .formula-box:active,
+body.no-hover .remark-box:active,
+body.no-hover .theorem-box:active,
+body.no-hover .lemma-box:active,
+body.no-hover .example-box:active,
+body.no-hover .statement-box:active,
+body.no-hover .corollary-box:active,
+body.no-hover .experiment-box:active,
+body.no-hover .derivation-box:active,
+body.no-hover .properties-box:active,
+body.no-hover .system-box:active,
+body.no-hover .content-section:active,
+body.no-hover .topic:active,
+body.no-hover .subject-card:active,
+body.no-hover .task-card:active,
+body.no-hover .stat-card:active,
+body.no-hover .subsection-title:active {
     transform: none !important;
     box-shadow: inherit !important;
 }
 
-body.no-hover .nav-link:hover {
+body.no-hover .nav-link:hover,
+body.no-hover .nav-link:active {
     transform: none !important;
 }
 
@@ -5799,35 +5837,49 @@ body.no-hover .settings-button:hover,
 body.no-hover .theme-toggle:hover,
 body.no-hover .toggle-derivation:hover,
 body.no-hover .task-toggle:hover,
-body.no-hover .hint-toggle:hover {
+body.no-hover .hint-toggle:hover,
+body.no-hover .knowledge-check-btn:active,
+body.no-hover .toggle-derivation:active,
+body.no-hover .toggle-proof:active,
+body.no-hover .task-toggle:active,
+body.no-hover .hint-toggle:active,
+body.no-hover .theme-toggle:active,
+body.no-hover .ny-toggle:active,
+body.no-hover .settings-button:active,
+body.no-hover .settings-button-sidebar:active,
+body.no-hover .auth-submit:active,
+body.no-hover .telegram-chat-button:active,
+body.no-hover .telegram-send-btn:active,
+body.no-hover .new-feature-button:active,
+body.no-hover .memory-btn:active {
     transform: none !important;
     box-shadow: inherit !important;
 }
 
 @media (hover: none) {
-    .definition-box:hover,
-    .formula-box:hover,
-    .remark-box:hover,
-    .theorem-box:hover,
-    .lemma-box:hover,
-    .example-box:hover,
-    .statement-box:hover,
-    .corollary-box:hover,
-    .experiment-box:hover,
-    .derivation-box:hover,
-    .properties-box:hover,
-    .system-box:hover,
-    .content-section:hover,
-    .topic:hover,
-    .subject-card:hover,
-    .task-card:hover,
-    .stat-card:hover,
-    .subsection-title:hover {
+    .definition-box:hover, .definition-box:active,
+    .formula-box:hover, .formula-box:active,
+    .remark-box:hover, .remark-box:active,
+    .theorem-box:hover, .theorem-box:active,
+    .lemma-box:hover, .lemma-box:active,
+    .example-box:hover, .example-box:active,
+    .statement-box:hover, .statement-box:active,
+    .corollary-box:hover, .corollary-box:active,
+    .experiment-box:hover, .experiment-box:active,
+    .derivation-box:hover, .derivation-box:active,
+    .properties-box:hover, .properties-box:active,
+    .system-box:hover, .system-box:active,
+    .content-section:hover, .content-section:active,
+    .topic:hover, .topic:active,
+    .subject-card:hover, .subject-card:active,
+    .task-card:hover, .task-card:active,
+    .stat-card:hover, .stat-card:active,
+    .subsection-title:hover, .subsection-title:active {
         transform: none !important;
         box-shadow: inherit !important;
     }
 
-    .nav-link:hover {
+    .nav-link:hover, .nav-link:active {
         transform: none !important;
     }
 
@@ -5835,15 +5887,22 @@ body.no-hover .hint-toggle:hover {
     .animation-level-option:hover,
     .settings-reset-btn:hover,
     .settings-close-btn:hover,
-    .auth-submit:hover,
-    .knowledge-check-btn:hover,
+    .auth-submit:hover, .auth-submit:active,
+    .knowledge-check-btn:hover, .knowledge-check-btn:active,
     .topic-select-card:hover,
     .menu-toggle:hover,
     .scroll-to-top:hover,
-    .settings-button:hover,
-    .toggle-derivation:hover,
-    .task-toggle:hover,
-    .hint-toggle:hover {
+    .settings-button:hover, .settings-button:active,
+    .toggle-derivation:hover, .toggle-derivation:active,
+    .toggle-proof:active,
+    .task-toggle:hover, .task-toggle:active,
+    .hint-toggle:hover, .hint-toggle:active,
+    .theme-toggle:active,
+    .ny-toggle:active,
+    .settings-button-sidebar:active,
+    .telegram-chat-button:active,
+    .new-feature-button:active,
+    .memory-btn:active {
         transform: none !important;
         box-shadow: inherit !important;
     }

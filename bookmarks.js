@@ -312,6 +312,30 @@
         return boxes[idx] || null;
     }
 
+    function sortedEntries() {
+        return Object.entries(bookmarks)
+            .map(([id, data]) => ({ id, ...data }))
+            .sort((a, b) => {
+                const oa = typeof a.order === 'number' ? a.order : Infinity;
+                const ob = typeof b.order === 'number' ? b.order : Infinity;
+                if (oa !== ob) return oa - ob;
+                return (b.timestamp || 0) - (a.timestamp || 0);
+            });
+    }
+
+    function persistOrder(orderedIds) {
+        orderedIds.forEach((id, i) => {
+            if (bookmarks[id]) bookmarks[id].order = i;
+        });
+        const ref = getBookmarksRef();
+        if (ref) {
+            orderedIds.forEach((id, i) => {
+                ref.child(id).child('order').set(i);
+            });
+        }
+        localStorage.setItem(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
+    }
+
     function renderBookmarksPanel() {
         let overlay = document.getElementById('bookmarksOverlay');
         if (!overlay) {
@@ -319,9 +343,7 @@
             overlay.id = 'bookmarksOverlay';
             overlay.className = 'auth-overlay hidden';
             overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) {
-                    closeBookmarksPanel();
-                }
+                if (e.target === overlay) closeBookmarksPanel();
             });
 
             const modal = document.createElement('div');
@@ -334,13 +356,7 @@
         }
 
         const modal = document.getElementById('bookmarksModal');
-        const currentPage = location.pathname;
-        const entries = Object.entries(bookmarks)
-            .map(([id, data]) => ({ id, ...data }))
-            .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-        const thisPage = entries.filter(e => e.page === currentPage);
-        const otherPages = entries.filter(e => e.page !== currentPage);
+        const entries = sortedEntries();
 
         modal.innerHTML = '';
 
@@ -355,20 +371,22 @@
             empty.innerHTML = 'Нет закладок.<br>Нажмите ☆ на любом блоке, чтобы добавить.';
             modal.appendChild(empty);
         } else {
-            if (thisPage.length > 0) {
-                modal.appendChild(createSectionTitle('На этой странице'));
-                thisPage.forEach(bm => {
-                    modal.appendChild(createBookmarkCard(bm, true));
-                });
-            }
-            if (otherPages.length > 0) {
-                const title = createSectionTitle('Другие страницы');
-                if (thisPage.length > 0) title.style.marginTop = '1.2rem';
-                modal.appendChild(title);
-                otherPages.forEach(bm => {
-                    modal.appendChild(createBookmarkCard(bm, false));
-                });
-            }
+            const hint = document.createElement('div');
+            hint.style.cssText = 'font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.6rem;';
+            hint.textContent = 'Удерживайте карточку для перемещения';
+            modal.appendChild(hint);
+
+            const list = document.createElement('div');
+            list.className = 'bm-sortable-list';
+            entries.forEach(bm => {
+                const currentPage = location.pathname;
+                const isLocal = bm.page === currentPage;
+                const card = createBookmarkCard(bm, isLocal);
+                card.dataset.bmId = bm.id;
+                list.appendChild(card);
+            });
+            modal.appendChild(list);
+            initDragSort(list);
         }
 
         const closeWrap = document.createElement('div');
@@ -382,6 +400,93 @@
         modal.appendChild(closeWrap);
 
         overlay.classList.remove('hidden');
+    }
+
+    function initDragSort(list) {
+        let dragItem = null;
+        let placeholder = null;
+        let longPressTimer = null;
+        let startY = 0;
+        let offsetY = 0;
+        let moved = false;
+
+        list.addEventListener('touchstart', (e) => {
+            const card = e.target.closest('.bm-card');
+            if (!card || e.target.closest('.bm-card-delete')) return;
+            startY = e.touches[0].clientY;
+            moved = false;
+
+            longPressTimer = setTimeout(() => {
+                dragItem = card;
+                moved = true;
+                const rect = card.getBoundingClientRect();
+                offsetY = startY - rect.top;
+
+                placeholder = document.createElement('div');
+                placeholder.className = 'bm-drag-placeholder';
+                placeholder.style.height = rect.height + 'px';
+                card.parentNode.insertBefore(placeholder, card);
+
+                card.classList.add('bm-dragging');
+                card.style.position = 'fixed';
+                card.style.left = rect.left + 'px';
+                card.style.width = rect.width + 'px';
+                card.style.top = (startY - offsetY) + 'px';
+                card.style.zIndex = '99999';
+
+                if (navigator.vibrate) navigator.vibrate(30);
+            }, 400);
+        }, { passive: true });
+
+        list.addEventListener('touchmove', (e) => {
+            if (longPressTimer && !dragItem) {
+                const dy = Math.abs(e.touches[0].clientY - startY);
+                if (dy > 8) { clearTimeout(longPressTimer); longPressTimer = null; }
+            }
+            if (!dragItem) return;
+            e.preventDefault();
+            const y = e.touches[0].clientY;
+            dragItem.style.top = (y - offsetY) + 'px';
+
+            const cards = [...list.querySelectorAll('.bm-card:not(.bm-dragging)')];
+            for (const c of cards) {
+                const r = c.getBoundingClientRect();
+                const mid = r.top + r.height / 2;
+                if (y < mid) {
+                    list.insertBefore(placeholder, c);
+                    return;
+                }
+            }
+            list.appendChild(placeholder);
+        }, { passive: false });
+
+        list.addEventListener('touchend', () => {
+            if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+            if (!dragItem) return;
+
+            dragItem.classList.remove('bm-dragging');
+            dragItem.style.cssText = '';
+            if (placeholder && placeholder.parentNode) {
+                placeholder.parentNode.insertBefore(dragItem, placeholder);
+                placeholder.remove();
+            }
+            placeholder = null;
+
+            const ids = [...list.querySelectorAll('.bm-card')].map(c => c.dataset.bmId);
+            persistOrder(ids);
+            dragItem = null;
+        });
+
+        list.addEventListener('touchcancel', () => {
+            if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+            if (dragItem) {
+                dragItem.classList.remove('bm-dragging');
+                dragItem.style.cssText = '';
+                if (placeholder) placeholder.remove();
+                dragItem = null;
+                placeholder = null;
+            }
+        });
     }
 
     function createSectionTitle(text) {
