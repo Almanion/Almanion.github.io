@@ -235,145 +235,239 @@ function initNavigation() {
 }
 
 // ============================================
-// ПОИСК
+// ПОИСК (Ctrl+F стиль)
 // ============================================
+
+let searchState = {
+    matches: [],
+    currentIndex: -1,
+    term: '',
+    bar: null,
+    debounce: null
+};
 
 function initSearch() {
     const searchInput = document.getElementById('searchInput');
     if (!searchInput) return;
-    
-    const topics = document.querySelectorAll('.topic, .content-section');
-    let searchDebounce = null;
 
-    let resultsInfo = document.getElementById('searchResultsInfo');
-    if (!resultsInfo) {
-        resultsInfo = document.createElement('div');
-        resultsInfo.id = 'searchResultsInfo';
-        resultsInfo.className = 'search-results-info';
-        searchInput.parentNode.appendChild(resultsInfo);
-    }
-    
+    createSearchBar();
+
     searchInput.addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase().trim();
-        
-        if (searchDebounce) clearTimeout(searchDebounce);
-        
-        if (searchTerm === '') {
-            topics.forEach(topic => {
-                topic.style.display = 'block';
-                removeHighlights(topic);
-            });
-            resultsInfo.style.display = 'none';
-            resultsInfo.innerHTML = '';
+        const term = e.target.value.trim();
+        if (searchState.debounce) clearTimeout(searchState.debounce);
+
+        if (term.length < 2) {
+            clearSearch();
             return;
         }
 
-        if (searchTerm.length < 2) return;
-        
-        searchDebounce = setTimeout(() => {
-            let matchCount = 0;
-            const matchedTopics = [];
+        searchState.debounce = setTimeout(() => {
+            performSearch(term.toLowerCase());
+        }, 200);
+    });
 
-            topics.forEach(topic => {
-                const text = topic.textContent.toLowerCase();
-                if (text.includes(searchTerm)) {
-                    topic.style.display = 'block';
-                    highlightText(topic, searchTerm);
-                    matchCount += topic.querySelectorAll('.highlight').length;
-                    const title = topic.querySelector('.topic-title, .subsection-title, h3, h4');
-                    matchedTopics.push({
-                        el: topic,
-                        name: title ? title.textContent.trim() : topic.id
-                    });
-                } else {
-                    topic.style.display = 'none';
-                    removeHighlights(topic);
-                }
-            });
-
-            if (matchedTopics.length > 0) {
-                resultsInfo.style.display = 'block';
-                let html = `<div class="search-results-count">${matchCount} совпад. в ${matchedTopics.length} разд.</div>`;
-                html += '<div class="search-results-list">';
-                matchedTopics.forEach(t => {
-                    html += `<a class="search-result-item" data-id="${t.el.id}">${t.name}</a>`;
-                });
-                html += '</div>';
-                resultsInfo.innerHTML = html;
-
-                resultsInfo.querySelectorAll('.search-result-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        const target = document.getElementById(item.dataset.id);
-                        if (target) {
-                            const first = target.querySelector('.highlight');
-                            const el = first || target;
-                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            closeMobileMenu();
-                        }
-                    });
-                });
+    searchInput.addEventListener('keydown', (e) => {
+        if (searchState.matches.length === 0) return;
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (e.shiftKey) {
+                navigateMatch(-1);
             } else {
-                resultsInfo.style.display = 'block';
-                resultsInfo.innerHTML = '<div class="search-results-count">Ничего не найдено</div>';
+                navigateMatch(1);
             }
-        }, 250);
+        }
     });
 }
 
-function highlightText(element, searchTerm) {
-    // Удаляем предыдущую подсветку
-    removeHighlights(element);
-    
-    // Получаем все текстовые узлы
+function createSearchBar() {
+    if (document.getElementById('searchNavBar')) return;
+    const bar = document.createElement('div');
+    bar.id = 'searchNavBar';
+    bar.className = 'search-nav-bar hidden';
+    bar.innerHTML = `
+        <div class="search-nav-info">
+            <span class="search-nav-count"></span>
+        </div>
+        <div class="search-nav-sections"></div>
+        <div class="search-nav-controls">
+            <button class="search-nav-btn" id="searchPrev" aria-label="Предыдущее">▲</button>
+            <button class="search-nav-btn" id="searchNext" aria-label="Следующее">▼</button>
+            <button class="search-nav-btn search-nav-close" id="searchClose" aria-label="Закрыть">✕</button>
+        </div>
+    `;
+    document.body.appendChild(bar);
+    searchState.bar = bar;
+
+    document.getElementById('searchPrev').addEventListener('click', () => navigateMatch(-1));
+    document.getElementById('searchNext').addEventListener('click', () => navigateMatch(1));
+    document.getElementById('searchClose').addEventListener('click', () => {
+        const input = document.getElementById('searchInput');
+        if (input) input.value = '';
+        clearSearch();
+    });
+}
+
+function performSearch(term) {
+    clearHighlights();
+    searchState.matches = [];
+    searchState.currentIndex = -1;
+    searchState.term = term;
+
+    const mainContent = document.querySelector('.main-content') || document.body;
     const walker = document.createTreeWalker(
-        element,
+        mainContent,
         NodeFilter.SHOW_TEXT,
         {
             acceptNode: (node) => {
-                // Пропускаем узлы в KaTeX формулах
-                if (node.parentElement.closest('.katex')) {
+                const parent = node.parentElement;
+                if (!parent) return NodeFilter.FILTER_REJECT;
+                if (parent.closest('.katex, .sidebar, .search-nav-bar, script, style, .highlight')) {
                     return NodeFilter.FILTER_REJECT;
                 }
                 return NodeFilter.FILTER_ACCEPT;
             }
         }
     );
-    
+
     const textNodes = [];
     while (walker.nextNode()) {
         textNodes.push(walker.currentNode);
     }
-    
-    // Подсвечиваем найденный текст
+
     textNodes.forEach(node => {
         const text = node.textContent;
-        const lowerText = text.toLowerCase();
-        const index = lowerText.indexOf(searchTerm);
-        
-        if (index !== -1) {
-            const before = text.substring(0, index);
-            const match = text.substring(index, index + searchTerm.length);
-            const after = text.substring(index + searchTerm.length);
-            
-            const span = document.createElement('span');
-            span.className = 'highlight';
-            span.textContent = match;
-            
-            const fragment = document.createDocumentFragment();
-            fragment.appendChild(document.createTextNode(before));
-            fragment.appendChild(span);
-            fragment.appendChild(document.createTextNode(after));
-            
-            node.parentNode.replaceChild(fragment, node);
+        const lower = text.toLowerCase();
+        let startPos = 0;
+        const fragments = [];
+        let hasMatch = false;
+
+        while (true) {
+            const idx = lower.indexOf(term, startPos);
+            if (idx === -1) break;
+            hasMatch = true;
+            fragments.push({ start: startPos, end: idx, type: 'text' });
+            fragments.push({ start: idx, end: idx + term.length, type: 'match' });
+            startPos = idx + term.length;
         }
+
+        if (!hasMatch) return;
+        fragments.push({ start: startPos, end: text.length, type: 'text' });
+
+        const container = document.createDocumentFragment();
+        fragments.forEach(f => {
+            const chunk = text.substring(f.start, f.end);
+            if (f.type === 'match') {
+                const span = document.createElement('span');
+                span.className = 'highlight';
+                span.textContent = chunk;
+                searchState.matches.push(span);
+                container.appendChild(span);
+            } else if (chunk) {
+                container.appendChild(document.createTextNode(chunk));
+            }
+        });
+        node.parentNode.replaceChild(container, node);
+    });
+
+    updateSearchBar();
+
+    if (searchState.matches.length > 0) {
+        searchState.currentIndex = 0;
+        setActiveMatch(0);
+    }
+}
+
+function navigateMatch(direction) {
+    if (searchState.matches.length === 0) return;
+    const len = searchState.matches.length;
+    const newIdx = (searchState.currentIndex + direction + len) % len;
+    setActiveMatch(newIdx);
+}
+
+function setActiveMatch(idx) {
+    if (searchState.currentIndex >= 0 && searchState.currentIndex < searchState.matches.length) {
+        searchState.matches[searchState.currentIndex].classList.remove('highlight-active');
+    }
+    searchState.currentIndex = idx;
+    const el = searchState.matches[idx];
+    if (!el) return;
+    el.classList.add('highlight-active');
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    updateSearchBar();
+}
+
+function updateSearchBar() {
+    const bar = searchState.bar;
+    if (!bar) return;
+
+    const total = searchState.matches.length;
+    const countEl = bar.querySelector('.search-nav-count');
+    const sectionsEl = bar.querySelector('.search-nav-sections');
+
+    if (total === 0 && searchState.term) {
+        bar.classList.remove('hidden');
+        countEl.textContent = 'Ничего не найдено';
+        sectionsEl.innerHTML = '';
+        return;
+    }
+
+    if (total === 0) {
+        bar.classList.add('hidden');
+        return;
+    }
+
+    bar.classList.remove('hidden');
+    countEl.textContent = `${searchState.currentIndex + 1} из ${total}`;
+
+    const sectionMap = new Map();
+    searchState.matches.forEach((m, i) => {
+        const topic = m.closest('.topic, .content-section');
+        if (!topic) return;
+        if (!sectionMap.has(topic)) {
+            const titleEl = topic.querySelector('.topic-title');
+            const name = titleEl ? titleEl.childNodes[0]?.textContent?.trim() || titleEl.textContent.trim() : (topic.id || '');
+            sectionMap.set(topic, { name, count: 0, firstIdx: i });
+        }
+        sectionMap.get(topic).count++;
+    });
+
+    let html = '';
+    sectionMap.forEach((info, topic) => {
+        const isActive = searchState.currentIndex >= info.firstIdx &&
+            searchState.currentIndex < info.firstIdx + info.count;
+        html += `<button class="search-nav-section ${isActive ? 'active' : ''}" data-idx="${info.firstIdx}">${info.name} <span class="search-section-badge">${info.count}</span></button>`;
+    });
+    sectionsEl.innerHTML = html;
+
+    sectionsEl.querySelectorAll('.search-nav-section').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idx = parseInt(btn.dataset.idx);
+            setActiveMatch(idx);
+            closeMobileMenu();
+        });
+    });
+}
+
+function clearSearch() {
+    clearHighlights();
+    searchState.matches = [];
+    searchState.currentIndex = -1;
+    searchState.term = '';
+    if (searchState.bar) {
+        searchState.bar.classList.add('hidden');
+    }
+}
+
+function clearHighlights() {
+    document.querySelectorAll('.highlight').forEach(el => {
+        const text = el.textContent;
+        el.replaceWith(text);
     });
 }
 
 function removeHighlights(element) {
-    const highlights = element.querySelectorAll('.highlight');
-    highlights.forEach(highlight => {
-        const text = highlight.textContent;
-        highlight.replaceWith(text);
+    element.querySelectorAll('.highlight').forEach(el => {
+        el.replaceWith(el.textContent);
     });
 }
 

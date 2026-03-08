@@ -771,43 +771,6 @@ body.sidebar-open {
     margin: 0;
 }
 
-.search-results-info {
-    display: none;
-    margin-top: 0.5rem;
-}
-
-.search-results-count {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    padding: 0.25rem 0;
-}
-
-.search-results-list {
-    max-height: 200px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.search-result-item {
-    display: block;
-    padding: 0.4rem 0.6rem;
-    font-size: 0.8rem;
-    color: var(--text-primary);
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.15s;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.search-result-item:hover {
-    background: rgba(var(--accent-rgb), 0.1);
-    color: var(--accent-color);
-}
-
 /* Навигационное меню */
 .nav-menu {
     padding: 1rem 0;
@@ -2010,6 +1973,21 @@ em {
         border-radius: 8px;
     }
 
+    .search-nav-bar {
+        padding: 0.4rem 0.75rem;
+        gap: 0.5rem;
+    }
+
+    .search-nav-sections {
+        order: 3;
+        flex-basis: 100%;
+        overflow-x: auto;
+    }
+
+    .search-nav-count {
+        font-size: 0.8rem;
+    }
+
     .nav-group-toggle {
         padding: 0.6rem var(--m-pad);
         font-size: 0.9rem;
@@ -2667,15 +2645,150 @@ em {
 
 /* Подсветка при поиске */
 .highlight {
-    background-color: yellow;
-    color: black;
-    padding: 2px 4px;
-    border-radius: 3px;
+    background-color: rgba(250, 204, 21, 0.4);
+    color: inherit;
+    padding: 1px 0;
+    border-radius: 2px;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+}
+
+.highlight-active {
+    background-color: #facc15;
+    color: #000;
+    outline: 2px solid #f59e0b;
+    outline-offset: 1px;
 }
 
 body.dark-theme .highlight {
+    background-color: rgba(251, 191, 36, 0.3);
+    color: inherit;
+}
+
+body.dark-theme .highlight-active {
     background-color: #fbbf24;
     color: #1e293b;
+    outline-color: #f59e0b;
+}
+
+/* ============ Search navigation bar ============ */
+.search-nav-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.search-nav-bar.hidden {
+    display: none;
+}
+
+.search-nav-info {
+    flex-shrink: 0;
+}
+
+.search-nav-count {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.search-nav-sections {
+    flex: 1;
+    display: flex;
+    gap: 0.35rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 2px 0;
+}
+
+.search-nav-sections::-webkit-scrollbar {
+    display: none;
+}
+
+.search-nav-section {
+    flex-shrink: 0;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.search-nav-section:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.search-nav-section.active {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+.search-section-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.25);
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    min-width: 1.2em;
+    text-align: center;
+}
+
+.search-nav-section:not(.active) .search-section-badge {
+    background: rgba(var(--accent-rgb), 0.12);
+    color: var(--accent-color);
+}
+
+.search-nav-controls {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.search-nav-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    transition: all 0.15s ease;
+}
+
+.search-nav-btn:hover {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+.search-nav-close {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
 }
 
 /* Прогресс-бар в темной теме */
@@ -3938,6 +4051,8 @@ input:focus:not(:focus-visible) {
     .telegram-notification,
     .ny-toggle,
     .formula-copy-btn,
+    .search-nav-bar,
+    .bookmark-btn,
     .page-footer button {
         display: none !important;
     }

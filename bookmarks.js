@@ -37,18 +37,20 @@
     }
 
     function loadBookmarks() {
+        try {
+            bookmarks = JSON.parse(localStorage.getItem(LOCAL_BOOKMARKS_KEY) || '{}');
+        } catch { bookmarks = {}; }
+
         const ref = getBookmarksRef();
         if (ref) {
             ref.on('value', (snap) => {
-                bookmarks = snap.val() || {};
+                const remote = snap.val() || {};
+                const merged = { ...bookmarks, ...remote };
+                bookmarks = merged;
                 localStorage.setItem(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
                 refreshAllButtons();
                 if (bookmarksPanelOpen) renderBookmarksPanel();
-            });
-        } else {
-            try {
-                bookmarks = JSON.parse(localStorage.getItem(LOCAL_BOOKMARKS_KEY) || '{}');
-            } catch { bookmarks = {}; }
+            }, () => {});
         }
     }
 
