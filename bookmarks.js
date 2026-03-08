@@ -11,6 +11,7 @@
     let visitorId = null;
     let bookmarks = {};
     let bookmarksPanelOpen = false;
+    let bmDragging = false;
 
     function getVisitorId() {
         let id = localStorage.getItem(VISITOR_ID_KEY);
@@ -238,7 +239,7 @@
         function getModal() { return document.getElementById('bookmarksModal'); }
 
         overlay.addEventListener('touchstart', (e) => {
-            if (window.innerWidth > 768) return;
+            if (bmDragging || window.innerWidth > 768) return;
             const modal = getModal();
             if (!modal || modal.scrollTop > 5) return;
             startY = e.touches[0].clientY;
@@ -248,7 +249,7 @@
         }, { passive: true });
 
         overlay.addEventListener('touchmove', (e) => {
-            if (!tracking) return;
+            if (!tracking || bmDragging) { tracking = false; return; }
             const modal = getModal();
             if (!modal) return;
             currentY = e.touches[0].clientY;
@@ -408,33 +409,65 @@
         let longPressTimer = null;
         let startY = 0;
         let offsetY = 0;
-        let moved = false;
+
+        function startDrag(card, touchY) {
+            dragItem = card;
+            bmDragging = true;
+            const rect = card.getBoundingClientRect();
+            offsetY = touchY - rect.top;
+
+            placeholder = document.createElement('div');
+            placeholder.className = 'bm-drag-placeholder';
+            placeholder.style.height = rect.height + 'px';
+            card.parentNode.insertBefore(placeholder, card);
+
+            card.classList.add('bm-dragging');
+            card.style.position = 'fixed';
+            card.style.left = rect.left + 'px';
+            card.style.width = rect.width + 'px';
+            card.style.top = (touchY - offsetY) + 'px';
+            card.style.zIndex = '99999';
+            card.style.margin = '0';
+
+            if (navigator.vibrate) navigator.vibrate(30);
+        }
+
+        function endDrag() {
+            if (!dragItem) return;
+            dragItem.classList.remove('bm-dragging');
+            dragItem.style.cssText = '';
+            if (placeholder && placeholder.parentNode) {
+                placeholder.parentNode.insertBefore(dragItem, placeholder);
+                placeholder.remove();
+            }
+            placeholder = null;
+
+            const ids = [...list.querySelectorAll('.bm-card')].map(c => c.dataset.bmId);
+            persistOrder(ids);
+            dragItem = null;
+            bmDragging = false;
+        }
+
+        function cancelDrag() {
+            if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+            if (dragItem) {
+                dragItem.classList.remove('bm-dragging');
+                dragItem.style.cssText = '';
+                if (placeholder) placeholder.remove();
+                dragItem = null;
+                placeholder = null;
+            }
+            bmDragging = false;
+        }
 
         list.addEventListener('touchstart', (e) => {
             const card = e.target.closest('.bm-card');
             if (!card || e.target.closest('.bm-card-delete')) return;
             startY = e.touches[0].clientY;
-            moved = false;
 
             longPressTimer = setTimeout(() => {
-                dragItem = card;
-                moved = true;
-                const rect = card.getBoundingClientRect();
-                offsetY = startY - rect.top;
-
-                placeholder = document.createElement('div');
-                placeholder.className = 'bm-drag-placeholder';
-                placeholder.style.height = rect.height + 'px';
-                card.parentNode.insertBefore(placeholder, card);
-
-                card.classList.add('bm-dragging');
-                card.style.position = 'fixed';
-                card.style.left = rect.left + 'px';
-                card.style.width = rect.width + 'px';
-                card.style.top = (startY - offsetY) + 'px';
-                card.style.zIndex = '99999';
-
-                if (navigator.vibrate) navigator.vibrate(30);
+                longPressTimer = null;
+                startDrag(card, startY);
             }, 400);
         }, { passive: true });
 
@@ -442,9 +475,11 @@
             if (longPressTimer && !dragItem) {
                 const dy = Math.abs(e.touches[0].clientY - startY);
                 if (dy > 8) { clearTimeout(longPressTimer); longPressTimer = null; }
+                return;
             }
             if (!dragItem) return;
             e.preventDefault();
+            e.stopPropagation();
             const y = e.touches[0].clientY;
             dragItem.style.top = (y - offsetY) + 'px';
 
@@ -460,32 +495,15 @@
             list.appendChild(placeholder);
         }, { passive: false });
 
-        list.addEventListener('touchend', () => {
+        list.addEventListener('touchend', (e) => {
             if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
             if (!dragItem) return;
-
-            dragItem.classList.remove('bm-dragging');
-            dragItem.style.cssText = '';
-            if (placeholder && placeholder.parentNode) {
-                placeholder.parentNode.insertBefore(dragItem, placeholder);
-                placeholder.remove();
-            }
-            placeholder = null;
-
-            const ids = [...list.querySelectorAll('.bm-card')].map(c => c.dataset.bmId);
-            persistOrder(ids);
-            dragItem = null;
+            e.stopPropagation();
+            endDrag();
         });
 
         list.addEventListener('touchcancel', () => {
-            if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
-            if (dragItem) {
-                dragItem.classList.remove('bm-dragging');
-                dragItem.style.cssText = '';
-                if (placeholder) placeholder.remove();
-                dragItem = null;
-                placeholder = null;
-            }
+            cancelDrag();
         });
     }
 
