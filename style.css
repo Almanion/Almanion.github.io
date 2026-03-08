@@ -759,6 +759,18 @@ body.sidebar-open {
     box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
 }
 
+.sidebar-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem var(--spacing);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-actions .knowledge-check-btn {
+    flex: 1;
+    margin: 0;
+}
+
 .search-results-info {
     display: none;
     margin-top: 0.5rem;

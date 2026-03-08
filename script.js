@@ -606,41 +606,76 @@ function initBottomSheetSwipe() {
 
     let startY = 0;
     let currentY = 0;
-    let isDragging = false;
+    let tracking = false;
+    let activated = false;
+    const DEAD_ZONE = 12;
 
     sidebar.addEventListener('touchstart', (e) => {
         if (window.innerWidth > 768 || !sidebar.classList.contains('open')) return;
         if (sidebar.scrollTop > 5) return;
         startY = e.touches[0].clientY;
         currentY = startY;
-        isDragging = true;
-        sidebar.style.transition = 'none';
+        tracking = true;
+        activated = false;
     }, { passive: true });
 
     sidebar.addEventListener('touchmove', (e) => {
-        if (!isDragging) return;
+        if (!tracking) return;
         currentY = e.touches[0].clientY;
         const deltaY = currentY - startY;
-        if (deltaY > 0) {
-            sidebar.style.transform = `translateY(${deltaY}px)`;
+
+        if (!activated) {
+            if (deltaY > DEAD_ZONE) {
+                activated = true;
+                startY = currentY;
+                sidebar.style.transition = 'none';
+            }
+            return;
+        }
+
+        const swipeDelta = currentY - startY;
+        if (swipeDelta > 0) {
+            e.preventDefault();
+            sidebar.style.transform = `translateY(${swipeDelta}px)`;
             const overlay = document.querySelector('.sidebar-overlay');
             if (overlay) {
-                overlay.style.opacity = Math.max(0, 1 - deltaY / 300);
+                overlay.style.opacity = Math.max(0, 1 - swipeDelta / 300);
             }
         }
-    }, { passive: true });
+    }, { passive: false });
 
     sidebar.addEventListener('touchend', () => {
-        if (!isDragging) return;
-        isDragging = false;
-        sidebar.style.transition = '';
+        if (!tracking) return;
+        tracking = false;
+        if (!activated) return;
+        activated = false;
+
         const overlay = document.querySelector('.sidebar-overlay');
-        if (overlay) overlay.style.opacity = '';
         const deltaY = currentY - startY;
-        if (deltaY > 80) {
-            closeMobileMenu();
+
+        if (deltaY > 60) {
+            sidebar.style.transition = 'transform 0.25s ease-out';
+            sidebar.style.transform = 'translateY(100vh)';
+            if (overlay) {
+                overlay.style.transition = 'opacity 0.25s ease-out';
+                overlay.style.opacity = '0';
+            }
+            setTimeout(() => {
+                closeMobileMenu();
+                sidebar.style.transition = '';
+                sidebar.style.transform = '';
+                if (overlay) {
+                    overlay.style.transition = '';
+                    overlay.style.opacity = '';
+                }
+            }, 250);
         } else {
+            sidebar.style.transition = 'transform 0.25s ease-out';
             sidebar.style.transform = '';
+            if (overlay) overlay.style.opacity = '';
+            setTimeout(() => {
+                sidebar.style.transition = '';
+            }, 250);
         }
     });
 }

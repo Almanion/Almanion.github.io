@@ -187,28 +187,23 @@
     }
 
     function addBookmarksSidebarButton() {
-        const navMenu = document.querySelector('.nav-menu');
-        if (!navMenu) return;
+        let container = document.querySelector('.sidebar-actions');
+        if (!container) {
+            const navMenu = document.querySelector('.nav-menu');
+            if (!navMenu) return;
+            container = navMenu;
+        }
 
-        const section = document.createElement('div');
-        section.className = 'nav-section';
         const btn = document.createElement('button');
         btn.className = 'knowledge-check-btn';
         btn.id = 'bookmarksBtn';
         btn.textContent = '🔖 Закладки';
-        btn.style.marginTop = '0.25rem';
 
         btn.addEventListener('click', () => {
             toggleBookmarksPanel();
         });
 
-        section.appendChild(btn);
-        const otherSubjects = navMenu.querySelector('.other-subjects');
-        if (otherSubjects) {
-            navMenu.insertBefore(section, otherSubjects);
-        } else {
-            navMenu.appendChild(section);
-        }
+        container.appendChild(btn);
     }
 
     function toggleBookmarksPanel() {
@@ -222,6 +217,89 @@
         renderBookmarksPanel();
     }
 
+    function closeBookmarksPanel() {
+        const overlay = document.getElementById('bookmarksOverlay');
+        if (overlay) {
+            overlay.classList.add('hidden');
+            bookmarksPanelOpen = false;
+        }
+    }
+
+    function initBookmarksSwipe() {
+        const overlay = document.getElementById('bookmarksOverlay');
+        if (!overlay || overlay.dataset.swipeInit) return;
+        overlay.dataset.swipeInit = 'true';
+
+        let startY = 0, currentY = 0, tracking = false, activated = false;
+        const DEAD_ZONE = 15;
+
+        function getModal() { return document.getElementById('bookmarksModal'); }
+
+        overlay.addEventListener('touchstart', (e) => {
+            if (window.innerWidth > 768) return;
+            const modal = getModal();
+            if (!modal || modal.scrollTop > 5) return;
+            startY = e.touches[0].clientY;
+            currentY = startY;
+            tracking = true;
+            activated = false;
+        }, { passive: true });
+
+        overlay.addEventListener('touchmove', (e) => {
+            if (!tracking) return;
+            const modal = getModal();
+            if (!modal) return;
+            currentY = e.touches[0].clientY;
+            const deltaY = currentY - startY;
+            if (!activated) {
+                if (deltaY > DEAD_ZONE) {
+                    activated = true;
+                    startY = currentY;
+                    modal.style.transition = 'none';
+                }
+                return;
+            }
+            const swipeDelta = currentY - startY;
+            if (swipeDelta > 0) {
+                e.preventDefault();
+                modal.style.transform = `translateY(${swipeDelta}px)`;
+                overlay.style.background = `rgba(0, 0, 0, ${Math.max(0, 0.75 - swipeDelta / 400)})`;
+            }
+        }, { passive: false });
+
+        overlay.addEventListener('touchend', () => {
+            if (!tracking) return;
+            tracking = false;
+            if (!activated) return;
+            activated = false;
+            const modal = getModal();
+            if (!modal) return;
+            const deltaY = currentY - startY;
+            if (deltaY > 60) {
+                modal.style.transition = 'transform 0.25s ease-out';
+                modal.style.transform = 'translateY(100vh)';
+                overlay.style.transition = 'background 0.25s ease-out';
+                overlay.style.background = 'rgba(0, 0, 0, 0)';
+                setTimeout(() => {
+                    closeBookmarksPanel();
+                    modal.style.transition = '';
+                    modal.style.transform = '';
+                    overlay.style.transition = '';
+                    overlay.style.background = '';
+                }, 250);
+            } else {
+                modal.style.transition = 'transform 0.25s ease-out';
+                modal.style.transform = '';
+                overlay.style.transition = 'background 0.25s ease-out';
+                overlay.style.background = '';
+                setTimeout(() => {
+                    modal.style.transition = '';
+                    overlay.style.transition = '';
+                }, 250);
+            }
+        });
+    }
+
     function renderBookmarksPanel() {
         let overlay = document.getElementById('bookmarksOverlay');
         if (!overlay) {
@@ -230,8 +308,7 @@
             overlay.className = 'auth-overlay hidden';
             overlay.addEventListener('click', (e) => {
                 if (e.target === overlay) {
-                    overlay.classList.add('hidden');
-                    bookmarksPanelOpen = false;
+                    closeBookmarksPanel();
                 }
             });
 
@@ -241,6 +318,7 @@
             modal.style.cssText = 'max-width: 600px; max-height: 80vh; overflow-y: auto;';
             overlay.appendChild(modal);
             document.body.appendChild(overlay);
+            initBookmarksSwipe();
         }
 
         const modal = document.getElementById('bookmarksModal');
@@ -291,9 +369,10 @@
                             setTimeout(() => target.classList.remove('nav-highlight'), 1500);
                         }
                     }
-                    overlay.classList.add('hidden');
-                    bookmarksPanelOpen = false;
-                    closeMobileMenu();
+                    closeBookmarksPanel();
+                    if (typeof window.closeMobileMenu === 'function') {
+                        window.closeMobileMenu();
+                    }
                 } else {
                     window.location.href = bm.page + '#' + bm.topicId;
                 }
@@ -311,8 +390,7 @@
         });
 
         document.getElementById('closeBookmarksBtn')?.addEventListener('click', () => {
-            overlay.classList.add('hidden');
-            bookmarksPanelOpen = false;
+            closeBookmarksPanel();
         });
     }
 
@@ -339,12 +417,6 @@
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
-    }
-
-    function closeMobileMenu() {
-        if (typeof window.closeMobileMenu === 'function') {
-            window.closeMobileMenu();
-        }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
