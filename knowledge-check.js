@@ -680,6 +680,91 @@ function getPluralForm(n, one, few, many) {
     }
 }
 
+// Свайп-закрытие для оверлеев проверки знаний
+function initKnowledgeCheckSwipe() {
+    initOverlaySwipe('topicSelectionOverlay', 'topicSelectionModal', () => {
+        document.getElementById('topicSelectionOverlay')?.classList.add('hidden');
+    });
+    initOverlaySwipe('knowledgeCheckOverlay', 'knowledgeCheckModal', () => {
+        if (showingFinalStats) {
+            showingFinalStats = false;
+            document.getElementById('knowledgeCheckOverlay')?.classList.add('hidden');
+        } else if (rememberCount + forgetCount > 0) {
+            showFinalStatistics();
+        } else {
+            document.getElementById('knowledgeCheckOverlay')?.classList.add('hidden');
+        }
+    });
+}
+
+function initOverlaySwipe(overlayId, modalId, onClose) {
+    const overlay = document.getElementById(overlayId);
+    if (!overlay) return;
+
+    let startY = 0;
+    let currentY = 0;
+    let isDragging = false;
+
+    function getModal() {
+        return document.getElementById(modalId);
+    }
+
+    overlay.addEventListener('touchstart', (e) => {
+        if (window.innerWidth > 768) return;
+        const modal = getModal();
+        if (!modal || modal.scrollTop > 5) return;
+        startY = e.touches[0].clientY;
+        currentY = startY;
+        isDragging = true;
+        modal.style.transition = 'none';
+    }, { passive: true });
+
+    overlay.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const modal = getModal();
+        if (!modal) return;
+        currentY = e.touches[0].clientY;
+        const deltaY = currentY - startY;
+        if (deltaY > 0) {
+            modal.style.transform = `translateY(${deltaY}px)`;
+            overlay.style.background = `rgba(0, 0, 0, ${Math.max(0, 0.75 - deltaY / 400)})`;
+        }
+    }, { passive: true });
+
+    overlay.addEventListener('touchend', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        const modal = getModal();
+        if (!modal) return;
+        const deltaY = currentY - startY;
+
+        if (deltaY > 80) {
+            modal.style.transition = 'transform 0.25s ease-out';
+            modal.style.transform = 'translateY(100vh)';
+            overlay.style.transition = 'background 0.25s ease-out';
+            overlay.style.background = 'rgba(0, 0, 0, 0)';
+            setTimeout(() => {
+                onClose();
+                modal.style.transition = '';
+                modal.style.transform = '';
+                overlay.style.transition = '';
+                overlay.style.background = '';
+            }, 250);
+        } else {
+            modal.style.transition = 'transform 0.25s ease-out';
+            modal.style.transform = '';
+            overlay.style.transition = 'background 0.25s ease-out';
+            overlay.style.background = '';
+            setTimeout(() => {
+                modal.style.transition = '';
+                overlay.style.transition = '';
+            }, 250);
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initKnowledgeCheckSwipe);
+
 // Экспортируем функции для использования в HTML
 window.revealDefinition = revealDefinition;
 window.restartKnowledgeCheck = restartKnowledgeCheck;
