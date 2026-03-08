@@ -26,8 +26,9 @@ let revealed = false;
 let sessionMemoryStats = {}; // Статистика запоминания для текущей сессии
 let rememberCount = 0;
 let forgetCount = 0;
-let totalRounds = 0; // Количество пройденных кругов
-let allDefinitions = []; // Все извлечённые определения для повторных кругов
+let totalRounds = 0;
+let allDefinitions = [];
+let showingFinalStats = false;
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
@@ -156,8 +157,10 @@ function initKnowledgeCheck() {
 
     if (closeBtn) {
         closeBtn.addEventListener('click', () => {
-            // Показываем финальные результаты перед закрытием
-            if (rememberCount + forgetCount > 0) {
+            if (showingFinalStats) {
+                showingFinalStats = false;
+                knowledgeCheckOverlay.classList.add('hidden');
+            } else if (rememberCount + forgetCount > 0) {
                 showFinalStatistics();
             } else {
                 knowledgeCheckOverlay.classList.add('hidden');
@@ -184,25 +187,38 @@ function createTopicSelectionList() {
     if (!list) return;
 
     list.innerHTML = '';
-    
+    list.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;';
+
     TOPICS.forEach(topic => {
-        const label = document.createElement('label');
-        label.style.cssText = 'display: flex; align-items: center; padding: 0.75rem; margin-bottom: 0.5rem; cursor: pointer; border-radius: var(--border-radius-sm); transition: background 0.2s;';
-        label.addEventListener('mouseenter', () => {
-            label.style.background = 'var(--bg-secondary)';
-        });
-        label.addEventListener('mouseleave', () => {
-            label.style.background = 'transparent';
-        });
+        const card = document.createElement('label');
+        card.className = 'topic-select-card';
+        card.setAttribute('data-topic', topic.id);
 
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.value = topic.id;
         checkbox.id = `topic-${topic.id}`;
-        checkbox.style.marginRight = '0.75rem';
-        checkbox.style.cursor = 'pointer';
-        checkbox.style.width = '18px';
-        checkbox.style.height = '18px';
+        checkbox.style.display = 'none';
+
+        const indicator = document.createElement('span');
+        indicator.className = 'topic-card-check';
+        indicator.textContent = '✓';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'topic-card-name';
+        nameSpan.textContent = topic.name;
+
+        card.appendChild(checkbox);
+        card.appendChild(indicator);
+        card.appendChild(nameSpan);
+
+        function updateCardStyle() {
+            if (checkbox.checked) {
+                card.classList.add('selected');
+            } else {
+                card.classList.remove('selected');
+            }
+        }
 
         checkbox.addEventListener('change', () => {
             if (checkbox.checked) {
@@ -212,17 +228,18 @@ function createTopicSelectionList() {
             } else {
                 selectedTopics = selectedTopics.filter(id => id !== topic.id);
             }
+            updateCardStyle();
             updateSelectAllButton();
         });
 
-        const span = document.createElement('span');
-        span.textContent = topic.name;
-        span.style.flex = '1';
-        span.style.userSelect = 'none';
+        card.addEventListener('click', (e) => {
+            if (e.target !== checkbox) {
+                checkbox.checked = !checkbox.checked;
+                checkbox.dispatchEvent(new Event('change'));
+            }
+        });
 
-        label.appendChild(checkbox);
-        label.appendChild(span);
-        list.appendChild(label);
+        list.appendChild(card);
     });
 
     updateSelectAllButton();
@@ -231,8 +248,12 @@ function createTopicSelectionList() {
 function updateTopicSelectionList() {
     TOPICS.forEach(topic => {
         const checkbox = document.getElementById(`topic-${topic.id}`);
+        const card = checkbox?.closest('.topic-select-card');
         if (checkbox) {
             checkbox.checked = selectedTopics.includes(topic.id);
+            if (card) {
+                card.classList.toggle('selected', checkbox.checked);
+            }
         }
     });
     updateSelectAllButton();
@@ -568,6 +589,7 @@ function nextDefinition() {
 
 
 function showFinalStatistics() {
+    showingFinalStats = true;
     const content = document.getElementById('knowledgeCheckContent');
     const progress = document.getElementById('knowledgeCheckProgress');
 

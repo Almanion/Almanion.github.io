@@ -487,13 +487,30 @@ function initSettingsSwipe() {
         isDragging = false;
         const content = getContent();
         if (!content) return;
-        content.style.transition = '';
-        modal.style.background = '';
         const deltaY = currentY - startY;
+
         if (deltaY > 80) {
-            closeSettingsModal();
+            content.style.transition = 'transform 0.25s ease-out';
+            content.style.transform = 'translateY(100vh)';
+            modal.style.transition = 'background 0.25s ease-out';
+            modal.style.background = 'rgba(0, 0, 0, 0)';
+            setTimeout(() => {
+                closeSettingsModal();
+                content.style.transition = '';
+                content.style.transform = '';
+                modal.style.transition = '';
+                modal.style.background = '';
+            }, 250);
+        } else {
+            content.style.transition = 'transform 0.25s ease-out';
+            content.style.transform = '';
+            modal.style.transition = 'background 0.25s ease-out';
+            modal.style.background = '';
+            setTimeout(() => {
+                content.style.transition = '';
+                modal.style.transition = '';
+            }, 250);
         }
-        content.style.transform = '';
     });
 }
 

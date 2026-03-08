@@ -846,7 +846,27 @@ document.querySelectorAll('.formula-box').forEach(formulaBox => {
 // ============================================
 
 function exportToPDF() {
-    window.print();
+    document.querySelectorAll('.derivation-content').forEach(el => {
+        el.style.display = 'block';
+        el.style.maxHeight = 'none';
+    });
+
+    document.querySelectorAll('.toggle-derivation').forEach(el => {
+        el.style.display = 'none';
+    });
+
+    setTimeout(() => window.print(), 200);
+
+    window.addEventListener('afterprint', function restoreUI() {
+        document.querySelectorAll('.derivation-content').forEach(el => {
+            el.style.display = '';
+            el.style.maxHeight = '';
+        });
+        document.querySelectorAll('.toggle-derivation').forEach(el => {
+            el.style.display = '';
+        });
+        window.removeEventListener('afterprint', restoreUI);
+    });
 }
 
 // Добавляем кнопку экспорта в футер
