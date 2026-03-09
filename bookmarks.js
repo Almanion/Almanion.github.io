@@ -51,7 +51,7 @@
                 bookmarks = merged;
                 localStorage.setItem(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
                 refreshAllButtons();
-                if (bookmarksPanelOpen) renderBookmarksPanel();
+                if (bookmarksPanelOpen && !bmDragging) renderBookmarksPanel();
             }, () => {});
         }
     }
@@ -234,6 +234,7 @@
     }
 
     function closeBookmarksPanel() {
+        bmDragging = false;
         if (lazyObserver) { lazyObserver.disconnect(); lazyObserver = null; }
         const overlay = document.getElementById('bookmarksOverlay');
         if (overlay) {
@@ -342,13 +343,13 @@
         orderedIds.forEach((id, i) => {
             if (bookmarks[id]) bookmarks[id].order = i;
         });
+        localStorage.setItem(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
         const ref = getBookmarksRef();
         if (ref) {
-            orderedIds.forEach((id, i) => {
-                ref.child(id).child('order').set(i);
-            });
+            const updates = {};
+            orderedIds.forEach((id, i) => { updates[id + '/order'] = i; });
+            ref.update(updates);
         }
-        localStorage.setItem(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
     }
 
     function renderBookmarksPanel() {
@@ -440,20 +441,22 @@
         let dragItem = null;
         let placeholder = null;
         let longPressTimer = null;
-        let touchStartY = 0;
-        let lastTouchY = 0;
+        let pointerStartY = 0;
+        let lastPointerY = 0;
         let initialTop = 0;
         let dragOffsetY = 0;
         let savedColor = '';
         let rafId = null;
+        let needsRaf = false;
+        let scrolling = false;
         const modal = document.getElementById('bookmarksModal');
 
-        function startDrag(card, touchY) {
+        function startDrag(card, pointerY) {
             dragItem = card;
             bmDragging = true;
             const rect = card.getBoundingClientRect();
             initialTop = rect.top;
-            dragOffsetY = touchY - rect.top;
+            dragOffsetY = pointerY - rect.top;
             savedColor = card.style.borderLeftColor || '';
 
             placeholder = document.createElement('div');
@@ -463,6 +466,8 @@
 
             list.style.userSelect = 'none';
             list.style.webkitUserSelect = 'none';
+            document.body.style.userSelect = 'none';
+            document.body.style.webkitUserSelect = 'none';
 
             card.classList.add('bm-dragging');
             card.style.cssText =
@@ -476,32 +481,19 @@
                 'will-change:transform;';
 
             if (navigator.vibrate) navigator.vibrate(30);
-            rafId = requestAnimationFrame(tick);
         }
 
         function tick() {
+            rafId = null;
             if (!dragItem) return;
 
-            dragItem.style.transform = 'translateY(' + (lastTouchY - dragOffsetY - initialTop) + 'px)';
-
-            if (modal) {
-                const mr = modal.getBoundingClientRect();
-                const edge = 50;
-                const maxSpeed = 8;
-                let delta = 0;
-                if (lastTouchY < mr.top + edge) {
-                    delta = -maxSpeed * Math.max(0, 1 - (lastTouchY - mr.top) / edge);
-                } else if (lastTouchY > mr.bottom - edge) {
-                    delta = maxSpeed * Math.max(0, 1 - (mr.bottom - lastTouchY) / edge);
-                }
-                if (Math.abs(delta) > 0.5) modal.scrollTop += delta;
-            }
+            dragItem.style.transform = 'translateY(' + (lastPointerY - dragOffsetY - initialTop) + 'px)';
 
             const cards = list.querySelectorAll('.bm-card:not(.bm-dragging)');
             let placed = false;
             for (const c of cards) {
                 const r = c.getBoundingClientRect();
-                if (lastTouchY < r.top + r.height / 2) {
+                if (lastPointerY < r.top + r.height / 2) {
                     if (placeholder.nextSibling !== c) list.insertBefore(placeholder, c);
                     placed = true;
                     break;
@@ -510,14 +502,51 @@
             if (!placed && list.lastElementChild !== placeholder) {
                 list.appendChild(placeholder);
             }
+            needsRaf = false;
+        }
 
-            rafId = requestAnimationFrame(tick);
+        function scheduleRaf() {
+            if (!needsRaf) {
+                needsRaf = true;
+                rafId = requestAnimationFrame(tick);
+            }
+        }
+
+        function autoScrollLoop() {
+            if (!dragItem || !modal) { scrolling = false; return; }
+            const mr = modal.getBoundingClientRect();
+            const edge = 50;
+            const maxSpeed = 8;
+            let delta = 0;
+            if (lastPointerY < mr.top + edge) {
+                delta = -maxSpeed * Math.max(0, 1 - (lastPointerY - mr.top) / edge);
+            } else if (lastPointerY > mr.bottom - edge) {
+                delta = maxSpeed * Math.max(0, 1 - (mr.bottom - lastPointerY) / edge);
+            }
+            if (Math.abs(delta) > 0.5) {
+                modal.scrollTop += delta;
+                scheduleRaf();
+                requestAnimationFrame(autoScrollLoop);
+            } else {
+                scrolling = false;
+            }
+        }
+
+        function startAutoScroll() {
+            if (!scrolling) {
+                scrolling = true;
+                requestAnimationFrame(autoScrollLoop);
+            }
         }
 
         function cleanup() {
             if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+            needsRaf = false;
+            scrolling = false;
             list.style.userSelect = '';
             list.style.webkitUserSelect = '';
+            document.body.style.userSelect = '';
+            document.body.style.webkitUserSelect = '';
         }
 
         function endDrag() {
@@ -551,31 +580,38 @@
             bmDragging = false;
         }
 
+        function onPointerMove(y) {
+            lastPointerY = y;
+            scheduleRaf();
+            startAutoScroll();
+        }
+
+        // === Touch events ===
         list.addEventListener('touchstart', (e) => {
             const card = e.target.closest('.bm-card');
             if (!card || e.target.closest('.bm-card-delete')) return;
-            touchStartY = e.touches[0].clientY;
-            lastTouchY = touchStartY;
+            pointerStartY = e.touches[0].clientY;
+            lastPointerY = pointerStartY;
             longPressTimer = setTimeout(() => {
                 longPressTimer = null;
-                startDrag(card, lastTouchY);
+                startDrag(card, lastPointerY);
             }, 400);
         }, { passive: true });
 
         list.addEventListener('touchmove', (e) => {
             const y = e.touches[0].clientY;
             if (longPressTimer && !dragItem) {
-                if (Math.abs(y - touchStartY) > 8) {
+                if (Math.abs(y - pointerStartY) > 8) {
                     clearTimeout(longPressTimer);
                     longPressTimer = null;
                 }
-                lastTouchY = y;
+                lastPointerY = y;
                 return;
             }
             if (!dragItem) return;
             e.preventDefault();
             e.stopPropagation();
-            lastTouchY = y;
+            onPointerMove(y);
         }, { passive: false });
 
         list.addEventListener('touchend', (e) => {
@@ -586,13 +622,45 @@
         });
 
         list.addEventListener('touchcancel', () => cancelDrag());
-    }
 
-    function createSectionTitle(text) {
-        const el = document.createElement('div');
-        el.className = 'bookmarks-section-title';
-        el.textContent = text;
-        return el;
+        // === Mouse events (desktop) ===
+        list.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            const card = e.target.closest('.bm-card');
+            if (!card || e.target.closest('.bm-card-delete')) return;
+            pointerStartY = e.clientY;
+            lastPointerY = pointerStartY;
+            longPressTimer = setTimeout(() => {
+                longPressTimer = null;
+                startDrag(card, lastPointerY);
+            }, 400);
+
+            function onMouseMove(ev) {
+                const y = ev.clientY;
+                if (longPressTimer && !dragItem) {
+                    if (Math.abs(y - pointerStartY) > 8) {
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                    }
+                    lastPointerY = y;
+                    return;
+                }
+                if (!dragItem) return;
+                ev.preventDefault();
+                onPointerMove(y);
+            }
+
+            function onMouseUp() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+                if (!dragItem) return;
+                endDrag();
+            }
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
     }
 
     function cloneBoxContent(box) {
