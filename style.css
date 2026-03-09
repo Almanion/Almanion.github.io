@@ -5812,33 +5812,6 @@ body.no-hover .auth-overlay *:active {
     transform: none !important;
     box-shadow: inherit !important;
 }
-@media (hover: none) {
-    .main-content *:hover,
-    .main-content *:active,
-    .subjects-grid *:hover,
-    .subjects-grid *:active {
-        transform: none !important;
-        box-shadow: inherit !important;
-        transition: none !important;
-    }
-
-    .formula-box:hover,
-    .formula-box:active,
-    .experiment-box:hover,
-    .experiment-box:active,
-    .derivation-box:hover,
-    .derivation-box:active {
-        border-width: 2px !important;
-    }
-
-    .sidebar *:active,
-    .settings-modal *:active,
-    .auth-overlay *:active {
-        transform: none !important;
-        box-shadow: inherit !important;
-    }
-}
-
 @media (max-width: 768px) {
     body.no-hover .topic > .formula-box:hover,
     body.no-hover .topic > .formula-box:active,
@@ -5846,17 +5819,6 @@ body.no-hover .auth-overlay *:active {
     body.no-hover .topic > .experiment-box:active,
     body.no-hover .topic > .derivation-box:hover,
     body.no-hover .topic > .derivation-box:active {
-        border-width: 0 !important;
-        border-left-width: 5px !important;
-    }
-}
-@media (max-width: 768px) and (hover: none) {
-    .topic > .formula-box:hover,
-    .topic > .formula-box:active,
-    .topic > .experiment-box:hover,
-    .topic > .experiment-box:active,
-    .topic > .derivation-box:hover,
-    .topic > .derivation-box:active {
         border-width: 0 !important;
         border-left-width: 5px !important;
     }
