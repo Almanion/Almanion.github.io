@@ -373,7 +373,8 @@
         }
 
         const modal = document.getElementById('bookmarksModal');
-        const entries = sortedEntries();
+        const currentPage = location.pathname;
+        const entries = sortedEntries().filter(bm => bm.page === currentPage);
 
         modal.innerHTML = '';
 
@@ -385,7 +386,7 @@
         if (entries.length === 0) {
             const empty = document.createElement('p');
             empty.style.cssText = 'color: var(--text-secondary); text-align: center; padding: 2rem 0;';
-            empty.innerHTML = 'Нет закладок.<br>Нажмите ☆ на любом блоке, чтобы добавить.';
+            empty.innerHTML = 'Нет закладок на этой странице.<br>Нажмите ☆ на любом блоке, чтобы добавить.';
             modal.appendChild(empty);
         } else {
             const hint = document.createElement('div');
@@ -396,9 +397,7 @@
             const list = document.createElement('div');
             list.className = 'bm-sortable-list';
             entries.forEach(bm => {
-                const currentPage = location.pathname;
-                const isLocal = bm.page === currentPage;
-                const card = createBookmarkCard(bm, isLocal);
+                const card = createBookmarkCard(bm, true);
                 card.dataset.bmId = bm.id;
                 list.appendChild(card);
             });
@@ -448,16 +447,25 @@
         let savedColor = '';
         let rafId = null;
         let needsRaf = false;
-        let scrolling = false;
+        let cachedModalTop = 0;
+        let cachedModalBottom = 0;
         const modal = document.getElementById('bookmarksModal');
 
         function startDrag(card, pointerY) {
             dragItem = card;
             bmDragging = true;
+            savedColor = card.style.borderLeftColor || '';
+
+            if (lazyObserver) { lazyObserver.disconnect(); }
+
             const rect = card.getBoundingClientRect();
             initialTop = rect.top;
-            dragOffsetY = pointerY - rect.top;
-            savedColor = card.style.borderLeftColor || '';
+            dragOffsetY = pointerY - initialTop;
+            if (modal) {
+                const mr = modal.getBoundingClientRect();
+                cachedModalTop = mr.top;
+                cachedModalBottom = mr.bottom;
+            }
 
             placeholder = document.createElement('div');
             placeholder.className = 'bm-drag-placeholder';
@@ -487,14 +495,37 @@
             rafId = null;
             if (!dragItem) return;
 
-            dragItem.style.transform = 'translateY(' + (lastPointerY - dragOffsetY - initialTop) + 'px)';
-
+            // === READS first (no layout thrashing) ===
             const cards = list.querySelectorAll('.bm-card:not(.bm-dragging)');
-            let placed = false;
+            const positions = [];
             for (const c of cards) {
                 const r = c.getBoundingClientRect();
-                if (lastPointerY < r.top + r.height / 2) {
-                    if (placeholder.nextSibling !== c) list.insertBefore(placeholder, c);
+                positions.push({ el: c, mid: r.top + r.height / 2 });
+            }
+
+            // === WRITES after ===
+            dragItem.style.transform = 'translateY(' + (lastPointerY - dragOffsetY - initialTop) + 'px)';
+
+            let keepScrolling = false;
+            if (modal) {
+                const edge = 50;
+                const maxSpeed = 8;
+                let delta = 0;
+                if (lastPointerY < cachedModalTop + edge) {
+                    delta = -maxSpeed * Math.max(0, 1 - (lastPointerY - cachedModalTop) / edge);
+                } else if (lastPointerY > cachedModalBottom - edge) {
+                    delta = maxSpeed * Math.max(0, 1 - (cachedModalBottom - lastPointerY) / edge);
+                }
+                if (Math.abs(delta) > 0.5) {
+                    modal.scrollTop += delta;
+                    keepScrolling = true;
+                }
+            }
+
+            let placed = false;
+            for (const { el, mid } of positions) {
+                if (lastPointerY < mid) {
+                    if (placeholder.nextSibling !== el) list.insertBefore(placeholder, el);
                     placed = true;
                     break;
                 }
@@ -502,7 +533,12 @@
             if (!placed && list.lastElementChild !== placeholder) {
                 list.appendChild(placeholder);
             }
+
             needsRaf = false;
+            if (keepScrolling) {
+                needsRaf = true;
+                rafId = requestAnimationFrame(tick);
+            }
         }
 
         function scheduleRaf() {
@@ -512,41 +548,22 @@
             }
         }
 
-        function autoScrollLoop() {
-            if (!dragItem || !modal) { scrolling = false; return; }
-            const mr = modal.getBoundingClientRect();
-            const edge = 50;
-            const maxSpeed = 8;
-            let delta = 0;
-            if (lastPointerY < mr.top + edge) {
-                delta = -maxSpeed * Math.max(0, 1 - (lastPointerY - mr.top) / edge);
-            } else if (lastPointerY > mr.bottom - edge) {
-                delta = maxSpeed * Math.max(0, 1 - (mr.bottom - lastPointerY) / edge);
-            }
-            if (Math.abs(delta) > 0.5) {
-                modal.scrollTop += delta;
-                scheduleRaf();
-                requestAnimationFrame(autoScrollLoop);
-            } else {
-                scrolling = false;
-            }
-        }
-
-        function startAutoScroll() {
-            if (!scrolling) {
-                scrolling = true;
-                requestAnimationFrame(autoScrollLoop);
-            }
-        }
-
         function cleanup() {
             if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
             needsRaf = false;
-            scrolling = false;
             list.style.userSelect = '';
             list.style.webkitUserSelect = '';
             document.body.style.userSelect = '';
             document.body.style.webkitUserSelect = '';
+        }
+
+        function reattachLazy() {
+            if (!lazyObserver) return;
+            const modal = document.getElementById('bookmarksModal');
+            if (!modal) return;
+            modal.querySelectorAll('.bm-card-content[data-lazy-bm-id]').forEach(el => {
+                lazyObserver.observe(el);
+            });
         }
 
         function endDrag() {
@@ -560,10 +577,14 @@
                 placeholder.remove();
             }
             placeholder = null;
-            const ids = [...list.querySelectorAll('.bm-card')].map(c => c.dataset.bmId);
-            persistOrder(ids);
             dragItem = null;
             bmDragging = false;
+
+            setTimeout(() => {
+                const ids = [...list.querySelectorAll('.bm-card')].map(c => c.dataset.bmId);
+                persistOrder(ids);
+                reattachLazy();
+            }, 0);
         }
 
         function cancelDrag() {
@@ -583,7 +604,6 @@
         function onPointerMove(y) {
             lastPointerY = y;
             scheduleRaf();
-            startAutoScroll();
         }
 
         // === Touch events ===

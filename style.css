@@ -511,6 +511,7 @@ body.dark-theme .knowledge-check-btn:hover {
     transition: none !important;
 }
 
+
 .bm-drag-placeholder {
     border: 2px dashed var(--accent-color);
     border-radius: 8px;
