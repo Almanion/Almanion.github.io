@@ -486,7 +486,11 @@ body.dark-theme .knowledge-check-btn:hover {
 .bm-card-content .lemma-box,
 .bm-card-content .example-box,
 .bm-card-content .statement-box,
-.bm-card-content .corollary-box {
+.bm-card-content .corollary-box,
+.bm-card-content .properties-box,
+.bm-card-content .experiment-box,
+.bm-card-content .derivation-box,
+.bm-card-content .system-box {
     background: none !important;
     padding: 0 !important;
 }
@@ -502,10 +506,9 @@ body.dark-theme .knowledge-check-btn:hover {
 }
 
 .bm-dragging {
-    opacity: 0.9;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25) !important;
     border-radius: 8px;
-    pointer-events: none;
+    background: var(--bg-secondary);
+    transition: none !important;
 }
 
 .bm-drag-placeholder {
@@ -5784,7 +5787,6 @@ body.no-hover .subjects-grid *:hover,
 body.no-hover .subjects-grid *:active {
     transform: none !important;
     box-shadow: inherit !important;
-    border-width: inherit !important;
 }
 
 body.no-hover .sidebar *:active,
@@ -5802,7 +5804,6 @@ body.no-hover .auth-overlay *:active {
     .subjects-grid *:active {
         transform: none !important;
         box-shadow: inherit !important;
-        border-width: inherit !important;
     }
 
     .sidebar *:active,

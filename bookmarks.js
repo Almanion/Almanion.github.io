@@ -76,7 +76,7 @@
     function generateBookmarkId(box) {
         const topic = box.closest('.topic');
         const topicId = topic ? topic.id : 'unknown';
-        const boxes = topic ? Array.from(topic.querySelectorAll('.definition-box, .formula-box, .theorem-box, .remark-box, .lemma-box, .example-box, .statement-box, .corollary-box')) : [];
+        const boxes = topic ? Array.from(topic.querySelectorAll('.definition-box, .formula-box, .theorem-box, .remark-box, .lemma-box, .example-box, .statement-box, .corollary-box, .properties-box, .experiment-box, .derivation-box, .system-box')) : [];
         const idx = boxes.indexOf(box);
         return topicId + '_' + idx;
     }
@@ -97,6 +97,10 @@
         if (box.classList.contains('example-box')) return 'example';
         if (box.classList.contains('statement-box')) return 'statement';
         if (box.classList.contains('corollary-box')) return 'corollary';
+        if (box.classList.contains('properties-box')) return 'properties';
+        if (box.classList.contains('experiment-box')) return 'experiment';
+        if (box.classList.contains('derivation-box')) return 'derivation';
+        if (box.classList.contains('system-box')) return 'system';
         return 'other';
     }
 
@@ -109,7 +113,11 @@
             lemma: 'Лемма',
             example: 'Пример',
             statement: 'Утверждение',
-            corollary: 'Следствие'
+            corollary: 'Следствие',
+            properties: 'Свойства',
+            experiment: 'Опыт',
+            derivation: 'Вывод',
+            system: 'Система'
         };
         return labels[type] || 'Блок';
     }
@@ -123,17 +131,21 @@
             lemma: '#f97316',
             example: '#06b6d4',
             statement: '#ec4899',
-            corollary: '#6366f1'
+            corollary: '#6366f1',
+            properties: '#14b8a6',
+            experiment: '#ef4444',
+            derivation: '#a855f7',
+            system: '#0ea5e9'
         };
         return colors[type] || '#6b7280';
     }
 
     function addBookmarkButtons() {
-        const selector = '.definition-box, .formula-box, .theorem-box, .remark-box, .lemma-box, .example-box, .statement-box, .corollary-box';
+        const selector = '.definition-box, .formula-box, .theorem-box, .remark-box, .lemma-box, .example-box, .statement-box, .corollary-box, .properties-box, .experiment-box, .derivation-box, .system-box';
         document.querySelectorAll(selector).forEach(box => {
             if (box.querySelector('.bookmark-btn')) return;
-            if (box.closest('.definition-box, .formula-box, .theorem-box, .remark-box')) {
-                if (box.parentElement.closest('.definition-box, .formula-box, .theorem-box, .remark-box')) return;
+            if (box.closest('.definition-box, .formula-box, .theorem-box, .remark-box, .properties-box, .experiment-box, .derivation-box, .system-box')) {
+                if (box.parentElement.closest('.definition-box, .formula-box, .theorem-box, .remark-box, .properties-box, .experiment-box, .derivation-box, .system-box')) return;
             }
 
             const btn = document.createElement('button');
@@ -309,7 +321,7 @@
         const topicId = parts.join('_');
         const topic = document.getElementById(topicId);
         if (!topic) return null;
-        const boxes = topic.querySelectorAll('.definition-box, .formula-box, .theorem-box, .remark-box, .lemma-box, .example-box, .statement-box, .corollary-box');
+        const boxes = topic.querySelectorAll('.definition-box, .formula-box, .theorem-box, .remark-box, .lemma-box, .example-box, .statement-box, .corollary-box, .properties-box, .experiment-box, .derivation-box, .system-box');
         return boxes[idx] || null;
     }
 
@@ -409,39 +421,46 @@
         let longPressTimer = null;
         let startY = 0;
         let offsetY = 0;
+        let savedColor = '';
+        let scrollRAF = null;
+        const modal = document.getElementById('bookmarksModal');
 
         function startDrag(card, touchY) {
             dragItem = card;
             bmDragging = true;
             const rect = card.getBoundingClientRect();
             offsetY = touchY - rect.top;
+            savedColor = card.style.borderLeftColor || '';
 
             placeholder = document.createElement('div');
             placeholder.className = 'bm-drag-placeholder';
             placeholder.style.height = rect.height + 'px';
             card.parentNode.insertBefore(placeholder, card);
 
+            card.style.cssText =
+                'position:fixed;z-index:99999;pointer-events:none;' +
+                'left:' + rect.left + 'px;' +
+                'width:' + rect.width + 'px;' +
+                'top:' + (touchY - offsetY) + 'px;' +
+                'margin:0;opacity:0.92;' +
+                'box-shadow:0 8px 32px rgba(0,0,0,0.25);' +
+                'border-left-color:' + savedColor + ';';
             card.classList.add('bm-dragging');
-            card.style.position = 'fixed';
-            card.style.left = rect.left + 'px';
-            card.style.width = rect.width + 'px';
-            card.style.top = (touchY - offsetY) + 'px';
-            card.style.zIndex = '99999';
-            card.style.margin = '0';
 
             if (navigator.vibrate) navigator.vibrate(30);
         }
 
         function endDrag() {
             if (!dragItem) return;
+            if (scrollRAF) { cancelAnimationFrame(scrollRAF); scrollRAF = null; }
             dragItem.classList.remove('bm-dragging');
-            dragItem.style.cssText = '';
+            dragItem.removeAttribute('style');
+            if (savedColor) dragItem.style.borderLeftColor = savedColor;
             if (placeholder && placeholder.parentNode) {
                 placeholder.parentNode.insertBefore(dragItem, placeholder);
                 placeholder.remove();
             }
             placeholder = null;
-
             const ids = [...list.querySelectorAll('.bm-card')].map(c => c.dataset.bmId);
             persistOrder(ids);
             dragItem = null;
@@ -450,9 +469,11 @@
 
         function cancelDrag() {
             if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+            if (scrollRAF) { cancelAnimationFrame(scrollRAF); scrollRAF = null; }
             if (dragItem) {
                 dragItem.classList.remove('bm-dragging');
-                dragItem.style.cssText = '';
+                dragItem.removeAttribute('style');
+                if (savedColor) dragItem.style.borderLeftColor = savedColor;
                 if (placeholder) placeholder.remove();
                 dragItem = null;
                 placeholder = null;
@@ -460,11 +481,47 @@
             bmDragging = false;
         }
 
+        function autoScroll(touchY) {
+            if (!modal) return;
+            const rect = modal.getBoundingClientRect();
+            const edge = 50;
+            const speed = 6;
+            let delta = 0;
+
+            if (touchY < rect.top + edge) {
+                delta = -speed * (1 - (touchY - rect.top) / edge);
+            } else if (touchY > rect.bottom - edge) {
+                delta = speed * (1 - (rect.bottom - touchY) / edge);
+            }
+
+            if (Math.abs(delta) > 0.5) {
+                modal.scrollTop += delta;
+                scrollRAF = requestAnimationFrame(() => autoScroll(touchY));
+            } else {
+                scrollRAF = null;
+            }
+        }
+
+        function movePlaceholder(y) {
+            const cards = list.querySelectorAll('.bm-card:not(.bm-dragging)');
+            for (const c of cards) {
+                const r = c.getBoundingClientRect();
+                if (y < r.top + r.height / 2) {
+                    if (placeholder.nextSibling !== c) {
+                        list.insertBefore(placeholder, c);
+                    }
+                    return;
+                }
+            }
+            if (list.lastElementChild !== placeholder) {
+                list.appendChild(placeholder);
+            }
+        }
+
         list.addEventListener('touchstart', (e) => {
             const card = e.target.closest('.bm-card');
             if (!card || e.target.closest('.bm-card-delete')) return;
             startY = e.touches[0].clientY;
-
             longPressTimer = setTimeout(() => {
                 longPressTimer = null;
                 startDrag(card, startY);
@@ -473,8 +530,10 @@
 
         list.addEventListener('touchmove', (e) => {
             if (longPressTimer && !dragItem) {
-                const dy = Math.abs(e.touches[0].clientY - startY);
-                if (dy > 8) { clearTimeout(longPressTimer); longPressTimer = null; }
+                if (Math.abs(e.touches[0].clientY - startY) > 8) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
                 return;
             }
             if (!dragItem) return;
@@ -482,17 +541,10 @@
             e.stopPropagation();
             const y = e.touches[0].clientY;
             dragItem.style.top = (y - offsetY) + 'px';
+            movePlaceholder(y);
 
-            const cards = [...list.querySelectorAll('.bm-card:not(.bm-dragging)')];
-            for (const c of cards) {
-                const r = c.getBoundingClientRect();
-                const mid = r.top + r.height / 2;
-                if (y < mid) {
-                    list.insertBefore(placeholder, c);
-                    return;
-                }
-            }
-            list.appendChild(placeholder);
+            if (scrollRAF) cancelAnimationFrame(scrollRAF);
+            scrollRAF = requestAnimationFrame(() => autoScroll(y));
         }, { passive: false });
 
         list.addEventListener('touchend', (e) => {
@@ -502,9 +554,7 @@
             endDrag();
         });
 
-        list.addEventListener('touchcancel', () => {
-            cancelDrag();
-        });
+        list.addEventListener('touchcancel', () => cancelDrag());
     }
 
     function createSectionTitle(text) {
