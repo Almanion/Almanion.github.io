@@ -12,6 +12,7 @@
     let bookmarks = {};
     let bookmarksPanelOpen = false;
     let bmDragging = false;
+    let lazyObserver = null;
 
     function getVisitorId() {
         let id = localStorage.getItem(VISITOR_ID_KEY);
@@ -233,6 +234,7 @@
     }
 
     function closeBookmarksPanel() {
+        if (lazyObserver) { lazyObserver.disconnect(); lazyObserver = null; }
         const overlay = document.getElementById('bookmarksOverlay');
         if (overlay) {
             overlay.classList.add('hidden');
@@ -350,6 +352,7 @@
     }
 
     function renderBookmarksPanel() {
+        if (lazyObserver) { lazyObserver.disconnect(); lazyObserver = null; }
         let overlay = document.getElementById('bookmarksOverlay');
         if (!overlay) {
             overlay = document.createElement('div');
@@ -413,6 +416,24 @@
         modal.appendChild(closeWrap);
 
         overlay.classList.remove('hidden');
+
+        requestAnimationFrame(() => {
+            ensureLazyObserver();
+            if (lazyObserver) {
+                modal.querySelectorAll('.bm-card-content[data-lazy-bm-id]').forEach(el => {
+                    lazyObserver.observe(el);
+                });
+            } else {
+                modal.querySelectorAll('.bm-card-content[data-lazy-bm-id]').forEach(el => {
+                    const box = findBoxById(el.dataset.lazyBmId);
+                    if (box) {
+                        el.textContent = '';
+                        el.appendChild(cloneBoxContent(box));
+                    }
+                    delete el.dataset.lazyBmId;
+                });
+            }
+        });
     }
 
     function initDragSort(list) {
@@ -574,6 +595,33 @@
         return el;
     }
 
+    function cloneBoxContent(box) {
+        const clone = box.cloneNode(true);
+        clone.querySelectorAll('.bookmark-btn').forEach(b => b.remove());
+        clone.style.cssText = 'margin:0;border:none;box-shadow:none;border-radius:0;border-left:none;';
+        return clone;
+    }
+
+    function ensureLazyObserver() {
+        if (lazyObserver) return;
+        if (!('IntersectionObserver' in window)) return;
+        lazyObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                const contentDiv = entry.target;
+                const bmId = contentDiv.dataset.lazyBmId;
+                if (!bmId) return;
+                lazyObserver.unobserve(contentDiv);
+                const box = findBoxById(bmId);
+                if (box) {
+                    contentDiv.textContent = '';
+                    contentDiv.appendChild(cloneBoxContent(box));
+                }
+                delete contentDiv.dataset.lazyBmId;
+            });
+        }, { root: document.getElementById('bookmarksModal'), rootMargin: '100px' });
+    }
+
     function createBookmarkCard(bm, isCurrentPage) {
         const card = document.createElement('div');
         card.className = 'bm-card';
@@ -611,19 +659,10 @@
 
         const contentDiv = document.createElement('div');
         contentDiv.className = 'bm-card-content';
+        contentDiv.textContent = bm.preview || '';
 
         if (isCurrentPage) {
-            const box = findBoxById(bm.id);
-            if (box) {
-                const clone = box.cloneNode(true);
-                clone.querySelectorAll('.bookmark-btn').forEach(b => b.remove());
-                clone.style.cssText = 'margin: 0; border: none; box-shadow: none; border-radius: 0; border-left: none;';
-                contentDiv.appendChild(clone);
-            } else {
-                contentDiv.textContent = bm.preview || '';
-            }
-        } else {
-            contentDiv.textContent = bm.preview || '';
+            contentDiv.dataset.lazyBmId = bm.id;
         }
 
         card.appendChild(contentDiv);

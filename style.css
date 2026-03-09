@@ -474,7 +474,7 @@ body.dark-theme .knowledge-check-btn:hover {
     padding: 0.5rem 0.75rem;
     font-size: 0.85rem;
     color: var(--text-primary);
-    max-height: 200px;
+    max-height: 300px;
     overflow-y: auto;
     line-height: 1.5;
 }
