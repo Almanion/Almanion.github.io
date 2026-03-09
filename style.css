@@ -2346,7 +2346,12 @@ em {
     .corollary-box:hover,
     .proof-box:hover {
         transform: none;
-        border-width: inherit;
+    }
+    .topic > .formula-box:hover,
+    .topic > .experiment-box:hover,
+    .topic > .derivation-box:hover {
+        border-width: 0;
+        border-left-width: 5px;
     }
 
     .experiment-box h4 {
@@ -5787,6 +5792,16 @@ body.no-hover .subjects-grid *:hover,
 body.no-hover .subjects-grid *:active {
     transform: none !important;
     box-shadow: inherit !important;
+    transition: none !important;
+}
+
+body.no-hover .formula-box:hover,
+body.no-hover .formula-box:active,
+body.no-hover .experiment-box:hover,
+body.no-hover .experiment-box:active,
+body.no-hover .derivation-box:hover,
+body.no-hover .derivation-box:active {
+    border-width: 2px !important;
 }
 
 body.no-hover .sidebar *:active,
@@ -5804,6 +5819,16 @@ body.no-hover .auth-overlay *:active {
     .subjects-grid *:active {
         transform: none !important;
         box-shadow: inherit !important;
+        transition: none !important;
+    }
+
+    .formula-box:hover,
+    .formula-box:active,
+    .experiment-box:hover,
+    .experiment-box:active,
+    .derivation-box:hover,
+    .derivation-box:active {
+        border-width: 2px !important;
     }
 
     .sidebar *:active,
@@ -5811,6 +5836,29 @@ body.no-hover .auth-overlay *:active {
     .auth-overlay *:active {
         transform: none !important;
         box-shadow: inherit !important;
+    }
+}
+
+@media (max-width: 768px) {
+    body.no-hover .topic > .formula-box:hover,
+    body.no-hover .topic > .formula-box:active,
+    body.no-hover .topic > .experiment-box:hover,
+    body.no-hover .topic > .experiment-box:active,
+    body.no-hover .topic > .derivation-box:hover,
+    body.no-hover .topic > .derivation-box:active {
+        border-width: 0 !important;
+        border-left-width: 5px !important;
+    }
+}
+@media (max-width: 768px) and (hover: none) {
+    .topic > .formula-box:hover,
+    .topic > .formula-box:active,
+    .topic > .experiment-box:hover,
+    .topic > .experiment-box:active,
+    .topic > .derivation-box:hover,
+    .topic > .derivation-box:active {
+        border-width: 0 !important;
+        border-left-width: 5px !important;
     }
 }
 
