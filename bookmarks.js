@@ -580,11 +580,13 @@
             dragItem = null;
             bmDragging = false;
 
-            setTimeout(() => {
+            if (modal) modal.style.overflow = 'hidden';
+            requestAnimationFrame(() => {
+                if (modal) modal.style.overflow = '';
                 const ids = [...list.querySelectorAll('.bm-card')].map(c => c.dataset.bmId);
                 persistOrder(ids);
                 reattachLazy();
-            }, 0);
+            });
         }
 
         function cancelDrag() {
