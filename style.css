@@ -6171,56 +6171,56 @@ body.matcenter-page .task-card.open .task-description {
     max-height: none;
 }
 
-/* Шапка страницы — заголовок и кнопка обновления */
-body.matcenter-page .page-header-top {
+/* Строка заголовка «Все задачи» + кнопка обновления */
+body.matcenter-page .part-title-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    width: 100%;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
 }
 
-body.matcenter-page .page-header-top h1 {
+body.matcenter-page .part-title-row .part-title {
     margin: 0;
     flex: 1;
 }
 
-/* Кнопка обновления в заголовке */
+/* Кнопка обновления перед «Все задачи» */
 body.matcenter-page .refresh-button {
     flex-shrink: 0;
     min-width: 40px;
     height: 40px;
     padding: 0 0.75rem;
     white-space: nowrap;
-    border: 2px solid rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
-    font-size: 1.2rem;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 1rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
     -webkit-tap-highlight-color: transparent;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 body.matcenter-page .refresh-button:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.8);
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
     transform: rotate(-90deg);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.3);
 }
 
 body.matcenter-page .refresh-button:active:not(:disabled) {
-    background: rgba(255, 255, 255, 0.4);
+    transform: rotate(-90deg) scale(0.98);
 }
 
 body.matcenter-page .refresh-button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    border-color: rgba(255, 255, 255, 0.3);
 }
 
 /* Поиск — layout input + фильтр по статусу */

@@ -108,10 +108,7 @@
     <!-- Основной контент -->
     <main class="main-content">
         <header class="page-header">
-            <div class="page-header-top">
-                <h1>МатЦентр 2025/2026</h1>
-                <button type="button" id="refreshButton" class="refresh-button" title="Обновить данные">🔄</button>
-            </div>
+            <h1>МатЦентр 2025/2026</h1>
             <p class="subtitle"><a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a></p>
         </header>
 
@@ -139,7 +136,10 @@
 
         <!-- Список задач -->
         <section class="content-section" id="all-tasks">
-            <h2 class="part-title">Все задачи</h2>
+            <div class="part-title-row">
+                <h2 class="part-title">Все задачи</h2>
+                <button type="button" id="refreshButton" class="refresh-button" title="Обновить данные">🔄</button>
+            </div>
             <div id="loadingMessage" class="loading-message">
                 <div class="spinner"></div>
                 <p>Загрузка задач из Google Таблицы...</p>
