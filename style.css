@@ -1,5 +1,5 @@
 /* ============================================
-   ОПОВЕЩЕНИЕ О НОВОЙ ФУНКЦИИ
+   РћРџРћР’Р•Р©Р•РќРР• Рћ РќРћР’РћР™ Р¤РЈРќРљР¦РР
    ============================================ */
 
    .new-feature-modal {
@@ -30,7 +30,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Улучшение тач-взаимодействия */
+    /* РЈР»СѓС‡С€РµРЅРёРµ С‚Р°С‡-РІР·Р°РёРјРѕРґРµР№СЃС‚РІРёСЏ */
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     z-index: 1;
@@ -172,7 +172,7 @@
     border-color: var(--text-secondary);
 }
 
-/* Темная тема */
+/* РўРµРјРЅР°СЏ С‚РµРјР° */
 body.dark-theme .new-feature-modal {
     background: var(--bg-primary);
 }
@@ -186,7 +186,7 @@ body.dark-theme .new-feature-list li::before {
 }
 
 /* ============================================
-   КНОПКА ПРОВЕРКИ ЗНАНИЙ
+   РљРќРћРџРљРђ РџР РћР’Р•Р РљР Р—РќРђРќРР™
    ============================================ */
 
 .knowledge-check-btn {
@@ -226,7 +226,7 @@ body.dark-theme .knowledge-check-btn:hover {
     color: white;
 }
 
-/* Кнопки "Помню" / "Не помню" */
+/* РљРЅРѕРїРєРё "РџРѕРјРЅСЋ" / "РќРµ РїРѕРјРЅСЋ" */
 .memory-buttons {
     display: flex;
     gap: 0.75rem;
@@ -280,7 +280,7 @@ body.dark-theme .knowledge-check-btn:hover {
     transform: none !important;
 }
 
-/* Статистика запоминания */
+/* РЎС‚Р°С‚РёСЃС‚РёРєР° Р·Р°РїРѕРјРёРЅР°РЅРёСЏ */
 .memory-stats {
     display: flex;
     gap: 0.75rem;
@@ -320,7 +320,7 @@ body.dark-theme .knowledge-check-btn:hover {
     color: var(--accent-color);
 }
 
-/* Карточки выбора тем */
+/* РљР°СЂС‚РѕС‡РєРё РІС‹Р±РѕСЂР° С‚РµРј */
 .topic-select-card {
     display: flex;
     align-items: center;
@@ -373,7 +373,7 @@ body.dark-theme .knowledge-check-btn:hover {
 }
 
 /* ============================================
-   ЗАКЛАДКИ
+   Р—РђРљР›РђР”РљР
    ============================================ */
 
 .bookmark-btn {
@@ -520,11 +520,11 @@ body.dark-theme .knowledge-check-btn:hover {
 }
 
 /* ============================================
-   ОСНОВНЫЕ СТИЛИ И ПЕРЕМЕННЫЕ
+   РћРЎРќРћР’РќР«Р• РЎРўРР›Р Р РџР•Р Р•РњР•РќРќР«Р•
    ============================================ */
 
    :root {
-    /* Цветовая схема - светлая тема */
+    /* Р¦РІРµС‚РѕРІР°СЏ СЃС…РµРјР° - СЃРІРµС‚Р»Р°СЏ С‚РµРјР° */
     --bg-primary: #ffffff;
     --bg-secondary: #f8f9fa;
     --bg-tertiary: #e9ecef;
@@ -535,7 +535,7 @@ body.dark-theme .knowledge-check-btn:hover {
     --accent-rgb: 37, 99, 235;
     --border-color: #dee2e6;
     
-    /* Цвета для блоков */
+    /* Р¦РІРµС‚Р° РґР»СЏ Р±Р»РѕРєРѕРІ */
     --definition-bg: #eff6ff;
     --definition-border: #3b82f6;
     --formula-bg: #dbeafe;
@@ -561,27 +561,27 @@ body.dark-theme .knowledge-check-btn:hover {
     --exercise-bg: #f8fafc;
     --exercise-border: #475569;
     
-    /* Размеры */
+    /* Р Р°Р·РјРµСЂС‹ */
     --sidebar-width: 320px;
     --border-radius: 16px;
     --border-radius-sm: 12px;
     --border-radius-lg: 20px;
     --spacing: 1.5rem;
     
-    /* Тени - более мягкие и дружелюбные */
+    /* РўРµРЅРё - Р±РѕР»РµРµ РјСЏРіРєРёРµ Рё РґСЂСѓР¶РµР»СЋР±РЅС‹Рµ */
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
     --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.15);
     --shadow-hover: 0 6px 24px rgba(var(--accent-rgb), 0.2);
     
-    /* Анимации - более плавные */
+    /* РђРЅРёРјР°С†РёРё - Р±РѕР»РµРµ РїР»Р°РІРЅС‹Рµ */
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-smooth: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
-/* Темная тема */
+/* РўРµРјРЅР°СЏ С‚РµРјР° */
 body.dark-theme {
     --bg-primary: #0f172a;
     --bg-secondary: #141b27;
@@ -593,7 +593,7 @@ body.dark-theme {
     --accent-rgb: 59, 130, 246;
     --border-color: #334155;
     
-    /* Цвета для блоков - темная тема */
+    /* Р¦РІРµС‚Р° РґР»СЏ Р±Р»РѕРєРѕРІ - С‚РµРјРЅР°СЏ С‚РµРјР° */
     --definition-bg: #19365d31;
     --definition-border: #438bff;
     --formula-bg: #1e3a5f;
@@ -619,7 +619,7 @@ body.dark-theme {
     --exercise-bg: #1e293b80;
     --exercise-border: #94a3b8;
     
-    /* Тени - темная тема (более мягкие) */
+    /* РўРµРЅРё - С‚РµРјРЅР°СЏ С‚РµРјР° (Р±РѕР»РµРµ РјСЏРіРєРёРµ) */
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -654,12 +654,12 @@ body {
     letter-spacing: 0.01em;
 }
 
-/* Предотвращение прокрутки body когда sidebar открыт на мобильных */
+/* РџСЂРµРґРѕС‚РІСЂР°С‰РµРЅРёРµ РїСЂРѕРєСЂСѓС‚РєРё body РєРѕРіРґР° sidebar РѕС‚РєСЂС‹С‚ РЅР° РјРѕР±РёР»СЊРЅС‹С… */
 body.sidebar-open {
     overflow: hidden;
 }
 
-/* Оверлей для sidebar на мобильных */
+/* РћРІРµСЂР»РµР№ РґР»СЏ sidebar РЅР° РјРѕР±РёР»СЊРЅС‹С… */
 .sidebar-overlay {
     display: none;
     position: fixed;
@@ -682,7 +682,7 @@ body.sidebar-open {
 }
 
 /* ============================================
-   БОКОВАЯ ПАНЕЛЬ НАВИГАЦИИ
+   Р‘РћРљРћР’РђРЇ РџРђРќР•Р›Р¬ РќРђР’РР“РђР¦РР
    ============================================ */
 
 .sidebar {
@@ -740,7 +740,7 @@ body.sidebar-open {
     min-width: 0;
 }
 
-/* Контейнер для кнопок в header */
+/* РљРѕРЅС‚РµР№РЅРµСЂ РґР»СЏ РєРЅРѕРїРѕРє РІ header */
 .sidebar-header-buttons {
     display: flex;
     gap: 0.5rem;
@@ -767,7 +767,7 @@ body.sidebar-open {
     transform: rotate(90deg);
 }
 
-/* Поиск */
+/* РџРѕРёСЃРє */
 .search-box {
     padding: 1rem var(--spacing);
     background: var(--bg-tertiary);
@@ -803,7 +803,7 @@ body.sidebar-open {
     margin: 0;
 }
 
-/* Навигационное меню */
+/* РќР°РІРёРіР°С†РёРѕРЅРЅРѕРµ РјРµРЅСЋ */
 .nav-menu {
     padding: 1rem 0;
     display: flex;
@@ -856,7 +856,7 @@ body.sidebar-open {
     box-shadow: var(--shadow-sm);
 }
 
-/* Раскрывающиеся группы в навигации */
+/* Р Р°СЃРєСЂС‹РІР°СЋС‰РёРµСЃСЏ РіСЂСѓРїРїС‹ РІ РЅР°РІРёРіР°С†РёРё */
 .nav-group {
     margin: 0.5rem 0;
 }
@@ -915,7 +915,7 @@ body.sidebar-open {
     padding-left: calc(var(--spacing) + 1.5rem);
 }
 
-/* Ссылки на другие предметы - адаптивные к теме */
+/* РЎСЃС‹Р»РєРё РЅР° РґСЂСѓРіРёРµ РїСЂРµРґРјРµС‚С‹ - Р°РґР°РїС‚РёРІРЅС‹Рµ Рє С‚РµРјРµ */
 .nav-section.other-subjects a {
     color: #1f2937 !important;
     text-decoration: none;
@@ -931,7 +931,7 @@ body.sidebar-open {
     opacity: 1;
 }
 
-/* В темной теме ссылки белые */
+/* Р’ С‚РµРјРЅРѕР№ С‚РµРјРµ СЃСЃС‹Р»РєРё Р±РµР»С‹Рµ */
 body.dark-theme .nav-section.other-subjects a {
     color: white !important;
 }
@@ -940,7 +940,7 @@ body.dark-theme .nav-section.other-subjects a:hover {
     opacity: 0.8;
 }
 
-/* Стили для кнопки зачёта в темной теме */
+/* РЎС‚РёР»Рё РґР»СЏ РєРЅРѕРїРєРё Р·Р°С‡С‘С‚Р° РІ С‚РµРјРЅРѕР№ С‚РµРјРµ */
 body.dark-theme .nav-link[href="physics 07.02.html"] {
     background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 100%) !important;
     color: white !important;
@@ -952,7 +952,7 @@ body.dark-theme .nav-link[href="physics 07.02.html"]:hover {
     box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
-/* Кнопка сворачивания сайдбара (внутри хедера, десктоп) */
+/* РљРЅРѕРїРєР° СЃРІРѕСЂР°С‡РёРІР°РЅРёСЏ СЃР°Р№РґР±Р°СЂР° (РІРЅСѓС‚СЂРё С…РµРґРµСЂР°, РґРµСЃРєС‚РѕРї) */
 .sidebar-collapse-btn {
     display: none;
     background: rgba(255, 255, 255, 0.2);
@@ -975,7 +975,7 @@ body.dark-theme .nav-link[href="physics 07.02.html"]:hover {
     background: rgba(255, 255, 255, 0.3);
 }
 
-/* Кнопка открытия свёрнутого сайдбара (появляется когда сайдбар скрыт) */
+/* РљРЅРѕРїРєР° РѕС‚РєСЂС‹С‚РёСЏ СЃРІС‘СЂРЅСѓС‚РѕРіРѕ СЃР°Р№РґР±Р°СЂР° (РїРѕСЏРІР»СЏРµС‚СЃСЏ РєРѕРіРґР° СЃР°Р№РґР±Р°СЂ СЃРєСЂС‹С‚) */
 .sidebar-expand-btn {
     display: none;
     position: fixed;
@@ -1007,7 +1007,7 @@ body.dark-theme .nav-link[href="physics 07.02.html"]:hover {
     transform: scale(1.08);
 }
 
-/* Состояние свёрнутого сайдбара */
+/* РЎРѕСЃС‚РѕСЏРЅРёРµ СЃРІС‘СЂРЅСѓС‚РѕРіРѕ СЃР°Р№РґР±Р°СЂР° */
 .sidebar.collapsed {
     transform: translateX(-100%);
 }
@@ -1023,7 +1023,7 @@ body.sidebar-collapsed .main-content {
     max-width: 100%;
 }
 
-/* Кнопка меню (мобильные) */
+/* РљРЅРѕРїРєР° РјРµРЅСЋ (РјРѕР±РёР»СЊРЅС‹Рµ) */
 .menu-toggle {
     display: none;
     position: fixed;
@@ -1047,7 +1047,7 @@ body.sidebar-collapsed .main-content {
     transform: scale(1.05);
 }
 
-/* Кнопка переключения темы */
+/* РљРЅРѕРїРєР° РїРµСЂРµРєР»СЋС‡РµРЅРёСЏ С‚РµРјС‹ */
 .theme-toggle {
     width: 40px;
     height: 40px;
@@ -1095,17 +1095,17 @@ body.sidebar-collapsed .main-content {
 }
 
 /* ============================================
-   ОСНОВНОЙ КОНТЕНТ
+   РћРЎРќРћР’РќРћР™ РљРћРќРўР•РќРў
    ============================================ */
 
 .main-content {
     margin-left: var(--sidebar-width);
     padding: 2rem;
-    max-width: calc(100vw - var(--sidebar-width) - 4rem); /* по ширине экрана минус сайдбар и отступы */
+    max-width: calc(100vw - var(--sidebar-width) - 4rem); /* РїРѕ С€РёСЂРёРЅРµ СЌРєСЂР°РЅР° РјРёРЅСѓСЃ СЃР°Р№РґР±Р°СЂ Рё РѕС‚СЃС‚СѓРїС‹ */
     transition: margin-left 0.3s ease, max-width 0.3s ease;
 }
 
-/* Заголовок страницы */
+/* Р—Р°РіРѕР»РѕРІРѕРє СЃС‚СЂР°РЅРёС†С‹ */
 .page-header {
     text-align: center;
     padding: 3.5rem 0;
@@ -1156,7 +1156,7 @@ body.sidebar-collapsed .main-content {
     position: relative;
 }
 
-/* Разделы контента */
+/* Р Р°Р·РґРµР»С‹ РєРѕРЅС‚РµРЅС‚Р° */
 .content-section {
     margin-bottom: 2rem;
     transition: background-color 0.3s ease,
@@ -1188,7 +1188,7 @@ body.sidebar-collapsed .main-content {
     50% { width: 150px; }
 }
 
-/* Топики/Статьи */
+/* РўРѕРїРёРєРё/РЎС‚Р°С‚СЊРё */
 .topic {
     background: var(--bg-secondary);
     padding: 2rem;
@@ -1219,7 +1219,7 @@ body.sidebar-collapsed .main-content {
 }
 
 .topic-title::before {
-    content: '📌';
+    content: 'рџ“Њ';
     font-size: 1.5rem;
 }
 
@@ -1243,10 +1243,10 @@ body.sidebar-collapsed .main-content {
 }
 
 /* ============================================
-   СПЕЦИАЛЬНЫЕ БЛОКИ
+   РЎРџР•Р¦РРђР›Р¬РќР«Р• Р‘Р›РћРљР
    ============================================ */
 
-/* Определения */
+/* РћРїСЂРµРґРµР»РµРЅРёСЏ */
 .definition-box {
     background: var(--definition-bg);
     border-left: 4px solid var(--definition-border);
@@ -1274,7 +1274,7 @@ body.sidebar-collapsed .main-content {
     font-size: 1.1rem;
 }
 
-/* Формулы */
+/* Р¤РѕСЂРјСѓР»С‹ */
 .formula-box {
     background: var(--formula-bg);
     border: 2px solid var(--formula-border);
@@ -1302,7 +1302,7 @@ body.sidebar-collapsed .main-content {
     margin-bottom: 0.75rem;
 }
 
-/* Замечания */
+/* Р—Р°РјРµС‡Р°РЅРёСЏ */
 .remark-box {
     background: var(--remark-bg);
     border-left: 4px solid var(--remark-border);
@@ -1325,7 +1325,7 @@ body.sidebar-collapsed .main-content {
 }
 
 .remark-box::before {
-    content: '💡';
+    content: 'рџ’Ў';
     position: absolute;
     top: 1rem;
     right: 1rem;
@@ -1334,7 +1334,7 @@ body.sidebar-collapsed .main-content {
     opacity: 0.6;
 }
 
-/* Эксперименты */
+/* Р­РєСЃРїРµСЂРёРјРµРЅС‚С‹ */
 .experiment-box {
     background: var(--experiment-bg);
     border: 2px solid var(--experiment-border);
@@ -1375,7 +1375,7 @@ body.sidebar-collapsed .main-content {
     margin-bottom: 0.5rem;
 }
 
-/* Выводы формул */
+/* Р’С‹РІРѕРґС‹ С„РѕСЂРјСѓР» */
 .derivation-box {
     background: var(--derivation-bg);
     border: 2px solid var(--derivation-border);
@@ -1431,7 +1431,7 @@ body.sidebar-collapsed .main-content {
     display: block;
 }
 
-/* Теоремы */
+/* РўРµРѕСЂРµРјС‹ */
 .theorem-box {
     background: var(--theorem-bg);
     border-left: 4px solid var(--theorem-border);
@@ -1459,7 +1459,7 @@ body.sidebar-collapsed .main-content {
     font-size: 1.1rem;
 }
 
-/* Леммы */
+/* Р›РµРјРјС‹ */
 .lemma-box {
     background: var(--lemma-bg);
     border-left: 4px solid var(--lemma-border);
@@ -1487,7 +1487,7 @@ body.sidebar-collapsed .main-content {
     font-size: 1.1rem;
 }
 
-/* Примеры */
+/* РџСЂРёРјРµСЂС‹ */
 .example-box {
     background: var(--example-bg);
     border-left: 4px solid var(--example-border);
@@ -1516,7 +1516,7 @@ body.sidebar-collapsed .main-content {
 }
 
 .example-box::before {
-    content: '📝';
+    content: 'рџ“ќ';
     position: absolute;
     top: 1rem;
     right: 1rem;
@@ -1525,7 +1525,7 @@ body.sidebar-collapsed .main-content {
     opacity: 0.6;
 }
 
-/* Утверждения */
+/* РЈС‚РІРµСЂР¶РґРµРЅРёСЏ */
 .statement-box {
     background: var(--statement-bg);
     border-left: 4px solid var(--statement-border);
@@ -1553,7 +1553,7 @@ body.sidebar-collapsed .main-content {
     font-size: 1.1rem;
 }
 
-/* Следствия */
+/* РЎР»РµРґСЃС‚РІРёСЏ */
 .corollary-box {
     background: var(--corollary-bg);
     border-left: 4px solid var(--corollary-border);
@@ -1581,7 +1581,7 @@ body.sidebar-collapsed .main-content {
     font-size: 1.1rem;
 }
 
-/* Доказательства */
+/* Р”РѕРєР°Р·Р°С‚РµР»СЊСЃС‚РІР° */
 .proof-box {
     background: var(--proof-bg);
     border: 2px solid var(--proof-border);
@@ -1644,7 +1644,7 @@ body.sidebar-collapsed .main-content {
     color: var(--proof-border);
 }
 
-/* Вложенные доказательства внутри блоков */
+/* Р’Р»РѕР¶РµРЅРЅС‹Рµ РґРѕРєР°Р·Р°С‚РµР»СЊСЃС‚РІР° РІРЅСѓС‚СЂРё Р±Р»РѕРєРѕРІ */
 .theorem-box > .proof-box,
 .statement-box > .proof-box,
 .remark-box > .proof-box,
@@ -1701,7 +1701,7 @@ body.sidebar-collapsed .main-content {
     border-top: none;
 }
 
-/* Вложенные доказательства в списках (properties-box) */
+/* Р’Р»РѕР¶РµРЅРЅС‹Рµ РґРѕРєР°Р·Р°С‚РµР»СЊСЃС‚РІР° РІ СЃРїРёСЃРєР°С… (properties-box) */
 li > .proof-box {
     background: transparent;
     border: none;
@@ -1738,7 +1738,7 @@ li > .proof-box .proof-content {
     border-top: none;
 }
 
-/* Системы уравнений */
+/* РЎРёСЃС‚РµРјС‹ СѓСЂР°РІРЅРµРЅРёР№ */
 .system-box {
     background: var(--formula-bg);
     border: 2px solid var(--formula-border);
@@ -1748,7 +1748,7 @@ li > .proof-box .proof-content {
     box-shadow: var(--shadow-sm);
 }
 
-/* Свойства/список */
+/* РЎРІРѕР№СЃС‚РІР°/СЃРїРёСЃРѕРє */
 .properties-box {
     background: var(--definition-bg);
     border-left: 4px solid var(--definition-border);
@@ -1767,7 +1767,7 @@ li > .proof-box .proof-content {
     margin: 0.75rem 0;
 }
 
-/* Упражнения */
+/* РЈРїСЂР°Р¶РЅРµРЅРёСЏ */
 .exercise-box {
     background: var(--exercise-bg);
     border-left: 4px solid var(--exercise-border);
@@ -1798,7 +1798,7 @@ li > .proof-box .proof-content {
 }
 
 /* ============================================
-   ТИПОГРАФИКА
+   РўРРџРћР“Р РђР¤РРљРђ
    ============================================ */
 
 ol, ul {
@@ -1815,7 +1815,7 @@ em {
     font-weight: 500;
 }
 
-/* KaTeX формулы */
+/* KaTeX С„РѕСЂРјСѓР»С‹ */
 .katex {
     font-size: 1.18em;
 }
@@ -1827,7 +1827,7 @@ em {
 }
 
 /* ============================================
-   ФУТЕР
+   Р¤РЈРўР•Р 
    ============================================ */
 
 .page-footer {
@@ -1843,7 +1843,7 @@ em {
 }
 
 /* ============================================
-   КНОПКА "НАВЕРХ"
+   РљРќРћРџРљРђ "РќРђР’Р•Р РҐ"
    ============================================ */
 
 .scroll-to-top {
@@ -1876,10 +1876,10 @@ em {
 }
 
 /* ============================================
-   АДАПТИВНОСТЬ
+   РђР”РђРџРўРР’РќРћРЎРўР¬
    ============================================ */
 
-/* Показ кнопки сворачивания на широких экранах */
+/* РџРѕРєР°Р· РєРЅРѕРїРєРё СЃРІРѕСЂР°С‡РёРІР°РЅРёСЏ РЅР° С€РёСЂРѕРєРёС… СЌРєСЂР°РЅР°С… */
 @media (min-width: 769px) {
     .sidebar-collapse-btn {
         display: flex;
@@ -1901,7 +1901,7 @@ em {
 }
 
 /* ============================================
-   МОБИЛЬНЫЙ ДИЗАЙН: CLEAN READER
+   РњРћР‘РР›Р¬РќР«Р™ Р”РР—РђР™Рќ: CLEAN READER
    ============================================ */
 
 @media (max-width: 768px) {
@@ -2599,7 +2599,7 @@ em {
 }
 
 /* ============================================
-   АНИМАЦИИ И ЭФФЕКТЫ
+   РђРќРРњРђР¦РР Р Р­Р¤Р¤Р•РљРўР«
    ============================================ */
 
 @keyframes pulse {
@@ -2615,7 +2615,7 @@ em {
     animation: pulse 2s ease-in-out infinite;
 }
 
-/* Подсветка при навигации */
+/* РџРѕРґСЃРІРµС‚РєР° РїСЂРё РЅР°РІРёРіР°С†РёРё */
 @keyframes navFlash {
     0% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.4); }
     50% { box-shadow: 0 0 0 6px rgba(var(--accent-rgb), 0.15); }
@@ -2626,7 +2626,7 @@ em {
     animation: navFlash 1.5s ease-out;
 }
 
-/* Анимации для смены темы */
+/* РђРЅРёРјР°С†РёРё РґР»СЏ СЃРјРµРЅС‹ С‚РµРјС‹ */
 @keyframes themeButtonSpin {
     0% {
         transform: scale(1) rotate(0deg);
@@ -2650,7 +2650,7 @@ em {
     }
 }
 
-/* Плавный переход для всех цветных элементов */
+/* РџР»Р°РІРЅС‹Р№ РїРµСЂРµС…РѕРґ РґР»СЏ РІСЃРµС… С†РІРµС‚РЅС‹С… СЌР»РµРјРµРЅС‚РѕРІ */
 .sidebar,
 .main-content,
 .page-header,
@@ -2674,13 +2674,13 @@ em {
                 transform 0.3s ease;
 }
 
-/* Плавное появление элементов при скролле - анимация отключена */
+/* РџР»Р°РІРЅРѕРµ РїРѕСЏРІР»РµРЅРёРµ СЌР»РµРјРµРЅС‚РѕРІ РїСЂРё СЃРєСЂРѕР»Р»Рµ - Р°РЅРёРјР°С†РёСЏ РѕС‚РєР»СЋС‡РµРЅР° */
 .fade-in {
     opacity: 1;
     transform: translateY(0);
 }
 
-/* Подсветка при поиске */
+/* РџРѕРґСЃРІРµС‚РєР° РїСЂРё РїРѕРёСЃРєРµ */
 mark.search-hl {
     background: rgba(250, 204, 21, 0.35);
     color: inherit;
@@ -2825,21 +2825,21 @@ body.dark-theme mark.search-hl-active {
     font-size: 0.85rem;
 }
 
-/* Прогресс-бар в темной теме */
+/* РџСЂРѕРіСЂРµСЃСЃ-Р±Р°СЂ РІ С‚РµРјРЅРѕР№ С‚РµРјРµ */
 body.dark-theme #progressBar {
     background: var(--accent-color);
 }
 
-/* KaTeX формулы в темной теме */
+/* KaTeX С„РѕСЂРјСѓР»С‹ РІ С‚РµРјРЅРѕР№ С‚РµРјРµ */
 body.dark-theme .katex {
     color: var(--text-primary);
 }
 
 /* ============================================
-   ACCESSIBILITY И FOCUS STATES
+   ACCESSIBILITY Р FOCUS STATES
    ============================================ */
 
-/* Улучшение focus states для клавиатурной навигации */
+/* РЈР»СѓС‡С€РµРЅРёРµ focus states РґР»СЏ РєР»Р°РІРёР°С‚СѓСЂРЅРѕР№ РЅР°РІРёРіР°С†РёРё */
 a:focus-visible,
 button:focus-visible,
 input:focus-visible {
@@ -2847,26 +2847,26 @@ input:focus-visible {
     outline-offset: 2px;
 }
 
-/* Убираем outline для мышки, но оставляем для клавиатуры */
+/* РЈР±РёСЂР°РµРј outline РґР»СЏ РјС‹С€РєРё, РЅРѕ РѕСЃС‚Р°РІР»СЏРµРј РґР»СЏ РєР»Р°РІРёР°С‚СѓСЂС‹ */
 a:focus:not(:focus-visible),
 button:focus:not(:focus-visible),
 input:focus:not(:focus-visible) {
     outline: none;
 }
 
-/* Улучшение контрастности для текста */
+/* РЈР»СѓС‡С€РµРЅРёРµ РєРѕРЅС‚СЂР°СЃС‚РЅРѕСЃС‚Рё РґР»СЏ С‚РµРєСЃС‚Р° */
 .nav-link,
 .nav-group-toggle {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* Предотвращение FOUT (Flash of Unstyled Text) */
+/* РџСЂРµРґРѕС‚РІСЂР°С‰РµРЅРёРµ FOUT (Flash of Unstyled Text) */
 .katex {
     visibility: visible;
 }
 
-/* Улучшение производительности анимаций */
+/* РЈР»СѓС‡С€РµРЅРёРµ РїСЂРѕРёР·РІРѕРґРёС‚РµР»СЊРЅРѕСЃС‚Рё Р°РЅРёРјР°С†РёР№ */
 .sidebar,
 .nav-submenu,
 .toggle-icon,
@@ -2881,10 +2881,10 @@ input:focus:not(:focus-visible) {
 }
 
 /* ============================================
-   МАТЦЕНТР - СПЕЦИАЛЬНЫЕ СТИЛИ
+   РњРђРўР¦Р•РќРўР  - РЎРџР•Р¦РРђР›Р¬РќР«Р• РЎРўРР›Р
    ============================================ */
 
-/* Статистика */
+/* РЎС‚Р°С‚РёСЃС‚РёРєР° */
 .stats-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -2923,35 +2923,35 @@ input:focus:not(:focus-visible) {
     letter-spacing: 0.05em;
 }
 
-/* Контейнер задач */
+/* РљРѕРЅС‚РµР№РЅРµСЂ Р·Р°РґР°С‡ */
 .tasks-container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 1rem;
 }
 
-/* На больших экранах - не более 3 колонок */
+/* РќР° Р±РѕР»СЊС€РёС… СЌРєСЂР°РЅР°С… - РЅРµ Р±РѕР»РµРµ 3 РєРѕР»РѕРЅРѕРє */
 @media (min-width: 1400px) {
     .tasks-container {
         grid-template-columns: repeat(3, 1fr);
     }
 }
 
-/* На средних экранах - 2 колонки */
+/* РќР° СЃСЂРµРґРЅРёС… СЌРєСЂР°РЅР°С… - 2 РєРѕР»РѕРЅРєРё */
 @media (min-width: 768px) and (max-width: 1399px) {
     .tasks-container {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
-/* На мобильных - 1 колонка */
+/* РќР° РјРѕР±РёР»СЊРЅС‹С… - 1 РєРѕР»РѕРЅРєР° */
 @media (max-width: 767px) {
     .tasks-container {
         grid-template-columns: 1fr;
     }
 }
 
-/* Карточка задачи */
+/* РљР°СЂС‚РѕС‡РєР° Р·Р°РґР°С‡Рё */
 .task-card {
     background: var(--bg-secondary);
     border-radius: var(--border-radius);
@@ -2991,7 +2991,7 @@ input:focus:not(:focus-visible) {
     border-left-width: 6px;
 }
 
-/* Статусы задач */
+/* РЎС‚Р°С‚СѓСЃС‹ Р·Р°РґР°С‡ */
 .task-card.solved {
     border-left-color: #22c55e;
     background: linear-gradient(90deg, rgba(34, 197, 94, 0.05), transparent);
@@ -3012,7 +3012,7 @@ input:focus:not(:focus-visible) {
     background: linear-gradient(90deg, rgba(246, 92, 92, 0.1), transparent);
 }
 
-/* Заголовок задачи */
+/* Р—Р°РіРѕР»РѕРІРѕРє Р·Р°РґР°С‡Рё */
 .task-header {
     display: flex;
     justify-content: space-between;
@@ -3077,7 +3077,7 @@ input:focus:not(:focus-visible) {
 }
 
 /* ============================================
-   ВЫПАДАЮЩИЙ СПИСОК СТАТУСОВ
+   Р’Р«РџРђР”РђР®Р©РР™ РЎРџРРЎРћРљ РЎРўРђРўРЈРЎРћР’
    ============================================ */
 
 .status-dropdown {
@@ -3112,7 +3112,7 @@ input:focus:not(:focus-visible) {
 }
 
 .status-option.current::after {
-    content: '✓';
+    content: 'вњ“';
     margin-left: auto;
     color: var(--accent-color);
     font-weight: bold;
@@ -3122,7 +3122,7 @@ input:focus:not(:focus-visible) {
     border-bottom: 1px solid var(--border-color);
 }
 
-/* Кнопка раскрытия */
+/* РљРЅРѕРїРєР° СЂР°СЃРєСЂС‹С‚РёСЏ */
 .task-toggle {
     width: 100%;
     padding: 0.75rem 1rem;
@@ -3174,31 +3174,36 @@ input:focus:not(:focus-visible) {
     box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.3);
 }
 
-/* Описание задачи */
+/* РћРїРёСЃР°РЅРёРµ Р·Р°РґР°С‡Рё */
 .task-description {
-    max-height: 0;
+    display: grid;
+    grid-template-rows: 0fr;
     overflow: hidden;
     opacity: 0;
-    transform: translateY(-20px) scaleY(0.8);
-    filter: blur(2px);
-    transition: max-height 0.35s cubic-bezier(0.4, 0, 1, 1),
-                opacity 0.2s ease-out,
-                transform 0.3s cubic-bezier(0.4, 0, 1, 1),
-                filter 0.2s ease-out,
-                margin-top 0.3s ease-out,
-                padding-top 0.3s ease-out,
-                border-top 0.2s ease-out;
+    transform: translateY(-10px) scaleY(0.95);
+    filter: blur(1px);
+    transition: grid-template-rows 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+                opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                filter 0.25s ease-out,
+                margin-top 0.35s ease-out,
+                padding-top 0.35s ease-out,
+                border-top 0.25s ease-out;
     color: var(--text-primary);
     line-height: 1.8;
     transform-origin: top center;
-    will-change: max-height, opacity, transform;
     word-wrap: break-word;
     word-break: break-word;
     overflow-wrap: break-word;
 }
 
+.task-description-inner {
+    min-height: 0;
+    overflow: hidden;
+}
+
 .task-card.open .task-description {
-    max-height: 3000px;
+    grid-template-rows: 1fr;
     opacity: 1;
     transform: translateY(0) scaleY(1);
     filter: blur(0);
@@ -3207,17 +3212,16 @@ input:focus:not(:focus-visible) {
     padding-top: 1rem;
     padding-bottom: 0;
     border-top: 2px solid var(--border-color);
-    transition: max-height 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
-                opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.1s,
-                transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s,
+    transition: grid-template-rows 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.05s,
+                transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.03s,
                 filter 0.25s ease-out 0.05s,
                 margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1),
                 padding-top 0.4s cubic-bezier(0.4, 0, 0.2, 1),
                 border-top 0.3s ease-out 0.1s;
-    animation: slideInContent 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Анимация появления содержимого */
+/* РђРЅРёРјР°С†РёСЏ РїРѕСЏРІР»РµРЅРёСЏ СЃРѕРґРµСЂР¶РёРјРѕРіРѕ */
 @keyframes slideInContent {
     0% {
         opacity: 0;
@@ -3235,7 +3239,7 @@ input:focus:not(:focus-visible) {
     }
 }
 
-/* Сообщение о загрузке */
+/* РЎРѕРѕР±С‰РµРЅРёРµ Рѕ Р·Р°РіСЂСѓР·РєРµ */
 .loading-message {
     text-align: center;
     padding: 3rem 2rem;
@@ -3256,7 +3260,7 @@ input:focus:not(:focus-visible) {
     to { transform: rotate(360deg); }
 }
 
-/* Маленький спиннер для кнопок */
+/* РњР°Р»РµРЅСЊРєРёР№ СЃРїРёРЅРЅРµСЂ РґР»СЏ РєРЅРѕРїРѕРє */
 .spinner-small {
     display: inline-block;
     width: 12px;
@@ -3283,7 +3287,7 @@ input:focus:not(:focus-visible) {
 }
 
 /* ============================================
-   АВТОРИЗАЦИЯ
+   РђР’РўРћР РР—РђР¦РРЇ
    ============================================ */
 
 .auth-overlay {
@@ -3300,7 +3304,7 @@ input:focus:not(:focus-visible) {
     align-items: center;
     z-index: 10000;
     animation: fadeIn 0.2s ease-out;
-    /* Улучшение тач-взаимодействия на мобильных */
+    /* РЈР»СѓС‡С€РµРЅРёРµ С‚Р°С‡-РІР·Р°РёРјРѕРґРµР№СЃС‚РІРёСЏ РЅР° РјРѕР±РёР»СЊРЅС‹С… */
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     cursor: pointer;
@@ -3310,7 +3314,7 @@ input:focus:not(:focus-visible) {
     display: none;
 }
 
-/* Предотвращаем закрытие при клике на модальное окно внутри оверлея */
+/* РџСЂРµРґРѕС‚РІСЂР°С‰Р°РµРј Р·Р°РєСЂС‹С‚РёРµ РїСЂРё РєР»РёРєРµ РЅР° РјРѕРґР°Р»СЊРЅРѕРµ РѕРєРЅРѕ РІРЅСѓС‚СЂРё РѕРІРµСЂР»РµСЏ */
 .auth-overlay > * {
     cursor: default;
 }
@@ -3456,7 +3460,7 @@ input:focus:not(:focus-visible) {
     animation-delay: 0.3s;
 }
 
-/* Кнопка выхода в sidebar */
+/* РљРЅРѕРїРєР° РІС‹С…РѕРґР° РІ sidebar */
 .logout-section {
     margin-top: auto;
     padding: 1rem var(--spacing);
@@ -3489,7 +3493,7 @@ input:focus:not(:focus-visible) {
     font-size: 1rem;
 }
 
-/* Анимации */
+/* РђРЅРёРјР°С†РёРё */
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -3551,7 +3555,7 @@ input:focus:not(:focus-visible) {
     }
 }
 
-/* Адаптивность для МатЦентра */
+/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ РґР»СЏ РњР°С‚Р¦РµРЅС‚СЂР° */
 @media (max-width: 768px) {
     .stats-container {
         grid-template-columns: repeat(2, 1fr);
@@ -3788,7 +3792,7 @@ input:focus:not(:focus-visible) {
 }
 
 /* ============================================
-   МОДАЛЬНОЕ ОКНО ПОДСКАЗОК (АДМИН)
+   РњРћР”РђР›Р¬РќРћР• РћРљРќРћ РџРћР”РЎРљРђР—РћРљ (РђР”РњРРќ)
    ============================================ */
 
 .hint-modal {
@@ -3906,9 +3910,9 @@ input:focus:not(:focus-visible) {
     background: var(--bg-tertiary);
 }
 
-/* Стили для подсказок в карточках задач */
+/* РЎС‚РёР»Рё РґР»СЏ РїРѕРґСЃРєР°Р·РѕРє РІ РєР°СЂС‚РѕС‡РєР°С… Р·Р°РґР°С‡ */
 /* ============================================
-   СТИЛИ ДЛЯ ПОДСКАЗОК
+   РЎРўРР›Р Р”Р›РЇ РџРћР”РЎРљРђР—РћРљ
    ============================================ */
 
 .task-hint {
@@ -3935,7 +3939,7 @@ input:focus:not(:focus-visible) {
     display: block;
 }
 
-/* Убираем все возможные отступы у первого элемента */
+/* РЈР±РёСЂР°РµРј РІСЃРµ РІРѕР·РјРѕР¶РЅС‹Рµ РѕС‚СЃС‚СѓРїС‹ Сѓ РїРµСЂРІРѕРіРѕ СЌР»РµРјРµРЅС‚Р° */
 .task-hint::first-line {
     text-indent: 0;
     margin: 0;
@@ -3950,14 +3954,14 @@ input:focus:not(:focus-visible) {
     display: block;
 }
 
-/* Убираем все отступы у дочерних элементов */
+/* РЈР±РёСЂР°РµРј РІСЃРµ РѕС‚СЃС‚СѓРїС‹ Сѓ РґРѕС‡РµСЂРЅРёС… СЌР»РµРјРµРЅС‚РѕРІ */
 .task-hint > * {
     margin: 0;
     padding: 0;
     text-align: left !important;
 }
 
-/* Убираем отступы у первого и последнего дочернего элемента */
+/* РЈР±РёСЂР°РµРј РѕС‚СЃС‚СѓРїС‹ Сѓ РїРµСЂРІРѕРіРѕ Рё РїРѕСЃР»РµРґРЅРµРіРѕ РґРѕС‡РµСЂРЅРµРіРѕ СЌР»РµРјРµРЅС‚Р° */
 .task-hint > *:first-child {
     margin-top: 0 !important;
     padding-top: 0 !important;
@@ -3968,14 +3972,14 @@ input:focus:not(:focus-visible) {
     padding-bottom: 0 !important;
 }
 
-/* Убираем отступы у текстовых узлов */
+/* РЈР±РёСЂР°РµРј РѕС‚СЃС‚СѓРїС‹ Сѓ С‚РµРєСЃС‚РѕРІС‹С… СѓР·Р»РѕРІ */
 .task-hint {
     margin-block-start: 0;
     margin-block-end: 0;
     padding-block-start: 0;
 }
 
-/* Стили для формул KaTeX */
+/* РЎС‚РёР»Рё РґР»СЏ С„РѕСЂРјСѓР» KaTeX */
 .task-hint .katex {
     text-align: left !important;
     margin: 0.25rem 0 !important;
@@ -3991,7 +3995,7 @@ input:focus:not(:focus-visible) {
     text-align: left !important;
 }
 
-/* Кнопка раскрытия подсказки */
+/* РљРЅРѕРїРєР° СЂР°СЃРєСЂС‹С‚РёСЏ РїРѕРґСЃРєР°Р·РєРё */
 .hint-toggle {
     background: #ffc107;
     color: white;
@@ -4035,7 +4039,7 @@ input:focus:not(:focus-visible) {
     transform: rotate(180deg);
 }
 
-/* Кнопка для админа */
+/* РљРЅРѕРїРєР° РґР»СЏ Р°РґРјРёРЅР° */
 .admin-hint-button {
     margin: 0.4rem 0 0 0;
     padding: 0.65rem 1rem;
@@ -4056,10 +4060,10 @@ input:focus:not(:focus-visible) {
 }
 
 /* ============================================
-   ОПТИМИЗАЦИЯ ДЛЯ МЕДЛЕННЫХ УСТРОЙСТВ
+   РћРџРўРРњРР—РђР¦РРЇ Р”Р›РЇ РњР•Р”Р›Р•РќРќР«РҐ РЈРЎРўР РћР™РЎРўР’
    ============================================ */
 
-/* Упрощаем анимации на устройствах с ограниченными ресурсами */
+/* РЈРїСЂРѕС‰Р°РµРј Р°РЅРёРјР°С†РёРё РЅР° СѓСЃС‚СЂРѕР№СЃС‚РІР°С… СЃ РѕРіСЂР°РЅРёС‡РµРЅРЅС‹РјРё СЂРµСЃСѓСЂСЃР°РјРё */
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -4074,7 +4078,7 @@ input:focus:not(:focus-visible) {
     }
 }
 
-/* Отключаем сложные анимации на мобильных для производительности */
+/* РћС‚РєР»СЋС‡Р°РµРј СЃР»РѕР¶РЅС‹Рµ Р°РЅРёРјР°С†РёРё РЅР° РјРѕР±РёР»СЊРЅС‹С… РґР»СЏ РїСЂРѕРёР·РІРѕРґРёС‚РµР»СЊРЅРѕСЃС‚Рё */
 @media (max-width: 768px) {
     .theme-ripple {
         animation-duration: 0.4s !important;
@@ -4091,7 +4095,7 @@ input:focus:not(:focus-visible) {
 }
 
 /* ============================================
-   ПЕЧАТЬ
+   РџР•Р§РђРўР¬
    ============================================ */
 
 @media print {
@@ -4235,10 +4239,10 @@ input:focus:not(:focus-visible) {
 }
 
 /* ============================================
-   НОВОГОДНИЙ ВАЙБ
+   РќРћР’РћР“РћР”РќРР™ Р’РђР™Р‘
    ============================================ */
 
-/* Кнопка новогоднего режима */
+/* РљРЅРѕРїРєР° РЅРѕРІРѕРіРѕРґРЅРµРіРѕ СЂРµР¶РёРјР° */
 .ny-toggle {
     display: none !important;
     background: linear-gradient(135deg, #2d5016 0%, #4a7c2e 100%);
@@ -4257,7 +4261,7 @@ input:focus:not(:focus-visible) {
     position: relative;
 }
 
-/* Визуальное разделение кнопки */
+/* Р’РёР·СѓР°Р»СЊРЅРѕРµ СЂР°Р·РґРµР»РµРЅРёРµ РєРЅРѕРїРєРё */
 .ny-toggle::before {
     content: '';
     position: absolute;
@@ -4278,7 +4282,7 @@ input:focus:not(:focus-visible) {
     transform: scale(0.95);
 }
 
-/* Контейнер для снега */
+/* РљРѕРЅС‚РµР№РЅРµСЂ РґР»СЏ СЃРЅРµРіР° */
 .snow-container {
     position: fixed;
     top: 0;
@@ -4290,7 +4294,7 @@ input:focus:not(:focus-visible) {
     overflow: hidden;
 }
 
-/* Снежинка */
+/* РЎРЅРµР¶РёРЅРєР° */
 .snowflake {
     position: fixed;
     left: 0;
@@ -4302,24 +4306,24 @@ input:focus:not(:focus-visible) {
     will-change: transform, opacity;
 }
 
-/* Снежинки для тёмной темы */
+/* РЎРЅРµР¶РёРЅРєРё РґР»СЏ С‚С‘РјРЅРѕР№ С‚РµРјС‹ */
 body.dark-theme .snowflake {
     color: #fff;
     text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
 }
 
-/* Оптимизация для мобильных устройств */
+/* РћРїС‚РёРјРёР·Р°С†РёСЏ РґР»СЏ РјРѕР±РёР»СЊРЅС‹С… СѓСЃС‚СЂРѕР№СЃС‚РІ */
 @media (max-width: 768px) {
     .snowflake {
-        /* Упрощаем анимацию на мобильных для лучшей производительности */
+        /* РЈРїСЂРѕС‰Р°РµРј Р°РЅРёРјР°С†РёСЋ РЅР° РјРѕР±РёР»СЊРЅС‹С… РґР»СЏ Р»СѓС‡С€РµР№ РїСЂРѕРёР·РІРѕРґРёС‚РµР»СЊРЅРѕСЃС‚Рё */
         will-change: transform;
-        transform: translateZ(0); /* Включаем аппаратное ускорение */
+        transform: translateZ(0); /* Р’РєР»СЋС‡Р°РµРј Р°РїРїР°СЂР°С‚РЅРѕРµ СѓСЃРєРѕСЂРµРЅРёРµ */
         backface-visibility: hidden;
         -webkit-backface-visibility: hidden;
     }
 }
 
-/* Контейнер для пасхалок */
+/* РљРѕРЅС‚РµР№РЅРµСЂ РґР»СЏ РїР°СЃС…Р°Р»РѕРє */
 .easter-eggs-container {
     position: fixed;
     top: 0;
@@ -4331,7 +4335,7 @@ body.dark-theme .snowflake {
     overflow: hidden;
 }
 
-/* Пасхалка (всплывающий emoji) */
+/* РџР°СЃС…Р°Р»РєР° (РІСЃРїР»С‹РІР°СЋС‰РёР№ emoji) */
 .easter-egg {
     position: fixed;
     font-size: 2rem;
@@ -4356,7 +4360,7 @@ body.dark-theme .snowflake {
     }
 }
 
-/* Уведомление о включении режима */
+/* РЈРІРµРґРѕРјР»РµРЅРёРµ Рѕ РІРєР»СЋС‡РµРЅРёРё СЂРµР¶РёРјР° */
 .ny-notification {
     position: fixed;
     top: 100px;
@@ -4378,14 +4382,14 @@ body.dark-theme .snowflake {
     transform: translateX(0);
 }
 
-/* Новогодние украшения для карточек статистики */
+/* РќРѕРІРѕРіРѕРґРЅРёРµ СѓРєСЂР°С€РµРЅРёСЏ РґР»СЏ РєР°СЂС‚РѕС‡РµРє СЃС‚Р°С‚РёСЃС‚РёРєРё */
 body.new-year-mode .stat-card.ny-decorated {
     position: relative;
     overflow: visible;
 }
 
 body.new-year-mode .stat-card.ny-decorated::before {
-    content: '✨';
+    content: 'вњЁ';
     position: absolute;
     top: -10px;
     right: -10px;
@@ -4394,15 +4398,15 @@ body.new-year-mode .stat-card.ny-decorated::before {
 }
 
 body.new-year-mode .stat-card.ny-decorated:nth-child(2)::before {
-    content: '🎁';
+    content: 'рџЋЃ';
 }
 
 body.new-year-mode .stat-card.ny-decorated:nth-child(3)::before {
-    content: '⭐';
+    content: 'в­ђ';
 }
 
 body.new-year-mode .stat-card.ny-decorated:nth-child(4)::before {
-    content: '🎄';
+    content: 'рџЋ„';
 }
 
 @keyframes sparkle {
@@ -4416,7 +4420,7 @@ body.new-year-mode .stat-card.ny-decorated:nth-child(4)::before {
     }
 }
 
-/* Новогодний эффект для header */
+/* РќРѕРІРѕРіРѕРґРЅРёР№ СЌС„С„РµРєС‚ РґР»СЏ header */
 body.new-year-mode .page-header {
     position: relative;
 }
@@ -4440,7 +4444,7 @@ body.new-year-mode .page-header::before {
     50% { opacity: 1; }
 }
 
-/* Анимация для кнопки новогоднего режима в активном состоянии */
+/* РђРЅРёРјР°С†РёСЏ РґР»СЏ РєРЅРѕРїРєРё РЅРѕРІРѕРіРѕРґРЅРµРіРѕ СЂРµР¶РёРјР° РІ Р°РєС‚РёРІРЅРѕРј СЃРѕСЃС‚РѕСЏРЅРёРё */
 body.new-year-mode .ny-toggle {
     animation: glow-pulse 2s ease-in-out infinite;
 }
@@ -4454,7 +4458,7 @@ body.new-year-mode .ny-toggle {
     }
 }
 
-/* Модальное окно настроек */
+/* РњРѕРґР°Р»СЊРЅРѕРµ РѕРєРЅРѕ РЅР°СЃС‚СЂРѕРµРє */
 .ny-settings-modal {
     position: fixed;
     top: 0;
@@ -4650,7 +4654,7 @@ body.new-year-mode .ny-toggle {
     box-shadow: 0 6px 20px rgba(74, 124, 46, 0.4);
 }
 
-/* Адаптация для мобильных устройств */
+/* РђРґР°РїС‚Р°С†РёСЏ РґР»СЏ РјРѕР±РёР»СЊРЅС‹С… СѓСЃС‚СЂРѕР№СЃС‚РІ */
 @media (max-width: 768px) {
     .ny-notification {
         top: 80px;
@@ -4709,7 +4713,7 @@ body.new-year-mode .ny-toggle {
     }
 }
 
-/* Темная тема для новогодних элементов */
+/* РўРµРјРЅР°СЏ С‚РµРјР° РґР»СЏ РЅРѕРІРѕРіРѕРґРЅРёС… СЌР»РµРјРµРЅС‚РѕРІ */
 body.dark-theme .ny-notification {
     background: linear-gradient(135deg, #1a3310 0%, #2d5016 100%);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -4723,9 +4727,9 @@ body.dark-theme .ny-toggle:hover {
     box-shadow: 0 4px 16px rgba(42, 74, 26, 0.6);
 }
 
-/* Эффект снега на задачах при наведении */
+/* Р­С„С„РµРєС‚ СЃРЅРµРіР° РЅР° Р·Р°РґР°С‡Р°С… РїСЂРё РЅР°РІРµРґРµРЅРёРё */
 body.new-year-mode .task-card:hover::after {
-    content: '❄️';
+    content: 'вќ„пёЏ';
     position: absolute;
     top: 10px;
     right: 10px;
@@ -4742,7 +4746,7 @@ body.new-year-mode .task-card:hover::after {
     }
 }
 
-/* Стили для чекбокса в настройках */
+/* РЎС‚РёР»Рё РґР»СЏ С‡РµРєР±РѕРєСЃР° РІ РЅР°СЃС‚СЂРѕР№РєР°С… */
 .ny-setting-checkbox {
     display: flex;
     align-items: center;
@@ -4769,7 +4773,7 @@ body.new-year-mode .task-card:hover::after {
     padding-left: 28px;
 }
 
-/* Предупреждение о производительности */
+/* РџСЂРµРґСѓРїСЂРµР¶РґРµРЅРёРµ Рѕ РїСЂРѕРёР·РІРѕРґРёС‚РµР»СЊРЅРѕСЃС‚Рё */
 .ny-setting-warning {
     background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
     color: #92400e;
@@ -4781,7 +4785,7 @@ body.new-year-mode .task-card:hover::after {
     border: 2px solid #fbbf24;
 }
 
-/* Стилизация ползунка количества при большом значении */
+/* РЎС‚РёР»РёР·Р°С†РёСЏ РїРѕР»Р·СѓРЅРєР° РєРѕР»РёС‡РµСЃС‚РІР° РїСЂРё Р±РѕР»СЊС€РѕРј Р·РЅР°С‡РµРЅРёРё */
 .ny-setting-item input[type="range"].high-count::-webkit-slider-thumb {
     background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
     box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
@@ -4801,10 +4805,10 @@ body.new-year-mode .task-card:hover::after {
 }
 
 /* ============================================
-   TELEGRAM КОММУНИКАЦИЯ
+   TELEGRAM РљРћРњРњРЈРќРРљРђР¦РРЇ
    ============================================ */
 
-/* Контейнер для уведомлений */
+/* РљРѕРЅС‚РµР№РЅРµСЂ РґР»СЏ СѓРІРµРґРѕРјР»РµРЅРёР№ */
 .telegram-notifications-container {
     position: fixed;
     top: 20px;
@@ -4817,7 +4821,7 @@ body.new-year-mode .task-card:hover::after {
     pointer-events: none;
 }
 
-/* Уведомление */
+/* РЈРІРµРґРѕРјР»РµРЅРёРµ */
 .telegram-notification {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -4884,7 +4888,7 @@ body.new-year-mode .task-card:hover::after {
     background: rgba(255, 255, 255, 0.3);
 }
 
-/* Плавающая кнопка чата */
+/* РџР»Р°РІР°СЋС‰Р°СЏ РєРЅРѕРїРєР° С‡Р°С‚Р° */
 .telegram-chat-button {
     position: fixed;
     bottom: 2rem;
@@ -4914,7 +4918,7 @@ body.new-year-mode .task-card:hover::after {
     transform: scale(0.95);
 }
 
-/* Диалоговое окно */
+/* Р”РёР°Р»РѕРіРѕРІРѕРµ РѕРєРЅРѕ */
 .telegram-dialog {
     position: fixed;
     bottom: 100px;
@@ -5123,7 +5127,7 @@ body.new-year-mode .task-card:hover::after {
     transform: translateY(0);
 }
 
-/* Адаптация для мобильных */
+/* РђРґР°РїС‚Р°С†РёСЏ РґР»СЏ РјРѕР±РёР»СЊРЅС‹С… */
 @media (max-width: 768px) {
     .telegram-notifications-container {
         top: 10px;
@@ -5202,16 +5206,16 @@ body.new-year-mode .task-card:hover::after {
     }
 }
 
-/* Темная тема */
+/* РўРµРјРЅР°СЏ С‚РµРјР° */
 body.dark-theme .telegram-welcome-message {
     background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
 }
 
 /* ============================================
-   МЕНЮ НАСТРОЕК
+   РњР•РќР® РќРђРЎРўР РћР•Рљ
    ============================================ */
 
-/* Кнопка настроек */
+/* РљРЅРѕРїРєР° РЅР°СЃС‚СЂРѕРµРє */
 .settings-button {
     position: fixed;
     top: 1rem;
@@ -5231,7 +5235,7 @@ body.dark-theme .telegram-welcome-message {
     align-items: center;
     justify-content: center;
     animation: pulse-subtle 3s ease-in-out infinite;
-    /* Точное центрирование эмодзи для корректного вращения */
+    /* РўРѕС‡РЅРѕРµ С†РµРЅС‚СЂРёСЂРѕРІР°РЅРёРµ СЌРјРѕРґР·Рё РґР»СЏ РєРѕСЂСЂРµРєС‚РЅРѕРіРѕ РІСЂР°С‰РµРЅРёСЏ */
     line-height: 1;
     text-align: center;
     padding: 0;
@@ -5257,7 +5261,7 @@ body.dark-theme .telegram-welcome-message {
     transform: scale(0.95);
 }
 
-/* Модальное окно настроек */
+/* РњРѕРґР°Р»СЊРЅРѕРµ РѕРєРЅРѕ РЅР°СЃС‚СЂРѕРµРє */
 .settings-modal {
     position: fixed;
     top: 0;
@@ -5348,7 +5352,7 @@ body.dark-theme .telegram-welcome-message {
     padding: 2rem;
 }
 
-/* Секция настроек */
+/* РЎРµРєС†РёСЏ РЅР°СЃС‚СЂРѕРµРє */
 .settings-section {
     margin-bottom: 2rem;
     padding-bottom: 2rem;
@@ -5375,7 +5379,7 @@ body.dark-theme .telegram-welcome-message {
     margin-top: 1rem;
 }
 
-/* Выбор темы */
+/* Р’С‹Р±РѕСЂ С‚РµРјС‹ */
 .theme-selector {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -5535,7 +5539,7 @@ body.dark-theme .telegram-welcome-message {
     flex: 1;
 }
 
-/* Кнопка дополнительных настроек снега */
+/* РљРЅРѕРїРєР° РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹С… РЅР°СЃС‚СЂРѕРµРє СЃРЅРµРіР° */
 .ny-advanced-settings {
     padding: 0.65rem 1.25rem;
     background: var(--bg-tertiary);
@@ -5557,7 +5561,7 @@ body.dark-theme .telegram-welcome-message {
     box-shadow: var(--shadow-sm);
 }
 
-/* Выбор уровня анимаций */
+/* Р’С‹Р±РѕСЂ СѓСЂРѕРІРЅСЏ Р°РЅРёРјР°С†РёР№ */
 .animation-level-selector {
     display: flex;
     flex-direction: column;
@@ -5608,7 +5612,7 @@ body.dark-theme .telegram-welcome-message {
     display: block;
 }
 
-/* Кнопки действий */
+/* РљРЅРѕРїРєРё РґРµР№СЃС‚РІРёР№ */
 .settings-actions {
     margin-top: 2rem;
     padding-top: 1.5rem;
@@ -5637,7 +5641,7 @@ body.dark-theme .telegram-welcome-message {
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
-/* Уведомление настроек */
+/* РЈРІРµРґРѕРјР»РµРЅРёРµ РЅР°СЃС‚СЂРѕРµРє */
 .settings-notification {
     position: fixed;
     bottom: 2rem;
@@ -5663,18 +5667,18 @@ body.dark-theme .telegram-welcome-message {
 }
 
 /* ============================================
-   УРОВНИ АНИМАЦИЙ
+   РЈР РћР’РќР РђРќРРњРђР¦РР™
    ============================================ */
 
-/* Максимальный уровень (по умолчанию - все анимации) */
+/* РњР°РєСЃРёРјР°Р»СЊРЅС‹Р№ СѓСЂРѕРІРµРЅСЊ (РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ - РІСЃРµ Р°РЅРёРјР°С†РёРё) */
 body.animations-max {
-    /* Все анимации включены - никаких ограничений */
+    /* Р’СЃРµ Р°РЅРёРјР°С†РёРё РІРєР»СЋС‡РµРЅС‹ - РЅРёРєР°РєРёС… РѕРіСЂР°РЅРёС‡РµРЅРёР№ */
     --animation-state: enabled;
 }
 
-/* Средний уровень (только базовые переходы, без декоративных анимаций и hover-трансформаций) */
+/* РЎСЂРµРґРЅРёР№ СѓСЂРѕРІРµРЅСЊ (С‚РѕР»СЊРєРѕ Р±Р°Р·РѕРІС‹Рµ РїРµСЂРµС…РѕРґС‹, Р±РµР· РґРµРєРѕСЂР°С‚РёРІРЅС‹С… Р°РЅРёРјР°С†РёР№ Рё hover-С‚СЂР°РЅСЃС„РѕСЂРјР°С†РёР№) */
 
-/* Убираем все @keyframes-анимации */
+/* РЈР±РёСЂР°РµРј РІСЃРµ @keyframes-Р°РЅРёРјР°С†РёРё */
 body.animations-medium .page-header::before,
 body.animations-medium .part-title::after,
 body.animations-medium .theme-toggle::before,
@@ -5685,7 +5689,7 @@ body.animations-medium .ny-decorated::after {
     animation: none !important;
 }
 
-/* Убираем hover-трансформации с контент-боксов */
+/* РЈР±РёСЂР°РµРј hover-С‚СЂР°РЅСЃС„РѕСЂРјР°С†РёРё СЃ РєРѕРЅС‚РµРЅС‚-Р±РѕРєСЃРѕРІ */
 body.animations-medium .definition-box:hover,
 body.animations-medium .formula-box:hover,
 body.animations-medium .remark-box:hover,
@@ -5695,12 +5699,12 @@ body.animations-medium .derivation-box:hover {
     border-width: inherit !important;
 }
 
-/* Убираем hover-трансформации со stat-card */
+/* РЈР±РёСЂР°РµРј hover-С‚СЂР°РЅСЃС„РѕСЂРјР°С†РёРё СЃРѕ stat-card */
 body.animations-medium .stat-card:hover {
     transform: none !important;
 }
 
-/* Упрощаем hover для карточек и тем — только тень, без подъёма */
+/* РЈРїСЂРѕС‰Р°РµРј hover РґР»СЏ РєР°СЂС‚РѕС‡РµРє Рё С‚РµРј вЂ” С‚РѕР»СЊРєРѕ С‚РµРЅСЊ, Р±РµР· РїРѕРґСЉС‘РјР° */
 body.animations-medium .topic:hover {
     transform: none !important;
 }
@@ -5713,7 +5717,7 @@ body.animations-medium .subject-card:hover {
     transform: none !important;
 }
 
-/* Отключаем сложные box-shadow переходы при наведении (только лёгкая тень) */
+/* РћС‚РєР»СЋС‡Р°РµРј СЃР»РѕР¶РЅС‹Рµ box-shadow РїРµСЂРµС…РѕРґС‹ РїСЂРё РЅР°РІРµРґРµРЅРёРё (С‚РѕР»СЊРєРѕ Р»С‘РіРєР°СЏ С‚РµРЅСЊ) */
 body.animations-medium .topic:hover,
 body.animations-medium .task-card:hover,
 body.animations-medium .subject-card:hover,
@@ -5726,14 +5730,14 @@ body.animations-medium .stat-card:hover {
     box-shadow: var(--shadow-md) !important;
 }
 
-/* Сокращаем длительность всех переходов */
+/* РЎРѕРєСЂР°С‰Р°РµРј РґР»РёС‚РµР»СЊРЅРѕСЃС‚СЊ РІСЃРµС… РїРµСЂРµС…РѕРґРѕРІ */
 body.animations-medium {
     --transition: all 0.15s ease;
     --transition-smooth: all 0.15s ease;
     --transition-bounce: all 0.15s ease;
 }
 
-/* Упрощаем переходы на элементах — убираем border-width, transform */
+/* РЈРїСЂРѕС‰Р°РµРј РїРµСЂРµС…РѕРґС‹ РЅР° СЌР»РµРјРµРЅС‚Р°С… вЂ” СѓР±РёСЂР°РµРј border-width, transform */
 body.animations-medium .definition-box,
 body.animations-medium .formula-box,
 body.animations-medium .remark-box,
@@ -5742,7 +5746,7 @@ body.animations-medium .derivation-box {
     transition: box-shadow 0.15s ease, background-color 0.15s ease !important;
 }
 
-/* Упрощаем hover на кнопках — без transform, только цвет/тень */
+/* РЈРїСЂРѕС‰Р°РµРј hover РЅР° РєРЅРѕРїРєР°С… вЂ” Р±РµР· transform, С‚РѕР»СЊРєРѕ С†РІРµС‚/С‚РµРЅСЊ */
 body.animations-medium .scroll-to-top:hover,
 body.animations-medium .settings-button:hover,
 body.animations-medium .menu-toggle:hover,
@@ -5751,12 +5755,12 @@ body.animations-medium .ny-toggle:hover {
     transform: none !important;
 }
 
-/* Отключаем новогодний снежинка-эффект при наведении на карточки задач */
+/* РћС‚РєР»СЋС‡Р°РµРј РЅРѕРІРѕРіРѕРґРЅРёР№ СЃРЅРµР¶РёРЅРєР°-СЌС„С„РµРєС‚ РїСЂРё РЅР°РІРµРґРµРЅРёРё РЅР° РєР°СЂС‚РѕС‡РєРё Р·Р°РґР°С‡ */
 body.animations-medium.new-year-mode .task-card:hover::after {
     content: none !important;
 }
 
-/* Выключенные анимации */
+/* Р’С‹РєР»СЋС‡РµРЅРЅС‹Рµ Р°РЅРёРјР°С†РёРё */
 body.animations-off *:not(#progressBar),
 body.animations-off *::before,
 body.animations-off *::after {
@@ -5798,21 +5802,21 @@ body.animations-off .retry-button:hover {
     box-shadow: var(--shadow-sm) !important;
 }
 
-/* Отключаем изменения при наведении на content-section */
+/* РћС‚РєР»СЋС‡Р°РµРј РёР·РјРµРЅРµРЅРёСЏ РїСЂРё РЅР°РІРµРґРµРЅРёРё РЅР° content-section */
 body.animations-off .content-section:hover {
     transform: none !important;
 }
 
-/* Отключаем изменения при наведении на topic */
+/* РћС‚РєР»СЋС‡Р°РµРј РёР·РјРµРЅРµРЅРёСЏ РїСЂРё РЅР°РІРµРґРµРЅРёРё РЅР° topic */
 body.animations-off .topic:hover {
     transform: none !important;
     box-shadow: var(--shadow-md) !important;
 }
 
-/* Разрешаем только изменение цвета фона для навигационных ссылок */
+/* Р Р°Р·СЂРµС€Р°РµРј С‚РѕР»СЊРєРѕ РёР·РјРµРЅРµРЅРёРµ С†РІРµС‚Р° С„РѕРЅР° РґР»СЏ РЅР°РІРёРіР°С†РёРѕРЅРЅС‹С… СЃСЃС‹Р»РѕРє */
 body.animations-off .nav-link:hover {
     transform: none !important;
-    /* Цвет фона изменяется через стандартные стили */
+    /* Р¦РІРµС‚ С„РѕРЅР° РёР·РјРµРЅСЏРµС‚СЃСЏ С‡РµСЂРµР· СЃС‚Р°РЅРґР°СЂС‚РЅС‹Рµ СЃС‚РёР»Рё */
 }
 
 /* ============================================
@@ -5856,7 +5860,7 @@ body.no-hover .auth-overlay *:active {
     }
 }
 
-/* Кнопка настроек в сайдбаре (для мобильных) */
+/* РљРЅРѕРїРєР° РЅР°СЃС‚СЂРѕРµРє РІ СЃР°Р№РґР±Р°СЂРµ (РґР»СЏ РјРѕР±РёР»СЊРЅС‹С…) */
 .settings-button-sidebar {
     display: none;
     background: rgba(255, 255, 255, 0.2);
@@ -5871,7 +5875,7 @@ body.no-hover .auth-overlay *:active {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    /* Точное центрирование эмодзи для корректного вращения */
+    /* РўРѕС‡РЅРѕРµ С†РµРЅС‚СЂРёСЂРѕРІР°РЅРёРµ СЌРјРѕРґР·Рё РґР»СЏ РєРѕСЂСЂРµРєС‚РЅРѕРіРѕ РІСЂР°С‰РµРЅРёСЏ */
     line-height: 1;
     text-align: center;
     padding: 0;
@@ -5887,7 +5891,7 @@ body.no-hover .auth-overlay *:active {
     transform: scale(0.9);
 }
 
-/* Адаптивность для настроек */
+/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ РґР»СЏ РЅР°СЃС‚СЂРѕРµРє */
 @media (max-width: 768px) {
     .settings-button {
         display: none !important;
@@ -6077,4 +6081,186 @@ body.no-hover .auth-overlay *:active {
     .level-icon {
         font-size: 1.35rem;
     }
+}
+
+/* ============================================
+   MATCENTER вЂ” РЎРџР•Р¦РР¤РР§РќР«Р• РЎРўРР›Р
+   ============================================ */
+
+/* Р¤РѕСЂРјР° РІС…РѕРґР° РЅР° РІРµСЃСЊ СЌРєСЂР°РЅ, Р±РµР· bottom-sheet РЅР° РјРѕР±РёР»СЊРЅС‹С… */
+body.matcenter-page .auth-overlay.matcenter-auth-fullscreen {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    body.matcenter-page .auth-overlay.matcenter-auth-fullscreen {
+        align-items: center;
+    }
+    body.matcenter-page .auth-overlay.matcenter-auth-fullscreen .auth-modal {
+        border-radius: 14px;
+        max-height: 90vh;
+        max-height: 90dvh;
+        animation: slideUp 0.3s ease-out;
+    }
+    body.matcenter-page .auth-overlay.matcenter-auth-fullscreen .auth-modal::before {
+        display: none;
+    }
+}
+
+/* РЈРїСЂРѕС‰С‘РЅРЅС‹Р№ РґРёР·Р°Р№РЅ РјРѕРґР°Р»РєРё РїРѕРґСЃРєР°Р·РєРё */
+body.matcenter-page #hintOverlay .hint-modal-header {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+body.matcenter-page #hintOverlay .hint-modal-header h3 {
+    color: var(--text-primary);
+}
+body.matcenter-page #hintOverlay .hint-close-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+body.matcenter-page #hintOverlay .hint-close-btn:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+body.matcenter-page #hintOverlay .hint-save-btn {
+    background: var(--accent-color);
+}
+body.matcenter-page #hintOverlay .hint-save-btn:hover {
+    background: var(--accent-hover);
+    box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.3);
+}
+
+/* РљРЅРѕРїРєР° РїРѕРґСЃРєР°Р·РєРё вЂ” РјРµРЅСЊС€Рµ Рё РјРµРЅРµРµ Р·Р°РјРµС‚РЅР°СЏ */
+body.matcenter-page .admin-hint-button {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.8rem;
+    border-width: 1px;
+    opacity: 0.85;
+}
+body.matcenter-page .admin-hint-button:hover {
+    opacity: 1;
+}
+
+/* Р’С‹РїР°РґР°СЋС‰РёР№ СЃРїРёСЃРѕРє СЃС‚Р°С‚СѓСЃР° вЂ” РЅРµ РІС‹С…РѕРґРёС‚ Р·Р° РїСЂР°РІС‹Р№ РєСЂР°Р№ */
+.status-dropdown {
+    max-width: min(180px, calc(100vw - 20px));
+}
+
+/* РџР»Р°РІРЅР°СЏ Р°РЅРёРјР°С†РёСЏ СЂР°СЃРєСЂС‹С‚РёСЏ СѓСЃР»РѕРІРёСЏ С‡РµСЂРµР· grid */
+body.matcenter-page .task-description {
+    display: grid;
+    grid-template-rows: 0fr;
+    max-height: none;
+    transition: grid-template-rows 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                opacity 0.3s ease,
+                margin-top 0.3s ease,
+                padding-top 0.3s ease,
+                border-top 0.2s ease;
+}
+body.matcenter-page .task-description .task-description-inner {
+    min-height: 0;
+    overflow: hidden;
+}
+body.matcenter-page .task-card.open .task-description {
+    grid-template-rows: 1fr;
+    max-height: none;
+}
+
+/* Шапка страницы — заголовок и кнопка обновления */
+body.matcenter-page .page-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+}
+
+body.matcenter-page .page-header-top h1 {
+    margin: 0;
+    flex: 1;
+}
+
+/* Кнопка обновления в заголовке */
+body.matcenter-page .refresh-button {
+    flex-shrink: 0;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 0.75rem;
+    white-space: nowrap;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: var(--border-radius-sm);
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+body.matcenter-page .refresh-button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.8);
+    transform: rotate(-90deg);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+body.matcenter-page .refresh-button:active:not(:disabled) {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+body.matcenter-page .refresh-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Поиск — layout input + фильтр по статусу */
+body.matcenter-page .search-box {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+body.matcenter-page .search-box input {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Фильтр по статусу — в едином стиле с полем поиска */
+body.matcenter-page .status-filter-select {
+    padding: 0.75rem 2.25rem 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.2s ease;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%238b5cf6' stroke-width='2'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    min-width: 130px;
+}
+
+body.matcenter-page .status-filter-select:hover {
+    border-color: var(--accent-color);
+    background-color: var(--bg-secondary);
+}
+
+body.matcenter-page .status-filter-select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
 }

@@ -15,8 +15,10 @@ const LOCKOUT_DURATIONS = [
 ];
 const SESSION_DURATION = Infinity; // Неистекающие сессии (до явного выхода)
 const FINGERPRINT_SALT = 'matcenter_v1_2024'; // Соль для отпечатка
+const TASKS_CACHE_KEY = 'matcenter_tasks_cache';
 
 let allTasks = [];
+let searchStatusFilter = 'all'; // all | current | postponed | unsolved
 let currentFilter = 'all';
 let authToken = null;
 let lockoutTimer = null;
@@ -146,6 +148,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     initMatCenterNavigation();
     initMatCenterSearch();
     initHintModal();
+    initStatusFilter();
+    initStatsClick();
+    initRetryButton();
+    initEscapeKey();
+    initHintSwipe();
     
     // Загружаем или генерируем отпечаток
     const cachedFP = localStorage.getItem('matcenter_fp');
@@ -661,7 +668,7 @@ async function initAuth() {
         // Пробуем загрузить данные с этим паролем
         try {
             authToken = password;
-            const response = await loadTasksFromGoogleSheets();
+            const response = await loadTasksFromGoogleSheets(true);
             
             // Если успешно:
             // 1. Создаём сессию
@@ -884,17 +891,21 @@ function logout() {
 // DATA FETCHING
 // ============================================
 
-async function loadTasksFromGoogleSheets() {
+async function loadTasksFromGoogleSheets(fromAuthAttempt = false) {
     const loadingMessage = document.getElementById('loadingMessage');
-    const tasksContainer = document.getElementById('tasksContainer');
+    const retryBtn = document.getElementById('retryButton');
     
-    // Показываем сообщение о загрузке и очищаем предыдущие ошибки
+    const showRetryUI = (msg) => {
+        if (!loadingMessage) return;
+        loadingMessage.style.display = 'block';
+        loadingMessage.innerHTML = `<p class="loading-error">${msg}</p><button id="retryButton" class="retry-button">🔄 Попробовать снова</button>`;
+        document.getElementById('retryButton')?.addEventListener('click', () => loadTasksFromGoogleSheets(false));
+    };
+    
     if (loadingMessage) {
         loadingMessage.style.display = 'block';
-        loadingMessage.innerHTML = `
-            <div class="spinner"></div>
-            <p>Загрузка задач...</p>
-        `;
+        loadingMessage.innerHTML = `<div class="spinner"></div><p>Загрузка задач...</p>`;
+        if (retryBtn) retryBtn.style.display = 'none';
     }
     
     console.log('=================================');
@@ -953,6 +964,11 @@ async function loadTasksFromGoogleSheets() {
         displayTasks(tasks);
         updateStatistics(tasks);
         
+        // Сохраняем в кэш для офлайн-режима
+        try {
+            localStorage.setItem(TASKS_CACHE_KEY, JSON.stringify({ tasks, timestamp: Date.now() }));
+        } catch (e) { /* ignore */ }
+        
         // Скрываем сообщение о загрузке и очищаем его содержимое
         if (loadingMessage) {
             loadingMessage.style.display = 'none';
@@ -969,13 +985,25 @@ async function loadTasksFromGoogleSheets() {
         console.error('Стек:', error.stack);
         console.error('=================================');
         
-        // Скрываем сообщение загрузки
-        if (loadingMessage) {
-            loadingMessage.style.display = 'none';
+        if (fromAuthAttempt) {
+            if (loadingMessage) loadingMessage.style.display = 'none';
+            throw error;
         }
         
-        // Пробрасываем ошибку дальше (для обработки в initAuth)
-        throw error;
+        // Пробуем загрузить из кэша
+        try {
+            const raw = localStorage.getItem(TASKS_CACHE_KEY);
+            if (raw) {
+                const { tasks } = JSON.parse(raw);
+                if (Array.isArray(tasks) && tasks.length > 0) {
+                    allTasks = tasks;
+                    displayTasks(tasks);
+                    updateStatistics(tasks);
+                }
+            }
+        } catch (e) { /* ignore */ }
+        
+        showRetryUI(error.message || 'Ошибка загрузки');
     }
 }
 
@@ -1207,7 +1235,7 @@ function createTaskElement(task) {
     if (isAdmin) {
         adminButtonHTML = `
             <button class="admin-hint-button" title="${hasHint ? 'Изменить подсказку' : 'Добавить подсказку'}">
-                ${hasHint ? '✏️ Изменить подсказку' : '➕ Добавить подсказку'}
+                💡 Подсказка
             </button>
         `;
     }
@@ -1227,7 +1255,7 @@ function createTaskElement(task) {
             Показать условие
         </button>
         <div class="task-description">
-            ${escapeHtml(description)}
+            <div class="task-description-inner">${escapeHtml(description)}</div>
         </div>
         ${hintHTML}
         ${adminButtonHTML}
@@ -1361,13 +1389,22 @@ function showStatusDropdown(badgeElement, task) {
         dropdown.appendChild(option);
     });
     
-    // Позиционируем dropdown под бейджем
+    // Позиционируем dropdown под бейджем, не выходя за экран
+    document.body.appendChild(dropdown);
     const rect = badgeElement.getBoundingClientRect();
+    const ddRect = dropdown.getBoundingClientRect();
+    const pad = 10;
+    const ddWidth = ddRect.width || 160;
+    if (rect.right + ddWidth > window.innerWidth - pad) {
+        dropdown.style.left = 'auto';
+        dropdown.style.right = `${window.innerWidth - rect.right}px`;
+    } else {
+        const left = Math.max(pad, rect.left);
+        dropdown.style.left = `${left}px`;
+        dropdown.style.right = 'auto';
+    }
     dropdown.style.position = 'fixed';
     dropdown.style.top = `${rect.bottom + 5}px`;
-    dropdown.style.left = `${rect.left}px`;
-    
-    document.body.appendChild(dropdown);
     
     // Закрытие dropdown при клике вне его
     setTimeout(() => {
@@ -1452,6 +1489,84 @@ function updateSectionTitle(sectionId, title) {
 }
 
 // ============================================
+// UI HELPERS
+// ============================================
+
+function initStatsClick() {
+    document.querySelectorAll('.stat-card.clickable[data-filter]').forEach(card => {
+        card.addEventListener('click', () => {
+            const filterId = card.dataset.filter;
+            const link = document.querySelector(`.nav-link[href="#${filterId}"]`);
+            if (link) link.click();
+        });
+    });
+}
+
+function initRetryButton() {
+    const btn = document.getElementById('retryButton');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+        if (authToken) loadTasksFromGoogleSheets().catch(() => {});
+    });
+}
+
+function initEscapeKey() {
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        const hintOverlay = document.getElementById('hintOverlay');
+        if (hintOverlay && !hintOverlay.classList.contains('hidden')) {
+            hideHintModal();
+        }
+    });
+}
+
+function initHintSwipe() {
+    const overlay = document.getElementById('hintOverlay');
+    const modal = document.getElementById('hintModal');
+    if (!overlay || !modal || overlay.dataset.hintSwipeInit) return;
+    overlay.dataset.hintSwipeInit = 'true';
+    let startY = 0, currentY = 0, tracking = false, activated = false;
+    const DEAD_ZONE = 15;
+    overlay.addEventListener('touchstart', (e) => {
+        if (window.innerWidth > 768) return;
+        if (modal.scrollTop > 5) return;
+        startY = e.touches[0].clientY;
+        currentY = startY;
+        tracking = true;
+        activated = false;
+    }, { passive: true });
+    overlay.addEventListener('touchmove', (e) => {
+        if (!tracking) return;
+        currentY = e.touches[0].clientY;
+        const deltaY = currentY - startY;
+        if (!activated) {
+            if (deltaY > DEAD_ZONE) { activated = true; startY = currentY; modal.style.transition = 'none'; }
+            return;
+        }
+        if (deltaY > 0) {
+            e.preventDefault();
+            modal.style.transform = `translateY(${deltaY}px)`;
+        }
+    }, { passive: false });
+    overlay.addEventListener('touchend', () => {
+        if (!tracking) return;
+        tracking = false;
+        if (!activated) return;
+        activated = false;
+        const deltaY = currentY - startY;
+        if (deltaY > 60) {
+            hideHintModal();
+            modal.style.transform = '';
+            modal.style.transition = '';
+        } else {
+            modal.style.transition = 'transform 0.25s ease-out';
+            modal.style.transform = '';
+            setTimeout(() => { modal.style.transition = ''; }, 250);
+        }
+    });
+}
+
+// ============================================
 // НАВИГАЦИЯ
 // ============================================
 
@@ -1491,6 +1606,7 @@ function initMatCenterNavigation() {
 }
 
 function filterAndDisplayTasks(filterId) {
+    currentFilter = filterId;
     let filteredTasks = [];
     let containerId = '';
     
@@ -1536,30 +1652,46 @@ function getTasksForCurrentFilter() {
 // ПОИСК
 // ============================================
 
+function initStatusFilter() {
+    const statusFilterEl = document.getElementById('statusFilter');
+    if (statusFilterEl) {
+        searchStatusFilter = statusFilterEl.value || 'all';
+        statusFilterEl.addEventListener('change', () => {
+            searchStatusFilter = statusFilterEl.value || 'all';
+            runSearch();
+        });
+    }
+}
+
+function getContainerIdForFilter() {
+    const map = { 'all-tasks': 'tasksContainer', 'current-series': 'currentSeriesContainer', 'postponed': 'postponedContainer', 'unsolved': 'unsolvedContainer' };
+    return map[currentFilter] || 'tasksContainer';
+}
+
+function runSearch() {
+    const searchInput = document.getElementById('statusFilter') ? document.getElementById('searchInput') : null;
+    const searchTerm = (searchInput && searchInput.value) ? searchInput.value.toLowerCase().trim() : '';
+    let currentTasks = getTasksForCurrentFilter();
+    if (searchStatusFilter && searchStatusFilter !== 'all') {
+        currentTasks = currentTasks.filter(t => t.status === searchStatusFilter);
+    }
+    if (searchTerm) {
+        currentTasks = currentTasks.filter(task => {
+            const numberMatch = task.number.toString().includes(searchTerm);
+            const descriptionMatch = task.description.toLowerCase().includes(searchTerm);
+            return numberMatch || descriptionMatch;
+        });
+    }
+    displayTasks(currentTasks, getContainerIdForFilter());
+}
+
 function initMatCenterSearch() {
     const searchInput = document.getElementById('searchInput');
-    
+    let debounceTimer = null;
     if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase().trim();
-            
-            // Получаем задачи для текущего фильтра
-            const currentTasks = getTasksForCurrentFilter();
-            
-            if (searchTerm === '') {
-                // Если поиск пустой, показываем все задачи текущего фильтра
-                displayTasks(currentTasks);
-                return;
-            }
-            
-            // Ищем только среди задач текущего фильтра
-            const filteredTasks = currentTasks.filter(task => {
-                const numberMatch = task.number.toString().includes(searchTerm);
-                const descriptionMatch = task.description.toLowerCase().includes(searchTerm);
-                return numberMatch || descriptionMatch;
-            });
-            
-            displayTasks(filteredTasks);
+        searchInput.addEventListener('input', () => {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(runSearch, 250);
         });
     }
 }
