@@ -3576,8 +3576,25 @@ input:focus:not(:focus-visible) {
         border-radius: 12px;
     }
     
+    .task-header {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
     .task-number {
         font-size: 1rem;
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .task-status-badge {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
     
     .task-toggle {
@@ -3702,9 +3719,23 @@ input:focus:not(:focus-visible) {
     }
     
     .task-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.35rem;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .task-number {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .task-status-badge {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
     
     .task-toggle {
