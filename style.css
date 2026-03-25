@@ -1219,7 +1219,7 @@ body.sidebar-collapsed .main-content {
 }
 
 .topic-title::before {
-    content: 'рџ“Њ';
+    content: '📌';
     font-size: 1.5rem;
 }
 
@@ -1325,7 +1325,7 @@ body.sidebar-collapsed .main-content {
 }
 
 .remark-box::before {
-    content: 'рџ’Ў';
+    content: '💡';
     position: absolute;
     top: 1rem;
     right: 1rem;
@@ -1516,7 +1516,7 @@ body.sidebar-collapsed .main-content {
 }
 
 .example-box::before {
-    content: 'рџ“ќ';
+    content: '📝';
     position: absolute;
     top: 1rem;
     right: 1rem;
@@ -3112,7 +3112,7 @@ input:focus:not(:focus-visible) {
 }
 
 .status-option.current::after {
-    content: 'вњ“';
+    content: '✓';
     margin-left: auto;
     color: var(--accent-color);
     font-weight: bold;
@@ -4389,7 +4389,7 @@ body.new-year-mode .stat-card.ny-decorated {
 }
 
 body.new-year-mode .stat-card.ny-decorated::before {
-    content: 'вњЁ';
+    content: '✨';
     position: absolute;
     top: -10px;
     right: -10px;
@@ -4398,15 +4398,15 @@ body.new-year-mode .stat-card.ny-decorated::before {
 }
 
 body.new-year-mode .stat-card.ny-decorated:nth-child(2)::before {
-    content: 'рџЋЃ';
+    content: '🎁';
 }
 
 body.new-year-mode .stat-card.ny-decorated:nth-child(3)::before {
-    content: 'в­ђ';
+    content: '⭐';
 }
 
 body.new-year-mode .stat-card.ny-decorated:nth-child(4)::before {
-    content: 'рџЋ„';
+    content: '🎄';
 }
 
 @keyframes sparkle {
@@ -4729,7 +4729,7 @@ body.dark-theme .ny-toggle:hover {
 
 /* Р­С„С„РµРєС‚ СЃРЅРµРіР° РЅР° Р·Р°РґР°С‡Р°С… РїСЂРё РЅР°РІРµРґРµРЅРёРё */
 body.new-year-mode .task-card:hover::after {
-    content: 'вќ„пёЏ';
+    content: '❄️';
     position: absolute;
     top: 10px;
     right: 10px;
