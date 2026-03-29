@@ -6540,3 +6540,89 @@ body.dark-theme .mobile-search-bar {
 .no-results-clear:active {
     transform: scale(0.97);
 }
+
+/* ============================================
+   MATCENTER — МОБИЛЬНЫЙ ДИЗАЙН ЗАДАЧ
+   Edge-to-edge в стиле блоков physics.html
+   ============================================ */
+@media (max-width: 768px) {
+    /* Контейнер: убираем grid-gap, переходим на вертикальный flex */
+    body.matcenter-page .tasks-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    /* Карточка задачи: без скруглений, от края до края, тонкий разделитель */
+    body.matcenter-page .task-card {
+        border-radius: 0;
+        border-left-width: 5px;
+        border-bottom: 1px solid var(--border-color);
+        padding: 0.75rem var(--m-pad);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    body.matcenter-page .task-card:hover {
+        transform: none;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    body.matcenter-page .task-card.open {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        border-left-width: 5px;
+    }
+
+    /* Последняя карточка без нижней черты */
+    body.matcenter-page .task-card:last-child {
+        border-bottom: none;
+    }
+
+    /* Шапка «Все задачи» + кнопка: компактная полоса, как .part-title в physics */
+    body.matcenter-page .part-title-row {
+        padding: 0.625rem var(--m-pad);
+        margin-bottom: 0;
+        border-bottom: 2px solid var(--accent-color);
+        background: var(--bg-secondary);
+        border-radius: 0;
+        position: static;
+    }
+
+    body.matcenter-page .part-title-row::after {
+        display: none;
+    }
+
+    body.matcenter-page .part-title-row .part-title {
+        font-size: 1.15rem;
+        padding: 0;
+        border-bottom: none;
+        background: transparent;
+    }
+
+    /* .part-title вне .part-title-row (Текущая серия, Откладыши…) */
+    body.matcenter-page .content-section > .part-title {
+        padding: 0.625rem var(--m-pad);
+        margin-bottom: 0;
+        border-bottom: 2px solid var(--accent-color);
+        background: var(--bg-secondary);
+        border-radius: 0;
+        position: static;
+        font-size: 1.15rem;
+    }
+
+    body.matcenter-page .content-section > .part-title::after {
+        display: none;
+    }
+
+    /* Кнопка «Показать условие» — на всю ширину */
+    body.matcenter-page .task-toggle {
+        width: 100%;
+        text-align: left;
+    }
+
+    /* «Ничего не найдено» — убираем grid-column (flex-контейнер) */
+    body.matcenter-page .no-results-message {
+        grid-column: unset;
+    }
+}
+
+/* На маленьких телефонах (≤480px) padding подхватывается из --m-pad автоматически */
