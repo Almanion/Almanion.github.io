@@ -1654,10 +1654,20 @@ function getTasksForCurrentFilter() {
 
 function initStatusFilter() {
     const statusFilterEl = document.getElementById('statusFilter');
+    const mobileStatusFilter = document.getElementById('mobileStatusFilter');
+
     if (statusFilterEl) {
-        searchStatusFilter = statusFilterEl.value || 'all';
         statusFilterEl.addEventListener('change', () => {
             searchStatusFilter = statusFilterEl.value || 'all';
+            if (mobileStatusFilter) mobileStatusFilter.value = statusFilterEl.value;
+            runSearch();
+        });
+    }
+
+    if (mobileStatusFilter) {
+        mobileStatusFilter.addEventListener('change', () => {
+            searchStatusFilter = mobileStatusFilter.value || 'all';
+            if (statusFilterEl) statusFilterEl.value = mobileStatusFilter.value;
             runSearch();
         });
     }
@@ -1669,12 +1679,17 @@ function getContainerIdForFilter() {
 }
 
 function runSearch() {
-    const searchInput = document.getElementById('statusFilter') ? document.getElementById('searchInput') : null;
-    const searchTerm = (searchInput && searchInput.value) ? searchInput.value.toLowerCase().trim() : '';
+    const searchInput = document.getElementById('searchInput');
+    const statusFilterEl = document.getElementById('statusFilter');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const activeStatus = statusFilterEl ? statusFilterEl.value : '';
+
     let currentTasks = getTasksForCurrentFilter();
-    if (searchStatusFilter && searchStatusFilter !== 'all') {
-        currentTasks = currentTasks.filter(t => t.status === searchStatusFilter);
+
+    if (activeStatus) {
+        currentTasks = currentTasks.filter(t => t.status === activeStatus);
     }
+
     if (searchTerm) {
         currentTasks = currentTasks.filter(task => {
             const numberMatch = task.number.toString().includes(searchTerm);
@@ -1682,17 +1697,100 @@ function runSearch() {
             return numberMatch || descriptionMatch;
         });
     }
-    displayTasks(currentTasks, getContainerIdForFilter());
+
+    const containerId = getContainerIdForFilter();
+
+    if (currentTasks.length === 0 && (searchTerm || activeStatus)) {
+        showNoResultsMessage(containerId, searchTerm, activeStatus);
+    } else {
+        displayTasks(currentTasks, containerId);
+    }
 }
+
+function showNoResultsMessage(containerId, searchTerm, statusFilter) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const statusLabels = { 'Р': 'Разобрано', 'Н': 'Текущая серия', 'От': 'Отложена', 'П': 'С подсказкой' };
+    const statusLabel = statusFilter ? (statusLabels[statusFilter] || statusFilter) : '';
+
+    let hint = '';
+    if (searchTerm && statusLabel) {
+        hint = `По запросу «${escapeHtml(searchTerm)}» в категории «${escapeHtml(statusLabel)}»`;
+    } else if (searchTerm) {
+        hint = `По запросу «${escapeHtml(searchTerm)}»`;
+    } else if (statusLabel) {
+        hint = `В категории «${escapeHtml(statusLabel)}»`;
+    }
+
+    container.innerHTML = `
+        <div class="no-results-message">
+            <span class="no-results-icon">🔍</span>
+            <p>Ничего не найдено</p>
+            ${hint ? `<p class="no-results-hint">${hint}</p>` : ''}
+            <button class="no-results-clear" onclick="clearSearch()">Сбросить фильтр</button>
+        </div>
+    `;
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const statusFilterEl = document.getElementById('statusFilter');
+    const mobileSearchInput = document.getElementById('mobileSearchInput');
+    const mobileStatusFilter = document.getElementById('mobileStatusFilter');
+    const searchClearBtn = document.getElementById('searchClearBtn');
+    const mobileSearchClear = document.getElementById('mobileSearchClear');
+
+    if (searchInput) searchInput.value = '';
+    if (statusFilterEl) statusFilterEl.value = '';
+    if (mobileSearchInput) mobileSearchInput.value = '';
+    if (mobileStatusFilter) mobileStatusFilter.value = '';
+    if (searchClearBtn) searchClearBtn.classList.remove('visible');
+    if (mobileSearchClear) mobileSearchClear.classList.remove('visible');
+
+    searchStatusFilter = 'all';
+
+    displayTasks(getTasksForCurrentFilter(), getContainerIdForFilter());
+}
+
+window.clearSearch = clearSearch;
 
 function initMatCenterSearch() {
     const searchInput = document.getElementById('searchInput');
+    const mobileSearchInput = document.getElementById('mobileSearchInput');
+    const searchClearBtn = document.getElementById('searchClearBtn');
+    const mobileSearchClear = document.getElementById('mobileSearchClear');
+
     let debounceTimer = null;
+
+    function updateClearBtns(value) {
+        const hasValue = value.length > 0;
+        if (searchClearBtn) searchClearBtn.classList.toggle('visible', hasValue);
+        if (mobileSearchClear) mobileSearchClear.classList.toggle('visible', hasValue);
+    }
+
+    function handleInput(value, source) {
+        if (source === 'sidebar' && mobileSearchInput) mobileSearchInput.value = value;
+        if (source === 'mobile' && searchInput) searchInput.value = value;
+        updateClearBtns(value);
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(runSearch, 250);
+    }
+
     if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            if (debounceTimer) clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(runSearch, 250);
-        });
+        searchInput.addEventListener('input', () => handleInput(searchInput.value, 'sidebar'));
+    }
+
+    if (mobileSearchInput) {
+        mobileSearchInput.addEventListener('input', () => handleInput(mobileSearchInput.value, 'mobile'));
+    }
+
+    if (searchClearBtn) {
+        searchClearBtn.addEventListener('click', clearSearch);
+    }
+
+    if (mobileSearchClear) {
+        mobileSearchClear.addEventListener('click', clearSearch);
     }
 }
 

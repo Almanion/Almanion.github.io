@@ -6274,3 +6274,227 @@ body.matcenter-page .status-filter-select:focus {
     border-color: var(--accent-color);
     box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
 }
+
+/* ============================================
+   MATCENTER — МОБИЛЬНЫЙ ПОИСК
+   ============================================ */
+
+/* Сайдбар: обёртка поля поиска с кнопкой очистки */
+body.matcenter-page .search-input-wrap {
+    position: relative;
+    width: 100%;
+}
+
+body.matcenter-page .search-input-wrap input {
+    width: 100%;
+    padding-right: 2.25rem;
+}
+
+body.matcenter-page .search-clear-btn {
+    position: absolute;
+    right: 0.4rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg-tertiary);
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.65rem;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: background 0.2s ease, color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body.matcenter-page .search-clear-btn.visible {
+    display: flex;
+}
+
+body.matcenter-page .search-clear-btn:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+
+/* Мобильная строка поиска */
+.mobile-search-bar {
+    display: none;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg-primary);
+    padding: 0.6rem 1rem 0.6rem 60px; /* left-отступ под кнопку меню */
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    margin-bottom: 1rem;
+    transition: background-color 0.15s ease;
+}
+
+body.dark-theme .mobile-search-bar {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 768px) {
+    .mobile-search-bar {
+        display: block;
+    }
+}
+
+.mobile-search-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.mobile-search-input-wrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.mobile-search-input-wrap input {
+    width: 100%;
+    padding: 0.55rem 2rem 0.55rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    -webkit-appearance: none;
+}
+
+.mobile-search-input-wrap input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.15);
+}
+
+.mobile-search-clear {
+    position: absolute;
+    right: 0.4rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg-tertiary);
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.65rem;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: background 0.2s ease, color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-search-clear.visible {
+    display: flex;
+}
+
+.mobile-search-clear:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+
+.mobile-status-filter {
+    flex-shrink: 0;
+    padding: 0.55rem 1.6rem 0.55rem 0.6rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12' fill='none' stroke='%236c757d' stroke-width='2'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.45rem center;
+    max-width: 105px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mobile-status-filter:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.15);
+}
+
+@media (max-width: 380px) {
+    .mobile-search-bar {
+        padding-left: 52px;
+    }
+
+    .mobile-status-filter {
+        max-width: 88px;
+        font-size: 0.8rem;
+        padding-right: 1.4rem;
+    }
+}
+
+/* ============================================
+   MATCENTER — СООБЩЕНИЕ "НИЧЕГО НЕ НАЙДЕНО"
+   ============================================ */
+
+.no-results-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 1rem 2rem;
+    color: var(--text-secondary);
+}
+
+.no-results-icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 0.75rem;
+    opacity: 0.8;
+}
+
+.no-results-message p {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+    color: var(--text-primary);
+}
+
+.no-results-hint {
+    font-size: 0.875rem;
+    color: var(--text-secondary) !important;
+    margin-bottom: 0.25rem !important;
+}
+
+.no-results-clear {
+    margin-top: 1rem;
+    display: inline-block;
+    padding: 0.5rem 1.25rem;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-family: inherit;
+    font-weight: 500;
+    transition: background 0.2s ease, transform 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.no-results-clear:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.no-results-clear:active {
+    transform: scale(0.97);
+}
