@@ -6546,18 +6546,17 @@ body.dark-theme .mobile-search-bar {
    Edge-to-edge в стиле блоков physics.html
    ============================================ */
 @media (max-width: 768px) {
-    /* Контейнер: убираем grid-gap, переходим на вертикальный flex */
+    /* Контейнер: небольшой зазор между карточками, вертикальный flex */
     body.matcenter-page .tasks-container {
         display: flex;
         flex-direction: column;
-        gap: 0;
+        gap: 0.5rem;
     }
 
-    /* Карточка задачи: без скруглений, от края до края, тонкий разделитель */
+    /* Карточка задачи: без скруглений, от края до края */
     body.matcenter-page .task-card {
         border-radius: 0;
         border-left-width: 5px;
-        border-bottom: 1px solid var(--border-color);
         padding: 0.75rem var(--m-pad);
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
@@ -6570,11 +6569,6 @@ body.dark-theme .mobile-search-bar {
     body.matcenter-page .task-card.open {
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
         border-left-width: 5px;
-    }
-
-    /* Последняя карточка без нижней черты */
-    body.matcenter-page .task-card:last-child {
-        border-bottom: none;
     }
 
     /* Шапка «Все задачи» + кнопка: компактная полоса, как .part-title в physics */
@@ -6626,3 +6620,94 @@ body.dark-theme .mobile-search-bar {
 }
 
 /* На маленьких телефонах (≤480px) padding подхватывается из --m-pad автоматически */
+
+/* ============================================
+   MATCENTER — МОБИЛЬНАЯ МОДАЛКА ПОДСКАЗКИ
+   Bottom sheet, как auth-modal
+   ============================================ */
+@media (max-width: 768px) {
+    /* Overlay: прижимаем к низу */
+    body.matcenter-page #hintOverlay {
+        align-items: flex-end;
+    }
+
+    /* Сама модалка — bottom sheet */
+    body.matcenter-page #hintOverlay .hint-modal {
+        width: 100%;
+        max-width: 100%;
+        border-radius: 20px 20px 0 0;
+        max-height: 90dvh;
+        overflow-y: auto;
+        animation: slideUpSheet 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Drag-handle сверху */
+    body.matcenter-page #hintOverlay .hint-modal::before {
+        content: '';
+        display: block;
+        width: 40px;
+        height: 4px;
+        background: var(--border-color);
+        border-radius: 2px;
+        margin: 0.75rem auto 0;
+    }
+
+    /* Шапка модалки */
+    body.matcenter-page #hintOverlay .hint-modal-header {
+        padding: 0.875rem var(--m-pad) 0.75rem;
+    }
+
+    body.matcenter-page #hintOverlay .hint-modal-header h3 {
+        font-size: 1.05rem;
+    }
+
+    /* Кнопка закрытия — крупнее для тапа */
+    body.matcenter-page #hintOverlay .hint-close-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    /* Textarea: без resize, комфортная высота */
+    body.matcenter-page #hintOverlay #hintTextarea {
+        padding: 0.875rem var(--m-pad);
+        min-height: 130px;
+        max-height: 38vh;
+        resize: none;
+        font-size: 1rem;
+        line-height: 1.55;
+    }
+
+    /* Кнопки действий — вертикальная стопка */
+    body.matcenter-page #hintOverlay .hint-modal-actions {
+        padding: 0.75rem var(--m-pad);
+        padding-bottom: calc(0.875rem + env(safe-area-inset-bottom, 0px));
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    body.matcenter-page #hintOverlay .hint-save-btn,
+    body.matcenter-page #hintOverlay .hint-delete-btn,
+    body.matcenter-page #hintOverlay .hint-cancel-btn {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        font-size: 0.95rem;
+        text-align: center;
+        justify-content: center;
+        border-radius: 10px;
+    }
+
+    body.matcenter-page #hintOverlay .hint-save-btn {
+        order: 1;
+    }
+
+    body.matcenter-page #hintOverlay .hint-delete-btn {
+        order: 2;
+    }
+
+    body.matcenter-page #hintOverlay .hint-cancel-btn {
+        order: 3;
+    }
+}
