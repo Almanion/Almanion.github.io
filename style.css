@@ -536,6 +536,11 @@ body.dark-theme .knowledge-check-btn:hover {
     --border-color: #dee2e6;
     
     /* Р¦РІРµС‚Р° РґР»СЏ Р±Р»РѕРєРѕРІ */
+    --svg-rod-fill: #c8a464;
+    --svg-rod-stroke: #7a5520;
+    --svg-axis-stroke: #555555;
+    --svg-label-fill: #333333;
+
     --definition-bg: #eff6ff;
     --definition-border: #3b82f6;
     --formula-bg: #dbeafe;
@@ -592,6 +597,11 @@ body.dark-theme {
     --accent-hover: #60a5fa;
     --accent-rgb: 59, 130, 246;
     --border-color: #334155;
+
+    --svg-rod-fill: #8f6830;
+    --svg-rod-stroke: #c8a464;
+    --svg-axis-stroke: #94a3b8;
+    --svg-label-fill: #cbd5e1;
     
     /* Р¦РІРµС‚Р° РґР»СЏ Р±Р»РѕРєРѕРІ - С‚РµРјРЅР°СЏ С‚РµРјР° */
     --definition-bg: #19365d31;
