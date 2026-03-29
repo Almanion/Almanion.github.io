@@ -81,6 +81,7 @@
                             <li><a href="#impact" class="nav-link">3.14 Удар</a></li>
                             <li><a href="#rotation-dynamics" class="nav-link">3.15 Динамика вращательного движения</a></li>
                             <li><a href="#moment-of-inertia" class="nav-link">3.16 Момент инерции</a></li>
+                            <li><a href="#angular-momentum" class="nav-link">3.17 Момент импульса</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -2583,10 +2584,294 @@
                     <div class="formula-box">
                         \[W_k = W_{k_c} + W_{k_0} = \frac{m \cdot v_c^2}{2} + \frac{I_0 \cdot \omega^2}{2}\]
                     </div>
-                    <strong>Обобщение:</strong> кинетическая энергия механической системы есть энергия движения центра масс плюс энергия движения тела относительно центра масс.
+                    <strong>Обобщение:</strong> кинетическая энергия механической системы есть энергия движения центра масс тела плюс энергия движения относительно центра масс.
                     <div class="formula-box">
-                        \[T = T_0 + T_c\]
+                        \[T = T_0 + T_r\]
+                        где \(T\) — полная кинетическая энергия системы,<br>
+                        \(T_0\) — кинетическая энергия движения центра масс,<br>
+                        \(T_r\) — относительная кинетическая энергия системы.
                     </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Главный центральный момент диска:</strong> разобьём диск на кольца.
+                    <div style="text-align: center; margin: 1rem 0;">
+                        <img src="images/hollow_cylinder_ring_element_dr_R_b.png" alt="Диск, разбитый на кольца" loading="lazy" style="max-width: 55%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    </div>
+                    <div class="derivation-box">
+                        <button class="toggle-derivation">📖 Показать вывод</button>
+                        <div class="derivation-content">
+                            \[\begin{align*}
+                            V &= Sb = \pi R^2 b \\
+                            m &= \rho V = \rho \pi R^2 b \\
+                            dm &= \rho\, dV = \rho \cdot 2\pi r b \cdot dr \\
+                            J_c &= \int_M r^2\, dm = \int_0^R r^2 \rho \cdot 2\pi r \cdot b\, dr = \\
+                            &= 2\pi\rho b \int_0^R r^3\, dr = 2\pi\rho b \cdot \frac{R^4}{4} = \frac{\pi\rho b R^4}{2} = \frac{mR^2}{2}
+                            \end{align*}\]
+                        </div>
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Центральный момент шара:</strong> разобьём на диски.
+                    <div class="formula-box">
+                        \[J = \frac{2}{5} m R^2\]
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Доказательство теоремы Штейнера.</strong>
+                    <div style="display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap; margin: 1rem 0;">
+                        <div style="flex: 1; min-width: 280px;">
+                            <div class="derivation-box">
+                                <button class="toggle-derivation">📖 Показать вывод</button>
+                                <div class="derivation-content">
+                                    \[J = \sum_{i=1}^{n} m_i (r'_i)^2\]
+                                    <p>\(\vec{r}'_i = \vec{r}_i + \vec{d}\), где \(\vec{d}\) — радиус-вектор расстояния между старой и новой осями вращения (новая ось проходит через центр масс).</p>
+                                    \[\begin{align*}
+                                    J &= \sum_{i=1}^{n} m_i (\vec{r}_i)^2 + 2\sum_{i=1}^{n} m_i \vec{r}_i \cdot \vec{d} + \sum_{i=1}^{n} m_i (\vec{d})^2 \\
+                                    &= \sum_{i=1}^{n} m_i (\vec{r}_i)^2 + 2\vec{d} \cdot \sum_{i=1}^{n} m_i \vec{r}_i + d^2 \sum_{i=1}^{n} m_i
+                                    \end{align*}\]
+                                    <p>Среднее слагаемое \(= 0\), так как \(\sum_{i=1}^{n} m_i \vec{r}_i = \vec{r}_c \cdot M\) в системе отсчёта центра масс, где \(\vec{r}_c = \vec{0}\).</p>
+                                    \[\begin{align*}
+                                    J &= \sum_{i=1}^{n} m_i (\vec{r}_i)^2 + d^2 \sum_{i=1}^{n} m_i
+                                    \end{align*}\]
+                                    \[\boxed{J = J_c + md^2}\]
+                                </div>
+                            </div>
+                        </div>
+                        <div style="flex: 1; min-width: 200px; text-align: center;">
+                            <img src="images/steiner_theorem_mass_element_vectors.png" alt="Теорема Штейнера" loading="lazy" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Применение теоремы Штейнера к стержню</strong>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0;">
+                        <div style="flex: 1; min-width: 220px; border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem;">
+                            <p style="margin: 0 0 0.5rem;"><strong>Ось через середину:</strong></p>
+                            <div class="formula-box">
+                                \[J_c = \frac{mL^2}{12}\]
+                            </div>
+                        </div>
+                        <div style="flex: 1; min-width: 220px; border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem;">
+                            <p style="margin: 0 0 0.5rem;"><strong>Ось через конец стержня:</strong></p>
+                            <div class="derivation-box">
+                                <button class="toggle-derivation">📖 Показать вывод</button>
+                                <div class="derivation-content">
+                                    \[\begin{aligned}
+                                    J &= J_c + md^2 = \frac{mL^2}{12} + m \cdot \left(\frac{L}{2}\right)^2 \\
+                                    &= \frac{mL^2}{12} + \frac{mL^2}{4} = \frac{mL^2}{3}
+                                    \end{aligned}\]
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Задача:</strong> шар массой \(m\) и радиусом \(R\) скатывается с наклонной плоскости (угол \(\alpha\)) с высоты \(h\).
+                    <div style="text-align: center; margin: 1rem 0;">
+                        <img src="images/rolling_on_incline_forces_coordinate_system.png" alt="Шар на наклонной плоскости" loading="lazy" style="max-width: 90%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    </div>
+                    <div class="formula-box">
+                        \[\begin{align*}
+                        &\vec{N} + m\vec{g} + \vec{F}_{\text{тр}} = m\vec{a} \\
+                        \text{OX:}\quad &mg\sin\alpha - F_{\text{тр}} = ma \\
+                        \text{OY:}\quad &N = mg\cos\alpha
+                        \end{align*}\]
+                    </div>
+                    <p>Без проскальзывания \(\Rightarrow\) скорости соприкасающихся точек равны \(\Rightarrow\) \(\vec{v}_A = \vec{0}\) \(\Rightarrow\) \(F_{\text{тр}} = F_{\text{тр. покоя}} \le \mu N\).</p>
+                    <div class="formula-box">
+                        \[\vec{M}_{\vec{F}_{\text{тр}}} + \vec{M}_{m\vec{g}} + \vec{M}_{\vec{N}} = I\vec{\beta}\]
+                    </div>
+                    <p>Моменты \(m\vec{g}\) и \(\vec{N}\) относительно центра равны нулю.</p>
+                    <div class="derivation-box">
+                        <button class="toggle-derivation">📖 Показать вывод</button>
+                        <div class="derivation-content">
+                            \[\begin{align*}
+                            F_{\text{тр}} \cdot R &= \frac{2}{5} m R^2 \beta = \frac{2}{5} m R^2 \cdot \frac{a}{R} = \frac{2}{5} ma \\
+                            F_{\text{тр}} &= \frac{2}{5} mR\beta = \frac{2}{5} mR \cdot \frac{a}{R} = \frac{2}{5} ma
+                            \end{align*}\]
+                            \[\begin{align*}
+                            &mg\sin\alpha - \frac{2}{5} ma = ma \quad\Rightarrow\quad a = \frac{5}{7} g\sin\alpha \\
+                            &\frac{h}{\sin\alpha} = \frac{at^2}{2} \quad\Rightarrow\quad
+                            t = \sqrt{\frac{2h}{a\sin\alpha}} = \sqrt{\frac{14h}{5g}} \cdot \frac{1}{\sin\alpha} \\
+                            &v = at = \sqrt{\frac{14h}{5g}} \cdot \frac{5}{7} g\sin\alpha \cdot \frac{1}{\sin\alpha} = \sqrt{\frac{10gh}{7}}
+                            \end{align*}\]
+                        </div>
+                    </div>
+                    <p><strong>Закон сохранения энергии:</strong></p>
+                    <div class="derivation-box">
+                        <button class="toggle-derivation">📖 Показать вывод</button>
+                        <div class="derivation-content">
+                            \[\begin{align*}
+                            mgh &= \frac{mv^2}{2} + \frac{I\omega^2}{2} \\
+                            mgh &= \frac{mv^2}{2} + \frac{2}{5} mR^2 \cdot \frac{1}{2} \frac{v^2}{R^2}
+                            = \frac{mv^2}{2} + \frac{mv^2}{5} \\
+                            v &= \sqrt{\frac{10gh}{7}}
+                            \end{align*}\]
+                            \[\begin{align*}
+                            &\frac{2}{5} ma \le \mu mg\cos\alpha \quad\Rightarrow\quad
+                            \mu \ge \frac{2}{5} a \cdot \frac{1}{g\cos\alpha}
+                            = \frac{2}{5} \cdot \frac{\frac{5}{7} g\sin\alpha}{g\cos\alpha}
+                            = \frac{2}{7} \tan\alpha
+                            \end{align*}\]
+                        </div>
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Относительно мгновенного центра скоростей:</strong>
+                    <div style="text-align: center; margin: 1rem 0;">
+                        <img src="images/rolling_on_incline_instantaneous_center.png" alt="Мгновенный центр скоростей" loading="lazy" style="max-width: 95%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    </div>
+                    <div class="formula-box">
+                        \[\begin{align*}
+                        \vec{M}_{\vec{F}_{\text{тр}}} + \vec{M}_{m\vec{g}} + \vec{M}_{\vec{N}} &= I\vec{\beta} \\
+                        mgR\sin\alpha &= \left(\frac{2}{5} mR^2 + mR^2\right) \cdot \frac{a}{R} \\
+                        a &= \frac{5}{7} g\sin\alpha
+                        \end{align*}\]
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Мгновенная ось вращения</strong> — ось, проходящая через точку, скорость которой равна нулю в данный момент времени. Такая точка называется <strong>мгновенным центром поворота</strong> или <strong>мгновенным центром скоростей</strong>.
+                </div>
+            </article>
+
+            <!-- Момент импульса -->
+            <article id="angular-momentum" class="topic">
+                <h3 class="topic-title">3.17 Момент импульса</h3>
+
+                <div class="definition-box">
+                    Введём аналог импульса для вращательного движения.
+                    <div class="formula-box">
+                        \[I\vec{\beta} = \sum \vec{M} \qquad \text{(найти аналог)}\]
+                    </div>
+                    <div class="formula-box">
+                        \[m\vec{a} = \sum \vec{F}, \qquad \frac{d\vec{p}}{dt} = \sum \vec{F}\]
+                    </div>
+                    <div class="derivation-box">
+                        <button class="toggle-derivation">📖 Показать вывод</button>
+                        <div class="derivation-content">
+                            \[\begin{align*}
+                            m\vec{a} &= \vec{f}, \qquad \frac{d(m\vec{v})}{dt} = \vec{f} \\
+                            I\vec{\beta} &= I \frac{d\vec{\omega}}{dt} = \frac{d(I\vec{\omega})}{dt} \\
+                            I\vec{\omega} &= mR^2 \cdot \frac{v}{R} = mRv = pR \\
+                            \vec{L} &= I\vec{\omega} = \vec{R} \times \vec{p}
+                            \end{align*}\]
+                        </div>
+                    </div>
+                    Величину \(L = mvR\) называют <strong>модулем момента импульса</strong>.
+                </div>
+
+                <div class="definition-box">
+                    <strong>Момент импульса материальной точки</strong> — векторная физическая величина, равная векторному произведению радиус-вектора, проведённого из оси вращения к материальной точке, на импульс тела:
+                    <div class="formula-box">
+                        \[\vec{L} = \vec{r} \times \vec{p} = \vec{r} \times m\vec{v}, \qquad |\vec{L}| = mrv\sin\alpha\]
+                    </div>
+                    Модуль импульса твёрдого тела, вращающегося относительно закреплённой оси: \(L = mvR\) (\(\vec{v} \perp \vec{R}\)).
+                </div>
+
+                <div class="definition-box">
+                    <strong>Момент импульса абсолютно твёрдого тела</strong> относительно закреплённой оси вращения — сумма моментов импульса всех элементов:
+                    <div class="formula-box">
+                        \[L = \sum L_i, \qquad \vec{L}_i = \Delta m_i \, \vec{r}_i \times \vec{v}_i\]
+                    </div>
+                    Если скорости элементов перпендикулярны их радиус-векторам от оси (\(\vec{v}_i \perp \vec{r}_i\)), то \(|\vec{L}_i| = \Delta m_i v_i r_i\).
+                    <br><br>
+                    <strong>Связь с моментом инерции и угловой скоростью:</strong>
+                    <div class="derivation-box">
+                        <button class="toggle-derivation">📖 Показать вывод</button>
+                        <div class="derivation-content">
+                            \[\begin{align*}
+                            |\vec{L}_i| = \Delta m_i v_i r_i, \qquad v_i &= \omega r_i \quad\Rightarrow\quad L_i = \Delta m_i r_i^2 \omega \\
+                            L = \omega \sum& \Delta m_i r_i^2 = \omega I
+                            \end{align*}\]
+                            \[\vec{L} = I \vec{\omega}\]
+                        </div>
+                    </div>
+                    Для абсолютно твёрдого тела векторы \(\vec{L}\) и \(\vec{\omega}\) всегда <strong>сонаправлены</strong>: \(\vec{L} \uparrow\uparrow \vec{\omega}\). При равномерном вращении момент импульса не меняется.
+                </div>
+
+                <div class="definition-box">
+                    <strong>Закон изменения момента импульса:</strong> скорость изменения момента импульса абсолютно твёрдого тела равна векторной сумме моментов внешних сил, действующих на тело.
+                    <div class="derivation-box">
+                        <button class="toggle-derivation">📖 Показать вывод</button>
+                        <div class="derivation-content">
+                            \[\begin{align*}
+                            \Delta \vec{L} = I \Delta \vec{\omega}, \qquad&
+                            \frac{\Delta \vec{L}}{\Delta t} = I \frac{\Delta \vec{\omega}}{\Delta t} \\
+                            \lim_{\Delta t \to 0} \frac{\Delta \vec{L}}{\Delta t} = I \vec{\beta}& = \sum_{i=1}^{n} \vec{M}_i
+                            \end{align*}\]
+                        </div>
+                    </div>
+                    <br>
+                    <strong>Закон сохранения момента импульса:</strong> если векторная сумма моментов внешних сил равна нулю, момент импульса системы не меняется.
+                    <div class="formula-box">
+                        \[\sum \vec{M}_i = \vec{0} \quad\Rightarrow\quad \frac{d\vec{L}}{dt} = \vec{0}, \qquad \vec{L} = \mathrm{const}\]
+                    </div>
+                </div>
+
+                <h4 class="subsection-title">Планета и II закон Кеплера</h4>
+
+                <div class="definition-box">
+                    <strong>II закон Кеплера</strong> (равенство площадей) по смыслу совпадает с <strong>законом сохранения момента импульса</strong> для планеты в поле притяжения к Солнцу: сила тяготения направлена вдоль \(\vec{r}\), её момент относительно Солнца равен нулю, поэтому \(\vec{L}\) планеты постоянен.
+                    <div style="display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap; margin: 1rem 0;">
+                        <div style="flex: 1; min-width: 200px; text-align: center;">
+                            <img src="images/kepler_second_law_orbit_diagram.png" alt="II закон Кеплера" loading="lazy" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <div class="formula-box">
+                                \[\begin{align*}
+                                \Delta S &= \frac{1}{2} r^2 \Delta\varphi \\
+                                \frac{\Delta S}{\Delta t} &= \frac{1}{2} r^2 \omega \qquad (\Delta t \to 0)
+                                \end{align*}\]
+                            </div>
+                        </div>
+                    </div>
+                    Свяжем «секторную скорость» с моментом импульса: \(L = r p_{\perp} = m r^2 \omega\), откуда
+                    <div class="derivation-box">
+                        <button class="toggle-derivation">📖 Показать вывод</button>
+                        <div class="derivation-content">
+                            \[\frac{\Delta S}{\Delta t} = \frac{L}{2m} \qquad (\Delta t \to 0)\]
+                        </div>
+                    </div>
+                    \(\vec{M}_{\text{тяготения}} = \vec{0}\) относительно Солнца, так как \(\vec{F}_{\text{тяготения}} \parallel \vec{r}\) (угол \(180^\circ\), момент силы нулевой) \(\Rightarrow\) \(\vec{L} = \mathrm{const}\).
+                    <br><br>
+                    Для твёрдого тела:
+                    <div class="formula-box">
+                        \[\vec{L} = \mathrm{const}, \qquad L_z = \mathrm{const}, \qquad I_0 \omega_0 = I \omega\]
+                    </div>
+                    При изменении распределения массы относительно оси меняется момент инерции \(I\), поэтому при неизменном \(L\) должна меняться угловая скорость \(\omega\).
+                </div>
+
+                <h4 class="subsection-title">Опыты на платформе и ориентация оси вращения</h4>
+
+                <div class="definition-box">
+                    Поворотный стул или платформа иллюстрируют сохранение момента импульса: при отсутствии внешнего момента относительно вертикальной оси суммарный \(\vec{L}\) системы «человек + платформа + колесо» сохраняется; перенос вращающегося колеса меняет его вклад в \(\vec{L}\) — платформа получает вращение.
+                </div>
+
+                <h4 class="subsection-title">Гироскоп, прецессия, нутация</h4>
+
+                <div class="definition-box">
+                    <strong>Гироскоп</strong> — устройство, способное реагировать на изменение углов ориентации тела, на котором оно установлено, относительно инерциальной системы отсчёта.
+                    <div style="text-align: center; margin: 1rem 0;">
+                        <img src="images/gyroscope_cardan_suspension.png" alt="Гироскоп в карданном подвесе" loading="lazy" style="max-width: 70%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    </div>
+                    <strong>Прецессия</strong> — явление, при котором момент импульса тела меняет своё направление в пространстве под действием момента внешней силы.
+                    <br><br>
+                    <strong>Нутация</strong> — колебательное нерегулярное движение вращающегося тела, совершающего прецессию.
+                </div>
+
+                <div class="definition-box">
+                    <strong>Границы применения закона сохранения момента импульса (ЗСМИ):</strong>
+                    <ul>
+                        <li>для <strong>проекций</strong></li>
+                        <li>для <strong>вращающегося твёрдого тела</strong></li>
+                    </ul>
                 </div>
             </article>
             
