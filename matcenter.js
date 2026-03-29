@@ -1521,46 +1521,58 @@ function initEscapeKey() {
 }
 
 function initHintSwipe() {
-    const overlay = document.getElementById('hintOverlay');
-    const modal = document.getElementById('hintModal');
+    const overlay  = document.getElementById('hintOverlay');
+    const modal    = document.getElementById('hintModal');
+    const dragZone = document.getElementById('hintDragHandle');
+    const header   = modal ? modal.querySelector('.hint-modal-header') : null;
     if (!overlay || !modal || overlay.dataset.hintSwipeInit) return;
     overlay.dataset.hintSwipeInit = 'true';
-    let startY = 0, currentY = 0, tracking = false, activated = false;
-    const DEAD_ZONE = 15;
-    overlay.addEventListener('touchstart', (e) => {
+
+    let startY = 0, currentY = 0, tracking = false;
+
+    function onTouchStart(e) {
         if (window.innerWidth > 768) return;
-        if (modal.scrollTop > 5) return;
-        startY = e.touches[0].clientY;
+        startY  = e.touches[0].clientY;
         currentY = startY;
         tracking = true;
-        activated = false;
-    }, { passive: true });
-    overlay.addEventListener('touchmove', (e) => {
+        modal.style.transition = 'none';
+    }
+
+    // Слушаем только drag-handle и шапку — они не скроллятся,
+    // поэтому passive:true не мешает preventDefault в touchmove
+    if (dragZone) dragZone.addEventListener('touchstart', onTouchStart, { passive: true });
+    if (header)   header.addEventListener('touchstart',   onTouchStart, { passive: true });
+
+    // Движение — на document, чтобы палец мог уходить за границу шапки
+    document.addEventListener('touchmove', (e) => {
         if (!tracking) return;
         currentY = e.touches[0].clientY;
-        const deltaY = currentY - startY;
-        if (!activated) {
-            if (deltaY > DEAD_ZONE) { activated = true; startY = currentY; modal.style.transition = 'none'; }
-            return;
-        }
-        if (deltaY > 0) {
+        const dy = currentY - startY;
+        if (dy > 0) {
             e.preventDefault();
-            modal.style.transform = `translateY(${deltaY}px)`;
+            modal.style.transform = `translateY(${dy}px)`;
+        } else {
+            modal.style.transform = '';
         }
     }, { passive: false });
-    overlay.addEventListener('touchend', () => {
+
+    document.addEventListener('touchend', () => {
         if (!tracking) return;
         tracking = false;
-        if (!activated) return;
-        activated = false;
-        const deltaY = currentY - startY;
-        if (deltaY > 60) {
-            hideHintModal();
-            modal.style.transform = '';
-            modal.style.transition = '';
+        const dy = currentY - startY;
+        if (dy > 80) {
+            // Анимируем вниз, затем закрываем
+            modal.style.transition = 'transform 0.22s ease-out';
+            modal.style.transform  = `translateY(110%)`;
+            setTimeout(() => {
+                hideHintModal();
+                modal.style.transform  = '';
+                modal.style.transition = '';
+            }, 220);
         } else {
+            // Возврат на место
             modal.style.transition = 'transform 0.25s ease-out';
-            modal.style.transform = '';
+            modal.style.transform  = '';
             setTimeout(() => { modal.style.transition = ''; }, 250);
         }
     });
@@ -1656,10 +1668,19 @@ function initStatusFilter() {
     const statusFilterEl = document.getElementById('statusFilter');
     const mobileStatusFilter = document.getElementById('mobileStatusFilter');
 
+    function syncFilterClass(el) {
+        if (!el) return;
+        el.classList.toggle('has-filter', el.value !== '');
+    }
+
     if (statusFilterEl) {
         statusFilterEl.addEventListener('change', () => {
             searchStatusFilter = statusFilterEl.value || 'all';
-            if (mobileStatusFilter) mobileStatusFilter.value = statusFilterEl.value;
+            if (mobileStatusFilter) {
+                mobileStatusFilter.value = statusFilterEl.value;
+                syncFilterClass(mobileStatusFilter);
+            }
+            syncFilterClass(statusFilterEl);
             runSearch();
         });
     }
@@ -1667,7 +1688,11 @@ function initStatusFilter() {
     if (mobileStatusFilter) {
         mobileStatusFilter.addEventListener('change', () => {
             searchStatusFilter = mobileStatusFilter.value || 'all';
-            if (statusFilterEl) statusFilterEl.value = mobileStatusFilter.value;
+            if (statusFilterEl) {
+                statusFilterEl.value = mobileStatusFilter.value;
+                syncFilterClass(statusFilterEl);
+            }
+            syncFilterClass(mobileStatusFilter);
             runSearch();
         });
     }
