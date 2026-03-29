@@ -6184,16 +6184,41 @@ body.matcenter-page .task-card.open .task-description {
 /* Строка заголовка «Все задачи» + кнопка обновления */
 body.matcenter-page .part-title-row {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem;
     margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 3px solid var(--accent-color);
+    position: relative;
+}
+
+/* Анимированная линия — теперь на строке, а не на заголовке */
+body.matcenter-page .part-title-row::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 100px;
+    height: 3px;
+    background: var(--accent-hover);
+    animation: expandLine 2s ease-in-out infinite;
 }
 
 body.matcenter-page .part-title-row .part-title {
     margin: 0;
     flex: 1;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+/* Убираем дублирующую анимацию с самого заголовка */
+body.matcenter-page .part-title-row .part-title::after {
+    display: none;
+}
+
+/* Кнопка выравнивается по нижнему краю вместе с подчёркиванием */
+body.matcenter-page .part-title-row .refresh-button {
+    margin-bottom: 2px;
 }
 
 /* Кнопка обновления — иконка-кружок */
