@@ -221,8 +221,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (refreshButton) {
         refreshButton.addEventListener('click', () => {
             refreshButton.disabled = true;
-            refreshButton.textContent = '⏳ Обновление...';
-            
+            refreshButton.classList.add('spinning');
+
             loadTasksFromGoogleSheets()
                 .catch(err => {
                     console.error('Ошибка обновления данных:', err);
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 })
                 .finally(() => {
                     refreshButton.disabled = false;
-                    refreshButton.textContent = '🔄 Обновить данные';
+                    refreshButton.classList.remove('spinning');
                 });
         });
     }
@@ -1678,6 +1678,69 @@ function getContainerIdForFilter() {
     return map[currentFilter] || 'tasksContainer';
 }
 
+// ============================================
+// РУССКИЙ СТЕММЕР
+// ============================================
+
+// Упрощённый стеммер: отрезает типичные русские окончания.
+// Возвращает приближённый корень слова (≥ 3 букв).
+function roughStemRu(word) {
+    if (word.length <= 3) return word;
+    const w = word.toLowerCase();
+
+    // От длинных к коротким — важен порядок
+    const suffixes = [
+        'ениями','аниями','ениях','аниях','ениям','аниям',
+        'ностью','ностей','ностям','ностях','ностями',
+        'ений','аний','ением','анием','ениях','аниях',
+        'ения','ание','ению','анию',
+        'ости','ость','ести','есть',
+        'ться','ться',
+        'ами','ями','ими','ыми',
+        'ого','его','ому','ему',
+        'ах','ях','ам','ям',
+        'ым','им','ых','их',
+        'ов','ев',
+        'ой','ей','ую','юю',
+        'ья','ью','ьи',
+        'ся','сь','ть','ти',
+        'ый','ий','ые','ие',
+        'ая','яя','ое','ее',
+        'а','я','у','ю','е','о','и','ы',
+    ];
+
+    for (const s of suffixes) {
+        if (w.endsWith(s) && w.length - s.length >= 3) {
+            return w.slice(0, w.length - s.length);
+        }
+    }
+    return w;
+}
+
+// Проверяет, совпадает ли слово запроса с любым словом в тексте
+// (точно или через стеммер)
+function matchWordRu(qWord, numStr, desc) {
+    // Прямое совпадение
+    if (numStr.includes(qWord) || desc.includes(qWord)) return true;
+
+    // Стемминг только для слов 4+ символов (не цифр)
+    if (qWord.length < 4 || /^\d+$/.test(qWord)) return false;
+
+    const qStem = roughStemRu(qWord);
+    if (qStem.length < 3) return false;
+
+    // Разбиваем описание на слова и сравниваем стеммы
+    const descWords = desc.split(/[\s,;:.!?()\[\]«»\-–—\/]+/);
+    return descWords.some(dWord => {
+        if (dWord.length < 3) return false;
+        // Описательное слово начинается с корня запроса
+        if (dWord.startsWith(qStem)) return true;
+        // Совпадение по стеммам
+        const dStem = roughStemRu(dWord);
+        return dStem === qStem;
+    });
+}
+
 function runSearch() {
     const searchInput = document.getElementById('searchInput');
     const statusFilterEl = document.getElementById('statusFilter');
@@ -1691,10 +1754,14 @@ function runSearch() {
     }
 
     if (searchTerm) {
+        const queryWords = searchTerm.split(/\s+/).filter(w => w.length > 0);
         currentTasks = currentTasks.filter(task => {
-            const numberMatch = task.number.toString().includes(searchTerm);
-            const descriptionMatch = task.description.toLowerCase().includes(searchTerm);
-            return numberMatch || descriptionMatch;
+            const numStr = task.number.toString();
+            const desc = task.description.toLowerCase();
+            // Быстрая проверка: весь запрос как подстрока (для номеров и точных фраз)
+            if (numStr.includes(searchTerm) || desc.includes(searchTerm)) return true;
+            // Каждое слово должно найтись (И-логика)
+            return queryWords.every(qWord => matchWordRu(qWord, numStr, desc));
         });
     }
 
