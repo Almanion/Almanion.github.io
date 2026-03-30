@@ -5,13 +5,58 @@
     <link rel="icon" href="favicons/favicon-ph.svg" type="image/svg+xml">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="manifest.json">
-    <title>Подготовка к зачёту по Физике | Almanion</title>
+    <title>Билеты к экзамену | Физика 9 класс | Almanion</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <!-- KaTeX для математических формул -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <style>
+        .ticket-section {
+            display: none;
+        }
+        .ticket-section.active-ticket {
+            display: block;
+        }
+        .ticket-nav-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-top: 2.5rem;
+            padding: 1rem 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+        }
+        .ticket-nav-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 0.6rem 1.2rem;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+        .ticket-nav-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+        .ticket-nav-btn:disabled {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            cursor: default;
+            transform: none;
+        }
+        .ticket-counter {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+    </style>
 </head>
 <body>
     <!-- Боковая панель навигации -->
@@ -21,49 +66,39 @@
             <!-- Кнопка настроек создается автоматически через settings.js -->
             <button class="close-sidebar" id="closeSidebar">✕</button>
         </div>
-        
+
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="🔍 Поиск...">
         </div>
 
-        <div class="sidebar-actions">
-        </div>
-
         <nav class="nav-menu">
             <div class="nav-section">
-                <h3>Подготовка к зачёту</h3>
-                <ul>
-                    <li><a href="#definitions-kinematics" class="nav-link active">📖 Определения: Кинематика (1-68)</a></li>
-                    <li><a href="#definitions-dynamics" class="nav-link">📖 Определения: Динамика (69-135)</a></li>
-                    <li><a href="#tickets-kinematics" class="nav-link">📋 Билеты: Кинематика (1-4)</a></li>
-                    <li><a href="#tickets-dynamics" class="nav-link">📋 Билеты: Динамика (5-8)</a></li>
+                <h3>Билеты к экзамену</h3>
+                <ul id="ticketNavList">
+                    <li><a href="#ticket-1"  class="nav-link active" data-ticket="1">Билет №1</a></li>
+                    <li><a href="#ticket-2"  class="nav-link" data-ticket="2">Билет №2</a></li>
+                    <li><a href="#ticket-3"  class="nav-link" data-ticket="3">Билет №3</a></li>
+                    <li><a href="#ticket-4"  class="nav-link" data-ticket="4">Билет №4</a></li>
+                    <li><a href="#ticket-5"  class="nav-link" data-ticket="5">Билет №5</a></li>
+                    <li><a href="#ticket-6"  class="nav-link" data-ticket="6">Билет №6</a></li>
+                    <li><a href="#ticket-7"  class="nav-link" data-ticket="7">Билет №7</a></li>
+                    <li><a href="#ticket-8"  class="nav-link" data-ticket="8">Билет №8</a></li>
+                    <li><a href="#ticket-9"  class="nav-link" data-ticket="9">Билет №9</a></li>
+                    <li><a href="#ticket-10" class="nav-link" data-ticket="10">Билет №10</a></li>
+                    <li><a href="#ticket-11" class="nav-link" data-ticket="11">Билет №11</a></li>
+                    <li><a href="#ticket-12" class="nav-link" data-ticket="12">Билет №12</a></li>
+                    <li><a href="#ticket-13" class="nav-link" data-ticket="13">Билет №13</a></li>
+                    <li><a href="#ticket-14" class="nav-link" data-ticket="14">Билет №14</a></li>
+                    <li><a href="#ticket-15" class="nav-link" data-ticket="15">Билет №15</a></li>
+                    <li><a href="#ticket-16" class="nav-link" data-ticket="16">Билет №16</a></li>
+                    <li><a href="#ticket-17" class="nav-link" data-ticket="17">Билет №17</a></li>
                 </ul>
             </div>
-            
-            <div class="nav-section">
-                <h3>Кинематика (Билеты 1-4)</h3>
-                <ul>
-                    <li><a href="#tickets-kinematics" class="nav-link">Билет №1: Механическое движение</a></li>
-                    <li><a href="#tickets-kinematics" class="nav-link">Билет №2: Равноускоренное движение</a></li>
-                    <li><a href="#tickets-kinematics" class="nav-link">Билет №3: Криволинейное движение</a></li>
-                    <li><a href="#tickets-kinematics" class="nav-link">Билет №4: Движение по окружности</a></li>
-                </ul>
-            </div>
-            
-            <div class="nav-section">
-                <h3>Динамика (Билеты 5-8)</h3>
-                <ul>
-                    <li><a href="#tickets-dynamics" class="nav-link">Билет №5: Законы Ньютона</a></li>
-                    <li><a href="#tickets-dynamics" class="nav-link">Билет №6: Закон тяготения</a></li>
-                    <li><a href="#tickets-dynamics" class="nav-link">Билет №7: Сила упругости</a></li>
-                    <li><a href="#tickets-dynamics" class="nav-link">Билет №8: Сила трения</a></li>
-                </ul>
-            </div>
-            
+
             <div class="nav-section other-subjects">
                 <h3>Другие предметы</h3>
                 <ul>
-                    <li><a href="physics.html" class="current-subject">Физика 9 класс</a></li>
+                    <li><a href="physics.html">Физика 9 класс</a></li>
                     <li><a href="math.html">Алгебра 9 класс</a></li>
                     <li><a href="geometry.html">Геометрия 9 класс</a></li>
                     <li><a href="chemistry.html">Химия</a></li>
@@ -80,1555 +115,173 @@
     <!-- Основной контент -->
     <main class="main-content">
         <header class="page-header">
-            <h1>Подготовка к зачёту по Физике</h1>
-            <p class="subtitle"><a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a> | 2025 — 2026</p>
+            <h1>📝 Билеты к экзамену</h1>
+            <p class="subtitle">Физика 9 класс | <a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a></p>
         </header>
 
-        <!-- Определения: Часть I - Кинематика -->
-        <section class="content-section" id="definitions-kinematics">
-            <h2 class="part-title">Часть I: Определения по Кинематике (1-68)</h2>
-
-            <div class="definition-box">
-                <strong>1. Физика</strong> — наука, занимающаяся изучением самых общих свойств окружающего нас материального мира.
-            </div>
-
-            <div class="definition-box">
-                <strong>2. Механика</strong> — наука об общих закономерностях движения тел.
-                <p><b>Механика делится на три раздела:</b></p>
-                <ol>
-                    <li><b>Кинематика</b> — описывает движение тела, не объясняя почему движение происходит.</li>
-                    <li><b>Статика</b> — отвечает на вопрос почему тело покоится.</li>
-                    <li><b>Динамика</b> — отвечает на вопрос почему тело приходит в движение.</li>
-                </ol>
-            </div>
-
-            <div class="definition-box">
-                <strong>3. Механическое движение</strong> — перемещение тел в пространстве относительно других тел с течением времени.
-            </div>
-
-            <div class="definition-box">
-                <strong>4. Виды движения.</strong> Механическое движение бывает 3 видов:
-                <ol>
-                    <li><em>Поступательное</em> — механическое движение системы точек, при котором отрезок, соединяющий любые две точки в теле, остаётся параллельным своему первоначальному положению, если тело не деформируется.</li>
-                    <li><em>Вращательное</em> — механическое движение системы точек, при котором все точки тела движутся по окружности, центры которых лежат на одной прямой, которая называется <strong>осью вращения</strong>.</li>
-                    <li><em>Колебательное</em></li>
-                </ol>
-            </div>
-
-            <div class="definition-box">
-                <strong>5. Вращательное движение АТТ.</strong> — механическое движение абсолютно твёрдого тела, все его точки движутся по окружности, центры которых лежат на одной прямой, которая называется <strong>осью вращения</strong>.
-                <p><strong> Абсолютно твёрдое тело</strong> — идеальная модель тела, деформацией в котором, под действием внешних сил, можно пренебречь.
-            </div>
-
-            <div class="remark-box">
-                <strong>6. Колебательное движение:</strong> В конспекте нет определения.
-            </div>
-
-            <div class="definition-box">
-                <strong>7. Поступательное движение</strong> — механическое движение системы точек, при котором отрезок, соединяющий любые две точки в теле, остаётся параллельным своему первоначальному положению, если тело не деформируется.
-            </div>
-
-            <div class="definition-box">
-                <strong>8. Кинематика</strong> — раздел механики, изучающий способы описания движений и связь между величинами, характеризующими эти движения.
-            </div>
-
-            <div class="definition-box">
-                <strong>9. Материальная точка</strong> — модель тела, размерами которого в данных условиях движение можно пренебречь.
-            </div>
-
-            <div class="definition-box">
-                <strong>10. Свойства пространства:</strong> <ol>
-                    <li><b>Трёхмерность</b> — пространство имеет три измерения</li>
-                    <li><b>Однородность</b> — в пространстве нет выделенных точек</li>
-                    <li><b>Изотропность</b> — в пространстве нет выделенных направлений</li>
-                </ol>
-            </div>
-
-            <div class="definition-box">
-                <strong>11. Свойства времени:</strong> <ol>
-                    <li><b>Однородность</b> — в времени нет выделенных моментов</li>
-                    <li><b>Одномерность</b> — время не зависит от выбора системы отсчёта</li>
-                    <li><b>Однонаправленность</b> — время течёт в одном направлении</li>
-                </ol>
-            </div>
-
-            <div class="definition-box">
-                <strong>12. Система отсчёта</strong> — система координат, тело отсчёта и прибор для измерения времени.
-            </div>
-
-            <div class="definition-box">
-                <strong>13. Тело отсчёта</strong> — тело, которое мы принимаем за неподвижное, относительно которого рассматривается движение других тел.
-            </div>
-
-            <div class="definition-box">
-                <strong>14. Система координат</strong> — способ определения положения точки или тела с помощью чисел и других символов.
-            </div>
-
-            <div class="definition-box">
-                <strong>15. Координата точки на прямой</strong> — число, модуль которого равен расстоянию до начала отсчёта, а знак указывает, с какой стороны от начала отсчёта находится данная точка.
-            </div>
-
-            <div class="definition-box">
-                <strong>16. Координата точки на плоскости</strong> — расстояние от начала отсчёта, взятое с определённым знаком
-            </div>
-
-            <div class="definition-box">
-                <strong>17. Декартовая система координат</strong> — способ определения положения точки или тела на плоскости с помощью двух чисел: абсциссы \(x\) и ординаты \(y\). Основана на двух взаимно перпендикулярных координатных осях, пересекающихся в начале отсчёта.
-            </div>
-
-            <div class="definition-box">
-                <strong>18. Полярная система координат</strong> — способ задания положения точки на плоскости при помощи радиус-вектора \(r\) и угла \(\rho\).
-            </div>
-
-            <div class="definition-box">
-                <strong>19. Связь полярной и декартовой систем координат:</strong>
-                <div class="formula-box">
-                    \[x = r\cos\rho,\quad y = r\sin\rho,\quad r^2 = x^2 + y^2\]
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>20. Физическая величина</strong> — физическое свойство материального объекта, физического явления или процесса, которое может быть охарактеризовано количественно.
-                <p><strong>Скаляр</strong> — величина, каждое значение которой может быть выражено одним числом.</p>
-                <p><strong>Вектор</strong> — направленный отрезок прямой.</p>
-            </div>
-
-            <div class="definition-box">
-                <strong>21. Проекция точки</strong> — основание перпендикуляра, опущенного из данной точки на ось.
-            </div>
-
-            <div class="definition-box">
-                <strong>22. Проекцией вектора \(\vec{AB}\) на ось OX</strong> является число, равное величине отрезка \(A_1B_1\), где \(A_1\) и \(B_1\) — это проекции точек \(A\) и \(B\) на ось OX.
-            </div>
-
-            <div class="definition-box">
-                <strong>23. Радиус-вектор</strong> — вектор, начало которого совпадает с началом системы координат, а конец — с данной точкой.
-                <div class="remark-box">
-                    Радиус-вектор характеризует положение тела в пространстве.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>24. Перемещение</strong> — вектор, соединяющий начальное положение тела с его последним положением.
-                <div class="remark-box">
-                    Перемещение характеризует движение тела.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>25. Путь</strong> — скалярная физическая величина, численно равная длине траектории.
-            </div>
-
-            <div class="definition-box">
-                <strong>26. Траектория</strong> — линия, вдоль которой происходило движение тела.
-            </div>
-
-            <div class="definition-box">
-                <strong>27. Равномерное прямолинейное движение</strong> — движение, при котором траектория есть прямая линия и точка за любые равные промежутки времени проходит равные расстояния.
-                <div class="formula-box">
-                    \[v_x=\frac{\Delta x}{\Delta t},\quad x(t) = x_0 + v_x(t - t_0)\]
-                </div>
-                
-                <div class="derivation-box">
-                    <button class="toggle-derivation">📖 Показать вывод формул</button>
-                    <div class="derivation-content">
-                        <p><b>Вывод первой формулы \(v_x = \frac{\Delta x}{\Delta t}\):</b></p>
-                        <p>По определению скорости равномерного движения — это физическая величина, равная отношению изменения координаты к промежутку времени:</p>
-                        \[v_x = \frac{\Delta x}{\Delta t} = \frac{x - x_0}{t - t_0}\]
-                        
-                        <p><b>Вывод второй формулы \(x(t) = x_0 + v_x(t - t_0)\):</b></p>
-                        <p>Из формулы скорости выражаем изменение координаты:</p>
-                        \[\begin{align*}
-                        v_x &= \frac{x - x_0}{t - t_0} \\
-                        x - x_0 &= v_x(t - t_0) \\
-                        x(t) &= x_0 + v_x(t - t_0)
-                        \end{align*}\]
-                        <p>Эта формула показывает, что координата тела в момент времени \(t\) равна сумме начальной координаты и произведения скорости на время движения.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>28. Средняя скорость</strong> — векторная физическая величина, равная отношению вектора перемещения к промежутку времени, за которое это перемещение произошло.
-                
-                <div class="remark-box">
-                    Средняя скорость характеризует быстроту, с которой совершалось перемещение в среднем.
-                </div>
-                <div class="formula-box">
-                    \[\vec{v}_{\text{ср}} = \frac{\Delta \vec{r}}{\Delta t}\]
-                    <p>Единица измерения: \([v] = [\text{м/с}]\)</p>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>29. Средняя путевая скорость</strong> — скалярная физическая величина, равная отношению всего пути ко всему времени движения.
-                <div class="formula-box">
-                    \[v_{\text{пут}} = \frac{s}{t}\]
-                    <p>Единица измерения: \([v] = [\text{м/с}]\)</p>
-                </div>
-                <div class="remark-box">
-                    Средняя путевая скорость показывает какой путь проходило тело за единицу времени в среднем.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>30. Мгновенная скорость</strong> — векторная физическая величина, равная пределу отношения перемещения материальной точки к промежутку времени, за которое оно совершено, при стремлении этого промежутка к нулю.
-                <div class="formula-box">
-                    \[\vec{v} = \lim_{\Delta t \to 0}\frac{\Delta \vec{r}}{\Delta t}\]
-                    <p>Единица измерения: \([v] = [\text{м/с}]\)</p>
-                </div>
-                <div class="remark-box">
-                    Мгновенная скорость в каждой точке траектории направлена по касательной к траектории.
-                </div>
-                
-                <div class="remark-box">
-                    Скорость характеризует скорость изменения радиус-вектора, то есть показывает как он изменялся за единицу времени.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>31. Мгновенное ускорение</strong> — векторная физическая величина, равная пределу отношения изменения вектора скорости к промежутку времени, за которое изменение произошло, при стремлении этого промежутка к нулю.
-                <div class="formula-box">
-                    \[\vec{a} = \lim_{\Delta t \to 0}\frac{\Delta \vec{v}}{\Delta t}\]
-                    <p>Единица измерения: \([a] = [\text{м/с}^2]\)</p>
-                </div>                
-                <div class="remark-box">
-                    Мгновенное ускорение показывает быстроту изменения скорости.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>32. Равноускоренное движение</strong> — механическое движение, при котором тело движется по прямой линии и за любые равные промежутки времени скорость тела изменяется на одинаковую величину.
-                
-                <p><strong>Равноускоренное прямолинейное движение</strong> — прямолинейное движение с постоянным ускорением.</p>
-            </div>
-
-            <div class="definition-box">
-                <strong>33. Основная задача кинематики:</strong> по известной зависимости ускорения от времени, координаты и скорости найти закон движения тела.
-            </div>
-
-            <div class="definition-box">
-                <strong>34. Годограф</strong> — кривая, которую описывает конец какого-либо вектора.
-            </div>
-
-            <div class="definition-box">
-                <strong>35. Годограф радиус-вектора</strong> — траектория движения тела (кривая, которую описывает конец радиус-вектора точки).
-            </div>
-
-            <div class="definition-box">
-                <strong>36. Годограф скорости</strong> — кривая, которую описывает конец вектора скорости.
-                <div class="remark-box"> Ускорение в каждой точке траектории направлено по касательной к годографу скорости.</div>
-            </div>
-
-            <div class="definition-box">
-                <strong>37. Теорема Галилея (Закон кратных отношений):</strong> пути, пройденные точкой при равноускоренном движении из состояния покоя за 1-ю, 2-ю, 3-ю и последующие секунды, относятся как ряд нечетных чисел 1:3:5:…
-
-            </div>
-
-            <div class="definition-box">
-                <strong>38. Способы задания движения:</strong>
-                <ul>
-                    <li><em>Координатный способ:</em> положение точки в пространстве определяется тремя координатами изменение которых определяет закон движения точки.</li>
-                    <li><em>Векторный способ:</em> положение точки определяется её радиус-вектором.
-                    <li><em>Естественный способ:</em> называется траектория точки, закон её движения по этой траектории, начало и направление отсчёта дуговой координаты.</li>
-                </ul>
-            </div>
-
-            <div class="definition-box">
-                <strong>39. Свободное падение</strong> — движение тела под действием силы тяжести при отсутствии силы сопротивления воздуха и действия других тел, кроме Земли.
-            </div>
-
-            <div class="experiment-box">
-                <h4>🔬 <strong>40. Опыт Галилея</strong></h4>
-                
-                <div class="exp-section">
-                    <strong>Наблюдения:</strong>
-                    <p>Галилей обнаружил, что шары одинакового диаметра, изготовленные из дерева, золота, слоновой кости, движутся по желобу с одинаковыми ускорениями \(a=\frac{2s}{t^2}\). Итак, ускорения не зависят от массы шаров.</p>
-                </div>
-                
-                <div class="exp-section">
-                    <strong>Вывод:</strong>
-                    <p>Галилей доказал, что в отсутствие сопротивления воздуха время падения не зависит от массы тела — тела разных масс падают с одинаковым ускорением.</p>
-                </div>
-            </div>
-
-            <div class="experiment-box">
-                <h4>🔬 <strong>41. Опыт Ньютона</strong></h4>
-                
-                <div class="exp-section">
-                    <strong>Ход эксперимента:</strong>
-                    <p>В стеклянную трубку помещают предметы разной массы и формы: дробинки, кусочки пробки, пушинки и т.д.</p>
-                    <p>Если теперь трубку перевернуть, дробинка падает быстрее, за ней кусочки пробки, а пушинка — последней.</p>
-                    <p>Но если выкачать воздух из трубки и создании вакуума оба предмета опускаются на дно одновременно.</p>
-                </div>
-                
-                <div class="exp-section">
-                    <strong>Наблюдения:</strong>
-                    <p>Движение пушинки задерживалось сопротивлением воздуха, которое в меньшей степени сказывалось на движении, например, пробки.</p>
-                    <p>Когда же на эти тела действует только притяжение Земли, то все они падают с одинаковым ускорением.</p>
-                </div>
-                
-                <div class="exp-section">
-                    <strong>Вывод:</strong>
-                    <p>Земля сообщает всем без исключения телам одно и то же ускорение. Если сопротивление воздуха отсутствует, то вблизи поверхности Земли ускорение падающего тела постоянно.</p>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>42. Радиус кривизны</strong> — радиус окружности, которая касательно совпадает с траекторией в бесконечно малом участке в этой точке.
-                <div class="remark-box">В конспекте нет определения.</div>
-            </div>
-
-            <div class="definition-box">
-                <strong>43. Нормальное ускорение</strong> — векторная физическая величина, составляющая вектор ускорения, равная пределу отношения нормальной составляющей изменения вектора скорости к промежутку времени, за которое это изменение произошло, при стремлении этого промежутка к нулю.
-
-                <div class="formula-box">
-                    \[\vec{a}_n = \lim_{\Delta t \to 0}\frac{\Delta\vec{v}_n}{\Delta t}\]
-                    \[|\vec{a_n}| = \frac{v^2}{R}\]
-                    <p>Единица измерения: \([a_n] = [\text{м/с}^2]\)</p>
-                </div>
-                
-                <div class="remark-box">
-                    Нормальное ускорение характеризует быстроту изменения направления скорости.
-                </div>
-                
-                <p>Чтобы выяснить смысл нормального ускорения, будем рассматривать движение, при котором не меняется модуль скорость, то есть траекторией будет окружность:</p>
-                
-                <div class="derivation-box">
-                    <button class="toggle-derivation">📖 Скрыть вывод</button>
-                    <div class="derivation-content show">
-                        <img src="images/normal-acceleration.png" alt="Геометрическая схема вывода нормального ускорения" loading="lazy" style="width: min(250px, 90vw); height: auto; margin: 15px auto; display: block; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: white;">
-                        
-                        <style>
-                        @media (min-width: 768px) {
-                            img[src="images/normal-acceleration.png"] {
-                                float: right;
-                                margin: 0 0 15px 15px;
-                                display: inline;
-                            }
-                        }
-                        </style>
-                        
-                        \[\begin{align*}
-                        &\text{Проведём хорду } PQ. \\
-                        &\vec{v_0} \perp OP \\
-                        &\vec{v}(t) \perp OQ \\
-                        &\text{Проведём вектор } \Delta\vec{v}. \\
-                        &\text{Рассмотрим треугольник } POQ \text{ и } PZX: \\
-                        &\angle ZAX = \angle POQ \text{ по лемме об остром угле при взаимно перпендикулярных сторонах} \\
-                        &\frac{PZ}{OP} = \frac{PX}{OQ} \text{ из равнобедренности этих треугольников}. \\
-                        &\text{Значит, } \triangle POQ \sim \triangle PZX. \\
-                        &v = |\vec{v_0}| = |\vec{v}(t)| \Rightarrow \vec{a} = \vec{a}_n \Rightarrow \Delta\vec{v} = \Delta\vec{v_n} \\
-                        &\frac{|\Delta\vec{v}|}{PQ} = \frac{v}{R} \\
-                        &|\Delta\vec{v}| = \frac{v}{R}PQ \\
-                        &|\vec{a_n}| = \lim_{\Delta t \to 0}\frac{|\Delta\vec{v_n}|}{\Delta t} = \lim_{\Delta t \to 0}\frac{|\Delta\vec{v}|}{\Delta t} = \lim_{\Delta t \to 0}\frac{v}{R}\frac{PQ}{\Delta t} = \frac{v}{R}\lim_{\Delta t \to 0}\frac{PQ}{\Delta t} \\
-                        &\text{Тогда при } \Delta t \to 0 \text{ хорда } PQ \to \text{ дуга } PQ \\
-                        &|\vec{a_n}| = \frac{v}{R}\lim_{\Delta t \to 0}\frac{PQ}{\Delta t} = \frac{v}{R}v = \frac{v^2}{R} \\
-                        &|\vec{a_n}| = \frac{v^2}{R} \\
-                        &\beta = \frac{180^\circ - \Delta\theta}{2} \Rightarrow \lim_{\Delta t \to 0}\beta = \lim_{\Delta t \to 0}\frac{180^\circ - \Delta\theta}{2} = 90^\circ
-                        \end{align*}\]
-                    </div>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>44. Тангенциальное ускорение</strong> — векторная физическая величина, составляющая ускорение, равная пределу отношения тангенциальной составляющей изменения вектора скорости к промежутку времени, за которое это изменение произошло, при стремлении этого промежутка к нулю.
-
-                <div class="formula-box">
-                    \[\vec{a}_\tau = \lim_{\Delta t \to 0}\frac{\Delta\vec{v}_\tau}{\Delta t}\]
-                    <p>Единица измерения: \([a_\tau] = [\text{м/с}^2]\)</p>
-                </div>
-                
-                <div class="remark-box">
-                    Тангенциальное ускорение характеризует быстроту изменения модуля скорости.
-                </div>                
-                <div class="derivation-box">
-                    <button class="toggle-derivation">📖 Скрыть вывод</button>
-                    <div class="derivation-content show">
-                        \[\begin{align*}
-                        \Delta\vec{v} &= \vec{v}_1 - \vec{v}_0 \\
-                        \vec{v}_1 &= \Delta\vec{v} + \vec{v}_0 \\
-                        \Delta\vec{v} &= \Delta\vec{v}_n + \Delta\vec{v}_\tau \\
-                        \vec{v}_0 &\uparrow\uparrow \Delta\vec{v}_\tau \\
-                        \vec{a} = \lim_{\Delta t \to 0}\frac{\Delta\vec{v}}{\Delta t} &= \lim_{\Delta t \to 0}\frac{\Delta\vec{v}_n + \Delta\vec{v}_\tau}{\Delta t} = \\
-                        &= \lim_{\Delta t \to 0}\frac{\Delta\vec{v}_n}{\Delta t} + \lim_{\Delta t \to 0}\frac{\Delta\vec{v}_\tau}{\Delta t} \\
-                        \vec{a}_n &= \lim_{\Delta t \to 0}\frac{\Delta\vec{v}_n}{\Delta t} \\
-                        \vec{a}_\tau &= \lim_{\Delta t \to 0}\frac{\Delta\vec{v}_\tau}{\Delta t}
-                        \end{align*}\]
-                        
-                        <div style="text-align: center; margin: 20px 0;">
-                            <img src="images/tangential-acceleration.png" alt="Разложение изменения скорости на тангенциальную и нормальную составляющие" loading="lazy" style="width: min(600px, 90vw); height: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background: white;">
-                            <p style="font-size: 0.9em; color: var(--text-color); margin-top: 10px; font-style: italic;">Разложение \(\Delta\vec{v}\) на тангенциальную и нормальную составляющие</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <p>Если \(\vec{a}_\tau \uparrow\uparrow \vec{v}\), то тело ускоряется.</p>
-                <p>Если \(\vec{a}_\tau \uparrow\downarrow \vec{v}\), то тело замедляется.</p>
-            </div>
-
-            <div class="definition-box">
-                <strong>45. Относительность движения</strong> — все кинематические характеристики зависят от выбора системы отсчёта.
-            </div>
-
-            <div class="definition-box">
-                <strong>46. Принцип относительности Галилея</strong> — все законы механики одинаковы во всех инерциальных системах отсчёта.
-            </div>
-
-            <div class="definition-box">
-                <strong>47. Абсолютная скорость точки</strong> — скорость точки в неподвижной системе отсчёта, равная геометрической сумме относительной скорости точки и переносной скорости точки.
-                
-                <div class="derivation-box">
-                    <button class="toggle-derivation">📖 Скрыть вывод</button>
-                    <div class="derivation-content show">
-                        \[\begin{align*}
-                        &\frac{\Delta\vec{r}_{\text{абс}}}{\Delta t} = \frac{\Delta\vec{r}_{\text{отн}}}{\Delta t} + \frac{\Delta\vec{r}_{\text{пер}}}{\Delta t} \\
-                        &\lim_{\Delta t \to 0}\frac{\Delta\vec{r}_{\text{абс}}}{\Delta t} = \lim_{\Delta t \to 0}\frac{\Delta\vec{r}_{\text{отн}}}{\Delta t} + \lim_{\Delta t \to 0}\frac{\Delta\vec{r}_{\text{пер}}}{\Delta t}
-                        \end{align*}\]
-                        
-                        <div class="formula-box">
-                            \[\vec{v}_{\text{абсолютная}} = \vec{v}_{\text{относительная}} + \vec{v}_{\text{переносная}}\]
-                            
-                            где <strong>\(\vec{v}_{\text{абс}}\)</strong> — скорость точки в неподвижной системе отсчёта;<br>
-                            <strong>\(\vec{v}_{\text{отн}}\)</strong> — скорость точки в подвижной системе отсчёта;<br>
-                            <strong>\(\vec{v}_{\text{пер}}\)</strong> — скорость подвижной системы отсчёта относительно неподвижной системы отсчёта.
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>48. Ускорение абсолютное</strong> — ускорение точки в неподвижной системе отсчёта, равное геометрической сумме ускорения точки в подвижной системы отсчёта и ускорения подвижной системы отсчёта относительно неподвижной системы отсчёта.
-                
-                <div class="derivation-box">
-                    <button class="toggle-derivation">📖 Скрыть вывод</button>
-                    <div class="derivation-content show">
-                        \[\begin{align*}
-                        &\vec{v}_{\text{абс}}(t_0) = \vec{v}_{\text{отн}}(t_0) + \vec{v}_{\text{пер}}(t_0) \\
-                        &\vec{v}_{\text{абс}}(t) = \vec{v}_{\text{отн}}(t) + \vec{v}_{\text{пер}}(t) \\
-                        &\Delta\vec{v}_{\text{абс}}(t_0) = \Delta\vec{v}_{\text{отн}}(t_0) + \Delta\vec{v}_{\text{пер}}(t_0) \\
-                        &\lim_{\Delta t \to 0}\frac{\Delta\vec{v}_{\text{абс}}}{\Delta t} = \lim_{\Delta t \to 0}\frac{\Delta\vec{v}_{\text{отн}}}{\Delta t} + \lim_{\Delta t \to 0}\frac{\Delta\vec{v}_{\text{пер}}}{\Delta t}
-                        \end{align*}\]
-                        
-                        <div class="formula-box">
-                            \[\vec{a}_{\text{абсолютное}} = \vec{a}_{\text{относительное}} + \vec{a}_{\text{переносное}}\]
-                            
-                            где <strong>\(\vec{a}_{\text{абс}}\)</strong> — ускорение точки в неподвижной системе отсчёта;<br>
-                            <strong>\(\vec{a}_{\text{отн}}\)</strong> — ускорение точки в подвижной системе отсчёта;<br>
-                            <strong>\(\vec{a}_{\text{пер}}\)</strong> — ускорение подвижной системы отсчёта относительно неподвижной системы отсчёта.
-                            
-                            <div class="remark-box">
-                                *Верно только для поступательного движения.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>49. Угол поворота тела</strong> — вектор, модуль которого равен углу, на который повернулось тело, а направление определяется правилом правого винта.
-            </div>
-
-            <div class="definition-box">
-                <strong>50. Правило правого винта:</strong> Если правый винт вращать по направлению вращения тела, то поступательное движение винта укажет направление вектора угла поворота.
-            </div>
-
-            <div class="definition-box">
-                <strong>51. Радианная мера угла</strong> — отношение длины дуги окружности к радиусу этой окружности.
-                
-                <div class="formula-box">
-                    \[\varphi = \frac{s}{r}\]
-                </div>
-                <p><strong>1 радиан</strong> — угол, соответствующий дуге, длина которой равна радиусу окружности, которой принадлежит эта дуга.</p>
-            </div>
-
-            <div class="definition-box">
-                <strong>52. Мгновенная угловая скорость</strong> — векторная физическая величина, равная пределу отношения угла поворота к промежутку времени, за который совершился этот поворот, при условии, что этот промежуток стремится к нулю.
-                
-                <div class="formula-box">
-                    \[\vec{\omega} = \lim_{\Delta t \to 0}\frac{\vec{\Delta\varphi}}{\Delta t}\]
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>53. Мгновенное угловое ускорение</strong> — векторная физическая величина, равная пределу отношения изменения угловой скорости к промежутку времени, за который это изменение произошло, при условии, что этот промежуток стремится к нулю.
-                
-                <div class="formula-box">
-                    \[\beta = \lim_{\Delta t \to 0}\frac{\vec{\Delta\omega}}{\Delta t}\]
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>54. Равноускоренное вращение</strong> — вращательное движение, при котором угловое ускорение постоянно по модулю и направлению.
-            </div>
-
-            <div class="definition-box">
-                <strong>55. Равномерное вращение</strong> — вращательное движение, при котором угловая скорость постоянна по модулю и направлению.
-            </div>
-
-            <div class="definition-box">
-                <strong>56. Период</strong> — скалярная физическая величина, равная отношению промежутку времени вращения к числу оборотов, совершённых за этот промежуток, при равномерном вращении.
-                
-                <div class="formula-box">
-                    \[T = \frac{t}{N}\]
-                    \[[T] = [\text{с}]\]
-                </div>
-                
-                <p><strong>Период вращения</strong> — время одного полного оборота.</p>
-            </div>
-
-            <div class="definition-box">
-                <strong>57. Частота вращения</strong> — скалярная физическая величина, равная отношению числа оборотов к промежутку времени, за который совершались обороты, при равномерном вращении.
-                
-                <div class="remark-box">
-                    Частота вращения равняется числу оборотов в единицу времени при равномерном движении.
-                </div>
-                
-                <div class="formula-box">
-                    \[\nu = \frac{N}{t}; \quad [\nu] = [\text{с}^{-1}] = [\text{Гц}]\]
-                    \[T = \frac{1}{\nu}; \quad \nu = \frac{1}{T}\]
-                    \[\omega = \frac{\Delta\varphi}{\Delta t}\]
-                    \[\omega = \frac{2\pi}{T} = 2\pi\nu\]
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>58. Связь между угловой скоростью и частотой:</strong>
-                <div class="formula-box">
-                    \[\omega = 2\pi\nu\]
-                </div>
-
-                <div class="derivation-box">
-                    <button class="toggle-derivation">📖 Показать вывод</button>
-                    <div class="derivation-content">
-                        <p>За один полный оборот тело поворачивается на угол \(2\pi\) радиан.</p>
-                        <p>Частота \(\nu\) показывает число оборотов за секунду.</p>
-                        <p>Угловая скорость — это изменение угла за единицу времени:</p>
-                        \[\omega = \frac{\Delta\varphi}{\Delta t} = \frac{2\pi \cdot \nu \cdot \Delta t}{\Delta t} = 2\pi\nu\]
-                    </div>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>59. Связь между угловой скоростью и периодом:</strong>
-                <div class="formula-box">
-                    \[\omega = \frac{2\pi}{T}\]
-                </div>
-                <p>Также: \(T = \frac{1}{\nu}\), \(\nu = \frac{1}{T}\)</p>
-
-                <div class="derivation-box">
-                    <button class="toggle-derivation">📖 Показать вывод</button>
-                    <div class="derivation-content">
-                        <p>За период \(T\) (время одного оборота) тело поворачивается на угол \(2\pi\) радиан:</p>
-                        \[\omega = \frac{\Delta\varphi}{\Delta t} = \frac{2\pi}{T}\]
-                    </div>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>60. Связь между угловой и линейной скоростью:</strong>
-                <div class="formula-box">
-                    \[v = \omega R\]
-                    <p>Векторная форма: \(\vec{v} = \vec{\omega} \times \vec{R}\)</p>
-                </div>
-
-                <div class="derivation-box">
-                    <button class="toggle-derivation">📖 Показать вывод</button>
-                    <div class="derivation-content">
-                        <p>За время \(\Delta t\) точка проходит путь \(s = R \cdot \Delta\varphi\), где \(\Delta\varphi\) — угол поворота в радианах.</p>
-                        <p>Линейная скорость:</p>
-                        \[v = \frac{s}{\Delta t} = \frac{R \cdot \Delta\varphi}{\Delta t} = R \cdot \frac{\Delta\varphi}{\Delta t} = R \cdot \omega\]
-                        <p>Также можно выразить через период:</p>
-                        \[v = \frac{2\pi R}{T} = \omega R\]
-                    </div>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>61. Модуль нормального ускорения:</strong>
-                <div class="formula-box">
-                    \[|\vec{a_n}| = \frac{v^2}{R}\]
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>62. Связь нормального ускорения с угловой и линейной скоростями:</strong>
-                <div class="formula-box">
-                    \[a_n = \frac{v^2}{R} = \omega^2 R\]
-                </div>
-
-                <div class="derivation-box">
-                    <button class="toggle-derivation">📖 Показать вывод</button>
-                    <div class="derivation-content">
-                        <p><b>Вывод формулы \(a_n = \frac{v^2}{R}\):</b></p>
-                        
-                        <p>Рассмотрим движение по окружности с постоянным модулем скорости:</p>
-                        <img src="images/normal-acceleration.png" alt="Геометрическая схема вывода нормального ускорения" loading="lazy" style="width: min(250px, 90vw); height: auto; margin: 15px auto; display: block; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: white;">
-                        
-                        <style>
-                        @media (min-width: 768px) {
-                            img[src="images/normal-acceleration.png"] {
-                                float: right;
-                                margin: 0 0 15px 15px;
-                                display: inline;
-                            }
-                        }
-                        </style>
-                        
-                        \[\begin{align*}
-                        &\text{Проведём хорду } PQ. \\
-                        &\vec{v_0} \perp OP, \quad \vec{v}(t) \perp OQ \\
-                        &\text{Рассмотрим треугольники } POQ \text{ и } PZX \text{ (треугольник векторов скорости):} \\
-                        &\angle ZAX = \angle POQ \text{ (по лемме об остром угле при взаимно перпендикулярных сторонах)} \\
-                        &\text{Треугольники равнобедренные, поэтому } \triangle POQ \sim \triangle PZX \\
-                        &\text{Из подобия: } \frac{|\Delta\vec{v}|}{PQ} = \frac{v}{R} \\
-                        &|\Delta\vec{v}| = \frac{v}{R}PQ \\
-                        &|\vec{a_n}| = \lim_{\Delta t \to 0}\frac{|\Delta\vec{v}|}{\Delta t} = \frac{v}{R}\lim_{\Delta t \to 0}\frac{PQ}{\Delta t} \\
-                        &\text{При } \Delta t \to 0 \text{ хорда } PQ \to \text{ дуга } PQ \\
-                        &|\vec{a_n}| = \frac{v}{R} \cdot v = \frac{v^2}{R}
-                        \end{align*}\]
-                        
-                        <p><b>Вывод формулы \(a_n = \omega^2 R\):</b></p>
-                        <p>Используем связь между линейной и угловой скоростями \(v = \omega R\).</p>
-                        <p>Подставим в формулу нормального ускорения:</p>
-                        \[\begin{align*}
-                        a_n &= \frac{v^2}{R} = \frac{(\omega R)^2}{R} = \frac{\omega^2 R^2}{R} = \omega^2 R
-                        \end{align*}\]
-                    </div>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>63. Таблица значений синусов, косинусов, тангенсов:</strong>
-                <table border="1" cellpadding="8" style="border-collapse: collapse; width: 100%; text-align: center; margin-top: 10px;">
-                    <tr>
-                        <th>\(\alpha\)</th>
-                        <th>0°</th>
-                        <th>30°</th>
-                        <th>45°</th>
-                        <th>60°</th>
-                        <th>90°</th>
-                    </tr>
-                    <tr>
-                        <th>\(\sin\alpha\)</th>
-                        <td>0</td>
-                        <td>\(\frac{1}{2}\)</td>
-                        <td>\(\frac{\sqrt{2}}{2}\)</td>
-                        <td>\(\frac{\sqrt{3}}{2}\)</td>
-                        <td>1</td>
-                    </tr>
-                    <tr>
-                        <th>\(\cos\alpha\)</th>
-                        <td>1</td>
-                        <td>\(\frac{\sqrt{3}}{2}\)</td>
-                        <td>\(\frac{\sqrt{2}}{2}\)</td>
-                        <td>\(\frac{1}{2}\)</td>
-                        <td>0</td>
-                    </tr>
-                    <tr>
-                        <th>\(\tan\alpha\)</th>
-                        <td>0</td>
-                        <td>\(\frac{\sqrt{3}}{3}\)</td>
-                        <td>1</td>
-                        <td>\(\sqrt{3}\)</td>
-                        <td>—</td>
-                    </tr>
-                </table>
-            </div>
-
-            <div class="definition-box">
-                <strong>64. Уравнения кинематики равнопеременного движения по окружности:</strong>
-                <div class="formula-box">
-                    \[\begin{align*}
-                    \varphi(t) &= \varphi_0 + \omega_0 t + \frac{\beta t^2}{2} \\
-                    \omega(t) &= \omega_0 + \beta t
-                    \end{align*}\]
-                </div>
-                
-                <div class="derivation-box">
-                    <button class="toggle-derivation">📖 Показать вывод формул</button>
-                    <div class="derivation-content">
-                        <p><b>Вывод первой формулы \(\omega(t) = \omega_0 + \beta t\):</b></p>
-                        <p>По определению углового ускорения при равноускоренном вращении:</p>
-                        \[\begin{align*}
-                        \beta &= \frac{\Delta\omega}{\Delta t} = \frac{\omega - \omega_0}{t - t_0} \\
-                        \omega - \omega_0 &= \beta(t - t_0)
-                        \end{align*}\]
-                        <p>Если \(t_0 = 0\), то:</p>
-                        \[\omega(t) = \omega_0 + \beta t\]
-                        
-                        <p><b>Вывод второй формулы \(\varphi(t) = \varphi_0 + \omega_0 t + \frac{\beta t^2}{2}\):</b></p>
-                        <p>Средняя угловая скорость при равноускоренном вращении равна полусумме начальной и конечной угловых скоростей:</p>
-                        \[\omega_{\text{ср}} = \frac{\omega_0 + \omega}{2}\]
-                        <p>Изменение угла поворота равно произведению средней угловой скорости на время:</p>
-                        \[\Delta\varphi = \omega_{\text{ср}} \cdot t = \frac{\omega_0 + \omega}{2} \cdot t\]
-                        <p>Подставим \(\omega = \omega_0 + \beta t\):</p>
-                        \[\begin{align*}
-                        \Delta\varphi &= \frac{\omega_0 + (\omega_0 + \beta t)}{2} \cdot t \\
-                        &= \frac{2\omega_0 + \beta t}{2} \cdot t \\
-                        &= \omega_0 t + \frac{\beta t^2}{2}
-                        \end{align*}\]
-                        <p>Отсюда:</p>
-                        \[\varphi(t) = \varphi_0 + \omega_0 t + \frac{\beta t^2}{2}\]
-                    </div>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>65. Уравнения кинематики равнопеременного поступательного движения:</strong>
-                <div class="formula-box">
-                    \[\begin{align*}
-                    x(t) &= x_0 + v_{0x}t + \frac{a_x t^2}{2} \\
-                    v_x(t) &= v_{0x} + a_x t \\
-                    S_x &= \frac{v_x^2 - v_{0x}^2}{2a_x}
-                    \end{align*}\]
-                </div>
-
-                <div class="derivation-box">
-                    <button class="toggle-derivation">📖 Показать вывод формул</button>
-                    <div class="derivation-content">
-                        <p><b>Вывод первой формулы \(v_x(t) = v_{0x} + a_x t\):</b></p>
-                        <p>По определению ускорения при равноускоренном движении:</p>
-                        \[\begin{align*}
-                        a_x &= \frac{\Delta v_x}{\Delta t} = \frac{v_x - v_{0x}}{t - t_0} \\
-                        v_x - v_{0x} &= a_x(t - t_0)
-                        \end{align*}\]
-                        <p>Если \(t_0 = 0\), то:</p>
-                        \[v_x(t) = v_{0x} + a_x t\]
-                        
-                        <p><b>Вывод второй формулы \(x(t) = x_0 + v_{0x}t + \frac{a_x t^2}{2}\):</b></p>
-                        <p>Средняя скорость при равноускоренном движении равна полусумме начальной и конечной скоростей:</p>
-                        \[v_{\text{ср}} = \frac{v_{0x} + v_x}{2}\]
-                        <p>Перемещение равно произведению средней скорости на время:</p>
-                        \[\Delta x = v_{\text{ср}} \cdot t = \frac{v_{0x} + v_x}{2} \cdot t\]
-                        <p>Подставим \(v_x = v_{0x} + a_x t\):</p>
-                        \[\begin{align*}
-                        \Delta x &= \frac{v_{0x} + (v_{0x} + a_x t)}{2} \cdot t \\
-                        &= \frac{2v_{0x} + a_x t}{2} \cdot t \\
-                        &= v_{0x}t + \frac{a_x t^2}{2}
-                        \end{align*}\]
-                        <p>Отсюда:</p>
-                        \[x(t) = x_0 + v_{0x}t + \frac{a_x t^2}{2}\]
-                        
-                        <p><b>Вывод третьей формулы \(S_x = \frac{v_x^2 - v_{0x}^2}{2a_x}\):</b></p>
-                        \[\begin{align*}
-                        S_x &= v_{0x}t + \frac{a_xt^2}{2} \\
-                        a_x &= \frac{v_x - v_{0x}}{t} \Rightarrow t = \frac{v_x - v_{0x}}{a_x} \\
-                        S_x &= v_{0x}t + \frac{(v_x - v_{0x})t}{2} = \frac{2v_{0x}t + v_xt - v_{0x}t}{2} = \frac{v_{0x} + v_x}{2}t \\
-                        S_x &= \frac{v_{0x} + v_x}{2} \cdot \frac{v_x - v_{0x}}{a_x} = \frac{(v_{0x} + v_x)(v_x - v_{0x})}{2a_x} = \frac{v_x^2 - v_{0x}^2}{2a_x}
-                        \end{align*}\]
-                    </div>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>66. Направление вектора скорости и ускорения при разгоне и торможении:</strong>
-                <ul>
-                    <li><strong>При разгоне:</strong> тангенциальное ускорение сонаправлено со скоростью (\(\vec{a}_\tau \uparrow\uparrow \vec{v}\))</li>
-                    <li><strong>При торможении:</strong> тангенциальное ускорение противонаправлено скорости (\(\vec{a}_\tau \uparrow\downarrow \vec{v}\))</li>
-                </ul>
-            </div>
-
-            <div class="definition-box">
-                <strong>67. Векторное произведение вектора \(\vec{a}\) на вектор \(\vec{b}\)</strong> — вектор, модуль которого равен произведению модулей \(|\vec{a}|\) и \(|\vec{b}|\) на синус угла между ними, а направление которого перпендикулярно обоим исходным векторам и определяется правилом правого винта.    
-                <div class="formula-box">
-                    \[\vec{a} \times \vec{b} = |\vec{a}| \cdot |\vec{b}| \cdot \sin\alpha\]
-                </div>
-                <p><strong>Правило правого винта:</strong> Если вращать правый винт от первого вектора ко второму по наименьшему углу, то поступательное движение винта укажет результат векторного произведения этих векторов.</p>
-            </div>
-
-            <div class="definition-box">
-                <strong>68. Скалярное произведение вектора \(\vec{a}\) на вектор \(\vec{b}\)</strong> — скалярная физическая величина, равная произведению модулей \(|\vec{a}|\) и \(|\vec{b}|\) на косинус угла между ними.
-                <div class="formula-box">
-                    \[\vec{a} \cdot \vec{b} = |\vec{a}| \cdot |\vec{b}| \cdot \cos\alpha\]
-                </div>
-            </div>
-
-        </section>
-
-        <!-- Определения: Часть II - Динамика -->
-        <section class="content-section" id="definitions-dynamics">
-            <h2 class="part-title">Часть II: Определения по Динамике (69-135)</h2>
-
-            <div class="definition-box">
-                <strong>69. I закон Ньютона:</strong> существуют такие системы отсчёта, относительно которых свободное тело сохраняет свою скорость неизменной. Такие системы отсчёта называются <strong>инерциальными</strong>.
-            </div>
-
-            <div class="definition-box">
-                <strong>70. Свободное тело</strong> — тело, на которое не действуют другие тела или действия других тел скомпенсированы.
-            </div>
-
-            <div class="definition-box">
-                <strong>71. Инерциальная система отсчёта</strong> — система отсчёта, относительно которой свободное тело движется с постоянной скоростью.
-            </div>
-
-            <div class="definition-box">
-                <strong>72. Маятник Фуко</strong> — массивный шар, подвешенный на достаточно длинной нити и совершающий малые колебания относительно положения равновесия. Если бы система отсчёта была инерциальной, то плоскость колебаний маятника Фуко оставалась бы неизменной относительно Земли.
-            </div>
-
-            <div class="definition-box">
-                <strong>73. Основное утверждение динамики (II закон Ньютона):</strong> изменение скорости или деформация тела происходит в результате воздействия на данное тело других тел.
-            </div>
-
-            <div class="definition-box">
-                <strong>74. Сила</strong> — векторная физическая величина, являющаяся мерой воздействия на данное тело других тел, при котором тело изменяет свою скорость или деформируется.
-                <div class="remark-box">
-                    <b>Результат воздействия силы на тело:</b>
-                    <ul>
-                        <li><strong>Динамический:</strong> движения тела, изменение скорости.</li>
-                        <li><strong>Статический:</strong> деформация тела, изменение формы.</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>75. Инерция</strong> — общее свойство всех физических объектов, тел сохранять своё состояние.
-                <div class="remark-box">
-                    Под инерцией в механике понимается способность тела сохранять свою скорость постоянной.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>76. Масса</strong> — мера инертности тела.
-                <div class="remark-box">
-                    *При поступательном движении.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>77. II закон Ньютона:</strong> ускорение, с которым движется тело под действием силы, прямо пропорционально этой силе и сонаправлено с ней.
-                <div class="formula-box">
-                    \[\vec{a} = \frac{\vec{F}}{m}, \quad m\vec{a} = \vec{F}\]
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>78. Принцип суперпозиции:</strong> если одновременно действуют несколько сил, то каждая из них сообщает точке ускорение, определённое вторым законом Ньютона, как если бы других сил не было.
-                <div class="remark-box">
-                    Действие нескольких сил можно заменить действием равнодействующей силы.
-                </div>
-                <div class="formula-box">
-                    \[\vec{F} = \sum\limits_{i=1}^n \vec{F}_i, \quad m\vec{a} = \sum\limits_{i=1}^n \vec{F}_i\]
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>79. III закон Ньютона:</strong> два тела взаимодействуют с силами одной природы, направленными вдоль прямой, соединяющей тела, равными по модулю и противоположными по направлению.
-                <div class="formula-box">
-                    \[\vec{F}_{12} = -\vec{F}_{21}\]
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>80. Границы применимости II закона Ньютона:</strong>
-                <ol>
-                    <li>Материальная точка.</li>
-                    <li>Тела движутся со скоростями, значительно меньшими скорости света.</li>
-                </ol>
-            </div>
-
-            <div class="definition-box">
-                <strong>81. I закон Кеплера:</strong> все планеты движутся по эллипсам, в одном из фокусов которого находится Солнце.
-                <div class="remark-box">
-                    Все космические тела движутся по траекториям, являющимися коническими сечениями (эллипс, парабола, окружность, прямая).
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>82. II закон Кеплера:</strong> радиус-вектор планеты за равные промежутки времени "заметает" равные площади.
-            </div>
-
-            <div class="definition-box">
-                <strong>83. III закон Кеплера:</strong> квадраты периодов обращения планет вокруг Солнца относятся как кубы больших полуосей их орбит.
-                <div class="formula-box">
-                    \[\frac{T_1^2}{T_2^2} = \frac{R_1^3}{R_2^3}\]
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>84. Закон всемирного тяготения:</strong> все тела притягиваются друг к другу с силами, прямо пропорциональными их массам и обратно пропорциональными квадрату расстояния между ними.
-                <div class="formula-box">
-                    \[F = G\frac{m_1m_2}{r^2}\]
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>85. Гравитационная постоянная</strong> — физическая постоянная, показывающая с какой силой притягиваются два тела массой 1 кг каждое, находящиеся на расстоянии 1 м друг от друга.
-                <div class="formula-box">
-                    \[G = 6.67 \cdot 10^{-11} \frac{\text{Н} \cdot \text{м}^2}{\text{кг}^2}\]
-                </div>
-                <div class="remark-box">
-                    Гравитационная постоянная одинакова для всех тел во Вселенной.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>86. Границы применимости закона всемирного тяготения:</strong>
-                <ul>
-                    <li>Размеры тел пренебрежимо малы по сравнению с расстоянием между ними.</li>
-                    <li>Оба тела однородны и шарообразны.</li>
-                    <li>Одно из тел — шар, размеры и масса которого значительно больше, чем у других тел.</li>
-                </ul>
-            </div>
-
-            <div class="experiment-box">
-                <h4>🔬 <strong>87. Опыт Кавендиша</strong></h4>
-                
-                <div class="exp-section">
-                    <strong>Цель:</strong>
-                    <p>Измерить гравитационную постоянную.</p>
-                </div>
-                
-                <div class="exp-section">
-                    <strong>Ход эксперимента:</strong>
-                    <p>Прибор состоит из крутильных весов, изготовленных из деревянного стержня длиной 1.8м, подвешенного на проволоке, с двумя свинцовыми шарами на концах. Два массивных свинцовых шара подвешены отдельно каждому концу. Измеряя гравитационное взаимодействие, крутильные весы поворачивались на незначительный угол. Рычаг поворачивался, пока сила натяжения нити не уравновесила гравитационное взаимодействие.</p>
-                </div>
-
-                <div style="text-align: center; margin: 20px 0;">
-                    <img src="images/Kavendish.png" alt="Опыт Кавендиша" loading="lazy" style="width: min(800px, 90vw); height: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background: white;">
-                    <p style="font-size: 0.9em; color: var(--text-color); margin-top: 10px; font-style: italic;">Опыт Кавендиша</p>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>88. Инертная масса</strong> — мера инертности тела.
-                <div class="remark-box">
-                    Инертная масса характеризует способность тела изменять скорость под действием внешних сил.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>89. Гравитационная масса</strong> — мера гравитации тела.
-                <div class="remark-box">
-                    Гравитационная масса характеризует способность тела притягивать к себе другие тела.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>90. Искусственный спутник Земли</strong> — космический летательный аппарат, вращающийся вокруг Земли по геоцентрической орбите.
-            </div>
-
-            <div class="definition-box">
-                <strong>91. Геостационарная орбита (ГСО)</strong> — круговая орбита, расположенная над экватором Земли (\(0^\circ\) широты), находясь на которой искусственный спутник обращается вокруг планеты с угловой скоростью, равной угловой скорости вращения Земли вокруг своей оси.
-            </div>
-
-            <div class="definition-box">
-                <strong>92. Первая космическая скорость</strong> — минимальная скорость, которую надо сообщить искусственному спутнику (ИС), чтобы он стал спутником Земли.
-                <div class="formula-box">
-                    \[v_1 = \sqrt{gR} = 7.9 \frac{\text{км}}{\text{с}}\]
-                </div>
-                
-                <div class="derivation-box">
-                    <button class="toggle-derivation">📖 Показать вывод</button>
-                    <div class="derivation-content">
-                        \[\begin{align*}
-                        F &= G\frac{Mm}{(R+h)^2} \\
-                        a &= \frac{v^2}{R+h} = \frac{F}{m} = G\frac{M}{(R+h)^2} \\
-                        \frac{v^2}{R+h} &= G\frac{M}{(R+h)^2} \\
-                        v &= \sqrt{G\frac{M}{R+h}} = \sqrt{gR}
-                        \end{align*}\]
-                    </div>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>93. Вторая космическая скорость</strong> — минимальная скорость, которую надо сообщить искусственному спутнику (ИС), чтобы он стал спутником Солнца.
-                <div class="formula-box">
-                    \[v_2 = \sqrt{2gR} = 11.2 \frac{\text{км}}{\text{с}}\]
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>94. Третья космическая скорость</strong> — минимальная скорость, которую надо сообщить искусственному спутнику (ИС), чтобы он покинул пределы Солнечной системы.
-                <div class="formula-box">
-                    \[v_3 = 16.6 \frac{\text{км}}{\text{с}}\]
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>95. Гравитационное поле</strong> — особая форма материи, с помощью которой осуществляется взаимодействие между телами, обладающими массой (гравитационными зарядами).
-                <br><br>
-                <strong>Свойства гравитационного поля:</strong>
-                <ul>
-                    <li>Материально.</li>
-                    <li>Объективно.</li>
-                    <li>Порождается гравитационным зарядом.</li>
-                    <li>Обнаруживается по действию на гравитационный заряд.</li>
-                    <li>Обладает энергией.</li>
-                    <li>Совершает работу по перемещению тела в пространстве.</li>
-                </ul>
-            </div>
-
-            <div class="definition-box">
-                <strong>96. Силовые линии</strong> — линии, касательные к которым в каждой точке совпадают с направлением действующей силы на материальную точку малой массы.
-            </div>
-
-            <div class="definition-box">
-                <strong>97. Силовая характеристика гравитационного поля</strong> — ускорение свободного падения или напряжённость гравитационного поля.
-                <div class="formula-box">
-                    \[\vec{g} = \frac{\vec{F}_{\text{г}}}{m}\]
-                </div>
-                <div class="remark-box">
-                    \(g\) линейно зависит от глубины погружения внутри Земли.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>98. Сила тяжести</strong> — сила гравитационного притяжения тела к Земле.
-                <div class="formula-box">
-                    \[F_{\text{тяж}} = mg\]
-                </div>
-                <div class="remark-box">
-                    <b>Направление:</b> к центру Земли.<br>
-                    <b>Точка приложения:</b> к центру масс тела.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>99. Деформация</strong> — изменение формы или размеров тела.
-                <div class="remark-box">
-                    <b>Причина деформации</b> — смещение частиц тела на разные расстояния под действием внешних сил.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>100. Виды деформации по характеру восстановления:</strong>
-                <ul>
-                    <li><strong>Упругая</strong> — деформация, исчезающая после прекращения действия на тело внешних сил. Тело принимает первоначальные размеры и форму.</li>
-                    <li><strong>Пластическая</strong> — деформация, не исчезающая после прекращения действия на тело внешних сил. Тело не принимает первоначальные размеры и форму.</li>
-                </ul>
-            </div>
-
-            <div class="definition-box">
-                <strong>101. Виды деформации по типу воздействия:</strong>
-                <ul>
-                    <li><b>Растяжение:</b> \(\epsilon_l = \frac{\Delta l}{l_0}\)</li>
-                    <li><b>Сжатие:</b> \(\epsilon_l = \frac{\Delta l}{l_0}\)</li>
-                    <li><b>Сдвиг:</b> \(\epsilon_\alpha = \tan \alpha\)</li>
-                    <li><b>Изгиб:</b> \(\epsilon_h = \frac{\Delta h}{l_0}\)</li>
-                    <li><b>Кручение:</b> \(\epsilon_\varphi = \frac{\varphi}{l_0}\)</li>
-                </ul>
-            </div>
-
-            <div class="definition-box">
-                <strong>102. Упругие тела</strong> — тела, которые полностью восстанавливают свою форму и объём после прекращения действия сил, вызвавших деформацию.
-            </div>
-
-            <div class="definition-box">
-                <strong>103. Пластические тела</strong> — тела, которые не восстанавливают свою форму и объём после прекращения действия сил, вызвавших деформацию.
-            </div>
-
-            <div class="definition-box">
-                <strong>104. Сила упругости</strong> — сила, возникающая в упругом деформированном теле и стремящаяся вернуть телу исходную форму.
-                <div class="remark-box">
-                    <b>Природа:</b> электромагнитная.<br>
-                    <b>Причина возникновения:</b> взаимодействие частиц тела друг с другом.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>105. Закон Гука:</strong> величина деформации прямо пропорциональна приложенной силе.
-                <div class="formula-box">
-                    \[F = k|\Delta l|\]
-                </div>
-                <div class="remark-box">
-                    где \(k\) — коэффициент жёсткости (зависит от материала, размеров и формы тела), \(\Delta l\) — удлинение тела.
-                </div>
-                <div class="remark-box">
-                    Закон Гука выполняется только для упругих деформаций.
-                </div>
-            </div>
-
-            <div class="experiment-box">
-                <h4>🔬 <strong>106. Эксперимент Гука</strong></h4>
-                
-                <div class="exp-section">
-                    <strong>Ход эксперимента:</strong>
-                    <ul>
-                        <li>Возьмём тело длиной \(l_0\).</li>
-                        <li>Будем подвешивать к нему грузы.</li>
-                        <li>Замерим удлинение тела.</li>
-                    </ul>
-                </div>
-                
-                <div class="exp-section">
-                    <strong>Наблюдения:</strong>
-                    <p>Сила упругости прямо пропорциональна удлинению тела.</p>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>107. Сила натяжения нити</strong> — сила упругости, действующая на тело со стороны нити.
-                <div class="remark-box">
-                    <b>Обозначение:</b> \(T\).<br>
-                    <b>Величина:</b> из условий движения или равновесия тела.<br>
-                    <b>Точка приложения:</b> к телу в точке подвеса.<br>
-                    <b>Направление:</b> вдоль нити.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>108. Сила нормальной реакции опоры</strong> — сила упругости, действующая на тело со стороны опоры.
-                <div class="remark-box">
-                    <b>Обозначение:</b> \(N\).<br>
-                    <b>Величина:</b> из условий движения или равновесия тела.<br>
-                    <b>Точка приложения:</b> к телу в точке соприкосновения с опорой.<br>
-                    <b>Направление:</b> перпендикулярно поверхности соприкосновения.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>109. Вес тела</strong> — сила упругости, с которой тело действует на опору или подвес.
-                <div class="remark-box">
-                    <b>Обозначение:</b> \(P\).<br>
-                    <b>Величина:</b> из условий движения или равновесия тела.<br>
-                    <b>Точка приложения:</b> к опоре или подвесу.<br>
-                    <b>Направление:</b> противоположно силе нормальной реакции опоры или силе натяжения нити.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>110. Перегрузка</strong> — явление увеличения веса тела.
-                <div class="remark-box">
-                    Возникает при ускоренном движении вверх или замедленном движении вниз.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>111. Невесомость</strong> — явление исчезновения веса, то есть тело перестаёт действовать на опору или подвес.
-                <div class="remark-box">
-                    Возникает при свободном падении (ускорение тела равно ускорению свободного падения).
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>112. Абсолютное удлинение</strong> — разность длин после растяжения (сжатия) и до него.
-                <div class="formula-box">
-                    \[\Delta l = l - l_0\]
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>113. Относительное удлинение</strong> — отношение абсолютного удлинения к изначальной длине.
-                <div class="formula-box">
-                    \[\varepsilon = \frac{\Delta l}{l_0}\]
-                </div>
-                <div class="remark-box">
-                    Абсолютное удлинение показывает насколько удлинилось тело.<br>
-                    Относительное удлинение показывает какую часть от длины составляет удлинение.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>114. Механическое напряжение</strong> — отношение модуля силы упругости к площади поперечного сечения образца, перпендикулярного вектору силы.
-                <div class="formula-box">
-                    \[\sigma = \frac{F_{\text{упр}}}{S}\]
-                    <p>Единица измерения: \([\sigma] = [\text{Па}]\)</p>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>115. Касательное напряжение</strong> — отношение модуля силы упругости к площади сечения касательно к вектору силы.
-            </div>
-
-            <div class="definition-box">
-                <strong>116. Обобщённый закон Гука:</strong> при малых деформациях механическое напряжение прямо пропорционально относительному удлинению.
-                <div class="formula-box">
-                    \[\sigma = E\varepsilon\]
-                </div>
-                <div class="remark-box">
-                    где \(E\) — модуль Юнга, \(\sigma\) — механическое напряжение, \(\varepsilon\) — относительное удлинение.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>117. Модуль Юнга</strong> — физическая величина, численно равная напряжению при удлинении тела в два раза (табличная величина).
-                <div class="formula-box">
-                    \[E = \frac{\sigma}{\varepsilon}\]
-                    <p>Единица измерения: \([E] = [\text{Па}]\)</p>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>118. Связь между законом Гука и обобщённым законом Гука:</strong>
-                <div class="formula-box">
-                    \[k = \frac{ES}{l_0}\]
-                </div>
-                <div class="remark-box">
-                    где \(k\) — коэффициент жёсткости, \(E\) — модуль Юнга, \(S\) — площадь поперечного сечения, \(l_0\) — начальная длина тела.
-                </div>
-                
-                <div class="derivation-box">
-                    <button class="toggle-derivation">📖 Показать вывод</button>
-                    <div class="derivation-content">
-                        \[\begin{align*}
-                        \sigma &= \frac{F_{\text{упр}}}{S}, \quad \sigma = E\varepsilon, \quad \varepsilon = \frac{|\Delta l|}{l_0} \\
-                        \frac{F_{\text{упр}}}{S} &= E \cdot \frac{|\Delta l|}{l_0} \\
-                        F_{\text{упр}} &= \frac{ES}{l_0}|\Delta l| \\
-                        \text{Но } F_{\text{упр}} &= k|\Delta l| \text{, следовательно:} \\
-                        k &= \frac{ES}{l_0}
-                        \end{align*}\]
-                    </div>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>119. Диаграмма растяжения</strong> — график зависимости механического напряжения от относительного удлинения.
-                <ul>
-                    <li><strong>Предел пропорциональности</strong> \(\sigma_{\text{пц}}\) — механическое напряжение, до значения которого выполняется закон Гука.</li>
-                    <li><strong>Предел упругости</strong> \(\sigma_{\text{упр}}\) — механическое напряжение, при котором ещё не возникает заметная остаточная деформация.</li>
-                    <li><strong>Остаточная деформация</strong> \(\varepsilon_{\text{ост}}\) — деформация, которая остаётся после прекращения воздействия.</li>
-                    <li><strong>Предел текучести</strong> \(\sigma_{\text{т}}\) — механическое напряжение, при котором деформации растут без увеличения механического напряжения.</li>
-                    <li><strong>Предел прочности</strong> \(\sigma_{\text{пр}}\) — максимальное механическое напряжение, которое может выдержать материал.</li>
-                </ul>
-
-                <div style="text-align: center; margin: 20px 0;">
-                    <img src="images/Supply diagram.png" alt="Диаграмма растяжения материала" loading="lazy" style="width: min(800px, 90vw); height: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background: white;">
-                    <p style="font-size: 0.9em; color: var(--text-color); margin-top: 10px; font-style: italic;">Диаграмма растяжения материала</p>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>120. Пластичные материалы</strong> — материалы, способные получать большие остаточные деформации без разрушения.
-                <div class="remark-box">
-                    Пластичные материалы: пластилин, сталь и др.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>121. Хрупкие материалы</strong> — материалы без области текучести.
-                <div class="remark-box">
-                    Хрупкие материалы: хрусталь, керамика и др.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>122. Запас прочности</strong> — отношение предела прочности данного материала к максимальному напряжению, которое будет испытывать деталь в работе.
-                <div class="formula-box">
-                    \[\text{Запас прочности} = \frac{\sigma_{\text{пр}}}{\sigma_{\text{раб}}}\]
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>123. Коэффициент безопасности</strong> — отношение предела пропорциональности данного материала к максимальному напряжению, которое будет испытывать деталь в работе.
-                <div class="formula-box">
-                    \[\text{Коэф. безопасности} = \frac{\sigma_{\text{пц}}}{\sigma_{\text{раб}}}\]
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>124. Трение</strong> — один из видов взаимодействия тел. Возникает при соприкосновении двух тел. Подчиняется третьему закону Ньютона.
-                <div class="remark-box">
-                    Силы трения имеют электромагнитную природу. Возникают вследствие взаимодействия между атомами и молекулами соприкасающихся тел или наличия неровностей и шероховатостей.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>125. Виды сил сухого трения:</strong>
-                <ul>
-                    <li>Трение покоя</li>
-                    <li>Трение скольжения</li>
-                    <li>Трение качения</li>
-                </ul>
-            </div>
-
-            <div class="definition-box">
-                <strong>126. Сила трения покоя</strong> — сила, возникающая при относительном покое тел между поверхностями соприкасающихся тел и препятствующая началу движения.
-                <div class="remark-box">
-                    <b>Величина:</b> зависит от условия покоя тела.<br>
-                    <b>Направление:</b> противоположно предполагаемому направлению движения.<br>
-                    <b>Точка приложения:</b> к поверхности тела.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>127. Максимальная сила трения покоя</strong> — максимальное значение силы трения покоя, при котором скольжение ещё не наступает.
-                <div class="formula-box">
-                    \[F_{\text{тр.покоя max}} = \mu N\]
-                </div>
-                <div class="remark-box">
-                    где \(\mu\) — коэффициент трения покоя, зависит от поверхностей соприкасающихся тел.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>128. Сила трения скольжения</strong> — сила, возникающая между поверхностями соприкасающихся тел и препятствующая относительному поступательному движению тел.
-                <div class="remark-box">
-                    <b>Направление:</b> противоположно направлению скольжения.<br>
-                    <b>Точка приложения:</b> к поверхности тела.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>129. Закон Кулона-Амонтона:</strong> сила сухого трения скольжения пропорциональна силе нормального давления тела на опору.
-                <div class="formula-box">
-                    \[F_{\text{тр.скольжения}} \approx F_{max} = \mu N\]
-                </div>
-                <div class="remark-box">
-                    <b>Зависит от:</b>
-                    <ul>
-                        <li>Относительной скорости движения тел.</li>
-                        <li>Вида материалов соприкасающихся тел.</li>
-                        <li>Качества обработки поверхностей соприкасающихся тел.</li>
-                        <li>Величины прижимающей силы.</li>
-                    </ul>
-                    <b>Не зависит от:</b>
-                    <ul>
-                        <li>Площади соприкасающихся поверхностей.</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>130. Сила трения качения</strong> — сила, возникающая между поверхностями соприкасающихся тел и препятствующая относительному вращательному движению тел.
-                <div class="remark-box">
-                    Сила трения качения возникает при вращении твёрдого тела по твёрдой упругой поверхности. Упругая опора продавливается твёрдым телом, возникает наплыв и твёрдому телу приходится его преодолевать.
-                </div>
-                <div class="remark-box">
-                    Между двумя абсолютно твёрдыми телами сила трения качения отсутствует.
-                </div>
-                <div class="formula-box">
-                    \[F_{\text{тр.качения}} = \frac{k}{R}N\]
-                </div>
-                <div class="remark-box">
-                    где \(N\) — сила нормальной реакции опоры, \(R\) — радиус катящегося тела, \(k\) — коэффициент трения качения, имеющий размерность длины.
-                </div>
-                <div class="remark-box">
-                    Сила трения качения, как правило, во много раз меньше силы трения скольжения. Поэтому был создан <strong>подшипник</strong>, который позволяет перевести трение скольжения на трение качения.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>131. Вязкое трение</strong> — трение, возникающее в жидкости при наличии достаточной прослойки жидкости между телами.
-                <div class="remark-box">
-                    Вязкое трение зависит от формы поверхности.
-                </div>
-                <p>При небольших скоростях:</p>
-                <div class="formula-box">
-                    \[\vec{F}_{\text{тр.вязкое}} = -\beta_1\vec{v}\]
-                </div>
-                <p>При больших скоростях:</p>
-                <div class="formula-box">
-                    \[F_{\text{тр.вязкое}} = \beta_2 v^2\]
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>132. Вязкость</strong> — свойство реальных жидкостей оказывать сопротивление перемещению части жидкости относительно другой.
-            </div>
-
-            <div class="definition-box">
-                <strong>133. Формула Стокса:</strong>
-                <div class="formula-box">
-                    \[F_{\text{тр.вязкое}} = -6\pi r \eta |\vec{v}|\]
-                </div>
-                <div class="remark-box">
-                    где \(r\) — радиус сферического объекта, \(\eta\) — коэффициент внутреннего трения (вязкость жидкости) [Па·с], \(|\vec{v}|\) — модуль скорости движения частицы.
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>134. Установившееся движение</strong> — движение при ускорении, равном нулю.
-                <div class="remark-box">
-                    При падении тела в жидкости или газе его скорость увеличивается, ускорение уменьшается и в конце концов достигает нуля.
-                </div>
-                <div class="formula-box">
-                    \[\vec{F}_{\text{тяж}} + \vec{F}_{\text{Арх}} + \vec{F}_{\text{сопр}} = m\vec{a} = 0\]
-                </div>
-            </div>
-
-            <div class="definition-box">
-                <strong>135. Скорость установившегося движения в вязкой жидкости:</strong>
-                <div class="formula-box">
-                    \[v = \frac{2g(\rho_1 - \rho_2)r^2}{9\eta}\]
-                </div>
-                <div class="remark-box">
-                    где \(\rho_1\) — плотность тела, \(\rho_2\) — плотность жидкости, \(r\) — радиус тела, \(\eta\) — вязкость жидкости.
-                </div>
-                
-                <div class="derivation-box">
-                    <button class="toggle-derivation">📖 Показать вывод</button>
-                    <div class="derivation-content">
-                        \[\begin{align*}
-                        mg &= F_{\text{Арх}} + F_{\text{сопр}} \\
-                        g\rho_1V &= g\rho_2V + 6\pi r \eta v \\
-                        gV(\rho_1 - \rho_2) &= 6\pi r \eta v \\
-                        v &= \frac{gV(\rho_1 - \rho_2)}{6\pi r \eta} \\
-                        V &= \frac{4}{3}\pi r^3 \\
-                        v &= \frac{g \cdot \frac{4}{3}\pi r^3(\rho_1 - \rho_2)}{6\pi r \eta} = \frac{4g\pi r^3(\rho_1 - \rho_2)}{18\pi r \eta} = \frac{2g(\rho_1 - \rho_2)r^2}{9\eta}
-                        \end{align*}\]
-                    </div>
-                </div>
-            </div>
-
-        </section>
-
-        <!-- Билеты: Часть I - Кинематика -->
-        <section class="content-section" id="tickets-kinematics">
-            <h2 class="part-title">Часть I: Кинематика (Билеты 1-4)</h2>
-
+        <!-- Билет №1 -->
+        <section class="content-section ticket-section active-ticket" id="ticket-1">
+            <h2 class="part-title">Билет №1</h2>
             <article class="topic">
-                <h3 class="topic-title">Билет №1</h3>
-                <p><strong>Тема:</strong> Механическое движение и его виды. Система отсчета. Основные кинематические характеристики механического движения. Относительность движения.</p>
-                
-                <p>См. определения: 3, 4, 12, 13, 14, 23, 24, 25, 26, 30, 31, 45, 47.</p>
-                
-                <div class="remark-box">
-                    <strong>Основные вопросы:</strong>
-                    <ul>
-                        <li>Что такое механическое движение?</li>
-                        <li>Виды движения: поступательное, вращательное, колебательное</li>
-                        <li>Система отсчёта и её компоненты</li>
-                        <li>Радиус-вектор, перемещение, путь, траектория</li>
-                        <li>Мгновенная скорость и ускорение</li>
-                        <li>Относительность движения</li>
-                    </ul>
-                </div>
-            </article>
+                <h3 class="topic-title">Содержимое</h3>
 
-            <article class="topic">
-                <h3 class="topic-title">Билет №2</h3>
-                <p><strong>Тема:</strong> Кинематика равноускоренного прямолинейного движения.</p>
-                
-                <p>См. определения: 32, 65.</p>
-                
-                <div class="remark-box">
-                    <strong>Ключевые формулы:</strong>
-                    <ul>
-                        <li>\(x(t) = x_0 + v_{0x}t + \frac{a_x t^2}{2}\)</li>
-                        <li>\(v_x(t) = v_{0x} + a_x t\)</li>
-                        <li>\(S_x = \frac{v_x^2 - v_{0x}^2}{2a_x}\)</li>
-                    </ul>
-                </div>
-            </article>
-
-            <article class="topic">
-                <h3 class="topic-title">Билет №3</h3>
-                <p><strong>Тема:</strong> Равноускоренное криволинейное движение (на примере движения тела, брошенного под углом к горизонту). Нормальное и тангенциальное ускорения. Понятие радиуса кривизны.</p>
-                
-                <p>См. определения: 43, 44, 42.</p>
-                
-                <div class="remark-box">
-                    <strong>Ключевые формулы:</strong>
-                    <ul>
-                        <li><strong>Нормальное ускорение:</strong> \(|\vec{a}_n| = \frac{v^2}{R}\)</li>
-                        <li><strong>Тангенциальное ускорение:</strong> характеризует изменение модуля скорости</li>
-                        <li><strong>Полное ускорение:</strong> \(\vec{a} = \vec{a}_n + \vec{a}_\tau\)</li>
-                    </ul>
-                </div>
-            </article>
-
-            <article class="topic">
-                <h3 class="topic-title">Билет №4</h3>
-                <p><strong>Тема:</strong> Кинематика движения тела по окружности. Период, частота, угловая скорость, угловое ускорение.</p>
-                
-                <p>См. определения: 5, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 67.</p>
-                
-                <div class="remark-box">
-                    <strong>Ключевые формулы:</strong>
-                    <ul>
-                        <li>\(T = \frac{1}{\nu}\), \(\omega = 2\pi\nu = \frac{2\pi}{T}\)</li>
-                        <li>\(v = \omega R\)</li>
-                        <li>\(a_n = \frac{v^2}{R} = \omega^2 R\)</li>
-                        <li>\(\varphi(t) = \varphi_0 + \omega_0 t + \frac{\beta t^2}{2}\)</li>
-                        <li>\(\omega(t) = \omega_0 + \beta t\)</li>
-                    </ul>
-                </div>
             </article>
         </section>
 
-        <!-- Билеты: Часть II - Динамика -->
-        <section class="content-section" id="tickets-dynamics">
-            <h2 class="part-title">Часть II: Динамика (Билеты 5-8)</h2>
-
+        <!-- Билет №2 -->
+        <section class="content-section ticket-section" id="ticket-2">
+            <h2 class="part-title">Билет №2</h2>
             <article class="topic">
-                <h3 class="topic-title">Билет №5</h3>
-                <p><strong>Тема:</strong> I, II, III законы Ньютона. Сила, масса и их эталоны.</p>
-                
-                <p>См. определения: 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80.</p>
-                
-                <div class="remark-box">
-                    <strong>Ключевые понятия:</strong>
-                    <ul>
-                        <li><strong>I закон Ньютона:</strong> существование инерциальных систем отсчёта</li>
-                        <li><strong>II закон Ньютона:</strong> \(m\vec{a} = \vec{F}\) или \(m\vec{a} = \sum\vec{F}_i\) (принцип суперпозиции)</li>
-                        <li><strong>III закон Ньютона:</strong> \(\vec{F}_{12} = -\vec{F}_{21}\)</li>
-                        <li><strong>Масса</strong> — мера инертности тела</li>
-                        <li><strong>Сила</strong> — мера воздействия на тело</li>
-                    </ul>
-                </div>
-            </article>
+                <h3 class="topic-title">Содержимое</h3>
 
-            <article class="topic">
-                <h3 class="topic-title">Билет №6</h3>
-                <p><strong>Тема:</strong> Закон всемирного тяготения, законы Кеплера. Гравитационное поле (материальной точки и Земли). Сила тяжести.</p>
-                
-                <p>См. определения: 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98.</p>
-                
-                <div class="remark-box">
-                    <strong>Ключевые понятия:</strong>
-                    <ul>
-                        <li><strong>Законы Кеплера:</strong>
-                            <ul>
-                                <li>I: планеты движутся по эллипсам, в фокусе — Солнце</li>
-                                <li>II: радиус-вектор "заметает" равные площади за равные времена</li>
-                                <li>III: \(\frac{T_1^2}{T_2^2} = \frac{R_1^3}{R_2^3}\)</li>
-                            </ul>
-                        </li>
-                        <li><strong>Закон всемирного тяготения:</strong> \(F = G\frac{m_1m_2}{r^2}\)</li>
-                        <li><strong>Гравитационная постоянная:</strong> \(G = 6.67 \cdot 10^{-11} \frac{\text{Н·м}^2}{\text{кг}^2}\)</li>
-                        <li><strong>Космические скорости:</strong> \(v_1 = 7.9\) км/с, \(v_2 = 11.2\) км/с, \(v_3 = 16.6\) км/с</li>
-                        <li><strong>Сила тяжести:</strong> \(F_{\text{тяж}} = mg\)</li>
-                    </ul>
-                </div>
-            </article>
-
-            <article class="topic">
-                <h3 class="topic-title">Билет №7</h3>
-                <p><strong>Тема:</strong> Сила упругости, закон Гука. Виды деформаций. Обобщенный закон Гука. Модуль Юнга. Запас прочности. Диаграмма напряжений. Вес. Невесомость.</p>
-                
-                <p>См. определения: 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123.</p>
-                
-                <div class="remark-box">
-                    <strong>Ключевые понятия:</strong>
-                    <ul>
-                        <li><strong>Закон Гука:</strong> \(F = k|\Delta l|\)</li>
-                        <li><strong>Обобщённый закон Гука:</strong> \(\sigma = E\varepsilon\)</li>
-                        <li><strong>Связь:</strong> \(k = \frac{ES}{l_0}\)</li>
-                        <li><strong>Виды деформаций:</strong> упругая/пластическая; растяжение/сжатие/сдвиг/изгиб/кручение</li>
-                        <li><strong>Диаграмма растяжения:</strong> пределы пропорциональности, упругости, текучести, прочности</li>
-                        <li><strong>Вес тела:</strong> \(P\) — сила, с которой тело действует на опору или подвес</li>
-                        <li><strong>Невесомость:</strong> вес равен нулю (свободное падение)</li>
-                        <li><strong>Запас прочности:</strong> \(\frac{\sigma_{\text{пр}}}{\sigma_{\text{раб}}}\)</li>
-                    </ul>
-                </div>
-            </article>
-
-            <article class="topic">
-                <h3 class="topic-title">Билет №8</h3>
-                <p><strong>Тема:</strong> Сила сухого трения, закон Кулона-Амонтона. Движение твердых тел в вязкой жидкости или газе.</p>
-                
-                <p>См. определения: 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135.</p>
-                
-                <div class="remark-box">
-                    <strong>Ключевые понятия:</strong>
-                    <ul>
-                        <li><strong>Виды сухого трения:</strong> трение покоя, скольжения, качения</li>
-                        <li><strong>Закон Кулона-Амонтона:</strong> \(F_{\text{тр}} = \mu N\)</li>
-                        <li><strong>Сила трения качения:</strong> \(F_{\text{тр.кач}} = \frac{k}{R}N\)</li>
-                        <li><strong>Вязкое трение (малые скорости):</strong> \(\vec{F}_{\text{тр}} = -\beta_1\vec{v}\)</li>
-                        <li><strong>Вязкое трение (большие скорости):</strong> \(F_{\text{тр}} = \beta_2 v^2\)</li>
-                        <li><strong>Формула Стокса:</strong> \(F_{\text{тр}} = -6\pi r \eta |\vec{v}|\)</li>
-                        <li><strong>Установившееся движение:</strong> \(v = \frac{2g(\rho_1 - \rho_2)r^2}{9\eta}\)</li>
-                        <li><strong>Природа трения:</strong> электромагнитная</li>
-                    </ul>
-                </div>
             </article>
         </section>
+
+        <!-- Билет №3 -->
+        <section class="content-section ticket-section" id="ticket-3">
+            <h2 class="part-title">Билет №3</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №4 -->
+        <section class="content-section ticket-section" id="ticket-4">
+            <h2 class="part-title">Билет №4</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №5 -->
+        <section class="content-section ticket-section" id="ticket-5">
+            <h2 class="part-title">Билет №5</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №6 -->
+        <section class="content-section ticket-section" id="ticket-6">
+            <h2 class="part-title">Билет №6</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №7 -->
+        <section class="content-section ticket-section" id="ticket-7">
+            <h2 class="part-title">Билет №7</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №8 -->
+        <section class="content-section ticket-section" id="ticket-8">
+            <h2 class="part-title">Билет №8</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №9 -->
+        <section class="content-section ticket-section" id="ticket-9">
+            <h2 class="part-title">Билет №9</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №10 -->
+        <section class="content-section ticket-section" id="ticket-10">
+            <h2 class="part-title">Билет №10</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №11 -->
+        <section class="content-section ticket-section" id="ticket-11">
+            <h2 class="part-title">Билет №11</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №12 -->
+        <section class="content-section ticket-section" id="ticket-12">
+            <h2 class="part-title">Билет №12</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №13 -->
+        <section class="content-section ticket-section" id="ticket-13">
+            <h2 class="part-title">Билет №13</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №14 -->
+        <section class="content-section ticket-section" id="ticket-14">
+            <h2 class="part-title">Билет №14</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №15 -->
+        <section class="content-section ticket-section" id="ticket-15">
+            <h2 class="part-title">Билет №15</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №16 -->
+        <section class="content-section ticket-section" id="ticket-16">
+            <h2 class="part-title">Билет №16</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №17 -->
+        <section class="content-section ticket-section" id="ticket-17">
+            <h2 class="part-title">Билет №17</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Навигация между билетами -->
+        <div class="ticket-nav-controls">
+            <button class="ticket-nav-btn" id="prevTicketBtn">← Предыдущий</button>
+            <span class="ticket-counter" id="ticketCounter">Билет 1 из 17</span>
+            <button class="ticket-nav-btn" id="nextTicketBtn">Следующий →</button>
+        </div>
 
         <!-- Футер -->
         <footer class="page-footer">
-            <p>2025-2026 Almanion | Подготовка к зачёту по физике 9 класс</p>
+            <p>2025-2026 Almanion | Билеты к экзамену | Физика 9 класс</p>
         </footer>
     </main>
 
@@ -1637,7 +290,7 @@
 
     <!-- Контейнер для снега -->
     <div class="snow-container" id="snowContainer"></div>
-    
+
     <!-- Контейнер для пасхалок -->
     <div class="easter-eggs-container" id="easterEggsContainer"></div>
 
@@ -1651,5 +304,72 @@
     <script src="newyear.js"></script>
     <script src="settings.js"></script>
     <script src="bookmarks.js"></script>
+
+    <script>
+        const TOTAL_TICKETS = 17;
+        let currentTicket = 1;
+
+        const ticketLinks = document.querySelectorAll('[data-ticket]');
+        const ticketSections = document.querySelectorAll('.ticket-section');
+        const prevBtn = document.getElementById('prevTicketBtn');
+        const nextBtn = document.getElementById('nextTicketBtn');
+        const counter = document.getElementById('ticketCounter');
+
+        function showTicket(n) {
+            currentTicket = n;
+
+            ticketSections.forEach(s => s.classList.remove('active-ticket'));
+            ticketLinks.forEach(l => l.classList.remove('active'));
+
+            const section = document.getElementById('ticket-' + n);
+            if (section) section.classList.add('active-ticket');
+
+            const link = document.querySelector('[data-ticket="' + n + '"]');
+            if (link) {
+                link.classList.add('active');
+                // Прокрутить навигацию к активной ссылке
+                link.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+
+            counter.textContent = 'Билет ' + n + ' из ' + TOTAL_TICKETS;
+            prevBtn.disabled = n === 1;
+            nextBtn.disabled = n === TOTAL_TICKETS;
+
+            // Прокрутить основной контент наверх
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // Обновить хеш в URL без прыжка страницы
+            history.replaceState(null, '', '#ticket-' + n);
+        }
+
+        ticketLinks.forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                showTicket(parseInt(this.dataset.ticket));
+            });
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentTicket > 1) showTicket(currentTicket - 1);
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentTicket < TOTAL_TICKETS) showTicket(currentTicket + 1);
+        });
+
+        // Если в URL есть хеш вида #ticket-N, открыть соответствующий билет
+        (function () {
+            const hash = window.location.hash;
+            const match = hash.match(/^#ticket-(\d+)$/);
+            if (match) {
+                const n = parseInt(match[1]);
+                if (n >= 1 && n <= TOTAL_TICKETS) {
+                    showTicket(n);
+                    return;
+                }
+            }
+            showTicket(1);
+        })();
+    </script>
 </body>
 </html>
