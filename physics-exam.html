@@ -13,12 +13,11 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     <style>
-        .ticket-section {
-            display: none;
-        }
-        .ticket-section.active-ticket {
-            display: block;
-        }
+        /* ---- Билеты: показ/скрытие ---- */
+        .ticket-section { display: none; }
+        .ticket-section.active-ticket { display: block; }
+
+        /* ---- Нижняя навигация ---- */
         .ticket-nav-controls {
             display: flex;
             align-items: center;
@@ -41,20 +40,300 @@
             transition: var(--transition);
             font-family: inherit;
         }
-        .ticket-nav-btn:hover {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
+        .ticket-nav-btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
+        .ticket-nav-btn:disabled { background: var(--bg-tertiary); color: var(--text-secondary); cursor: default; transform: none; }
+        .ticket-counter { font-size: 0.95rem; color: var(--text-secondary); font-weight: 500; }
+
+        /* ====================================================
+           КОНСТРУКТОР БИЛЕТОВ
+           ==================================================== */
+
+        /* Плавающая кнопка открытия */
+        .builder-open-btn {
+            position: fixed;
+            bottom: 5rem;
+            right: 1.5rem;
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 0.55rem 1rem;
+            font-size: 0.88rem;
+            font-family: inherit;
+            cursor: pointer;
+            z-index: 900;
+            transition: var(--transition);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.25);
         }
-        .ticket-nav-btn:disabled {
+        .builder-open-btn:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.3); }
+
+        /* Оверлей */
+        .builder-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 2000;
+            display: flex;
+            align-items: stretch;
+        }
+        .builder-overlay.hidden { display: none; }
+
+        /* Модальное окно — занимает весь экран */
+        .builder-modal {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+        }
+
+        /* Шапка конструктора */
+        .builder-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.7rem 1.2rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .builder-header-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin: 0;
+            white-space: nowrap;
+        }
+        .builder-header-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        .builder-select {
             background: var(--bg-tertiary);
-            color: var(--text-secondary);
-            cursor: default;
-            transform: none;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 0.35rem 0.6rem;
+            font-size: 0.88rem;
+            font-family: inherit;
+            cursor: pointer;
         }
-        .ticket-counter {
-            font-size: 0.95rem;
+        .builder-btn {
+            padding: 0.35rem 0.85rem;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 0.85rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .builder-btn-save  { background: var(--accent-color); color: #fff; }
+        .builder-btn-save:hover  { background: var(--accent-hover); }
+        .builder-btn-reset { background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); }
+        .builder-btn-reset:hover { background: var(--border-color); }
+        .builder-btn-close { background: none; color: var(--text-secondary); font-size: 1.3rem; line-height: 1; margin-left: auto; padding: 0.2rem 0.5rem; }
+        .builder-btn-close:hover { color: var(--text-primary); }
+
+        /* Основная область: 2 колонки */
+        .builder-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            flex: 1;
+            overflow: hidden;
+        }
+        .builder-panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-right: 1px solid var(--border-color);
+        }
+        .builder-panel:last-child { border-right: none; }
+        .builder-panel-header {
+            padding: 0.6rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
             color: var(--text-secondary);
-            font-weight: 500;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        .builder-panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.75rem;
+        }
+
+        /* ---- Левая панель: блоки текущего билета ---- */
+        .builder-block-item {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.45rem 0.7rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 0.35rem;
+            user-select: none;
+            transition: box-shadow 0.15s;
+        }
+        .builder-block-item.sortable-ghost { opacity: 0.4; background: var(--accent-color); border-color: transparent; }
+        .builder-block-item.sortable-chosen { box-shadow: 0 4px 16px rgba(0,0,0,0.18); }
+        .builder-drag-handle {
+            color: var(--text-secondary);
+            cursor: grab;
+            font-size: 1.05rem;
+            flex-shrink: 0;
+            opacity: 0.6;
+        }
+        .builder-drag-handle:active { cursor: grabbing; }
+
+        /* Бейджи типов */
+        .builder-badge {
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 0.12rem 0.3rem;
+            border-radius: 3px;
+            flex-shrink: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .builder-badge-def  { background: #dbeafe; color: #1d4ed8; }
+        .builder-badge-h4   { background: #fef3c7; color: #b45309; }
+        .builder-badge-other{ background: #f0fdf4; color: #15803d; }
+        body.dark-theme .builder-badge-def   { background: #1e3a5f; color: #93c5fd; }
+        body.dark-theme .builder-badge-h4    { background: #451a03; color: #fde68a; }
+        body.dark-theme .builder-badge-other { background: #14532d; color: #86efac; }
+
+        .builder-block-preview {
+            flex: 1;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .builder-block-remove {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0 0.2rem;
+            border-radius: 3px;
+            flex-shrink: 0;
+            transition: var(--transition);
+            line-height: 1;
+        }
+        .builder-block-remove:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+        .builder-empty-hint {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        /* ---- Правая панель: библиотека ---- */
+        .builder-search {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: inherit;
+            margin-bottom: 0.75rem;
+            transition: border-color 0.2s;
+        }
+        .builder-search:focus { outline: none; border-color: var(--accent-color); }
+
+        .builder-lib-group {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 0.45rem;
+            overflow: hidden;
+        }
+        .builder-lib-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.55rem 0.85rem;
+            background: var(--bg-secondary);
+            cursor: pointer;
+            font-size: 0.83rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            user-select: none;
+            transition: background 0.15s;
+        }
+        .builder-lib-group-header:hover { background: var(--bg-tertiary); }
+        .builder-lib-group-chevron {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+        .builder-lib-group.open .builder-lib-group-chevron { transform: rotate(90deg); }
+        .builder-lib-group-items { display: none; }
+        .builder-lib-group.open .builder-lib-group-items { display: block; }
+
+        .builder-lib-item {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.45rem 0.75rem;
+            border-top: 1px solid var(--border-color);
+            transition: background 0.12s;
+        }
+        .builder-lib-item:hover { background: var(--bg-tertiary); }
+        .builder-lib-preview {
+            flex: 1;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .builder-lib-add {
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            width: 22px;
+            height: 22px;
+            font-size: 1rem;
+            line-height: 1;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+        .builder-lib-add:hover { background: var(--accent-hover); transform: scale(1.15); }
+        .builder-lib-added { background: #16a34a !important; }
+        .builder-lib-added:hover { background: #15803d !important; transform: none; }
+
+        .builder-status {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+        }
+
+        /* Мобильная адаптация */
+        @media (max-width: 650px) {
+            .builder-body { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+            .builder-panel { border-right: none; border-bottom: 1px solid var(--border-color); }
+            .builder-open-btn { font-size: 0.8rem; padding: 0.45rem 0.75rem; bottom: 4.5rem; }
         }
     </style>
 </head>
@@ -710,6 +989,566 @@
     <script src="newyear.js"></script>
     <script src="settings.js"></script>
     <script src="bookmarks.js"></script>
+
+    <!-- ====================================================
+         КОНСТРУКТОР БИЛЕТОВ — HTML
+         ==================================================== -->
+
+    <!-- Плавающая кнопка -->
+    <button id="builderOpenBtn" class="builder-open-btn" title="Открыть конструктор билетов">✏️ Конструктор</button>
+
+    <!-- Полноэкранный оверлей конструктора -->
+    <div id="builderOverlay" class="builder-overlay hidden">
+        <div class="builder-modal">
+
+            <!-- Шапка -->
+            <div class="builder-header">
+                <h2 class="builder-header-title">✏️ Конструктор билетов</h2>
+                <div class="builder-header-controls">
+                    <label for="builderTicketSelect" style="font-size:0.82rem;color:var(--text-secondary);white-space:nowrap;">Билет:</label>
+                    <select id="builderTicketSelect" class="builder-select">
+                        <option value="1">Билет №1</option>
+                        <option value="2">Билет №2</option>
+                        <option value="3">Билет №3</option>
+                        <option value="4">Билет №4</option>
+                        <option value="5">Билет №5</option>
+                        <option value="6">Билет №6</option>
+                        <option value="7">Билет №7</option>
+                        <option value="8">Билет №8</option>
+                        <option value="9">Билет №9</option>
+                        <option value="10">Билет №10</option>
+                        <option value="11">Билет №11</option>
+                        <option value="12">Билет №12</option>
+                        <option value="13">Билет №13</option>
+                        <option value="14">Билет №14</option>
+                        <option value="15">Билет №15</option>
+                        <option value="16">Билет №16</option>
+                        <option value="17">Билет №17</option>
+                    </select>
+                    <button id="builderSaveBtn"    class="builder-btn builder-btn-save">💾 Сохранить</button>
+                    <button id="builderResetBtn"   class="builder-btn builder-btn-reset">🗑 Очистить</button>
+                    <button id="builderRefreshLib" class="builder-btn builder-btn-reset" title="Перезагрузить библиотеку из physics.html (сбросит кеш)">↺ Обновить библиотеку</button>
+                    <button id="builderCloseBtn"   class="builder-btn builder-btn-close" title="Закрыть">✕</button>
+                </div>
+            </div>
+
+            <!-- Двухколоночная область -->
+            <div class="builder-body">
+
+                <!-- Левая панель: текущий билет -->
+                <div class="builder-panel">
+                    <div class="builder-panel-header">Текущий билет — порядок блоков</div>
+                    <div class="builder-panel-content">
+                        <div id="builderCurrentBlocks"></div>
+                    </div>
+                </div>
+
+                <!-- Правая панель: библиотека из physics.html -->
+                <div class="builder-panel">
+                    <div class="builder-panel-header">Библиотека — physics.html</div>
+                    <div class="builder-panel-content">
+                        <input type="text" id="builderSearch" class="builder-search" placeholder="🔍 Поиск по тексту блоков...">
+                        <div id="builderLibraryContent">
+                            <div class="builder-status">Откройте конструктор, чтобы загрузить библиотеку</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================================================
+         КОНСТРУКТОР БИЛЕТОВ — JS
+         ==================================================== -->
+    <script>
+(function () {
+    'use strict';
+
+    // ---- Константы и состояние ----
+    var STORAGE_KEY   = 'physics-exam-builder-v1';
+    var PHYSICS_URL   = 'physics.html';
+    var TOTAL         = 17;
+
+    var library       = null;   // массив блоков из physics.html, null = не загружено
+    var builderTicket = 1;      // номер редактируемого билета
+    var session       = [];     // блоки текущей сессии конструктора
+    var sortable      = null;   // экземпляр SortableJS
+
+    // ---- DOM-ссылки ----
+    var overlay    = document.getElementById('builderOverlay');
+    var selTicket  = document.getElementById('builderTicketSelect');
+    var btnSave    = document.getElementById('builderSaveBtn');
+    var btnReset   = document.getElementById('builderResetBtn');
+    var btnClose   = document.getElementById('builderCloseBtn');
+    var btnOpen    = document.getElementById('builderOpenBtn');
+    var searchEl   = document.getElementById('builderSearch');
+    var curPanel   = document.getElementById('builderCurrentBlocks');
+    var libPanel   = document.getElementById('builderLibraryContent');
+
+    // ---- Утилиты ----
+
+    function escHtml(s) {
+        return String(s || '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function textOf(html) {
+        var d = document.createElement('div');
+        d.innerHTML = html;
+        return (d.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 95);
+    }
+
+    function badge(type) {
+        var map = {
+            definition: ['DEF', 'builder-badge-def'],
+            heading:    ['H4',  'builder-badge-h4'],
+            other:      ['···', 'builder-badge-other']
+        };
+        var t = map[type] || map.other;
+        return '<span class="builder-badge ' + t[1] + '">' + t[0] + '</span>';
+    }
+
+    // ---- localStorage ----
+
+    function getAll() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+        catch (e) { return {}; }
+    }
+
+    function saveAll(data) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+    }
+
+    function storeTicket(n, blocks) {
+        var data = getAll();
+        data[n] = blocks;
+        saveAll(data);
+    }
+
+    function clearTicket(n) {
+        var data = getAll();
+        delete data[n];
+        saveAll(data);
+    }
+
+    // ---- Re-инициализация формул и выводов после вставки HTML ----
+
+    function reInit(container) {
+        // Переинициализируем кнопки раскрытия вывода
+        container.querySelectorAll('.toggle-derivation').forEach(function (btn) {
+            var fresh = btn.cloneNode(true);
+            btn.parentNode.replaceChild(fresh, btn);
+            fresh.addEventListener('click', function () {
+                var content = this.nextElementSibling;
+                if (!content) return;
+                var open = content.classList.toggle('visible');
+                this.textContent = open ? '📕 Скрыть вывод' : '📖 Показать вывод';
+            });
+        });
+        // KaTeX
+        if (window.renderMathInElement) {
+            renderMathInElement(container, {
+                throwOnError: false,
+                delimiters: [
+                    { left: '\\[', right: '\\]', display: true },
+                    { left: '\\(', right: '\\)', display: false }
+                ]
+            });
+        }
+    }
+
+    // ---- Применить сохранённые билеты при загрузке страницы ----
+
+    function applyStoredTickets() {
+        var all = getAll();
+        Object.keys(all).forEach(function (n) {
+            var blocks = all[n];
+            if (!blocks || blocks.length === 0) return;
+            var section = document.getElementById('ticket-' + n);
+            if (!section) return;
+            var article = section.querySelector('article.topic');
+            if (!article) return;
+
+            var h3 = article.querySelector('h3.topic-title');
+            article.innerHTML = '';
+            if (h3) article.appendChild(h3);
+
+            blocks.forEach(function (block) {
+                var wrap = document.createElement('div');
+                wrap.innerHTML = block.html;
+                while (wrap.firstChild) article.appendChild(wrap.firstChild);
+            });
+
+            reInit(article);
+        });
+    }
+
+    // ---- Загрузка библиотеки из physics.html ----
+
+    var LIBRARY_CACHE_KEY = 'physics-exam-library-v1';
+
+    // Парсинг DOM документа → массив блоков
+    function parsePhysicsDoc(doc) {
+        var result = [];
+        var uid = 0;
+        doc.querySelectorAll('article.topic').forEach(function (article) {
+            var topicId    = article.id || ('topic-' + uid);
+            var topicTitle = (article.querySelector('.topic-title') || {}).textContent || topicId;
+            topicTitle = topicTitle.trim();
+
+            var children = Array.from(article.children).filter(function (el) {
+                return !el.matches('h3.topic-title');
+            });
+
+            children.forEach(function (el) {
+                var type = 'other';
+                if (el.matches('.definition-box'))          type = 'definition';
+                else if (el.matches('h4.subsection-title')) type = 'heading';
+
+                var preview = textOf(el.outerHTML) || el.tagName;
+                result.push({
+                    id:         topicId + '-' + (uid++),
+                    topicId:    topicId,
+                    topicTitle: topicTitle,
+                    type:       type,
+                    html:       el.outerHTML,
+                    preview:    preview
+                });
+            });
+        });
+        return result;
+    }
+
+    function loadLibrary() {
+        if (library !== null) return Promise.resolve(library);
+
+        // 1. Проверяем кеш localStorage
+        //    (заполняется при открытии через HTTP; работает и на file://)
+        try {
+            var cached = localStorage.getItem(LIBRARY_CACHE_KEY);
+            if (cached) {
+                var parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    library = parsed;
+                    return Promise.resolve(library);
+                }
+            }
+        } catch (e) { /* игнорируем ошибки парсинга */ }
+
+        // 2. Пробуем fetch (работает на HTTP/HTTPS — GitHub Pages, Live Server)
+        return fetch(PHYSICS_URL)
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.text();
+            })
+            .then(function (html) {
+                var parser = new DOMParser();
+                var doc = parser.parseFromString(html, 'text/html');
+                library = parsePhysicsDoc(doc);
+                // Кешируем: теперь будет работать и на file://
+                try { localStorage.setItem(LIBRARY_CACHE_KEY, JSON.stringify(library)); } catch (e) {}
+                return library;
+            })
+            .catch(function () {
+                // 3. file:// без кеша — показываем понятное сообщение
+                return Promise.reject({ isFileProtocol: true });
+            });
+    }
+
+    // ---- Загрузка SortableJS (лениво, только при первом открытии) ----
+
+    function loadSortable() {
+        if (window.Sortable) return Promise.resolve();
+        return new Promise(function (resolve, reject) {
+            var s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js';
+            s.onload  = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+        });
+    }
+
+    // ---- Отрисовка левой панели (текущий билет) ----
+
+    function renderCurrent() {
+        curPanel.innerHTML = '';
+
+        if (session.length === 0) {
+            curPanel.innerHTML = '<div class="builder-empty-hint">Блоков нет — добавьте из библиотеки →</div>';
+        } else {
+            session.forEach(function (block, idx) {
+                var item = document.createElement('div');
+                item.className = 'builder-block-item';
+                item.dataset.idx = String(idx);
+                item.innerHTML =
+                    '<span class="builder-drag-handle" title="Перетащить">⠿</span>' +
+                    badge(block.type) +
+                    '<span class="builder-block-preview" title="' + escHtml(block.preview) + '">' +
+                        escHtml(block.preview) +
+                    '</span>' +
+                    '<button class="builder-block-remove" data-idx="' + idx + '" title="Удалить">×</button>';
+                curPanel.appendChild(item);
+            });
+
+            curPanel.querySelectorAll('.builder-block-remove').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    session.splice(parseInt(this.dataset.idx), 1);
+                    renderCurrent();
+                });
+            });
+        }
+
+        // SortableJS
+        if (window.Sortable) {
+            if (sortable) { try { sortable.destroy(); } catch (e) {} }
+            sortable = Sortable.create(curPanel, {
+                animation:   150,
+                handle:      '.builder-drag-handle',
+                ghostClass:  'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                onEnd: function (evt) {
+                    var moved = session.splice(evt.oldIndex, 1)[0];
+                    session.splice(evt.newIndex, 0, moved);
+                    // Обновляем data-idx
+                    curPanel.querySelectorAll('.builder-block-item').forEach(function (item, i) {
+                        item.dataset.idx = String(i);
+                        var rm = item.querySelector('.builder-block-remove');
+                        if (rm) rm.dataset.idx = String(i);
+                    });
+                }
+            });
+        }
+    }
+
+    // ---- Отрисовка правой панели (библиотека) ----
+
+    function renderLibrary(query) {
+        libPanel.innerHTML = '';
+        var q = (query || '').toLowerCase().trim();
+
+        // Группируем по теме
+        var groups = new Map();
+        library.forEach(function (block) {
+            if (q &&
+                !block.preview.toLowerCase().includes(q) &&
+                !block.topicTitle.toLowerCase().includes(q)) return;
+
+            if (!groups.has(block.topicId)) {
+                groups.set(block.topicId, { title: block.topicTitle, blocks: [] });
+            }
+            groups.get(block.topicId).blocks.push(block);
+        });
+
+        if (groups.size === 0) {
+            libPanel.innerHTML = '<div class="builder-status">Ничего не найдено</div>';
+            return;
+        }
+
+        groups.forEach(function (group) {
+            var groupEl = document.createElement('div');
+            groupEl.className = 'builder-lib-group' + (q ? ' open' : '');
+
+            var header = document.createElement('div');
+            header.className = 'builder-lib-group-header';
+            header.innerHTML =
+                escHtml(group.title) +
+                '<span class="builder-lib-group-chevron">▶</span>';
+            header.addEventListener('click', function () {
+                groupEl.classList.toggle('open');
+            });
+            groupEl.appendChild(header);
+
+            var items = document.createElement('div');
+            items.className = 'builder-lib-group-items';
+
+            group.blocks.forEach(function (block) {
+                var item = document.createElement('div');
+                item.className = 'builder-lib-item';
+                item.innerHTML =
+                    badge(block.type) +
+                    '<span class="builder-lib-preview" title="' + escHtml(block.preview) + '">' +
+                        escHtml(block.preview) +
+                    '</span>' +
+                    '<button class="builder-lib-add" title="Добавить в билет">+</button>';
+
+                item.querySelector('.builder-lib-add').addEventListener('click', function () {
+                    session.push(Object.assign({}, block, { id: block.id + '-' + Date.now() }));
+                    // Визуальная обратная связь: кнопка мигает зелёным
+                    var btn = this;
+                    btn.classList.add('builder-lib-added');
+                    btn.textContent = '✓';
+                    setTimeout(function () {
+                        btn.classList.remove('builder-lib-added');
+                        btn.textContent = '+';
+                    }, 700);
+                    renderCurrent();
+                });
+
+                items.appendChild(item);
+            });
+
+            groupEl.appendChild(items);
+            libPanel.appendChild(groupEl);
+        });
+    }
+
+    // ---- Открыть конструктор ----
+
+    function openBuilder(ticketNum) {
+        builderTicket = ticketNum;
+        selTicket.value = String(ticketNum);
+
+        // Загружаем текущие блоки из хранилища
+        var stored = getAll();
+        session = stored[ticketNum]
+            ? stored[ticketNum].map(function (b) { return Object.assign({}, b); })
+            : [];
+
+        overlay.classList.remove('hidden');
+        renderCurrent();
+
+        // Загружаем SortableJS и библиотеку (если ещё не загружены)
+        libPanel.innerHTML = '<div class="builder-status">⏳ Загрузка...</div>';
+        Promise.all([loadSortable(), loadLibrary()])
+            .then(function () {
+                renderCurrent();     // переинициализируем Sortable теперь когда он загружен
+                renderLibrary(searchEl.value);
+            })
+            .catch(function (err) {
+                if (err && err.isFileProtocol) {
+                    libPanel.innerHTML =
+                        '<div class="builder-status" style="text-align:left;line-height:1.7">' +
+                        '<strong style="color:var(--text-primary)">Библиотека недоступна на file://</strong><br><br>' +
+                        'Браузер блокирует загрузку файлов по протоколу <code>file://</code>.<br>' +
+                        'Библиотека кешируется автоматически при первом открытии через HTTP.<br><br>' +
+                        '<strong>Варианты решения:</strong><br>' +
+                        '① Открой страницу через <strong>Live Server</strong> в VS Code<br>' +
+                        '&nbsp;&nbsp;&nbsp;<small style="color:var(--text-secondary)">ПКМ на файле → Open with Live Server</small><br>' +
+                        '② Или открой на <strong>GitHub Pages</strong> — там fetch работает и кеш заполнится<br>' +
+                        '&nbsp;&nbsp;&nbsp;<small style="color:var(--text-secondary)">После этого библиотека будет доступна и на file://</small>' +
+                        '</div>';
+                } else {
+                    libPanel.innerHTML = '<div class="builder-status" style="color:#ef4444">Ошибка загрузки: ' + escHtml(String(err)) + '</div>';
+                }
+            });
+    }
+
+    // ---- Закрыть конструктор ----
+
+    function closeBuilder() {
+        overlay.classList.add('hidden');
+        if (sortable) { try { sortable.destroy(); } catch (e) {} sortable = null; }
+    }
+
+    // ---- Сохранить ----
+
+    function saveBuilder() {
+        storeTicket(builderTicket, session);
+
+        // Обновляем билет на странице
+        var section = document.getElementById('ticket-' + builderTicket);
+        if (section) {
+            var article = section.querySelector('article.topic');
+            if (article) {
+                var h3 = article.querySelector('h3.topic-title');
+                article.innerHTML = '';
+                if (h3) article.appendChild(h3);
+                session.forEach(function (block) {
+                    var wrap = document.createElement('div');
+                    wrap.innerHTML = block.html;
+                    while (wrap.firstChild) article.appendChild(wrap.firstChild);
+                });
+                reInit(article);
+            }
+        }
+
+        // Обратная связь
+        var orig = btnSave.textContent;
+        btnSave.textContent = '✅ Сохранено';
+        btnSave.style.background = '#16a34a';
+        setTimeout(function () {
+            btnSave.textContent = orig;
+            btnSave.style.background = '';
+        }, 2000);
+    }
+
+    // ---- Очистить (сбросить к исходному HTML) ----
+
+    function resetBuilder() {
+        if (!confirm('Очистить Билет №' + builderTicket + '?\nСохранённые данные будут удалены, при перезагрузке страницы вернётся исходное содержимое.')) return;
+        session = [];
+        clearTicket(builderTicket);
+        renderCurrent();
+        // Очищаем статью на странице
+        var section = document.getElementById('ticket-' + builderTicket);
+        if (section) {
+            var article = section.querySelector('article.topic');
+            if (article) {
+                var h3 = article.querySelector('h3.topic-title');
+                article.innerHTML = '';
+                if (h3) {
+                    article.appendChild(h3);
+                } else {
+                    article.innerHTML = '<p style="color:var(--text-secondary);font-style:italic;">Билет очищен. Перезагрузите страницу для восстановления исходного содержимого.</p>';
+                }
+            }
+        }
+    }
+
+    // ---- Обработчики событий ----
+
+    document.getElementById('builderRefreshLib').addEventListener('click', function () {
+        // Сбрасываем кеш и перезагружаем библиотеку
+        try { localStorage.removeItem(LIBRARY_CACHE_KEY); } catch (e) {}
+        library = null;
+        libPanel.innerHTML = '<div class="builder-status">⏳ Перезагрузка библиотеки...</div>';
+        loadSortable().then(loadLibrary).then(function () {
+            renderLibrary(searchEl.value);
+        }).catch(function (err) {
+            libPanel.innerHTML = '<div class="builder-status" style="color:#ef4444">Ошибка: ' + escHtml(String(err && err.message || err)) + '</div>';
+        });
+    });
+
+    btnOpen.addEventListener('click', function () {
+        // Определяем активный билет из DOM (не зависим от внешней переменной)
+        var active = document.querySelector('.ticket-section.active-ticket');
+        var n = 1;
+        if (active) {
+            var m = (active.id || '').match(/^ticket-(\d+)$/);
+            if (m) n = parseInt(m[1]);
+        }
+        openBuilder(n);
+    });
+    btnClose.addEventListener('click', closeBuilder);
+    btnSave.addEventListener('click', saveBuilder);
+    btnReset.addEventListener('click', resetBuilder);
+
+    selTicket.addEventListener('change', function () {
+        builderTicket = parseInt(this.value);
+        var stored = getAll();
+        session = stored[builderTicket]
+            ? stored[builderTicket].map(function (b) { return Object.assign({}, b); })
+            : [];
+        renderCurrent();
+    });
+
+    searchEl.addEventListener('input', function () {
+        if (library) renderLibrary(this.value);
+    });
+
+    // Закрыть по клику на затемнение (вне модального окна)
+    overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) closeBuilder();
+    });
+
+    // Применить сохранённые билеты после загрузки всех скриптов (KaTeX = defer)
+    window.addEventListener('load', applyStoredTickets);
+
+})();
+    </script>
 
     <script>
         const TOTAL_TICKETS = 17;
