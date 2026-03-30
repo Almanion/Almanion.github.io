@@ -74,11 +74,11 @@
             <div class="poll-body">
                 <p class="poll-emoji">🎨</p>
                 <h3 class="poll-title">Как вам новый дизайн?</h3>
-                <p class="poll-sub">Провели редизайн — стало лучше?</p>
+                <p class="poll-sub">Сделал редизайн — стало лучше?</p>
                 <div class="poll-stars" id="pollStars" role="group" aria-label="Оценка от 1 до 5">
                     ${stars}
                 </div>
-                <p class="poll-hint" id="pollHint">Нажмите на звёздочку</p>
+                <p class="poll-hint" id="pollHint">Нажми на звёздочку</p>
                 <p class="poll-deadline">Опрос активен до 31 марта</p>
             </div>
         </div>`;
