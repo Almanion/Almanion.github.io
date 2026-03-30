@@ -5,7 +5,7 @@
 (function () {
     'use strict';
 
-    const DEADLINE     = new Date('2026-03-31T12:00:00'); // 31 марта 12:00 МСК
+    const DEADLINE     = new Date('2026-03-29T00:00:00'); // опрос завершён
     const POLL_KEY     = 'almanion_poll_design_slate';
     const VISITOR_KEY  = 'almanion_visitor_id';
     const DELAY_MS     = 60 * 1000; // показываем через 1 минуту

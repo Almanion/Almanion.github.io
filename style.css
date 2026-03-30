@@ -588,15 +588,15 @@ body.dark-theme .knowledge-check-btn:hover {
 
 /* РўРµРјРЅР°СЏ С‚РµРјР° */
 body.dark-theme {
-    --bg-primary: #0d0d0d;
-    --bg-secondary: #161616;
-    --bg-tertiary: #282828;
+    --bg-primary: #0f172a;
+    --bg-secondary: #141b27;
+    --bg-tertiary: #334155;
     --text-primary: #f1f5f9;
-    --text-secondary: #888888;
+    --text-secondary: #a8b8cc;
     --accent-color: #3b82f6;
     --accent-hover: #60a5fa;
     --accent-rgb: 59, 130, 246;
-    --border-color: #2a2a2a;
+    --border-color: #334155;
 
     --svg-rod-fill: #8f6830;
     --svg-rod-stroke: #c8a464;
@@ -604,36 +604,36 @@ body.dark-theme {
     --svg-label-fill: #cbd5e1;
     
     /* Р¦РІРµС‚Р° РґР»СЏ Р±Р»РѕРєРѕРІ - С‚РµРјРЅР°СЏ С‚РµРјР° */
-    --definition-bg: rgba(255,255,255,0.04);
+    --definition-bg: #19365d31;
     --definition-border: #438bff;
-    --formula-bg: rgba(255,255,255,0.05);
+    --formula-bg: #1e3a5f;
     --formula-border: #60a5fa;
-    --remark-bg: rgba(255,255,255,0.04);
+    --remark-bg: #4a3f1f;
     --remark-border: #fbbe24a2;
-    --experiment-bg: rgba(255,255,255,0.04);
+    --experiment-bg: #2e106598;
     --experiment-border: #a78bfa;
-    --derivation-bg: rgba(255,255,255,0.04);
+    --derivation-bg: #1f3f2f;
     --derivation-border: #4ade80;
-    --theorem-bg: rgba(255,255,255,0.04);
+    --theorem-bg: #2e1065a0;
     --theorem-border: #a78bfa;
-    --lemma-bg: rgba(255,255,255,0.04);
+    --lemma-bg: #1a3a3a;
     --lemma-border: #5eead4;
-    --example-bg: rgba(255,255,255,0.04);
+    --example-bg: #3a2a1a;
     --example-border: #fb923c;
-    --statement-bg: rgba(255,255,255,0.04);
+    --statement-bg: #1e1b4b80;
     --statement-border: #818cf8;
-    --corollary-bg: rgba(255,255,255,0.04);
+    --corollary-bg: #1e293b80;
     --corollary-border: #94a3b8;
-    --proof-bg: rgba(255,255,255,0.04);
+    --proof-bg: #1f3f2f;
     --proof-border: #4ade80;
-    --exercise-bg: rgba(255,255,255,0.04);
+    --exercise-bg: #1e293b80;
     --exercise-border: #94a3b8;
     
     /* РўРµРЅРё - С‚РµРјРЅР°СЏ С‚РµРјР° (Р±РѕР»РµРµ РјСЏРіРєРёРµ) */
-    --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 3px 10px rgba(0, 0, 0, 0.5);
-    --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.55);
-    --shadow-xl: 0 8px 30px rgba(0, 0, 0, 0.65);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.6);
     --shadow-hover: 0 6px 24px rgba(var(--accent-rgb), 0.3);
 }
 
@@ -746,10 +746,10 @@ body.sidebar-open {
 }
 
 body.dark-theme .sidebar-header {
-    background: #111111;
-    color: #e8e8e8;
-    border-bottom-color: #2a2a2a;
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+    color: white;
+    border-bottom-color: transparent;
+    box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.25);
 }
 
 .sidebar-header h2 {
@@ -788,12 +788,12 @@ body.dark-theme .sidebar-header {
 }
 
 body.dark-theme .close-sidebar {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
 }
 
 body.dark-theme .close-sidebar:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.3);
     color: white;
 }
 
@@ -1151,8 +1151,8 @@ body.sidebar-collapsed .main-content {
 }
 
 body.dark-theme .page-header {
-    background: #0d0d0d;
-    border: 1px solid #2a2a2a;
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+    border: none;
     box-shadow: var(--shadow-xl);
 }
 
@@ -5906,12 +5906,12 @@ body.no-hover .auth-overlay *:active {
 }
 
 body.dark-theme .settings-button-sidebar {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
 }
 
 body.dark-theme .settings-button-sidebar:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.3);
     color: white;
 }
 
