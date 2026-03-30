@@ -382,11 +382,88 @@
             font-size: 0.88rem;
         }
 
+        /* Скрываем плавающие кнопки когда конструктор открыт */
+        body.builder-open .settings-button,
+        body.builder-open #scrollToTop,
+        body.builder-open .builder-open-btn { display: none !important; }
+
+        /* Мобильные табы (скрыты на десктопе) */
+        .builder-mobile-tabs {
+            display: none;
+        }
+
         /* Мобильная адаптация */
         @media (max-width: 650px) {
-            .builder-body { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
-            .builder-panel { border-right: none; border-bottom: 1px solid var(--border-color); }
+
+            /* Шапка: компактная */
+            .builder-header { padding: 0.5rem 0.75rem; gap: 0.4rem; }
+            .builder-header-title { display: none; }
+            .builder-header-controls { gap: 0.35rem; }
+            label[for="builderTicketSelect"] { display: none; }
+            .builder-select { font-size: 0.82rem; padding: 0.3rem 0.4rem; max-width: 100px; }
+            .btn-text { display: none; }
+            .builder-btn { padding: 0.3rem 0.55rem; font-size: 0.95rem; }
+            .builder-auth-user { display: none !important; }
+            .builder-sync-badge { display: none !important; }
+
+            /* Мобильные табы */
+            .builder-mobile-tabs {
+                display: flex;
+                flex-shrink: 0;
+                background: var(--bg-secondary);
+                border-bottom: 1px solid var(--border-color);
+            }
+            .builder-mobile-tab {
+                flex: 1;
+                padding: 0.6rem 0.5rem;
+                background: none;
+                border: none;
+                border-bottom: 2px solid transparent;
+                font-size: 0.85rem;
+                font-family: inherit;
+                color: var(--text-secondary);
+                cursor: pointer;
+                transition: var(--transition);
+            }
+            .builder-mobile-tab.active {
+                color: var(--accent-color);
+                border-bottom-color: var(--accent-color);
+                font-weight: 600;
+            }
+
+            /* Тело: колонки → вертикальный стек с табами */
+            .builder-body {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+            .builder-panel {
+                display: none;
+                grid-column: 1;
+                grid-row: 2;
+                border-right: none;
+            }
+            .builder-panel.builder-panel-active { display: flex; }
+
+            /* Плавающая кнопка открытия: компактнее */
             .builder-open-btn { font-size: 0.8rem; padding: 0.45rem 0.75rem; bottom: 4.5rem; }
+
+            /* Попап предпросмотра: на весь экран снизу */
+            .builder-preview-popup {
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                top: auto !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                max-height: 55vh !important;
+                border-radius: var(--border-radius) var(--border-radius) 0 0;
+                box-shadow: 0 -4px 24px rgba(0,0,0,0.25);
+            }
+        }
+
+        @media (max-width: 400px) {
+            .builder-mobile-tab { font-size: 0.78rem; padding: 0.5rem 0.3rem; }
+            .builder-btn { padding: 0.28rem 0.45rem; }
         }
 
         /* ====================================================
@@ -814,14 +891,14 @@
                         <option value="16">Билет №16</option>
                         <option value="17">Билет №17</option>
                     </select>
-                    <button id="builderSaveBtn"    class="builder-btn builder-btn-save">💾 Сохранить</button>
-                    <button id="builderResetBtn"   class="builder-btn builder-btn-reset">🗑 Очистить</button>
-                    <button id="builderRefreshLib" class="builder-btn builder-btn-reset" title="Перезагрузить библиотеку из physics.html (сбросит кеш)">↺ Обновить библиотеку</button>
+                    <button id="builderSaveBtn"    class="builder-btn builder-btn-save"  title="Сохранить билет">💾<span class="btn-text"> Сохранить</span></button>
+                    <button id="builderResetBtn"   class="builder-btn builder-btn-reset" title="Очистить билет">🗑<span class="btn-text"> Очистить</span></button>
+                    <button id="builderRefreshLib" class="builder-btn builder-btn-reset" title="Перезагрузить библиотеку из physics.html (сбросит кеш)">↺<span class="btn-text"> Обновить</span></button>
                     <!-- Авторизация -->
                     <div class="builder-auth-section">
                         <span id="builderSyncBadge" class="builder-sync-badge" style="display:none">☁ синхронизировано</span>
                         <span id="builderUserLabel" class="builder-auth-user" style="display:none"></span>
-                        <button id="builderAuthBtn" class="builder-btn builder-btn-reset">🔐 Войти</button>
+                        <button id="builderAuthBtn" class="builder-btn builder-btn-reset" title="Войти / Выйти">🔐<span class="btn-text"> Войти</span></button>
                     </div>
                 </div>
                 <button id="builderCloseBtn" class="builder-btn builder-btn-close" title="Закрыть (Esc)">✕</button>
@@ -830,8 +907,14 @@
             <!-- Двухколоночная область -->
             <div class="builder-body">
 
+                <!-- Мобильные табы (видны только на телефоне) -->
+                <div class="builder-mobile-tabs">
+                    <button class="builder-mobile-tab active" data-panel="0">📋 Билет</button>
+                    <button class="builder-mobile-tab"        data-panel="1">📚 Библиотека</button>
+                </div>
+
                 <!-- Левая панель: текущий билет -->
-                <div class="builder-panel">
+                <div class="builder-panel builder-panel-active" id="builderPanelCurrent">
                     <div class="builder-panel-header">Текущий билет — порядок блоков</div>
                     <div class="builder-panel-content">
                         <div id="builderCurrentBlocks"></div>
@@ -839,7 +922,7 @@
                 </div>
 
                 <!-- Правая панель: библиотека из physics.html -->
-                <div class="builder-panel">
+                <div class="builder-panel" id="builderPanelLib">
                     <div class="builder-panel-header">Библиотека — physics.html</div>
                     <div class="builder-panel-content">
                         <input type="text" id="builderSearch" class="builder-search" placeholder="🔍 Поиск по тексту блоков...">
@@ -1238,9 +1321,39 @@
 
     // ---- Открыть конструктор ----
 
+    // ---- Мобильные табы ----
+
+    var mobilePanels = [
+        document.getElementById('builderPanelCurrent'),
+        document.getElementById('builderPanelLib')
+    ];
+
+    document.querySelectorAll('.builder-mobile-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            var idx = parseInt(this.dataset.panel);
+            document.querySelectorAll('.builder-mobile-tab').forEach(function (t) {
+                t.classList.remove('active');
+            });
+            this.classList.add('active');
+            mobilePanels.forEach(function (p, i) {
+                if (p) p.classList.toggle('builder-panel-active', i === idx);
+            });
+        });
+    });
+
+    function switchMobileTab(idx) {
+        document.querySelectorAll('.builder-mobile-tab').forEach(function (t, i) {
+            t.classList.toggle('active', i === idx);
+        });
+        mobilePanels.forEach(function (p, i) {
+            if (p) p.classList.toggle('builder-panel-active', i === idx);
+        });
+    }
+
     function openBuilder(ticketNum) {
         builderTicket = ticketNum;
         selTicket.value = String(ticketNum);
+        document.body.classList.add('builder-open');
 
         // Загружаем текущие блоки из хранилища
         var stored = getAll();
@@ -1249,6 +1362,7 @@
             : [];
 
         overlay.classList.remove('hidden');
+        switchMobileTab(0);   // всегда начинаем с вкладки "Билет"
         renderCurrent();
 
         // Загружаем SortableJS и библиотеку (если ещё не загружены)
@@ -1281,6 +1395,7 @@
 
     function closeBuilder() {
         overlay.classList.add('hidden');
+        document.body.classList.remove('builder-open');
         if (sortable) { try { sortable.destroy(); } catch (e) {} sortable = null; }
         closeBlockPreview();
     }
@@ -1499,11 +1614,11 @@
         if (user) {
             userLabel.textContent = '👤 ' + user.email;
             userLabel.style.display = 'inline';
-            authBtn.textContent = 'Выйти';
+            authBtn.innerHTML = '🔓<span class="btn-text"> Выйти</span>';
             syncBadge.style.display = 'inline';
         } else {
             userLabel.style.display = 'none';
-            authBtn.textContent = '🔐 Войти';
+            authBtn.innerHTML = '🔐<span class="btn-text"> Войти</span>';
             syncBadge.style.display = 'none';
         }
     }
