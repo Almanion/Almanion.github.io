@@ -25,7 +25,7 @@
 
     function initFirebase() {
         if (typeof firebase === 'undefined') return false;
-        if (!firebaseConfig || firebaseConfig.apiKey === "ВСТАВЬ_СВОЙ_API_KEY") return false;
+        if (!firebaseConfig || firebaseConfig.apiKey === "AIzaSyD7pwdKZZJapEdD60TS_z_UFD9IijB_UYU") return false;
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
