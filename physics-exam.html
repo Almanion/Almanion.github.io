@@ -90,19 +90,19 @@
         /* Шапка конструктора */
         .builder-header {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 0.75rem;
             padding: 0.7rem 1.2rem;
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border-color);
             flex-shrink: 0;
-            flex-wrap: wrap;
         }
         .builder-header-title {
             font-size: 1rem;
             font-weight: 700;
             margin: 0;
             white-space: nowrap;
+            padding-top: 0.3rem;
         }
         .builder-header-controls {
             display: flex;
@@ -135,7 +135,7 @@
         .builder-btn-save:hover  { background: var(--accent-hover); }
         .builder-btn-reset { background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); }
         .builder-btn-reset:hover { background: var(--border-color); }
-        .builder-btn-close { background: none; color: var(--text-secondary); font-size: 1.3rem; line-height: 1; margin-left: auto; padding: 0.2rem 0.5rem; }
+        .builder-btn-close { background: none; color: var(--text-secondary); font-size: 1.3rem; line-height: 1; padding: 0.2rem 0.6rem; flex-shrink: 0; border: none; cursor: pointer; transition: var(--transition); }
         .builder-btn-close:hover { color: var(--text-primary); }
 
         /* Основная область: 2 колонки */
@@ -205,9 +205,15 @@
         }
         .builder-badge-def  { background: #dbeafe; color: #1d4ed8; }
         .builder-badge-h4   { background: #fef3c7; color: #b45309; }
+        .builder-badge-fig  { background: #fce7f3; color: #9d174d; }
+        .builder-badge-txt  { background: #f5f5f5; color: #525252; }
+        .builder-badge-deriv{ background: #ede9fe; color: #5b21b6; }
         .builder-badge-other{ background: #f0fdf4; color: #15803d; }
         body.dark-theme .builder-badge-def   { background: #1e3a5f; color: #93c5fd; }
         body.dark-theme .builder-badge-h4    { background: #451a03; color: #fde68a; }
+        body.dark-theme .builder-badge-fig   { background: #500724; color: #f9a8d4; }
+        body.dark-theme .builder-badge-txt   { background: #262626; color: #a3a3a3; }
+        body.dark-theme .builder-badge-deriv { background: #2e1065; color: #c4b5fd; }
         body.dark-theme .builder-badge-other { background: #14532d; color: #86efac; }
 
         .builder-block-preview {
@@ -321,6 +327,53 @@
         .builder-lib-add:hover { background: var(--accent-hover); transform: scale(1.15); }
         .builder-lib-added { background: #16a34a !important; }
         .builder-lib-added:hover { background: #15803d !important; transform: none; }
+
+        .builder-lib-eye {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            width: 22px;
+            height: 22px;
+            font-size: 0.72rem;
+            line-height: 1;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: var(--transition);
+        }
+        .builder-lib-eye:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+        /* Попап предпросмотра блока */
+        .builder-preview-popup {
+            position: fixed;
+            z-index: 4000;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            overflow-y: auto;
+            padding: 0.85rem 1rem;
+            font-size: 0.82rem;
+            max-width: 360px;
+            pointer-events: auto;
+            line-height: 1.5;
+        }
+        .builder-preview-popup .formula-box,
+        .builder-preview-popup .definition-box { font-size: 0.78rem; }
+        .builder-preview-popup img { max-width: 100%; border-radius: 4px; }
+        .builder-preview-popup h4 { font-size: 0.85rem; margin: 0 0 0.4rem; }
+        .builder-preview-close {
+            display: block;
+            text-align: right;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            cursor: pointer;
+            margin-bottom: 0.5rem;
+        }
+        .builder-preview-close:hover { color: var(--text-primary); }
 
         .builder-status {
             text-align: center;
@@ -659,277 +712,8 @@
         <!-- Билет №14 -->
         <section class="content-section ticket-section" id="ticket-14">
             <h2 class="part-title">Билет №14</h2>
-            <p style="color: var(--text-secondary); font-style: italic; margin-bottom: 1.5rem;">Момент силы. Момент инерции тела. Теорема Штейнера. Основное уравнение динамики вращательного движения. Кинетическая энергия вращательного движения.</p>
             <article class="topic">
-                <h3 class="topic-title">Динамика вращательного движения и момент инерции</h3>
-
-                <h4 class="subsection-title">1. Работа вращающей силы АТТ</h4>
-
-                <div class="definition-box">
-                    Рассмотрим тело на закреплённой оси, к которому приложена произвольная сила \(\vec{F}\). Разложим эту силу на 2 компоненты \(\vec{F}_{\parallel}\) и \(\vec{F}_{\perp}\) (рис. 10).
-                    <br><br>
-                    \(\vec{F}_{\parallel}\) лежит в плоскости, параллельной оси, не влияет на вращение тела, а лишь способствует линейной деформации оси. Только \(\vec{F}_{\perp}\) обеспечивает вращение тела вокруг оси с угловым ускорением \(\beta\).
-                    <br><br>
-                    Выделим плоскость, перпендикулярную оси и содержащую \(\vec{F}_{\perp}\).<br>
-                    Пусть тело повернётся на малый угол \(\Delta\varphi\). Разложим силу на компоненты: \(\vec{F}_n\) и \(\vec{F}_\tau\).
-                    \[\Delta A_{F_\perp} = \Delta A_{F_n} + \Delta A_{F_\tau}.\]
-                    \(\vec{F}_n \perp \Delta\vec{l}\), поэтому \(\Delta A_{F_n} = 0\). Работа равна работе тангенциальной компоненты:
-                    \[\Delta A_{F_\perp} = \Delta A_{F_\tau} = F_\tau \cdot \Delta l.\]
-                    Поскольку \(\Delta l = r \cdot \Delta\varphi\), получаем формулу работы вращения:
-                    <div class="formula-box">
-                        \[\Delta A_{F_\perp} = F_\tau \cdot r \cdot \Delta\varphi\]
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; margin: 1.5rem 0;">
-                    <figure style="flex: 1; min-width: 220px; max-width: 45%; text-align: center; margin: 0;">
-                        <img src="images/force-decomp-axis.jpg" alt="Разложение силы на компоненты" loading="lazy" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                        <figcaption style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-secondary); font-style: italic;">Разложение силы \(\vec{F}\) на компоненты \(\vec{F}_{\parallel}\) и \(\vec{F}_{\perp}\).</figcaption>
-                    </figure>
-                    <figure style="flex: 1; min-width: 220px; max-width: 45%; text-align: center; margin: 0;">
-                        <img src="images/force-decomp-rotation-work.jpg" alt="Поворот на угол Δφ" loading="lazy" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                        <figcaption style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-secondary); font-style: italic;">Поворот на угол \(\Delta\varphi\).</figcaption>
-                    </figure>
-                </div>
-
-                <h4 class="subsection-title">2. Момент силы АТТ</h4>
-
-                <div class="definition-box">
-                    <strong>Момент силы</strong> — векторная физическая величина, равная векторному произведению радиус-вектора, проведённого от оси вращения до точки приложения силы, на вектор силы.
-                    <div class="formula-box">
-                        \[\vec{M} = \vec{r} \times \vec{F}\]
-                        \[M = r \cdot F \cdot \sin\alpha\]
-                    </div>
-                </div>
-
-                <h4 class="subsection-title">3. Правило правого винта</h4>
-
-                <div class="definition-box">
-                    <strong>Правило правого винта:</strong> если от вектора перемещения \(\vec{r}\) вращать по кратчайшему пути к вектору силы \(\vec{F}\) правый винт, то его поступательное движение совпадает с направлением вектора момента силы \(\vec{M}\).
-                    <br><br>
-                    Момент силы считают <strong>положительным</strong>, если сила вызывает вращение тела по часовой стрелке, и <strong>отрицательным</strong>, если против.
-                </div>
-
-                <h4 class="subsection-title">4. Плечо силы</h4>
-
-                <div class="definition-box">
-                    <strong>Плечо силы</strong> — кратчайшее расстояние от оси вращения до прямой, вдоль которой направлена сила.
-                    <div class="formula-box">
-                        \[l = r \cdot \sin\alpha\]
-                    </div>
-                </div>
-
-                <h4 class="subsection-title">5. Кинетическая энергия вращающегося АТТ</h4>
-
-                <div class="definition-box">
-                    <div class="derivation-box">
-                        <button class="toggle-derivation">📖 Показать вывод</button>
-                        <div class="derivation-content">
-                            \[\boxed{\Delta A = M \cdot \Delta\varphi, \qquad \Delta A = \sum M_i \cdot \Delta\varphi}\]
-                            Разобьём АТТ на множество материальных точек. Кинетическая энергия системы равна:
-                            \[W_k = \sum W_{k_i} = \sum \frac{m_i v_i^2}{2}\]
-                            \[v_i = \omega \cdot r_i\]
-                            \[W_k = \sum \frac{\omega^2}{2} \cdot m_i r_i^2 = \frac{\omega^2}{2} \cdot \sum m_i r_i^2\]
-                            Момент инерции АТТ относительно заданной оси вращения:
-                            \[I = \sum m_i r_i^2\]
-                        </div>
-                    </div>
-                    <div class="formula-box">
-                        \[W_{\text{кин. вращ.}} = \frac{I \cdot \omega^2}{2}\]
-                    </div>
-                </div>
-
-                <h4 class="subsection-title">6. Момент инерции АТТ</h4>
-
-                <div class="definition-box">
-                    <strong>Момент инерции МТ</strong> — скалярная физическая величина, равная произведению массы материальной точки на квадрат расстояния до центра вращения.
-                    <div class="formula-box">
-                        \[I = mr^2\]
-                    </div>
-                    <strong>Момент инерции АТТ</strong> — скалярная физическая величина, равная сумме моментов инерции всех МТ тела относительно оси вращения.
-                    <div class="formula-box">
-                        \[I = \sum m_i r_i^2\]
-                    </div>
-                </div>
-
-                <h4 class="subsection-title">7. Момент инерции тонкого кольца</h4>
-
-                <div class="definition-box">
-                    <strong>Центральный момент тонкого кольца:</strong>
-                    <div class="derivation-box">
-                        <button class="toggle-derivation">📖 Показать вывод</button>
-                        <div class="derivation-content">
-                            \[\Delta I_i = \Delta m_i \cdot r^2\]
-                            \[I = \sum \Delta m_i \cdot r^2 = m \cdot r^2\]
-                            Здесь мы учли, что расстояние \(r\) для всех МТ одинаково и сумма масс МТ равна массе кольца.
-                        </div>
-                    </div>
-                    <div style="text-align: center; margin: 1.5rem 0;">
-                        <img src="images/thin-ring-moment-inertia.jpg" alt="Тонкое кольцо: момент инерции" loading="lazy" style="max-width: 60%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                        <p style="margin-top: 0.75rem; font-size: 0.9rem; color: var(--text-secondary); font-style: italic;">Тонкое кольцо: центр \(O\), ось вращения, радиус \(R\), элемент массы \(\Delta m_i\).</p>
-                    </div>
-                    <div class="formula-box">
-                        \[I_{\text{кольца}} = mR^2\]
-                    </div>
-                </div>
-
-                <h4 class="subsection-title">8. Моменты инерции без вывода</h4>
-
-                <div class="definition-box">
-                    <strong>Главный центральный момент диска:</strong>
-                    <div style="text-align: center; margin: 1rem 0;">
-                        <img src="images/hollow_cylinder_ring_element_dr_R_b.png" alt="Диск, разбитый на кольца" loading="lazy" style="max-width: 50%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                    </div>
-                    <div class="formula-box">
-                        \[I_{\text{диска}} = \frac{mR^2}{2}\]
-                    </div>
-                    <strong>Центральный момент шара:</strong>
-                    <div class="formula-box">
-                        \[I_{\text{шара}} = \frac{2}{5} mR^2\]
-                    </div>
-                    <strong>Момент инерции стержня (ось через середину):</strong>
-                    <div class="formula-box">
-                        \[I_{\text{стержня}} = \frac{mL^2}{12}\]
-                    </div>
-                </div>
-
-                <h4 class="subsection-title">9. Теорема о взаимно перпендикулярных осях</h4>
-
-                <div class="definition-box">
-                    <strong>Теорема о взаимно перпендикулярных осях:</strong> сумма моментов инерции плоского тела относительно любой пары взаимно перпендикулярных осей в плоскости этого тела равна моменту инерции относительно оси, перпендикулярной плоскости тела и проходящей через точку пересечения этих осей.
-                    <div class="formula-box">
-                        \[I_x + I_y = I_z\]
-                    </div>
-                </div>
-
-                <h4 class="subsection-title">10. Применение теоремы (пример)</h4>
-
-                <div class="definition-box">
-                    Для диска: \(I_z = \dfrac{mR^2}{2}\). По симметрии \(I_x = I_y\). По теореме о взаимно перпендикулярных осях:
-                    <div class="formula-box">
-                        \[I_x + I_y = I_z \quad\Rightarrow\quad 2I_x = \frac{mR^2}{2} \quad\Rightarrow\quad I_x = \frac{mR^2}{4}\]
-                    </div>
-                </div>
-
-                <h4 class="subsection-title">11. Теорема Штейнера</h4>
-
-                <div class="definition-box">
-                    <strong>Теорема Штейнера:</strong> момент инерции тела \(I\) относительно произвольной оси равен сумме центрального момента инерции \(I_0\) относительно оси, проходящей параллельно рассматриваемой через центр масс, и произведения массы тела \(m\) на квадрат расстояния \(d\) между осями.
-                    <div class="formula-box">
-                        \[I = I_0 + m \cdot d^2\]
-                    </div>
-                </div>
-
-                <h4 class="subsection-title">12. Применение теоремы Штейнера к стержню</h4>
-
-                <div class="definition-box">
-                    <strong>Применение теоремы Штейнера к стержню</strong>
-                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0;">
-                        <div style="flex: 1; min-width: 220px; border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem;">
-                            <svg viewBox="0 0 200 72" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;margin:0 auto 0.75rem;">
-                                <rect x="5" y="32" width="190" height="18" style="fill:var(--svg-rod-fill);stroke:var(--svg-rod-stroke)" stroke-width="1" rx="1"/>
-                                <line x1="100" y1="6" x2="100" y2="62" style="stroke:var(--svg-axis-stroke)" stroke-width="1.5" stroke-dasharray="5,3"/>
-                                <text x="100" y="5" text-anchor="middle" font-family="sans-serif" font-size="9.5" style="fill:var(--svg-label-fill)">ось через середину</text>
-                            </svg>
-                            <p style="margin: 0 0 0.5rem;"><strong>Ось через середину:</strong></p>
-                            <div class="formula-box">
-                                \[J_c = \frac{mL^2}{12}\]
-                            </div>
-                        </div>
-                        <div style="flex: 1; min-width: 220px; border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem;">
-                            <svg viewBox="0 0 200 92" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;margin:0 auto 0.75rem;">
-                                <defs>
-                                    <marker id="st-arr-14" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
-                                        <path d="M0,0 L10,5 L0,10 z" style="fill:var(--svg-label-fill)"/>
-                                    </marker>
-                                </defs>
-                                <rect x="5" y="32" width="190" height="18" style="fill:var(--svg-rod-fill);stroke:var(--svg-rod-stroke)" stroke-width="1" rx="1"/>
-                                <line x1="5" y1="6" x2="5" y2="62" style="stroke:var(--svg-axis-stroke)" stroke-width="1.5" stroke-dasharray="5,3"/>
-                                <text x="8" y="5" text-anchor="start" font-family="sans-serif" font-size="9.5" style="fill:var(--svg-label-fill)">ось через конец</text>
-                                <line x1="5" y1="76" x2="100" y2="76" style="stroke:var(--svg-label-fill)" stroke-width="1.2" marker-start="url(#st-arr-14)" marker-end="url(#st-arr-14)"/>
-                                <text x="52" y="89" text-anchor="middle" font-family="sans-serif" font-size="9.5" style="fill:var(--svg-label-fill)">d = L/2</text>
-                            </svg>
-                            <p style="margin: 0 0 0.5rem;"><strong>Ось через конец стержня:</strong></p>
-                            <div class="derivation-box">
-                                <button class="toggle-derivation">📖 Показать вывод</button>
-                                <div class="derivation-content">
-                                    \[\begin{aligned}
-                                    J &= J_c + md^2 = \frac{mL^2}{12} + m \cdot \left(\frac{L}{2}\right)^2 \\
-                                    &= \frac{mL^2}{12} + \frac{mL^2}{4} = \frac{mL^2}{3}
-                                    \end{aligned}\]
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <h4 class="subsection-title">13. Теорема о взаимно перпендикулярных осях с доказательством</h4>
-
-                <div class="definition-box">
-                    <strong>Доказательство теоремы Штейнера.</strong>
-                    <div style="display: flex; gap: 1.5rem; align-items: stretch; flex-wrap: wrap; margin: 1rem 0;">
-                        <div style="flex: 1; min-width: 280px;">
-                            <div class="derivation-box">
-                                <button class="toggle-derivation">📖 Показать вывод</button>
-                                <div class="derivation-content">
-                                    \[J = \sum_{i=1}^{n} m_i (r'_i)^2\]
-                                    <p>\(\vec{r}'_i = \vec{r}_i + \vec{d}\), где \(\vec{d}\) — радиус-вектор расстояния между старой и новой осями вращения (новая ось проходит через центр масс).</p>
-                                    \[\begin{align*}
-                                    J &= \sum_{i=1}^{n} m_i (\vec{r}_i)^2 + 2\sum_{i=1}^{n} m_i \vec{r}_i \cdot \vec{d} + \sum_{i=1}^{n} m_i (\vec{d})^2 \\
-                                    &= \sum_{i=1}^{n} m_i (\vec{r}_i)^2 + 2\vec{d} \cdot \sum_{i=1}^{n} m_i \vec{r}_i + d^2 \sum_{i=1}^{n} m_i
-                                    \end{align*}\]
-                                    <p>Среднее слагаемое \(= 0\), так как \(\sum_{i=1}^{n} m_i \vec{r}_i = \vec{r}_c \cdot M\) в системе отсчёта центра масс, где \(\vec{r}_c = \vec{0}\).</p>
-                                    \[\begin{align*}
-                                    J &= \sum_{i=1}^{n} m_i (\vec{r}_i)^2 + d^2 \sum_{i=1}^{n} m_i
-                                    \end{align*}\]
-                                    \[\boxed{J = J_c + md^2}\]
-                                </div>
-                            </div>
-                        </div>
-                        <div style="flex: 1; min-width: 200px; display: flex; align-items: center; justify-content: center;">
-                            <img src="images/steiner_theorem_mass_element_vectors.png" alt="Теорема Штейнера" loading="lazy" style="max-width: 90%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                        </div>
-                    </div>
-                </div>
-
-                <h4 class="subsection-title">14. Вывод основного уравнения динамики вращательного движения АТТ</h4>
-
-                <div class="definition-box">
-                    <strong>Основное уравнение динамики вращательного движения АТТ:</strong> угловое ускорение АТТ относительно заданной оси вращения прямо пропорционально векторной сумме моментов внешних сил и обратно пропорционально моменту инерции относительно заданной оси вращения.
-                    <div class="formula-box">
-                        \[I \cdot \vec{\beta} = \sum \vec{M}\]
-                    </div>
-                    <div class="derivation-box">
-                        <button class="toggle-derivation">📖 Показать вывод</button>
-                        <div class="derivation-content">
-                            \[A = \Delta W_k\]
-                            \[M_0 \Delta\varphi = \Delta\!\left(\frac{I \cdot \omega^2}{2}\right) \Rightarrow M_0 \Delta\varphi = \frac{I}{2} \cdot \Delta(\omega^2)\]
-                            \[\frac{d(\omega^2)}{d\omega} = 2\omega \Rightarrow \Delta(\omega^2) = 2\omega \cdot \Delta\omega\]
-                            \[M_0 \lim_{\Delta t \to 0}\frac{\Delta\varphi}{\Delta t} = \frac{I}{2} \cdot 2\omega \cdot \lim_{\Delta t \to 0}\frac{\Delta\omega}{\Delta t}\]
-                            \[M_0 \omega = I \cdot \omega \cdot \beta \Rightarrow M_0 = I \cdot \beta\]
-                        </div>
-                    </div>
-                </div>
-
-                <h4 class="subsection-title">15. Плоское движение АТТ и теорема Кёнига</h4>
-
-                <div class="definition-box">
-                    Любое плоское движение АТТ можно представить в виде суммы поступательного движения центра масс и вращательного движения относительно оси, проходящей через центр масс тела.
-                </div>
-
-                <div class="definition-box">
-                    <strong>Теорема Кёнига:</strong> при плоском движении кинетическая энергия движущегося АТТ равна сумме кинетической энергии поступательного движения центра масс и кинетической энергии вращательного движения относительно оси, проходящей через центр масс и перпендикулярной плоскости, в которой движутся все точки тела.
-                    <div class="formula-box">
-                        \[W_k = W_{k_c} + W_{k_0} = \frac{m \cdot v_c^2}{2} + \frac{I_0 \cdot \omega^2}{2}\]
-                    </div>
-                    <strong>Обобщение:</strong> кинетическая энергия механической системы есть энергия движения центра масс тела плюс энергия движения относительно центра масс.
-                    <div class="formula-box">
-                        \[T = T_0 + T_r\]
-                        где \(T\) — полная кинетическая энергия системы,<br>
-                        \(T_0\) — кинетическая энергия движения центра масс,<br>
-                        \(T_r\) — относительная кинетическая энергия системы.
-                    </div>
-                </div>
+                <h3 class="topic-title">Содержимое</h3>
 
             </article>
         </section>
@@ -946,145 +730,8 @@
         <!-- Билет №16 -->
         <section class="content-section ticket-section" id="ticket-16">
             <h2 class="part-title">Билет №16</h2>
-            <p style="color: var(--text-secondary); font-style: italic; margin-bottom: 1.5rem;">Момент импульса материальной точки, момент импульса тела. Закон изменения момента импульса. Закон сохранения момента импульса тела и системы тел.</p>
             <article class="topic">
-                <h3 class="topic-title">Момент импульса</h3>
-
-                <h4 class="subsection-title">1. Момент импульса МТ</h4>
-
-                <div class="definition-box">
-                    Введём аналог импульса для вращательного движения.
-                    <div class="formula-box">
-                        \[I\vec{\beta} = \sum \vec{M} \qquad \text{(найти аналог)}\]
-                    </div>
-                    <div class="formula-box">
-                        \[m\vec{a} = \sum \vec{F}, \qquad \frac{d\vec{p}}{dt} = \sum \vec{F}\]
-                    </div>
-                    <div class="derivation-box">
-                        <button class="toggle-derivation">📖 Показать вывод</button>
-                        <div class="derivation-content">
-                            \[\begin{align*}
-                            m\vec{a} &= \vec{f}, \qquad \frac{d(m\vec{v})}{dt} = \vec{f} \\
-                            I\vec{\beta} &= I \frac{d\vec{\omega}}{dt} = \frac{d(I\vec{\omega})}{dt} \\
-                            I\vec{\omega} &= mR^2 \cdot \frac{v}{R} = mRv = pR \\
-                            \vec{L} &= I\vec{\omega} = \vec{R} \times \vec{p}
-                            \end{align*}\]
-                        </div>
-                    </div>
-                    Величину \(L = mvR\) называют <strong>модулем момента импульса</strong>.
-                </div>
-
-                <div class="definition-box">
-                    <strong>Момент импульса материальной точки</strong> — векторная физическая величина, равная векторному произведению радиус-вектора, проведённого из оси вращения к материальной точке, на импульс тела:
-                    <div class="formula-box">
-                        \[\vec{L} = \vec{r} \times \vec{p} = \vec{r} \times m\vec{v}, \qquad |\vec{L}| = mrv\sin\alpha\]
-                    </div>
-                    Модуль импульса твёрдого тела, вращающегося относительно закреплённой оси: \(L = mvR\) (\(\vec{v} \perp \vec{R}\)).
-                </div>
-
-                <h4 class="subsection-title">2. Момент импульса АТТ</h4>
-
-                <div class="definition-box">
-                    <strong>Момент импульса абсолютно твёрдого тела</strong> относительно закреплённой оси вращения — сумма моментов импульса всех элементов:
-                    <div class="formula-box">
-                        \[L = \sum L_i, \qquad \vec{L}_i = \Delta m_i \, \vec{r}_i \times \vec{v}_i\]
-                    </div>
-                    Если скорости элементов перпендикулярны их радиус-векторам от оси (\(\vec{v}_i \perp \vec{r}_i\)), то \(|\vec{L}_i| = \Delta m_i v_i r_i\).
-                    <br><br>
-                    <strong>Связь с моментом инерции и угловой скоростью:</strong>
-                    <div class="derivation-box">
-                        <button class="toggle-derivation">📖 Показать вывод</button>
-                        <div class="derivation-content">
-                            \[\begin{align*}
-                            |\vec{L}_i| = \Delta m_i v_i r_i, \qquad v_i &= \omega r_i \quad\Rightarrow\quad L_i = \Delta m_i r_i^2 \omega \\
-                            L = \omega \sum& \Delta m_i r_i^2 = \omega I
-                            \end{align*}\]
-                            \[\vec{L} = I \vec{\omega}\]
-                        </div>
-                    </div>
-                    Для абсолютно твёрдого тела векторы \(\vec{L}\) и \(\vec{\omega}\) всегда <strong>сонаправлены</strong>: \(\vec{L} \uparrow\uparrow \vec{\omega}\). При равномерном вращении момент импульса не меняется.
-                </div>
-
-                <h4 class="subsection-title">3. Получение закона изменения момента импульса тела</h4>
-
-                <div class="definition-box">
-                    <strong>Закон изменения момента импульса:</strong> скорость изменения момента импульса абсолютно твёрдого тела равна векторной сумме моментов внешних сил, действующих на тело.
-                    <div class="derivation-box">
-                        <button class="toggle-derivation">📖 Показать вывод</button>
-                        <div class="derivation-content">
-                            \[\begin{align*}
-                            \Delta \vec{L} = I \Delta \vec{\omega}, \qquad&
-                            \frac{\Delta \vec{L}}{\Delta t} = I \frac{\Delta \vec{\omega}}{\Delta t} \\
-                            \lim_{\Delta t \to 0} \frac{\Delta \vec{L}}{\Delta t} = I \vec{\beta}& = \sum_{i=1}^{n} \vec{M}_i
-                            \end{align*}\]
-                        </div>
-                    </div>
-                </div>
-
-                <h4 class="subsection-title">4. Закон сохранения момента импульса тела</h4>
-
-                <div class="definition-box">
-                    <strong>Закон сохранения момента импульса:</strong> если векторная сумма моментов внешних сил равна нулю, момент импульса системы не меняется.
-                    <div class="formula-box">
-                        \[\sum \vec{M}_i = \vec{0} \quad\Rightarrow\quad \frac{d\vec{L}}{dt} = \vec{0}, \qquad \vec{L} = \mathrm{const}\]
-                    </div>
-                    <strong>Границы применения ЗСМИ:</strong>
-                    <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
-                        <li>для проекций на ось</li>
-                        <li>для вращающегося твёрдого тела</li>
-                    </ul>
-                </div>
-
-                <h4 class="subsection-title">5. Примеры выполнения закона</h4>
-
-                <div class="definition-box">
-                    <strong>Планета и II закон Кеплера.</strong><br>
-                    <strong>II закон Кеплера</strong> (равенство площадей) по смыслу совпадает с <strong>законом сохранения момента импульса</strong> для планеты в поле притяжения к Солнцу: сила тяготения направлена вдоль \(\vec{r}\), её момент относительно Солнца равен нулю, поэтому \(\vec{L}\) планеты постоянен.
-                    <div style="display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap; margin: 1rem 0;">
-                        <div style="flex: 1; min-width: 200px; text-align: center;">
-                            <img src="images/kepler_second_law_orbit_diagram.png" alt="II закон Кеплера" loading="lazy" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                        </div>
-                        <div style="flex: 1; min-width: 200px;">
-                            <div class="formula-box">
-                                \[\begin{align*}
-                                \Delta S &= \frac{1}{2} r^2 \Delta\varphi \\
-                                \frac{\Delta S}{\Delta t} &= \frac{1}{2} r^2 \omega \qquad (\Delta t \to 0)
-                                \end{align*}\]
-                            </div>
-                        </div>
-                    </div>
-                    Свяжем «секторную скорость» с моментом импульса: \(L = r p_{\perp} = m r^2 \omega\), откуда
-                    <div class="derivation-box">
-                        <button class="toggle-derivation">📖 Показать вывод</button>
-                        <div class="derivation-content">
-                            \[\frac{\Delta S}{\Delta t} = \frac{L}{2m} \qquad (\Delta t \to 0)\]
-                        </div>
-                    </div>
-                    \(\vec{M}_{\text{тяготения}} = \vec{0}\) относительно Солнца, так как \(\vec{F}_{\text{тяготения}} \parallel \vec{r}\) (угол \(180^\circ\), момент силы нулевой) \(\Rightarrow\) \(\vec{L} = \mathrm{const}\).
-                    <br><br>
-                    Для твёрдого тела:
-                    <div class="formula-box">
-                        \[\vec{L} = \mathrm{const}, \qquad L_z = \mathrm{const}, \qquad I_0 \omega_0 = I \omega\]
-                    </div>
-                    При изменении распределения массы относительно оси меняется момент инерции \(I\), поэтому при неизменном \(L\) должна меняться угловая скорость \(\omega\).
-                </div>
-
-                <div class="definition-box">
-                    <strong>Опыты на платформе и ориентация оси вращения.</strong><br>
-                    Поворотный стул или платформа иллюстрируют сохранение момента импульса: при отсутствии внешнего момента относительно вертикальной оси суммарный \(\vec{L}\) системы «человек + платформа + колесо» сохраняется; перенос вращающегося колеса меняет его вклад в \(\vec{L}\) — платформа получает вращение.
-                </div>
-
-                <h4 class="subsection-title">6. Принцип действия и устройство гироскопа</h4>
-
-                <div class="definition-box">
-                    <strong>Гироскоп</strong> — устройство, способное реагировать на изменение углов ориентации тела, на котором оно установлено, относительно инерциальной системы отсчёта.
-                    <div style="text-align: center; margin: 1rem 0;">
-                        <img src="images/gyroscope_cardan_suspension.png" alt="Гироскоп в карданном подвесе" loading="lazy" style="max-width: 70%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                    </div>
-                    <strong>Прецессия</strong> — явление, при котором момент импульса тела меняет своё направление в пространстве под действием момента внешней силы.
-                    <br><br>
-                    <strong>Нутация</strong> — колебательное нерегулярное движение вращающегося тела, совершающего прецессию.
-                </div>
+                <h3 class="topic-title">Содержимое</h3>
 
             </article>
         </section>
@@ -1176,8 +823,8 @@
                         <span id="builderUserLabel" class="builder-auth-user" style="display:none"></span>
                         <button id="builderAuthBtn" class="builder-btn builder-btn-reset">🔐 Войти</button>
                     </div>
-                    <button id="builderCloseBtn"   class="builder-btn builder-btn-close" title="Закрыть">✕</button>
                 </div>
+                <button id="builderCloseBtn" class="builder-btn builder-btn-close" title="Закрыть (Esc)">✕</button>
             </div>
 
             <!-- Двухколоночная область -->
@@ -1285,6 +932,9 @@
         var map = {
             definition: ['DEF', 'builder-badge-def'],
             heading:    ['H4',  'builder-badge-h4'],
+            figure:     ['IMG', 'builder-badge-fig'],
+            text:       ['TXT', 'builder-badge-txt'],
+            derivation: ['▶',   'builder-badge-deriv'],
             other:      ['···', 'builder-badge-other']
         };
         var t = map[type] || map.other;
@@ -1385,8 +1035,12 @@
 
             children.forEach(function (el) {
                 var type = 'other';
-                if (el.matches('.definition-box'))          type = 'definition';
-                else if (el.matches('h4.subsection-title')) type = 'heading';
+                if (el.matches('.definition-box'))           type = 'definition';
+                else if (el.matches('h4.subsection-title'))  type = 'heading';
+                else if (el.matches('figure'))               type = 'figure';
+                else if (el.matches('p'))                    type = 'text';
+                else if (el.matches('.derivation-box'))      type = 'derivation';
+                else if (el.querySelector('img'))            type = 'figure';
 
                 var preview = textOf(el.outerHTML) || el.tagName;
                 result.push({
@@ -1553,7 +1207,13 @@
                     '<span class="builder-lib-preview" title="' + escHtml(block.preview) + '">' +
                         escHtml(block.preview) +
                     '</span>' +
+                    '<button class="builder-lib-eye" title="Предпросмотр блока">👁</button>' +
                     '<button class="builder-lib-add" title="Добавить в билет">+</button>';
+
+                item.querySelector('.builder-lib-eye').addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    showBlockPreview(block, this);
+                });
 
                 item.querySelector('.builder-lib-add').addEventListener('click', function () {
                     session.push(Object.assign({}, block, { id: block.id + '-' + Date.now() }));
@@ -1622,7 +1282,91 @@
     function closeBuilder() {
         overlay.classList.add('hidden');
         if (sortable) { try { sortable.destroy(); } catch (e) {} sortable = null; }
+        closeBlockPreview();
     }
+
+    // ---- Предпросмотр блока (всплывающий попап) ----
+
+    var previewPopupEl = null;
+    var previewCloseHandler = null;
+
+    function showBlockPreview(block, triggerEl) {
+        closeBlockPreview();
+
+        var popup = document.createElement('div');
+        popup.className = 'builder-preview-popup';
+
+        var closeSpan = document.createElement('span');
+        closeSpan.className = 'builder-preview-close';
+        closeSpan.textContent = '✕ закрыть';
+        closeSpan.addEventListener('click', function (e) { e.stopPropagation(); closeBlockPreview(); });
+        popup.appendChild(closeSpan);
+
+        var content = document.createElement('div');
+        content.innerHTML = block.html;
+        popup.appendChild(content);
+
+        document.body.appendChild(popup);
+
+        // Позиционирование: слева от кнопки, или справа если не помещается
+        var rect   = triggerEl.getBoundingClientRect();
+        var pw     = 360;
+        var left   = rect.left - pw - 8;
+        if (left < 8) left = rect.right + 8;
+        var top    = Math.max(8, Math.min(rect.top, window.innerHeight - 60));
+        var maxH   = window.innerHeight - top - 12;
+
+        popup.style.cssText = 'left:' + Math.max(8, left) + 'px;top:' + top + 'px;width:' + pw + 'px;max-height:' + Math.min(420, maxH) + 'px';
+
+        // Рендерим формулы (если KaTeX загружен)
+        if (window.renderMathInElement) {
+            try {
+                renderMathInElement(popup, {
+                    throwOnError: false,
+                    delimiters: [
+                        { left: '\\[', right: '\\]', display: true },
+                        { left: '\\(', right: '\\)', display: false }
+                    ]
+                });
+            } catch (e) {}
+        }
+
+        previewPopupEl = popup;
+
+        // Закрываем по клику вне попапа (с задержкой, чтобы не сработало сразу)
+        setTimeout(function () {
+            previewCloseHandler = function (e) {
+                if (previewPopupEl && !previewPopupEl.contains(e.target)) {
+                    closeBlockPreview();
+                }
+            };
+            document.addEventListener('click', previewCloseHandler);
+        }, 50);
+    }
+
+    function closeBlockPreview() {
+        if (previewPopupEl && previewPopupEl.parentNode) {
+            previewPopupEl.parentNode.removeChild(previewPopupEl);
+        }
+        previewPopupEl = null;
+        if (previewCloseHandler) {
+            document.removeEventListener('click', previewCloseHandler);
+            previewCloseHandler = null;
+        }
+    }
+
+    // ---- Escape для закрытия ----
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        if (previewPopupEl) { closeBlockPreview(); return; }
+        var authOv = document.getElementById('builderAuthOverlay');
+        if (authOv && !authOv.classList.contains('hidden')) {
+            authOv.classList.add('hidden');
+            return;
+        }
+        if (!overlay.classList.contains('hidden')) { closeBuilder(); }
+    });
 
     // ---- Сохранить ----
 
