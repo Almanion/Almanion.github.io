@@ -335,6 +335,147 @@
             .builder-panel { border-right: none; border-bottom: 1px solid var(--border-color); }
             .builder-open-btn { font-size: 0.8rem; padding: 0.45rem 0.75rem; bottom: 4.5rem; }
         }
+
+        /* ====================================================
+           АВТОРИЗАЦИЯ В КОНСТРУКТОРЕ
+           ==================================================== */
+
+        .builder-auth-section {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+        .builder-auth-user {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            max-width: 160px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        /* Модальное окно авторизации */
+        .builder-auth-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .builder-auth-overlay.hidden { display: none; }
+        .builder-auth-modal {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .builder-auth-icon {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .builder-auth-modal h3 {
+            text-align: center;
+            margin: 0 0 1.5rem;
+            font-size: 1.2rem;
+        }
+        /* Табы Вход / Регистрация */
+        .builder-auth-tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 1.25rem;
+        }
+        .builder-auth-tab {
+            flex: 1;
+            padding: 0.55rem;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-family: inherit;
+            color: var(--text-secondary);
+            transition: var(--transition);
+        }
+        .builder-auth-tab.active {
+            color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+            font-weight: 600;
+        }
+        /* Поля ввода */
+        .builder-auth-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.65rem 0.9rem;
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: inherit;
+            margin-bottom: 0.7rem;
+            transition: border-color 0.2s;
+        }
+        .builder-auth-input:focus { outline: none; border-color: var(--accent-color); }
+        /* Сообщение об ошибке */
+        .builder-auth-error {
+            background: rgba(239,68,68,0.08);
+            color: #dc2626;
+            border: 1px solid rgba(239,68,68,0.25);
+            border-radius: var(--border-radius);
+            padding: 0.55rem 0.85rem;
+            font-size: 0.85rem;
+            margin-bottom: 0.75rem;
+            display: none;
+        }
+        /* Кнопки в модале */
+        .builder-auth-submit {
+            width: 100%;
+            padding: 0.65rem;
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 0.95rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 0.5rem;
+        }
+        .builder-auth-submit:hover { background: var(--accent-hover); }
+        .builder-auth-submit:disabled { opacity: 0.6; cursor: default; }
+        .builder-auth-cancel-btn {
+            width: 100%;
+            padding: 0.55rem;
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .builder-auth-cancel-btn:hover { background: var(--bg-secondary); }
+        /* Индикатор синхронизации */
+        .builder-sync-badge {
+            font-size: 0.72rem;
+            padding: 0.15rem 0.45rem;
+            border-radius: 10px;
+            background: #dcfce7;
+            color: #15803d;
+            font-weight: 600;
+        }
+        body.dark-theme .builder-sync-badge { background: #14532d; color: #86efac; }
+        .builder-sync-badge.syncing { background: #fef9c3; color: #a16207; }
+        body.dark-theme .builder-sync-badge.syncing { background: #422006; color: #fde68a; }
     </style>
 </head>
 <body>
@@ -979,9 +1120,10 @@
     <!-- Контейнер для пасхалок -->
     <div class="easter-eggs-container" id="easterEggsContainer"></div>
 
-    <!-- Firebase Analytics -->
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="firebase-analytics.js"></script>
 
@@ -1028,6 +1170,12 @@
                     <button id="builderSaveBtn"    class="builder-btn builder-btn-save">💾 Сохранить</button>
                     <button id="builderResetBtn"   class="builder-btn builder-btn-reset">🗑 Очистить</button>
                     <button id="builderRefreshLib" class="builder-btn builder-btn-reset" title="Перезагрузить библиотеку из physics.html (сбросит кеш)">↺ Обновить библиотеку</button>
+                    <!-- Авторизация -->
+                    <div class="builder-auth-section">
+                        <span id="builderSyncBadge" class="builder-sync-badge" style="display:none">☁ синхронизировано</span>
+                        <span id="builderUserLabel" class="builder-auth-user" style="display:none"></span>
+                        <button id="builderAuthBtn" class="builder-btn builder-btn-reset">🔐 Войти</button>
+                    </div>
                     <button id="builderCloseBtn"   class="builder-btn builder-btn-close" title="Закрыть">✕</button>
                 </div>
             </div>
@@ -1055,6 +1203,39 @@
                 </div>
 
             </div>
+        </div>
+    </div>
+
+    <!-- Модал авторизации конструктора -->
+    <div id="builderAuthOverlay" class="builder-auth-overlay hidden">
+        <div class="builder-auth-modal">
+            <div class="builder-auth-icon">🔐</div>
+            <h3>Конструктор билетов</h3>
+
+            <!-- Табы -->
+            <div class="builder-auth-tabs">
+                <button class="builder-auth-tab active" data-tab="login">Вход</button>
+                <button class="builder-auth-tab" data-tab="register">Регистрация</button>
+            </div>
+
+            <!-- Форма входа -->
+            <div id="bAuthLoginForm">
+                <input type="email"    id="bAuthEmail"    class="builder-auth-input" placeholder="Email" autocomplete="email">
+                <input type="password" id="bAuthPassword" class="builder-auth-input" placeholder="Пароль" autocomplete="current-password">
+                <div id="bAuthLoginError" class="builder-auth-error"></div>
+                <button id="bAuthLoginBtn" class="builder-auth-submit">Войти</button>
+            </div>
+
+            <!-- Форма регистрации -->
+            <div id="bAuthRegForm" style="display:none">
+                <input type="email"    id="bAuthRegEmail"    class="builder-auth-input" placeholder="Email" autocomplete="email">
+                <input type="password" id="bAuthRegPass"     class="builder-auth-input" placeholder="Пароль (мин. 6 символов)" autocomplete="new-password">
+                <input type="password" id="bAuthRegPassConf" class="builder-auth-input" placeholder="Повторите пароль" autocomplete="new-password">
+                <div id="bAuthRegError" class="builder-auth-error"></div>
+                <button id="bAuthRegBtn" class="builder-auth-submit">Зарегистрироваться</button>
+            </div>
+
+            <button id="bAuthCancelBtn" class="builder-auth-cancel-btn" style="margin-top:0.5rem">Отмена</button>
         </div>
     </div>
 
@@ -1447,6 +1628,7 @@
 
     function saveBuilder() {
         storeTicket(builderTicket, session);
+        saveToFirebase(builderTicket, session);   // синхронизация с Firebase (если залогинен)
 
         // Обновляем билет на странице
         var section = document.getElementById('ticket-' + builderTicket);
@@ -1546,6 +1728,245 @@
 
     // Применить сохранённые билеты после загрузки всех скриптов (KaTeX = defer)
     window.addEventListener('load', applyStoredTickets);
+
+
+    // ====================================================
+    // АВТОРИЗАЦИЯ И СИНХРОНИЗАЦИЯ С FIREBASE
+    // ====================================================
+
+    var currentUser  = null;
+    var DB_ROOT      = 'ticketBuilder';
+    var syncBadge    = document.getElementById('builderSyncBadge');
+    var userLabel    = document.getElementById('builderUserLabel');
+    var authBtn      = document.getElementById('builderAuthBtn');
+
+    // ---- Firebase helpers ----
+
+    function fbAuth() {
+        return (window.firebase && window.firebase.apps.length) ? window.firebase.auth() : null;
+    }
+    function fbDb() {
+        return (window.firebase && window.firebase.apps.length) ? window.firebase.database() : null;
+    }
+
+    // ---- Обновить шапку: email + синк-бейдж ----
+
+    function updateAuthUI(user) {
+        if (user) {
+            userLabel.textContent = '👤 ' + user.email;
+            userLabel.style.display = 'inline';
+            authBtn.textContent = 'Выйти';
+            syncBadge.style.display = 'inline';
+        } else {
+            userLabel.style.display = 'none';
+            authBtn.textContent = '🔐 Войти';
+            syncBadge.style.display = 'none';
+        }
+    }
+
+    // ---- Загрузить билеты из Firebase → localStorage → страница ----
+
+    function loadFromFirebase(uid) {
+        var db = fbDb();
+        if (!db) return;
+
+        fbDb().ref(DB_ROOT + '/' + uid + '/tickets').once('value')
+            .then(function (snap) {
+                var data = snap.val();
+                if (!data) return;
+
+                // Данные из Firebase перезаписывают localStorage
+                var all = getAll();
+                Object.keys(data).forEach(function (n) {
+                    if (Array.isArray(data[n]) && data[n].length > 0) {
+                        all[n] = data[n];
+                    }
+                });
+                saveAll(all);
+
+                // Применяем к странице
+                applyStoredTickets();
+
+                // Если конструктор открыт — обновить левую панель
+                if (!overlay.classList.contains('hidden')) {
+                    var stored = getAll();
+                    session = (stored[builderTicket] || []).map(function (b) { return Object.assign({}, b); });
+                    renderCurrent();
+                }
+
+                setSyncBadge('ok');
+            })
+            .catch(function (err) {
+                console.warn('[Builder] Firebase load failed:', err.message);
+            });
+    }
+
+    // ---- Сохранить один билет в Firebase (в фоне) ----
+
+    function saveToFirebase(n, blocks) {
+        var db = fbDb();
+        if (!db || !currentUser) return;
+
+        setSyncBadge('syncing');
+        db.ref(DB_ROOT + '/' + currentUser.uid + '/tickets/' + n)
+            .set(blocks)
+            .then(function () { setSyncBadge('ok'); })
+            .catch(function (err) {
+                console.warn('[Builder] Firebase save failed:', err.message);
+                setSyncBadge('ok');
+            });
+    }
+
+    function setSyncBadge(state) {
+        if (!currentUser) return;
+        syncBadge.style.display = 'inline';
+        if (state === 'syncing') {
+            syncBadge.textContent = '↑ синхронизация...';
+            syncBadge.classList.add('syncing');
+        } else {
+            syncBadge.textContent = '☁ синхронизировано';
+            syncBadge.classList.remove('syncing');
+        }
+    }
+
+    // ---- Перевод ошибок Firebase ----
+
+    function fbErrorText(code) {
+        var map = {
+            'auth/user-not-found':        'Пользователь не найден',
+            'auth/wrong-password':        'Неверный пароль',
+            'auth/invalid-email':         'Некорректный email',
+            'auth/email-already-in-use':  'Этот email уже зарегистрирован',
+            'auth/weak-password':         'Пароль слишком короткий (мин. 6 символов)',
+            'auth/too-many-requests':     'Слишком много попыток — подожди немного',
+            'auth/network-request-failed':'Ошибка сети',
+            'auth/invalid-credential':    'Неверный email или пароль',
+        };
+        return map[code] || 'Ошибка: ' + code;
+    }
+
+    // ---- Модал авторизации ----
+
+    var authOverlay = document.getElementById('builderAuthOverlay');
+
+    function openAuthModal() {
+        // Сбрасываем форму
+        ['bAuthEmail','bAuthPassword','bAuthRegEmail','bAuthRegPass','bAuthRegPassConf']
+            .forEach(function (id) { document.getElementById(id).value = ''; });
+        document.getElementById('bAuthLoginError').style.display = 'none';
+        document.getElementById('bAuthRegError').style.display  = 'none';
+        switchAuthTab('login');
+        authOverlay.classList.remove('hidden');
+        setTimeout(function () { document.getElementById('bAuthEmail').focus(); }, 50);
+    }
+
+    function closeAuthModal() {
+        authOverlay.classList.add('hidden');
+    }
+
+    function switchAuthTab(tab) {
+        document.querySelectorAll('.builder-auth-tab').forEach(function (t) {
+            t.classList.toggle('active', t.dataset.tab === tab);
+        });
+        document.getElementById('bAuthLoginForm').style.display = tab === 'login'    ? '' : 'none';
+        document.getElementById('bAuthRegForm'  ).style.display = tab === 'register' ? '' : 'none';
+    }
+
+    function showFormError(id, msg) {
+        var el = document.getElementById(id);
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+
+    function setAuthBtnLoading(btnId, loading, text) {
+        var btn = document.getElementById(btnId);
+        btn.disabled = loading;
+        btn.textContent = loading ? '...' : text;
+    }
+
+    // Вход
+    document.getElementById('bAuthLoginBtn').addEventListener('click', function () {
+        var email = document.getElementById('bAuthEmail').value.trim();
+        var pass  = document.getElementById('bAuthPassword').value;
+        var auth  = fbAuth();
+        if (!auth || !email || !pass) return;
+
+        document.getElementById('bAuthLoginError').style.display = 'none';
+        setAuthBtnLoading('bAuthLoginBtn', true, 'Войти');
+
+        auth.signInWithEmailAndPassword(email, pass)
+            .then(function () { closeAuthModal(); })
+            .catch(function (err) { showFormError('bAuthLoginError', fbErrorText(err.code)); })
+            .finally(function () { setAuthBtnLoading('bAuthLoginBtn', false, 'Войти'); });
+    });
+
+    // Регистрация
+    document.getElementById('bAuthRegBtn').addEventListener('click', function () {
+        var email = document.getElementById('bAuthRegEmail').value.trim();
+        var pass  = document.getElementById('bAuthRegPass').value;
+        var conf  = document.getElementById('bAuthRegPassConf').value;
+        var auth  = fbAuth();
+        if (!auth || !email || !pass) return;
+
+        document.getElementById('bAuthRegError').style.display = 'none';
+
+        if (pass !== conf) {
+            showFormError('bAuthRegError', 'Пароли не совпадают');
+            return;
+        }
+
+        setAuthBtnLoading('bAuthRegBtn', true, 'Зарегистрироваться');
+
+        auth.createUserWithEmailAndPassword(email, pass)
+            .then(function () { closeAuthModal(); })
+            .catch(function (err) { showFormError('bAuthRegError', fbErrorText(err.code)); })
+            .finally(function () { setAuthBtnLoading('bAuthRegBtn', false, 'Зарегистрироваться'); });
+    });
+
+    // Enter в полях
+    document.getElementById('bAuthPassword').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') document.getElementById('bAuthLoginBtn').click();
+    });
+    document.getElementById('bAuthRegPassConf').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') document.getElementById('bAuthRegBtn').click();
+    });
+
+    // Кнопка «Войти / Выйти» в шапке
+    authBtn.addEventListener('click', function () {
+        var auth = fbAuth();
+        if (!auth) { alert('Firebase недоступен'); return; }
+        if (currentUser) {
+            auth.signOut();
+        } else {
+            openAuthModal();
+        }
+    });
+
+    // Закрыть модал
+    document.getElementById('bAuthCancelBtn').addEventListener('click', closeAuthModal);
+    authOverlay.addEventListener('click', function (e) {
+        if (e.target === authOverlay) closeAuthModal();
+    });
+
+    // Переключение табов
+    document.querySelectorAll('.builder-auth-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () { switchAuthTab(this.dataset.tab); });
+    });
+
+    // ---- Слушаем состояние авторизации ----
+
+    window.addEventListener('load', function () {
+        var auth = fbAuth();
+        if (!auth) return;
+
+        auth.onAuthStateChanged(function (user) {
+            currentUser = user;
+            updateAuthUI(user);
+            if (user) {
+                loadFromFirebase(user.uid);
+            }
+        });
+    });
 
 })();
     </script>

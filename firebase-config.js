@@ -50,6 +50,12 @@
 //         ".read": true,
 //         ".write": true
 //       }
+//     },
+//     "ticketBuilder": {
+//       "$uid": {
+//         ".read": "auth != null && auth.uid === $uid",
+//         ".write": "auth != null && auth.uid === $uid"
+//       }
 //     }
 //   }
 // }
