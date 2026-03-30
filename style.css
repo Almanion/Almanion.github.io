@@ -731,8 +731,9 @@ body.sidebar-open {
 
 .sidebar-header {
     padding: var(--spacing);
-    background: #1a1a1a;
-    color: #ffffff;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
     position: sticky;
     top: 0;
     z-index: 10;
@@ -740,13 +741,15 @@ body.sidebar-open {
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
+    box-shadow: var(--shadow-sm);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 body.dark-theme .sidebar-header {
-    background: #0a0a0a;
+    background: #111111;
     color: #e8e8e8;
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05);
+    border-bottom-color: #2a2a2a;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .sidebar-header h2 {
@@ -766,9 +769,9 @@ body.dark-theme .sidebar-header {
 
 .close-sidebar {
     display: none;
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--bg-tertiary);
     border: none;
-    color: white;
+    color: var(--text-secondary);
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -779,8 +782,19 @@ body.dark-theme .sidebar-header {
 }
 
 .close-sidebar:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--border-color);
+    color: var(--text-primary);
     transform: rotate(90deg);
+}
+
+body.dark-theme .close-sidebar {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+body.dark-theme .close-sidebar:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
 }
 
 /* РџРѕРёСЃРє */
@@ -1125,7 +1139,7 @@ body.sidebar-collapsed .main-content {
 .page-header {
     text-align: center;
     padding: 3rem 2rem;
-    background: #1a1a1a;
+    background: #222222;
     color: #ffffff;
     border-radius: var(--border-radius-lg);
     margin-bottom: 2.5rem;
@@ -1137,7 +1151,8 @@ body.sidebar-collapsed .main-content {
 }
 
 body.dark-theme .page-header {
-    background: #111111;
+    background: #0d0d0d;
+    border: 1px solid #2a2a2a;
     box-shadow: var(--shadow-xl);
 }
 
@@ -5862,9 +5877,9 @@ body.no-hover .auth-overlay *:active {
 /* РљРЅРѕРїРєР° РЅР°СЃС‚СЂРѕРµРє РІ СЃР°Р№РґР±Р°СЂРµ (РґР»СЏ РјРѕР±РёР»СЊРЅС‹С…) */
 .settings-button-sidebar {
     display: none;
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--bg-tertiary);
     border: none;
-    color: white;
+    color: var(--text-secondary);
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -5874,7 +5889,6 @@ body.no-hover .auth-overlay *:active {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    /* РўРѕС‡РЅРѕРµ С†РµРЅС‚СЂРёСЂРѕРІР°РЅРёРµ СЌРјРѕРґР·Рё РґР»СЏ РєРѕСЂСЂРµРєС‚РЅРѕРіРѕ РІСЂР°С‰РµРЅРёСЏ */
     line-height: 1;
     text-align: center;
     padding: 0;
@@ -5882,12 +5896,23 @@ body.no-hover .auth-overlay *:active {
 }
 
 .settings-button-sidebar:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--border-color);
+    color: var(--text-primary);
     transform: rotate(90deg);
 }
 
 .settings-button-sidebar:active {
     transform: scale(0.9);
+}
+
+body.dark-theme .settings-button-sidebar {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+body.dark-theme .settings-button-sidebar:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
 }
 
 /* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ РґР»СЏ РЅР°СЃС‚СЂРѕРµРє */
