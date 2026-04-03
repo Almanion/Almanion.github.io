@@ -1427,7 +1427,7 @@
 
                         <!-- Область ввода -->
                         <div class="beditor-section">
-                            <div class="beditor-label">Содержимое</div>
+                            <div class="beditor-label" id="beditorContentLabel">Содержимое</div>
                             <div id="beditorContent" class="beditor-content" contenteditable="true" spellcheck="false" placeholder="Введите текст блока..."></div>
                         </div>
 
@@ -1502,25 +1502,29 @@
 
     <!-- Модал «Предложить блок администратору» -->
     <div id="beditorSuggestOverlay" class="beditor-suggest-overlay hidden">
-        <div class="beditor-suggest-modal">
+        <div class="beditor-suggest-modal" style="max-width:420px">
             <div class="beditor-suggest-header">
                 <h3>📤 Предложить блок</h3>
                 <button class="builder-pub-view-close" id="beditorSuggestClose">✕</button>
             </div>
-            <div class="beditor-suggest-body">
-                <div class="beditor-suggest-note">
-                    Скопируйте HTML-код ниже и вставьте в нужное место в файле
-                    <code>physics.html</code> внутри тега <code>&lt;article class="topic"&gt;</code>
-                    нужной темы. После этого блок появится в библиотеке конструктора.
+            <div class="beditor-suggest-body" style="gap:0.5rem">
+                <!-- Режим пользователя: только подтверждение -->
+                <div id="beditorSuggestSuccess" style="text-align:center;padding:0.5rem 0">
+                    <div style="font-size:2.5rem;margin-bottom:0.5rem">✅</div>
+                    <div style="font-size:1rem;font-weight:600;margin-bottom:0.4rem">Предложение отправлено!</div>
+                    <div class="beditor-suggest-note" style="text-align:center">Администратор получит уведомление и рассмотрит ваш блок.</div>
                 </div>
-                <div id="beditorSuggestCode" class="beditor-code-block"></div>
-                <div class="beditor-suggest-note" id="beditorSuggestFirebaseNote" style="display:none">
-                    ✅ Предложение также сохранено в Firebase — вы можете найти его в разделе
-                    <code>blockSuggestions</code> базы данных.
+                <!-- Режим администратора: код для вставки в physics.html -->
+                <div id="beditorSuggestAdminSection" style="display:none">
+                    <div class="beditor-suggest-note">
+                        Скопируй код и вставь в нужное место в <code>physics.html</code>
+                        внутри <code>&lt;article class="topic"&gt;</code> нужной темы:
+                    </div>
+                    <div id="beditorSuggestCode" class="beditor-code-block"></div>
                 </div>
             </div>
             <div class="beditor-suggest-footer">
-                <button class="builder-btn builder-btn-save" id="beditorSuggestCopy">📋 Скопировать код</button>
+                <button class="builder-btn builder-btn-save" id="beditorSuggestCopy" style="display:none">📋 Скопировать код</button>
                 <button class="builder-btn builder-btn-reset" id="beditorSuggestCloseBtn">Закрыть</button>
             </div>
         </div>
@@ -2453,12 +2457,14 @@
     var beditorMyBlocks = document.getElementById('beditorMyBlocks');
 
     // Модал «Предложить»
-    var suggestOverlay   = document.getElementById('beditorSuggestOverlay');
-    var suggestCode      = document.getElementById('beditorSuggestCode');
-    var suggestFBNote    = document.getElementById('beditorSuggestFirebaseNote');
-    var suggestCloseBtn  = document.getElementById('beditorSuggestCloseBtn');
-    var suggestCloseX    = document.getElementById('beditorSuggestClose');
-    var suggestCopyBtn   = document.getElementById('beditorSuggestCopy');
+    var suggestOverlay      = document.getElementById('beditorSuggestOverlay');
+    var suggestCode         = document.getElementById('beditorSuggestCode');
+    var suggestFBNote       = document.getElementById('beditorSuggestFirebaseNote');
+    var suggestCloseBtn     = document.getElementById('beditorSuggestCloseBtn');
+    var suggestCloseX       = document.getElementById('beditorSuggestClose');
+    var suggestCopyBtn      = document.getElementById('beditorSuggestCopy');
+    var suggestAdminSection = document.getElementById('beditorSuggestAdminSection');
+    var ADMIN_EMAIL         = 'dmb23930@gmail.com';
     document.getElementById('beditorSave').addEventListener('click', saveEditorBlock);
     document.getElementById('beditorSuggest').addEventListener('click', suggestEditorBlock);
     document.getElementById('beditorClear').addEventListener('click', function () {
@@ -2515,7 +2521,25 @@
 
     // Авто-превью при вводе
     beditorContent.addEventListener('input', updateBeditorPreview);
-    beditorType.addEventListener('change', updateBeditorPreview);
+    beditorType.addEventListener('change', function () {
+        updateBeditorTypeHint();
+        updateBeditorPreview();
+    });
+
+    function updateBeditorTypeHint() {
+        var type = beditorType.value;
+        var label = document.getElementById('beditorContentLabel');
+        if (type === 'formula-box') {
+            label.textContent = 'Формула (LaTeX, без $$)';
+            beditorContent.setAttribute('placeholder', 'E = mc^2');
+        } else if (type === 'h4') {
+            label.textContent = 'Текст заголовка';
+            beditorContent.setAttribute('placeholder', 'Заголовок раздела');
+        } else {
+            label.textContent = 'Содержимое';
+            beditorContent.setAttribute('placeholder', 'Введите текст блока...');
+        }
+    }
 
     function insertAtBeditorCursor(text) {
         beditorContent.focus();
@@ -2553,8 +2577,15 @@
     function wrapWithType(innerHtml) {
         var type = beditorType.value;
         if (type === 'definition-box') return '<div class="definition-box">' + innerHtml + '</div>';
-        if (type === 'formula-box')    return '<div class="formula-box">'    + innerHtml + '</div>';
-        if (type === 'h4')             return '<h4 class="subsection-title">' + (beditorContent.textContent.trim() || innerHtml) + '</h4>';
+        if (type === 'formula-box') {
+            // formula-box содержит только \[формула\] — берём «сырой» LaTeX из текста
+            var latex = beditorContent.textContent.trim()
+                .replace(/^\$\$([\s\S]+)\$\$$/, '$1')   // убираем $$...$$
+                .replace(/^\$([\s\S]+)\$$/, '$1')        // убираем $...$
+                .trim();
+            return '<div class="formula-box">\\[' + latex + '\\]</div>';
+        }
+        if (type === 'h4') return '<h4 class="subsection-title">' + (beditorContent.textContent.trim() || innerHtml) + '</h4>';
         return '<p>' + innerHtml + '</p>';
     }
 
@@ -2586,23 +2617,33 @@
     function saveEditorBlock() {
         var raw = getEditorRawHtml();
         if (!raw) { showToast('⚠️ Редактор пуст'); return; }
-        var html = wrapWithType(raw);
+        var html    = wrapWithType(raw);
         var preview = beditorContent.textContent.trim().slice(0, 80) || '(блок)';
         var block = {
-            id: 'custom-' + Date.now(),
-            type: beditorType.value,
-            html: html,
-            preview: preview,
+            id:        'custom-' + Date.now(),
+            type:      beditorType.value,
+            html:      html,
+            preview:   preview,
             createdAt: Date.now()
         };
-        var blocks = getCustomBlocks();
-        blocks.unshift(block);
-        saveCustomBlocks(blocks);
+
+        // Сохраняем в «Мои блоки»
+        var myBlocks = getCustomBlocks();
+        myBlocks.unshift(block);
+        saveCustomBlocks(myBlocks);
         renderMyBlocks();
-        // Добавить в текущую сессию (как стандартный блок из библиотеки)
-        session.push({ id: block.id, html: block.html, preview: block.preview, type: block.type });
+
+        // Добавляем в текущую сессию
+        var entry = { id: block.id, html: block.html, preview: block.preview, type: block.type };
+        session.push(entry);
         renderCurrent();
-        showToast('✅ Блок сохранён и добавлен в билет');
+
+        // Сразу сохраняем сессию в localStorage и Firebase
+        // (чтобы блок не потерялся если закрыть конструктор без нажатия «Сохранить»)
+        storeTicket(builderTicket, session);
+        saveToFirebase(builderTicket, session);
+
+        showToast('✅ Блок создан и сохранён в билет ' + builderTicket);
     }
 
     function renderMyBlocks() {
@@ -2683,13 +2724,18 @@
         var html    = wrapWithType(raw);
         var preview = beditorContent.textContent.trim().slice(0, 200);
         var type    = beditorType.value;
-
-        // Красиво форматируем HTML с отступами-табами
         var formatted = formatHtmlForSuggest(html);
-        suggestCode.textContent = formatted;
-        suggestFBNote.style.display = 'none';
 
-        // Сохраняем в Firebase если авторизован
+        var isAdmin = currentUser && currentUser.email === ADMIN_EMAIL;
+
+        // Режим администратора: показываем код для вставки в physics.html
+        if (suggestAdminSection) {
+            suggestAdminSection.style.display = isAdmin ? '' : 'none';
+        }
+        if (suggestCode) suggestCode.textContent = formatted;
+        if (suggestCopyBtn) suggestCopyBtn.style.display = isAdmin ? '' : 'none';
+
+        // Сохраняем в Firebase если авторизован (для всех, не только для себя)
         if (currentUser) {
             var db = fbDb();
             if (db) {
@@ -2701,7 +2747,6 @@
                     uid: currentUser.uid,
                     createdAt: Date.now()
                 });
-                suggestFBNote.style.display = '';
             }
         }
 
