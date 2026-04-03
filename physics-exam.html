@@ -2698,23 +2698,21 @@
     // Затем напиши боту любое сообщение и зайди на:
     //   https://api.telegram.org/bot{TOKEN}/getUpdates
     // Скопируй chat_id из ответа и вставь ниже.
-    var TG_TOKEN   = 'bot8656864779:AAGrAcowsAA-7lCs-fLg8UR5ObDOPoAnwjc';   // 'bot123456:ABCdef...'
-    var TG_CHAT_ID = '5777542073';   // '123456789'
+    // URL Cloudflare Worker — токен хранится там, не в коде сайта
+    // Как задеплоить: см. комментарий ниже
+    var SUGGEST_WORKER_URL = 'https://physics-suggest.almanion.workers.dev/';  // 'https://suggest.YOUR_SUBDOMAIN.workers.dev'
 
     function sendTelegramSuggestion(authorEmail, blockType, preview, codeText) {
-        if (!TG_TOKEN || !TG_CHAT_ID) return;
-        function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-        var code = codeText.slice(0, 2400); // Telegram limit
-        var msg =
-            '📨 <b>Предложение блока</b>\n' +
-            '👤 ' + esc(authorEmail || 'Гость') + '\n' +
-            '📁 Тип: <code>' + esc(blockType) + '</code>\n' +
-            '📝 ' + esc(preview.slice(0, 200)) + '\n\n' +
-            '<pre><code class="language-html">' + esc(code) + '</code></pre>';
-        fetch('https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage', {
+        if (!SUGGEST_WORKER_URL) return;
+        fetch(SUGGEST_WORKER_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: TG_CHAT_ID, text: msg, parse_mode: 'HTML' })
+            body: JSON.stringify({
+                author:  authorEmail || 'Гость',
+                type:    blockType,
+                preview: preview.slice(0, 300),
+                code:    codeText.slice(0, 2400)
+            })
         }).catch(function () {});
     }
 
