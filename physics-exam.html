@@ -1909,18 +1909,22 @@
         publishBtn.disabled = true;
         publishBtn.innerHTML = '⏳<span class="btn-text"> Публикую...</span>';
 
+        function resetPublishBtn() {
+            publishBtn.disabled = false;
+            publishBtn.innerHTML = '📤<span class="btn-text"> Опубликовать</span>';
+        }
+
         db.ref(PUBLIC_ROOT + '/' + currentUser.uid).set({
             author:      author,
             email:       currentUser.email,
             publishedAt: Date.now(),
             tickets:     toPublish
         }).then(function () {
-            showToast('✅ Опубликовано! Другие пользователи найдут ваши билеты на вкладке 🌐 Общие', 4000);
+            resetPublishBtn();
+            showToast('✅ Опубликовано! Другие найдут ваши билеты на вкладке 🌐 Общие', 4500);
         }).catch(function (err) {
+            resetPublishBtn();
             showToast('Ошибка публикации: ' + err.message);
-        }).finally(function () {
-            publishBtn.disabled = false;
-            publishBtn.innerHTML = '📤<span class="btn-text"> Опубликовать</span>';
         });
     }
 
