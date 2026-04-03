@@ -499,6 +499,127 @@
         }
         .builder-pub-clone-one:hover { background: var(--accent-color); color: #fff; }
 
+        /* ---- Кнопка просмотра в строке автора ---- */
+        .builder-pub-view-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.22rem 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: var(--transition);
+        }
+        .builder-pub-view-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+        /* ---- Модал просмотра публичного билета ---- */
+        .builder-pub-view-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            z-index: 3500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .builder-pub-view-overlay.hidden { display: none; }
+        .builder-pub-view-modal {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-shadow: 0 16px 56px rgba(0,0,0,0.4);
+            width: 100%;
+            max-width: 680px;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .builder-pub-view-header {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            flex-shrink: 0;
+        }
+        .builder-pub-view-title {
+            flex: 1;
+            font-size: 0.9rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .builder-pub-view-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            line-height: 1;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+        .builder-pub-view-close:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+        .builder-pub-view-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.25rem 1.5rem;
+        }
+        /* Стили контента внутри просмотра (наследует сайтовые) */
+        .builder-pub-view-body .definition-box { margin-bottom: 0.75rem; }
+        .builder-pub-view-body h4.subsection-title { margin: 1rem 0 0.35rem; font-size: 0.95rem; }
+        .builder-pub-view-body figure { margin: 0.75rem 0; }
+        .builder-pub-view-body img { max-width: 100%; border-radius: 6px; }
+        .builder-pub-view-footer {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.65rem 1rem;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .builder-pub-view-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex: 1;
+        }
+        .builder-pub-view-nav-btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.28rem 0.65rem;
+            font-size: 0.82rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .builder-pub-view-nav-btn:hover:not(:disabled) { background: var(--border-color); color: var(--text-primary); }
+        .builder-pub-view-nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .builder-pub-view-counter {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            min-width: 42px;
+            text-align: center;
+        }
+        @media (max-width: 650px) {
+            .builder-pub-view-modal { max-height: 95vh; border-radius: var(--border-radius) var(--border-radius) 0 0; }
+            .builder-pub-view-overlay { align-items: flex-end; padding: 0; }
+            .builder-pub-view-body { padding: 1rem; }
+        }
+
         /* Кнопка публикации (скрыта пока не вошли) */
         #builderPublishBtn { display: none; }
         .builder-btn-publish { background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); }
@@ -1129,6 +1250,26 @@
         </div>
     </div>
 
+    <!-- Модал просмотра публичного билета -->
+    <div id="builderPubViewOverlay" class="builder-pub-view-overlay hidden">
+        <div class="builder-pub-view-modal">
+            <div class="builder-pub-view-header">
+                <span class="builder-pub-view-title" id="builderPubViewTitle">Просмотр билета</span>
+                <button class="builder-pub-view-close" id="builderPubViewClose" title="Закрыть (Esc)">✕</button>
+            </div>
+            <div class="builder-pub-view-body" id="builderPubViewBody"></div>
+            <div class="builder-pub-view-footer">
+                <div class="builder-pub-view-nav">
+                    <button class="builder-pub-view-nav-btn" id="builderPubViewPrev">← Пред.</button>
+                    <span class="builder-pub-view-counter" id="builderPubViewCounter">1 / 1</span>
+                    <button class="builder-pub-view-nav-btn" id="builderPubViewNext">След. →</button>
+                </div>
+                <button class="builder-btn builder-btn-reset" id="builderPubCloneOne" title="Скопировать этот билет к себе">⬇ Этот билет</button>
+                <button class="builder-btn builder-btn-save"  id="builderPubCloneAll" title="Скопировать все билеты пользователя">⬇ Все билеты</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ====================================================
          КОНСТРУКТОР БИЛЕТОВ — JS
          ==================================================== -->
@@ -1178,6 +1319,7 @@
             figure:     ['IMG', 'builder-badge-fig'],
             text:       ['TXT', 'builder-badge-txt'],
             derivation: ['▶',   'builder-badge-deriv'],
+            remark:     ['REM', 'builder-badge-remark'],
             other:      ['···', 'builder-badge-other']
         };
         var t = map[type] || map.other;
@@ -1630,11 +1772,99 @@
         }
     }
 
+    // ---- Просмотр публичного билета ----
+
+    var pubViewOverlay  = document.getElementById('builderPubViewOverlay');
+    var pubViewTitle    = document.getElementById('builderPubViewTitle');
+    var pubViewBody     = document.getElementById('builderPubViewBody');
+    var pubViewCounter  = document.getElementById('builderPubViewCounter');
+    var pubViewPrevBtn  = document.getElementById('builderPubViewPrev');
+    var pubViewNextBtn  = document.getElementById('builderPubViewNext');
+    var pubViewCloneOne = document.getElementById('builderPubCloneOne');
+    var pubViewCloneAll = document.getElementById('builderPubCloneAll');
+
+    var pvState = { nums: [], tickets: {}, idx: 0, fromName: '', fromUid: '' };
+
+    function openPublicPreview(fromUid, fromName, tickets, startNum) {
+        var nums = Object.keys(tickets).filter(function (n) {
+            return Array.isArray(tickets[n]) && tickets[n].length > 0;
+        }).sort(function (a, b) { return +a - +b; });
+
+        if (nums.length === 0) { showToast('Нет блоков для просмотра'); return; }
+
+        var startIdx = startNum != null ? nums.indexOf(String(startNum)) : 0;
+        if (startIdx < 0) startIdx = 0;
+
+        pvState = { nums: nums, tickets: tickets, idx: startIdx, fromName: fromName, fromUid: fromUid };
+        renderPubViewPage();
+        pubViewOverlay.classList.remove('hidden');
+    }
+
+    function renderPubViewPage() {
+        var s   = pvState;
+        var n   = s.nums[s.idx];
+        var blocks = s.tickets[n] || [];
+
+        pubViewTitle.textContent = '👁 ' + (s.fromName || 'Аноним') + '  —  Билет №' + n;
+        pubViewCounter.textContent = (s.idx + 1) + ' / ' + s.nums.length;
+        pubViewPrevBtn.disabled = s.idx === 0;
+        pubViewNextBtn.disabled = s.idx === s.nums.length - 1;
+
+        pubViewBody.innerHTML = '';
+        blocks.forEach(function (block) {
+            var wrap = document.createElement('div');
+            wrap.innerHTML = block.html;
+            wrap.style.marginBottom = '0.6rem';
+            pubViewBody.appendChild(wrap);
+        });
+        pubViewBody.scrollTop = 0;
+
+        // Рендерим формулы
+        if (window.renderMathInElement) {
+            try {
+                renderMathInElement(pubViewBody, {
+                    throwOnError: false,
+                    delimiters: [
+                        { left: '\\[', right: '\\]', display: true },
+                        { left: '\\(', right: '\\)', display: false }
+                    ]
+                });
+            } catch (e) {}
+        }
+
+        // Восстанавливаем кнопки «показать вывод»
+        reInit(pubViewBody);
+    }
+
+    function closePubView() { pubViewOverlay.classList.add('hidden'); }
+
+    pubViewPrevBtn.addEventListener('click', function () {
+        if (pvState.idx > 0) { pvState.idx--; renderPubViewPage(); }
+    });
+    pubViewNextBtn.addEventListener('click', function () {
+        if (pvState.idx < pvState.nums.length - 1) { pvState.idx++; renderPubViewPage(); }
+    });
+    pubViewCloneOne.addEventListener('click', function () {
+        var s = pvState; var n = s.nums[s.idx];
+        var single = {}; single[n] = s.tickets[n];
+        cloneTickets(s.fromUid, s.fromName, single, n);
+        closePubView();
+    });
+    pubViewCloneAll.addEventListener('click', function () {
+        cloneTickets(pvState.fromUid, pvState.fromName, pvState.tickets, null);
+        closePubView();
+    });
+    document.getElementById('builderPubViewClose').addEventListener('click', closePubView);
+    pubViewOverlay.addEventListener('click', function (e) {
+        if (e.target === pubViewOverlay) closePubView();
+    });
+
     // ---- Escape для закрытия ----
 
     document.addEventListener('keydown', function (e) {
         if (e.key !== 'Escape') return;
         if (previewPopupEl) { closeBlockPreview(); return; }
+        if (pubViewOverlay && !pubViewOverlay.classList.contains('hidden')) { closePubView(); return; }
         var authOv = document.getElementById('builderAuthOverlay');
         if (authOv && !authOv.classList.contains('hidden')) {
             authOv.classList.add('hidden');
@@ -2008,8 +2238,13 @@
                 '<span class="builder-pub-name">' + escHtml(info.author || 'Аноним') +
                 (isMe ? ' <span style="color:var(--accent-color);font-size:0.72rem">(вы)</span>' : '') + '</span>' +
                 '<span class="builder-pub-meta">' + nums.length + ' бил. · ' + date + '</span>' +
+                '<button class="builder-pub-view-btn"  title="Просмотреть билеты">👁 Смотреть</button>' +
                 '<button class="builder-pub-clone-all" title="Скопировать все билеты этого пользователя">⬇ Все</button>';
 
+            header.querySelector('.builder-pub-view-btn').addEventListener('click', function (e) {
+                e.stopPropagation();
+                openPublicPreview(uid, info.author, tickets, null);
+            });
             header.querySelector('.builder-pub-clone-all').addEventListener('click', function (e) {
                 e.stopPropagation();
                 cloneTickets(uid, info.author, tickets, null);
@@ -2031,8 +2266,12 @@
                 row.innerHTML =
                     '<span class="builder-pub-ticket-num">Билет №' + n + '</span>' +
                     '<span class="builder-pub-ticket-preview" title="' + escHtml(preview) + '">' + escHtml(preview) + '</span>' +
+                    '<button class="builder-lib-eye" title="Просмотреть содержимое билета">👁</button>' +
                     '<button class="builder-pub-clone-one" title="Скопировать только этот билет">⬇</button>';
 
+                row.querySelector('.builder-lib-eye').addEventListener('click', function () {
+                    openPublicPreview(uid, info.author, tickets, n);
+                });
                 row.querySelector('.builder-pub-clone-one').addEventListener('click', function () {
                     var single = {}; single[n] = blocks;
                     cloneTickets(uid, info.author, single, n);
