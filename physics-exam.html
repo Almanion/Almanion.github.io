@@ -1419,6 +1419,9 @@
                                 <div class="beditor-tb-sep"></div>
                                 <button class="beditor-tb-btn" data-latex="inline" title="Формула в строке: \(формула\)">\(f\)</button>
                                 <button class="beditor-tb-btn" data-latex="block"  title="Блочная формула: \[формула\]">\[f\]</button>
+                                <div class="beditor-tb-sep"></div>
+                                <button class="beditor-tb-btn" data-nest="formula-box"    title="Вложить блок с формулой">↳ Формула</button>
+                                <button class="beditor-tb-btn" data-nest="definition-box" title="Вложить определение/текст">↳ Блок</button>
                             </div>
                         </div>
 
@@ -2481,17 +2484,34 @@
     document.querySelectorAll('.beditor-tb-btn').forEach(function (btn) {
         btn.addEventListener('mousedown', function (e) {
             e.preventDefault(); // не снимаем фокус с contenteditable
-            var cmd = this.dataset.cmd;
-            var lat = this.dataset.latex;
+            var cmd  = this.dataset.cmd;
+            var lat  = this.dataset.latex;
+            var nest = this.dataset.nest;
             if (cmd) {
                 beditorContent.focus();
                 document.execCommand(cmd, false, null);
+                updateBeditorPreview();
             } else if (lat) {
                 insertAtBeditorCursor(lat === 'inline' ? '\\(формула\\)' : '\\[формула\\]');
+                updateBeditorPreview();
+            } else if (nest) {
+                insertNestedBlock(nest);
             }
-            updateBeditorPreview();
         });
     });
+
+    function insertNestedBlock(className) {
+        beditorContent.focus();
+        var labels = {
+            'formula-box':    'Формула',
+            'definition-box': 'Текст определения',
+        };
+        var placeholder = labels[className] || 'Содержимое';
+        // Вставляем шаблон вложенного блока с нулевым пробелом после
+        var tmpl = '<div class="' + className + '">' + placeholder + '</div>&#8203;';
+        document.execCommand('insertHTML', false, tmpl);
+        updateBeditorPreview();
+    }
 
     // Авто-превью при вводе
     beditorContent.addEventListener('input', updateBeditorPreview);
@@ -2620,12 +2640,39 @@
 
     // ---- Предложить блок ----
 
+    // ---- Telegram-уведомления для предложений блоков ----
+    // Настройка: создай бота через @BotFather, получи токен.
+    // Затем напиши боту любое сообщение и зайди на:
+    //   https://api.telegram.org/bot{TOKEN}/getUpdates
+    // Скопируй chat_id из ответа и вставь ниже.
+    var TG_TOKEN   = '';   // 'bot123456:ABCdef...'
+    var TG_CHAT_ID = '';   // '123456789'
+
+    function sendTelegramSuggestion(authorEmail, blockType, preview, codeText) {
+        if (!TG_TOKEN || !TG_CHAT_ID) return;
+        function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        var code = codeText.slice(0, 2400); // Telegram limit
+        var msg =
+            '📨 <b>Предложение блока</b>\n' +
+            '👤 ' + esc(authorEmail || 'Гость') + '\n' +
+            '📁 Тип: <code>' + esc(blockType) + '</code>\n' +
+            '📝 ' + esc(preview.slice(0, 200)) + '\n\n' +
+            '<pre><code class="language-html">' + esc(code) + '</code></pre>';
+        fetch('https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: TG_CHAT_ID, text: msg, parse_mode: 'HTML' })
+        }).catch(function () {});
+    }
+
     function suggestEditorBlock() {
         var raw = getEditorRawHtml();
         if (!raw) { showToast('⚠️ Редактор пуст'); return; }
-        var html = wrapWithType(raw);
+        var html    = wrapWithType(raw);
+        var preview = beditorContent.textContent.trim().slice(0, 200);
+        var type    = beditorType.value;
 
-        // Красиво форматируем HTML
+        // Красиво форматируем HTML с отступами-табами
         var formatted = formatHtmlForSuggest(html);
         suggestCode.textContent = formatted;
         suggestFBNote.style.display = 'none';
@@ -2636,8 +2683,8 @@
             if (db) {
                 db.ref('blockSuggestions/' + currentUser.uid + '/' + Date.now()).set({
                     html: html,
-                    type: beditorType.value,
-                    preview: beditorContent.textContent.trim().slice(0, 120),
+                    type: type,
+                    preview: preview,
                     author: currentUser.email,
                     uid: currentUser.uid,
                     createdAt: Date.now()
@@ -2645,19 +2692,73 @@
                 suggestFBNote.style.display = '';
             }
         }
+
+        // Отправляем уведомление в Telegram
+        sendTelegramSuggestion(
+            currentUser ? currentUser.email : null,
+            type, preview, formatted
+        );
+
         suggestOverlay.classList.remove('hidden');
     }
 
     function formatHtmlForSuggest(html) {
-        // Простой форматировщик: добавляем отступы
-        return html
-            .replace(/<(?!\/)/g, '\n<')
-            .replace(/></g, '>\n<')
-            .trim()
-            .split('\n')
-            .filter(function (l) { return l.trim(); })
-            .map(function (l) { return '    ' + l; })
-            .join('\n');
+        // Токенизируем HTML на теги и текст
+        var VOID_RE   = /^<(br|hr|img|input|col|area|base|source|meta|link)\b/i;
+        var INLINE_RE = /^<\/?(strong|em|b|i|span|code|sup|sub|mark|a)\b/i;
+
+        var tokens = [];
+        var re = /<[^>]+>|[^<]+/g;
+        var m;
+        while ((m = re.exec(html)) !== null) {
+            var t = m[0];
+            if (t.trim()) tokens.push(t);
+        }
+
+        var lines  = [];
+        var depth  = 0;
+        var buf    = '';  // буфер для inline-контента
+
+        function flushBuf() {
+            if (buf.trim()) {
+                lines.push('\t'.repeat(depth) + buf.trim());
+                buf = '';
+            }
+        }
+
+        tokens.forEach(function (tok) {
+            var trimmed = tok.trim();
+            if (!trimmed.startsWith('<')) {
+                // Текст — добавляем в буфер
+                buf += trimmed;
+                return;
+            }
+            var isClose  = trimmed.startsWith('</');
+            var isVoid   = VOID_RE.test(trimmed);
+            var isInline = INLINE_RE.test(trimmed);
+
+            if (isInline) {
+                // Inline-теги собираем в буфер вместе с текстом
+                buf += trimmed;
+                return;
+            }
+
+            // Блочный тег — сначала выводим буфер
+            flushBuf();
+
+            if (isClose) {
+                depth = Math.max(0, depth - 1);
+                lines.push('\t'.repeat(depth) + trimmed);
+            } else if (isVoid) {
+                lines.push('\t'.repeat(depth) + trimmed);
+            } else {
+                lines.push('\t'.repeat(depth) + trimmed);
+                depth++;
+            }
+        });
+
+        flushBuf();
+        return lines.join('\n');
     }
 
     // ---- Toast-уведомление ----
