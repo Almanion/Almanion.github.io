@@ -2535,7 +2535,19 @@
     }
 
     function getEditorRawHtml() {
-        return beditorContent.innerHTML.trim();
+        return convertDollarLatex(beditorContent.innerHTML.trim());
+    }
+
+    // Конвертация $...$ → \(...\) и $$...$$ → \[...\]
+    // Применяется к тексту внутри тегов, не трогает атрибуты
+    function convertDollarLatex(html) {
+        // Обрабатываем посегментно: текстовые узлы vs теги
+        return html.replace(/(<[^>]*>)|(\$\$[\s\S]+?\$\$)|(\$[^$\n]+?\$)/g, function (match, tag, dbl, sngl) {
+            if (tag)  return tag;                               // HTML-тег — не трогаем
+            if (dbl)  return '\\[' + dbl.slice(2, -2) + '\\]'; // $$...$$ → \[...\]
+            if (sngl) return '\\(' + sngl.slice(1, -1) + '\\)'; // $...$ → \(...\)
+            return match;
+        });
     }
 
     function wrapWithType(innerHtml) {
@@ -2645,8 +2657,8 @@
     // Затем напиши боту любое сообщение и зайди на:
     //   https://api.telegram.org/bot{TOKEN}/getUpdates
     // Скопируй chat_id из ответа и вставь ниже.
-    var TG_TOKEN   = '';   // 'bot123456:ABCdef...'
-    var TG_CHAT_ID = '';   // '123456789'
+    var TG_TOKEN   = 'bot8656864779:AAGrAcowsAA-7lCs-fLg8UR5ObDOPoAnwjc';   // 'bot123456:ABCdef...'
+    var TG_CHAT_ID = '5777542073';   // '123456789'
 
     function sendTelegramSuggestion(authorEmail, blockType, preview, codeText) {
         if (!TG_TOKEN || !TG_CHAT_ID) return;
