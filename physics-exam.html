@@ -90,53 +90,61 @@
         /* Шапка конструктора */
         .builder-header {
             display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            padding: 0.7rem 1.2rem;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.6rem 1rem;
             background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 2px solid var(--accent-color);
             flex-shrink: 0;
         }
         .builder-header-title {
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 700;
             margin: 0;
             white-space: nowrap;
-            padding-top: 0.3rem;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
         }
         .builder-header-controls {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
             flex-wrap: wrap;
             flex: 1;
         }
         .builder-select {
-            background: var(--bg-tertiary);
+            background: var(--bg-primary);
             color: var(--text-primary);
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius);
-            padding: 0.35rem 0.6rem;
-            font-size: 0.88rem;
-            font-family: inherit;
-            cursor: pointer;
-        }
-        .builder-btn {
-            padding: 0.35rem 0.85rem;
-            border: none;
-            border-radius: var(--border-radius);
+            padding: 0.3rem 0.55rem;
             font-size: 0.85rem;
             font-family: inherit;
             cursor: pointer;
-            transition: var(--transition);
-            white-space: nowrap;
+            transition: border-color 0.15s;
         }
-        .builder-btn-save  { background: var(--accent-color); color: #fff; }
-        .builder-btn-save:hover  { background: var(--accent-hover); }
-        .builder-btn-reset { background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); }
-        .builder-btn-reset:hover { background: var(--border-color); }
-        .builder-btn-close { background: none; color: var(--text-secondary); font-size: 1.3rem; line-height: 1; padding: 0.2rem 0.6rem; flex-shrink: 0; border: none; cursor: pointer; transition: var(--transition); }
-        .builder-btn-close:hover { color: var(--text-primary); }
+        .builder-select:focus { outline: none; border-color: var(--accent-color); }
+        .builder-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.3rem 0.7rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+        .builder-btn:active { transform: scale(0.97); }
+        .builder-btn-save  { background: var(--accent-color); color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
+        .builder-btn-save:hover  { background: var(--accent-hover); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .builder-btn-reset { background: var(--bg-primary); color: var(--text-secondary); border: 1px solid var(--border-color); }
+        .builder-btn-reset:hover { background: var(--bg-tertiary); color: var(--text-primary); border-color: var(--text-secondary); }
+        .builder-btn-close { background: none; color: var(--text-secondary); font-size: 1.25rem; line-height: 1; padding: 0.25rem 0.55rem; flex-shrink: 0; border: none; cursor: pointer; transition: all 0.15s; border-radius: 6px; }
+        .builder-btn-close:hover { color: #ef4444; background: rgba(239,68,68,0.08); }
 
         /* Основная область: 2 колонки */
         .builder-body {
@@ -153,10 +161,13 @@
         }
         .builder-panel:last-child { border-right: none; }
         .builder-panel-header {
-            padding: 0.6rem 1rem;
-            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.5rem 0.9rem;
+            font-size: 0.7rem;
             font-weight: 700;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
             color: var(--text-secondary);
             background: var(--bg-secondary);
@@ -166,49 +177,62 @@
         .builder-panel-content {
             flex: 1;
             overflow-y: auto;
-            padding: 0.75rem;
+            padding: 0.6rem;
         }
 
         /* ---- Левая панель: блоки текущего билета ---- */
         .builder-block-item {
             display: flex;
             align-items: center;
-            gap: 0.45rem;
-            padding: 0.45rem 0.7rem;
-            background: var(--bg-secondary);
+            gap: 0.4rem;
+            padding: 0.42rem 0.65rem 0.42rem 0.75rem;
+            background: var(--bg-primary);
             border: 1px solid var(--border-color);
-            border-radius: 6px;
-            margin-bottom: 0.35rem;
+            border-left: 3px solid var(--border-color);
+            border-radius: 0 7px 7px 0;
+            margin-bottom: 0.3rem;
             user-select: none;
-            transition: box-shadow 0.15s;
+            transition: box-shadow 0.15s, background 0.12s;
         }
-        .builder-block-item.sortable-ghost { opacity: 0.4; background: var(--accent-color); border-color: transparent; }
-        .builder-block-item.sortable-chosen { box-shadow: 0 4px 16px rgba(0,0,0,0.18); }
+        .builder-block-item:hover { background: var(--bg-secondary); }
+        .builder-block-item.sortable-ghost  { opacity: 0.35; background: var(--accent-color); border-color: transparent; }
+        .builder-block-item.sortable-chosen { box-shadow: 0 3px 12px rgba(0,0,0,0.15); }
+
+        /* Цветная левая полоса по типу блока */
+        .builder-block-item[data-type="definition"] { border-left-color: #3b82f6; }
+        .builder-block-item[data-type="heading"]    { border-left-color: #f59e0b; }
+        .builder-block-item[data-type="figure"]     { border-left-color: #ec4899; }
+        .builder-block-item[data-type="derivation"] { border-left-color: #8b5cf6; }
+        .builder-block-item[data-type="text"]       { border-left-color: #6b7280; }
+        .builder-block-item[data-type="other"]      { border-left-color: #10b981; }
+
         .builder-drag-handle {
             color: var(--text-secondary);
             cursor: grab;
-            font-size: 1.05rem;
+            font-size: 1rem;
             flex-shrink: 0;
-            opacity: 0.6;
+            opacity: 0.4;
+            transition: opacity 0.12s;
         }
+        .builder-block-item:hover .builder-drag-handle { opacity: 0.7; }
         .builder-drag-handle:active { cursor: grabbing; }
 
-        /* Бейджи типов */
+        /* Бейджи типов — pill-форма */
         .builder-badge {
-            font-size: 0.6rem;
+            font-size: 0.58rem;
             font-weight: 700;
-            padding: 0.12rem 0.3rem;
-            border-radius: 3px;
+            padding: 0.15rem 0.45rem;
+            border-radius: 999px;
             flex-shrink: 0;
             text-transform: uppercase;
-            letter-spacing: 0.03em;
+            letter-spacing: 0.04em;
         }
         .builder-badge-def  { background: #dbeafe; color: #1d4ed8; }
-        .builder-badge-h4   { background: #fef3c7; color: #b45309; }
+        .builder-badge-h4   { background: #fef3c7; color: #92400e; }
         .builder-badge-fig  { background: #fce7f3; color: #9d174d; }
         .builder-badge-txt  { background: #f5f5f5; color: #525252; }
         .builder-badge-deriv{ background: #ede9fe; color: #5b21b6; }
-        .builder-badge-other{ background: #f0fdf4; color: #15803d; }
+        .builder-badge-other{ background: #dcfce7; color: #15803d; }
         body.dark-theme .builder-badge-def   { background: #1e3a5f; color: #93c5fd; }
         body.dark-theme .builder-badge-h4    { background: #451a03; color: #fde68a; }
         body.dark-theme .builder-badge-fig   { background: #500724; color: #f9a8d4; }
@@ -218,7 +242,7 @@
 
         .builder-block-preview {
             flex: 1;
-            font-size: 0.8rem;
+            font-size: 0.79rem;
             color: var(--text-secondary);
             overflow: hidden;
             white-space: nowrap;
@@ -229,60 +253,75 @@
             border: none;
             color: var(--text-secondary);
             cursor: pointer;
-            font-size: 1rem;
-            padding: 0 0.2rem;
-            border-radius: 3px;
+            font-size: 0.95rem;
+            padding: 0.1rem 0.25rem;
+            border-radius: 4px;
             flex-shrink: 0;
-            transition: var(--transition);
+            transition: all 0.12s;
             line-height: 1;
+            opacity: 0;
         }
+        .builder-block-item:hover .builder-block-remove { opacity: 1; }
         .builder-block-remove:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
         .builder-empty-hint {
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
             padding: 3rem 1rem;
             color: var(--text-secondary);
-            font-size: 0.9rem;
-            opacity: 0.7;
+            font-size: 0.85rem;
+            opacity: 0.6;
+            text-align: center;
+        }
+        .builder-empty-hint::before {
+            content: '📋';
+            font-size: 2rem;
+            opacity: 0.5;
         }
 
         /* ---- Правая панель: библиотека ---- */
         .builder-search {
             width: 100%;
             box-sizing: border-box;
-            padding: 0.5rem 0.75rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
+            padding: 0.45rem 0.75rem;
+            background: var(--bg-primary);
+            border: 1.5px solid var(--border-color);
+            border-radius: 8px;
             color: var(--text-primary);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-family: inherit;
-            margin-bottom: 0.75rem;
-            transition: border-color 0.2s;
+            margin-bottom: 0.6rem;
+            transition: border-color 0.15s, box-shadow 0.15s;
         }
-        .builder-search:focus { outline: none; border-color: var(--accent-color); }
+        .builder-search:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
 
         .builder-lib-group {
             border: 1px solid var(--border-color);
-            border-radius: 6px;
-            margin-bottom: 0.45rem;
+            border-radius: 8px;
+            margin-bottom: 0.35rem;
             overflow: hidden;
+            transition: box-shadow 0.15s;
         }
+        .builder-lib-group.open { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
         .builder-lib-group-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0.55rem 0.85rem;
+            padding: 0.5rem 0.8rem;
             background: var(--bg-secondary);
             cursor: pointer;
-            font-size: 0.83rem;
+            font-size: 0.8rem;
             font-weight: 600;
             color: var(--text-primary);
             user-select: none;
-            transition: background 0.15s;
+            transition: background 0.12s;
         }
+        .builder-lib-group.open .builder-lib-group-header { background: var(--bg-tertiary); }
         .builder-lib-group-header:hover { background: var(--bg-tertiary); }
         .builder-lib-group-chevron {
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             color: var(--text-secondary);
             transition: transform 0.2s;
             flex-shrink: 0;
@@ -294,15 +333,15 @@
         .builder-lib-item {
             display: flex;
             align-items: center;
-            gap: 0.45rem;
-            padding: 0.45rem 0.75rem;
+            gap: 0.4rem;
+            padding: 0.38rem 0.7rem;
             border-top: 1px solid var(--border-color);
-            transition: background 0.12s;
+            transition: background 0.1s;
         }
-        .builder-lib-item:hover { background: var(--bg-tertiary); }
+        .builder-lib-item:hover { background: var(--bg-secondary); }
         .builder-lib-preview {
             flex: 1;
-            font-size: 0.8rem;
+            font-size: 0.77rem;
             color: var(--text-secondary);
             overflow: hidden;
             white-space: nowrap;
@@ -312,28 +351,29 @@
             background: var(--accent-color);
             color: #fff;
             border: none;
-            border-radius: 4px;
-            width: 22px;
-            height: 22px;
-            font-size: 1rem;
+            border-radius: 5px;
+            width: 24px;
+            height: 24px;
+            font-size: 1.05rem;
             line-height: 1;
             cursor: pointer;
             flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: var(--transition);
+            transition: all 0.15s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
         }
-        .builder-lib-add:hover { background: var(--accent-hover); transform: scale(1.15); }
+        .builder-lib-add:hover { background: var(--accent-hover); transform: scale(1.12); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
         .builder-lib-added { background: #16a34a !important; }
         .builder-lib-added:hover { background: #15803d !important; transform: none; }
 
         .builder-lib-eye {
             background: none;
             border: 1px solid var(--border-color);
-            border-radius: 4px;
-            width: 22px;
-            height: 22px;
+            border-radius: 5px;
+            width: 24px;
+            height: 24px;
             font-size: 0.72rem;
             line-height: 1;
             cursor: pointer;
@@ -342,9 +382,9 @@
             align-items: center;
             justify-content: center;
             color: var(--text-secondary);
-            transition: var(--transition);
+            transition: all 0.12s;
         }
-        .builder-lib-eye:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+        .builder-lib-eye:hover { background: var(--bg-tertiary); color: var(--text-primary); border-color: var(--text-secondary); }
 
         /* Попап предпросмотра блока */
         .builder-preview-popup {
@@ -395,23 +435,25 @@
         }
         .builder-lib-subtab {
             flex: 1;
-            padding: 0.55rem 0.5rem;
+            padding: 0.48rem 0.5rem;
             background: none;
             border: none;
             border-bottom: 2px solid transparent;
-            font-size: 0.82rem;
+            font-size: 0.78rem;
             font-family: inherit;
             color: var(--text-secondary);
             cursor: pointer;
-            transition: var(--transition);
+            transition: all 0.15s;
             white-space: nowrap;
+            font-weight: 500;
         }
         .builder-lib-subtab.active {
             color: var(--accent-color);
             border-bottom-color: var(--accent-color);
-            font-weight: 600;
+            font-weight: 700;
+            background: rgba(59,130,246,0.04);
         }
-        .builder-lib-subtab:hover:not(.active) { background: var(--bg-tertiary); }
+        .builder-lib-subtab:hover:not(.active) { background: var(--bg-tertiary); color: var(--text-primary); }
 
         /* Публичная панель */
         #builderPublicContent { padding: 0.5rem 0; }
@@ -622,8 +664,8 @@
 
         /* Кнопка публикации (скрыта пока не вошли) */
         #builderPublishBtn { display: none; }
-        .builder-btn-publish { background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); }
-        .builder-btn-publish:hover { background: var(--accent-color); color: #fff; border-color: var(--accent-color); }
+        .builder-btn-publish { background: var(--bg-primary); color: var(--text-secondary); border: 1px solid var(--border-color); }
+        .builder-btn-publish:hover { background: #7c3aed; color: #fff; border-color: #7c3aed; box-shadow: 0 2px 8px rgba(124,58,237,0.3); }
 
         /* Toast-уведомление */
         .builder-toast {
@@ -1786,7 +1828,8 @@
             session.forEach(function (block, idx) {
                 var item = document.createElement('div');
                 item.className = 'builder-block-item';
-                item.dataset.idx = String(idx);
+                item.dataset.idx  = String(idx);
+                item.dataset.type = block.type || 'other';
                 item.innerHTML =
                     '<span class="builder-drag-handle" title="Перетащить">⠿</span>' +
                     badge(block.type) +
@@ -2833,11 +2876,7 @@
     var SUGGEST_WORKER_URL = 'https://physics-suggest.almanion.workers.dev/';  // 'https://suggest.YOUR_SUBDOMAIN.workers.dev'
 
     function sendTelegramSuggestion(authorEmail, blockType, preview, codeText) {
-        if (!SUGGEST_WORKER_URL) {
-            console.warn('[suggest] SUGGEST_WORKER_URL не задан — Telegram пропущен');
-            return;
-        }
-        console.log('[suggest] fetch →', SUGGEST_WORKER_URL);
+        if (!SUGGEST_WORKER_URL) return;
         fetch(SUGGEST_WORKER_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2848,76 +2887,46 @@
                 code:    codeText.slice(0, 2400)
             })
         })
-        .then(function (r) {
-            console.log('[suggest] Worker HTTP status:', r.status);
-            return r.json();
-        })
+        .then(function (r) { return r.json(); })
         .then(function (data) {
-            console.log('[suggest] Worker response:', JSON.stringify(data));
-            if (!data.ok) {
-                showToast('⚠️ Не удалось уведомить администратора: ' + (data.tg || 'неизвестная ошибка'));
-            } else {
-                console.log('[suggest] Telegram OK ✓');
-            }
+            if (!data.ok) showToast('⚠️ Не удалось уведомить администратора');
         })
-        .catch(function (err) {
-            console.warn('[suggest] Worker fetch error:', err.message || err);
-            showToast('⚠️ Ошибка отправки уведомления — предложение сохранено в Firebase');
+        .catch(function () {
+            showToast('⚠️ Ошибка связи — предложение сохранено в Firebase');
         });
     }
 
     function suggestEditorBlock() {
-        console.log('[suggest] кнопка нажата');
-
-        // contenteditable может содержать только <br> — считаем это пустым
         var textContent = beditorContent.textContent.trim();
         if (!textContent) {
-            console.log('[suggest] редактор пуст (textContent пусто)');
             showToast('⚠️ Введите содержимое блока перед тем как предложить');
             return;
         }
 
-        var raw  = getEditorRawHtml();
-        var html = wrapWithType(raw);
+        var raw       = getEditorRawHtml();
+        var html      = wrapWithType(raw);
         var preview   = textContent.slice(0, 200);
         var type      = beditorType.value;
         var formatted = formatHtmlForSuggest(html);
-        console.log('[suggest] тип:', type, '| превью:', preview.slice(0, 50));
+        var isAdmin   = currentUser && currentUser.email === ADMIN_EMAIL;
 
-        var isAdmin = currentUser && currentUser.email === ADMIN_EMAIL;
+        if (suggestAdminSection) suggestAdminSection.style.display = isAdmin ? '' : 'none';
+        if (suggestCode)         suggestCode.textContent = formatted;
+        if (suggestCopyBtn)      suggestCopyBtn.style.display = isAdmin ? '' : 'none';
 
-        // Режим администратора: показываем код для вставки в physics.html
-        if (suggestAdminSection) {
-            suggestAdminSection.style.display = isAdmin ? '' : 'none';
-        }
-        if (suggestCode) suggestCode.textContent = formatted;
-        if (suggestCopyBtn) suggestCopyBtn.style.display = isAdmin ? '' : 'none';
-
-        // Сохраняем в Firebase если авторизован
         if (currentUser) {
             var db = fbDb();
             if (db) {
-                console.log('[suggest] сохраняем в Firebase...');
                 db.ref('blockSuggestions/' + currentUser.uid + '/' + Date.now()).set({
                     html: html, type: type, preview: preview,
                     author: currentUser.email, uid: currentUser.uid,
                     createdAt: Date.now()
-                }).then(function () {
-                    console.log('[suggest] Firebase OK');
-                }).catch(function (e) {
-                    console.warn('[suggest] Firebase error:', e);
                 });
             }
-        } else {
-            console.log('[suggest] не авторизован — Firebase пропущен');
         }
 
-        // Отправляем уведомление в Telegram
-        console.log('[suggest] отправляем в Telegram через Worker...');
         sendTelegramSuggestion(currentUser ? currentUser.email : null, type, preview, formatted);
-
         suggestOverlay.classList.remove('hidden');
-        console.log('[suggest] модал открыт');
     }
 
     function formatHtmlForSuggest(html) {
