@@ -2250,7 +2250,64 @@
     });
 
     // Применить сохранённые билеты после загрузки всех скриптов (KaTeX = defer)
-    window.addEventListener('load', applyStoredTickets);
+    window.addEventListener('load', function () {
+        applyStoredTickets();
+        loadDefaultsIfEmpty();
+    });
+
+    // ---- Загрузка дефолтных билетов для новых пользователей ----
+    // Если у пользователя нет ни одного блока ни в одном билете,
+    // тихо клонируем публичные билеты автора сайта (dmb23930@gmail.com).
+
+    var DEFAULT_AUTHOR_EMAIL = 'dmb23930@gmail.com';
+    var DEFAULT_LOADED_KEY   = 'physics-exam-defaults-loaded';
+
+    function hasAnyBlocks() {
+        var all = getAll();
+        return Object.keys(all).some(function (n) {
+            return Array.isArray(all[n]) && all[n].length > 0;
+        });
+    }
+
+    function loadDefaultsIfEmpty() {
+        // Если блоки уже есть или дефолты уже загружались — не трогаем
+        if (localStorage.getItem(DEFAULT_LOADED_KEY)) return;
+        if (hasAnyBlocks()) {
+            localStorage.setItem(DEFAULT_LOADED_KEY, '1');
+            return;
+        }
+        // Нужно Firebase — ждём его инициализации (SDK грузится async)
+        var attempts = 0;
+        function tryLoad() {
+            var db = fbDb();
+            if (!db) {
+                if (attempts++ < 20) setTimeout(tryLoad, 300);
+                return;
+            }
+            db.ref('publicTickets').once('value').then(function (snap) {
+                var data = snap.val();
+                if (!data) return;
+                // Ищем запись автора сайта по email
+                var entry = null;
+                Object.keys(data).forEach(function (uid) {
+                    if (data[uid].email === DEFAULT_AUTHOR_EMAIL) entry = data[uid];
+                });
+                if (!entry || !entry.tickets) return;
+                // Клонируем тихо (без confirm и уведомлений)
+                var all = getAll();
+                Object.keys(entry.tickets).forEach(function (n) {
+                    var blocks = entry.tickets[n];
+                    if (Array.isArray(blocks) && blocks.length > 0) {
+                        all[n] = blocks.map(function (b) { return Object.assign({}, b); });
+                    }
+                });
+                saveAll(all);
+                applyStoredTickets();
+                localStorage.setItem(DEFAULT_LOADED_KEY, '1');
+            }).catch(function () { /* Firebase недоступен — ок */ });
+        }
+        tryLoad();
+    }
 
 
     // ====================================================
