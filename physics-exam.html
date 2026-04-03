@@ -2713,7 +2713,18 @@
                 preview: preview.slice(0, 300),
                 code:    codeText.slice(0, 2400)
             })
-        }).catch(function () {});
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (!data.ok) {
+                console.warn('[suggest] Telegram error:', data.tg);
+                showToast('⚠️ Не удалось уведомить администратора: ' + (data.tg || 'неизвестная ошибка'));
+            }
+        })
+        .catch(function (err) {
+            console.warn('[suggest] Worker fetch error:', err);
+            showToast('⚠️ Ошибка отправки уведомления — предложение сохранено в Firebase');
+        });
     }
 
     function suggestEditorBlock() {
