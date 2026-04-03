@@ -1345,6 +1345,7 @@
                     <button id="builderSaveBtn"    class="builder-btn builder-btn-save"  title="Сохранить билет">💾<span class="btn-text"> Сохранить</span></button>
                     <button id="builderResetBtn"   class="builder-btn builder-btn-reset" title="Очистить билет">🗑<span class="btn-text"> Очистить</span></button>
                     <button id="builderRefreshLib" class="builder-btn builder-btn-reset" title="Перезагрузить библиотеку из physics.html (сбросит кеш)">↺<span class="btn-text"> Обновить</span></button>
+                    <button id="builderSyncTickets" class="builder-btn builder-btn-save" title="Синхронизировать блоки всех билетов с актуальной версией physics.html">🔄<span class="btn-text"> Синхр.</span></button>
                     <button id="builderPublishBtn" class="builder-btn builder-btn-publish" title="Опубликовать все непустые билеты в общий доступ">📤<span class="btn-text"> Опубликовать</span></button>
                     <!-- Авторизация -->
                     <div class="builder-auth-section">
@@ -1688,9 +1689,10 @@
     // Парсинг DOM документа → массив блоков
     function parsePhysicsDoc(doc) {
         var result = [];
-        var uid = 0;
+        var uid = 0;          // глобальный счётчик для обратной совместимости id
+        var topicFallback = 0;
         doc.querySelectorAll('article.topic').forEach(function (article) {
-            var topicId    = article.id || ('topic-' + uid);
+            var topicId    = article.id || ('topic-' + (topicFallback++));
             var topicTitle = (article.querySelector('.topic-title') || {}).textContent || topicId;
             topicTitle = topicTitle.trim();
 
@@ -1698,7 +1700,7 @@
                 return !el.matches('h3.topic-title');
             });
 
-            children.forEach(function (el) {
+            children.forEach(function (el, localIdx) {
                 var type = 'other';
                 if (el.matches('.definition-box'))           type = 'definition';
                 else if (el.matches('h4.subsection-title'))  type = 'heading';
@@ -1710,6 +1712,9 @@
                 var preview = textOf(el.outerHTML) || el.tagName;
                 result.push({
                     id:         topicId + '-' + (uid++),
+                    // srcId стабилен: зависит только от topicId и позиции в теме
+                    // Не ломается при добавлении блоков в другие темы
+                    srcId:      topicId + ':' + localIdx,
                     topicId:    topicId,
                     topicTitle: topicTitle,
                     type:       type,
@@ -2224,6 +2229,131 @@
         });
     });
 
+    // ---- Синхронизация блоков всех билетов с physics.html ----
+
+    document.getElementById('builderSyncTickets').addEventListener('click', function () {
+        syncTicketBlocks(this);
+    });
+
+    function syncTicketBlocks(triggerBtn) {
+        var btn = triggerBtn || document.getElementById('builderSyncTickets');
+        var origHtml = btn ? btn.innerHTML : '';
+        if (btn) { btn.disabled = true; btn.innerHTML = '⏳<span class="btn-text"> Синхр.</span>'; }
+
+        // Всегда берём свежую копию — сбрасываем кеш
+        try { localStorage.removeItem(LIBRARY_CACHE_KEY); } catch (e) {}
+        var prevLib = library;
+        library = null;
+
+        loadLibrary().then(function (freshLib) {
+            // Два индекса для надёжного матчинга:
+            // 1. srcId (topicId:localIdx) — стабильный, не зависит от других тем
+            // 2. topicId|preview — текстовый фолбэк для старых блоков без srcId
+            var bySrcId   = {};
+            var byPreview = {};
+            freshLib.forEach(function (b) {
+                if (b.srcId) bySrcId[b.srcId] = b;
+                var pk = (b.topicId || '') + '|' + (b.preview || '').trim().slice(0, 80);
+                byPreview[pk] = b;
+            });
+
+            var all = getAll();
+            var updatedBlocks  = 0;
+            var ticketsChanged = [];
+
+            Object.keys(all).forEach(function (n) {
+                var blocks = all[n];
+                if (!Array.isArray(blocks)) return;
+                var changed = false;
+
+                blocks.forEach(function (block, i) {
+                    // Пропускаем собственные и кастомные блоки
+                    if (!block || !block.id) return;
+                    var rawId = block.id;
+                    if (rawId.startsWith('custom-')) return;
+
+                    // Ищем соответствие в свежей библиотеке
+                    var fresh = null;
+
+                    // 1. По srcId (самый надёжный)
+                    if (block.srcId) fresh = bySrcId[block.srcId];
+
+                    // 2. По stripped id (убираем суффикс -TIMESTAMP)
+                    if (!fresh) {
+                        var strippedId = rawId.replace(/-\d{10,}$/, '');
+                        fresh = freshLib.filter(function (b) { return b.id === strippedId; })[0] || null;
+                    }
+
+                    // 3. По тексту превью внутри той же темы
+                    if (!fresh && block.topicId) {
+                        var pk = block.topicId + '|' + (block.preview || '').trim().slice(0, 80);
+                        fresh = byPreview[pk] || null;
+                    }
+
+                    if (!fresh) return; // блок не найден в текущей версии
+
+                    // Обновляем если HTML изменился
+                    if (fresh.html !== block.html) {
+                        all[n][i] = Object.assign({}, block, {
+                            html:    fresh.html,
+                            preview: fresh.preview,
+                            srcId:   fresh.srcId,   // сохраняем srcId для следующей синхронизации
+                            type:    fresh.type
+                        });
+                        changed = true;
+                        updatedBlocks++;
+                    } else if (!block.srcId && fresh.srcId) {
+                        // Только записываем srcId (без изменения HTML — не считается как обновление)
+                        all[n][i] = Object.assign({}, block, { srcId: fresh.srcId });
+                        changed = true;
+                    }
+                });
+
+                if (changed) ticketsChanged.push(parseInt(n, 10));
+            });
+
+            if (ticketsChanged.length > 0) {
+                saveAll(all);
+                applyStoredTickets();
+
+                // Если конструктор открыт на одном из изменённых билетов — обновляем сессию
+                if (!overlay.classList.contains('hidden') && ticketsChanged.indexOf(builderTicket) !== -1) {
+                    var stored = getAll();
+                    session = (stored[builderTicket] || []).map(function (b) { return Object.assign({}, b); });
+                    renderCurrent();
+                }
+
+                // Firebase sync для всех изменённых
+                if (currentUser) {
+                    ticketsChanged.forEach(function (n) {
+                        if (all[n] && all[n].length) saveToFirebase(n, all[n]);
+                    });
+                }
+            }
+
+            // Обновляем панель библиотеки актуальными данными
+            if (!overlay.classList.contains('hidden')) renderLibrary(searchEl.value);
+
+            var msg = updatedBlocks > 0
+                ? '✅ Синхронизировано: обновлено ' + updatedBlocks + ' ' + plural(updatedBlocks, 'блок', 'блока', 'блоков') + ' в ' + ticketsChanged.length + ' ' + plural(ticketsChanged.length, 'билете', 'билетах', 'билетах')
+                : '✓ Все блоки уже актуальны';
+            showToast(msg, 4000);
+
+        }).catch(function (err) {
+            library = prevLib; // откатываем если не удалось загрузить
+            showToast('⚠️ Не удалось синхронизировать: ' + (err && err.message ? err.message : 'ошибка загрузки physics.html'));
+        }).then(function () {
+            if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+        });
+    }
+
+    function plural(n, one, few, many) {
+        var m10 = n % 10, m100 = n % 100;
+        if (m10 === 1 && m100 !== 11) return one;
+        if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few;
+        return many;
+    }
+
     btnOpen.addEventListener('click', function () {
         // Определяем активный билет из DOM (не зависим от внешней переменной)
         var active = document.querySelector('.ticket-section.active-ticket');
@@ -2703,7 +2833,11 @@
     var SUGGEST_WORKER_URL = 'https://physics-suggest.almanion.workers.dev/';  // 'https://suggest.YOUR_SUBDOMAIN.workers.dev'
 
     function sendTelegramSuggestion(authorEmail, blockType, preview, codeText) {
-        if (!SUGGEST_WORKER_URL) return;
+        if (!SUGGEST_WORKER_URL) {
+            console.warn('[suggest] SUGGEST_WORKER_URL не задан — Telegram пропущен');
+            return;
+        }
+        console.log('[suggest] fetch →', SUGGEST_WORKER_URL);
         fetch(SUGGEST_WORKER_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2714,26 +2848,41 @@
                 code:    codeText.slice(0, 2400)
             })
         })
-        .then(function (r) { return r.json(); })
+        .then(function (r) {
+            console.log('[suggest] Worker HTTP status:', r.status);
+            return r.json();
+        })
         .then(function (data) {
+            console.log('[suggest] Worker response:', JSON.stringify(data));
             if (!data.ok) {
-                console.warn('[suggest] Telegram error:', data.tg);
                 showToast('⚠️ Не удалось уведомить администратора: ' + (data.tg || 'неизвестная ошибка'));
+            } else {
+                console.log('[suggest] Telegram OK ✓');
             }
         })
         .catch(function (err) {
-            console.warn('[suggest] Worker fetch error:', err);
+            console.warn('[suggest] Worker fetch error:', err.message || err);
             showToast('⚠️ Ошибка отправки уведомления — предложение сохранено в Firebase');
         });
     }
 
     function suggestEditorBlock() {
-        var raw = getEditorRawHtml();
-        if (!raw) { showToast('⚠️ Редактор пуст'); return; }
-        var html    = wrapWithType(raw);
-        var preview = beditorContent.textContent.trim().slice(0, 200);
-        var type    = beditorType.value;
+        console.log('[suggest] кнопка нажата');
+
+        // contenteditable может содержать только <br> — считаем это пустым
+        var textContent = beditorContent.textContent.trim();
+        if (!textContent) {
+            console.log('[suggest] редактор пуст (textContent пусто)');
+            showToast('⚠️ Введите содержимое блока перед тем как предложить');
+            return;
+        }
+
+        var raw  = getEditorRawHtml();
+        var html = wrapWithType(raw);
+        var preview   = textContent.slice(0, 200);
+        var type      = beditorType.value;
         var formatted = formatHtmlForSuggest(html);
+        console.log('[suggest] тип:', type, '| превью:', preview.slice(0, 50));
 
         var isAdmin = currentUser && currentUser.email === ADMIN_EMAIL;
 
@@ -2744,28 +2893,31 @@
         if (suggestCode) suggestCode.textContent = formatted;
         if (suggestCopyBtn) suggestCopyBtn.style.display = isAdmin ? '' : 'none';
 
-        // Сохраняем в Firebase если авторизован (для всех, не только для себя)
+        // Сохраняем в Firebase если авторизован
         if (currentUser) {
             var db = fbDb();
             if (db) {
+                console.log('[suggest] сохраняем в Firebase...');
                 db.ref('blockSuggestions/' + currentUser.uid + '/' + Date.now()).set({
-                    html: html,
-                    type: type,
-                    preview: preview,
-                    author: currentUser.email,
-                    uid: currentUser.uid,
+                    html: html, type: type, preview: preview,
+                    author: currentUser.email, uid: currentUser.uid,
                     createdAt: Date.now()
+                }).then(function () {
+                    console.log('[suggest] Firebase OK');
+                }).catch(function (e) {
+                    console.warn('[suggest] Firebase error:', e);
                 });
             }
+        } else {
+            console.log('[suggest] не авторизован — Firebase пропущен');
         }
 
         // Отправляем уведомление в Telegram
-        sendTelegramSuggestion(
-            currentUser ? currentUser.email : null,
-            type, preview, formatted
-        );
+        console.log('[suggest] отправляем в Telegram через Worker...');
+        sendTelegramSuggestion(currentUser ? currentUser.email : null, type, preview, formatted);
 
         suggestOverlay.classList.remove('hidden');
+        console.log('[suggest] модал открыт');
     }
 
     function formatHtmlForSuggest(html) {
