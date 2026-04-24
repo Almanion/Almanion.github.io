@@ -106,7 +106,7 @@
                         </button>
                         <ul class="nav-submenu">
                             <li><a href="#hydrostatics" class="nav-link">Гидростатика</a></li>
-                            <li><a href="#hydro-ship-terms" class="nav-link">Термины с судами</a></li>
+                            <li><a href="#hydro-ship-terms" class="nav-link">Морские термины</a></li>
                             <li><a href="#hydro-roll-trim-heading" class="nav-link">Крен, дифферент и курс</a></li>
                         </ul>
                     </li>
@@ -3052,7 +3052,7 @@
                     Это так, ведь относительно этой оси моменты сил тяжести и силы реакции опоры равны нулю, так как равны нулю плечи этих сил.</p>
 
                     <div style="text-align: center; margin: 1rem 0;">
-                        <img src="images/cg_simple_lever.png" alt="Определение центра тяжести простой формы" loading="lazy" style="max-width: 72%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <img src="images/cg_simple_lever.png" alt="Определение центра тяжести простой формы" loading="lazy" style="max-width: 38%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                     </div>
 
                     <div class="derivation-box">
@@ -3072,7 +3072,7 @@
                     <p><strong>Определение центра тяжести произвольного тела:</strong></p>
 
                     <div style="text-align: center; margin: 1rem 0;">
-                        <img src="images/cg_arbitrary_suspension.png" alt="Центр тяжести произвольного тела" loading="lazy" style="max-width: 62%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <img src="images/cg_arbitrary_suspension.png" alt="Центр тяжести произвольного тела" loading="lazy" style="max-width: 40%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                     </div>
 
                     <div class="derivation-box">
@@ -3080,22 +3080,22 @@
                         <div class="derivation-content">
                             Произвольное тело разобьём на МТ:
                             \[\begin{align*}
-                            \vec{F} + \sum_{i=1} \Delta F_{\text{тяж. i}} &= \vec{0} \\
-                            M' + \sum_{i=1} \Delta M_i &= 0 \\
-                            \sum_{i=1}\Delta M_i &= \Delta m_1x_1g + \Delta m_2x_2g + \cdots = g \sum_{i=1} \Delta m_i x_i = 0
+                            &\vec{F} + \sum\limits_{i=1} \Delta F_{\text{тяж. i}} = \vec{0} \\
+                            &M' + \sum\limits_{i=1} \Delta M_i = 0 \\
+                            &\sum\limits_{i=1}\Delta M_i = \Delta m_1x_1g + \Delta m_2x_2g + \cdots = g \sum\limits_{i=1} \Delta m_i x_i = 0
                             \end{align*}\]
                             Мы предположили, что точка, в которой приложена суммарная сила \(F_{\text{тяж}}\) имеет координату \(x\).
                             \[\begin{align*}
-                            F_{\text{тяж}} &= gx\sum_{i=1} \Delta m_i \\
-                            g \sum_{i=1} \Delta m_i x_i &= gx \sum_{i=1} \Delta m_i \\
-                            x = \frac{\sum_{i=1} \Delta m_i x_i}{\sum_{i=1} \Delta m_i} &= \frac{\sum_{i=1} \Delta m_i x_i}{m}
+                            &F_{\text{тяж}} = gx\sum\limits_{i=1} \Delta m_i \\
+                            &g \sum\limits_{i=1} \Delta m_i x_i = gx \sum\limits_{i=1} \Delta m_i \\
+                            &x = \frac{\sum\limits_{i=1} \Delta m_i x_i}{\sum\limits_{i=1} \Delta m_i} = \frac{\sum\limits_{i=1} \Delta m_i x_i}{m} \\
+                            &\boxed{\vec{r}_c = \frac{1}{m}\sum\limits_{i=1} m_i \vec{r}_i}
                             \end{align*}\]
-                            \[\boxed{\vec{r}_c = \frac{1}{m}\sum_{i=1} m_i \vec{r}_i}\]
                         </div>
                     </div>
 
                     <div style="text-align: center; margin: 1rem 0;">
-                        <img src="images/cg_arbitrary_coordinates.png" alt="Координаты центра тяжести" loading="lazy" style="max-width: 95%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <img src="images/cg_arbitrary_coordinates.png" alt="Координаты центра тяжести" loading="lazy" style="max-width: 80%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                     </div>
 
                     <div class="remark-box">
@@ -3136,7 +3136,7 @@
                     </div>
                     Консервативная сила, действующая на тело, направлена в сторону наибыстрейшего убывания потенциальной энергии.
                     <div class="formula-box">
-                        \[\vec{F} = -\lim_{\Delta r \to 0} \frac{\Delta W_p}{\Delta r}\]
+                        \[\vec{F} = -\lim\limits_{\Delta r \to 0} \frac{\Delta W_p}{\Delta r}\]
                     </div>
                 </div>
             </article>
@@ -3153,7 +3153,7 @@
                     <strong>Давление</strong> — скалярная физическая величина, численно равная отношению силы, действующей перпендикулярно поверхности, к площади этой поверхности.
                     <div class="formula-box">
                         \[\begin{align*}
-                        p = \frac{F}{S}; \qquad [p] = \left[\frac{\text{Н}}{\text{м}^2}\right] = [\text{Па}]
+                        p = \frac{F}{S}; \qquad [p] = [\frac{\text{Н}}{\text{м}^2}] = [\text{Па}]
                         \end{align*}\]
                     </div>
                     <strong>1 Паскаль</strong> — давление, которое создаёт сила в 1 Ньютон, действующая на площадь 1 квадратный метр.<br>
@@ -3179,11 +3179,13 @@
 
                 <div class="definition-box">
                     <strong>Закон Паскаля:</strong> внешнее давление, производимое на покоящуюся жидкость (газ), передаётся без изменений в каждую точку жидкости (газа).<br>
-                    <strong>Доказательство:</strong> выделим в покоящейся жидкости цилиндр \(AB\), ось которого служит линией. На цилиндр действует давление в точках \(A\) и \(B\). Так как жидкость покоится, эти силы компенсируют друг друга. Силы, действующие на боковую поверхность перпендикулярны ей \(\Rightarrow\) их проекции на ось равны нулю. Можем разбить жидкость на множество мысленных цилиндров и для каждого доказать, что давления равны.
+                    <strong>Доказательство:</strong> выделим в покоящейся жидкости цилиндр \(AB\), ось которого служит линией. На цилиндр действует давление в точках \(A\) и \(B\). Так как жидкость покоится, эти силы компенсируют друг друга. Силы, действующие на боковую поверхность<br>
+                    перпендикулярны ей \(\Rightarrow\) их проекции на ось равны нулю. Можем разбить жидкость на множество мысленных цилиндров и для каждого доказать, что давления равны.
                 </div>
 
                 <div class="definition-box">
-                    <strong>Гидравлические машины</strong> — устройства, которые служат для преобразования механической энергии движения в энергию перемещаемой жидкости (насосы) или для преобразования энергетического потока жидкости в механическую энергию (гидравлические турбины).
+                    <strong>Гидравлические машины</strong> — устройства, которые служат для преобразования механической энергии движения в энергию перемещаемой жидкости (насосы) или для преобразования энергетического потока жидкости<br>
+                    в механическую энергию (гидравлические турбины).
                     <div class="formula-box">
                         \[P_1 = P_2 \Rightarrow \frac{F_1}{S_1} = \frac{F_2}{S_2} \Rightarrow \frac{F_1}{F_2} = \frac{S_2}{S_1}\]
                     </div>
@@ -3197,7 +3199,8 @@
                     <div class="formula-box">
                         \[F_{\text{Арх}} = \rho gV\]
                     </div>
-                    <strong>Доказательство:</strong> поместим некоторое тело в виде цилиндра в жидкость: \(F_{\text{выт.}}=F_2-F_1=\rho g S(h_2-h_1)=\rho g S \Delta h=\rho g V \Rightarrow\) выталкивающая сила равна произведению плотности жидкости на ускорение свободного падения и на объём вытесненной жидкости. Разбив тело на цилиндры, получим тот же результат.
+                    <strong>Доказательство:</strong> поместим некоторое тело в виде цилиндра в жидкость: \(F_{\text{выт.}}=F_2-F_1=\rho g S(h_2-h_1)=\rho g S \Delta h=\rho g V \Rightarrow\) выталкивающая сила равна произведению плотности жидкости на<br>
+                    ускорение свободного падения и на объём вытесненной жидкости. Разбив тело на цилиндры, получим тот же результат.
                 </div>
 
                 <div class="definition-box">
@@ -3210,7 +3213,7 @@
                     </ul>
                 </div>
 
-                <h4 id="hydro-ship-terms" class="subsection-title">Термины с судами</h4>
+                <h4 id="hydro-ship-terms" class="subsection-title">Морские термины</h4>
 
                 <div class="definition-box">
                     <strong>Осадка судна (Draft)</strong> — глубина погружения корабля или судна в воду.
@@ -3231,7 +3234,7 @@
                 <h4 id="hydro-roll-trim-heading" class="subsection-title">Крен, дифферент и курс</h4>
 
                 <div style="text-align: center; margin: 1rem 0;">
-                    <img src="images/ship_roll_pitch_yaw.png" alt="Крен, дифферент и курс" loading="lazy" style="max-width: 75%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    <img src="images/ship_roll_pitch_yaw.png" alt="Крен, дифферент и курс" loading="lazy" style="max-width: 80%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                 </div>
 
                 <div class="definition-box">
