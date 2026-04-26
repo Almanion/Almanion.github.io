@@ -1703,6 +1703,45 @@ function getContainerIdForFilter() {
     return map[currentFilter] || 'tasksContainer';
 }
 
+function normalizeSearchText(text) {
+    return String(text || '')
+        .toLowerCase()
+        .replace(/ё/g, 'е')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function splitSearchQuery(query) {
+    const normalized = normalizeSearchText(query);
+    if (!normalized) return [];
+
+    const tokens = [];
+    const regex = /"([^"]+)"|(\S+)/g;
+    let match;
+
+    while ((match = regex.exec(normalized)) !== null) {
+        const token = normalizeSearchText(match[1] || match[2]);
+        if (token) tokens.push(token);
+    }
+
+    return tokens;
+}
+
+function taskMatchesSearch(task, queryTokens, fullQuery) {
+    const haystack = normalizeSearchText([
+        task.number,
+        task.numberText,
+        task.description,
+        task.hint
+    ].join(' '));
+
+    // Быстрый путь: вся фраза есть целиком.
+    if (fullQuery && haystack.includes(fullQuery)) return true;
+
+    // Иначе каждая часть запроса должна присутствовать.
+    return queryTokens.every(token => haystack.includes(token));
+}
+
 // ============================================
 // РУССКИЙ СТЕММЕР
 // ============================================
@@ -1769,7 +1808,8 @@ function matchWordRu(qWord, numStr, desc) {
 function runSearch() {
     const searchInput = document.getElementById('searchInput');
     const statusFilterEl = document.getElementById('statusFilter');
-    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const searchTerm = searchInput ? searchInput.value : '';
+    const normalizedTerm = normalizeSearchText(searchTerm);
     const activeStatus = statusFilterEl ? statusFilterEl.value : '';
 
     let currentTasks = getTasksForCurrentFilter();
@@ -1778,22 +1818,17 @@ function runSearch() {
         currentTasks = currentTasks.filter(t => t.status === activeStatus);
     }
 
-    if (searchTerm) {
-        const queryWords = searchTerm.split(/\s+/).filter(w => w.length > 0);
+    if (normalizedTerm) {
+        const queryTokens = splitSearchQuery(normalizedTerm);
         currentTasks = currentTasks.filter(task => {
-            const numStr = task.number.toString();
-            const desc = task.description.toLowerCase();
-            // Быстрая проверка: весь запрос как подстрока (для номеров и точных фраз)
-            if (numStr.includes(searchTerm) || desc.includes(searchTerm)) return true;
-            // Каждое слово должно найтись (И-логика)
-            return queryWords.every(qWord => matchWordRu(qWord, numStr, desc));
+            return taskMatchesSearch(task, queryTokens, normalizedTerm);
         });
     }
 
     const containerId = getContainerIdForFilter();
 
-    if (currentTasks.length === 0 && (searchTerm || activeStatus)) {
-        showNoResultsMessage(containerId, searchTerm, activeStatus);
+    if (currentTasks.length === 0 && (normalizedTerm || activeStatus)) {
+        showNoResultsMessage(containerId, normalizedTerm, activeStatus);
     } else {
         displayTasks(currentTasks, containerId);
     }
@@ -1839,6 +1874,8 @@ function clearSearch() {
     if (mobileStatusFilter) mobileStatusFilter.value = '';
     if (searchClearBtn) searchClearBtn.classList.remove('visible');
     if (mobileSearchClear) mobileSearchClear.classList.remove('visible');
+    if (statusFilterEl) statusFilterEl.classList.remove('has-filter');
+    if (mobileStatusFilter) mobileStatusFilter.classList.remove('has-filter');
 
     searchStatusFilter = 'all';
 
@@ -1866,7 +1903,7 @@ function initMatCenterSearch() {
         if (source === 'mobile' && searchInput) searchInput.value = value;
         updateClearBtns(value);
         if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(runSearch, 250);
+        debounceTimer = setTimeout(runSearch, 150);
     }
 
     if (searchInput) {

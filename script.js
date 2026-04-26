@@ -248,6 +248,10 @@ const searchState = {
 };
 
 function initSearch() {
+    // На Матцентре используется отдельный поиск в matcenter.js.
+    // Здесь отключаем общий полнотекстовый поиск, чтобы не было конфликта обработчиков.
+    if (document.body.classList.contains('matcenter-page')) return;
+
     const searchInput = document.getElementById('searchInput');
     if (!searchInput) return;
 
