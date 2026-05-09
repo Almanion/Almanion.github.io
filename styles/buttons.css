@@ -61,14 +61,14 @@
 
 :where(.btn-outline, .knowledge-check-btn, .hint-cancel-btn, .ny-advanced-settings) {
     background: transparent;
-    color: var(--button-accent, var(--accent-color));
-    border: 1.5px solid var(--button-accent, var(--accent-color));
+    color: var(--button-accent, var(--text-primary));
+    border: 1.5px solid var(--button-accent, var(--border-color));
 }
 
 :where(.btn-outline, .knowledge-check-btn, .hint-cancel-btn, .ny-advanced-settings):hover {
-    background: rgba(var(--accent-rgb), 0.08);
-    color: var(--button-accent-hover, var(--accent-hover));
-    border-color: var(--button-accent-hover, var(--accent-hover));
+    background: var(--bg-tertiary);
+    color: var(--button-accent-hover, var(--text-primary));
+    border-color: var(--button-accent-hover, var(--text-secondary));
 }
 
 :where(.btn-subtle, .task-toggle, .settings-reset-btn, .ny-settings-reset) {
@@ -79,7 +79,7 @@
 
 :where(.btn-subtle, .task-toggle, .settings-reset-btn, .ny-settings-reset):hover {
     background: var(--bg-primary);
-    border-color: var(--accent-color);
+    border-color: var(--text-secondary);
 }
 
 :where(.btn-danger, .builder-btn-reset, .hint-delete-btn):hover {
