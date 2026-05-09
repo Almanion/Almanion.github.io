@@ -2796,14 +2796,14 @@ body.dark-theme mark.search-hl-active {
 }
 
 .search-nav-section:hover {
-    border-color: var(--accent-color);
-    color: var(--accent-color);
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
 }
 
 .search-nav-section.active {
-    background: var(--accent-color);
-    color: white;
-    border-color: var(--accent-color);
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    border-color: var(--text-primary);
 }
 
 .search-section-badge {
@@ -2817,8 +2817,8 @@ body.dark-theme mark.search-hl-active {
 }
 
 .search-nav-section:not(.active) .search-section-badge {
-    background: rgba(var(--accent-rgb), 0.12);
-    color: var(--accent-color);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
 }
 
 .search-nav-controls {
@@ -2843,9 +2843,9 @@ body.dark-theme mark.search-hl-active {
 }
 
 .search-nav-btn:hover {
-    background: var(--accent-color);
-    color: white;
-    border-color: var(--accent-color);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
 }
 
 .search-nav-close {
@@ -3053,7 +3053,7 @@ input:focus:not(:focus-visible) {
 .task-number {
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--accent-color);
+    color: var(--text-primary);
 }
 
 .task-note {
