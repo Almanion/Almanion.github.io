@@ -15,6 +15,11 @@ body.study-mode {
     --primary-color: #0a0a0a;
     --accent-color: #0a0a0a;
     --accent-hover: #000000;
+    --accent-rgb: 10, 10, 10;
+    --svg-rod-fill: #737373;
+    --svg-rod-stroke: #404040;
+    --svg-axis-stroke: #404040;
+    --svg-label-fill: #0a0a0a;
     background-color: var(--bg-primary) !important;
     color: var(--text-primary);
 }
@@ -32,6 +37,11 @@ body.study-mode.dark-theme {
     --primary-color: #f5f5f5;
     --accent-color: #f5f5f5;
     --accent-hover: #ffffff;
+    --accent-rgb: 245, 245, 245;
+    --svg-rod-fill: #a3a3a3;
+    --svg-rod-stroke: #d4d4d4;
+    --svg-axis-stroke: #d4d4d4;
+    --svg-label-fill: #f5f5f5;
     background-color: var(--bg-primary) !important;
     color: var(--text-primary);
 }
@@ -61,6 +71,44 @@ body.study-mode .main-content li :is(a) :is(strong, b) {
 body.study-mode em {
     color: var(--text-secondary) !important;
     font-weight: 500;
+}
+
+/* Ни остатков синего акцента: подзаголовки, подписи, ссылки, формулы */
+body.study-mode .main-content .subsection-title {
+    color: var(--text-primary) !important;
+    border-bottom-color: var(--border-color) !important;
+}
+
+body.study-mode .main-content .subsection-title:hover {
+    color: var(--text-primary) !important;
+    border-bottom-color: var(--border-color) !important;
+}
+
+body.study-mode .main-content .experiment-box h4 {
+    color: var(--text-primary) !important;
+}
+
+body.study-mode .main-content .proof-qed {
+    color: var(--text-secondary) !important;
+}
+
+body.study-mode .main-content a {
+    color: var(--text-primary) !important;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+}
+
+body.study-mode .main-content .page-header a {
+    text-decoration: none;
+}
+
+body.study-mode .main-content .katex {
+    color: var(--text-primary) !important;
+}
+
+body.study-mode .main-content .katex * {
+    color: inherit !important;
 }
 
 body.study-mode #sidebar,
