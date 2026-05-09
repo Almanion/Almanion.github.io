@@ -1284,7 +1284,6 @@ body.dark-theme .page-header {
 }
 
 .definition-box strong {
-    color: inherit;
     font-size: 1.1rem;
 }
 
@@ -1384,7 +1383,6 @@ body.dark-theme .page-header {
 }
 
 .exp-section strong {
-    color: inherit;
     display: block;
     margin-bottom: 0.5rem;
 }
@@ -1469,7 +1467,6 @@ body.dark-theme .page-header {
 }
 
 .theorem-box strong {
-    color: inherit;
     font-size: 1.1rem;
 }
 
@@ -1497,7 +1494,6 @@ body.dark-theme .page-header {
 }
 
 .lemma-box strong {
-    color: inherit;
     font-size: 1.1rem;
 }
 
@@ -1525,7 +1521,6 @@ body.dark-theme .page-header {
 }
 
 .example-box strong {
-    color: inherit;
     font-size: 1.1rem;
 }
 
@@ -1563,7 +1558,6 @@ body.dark-theme .page-header {
 }
 
 .statement-box strong {
-    color: inherit;
     font-size: 1.1rem;
 }
 
@@ -1591,7 +1585,6 @@ body.dark-theme .page-header {
 }
 
 .corollary-box strong {
-    color: inherit;
     font-size: 1.1rem;
 }
 
@@ -1827,6 +1820,16 @@ li {
 em {
     color: var(--accent-color);
     font-weight: 500;
+}
+
+/* Полужирный — основной цвет текста, без оттенков блока и акцента */
+.main-content :is(strong, b) {
+    color: var(--text-primary);
+}
+
+.main-content .page-header :is(strong, b),
+.main-content a :is(strong, b) {
+    color: inherit;
 }
 
 /* KaTeX С„РѕСЂРјСѓР»С‹ */
