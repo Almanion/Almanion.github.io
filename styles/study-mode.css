@@ -1,7 +1,66 @@
 /* Режим заучивания: документоподобный вид, минимум отвлечений */
 
+/* Монохром: светлая тема — тёмный текст на светлом фоне; тёмная — светлый на чёрном */
 body.study-mode {
     overflow-x: hidden;
+    --text-primary: #0a0a0a;
+    --text-secondary: #2e2e2e;
+    --text-color: #0a0a0a;
+    --bg-primary: #ffffff;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f0f0f0;
+    --border-color: #242424;
+    --header-bg: #ffffff;
+    --header-text: #0a0a0a;
+    --primary-color: #0a0a0a;
+    --accent-color: #0a0a0a;
+    --accent-hover: #000000;
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary);
+}
+
+body.study-mode.dark-theme {
+    --text-primary: #f5f5f5;
+    --text-secondary: #d4d4d4;
+    --text-color: #f5f5f5;
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #0a0a0a;
+    --bg-tertiary: #141414;
+    --border-color: #e5e5e5;
+    --header-bg: #0a0a0a;
+    --header-text: #f5f5f5;
+    --primary-color: #f5f5f5;
+    --accent-color: #f5f5f5;
+    --accent-hover: #ffffff;
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary);
+}
+
+body.study-mode .main-content :is(strong, b) {
+    color: var(--text-primary) !important;
+}
+
+body.study-mode .main-content .page-header :is(strong, b) {
+    color: inherit !important;
+}
+
+body.study-mode .main-content a :is(strong, b) {
+    color: inherit !important;
+}
+
+body.study-mode .main-content :is(ol, ul) li :is(strong, b),
+body.study-mode .main-content li :is(strong, b) {
+    color: var(--text-primary) !important;
+}
+
+body.study-mode .main-content :is(ol, ul) li a :is(strong, b),
+body.study-mode .main-content li :is(a) :is(strong, b) {
+    color: inherit !important;
+}
+
+body.study-mode em {
+    color: var(--text-secondary) !important;
+    font-weight: 500;
 }
 
 body.study-mode #sidebar,
@@ -220,14 +279,15 @@ body.study-mode .ticket-nav-controls {
 }
 
 body.study-mode .study-mode-toggle {
-    background: var(--accent-color);
-    color: #fff;
-    border-color: var(--accent-color);
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    border-color: var(--text-primary);
 }
 
 body.study-mode .study-mode-toggle:hover {
-    background: var(--accent-hover);
-    border-color: var(--accent-hover);
+    background: var(--text-secondary);
+    color: var(--bg-primary);
+    border-color: var(--text-secondary);
 }
 
 @media print {

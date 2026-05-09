@@ -1824,12 +1824,23 @@ em {
 
 /* Полужирный — основной цвет текста, без оттенков блока и акцента */
 .main-content :is(strong, b) {
-    color: var(--text-primary);
+    color: var(--text-primary) !important;
 }
 
 .main-content .page-header :is(strong, b),
 .main-content a :is(strong, b) {
-    color: inherit;
+    color: inherit !important;
+}
+
+/* Списки: то же, выше специфичность на случай порядка стилей / вложенности */
+.main-content :is(ol, ul) li :is(strong, b),
+.main-content li :is(strong, b) {
+    color: var(--text-primary) !important;
+}
+
+.main-content :is(ol, ul) li a :is(strong, b),
+.main-content li :is(a) :is(strong, b) {
+    color: inherit !important;
 }
 
 /* KaTeX С„РѕСЂРјСѓР»С‹ */
