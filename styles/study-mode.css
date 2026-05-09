@@ -1,0 +1,250 @@
+/* Режим заучивания: документоподобный вид, минимум отвлечений */
+
+body.study-mode {
+    overflow-x: hidden;
+}
+
+body.study-mode #sidebar,
+body.study-mode .sidebar-overlay,
+body.study-mode .menu-toggle,
+body.study-mode #closeSidebar,
+body.study-mode .sidebar-collapse-btn,
+body.study-mode .sidebar-expand-btn,
+body.study-mode #settingsButton,
+body.study-mode #settingsButtonSidebar,
+body.study-mode .settings-modal,
+body.study-mode .theme-toggle,
+body.study-mode .ny-toggle,
+body.study-mode .scroll-to-top,
+body.study-mode #snowContainer,
+body.study-mode .snow-container,
+body.study-mode #easterEggsContainer,
+body.study-mode .easter-eggs-container,
+body.study-mode .bookmark-btn,
+body.study-mode .copy-block-btn,
+body.study-mode #bookmarksBtn,
+body.study-mode #knowledgeCheckBtn,
+body.study-mode .sidebar-actions,
+body.study-mode .search-nav-bar,
+body.study-mode .telegram-chat-button,
+body.study-mode .telegram-notification,
+body.study-mode .poll-widget,
+body.study-mode #designPollOverlay,
+body.study-mode .poll-overlay,
+body.study-mode .mobile-search-bar,
+body.study-mode #builderOpenBtn,
+body.study-mode #builderOverlay,
+body.study-mode #builderAuthOverlay,
+body.study-mode .beditor-suggest-overlay,
+body.study-mode .builder-pub-view-overlay,
+body.study-mode .builder-toast,
+body.study-mode .progress-bar,
+body.study-mode #progressBar {
+    display: none !important;
+}
+
+/* Оверлеи проверки знаний не показывать поверх (на случай класса hidden снятого) */
+body.study-mode #topicSelectionOverlay,
+body.study-mode #knowledgeCheckOverlay,
+body.study-mode #newFeatureOverlay {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+body.study-mode .main-content {
+    margin-left: 0 !important;
+    max-width: min(920px, 100%) !important;
+    margin-inline: auto !important;
+    padding: 1.25rem 1.5rem 3rem !important;
+    width: 100% !important;
+}
+
+body.study-mode .page-header {
+    background: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    box-shadow: none !important;
+    border-radius: var(--border-radius) !important;
+    border: 1px solid var(--border-color) !important;
+    margin-bottom: 1.5rem !important;
+    padding: 1.5rem 1.25rem !important;
+}
+
+body.study-mode .page-header::before {
+    display: none !important;
+    animation: none !important;
+}
+
+body.study-mode .page-header h1,
+body.study-mode .page-header .subtitle,
+body.study-mode .page-header a {
+    color: inherit !important;
+}
+
+body.study-mode .part-title {
+    background: transparent !important;
+    border-bottom: 2px solid var(--border-color) !important;
+    padding: 0.75rem 0 !important;
+    margin-bottom: 1rem !important;
+    color: var(--text-primary) !important;
+}
+
+body.study-mode .part-title::after {
+    display: none !important;
+    animation: none !important;
+}
+
+body.study-mode .topic {
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0.75rem 0 !important;
+    margin-bottom: 1.25rem !important;
+    border-radius: 0 !important;
+}
+
+body.study-mode .topic:hover {
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+body.study-mode .topic-title {
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding-bottom: 0.35rem !important;
+    margin-bottom: 0.75rem !important;
+}
+
+body.study-mode .topic-title::before {
+    content: none !important;
+    display: none !important;
+}
+
+body.study-mode .definition-box,
+body.study-mode .formula-box,
+body.study-mode .remark-box,
+body.study-mode .experiment-box,
+body.study-mode .derivation-box,
+body.study-mode .theorem-box,
+body.study-mode .lemma-box,
+body.study-mode .example-box,
+body.study-mode .statement-box,
+body.study-mode .corollary-box,
+body.study-mode .proof-box,
+body.study-mode .exercise-box,
+body.study-mode .properties-box,
+body.study-mode .system-box {
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    border: none !important;
+    border-left: 2px solid var(--border-color) !important;
+    padding: 0.5rem 0 0.75rem 0.85rem !important;
+    margin: 0.75rem 0 !important;
+}
+
+body.study-mode .definition-box:hover,
+body.study-mode .formula-box:hover,
+body.study-mode .remark-box:hover,
+body.study-mode .experiment-box:hover,
+body.study-mode .derivation-box:hover,
+body.study-mode .theorem-box:hover,
+body.study-mode .lemma-box:hover,
+body.study-mode .example-box:hover,
+body.study-mode .statement-box:hover,
+body.study-mode .corollary-box:hover,
+body.study-mode .proof-box:hover,
+body.study-mode .exercise-box:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+body.study-mode .remark-box::before,
+body.study-mode .example-box::before {
+    display: none !important;
+}
+
+body.study-mode .toggle-derivation,
+body.study-mode .toggle-proof {
+    display: none !important;
+}
+
+body.study-mode .derivation-content,
+body.study-mode .proof-content {
+    display: block !important;
+    max-height: none !important;
+    margin-top: 0.5rem !important;
+    padding-top: 0.5rem !important;
+    border-top: 1px dashed var(--border-color) !important;
+}
+
+body.study-mode .content-section {
+    margin-bottom: 1rem !important;
+}
+
+body.study-mode .page-footer {
+    margin-top: 2rem !important;
+    padding: 1rem 0 !important;
+    border-top: 1px solid var(--border-color) !important;
+}
+
+body.study-mode .ticket-nav-controls {
+    background: var(--bg-secondary) !important;
+    box-shadow: none !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+/* Кнопка переключения режима */
+.study-mode-toggle {
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
+    z-index: 10050;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: inherit;
+    line-height: 1.2;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.study-mode-toggle:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent-color);
+}
+
+body.study-mode .study-mode-toggle {
+    background: var(--accent-color);
+    color: #fff;
+    border-color: var(--accent-color);
+}
+
+body.study-mode .study-mode-toggle:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+}
+
+@media print {
+    .study-mode-toggle {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    body.study-mode .main-content {
+        padding: 0.75rem 1rem 2.5rem !important;
+    }
+
+    .study-mode-toggle {
+        bottom: 4.5rem;
+        left: 0.75rem;
+        font-size: 0.75rem;
+        padding: 0.4rem 0.65rem;
+    }
+}
