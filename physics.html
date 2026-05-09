@@ -110,6 +110,17 @@
                             <li><a href="#hydro-roll-trim-heading" class="nav-link">Крен, дифферент и курс</a></li>
                         </ul>
                     </li>
+
+                    <li class="nav-group">
+                        <button class="nav-group-toggle">
+                            <span class="toggle-icon">▼</span>
+                            Гидродинамика
+                        </button>
+                        <ul class="nav-submenu">
+                            <li><a href="#hydrodynamics" class="nav-link">Гидродинамика</a></li>
+                            <li><a href="#fluid-internal-friction" class="nav-link">Внутреннее трение в жидкости</a></li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
             
@@ -446,8 +457,8 @@
                 <div class="definition-box">
                     О графике зависимости проекции скорости на ось OX от времени:
                     <ul>
-                        <li>Если проекция скорости больше 0 — это означает, что тело двигается по направлению оси \(x\).</li>
-                        <li>Если проекция скорости меньше 0 — это означает, что тело двигается против направления оси \(x\).</li>
+                        <li>Если проекция скорости больше 0 — это означает, что тело движется по направлению оси \(x\).</li>
+                        <li>Если проекция скорости меньше 0 — это означает, что тело движется против направления оси \(x\).</li>
                         <li>Площадь под графиком скорости, без учёта знака, — путь; а с учётом знака — перемещение.</li>
                     </ul>
                 </div>
@@ -2952,7 +2963,7 @@
                 <h4 id="statics-equilibrium" class="subsection-title">Равновесие тела</h4>
 
                 <div class="definition-box">
-                    <strong>Равновесие МТ</strong> — состояние, при котором тело покоится либо двигается равномерно и прямолинейно.
+                    <strong>Равновесие МТ</strong> — состояние, при котором тело покоится либо движется равномерно и прямолинейно.
                 </div>
 
                 <div class="definition-box">
@@ -2974,7 +2985,7 @@
                         </li>
                         <li><strong>Динамическое:</strong>
                             <ul>
-                                <li>В случае МТ — тело двигается равномерно и прямолинейно.</li>
+                                <li>В случае МТ — тело движется равномерно и прямолинейно.</li>
                                 <li>В случае АТТ — тело вращается равномерно относительно закреплённой оси.</li>
                             </ul>
                         </li>
@@ -3241,6 +3252,307 @@
                     <strong>Крен (heel)</strong> — небольшой поворот корпуса судна вокруг продольной оси: наклон палубы к левому или правому борту относительно горизонтали.<br><br>
                     <strong>Дифферент (trim)</strong> — поворот корпуса вокруг поперечной горизонтальной оси: разница уровней носа и кормы (нос выше или ниже кормы).<br><br>
                     <strong>Курс (heading)</strong> — направление носа судна в горизонтальной плоскости, задаваемое углом с меридианом.
+                </div>
+            </article>
+
+            <!-- Гидродинамика -->
+            <article id="hydrodynamics" class="topic">
+                <h3 class="topic-title">Гидродинамика</h3>
+
+                <div class="definition-box">
+                    <strong>Гидродинамика</strong> — раздел механики, в котором изучается движение жидкостей и газов, а также взаимодействие твёрдых тел с жидкостью и газообразной средой.
+                </div>
+
+                <div class="definition-box">
+                    <strong>Плотность</strong> — скалярная физическая величина, численно равная пределу отношения массы тела к его объёму при стремлении объёма к нулю.
+                    <div class="formula-box">
+                        \[\begin{align*}
+                        \rho(x, y, z) = \lim\limits_{\Delta V \to 0} \frac{\Delta m}{\Delta V}
+                        \end{align*}\]
+                    </div>
+                    <strong>Единицы измерения:</strong> \(\text{кг/м}^3\).
+                </div>
+
+                <div class="definition-box">
+                    <strong>Несжимаемая жидкость</strong> — жидкости, а также газы, когда их сжимаемостью можно пренебречь.
+                    <div class="remark-box">
+                        У несжимаемых жидкостей (газов) плотность одинакова по всему объёму.
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Идеальная жидкость</strong> — жидкость, в которой силами внутреннего трения можно пренебречь.
+                </div>
+
+                <div class="definition-box">
+                    <strong>Виды течения жидкости:</strong>
+                    <ul>
+                        <li><strong>Ламинарное течение</strong> — течение, при котором отдельные слои жидкости скользят друг относительно друга.</li>
+                        <li><strong>Турбулентное течение</strong> — течение, сопровождающееся перемешиванием различных слоёв жидкости с образованием завихрений.</li>
+                    </ul>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Линии тока</strong> — воображаемые линии, касательные к которым в каждой точке совпадают с направлением скорости потока жидкости.<br>
+                    <strong>Свойства:</strong>
+                    <ul>
+                        <li>Не пересекаются</li>
+                        <li>Не имеют изломов</li>
+                        <li>Начинаются на источниках и заканчиваются на точках стока жидкости</li>
+                        <li>Совпадают с траекториями движения частиц жидкости для стационарного течения</li>
+                    </ul>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Трубка тока</strong> — объём жидкости, ограниченный линиями тока.
+                </div>
+
+                <div class="definition-box">
+                    <strong>Стационарное течение</strong> — течение, при котором в любом сечении трубки тока параметры жидкости (давление, плотность, температура, скорость потока) не зависят от времени.<br>
+                    <strong>Нестационарное течение</strong> — течение, при котором параметры жидкости меняются со временем.
+                </div>
+
+                <div class="definition-box">
+                    <strong>Поток жидкости</strong> — масса жидкости, протекающая в единицу времени через данное сечение.
+                    <div class="formula-box">
+                        \[\begin{align*}
+                        \Phi = \frac{\Delta m}{\Delta t}
+                        \end{align*}\]
+                    </div>
+                    <div class="derivation-box">
+                        <button class="toggle-derivation">📖 Показать вывод</button>
+                        <div class="derivation-content">
+                            Пусть есть труба, в которой мы знаем скорость движения жидкости. Рассчитаем объём жидкости, протекающей за единицу времени через некоторую воображаемую площадку:
+                            \[\begin{align*}
+                            \Delta V &= S \cdot \Delta h \\
+                            \Delta h &= \Delta l \cdot \cos\alpha = v \cdot \cos\alpha \cdot \Delta t \\
+                            \Delta V &= S \cdot v \cdot \cos\alpha \cdot \Delta t \\
+                            \Phi = \frac{\Delta m}{\Delta t} &= \frac{\rho \cdot S \cdot v \cdot \cos\alpha \cdot \Delta t}{\Delta t} = \rho \cdot S \cdot v \cdot \cos\alpha
+                            \end{align*}\]
+                            <strong>Вектор площади</strong> — вектор, по модулю равный площади и направленный по внешней нормали.<br>
+                            <strong>Внешняя нормаль</strong> — нормаль к каждому из элементов поверхности \(S\), направленная из объёма наружу.
+                            <div class="formula-box">
+                                \[\begin{align*}
+                                \Phi = \rho \cdot \vec{v} \cdot \vec{S}
+                                \end{align*}\]
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Объёмный расход жидкости</strong> — скалярная физическая величина, численно равная объёму жидкости, протекающей через сечение трубки тока за единицу времени.
+                    <div class="formula-box">
+                        \[\begin{align*}
+                        Q = \frac{\Phi}{\rho} = \int\limits_{S} \vec{v} \cdot d\vec{S}
+                        \end{align*}\]
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>I теорема о потоке несжимаемой жидкости:</strong> если в некоторой области движения несжимаемой жидкости отсутствуют источники и стоки, то поток жидкости через любую замкнутую воображаемую поверхность равен нулю.<br>
+                    <strong>Физический смысл:</strong> количество втекающей жидкости равно количеству вытекающей жидкости.
+                </div>
+
+                <div class="definition-box">
+                    <strong>Уравнение неразрывности:</strong> пусть жидкость протекает по трубе переменного сечения. В качестве замкнутой поверхности рассматривается часть боковой поверхности в месте сочленения и две плоские площадки, перпендикулярные оси трубы, находящиеся в широкой и узкой части.<br>
+                    Для примера выберем воображаемую поверхность в виде двух сечений и боковой поверхности.
+                    <div class="derivation-box">
+                        <button class="toggle-derivation">📖 Показать вывод</button>
+                        <div class="derivation-content">
+                            По аддитивности потока:
+                            \[\begin{align*}
+                            \Phi_1 &= -\rho_1 v_1 S_1 \\
+                            \Phi_2 &= \rho_2 v_2 S_2 \\
+                            \Phi_3 &= 0 \\
+                            \Phi = \Phi_1 + \Phi_2 + \Phi_3 &= -\rho_1 v_1 S_1 + \rho_2 v_2 S_2 + 0 = 0 \\
+                            \rho_1 v_1 S_1 = \rho_2 v_2 S_2 & \textbf{-- уравнение неразрывности} \\
+                            \rho_1 = \rho_2 \Rightarrow v_1 S_1 &= v_2 S_2 \Rightarrow [\cdot t] \Rightarrow \Delta V_1 = \Delta V_2
+                            \end{align*}\]
+                        </div>
+                    </div>
+                    Если жидкость протекает из широкой части трубы в узкую, то скорость её движения увеличивается.
+                </div>
+
+                <div class="definition-box">
+                    <strong>Уравнение Бернулли:</strong> следствие уравнения неразрывности.
+                    <div style="text-align: center; margin: 1rem 0;">
+                        <img src="images/bernoulli_equation.png" alt="Уравнение Бернулли" loading="lazy" style="max-width: 86%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    </div>
+                    <div class="derivation-box">
+                        <button class="toggle-derivation">📖 Показать вывод</button>
+                        <div class="derivation-content">
+                            \[\begin{align*}
+                            &\Delta W = A^{ext} \\
+                            &W_{ABCD} = W_{ABA_1B_1} + W_{A_1B_1CD} \\
+                            &W_{A_1B_1C_1D_1} = W_{A_1B_1CD} + W_{CDC_1D_1} \\
+                            &\Delta W = W_{A_1B_1C_1D_1} - W_{ABCD} = W_{CDC_1D_1} - W_{ABA_1B_1} = \\
+                            &= \left(\frac{\Delta m_2 v_2^2}{2} + \Delta m_2 g h_2\right) - \left(\frac{\Delta m_1 v_1^2}{2} + \Delta m_1 g h_1\right) = \\
+                            &A^\text{ext} = F_1 \cdot \Delta l_1 + (-F_2 \cdot \Delta l_2) = p_1 \cdot S_1 \cdot v_1 \cdot \Delta t - p_2 \cdot S_2 \cdot v_2 \cdot \Delta t = \\
+                            &\frac{\Delta m_2}{\Delta t} \cdot \left(\frac{v_2^2}{2} + gh_2\right) - \frac{\Delta m_1}{\Delta t} \cdot \left(\frac{v_1^2}{2} + gh_1\right) = p_1 \cdot S_1 \cdot v_1 - p_2 \cdot S_2 \cdot v_2 \\
+                            &\Phi = \frac{\Delta m}{\Delta t} = \rho \cdot v \cdot S \\
+                            &\Phi_2 \cdot \left(\frac{v_2^2}{2} + gh_2\right) - \Phi_1 \cdot \left(\frac{v_1^2}{2} + gh_1\right) = \frac{p_1}{\rho_1} \cdot \Phi_1 - \frac{p_2}{\rho_2} \cdot \Phi_2 \\
+                            &\frac{p_1}{\rho_1} + \frac{v_1^2}{2} + gh_1 = \frac{p_2}{\rho_2} + \frac{v_2^2}{2} + gh_2 \\
+                            &\boxed{p_1 + \frac{\rho v_1^2}{2} + \rho gh_1 = p_2 + \frac{\rho v_2^2}{2} + \rho gh_2} \quad \textbf{-- уравнение Бернулли}
+                            \end{align*}\]
+                            где \(p\) — статическое давление, \(\frac{\rho v^2}{2}\) — гидродинамическое давление, \(\rho gh\) — гидростатическое давление.
+                        </div>
+                    </div>
+                    <strong>Пример:</strong> высокое артериальное давление у жирафов.
+                </div>
+
+                <div class="definition-box">
+                    <strong>Формула Торричелли:</strong> скорость истечения жидкости из отверстия в дне сосуда.
+                    <div style="text-align: center; margin: 1rem 0;">
+                        <img src="images/torricelli_formula.png" alt="Формула Торричелли" loading="lazy" style="max-width: 50%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    </div>
+                    <div class="derivation-box">
+                        <button class="toggle-derivation">📖 Показать вывод</button>
+                        <div class="derivation-content">
+                            \[\begin{align*}
+                            p_1 + \frac{\rho v_1^2}{2} + \rho gh_1 &= p_2 + \frac{\rho v_2^2}{2} + \rho gh_2 \\
+                            p_0 + \frac{\rho \cdot 0}{2} + \rho gh &= p_0 + \frac{\rho v^2}{2} + \rho g \cdot 0 \\
+                            \rho gh &= \frac{\rho v^2}{2} \\
+                            v &= \sqrt{2gh}
+                            \end{align*}\]
+                        </div>
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Эффект Вентури</strong> — уменьшение давления жидкости, которое происходит, когда движущаяся жидкость ускоряется при движении из одного сечения трубы в меньшее сечение.
+                    <div style="text-align: center; margin: 1rem 0;">
+                        <img src="images/venturi_effect.png" alt="Эффект Вентури" loading="lazy" style="max-width: 85%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <p style="margin: 0.35em 0 0; font-size: 0.9em; font-style: italic; color: var(--text-secondary);">Статическое давление на входе (1) выше, чем в сужении (2), а скорость жидкости в точке «1» ниже, чем в точке «2», поскольку площадь поперечного сечения в точке «1» больше, чем в точке «2».</p>
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Трубка Пито</strong> — часть прибора для измерения полного напора текущей жидкости (суспензии) или газа.
+                </div>
+
+                <div class="definition-box">
+                    <strong>Расход</strong> — количество (масса) жидкости, вытекающей из источника за единицу времени.
+                    <div class="formula-box">
+                        \[\begin{align*}
+                        \mu = \frac{\Delta m}{\Delta t}
+                        \end{align*}\]
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>II теорема о потоке несжимаемой жидкости:</strong> поток несжимаемой жидкости через любую замкнутую поверхность равен сумме расходов источников, находящихся внутри поверхности.
+                    <div class="formula-box">
+                        \[\begin{align*}
+                        \Phi = \sum \mu_i
+                        \end{align*}\]
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Распределение скоростей жидкости вокруг источника:</strong>
+                    <div style="text-align: center; margin: 1rem 0;">
+                        <img src="images/source_velocity_distribution.png" alt="Распределение скоростей жидкости вокруг источника" loading="lazy" style="max-width: 55%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    </div>
+                    <div class="derivation-box">
+                        <button class="toggle-derivation">📖 Показать вывод</button>
+                        <div class="derivation-content">
+                            \[\begin{align*}
+                            &\Phi = \rho \cdot v \cdot S \cdot \cos 0^\circ \\
+                            &S = 4 \pi r^2 \\
+                            &\Phi = 4 \pi \rho v r^2 \\
+                            &\Phi = \mu \\
+                            &4 \pi \rho v r^2 = \mu \\
+                            &v = \frac{\mu}{4 \pi \rho r^2}
+                            \end{align*}\]
+                        </div>
+                    </div>
+                </div>
+
+                <h4 id="fluid-internal-friction" class="subsection-title">Внутреннее трение в жидкости</h4>
+
+                <div class="definition-box">
+                    <strong>Вязкость</strong> — свойство реальных жидкостей оказывать сопротивление перемещению одной части жидкости относительно другой.<br>
+                    <strong>Силы внутреннего трения:</strong>
+                    <ul>
+                        <li>Возникают при относительном движении слоёв жидкости</li>
+                        <li>Приложены к слоям жидкости и действуют по касательной к ним</li>
+                    </ul>
+                    <strong>Причина возникновения:</strong>
+                    <ul>
+                        <li>В жидкостях: сцепление между молекулами, принадлежащими разным слоям жидкости</li>
+                        <li>В газах: обмен молекулами между движущимися слоями газа</li>
+                    </ul>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Формула Ньютона</strong><br>
+                    Выделим в потоке 2 параллельных, равных по площади слоя жидкости, расположенных на расстоянии \(\Delta z\) друг от друга, которые движутся с разными скоростями друг относительно друга.<br>
+                    Изменение скорости от первого слоя ко второму происходит по линейному закону. Из опыта получаем, что \(F_\text{сопр} \sim \frac{\Delta v}{\Delta z} S\).<br>
+                    Коэффициент пропорциональности \(\eta\) называется <strong>вязкостью</strong>.
+                    <div class="formula-box">
+                        \[\begin{align*}
+                        F_\text{сопр} = \eta S \frac{dv}{dz} = \eta S \lim\limits_{\Delta z \to 0} \frac{\Delta v}{\Delta z} \\
+                        [\eta] = \frac{\text{Н} \cdot \text{с} \cdot \text{м}}{\text{м} \cdot \text{м}^2} = \frac{\text{Н}}{\text{м}^2} \cdot \text{с} = \text{Па} \cdot \text{с}
+                        \end{align*}\]
+                    </div>
+                    <strong>Единица вязкости (СИ):</strong> вязкость такой жидкости, в которой между двумя слоями площадью 1 м\(^2\), при градиенте скорости 1 с\(^{-1}\) возникает сила внутреннего трения, равная 1 Н.
+                    <strong>Зависит от:</strong>
+                    <ul>
+                        <li>Рода жидкости</li>
+                        <li>Температуры: в жидкостях с повышением температуры вязкость уменьшается, в газах — увеличивается</li>
+                    </ul>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Закон Пуазейля:</strong> при стационарном ламинарном течении вязкой несжимаемой жидкости сквозь длинную прямую цилиндрическую трубу круглого сечения объёмный расход жидкости прямо пропорционален перепаду давления на единицу длины трубы и четвёртой степени радиуса трубы и обратно пропорционален коэффициенту вязкости жидкости.
+                    <div style="text-align: center; margin: 1rem 0;">
+                        <img src="images/poiseuille_law.png" alt="Закон Пуазейля" loading="lazy" style="max-width: 82%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    </div>
+                    <div class="formula-box">
+                        \[\begin{align*}
+                        Q = \frac{\pi (p_1 - p_2)}{8l \eta} R^4
+                        \end{align*}\]
+                    </div>
+                    <strong>Вывод закона Пуазейля:</strong>
+                    <div class="derivation-box">
+                        <button class="toggle-derivation">📖 Показать вывод</button>
+                        <div class="derivation-content">
+                            Выделим в потоке цилиндрический элемент жидкости длиной \(l\), расположенный по оси трубы.
+                            \[\begin{align*}
+                            \vec{F}_{давления 1} + \vec{F}_{давления 2} + \vec{F}_{бокового давления} + \vec{F}_{вязкости} + \vec{F}_{тяжести} = \vec{0}
+                            \end{align*}\]
+                            Спроецируем на ось:
+                            \[\begin{align*}
+                            &F_{давления 1} - F_{давления 2} - F_{вязкости} = 0 \\
+                            &p_1 \pi r^2 - p_2 \pi r^2 - \tau 2 \pi r l = 0
+                            \end{align*}\]
+                            \(\tau\) — сила вязкости, приходящаяся на единицу поверхности.<br>
+                            Величина постоянна по всей боковой поверхности выделенного цилиндра, так как по условию симметрии все частицы, равноудалённые от оси цилиндра, имеют одинаковую скорость.
+                            \[\begin{align*}
+                            &\tau = -\eta \frac{dv}{dr} \\
+                            &r(p_1-p_2) + 2l\eta \frac{dv}{dr} = 0 \\
+                            &dv = -\frac{p_1-p_2}{2l\eta}rdr \\
+                            &v = -\frac{p_1-p_2}{4l\eta}r^2 + C
+                            \end{align*}\]
+                            Определим \(C\) из начальных условий: около стенок трубы скорости частиц жидкости равны нулю, поэтому \(v = 0\) при \(r = R\).
+                            \[\begin{align*}
+                            &C = \frac{p_1-p_2}{4l\eta}R^2 \\
+                            &v = \frac{p_1-p_2}{4l\eta}(R^2 - r^2) \\
+                            &v_{макс}=\frac{p_1-p_2}{4l\eta}R^2
+                            \end{align*}\]
+                            Объёмный расход жидкости:
+                            \[\begin{align*}
+                            &dQ = vdS = v2\pi rdr \\
+                            &Q = \int\limits_0^R dQ = \frac{2\pi (p_1-p_2)}{4l\eta} \int\limits_0^R (R^2 - r^2)rdr\\
+                            &Q = \frac{\pi (p_1-p_2)}{8l\eta} R^4
+                            \end{align*}\]
+                        </div>
+                    </div>
+                </div>
+
+                <div class="definition-box">
+                    <strong>Вискозиметр Оствальда:</strong> принцип действия данных вискозиметров основан на истечении жидкости из резервуара через капилляр. Определяется объём вытекшей жидкости за единицу времени.
                 </div>
             </article>
             
