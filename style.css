@@ -877,16 +877,16 @@ body.dark-theme .close-sidebar:hover {
 
 .nav-link:hover {
     background: var(--bg-tertiary);
-    border-left-color: var(--accent-color);
+    border-left-color: var(--text-secondary);
     padding-left: calc(var(--spacing) + 0.5rem);
     transform: translateX(4px);
     box-shadow: var(--shadow-sm);
 }
 
 .nav-link.active {
-    background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.12), rgba(var(--accent-rgb), 0.05));
-    border-left-color: var(--accent-color);
-    color: var(--accent-color);
+    background: var(--bg-tertiary);
+    border-left-color: var(--text-secondary);
+    color: var(--text-primary);
     font-weight: 600;
     box-shadow: var(--shadow-sm);
 }
@@ -915,7 +915,7 @@ body.dark-theme .close-sidebar:hover {
 
 .nav-group-toggle:hover {
     background: var(--bg-primary);
-    border-left-color: var(--accent-color);
+    border-left-color: var(--text-secondary);
 }
 
 .nav-group-toggle .toggle-icon {
@@ -964,7 +964,7 @@ body.dark-theme .close-sidebar:hover {
 .nav-section.other-subjects a.current-subject {
     font-weight: 600;
     opacity: 1;
-    color: var(--accent-color);
+    color: var(--text-primary);
 }
 
 body.dark-theme .nav-section.other-subjects a:hover {
@@ -1179,10 +1179,10 @@ body.dark-theme .page-header {
 
 .part-title {
     font-size: 2rem;
-    color: var(--accent-color);
+    color: var(--text-primary);
     margin-bottom: 1.5rem;
     padding-bottom: 0.5rem;
-    border-bottom: 3px solid var(--accent-color);
+    border-bottom: 3px solid var(--border-color);
     position: relative;
 }
 
@@ -1193,7 +1193,7 @@ body.dark-theme .page-header {
     left: 0;
     width: 100px;
     height: 3px;
-    background: var(--accent-hover);
+    background: var(--text-secondary);
     animation: expandLine 2s ease-in-out infinite;
 }
 
@@ -1225,7 +1225,7 @@ body.dark-theme .page-header {
 
 .topic-title {
     font-size: 1.75rem;
-    color: var(--accent-color);
+    color: var(--text-primary);
     margin-bottom: 1.5rem;
     display: flex;
     align-items: center;
@@ -1239,12 +1239,12 @@ body.dark-theme .page-header {
 
 .subsection-title {
     font-size: 1.4rem;
-    color: var(--accent-color);
+    color: var(--text-primary);
     margin: 2.5rem 0 1.25rem;
     padding: 0.5rem 0;
     background: none;
     border: none;
-    border-bottom: 3px solid var(--accent-color);
+    border-bottom: 3px solid var(--border-color);
     border-radius: 0;
     font-weight: 700;
     letter-spacing: -0.01em;
@@ -1252,8 +1252,8 @@ body.dark-theme .page-header {
 }
 
 .subsection-title:hover {
-    color: var(--primary-color);
-    border-bottom-color: var(--primary-color);
+    color: var(--text-primary);
+    border-bottom-color: var(--text-secondary);
 }
 
 /* ============================================
@@ -1369,7 +1369,7 @@ body.dark-theme .page-header {
 }
 
 .experiment-box h4 {
-    color: var(--experiment-border);
+    color: var(--text-primary);
     margin-bottom: 1rem;
     font-size: 1.3rem;
 }
@@ -1648,7 +1648,7 @@ body.dark-theme .page-header {
     text-align: right;
     font-size: 1.2rem;
     margin-top: 0.5rem;
-    color: var(--proof-border);
+    color: var(--text-secondary);
 }
 
 /* Р’Р»РѕР¶РµРЅРЅС‹Рµ РґРѕРєР°Р·Р°С‚РµР»СЊСЃС‚РІР° РІРЅСѓС‚СЂРё Р±Р»РѕРєРѕРІ */
@@ -1818,7 +1818,7 @@ li {
 }
 
 em {
-    color: var(--accent-color);
+    color: var(--text-secondary);
     font-weight: 500;
 }
 
@@ -2109,7 +2109,7 @@ em {
         font-size: 1.2rem;
         padding: 0.7rem var(--m-pad);
         margin-bottom: 0;
-        border-bottom: 2px solid var(--accent-color);
+        border-bottom: 2px solid var(--border-color);
         background: var(--bg-secondary);
         border-radius: 0;
         position: static;
@@ -2142,7 +2142,7 @@ em {
         margin-right: calc(-1 * var(--m-pad));
         padding: 0.5rem var(--m-pad);
         background: var(--bg-primary);
-        border-bottom: 2px solid var(--accent-color);
+        border-bottom: 2px solid var(--border-color);
         position: sticky;
         top: 0;
         z-index: 10;
@@ -2159,7 +2159,7 @@ em {
         margin: 1rem 0 0.6rem;
         width: auto;
         border: none;
-        border-bottom: 2.5px solid var(--accent-color);
+        border-bottom: 2.5px solid var(--border-color);
     }
 
     .subsection-title:hover {
@@ -2220,7 +2220,7 @@ em {
         overflow-x: auto;
         background: var(--formula-bg);
         border: none;
-        border-left: 5px solid var(--formula-border);
+        border-left: 5px solid var(--border-color);
         margin-top: 1.155rem;
         margin-bottom: 1.155rem;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -2233,7 +2233,7 @@ em {
         border-radius: 0;
         background: var(--experiment-bg);
         border: none;
-        border-left: 5px solid var(--experiment-border);
+        border-left: 5px solid var(--border-color);
         margin-top: 1.155rem;
         margin-bottom: 1.155rem;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -2246,7 +2246,7 @@ em {
         border-radius: 0;
         background: var(--derivation-bg);
         border: none;
-        border-left: 5px solid var(--derivation-border);
+        border-left: 5px solid var(--border-color);
         margin-top: 1.155rem;
         margin-bottom: 1.155rem;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -2284,7 +2284,7 @@ em {
         border-radius: 0;
         background: var(--proof-bg);
         border: none;
-        border-left: 5px solid var(--proof-border);
+        border-left: 5px solid var(--border-color);
         margin-top: 1.155rem;
         margin-bottom: 1.155rem;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -2297,7 +2297,7 @@ em {
         padding: 0.75rem var(--m-pad);
         border-radius: 0;
         border: none;
-        border-left: 5px solid var(--accent-color);
+        border-left: 5px solid var(--border-color);
         margin-top: 1.155rem;
         margin-bottom: 1.155rem;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -2309,7 +2309,7 @@ em {
         padding: 0.75rem var(--m-pad);
         border-radius: 0;
         border: none;
-        border-left: 5px solid var(--accent-color);
+        border-left: 5px solid var(--border-color);
         margin-top: 1.155rem;
         margin-bottom: 1.155rem;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -2940,7 +2940,7 @@ input:focus:not(:focus-visible) {
 .stat-number {
     font-size: 2.5rem;
     font-weight: 700;
-    color: var(--accent-color);
+    color: var(--text-primary);
     margin-bottom: 0.5rem;
 }
 
@@ -3142,7 +3142,7 @@ input:focus:not(:focus-visible) {
 .status-option.current::after {
     content: '✓';
     margin-left: auto;
-    color: var(--accent-color);
+    color: var(--text-secondary);
     font-weight: bold;
 }
 
@@ -6216,7 +6216,7 @@ body.matcenter-page .part-title-row {
     gap: 0.75rem;
     margin-bottom: 1.5rem;
     padding-bottom: 0.5rem;
-    border-bottom: 3px solid var(--accent-color);
+    border-bottom: 3px solid var(--border-color);
     position: relative;
 }
 
@@ -6228,7 +6228,7 @@ body.matcenter-page .part-title-row::after {
     left: 0;
     width: 100px;
     height: 3px;
-    background: var(--accent-hover);
+    background: var(--text-secondary);
     animation: expandLine 2s ease-in-out infinite;
 }
 
@@ -6619,7 +6619,7 @@ body.dark-theme .mobile-search-bar {
     body.matcenter-page .part-title-row {
         padding: 0.625rem var(--m-pad);
         margin-bottom: 0;
-        border-bottom: 2px solid var(--accent-color);
+        border-bottom: 2px solid var(--border-color);
         background: var(--bg-secondary);
         border-radius: 0;
         position: static;
@@ -6640,7 +6640,7 @@ body.dark-theme .mobile-search-bar {
     body.matcenter-page .content-section > .part-title {
         padding: 0.625rem var(--m-pad);
         margin-bottom: 0;
-        border-bottom: 2px solid var(--accent-color);
+        border-bottom: 2px solid var(--border-color);
         background: var(--bg-secondary);
         border-radius: 0;
         position: static;
@@ -6954,4 +6954,25 @@ body.dark-theme .mobile-search-bar {
         width: calc(100% - 2rem);
         max-width: 420px;
     }
+}
+
+/* Ссылки и KaTeX в материале: без синего текста (в т.ч. если katex.min.css подключён после темы) */
+.main-content a[href] {
+    color: var(--text-primary);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+}
+
+.main-content .page-header a[href] {
+    color: inherit !important;
+    text-decoration: none !important;
+}
+
+.main-content .katex {
+    color: var(--text-primary) !important;
+}
+
+.main-content .katex * {
+    color: inherit !important;
 }
