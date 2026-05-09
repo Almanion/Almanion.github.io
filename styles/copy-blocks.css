@@ -1,0 +1,54 @@
+.copyable-block {
+    position: relative;
+}
+
+.copy-block-btn {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.55rem;
+    z-index: 4;
+    min-height: 0;
+    padding: 0.35rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    line-height: 1;
+    opacity: 0;
+    transform: translateY(-2px);
+}
+
+.copyable-block:hover > .copy-block-btn,
+.copyable-block:focus-within > .copy-block-btn,
+.copy-block-btn:focus-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.copy-block-btn.is-copied {
+    --button-accent: var(--success-color);
+    --button-accent-hover: var(--success-hover);
+}
+
+.copy-block-btn.is-error {
+    --button-accent: var(--error-color);
+    --button-accent-hover: var(--error-hover);
+}
+
+.copyable-block > .copy-block-btn + .copy-block-btn {
+    right: 3rem;
+}
+
+@media (max-width: 768px) {
+    .copy-block-btn {
+        top: 0.4rem;
+        right: 0.4rem;
+        opacity: 0.85;
+        padding: 0.3rem 0.45rem;
+        font-size: 0.75rem;
+    }
+}
+
+@media print {
+    .copy-block-btn {
+        display: none !important;
+    }
+}

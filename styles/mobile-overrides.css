@@ -1,0 +1,76 @@
+@media (max-width: 768px) {
+    :root {
+        --m-pad: 1.1rem;
+    }
+
+    .topic {
+        padding: 0.85rem var(--m-pad);
+        margin-bottom: 0.75rem;
+    }
+
+    .topic-title {
+        padding: 0.5rem var(--m-pad);
+        margin-bottom: 0.65rem;
+    }
+
+    .definition-box,
+    .formula-box,
+    .remark-box,
+    .experiment-box,
+    .derivation-box,
+    .theorem-box,
+    .lemma-box,
+    .example-box,
+    .statement-box,
+    .corollary-box,
+    .proof-box,
+    .exercise-box {
+        padding: 0.75rem;
+        margin: 0.65rem 0;
+        border-radius: 8px;
+    }
+
+    .formula-box,
+    .derivation-box,
+    .experiment-box,
+    .proof-box {
+        padding: 0.75rem;
+    }
+
+    .derivation-content,
+    .proof-content {
+        margin-top: 0.65rem;
+        padding-top: 0.65rem;
+    }
+
+    .katex-display {
+        margin: 0.25rem 0;
+        padding: 0.1rem 0;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --m-pad: 0.9rem;
+    }
+
+    .topic {
+        padding: 0.65rem var(--m-pad);
+    }
+
+    .definition-box,
+    .formula-box,
+    .remark-box,
+    .experiment-box,
+    .derivation-box,
+    .theorem-box,
+    .lemma-box,
+    .example-box,
+    .statement-box,
+    .corollary-box,
+    .proof-box,
+    .exercise-box {
+        padding: 0.6rem;
+        margin: 0.5rem 0;
+    }
+}

@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initMobileMenu();
     initBottomSheetSwipe();
     initSidebarCollapse();
+    initCopyableBlocks();
 });
 
 // ============================================
@@ -914,95 +915,141 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ============================================
-// КОПИРОВАНИЕ ФОРМУЛ
+// КОПИРОВАНИЕ БЛОКОВ ДЛЯ WORD
 // ============================================
 
-document.querySelectorAll('.formula-box').forEach(formulaBox => {
-    formulaBox.style.position = 'relative';
-    
-    // Сохраняем исходный LaTeX код до рендеринга KaTeX
-    const originalHTML = formulaBox.innerHTML;
-    let latexCode = '';
-    
-    // Извлекаем LaTeX код из исходного HTML
-    const latexBlocks = originalHTML.match(/\\\[([\s\S]*?)\\\]|\\\(([\s\S]*?)\\\)/g);
-    if (latexBlocks && latexBlocks.length > 0) {
-        latexCode = latexBlocks.map(block => {
-            // Убираем обрамляющие символы \[ и \] или \( и \)
-            return block.replace(/^\\[\[\]()]|\\[\[\]()]$/g, '').trim();
-        }).join('\n');
-    }
-    
-    // Сохраняем LaTeX код в data-атрибут
-    if (latexCode) {
-        formulaBox.dataset.latexCode = latexCode;
-    }
-    
-    const copyBtn = document.createElement('button');
-    copyBtn.textContent = '📋';
-    copyBtn.style.cssText = `
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: var(--accent-color);
-        color: white;
-        border: none;
-        padding: 5px 10px;
-        border-radius: 5px;
-        cursor: pointer;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    `;
-    copyBtn.title = 'Копировать формулу';
-    
-    formulaBox.appendChild(copyBtn);
-    
-    formulaBox.addEventListener('mouseenter', () => {
-        copyBtn.style.opacity = '1';
-    });
-    
-    formulaBox.addEventListener('mouseleave', () => {
-        copyBtn.style.opacity = '0';
-    });
-    
-    copyBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        
-        // Используем сохраненный LaTeX код или пытаемся извлечь из HTML
-        let formulaText = formulaBox.dataset.latexCode || '';
-        
-        if (!formulaText) {
-            // Если не сохранили заранее, пытаемся извлечь из текущего HTML
-            const innerHTML = formulaBox.innerHTML;
-            const latexBlocks = innerHTML.match(/\\\[([\s\S]*?)\\\]|\\\(([\s\S]*?)\\\)/g);
-            
-            if (latexBlocks && latexBlocks.length > 0) {
-                formulaText = latexBlocks.map(block => {
-                    return block.replace(/^\\[\[\]()]|\\[\[\]()]$/g, '').trim();
-                }).join('\n');
-            } else {
-                // Fallback: используем textContent
-                formulaText = formulaBox.textContent
-                    .replace('📋', '')
-                    .replace(/\s+/g, ' ')
-                    .trim();
+const COPYABLE_BLOCK_SELECTOR = [
+    '.topic',
+    '.definition-box',
+    '.formula-box',
+    '.remark-box',
+    '.experiment-box',
+    '.derivation-box',
+    '.theorem-box',
+    '.lemma-box',
+    '.example-box',
+    '.statement-box',
+    '.corollary-box',
+    '.proof-box',
+    '.exercise-box'
+].join(', ');
+
+function initCopyableBlocks() {
+    document.querySelectorAll(COPYABLE_BLOCK_SELECTOR).forEach(block => {
+        if (block.dataset.copyReady === 'true') return;
+
+        block.dataset.copyReady = 'true';
+        block.classList.add('copyable-block');
+
+        const copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.className = 'copy-block-btn';
+        copyBtn.textContent = '📋';
+        copyBtn.title = 'Скопировать блок для Word';
+        copyBtn.setAttribute('aria-label', 'Скопировать блок для Word');
+
+        copyBtn.addEventListener('click', async event => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            try {
+                const payload = buildWordCopyPayload(block);
+                await writeRichClipboard(payload.html, payload.text);
+                showCopyState(copyBtn, '✅', 'is-copied');
+            } catch (error) {
+                console.error('Ошибка копирования блока:', error);
+                showCopyState(copyBtn, '❌', 'is-error');
             }
-        }
-        
-        navigator.clipboard.writeText(formulaText).then(() => {
-            copyBtn.textContent = '✅';
-            setTimeout(() => {
-                copyBtn.textContent = '📋';
-            }, 2000);
-        }).catch(err => {
-            console.error('Ошибка копирования:', err);
-            copyBtn.textContent = '❌';
-            setTimeout(() => {
-                copyBtn.textContent = '📋';
-            }, 2000);
+        });
+
+        block.appendChild(copyBtn);
+    });
+}
+
+function buildWordCopyPayload(sourceBlock) {
+    const clone = sourceBlock.cloneNode(true);
+    prepareCopyClone(clone);
+
+    const html = `
+        <div style="background: transparent; color: #111827; font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.45;">
+            ${clone.innerHTML}
+        </div>
+    `.trim();
+
+    const text = clone.innerText
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+
+    return { html, text };
+}
+
+function prepareCopyClone(root) {
+    root.querySelectorAll('.derivation-content:not(.show), .proof-content:not(.show)').forEach(node => node.remove());
+    root.querySelectorAll('.copy-block-btn, .formula-copy-btn, .bookmark-btn, .toggle-derivation, .toggle-proof').forEach(node => node.remove());
+
+    root.querySelectorAll('mark.search-hl, mark.search-hl-active').forEach(mark => {
+        mark.replaceWith(document.createTextNode(mark.textContent));
+    });
+
+    root.querySelectorAll('.katex').forEach(katexNode => {
+        const annotation = katexNode.querySelector('annotation[encoding="application/x-tex"]');
+        if (!annotation) return;
+
+        const tex = annotation.textContent.trim();
+        const isDisplay = Boolean(katexNode.closest('.katex-display'));
+        const formulaText = isDisplay ? `\\[${tex}\\]` : `\\(${tex}\\)`;
+        katexNode.replaceWith(document.createTextNode(formulaText));
+    });
+
+    root.querySelectorAll('*').forEach(node => {
+        node.removeAttribute('class');
+        node.removeAttribute('id');
+        node.removeAttribute('style');
+
+        Array.from(node.attributes).forEach(attribute => {
+            if (attribute.name.startsWith('data-') || attribute.name.startsWith('aria-')) {
+                node.removeAttribute(attribute.name);
+            }
         });
     });
-});
+}
+
+async function writeRichClipboard(html, text) {
+    if (navigator.clipboard && window.ClipboardItem) {
+        const item = new ClipboardItem({
+            'text/html': new Blob([html], { type: 'text/html' }),
+            'text/plain': new Blob([text], { type: 'text/plain' })
+        });
+        await navigator.clipboard.write([item]);
+        return;
+    }
+
+    if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        return;
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    textarea.remove();
+}
+
+function showCopyState(button, text, className) {
+    const previousText = button.textContent;
+    button.textContent = text;
+    button.classList.add(className);
+
+    setTimeout(() => {
+        button.textContent = previousText;
+        button.classList.remove(className);
+    }, 1400);
+}
 
 // ============================================
 // ЭКСПОРТ В PDF (опционально)

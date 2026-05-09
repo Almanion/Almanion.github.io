@@ -1,0 +1,54 @@
+:root {
+    --success-color: #16a34a;
+    --success-hover: #15803d;
+    --success-rgb: 22, 163, 74;
+    --warning-color: #d97706;
+    --warning-hover: #b45309;
+    --warning-rgb: 217, 119, 6;
+    --error-color: #dc2626;
+    --error-hover: #b91c1c;
+    --error-rgb: 220, 38, 38;
+    --info-color: var(--accent-color);
+    --info-hover: var(--accent-hover);
+    --text-color: var(--text-primary);
+}
+
+body.dark-theme {
+    --success-color: #4ade80;
+    --success-hover: #86efac;
+    --success-rgb: 74, 222, 128;
+    --warning-color: #fbbf24;
+    --warning-hover: #fcd34d;
+    --warning-rgb: 251, 191, 36;
+    --error-color: #f87171;
+    --error-hover: #fca5a5;
+    --error-rgb: 248, 113, 113;
+    --text-color: var(--text-primary);
+}
+
+.memory-btn-remember,
+.memory-stat.remember .memory-stat-value {
+    --button-accent: var(--success-color);
+    --button-accent-hover: var(--success-hover);
+}
+
+.memory-btn-forget,
+.auth-error,
+.hint-delete-btn,
+.bm-card-delete:hover {
+    --button-accent: var(--error-color);
+    --button-accent-hover: var(--error-hover);
+}
+
+.bookmark-btn.bookmarked {
+    color: var(--warning-color);
+}
+
+.memory-stat.remember .memory-stat-value {
+    color: var(--success-color);
+}
+
+.memory-stat.forget .memory-stat-value,
+.auth-error {
+    color: var(--error-color);
+}
