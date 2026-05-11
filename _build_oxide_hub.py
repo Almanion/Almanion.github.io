@@ -179,7 +179,7 @@ def build_hub_html(reactions: str, cheatsheet: str) -> str:
                     <header class="chem-hub-head">
                         <div class="chem-hub-icon" aria-hidden="true">⚗️</div>
                         <div>
-                            <h4 class="chem-hub-title">Оксиды: шпаргалка и типовые реакции</h4>
+                            <h4 class="chem-hub-title">Интерактивная справка</h4>
                             <p class="chem-hub-desc">
                                 Два режима в одном блоке: быстро определить тип оксида по положению элемента в ПСХЭ и степени окисления,
                                 либо переключить таблицу реакций для оксидов, кислот, оснований и солей.
@@ -260,7 +260,8 @@ def build_hub_html(reactions: str, cheatsheet: str) -> str:
                         setHubMode("react");
                         var oxBtn = root.querySelector('[data-chem-react="oxides"]');
                         if (oxBtn) oxBtn.click();
-                        root.scrollIntoView({{ behavior: "smooth", block: "start" }});
+                        var anchor = document.getElementById("oxide-interactive") || root;
+                        anchor.scrollIntoView({{ behavior: "smooth", block: "start" }});
                     }};
                 }})();
                 </script>
@@ -276,10 +277,18 @@ def ensure_head_and_nav(text: str) -> str:
             1,
         )
 
-    nav = '                            <li><a href="#oxide-interactive-hub" class="nav-link">2а. Шпаргалка и реакции (оксиды)</a></li>\n'
+    nav = '                            <li><a href="#oxide-interactive" class="nav-link">2а. Шпаргалка и таблица реакций</a></li>\n'
     needle = '                            <li><a href="#oxides" class="nav-link">2. Оксиды</a></li>\n'
-    if nav.strip() not in text and needle in text:
+    if needle in text and nav.strip() not in text:
         text = text.replace(needle, needle + nav, 1)
+    text = text.replace(
+        'href="#oxide-interactive-hub"',
+        'href="#oxide-interactive"',
+    )
+    text = text.replace(
+        ">2а. Шпаргалка и реакции (оксиды)<",
+        ">2а. Шпаргалка и таблица реакций<",
+    )
 
     return text
 
@@ -305,7 +314,7 @@ def main() -> None:
     )
     if needle not in text:
         if 'id="oxide-interactive-hub"' in text:
-            print("Уже вставлено: обновляю только head/nav")
+            print("OK: hub already present, syncing head/nav only.")
             text = ensure_head_and_nav(text)
             chem_path.write_text(text, encoding="utf-8")
             return
@@ -316,7 +325,12 @@ def main() -> None:
         "                        💡 <strong>Примеры:</strong> \\(Fe_3O_4\\) (можно представить как \\(FeO \\cdot Fe_2O_3\\)), \\(Pb_3O_4\\)\n"
         "                    </div>\n"
         "                </div>\n"
-        "\n"
+        "            </article>\n\n"
+        '            <article id="oxide-interactive" class="topic">\n'
+        "                <h3 class=\"topic-title\">2а. Оксиды: шпаргалка и типовые реакции</h3>\n\n"
+        '                <div class="remark-box">\n'
+        "                    💡 Один блок: тип оксида по ПСХЭ и степени окисления; переключаемые таблицы реакций (оксиды, кислоты, основания, соли).\n"
+        "                </div>\n\n"
         + hub
         + "\n            </article>"
     )

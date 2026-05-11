@@ -61,7 +61,7 @@
                         <ul class="nav-submenu">
                             <li><a href="#inorganic" class="nav-link">1. Неорганические соединения</a></li>
                             <li><a href="#oxides" class="nav-link">2. Оксиды</a></li>
-                            <li><a href="#oxide-interactive-hub" class="nav-link">2а. Шпаргалка и реакции (оксиды)</a></li>
+                            <li><a href="#oxide-interactive" class="nav-link">2а. Шпаргалка и таблица реакций</a></li>
                             <li><a href="#physical-properties" class="nav-link">3. Физические свойства оксидов</a></li>
                             <li><a href="#chemical-properties" class="nav-link">4. Химические свойства оксидов</a></li>
                             <li><a href="#oxygen" class="nav-link">5. Кислород</a></li>
@@ -1025,12 +1025,20 @@
                         💡 <strong>Примеры:</strong> \(Fe_3O_4\) (можно представить как \(FeO \cdot Fe_2O_3\)), \(Pb_3O_4\)
                     </div>
                 </div>
+            </article>
 
-<div id="oxide-interactive-hub" class="chem-interactive-hub" aria-label="Интерактивные таблицы по оксидам">
+            <article id="oxide-interactive" class="topic">
+                <h3 class="topic-title">2а. Оксиды: шпаргалка и типовые реакции</h3>
+
+                <div class="remark-box">
+                    💡 Один блок: тип оксида по ПСХЭ и степени окисления; переключаемые таблицы реакций (оксиды, кислоты, основания, соли).
+                </div>
+
+                <div id="oxide-interactive-hub" class="chem-interactive-hub" aria-label="Интерактивные таблицы по оксидам">
                     <header class="chem-hub-head">
                         <div class="chem-hub-icon" aria-hidden="true">⚗️</div>
                         <div>
-                            <h4 class="chem-hub-title">Оксиды: шпаргалка и типовые реакции</h4>
+                            <h4 class="chem-hub-title">Интерактивная справка</h4>
                             <p class="chem-hub-desc">
                                 Два режима в одном блоке: быстро определить тип оксида по положению элемента в ПСХЭ и степени окисления,
                                 либо переключить таблицу реакций для оксидов, кислот, оснований и солей.
@@ -1539,7 +1547,8 @@
                         setHubMode("react");
                         var oxBtn = root.querySelector('[data-chem-react="oxides"]');
                         if (oxBtn) oxBtn.click();
-                        root.scrollIntoView({ behavior: "smooth", block: "start" });
+                        var anchor = document.getElementById("oxide-interactive") || root;
+                        anchor.scrollIntoView({ behavior: "smooth", block: "start" });
                     };
                 })();
                 </script>
