@@ -1,0 +1,387 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="favicons/favicon-geo.svg" type="image/svg+xml">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <title>Формулы по Геометрии 9 класс | Almanion</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles/tokens.css">
+    <link rel="stylesheet" href="styles/buttons.css">
+    <link rel="stylesheet" href="styles/mobile-overrides.css">
+    <link rel="stylesheet" href="styles/copy-blocks.css">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <!-- KaTeX для математических формул -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+    <!-- Боковая панель навигации -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2><a href="index.html" style="color: white; text-decoration: none;">📚 Конспекты</a></h2>
+            <!-- Кнопка настроек создается автоматически через settings.js -->
+            <button class="close-sidebar" id="closeSidebar">✕</button>
+        </div>
+        
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="🔍 Поиск...">
+        </div>
+
+        <div class="sidebar-actions">
+        </div>
+
+        <nav class="nav-menu">
+            <div class="nav-section">
+                <h3>Формулы по геометрии</h3>
+                <ul>
+                    <li><a href="#line-equations" class="nav-link active">Уравнения прямой</a></li>
+                    <li><a href="#distance" class="nav-link">Расстояние между точками</a></li>
+                    <li><a href="#midpoint" class="nav-link">Середина отрезка</a></li>
+                    <li><a href="#scalar-product" class="nav-link">Скалярное произведение</a></li>
+                    <li><a href="#parallel-perpendicular" class="nav-link">Параллельность и перпендикулярность</a></li>
+                    <li><a href="#bisector" class="nav-link">Биссектрисы треугольника</a></li>
+                    <li><a href="#curves" class="nav-link">Кривые второго порядка</a></li>
+                </ul>
+            </div>
+            
+            <div class="nav-section other-subjects">
+                <h3>Другие предметы</h3>
+                <ul>
+                    <li><a href="physics.html">Физика 9 класс</a></li>
+                    <li><a href="math.html">Алгебра 9 класс</a></li>
+                    <li><a href="geometry.html" class="current-subject">Геометрия 9 класс</a></li>
+                    <li><a href="chemistry.html">Химия</a></li>
+                    <li><a href="likbez.html">Ликбезы</a></li>
+                </ul>
+            </div>
+        </nav>
+
+    </aside>
+
+    <!-- Кнопка открытия меню (для мобильных) -->
+    <button class="menu-toggle" id="menuToggle">☰</button>
+
+    <!-- Основной контент -->
+    <main class="main-content">
+        <header class="page-header">
+            <h1>Формулы по Геометрии 9 класс</h1>
+            <p class="subtitle"><a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a> | 2025 — 2026</p>
+        </header>
+
+        <!-- Уравнения прямой -->
+        <section class="content-section" id="line-equations">
+            <h2 class="part-title">1. Уравнения прямой</h2>
+
+            <div class="definition-box">
+                <strong>Уравнение прямой по направляющему вектору и точке:</strong>
+                <p>Если прямая проходит через точку \(M_0(x_0; y_0)\) и имеет направляющий вектор \(\vec{v} = (v_x; v_y)\), то её уравнение:</p>
+                <div class="formula-box">
+                    \[\frac{x - x_0}{v_x} = \frac{y - y_0}{v_y}\]
+                </div>
+                <div class="remark-box">
+                    Если \(v_x = 0\), то прямая параллельна оси \(Oy\) и имеет уравнение \(x = x_0\).<br>
+                    Если \(v_y = 0\), то прямая параллельна оси \(Ox\) и имеет уравнение \(y = y_0\).
+                </div>
+            </div>
+
+            <div class="definition-box">
+                <strong>Уравнение прямой по двум точкам:</strong>
+                <p>Если прямая проходит через точки \(A(x_1; y_1)\) и \(B(x_2; y_2)\), то её уравнение:</p>
+                <div class="formula-box">
+                    \[\frac{x - x_1}{x_2 - x_1} = \frac{y - y_1}{y_2 - y_1}\]
+                </div>
+                <div class="remark-box">
+                    Если \(x_1 = x_2\), то прямая параллельна оси \(Oy\): \(x = x_1\).<br>
+                    Если \(y_1 = y_2\), то прямая параллельна оси \(Ox\): \(y = y_1\).
+                </div>
+            </div>
+
+            <div class="definition-box">
+                <strong>Уравнение прямой по нормали и точке:</strong>
+                <p>Если прямая проходит через точку \(M_0(x_0; y_0)\) и перпендикулярна нормальному вектору \(\vec{n} = (A; B)\), то её уравнение:</p>
+                <div class="formula-box">
+                    \[A(x - x_0) + B(y - y_0) = 0\]
+                </div>
+                <p>Или в общем виде:</p>
+                <div class="formula-box">
+                    \[Ax + By + C = 0\]
+                </div>
+                <p>где \(C = -Ax_0 - By_0\).</p>
+            </div>
+        </section>
+
+        <!-- Расстояние между точками -->
+        <section class="content-section" id="distance">
+            <h2 class="part-title">2. Расстояние между двумя точками</h2>
+
+            <div class="definition-box">
+                <strong>Формула расстояния между двумя точками:</strong>
+                <p>Расстояние между точками \(A(x_1; y_1)\) и \(B(x_2; y_2)\) вычисляется по формуле:</p>
+                <div class="formula-box">
+                    \[|AB| = \sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2}\]
+                </div>
+                <div class="remark-box">
+                    Эта формула следует из теоремы Пифагора для прямоугольного треугольника с катетами \(|x_2 - x_1|\) и \(|y_2 - y_1|\).
+                </div>
+            </div>
+        </section>
+
+        <!-- Середина отрезка -->
+        <section class="content-section" id="midpoint">
+            <h2 class="part-title">3. Координаты середины отрезка</h2>
+
+            <div class="definition-box">
+                <strong>Формула координат середины отрезка:</strong>
+                <p>Если даны точки \(A(x_1; y_1)\) и \(B(x_2; y_2)\), то координаты середины \(M\) отрезка \(AB\):</p>
+                <div class="formula-box">
+                    \[M\left(\frac{x_1 + x_2}{2}; \frac{y_1 + y_2}{2}\right)\]
+                </div>
+                <div class="remark-box">
+                    Середина отрезка делит его пополам, поэтому её координаты равны полусумме соответствующих координат концов отрезка.
+                </div>
+            </div>
+        </section>
+
+        <!-- Скалярное произведение -->
+        <section class="content-section" id="scalar-product">
+            <h2 class="part-title">4. Скалярное произведение векторов</h2>
+
+            <div class="definition-box">
+                <strong>Определение скалярного произведения векторов:</strong>
+                <p>Скалярное произведение двух векторов — это число, равное произведению длин этих векторов на косинус угла между ними:</p>
+                <div class="formula-box">
+                    \[\vec{a} \cdot \vec{b} = |\vec{a}| \cdot |\vec{b}| \cdot \cos\varphi\]
+                </div>
+                <p>где \(\varphi\) — угол между векторами \(\vec{a}\) и \(\vec{b}\).</p>
+            </div>
+
+            <div class="definition-box">
+                <strong>Определение скалярного квадрата вектора:</strong>
+                <p>Скалярный квадрат вектора — это скалярное произведение вектора на самого себя:</p>
+                <div class="formula-box">
+                    \[\vec{a}^2 = \vec{a} \cdot \vec{a} = |\vec{a}|^2\]
+                </div>
+                <div class="remark-box">
+                    Скалярный квадрат вектора равен квадрату его длины.
+                </div>
+            </div>
+
+            <div class="definition-box">
+                <strong>Теорема о равенстве нулю скалярного произведения:</strong>
+                <p>Ненулевые векторы \(\vec{a}\) и \(\vec{b}\) перпендикулярны тогда и только тогда, когда их скалярное произведение равно нулю:</p>
+                <div class="formula-box">
+                    \[\vec{a} \perp \vec{b} \Leftrightarrow \vec{a} \cdot \vec{b} = 0\]
+                </div>
+            </div>
+
+            <div class="definition-box">
+                <strong>Формула скалярного произведения в координатах:</strong>
+                <p>Если \(\vec{a} = (a_x; a_y)\) и \(\vec{b} = (b_x; b_y)\), то:</p>
+                <div class="formula-box">
+                    \[\vec{a} \cdot \vec{b} = a_x b_x + a_y b_y\]
+                </div>
+            </div>
+
+            <div class="definition-box">
+                <strong>Свойства скалярного произведения:</strong>
+                <ol>
+                    <li>\(\vec{a} \cdot \vec{b} = \vec{b} \cdot \vec{a}\) (коммутативность)</li>
+                    <li>\((k\vec{a}) \cdot \vec{b} = k(\vec{a} \cdot \vec{b})\) (ассоциативность относительно умножения на число)</li>
+                    <li>\((\vec{a} + \vec{b}) \cdot \vec{c} = \vec{a} \cdot \vec{c} + \vec{b} \cdot \vec{c}\) (дистрибутивность)</li>
+                    <li>\(\vec{a} \cdot \vec{a} \geq 0\), причём \(\vec{a} \cdot \vec{a} = 0\) только если \(\vec{a} = \vec{0}\)</li>
+                </ol>
+            </div>
+
+            <div class="definition-box">
+                <p><strong>Косинус угла между векторами:</strong></p>
+                <div class="formula-box">
+                    \[\cos\varphi = \frac{\vec{a} \cdot \vec{b}}{|\vec{a}| \cdot |\vec{b}|} = \frac{a_x b_x + a_y b_y}{\sqrt{a_x^2 + a_y^2} \cdot \sqrt{b_x^2 + b_y^2}}\]
+                </div>
+                
+                <p><strong>Длина проекции одного вектора на другой:</strong></p>
+                <div class="formula-box">
+                    \[\text{пр}_{\vec{b}}\vec{a} = \frac{\vec{a} \cdot \vec{b}}{|\vec{b}|} = |\vec{a}| \cos\varphi\]
+                </div>
+                <div class="remark-box">
+                    Проекция вектора \(\vec{a}\) на вектор \(\vec{b}\) показывает, насколько вектор \(\vec{a}\) "растягивается" в направлении вектора \(\vec{b}\).
+                </div>
+            </div>
+
+            <div class="definition-box">
+                <strong>Формула расстояния от точки до прямой:</strong>
+                <p>Расстояние от точки \(M_0(x_0; y_0)\) до прямой \(Ax + By + C = 0\) вычисляется по формуле:</p>
+                <div class="formula-box">
+                    \[\rho_l(M_0) = \frac{|Ax_0 + By_0 + C|}{\sqrt{A^2 + B^2}}\]
+                </div>
+                <div class="remark-box">
+                    Эта формула получается из проекции вектора, соединяющего точку на прямой с заданной точкой, на нормальный вектор прямой.
+                </div>
+            </div>
+        </section>
+
+        <!-- Параллельность и перпендикулярность -->
+        <section class="content-section" id="parallel-perpendicular">
+            <h2 class="part-title">5. Теорема о перпендикулярных и параллельных прямых, заданных в угловой форме</h2>
+
+            <div class="definition-box">
+                <strong>Теорема о параллельных прямых:</strong>
+                <p>Две прямые, заданные уравнениями \(y = k_1x + b_1\) и \(y = k_2x + b_2\), параллельны тогда и только тогда, когда их угловые коэффициенты равны:</p>
+                <div class="formula-box">
+                    \[l_1 \parallel l_2 \Leftrightarrow k_1 = k_2\]
+                </div>
+            </div>
+
+            <div class="definition-box">
+                <strong>Теорема о перпендикулярных прямых:</strong>
+                <p>Две прямые, заданные уравнениями \(y = k_1x + b_1\) и \(y = k_2x + b_2\), перпендикулярны тогда и только тогда, когда произведение их угловых коэффициентов равно \(-1\):</p>
+                <div class="formula-box">
+                    \[l_1 \perp l_2 \Leftrightarrow k_1 \cdot k_2 = -1\]
+                </div>
+                <div class="remark-box">
+                    Это условие эквивалентно тому, что \(k_2 = -\frac{1}{k_1}\) (при \(k_1 \neq 0\)).
+                </div>
+            </div>
+        </section>
+
+        <!-- Биссектрисы треугольника -->
+        <section class="content-section" id="bisector">
+            <h2 class="part-title">6. Формула для угла между биссектрисами треугольника</h2>
+
+            <div class="definition-box">
+                <strong>Формула для угла между биссектрисами треугольника:</strong>
+                <p>Если в треугольнике \(ABC\) биссектрисы углов \(A\) и \(B\) пересекаются в точке \(O\), то угол между биссектрисами:</p>
+                <div class="formula-box">
+                    \[\angle AOB = 90^\circ + \frac{\angle C}{2}\]
+                </div>
+                <div class="remark-box">
+                    Эта формула следует из того, что сумма углов треугольника равна \(180^\circ\), и биссектрисы делят углы пополам.
+                </div>
+            </div>
+        </section>
+
+        <!-- Кривые второго порядка -->
+        <section class="content-section" id="curves">
+            <h2 class="part-title">7. Кривые второго порядка</h2>
+
+            <div class="definition-box">
+                <strong>Каноническое уравнение окружности:</strong>
+                <p>Окружность с центром в точке \(O(a; b)\) и радиусом \(R\) задаётся уравнением:</p>
+                <div class="formula-box">
+                    \[(x - a)^2 + (y - b)^2 = R^2\]
+                </div>
+                <p>Если центр окружности находится в начале координат, то:</p>
+                <div class="formula-box">
+                    \[x^2 + y^2 = R^2\]
+                </div>
+            </div>
+
+            <div class="definition-box">
+                <strong>Определение параболы:</strong>
+                <p><b>Парабола</b> — это геометрическое место точек, равноудалённых от данной точки (фокуса) и данной прямой (директрисы).</p>
+            </div>
+
+            <div class="definition-box">
+                <strong>Каноническое уравнение параболы:</strong>
+                <p>Парабола с фокусом в точке \(F\left(\frac{p}{2}; 0\right)\) и директрисой \(x = -\frac{p}{2}\) задаётся уравнением:</p>
+                <div class="formula-box">
+                    \[y^2 = 2px\]
+                </div>
+                <p>где \(p > 0\) — параметр параболы (расстояние от фокуса до директрисы).</p>
+                <div class="remark-box">
+                    Вершина параболы находится в начале координат, ось симметрии совпадает с осью \(Ox\).
+                </div>
+            </div>
+
+            <div class="definition-box">
+                <strong>Определение эллипса:</strong>
+                <p>Эллипс — это геометрическое место точек, для которых сумма расстояний до двух фиксированных точек (фокусов) есть постоянная величина, большая расстояния между фокусами.</p>
+                <div class="formula-box">
+                    \[|MF_1| + |MF_2| = 2a\]
+                </div>
+                <p>где \(a\) — большая полуось эллипса, \(F_1\) и \(F_2\) — фокусы.</p>
+            </div>
+
+            <div class="definition-box">
+                <strong>Каноническое уравнение эллипса:</strong>
+                <p>Эллипс с центром в начале координат, большой полуосью \(a\) и малой полуосью \(b\) задаётся уравнением:</p>
+                <div class="formula-box">
+                    \[\frac{x^2}{a^2} + \frac{y^2}{b^2} = 1\]
+                </div>
+                <p>где \(a > b > 0\).</p>
+            </div>
+
+            <div class="definition-box">
+                <strong>Свойства канонического эллипса:</strong>
+                <ul>
+                    <li>Фокусы: \(F_1(-c; 0)\) и \(F_2(c; 0)\), где \(c = \sqrt{a^2 - b^2}\)</li>
+                    <li>Вершины: \(A_1(-a; 0)\), \(A_2(a; 0)\), \(B_1(0; -b)\), \(B_2(0; b)\)</li>
+                    <li>Эксцентриситет: \(e = \frac{c}{a}\), где \(0 < e < 1\)</li>
+                    <li>Фокальное расстояние: \(2c\)</li>
+                    <li>Площадь: \(S = \pi ab\)</li>
+                    <li>Эллипс симметричен относительно обеих координатных осей и начала координат</li>
+                </ul>
+            </div>
+
+            <div class="definition-box">
+                <strong>Определение гиперболы:</strong>
+                <p>Гипербола — это геометрическое место точек, для которых модуль разности расстояний до двух фиксированных точек (фокусов) есть постоянная величина, меньшая расстояния между фокусами.</p>
+                <div class="formula-box">
+                    \[||MF_1| - |MF_2|| = 2a\]
+                </div>
+                <p>где \(a\) — действительная полуось гиперболы, \(F_1\) и \(F_2\) — фокусы.</p>
+            </div>
+
+            <div class="definition-box">
+                <strong>Каноническое уравнение гиперболы:</strong>
+                <p>Гипербола с центром в начале координат, действительной полуосью \(a\) и мнимой полуосью \(b\) задаётся уравнением:</p>
+                <div class="formula-box">
+                    \[\frac{x^2}{a^2} - \frac{y^2}{b^2} = 1\]
+                </div>
+                <p>где \(a > 0\), \(b > 0\).</p>
+            </div>
+
+            <div class="definition-box">
+                <strong>Свойства канонической гиперболы:</strong>
+                <ul>
+                    <li>Фокусы: \(F_1(-c; 0)\) и \(F_2(c; 0)\), где \(c = \sqrt{a^2 + b^2}\)</li>
+                    <li>Вершины: \(A_1(-a; 0)\) и \(A_2(a; 0)\)</li>
+                    <li>Эксцентриситет: \(e = \frac{c}{a}\), где \(e > 1\)</li>
+                    <li>Асимптоты: \(y = \pm\frac{b}{a}x\)</li>
+                    <li>Фокальное расстояние: \(2c\)</li>
+                    <li>Гипербола симметрична относительно обеих координатных осей и начала координат</li>
+                    <li>Гипербола состоит из двух ветвей, расположенных в областях \(x \leq -a\) и \(x \geq a\)</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Футер -->
+        <footer class="page-footer">
+            <p>2025-2026 Almanion | Формулы по геометрии 9 класс</p>
+        </footer>
+    </main>
+
+    <!-- Кнопка "Наверх" -->
+    <button class="scroll-to-top" id="scrollToTop">↑</button>
+
+    <!-- Контейнер для снега -->
+    <div class="snow-container" id="snowContainer"></div>
+    
+    <!-- Контейнер для пасхалок -->
+    <div class="easter-eggs-container" id="easterEggsContainer"></div>
+
+    <!-- Firebase Analytics -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-analytics.js"></script>
+
+    <script src="script.js"></script>
+    <script src="newyear.js"></script>
+    <script src="settings.js"></script>
+    <script src="bookmarks.js"></script>
+</body>
+</html>
+

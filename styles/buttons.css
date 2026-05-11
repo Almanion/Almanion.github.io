@@ -1,0 +1,93 @@
+:where(
+    .btn,
+    .knowledge-check-btn,
+    .toggle-derivation,
+    .toggle-proof,
+    .task-toggle,
+    .auth-submit,
+    .builder-btn,
+    .ticket-nav-btn,
+    .search-nav-btn,
+    .retry-button,
+    .no-results-clear,
+    .settings-reset-btn,
+    .ny-advanced-settings,
+    .ny-settings-reset,
+    .ny-settings-apply,
+    .hint-save-btn,
+    .hint-delete-btn,
+    .hint-cancel-btn,
+    .copy-block-btn
+) {
+    min-height: 2.4rem;
+    border-radius: var(--border-radius-sm);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease,
+                box-shadow 0.2s ease,
+                background-color 0.2s ease,
+                border-color 0.2s ease,
+                color 0.2s ease,
+                opacity 0.2s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+:where(
+    .btn,
+    .auth-submit,
+    .builder-btn-save,
+    .ticket-nav-btn,
+    .copy-block-btn
+) {
+    background: var(--button-accent, var(--accent-color));
+    color: #ffffff;
+    border: 1px solid var(--button-accent, var(--accent-color));
+    box-shadow: var(--shadow-sm);
+}
+
+:where(
+    .btn,
+    .auth-submit,
+    .builder-btn-save,
+    .ticket-nav-btn,
+    .copy-block-btn
+):hover {
+    background: var(--button-accent-hover, var(--accent-hover));
+    border-color: var(--button-accent-hover, var(--accent-hover));
+    box-shadow: var(--shadow-md);
+}
+
+:where(.btn-outline, .knowledge-check-btn, .hint-cancel-btn, .ny-advanced-settings) {
+    background: transparent;
+    color: var(--button-accent, var(--text-primary));
+    border: 1.5px solid var(--button-accent, var(--border-color));
+}
+
+:where(.btn-outline, .knowledge-check-btn, .hint-cancel-btn, .ny-advanced-settings):hover {
+    background: var(--bg-tertiary);
+    color: var(--button-accent-hover, var(--text-primary));
+    border-color: var(--button-accent-hover, var(--text-secondary));
+}
+
+:where(.btn-subtle, .task-toggle, .settings-reset-btn, .ny-settings-reset) {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+:where(.btn-subtle, .task-toggle, .settings-reset-btn, .ny-settings-reset):hover {
+    background: var(--bg-primary);
+    border-color: var(--text-secondary);
+}
+
+:where(.btn-danger, .builder-btn-reset, .hint-delete-btn):hover {
+    background: var(--error-color);
+    border-color: var(--error-color);
+    color: #ffffff;
+}
+
+:where(.btn, .btn-outline, .btn-subtle, .copy-block-btn):active {
+    transform: translateY(0) scale(0.98);
+}

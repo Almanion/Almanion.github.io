@@ -1,0 +1,3435 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="favicons/favicon-ph.svg" type="image/svg+xml">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <title>Билеты к экзамену | Физика 9 класс | Almanion</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles/tokens.css">
+    <link rel="stylesheet" href="styles/buttons.css">
+    <link rel="stylesheet" href="styles/mobile-overrides.css">
+    <link rel="stylesheet" href="styles/copy-blocks.css">
+    <link rel="stylesheet" href="styles/study-mode.css">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <!-- KaTeX для математических формул -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <style>
+        /* ---- Билеты: показ/скрытие ---- */
+        .ticket-section { display: none; }
+        .ticket-section.active-ticket { display: block; }
+
+        /* ---- Нижняя навигация ---- */
+        .ticket-nav-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-top: 2.5rem;
+            padding: 1rem 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+        }
+        .ticket-nav-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 0.6rem 1.2rem;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+        .ticket-nav-btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
+        .ticket-nav-btn:disabled { background: var(--bg-tertiary); color: var(--text-secondary); cursor: default; transform: none; }
+        .ticket-counter { font-size: 0.95rem; color: var(--text-secondary); font-weight: 500; }
+
+        /* ====================================================
+           КОНСТРУКТОР БИЛЕТОВ
+           ==================================================== */
+
+        /* Плавающая кнопка открытия */
+        .builder-open-btn {
+            position: fixed;
+            bottom: 5rem;
+            right: 1.5rem;
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 0.55rem 1rem;
+            font-size: 0.88rem;
+            font-family: inherit;
+            cursor: pointer;
+            z-index: 900;
+            transition: var(--transition);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+        }
+        .builder-open-btn:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.3); }
+
+        /* Оверлей */
+        .builder-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 2000;
+            display: flex;
+            align-items: stretch;
+        }
+        .builder-overlay.hidden { display: none; }
+
+        /* Модальное окно — занимает весь экран */
+        .builder-modal {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+        }
+
+        /* Шапка конструктора */
+        .builder-header {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.6rem 1rem;
+            background: var(--bg-secondary);
+            border-bottom: 2px solid var(--accent-color);
+            flex-shrink: 0;
+        }
+        .builder-header-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin: 0;
+            white-space: nowrap;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+        .builder-header-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        .builder-select {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 0.3rem 0.55rem;
+            font-size: 0.85rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: border-color 0.15s;
+        }
+        .builder-select:focus { outline: none; border-color: var(--accent-color); }
+        .builder-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.3rem 0.7rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+        .builder-btn:active { transform: scale(0.97); }
+        .builder-btn-save  { background: var(--accent-color); color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
+        .builder-btn-save:hover  { background: var(--accent-hover); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .builder-btn-reset { background: var(--bg-primary); color: var(--text-secondary); border: 1px solid var(--border-color); }
+        .builder-btn-reset:hover { background: var(--bg-tertiary); color: var(--text-primary); border-color: var(--text-secondary); }
+        .builder-btn-close { background: none; color: var(--text-secondary); font-size: 1.25rem; line-height: 1; padding: 0.25rem 0.55rem; flex-shrink: 0; border: none; cursor: pointer; transition: all 0.15s; border-radius: 6px; }
+        .builder-btn-close:hover { color: #ef4444; background: rgba(239,68,68,0.08); }
+
+        /* Основная область: 2 колонки */
+        .builder-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            flex: 1;
+            overflow: hidden;
+        }
+        .builder-panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-right: 1px solid var(--border-color);
+        }
+        .builder-panel:last-child { border-right: none; }
+        .builder-panel-header {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.5rem 0.9rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        .builder-panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.6rem;
+        }
+
+        /* ---- Левая панель: блоки текущего билета ---- */
+        .builder-block-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.42rem 0.65rem 0.42rem 0.75rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-left: 3px solid var(--border-color);
+            border-radius: 0 7px 7px 0;
+            margin-bottom: 0.3rem;
+            user-select: none;
+            transition: box-shadow 0.15s, background 0.12s;
+        }
+        .builder-block-item:hover { background: var(--bg-secondary); }
+        .builder-block-item.sortable-ghost  { opacity: 0.35; background: var(--accent-color); border-color: transparent; }
+        .builder-block-item.sortable-chosen { box-shadow: 0 3px 12px rgba(0,0,0,0.15); }
+
+        /* Цветная левая полоса по типу блока */
+        .builder-block-item[data-type="definition"] { border-left-color: #3b82f6; }
+        .builder-block-item[data-type="heading"]    { border-left-color: #f59e0b; }
+        .builder-block-item[data-type="figure"]     { border-left-color: #ec4899; }
+        .builder-block-item[data-type="derivation"] { border-left-color: #8b5cf6; }
+        .builder-block-item[data-type="text"]       { border-left-color: #6b7280; }
+        .builder-block-item[data-type="other"]      { border-left-color: #10b981; }
+
+        .builder-drag-handle {
+            color: var(--text-secondary);
+            cursor: grab;
+            font-size: 1rem;
+            flex-shrink: 0;
+            opacity: 0.4;
+            transition: opacity 0.12s;
+        }
+        .builder-block-item:hover .builder-drag-handle { opacity: 0.7; }
+        .builder-drag-handle:active { cursor: grabbing; }
+
+        /* Бейджи типов — pill-форма */
+        .builder-badge {
+            font-size: 0.58rem;
+            font-weight: 700;
+            padding: 0.15rem 0.45rem;
+            border-radius: 999px;
+            flex-shrink: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .builder-badge-def  { background: #dbeafe; color: #1d4ed8; }
+        .builder-badge-h4   { background: #fef3c7; color: #92400e; }
+        .builder-badge-fig  { background: #fce7f3; color: #9d174d; }
+        .builder-badge-txt  { background: #f5f5f5; color: #525252; }
+        .builder-badge-deriv{ background: #ede9fe; color: #5b21b6; }
+        .builder-badge-other{ background: #dcfce7; color: #15803d; }
+        body.dark-theme .builder-badge-def   { background: #1e3a5f; color: #93c5fd; }
+        body.dark-theme .builder-badge-h4    { background: #451a03; color: #fde68a; }
+        body.dark-theme .builder-badge-fig   { background: #500724; color: #f9a8d4; }
+        body.dark-theme .builder-badge-txt   { background: #262626; color: #a3a3a3; }
+        body.dark-theme .builder-badge-deriv { background: #2e1065; color: #c4b5fd; }
+        body.dark-theme .builder-badge-other { background: #14532d; color: #86efac; }
+
+        .builder-block-preview {
+            flex: 1;
+            font-size: 0.79rem;
+            color: var(--text-secondary);
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .builder-block-remove {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.95rem;
+            padding: 0.1rem 0.25rem;
+            border-radius: 4px;
+            flex-shrink: 0;
+            transition: all 0.12s;
+            line-height: 1;
+            opacity: 0;
+        }
+        .builder-block-item:hover .builder-block-remove { opacity: 1; }
+        .builder-block-remove:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+        .builder-empty-hint {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 3rem 1rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            opacity: 0.6;
+            text-align: center;
+        }
+        .builder-empty-hint::before {
+            content: '📋';
+            font-size: 2rem;
+            opacity: 0.5;
+        }
+
+        /* ---- Правая панель: библиотека ---- */
+        .builder-search {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.45rem 0.75rem;
+            background: var(--bg-primary);
+            border: 1.5px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            font-family: inherit;
+            margin-bottom: 0.6rem;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .builder-search:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+
+        .builder-lib-group {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 0.35rem;
+            overflow: hidden;
+            transition: box-shadow 0.15s;
+        }
+        .builder-lib-group.open { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .builder-lib-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.8rem;
+            background: var(--bg-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            user-select: none;
+            transition: background 0.12s;
+        }
+        .builder-lib-group.open .builder-lib-group-header { background: var(--bg-tertiary); }
+        .builder-lib-group-header:hover { background: var(--bg-tertiary); }
+        .builder-lib-group-chevron {
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+        .builder-lib-group.open .builder-lib-group-chevron { transform: rotate(90deg); }
+        .builder-lib-group-items { display: none; }
+        .builder-lib-group.open .builder-lib-group-items { display: block; }
+
+        .builder-lib-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.38rem 0.7rem;
+            border-top: 1px solid var(--border-color);
+            transition: background 0.1s;
+        }
+        .builder-lib-item:hover { background: var(--bg-secondary); }
+        .builder-lib-preview {
+            flex: 1;
+            font-size: 0.77rem;
+            color: var(--text-secondary);
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .builder-lib-add {
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            width: 24px;
+            height: 24px;
+            font-size: 1.05rem;
+            line-height: 1;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+        .builder-lib-add:hover { background: var(--accent-hover); transform: scale(1.12); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        .builder-lib-added { background: #16a34a !important; }
+        .builder-lib-added:hover { background: #15803d !important; transform: none; }
+
+        .builder-lib-eye {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            width: 24px;
+            height: 24px;
+            font-size: 0.72rem;
+            line-height: 1;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.12s;
+        }
+        .builder-lib-eye:hover { background: var(--bg-tertiary); color: var(--text-primary); border-color: var(--text-secondary); }
+
+        /* Попап предпросмотра блока */
+        .builder-preview-popup {
+            position: fixed;
+            z-index: 4000;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            overflow-y: auto;
+            padding: 0.85rem 1rem;
+            font-size: 0.82rem;
+            max-width: 360px;
+            pointer-events: auto;
+            line-height: 1.5;
+        }
+        .builder-preview-popup .formula-box,
+        .builder-preview-popup .definition-box { font-size: 0.78rem; }
+        .builder-preview-popup img { max-width: 100%; border-radius: 4px; }
+        .builder-preview-popup h4 { font-size: 0.85rem; margin: 0 0 0.4rem; }
+        .builder-preview-close {
+            display: block;
+            text-align: right;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            cursor: pointer;
+            margin-bottom: 0.5rem;
+        }
+        .builder-preview-close:hover { color: var(--text-primary); }
+
+        .builder-status {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+        }
+
+        /* ====================================================
+           ПУБЛИЧНЫЕ БИЛЕТЫ — стили
+           ==================================================== */
+
+        /* Subtabs внутри правой панели */
+        .builder-lib-subtabs {
+            display: flex;
+            flex-shrink: 0;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+        .builder-lib-subtab {
+            flex: 1;
+            padding: 0.48rem 0.5rem;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            font-size: 0.78rem;
+            font-family: inherit;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+        .builder-lib-subtab.active {
+            color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+            font-weight: 700;
+            background: rgba(59,130,246,0.04);
+        }
+        .builder-lib-subtab:hover:not(.active) { background: var(--bg-tertiary); color: var(--text-primary); }
+
+        /* Публичная панель */
+        #builderPublicContent { padding: 0.5rem 0; }
+
+        .builder-pub-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem 0.4rem;
+            gap: 0.5rem;
+        }
+        .builder-pub-title { font-size: 0.82rem; color: var(--text-secondary); }
+        .builder-pub-refresh-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.2rem 0.55rem;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .builder-pub-refresh-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+        .builder-pub-author {
+            border-top: 1px solid var(--border-color);
+        }
+        .builder-pub-author-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.55rem 0.75rem;
+            cursor: pointer;
+            transition: background 0.12s;
+            user-select: none;
+        }
+        .builder-pub-author-header:hover { background: var(--bg-tertiary); }
+        .builder-pub-arrow { font-size: 0.7rem; color: var(--text-secondary); transition: transform 0.2s; }
+        .builder-pub-author.expanded .builder-pub-arrow { transform: rotate(90deg); }
+        .builder-pub-name { font-size: 0.82rem; font-weight: 600; flex: 1; color: var(--text-primary); }
+        .builder-pub-meta { font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; }
+        .builder-pub-clone-all {
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 0.22rem 0.55rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: var(--transition);
+        }
+        .builder-pub-clone-all:hover { background: var(--accent-hover); }
+
+        .builder-pub-tickets {
+            display: none;
+            flex-direction: column;
+            border-top: 1px solid var(--border-color);
+        }
+        .builder-pub-author.expanded .builder-pub-tickets { display: flex; }
+
+        .builder-pub-ticket {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.4rem 1rem 0.4rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.12s;
+        }
+        .builder-pub-ticket:last-child { border-bottom: none; }
+        .builder-pub-ticket:hover { background: var(--bg-tertiary); }
+        .builder-pub-ticket-num { font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); flex-shrink: 0; min-width: 52px; }
+        .builder-pub-ticket-preview { flex: 1; font-size: 0.75rem; color: var(--text-secondary); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .builder-pub-clone-one {
+            background: none;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            border-radius: 4px;
+            padding: 0.18rem 0.45rem;
+            font-size: 0.72rem;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: var(--transition);
+        }
+        .builder-pub-clone-one:hover { background: var(--accent-color); color: #fff; }
+
+        /* ---- Кнопка просмотра в строке автора ---- */
+        .builder-pub-view-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.22rem 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: var(--transition);
+        }
+        .builder-pub-view-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+        /* ---- Модал просмотра публичного билета ---- */
+        .builder-pub-view-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            z-index: 3500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .builder-pub-view-overlay.hidden { display: none; }
+        .builder-pub-view-modal {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-shadow: 0 16px 56px rgba(0,0,0,0.4);
+            width: 100%;
+            max-width: 680px;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .builder-pub-view-header {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            flex-shrink: 0;
+        }
+        .builder-pub-view-title {
+            flex: 1;
+            font-size: 0.9rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .builder-pub-view-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            line-height: 1;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.1rem 0.35rem;
+            border-radius: 4px;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+        .builder-pub-view-close:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+        .builder-pub-view-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.25rem 1.5rem;
+        }
+        /* Стили контента внутри просмотра (наследует сайтовые) */
+        .builder-pub-view-body .definition-box { margin-bottom: 0.75rem; }
+        .builder-pub-view-body h4.subsection-title { margin: 1rem 0 0.35rem; font-size: 0.95rem; }
+        .builder-pub-view-body figure { margin: 0.75rem 0; }
+        .builder-pub-view-body img { max-width: 100%; border-radius: 6px; }
+        .builder-pub-view-footer {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.65rem 1rem;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .builder-pub-view-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex: 1;
+        }
+        .builder-pub-view-nav-btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.28rem 0.65rem;
+            font-size: 0.82rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .builder-pub-view-nav-btn:hover:not(:disabled) { background: var(--border-color); color: var(--text-primary); }
+        .builder-pub-view-nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .builder-pub-view-counter {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            min-width: 42px;
+            text-align: center;
+        }
+        @media (max-width: 650px) {
+            .builder-pub-view-modal { max-height: 95vh; border-radius: var(--border-radius) var(--border-radius) 0 0; }
+            .builder-pub-view-overlay { align-items: flex-end; padding: 0; }
+            .builder-pub-view-body { padding: 1rem; }
+        }
+
+        /* Кнопка публикации (скрыта пока не вошли) */
+        #builderPublishBtn { display: none; }
+        .builder-btn-publish { background: var(--bg-primary); color: var(--text-secondary); border: 1px solid var(--border-color); }
+        .builder-btn-publish:hover { background: #7c3aed; color: #fff; border-color: #7c3aed; box-shadow: 0 2px 8px rgba(124,58,237,0.3); }
+
+        /* Toast-уведомление */
+        .builder-toast {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: var(--text-primary);
+            color: var(--bg-primary);
+            padding: 0.6rem 1.25rem;
+            border-radius: 20px;
+            font-size: 0.88rem;
+            z-index: 9000;
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .builder-toast.visible {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* ====================================================
+           РЕДАКТОР ПОЛЬЗОВАТЕЛЬСКИХ БЛОКОВ
+           ==================================================== */
+
+        /* Панель редактора */
+        #builderSubCreate {
+            flex-direction: column;
+            gap: 0;
+            overflow-y: auto;
+        }
+        .beditor-section {
+            padding: 0.65rem 0.85rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .beditor-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+        .beditor-type-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .beditor-type-select {
+            flex: 1;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 0.3rem 0.5rem;
+            font-size: 0.82rem;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        /* Тулбар */
+        .beditor-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+        .beditor-tb-btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.22rem 0.5rem;
+            font-size: 0.82rem;
+            cursor: pointer;
+            color: var(--text-primary);
+            transition: var(--transition);
+            line-height: 1.3;
+            white-space: nowrap;
+        }
+        .beditor-tb-btn:hover { background: var(--accent-color); color: #fff; border-color: var(--accent-color); }
+        .beditor-tb-sep { width: 1px; background: var(--border-color); margin: 0 0.1rem; align-self: stretch; }
+        /* Область редактирования */
+        .beditor-content {
+            min-height: 80px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 0.5rem 0.65rem;
+            font-size: 0.85rem;
+            line-height: 1.55;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            outline: none;
+            word-break: break-word;
+        }
+        .beditor-content:focus { border-color: var(--accent-color); }
+        .beditor-content ul, .beditor-content ol { padding-left: 1.4rem; margin: 0.25rem 0; }
+        .beditor-content li { margin: 0.1rem 0; }
+        /* Превью */
+        .beditor-preview-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 0.6rem 0.75rem;
+            font-size: 0.82rem;
+            min-height: 50px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .beditor-preview-box img { max-width: 100%; }
+        /* Кнопки действий */
+        .beditor-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        /* Мои блоки */
+        .beditor-myblock {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.42rem 0.85rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.12s;
+        }
+        .beditor-myblock:hover { background: var(--bg-tertiary); }
+        .beditor-myblock-preview {
+            flex: 1;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .beditor-myblock-del {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+        .beditor-myblock-del:hover { background: #ef4444; color: #fff; }
+
+        /* Модал «Предложить» */
+        .beditor-suggest-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 3600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .beditor-suggest-overlay.hidden { display: none; }
+        .beditor-suggest-modal {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-shadow: 0 16px 48px rgba(0,0,0,0.35);
+            width: 100%;
+            max-width: 600px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .beditor-suggest-header {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            flex-shrink: 0;
+        }
+        .beditor-suggest-header h3 { flex: 1; font-size: 0.95rem; margin: 0; }
+        .beditor-suggest-body { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+        .beditor-suggest-note { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; }
+        .beditor-suggest-note code { background: var(--bg-tertiary); border-radius: 3px; padding: 0.1rem 0.3rem; font-size: 0.8rem; }
+        .beditor-code-block {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 0.75rem;
+            font-family: monospace;
+            font-size: 0.78rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 260px;
+            overflow-y: auto;
+            user-select: all;
+            color: var(--text-primary);
+        }
+        .beditor-suggest-footer {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.65rem 1rem;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            flex-shrink: 0;
+        }
+
+        /* Скрываем плавающие кнопки когда конструктор открыт */
+        body.builder-open .settings-button,
+        body.builder-open #scrollToTop,
+        body.builder-open .builder-open-btn { display: none !important; }
+
+        /* Мобильные табы (скрыты на десктопе) */
+        .builder-mobile-tabs {
+            display: none;
+        }
+
+        /* Мобильная адаптация */
+        @media (max-width: 650px) {
+
+            /* Шапка: компактная */
+            .builder-header { padding: 0.5rem 0.75rem; gap: 0.4rem; }
+            .builder-header-title { display: none; }
+            .builder-header-controls { gap: 0.35rem; }
+            label[for="builderTicketSelect"] { display: none; }
+            .builder-select { font-size: 0.82rem; padding: 0.3rem 0.4rem; max-width: 100px; }
+            .btn-text { display: none; }
+            .builder-btn { padding: 0.3rem 0.55rem; font-size: 0.95rem; }
+            .builder-auth-user { display: none !important; }
+            .builder-sync-badge { display: none !important; }
+
+            /* Мобильные табы */
+            .builder-mobile-tabs {
+                display: flex;
+                flex-shrink: 0;
+                background: var(--bg-secondary);
+                border-bottom: 1px solid var(--border-color);
+            }
+            .builder-mobile-tab {
+                flex: 1;
+                padding: 0.6rem 0.5rem;
+                background: none;
+                border: none;
+                border-bottom: 2px solid transparent;
+                font-size: 0.85rem;
+                font-family: inherit;
+                color: var(--text-secondary);
+                cursor: pointer;
+                transition: var(--transition);
+            }
+            .builder-mobile-tab.active {
+                color: var(--accent-color);
+                border-bottom-color: var(--accent-color);
+                font-weight: 600;
+            }
+
+            /* Тело: колонки → вертикальный стек с табами */
+            .builder-body {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+            .builder-panel {
+                display: none;
+                grid-column: 1;
+                grid-row: 2;
+                border-right: none;
+            }
+            .builder-panel.builder-panel-active { display: flex; }
+
+            /* Плавающая кнопка открытия: компактнее */
+            .builder-open-btn { font-size: 0.8rem; padding: 0.45rem 0.75rem; bottom: 4.5rem; }
+
+            /* Попап предпросмотра: на весь экран снизу */
+            .builder-preview-popup {
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                top: auto !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                max-height: 55vh !important;
+                border-radius: var(--border-radius) var(--border-radius) 0 0;
+                box-shadow: 0 -4px 24px rgba(0,0,0,0.25);
+            }
+        }
+
+        @media (max-width: 400px) {
+            .builder-mobile-tab { font-size: 0.78rem; padding: 0.5rem 0.3rem; }
+            .builder-btn { padding: 0.28rem 0.45rem; }
+        }
+
+        /* ====================================================
+           АВТОРИЗАЦИЯ В КОНСТРУКТОРЕ
+           ==================================================== */
+
+        .builder-auth-section {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+        .builder-auth-user {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            max-width: 160px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        /* Модальное окно авторизации */
+        .builder-auth-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .builder-auth-overlay.hidden { display: none; }
+        .builder-auth-modal {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .builder-auth-icon {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .builder-auth-modal h3 {
+            text-align: center;
+            margin: 0 0 1.5rem;
+            font-size: 1.2rem;
+        }
+        /* Табы Вход / Регистрация */
+        .builder-auth-tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 1.25rem;
+        }
+        .builder-auth-tab {
+            flex: 1;
+            padding: 0.55rem;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-family: inherit;
+            color: var(--text-secondary);
+            transition: var(--transition);
+        }
+        .builder-auth-tab.active {
+            color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+            font-weight: 600;
+        }
+        /* Поля ввода */
+        .builder-auth-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.65rem 0.9rem;
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: inherit;
+            margin-bottom: 0.7rem;
+            transition: border-color 0.2s;
+        }
+        .builder-auth-input:focus { outline: none; border-color: var(--accent-color); }
+        /* Сообщение об ошибке */
+        .builder-auth-error {
+            background: rgba(239,68,68,0.08);
+            color: #dc2626;
+            border: 1px solid rgba(239,68,68,0.25);
+            border-radius: var(--border-radius);
+            padding: 0.55rem 0.85rem;
+            font-size: 0.85rem;
+            margin-bottom: 0.75rem;
+            display: none;
+        }
+        /* Кнопки в модале */
+        .builder-auth-submit {
+            width: 100%;
+            padding: 0.65rem;
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 0.95rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 0.5rem;
+        }
+        .builder-auth-submit:hover { background: var(--accent-hover); }
+        .builder-auth-submit:disabled { opacity: 0.6; cursor: default; }
+        .builder-auth-cancel-btn {
+            width: 100%;
+            padding: 0.55rem;
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .builder-auth-cancel-btn:hover { background: var(--bg-secondary); }
+        /* Индикатор синхронизации */
+        .builder-sync-badge {
+            font-size: 0.72rem;
+            padding: 0.15rem 0.45rem;
+            border-radius: 10px;
+            background: #dcfce7;
+            color: #15803d;
+            font-weight: 600;
+        }
+        body.dark-theme .builder-sync-badge { background: #14532d; color: #86efac; }
+        .builder-sync-badge.syncing { background: #fef9c3; color: #a16207; }
+        body.dark-theme .builder-sync-badge.syncing { background: #422006; color: #fde68a; }
+    </style>
+</head>
+<body>
+    <!-- Боковая панель навигации -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2><a href="index.html" style="color: white; text-decoration: none;">📚 Конспекты</a></h2>
+            <!-- Кнопка настроек создается автоматически через settings.js -->
+            <button class="close-sidebar" id="closeSidebar">✕</button>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="🔍 Поиск...">
+        </div>
+
+        <nav class="nav-menu">
+            <div class="nav-section">
+                <h3>Билеты к экзамену</h3>
+                <ul id="ticketNavList">
+                    <li><a href="#ticket-1"  class="nav-link active" data-ticket="1">Билет №1</a></li>
+                    <li><a href="#ticket-2"  class="nav-link" data-ticket="2">Билет №2</a></li>
+                    <li><a href="#ticket-3"  class="nav-link" data-ticket="3">Билет №3</a></li>
+                    <li><a href="#ticket-4"  class="nav-link" data-ticket="4">Билет №4</a></li>
+                    <li><a href="#ticket-5"  class="nav-link" data-ticket="5">Билет №5</a></li>
+                    <li><a href="#ticket-6"  class="nav-link" data-ticket="6">Билет №6</a></li>
+                    <li><a href="#ticket-7"  class="nav-link" data-ticket="7">Билет №7</a></li>
+                    <li><a href="#ticket-8"  class="nav-link" data-ticket="8">Билет №8</a></li>
+                    <li><a href="#ticket-9"  class="nav-link" data-ticket="9">Билет №9</a></li>
+                    <li><a href="#ticket-10" class="nav-link" data-ticket="10">Билет №10</a></li>
+                    <li><a href="#ticket-11" class="nav-link" data-ticket="11">Билет №11</a></li>
+                    <li><a href="#ticket-12" class="nav-link" data-ticket="12">Билет №12</a></li>
+                    <li><a href="#ticket-13" class="nav-link" data-ticket="13">Билет №13</a></li>
+                    <li><a href="#ticket-14" class="nav-link" data-ticket="14">Билет №14</a></li>
+                    <li><a href="#ticket-15" class="nav-link" data-ticket="15">Билет №15</a></li>
+                    <li><a href="#ticket-16" class="nav-link" data-ticket="16">Билет №16</a></li>
+                    <li><a href="#ticket-17" class="nav-link" data-ticket="17">Билет №17</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-section other-subjects">
+                <h3>Другие предметы</h3>
+                <ul>
+                    <li><a href="physics.html">Физика 9 класс</a></li>
+                    <li><a href="math.html">Алгебра 9 класс</a></li>
+                    <li><a href="geometry.html">Геометрия 9 класс</a></li>
+                    <li><a href="chemistry.html">Химия</a></li>
+                    <li><a href="likbez.html">Ликбезы</a></li>
+                </ul>
+            </div>
+        </nav>
+
+    </aside>
+
+    <!-- Кнопка открытия меню (для мобильных) -->
+    <button class="menu-toggle" id="menuToggle">☰</button>
+
+    <!-- Основной контент -->
+    <main class="main-content">
+        <header class="page-header">
+            <h1>📝 Билеты к экзамену</h1>
+            <p class="subtitle">Физика 9 класс | <a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a></p>
+        </header>
+
+        <!-- Билет №1 -->
+        <section class="content-section ticket-section active-ticket" id="ticket-1">
+            <h2 class="part-title">Билет №1</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №2 -->
+        <section class="content-section ticket-section" id="ticket-2">
+            <h2 class="part-title">Билет №2</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №3 -->
+        <section class="content-section ticket-section" id="ticket-3">
+            <h2 class="part-title">Билет №3</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №4 -->
+        <section class="content-section ticket-section" id="ticket-4">
+            <h2 class="part-title">Билет №4</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №5 -->
+        <section class="content-section ticket-section" id="ticket-5">
+            <h2 class="part-title">Билет №5</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №6 -->
+        <section class="content-section ticket-section" id="ticket-6">
+            <h2 class="part-title">Билет №6</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №7 -->
+        <section class="content-section ticket-section" id="ticket-7">
+            <h2 class="part-title">Билет №7</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №8 -->
+        <section class="content-section ticket-section" id="ticket-8">
+            <h2 class="part-title">Билет №8</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №9 -->
+        <section class="content-section ticket-section" id="ticket-9">
+            <h2 class="part-title">Билет №9</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №10 -->
+        <section class="content-section ticket-section" id="ticket-10">
+            <h2 class="part-title">Билет №10</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №11 -->
+        <section class="content-section ticket-section" id="ticket-11">
+            <h2 class="part-title">Билет №11</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №12 -->
+        <section class="content-section ticket-section" id="ticket-12">
+            <h2 class="part-title">Билет №12</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №13 -->
+        <section class="content-section ticket-section" id="ticket-13">
+            <h2 class="part-title">Билет №13</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №14 -->
+        <section class="content-section ticket-section" id="ticket-14">
+            <h2 class="part-title">Билет №14</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №15 -->
+        <section class="content-section ticket-section" id="ticket-15">
+            <h2 class="part-title">Билет №15</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №16 -->
+        <section class="content-section ticket-section" id="ticket-16">
+            <h2 class="part-title">Билет №16</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Билет №17 -->
+        <section class="content-section ticket-section" id="ticket-17">
+            <h2 class="part-title">Билет №17</h2>
+            <article class="topic">
+                <h3 class="topic-title">Содержимое</h3>
+
+            </article>
+        </section>
+
+        <!-- Навигация между билетами -->
+        <div class="ticket-nav-controls">
+            <button class="ticket-nav-btn" id="prevTicketBtn">← Предыдущий</button>
+            <span class="ticket-counter" id="ticketCounter">Билет 1 из 17</span>
+            <button class="ticket-nav-btn" id="nextTicketBtn">Следующий →</button>
+        </div>
+
+        <!-- Футер -->
+        <footer class="page-footer">
+            <p>2025-2026 Almanion | Билеты к экзамену | Физика 9 класс</p>
+        </footer>
+    </main>
+
+    <!-- Кнопка "Наверх" -->
+    <button class="scroll-to-top" id="scrollToTop">↑</button>
+
+    <!-- Контейнер для снега -->
+    <div class="snow-container" id="snowContainer"></div>
+
+    <!-- Контейнер для пасхалок -->
+    <div class="easter-eggs-container" id="easterEggsContainer"></div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-analytics.js"></script>
+
+    <script src="study-mode.js" defer></script>
+    <script src="script.js"></script>
+    <script src="newyear.js"></script>
+    <script src="settings.js"></script>
+    <script src="bookmarks.js"></script>
+
+    <!-- ====================================================
+         КОНСТРУКТОР БИЛЕТОВ — HTML
+         ==================================================== -->
+
+    <!-- Плавающая кнопка -->
+    <button id="builderOpenBtn" class="builder-open-btn" title="Открыть конструктор билетов">✏️ Конструктор</button>
+
+    <!-- Полноэкранный оверлей конструктора -->
+    <div id="builderOverlay" class="builder-overlay hidden">
+        <div class="builder-modal">
+
+            <!-- Шапка -->
+            <div class="builder-header">
+                <h2 class="builder-header-title">✏️ Конструктор билетов</h2>
+                <div class="builder-header-controls">
+                    <label for="builderTicketSelect" style="font-size:0.82rem;color:var(--text-secondary);white-space:nowrap;">Билет:</label>
+                    <select id="builderTicketSelect" class="builder-select">
+                        <option value="1">Билет №1</option>
+                        <option value="2">Билет №2</option>
+                        <option value="3">Билет №3</option>
+                        <option value="4">Билет №4</option>
+                        <option value="5">Билет №5</option>
+                        <option value="6">Билет №6</option>
+                        <option value="7">Билет №7</option>
+                        <option value="8">Билет №8</option>
+                        <option value="9">Билет №9</option>
+                        <option value="10">Билет №10</option>
+                        <option value="11">Билет №11</option>
+                        <option value="12">Билет №12</option>
+                        <option value="13">Билет №13</option>
+                        <option value="14">Билет №14</option>
+                        <option value="15">Билет №15</option>
+                        <option value="16">Билет №16</option>
+                        <option value="17">Билет №17</option>
+                    </select>
+                    <button id="builderSaveBtn"    class="builder-btn builder-btn-save"  title="Сохранить билет">💾<span class="btn-text"> Сохранить</span></button>
+                    <button id="builderResetBtn"   class="builder-btn builder-btn-reset" title="Очистить билет">🗑<span class="btn-text"> Очистить</span></button>
+                    <button id="builderRefreshLib" class="builder-btn builder-btn-reset" title="Перезагрузить библиотеку из physics.html (сбросит кеш)">↺<span class="btn-text"> Обновить</span></button>
+                    <button id="builderSyncTickets" class="builder-btn builder-btn-save" title="Синхронизировать блоки всех билетов с актуальной версией physics.html">🔄<span class="btn-text"> Синхр.</span></button>
+                    <button id="builderPublishBtn" class="builder-btn builder-btn-publish" title="Опубликовать все непустые билеты в общий доступ">📤<span class="btn-text"> Опубликовать</span></button>
+                    <!-- Авторизация -->
+                    <div class="builder-auth-section">
+                        <span id="builderSyncBadge" class="builder-sync-badge" style="display:none">☁ синхронизировано</span>
+                        <span id="builderUserLabel" class="builder-auth-user" style="display:none"></span>
+                        <button id="builderAuthBtn" class="builder-btn builder-btn-reset" title="Войти / Выйти">🔐<span class="btn-text"> Войти</span></button>
+                    </div>
+                </div>
+                <button id="builderCloseBtn" class="builder-btn builder-btn-close" title="Закрыть (Esc)">✕</button>
+            </div>
+
+            <!-- Двухколоночная область -->
+            <div class="builder-body">
+
+                <!-- Мобильные табы (видны только на телефоне) -->
+                <div class="builder-mobile-tabs">
+                    <button class="builder-mobile-tab active" data-panel="0">📋 Билет</button>
+                    <button class="builder-mobile-tab"        data-panel="1">📚 Библиотека</button>
+                </div>
+
+                <!-- Левая панель: текущий билет -->
+                <div class="builder-panel builder-panel-active" id="builderPanelCurrent">
+                    <div class="builder-panel-header">Текущий билет — порядок блоков</div>
+                    <div class="builder-panel-content">
+                        <div id="builderCurrentBlocks"></div>
+                    </div>
+                </div>
+
+                <!-- Правая панель: библиотека + публичные билеты -->
+                <div class="builder-panel" id="builderPanelLib">
+
+                    <!-- Подтабы (physics.html / Общие / Создать) -->
+                    <div class="builder-lib-subtabs">
+                        <button class="builder-lib-subtab active" data-subtab="physics">📖 physics.html</button>
+                        <button class="builder-lib-subtab"        data-subtab="public">🌐 Общие</button>
+                        <button class="builder-lib-subtab"        data-subtab="create">✏️ Создать</button>
+                    </div>
+
+                    <!-- Физика: поиск + блоки -->
+                    <div class="builder-panel-content" id="builderSubPhysics">
+                        <input type="text" id="builderSearch" class="builder-search" placeholder="🔍 Поиск по тексту блоков...">
+                        <div id="builderLibraryContent">
+                            <div class="builder-status">Откройте конструктор, чтобы загрузить библиотеку</div>
+                        </div>
+                    </div>
+
+                    <!-- Редактор пользовательских блоков -->
+                    <div class="builder-panel-content" id="builderSubCreate" style="display:none">
+
+                        <!-- Тип блока -->
+                        <div class="beditor-section">
+                            <div class="beditor-label">Тип блока</div>
+                            <div class="beditor-type-row">
+                                <select id="beditorType" class="beditor-type-select">
+                                    <option value="definition-box">Определение / текстовый блок</option>
+                                    <option value="formula-box">Блок с формулой</option>
+                                    <option value="h4">Подзаголовок (h4)</option>
+                                    <option value="paragraph">Обычный текст</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Тулбар форматирования -->
+                        <div class="beditor-section">
+                            <div class="beditor-label">Форматирование</div>
+                            <div class="beditor-toolbar">
+                                <button class="beditor-tb-btn" data-cmd="bold"        title="Жирный (Ctrl+B)"><strong>B</strong></button>
+                                <button class="beditor-tb-btn" data-cmd="italic"      title="Курсив (Ctrl+I)"><em>I</em></button>
+                                <div class="beditor-tb-sep"></div>
+                                <button class="beditor-tb-btn" data-cmd="insertUnorderedList" title="Маркированный список">• Список</button>
+                                <button class="beditor-tb-btn" data-cmd="insertOrderedList"   title="Нумерованный список">1. Список</button>
+                                <div class="beditor-tb-sep"></div>
+                                <button class="beditor-tb-btn" data-latex="inline" title="Формула в строке: \(формула\)">\(f\)</button>
+                                <button class="beditor-tb-btn" data-latex="block"  title="Блочная формула: \[формула\]">\[f\]</button>
+                                <div class="beditor-tb-sep"></div>
+                                <button class="beditor-tb-btn" data-nest="formula-box"    title="Вложить блок с формулой">↳ Формула</button>
+                                <button class="beditor-tb-btn" data-nest="definition-box" title="Вложить определение/текст">↳ Блок</button>
+                            </div>
+                        </div>
+
+                        <!-- Область ввода -->
+                        <div class="beditor-section">
+                            <div class="beditor-label" id="beditorContentLabel">Содержимое</div>
+                            <div id="beditorContent" class="beditor-content" contenteditable="true" spellcheck="false" placeholder="Введите текст блока..."></div>
+                        </div>
+
+                        <!-- Превью -->
+                        <div class="beditor-section">
+                            <div class="beditor-label">Предпросмотр</div>
+                            <div id="beditorPreview" class="beditor-preview-box"></div>
+                        </div>
+
+                        <!-- Действия -->
+                        <div class="beditor-section">
+                            <div class="beditor-actions">
+                                <button id="beditorSave"    class="builder-btn builder-btn-save"  title="Сохранить блок в «Мои блоки» и добавить в билет">💾 Сохранить</button>
+                                <button id="beditorSuggest" class="builder-btn builder-btn-reset" title="Предложить блок для добавления в physics.html">📤 Предложить</button>
+                                <button id="beditorClear"   class="builder-btn builder-btn-reset" title="Очистить редактор">✕ Очистить</button>
+                            </div>
+                        </div>
+
+                        <!-- Мои блоки -->
+                        <div class="beditor-section">
+                            <div class="beditor-label">Мои блоки</div>
+                        </div>
+                        <div id="beditorMyBlocks"></div>
+
+                    </div>
+
+                    <!-- Публичные: список опубликованных пользователей -->
+                    <div class="builder-panel-content" id="builderSubPublic" style="display:none">
+                        <div id="builderPublicContent">
+                            <div class="builder-status">Войдите в аккаунт или переключите вкладку, чтобы загрузить публичные билеты</div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Модал авторизации конструктора -->
+    <div id="builderAuthOverlay" class="builder-auth-overlay hidden">
+        <div class="builder-auth-modal">
+            <div class="builder-auth-icon">🔐</div>
+            <h3>Конструктор билетов</h3>
+
+            <!-- Табы -->
+            <div class="builder-auth-tabs">
+                <button class="builder-auth-tab active" data-tab="login">Вход</button>
+                <button class="builder-auth-tab" data-tab="register">Регистрация</button>
+            </div>
+
+            <!-- Форма входа -->
+            <div id="bAuthLoginForm">
+                <input type="email"    id="bAuthEmail"    class="builder-auth-input" placeholder="Email" autocomplete="email">
+                <input type="password" id="bAuthPassword" class="builder-auth-input" placeholder="Пароль" autocomplete="current-password">
+                <div id="bAuthLoginError" class="builder-auth-error"></div>
+                <button id="bAuthLoginBtn" class="builder-auth-submit">Войти</button>
+            </div>
+
+            <!-- Форма регистрации -->
+            <div id="bAuthRegForm" style="display:none">
+                <input type="email"    id="bAuthRegEmail"    class="builder-auth-input" placeholder="Email" autocomplete="email">
+                <input type="password" id="bAuthRegPass"     class="builder-auth-input" placeholder="Пароль (мин. 6 символов)" autocomplete="new-password">
+                <input type="password" id="bAuthRegPassConf" class="builder-auth-input" placeholder="Повторите пароль" autocomplete="new-password">
+                <div id="bAuthRegError" class="builder-auth-error"></div>
+                <button id="bAuthRegBtn" class="builder-auth-submit">Зарегистрироваться</button>
+            </div>
+
+            <button id="bAuthCancelBtn" class="builder-auth-cancel-btn" style="margin-top:0.5rem">Отмена</button>
+        </div>
+    </div>
+
+    <!-- Модал «Предложить блок администратору» -->
+    <div id="beditorSuggestOverlay" class="beditor-suggest-overlay hidden">
+        <div class="beditor-suggest-modal" style="max-width:420px">
+            <div class="beditor-suggest-header">
+                <h3>📤 Предложить блок</h3>
+                <button class="builder-pub-view-close" id="beditorSuggestClose">✕</button>
+            </div>
+            <div class="beditor-suggest-body" style="gap:0.5rem">
+                <!-- Режим пользователя: только подтверждение -->
+                <div id="beditorSuggestSuccess" style="text-align:center;padding:0.5rem 0">
+                    <div style="font-size:2.5rem;margin-bottom:0.5rem">✅</div>
+                    <div style="font-size:1rem;font-weight:600;margin-bottom:0.4rem">Предложение отправлено!</div>
+                    <div class="beditor-suggest-note" style="text-align:center">Администратор получит уведомление и рассмотрит ваш блок.</div>
+                </div>
+                <!-- Режим администратора: код для вставки в physics.html -->
+                <div id="beditorSuggestAdminSection" style="display:none">
+                    <div class="beditor-suggest-note">
+                        Скопируй код и вставь в нужное место в <code>physics.html</code>
+                        внутри <code>&lt;article class="topic"&gt;</code> нужной темы:
+                    </div>
+                    <div id="beditorSuggestCode" class="beditor-code-block"></div>
+                </div>
+            </div>
+            <div class="beditor-suggest-footer">
+                <button class="builder-btn builder-btn-save" id="beditorSuggestCopy" style="display:none">📋 Скопировать код</button>
+                <button class="builder-btn builder-btn-reset" id="beditorSuggestCloseBtn">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модал просмотра публичного билета -->
+    <div id="builderPubViewOverlay" class="builder-pub-view-overlay hidden">
+        <div class="builder-pub-view-modal">
+            <div class="builder-pub-view-header">
+                <span class="builder-pub-view-title" id="builderPubViewTitle">Просмотр билета</span>
+                <button class="builder-pub-view-close" id="builderPubViewClose" title="Закрыть (Esc)">✕</button>
+            </div>
+            <div class="builder-pub-view-body" id="builderPubViewBody"></div>
+            <div class="builder-pub-view-footer">
+                <div class="builder-pub-view-nav">
+                    <button class="builder-pub-view-nav-btn" id="builderPubViewPrev">← Пред.</button>
+                    <span class="builder-pub-view-counter" id="builderPubViewCounter">1 / 1</span>
+                    <button class="builder-pub-view-nav-btn" id="builderPubViewNext">След. →</button>
+                </div>
+                <button class="builder-btn builder-btn-reset" id="builderPubCloneOne" title="Скопировать этот билет к себе">⬇ Этот билет</button>
+                <button class="builder-btn builder-btn-save"  id="builderPubCloneAll" title="Скопировать все билеты пользователя">⬇ Все билеты</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================================================
+         КОНСТРУКТОР БИЛЕТОВ — JS
+         ==================================================== -->
+    <script>
+(function () {
+    'use strict';
+
+    // ---- Константы и состояние ----
+    var STORAGE_KEY   = 'physics-exam-builder-v1';
+    var PHYSICS_URL   = 'physics.html';
+    var TOTAL         = 17;
+
+    var library       = null;   // массив блоков из physics.html, null = не загружено
+    var builderTicket = 1;      // номер редактируемого билета
+    var session       = [];     // блоки текущей сессии конструктора
+    var sortable      = null;   // экземпляр SortableJS
+
+    // ---- DOM-ссылки ----
+    var overlay    = document.getElementById('builderOverlay');
+    var selTicket  = document.getElementById('builderTicketSelect');
+    var btnSave    = document.getElementById('builderSaveBtn');
+    var btnReset   = document.getElementById('builderResetBtn');
+    var btnClose   = document.getElementById('builderCloseBtn');
+    var btnOpen    = document.getElementById('builderOpenBtn');
+    var searchEl   = document.getElementById('builderSearch');
+    var curPanel   = document.getElementById('builderCurrentBlocks');
+    var libPanel   = document.getElementById('builderLibraryContent');
+
+    // ---- Утилиты ----
+
+    function escHtml(s) {
+        return String(s || '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function textOf(html) {
+        var d = document.createElement('div');
+        d.innerHTML = html;
+        return (d.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 95);
+    }
+
+    function badge(type) {
+        var map = {
+            definition: ['DEF', 'builder-badge-def'],
+            heading:    ['H4',  'builder-badge-h4'],
+            figure:     ['IMG', 'builder-badge-fig'],
+            text:       ['TXT', 'builder-badge-txt'],
+            derivation: ['▶',   'builder-badge-deriv'],
+            remark:     ['REM', 'builder-badge-remark'],
+            other:      ['···', 'builder-badge-other']
+        };
+        var t = map[type] || map.other;
+        return '<span class="builder-badge ' + t[1] + '">' + t[0] + '</span>';
+    }
+
+    // ---- localStorage ----
+
+    function getAll() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+        catch (e) { return {}; }
+    }
+
+    function saveAll(data) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+    }
+
+    function storeTicket(n, blocks) {
+        var data = getAll();
+        data[n] = blocks;
+        saveAll(data);
+    }
+
+    function clearTicket(n) {
+        var data = getAll();
+        delete data[n];
+        saveAll(data);
+    }
+
+    // ---- Re-инициализация формул и выводов после вставки HTML ----
+
+    function reInit(container) {
+        // Переинициализируем кнопки раскрытия вывода
+        container.querySelectorAll('.toggle-derivation').forEach(function (btn) {
+            var fresh = btn.cloneNode(true);
+            btn.parentNode.replaceChild(fresh, btn);
+            fresh.addEventListener('click', function () {
+                var content = this.nextElementSibling;
+                if (!content) return;
+                var open = content.classList.toggle('show');
+                this.textContent = open ? '📕 Скрыть вывод' : '📖 Показать вывод';
+            });
+        });
+        // KaTeX
+        if (window.renderMathInElement) {
+            renderMathInElement(container, {
+                throwOnError: false,
+                delimiters: [
+                    { left: '\\[', right: '\\]', display: true },
+                    { left: '\\(', right: '\\)', display: false }
+                ]
+            });
+        }
+    }
+
+    // ---- Применить сохранённые билеты при загрузке страницы ----
+
+    function applyStoredTickets() {
+        var all = getAll();
+        Object.keys(all).forEach(function (n) {
+            var blocks = all[n];
+            if (!blocks || blocks.length === 0) return;
+            var section = document.getElementById('ticket-' + n);
+            if (!section) return;
+            var article = section.querySelector('article.topic');
+            if (!article) return;
+
+            var h3 = article.querySelector('h3.topic-title');
+            article.innerHTML = '';
+            if (h3) article.appendChild(h3);
+
+            blocks.forEach(function (block) {
+                var wrap = document.createElement('div');
+                wrap.innerHTML = block.html;
+                while (wrap.firstChild) article.appendChild(wrap.firstChild);
+            });
+
+            reInit(article);
+        });
+    }
+
+    // ---- Загрузка библиотеки из physics.html ----
+
+    var LIBRARY_CACHE_KEY = 'physics-exam-library-v1';
+
+    // Парсинг DOM документа → массив блоков
+    function parsePhysicsDoc(doc) {
+        var result = [];
+        var uid = 0;          // глобальный счётчик для обратной совместимости id
+        var topicFallback = 0;
+        doc.querySelectorAll('article.topic').forEach(function (article) {
+            var topicId    = article.id || ('topic-' + (topicFallback++));
+            var topicTitle = (article.querySelector('.topic-title') || {}).textContent || topicId;
+            topicTitle = topicTitle.trim();
+
+            var children = Array.from(article.children).filter(function (el) {
+                return !el.matches('h3.topic-title');
+            });
+
+            children.forEach(function (el, localIdx) {
+                var type = 'other';
+                if (el.matches('.definition-box'))           type = 'definition';
+                else if (el.matches('h4.subsection-title'))  type = 'heading';
+                else if (el.matches('figure'))               type = 'figure';
+                else if (el.matches('p'))                    type = 'text';
+                else if (el.matches('.derivation-box'))      type = 'derivation';
+                else if (el.querySelector('img'))            type = 'figure';
+
+                var preview = textOf(el.outerHTML) || el.tagName;
+                result.push({
+                    id:         topicId + '-' + (uid++),
+                    // srcId стабилен: зависит только от topicId и позиции в теме
+                    // Не ломается при добавлении блоков в другие темы
+                    srcId:      topicId + ':' + localIdx,
+                    topicId:    topicId,
+                    topicTitle: topicTitle,
+                    type:       type,
+                    html:       el.outerHTML,
+                    preview:    preview
+                });
+            });
+        });
+        return result;
+    }
+
+    function loadLibrary() {
+        if (library !== null) return Promise.resolve(library);
+
+        // 1. Проверяем кеш localStorage
+        //    (заполняется при открытии через HTTP; работает и на file://)
+        try {
+            var cached = localStorage.getItem(LIBRARY_CACHE_KEY);
+            if (cached) {
+                var parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    library = parsed;
+                    return Promise.resolve(library);
+                }
+            }
+        } catch (e) { /* игнорируем ошибки парсинга */ }
+
+        // 2. Пробуем fetch (работает на HTTP/HTTPS — GitHub Pages, Live Server)
+        return fetch(PHYSICS_URL)
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.text();
+            })
+            .then(function (html) {
+                var parser = new DOMParser();
+                var doc = parser.parseFromString(html, 'text/html');
+                library = parsePhysicsDoc(doc);
+                // Кешируем: теперь будет работать и на file://
+                try { localStorage.setItem(LIBRARY_CACHE_KEY, JSON.stringify(library)); } catch (e) {}
+                return library;
+            })
+            .catch(function () {
+                // 3. file:// без кеша — показываем понятное сообщение
+                return Promise.reject({ isFileProtocol: true });
+            });
+    }
+
+    // ---- Загрузка SortableJS (лениво, только при первом открытии) ----
+
+    function loadSortable() {
+        if (window.Sortable) return Promise.resolve();
+        return new Promise(function (resolve, reject) {
+            var s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js';
+            s.onload  = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+        });
+    }
+
+    // ---- Отрисовка левой панели (текущий билет) ----
+
+    function renderCurrent() {
+        curPanel.innerHTML = '';
+
+        if (session.length === 0) {
+            curPanel.innerHTML = '<div class="builder-empty-hint">Блоков нет — добавьте из библиотеки →</div>';
+        } else {
+            session.forEach(function (block, idx) {
+                var item = document.createElement('div');
+                item.className = 'builder-block-item';
+                item.dataset.idx  = String(idx);
+                item.dataset.type = block.type || 'other';
+                item.innerHTML =
+                    '<span class="builder-drag-handle" title="Перетащить">⠿</span>' +
+                    badge(block.type) +
+                    '<span class="builder-block-preview" title="' + escHtml(block.preview) + '">' +
+                        escHtml(block.preview) +
+                    '</span>' +
+                    '<button class="builder-block-remove" data-idx="' + idx + '" title="Удалить">×</button>';
+                curPanel.appendChild(item);
+            });
+
+            curPanel.querySelectorAll('.builder-block-remove').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    session.splice(parseInt(this.dataset.idx), 1);
+                    renderCurrent();
+                });
+            });
+        }
+
+        // SortableJS
+        if (window.Sortable) {
+            if (sortable) { try { sortable.destroy(); } catch (e) {} }
+            sortable = Sortable.create(curPanel, {
+                animation:   150,
+                handle:      '.builder-drag-handle',
+                ghostClass:  'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                onEnd: function (evt) {
+                    var moved = session.splice(evt.oldIndex, 1)[0];
+                    session.splice(evt.newIndex, 0, moved);
+                    // Обновляем data-idx
+                    curPanel.querySelectorAll('.builder-block-item').forEach(function (item, i) {
+                        item.dataset.idx = String(i);
+                        var rm = item.querySelector('.builder-block-remove');
+                        if (rm) rm.dataset.idx = String(i);
+                    });
+                }
+            });
+        }
+    }
+
+    // ---- Отрисовка правой панели (библиотека) ----
+
+    function renderLibrary(query) {
+        libPanel.innerHTML = '';
+        var q = (query || '').toLowerCase().trim();
+
+        // Группируем по теме
+        var groups = new Map();
+        library.forEach(function (block) {
+            if (q &&
+                !block.preview.toLowerCase().includes(q) &&
+                !block.topicTitle.toLowerCase().includes(q)) return;
+
+            if (!groups.has(block.topicId)) {
+                groups.set(block.topicId, { title: block.topicTitle, blocks: [] });
+            }
+            groups.get(block.topicId).blocks.push(block);
+        });
+
+        if (groups.size === 0) {
+            libPanel.innerHTML = '<div class="builder-status">Ничего не найдено</div>';
+            return;
+        }
+
+        groups.forEach(function (group) {
+            var groupEl = document.createElement('div');
+            groupEl.className = 'builder-lib-group' + (q ? ' open' : '');
+
+            var header = document.createElement('div');
+            header.className = 'builder-lib-group-header';
+            header.innerHTML =
+                escHtml(group.title) +
+                '<span class="builder-lib-group-chevron">▶</span>';
+            header.addEventListener('click', function () {
+                groupEl.classList.toggle('open');
+            });
+            groupEl.appendChild(header);
+
+            var items = document.createElement('div');
+            items.className = 'builder-lib-group-items';
+
+            group.blocks.forEach(function (block) {
+                var item = document.createElement('div');
+                item.className = 'builder-lib-item';
+                item.innerHTML =
+                    badge(block.type) +
+                    '<span class="builder-lib-preview" title="' + escHtml(block.preview) + '">' +
+                        escHtml(block.preview) +
+                    '</span>' +
+                    '<button class="builder-lib-eye" title="Предпросмотр блока">👁</button>' +
+                    '<button class="builder-lib-add" title="Добавить в билет">+</button>';
+
+                item.querySelector('.builder-lib-eye').addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    showBlockPreview(block, this);
+                });
+
+                item.querySelector('.builder-lib-add').addEventListener('click', function () {
+                    session.push(Object.assign({}, block, { id: block.id + '-' + Date.now() }));
+                    // Визуальная обратная связь: кнопка мигает зелёным
+                    var btn = this;
+                    btn.classList.add('builder-lib-added');
+                    btn.textContent = '✓';
+                    setTimeout(function () {
+                        btn.classList.remove('builder-lib-added');
+                        btn.textContent = '+';
+                    }, 700);
+                    renderCurrent();
+                });
+
+                items.appendChild(item);
+            });
+
+            groupEl.appendChild(items);
+            libPanel.appendChild(groupEl);
+        });
+    }
+
+    // ---- Открыть конструктор ----
+
+    // ---- Мобильные табы ----
+
+    var mobilePanels = [
+        document.getElementById('builderPanelCurrent'),
+        document.getElementById('builderPanelLib')
+    ];
+
+    document.querySelectorAll('.builder-mobile-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            var idx = parseInt(this.dataset.panel);
+            document.querySelectorAll('.builder-mobile-tab').forEach(function (t) {
+                t.classList.remove('active');
+            });
+            this.classList.add('active');
+            mobilePanels.forEach(function (p, i) {
+                if (p) p.classList.toggle('builder-panel-active', i === idx);
+            });
+        });
+    });
+
+    function switchMobileTab(idx) {
+        document.querySelectorAll('.builder-mobile-tab').forEach(function (t, i) {
+            t.classList.toggle('active', i === idx);
+        });
+        mobilePanels.forEach(function (p, i) {
+            if (p) p.classList.toggle('builder-panel-active', i === idx);
+        });
+    }
+
+    function openBuilder(ticketNum) {
+        builderTicket = ticketNum;
+        selTicket.value = String(ticketNum);
+        document.body.classList.add('builder-open');
+
+        // Загружаем текущие блоки из хранилища
+        var stored = getAll();
+        session = stored[ticketNum]
+            ? stored[ticketNum].map(function (b) { return Object.assign({}, b); })
+            : [];
+
+        overlay.classList.remove('hidden');
+        switchMobileTab(0);   // всегда начинаем с вкладки "Билет"
+        renderCurrent();
+
+        // Загружаем SortableJS и библиотеку (если ещё не загружены)
+        libPanel.innerHTML = '<div class="builder-status">⏳ Загрузка...</div>';
+        Promise.all([loadSortable(), loadLibrary()])
+            .then(function () {
+                renderCurrent();     // переинициализируем Sortable теперь когда он загружен
+                renderLibrary(searchEl.value);
+            })
+            .catch(function (err) {
+                if (err && err.isFileProtocol) {
+                    libPanel.innerHTML =
+                        '<div class="builder-status" style="text-align:left;line-height:1.7">' +
+                        '<strong style="color:var(--text-primary)">Библиотека недоступна на file://</strong><br><br>' +
+                        'Браузер блокирует загрузку файлов по протоколу <code>file://</code>.<br>' +
+                        'Библиотека кешируется автоматически при первом открытии через HTTP.<br><br>' +
+                        '<strong>Варианты решения:</strong><br>' +
+                        '① Открой страницу через <strong>Live Server</strong> в VS Code<br>' +
+                        '&nbsp;&nbsp;&nbsp;<small style="color:var(--text-secondary)">ПКМ на файле → Open with Live Server</small><br>' +
+                        '② Или открой на <strong>GitHub Pages</strong> — там fetch работает и кеш заполнится<br>' +
+                        '&nbsp;&nbsp;&nbsp;<small style="color:var(--text-secondary)">После этого библиотека будет доступна и на file://</small>' +
+                        '</div>';
+                } else {
+                    libPanel.innerHTML = '<div class="builder-status" style="color:#ef4444">Ошибка загрузки: ' + escHtml(String(err)) + '</div>';
+                }
+            });
+    }
+
+    // ---- Закрыть конструктор ----
+
+    function closeBuilder() {
+        overlay.classList.add('hidden');
+        document.body.classList.remove('builder-open');
+        if (sortable) { try { sortable.destroy(); } catch (e) {} sortable = null; }
+        closeBlockPreview();
+    }
+
+    // ---- Предпросмотр блока (всплывающий попап) ----
+
+    var previewPopupEl = null;
+    var previewCloseHandler = null;
+
+    function showBlockPreview(block, triggerEl) {
+        closeBlockPreview();
+
+        var popup = document.createElement('div');
+        popup.className = 'builder-preview-popup';
+
+        var closeSpan = document.createElement('span');
+        closeSpan.className = 'builder-preview-close';
+        closeSpan.textContent = '✕ закрыть';
+        closeSpan.addEventListener('click', function (e) { e.stopPropagation(); closeBlockPreview(); });
+        popup.appendChild(closeSpan);
+
+        var content = document.createElement('div');
+        content.innerHTML = block.html;
+        popup.appendChild(content);
+
+        document.body.appendChild(popup);
+
+        // Позиционирование: слева от кнопки, или справа если не помещается
+        var rect   = triggerEl.getBoundingClientRect();
+        var pw     = 360;
+        var left   = rect.left - pw - 8;
+        if (left < 8) left = rect.right + 8;
+        var top    = Math.max(8, Math.min(rect.top, window.innerHeight - 60));
+        var maxH   = window.innerHeight - top - 12;
+
+        popup.style.cssText = 'left:' + Math.max(8, left) + 'px;top:' + top + 'px;width:' + pw + 'px;max-height:' + Math.min(420, maxH) + 'px';
+
+        // Рендерим формулы (если KaTeX загружен)
+        if (window.renderMathInElement) {
+            try {
+                renderMathInElement(popup, {
+                    throwOnError: false,
+                    delimiters: [
+                        { left: '\\[', right: '\\]', display: true },
+                        { left: '\\(', right: '\\)', display: false }
+                    ]
+                });
+            } catch (e) {}
+        }
+
+        previewPopupEl = popup;
+
+        // Закрываем по клику вне попапа (с задержкой, чтобы не сработало сразу)
+        setTimeout(function () {
+            previewCloseHandler = function (e) {
+                if (previewPopupEl && !previewPopupEl.contains(e.target)) {
+                    closeBlockPreview();
+                }
+            };
+            document.addEventListener('click', previewCloseHandler);
+        }, 50);
+    }
+
+    function closeBlockPreview() {
+        if (previewPopupEl && previewPopupEl.parentNode) {
+            previewPopupEl.parentNode.removeChild(previewPopupEl);
+        }
+        previewPopupEl = null;
+        if (previewCloseHandler) {
+            document.removeEventListener('click', previewCloseHandler);
+            previewCloseHandler = null;
+        }
+    }
+
+    // ---- Просмотр публичного билета ----
+
+    var pubViewOverlay  = document.getElementById('builderPubViewOverlay');
+    var pubViewTitle    = document.getElementById('builderPubViewTitle');
+    var pubViewBody     = document.getElementById('builderPubViewBody');
+    var pubViewCounter  = document.getElementById('builderPubViewCounter');
+    var pubViewPrevBtn  = document.getElementById('builderPubViewPrev');
+    var pubViewNextBtn  = document.getElementById('builderPubViewNext');
+    var pubViewCloneOne = document.getElementById('builderPubCloneOne');
+    var pubViewCloneAll = document.getElementById('builderPubCloneAll');
+
+    var pvState = { nums: [], tickets: {}, idx: 0, fromName: '', fromUid: '' };
+
+    function openPublicPreview(fromUid, fromName, tickets, startNum) {
+        var nums = Object.keys(tickets).filter(function (n) {
+            return Array.isArray(tickets[n]) && tickets[n].length > 0;
+        }).sort(function (a, b) { return +a - +b; });
+
+        if (nums.length === 0) { showToast('Нет блоков для просмотра'); return; }
+
+        var startIdx = startNum != null ? nums.indexOf(String(startNum)) : 0;
+        if (startIdx < 0) startIdx = 0;
+
+        pvState = { nums: nums, tickets: tickets, idx: startIdx, fromName: fromName, fromUid: fromUid };
+        renderPubViewPage();
+        pubViewOverlay.classList.remove('hidden');
+    }
+
+    function renderPubViewPage() {
+        var s   = pvState;
+        var n   = s.nums[s.idx];
+        var blocks = s.tickets[n] || [];
+
+        pubViewTitle.textContent = '👁 ' + (s.fromName || 'Аноним') + '  —  Билет №' + n;
+        pubViewCounter.textContent = (s.idx + 1) + ' / ' + s.nums.length;
+        pubViewPrevBtn.disabled = s.idx === 0;
+        pubViewNextBtn.disabled = s.idx === s.nums.length - 1;
+
+        pubViewBody.innerHTML = '';
+        blocks.forEach(function (block) {
+            var wrap = document.createElement('div');
+            wrap.innerHTML = block.html;
+            wrap.style.marginBottom = '0.6rem';
+            pubViewBody.appendChild(wrap);
+        });
+        pubViewBody.scrollTop = 0;
+
+        // Рендерим формулы
+        if (window.renderMathInElement) {
+            try {
+                renderMathInElement(pubViewBody, {
+                    throwOnError: false,
+                    delimiters: [
+                        { left: '\\[', right: '\\]', display: true },
+                        { left: '\\(', right: '\\)', display: false }
+                    ]
+                });
+            } catch (e) {}
+        }
+
+        // Восстанавливаем кнопки «показать вывод»
+        reInit(pubViewBody);
+    }
+
+    function closePubView() { pubViewOverlay.classList.add('hidden'); }
+
+    pubViewPrevBtn.addEventListener('click', function () {
+        if (pvState.idx > 0) { pvState.idx--; renderPubViewPage(); }
+    });
+    pubViewNextBtn.addEventListener('click', function () {
+        if (pvState.idx < pvState.nums.length - 1) { pvState.idx++; renderPubViewPage(); }
+    });
+    pubViewCloneOne.addEventListener('click', function () {
+        var s = pvState; var n = s.nums[s.idx];
+        var single = {}; single[n] = s.tickets[n];
+        cloneTickets(s.fromUid, s.fromName, single, n);
+        closePubView();
+    });
+    pubViewCloneAll.addEventListener('click', function () {
+        cloneTickets(pvState.fromUid, pvState.fromName, pvState.tickets, null);
+        closePubView();
+    });
+    document.getElementById('builderPubViewClose').addEventListener('click', closePubView);
+    pubViewOverlay.addEventListener('click', function (e) {
+        if (e.target === pubViewOverlay) closePubView();
+    });
+
+    // ---- Escape для закрытия ----
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        if (previewPopupEl) { closeBlockPreview(); return; }
+        if (suggestOverlay && !suggestOverlay.classList.contains('hidden')) { suggestOverlay.classList.add('hidden'); return; }
+        if (pubViewOverlay && !pubViewOverlay.classList.contains('hidden')) { closePubView(); return; }
+        var authOv = document.getElementById('builderAuthOverlay');
+        if (authOv && !authOv.classList.contains('hidden')) {
+            authOv.classList.add('hidden');
+            return;
+        }
+        if (!overlay.classList.contains('hidden')) { closeBuilder(); }
+    });
+
+    // ---- Сохранить ----
+
+    function saveBuilder() {
+        storeTicket(builderTicket, session);
+        saveToFirebase(builderTicket, session);   // синхронизация с Firebase (если залогинен)
+
+        // Обновляем билет на странице
+        var section = document.getElementById('ticket-' + builderTicket);
+        if (section) {
+            var article = section.querySelector('article.topic');
+            if (article) {
+                var h3 = article.querySelector('h3.topic-title');
+                article.innerHTML = '';
+                if (h3) article.appendChild(h3);
+                session.forEach(function (block) {
+                    var wrap = document.createElement('div');
+                    wrap.innerHTML = block.html;
+                    while (wrap.firstChild) article.appendChild(wrap.firstChild);
+                });
+                reInit(article);
+            }
+        }
+
+        // Обратная связь
+        var orig = btnSave.textContent;
+        btnSave.textContent = '✅ Сохранено';
+        btnSave.style.background = '#16a34a';
+        setTimeout(function () {
+            btnSave.textContent = orig;
+            btnSave.style.background = '';
+        }, 2000);
+    }
+
+    // ---- Очистить (сбросить к исходному HTML) ----
+
+    function resetBuilder() {
+        if (!confirm('Очистить Билет №' + builderTicket + '?\nСохранённые данные будут удалены, при перезагрузке страницы вернётся исходное содержимое.')) return;
+        session = [];
+        clearTicket(builderTicket);
+        renderCurrent();
+        // Очищаем статью на странице
+        var section = document.getElementById('ticket-' + builderTicket);
+        if (section) {
+            var article = section.querySelector('article.topic');
+            if (article) {
+                var h3 = article.querySelector('h3.topic-title');
+                article.innerHTML = '';
+                if (h3) {
+                    article.appendChild(h3);
+                } else {
+                    article.innerHTML = '<p style="color:var(--text-secondary);font-style:italic;">Билет очищен. Перезагрузите страницу для восстановления исходного содержимого.</p>';
+                }
+            }
+        }
+    }
+
+    // ---- Обработчики событий ----
+
+    document.getElementById('builderRefreshLib').addEventListener('click', function () {
+        // Сбрасываем кеш и перезагружаем библиотеку
+        try { localStorage.removeItem(LIBRARY_CACHE_KEY); } catch (e) {}
+        library = null;
+        libPanel.innerHTML = '<div class="builder-status">⏳ Перезагрузка библиотеки...</div>';
+        loadSortable().then(loadLibrary).then(function () {
+            renderLibrary(searchEl.value);
+        }).catch(function (err) {
+            libPanel.innerHTML = '<div class="builder-status" style="color:#ef4444">Ошибка: ' + escHtml(String(err && err.message || err)) + '</div>';
+        });
+    });
+
+    // ---- Синхронизация блоков всех билетов с physics.html ----
+
+    document.getElementById('builderSyncTickets').addEventListener('click', function () {
+        syncTicketBlocks(this);
+    });
+
+    function syncTicketBlocks(triggerBtn) {
+        var btn = triggerBtn || document.getElementById('builderSyncTickets');
+        var origHtml = btn ? btn.innerHTML : '';
+        if (btn) { btn.disabled = true; btn.innerHTML = '⏳<span class="btn-text"> Синхр.</span>'; }
+
+        // Всегда берём свежую копию — сбрасываем кеш
+        try { localStorage.removeItem(LIBRARY_CACHE_KEY); } catch (e) {}
+        var prevLib = library;
+        library = null;
+
+        loadLibrary().then(function (freshLib) {
+            // Два индекса для надёжного матчинга:
+            // 1. srcId (topicId:localIdx) — стабильный, не зависит от других тем
+            // 2. topicId|preview — текстовый фолбэк для старых блоков без srcId
+            var bySrcId   = {};
+            var byPreview = {};
+            freshLib.forEach(function (b) {
+                if (b.srcId) bySrcId[b.srcId] = b;
+                var pk = (b.topicId || '') + '|' + (b.preview || '').trim().slice(0, 80);
+                byPreview[pk] = b;
+            });
+
+            var all = getAll();
+            var updatedBlocks  = 0;
+            var ticketsChanged = [];
+
+            Object.keys(all).forEach(function (n) {
+                var blocks = all[n];
+                if (!Array.isArray(blocks)) return;
+                var changed = false;
+
+                blocks.forEach(function (block, i) {
+                    // Пропускаем собственные и кастомные блоки
+                    if (!block || !block.id) return;
+                    var rawId = block.id;
+                    if (rawId.startsWith('custom-')) return;
+
+                    // Ищем соответствие в свежей библиотеке
+                    var fresh = null;
+
+                    // 1. По srcId (самый надёжный)
+                    if (block.srcId) fresh = bySrcId[block.srcId];
+
+                    // 2. По stripped id (убираем суффикс -TIMESTAMP)
+                    if (!fresh) {
+                        var strippedId = rawId.replace(/-\d{10,}$/, '');
+                        fresh = freshLib.filter(function (b) { return b.id === strippedId; })[0] || null;
+                    }
+
+                    // 3. По тексту превью внутри той же темы
+                    if (!fresh && block.topicId) {
+                        var pk = block.topicId + '|' + (block.preview || '').trim().slice(0, 80);
+                        fresh = byPreview[pk] || null;
+                    }
+
+                    if (!fresh) return; // блок не найден в текущей версии
+
+                    // Обновляем если HTML изменился
+                    if (fresh.html !== block.html) {
+                        all[n][i] = Object.assign({}, block, {
+                            html:    fresh.html,
+                            preview: fresh.preview,
+                            srcId:   fresh.srcId,   // сохраняем srcId для следующей синхронизации
+                            type:    fresh.type
+                        });
+                        changed = true;
+                        updatedBlocks++;
+                    } else if (!block.srcId && fresh.srcId) {
+                        // Только записываем srcId (без изменения HTML — не считается как обновление)
+                        all[n][i] = Object.assign({}, block, { srcId: fresh.srcId });
+                        changed = true;
+                    }
+                });
+
+                if (changed) ticketsChanged.push(parseInt(n, 10));
+            });
+
+            if (ticketsChanged.length > 0) {
+                saveAll(all);
+                applyStoredTickets();
+
+                // Если конструктор открыт на одном из изменённых билетов — обновляем сессию
+                if (!overlay.classList.contains('hidden') && ticketsChanged.indexOf(builderTicket) !== -1) {
+                    var stored = getAll();
+                    session = (stored[builderTicket] || []).map(function (b) { return Object.assign({}, b); });
+                    renderCurrent();
+                }
+
+                // Firebase sync для всех изменённых
+                if (currentUser) {
+                    ticketsChanged.forEach(function (n) {
+                        if (all[n] && all[n].length) saveToFirebase(n, all[n]);
+                    });
+                }
+            }
+
+            // Обновляем панель библиотеки актуальными данными
+            if (!overlay.classList.contains('hidden')) renderLibrary(searchEl.value);
+
+            var msg = updatedBlocks > 0
+                ? '✅ Синхронизировано: обновлено ' + updatedBlocks + ' ' + plural(updatedBlocks, 'блок', 'блока', 'блоков') + ' в ' + ticketsChanged.length + ' ' + plural(ticketsChanged.length, 'билете', 'билетах', 'билетах')
+                : '✓ Все блоки уже актуальны';
+            showToast(msg, 4000);
+
+        }).catch(function (err) {
+            library = prevLib; // откатываем если не удалось загрузить
+            showToast('⚠️ Не удалось синхронизировать: ' + (err && err.message ? err.message : 'ошибка загрузки physics.html'));
+        }).then(function () {
+            if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+        });
+    }
+
+    function plural(n, one, few, many) {
+        var m10 = n % 10, m100 = n % 100;
+        if (m10 === 1 && m100 !== 11) return one;
+        if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few;
+        return many;
+    }
+
+    btnOpen.addEventListener('click', function () {
+        // Определяем активный билет из DOM (не зависим от внешней переменной)
+        var active = document.querySelector('.ticket-section.active-ticket');
+        var n = 1;
+        if (active) {
+            var m = (active.id || '').match(/^ticket-(\d+)$/);
+            if (m) n = parseInt(m[1]);
+        }
+        openBuilder(n);
+    });
+    btnClose.addEventListener('click', closeBuilder);
+    btnSave.addEventListener('click', saveBuilder);
+    btnReset.addEventListener('click', resetBuilder);
+
+    selTicket.addEventListener('change', function () {
+        builderTicket = parseInt(this.value);
+        var stored = getAll();
+        session = stored[builderTicket]
+            ? stored[builderTicket].map(function (b) { return Object.assign({}, b); })
+            : [];
+        renderCurrent();
+    });
+
+    searchEl.addEventListener('input', function () {
+        if (library) renderLibrary(this.value);
+    });
+
+    // Закрыть по клику на затемнение (вне модального окна)
+    overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) closeBuilder();
+    });
+
+    // Применить сохранённые билеты после загрузки всех скриптов (KaTeX = defer)
+    window.addEventListener('load', function () {
+        applyStoredTickets();
+        loadDefaultsIfEmpty();
+    });
+
+    // ---- Загрузка дефолтных билетов для новых пользователей ----
+    // Если у пользователя нет ни одного блока ни в одном билете,
+    // тихо клонируем публичные билеты автора сайта (dmb23930@gmail.com).
+
+    var DEFAULT_AUTHOR_EMAIL = 'dmb23930@gmail.com';
+    var DEFAULT_LOADED_KEY   = 'physics-exam-defaults-loaded';
+
+    function hasAnyBlocks() {
+        var all = getAll();
+        return Object.keys(all).some(function (n) {
+            return Array.isArray(all[n]) && all[n].length > 0;
+        });
+    }
+
+    function loadDefaultsIfEmpty() {
+        // Если блоки уже есть или дефолты уже загружались — не трогаем
+        if (localStorage.getItem(DEFAULT_LOADED_KEY)) return;
+        if (hasAnyBlocks()) {
+            localStorage.setItem(DEFAULT_LOADED_KEY, '1');
+            return;
+        }
+        // Нужно Firebase — ждём его инициализации (SDK грузится async)
+        var attempts = 0;
+        function tryLoad() {
+            var db = fbDb();
+            if (!db) {
+                if (attempts++ < 20) setTimeout(tryLoad, 300);
+                return;
+            }
+            db.ref('publicTickets').once('value').then(function (snap) {
+                var data = snap.val();
+                if (!data) return;
+                // Ищем запись автора сайта по email
+                var entry = null;
+                Object.keys(data).forEach(function (uid) {
+                    if (data[uid].email === DEFAULT_AUTHOR_EMAIL) entry = data[uid];
+                });
+                if (!entry || !entry.tickets) return;
+                // Клонируем тихо (без confirm и уведомлений)
+                var all = getAll();
+                Object.keys(entry.tickets).forEach(function (n) {
+                    var blocks = entry.tickets[n];
+                    if (Array.isArray(blocks) && blocks.length > 0) {
+                        all[n] = blocks.map(function (b) { return Object.assign({}, b); });
+                    }
+                });
+                saveAll(all);
+                applyStoredTickets();
+                localStorage.setItem(DEFAULT_LOADED_KEY, '1');
+            }).catch(function () { /* Firebase недоступен — ок */ });
+        }
+        tryLoad();
+    }
+
+
+    // ====================================================
+    // АВТОРИЗАЦИЯ И СИНХРОНИЗАЦИЯ С FIREBASE
+    // ====================================================
+
+    var currentUser  = null;
+    var DB_ROOT      = 'ticketBuilder';
+    var syncBadge    = document.getElementById('builderSyncBadge');
+    var userLabel    = document.getElementById('builderUserLabel');
+    var authBtn      = document.getElementById('builderAuthBtn');
+
+    // ---- Firebase helpers ----
+
+    function fbAuth() {
+        return (window.firebase && window.firebase.apps.length) ? window.firebase.auth() : null;
+    }
+    function fbDb() {
+        return (window.firebase && window.firebase.apps.length) ? window.firebase.database() : null;
+    }
+
+    // ---- Обновить шапку: email + синк-бейдж ----
+
+    function updateAuthUI(user) {
+        if (user) {
+            userLabel.textContent = '👤 ' + user.email;
+            userLabel.style.display = 'inline';
+            authBtn.innerHTML = '🔓<span class="btn-text"> Выйти</span>';
+            syncBadge.style.display = 'inline';
+            if (publishBtn) publishBtn.style.display = 'inline-flex';
+        } else {
+            userLabel.style.display = 'none';
+            authBtn.innerHTML = '🔐<span class="btn-text"> Войти</span>';
+            syncBadge.style.display = 'none';
+            if (publishBtn) publishBtn.style.display = 'none';
+        }
+    }
+
+    // ---- Загрузить билеты из Firebase → localStorage → страница ----
+
+    function loadFromFirebase(uid) {
+        var db = fbDb();
+        if (!db) return;
+
+        fbDb().ref(DB_ROOT + '/' + uid + '/tickets').once('value')
+            .then(function (snap) {
+                var data = snap.val();
+                if (!data) return;
+
+                // Данные из Firebase перезаписывают localStorage
+                var all = getAll();
+                Object.keys(data).forEach(function (n) {
+                    if (Array.isArray(data[n]) && data[n].length > 0) {
+                        all[n] = data[n];
+                    }
+                });
+                saveAll(all);
+
+                // Применяем к странице
+                applyStoredTickets();
+
+                // Если конструктор открыт — обновить левую панель
+                if (!overlay.classList.contains('hidden')) {
+                    var stored = getAll();
+                    session = (stored[builderTicket] || []).map(function (b) { return Object.assign({}, b); });
+                    renderCurrent();
+                }
+
+                setSyncBadge('ok');
+            })
+            .catch(function (err) {
+                console.warn('[Builder] Firebase load failed:', err.message);
+            });
+    }
+
+    // ---- Сохранить один билет в Firebase (в фоне) ----
+
+    function saveToFirebase(n, blocks) {
+        var db = fbDb();
+        if (!db || !currentUser) return;
+
+        setSyncBadge('syncing');
+        db.ref(DB_ROOT + '/' + currentUser.uid + '/tickets/' + n)
+            .set(blocks)
+            .then(function () { setSyncBadge('ok'); })
+            .catch(function (err) {
+                console.warn('[Builder] Firebase save failed:', err.message);
+                setSyncBadge('ok');
+            });
+    }
+
+    function setSyncBadge(state) {
+        if (!currentUser) return;
+        syncBadge.style.display = 'inline';
+        if (state === 'syncing') {
+            syncBadge.textContent = '↑ синхронизация...';
+            syncBadge.classList.add('syncing');
+        } else {
+            syncBadge.textContent = '☁ синхронизировано';
+            syncBadge.classList.remove('syncing');
+        }
+    }
+
+    // ====================================================
+    // ПУБЛИЧНЫЕ БИЛЕТЫ
+    // ====================================================
+
+    var PUBLIC_ROOT = 'publicTickets';
+    var pubPanel    = document.getElementById('builderPublicContent');
+    var publishBtn  = document.getElementById('builderPublishBtn');
+    var subPhysics  = document.getElementById('builderSubPhysics');
+    var subPublic   = document.getElementById('builderSubPublic');
+    var subCreate   = document.getElementById('builderSubCreate');
+
+    // ---- Subtab переключение ----
+
+    document.querySelectorAll('.builder-lib-subtab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            document.querySelectorAll('.builder-lib-subtab').forEach(function (t) { t.classList.remove('active'); });
+            this.classList.add('active');
+            var sub = this.dataset.subtab;
+            subPhysics.style.display = sub === 'physics' ? '' : 'none';
+            subPublic.style.display  = sub === 'public'  ? '' : 'none';
+            subCreate.style.display  = sub === 'create'  ? '' : 'none';
+            if (sub === 'public') loadPublicTickets();
+            if (sub === 'create') renderMyBlocks();
+        });
+    });
+
+    // =====================================================================
+    // РЕДАКТОР ПОЛЬЗОВАТЕЛЬСКИХ БЛОКОВ
+    // =====================================================================
+
+    var CUSTOM_BLOCKS_KEY = 'physics-exam-custom-blocks';
+
+    // DOM-элементы редактора
+    var beditorType    = document.getElementById('beditorType');
+    var beditorContent = document.getElementById('beditorContent');
+    var beditorPreview = document.getElementById('beditorPreview');
+    var beditorMyBlocks = document.getElementById('beditorMyBlocks');
+
+    // Модал «Предложить»
+    var suggestOverlay      = document.getElementById('beditorSuggestOverlay');
+    var suggestCode         = document.getElementById('beditorSuggestCode');
+    var suggestFBNote       = document.getElementById('beditorSuggestFirebaseNote');
+    var suggestCloseBtn     = document.getElementById('beditorSuggestCloseBtn');
+    var suggestCloseX       = document.getElementById('beditorSuggestClose');
+    var suggestCopyBtn      = document.getElementById('beditorSuggestCopy');
+    var suggestAdminSection = document.getElementById('beditorSuggestAdminSection');
+    var ADMIN_EMAIL         = 'dmb23930@gmail.com';
+    document.getElementById('beditorSave').addEventListener('click', saveEditorBlock);
+    document.getElementById('beditorSuggest').addEventListener('click', suggestEditorBlock);
+    document.getElementById('beditorClear').addEventListener('click', function () {
+        beditorContent.innerHTML = '';
+        beditorPreview.innerHTML = '';
+    });
+    suggestCloseBtn.addEventListener('click', function () { suggestOverlay.classList.add('hidden'); });
+    suggestCloseX.addEventListener('click',   function () { suggestOverlay.classList.add('hidden'); });
+    suggestOverlay.addEventListener('click', function (e) { if (e.target === suggestOverlay) suggestOverlay.classList.add('hidden'); });
+    suggestCopyBtn.addEventListener('click', function () {
+        var text = suggestCode.textContent;
+        navigator.clipboard.writeText(text).then(function () {
+            showToast('📋 Код скопирован');
+        }).catch(function () {
+            suggestCode.focus();
+            document.execCommand('selectAll');
+            document.execCommand('copy');
+            showToast('📋 Код скопирован');
+        });
+    });
+
+    // Тулбар форматирования
+    document.querySelectorAll('.beditor-tb-btn').forEach(function (btn) {
+        btn.addEventListener('mousedown', function (e) {
+            e.preventDefault(); // не снимаем фокус с contenteditable
+            var cmd  = this.dataset.cmd;
+            var lat  = this.dataset.latex;
+            var nest = this.dataset.nest;
+            if (cmd) {
+                beditorContent.focus();
+                document.execCommand(cmd, false, null);
+                updateBeditorPreview();
+            } else if (lat) {
+                insertAtBeditorCursor(lat === 'inline' ? '\\(формула\\)' : '\\[формула\\]');
+                updateBeditorPreview();
+            } else if (nest) {
+                insertNestedBlock(nest);
+            }
+        });
+    });
+
+    function insertNestedBlock(className) {
+        beditorContent.focus();
+        var labels = {
+            'formula-box':    'Формула',
+            'definition-box': 'Текст определения',
+        };
+        var placeholder = labels[className] || 'Содержимое';
+        // Вставляем шаблон вложенного блока с нулевым пробелом после
+        var tmpl = '<div class="' + className + '">' + placeholder + '</div>&#8203;';
+        document.execCommand('insertHTML', false, tmpl);
+        updateBeditorPreview();
+    }
+
+    // Авто-превью при вводе
+    beditorContent.addEventListener('input', updateBeditorPreview);
+    beditorType.addEventListener('change', function () {
+        updateBeditorTypeHint();
+        updateBeditorPreview();
+    });
+
+    function updateBeditorTypeHint() {
+        var type = beditorType.value;
+        var label = document.getElementById('beditorContentLabel');
+        if (type === 'formula-box') {
+            label.textContent = 'Формула (LaTeX, без $$)';
+            beditorContent.setAttribute('placeholder', 'E = mc^2');
+        } else if (type === 'h4') {
+            label.textContent = 'Текст заголовка';
+            beditorContent.setAttribute('placeholder', 'Заголовок раздела');
+        } else {
+            label.textContent = 'Содержимое';
+            beditorContent.setAttribute('placeholder', 'Введите текст блока...');
+        }
+    }
+
+    function insertAtBeditorCursor(text) {
+        beditorContent.focus();
+        var sel = window.getSelection();
+        if (!sel.rangeCount) {
+            beditorContent.appendChild(document.createTextNode(text));
+            return;
+        }
+        var range = sel.getRangeAt(0);
+        range.deleteContents();
+        var node = document.createTextNode(text);
+        range.insertNode(node);
+        range.setStartAfter(node);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+
+    function getEditorRawHtml() {
+        return convertDollarLatex(beditorContent.innerHTML.trim());
+    }
+
+    // Конвертация $...$ → \(...\) и $$...$$ → \[...\]
+    // Применяется к тексту внутри тегов, не трогает атрибуты
+    function convertDollarLatex(html) {
+        // Обрабатываем посегментно: текстовые узлы vs теги
+        return html.replace(/(<[^>]*>)|(\$\$[\s\S]+?\$\$)|(\$[^$\n]+?\$)/g, function (match, tag, dbl, sngl) {
+            if (tag)  return tag;                               // HTML-тег — не трогаем
+            if (dbl)  return '\\[' + dbl.slice(2, -2) + '\\]'; // $$...$$ → \[...\]
+            if (sngl) return '\\(' + sngl.slice(1, -1) + '\\)'; // $...$ → \(...\)
+            return match;
+        });
+    }
+
+    function wrapWithType(innerHtml) {
+        var type = beditorType.value;
+        if (type === 'definition-box') return '<div class="definition-box">' + innerHtml + '</div>';
+        if (type === 'formula-box') {
+            // formula-box содержит только \[формула\] — берём «сырой» LaTeX из текста
+            var latex = beditorContent.textContent.trim()
+                .replace(/^\$\$([\s\S]+)\$\$$/, '$1')   // убираем $$...$$
+                .replace(/^\$([\s\S]+)\$$/, '$1')        // убираем $...$
+                .trim();
+            return '<div class="formula-box">\\[' + latex + '\\]</div>';
+        }
+        if (type === 'h4') return '<h4 class="subsection-title">' + (beditorContent.textContent.trim() || innerHtml) + '</h4>';
+        return '<p>' + innerHtml + '</p>';
+    }
+
+    function updateBeditorPreview() {
+        var wrapped = wrapWithType(getEditorRawHtml());
+        beditorPreview.innerHTML = wrapped;
+        if (window.renderMathInElement) {
+            try {
+                renderMathInElement(beditorPreview, {
+                    throwOnError: false,
+                    delimiters: [
+                        { left: '\\[', right: '\\]', display: true },
+                        { left: '\\(', right: '\\)', display: false }
+                    ]
+                });
+            } catch (e) {}
+        }
+    }
+
+    // ---- Хранилище «Мои блоки» ----
+
+    function getCustomBlocks() {
+        try { return JSON.parse(localStorage.getItem(CUSTOM_BLOCKS_KEY)) || []; } catch (e) { return []; }
+    }
+    function saveCustomBlocks(blocks) {
+        localStorage.setItem(CUSTOM_BLOCKS_KEY, JSON.stringify(blocks));
+    }
+
+    function saveEditorBlock() {
+        var raw = getEditorRawHtml();
+        if (!raw) { showToast('⚠️ Редактор пуст'); return; }
+        var html    = wrapWithType(raw);
+        var preview = beditorContent.textContent.trim().slice(0, 80) || '(блок)';
+        var block = {
+            id:        'custom-' + Date.now(),
+            type:      beditorType.value,
+            html:      html,
+            preview:   preview,
+            createdAt: Date.now()
+        };
+
+        // Сохраняем в «Мои блоки»
+        var myBlocks = getCustomBlocks();
+        myBlocks.unshift(block);
+        saveCustomBlocks(myBlocks);
+        renderMyBlocks();
+
+        // Добавляем в текущую сессию
+        var entry = { id: block.id, html: block.html, preview: block.preview, type: block.type };
+        session.push(entry);
+        renderCurrent();
+
+        // Сразу сохраняем сессию в localStorage и Firebase
+        // (чтобы блок не потерялся если закрыть конструктор без нажатия «Сохранить»)
+        storeTicket(builderTicket, session);
+        saveToFirebase(builderTicket, session);
+
+        showToast('✅ Блок создан и сохранён в билет ' + builderTicket);
+    }
+
+    function renderMyBlocks() {
+        var blocks = getCustomBlocks();
+        if (!blocks.length) {
+            beditorMyBlocks.innerHTML = '<div style="padding:0.5rem 0.85rem;font-size:0.78rem;color:var(--text-secondary)">Нет сохранённых блоков</div>';
+            return;
+        }
+        beditorMyBlocks.innerHTML = '';
+        blocks.forEach(function (b) {
+            var row = document.createElement('div');
+            row.className = 'beditor-myblock';
+
+            var addBtn = document.createElement('button');
+            addBtn.className = 'builder-lib-add';
+            addBtn.title = 'Добавить в билет';
+            addBtn.textContent = '+';
+            addBtn.addEventListener('click', function () {
+                session.push({ id: b.id + '-' + Date.now(), html: b.html, preview: b.preview, type: b.type });
+                renderCurrent();
+                var btn = addBtn;
+                btn.textContent = '✓';
+                setTimeout(function () { btn.textContent = '+'; }, 700);
+            });
+
+            var prevEl = document.createElement('span');
+            prevEl.className = 'beditor-myblock-preview';
+            prevEl.title = b.preview;
+            prevEl.textContent = b.preview;
+
+            var delBtn = document.createElement('button');
+            delBtn.className = 'beditor-myblock-del';
+            delBtn.title = 'Удалить блок';
+            delBtn.textContent = '🗑';
+            delBtn.addEventListener('click', function () {
+                var blocks2 = getCustomBlocks().filter(function (x) { return x.id !== b.id; });
+                saveCustomBlocks(blocks2);
+                renderMyBlocks();
+            });
+
+            row.appendChild(addBtn);
+            row.appendChild(prevEl);
+            row.appendChild(delBtn);
+            beditorMyBlocks.appendChild(row);
+        });
+    }
+
+    // ---- Предложить блок ----
+
+    // ---- Telegram-уведомления для предложений блоков ----
+    // Настройка: создай бота через @BotFather, получи токен.
+    // Затем напиши боту любое сообщение и зайди на:
+    //   https://api.telegram.org/bot{TOKEN}/getUpdates
+    // Скопируй chat_id из ответа и вставь ниже.
+    // URL Cloudflare Worker — токен хранится там, не в коде сайта
+    // Как задеплоить: см. комментарий ниже
+    var SUGGEST_WORKER_URL = 'https://physics-suggest.almanion.workers.dev/';  // 'https://suggest.YOUR_SUBDOMAIN.workers.dev'
+
+    function sendTelegramSuggestion(authorEmail, blockType, preview, codeText) {
+        if (!SUGGEST_WORKER_URL) return;
+        fetch(SUGGEST_WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                author:  authorEmail || 'Гость',
+                type:    blockType,
+                preview: preview.slice(0, 300),
+                code:    codeText.slice(0, 2400)
+            })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (!data.ok) showToast('⚠️ Не удалось уведомить администратора');
+        })
+        .catch(function () {
+            showToast('⚠️ Ошибка связи — предложение сохранено в Firebase');
+        });
+    }
+
+    function suggestEditorBlock() {
+        var textContent = beditorContent.textContent.trim();
+        if (!textContent) {
+            showToast('⚠️ Введите содержимое блока перед тем как предложить');
+            return;
+        }
+
+        var raw       = getEditorRawHtml();
+        var html      = wrapWithType(raw);
+        var preview   = textContent.slice(0, 200);
+        var type      = beditorType.value;
+        var formatted = formatHtmlForSuggest(html);
+        var isAdmin   = currentUser && currentUser.email === ADMIN_EMAIL;
+
+        if (suggestAdminSection) suggestAdminSection.style.display = isAdmin ? '' : 'none';
+        if (suggestCode)         suggestCode.textContent = formatted;
+        if (suggestCopyBtn)      suggestCopyBtn.style.display = isAdmin ? '' : 'none';
+
+        if (currentUser) {
+            var db = fbDb();
+            if (db) {
+                db.ref('blockSuggestions/' + currentUser.uid + '/' + Date.now()).set({
+                    html: html, type: type, preview: preview,
+                    author: currentUser.email, uid: currentUser.uid,
+                    createdAt: Date.now()
+                });
+            }
+        }
+
+        sendTelegramSuggestion(currentUser ? currentUser.email : null, type, preview, formatted);
+        suggestOverlay.classList.remove('hidden');
+    }
+
+    function formatHtmlForSuggest(html) {
+        // Токенизируем HTML на теги и текст
+        var VOID_RE   = /^<(br|hr|img|input|col|area|base|source|meta|link)\b/i;
+        var INLINE_RE = /^<\/?(strong|em|b|i|span|code|sup|sub|mark|a)\b/i;
+
+        var tokens = [];
+        var re = /<[^>]+>|[^<]+/g;
+        var m;
+        while ((m = re.exec(html)) !== null) {
+            var t = m[0];
+            if (t.trim()) tokens.push(t);
+        }
+
+        var lines  = [];
+        var depth  = 0;
+        var buf    = '';  // буфер для inline-контента
+
+        function flushBuf() {
+            if (buf.trim()) {
+                lines.push('\t'.repeat(depth) + buf.trim());
+                buf = '';
+            }
+        }
+
+        tokens.forEach(function (tok) {
+            var trimmed = tok.trim();
+            if (!trimmed.startsWith('<')) {
+                // Текст — добавляем в буфер
+                buf += trimmed;
+                return;
+            }
+            var isClose  = trimmed.startsWith('</');
+            var isVoid   = VOID_RE.test(trimmed);
+            var isInline = INLINE_RE.test(trimmed);
+
+            if (isInline) {
+                // Inline-теги собираем в буфер вместе с текстом
+                buf += trimmed;
+                return;
+            }
+
+            // Блочный тег — сначала выводим буфер
+            flushBuf();
+
+            if (isClose) {
+                depth = Math.max(0, depth - 1);
+                lines.push('\t'.repeat(depth) + trimmed);
+            } else if (isVoid) {
+                lines.push('\t'.repeat(depth) + trimmed);
+            } else {
+                lines.push('\t'.repeat(depth) + trimmed);
+                depth++;
+            }
+        });
+
+        flushBuf();
+        return lines.join('\n');
+    }
+
+    // ---- Toast-уведомление ----
+
+    var toastEl = null;
+    function showToast(msg, ms) {
+        if (!toastEl) {
+            toastEl = document.createElement('div');
+            toastEl.className = 'builder-toast';
+            document.body.appendChild(toastEl);
+        }
+        toastEl.textContent = msg;
+        toastEl.classList.add('visible');
+        clearTimeout(toastEl._t);
+        toastEl._t = setTimeout(function () { toastEl.classList.remove('visible'); }, ms || 3000);
+    }
+
+    // ---- Публикация билетов ----
+
+    function publishTickets() {
+        var db = fbDb();
+        if (!db || !currentUser) { showToast('Войдите в аккаунт, чтобы публиковать билеты'); return; }
+
+        var all = getAll();
+        var toPublish = {};
+        Object.keys(all).forEach(function (n) {
+            if (Array.isArray(all[n]) && all[n].length > 0) toPublish[n] = all[n];
+        });
+
+        if (Object.keys(toPublish).length === 0) {
+            showToast('Нет непустых билетов для публикации');
+            return;
+        }
+
+        var author = currentUser.email.split('@')[0];
+        publishBtn.disabled = true;
+        publishBtn.innerHTML = '⏳<span class="btn-text"> Публикую...</span>';
+
+        function resetPublishBtn() {
+            publishBtn.disabled = false;
+            publishBtn.innerHTML = '📤<span class="btn-text"> Опубликовать</span>';
+        }
+
+        db.ref(PUBLIC_ROOT + '/' + currentUser.uid).set({
+            author:      author,
+            email:       currentUser.email,
+            publishedAt: Date.now(),
+            tickets:     toPublish
+        }).then(function () {
+            resetPublishBtn();
+            showToast('✅ Опубликовано! Другие найдут ваши билеты на вкладке 🌐 Общие', 4500);
+        }).catch(function (err) {
+            resetPublishBtn();
+            showToast('Ошибка публикации: ' + err.message);
+        });
+    }
+
+    if (publishBtn) publishBtn.addEventListener('click', publishTickets);
+
+    // ---- Загрузка публичных билетов ----
+
+    var publicLoading = false;
+
+    function loadPublicTickets() {
+        var db = fbDb();
+        if (publicLoading) return;
+
+        pubPanel.innerHTML = '<div class="builder-status">⏳ Загрузка...</div>';
+
+        if (!db) {
+            pubPanel.innerHTML = '<div class="builder-status">Firebase недоступен</div>';
+            return;
+        }
+
+        publicLoading = true;
+        db.ref(PUBLIC_ROOT).once('value')
+            .then(function (snap) {
+                publicLoading = false;
+                var data = snap.val();
+                renderPublicTickets(data);
+            })
+            .catch(function (err) {
+                publicLoading = false;
+                pubPanel.innerHTML = '<div class="builder-status" style="color:#ef4444">Ошибка: ' + escHtml(err.message) + '</div>';
+            });
+    }
+
+    // ---- Рендер публичных билетов ----
+
+    function renderPublicTickets(data) {
+        pubPanel.innerHTML = '';
+
+        var toolbar = document.createElement('div');
+        toolbar.className = 'builder-pub-toolbar';
+        toolbar.innerHTML =
+            '<span class="builder-pub-title">' +
+            (data ? Object.keys(data).length + ' польз.' : '0 польз.') + ' опубликовали билеты</span>' +
+            '<button class="builder-pub-refresh-btn">↺ Обновить</button>';
+        toolbar.querySelector('.builder-pub-refresh-btn').addEventListener('click', loadPublicTickets);
+        pubPanel.appendChild(toolbar);
+
+        if (!data) {
+            var empty = document.createElement('div');
+            empty.className = 'builder-status';
+            empty.textContent = 'Пока никто не опубликовал билеты';
+            pubPanel.appendChild(empty);
+            return;
+        }
+
+        // Сортируем по дате публикации (сначала новые)
+        var entries = Object.keys(data).map(function (uid) {
+            return { uid: uid, info: data[uid] };
+        }).sort(function (a, b) {
+            return (b.info.publishedAt || 0) - (a.info.publishedAt || 0);
+        });
+
+        entries.forEach(function (entry) {
+            var uid  = entry.uid;
+            var info = entry.info;
+            var tickets = info.tickets || {};
+            var nums = Object.keys(tickets).sort(function (a, b) { return +a - +b; });
+            if (nums.length === 0) return;
+
+            var date = info.publishedAt ? new Date(info.publishedAt).toLocaleDateString('ru-RU') : '';
+            var isMe = currentUser && currentUser.uid === uid;
+
+            var block = document.createElement('div');
+            block.className = 'builder-pub-author';
+
+            // Шапка автора
+            var header = document.createElement('div');
+            header.className = 'builder-pub-author-header';
+            header.innerHTML =
+                '<span class="builder-pub-arrow">▶</span>' +
+                '<span class="builder-pub-name">' + escHtml(info.author || 'Аноним') +
+                (isMe ? ' <span style="color:var(--accent-color);font-size:0.72rem">(вы)</span>' : '') + '</span>' +
+                '<span class="builder-pub-meta">' + nums.length + ' бил. · ' + date + '</span>' +
+                '<button class="builder-pub-view-btn"  title="Просмотреть билеты">👁 Смотреть</button>' +
+                '<button class="builder-pub-clone-all" title="Скопировать все билеты этого пользователя">⬇ Все</button>';
+
+            header.querySelector('.builder-pub-view-btn').addEventListener('click', function (e) {
+                e.stopPropagation();
+                openPublicPreview(uid, info.author, tickets, null);
+            });
+            header.querySelector('.builder-pub-clone-all').addEventListener('click', function (e) {
+                e.stopPropagation();
+                cloneTickets(uid, info.author, tickets, null);
+            });
+            header.addEventListener('click', function () {
+                block.classList.toggle('expanded');
+            });
+
+            // Список билетов
+            var ticketList = document.createElement('div');
+            ticketList.className = 'builder-pub-tickets';
+
+            nums.forEach(function (n) {
+                var blocks = tickets[n];
+                var preview = blocks.length > 0 ? (blocks[0].preview || '...') : '(пусто)';
+
+                var row = document.createElement('div');
+                row.className = 'builder-pub-ticket';
+                row.innerHTML =
+                    '<span class="builder-pub-ticket-num">Билет №' + n + '</span>' +
+                    '<span class="builder-pub-ticket-preview" title="' + escHtml(preview) + '">' + escHtml(preview) + '</span>' +
+                    '<button class="builder-lib-eye" title="Просмотреть содержимое билета">👁</button>' +
+                    '<button class="builder-pub-clone-one" title="Скопировать только этот билет">⬇</button>';
+
+                row.querySelector('.builder-lib-eye').addEventListener('click', function () {
+                    openPublicPreview(uid, info.author, tickets, n);
+                });
+                row.querySelector('.builder-pub-clone-one').addEventListener('click', function () {
+                    var single = {}; single[n] = blocks;
+                    cloneTickets(uid, info.author, single, n);
+                });
+                ticketList.appendChild(row);
+            });
+
+            block.appendChild(header);
+            block.appendChild(ticketList);
+            pubPanel.appendChild(block);
+        });
+    }
+
+    // ---- Клонирование билетов ----
+
+    function cloneTickets(fromUid, fromName, ticketsToClone, singleNum) {
+        if (!currentUser) {
+            if (confirm('Для сохранения клонированных билетов войдите в аккаунт. Продолжить без входа (только локально)?')) {
+                doClone(ticketsToClone, fromName, singleNum);
+            }
+        } else {
+            doClone(ticketsToClone, fromName, singleNum);
+        }
+    }
+
+    function doClone(ticketsToClone, fromName, singleNum) {
+        var all = getAll();
+        var count = 0;
+        Object.keys(ticketsToClone).forEach(function (n) {
+            if (Array.isArray(ticketsToClone[n]) && ticketsToClone[n].length > 0) {
+                if (all[n] && all[n].length > 0) {
+                    if (!confirm('Билет №' + n + ' уже содержит блоки. Перезаписать?')) return;
+                }
+                all[n] = ticketsToClone[n].map(function (b) { return Object.assign({}, b); });
+                count++;
+                if (currentUser) saveToFirebase(n, all[n]);
+            }
+        });
+        if (count === 0) { showToast('Нет блоков для клонирования'); return; }
+        saveAll(all);
+        applyStoredTickets();
+
+        // Если конструктор открыт на одном из клонированных билетов — обновить
+        if (!overlay.classList.contains('hidden') && ticketsToClone[builderTicket]) {
+            session = (all[builderTicket] || []).map(function (b) { return Object.assign({}, b); });
+            renderCurrent();
+            // Переключаем левую панель, чтобы пользователь увидел результат
+            switchMobileTab(0);
+            document.querySelectorAll('.builder-lib-subtab').forEach(function (t) {
+                t.classList.toggle('active', t.dataset.subtab === 'physics');
+            });
+            subPhysics.style.display = '';
+            subPublic.style.display = 'none';
+        }
+
+        var label = singleNum ? 'Билет №' + singleNum : count + ' бил.';
+        showToast('✅ Клонировано: ' + label + ' от ' + escHtml(fromName || 'пользователя'));
+    }
+
+    // ---- Перевод ошибок Firebase ----
+
+    function fbErrorText(code) {
+        var map = {
+            'auth/user-not-found':        'Пользователь не найден',
+            'auth/wrong-password':        'Неверный пароль',
+            'auth/invalid-email':         'Некорректный email',
+            'auth/email-already-in-use':  'Этот email уже зарегистрирован',
+            'auth/weak-password':         'Пароль слишком короткий (мин. 6 символов)',
+            'auth/too-many-requests':     'Слишком много попыток — подожди немного',
+            'auth/network-request-failed':'Ошибка сети',
+            'auth/invalid-credential':    'Неверный email или пароль',
+        };
+        return map[code] || 'Ошибка: ' + code;
+    }
+
+    // ---- Модал авторизации ----
+
+    var authOverlay = document.getElementById('builderAuthOverlay');
+
+    function openAuthModal() {
+        // Сбрасываем форму
+        ['bAuthEmail','bAuthPassword','bAuthRegEmail','bAuthRegPass','bAuthRegPassConf']
+            .forEach(function (id) { document.getElementById(id).value = ''; });
+        document.getElementById('bAuthLoginError').style.display = 'none';
+        document.getElementById('bAuthRegError').style.display  = 'none';
+        switchAuthTab('login');
+        authOverlay.classList.remove('hidden');
+        setTimeout(function () { document.getElementById('bAuthEmail').focus(); }, 50);
+    }
+
+    function closeAuthModal() {
+        authOverlay.classList.add('hidden');
+    }
+
+    function switchAuthTab(tab) {
+        document.querySelectorAll('.builder-auth-tab').forEach(function (t) {
+            t.classList.toggle('active', t.dataset.tab === tab);
+        });
+        document.getElementById('bAuthLoginForm').style.display = tab === 'login'    ? '' : 'none';
+        document.getElementById('bAuthRegForm'  ).style.display = tab === 'register' ? '' : 'none';
+    }
+
+    function showFormError(id, msg) {
+        var el = document.getElementById(id);
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+
+    function setAuthBtnLoading(btnId, loading, text) {
+        var btn = document.getElementById(btnId);
+        btn.disabled = loading;
+        btn.textContent = loading ? '...' : text;
+    }
+
+    // Вход
+    document.getElementById('bAuthLoginBtn').addEventListener('click', function () {
+        var email = document.getElementById('bAuthEmail').value.trim();
+        var pass  = document.getElementById('bAuthPassword').value;
+        var auth  = fbAuth();
+        if (!auth || !email || !pass) return;
+
+        document.getElementById('bAuthLoginError').style.display = 'none';
+        setAuthBtnLoading('bAuthLoginBtn', true, 'Войти');
+
+        auth.signInWithEmailAndPassword(email, pass)
+            .then(function () { closeAuthModal(); })
+            .catch(function (err) { showFormError('bAuthLoginError', fbErrorText(err.code)); })
+            .finally(function () { setAuthBtnLoading('bAuthLoginBtn', false, 'Войти'); });
+    });
+
+    // Регистрация
+    document.getElementById('bAuthRegBtn').addEventListener('click', function () {
+        var email = document.getElementById('bAuthRegEmail').value.trim();
+        var pass  = document.getElementById('bAuthRegPass').value;
+        var conf  = document.getElementById('bAuthRegPassConf').value;
+        var auth  = fbAuth();
+        if (!auth || !email || !pass) return;
+
+        document.getElementById('bAuthRegError').style.display = 'none';
+
+        if (pass !== conf) {
+            showFormError('bAuthRegError', 'Пароли не совпадают');
+            return;
+        }
+
+        setAuthBtnLoading('bAuthRegBtn', true, 'Зарегистрироваться');
+
+        auth.createUserWithEmailAndPassword(email, pass)
+            .then(function () { closeAuthModal(); })
+            .catch(function (err) { showFormError('bAuthRegError', fbErrorText(err.code)); })
+            .finally(function () { setAuthBtnLoading('bAuthRegBtn', false, 'Зарегистрироваться'); });
+    });
+
+    // Enter в полях
+    document.getElementById('bAuthPassword').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') document.getElementById('bAuthLoginBtn').click();
+    });
+    document.getElementById('bAuthRegPassConf').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') document.getElementById('bAuthRegBtn').click();
+    });
+
+    // Кнопка «Войти / Выйти» в шапке
+    authBtn.addEventListener('click', function () {
+        var auth = fbAuth();
+        if (!auth) { alert('Firebase недоступен'); return; }
+        if (currentUser) {
+            auth.signOut();
+        } else {
+            openAuthModal();
+        }
+    });
+
+    // Закрыть модал
+    document.getElementById('bAuthCancelBtn').addEventListener('click', closeAuthModal);
+    authOverlay.addEventListener('click', function (e) {
+        if (e.target === authOverlay) closeAuthModal();
+    });
+
+    // Переключение табов
+    document.querySelectorAll('.builder-auth-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () { switchAuthTab(this.dataset.tab); });
+    });
+
+    // ---- Слушаем состояние авторизации ----
+
+    window.addEventListener('load', function () {
+        var auth = fbAuth();
+        if (!auth) return;
+
+        auth.onAuthStateChanged(function (user) {
+            currentUser = user;
+            updateAuthUI(user);
+            if (user) {
+                loadFromFirebase(user.uid);
+            }
+        });
+    });
+
+})();
+    </script>
+
+    <script>
+        const TOTAL_TICKETS = 17;
+        let currentTicket = 1;
+
+        const ticketLinks = document.querySelectorAll('[data-ticket]');
+        const ticketSections = document.querySelectorAll('.ticket-section');
+        const prevBtn = document.getElementById('prevTicketBtn');
+        const nextBtn = document.getElementById('nextTicketBtn');
+        const counter = document.getElementById('ticketCounter');
+
+        function showTicket(n) {
+            currentTicket = n;
+
+            ticketSections.forEach(s => s.classList.remove('active-ticket'));
+            ticketLinks.forEach(l => l.classList.remove('active'));
+
+            const section = document.getElementById('ticket-' + n);
+            if (section) section.classList.add('active-ticket');
+
+            const link = document.querySelector('[data-ticket="' + n + '"]');
+            if (link) {
+                link.classList.add('active');
+                // Прокрутить навигацию к активной ссылке
+                link.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+
+            counter.textContent = 'Билет ' + n + ' из ' + TOTAL_TICKETS;
+            prevBtn.disabled = n === 1;
+            nextBtn.disabled = n === TOTAL_TICKETS;
+
+            // Прокрутить основной контент наверх
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // Обновить хеш в URL без прыжка страницы
+            history.replaceState(null, '', '#ticket-' + n);
+        }
+
+        ticketLinks.forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                showTicket(parseInt(this.dataset.ticket));
+            });
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentTicket > 1) showTicket(currentTicket - 1);
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentTicket < TOTAL_TICKETS) showTicket(currentTicket + 1);
+        });
+
+        // Если в URL есть хеш вида #ticket-N, открыть соответствующий билет
+        (function () {
+            const hash = window.location.hash;
+            const match = hash.match(/^#ticket-(\d+)$/);
+            if (match) {
+                const n = parseInt(match[1]);
+                if (n >= 1 && n <= TOTAL_TICKETS) {
+                    showTicket(n);
+                    return;
+                }
+            }
+            showTicket(1);
+        })();
+    </script>
+</body>
+</html>
+

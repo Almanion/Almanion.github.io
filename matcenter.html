@@ -1,0 +1,219 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="favicons/favicon-mc.svg" type="image/svg+xml">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net;">
+    <title>МатЦентр 2025/2026 | Almanion</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles/tokens.css">
+    <link rel="stylesheet" href="styles/buttons.css">
+    <link rel="stylesheet" href="styles/mobile-overrides.css">
+    <link rel="stylesheet" href="styles/copy-blocks.css">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <!-- KaTeX для математических формул -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body class="matcenter-page">
+    <!-- Боковая панель навигации -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2><a href="index.html" style="color: white; text-decoration: none;">📚 Главная</a></h2>
+            <!-- Кнопка настроек создается автоматически через settings.js -->
+            <button class="close-sidebar" id="closeSidebar">✕</button>
+        </div>
+        
+        <div class="search-box">
+            <div class="search-input-wrap">
+                <input type="text" id="searchInput" placeholder="🔍 Поиск задач...">
+                <button class="search-clear-btn" id="searchClearBtn" aria-label="Очистить поиск">✕</button>
+            </div>
+            <select id="statusFilter" class="status-filter-select" title="Фильтр по статусу">
+                <option value="">Все</option>
+                <option value="Н">Серия</option>
+                <option value="П">Подсказка</option>
+                <option value="От">Отложено</option>
+                <option value="Р">Разобрано</option>
+            </select>
+        </div>
+
+        <nav class="nav-menu">
+            <div class="nav-section">
+                <h3>МатЦентр 2025/2026</h3>
+                <ul>
+                    <li><a href="#all-tasks" class="nav-link active">Все задачи</a></li>
+                    <li><a href="#current-series" class="nav-link">Текущая серия</a></li>
+                    <li><a href="#postponed" class="nav-link">Откладыши</a></li>
+                    <li><a href="#unsolved" class="nav-link">Неразобранные</a></li>
+                </ul>
+            </div>
+            
+            <div class="nav-section logout-section" id="logoutSection" style="display: none;">
+                <button id="logoutButton" class="logout-button-sidebar">
+                    <span class="logout-icon">🚪</span>
+                    <span>Выйти</span>
+                </button>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Кнопка открытия меню (для мобильных) -->
+    <button class="menu-toggle" id="menuToggle">☰</button>
+
+    <!-- Форма авторизации (fullscreen, без swipe) -->
+    <div class="auth-overlay matcenter-auth-fullscreen hidden" id="authOverlay">
+        <div class="auth-modal" id="authModal">
+            <div class="auth-icon">🔐</div>
+            <h2>Введите пароль</h2>
+            <form id="authForm">
+                <input 
+                    type="password" 
+                    id="passwordInput" 
+                    placeholder="Введите пароль..."
+                    autocomplete="off"
+                    required
+                >
+                <div class="auth-error" id="authError" style="display: none;">
+                    <span class="error-icon">🚫</span>
+                    <span class="error-text">Неверный пароль.</span>
+                </div>
+                <button type="submit" class="auth-submit" id="authSubmit">
+                    <span class="submit-text">Войти</span>
+                    <span class="submit-spinner" style="display: none;">
+                        <span class="spinner-dot"></span>
+                        <span class="spinner-dot"></span>
+                        <span class="spinner-dot"></span>
+                    </span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно для добавления подсказки (Админ) -->
+    <div class="auth-overlay hidden" id="hintOverlay">
+        <div class="hint-modal" id="hintModal">
+            <div class="hint-drag-handle" id="hintDragHandle" aria-hidden="true"></div>
+            <div class="hint-modal-header">
+                <h3>💡 Подсказка к задаче №<span id="hintTaskNumber"></span></h3>
+                <button class="hint-close-btn" id="hintCloseBtn">✕</button>
+            </div>
+            <textarea 
+                id="hintTextarea" 
+                placeholder="Введите текст подсказки..."
+                rows="6"
+            ></textarea>
+            <div class="hint-modal-actions">
+                <button class="hint-save-btn" id="hintSaveBtn">💾 Сохранить</button>
+                <button class="hint-delete-btn" id="hintDeleteBtn">🗑️ Удалить подсказку</button>
+                <button class="hint-cancel-btn" id="hintCancelBtn">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основной контент -->
+    <main class="main-content">
+        <header class="page-header">
+            <h1>МатЦентр 2025/2026</h1>
+            <p class="subtitle"><a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a></p>
+        </header>
+
+        <!-- Мобильная строка поиска (видна только на мобильных) -->
+        <div class="mobile-search-bar" id="mobileSearchBar">
+            <div class="mobile-search-row">
+                <div class="mobile-search-input-wrap">
+                    <input type="text" id="mobileSearchInput" placeholder="🔍 Поиск задач..." autocomplete="off" inputmode="search">
+                    <button class="mobile-search-clear" id="mobileSearchClear" aria-label="Очистить поиск">✕</button>
+                </div>
+                <select id="mobileStatusFilter" class="mobile-status-filter" title="Фильтр по статусу">
+                    <option value="">Все</option>
+                    <option value="Н">Серия</option>
+                    <option value="П">Подсказка</option>
+                    <option value="От">Отложено</option>
+                    <option value="Р">Разобрано</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Статистика -->
+        <section class="content-section">
+            <div class="stats-container" id="statsContainer">
+                <div class="stat-card clickable" data-filter="all-tasks" title="Все задачи">
+                    <div class="stat-number" id="totalTasks">0</div>
+                    <div class="stat-label">Всего задач</div>
+                </div>
+                <div class="stat-card clickable" data-filter="unsolved" title="Неразобранные">
+                    <div class="stat-number" id="solvedTasks">0</div>
+                    <div class="stat-label">Неразобрано</div>
+                </div>
+                <div class="stat-card clickable" data-filter="current-series" title="Текущая серия">
+                    <div class="stat-number" id="currentSeries">0</div>
+                    <div class="stat-label">Текущая серия</div>
+                </div>
+                <div class="stat-card clickable" data-filter="postponed" title="Откладыши">
+                    <div class="stat-number" id="postponedTasks">0</div>
+                    <div class="stat-label">Откладыши</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Список задач -->
+        <section class="content-section" id="all-tasks">
+            <div class="part-title-row">
+                <h2 class="part-title">Все задачи</h2>
+                <button type="button" id="refreshButton" class="refresh-button" title="Обновить данные">🔄</button>
+            </div>
+            <div id="loadingMessage" class="loading-message">
+                <div class="spinner"></div>
+                <p>Загрузка задач из Google Таблицы...</p>
+                <button id="retryButton" class="retry-button" style="display: none; margin-top: 1rem;">
+                    🔄 Попробовать снова
+                </button>
+            </div>
+            <div id="tasksContainer" class="tasks-container"></div>
+        </section>
+
+        <!-- Текущая серия -->
+        <section class="content-section" id="current-series" style="display: none;">
+            <h2 class="part-title">Текущая серия</h2>
+            <div id="currentSeriesContainer" class="tasks-container"></div>
+        </section>
+
+        <!-- Откладыши -->
+        <section class="content-section" id="postponed" style="display: none;">
+            <h2 class="part-title">Откладыши</h2>
+            <div id="postponedContainer" class="tasks-container"></div>
+        </section>
+
+        <!-- Неразобранные -->
+        <section class="content-section" id="unsolved" style="display: none;">
+            <h2 class="part-title">Неразобранные задачи</h2>
+            <div id="unsolvedContainer" class="tasks-container"></div>
+        </section>
+    </main>
+
+    <!-- Кнопка "Наверх" -->
+    <button class="scroll-to-top" id="scrollToTop">↑</button>
+
+    <!-- Контейнер для снега -->
+    <div class="snow-container" id="snowContainer"></div>
+    
+    <!-- Контейнер для пасхалок -->
+    <div class="easter-eggs-container" id="easterEggsContainer"></div>
+
+    <!-- Firebase Analytics -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="firebase-analytics.js"></script>
+
+    <script src="script.js"></script>
+    <script src="matcenter.js"></script>
+    <script src="newyear.js"></script>
+    <script src="settings.js"></script>
+    <script src="poll.js"></script>
+</body>
+</html>
