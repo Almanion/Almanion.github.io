@@ -782,6 +782,20 @@ img {
   text-indent: 0 !important;
 }
 
+/* Пульсация абзаца при переходе по ссылке "Открыть в тексте главы" */
+@keyframes paragraphPulse {
+  0%   { background: transparent; box-shadow: 0 0 0 0 transparent; }
+  20%  { background: var(--color-highlight); box-shadow: 0 0 0 10px var(--color-highlight); }
+  70%  { background: var(--color-highlight); box-shadow: 0 0 0 10px var(--color-highlight); }
+  100% { background: transparent; box-shadow: 0 0 0 0 transparent; }
+}
+
+.paragraph-pulse {
+  animation: paragraphPulse 2.4s ease;
+  border-radius: 4px;
+  scroll-margin-top: 100px;
+}
+
 .drop-cap {
   float: left;
   font-family: 'Georgia', 'Times New Roman', serif;
@@ -1336,4 +1350,172 @@ img {
     padding: 1rem;
   }
 }
+
+/* ========== АНИМАЦИЯ ПОЯВЛЕНИЯ ========== */
+.fade-in {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+  will-change: opacity, transform;
+}
+
+.fade-in.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in, .fade-in.is-visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ========== КРАТКОЕ СОДЕРЖАНИЕ ========== */
+.summary-chapter {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.75rem 2rem;
+  margin-bottom: 1.5rem;
+  scroll-margin-top: 100px;
+}
+
+.summary-chapter__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.summary-chapter__number {
+  flex-shrink: 0;
+  width: 54px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-accent);
+  color: #fff;
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  border-radius: 50%;
+  text-decoration: none;
+  transition: transform var(--transition);
+  cursor: pointer;
+}
+
+.summary-chapter__number:hover {
+  transform: scale(1.06);
+  color: #fff;
+}
+
+.summary-chapter__titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.summary-chapter__title {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+.summary-chapter__fabula {
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: 1.02rem;
+  color: var(--color-accent-light);
+  line-height: 1.4;
+}
+
+.summary-chapter__body {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--color-text);
+  margin-bottom: 1.25rem;
+}
+
+.summary-chapter__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--color-accent);
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .summary-chapter {
+    padding: 1.25rem 1.25rem;
+  }
+  .summary-chapter__head {
+    gap: 0.85rem;
+  }
+  .summary-chapter__number {
+    width: 44px;
+    height: 44px;
+    font-size: 1.2rem;
+  }
+  .summary-chapter__title {
+    font-size: 1.2rem;
+  }
+  .summary-chapter__fabula {
+    font-size: 0.92rem;
+  }
+}
+
+/* ========== ГЛОССАРИЙ ========== */
+.glossary-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+}
+
+.glossary-item {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  gap: 1.25rem;
+  padding: 1rem 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent-light);
+  border-radius: var(--radius-sm);
+  align-items: start;
+}
+
+.glossary-item__term {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--color-accent);
+  margin: 0;
+}
+
+.glossary-item__def {
+  font-size: 0.94rem;
+  line-height: 1.7;
+  color: var(--color-text);
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .glossary-item {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .glossary-item__term {
+    font-size: 1.05rem;
+  }
+}
+
 

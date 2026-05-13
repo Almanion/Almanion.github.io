@@ -9,7 +9,13 @@ const APP = {
       const link = e.target.closest('[data-nav]');
       if (link) {
         e.preventDefault();
-        window.location.hash = link.getAttribute('href');
+        const target = link.getAttribute('href');
+        // Если уже на этом хеше — принудительно вызовем route()
+        if (window.location.hash === target) {
+          this.route();
+        } else {
+          window.location.hash = target;
+        }
       }
     });
     this.route();
@@ -17,18 +23,23 @@ const APP = {
 
   async route() {
     const hash = window.location.hash.slice(1) || 'home';
-    const [page, param] = hash.split('/');
+    const parts = hash.split('/');
+    const page = parts[0];
+    const param = parts[1];
+    const param2 = parts[2];
 
     await loadChapters();
 
     const routes = {
       home: () => this.renderHome(),
-      text: () => this.renderText(param),
+      text: () => this.renderText(param, param2),
+      summary: () => this.renderSummary(),
       'city-map': () => this.renderCityMap(),
       'landowner-map': () => this.renderLandownerMap(),
       chichikov: () => this.renderChichikov(),
       character: () => this.renderCharacter(param),
       society: () => this.renderSociety(),
+      glossary: () => this.renderGlossary(),
       author: () => this.renderAuthor(),
       sources: () => this.renderSources(),
       about: () => this.renderAbout()
@@ -36,9 +47,13 @@ const APP = {
 
     const renderer = routes[page] || routes.home;
     renderer();
-    window.scrollTo(0, 0);
+    // Не сбрасываем скролл, если нужно прокрутить к конкретному абзацу/главе.
+    if (!(page === 'text' && param)) {
+      window.scrollTo(0, 0);
+    }
     this.updateActiveNav(page);
     this.closeMenu();
+    this._initFadeIn();
   },
 
   updateActiveNav(page) {
@@ -64,11 +79,13 @@ const APP = {
           <a href="#home" data-nav class="nav__logo">Мёртвые души</a>
           <ul class="nav__links">
             <li><a href="#text" data-nav class="nav__link">Текст</a></li>
+            <li><a href="#summary" data-nav class="nav__link">Краткое</a></li>
             <li><a href="#city-map" data-nav class="nav__link">Карта города</a></li>
             <li><a href="#landowner-map" data-nav class="nav__link">Карта помещиков</a></li>
             <li><a href="#chichikov" data-nav class="nav__link">Чичиков</a></li>
             <li><a href="#society" data-nav class="nav__link">Общество</a></li>
             <li><a href="#author" data-nav class="nav__link">О Гоголе</a></li>
+            <li><a href="#glossary" data-nav class="nav__link">Глоссарий</a></li>
             <li><a href="#about" data-nav class="nav__link">О проекте</a></li>
           </ul>
           <button class="nav__toggle" onclick="APP.toggleMenu()" aria-label="Меню">
@@ -84,7 +101,7 @@ const APP = {
   getFooter() {
     return `
       <footer class="footer">
-        <p>Интерактивный проект по поэме Н. В. Гоголя «Мёртвые души» &middot; <a href="#author" data-nav>О Гоголе</a> &middot; <a href="#sources" data-nav>Источники</a> &middot; <a href="#about" data-nav>О проекте</a></p>
+        <p>Интерактивный проект по поэме Н. В. Гоголя «Мёртвые души» &middot; <a href="#summary" data-nav>Краткое содержание</a> &middot; <a href="#glossary" data-nav>Глоссарий</a> &middot; <a href="#author" data-nav>О Гоголе</a> &middot; <a href="#sources" data-nav>Источники</a> &middot; <a href="#about" data-nav>О проекте</a></p>
         <p class="footer__author">Белоцерковцев Дмитрий, 9-1</p>
       </footer>
     `;
@@ -114,32 +131,37 @@ const APP = {
         </div>
         <div class="container">
           <div class="grid grid--4">
-            <a href="#text" data-nav class="nav-card">
+            <a href="#text" data-nav class="nav-card fade-in">
               <div class="nav-card__icon">&#128214;</div>
               <h3 class="nav-card__title">Оригинальный текст</h3>
               <p class="nav-card__desc">Текст поэмы с делением на главы и оглавлением</p>
             </a>
-            <a href="#city-map" data-nav class="nav-card">
+            <a href="#summary" data-nav class="nav-card fade-in">
+              <div class="nav-card__icon">&#128221;</div>
+              <h3 class="nav-card__title">Краткое содержание</h3>
+              <p class="nav-card__desc">Пересказ каждой главы с фабулой</p>
+            </a>
+            <a href="#city-map" data-nav class="nav-card fade-in">
               <div class="nav-card__icon">&#127963;</div>
               <h3 class="nav-card__title">Карта города</h3>
               <p class="nav-card__desc">Интерактивная карта чиновников города NN</p>
             </a>
-            <a href="#landowner-map" data-nav class="nav-card">
+            <a href="#landowner-map" data-nav class="nav-card fade-in">
               <div class="nav-card__icon">&#127969;</div>
               <h3 class="nav-card__title">Карта помещиков</h3>
               <p class="nav-card__desc">Схема поместий, которые посещает Чичиков</p>
             </a>
-            <a href="#chichikov" data-nav class="nav-card">
+            <a href="#chichikov" data-nav class="nav-card fade-in">
               <div class="nav-card__icon">&#128100;</div>
               <h3 class="nav-card__title">Чичиков</h3>
               <p class="nav-card__desc">Центральный персонаж и его связи со всеми героями</p>
             </a>
-            <a href="#society" data-nav class="nav-card">
+            <a href="#society" data-nav class="nav-card fade-in">
               <div class="nav-card__icon">&#127894;</div>
               <h3 class="nav-card__title">Общество</h3>
               <p class="nav-card__desc">Коллективный портрет губернской жизни</p>
             </a>
-            <a href="#author" data-nav class="nav-card">
+            <a href="#author" data-nav class="nav-card fade-in">
               <div class="nav-card__icon">&#9997;</div>
               <h3 class="nav-card__title">О Гоголе</h3>
               <p class="nav-card__desc">Биография автора и история создания поэмы</p>
@@ -178,7 +200,7 @@ const APP = {
 
   charCard(c) {
     return `
-      <a href="#character/${c.id}" data-nav class="char-card">
+      <a href="#character/${c.id}" data-nav class="char-card fade-in">
         <div class="char-card__name">${c.name}</div>
         <div class="char-card__role">${c.role}</div>
         <div class="char-card__desc">${c.shortDesc}</div>
@@ -188,7 +210,7 @@ const APP = {
   },
 
   // ========== СТРАНИЦА ТЕКСТА ==========
-  renderText(scrollToChapter) {
+  renderText(scrollToChapter, scrollToParagraph) {
     const toc = TEXT_CHAPTERS.map(ch => `
       <li class="text-page__toc-item">
         <a href="#" onclick="event.preventDefault(); document.getElementById('ch-${ch.number}').scrollIntoView({behavior:'smooth'})">
@@ -239,9 +261,19 @@ const APP = {
 
     if (scrollToChapter) {
       setTimeout(() => {
+        // Если указан индекс абзаца — прокрутим к нему и подсветим
+        if (scrollToParagraph !== undefined) {
+          const pEl = document.getElementById(`ch${scrollToChapter}-p${scrollToParagraph}`);
+          if (pEl) {
+            pEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            pEl.classList.add('paragraph-pulse');
+            setTimeout(() => pEl.classList.remove('paragraph-pulse'), 2400);
+            return;
+          }
+        }
         const el = document.getElementById(`ch-${scrollToChapter}`);
         if (el) el.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+      }, 120);
     }
   },
 
@@ -938,19 +970,19 @@ const APP = {
         <div class="char-section">
           <h2 class="char-section__title">Связи с персонажами</h2>
           <div class="chichikov-hub">
-            <a href="#city-map" data-nav class="chichikov-hub__card">
+            <a href="#city-map" data-nav class="chichikov-hub__card fade-in">
               <div class="chichikov-hub__card-title">&#127963; Карта города</div>
               <div class="chichikov-hub__card-desc">Чичиков и чиновники города NN — от губернатора до полицеймейстера</div>
             </a>
-            <a href="#landowner-map" data-nav class="chichikov-hub__card">
+            <a href="#landowner-map" data-nav class="chichikov-hub__card fade-in">
               <div class="chichikov-hub__card-title">&#127969; Карта помещиков</div>
               <div class="chichikov-hub__card-desc">Маршрут Чичикова: от Манилова до Плюшкина</div>
             </a>
-            <a href="#text" data-nav class="chichikov-hub__card">
+            <a href="#text" data-nav class="chichikov-hub__card fade-in">
               <div class="chichikov-hub__card-title">&#128214; Оригинальный текст</div>
               <div class="chichikov-hub__card-desc">Текст поэмы с делением на главы</div>
             </a>
-            <a href="#society" data-nav class="chichikov-hub__card">
+            <a href="#society" data-nav class="chichikov-hub__card fade-in">
               <div class="chichikov-hub__card-title">&#127894; Общество</div>
               <div class="chichikov-hub__card-desc">Коллективный портрет губернии, в котором действует Чичиков</div>
             </a>
@@ -1148,6 +1180,89 @@ const APP = {
     `;
   },
 
+  // ========== КРАТКОЕ СОДЕРЖАНИЕ ==========
+  renderSummary() {
+    const p = PLOT_SUMMARIES;
+    this.root.innerHTML = `
+      ${this.getNav()}
+      <div class="text-page">
+        <div class="char-page__header">
+          <div class="char-page__type">Пересказ</div>
+          <h1 class="char-page__name">${p.title}</h1>
+          <p class="char-page__desc">${p.intro}</p>
+        </div>
+
+        ${p.chapters.map(ch => `
+          <div class="summary-chapter fade-in" id="sum-${ch.number}">
+            <div class="summary-chapter__head">
+              <a href="#text/${ch.number}" data-nav class="summary-chapter__number" title="Открыть полный текст главы">${ch.number}</a>
+              <div class="summary-chapter__titles">
+                <h2 class="summary-chapter__title">${ch.title}</h2>
+                <div class="summary-chapter__fabula">${ch.fabula}</div>
+              </div>
+            </div>
+            <div class="summary-chapter__body">${ch.summary}</div>
+            <a href="#text/${ch.number}" data-nav class="summary-chapter__link">
+              &#8594; Читать полный текст главы
+            </a>
+          </div>
+        `).join('')}
+      </div>
+      ${this.getFooter()}
+    `;
+    this._initFadeIn();
+  },
+
+  // ========== ГЛОССАРИЙ ==========
+  renderGlossary() {
+    const g = GLOSSARY;
+    this.root.innerHTML = `
+      ${this.getNav()}
+      <div class="char-page">
+        <div class="char-page__header">
+          <div class="char-page__type">Справочник</div>
+          <h1 class="char-page__name">${g.title}</h1>
+          <p class="char-page__desc">${g.intro}</p>
+        </div>
+
+        ${g.groups.map(grp => `
+          <div class="char-section fade-in">
+            <h2 class="char-section__title">${grp.title}</h2>
+            <dl class="glossary-list">
+              ${grp.terms.map(t => `
+                <div class="glossary-item">
+                  <dt class="glossary-item__term">${t.term}</dt>
+                  <dd class="glossary-item__def">${t.definition}</dd>
+                </div>
+              `).join('')}
+            </dl>
+          </div>
+        `).join('')}
+      </div>
+      ${this.getFooter()}
+    `;
+    this._initFadeIn();
+  },
+
+  // ========== АНИМАЦИЯ ПОЯВЛЕНИЯ ==========
+  // Применяется к элементам с классом .fade-in: они появляются при скролле.
+  _initFadeIn() {
+    if (!('IntersectionObserver' in window)) {
+      // fallback — просто показать всё
+      document.querySelectorAll('.fade-in').forEach(el => el.classList.add('is-visible'));
+      return;
+    }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.fade-in:not(.is-visible)').forEach(el => io.observe(el));
+  },
+
   // ========== ОБ АВТОРЕ ==========
   renderAuthor() {
     const a = AUTHOR;
@@ -1173,7 +1288,7 @@ const APP = {
           <h2 class="char-section__title">Хронология жизни</h2>
           <div class="timeline">
             ${a.timeline.map(t => `
-              <div class="timeline__row">
+              <div class="timeline__row fade-in">
                 <div class="timeline__year">${t.year}</div>
                 <div class="timeline__event">${t.event}</div>
               </div>
@@ -1207,7 +1322,7 @@ const APP = {
             <h2 class="char-section__title">${g.title}</h2>
             <div class="sources-list">
               ${g.items.map(item => `
-                <div class="source-item">
+                <div class="source-item fade-in">
                   <div class="source-item__cite">
                     ${item.author ? `<span class="source-item__author">${item.author}</span> ` : ''}
                     <span class="source-item__work">${item.work}</span>${item.edition ? `. <span class="source-item__edition">${item.edition}</span>` : ''}${item.publisher ? ` — <span class="source-item__publisher">${item.publisher}</span>` : ''}
@@ -1282,8 +1397,8 @@ const APP = {
         ${result.contextBeforeShort ? `<div class="text-panel__context">${result.contextBeforeShort}</div>` : ''}
         <div class="text-panel__paragraph">${result.excerptHTML || result.paragraphHTML || result.paragraph}</div>
         ${result.contextAfterShort ? `<div class="text-panel__context">${result.contextAfterShort}</div>` : ''}
-        <a href="#text/${result.chapter}" data-nav class="text-panel__chapter-link" onclick="APP.closePanel()">
-          &#8594; Читать всю главу
+        <a href="#text/${result.chapter}/${result.paragraphIndex}" data-nav class="text-panel__chapter-link" onclick="APP.closePanel()">
+          &#8594; Открыть в тексте главы
         </a>
       `;
     } else {
