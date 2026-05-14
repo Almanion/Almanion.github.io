@@ -99,7 +99,7 @@ const APP = {
   getFooter() {
     return `
       <footer class="footer">
-        <p>Интерактивный проект по поэме Н. В. Гоголя «Мёртвые души» &middot; <a href="#summary" data-nav>Краткое содержание</a> &middot; <a href="#glossary" data-nav>Глоссарий</a> &middot; <a href="#author" data-nav>О Гоголе</a> &middot; <a href="#sources" data-nav>Источники</a> &middot; <a href="#about" data-nav>О проекте</a></p>
+        <p>Проект по поэме Н. В. Гоголя «Мёртвые души» &middot; <a href="#summary" data-nav>Краткое содержание</a> &middot; <a href="#glossary" data-nav>Глоссарий</a> &middot; <a href="#author" data-nav>О Гоголе</a> &middot; <a href="#sources" data-nav>Источники</a> &middot; <a href="#about" data-nav>О проекте</a></p>
         <p class="footer__author">Белоцерковцев Дмитрий, 9-1</p>
       </footer>
     `;
@@ -125,7 +125,7 @@ const APP = {
       <section class="section">
         <div class="section__header">
           <h2 class="section__title">Разделы проекта</h2>
-          <p class="section__desc">те произведение через текст, карты и персонажеИзучайй</p>
+          <p class="section__desc"></p>
         </div>
         <div class="container">
           <div class="grid grid--4">
@@ -142,7 +142,7 @@ const APP = {
             <a href="#city-map" data-nav class="nav-card fade-in">
               <div class="nav-card__icon">&#127963;</div>
               <h3 class="nav-card__title">Карта города</h3>
-              <p class="nav-card__desc">Интерактивная карта чиновников города NN</p>
+              <p class="nav-card__desc">Карта чиновников города NN</p>
             </a>
             <a href="#landowner-map" data-nav class="nav-card fade-in">
               <div class="nav-card__icon">&#127969;</div>
