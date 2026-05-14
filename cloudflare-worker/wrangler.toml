@@ -1,8 +1,0 @@
-name            = "physics-suggest"
-main            = "worker.js"
-compatibility_date = "2024-01-01"
-
-# Секреты задаются через CLI или Dashboard — НЕ здесь:
-#   wrangler secret put TG_TOKEN
-#   wrangler secret put TG_CHAT_ID
-#   wrangler secret put ALLOWED_ORIGIN
