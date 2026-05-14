@@ -38,7 +38,6 @@ const APP = {
       'landowner-map': () => this.renderLandownerMap(),
       chichikov: () => this.renderChichikov(),
       character: () => this.renderCharacter(param),
-      society: () => this.renderSociety(),
       glossary: () => this.renderGlossary(),
       author: () => this.renderAuthor(),
       sources: () => this.renderSources(),
@@ -79,11 +78,10 @@ const APP = {
           <a href="#home" data-nav class="nav__logo">Мёртвые души</a>
           <ul class="nav__links">
             <li><a href="#text" data-nav class="nav__link">Текст</a></li>
-            <li><a href="#summary" data-nav class="nav__link">Краткое</a></li>
+            <li><a href="#summary" data-nav class="nav__link">Пересказ</a></li>
             <li><a href="#city-map" data-nav class="nav__link">Карта города</a></li>
             <li><a href="#landowner-map" data-nav class="nav__link">Карта помещиков</a></li>
             <li><a href="#chichikov" data-nav class="nav__link">Чичиков</a></li>
-            <li><a href="#society" data-nav class="nav__link">Общество</a></li>
             <li><a href="#author" data-nav class="nav__link">О Гоголе</a></li>
             <li><a href="#glossary" data-nav class="nav__link">Глоссарий</a></li>
             <li><a href="#about" data-nav class="nav__link">О проекте</a></li>
@@ -127,7 +125,7 @@ const APP = {
       <section class="section">
         <div class="section__header">
           <h2 class="section__title">Разделы проекта</h2>
-          <p class="section__desc">Изучайте произведение через текст, карты и персонажей</p>
+          <p class="section__desc">те произведение через текст, карты и персонажеИзучайй</p>
         </div>
         <div class="container">
           <div class="grid grid--4">
@@ -155,11 +153,6 @@ const APP = {
               <div class="nav-card__icon">&#128100;</div>
               <h3 class="nav-card__title">Чичиков</h3>
               <p class="nav-card__desc">Центральный персонаж и его связи со всеми героями</p>
-            </a>
-            <a href="#society" data-nav class="nav-card fade-in">
-              <div class="nav-card__icon">&#127894;</div>
-              <h3 class="nav-card__title">Общество</h3>
-              <p class="nav-card__desc">Коллективный портрет губернской жизни</p>
             </a>
             <a href="#author" data-nav class="nav-card fade-in">
               <div class="nav-card__icon">&#9997;</div>
@@ -425,7 +418,7 @@ const APP = {
       <section class="section">
         <div class="section__header">
           <h2 class="section__title">Карта города NN</h2>
-          <p class="section__desc">Стилизованный план провинциального города. Чиновники сгруппированы по своим ведомствам — от верховной власти до служебных управлений. Нажмите на персонажа, чтобы открыть его страницу.</p>
+          <p class="section__desc">Чиновники сгруппированы по своим ведомствам — от верховной власти до служебных управлений. ! Названия улиц и площади я придумал сам ! </p>
         </div>
         <div class="container">
           <div class="map-container" id="cityMap">
@@ -451,10 +444,10 @@ const APP = {
                     font-family="Georgia" font-style="italic" font-size="20"
                     letter-spacing="3">Планъ губернскаго города NN</text>
 
-              <!-- Кафедральный собор -->
+              <!-- Собор (упоминается в гл.1 — «куда пройти к собору») -->
               <g transform="translate(500, 95)">
                 <!-- центральный высокий купол -->
-                <path d="M -10 60 Q -10 30, 0 14 Q 10 30, 10 60 Z"
+                <path d="M -10 64 Q -10 30, 0 14 Q 10 30, 10 64 Z"
                       fill="#8b7355" opacity="0.92"/>
                 <line x1="0" y1="0" x2="0" y2="14" stroke="#8b7355" stroke-width="1.5"/>
                 <line x1="-4" y1="4" x2="4" y2="4" stroke="#8b7355" stroke-width="1.5"/>
@@ -473,7 +466,7 @@ const APP = {
                 <rect x="-12" y="74" width="8" height="12" fill="#8b7355" opacity="0.3"/>
                 <rect x="4" y="74" width="8" height="12" fill="#8b7355" opacity="0.3"/>
                 <text y="104" text-anchor="middle" fill="#8b7355" font-size="11"
-                      font-style="italic" font-family="Georgia">Кафедральный собор</text>
+                      font-style="italic" font-family="Georgia">Собор</text>
               </g>
 
               <!-- Соборная площадь — фоновая «брусчатка» под губернским домом -->
@@ -593,6 +586,64 @@ const APP = {
         </div>
       </section>
       ${this.getFooter()}
+    `;
+  },
+
+  // ========== МАРКЕРЫ ДОРОЖНЫХ СОБЫТИЙ ==========
+  // Промежуточные точки на маршруте: гроза, трактир, столкновение с коляской.
+  eventMarkerHTML(ev) {
+    const icons = {
+      // Гроза: облако с молниями
+      storm: `
+        <g transform="translate(${ev.x},${ev.y})">
+          <!-- облако -->
+          <ellipse cx="-8" cy="-3" rx="10" ry="6" fill="#8a9aab" opacity="0.85"/>
+          <ellipse cx="6" cy="-3" rx="11" ry="7" fill="#8a9aab" opacity="0.85"/>
+          <ellipse cx="-1" cy="-7" rx="8" ry="5" fill="#9aaabc" opacity="0.85"/>
+          <!-- молния -->
+          <path d="M -2 3 L -6 12 L -2 12 L -6 20" stroke="#c5a04d" stroke-width="1.8"
+                fill="none" stroke-linejoin="miter"/>
+          <path d="M 4 3 L 0 11 L 4 11 L 0 18" stroke="#c5a04d" stroke-width="1.5"
+                fill="none" stroke-linejoin="miter" opacity="0.7"/>
+        </g>
+      `,
+      // Трактир: маленький дом с вывеской
+      tavern: `
+        <g transform="translate(${ev.x},${ev.y})">
+          <rect x="-10" y="-3" width="20" height="12" fill="#e8dcc0" stroke="#8b7355" stroke-width="0.8"/>
+          <path d="M -12 -3 L 0 -13 L 12 -3 Z" fill="#a89476" stroke="#6b5a47" stroke-width="0.8"/>
+          <!-- дверь -->
+          <rect x="-2" y="2" width="4" height="7" fill="#6b5a47"/>
+          <!-- окна -->
+          <rect x="-7" y="0" width="3" height="3" fill="#c5a04d" opacity="0.7"/>
+          <rect x="4" y="0" width="3" height="3" fill="#c5a04d" opacity="0.7"/>
+          <!-- вывеска-фонарь -->
+          <line x1="10" y1="-2" x2="14" y2="-2" stroke="#3a3226" stroke-width="0.8"/>
+          <rect x="13" y="-2" width="5" height="4" fill="#c5a04d" opacity="0.8" stroke="#3a3226" stroke-width="0.5"/>
+        </g>
+      `,
+      // Дорожное столкновение: восклицательный знак в круге + коляска
+      collision: `
+        <g transform="translate(${ev.x},${ev.y})">
+          <!-- две сцепленные стрелочки/коляски -->
+          <ellipse cx="-7" cy="0" rx="6" ry="3" fill="#a89476" stroke="#6b5a47" stroke-width="0.8"/>
+          <circle cx="-10" cy="3" r="1.5" fill="#3a3226"/>
+          <circle cx="-4" cy="3" r="1.5" fill="#3a3226"/>
+          <ellipse cx="7" cy="0" rx="6" ry="3" fill="#a89476" stroke="#6b5a47" stroke-width="0.8"/>
+          <circle cx="4" cy="3" r="1.5" fill="#3a3226"/>
+          <circle cx="10" cy="3" r="1.5" fill="#3a3226"/>
+          <!-- восклицательный знак сверху -->
+          <circle cx="0" cy="-12" r="6" fill="#c5a04d" stroke="#5a4a3a" stroke-width="1"/>
+          <text x="0" y="-9" text-anchor="middle" fill="#5a4a3a" font-size="9" font-weight="700">!</text>
+        </g>
+      `
+    };
+    return `
+      ${icons[ev.kind] || ''}
+      <text x="${ev.x}" y="${ev.y + 30}" text-anchor="middle" fill="#5a4a3a"
+            font-size="10" font-weight="600" font-style="italic" font-family="Georgia">${ev.label}</text>
+      <text x="${ev.x}" y="${ev.y + 43}" text-anchor="middle" fill="#a89476"
+            font-size="9" font-style="italic" font-family="Georgia">${ev.sub}</text>
     `;
   },
 
@@ -730,77 +781,100 @@ const APP = {
   renderLandownerMap() {
     const landowners = getLandowners();
 
-    // Точки на маршруте: координаты подобраны так,
-    // чтобы дорога образовала естественную петлю Чичикова.
+    // Точки на маршруте — порядок визитов Чичикова.
     const estates = [
-      { id: 'manilov',    x: 220, y: 200, order: 1, estate: 'Маниловка',         name: 'Манилов' },
-      { id: 'korobochka', x: 820, y: 200, order: 2, estate: 'Деревня Коробочки', name: 'Коробочка' },
-      { id: 'nozdryov',   x: 720, y: 360, order: 3, estate: 'Усадьба Ноздрёва',  name: 'Ноздрёв' },
-      { id: 'sobakevich', x: 220, y: 480, order: 4, estate: 'Имение Собакевича', name: 'Собакевич' },
-      { id: 'plyushkin',  x: 720, y: 580, order: 5, estate: 'Деревня Плюшкина',  name: 'Плюшкин' }
+      { id: 'manilov',    x: 220, y: 230, order: 1, estate: 'Маниловка',         name: 'Манилов',    epigraph: '«люди так себе, ни то ни сё»' },
+      { id: 'korobochka', x: 820, y: 230, order: 2, estate: 'Деревня Коробочки', name: 'Коробочка',  epigraph: '«дубинноголовая»' },
+      { id: 'nozdryov',   x: 720, y: 470, order: 3, estate: 'Усадьба Ноздрёва',  name: 'Ноздрёв',    epigraph: '«исторический человек»' },
+      { id: 'sobakevich', x: 220, y: 600, order: 4, estate: 'Имение Собакевича', name: 'Собакевич',  epigraph: '«средней величины медведь»' },
+      { id: 'plyushkin',  x: 720, y: 730, order: 5, estate: 'Деревня Плюшкина',  name: 'Плюшкин',    epigraph: '«прореха на человечестве»' }
     ];
 
     // Город NN — точка отправления маршрута
-    const cityX = 470, cityY = 100;
+    const cityX = 470, cityY = 130;
 
     // Дорога: плавная кривая через все усадьбы в порядке визитов
     const pathPoints = [{ x: cityX, y: cityY }, ...estates.map(e => ({ x: e.x, y: e.y }))];
     const roadPath = this.buildRoadPath(pathPoints);
+
+    // Промежуточные события на маршруте. Координаты подобраны так,
+    // чтобы маркеры не накладывались на подписи усадеб.
+    const events = [
+      { x: 520, y: 225, kind: 'storm',     label: 'Гроза', sub: 'Селифан сбился с пути' },
+      { x: 850, y: 360, kind: 'tavern',    label: 'Трактир', sub: 'встреча с Ноздрёвым' },
+      { x: 460, y: 555, kind: 'collision', label: 'Дорожное столкновение', sub: 'коляска с губ. дочкой' }
+    ];
 
     this.root.innerHTML = `
       ${this.getNav()}
       <section class="section">
         <div class="section__header">
           <h2 class="section__title">Карта помещиков</h2>
-          <p class="section__desc">Стилизованная карта местности с маршрутом Чичикова. Усадьбы пронумерованы в порядке визитов и нарисованы в соответствии с характером каждого помещика — от сентиментального до разрушенного.</p>
+          <p class="section__desc">Маршрут Чичикова.</p>
         </div>
         <div class="container">
           <div class="map-container" id="landownerMap">
-            <svg viewBox="0 0 1000 700" class="map-svg" xmlns="http://www.w3.org/2000/svg">
+            <svg viewBox="0 0 1000 880" class="map-svg" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <pattern id="landGrain" patternUnits="userSpaceOnUse" width="60" height="60">
                   <circle cx="10" cy="10" r="0.4" fill="#a8b598" opacity="0.25"/>
                   <circle cx="40" cy="35" r="0.4" fill="#a8b598" opacity="0.25"/>
                   <circle cx="22" cy="48" r="0.4" fill="#a8b598" opacity="0.25"/>
                 </pattern>
+                <!-- Стрелка направления на дороге -->
+                <marker id="roadArrow" viewBox="0 0 10 10" refX="5" refY="5"
+                        markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b7355"/>
+                </marker>
               </defs>
 
               <!-- Фон-местность -->
-              <rect width="1000" height="700" fill="#f3eed7" rx="12"/>
-              <rect width="1000" height="700" fill="url(#landGrain)"/>
+              <rect width="1000" height="880" fill="#f3eed7" rx="12"/>
+              <rect width="1000" height="880" fill="url(#landGrain)"/>
 
               <!-- Декоративная двойная рамка -->
-              <rect x="14" y="14" width="972" height="672" fill="none" stroke="#b5a890" stroke-width="1.2" rx="8"/>
-              <rect x="22" y="22" width="956" height="656" fill="none" stroke="#c5b8a5" stroke-width="0.6" rx="6"/>
+              <rect x="14" y="14" width="972" height="852" fill="none" stroke="#b5a890" stroke-width="1.2" rx="8"/>
+              <rect x="22" y="22" width="956" height="836" fill="none" stroke="#c5b8a5" stroke-width="0.6" rx="6"/>
 
-              <!-- Заголовок -->
-              <text x="500" y="58" text-anchor="middle" fill="#5a4a3a"
-                    font-family="Georgia" font-style="italic" font-size="20"
-                    letter-spacing="3">Маршрутъ Павла Ивановича</text>
+              <!-- Картуш-свиток с заголовком -->
+              <g transform="translate(500, 60)">
+                <!-- свиток -->
+                <path d="M -220 -20 Q -240 0, -220 20 L 220 20 Q 240 0, 220 -20 Z"
+                      fill="#ebe1c7" stroke="#8b7355" stroke-width="1.2"/>
+                <!-- завитки слева и справа -->
+                <path d="M -220 -20 Q -240 0, -220 20" fill="none" stroke="#6b5a47" stroke-width="0.8"/>
+                <path d="M -228 -10 Q -236 0, -228 10" fill="none" stroke="#8b7355" stroke-width="0.6"/>
+                <path d="M 220 -20 Q 240 0, 220 20" fill="none" stroke="#6b5a47" stroke-width="0.8"/>
+                <path d="M 228 -10 Q 236 0, 228 10" fill="none" stroke="#8b7355" stroke-width="0.6"/>
+                <!-- текст -->
+                <text y="6" text-anchor="middle" fill="#5a4a3a"
+                      font-family="Georgia" font-style="italic" font-size="20"
+                      letter-spacing="3">Маршрутъ Павла Ивановича</text>
+              </g>
 
               <!-- Стилизованные холмы фона -->
-              <path d="M 0 540 Q 200 510, 400 545 T 700 540 Q 850 530, 1000 555 L 1000 700 L 0 700 Z"
+              <path d="M 0 680 Q 200 650, 400 685 T 700 680 Q 850 670, 1000 695 L 1000 880 L 0 880 Z"
                     fill="#dce4cc" opacity="0.45"/>
-              <path d="M 0 620 Q 250 600, 500 625 T 1000 620 L 1000 700 L 0 700 Z"
+              <path d="M 0 770 Q 250 750, 500 775 T 1000 770 L 1000 880 L 0 880 Z"
                     fill="#c8d4b8" opacity="0.4"/>
 
               <!-- Лесные массивы (точечная штриховка) -->
               <g opacity="0.5" fill="#8b9a78">
-                <circle cx="80" cy="320" r="6"/>
-                <circle cx="90" cy="330" r="5"/>
-                <circle cx="100" cy="320" r="7"/>
-                <circle cx="110" cy="335" r="5"/>
-                <circle cx="120" cy="325" r="6"/>
-                <circle cx="60" cy="395" r="6"/>
-                <circle cx="72" cy="405" r="5"/>
-                <circle cx="84" cy="395" r="7"/>
-                <circle cx="945" cy="420" r="6"/>
-                <circle cx="955" cy="430" r="5"/>
-                <circle cx="935" cy="430" r="6"/>
-                <circle cx="940" cy="445" r="5"/>
-                <circle cx="455" cy="295" r="5"/>
-                <circle cx="468" cy="305" r="6"/>
-                <circle cx="478" cy="295" r="5"/>
+                <circle cx="80" cy="340" r="6"/>
+                <circle cx="90" cy="350" r="5"/>
+                <circle cx="100" cy="340" r="7"/>
+                <circle cx="110" cy="355" r="5"/>
+                <circle cx="120" cy="345" r="6"/>
+                <circle cx="60" cy="445" r="6"/>
+                <circle cx="72" cy="455" r="5"/>
+                <circle cx="84" cy="445" r="7"/>
+                <circle cx="945" cy="490" r="6"/>
+                <circle cx="955" cy="500" r="5"/>
+                <circle cx="935" cy="500" r="6"/>
+                <circle cx="940" cy="515" r="5"/>
+                <circle cx="455" cy="345" r="5"/>
+                <circle cx="468" cy="355" r="6"/>
+                <circle cx="478" cy="345" r="5"/>
               </g>
 
               <!-- Дорога — толстая фоновая линия + пунктир сверху -->
@@ -808,17 +882,17 @@ const APP = {
               <path d="${roadPath}" fill="none" stroke="#8b7355" stroke-width="1.5"
                     stroke-dasharray="10,7" stroke-linecap="round"/>
 
+              <!-- ПРОМЕЖУТОЧНЫЕ СОБЫТИЯ на маршруте -->
+              ${events.map(ev => this.eventMarkerHTML(ev)).join('')}
+
               <!-- Город NN — точка отправления -->
               <g transform="translate(${cityX}, ${cityY})">
-                <!-- упрощённый силуэт города -->
                 <rect x="-50" y="-8" width="100" height="32" fill="#e8dcc0" stroke="#8b7355" stroke-width="1.2" rx="3"/>
-                <!-- купола -->
                 <path d="M -12 -8 Q -12 -22, -4 -28 Q 4 -22, 4 -8 Z" fill="#8b7355"/>
                 <line x1="-4" y1="-32" x2="-4" y2="-28" stroke="#8b7355" stroke-width="1"/>
                 <line x1="-7" y1="-30" x2="-1" y2="-30" stroke="#8b7355" stroke-width="1"/>
                 <path d="M 18 -8 Q 18 -16, 24 -20 Q 30 -16, 30 -8 Z" fill="#8b7355" opacity="0.75"/>
                 <path d="M -34 -8 Q -34 -16, -28 -20 Q -22 -16, -22 -8 Z" fill="#8b7355" opacity="0.75"/>
-                <!-- окошки -->
                 <rect x="-44" y="2" width="6" height="8" fill="#8b7355" opacity="0.5"/>
                 <rect x="-30" y="2" width="6" height="8" fill="#8b7355" opacity="0.5"/>
                 <rect x="36" y="2" width="6" height="8" fill="#8b7355" opacity="0.5"/>
@@ -828,17 +902,38 @@ const APP = {
                       font-style="italic" font-family="Georgia">отправление</text>
               </g>
 
-              <!-- Чичиков (фигурка-бричка рядом с городом) -->
+              <!-- Чичиков-бричка: маленькая иконка в движении вдоль дороги -->
               <g class="map-point" data-char="chichikov"
                  onclick="location.hash='#character/chichikov'"
                  onmouseenter="APP.showTooltip(event, 'chichikov')"
                  onmouseleave="APP.hideTooltip()"
                  transform="translate(${cityX + 105}, ${cityY + 15})">
+                <!-- лёгкое свечение -->
                 <circle r="22" fill="#5a4a3a" opacity="0.1"/>
                 <circle class="map-point__circle" r="18" fill="#5a4a3a"/>
                 <text y="4" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">Ч</text>
                 <text y="36" text-anchor="middle" fill="#5a4a3a" font-size="11"
                       font-weight="600" font-family="sans-serif">Чичиков</text>
+              </g>
+
+              <!-- Маленькая бричка-карета на маршруте между Коробочкой и Ноздрёвым -->
+              <g transform="translate(420, 200)" opacity="0.85">
+                <!-- кузов -->
+                <rect x="-9" y="-5" width="18" height="8" rx="2" fill="#6b5a47" stroke="#3a3226" stroke-width="0.8"/>
+                <!-- крыша/верх -->
+                <path d="M -8 -5 Q 0 -11, 8 -5" fill="none" stroke="#3a3226" stroke-width="0.8"/>
+                <!-- колёса -->
+                <circle cx="-6" cy="4" r="2.5" fill="#3a3226"/>
+                <circle cx="-6" cy="4" r="1" fill="#a89476"/>
+                <circle cx="6" cy="4" r="2.5" fill="#3a3226"/>
+                <circle cx="6" cy="4" r="1" fill="#a89476"/>
+                <!-- дышло -->
+                <line x1="9" y1="0" x2="16" y2="-2" stroke="#3a3226" stroke-width="0.8"/>
+                <!-- лошадь (упрощённая) -->
+                <ellipse cx="20" cy="-2" rx="6" ry="2.5" fill="#6b5a47"/>
+                <circle cx="25" cy="-3" r="2" fill="#6b5a47"/>
+                <line x1="18" y1="0" x2="17" y2="4" stroke="#3a3226" stroke-width="0.7"/>
+                <line x1="22" y1="0" x2="23" y2="4" stroke="#3a3226" stroke-width="0.7"/>
               </g>
 
               <!-- Усадьбы с иконками -->
@@ -863,21 +958,50 @@ const APP = {
                         font-size="13" font-weight="700" font-family="Georgia">${e.name}</text>
                   <text x="${e.x}" y="${e.y + 71}" text-anchor="middle" fill="#8b7355"
                         font-size="10" font-style="italic" font-family="Georgia">${e.estate}</text>
+                  <!-- эпиграф-цитата под именем -->
+                  <text x="${e.x}" y="${e.y + 87}" text-anchor="middle" fill="#a89476"
+                        font-size="10" font-style="italic" font-family="Georgia">${e.epigraph}</text>
                 </g>
               `).join('')}
 
               <!-- Роза ветров -->
-              <g transform="translate(945, 62)">
-                <circle r="22" fill="#f3eed7" stroke="#b5a890" stroke-width="1"/>
-                <path d="M 0 -16 L 4 0 L 0 4 L -4 0 Z" fill="#5a4a3a"/>
-                <path d="M 0 16 L 4 0 L 0 -4 L -4 0 Z" fill="#b5a890"/>
-                <text y="-26" text-anchor="middle" fill="#5a4a3a" font-size="10"
-                      font-weight="700">С</text>
-                <text y="34" text-anchor="middle" fill="#5a4a3a" font-size="10">Ю</text>
+              <g transform="translate(945, 130)">
+                <circle r="24" fill="#f3eed7" stroke="#b5a890" stroke-width="1"/>
+                <circle r="20" fill="none" stroke="#c5b8a5" stroke-width="0.5"/>
+                <path d="M 0 -18 L 5 0 L 0 5 L -5 0 Z" fill="#5a4a3a"/>
+                <path d="M 0 18 L 5 0 L 0 -5 L -5 0 Z" fill="#b5a890"/>
+                <text y="-28" text-anchor="middle" fill="#5a4a3a" font-size="11"
+                      font-weight="700" font-family="Georgia">С</text>
+                <text y="36" text-anchor="middle" fill="#5a4a3a" font-size="11"
+                      font-family="Georgia">Ю</text>
+              </g>
+
+              <!-- Масштабная линейка -->
+              <g transform="translate(50, 830)">
+                <!-- основная горизонтальная линия -->
+                <line x1="0" y1="0" x2="240" y2="0" stroke="#5a4a3a" stroke-width="2"/>
+                <!-- чередующиеся сегменты для эффекта старинной линейки -->
+                <rect x="0" y="-3" width="40" height="6" fill="#5a4a3a"/>
+                <rect x="80" y="-3" width="40" height="6" fill="#5a4a3a"/>
+                <rect x="160" y="-3" width="40" height="6" fill="#5a4a3a"/>
+                <rect x="40" y="-3" width="40" height="6" fill="#f3eed7" stroke="#5a4a3a" stroke-width="0.5"/>
+                <rect x="120" y="-3" width="40" height="6" fill="#f3eed7" stroke="#5a4a3a" stroke-width="0.5"/>
+                <rect x="200" y="-3" width="40" height="6" fill="#f3eed7" stroke="#5a4a3a" stroke-width="0.5"/>
+                <!-- деления и подписи -->
+                <line x1="0" y1="-7" x2="0" y2="7" stroke="#5a4a3a" stroke-width="1.5"/>
+                <line x1="80" y1="-6" x2="80" y2="6" stroke="#5a4a3a" stroke-width="1"/>
+                <line x1="160" y1="-6" x2="160" y2="6" stroke="#5a4a3a" stroke-width="1"/>
+                <line x1="240" y1="-7" x2="240" y2="7" stroke="#5a4a3a" stroke-width="1.5"/>
+                <text x="0" y="-12" text-anchor="middle" fill="#5a4a3a" font-size="10" font-family="Georgia">0</text>
+                <text x="80" y="-12" text-anchor="middle" fill="#5a4a3a" font-size="10" font-family="Georgia">10</text>
+                <text x="160" y="-12" text-anchor="middle" fill="#5a4a3a" font-size="10" font-family="Georgia">20</text>
+                <text x="240" y="-12" text-anchor="middle" fill="#5a4a3a" font-size="10" font-family="Georgia">30</text>
+                <text x="120" y="22" text-anchor="middle" fill="#5a4a3a" font-size="10"
+                      font-style="italic" font-family="Georgia">вёрстъ</text>
               </g>
 
               <!-- Подпись внизу -->
-              <text x="500" y="678" text-anchor="middle" fill="#a89476"
+              <text x="500" y="850" text-anchor="middle" fill="#a89476"
                     font-size="11" font-style="italic" font-family="Georgia">
                 «Порядокъ визитовъ отражаетъ нарастание духовнаго омертвения»
               </text>
@@ -888,26 +1012,26 @@ const APP = {
             </div>
           </div>
 
-          <div class="map-legend">
+          <div class="map-legend map-legend--inline">
             <div class="map-legend__item">
               <span class="map-legend__badge">1</span>
-              <span><strong>Манилов</strong> — пустая мечтательность</span>
+              <span><strong>Манилов</strong></span>
             </div>
             <div class="map-legend__item">
               <span class="map-legend__badge">2</span>
-              <span><strong>Коробочка</strong> — мелочная скупость</span>
+              <span><strong>Коробочка</strong></span>
             </div>
             <div class="map-legend__item">
               <span class="map-legend__badge">3</span>
-              <span><strong>Ноздрёв</strong> — буйное расточительство</span>
+              <span><strong>Ноздрёв</strong></span>
             </div>
             <div class="map-legend__item">
               <span class="map-legend__badge">4</span>
-              <span><strong>Собакевич</strong> — грубый материализм</span>
+              <span><strong>Собакевич</strong></span>
             </div>
             <div class="map-legend__item">
               <span class="map-legend__badge">5</span>
-              <span><strong>Плюшкин</strong> — крайнее омертвение</span>
+              <span><strong>Плюшкин</strong></span>
             </div>
           </div>
         </div>
@@ -982,10 +1106,6 @@ const APP = {
               <div class="chichikov-hub__card-title">&#128214; Оригинальный текст</div>
               <div class="chichikov-hub__card-desc">Текст поэмы с делением на главы</div>
             </a>
-            <a href="#society" data-nav class="chichikov-hub__card fade-in">
-              <div class="chichikov-hub__card-title">&#127894; Общество</div>
-              <div class="chichikov-hub__card-desc">Коллективный портрет губернии, в котором действует Чичиков</div>
-            </a>
           </div>
         </div>
 
@@ -998,11 +1118,6 @@ const APP = {
               <div class="quote-card__hint">&#8594; Показать в тексте</div>
             </div>
           `).join('')}
-        </div>
-
-        <div class="char-section">
-          <h2 class="char-section__title">Значение образа</h2>
-          <div class="meaning-block">${c.meaning}</div>
         </div>
 
         <div class="char-section">
@@ -1065,11 +1180,6 @@ const APP = {
               <div class="quote-card__hint">&#8594; Показать в тексте</div>
             </div>
           `).join('')}
-        </div>
-
-        <div class="char-section">
-          <h2 class="char-section__title">Значение образа</h2>
-          <div class="meaning-block">${c.meaning}</div>
         </div>
       </div>
 
@@ -1135,51 +1245,6 @@ const APP = {
     `;
   },
 
-  // ========== ОБЩЕСТВО ==========
-  renderSociety() {
-    const s = SOCIETY;
-    this.root.innerHTML = `
-      ${this.getNav()}
-      <div class="char-page">
-        <div class="char-page__header">
-          <div class="char-page__type">Коллективный образ</div>
-          <h1 class="char-page__name">${s.title}</h1>
-          <div class="char-page__role">${s.subtitle}</div>
-          <p class="char-page__desc">${s.intro}</p>
-        </div>
-
-        ${s.sections.map(section => `
-          <div class="char-section">
-            <h2 class="char-section__title">${section.title}</h2>
-            <div class="meaning-block">${section.content}</div>
-          </div>
-        `).join('')}
-
-        <div class="char-section">
-          <h2 class="char-section__title">Цитатная характеристика общества</h2>
-          ${s.quotes.map(q => `
-            <div class="quote-card" onclick="APP.openQuotePanel(${JSON.stringify(q).replace(/"/g, '&quot;')})">
-              <div class="quote-card__text">${q.text}</div>
-              <div class="quote-card__explanation">${q.explanation}</div>
-              <div class="quote-card__hint">&#8594; Показать в тексте</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-
-      ${this.getFooter()}
-
-      <div class="text-panel__overlay" id="panelOverlay"></div>
-      <div class="text-panel" id="textPanel">
-        <div class="text-panel__header">
-          <span class="text-panel__title" id="panelTitle"></span>
-          <button class="text-panel__close" onclick="APP.closePanel()">&times;</button>
-        </div>
-        <div class="text-panel__body" id="panelBody"></div>
-      </div>
-    `;
-  },
-
   // ========== КРАТКОЕ СОДЕРЖАНИЕ ==========
   renderSummary() {
     const p = PLOT_SUMMARIES;
@@ -1189,7 +1254,6 @@ const APP = {
         <div class="char-page__header">
           <div class="char-page__type">Пересказ</div>
           <h1 class="char-page__name">${p.title}</h1>
-          <p class="char-page__desc">${p.intro}</p>
         </div>
 
         ${p.chapters.map(ch => `
@@ -1296,10 +1360,6 @@ const APP = {
           </div>
         </div>
 
-        <div class="char-section">
-          <h2 class="char-section__title">Дальнейшее чтение</h2>
-          <p>Подробный список источников и литературоведческих работ о поэме см. на странице <a href="#sources" data-nav>Источники</a>.</p>
-        </div>
       </div>
       ${this.getFooter()}
     `;
@@ -1334,12 +1394,6 @@ const APP = {
           </div>
         `).join('')}
 
-        <div class="char-section">
-          <h2 class="char-section__title">Принципы работы с материалом</h2>
-          <ul class="principles-list">
-            ${s.principles.map(p => `<li>${p}</li>`).join('')}
-          </ul>
-        </div>
       </div>
       ${this.getFooter()}
     `;
@@ -1351,33 +1405,28 @@ const APP = {
       ${this.getNav()}
       <div class="about">
         <h1>О проекте</h1>
-        <p>Этот интерактивный сайт создан для изучения поэмы Н. В. Гоголя «Мёртвые души». Проект объединяет оригинальный текст произведения, карты персонажей и цитатные характеристики в единое пространство для исследования.</p>
+        <p>Проект по поэме Н. В. Гоголя «Мёртвые души»</p>
 
-        <h2>Что можно изучать на сайте</h2>
+        <h2>Что представлено на сайте</h2>
         <ul>
-          <li><strong>Оригинальный текст</strong> — поэма разделена на главы с удобным оглавлением и возможностью быстрого перехода</li>
-          <li><strong>Карта города</strong> — интерактивная схема города NN с чиновниками и их связями</li>
-          <li><strong>Карта помещиков</strong> — маршрут Чичикова с визуализацией порядка посещений</li>
-          <li><strong>Персонажи</strong> — у каждого героя есть своя страница с характеристикой и цитатами</li>
-          <li><strong>Цитаты в контексте</strong> — нажатие на цитату открывает её положение в оригинальном тексте</li>
+          <li><strong>Оригинальный текст</strong> — поэма разделена на 11 глав с оглавлением</li>
+          <li><strong>Краткое содержание</strong> — пересказ каждой главы с фабулой</li>
+          <li><strong>Карта города</strong> — план города NN с чиновниками</li>
+          <li><strong>Карта помещиков</strong> — маршрут Чичикова</li>
+          <li><strong>Страницы персонажей</strong> — характеристика, цитаты с ссылками на текст</li>
+          <li><strong>Глоссарий</strong> — значения устаревших слов, чинов и терминов</li>
         </ul>
 
-        <h2>Как устроена навигация</h2>
-        <p>Все разделы связаны между собой. Из карт можно перейти к персонажам, из карточек персонажей — к их цитатам в тексте. Чичиков выступает центральным узлом навигации, связанным со всеми остальными разделами.</p>
+        <h2>Навигация</h2>
+        <p>Все разделы связаны: из карт можно перейти к персонажам, из карточек персонажей — к их цитатам в тексте, из краткого содержания — к полному тексту главы.</p>
 
-        <h2>Технологии</h2>
-        <p>Сайт создан на чистом HTML, CSS и JavaScript без внешних зависимостей. Данные персонажей и текста хранятся в структурированных JavaScript-объектах, что позволяет легко расширять проект.</p>
-
-        <h2>Принципы построения</h2>
-        <ul>
-          <li>Помещики расположены по нарастанию духовного омертвения: от Манилова (пустая мечтательность) до Плюшкина (полная деградация)</li>
-          <li>Чиновники представлены как единая система городской бюрократии</li>
-          <li>Чичиков связан со всеми персонажами как зеркало, отражающее их пороки</li>
-          <li>Цитаты подобраны для раскрытия ключевых черт каждого персонажа</li>
-        </ul>
+        <h2>На чём я писал?</h2>
+        <p>Сайт сделан на чистом HTML, CSS и JavaScript, без внешних зависимостей. Данные персонажей и текст глав хранятся в отдельных файлах.</p>
+        <p>Полный код проекта доступен по ссылке <a href="https://github.com/Almanion/Almanion.github.io" target="_blank">GitHub</a>->dead souls.</p>
 
         <h2>Источники и автор</h2>
-        <p>Подробная биография Н. В. Гоголя, история создания поэмы и хронология жизни писателя — на странице <a href="#author" data-nav>О Гоголе</a>. Полный список использованных источников и литературоведческих работ — на странице <a href="#sources" data-nav>Источники</a>.</p>
+        <p>Биография Н. В. Гоголя и история создания поэмы — на странице <a href="#author" data-nav>О Гоголе</a>. </p>
+        <p>Список использованной литературы — на странице <a href="#sources" data-nav>Источники</a>.</p>
       </div>
       ${this.getFooter()}
     `;

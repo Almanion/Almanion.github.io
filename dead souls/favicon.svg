@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6b5a47"/>
+      <stop offset="100%" stop-color="#3a3226"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Тёмно-коричневый фон со скруглением -->
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+
+  <!-- Декоративная внутренняя рамка -->
+  <rect x="6" y="6" width="52" height="52" rx="10"
+        fill="none" stroke="#e3d4b3" stroke-width="0.8" opacity="0.5"/>
+
+  <!-- Монограмма «МД» в стиле старых литер -->
+  <text x="32" y="44"
+        text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-style="italic"
+        font-weight="700"
+        font-size="34"
+        fill="#f5efde">МД</text>
+</svg>

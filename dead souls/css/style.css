@@ -485,7 +485,7 @@ img {
   gap: 0.35rem;
 }
 
-/* Значение образа */
+/* Развёрнутый текстовый блок (персонажи, автор) */
 .meaning-block {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -1151,6 +1151,27 @@ img {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
+}
+
+/* Легенда карты помещиков — все пункты в одну строку, рамка по ширине содержимого */
+.map-legend--inline {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem 1.1rem;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  box-sizing: border-box;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+.map-legend--inline .map-legend__item {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .map-legend__item {
