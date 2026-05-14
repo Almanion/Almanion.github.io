@@ -166,7 +166,6 @@ const APP = {
       <section class="section section--alt">
         <div class="section__header">
           <h2 class="section__title">Помещики</h2>
-          <p class="section__desc">Галерея образов, расположенных по нарастанию духовного омертвения</p>
         </div>
         <div class="container">
           <div class="grid grid--3">
