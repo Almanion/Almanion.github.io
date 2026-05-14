@@ -178,7 +178,6 @@ const APP = {
       <section class="section">
         <div class="section__header">
           <h2 class="section__title">Чиновники города NN</h2>
-          <p class="section__desc">Представители бюрократического мира поэмы</p>
         </div>
         <div class="container">
           <div class="grid grid--3">
