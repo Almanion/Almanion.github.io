@@ -26,8 +26,18 @@
     display: block;
 }
 
-.copyable-block:hover > .copy-block-btn,
-.copyable-block:focus-within > .copy-block-btn,
+/* Десктоп с мышью: кнопка появляется при наведении / фокусе */
+@media (hover: hover) {
+    .copyable-block:hover > .copy-block-btn,
+    .copyable-block:focus-within > .copy-block-btn,
+    .copy-block-btn:focus-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Touch-устройства: кнопка появляется только когда блок «активирован» тапом */
+.copyable-block.is-active > .copy-block-btn,
 .copy-block-btn:focus-visible {
     opacity: 1;
     transform: translateY(0);
@@ -56,9 +66,9 @@
     .copy-block-btn {
         top: 0.35rem;
         right: 0.35rem;
-        opacity: 0.85;
         width: 24px;
         height: 24px;
+        /* На мобильном остаётся opacity:0 — показываем только при .is-active */
     }
     .copyable-block:has(.bookmark-btn) > .copy-block-btn {
         right: 2.1rem;

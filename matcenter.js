@@ -1605,17 +1605,18 @@ function isSummerGrade(grade) {
 }
 
 // Разделы летней серии 9-10 по номерам реальных задач.
+// bannerNum — номер псевдо-задачи-заголовка темы (вводный текст с названием раздела).
 // Если структура серии изменится — править здесь.
 const SUMMER_SECTIONS = {
     'grade-summer-9-10': [
-        { id: 'topic-mayskie',  title: 'Майские сборы',           minNum: 1,  maxNum: 8 },
-        { id: 'topic-combin',   title: 'Комбинаторика',            minNum: 9,  maxNum: 13 },
-        { id: 'topic-algebra',  title: 'Алгебра',                  minNum: 14, maxNum: 17 },
-        { id: 'topic-numbers',  title: 'Теория чисел',             minNum: 18, maxNum: 19 },
-        { id: 'topic-analysis', title: 'Математический анализ',    minNum: 20, maxNum: 22 },
-        { id: 'topic-analytic', title: 'Аналитическая теория чисел', minNum: 23, maxNum: 25 },
-        { id: 'topic-mersenne', title: 'Простота чисел Мерсенна',  minNum: 26, maxNum: 40 },
-        { id: 'topic-geometry', title: 'Геометрия',                minNum: 41, maxNum: 59 },
+        { id: 'topic-mayskie',  title: 'Майские сборы',              bannerNum: 0.5,  minNum: 1,  maxNum: 8 },
+        { id: 'topic-combin',   title: 'Комбинаторика',               bannerNum: 8.5,  minNum: 9,  maxNum: 13 },
+        { id: 'topic-algebra',  title: 'Алгебра',                     bannerNum: 13.5, minNum: 14, maxNum: 17 },
+        { id: 'topic-numbers',  title: 'Теория чисел',                bannerNum: 17.5, minNum: 18, maxNum: 19 },
+        { id: 'topic-analysis', title: 'Математический анализ',       bannerNum: 19.5, minNum: 20, maxNum: 22 },
+        { id: 'topic-analytic', title: 'Аналитическая теория чисел',  bannerNum: 22.5, minNum: 23, maxNum: 25 },
+        { id: 'topic-mersenne', title: 'Простота чисел Мерсенна',     bannerNum: 25.5, minNum: 26, maxNum: 40 },
+        { id: 'topic-geometry', title: 'Геометрия',                   bannerNum: 40.5, minNum: 41, maxNum: 59 },
     ]
 };
 
@@ -1800,7 +1801,10 @@ function refreshCurrentView() {
     const searchInput = document.getElementById('searchInput');
     const statusFilterEl = document.getElementById('statusFilter');
     const hasSearch = searchInput && normalizeSearchText(searchInput.value);
-    const hasStatusFilter = statusFilterEl && statusFilterEl.value;
+    // В летних сериях select-фильтр работает как переключатель тем,
+    // его значение уже отражено в currentFilter — повторно не применяем.
+    const hasStatusFilter = !isSummerGrade(currentGrade)
+        && statusFilterEl && statusFilterEl.value;
 
     if (hasSearch || hasStatusFilter) {
         runSearch();
@@ -1974,15 +1978,17 @@ function setCurrentFilter(filterId, opts = {}) {
     }
 }
 
-// Псевдо-задачи (баннеры разделов) показываем только если рядом есть видимые реальные задачи.
+// Возвращает задачи раздела + его заголовочный баннер + переходные тексты внутри.
 function filterTasksByTopic(tasks, topicSection) {
     return tasks.filter(t => {
         if (Number.isInteger(t.number)) {
             return t.number >= topicSection.minNum && t.number <= topicSection.maxNum;
         }
-        // Псевдо-задача (баннер): включаем, если её номер «попадает» внутрь диапазона темы
-        // (например, 13.5 — баннер «Алгебра» — попадает в [14;17] как 13.5 < 14, поэтому
-        //  её НЕ берём; внутренние переходные тексты вроде 26.5/28.5 — берём, если они внутри [26;40]).
+        // Заголовочный баннер темы (например, 13.5 «Алгебра» с вводным текстом про
+        // квазилинеаризацию) — показываем перед задачами темы.
+        if (t.number === topicSection.bannerNum) return true;
+        // Внутренние переходные тексты (26.5, 28.5, 32.5 — внутри Мерсенна) попадают
+        // строго между min и max своей темы.
         return t.number > topicSection.minNum && t.number < topicSection.maxNum;
     });
 }
@@ -2250,7 +2256,11 @@ function runSearch() {
     const statusFilterEl = document.getElementById('statusFilter');
     const searchTerm = searchInput ? searchInput.value : '';
     const normalizedTerm = normalizeSearchText(searchTerm);
-    const activeStatus = statusFilterEl ? statusFilterEl.value : '';
+    // В летних сериях значение select — это topic-id, а не статус.
+    // Тематический фильтр применяется через currentFilter в getTasksForCurrentFilter().
+    const activeStatus = !isSummerGrade(currentGrade) && statusFilterEl
+        ? statusFilterEl.value
+        : '';
 
     let currentTasks = getTasksForCurrentFilter();
 

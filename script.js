@@ -944,9 +944,14 @@ const COPY_ICONS = {
     cross: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>'
 };
 
+// На заголовочные элементы и контейнеры разделов copy-btn не добавляем.
+// (Сам раздел .topic — это обёртка с заголовком и блоками внутри, у каждого блока уже своя copy-кнопка.)
+const COPY_EXCLUDE_SELECTOR = 'h1, h2, h3, h4, h5, h6, .topic, .topic-title, .subsection-title, .section-title';
+
 function initCopyableBlocks() {
     document.querySelectorAll(COPYABLE_BLOCK_SELECTOR).forEach(block => {
         if (block.dataset.copyReady === 'true') return;
+        if (block.matches(COPY_EXCLUDE_SELECTOR)) return;
 
         block.dataset.copyReady = 'true';
         block.classList.add('copyable-block');
@@ -974,6 +979,27 @@ function initCopyableBlocks() {
 
         block.appendChild(copyBtn);
     });
+
+    // Один раз вешаем общий обработчик: на touch-устройстве кнопка копирования
+    // появляется при касании блока (через класс .is-active) и убирается при касании
+    // снаружи. На устройствах с мышью эффект не нужен — CSS показывает по :hover.
+    if (!window.__copyTapInit) {
+        window.__copyTapInit = true;
+        document.addEventListener('click', (e) => {
+            const block = e.target.closest('.copyable-block');
+            const copyBtn = e.target.closest('.copy-block-btn');
+            // Если кликнули по кнопке копирования — состояние блока не трогаем
+            if (copyBtn) return;
+
+            // Со всех остальных блоков снимаем активность
+            document.querySelectorAll('.copyable-block.is-active').forEach(b => {
+                if (b !== block) b.classList.remove('is-active');
+            });
+
+            // Активируем именно тот блок, по которому кликнули
+            if (block) block.classList.add('is-active');
+        });
+    }
 }
 
 function buildWordCopyPayload(sourceBlock) {
