@@ -106,6 +106,9 @@ function initMath() {
 // ============================================
 
 function initNavigation() {
+    // На Матцентре своя навигация в matcenter.js
+    if (document.body.classList.contains('matcenter-page')) return;
+
     const navLinks = document.querySelectorAll('.nav-link');
     // Поддерживаем оба варианта: .topic и .content-section
     const topics = document.querySelectorAll('.topic, .content-section');
@@ -806,7 +809,7 @@ function initSidebarCollapse() {
         collapseBtn.className = 'sidebar-collapse-btn';
         collapseBtn.title = 'Свернуть меню (горячая клавиша [)';
         collapseBtn.setAttribute('aria-label', 'Свернуть меню навигации');
-        collapseBtn.textContent = '←';
+        collapseBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>';
         
         // Вставляем в контейнер кнопок если он уже есть, иначе в хедер
         // (settings.js позже подхватит кнопку в контейнер)
@@ -831,7 +834,7 @@ function initSidebarCollapse() {
         expandBtn.className = 'sidebar-expand-btn';
         expandBtn.title = 'Развернуть меню (горячая клавиша [)';
         expandBtn.setAttribute('aria-label', 'Развернуть меню навигации');
-        expandBtn.textContent = '☰';
+        expandBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>';
         document.body.appendChild(expandBtn);
     }
     

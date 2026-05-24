@@ -2,8 +2,13 @@
 // CONFIGURATION
 // ============================================
 
-// Google Apps Script endpoint
+// Google Apps Script endpoints.
+// Первый — основная таблица (9 класс и т.д.), второй — летняя серия 9-10 (отдельная таблица).
+// Можно добавлять ещё, фронт читает все и сливает задачи.
 const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyR_Iz_fyg2s-bviRtkvF1Zz_KMdRCUgpoIVT1CF-lG6UiNkVfvor_nMXILPzk8xslA/exec';
+const SUMMER_9_10_ENDPOINT = 'https://script.google.com/macros/s/AKfycbw_1QMpa29l9_ziOEVI13PLlHfhdUX5-Aqrg76hfIgXamUVitT0Sc_IwBwKb2Pqj0s/exec';
+
+const TASKS_ENDPOINTS = [API_ENDPOINT, SUMMER_9_10_ENDPOINT].filter(Boolean);
 
 // Security settings
 const MAX_FAILED_ATTEMPTS = 3;
@@ -16,10 +21,25 @@ const LOCKOUT_DURATIONS = [
 const SESSION_DURATION = Infinity; // Неистекающие сессии (до явного выхода)
 const FINGERPRINT_SALT = 'matcenter_v1_2024'; // Соль для отпечатка
 const TASKS_CACHE_KEY = 'matcenter_tasks_cache';
+const GRADE_STORAGE_KEY = 'matcenter_grade';
+const FILTER_STORAGE_KEY = 'matcenter_filter';
+const DEFAULT_GRADE = 'grade-9';
+const DEFAULT_FILTER = 'all-tasks';
+
+const GRADE_SECTIONS = [
+    { id: 'grade-9', title: '9 класс' },
+    { id: 'grade-summer-9-10', title: 'Летняя серия 9-10' },
+    { id: 'grade-10', title: '10 класс' },
+    { id: 'grade-summer-10-11', title: 'Летняя серия 10-11' },
+    { id: 'grade-11', title: '11 класс' }
+];
+
+const TASK_VIEW_IDS = ['all-tasks', 'current-series', 'postponed', 'unsolved'];
 
 let allTasks = [];
 let searchStatusFilter = 'all'; // all | current | postponed | unsolved
-let currentFilter = 'all';
+let currentGrade = DEFAULT_GRADE;
+let currentFilter = 'all-tasks';
 let authToken = null;
 let lockoutTimer = null;
 let autoRefreshTimer = null; // Таймер автообновления
@@ -145,14 +165,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('=================================');
     
     // Инициализируем UI компоненты сразу (неблокирующие операции)
+    initGradeNavigation();
     initMatCenterNavigation();
     initMatCenterSearch();
     initHintModal();
     initStatusFilter();
     initStatsClick();
-    initRetryButton();
+    initRefreshButtons();
     initEscapeKey();
     initHintSwipe();
+    restoreCurrentFilter();
     
     // Загружаем или генерируем отпечаток
     const cachedFP = localStorage.getItem('matcenter_fp');
@@ -187,7 +209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             // Перерисовываем задачи сразу
             if (allTasks.length > 0) {
-                displayTasks(allTasks);
+                refreshCurrentView();
             }
             
             // Создаём сессию сразу (важно для сохранения между перезагрузками)
@@ -216,40 +238,61 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Инициализируем авторизацию (проверка сессии будет внутри)
     initAuth();
     
-    // Кнопка обновления в заголовке
-    const refreshButton = document.getElementById('refreshButton');
-    if (refreshButton) {
-        refreshButton.addEventListener('click', () => {
-            refreshButton.disabled = true;
-            refreshButton.classList.add('spinning');
-
-            loadTasksFromGoogleSheets()
-                .catch(err => {
-                    console.error('Ошибка обновления данных:', err);
-                    alert('Не удалось обновить данные. Проверьте соединение.');
-                })
-                .finally(() => {
-                    refreshButton.disabled = false;
-                    refreshButton.classList.remove('spinning');
-                });
-        });
-    }
-    
     // Автообновление каждые 5 минут (только если авторизован)
     // Очищаем старый таймер если существует
     if (autoRefreshTimer) {
         clearInterval(autoRefreshTimer);
     }
-    
+
     autoRefreshTimer = setInterval(() => {
-        if (authToken) {
-            loadTasksFromGoogleSheets().catch(err => {
-                console.error('Ошибка автообновления:', err);
-                // При ошибке автообновления не разлогиниваем пользователя
-            });
+        if (!authToken) return;
+        // Не дёргаем сервер, пока админ редактирует подсказку
+        const hintOverlay = document.getElementById('hintOverlay');
+        if (hintOverlay && !hintOverlay.classList.contains('hidden')) {
+            console.log('⏸ Автообновление отложено: открыта модалка подсказки');
+            return;
         }
+        // silent: не показываем большую плашку загрузки
+        loadTasksFromGoogleSheets(false, true).catch(err => {
+            console.error('Ошибка автообновления:', err);
+        });
     }, 5 * 60 * 1000);
 });
+
+// Восстановление сохранённой секции (вызывается после init UI, до загрузки задач)
+function restoreCurrentFilter() {
+    try {
+        const saved = localStorage.getItem(FILTER_STORAGE_KEY);
+        if (saved && TASK_VIEW_IDS.includes(saved)) {
+            currentFilter = saved;
+            showTaskView(saved);
+        }
+    } catch (e) { /* ignore */ }
+    syncFilterUI();
+}
+
+// Один обработчик на все кнопки .refresh-button (делегирование)
+function initRefreshButtons() {
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.refresh-button[data-refresh]');
+        if (!btn) return;
+        if (btn.disabled) return;
+
+        // Все refresh-кнопки крутим одновременно — единое визуальное состояние
+        const allButtons = document.querySelectorAll('.refresh-button[data-refresh]');
+        allButtons.forEach(b => { b.disabled = true; b.classList.add('spinning'); });
+
+        // silent: показываем только вращающуюся кнопку, без большой плашки загрузки
+        loadTasksFromGoogleSheets(false, true)
+            .catch(err => {
+                console.error('Ошибка обновления данных:', err);
+                alert('Не удалось обновить данные. Проверьте соединение.');
+            })
+            .finally(() => {
+                allButtons.forEach(b => { b.disabled = false; b.classList.remove('spinning'); });
+            });
+    });
+}
 
 // ============================================
 // CRYPTOGRAPHY & FINGERPRINTING
@@ -616,7 +659,7 @@ async function initAuth() {
                 
                 // Перерисовываем задачи чтобы отобразить подсказки
                 if (allTasks.length > 0) {
-                    displayTasks(allTasks);
+                    refreshCurrentView();
                 }
                 
                 console.log(isAdmin ? '✅ Автоматический вход выполнен через сессию (АДМИН)' : '✅ Автоматический вход выполнен через сессию');
@@ -691,7 +734,7 @@ async function initAuth() {
             
             // 7. Перерисовываем задачи чтобы отобразить подсказки
             if (allTasks.length > 0) {
-                displayTasks(allTasks);
+                refreshCurrentView();
             }
             
         } catch (error) {
@@ -878,7 +921,7 @@ function logout() {
     
     // Сбрасываем статистику
     document.getElementById('totalTasks').textContent = '0';
-    document.getElementById('solvedTasks').textContent = '0';
+    document.getElementById('unsolvedTasks').textContent = '0';
     document.getElementById('currentSeries').textContent = '0';
     document.getElementById('postponedTasks').textContent = '0';
     
@@ -891,18 +934,19 @@ function logout() {
 // DATA FETCHING
 // ============================================
 
-async function loadTasksFromGoogleSheets(fromAuthAttempt = false) {
+async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false) {
     const loadingMessage = document.getElementById('loadingMessage');
     const retryBtn = document.getElementById('retryButton');
-    
+
     const showRetryUI = (msg) => {
         if (!loadingMessage) return;
         loadingMessage.style.display = 'block';
         loadingMessage.innerHTML = `<p class="loading-error">${msg}</p><button id="retryButton" class="retry-button">🔄 Попробовать снова</button>`;
         document.getElementById('retryButton')?.addEventListener('click', () => loadTasksFromGoogleSheets(false));
     };
-    
-    if (loadingMessage) {
+
+    // В silent-режиме (refresh-кнопка, автообновление) не показываем большую плашку
+    if (!silent && loadingMessage) {
         loadingMessage.style.display = 'block';
         loadingMessage.innerHTML = `<div class="spinner"></div><p>Загрузка задач...</p>`;
         if (retryBtn) retryBtn.style.display = 'none';
@@ -939,7 +983,7 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false) {
             throw new Error('Не удалось загрузить задачи - пустой массив');
         }
         
-        allTasks = tasks;
+        allTasks = normalizeAllTasks(tasks);
         isAdmin = adminFlag;
         
         // Детальная статистика по загруженным задачам
@@ -961,8 +1005,8 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false) {
         }
         console.log('=================================');
         
-        displayTasks(tasks);
-        updateStatistics(tasks);
+        updateStatistics(getTasksForCurrentGrade());
+        refreshCurrentView();
         
         // Сохраняем в кэш для офлайн-режима
         try {
@@ -970,13 +1014,13 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false) {
         } catch (e) { /* ignore */ }
         
         // Скрываем сообщение о загрузке и очищаем его содержимое
-        if (loadingMessage) {
+        if (!silent && loadingMessage) {
             loadingMessage.style.display = 'none';
             loadingMessage.innerHTML = ''; // Очищаем содержимое
         }
-        
+
         console.log('✅ УСПЕХ! Данные отображены на странице');
-        
+
     } catch (error) {
         console.error('=================================');
         console.error('❌ ОШИБКА ЗАГРУЗКИ:');
@@ -984,25 +1028,31 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false) {
         console.error('Сообщение:', error.message);
         console.error('Стек:', error.stack);
         console.error('=================================');
-        
+
         if (fromAuthAttempt) {
             if (loadingMessage) loadingMessage.style.display = 'none';
             throw error;
         }
-        
+
+        // В silent-режиме не показываем плашку с ошибкой — пробрасываем наверх,
+        // вызывающий покажет alert; данные на странице остаются прежними
+        if (silent) {
+            throw error;
+        }
+
         // Пробуем загрузить из кэша
         try {
             const raw = localStorage.getItem(TASKS_CACHE_KEY);
             if (raw) {
                 const { tasks } = JSON.parse(raw);
                 if (Array.isArray(tasks) && tasks.length > 0) {
-                    allTasks = tasks;
-                    displayTasks(tasks);
-                    updateStatistics(tasks);
+                    allTasks = normalizeAllTasks(tasks);
+                    updateStatistics(getTasksForCurrentGrade());
+                    refreshCurrentView();
                 }
             }
         } catch (e) { /* ignore */ }
-        
+
         showRetryUI(error.message || 'Ошибка загрузки');
     }
 }
@@ -1011,112 +1061,118 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false) {
 // DATA LOADING
 // ============================================
 
-async function loadFromAppsScript() {
-    console.log('🔵 Загрузка данных с сервера...');
-    
-    let response;
-    let usedMethod = 'POST';
-    
-    // Используем только GET (обходит CORS preflight)
-    console.log('🔄 Используем GET запрос...');
-    usedMethod = 'GET';
-    
+async function loadFromOneEndpoint(endpoint, endpointIdx) {
     const clientId = deviceFingerprint ? deviceFingerprint.substring(0, 16) : 'unknown';
-    const url = `${API_ENDPOINT}?password=${encodeURIComponent(authToken)}&clientId=${encodeURIComponent(clientId)}`;
-    
+    const url = `${endpoint}?password=${encodeURIComponent(authToken)}&clientId=${encodeURIComponent(clientId)}`;
+
+    let response;
     try {
         response = await fetch(url);
-        console.log('📡 GET ответ получен, статус:', response.status);
     } catch (error) {
-        console.error('❌ Ошибка сети при загрузке данных:', error);
-        throw new Error('Не удалось подключиться к серверу. Проверьте интернет-соединение.');
+        throw new Error('Сеть: ' + (error && error.message || error));
     }
-    
-    console.log(`✅ Использован метод: ${usedMethod}`);
-    
+
     if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP ${response.status}`);
     }
-    
+
     const text = await response.text();
-    console.log('📄 Сырой ответ (первые 500 символов):', text.substring(0, 500));
-    
     let data;
     try {
         data = JSON.parse(text);
     } catch (e) {
-        console.error('❌ Ошибка парсинга JSON:', e);
-        console.log('Полный ответ:', text);
-        throw new Error('Не удалось распарсить ответ от сервера');
+        throw new Error('Невалидный JSON: ' + text.substring(0, 100));
     }
-    
-    console.log('📊 Данные распарсены:', data);
-    
+
     if (!data.success) {
-        console.error('❌ Сервер вернул ошибку:', data.error);
-        throw new Error(data.error || 'Ошибка загрузки данных');
+        throw new Error(data.error || 'Ошибка сервера');
     }
-    
-    console.log('✅ Сервер вернул задач:', data.count);
-    console.log('🔑 Статус админа:', data.isAdmin ? 'ДА' : 'НЕТ');
-    console.log('Первая задача:', data.tasks[0]);
-    
-    // Логируем уникальные статусы
-    const uniqueStatuses = [...new Set(data.tasks.map(t => t.status))];
-    console.log('🏷️ Уникальные статусы в данных:', uniqueStatuses);
-    console.log('Примеры задач по статусам:');
-    uniqueStatuses.forEach(status => {
-        const example = data.tasks.find(t => t.status === status);
-        console.log(`  "${status}" (длина: ${status.length}, коды: ${[...status].map(c => c.charCodeAt(0)).join(',')})`, 
-                    '- Пример:', example ? `#${example.number}` : 'нет');
-    });
-    
-    // Валидация данных перед преобразованием
+
     if (!Array.isArray(data.tasks)) {
-        console.error('❌ Неверный формат данных: tasks не является массивом');
-        throw new Error('Неверный формат данных от сервера');
+        throw new Error('tasks не массив');
     }
-    
-    // Преобразуем данные в нужный формат с валидацией
+
     const tasks = data.tasks.map((task, index) => {
-        // Валидация обязательных полей
-        if (!task || typeof task !== 'object') {
-            console.warn(`⚠️ Пропускаем некорректную задачу на позиции ${index}`);
-            return null;
-        }
-        
-        if (!task.number || !task.status) {
-            console.warn(`⚠️ Пропускаем задачу без номера или статуса на позиции ${index}`);
-            return null;
-        }
-        
+        if (!task || typeof task !== 'object') return null;
+        if (task.number === undefined || task.number === null || task.number === '') return null;
+
         const cleanNumber = extractNumber(task.number);
-        if (cleanNumber === null || isNaN(cleanNumber)) {
-            console.warn(`⚠️ Пропускаем задачу с некорректным номером: ${task.number}`);
-            return null;
-        }
-        
+        if (cleanNumber === null || isNaN(cleanNumber)) return null;
+
+        const gradeRaw = task.grade ? String(task.grade).trim() : '';
+        const grade = gradeRaw && GRADE_SECTIONS.some(g => g.id === gradeRaw)
+            ? gradeRaw
+            : DEFAULT_GRADE;
+
+        const statusRaw = task.status == null ? '' : String(task.status).trim();
+
         return {
             number: cleanNumber,
             numberText: String(task.number),
-            status: String(task.status).trim(),
+            status: statusRaw,
             description: task.description ? String(task.description) : 'Условие не указано',
-            hint: task.hint ? String(task.hint) : ''
+            hint: task.hint ? String(task.hint) : '',
+            grade,
+            _endpointIdx: endpointIdx
         };
-    }).filter(task => task !== null); // Удаляем null значения
-    
-    console.log('🎉 Преобразовано задач:', tasks.length);
-    
+    }).filter(t => t !== null);
+
     return {
         tasks: tasks,
-        isAdmin: data.isAdmin || false
+        isAdmin: !!data.isAdmin
     };
 }
 
-// Извлечение номера из текста типа "98 (ЛЗ 36)"
+async function loadFromAppsScript() {
+    console.log('🔵 Загрузка с', TASKS_ENDPOINTS.length, 'таблиц(ы)...');
+
+    if (TASKS_ENDPOINTS.length === 0) {
+        throw new Error('Не настроены endpoints в matcenter.js');
+    }
+
+    const results = await Promise.allSettled(
+        TASKS_ENDPOINTS.map((url, idx) => loadFromOneEndpoint(url, idx))
+    );
+
+    const allTasks = [];
+    let isAdmin = false;
+    let successCount = 0;
+    let lastError = null;
+
+    results.forEach((r, idx) => {
+        if (r.status === 'fulfilled') {
+            successCount++;
+            allTasks.push(...r.value.tasks);
+            if (r.value.isAdmin) isAdmin = true;
+            console.log(`✅ Endpoint #${idx}: ${r.value.tasks.length} задач${r.value.isAdmin ? ' (АДМИН)' : ''}`);
+        } else {
+            lastError = r.reason;
+            console.warn(`⚠️ Endpoint #${idx} не отвечает:`, r.reason && r.reason.message || r.reason);
+        }
+    });
+
+    // Если ни одна таблица не ответила — это полный отказ.
+    if (successCount === 0) {
+        throw lastError instanceof Error
+            ? lastError
+            : new Error('Не удалось загрузить ни одну из таблиц');
+    }
+
+    console.log('🎉 Всего задач со всех таблиц:', allTasks.length);
+
+    return {
+        tasks: allTasks,
+        isAdmin: isAdmin
+    };
+}
+
+// Извлечение номера из текста типа "98 (ЛЗ 36)" или "8.5 Алгебра".
+// Поддерживает дробные числа — нужно для псевдо-задач разделов (0.5, 8.5, …).
 function extractNumber(text) {
-    const match = text.match(/^(\d+)/);
-    return match ? parseInt(match[1]) : null;
+    const str = String(text == null ? '' : text).trim();
+    const match = str.match(/^(\d+(?:[.,]\d+)?)/);
+    if (!match) return null;
+    return parseFloat(match[1].replace(',', '.'));
 }
 
 // ============================================
@@ -1136,7 +1192,11 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
     }
     
     if (tasks.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Задачи не найдены</p>';
+        if (getTasksForCurrentGrade().length === 0) {
+            showEmptyGradeMessage(container);
+        } else {
+            container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Задачи не найдены</p>';
+        }
         return;
     }
     
@@ -1149,8 +1209,10 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
     });
     console.log('Статусы отображаемых задач:', statusCounts);
     
-    // Сортировка задач по номеру (от большего к меньшему)
-    const sortedTasks = [...tasks].sort((a, b) => b.number - a.number);
+    // Летние серии выдаются целиком, удобнее по возрастанию (1, 2, 3, …).
+    // Обычные классы — по убыванию (свежие задачи сверху).
+    const ascending = typeof currentGrade === 'string' && currentGrade.indexOf('summer') !== -1;
+    const sortedTasks = [...tasks].sort((a, b) => ascending ? a.number - b.number : b.number - a.number);
     
     container.innerHTML = '';
     
@@ -1174,13 +1236,28 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
 
 function createTaskElement(task) {
     // Валидация данных задачи
-    if (!task || !task.number) {
+    if (!task || task.number === undefined || task.number === null || isNaN(task.number)) {
         console.warn('⚠️ Пропускаем задачу без номера:', task);
         const emptyCard = document.createElement('div');
         emptyCard.style.display = 'none';
         return emptyCard;
     }
-    
+
+    // Псевдо-задача (раздел или вводный текст) — дробный номер вида 0.5, 8.5 и т.д.
+    if (!Number.isInteger(task.number)) {
+        const banner = document.createElement('div');
+        banner.className = 'task-section-banner';
+        const inner = document.createElement('div');
+        inner.className = 'task-section-banner-inner';
+        inner.textContent = task.description || '';
+        banner.appendChild(inner);
+        // KaTeX-рендер формул, если есть
+        if (typeof renderLatexInElement === 'function') {
+            setTimeout(() => renderLatexInElement(banner), 0);
+        }
+        return banner;
+    }
+
     const taskCard = document.createElement('div');
     taskCard.className = 'task-card';
     
@@ -1240,10 +1317,17 @@ function createTaskElement(task) {
         `;
     }
     
-    // Для админов добавляем возможность изменения статуса
-    const statusBadgeHTML = isAdmin 
-        ? `<div class="task-status-badge clickable" data-task-number="${escapeHtml(String(task.number))}">${getStatusText(task.status)}</div>`
-        : `<div class="task-status-badge">${getStatusText(task.status)}</div>`;
+    // Для админов добавляем возможность изменения статуса.
+    // Если статуса нет (например, в летних сериях) — обычным пользователям бейдж не показываем,
+    // админ может его поставить кликом.
+    let statusBadgeHTML = '';
+    if (task.status) {
+        statusBadgeHTML = isAdmin
+            ? `<div class="task-status-badge clickable" data-task-number="${escapeHtml(String(task.number))}">${getStatusText(task.status)}</div>`
+            : `<div class="task-status-badge">${getStatusText(task.status)}</div>`;
+    } else if (isAdmin) {
+        statusBadgeHTML = `<div class="task-status-badge clickable empty" data-task-number="${escapeHtml(String(task.number))}">+ статус</div>`;
+    }
     
     taskCard.innerHTML = `
         <div class="task-header">
@@ -1321,7 +1405,7 @@ function getStatusText(status) {
     const statusMap = {
         'Р': 'Разобрано',
         'П': 'Подсказка',
-        'Н': 'Новая',
+        'Н': 'Серия',
         'От': 'Отложена'
     };
     return statusMap[status] || status;
@@ -1376,8 +1460,8 @@ function showStatusDropdown(badgeElement, task) {
                     allTasks[taskIndex].status = status.code;
                 }
                 
-                // Перерисовываем задачи
-                displayTasks(allTasks);
+                updateStatistics(getTasksForCurrentGrade());
+                refreshCurrentView();
                 
             } catch (error) {
                 option.innerHTML = status.text;
@@ -1418,11 +1502,23 @@ function showStatusDropdown(badgeElement, task) {
     }, 0);
 }
 
+// Найти endpoint, к которому принадлежит задача (для админских операций).
+// Если задача не нашлась — используем первый endpoint как запасной.
+function getEndpointForTask(taskNumber) {
+    const numKey = extractNumber(taskNumber);
+    const task = allTasks.find(t => t.number === numKey || String(t.numberText) === String(taskNumber));
+    if (task && typeof task._endpointIdx === 'number' && TASKS_ENDPOINTS[task._endpointIdx]) {
+        return TASKS_ENDPOINTS[task._endpointIdx];
+    }
+    return TASKS_ENDPOINTS[0];
+}
+
 // Изменить статус задачи на сервере
 async function changeTaskStatus(taskNumber, newStatus) {
     console.log(`🔄 Изменение статуса задачи №${taskNumber} на "${newStatus}"...`);
-    
-    const url = `${API_ENDPOINT}?password=${encodeURIComponent(authToken)}&action=changeStatus&taskNumber=${encodeURIComponent(taskNumber)}&newStatus=${encodeURIComponent(newStatus)}`;
+
+    const endpoint = getEndpointForTask(taskNumber);
+    const url = `${endpoint}?password=${encodeURIComponent(authToken)}&action=changeStatus&taskNumber=${encodeURIComponent(taskNumber)}&newStatus=${encodeURIComponent(newStatus)}`;
     
     try {
         const response = await fetch(url);
@@ -1461,31 +1557,171 @@ function escapeHtml(text) {
 // СТАТИСТИКА
 // ============================================
 
-function updateStatistics(tasks) {
-    const total = tasks.length;
-    const current = tasks.filter(t => t.status === 'Н').length; // Текущая серия: "Н"
-    const postponed = tasks.filter(t => t.status === 'От' || t.status === 'П').length; // Откладыши: "От" + "П"
-    const unsolved = current + postponed;
-    
-    document.getElementById('totalTasks').textContent = total;
-    document.getElementById('solvedTasks').textContent = unsolved;
-    document.getElementById('currentSeries').textContent = current;
-    document.getElementById('postponedTasks').textContent = postponed;
-    
-    // Обновляем заголовки секций
-    updateSectionTitle('current-series', `Текущая серия (${current})`);
-    updateSectionTitle('postponed', `Отложенные задачи (${postponed})`);
-    updateSectionTitle('unsolved', `Неразобранные задачи (${unsolved})`);
+function getGradeTitle(gradeId) {
+    const section = GRADE_SECTIONS.find(g => g.id === gradeId);
+    return section ? section.title : gradeId;
 }
 
-function updateSectionTitle(sectionId, title) {
-    const section = document.getElementById(sectionId);
-    if (section) {
-        const titleElement = section.querySelector('.part-title');
-        if (titleElement) {
-            titleElement.textContent = title;
+function normalizeAllTasks(tasks) {
+    if (!Array.isArray(tasks)) return [];
+    return tasks.map(task => ({
+        ...task,
+        grade: task.grade && GRADE_SECTIONS.some(g => g.id === task.grade)
+            ? task.grade
+            : DEFAULT_GRADE
+    }));
+}
+
+function getTasksForCurrentGrade() {
+    return allTasks.filter(t => t.grade === currentGrade);
+}
+
+function syncGradeNavUI() {
+    document.querySelectorAll('.grade-link, .grade-card').forEach(el => {
+        el.classList.toggle('active', el.dataset.grade === currentGrade);
+    });
+
+    const title = getGradeTitle(currentGrade);
+    const navTitle = document.getElementById('gradeNavTitle');
+    if (navTitle) navTitle.textContent = title;
+
+    // Базовые заголовки (счётчики добавит updateStatistics)
+    const allTasksTitle = document.getElementById('allTasksTitle');
+    if (allTasksTitle) allTasksTitle.textContent = `${title} — все задачи`;
+}
+
+// Правильное склонение русских числительных: 1 задача, 2 задачи, 5 задач
+function pluralizeTasks(n) {
+    const mod10 = n % 10;
+    const mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return 'задача';
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'задачи';
+    return 'задач';
+}
+
+// Обновление счётчиков задач на карточках классов
+function updateGradeCounts() {
+    GRADE_SECTIONS.forEach(g => {
+        // Псевдо-задачи (дробные номера) в счётчик не идут.
+        const count = allTasks.filter(t => t.grade === g.id && Number.isInteger(t.number)).length;
+        const countEl = document.querySelector(`[data-count-grade="${g.id}"]`);
+        if (countEl) countEl.textContent = count;
+        // Меняем подпись «задача/задачи/задач» под числом
+        const card = document.querySelector(`.grade-card[data-grade="${g.id}"]`);
+        const subEl = card ? card.querySelector('.grade-card-sub') : null;
+        if (subEl) subEl.textContent = pluralizeTasks(count);
+    });
+}
+
+// Синхронизация active-классов на nav-link и стат-картах
+function syncFilterUI() {
+    document.querySelectorAll('.nav-link').forEach(l => {
+        const href = l.getAttribute('href') || '';
+        l.classList.toggle('active', href === `#${currentFilter}`);
+    });
+    document.querySelectorAll('.stat-card.clickable[data-filter]').forEach(c => {
+        c.classList.toggle('active', c.dataset.filter === currentFilter);
+    });
+}
+
+function setCurrentGrade(gradeId) {
+    if (!GRADE_SECTIONS.some(g => g.id === gradeId)) return;
+
+    currentGrade = gradeId;
+    try {
+        localStorage.setItem(GRADE_STORAGE_KEY, gradeId);
+    } catch (e) { /* ignore */ }
+
+    syncGradeNavUI();
+    updateStatistics(getTasksForCurrentGrade());
+    refreshCurrentView();
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function initGradeNavigation() {
+    try {
+        const saved = localStorage.getItem(GRADE_STORAGE_KEY);
+        if (saved && GRADE_SECTIONS.some(g => g.id === saved)) {
+            currentGrade = saved;
         }
+    } catch (e) { /* ignore */ }
+
+    syncGradeNavUI();
+
+    document.querySelectorAll('.grade-link, .grade-card').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const gradeId = link.dataset.grade;
+            if (gradeId) setCurrentGrade(gradeId);
+            if (typeof closeMobileMenu === 'function') closeMobileMenu();
+        });
+    });
+}
+
+function hideAllTaskViews() {
+    TASK_VIEW_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+}
+
+function showTaskView(viewId) {
+    hideAllTaskViews();
+    const el = document.getElementById(viewId);
+    if (el) el.style.display = 'block';
+}
+
+function refreshCurrentView() {
+    const searchInput = document.getElementById('searchInput');
+    const statusFilterEl = document.getElementById('statusFilter');
+    const hasSearch = searchInput && normalizeSearchText(searchInput.value);
+    const hasStatusFilter = statusFilterEl && statusFilterEl.value;
+
+    if (hasSearch || hasStatusFilter) {
+        runSearch();
+    } else {
+        filterAndDisplayTasks(currentFilter);
     }
+}
+
+function showEmptyGradeMessage(container) {
+    const title = escapeHtml(getGradeTitle(currentGrade));
+    container.innerHTML = `
+        <div class="empty-grade-message">
+            <span class="empty-grade-icon">📂</span>
+            <p>В разделе «${title}» пока нет задач</p>
+        </div>
+    `;
+}
+
+function updateStatistics(tasks) {
+    // Псевдо-задачи (заголовки разделов / вводные тексты) — дробные номера,
+    // их в статистике не учитываем.
+    const realTasks = tasks.filter(t => Number.isInteger(t.number));
+    const total = realTasks.length;
+    const current = realTasks.filter(t => t.status === 'Н').length; // Текущая серия: "Н"
+    const postponed = realTasks.filter(t => t.status === 'От' || t.status === 'П').length; // Откладыши: "От" + "П"
+    const unsolved = current + postponed;
+
+    document.getElementById('totalTasks').textContent = total;
+    document.getElementById('unsolvedTasks').textContent = unsolved;
+    document.getElementById('currentSeries').textContent = current;
+    document.getElementById('postponedTasks').textContent = postponed;
+
+    // Обновляем заголовки секций с указанием класса для согласованности
+    const gradeTitle = getGradeTitle(currentGrade);
+    updateSectionTitle('currentSeriesTitle', `${gradeTitle} — текущая серия (${current})`);
+    updateSectionTitle('postponedTitle', `${gradeTitle} — откладыши (${postponed})`);
+    updateSectionTitle('unsolvedTitle', `${gradeTitle} — неразобранные (${unsolved})`);
+
+    // Обновляем счётчики на карточках разделов (по всем классам)
+    updateGradeCounts();
+}
+
+function updateSectionTitle(elementId, title) {
+    const el = document.getElementById(elementId);
+    if (el) el.textContent = title;
 }
 
 // ============================================
@@ -1496,17 +1732,8 @@ function initStatsClick() {
     document.querySelectorAll('.stat-card.clickable[data-filter]').forEach(card => {
         card.addEventListener('click', () => {
             const filterId = card.dataset.filter;
-            const link = document.querySelector(`.nav-link[href="#${filterId}"]`);
-            if (link) link.click();
+            if (filterId) setCurrentFilter(filterId, { scrollTop: true });
         });
-    });
-}
-
-function initRetryButton() {
-    const btn = document.getElementById('retryButton');
-    if (!btn) return;
-    btn.addEventListener('click', () => {
-        if (authToken) loadTasksFromGoogleSheets().catch(() => {});
     });
 }
 
@@ -1584,61 +1811,59 @@ function initHintSwipe() {
 
 function initMatCenterNavigation() {
     const navLinks = document.querySelectorAll('.nav-link');
-    
+
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            
-            navLinks.forEach(l => l.classList.remove('active'));
-            link.classList.add('active');
-            
-            const targetId = link.getAttribute('href').substring(1);
-            
-            // Скрываем все секции
-            document.querySelectorAll('.content-section').forEach(section => {
-                section.style.display = 'none';
-            });
-            
-            // Показываем нужную секцию
-            const targetSection = document.getElementById(targetId);
-            if (targetSection) {
-                targetSection.style.display = 'block';
-                
-                // Фильтруем и отображаем задачи
-                filterAndDisplayTasks(targetId);
-            }
-            
-            // Прокрутка к секции
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
+            const targetId = (link.getAttribute('href') || '').substring(1);
+            if (targetId) setCurrentFilter(targetId, { scrollTop: true });
+            if (typeof closeMobileMenu === 'function') closeMobileMenu();
         });
     });
 }
 
+// Единая точка смены активной секции: применяет поиск/фильтр и обновляет UI
+function setCurrentFilter(filterId, opts = {}) {
+    if (!TASK_VIEW_IDS.includes(filterId)) return;
+
+    currentFilter = filterId;
+    try { localStorage.setItem(FILTER_STORAGE_KEY, filterId); } catch (e) { /* ignore */ }
+
+    showTaskView(filterId);
+    syncFilterUI();
+    refreshCurrentView(); // сам выберет runSearch() или filterAndDisplayTasks()
+
+    if (opts.scrollTop) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
 function filterAndDisplayTasks(filterId) {
     currentFilter = filterId;
+    const gradeTasks = getTasksForCurrentGrade();
     let filteredTasks = [];
     let containerId = '';
     
     switch (filterId) {
         case 'all-tasks':
-            filteredTasks = allTasks;
+            filteredTasks = gradeTasks;
             containerId = 'tasksContainer';
             break;
         case 'current-series':
-            filteredTasks = allTasks.filter(t => t.status === 'Н'); // Текущая серия: "Н"
+            filteredTasks = gradeTasks.filter(t => t.status === 'Н'); // Текущая серия: "Н"
             containerId = 'currentSeriesContainer';
             break;
         case 'postponed':
-            filteredTasks = allTasks.filter(t => t.status === 'От' || t.status === 'П'); // Откладыши: "От" + "П"
+            filteredTasks = gradeTasks.filter(t => t.status === 'От' || t.status === 'П'); // Откладыши: "От" + "П"
             containerId = 'postponedContainer';
             break;
         case 'unsolved':
-            filteredTasks = allTasks.filter(t => t.status === 'Н' || t.status === 'От' || t.status === 'П'); // Все неразобранные
+            filteredTasks = gradeTasks.filter(t => t.status === 'Н' || t.status === 'От' || t.status === 'П'); // Все неразобранные
             containerId = 'unsolvedContainer';
             break;
+        default:
+            filteredTasks = gradeTasks;
+            containerId = 'tasksContainer';
     }
     
     displayTasks(filteredTasks, containerId);
@@ -1646,17 +1871,19 @@ function filterAndDisplayTasks(filterId) {
 
 // Получить задачи для текущего фильтра
 function getTasksForCurrentFilter() {
+    const gradeTasks = getTasksForCurrentGrade();
+
     switch (currentFilter) {
         case 'all-tasks':
-            return allTasks;
+            return gradeTasks;
         case 'current-series':
-            return allTasks.filter(t => t.status === 'Н');
+            return gradeTasks.filter(t => t.status === 'Н');
         case 'postponed':
-            return allTasks.filter(t => t.status === 'От' || t.status === 'П');
+            return gradeTasks.filter(t => t.status === 'От' || t.status === 'П');
         case 'unsolved':
-            return allTasks.filter(t => t.status === 'Н' || t.status === 'От' || t.status === 'П');
+            return gradeTasks.filter(t => t.status === 'Н' || t.status === 'От' || t.status === 'П');
         default:
-            return allTasks;
+            return gradeTasks;
     }
 }
 
@@ -1696,6 +1923,16 @@ function initStatusFilter() {
             runSearch();
         });
     }
+
+    // Начальная синхронизация: если браузер восстановил значение — отразить во втором селекте и в .has-filter
+    const initialValue = (statusFilterEl && statusFilterEl.value)
+        || (mobileStatusFilter && mobileStatusFilter.value)
+        || '';
+    if (statusFilterEl) statusFilterEl.value = initialValue;
+    if (mobileStatusFilter) mobileStatusFilter.value = initialValue;
+    syncFilterClass(statusFilterEl);
+    syncFilterClass(mobileStatusFilter);
+    searchStatusFilter = initialValue || 'all';
 }
 
 function getContainerIdForFilter() {
@@ -1838,7 +2075,7 @@ function showNoResultsMessage(containerId, searchTerm, statusFilter) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    const statusLabels = { 'Р': 'Разобрано', 'Н': 'Текущая серия', 'От': 'Отложена', 'П': 'С подсказкой' };
+    const statusLabels = { 'Р': 'Разобрано', 'Н': 'Серия', 'От': 'Отложена', 'П': 'Подсказка' };
     const statusLabel = statusFilter ? (statusLabels[statusFilter] || statusFilter) : '';
 
     let hint = '';
@@ -1921,6 +2158,14 @@ function initMatCenterSearch() {
     if (mobileSearchClear) {
         mobileSearchClear.addEventListener('click', clearSearch);
     }
+
+    // Начальная синхронизация: один инпут может иметь восстановленный браузером текст
+    const initialValue = (searchInput && searchInput.value)
+        || (mobileSearchInput && mobileSearchInput.value)
+        || '';
+    if (searchInput) searchInput.value = initialValue;
+    if (mobileSearchInput) mobileSearchInput.value = initialValue;
+    updateClearBtns(initialValue);
 }
 
 // ============================================
@@ -2063,7 +2308,7 @@ function initHintModal() {
                     // Через 500ms закрываем модалку
                     setTimeout(() => {
                         hideHintModal();
-                        displayTasks(allTasks);
+                        refreshCurrentView();
                         console.log(`✅ Подсказка для задачи №${taskNumber} сохранена`);
                     }, 500);
                 }
@@ -2099,7 +2344,7 @@ function initHintModal() {
                         // Через 500ms закрываем модалку
                         setTimeout(() => {
                             hideHintModal();
-                            displayTasks(allTasks);
+                            refreshCurrentView();
                         }, 500);
                     }
                 } catch (error) {
@@ -2139,7 +2384,8 @@ async function pushHintToServer(taskNumber, hintText) {
     
     try {
         // Используем GET вместо POST (обходит CORS)
-        const url = `${API_ENDPOINT}?password=${encodeURIComponent(authToken)}&action=setHint&taskNumber=${encodeURIComponent(taskNumber)}&hintText=${encodeURIComponent(hintText)}`;
+        const endpoint = getEndpointForTask(taskNumber);
+        const url = `${endpoint}?password=${encodeURIComponent(authToken)}&action=setHint&taskNumber=${encodeURIComponent(taskNumber)}&hintText=${encodeURIComponent(hintText)}`;
         const response = await fetch(url);
         
         const responseText = await response.text();

@@ -154,7 +154,7 @@
             btn.setAttribute('aria-label', 'Добавить в закладки');
             const bmId = generateBookmarkId(box);
             btn.dataset.bmId = bmId;
-            btn.innerHTML = bookmarks[bmId] ? '★' : '☆';
+            btn.innerHTML = bookmarkSvg(!!bookmarks[bmId]);
             if (bookmarks[bmId]) btn.classList.add('bookmarked');
 
             btn.addEventListener('click', (e) => {
@@ -162,7 +162,7 @@
                 const id = btn.dataset.bmId;
                 if (bookmarks[id]) {
                     removeBookmark(id);
-                    btn.innerHTML = '☆';
+                    btn.innerHTML = bookmarkSvg(false);
                     btn.classList.remove('bookmarked');
                 } else {
                     const topic = box.closest('.topic');
@@ -176,7 +176,7 @@
                         type: getBoxType(box),
                         timestamp: Date.now()
                     });
-                    btn.innerHTML = '★';
+                    btn.innerHTML = bookmarkSvg(true);
                     btn.classList.add('bookmarked');
                     btn.style.transform = 'scale(1.3)';
                     setTimeout(() => btn.style.transform = '', 200);
@@ -189,14 +189,21 @@
         });
     }
 
+    function bookmarkSvg(filled) {
+        // Закладка — лента/тег. filled = заполнена цветом, иначе только обводка.
+        return '<svg class="bookmark-icon" viewBox="0 0 24 24" fill="' + (filled ? 'currentColor' : 'none')
+             + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+             + '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+    }
+
     function refreshAllButtons() {
         document.querySelectorAll('.bookmark-btn').forEach(btn => {
             const id = btn.dataset.bmId;
             if (bookmarks[id]) {
-                btn.innerHTML = '★';
+                btn.innerHTML = bookmarkSvg(true);
                 btn.classList.add('bookmarked');
             } else {
-                btn.innerHTML = '☆';
+                btn.innerHTML = bookmarkSvg(false);
                 btn.classList.remove('bookmarked');
             }
         });
@@ -213,7 +220,7 @@
         const btn = document.createElement('button');
         btn.className = 'knowledge-check-btn';
         btn.id = 'bookmarksBtn';
-        btn.textContent = '🔖 Закладки';
+        btn.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span>Закладки</span>';
 
         btn.addEventListener('click', () => {
             toggleBookmarksPanel();
@@ -379,8 +386,8 @@
         modal.innerHTML = '';
 
         const header = document.createElement('h2');
-        header.style.cssText = 'margin-top: 0; margin-bottom: 1rem;';
-        header.textContent = '🔖 Закладки';
+        header.style.cssText = 'margin-top: 0; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;';
+        header.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span>Закладки</span>';
         modal.appendChild(header);
 
         if (entries.length === 0) {

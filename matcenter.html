@@ -22,28 +22,29 @@
     <!-- Боковая панель навигации -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h2><a href="index.html" style="color: white; text-decoration: none;">📚 Главная</a></h2>
+            <h2><a href="index.html" style="color: white; text-decoration: none;"><svg class="home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg><span>Главная</span></a></h2>
             <!-- Кнопка настроек создается автоматически через settings.js -->
-            <button class="close-sidebar" id="closeSidebar">✕</button>
+            <button class="close-sidebar" id="closeSidebar" aria-label="Закрыть меню"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>
         </div>
         
         <div class="search-box">
             <div class="search-input-wrap">
-                <input type="text" id="searchInput" placeholder="🔍 Поиск задач...">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-3.6-3.6"/></svg>
+                <input type="text" id="searchInput" placeholder="Поиск задач..." aria-label="Поиск задач">
                 <button class="search-clear-btn" id="searchClearBtn" aria-label="Очистить поиск">✕</button>
             </div>
-            <select id="statusFilter" class="status-filter-select" title="Фильтр по статусу">
+            <select id="statusFilter" class="status-filter-select" title="Фильтр по статусу" aria-label="Фильтр по статусу">
                 <option value="">Все</option>
                 <option value="Н">Серия</option>
                 <option value="П">Подсказка</option>
-                <option value="От">Отложено</option>
+                <option value="От">Отложена</option>
                 <option value="Р">Разобрано</option>
             </select>
         </div>
 
         <nav class="nav-menu">
             <div class="nav-section">
-                <h3>МатЦентр 2025/2026</h3>
+                <h3 id="gradeNavTitle">9 класс</h3>
                 <ul>
                     <li><a href="#all-tasks" class="nav-link active">Все задачи</a></li>
                     <li><a href="#current-series" class="nav-link">Текущая серия</a></li>
@@ -54,7 +55,9 @@
             
             <div class="nav-section logout-section" id="logoutSection" style="display: none;">
                 <button id="logoutButton" class="logout-button-sidebar">
-                    <span class="logout-icon">🚪</span>
+                    <span class="logout-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    </span>
                     <span>Выйти</span>
                 </button>
             </div>
@@ -62,7 +65,7 @@
     </aside>
 
     <!-- Кнопка открытия меню (для мобильных) -->
-    <button class="menu-toggle" id="menuToggle">☰</button>
+    <button class="menu-toggle" id="menuToggle" aria-label="Открыть меню"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
 
     <!-- Форма авторизации (fullscreen, без swipe) -->
     <div class="auth-overlay matcenter-auth-fullscreen hidden" id="authOverlay">
@@ -70,11 +73,12 @@
             <div class="auth-icon">🔐</div>
             <h2>Введите пароль</h2>
             <form id="authForm">
-                <input 
-                    type="password" 
-                    id="passwordInput" 
+                <input
+                    type="password"
+                    id="passwordInput"
                     placeholder="Введите пароль..."
                     autocomplete="off"
+                    aria-label="Пароль"
                     required
                 >
                 <div class="auth-error" id="authError" style="display: none;">
@@ -99,7 +103,7 @@
             <div class="hint-drag-handle" id="hintDragHandle" aria-hidden="true"></div>
             <div class="hint-modal-header">
                 <h3>💡 Подсказка к задаче №<span id="hintTaskNumber"></span></h3>
-                <button class="hint-close-btn" id="hintCloseBtn">✕</button>
+                <button class="hint-close-btn" id="hintCloseBtn" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>
             </div>
             <textarea 
                 id="hintTextarea" 
@@ -125,28 +129,73 @@
         <div class="mobile-search-bar" id="mobileSearchBar">
             <div class="mobile-search-row">
                 <div class="mobile-search-input-wrap">
-                    <input type="text" id="mobileSearchInput" placeholder="🔍 Поиск задач..." autocomplete="off" inputmode="search">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-3.6-3.6"/></svg>
+                    <input type="text" id="mobileSearchInput" placeholder="Поиск задач..." autocomplete="off" inputmode="search" aria-label="Поиск задач">
                     <button class="mobile-search-clear" id="mobileSearchClear" aria-label="Очистить поиск">✕</button>
                 </div>
-                <select id="mobileStatusFilter" class="mobile-status-filter" title="Фильтр по статусу">
+                <select id="mobileStatusFilter" class="mobile-status-filter" title="Фильтр по статусу" aria-label="Фильтр по статусу">
                     <option value="">Все</option>
                     <option value="Н">Серия</option>
                     <option value="П">Подсказка</option>
-                    <option value="От">Отложено</option>
+                    <option value="От">Отложена</option>
                     <option value="Р">Разобрано</option>
                 </select>
             </div>
         </div>
 
+        <!-- Переключатель разделов по классам — крупные карточки -->
+        <nav class="grade-switcher" id="gradeSwitcher" aria-label="Раздел по классу">
+            <button type="button" class="grade-card active" data-grade="grade-9">
+                <span class="grade-card-eyebrow">Раздел</span>
+                <span class="grade-card-title">9 класс</span>
+                <span class="grade-card-meta">
+                    <span class="grade-card-count" data-count-grade="grade-9">—</span>
+                    <span class="grade-card-sub">задач</span>
+                </span>
+            </button>
+            <button type="button" class="grade-card grade-card-summer" data-grade="grade-summer-9-10">
+                <span class="grade-card-eyebrow">Лето</span>
+                <span class="grade-card-title">9 — 10</span>
+                <span class="grade-card-meta">
+                    <span class="grade-card-count" data-count-grade="grade-summer-9-10">—</span>
+                    <span class="grade-card-sub">задач</span>
+                </span>
+            </button>
+            <button type="button" class="grade-card" data-grade="grade-10">
+                <span class="grade-card-eyebrow">Раздел</span>
+                <span class="grade-card-title">10 класс</span>
+                <span class="grade-card-meta">
+                    <span class="grade-card-count" data-count-grade="grade-10">—</span>
+                    <span class="grade-card-sub">задач</span>
+                </span>
+            </button>
+            <button type="button" class="grade-card grade-card-summer" data-grade="grade-summer-10-11">
+                <span class="grade-card-eyebrow">Лето</span>
+                <span class="grade-card-title">10 — 11</span>
+                <span class="grade-card-meta">
+                    <span class="grade-card-count" data-count-grade="grade-summer-10-11">—</span>
+                    <span class="grade-card-sub">задач</span>
+                </span>
+            </button>
+            <button type="button" class="grade-card" data-grade="grade-11">
+                <span class="grade-card-eyebrow">Раздел</span>
+                <span class="grade-card-title">11 класс</span>
+                <span class="grade-card-meta">
+                    <span class="grade-card-count" data-count-grade="grade-11">—</span>
+                    <span class="grade-card-sub">задач</span>
+                </span>
+            </button>
+        </nav>
+
         <!-- Статистика -->
-        <section class="content-section">
+        <section class="content-section matcenter-stats-section">
             <div class="stats-container" id="statsContainer">
                 <div class="stat-card clickable" data-filter="all-tasks" title="Все задачи">
                     <div class="stat-number" id="totalTasks">0</div>
                     <div class="stat-label">Всего задач</div>
                 </div>
                 <div class="stat-card clickable" data-filter="unsolved" title="Неразобранные">
-                    <div class="stat-number" id="solvedTasks">0</div>
+                    <div class="stat-number" id="unsolvedTasks">0</div>
                     <div class="stat-label">Неразобрано</div>
                 </div>
                 <div class="stat-card clickable" data-filter="current-series" title="Текущая серия">
@@ -160,43 +209,54 @@
             </div>
         </section>
 
+        <!-- Общее сообщение о загрузке / ошибке — видно во всех секциях -->
+        <div id="loadingMessage" class="loading-message">
+            <div class="spinner"></div>
+            <p>Загрузка задач из Google Таблицы...</p>
+            <button id="retryButton" class="retry-button" style="display: none; margin-top: 1rem;">
+                🔄 Попробовать снова
+            </button>
+        </div>
+
         <!-- Список задач -->
-        <section class="content-section" id="all-tasks">
+        <section class="content-section matcenter-task-view" id="all-tasks">
             <div class="part-title-row">
-                <h2 class="part-title">Все задачи</h2>
-                <button type="button" id="refreshButton" class="refresh-button" title="Обновить данные">🔄</button>
-            </div>
-            <div id="loadingMessage" class="loading-message">
-                <div class="spinner"></div>
-                <p>Загрузка задач из Google Таблицы...</p>
-                <button id="retryButton" class="retry-button" style="display: none; margin-top: 1rem;">
-                    🔄 Попробовать снова
-                </button>
+                <h2 class="part-title" id="allTasksTitle">9 класс — все задачи</h2>
+                <button type="button" class="refresh-button" data-refresh title="Обновить данные" aria-label="Обновить данные"><svg class="icon icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.45 6.36L3 16"/><path d="M3 12a9 9 0 0 1 15.45-6.36L21 8"/><polyline points="21 3 21 8 16 8"/><polyline points="3 21 3 16 8 16"/></svg></button>
             </div>
             <div id="tasksContainer" class="tasks-container"></div>
         </section>
 
         <!-- Текущая серия -->
-        <section class="content-section" id="current-series" style="display: none;">
-            <h2 class="part-title">Текущая серия</h2>
+        <section class="content-section matcenter-task-view" id="current-series" style="display: none;">
+            <div class="part-title-row">
+                <h2 class="part-title" id="currentSeriesTitle">Текущая серия</h2>
+                <button type="button" class="refresh-button" data-refresh title="Обновить данные" aria-label="Обновить данные"><svg class="icon icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.45 6.36L3 16"/><path d="M3 12a9 9 0 0 1 15.45-6.36L21 8"/><polyline points="21 3 21 8 16 8"/><polyline points="3 21 3 16 8 16"/></svg></button>
+            </div>
             <div id="currentSeriesContainer" class="tasks-container"></div>
         </section>
 
         <!-- Откладыши -->
-        <section class="content-section" id="postponed" style="display: none;">
-            <h2 class="part-title">Откладыши</h2>
+        <section class="content-section matcenter-task-view" id="postponed" style="display: none;">
+            <div class="part-title-row">
+                <h2 class="part-title" id="postponedTitle">Откладыши</h2>
+                <button type="button" class="refresh-button" data-refresh title="Обновить данные" aria-label="Обновить данные"><svg class="icon icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.45 6.36L3 16"/><path d="M3 12a9 9 0 0 1 15.45-6.36L21 8"/><polyline points="21 3 21 8 16 8"/><polyline points="3 21 3 16 8 16"/></svg></button>
+            </div>
             <div id="postponedContainer" class="tasks-container"></div>
         </section>
 
         <!-- Неразобранные -->
-        <section class="content-section" id="unsolved" style="display: none;">
-            <h2 class="part-title">Неразобранные задачи</h2>
+        <section class="content-section matcenter-task-view" id="unsolved" style="display: none;">
+            <div class="part-title-row">
+                <h2 class="part-title" id="unsolvedTitle">Неразобранные задачи</h2>
+                <button type="button" class="refresh-button" data-refresh title="Обновить данные" aria-label="Обновить данные"><svg class="icon icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.45 6.36L3 16"/><path d="M3 12a9 9 0 0 1 15.45-6.36L21 8"/><polyline points="21 3 21 8 16 8"/><polyline points="3 21 3 16 8 16"/></svg></button>
+            </div>
             <div id="unsolvedContainer" class="tasks-container"></div>
         </section>
     </main>
 
     <!-- Кнопка "Наверх" -->
-    <button class="scroll-to-top" id="scrollToTop">↑</button>
+    <button class="scroll-to-top" id="scrollToTop" aria-label="Наверх">↑</button>
 
     <!-- Контейнер для снега -->
     <div class="snow-container" id="snowContainer"></div>
