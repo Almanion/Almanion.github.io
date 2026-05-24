@@ -263,12 +263,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 function restoreCurrentFilter() {
     try {
         const saved = localStorage.getItem(FILTER_STORAGE_KEY);
-        if (saved && TASK_VIEW_IDS.includes(saved)) {
+        if (saved && (TASK_VIEW_IDS.includes(saved) || saved.indexOf('topic-') === 0)) {
             currentFilter = saved;
-            showTaskView(saved);
         }
     } catch (e) { /* ignore */ }
+
+    // Если сохранённый topic не подходит к текущему грейду — сбрасываем
+    if (!isAllowedFilter(currentFilter)) {
+        currentFilter = 'all-tasks';
+    }
+
+    const viewId = currentFilter.indexOf('topic-') === 0 ? 'all-tasks' : currentFilter;
+    showTaskView(viewId);
     syncFilterUI();
+    updateAllTasksTitleForFilter();
 }
 
 // Один обработчик на все кнопки .refresh-button (делегирование)
@@ -1260,19 +1268,24 @@ function createTaskElement(task) {
 
     const taskCard = document.createElement('div');
     taskCard.className = 'task-card';
-    
-    // Определяем класс по статусу
+
+    // В летних сериях статусов нет вообще — не подкрашиваем карточки и не показываем бейдж.
+    const isSummerTask = isSummerGrade(task.grade);
+
+    // Определяем класс по статусу (только для не-летних)
     let statusClass = '';
-    if (task.status === 'От') {
-        statusClass = 'postponed'; // Отложены: "От" (красный)
-    } else if (task.status === 'П') {
-        statusClass = 'with-hint'; // С подсказкой: "П" (фиолетовый)
-    } else if (task.status === 'Н') {
-        statusClass = 'current-series'; // Текущая серия: "Н" (оранжевый)
-    } else if (task.status === 'Р') {
-        statusClass = 'solved'; // Разобрано: "Р" (зелёный)
+    if (!isSummerTask) {
+        if (task.status === 'От') {
+            statusClass = 'postponed'; // Отложены: "От" (красный)
+        } else if (task.status === 'П') {
+            statusClass = 'with-hint'; // С подсказкой: "П" (фиолетовый)
+        } else if (task.status === 'Н') {
+            statusClass = 'current-series'; // Текущая серия: "Н" (оранжевый)
+        } else if (task.status === 'Р') {
+            statusClass = 'solved'; // Разобрано: "Р" (зелёный)
+        }
     }
-    
+
     if (statusClass) {
         taskCard.classList.add(statusClass);
     }
@@ -1317,16 +1330,17 @@ function createTaskElement(task) {
         `;
     }
     
-    // Для админов добавляем возможность изменения статуса.
-    // Если статуса нет (например, в летних сериях) — обычным пользователям бейдж не показываем,
-    // админ может его поставить кликом.
+    // Бейдж статуса: в летних сериях статусы не используются — вообще ничего не показываем.
+    // В обычных классах: показываем статус, а для админа дополнительно даём поставить.
     let statusBadgeHTML = '';
-    if (task.status) {
-        statusBadgeHTML = isAdmin
-            ? `<div class="task-status-badge clickable" data-task-number="${escapeHtml(String(task.number))}">${getStatusText(task.status)}</div>`
-            : `<div class="task-status-badge">${getStatusText(task.status)}</div>`;
-    } else if (isAdmin) {
-        statusBadgeHTML = `<div class="task-status-badge clickable empty" data-task-number="${escapeHtml(String(task.number))}">+ статус</div>`;
+    if (!isSummerTask) {
+        if (task.status) {
+            statusBadgeHTML = isAdmin
+                ? `<div class="task-status-badge clickable" data-task-number="${escapeHtml(String(task.number))}">${getStatusText(task.status)}</div>`
+                : `<div class="task-status-badge">${getStatusText(task.status)}</div>`;
+        } else if (isAdmin) {
+            statusBadgeHTML = `<div class="task-status-badge clickable empty" data-task-number="${escapeHtml(String(task.number))}">+ статус</div>`;
+        }
     }
     
     taskCard.innerHTML = `
@@ -1347,13 +1361,22 @@ function createTaskElement(task) {
     
     // Обработчик раскрытия/скрытия условия
     const toggleBtn = taskCard.querySelector('.task-condition-toggle');
-    
+
     if (toggleBtn) {
         toggleBtn.addEventListener('click', () => {
             const isOpen = taskCard.classList.toggle('open');
             toggleBtn.innerHTML = isOpen
                 ? '<span class="toggle-icon">▲</span> Скрыть условие'
                 : '<span class="toggle-icon">▼</span> Показать условие';
+
+            // Рендерим LaTeX-формулы при первом раскрытии условия
+            if (isOpen) {
+                const descEl = taskCard.querySelector('.task-description');
+                if (descEl && !descEl.dataset.latexRendered && typeof renderLatexInElement === 'function') {
+                    renderLatexInElement(descEl);
+                    descEl.dataset.latexRendered = 'true';
+                }
+            }
         });
     }
     
@@ -1576,6 +1599,34 @@ function getTasksForCurrentGrade() {
     return allTasks.filter(t => t.grade === currentGrade);
 }
 
+// Является ли грейд летней серией (там нет статусов, разделы — по темам).
+function isSummerGrade(grade) {
+    return typeof grade === 'string' && grade.indexOf('summer') !== -1;
+}
+
+// Разделы летней серии 9-10 по номерам реальных задач.
+// Если структура серии изменится — править здесь.
+const SUMMER_SECTIONS = {
+    'grade-summer-9-10': [
+        { id: 'topic-mayskie',  title: 'Майские сборы',           minNum: 1,  maxNum: 8 },
+        { id: 'topic-combin',   title: 'Комбинаторика',            minNum: 9,  maxNum: 13 },
+        { id: 'topic-algebra',  title: 'Алгебра',                  minNum: 14, maxNum: 17 },
+        { id: 'topic-numbers',  title: 'Теория чисел',             minNum: 18, maxNum: 19 },
+        { id: 'topic-analysis', title: 'Математический анализ',    minNum: 20, maxNum: 22 },
+        { id: 'topic-analytic', title: 'Аналитическая теория чисел', minNum: 23, maxNum: 25 },
+        { id: 'topic-mersenne', title: 'Простота чисел Мерсенна',  minNum: 26, maxNum: 40 },
+        { id: 'topic-geometry', title: 'Геометрия',                minNum: 41, maxNum: 59 },
+    ]
+};
+
+function getSummerSectionsFor(grade) {
+    return SUMMER_SECTIONS[grade] || [];
+}
+
+function getSummerSectionById(grade, id) {
+    return getSummerSectionsFor(grade).find(s => s.id === id) || null;
+}
+
 function syncGradeNavUI() {
     document.querySelectorAll('.grade-link, .grade-card').forEach(el => {
         el.classList.toggle('active', el.dataset.grade === currentGrade);
@@ -1585,9 +1636,54 @@ function syncGradeNavUI() {
     const navTitle = document.getElementById('gradeNavTitle');
     if (navTitle) navTitle.textContent = title;
 
-    // Базовые заголовки (счётчики добавит updateStatistics)
-    const allTasksTitle = document.getElementById('allTasksTitle');
-    if (allTasksTitle) allTasksTitle.textContent = `${title} — все задачи`;
+    // Помечаем body — у летних серий другие UI-правила (нет статусов, темы вместо фильтров)
+    document.body.classList.toggle('is-summer-grade', isSummerGrade(currentGrade));
+
+    // Заголовок секции #all-tasks учитывает текущую тему (для летних серий)
+    updateAllTasksTitleForFilter();
+}
+
+// Заголовок секции #all-tasks — для летних серий показываем имя темы, иначе «… — все задачи».
+function updateAllTasksTitleForFilter() {
+    const el = document.getElementById('allTasksTitle');
+    if (!el) return;
+    const gradeTitle = getGradeTitle(currentGrade);
+    if (typeof currentFilter === 'string' && currentFilter.indexOf('topic-') === 0) {
+        const section = getSummerSectionById(currentGrade, currentFilter);
+        if (section) {
+            el.textContent = `${gradeTitle} — ${section.title}`;
+            return;
+        }
+    }
+    el.textContent = `${gradeTitle} — все задачи`;
+}
+
+// Перестраивает список пунктов навигации в сайдбаре под текущий грейд.
+// Для летних серий — «Все задачи» + темы (Майские сборы, Алгебра, …).
+// Для обычных классов — стандартные «Все задачи / Текущая серия / Откладыши / Неразобранные».
+function rebuildNavMenu(grade) {
+    const navTitleEl = document.getElementById('gradeNavTitle');
+    if (!navTitleEl) return;
+    const navSection = navTitleEl.closest('.nav-section');
+    if (!navSection) return;
+    const listEl = navSection.querySelector('ul');
+    if (!listEl) return;
+
+    const items = [{ id: 'all-tasks', title: 'Все задачи' }];
+    if (isSummerGrade(grade)) {
+        getSummerSectionsFor(grade).forEach(s => {
+            items.push({ id: s.id, title: s.title });
+        });
+    } else {
+        items.push({ id: 'current-series', title: 'Текущая серия' });
+        items.push({ id: 'postponed',      title: 'Откладыши' });
+        items.push({ id: 'unsolved',       title: 'Неразобранные' });
+    }
+
+    listEl.innerHTML = items.map(item => {
+        const isActive = item.id === currentFilter ? ' active' : '';
+        return `<li><a href="#${item.id}" class="nav-link${isActive}">${escapeHtml(item.title)}</a></li>`;
+    }).join('');
 }
 
 // Правильное склонение русских числительных: 1 задача, 2 задачи, 5 задач
@@ -1632,7 +1728,20 @@ function setCurrentGrade(gradeId) {
         localStorage.setItem(GRADE_STORAGE_KEY, gradeId);
     } catch (e) { /* ignore */ }
 
+    // Перестраиваем sidebar nav под новый грейд (его список пунктов меняется)
+    rebuildNavMenu(currentGrade);
+
+    // Если текущий фильтр недоступен в новом грейде — сбрасываем на «Все задачи»
+    if (!isAllowedFilter(currentFilter)) {
+        currentFilter = 'all-tasks';
+        try { localStorage.setItem(FILTER_STORAGE_KEY, currentFilter); } catch (e) { /* ignore */ }
+        showTaskView('all-tasks');
+    } else if (currentFilter.indexOf('topic-') === 0) {
+        showTaskView('all-tasks');
+    }
+
     syncGradeNavUI();
+    syncFilterUI();
     updateStatistics(getTasksForCurrentGrade());
     refreshCurrentView();
 
@@ -1647,6 +1756,7 @@ function initGradeNavigation() {
         }
     } catch (e) { /* ignore */ }
 
+    rebuildNavMenu(currentGrade);
     syncGradeNavUI();
 
     document.querySelectorAll('.grade-link, .grade-card').forEach(link => {
@@ -1810,27 +1920,39 @@ function initHintSwipe() {
 // ============================================
 
 function initMatCenterNavigation() {
-    const navLinks = document.querySelectorAll('.nav-link');
-
-    navLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const targetId = (link.getAttribute('href') || '').substring(1);
-            if (targetId) setCurrentFilter(targetId, { scrollTop: true });
-            if (typeof closeMobileMenu === 'function') closeMobileMenu();
-        });
+    // nav-link могут пересоздаваться при смене грейда — делегируем клик
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('.nav-link');
+        if (!link) return;
+        if (!link.closest('.nav-menu')) return; // только из sidebar-меню
+        e.preventDefault();
+        const targetId = (link.getAttribute('href') || '').substring(1);
+        if (targetId) setCurrentFilter(targetId, { scrollTop: true });
+        if (typeof closeMobileMenu === 'function') closeMobileMenu();
     });
+}
+
+// Разрешённые фильтры для текущего грейда.
+function isAllowedFilter(filterId) {
+    if (TASK_VIEW_IDS.includes(filterId)) return true;
+    if (filterId.indexOf('topic-') === 0) {
+        return !!getSummerSectionById(currentGrade, filterId);
+    }
+    return false;
 }
 
 // Единая точка смены активной секции: применяет поиск/фильтр и обновляет UI
 function setCurrentFilter(filterId, opts = {}) {
-    if (!TASK_VIEW_IDS.includes(filterId)) return;
+    if (!isAllowedFilter(filterId)) return;
 
     currentFilter = filterId;
     try { localStorage.setItem(FILTER_STORAGE_KEY, filterId); } catch (e) { /* ignore */ }
 
-    showTaskView(filterId);
+    // Темы летних серий рендерятся внутри секции #all-tasks
+    const viewId = filterId.indexOf('topic-') === 0 ? 'all-tasks' : filterId;
+    showTaskView(viewId);
     syncFilterUI();
+    updateAllTasksTitleForFilter();
     refreshCurrentView(); // сам выберет runSearch() или filterAndDisplayTasks()
 
     if (opts.scrollTop) {
@@ -1838,40 +1960,64 @@ function setCurrentFilter(filterId, opts = {}) {
     }
 }
 
+// Псевдо-задачи (баннеры разделов) показываем только если рядом есть видимые реальные задачи.
+function filterTasksByTopic(tasks, topicSection) {
+    return tasks.filter(t => {
+        if (Number.isInteger(t.number)) {
+            return t.number >= topicSection.minNum && t.number <= topicSection.maxNum;
+        }
+        // Псевдо-задача (баннер): включаем, если её номер «попадает» внутрь диапазона темы
+        // (например, 13.5 — баннер «Алгебра» — попадает в [14;17] как 13.5 < 14, поэтому
+        //  её НЕ берём; внутренние переходные тексты вроде 26.5/28.5 — берём, если они внутри [26;40]).
+        return t.number > topicSection.minNum && t.number < topicSection.maxNum;
+    });
+}
+
 function filterAndDisplayTasks(filterId) {
     currentFilter = filterId;
     const gradeTasks = getTasksForCurrentGrade();
     let filteredTasks = [];
-    let containerId = '';
-    
-    switch (filterId) {
-        case 'all-tasks':
-            filteredTasks = gradeTasks;
-            containerId = 'tasksContainer';
-            break;
-        case 'current-series':
-            filteredTasks = gradeTasks.filter(t => t.status === 'Н'); // Текущая серия: "Н"
-            containerId = 'currentSeriesContainer';
-            break;
-        case 'postponed':
-            filteredTasks = gradeTasks.filter(t => t.status === 'От' || t.status === 'П'); // Откладыши: "От" + "П"
-            containerId = 'postponedContainer';
-            break;
-        case 'unsolved':
-            filteredTasks = gradeTasks.filter(t => t.status === 'Н' || t.status === 'От' || t.status === 'П'); // Все неразобранные
-            containerId = 'unsolvedContainer';
-            break;
-        default:
-            filteredTasks = gradeTasks;
-            containerId = 'tasksContainer';
+    let containerId = 'tasksContainer';
+
+    if (filterId.indexOf('topic-') === 0) {
+        const section = getSummerSectionById(currentGrade, filterId);
+        filteredTasks = section ? filterTasksByTopic(gradeTasks, section) : gradeTasks;
+        containerId = 'tasksContainer';
+    } else {
+        switch (filterId) {
+            case 'all-tasks':
+                filteredTasks = gradeTasks;
+                containerId = 'tasksContainer';
+                break;
+            case 'current-series':
+                filteredTasks = gradeTasks.filter(t => t.status === 'Н');
+                containerId = 'currentSeriesContainer';
+                break;
+            case 'postponed':
+                filteredTasks = gradeTasks.filter(t => t.status === 'От' || t.status === 'П');
+                containerId = 'postponedContainer';
+                break;
+            case 'unsolved':
+                filteredTasks = gradeTasks.filter(t => t.status === 'Н' || t.status === 'От' || t.status === 'П');
+                containerId = 'unsolvedContainer';
+                break;
+            default:
+                filteredTasks = gradeTasks;
+                containerId = 'tasksContainer';
+        }
     }
-    
+
     displayTasks(filteredTasks, containerId);
 }
 
 // Получить задачи для текущего фильтра
 function getTasksForCurrentFilter() {
     const gradeTasks = getTasksForCurrentGrade();
+
+    if (currentFilter.indexOf('topic-') === 0) {
+        const section = getSummerSectionById(currentGrade, currentFilter);
+        return section ? filterTasksByTopic(gradeTasks, section) : gradeTasks;
+    }
 
     switch (currentFilter) {
         case 'all-tasks':

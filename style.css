@@ -7207,6 +7207,20 @@ body.dark-theme .mobile-search-bar {
     }
 }
 
+/* В летних сериях стат-карты «Неразобрано / Текущая серия / Откладыши»
+   неуместны (статусов нет) — оставляем только «Всего задач». */
+body.is-summer-grade .stat-card[data-filter="unsolved"],
+body.is-summer-grade .stat-card[data-filter="current-series"],
+body.is-summer-grade .stat-card[data-filter="postponed"] {
+    display: none;
+}
+
+/* Чтобы «Всего задач» не растягивалась во всю ширину на больших экранах */
+body.is-summer-grade .stats-container {
+    grid-template-columns: minmax(180px, 320px);
+    justify-content: start;
+}
+
 /* ============================================
    MATCENTER — БАННЕР-РАЗДЕЛИТЕЛЬ (заголовок раздела / вводный текст)
    ============================================ */
