@@ -1,4 +1,21 @@
 // ============================================
+// DEBUG LOGGING
+// matcenter имеет много отладочных console.log — на проде они тратят CPU
+// (форматирование строк, вывод в DevTools). Глушим по умолчанию.
+// Включить отладку: localStorage.setItem('matcenter_debug', '1') и перезагрузить.
+// error / warn / table остаются — для диагностики проблем.
+// ============================================
+(function muteVerboseLogs() {
+    try {
+        if (localStorage.getItem('matcenter_debug') === '1') return;
+    } catch (e) { /* ignore */ }
+    const noop = function () {};
+    console.log = noop;
+    console.info = noop;
+    console.debug = noop;
+})();
+
+// ============================================
 // CONFIGURATION
 // ============================================
 
@@ -1208,38 +1225,26 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
         return;
     }
     
-    console.log(`📦 Отображение ${tasks.length} задач в контейнере ${containerId}`);
-    
-    // Статистика по статусам отображаемых задач
-    const statusCounts = {};
-    tasks.forEach(t => {
-        statusCounts[t.status] = (statusCounts[t.status] || 0) + 1;
-    });
-    console.log('Статусы отображаемых задач:', statusCounts);
-    
     // Летние серии выдаются целиком, удобнее по возрастанию (1, 2, 3, …).
     // Обычные классы — по убыванию (свежие задачи сверху).
     const ascending = typeof currentGrade === 'string' && currentGrade.indexOf('summer') !== -1;
     const sortedTasks = [...tasks].sort((a, b) => ascending ? a.number - b.number : b.number - a.number);
     
     container.innerHTML = '';
-    
+
+    // Собираем все карточки в DocumentFragment — один reflow вместо N
+    const fragment = document.createDocumentFragment();
     let addedCount = 0;
     sortedTasks.forEach((task, index) => {
         try {
             const taskElement = createTaskElement(task);
-            container.appendChild(taskElement);
+            fragment.appendChild(taskElement);
             addedCount++;
         } catch (error) {
             console.error(`❌ Ошибка при создании элемента для задачи #${task.number} (индекс ${index}):`, error);
         }
     });
-    
-    console.log(`✅ Добавлено в DOM: ${addedCount} из ${sortedTasks.length} задач`);
-    
-    // Проверим реальное количество элементов в контейнере
-    const actualCount = container.querySelectorAll('.task-card').length;
-    console.log(`🔍 Реальное количество .task-card в DOM: ${actualCount}`);
+    container.appendChild(fragment);
 }
 
 function createTaskElement(task) {

@@ -586,10 +586,27 @@ body.dark-theme .knowledge-check-btn:hover {
     --shadow-xl: 0 8px 28px rgba(0, 0, 0, 0.18);
     --shadow-hover: 0 4px 16px rgba(var(--accent-rgb), 0.18);
     
-    /* РђРЅРёРјР°С†РёРё - Р±РѕР»РµРµ РїР»Р°РІРЅС‹Рµ */
-    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-smooth: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    /* Анимации — явный список свойств вместо all
+       (так браузер не отслеживает изменения всех CSS-свойств подряд,
+        ощутимо меньше work для движка на страницах с сотнями элементов) */
+    --transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: background-color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                        color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                        border-color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                        box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                        transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                        opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-bounce: background-color 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55),
+                        color 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55),
+                        border-color 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55),
+                        box-shadow 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55),
+                        transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55),
+                        opacity 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 /* РўРµРјРЅР°СЏ С‚РµРјР° */
@@ -5888,11 +5905,17 @@ body.animations-medium .stat-card:hover {
     box-shadow: var(--shadow-md) !important;
 }
 
-/* РЎРѕРєСЂР°С‰Р°РµРј РґР»РёС‚РµР»СЊРЅРѕСЃС‚СЊ РІСЃРµС… РїРµСЂРµС…РѕРґРѕРІ */
+/* Сокращаем длительность всех переходов — конкретные свойства, не all */
 body.animations-medium {
-    --transition: all 0.15s ease;
-    --transition-smooth: all 0.15s ease;
-    --transition-bounce: all 0.15s ease;
+    --transition: background-color 0.15s ease, color 0.15s ease,
+                  border-color 0.15s ease, box-shadow 0.15s ease,
+                  transform 0.15s ease, opacity 0.15s ease;
+    --transition-smooth: background-color 0.15s ease, color 0.15s ease,
+                        border-color 0.15s ease, box-shadow 0.15s ease,
+                        transform 0.15s ease, opacity 0.15s ease;
+    --transition-bounce: background-color 0.15s ease, color 0.15s ease,
+                        border-color 0.15s ease, box-shadow 0.15s ease,
+                        transform 0.15s ease, opacity 0.15s ease;
 }
 
 /* РЈРїСЂРѕС‰Р°РµРј РїРµСЂРµС…РѕРґС‹ РЅР° СЌР»РµРјРµРЅС‚Р°С… вЂ” СѓР±РёСЂР°РµРј border-width, transform */
