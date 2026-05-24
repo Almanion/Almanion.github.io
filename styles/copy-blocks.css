@@ -4,16 +4,26 @@
 
 .copy-block-btn {
     position: absolute;
-    top: 0.55rem;
-    right: 0.55rem;
+    top: 0.45rem;
+    right: 0.45rem;
     z-index: 4;
     min-height: 0;
-    padding: 0.35rem 0.55rem;
-    border-radius: 999px;
-    font-size: 0.8rem;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
     line-height: 1;
     opacity: 0;
     transform: translateY(-2px);
+}
+
+.copy-block-btn svg {
+    width: 14px;
+    height: 14px;
+    display: block;
 }
 
 .copyable-block:hover > .copy-block-btn,
@@ -21,6 +31,11 @@
 .copy-block-btn:focus-visible {
     opacity: 1;
     transform: translateY(0);
+}
+
+/* Если на блоке уже есть кнопка закладки — сдвигаем копирование левее, чтобы не перекрывать */
+.copyable-block:has(.bookmark-btn) > .copy-block-btn {
+    right: 2.25rem;
 }
 
 .copy-block-btn.is-copied {
@@ -34,16 +49,19 @@
 }
 
 .copyable-block > .copy-block-btn + .copy-block-btn {
-    right: 3rem;
+    right: 3.5rem;
 }
 
 @media (max-width: 768px) {
     .copy-block-btn {
-        top: 0.4rem;
-        right: 0.4rem;
+        top: 0.35rem;
+        right: 0.35rem;
         opacity: 0.85;
-        padding: 0.3rem 0.45rem;
-        font-size: 0.75rem;
+        width: 24px;
+        height: 24px;
+    }
+    .copyable-block:has(.bookmark-btn) > .copy-block-btn {
+        right: 2.1rem;
     }
 }
 

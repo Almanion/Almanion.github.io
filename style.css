@@ -821,11 +821,23 @@ body.dark-theme .close-sidebar:hover {
     padding: 1rem var(--spacing);
     background: var(--bg-tertiary);
     border-bottom: 1px solid var(--border-color);
+    position: relative;
+}
+
+.search-box .sidebar-search-icon {
+    position: absolute;
+    left: calc(var(--spacing) + 0.7rem);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: var(--text-secondary);
+    pointer-events: none;
 }
 
 .search-box input {
     width: 100%;
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 1rem 0.75rem 2.35rem;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     background: var(--bg-primary);
@@ -1251,8 +1263,13 @@ body.dark-theme .page-header {
 }
 
 .topic-title::before {
-    content: '📌';
-    font-size: 1.5rem;
+    content: '';
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    background-color: var(--accent-color);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='4' y1='9' x2='20' y2='9'/%3E%3Cline x1='4' y1='15' x2='20' y2='15'/%3E%3Cline x1='10' y1='3' x2='8' y2='21'/%3E%3Cline x1='16' y1='3' x2='14' y2='21'/%3E%3C/svg%3E") no-repeat center / contain;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='4' y1='9' x2='20' y2='9'/%3E%3Cline x1='4' y1='15' x2='20' y2='15'/%3E%3Cline x1='10' y1='3' x2='8' y2='21'/%3E%3Cline x1='16' y1='3' x2='14' y2='21'/%3E%3C/svg%3E") no-repeat center / contain;
 }
 
 .subsection-title {
@@ -1338,6 +1355,7 @@ body.dark-theme .page-header {
     background: var(--remark-bg);
     border-left: 4px solid var(--remark-border);
     padding: 1.25rem;
+    padding-right: 3.25rem; /* место под SVG-иконку, чтобы текст не налезал */
     margin: 1.25rem 0;
     border-radius: var(--border-radius);
     font-style: italic;
@@ -1356,13 +1374,16 @@ body.dark-theme .page-header {
 }
 
 .remark-box::before {
-    content: '💡';
+    content: '';
     position: absolute;
     top: 1rem;
     right: 1rem;
-    font-style: normal;
-    font-size: 1.5rem;
-    opacity: 0.6;
+    width: 22px;
+    height: 22px;
+    background-color: var(--remark-border);
+    opacity: 0.55;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18h6'/%3E%3Cpath d='M10 22h4'/%3E%3Cpath d='M12 2a7 7 0 0 0-4 12.7c.6.4 1 1.1 1 1.8V18h6v-1.5c0-.7.4-1.4 1-1.8A7 7 0 0 0 12 2z'/%3E%3C/svg%3E") no-repeat center / contain;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18h6'/%3E%3Cpath d='M10 22h4'/%3E%3Cpath d='M12 2a7 7 0 0 0-4 12.7c.6.4 1 1.1 1 1.8V18h6v-1.5c0-.7.4-1.4 1-1.8A7 7 0 0 0 12 2z'/%3E%3C/svg%3E") no-repeat center / contain;
 }
 
 /* Р­РєСЃРїРµСЂРёРјРµРЅС‚С‹ */
@@ -1520,6 +1541,7 @@ body.dark-theme .page-header {
     background: var(--example-bg);
     border-left: 4px solid var(--example-border);
     padding: 1.5rem;
+    padding-right: 3.25rem; /* место под SVG-иконку */
     margin: 1.25rem 0;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
@@ -1543,13 +1565,23 @@ body.dark-theme .page-header {
 }
 
 .example-box::before {
-    content: '📝';
+    content: '';
     position: absolute;
     top: 1rem;
     right: 1rem;
-    font-style: normal;
-    font-size: 1.5rem;
-    opacity: 0.6;
+    width: 22px;
+    height: 22px;
+    background-color: var(--example-border, var(--accent-color));
+    opacity: 0.55;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z'/%3E%3C/svg%3E") no-repeat center / contain;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+
+/* Если на блоке есть кнопка закладки — двигаем декоративную иконку левее,
+   чтобы они не накладывались друг на друга. */
+.remark-box:has(.bookmark-btn)::before,
+.example-box:has(.bookmark-btn)::before {
+    right: 2.5rem;
 }
 
 /* РЈС‚РІРµСЂР¶РґРµРЅРёСЏ */
@@ -2000,7 +2032,7 @@ em {
     }
 
     .close-sidebar {
-        display: block;
+        display: flex;
         min-width: 44px;
         min-height: 44px;
         width: 34px;
@@ -2009,7 +2041,7 @@ em {
     }
 
     .menu-toggle {
-        display: block;
+        display: flex;
         left: auto;
         right: 0.75rem;
         top: auto;
@@ -7256,14 +7288,15 @@ body.matcenter-page .task-section-banner-inner {
    SVG-ИКОНКИ В КНОПКАХ (универсальные размеры)
    ============================================ */
 
-/* Кнопки sidebar (свернуть / развернуть / закрыть / меню) и подсказки */
+/* Кнопки sidebar (свернуть / развернуть / закрыть / меню) и подсказки.
+   ВАЖНО: не задаём display здесь — он управляется существующими правилами
+   (default none + media-queries/state-classes показывают как flex). */
 .sidebar-collapse-btn,
 .sidebar-expand-btn,
 .close-sidebar,
 .menu-toggle,
 .hint-close-btn,
 .settings-close-btn {
-    display: inline-flex;
     align-items: center;
     justify-content: center;
 }
@@ -7319,9 +7352,13 @@ body.matcenter-page .task-section-banner-inner {
     display: block;
 }
 
-/* Иконка в заголовке панели «Закладки» */
+/* Универсальный размер для .btn-icon (если конкретный контекст не задал свой) */
 .btn-icon {
+    width: 18px;
+    height: 18px;
     flex-shrink: 0;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 /* ============================================

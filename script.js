@@ -937,6 +937,13 @@ const COPYABLE_BLOCK_SELECTOR = [
     '.exercise-box'
 ].join(', ');
 
+// SVG-иконки для кнопки копирования блока
+const COPY_ICONS = {
+    copy:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>',
+    cross: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>'
+};
+
 function initCopyableBlocks() {
     document.querySelectorAll(COPYABLE_BLOCK_SELECTOR).forEach(block => {
         if (block.dataset.copyReady === 'true') return;
@@ -947,7 +954,7 @@ function initCopyableBlocks() {
         const copyBtn = document.createElement('button');
         copyBtn.type = 'button';
         copyBtn.className = 'copy-block-btn';
-        copyBtn.textContent = '📋';
+        copyBtn.innerHTML = COPY_ICONS.copy;
         copyBtn.title = 'Скопировать блок для Word';
         copyBtn.setAttribute('aria-label', 'Скопировать блок для Word');
 
@@ -958,10 +965,10 @@ function initCopyableBlocks() {
             try {
                 const payload = buildWordCopyPayload(block);
                 await writeRichClipboard(payload.html, payload.text);
-                showCopyState(copyBtn, '✅', 'is-copied');
+                showCopyState(copyBtn, COPY_ICONS.check, 'is-copied');
             } catch (error) {
                 console.error('Ошибка копирования блока:', error);
-                showCopyState(copyBtn, '❌', 'is-error');
+                showCopyState(copyBtn, COPY_ICONS.cross, 'is-error');
             }
         });
 
@@ -1043,13 +1050,13 @@ async function writeRichClipboard(html, text) {
     textarea.remove();
 }
 
-function showCopyState(button, text, className) {
-    const previousText = button.textContent;
-    button.textContent = text;
+function showCopyState(button, content, className) {
+    const previousHTML = button.innerHTML;
+    button.innerHTML = content;
     button.classList.add(className);
 
     setTimeout(() => {
-        button.textContent = previousText;
+        button.innerHTML = previousHTML;
         button.classList.remove(className);
     }, 1400);
 }

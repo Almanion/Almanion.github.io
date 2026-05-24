@@ -1718,6 +1718,19 @@ function syncFilterUI() {
     document.querySelectorAll('.stat-card.clickable[data-filter]').forEach(c => {
         c.classList.toggle('active', c.dataset.filter === currentFilter);
     });
+    // В летних сериях select-фильтр работает как переключатель тем —
+    // обновляем выбранное значение, чтобы оно соответствовало активной секции.
+    if (isSummerGrade(currentGrade)) {
+        const wantValue = currentFilter.indexOf('topic-') === 0 ? currentFilter : '';
+        ['statusFilter', 'mobileStatusFilter'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (Array.from(el.options).some(o => o.value === wantValue)) {
+                el.value = wantValue;
+            }
+            el.classList.toggle('has-filter', el.value !== '');
+        });
+    }
 }
 
 function setCurrentGrade(gradeId) {
@@ -1730,6 +1743,7 @@ function setCurrentGrade(gradeId) {
 
     // Перестраиваем sidebar nav под новый грейд (его список пунктов меняется)
     rebuildNavMenu(currentGrade);
+    rebuildStatusFilters(currentGrade);
 
     // Если текущий фильтр недоступен в новом грейде — сбрасываем на «Все задачи»
     if (!isAllowedFilter(currentFilter)) {
@@ -2037,6 +2051,39 @@ function getTasksForCurrentFilter() {
 // ПОИСК
 // ============================================
 
+// Перестраивает опции select-фильтров под текущий грейд:
+// — летние серии → выбор темы (Все темы / Майские сборы / Алгебра / …);
+// — обычные классы → выбор статуса (Все / Серия / Подсказка / Отложена / Разобрано).
+function rebuildStatusFilters(grade) {
+    const desktop = document.getElementById('statusFilter');
+    const mobile  = document.getElementById('mobileStatusFilter');
+    const summer  = isSummerGrade(grade);
+
+    const opts = summer
+        ? [
+            { value: '', label: 'Все темы' },
+            ...getSummerSectionsFor(grade).map(s => ({ value: s.id, label: s.title }))
+        ]
+        : [
+            { value: '',   label: 'Все' },
+            { value: 'Н',  label: 'Серия' },
+            { value: 'П',  label: 'Подсказка' },
+            { value: 'От', label: 'Отложена' },
+            { value: 'Р',  label: 'Разобрано' }
+        ];
+
+    [desktop, mobile].forEach(sel => {
+        if (!sel) return;
+        const prev = sel.value;
+        sel.innerHTML = opts.map(o =>
+            `<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`
+        ).join('');
+        const hasPrev = opts.some(o => o.value === prev);
+        sel.value = hasPrev ? prev : '';
+        sel.classList.toggle('has-filter', sel.value !== '');
+    });
+}
+
 function initStatusFilter() {
     const statusFilterEl = document.getElementById('statusFilter');
     const mobileStatusFilter = document.getElementById('mobileStatusFilter');
@@ -2046,31 +2093,39 @@ function initStatusFilter() {
         el.classList.toggle('has-filter', el.value !== '');
     }
 
+    function handleChange(value, mirror) {
+        if (mirror) {
+            mirror.value = value;
+            syncFilterClass(mirror);
+        }
+        if (isSummerGrade(currentGrade)) {
+            // В летних сериях select — это переключатель тем
+            setCurrentFilter(value || 'all-tasks');
+        } else {
+            // В обычных классах — фильтр по статусу
+            searchStatusFilter = value || 'all';
+            runSearch();
+        }
+    }
+
     if (statusFilterEl) {
         statusFilterEl.addEventListener('change', () => {
-            searchStatusFilter = statusFilterEl.value || 'all';
-            if (mobileStatusFilter) {
-                mobileStatusFilter.value = statusFilterEl.value;
-                syncFilterClass(mobileStatusFilter);
-            }
             syncFilterClass(statusFilterEl);
-            runSearch();
+            handleChange(statusFilterEl.value, mobileStatusFilter);
         });
     }
 
     if (mobileStatusFilter) {
         mobileStatusFilter.addEventListener('change', () => {
-            searchStatusFilter = mobileStatusFilter.value || 'all';
-            if (statusFilterEl) {
-                statusFilterEl.value = mobileStatusFilter.value;
-                syncFilterClass(statusFilterEl);
-            }
             syncFilterClass(mobileStatusFilter);
-            runSearch();
+            handleChange(mobileStatusFilter.value, statusFilterEl);
         });
     }
 
-    // Начальная синхронизация: если браузер восстановил значение — отразить во втором селекте и в .has-filter
+    // Изначальная сборка опций под стартовый грейд
+    rebuildStatusFilters(currentGrade);
+
+    // Начальная синхронизация значения (если что-то сохранилось)
     const initialValue = (statusFilterEl && statusFilterEl.value)
         || (mobileStatusFilter && mobileStatusFilter.value)
         || '';
@@ -2078,7 +2133,9 @@ function initStatusFilter() {
     if (mobileStatusFilter) mobileStatusFilter.value = initialValue;
     syncFilterClass(statusFilterEl);
     syncFilterClass(mobileStatusFilter);
-    searchStatusFilter = initialValue || 'all';
+    if (!isSummerGrade(currentGrade)) {
+        searchStatusFilter = initialValue || 'all';
+    }
 }
 
 function getContainerIdForFilter() {
