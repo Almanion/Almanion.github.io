@@ -194,64 +194,112 @@
             .subjects-grid,
             .subjects-grid.coming-soon {
                 grid-template-columns: 1fr;
-                gap: 0.75rem;
+                gap: 0.65rem;
             }
-            
+
             .home-container {
-                padding: 0.75rem;
+                padding: 1rem 0.85rem 1.5rem;
             }
-            
+
             .home-header {
-                margin-bottom: 1.25rem;
+                margin-bottom: 1.5rem;
+                padding-top: 0.5rem;
             }
-            
+
             .home-header h1 {
-                font-size: 2.2rem;
+                font-size: 1.85rem;
+                line-height: 1.15;
+                margin-bottom: 0.4rem;
+                gap: 0.4rem;
             }
-            
+
+            .home-header h1 svg {
+                width: 28px;
+                height: 28px;
+            }
+
+            .home-header p {
+                font-size: 0.95rem;
+                line-height: 1.5;
+            }
+
             .section-title {
-                font-size: 1.3rem;
-                margin-bottom: 0.75rem;
+                font-size: 1.15rem;
+                margin-bottom: 0.85rem;
+                font-weight: 700;
             }
-            
+
+            .subjects-section {
+                margin-top: 1.5rem;
+            }
+
             .stats {
-                gap: 1rem;
-                margin-top: 1.25rem;
+                gap: 0.85rem;
+                margin-top: 1.5rem;
             }
-            
+
             .stat-item {
-                padding: 0.75rem 1.25rem;
+                padding: 0.75rem 1.1rem;
                 border-radius: 10px;
             }
         }
 
         @media (max-width: 480px) {
             .home-container {
-                padding: 0.5rem;
+                padding: 0.85rem 0.7rem 1.25rem;
             }
-            
+
+            .home-header {
+                margin-bottom: 1.25rem;
+            }
+
             .home-header h1 {
-                font-size: 1.75rem;
+                font-size: 1.6rem;
             }
-            
+
+            .home-header h1 svg {
+                width: 26px;
+                height: 26px;
+            }
+
             .home-header p {
-                font-size: 0.95rem;
+                font-size: 0.9rem;
             }
-            
+
             .section-title {
-                font-size: 1.15rem;
+                font-size: 1.05rem;
+                margin-bottom: 0.7rem;
             }
-            
+
             .subjects-grid {
                 gap: 0.5rem;
             }
-            
+
             .stat-item {
-                padding: 0.625rem 1rem;
+                padding: 0.6rem 0.95rem;
             }
-            
+
             .stat-item .number {
-                font-size: 1.25rem;
+                font-size: 1.2rem;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .home-container {
+                padding: 0.7rem 0.55rem 1rem;
+            }
+            .home-header h1 {
+                font-size: 1.4rem;
+            }
+            .home-header h1 svg {
+                width: 24px;
+                height: 24px;
+            }
+            .home-header p {
+                font-size: 0.85rem;
+            }
+            .section-title {
+                font-size: 1rem;
             }
         }
 
@@ -349,88 +397,122 @@
         @media (max-width: 768px) {
             .subject-card {
                 flex-direction: row;
-                border-radius: 14px;
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+                border-radius: 12px;
+                /* Шадоу заметно легче — на мобиле тяжёлые тени выглядят перегружено */
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+                min-height: 72px;
             }
-            
+
+            /* Tap feedback — на :active даём чёткую реакцию */
+            .subject-card:active {
+                transform: scale(0.985);
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            }
+
             .subject-card:hover {
-                transform: translateX(4px);
-                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+                transform: none;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             }
-            
+
             .subject-card::before {
                 width: 100%;
                 height: 3px;
             }
 
             .card-header {
-                width: 72px;
-                min-width: 72px;
-                padding: 0.75rem;
+                width: 68px;
+                min-width: 68px;
+                padding: 0.65rem;
                 border-bottom: none;
-                border-right: 2px solid #e9ecef;
+                border-right: 1px solid var(--border-color);
                 display: flex;
                 align-items: center;
                 justify-content: center;
             }
-            
+
             .subject-icon {
                 margin-bottom: 0;
+                filter: none; /* Drop-shadow на иконке съедает производительность */
             }
 
             .subject-icon svg {
-                width: 36px;
-                height: 36px;
+                width: 32px;
+                height: 32px;
             }
-            
+
             .card-body {
-                padding: 0.75rem 1rem;
+                padding: 0.7rem 0.9rem;
                 justify-content: center;
+                gap: 0.2rem;
             }
-            
+
             .subject-card h2 {
-                font-size: 1.1rem;
+                font-size: 1.05rem;
                 text-align: left;
-                margin-bottom: 0.25rem;
+                margin-bottom: 0.15rem;
+                line-height: 1.25;
             }
-            
+
             .card-info {
                 margin-top: 0;
             }
-            
+
             .status-badge {
                 margin-top: 0;
-                font-size: 0.75rem;
-                padding: 0.15rem 0.6rem;
+                font-size: 0.72rem;
+                padding: 0.15rem 0.55rem;
+                border-radius: 999px;
             }
-            
+
             .card-info > div {
                 text-align: left !important;
             }
         }
-        
+
         @media (max-width: 480px) {
             .subject-card {
-                border-radius: 12px;
+                border-radius: 10px;
+                min-height: 68px;
             }
 
             .card-header {
                 width: 60px;
                 min-width: 60px;
-                padding: 0.5rem;
+                padding: 0.55rem;
             }
-            
+
             .subject-icon svg {
-                width: 30px;
-                height: 30px;
+                width: 28px;
+                height: 28px;
             }
-            
+
             .card-body {
-                padding: 0.625rem 0.75rem;
+                padding: 0.6rem 0.8rem;
             }
-            
+
             .subject-card h2 {
                 font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .subject-card {
+                min-height: 60px;
+            }
+            .card-header {
+                width: 52px;
+                min-width: 52px;
+            }
+            .subject-icon svg {
+                width: 26px;
+                height: 26px;
+            }
+            .subject-card h2 {
+                font-size: 0.95rem;
+            }
+            .status-badge {
+                font-size: 0.68rem;
+                padding: 0.1rem 0.5rem;
             }
         }
 

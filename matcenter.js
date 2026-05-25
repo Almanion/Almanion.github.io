@@ -6,13 +6,13 @@
 // ============================================
 const safeGet = (typeof window !== 'undefined' && window.safeStorageGet)
     ? window.safeStorageGet
-    : function(k){ try { return safeGet(k); } catch (_) { return null; } };
+    : function(k){ try { return window.localStorage.getItem(k); } catch (_) { return null; } };
 const safeSet = (typeof window !== 'undefined' && window.safeStorageSet)
     ? window.safeStorageSet
-    : function(k,v){ try { safeSet(k,v); return true; } catch (_) { return false; } };
+    : function(k,v){ try { window.localStorage.setItem(k,v); return true; } catch (_) { return false; } };
 const safeRemove = (typeof window !== 'undefined' && window.safeStorageRemove)
     ? window.safeStorageRemove
-    : function(k){ try { safeRemove(k); } catch (_) {} };
+    : function(k){ try { window.localStorage.removeItem(k); } catch (_) {} };
 
 // ============================================
 // DEBUG LOGGING

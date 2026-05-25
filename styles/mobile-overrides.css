@@ -1,18 +1,85 @@
+/* ============================================================
+   MOBILE OVERRIDES — основной слой мобильных правок.
+   Загружается ПОСЛЕ style.css, поэтому переопределяет всё.
+
+   Принципы:
+   1. Touch-friendly: tap-targets ≥44×44, между ними хотя бы 8px;
+   2. Читабельность: 16px base, line-height 1.6 для body;
+   3. Компактные header'ы, чтобы первый контент был выше fold;
+   4. Tap-feedback: на :active subtle scale, чтобы тап ощущался отзывчиво;
+   5. KaTeX в скроллах с видимыми scrollbars;
+   6. Тени слабее — на мобиле depth-cues и так читаемы.
+   ============================================================ */
+
+/* =============================
+   ПЛАНШЕТ И ТЕЛЕФОНЫ (≤768px)
+   ============================= */
 @media (max-width: 768px) {
     :root {
         --m-pad: 1.1rem;
     }
 
+    /* --- БАЗОВАЯ ТИПОГРАФИКА --- */
+    body {
+        font-size: 16px;
+        line-height: 1.6;
+        /* iOS Safari font-smoothing для меньшего шрифта */
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /* Заголовки — компактнее, line-height ниже для плотности */
+    h1, h2, h3, h4 {
+        line-height: 1.25;
+    }
+
+    /* --- PAGE HEADER --- */
+    /* Компактнее, чем дефолт — заголовок не должен есть полэкрана. */
+    .page-header {
+        padding: 1rem var(--m-pad) 0.9rem !important;
+        margin-bottom: 1rem !important;
+        border-radius: 12px !important;
+    }
+    .page-header h1 {
+        font-size: 1.35rem !important;
+        line-height: 1.2 !important;
+        margin-bottom: 0.25rem !important;
+    }
+    .page-header .subtitle {
+        font-size: 0.85rem !important;
+        line-height: 1.4 !important;
+        opacity: 0.95;
+    }
+
+    /* --- ЧАСТЬ / ГЛАВА --- */
+    .part-title {
+        font-size: 1.15rem;
+        line-height: 1.25;
+        padding: 0.6rem var(--m-pad);
+        margin-bottom: 0.85rem;
+    }
+
+    /* --- TOPIC (раздел) --- */
     .topic {
         padding: 0.85rem var(--m-pad);
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.85rem;
+        border-radius: 10px;
     }
-
     .topic-title {
-        padding: 0.5rem var(--m-pad);
-        margin-bottom: 0.65rem;
+        font-size: 1.08rem;
+        line-height: 1.3;
+        padding: 0.55rem var(--m-pad);
+        margin-bottom: 0.7rem;
+        /* Sticky остаётся, но без жёсткой тени */
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+    .subsection-title {
+        font-size: 1rem;
+        line-height: 1.35;
+        margin-top: 0.85rem;
+        margin-bottom: 0.5rem;
     }
 
+    /* --- БЛОКИ (definition / formula / etc) --- */
     .definition-box,
     .formula-box,
     .remark-box,
@@ -24,17 +91,30 @@
     .statement-box,
     .corollary-box,
     .proof-box,
-    .exercise-box {
-        padding: 0.75rem;
+    .exercise-box,
+    .properties-box,
+    .system-box {
+        padding: 0.85rem 0.9rem;
         margin: 0.65rem 0;
-        border-radius: 8px;
+        border-radius: 10px;
+        /* На мобиле тяжёлые тени выглядят перегружено — облегчаем. */
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
-
-    .formula-box,
-    .derivation-box,
-    .experiment-box,
-    .proof-box {
-        padding: 0.75rem;
+    /* Жирный заголовок внутри блока (Определение, Формула, ...) — крупнее, чтобы был якорь для глаз */
+    .definition-box strong:first-child,
+    .formula-box strong:first-child,
+    .remark-box strong:first-child,
+    .experiment-box strong:first-child,
+    .derivation-box strong:first-child,
+    .theorem-box strong:first-child,
+    .lemma-box strong:first-child,
+    .example-box strong:first-child,
+    .statement-box strong:first-child,
+    .corollary-box strong:first-child,
+    .properties-box strong:first-child {
+        font-size: 1rem;
+        display: inline-block;
+        margin-bottom: 0.15rem;
     }
 
     .derivation-content,
@@ -43,14 +123,182 @@
         padding-top: 0.65rem;
     }
 
+    /* --- KATEX --- */
+    /* Не уменьшаем шрифт — 0.95em читается даже на 360px. */
+    .katex {
+        font-size: 0.95em;
+    }
+    /* Display-формулы могут быть длинными — даём горизонтальный скролл с видимой полосой */
     .katex-display {
-        margin: 0.25rem 0;
-        padding: 0.1rem 0;
+        margin: 0.5rem 0 !important;
+        padding: 0.25rem 0 !important;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        /* Тонкая полоса прокрутки, чтобы было понятно что можно свайпать */
+        scrollbar-width: thin;
+    }
+    .katex-display::-webkit-scrollbar {
+        height: 4px;
+    }
+    .katex-display::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 2px;
     }
 
-    /* Снижаем backdrop-filter blur на мобильных — blur(10px) на overlay
-       это самый тяжёлый paint job на слабых телефонах (full-screen GPU работа).
-       3px достаточно для эффекта "затемнение" и не тормозит. */
+    /* Списки — отступ короче */
+    ol, ul {
+        padding-left: 1.15rem;
+        margin: 0.5rem 0;
+    }
+    li + li {
+        margin-top: 0.2rem;
+    }
+
+    /* --- IMAGES --- */
+    .topic img,
+    .content-section img {
+        max-width: 100% !important;
+        border-radius: 6px !important;
+        margin: 0.5rem 0;
+    }
+
+    /* --- SIDEBAR (мобильный bottom-sheet) --- */
+    .sidebar {
+        max-height: 88vh;
+        max-height: 88dvh;
+        border-radius: 16px 16px 0 0;
+    }
+    .sidebar-header {
+        padding: 0.6rem 0.9rem 0.7rem;
+        gap: 0.4rem;
+    }
+    .sidebar-header h2 {
+        font-size: 1.05rem;
+        /* Если "Конспекты" длинное — даём ему 2 строки максимум */
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* --- TOUCH TARGETS ≥44px ---
+       Visual размер можно оставить меньше (32px), но через padding/inset
+       расширяем интерактивную область до 44×44. */
+    .close-sidebar,
+    .menu-toggle,
+    .theme-toggle,
+    .ny-toggle,
+    .settings-button-sidebar,
+    .sidebar-collapse-btn,
+    .sidebar-expand-btn,
+    .scroll-to-top,
+    .settings-button {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Тапаемая зона у кнопки закладки — увеличиваем через padding,
+       но визуальный размер svg остаётся прежним. */
+    .bookmark-btn {
+        padding: 8px !important;
+        /* Чтобы кнопка не наезжала на контент справа */
+        top: 0.4rem !important;
+        right: 0.4rem !important;
+    }
+    .bookmark-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* Touch hit-area: невидимый ::before расширяет тач-зону до 44px */
+    .copy-block-btn::before,
+    .bookmark-btn::before {
+        content: '';
+        position: absolute;
+        inset: -8px;
+    }
+
+    /* Навигационные ссылки — крупнее тапаемая площадь */
+    .nav-link {
+        padding: 0.7rem 0.85rem;
+        font-size: 0.95rem;
+        line-height: 1.35;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+    .nav-group-toggle {
+        padding: 0.7rem 0.85rem;
+        font-size: 0.92rem;
+        min-height: 44px;
+    }
+
+    /* --- SEARCH BAR --- */
+    .search-box input {
+        font-size: 16px; /* 16px нужно чтобы iOS не зумировал при focus */
+        padding: 0.65rem 0.75rem 0.65rem 2.25rem;
+        min-height: 44px;
+    }
+
+    /* --- КНОПКИ TOGGLE (Показать вывод / Доказательство) --- */
+    .toggle-derivation,
+    .toggle-proof {
+        padding: 0.6rem 1rem;
+        font-size: 0.88rem;
+        border-radius: 8px;
+        width: 100%;
+        min-height: 44px;
+        justify-content: center;
+    }
+
+    .knowledge-check-btn {
+        padding: 0.6rem 0.75rem;
+        font-size: 0.88rem;
+        border-radius: 8px;
+        min-height: 44px;
+    }
+
+    /* --- SCROLL-TO-TOP --- */
+    .scroll-to-top {
+        bottom: 5rem;
+        right: 0.85rem;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    }
+
+    /* --- SETTINGS BUTTON --- */
+    /* Sidebar-вариант сверху, FAB — слева внизу, чтобы не перекрывать scroll-to-top */
+    .settings-button {
+        bottom: 5rem;
+        left: 0.85rem;
+        width: 44px;
+        height: 44px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    }
+
+    /* MENU TOGGLE FAB — внизу справа, выше FAB-ов выше */
+    .menu-toggle {
+        bottom: 0.85rem;
+        right: 0.85rem;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.22);
+    }
+
+    /* main-content — нижний padding, чтобы FAB не закрывал последнюю строку */
+    .main-content {
+        padding-bottom: 6rem !important;
+    }
+
+    /* --- ОВЕРЛЕИ: snижаем backdrop blur для производительности --- */
     .sidebar,
     .auth-overlay,
     .ny-settings-modal,
@@ -63,9 +311,7 @@
         -webkit-backdrop-filter: blur(3px) !important;
     }
 
-    /* Длинные русские слова ("равносильность", "иррациональные") и формулы
-       могут вылазить за границу карточек на узких экранах. Включаем перенос
-       внутри слов как последнее средство. */
+    /* --- OVERFLOW-WRAP: длинные русские слова не должны ломать вёрстку --- */
     .main-content,
     .topic,
     .topic-title,
@@ -91,23 +337,186 @@
         overflow-wrap: anywhere;
         word-break: break-word;
     }
-
-    /* На очень узких экранах разрешаем перенос длинных слов с дефисом */
     .main-content {
         hyphens: auto;
         -webkit-hyphens: auto;
     }
+
+    /* --- TAP FEEDBACK ---
+       На мобиле hover не работает; даём active-фидбек, чтобы тап
+       не казался "проглоченным". scale + лёгкое затемнение. */
+    @media (hover: none) {
+        .subject-card:active,
+        .topic:active,
+        .task-card:active,
+        .nav-link:active,
+        .toggle-derivation:active,
+        .toggle-proof:active,
+        .bm-card:active,
+        .topic-select-card:active {
+            transform: scale(0.985);
+        }
+        /* Кнопки — лёгкое затемнение фона на тап */
+        .menu-toggle:active,
+        .scroll-to-top:active,
+        .settings-button:active,
+        .close-sidebar:active,
+        .theme-toggle:active,
+        .settings-button-sidebar:active,
+        .copy-block-btn:active,
+        .bookmark-btn:active {
+            opacity: 0.7;
+            transform: scale(0.95);
+        }
+    }
+
+    /* Tap-highlight убираем — он мешает кастомному feedback'у */
+    a, button {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* --- SUBJECT CARDS на index.html --- */
+    /* Чище и плотнее: больше пространства для текста, иконка пропорциональнее */
+    .subject-card,
+    .subjects-grid .subject-link {
+        padding: 1rem 1.1rem !important;
+        min-height: 84px;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+    .subjects-grid {
+        gap: 0.75rem !important;
+    }
+
+    /* --- TASK CARDS (matcenter) --- */
+    .task-card {
+        padding: 0.85rem 1rem !important;
+        margin-bottom: 0.65rem !important;
+        border-radius: 10px;
+        /* Лёгкая тень — глубина без перегруза */
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    }
+    .task-card:active {
+        transform: scale(0.99);
+        background-color: var(--bg-tertiary);
+    }
+    .task-header {
+        gap: 0.5rem !important;
+    }
+    .task-number {
+        font-size: 1rem !important;
+    }
+    .task-condition {
+        font-size: 0.94rem !important;
+        line-height: 1.55 !important;
+    }
+
+    /* --- FILTERS (matcenter) --- */
+    .filter-tabs,
+    .topic-tabs {
+        gap: 0.4rem !important;
+        flex-wrap: wrap;
+    }
+    .filter-tab,
+    .topic-tab {
+        padding: 0.5rem 0.85rem !important;
+        font-size: 0.88rem !important;
+        min-height: 38px;
+        border-radius: 999px;
+    }
+
+    /* matcenter mobile search bar — выглядит чище и с большим touch-target */
+    .mobile-search-bar,
+    body.matcenter-page .mobile-search-input-wrap input {
+        font-size: 16px;
+        min-height: 44px;
+    }
+
+    /* matcenter status-filter select — большая тач-зона */
+    body.matcenter-page .status-filter-select,
+    body.matcenter-page .mobile-status-filter {
+        font-size: 16px;
+        min-height: 44px;
+        padding: 0.65rem 2.25rem 0.65rem 0.9rem;
+    }
+
+    /* Карточки выбора темы в matcenter */
+    .topic-select-card {
+        padding: 0.85rem 1rem !important;
+        min-height: 60px;
+        border-radius: 10px;
+    }
+    .topic-select-card:active {
+        transform: scale(0.985);
+    }
+
+    /* --- FORM INPUTS вообще ---
+       Любые input/textarea/select на мобиле должны быть ≥16px,
+       иначе iOS Safari зумирует viewport при фокусе → пользователь
+       теряется и должен зумировать назад. */
+    input[type="text"],
+    input[type="search"],
+    input[type="password"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="number"],
+    textarea,
+    select {
+        font-size: 16px !important;
+    }
+
+    /* --- FOOTER --- */
+    .page-footer {
+        padding: 1rem var(--m-pad);
+        margin-top: 1.5rem;
+    }
+    .page-footer p {
+        font-size: 0.85rem;
+    }
 }
 
+/* =============================
+   ТЕЛЕФОНЫ (≤480px) — стандартный мобильник
+   ============================= */
 @media (max-width: 480px) {
     :root {
-        --m-pad: 0.9rem;
+        --m-pad: 0.95rem;
+    }
+
+    body {
+        line-height: 1.6;
+    }
+
+    /* Header ещё компактнее на стандартном телефоне */
+    .page-header {
+        padding: 0.85rem var(--m-pad) 0.75rem !important;
+        margin-bottom: 0.85rem !important;
+    }
+    .page-header h1 {
+        font-size: 1.25rem !important;
+    }
+    .page-header .subtitle {
+        font-size: 0.8rem !important;
+    }
+
+    .part-title {
+        font-size: 1.05rem;
+        padding: 0.5rem var(--m-pad);
+        margin-bottom: 0.65rem;
     }
 
     .topic {
-        padding: 0.65rem var(--m-pad);
+        padding: 0.7rem var(--m-pad);
+        margin-bottom: 0.7rem;
+    }
+    .topic-title {
+        font-size: 1rem;
+        padding: 0.45rem var(--m-pad);
+        margin-bottom: 0.6rem;
     }
 
+    /* Боксы плотнее, но не слишком — оставляем читабельный air */
     .definition-box,
     .formula-box,
     .remark-box,
@@ -119,8 +528,164 @@
     .statement-box,
     .corollary-box,
     .proof-box,
-    .exercise-box {
-        padding: 0.6rem;
-        margin: 0.5rem 0;
+    .exercise-box,
+    .properties-box,
+    .system-box {
+        padding: 0.7rem 0.8rem;
+        margin: 0.55rem 0;
+    }
+
+    /* Sidebar header чуть плотнее */
+    .sidebar-header h2 {
+        font-size: 1rem;
+    }
+
+    /* Кнопки в шапке сайдбара чуть меньше визуально, но hit area ≥44 */
+    .close-sidebar,
+    .theme-toggle,
+    .ny-toggle,
+    .settings-button-sidebar {
+        width: 36px;
+        height: 36px;
+        /* hit area через outline-padding */
+        position: relative;
+    }
+    /* Не уменьшаем min-width — он от 768px остаётся 44px */
+
+    /* Тех-кнопки внутри блоков (toggle и т.п.) — slim, но кликабельные */
+    .toggle-derivation,
+    .toggle-proof {
+        padding: 0.55rem 0.85rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* =============================
+   МАЛЕНЬКИЕ ТЕЛЕФОНЫ (≤360px) — iPhone SE, старые андроиды
+   ============================= */
+@media (max-width: 360px) {
+    :root {
+        --m-pad: 0.75rem;
+    }
+
+    body {
+        font-size: 15.5px;
+    }
+
+    .page-header {
+        padding: 0.75rem var(--m-pad) 0.65rem !important;
+    }
+    .page-header h1 {
+        font-size: 1.15rem !important;
+    }
+    .page-header .subtitle {
+        font-size: 0.78rem !important;
+    }
+
+    .part-title {
+        font-size: 1rem;
+        padding: 0.4rem var(--m-pad);
+    }
+
+    .topic {
+        padding: 0.55rem var(--m-pad);
+    }
+    .topic-title {
+        font-size: 0.95rem;
+        padding: 0.4rem var(--m-pad);
+    }
+
+    .subsection-title {
+        font-size: 0.92rem;
+    }
+
+    /* Боксы — ещё чуть плотнее, но padding≥0.6 для читабельности */
+    .definition-box,
+    .formula-box,
+    .remark-box,
+    .experiment-box,
+    .derivation-box,
+    .theorem-box,
+    .lemma-box,
+    .example-box,
+    .statement-box,
+    .corollary-box,
+    .proof-box,
+    .exercise-box,
+    .properties-box,
+    .system-box {
+        padding: 0.6rem 0.7rem;
+    }
+
+    .katex {
+        font-size: 0.9em;
+    }
+
+    /* FAB-кнопки чуть ближе к краю */
+    .menu-toggle,
+    .scroll-to-top,
+    .settings-button {
+        bottom: 0.7rem;
+    }
+    .menu-toggle {
+        right: 0.7rem;
+        width: 44px;
+        height: 44px;
+    }
+    .scroll-to-top {
+        right: 0.7rem;
+        bottom: 4.5rem;
+    }
+    .settings-button {
+        left: 0.7rem;
+        bottom: 4.5rem;
+    }
+
+    /* Подвал на мин-телефоне ещё меньше */
+    .page-footer {
+        padding: 0.85rem var(--m-pad);
+    }
+}
+
+/* =============================
+   LANDSCAPE на телефоне (низкий viewport) —
+   sidebar не должен быть 88vh, иначе закроет весь экран
+   ============================= */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 500px) {
+    .sidebar {
+        max-height: 95vh;
+        max-height: 95dvh;
+    }
+    .page-header {
+        padding: 0.65rem var(--m-pad) 0.55rem !important;
+    }
+    .page-header h1 {
+        font-size: 1.1rem !important;
+    }
+    .topic-title {
+        position: static;  /* убираем sticky чтобы не съедало 2.5rem в landscape */
+    }
+}
+
+/* =============================
+   ALPHA (тёмная тема) — на мобиле особые правки контраста
+   ============================= */
+@media (max-width: 768px) {
+    body.dark-theme .topic-title,
+    body.midnight-theme .topic-title {
+        /* В тёмной теме лёгкая граница помогает разделить sticky-заголовок и контент */
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    /* Sepia на мобиле: лёгкий warm-shadow вместо нейтрального */
+    body.sepia-theme .definition-box,
+    body.sepia-theme .formula-box,
+    body.sepia-theme .theorem-box,
+    body.sepia-theme .lemma-box,
+    body.sepia-theme .example-box,
+    body.sepia-theme .statement-box,
+    body.sepia-theme .corollary-box,
+    body.sepia-theme .proof-box {
+        box-shadow: 0 1px 3px rgba(93, 70, 40, 0.10);
     }
 }
