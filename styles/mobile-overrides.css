@@ -47,6 +47,56 @@
         margin: 0.25rem 0;
         padding: 0.1rem 0;
     }
+
+    /* Снижаем backdrop-filter blur на мобильных — blur(10px) на overlay
+       это самый тяжёлый paint job на слабых телефонах (full-screen GPU работа).
+       3px достаточно для эффекта "затемнение" и не тормозит. */
+    .sidebar,
+    .auth-overlay,
+    .ny-settings-modal,
+    .settings-modal,
+    .poll-overlay-content,
+    .telegram-overlay,
+    .builder-overlay,
+    .beditor-suggest-overlay {
+        backdrop-filter: blur(3px) !important;
+        -webkit-backdrop-filter: blur(3px) !important;
+    }
+
+    /* Длинные русские слова ("равносильность", "иррациональные") и формулы
+       могут вылазить за границу карточек на узких экранах. Включаем перенос
+       внутри слов как последнее средство. */
+    .main-content,
+    .topic,
+    .topic-title,
+    .subsection-title,
+    .definition-box,
+    .formula-box,
+    .remark-box,
+    .experiment-box,
+    .derivation-box,
+    .theorem-box,
+    .lemma-box,
+    .example-box,
+    .statement-box,
+    .corollary-box,
+    .proof-box,
+    .exercise-box,
+    .properties-box,
+    .system-box,
+    .task-card,
+    .task-text,
+    .bm-card-text,
+    .nav-link {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    /* На очень узких экранах разрешаем перенос длинных слов с дефисом */
+    .main-content {
+        hyphens: auto;
+        -webkit-hyphens: auto;
+    }
 }
 
 @media (max-width: 480px) {

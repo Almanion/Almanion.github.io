@@ -2,6 +2,22 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <script>
+        // FOUC-prevention: применяем тему до загрузки CSS
+        (function(){
+            try {
+                var t = 'light';
+                var s = localStorage.getItem('siteSettings');
+                if (s) { try { var p = JSON.parse(s); if (p && p.theme) t = p.theme; } catch(_){} }
+                else { var l = localStorage.getItem('theme'); if (l === 'dark') t = 'dark'; }
+                var bg = {light:'#f8fafc',dark:'#0f172a',sepia:'#f4ecd8',midnight:'#0a0a0b'}[t] || '#f8fafc';
+                var fg = {light:'#0f172a',dark:'#f1f5f9',sepia:'#3d2f1e',midnight:'#fafafa'}[t] || '#0f172a';
+                document.documentElement.style.backgroundColor = bg;
+                document.documentElement.style.color = fg;
+                document.documentElement.dataset.theme = t;
+            } catch(e) {}
+        })();
+    </script>
     <link rel="icon" href="favicons/favicon.svg" type="image/svg+xml">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="manifest.json">
@@ -51,6 +67,51 @@
         body.dark-theme .status-active {
             background: rgba(74, 222, 128, 0.12);
             color: #6ee7b7;
+        }
+
+        /* Sepia (reader-mode) — тёплый бумажный фон с мягким свечением */
+        body.sepia-theme {
+            background: var(--bg-primary);
+            background-image:
+                radial-gradient(circle at 15% 0%, rgba(var(--accent-rgb), 0.10), transparent 55%),
+                radial-gradient(circle at 85% 100%, rgba(139, 96, 50, 0.10), transparent 60%);
+        }
+
+        body.sepia-theme .subject-card {
+            background: var(--bg-secondary);
+            border-color: var(--border-color);
+        }
+
+        body.sepia-theme .status-active {
+            background: rgba(94, 122, 58, 0.18);
+            color: #4a6328;
+        }
+
+        /* Midnight Mono — глубокий монохромный тёмный с фиолетовым свечением */
+        body.midnight-theme {
+            background: var(--bg-primary);
+            background-image:
+                radial-gradient(circle at 15% 0%, rgba(167, 139, 250, 0.10), transparent 55%),
+                radial-gradient(circle at 85% 100%, rgba(167, 139, 250, 0.06), transparent 60%);
+        }
+
+        body.midnight-theme .subject-card {
+            background: var(--bg-secondary);
+            border-color: var(--border-color);
+        }
+
+        body.midnight-theme .card-header {
+            background: transparent;
+            border-bottom-color: var(--border-color);
+        }
+
+        body.midnight-theme .subject-card h2 {
+            color: var(--text-primary);
+        }
+
+        body.midnight-theme .status-active {
+            background: rgba(74, 222, 128, 0.14);
+            color: #86efac;
         }
 
         /* Кнопка переключения темы на главной странице */
@@ -527,6 +588,7 @@
     </style>
 </head>
 <body>
+    <script>(function(){var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');})();</script>
     <!-- Кнопка настроек создается автоматически через settings.js -->
 
     <div class="home-container">
@@ -608,7 +670,7 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        <h2>Химия</h2>
+                        <h2>Химия 9 класс</h2>
                         <div class="card-info">
                             <div style="text-align: center;">
                                 <span class="status-badge status-active">✓ Активно</span>

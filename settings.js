@@ -14,6 +14,26 @@ const defaultSettings = {
 let siteSettings = { ...defaultSettings };
 
 // ============================================
+// БЕЗОПАСНЫЕ ОБЁРТКИ ДЛЯ LOCALSTORAGE
+// (приватный режим Safari / quota exceeded / cookies off)
+// ============================================
+function safeStorageGet(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+}
+function safeStorageSet(key, value) {
+    try { localStorage.setItem(key, value); return true; } catch (e) { return false; }
+}
+function safeStorageRemove(key) {
+    try { localStorage.removeItem(key); } catch (e) { /* ignore */ }
+}
+// Экспонируем для других скриптов (script.js, matcenter.js, bookmarks.js)
+if (typeof window !== 'undefined') {
+    window.safeStorageGet = safeStorageGet;
+    window.safeStorageSet = safeStorageSet;
+    window.safeStorageRemove = safeStorageRemove;
+}
+
+// ============================================
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================
 
@@ -29,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================
 
 function loadSettings() {
-    const saved = localStorage.getItem('siteSettings');
+    const saved = safeStorageGet('siteSettings');
     if (saved) {
         try {
             siteSettings = { ...defaultSettings, ...JSON.parse(saved) };
@@ -43,7 +63,7 @@ function loadSettings() {
 }
 
 function saveSettings() {
-    localStorage.setItem('siteSettings', JSON.stringify(siteSettings));
+    safeStorageSet('siteSettings', JSON.stringify(siteSettings));
 }
 
 // ============================================
@@ -65,27 +85,41 @@ function applyHoverEffects(enabled) {
 }
 
 function applyTheme(theme) {
-    const isDark = theme === 'dark';
     const body = document.body;
+    const html = document.documentElement;
+
+    // Race-guard: если предыдущая смена темы ещё не завершилась — игнорируем.
+    if (body.dataset.themeBusy === '1') return;
+    body.dataset.themeBusy = '1';
 
     // Отключаем все transitions на момент смены темы — иначе сотни элементов
     // одновременно начинают анимировать цвета и страница лагает.
     body.classList.add('theme-transitioning');
 
-    if (isDark) {
-        body.classList.add('dark-theme');
-    } else {
-        body.classList.remove('dark-theme');
-    }
+    // Снимаем все возможные классы тем, потом включаем нужный
+    body.classList.remove('dark-theme', 'sepia-theme', 'midnight-theme');
+    if (theme === 'dark')     body.classList.add('dark-theme');
+    if (theme === 'sepia')    body.classList.add('sepia-theme');
+    if (theme === 'midnight') body.classList.add('midnight-theme');
+    // 'light' — без дополнительного класса (значения из :root)
 
-    // Сохраняем для совместимости со старым кодом
-    localStorage.setItem('theme', theme);
+    // Снимаем inline-стили, выставленные FOUC-скриптом в <head> —
+    // теперь цвет полностью контролируется CSS-переменными темы.
+    if (html.style.backgroundColor || html.style.color) {
+        html.style.backgroundColor = '';
+        html.style.color = '';
+    }
+    html.dataset.theme = theme;
+
+    // Сохраняем для совместимости со старым кодом (и для FOUC-скрипта)
+    safeStorageSet('theme', theme);
 
     // Через 2 кадра отдаём управление — браузер уже применил новые цвета,
     // можно вернуть transitions для пользовательских взаимодействий.
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             body.classList.remove('theme-transitioning');
+            delete body.dataset.themeBusy;
         });
     });
 }
@@ -173,6 +207,8 @@ function createSettingsModal() {
         settings: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
         palette: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r="0.5" fill="currentColor"/><circle cx="17.5" cy="10.5" r="0.5" fill="currentColor"/><circle cx="8.5" cy="7.5" r="0.5" fill="currentColor"/><circle cx="6.5" cy="12.5" r="0.5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.6 0 1-.4 1-1 0-.3-.1-.5-.3-.7-.2-.2-.3-.4-.3-.7 0-.6.4-1 1-1h2c2.8 0 5-2.2 5-5 0-5-4.5-9.6-8.4-9.6z"/></svg>`,
         sparkles: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/><path d="M19 14l.75 2.25L22 17l-2.25.75L19 20l-.75-2.25L16 17l2.25-.75z"/><path d="M5 17l.5 1.5L7 19l-1.5.5L5 21l-.5-1.5L3 19l1.5-.5z"/></svg>`,
+        bookOpen: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+        moonStars: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/><circle cx="5" cy="5" r="0.6" fill="currentColor"/><circle cx="8" cy="2.5" r="0.5" fill="currentColor"/><circle cx="3" cy="10" r="0.4" fill="currentColor"/></svg>`,
         pointer: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11V6a2 2 0 0 1 4 0v6"/><path d="M13 9a2 2 0 0 1 4 0v4"/><path d="M17 11a2 2 0 0 1 4 0v6a5 5 0 0 1-5 5h-3.5a5 5 0 0 1-4.3-2.5L4 14a2 2 0 0 1 3.5-2L9 14"/></svg>`,
         sun: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="5" y1="5" x2="7" y2="7"/><line x1="17" y1="17" x2="19" y2="19"/><line x1="5" y1="19" x2="7" y2="17"/><line x1="17" y1="7" x2="19" y2="5"/></svg>`,
         moon: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>`,
@@ -186,7 +222,7 @@ function createSettingsModal() {
     modal.innerHTML = `
         <div class="settings-modal-content">
             <div class="settings-modal-header">
-                <h2><span class="settings-title-icon">${ICONS.settings}</span>Настройки</h2>
+                <h2 id="settingsModalTitle"><span class="settings-title-icon">${ICONS.settings}</span>Настройки</h2>
                 <button class="settings-close-btn" id="settingsCloseBtn" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>
             </div>
 
@@ -209,6 +245,20 @@ function createSettingsModal() {
                                     <div class="preview-content"></div>
                                 </div>
                                 <span class="theme-option-label">${ICONS.moon}<span>Тёмная</span></span>
+                            </button>
+                            <button class="theme-option ${siteSettings.theme === 'sepia' ? 'active' : ''}" data-theme="sepia">
+                                <div class="theme-preview sepia-preview">
+                                    <div class="preview-header"></div>
+                                    <div class="preview-content"></div>
+                                </div>
+                                <span class="theme-option-label">${ICONS.bookOpen}<span>Сепия</span></span>
+                            </button>
+                            <button class="theme-option ${siteSettings.theme === 'midnight' ? 'active' : ''}" data-theme="midnight">
+                                <div class="theme-preview midnight-preview">
+                                    <div class="preview-header"></div>
+                                    <div class="preview-content"></div>
+                                </div>
+                                <span class="theme-option-label">${ICONS.moonStars}<span>Midnight</span></span>
                             </button>
                         </div>
                     </div>
@@ -426,27 +476,43 @@ function getAnimationLevelMessage(level) {
 
 function openSettingsModal() {
     const modal = document.getElementById('settingsModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-        
-        const newYearToggle = document.getElementById('newYearToggle');
-        if (newYearToggle && typeof isNewYearMode !== 'undefined') {
-            newYearToggle.checked = isNewYearMode;
-        }
-        const hoverToggle = document.getElementById('hoverToggle');
-        if (hoverToggle) {
-            hoverToggle.checked = siteSettings.hoverEffects;
-        }
+    if (!modal) return;
+
+    modal.classList.remove('hidden');
+    document.body.classList.add('modal-open');
+    // A11y
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'settingsModalTitle');
+
+    const newYearToggle = document.getElementById('newYearToggle');
+    if (newYearToggle && typeof isNewYearMode !== 'undefined') {
+        newYearToggle.checked = isNewYearMode;
     }
+    const hoverToggle = document.getElementById('hoverToggle');
+    if (hoverToggle) {
+        hoverToggle.checked = siteSettings.hoverEffects;
+    }
+
+    // Запоминаем элемент, с которого открыли — вернём фокус при закрытии
+    settingsModalReturnFocus = document.activeElement;
+    // Фокус на первой кнопке внутри модалки
+    const firstFocusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (firstFocusable) firstFocusable.focus();
 }
+
+let settingsModalReturnFocus = null;
 
 function closeSettingsModal() {
     const modal = document.getElementById('settingsModal');
-    if (modal) {
-        modal.classList.add('hidden');
-        document.body.style.overflow = '';
+    if (!modal) return;
+    modal.classList.add('hidden');
+    document.body.classList.remove('modal-open');
+    // Возвращаем фокус на исходный элемент (кнопка настроек)
+    if (settingsModalReturnFocus && typeof settingsModalReturnFocus.focus === 'function') {
+        try { settingsModalReturnFocus.focus(); } catch (_) {}
     }
+    settingsModalReturnFocus = null;
 }
 
 // ============================================

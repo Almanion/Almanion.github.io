@@ -2,6 +2,22 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <script>
+        // FOUC-prevention: применяем тему до загрузки CSS
+        (function(){
+            try {
+                var t = 'light';
+                var s = localStorage.getItem('siteSettings');
+                if (s) { try { var p = JSON.parse(s); if (p && p.theme) t = p.theme; } catch(_){} }
+                else { var l = localStorage.getItem('theme'); if (l === 'dark') t = 'dark'; }
+                var bg = {light:'#f8fafc',dark:'#0f172a',sepia:'#f4ecd8',midnight:'#0a0a0b'}[t] || '#f8fafc';
+                var fg = {light:'#0f172a',dark:'#f1f5f9',sepia:'#3d2f1e',midnight:'#fafafa'}[t] || '#0f172a';
+                document.documentElement.style.backgroundColor = bg;
+                document.documentElement.style.color = fg;
+                document.documentElement.dataset.theme = t;
+            } catch(e) {}
+        })();
+    </script>
     <link rel="icon" href="favicons/favicon-lik.svg" type="image/svg+xml">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="manifest.json">
@@ -18,6 +34,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 </head>
 <body>
+    <script>(function(){var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');})();</script>
     <!-- Боковая панель навигации -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -53,6 +70,7 @@
                     <li><a href="physics.html">Физика 9 класс</a></li>
                     <li><a href="math.html">Алгебра 9 класс</a></li>
                     <li><a href="geometry.html">Геометрия 9 класс</a></li>
+                    <li><a href="chemistry.html">Химия 9 класс</a></li>
                     <li><a href="likbez.html" class="current-subject">Ликбезы</a></li>
                 </ul>
             </div>
@@ -649,7 +667,7 @@
     </main>
 
     <!-- Кнопка "Наверх" -->
-    <button class="scroll-to-top" id="scrollToTop">↑</button>
+    <button class="scroll-to-top" id="scrollToTop" aria-label="Наверх"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg></button>
 
     <!-- Контейнер для снега -->
     <div class="snow-container" id="snowContainer"></div>

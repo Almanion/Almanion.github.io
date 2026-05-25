@@ -117,9 +117,6 @@ body.study-mode .menu-toggle,
 body.study-mode #closeSidebar,
 body.study-mode .sidebar-collapse-btn,
 body.study-mode .sidebar-expand-btn,
-body.study-mode #settingsButton,
-body.study-mode #settingsButtonSidebar,
-body.study-mode .settings-modal,
 body.study-mode .theme-toggle,
 body.study-mode .ny-toggle,
 body.study-mode .scroll-to-top,
@@ -148,6 +145,35 @@ body.study-mode .builder-toast,
 body.study-mode .progress-bar,
 body.study-mode #progressBar {
     display: none !important;
+}
+
+/* Кнопка настроек ОСТАЁТСЯ — нужна, чтобы сменить тему / другие параметры в режиме чтения.
+   Если на экране нет десктопной кнопки, sidebar-кнопку выводим как fixed-плавающую. */
+body.study-mode #settingsButton {
+    display: flex !important;
+    z-index: 10060;
+}
+body.study-mode #settingsButtonSidebar {
+    display: flex !important;
+    position: fixed !important;
+    top: 1rem;
+    right: 1rem;
+    z-index: 10060;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    box-shadow: var(--shadow-md);
+}
+/* На экранах, где десктопная settings-кнопка скрыта (mobile), её всё равно показываем */
+@media (max-width: 768px) {
+    body.study-mode #settingsButton {
+        display: none !important;
+    }
+}
+@media (min-width: 769px) {
+    body.study-mode #settingsButtonSidebar {
+        display: none !important;
+    }
 }
 
 /* Оверлеи проверки знаний не показывать поверх (на случай класса hidden снятого) */
@@ -227,6 +253,9 @@ body.study-mode .topic-title::before {
     display: none !important;
 }
 
+/* Блоки в режиме чтения — без рамок, без теней.
+   Разделение между блоками — только пустотой (margin), как в обычной книге.
+   Никаких горизонтальных линий после каждого блока — иначе страница режется на много полосок. */
 body.study-mode .definition-box,
 body.study-mode .formula-box,
 body.study-mode .remark-box,
@@ -245,12 +274,8 @@ body.study-mode .system-box {
     box-shadow: none !important;
     border-radius: 0 !important;
     border: none !important;
-    border-left: none !important;
-    border-right: none !important;
-    border-top: none !important;
-    border-bottom: 1px solid var(--border-color) !important;
-    padding: 0.75rem 0 !important;
-    margin: 0 0 0.65rem 0 !important;
+    padding: 0.25rem 0 0.25rem 0 !important;
+    margin: 0 0 1.1rem 0 !important;
 }
 
 body.study-mode .definition-box:hover,
@@ -267,11 +292,24 @@ body.study-mode .proof-box:hover,
 body.study-mode .exercise-box:hover {
     transform: none !important;
     box-shadow: none !important;
+    border: none !important;
+    border-width: 0 !important;
 }
 
 body.study-mode .remark-box::before,
-body.study-mode .example-box::before {
+body.study-mode .example-box::before,
+body.study-mode .topic-title::before {
     display: none !important;
+}
+
+/* Внутренние блоки эксперимента: убираем цветную левую рамку и фон */
+body.study-mode .exp-section {
+    background: transparent !important;
+    border: none !important;
+    border-left: 2px solid var(--border-color) !important;
+    border-radius: 0 !important;
+    padding: 0.1rem 0 0.1rem 0.85rem !important;
+    margin: 0.4rem 0 !important;
 }
 
 body.study-mode .toggle-derivation,
@@ -279,13 +317,16 @@ body.study-mode .toggle-proof {
     display: none !important;
 }
 
+/* Вывод/доказательство: открыты по умолчанию, но без верхней линии-разделителя */
 body.study-mode .derivation-content,
 body.study-mode .proof-content {
     display: block !important;
     max-height: none !important;
-    margin-top: 0.5rem !important;
-    padding-top: 0.5rem !important;
-    border-top: 1px dashed var(--border-color) !important;
+    margin-top: 0.4rem !important;
+    padding-top: 0 !important;
+    padding-left: 1rem !important;
+    border-top: none !important;
+    border-left: 2px solid var(--border-color) !important;
 }
 
 body.study-mode .content-section {

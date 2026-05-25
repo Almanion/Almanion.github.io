@@ -2,12 +2,30 @@
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================
 
+// Безопасные обёртки для localStorage — приватный режим Safari и quota exceeded
+// не должны крашить страницу. Используем тот же интерфейс, что и settings.js
+// (если settings.js загружен раньше — берём оттуда).
+const _safeGet = (typeof window !== 'undefined' && window.safeStorageGet)
+    ? window.safeStorageGet
+    : function(k){ try { return localStorage.getItem(k); } catch (_) { return null; } };
+const _safeSet = (typeof window !== 'undefined' && window.safeStorageSet)
+    ? window.safeStorageSet
+    : function(k,v){ try { localStorage.setItem(k,v); return true; } catch (_) { return false; } };
+const _safeRemove = (typeof window !== 'undefined' && window.safeStorageRemove)
+    ? window.safeStorageRemove
+    : function(k){ try { localStorage.removeItem(k); } catch (_) {} };
+
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/docs/sw.js').catch(() => {});
 }
 
+// Guard от двойной инициализации — DOMContentLoaded может прилететь дважды
+// при некоторых редких сценариях (SPA-навигация, перерегистрация SW и т.п.).
+let __initDone = false;
 document.addEventListener('DOMContentLoaded', () => {
-    initTheme();
+    if (__initDone) return;
+    __initDone = true;
+
     initMath();
     initNavigation();
     initSearch();
@@ -23,45 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================
 // ПЕРЕКЛЮЧЕНИЕ ТЕМЫ
 // ============================================
-
-function initTheme() {
-    const themeToggle = document.getElementById('themeToggle');
-    
-    // Проверяем сохранённую тему в localStorage
-    const savedTheme = localStorage.getItem('theme');
-    
-    // Применяем сохранённую тему или используем светлую по умолчанию
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-theme');
-        if (themeToggle) {
-            themeToggle.textContent = '☀️';
-        }
-    } else {
-        document.body.classList.remove('dark-theme');
-        if (themeToggle) {
-            themeToggle.textContent = '🌙';
-        }
-    }
-    
-    // Обработчик клика на кнопку переключения темы
-    if (themeToggle) {
-        themeToggle.addEventListener('click', () => {
-            const isDark = document.body.classList.toggle('dark-theme');
-            
-            // Сохраняем выбранную тему в localStorage
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            
-            // Меняем иконку кнопки
-            themeToggle.textContent = isDark ? '☀️' : '🌙';
-            
-            // Добавляем небольшую анимацию
-            themeToggle.style.transform = 'scale(0.9)';
-            setTimeout(() => {
-                themeToggle.style.transform = '';
-            }, 150);
-        });
-    }
-}
+// Управление темой полностью перенесено в settings.js (4 темы: light/dark/sepia/midnight).
+// FOUC-защита — inline-скрипт в <body> каждой HTML-страницы, применяющий тему
+// до парсинга остальных скриптов. Здесь оставлять initTheme() больше нет смысла.
 
 
 // ============================================
@@ -79,8 +61,16 @@ function initMath() {
         trust: true
     };
 
+    // Помечаем уже отрендеренные derivation/proof, чтобы при тогле не вызывать KaTeX второй раз
+    function markRenderedBlocks() {
+        document.querySelectorAll('.derivation-content, .proof-content').forEach(el => {
+            el.dataset.latexRendered = '1';
+        });
+    }
+
     if (typeof renderMathInElement !== 'undefined') {
         renderMathInElement(document.body, katexOptions);
+        markRenderedBlocks();
         return;
     }
 
@@ -93,7 +83,7 @@ function initMath() {
         if (typeof renderMathInElement !== 'undefined') {
             clearInterval(waitForKaTeX);
             renderMathInElement(document.body, katexOptions);
-            console.log('📐 KaTeX загружен (попытка ' + attempts + ')');
+            markRenderedBlocks();
         } else if (attempts >= maxAttempts) {
             clearInterval(waitForKaTeX);
             console.warn('⚠️ KaTeX не удалось загрузить за 15 секунд');
@@ -524,42 +514,48 @@ function initScrollEffects() {
 // ПЕРЕКЛЮЧАТЕЛИ ВЫВОДОВ ФОРМУЛ
 // ============================================
 
+// Универсальная иконка "книга" для кнопок toggle вывода/доказательства
+const TOGGLE_BOOK_ICON = '<svg class="toggle-book-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>';
+
+const KATEX_OPTIONS = {
+    delimiters: [
+        {left: '\\[', right: '\\]', display: true},
+        {left: '\\(', right: '\\)', display: false},
+        {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false,
+    trust: true
+};
+
+// Рендерим формулы один раз на элемент, помечая флагом.
+function renderMathOnce(el) {
+    if (!el || typeof renderMathInElement === 'undefined') return;
+    if (el.dataset.latexRendered === '1') return;
+    renderMathInElement(el, KATEX_OPTIONS);
+    el.dataset.latexRendered = '1';
+}
+
+function setToggleLabel(button, text) {
+    button.innerHTML = TOGGLE_BOOK_ICON + '<span>' + text + '</span>';
+}
+
 function initDerivationToggles() {
     const toggleButtons = document.querySelectorAll('.toggle-derivation');
-    
+
     toggleButtons.forEach(button => {
         const derivationContent = button.nextElementSibling;
-        
+
         // Показываем все выводы по умолчанию
         if (derivationContent && derivationContent.classList.contains('derivation-content')) {
             derivationContent.classList.add('show');
-            button.textContent = '📖 Скрыть вывод формулы';
+            setToggleLabel(button, 'Скрыть вывод формулы');
         }
-        
+
         button.addEventListener('click', () => {
-            if (derivationContent && derivationContent.classList.contains('derivation-content')) {
-                derivationContent.classList.toggle('show');
-                
-                // Меняем текст кнопки
-                if (derivationContent.classList.contains('show')) {
-                    button.textContent = '📖 Скрыть вывод формулы';
-                } else {
-                    button.textContent = '📖 Показать вывод формулы';
-                }
-                
-                // Рендерим формулы в выводе, если они ещё не отрендерены
-                if (derivationContent.classList.contains('show') && typeof renderMathInElement !== 'undefined') {
-                    renderMathInElement(derivationContent, {
-                        delimiters: [
-                            {left: '\\[', right: '\\]', display: true},
-                            {left: '\\(', right: '\\)', display: false},
-                            {left: '$', right: '$', display: false}
-                        ],
-                        throwOnError: false,
-                        trust: true
-                    });
-                }
-            }
+            if (!derivationContent || !derivationContent.classList.contains('derivation-content')) return;
+            const shown = derivationContent.classList.toggle('show');
+            setToggleLabel(button, shown ? 'Скрыть вывод формулы' : 'Показать вывод формулы');
+            if (shown) renderMathOnce(derivationContent);
         });
     });
 }
@@ -570,32 +566,20 @@ function initDerivationToggles() {
 
 function initProofToggles() {
     const toggleButtons = document.querySelectorAll('.toggle-proof');
-    
+
     toggleButtons.forEach(button => {
         const proofContent = button.nextElementSibling;
-        
+        // Изначальное состояние кнопки определяет текущий текст
+        const initiallyOpen = proofContent && proofContent.classList.contains('show');
+        if (!button.innerHTML.includes('toggle-book-icon')) {
+            setToggleLabel(button, initiallyOpen ? 'Скрыть доказательство' : 'Показать доказательство');
+        }
+
         button.addEventListener('click', () => {
-            if (proofContent && proofContent.classList.contains('proof-content')) {
-                proofContent.classList.toggle('show');
-                
-                if (proofContent.classList.contains('show')) {
-                    button.textContent = '📖 Скрыть доказательство';
-                } else {
-                    button.textContent = '📖 Показать доказательство';
-                }
-                
-                if (proofContent.classList.contains('show') && typeof renderMathInElement !== 'undefined') {
-                    renderMathInElement(proofContent, {
-                        delimiters: [
-                            {left: '\\[', right: '\\]', display: true},
-                            {left: '\\(', right: '\\)', display: false},
-                            {left: '$', right: '$', display: false}
-                        ],
-                        throwOnError: false,
-                        trust: true
-                    });
-                }
-            }
+            if (!proofContent || !proofContent.classList.contains('proof-content')) return;
+            const shown = proofContent.classList.toggle('show');
+            setToggleLabel(button, shown ? 'Скрыть доказательство' : 'Показать доказательство');
+            if (shown) renderMathOnce(proofContent);
         });
     });
 }
@@ -605,10 +589,15 @@ function initProofToggles() {
 // ============================================
 
 function initMobileMenu() {
+    // Guard: вешаем document.click только один раз. При повторных вызовах
+    // не будем устраивать дубли обработчиков (которые приводили к "двойному закрытию").
+    if (window.__mobileMenuInit) return;
+    window.__mobileMenuInit = true;
+
     const menuToggle = document.getElementById('menuToggle');
     const closeSidebar = document.getElementById('closeSidebar');
     const sidebar = document.getElementById('sidebar');
-    
+
     // Проверяем наличие элементов
     if (!menuToggle || !closeSidebar || !sidebar) {
         console.warn('⚠️ Не найдены элементы мобильного меню');
@@ -839,7 +828,7 @@ function initSidebarCollapse() {
     }
     
     // Восстанавливаем состояние из localStorage
-    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    const isCollapsed = _safeGet('sidebarCollapsed') === 'true';
     if (isCollapsed && window.innerWidth > 768) {
         sidebar.classList.add('collapsed');
         document.body.classList.add('sidebar-collapsed');
@@ -857,19 +846,19 @@ function initSidebarCollapse() {
 function collapseSidebar() {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
-    
+
     sidebar.classList.add('collapsed');
     document.body.classList.add('sidebar-collapsed');
-    localStorage.setItem('sidebarCollapsed', 'true');
+    _safeSet('sidebarCollapsed', 'true');
 }
 
 function expandSidebar() {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
-    
+
     sidebar.classList.remove('collapsed');
     document.body.classList.remove('sidebar-collapsed');
-    localStorage.setItem('sidebarCollapsed', 'false');
+    _safeSet('sidebarCollapsed', 'false');
 }
 
 function toggleSidebar() {
@@ -1197,14 +1186,15 @@ updateProgress();
 
 window.addEventListener('beforeunload', () => {
     const key = 'scrollPosition_' + location.pathname;
-    localStorage.setItem(key, window.pageYOffset);
+    _safeSet(key, window.pageYOffset);
 });
 
 window.addEventListener('load', () => {
     const key = 'scrollPosition_' + location.pathname;
-    const savedPosition = localStorage.getItem(key);
+    const savedPosition = _safeGet(key);
     if (savedPosition) {
-        window.scrollTo(0, parseInt(savedPosition));
+        const n = parseInt(savedPosition, 10);
+        if (Number.isFinite(n)) window.scrollTo(0, n);
     }
 });
 

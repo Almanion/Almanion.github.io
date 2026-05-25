@@ -331,7 +331,7 @@ body.dark-theme .knowledge-check-btn:hover {
     border: 2px solid var(--border-color);
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-quick);
     background: var(--bg-primary);
     user-select: none;
 }
@@ -358,7 +358,7 @@ body.dark-theme .knowledge-check-btn:hover {
     font-size: 0.75rem;
     font-weight: 700;
     color: transparent;
-    transition: all 0.2s ease;
+    transition: var(--transition-quick);
     background: var(--bg-secondary);
 }
 
@@ -388,7 +388,7 @@ body.dark-theme .knowledge-check-btn:hover {
     cursor: pointer;
     color: var(--text-secondary);
     opacity: 0.4;
-    transition: all 0.2s ease;
+    transition: var(--transition-quick);
     padding: 0.2rem;
     line-height: 1;
     z-index: 2;
@@ -462,7 +462,7 @@ body.dark-theme .knowledge-check-btn:hover {
     padding: 0.2rem 0.35rem;
     border-radius: 4px;
     opacity: 0.4;
-    transition: all 0.15s;
+    transition: var(--transition-fast);
     margin-left: auto;
 }
 
@@ -607,6 +607,19 @@ body.dark-theme .knowledge-check-btn:hover {
                         box-shadow 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55),
                         transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55),
                         opacity 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    /* Короткие transitions (для кнопок, ховеров — реагирующих мгновенно). */
+    --transition-fast: background-color 0.15s ease,
+                       color 0.15s ease,
+                       border-color 0.15s ease,
+                       box-shadow 0.15s ease,
+                       transform 0.15s ease,
+                       opacity 0.15s ease;
+    --transition-quick: background-color 0.2s ease,
+                        color 0.2s ease,
+                        border-color 0.2s ease,
+                        box-shadow 0.2s ease,
+                        transform 0.2s ease,
+                        opacity 0.2s ease;
 }
 
 /* РўРµРјРЅР°СЏ С‚РµРјР° */
@@ -664,7 +677,149 @@ body.dark-theme {
     --shadow-hover: 0 6px 24px rgba(var(--accent-rgb), 0.3);
 }
 
+/* =====================================================================
+   Sepia / Reader Mode — тёплая бумажная палитра.
+   Для длинного чтения конспектов: глаза не устают, контраст ниже,
+   акцент тёплый (terracotta).
+   ===================================================================== */
+body.sepia-theme {
+    --bg-primary: #f4ecd8;
+    --bg-secondary: #faf3e0;
+    --bg-tertiary: #e8dec7;
+    --text-primary: #3d2f1e;
+    --text-secondary: #6b5a40;
+    --accent-color: #b45309;
+    --accent-hover: #92400e;
+    --accent-rgb: 180, 83, 9;
+    --primary-color: var(--accent-color);
+    --primary-gradient: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+    --border-color: #d4c39d;
+    --header-bg: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+    --header-text: #faf3e0;
 
+    --svg-rod-fill: #b9844a;
+    --svg-rod-stroke: #5e4030;
+    --svg-axis-stroke: #6b5a40;
+    --svg-label-fill: #3d2f1e;
+
+    /* Блоки — тёплые бежевые оттенки, контуры — тёплые коричневые/амбер */
+    --definition-bg: #ece2c8;
+    --definition-border: #92400e;
+    --formula-bg: #ebe0c5;
+    --formula-border: #b45309;
+    --remark-bg: #f1e6c8;
+    --remark-border: #ca8a04;
+    --experiment-bg: #ece1c4;
+    --experiment-border: #a16207;
+    --derivation-bg: #e6dcc1;
+    --derivation-border: #5e4030;
+    --theorem-bg: #ece1c4;
+    --theorem-border: #8b5a3c;
+    --lemma-bg: #e7ddc2;
+    --lemma-border: #5e4030;
+    --example-bg: #f0e5cb;
+    --example-border: #b45309;
+    --statement-bg: #ebe0c5;
+    --statement-border: #92400e;
+    --corollary-bg: #ede4cb;
+    --corollary-border: #6b5a40;
+    --proof-bg: #e6dcc1;
+    --proof-border: #5e4030;
+    --exercise-bg: #ede4cb;
+    --exercise-border: #6b5a40;
+
+    /* Тени — тёплые, с коричневым оттенком */
+    --shadow-sm: 0 1px 3px rgba(93, 70, 40, 0.12);
+    --shadow-md: 0 3px 8px rgba(93, 70, 40, 0.15);
+    --shadow-lg: 0 6px 18px rgba(93, 70, 40, 0.18);
+    --shadow-xl: 0 8px 28px rgba(93, 70, 40, 0.22);
+    --shadow-hover: 0 4px 16px rgba(var(--accent-rgb), 0.2);
+}
+
+/* Семантические цвета — тоже теплее на sepia, чтобы не было «синтетических» зелёных/красных */
+body.sepia-theme {
+    --success-color: #5e7a3a;
+    --success-hover: #4a6328;
+    --success-rgb: 94, 122, 58;
+    --warning-color: #b45309;
+    --warning-hover: #92400e;
+    --warning-rgb: 180, 83, 9;
+    --error-color: #a3361a;
+    --error-hover: #7c2410;
+    --error-rgb: 163, 54, 26;
+}
+
+/* =====================================================================
+   Midnight Mono — глубокий монохромный тёмный с фиолетовым акцентом.
+   Стилистика: Linear / Vercel / Notion-dark. Минимум цвета на фоне,
+   фиолет работает только как акцент. Глубже и спокойнее, чем dark-theme.
+   ===================================================================== */
+body.midnight-theme {
+    --bg-primary: #0a0a0b;
+    --bg-secondary: #131316;
+    --bg-tertiary: #1f1f23;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --accent-color: #a78bfa;
+    --accent-hover: #c4b5fd;
+    --accent-rgb: 167, 139, 250;
+    --primary-color: var(--accent-color);
+    --primary-gradient: linear-gradient(135deg, var(--accent-color) 0%, #7c3aed 100%);
+    --border-color: #27272a;
+    --header-bg: linear-gradient(135deg, #18181b 0%, #27272a 100%);
+    --header-text: #fafafa;
+
+    --svg-rod-fill: #52525b;
+    --svg-rod-stroke: #a1a1aa;
+    --svg-axis-stroke: #71717a;
+    --svg-label-fill: #d4d4d8;
+
+    /* Блоки — нейтральные серые поверхности, бордюры — холодные акценты */
+    --definition-bg: #18181b;
+    --definition-border: #a78bfa;
+    --formula-bg: #1a1a1d;
+    --formula-border: #c4b5fd;
+    --remark-bg: #1c1a16;
+    --remark-border: #fbbf24;
+    --experiment-bg: #19171f;
+    --experiment-border: #a78bfa;
+    --derivation-bg: #161a18;
+    --derivation-border: #4ade80;
+    --theorem-bg: #19171f;
+    --theorem-border: #a78bfa;
+    --lemma-bg: #161a1a;
+    --lemma-border: #5eead4;
+    --example-bg: #1d1a16;
+    --example-border: #fb923c;
+    --statement-bg: #18181b;
+    --statement-border: #818cf8;
+    --corollary-bg: #18181b;
+    --corollary-border: #71717a;
+    --proof-bg: #161a18;
+    --proof-border: #4ade80;
+    --exercise-bg: #18181b;
+    --exercise-border: #71717a;
+
+    /* Тени — плотные глубокие чёрные (на тёмном фоне глубина читается лучше) */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.6);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.7);
+    --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.8);
+    --shadow-hover: 0 6px 20px rgba(var(--accent-rgb), 0.25);
+}
+
+/* Семантические цвета на midnight — приглушённые, не яркие */
+body.midnight-theme {
+    --success-color: #4ade80;
+    --success-hover: #86efac;
+    --success-rgb: 74, 222, 128;
+    --warning-color: #fbbf24;
+    --warning-hover: #fcd34d;
+    --warning-rgb: 251, 191, 36;
+    --error-color: #f87171;
+    --error-hover: #fca5a5;
+    --error-rgb: 248, 113, 113;
+}
 
 * {
     margin: 0;
@@ -692,8 +847,19 @@ body {
 }
 
 /* РџСЂРµРґРѕС‚РІСЂР°С‰РµРЅРёРµ РїСЂРѕРєСЂСѓС‚РєРё body РєРѕРіРґР° sidebar РѕС‚РєСЂС‹С‚ РЅР° РјРѕР±РёР»СЊРЅС‹С… */
-body.sidebar-open {
+body.sidebar-open,
+body.modal-open {
     overflow: hidden;
+}
+
+/* Дополнительно фиксируем body на мобильных, чтобы фон под модалкой не скроллился
+   при свайпе на iOS — overflow: hidden один не справляется. */
+@media (max-width: 768px) {
+    body.modal-open {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+    }
 }
 
 /* РћРІРµСЂР»РµР№ РґР»СЏ sidebar РЅР° РјРѕР±РёР»СЊРЅС‹С… */
@@ -860,7 +1026,7 @@ body.dark-theme .close-sidebar:hover {
     background: var(--bg-primary);
     color: var(--text-primary);
     font-size: 0.95rem;
-    transition: all 0.3s ease;
+    transition: var(--transition);
 }
 
 .search-box input:focus {
@@ -915,7 +1081,7 @@ body.dark-theme .search-box input:focus {
     padding: 0.85rem var(--spacing);
     color: var(--text-primary);
     text-decoration: none;
-    transition: all 0.3s ease;
+    transition: var(--transition);
     border-left: 3px solid transparent;
     font-size: 0.95rem;
     border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
@@ -1136,8 +1302,7 @@ body.sidebar-collapsed .main-content {
     font-size: 1.3rem;
     cursor: pointer;
     box-shadow: var(--shadow-sm);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 0.3s ease;
+    transition: var(--transition);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1475,6 +1640,15 @@ body.dark-theme .page-header {
     transition: var(--transition-smooth);
     box-shadow: var(--shadow-sm);
     letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.toggle-book-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
 }
 
 .toggle-derivation:hover {
@@ -1687,6 +1861,9 @@ body.dark-theme .page-header {
     transition: var(--transition-smooth);
     box-shadow: var(--shadow-sm);
     letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .toggle-proof:hover {
@@ -1860,16 +2037,9 @@ li > .proof-box .proof-content {
     margin: 0.75rem 0;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
+/* @keyframes fadeIn ранее был объявлен здесь с translateY, но дублировался
+   ниже (~line 3776) и переопределялся (last-wins) — этот вариант
+   фактически никогда не применялся. Оставлен canonical fadeIn без translateY. */
 
 /* ============================================
    РўРРџРћР“Р РђР¤РРљРђ
@@ -1951,13 +2121,22 @@ em {
     color: white;
     border: none;
     border-radius: 50%;
-    font-size: 1.5rem;
     cursor: pointer;
     opacity: 0;
     visibility: hidden;
     transition: var(--transition);
     box-shadow: var(--shadow-lg);
     z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.scroll-to-top svg {
+    width: 22px;
+    height: 22px;
+    display: block;
 }
 
 .scroll-to-top.visible {
@@ -2855,7 +3034,7 @@ body.dark-theme mark.search-hl-active {
     background: var(--bg-secondary);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: var(--transition-fast);
     white-space: nowrap;
     display: flex;
     align-items: center;
@@ -2906,7 +3085,7 @@ body.dark-theme mark.search-hl-active {
     align-items: center;
     justify-content: center;
     font-size: 0.75rem;
-    transition: all 0.15s ease;
+    transition: var(--transition-fast);
 }
 
 .search-nav-btn:hover {
@@ -3052,9 +3231,7 @@ input:focus:not(:focus-visible) {
     border-radius: var(--border-radius);
     padding: 1rem;
     box-shadow: var(--shadow-sm);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                background-color 0.3s ease,
-                border-color 0.3s ease;
+    transition: var(--transition-smooth);
     border-left: 4px solid var(--border-color);
     position: relative;
     overflow: hidden;
@@ -3465,7 +3642,7 @@ input:focus:not(:focus-visible) {
     border-radius: 12px;
     background: var(--bg-secondary);
     color: var(--text-primary);
-    transition: all 0.3s ease;
+    transition: var(--transition);
 }
 
 #passwordInput:focus {
@@ -3512,7 +3689,7 @@ body.dark-theme #passwordInput:focus {
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-quick);
     position: relative;
     overflow: hidden;
 }
@@ -3575,7 +3752,7 @@ body.dark-theme #passwordInput:focus {
     cursor: pointer;
     font-size: 0.875rem;
     font-weight: 400;
-    transition: all 0.2s ease;
+    transition: var(--transition-quick);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3981,7 +4158,7 @@ body.dark-theme #passwordInput:focus {
     border-radius: var(--border-radius-sm);
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: var(--transition-quick);
     font-weight: 500;
 }
 
@@ -4177,10 +4354,27 @@ body.dark-theme #passwordInput:focus {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
     }
-    
-    .theme-ripple {
+
+    html {
+        scroll-behavior: auto !important;
+    }
+
+    .theme-ripple,
+    #snowContainer,
+    .snow-container,
+    #easterEggsContainer,
+    .easter-eggs-container {
         display: none !important;
+    }
+
+    /* Убираем любые keyframe-анимации (sparkle, glow-pulse, shimmer, modalSlideIn) */
+    .nav-highlight,
+    .topic,
+    .page-header::before,
+    .part-title::after {
+        animation: none !important;
     }
 }
 
@@ -4936,7 +5130,7 @@ body.new-year-mode .task-card:hover::after {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     transform: translateX(400px);
     opacity: 0;
-    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    transition: var(--transition-bounce);
     pointer-events: auto;
     position: relative;
     max-width: 380px;
@@ -5008,7 +5202,7 @@ body.new-year-mode .task-card:hover::after {
     font-size: 1.8rem;
     cursor: pointer;
     box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
-    transition: all 0.3s ease;
+    transition: var(--transition);
     z-index: 999;
     display: flex;
     align-items: center;
@@ -5033,6 +5227,7 @@ body.new-year-mode .task-card:hover::after {
     max-width: calc(100vw - 40px);
     height: 500px;
     max-height: calc(100vh - 140px);
+    max-height: calc(100dvh - 140px);
     background: var(--bg-primary);
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
@@ -5041,7 +5236,7 @@ body.new-year-mode .task-card:hover::after {
     flex-direction: column;
     opacity: 1;
     transform: scale(1) translateY(0);
-    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    transition: var(--transition-bounce);
 }
 
 .telegram-dialog.hidden {
@@ -5220,7 +5415,7 @@ body.new-year-mode .task-card:hover::after {
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: var(--transition);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
@@ -5261,6 +5456,7 @@ body.new-year-mode .task-card:hover::after {
         width: calc(100vw - 20px);
         height: 450px;
         max-height: calc(100vh - 100px);
+        max-height: calc(100dvh - 100px);
     }
     
     .telegram-dialog-header h3 {
@@ -5396,20 +5592,24 @@ body.dark-theme .telegram-welcome-message {
     max-width: 650px;
     width: 90%;
     max-height: 85vh;
-    overflow-y: auto;
+    /* Скролл переехал внутрь .settings-modal-body, тут — hidden,
+       чтобы скроллбар не накладывался на закруглённые углы */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     animation: modalSlideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     transition: background-color 0.3s ease;
 }
 
-.settings-modal-content::-webkit-scrollbar {
+.settings-modal-body::-webkit-scrollbar {
     width: 8px;
 }
 
-.settings-modal-content::-webkit-scrollbar-track {
+.settings-modal-body::-webkit-scrollbar-track {
     background: var(--bg-tertiary);
 }
 
-.settings-modal-content::-webkit-scrollbar-thumb {
+.settings-modal-body::-webkit-scrollbar-thumb {
     background: var(--accent-color);
     border-radius: 4px;
 }
@@ -5456,6 +5656,9 @@ body.dark-theme .telegram-welcome-message {
 
 .settings-modal-body {
     padding: 2rem;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
 }
 
 /* Секция настроек — без разделительных полосок */
@@ -5486,8 +5689,8 @@ body.dark-theme .telegram-welcome-message {
 /* Р’С‹Р±РѕСЂ С‚РµРјС‹ */
 .theme-selector {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
 }
 
 .theme-option {
@@ -5533,6 +5736,14 @@ body.dark-theme .telegram-welcome-message {
     background: #0f172a;
 }
 
+.sepia-preview {
+    background: #faf3e0;
+}
+
+.midnight-preview {
+    background: #0a0a0b;
+}
+
 .preview-header {
     height: 25px;
 }
@@ -5543,6 +5754,15 @@ body.dark-theme .telegram-welcome-message {
 
 .dark-preview .preview-header {
     background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+}
+
+.sepia-preview .preview-header {
+    background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+}
+
+.midnight-preview .preview-header {
+    background: linear-gradient(135deg, #18181b 0%, #27272a 100%);
+    border-bottom: 1px solid #a78bfa;
 }
 
 .preview-content {
@@ -5561,10 +5781,22 @@ body.dark-theme .telegram-welcome-message {
     background: #1e293b;
 }
 
+.sepia-preview .preview-content {
+    background: #f4ecd8;
+}
+
+.midnight-preview .preview-content {
+    background: #131316;
+}
+
 .light-preview .preview-content::before,
 .light-preview .preview-content::after,
 .dark-preview .preview-content::before,
-.dark-preview .preview-content::after {
+.dark-preview .preview-content::after,
+.sepia-preview .preview-content::before,
+.sepia-preview .preview-content::after,
+.midnight-preview .preview-content::before,
+.midnight-preview .preview-content::after {
     content: '';
     height: 6px;
     border-radius: 3px;
@@ -5578,6 +5810,16 @@ body.dark-theme .telegram-welcome-message {
 .dark-preview .preview-content::before,
 .dark-preview .preview-content::after {
     background: #334155;
+}
+
+.sepia-preview .preview-content::before,
+.sepia-preview .preview-content::after {
+    background: #d4c39d;
+}
+
+.midnight-preview .preview-content::before,
+.midnight-preview .preview-content::after {
+    background: #27272a;
 }
 
 .theme-option span {
@@ -5830,7 +6072,7 @@ body.dark-theme .telegram-welcome-message {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     transform: translateX(400px);
     opacity: 0;
-    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    transition: var(--transition-bounce);
     z-index: 10001;
     pointer-events: none;
     max-width: 350px;
@@ -6001,34 +6243,50 @@ body.animations-off .nav-link:hover {
 }
 
 /* ============================================
-   NO-HOVER MODE (body.no-hover + touch devices)
+   NO-HOVER MODE
+   Полное отключение всех hover-эффектов: transform, box-shadow,
+   изменения border-width. Только базовые color/background меняются,
+   чтобы сохранить индикацию интерактивности.
    ============================================ */
-body.no-hover .main-content *:hover,
-body.no-hover .main-content *:active,
-body.no-hover .subjects-grid *:hover,
-body.no-hover .subjects-grid *:active {
+body.no-hover *:hover,
+body.no-hover *:active,
+body.no-hover *:focus-visible {
     transform: none !important;
-    box-shadow: inherit !important;
-    transition: none !important;
+    box-shadow: none !important;
 }
 
+/* Возвращаем box-shadow обратно для тех элементов, у которых тень — НЕ hover-эффект,
+   а постоянное оформление (карточки с тенью в спокойном состоянии). */
+body.no-hover .stat-card:hover,
+body.no-hover .task-card:hover,
+body.no-hover .subject-card:hover,
+body.no-hover [class$="-box"]:hover {
+    box-shadow: var(--shadow-sm) !important;
+}
+
+/* Не позволяем :hover менять толщину бордюра у блоков с full-border */
 body.no-hover .formula-box:hover,
 body.no-hover .formula-box:active,
 body.no-hover .experiment-box:hover,
 body.no-hover .experiment-box:active,
 body.no-hover .derivation-box:hover,
-body.no-hover .derivation-box:active {
+body.no-hover .derivation-box:active,
+body.no-hover .proof-box:hover,
+body.no-hover .proof-box:active {
     border-width: 2px !important;
 }
 
-body.no-hover .sidebar *:active,
-body.no-hover .settings-modal *:hover,
-body.no-hover .settings-modal *:active,
-body.no-hover .auth-overlay *:hover,
-body.no-hover .auth-overlay *:active {
-    transform: none !important;
-    box-shadow: inherit !important;
+/* Вложенные proof-box (внутри theorem/lemma/...) — натуральная 2px толщина */
+body.no-hover .theorem-box > .proof-box:hover,
+body.no-hover .statement-box > .proof-box:hover,
+body.no-hover .remark-box > .proof-box:hover,
+body.no-hover .corollary-box > .proof-box:hover,
+body.no-hover .lemma-box > .proof-box:hover,
+body.no-hover li > .proof-box:hover {
+    border-width: 2px !important;
 }
+
+/* Мобильная edge-to-edge верстка блоков: на тапе сохраняем 0/5px от спокойного состояния */
 @media (max-width: 768px) {
     body.no-hover .topic > .formula-box:hover,
     body.no-hover .topic > .formula-box:active,
@@ -6149,8 +6407,8 @@ body.dark-theme .settings-button-sidebar:hover {
     }
     
     .theme-selector {
-        grid-template-columns: 1fr 1fr;
-        gap: 0.625rem;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
     }
 
     .theme-option {

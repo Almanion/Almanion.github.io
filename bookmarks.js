@@ -14,11 +14,15 @@
     let bmDragging = false;
     let lazyObserver = null;
 
+    // Безопасные обёртки для localStorage — приватный режим и quota
+    const safeGet = (window.safeStorageGet) || function(k){ try { return localStorage.getItem(k); } catch(_) { return null; } };
+    const safeSet = (window.safeStorageSet) || function(k,v){ try { localStorage.setItem(k,v); return true; } catch(_) { return false; } };
+
     function getVisitorId() {
-        let id = localStorage.getItem(VISITOR_ID_KEY);
+        let id = safeGet(VISITOR_ID_KEY);
         if (!id) {
             id = 'v_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-            localStorage.setItem(VISITOR_ID_KEY, id);
+            safeSet(VISITOR_ID_KEY, id);
         }
         return id;
     }
@@ -40,7 +44,7 @@
 
     function loadBookmarks() {
         try {
-            bookmarks = JSON.parse(localStorage.getItem(LOCAL_BOOKMARKS_KEY) || '{}');
+            bookmarks = JSON.parse(safeGet(LOCAL_BOOKMARKS_KEY) || '{}');
         } catch { bookmarks = {}; }
 
         const ref = getBookmarksRef();
@@ -49,7 +53,7 @@
                 const remote = snap.val() || {};
                 const merged = { ...bookmarks, ...remote };
                 bookmarks = merged;
-                localStorage.setItem(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
+                safeSet(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
                 refreshAllButtons();
                 if (bookmarksPanelOpen && !bmDragging) renderBookmarksPanel();
             }, () => {});
@@ -62,7 +66,7 @@
         if (ref) {
             ref.child(id).set(data);
         }
-        localStorage.setItem(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
+        safeSet(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
     }
 
     function removeBookmark(id) {
@@ -71,7 +75,7 @@
         if (ref) {
             ref.child(id).remove();
         }
-        localStorage.setItem(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
+        safeSet(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
     }
 
     function generateBookmarkId(box) {
@@ -350,7 +354,7 @@
         orderedIds.forEach((id, i) => {
             if (bookmarks[id]) bookmarks[id].order = i;
         });
-        localStorage.setItem(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
+        safeSet(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
         const ref = getBookmarksRef();
         if (ref) {
             const updates = {};

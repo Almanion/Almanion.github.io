@@ -34,15 +34,34 @@ function isMobileDevice() {
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================
 
+// Проверяем prefers-reduced-motion — пользователи с этим флагом
+// не хотят анимаций, снег им не нужен.
+function userPrefersReducedMotion() {
+    try {
+        return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (_) { return false; }
+}
+
+// Безопасный localStorage (приватный режим / quota)
+function _nyGet(k) { try { return localStorage.getItem(k); } catch(_) { return null; } }
+function _nySet(k, v) { try { localStorage.setItem(k, v); } catch(_) {} }
+
 document.addEventListener('DOMContentLoaded', () => {
     // Загружаем настройки из localStorage
     loadSettings();
-    
+
     // Оптимизируем для мобильных устройств
     optimizeForMobile();
-    
+
+    // Если пользователь просил reduced motion — снег не запускаем вообще
+    if (userPrefersReducedMotion()) {
+        const nyToggle = document.getElementById('nyToggle');
+        if (nyToggle) nyToggle.style.display = 'none';
+        return;
+    }
+
     // Проверяем сохранённое состояние (по умолчанию ВЫКЛЮЧЕН)
-    const savedState = localStorage.getItem('newYearMode');
+    const savedState = _nyGet('newYearMode');
     if (savedState === 'true') {
         isNewYearMode = true;
         enableNewYearMode();

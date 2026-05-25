@@ -25,11 +25,18 @@
     // УНИКАЛЬНЫЙ ID ПОСЕТИТЕЛЯ
     // ============================================
 
+    function safeGet(key) {
+        try { return localStorage.getItem(key); } catch (_) { return null; }
+    }
+    function safeSet(key, value) {
+        try { localStorage.setItem(key, value); } catch (_) { /* приватный режим / quota */ }
+    }
+
     function getVisitorId() {
-        let id = localStorage.getItem(VISITOR_ID_KEY);
+        let id = safeGet(VISITOR_ID_KEY);
         if (!id) {
             id = 'v_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-            localStorage.setItem(VISITOR_ID_KEY, id);
+            safeSet(VISITOR_ID_KEY, id);
         }
         return id;
     }
@@ -39,6 +46,8 @@
     // ============================================
     // ТРЕКИНГ ПРИСУТСТВИЯ (КТО ОНЛАЙН)
     // ============================================
+
+    let presenceIntervalId = null;
 
     function trackPresence() {
         const presenceRef = db.ref('presence/' + visitorId);
@@ -61,7 +70,11 @@
         });
 
         // Обновляем текущую страницу каждые 30 секунд
-        setInterval(() => {
+        // Сохраняем id, чтобы можно было очистить при уходе со страницы.
+        if (presenceIntervalId) clearInterval(presenceIntervalId);
+        presenceIntervalId = setInterval(() => {
+            // visibilitychange optimization: не дёргаем Firebase, если вкладка скрыта
+            if (document.visibilityState === 'hidden') return;
             presenceRef.update({
                 page: location.pathname,
                 pageTitle: document.title,
@@ -69,6 +82,16 @@
             });
         }, 30000);
     }
+
+    // Очищаем interval при выходе со страницы (и pagehide для мобильного Safari/iOS).
+    function cleanupPresence() {
+        if (presenceIntervalId) {
+            clearInterval(presenceIntervalId);
+            presenceIntervalId = null;
+        }
+    }
+    window.addEventListener('beforeunload', cleanupPresence);
+    window.addEventListener('pagehide', cleanupPresence);
 
     // ============================================
     // РЕГИСТРАЦИЯ УНИКАЛЬНОГО ПОСЕТИТЕЛЯ
@@ -106,7 +129,8 @@
                 const pollId = childSnap.key;
 
                 // Проверяем, не отвечали ли уже
-                const answeredPolls = JSON.parse(localStorage.getItem('almanion_answered_polls') || '{}');
+                let answeredPolls = {};
+                try { answeredPolls = JSON.parse(safeGet('almanion_answered_polls') || '{}'); } catch (_) { answeredPolls = {}; }
                 if (answeredPolls[pollId]) return;
 
                 // Показываем опрос
@@ -255,9 +279,10 @@
     }
 
     function markPollAnswered(pollId) {
-        const answered = JSON.parse(localStorage.getItem('almanion_answered_polls') || '{}');
+        let answered = {};
+        try { answered = JSON.parse(safeGet('almanion_answered_polls') || '{}'); } catch (_) { answered = {}; }
         answered[pollId] = Date.now();
-        localStorage.setItem('almanion_answered_polls', JSON.stringify(answered));
+        safeSet('almanion_answered_polls', JSON.stringify(answered));
     }
 
     // ============================================

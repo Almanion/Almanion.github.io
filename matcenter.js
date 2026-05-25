@@ -1,14 +1,28 @@
 // ============================================
+// БЕЗОПАСНЫЕ ОБЁРТКИ ДЛЯ LOCALSTORAGE
+// Используются повсюду, чтобы приватный режим / quota / cookies-off
+// не крашили matcenter (а это страница, где они особенно критичны:
+// авторизация, сессии, fingerprint, кеш задач).
+// ============================================
+const safeGet = (typeof window !== 'undefined' && window.safeStorageGet)
+    ? window.safeStorageGet
+    : function(k){ try { return safeGet(k); } catch (_) { return null; } };
+const safeSet = (typeof window !== 'undefined' && window.safeStorageSet)
+    ? window.safeStorageSet
+    : function(k,v){ try { safeSet(k,v); return true; } catch (_) { return false; } };
+const safeRemove = (typeof window !== 'undefined' && window.safeStorageRemove)
+    ? window.safeStorageRemove
+    : function(k){ try { safeRemove(k); } catch (_) {} };
+
+// ============================================
 // DEBUG LOGGING
 // matcenter имеет много отладочных console.log — на проде они тратят CPU
 // (форматирование строк, вывод в DevTools). Глушим по умолчанию.
-// Включить отладку: localStorage.setItem('matcenter_debug', '1') и перезагрузить.
+// Включить отладку: safeSet('matcenter_debug', '1') и перезагрузить.
 // error / warn / table остаются — для диагностики проблем.
 // ============================================
 (function muteVerboseLogs() {
-    try {
-        if (localStorage.getItem('matcenter_debug') === '1') return;
-    } catch (e) { /* ignore */ }
+    if (safeGet('matcenter_debug') === '1') return;
     const noop = function () {};
     console.log = noop;
     console.info = noop;
@@ -157,10 +171,10 @@ window.resetSecurityData = function() {
         return;
     }
     
-    localStorage.removeItem('matcenter_failed_attempts');
-    localStorage.removeItem('matcenter_lockout_until');
-    localStorage.removeItem('matcenter_lockout_count');
-    localStorage.removeItem('matcenter_attempt_history');
+    safeRemove('matcenter_failed_attempts');
+    safeRemove('matcenter_lockout_until');
+    safeRemove('matcenter_lockout_count');
+    safeRemove('matcenter_attempt_history');
     clearSession();
     
     console.log('✅ Все данные безопасности сброшены');
@@ -194,7 +208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     restoreCurrentFilter();
     
     // Загружаем или генерируем отпечаток
-    const cachedFP = localStorage.getItem('matcenter_fp');
+    const cachedFP = safeGet('matcenter_fp');
     if (cachedFP) {
       deviceFingerprint = cachedFP;
       console.log('🔑 Загружен cached fingerprint');
@@ -208,7 +222,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }) : Promise.resolve();
     
     // Проверяем, есть ли сохранённый пароль
-    const savedPassword = localStorage.getItem('matcenter_auth');
+    const savedPassword = safeGet('matcenter_auth');
     console.log('🔑 Сохранённый пароль:', savedPassword ? 'найден ✅' : 'не найден ❌');
     
     if (savedPassword) {
@@ -244,7 +258,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.warn('⚠️ Сохранённый пароль недействителен:', error.message);
             authToken = null;
             isAdmin = false;
-            localStorage.removeItem('matcenter_auth');
+            safeRemove('matcenter_auth');
             showAuthForm();
         }
     } else {
@@ -279,7 +293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Восстановление сохранённой секции (вызывается после init UI, до загрузки задач)
 function restoreCurrentFilter() {
     try {
-        const saved = localStorage.getItem(FILTER_STORAGE_KEY);
+        const saved = safeGet(FILTER_STORAGE_KEY);
         if (saved && (TASK_VIEW_IDS.includes(saved) || saved.indexOf('topic-') === 0)) {
             currentFilter = saved;
         }
@@ -335,13 +349,13 @@ async function hashPassword(password) {
 // Добавляем функцию для получения или создания отпечатка
 function getOrCreateFingerprint() {
     // 1. Пытаемся взять из localStorage, если уже создан
-    let fp = localStorage.getItem('matcenter_fp');
+    let fp = safeGet('matcenter_fp');
     if (fp) return Promise.resolve(fp);
 
     // 2. Если нет – генерируем и сохраняем
     return generateFingerprintAlgo().then(generated => {
         try {
-            localStorage.setItem('matcenter_fp', generated);
+            safeSet('matcenter_fp', generated);
         } catch (e) {
             console.warn('Не удалось сохранить отпечаток:', e);
         }
@@ -402,33 +416,33 @@ function generateSessionToken() {
 // ============================================
 
 function getFailedAttempts() {
-    return parseInt(localStorage.getItem('matcenter_failed_attempts') || '0');
+    return parseInt(safeGet('matcenter_failed_attempts') || '0');
 }
 
 function setFailedAttempts(count) {
-    localStorage.setItem('matcenter_failed_attempts', count.toString());
+    safeSet('matcenter_failed_attempts', count.toString());
 }
 
 function getLockoutUntil() {
-    return parseInt(localStorage.getItem('matcenter_lockout_until') || '0');
+    return parseInt(safeGet('matcenter_lockout_until') || '0');
 }
 
 function setLockoutUntil(timestamp) {
-    localStorage.setItem('matcenter_lockout_until', timestamp.toString());
+    safeSet('matcenter_lockout_until', timestamp.toString());
 }
 
 function getLockoutCount() {
-    return parseInt(localStorage.getItem('matcenter_lockout_count') || '0');
+    return parseInt(safeGet('matcenter_lockout_count') || '0');
 }
 
 function incrementLockoutCount() {
     const count = getLockoutCount() + 1;
-    localStorage.setItem('matcenter_lockout_count', count.toString());
+    safeSet('matcenter_lockout_count', count.toString());
     return count;
 }
 
 function resetLockoutCount() {
-    localStorage.setItem('matcenter_lockout_count', '0');
+    safeSet('matcenter_lockout_count', '0');
 }
 
 function getLockoutDuration() {
@@ -438,7 +452,7 @@ function getLockoutDuration() {
 }
 
 function getAttemptHistory() {
-    const encrypted = localStorage.getItem('matcenter_attempt_history');
+    const encrypted = safeGet('matcenter_attempt_history');
     if (!encrypted) return [];
     return decryptData(encrypted, deviceFingerprint || 'fallback') || [];
 }
@@ -457,7 +471,7 @@ function addAttemptToHistory(success, fingerprint) {
     }
     
     const encrypted = encryptData(history, deviceFingerprint || 'fallback');
-    localStorage.setItem('matcenter_attempt_history', encrypted);
+    safeSet('matcenter_attempt_history', encrypted);
 }
 
 function detectSuspiciousActivity() {
@@ -483,7 +497,7 @@ function detectSuspiciousActivity() {
 
 // Управление сессиями
 function getSessionData() {
-    const encrypted = localStorage.getItem('matcenter_session');
+    const encrypted = safeGet('matcenter_session');
     if (!encrypted) return null;
     
     // Используем fallback для расшифровки, если отпечаток еще не готов
@@ -518,7 +532,7 @@ function createSession(passwordHash) {
     };
     
     const encrypted = encryptData(session, deviceFingerprint || 'fallback');
-    localStorage.setItem('matcenter_session', encrypted);
+    safeSet('matcenter_session', encrypted);
     
     console.log('✅ Новая сессия создана');
     if (session.expiresAt === Infinity) {
@@ -531,7 +545,7 @@ function createSession(passwordHash) {
 }
 
 function clearSession() {
-    localStorage.removeItem('matcenter_session');
+    safeRemove('matcenter_session');
     // НЕ удаляем matcenter_auth - пароль должен сохраняться для автовхода
     console.log('🗑️ Сессия очищена');
 }
@@ -675,7 +689,7 @@ async function initAuth() {
     const existingSession = getSessionData();
     if (existingSession) {
         console.log('✅ Найдена действительная сессия');
-        authToken = localStorage.getItem('matcenter_auth');
+        authToken = safeGet('matcenter_auth');
         if (authToken) {
             try {
                 const result = await loadTasksFromGoogleSheets();
@@ -745,7 +759,7 @@ async function initAuth() {
             // isAdmin уже установлен внутри loadTasksFromGoogleSheets()
             
             // 2. Сохраняем пароль (для API)
-            localStorage.setItem('matcenter_auth', password);
+            safeSet('matcenter_auth', password);
             
             // 3. Логируем успешную попытку
             addAttemptToHistory(true, deviceFingerprint);
@@ -935,7 +949,7 @@ function logout() {
     
     // Очищаем сессию и пароль
     clearSession();
-    localStorage.removeItem('matcenter_auth'); // Удаляем сохранённый пароль
+    safeRemove('matcenter_auth'); // Удаляем сохранённый пароль
     
     // Очищаем данные
     allTasks = [];
@@ -965,8 +979,35 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
 
     const showRetryUI = (msg) => {
         if (!loadingMessage) return;
+        // Делаем сообщение пользовательски-понятным — техническую ошибку прячем в title
+        const technicalMsg = String(msg || '');
+        const isNetwork = /Сеть|network|fetch|HTTP/i.test(technicalMsg);
+        const isAuth = /403|401|unauthor|пароль/i.test(technicalMsg);
+        const friendly = isAuth
+            ? 'Не удалось авторизоваться. Проверьте пароль или попробуйте ещё раз.'
+            : isNetwork
+                ? 'Не удалось связаться с сервером. Проверьте подключение к интернету.'
+                : 'Не удалось загрузить задачи. Возможно, сервер временно недоступен.';
         loadingMessage.style.display = 'block';
-        loadingMessage.innerHTML = `<p class="loading-error">${msg}</p><button id="retryButton" class="retry-button">🔄 Попробовать снова</button>`;
+        loadingMessage.innerHTML = `
+            <div class="loading-error-wrap" style="text-align:center;padding:1rem 0;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:48px;height:48px;color:var(--error-color, #ef4444);opacity:0.7;margin:0 auto 0.75rem;display:block;">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <p class="loading-error" style="margin:0 0 1rem 0;" title="${escapeHtml(technicalMsg)}">${escapeHtml(friendly)}</p>
+                <button id="retryButton" class="retry-button" style="display:inline-flex;align-items:center;gap:0.5rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:16px;height:16px;">
+                        <path d="M21 12a9 9 0 0 1-15.45 6.36L3 16"/>
+                        <path d="M3 12a9 9 0 0 1 15.45-6.36L21 8"/>
+                        <polyline points="21 3 21 8 16 8"/>
+                        <polyline points="3 21 3 16 8 16"/>
+                    </svg>
+                    Попробовать снова
+                </button>
+            </div>
+        `;
         document.getElementById('retryButton')?.addEventListener('click', () => loadTasksFromGoogleSheets(false));
     };
 
@@ -1035,7 +1076,7 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
         
         // Сохраняем в кэш для офлайн-режима
         try {
-            localStorage.setItem(TASKS_CACHE_KEY, JSON.stringify({ tasks, timestamp: Date.now() }));
+            safeSet(TASKS_CACHE_KEY, JSON.stringify({ tasks, timestamp: Date.now() }));
         } catch (e) { /* ignore */ }
         
         // Скрываем сообщение о загрузке и очищаем его содержимое
@@ -1067,7 +1108,7 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
 
         // Пробуем загрузить из кэша
         try {
-            const raw = localStorage.getItem(TASKS_CACHE_KEY);
+            const raw = safeGet(TASKS_CACHE_KEY);
             if (raw) {
                 const { tasks } = JSON.parse(raw);
                 if (Array.isArray(tasks) && tasks.length > 0) {
@@ -1220,7 +1261,28 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
         if (getTasksForCurrentGrade().length === 0) {
             showEmptyGradeMessage(container);
         } else {
-            container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Задачи не найдены</p>';
+            // Фильтр/поиск ничего не нашёл — но в классе задачи есть.
+            // Показываем дружелюбное empty state с подсказкой "сбросить фильтры".
+            const searchInput = document.getElementById('searchInput');
+            const hasSearch = searchInput && searchInput.value && searchInput.value.trim().length > 0;
+            container.innerHTML = `
+                <div class="empty-grade-message">
+                    <svg class="empty-grade-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:48px;height:48px;opacity:0.5;">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.3-4.3"/>
+                    </svg>
+                    <p>${hasSearch ? 'По вашему запросу ничего не найдено' : 'В этой категории пока нет задач'}</p>
+                    <button type="button" class="empty-grade-reset" id="emptyGradeReset" style="margin-top:1rem;padding:0.5rem 1rem;background:var(--accent-color);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;">Сбросить фильтры</button>
+                </div>
+            `;
+            const resetBtn = document.getElementById('emptyGradeReset');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    if (searchInput) searchInput.value = '';
+                    if (typeof setActiveFilter === 'function') setActiveFilter('all');
+                    if (typeof refreshCurrentView === 'function') refreshCurrentView();
+                });
+            }
         }
         return;
     }
@@ -1744,7 +1806,7 @@ function setCurrentGrade(gradeId) {
 
     currentGrade = gradeId;
     try {
-        localStorage.setItem(GRADE_STORAGE_KEY, gradeId);
+        safeSet(GRADE_STORAGE_KEY, gradeId);
     } catch (e) { /* ignore */ }
 
     // Перестраиваем sidebar nav под новый грейд (его список пунктов меняется)
@@ -1754,7 +1816,7 @@ function setCurrentGrade(gradeId) {
     // Если текущий фильтр недоступен в новом грейде — сбрасываем на «Все задачи»
     if (!isAllowedFilter(currentFilter)) {
         currentFilter = 'all-tasks';
-        try { localStorage.setItem(FILTER_STORAGE_KEY, currentFilter); } catch (e) { /* ignore */ }
+        try { safeSet(FILTER_STORAGE_KEY, currentFilter); } catch (e) { /* ignore */ }
         showTaskView('all-tasks');
     } else if (currentFilter.indexOf('topic-') === 0) {
         showTaskView('all-tasks');
@@ -1770,7 +1832,7 @@ function setCurrentGrade(gradeId) {
 
 function initGradeNavigation() {
     try {
-        const saved = localStorage.getItem(GRADE_STORAGE_KEY);
+        const saved = safeGet(GRADE_STORAGE_KEY);
         if (saved && GRADE_SECTIONS.some(g => g.id === saved)) {
             currentGrade = saved;
         }
@@ -1969,7 +2031,7 @@ function setCurrentFilter(filterId, opts = {}) {
     if (!isAllowedFilter(filterId)) return;
 
     currentFilter = filterId;
-    try { localStorage.setItem(FILTER_STORAGE_KEY, filterId); } catch (e) { /* ignore */ }
+    try { safeSet(FILTER_STORAGE_KEY, filterId); } catch (e) { /* ignore */ }
 
     // Темы летних серий рендерятся внутри секции #all-tasks
     const viewId = filterId.indexOf('topic-') === 0 ? 'all-tasks' : filterId;
