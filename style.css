@@ -3611,6 +3611,20 @@ input:focus:not(:focus-visible) {
     font-size: 2rem;
     text-align: center;
     margin-bottom: 0.5rem;
+    color: var(--accent-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.auth-icon svg {
+    width: 44px;
+    height: 44px;
+}
+.auth-error .error-icon svg {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    color: var(--error-color, #ef4444);
 }
 
 .auth-modal h2 {
@@ -6386,11 +6400,13 @@ body.dark-theme .settings-button-sidebar:hover {
     }
 
     .settings-close-btn {
-        width: 34px;
-        height: 34px;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
         font-size: 1.1rem;
     }
-    
+
     .settings-modal-body {
         padding: 1rem 1.25rem 1.5rem;
     }

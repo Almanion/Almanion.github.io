@@ -691,8 +691,8 @@ function initSettingsModal() {
                 </div>
             </div>
             <div class="ny-settings-footer">
-                <button class="ny-settings-reset" id="nySettingsReset">🔄 Сбросить</button>
-                <button class="ny-settings-apply" id="nySettingsApply">✅ Применить</button>
+                <button class="ny-settings-reset" id="nySettingsReset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:14px;height:14px;vertical-align:middle;margin-right:0.35rem;"><path d="M21 12a9 9 0 0 1-15.45 6.36L3 16"/><path d="M3 12a9 9 0 0 1 15.45-6.36L21 8"/><polyline points="21 3 21 8 16 8"/><polyline points="3 21 3 16 8 16"/></svg>Сбросить</button>
+                <button class="ny-settings-apply" id="nySettingsApply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:14px;height:14px;vertical-align:middle;margin-right:0.35rem;"><polyline points="20 6 9 17 4 12"/></svg>Применить</button>
             </div>
         </div>
     `;

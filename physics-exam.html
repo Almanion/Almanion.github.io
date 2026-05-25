@@ -78,15 +78,28 @@
             color: #fff;
             border: none;
             border-radius: var(--border-radius);
-            padding: 0.55rem 1rem;
-            font-size: 0.88rem;
+            padding: 0.7rem 1.1rem;
+            font-size: 0.92rem;
+            font-weight: 600;
             font-family: inherit;
             cursor: pointer;
             z-index: 900;
             transition: var(--transition);
             box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
         }
         .builder-open-btn:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.3); }
+        @media (max-width: 480px) {
+            .builder-open-btn {
+                bottom: 5rem;
+                right: 0.85rem;
+                padding: 0.6rem 0.9rem;
+                font-size: 0.85rem;
+            }
+        }
 
         /* Оверлей */
         .builder-overlay {
@@ -1181,7 +1194,7 @@
     <!-- Основной контент -->
     <main class="main-content">
         <header class="page-header">
-            <h1>📝 Билеты к экзамену</h1>
+            <h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:0.4rem;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>Билеты к экзамену</h1>
             <p class="subtitle">Физика 9 класс | <a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a></p>
         </header>
 

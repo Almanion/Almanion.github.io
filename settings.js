@@ -116,12 +116,18 @@ function applyTheme(theme) {
 
     // Через 2 кадра отдаём управление — браузер уже применил новые цвета,
     // можно вернуть transitions для пользовательских взаимодействий.
+    // setTimeout-fallback на случай если страница в фоне (rAF приостановлен).
+    let cleared = false;
+    const clearTransitioning = () => {
+        if (cleared) return;
+        cleared = true;
+        body.classList.remove('theme-transitioning');
+        delete body.dataset.themeBusy;
+    };
     requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            body.classList.remove('theme-transitioning');
-            delete body.dataset.themeBusy;
-        });
+        requestAnimationFrame(clearTransitioning);
     });
+    setTimeout(clearTransitioning, 250);
 }
 
 function applyAnimationLevel(level) {

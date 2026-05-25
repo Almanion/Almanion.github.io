@@ -61,6 +61,15 @@ function initMath() {
         trust: true
     };
 
+    // Если на странице нет ни одного math-блока — KaTeX не нужен, не дёргаем CDN.
+    // (index.html и admin.html не имеют формул — нет смысла ждать загрузки 15 секунд.)
+    const hasMathContent = !!document.querySelector(
+        '.formula-box, .derivation-content, .proof-content, .definition-box, ' +
+        '.theorem-box, .lemma-box, .statement-box, .corollary-box, .system-box, ' +
+        '.derivation-box, .proof-box, .topic, .content-section'
+    );
+    if (!hasMathContent) return;
+
     // Помечаем уже отрендеренные derivation/proof, чтобы при тогле не вызывать KaTeX второй раз
     function markRenderedBlocks() {
         document.querySelectorAll('.derivation-content, .proof-content').forEach(el => {
@@ -592,17 +601,17 @@ function initMobileMenu() {
     // Guard: вешаем document.click только один раз. При повторных вызовах
     // не будем устраивать дубли обработчиков (которые приводили к "двойному закрытию").
     if (window.__mobileMenuInit) return;
-    window.__mobileMenuInit = true;
 
     const menuToggle = document.getElementById('menuToggle');
     const closeSidebar = document.getElementById('closeSidebar');
     const sidebar = document.getElementById('sidebar');
 
-    // Проверяем наличие элементов
+    // На страницах без сайдбара (index.html, the-secret-game.html) — тихо выходим.
+    // Не warning'уем — это нормальное состояние.
     if (!menuToggle || !closeSidebar || !sidebar) {
-        console.warn('⚠️ Не найдены элементы мобильного меню');
         return;
     }
+    window.__mobileMenuInit = true;
     
     // Создаём оверлей, если его ещё нет
     let overlay = document.querySelector('.sidebar-overlay');
