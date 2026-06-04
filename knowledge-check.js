@@ -19,94 +19,45 @@
     const kcGet = (window.safeStorageGet) || function (k) { try { return localStorage.getItem(k); } catch (_) { return null; } };
     const kcSet = (window.safeStorageSet) || function (k, v) { try { localStorage.setItem(k, v); return true; } catch (_) { return false; } };
 
-    // ---------- Настройки расписания (как дефолты Anki) ----------
-    // Целевое удержание: чем выше — тем КОРОЧЕ интервалы и чаще повторения.
-    // По умолчанию 0.95 (короче, чем дефолтные FSRS 0.90); «Экзамен» 0.97 — ещё короче.
-    const RETENTION_KEY = 'kc_retention';
-    const DEFAULT_RETENTION = 0.95;
-    const RETENTION_PRESETS = [
-        { r: 0.90, label: 'Спокойно' },
-        { r: 0.95, label: 'Обычно' },
-        { r: 0.97, label: 'Экзамен' }
-    ];
-    function getRetention() {
-        const v = parseFloat(kcGet(RETENTION_KEY));
-        return (v >= 0.80 && v <= 0.99) ? v : DEFAULT_RETENTION;
-    }
-    function setRetention(r) { kcSet(RETENTION_KEY, String(r)); }
-    const NEW_PER_DAY = 20;     // лимит новых карточек в день
+    // ---------- Расписание: лесенка интервалов (шаги заучивания) ----------
+    // Каждый успешный ответ поднимает карточку на ступень: «Снова» → в начало,
+    // «Трудно» → та же ступень, «Хорошо» → +1, «Лёгко» → +2. После последней
+    // ступени интервал удваивается. Лесенка (в минутах): 1м 3м 5м 10м 30м 1ч 3ч 5ч 1д 3д 5д …
+    const STEPS_MIN = [1, 3, 5, 10, 30, 60, 180, 300, 1440, 4320, 7200];
+    const LAST_STEP = STEPS_MIN.length - 1;
+    const NEW_PER_DAY = 200;    // лимит новых карточек за день
     const MAX_DAYS = 36500;     // потолок интервала
-    const RELEARN_DAYS = 10 / 1440; // «переучивание» после «Снова» ≈ 10 минут
-    const S_MIN = 0.05, S_MAX = MAX_DAYS;
     const DAY = 86400000;
-
-    // ---------- FSRS‑4.5 ----------
-    const W = [0.4872, 1.4003, 3.7145, 13.8206, 5.1618, 1.2298, 0.8975, 0.031,
-               1.6474, 0.1367, 1.0461, 2.1072, 0.0793, 0.3246, 1.587, 0.2272, 2.8755];
-    const DECAY = -0.5;
-    const FACTOR = Math.pow(0.9, 1 / DECAY) - 1; // = 19/81 ≈ 0.2345679
 
     const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 
-    function retrievability(elapsedDays, S) {
-        return Math.pow(1 + FACTOR * elapsedDays / S, DECAY);
+    // Длина ступени в минутах (после лесенки — удвоение от последней ступени).
+    function stepMinutes(step) {
+        if (step <= 0) return STEPS_MIN[0];
+        if (step <= LAST_STEP) return STEPS_MIN[step];
+        return Math.min(STEPS_MIN[LAST_STEP] * Math.pow(2, step - LAST_STEP), MAX_DAYS * 1440);
     }
-    function intervalForStability(S, r) {
-        return (S / FACTOR) * (Math.pow(r || getRetention(), 1 / DECAY) - 1);
-    }
-    function initDifficulty(G) {
-        return clamp(W[4] - W[5] * (G - 3), 1, 10);
-    }
-    function nextDifficulty(D, G) {
-        let d = D - W[6] * (G - 3);
-        d = W[7] * W[4] + (1 - W[7]) * d; // возврат к среднему (к D0 «Хорошо» = W[4])
-        return clamp(d, 1, 10);
-    }
-    function stabilityRecall(D, S, R, G) {
-        const hard = (G === 2) ? W[15] : 1;
-        const easy = (G === 4) ? W[16] : 1;
-        const s = S * (1 + Math.exp(W[8]) * (11 - D) * Math.pow(S, -W[9]) *
-                       (Math.exp(W[10] * (1 - R)) - 1) * hard * easy);
-        return clamp(s, S_MIN, S_MAX);
-    }
-    function stabilityForget(D, S, R) {
-        const s = W[11] * Math.pow(D, -W[12]) * (Math.pow(S + 1, W[13]) - 1) * Math.exp(W[14] * (1 - R));
-        return clamp(Math.min(s, S), S_MIN, S_MAX);
+    // Новая ступень для оценки G (1 Снова · 2 Трудно · 3 Хорошо · 4 Лёгко).
+    function nextStep(state, G) {
+        const s = (state && typeof state.step === 'number') ? state.step : -1; // -1 = новая
+        if (s < 0) return [0, 1, 2, 4][G - 1];   // новая карточка
+        if (G === 1) return 0;                    // Снова → в начало лесенки
+        if (G === 2) return s;                    // Трудно → та же ступень
+        if (G === 3) return s + 1;                // Хорошо → следующая
+        return s + 2;                             // Лёгко → через одну
     }
 
     // Рассчитать новое состояние карточки для оценки G (без сохранения).
-    // state: {S,D,last,reps,lapses} либо null (новая карточка).
+    // state: {step,last,reps,lapses} либо null/старое (тогда — как новая).
     function project(state, G, now) {
         const res = {};
-        if (!state || state.S == null) {
-            res.S = clamp(W[G - 1], S_MIN, S_MAX);
-            res.D = initDifficulty(G);
-            res.reps = 1;
-            res.lapses = (G === 1) ? 1 : 0;
-        } else {
-            const elapsed = Math.max(0, (now - state.last) / DAY);
-            const R = retrievability(elapsed, state.S);
-            res.D = nextDifficulty(state.D, G);
-            if (G === 1) {
-                res.S = stabilityForget(state.D, state.S, R);
-                res.lapses = (state.lapses || 0) + 1;
-            } else {
-                res.S = stabilityRecall(state.D, state.S, R, G);
-                res.lapses = state.lapses || 0;
-            }
-            res.reps = (state.reps || 0) + 1;
-        }
-
-        let iv = intervalForStability(res.S, getRetention()); // в днях
-        if (G === 1) {
-            iv = Math.min(iv, RELEARN_DAYS);       // «Снова» → вернуть в этой же сессии
-            res.learning = true;
-        } else {
-            iv = Math.max(1, Math.round(iv));      // минимум 1 день (как в Anki)
-            res.learning = false;
-        }
-        res.intervalDays = clamp(iv, RELEARN_DAYS, MAX_DAYS);
-        res.due = now + res.intervalDays * DAY;
+        res.step = nextStep(state, G);
+        res.reps = ((state && state.reps) || 0) + 1;
+        res.lapses = ((state && state.lapses) || 0) + (G === 1 ? 1 : 0);
+        const minutes = stepMinutes(res.step);
+        res.intervalDays = minutes / 1440;
+        res.learning = minutes < 1440;            // короче суток → вернуть в этой же сессии
+        res.due = now + minutes * 60000;
         res.last = now;
         return res;
     }
@@ -271,16 +222,7 @@
                 '<button class="kc-close" id="kcSelectClose" aria-label="Закрыть">' + IC.close + '</button>' +
                 '<div class="kc-head"><span class="kc-head-icon">' + IC.brain + '</span>' +
                     '<div class="kc-head-text"><h2 class="kc-title">Проверка знаний</h2>' +
-                    '<p class="kc-subtitle">Интервальное повторение определений · FSRS</p></div></div>' +
-                '<div class="kc-intensity">' +
-                    '<span class="kc-intensity-lbl">Интервалы</span>' +
-                    '<div class="kc-intensity-opts" id="kcIntensityOpts">' +
-                        RETENTION_PRESETS.map(function (p) {
-                            return '<button type="button" class="kc-intensity-btn" data-r="' + p.r +
-                                '" title="удержание ' + Math.round(p.r * 100) + '%">' + p.label + '</button>';
-                        }).join('') +
-                    '</div>' +
-                '</div>' +
+                    '<p class="kc-subtitle">Интервальное повторение определений</p></div></div>' +
                 '<div class="kc-deck-list" id="kcDeckList"></div>' +
                 '<div class="kc-actions">' +
                     '<button class="kc-btn kc-btn-ghost" id="kcSelectAll">Выбрать всё</button>' +
@@ -313,14 +255,6 @@
         document.getElementById('kcSelectAll').addEventListener('click', toggleSelectAll);
         document.getElementById('kcStart').addEventListener('click', startSession);
 
-        const intensityOpts = document.getElementById('kcIntensityOpts');
-        if (intensityOpts) intensityOpts.addEventListener('click', (e) => {
-            const b = e.target.closest('.kc-intensity-btn');
-            if (!b) return;
-            setRetention(parseFloat(b.dataset.r));
-            syncIntensity();
-        });
-
         initSwipe('kcSelectOverlay', 'kcSelectModal', () => hide('kcSelectOverlay'));
         initSwipe('kcReviewOverlay', 'kcReviewModal', closeReview);
     }
@@ -337,15 +271,7 @@
         store = loadStore();
         if (selected.length === 0) selected = TOPICS.map(t => t.id); // по умолчанию — всё
         renderDeckList();
-        syncIntensity();
         document.getElementById('kcSelectOverlay').classList.remove('hidden');
-    }
-
-    function syncIntensity() {
-        const r = getRetention();
-        document.querySelectorAll('#kcIntensityOpts .kc-intensity-btn').forEach(b => {
-            b.classList.toggle('active', Math.abs(parseFloat(b.dataset.r) - r) < 0.001);
-        });
     }
 
     function renderDeckList() {
@@ -670,7 +596,7 @@
     else init();
 
     // Экспорт для отладки/тестов
-    window.__kcFSRS = { project, intervalForStability, retrievability, W, DECAY, FACTOR, fmtInterval };
+    window.__kcFSRS = { project, stepMinutes, nextStep, STEPS_MIN, fmtInterval };
 
     // Хук для синхронизации аккаунта (account.js): перечитать прогресс из localStorage,
     // когда облако прислало изменения (но не посреди активной сессии повторения).
