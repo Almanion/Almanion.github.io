@@ -1290,3 +1290,60 @@ console.log('💡 Горячие клавиши:');
 console.log('   • Ctrl/Cmd + K - Поиск');
 console.log('   • Escape - Закрыть меню');
 console.log('   • [ - Свернуть/развернуть боковое меню');
+
+// ============================================
+// Нижняя навигация (нативный мобильный экспериментальный дизайн).
+// Видна только при body.experimental на телефоне (управляется CSS).
+// ============================================
+function initExpBottomNav() {
+    if (document.getElementById('expBottomNav')) return;
+    if (!document.getElementById('sidebar')) return; // только страницы с меню
+
+    const ICONS = {
+        menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
+        search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+        bm: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
+        kc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg>',
+        acc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+    };
+
+    function clickById(id) { const el = document.getElementById(id); if (el) el.click(); }
+    function toggleMenu() {
+        const sb = document.getElementById('sidebar');
+        if (sb && sb.classList.contains('open')) { if (window.closeMobileMenu) window.closeMobileMenu(); }
+        else if (window.openMobileMenu) window.openMobileMenu();
+    }
+    function openSearch() {
+        if (window.openMobileMenu) window.openMobileMenu();
+        setTimeout(function () {
+            const s = document.getElementById('searchInput');
+            if (s) { s.scrollIntoView({ block: 'center' }); s.focus(); }
+        }, 90);
+    }
+
+    const items = [
+        { label: 'Меню', icon: ICONS.menu, act: toggleMenu },
+        { label: 'Поиск', icon: ICONS.search, act: openSearch },
+        { label: 'Закладки', icon: ICONS.bm, act: function () { clickById('bookmarksBtn'); } },
+        { label: 'Знания', icon: ICONS.kc, act: function () { clickById('knowledgeCheckBtn'); } },
+        { label: 'Аккаунт', icon: ICONS.acc, act: function () { clickById('accountBtn'); } }
+    ];
+
+    const nav = document.createElement('nav');
+    nav.id = 'expBottomNav';
+    nav.className = 'exp-bottom-nav';
+    nav.setAttribute('aria-label', 'Быстрая навигация');
+    items.forEach(function (it) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'exp-bn-item';
+        b.setAttribute('aria-label', it.label);
+        b.innerHTML = it.icon + '<span class="exp-bn-label">' + it.label + '</span>';
+        // Останавливаем всплытие: иначе глобальный «клик вне меню → закрыть»
+        // тут же закроет только что открытое меню.
+        b.addEventListener('click', function (e) { e.stopPropagation(); it.act(e); });
+        nav.appendChild(b);
+    });
+    document.body.appendChild(nav);
+}
+document.addEventListener('DOMContentLoaded', initExpBottomNav);

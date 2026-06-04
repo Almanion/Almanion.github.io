@@ -785,6 +785,51 @@ body.dark-theme .sidebar-header .account-btn:hover { background: rgba(255,255,25
 .account-link:hover { text-decoration: underline; }
 .account-signout { background: var(--error-color) !important; }
 
+/* ============================================
+   Нижняя навигация — нативный мобильный экспериментальный дизайн
+   ============================================ */
+.exp-bottom-nav { display: none; }
+.exp-bn-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 56px;
+    padding: 6px 2px;
+    background: none;
+    border: none;
+    color: var(--exp-text-dim, var(--text-secondary));
+    font: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.12s ease;
+}
+.exp-bn-item svg { width: 22px; height: 22px; }
+.exp-bn-label { font-size: 0.66rem; font-weight: 600; line-height: 1; letter-spacing: 0.01em; }
+.exp-bn-item:active { color: var(--exp-accent, var(--accent-color)); }
+.exp-bn-item:active svg { transform: scale(0.92); }
+
+@media (max-width: 768px) {
+    body.experimental .exp-bottom-nav {
+        display: flex;
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        z-index: 9000;
+        background: var(--exp-surface, var(--bg-secondary));
+        border-top: 1px solid var(--exp-border, var(--border-color));
+        box-shadow: 0 -2px 14px rgba(15, 15, 25, 0.08);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    body.experimental .main-content {
+        padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+    body.experimental .scroll-to-top {
+        bottom: calc(74px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+}
+
 @media (max-width: 600px) {
     .kc-grade { padding: 0.55rem 0.2rem; border-radius: 10px; gap: 0.05rem; }
     .kc-grade-lbl { font-size: 0.8rem; }
