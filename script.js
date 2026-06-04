@@ -965,6 +965,8 @@ function initCopyableBlocks() {
         copyBtn.addEventListener('click', async event => {
             event.preventDefault();
             event.stopPropagation();
+            // detail > 0 — активировано мышью/тачем (а не клавиатурой)
+            const viaPointer = event.detail > 0;
 
             try {
                 const payload = buildWordCopyPayload(block);
@@ -974,6 +976,11 @@ function initCopyableBlocks() {
                 console.error('Ошибка копирования блока:', error);
                 showCopyState(copyBtn, COPY_ICONS.cross, 'is-error');
             }
+
+            // После клика мышью снимаем фокус: иначе блок остаётся в :focus-within
+            // и кнопка «залипает» видимой навсегда (пока не кликнешь в другое место).
+            // Для клавиатуры фокус сохраняем — там работает :focus-visible.
+            if (viaPointer) copyBtn.blur();
         });
 
         block.appendChild(copyBtn);
@@ -985,6 +992,9 @@ function initCopyableBlocks() {
     if (!window.__copyTapInit) {
         window.__copyTapInit = true;
         document.addEventListener('click', (e) => {
+            // На устройствах с мышью кнопка показывается по :hover — класс is-active
+            // не нужен и «залипал» бы видимым после клика в блок. Только для сенсорных.
+            if (window.matchMedia && window.matchMedia('(hover: hover)').matches) return;
             const block = e.target.closest('.copyable-block');
             const copyBtn = e.target.closest('.copy-block-btn');
             // Если кликнули по кнопке копирования — состояние блока не трогаем
