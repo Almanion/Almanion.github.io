@@ -244,6 +244,18 @@ body.dark-theme .knowledge-check-btn:hover {
     text-align: left;
     position: relative;
 }
+
+/* Свайп-закрытие нижних модалок (закладки, знания, аккаунт) работает на реальных
+   устройствах только если погасить нативный overscroll/scroll-chaining — как у
+   сайдбара (.sidebar { overscroll-behavior: contain }). Без этого нативный
+   overscroll перехватывает жест вниз, и закрытие пролистыванием не срабатывает.
+   Все три модалки имеют класс .auth-modal; плюс внутренние прокручиваемые списки. */
+.auth-modal,
+.kc-deck-list,
+.kc-content {
+    overscroll-behavior: contain;
+}
+
 .kc-modal-game {
     max-width: 760px;
     display: flex;
