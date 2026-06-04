@@ -2275,6 +2275,19 @@ body:not(.no-hover) .remark-box:hover {
     transform: translateX(2px) translateY(-2px);
 }
 
+/* Заголовок-«надпись» как у остальных блоков (определение/теорема/пример):
+   прямой (не курсив, хотя тело замечания остаётся курсивным) и того же размера. */
+.remark-box strong {
+    font-size: 1.1rem;
+    font-style: normal;
+}
+/* Убираем дублирующую встроенную лампочку перед заголовком — маркер-лампочка
+   и так есть в углу (::before), как иконки-уголки у «примера»/«теоремы».
+   Так надпись становится чистой, как у остальных блоков. */
+.remark-box > .eic-bulb:first-child {
+    display: none;
+}
+
 .remark-box::before {
     content: '';
     position: absolute;
