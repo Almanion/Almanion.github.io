@@ -975,3 +975,29 @@ body.experimental.exp-animate .definition-box {
         padding-right: 2.7rem !important;
     }
 }
+
+/* =========================================================
+   ЧИТАЕМОСТЬ: прогресс чтения, картинки, подписи
+   ========================================================= */
+/* Полоса прогресса — акцент текущей палитры */
+body.experimental #readingProgress .rp-fill {
+    background: var(--exp-accent, var(--accent-color));
+}
+
+/* Картинки-диаграммы: по центру, отзывчивый размер, единый вид */
+body.experimental .main-content img {
+    display: block;
+    margin: 1.1rem auto;
+    max-width: 100%;
+    height: auto;
+}
+
+/* Подпись сразу под картинкой — по центру и приглушённая, единый стиль */
+body.experimental .main-content img + p,
+body.experimental .main-content figcaption {
+    text-align: center !important;
+    color: var(--exp-text-dim) !important;
+    font-size: 0.85rem !important;
+    font-style: italic;
+    margin-top: 0.45rem !important;
+}

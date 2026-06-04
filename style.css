@@ -860,6 +860,29 @@ body.lightbox-open { overflow: hidden; }
 .lightbox-close svg { width: 22px; height: 22px; }
 .lightbox-close:hover { background: rgba(255, 255, 255, 0.3); }
 
+/* ============================================
+   Индикатор прогресса чтения (тонкая полоса сверху)
+   ============================================ */
+#readingProgress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: 9500;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+}
+#readingProgress.rp-visible { opacity: 1; }
+#readingProgress .rp-fill {
+    height: 100%;
+    transform: scaleX(0);
+    transform-origin: left center;
+    background: var(--accent-color);
+    transition: transform 0.08s linear;
+}
+
 @media (max-width: 768px) {
     body.experimental .exp-bottom-nav {
         display: flex;

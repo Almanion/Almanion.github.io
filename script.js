@@ -1475,3 +1475,37 @@ document.addEventListener('DOMContentLoaded', initExpBottomNav);
         if (e.key === 'Escape' && ov && ov.classList.contains('open')) close();
     });
 })();
+
+// ============================================
+// Индикатор прогресса чтения — тонкая полоса сверху (только на страницах конспектов)
+// ============================================
+(function () {
+    function init() {
+        const main = document.querySelector('.main-content');
+        const hasTopics = document.querySelector('.topic, .topic-title');
+        if (!main || !hasTopics) return;
+        const bar = document.createElement('div');
+        bar.id = 'readingProgress';
+        bar.innerHTML = '<div class="rp-fill"></div>';
+        document.body.appendChild(bar);
+        const fill = bar.querySelector('.rp-fill');
+        let ticking = false;
+        function update() {
+            const doc = document.documentElement;
+            const scrollTop = window.pageYOffset || doc.scrollTop || 0;
+            const height = doc.scrollHeight - doc.clientHeight;
+            const pct = height > 0 ? Math.min(1, Math.max(0, scrollTop / height)) : 0;
+            fill.style.transform = 'scaleX(' + pct + ')';
+            bar.classList.toggle('rp-visible', scrollTop > 40);
+            ticking = false;
+        }
+        function onScroll() {
+            if (!ticking) { ticking = true; requestAnimationFrame(update); }
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onScroll, { passive: true });
+        update();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+})();
