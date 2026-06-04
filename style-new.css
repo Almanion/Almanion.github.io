@@ -36,7 +36,7 @@ body.experimental {
     --t-statement: #71717a; --t-corollary: #71717a; --t-example: #71717a;
     --t-formula: #71717a; --t-proof: #71717a; --t-derivation: #71717a;
     --t-experiment: #71717a; --t-exercise: #71717a; --t-properties: #71717a;
-    --t-system: #71717a; --t-remark: #71717a;
+    --t-system: #71717a; --t-remark: #ca8a04;
 
     /* ---- РЕМАП легаси-переменных на --exp-* ---- */
     --bg-primary: var(--exp-bg);
@@ -135,7 +135,7 @@ body.experimental.exp-prism {
     --t-statement: #6366f1; --t-corollary: #64748b; --t-example: #ea580c;
     --t-formula: #4f46e5; --t-proof: #16a34a; --t-derivation: #16a34a;
     --t-experiment: #9333ea; --t-exercise: #475569; --t-properties: #2563eb;
-    --t-system: #475569; --t-remark: #d97706;
+    --t-system: #475569; --t-remark: #ca8a04;
 }
 
 /* ---- ПРИЗМА · тёмная ---- */
@@ -158,7 +158,7 @@ body.experimental.exp-prism.exp-dark {
     --t-statement: #818cf8; --t-corollary: #94a3b8; --t-example: #fb923c;
     --t-formula: #818cf8; --t-proof: #4ade80; --t-derivation: #4ade80;
     --t-experiment: #c084fc; --t-exercise: #94a3b8; --t-properties: #60a5fa;
-    --t-system: #94a3b8; --t-remark: #fbbf24;
+    --t-system: #94a3b8; --t-remark: #facc15;
 }
 
 /* ---- Нейтральные токены типов для ТЁМНОГО Графита ----
@@ -168,7 +168,7 @@ body.experimental.exp-dark {
     --t-statement: #a1a1aa; --t-corollary: #a1a1aa; --t-example: #a1a1aa;
     --t-formula: #a1a1aa; --t-proof: #a1a1aa; --t-derivation: #a1a1aa;
     --t-experiment: #a1a1aa; --t-exercise: #a1a1aa; --t-properties: #a1a1aa;
-    --t-system: #a1a1aa; --t-remark: #a1a1aa;
+    --t-system: #a1a1aa; --t-remark: #facc15;
 }
 
 /* ---- Тёмные тени ---- */
@@ -470,7 +470,7 @@ body.experimental .experiment-box::before  { content: "Эксперимент"; 
 body.experimental .exercise-box::before    { content: "Упражнение"; color: var(--t-exercise); }
 body.experimental .properties-box::before  { content: "Свойства"; color: var(--t-properties); }
 body.experimental .system-box::before      { content: "Система"; color: var(--t-system); }
-/* remark-box оформляется не текстовым ярлыком, а иконкой-лампочкой в углу — см. ниже */
+body.experimental .remark-box::before      { content: "Замечание"; color: var(--t-remark); }
 
 body.experimental .definition-box::before,
 body.experimental .theorem-box::before,
@@ -484,7 +484,8 @@ body.experimental .derivation-box::before,
 body.experimental .experiment-box::before,
 body.experimental .exercise-box::before,
 body.experimental .properties-box::before,
-body.experimental .system-box::before {
+body.experimental .system-box::before,
+body.experimental .remark-box::before {
     display: block;
     width: fit-content;
     margin: 0 0 0.7rem 0 !important;
@@ -501,39 +502,17 @@ body.experimental .system-box::before {
     -webkit-text-fill-color: currentColor;
 }
 
-/* remark-box: чистая иконка-лампочка в правом верхнем углу (как в обычном
-   режиме), а НЕ текстовый чип. Раньше базовая mask-лампочка «обрезала» текстовый
-   чип в лампочку-силуэт и он выходил разноцветным над текстом. Здесь полностью
-   переопределяем ::before: пустой content + та же SVG-маска, окрашенная в цвет
-   типа (--t-remark), absolute в правом верхнем углу. */
-body.experimental .remark-box {
-    position: relative;
-    padding-right: 3rem !important;
-}
+/* remark-box: текстовый ярлык «Замечание» (жёлтый) как у остальных блоков —
+   content и цвет заданы в списке ярлыков выше, общий стиль чипа — в группе выше.
+   Здесь сбрасываем остатки базовой угловой лампочки из обычного режима: её
+   SVG-маска иначе обрезала бы текст чипа в силуэт лампочки, а height/opacity
+   ломали бы вид. position/top/left уже снимает общий стиль чипа (position: static). */
 body.experimental .remark-box::before {
-    content: '' !important;
-    display: block !important;
-    position: absolute !important;
-    top: 0.95rem !important;
-    right: 1rem !important;
-    left: auto !important;
-    width: 20px !important;
-    height: 20px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    background: var(--t-remark) !important;
-    opacity: 0.8;
-    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18h6'/%3E%3Cpath d='M10 22h4'/%3E%3Cpath d='M12 2a7 7 0 0 0-4 12.7c.6.4 1 1.1 1 1.8V18h6v-1.5c0-.7.4-1.4 1-1.8A7 7 0 0 0 12 2z'/%3E%3C/svg%3E") no-repeat center / contain !important;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18h6'/%3E%3Cpath d='M10 22h4'/%3E%3Cpath d='M12 2a7 7 0 0 0-4 12.7c.6.4 1 1.1 1 1.8V18h6v-1.5c0-.7.4-1.4 1-1.8A7 7 0 0 0 12 2z'/%3E%3C/svg%3E") no-repeat center / contain !important;
-}
-/* Если у remark есть кнопка закладки — лампочка уходит левее неё (десктоп),
-   чтобы значки не накладывались. */
-body.experimental .remark-box:has(.bookmark-btn)::before {
-    right: 2.7rem !important;
-}
-body.experimental .remark-box:has(.bookmark-btn) {
-    padding-right: 3.5rem !important;
+    -webkit-mask: none !important;
+    mask: none !important;
+    right: auto !important;
+    height: auto !important;
+    opacity: 1 !important;
 }
 
 /* Вложенный proof внутри теоремы/леммы — компактный ярлык */
@@ -958,13 +937,12 @@ body.experimental.exp-animate .definition-box {
         padding: 0.9rem 1rem !important;
     }
 
-    /* На телефоне декоративная лампочка remark/example прячется, если рядом есть
-       кнопка закладки (иначе значки накладываются и съедают ширину). Инлайновая
-       💡 в начале текста остаётся индикатором. Работает в обычном и эксп-режиме. */
-    .remark-box:has(.bookmark-btn)::before,
-    .example-box:has(.bookmark-btn)::before,
-    body.experimental .remark-box:has(.bookmark-btn)::before,
-    body.experimental .example-box:has(.bookmark-btn)::before {
+    /* На телефоне угловая лампочка/перо remark/example прячется, если рядом есть
+       кнопка закладки (иначе значки накладываются). Только для ОБЫЧНОГО режима —
+       в эксп-режиме ::before это верхний чип-ярлык («Замечание»/«Пример»), он не
+       в углу и не конфликтует с закладкой, поэтому его НЕ прячем. */
+    body:not(.experimental) .remark-box:has(.bookmark-btn)::before,
+    body:not(.experimental) .example-box:has(.bookmark-btn)::before {
         display: none !important;
     }
     /* Под лампочку место больше не резервируем — оставляем только под закладку. */
