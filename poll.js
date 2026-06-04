@@ -12,18 +12,22 @@
     const DB_URL       = 'https://almanion-70120-default-rtdb.europe-west1.firebasedatabase.app/';
     const POLL_ID      = 'design-slate-2026';
 
+    // Безопасный localStorage (приватный режим / quota не должны крашить страницу)
+    const safeGet = (window.safeStorageGet) || function (k) { try { return localStorage.getItem(k); } catch (_) { return null; } };
+    const safeSet = (window.safeStorageSet) || function (k, v) { try { localStorage.setItem(k, v); return true; } catch (_) { return false; } };
+
     // Прошёл ли дедлайн?
     if (Date.now() > DEADLINE.getTime()) return;
 
     // Уже голосовал?
-    if (localStorage.getItem(POLL_KEY)) return;
+    if (safeGet(POLL_KEY)) return;
 
     // Запускаем таймер
     let pollTimer = setTimeout(tryShow, DELAY_MS);
 
     // Если пользователь уходит раньше — не показываем
     function tryShow() {
-        if (localStorage.getItem(POLL_KEY)) return;
+        if (safeGet(POLL_KEY)) return;
         showPoll();
     }
 
@@ -31,10 +35,10 @@
     // ID посетителя (тот же, что в firebase-analytics)
     // ============================================
     function getVisitorId() {
-        let id = localStorage.getItem(VISITOR_KEY);
+        let id = safeGet(VISITOR_KEY);
         if (!id) {
             id = 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
-            localStorage.setItem(VISITOR_KEY, id);
+            safeSet(VISITOR_KEY, id);
         }
         return id;
     }
@@ -145,7 +149,7 @@
     // ============================================
     function submitRating(value) {
         // Запоминаем, чтобы не показывать снова
-        localStorage.setItem(POLL_KEY, JSON.stringify({
+        safeSet(POLL_KEY, JSON.stringify({
             rating: value,
             ts:     Date.now(),
             page:   location.pathname

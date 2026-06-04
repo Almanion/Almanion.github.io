@@ -3,18 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <script>
-        // FOUC-prevention: применяем тему до загрузки CSS
+        // FOUC-prevention: тема + экспериментальный режим до загрузки CSS
         (function(){
             try {
-                var t = 'light';
                 var s = localStorage.getItem('siteSettings');
-                if (s) { try { var p = JSON.parse(s); if (p && p.theme) t = p.theme; } catch(_){} }
-                else { var l = localStorage.getItem('theme'); if (l === 'dark') t = 'dark'; }
-                var bg = {light:'#f8fafc',dark:'#0f172a',sepia:'#f4ecd8',midnight:'#0a0a0b'}[t] || '#f8fafc';
-                var fg = {light:'#0f172a',dark:'#f1f5f9',sepia:'#3d2f1e',midnight:'#fafafa'}[t] || '#0f172a';
+                var p = s ? JSON.parse(s) : {};
+                var bg, fg;
+                if (p && p.experimental) {
+                    var dark = !!p.expDark;
+                    var mode = p.expMode === 'prism' ? 'prism' : 'graphite';
+                    if (mode === 'graphite') { bg = dark ? '#09090b' : '#fafafa'; fg = dark ? '#f4f4f5' : '#18181b'; }
+                    else { bg = dark ? '#0e0e16' : '#fbfbfe'; fg = dark ? '#ececf4' : '#16161f'; }
+                    document.documentElement.dataset.exp = mode + (dark ? '-dark' : '-light');
+                } else {
+                    var t = (p && p.theme) || (localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
+                    bg = {light:'#f8fafc',dark:'#0f172a',sepia:'#f4ecd8',midnight:'#0a0a0b'}[t] || '#f8fafc';
+                    fg = {light:'#0f172a',dark:'#f1f5f9',sepia:'#3d2f1e',midnight:'#fafafa'}[t] || '#0f172a';
+                    document.documentElement.dataset.theme = t;
+                }
                 document.documentElement.style.backgroundColor = bg;
                 document.documentElement.style.color = fg;
-                document.documentElement.dataset.theme = t;
             } catch(e) {}
         })();
     </script>
@@ -159,6 +167,64 @@
 
         .subjects-section {
             margin-top: 2rem;
+            text-align: center;
+        }
+
+        /* Селектор класса (вкладки 9/10/11) */
+        .grade-tabs {
+            display: flex;
+            width: fit-content;
+            margin: 0 auto 1.9rem;
+            gap: 0.3rem;
+            padding: 0.32rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            box-shadow: var(--shadow-sm);
+        }
+        .grade-tab {
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font: inherit;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 0.55rem 1.3rem;
+            min-height: 42px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: background-color 0.15s ease, color 0.15s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .grade-tab:hover { color: var(--text-primary); }
+        .grade-tab.active {
+            background: var(--accent-color);
+            color: #fff;
+        }
+        .grade-panel[hidden] { display: none; }
+        .grade-panel:not([hidden]) { animation: gradeFade 0.26s ease; }
+        @keyframes gradeFade {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .grade-empty {
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+            text-align: center;
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+            border: 1px dashed var(--border-color);
+            border-radius: var(--border-radius-lg);
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+        .grade-empty svg { width: 40px; height: 40px; opacity: 0.5; margin-bottom: 0.75rem; }
+        .extra-section { margin-top: 2.75rem; }
+        .extra-section .section-title { margin-bottom: 1.25rem; }
+
+        @media (max-width: 480px) {
+            .grade-tab { padding: 0.5rem 0.95rem; font-size: 0.9rem; }
         }
 
         .section-title {
@@ -315,12 +381,14 @@
             color: inherit;
             display: flex;
             flex-direction: column;
-            animation: fadeIn 0.8s ease;
+            animation: riseIn 0.55s var(--ease-out) both;
             overflow: hidden;
             position: relative;
         }
 
-        .subject-card:hover {
+        /* Hover-эффекты карточек гейтятся через body:not(.no-hover):
+           при отключённых hover-эффектах правила не применяются вовсе. */
+        body:not(.no-hover) .subject-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
             border-color: var(--accent-color);
@@ -339,16 +407,16 @@
             transition: opacity 0.22s ease;
         }
 
-        .subject-card:hover::before {
+        body:not(.no-hover) .subject-card:hover::before {
             opacity: 1;
         }
 
-        .subject-card[data-subject="physics"]:hover::before { color: #3b82f6; }
-        .subject-card[data-subject="physics-exam"]:hover::before { color: #8b5cf6; }
-        .subject-card[data-subject="chemistry"]:hover::before { color: #10b981; }
-        .subject-card[data-subject="math"]:hover::before { color: #f59e0b; }
-        .subject-card[data-subject="geometry"]:hover::before { color: #6366f1; }
-        .subject-card[data-subject="likbez"]:hover::before { color: #ec4899; }
+        body:not(.no-hover) .subject-card[data-subject="physics"]:hover::before { color: #3b82f6; }
+        body:not(.no-hover) .subject-card[data-subject="physics-exam"]:hover::before { color: #8b5cf6; }
+        body:not(.no-hover) .subject-card[data-subject="chemistry"]:hover::before { color: #10b981; }
+        body:not(.no-hover) .subject-card[data-subject="math"]:hover::before { color: #f59e0b; }
+        body:not(.no-hover) .subject-card[data-subject="geometry"]:hover::before { color: #6366f1; }
+        body:not(.no-hover) .subject-card[data-subject="likbez"]:hover::before { color: #ec4899; }
 
         .card-header {
             background: transparent;
@@ -668,9 +736,10 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="style-new.css">
 </head>
 <body>
-    <script>(function(){var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');})();</script>
+    <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p&&p.experimental){document.body.classList.add('experimental',p.expMode==='prism'?'exp-prism':'exp-graphite');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
     <!-- Кнопка настроек создается автоматически через settings.js -->
 
     <div class="home-container">
@@ -692,139 +761,130 @@
             </div>
         </div>
 
-        <!-- Активные предметы -->
+        <!-- Предметы по классам -->
         <div class="subjects-section">
-            <div class="subjects-grid">
-                <!-- Физика -->
-                <a href="physics.html" class="subject-card" data-subject="physics">
-                    <div class="card-header">
-                        <div class="subject-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <circle cx="12" cy="12" r="1.6" fill="currentColor"/>
-                                <ellipse cx="12" cy="12" rx="10" ry="4"/>
-                                <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/>
-                                <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <h2>Физика 9 класс</h2>
-                        <div class="card-info">
-                            <div style="text-align: center;">
-                                <span class="status-badge status-active">✓ Активно</span>
-                            </div>
-                        </div>
-                    </div>
-                </a>
+            <div class="grade-tabs" role="tablist" aria-label="Выбор класса">
+                <button class="grade-tab active" data-grade="9" role="tab" aria-selected="true">9 класс</button>
+                <button class="grade-tab" data-grade="10" role="tab" aria-selected="false">10 класс</button>
+                <button class="grade-tab" data-grade="11" role="tab" aria-selected="false">11 класс</button>
+            </div>
 
-                <a href="physics-exam.html" class="subject-card" data-subject="physics-exam">
-                    <div class="card-header">
-                        <div class="subject-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14 2 14 8 20 8"/>
-                                <line x1="8" y1="13" x2="16" y2="13"/>
-                                <line x1="8" y1="17" x2="13" y2="17"/>
-                                <line x1="8" y1="9" x2="10" y2="9"/>
-                            </svg>
+            <div class="grade-panel" data-grade-panel="9">
+                <div class="subjects-grid">
+                    <a href="physics.html" class="subject-card" data-subject="physics">
+                        <div class="card-header">
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1.5" fill="currentColor"/><ellipse cx="12" cy="12" rx="9.5" ry="3.3"/><ellipse cx="12" cy="12" rx="9.5" ry="3.3" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9.5" ry="3.3" transform="rotate(120 12 12)"/></svg></div>
                         </div>
-                    </div>
-                    <div class="card-body">
-                        <h2>Физика билеты</h2>
-                        <div class="card-info">
-                            <div style="text-align: center;">
-                                <span class="status-badge status-active">✓ Активно</span>
+                        <div class="card-body">
+                            <h2>Физика</h2>
+                            <div class="card-info">
+                                <div style="text-align: center;">
+                                    <span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> Активно</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </a>
+                    </a>
 
-                <a href="chemistry.html" class="subject-card" data-subject="chemistry">
-                    <div class="card-header">
-                        <div class="subject-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M9 3v6L3.5 18a2 2 0 0 0 1.75 3h13.5a2 2 0 0 0 1.75-3L15 9V3"/>
-                                <line x1="8" y1="3" x2="16" y2="3"/>
-                                <path d="M6.5 14h11"/>
-                                <circle cx="10" cy="17" r="0.6" fill="currentColor"/>
-                                <circle cx="13.5" cy="18.5" r="0.5" fill="currentColor"/>
-                            </svg>
+                    <a href="chemistry.html" class="subject-card" data-subject="chemistry">
+                        <div class="card-header">
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v6L3.5 18a2 2 0 0 0 1.75 3h13.5a2 2 0 0 0 1.75-3L15 9V3"/><line x1="8" y1="3" x2="16" y2="3"/><path d="M6.5 14h11"/><circle cx="10" cy="17" r="0.6" fill="currentColor"/><circle cx="13.5" cy="18.5" r="0.5" fill="currentColor"/></svg></div>
                         </div>
-                    </div>
-                    <div class="card-body">
-                        <h2>Химия 9 класс</h2>
-                        <div class="card-info">
-                            <div style="text-align: center;">
-                                <span class="status-badge status-active">✓ Активно</span>
+                        <div class="card-body">
+                            <h2>Химия</h2>
+                            <div class="card-info">
+                                <div style="text-align: center;">
+                                    <span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> Активно</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </a>
+                    </a>
 
-                <!-- Алгебра -->
-                <a href="math.html" class="subject-card" data-subject="math">
-                    <div class="card-header">
-                        <div class="subject-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <line x1="3" y1="20" x2="21" y2="20"/>
-                                <line x1="4" y1="3" x2="4" y2="21"/>
-                                <path d="M4 18 Q12 4 20 18"/>
-                            </svg>
+                    <a href="math.html" class="subject-card" data-subject="math">
+                        <div class="card-header">
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="3" x2="4" y2="20"/><line x1="4" y1="20" x2="21" y2="20"/><path d="M7 5 C9 20 15 20 17 5"/></svg></div>
                         </div>
-                    </div>
-                    <div class="card-body">
-                        <h2>Алгебра 9 класс</h2>
-                        <div class="card-info">
-                            <div style="text-align: center;">
-                                <span class="status-badge status-active">✓ Активно</span>
+                        <div class="card-body">
+                            <h2>Алгебра</h2>
+                            <div class="card-info">
+                                <div style="text-align: center;">
+                                    <span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> Активно</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </a>
+                    </a>
 
-                <!-- Геометрия -->
-                <a href="geometry.html" class="subject-card" data-subject="geometry">
-                    <div class="card-header">
-                        <div class="subject-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <circle cx="12" cy="12" r="9"/>
-                                <polygon points="5.5 16.5 18.5 16.5 12 5"/>
-                                <circle cx="12" cy="12" r="0.9" fill="currentColor"/>
-                            </svg>
+                    <a href="geometry.html" class="subject-card" data-subject="geometry">
+                        <div class="card-header">
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polygon points="5.5 16.5 18.5 16.5 12 5"/><circle cx="12" cy="12" r="0.9" fill="currentColor"/></svg></div>
                         </div>
-                    </div>
-                    <div class="card-body">
-                        <h2>Геометрия 9 класс</h2>
-                        <div class="card-info">
-                            <div style="text-align: center;">
-                                <span class="status-badge status-active">✓ Активно</span>
+                        <div class="card-body">
+                            <h2>Геометрия</h2>
+                            <div class="card-info">
+                                <div style="text-align: center;">
+                                    <span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> Активно</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </a>
+                    </a>
 
-                <!-- Ликбезы -->
-                <a href="likbez.html" class="subject-card" data-subject="likbez">
-                    <div class="card-header">
-                        <div class="subject-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M2 10l10-5 10 5-10 5z"/>
-                                <path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/>
-                                <path d="M22 10v6"/>
-                            </svg>
+                    <a href="physics-exam.html" class="subject-card" data-subject="physics-exam">
+                        <div class="card-header">
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg></div>
                         </div>
-                    </div>
-                    <div class="card-body">
-                        <h2>Ликбезы</h2>
-                        <div class="card-info">
-                            <div style="text-align: center;">
-                                <span class="status-badge status-active">✓ Активно</span>
+                        <div class="card-body">
+                            <h2>Физика билеты</h2>
+                            <div class="card-info">
+                                <div style="text-align: center;">
+                                    <span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> Активно</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </a>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grade-panel" data-grade-panel="10" hidden>
+                <div class="grade-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><div>Материалы для 10 класса скоро появятся</div></div>
+            </div>
+
+            <div class="grade-panel" data-grade-panel="11" hidden>
+                <div class="grade-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><div>Материалы для 11 класса скоро появятся</div></div>
+            </div>
+
+            <div class="extra-section">
+                <h2 class="section-title">Дополнительно</h2>
+                <div class="subjects-grid">
+                    <a href="matcenter.html" class="subject-card" data-subject="matcenter">
+                        <div class="card-header">
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4H8l4 8-4 8h8"/></svg></div>
+                        </div>
+                        <div class="card-body">
+                            <h2>МатЦентр</h2>
+                            <div class="card-info">
+                                <div style="text-align: center;">
+                                    <span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> Активно</span>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="likbez.html" class="subject-card" data-subject="likbez">
+                        <div class="card-header">
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/><path d="M22 10v6"/></svg></div>
+                        </div>
+                        <div class="card-body">
+                            <h2>Ликбезы</h2>
+                            <div class="card-info">
+                                <div style="text-align: center;">
+                                    <span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> Активно</span>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
             </div>
         </div>
+
 
         <div style="text-align: center; margin-top: 3rem; color: var(--text-secondary);">
             <p style="font-size: 0.95rem;">
@@ -832,6 +892,21 @@
             </p>
         </div>
     </div>
+    <script>
+    (function(){
+        var tabs = document.querySelectorAll('.grade-tab');
+        var panels = document.querySelectorAll('.grade-panel');
+        function sel(g){
+            tabs.forEach(function(t){ var on = t.dataset.grade === g; t.classList.toggle('active', on); t.setAttribute('aria-selected', on ? 'true' : 'false'); });
+            panels.forEach(function(p){ p.hidden = p.dataset.gradePanel !== g; });
+            try { localStorage.setItem('homeGrade', g); } catch(e){}
+        }
+        tabs.forEach(function(t){ t.addEventListener('click', function(){ sel(t.dataset.grade); }); });
+        var saved = null; try { saved = localStorage.getItem('homeGrade'); } catch(e){}
+        if (saved && document.querySelector('.grade-panel[data-grade-panel="'+saved+'"]')) sel(saved);
+    })();
+    </script>
+
 
     <!-- Контейнер для снега -->
     <div class="snow-container" id="snowContainer"></div>

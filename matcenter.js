@@ -159,7 +159,7 @@ window.showSecurityStats = function() {
 
 // Функция для полного сброса данных безопасности (защищена паролем)
 window.resetSecurityData = function() {
-    const secret = prompt('⚠️ Введите секретный код для сброса:');
+    const secret = prompt('Введите секретный код для сброса:');
     
     // Простая проверка (можно улучшить)
     if (secret !== 'reset_matcenter_' + new Date().getFullYear()) {
@@ -167,7 +167,7 @@ window.resetSecurityData = function() {
         return;
     }
     
-    if (!confirm('⚠️ Это удалит ВСЕ данные безопасности! Продолжить?')) {
+    if (!confirm('Это удалит ВСЕ данные безопасности! Продолжить?')) {
         return;
     }
     
@@ -623,7 +623,7 @@ function updateLockoutUI() {
         
         if (authError) {
             authError.style.display = 'flex';
-            authError.querySelector('.error-icon').textContent = '⏱️';
+            authError.querySelector('.error-icon').innerHTML = '<span class="eic eic-clock" aria-hidden="true"></span>';
             authError.querySelector('.error-text').textContent = 
                 `Слишком много попыток. Повторите через ${minutes}:${seconds.toString().padStart(2, '0')}`;
         }
@@ -797,7 +797,7 @@ async function initAuth() {
             
             // 4. Проверяем подозрительную активность
             if (detectSuspiciousActivity()) {
-                authError.querySelector('.error-icon').textContent = '🚨';
+                authError.querySelector('.error-icon').innerHTML = '<span class="eic eic-alert" aria-hidden="true"></span>';
                 authError.querySelector('.error-text').textContent = 
                     'Обнаружена подозрительная активность!';
                 authError.style.display = 'flex';
@@ -821,7 +821,7 @@ async function initAuth() {
                 // Показываем обычную ошибку
                 authError.style.display = 'flex';
                 authError.style.background = 'rgba(239, 68, 68, 0.1)';
-                authError.querySelector('.error-icon').textContent = '🚫';
+                authError.querySelector('.error-icon').innerHTML = '<span class="eic eic-alert" aria-hidden="true"></span>';
                 authError.querySelector('.error-text').textContent = 
                     `Неверный пароль. Осталось попыток: ${MAX_FAILED_ATTEMPTS - failedAttempts}`;
                 
@@ -1369,10 +1369,12 @@ function createTaskElement(task) {
     // Безопасное получение description
     const description = task.description || 'Условие не указано';
     
-    // Проверяем наличие подсказки
+    // Проверяем наличие подсказки.
+    // В летних сериях подсказок нет в принципе — не показываем ни кнопку,
+    // ни (для админа) кнопку добавления подсказки.
     const hint = task.hint || null;
-    const hasHint = hint !== null;
-    
+    const hasHint = hint !== null && !isSummerTask;
+
     // Формируем HTML подсказки
     let hintHTML = '';
     if (hasHint) {
@@ -1380,19 +1382,19 @@ function createTaskElement(task) {
         const trimmedHint = hint.trim();
         hintHTML = `
             <button class="task-toggle hint-toggle">
-                <span class="toggle-icon">💡</span>
+                <span class="toggle-icon"><span class="eic eic-bulb" aria-hidden="true"></span></span>
                 Показать подсказку
             </button>
             <div class="task-hint" data-hint-id="hint-${escapeHtml(String(task.number))}">${escapeHtml(trimmedHint)}</div>
         `;
     }
     
-    // Формируем HTML кнопки для админа
+    // Формируем HTML кнопки для админа (в летних сериях подсказок нет — кнопку не показываем)
     let adminButtonHTML = '';
-    if (isAdmin) {
+    if (isAdmin && !isSummerTask) {
         adminButtonHTML = `
-            <button class="admin-hint-button" title="${hasHint ? 'Изменить подсказку' : 'Добавить подсказку'}">
-                💡 Подсказка
+            <button class="admin-hint-button" title="${hint !== null ? 'Изменить подсказку' : 'Добавить подсказку'}">
+                <span class="eic eic-bulb" aria-hidden="true"></span> Подсказка
             </button>
         `;
     }
@@ -1453,8 +1455,8 @@ function createTaskElement(task) {
         hintToggleBtn.addEventListener('click', () => {
             const isOpen = taskCard.classList.toggle('hint-open');
             hintToggleBtn.innerHTML = isOpen
-                ? '<span class="toggle-icon">💡</span> Скрыть подсказку'
-                : '<span class="toggle-icon">💡</span> Показать подсказку';
+                ? '<span class="toggle-icon"><span class="eic eic-bulb" aria-hidden="true"></span></span> Скрыть подсказку'
+                : '<span class="toggle-icon"><span class="eic eic-bulb" aria-hidden="true"></span></span> Показать подсказку';
             if(isOpen){hintToggleBtn.classList.add('active');}else{hintToggleBtn.classList.remove('active');}
             
             // Рендерим LaTeX формулы при первом открытии
@@ -1884,7 +1886,7 @@ function showEmptyGradeMessage(container) {
     const title = escapeHtml(getGradeTitle(currentGrade));
     container.innerHTML = `
         <div class="empty-grade-message">
-            <span class="empty-grade-icon">📂</span>
+            <span class="empty-grade-icon"><span class="eic eic-folder" aria-hidden="true"></span></span>
             <p>В разделе «${title}» пока нет задач</p>
         </div>
     `;
@@ -2369,7 +2371,7 @@ function showNoResultsMessage(containerId, searchTerm, statusFilter) {
 
     container.innerHTML = `
         <div class="no-results-message">
-            <span class="no-results-icon">🔍</span>
+            <span class="no-results-icon"><span class="eic eic-search" aria-hidden="true"></span></span>
             <p>Ничего не найдено</p>
             ${hint ? `<p class="no-results-hint">${hint}</p>` : ''}
             <button class="no-results-clear" onclick="clearSearch()">Сбросить фильтр</button>
@@ -2513,13 +2515,13 @@ function resetHintModalButtons() {
     
     if (saveBtn) {
         saveBtn.disabled = false;
-        saveBtn.innerHTML = '💾 Сохранить';
+        saveBtn.innerHTML = '<span class="eic eic-save" aria-hidden="true"></span> Сохранить';
         saveBtn.style.opacity = '1';
     }
     
     if (deleteBtn) {
         deleteBtn.disabled = false;
-        deleteBtn.innerHTML = '🗑️ Удалить подсказку';
+        deleteBtn.innerHTML = '<span class="eic eic-trash" aria-hidden="true"></span> Удалить подсказку';
         deleteBtn.style.opacity = '1';
     }
 }
@@ -2582,7 +2584,7 @@ function initHintModal() {
                     await pushHintToServer(taskNumber, hintText);
                     
                     // Показываем успех
-                    saveBtn.innerHTML = '✓ Сохранено!';
+                    saveBtn.innerHTML = '<span class="eic eic-check" aria-hidden="true"></span> Сохранено!';
                     saveBtn.style.opacity = '1';
                     
                     // Через 500ms закрываем модалку
@@ -2618,7 +2620,7 @@ function initHintModal() {
                         await pushHintToServer(taskNumber,'');
                         
                         // Показываем успех
-                        deleteBtn.innerHTML = '✓ Удалено!';
+                        deleteBtn.innerHTML = '<span class="eic eic-check" aria-hidden="true"></span> Удалено!';
                         deleteBtn.style.opacity = '1';
                         
                         // Через 500ms закрываем модалку

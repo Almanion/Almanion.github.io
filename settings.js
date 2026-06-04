@@ -7,7 +7,11 @@ const defaultSettings = {
     theme: 'light',
     newYearMode: false,
     animationLevel: 'max',
-    hoverEffects: true
+    hoverEffects: true,
+    // Экспериментальный режим (новый дизайн)
+    experimental: false,
+    expMode: 'graphite',   // 'graphite' | 'prism'
+    expDark: false
 };
 
 // Текущие настройки
@@ -71,9 +75,42 @@ function saveSettings() {
 // ============================================
 
 function applyAllSettings() {
+    applyExperimental();
     applyTheme(siteSettings.theme);
     applyAnimationLevel(siteSettings.animationLevel);
     applyHoverEffects(siteSettings.hoverEffects);
+}
+
+// Применяем экспериментальный режим (новый дизайн).
+// body.experimental + body.exp-graphite|exp-prism + (body.exp-dark для тёмной).
+function applyExperimental() {
+    const body = document.body;
+    const on = !!siteSettings.experimental;
+
+    // ВАЖНО: подавляем CSS-переходы на время переключения. Без этого при смене
+    // режима/темы/включении 300+ элементов одновременно анимируют цвета волной
+    // (0.3s) — это и есть «баги анимаций».
+    // Используем exp-switching (только transition: none), а НЕ theme-transitioning,
+    // чтобы не сбрасывать animation-duration и не дёргать анимацию модалки настроек.
+    body.classList.add('exp-switching');
+
+    body.classList.toggle('experimental', on);
+    body.classList.toggle('exp-graphite', on && siteSettings.expMode === 'graphite');
+    body.classList.toggle('exp-prism', on && siteSettings.expMode === 'prism');
+    body.classList.toggle('exp-dark', on && !!siteSettings.expDark);
+
+    // Когда экспериментальный режим включён, его собственная светлая/тёмная
+    // тема управляет видом — снимаем легаси-классы тем, чтобы не было конфликта.
+    if (on) {
+        body.classList.remove('dark-theme', 'sepia-theme', 'midnight-theme');
+    }
+
+    // Возвращаем переходы через 2 кадра (когда новые цвета уже применены),
+    // + setTimeout-фоллбэк на случай фоновой вкладки (rAF приостановлен).
+    let cleared = false;
+    const clear = () => { if (cleared) return; cleared = true; body.classList.remove('exp-switching'); };
+    requestAnimationFrame(() => requestAnimationFrame(clear));
+    setTimeout(clear, 260);
 }
 
 function applyHoverEffects(enabled) {
@@ -87,6 +124,13 @@ function applyHoverEffects(enabled) {
 function applyTheme(theme) {
     const body = document.body;
     const html = document.documentElement;
+
+    // В экспериментальном режиме внешним видом управляет он сам (свет/тьма
+    // через exp-dark) — легаси-темы не трогаем.
+    if (siteSettings.experimental) {
+        safeStorageSet('theme', theme);
+        return;
+    }
 
     // Race-guard: если предыдущая смена темы ещё не завершилась — игнорируем.
     if (body.dataset.themeBusy === '1') return;
@@ -211,7 +255,7 @@ function createSettingsModal() {
     // Inline SVG-иконки (Feather-style, наследуют currentColor)
     const ICONS = {
         settings: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
-        palette: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r="0.5" fill="currentColor"/><circle cx="17.5" cy="10.5" r="0.5" fill="currentColor"/><circle cx="8.5" cy="7.5" r="0.5" fill="currentColor"/><circle cx="6.5" cy="12.5" r="0.5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.6 0 1-.4 1-1 0-.3-.1-.5-.3-.7-.2-.2-.3-.4-.3-.7 0-.6.4-1 1-1h2c2.8 0 5-2.2 5-5 0-5-4.5-9.6-8.4-9.6z"/></svg>`,
+        palette: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>`,
         sparkles: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/><path d="M19 14l.75 2.25L22 17l-2.25.75L19 20l-.75-2.25L16 17l2.25-.75z"/><path d="M5 17l.5 1.5L7 19l-1.5.5L5 21l-.5-1.5L3 19l1.5-.5z"/></svg>`,
         bookOpen: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
         moonStars: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/><circle cx="5" cy="5" r="0.6" fill="currentColor"/><circle cx="8" cy="2.5" r="0.5" fill="currentColor"/><circle cx="3" cy="10" r="0.4" fill="currentColor"/></svg>`,
@@ -233,8 +277,38 @@ function createSettingsModal() {
             </div>
 
             <div class="settings-modal-body">
-                <!-- Тема -->
+                <!-- Экспериментальный режим -->
                 <div class="settings-section">
+                    <h3><svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6.5L4.5 18a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V3"/><path d="M7.5 14h9"/></svg><span>Экспериментальный режим</span></h3>
+                    <div class="settings-option">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="experimentalToggle" ${siteSettings.experimental ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Новый дизайн сайта (бета) — минималистичный и современный</span>
+                        </label>
+                        <div class="exp-subpanel" id="expSubpanel" ${siteSettings.experimental ? '' : 'hidden'}>
+                            <div class="exp-mode-grid">
+                                <button type="button" class="exp-mode-card ${siteSettings.expMode === 'graphite' ? 'active' : ''}" data-exp-mode="graphite">
+                                    <span class="exp-mode-swatch exp-swatch-graphite"><span></span><span></span><span></span></span>
+                                    <span class="exp-mode-name">Графит</span>
+                                    <span class="exp-mode-desc">Нейтральный монохром, максимум воздуха</span>
+                                </button>
+                                <button type="button" class="exp-mode-card ${siteSettings.expMode === 'prism' ? 'active' : ''}" data-exp-mode="prism">
+                                    <span class="exp-mode-swatch exp-swatch-prism"><span></span><span></span><span></span></span>
+                                    <span class="exp-mode-name">Призма</span>
+                                    <span class="exp-mode-desc">Акцентный цвет и цветные ярлыки блоков</span>
+                                </button>
+                            </div>
+                            <div class="exp-lightdark" role="group" aria-label="Светлая или тёмная тема">
+                                <button type="button" class="exp-ld-btn ${!siteSettings.expDark ? 'active' : ''}" data-exp-dark="false">${ICONS.sun}<span>Светлая</span></button>
+                                <button type="button" class="exp-ld-btn ${siteSettings.expDark ? 'active' : ''}" data-exp-dark="true">${ICONS.moon}<span>Тёмная</span></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Тема -->
+                <div class="settings-section" id="themeSection" ${siteSettings.experimental ? 'style="display:none;"' : ''}>
                     <h3>${ICONS.palette}<span>Тема оформления</span></h3>
                     <div class="settings-option">
                         <div class="theme-selector">
@@ -386,7 +460,41 @@ function bindSettingsHandlers() {
             setTimeout(() => btn.style.transform = '', 150);
         });
     });
-    
+
+    // ---- Экспериментальный режим ----
+    const experimentalToggle = document.getElementById('experimentalToggle');
+    const expSubpanel = document.getElementById('expSubpanel');
+    const themeSection = document.getElementById('themeSection');
+    if (experimentalToggle) {
+        experimentalToggle.addEventListener('change', (e) => {
+            siteSettings.experimental = e.target.checked;
+            if (expSubpanel) expSubpanel.hidden = !e.target.checked;
+            if (themeSection) themeSection.style.display = e.target.checked ? 'none' : '';
+            applyExperimental();
+            applyTheme(siteSettings.theme); // вкл: no-op; выкл: восстановит легаси-тему
+            saveSettings();
+            showNotification(e.target.checked ? 'Экспериментальный режим включён' : 'Экспериментальный режим выключен');
+        });
+    }
+    const expModeCards = document.querySelectorAll('.exp-mode-card');
+    expModeCards.forEach(card => {
+        card.addEventListener('click', () => {
+            siteSettings.expMode = card.dataset.expMode;
+            expModeCards.forEach(c => c.classList.toggle('active', c === card));
+            applyExperimental();
+            saveSettings();
+        });
+    });
+    const expLdBtns = document.querySelectorAll('.exp-ld-btn');
+    expLdBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            siteSettings.expDark = btn.dataset.expDark === 'true';
+            expLdBtns.forEach(b => b.classList.toggle('active', b === btn));
+            applyExperimental();
+            saveSettings();
+        });
+    });
+
     // Переключение новогоднего режима
     const newYearToggle = document.getElementById('newYearToggle');
     newYearToggle.addEventListener('change', (e) => {
@@ -403,7 +511,7 @@ function bindSettingsHandlers() {
         }
         
         // Сохраняем
-        localStorage.setItem('newYearMode', enabled);
+        safeStorageSet('newYearMode', enabled);
         saveSettings();
     });
     
@@ -458,7 +566,7 @@ function bindSettingsHandlers() {
             siteSettings.hoverEffects = e.target.checked;
             applyHoverEffects(e.target.checked);
             saveSettings();
-            showNotification(e.target.checked ? 'Hover-эффекты включены 👆' : 'Hover-эффекты выключены');
+            showNotification(e.target.checked ? 'Hover-эффекты включены' : 'Hover-эффекты выключены');
         });
     }
 
@@ -469,9 +577,9 @@ function bindSettingsHandlers() {
 
 function getAnimationLevelMessage(level) {
     const messages = {
-        'max': 'Максимальный уровень анимаций включен! 🚀',
-        'medium': 'Средний уровень анимаций включен ⚡',
-        'off': 'Анимации выключены 🔇'
+        'max': 'Максимальный уровень анимаций включен!',
+        'medium': 'Средний уровень анимаций включен',
+        'off': 'Анимации выключены'
     };
     return messages[level] || 'Настройки применены';
 }
@@ -549,7 +657,7 @@ function resetAllSettings() {
             location.reload();
         }, 500);
         
-        showNotification('Настройки сброшены! Страница будет перезагружена... 🔄');
+        showNotification('Настройки сброшены! Страница будет перезагружена...');
     }
 }
 

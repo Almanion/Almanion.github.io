@@ -47,7 +47,10 @@
     box-shadow: var(--shadow-sm);
 }
 
-:where(
+/* Hover-стили кнопок гейтятся через body:not(.no-hover) — когда пользователь
+   отключает hover-эффекты, эти правила просто не применяются (гарантированно
+   ноль изменений под курсором, без войны специфичностей). */
+body:not(.no-hover) :where(
     .btn,
     .auth-submit,
     .builder-btn-save,
@@ -65,7 +68,7 @@
     border: 1.5px solid var(--button-accent, var(--border-color));
 }
 
-:where(.btn-outline, .knowledge-check-btn, .hint-cancel-btn, .ny-advanced-settings):hover {
+body:not(.no-hover) :where(.btn-outline, .knowledge-check-btn, .hint-cancel-btn, .ny-advanced-settings):hover {
     background: var(--bg-tertiary);
     color: var(--button-accent-hover, var(--text-primary));
     border-color: var(--button-accent-hover, var(--text-secondary));
@@ -77,12 +80,12 @@
     border: 1px solid var(--border-color);
 }
 
-:where(.btn-subtle, .task-toggle, .settings-reset-btn, .ny-settings-reset):hover {
+body:not(.no-hover) :where(.btn-subtle, .task-toggle, .settings-reset-btn, .ny-settings-reset):hover {
     background: var(--bg-primary);
     border-color: var(--text-secondary);
 }
 
-:where(.btn-danger, .builder-btn-reset, .hint-delete-btn):hover {
+body:not(.no-hover) :where(.btn-danger, .builder-btn-reset, .hint-delete-btn):hover {
     background: var(--error-color);
     border-color: var(--error-color);
     color: #ffffff;

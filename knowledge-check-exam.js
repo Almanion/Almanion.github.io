@@ -354,8 +354,8 @@ function showCurrentDefinition() {
         progress.innerHTML = `
             <div style="display: flex; align-items: center; gap: 1rem;">
                 <span style="font-weight: 600;">Круг ${totalRounds}</span>
-                <span style="color: #22c55e;">✓ ${rememberCount}</span>
-                <span style="color: #ef4444;">✗ ${forgetCount}</span>
+                <span style="color: #22c55e;"><span class="eic eic-check" aria-hidden="true"></span> ${rememberCount}</span>
+                <span style="color: #ef4444;"><span class="eic eic-x" aria-hidden="true"></span> ${forgetCount}</span>
             </div>
         `;
     }
@@ -377,11 +377,11 @@ function showCurrentDefinition() {
                 <div id="memoryButtonsContainer" style="display: none;">
                     <div class="memory-buttons">
                         <button class="memory-btn memory-btn-forget" onclick="window.markAsForget()">
-                            <span style="font-size: 1.2rem;">✗</span>
+                            <span style="font-size: 1.2rem;"><span class="eic eic-x" aria-hidden="true"></span></span>
                             Не помню
                         </button>
                         <button class="memory-btn memory-btn-remember" onclick="window.markAsRemember()">
-                            <span style="font-size: 1.2rem;">✓</span>
+                            <span style="font-size: 1.2rem;"><span class="eic eic-check" aria-hidden="true"></span></span>
                             Помню
                         </button>
                     </div>
@@ -521,13 +521,13 @@ function showFinalStatistics() {
     const successRate = rememberCount / Math.max(1, rememberCount + forgetCount);
     const successPercent = Math.round(successRate * 100);
     
-    let emoji = '✅';
+    let emoji = '<span class="eic eic-check" aria-hidden="true"></span>';
     let message = 'Отличный результат!';
     if (successPercent < 50) {
-        emoji = '📚';
+        emoji = '<span class="eic eic-book" aria-hidden="true"></span>';
         message = 'Есть над чем поработать';
     } else if (successPercent < 75) {
-        emoji = '👍';
+        emoji = '<span class="eic eic-thumb" aria-hidden="true"></span>';
         message = 'Хороший результат!';
     }
 

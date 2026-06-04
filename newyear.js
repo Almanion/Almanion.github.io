@@ -115,7 +115,7 @@ function handleButtonClick() {
 
 function toggleNewYearMode() {
     isNewYearMode = !isNewYearMode;
-    localStorage.setItem('newYearMode', isNewYearMode);
+    _nySet('newYearMode', isNewYearMode);
     
     if (isNewYearMode) {
         enableNewYearMode();
@@ -610,7 +610,7 @@ function showNewYearNotification() {
 // ============================================
 
 function loadSettings() {
-    const saved = localStorage.getItem('snowSettings');
+    const saved = _nyGet('snowSettings');
     if (saved) {
         try {
             snowSettings = JSON.parse(saved);
@@ -621,7 +621,7 @@ function loadSettings() {
 }
 
 function saveSettings() {
-    localStorage.setItem('snowSettings', JSON.stringify(snowSettings));
+    _nySet('snowSettings', JSON.stringify(snowSettings));
 }
 
 function initSettingsModal() {
@@ -634,13 +634,13 @@ function initSettingsModal() {
     modal.innerHTML = `
         <div class="ny-settings-content">
             <div class="ny-settings-header">
-                <h3>⚙️ Настройки новогоднего вайба</h3>
-                <button class="ny-settings-close" id="nySettingsClose">✕</button>
+                <h3><span class="eic eic-gear" aria-hidden="true"></span> Настройки новогоднего вайба</h3>
+                <button class="ny-settings-close" id="nySettingsClose"><span class="eic eic-x" aria-hidden="true"></span></button>
             </div>
             <div class="ny-settings-body">
                 <div class="ny-setting-item">
                     <label>
-                        <span>❄️ Количество снежинок</span>
+                        <span>Количество снежинок</span>
                         <input type="range" id="snowCount" min="10" max="200" step="10" value="${snowSettings.count}">
                         <span class="ny-setting-value" id="snowCountValue">${snowSettings.count}</span>
                     </label>
@@ -648,7 +648,7 @@ function initSettingsModal() {
                 
                 <div class="ny-setting-item">
                     <label>
-                        <span>⚡ Скорость падения</span>
+                        <span>Скорость падения</span>
                         <input type="range" id="snowSpeed" min="0.2" max="2" step="0.1" value="${snowSettings.speed}">
                         <span class="ny-setting-value" id="snowSpeedValue">${snowSettings.speed.toFixed(1)}x</span>
                     </label>
@@ -656,7 +656,7 @@ function initSettingsModal() {
                 
                 <div class="ny-setting-item">
                     <label>
-                        <span>📏 Размер снежинок</span>
+                        <span>Размер снежинок</span>
                         <input type="range" id="snowSize" min="0.2" max="2" step="0.1" value="${snowSettings.size}">
                         <span class="ny-setting-value" id="snowSizeValue">${snowSettings.size.toFixed(1)}x</span>
                     </label>
@@ -664,7 +664,7 @@ function initSettingsModal() {
                 
                 <div class="ny-setting-item">
                     <label>
-                        <span>💨 Дрейф (покачивание)</span>
+                        <span>Дрейф (покачивание)</span>
                         <input type="range" id="snowDrift" min="0" max="2" step="0.1" value="${snowSettings.drift}">
                         <span class="ny-setting-value" id="snowDriftValue">${snowSettings.drift.toFixed(1)}x</span>
                     </label>
@@ -672,7 +672,7 @@ function initSettingsModal() {
                 
                 <div class="ny-setting-item">
                     <label>
-                        <span>✨ Непрозрачность</span>
+                        <span>Непрозрачность</span>
                         <input type="range" id="snowOpacity" min="0.05" max="1" step="0.05" value="${snowSettings.opacity}">
                         <span class="ny-setting-value" id="snowOpacityValue">${Math.round(snowSettings.opacity * 100)}%</span>
                     </label>
@@ -681,13 +681,13 @@ function initSettingsModal() {
                 <div class="ny-setting-item">
                     <label class="ny-setting-checkbox">
                         <input type="checkbox" id="snowMerge" ${snowSettings.mergeEnabled ? 'checked' : ''}>
-                        <span>🔗 Слияние снежинок при столкновении</span>
+                        <span>Слияние снежинок при столкновении</span>
                     </label>
                     <p class="ny-setting-hint">Снежинки будут объединяться, создавая более крупные хлопья</p>
                 </div>
                 
                 <div class="ny-setting-warning" id="perfWarning" style="display: none; font-size: 0.72rem;">
-                    ⚠️ При большом количестве снежинок требуется мощный процессор
+                    <span class="eic eic-warn" aria-hidden="true"></span> При большом количестве снежинок требуется мощный процессор
                 </div>
             </div>
             <div class="ny-settings-footer">
@@ -834,7 +834,7 @@ function applySnowSettings() {
     // Показываем уведомление
     const notification = document.createElement('div');
     notification.className = 'ny-notification';
-    notification.textContent = 'Настройки применены! ✨';
+    notification.textContent = 'Настройки применены!';
     document.body.appendChild(notification);
     
     setTimeout(() => notification.classList.add('show'), 100);
@@ -949,7 +949,7 @@ document.addEventListener('visibilitychange', () => {
 
 // Автоматическая оптимизация настроек для мобильных
 function optimizeForMobile() {
-    if (isMobileDevice() && !localStorage.getItem('snowSettings')) {
+    if (isMobileDevice() && !_nyGet('snowSettings')) {
         // Если на мобильном и настройки не были изменены пользователем
         snowSettings.count = Math.min(snowSettings.count, 40); // Максимум 40 снежинок
         snowSettings.speed = Math.max(snowSettings.speed, 1.2); // Быстрее падают

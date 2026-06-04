@@ -292,7 +292,7 @@ function createSearchBar() {
         '<div class="search-nav-controls">' +
             '<button class="search-nav-btn" id="searchPrev" aria-label="Предыдущее">▲</button>' +
             '<button class="search-nav-btn" id="searchNext" aria-label="Следующее">▼</button>' +
-            '<button class="search-nav-btn search-nav-close" id="searchClose" aria-label="Закрыть">✕</button>' +
+            '<button class="search-nav-btn search-nav-close" id="searchClose" aria-label="Закрыть"><span class="eic eic-x" aria-hidden="true"></span></button>' +
         '</div>';
     document.body.appendChild(bar);
     searchState.bar = bar;
@@ -1117,7 +1117,7 @@ function exportToPDF() {
 const footer = document.querySelector('.page-footer');
 if (footer) {
     const exportBtn = document.createElement('button');
-    exportBtn.textContent = '📄 Экспорт в PDF';
+    exportBtn.innerHTML = '<span class="eic eic-file" aria-hidden="true"></span> Экспорт в PDF';
     exportBtn.style.cssText = `
         margin-top: 1rem;
         padding: 0.75rem 1.5rem;

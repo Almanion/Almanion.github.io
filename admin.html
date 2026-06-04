@@ -3,18 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <script>
-        // FOUC-prevention: применяем тему до загрузки CSS
+        // FOUC-prevention: тема + экспериментальный режим до загрузки CSS
         (function(){
             try {
-                var t = 'light';
                 var s = localStorage.getItem('siteSettings');
-                if (s) { try { var p = JSON.parse(s); if (p && p.theme) t = p.theme; } catch(_){} }
-                else { var l = localStorage.getItem('theme'); if (l === 'dark') t = 'dark'; }
-                var bg = {light:'#f8fafc',dark:'#0f172a',sepia:'#f4ecd8',midnight:'#0a0a0b'}[t] || '#f8fafc';
-                var fg = {light:'#0f172a',dark:'#f1f5f9',sepia:'#3d2f1e',midnight:'#fafafa'}[t] || '#0f172a';
+                var p = s ? JSON.parse(s) : {};
+                var bg, fg;
+                if (p && p.experimental) {
+                    var dark = !!p.expDark;
+                    var mode = p.expMode === 'prism' ? 'prism' : 'graphite';
+                    if (mode === 'graphite') { bg = dark ? '#09090b' : '#fafafa'; fg = dark ? '#f4f4f5' : '#18181b'; }
+                    else { bg = dark ? '#0e0e16' : '#fbfbfe'; fg = dark ? '#ececf4' : '#16161f'; }
+                    document.documentElement.dataset.exp = mode + (dark ? '-dark' : '-light');
+                } else {
+                    var t = (p && p.theme) || (localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
+                    bg = {light:'#f8fafc',dark:'#0f172a',sepia:'#f4ecd8',midnight:'#0a0a0b'}[t] || '#f8fafc';
+                    fg = {light:'#0f172a',dark:'#f1f5f9',sepia:'#3d2f1e',midnight:'#fafafa'}[t] || '#0f172a';
+                    document.documentElement.dataset.theme = t;
+                }
                 document.documentElement.style.backgroundColor = bg;
                 document.documentElement.style.color = fg;
-                document.documentElement.dataset.theme = t;
             } catch(e) {}
         })();
     </script>
@@ -836,15 +844,43 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        /* Инлайн-иконки (замена эмодзи) */
+        .eic { display:inline-block; width:1.05em; height:1.05em; vertical-align:-0.18em; background-color:currentColor; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center; -webkit-mask-size:contain; mask-size:contain; -webkit-mask-image:var(--eic-img); mask-image:var(--eic-img); flex-shrink:0; }
+        .eic-lock { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E"); }
+        .eic-chart { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 20V10'/%3E%3Cpath d='M12 20V4'/%3E%3Cpath d='M6 20v-6'/%3E%3C/svg%3E"); }
+        .eic-dot { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='6' fill='black'/%3E%3C/svg%3E"); }
+        .eic-users { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='9' cy='7' r='4'/%3E%3Cpath d='M23 21v-2a4 4 0 0 0-3-3.87'/%3E%3Cpath d='M16 3.13a4 4 0 0 1 0 7.75'/%3E%3C/svg%3E"); }
+        .eic-user { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E"); }
+        .eic-calendar { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4'/%3E%3Cpath d='M8 2v4'/%3E%3Cpath d='M3 10h18'/%3E%3C/svg%3E"); }
+        .eic-file { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 2v6h6'/%3E%3C/svg%3E"); }
+        .eic-pen { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z'/%3E%3C/svg%3E"); }
+        .eic-megaphone { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11l16-6v14L3 13z'/%3E%3Cpath d='M11.5 16.5a2.5 2.5 0 0 1-4.9-.8'/%3E%3C/svg%3E"); }
+        .eic-book { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z'/%3E%3Cpath d='M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z'/%3E%3C/svg%3E"); }
+        .eic-gear { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'/%3E%3C/svg%3E"); }
+        .eic-trash { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6h18'/%3E%3Cpath d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/%3E%3C/svg%3E"); }
+        .eic-refresh { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M23 4v6h-6'/%3E%3Cpath d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/%3E%3C/svg%3E"); }
+        .eic-send { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 2 11 13'/%3E%3Cpath d='M22 2 15 22l-4-9-9-4z'/%3E%3C/svg%3E"); }
+        .eic-phone { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='2' width='14' height='20' rx='2'/%3E%3Cpath d='M12 18h.01'/%3E%3C/svg%3E"); }
+        .eic-laptop { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='12' rx='2'/%3E%3Cpath d='M2 20h20'/%3E%3C/svg%3E"); }
+        .eic-mail { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='4' width='20' height='16' rx='2'/%3E%3Cpath d='m22 7-10 5L2 7'/%3E%3C/svg%3E"); }
+        .eic-chat { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z'/%3E%3C/svg%3E"); }
+        .eic-clip { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/%3E%3Crect x='8' y='2' width='8' height='4' rx='1'/%3E%3C/svg%3E"); }
+        .eic-check { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E"); }
+        .eic-x { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='M6 6l12 12'/%3E%3C/svg%3E"); }
+        .eic-warn { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E"); }
+        .eic-alert { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 8v4'/%3E%3Cpath d='M12 16h.01'/%3E%3C/svg%3E"); }
+        .eic-clock { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpolyline points='12 6 12 12 16 14'/%3E%3C/svg%3E"); }
     </style>
+    <link rel="stylesheet" href="style-new.css">
 </head>
 <body>
-    <script>(function(){var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');})();</script>
+    <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p&&p.experimental){document.body.classList.add('experimental',p.expMode==='prism'?'exp-prism':'exp-graphite');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
 
     <!-- ============ ЭКРАН ВХОДА ============ -->
     <div class="login-screen" id="loginScreen">
         <div class="login-card">
-            <h1>🔒 Админ-панель</h1>
+            <h1><span class="eic eic-lock" aria-hidden="true"></span> Админ-панель</h1>
             <p>Almanion Analytics</p>
             <div class="form-group">
                 <label for="loginEmail">Email</label>
@@ -862,7 +898,7 @@
     <!-- ============ DASHBOARD ============ -->
     <div class="dashboard" id="dashboard">
         <div class="dashboard-header">
-            <h1>📊 Панель управления</h1>
+            <h1><span class="eic eic-chart" aria-hidden="true"></span> Панель управления</h1>
             <div class="header-actions">
                 <span style="font-size: 0.85rem; color: var(--text-secondary);" id="adminEmail"></span>
                 <button class="btn btn-outline btn-sm" id="logoutBtn">Выйти</button>
@@ -872,22 +908,22 @@
         <!-- Статистика -->
         <div class="stats-grid">
             <div class="stat-card online">
-                <div class="stat-icon">🟢</div>
+                <div class="stat-icon"><span class="eic eic-dot" aria-hidden="true"></span></div>
                 <div class="stat-value" id="onlineCount">—</div>
                 <div class="stat-label">Сейчас онлайн</div>
             </div>
             <div class="stat-card unique">
-                <div class="stat-icon">👥</div>
+                <div class="stat-icon"><span class="eic eic-users" aria-hidden="true"></span></div>
                 <div class="stat-value" id="uniqueCount">—</div>
                 <div class="stat-label">Всего уникальных</div>
             </div>
             <div class="stat-card today">
-                <div class="stat-icon">📅</div>
+                <div class="stat-icon"><span class="eic eic-calendar" aria-hidden="true"></span></div>
                 <div class="stat-value" id="todayCount">—</div>
                 <div class="stat-label">Сегодня посетило</div>
             </div>
             <div class="stat-card pages">
-                <div class="stat-icon">📄</div>
+                <div class="stat-icon"><span class="eic eic-file" aria-hidden="true"></span></div>
                 <div class="stat-value" id="pagesCount">—</div>
                 <div class="stat-label">Страниц просмотрено</div>
             </div>
@@ -919,7 +955,7 @@
 
         <!-- Создание опроса -->
         <div class="section">
-            <div class="section-title">📝 Создать опрос</div>
+            <div class="section-title"><span class="eic eic-pen" aria-hidden="true"></span> Создать опрос</div>
             <div class="poll-form" id="pollForm">
                 <div class="form-group">
                     <label>Вопрос</label>
@@ -944,26 +980,26 @@
                     <button class="add-option-btn" id="addOptionBtn">+ Добавить вариант</button>
                 </div>
                 <div class="poll-actions">
-                    <button class="btn btn-success" id="sendPollBtn">🚀 Отправить опрос</button>
+                    <button class="btn btn-success" id="sendPollBtn"><span class="eic eic-send" aria-hidden="true"></span> Отправить опрос</button>
                 </div>
             </div>
         </div>
 
         <!-- Массовое сообщение всем онлайн -->
         <div class="section">
-            <div class="section-title">📢 Сообщение всем онлайн</div>
+            <div class="section-title"><span class="eic eic-megaphone" aria-hidden="true"></span> Сообщение всем онлайн</div>
             <div class="form-group">
                 <textarea id="broadcastText" rows="2" placeholder="Текст сообщения для всех, кто сейчас на сайте..." style="resize:vertical;"></textarea>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <span style="font-size:0.8rem; color:var(--text-secondary);">Получат: <strong id="broadcastCount">0</strong> человек</span>
-                <button class="btn btn-primary btn-sm" id="broadcastBtn">📢 Отправить всем</button>
+                <button class="btn btn-primary btn-sm" id="broadcastBtn"><span class="eic eic-megaphone" aria-hidden="true"></span> Отправить всем</button>
             </div>
         </div>
 
         <!-- Активные опросы -->
         <div class="section">
-            <div class="section-title">📊 Опросы и результаты</div>
+            <div class="section-title"><span class="eic eic-chart" aria-hidden="true"></span> Опросы и результаты</div>
             <div id="pollsList">
                 <div class="no-data">Загрузка...</div>
             </div>
@@ -971,7 +1007,7 @@
 
         <!-- Журнал всех посетителей -->
         <div class="section">
-            <div class="section-title">📒 Все посетители</div>
+            <div class="section-title"><span class="eic eic-book" aria-hidden="true"></span> Все посетители</div>
             <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
                 <button class="btn btn-outline btn-sm" onclick="loadAllVisitors('all')" style="font-size:0.8rem;">Все</button>
                 <button class="btn btn-outline btn-sm" onclick="loadAllVisitors('today')" style="font-size:0.8rem;">Сегодня</button>
@@ -984,11 +1020,11 @@
 
         <!-- Управление данными -->
         <div class="section">
-            <div class="section-title">⚙️ Управление данными</div>
+            <div class="section-title"><span class="eic eic-gear" aria-hidden="true"></span> Управление данными</div>
             <div style="display:flex; flex-wrap:wrap; gap:0.75rem;">
-                <button class="btn btn-outline btn-sm" onclick="clearDailyStats()">🗑️ Очистить дневную статистику</button>
-                <button class="btn btn-outline btn-sm" onclick="clearAllPresence()">🔄 Сбросить онлайн</button>
-                <button class="btn btn-danger btn-sm" onclick="clearAllData()">⚠️ Удалить ВСЕ данные</button>
+                <button class="btn btn-outline btn-sm" onclick="clearDailyStats()"><span class="eic eic-trash" aria-hidden="true"></span> Очистить дневную статистику</button>
+                <button class="btn btn-outline btn-sm" onclick="clearAllPresence()"><span class="eic eic-refresh" aria-hidden="true"></span> Сбросить онлайн</button>
+                <button class="btn btn-danger btn-sm" onclick="clearAllData()"><span class="eic eic-warn" aria-hidden="true"></span> Удалить ВСЕ данные</button>
             </div>
         </div>
     </div>
@@ -1005,7 +1041,7 @@
 
         if (firebaseConfig.apiKey === "ВСТАВЬ_СВОЙ_API_KEY") {
             document.querySelector('.login-card').innerHTML = `
-                <h1>⚠️ Настройка</h1>
+                <h1><span class="eic eic-warn" aria-hidden="true"></span> Настройка</h1>
                 <p style="color: #f59e0b;">Firebase конфиг не заполнен.<br>Отредактируй <code>firebase-config.js</code></p>
             `;
         }
@@ -1045,7 +1081,7 @@
 
             action.catch(err => {
                 console.error('Ошибка переименования:', err);
-                alert('❌ Ошибка: ' + err.message + '\n\nПроверь правила Firebase — нужен узел visitorNames');
+                alert('Ошибка: ' + err.message + '\n\nПроверь правила Firebase — нужен узел visitorNames');
             });
         }
 
@@ -1173,7 +1209,7 @@
                 const shortId = vid.substring(0, 12);
                 const isMobile = /Mobile|Android|iPhone|iPad/i.test(user.userAgent || '');
                 const deviceClass = isMobile ? 'device-mobile' : 'device-desktop';
-                const deviceLabel = isMobile ? '📱 Мобильный' : '💻 Десктоп';
+                const deviceLabel = isMobile ? '<span class="eic eic-phone" aria-hidden="true"></span> Мобильный' : '<span class="eic eic-laptop" aria-hidden="true"></span> Десктоп';
                 const page = (user.page || '/').replace(/^\//, '') || 'index';
                 const pageDisplay = page.replace('.html', '');
                 const timeAgo = getTimeAgo(user.timestamp);
@@ -1182,11 +1218,11 @@
                     ? `<span class="visitor-name" onclick="renameVisitor('${vid}')" title="Клик для переименования">
                            <span class="name-label">${escapeHtml(name)}</span>
                            <span class="name-id">${shortId}…</span>
-                           <span class="edit-icon">✏️</span>
+                           <span class="edit-icon"><span class="eic eic-pen" aria-hidden="true"></span></span>
                        </span>`
                     : `<span class="visitor-name" onclick="renameVisitor('${vid}')" title="Клик для присвоения имени">
                            <code style="font-size:0.8rem; color:var(--text-secondary)">${shortId}…</code>
-                           <span class="edit-icon">✏️</span>
+                           <span class="edit-icon"><span class="eic eic-pen" aria-hidden="true"></span></span>
                        </span>`;
 
                 return `<tr>
@@ -1195,8 +1231,8 @@
                     <td><span class="device-badge ${deviceClass}">${deviceLabel}</span></td>
                     <td style="color:var(--text-secondary)">${timeAgo}</td>
                     <td style="white-space:nowrap;">
-                        <button class="action-btn" onclick="openVisitorProfile('${vid}')" title="Профиль посетителя">📋</button>
-                        <button class="action-btn" onclick="openDirectMessage('${vid}')" title="Написать сообщение">✉️</button>
+                        <button class="action-btn" onclick="openVisitorProfile('${vid}')" title="Профиль посетителя"><span class="eic eic-clip" aria-hidden="true"></span></button>
+                        <button class="action-btn" onclick="openDirectMessage('${vid}')" title="Написать сообщение"><span class="eic eic-mail" aria-hidden="true"></span></button>
                     </td>
                 </tr>`;
             }).join('');
@@ -1244,10 +1280,10 @@
             overlay.innerHTML = `
                 <div class="modal profile-modal">
                     <div class="profile-header">
-                        <div class="profile-avatar">👤</div>
+                        <div class="profile-avatar"><span class="eic eic-user" aria-hidden="true"></span></div>
                         <div class="profile-info">
                             <h3>${escapeHtml(displayName)}
-                                <span class="edit-icon" style="cursor:pointer; font-size:0.8rem; opacity:0.5;" onclick="renameVisitor('${visitorId}')" title="Переименовать">✏️</span>
+                                <span class="edit-icon" style="cursor:pointer; font-size:0.8rem; opacity:0.5;" onclick="renameVisitor('${visitorId}')" title="Переименовать"><span class="eic eic-pen" aria-hidden="true"></span></span>
                             </h3>
                             <div class="profile-id">${escapeHtml(visitorId)}</div>
                         </div>
@@ -1256,7 +1292,7 @@
                         <div class="history-empty pulse">Загрузка истории...</div>
                     </div>
                     <div class="modal-actions" style="padding-top:1rem; border-top: 1px solid var(--border); flex-shrink:0;">
-                        <button class="btn btn-outline btn-sm" onclick="openDirectMessage('${visitorId}'); this.closest('.modal-overlay').remove();">✉️ Написать</button>
+                        <button class="btn btn-outline btn-sm" onclick="openDirectMessage('${visitorId}'); this.closest('.modal-overlay').remove();"><span class="eic eic-mail" aria-hidden="true"></span> Написать</button>
                         <button class="btn btn-outline btn-sm" onclick="this.closest('.modal-overlay').remove()">Закрыть</button>
                     </div>
                 </div>
@@ -1296,11 +1332,11 @@
                         allItems.push({
                             time: msg.timestamp || 0,
                             type: 'dm-poll',
-                            typeLabel: '📊 Личный опрос',
+                            typeLabel: '<span class="eic eic-chart" aria-hidden="true"></span> Личный опрос',
                             text: msg.message,
                             extra: answerText
-                                ? '✅ Ответ: ' + answerText
-                                : '⏳ Варианты: ' + (msg.options || []).join(', ') + ' (нет ответа)',
+                                ? '<span class="eic eic-check" aria-hidden="true"></span> Ответ: ' + answerText
+                                : '<span class="eic eic-clock" aria-hidden="true"></span> Варианты: ' + (msg.options || []).join(', ') + ' (нет ответа)',
                             read: msg.read,
                             deletePath: 'directMessages/' + visitorId + '/' + msgId
                         });
@@ -1308,7 +1344,7 @@
                         allItems.push({
                             time: msg.timestamp || 0,
                             type: 'msg',
-                            typeLabel: '💬 Сообщение',
+                            typeLabel: '<span class="eic eic-chat" aria-hidden="true"></span> Сообщение',
                             text: msg.message,
                             extra: null,
                             read: msg.read,
@@ -1328,7 +1364,7 @@
                         allItems.push({
                             time: resp.timestamp || 0,
                             type: 'vote',
-                            typeLabel: '✅ Ответ на опрос',
+                            typeLabel: '<span class="eic eic-check" aria-hidden="true"></span> Ответ на опрос',
                             text: poll.question || '(без вопроса)',
                             extra: resp.optionText || (poll.options ? poll.options[resp.optionIndex] : '?'),
                             read: null,
@@ -1353,14 +1389,14 @@
 
                 if (messagesHtml) {
                     html += `<div class="profile-section">
-                        <div class="profile-section-title">📨 Отправленные сообщения (${allItems.filter(i => i.type === 'msg' || i.type === 'dm-poll').length})</div>
+                        <div class="profile-section-title"><span class="eic eic-mail" aria-hidden="true"></span> Отправленные сообщения (${allItems.filter(i => i.type === 'msg' || i.type === 'dm-poll').length})</div>
                         ${messagesHtml}
                     </div>`;
                 }
 
                 if (votesHtml) {
                     html += `<div class="profile-section">
-                        <div class="profile-section-title">📊 Ответы на опросы (${allItems.filter(i => i.type === 'vote').length})</div>
+                        <div class="profile-section-title"><span class="eic eic-chart" aria-hidden="true"></span> Ответы на опросы (${allItems.filter(i => i.type === 'vote').length})</div>
                         ${votesHtml}
                     </div>`;
                 }
@@ -1369,7 +1405,7 @@
 
             } catch (err) {
                 console.error('Ошибка загрузки профиля:', err);
-                body.innerHTML = `<div class="history-empty">❌ Ошибка: ${escapeHtml(err.message)}</div>`;
+                body.innerHTML = `<div class="history-empty"><span class="eic eic-alert" aria-hidden="true"></span> Ошибка: ${escapeHtml(err.message)}</div>`;
             }
         }
 
@@ -1379,7 +1415,7 @@
         function renderHistoryItem(item) {
             const time = item.time ? formatDate(item.time) : '—';
             const typeClass = 'history-type-' + item.type.replace('-', '-');
-            const readBadge = item.read === true ? ' ✓' : (item.read === false ? ' (не прочитано)' : '');
+            const readBadge = item.read === true ? ' <span class="eic eic-check" aria-hidden="true"></span>' : (item.read === false ? ' (не прочитано)' : '');
 
             let extraHtml = '';
             if (item.type === 'vote') {
@@ -1389,7 +1425,7 @@
             }
 
             const deleteBtn = item.deletePath
-                ? `<button class="action-btn" style="width:24px; height:24px; font-size:0.7rem;" onclick="deleteHistoryItem('${item.deletePath}')" title="Удалить">🗑️</button>`
+                ? `<button class="action-btn" style="width:24px; height:24px; font-size:0.7rem;" onclick="deleteHistoryItem('${item.deletePath}')" title="Удалить"><span class="eic eic-trash" aria-hidden="true"></span></button>`
                 : '';
 
             return `
@@ -1417,7 +1453,7 @@
                     }
                 })
                 .catch(err => {
-                    alert('❌ Ошибка удаления: ' + err.message);
+                    alert('Ошибка удаления: ' + err.message);
                 });
         }
 
@@ -1456,11 +1492,11 @@
 
             overlay.innerHTML = `
                 <div class="modal">
-                    <h3>✉️ Сообщение для <span style="color:var(--accent-hover)">${escapeHtml(name)}</span></h3>
+                    <h3><span class="eic eic-mail" aria-hidden="true"></span> Сообщение для <span style="color:var(--accent-hover)">${escapeHtml(name)}</span></h3>
 
                     <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
-                        <button class="btn btn-sm btn-outline dm-mode-btn active" data-mode="message" onclick="switchDmMode(this, 'message')">💬 Сообщение</button>
-                        <button class="btn btn-sm btn-outline dm-mode-btn" data-mode="poll" onclick="switchDmMode(this, 'poll')">📊 Опрос</button>
+                        <button class="btn btn-sm btn-outline dm-mode-btn active" data-mode="message" onclick="switchDmMode(this, 'message')"><span class="eic eic-chat" aria-hidden="true"></span> Сообщение</button>
+                        <button class="btn btn-sm btn-outline dm-mode-btn" data-mode="poll" onclick="switchDmMode(this, 'poll')"><span class="eic eic-chart" aria-hidden="true"></span> Опрос</button>
                     </div>
 
                     <div id="dmMessageForm">
@@ -1545,10 +1581,10 @@
                 }).then(() => {
                     const overlay = document.querySelector('.modal-overlay');
                     if (overlay) overlay.remove();
-                    alert('✅ Сообщение отправлено!');
+                    alert('Сообщение отправлено!');
                 }).catch(err => {
                     console.error('Ошибка отправки:', err);
-                    alert('❌ Ошибка: ' + err.message + '\n\nПроверь правила Firebase — нужен узел directMessages');
+                    alert('Ошибка: ' + err.message + '\n\nПроверь правила Firebase — нужен узел directMessages');
                     if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Отправить'; }
                 });
             } else {
@@ -1572,10 +1608,10 @@
                 }).then(() => {
                     const overlay = document.querySelector('.modal-overlay');
                     if (overlay) overlay.remove();
-                    alert('✅ Опрос отправлен посетителю!');
+                    alert('Опрос отправлен посетителю!');
                 }).catch(err => {
                     console.error('Ошибка отправки:', err);
-                    alert('❌ Ошибка: ' + err.message + '\n\nПроверь правила Firebase — нужен узел directMessages');
+                    alert('Ошибка: ' + err.message + '\n\nПроверь правила Firebase — нужен узел directMessages');
                     if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Отправить'; }
                 });
             }
@@ -1657,7 +1693,7 @@
                     document.getElementById('pollQuestion').value = '';
                     document.getElementById('pollDescription').value = '';
                     document.querySelectorAll('.poll-option').forEach(input => input.value = '');
-                    alert('✅ Опрос отправлен всем!');
+                    alert('Опрос отправлен всем!');
                 })
                 .catch(err => {
                     alert('Ошибка: ' + err.message);
@@ -1775,7 +1811,7 @@
 
                 container.innerHTML = barsHtml +
                     `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.5rem;">
-                        <button class="poll-details-toggle" onclick="toggleVoterList('voters-${pollCardId}')">👥 Показать ответы по посетителям (${total})</button>
+                        <button class="poll-details-toggle" onclick="toggleVoterList('voters-${pollCardId}')"><span class="eic eic-users" aria-hidden="true"></span> Показать ответы по посетителям (${total})</button>
                         <span style="font-size:0.8rem; color:var(--text-secondary);">Всего: ${total}</span>
                     </div>
                     <div class="poll-voter-list" id="voters-${pollCardId}">
@@ -1861,12 +1897,12 @@
             Promise.all(promises)
                 .then(() => {
                     document.getElementById('broadcastText').value = '';
-                    alert(`✅ Отправлено ${onlineVisitorIds.length} посетителям!`);
+                    alert(`Отправлено ${onlineVisitorIds.length} посетителям!`);
                 })
-                .catch(err => alert('❌ Ошибка: ' + err.message))
+                .catch(err => alert('Ошибка: ' + err.message))
                 .finally(() => {
                     btn.disabled = false;
-                    btn.textContent = '📢 Отправить всем';
+                    btn.textContent = '<span class="eic eic-megaphone" aria-hidden="true"></span> Отправить всем';
                 });
         });
 
@@ -1976,9 +2012,9 @@
                                     <td style="text-align:center;">${v.visitCount}</td>
                                     <td><span class="page-badge">${escapeHtml(page)}</span></td>
                                     <td style="white-space:nowrap;">
-                                        <button class="action-btn" onclick="openVisitorProfile('${v.id}')" title="Профиль">📋</button>
-                                        <button class="action-btn" onclick="openDirectMessage('${v.id}')" title="Написать">✉️</button>
-                                        <button class="action-btn" onclick="deleteVisitor('${v.id}')" title="Удалить" style="color:var(--danger);">🗑️</button>
+                                        <button class="action-btn" onclick="openVisitorProfile('${v.id}')" title="Профиль"><span class="eic eic-clip" aria-hidden="true"></span></button>
+                                        <button class="action-btn" onclick="openDirectMessage('${v.id}')" title="Написать"><span class="eic eic-mail" aria-hidden="true"></span></button>
+                                        <button class="action-btn" onclick="deleteVisitor('${v.id}')" title="Удалить" style="color:var(--danger);"><span class="eic eic-trash" aria-hidden="true"></span></button>
                                     </td>
                                 </tr>`;
                             }).join('')}
@@ -1997,9 +2033,9 @@
                 db.ref('visitorNames/' + visitorId).remove(),
                 db.ref('directMessages/' + visitorId).remove()
             ]).then(() => {
-                alert('✅ Посетитель удалён');
+                alert('Посетитель удалён');
             }).catch(err => {
-                alert('❌ Ошибка: ' + err.message);
+                alert('Ошибка: ' + err.message);
             });
         }
 
@@ -2010,19 +2046,19 @@
         function clearDailyStats() {
             if (!confirm('Очистить дневную статистику? Счётчик "Сегодня посетило" обнулится.')) return;
             db.ref('dailyStats').remove()
-                .then(() => alert('✅ Дневная статистика очищена'))
-                .catch(err => alert('❌ ' + err.message));
+                .then(() => alert('Дневная статистика очищена'))
+                .catch(err => alert('' + err.message));
         }
 
         function clearAllPresence() {
             if (!confirm('Сбросить список онлайн? Все текущие подключения обновятся автоматически.')) return;
             db.ref('presence').remove()
-                .then(() => alert('✅ Онлайн сброшен'))
-                .catch(err => alert('❌ ' + err.message));
+                .then(() => alert('Онлайн сброшен'))
+                .catch(err => alert('' + err.message));
         }
 
         function clearAllData() {
-            const code = prompt('⚠️ ВНИМАНИЕ: Это удалит ВСЕ данные!\n\nВведите "УДАЛИТЬ" для подтверждения:');
+            const code = prompt('ВНИМАНИЕ: Это удалит ВСЕ данные!\n\nВведите "УДАЛИТЬ" для подтверждения:');
             if (code !== 'УДАЛИТЬ') { alert('Отменено'); return; }
 
             Promise.all([
@@ -2034,9 +2070,9 @@
                 db.ref('pollResponses').remove(),
                 db.ref('presence').remove()
             ]).then(() => {
-                alert('✅ Все данные удалены');
+                alert('Все данные удалены');
             }).catch(err => {
-                alert('❌ Ошибка: ' + err.message);
+                alert('Ошибка: ' + err.message);
             });
         }
     </script>

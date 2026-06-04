@@ -1,0 +1,157 @@
+admin.html:1338 [U+23F3] : '⏳ Варианты: ' + (msg.options || []).join(', ') + ' (нет ответа)',
+admin.html:1721 [U+25CF,U+25CB] const statusText = poll.active ? '● Активен' : '○ Закрыт';
+admin.html:1983 [U+25CF] Найдено: ${visitors.length} · <span style="color:var(--success);">● li
+chemistry.html:71 [U+25BC] <span class="toggle-icon">▼</span>
+chemistry.html:85 [U+25BC] <span class="toggle-icon">▼</span>
+chemistry.html:110 [U+25BC] <span class="toggle-icon">▼</span>
+chemistry.html:1239 [U+2550] <!-- ═══════════════ ОКСИДЫ ═══════════════ -->
+chemistry.html:1318 [U+2550] <!-- ═══════════════ КИСЛОТЫ ═══════════════ -->
+chemistry.html:1372 [U+2550] <!-- ═══════════════ ОСНОВАНИЯ ═══════════════ -->
+chemistry.html:1434 [U+2550] <!-- ═══════════════ СОЛИ ═══════════════ -->
+chemistry.html:2497 [U+1F4D6] <button class="toggle-derivation">📖 Показать электронный баланс</butto
+chemistry.html:2522 [U+1F4D6] <button class="toggle-derivation">📖 Показать решение</button>
+geometry.html:203 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+geometry.html:250 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+geometry.html:409 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод формулы</button>
+geometry.html:511 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод канонического уравн
+likbez.html:126 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:154 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:165 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:177 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:198 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:222 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:236 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:261 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:275 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:302 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:322 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:339 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:362 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:375 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:386 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:398 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:430 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:450 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:462 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:511 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:529 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:549 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:577 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:613 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:624 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+likbez.html:661 [U+1F4D6] <button class="toggle-proof">📖 Показать доказательство</button>
+oxide_reactions_table.html:50 [U+2550] <!-- ═══════════════ ОКСИДЫ ═══════════════ -->
+oxide_reactions_table.html:129 [U+2550] <!-- ═══════════════ КИСЛОТЫ ═══════════════ -->
+oxide_reactions_table.html:183 [U+2550] <!-- ═══════════════ ОСНОВАНИЯ ═══════════════ -->
+oxide_reactions_table.html:245 [U+2550] <!-- ═══════════════ СОЛИ ═══════════════ -->
+physics-exam.html:1518 [U+21B3] <button class="beditor-tb-btn" data-nest="formula-box"    title="Вложи
+physics-exam.html:1519 [U+21B3] <button class="beditor-tb-btn" data-nest="definition-box" title="Вложи
+physics-exam.html:1696 [U+25B6] derivation: ['▶',   'builder-badge-deriv'],
+physics-exam.html:1958 [U+25B6] '<span class="builder-lib-group-chevron">▶</span>';
+physics-exam.html:2051 [U+23F3] libPanel.innerHTML = '<div class="builder-status">⏳ Загрузка...</div>'
+physics-exam.html:2065 [U+2460] '① Открой страницу через <strong>Live Server</strong> в VS Code<br>' +
+physics-exam.html:2067 [U+2461] '② Или открой на <strong>GitHub Pages</strong> — там fetch работает и 
+physics-exam.html:2319 [U+23F3] libPanel.innerHTML = '<div class="builder-status">⏳ Перезагрузка библи
+physics-exam.html:3139 [U+23F3] pubPanel.innerHTML = '<div class="builder-status">⏳ Загрузка...</div>'
+physics-exam.html:3205 [U+25B6] '<span class="builder-pub-arrow">▶</span>' +
+physics.html:78 [U+25BC] <span class="toggle-icon">▼</span>
+physics.html:98 [U+25BC] <span class="toggle-icon">▼</span>
+physics.html:124 [U+25BC] <span class="toggle-icon">▼</span>
+physics.html:137 [U+25BC] <span class="toggle-icon">▼</span>
+physics.html:149 [U+25BC] <span class="toggle-icon">▼</span>
+physics.html:592 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод формулы</button>
+physics.html:681 [U+1F4D6] <button class="toggle-derivation">📖 Скрыть вывод</button>
+physics.html:696 [U+1F4D6] <button class="toggle-derivation">📖 Скрыть вывод</button>
+physics.html:708 [U+1F4D6] <button class="toggle-derivation">📖 Скрыть вывод</button>
+physics.html:733 [U+1F4D6] <button class="toggle-derivation">📖 Скрыть вывод</button>
+physics.html:756 [U+1F4D6] <button class="toggle-derivation">📖 Скрыть вывод</button>
+physics.html:768 [U+1F4D6] <button class="toggle-derivation">📖 Скрыть вывод</button>
+physics.html:789 [U+1F4D6] <button class="toggle-derivation">📖 Скрыть вывод</button>
+physics.html:823 [U+1F4D6] <button class="toggle-derivation">📖 Скрыть вывод</button>
+physics.html:1034 [U+1F4D6] <button class="toggle-derivation">📖 Скрыть вывод</button>
+physics.html:1060 [U+1F4D6] <button class="toggle-derivation">📖 Скрыть вывод</button>
+physics.html:1082 [U+1F4D6] <button class="toggle-derivation">📖 Скрыть вывод</button>
+physics.html:1556 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод формулы</button>
+physics.html:1636 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:1729 [U+1F4D6] <button class="toggle-derivation">📖 Скрыть вывод</button>
+physics.html:1806 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:1885 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:1967 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2017 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2067 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2129 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2148 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2165 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2196 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2210 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2229 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2241 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2286 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2305 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2331 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2365 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2421 [U+1F4D6] <button class="toggle-derivation">📖 Показать полный вывод</button>
+physics.html:2469 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2579 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2598 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2640 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2656 [U+1F4D6] <button class="toggle-derivation">📖 Показать формулу</button>
+physics.html:2694 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2719 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2770 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2800 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2816 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2866 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2896 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2911 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:2951 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:3068 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:3107 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:3127 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:3360 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:3398 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:3420 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:3447 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:3495 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+physics.html:3556 [U+1F4D6] <button class="toggle-derivation">📖 Показать вывод</button>
+the-secret-game.html:511 [U+2600] ☀ ДЕНЬ 1
+the-secret-game.html:551 [U+25B6] ▶ Начать игру
+the-secret-game.html:699 [U+1F6E1] phaseEl.textContent = '🛡 ПОДГОТОВКА';
+the-secret-game.html:702 [U+2600] phaseEl.textContent = '☀ ДЕНЬ ' + day;
+the-secret-game.html:705 [U+1F319] phaseEl.textContent = '🌙 НОЧЬ ' + day;
+the-secret-game.html:988 [U+1F6E1] ctx.fillText('🛡', px + cs / 2, py + cs / 2);
+the-secret-game.html:1116 [U+1F525] if (fireCells.has(k)) status = '🔥 Горит';
+the-secret-game.html:1117 [U+1F6E1] else if (protectedCells.has(k)) status = '🛡 Защищено';
+knowledge-check-exam.js:357 [U+2713] <span style="color: #22c55e;">✓ ${rememberCount}</span>
+knowledge-check-exam.js:358 [U+2717] <span style="color: #ef4444;">✗ ${forgetCount}</span>
+knowledge-check-exam.js:380 [U+2717] <span style="font-size: 1.2rem;">✗</span>
+knowledge-check-exam.js:384 [U+2713] <span style="font-size: 1.2rem;">✓</span>
+knowledge-check-exam.js:524 [U+2705] let emoji = '✅';
+knowledge-check-exam.js:527 [U+1F4DA] emoji = '📚';
+knowledge-check-exam.js:530 [U+1F44D] emoji = '👍';
+matcenter.js:135 [U+2713,U+2717] const status = attempt.success ? '✓' : '✗';
+matcenter.js:626 [U+23F1] authError.querySelector('.error-icon').textContent = '⏱️';
+matcenter.js:672 [U+1F512] // 🔒 Проверяем, есть ли уже отпечаток (если был сгенерирован ранее)
+matcenter.js:679 [U+1F50D] // 🔍 Проверяем подозрительную активность (неблокирующая проверка)
+matcenter.js:684 [U+1F510] // 🔐 Проверяем существующую сессию (только если не было автозагрузки)
+matcenter.js:1421 [U+25BC] <span class="toggle-icon">▼</span>
+matcenter.js:1438 [U+25B2] ? '<span class="toggle-icon">▲</span> Скрыть условие'
+matcenter.js:1439 [U+25BC] : '<span class="toggle-icon">▼</span> Показать условие';
+newyear.js:218 [U+2744] div.innerHTML = '❄';
+newyear.js:465 [U+1F384,U+1F385,U+1F3FC] header.innerHTML = '🎄 ' + header.textContent + ' 🎅🏼';
+newyear.js:502 [U+1F384] createEasterEgg('🎄', header);
+newyear.js:514 [U+1F381] createEasterEgg('🎁', e.target);
+newyear.js:522 [U+2728] createEasterEgg('✨', button);
+newyear.js:523 [U+2B50] createEasterEgg('⭐', button);
+newyear.js:538 [U+2744] createFloatingEmoji('❄️', x, y);
+newyear.js:577 [U+1F384] 'С Новым Годом! 🎄',
+newyear.js:578 [U+2728] 'С Рождеством! ✨',
+newyear.js:579 [U+2744] 'Новогодний вайб включен!) ❄️',
+newyear.js:580 [U+1F385,U+1F3FC] 'Пасхалочка!)) 🎅🏼'
+poll.js:72 [U+2605] `<button class="poll-star" data-value="${n}" aria-label="${n} из 5" ti
+poll.js:77 [U+2715] <button class="poll-close" id="pollClose" aria-label="Закрыть">✕</butt
+poll.js:79 [U+1F3A8] <p class="poll-emoji">🎨</p>
+poll.js:109 [U+1F61E,U+1F615,U+1F610,U+1F642,U+1F929] const labels = ['', 'Совсем не нравится 😞', 'Плохо 😕', 'Нормально 😐', 
+poll.js:163 [U+1F61E,U+1F615,U+1F610,U+1F642,U+1F929] <p class="poll-thanks-emoji">${['','😞','😕','😐','🙂','🤩'][value]}</p>
+script.js:293 [U+25B2] '<button class="search-nav-btn" id="searchPrev" aria-label="Предыдущее
+script.js:294 [U+25BC] '<button class="search-nav-btn" id="searchNext" aria-label="Следующее"

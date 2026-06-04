@@ -265,7 +265,7 @@
         const modal = overlay.querySelector('div');
         modal.innerHTML = `
             <div style="text-align: center; padding: 2rem 0;">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+                <div style="font-size: 3rem; margin-bottom: 1rem;"><span class="eic eic-check" aria-hidden="true"></span></div>
                 <h3 style="margin: 0 0 0.5rem 0; color: inherit;">Спасибо!</h3>
                 <p style="margin: 0; opacity: 0.7;">Ваш ответ записан</p>
             </div>
@@ -340,7 +340,7 @@
         `;
 
         modal.innerHTML = `
-            <div style="font-size: 2rem; margin-bottom: 1rem;">💬</div>
+            <div style="font-size: 2rem; margin-bottom: 1rem;"><span class="eic eic-chat" aria-hidden="true"></span></div>
             <h3 style="margin: 0 0 1rem 0; font-size: 1.2rem; font-weight: 700;">Сообщение от администратора</h3>
             <p style="margin: 0 0 1.5rem 0; font-size: 1rem; line-height: 1.6; color: ${isDark ? '#cbd5e1' : '#374151'};">${msg.message.replace(/\n/g, '<br>')}</p>
             <button style="

@@ -3,18 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <script>
-        // FOUC-prevention: применяем тему до загрузки CSS
+        // FOUC-prevention: тема + экспериментальный режим до загрузки CSS
         (function(){
             try {
-                var t = 'light';
                 var s = localStorage.getItem('siteSettings');
-                if (s) { try { var p = JSON.parse(s); if (p && p.theme) t = p.theme; } catch(_){} }
-                else { var l = localStorage.getItem('theme'); if (l === 'dark') t = 'dark'; }
-                var bg = {light:'#f8fafc',dark:'#0f172a',sepia:'#f4ecd8',midnight:'#0a0a0b'}[t] || '#f8fafc';
-                var fg = {light:'#0f172a',dark:'#f1f5f9',sepia:'#3d2f1e',midnight:'#fafafa'}[t] || '#0f172a';
+                var p = s ? JSON.parse(s) : {};
+                var bg, fg;
+                if (p && p.experimental) {
+                    var dark = !!p.expDark;
+                    var mode = p.expMode === 'prism' ? 'prism' : 'graphite';
+                    if (mode === 'graphite') { bg = dark ? '#09090b' : '#fafafa'; fg = dark ? '#f4f4f5' : '#18181b'; }
+                    else { bg = dark ? '#0e0e16' : '#fbfbfe'; fg = dark ? '#ececf4' : '#16161f'; }
+                    document.documentElement.dataset.exp = mode + (dark ? '-dark' : '-light');
+                } else {
+                    var t = (p && p.theme) || (localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
+                    bg = {light:'#f8fafc',dark:'#0f172a',sepia:'#f4ecd8',midnight:'#0a0a0b'}[t] || '#f8fafc';
+                    fg = {light:'#0f172a',dark:'#f1f5f9',sepia:'#3d2f1e',midnight:'#fafafa'}[t] || '#0f172a';
+                    document.documentElement.dataset.theme = t;
+                }
                 document.documentElement.style.backgroundColor = bg;
                 document.documentElement.style.color = fg;
-                document.documentElement.dataset.theme = t;
             } catch(e) {}
         })();
     </script>
@@ -33,9 +41,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="style-new.css">
 </head>
 <body class="matcenter-page">
-    <script>(function(){var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');})();</script>
+    <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p&&p.experimental){document.body.classList.add('experimental',p.expMode==='prism'?'exp-prism':'exp-graphite');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
     <!-- Боковая панель навигации -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -48,7 +57,7 @@
             <div class="search-input-wrap">
                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-3.6-3.6"/></svg>
                 <input type="text" id="searchInput" placeholder="Поиск задач..." aria-label="Поиск задач">
-                <button class="search-clear-btn" id="searchClearBtn" aria-label="Очистить поиск">✕</button>
+                <button class="search-clear-btn" id="searchClearBtn" aria-label="Очистить поиск"><span class="eic eic-x" aria-hidden="true"></span></button>
             </div>
             <select id="statusFilter" class="status-filter-select" title="Фильтр по статусу" aria-label="Фильтр по статусу">
                 <option value="">Все</option>
@@ -119,7 +128,7 @@
         <div class="hint-modal" id="hintModal">
             <div class="hint-drag-handle" id="hintDragHandle" aria-hidden="true"></div>
             <div class="hint-modal-header">
-                <h3>💡 Подсказка к задаче №<span id="hintTaskNumber"></span></h3>
+                <h3><span class="eic eic-bulb" aria-hidden="true"></span> Подсказка к задаче №<span id="hintTaskNumber"></span></h3>
                 <button class="hint-close-btn" id="hintCloseBtn" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>
             </div>
             <textarea 
@@ -128,8 +137,8 @@
                 rows="6"
             ></textarea>
             <div class="hint-modal-actions">
-                <button class="hint-save-btn" id="hintSaveBtn">💾 Сохранить</button>
-                <button class="hint-delete-btn" id="hintDeleteBtn">🗑️ Удалить подсказку</button>
+                <button class="hint-save-btn" id="hintSaveBtn"><span class="eic eic-save" aria-hidden="true"></span> Сохранить</button>
+                <button class="hint-delete-btn" id="hintDeleteBtn"><span class="eic eic-trash" aria-hidden="true"></span> Удалить подсказку</button>
                 <button class="hint-cancel-btn" id="hintCancelBtn">Отмена</button>
             </div>
         </div>
@@ -148,7 +157,7 @@
                 <div class="mobile-search-input-wrap">
                     <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-3.6-3.6"/></svg>
                     <input type="text" id="mobileSearchInput" placeholder="Поиск задач..." autocomplete="off" inputmode="search" aria-label="Поиск задач">
-                    <button class="mobile-search-clear" id="mobileSearchClear" aria-label="Очистить поиск">✕</button>
+                    <button class="mobile-search-clear" id="mobileSearchClear" aria-label="Очистить поиск"><span class="eic eic-x" aria-hidden="true"></span></button>
                 </div>
                 <select id="mobileStatusFilter" class="mobile-status-filter" title="Фильтр по статусу" aria-label="Фильтр по статусу">
                     <option value="">Все</option>
@@ -231,7 +240,7 @@
             <div class="spinner"></div>
             <p>Загрузка задач из Google Таблицы...</p>
             <button id="retryButton" class="retry-button" style="display: none; margin-top: 1rem;">
-                🔄 Попробовать снова
+                <span class="eic eic-refresh" aria-hidden="true"></span> Попробовать снова
             </button>
         </div>
 

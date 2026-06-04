@@ -1,0 +1,969 @@
+/* =====================================================================
+   ЭКСПЕРИМЕНТАЛЬНЫЙ РЕЖИМ — полная переработка дизайна
+   Включается тумблером в настройках (body.experimental).
+
+   Два дизайн-режима, у каждого светлая и тёмная тема:
+     • «Графит» (body.exp-graphite) — нейтральный монохром (Linear/Notion-стиль)
+     • «Призма» (body.exp-prism)    — дисциплинированный цвет (акцент + цветные
+                                       ярлыки типов блоков)
+   Светлая/тёмная: отсутствие/наличие класса body.exp-dark.
+
+   Архитектура: токены --exp-* задаются для каждой комбинации (режим × тема),
+   а легаси-переменные сайта (--bg-primary и т.д.) РЕМАПЯТСЯ на них один раз —
+   так весь сайт перекрашивается автоматически, а сверху идёт точечная
+   структурная доработка (плоские шапки, нейтральные блоки с цветными
+   ярлыками-чипами, аккуратные карточки).
+   ===================================================================== */
+
+/* =========================================================
+   1. БАЗА + РЕМАП ЛЕГАСИ-ПЕРЕМЕННЫХ
+   ========================================================= */
+body.experimental {
+    /* Геометрия */
+    --exp-r-sm: 8px;
+    --exp-r: 12px;
+    --exp-r-lg: 16px;
+    --exp-r-pill: 999px;
+
+    /* Светлые тени по умолчанию (мягкие, без «пластика») */
+    --exp-shadow-sm: 0 1px 2px rgba(15, 15, 25, 0.05);
+    --exp-shadow: 0 2px 8px rgba(15, 15, 25, 0.06);
+    --exp-shadow-md: 0 4px 16px rgba(15, 15, 25, 0.08);
+    --exp-shadow-lg: 0 12px 32px rgba(15, 15, 25, 0.10);
+
+    /* Цветовые токены типов блоков — по умолчанию нейтральные (для «Графита») */
+    --t-definition: #71717a; --t-theorem: #71717a; --t-lemma: #71717a;
+    --t-statement: #71717a; --t-corollary: #71717a; --t-example: #71717a;
+    --t-formula: #71717a; --t-proof: #71717a; --t-derivation: #71717a;
+    --t-experiment: #71717a; --t-exercise: #71717a; --t-properties: #71717a;
+    --t-system: #71717a; --t-remark: #71717a;
+
+    /* ---- РЕМАП легаси-переменных на --exp-* ---- */
+    --bg-primary: var(--exp-bg);
+    --bg-secondary: var(--exp-surface);
+    --bg-tertiary: var(--exp-surface-2);
+    --text-primary: var(--exp-text);
+    --text-secondary: var(--exp-text-dim);
+    --accent-color: var(--exp-accent);
+    --accent-hover: var(--exp-accent-hover);
+    --accent-rgb: var(--exp-accent-rgb);
+    --primary-color: var(--exp-accent);
+    --primary-gradient: linear-gradient(135deg, var(--exp-accent), var(--exp-accent-hover));
+    --border-color: var(--exp-border);
+    --header-bg: var(--exp-surface);
+    --header-text: var(--exp-text);
+
+    --shadow-sm: var(--exp-shadow-sm);
+    --shadow-md: var(--exp-shadow);
+    --shadow-lg: var(--exp-shadow-md);
+    --shadow-xl: var(--exp-shadow-lg);
+    --shadow-hover: var(--exp-shadow-md);
+
+    /* Блоки — нейтральные поверхности (цвет уходит в ярлык-чип) */
+    --definition-bg: var(--exp-surface); --definition-border: var(--exp-border);
+    --formula-bg: var(--exp-surface); --formula-border: var(--exp-border);
+    --remark-bg: var(--exp-surface); --remark-border: var(--exp-border);
+    --experiment-bg: var(--exp-surface); --experiment-border: var(--exp-border);
+    --derivation-bg: var(--exp-surface); --derivation-border: var(--exp-border);
+    --theorem-bg: var(--exp-surface); --theorem-border: var(--exp-border);
+    --lemma-bg: var(--exp-surface); --lemma-border: var(--exp-border);
+    --example-bg: var(--exp-surface); --example-border: var(--exp-border);
+    --statement-bg: var(--exp-surface); --statement-border: var(--exp-border);
+    --corollary-bg: var(--exp-surface); --corollary-border: var(--exp-border);
+    --proof-bg: var(--exp-surface); --proof-border: var(--exp-border);
+    --exercise-bg: var(--exp-surface); --exercise-border: var(--exp-border);
+
+    background-color: var(--exp-bg);
+    color: var(--exp-text);
+}
+
+/* =========================================================
+   2. ТОКЕНЫ РЕЖИМОВ
+   ========================================================= */
+
+/* ---- ГРАФИТ · светлая ---- */
+body.experimental.exp-graphite {
+    --exp-bg: #fafafa;
+    --exp-surface: #ffffff;
+    --exp-surface-2: #f4f4f5;
+    --exp-text: #18181b;
+    --exp-text-dim: #52525b;
+    --exp-text-faint: #a1a1aa;
+    --exp-border: #e8e8ea;
+    --exp-border-strong: #d4d4d8;
+    --exp-accent: #18181b;
+    --exp-accent-hover: #000000;
+    --exp-accent-soft: #f4f4f5;
+    --exp-accent-contrast: #ffffff;
+    --exp-accent-rgb: 24, 24, 27;
+}
+
+/* ---- ГРАФИТ · тёмная ---- */
+body.experimental.exp-graphite.exp-dark {
+    --exp-bg: #09090b;
+    --exp-surface: #131316;
+    --exp-surface-2: #1c1c20;
+    --exp-text: #f4f4f5;
+    --exp-text-dim: #a1a1aa;
+    --exp-text-faint: #71717a;
+    --exp-border: #27272a;
+    --exp-border-strong: #3f3f46;
+    --exp-accent: #fafafa;
+    --exp-accent-hover: #ffffff;
+    --exp-accent-soft: #1c1c20;
+    --exp-accent-contrast: #09090b;
+    --exp-accent-rgb: 250, 250, 250;
+}
+
+/* ---- ПРИЗМА · светлая ---- */
+body.experimental.exp-prism {
+    --exp-bg: #fbfbfe;
+    --exp-surface: #ffffff;
+    --exp-surface-2: #f3f4fb;
+    --exp-text: #16161f;
+    --exp-text-dim: #51526b;
+    --exp-text-faint: #9a9ab0;
+    --exp-border: #e8e8f2;
+    --exp-border-strong: #d6d6e6;
+    --exp-accent: #4f46e5;
+    --exp-accent-hover: #4338ca;
+    --exp-accent-soft: #eef0fe;
+    --exp-accent-contrast: #ffffff;
+    --exp-accent-rgb: 79, 70, 229;
+
+    --t-definition: #2563eb; --t-theorem: #7c3aed; --t-lemma: #0d9488;
+    --t-statement: #6366f1; --t-corollary: #64748b; --t-example: #ea580c;
+    --t-formula: #4f46e5; --t-proof: #16a34a; --t-derivation: #16a34a;
+    --t-experiment: #9333ea; --t-exercise: #475569; --t-properties: #2563eb;
+    --t-system: #475569; --t-remark: #d97706;
+}
+
+/* ---- ПРИЗМА · тёмная ---- */
+body.experimental.exp-prism.exp-dark {
+    --exp-bg: #0e0e16;
+    --exp-surface: #16161f;
+    --exp-surface-2: #1e1e2b;
+    --exp-text: #ececf4;
+    --exp-text-dim: #a2a2b8;
+    --exp-text-faint: #6f6f86;
+    --exp-border: #262638;
+    --exp-border-strong: #34344c;
+    --exp-accent: #818cf8;
+    --exp-accent-hover: #a5b4fc;
+    --exp-accent-soft: #1c1d33;
+    --exp-accent-contrast: #0e0e16;
+    --exp-accent-rgb: 129, 140, 248;
+
+    --t-definition: #60a5fa; --t-theorem: #a78bfa; --t-lemma: #2dd4bf;
+    --t-statement: #818cf8; --t-corollary: #94a3b8; --t-example: #fb923c;
+    --t-formula: #818cf8; --t-proof: #4ade80; --t-derivation: #4ade80;
+    --t-experiment: #c084fc; --t-exercise: #94a3b8; --t-properties: #60a5fa;
+    --t-system: #94a3b8; --t-remark: #fbbf24;
+}
+
+/* ---- Нейтральные токены типов для ТЁМНОГО Графита ----
+   (Призма-тёмная перекрывает это благодаря большей специфичности) */
+body.experimental.exp-dark {
+    --t-definition: #a1a1aa; --t-theorem: #a1a1aa; --t-lemma: #a1a1aa;
+    --t-statement: #a1a1aa; --t-corollary: #a1a1aa; --t-example: #a1a1aa;
+    --t-formula: #a1a1aa; --t-proof: #a1a1aa; --t-derivation: #a1a1aa;
+    --t-experiment: #a1a1aa; --t-exercise: #a1a1aa; --t-properties: #a1a1aa;
+    --t-system: #a1a1aa; --t-remark: #a1a1aa;
+}
+
+/* ---- Тёмные тени ---- */
+body.experimental.exp-dark {
+    --exp-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --exp-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    --exp-shadow-md: 0 6px 18px rgba(0, 0, 0, 0.5);
+    --exp-shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.6);
+}
+
+/* =========================================================
+   3. ТИПОГРАФИКА И БАЗА
+   ========================================================= */
+body.experimental {
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+    line-height: 1.65;
+    letter-spacing: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body.experimental .main-content :is(h1, h2, h3, h4) {
+    letter-spacing: -0.012em;
+}
+
+body.experimental ::selection {
+    background: color-mix(in srgb, var(--exp-accent) 22%, transparent);
+}
+
+/* Тонкие скроллбары */
+body.experimental * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--exp-border-strong) transparent;
+}
+body.experimental ::-webkit-scrollbar { width: 10px; height: 10px; }
+body.experimental ::-webkit-scrollbar-thumb {
+    background: var(--exp-border-strong);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+}
+body.experimental ::-webkit-scrollbar-thumb:hover { background: var(--exp-text-faint); background-clip: content-box; }
+
+/* =========================================================
+   4. PAGE HEADER — плоский, слева, минималистичный
+   ========================================================= */
+body.experimental .page-header {
+    background: var(--exp-surface) !important;
+    color: var(--exp-text) !important;
+    border: 1px solid var(--exp-border) !important;
+    border-radius: var(--exp-r-lg) !important;
+    box-shadow: none !important;
+    text-align: left !important;
+    padding: 1.75rem 1.9rem !important;
+    margin-bottom: 2rem !important;
+    overflow: hidden;
+}
+body.experimental .page-header::before,
+body.experimental .page-header::after { display: none !important; animation: none !important; }
+body.experimental .page-header h1 {
+    color: var(--exp-text) !important;
+    font-size: 2rem;
+    font-weight: 750;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.45rem 0 !important;
+}
+body.experimental .page-header .subtitle,
+body.experimental .page-header p {
+    color: var(--exp-text-dim) !important;
+    font-size: 0.95rem;
+}
+body.experimental .page-header a { color: var(--exp-accent) !important; font-weight: 600; }
+body.experimental .page-header .subtitle a { color: var(--exp-accent) !important; }
+
+/* =========================================================
+   5. SIDEBAR + НАВИГАЦИЯ
+   ========================================================= */
+body.experimental .sidebar {
+    background: var(--exp-surface) !important;
+    border-right: 1px solid var(--exp-border) !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+}
+body.experimental .sidebar-header {
+    background: var(--exp-surface) !important;
+    border-bottom: 1px solid var(--exp-border);
+    color: var(--exp-text);
+}
+body.experimental .sidebar-header h2,
+body.experimental .sidebar-header h2 a { color: var(--exp-text) !important; }
+body.experimental .sidebar-header .home-icon { color: var(--exp-accent); }
+
+body.experimental .search-box input {
+    background: var(--exp-surface-2);
+    border: 1px solid var(--exp-border);
+    color: var(--exp-text);
+    border-radius: var(--exp-r-sm);
+}
+body.experimental .search-box input:focus {
+    border-color: var(--exp-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--exp-accent) 15%, transparent);
+}
+body.experimental .sidebar-search-icon { color: var(--exp-text-faint); }
+
+body.experimental .nav-section h3 {
+    color: var(--exp-text-faint);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+body.experimental .nav-link {
+    color: var(--exp-text-dim);
+    border-left: none;
+    border-radius: var(--exp-r-sm);
+    margin: 0.1rem 0;
+    font-weight: 500;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+body:not(.no-hover).experimental .nav-link:hover {
+    background: var(--exp-surface-2) !important;
+    color: var(--exp-text) !important;
+    border-left-color: transparent !important;
+    transform: none !important;
+}
+body.experimental .nav-link.active {
+    background: var(--exp-accent-soft) !important;
+    color: var(--exp-accent) !important;
+    border-left: none !important;
+    font-weight: 650;
+    box-shadow: inset 2px 0 0 var(--exp-accent);
+}
+body.experimental .nav-group-toggle { color: var(--exp-text); border-left: none; }
+
+/* Кнопки сайдбара/FAB */
+body.experimental .menu-toggle,
+body.experimental .sidebar-expand-btn {
+    background: var(--exp-accent);
+    color: var(--exp-accent-contrast);
+    border-radius: var(--exp-r);
+    box-shadow: var(--exp-shadow-md);
+}
+body.experimental .close-sidebar,
+body.experimental .sidebar-collapse-btn,
+body.experimental .settings-button-sidebar {
+    background: var(--exp-surface-2);
+    color: var(--exp-text-dim);
+    border-radius: var(--exp-r-sm);
+}
+body:not(.no-hover).experimental .close-sidebar:hover,
+body:not(.no-hover).experimental .sidebar-collapse-btn:hover {
+    background: var(--exp-border);
+    color: var(--exp-text);
+}
+
+/* =========================================================
+   6. ЧАСТИ / ТЕМЫ / ПОДЗАГОЛОВКИ
+   ========================================================= */
+body.experimental .part-title {
+    background: transparent !important;
+    color: var(--exp-text) !important;
+    border: none !important;
+    border-bottom: 1px solid var(--exp-border) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 0 0.7rem 0 !important;
+    margin: 2.5rem 0 1.5rem !important;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+}
+body.experimental .part-title::after,
+body.experimental .part-title::before { display: none !important; }
+
+/* МатЦентр: заголовок раздела лежит ВНУТРИ .part-title-row, у которого уже есть
+   своя нижняя граница. Без этого у .part-title оставалась собственная граница из
+   правила выше → под названием рисовались ДВЕ горизонтальные полоски. */
+body.experimental .part-title-row .part-title {
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+    margin: 0 !important;
+}
+
+body.experimental .topic {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 0 0.5rem 0 !important;
+    margin-bottom: 2rem !important;
+}
+body.experimental .topic:hover { transform: none !important; box-shadow: none !important; }
+
+body.experimental .topic-title {
+    color: var(--exp-text) !important;
+    background: var(--exp-bg) !important;
+    border: none !important;
+    border-bottom: 1px solid var(--exp-border) !important;
+    border-radius: 0 !important;
+    padding: 0.4rem 0 0.55rem 0 !important;
+    margin-bottom: 1.1rem !important;
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    /* Явный transition вместо унаследованного `all` (иначе sticky-заголовок
+       мог дёргаться при прокрутке/переключении). БЕЗ !important — чтобы
+       theme-transitioning (подавление переходов при смене режима) перекрывал его. */
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+body.experimental .topic-title::before,
+body.experimental .topic-title::after { display: none !important; content: none !important; }
+
+body.experimental .subsection-title {
+    color: var(--exp-text) !important;
+    border: none !important;
+    border-bottom: none !important;
+    font-size: 1.08rem;
+    font-weight: 650;
+    margin: 1.5rem 0 0.6rem;
+    padding: 0;
+}
+
+/* =========================================================
+   7. БЛОКИ — нейтральная карточка + цветной ярлык-чип (::before)
+   ========================================================= */
+body.experimental .definition-box,
+body.experimental .formula-box,
+body.experimental .remark-box,
+body.experimental .experiment-box,
+body.experimental .derivation-box,
+body.experimental .theorem-box,
+body.experimental .lemma-box,
+body.experimental .example-box,
+body.experimental .statement-box,
+body.experimental .corollary-box,
+body.experimental .proof-box,
+body.experimental .exercise-box,
+body.experimental .properties-box,
+body.experimental .system-box {
+    background: var(--exp-surface) !important;
+    border: 1px solid var(--exp-border) !important;
+    border-left: 1px solid var(--exp-border) !important;
+    border-radius: var(--exp-r) !important;
+    box-shadow: none !important;
+    padding: 1.05rem 1.25rem !important;
+    margin: 1rem 0 !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+body:not(.no-hover).experimental .definition-box:hover,
+body:not(.no-hover).experimental .formula-box:hover,
+body:not(.no-hover).experimental .theorem-box:hover,
+body:not(.no-hover).experimental .lemma-box:hover,
+body:not(.no-hover).experimental .example-box:hover,
+body:not(.no-hover).experimental .statement-box:hover,
+body:not(.no-hover).experimental .corollary-box:hover,
+body:not(.no-hover).experimental .proof-box:hover,
+body:not(.no-hover).experimental .properties-box:hover,
+body:not(.no-hover).experimental .derivation-box:hover,
+body:not(.no-hover).experimental .experiment-box:hover {
+    transform: none !important;
+    border-color: var(--exp-border-strong) !important;
+    box-shadow: var(--exp-shadow-sm) !important;
+}
+
+/* NO-HOVER в эксп-режиме: общий no-hover-блок (style.css) ВОЗВРАЩАЕТ тень
+   карточкам/блокам на :hover (в легаси у них есть базовая тень). В эксп-режиме
+   они ПЛОСКИЕ — поэтому при выключенных hover-эффектах тень появляться не должна.
+   Гасим её, чтобы под курсором не возникало вообще никакого эффекта. */
+body.experimental.no-hover [class$="-box"]:hover,
+body.experimental.no-hover .subject-card:hover,
+body.experimental.no-hover .task-card:hover,
+body.experimental.no-hover .stat-card:hover,
+body.experimental.no-hover .bm-card:hover,
+body.experimental.no-hover .topic-select-card:hover,
+body.experimental.no-hover .grade-card:hover {
+    box-shadow: none !important;
+}
+
+/* Ярлыки типов */
+body.experimental .definition-box::before { content: "Определение"; color: var(--t-definition); }
+body.experimental .theorem-box::before     { content: "Теорема"; color: var(--t-theorem); }
+body.experimental .lemma-box::before       { content: "Лемма"; color: var(--t-lemma); }
+body.experimental .statement-box::before   { content: "Утверждение"; color: var(--t-statement); }
+body.experimental .corollary-box::before   { content: "Следствие"; color: var(--t-corollary); }
+body.experimental .example-box::before     { content: "Пример"; color: var(--t-example); }
+body.experimental .formula-box::before     { content: "Формула"; color: var(--t-formula); }
+body.experimental .proof-box::before       { content: "Доказательство"; color: var(--t-proof); }
+body.experimental .derivation-box::before  { content: "Вывод"; color: var(--t-derivation); }
+body.experimental .experiment-box::before  { content: "Эксперимент"; color: var(--t-experiment); }
+body.experimental .exercise-box::before    { content: "Упражнение"; color: var(--t-exercise); }
+body.experimental .properties-box::before  { content: "Свойства"; color: var(--t-properties); }
+body.experimental .system-box::before      { content: "Система"; color: var(--t-system); }
+/* remark-box оформляется не текстовым ярлыком, а иконкой-лампочкой в углу — см. ниже */
+
+body.experimental .definition-box::before,
+body.experimental .theorem-box::before,
+body.experimental .lemma-box::before,
+body.experimental .statement-box::before,
+body.experimental .corollary-box::before,
+body.experimental .example-box::before,
+body.experimental .formula-box::before,
+body.experimental .proof-box::before,
+body.experimental .derivation-box::before,
+body.experimental .experiment-box::before,
+body.experimental .exercise-box::before,
+body.experimental .properties-box::before,
+body.experimental .system-box::before {
+    display: block;
+    width: fit-content;
+    margin: 0 0 0.7rem 0 !important;
+    padding: 0.16rem 0.5rem;
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    border-radius: 6px;
+    background: color-mix(in srgb, currentColor 14%, transparent);
+    position: static;
+    top: auto; left: auto;
+    -webkit-text-fill-color: currentColor;
+}
+
+/* remark-box: чистая иконка-лампочка в правом верхнем углу (как в обычном
+   режиме), а НЕ текстовый чип. Раньше базовая mask-лампочка «обрезала» текстовый
+   чип в лампочку-силуэт и он выходил разноцветным над текстом. Здесь полностью
+   переопределяем ::before: пустой content + та же SVG-маска, окрашенная в цвет
+   типа (--t-remark), absolute в правом верхнем углу. */
+body.experimental .remark-box {
+    position: relative;
+    padding-right: 3rem !important;
+}
+body.experimental .remark-box::before {
+    content: '' !important;
+    display: block !important;
+    position: absolute !important;
+    top: 0.95rem !important;
+    right: 1rem !important;
+    left: auto !important;
+    width: 20px !important;
+    height: 20px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    background: var(--t-remark) !important;
+    opacity: 0.8;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18h6'/%3E%3Cpath d='M10 22h4'/%3E%3Cpath d='M12 2a7 7 0 0 0-4 12.7c.6.4 1 1.1 1 1.8V18h6v-1.5c0-.7.4-1.4 1-1.8A7 7 0 0 0 12 2z'/%3E%3C/svg%3E") no-repeat center / contain !important;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18h6'/%3E%3Cpath d='M10 22h4'/%3E%3Cpath d='M12 2a7 7 0 0 0-4 12.7c.6.4 1 1.1 1 1.8V18h6v-1.5c0-.7.4-1.4 1-1.8A7 7 0 0 0 12 2z'/%3E%3C/svg%3E") no-repeat center / contain !important;
+}
+/* Если у remark есть кнопка закладки — лампочка уходит левее неё (десктоп),
+   чтобы значки не накладывались. */
+body.experimental .remark-box:has(.bookmark-btn)::before {
+    right: 2.7rem !important;
+}
+body.experimental .remark-box:has(.bookmark-btn) {
+    padding-right: 3.5rem !important;
+}
+
+/* Вложенный proof внутри теоремы/леммы — компактный ярлык */
+body.experimental .theorem-box > .proof-box,
+body.experimental .statement-box > .proof-box,
+body.experimental .lemma-box > .proof-box,
+body.experimental .corollary-box > .proof-box,
+body.experimental .remark-box > .proof-box {
+    background: var(--exp-surface-2) !important;
+    margin-top: 0.85rem !important;
+}
+
+/* Вывод/доказательство — раскрытый контент */
+body.experimental .derivation-content,
+body.experimental .proof-content {
+    border-top: 1px dashed var(--exp-border) !important;
+    border-left: none !important;
+}
+
+/* Кнопки-тогглы вывода/доказательства */
+body.experimental .toggle-derivation,
+body.experimental .toggle-proof {
+    background: var(--exp-surface-2) !important;
+    color: var(--exp-text) !important;
+    border: 1px solid var(--exp-border) !important;
+    border-radius: var(--exp-r-sm) !important;
+    box-shadow: none !important;
+    font-weight: 600;
+}
+body:not(.no-hover).experimental .toggle-derivation:hover,
+body:not(.no-hover).experimental .toggle-proof:hover {
+    background: var(--exp-accent-soft) !important;
+    border-color: var(--exp-accent) !important;
+    color: var(--exp-accent) !important;
+    transform: none !important;
+    opacity: 1 !important;
+}
+body.experimental .toggle-book-icon { color: currentColor; }
+
+/* Strong/жирный внутри блоков */
+body.experimental .main-content :is(strong, b) { color: var(--exp-text); font-weight: 700; }
+
+/* Списки */
+body.experimental .main-content :is(ul, ol) { padding-left: 1.3rem; }
+
+/* Ссылки в тексте */
+body.experimental .main-content a {
+    color: var(--exp-accent);
+    text-decoration-color: color-mix(in srgb, var(--exp-accent) 40%, transparent);
+    text-underline-offset: 0.18em;
+}
+
+/* KaTeX наследует цвет текста */
+body.experimental .katex { color: var(--exp-text); }
+
+/* Таблицы */
+body.experimental table { border-color: var(--exp-border); }
+body.experimental th { background: var(--exp-surface-2); color: var(--exp-text); }
+body.experimental td, body.experimental th { border-color: var(--exp-border); }
+
+/* =========================================================
+   8. КНОПКИ (общие) и copy/bookmark
+   ========================================================= */
+body.experimental .btn,
+body.experimental .auth-submit,
+body.experimental .retry-button,
+body.experimental .knowledge-check-btn {
+    border-radius: var(--exp-r-sm) !important;
+}
+body.experimental .copy-block-btn,
+body.experimental .bookmark-btn {
+    color: var(--exp-text-faint);
+    background: transparent;
+}
+body:not(.no-hover).experimental .copy-block-btn:hover,
+body:not(.no-hover).experimental .bookmark-btn:hover {
+    color: var(--exp-accent);
+    background: var(--exp-accent-soft);
+}
+body.experimental .bookmark-btn.bookmarked { color: var(--exp-accent); }
+
+/* Кнопка «вверх» и настроек */
+body.experimental .scroll-to-top {
+    background: var(--exp-surface) !important;
+    color: var(--exp-text) !important;
+    border: 1px solid var(--exp-border) !important;
+    box-shadow: var(--exp-shadow-md) !important;
+}
+body.experimental .settings-button {
+    background: var(--exp-accent) !important;
+    color: var(--exp-accent-contrast) !important;
+    box-shadow: var(--exp-shadow-md) !important;
+    /* Отключаем постоянную пульсацию (pulse-subtle) — в минималистичном
+       дизайне это лишний отвлекающий эффект. */
+    animation: none !important;
+}
+
+/* =========================================================
+   9. INDEX (главная) — карточки предметов
+   ========================================================= */
+body.experimental .home-header h1 { color: var(--exp-text); letter-spacing: -0.02em; }
+body.experimental .home-header h1 svg { color: var(--exp-accent); }
+body.experimental .home-header p { color: var(--exp-text-dim); }
+body.experimental .section-title { color: var(--exp-text); font-weight: 700; }
+
+/* Вкладки выбора класса (9/10/11). Фон активной = акцент (var(--accent-color)).
+   В эксп-режиме акцент бывает светлым (Графит-тёмная: #fafafa), поэтому жёстко
+   заданный в index.html белый текст сливался с фоном. Берём контрастный к акценту. */
+body.experimental .grade-tabs { background: var(--exp-surface-2); border-color: var(--exp-border); box-shadow: none; }
+body.experimental .grade-tab { color: var(--exp-text-dim); }
+body:not(.no-hover).experimental .grade-tab:hover { color: var(--exp-text); }
+body.experimental .grade-tab.active { background: var(--exp-accent); color: var(--exp-accent-contrast); }
+
+body.experimental .subject-card {
+    background: var(--exp-surface) !important;
+    border: 1px solid var(--exp-border) !important;
+    border-radius: var(--exp-r-lg) !important;
+    box-shadow: none !important;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+body:not(.no-hover).experimental .subject-card:hover {
+    border-color: var(--exp-border-strong) !important;
+    box-shadow: var(--exp-shadow-md) !important;
+    transform: none !important;
+}
+body.experimental .card-header { border-color: var(--exp-border) !important; background: transparent !important; }
+body.experimental .subject-card h2 { color: var(--exp-text) !important; }
+body.experimental .topics-count {
+    background: var(--exp-surface-2) !important;
+    color: var(--exp-text-dim) !important;
+    border-radius: var(--exp-r-sm);
+}
+body.experimental .last-update { color: var(--exp-text-faint) !important; border-color: var(--exp-border) !important; }
+body.experimental .status-badge.status-active {
+    background: color-mix(in srgb, var(--t-proof) 16%, transparent) !important;
+    color: var(--t-proof) !important;
+}
+body.experimental .stat-item {
+    background: var(--exp-surface) !important;
+    border: 1px solid var(--exp-border) !important;
+    box-shadow: none !important;
+}
+
+/* «Графит»: иконки предметов монохромные */
+body.experimental.exp-graphite .subject-icon,
+body.experimental.exp-graphite .subject-icon svg { color: var(--exp-text-dim) !important; }
+body.experimental.exp-graphite .subject-card::before { background: var(--exp-text) !important; color: var(--exp-text) !important; }
+body.experimental.exp-graphite .home-header h1 svg { color: var(--exp-text) !important; }
+
+/* =========================================================
+   10. MATCENTER — задачи, фильтры, разделы
+   ========================================================= */
+body.experimental .task-card {
+    background: var(--exp-surface) !important;
+    border: 1px solid var(--exp-border) !important;
+    border-left: 3px solid var(--exp-border-strong) !important;
+    border-radius: var(--exp-r) !important;
+    box-shadow: none !important;
+}
+body.experimental.matcenter-page .task-card.solved { border-left-color: var(--t-proof) !important; }
+body.experimental.matcenter-page .task-card.current-series { border-left-color: var(--t-example) !important; }
+body.experimental.matcenter-page .task-card.with-hint { border-left-color: var(--t-theorem) !important; }
+body.experimental.matcenter-page .task-card.postponed { border-left-color: #ef4444 !important; }
+
+body.experimental .task-number { color: var(--exp-text) !important; }
+body.experimental .task-status-badge {
+    background: var(--exp-surface-2) !important;
+    color: var(--exp-text-dim) !important;
+    border-radius: var(--exp-r-pill);
+}
+body.experimental .task-toggle,
+body.experimental .task-condition-toggle,
+body.experimental .hint-toggle {
+    background: var(--exp-surface-2) !important;
+    color: var(--exp-text) !important;
+    border: 1px solid var(--exp-border) !important;
+    border-radius: var(--exp-r-sm) !important;
+}
+
+/* Карточки выбора раздела (9/10/11/лето) */
+body.experimental .grade-card {
+    background: var(--exp-surface) !important;
+    border: 1px solid var(--exp-border) !important;
+    border-radius: var(--exp-r) !important;
+}
+body.experimental .grade-card.active {
+    background: var(--exp-accent) !important;
+    border-color: var(--exp-accent) !important;
+    color: var(--exp-accent-contrast) !important;
+}
+body.experimental .grade-card.active .grade-card-eyebrow,
+body.experimental .grade-card.active .grade-card-title,
+body.experimental .grade-card.active .grade-card-count,
+body.experimental .grade-card.active .grade-card-sub { color: var(--exp-accent-contrast) !important; }
+body.experimental .grade-card::before { background: var(--exp-accent) !important; }
+
+/* Поиск и фильтр статуса */
+body.experimental .status-filter-select,
+body.experimental .mobile-status-filter,
+body.experimental .mobile-search-bar,
+body.experimental .search-input-wrap input {
+    background: var(--exp-surface) !important;
+    border: 1px solid var(--exp-border) !important;
+    color: var(--exp-text) !important;
+    border-radius: var(--exp-r-sm) !important;
+}
+
+/* Статистика */
+body.experimental .stat-card,
+body.experimental .stats-bar,
+body.experimental .matcenter-stats > * {
+    background: var(--exp-surface) !important;
+    border: 1px solid var(--exp-border) !important;
+    box-shadow: none !important;
+}
+
+/* Кнопка обновить */
+body.experimental .refresh-button {
+    background: transparent !important;
+    color: var(--exp-text-dim) !important;
+    border: none !important;
+    border-radius: var(--exp-r-sm) !important;
+}
+body:not(.no-hover).experimental .refresh-button:hover:not(:disabled) {
+    background: var(--exp-surface-2) !important;
+    color: var(--exp-text) !important;
+}
+
+/* Авторизация */
+body.experimental .auth-overlay { background: color-mix(in srgb, var(--exp-bg) 75%, transparent) !important; }
+body.experimental .auth-modal {
+    background: var(--exp-surface) !important;
+    border: 1px solid var(--exp-border) !important;
+    border-radius: var(--exp-r-lg) !important;
+}
+body.experimental .auth-icon { color: var(--exp-accent) !important; }
+body.experimental .auth-modal input {
+    background: var(--exp-surface-2) !important;
+    border: 1px solid var(--exp-border) !important;
+    color: var(--exp-text) !important;
+    border-radius: var(--exp-r-sm) !important;
+}
+
+/* =========================================================
+   11. КОНСТРУКТОР БИЛЕТОВ (physics-exam) — мягкие правки
+   ========================================================= */
+body.experimental .builder-open-btn {
+    background: var(--exp-accent) !important;
+    color: var(--exp-accent-contrast) !important;
+    border-radius: var(--exp-r) !important;
+}
+body.experimental .builder-overlay { background: color-mix(in srgb, var(--exp-bg) 75%, transparent) !important; }
+body.experimental .builder-panel,
+body.experimental .builder-modal,
+body.experimental .beditor-suggest-overlay > * {
+    background: var(--exp-surface) !important;
+    border-color: var(--exp-border) !important;
+}
+body.experimental .ticket-nav-controls {
+    background: var(--exp-surface) !important;
+    border: 1px solid var(--exp-border) !important;
+    border-radius: var(--exp-r) !important;
+    box-shadow: var(--exp-shadow) !important;
+}
+
+/* =========================================================
+   12. МОДАЛКА НАСТРОЕК + ПЕРЕКЛЮЧАТЕЛЬ ЭКСП-РЕЖИМА
+   ========================================================= */
+body.experimental .settings-modal { backdrop-filter: blur(6px); }
+body.experimental .settings-modal-content {
+    background: var(--exp-surface) !important;
+    border: 1px solid var(--exp-border);
+    border-radius: var(--exp-r-lg) !important;
+}
+body.experimental .settings-modal-header {
+    background: var(--exp-surface-2) !important;
+    color: var(--exp-text) !important;
+    border-bottom: 1px solid var(--exp-border);
+}
+body.experimental .settings-modal-header h2 { color: var(--exp-text) !important; }
+body.experimental .settings-close-btn {
+    background: var(--exp-surface) !important;
+    color: var(--exp-text-dim) !important;
+}
+body.experimental .settings-section h3 { color: var(--exp-text); }
+
+/* Секция «Экспериментальный режим» (работает и в обычном, и в экспериментальном виде) */
+.exp-section-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+.exp-mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin-top: 1rem;
+}
+.exp-mode-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 0.85rem;
+    border: 1.5px solid var(--border-color);
+    border-radius: 14px;
+    background: var(--bg-secondary);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    text-align: left;
+    font: inherit;
+    color: var(--text-primary);
+}
+body:not(.no-hover) .exp-mode-card:hover { border-color: var(--accent-color); }
+.exp-mode-card.active {
+    border-color: var(--accent-color);
+    background: color-mix(in srgb, var(--accent-color) 8%, var(--bg-secondary));
+}
+.exp-mode-swatch {
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+.exp-mode-swatch span { flex: 1; }
+/* Превью «Графит» */
+.exp-swatch-graphite span:nth-child(1) { background: #fafafa; }
+.exp-swatch-graphite span:nth-child(2) { background: #d4d4d8; }
+.exp-swatch-graphite span:nth-child(3) { background: #18181b; }
+/* Превью «Призма» */
+.exp-swatch-prism span:nth-child(1) { background: #ffffff; }
+.exp-swatch-prism span:nth-child(2) { background: #4f46e5; }
+.exp-swatch-prism span:nth-child(3) { background: #ea580c; }
+.exp-mode-card .exp-mode-name { font-weight: 700; font-size: 0.95rem; }
+.exp-mode-card .exp-mode-desc { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.35; }
+
+/* Сегментированный свет/тьма — на всю ширину (раньше был узкой пилюлей
+   слева и смотрелся «не вписанным» рядом с карточками Графит/Призма) */
+.exp-lightdark {
+    display: flex;
+    width: 100%;
+    margin-top: 0.6rem;
+    padding: 0.25rem;
+    gap: 0.25rem;
+    background: var(--bg-tertiary);
+    border-radius: 999px;
+}
+.exp-ld-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.95rem;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+.exp-ld-btn svg { width: 15px; height: 15px; }
+.exp-ld-btn.active {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+}
+.exp-subpanel { margin-top: 0.5rem; }
+.exp-subpanel[hidden] { display: none; }
+
+/* =========================================================
+   13. ПРОВЕРКА ЗНАНИЙ (kc-*) в экспериментальном виде
+   ========================================================= */
+body.experimental .kc-flashcard {
+    background: var(--exp-surface) !important;
+    border: 1px solid var(--exp-border) !important;
+    border-radius: var(--exp-r-lg) !important;
+}
+body.experimental .kc-flashcard.is-revealed {
+    border-color: var(--exp-accent) !important;
+    background: var(--exp-accent-soft) !important;
+}
+body.experimental .kc-definition {
+    background: var(--exp-surface-2) !important;
+    border: 1px solid var(--exp-accent) !important;
+    border-left: 3px solid var(--exp-accent) !important;
+    border-radius: var(--exp-r) !important;
+}
+body.experimental .kc-final-ring { --kc-ring-color: var(--exp-accent); }
+
+/* =========================================================
+   14. ПЛАВНОЕ ПЕРЕКЛЮЧЕНИЕ + МОБИЛЬНОЕ
+   ========================================================= */
+body.experimental.exp-animate,
+body.experimental.exp-animate .sidebar,
+body.experimental.exp-animate .page-header,
+body.experimental.exp-animate .definition-box {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    body.experimental .page-header { padding: 1.25rem 1.1rem !important; }
+    body.experimental .page-header h1 { font-size: 1.55rem; }
+    body.experimental .topic-title { font-size: 1.15rem; }
+    body.experimental .exp-mode-grid { grid-template-columns: 1fr; }
+    body.experimental .definition-box,
+    body.experimental .formula-box,
+    body.experimental .remark-box,
+    body.experimental .experiment-box,
+    body.experimental .derivation-box,
+    body.experimental .theorem-box,
+    body.experimental .lemma-box,
+    body.experimental .example-box,
+    body.experimental .statement-box,
+    body.experimental .corollary-box,
+    body.experimental .proof-box,
+    body.experimental .exercise-box,
+    body.experimental .properties-box,
+    body.experimental .system-box {
+        padding: 0.9rem 1rem !important;
+    }
+
+    /* На телефоне декоративная лампочка remark/example прячется, если рядом есть
+       кнопка закладки (иначе значки накладываются и съедают ширину). Инлайновая
+       💡 в начале текста остаётся индикатором. Работает в обычном и эксп-режиме. */
+    .remark-box:has(.bookmark-btn)::before,
+    .example-box:has(.bookmark-btn)::before,
+    body.experimental .remark-box:has(.bookmark-btn)::before,
+    body.experimental .example-box:has(.bookmark-btn)::before {
+        display: none !important;
+    }
+    /* Под лампочку место больше не резервируем — оставляем только под закладку. */
+    .remark-box:has(.bookmark-btn),
+    .example-box:has(.bookmark-btn),
+    body.experimental .remark-box:has(.bookmark-btn),
+    body.experimental .example-box:has(.bookmark-btn) {
+        padding-right: 2.7rem !important;
+    }
+}

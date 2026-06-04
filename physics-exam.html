@@ -3,25 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <script>
-        // FOUC-prevention: применяем тему до загрузки CSS
+        // FOUC-prevention: тема + экспериментальный режим до загрузки CSS
         (function(){
             try {
-                var t = 'light';
                 var s = localStorage.getItem('siteSettings');
-                if (s) { try { var p = JSON.parse(s); if (p && p.theme) t = p.theme; } catch(_){} }
-                else { var l = localStorage.getItem('theme'); if (l === 'dark') t = 'dark'; }
-                var bg = {light:'#f8fafc',dark:'#0f172a',sepia:'#f4ecd8',midnight:'#0a0a0b'}[t] || '#f8fafc';
-                var fg = {light:'#0f172a',dark:'#f1f5f9',sepia:'#3d2f1e',midnight:'#fafafa'}[t] || '#0f172a';
+                var p = s ? JSON.parse(s) : {};
+                var bg, fg;
+                if (p && p.experimental) {
+                    var dark = !!p.expDark;
+                    var mode = p.expMode === 'prism' ? 'prism' : 'graphite';
+                    if (mode === 'graphite') { bg = dark ? '#09090b' : '#fafafa'; fg = dark ? '#f4f4f5' : '#18181b'; }
+                    else { bg = dark ? '#0e0e16' : '#fbfbfe'; fg = dark ? '#ececf4' : '#16161f'; }
+                    document.documentElement.dataset.exp = mode + (dark ? '-dark' : '-light');
+                } else {
+                    var t = (p && p.theme) || (localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
+                    bg = {light:'#f8fafc',dark:'#0f172a',sepia:'#f4ecd8',midnight:'#0a0a0b'}[t] || '#f8fafc';
+                    fg = {light:'#0f172a',dark:'#f1f5f9',sepia:'#3d2f1e',midnight:'#fafafa'}[t] || '#0f172a';
+                    document.documentElement.dataset.theme = t;
+                }
                 document.documentElement.style.backgroundColor = bg;
                 document.documentElement.style.color = fg;
-                document.documentElement.dataset.theme = t;
             } catch(e) {}
         })();
     </script>
     <link rel="icon" href="favicons/favicon-ph.svg" type="image/svg+xml">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="manifest.json">
-    <title>Билеты к экзамену | Физика 9 класс | Almanion</title>
+    <title>Билеты к экзамену | Физика | Almanion</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="styles/tokens.css">
     <link rel="stylesheet" href="styles/buttons.css">
@@ -310,9 +318,15 @@
             text-align: center;
         }
         .builder-empty-hint::before {
-            content: '📋';
-            font-size: 2rem;
+            content: '';
+            display: block;
+            width: 2rem;
+            height: 2rem;
+            margin: 0 auto 0.3rem;
+            background-color: currentColor;
             opacity: 0.5;
+            -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/%3E%3Crect x='8' y='2' width='8' height='4' rx='1'/%3E%3C/svg%3E") center / contain no-repeat;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/%3E%3Crect x='8' y='2' width='8' height='4' rx='1'/%3E%3C/svg%3E") center / contain no-repeat;
         }
 
         /* ---- Правая панель: библиотека ---- */
@@ -1134,9 +1148,10 @@
         .builder-sync-badge.syncing { background: #fef9c3; color: #a16207; }
         body.dark-theme .builder-sync-badge.syncing { background: #422006; color: #fde68a; }
     </style>
+    <link rel="stylesheet" href="style-new.css">
 </head>
 <body>
-    <script>(function(){var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');})();</script>
+    <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p&&p.experimental){document.body.classList.add('experimental',p.expMode==='prism'?'exp-prism':'exp-graphite');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
     <!-- Боковая панель навигации -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -1177,10 +1192,10 @@
             <div class="nav-section other-subjects">
                 <h3>Другие предметы</h3>
                 <ul>
-                    <li><a href="physics.html">Физика 9 класс</a></li>
-                    <li><a href="math.html">Алгебра 9 класс</a></li>
-                    <li><a href="geometry.html">Геометрия 9 класс</a></li>
-                    <li><a href="chemistry.html">Химия 9 класс</a></li>
+                    <li><a href="physics.html">Физика</a></li>
+                    <li><a href="math.html">Алгебра</a></li>
+                    <li><a href="geometry.html">Геометрия</a></li>
+                    <li><a href="chemistry.html">Химия</a></li>
                     <li><a href="likbez.html">Ликбезы</a></li>
                 </ul>
             </div>
@@ -1195,7 +1210,7 @@
     <main class="main-content">
         <header class="page-header">
             <h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:0.4rem;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>Билеты к экзамену</h1>
-            <p class="subtitle">Физика 9 класс | <a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a></p>
+            <p class="subtitle">Физика | <a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a></p>
         </header>
 
         <!-- Билет №1 -->
@@ -1360,7 +1375,7 @@
 
         <!-- Футер -->
         <footer class="page-footer">
-            <p>2025-2026 Almanion | Билеты к экзамену | Физика 9 класс</p>
+            <p>2025-2026 Almanion | Билеты к экзамену | Физика</p>
         </footer>
     </main>
 
@@ -1433,7 +1448,7 @@
                         <button id="builderAuthBtn" class="builder-btn builder-btn-reset" title="Войти / Выйти"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span class="btn-text">Войти</span></button>
                     </div>
                 </div>
-                <button id="builderCloseBtn" class="builder-btn builder-btn-close" title="Закрыть (Esc)">✕</button>
+                <button id="builderCloseBtn" class="builder-btn builder-btn-close" title="Закрыть (Esc)"><span class="eic eic-x" aria-hidden="true"></span></button>
             </div>
 
             <!-- Двухколоночная область -->
@@ -1522,7 +1537,7 @@
                             <div class="beditor-actions">
                                 <button id="beditorSave"    class="builder-btn builder-btn-save"  title="Сохранить блок в «Мои блоки» и добавить в билет"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg><span>Сохранить</span></button>
                                 <button id="beditorSuggest" class="builder-btn builder-btn-reset" title="Предложить блок для добавления в physics.html"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Предложить</span></button>
-                                <button id="beditorClear"   class="builder-btn builder-btn-reset" title="Очистить редактор">✕ Очистить</button>
+                                <button id="beditorClear"   class="builder-btn builder-btn-reset" title="Очистить редактор"><span class="eic eic-x" aria-hidden="true"></span> Очистить</button>
                             </div>
                         </div>
 
@@ -1585,7 +1600,7 @@
         <div class="beditor-suggest-modal" style="max-width:420px">
             <div class="beditor-suggest-header">
                 <h3 style="display:flex;align-items:center;gap:0.4rem"><svg class="btn-icon" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Предложить блок</span></h3>
-                <button class="builder-pub-view-close" id="beditorSuggestClose">✕</button>
+                <button class="builder-pub-view-close" id="beditorSuggestClose"><span class="eic eic-x" aria-hidden="true"></span></button>
             </div>
             <div class="beditor-suggest-body" style="gap:0.5rem">
                 <!-- Режим пользователя: только подтверждение -->
@@ -1615,7 +1630,7 @@
         <div class="builder-pub-view-modal">
             <div class="builder-pub-view-header">
                 <span class="builder-pub-view-title" id="builderPubViewTitle">Просмотр билета</span>
-                <button class="builder-pub-view-close" id="builderPubViewClose" title="Закрыть (Esc)">✕</button>
+                <button class="builder-pub-view-close" id="builderPubViewClose" title="Закрыть (Esc)"><span class="eic eic-x" aria-hidden="true"></span></button>
             </div>
             <div class="builder-pub-view-body" id="builderPubViewBody"></div>
             <div class="builder-pub-view-footer">
@@ -1720,7 +1735,7 @@
                 var content = this.nextElementSibling;
                 if (!content) return;
                 var open = content.classList.toggle('show');
-                this.textContent = open ? '📕 Скрыть вывод' : '📖 Показать вывод';
+                this.innerHTML = open ? '<span class="eic eic-book" aria-hidden="true"></span> Скрыть вывод' : '<span class="eic eic-book" aria-hidden="true"></span> Показать вывод';
             });
         });
         // KaTeX
@@ -1970,7 +1985,7 @@
                     // Визуальная обратная связь: кнопка мигает зелёным
                     var btn = this;
                     btn.classList.add('builder-lib-added');
-                    btn.textContent = '✓';
+                    btn.innerHTML = '<span class="eic eic-check" aria-hidden="true"></span>';
                     setTimeout(function () {
                         btn.classList.remove('builder-lib-added');
                         btn.textContent = '+';
@@ -2033,7 +2048,7 @@
         renderCurrent();
 
         // Загружаем SortableJS и библиотеку (если ещё не загружены)
-        libPanel.innerHTML = '<div class="builder-status">⏳ Загрузка...</div>';
+        libPanel.innerHTML = '<div class="builder-status"><span class="eic eic-clock" aria-hidden="true"></span> Загрузка...</div>';
         Promise.all([loadSortable(), loadLibrary()])
             .then(function () {
                 renderCurrent();     // переинициализируем Sortable теперь когда он загружен
@@ -2080,7 +2095,7 @@
 
         var closeSpan = document.createElement('span');
         closeSpan.className = 'builder-preview-close';
-        closeSpan.textContent = '✕ закрыть';
+        closeSpan.innerHTML = '<span class="eic eic-x" aria-hidden="true"></span> закрыть';
         closeSpan.addEventListener('click', function (e) { e.stopPropagation(); closeBlockPreview(); });
         popup.appendChild(closeSpan);
 
@@ -2301,7 +2316,7 @@
         // Сбрасываем кеш и перезагружаем библиотеку
         try { localStorage.removeItem(LIBRARY_CACHE_KEY); } catch (e) {}
         library = null;
-        libPanel.innerHTML = '<div class="builder-status">⏳ Перезагрузка библиотеки...</div>';
+        libPanel.innerHTML = '<div class="builder-status"><span class="eic eic-clock" aria-hidden="true"></span> Перезагрузка библиотеки...</div>';
         loadSortable().then(loadLibrary).then(function () {
             renderLibrary(searchEl.value);
         }).catch(function (err) {
@@ -2415,13 +2430,13 @@
             if (!overlay.classList.contains('hidden')) renderLibrary(searchEl.value);
 
             var msg = updatedBlocks > 0
-                ? '✅ Синхронизировано: обновлено ' + updatedBlocks + ' ' + plural(updatedBlocks, 'блок', 'блока', 'блоков') + ' в ' + ticketsChanged.length + ' ' + plural(ticketsChanged.length, 'билете', 'билетах', 'билетах')
-                : '✓ Все блоки уже актуальны';
+                ? 'Синхронизировано: обновлено ' + updatedBlocks + ' ' + plural(updatedBlocks, 'блок', 'блока', 'блоков') + ' в ' + ticketsChanged.length + ' ' + plural(ticketsChanged.length, 'билете', 'билетах', 'билетах')
+                : 'Все блоки уже актуальны';
             showToast(msg, 4000);
 
         }).catch(function (err) {
             library = prevLib; // откатываем если не удалось загрузить
-            showToast('⚠️ Не удалось синхронизировать: ' + (err && err.message ? err.message : 'ошибка загрузки physics.html'));
+            showToast('Не удалось синхронизировать: ' + (err && err.message ? err.message : 'ошибка загрузки physics.html'));
         }).then(function () {
             if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
         });
@@ -2709,12 +2724,12 @@
     suggestCopyBtn.addEventListener('click', function () {
         var text = suggestCode.textContent;
         navigator.clipboard.writeText(text).then(function () {
-            showToast('📋 Код скопирован');
+            showToast('Код скопирован');
         }).catch(function () {
             suggestCode.focus();
             document.execCommand('selectAll');
             document.execCommand('copy');
-            showToast('📋 Код скопирован');
+            showToast('Код скопирован');
         });
     });
 
@@ -2857,7 +2872,7 @@
 
     function saveEditorBlock() {
         var raw = getEditorRawHtml();
-        if (!raw) { showToast('⚠️ Редактор пуст'); return; }
+        if (!raw) { showToast('Редактор пуст'); return; }
         var html    = wrapWithType(raw);
         var preview = beditorContent.textContent.trim().slice(0, 80) || '(блок)';
         var block = {
@@ -2884,7 +2899,7 @@
         storeTicket(builderTicket, session);
         saveToFirebase(builderTicket, session);
 
-        showToast('✅ Блок создан и сохранён в билет ' + builderTicket);
+        showToast('Блок создан и сохранён в билет ' + builderTicket);
     }
 
     function renderMyBlocks() {
@@ -2906,7 +2921,7 @@
                 session.push({ id: b.id + '-' + Date.now(), html: b.html, preview: b.preview, type: b.type });
                 renderCurrent();
                 var btn = addBtn;
-                btn.textContent = '✓';
+                btn.innerHTML = '<span class="eic eic-check" aria-hidden="true"></span>';
                 setTimeout(function () { btn.textContent = '+'; }, 700);
             });
 
@@ -2918,7 +2933,7 @@
             var delBtn = document.createElement('button');
             delBtn.className = 'beditor-myblock-del';
             delBtn.title = 'Удалить блок';
-            delBtn.textContent = '🗑';
+            delBtn.innerHTML = '<span class="eic eic-trash" aria-hidden="true"></span>';
             delBtn.addEventListener('click', function () {
                 var blocks2 = getCustomBlocks().filter(function (x) { return x.id !== b.id; });
                 saveCustomBlocks(blocks2);
@@ -2957,17 +2972,17 @@
         })
         .then(function (r) { return r.json(); })
         .then(function (data) {
-            if (!data.ok) showToast('⚠️ Не удалось уведомить администратора');
+            if (!data.ok) showToast('Не удалось уведомить администратора');
         })
         .catch(function () {
-            showToast('⚠️ Ошибка связи — предложение сохранено в Firebase');
+            showToast('Ошибка связи — предложение сохранено в Firebase');
         });
     }
 
     function suggestEditorBlock() {
         var textContent = beditorContent.textContent.trim();
         if (!textContent) {
-            showToast('⚠️ Введите содержимое блока перед тем как предложить');
+            showToast('Введите содержимое блока перед тем как предложить');
             return;
         }
 
@@ -3104,7 +3119,7 @@
             tickets:     toPublish
         }).then(function () {
             resetPublishBtn();
-            showToast('✅ Опубликовано! Другие найдут ваши билеты на вкладке 🌐 Общие', 4500);
+            showToast('Опубликовано! Другие найдут ваши билеты на вкладке Общие', 4500);
         }).catch(function (err) {
             resetPublishBtn();
             showToast('Ошибка публикации: ' + err.message);
@@ -3121,7 +3136,7 @@
         var db = fbDb();
         if (publicLoading) return;
 
-        pubPanel.innerHTML = '<div class="builder-status">⏳ Загрузка...</div>';
+        pubPanel.innerHTML = '<div class="builder-status"><span class="eic eic-clock" aria-hidden="true"></span> Загрузка...</div>';
 
         if (!db) {
             pubPanel.innerHTML = '<div class="builder-status">Firebase недоступен</div>';
@@ -3281,7 +3296,7 @@
         }
 
         var label = singleNum ? 'Билет №' + singleNum : count + ' бил.';
-        showToast('✅ Клонировано: ' + label + ' от ' + escHtml(fromName || 'пользователя'));
+        showToast('Клонировано: ' + label + ' от ' + escHtml(fromName || 'пользователя'));
     }
 
     // ---- Перевод ошибок Firebase ----
