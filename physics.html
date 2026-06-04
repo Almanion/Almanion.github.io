@@ -3,25 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <script>
-        // FOUC-prevention: применяем тему до загрузки CSS
+        // FOUC-prevention: тема + экспериментальный режим до загрузки CSS
         (function(){
             try {
-                var t = 'light';
                 var s = localStorage.getItem('siteSettings');
-                if (s) { try { var p = JSON.parse(s); if (p && p.theme) t = p.theme; } catch(_){} }
-                else { var l = localStorage.getItem('theme'); if (l === 'dark') t = 'dark'; }
-                var bg = {light:'#f8fafc',dark:'#0f172a',sepia:'#f4ecd8',midnight:'#0a0a0b'}[t] || '#f8fafc';
-                var fg = {light:'#0f172a',dark:'#f1f5f9',sepia:'#3d2f1e',midnight:'#fafafa'}[t] || '#0f172a';
+                var p = s ? JSON.parse(s) : {};
+                var bg, fg;
+                if (p && p.experimental) {
+                    var dark = !!p.expDark;
+                    var mode = p.expMode === 'prism' ? 'prism' : 'graphite';
+                    if (mode === 'graphite') { bg = dark ? '#09090b' : '#fafafa'; fg = dark ? '#f4f4f5' : '#18181b'; }
+                    else { bg = dark ? '#0e0e16' : '#fbfbfe'; fg = dark ? '#ececf4' : '#16161f'; }
+                    document.documentElement.dataset.exp = mode + (dark ? '-dark' : '-light');
+                } else {
+                    var t = (p && p.theme) || (localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
+                    bg = {light:'#f8fafc',dark:'#0f172a',sepia:'#f4ecd8',midnight:'#0a0a0b'}[t] || '#f8fafc';
+                    fg = {light:'#0f172a',dark:'#f1f5f9',sepia:'#3d2f1e',midnight:'#fafafa'}[t] || '#0f172a';
+                    document.documentElement.dataset.theme = t;
+                }
                 document.documentElement.style.backgroundColor = bg;
                 document.documentElement.style.color = fg;
-                document.documentElement.dataset.theme = t;
             } catch(e) {}
         })();
     </script>
     <link rel="icon" href="favicons/favicon-ph.svg" type="image/svg+xml">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="manifest.json">
-    <title>Конспекты по Физике 9 класс | Almanion</title>
+    <title>Конспекты по Физике | Almanion</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="styles/tokens.css">
     <link rel="stylesheet" href="styles/buttons.css">
@@ -33,9 +41,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="style-new.css">
 </head>
 <body>
-    <script>(function(){var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');})();</script>
+    <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p&&p.experimental){document.body.classList.add('experimental',p.expMode==='prism'?'exp-prism':'exp-graphite');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
     <!-- Боковая панель навигации -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -58,7 +67,7 @@
 
         <nav class="nav-menu">
             <div class="nav-section">
-                <h3>Физика 9 класс</h3>
+                <h3>Физика</h3>
                 <ul>
                     <li><a href="#main-definitions" class="nav-link active">Главные определения</a></li>
                     <li><a href="#intro" class="nav-link">1. Введение в механику</a></li>
@@ -151,10 +160,10 @@
             <div class="nav-section other-subjects">
                 <h3>Другие предметы</h3>
                 <ul>
-                    <li><a href="physics.html" class="current-subject">Физика 9 класс</a></li>
-                    <li><a href="math.html">Алгебра 9 класс</a></li>
-                    <li><a href="geometry.html">Геометрия 9 класс</a></li>
-                    <li><a href="chemistry.html">Химия 9 класс</a></li>
+                    <li><a href="physics.html" class="current-subject">Физика</a></li>
+                    <li><a href="math.html">Алгебра</a></li>
+                    <li><a href="geometry.html">Геометрия</a></li>
+                    <li><a href="chemistry.html">Химия</a></li>
                     <li><a href="likbez.html">Ликбезы</a></li>
                 </ul>
             </div>
@@ -168,21 +177,27 @@
 
     <!-- Модальное окно выбора тем для проверки знаний -->
     <div class="auth-overlay hidden" id="topicSelectionOverlay">
-        <div class="auth-modal" id="topicSelectionModal" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
-            <div class="auth-icon">📚</div>
-            <h2>Выберите темы для проверки</h2>
-            <div id="topicSelectionList" style="margin: 1.5rem 0; text-align: left;">
+        <div class="auth-modal kc-modal" id="topicSelectionModal" role="dialog" aria-modal="true" aria-labelledby="kcSelectTitle">
+            <button id="cancelTopicSelectionBtn" class="kc-close" aria-label="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+            </button>
+            <div class="kc-head">
+                <span class="kc-head-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg>
+                </span>
+                <div class="kc-head-text">
+                    <h2 class="kc-title" id="kcSelectTitle">Проверка знаний</h2>
+                    <p class="kc-subtitle">Выберите темы — определения будем повторять карточками</p>
+                </div>
+            </div>
+            <div id="topicSelectionList" class="kc-topic-grid">
                 <!-- Список тем будет добавлен через JavaScript -->
             </div>
-            <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
-                <button id="selectAllTopicsBtn" class="auth-submit" style="background: var(--primary-color);">
-                    Выбрать всё
-                </button>
-                <button id="startKnowledgeCheckBtn" class="auth-submit" style="background: var(--accent-color);">
-                    Начать проверку
-                </button>
-                <button id="cancelTopicSelectionBtn" class="auth-submit" style="background: var(--text-secondary);">
-                    Отмена
+            <div class="kc-actions">
+                <button id="selectAllTopicsBtn" class="kc-btn kc-btn-ghost">Выбрать всё</button>
+                <button id="startKnowledgeCheckBtn" class="kc-btn kc-btn-primary">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="width:16px;height:16px;"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                    Начать<span class="kc-count-badge" id="kcSelectedCount">0</span>
                 </button>
             </div>
         </div>
@@ -190,17 +205,15 @@
 
     <!-- Модальное окно проверки знаний -->
     <div class="auth-overlay hidden" id="knowledgeCheckOverlay">
-        <div class="auth-modal" id="knowledgeCheckModal" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h2 style="margin: 0;">Проверка знаний</h2>
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                    <span id="knowledgeCheckProgress" style="font-size: 0.9rem; color: var(--text-secondary);">
-                        1 / 0
-                    </span>
-                    <button id="closeKnowledgeCheckBtn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-primary);">✕</button>
-                </div>
+        <div class="auth-modal kc-modal kc-modal-game" id="knowledgeCheckModal" role="dialog" aria-modal="true">
+            <div class="kc-game-bar">
+                <div id="knowledgeCheckProgress" class="kc-stats-row"><!-- круг и счётчики --></div>
+                <button id="closeKnowledgeCheckBtn" class="kc-close" aria-label="Закрыть">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+                </button>
             </div>
-            <div id="knowledgeCheckContent" style="min-height: 300px;">
+            <div class="kc-progress-track" aria-hidden="true"><div class="kc-progress-fill" id="kcProgressFill"></div></div>
+            <div id="knowledgeCheckContent" class="kc-content">
                 <!-- Контент проверки будет добавлен через JavaScript -->
             </div>
         </div>
@@ -209,7 +222,7 @@
     <!-- Основной контент -->
     <main class="main-content">
         <header class="page-header">
-            <h1>Физика 9 класс</h1>
+            <h1>Физика</h1>
             <p class="subtitle">Конспекты | 2025—2026 | <a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a></p>
         </header>
 
@@ -601,7 +614,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>🔬 Опыт Галилея</h4>
+                    <h4><span class="eic eic-micro" aria-hidden="true"></span> Опыт Галилея</h4>
                     
                     <div class="exp-section">
                         <strong>Наблюдения:</strong>
@@ -615,7 +628,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>🔬 Опыт Ньютона</h4>
+                    <h4><span class="eic eic-micro" aria-hidden="true"></span> Опыт Ньютона</h4>
                     
                     <div class="exp-section">
                         <strong>Ход эксперимента:</strong>
@@ -1411,7 +1424,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>🔬 Эксперимент Гука</h4>
+                    <h4><span class="eic eic-micro" aria-hidden="true"></span> Эксперимент Гука</h4>
                     
                     <div class="exp-section">
                         <strong>Ход эксперимента:</strong>
@@ -1658,7 +1671,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>🔬 Опыт Кавендиша</h4>
+                    <h4><span class="eic eic-micro" aria-hidden="true"></span> Опыт Кавендиша</h4>
                     
                     <div class="exp-section">
                         <strong>Цель:</strong>
@@ -1931,7 +1944,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>🔬 Эксперимент</h4>
+                    <h4><span class="eic eic-micro" aria-hidden="true"></span> Эксперимент</h4>
                     
                     <div class="exp-section">
                         <strong>Процедура:</strong>
@@ -3600,6 +3613,7 @@
     <!-- Firebase Analytics -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="firebase-analytics.js"></script>
 
@@ -3610,6 +3624,7 @@
     <script src="bookmarks.js"></script>
 
     <script src="knowledge-check.js"></script>
+    <script src="account.js"></script>
     <script src="poll.js"></script>
 </body>
 </html>

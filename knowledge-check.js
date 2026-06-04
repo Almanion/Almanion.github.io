@@ -131,7 +131,11 @@
     function loadStore() {
         try { return JSON.parse(kcGet(STORE_KEY) || '{}') || {}; } catch (_) { return {}; }
     }
-    function saveStore() { kcSet(STORE_KEY, JSON.stringify(store)); }
+    function saveStore() {
+        kcSet(STORE_KEY, JSON.stringify(store));
+        // Сигнал для account.js (синхронизация прогресса в облако).
+        try { window.dispatchEvent(new CustomEvent('kc-store-changed', { detail: { key: STORE_KEY } })); } catch (_) {}
+    }
 
     function todayStr() {
         const d = new Date();
@@ -667,4 +671,11 @@
 
     // Экспорт для отладки/тестов
     window.__kcFSRS = { project, intervalForStability, retrievability, W, DECAY, FACTOR, fmtInterval };
+
+    // Хук для синхронизации аккаунта (account.js): перечитать прогресс из localStorage,
+    // когда облако прислало изменения (но не посреди активной сессии повторения).
+    window.KC = window.KC || {};
+    window.KC.reload = function (key) {
+        if (key === STORE_KEY && !session) store = loadStore();
+    };
 })();

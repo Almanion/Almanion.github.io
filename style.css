@@ -740,6 +740,51 @@ body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color)
     border-top: 1px solid var(--border-color);
 }
 
+/* ============================================
+   Аккаунт и синхронизация (кнопка + окно входа)
+   ============================================ */
+.account-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 50%;
+    border: none; background: var(--bg-tertiary); color: var(--text-secondary);
+    cursor: pointer; flex-shrink: 0; padding: 0;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.account-btn svg { width: 18px; height: 18px; }
+.account-btn:hover { background: var(--border-color); color: var(--text-primary); }
+.account-btn.signed-in { background: var(--accent-color); color: #fff; }
+.account-avatar { font-size: 0.85rem; font-weight: 700; line-height: 1; }
+body.dark-theme .sidebar-header .account-btn { background: rgba(255,255,255,0.2); color: #fff; }
+body.dark-theme .sidebar-header .account-btn:hover { background: rgba(255,255,255,0.3); }
+
+.account-modal { max-width: 360px; text-align: center; }
+.account-modal .auth-icon { color: var(--accent-color); }
+.account-modal h2 { margin: 0.25rem 0 0.4rem; }
+.account-modal p { margin: 0 0 1rem; }
+.account-email { font-weight: 700; color: var(--text-primary) !important; word-break: break-all; }
+
+.account-google-btn {
+    width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+    padding: 0.7rem 1rem; border: 1px solid var(--border-color); border-radius: 10px;
+    background: var(--bg-secondary); color: var(--text-primary); font: inherit; font-weight: 600;
+    cursor: pointer; transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.account-google-btn:hover { background: var(--bg-tertiary); box-shadow: var(--shadow-sm); }
+
+.account-or { display: flex; align-items: center; gap: 0.6rem; margin: 0.9rem 0; color: var(--text-secondary); font-size: 0.8rem; }
+.account-or::before, .account-or::after { content: ''; flex: 1; height: 1px; background: var(--border-color); }
+
+#accForm { display: flex; flex-direction: column; gap: 0.6rem; }
+#accForm input {
+    width: 100%; padding: 0.7rem 0.9rem; border: 1px solid var(--border-color); border-radius: 10px;
+    background: var(--bg-secondary); color: var(--text-primary); font: inherit;
+}
+#accForm input:focus { outline: none; border-color: var(--accent-color); }
+.account-error { color: var(--error-color); font-size: 0.82rem; text-align: left; }
+.account-link { margin-top: 0.8rem; background: none; border: none; color: var(--accent-color); font: inherit; font-size: 0.85rem; cursor: pointer; }
+.account-link:hover { text-decoration: underline; }
+.account-signout { background: var(--error-color) !important; }
+
 @media (max-width: 600px) {
     .kc-grade { padding: 0.55rem 0.2rem; border-radius: 10px; gap: 0.05rem; }
     .kc-grade-lbl { font-size: 0.8rem; }
