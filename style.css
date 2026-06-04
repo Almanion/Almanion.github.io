@@ -229,123 +229,96 @@ body.dark-theme .knowledge-check-btn:hover {
 }
 
 /* РљРЅРѕРїРєРё "РџРѕРјРЅСЋ" / "РќРµ РїРѕРјРЅСЋ" */
-.memory-buttons {
-    display: flex;
-    gap: 0.75rem;
-    justify-content: center;
-    margin-top: 1.5rem;
-}
+/* =====================================================================
+   ПРОВЕРКА ЗНАНИЙ (Knowledge Check) — современный редизайн
+   Карточки-флэшкарты с повторением определений.
+   ===================================================================== */
 
-.memory-btn {
-    flex: 1;
-    max-width: 180px;
-    padding: 0.75rem 1.25rem;
-    font-size: 0.95rem;
-    font-weight: 600;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
+/* --- Общий контейнер модалок --- */
+.kc-modal {
+    max-width: 640px;
+    width: 100%;
+    max-height: 88vh;
+    max-height: 88dvh;
+    overflow-y: auto;
+    text-align: left;
+    position: relative;
 }
-
-.memory-btn-remember {
-    background: var(--success-color);
-    color: white;
-}
-
-.memory-btn-remember:hover {
-    background: var(--success-hover);
-    transform: translateY(-1px);
-}
-
-.memory-btn-forget {
-    background: var(--error-color);
-    color: white;
-}
-
-.memory-btn-forget:hover {
-    background: var(--error-hover);
-    transform: translateY(-1px);
-}
-
-.memory-btn:active {
-    transform: scale(0.96);
-}
-
-.memory-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none !important;
-}
-
-/* РЎС‚Р°С‚РёСЃС‚РёРєР° Р·Р°РїРѕРјРёРЅР°РЅРёСЏ */
-.memory-stats {
-    display: flex;
-    gap: 0.75rem;
-    justify-content: center;
-    margin-bottom: 1rem;
-    padding: 0.75rem;
-    background: var(--bg-secondary);
-    border-radius: 10px;
-}
-
-.memory-stat {
+.kc-modal-game {
+    max-width: 760px;
     display: flex;
     flex-direction: column;
+}
+
+/* Кнопка-крестик в углу */
+.kc-close {
+    position: absolute;
+    top: 0.9rem;
+    right: 0.9rem;
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
     align-items: center;
-    gap: 0.2rem;
-}
-
-.memory-stat-value {
-    font-size: 1.35rem;
-    font-weight: 700;
-}
-
-.memory-stat-label {
-    font-size: 0.8rem;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
     color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    z-index: 2;
+}
+.kc-close svg { width: 18px; height: 18px; }
+.kc-close:hover { background: var(--border-color); color: var(--text-primary); }
+
+/* --- Шапка выбора тем --- */
+.kc-head {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    margin-bottom: 1.25rem;
+    padding-right: 2.5rem;
+}
+.kc-head-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background: rgba(var(--accent-rgb), 0.12);
+    color: var(--accent-color);
+}
+.kc-head-icon svg { width: 26px; height: 26px; }
+.kc-title { margin: 0; font-size: 1.4rem; font-weight: 700; color: var(--text-primary); line-height: 1.15; }
+.kc-subtitle { margin: 0.2rem 0 0; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.35; }
+
+/* --- Сетка выбора тем --- */
+.kc-topic-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
 }
 
-.memory-stat.remember .memory-stat-value {
-    color: var(--success-color);
-}
-
-.memory-stat.forget .memory-stat-value {
-    color: var(--error-color);
-}
-
-.memory-stat.total .memory-stat-value {
-    color: var(--text-primary);
-}
-
-/* РљР°СЂС‚РѕС‡РєРё РІС‹Р±РѕСЂР° С‚РµРј */
 .topic-select-card {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 0.75rem;
-    border: 2px solid var(--border-color);
-    border-radius: 10px;
+    gap: 0.6rem;
+    padding: 0.7rem 0.85rem;
+    border: 1.5px solid var(--border-color);
+    border-radius: 12px;
     cursor: pointer;
-    transition: var(--transition-quick);
-    background: var(--bg-primary);
+    transition: var(--transition-fast);
+    background: var(--bg-secondary);
     user-select: none;
 }
-
-.topic-select-card:hover {
-    border-color: var(--text-secondary);
-    background: var(--bg-tertiary);
-}
-
+.topic-select-card:hover { border-color: var(--accent-color); }
 .topic-select-card.selected {
-    border-color: var(--text-primary);
-    background: var(--bg-tertiary);
+    border-color: var(--accent-color);
+    background: rgba(var(--accent-rgb), 0.08);
 }
-
 .topic-card-check {
     display: flex;
     align-items: center;
@@ -353,25 +326,411 @@ body.dark-theme .knowledge-check-btn:hover {
     width: 22px;
     height: 22px;
     min-width: 22px;
-    border-radius: 6px;
+    border-radius: 7px;
     border: 2px solid var(--border-color);
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 700;
     color: transparent;
-    transition: var(--transition-quick);
-    background: var(--bg-secondary);
+    transition: var(--transition-fast);
+    background: var(--bg-primary);
 }
-
 .topic-select-card.selected .topic-card-check {
-    background: var(--text-primary);
-    border-color: var(--text-primary);
-    color: var(--bg-primary);
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: #fff;
+}
+.topic-card-name { font-size: 0.88rem; line-height: 1.3; color: var(--text-primary); }
+
+/* --- Кнопки действий --- */
+.kc-actions {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+}
+.kc-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.7rem 1.2rem;
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-radius: 12px;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    min-height: 46px;
+    transition: var(--transition-fast);
+}
+.kc-btn svg { width: 16px; height: 16px; }
+.kc-btn-primary {
+    background: var(--accent-color);
+    color: #fff;
+    flex: 1;
+    box-shadow: var(--shadow-sm);
+}
+.kc-btn-primary:hover { background: var(--accent-hover); box-shadow: var(--shadow-md); }
+.kc-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+.kc-btn-ghost {
+    background: transparent;
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+.kc-btn-ghost:hover { background: var(--bg-tertiary); border-color: var(--text-secondary); }
+.kc-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.25);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+.kc-count-badge.is-empty { opacity: 0.6; }
+
+/* --- Верхняя панель игры (круг + счётчики + закрыть) --- */
+.kc-game-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    padding-right: 0;
+}
+.kc-game-bar .kc-close { position: static; }
+.kc-stats-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.kc-round-pill {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+}
+.kc-stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+}
+.kc-stat-pill svg { width: 13px; height: 13px; }
+.kc-stat-ok { color: var(--success-color); background: rgba(var(--success-rgb, 34,197,94), 0.12); }
+.kc-stat-no { color: var(--error-color); background: rgba(var(--error-rgb, 239,68,68), 0.12); }
+
+/* --- Прогресс-бар круга --- */
+.kc-progress-track {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--bg-tertiary);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+}
+.kc-progress-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 999px;
+    background: var(--accent-color);
+    transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.topic-card-name {
-    font-size: 0.85rem;
-    line-height: 1.3;
+/* --- Флэш-карточка --- */
+.kc-content { min-height: 320px; display: flex; flex-direction: column; }
+.kc-card-wrap { display: flex; flex-direction: column; gap: 1rem; flex: 1; }
+.kc-topic-label {
+    text-align: center;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+.kc-flashcard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    width: 100%;
+    min-height: 180px;
+    padding: 2rem 1.5rem;
+    border: 1.5px solid var(--border-color);
+    border-radius: 18px;
+    background: var(--bg-secondary);
+    cursor: pointer;
+    font: inherit;
+    text-align: center;
+    transition: var(--transition-fast);
+}
+.kc-flashcard:hover { border-color: var(--accent-color); box-shadow: var(--shadow-md); }
+.kc-flashcard-term {
+    font-size: 1.6rem;
+    font-weight: 700;
     color: var(--text-primary);
+    line-height: 1.3;
+}
+.kc-flashcard-tap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+.kc-flashcard-tap svg { width: 15px; height: 15px; }
+.kc-flashcard.is-revealed {
+    cursor: default;
+    border-color: var(--accent-color);
+    background: rgba(var(--accent-rgb), 0.06);
+}
+.kc-flashcard.is-revealed .kc-flashcard-tap { display: none; }
+
+/* --- Определение --- */
+.kc-definition {
+    padding: 1.25rem 1.4rem;
+    background: var(--bg-primary);
+    border: 1.5px solid var(--accent-color);
+    border-left-width: 4px;
+    border-radius: 14px;
+    line-height: 1.6;
+    animation: fadeIn 0.25s ease;
+}
+.kc-definition strong { color: var(--text-primary); }
+
+/* --- Кнопки ответа --- */
+.kc-answer-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: auto;
+    padding-top: 0.5rem;
+    animation: fadeIn 0.25s ease;
+}
+.kc-answer {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1rem;
+    font: inherit;
+    font-weight: 600;
+    font-size: 1rem;
+    border: 1.5px solid;
+    border-radius: 14px;
+    cursor: pointer;
+    min-height: 52px;
+    background: var(--bg-secondary);
+    transition: var(--transition-fast);
+}
+.kc-answer-ic { display: inline-flex; }
+.kc-answer-ic svg { width: 18px; height: 18px; }
+.kc-answer-forget { color: var(--error-color); border-color: rgba(var(--error-rgb, 239,68,68), 0.4); }
+body:not(.no-hover) .kc-answer-forget:hover { background: var(--error-color); color: #fff; border-color: var(--error-color); }
+.kc-answer-remember { color: var(--success-color); border-color: rgba(var(--success-rgb, 34,197,94), 0.4); }
+body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color); color: #fff; border-color: var(--success-color); }
+.kc-answer:active { transform: scale(0.97); }
+.kc-kbd {
+    font-size: 0.7rem;
+    font-family: ui-monospace, monospace;
+    padding: 0.05rem 0.35rem;
+    border-radius: 5px;
+    border: 1px solid currentColor;
+    opacity: 0.55;
+}
+
+/* --- Финальная статистика --- */
+.kc-final {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.5rem;
+    padding: 1rem 0;
+}
+.kc-final-ring {
+    --p: 0;
+    width: 128px;
+    height: 128px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: conic-gradient(var(--kc-ring-color, var(--accent-color)) calc(var(--p) * 1%), var(--bg-tertiary) 0);
+    margin-bottom: 0.25rem;
+}
+.kc-final-ring::before {
+    content: '';
+    grid-area: 1 / 1;
+    width: 98px;
+    height: 98px;
+    border-radius: 50%;
+    background: var(--bg-primary);
+}
+.kc-final-pct {
+    grid-area: 1 / 1;
+    z-index: 1;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+.kc-final-pct small { font-size: 1rem; font-weight: 700; color: var(--text-secondary); }
+.kc-ring-ok { --kc-ring-color: var(--success-color); }
+.kc-ring-mid { --kc-ring-color: var(--warning-color, #f59e0b); }
+.kc-ring-low { --kc-ring-color: var(--error-color); }
+.kc-final-icon { color: var(--accent-color); margin-top: -0.25rem; }
+.kc-final-icon svg { width: 26px; height: 26px; }
+.kc-ring-ok ~ .kc-final-icon { color: var(--success-color); }
+.kc-final-title { margin: 0.25rem 0 0.75rem; font-size: 1.3rem; font-weight: 700; color: var(--text-primary); }
+.kc-final-stats {
+    display: flex;
+    gap: 0.6rem;
+    width: 100%;
+    margin-bottom: 1.25rem;
+}
+.kc-fstat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.85rem 0.5rem;
+    border-radius: 14px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+}
+.kc-fstat-val { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
+.kc-fstat-lbl { font-size: 0.78rem; color: var(--text-secondary); }
+.kc-fstat-ok .kc-fstat-val { color: var(--success-color); }
+.kc-fstat-no .kc-fstat-val { color: var(--error-color); }
+.kc-final-actions { display: flex; gap: 0.6rem; width: 100%; }
+.kc-final-actions .kc-btn { flex: 1; }
+
+/* --- Мобильная адаптация Проверки знаний --- */
+@media (max-width: 600px) {
+    .kc-topic-grid { grid-template-columns: 1fr; }
+    .kc-flashcard-term { font-size: 1.35rem; }
+    .kc-flashcard { min-height: 150px; padding: 1.5rem 1rem; }
+    .kc-final-ring { width: 110px; height: 110px; }
+    .kc-final-ring::before { width: 84px; height: 84px; }
+    .kc-final-pct { font-size: 1.7rem; }
+    .kc-kbd { display: none; }
+}
+
+/* ===== FSRS: список тем как «колоды», счётчики, кнопки оценок ===== */
+.kc-deck-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin: 1rem 0 1.25rem;
+    max-height: 52vh;
+    overflow-y: auto;
+}
+.kc-deck {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+.kc-deck:hover { border-color: var(--accent-color); }
+.kc-deck.selected { border-color: var(--accent-color); background: rgba(var(--accent-rgb, 37,99,235), 0.06); }
+.kc-deck-check {
+    flex: 0 0 auto;
+    width: 20px; height: 20px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1.5px solid var(--border-color);
+    border-radius: 6px;
+}
+.kc-deck-check svg { width: 13px; height: 13px; opacity: 0; }
+.kc-deck.selected .kc-deck-check { background: var(--accent-color); border-color: var(--accent-color); color: #fff; }
+.kc-deck.selected .kc-deck-check svg { opacity: 1; }
+.kc-deck-name { flex: 1 1 auto; font-size: 0.92rem; line-height: 1.3; }
+.kc-deck-counts { flex: 0 0 auto; display: inline-flex; gap: 0.3rem; align-items: center; }
+.kc-pill {
+    min-width: 22px;
+    padding: 0.1rem 0.4rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.kc-pill svg { width: 12px; height: 12px; }
+.kc-pill-due { color: var(--success-color); background: rgba(var(--success-rgb, 34,197,94), 0.14); }
+.kc-pill-new { color: var(--accent-color); background: rgba(var(--accent-rgb, 37,99,235), 0.14); }
+.kc-pill-done { color: var(--text-secondary); background: var(--bg-tertiary); }
+
+/* Верхние счётчики (новые · изучаются · повтор) */
+.kc-counts { display: inline-flex; gap: 0.45rem; align-items: center; }
+.kc-count {
+    font-size: 0.9rem; font-weight: 700;
+    padding: 0.1rem 0.5rem; border-radius: 999px; min-width: 1.6rem; text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+.kc-count-new { color: var(--accent-color); background: rgba(var(--accent-rgb, 37,99,235), 0.12); }
+.kc-count-learn { color: var(--warning-color, #f59e0b); background: rgba(245,158,11, 0.16); }
+.kc-count-review { color: var(--success-color); background: rgba(var(--success-rgb, 34,197,94), 0.12); }
+
+/* Ряд из 4 кнопок оценки с превью интервала */
+.kc-grade-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    margin-top: auto;
+}
+.kc-grade {
+    display: flex; flex-direction: column; align-items: center; gap: 0.12rem;
+    padding: 0.6rem 0.4rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font: inherit; cursor: pointer;
+    transition: transform 0.06s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.kc-grade:hover { background: var(--bg-tertiary); }
+.kc-grade:active { transform: scale(0.97); }
+.kc-grade-iv { font-size: 0.74rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.kc-grade-lbl { font-size: 0.95rem; font-weight: 700; }
+.kc-grade .kc-kbd { margin-top: 0.1rem; }
+.kc-grade-again { color: var(--error-color); border-color: rgba(var(--error-rgb, 239,68,68), 0.35); }
+.kc-grade-again:hover { background: rgba(var(--error-rgb, 239,68,68), 0.08); }
+.kc-grade-hard  { color: var(--warning-color, #f59e0b); border-color: rgba(245,158,11, 0.35); }
+.kc-grade-hard:hover  { background: rgba(245,158,11, 0.08); }
+.kc-grade-good  { color: var(--success-color); border-color: rgba(var(--success-rgb, 34,197,94), 0.35); }
+.kc-grade-good:hover  { background: rgba(var(--success-rgb, 34,197,94), 0.08); }
+.kc-grade-easy  { color: var(--accent-color); border-color: rgba(var(--accent-rgb, 37,99,235), 0.35); }
+.kc-grade-easy:hover  { background: rgba(var(--accent-rgb, 37,99,235), 0.08); }
+
+.kc-final-sub { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.45; margin: 0.15rem auto 1rem; max-width: 34ch; }
+.kc-final-icon-ok { color: var(--success-color); }
+
+/* Экран повторения: ограничиваем высоту модалки, карточку/ответ прокручиваем,
+   а кнопки оценок держим закреплённым футером — иначе на невысоких телефонах
+   они уходили за нижний край и были недоступны. */
+.kc-modal-game { display: flex; flex-direction: column; max-height: 88vh; }
+.kc-modal-game .kc-content { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.kc-modal-game .kc-grade-row {
+    margin-top: 0;
+    flex: 0 0 auto;
+    padding-top: 0.7rem;
+    border-top: 1px solid var(--border-color);
+}
+
+@media (max-width: 600px) {
+    .kc-grade { padding: 0.55rem 0.2rem; border-radius: 10px; gap: 0.05rem; }
+    .kc-grade-lbl { font-size: 0.8rem; }
+    .kc-grade-iv { font-size: 0.68rem; }
+    .kc-grade .kc-kbd { display: none; }
 }
 
 /* ============================================
@@ -415,11 +774,12 @@ body.dark-theme .knowledge-check-btn:hover {
 }
 
 .bm-card {
+    position: relative;
     border-left: 4px solid var(--accent-color);
-    border-radius: 8px;
+    border-radius: 10px;
     background: var(--bg-secondary);
-    margin-bottom: 0.75rem;
-    cursor: pointer;
+    margin-bottom: 0.6rem;
+    box-shadow: var(--shadow-sm);
     transition: box-shadow 0.15s ease;
     overflow: hidden;
 }
@@ -431,29 +791,42 @@ body.dark-theme .knowledge-check-btn:hover {
 .bm-card-header {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid var(--border-color);
+    gap: 0.45rem;
+    padding: 0.45rem 0.6rem 0.45rem 0.4rem;
 }
+.bm-card.bm-clamped .bm-card-header { cursor: pointer; }
 
 .bm-card-type {
     font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    margin-right: auto;            /* шеврон и крестик уходят вправо */
 }
 
 .bm-card-page {
-    flex: 1;
     font-size: 0.7rem;
     color: var(--text-secondary);
-    text-align: right;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    max-width: 45%;
 }
 
+.bm-card-chevron {
+    display: none;
+    align-items: center;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    opacity: 0.55;
+    transition: transform 0.25s ease;
+}
+.bm-card.bm-clamped .bm-card-chevron { display: inline-flex; }
+.bm-card.expanded .bm-card-chevron { transform: rotate(180deg); }
+.bm-card-chevron svg { width: 16px; height: 16px; pointer-events: none; }
+
 .bm-card-delete {
+    flex-shrink: 0;
     background: none;
     border: none;
     color: var(--text-secondary);
@@ -463,7 +836,6 @@ body.dark-theme .knowledge-check-btn:hover {
     border-radius: 4px;
     opacity: 0.4;
     transition: var(--transition-fast);
-    margin-left: auto;
 }
 
 .bm-card-delete:hover {
@@ -472,14 +844,56 @@ body.dark-theme .knowledge-check-btn:hover {
     background: rgba(var(--error-rgb), 0.1);
 }
 
+/* Ручка перетаскивания — единственная точка захвата для перестановки карточек.
+   Тело карточки раскрывает её, переход — по кнопке «Перейти к блоку». */
+.bm-drag-handle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin: -0.3rem 0 -0.3rem -0.35rem;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    border-radius: 6px;
+    flex-shrink: 0;
+    cursor: grab;
+    touch-action: none; /* касание по ручке тянет карточку, а не скроллит */
+    transition: opacity var(--transition-fast), background-color var(--transition-fast);
+}
+body:not(.no-hover) .bm-drag-handle:hover { opacity: 1; background: var(--bg-tertiary); }
+.bm-drag-handle:active,
+.bm-card.bm-dragging .bm-drag-handle { cursor: grabbing; }
+.bm-drag-handle svg { width: 16px; height: 16px; pointer-events: none; }
+
+/* Содержимое: клон блока, свёрнут до пары строк с затуханием снизу */
 .bm-card-content {
-    padding: 0.5rem 0.75rem;
+    position: relative;
+    padding: 0 0.75rem 0.5rem;
     font-size: 0.85rem;
     color: var(--text-primary);
-    max-height: 300px;
-    overflow-y: auto;
     line-height: 1.5;
+    max-height: 4.6em;
+    overflow: hidden;
+    transition: max-height 0.28s ease;
 }
+.bm-card.bm-clamped:not(.expanded) .bm-card-content { cursor: pointer; }
+.bm-card.bm-clamped .bm-card-content::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2em;
+    background: linear-gradient(to bottom, transparent, var(--bg-secondary));
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+.bm-card.expanded .bm-card-content {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+.bm-card.expanded .bm-card-content::after { opacity: 0; }
 
 .bm-card-content .definition-box,
 .bm-card-content .formula-box,
@@ -497,10 +911,46 @@ body.dark-theme .knowledge-check-btn:hover {
     padding: 0 !important;
 }
 
+/* Декоративные угловые иконки блоков (лампочка и т.п.) в компактной карточке
+   мешают — убираем их псевдоэлементы, оставляя только содержимое. */
+.bm-card-content :is(.definition-box, .formula-box, .theorem-box, .remark-box,
+    .lemma-box, .example-box, .statement-box, .corollary-box, .properties-box,
+    .experiment-box, .derivation-box, .system-box)::before,
+.bm-card-content :is(.definition-box, .formula-box, .theorem-box, .remark-box,
+    .lemma-box, .example-box, .statement-box, .corollary-box, .properties-box,
+    .experiment-box, .derivation-box, .system-box)::after {
+    content: none !important;
+}
+
 .bm-card-content img {
     max-width: 100%;
     height: auto;
 }
+
+/* Подвал «Перейти к блоку»: у коротких карточек виден всегда,
+   у обрезанных появляется в раскрытом состоянии */
+.bm-card-foot {
+    display: none;
+    padding: 0 0.75rem 0.55rem;
+}
+.bm-card:not(.bm-clamped) .bm-card-foot,
+.bm-card.expanded .bm-card-foot {
+    display: block;
+}
+.bm-card-goto {
+    background: none;
+    border: none;
+    padding: 0.25rem 0;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent-color);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.bm-card-goto:hover { text-decoration: underline; }
 
 .bm-sortable-list {
     display: flex;
@@ -508,17 +958,17 @@ body.dark-theme .knowledge-check-btn:hover {
 }
 
 .bm-dragging {
-    border-radius: 8px;
+    border-radius: 10px;
     background: var(--bg-secondary);
     transition: none !important;
 }
 
-
 .bm-drag-placeholder {
     border: 2px dashed var(--accent-color);
-    border-radius: 8px;
-    margin-bottom: 0.75rem;
-    opacity: 0.4;
+    border-radius: 10px;
+    margin-bottom: 0.6rem;
+    background: var(--bg-tertiary);
+    opacity: 0.6;
 }
 
 /* ============================================
@@ -589,37 +1039,44 @@ body.dark-theme .knowledge-check-btn:hover {
     /* Анимации — явный список свойств вместо all
        (так браузер не отслеживает изменения всех CSS-свойств подряд,
         ощутимо меньше work для движка на страницах с сотнями элементов) */
-    --transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                  color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                  border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                  box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                  transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                  opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-smooth: background-color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                        color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                        border-color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                        box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                        transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                        opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    --transition-bounce: background-color 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55),
-                        color 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55),
-                        border-color 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55),
-                        box-shadow 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55),
-                        transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55),
-                        opacity 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    /* Кривые ускорения — единый «премиальный» язык движения.
+       --ease-out: easeOutQuint (быстрый старт, мягкое затухание — отзывчиво и стильно)
+       --ease-spring: лёгкий, неназойливый «отскок» для всплывающих элементов */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-spring: cubic-bezier(0.34, 1.45, 0.5, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+    --transition: background-color 0.25s var(--ease-out),
+                  color 0.25s var(--ease-out),
+                  border-color 0.25s var(--ease-out),
+                  box-shadow 0.25s var(--ease-out),
+                  transform 0.25s var(--ease-out),
+                  opacity 0.25s var(--ease-out);
+    --transition-smooth: background-color 0.45s var(--ease-out),
+                        color 0.45s var(--ease-out),
+                        border-color 0.45s var(--ease-out),
+                        box-shadow 0.45s var(--ease-out),
+                        transform 0.45s var(--ease-out),
+                        opacity 0.45s var(--ease-out);
+    --transition-bounce: transform 0.4s var(--ease-spring),
+                        box-shadow 0.4s var(--ease-spring),
+                        background-color 0.28s var(--ease-out),
+                        color 0.28s var(--ease-out),
+                        border-color 0.28s var(--ease-out),
+                        opacity 0.28s var(--ease-out);
     /* Короткие transitions (для кнопок, ховеров — реагирующих мгновенно). */
-    --transition-fast: background-color 0.15s ease,
-                       color 0.15s ease,
-                       border-color 0.15s ease,
-                       box-shadow 0.15s ease,
-                       transform 0.15s ease,
-                       opacity 0.15s ease;
-    --transition-quick: background-color 0.2s ease,
-                        color 0.2s ease,
-                        border-color 0.2s ease,
-                        box-shadow 0.2s ease,
-                        transform 0.2s ease,
-                        opacity 0.2s ease;
+    --transition-fast: background-color 0.14s var(--ease-out),
+                       color 0.14s var(--ease-out),
+                       border-color 0.14s var(--ease-out),
+                       box-shadow 0.14s var(--ease-out),
+                       transform 0.14s var(--ease-out),
+                       opacity 0.14s var(--ease-out);
+    --transition-quick: background-color 0.18s var(--ease-out),
+                        color 0.18s var(--ease-out),
+                        border-color 0.18s var(--ease-out),
+                        box-shadow 0.18s var(--ease-out),
+                        transform 0.18s var(--ease-out),
+                        opacity 0.18s var(--ease-out);
 }
 
 /* РўРµРјРЅР°СЏ С‚РµРјР° */
@@ -832,6 +1289,90 @@ img {
     height: auto;
 }
 
+/* ============================================
+   ИНЛАЙН-ИКОНКИ (замена эмодзи)
+   Масштабируются с текстом, цвет = currentColor, монохром.
+   ============================================ */
+.eic {
+    display: inline-block;
+    width: 1.05em;
+    height: 1.05em;
+    vertical-align: -0.18em;
+    background-color: currentColor;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-image: var(--eic-img);
+    mask-image: var(--eic-img);
+    flex-shrink: 0;
+}
+.eic-bulb  { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18h6'/%3E%3Cpath d='M10 22h4'/%3E%3Cpath d='M12 2a7 7 0 0 0-4 12.7c.6.4 1 1.1 1 1.8V18h6v-1.5c0-.7.4-1.4 1-1.8A7 7 0 0 0 12 2z'/%3E%3C/svg%3E"); }
+.eic-micro { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 18h8'/%3E%3Cpath d='M3 22h18'/%3E%3Cpath d='M14 22a7 7 0 1 0 0-14h-1'/%3E%3Cpath d='M9 14h2'/%3E%3Cpath d='M9 12a2 2 0 0 1-2-2V6h4v4a2 2 0 0 1-2 2Z'/%3E%3Cpath d='M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3'/%3E%3C/svg%3E"); }
+.eic-check { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E"); }
+.eic-x     { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='M6 6l12 12'/%3E%3C/svg%3E"); }
+.eic-book  { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z'/%3E%3Cpath d='M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z'/%3E%3C/svg%3E"); }
+.eic-pen   { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z'/%3E%3C/svg%3E"); }
+.eic-flask { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 3h6'/%3E%3Cpath d='M10 3v6.5L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V3'/%3E%3Cpath d='M7 14h10'/%3E%3C/svg%3E"); }
+.eic-warn  { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E"); }
+.eic-folder{ --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'/%3E%3C/svg%3E"); }
+.eic-search{ --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E"); }
+.eic-save  { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z'/%3E%3Cpath d='M17 21v-8H7v8'/%3E%3Cpath d='M7 3v5h8'/%3E%3C/svg%3E"); }
+.eic-trash { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6h18'/%3E%3Cpath d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/%3E%3C/svg%3E"); }
+.eic-clip  { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/%3E%3Crect x='8' y='2' width='8' height='4' rx='1'/%3E%3C/svg%3E"); }
+.eic-globe { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M2 12h20'/%3E%3Cpath d='M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z'/%3E%3C/svg%3E"); }
+.eic-file  { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 2v6h6'/%3E%3Cpath d='M16 13H8'/%3E%3Cpath d='M16 17H8'/%3E%3C/svg%3E"); }
+.eic-alert { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7.86 2h8.28L22 7.86v8.28L16.14 22H7.86L2 16.14V7.86z'/%3E%3Cpath d='M12 8v4'/%3E%3Cpath d='M12 16h.01'/%3E%3C/svg%3E"); }
+.eic-refresh { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M23 4v6h-6'/%3E%3Cpath d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/%3E%3C/svg%3E"); }
+.eic-gear  { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'/%3E%3C/svg%3E"); }
+.eic-bookmark { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z'/%3E%3C/svg%3E"); }
+.eic-chat  { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z'/%3E%3C/svg%3E"); }
+.eic-clock { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpolyline points='12 6 12 12 16 14'/%3E%3C/svg%3E"); }
+.eic-thumb { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3z'/%3E%3Cpath d='M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3'/%3E%3C/svg%3E"); }
+
+/* ============================================
+   ПЛАВНЫЙ HOVER БЕЗ «МОРГАНИЯ»
+   Причина мигания: transform (сдвиг) на :hover поднимает элемент
+   на отдельный GPU-слой, который в конце обратной анимации
+   разрушается — на один кадр элемент «пропадает». Особенно остро
+   с overflow:hidden + border-radius (баг отрисовки скруглённого слоя).
+   Решение: на :hover НЕ двигаем элемент (transform убран полностью),
+   обратная связь — мягкая тень и рамка. Переходы плавные (ease-out)
+   и быстрые (~0.24s), без резких остановок.
+   ============================================ */
+.subject-card,
+.nav-link, .task-card, .stat-card,
+.definition-box, .formula-box, .remark-box, .experiment-box, .derivation-box,
+.theorem-box, .lemma-box, .example-box, .statement-box, .corollary-box,
+.proof-box, .properties-box {
+    transition: box-shadow 0.24s cubic-bezier(0.33, 1, 0.68, 1),
+                border-color 0.24s cubic-bezier(0.33, 1, 0.68, 1),
+                background-color 0.24s cubic-bezier(0.33, 1, 0.68, 1),
+                color 0.24s cubic-bezier(0.33, 1, 0.68, 1) !important;
+}
+body:not(.no-hover) .subject-card:hover,
+body:not(.no-hover) .nav-link:hover,
+body:not(.no-hover) .task-card:hover,
+body:not(.no-hover) .stat-card:hover,
+body:not(.no-hover) .toggle-derivation:hover,
+body:not(.no-hover) .toggle-proof:hover,
+body:not(.no-hover) .definition-box:hover,
+body:not(.no-hover) .formula-box:hover,
+body:not(.no-hover) .remark-box:hover,
+body:not(.no-hover) .experiment-box:hover,
+body:not(.no-hover) .derivation-box:hover,
+body:not(.no-hover) .theorem-box:hover,
+body:not(.no-hover) .lemma-box:hover,
+body:not(.no-hover) .example-box:hover,
+body:not(.no-hover) .statement-box:hover,
+body:not(.no-hover) .corollary-box:hover,
+body:not(.no-hover) .proof-box:hover,
+body:not(.no-hover) .properties-box:hover {
+    transform: none !important;
+}
+
 body {
     font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Oxygen',
         'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
@@ -850,6 +1391,15 @@ body {
 body.sidebar-open,
 body.modal-open {
     overflow: hidden;
+}
+
+/* Когда открыта модалка настроек — прячем плавающие кнопки (режим заучивания,
+   стрелка вверх, FAB-кнопки), иначе они просвечивают поверх затемнения. */
+body.modal-open .study-mode-toggle,
+body.modal-open .scroll-to-top,
+body.modal-open .menu-toggle,
+body.modal-open .settings-button {
+    visibility: hidden !important;
 }
 
 /* Дополнительно фиксируем body на мобильных, чтобы фон под модалкой не скроллился
@@ -1091,8 +1641,6 @@ body.dark-theme .search-box input:focus {
 .nav-link:hover {
     background: var(--bg-tertiary);
     border-left-color: var(--text-secondary);
-    padding-left: calc(var(--spacing) + 0.5rem);
-    transform: translateX(4px);
     box-shadow: var(--shadow-sm);
 }
 
@@ -1159,8 +1707,10 @@ body.dark-theme .search-box input:focus {
     font-size: 0.9rem;
 }
 
-.nav-submenu .nav-link:hover {
-    padding-left: calc(var(--spacing) + 1.5rem);
+/* Подменю при наведении не сдвигается (раньше +0.5rem отступ выглядел как
+   слишком резкий «прыжок»); подсветка — фоном из .nav-link:hover. */
+body:not(.no-hover) .nav-submenu .nav-link:hover {
+    padding-left: calc(var(--spacing) + 1rem);
 }
 
 /* РЎСЃС‹Р»РєРё РЅР° РґСЂСѓРіРёРµ РїСЂРµРґРјРµС‚С‹ - Р°РґР°РїС‚РёРІРЅС‹Рµ Рє С‚РµРјРµ */
@@ -1265,6 +1815,8 @@ body.sidebar-collapsed .sidebar-expand-btn {
 body.sidebar-collapsed .main-content {
     margin-left: 0;
     max-width: 100%;
+    /* Сайдбар свёрнут — центрируем широкую колонку по всему экрану */
+    padding: 2rem max(2rem, calc((100vw - 1400px) / 2)) 2rem;
 }
 
 /* РљРЅРѕРїРєР° РјРµРЅСЋ (РјРѕР±РёР»СЊРЅС‹Рµ) */
@@ -1343,8 +1895,11 @@ body.sidebar-collapsed .main-content {
 
 .main-content {
     margin-left: var(--sidebar-width);
-    padding: 2rem;
-    max-width: calc(100vw - var(--sidebar-width) - 4rem); /* РїРѕ С€РёСЂРёРЅРµ СЌРєСЂР°РЅР° РјРёРЅСѓСЃ СЃР°Р№РґР±Р°СЂ Рё РѕС‚СЃС‚СѓРїС‹ */
+    /* Широкая колонка контента: блоки занимают большую часть доступной ширины
+       на десктопе. Кап ~1400px не даёт строкам растягиваться до абсурда на 4K,
+       но на типичных ноутбуках/мониторах контент почти во всю ширину. */
+    padding: 2rem max(2rem, calc((100vw - var(--sidebar-width) - 1400px) / 2)) 2rem;
+    max-width: calc(100vw - var(--sidebar-width)); /* по ширине экрана минус сайдбар */
     transition: margin-left 0.3s ease, max-width 0.3s ease;
 }
 
@@ -1495,7 +2050,7 @@ body.dark-theme .page-header {
     position: relative;
 }
 
-.definition-box:hover {
+body:not(.no-hover) .definition-box:hover {
     box-shadow: var(--shadow-md);
     transform: translateX(2px) translateY(-2px);
 }
@@ -1522,7 +2077,7 @@ body.dark-theme .page-header {
                 border-color 0.3s ease;
 }
 
-.formula-box:hover {
+body:not(.no-hover) .formula-box:hover {
     box-shadow: var(--shadow-md);
     transform: translateY(-2px);
     border-width: 2.5px;
@@ -1550,7 +2105,7 @@ body.dark-theme .page-header {
                 border-color 0.3s ease;
 }
 
-.remark-box:hover {
+body:not(.no-hover) .remark-box:hover {
     box-shadow: var(--shadow-md);
     transform: translateX(2px) translateY(-2px);
 }
@@ -1583,7 +2138,7 @@ body.dark-theme .page-header {
                 border-color 0.3s ease;
 }
 
-.experiment-box:hover {
+body:not(.no-hover) .experiment-box:hover {
     box-shadow: var(--shadow-lg);
     transform: translateY(-2px);
     border-width: 2.5px;
@@ -1623,7 +2178,7 @@ body.dark-theme .page-header {
                 border-color 0.3s ease;
 }
 
-.derivation-box:hover {
+body:not(.no-hover) .derivation-box:hover {
     box-shadow: var(--shadow-md);
     transform: translateY(-2px);
     border-width: 2.5px;
@@ -1691,7 +2246,7 @@ body.dark-theme .page-header {
     position: relative;
 }
 
-.theorem-box:hover {
+body:not(.no-hover) .theorem-box:hover {
     box-shadow: var(--shadow-md);
     transform: translateX(2px) translateY(-2px);
 }
@@ -1718,7 +2273,7 @@ body.dark-theme .page-header {
     position: relative;
 }
 
-.lemma-box:hover {
+body:not(.no-hover) .lemma-box:hover {
     box-shadow: var(--shadow-md);
     transform: translateX(2px) translateY(-2px);
 }
@@ -1746,7 +2301,7 @@ body.dark-theme .page-header {
     position: relative;
 }
 
-.example-box:hover {
+body:not(.no-hover) .example-box:hover {
     box-shadow: var(--shadow-md);
     transform: translateX(2px) translateY(-2px);
 }
@@ -1793,7 +2348,7 @@ body.dark-theme .page-header {
     position: relative;
 }
 
-.statement-box:hover {
+body:not(.no-hover) .statement-box:hover {
     box-shadow: var(--shadow-md);
     transform: translateX(2px) translateY(-2px);
 }
@@ -1820,7 +2375,7 @@ body.dark-theme .page-header {
     position: relative;
 }
 
-.corollary-box:hover {
+body:not(.no-hover) .corollary-box:hover {
     box-shadow: var(--shadow-md);
     transform: translateX(2px) translateY(-2px);
 }
@@ -1844,7 +2399,7 @@ body.dark-theme .page-header {
                 border-color 0.3s ease;
 }
 
-.proof-box:hover {
+body:not(.no-hover) .proof-box:hover {
     box-shadow: var(--shadow-md);
     transform: translateY(-2px);
     border-width: 2.5px;
@@ -3852,6 +4407,65 @@ body.dark-theme #passwordInput:focus {
     }
 }
 
+/* ============================================
+   СТИЛЬНОЕ ПОЯВЛЕНИЕ КАРТОЧЕК (каскадом)
+   Лёгкий «подъём» с появлением — только на полном уровне анимаций
+   (на «среднем»/«выкл» и при prefers-reduced-motion не применяется).
+   ============================================ */
+@keyframes riseIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.985); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* Применяется на парсинге (без вспышки); глушится правилами
+   body.animations-off (* { animation:none }) и prefers-reduced-motion.
+   .subject-card получает riseIn из инлайнового стиля index.html. */
+.grade-card,
+.stat-card,
+.task-card {
+    animation: riseIn 0.5s var(--ease-out) both;
+}
+/* Лёгкий каскад для основных сеток (первые карточки появляются по очереди) */
+.subject-card:nth-child(2),
+.grade-card:nth-child(2),
+.stat-card:nth-child(2) { animation-delay: 0.05s; }
+.subject-card:nth-child(3),
+.grade-card:nth-child(3),
+.stat-card:nth-child(3) { animation-delay: 0.10s; }
+.subject-card:nth-child(4),
+.grade-card:nth-child(4),
+.stat-card:nth-child(4) { animation-delay: 0.15s; }
+.subject-card:nth-child(5),
+.grade-card:nth-child(5) { animation-delay: 0.20s; }
+.subject-card:nth-child(n+6),
+.grade-card:nth-child(n+6) { animation-delay: 0.24s; }
+
+/* ============================================
+   ТАКТИЛЬНЫЙ ОТКЛИК НА НАЖАТИЕ
+   Кратковременное «вдавливание» при клике/тапе — живой отклик.
+   !important перебивает transform:none из anti-flicker правила ховера.
+   У карточек transform не участвует в transition → масштаб мгновенный,
+   без шанса на «моргание» при отпускании.
+   ============================================ */
+body:not(.no-hover) .subject-card:active,
+body:not(.no-hover) .grade-card:active,
+body:not(.no-hover) .grade-tab:active,
+body:not(.no-hover) .task-card:active,
+body:not(.no-hover) .stat-card.clickable:active,
+body:not(.no-hover) .theme-option:active,
+body:not(.no-hover) .animation-level-option:active,
+body:not(.no-hover) .exp-mode-card:active,
+body:not(.no-hover) .exp-ld-btn:active,
+body:not(.no-hover) .nav-link:active,
+body:not(.no-hover) .btn:active,
+body:not(.no-hover) .task-toggle:active,
+body:not(.no-hover) .toggle-derivation:active,
+body:not(.no-hover) .toggle-proof:active,
+body:not(.no-hover) .auth-submit:active,
+body:not(.no-hover) .settings-button:active,
+body:not(.no-hover) .refresh-button:active {
+    transform: scale(0.97) !important;
+}
+
 /* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ РґР»СЏ РњР°С‚Р¦РµРЅС‚СЂР° */
 @media (max-width: 768px) {
     .stats-container {
@@ -4310,7 +4924,7 @@ body.dark-theme #passwordInput:focus {
     width: 100%;
 }
 
-.hint-toggle:hover {
+body:not(.no-hover) .hint-toggle:hover {
     background: #ffb300;
 }
 
@@ -4802,12 +5416,12 @@ body.new-year-mode .ny-toggle {
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
-    animation: modalSlideIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    animation: modalSlideIn 0.42s var(--ease-spring);
 }
 
 @keyframes modalSlideIn {
     from {
-        transform: scale(0.8) translateY(-20px);
+        transform: scale(0.96) translateY(8px);
         opacity: 0;
     }
     to {
@@ -5584,12 +6198,13 @@ body.dark-theme .telegram-welcome-message {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(10px);
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10000;
+    z-index: 10110; /* выше плавающих кнопок (study-mode-toggle 10050, FAB-ов), иначе они вылезают поверх модалки */
     opacity: 1;
     transition: opacity 0.3s ease;
 }
@@ -5602,8 +6217,9 @@ body.dark-theme .telegram-welcome-message {
 .settings-modal-content {
     background: var(--bg-primary);
     border-radius: 24px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-    max-width: 650px;
+    box-shadow: 0 24px 70px -16px rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--border-color);
+    max-width: 620px;
     width: 90%;
     max-height: 85vh;
     /* Скролл переехал внутрь .settings-modal-body, тут — hidden,
@@ -5611,8 +6227,16 @@ body.dark-theme .telegram-welcome-message {
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    animation: modalSlideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    /* Анимацию входа НЕ держим тут (иначе она проигрывалась на этапе создания,
+       при закрытом окне, и могла «дёргаться»). Запускаем её только при открытии —
+       см. правило .settings-modal:not(.hidden) .settings-modal-content ниже. */
     transition: background-color 0.3s ease;
+}
+
+/* Плавный вход модалки настроек ИМЕННО при открытии. Спокойный ease-out
+   без overshoot — чтобы не выглядело как «переоткрытие пару раз». */
+.settings-modal:not(.hidden) .settings-modal-content {
+    animation: modalSlideIn 0.28s ease-out;
 }
 
 .settings-modal-body::-webkit-scrollbar {
@@ -5629,33 +6253,34 @@ body.dark-theme .telegram-welcome-message {
 }
 
 .settings-modal-header {
-    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
-    color: white;
-    padding: 1.75rem 2rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 1.35rem 1.75rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-radius: 24px 24px 0 0;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .settings-modal-header h2 {
     margin: 0;
-    font-size: 1.6rem;
+    font-size: 1.35rem;
     font-weight: 700;
+    letter-spacing: -0.01em;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.6rem;
 }
 
 .settings-close-btn {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--bg-tertiary);
     border: none;
-    color: white;
-    width: 36px;
-    height: 36px;
+    color: var(--text-secondary);
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 1.3rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -5663,9 +6288,14 @@ body.dark-theme .telegram-welcome-message {
     flex-shrink: 0;
 }
 
-.settings-close-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: rotate(90deg);
+.settings-close-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+body:not(.no-hover) .settings-close-btn:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
 }
 
 .settings-modal-body {
@@ -5677,7 +6307,7 @@ body.dark-theme .telegram-welcome-message {
 
 /* Секция настроек — без разделительных полосок */
 .settings-section {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.85rem;
     padding-bottom: 0;
     border-bottom: none;
 }
@@ -5688,12 +6318,13 @@ body.dark-theme .telegram-welcome-message {
 
 .settings-section h3 {
     color: var(--text-primary);
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: 1.25rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 1rem;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.55rem;
 }
 
 .settings-option {
@@ -5709,33 +6340,32 @@ body.dark-theme .telegram-welcome-message {
 
 .theme-option {
     background: var(--bg-secondary);
-    border: 3px solid var(--border-color);
-    border-radius: 16px;
-    padding: 1.25rem;
+    border: 1.5px solid var(--border-color);
+    border-radius: 14px;
+    padding: 0.9rem;
     cursor: pointer;
     transition: var(--transition);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.6rem;
 }
 
-.theme-option:hover {
+body:not(.no-hover) .theme-option:hover {
     border-color: var(--accent-color);
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-sm);
 }
 
 .theme-option.active {
     border-color: var(--accent-color);
-    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1), rgba(var(--accent-rgb), 0.05));
-    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2);
+    background: rgba(var(--accent-rgb), 0.07);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.14);
 }
 
 .theme-preview {
     width: 100%;
-    height: 80px;
-    border-radius: 10px;
+    height: 62px;
+    border-radius: 9px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -5759,7 +6389,7 @@ body.dark-theme .telegram-welcome-message {
 }
 
 .preview-header {
-    height: 25px;
+    height: 18px;
 }
 
 .light-preview .preview-header {
@@ -5839,13 +6469,15 @@ body.dark-theme .telegram-welcome-message {
 .theme-option span {
     color: var(--text-primary);
     font-weight: 600;
-    font-size: 1rem;
+    font-size: 0.9rem;
 }
 
 /* Toggle Switch */
 .toggle-switch {
     display: flex;
-    align-items: flex-start;
+    flex-direction: row-reverse;
+    align-items: center;
+    justify-content: space-between;
     gap: 1rem;
     cursor: pointer;
     user-select: none;
@@ -5884,8 +6516,12 @@ body.dark-theme .telegram-welcome-message {
 }
 
 .toggle-switch input:checked + .toggle-slider {
-    background: linear-gradient(135deg, var(--success-color) 0%, var(--success-hover) 100%);
+    background: var(--success-color);
     border-color: var(--success-color);
+}
+
+.toggle-switch input:focus-visible + .toggle-slider {
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.25);
 }
 
 .toggle-switch input:checked + .toggle-slider::before {
@@ -5913,7 +6549,7 @@ body.dark-theme .telegram-welcome-message {
     width: 100%;
 }
 
-.ny-advanced-settings:hover {
+body:not(.no-hover) .ny-advanced-settings:hover {
     background: var(--accent-color);
     color: white;
     border-color: var(--accent-color);
@@ -5930,9 +6566,9 @@ body.dark-theme .telegram-welcome-message {
 
 .animation-level-option {
     background: var(--bg-secondary);
-    border: 3px solid var(--border-color);
-    border-radius: 14px;
-    padding: 1rem 1.25rem;
+    border: 1.5px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.9rem 1.1rem;
     cursor: pointer;
     transition: var(--transition);
     display: flex;
@@ -5941,16 +6577,15 @@ body.dark-theme .telegram-welcome-message {
     text-align: left;
 }
 
-.animation-level-option:hover {
+body:not(.no-hover) .animation-level-option:hover {
     border-color: var(--accent-color);
-    transform: translateX(5px);
     box-shadow: var(--shadow-sm);
 }
 
 .animation-level-option.active {
     border-color: var(--accent-color);
-    background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.1), rgba(var(--accent-rgb), 0.05));
-    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
+    background: rgba(var(--accent-rgb), 0.07);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
 }
 
 .level-icon {
@@ -5991,7 +6626,7 @@ body.dark-theme .telegram-welcome-message {
 .settings-title-icon .settings-section-icon {
     width: 22px;
     height: 22px;
-    color: white;
+    color: var(--accent-color);
 }
 
 /* Иконка солнца/луны в кнопках выбора темы */
@@ -6045,30 +6680,31 @@ body.dark-theme .telegram-welcome-message {
 
 /* РљРЅРѕРїРєРё РґРµР№СЃС‚РІРёР№ */
 .settings-actions {
-    margin-top: 2rem;
+    margin-top: 1.75rem;
     padding-top: 1.5rem;
-    border-top: 2px solid var(--border-color);
+    border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: center;
 }
 
 .settings-reset-btn {
-    padding: 0.85rem 2rem;
+    padding: 0.7rem 1.6rem;
     background: var(--bg-tertiary);
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
-    color: var(--text-primary);
-    font-size: 1rem;
+    border: 1.5px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
 }
 
-.settings-reset-btn:hover {
+body:not(.no-hover) .settings-reset-btn:hover {
     background: var(--error-color);
     color: white;
     border-color: var(--error-color);
-    transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(var(--error-rgb), 0.3);
 }
 
@@ -6163,25 +6799,35 @@ body.animations-medium .stat-card:hover {
 
 /* Сокращаем длительность всех переходов — конкретные свойства, не all */
 body.animations-medium {
-    --transition: background-color 0.15s ease, color 0.15s ease,
-                  border-color 0.15s ease, box-shadow 0.15s ease,
-                  transform 0.15s ease, opacity 0.15s ease;
-    --transition-smooth: background-color 0.15s ease, color 0.15s ease,
-                        border-color 0.15s ease, box-shadow 0.15s ease,
-                        transform 0.15s ease, opacity 0.15s ease;
-    --transition-bounce: background-color 0.15s ease, color 0.15s ease,
-                        border-color 0.15s ease, box-shadow 0.15s ease,
-                        transform 0.15s ease, opacity 0.15s ease;
+    /* Переходы — те же стильные, что в «Максимальном» (это и есть «основные»
+       анимации); убираем лишь пружинный «отскок» у всплывающих элементов,
+       чтобы средний уровень был спокойнее, но не «другим». */
+    --transition-smooth: var(--transition);
+    --transition-bounce: var(--transition);
+}
+
+/* Каскадное «появление» карточек — это украшение: на среднем выключаем
+   (карточки сразу на месте). animation:none безопасно сбрасывает элемент в
+   видимое состояние — без вспышки и не оставляя его невидимым. */
+body.animations-medium .subject-card,
+body.animations-medium .grade-card,
+body.animations-medium .stat-card,
+body.animations-medium .task-card {
+    animation: none !important;
+}
+
+/* Окна появляются спокойно — простое проявление, без масштабирования/пружины */
+body.animations-medium .settings-modal:not(.hidden) .settings-modal-content,
+body.animations-medium .auth-modal,
+body.animations-medium .hint-modal {
+    animation-name: fadeIn !important;
+    animation-timing-function: var(--ease-out) !important;
 }
 
 /* РЈРїСЂРѕС‰Р°РµРј РїРµСЂРµС…РѕРґС‹ РЅР° СЌР»РµРјРµРЅС‚Р°С… вЂ” СѓР±РёСЂР°РµРј border-width, transform */
-body.animations-medium .definition-box,
-body.animations-medium .formula-box,
-body.animations-medium .remark-box,
-body.animations-medium .experiment-box,
-body.animations-medium .derivation-box {
-    transition: box-shadow 0.15s ease, background-color 0.15s ease !important;
-}
+/* Переходы блоков-конспектов в среднем — те же, что в «Максимальном»
+   (общая стильная кривая); отдельную «ускоренную» версию убрали, чтобы
+   уровни не отличались скоростью/кривой, только набором эффектов. */
 
 /* РЈРїСЂРѕС‰Р°РµРј hover РЅР° РєРЅРѕРїРєР°С… вЂ” Р±РµР· transform, С‚РѕР»СЊРєРѕ С†РІРµС‚/С‚РµРЅСЊ */
 body.animations-medium .scroll-to-top:hover,
@@ -6257,47 +6903,127 @@ body.animations-off .nav-link:hover {
 }
 
 /* ============================================
-   NO-HOVER MODE
-   Полное отключение всех hover-эффектов: transform, box-shadow,
-   изменения border-width. Только базовые color/background меняются,
-   чтобы сохранить индикацию интерактивности.
+   NO-HOVER MODE — ПОЛНОЕ отключение hover-эффектов.
+   Цель: при наведении НИЧЕГО не меняется — ни сдвига, ни масштаба,
+   ни тени, ни подсветки фона/рамки, ни толщины рамки, ни прозрачности.
+   focus-visible НЕ трогаем (нужен для доступности с клавиатуры).
+
+   Стратегия:
+   1) Универсальный сброс свойств, у которых есть универсальное "выкл"
+      (transform / filter / transition / animation / box-shadow) — покрывает
+      ВСЁ, включая ::before/::after и правила из инлайновых <style> (через !important).
+   2) Точечно возвращаем постоянную тень/прозрачность/подсветку к базовым
+      значениям там, где :hover менял фон/рамку/opacity (у этих свойств нет
+      универсального "выкл", поэтому ставим базовое значение явно).
    ============================================ */
 body.no-hover *:hover,
-body.no-hover *:active,
-body.no-hover *:focus-visible {
+body.no-hover *:hover::before,
+body.no-hover *:hover::after {
     transform: none !important;
+    filter: none !important;
+    transition: none !important;
     box-shadow: none !important;
 }
+/* НЕ обнуляем animation глобально на :hover — это перезапускало бы анимации
+   появления (fadeIn/slideUp) при УВОДЕ курсора (свойство animation возвращается
+   и браузер проигрывает анимацию заново → блок «моргал»). Гасим точечно только
+   реальные hover-анимации (их одна — новогодний снег на карточке). */
+body.no-hover .new-year-mode .task-card:hover::after,
+body.no-hover.new-year-mode .task-card:hover::after {
+    animation: none !important;
+}
 
-/* Возвращаем box-shadow обратно для тех элементов, у которых тень — НЕ hover-эффект,
-   а постоянное оформление (карточки с тенью в спокойном состоянии). */
+/* ВАЖНО: у сайдбара transform — это структурное состояние (свёрнут/открыт),
+   а не hover-эффект. Универсальное правило выше обнуляло его, пока курсор над
+   меню → при клике «свернуть» сайдбар оставался на месте до увода мыши.
+   Возвращаем структурный transform (и плавный переход) даже при наведении. */
+body.no-hover .sidebar.collapsed:hover {
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+body.no-hover .sidebar.open:hover {
+    transform: translateY(0) !important;
+}
+
+/* Тень — это оформление (а не hover-эффект) у карточек/блоков/FAB-кнопок:
+   возвращаем её, чтобы под курсором тень не «исчезала». */
 body.no-hover .stat-card:hover,
 body.no-hover .task-card:hover,
 body.no-hover .subject-card:hover,
+body.no-hover .bm-card:hover,
+body.no-hover .topic-select-card:hover,
 body.no-hover [class$="-box"]:hover {
     box-shadow: var(--shadow-sm) !important;
 }
-
-/* Не позволяем :hover менять толщину бордюра у блоков с full-border */
-body.no-hover .formula-box:hover,
-body.no-hover .formula-box:active,
-body.no-hover .experiment-box:hover,
-body.no-hover .experiment-box:active,
-body.no-hover .derivation-box:hover,
-body.no-hover .derivation-box:active,
-body.no-hover .proof-box:hover,
-body.no-hover .proof-box:active {
-    border-width: 2px !important;
+body.no-hover .scroll-to-top:hover,
+body.no-hover .settings-button:hover,
+body.no-hover .menu-toggle:hover,
+body.no-hover .telegram-chat-button:hover {
+    box-shadow: var(--shadow-md) !important;
 }
 
-/* Вложенные proof-box (внутри theorem/lemma/...) — натуральная 2px толщина */
-body.no-hover .theorem-box > .proof-box:hover,
-body.no-hover .statement-box > .proof-box:hover,
-body.no-hover .remark-box > .proof-box:hover,
-body.no-hover .corollary-box > .proof-box:hover,
-body.no-hover .lemma-box > .proof-box:hover,
-body.no-hover li > .proof-box:hover {
-    border-width: 2px !important;
+/* Псевдо-полоски-акценты остаются на базовой прозрачности (не «загораются»). */
+body.no-hover .grade-card:hover::before { opacity: 0.2 !important; }
+body.no-hover .grade-card-summer:hover::before { opacity: 0.55 !important; }
+body.no-hover .theme-toggle:hover::before { opacity: 0 !important; }
+
+/* Подсветка фона/рамки/сдвиг у навигации, заголовков, табов, карточек —
+   возвращаем к базовому виду. */
+body.no-hover .nav-link:hover {
+    background: transparent !important;
+    border-left-color: transparent !important;
+    /* padding-left НЕ трогаем: у вложенных пунктов меню свой отступ
+       (calc(--spacing + 1rem)); форсирование var(--spacing) сдвигало их влево
+       при наведении. Сдвига на hover больше нет, нормализовать нечего. */
+}
+body.no-hover .nav-group-toggle:hover {
+    background: transparent !important;
+    border-left-color: transparent !important;
+}
+body.no-hover .nav-submenu .nav-link:hover,
+body.no-hover .nav-section.other-subjects a:hover {
+    background: transparent !important;
+    opacity: 1 !important;
+}
+body.no-hover .subsection-title:hover {
+    border-bottom-color: var(--border-color) !important;
+}
+body.no-hover .grade-card:hover {
+    border-color: var(--border-color) !important;
+    background: var(--bg-secondary) !important;
+}
+body.no-hover .grade-card-summer:hover {
+    border-color: var(--border-color) !important;
+}
+body.no-hover .theme-option:hover,
+body.no-hover .animation-level-option:hover {
+    border-color: var(--border-color) !important;
+}
+
+/* Прозрачность кнопок-тогглов не меняется на hover. */
+body.no-hover .toggle-derivation:hover,
+body.no-hover .toggle-proof:hover {
+    opacity: 1 !important;
+}
+body.no-hover .theorem-box > .proof-box .toggle-proof:hover,
+body.no-hover .statement-box > .proof-box .toggle-proof:hover,
+body.no-hover .remark-box > .proof-box .toggle-proof:hover,
+body.no-hover .corollary-box > .proof-box .toggle-proof:hover,
+body.no-hover .lemma-box > .proof-box .toggle-proof:hover,
+body.no-hover li > .proof-box .toggle-proof:hover {
+    opacity: 0.85 !important;
+}
+
+/* Толщину бордюра НЕ нормализуем жёстко: все :hover-правила блоков теперь
+   гейтятся через body:not(.no-hover) и в режиме no-hover не применяются —
+   рамка остаётся базовой (2px в легаси, 1px в эксп-режиме). Прежнее
+   `border-width: 2px !important` ломало эксп-режим (утолщало 1px → 2px). */
+
+/* focus-visible ВСЕГДА должен быть виден (доступность с клавиатуры),
+   даже при отключённых hover-эффектах. */
+body.no-hover *:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
 }
 
 /* Мобильная edge-to-edge верстка блоков: на тапе сохраняем 0/5px от спокойного состояния */
@@ -6682,21 +7408,41 @@ body.matcenter-page .part-title-row {
     align-items: flex-end;
     gap: 0.75rem;
     margin-bottom: 1.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 3px solid var(--border-color);
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid var(--border-color);
     position: relative;
 }
 
-/* Анимированная линия — теперь на строке, а не на заголовке */
-body.matcenter-page .part-title-row::after {
-    content: '';
-    position: absolute;
-    bottom: -3px;
-    left: 0;
-    width: 100px;
-    height: 3px;
-    background: var(--text-secondary);
-    animation: expandLine 2s ease-in-out infinite;
+/* Пульсирующая линия-акцент убрана — выглядела устаревше и дёргалась.
+   Чистая тонкая нижняя граница как в остальном новом дизайне. */
+body.matcenter-page .part-title-row::after { display: none; }
+
+/* ============================================
+   MATCENTER — РЕДИЗАЙН: РОВНАЯ СТАТИСТИКА И ПЛОСКИЕ КАРТОЧКИ
+   ============================================ */
+/* Плоские карточки статистики — тонкая рамка вместо тяжёлой тени */
+body.matcenter-page .stat-card {
+    box-shadow: none;
+    border: 1px solid var(--border-color);
+}
+/* Десктоп: ровный ряд из 4 карточек (раньше 4-я переносилась одна),
+   цифры чуть компактнее под 4 колонки */
+@media (min-width: 769px) {
+    body.matcenter-page:not(.is-summer-grade) .stats-container {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.85rem;
+        margin-bottom: 1.75rem;
+    }
+    body.matcenter-page .stat-number { font-size: 2rem; }
+    body.matcenter-page .stat-label { font-size: 0.82rem; }
+}
+/* Карточки задач — без цветного градиент-фона: чистый фон + цветная
+   левая граница и бейдж статуса (как в новом «плоском» дизайне). */
+body.matcenter-page .task-card.solved,
+body.matcenter-page .task-card.current-series,
+body.matcenter-page .task-card.postponed,
+body.matcenter-page .task-card.with-hint {
+    background: var(--bg-secondary);
 }
 
 body.matcenter-page .part-title-row .part-title {
@@ -6717,31 +7463,29 @@ body.matcenter-page .part-title-row .refresh-button {
 }
 
 /* Кнопка обновления — иконка-кружок */
+/* Кнопка обновления — лёгкая «призрачная» иконка-кнопка (раньше был
+   обведённый кружок, выглядел тяжеловато рядом с заголовком). */
 body.matcenter-page .refresh-button {
     flex-shrink: 0;
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     padding: 0;
-    border: 1.5px solid var(--border-color);
-    border-radius: 50%;
-    background: var(--bg-secondary);
+    border: none;
+    border-radius: 9px;
+    background: transparent;
     color: var(--text-secondary);
-    font-size: 1rem;
     line-height: 1;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s ease, border-color 0.2s ease,
-                box-shadow 0.2s ease, color 0.2s ease;
+    transition: background-color 0.18s ease, color 0.18s ease;
     -webkit-tap-highlight-color: transparent;
 }
 
 body.matcenter-page .refresh-button:hover:not(:disabled) {
     background: var(--bg-tertiary);
-    border-color: var(--text-secondary);
     color: var(--text-primary);
-    box-shadow: var(--shadow-sm);
 }
 
 body.matcenter-page .refresh-button:active:not(:disabled) {
@@ -7673,6 +8417,18 @@ body.theme-transitioning *::after {
     animation-delay: 0s !important;
 }
 
+/* Лёгкое подавление ТОЛЬКО переходов — для переключения экспериментального
+   режима. В отличие от theme-transitioning, НЕ сбрасывает animation-duration,
+   поэтому не трогает keyframe-анимацию модалки настроек (иначе она «моргала»
+   /переоткрывалась при действиях внутри настроек). Подавляет «волну» из
+   сотен transition при смене режима/темы. */
+body.exp-switching,
+body.exp-switching *,
+body.exp-switching *::before,
+body.exp-switching *::after {
+    transition: none !important;
+}
+
 /* ============================================
    MATCENTER — АКТИВНЫЕ СОСТОЯНИЯ И STICKY-ЗАГОЛОВКИ
    ============================================ */
@@ -7709,10 +8465,8 @@ body.matcenter-page .matcenter-task-view .part-title-row {
 
 /* Refresh-кнопка: чуть заметнее (акцентный hover) */
 body.matcenter-page .refresh-button:hover:not(:disabled) {
-    background: rgba(var(--accent-rgb), 0.08);
-    border-color: var(--accent-color);
-    color: var(--accent-color);
-    box-shadow: var(--shadow-sm);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
 }
 
 /* Спиннер загрузки и кнопка-«вертушка» должны крутиться даже при animations-off */

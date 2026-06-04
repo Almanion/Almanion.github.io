@@ -12,6 +12,8 @@
     let bookmarks = {};
     let bookmarksPanelOpen = false;
     let bmDragging = false;
+    let bmJustDragged = false; // подавляет «клик» по карточке сразу после перетаскивания
+    let lastLocalWriteAt = 0;  // окно, в котором эхо Firebase не пересобирает панель
     let lazyObserver = null;
 
     // Безопасные обёртки для localStorage — приватный режим и quota
@@ -55,13 +57,18 @@
                 bookmarks = merged;
                 safeSet(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
                 refreshAllButtons();
-                if (bookmarksPanelOpen && !bmDragging) renderBookmarksPanel();
+                // Не пересобираем панель из-за собственного эха (порядок/добавление/
+                // удаление уже отражены локально) — иначе мигание и сброс раскрытых карточек.
+                if (bookmarksPanelOpen && !bmDragging && (Date.now() - lastLocalWriteAt > 1200)) {
+                    renderBookmarksPanel();
+                }
             }, () => {});
         }
     }
 
     function saveBookmark(id, data) {
         bookmarks[id] = data;
+        lastLocalWriteAt = Date.now();
         const ref = getBookmarksRef();
         if (ref) {
             ref.child(id).set(data);
@@ -71,6 +78,7 @@
 
     function removeBookmark(id) {
         delete bookmarks[id];
+        lastLocalWriteAt = Date.now();
         const ref = getBookmarksRef();
         if (ref) {
             ref.child(id).remove();
@@ -351,6 +359,7 @@
     }
 
     function persistOrder(orderedIds) {
+        lastLocalWriteAt = Date.now();
         orderedIds.forEach((id, i) => {
             if (bookmarks[id]) bookmarks[id].order = i;
         });
@@ -397,12 +406,12 @@
         if (entries.length === 0) {
             const empty = document.createElement('p');
             empty.style.cssText = 'color: var(--text-secondary); text-align: center; padding: 2rem 0;';
-            empty.innerHTML = 'Нет закладок на этой странице.<br>Нажмите ☆ на любом блоке, чтобы добавить.';
+            empty.innerHTML = 'Нет закладок на этой странице.<br>Нажмите <span class="eic eic-bookmark" aria-hidden="true"></span> на любом блоке, чтобы добавить.';
             modal.appendChild(empty);
         } else {
             const hint = document.createElement('div');
             hint.style.cssText = 'font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.6rem;';
-            hint.textContent = 'Удерживайте карточку для перемещения';
+            hint.textContent = 'Тяните за ручку слева, чтобы менять порядок · нажмите на карточку, чтобы раскрыть';
             modal.appendChild(hint);
 
             const list = document.createElement('div');
@@ -442,40 +451,77 @@
                         el.appendChild(cloneBoxContent(box));
                     }
                     delete el.dataset.lazyBmId;
+                    applyClampState(el);
                 });
             }
         });
     }
 
     function initDragSort(list) {
-        let dragItem = null;
-        let placeholder = null;
-        let longPressTimer = null;
-        let pointerStartY = 0;
-        let lastPointerY = 0;
-        let initialTop = 0;
-        let dragOffsetY = 0;
-        let savedColor = '';
-        let rafId = null;
-        let needsRaf = false;
-        let cachedModalTop = 0;
-        let cachedModalBottom = 0;
         const modal = document.getElementById('bookmarksModal');
+        let dragItem = null, placeholder = null, activePointer = null;
+        let dragOffsetY = 0, initialTop = 0, lastPointerY = 0, savedColor = '';
+        let rafId = null, modalTop = 0, modalBottom = 0;
 
-        function startDrag(card, pointerY) {
+        function reattachLazy() {
+            if (!lazyObserver) return;
+            const m = document.getElementById('bookmarksModal');
+            if (!m) return;
+            m.querySelectorAll('.bm-card-content[data-lazy-bm-id]').forEach(function (el) {
+                lazyObserver.observe(el);
+            });
+        }
+
+        function tick() {
+            rafId = null;
+            if (!dragItem) return;
+
+            // --- ЧТЕНИЯ (без layout-trashing) ---
+            const cards = list.querySelectorAll('.bm-card:not(.bm-dragging)');
+            let beforeEl = null;
+            for (const c of cards) {
+                const r = c.getBoundingClientRect();
+                if (lastPointerY < r.top + r.height / 2) { beforeEl = c; break; }
+            }
+            let scrollDelta = 0;
+            if (modal) {
+                const edge = 48, maxSpeed = 12;
+                if (lastPointerY < modalTop + edge) {
+                    scrollDelta = -maxSpeed * Math.min(1, (modalTop + edge - lastPointerY) / edge);
+                } else if (lastPointerY > modalBottom - edge) {
+                    scrollDelta = maxSpeed * Math.min(1, (lastPointerY - (modalBottom - edge)) / edge);
+                }
+            }
+
+            // --- ЗАПИСИ ---
+            dragItem.style.transform = 'translateY(' + (lastPointerY - dragOffsetY - initialTop) + 'px)';
+            if (beforeEl) {
+                if (placeholder.nextElementSibling !== beforeEl) list.insertBefore(placeholder, beforeEl);
+            } else if (list.lastElementChild !== placeholder) {
+                list.appendChild(placeholder);
+            }
+            if (scrollDelta && modal) {
+                modal.scrollTop += scrollDelta;
+                rafId = requestAnimationFrame(tick); // продолжаем автоскролл, пока палец у края
+            }
+        }
+
+        function scheduleTick() { if (rafId == null) rafId = requestAnimationFrame(tick); }
+
+        function startDrag(card, startY) {
             dragItem = card;
             bmDragging = true;
             savedColor = card.style.borderLeftColor || '';
-
-            if (lazyObserver) { lazyObserver.disconnect(); }
+            if (lazyObserver) lazyObserver.disconnect();
 
             const rect = card.getBoundingClientRect();
             initialTop = rect.top;
-            dragOffsetY = pointerY - initialTop;
+            dragOffsetY = startY - rect.top;
+            lastPointerY = startY;
             if (modal) {
                 const mr = modal.getBoundingClientRect();
-                cachedModalTop = mr.top;
-                cachedModalBottom = mr.bottom;
+                modalTop = mr.top;
+                modalBottom = mr.bottom;
             }
 
             placeholder = document.createElement('div');
@@ -483,224 +529,99 @@
             placeholder.style.height = rect.height + 'px';
             card.parentNode.insertBefore(placeholder, card);
 
-            list.style.userSelect = 'none';
-            list.style.webkitUserSelect = 'none';
             document.body.style.userSelect = 'none';
             document.body.style.webkitUserSelect = 'none';
-
             card.classList.add('bm-dragging');
             card.style.cssText =
                 'position:fixed;z-index:99999;pointer-events:none;' +
-                'left:' + rect.left + 'px;' +
-                'width:' + rect.width + 'px;' +
-                'top:' + initialTop + 'px;' +
-                'margin:0;opacity:0.92;' +
-                'box-shadow:0 8px 32px rgba(0,0,0,0.25);' +
-                'border-left-color:' + savedColor + ';' +
-                'will-change:transform;';
-
-            if (navigator.vibrate) navigator.vibrate(30);
-        }
-
-        function tick() {
-            rafId = null;
-            if (!dragItem) return;
-
-            // === READS first (no layout thrashing) ===
-            const cards = list.querySelectorAll('.bm-card:not(.bm-dragging)');
-            const positions = [];
-            for (const c of cards) {
-                const r = c.getBoundingClientRect();
-                positions.push({ el: c, mid: r.top + r.height / 2 });
-            }
-
-            // === WRITES after ===
-            dragItem.style.transform = 'translateY(' + (lastPointerY - dragOffsetY - initialTop) + 'px)';
-
-            let keepScrolling = false;
-            if (modal) {
-                const edge = 50;
-                const maxSpeed = 8;
-                let delta = 0;
-                if (lastPointerY < cachedModalTop + edge) {
-                    delta = -maxSpeed * Math.max(0, 1 - (lastPointerY - cachedModalTop) / edge);
-                } else if (lastPointerY > cachedModalBottom - edge) {
-                    delta = maxSpeed * Math.max(0, 1 - (cachedModalBottom - lastPointerY) / edge);
-                }
-                if (Math.abs(delta) > 0.5) {
-                    modal.scrollTop += delta;
-                    keepScrolling = true;
-                }
-            }
-
-            let placed = false;
-            for (const { el, mid } of positions) {
-                if (lastPointerY < mid) {
-                    if (placeholder.nextSibling !== el) list.insertBefore(placeholder, el);
-                    placed = true;
-                    break;
-                }
-            }
-            if (!placed && list.lastElementChild !== placeholder) {
-                list.appendChild(placeholder);
-            }
-
-            needsRaf = false;
-            if (keepScrolling) {
-                needsRaf = true;
-                rafId = requestAnimationFrame(tick);
-            }
-        }
-
-        function scheduleRaf() {
-            if (!needsRaf) {
-                needsRaf = true;
-                rafId = requestAnimationFrame(tick);
-            }
-        }
-
-        function cleanup() {
-            if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-            needsRaf = false;
-            list.style.userSelect = '';
-            list.style.webkitUserSelect = '';
-            document.body.style.userSelect = '';
-            document.body.style.webkitUserSelect = '';
-        }
-
-        function reattachLazy() {
-            if (!lazyObserver) return;
-            const modal = document.getElementById('bookmarksModal');
-            if (!modal) return;
-            modal.querySelectorAll('.bm-card-content[data-lazy-bm-id]').forEach(el => {
-                lazyObserver.observe(el);
-            });
+                'left:' + rect.left + 'px;width:' + rect.width + 'px;top:' + initialTop + 'px;' +
+                'margin:0;opacity:0.96;box-shadow:0 12px 34px rgba(0,0,0,0.28);' +
+                'border-left-color:' + savedColor + ';will-change:transform;';
+            if (navigator.vibrate) { try { navigator.vibrate(18); } catch (_) {} }
         }
 
         function endDrag() {
-            if (!dragItem) return;
-            cleanup();
-            dragItem.classList.remove('bm-dragging');
-            dragItem.removeAttribute('style');
-            if (savedColor) dragItem.style.borderLeftColor = savedColor;
+            if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+            const card = dragItem;
+            dragItem = null;
+            activePointer = null;
+            document.body.style.userSelect = '';
+            document.body.style.webkitUserSelect = '';
+            bmDragging = false;
+            if (!card) return;
+
+            card.classList.remove('bm-dragging');
+            card.removeAttribute('style');
+            if (savedColor) card.style.borderLeftColor = savedColor;
             if (placeholder && placeholder.parentNode) {
-                placeholder.parentNode.insertBefore(dragItem, placeholder);
+                placeholder.parentNode.insertBefore(card, placeholder);
                 placeholder.remove();
             }
             placeholder = null;
-            dragItem = null;
-            bmDragging = false;
 
-            if (modal) modal.style.overflow = 'hidden';
-            requestAnimationFrame(() => {
-                if (modal) modal.style.overflow = '';
-                const ids = [...list.querySelectorAll('.bm-card')].map(c => c.dataset.bmId);
-                persistOrder(ids);
-                reattachLazy();
-            });
+            // подавляем клик-переход карточки, который иначе срабатывает после перетаскивания
+            bmJustDragged = true;
+            setTimeout(function () { bmJustDragged = false; }, 80);
+
+            const ids = [].slice.call(list.querySelectorAll('.bm-card')).map(function (c) { return c.dataset.bmId; });
+            persistOrder(ids);
+            reattachLazy();
         }
 
-        function cancelDrag() {
-            if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
-            cleanup();
-            if (dragItem) {
-                dragItem.classList.remove('bm-dragging');
-                dragItem.removeAttribute('style');
-                if (savedColor) dragItem.style.borderLeftColor = savedColor;
-                if (placeholder) placeholder.remove();
-                dragItem = null;
-                placeholder = null;
-            }
-            bmDragging = false;
-        }
-
-        function onPointerMove(y) {
-            lastPointerY = y;
-            scheduleRaf();
-        }
-
-        // === Touch events ===
-        list.addEventListener('touchstart', (e) => {
-            const card = e.target.closest('.bm-card');
-            if (!card || e.target.closest('.bm-card-delete')) return;
-            pointerStartY = e.touches[0].clientY;
-            lastPointerY = pointerStartY;
-            longPressTimer = setTimeout(() => {
-                longPressTimer = null;
-                startDrag(card, lastPointerY);
-            }, 400);
-        }, { passive: true });
-
-        list.addEventListener('touchmove', (e) => {
-            const y = e.touches[0].clientY;
-            if (longPressTimer && !dragItem) {
-                if (Math.abs(y - pointerStartY) > 8) {
-                    clearTimeout(longPressTimer);
-                    longPressTimer = null;
-                }
-                lastPointerY = y;
-                return;
-            }
-            if (!dragItem) return;
+        // Единый ввод (мышь + тач + перо) через Pointer Events.
+        // Захват только за «ручку»; перетаскивание начинается после небольшого
+        // смещения — без долгого нажатия и без конфликта с кликом/скроллом.
+        list.addEventListener('pointerdown', function (e) {
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            const handle = e.target.closest('.bm-drag-handle');
+            if (!handle) return;
+            const card = handle.closest('.bm-card');
+            if (!card) return;
             e.preventDefault();
-            e.stopPropagation();
-            onPointerMove(y);
-        }, { passive: false });
 
-        list.addEventListener('touchend', (e) => {
-            if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
-            if (!dragItem) return;
-            e.stopPropagation();
-            endDrag();
-        });
+            const startY = e.clientY;
+            activePointer = e.pointerId;
+            let started = false;
+            try { handle.setPointerCapture(e.pointerId); } catch (_) {}
 
-        list.addEventListener('touchcancel', () => cancelDrag());
-
-        // === Mouse events (desktop) ===
-        list.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) return;
-            const card = e.target.closest('.bm-card');
-            if (!card || e.target.closest('.bm-card-delete')) return;
-            pointerStartY = e.clientY;
-            lastPointerY = pointerStartY;
-            longPressTimer = setTimeout(() => {
-                longPressTimer = null;
-                startDrag(card, lastPointerY);
-            }, 400);
-
-            function onMouseMove(ev) {
-                const y = ev.clientY;
-                if (longPressTimer && !dragItem) {
-                    if (Math.abs(y - pointerStartY) > 8) {
-                        clearTimeout(longPressTimer);
-                        longPressTimer = null;
-                    }
-                    lastPointerY = y;
-                    return;
+            function onMove(ev) {
+                if (ev.pointerId !== activePointer) return;
+                if (!started) {
+                    if (Math.abs(ev.clientY - startY) < 4) return; // порог: тап ≠ перетаскивание
+                    started = true;
+                    startDrag(card, startY);
                 }
-                if (!dragItem) return;
-                ev.preventDefault();
-                onPointerMove(y);
+                lastPointerY = ev.clientY;
+                scheduleTick();
             }
-
-            function onMouseUp() {
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
-                if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
-                if (!dragItem) return;
-                endDrag();
+            function onUp(ev) {
+                if (ev.pointerId !== activePointer) return;
+                document.removeEventListener('pointermove', onMove);
+                document.removeEventListener('pointerup', onUp);
+                document.removeEventListener('pointercancel', onUp);
+                if (started) endDrag();
+                else activePointer = null;
             }
-
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
+            document.addEventListener('pointermove', onMove);
+            document.addEventListener('pointerup', onUp);
+            document.addEventListener('pointercancel', onUp);
         });
     }
 
     function cloneBoxContent(box) {
         const clone = box.cloneNode(true);
-        clone.querySelectorAll('.bookmark-btn').forEach(b => b.remove());
+        // Убираем интерактив, который в карточке не нужен и может всплыть при наведении.
+        clone.querySelectorAll('.bookmark-btn, .copy-block-btn').forEach(b => b.remove());
         clone.style.cssText = 'margin:0;border:none;box-shadow:none;border-radius:0;border-left:none;';
         return clone;
+    }
+
+    // Помечаем карточку «обрезанной», если содержимое не влезает в свёрнутую высоту —
+    // только таким нужны затухание снизу, шеврон и жест «тап = раскрыть».
+    function applyClampState(contentDiv) {
+        const card = contentDiv.closest('.bm-card');
+        if (!card) return;
+        card.classList.toggle('bm-clamped', contentDiv.scrollHeight - contentDiv.clientHeight > 4);
     }
 
     function ensureLazyObserver() {
@@ -719,18 +640,45 @@
                     contentDiv.appendChild(cloneBoxContent(box));
                 }
                 delete contentDiv.dataset.lazyBmId;
+                applyClampState(contentDiv);
             });
         }, { root: document.getElementById('bookmarksModal'), rootMargin: '100px' });
+    }
+
+    function navigateToBookmark(bm, isCurrentPage) {
+        if (isCurrentPage) {
+            const box = findBoxById(bm.id);
+            if (!box) return;
+            closeBookmarksPanel();
+            if (typeof window.closeMobileMenu === 'function') window.closeMobileMenu();
+            setTimeout(() => {
+                box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                box.classList.add('nav-highlight');
+                setTimeout(() => box.classList.remove('nav-highlight'), 1500);
+            }, 100);
+        } else {
+            window.location.href = bm.page + '#' + bm.topicId;
+        }
     }
 
     function createBookmarkCard(bm, isCurrentPage) {
         const card = document.createElement('div');
         card.className = 'bm-card';
+        card.dataset.bmId = bm.id;
         const color = getTypeColor(bm.type);
         card.style.borderLeftColor = color;
 
         const headerDiv = document.createElement('div');
         headerDiv.className = 'bm-card-header';
+
+        // Ручка перетаскивания — захват только за неё (drag); тело карточки раскрывает.
+        const handle = document.createElement('span');
+        handle.className = 'bm-drag-handle';
+        handle.title = 'Перетащите, чтобы изменить порядок';
+        handle.setAttribute('aria-hidden', 'true');
+        handle.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+        handle.addEventListener('click', (e) => { e.stopPropagation(); });
+        headerDiv.appendChild(handle);
 
         const typeSpan = document.createElement('span');
         typeSpan.className = 'bm-card-type';
@@ -745,10 +693,17 @@
             headerDiv.appendChild(pageSpan);
         }
 
+        const chevron = document.createElement('span');
+        chevron.className = 'bm-card-chevron';
+        chevron.setAttribute('aria-hidden', 'true');
+        chevron.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+        headerDiv.appendChild(chevron);
+
         const delBtn = document.createElement('button');
         delBtn.className = 'bm-card-delete';
         delBtn.title = 'Удалить';
-        delBtn.textContent = '✕';
+        delBtn.setAttribute('aria-label', 'Удалить закладку');
+        delBtn.innerHTML = '<span class="eic eic-x" aria-hidden="true"></span>';
         delBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             removeBookmark(bm.id);
@@ -761,30 +716,37 @@
         const contentDiv = document.createElement('div');
         contentDiv.className = 'bm-card-content';
         contentDiv.textContent = bm.preview || '';
-
         if (isCurrentPage) {
             contentDiv.dataset.lazyBmId = bm.id;
         }
-
         card.appendChild(contentDiv);
 
-        card.addEventListener('click', () => {
-            if (isCurrentPage) {
-                const box = findBoxById(bm.id);
-                if (box) {
-                    closeBookmarksPanel();
-                    if (typeof window.closeMobileMenu === 'function') {
-                        window.closeMobileMenu();
-                    }
-                    setTimeout(() => {
-                        box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        box.classList.add('nav-highlight');
-                        setTimeout(() => box.classList.remove('nav-highlight'), 1500);
-                    }, 100);
-                }
-            } else {
-                window.location.href = bm.page + '#' + bm.topicId;
-            }
+        // Подвал «Перейти к блоку»: у коротких карточек виден всегда, у обрезанных —
+        // в раскрытом состоянии (видимостью управляет CSS).
+        const foot = document.createElement('div');
+        foot.className = 'bm-card-foot';
+        const gotoBtn = document.createElement('button');
+        gotoBtn.className = 'bm-card-goto';
+        gotoBtn.innerHTML = 'Перейти к блоку <span aria-hidden="true">→</span>';
+        gotoBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            navigateToBookmark(bm, isCurrentPage);
+        });
+        foot.appendChild(gotoBtn);
+        card.appendChild(foot);
+
+        // Тап по карточке раскрывает/сворачивает (drag — только за ручку, поэтому
+        // конфликта «клик после перетаскивания» нет; флаги — дополнительная страховка).
+        card.addEventListener('click', (e) => {
+            if (bmDragging || bmJustDragged) return;
+            if (e.target.closest('.bm-drag-handle') ||
+                e.target.closest('.bm-card-delete') ||
+                e.target.closest('.bm-card-goto')) return;
+            if (!card.classList.contains('bm-clamped')) return; // короткую нечего раскрывать
+            // Раскрытую карточку не сворачиваем кликом по содержимому — там выделяют
+            // текст и тыкают формулы; сворачивание — по шапке/шеврону.
+            if (card.classList.contains('expanded') && e.target.closest('.bm-card-content')) return;
+            card.classList.toggle('expanded');
         });
 
         return card;

@@ -3,25 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <script>
-        // FOUC-prevention: применяем тему до загрузки CSS
+        // FOUC-prevention: тема + экспериментальный режим до загрузки CSS
         (function(){
             try {
-                var t = 'light';
                 var s = localStorage.getItem('siteSettings');
-                if (s) { try { var p = JSON.parse(s); if (p && p.theme) t = p.theme; } catch(_){} }
-                else { var l = localStorage.getItem('theme'); if (l === 'dark') t = 'dark'; }
-                var bg = {light:'#f8fafc',dark:'#0f172a',sepia:'#f4ecd8',midnight:'#0a0a0b'}[t] || '#f8fafc';
-                var fg = {light:'#0f172a',dark:'#f1f5f9',sepia:'#3d2f1e',midnight:'#fafafa'}[t] || '#0f172a';
+                var p = s ? JSON.parse(s) : {};
+                var bg, fg;
+                if (p && p.experimental) {
+                    var dark = !!p.expDark;
+                    var mode = p.expMode === 'prism' ? 'prism' : 'graphite';
+                    if (mode === 'graphite') { bg = dark ? '#09090b' : '#fafafa'; fg = dark ? '#f4f4f5' : '#18181b'; }
+                    else { bg = dark ? '#0e0e16' : '#fbfbfe'; fg = dark ? '#ececf4' : '#16161f'; }
+                    document.documentElement.dataset.exp = mode + (dark ? '-dark' : '-light');
+                } else {
+                    var t = (p && p.theme) || (localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
+                    bg = {light:'#f8fafc',dark:'#0f172a',sepia:'#f4ecd8',midnight:'#0a0a0b'}[t] || '#f8fafc';
+                    fg = {light:'#0f172a',dark:'#f1f5f9',sepia:'#3d2f1e',midnight:'#fafafa'}[t] || '#0f172a';
+                    document.documentElement.dataset.theme = t;
+                }
                 document.documentElement.style.backgroundColor = bg;
                 document.documentElement.style.color = fg;
-                document.documentElement.dataset.theme = t;
             } catch(e) {}
         })();
     </script>
     <link rel="icon" href="favicons/favicon-geo.svg" type="image/svg+xml">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="manifest.json">
-    <title>Конспекты по Геометрии 9 класс | Almanion</title>
+    <title>Конспекты по Геометрии | Almanion</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="styles/tokens.css">
     <link rel="stylesheet" href="styles/buttons.css">
@@ -32,9 +40,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="style-new.css">
 </head>
 <body>
-    <script>(function(){var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');})();</script>
+    <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p&&p.experimental){document.body.classList.add('experimental',p.expMode==='prism'?'exp-prism':'exp-graphite');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
     <!-- Боковая панель навигации -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -53,7 +62,7 @@
 
         <nav class="nav-menu">
             <div class="nav-section">
-                <h3>Геометрия 9 класс</h3>
+                <h3>Геометрия</h3>
                 <ul>
                     <li><a href="#vectors" class="nav-link active">Векторы / направленные отрезки</a></li>
                     <li><a href="#operations" class="nav-link">Сложение и вычитание векторов</a></li>
@@ -69,10 +78,10 @@
             <div class="nav-section other-subjects">
                 <h3>Другие предметы</h3>
                 <ul>
-                    <li><a href="physics.html">Физика 9 класс</a></li>
-                    <li><a href="math.html">Алгебра 9 класс</a></li>
-                    <li><a href="geometry.html" class="current-subject">Геометрия 9 класс</a></li>
-                    <li><a href="chemistry.html">Химия 9 класс</a></li>
+                    <li><a href="physics.html">Физика</a></li>
+                    <li><a href="math.html">Алгебра</a></li>
+                    <li><a href="geometry.html" class="current-subject">Геометрия</a></li>
+                    <li><a href="chemistry.html">Химия</a></li>
                     <li><a href="likbez.html">Ликбезы</a></li>
                 </ul>
             </div>
@@ -86,7 +95,7 @@
     <!-- Основной контент -->
     <main class="main-content">
         <header class="page-header">
-            <h1>Геометрия 9 класс</h1>
+            <h1>Геометрия</h1>
             <p class="subtitle"><a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a> | 2025 — 2026</p>
         </header>
 
@@ -341,7 +350,7 @@
                     где \(A\), \(B\), \(C\) — числа, причём \(A\) и \(B\) одновременно не равны нулю.
                     
                     <div class="remark-box">
-                        💡 Вектор \(\vec{n} = (A; B)\) называется <strong>нормальным вектором</strong> прямой (перпендикулярен прямой)
+                        <span class="eic eic-bulb" aria-hidden="true"></span> Вектор \(\vec{n} = (A; B)\) называется <strong>нормальным вектором</strong> прямой (перпендикулярен прямой)
                     </div>
                 </div>
 
@@ -450,7 +459,7 @@
                     <strong>Эллипс</strong> — геометрическое место точек, для которых сумма расстояний до двух фиксированных точек (называемых фокусами) есть постоянная величина.
                     
                     <div class="remark-box">
-                        💡 Если \(F_1\) и \(F_2\) — фокусы эллипса, а \(M\) — произвольная точка эллипса, то \(|MF_1| + |MF_2| = 2a\), где \(a\) — большая полуось эллипса.
+                        <span class="eic eic-bulb" aria-hidden="true"></span> Если \(F_1\) и \(F_2\) — фокусы эллипса, а \(M\) — произвольная точка эллипса, то \(|MF_1| + |MF_2| = 2a\), где \(a\) — большая полуось эллипса.
                     </div>
                 </div>
 
@@ -466,7 +475,7 @@
                     где \(a > b > 0\), \(a\) — <strong>большая полуось</strong>, \(b\) — <strong>малая полуось</strong>.
                     
                     <div class="remark-box">
-                        💡 При \(a = b\) эллипс превращается в окружность
+                        <span class="eic eic-bulb" aria-hidden="true"></span> При \(a = b\) эллипс превращается в окружность
                     </div>
                 </div>
 
@@ -592,6 +601,7 @@
     <script src="newyear.js"></script>
     <script src="settings.js"></script>
     <script src="bookmarks.js"></script>
+    <script src="knowledge-check.js"></script>
     <script src="poll.js"></script>
 </body>
 </html>

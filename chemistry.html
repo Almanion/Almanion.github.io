@@ -3,25 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <script>
-        // FOUC-prevention: применяем тему до загрузки CSS
+        // FOUC-prevention: тема + экспериментальный режим до загрузки CSS
         (function(){
             try {
-                var t = 'light';
                 var s = localStorage.getItem('siteSettings');
-                if (s) { try { var p = JSON.parse(s); if (p && p.theme) t = p.theme; } catch(_){} }
-                else { var l = localStorage.getItem('theme'); if (l === 'dark') t = 'dark'; }
-                var bg = {light:'#f8fafc',dark:'#0f172a',sepia:'#f4ecd8',midnight:'#0a0a0b'}[t] || '#f8fafc';
-                var fg = {light:'#0f172a',dark:'#f1f5f9',sepia:'#3d2f1e',midnight:'#fafafa'}[t] || '#0f172a';
+                var p = s ? JSON.parse(s) : {};
+                var bg, fg;
+                if (p && p.experimental) {
+                    var dark = !!p.expDark;
+                    var mode = p.expMode === 'prism' ? 'prism' : 'graphite';
+                    if (mode === 'graphite') { bg = dark ? '#09090b' : '#fafafa'; fg = dark ? '#f4f4f5' : '#18181b'; }
+                    else { bg = dark ? '#0e0e16' : '#fbfbfe'; fg = dark ? '#ececf4' : '#16161f'; }
+                    document.documentElement.dataset.exp = mode + (dark ? '-dark' : '-light');
+                } else {
+                    var t = (p && p.theme) || (localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
+                    bg = {light:'#f8fafc',dark:'#0f172a',sepia:'#f4ecd8',midnight:'#0a0a0b'}[t] || '#f8fafc';
+                    fg = {light:'#0f172a',dark:'#f1f5f9',sepia:'#3d2f1e',midnight:'#fafafa'}[t] || '#0f172a';
+                    document.documentElement.dataset.theme = t;
+                }
                 document.documentElement.style.backgroundColor = bg;
                 document.documentElement.style.color = fg;
-                document.documentElement.dataset.theme = t;
             } catch(e) {}
         })();
     </script>
     <link rel="icon" href="favicons/favicon-ch.svg" type="image/svg+xml">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="manifest.json">
-    <title>Конспекты по Химии 9 класс | Almanion</title>
+    <title>Конспекты по Химии | Almanion</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="styles/tokens.css">
     <link rel="stylesheet" href="styles/buttons.css">
@@ -33,9 +41,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="style-new.css">
 </head>
 <body>
-    <script>(function(){var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');})();</script>
+    <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p&&p.experimental){document.body.classList.add('experimental',p.expMode==='prism'?'exp-prism':'exp-graphite');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
     <!-- Боковая панель навигации -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -54,7 +63,7 @@
 
         <nav class="nav-menu">
             <div class="nav-section">
-                <h3>Химия 9 класс</h3>
+                <h3>Химия</h3>
                 <ul>
                     <!-- Часть 0: Теоретические основы -->
                     <li class="nav-group">
@@ -113,10 +122,10 @@
             <div class="nav-section other-subjects">
                 <h3>Другие предметы</h3>
                 <ul>
-                    <li><a href="physics.html">Физика 9 класс</a></li>
-                    <li><a href="math.html">Алгебра 9 класс</a></li>
-                    <li><a href="geometry.html">Геометрия 9 класс</a></li>
-                    <li><a href="chemistry.html" class="current-subject">Химия 9 класс</a></li>
+                    <li><a href="physics.html">Физика</a></li>
+                    <li><a href="math.html">Алгебра</a></li>
+                    <li><a href="geometry.html">Геометрия</a></li>
+                    <li><a href="chemistry.html" class="current-subject">Химия</a></li>
                     <li><a href="likbez.html">Ликбезы</a></li>
                 </ul>
             </div>
@@ -130,7 +139,7 @@
     <!-- Основной контент -->
     <main class="main-content">
         <header class="page-header">
-            <h1>Химия 9 класс</h1>
+            <h1>Химия</h1>
             <p class="subtitle"><a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a> | 2025 — 2026</p>
         </header>
 
@@ -204,7 +213,7 @@
                 </div>
 
                 <div class="remark-box">
-                    💡 <strong>Примеры электронных конфигураций:</strong>
+                    <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры электронных конфигураций:</strong>
                     <ul>
                         <li>\(H\) (Z=1): 1</li>
                         <li>\(He\) (Z=2): 2</li>
@@ -226,7 +235,7 @@
                     </ul>
                     
                     <div class="remark-box">
-                        💡 <strong>Номер периода</strong> = число энергетических уровней (электронных слоёв)
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Номер периода</strong> = число энергетических уровней (электронных слоёв)
                     </div>
                 </div>
 
@@ -238,7 +247,7 @@
                     </ul>
                     
                     <div class="remark-box">
-                        💡 <strong>Номер группы</strong> (главная подгруппа) = число электронов на внешнем уровне
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Номер группы</strong> (главная подгруппа) = число электронов на внешнем уровне
                     </div>
                 </div>
 
@@ -286,13 +295,13 @@
                         <ol>
                             <li><strong>Неполярная ковалентная связь</strong> — образуется между атомами одного элемента (одинаковая электроотрицательность)
                                 <div class="remark-box">
-                                    💡 <strong>Примеры:</strong> \(H_2\), \(O_2\), \(N_2\), \(Cl_2\)
+                                    <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры:</strong> \(H_2\), \(O_2\), \(N_2\), \(Cl_2\)
                                 </div>
                             </li>
                             
                             <li><strong>Полярная ковалентная связь</strong> — образуется между атомами разных элементов (разная электроотрицательность)
                                 <div class="remark-box">
-                                    💡 <strong>Примеры:</strong> \(HCl\), \(H_2O\), \(NH_3\), \(CO_2\)
+                                    <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры:</strong> \(HCl\), \(H_2O\), \(NH_3\), \(CO_2\)
                                 </div>
                             </li>
                         </ol>
@@ -326,7 +335,7 @@
                     </div>
                     
                     <div class="remark-box">
-                        💡 <strong>Примеры:</strong> \(NaCl\), \(KBr\), \(MgO\), \(CaCl_2\), \(Li_2O\)
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры:</strong> \(NaCl\), \(KBr\), \(MgO\), \(CaCl_2\), \(Li_2O\)
                     </div>
                 </div>
 
@@ -439,7 +448,7 @@
                     <strong>Неэлектролиты</strong> — вещества, растворы которых не проводят электрический ток.
                     
                     <div class="remark-box">
-                        💡 <strong>Примеры:</strong> сахар, спирт, глюкоза, большинство органических веществ
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры:</strong> сахар, спирт, глюкоза, большинство органических веществ
                     </div>
                 </div>
 
@@ -514,7 +523,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>📝 Алгоритм составления ионных уравнений</h4>
+                    <h4><span class="eic eic-pen" aria-hidden="true"></span> Алгоритм составления ионных уравнений</h4>
                     
                     <div class="exp-section">
                         <strong>Пример:</strong> Реакция между растворами хлорида натрия и нитрата серебра
@@ -537,7 +546,7 @@
                 </div>
 
                 <div class="remark-box">
-                    💡 <strong>Важно:</strong> В виде ионов не записываются:
+                    <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Важно:</strong> В виде ионов не записываются:
                     <ul>
                         <li>Нерастворимые вещества (осадки)</li>
                         <li>Газы</li>
@@ -564,7 +573,7 @@
                 </div>
 
                 <div class="remark-box">
-                    💡 <strong>Запомните:</strong> На катоде — восстановление (К — восстановление), на аноде — окисление (А — окисление)
+                    <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Запомните:</strong> На катоде — восстановление (К — восстановление), на аноде — окисление (А — окисление)
                 </div>
 
                 <h4 class="subsection-title">0.4.1 Электролиз расплавов</h4>
@@ -583,7 +592,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>📝 Примеры электролиза расплавов</h4>
+                    <h4><span class="eic eic-pen" aria-hidden="true"></span> Примеры электролиза расплавов</h4>
                     
                     <div class="exp-section">
                         <strong>Пример 1: Электролиз расплава хлорида натрия</strong>
@@ -603,7 +612,7 @@
                         </div>
                         
                         <div class="remark-box">
-                            💡 На катоде выделяется металлический натрий, на аноде — газообразный хлор
+                            <span class="eic eic-bulb" aria-hidden="true"></span> На катоде выделяется металлический натрий, на аноде — газообразный хлор
                         </div>
                     </div>
                     
@@ -625,7 +634,7 @@
                         </div>
                         
                         <div class="remark-box">
-                            💡 Так получают алюминий в промышленности (процесс Холла-Эру)
+                            <span class="eic eic-bulb" aria-hidden="true"></span> Так получают алюминий в промышленности (процесс Холла-Эру)
                         </div>
                     </div>
                     
@@ -727,7 +736,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>📝 Примеры электролиза растворов</h4>
+                    <h4><span class="eic eic-pen" aria-hidden="true"></span> Примеры электролиза растворов</h4>
                     
                     <div class="exp-section">
                         <strong>Пример 1: Электролиз раствора хлорида натрия (инертный анод)</strong>
@@ -748,7 +757,7 @@
                         </div>
                         
                         <div class="remark-box">
-                            💡 В растворе накапливается \(NaOH\) (щёлочь). Так получают хлор, водород и щёлочь в промышленности
+                            <span class="eic eic-bulb" aria-hidden="true"></span> В растворе накапливается \(NaOH\) (щёлочь). Так получают хлор, водород и щёлочь в промышленности
                         </div>
                     </div>
                     
@@ -770,7 +779,7 @@
                         </div>
                         
                         <div class="remark-box">
-                            💡 На катоде выделяется чистая медь (рафинирование меди), на аноде — кислород, в растворе накапливается серная кислота
+                            <span class="eic eic-bulb" aria-hidden="true"></span> На катоде выделяется чистая медь (рафинирование меди), на аноде — кислород, в растворе накапливается серная кислота
                         </div>
                     </div>
                     
@@ -792,7 +801,7 @@
                         </div>
                         
                         <div class="remark-box">
-                            💡 Фактически происходит электролиз воды! Соль \(Na_2SO_4\) не расходуется, а лишь увеличивает электропроводность раствора
+                            <span class="eic eic-bulb" aria-hidden="true"></span> Фактически происходит электролиз воды! Соль \(Na_2SO_4\) не расходуется, а лишь увеличивает электропроводность раствора
                         </div>
                     </div>
                     
@@ -811,7 +820,7 @@
                         </div>
                         
                         <div class="remark-box">
-                            💡 Снова получается электролиз воды
+                            <span class="eic eic-bulb" aria-hidden="true"></span> Снова получается электролиз воды
                         </div>
                     </div>
                     
@@ -830,7 +839,7 @@
                         </div>
                         
                         <div class="remark-box">
-                            💡 Медь переносится с анода на катод. Так осуществляется <strong>электрохимическая очистка (рафинирование) меди</strong>: примеси остаются в растворе или оседают на дно, а на катоде выделяется чистая медь
+                            <span class="eic eic-bulb" aria-hidden="true"></span> Медь переносится с анода на катод. Так осуществляется <strong>электрохимическая очистка (рафинирование) меди</strong>: примеси остаются в растворе или оседают на дно, а на катоде выделяется чистая медь
                         </div>
                     </div>
                 </div>
@@ -856,7 +865,7 @@
                 </div>
 
                 <div class="remark-box">
-                    💡 <strong>Постоянная Фарадея</strong> — это заряд одного моля электронов: \(F = 96500\) Кл/моль
+                    <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Постоянная Фарадея</strong> — это заряд одного моля электронов: \(F = 96500\) Кл/моль
                 </div>
 
                 <h4 class="subsection-title">0.4.4 Применение электролиза</h4>
@@ -912,7 +921,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>🔬 Демонстрационный опыт: Электролиз воды</h4>
+                    <h4><span class="eic eic-micro" aria-hidden="true"></span> Демонстрационный опыт: Электролиз воды</h4>
                     
                     <div class="exp-section">
                         <strong>Установка Гофмана:</strong>
@@ -932,7 +941,7 @@
                 </div>
 
                 <div class="remark-box">
-                    💡 <strong>Основное различие электролиза расплавов и растворов:</strong>
+                    <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Основное различие электролиза расплавов и растворов:</strong>
                     <ul>
                         <li><strong>Расплавы:</strong> проще, выделяются элементы, входящие в состав вещества</li>
                         <li><strong>Растворы:</strong> сложнее, может участвовать вода, продукты зависят от активности ионов и материала электродов</li>
@@ -957,7 +966,7 @@
                     <strong>Простые вещества</strong> — вещества, состоящие из атомов одного химического элемента.
                     
                     <div class="remark-box">
-                        💡 <strong>Примеры:</strong> \(O_2\) (кислород), \(N_2\) (азот), \(Fe\) (железо), \(S\) (сера), \(P\) (фосфор)
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры:</strong> \(O_2\) (кислород), \(N_2\) (азот), \(Fe\) (железо), \(S\) (сера), \(P\) (фосфор)
                     </div>
                 </div>
 
@@ -965,7 +974,7 @@
                     <strong>Сложные вещества</strong> — вещества, состоящие из атомов двух или более химических элементов.
                     
                     <div class="remark-box">
-                        💡 <strong>Примеры:</strong> \(H_2O\) (вода), \(NaCl\) (поваренная соль), \(H_2SO_4\) (серная кислота)
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры:</strong> \(H_2O\) (вода), \(NaCl\) (поваренная соль), \(H_2SO_4\) (серная кислота)
                     </div>
                 </div>
 
@@ -1006,19 +1015,19 @@
                     <ol>
                         <li><strong>Основные оксиды</strong> — оксиды металлов со степенью окисления +1 и +2
                             <div class="remark-box">
-                                💡 <strong>Примеры:</strong> \(Na_2O\), \(CaO\), \(FeO\), \(CuO\)
+                                <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры:</strong> \(Na_2O\), \(CaO\), \(FeO\), \(CuO\)
                             </div>
                         </li>
                         
                         <li><strong>Кислотные оксиды</strong> — оксиды неметаллов и металлов со степенью окисления +5, +6, +7
                             <div class="remark-box">
-                                💡 <strong>Примеры:</strong> \(SO_3\), \(CO_2\), \(P_2O_5\), \(Mn_2O_7\)
+                                <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры:</strong> \(SO_3\), \(CO_2\), \(P_2O_5\), \(Mn_2O_7\)
                             </div>
                         </li>
                         
                         <li><strong>Амфотерные оксиды</strong> — оксиды, проявляющие свойства как основных, так и кислотных оксидов
                             <div class="remark-box">
-                                💡 <strong>Примеры:</strong> \(Al_2O_3\), \(ZnO\), \(Cr_2O_3\), \(BeO\)
+                                <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры:</strong> \(Al_2O_3\), \(ZnO\), \(Cr_2O_3\), \(BeO\)
                             </div>
                         </li>
                     </ol>
@@ -1030,7 +1039,7 @@
                     <strong>Несолеобразующие (безразличные) оксиды</strong> — оксиды, которые не реагируют ни с кислотами, ни с основаниями и не образуют соли.
                     
                     <div class="remark-box">
-                        💡 <strong>Примеры:</strong> \(CO\) (угарный газ), \(NO\) (оксид азота(II)), \(N_2O\) (оксид азота(I))
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры:</strong> \(CO\) (угарный газ), \(NO\) (оксид азота(II)), \(N_2O\) (оксид азота(I))
                     </div>
                 </div>
 
@@ -1040,7 +1049,7 @@
                     <strong>Двойные оксиды</strong> — оксиды, содержащие два разных металла или один металл в разных степенях окисления.
                     
                     <div class="remark-box">
-                        💡 <strong>Примеры:</strong> \(Fe_3O_4\) (можно представить как \(FeO \cdot Fe_2O_3\)), \(Pb_3O_4\)
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры:</strong> \(Fe_3O_4\) (можно представить как \(FeO \cdot Fe_2O_3\)), \(Pb_3O_4\)
                     </div>
                 </div>
             </article>
@@ -1049,12 +1058,12 @@
                 <h3 class="topic-title">2а. Оксиды: шпаргалка и типовые реакции</h3>
 
                 <div class="remark-box">
-                    💡 Один блок: тип оксида по ПСХЭ и степени окисления; переключаемые таблицы реакций (оксиды, кислоты, основания, соли).
+                    <span class="eic eic-bulb" aria-hidden="true"></span> Один блок: тип оксида по ПСХЭ и степени окисления; переключаемые таблицы реакций (оксиды, кислоты, основания, соли).
                 </div>
 
                 <div id="oxide-interactive-hub" class="chem-interactive-hub" aria-label="Интерактивные таблицы по оксидам">
                     <header class="chem-hub-head">
-                        <div class="chem-hub-icon" aria-hidden="true">⚗️</div>
+                        <div class="chem-hub-icon" aria-hidden="true"><span class="eic eic-flask" aria-hidden="true"></span></div>
                         <div>
                             <h4 class="chem-hub-title">Интерактивная справка</h4>
                             <p class="chem-hub-desc">
@@ -1608,7 +1617,7 @@
                 </div>
 
                 <div class="remark-box">
-                    💡 <strong>Важно:</strong> При растворении основных оксидов в воде образуются основания, а при растворении кислотных оксидов — кислоты.
+                    <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Важно:</strong> При растворении основных оксидов в воде образуются основания, а при растворении кислотных оксидов — кислоты.
                 </div>
             </article>
 
@@ -1658,7 +1667,7 @@
                                 \[P_2O_5 + 3H_2O \rightarrow 2H_3PO_4\]
                             </div>
                             <div class="remark-box">
-                                ⚠️ <strong>Исключение:</strong> \(SiO_2\) не реагирует с водой
+                                <span class="eic eic-warn" aria-hidden="true"></span> <strong>Исключение:</strong> \(SiO_2\) не реагирует с водой
                             </div>
                         </li>
                         
@@ -1752,7 +1761,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>🔬 Получение кислорода в лаборатории</h4>
+                    <h4><span class="eic eic-micro" aria-hidden="true"></span> Получение кислорода в лаборатории</h4>
                     
                     <div class="exp-section">
                         <strong>Способы получения:</strong>
@@ -1920,7 +1929,7 @@
                         
                         <li><strong>Пассивация металлов:</strong>
                             <div class="remark-box">
-                                ⚠️ Концентрированная азотная кислота пассивирует (не растворяет) железо, алюминий, хром — на их поверхности образуется защитная оксидная плёнка.
+                                <span class="eic eic-warn" aria-hidden="true"></span> Концентрированная азотная кислота пассивирует (не растворяет) железо, алюминий, хром — на их поверхности образуется защитная оксидная плёнка.
                             </div>
                         </li>
                         
@@ -1934,7 +1943,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>🔬 Качественная реакция на нитрат-ион</h4>
+                    <h4><span class="eic eic-micro" aria-hidden="true"></span> Качественная реакция на нитрат-ион</h4>
                     
                     <div class="exp-section">
                         <strong>Реакция «бурого кольца»:</strong>
@@ -2027,7 +2036,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>🔬 Получение оснований</h4>
+                    <h4><span class="eic eic-micro" aria-hidden="true"></span> Получение оснований</h4>
                     
                     <div class="exp-section">
                         <strong>Способы получения:</strong>
@@ -2066,7 +2075,7 @@
                     <strong>Нерастворимые основания</strong> — гидроксиды металлов, которые практически не растворяются в воде.
                     
                     <div class="remark-box">
-                        💡 <strong>Примеры:</strong> \(Cu(OH)_2\), \(Fe(OH)_2\), \(Fe(OH)_3\), \(Zn(OH)_2\)
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры:</strong> \(Cu(OH)_2\), \(Fe(OH)_2\), \(Fe(OH)_3\), \(Zn(OH)_2\)
                     </div>
                 </div>
 
@@ -2097,17 +2106,17 @@
                             </div>
                             
                             <div class="remark-box">
-                                💡 \(Cu(OH)_2\) — голубой осадок, при нагревании чернеет (\(CuO\) — чёрного цвета)
+                                <span class="eic eic-bulb" aria-hidden="true"></span> \(Cu(OH)_2\) — голубой осадок, при нагревании чернеет (\(CuO\) — чёрного цвета)
                             </div>
                             <div class="remark-box">
-                                💡 \(Fe(OH)_3\) — бурый осадок, при нагревании превращается в \(Fe_2O_3\) (красно-бурого цвета)
+                                <span class="eic eic-bulb" aria-hidden="true"></span> \(Fe(OH)_3\) — бурый осадок, при нагревании превращается в \(Fe_2O_3\) (красно-бурого цвета)
                             </div>
                         </li>
                     </ol>
                 </div>
 
                 <div class="experiment-box">
-                    <h4>🔬 Качественные реакции на ионы металлов</h4>
+                    <h4><span class="eic eic-micro" aria-hidden="true"></span> Качественные реакции на ионы металлов</h4>
                     
                     <div class="exp-section">
                         <strong>Образование осадков нерастворимых оснований:</strong>
@@ -2130,7 +2139,7 @@
                     <strong>Амфотерные гидроксиды</strong> — гидроксиды, которые проявляют свойства как оснований, так и кислот в зависимости от условий реакции.
                     
                     <div class="remark-box">
-                        💡 <strong>Примеры:</strong> \(Zn(OH)_2\), \(Al(OH)_3\), \(Cr(OH)_3\), \(Be(OH)_2\)
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры:</strong> \(Zn(OH)_2\), \(Al(OH)_3\), \(Cr(OH)_3\), \(Be(OH)_2\)
                     </div>
                 </div>
 
@@ -2170,7 +2179,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>🔬 Экспериментальное доказательство амфотерности</h4>
+                    <h4><span class="eic eic-micro" aria-hidden="true"></span> Экспериментальное доказательство амфотерности</h4>
                     
                     <div class="exp-section">
                         <strong>Опыт с гидроксидом цинка:</strong>
@@ -2200,7 +2209,7 @@
                 </div>
 
                 <div class="remark-box">
-                    💡 <strong>Важно:</strong> Гидролизу подвергаются соли, образованные слабой кислотой и/или слабым основанием.
+                    <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Важно:</strong> Гидролизу подвергаются соли, образованные слабой кислотой и/или слабым основанием.
                 </div>
 
                 <h4 class="subsection-title">11.1 Типы гидролиза солей</h4>
@@ -2240,7 +2249,7 @@
                     </div>
                     
                     <div class="remark-box">
-                        ⚠️ Если кислота и основание одинаковой силы, среда раствора нейтральная (pH ≈ 7)
+                        <span class="eic eic-warn" aria-hidden="true"></span> Если кислота и основание одинаковой силы, среда раствора нейтральная (pH ≈ 7)
                     </div>
                 </div>
 
@@ -2250,7 +2259,7 @@
                     <p>Среда раствора — <strong>нейтральная</strong> (pH = 7)</p>
                     
                     <div class="remark-box">
-                        💡 <strong>Примеры:</strong> \(NaCl\), \(KNO_3\), \(Na_2SO_4\), \(K_2SO_4\)
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры:</strong> \(NaCl\), \(KNO_3\), \(Na_2SO_4\), \(K_2SO_4\)
                     </div>
                 </div>
 
@@ -2260,7 +2269,7 @@
                     <strong>Степень гидролиза</strong> — доля соли, подвергшаяся гидролизу.
                     
                     <div class="remark-box">
-                        💡 Зависит от:
+                        <span class="eic eic-bulb" aria-hidden="true"></span> Зависит от:
                         <ul>
                             <li>Природы соли (чем слабее кислота или основание, тем сильнее гидролиз)</li>
                             <li>Температуры (при нагревании гидролиз усиливается)</li>
@@ -2270,7 +2279,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>🔬 Экспериментальное определение среды раствора соли</h4>
+                    <h4><span class="eic eic-micro" aria-hidden="true"></span> Экспериментальное определение среды раствора соли</h4>
                     
                     <div class="exp-section">
                         <strong>Использование индикаторов:</strong>
@@ -2293,7 +2302,7 @@
                 </div>
 
                 <div class="remark-box">
-                    💡 При совместном гидролизе образующиеся ионы \(H^+\) и \(OH^-\) связываются в молекулы воды, что смещает равновесие вправо и гидролиз идёт до конца.
+                    <span class="eic eic-bulb" aria-hidden="true"></span> При совместном гидролизе образующиеся ионы \(H^+\) и \(OH^-\) связываются в молекулы воды, что смещает равновесие вправо и гидролиз идёт до конца.
                 </div>
 
                 <div class="properties-box">
@@ -2316,7 +2325,7 @@
                     \[Al_2(SO_4)_3 + 3Na_2CO_3 + 3H_2O \rightarrow 2Al(OH)_3\downarrow + 3CO_2\uparrow + 3Na_2SO_4\]
                     
                     <div class="remark-box">
-                        💡 Катион \(Al^{3+}\) связывает \(OH^-\), анион \(CO_3^{2-}\) связывает \(H^+\), образуя \(Al(OH)_3\downarrow\) и \(CO_2\uparrow\)
+                        <span class="eic eic-bulb" aria-hidden="true"></span> Катион \(Al^{3+}\) связывает \(OH^-\), анион \(CO_3^{2-}\) связывает \(H^+\), образуя \(Al(OH)_3\downarrow\) и \(CO_2\uparrow\)
                     </div>
                 </div>
 
@@ -2326,7 +2335,7 @@
                     \[2FeCl_3 + 3Na_2CO_3 + 3H_2O \rightarrow 2Fe(OH)_3\downarrow + 3CO_2\uparrow + 6NaCl\]
                     
                     <div class="remark-box">
-                        💡 Вместо ожидаемой соли \(Fe_2(CO_3)_3\) образуется гидроксид железа(III) и углекислый газ
+                        <span class="eic eic-bulb" aria-hidden="true"></span> Вместо ожидаемой соли \(Fe_2(CO_3)_3\) образуется гидроксид железа(III) и углекислый газ
                     </div>
                 </div>
 
@@ -2346,7 +2355,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>🔬 Экспериментальное наблюдение совместного гидролиза</h4>
+                    <h4><span class="eic eic-micro" aria-hidden="true"></span> Экспериментальное наблюдение совместного гидролиза</h4>
                     
                     <div class="exp-section">
                         <strong>Опыт:</strong>
@@ -2406,7 +2415,7 @@
                 </div>
 
                 <div class="remark-box">
-                    💡 <strong>Важно запомнить:</strong>
+                    <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Важно запомнить:</strong>
                     <ul>
                         <li><strong>Окисление</strong> — Отдача электронов — степень Окисления растёт</li>
                         <li><strong>Восстановление</strong> — Восполнение электронов — степень окисления Вниз</li>
@@ -2454,7 +2463,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>📝 Алгоритм составления уравнений ОВР</h4>
+                    <h4><span class="eic eic-pen" aria-hidden="true"></span> Алгоритм составления уравнений ОВР</h4>
                     
                     <div class="exp-section">
                         <strong>Шаг 1:</strong> Записать схему реакции
@@ -2531,7 +2540,7 @@
                 </div>
 
                 <div class="remark-box">
-                    💡 <strong>Совет:</strong> Всегда проверяйте правильность расстановки коэффициентов, подсчитав число атомов каждого элемента в левой и правой частях уравнения.
+                    <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Совет:</strong> Всегда проверяйте правильность расстановки коэффициентов, подсчитав число атомов каждого элемента в левой и правой частях уравнения.
                 </div>
             </article>
 
@@ -2555,7 +2564,7 @@
                     <strong>1. Средние (нормальные) соли</strong> — продукты полного замещения атомов водорода в кислоте на атомы металла:
                     
                     <div class="remark-box">
-                        💡 <strong>Примеры:</strong> \(NaCl\), \(K_2SO_4\), \(CaCO_3\), \(Al(NO_3)_3\)
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры:</strong> \(NaCl\), \(K_2SO_4\), \(CaCO_3\), \(Al(NO_3)_3\)
                     </div>
                 </div>
 
@@ -2571,7 +2580,7 @@
                     </div>
                     
                     <div class="remark-box">
-                        ⚠️ Кислые соли могут образовывать только многоосновные кислоты!
+                        <span class="eic eic-warn" aria-hidden="true"></span> Кислые соли могут образовывать только многоосновные кислоты!
                     </div>
                 </div>
 
@@ -2587,7 +2596,7 @@
                     </div>
                     
                     <div class="remark-box">
-                        ⚠️ Основные соли могут образовывать только многокислотные основания!
+                        <span class="eic eic-warn" aria-hidden="true"></span> Основные соли могут образовывать только многокислотные основания!
                     </div>
                 </div>
 
@@ -2595,7 +2604,7 @@
                     <strong>4. Двойные соли</strong> — соли, содержащие два разных катиона:
                     
                     <div class="remark-box">
-                        💡 <strong>Примеры:</strong> \(KAl(SO_4)_2\) (алюмокалиевые квасцы), \(KCr(SO_4)_2\)
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры:</strong> \(KAl(SO_4)_2\) (алюмокалиевые квасцы), \(KCr(SO_4)_2\)
                     </div>
                 </div>
 
@@ -2603,7 +2612,7 @@
                     <strong>5. Смешанные соли</strong> — соли, содержащие два разных аниона:
                     
                     <div class="remark-box">
-                        💡 <strong>Примеры:</strong> \(CaOCl_2\) (хлорная известь), \(CaCl(OCl)\)
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Примеры:</strong> \(CaOCl_2\) (хлорная известь), \(CaCl(OCl)\)
                     </div>
                 </div>
 
@@ -2785,7 +2794,7 @@
                             </div>
                             
                             <div class="remark-box">
-                                ⚠️ С концентрированными \(HNO_3\) и \(H_2SO_4\) водород не выделяется!
+                                <span class="eic eic-warn" aria-hidden="true"></span> С концентрированными \(HNO_3\) и \(H_2SO_4\) водород не выделяется!
                             </div>
                         </li>
                         
@@ -2808,7 +2817,7 @@
                     </div>
                     
                     <div class="remark-box">
-                        💡 <strong>Свойства:</strong>
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Свойства:</strong>
                         <ul>
                             <li>Слева направо активность металлов <strong>уменьшается</strong></li>
                             <li>Металлы до водорода вытесняют его из кислот</li>
@@ -2851,7 +2860,7 @@
                                 \[2Na + 2H_2O \rightarrow 2NaOH + H_2\uparrow\]
                             </div>
                             <div class="remark-box">
-                                ⚠️ Реакция протекает с выделением тепла, водород может воспламениться!
+                                <span class="eic eic-warn" aria-hidden="true"></span> Реакция протекает с выделением тепла, водород может воспламениться!
                             </div>
                         </li>
                         
@@ -2894,7 +2903,7 @@
                     </div>
                     
                     <div class="remark-box">
-                        💡 <strong>Соединения кальция:</strong>
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Соединения кальция:</strong>
                         <ul>
                             <li>\(CaCO_3\) — мел, мрамор, известняк</li>
                             <li>\(CaO\) — негашёная известь</li>
@@ -3002,7 +3011,7 @@
                             </div>
                             
                             <div class="remark-box">
-                                ⚠️ Концентрированные \(HNO_3\) и \(H_2SO_4\) пассивируют железо на холоде!
+                                <span class="eic eic-warn" aria-hidden="true"></span> Концентрированные \(HNO_3\) и \(H_2SO_4\) пассивируют железо на холоде!
                             </div>
                         </li>
                         
@@ -3043,7 +3052,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>🔬 Качественные реакции на ионы железа</h4>
+                    <h4><span class="eic eic-micro" aria-hidden="true"></span> Качественные реакции на ионы железа</h4>
                     
                     <div class="exp-section">
                         <strong>1. На ион \(Fe^{2+}\):</strong>
@@ -3197,7 +3206,7 @@
                 </div>
 
                 <div class="remark-box">
-                    ⚠️ <strong>Важно:</strong> Все галогены <strong>ядовиты</strong>! Фтор — самый опасный, вызывает тяжёлые ожоги при контакте.
+                    <span class="eic eic-warn" aria-hidden="true"></span> <strong>Важно:</strong> Все галогены <strong>ядовиты</strong>! Фтор — самый опасный, вызывает тяжёлые ожоги при контакте.
                 </div>
 
                 <h5 style="margin-top: 2rem; margin-bottom: 1rem; color: var(--accent-color); font-size: 1.1rem;">Фтор \(F_2\)</h5>
@@ -3236,7 +3245,7 @@
                     </ol>
                     
                     <div class="remark-box">
-                        💡 <strong>Фтороводород (плавиковая кислота) \(HF\)</strong> — единственная кислота, растворяющая стекло (\(SiO_2\))
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Фтороводород (плавиковая кислота) \(HF\)</strong> — единственная кислота, растворяющая стекло (\(SiO_2\))
                     </div>
                 </div>
 
@@ -3271,7 +3280,7 @@
                                 \[H_2 + Cl_2 \xrightarrow{h\nu} 2HCl\]
                             </div>
                             <div class="remark-box">
-                                ⚠️ Смесь водорода и хлора взрывоопасна на свету!
+                                <span class="eic eic-warn" aria-hidden="true"></span> Смесь водорода и хлора взрывоопасна на свету!
                             </div>
                         </li>
                         
@@ -3280,7 +3289,7 @@
                                 \[Cl_2 + H_2O \rightleftharpoons HCl + HClO\]
                             </div>
                             <div class="remark-box">
-                                💡 \(HClO\) — хлорноватистая кислота (обладает отбеливающими и дезинфицирующими свойствами)
+                                <span class="eic eic-bulb" aria-hidden="true"></span> \(HClO\) — хлорноватистая кислота (обладает отбеливающими и дезинфицирующими свойствами)
                             </div>
                         </li>
                         
@@ -3309,7 +3318,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>🔬 Получение хлора в лаборатории</h4>
+                    <h4><span class="eic eic-micro" aria-hidden="true"></span> Получение хлора в лаборатории</h4>
                     
                     <div class="exp-section">
                         <strong>Способы получения:</strong>
@@ -3378,7 +3387,7 @@
                     </div>
                     
                     <div class="remark-box">
-                        💡 <strong>Бромная вода</strong> — раствор брома в воде, применяется для обнаружения непредельных соединений
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Бромная вода</strong> — раствор брома в воде, применяется для обнаружения непредельных соединений
                     </div>
                 </div>
 
@@ -3417,12 +3426,12 @@
                     </div>
                     
                     <div class="remark-box">
-                        💡 Йод не вытесняется хлором и бромом из растворов йодидов
+                        <span class="eic eic-bulb" aria-hidden="true"></span> Йод не вытесняется хлором и бромом из растворов йодидов
                     </div>
                 </div>
 
                 <div class="experiment-box">
-                    <h4>🔬 Качественная реакция на йод</h4>
+                    <h4><span class="eic eic-micro" aria-hidden="true"></span> Качественная реакция на йод</h4>
                     
                     <div class="exp-section">
                         <strong>Реакция с крахмалом:</strong>
@@ -3430,7 +3439,7 @@
                         <p>Йод даёт синее окрашивание с крахмалом — это качественная реакция на йод и на крахмал.</p>
                         
                         <div class="remark-box">
-                            💡 Спиртовой раствор йода (йодная настойка) используется в медицине как антисептик
+                            <span class="eic eic-bulb" aria-hidden="true"></span> Спиртовой раствор йода (йодная настойка) используется в медицине как антисептик
                         </div>
                     </div>
                 </div>
@@ -3484,7 +3493,7 @@
                     </table>
                     
                     <div class="remark-box">
-                        💡 Сила кислот <strong>увеличивается</strong> от HF к HI: \(HF < HCl < HBr < HI\)
+                        <span class="eic eic-bulb" aria-hidden="true"></span> Сила кислот <strong>увеличивается</strong> от HF к HI: \(HF < HCl < HBr < HI\)
                     </div>
                 </div>
 
@@ -3499,7 +3508,7 @@
                     </ul>
                     
                     <div class="remark-box">
-                        💡 С увеличением степени окисления хлора сила кислот <strong>увеличивается</strong>, а окислительная способность <strong>уменьшается</strong>
+                        <span class="eic eic-bulb" aria-hidden="true"></span> С увеличением степени окисления хлора сила кислот <strong>увеличивается</strong>, а окислительная способность <strong>уменьшается</strong>
                     </div>
                 </div>
 
@@ -3583,7 +3592,7 @@
                     </div>
                     
                     <div class="remark-box">
-                        ⚠️ Концентрированная \(H_2SO_4\) пассивирует Fe, Al, Cr на холоде!
+                        <span class="eic eic-warn" aria-hidden="true"></span> Концентрированная \(H_2SO_4\) пассивирует Fe, Al, Cr на холоде!
                     </div>
                 </div>
 
@@ -3607,7 +3616,7 @@
                     <strong>Аммиак \(NH_3\):</strong>
                     
                     <div class="remark-box">
-                        💡 <strong>Физические свойства:</strong>
+                        <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Физические свойства:</strong>
                         <ul>
                             <li>Бесцветный газ с резким запахом</li>
                             <li>Легче воздуха</li>
@@ -3781,7 +3790,7 @@
                     </div>
                     
                     <div class="remark-box">
-                        💡 Влажная лакмусовая бумажка синеет (аммиак — щелочной газ)
+                        <span class="eic eic-bulb" aria-hidden="true"></span> Влажная лакмусовая бумажка синеет (аммиак — щелочной газ)
                     </div>
                 </div>
 
@@ -3815,7 +3824,7 @@
                     </div>
                     
                     <div class="remark-box">
-                        💡 Осадок не растворяется в \(HNO_3\), но растворяется в растворе аммиака
+                        <span class="eic eic-bulb" aria-hidden="true"></span> Осадок не растворяется в \(HNO_3\), но растворяется в растворе аммиака
                     </div>
                 </div>
 
@@ -3870,7 +3879,7 @@
                     </div>
                     
                     <div class="remark-box">
-                        💡 Осадок не растворяется в кислотах!
+                        <span class="eic eic-bulb" aria-hidden="true"></span> Осадок не растворяется в кислотах!
                     </div>
                 </div>
 
@@ -3917,7 +3926,7 @@
                 </div>
 
                 <div class="experiment-box">
-                    <h4>🔬 Практическое применение качественных реакций</h4>
+                    <h4><span class="eic eic-micro" aria-hidden="true"></span> Практическое применение качественных реакций</h4>
                     
                     <div class="exp-section">
                         <strong>Алгоритм определения неизвестной соли:</strong>
@@ -3958,6 +3967,7 @@
     <script src="newyear.js"></script>
     <script src="settings.js"></script>
     <script src="bookmarks.js"></script>
+    <script src="knowledge-check.js"></script>
     <script src="poll.js"></script>
 </body>
 </html>
