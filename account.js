@@ -53,9 +53,12 @@
         btn.setAttribute('aria-label', 'Войти в аккаунт');
         btn.innerHTML = IC_USER;
         btn.addEventListener('click', onAccountClick);
+        // Иконка аккаунта — левее кнопки сворачивания «‹» (она должна быть правее аккаунта).
+        const collapseBtn = container.querySelector('.sidebar-collapse-btn');
         const settingsBtn = container.querySelector('#settingsButtonSidebar');
-        if (settingsBtn) container.insertBefore(btn, settingsBtn);
-        else container.insertBefore(btn, container.firstChild);
+        const anchor = collapseBtn || settingsBtn || container.firstChild;
+        if (anchor) container.insertBefore(btn, anchor);
+        else container.appendChild(btn);
         updateButton();
     }
 

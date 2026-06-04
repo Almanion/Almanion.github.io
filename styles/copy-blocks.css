@@ -75,6 +75,53 @@
     }
 }
 
+/* На сенсорных устройствах кнопки нет — блок копируется ДОЛГИМ НАЖАТИЕМ (script.js).
+   Отключаем нативное выделение/контекстное меню, чтобы удержание не выделяло текст. */
+@media (hover: none) and (pointer: coarse) {
+    .copy-block-btn { display: none !important; }
+    .copyable-block {
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+    }
+}
+
+/* Идёт удержание (жест распознан, отпусти — скопируется) */
+.copyable-block.is-longpressing {
+    outline: 2px dashed var(--accent-color);
+    outline-offset: 3px;
+    border-radius: 8px;
+}
+/* Блок скопирован удержанием */
+.copyable-block.is-longcopied {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 3px;
+    border-radius: 8px;
+}
+
+/* Всплывающее уведомление «Скопировано» */
+.copy-toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(1.4rem + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%) translateY(12px);
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    padding: 0.55rem 1.1rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    z-index: 100000;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.copy-toast.is-shown {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
 @media print {
     .copy-block-btn {
         display: none !important;
