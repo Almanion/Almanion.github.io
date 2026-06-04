@@ -96,11 +96,49 @@
         ov.className = 'auth-overlay hidden';
         ov.addEventListener('click', function (e) { if (e.target === ov) hideOverlay(); });
         document.body.appendChild(ov);
+        initSwipeClose(ov);
         return ov;
     }
     function hideOverlay() {
         const ov = document.getElementById('accountOverlay');
         if (ov) ov.classList.add('hidden');
+    }
+
+    // Свайп вниз закрывает окно (как и остальные модальные окна на мобильных).
+    function initSwipeClose(overlay) {
+        let startY = 0, currentY = 0, tracking = false, activated = false;
+        const DEAD = 15;
+        const getModal = () => overlay.querySelector('.auth-modal');
+        overlay.addEventListener('touchstart', function (e) {
+            if (window.innerWidth > 768) return;
+            const m = getModal();
+            if (!m || m.scrollTop > 5) return;
+            startY = currentY = e.touches[0].clientY; tracking = true; activated = false;
+        }, { passive: true });
+        overlay.addEventListener('touchmove', function (e) {
+            if (!tracking) return;
+            const m = getModal(); if (!m) return;
+            currentY = e.touches[0].clientY;
+            const d = currentY - startY;
+            if (!activated) { if (d > DEAD) { activated = true; startY = currentY; m.style.transition = 'none'; } return; }
+            const sd = currentY - startY;
+            if (sd > 0) { e.preventDefault(); m.style.transform = 'translateY(' + sd + 'px)'; overlay.style.background = 'rgba(0,0,0,' + Math.max(0, 0.6 - sd / 400) + ')'; }
+        }, { passive: false });
+        overlay.addEventListener('touchend', function () {
+            if (!tracking) return; tracking = false;
+            if (!activated) return; activated = false;
+            const m = getModal(); if (!m) return;
+            const d = currentY - startY;
+            if (d > 60) {
+                m.style.transition = 'transform 0.25s ease-out'; m.style.transform = 'translateY(100vh)';
+                overlay.style.transition = 'background 0.25s ease-out'; overlay.style.background = 'rgba(0,0,0,0)';
+                setTimeout(function () { hideOverlay(); m.style.transition = ''; m.style.transform = ''; overlay.style.transition = ''; overlay.style.background = ''; }, 250);
+            } else {
+                m.style.transition = 'transform 0.25s ease-out'; m.style.transform = '';
+                overlay.style.transition = 'background 0.25s ease-out'; overlay.style.background = '';
+                setTimeout(function () { m.style.transition = ''; overlay.style.transition = ''; }, 250);
+            }
+        });
     }
 
     function openLoginModal(registerMode) {

@@ -556,6 +556,10 @@
             if (window.innerWidth > 768) return;
             const m = getModal();
             if (!m || m.scrollTop > 5) return;
+            // Не перехватываем свайп, если внутренний прокручиваемый список не вверху —
+            // иначе пролистывание списка случайно закрывает окно.
+            const sc = e.target.closest && e.target.closest('.kc-deck-list, .kc-content');
+            if (sc && sc.scrollTop > 5) return;
             startY = currentY = e.touches[0].clientY; tracking = true; activated = false;
         }, { passive: true });
         overlay.addEventListener('touchmove', e => {

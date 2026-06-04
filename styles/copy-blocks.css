@@ -63,16 +63,10 @@
 }
 
 @media (max-width: 768px) {
-    .copy-block-btn {
-        top: 0.35rem;
-        right: 0.35rem;
-        width: 24px;
-        height: 24px;
-        /* На мобильном остаётся opacity:0 — показываем только при .is-active */
-    }
-    .copyable-block:has(.bookmark-btn) > .copy-block-btn {
-        right: 2.1rem;
-    }
+    /* На телефоне (мобильная вёрстка) кнопки копирования нет — блок копируется
+       ДОЛГИМ НАЖАТИЕМ (script.js). Скрываем по ширине, т.к. (pointer: coarse) не
+       срабатывает при эмуляции мобильного на десктопе. */
+    .copy-block-btn { display: none !important; }
 }
 
 /* На сенсорных устройствах кнопки нет — блок копируется ДОЛГИМ НАЖАТИЕМ (script.js).

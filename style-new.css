@@ -369,8 +369,16 @@ body.experimental .topic-title {
     border: none !important;
     border-bottom: 1px solid var(--exp-border) !important;
     border-radius: 0 !important;
-    padding: 0.4rem 0 0.55rem 0 !important;
+    /* Горизонтальный padding 1rem = как у карточек (.definition-box и т.п.),
+       чтобы текст заголовка был на одной линии с текстом блоков. */
+    padding: 0.4rem 1rem 0.55rem 1rem !important;
     margin-bottom: 1.1rem !important;
+    /* Сбрасываем отрицательные боковые margin из мобильного sticky-правила
+       (style.css): там они компенсировались горизонтальным padding, а здесь
+       иначе заголовок вылезал за экран на ~15px. */
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    overflow-wrap: anywhere;
     font-size: 1.3rem;
     font-weight: 700;
     letter-spacing: -0.015em;
