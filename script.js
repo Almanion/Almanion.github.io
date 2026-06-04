@@ -676,12 +676,13 @@ function closeMobileMenu() {
     
     if (sidebar) {
         sidebar.classList.remove('open');
+        sidebar.classList.remove('exp-search-on'); // сбрасываем «режим поиска» в меню
         sidebar.style.transform = '';
     }
     if (overlay) {
         overlay.classList.remove('active');
     }
-    
+
     document.body.classList.remove('sidebar-open');
 }
 
@@ -1314,6 +1315,8 @@ function initExpBottomNav() {
         else if (window.openMobileMenu) window.openMobileMenu();
     }
     function openSearch() {
+        const sb = document.getElementById('sidebar');
+        if (sb) sb.classList.add('exp-search-on'); // временно показать строку поиска в меню
         if (window.openMobileMenu) window.openMobileMenu();
         setTimeout(function () {
             const s = document.getElementById('searchInput');

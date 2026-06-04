@@ -828,6 +828,18 @@ body.dark-theme .sidebar-header .account-btn:hover { background: rgba(255,255,25
     body.experimental .scroll-to-top {
         bottom: calc(74px + env(safe-area-inset-bottom, 0px)) !important;
     }
+
+    /* Синяя кнопка-меню не нужна — её заменяет «Меню» в нижней панели */
+    body.experimental .menu-toggle { display: none !important; }
+
+    /* Поиск / Закладки / Знания убраны из меню — открываются из нижней панели.
+       Строку поиска показываем временно по тапу «Поиск» (класс .exp-search-on). */
+    body.experimental .sidebar .search-box { display: none; }
+    body.experimental .sidebar.exp-search-on .search-box { display: block; }
+    body.experimental .sidebar-actions { display: none !important; }
+
+    /* Текст чуть мельче */
+    body.experimental .main-content { font-size: 0.94rem; }
 }
 
 @media (max-width: 600px) {
