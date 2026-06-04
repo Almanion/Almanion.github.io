@@ -669,6 +669,20 @@ body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color)
 .kc-pill-new { color: var(--accent-color); background: rgba(var(--accent-rgb, 37,99,235), 0.14); }
 .kc-pill-done { color: var(--text-secondary); background: var(--bg-tertiary); }
 
+/* Переключатель интенсивности (целевое удержание → длина интервалов) */
+.kc-intensity { display: flex; align-items: center; gap: 0.6rem; margin: 0.9rem 0 0.2rem; }
+.kc-intensity-lbl { font-size: 0.8rem; color: var(--text-secondary); flex: 0 0 auto; }
+.kc-intensity-opts {
+    display: inline-flex; gap: 0.2rem;
+    background: var(--bg-tertiary); padding: 0.2rem; border-radius: 999px;
+}
+.kc-intensity-btn {
+    border: none; background: none; font: inherit; font-size: 0.8rem; font-weight: 600;
+    color: var(--text-secondary); padding: 0.3rem 0.7rem; border-radius: 999px; cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.kc-intensity-btn.active { background: var(--bg-secondary); color: var(--accent-color); box-shadow: var(--shadow-sm); }
+
 /* Верхние счётчики (новые · изучаются · повтор) */
 .kc-counts { display: inline-flex; gap: 0.45rem; align-items: center; }
 .kc-count {

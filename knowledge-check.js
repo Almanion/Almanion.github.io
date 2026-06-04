@@ -20,7 +20,20 @@
     const kcSet = (window.safeStorageSet) || function (k, v) { try { localStorage.setItem(k, v); return true; } catch (_) { return false; } };
 
     // ---------- Настройки расписания (как дефолты Anki) ----------
-    const DESIRED_R = 0.90;     // целевое удержание
+    // Целевое удержание: чем выше — тем КОРОЧЕ интервалы и чаще повторения.
+    // По умолчанию 0.95 (короче, чем дефолтные FSRS 0.90); «Экзамен» 0.97 — ещё короче.
+    const RETENTION_KEY = 'kc_retention';
+    const DEFAULT_RETENTION = 0.95;
+    const RETENTION_PRESETS = [
+        { r: 0.90, label: 'Спокойно' },
+        { r: 0.95, label: 'Обычно' },
+        { r: 0.97, label: 'Экзамен' }
+    ];
+    function getRetention() {
+        const v = parseFloat(kcGet(RETENTION_KEY));
+        return (v >= 0.80 && v <= 0.99) ? v : DEFAULT_RETENTION;
+    }
+    function setRetention(r) { kcSet(RETENTION_KEY, String(r)); }
     const NEW_PER_DAY = 20;     // лимит новых карточек в день
     const MAX_DAYS = 36500;     // потолок интервала
     const RELEARN_DAYS = 10 / 1440; // «переучивание» после «Снова» ≈ 10 минут
@@ -39,7 +52,7 @@
         return Math.pow(1 + FACTOR * elapsedDays / S, DECAY);
     }
     function intervalForStability(S, r) {
-        return (S / FACTOR) * (Math.pow(r || DESIRED_R, 1 / DECAY) - 1);
+        return (S / FACTOR) * (Math.pow(r || getRetention(), 1 / DECAY) - 1);
     }
     function initDifficulty(G) {
         return clamp(W[4] - W[5] * (G - 3), 1, 10);
@@ -84,14 +97,12 @@
             res.reps = (state.reps || 0) + 1;
         }
 
-        let iv = intervalForStability(res.S, DESIRED_R); // в днях
+        let iv = intervalForStability(res.S, getRetention()); // в днях
         if (G === 1) {
             iv = Math.min(iv, RELEARN_DAYS);       // «Снова» → вернуть в этой же сессии
             res.learning = true;
-        } else if (iv < 1) {
-            res.learning = true;                    // совсем короткий интервал — тоже учим сейчас
         } else {
-            iv = Math.round(iv);
+            iv = Math.max(1, Math.round(iv));      // минимум 1 день (как в Anki)
             res.learning = false;
         }
         res.intervalDays = clamp(iv, RELEARN_DAYS, MAX_DAYS);
@@ -257,6 +268,15 @@
                 '<div class="kc-head"><span class="kc-head-icon">' + IC.brain + '</span>' +
                     '<div class="kc-head-text"><h2 class="kc-title">Проверка знаний</h2>' +
                     '<p class="kc-subtitle">Интервальное повторение определений · FSRS</p></div></div>' +
+                '<div class="kc-intensity">' +
+                    '<span class="kc-intensity-lbl">Интервалы</span>' +
+                    '<div class="kc-intensity-opts" id="kcIntensityOpts">' +
+                        RETENTION_PRESETS.map(function (p) {
+                            return '<button type="button" class="kc-intensity-btn" data-r="' + p.r +
+                                '" title="удержание ' + Math.round(p.r * 100) + '%">' + p.label + '</button>';
+                        }).join('') +
+                    '</div>' +
+                '</div>' +
                 '<div class="kc-deck-list" id="kcDeckList"></div>' +
                 '<div class="kc-actions">' +
                     '<button class="kc-btn kc-btn-ghost" id="kcSelectAll">Выбрать всё</button>' +
@@ -289,6 +309,14 @@
         document.getElementById('kcSelectAll').addEventListener('click', toggleSelectAll);
         document.getElementById('kcStart').addEventListener('click', startSession);
 
+        const intensityOpts = document.getElementById('kcIntensityOpts');
+        if (intensityOpts) intensityOpts.addEventListener('click', (e) => {
+            const b = e.target.closest('.kc-intensity-btn');
+            if (!b) return;
+            setRetention(parseFloat(b.dataset.r));
+            syncIntensity();
+        });
+
         initSwipe('kcSelectOverlay', 'kcSelectModal', () => hide('kcSelectOverlay'));
         initSwipe('kcReviewOverlay', 'kcReviewModal', closeReview);
     }
@@ -305,7 +333,15 @@
         store = loadStore();
         if (selected.length === 0) selected = TOPICS.map(t => t.id); // по умолчанию — всё
         renderDeckList();
+        syncIntensity();
         document.getElementById('kcSelectOverlay').classList.remove('hidden');
+    }
+
+    function syncIntensity() {
+        const r = getRetention();
+        document.querySelectorAll('#kcIntensityOpts .kc-intensity-btn').forEach(b => {
+            b.classList.toggle('active', Math.abs(parseFloat(b.dataset.r) - r) < 0.001);
+        });
     }
 
     function renderDeckList() {
