@@ -109,7 +109,6 @@
                     '<button class="kc-close" id="accClose" aria-label="Закрыть">' + IC_CLOSE + '</button>' +
                     '<div class="auth-icon">' + IC_USER + '</div>' +
                     '<h2>' + (mode === 'register' ? 'Регистрация' : 'Вход в аккаунт') + '</h2>' +
-                    '<p>Чтобы прогресс повторений сохранялся и был на всех устройствах.</p>' +
                     '<button type="button" class="account-google-btn" id="accGoogle">' + IC_GOOGLE + '<span>Войти через Google</span></button>' +
                     '<div class="account-or"><span>или</span></div>' +
                     '<form id="accForm" autocomplete="on">' +
@@ -169,14 +168,13 @@
     // ---------- Окно «вы вошли» ----------
     function openAccountMenu() {
         const ov = ensureOverlay();
-        const name = (user && (user.displayName || user.email)) || 'Аккаунт';
+        const email = (user && user.email) || 'Аккаунт';
         ov.innerHTML =
             '<div class="auth-modal account-modal" role="dialog" aria-modal="true">' +
                 '<button class="kc-close" id="accClose" aria-label="Закрыть">' + IC_CLOSE + '</button>' +
                 '<div class="auth-icon">' + IC_USER + '</div>' +
                 '<h2>Вы вошли</h2>' +
-                '<p class="account-email">' + escapeHtml(name) + '</p>' +
-                '<p>Прогресс «Проверки знаний» синхронизируется с этим аккаунтом.</p>' +
+                '<p class="account-email">' + escapeHtml(email) + '</p>' +
                 '<button type="button" class="auth-submit account-signout" id="accSignout">Выйти</button>' +
             '</div>';
         ov.querySelector('#accClose').addEventListener('click', hideOverlay);
