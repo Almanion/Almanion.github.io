@@ -147,7 +147,7 @@
         let due = 0, fresh = 0;
         extractCards([tid]).forEach(c => {
             const st = store[c.id];
-            if (!st || st.S == null) fresh++;
+            if (!st || st.step == null) fresh++;
             else if (st.due <= now) due++;
         });
         return { due, fresh };
@@ -310,7 +310,7 @@
         let count = 0, allowance = introAllowance(), newSeen = 0;
         selected.forEach(tid => extractCards([tid]).forEach(c => {
             const st = store[c.id];
-            if (!st || st.S == null) { if (newSeen < allowance) { newSeen++; count++; } }
+            if (!st || st.step == null) { if (newSeen < allowance) { newSeen++; count++; } }
             else if (st.due <= now) count++;
         }));
         const badge = document.getElementById('kcStartCount');
@@ -340,7 +340,7 @@
         const learn = [], review = [], fresh = [];
         cards.forEach(c => {
             const st = store[c.id];
-            if (!st || st.S == null) fresh.push(c);
+            if (!st || st.step == null) fresh.push(c);
             else if (st.due <= now) (st.learning ? learn : review).push(c);
         });
         shuffle(review); shuffle(fresh);
@@ -443,11 +443,11 @@
         const item = session.queue.shift();
         const def = item.card;
         const prev = store[def.id];
-        const wasNew = !prev || prev.S == null;
+        const wasNew = !prev || prev.step == null;
         const now = Date.now();
         const res = project(prev, G, now);
 
-        store[def.id] = { S: res.S, D: res.D, due: res.due, last: res.last, reps: res.reps, lapses: res.lapses, learning: res.learning };
+        store[def.id] = { step: res.step, due: res.due, last: res.last, reps: res.reps, lapses: res.lapses, learning: res.learning };
         if (wasNew) recordIntro();
         saveStore();
 
