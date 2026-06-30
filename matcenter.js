@@ -1479,6 +1479,58 @@ function showPersonalSolvedNotice(message) {
 // ОТОБРАЖЕНИЕ ЗАДАЧ
 // ============================================
 
+// Перед перерисовкой списка сохраняем, какие карточки были раскрыты —
+// иначе автообновление, refresh и поиск закрывают все открытые условия разом.
+function captureTaskCardUiState(container) {
+    const open = new Set();
+    const hintOpen = new Set();
+    if (!container) return { open, hintOpen };
+
+    container.querySelectorAll('.task-card[data-solved-key]').forEach(card => {
+        const key = card.dataset.solvedKey;
+        if (!key) return;
+        if (card.classList.contains('open')) open.add(key);
+        if (card.classList.contains('hint-open')) hintOpen.add(key);
+    });
+    return { open, hintOpen };
+}
+
+function restoreTaskCardUiState(container, uiState) {
+    if (!container || !uiState) return;
+
+    container.querySelectorAll('.task-card[data-solved-key]').forEach(card => {
+        const key = card.dataset.solvedKey;
+        if (!key) return;
+
+        if (uiState.open.has(key)) {
+            card.classList.add('open');
+            const toggleBtn = card.querySelector('.task-condition-toggle');
+            if (toggleBtn) {
+                toggleBtn.innerHTML = '<span class="toggle-icon">▲</span> Скрыть условие';
+            }
+            const descEl = card.querySelector('.task-description');
+            if (descEl && typeof renderLatexInElement === 'function') {
+                renderLatexInElement(descEl);
+                descEl.dataset.latexRendered = 'true';
+            }
+        }
+
+        if (uiState.hintOpen.has(key)) {
+            card.classList.add('hint-open');
+            const hintToggleBtn = card.querySelector('.hint-toggle');
+            if (hintToggleBtn) {
+                hintToggleBtn.innerHTML = '<span class="toggle-icon"><span class="eic eic-bulb" aria-hidden="true"></span></span> Скрыть подсказку';
+                hintToggleBtn.classList.add('active');
+            }
+            const hintElement = card.querySelector('.task-hint');
+            if (hintElement && typeof renderLatexInElement === 'function') {
+                renderLatexInElement(hintElement);
+                hintElement.dataset.latexRendered = 'true';
+            }
+        }
+    });
+}
+
 function displayTasks(tasks, containerId = 'tasksContainer') {
     const container = document.getElementById(containerId);
     if (!container) {
@@ -1525,7 +1577,8 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
     // Обычные классы — по убыванию (свежие задачи сверху).
     const ascending = typeof currentGrade === 'string' && currentGrade.indexOf('summer') !== -1;
     const sortedTasks = [...tasks].sort((a, b) => ascending ? a.number - b.number : b.number - a.number);
-    
+
+    const uiState = captureTaskCardUiState(container);
     container.innerHTML = '';
 
     // Собираем все карточки в DocumentFragment — один reflow вместо N
@@ -1542,6 +1595,7 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
     });
     container.appendChild(fragment);
     applyPersonalSolvedMarks();
+    restoreTaskCardUiState(container, uiState);
 }
 
 function createTaskElement(task) {
