@@ -57,6 +57,7 @@ const FILTER_STORAGE_KEY = 'matcenter_filter';
 const DEFAULT_GRADE = 'grade-9';
 const DEFAULT_FILTER = 'all-tasks';
 const MATCENTER_SOLVED_DB_PATH = 'matcenterSolved';
+let lastTasksPayloadSignature = '';
 
 const GRADE_SECTIONS = [
     { id: 'grade-9', title: '9 класс' },
@@ -238,18 +239,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Сразу скрываем форму и показываем меню
         hideAuthForm();
-        
+
+        // Мгновенно показываем последний кэш, пока идёт запрос к Google Таблице
+        const hadCache = applyTasksFromCache();
+
         try {
             // Пробуем загрузить данные с сохранённым паролем
             console.log('🔄 Попытка загрузки с сохранённым паролем...');
-            const result = await loadTasksFromGoogleSheets();
-            // isAdmin будет установлен внутри loadTasksFromGoogleSheets()
+            await loadTasksFromGoogleSheets(false, hadCache);
             console.log(isAdmin ? '✅ Загрузка успешна! (АДМИН)' : '✅ Загрузка успешна! Пользователь авторизован.');
-            
-            // Перерисовываем задачи сразу
-            if (allTasks.length > 0) {
-                refreshCurrentView();
-            }
             
             // Создаём сессию сразу (важно для сохранения между перезагрузками)
             try {
@@ -700,14 +698,9 @@ async function initAuth() {
         authToken = safeGet('matcenter_auth');
         if (authToken) {
             try {
-                const result = await loadTasksFromGoogleSheets();
-                // isAdmin будет установлен внутри loadTasksFromGoogleSheets()
                 hideAuthForm();
-                
-                // Перерисовываем задачи чтобы отобразить подсказки
-                if (allTasks.length > 0) {
-                    refreshCurrentView();
-                }
+                const hadCache = applyTasksFromCache();
+                await loadTasksFromGoogleSheets(false, hadCache);
                 
                 console.log(isAdmin ? '✅ Автоматический вход выполнен через сессию (АДМИН)' : '✅ Автоматический вход выполнен через сессию');
                 return;
@@ -983,6 +976,38 @@ function logout() {
 // DATA FETCHING
 // ============================================
 
+function buildTasksPayloadSignature(tasks) {
+    if (!Array.isArray(tasks) || !tasks.length) return '';
+    let sig = String(tasks.length);
+    const step = Math.max(1, Math.floor(tasks.length / 48));
+    for (let i = 0; i < tasks.length; i += step) {
+        const t = tasks[i];
+        if (!t) continue;
+        sig += '|' + (t.grade || '') + ':' + t.number + ':' + (t.status || '') + ':' + String(t.hint || '').length;
+    }
+    return sig;
+}
+
+function applyTasksFromCache() {
+    try {
+        const raw = safeGet(TASKS_CACHE_KEY);
+        if (!raw) return false;
+        const parsed = JSON.parse(raw);
+        if (!parsed || !Array.isArray(parsed.tasks) || parsed.tasks.length === 0) return false;
+
+        allTasks = normalizeAllTasks(parsed.tasks);
+        lastTasksPayloadSignature = buildTasksPayloadSignature(parsed.tasks);
+        updateStatistics(getTasksForCurrentGrade());
+        refreshCurrentView();
+
+        const loadingMessage = document.getElementById('loadingMessage');
+        if (loadingMessage) loadingMessage.style.display = 'none';
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
 async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false) {
     const loadingMessage = document.getElementById('loadingMessage');
     const retryBtn = document.getElementById('retryButton');
@@ -1058,6 +1083,13 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
         if (tasks.length === 0) {
             throw new Error('Не удалось загрузить задачи - пустой массив');
         }
+
+        const newSignature = buildTasksPayloadSignature(tasks);
+        if (silent && newSignature && newSignature === lastTasksPayloadSignature) {
+            console.log('📦 Данные не изменились — перерисовка не нужна');
+            return;
+        }
+        lastTasksPayloadSignature = newSignature;
         
         allTasks = normalizeAllTasks(tasks);
         isAdmin = adminFlag;
@@ -2122,8 +2154,39 @@ function syncFilterUI() {
     }
 }
 
+function resetMatcenterTaskFilters() {
+    const searchInput = document.getElementById('searchInput');
+    const statusFilterEl = document.getElementById('statusFilter');
+    const mobileSearchInput = document.getElementById('mobileSearchInput');
+    const mobileStatusFilter = document.getElementById('mobileStatusFilter');
+    const searchClearBtn = document.getElementById('searchClearBtn');
+    const mobileSearchClear = document.getElementById('mobileSearchClear');
+
+    if (searchInput) searchInput.value = '';
+    if (statusFilterEl) statusFilterEl.value = '';
+    if (mobileSearchInput) mobileSearchInput.value = '';
+    if (mobileStatusFilter) mobileStatusFilter.value = '';
+    if (searchClearBtn) searchClearBtn.classList.remove('visible');
+    if (mobileSearchClear) mobileSearchClear.classList.remove('visible');
+    if (statusFilterEl) statusFilterEl.classList.remove('has-filter');
+    if (mobileStatusFilter) mobileStatusFilter.classList.remove('has-filter');
+
+    searchStatusFilter = 'all';
+    currentFilter = 'all-tasks';
+    try { safeSet(FILTER_STORAGE_KEY, currentFilter); } catch (_) {}
+
+    showTaskView('all-tasks');
+    syncFilterUI();
+    updateAllTasksTitleForFilter();
+}
+
 function setCurrentGrade(gradeId) {
     if (!GRADE_SECTIONS.some(g => g.id === gradeId)) return;
+
+    const gradeChanged = gradeId !== currentGrade;
+    if (gradeChanged) {
+        resetMatcenterTaskFilters();
+    }
 
     currentGrade = gradeId;
     try {
@@ -2133,15 +2196,6 @@ function setCurrentGrade(gradeId) {
     // Перестраиваем sidebar nav под новый грейд (его список пунктов меняется)
     rebuildNavMenu(currentGrade);
     rebuildStatusFilters(currentGrade);
-
-    // Если текущий фильтр недоступен в новом грейде — сбрасываем на «Все задачи»
-    if (!isAllowedFilter(currentFilter)) {
-        currentFilter = 'all-tasks';
-        try { safeSet(FILTER_STORAGE_KEY, currentFilter); } catch (e) { /* ignore */ }
-        showTaskView('all-tasks');
-    } else if (currentFilter.indexOf('topic-') === 0) {
-        showTaskView('all-tasks');
-    }
 
     syncGradeNavUI();
     syncFilterUI();

@@ -1309,6 +1309,7 @@ console.log('   • [ - Свернуть/развернуть боковое м�
 function initExpBottomNav() {
     if (document.getElementById('expBottomNav')) return;
     if (!document.getElementById('sidebar')) return; // только страницы с меню
+    const isMatcenter = document.body.classList.contains('matcenter-page');
 
     const ICONS = {
         menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
@@ -1325,6 +1326,14 @@ function initExpBottomNav() {
         else if (window.openMobileMenu) window.openMobileMenu();
     }
     function openSearch() {
+        if (document.body.classList.contains('matcenter-page')) {
+            const mobileInput = document.getElementById('mobileSearchInput') || document.getElementById('searchInput');
+            if (mobileInput) {
+                mobileInput.focus({ preventScroll: false });
+                mobileInput.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                return;
+            }
+        }
         const sb = document.getElementById('sidebar');
         if (sb) sb.classList.add('exp-search-on'); // временно показать строку поиска в меню
         if (window.openMobileMenu) window.openMobileMenu();
@@ -1336,11 +1345,15 @@ function initExpBottomNav() {
 
     const items = [
         { label: 'Меню', icon: ICONS.menu, act: toggleMenu },
-        { label: 'Поиск', icon: ICONS.search, act: openSearch },
-        { label: 'Закладки', icon: ICONS.bm, act: function () { clickById('bookmarksBtn'); } },
-        { label: 'Знания', icon: ICONS.kc, act: function () { clickById('knowledgeCheckBtn'); } },
-        { label: 'Аккаунт', icon: ICONS.acc, act: function () { clickById('accountBtn'); } }
+        { label: 'Поиск', icon: ICONS.search, act: openSearch }
     ];
+    if (!isMatcenter) {
+        items.push(
+            { label: 'Закладки', icon: ICONS.bm, act: function () { clickById('bookmarksBtn'); } },
+            { label: 'Знания', icon: ICONS.kc, act: function () { clickById('knowledgeCheckBtn'); } }
+        );
+    }
+    items.push({ label: 'Аккаунт', icon: ICONS.acc, act: function () { clickById('accountBtn'); } });
 
     const nav = document.createElement('nav');
     nav.id = 'expBottomNav';
