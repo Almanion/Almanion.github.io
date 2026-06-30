@@ -7765,7 +7765,7 @@ body.matcenter-page .admin-hint-button:hover {
     max-width: min(180px, calc(100vw - 20px));
 }
 
-/* Раскрытие условия — быстрая и лёгкая анимация (без grid, blur, bounce) */
+/* Раскрытие условия — мгновенно, без анимации */
 body.matcenter-page .task-description {
     display: block;
     max-height: 0;
@@ -7776,12 +7776,8 @@ body.matcenter-page .task-description {
     border-top: 0 solid var(--border-color);
     transform: none;
     filter: none;
-    transition: max-height 0.22s ease-out,
-                opacity 0.18s ease-out,
-                margin-top 0.22s ease-out,
-                padding-top 0.22s ease-out,
-                border-top-width 0.22s ease-out;
-    will-change: max-height, opacity;
+    transition: none;
+    will-change: auto;
 }
 
 body.matcenter-page .task-description .task-description-inner {
@@ -7795,16 +7791,31 @@ body.matcenter-page .task-card.open .task-description {
     margin-top: 1rem;
     padding-top: 1rem;
     border-top-width: 2px;
-    transition: max-height 0.28s ease-out,
-                opacity 0.22s ease-out 0.04s,
-                margin-top 0.22s ease-out,
-                padding-top 0.22s ease-out,
-                border-top-width 0.22s ease-out;
+    transition: none;
 }
 
-/* Упрощаем transition самой карточки (был transition: all 0.4s — заставлял анимировать все свойства) */
-body.matcenter-page .task-card {
-    transition: box-shadow 0.18s ease, border-left-color 0.18s ease, background-color 0.18s ease;
+/* Карточки задач и статистики — без transition, riseIn и «вдавливания» при нажатии */
+body.matcenter-page .task-card,
+body.matcenter-page .stat-card {
+    transition: none !important;
+    animation: none !important;
+}
+
+body.matcenter-page .task-hint,
+body.matcenter-page .task-card.hint-open .task-hint {
+    transition: none;
+}
+
+body.matcenter-page .task-card:active,
+body.matcenter-page .stat-card.clickable:active,
+body.matcenter-page .task-condition-toggle:active,
+body.matcenter-page .hint-toggle:active {
+    transform: none !important;
+}
+
+body.matcenter-page .task-toggle .toggle-icon,
+body.matcenter-page .hint-toggle .toggle-icon {
+    transition: none;
 }
 
 /* Отключаем overlay-анимацию ::before на matcenter (тяжёлая, дёргает layout) */
