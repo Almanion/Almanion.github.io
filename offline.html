@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <title>Almanion — офлайн</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --accent: #2563eb;
+            --border: #e2e8f0;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0f172a;
+                --surface: #111827;
+                --text: #f8fafc;
+                --muted: #94a3b8;
+                --border: #243244;
+            }
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            align-items: center;
+            background:
+                radial-gradient(circle at 18% 10%, rgba(37, 99, 235, 0.14), transparent 34rem),
+                var(--bg);
+            color: var(--text);
+            display: flex;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            justify-content: center;
+            margin: 0;
+            min-height: 100vh;
+            padding: 1.5rem;
+        }
+
+        main {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            box-shadow: 0 22px 70px rgba(15, 23, 42, 0.12);
+            max-width: 34rem;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .icon {
+            display: inline-grid;
+            height: 4rem;
+            margin-bottom: 1rem;
+            place-items: center;
+            width: 4rem;
+        }
+
+        .icon svg { height: 100%; width: 100%; }
+
+        h1 {
+            font-size: clamp(1.45rem, 5vw, 2.1rem);
+            line-height: 1.1;
+            margin: 0 0 0.75rem;
+        }
+
+        p {
+            color: var(--muted);
+            line-height: 1.6;
+            margin: 0 0 1.25rem;
+        }
+
+        a, button {
+            background: var(--accent);
+            border: 0;
+            border-radius: 999px;
+            color: #fff;
+            cursor: pointer;
+            display: inline-flex;
+            font: inherit;
+            font-weight: 700;
+            padding: 0.78rem 1.05rem;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32" role="img">
+                <rect x="4" y="4" width="5" height="25" rx="2" fill="#1a7a3c"/>
+                <rect x="8" y="4" width="20" height="25" rx="2" fill="#2ea84f"/>
+                <rect x="11" y="7" width="2" height="19" rx="1" fill="#4ecf70" opacity="0.6"/>
+                <rect x="26" y="5" width="2" height="23" rx="1" fill="#e8f5e9" opacity="0.7"/>
+            </svg>
+        </div>
+        <h1>Сейчас нет соединения</h1>
+        <p>Приложение Almanion откроет уже сохранённые страницы, а новые конспекты и задачи подтянутся автоматически, когда интернет вернётся.</p>
+        <button type="button" onclick="location.reload()">Попробовать снова</button>
+    </main>
+</body>
+</html>

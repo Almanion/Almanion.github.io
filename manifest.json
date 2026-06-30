@@ -1,16 +1,53 @@
 {
-    "name": "Конспекты Almanion",
-    "short_name": "Конспекты",
-    "description": "Конспекты по школьным предметам",
-    "start_url": "/docs/index.html",
+    "id": "/",
+    "name": "Almanion — конспекты и МатЦентр",
+    "short_name": "Almanion",
+    "description": "Веб-приложение с конспектами по школьным предметам и задачами МатЦентра.",
+    "lang": "ru",
+    "dir": "ltr",
+    "start_url": "/?source=pwa",
+    "scope": "/",
     "display": "standalone",
-    "background_color": "#667eea",
-    "theme_color": "#667eea",
+    "display_override": ["standalone", "minimal-ui", "browser"],
+    "orientation": "any",
+    "background_color": "#f8fafc",
+    "theme_color": "#2563eb",
+    "categories": ["education", "productivity", "books"],
     "icons": [
         {
-            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>",
+            "src": "/favicons/favicon.svg",
             "sizes": "any",
-            "type": "image/svg+xml"
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/favicons/favicon-mc.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Математика",
+            "short_name": "Математика",
+            "description": "Открыть конспекты по математике",
+            "url": "/math.html",
+            "icons": [{ "src": "/favicons/favicon-al.svg", "sizes": "any", "type": "image/svg+xml" }]
+        },
+        {
+            "name": "Физика",
+            "short_name": "Физика",
+            "description": "Открыть конспекты по физике",
+            "url": "/physics.html",
+            "icons": [{ "src": "/favicons/favicon-ph.svg", "sizes": "any", "type": "image/svg+xml" }]
+        },
+        {
+            "name": "МатЦентр",
+            "short_name": "МатЦентр",
+            "description": "Открыть задачи МатЦентра",
+            "url": "/matcenter.html",
+            "icons": [{ "src": "/favicons/favicon-mc.svg", "sizes": "any", "type": "image/svg+xml" }]
         }
     ]
 }

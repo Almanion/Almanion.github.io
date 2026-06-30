@@ -15,9 +15,61 @@ const _safeRemove = (typeof window !== 'undefined' && window.safeStorageRemove)
     ? window.safeStorageRemove
     : function(k){ try { localStorage.removeItem(k); } catch (_) {} };
 
+let __pwaReloading = false;
+let __pwaInstallPrompt = null;
+let __pwaInstallButtonReady = false;
+
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/docs/sw.js').catch(() => {});
+    window.addEventListener('load', () => {
+        const hadController = !!navigator.serviceWorker.controller;
+
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then((registration) => {
+                window.__almanionServiceWorker = registration;
+
+                if (registration.waiting) {
+                    showPwaUpdatePrompt(registration);
+                }
+
+                registration.addEventListener('updatefound', () => {
+                    const worker = registration.installing;
+                    if (!worker) return;
+                    worker.addEventListener('statechange', () => {
+                        if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                            showPwaUpdatePrompt(registration);
+                        }
+                    });
+                });
+            })
+            .catch(() => {});
+
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!hadController) return;
+            if (__pwaReloading) return;
+            __pwaReloading = true;
+            window.location.reload();
+        });
+    });
 }
+
+window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    __pwaInstallPrompt = event;
+    __pwaInstallButtonReady = true;
+    showPwaInstallButton();
+});
+
+window.addEventListener('appinstalled', () => {
+    __pwaInstallPrompt = null;
+    hidePwaInstallButton();
+    showPwaMiniToast('Almanion установлен как приложение');
+});
+
+window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        closePwaInstallHelp();
+    }
+});
 
 // Guard от двойной инициализации — DOMContentLoaded может прилететь дважды
 // при некоторых редких сценариях (SPA-навигация, перерегистрация SW и т.п.).
@@ -36,7 +88,184 @@ document.addEventListener('DOMContentLoaded', () => {
     initBottomSheetSwipe();
     initSidebarCollapse();
     initCopyableBlocks();
+    initPwaInstallUi();
 });
+
+// ============================================
+// PWA: установка приложения и обновления
+// ============================================
+
+function isRunningAsPwa() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+        window.matchMedia('(display-mode: fullscreen)').matches ||
+        window.navigator.standalone === true;
+}
+
+function isPwaInstallLandingPage() {
+    const path = window.location.pathname.replace(/\/+$/, '/');
+    return path === '/' || path.endsWith('/index.html');
+}
+
+function initPwaInstallUi() {
+    if (isRunningAsPwa() || !isPwaInstallLandingPage()) return;
+    window.setTimeout(showPwaInstallButton, 500);
+}
+
+function showPwaInstallButton() {
+    if (isRunningAsPwa() || !isPwaInstallLandingPage()) return;
+
+    let btn = document.getElementById('pwaInstallBtn');
+    if (!btn) {
+        btn = document.createElement('button');
+        btn.id = 'pwaInstallBtn';
+        btn.className = 'pwa-install-btn';
+        btn.type = 'button';
+        btn.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v12"/>
+                <path d="m7 10 5 5 5-5"/>
+                <path d="M5 21h14"/>
+            </svg>
+            <span>Установить</span>
+        `;
+        btn.addEventListener('click', handlePwaInstallClick);
+        document.body.appendChild(btn);
+    }
+
+    requestAnimationFrame(() => btn.classList.add('is-visible'));
+}
+
+function hidePwaInstallButton() {
+    const btn = document.getElementById('pwaInstallBtn');
+    if (!btn) return;
+    btn.classList.remove('is-visible');
+    setTimeout(() => btn.remove(), 220);
+}
+
+async function handlePwaInstallClick() {
+    if (!__pwaInstallPrompt) {
+        openPwaInstallHelp();
+        return;
+    }
+
+    const promptEvent = __pwaInstallPrompt;
+    __pwaInstallPrompt = null;
+
+    try {
+        promptEvent.prompt();
+        const result = await promptEvent.userChoice;
+        if (result && result.outcome === 'accepted') {
+            hidePwaInstallButton();
+        } else {
+            openPwaInstallHelp();
+            showPwaInstallButton();
+        }
+    } catch (_) {
+        // Браузер может отменить prompt, если PWA уже установлена или условия installability изменились.
+        openPwaInstallHelp();
+        showPwaInstallButton();
+    }
+}
+
+function openPwaInstallHelp() {
+    let overlay = document.getElementById('pwaInstallHelp');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'pwaInstallHelp';
+        overlay.className = 'pwa-install-help';
+        overlay.innerHTML = `
+            <div class="pwa-install-help-card" role="dialog" aria-modal="true" aria-labelledby="pwaInstallHelpTitle">
+                <button type="button" class="pwa-install-help-close" aria-label="Закрыть">×</button>
+                <div class="pwa-install-help-icon" aria-hidden="true">
+                    <svg viewBox="0 0 32 32">
+                        <rect x="4" y="4" width="5" height="25" rx="2" fill="#1a7a3c"/>
+                        <rect x="8" y="4" width="20" height="25" rx="2" fill="#2ea84f"/>
+                        <rect x="11" y="7" width="2" height="19" rx="1" fill="#4ecf70" opacity="0.6"/>
+                        <rect x="26" y="5" width="2" height="23" rx="1" fill="#e8f5e9" opacity="0.7"/>
+                    </svg>
+                </div>
+                <h2 id="pwaInstallHelpTitle">Установка приложения</h2>
+                <p class="pwa-install-help-lead">Если системная кнопка установки не появилась, открой сайт в обычном браузере и установи вручную.</p>
+                <div class="pwa-install-help-list">
+                    <div>
+                        <strong>Chrome / Edge на компьютере</strong>
+                        <span>Иконка установки в адресной строке или меню ⋮ → “Установить Almanion”.</span>
+                    </div>
+                    <div>
+                        <strong>Android</strong>
+                        <span>Chrome → меню ⋮ → “Установить приложение” или “Добавить на главный экран”.</span>
+                    </div>
+                    <div>
+                        <strong>iPhone / iPad</strong>
+                        <span>Safari → Поделиться → “На экран Домой”.</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        overlay.addEventListener('click', (event) => {
+            if (event.target === overlay) closePwaInstallHelp();
+        });
+        overlay.querySelector('.pwa-install-help-close').addEventListener('click', closePwaInstallHelp);
+        document.body.appendChild(overlay);
+    }
+
+    overlay.classList.add('is-visible');
+    document.body.classList.add('modal-open');
+}
+
+function closePwaInstallHelp() {
+    const overlay = document.getElementById('pwaInstallHelp');
+    if (!overlay || !overlay.classList.contains('is-visible')) return;
+    overlay.classList.remove('is-visible');
+    document.body.classList.remove('modal-open');
+}
+
+function showPwaUpdatePrompt(registration) {
+    if (!registration || !registration.waiting) return;
+    if (document.getElementById('pwaUpdateToast')) return;
+
+    const toast = document.createElement('div');
+    toast.id = 'pwaUpdateToast';
+    toast.className = 'pwa-update-toast';
+    toast.setAttribute('role', 'status');
+    toast.innerHTML = `
+        <div class="pwa-update-text">
+            <strong>Доступна новая версия</strong>
+            <span>Обновить приложение и открыть свежие конспекты?</span>
+        </div>
+        <button type="button" class="pwa-update-action">Обновить</button>
+        <button type="button" class="pwa-update-close" aria-label="Скрыть">×</button>
+    `;
+
+    const action = toast.querySelector('.pwa-update-action');
+    const close = toast.querySelector('.pwa-update-close');
+
+    action.addEventListener('click', () => {
+        if (registration.waiting) {
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+    });
+    close.addEventListener('click', () => toast.remove());
+
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('is-visible'));
+}
+
+function showPwaMiniToast(message) {
+    const old = document.getElementById('pwaMiniToast');
+    if (old) old.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'pwaMiniToast';
+    toast.className = 'pwa-mini-toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('is-visible'));
+
+    setTimeout(() => toast.classList.remove('is-visible'), 2200);
+    setTimeout(() => toast.remove(), 2500);
+}
 
 // ============================================
 // ПЕРЕКЛЮЧЕНИЕ ТЕМЫ
