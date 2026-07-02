@@ -15,6 +15,12 @@
     "categories": ["education", "productivity", "books"],
     "icons": [
         {
+            "src": "/favicons/app-icon.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        },
+        {
             "src": "/favicons/favicon.svg",
             "sizes": "any",
             "type": "image/svg+xml",

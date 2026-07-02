@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-07-01';
+const CACHE_VERSION = 'almanion-pwa-2026-07-02-app-icon';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -26,6 +26,7 @@ const APP_SHELL = [
     '/styles/copy-blocks.css',
     '/styles/chemistry-interactive-hub.css',
     '/favicons/favicon.svg',
+    '/favicons/app-icon.svg',
     '/favicons/favicon-al.svg',
     '/favicons/favicon-ch.svg',
     '/favicons/favicon-geo.svg',
