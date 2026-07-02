@@ -1428,15 +1428,7 @@ function updatePersonalSolvedProgress() {
 
 function ensureSolvedShareButton() {
     let btn = document.getElementById('shareSolvedTasksBtn');
-    if (btn) {
-        if (!btn.querySelector('.matcenter-share-solved-text')) {
-            const text = document.createElement('span');
-            text.className = 'matcenter-share-solved-text';
-            text.textContent = 'Поделиться';
-            btn.appendChild(text);
-        }
-        return btn;
-    }
+    if (btn) return btn;
 
     const progress = document.getElementById('matcenterProgress');
     const head = progress ? progress.querySelector('.matcenter-progress-head') : null;
@@ -1468,7 +1460,6 @@ function ensureSolvedShareButton() {
             <path d="M13.5 7 18.5 12l-5 5"/>
             <path d="M10.5 5.5H7a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h3.5"/>
         </svg>
-        <span class="matcenter-share-solved-text">Поделиться</span>
     `;
     meta.appendChild(btn);
     return btn;
