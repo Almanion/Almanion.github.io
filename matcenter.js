@@ -212,7 +212,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     initStatsClick();
     initRefreshButtons();
     initPersonalSolvedTasks();
-    initSolvedShare();
     initEscapeKey();
     initHintSwipe();
     restoreCurrentFilter();
@@ -1389,7 +1388,6 @@ function applyPersonalSolvedMarks() {
 function updatePersonalSolvedProgress() {
     const wrap = document.getElementById('matcenterProgress');
     if (!wrap) return;
-    const shareBtn = ensureSolvedShareButton();
 
     const realTasks = getTasksForCurrentGrade().filter(t => Number.isInteger(t.number));
     const total = realTasks.length;
@@ -1413,266 +1411,7 @@ function updatePersonalSolvedProgress() {
     if (fillEl) fillEl.style.width = `${percent}%`;
     if (percentEl) percentEl.textContent = `${percent}%`;
 
-    if (shareBtn) {
-        shareBtn.disabled = solved === 0;
-        shareBtn.title = solved > 0
-            ? 'Поделиться решёнными задачами'
-            : 'Отметьте хотя бы одну задачу как решённую';
-        shareBtn.setAttribute('aria-label', solved > 0
-            ? `Поделиться решёнными задачами: ${solved} из ${total}`
-            : 'Нет решённых задач для отправки');
-    }
-
     wrap.classList.toggle('is-complete', total > 0 && solved === total);
-}
-
-function ensureSolvedShareButton() {
-    let btn = document.getElementById('shareSolvedTasksBtn');
-    if (btn) return btn;
-
-    const progress = document.getElementById('matcenterProgress');
-    const head = progress ? progress.querySelector('.matcenter-progress-head') : null;
-    if (!head) return null;
-
-    let meta = head.querySelector('.matcenter-progress-meta');
-    const value = head.querySelector('.matcenter-progress-value');
-    if (!meta) {
-        meta = document.createElement('span');
-        meta.className = 'matcenter-progress-meta';
-        if (value) {
-            head.insertBefore(meta, value);
-            meta.appendChild(value);
-        } else {
-            head.appendChild(meta);
-        }
-    }
-
-    btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'matcenter-share-solved-btn';
-    btn.id = 'shareSolvedTasksBtn';
-    btn.setAttribute('aria-label', 'Поделиться решёнными задачами');
-    btn.title = 'Поделиться решёнными задачами';
-    btn.disabled = true;
-    btn.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M8 12h8.5"/>
-            <path d="M13.5 7 18.5 12l-5 5"/>
-            <path d="M10.5 5.5H7a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h3.5"/>
-        </svg>
-    `;
-    meta.appendChild(btn);
-    return btn;
-}
-
-function initSolvedShare() {
-    const btn = ensureSolvedShareButton();
-    if (!btn || btn.dataset.shareInit) return;
-    btn.dataset.shareInit = 'true';
-
-    btn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        await sharePersonalSolvedTasks(btn);
-    });
-
-    document.addEventListener('click', (e) => {
-        const menu = document.getElementById('matcenterSolvedShareMenu');
-        if (!menu || menu.hidden) return;
-        if (menu.contains(e.target) || btn.contains(e.target)) return;
-        hideSolvedShareMenu();
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') hideSolvedShareMenu();
-    });
-
-    window.addEventListener('resize', hideSolvedShareMenu, { passive: true });
-    window.addEventListener('scroll', hideSolvedShareMenu, { passive: true });
-}
-
-async function sharePersonalSolvedTasks(anchorBtn) {
-    const payload = buildSolvedSharePayload();
-    if (!payload.count) {
-        showPersonalSolvedNotice('Сначала отметьте хотя бы одну задачу как решённую');
-        return;
-    }
-
-    hideSolvedShareMenu();
-
-    if (navigator.share) {
-        try {
-            await navigator.share({
-                title: payload.title,
-                text: payload.text,
-                url: payload.url
-            });
-            return;
-        } catch (err) {
-            if (err && err.name === 'AbortError') return;
-            console.warn('Не удалось открыть системное меню «Поделиться»:', err);
-        }
-    }
-
-    showSolvedShareMenu(anchorBtn, payload);
-}
-
-function buildSolvedSharePayload() {
-    const realTasks = getTasksForCurrentGrade()
-        .filter(t => Number.isInteger(t.number));
-    const solvedTasks = realTasks
-        .filter(t => isTaskPersonallySolved(t))
-        .sort((a, b) => {
-            const byNumber = (a.number || 0) - (b.number || 0);
-            if (byNumber !== 0) return byNumber;
-            return String(a.numberText || '').localeCompare(String(b.numberText || ''), 'ru', { numeric: true });
-        });
-
-    const count = solvedTasks.length;
-    const total = realTasks.length;
-    const gradeTitle = getGradeTitle(currentGrade);
-    const numbers = solvedTasks.map(t => `№${formatShareTaskNumber(t)}`);
-    const noun = pluralRu(count, 'задачу', 'задачи', 'задач');
-    const text = count
-        ? `Я решил ${count} ${noun} в МатЦентре (${gradeTitle}): ${numbers.join(', ')}`
-        : `Я пока не отметил решённых задач в МатЦентре (${gradeTitle}).`;
-
-    return {
-        title: 'Мой прогресс в МатЦентре',
-        text,
-        url: getMatcenterShareUrl(),
-        count,
-        total,
-        numbers
-    };
-}
-
-function formatShareTaskNumber(task) {
-    const raw = (task && task.numberText) || (task && task.number) || '';
-    return String(raw).replace(/\s+/g, ' ').trim();
-}
-
-function pluralRu(n, one, few, many) {
-    const abs = Math.abs(Number(n) || 0);
-    const mod10 = abs % 10;
-    const mod100 = abs % 100;
-    if (mod10 === 1 && mod100 !== 11) return one;
-    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
-    return many;
-}
-
-function getMatcenterShareUrl() {
-    const localHost = /^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/i.test(window.location.hostname);
-    if (window.location.protocol === 'file:' || localHost) {
-        return 'https://almanion.github.io/matcenter.html';
-    }
-    return `${window.location.origin}${window.location.pathname || '/matcenter.html'}`;
-}
-
-function ensureSolvedShareMenu() {
-    let menu = document.getElementById('matcenterSolvedShareMenu');
-    if (menu) return menu;
-
-    menu = document.createElement('div');
-    menu.id = 'matcenterSolvedShareMenu';
-    menu.className = 'matcenter-share-menu';
-    menu.hidden = true;
-    menu.setAttribute('role', 'menu');
-    menu.innerHTML = `
-        <button type="button" data-share-action="telegram" role="menuitem">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4 3 11.5l7 2.5"/><path d="M21 4 14 21l-4-7"/><path d="m10 14 5-5"/></svg>
-            <span>Telegram</span>
-        </button>
-        <button type="button" data-share-action="copy" role="menuitem">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            <span>Скопировать текст</span>
-        </button>
-    `;
-
-    menu.addEventListener('click', async (e) => {
-        const actionBtn = e.target.closest('[data-share-action]');
-        if (!actionBtn) return;
-        const payload = menu.__sharePayload || buildSolvedSharePayload();
-        const action = actionBtn.dataset.shareAction;
-
-        if (action === 'telegram') {
-            openTelegramSolvedShare(payload);
-            hideSolvedShareMenu();
-            return;
-        }
-
-        if (action === 'copy') {
-            await copySolvedShareText(payload);
-            hideSolvedShareMenu();
-        }
-    });
-
-    document.body.appendChild(menu);
-    return menu;
-}
-
-function showSolvedShareMenu(anchorBtn, payload) {
-    const menu = ensureSolvedShareMenu();
-    menu.__sharePayload = payload;
-    menu.hidden = false;
-
-    const rect = anchorBtn.getBoundingClientRect();
-    const width = Math.min(260, Math.max(210, window.innerWidth - 24));
-    menu.style.width = `${width}px`;
-
-    const menuRect = menu.getBoundingClientRect();
-    let left = rect.right - width;
-    left = Math.max(12, Math.min(left, window.innerWidth - width - 12));
-
-    let top = rect.bottom + 10;
-    if (top + menuRect.height > window.innerHeight - 12) {
-        top = Math.max(12, rect.top - menuRect.height - 10);
-    }
-
-    menu.style.left = `${left}px`;
-    menu.style.top = `${top}px`;
-}
-
-function hideSolvedShareMenu() {
-    const menu = document.getElementById('matcenterSolvedShareMenu');
-    if (!menu) return;
-    menu.hidden = true;
-    menu.__sharePayload = null;
-}
-
-function openTelegramSolvedShare(payload) {
-    const url = new URL('https://t.me/share/url');
-    url.searchParams.set('url', payload.url);
-    url.searchParams.set('text', payload.text);
-    window.open(url.toString(), '_blank', 'noopener,noreferrer');
-}
-
-async function copySolvedShareText(payload) {
-    const fullText = `${payload.text}\n${payload.url}`;
-    try {
-        if (navigator.clipboard && window.isSecureContext) {
-            await navigator.clipboard.writeText(fullText);
-        } else {
-            fallbackCopyText(fullText);
-        }
-        showPersonalSolvedNotice('Текст с решёнными задачами скопирован');
-    } catch (err) {
-        console.warn('Не удалось скопировать текст:', err);
-        showPersonalSolvedNotice('Не удалось скопировать текст');
-    }
-}
-
-function fallbackCopyText(text) {
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.setAttribute('readonly', '');
-    textarea.style.position = 'fixed';
-    textarea.style.left = '-9999px';
-    textarea.style.top = '0';
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    textarea.remove();
 }
 
 function setPersonalSolvedCardState(card, solved, animate) {
@@ -1725,7 +1464,6 @@ async function togglePersonalSolvedTask(task, card) {
     if (nextSolved) personalSolvedMap[key] = getSolvedTaskPayload(task);
     else delete personalSolvedMap[key];
     setPersonalSolvedCardState(card, nextSolved, true);
-    updatePersonalSolvedProgress();
 
     try {
         const ref = (personalSolvedRef || personalSolvedDb.ref(`${MATCENTER_SOLVED_DB_PATH}/${personalSolvedUser.uid}`)).child(key);
@@ -1738,7 +1476,6 @@ async function togglePersonalSolvedTask(task, card) {
         if (previousValue) personalSolvedMap[key] = previousValue;
         else delete personalSolvedMap[key];
         setPersonalSolvedCardState(card, wasSolved, false);
-        updatePersonalSolvedProgress();
         console.warn('⚠️ Не удалось сохранить личную отметку задачи:', err);
         showPersonalSolvedNotice('Не удалось сохранить отметку. Проверьте соединение');
     } finally {
