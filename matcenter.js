@@ -1389,6 +1389,7 @@ function applyPersonalSolvedMarks() {
 function updatePersonalSolvedProgress() {
     const wrap = document.getElementById('matcenterProgress');
     if (!wrap) return;
+    const shareBtn = ensureSolvedShareButton();
 
     const realTasks = getTasksForCurrentGrade().filter(t => Number.isInteger(t.number));
     const total = realTasks.length;
@@ -1412,7 +1413,6 @@ function updatePersonalSolvedProgress() {
     if (fillEl) fillEl.style.width = `${percent}%`;
     if (percentEl) percentEl.textContent = `${percent}%`;
 
-    const shareBtn = document.getElementById('shareSolvedTasksBtn');
     if (shareBtn) {
         shareBtn.disabled = solved === 0;
         shareBtn.title = solved > 0
@@ -1426,8 +1426,56 @@ function updatePersonalSolvedProgress() {
     wrap.classList.toggle('is-complete', total > 0 && solved === total);
 }
 
+function ensureSolvedShareButton() {
+    let btn = document.getElementById('shareSolvedTasksBtn');
+    if (btn) {
+        if (!btn.querySelector('.matcenter-share-solved-text')) {
+            const text = document.createElement('span');
+            text.className = 'matcenter-share-solved-text';
+            text.textContent = 'Поделиться';
+            btn.appendChild(text);
+        }
+        return btn;
+    }
+
+    const progress = document.getElementById('matcenterProgress');
+    const head = progress ? progress.querySelector('.matcenter-progress-head') : null;
+    if (!head) return null;
+
+    let meta = head.querySelector('.matcenter-progress-meta');
+    const value = head.querySelector('.matcenter-progress-value');
+    if (!meta) {
+        meta = document.createElement('span');
+        meta.className = 'matcenter-progress-meta';
+        if (value) {
+            head.insertBefore(meta, value);
+            meta.appendChild(value);
+        } else {
+            head.appendChild(meta);
+        }
+    }
+
+    btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'matcenter-share-solved-btn';
+    btn.id = 'shareSolvedTasksBtn';
+    btn.setAttribute('aria-label', 'Поделиться решёнными задачами');
+    btn.title = 'Поделиться решёнными задачами';
+    btn.disabled = true;
+    btn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M8 12h8.5"/>
+            <path d="M13.5 7 18.5 12l-5 5"/>
+            <path d="M10.5 5.5H7a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h3.5"/>
+        </svg>
+        <span class="matcenter-share-solved-text">Поделиться</span>
+    `;
+    meta.appendChild(btn);
+    return btn;
+}
+
 function initSolvedShare() {
-    const btn = document.getElementById('shareSolvedTasksBtn');
+    const btn = ensureSolvedShareButton();
     if (!btn || btn.dataset.shareInit) return;
     btn.dataset.shareInit = 'true';
 

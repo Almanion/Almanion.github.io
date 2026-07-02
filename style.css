@@ -4099,9 +4099,11 @@ body.dark-theme .stat-card--postponed { --stat-accent: #f87171; }
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
+    gap: 0.42rem;
+    min-width: 34px;
     height: 34px;
-    flex: 0 0 34px;
+    flex: 0 0 auto;
+    padding: 0 0.78rem;
     border: 1px solid color-mix(in srgb, var(--success-color) 30%, var(--border-color));
     border-radius: 999px;
     background:
@@ -4123,6 +4125,14 @@ body.dark-theme .stat-card--postponed { --stat-accent: #f87171; }
 .matcenter-share-solved-btn svg {
     width: 18px;
     height: 18px;
+    flex: 0 0 18px;
+}
+
+.matcenter-share-solved-text {
+    font-size: 0.82rem;
+    font-weight: 750;
+    line-height: 1;
+    letter-spacing: 0.005em;
 }
 
 .matcenter-share-solved-btn:not(:disabled):hover {
@@ -9059,9 +9069,10 @@ body.dark-theme .mobile-search-bar {
     }
 
     body.matcenter-page .matcenter-share-solved-btn {
-        width: 38px;
+        min-width: 38px;
         height: 38px;
-        flex-basis: 38px;
+        flex-basis: auto;
+        padding: 0 0.82rem;
     }
 
     body.matcenter-page .matcenter-share-menu {
