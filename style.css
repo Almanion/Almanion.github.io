@@ -4081,10 +4081,130 @@ body.dark-theme .stat-card--postponed { --stat-accent: #f87171; }
     white-space: nowrap;
 }
 
+.matcenter-progress-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.55rem;
+    min-width: max-content;
+}
+
 .matcenter-progress-value b {
     color: var(--success-color);
     font-weight: 800;
     font-variant-numeric: tabular-nums;
+}
+
+.matcenter-share-solved-btn {
+    align-items: center;
+    background: color-mix(in srgb, var(--success-color) 10%, var(--bg-primary));
+    border: 1px solid color-mix(in srgb, var(--success-color) 32%, var(--border-color));
+    border-radius: 999px;
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--success-color) 8%, transparent);
+    color: var(--success-color);
+    cursor: pointer;
+    display: inline-flex;
+    flex: 0 0 34px;
+    height: 34px;
+    justify-content: center;
+    padding: 0;
+    transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+    width: 34px;
+}
+
+.matcenter-share-solved-btn svg {
+    height: 18px;
+    width: 18px;
+}
+
+.matcenter-share-solved-btn:hover,
+.matcenter-share-solved-btn:focus-visible {
+    background: color-mix(in srgb, var(--success-color) 16%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--success-color) 58%, var(--border-color));
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--success-color) 14%, transparent);
+    transform: translateY(-1px);
+}
+
+.matcenter-share-solved-btn:active {
+    transform: scale(0.96);
+}
+
+.matcenter-share-solved-btn:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--success-color) 22%, transparent);
+    outline-offset: 2px;
+}
+
+.matcenter-share-menu {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    color: var(--text-primary);
+    opacity: 0;
+    padding: 0.55rem;
+    position: fixed;
+    transform: translateY(-4px) scale(0.98);
+    transform-origin: top right;
+    transition: opacity 0.14s ease, transform 0.14s ease;
+    z-index: 10020;
+}
+
+.matcenter-share-menu[hidden] {
+    display: none;
+}
+
+.matcenter-share-menu.is-open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.matcenter-share-title {
+    color: var(--text-primary);
+    font-size: 0.84rem;
+    font-weight: 800;
+    padding: 0.35rem 0.45rem 0.1rem;
+}
+
+.matcenter-share-summary {
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    font-weight: 650;
+    padding: 0 0.45rem 0.45rem;
+}
+
+.matcenter-share-option {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    gap: 0.65rem;
+    padding: 0.68rem 0.7rem;
+    text-align: left;
+    width: 100%;
+}
+
+.matcenter-share-option:hover,
+.matcenter-share-option:focus-visible {
+    background: color-mix(in srgb, var(--accent-color) 10%, transparent);
+    outline: none;
+}
+
+.matcenter-share-option span:first-child {
+    align-items: center;
+    background: color-mix(in srgb, var(--success-color) 13%, transparent);
+    border-radius: 999px;
+    color: var(--success-color);
+    display: inline-flex;
+    flex: 0 0 28px;
+    height: 28px;
+    justify-content: center;
+    width: 28px;
 }
 
 .matcenter-progress-track {
@@ -8920,6 +9040,41 @@ body.dark-theme .mobile-search-bar {
     body.matcenter-page .matcenter-progress {
         margin-bottom: 1.25rem;
         padding: 0.85rem 0.95rem 0.75rem;
+    }
+
+    body.matcenter-page .matcenter-progress-head {
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+    }
+
+    body.matcenter-page .matcenter-progress-title {
+        min-width: 0;
+    }
+
+    body.matcenter-page .matcenter-progress-actions {
+        gap: 0.45rem;
+        margin-left: auto;
+    }
+
+    body.matcenter-page .matcenter-progress-value {
+        font-size: 0.82rem;
+    }
+
+    body.matcenter-page .matcenter-share-solved-btn {
+        flex-basis: 36px;
+        height: 36px;
+        width: 36px;
+    }
+
+    body.matcenter-page .matcenter-share-menu {
+        border-radius: 18px;
+        bottom: calc(0.85rem + env(safe-area-inset-bottom));
+        left: max(12px, env(safe-area-inset-left)) !important;
+        right: max(12px, env(safe-area-inset-right)) !important;
+        top: auto !important;
+        transform-origin: bottom right;
+        width: auto !important;
     }
 
     /* Шапка «Все задачи» + кнопка: компактная полоса, как .part-title в physics */

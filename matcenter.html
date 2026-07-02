@@ -257,7 +257,16 @@
                         <span class="matcenter-progress-badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
                         <span>Ваш прогресс</span>
                     </span>
-                    <span class="matcenter-progress-value"><b id="solvedCount">0</b> из <span id="solvedTotal">0</span> решено</span>
+                    <span class="matcenter-progress-actions">
+                        <span class="matcenter-progress-value"><b id="solvedCount">0</b> из <span id="solvedTotal">0</span> решено</span>
+                        <button type="button" class="matcenter-share-solved-btn" id="shareSolvedTasksBtn" aria-label="Поделиться решёнными задачами" title="Поделиться решёнными задачами">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M7 12h9.5"/>
+                                <path d="M13 7.5 17.5 12 13 16.5"/>
+                                <path d="M10 5H7.5A3.5 3.5 0 0 0 4 8.5v7A3.5 3.5 0 0 0 7.5 19H10"/>
+                            </svg>
+                        </button>
+                    </span>
                 </div>
                 <div class="matcenter-progress-track">
                     <div class="matcenter-progress-fill" id="solvedProgressFill" style="width: 0%"></div>
