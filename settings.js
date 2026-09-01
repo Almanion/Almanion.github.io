@@ -31,7 +31,7 @@ function safeStorageSet(key, value) {
 function safeStorageRemove(key) {
     try { localStorage.removeItem(key); } catch (e) { /* ignore */ }
 }
-// Экспонируем для других скриптов (script.js, matcenter.js, bookmarks.js)
+// Экспонируем для других скриптов (script.js, модули matcenter/, bookmarks.js)
 if (typeof window !== 'undefined') {
     window.safeStorageGet = safeStorageGet;
     window.safeStorageSet = safeStorageSet;

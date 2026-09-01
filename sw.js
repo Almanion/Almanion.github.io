@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-07-02-app-icon';
+const CACHE_VERSION = 'almanion-pwa-2026-09-01-split-assets';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -7,7 +7,14 @@ const APP_SHELL = [
     '/index.html',
     '/offline.html',
     '/manifest.json',
-    '/style.css',
+    '/styles/site/index.css',
+    '/styles/site/00-components.css',
+    '/styles/site/10-foundation.css',
+    '/styles/site/20-layout-content.css',
+    '/styles/site/30-matcenter-core.css',
+    '/styles/site/40-extras-settings.css',
+    '/styles/site/50-matcenter-responsive.css',
+    '/styles/site/60-poll-pwa.css',
     '/style-new.css',
     '/script.js',
     '/settings.js',
@@ -19,7 +26,14 @@ const APP_SHELL = [
     '/knowledge-check-exam.js',
     '/firebase-config.js',
     '/firebase-analytics.js',
-    '/matcenter.js',
+    '/matcenter/00-core.js',
+    '/matcenter/10-security.js',
+    '/matcenter/20-auth.js',
+    '/matcenter/30-data.js',
+    '/matcenter/40-personal-progress.js',
+    '/matcenter/50-render.js',
+    '/matcenter/60-navigation-search.js',
+    '/matcenter/70-hints.js',
     '/styles/tokens.css',
     '/styles/buttons.css',
     '/styles/mobile-overrides.css',

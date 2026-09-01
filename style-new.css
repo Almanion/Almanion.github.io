@@ -374,7 +374,7 @@ body.experimental .topic-title {
     padding: 0.4rem 1rem 0.55rem 1rem !important;
     margin-bottom: 1.1rem !important;
     /* Сбрасываем отрицательные боковые margin из мобильного sticky-правила
-       (style.css): там они компенсировались горизонтальным padding, а здесь
+       (styles/site/): там они компенсировались горизонтальным padding, а здесь
        иначе заголовок вылезал за экран на ~15px. */
     margin-left: 0 !important;
     margin-right: 0 !important;
@@ -442,7 +442,7 @@ body:not(.no-hover).experimental .experiment-box:hover {
     box-shadow: var(--exp-shadow-sm) !important;
 }
 
-/* NO-HOVER в эксп-режиме: общий no-hover-блок (style.css) ВОЗВРАЩАЕТ тень
+/* NO-HOVER в эксп-режиме: общий no-hover-блок (styles/site/) ВОЗВРАЩАЕТ тень
    карточкам/блокам на :hover (в легаси у них есть базовая тень). В эксп-режиме
    они ПЛОСКИЕ — поэтому при выключенных hover-эффектах тень появляться не должна.
    Гасим её, чтобы под курсором не возникало вообще никакого эффекта. */

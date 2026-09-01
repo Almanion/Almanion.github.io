@@ -334,7 +334,7 @@ function initMath() {
 // ============================================
 
 function initNavigation() {
-    // На Матцентре своя навигация в matcenter.js
+    // На Матцентре своя навигация в модулях matcenter/
     if (document.body.classList.contains('matcenter-page')) return;
 
     const navLinks = document.querySelectorAll('.nav-link');
@@ -480,7 +480,7 @@ const searchState = {
 };
 
 function initSearch() {
-    // На Матцентре используется отдельный поиск в matcenter.js.
+    // На Матцентре используется отдельный поиск в модулях matcenter/.
     // Здесь отключаем общий полнотекстовый поиск, чтобы не было конфликта обработчиков.
     if (document.body.classList.contains('matcenter-page')) return;
 

@@ -1,0 +1,1647 @@
+/* ============================================
+   MATCENTER вЂ” РЎРџР•Р¦РР¤РР§РќР«Р• РЎРўРР›Р
+   ============================================ */
+
+/* Р¤РѕСЂРјР° РІС…РѕРґР° РЅР° РІРµСЃСЊ СЌРєСЂР°РЅ, Р±РµР· bottom-sheet РЅР° РјРѕР±РёР»СЊРЅС‹С… */
+body.matcenter-page .auth-overlay.matcenter-auth-fullscreen {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    body.matcenter-page .auth-overlay.matcenter-auth-fullscreen {
+        align-items: center;
+    }
+    body.matcenter-page .auth-overlay.matcenter-auth-fullscreen .auth-modal {
+        border-radius: 14px;
+        box-sizing: border-box;
+        width: min(400px, calc(100% - 2rem));
+        max-width: min(400px, calc(100% - 2rem));
+        max-height: 90vh;
+        max-height: 90dvh;
+        animation: slideUp 0.3s ease-out;
+    }
+    body.matcenter-page .auth-overlay.matcenter-auth-fullscreen .auth-modal::before {
+        display: none;
+    }
+}
+
+.matcenter-data-warning {
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: 10px;
+    color: var(--text-primary);
+    margin: 0 0 1rem;
+    padding: 0.75rem 1rem;
+}
+
+@media (max-width: 768px) {
+    .matcenter-data-warning {
+        border-left: 0;
+        border-right: 0;
+        border-radius: 0;
+        margin-left: calc(-1 * var(--m-pad));
+        margin-right: calc(-1 * var(--m-pad));
+    }
+}
+
+/* РЈРїСЂРѕС‰С‘РЅРЅС‹Р№ РґРёР·Р°Р№РЅ РјРѕРґР°Р»РєРё РїРѕРґСЃРєР°Р·РєРё */
+body.matcenter-page #hintOverlay .hint-modal-header {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+body.matcenter-page #hintOverlay .hint-modal-header h3 {
+    color: var(--text-primary);
+}
+body.matcenter-page #hintOverlay .hint-close-btn {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+body.matcenter-page #hintOverlay .hint-close-btn:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+body.matcenter-page #hintOverlay .hint-save-btn {
+    background: var(--accent-color);
+}
+body.matcenter-page #hintOverlay .hint-save-btn:hover {
+    background: var(--accent-hover);
+    box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.3);
+}
+
+/* РљРЅРѕРїРєР° РїРѕРґСЃРєР°Р·РєРё вЂ” РјРµРЅСЊС€Рµ Рё РјРµРЅРµРµ Р·Р°РјРµС‚РЅР°СЏ */
+body.matcenter-page .admin-hint-button {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.8rem;
+    border-width: 1px;
+    opacity: 0.85;
+}
+body.matcenter-page .admin-hint-button:hover {
+    opacity: 1;
+}
+
+/* Р’С‹РїР°РґР°СЋС‰РёР№ СЃРїРёСЃРѕРє СЃС‚Р°С‚СѓСЃР° вЂ” РЅРµ РІС‹С…РѕРґРёС‚ Р·Р° РїСЂР°РІС‹Р№ РєСЂР°Р№ */
+.status-dropdown {
+    max-width: min(180px, calc(100vw - 20px));
+}
+
+/* Раскрытие условия — быстрая и лёгкая анимация (без grid, blur, bounce) */
+body.matcenter-page .task-description {
+    display: block;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0 solid var(--border-color);
+    transform: none;
+    filter: none;
+    transition: max-height 0.22s ease-out,
+                opacity 0.18s ease-out,
+                margin-top 0.22s ease-out,
+                padding-top 0.22s ease-out,
+                border-top-width 0.22s ease-out;
+    will-change: max-height, opacity;
+}
+
+body.matcenter-page .task-description .task-description-inner {
+    min-height: 0;
+    overflow: hidden;
+}
+
+body.matcenter-page .task-card.open .task-description {
+    max-height: 4000px;
+    opacity: 1;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top-width: 2px;
+    transition: max-height 0.28s ease-out,
+                opacity 0.22s ease-out 0.04s,
+                margin-top 0.22s ease-out,
+                padding-top 0.22s ease-out,
+                border-top-width 0.22s ease-out;
+}
+
+/* Упрощаем transition самой карточки (был transition: all 0.4s — заставлял анимировать все свойства) */
+body.matcenter-page .task-card {
+    transition: box-shadow 0.18s ease, border-left-color 0.18s ease, background-color 0.18s ease;
+}
+
+/* МатЦентр: без «вдавливания» при нажатии на карточки, фильтры и кнопки раскрытия */
+body.matcenter-page .task-card:active,
+body.matcenter-page .stat-card.clickable:active,
+body.matcenter-page .task-toggle:active {
+    transform: none !important;
+}
+
+/* Отключаем overlay-анимацию ::before на matcenter (тяжёлая, дёргает layout) */
+body.matcenter-page .task-card::before {
+    transition: none;
+    display: none;
+}
+
+/* Строка заголовка «Все задачи» + кнопка обновления */
+body.matcenter-page .part-title-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid var(--border-color);
+    position: relative;
+}
+
+/* Пульсирующая линия-акцент убрана — выглядела устаревше и дёргалась.
+   Чистая тонкая нижняя граница как в остальном новом дизайне. */
+body.matcenter-page .part-title-row::after { display: none; }
+
+/* ============================================
+   MATCENTER — РЕДИЗАЙН: РОВНАЯ СТАТИСТИКА И ПЛОСКИЕ КАРТОЧКИ
+   ============================================ */
+/* Плоские карточки статистики — тонкая рамка вместо тяжёлой тени */
+body.matcenter-page .stat-card {
+    box-shadow: none;
+    border: 1px solid var(--border-color);
+}
+/* Десктоп: ровный ряд из 4 карточек (раньше 4-я переносилась одна) */
+@media (min-width: 769px) {
+    body.matcenter-page:not(.is-summer-grade) .stats-container {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.85rem;
+        margin-bottom: 1.75rem;
+    }
+}
+/* Карточки задач — без цветного градиент-фона: чистый фон + цветная
+   левая граница и бейдж статуса (как в новом «плоском» дизайне). */
+body.matcenter-page .task-card.solved,
+body.matcenter-page .task-card.current-series,
+body.matcenter-page .task-card.postponed,
+body.matcenter-page .task-card.with-hint {
+    background: var(--bg-secondary);
+}
+
+/* Личная отметка пользователя «решено» — поверх общего статуса Матцентра */
+body.matcenter-page .task-number-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+}
+
+/* Круглый чекбокс «решено» — основной, понятный контрол */
+body.matcenter-page .task-solved-check {
+    appearance: none;
+    -webkit-appearance: none;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border-radius: 999px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--success-color);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.16s ease, box-shadow 0.18s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body.matcenter-page:not(.no-hover) .task-solved-check:hover {
+    border-color: var(--success-color);
+    background: color-mix(in srgb, var(--success-color) 12%, transparent);
+}
+
+body.matcenter-page .task-solved-check:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--success-color) 55%, transparent);
+    outline-offset: 3px;
+}
+
+body.matcenter-page .task-solved-check:active {
+    transform: scale(0.9);
+}
+
+body.matcenter-page .task-solved-check:disabled {
+    cursor: progress;
+    opacity: 0.65;
+}
+
+body.matcenter-page .task-solved-check-icon {
+    width: 15px;
+    height: 15px;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: opacity 0.16s ease, transform 0.18s ease;
+}
+
+body.matcenter-page:not(.no-hover) .task-solved-check:hover .task-solved-check-icon {
+    opacity: 0.5;
+    transform: scale(1);
+}
+
+/* Состояние «решено»: залитый зелёный кружок с галочкой */
+body.matcenter-page .task-card.user-solved .task-solved-check {
+    background: var(--success-color);
+    border-color: var(--success-color);
+    color: #fff;
+}
+
+body.matcenter-page .task-card.user-solved .task-solved-check-icon {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Радиальный «всплеск» вокруг чекбокса */
+body.matcenter-page .task-solved-burst {
+    position: absolute;
+    inset: -4px;
+    border-radius: 999px;
+    border: 2px solid var(--success-color);
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Номер задачи (теперь обычный текст; строка зачёркивания — оверлеем) */
+body.matcenter-page .task-number {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    transition: color 0.18s ease;
+}
+
+body.matcenter-page .task-number-label {
+    position: relative;
+    z-index: 1;
+}
+
+body.matcenter-page .task-card.user-solved .task-number-label {
+    color: var(--text-secondary);
+}
+
+body.matcenter-page .task-solved-strike {
+    position: absolute;
+    left: -0.1rem;
+    right: -0.1rem;
+    top: 52%;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--success-color);
+    opacity: 0;
+    transform: scaleX(0);
+    transform-origin: left center;
+    pointer-events: none;
+    z-index: 2;
+    transition: opacity 0.16s ease, transform 0.24s ease;
+}
+
+body.matcenter-page .task-solved-caption {
+    align-items: center;
+    background: color-mix(in srgb, var(--success-color) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--success-color) 26%, transparent);
+    border-radius: 999px;
+    color: var(--success-color);
+    display: inline-flex;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    padding: 0.25rem 0.46rem;
+    text-transform: uppercase;
+}
+
+body.matcenter-page .task-solved-caption[hidden] {
+    display: none;
+}
+
+/* Карточка решённой задачи — мягкий зелёный акцент */
+body.matcenter-page .task-card.user-solved {
+    border-color: color-mix(in srgb, var(--success-color) 30%, var(--border-color));
+    background: color-mix(in srgb, var(--success-color) 5%, var(--bg-secondary));
+}
+
+/* ---- Анимация: режим «Зачёркивание» (data-...="strike") ---- */
+body[data-matcenter-solved-animation="strike"] .task-card.user-solved .task-solved-strike {
+    opacity: 1;
+    transform: scaleX(1);
+}
+
+body[data-matcenter-solved-animation="strike"] .task-card.just-solved .task-solved-strike {
+    animation: mc-solved-strike 0.4s var(--ease-out, ease);
+}
+
+/* ---- Анимация: режим «Кружок» (по умолчанию) — всплеск-кольцо ---- */
+body.matcenter-page:not([data-matcenter-solved-animation]) .task-card.just-solved .task-solved-burst,
+body[data-matcenter-solved-animation="circle"] .task-card.just-solved .task-solved-burst {
+    animation: mc-solved-burst 0.55s var(--ease-out, ease);
+}
+
+/* Галочка прорисовывается при отметке (оба режима) */
+body.matcenter-page .task-card.just-solved .task-solved-check {
+    animation: mc-check-pop 0.42s var(--ease-spring, ease);
+}
+
+body.matcenter-page .task-card.just-solved .task-solved-check-icon polyline {
+    stroke-dasharray: 24;
+    stroke-dashoffset: 24;
+    animation: mc-check-draw 0.34s 0.05s var(--ease-out, ease) forwards;
+}
+
+body.matcenter-page .task-card.just-unsolved .task-solved-check {
+    animation: mc-solved-pop-out 0.24s ease-out;
+}
+
+@keyframes mc-solved-burst {
+    0% { opacity: 0.7; transform: scale(0.6); }
+    100% { opacity: 0; transform: scale(1.85); }
+}
+
+@keyframes mc-solved-strike {
+    0% { opacity: 0; transform: scaleX(0); }
+    100% { opacity: 1; transform: scaleX(1); }
+}
+
+@keyframes mc-check-draw {
+    to { stroke-dashoffset: 0; }
+}
+
+@keyframes mc-check-pop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.18); }
+    100% { transform: scale(1); }
+}
+
+@keyframes mc-solved-pop-out {
+    0% { transform: scale(1); }
+    45% { transform: scale(0.9); }
+    100% { transform: scale(1); }
+}
+
+/* Анимации выключены — показываем сразу финальное состояние */
+body.animations-off.matcenter-page .task-card.just-solved .task-solved-check,
+body.animations-off.matcenter-page .task-card.just-solved .task-solved-burst,
+body.animations-off.matcenter-page .task-card.just-solved .task-solved-strike,
+body.animations-off.matcenter-page .task-card.just-unsolved .task-solved-check {
+    animation: none;
+}
+
+body.animations-off.matcenter-page .task-card.just-solved .task-solved-check-icon polyline {
+    animation: none;
+    stroke-dashoffset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.matcenter-page .task-card.just-solved .task-solved-check,
+    body.matcenter-page .task-card.just-solved .task-solved-burst,
+    body.matcenter-page .task-card.just-solved .task-solved-strike,
+    body.matcenter-page .task-card.just-unsolved .task-solved-check {
+        animation: none;
+    }
+    body.matcenter-page .task-card.just-solved .task-solved-check-icon polyline {
+        animation: none;
+        stroke-dashoffset: 0;
+    }
+}
+
+.matcenter-solved-toast {
+    background: var(--text-primary);
+    border-radius: 999px;
+    bottom: calc(1.1rem + env(safe-area-inset-bottom));
+    box-shadow: var(--shadow-md);
+    color: var(--bg-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    left: 50%;
+    max-width: min(92vw, 420px);
+    opacity: 0;
+    padding: 0.65rem 0.95rem;
+    position: fixed;
+    transform: translate(-50%, 12px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 12000;
+}
+
+.matcenter-solved-toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.matcenter-solved-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.matcenter-solved-settings-title {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.matcenter-solved-animation-selector {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.matcenter-solved-animation-option {
+    align-items: flex-start;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.38rem;
+    min-height: 124px;
+    padding: 0.9rem;
+    text-align: left;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.matcenter-solved-animation-option:hover {
+    border-color: var(--accent-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.matcenter-solved-animation-option.active {
+    border-color: var(--success-color);
+    box-shadow: 0 0 0 3px rgba(var(--success-rgb), 0.12);
+}
+
+.mc-solved-preview {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 1.05rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 0.18rem;
+}
+
+.mc-prev-check {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: var(--success-color);
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.mc-prev-check svg {
+    width: 13px;
+    height: 13px;
+}
+
+.mc-prev-num {
+    position: relative;
+    color: var(--success-color);
+}
+
+/* «Кружок» — кольцо-всплеск вокруг галочки */
+.mc-solved-preview-circle .mc-prev-check::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 999px;
+    border: 2px solid color-mix(in srgb, var(--success-color) 55%, transparent);
+}
+
+/* «Зачёркивание» — линия по номеру */
+.mc-solved-preview-strike .mc-prev-num::after {
+    content: '';
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    top: 52%;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--success-color);
+}
+
+@media (max-width: 520px) {
+    .matcenter-solved-animation-selector {
+        grid-template-columns: 1fr;
+    }
+}
+
+body.matcenter-page .part-title-row .part-title {
+    margin: 0;
+    flex: 1;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+/* Убираем дублирующую анимацию с самого заголовка */
+body.matcenter-page .part-title-row .part-title::after {
+    display: none;
+}
+
+/* Кнопка выравнивается по нижнему краю вместе с подчёркиванием */
+body.matcenter-page .part-title-row .refresh-button {
+    margin-bottom: 2px;
+}
+
+/* Кнопка обновления — иконка-кружок */
+/* Кнопка обновления — лёгкая «призрачная» иконка-кнопка (раньше был
+   обведённый кружок, выглядел тяжеловато рядом с заголовком). */
+body.matcenter-page .refresh-button {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--text-secondary);
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.18s ease, color 0.18s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body.matcenter-page .refresh-button:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+body.matcenter-page .refresh-button:active:not(:disabled) {
+    transform: scale(0.88);
+    box-shadow: none;
+}
+
+body.matcenter-page .refresh-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+body.matcenter-page .refresh-button.spinning {
+    animation: mc-refresh-spin 0.7s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes mc-refresh-spin {
+    to { transform: rotate(-360deg); }
+}
+
+/* Разделы по классам */
+body.matcenter-page .grade-nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+body.matcenter-page .grade-link {
+    display: block;
+    padding: 0.55rem 0.75rem;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.92rem;
+    line-height: 1.35;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+body.matcenter-page .grade-link:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+body.matcenter-page .grade-link.active {
+    background: rgba(var(--accent-rgb), 0.12);
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+/* ============================================
+   MATCENTER — ПЕРЕКЛЮЧАТЕЛЬ КЛАССОВ (минимализм)
+   ============================================ */
+
+.grade-switcher {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.625rem;
+    margin: 0.25rem 0 1.5rem;
+}
+
+.grade-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: 96px;
+    padding: 0.85rem 0.95rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    transition: border-color 0.18s ease, background-color 0.18s ease,
+                box-shadow 0.18s ease, color 0.18s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Тонкая цветовая полоска слева — индикатор типа раздела */
+.grade-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+    background: var(--text-secondary);
+    opacity: 0.2;
+    transition: opacity 0.18s ease, background-color 0.18s ease;
+}
+
+.grade-card:hover {
+    border-color: var(--text-secondary);
+    background: var(--bg-primary);
+}
+
+.grade-card:hover::before {
+    opacity: 0.5;
+}
+
+.grade-card:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+.grade-card-eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.grade-card-title {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-top: 0.35rem;
+}
+
+.grade-card-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    margin-top: auto;
+    padding-top: 0.65rem;
+}
+
+.grade-card-count {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.grade-card-sub {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+/* Активная карточка — акцентная заливка без градиентов */
+.grade-card.active {
+    border-color: var(--accent-color);
+    background: var(--accent-color);
+    color: white;
+}
+
+.grade-card.active::before {
+    background: rgba(255, 255, 255, 0.6);
+    opacity: 1;
+}
+
+.grade-card.active .grade-card-eyebrow,
+.grade-card.active .grade-card-title,
+.grade-card.active .grade-card-count,
+.grade-card.active .grade-card-sub {
+    color: white;
+}
+
+.grade-card.active .grade-card-eyebrow,
+.grade-card.active .grade-card-sub {
+    opacity: 0.8;
+}
+
+/* Летние серии — янтарная полоска вместо стандартной */
+.grade-card-summer::before {
+    background: #d97706;
+    opacity: 0.55;
+}
+
+.grade-card-summer:hover {
+    border-color: #d97706;
+}
+
+.grade-card-summer:hover::before {
+    opacity: 1;
+}
+
+.grade-card-summer.active {
+    border-color: #d97706;
+    background: #d97706;
+}
+
+/* Тёмная тема */
+body.dark-theme .grade-card {
+    background: var(--bg-secondary);
+}
+
+body.dark-theme .grade-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* Средние экраны — 3 в ряд */
+@media (max-width: 900px) {
+    .grade-switcher {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+}
+
+/* Мобильные — 2 в ряд, пятая на всю ширину */
+@media (max-width: 560px) {
+    .grade-switcher {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        padding: 0 var(--m-pad);
+        margin-bottom: 1rem;
+    }
+    .grade-card {
+        min-height: 86px;
+        padding: 0.7rem 0.8rem;
+        border-radius: 10px;
+    }
+    .grade-card-eyebrow {
+        font-size: 0.65rem;
+    }
+    .grade-card-title {
+        font-size: 1rem;
+    }
+    .grade-card-count {
+        font-size: 1.1rem;
+    }
+    /* Пятая (одинокая) карточка во всю ширину, в одну строку */
+    .grade-card:nth-child(5):last-child {
+        grid-column: span 2;
+        flex-direction: row;
+        align-items: center;
+        min-height: 64px;
+        gap: 0.75rem;
+    }
+    .grade-card:nth-child(5):last-child .grade-card-title {
+        margin-top: 0;
+        flex: 1;
+    }
+    .grade-card:nth-child(5):last-child .grade-card-meta {
+        margin-top: 0;
+        padding-top: 0;
+    }
+    .grade-card:nth-child(5):last-child .grade-card-eyebrow {
+        display: none;
+    }
+}
+
+.empty-grade-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 1rem 2rem;
+    color: var(--text-secondary);
+}
+
+.empty-grade-icon {
+    display: block;
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+    opacity: 0.7;
+}
+
+/* Поиск — layout input + фильтр по статусу */
+body.matcenter-page .search-box {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+body.matcenter-page .search-box input {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Фильтр по статусу — в едином стиле с полем поиска */
+body.matcenter-page .status-filter-select {
+    padding: 0.75rem 2.25rem 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.2s ease;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+                      linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%;
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+    min-width: 130px;
+}
+
+body.matcenter-page .status-filter-select:hover {
+    border-color: var(--accent-color);
+    background-color: var(--bg-secondary);
+}
+
+body.matcenter-page .status-filter-select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
+}
+
+body.matcenter-page .status-filter-select.has-filter {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    font-weight: 500;
+}
+
+/* На мобильных поиск только в шапке страницы, не в сайдбаре */
+@media (max-width: 768px) {
+    body.matcenter-page .search-box {
+        display: none;
+    }
+}
+
+/* ============================================
+   MATCENTER — МОБИЛЬНЫЙ ПОИСК
+   ============================================ */
+
+/* Сайдбар: обёртка поля поиска с кнопкой очистки */
+body.matcenter-page .search-input-wrap {
+    position: relative;
+    width: 100%;
+}
+
+body.matcenter-page .search-input-wrap input {
+    width: 100%;
+    padding-left: 2.25rem;
+    padding-right: 2.25rem;
+}
+
+body.matcenter-page .search-input-wrap .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.mobile-search-input-wrap .search-icon {
+    position: absolute;
+    left: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 15px;
+    height: 15px;
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.mobile-search-input-wrap input {
+    padding-left: 1.9rem;
+}
+
+/* Иконка обновления */
+.refresh-button .icon-refresh {
+    width: 16px;
+    height: 16px;
+    display: block;
+}
+
+/* Иконка настроек — наследует размер от кнопки */
+.settings-icon {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
+.settings-button-sidebar .settings-icon {
+    width: 18px;
+    height: 18px;
+}
+
+body.matcenter-page .search-clear-btn {
+    position: absolute;
+    right: 0.4rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg-tertiary);
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.65rem;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: background 0.2s ease, color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body.matcenter-page .search-clear-btn.visible {
+    display: flex;
+}
+
+body.matcenter-page .search-clear-btn:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+
+/* Мобильная строка поиска */
+.mobile-search-bar {
+    display: none;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg-primary);
+    padding: 0.6rem 1rem;
+    padding-top: max(0.6rem, env(safe-area-inset-top));
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    margin-bottom: 1rem;
+    transition: background-color 0.15s ease;
+}
+
+body.dark-theme .mobile-search-bar {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 768px) {
+    .mobile-search-bar {
+        display: block;
+    }
+}
+
+.mobile-search-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.mobile-search-input-wrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.mobile-search-input-wrap input {
+    width: 100%;
+    padding: 0.55rem 2rem 0.55rem 2rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    -webkit-appearance: none;
+}
+
+.mobile-search-input-wrap input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.15);
+}
+
+.mobile-search-clear {
+    position: absolute;
+    right: 0.4rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg-tertiary);
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.65rem;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: background 0.2s ease, color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-search-clear.visible {
+    display: flex;
+}
+
+.mobile-search-clear:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+
+.mobile-status-filter {
+    flex-shrink: 0;
+    padding: 0.55rem 1.5rem 0.55rem 0.7rem;
+    border: 1.5px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    /* Стрелка-«галка» из CSS — наследует цвет от темы */
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+                      linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: calc(100% - 14px) 50%, calc(100% - 9px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    /* Ширина: минимум для «Все», максимум для «Подсказка» */
+    min-width: 3.5rem;
+    max-width: 7.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease,
+                background-color 0.2s ease, color 0.2s ease;
+}
+
+.mobile-status-filter:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.15);
+}
+
+/* Активный фильтр (не «Все»): акцентный цвет и обводка */
+.mobile-status-filter.has-filter {
+    border-color: var(--accent-color);
+    background-color: var(--bg-secondary);
+    color: var(--accent-color);
+    font-weight: 500;
+}
+
+@media (max-width: 380px) {
+    .mobile-search-bar {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .mobile-status-filter {
+        max-width: 6rem;
+        font-size: 0.8rem;
+        padding-right: 1.25rem;
+    }
+}
+
+/* ============================================
+   MATCENTER — СООБЩЕНИЕ "НИЧЕГО НЕ НАЙДЕНО"
+   ============================================ */
+
+.no-results-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 1rem 2rem;
+    color: var(--text-secondary);
+}
+
+.no-results-icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 0.75rem;
+    opacity: 0.8;
+}
+
+.no-results-message p {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+    color: var(--text-primary);
+}
+
+.no-results-hint {
+    font-size: 0.875rem;
+    color: var(--text-secondary) !important;
+    margin-bottom: 0.25rem !important;
+}
+
+.no-results-clear {
+    margin-top: 1rem;
+    display: inline-block;
+    padding: 0.5rem 1.25rem;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-family: inherit;
+    font-weight: 500;
+    transition: background 0.2s ease, transform 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.no-results-clear:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.no-results-clear:active {
+    transform: scale(0.97);
+}
+
+/* ============================================
+   MATCENTER — МОБИЛЬНЫЙ ДИЗАЙН ЗАДАЧ
+   Edge-to-edge в стиле блоков physics.html
+   ============================================ */
+@media (max-width: 768px) {
+    /* Контейнер: зазор между карточками, вертикальный flex */
+    body.matcenter-page .tasks-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    /* Карточка задачи: без скруглений, от края до края */
+    body.matcenter-page .task-card {
+        border-radius: 0;
+        border-left-width: 5px;
+        padding: 0.75rem var(--m-pad);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    body.matcenter-page .task-card:hover {
+        transform: none;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    body.matcenter-page .task-card.open {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        border-left-width: 5px;
+    }
+
+    body.matcenter-page .task-header {
+        align-items: flex-start;
+        gap: 0.45rem 0.55rem;
+    }
+
+    body.matcenter-page .task-number-wrap {
+        flex: 1 1 190px;
+        min-width: 0;
+    }
+
+    body.matcenter-page .task-number {
+        max-width: 100%;
+        white-space: normal;
+    }
+
+    body.matcenter-page .task-number-label {
+        overflow-wrap: anywhere;
+    }
+
+    body.matcenter-page .task-solved-caption {
+        font-size: 0.66rem;
+        padding: 0.22rem 0.4rem;
+    }
+
+    /* Полоса прогресса на мобильных */
+    body.matcenter-page .matcenter-progress {
+        margin-bottom: 1.25rem;
+        padding: 0.85rem 0.95rem 0.75rem;
+    }
+
+    body.matcenter-page .matcenter-progress-head {
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+    }
+
+    body.matcenter-page .matcenter-progress-title {
+        min-width: 0;
+    }
+
+    body.matcenter-page .matcenter-progress-actions {
+        gap: 0.45rem;
+        margin-left: auto;
+    }
+
+    body.matcenter-page .matcenter-progress-value {
+        font-size: 0.82rem;
+    }
+
+    body.matcenter-page .matcenter-share-solved-btn {
+        flex-basis: 36px;
+        height: 36px;
+        width: 36px;
+    }
+
+    body.matcenter-page .matcenter-share-menu {
+        border-radius: 18px;
+        bottom: calc(0.85rem + env(safe-area-inset-bottom));
+        left: max(12px, env(safe-area-inset-left)) !important;
+        right: max(12px, env(safe-area-inset-right)) !important;
+        top: auto !important;
+        transform-origin: bottom right;
+        width: auto !important;
+    }
+
+    /* Шапка «Все задачи» + кнопка: компактная полоса, как .part-title в physics */
+    body.matcenter-page .part-title-row {
+        padding: 0.625rem var(--m-pad);
+        margin-bottom: 0;
+        border-bottom: 2px solid var(--border-color);
+        background: var(--bg-secondary);
+        border-radius: 0;
+        position: sticky;
+        top: 56px; /* под mobile-search-bar */
+        z-index: 30;
+    }
+
+    body.matcenter-page .part-title-row::after {
+        display: none;
+    }
+
+    body.matcenter-page .part-title-row .part-title {
+        font-size: 1.15rem;
+        padding: 0;
+        border-bottom: none;
+        background: transparent;
+    }
+
+    /* .part-title вне .part-title-row (Текущая серия, Откладыши…) */
+    body.matcenter-page .content-section > .part-title {
+        padding: 0.625rem var(--m-pad);
+        margin-bottom: 0;
+        border-bottom: 2px solid var(--border-color);
+        background: var(--bg-secondary);
+        border-radius: 0;
+        position: static;
+        font-size: 1.15rem;
+    }
+
+    body.matcenter-page .content-section > .part-title::after {
+        display: none;
+    }
+
+    /* Кнопка «Показать условие» — на всю ширину */
+    body.matcenter-page .task-toggle {
+        width: 100%;
+        text-align: left;
+    }
+
+    /* «Ничего не найдено» — убираем grid-column (flex-контейнер) */
+    body.matcenter-page .no-results-message {
+        grid-column: unset;
+    }
+}
+
+/* На маленьких телефонах (≤480px) padding подхватывается из --m-pad автоматически */
+
+/* ============================================
+   MATCENTER — МОБИЛЬНАЯ МОДАЛКА ПОДСКАЗКИ
+   Bottom sheet, как auth-modal
+   ============================================ */
+@media (max-width: 768px) {
+    /* Overlay: прижимаем к низу */
+    body.matcenter-page #hintOverlay {
+        align-items: flex-end;
+    }
+
+    /* Сама модалка — bottom sheet */
+    body.matcenter-page #hintOverlay .hint-modal {
+        width: 100%;
+        max-width: 100%;
+        border-radius: 20px 20px 0 0;
+        max-height: 90dvh;
+        overflow-y: auto;
+        animation: slideUpSheet 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Drag-handle — реальный DOM-элемент для захвата свайпа */
+    body.matcenter-page #hintOverlay .hint-drag-handle {
+        width: 100%;
+        padding: 0.75rem 0 0.25rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: grab;
+        touch-action: none;
+        flex-shrink: 0;
+    }
+
+    body.matcenter-page #hintOverlay .hint-drag-handle::after {
+        content: '';
+        display: block;
+        width: 40px;
+        height: 4px;
+        background: var(--border-color);
+        border-radius: 2px;
+    }
+
+    /* Шапка модалки */
+    body.matcenter-page #hintOverlay .hint-modal-header {
+        padding: 0.875rem var(--m-pad) 0.75rem;
+    }
+
+    body.matcenter-page #hintOverlay .hint-modal-header h3 {
+        font-size: 1.05rem;
+    }
+
+    /* Кнопка закрытия — крупнее для тапа */
+    body.matcenter-page #hintOverlay .hint-close-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    /* Textarea: без resize, комфортная высота */
+    body.matcenter-page #hintOverlay #hintTextarea {
+        padding: 0.875rem var(--m-pad);
+        min-height: 130px;
+        max-height: 38vh;
+        resize: none;
+        font-size: 1rem;
+        line-height: 1.55;
+    }
+
+    /* Кнопки действий — вертикальная стопка */
+    body.matcenter-page #hintOverlay .hint-modal-actions {
+        padding: 0.75rem var(--m-pad);
+        padding-bottom: calc(0.875rem + env(safe-area-inset-bottom, 0px));
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    body.matcenter-page #hintOverlay .hint-save-btn,
+    body.matcenter-page #hintOverlay .hint-delete-btn,
+    body.matcenter-page #hintOverlay .hint-cancel-btn {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        font-size: 0.95rem;
+        text-align: center;
+        justify-content: center;
+        border-radius: 10px;
+    }
+
+    body.matcenter-page #hintOverlay .hint-save-btn {
+        order: 1;
+    }
+
+    body.matcenter-page #hintOverlay .hint-delete-btn {
+        order: 2;
+    }
+
+    body.matcenter-page #hintOverlay .hint-cancel-btn {
+        order: 3;
+    }
+}
+
+/* В летних сериях стат-карты «Неразобрано / Текущая серия / Откладыши»
+   неуместны (статусов нет) — оставляем только «Всего задач». */
+body.is-summer-grade .stat-card[data-filter="unsolved"],
+body.is-summer-grade .stat-card[data-filter="current-series"],
+body.is-summer-grade .stat-card[data-filter="postponed"] {
+    display: none;
+}
+
+/* Чтобы «Всего задач» не растягивалась во всю ширину на больших экранах */
+body.is-summer-grade .stats-container {
+    grid-template-columns: minmax(180px, 320px);
+    justify-content: start;
+}
+
+/* ============================================
+   MATCENTER — БАННЕР-РАЗДЕЛИТЕЛЬ (заголовок раздела / вводный текст)
+   ============================================ */
+body.matcenter-page .task-section-banner {
+    grid-column: 1 / -1; /* во всю ширину при grid-сетке */
+    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.08), rgba(139, 92, 246, 0.05));
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--accent-color);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    color: var(--text-primary);
+    font-size: 1rem;
+    line-height: 1.5;
+    margin: 0.25rem 0;
+}
+
+body.matcenter-page .task-section-banner-inner {
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    body.matcenter-page .task-section-banner {
+        border-radius: 0;
+        margin-left: calc(-1 * var(--m-pad));
+        margin-right: calc(-1 * var(--m-pad));
+        padding: 0.85rem var(--m-pad);
+        border-left-width: 5px;
+        border-right: none;
+    }
+}
+
+/* ============================================
+   SVG-ИКОНКИ В КНОПКАХ (универсальные размеры)
+   ============================================ */
+
+/* Кнопки sidebar (свернуть / развернуть / закрыть / меню) и подсказки.
+   ВАЖНО: не задаём display здесь — он управляется существующими правилами
+   (default none + media-queries/state-classes показывают как flex). */
+.sidebar-collapse-btn,
+.sidebar-expand-btn,
+.close-sidebar,
+.menu-toggle,
+.hint-close-btn,
+.settings-close-btn {
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-collapse-btn svg,
+.close-sidebar svg,
+.hint-close-btn svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+}
+
+.sidebar-expand-btn svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+
+.menu-toggle svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
+.settings-close-btn svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+}
+
+/* Кнопка проверки знаний / закладок (в сайдбаре) — текст + иконка */
+.knowledge-check-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.knowledge-check-btn .btn-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+/* Кнопка-звёздочка закладки на блоках */
+.bookmark-btn {
+    font-size: 0; /* был для звёздочки — теперь не нужен */
+}
+
+.bookmark-btn .bookmark-icon {
+    width: 18px;
+    height: 18px;
+    display: block;
+}
+
+/* Универсальный размер для .btn-icon (если конкретный контекст не задал свой) */
+.btn-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* ============================================
+   ОПТИМИЗАЦИЯ СМЕНЫ ТЕМЫ
+   На момент переключения отключаем все transitions —
+   иначе сотни элементов одновременно начинают анимировать
+   background/color/border и страница ощутимо «лагает».
+   ============================================ */
+body.theme-transitioning,
+body.theme-transitioning *,
+body.theme-transitioning *::before,
+body.theme-transitioning *::after {
+    transition: none !important;
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+}
+
+/* Лёгкое подавление ТОЛЬКО переходов — для переключения экспериментального
+   режима. В отличие от theme-transitioning, НЕ сбрасывает animation-duration,
+   поэтому не трогает keyframe-анимацию модалки настроек (иначе она «моргала»
+   /переоткрывалась при действиях внутри настроек). Подавляет «волну» из
+   сотен transition при смене режима/темы. */
+body.exp-switching,
+body.exp-switching *,
+body.exp-switching *::before,
+body.exp-switching *::after {
+    transition: none !important;
+}
+
+/* ============================================
+   MATCENTER — АКТИВНЫЕ СОСТОЯНИЯ И STICKY-ЗАГОЛОВКИ
+   ============================================ */
+
+/* Курсор на кликабельных стат-картах */
+body.matcenter-page .stat-card.clickable {
+    cursor: pointer;
+}
+
+/* Активная стат-карта: акцентная обводка + цвет цифры */
+body.matcenter-page .stat-card.active {
+    outline: 2px solid var(--accent-color);
+    outline-offset: -2px;
+    background: rgba(var(--accent-rgb), 0.06);
+    box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.18);
+}
+
+body.matcenter-page .stat-card.active .stat-number {
+    color: var(--accent-color);
+}
+
+body.matcenter-page .stat-card.active .stat-label {
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+/* Sticky-заголовок секции на матцентре (десктоп) */
+body.matcenter-page .matcenter-task-view .part-title-row {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--bg-primary);
+}
+
+/* Refresh-кнопка: чуть заметнее (акцентный hover) */
+body.matcenter-page .refresh-button:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* Спиннер загрузки и кнопка-«вертушка» должны крутиться даже при animations-off */
+body.animations-off .spinner,
+body.animations-off .refresh-button.spinning,
+body.animations-off .spinner-small {
+    animation-duration: 0.7s !important;
+    animation-iteration-count: infinite !important;
+    animation-timing-function: linear !important;
+}
+
+body.animations-off .spinner {
+    animation-name: spin !important;
+}
+
+body.animations-off .spinner-small {
+    animation-name: spin !important;
+}
+
+body.animations-off .refresh-button.spinning {
+    animation-name: mc-refresh-spin !important;
+}
+

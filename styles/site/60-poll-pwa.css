@@ -1,0 +1,510 @@
+/* ============================================
+   ОПРОС О ДИЗАЙНЕ
+   ============================================ */
+.poll-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0);
+    transition: background 0.3s ease;
+    pointer-events: none;
+}
+
+.poll-overlay.poll-visible {
+    background: rgba(0, 0, 0, 0.45);
+    pointer-events: auto;
+}
+
+.poll-modal {
+    background: var(--bg-primary);
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-width: 480px;
+    padding: 1.5rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.18);
+    position: relative;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.poll-overlay.poll-visible .poll-modal {
+    transform: translateY(0);
+}
+
+/* Drag-handle */
+.poll-modal::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: var(--border-color);
+    border-radius: 2px;
+    margin: 0 auto 1.25rem;
+}
+
+.poll-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: var(--bg-tertiary);
+    border: none;
+    color: var(--text-secondary);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.poll-close:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+
+.poll-body {
+    text-align: center;
+}
+
+.poll-emoji {
+    font-size: 2.5rem;
+    margin: 0 0 0.75rem;
+    line-height: 1;
+}
+
+.poll-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.35rem;
+}
+
+.poll-sub {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0 0 1.25rem;
+}
+
+/* Звёзды */
+.poll-stars {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.poll-star {
+    background: none;
+    border: none;
+    font-size: 2.2rem;
+    color: var(--border-color);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.15rem;
+    transition: color 0.15s ease, transform 0.1s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.poll-star:hover,
+.poll-star.poll-star-lit {
+    color: var(--warning-color);
+    transform: scale(1.15);
+}
+
+.poll-hint {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0 0 0.5rem;
+    min-height: 1.2em;
+    transition: color 0.15s ease;
+}
+
+.poll-deadline {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    margin: 0;
+}
+
+/* Экран благодарности */
+.poll-thanks {
+    text-align: center;
+    padding: 0.5rem 0;
+}
+
+.poll-thanks-emoji {
+    font-size: 3rem;
+    margin: 0 0 0.75rem;
+    line-height: 1;
+}
+
+.poll-thanks h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.35rem;
+}
+
+.poll-thanks p {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin: 0 0 1.25rem;
+}
+
+.poll-thanks-btn {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    padding: 0.75rem 2rem;
+    font-size: 0.95rem;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.poll-thanks-btn:hover {
+    background: var(--accent-hover);
+}
+
+@media (min-width: 480px) {
+    .poll-modal {
+        border-radius: 16px;
+        margin: 0 1rem 1rem;
+        width: calc(100% - 2rem);
+        max-width: 420px;
+    }
+}
+
+/* Ссылки и KaTeX в материале: без синего текста (в т.ч. если katex.min.css подключён после темы) */
+.main-content a[href] {
+    color: var(--text-primary);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+}
+
+.main-content .page-header a[href] {
+    color: inherit !important;
+    text-decoration: none !important;
+}
+
+.main-content .katex {
+    color: var(--text-primary) !important;
+}
+
+.main-content .katex * {
+    color: inherit !important;
+}
+
+/* ============================================
+   PWA — установка приложения и обновления
+   ============================================ */
+
+.pwa-install-btn {
+    align-items: center;
+    background: var(--accent-color);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    box-shadow: 0 14px 34px rgba(var(--accent-rgb), 0.28);
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    gap: 0.45rem;
+    left: 1rem;
+    opacity: 0;
+    padding: 0.68rem 0.9rem;
+    pointer-events: none;
+    position: fixed;
+    transform: translateY(10px) scale(0.98);
+    transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+    z-index: 9500;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.pwa-install-btn.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+}
+
+.pwa-install-btn:hover {
+    background: var(--accent-hover);
+}
+
+.pwa-install-btn svg {
+    height: 18px;
+    width: 18px;
+}
+
+.pwa-update-toast,
+.pwa-mini-toast {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+    color: var(--text-primary);
+    opacity: 0;
+    position: fixed;
+    transform: translate(-50%, 12px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 12000;
+}
+
+.pwa-update-toast {
+    align-items: center;
+    border-radius: 18px;
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    display: flex;
+    gap: 0.85rem;
+    left: 50%;
+    max-width: min(92vw, 560px);
+    padding: 0.75rem 0.8rem 0.75rem 1rem;
+}
+
+.pwa-update-toast.is-visible,
+.pwa-mini-toast.is-visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.pwa-update-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.16rem;
+    min-width: 0;
+}
+
+.pwa-update-text strong {
+    font-size: 0.94rem;
+    line-height: 1.15;
+}
+
+.pwa-update-text span {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.25;
+}
+
+.pwa-update-action,
+.pwa-update-close {
+    border: 0;
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.pwa-update-action {
+    background: var(--accent-color);
+    border-radius: 999px;
+    color: #fff;
+    font-size: 0.84rem;
+    font-weight: 700;
+    padding: 0.58rem 0.82rem;
+}
+
+.pwa-update-close {
+    align-items: center;
+    background: var(--bg-tertiary);
+    border-radius: 50%;
+    color: var(--text-secondary);
+    display: inline-flex;
+    font-size: 1.15rem;
+    height: 2rem;
+    justify-content: center;
+    line-height: 1;
+    width: 2rem;
+}
+
+.pwa-mini-toast {
+    border-radius: 999px;
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    font-size: 0.9rem;
+    font-weight: 700;
+    left: 50%;
+    padding: 0.72rem 1rem;
+}
+
+.pwa-install-help {
+    align-items: center;
+    background: rgba(15, 23, 42, 0.56);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    opacity: 0;
+    padding: 1rem;
+    pointer-events: none;
+    position: fixed;
+    transition: opacity 0.2s ease;
+    z-index: 13000;
+}
+
+.pwa-install-help.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.pwa-install-help-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 22px;
+    box-shadow: 0 28px 90px rgba(15, 23, 42, 0.32);
+    color: var(--text-primary);
+    max-width: 520px;
+    padding: 1.45rem;
+    position: relative;
+    transform: translateY(8px) scale(0.98);
+    transition: transform 0.2s ease;
+    width: 100%;
+}
+
+.pwa-install-help.is-visible .pwa-install-help-card {
+    transform: translateY(0) scale(1);
+}
+
+.pwa-install-help-close {
+    align-items: center;
+    background: var(--bg-tertiary);
+    border: 0;
+    border-radius: 50%;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 1.25rem;
+    height: 2.1rem;
+    justify-content: center;
+    line-height: 1;
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    width: 2.1rem;
+}
+
+.pwa-install-help-icon {
+    align-items: center;
+    background: rgba(var(--accent-rgb), 0.1);
+    border-radius: 18px;
+    display: inline-flex;
+    height: 3.4rem;
+    justify-content: center;
+    margin-bottom: 0.95rem;
+    width: 3.4rem;
+}
+
+.pwa-install-help-icon svg {
+    height: 2rem;
+    width: 2rem;
+}
+
+.pwa-install-help h2 {
+    color: var(--text-primary);
+    font-size: 1.45rem;
+    line-height: 1.15;
+    margin: 0 2.4rem 0.55rem 0;
+}
+
+.pwa-install-help-lead,
+.pwa-install-help-note {
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.55;
+    margin: 0;
+}
+
+.pwa-install-help-list {
+    display: grid;
+    gap: 0.65rem;
+    margin: 1rem 0;
+}
+
+.pwa-install-help-list > div {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.82rem 0.9rem;
+}
+
+.pwa-install-help-list strong {
+    color: var(--text-primary);
+    font-size: 0.92rem;
+}
+
+.pwa-install-help-list span {
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+    line-height: 1.45;
+}
+
+body.experimental .pwa-install-btn {
+    background: var(--exp-accent, var(--accent-color));
+    border-color: var(--exp-border, rgba(255, 255, 255, 0.18));
+    color: var(--exp-accent-contrast, #fff);
+}
+
+body.experimental .pwa-update-toast,
+body.experimental .pwa-mini-toast,
+body.experimental .pwa-install-help-card {
+    background: var(--exp-surface, var(--bg-secondary));
+    border-color: var(--exp-border, var(--border-color));
+    color: var(--exp-text, var(--text-primary));
+}
+
+body.experimental .pwa-update-text span {
+    color: var(--exp-text-dim, var(--text-secondary));
+}
+
+body.experimental .pwa-install-help-list > div {
+    background: var(--exp-surface-2, var(--bg-primary));
+    border-color: var(--exp-border, var(--border-color));
+}
+
+@media (max-width: 768px) {
+    body.experimental .pwa-install-btn {
+        bottom: calc(74px + env(safe-area-inset-bottom));
+    }
+
+    .pwa-update-toast {
+        align-items: stretch;
+        border-radius: 20px 20px 0 0;
+        bottom: 0;
+        flex-wrap: wrap;
+        max-width: none;
+        padding: 0.85rem 0.95rem calc(0.95rem + env(safe-area-inset-bottom));
+        width: 100%;
+    }
+
+    .pwa-update-text {
+        flex-basis: calc(100% - 3rem);
+    }
+
+    .pwa-update-action {
+        flex: 1 1 auto;
+    }
+
+    .pwa-install-help {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .pwa-install-help-card {
+        border-radius: 22px 22px 0 0;
+        max-width: none;
+        padding: 1.25rem 1.1rem calc(1.2rem + env(safe-area-inset-bottom));
+    }
+}

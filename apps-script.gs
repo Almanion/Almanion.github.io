@@ -2,7 +2,7 @@
  * matcenter — Google Apps Script backend.
  *
  * Что делает:
- *  - Возвращает все задачи из активного листа в JSON-формате, который ждёт matcenter.js.
+ *  - Возвращает все задачи из активного листа в JSON-формате, который ждут модули matcenter/.
  *  - Поддерживает изменение статуса и подсказки (action=changeStatus / action=setHint),
  *    но только если пришёл админский пароль.
  *
@@ -15,7 +15,7 @@ const ADMIN_PASSWORD = 'CHANGE_ME_admin';  // админский пароль (�
 // =========================================================================
 
 // Ожидаемые заголовки колонок (первая строка листа):
-// Number | NumberText | Description | Status | Hint | Grade
+// TaskId (рекомендуется) | Number | NumberText | Description | Status | Hint | Grade
 
 function doGet(e) {
   return handle(e);
@@ -40,12 +40,12 @@ function handle(e) {
 
     if (action === 'changeStatus') {
       if (!isAdmin) return json({ success: false, error: 'Недостаточно прав' });
-      return changeStatus(params.taskNumber, params.newStatus);
+      return changeStatus(params.taskNumber, params.newStatus, params.grade, params.taskId);
     }
 
     if (action === 'setHint') {
       if (!isAdmin) return json({ success: false, error: 'Недостаточно прав' });
-      return setHint(params.taskNumber, params.hintText || '');
+      return setHint(params.taskNumber, params.hintText || '', params.grade, params.taskId);
     }
 
     if (action) {
@@ -95,49 +95,39 @@ function getTasks(isAdmin) {
 }
 
 // === Изменение статуса =====================================================
-function changeStatus(taskNumber, newStatus) {
+function changeStatus(taskNumber, newStatus, grade, taskId) {
   if (!taskNumber) return json({ success: false, error: 'taskNumber обязателен' });
 
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
   const values = sheet.getDataRange().getValues();
   const headers = values[0].map(function (h) { return String(h || '').trim(); });
 
-  const numCol = findColumn(headers, ['Number', 'number']);
   const statusCol = findColumn(headers, ['Status', 'status']);
-  if (numCol === -1) return json({ success: false, error: 'Колонка Number не найдена' });
   if (statusCol === -1) return json({ success: false, error: 'Колонка Status не найдена' });
 
-  const target = String(taskNumber).trim();
-  for (let i = 1; i < values.length; i++) {
-    if (String(values[i][numCol]).trim() === target) {
-      sheet.getRange(i + 1, statusCol + 1).setValue(newStatus || '');
-      return json({ success: true });
-    }
-  }
-  return json({ success: false, error: 'Задача №' + taskNumber + ' не найдена' });
+  const found = findTaskRow(values, headers, taskNumber, grade, taskId);
+  if (found.error) return json({ success: false, error: found.error });
+
+  sheet.getRange(found.rowIndex + 1, statusCol + 1).setValue(newStatus || '');
+  return json({ success: true });
 }
 
 // === Изменение подсказки ==================================================
-function setHint(taskNumber, hintText) {
+function setHint(taskNumber, hintText, grade, taskId) {
   if (!taskNumber) return json({ success: false, error: 'taskNumber обязателен' });
 
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
   const values = sheet.getDataRange().getValues();
   const headers = values[0].map(function (h) { return String(h || '').trim(); });
 
-  const numCol = findColumn(headers, ['Number', 'number']);
   const hintCol = findColumn(headers, ['Hint', 'hint']);
-  if (numCol === -1) return json({ success: false, error: 'Колонка Number не найдена' });
   if (hintCol === -1) return json({ success: false, error: 'Колонка Hint не найдена' });
 
-  const target = String(taskNumber).trim();
-  for (let i = 1; i < values.length; i++) {
-    if (String(values[i][numCol]).trim() === target) {
-      sheet.getRange(i + 1, hintCol + 1).setValue(hintText || '');
-      return json({ success: true });
-    }
-  }
-  return json({ success: false, error: 'Задача №' + taskNumber + ' не найдена' });
+  const found = findTaskRow(values, headers, taskNumber, grade, taskId);
+  if (found.error) return json({ success: false, error: found.error });
+
+  sheet.getRange(found.rowIndex + 1, hintCol + 1).setValue(hintText || '');
+  return json({ success: true });
 }
 
 // === Утилиты ==============================================================
@@ -153,6 +143,43 @@ function findColumn(headers, candidates) {
     if (idx !== -1) return idx;
   }
   return -1;
+}
+
+function findTaskRow(values, headers, taskNumber, grade, taskId) {
+  const numCol = findColumn(headers, ['Number', 'number']);
+  const gradeCol = findColumn(headers, ['Grade', 'grade']);
+  const taskIdCol = findColumn(headers, ['TaskId', 'taskId', 'ID', 'Id', 'id']);
+
+  if (taskId && taskIdCol !== -1) {
+    const idTarget = String(taskId).trim();
+    const idMatches = [];
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][taskIdCol]).trim() === idTarget) idMatches.push(i);
+    }
+    if (idMatches.length === 1) return { rowIndex: idMatches[0] };
+    if (idMatches.length > 1) {
+      return { error: 'TaskId должен быть уникальным: найдено строк ' + idMatches.length };
+    }
+  }
+
+  if (numCol === -1) return { error: 'Колонка Number не найдена' };
+
+  const numberTarget = String(taskNumber || '').trim();
+  const gradeTarget = String(grade || '').trim();
+  const matches = [];
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][numCol]).trim() !== numberTarget) continue;
+    if (gradeTarget && gradeCol !== -1 && String(values[i][gradeCol]).trim() !== gradeTarget) continue;
+    matches.push(i);
+  }
+
+  if (matches.length === 1) return { rowIndex: matches[0] };
+  if (matches.length === 0) {
+    return { error: 'Задача №' + taskNumber + (gradeTarget ? ' (' + gradeTarget + ')' : '') + ' не найдена' };
+  }
+  return {
+    error: 'Найдено несколько задач №' + taskNumber + '. Добавьте уникальную колонку TaskId или передайте Grade.'
+  };
 }
 
 function json(obj) {
@@ -189,7 +216,7 @@ function json(obj) {
         https://script.google.com/macros/s/AKfycb.../exec
       Скопируйте его.
 
-   8) В docs/matcenter.js (строка ~6) замените значение API_ENDPOINT на этот URL.
+   8) В matcenter/00-core.js замените значение API_ENDPOINT на этот URL.
 
    9) Откройте сайт, введите USER_PASSWORD. Должны загрузиться задачи.
 

@@ -1,0 +1,463 @@
+/* ============================================
+   РћРЎРќРћР’РќР«Р• РЎРўРР›Р Р РџР•Р Р•РњР•РќРќР«Р•
+   ============================================ */
+
+:root {
+    /* Цветовая схема — светлая тема (Slate) */
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #eef2f7;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --accent-color: #2563eb;
+    --accent-hover: #1e40af;
+    --accent-rgb: 37, 99, 235;
+    --primary-color: var(--accent-color);
+    --primary-gradient: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+    --border-color: #d7dee8;
+    --header-bg: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    --header-text: #ffffff;
+    
+    /* Р¦РІРµС‚Р° РґР»СЏ Р±Р»РѕРєРѕРІ */
+    --svg-rod-fill: #c8a464;
+    --svg-rod-stroke: #7a5520;
+    --svg-axis-stroke: #555555;
+    --svg-label-fill: #333333;
+
+    --definition-bg: #eff6ff;
+    --definition-border: #3b82f6;
+    --formula-bg: #eef2ff;
+    --formula-border: #2563eb;
+    --remark-bg: #fffbeb;
+    --remark-border: var(--warning-color);
+    --experiment-bg: #f5f3ff;
+    --experiment-border: #8b5cf6;
+    --derivation-bg: #ecfdf5;
+    --derivation-border: var(--success-color);
+    --theorem-bg: #f5f3ff;
+    --theorem-border: #8b5cf6;
+    --lemma-bg: #f0fdfa;
+    --lemma-border: #0f766e;
+    --example-bg: #fff7ed;
+    --example-border: #f97316;
+    --statement-bg: #eef2ff;
+    --statement-border: #6366f1;
+    --corollary-bg: #f1f5f9;
+    --corollary-border: #64748b;
+    --proof-bg: #ecfdf5;
+    --proof-border: var(--success-color);
+    --exercise-bg: #f8fafc;
+    --exercise-border: #475569;
+    
+    /* Р Р°Р·РјРµСЂС‹ */
+    --sidebar-width: 320px;
+    --border-radius: 10px;
+    --border-radius-sm: 7px;
+    --border-radius-lg: 13px;
+    --spacing: 1.5rem;
+    
+    /* РўРµРЅРё - Р±РѕР»РµРµ РјСЏРіРєРёРµ Рё РґСЂСѓР¶РµР»СЋР±РЅС‹Рµ */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 3px 8px rgba(0, 0, 0, 0.13);
+    --shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.15);
+    --shadow-xl: 0 8px 28px rgba(0, 0, 0, 0.18);
+    --shadow-hover: 0 4px 16px rgba(var(--accent-rgb), 0.18);
+    
+    /* Анимации — явный список свойств вместо all
+       (так браузер не отслеживает изменения всех CSS-свойств подряд,
+        ощутимо меньше work для движка на страницах с сотнями элементов) */
+    /* Кривые ускорения — единый «премиальный» язык движения.
+       --ease-out: easeOutQuint (быстрый старт, мягкое затухание — отзывчиво и стильно)
+       --ease-spring: лёгкий, неназойливый «отскок» для всплывающих элементов */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-spring: cubic-bezier(0.34, 1.45, 0.5, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+    --transition: background-color 0.25s var(--ease-out),
+                  color 0.25s var(--ease-out),
+                  border-color 0.25s var(--ease-out),
+                  box-shadow 0.25s var(--ease-out),
+                  transform 0.25s var(--ease-out),
+                  opacity 0.25s var(--ease-out);
+    --transition-smooth: background-color 0.45s var(--ease-out),
+                        color 0.45s var(--ease-out),
+                        border-color 0.45s var(--ease-out),
+                        box-shadow 0.45s var(--ease-out),
+                        transform 0.45s var(--ease-out),
+                        opacity 0.45s var(--ease-out);
+    --transition-bounce: transform 0.4s var(--ease-spring),
+                        box-shadow 0.4s var(--ease-spring),
+                        background-color 0.28s var(--ease-out),
+                        color 0.28s var(--ease-out),
+                        border-color 0.28s var(--ease-out),
+                        opacity 0.28s var(--ease-out);
+    /* Короткие transitions (для кнопок, ховеров — реагирующих мгновенно). */
+    --transition-fast: background-color 0.14s var(--ease-out),
+                       color 0.14s var(--ease-out),
+                       border-color 0.14s var(--ease-out),
+                       box-shadow 0.14s var(--ease-out),
+                       transform 0.14s var(--ease-out),
+                       opacity 0.14s var(--ease-out);
+    --transition-quick: background-color 0.18s var(--ease-out),
+                        color 0.18s var(--ease-out),
+                        border-color 0.18s var(--ease-out),
+                        box-shadow 0.18s var(--ease-out),
+                        transform 0.18s var(--ease-out),
+                        opacity 0.18s var(--ease-out);
+}
+
+/* РўРµРјРЅР°СЏ С‚РµРјР° */
+body.dark-theme {
+    --bg-primary: #0f172a;
+    --bg-secondary: #141b27;
+    --bg-tertiary: #334155;
+    --text-primary: #f1f5f9;
+    --text-secondary: #a8b8cc;
+    --accent-color: #3b82f6;
+    --accent-hover: #60a5fa;
+    --accent-rgb: 59, 130, 246;
+    --primary-color: var(--accent-color);
+    --primary-gradient: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+    --border-color: #334155;
+    --header-bg: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+    --header-text: #ffffff;
+
+    --svg-rod-fill: #8f6830;
+    --svg-rod-stroke: #c8a464;
+    --svg-axis-stroke: #94a3b8;
+    --svg-label-fill: #cbd5e1;
+    
+    /* Р¦РІРµС‚Р° РґР»СЏ Р±Р»РѕРєРѕРІ - С‚РµРјРЅР°СЏ С‚РµРјР° */
+    --definition-bg: #19365d31;
+    --definition-border: #438bff;
+    --formula-bg: #1e3a5f;
+    --formula-border: #60a5fa;
+    --remark-bg: #4a3f1f;
+    --remark-border: #fbbe24a2;
+    --experiment-bg: #2e106598;
+    --experiment-border: #a78bfa;
+    --derivation-bg: #1f3f2f;
+    --derivation-border: #4ade80;
+    --theorem-bg: #2e1065a0;
+    --theorem-border: #a78bfa;
+    --lemma-bg: #1a3a3a;
+    --lemma-border: #5eead4;
+    --example-bg: #3a2a1a;
+    --example-border: #fb923c;
+    --statement-bg: #1e1b4b80;
+    --statement-border: #818cf8;
+    --corollary-bg: #1e293b80;
+    --corollary-border: #94a3b8;
+    --proof-bg: #1f3f2f;
+    --proof-border: #4ade80;
+    --exercise-bg: #1e293b80;
+    --exercise-border: #94a3b8;
+    
+    /* РўРµРЅРё - С‚РµРјРЅР°СЏ С‚РµРјР° (Р±РѕР»РµРµ РјСЏРіРєРёРµ) */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.6);
+    --shadow-hover: 0 6px 24px rgba(var(--accent-rgb), 0.3);
+}
+
+/* =====================================================================
+   Sepia / Reader Mode — тёплая бумажная палитра.
+   Для длинного чтения конспектов: глаза не устают, контраст ниже,
+   акцент тёплый (terracotta).
+   ===================================================================== */
+body.sepia-theme {
+    --bg-primary: #f4ecd8;
+    --bg-secondary: #faf3e0;
+    --bg-tertiary: #e8dec7;
+    --text-primary: #3d2f1e;
+    --text-secondary: #6b5a40;
+    --accent-color: #b45309;
+    --accent-hover: #92400e;
+    --accent-rgb: 180, 83, 9;
+    --primary-color: var(--accent-color);
+    --primary-gradient: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+    --border-color: #d4c39d;
+    --header-bg: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+    --header-text: #faf3e0;
+
+    --svg-rod-fill: #b9844a;
+    --svg-rod-stroke: #5e4030;
+    --svg-axis-stroke: #6b5a40;
+    --svg-label-fill: #3d2f1e;
+
+    /* Блоки — тёплые бежевые оттенки, контуры — тёплые коричневые/амбер */
+    --definition-bg: #ece2c8;
+    --definition-border: #92400e;
+    --formula-bg: #ebe0c5;
+    --formula-border: #b45309;
+    --remark-bg: #f1e6c8;
+    --remark-border: #ca8a04;
+    --experiment-bg: #ece1c4;
+    --experiment-border: #a16207;
+    --derivation-bg: #e6dcc1;
+    --derivation-border: #5e4030;
+    --theorem-bg: #ece1c4;
+    --theorem-border: #8b5a3c;
+    --lemma-bg: #e7ddc2;
+    --lemma-border: #5e4030;
+    --example-bg: #f0e5cb;
+    --example-border: #b45309;
+    --statement-bg: #ebe0c5;
+    --statement-border: #92400e;
+    --corollary-bg: #ede4cb;
+    --corollary-border: #6b5a40;
+    --proof-bg: #e6dcc1;
+    --proof-border: #5e4030;
+    --exercise-bg: #ede4cb;
+    --exercise-border: #6b5a40;
+
+    /* Тени — тёплые, с коричневым оттенком */
+    --shadow-sm: 0 1px 3px rgba(93, 70, 40, 0.12);
+    --shadow-md: 0 3px 8px rgba(93, 70, 40, 0.15);
+    --shadow-lg: 0 6px 18px rgba(93, 70, 40, 0.18);
+    --shadow-xl: 0 8px 28px rgba(93, 70, 40, 0.22);
+    --shadow-hover: 0 4px 16px rgba(var(--accent-rgb), 0.2);
+}
+
+/* Семантические цвета — тоже теплее на sepia, чтобы не было «синтетических» зелёных/красных */
+body.sepia-theme {
+    --success-color: #5e7a3a;
+    --success-hover: #4a6328;
+    --success-rgb: 94, 122, 58;
+    --warning-color: #b45309;
+    --warning-hover: #92400e;
+    --warning-rgb: 180, 83, 9;
+    --error-color: #a3361a;
+    --error-hover: #7c2410;
+    --error-rgb: 163, 54, 26;
+}
+
+/* =====================================================================
+   Midnight Mono — глубокий монохромный тёмный с фиолетовым акцентом.
+   Стилистика: Linear / Vercel / Notion-dark. Минимум цвета на фоне,
+   фиолет работает только как акцент. Глубже и спокойнее, чем dark-theme.
+   ===================================================================== */
+body.midnight-theme {
+    --bg-primary: #0a0a0b;
+    --bg-secondary: #131316;
+    --bg-tertiary: #1f1f23;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --accent-color: #a78bfa;
+    --accent-hover: #c4b5fd;
+    --accent-rgb: 167, 139, 250;
+    --primary-color: var(--accent-color);
+    --primary-gradient: linear-gradient(135deg, var(--accent-color) 0%, #7c3aed 100%);
+    --border-color: #27272a;
+    --header-bg: linear-gradient(135deg, #18181b 0%, #27272a 100%);
+    --header-text: #fafafa;
+
+    --svg-rod-fill: #52525b;
+    --svg-rod-stroke: #a1a1aa;
+    --svg-axis-stroke: #71717a;
+    --svg-label-fill: #d4d4d8;
+
+    /* Блоки — нейтральные серые поверхности, бордюры — холодные акценты */
+    --definition-bg: #18181b;
+    --definition-border: #a78bfa;
+    --formula-bg: #1a1a1d;
+    --formula-border: #c4b5fd;
+    --remark-bg: #1c1a16;
+    --remark-border: #fbbf24;
+    --experiment-bg: #19171f;
+    --experiment-border: #a78bfa;
+    --derivation-bg: #161a18;
+    --derivation-border: #4ade80;
+    --theorem-bg: #19171f;
+    --theorem-border: #a78bfa;
+    --lemma-bg: #161a1a;
+    --lemma-border: #5eead4;
+    --example-bg: #1d1a16;
+    --example-border: #fb923c;
+    --statement-bg: #18181b;
+    --statement-border: #818cf8;
+    --corollary-bg: #18181b;
+    --corollary-border: #71717a;
+    --proof-bg: #161a18;
+    --proof-border: #4ade80;
+    --exercise-bg: #18181b;
+    --exercise-border: #71717a;
+
+    /* Тени — плотные глубокие чёрные (на тёмном фоне глубина читается лучше) */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.6);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.7);
+    --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.8);
+    --shadow-hover: 0 6px 20px rgba(var(--accent-rgb), 0.25);
+}
+
+/* Семантические цвета на midnight — приглушённые, не яркие */
+body.midnight-theme {
+    --success-color: #4ade80;
+    --success-hover: #86efac;
+    --success-rgb: 74, 222, 128;
+    --warning-color: #fbbf24;
+    --warning-hover: #fcd34d;
+    --warning-rgb: 251, 191, 36;
+    --error-color: #f87171;
+    --error-hover: #fca5a5;
+    --error-rgb: 248, 113, 113;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* ============================================
+   ИНЛАЙН-ИКОНКИ (замена эмодзи)
+   Масштабируются с текстом, цвет = currentColor, монохром.
+   ============================================ */
+.eic {
+    display: inline-block;
+    width: 1.05em;
+    height: 1.05em;
+    vertical-align: -0.18em;
+    background-color: currentColor;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-image: var(--eic-img);
+    mask-image: var(--eic-img);
+    flex-shrink: 0;
+}
+.eic-bulb  { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18h6'/%3E%3Cpath d='M10 22h4'/%3E%3Cpath d='M12 2a7 7 0 0 0-4 12.7c.6.4 1 1.1 1 1.8V18h6v-1.5c0-.7.4-1.4 1-1.8A7 7 0 0 0 12 2z'/%3E%3C/svg%3E"); }
+.eic-micro { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 18h8'/%3E%3Cpath d='M3 22h18'/%3E%3Cpath d='M14 22a7 7 0 1 0 0-14h-1'/%3E%3Cpath d='M9 14h2'/%3E%3Cpath d='M9 12a2 2 0 0 1-2-2V6h4v4a2 2 0 0 1-2 2Z'/%3E%3Cpath d='M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3'/%3E%3C/svg%3E"); }
+.eic-check { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E"); }
+.eic-x     { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='M6 6l12 12'/%3E%3C/svg%3E"); }
+.eic-book  { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z'/%3E%3Cpath d='M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z'/%3E%3C/svg%3E"); }
+.eic-pen   { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z'/%3E%3C/svg%3E"); }
+.eic-flask { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 3h6'/%3E%3Cpath d='M10 3v6.5L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V3'/%3E%3Cpath d='M7 14h10'/%3E%3C/svg%3E"); }
+.eic-warn  { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E"); }
+.eic-folder{ --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'/%3E%3C/svg%3E"); }
+.eic-search{ --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E"); }
+.eic-save  { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z'/%3E%3Cpath d='M17 21v-8H7v8'/%3E%3Cpath d='M7 3v5h8'/%3E%3C/svg%3E"); }
+.eic-trash { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6h18'/%3E%3Cpath d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/%3E%3C/svg%3E"); }
+.eic-clip  { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/%3E%3Crect x='8' y='2' width='8' height='4' rx='1'/%3E%3C/svg%3E"); }
+.eic-globe { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M2 12h20'/%3E%3Cpath d='M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z'/%3E%3C/svg%3E"); }
+.eic-file  { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 2v6h6'/%3E%3Cpath d='M16 13H8'/%3E%3Cpath d='M16 17H8'/%3E%3C/svg%3E"); }
+.eic-alert { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7.86 2h8.28L22 7.86v8.28L16.14 22H7.86L2 16.14V7.86z'/%3E%3Cpath d='M12 8v4'/%3E%3Cpath d='M12 16h.01'/%3E%3C/svg%3E"); }
+.eic-refresh { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M23 4v6h-6'/%3E%3Cpath d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/%3E%3C/svg%3E"); }
+.eic-gear  { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'/%3E%3C/svg%3E"); }
+.eic-bookmark { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z'/%3E%3C/svg%3E"); }
+.eic-chat  { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z'/%3E%3C/svg%3E"); }
+.eic-clock { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpolyline points='12 6 12 12 16 14'/%3E%3C/svg%3E"); }
+.eic-thumb { --eic-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3z'/%3E%3Cpath d='M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3'/%3E%3C/svg%3E"); }
+
+/* ============================================
+   ПЛАВНЫЙ HOVER БЕЗ «МОРГАНИЯ»
+   Причина мигания: transform (сдвиг) на :hover поднимает элемент
+   на отдельный GPU-слой, который в конце обратной анимации
+   разрушается — на один кадр элемент «пропадает». Особенно остро
+   с overflow:hidden + border-radius (баг отрисовки скруглённого слоя).
+   Решение: на :hover НЕ двигаем элемент (transform убран полностью),
+   обратная связь — мягкая тень и рамка. Переходы плавные (ease-out)
+   и быстрые (~0.24s), без резких остановок.
+   ============================================ */
+.subject-card,
+.nav-link, .task-card, .stat-card,
+.definition-box, .formula-box, .remark-box, .experiment-box, .derivation-box,
+.theorem-box, .lemma-box, .example-box, .statement-box, .corollary-box,
+.proof-box, .properties-box {
+    transition: box-shadow 0.24s cubic-bezier(0.33, 1, 0.68, 1),
+                border-color 0.24s cubic-bezier(0.33, 1, 0.68, 1),
+                background-color 0.24s cubic-bezier(0.33, 1, 0.68, 1),
+                color 0.24s cubic-bezier(0.33, 1, 0.68, 1) !important;
+}
+body:not(.no-hover) .subject-card:hover,
+body:not(.no-hover) .nav-link:hover,
+body:not(.no-hover) .task-card:hover,
+body:not(.no-hover) .stat-card:hover,
+body:not(.no-hover) .toggle-derivation:hover,
+body:not(.no-hover) .toggle-proof:hover,
+body:not(.no-hover) .definition-box:hover,
+body:not(.no-hover) .formula-box:hover,
+body:not(.no-hover) .remark-box:hover,
+body:not(.no-hover) .experiment-box:hover,
+body:not(.no-hover) .derivation-box:hover,
+body:not(.no-hover) .theorem-box:hover,
+body:not(.no-hover) .lemma-box:hover,
+body:not(.no-hover) .example-box:hover,
+body:not(.no-hover) .statement-box:hover,
+body:not(.no-hover) .corollary-box:hover,
+body:not(.no-hover) .proof-box:hover,
+body:not(.no-hover) .properties-box:hover {
+    transform: none !important;
+}
+
+body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.8;
+    overflow-x: hidden;
+    transition: background-color 0.15s ease,
+                color 0.15s ease;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: 0.01em;
+}
+
+/* РџСЂРµРґРѕС‚РІСЂР°С‰РµРЅРёРµ РїСЂРѕРєСЂСѓС‚РєРё body РєРѕРіРґР° sidebar РѕС‚РєСЂС‹С‚ РЅР° РјРѕР±РёР»СЊРЅС‹С… */
+body.sidebar-open,
+body.modal-open {
+    overflow: hidden;
+}
+
+/* Когда открыта модалка настроек — прячем плавающие кнопки (режим заучивания,
+   стрелка вверх, FAB-кнопки), иначе они просвечивают поверх затемнения. */
+body.modal-open .study-mode-toggle,
+body.modal-open .scroll-to-top,
+body.modal-open .menu-toggle,
+body.modal-open .settings-button {
+    visibility: hidden !important;
+}
+
+/* Дополнительно фиксируем body на мобильных, чтобы фон под модалкой не скроллился
+   при свайпе на iOS — overflow: hidden один не справляется. */
+@media (max-width: 768px) {
+    body.modal-open {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+    }
+}
+
+/* РћРІРµСЂР»РµР№ РґР»СЏ sidebar РЅР° РјРѕР±РёР»СЊРЅС‹С… */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+}
+

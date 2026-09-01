@@ -1,0 +1,2120 @@
+/* ============================================
+   РќРћР’РћР“РћР”РќРР™ Р’РђР™Р‘
+   ============================================ */
+
+/* РљРЅРѕРїРєР° РЅРѕРІРѕРіРѕРґРЅРµРіРѕ СЂРµР¶РёРјР° */
+.ny-toggle {
+    display: none !important;
+    background: linear-gradient(135deg, #2d5016 0%, #4a7c2e 100%);
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    margin-left: 0.5rem;
+    position: relative;
+}
+
+/* Р’РёР·СѓР°Р»СЊРЅРѕРµ СЂР°Р·РґРµР»РµРЅРёРµ РєРЅРѕРїРєРё */
+.ny-toggle::before {
+    content: '';
+    position: absolute;
+    left: -0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 60%;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.ny-toggle:hover {
+    transform: scale(1.15) rotate(5deg);
+    box-shadow: 0 4px 16px rgba(74, 124, 46, 0.4);
+}
+
+.ny-toggle:active {
+    transform: scale(0.95);
+}
+
+/* РљРѕРЅС‚РµР№РЅРµСЂ РґР»СЏ СЃРЅРµРіР° */
+.snow-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+}
+
+/* РЎРЅРµР¶РёРЅРєР° */
+.snowflake {
+    position: fixed;
+    left: 0;
+    top: 0;
+    color: #a0c4e8;
+    pointer-events: none;
+    user-select: none;
+    text-shadow: 0 0 5px rgba(160, 196, 232, 0.6);
+    will-change: transform, opacity;
+}
+
+/* РЎРЅРµР¶РёРЅРєРё РґР»СЏ С‚С‘РјРЅРѕР№ С‚РµРјС‹ */
+body.dark-theme .snowflake {
+    color: #fff;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+}
+
+/* РћРїС‚РёРјРёР·Р°С†РёСЏ РґР»СЏ РјРѕР±РёР»СЊРЅС‹С… СѓСЃС‚СЂРѕР№СЃС‚РІ */
+@media (max-width: 768px) {
+    .snowflake {
+        /* РЈРїСЂРѕС‰Р°РµРј Р°РЅРёРјР°С†РёСЋ РЅР° РјРѕР±РёР»СЊРЅС‹С… РґР»СЏ Р»СѓС‡С€РµР№ РїСЂРѕРёР·РІРѕРґРёС‚РµР»СЊРЅРѕСЃС‚Рё */
+        will-change: transform;
+        transform: translateZ(0); /* Р’РєР»СЋС‡Р°РµРј Р°РїРїР°СЂР°С‚РЅРѕРµ СѓСЃРєРѕСЂРµРЅРёРµ */
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+    }
+}
+
+/* РљРѕРЅС‚РµР№РЅРµСЂ РґР»СЏ РїР°СЃС…Р°Р»РѕРє */
+.easter-eggs-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10000;
+    overflow: hidden;
+}
+
+/* РџР°СЃС…Р°Р»РєР° (РІСЃРїР»С‹РІР°СЋС‰РёР№ emoji) */
+.easter-egg {
+    position: fixed;
+    font-size: 2rem;
+    pointer-events: none;
+    user-select: none;
+    animation: float-up 2s ease-out forwards;
+    z-index: 10001;
+}
+
+@keyframes float-up {
+    0% {
+        transform: translateY(0) scale(0.5) rotate(0deg);
+        opacity: 1;
+    }
+    50% {
+        transform: translateY(-100px) scale(1.2) rotate(180deg);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(-200px) scale(0.8) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* РЈРІРµРґРѕРјР»РµРЅРёРµ Рѕ РІРєР»СЋС‡РµРЅРёРё СЂРµР¶РёРјР° */
+.ny-notification {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    background: linear-gradient(135deg, #2d5016 0%, #4a7c2e 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transform: translateX(400px);
+    transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    z-index: 10002;
+    pointer-events: none;
+}
+
+.ny-notification.show {
+    transform: translateX(0);
+}
+
+/* РќРѕРІРѕРіРѕРґРЅРёРµ СѓРєСЂР°С€РµРЅРёСЏ РґР»СЏ РєР°СЂС‚РѕС‡РµРє СЃС‚Р°С‚РёСЃС‚РёРєРё */
+body.new-year-mode .stat-card.ny-decorated {
+    position: relative;
+    overflow: visible;
+}
+
+body.new-year-mode .stat-card.ny-decorated::before {
+    content: '✨';
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 1.5rem;
+    animation: sparkle 2s ease-in-out infinite;
+}
+
+body.new-year-mode .stat-card.ny-decorated:nth-child(2)::before {
+    content: '🎁';
+}
+
+body.new-year-mode .stat-card.ny-decorated:nth-child(3)::before {
+    content: '⭐';
+}
+
+body.new-year-mode .stat-card.ny-decorated:nth-child(4)::before {
+    content: '🎄';
+}
+
+@keyframes sparkle {
+    0%, 100% {
+        transform: scale(1) rotate(-20deg);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.3) rotate(20deg);
+        opacity: 1;
+    }
+}
+
+/* РќРѕРІРѕРіРѕРґРЅРёР№ СЌС„С„РµРєС‚ РґР»СЏ header */
+body.new-year-mode .page-header {
+    position: relative;
+}
+
+body.new-year-mode .page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 20% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 50%, rgba(74, 124, 46, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+/* РђРЅРёРјР°С†РёСЏ РґР»СЏ РєРЅРѕРїРєРё РЅРѕРІРѕРіРѕРґРЅРµРіРѕ СЂРµР¶РёРјР° РІ Р°РєС‚РёРІРЅРѕРј СЃРѕСЃС‚РѕСЏРЅРёРё */
+body.new-year-mode .ny-toggle {
+    animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.9);
+    }
+}
+
+/* РњРѕРґР°Р»СЊРЅРѕРµ РѕРєРЅРѕ РЅР°СЃС‚СЂРѕРµРє */
+.ny-settings-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10003;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.ny-settings-modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.ny-settings-content {
+    background: var(--bg-primary);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalSlideIn 0.42s var(--ease-spring);
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: scale(0.96) translateY(8px);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+.ny-settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 2px solid var(--border-color);
+    background: linear-gradient(135deg, #2d5016 0%, #4a7c2e 100%);
+    border-radius: 20px 20px 0 0;
+}
+
+.ny-settings-header h3 {
+    color: white;
+    font-size: 1.3rem;
+    margin: 0;
+    font-weight: 600;
+}
+
+.ny-settings-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.ny-settings-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.ny-settings-body {
+    padding: 1.5rem;
+}
+
+.ny-setting-item {
+    margin-bottom: 1.5rem;
+}
+
+.ny-setting-item:last-child {
+    margin-bottom: 0;
+}
+
+.ny-setting-item label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ny-setting-item label > span:first-child {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.ny-setting-item input[type="range"] {
+    width: 100%;
+    height: 8px;
+    border-radius: 5px;
+    background: var(--bg-tertiary);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.ny-setting-item input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2d5016 0%, #4a7c2e 100%);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(74, 124, 46, 0.4);
+    transition: var(--transition);
+}
+
+.ny-setting-item input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 12px rgba(74, 124, 46, 0.6);
+}
+
+.ny-setting-item input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2d5016 0%, #4a7c2e 100%);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 8px rgba(74, 124, 46, 0.4);
+    transition: var(--transition);
+}
+
+.ny-setting-item input[type="range"]::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 12px rgba(74, 124, 46, 0.6);
+}
+
+.ny-setting-value {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-align: right;
+}
+
+.ny-settings-footer {
+    display: flex;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-top: 2px solid var(--border-color);
+    background: var(--bg-secondary);
+    border-radius: 0 0 20px 20px;
+}
+
+.ny-settings-reset,
+.ny-settings-apply {
+    flex: 1;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.ny-settings-reset {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.ny-settings-reset:hover {
+    background: var(--border-color);
+    transform: translateY(-2px);
+}
+
+.ny-settings-apply {
+    background: linear-gradient(135deg, #2d5016 0%, #4a7c2e 100%);
+    color: white;
+}
+
+.ny-settings-apply:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(74, 124, 46, 0.4);
+}
+
+/* РђРґР°РїС‚Р°С†РёСЏ РґР»СЏ РјРѕР±РёР»СЊРЅС‹С… СѓСЃС‚СЂРѕР№СЃС‚РІ */
+@media (max-width: 768px) {
+    .ny-notification {
+        top: 80px;
+        right: 10px;
+        left: 10px;
+        text-align: center;
+        font-size: 1rem;
+        padding: 0.8rem 1rem;
+    }
+
+    .easter-egg {
+        font-size: 1.5rem;
+    }
+    
+    .ny-toggle {
+        width: 36px;
+        height: 36px;
+        font-size: 1.1rem;
+        margin-left: 0.3rem;
+    }
+    
+    .ny-toggle::before {
+        left: -0.3rem;
+    }
+    
+    .ny-settings-content {
+        width: 95%;
+        max-height: 85vh;
+    }
+    
+    .ny-settings-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .ny-settings-body {
+        padding: 1rem;
+    }
+    
+    .ny-settings-footer {
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .ny-toggle {
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
+        margin-left: 0.25rem;
+    }
+    
+    .ny-toggle::before {
+        left: -0.25rem;
+        height: 50%;
+    }
+}
+
+/* РўРµРјРЅР°СЏ С‚РµРјР° РґР»СЏ РЅРѕРІРѕРіРѕРґРЅРёС… СЌР»РµРјРµРЅС‚РѕРІ */
+body.dark-theme .ny-notification {
+    background: linear-gradient(135deg, #1a3310 0%, #2d5016 100%);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme .ny-toggle {
+    background: linear-gradient(135deg, #1a3310 0%, #2d5016 100%);
+}
+
+body.dark-theme .ny-toggle:hover {
+    box-shadow: 0 4px 16px rgba(42, 74, 26, 0.6);
+}
+
+/* Р­С„С„РµРєС‚ СЃРЅРµРіР° РЅР° Р·Р°РґР°С‡Р°С… РїСЂРё РЅР°РІРµРґРµРЅРёРё */
+body.new-year-mode .task-card:hover::after {
+    content: '❄️';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 1.2rem;
+    opacity: 0;
+    animation: fade-in-snow 0.5s ease forwards;
+    z-index: 1;
+    pointer-events: none;
+}
+
+@keyframes fade-in-snow {
+    to {
+        opacity: 0.7;
+    }
+}
+
+/* РЎС‚РёР»Рё РґР»СЏ С‡РµРєР±РѕРєСЃР° РІ РЅР°СЃС‚СЂРѕР№РєР°С… */
+.ny-setting-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    cursor: pointer;
+    flex-direction: row !important;
+}
+
+.ny-setting-checkbox input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #4a7c2e;
+}
+
+.ny-setting-checkbox span {
+    font-weight: 600 !important;
+}
+
+.ny-setting-hint {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.3rem;
+    padding-left: 28px;
+}
+
+/* РџСЂРµРґСѓРїСЂРµР¶РґРµРЅРёРµ Рѕ РїСЂРѕРёР·РІРѕРґРёС‚РµР»СЊРЅРѕСЃС‚Рё */
+.ny-setting-warning {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    padding: 0.8rem 1rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    border: 2px solid #fbbf24;
+}
+
+/* РЎС‚РёР»РёР·Р°С†РёСЏ РїРѕР»Р·СѓРЅРєР° РєРѕР»РёС‡РµСЃС‚РІР° РїСЂРё Р±РѕР»СЊС€РѕРј Р·РЅР°С‡РµРЅРёРё */
+.ny-setting-item input[type="range"].high-count::-webkit-slider-thumb {
+    background: linear-gradient(135deg, var(--error-hover) 0%, var(--error-color) 100%);
+    box-shadow: 0 2px 8px rgba(var(--error-rgb), 0.4);
+}
+
+.ny-setting-item input[type="range"].high-count::-webkit-slider-thumb:hover {
+    box-shadow: 0 4px 12px rgba(var(--error-rgb), 0.6);
+}
+
+.ny-setting-item input[type="range"].high-count::-moz-range-thumb {
+    background: linear-gradient(135deg, var(--error-hover) 0%, var(--error-color) 100%);
+    box-shadow: 0 2px 8px rgba(var(--error-rgb), 0.4);
+}
+
+.ny-setting-item input[type="range"].high-count::-moz-range-thumb:hover {
+    box-shadow: 0 4px 12px rgba(var(--error-rgb), 0.6);
+}
+
+/* ============================================
+   TELEGRAM РљРћРњРњРЈРќРРљРђР¦РРЇ
+   ============================================ */
+
+/* РљРѕРЅС‚РµР№РЅРµСЂ РґР»СЏ СѓРІРµРґРѕРјР»РµРЅРёР№ */
+.telegram-notifications-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10005;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 380px;
+    pointer-events: none;
+}
+
+/* РЈРІРµРґРѕРјР»РµРЅРёРµ */
+.telegram-notification {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transform: translateX(400px);
+    opacity: 0;
+    transition: var(--transition-bounce);
+    pointer-events: auto;
+    position: relative;
+    max-width: 380px;
+    word-wrap: break-word;
+}
+
+.telegram-notification.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.telegram-notification-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.telegram-notification-icon {
+    font-size: 1.2rem;
+}
+
+.telegram-notification-title {
+    font-size: 0.95rem;
+}
+
+.telegram-notification-body {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    opacity: 0.95;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.telegram-notification-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.telegram-notification-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* РџР»Р°РІР°СЋС‰Р°СЏ РєРЅРѕРїРєР° С‡Р°С‚Р° */
+.telegram-chat-button {
+    position: fixed;
+    bottom: 2rem;
+    left: 2rem;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.8rem;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+    transition: var(--transition);
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.telegram-chat-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 32px rgba(102, 126, 234, 0.6);
+}
+
+.telegram-chat-button:active {
+    transform: scale(0.95);
+}
+
+/* Р”РёР°Р»РѕРіРѕРІРѕРµ РѕРєРЅРѕ */
+.telegram-dialog {
+    position: fixed;
+    bottom: 100px;
+    left: 20px;
+    width: 400px;
+    max-width: calc(100vw - 40px);
+    height: 500px;
+    max-height: calc(100vh - 140px);
+    max-height: calc(100dvh - 140px);
+    background: var(--bg-primary);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    transition: var(--transition-bounce);
+}
+
+.telegram-dialog.hidden {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+    pointer-events: none;
+}
+
+.telegram-dialog-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 20px 20px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.telegram-dialog-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.telegram-close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.telegram-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.telegram-dialog-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+.telegram-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.telegram-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.telegram-messages::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+}
+
+.telegram-messages::-webkit-scrollbar-thumb {
+    background: var(--accent-color);
+    border-radius: 3px;
+}
+
+.telegram-welcome-message {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    color: var(--text-primary);
+    padding: 1rem;
+    border-radius: 12px;
+    border-left: 4px solid #667eea;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.telegram-message {
+    max-width: 80%;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    word-wrap: break-word;
+    animation: messageSlideIn 0.3s ease;
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.telegram-message-user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px 12px 4px 12px;
+}
+
+.telegram-message-admin {
+    align-self: flex-start;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px 12px 12px 4px;
+}
+
+.telegram-message-system {
+    align-self: center;
+    background: rgba(102, 126, 234, 0.1);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    max-width: 90%;
+    text-align: center;
+}
+
+.telegram-message-text {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 0.25rem;
+}
+
+.telegram-message-time {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    text-align: right;
+}
+
+.telegram-input-container {
+    padding: 1rem;
+    background: var(--bg-primary);
+    border-top: 2px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+#telegramMessageInput {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: none;
+    transition: border-color 0.3s ease;
+}
+
+#telegramMessageInput:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.telegram-send-btn {
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.telegram-send-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.telegram-send-btn:active {
+    transform: translateY(0);
+}
+
+/* РђРґР°РїС‚Р°С†РёСЏ РґР»СЏ РјРѕР±РёР»СЊРЅС‹С… */
+@media (max-width: 768px) {
+    .telegram-notifications-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+    
+    .telegram-notification {
+        max-width: 100%;
+    }
+    
+    .telegram-chat-button {
+        bottom: 1rem;
+        left: 1rem;
+        width: 56px;
+        height: 56px;
+        font-size: 1.6rem;
+    }
+    
+    .telegram-dialog {
+        bottom: 80px;
+        left: 10px;
+        right: 10px;
+        width: calc(100vw - 20px);
+        height: 450px;
+        max-height: calc(100vh - 100px);
+        max-height: calc(100dvh - 100px);
+    }
+    
+    .telegram-dialog-header h3 {
+        font-size: 1rem;
+    }
+    
+    .telegram-message {
+        max-width: 85%;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .telegram-chat-button {
+        width: 52px;
+        height: 52px;
+        font-size: 1.5rem;
+    }
+    
+    .telegram-dialog {
+        bottom: 70px;
+        height: 400px;
+    }
+    
+    .telegram-dialog-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .telegram-dialog-header h3 {
+        font-size: 0.95rem;
+    }
+    
+    .telegram-messages {
+        padding: 0.75rem;
+    }
+    
+    .telegram-input-container {
+        padding: 0.75rem;
+    }
+    
+    #telegramMessageInput {
+        font-size: 0.9rem;
+        padding: 0.65rem;
+    }
+    
+    .telegram-send-btn {
+        padding: 0.65rem 1.25rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* РўРµРјРЅР°СЏ С‚РµРјР° */
+body.dark-theme .telegram-welcome-message {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+}
+
+/* ============================================
+   РњР•РќР® РќРђРЎРўР РћР•Рљ
+   ============================================ */
+
+/* РљРЅРѕРїРєР° РЅР°СЃС‚СЂРѕРµРє */
+.settings-button {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.6rem;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    transition: var(--transition);
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse-subtle 3s ease-in-out infinite;
+    /* РўРѕС‡РЅРѕРµ С†РµРЅС‚СЂРёСЂРѕРІР°РЅРёРµ СЌРјРѕРґР·Рё РґР»СЏ РєРѕСЂСЂРµРєС‚РЅРѕРіРѕ РІСЂР°С‰РµРЅРёСЏ */
+    line-height: 1;
+    text-align: center;
+    padding: 0;
+    text-indent: 0;
+    transform-origin: center center;
+}
+
+@keyframes pulse-subtle {
+    0%, 100% {
+        box-shadow: var(--shadow-lg);
+    }
+    50% {
+        box-shadow: 0 8px 32px rgba(var(--accent-rgb), 0.4);
+    }
+}
+
+.settings-button:hover {
+    transform: scale(1.1) rotate(90deg);
+    box-shadow: 0 12px 40px rgba(var(--accent-rgb), 0.5);
+}
+
+.settings-button:active {
+    transform: scale(0.95);
+}
+
+/* РњРѕРґР°Р»СЊРЅРѕРµ РѕРєРЅРѕ РЅР°СЃС‚СЂРѕРµРє */
+.settings-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10110; /* выше плавающих кнопок (study-mode-toggle 10050, FAB-ов), иначе они вылезают поверх модалки */
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.settings-modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.settings-modal-content {
+    background: var(--bg-primary);
+    border-radius: 24px;
+    box-shadow: 0 24px 70px -16px rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--border-color);
+    max-width: 620px;
+    width: 90%;
+    max-height: 85vh;
+    /* Скролл переехал внутрь .settings-modal-body, тут — hidden,
+       чтобы скроллбар не накладывался на закруглённые углы */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    /* Анимацию входа НЕ держим тут (иначе она проигрывалась на этапе создания,
+       при закрытом окне, и могла «дёргаться»). Запускаем её только при открытии —
+       см. правило .settings-modal:not(.hidden) .settings-modal-content ниже. */
+    transition: background-color 0.3s ease;
+}
+
+/* Плавный вход модалки настроек ИМЕННО при открытии. Спокойный ease-out
+   без overshoot — чтобы не выглядело как «переоткрытие пару раз». */
+.settings-modal:not(.hidden) .settings-modal-content {
+    animation: modalSlideIn 0.28s ease-out;
+}
+
+.settings-modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.settings-modal-body::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+}
+
+.settings-modal-body::-webkit-scrollbar-thumb {
+    background: var(--accent-color);
+    border-radius: 4px;
+}
+
+.settings-modal-header {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 1.35rem 1.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 24px 24px 0 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-modal-header h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.settings-close-btn {
+    background: var(--bg-tertiary);
+    border: none;
+    color: var(--text-secondary);
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+
+.settings-close-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+body:not(.no-hover) .settings-close-btn:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+
+.settings-modal-body {
+    padding: 2rem;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+/* Секция настроек — без разделительных полосок */
+.settings-section {
+    margin-bottom: 1.85rem;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.settings-section:last-of-type {
+    margin-bottom: 0;
+}
+
+.settings-section h3 {
+    color: var(--text-primary);
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.settings-option {
+    margin-top: 1rem;
+}
+
+/* Р’С‹Р±РѕСЂ С‚РµРјС‹ */
+.theme-selector {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.theme-option {
+    background: var(--bg-secondary);
+    border: 1.5px solid var(--border-color);
+    border-radius: 14px;
+    padding: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+body:not(.no-hover) .theme-option:hover {
+    border-color: var(--accent-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.theme-option.active {
+    border-color: var(--accent-color);
+    background: rgba(var(--accent-rgb), 0.07);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.14);
+}
+
+.theme-preview {
+    width: 100%;
+    height: 62px;
+    border-radius: 9px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-sm);
+}
+
+.light-preview {
+    background: #ffffff;
+}
+
+.dark-preview {
+    background: #0f172a;
+}
+
+.sepia-preview {
+    background: #faf3e0;
+}
+
+.midnight-preview {
+    background: #0a0a0b;
+}
+
+.preview-header {
+    height: 18px;
+}
+
+.light-preview .preview-header {
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+}
+
+.dark-preview .preview-header {
+    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+}
+
+.sepia-preview .preview-header {
+    background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+}
+
+.midnight-preview .preview-header {
+    background: linear-gradient(135deg, #18181b 0%, #27272a 100%);
+    border-bottom: 1px solid #a78bfa;
+}
+
+.preview-content {
+    flex: 1;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.light-preview .preview-content {
+    background: #f8f9fa;
+}
+
+.dark-preview .preview-content {
+    background: #1e293b;
+}
+
+.sepia-preview .preview-content {
+    background: #f4ecd8;
+}
+
+.midnight-preview .preview-content {
+    background: #131316;
+}
+
+.light-preview .preview-content::before,
+.light-preview .preview-content::after,
+.dark-preview .preview-content::before,
+.dark-preview .preview-content::after,
+.sepia-preview .preview-content::before,
+.sepia-preview .preview-content::after,
+.midnight-preview .preview-content::before,
+.midnight-preview .preview-content::after {
+    content: '';
+    height: 6px;
+    border-radius: 3px;
+}
+
+.light-preview .preview-content::before,
+.light-preview .preview-content::after {
+    background: #dee2e6;
+}
+
+.dark-preview .preview-content::before,
+.dark-preview .preview-content::after {
+    background: #334155;
+}
+
+.sepia-preview .preview-content::before,
+.sepia-preview .preview-content::after {
+    background: #d4c39d;
+}
+
+.midnight-preview .preview-content::before,
+.midnight-preview .preview-content::after {
+    background: #27272a;
+}
+
+.theme-option span {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+
+.toggle-switch input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 56px;
+    height: 32px;
+    background: var(--bg-tertiary);
+    border-radius: 16px;
+    transition: var(--transition);
+    flex-shrink: 0;
+    border: 2px solid var(--border-color);
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    background: white;
+    border-radius: 50%;
+    transition: var(--transition);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.toggle-switch input:focus-visible + .toggle-slider {
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.25);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(24px);
+}
+
+.toggle-label {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    flex: 1;
+}
+
+/* РљРЅРѕРїРєР° РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹С… РЅР°СЃС‚СЂРѕРµРє СЃРЅРµРіР° */
+.ny-advanced-settings {
+    padding: 0.65rem 1.25rem;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    width: 100%;
+}
+
+body:not(.no-hover) .ny-advanced-settings:hover {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Р’С‹Р±РѕСЂ СѓСЂРѕРІРЅСЏ Р°РЅРёРјР°С†РёР№ */
+.animation-level-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.animation-level-option {
+    background: var(--bg-secondary);
+    border: 1.5px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.9rem 1.1rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-align: left;
+}
+
+body:not(.no-hover) .animation-level-option:hover {
+    border-color: var(--accent-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.animation-level-option.active {
+    border-color: var(--accent-color);
+    background: rgba(var(--accent-rgb), 0.07);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
+}
+
+.level-icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    color: var(--text-secondary);
+}
+
+.level-icon-svg {
+    width: 26px;
+    height: 26px;
+    display: block;
+}
+
+.animation-level-option.active .level-icon {
+    color: var(--accent-color);
+}
+
+/* Иконки в заголовках секций настроек */
+.settings-section-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: var(--accent-color);
+}
+
+/* Иконка в заголовке модалки настроек */
+.settings-title-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.settings-title-icon .settings-section-icon {
+    width: 22px;
+    height: 22px;
+    color: var(--accent-color);
+}
+
+/* Иконка солнца/луны в кнопках выбора темы */
+.theme-option-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.theme-option-label .level-icon-svg {
+    width: 18px;
+    height: 18px;
+    color: var(--text-secondary);
+}
+
+.theme-option.active .theme-option-label .level-icon-svg {
+    color: var(--accent-color);
+}
+
+/* Иконка сброса в кнопке reset */
+.reset-icon {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: -3px;
+    margin-right: 0.4rem;
+}
+
+/* Иконка в кнопке доп. настроек снега */
+.ny-advanced-settings .settings-section-icon {
+    width: 16px;
+    height: 16px;
+    vertical-align: -3px;
+    margin-right: 0.4rem;
+    color: inherit;
+}
+
+.level-title {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 1.05rem;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.level-desc {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    display: block;
+}
+
+/* РљРЅРѕРїРєРё РґРµР№СЃС‚РІРёР№ */
+.settings-actions {
+    margin-top: 1.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: center;
+}
+
+.settings-reset-btn {
+    padding: 0.7rem 1.6rem;
+    background: var(--bg-tertiary);
+    border: 1.5px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+}
+
+body:not(.no-hover) .settings-reset-btn:hover {
+    background: var(--error-color);
+    color: white;
+    border-color: var(--error-color);
+    box-shadow: 0 4px 12px rgba(var(--error-rgb), 0.3);
+}
+
+/* РЈРІРµРґРѕРјР»РµРЅРёРµ РЅР°СЃС‚СЂРѕРµРє */
+.settings-notification {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transform: translateX(400px);
+    opacity: 0;
+    transition: var(--transition-bounce);
+    z-index: 10001;
+    pointer-events: none;
+    max-width: 350px;
+}
+
+.settings-notification.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+/* ============================================
+   РЈР РћР’РќР РђРќРРњРђР¦РР™
+   ============================================ */
+
+/* РњР°РєСЃРёРјР°Р»СЊРЅС‹Р№ СѓСЂРѕРІРµРЅСЊ (РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ - РІСЃРµ Р°РЅРёРјР°С†РёРё) */
+body.animations-max {
+    /* Р’СЃРµ Р°РЅРёРјР°С†РёРё РІРєР»СЋС‡РµРЅС‹ - РЅРёРєР°РєРёС… РѕРіСЂР°РЅРёС‡РµРЅРёР№ */
+    --animation-state: enabled;
+}
+
+/* РЎСЂРµРґРЅРёР№ СѓСЂРѕРІРµРЅСЊ (С‚РѕР»СЊРєРѕ Р±Р°Р·РѕРІС‹Рµ РїРµСЂРµС…РѕРґС‹, Р±РµР· РґРµРєРѕСЂР°С‚РёРІРЅС‹С… Р°РЅРёРјР°С†РёР№ Рё hover-С‚СЂР°РЅСЃС„РѕСЂРјР°С†РёР№) */
+
+/* РЈР±РёСЂР°РµРј РІСЃРµ @keyframes-Р°РЅРёРјР°С†РёРё */
+body.animations-medium .page-header::before,
+body.animations-medium .part-title::after,
+body.animations-medium .theme-toggle::before,
+body.animations-medium .task-card::before,
+body.animations-medium .subject-card::before,
+body.animations-medium .progress-fill::after,
+body.animations-medium .ny-decorated::after {
+    animation: none !important;
+}
+
+/* РЈР±РёСЂР°РµРј hover-С‚СЂР°РЅСЃС„РѕСЂРјР°С†РёРё СЃ РєРѕРЅС‚РµРЅС‚-Р±РѕРєСЃРѕРІ */
+body.animations-medium .definition-box:hover,
+body.animations-medium .formula-box:hover,
+body.animations-medium .remark-box:hover,
+body.animations-medium .experiment-box:hover,
+body.animations-medium .derivation-box:hover {
+    transform: none !important;
+    border-width: inherit !important;
+}
+
+/* РЈР±РёСЂР°РµРј hover-С‚СЂР°РЅСЃС„РѕСЂРјР°С†РёРё СЃРѕ stat-card */
+body.animations-medium .stat-card:hover {
+    transform: none !important;
+}
+
+/* РЈРїСЂРѕС‰Р°РµРј hover РґР»СЏ РєР°СЂС‚РѕС‡РµРє Рё С‚РµРј вЂ” С‚РѕР»СЊРєРѕ С‚РµРЅСЊ, Р±РµР· РїРѕРґСЉС‘РјР° */
+body.animations-medium .topic:hover {
+    transform: none !important;
+}
+
+body.animations-medium .task-card:hover {
+    transform: none !important;
+}
+
+body.animations-medium .subject-card:hover {
+    transform: none !important;
+}
+
+/* РћС‚РєР»СЋС‡Р°РµРј СЃР»РѕР¶РЅС‹Рµ box-shadow РїРµСЂРµС…РѕРґС‹ РїСЂРё РЅР°РІРµРґРµРЅРёРё (С‚РѕР»СЊРєРѕ Р»С‘РіРєР°СЏ С‚РµРЅСЊ) */
+body.animations-medium .topic:hover,
+body.animations-medium .task-card:hover,
+body.animations-medium .subject-card:hover,
+body.animations-medium .definition-box:hover,
+body.animations-medium .formula-box:hover,
+body.animations-medium .remark-box:hover,
+body.animations-medium .experiment-box:hover,
+body.animations-medium .derivation-box:hover,
+body.animations-medium .stat-card:hover {
+    box-shadow: var(--shadow-md) !important;
+}
+
+/* Сокращаем длительность всех переходов — конкретные свойства, не all */
+body.animations-medium {
+    /* Переходы — те же стильные, что в «Максимальном» (это и есть «основные»
+       анимации); убираем лишь пружинный «отскок» у всплывающих элементов,
+       чтобы средний уровень был спокойнее, но не «другим». */
+    --transition-smooth: var(--transition);
+    --transition-bounce: var(--transition);
+}
+
+/* Каскадное «появление» карточек — это украшение: на среднем выключаем
+   (карточки сразу на месте). animation:none безопасно сбрасывает элемент в
+   видимое состояние — без вспышки и не оставляя его невидимым. */
+body.animations-medium .subject-card,
+body.animations-medium .grade-card,
+body.animations-medium .stat-card,
+body.animations-medium .task-card {
+    animation: none !important;
+}
+
+/* Окна появляются спокойно — простое проявление, без масштабирования/пружины */
+body.animations-medium .settings-modal:not(.hidden) .settings-modal-content,
+body.animations-medium .auth-modal,
+body.animations-medium .hint-modal {
+    animation-name: fadeIn !important;
+    animation-timing-function: var(--ease-out) !important;
+}
+
+/* РЈРїСЂРѕС‰Р°РµРј РїРµСЂРµС…РѕРґС‹ РЅР° СЌР»РµРјРµРЅС‚Р°С… вЂ” СѓР±РёСЂР°РµРј border-width, transform */
+/* Переходы блоков-конспектов в среднем — те же, что в «Максимальном»
+   (общая стильная кривая); отдельную «ускоренную» версию убрали, чтобы
+   уровни не отличались скоростью/кривой, только набором эффектов. */
+
+/* РЈРїСЂРѕС‰Р°РµРј hover РЅР° РєРЅРѕРїРєР°С… вЂ” Р±РµР· transform, С‚РѕР»СЊРєРѕ С†РІРµС‚/С‚РµРЅСЊ */
+body.animations-medium .scroll-to-top:hover,
+body.animations-medium .settings-button:hover,
+body.animations-medium .menu-toggle:hover,
+body.animations-medium .theme-toggle:hover,
+body.animations-medium .ny-toggle:hover {
+    transform: none !important;
+}
+
+/* РћС‚РєР»СЋС‡Р°РµРј РЅРѕРІРѕРіРѕРґРЅРёР№ СЃРЅРµР¶РёРЅРєР°-СЌС„С„РµРєС‚ РїСЂРё РЅР°РІРµРґРµРЅРёРё РЅР° РєР°СЂС‚РѕС‡РєРё Р·Р°РґР°С‡ */
+body.animations-medium.new-year-mode .task-card:hover::after {
+    content: none !important;
+}
+
+/* Р’С‹РєР»СЋС‡РµРЅРЅС‹Рµ Р°РЅРёРјР°С†РёРё */
+body.animations-off *:not(#progressBar),
+body.animations-off *::before,
+body.animations-off *::after {
+    animation: none !important;
+    transition: none !important;
+}
+
+body.animations-off #progressBar {
+    transition: width 0.4s linear !important;
+}
+
+body.animations-off .task-card:hover,
+body.animations-off .subject-card:hover,
+body.animations-off .definition-box:hover,
+body.animations-off .formula-box:hover,
+body.animations-off .remark-box:hover,
+body.animations-off .experiment-box:hover,
+body.animations-off .derivation-box:hover,
+body.animations-off .stat-card:hover,
+body.animations-off .theme-toggle:hover,
+body.animations-off .ny-toggle:hover,
+body.animations-off .settings-button:hover,
+body.animations-off .menu-toggle:hover,
+body.animations-off .scroll-to-top:hover,
+body.animations-off .theme-option:hover,
+body.animations-off .animation-level-option:hover,
+body.animations-off .task-toggle:hover,
+body.animations-off .toggle-derivation:hover,
+body.animations-off .hint-toggle:hover,
+body.animations-off .settings-reset-btn:hover,
+body.animations-off .ny-advanced-settings:hover,
+body.animations-off .settings-close-btn:hover,
+body.animations-off .close-sidebar:hover,
+body.animations-off .auth-submit:hover,
+body.animations-off .telegram-chat-button:hover,
+body.animations-off .hint-save-btn:hover,
+body.animations-off .retry-button:hover {
+    transform: none !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+/* РћС‚РєР»СЋС‡Р°РµРј РёР·РјРµРЅРµРЅРёСЏ РїСЂРё РЅР°РІРµРґРµРЅРёРё РЅР° content-section */
+body.animations-off .content-section:hover {
+    transform: none !important;
+}
+
+/* РћС‚РєР»СЋС‡Р°РµРј РёР·РјРµРЅРµРЅРёСЏ РїСЂРё РЅР°РІРµРґРµРЅРёРё РЅР° topic */
+body.animations-off .topic:hover {
+    transform: none !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
+/* Р Р°Р·СЂРµС€Р°РµРј С‚РѕР»СЊРєРѕ РёР·РјРµРЅРµРЅРёРµ С†РІРµС‚Р° С„РѕРЅР° РґР»СЏ РЅР°РІРёРіР°С†РёРѕРЅРЅС‹С… СЃСЃС‹Р»РѕРє */
+body.animations-off .nav-link:hover {
+    transform: none !important;
+    /* Р¦РІРµС‚ С„РѕРЅР° РёР·РјРµРЅСЏРµС‚СЃСЏ С‡РµСЂРµР· СЃС‚Р°РЅРґР°СЂС‚РЅС‹Рµ СЃС‚РёР»Рё */
+}
+
+/* ============================================
+   NO-HOVER MODE — ПОЛНОЕ отключение hover-эффектов.
+   Цель: при наведении НИЧЕГО не меняется — ни сдвига, ни масштаба,
+   ни тени, ни подсветки фона/рамки, ни толщины рамки, ни прозрачности.
+   focus-visible НЕ трогаем (нужен для доступности с клавиатуры).
+
+   Стратегия:
+   1) Универсальный сброс свойств, у которых есть универсальное "выкл"
+      (transform / filter / transition / animation / box-shadow) — покрывает
+      ВСЁ, включая ::before/::after и правила из инлайновых <style> (через !important).
+   2) Точечно возвращаем постоянную тень/прозрачность/подсветку к базовым
+      значениям там, где :hover менял фон/рамку/opacity (у этих свойств нет
+      универсального "выкл", поэтому ставим базовое значение явно).
+   ============================================ */
+body.no-hover *:hover,
+body.no-hover *:hover::before,
+body.no-hover *:hover::after {
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+    box-shadow: none !important;
+}
+/* НЕ обнуляем animation глобально на :hover — это перезапускало бы анимации
+   появления (fadeIn/slideUp) при УВОДЕ курсора (свойство animation возвращается
+   и браузер проигрывает анимацию заново → блок «моргал»). Гасим точечно только
+   реальные hover-анимации (их одна — новогодний снег на карточке). */
+body.no-hover .new-year-mode .task-card:hover::after,
+body.no-hover.new-year-mode .task-card:hover::after {
+    animation: none !important;
+}
+
+/* ВАЖНО: у сайдбара transform — это структурное состояние (свёрнут/открыт),
+   а не hover-эффект. Универсальное правило выше обнуляло его, пока курсор над
+   меню → при клике «свернуть» сайдбар оставался на месте до увода мыши.
+   Возвращаем структурный transform (и плавный переход) даже при наведении. */
+body.no-hover .sidebar.collapsed:hover {
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+body.no-hover .sidebar.open:hover {
+    transform: translateY(0) !important;
+}
+
+/* Тень — это оформление (а не hover-эффект) у карточек/блоков/FAB-кнопок:
+   возвращаем её, чтобы под курсором тень не «исчезала». */
+body.no-hover .stat-card:hover,
+body.no-hover .task-card:hover,
+body.no-hover .subject-card:hover,
+body.no-hover .bm-card:hover,
+body.no-hover .topic-select-card:hover,
+body.no-hover [class$="-box"]:hover {
+    box-shadow: var(--shadow-sm) !important;
+}
+body.no-hover .scroll-to-top:hover,
+body.no-hover .settings-button:hover,
+body.no-hover .menu-toggle:hover,
+body.no-hover .telegram-chat-button:hover {
+    box-shadow: var(--shadow-md) !important;
+}
+
+/* Псевдо-полоски-акценты остаются на базовой прозрачности (не «загораются»). */
+body.no-hover .grade-card:hover::before { opacity: 0.2 !important; }
+body.no-hover .grade-card-summer:hover::before { opacity: 0.55 !important; }
+body.no-hover .theme-toggle:hover::before { opacity: 0 !important; }
+
+/* Подсветка фона/рамки/сдвиг у навигации, заголовков, табов, карточек —
+   возвращаем к базовому виду. */
+body.no-hover .nav-link:hover {
+    background: transparent !important;
+    border-left-color: transparent !important;
+    /* padding-left НЕ трогаем: у вложенных пунктов меню свой отступ
+       (calc(--spacing + 1rem)); форсирование var(--spacing) сдвигало их влево
+       при наведении. Сдвига на hover больше нет, нормализовать нечего. */
+}
+body.no-hover .nav-group-toggle:hover {
+    background: transparent !important;
+    border-left-color: transparent !important;
+}
+body.no-hover .nav-submenu .nav-link:hover,
+body.no-hover .nav-section.other-subjects a:hover {
+    background: transparent !important;
+    opacity: 1 !important;
+}
+body.no-hover .subsection-title:hover {
+    border-bottom-color: var(--border-color) !important;
+}
+body.no-hover .grade-card:hover {
+    border-color: var(--border-color) !important;
+    background: var(--bg-secondary) !important;
+}
+body.no-hover .grade-card-summer:hover {
+    border-color: var(--border-color) !important;
+}
+body.no-hover .theme-option:hover,
+body.no-hover .animation-level-option:hover {
+    border-color: var(--border-color) !important;
+}
+
+/* Прозрачность кнопок-тогглов не меняется на hover. */
+body.no-hover .toggle-derivation:hover,
+body.no-hover .toggle-proof:hover {
+    opacity: 1 !important;
+}
+body.no-hover .theorem-box > .proof-box .toggle-proof:hover,
+body.no-hover .statement-box > .proof-box .toggle-proof:hover,
+body.no-hover .remark-box > .proof-box .toggle-proof:hover,
+body.no-hover .corollary-box > .proof-box .toggle-proof:hover,
+body.no-hover .lemma-box > .proof-box .toggle-proof:hover,
+body.no-hover li > .proof-box .toggle-proof:hover {
+    opacity: 0.85 !important;
+}
+
+/* Толщину бордюра НЕ нормализуем жёстко: все :hover-правила блоков теперь
+   гейтятся через body:not(.no-hover) и в режиме no-hover не применяются —
+   рамка остаётся базовой (2px в легаси, 1px в эксп-режиме). Прежнее
+   `border-width: 2px !important` ломало эксп-режим (утолщало 1px → 2px). */
+
+/* focus-visible ВСЕГДА должен быть виден (доступность с клавиатуры),
+   даже при отключённых hover-эффектах. */
+body.no-hover *:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+/* Мобильная edge-to-edge верстка блоков: на тапе сохраняем 0/5px от спокойного состояния */
+@media (max-width: 768px) {
+    body.no-hover .topic > .formula-box:hover,
+    body.no-hover .topic > .formula-box:active,
+    body.no-hover .topic > .experiment-box:hover,
+    body.no-hover .topic > .experiment-box:active,
+    body.no-hover .topic > .derivation-box:hover,
+    body.no-hover .topic > .derivation-box:active {
+        border-width: 0 !important;
+        border-left-width: 5px !important;
+    }
+}
+
+/* РљРЅРѕРїРєР° РЅР°СЃС‚СЂРѕРµРє РІ СЃР°Р№РґР±Р°СЂРµ (РґР»СЏ РјРѕР±РёР»СЊРЅС‹С…) */
+.settings-button-sidebar {
+    display: none;
+    background: var(--bg-tertiary);
+    border: none;
+    color: var(--text-secondary);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.3rem;
+    transition: var(--transition);
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    line-height: 1;
+    text-align: center;
+    padding: 0;
+    transform-origin: center center;
+}
+
+.settings-button-sidebar:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+    transform: rotate(90deg);
+}
+
+.settings-button-sidebar:active {
+    transform: scale(0.9);
+}
+
+body.dark-theme .settings-button-sidebar {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+body.dark-theme .settings-button-sidebar:hover {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ РґР»СЏ РЅР°СЃС‚СЂРѕРµРє */
+@media (max-width: 768px) {
+    .settings-button {
+        display: none !important;
+    }
+    
+    .settings-button-sidebar {
+        display: flex;
+    }
+
+    .settings-modal {
+        align-items: flex-end;
+    }
+    
+    .settings-modal-content {
+        width: 100%;
+        max-width: 100%;
+        max-height: 88vh;
+        max-height: 88dvh;
+        border-radius: 16px 16px 0 0;
+        animation: slideUpSheet 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .settings-modal-content::before {
+        content: '';
+        display: block;
+        width: 36px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.4);
+        border-radius: 2px;
+        margin: 8px auto 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .settings-modal-header {
+        padding: 0.75rem 1.25rem 0.875rem;
+        border-radius: 0;
+    }
+    
+    .settings-modal-header h2 {
+        font-size: 1.15rem;
+        gap: 0.375rem;
+    }
+
+    .settings-close-btn {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        font-size: 1.1rem;
+    }
+
+    .settings-modal-body {
+        padding: 1rem 1.25rem 1.5rem;
+    }
+
+    .settings-section {
+        margin-bottom: 1.25rem;
+        padding-bottom: 1.25rem;
+        border-bottom-width: 1px;
+    }
+
+    .settings-section h3 {
+        font-size: 1.05rem;
+        margin-bottom: 0.875rem;
+    }
+    
+    .theme-selector {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+
+    .theme-option {
+        padding: 0.75rem;
+        border-radius: 12px;
+        border-width: 2px;
+        gap: 0.5rem;
+    }
+
+    .theme-option:hover {
+        transform: none;
+    }
+
+    .theme-option span {
+        font-size: 0.9rem;
+    }
+    
+    .theme-preview {
+        height: 50px;
+        border-radius: 8px;
+    }
+
+    .animation-level-option {
+        padding: 0.75rem 0.875rem;
+        border-radius: 10px;
+        border-width: 2px;
+        gap: 0.75rem;
+    }
+
+    .animation-level-option:hover {
+        transform: none;
+    }
+
+    .level-icon {
+        width: 26px;
+        height: 26px;
+    }
+
+    .level-icon-svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    .level-title {
+        font-size: 0.95rem;
+        margin-bottom: 0.125rem;
+    }
+
+    .level-desc {
+        font-size: 0.8rem;
+    }
+
+    .toggle-slider {
+        width: 48px;
+        height: 28px;
+        border-radius: 14px;
+    }
+
+    .toggle-slider::before {
+        width: 20px;
+        height: 20px;
+    }
+
+    .toggle-switch input:checked + .toggle-slider::before {
+        transform: translateX(20px);
+    }
+
+    .toggle-label {
+        font-size: 0.9rem;
+    }
+
+    .toggle-switch {
+        gap: 0.75rem;
+    }
+
+    .settings-actions {
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+        border-top-width: 1px;
+    }
+
+    .settings-reset-btn {
+        padding: 0.7rem 1.5rem;
+        font-size: 0.9rem;
+        border-radius: 10px;
+        width: 100%;
+    }
+
+    .settings-reset-btn:hover {
+        transform: none;
+    }
+    
+    .settings-notification {
+        bottom: 1rem;
+        right: 1rem;
+        left: 1rem;
+        max-width: none;
+        text-align: center;
+        font-size: 0.9rem;
+        border-radius: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .settings-modal-header {
+        padding: 0.625rem 1rem 0.75rem;
+    }
+
+    .settings-modal-header h2 {
+        font-size: 1.05rem;
+    }
+    
+    .settings-modal-body {
+        padding: 0.875rem 1rem 1.25rem;
+    }
+
+    .settings-section h3 {
+        font-size: 1rem;
+    }
+
+    .animation-level-option {
+        padding: 0.625rem 0.75rem;
+    }
+
+    .level-icon {
+        width: 24px;
+        height: 24px;
+    }
+
+    .level-icon-svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
