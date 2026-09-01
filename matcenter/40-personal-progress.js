@@ -441,9 +441,7 @@ async function shareSolvedTasksProgress(anchorBtn) {
     if (navigator.share) {
         try {
             await navigator.share({
-                title: payload.title,
-                text: payload.text,
-                url: payload.url
+                text: payload.text
             });
             hideSolvedTasksShareMenu();
             return;
@@ -466,15 +464,10 @@ function buildSolvedTasksSharePayload() {
     const count = solvedTasks.length;
     const total = realTasks.length;
     const numbers = solvedTasks.map(formatSolvedTaskNumberForShare);
-    const gradeTitle = getGradeTitle(currentGrade);
-    const noun = pluralRu(count, 'задачу', 'задачи', 'задач');
-    const list = numbers.join(', ');
-    const text = `Я решил ${count} ${noun} в МатЦентре (${gradeTitle}): ${list}`;
+    const text = `${count}: ${numbers.join(', ')}`;
 
     return {
-        title: 'Мой прогресс в МатЦентре',
         text,
-        url: getMatcenterShareUrl(),
         count,
         total,
         numbers
@@ -488,27 +481,7 @@ function compareTasksForSharing(a, b) {
 }
 
 function formatSolvedTaskNumberForShare(task) {
-    const raw = (task && task.numberText) || (task && task.number) || '';
-    return `№${String(raw).replace(/\s+/g, ' ').trim()}`;
-}
-
-function pluralRu(value, one, few, many) {
-    const n = Math.abs(Number(value) || 0);
-    const mod10 = n % 10;
-    const mod100 = n % 100;
-    if (mod10 === 1 && mod100 !== 11) return one;
-    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
-    return many;
-}
-
-function getMatcenterShareUrl() {
-    const host = window.location.hostname || '';
-    const isLocal = window.location.protocol === 'file:'
-        || host === 'localhost'
-        || host === '127.0.0.1'
-        || host === '0.0.0.0';
-    if (isLocal) return 'https://almanion.github.io/matcenter.html';
-    return `${window.location.origin}${window.location.pathname || '/matcenter.html'}`;
+    return String(task.number);
 }
 
 function showSolvedTasksShareMenu(anchorBtn, payload) {
@@ -517,7 +490,6 @@ function showSolvedTasksShareMenu(anchorBtn, payload) {
 
     menu.hidden = false;
     menu.dataset.shareText = payload.text;
-    menu.dataset.shareUrl = payload.url;
 
     const summary = menu.querySelector('.matcenter-share-summary');
     if (summary) summary.textContent = `${payload.count} из ${payload.total} решено`;
@@ -556,8 +528,7 @@ function ensureSolvedTasksShareMenu() {
     telegram.innerHTML = '<span aria-hidden="true">↗</span><span>Telegram</span>';
     telegram.addEventListener('click', () => {
         const text = menu.dataset.shareText || '';
-        const url = menu.dataset.shareUrl || getMatcenterShareUrl();
-        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+        const shareUrl = `https://t.me/share/url?text=${encodeURIComponent(text)}`;
         hideSolvedTasksShareMenu();
         window.open(shareUrl, '_blank', 'noopener,noreferrer');
     });
@@ -567,7 +538,7 @@ function ensureSolvedTasksShareMenu() {
     copy.className = 'matcenter-share-option';
     copy.innerHTML = '<span aria-hidden="true">⧉</span><span>Скопировать текст</span>';
     copy.addEventListener('click', async () => {
-        const text = [menu.dataset.shareText, menu.dataset.shareUrl].filter(Boolean).join('\n');
+        const text = menu.dataset.shareText || '';
         const ok = await copySolvedShareText(text);
         hideSolvedTasksShareMenu();
         showPersonalSolvedNotice(ok ? 'Текст скопирован' : 'Не удалось скопировать текст');
