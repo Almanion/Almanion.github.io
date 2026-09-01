@@ -51,6 +51,12 @@
 //         ".write": true
 //       }
 //     },
+//     "matcenterSolved": {
+//       "$uid": {
+//         ".read": "auth != null && auth.uid === $uid",
+//         ".write": "auth != null && auth.uid === $uid"
+//       }
+//     },
 //     "ticketBuilder": {
 //       "$uid": {
 //         ".read": "auth != null && auth.uid === $uid",

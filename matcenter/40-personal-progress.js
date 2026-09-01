@@ -2,6 +2,11 @@
 // ЛИЧНЫЕ ОТМЕТКИ «РЕШЕНО» (Firebase Auth + Realtime Database)
 // ============================================
 
+const MATCENTER_SOLVED_CACHE_PREFIX = 'matcenter_solved_cache_v1_';
+const MATCENTER_SOLVED_CACHE_VERSION = 1;
+let personalSolvedSyncInFlight = false;
+let personalSolvedOnlineHandlerReady = false;
+
 function initPersonalSolvedTasks() {
     if (personalSolvedInitialized) return;
     personalSolvedInitialized = true;
@@ -28,32 +33,184 @@ function initPersonalSolvedTasks() {
     }
 
     personalSolvedAuth.onAuthStateChanged(handlePersonalSolvedUser);
+
+    if (!personalSolvedOnlineHandlerReady) {
+        personalSolvedOnlineHandlerReady = true;
+        window.addEventListener('online', () => {
+            syncPendingPersonalSolvedEntries();
+        });
+    }
 }
 
 function handlePersonalSolvedUser(user) {
+    const previousUid = personalSolvedUser && personalSolvedUser.uid;
+    const nextUid = user && user.uid;
+
+    // Firebase может повторно сообщить о том же пользователе. Не очищаем уже
+    // загруженный прогресс и не создаём второй одинаковый listener.
+    if (previousUid && previousUid === nextUid && personalSolvedRef) {
+        applyPersonalSolvedMarks();
+        return;
+    }
+
     if (personalSolvedRef) {
         try { personalSolvedRef.off(); } catch (_) {}
         personalSolvedRef = null;
     }
 
     personalSolvedUser = user || null;
-    personalSolvedMap = {};
     document.body.classList.toggle('matcenter-account-signed-in', !!personalSolvedUser);
     document.body.classList.toggle('matcenter-account-anonymous', !personalSolvedUser);
 
     if (!personalSolvedUser || !personalSolvedDb) {
+        personalSolvedMap = {};
         applyPersonalSolvedMarks();
         return;
     }
 
+    // Показываем последнюю сохранённую копию сразу, не дожидаясь сети.
+    personalSolvedMap = readPersonalSolvedCache(personalSolvedUser.uid);
+    applyPersonalSolvedMarks();
+
     personalSolvedRef = personalSolvedDb.ref(`${MATCENTER_SOLVED_DB_PATH}/${personalSolvedUser.uid}`);
     personalSolvedRef.on('value', (snap) => {
-        personalSolvedMap = snap.val() || {};
+        const remoteMap = normalizePersonalSolvedMap(snap.val() || {});
+        personalSolvedMap = mergePersonalSolvedMaps(personalSolvedMap, remoteMap);
+        writePersonalSolvedCache();
         applyPersonalSolvedMarks();
+        syncPendingPersonalSolvedEntries();
     }, (err) => {
         console.warn('⚠️ Не удалось загрузить личные отметки задач:', err);
-        showPersonalSolvedNotice('Не удалось загрузить отметки решённых задач');
+        // Не стираем локальную копию при временной ошибке Firebase.
+        applyPersonalSolvedMarks();
+        showPersonalSolvedNotice('Firebase временно недоступен — показан сохранённый прогресс');
     });
+
+    // Если в прошлый раз сеть пропала во время записи, повторяем синхронизацию.
+    syncPendingPersonalSolvedEntries();
+}
+
+function getPersonalSolvedCacheKey(uid) {
+    return `${MATCENTER_SOLVED_CACHE_PREFIX}${String(uid || '')}`;
+}
+
+function normalizePersonalSolvedMap(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+
+    return Object.keys(value).reduce((result, key) => {
+        const entry = value[key];
+        if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return result;
+
+        result[key] = {
+            ...entry,
+            solved: entry.solved !== false,
+            updatedAt: Number(entry.updatedAt) || 0,
+            _pending: entry._pending === true
+        };
+        return result;
+    }, {});
+}
+
+function readPersonalSolvedCache(uid) {
+    if (!uid) return {};
+
+    try {
+        const raw = safeGet(getPersonalSolvedCacheKey(uid));
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        if (!parsed || parsed.version !== MATCENTER_SOLVED_CACHE_VERSION) return {};
+        return normalizePersonalSolvedMap(parsed.entries);
+    } catch (err) {
+        console.warn('⚠️ Не удалось прочитать локальный прогресс Матцентра:', err);
+        return {};
+    }
+}
+
+function writePersonalSolvedCache() {
+    if (!personalSolvedUser || !personalSolvedUser.uid) return;
+
+    try {
+        safeSet(getPersonalSolvedCacheKey(personalSolvedUser.uid), JSON.stringify({
+            version: MATCENTER_SOLVED_CACHE_VERSION,
+            updatedAt: Date.now(),
+            entries: personalSolvedMap
+        }));
+    } catch (err) {
+        console.warn('⚠️ Не удалось сохранить локальный прогресс Матцентра:', err);
+    }
+}
+
+function getPersonalSolvedEntryTime(entry) {
+    return entry && Number(entry.updatedAt) || 0;
+}
+
+function mergePersonalSolvedMaps(localValue, remoteValue) {
+    const localMap = normalizePersonalSolvedMap(localValue);
+    const remoteMap = normalizePersonalSolvedMap(remoteValue);
+    const merged = {};
+    const keys = new Set([...Object.keys(localMap), ...Object.keys(remoteMap)]);
+
+    keys.forEach(key => {
+        const localEntry = localMap[key];
+        const remoteEntry = remoteMap[key];
+
+        if (!localEntry) {
+            merged[key] = { ...remoteEntry, _pending: false };
+            return;
+        }
+
+        if (!remoteEntry) {
+            // Отсутствующая серверная запись не должна обнулять локальный
+            // прогресс. Восстановим её при следующей успешной синхронизации.
+            merged[key] = { ...localEntry, _pending: true };
+            return;
+        }
+
+        if (localEntry._pending || getPersonalSolvedEntryTime(localEntry) > getPersonalSolvedEntryTime(remoteEntry)) {
+            merged[key] = { ...localEntry, _pending: true };
+        } else {
+            merged[key] = { ...remoteEntry, _pending: false };
+        }
+    });
+
+    return merged;
+}
+
+function getRemotePersonalSolvedEntry(entry) {
+    if (!entry || typeof entry !== 'object') return null;
+    const remoteEntry = { ...entry };
+    delete remoteEntry._pending;
+    return remoteEntry;
+}
+
+async function syncPendingPersonalSolvedEntries() {
+    if (personalSolvedSyncInFlight || !personalSolvedUser || !personalSolvedRef) return;
+
+    const pendingKeys = Object.keys(personalSolvedMap).filter(key => personalSolvedMap[key]?._pending);
+    if (pendingKeys.length === 0) return;
+
+    const updates = {};
+    const versions = {};
+    pendingKeys.forEach(key => {
+        updates[key] = getRemotePersonalSolvedEntry(personalSolvedMap[key]);
+        versions[key] = getPersonalSolvedEntryTime(personalSolvedMap[key]);
+    });
+
+    personalSolvedSyncInFlight = true;
+    try {
+        await personalSolvedRef.update(updates);
+        pendingKeys.forEach(key => {
+            const current = personalSolvedMap[key];
+            if (current && getPersonalSolvedEntryTime(current) === versions[key]) {
+                current._pending = false;
+            }
+        });
+        writePersonalSolvedCache();
+    } catch (err) {
+        console.warn('⚠️ Отложенная синхронизация прогресса Матцентра не выполнена:', err);
+    } finally {
+        personalSolvedSyncInFlight = false;
+    }
 }
 
 function getSolvedTaskKey(task) {
@@ -72,9 +229,9 @@ function isTaskPersonallySolved(taskOrKey) {
     return !!(value && value.solved !== false);
 }
 
-function getSolvedTaskPayload(task) {
+function getSolvedTaskPayload(task, solved = true) {
     const payload = {
-        solved: true,
+        solved: !!solved,
         grade: task.grade || currentGrade || DEFAULT_GRADE,
         number: task.number,
         numberText: task.numberText || String(task.number),
@@ -82,9 +239,11 @@ function getSolvedTaskPayload(task) {
     };
 
     try {
-        payload.solvedAt = firebase.database.ServerValue.TIMESTAMP;
+        if (solved) payload.solvedAt = firebase.database.ServerValue.TIMESTAMP;
+        else payload.unsolvedAt = firebase.database.ServerValue.TIMESTAMP;
     } catch (_) {
-        payload.solvedAt = Date.now();
+        if (solved) payload.solvedAt = Date.now();
+        else payload.unsolvedAt = Date.now();
     }
 
     return payload;
@@ -174,27 +333,30 @@ async function togglePersonalSolvedTask(task, card) {
     const key = getSolvedTaskKey(task);
     const wasSolved = isTaskPersonallySolved(key);
     const nextSolved = !wasSolved;
-    const previousValue = personalSolvedMap[key];
     const btn = card ? card.querySelector('.task-solved-check') : null;
 
     if (btn) btn.disabled = true;
-    if (nextSolved) personalSolvedMap[key] = getSolvedTaskPayload(task);
-    else delete personalSolvedMap[key];
+    personalSolvedMap[key] = {
+        ...getSolvedTaskPayload(task, nextSolved),
+        _pending: true
+    };
+    writePersonalSolvedCache();
     setPersonalSolvedCardState(card, nextSolved, true);
+    updatePersonalSolvedProgress();
 
     try {
         const ref = (personalSolvedRef || personalSolvedDb.ref(`${MATCENTER_SOLVED_DB_PATH}/${personalSolvedUser.uid}`)).child(key);
-        if (nextSolved) {
-            await ref.set(getSolvedTaskPayload(task));
-        } else {
-            await ref.remove();
+        const version = getPersonalSolvedEntryTime(personalSolvedMap[key]);
+        await ref.set(getRemotePersonalSolvedEntry(personalSolvedMap[key]));
+        if (personalSolvedMap[key] && getPersonalSolvedEntryTime(personalSolvedMap[key]) === version) {
+            personalSolvedMap[key]._pending = false;
         }
+        writePersonalSolvedCache();
     } catch (err) {
-        if (previousValue) personalSolvedMap[key] = previousValue;
-        else delete personalSolvedMap[key];
-        setPersonalSolvedCardState(card, wasSolved, false);
         console.warn('⚠️ Не удалось сохранить личную отметку задачи:', err);
-        showPersonalSolvedNotice('Не удалось сохранить отметку. Проверьте соединение');
+        // Локальная отметка остаётся и будет отправлена при восстановлении сети.
+        writePersonalSolvedCache();
+        showPersonalSolvedNotice('Отметка сохранена на устройстве и синхронизируется позже');
     } finally {
         if (btn) btn.disabled = false;
     }
