@@ -18,6 +18,21 @@ const _safeRemove = (typeof window !== 'undefined' && window.safeStorageRemove)
 let __pwaReloading = false;
 let __pwaInstallPrompt = null;
 let __pwaInstallButtonReady = false;
+const PWA_UPDATE_DISMISSED_KEY = 'almanion_pwa_update_dismissed_for_session';
+
+function isPwaUpdateDismissed() {
+    try {
+        return sessionStorage.getItem(PWA_UPDATE_DISMISSED_KEY) === '1';
+    } catch (_) {
+        return false;
+    }
+}
+
+function dismissPwaUpdateForSession() {
+    try {
+        sessionStorage.setItem(PWA_UPDATE_DISMISSED_KEY, '1');
+    } catch (_) {}
+}
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -223,6 +238,7 @@ function closePwaInstallHelp() {
 
 function showPwaUpdatePrompt(registration) {
     if (!registration || !registration.waiting) return;
+    if (isPwaUpdateDismissed()) return;
     if (document.getElementById('pwaUpdateToast')) return;
 
     const toast = document.createElement('div');
@@ -246,7 +262,10 @@ function showPwaUpdatePrompt(registration) {
             registration.waiting.postMessage({ type: 'SKIP_WAITING' });
         }
     });
-    close.addEventListener('click', () => toast.remove());
+    close.addEventListener('click', () => {
+        dismissPwaUpdateForSession();
+        toast.remove();
+    });
 
     document.body.appendChild(toast);
     requestAnimationFrame(() => toast.classList.add('is-visible'));
@@ -369,6 +388,12 @@ function initNavigation() {
             
             if (targetElement) {
                 closeMobileMenu();
+
+                if (window.experimentalReader
+                    && window.experimentalReader.isActive()
+                    && window.experimentalReader.goToId(targetId, { source: 'sidebar' })) {
+                    return;
+                }
 
                 const stickyHeader = document.querySelector('.topic-title');
                 const headerHeight = stickyHeader ? stickyHeader.offsetHeight + 8 : 20;
@@ -548,7 +573,7 @@ function performSearch(term) {
         acceptNode(node) {
             const p = node.parentElement;
             if (!p) return NodeFilter.FILTER_REJECT;
-            if (p.closest('.katex, .sidebar, .search-nav-bar, script, style, noscript')) {
+            if (p.closest('.katex, .sidebar, .search-nav-bar, .exp-reader-toolbar, .exp-reader-footer, script, style, noscript')) {
                 return NodeFilter.FILTER_REJECT;
             }
             if (node.textContent.toLowerCase().indexOf(term) === -1) {
@@ -583,12 +608,13 @@ function performSearch(term) {
         parent.replaceChild(frag, node);
     });
 
-    showSearchBar();
-
     if (searchState.matches.length > 0) {
         searchState.currentIndex = 0;
         searchState.matches[0].classList.add('search-hl-active');
+        scrollToSearchMatch(searchState.matches[0]);
     }
+
+    showSearchBar();
 }
 
 function navigateMatch(dir) {
@@ -598,8 +624,17 @@ function navigateMatch(dir) {
     searchState.currentIndex = (searchState.currentIndex + dir + m.length) % m.length;
     const el = m[searchState.currentIndex];
     el.classList.add('search-hl-active');
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    scrollToSearchMatch(el);
     showSearchBar();
+}
+
+function scrollToSearchMatch(element) {
+    if (window.experimentalReader && window.experimentalReader.isActive()) {
+        window.experimentalReader.revealElement(element, { source: 'search' });
+    }
+    requestAnimationFrame(() => {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
 }
 
 function showSearchBar() {
@@ -655,7 +690,7 @@ function showSearchBar() {
             searchState.matches[searchState.currentIndex]?.classList.remove('search-hl-active');
             searchState.currentIndex = i;
             searchState.matches[i].classList.add('search-hl-active');
-            searchState.matches[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            scrollToSearchMatch(searchState.matches[i]);
             closeMobileMenu();
             showSearchBar();
         });
@@ -780,18 +815,22 @@ function setToggleLabel(button, text) {
 function initDerivationToggles() {
     const toggleButtons = document.querySelectorAll('.toggle-derivation');
 
-    toggleButtons.forEach(button => {
+    toggleButtons.forEach((button, index) => {
         const derivationContent = button.nextElementSibling;
 
         // Показываем все выводы по умолчанию
         if (derivationContent && derivationContent.classList.contains('derivation-content')) {
+            if (!derivationContent.id) derivationContent.id = `derivation-content-${index + 1}`;
+            button.setAttribute('aria-controls', derivationContent.id);
             derivationContent.classList.add('show');
+            button.setAttribute('aria-expanded', 'true');
             setToggleLabel(button, 'Скрыть вывод формулы');
         }
 
         button.addEventListener('click', () => {
             if (!derivationContent || !derivationContent.classList.contains('derivation-content')) return;
             const shown = derivationContent.classList.toggle('show');
+            button.setAttribute('aria-expanded', shown ? 'true' : 'false');
             setToggleLabel(button, shown ? 'Скрыть вывод формулы' : 'Показать вывод формулы');
             if (shown) renderMathOnce(derivationContent);
         });
@@ -805,10 +844,15 @@ function initDerivationToggles() {
 function initProofToggles() {
     const toggleButtons = document.querySelectorAll('.toggle-proof');
 
-    toggleButtons.forEach(button => {
+    toggleButtons.forEach((button, index) => {
         const proofContent = button.nextElementSibling;
         // Изначальное состояние кнопки определяет текущий текст
         const initiallyOpen = proofContent && proofContent.classList.contains('show');
+        if (proofContent && proofContent.classList.contains('proof-content')) {
+            if (!proofContent.id) proofContent.id = `proof-content-${index + 1}`;
+            button.setAttribute('aria-controls', proofContent.id);
+            button.setAttribute('aria-expanded', initiallyOpen ? 'true' : 'false');
+        }
         if (!button.innerHTML.includes('toggle-book-icon')) {
             setToggleLabel(button, initiallyOpen ? 'Скрыть доказательство' : 'Показать доказательство');
         }
@@ -816,6 +860,7 @@ function initProofToggles() {
         button.addEventListener('click', () => {
             if (!proofContent || !proofContent.classList.contains('proof-content')) return;
             const shown = proofContent.classList.toggle('show');
+            button.setAttribute('aria-expanded', shown ? 'true' : 'false');
             setToggleLabel(button, shown ? 'Скрыть доказательство' : 'Показать доказательство');
             if (shown) renderMathOnce(proofContent);
         });

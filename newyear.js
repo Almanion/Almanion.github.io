@@ -631,11 +631,15 @@ function initSettingsModal() {
     const modal = document.createElement('div');
     modal.id = 'nySettingsModal';
     modal.className = 'ny-settings-modal hidden';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'nySettingsTitle');
+    modal.setAttribute('aria-hidden', 'true');
     modal.innerHTML = `
         <div class="ny-settings-content">
             <div class="ny-settings-header">
-                <h3><span class="eic eic-gear" aria-hidden="true"></span> Настройки новогоднего вайба</h3>
-                <button class="ny-settings-close" id="nySettingsClose"><span class="eic eic-x" aria-hidden="true"></span></button>
+                <h3 id="nySettingsTitle"><span class="eic eic-gear" aria-hidden="true"></span> Настройки новогоднего вайба</h3>
+                <button class="ny-settings-close" id="nySettingsClose" type="button" aria-label="Закрыть настройки"><span class="eic eic-x" aria-hidden="true"></span></button>
             </div>
             <div class="ny-settings-body">
                 <div class="ny-setting-item">
@@ -794,6 +798,7 @@ function nyOpenSnowSettings() {
         }
         
         modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
     }
 }
@@ -802,6 +807,7 @@ function nyCloseSnowSettings() {
     const modal = document.getElementById('nySettingsModal');
     if (modal) {
         modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
     }
 }

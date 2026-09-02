@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-02-share-format';
+const CACHE_VERSION = 'almanion-pwa-2026-09-02-experimental-reader-audit-3';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -17,6 +17,7 @@ const APP_SHELL = [
     '/styles/site/60-poll-pwa.css',
     '/style-new.css',
     '/script.js',
+    '/experimental-reader.js',
     '/settings.js',
     '/bookmarks.js',
     '/newyear.js',
