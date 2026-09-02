@@ -236,28 +236,27 @@ async function pushHintToServer(taskOrNumber, hintText) {
     console.log(`   Пароль: ${authToken ? 'есть' : 'нет'}, taskNumber: ${mutation.taskNumber}, hintText length: ${hintText.length}`);
     
     try {
-        // Используем GET вместо POST (обходит CORS)
         const endpoint = getEndpointForTask(mutation.task || taskOrNumber);
-        const params = new URLSearchParams({
-            password: authToken || '',
+        const payload = {
             action: 'setHint',
             taskNumber: mutation.taskNumber,
             hintText,
             grade: mutation.grade,
             taskId: mutation.taskId
-        });
-        const url = `${endpoint}?${params.toString()}`;
-        const response = await fetch(url);
-        
-        const responseText = await response.text();
-        console.log('📥 Ответ сервера (raw):', responseText);
-        
+        };
         let data;
-        try {
-            data = JSON.parse(responseText);
-        } catch (parseError) {
-            console.error('❌ Ошибка парсинга ответа сервера:', parseError);
-            throw new Error('Сервер вернул некорректный JSON: ' + responseText);
+        if (matcenterAuthMode === 'account') {
+            data = await postMatcenterJson(endpoint, {
+                ...payload,
+                idToken: await getMatcenterIdToken()
+            });
+        } else {
+            const params = new URLSearchParams({ ...payload, password: authToken || '' });
+            const response = await fetch(`${endpoint}?${params.toString()}`);
+            const responseText = await response.text();
+            console.log('📥 Ответ сервера (raw):', responseText);
+            try { data = JSON.parse(responseText); }
+            catch (_) { throw new Error('Сервер вернул некорректный JSON: ' + responseText); }
         }
         
         if (!data.success) {

@@ -1,3 +1,74 @@
+let matcenterAccountGateBusy = false;
+
+function showMatcenterAuthMessage(message, isError = true) {
+    const authError = document.getElementById('authError');
+    if (!authError) return;
+    authError.style.display = 'flex';
+    authError.style.background = isError ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.12)';
+    const icon = authError.querySelector('.error-icon');
+    const text = authError.querySelector('.error-text');
+    if (icon) icon.innerHTML = '<span class="eic eic-alert" aria-hidden="true"></span>';
+    if (text) text.textContent = message;
+}
+
+function updateMatcenterAuthCopy() {
+    const title = document.getElementById('authTitle');
+    const note = document.getElementById('matcenterAccountNote');
+    const accountButton = document.getElementById('matcenterAccountLogin');
+    const passwordInput = document.getElementById('passwordInput');
+    const submit = document.getElementById('authSubmit');
+    if (!title || !note || !accountButton || !passwordInput || !submit) return;
+
+    if (matcenterAuthMode !== 'account') {
+        title.textContent = 'Введите пароль';
+        note.textContent = 'Пароль открывает доступ к материалам Матцентра.';
+        accountButton.hidden = true;
+        passwordInput.hidden = false;
+        submit.hidden = false;
+        return;
+    }
+
+    const user = getMatcenterFirebaseAuth()?.currentUser || null;
+    if (!user) {
+        title.textContent = 'Сначала войдите в аккаунт';
+        note.textContent = 'Закладки, решённые задачи и доступ к Матцентру привязываются к одному аккаунту Almanion.';
+        accountButton.hidden = false;
+        accountButton.textContent = 'Войти или зарегистрироваться';
+        passwordInput.hidden = true;
+        submit.hidden = true;
+    } else {
+        title.textContent = 'Подтвердите доступ';
+        note.textContent = `Аккаунт ${user.email || 'Almanion'} ещё не подтверждён для Матцентра. Введите пароль один раз.`;
+        accountButton.hidden = true;
+        passwordInput.hidden = false;
+        submit.hidden = false;
+        submit.querySelector('.submit-text').textContent = 'Подтвердить аккаунт';
+    }
+}
+
+async function refreshMatcenterAccountGate() {
+    if (matcenterAuthMode !== 'account' || authToken || matcenterAccountGateBusy) {
+        updateMatcenterAuthCopy();
+        return;
+    }
+    updateMatcenterAuthCopy();
+    if (!getMatcenterFirebaseAuth()?.currentUser) return;
+    matcenterAccountGateBusy = true;
+    try {
+        const access = await checkMatcenterAccountAccess();
+        if (!access.allowed) return;
+        authToken = 'account';
+        isAdmin = access.isAdmin;
+        hideAuthForm();
+        const hadCache = applyTasksFromCache();
+        await loadTasksFromGoogleSheets(false, hadCache);
+    } catch (error) {
+        showMatcenterAuthMessage(error.message || 'Не удалось проверить доступ', false);
+    } finally {
+        matcenterAccountGateBusy = false;
+    }
+}
+
 async function initAuth() {
     const authForm = document.getElementById('authForm');
     const passwordInput = document.getElementById('passwordInput');
@@ -7,6 +78,14 @@ async function initAuth() {
     const submitSpinner = authSubmit.querySelector('.submit-spinner');
     const authModal = document.getElementById('authModal');
     const logoutButton = document.getElementById('logoutButton');
+    const accountLoginButton = document.getElementById('matcenterAccountLogin');
+
+    accountLoginButton?.addEventListener('click', () => {
+        if (window.AlmanionAccount?.openLogin) window.AlmanionAccount.openLogin();
+        else showMatcenterAuthMessage('Форма аккаунта ещё загружается. Повторите через секунду.', false);
+    });
+    window.addEventListener('almanion-account-ready', refreshMatcenterAccountGate);
+    updateMatcenterAuthCopy();
 
     if (authModal && !authModal.dataset.focusTrapReady) {
         authModal.dataset.focusTrapReady = 'true';
@@ -38,14 +117,14 @@ async function initAuth() {
     }
 
     // 🔒 Проверяем, есть ли уже отпечаток (если был сгенерирован ранее)
-    if (!deviceFingerprint) {
+    if (matcenterAuthMode === 'legacy' && !deviceFingerprint) {
         console.log('🔍 Генерация отпечатка устройства...');
         deviceFingerprint = await generateFingerprint();
         console.log(`✅ Отпечаток: ${deviceFingerprint.substring(0, 16)}...`);
     }
     
     // 🔍 Проверяем подозрительную активность (неблокирующая проверка)
-    if (detectSuspiciousActivity()) {
+    if (matcenterAuthMode === 'legacy' && detectSuspiciousActivity()) {
         console.warn('⚠️ Обнаружена подозрительная активность! Рекомендуется усиленная защита.');
     }
     
@@ -54,7 +133,7 @@ async function initAuth() {
         return; // Уже загружено в DOMContentLoaded
     }
     
-    const existingSession = getSessionData();
+    const existingSession = matcenterAuthMode === 'legacy' ? getSessionData() : null;
     if (existingSession) {
         console.log('✅ Найдена действительная сессия');
         authToken = safeGet('matcenter_auth');
@@ -107,22 +186,29 @@ async function initAuth() {
         authSubmit.disabled = true;
         passwordInput.disabled = true;
         
-        // Хешируем пароль
-        const passwordHash = await hashPassword(password);
+        const passwordHash = matcenterAuthMode === 'legacy' ? await hashPassword(password) : '';
         
         // Пробуем загрузить данные с этим паролем
         try {
-            authToken = password;
-            const response = await loadTasksFromGoogleSheets(true);
+            if (matcenterAuthMode === 'account') {
+                const access = await authorizeMatcenterAccount(password);
+                authToken = 'account';
+                isAdmin = access.isAdmin;
+                safeRemove('matcenter_auth');
+                passwordInput.value = '';
+            } else {
+                authToken = password;
+            }
+            await loadTasksFromGoogleSheets(true);
             
             // Если успешно:
             // 1. Создаём сессию
-            createSession(passwordHash);
+            if (matcenterAuthMode === 'legacy') createSession(passwordHash);
             
             // isAdmin уже установлен внутри loadTasksFromGoogleSheets()
             
             // 2. Сохраняем пароль (для API)
-            safeSet('matcenter_auth', password);
+            if (matcenterAuthMode === 'legacy') safeSet('matcenter_auth', password);
             
             // 3. Логируем успешную попытку
             addAttemptToHistory(true, deviceFingerprint);
@@ -145,6 +231,16 @@ async function initAuth() {
 
             // Network and server failures are not failed password attempts and
             // must not lock a legitimate user out.
+            if (error && error.code === 'ACCOUNT_REQUIRED') {
+                showMatcenterAuthMessage('Сначала войдите в аккаунт Almanion.', false);
+                updateMatcenterAuthCopy();
+                submitText.style.display = 'inline';
+                submitSpinner.style.display = 'none';
+                authSubmit.disabled = false;
+                passwordInput.disabled = false;
+                return;
+            }
+
             if (!error || error.code !== 'AUTH') {
                 authError.style.display = 'flex';
                 authError.style.background = 'rgba(245, 158, 11, 0.12)';
@@ -251,6 +347,8 @@ function showAuthForm() {
         setMatcenterAuthPageLocked(true);
         console.log('✅ Форма авторизации показана');
     }
+
+    updateMatcenterAuthCopy();
     
     // Очищаем поле пароля
     if (passwordInput) {
@@ -341,9 +439,10 @@ function logout() {
         autoRefreshTimer = null;
     }
     
-    // Очищаем сессию и пароль
+    // Очищаем локальную сессию. Серверное подтверждение UID остаётся: после
+    // следующего входа в тот же аккаунт повторный пароль Матцентра не нужен.
     clearSession();
-    safeRemove('matcenter_auth'); // Удаляем сохранённый пароль
+    safeRemove('matcenter_auth');
     safeRemove(TASKS_CACHE_KEY); // После выхода защищённые данные не должны оставаться в кэше
     showMatcenterDataWarning('');
     
@@ -364,6 +463,9 @@ function logout() {
     
     console.log('👋 Выход выполнен');
     
+    if (matcenterAuthMode === 'account') {
+        getMatcenterFirebaseAuth()?.signOut().catch(() => {});
+    }
     showAuthForm();
 }
 

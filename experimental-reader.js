@@ -11,6 +11,7 @@
         toolbar: null,
         footer: null,
         enterTimer: 0,
+        transitionGeneration: 0,
         swipe: null
     };
 
@@ -109,7 +110,7 @@
         });
 
         document.addEventListener('keydown', event => {
-            if (!state.active || state.animating || event.altKey || event.ctrlKey || event.metaKey) return;
+            if (!state.active || event.altKey || event.ctrlKey || event.metaKey) return;
             if (event.target.closest('input, textarea, select, button, a, [contenteditable="true"]')) return;
             if (document.querySelector('.settings-modal:not(.hidden), .auth-overlay:not(.hidden), .lightbox-overlay.open')) return;
 
@@ -205,8 +206,13 @@
     }
 
     function goToIndex(nextIndex, options) {
-        if (!state.active || state.animating) return false;
+        if (!state.active) return false;
         if (nextIndex < 0 || nextIndex >= state.topics.length) return false;
+
+        // Повторный клик/свайп не должен ждать окончания предыдущей анимации.
+        // Текущее состояние уже переключено, поэтому безопасно отменяем только
+        // визуальный хвост и сразу принимаем следующую команду.
+        cancelReaderTransition();
 
         const settings = {
             animate: true,
@@ -223,7 +229,6 @@
         }
 
         const direction = nextIndex > state.index ? 'next' : 'prev';
-        const outgoing = state.topics[state.index];
         const animate = settings.animate && !prefersReducedReaderMotion();
 
         const readerScrollTop = settings.scroll ? getReaderScrollTop() : null;
@@ -241,36 +246,39 @@
             return true;
         }
 
+        const generation = ++state.transitionGeneration;
         state.animating = true;
         document.body.classList.add('exp-reader-transitioning');
-
-        if (typeof document.startViewTransition === 'function') {
-            const root = document.documentElement;
-            root.classList.add('exp-reader-vt-active', `exp-reader-vt-${direction}`);
-            outgoing.style.viewTransitionName = 'exp-reader-topic';
-            let incoming = null;
-            const transition = document.startViewTransition(() => {
-                outgoing.style.removeProperty('view-transition-name');
-                incoming = commit();
-                incoming.style.viewTransitionName = 'exp-reader-topic';
-            });
-            const cleanup = () => {
-                outgoing.style.removeProperty('view-transition-name');
-                if (incoming) incoming.style.removeProperty('view-transition-name');
-                root.classList.remove('exp-reader-vt-active', `exp-reader-vt-${direction}`);
-                finishReaderTransition();
-            };
-            transition.finished.then(cleanup, cleanup);
-            return true;
-        }
 
         const incoming = commit();
         incoming.classList.add(`exp-reader-enter-${direction}`);
         state.enterTimer = window.setTimeout(() => {
+            if (generation !== state.transitionGeneration) return;
             incoming.classList.remove(`exp-reader-enter-${direction}`);
             finishReaderTransition();
         }, getReaderEnterDuration());
         return true;
+    }
+
+    function cancelReaderTransition() {
+        state.transitionGeneration++;
+        clearReaderTimers();
+        state.topics.forEach(topic => {
+            topic.classList.remove(
+                'exp-reader-enter-next',
+                'exp-reader-enter-prev',
+                'exp-reader-leave-next',
+                'exp-reader-leave-prev'
+            );
+            topic.style.removeProperty('view-transition-name');
+        });
+        document.documentElement.classList.remove(
+            'exp-reader-vt-active',
+            'exp-reader-vt-next',
+            'exp-reader-vt-prev'
+        );
+        state.animating = false;
+        document.body.classList.remove('exp-reader-transitioning');
     }
 
     function finishReaderTransition() {
@@ -377,6 +385,8 @@
         document.querySelectorAll('.nav-link').forEach(link => {
             const active = link.getAttribute('href') === `#${id}`;
             link.classList.toggle('active', active);
+            if (active) link.setAttribute('aria-current', 'location');
+            else link.removeAttribute('aria-current');
             if (active) link.closest('.nav-group')?.classList.add('open');
         });
     }
@@ -402,7 +412,7 @@
     }
 
     function onPointerDown(event) {
-        if (!state.active || state.animating || state.swipe || !event.isPrimary || event.button !== 0) return;
+        if (!state.active || state.swipe || !event.isPrimary || event.button !== 0) return;
         if (!event.target.closest || event.target.closest(SWIPE_BLOCK_SELECTOR)) return;
         if (document.querySelector('.settings-modal:not(.hidden), .auth-overlay:not(.hidden), .lightbox-overlay.open')) return;
 

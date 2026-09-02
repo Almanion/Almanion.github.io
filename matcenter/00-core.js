@@ -75,6 +75,7 @@ let searchStatusFilter = 'all'; // all | current | postponed | unsolved
 let currentGrade = DEFAULT_GRADE;
 let currentFilter = 'all-tasks';
 let authToken = null;
+let matcenterAuthMode = 'detecting'; // account (v2) | legacy (старые deployment)
 let lockoutTimer = null;
 let autoRefreshTimer = null; // Таймер автообновления
 let deviceFingerprint = null;
@@ -86,6 +87,174 @@ let personalSolvedRef = null;
 let personalSolvedMap = {};
 let personalSolvedInitialized = false;
 // Подсказки теперь хранятся в Google Sheet (столбец Hint)
+
+async function postMatcenterJson(endpoint, payload) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 9000);
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+            body: JSON.stringify(payload || {}),
+            signal: controller.signal
+        });
+        if (!response.ok) {
+            const error = new Error(`HTTP ${response.status}`);
+            error.code = response.status === 401 || response.status === 403 ? 'AUTH' : 'HTTP';
+            throw error;
+        }
+        const text = await response.text();
+        try { return JSON.parse(text); }
+        catch (_) { throw new Error('Сервер вернул некорректный ответ'); }
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+async function detectMatcenterAuthMode() {
+    const remembered = safeGet('matcenter_auth_mode');
+    const checks = await Promise.allSettled(
+        TASKS_ENDPOINTS.map(endpoint => postMatcenterJson(endpoint, { action: 'capabilities' }))
+    );
+    const responses = checks.filter(item => item.status === 'fulfilled').map(item => item.value);
+    if (responses.length === TASKS_ENDPOINTS.length && responses.every(data => Number(data.authVersion) >= 2)) {
+        safeSet('matcenter_auth_mode', 'account');
+        return 'account';
+    }
+    // После перехода на v2 сетевой сбой не должен возвращать пароль в legacy URL.
+    if (remembered === 'account') return 'account';
+    safeSet('matcenter_auth_mode', 'legacy');
+    return 'legacy';
+}
+
+function getMatcenterFirebaseAuth() {
+    if (typeof firebase === 'undefined' || typeof firebase.auth !== 'function') return null;
+    try { return firebase.auth(); } catch (_) { return null; }
+}
+
+async function waitForMatcenterUser() {
+    const auth = getMatcenterFirebaseAuth();
+    if (!auth) return null;
+    if (auth.currentUser) return auth.currentUser;
+    return new Promise(resolve => {
+        let settled = false;
+        let unsubscribe = () => {};
+        const timer = setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            unsubscribe();
+            resolve(auth.currentUser || null);
+        }, 3500);
+        unsubscribe = auth.onAuthStateChanged(user => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            unsubscribe();
+            resolve(user || null);
+        }, () => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            unsubscribe();
+            resolve(null);
+        });
+    });
+}
+
+async function getMatcenterIdToken(forceRefresh = false) {
+    const user = await waitForMatcenterUser();
+    if (!user) {
+        const error = new Error('Сначала войдите в аккаунт Almanion');
+        error.code = 'ACCOUNT_REQUIRED';
+        throw error;
+    }
+    return user.getIdToken(forceRefresh);
+}
+
+async function checkMatcenterAccountAccess() {
+    const idToken = await getMatcenterIdToken();
+    const results = await Promise.all(TASKS_ENDPOINTS.map(endpoint =>
+        postMatcenterJson(endpoint, { action: 'accessStatus', idToken })
+    ));
+    return {
+        allowed: results.every(data => data && data.success && data.allowed),
+        isAdmin: results.length > 0 && results.every(data => data && data.isAdmin)
+    };
+}
+
+async function authorizeMatcenterAccount(password) {
+    const idToken = await getMatcenterIdToken(true);
+    const results = await Promise.all(TASKS_ENDPOINTS.map(endpoint =>
+        postMatcenterJson(endpoint, { action: 'authorizeAccount', idToken, password })
+    ));
+    const failure = results.find(data => !data || !data.success || !data.allowed);
+    if (failure) {
+        const error = new Error(failure.error || 'Не удалось подтвердить аккаунт');
+        error.code = /парол/i.test(error.message) ? 'AUTH' : 'SERVER';
+        throw error;
+    }
+    return { isAdmin: results.length > 0 && results.every(data => data.isAdmin) };
+}
+
+async function initializeMatcenterAccess(fingerprintPromise) {
+    matcenterAuthMode = await detectMatcenterAuthMode();
+    if (matcenterAuthMode === 'account') {
+        safeRemove('matcenter_auth');
+        clearSession();
+        const user = await waitForMatcenterUser();
+        if (!user) {
+            showAuthForm();
+            return;
+        }
+        try {
+            const access = await checkMatcenterAccountAccess();
+            if (!access.allowed) {
+                showAuthForm();
+                return;
+            }
+            authToken = 'account';
+            isAdmin = access.isAdmin;
+            hideAuthForm();
+            const hadCache = applyTasksFromCache();
+            await loadTasksFromGoogleSheets(false, hadCache);
+        } catch (error) {
+            authToken = null;
+            showAuthForm();
+            showMatcenterAuthMessage(error.message || 'Не удалось проверить доступ', false);
+        }
+        return;
+    }
+
+    const savedPassword = safeGet('matcenter_auth');
+    if (!savedPassword) {
+        showAuthForm();
+        return;
+    }
+
+    authToken = savedPassword;
+    hideAuthForm();
+    const hadCache = applyTasksFromCache();
+    try {
+        await loadTasksFromGoogleSheets(false, hadCache);
+        try {
+            await fingerprintPromise;
+            createSession(await hashPassword(savedPassword));
+        } catch (error) {
+            console.warn('Ошибка создания legacy-сессии:', error);
+        }
+    } catch (error) {
+        const isAuthFailure = error && (error.code === 'AUTH'
+            || /парол|недостаточно прав|unauthor|\b401\b|\b403\b/i.test(error.message || ''));
+        if (hadCache && !isAuthFailure) {
+            showMatcenterDataWarning('Сервер временно недоступен. Показана сохранённая копия задач.');
+        } else {
+            authToken = null;
+            isAdmin = false;
+            safeRemove('matcenter_auth');
+            showAuthForm();
+        }
+    }
+}
 
 // ============================================
 // SECURITY STATS & MONITORING
@@ -233,56 +402,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log(`✅ Отпечаток: ${fp.substring(0, 16)}...`);
     }) : Promise.resolve();
     
-    // Проверяем, есть ли сохранённый пароль
-    const savedPassword = safeGet('matcenter_auth');
-    console.log('🔑 Сохранённый пароль:', savedPassword ? 'найден ✅' : 'не найден ❌');
-    
-    if (savedPassword) {
-        authToken = savedPassword;
-        
-        // Сразу скрываем форму и показываем меню
-        hideAuthForm();
-
-        // Мгновенно показываем последний кэш, пока идёт запрос к Google Таблице
-        const hadCache = applyTasksFromCache();
-
-        try {
-            // Пробуем загрузить данные с сохранённым паролем
-            console.log('🔄 Попытка загрузки с сохранённым паролем...');
-            await loadTasksFromGoogleSheets(false, hadCache);
-            console.log(isAdmin ? '✅ Загрузка успешна! (АДМИН)' : '✅ Загрузка успешна! Пользователь авторизован.');
-            
-            // Создаём сессию сразу (важно для сохранения между перезагрузками)
-            try {
-                await fingerprintPromise; // Ждём отпечаток
-                const passwordHash = await hashPassword(savedPassword);
-                createSession(passwordHash);
-                console.log('✅ Сессия создана');
-            } catch (err) {
-                console.warn('⚠️ Ошибка создания сессии:', err);
-            }
-            
-        } catch (error) {
-            const isAuthFailure = error && (error.code === 'AUTH'
-                || /парол|недостаточно прав|unauthor|\b401\b|\b403\b/i.test(error.message || ''));
-
-            // A network/server failure must not invalidate a previously working
-            // local session. Keep the cached read-only data available offline.
-            if (hadCache && !isAuthFailure) {
-                console.warn('⚠️ Сервер недоступен, используется локальный кэш:', error.message);
-                showMatcenterDataWarning('Сервер временно недоступен. Показана сохранённая копия задач.');
-            } else {
-                console.warn('⚠️ Сохранённый пароль недействителен:', error.message);
-                authToken = null;
-                isAdmin = false;
-                safeRemove('matcenter_auth');
-                showAuthForm();
-            }
-        }
-    } else {
-        console.log('📋 Показываем форму авторизации...');
-        showAuthForm();
-    }
+    await initializeMatcenterAccess(fingerprintPromise);
     
     // Инициализируем авторизацию (проверка сессии будет внутри)
     initAuth();

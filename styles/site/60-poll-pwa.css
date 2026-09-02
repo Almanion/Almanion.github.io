@@ -251,6 +251,15 @@
     width: 18px;
 }
 
+/* На главной кнопка является частью потока страницы и не перекрывает карточки. */
+body.home-page .pwa-install-btn {
+    bottom: auto;
+    left: auto;
+    position: relative;
+    width: max-content;
+    margin: -1rem auto 1.25rem;
+}
+
 .pwa-mini-toast {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -408,8 +417,12 @@ body.experimental .pwa-install-help-list > div {
 }
 
 @media (max-width: 768px) {
-    body.experimental .pwa-install-btn {
+    body.experimental:not(.home-page) .pwa-install-btn {
         bottom: calc(74px + env(safe-area-inset-bottom));
+    }
+
+    body.home-page .pwa-install-btn {
+        margin: -0.5rem auto 1rem;
     }
 
     .pwa-install-help {

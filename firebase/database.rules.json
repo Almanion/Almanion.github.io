@@ -1,0 +1,122 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "admins": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false,
+        ".validate": "newData.isBoolean()"
+      }
+    },
+
+    "presence": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$visitorId": {
+        ".write": true,
+        "visitorId": { ".validate": "newData.isString() && newData.val() === $visitorId" },
+        "page": { ".validate": "newData.isString() && newData.val().length <= 180" },
+        "pageTitle": { ".validate": "newData.isString() && newData.val().length <= 180" },
+        "timestamp": { ".validate": "newData.isNumber()" },
+        "userAgent": { ".validate": "newData.isString() && newData.val().length <= 120" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "polls": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".indexOn": ["active", "createdAt"]
+    },
+
+    "pollResponses": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$pollId": {
+        "$visitorId": {
+          ".write": "!data.exists()",
+          ".validate": "newData.hasChildren(['optionIndex', 'optionText', 'timestamp', 'page'])",
+          "optionIndex": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 20" },
+          "optionText": { ".validate": "newData.isString() && newData.val().length <= 240" },
+          "timestamp": { ".validate": "newData.isNumber()" },
+          "page": { ".validate": "newData.isString() && newData.val().length <= 180" },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
+    "visitors": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$visitorId": {
+        ".write": "newData.exists() || (auth != null && root.child('admins').child(auth.uid).val() === true)",
+        "id": { ".validate": "newData.isString() && newData.val() === $visitorId" },
+        "lastVisit": { ".validate": "newData.isNumber()" },
+        "lastPage": { ".validate": "newData.isString() && newData.val().length <= 180" },
+        "visitCount": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "dailyStats": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$day": {
+        "$visitorId": {
+          ".write": "newData.val() === true",
+          ".validate": "newData.isBoolean()"
+        }
+      }
+    },
+
+    "visitorNames": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+
+    "directMessages": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$visitorId": {
+        ".read": true,
+        "$msgId": {
+          "read": { ".write": true, ".validate": "newData.isBoolean()" },
+          "readAt": { ".write": true, ".validate": "newData.isNumber()" }
+        }
+      }
+    },
+
+    "bookmarks": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "ticketBuilder": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "publicTickets": {
+      ".read": true,
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "kc": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "matcenterSolved": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    }
+  }
+}

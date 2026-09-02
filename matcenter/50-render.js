@@ -455,26 +455,27 @@ async function changeTaskStatus(taskOrNumber, newStatus) {
     console.log(`🔄 Изменение статуса задачи №${mutation.taskNumber} на "${newStatus}"...`);
 
     const endpoint = getEndpointForTask(mutation.task || taskOrNumber);
-    const params = new URLSearchParams({
-        password: authToken || '',
+    const payload = {
         action: 'changeStatus',
         taskNumber: mutation.taskNumber,
         newStatus: newStatus || '',
         grade: mutation.grade,
         taskId: mutation.taskId
-    });
-    const url = `${endpoint}?${params.toString()}`;
+    };
     
     try {
-        const response = await fetch(url);
-        const responseText = await response.text();
-        
         let data;
-        try {
-            data = JSON.parse(responseText);
-        } catch (parseError) {
-            console.error('❌ Ошибка парсинга ответа сервера:', parseError);
-            throw new Error('Сервер вернул некорректный JSON: ' + responseText);
+        if (matcenterAuthMode === 'account') {
+            data = await postMatcenterJson(endpoint, {
+                ...payload,
+                idToken: await getMatcenterIdToken()
+            });
+        } else {
+            const params = new URLSearchParams({ ...payload, password: authToken || '' });
+            const response = await fetch(`${endpoint}?${params.toString()}`);
+            const responseText = await response.text();
+            try { data = JSON.parse(responseText); }
+            catch (_) { throw new Error('Сервер вернул некорректный JSON: ' + responseText); }
         }
         
         if (!data.success) {

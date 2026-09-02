@@ -274,6 +274,16 @@ body.experimental .search-box input:focus {
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--exp-accent) 15%, transparent);
 }
 body.experimental .sidebar-search-icon { color: var(--exp-text-faint); }
+body.experimental .site-search-scope {
+    background: var(--exp-surface-2);
+    border-color: var(--exp-border);
+}
+body.experimental .site-search-scope button { color: var(--exp-text-faint); }
+body.experimental .site-search-scope button.active {
+    color: var(--exp-text);
+    background: var(--exp-surface);
+    box-shadow: var(--exp-shadow-sm);
+}
 
 body.experimental .nav-section h3 {
     color: var(--exp-text-faint);
@@ -303,7 +313,12 @@ body.experimental .nav-link.active {
     font-weight: 650;
     box-shadow: inset 2px 0 0 var(--exp-accent);
 }
-body.experimental .nav-group-toggle { color: var(--exp-text); border-left: none; }
+body.experimental .nav-group-toggle,
+body.experimental .nav-group-heading {
+    color: var(--exp-text-faint);
+    border-left: none;
+}
+body.experimental .nav-submenu { border-left-color: var(--exp-border); }
 
 /* Кнопки сайдбара/FAB */
 body.experimental .menu-toggle,
@@ -591,7 +606,12 @@ body.experimental .bookmark-btn {
 body:not(.no-hover).experimental .copy-block-btn:hover,
 body:not(.no-hover).experimental .bookmark-btn:hover {
     color: var(--exp-accent);
-    background: var(--exp-accent-soft);
+    background: transparent;
+}
+body:not(.no-hover).experimental .copy-block-btn:hover { background: var(--exp-accent-soft); }
+body:not(.no-hover).experimental .bookmark-btn:hover .bookmark-icon {
+    fill: currentColor;
+    transform: scale(1.04);
 }
 body.experimental .bookmark-btn.bookmarked { color: var(--exp-accent); }
 
@@ -648,8 +668,12 @@ body.experimental .topics-count {
 }
 body.experimental .last-update { color: var(--exp-text-faint) !important; border-color: var(--exp-border) !important; }
 body.experimental .status-badge.status-active {
-    background: color-mix(in srgb, var(--t-proof) 16%, transparent) !important;
-    color: var(--t-proof) !important;
+    background: transparent !important;
+    color: var(--exp-text-faint) !important;
+    box-shadow: none !important;
+}
+body.experimental .status-badge.status-active::before {
+    background: color-mix(in srgb, var(--t-proof) 76%, var(--exp-text-faint));
 }
 body.experimental .stat-item {
     background: var(--exp-surface) !important;

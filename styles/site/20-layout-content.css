@@ -204,6 +204,48 @@ body.dark-theme .search-box input:focus {
     overscroll-behavior: contain;
 }
 
+.site-search-scope {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.24rem;
+    margin: 0 0.55rem 0.48rem;
+    padding: 0.22rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 9px;
+}
+
+.site-search-panel .search-results-list {
+    max-height: calc(min(54vh, 520px) - 82px);
+}
+
+.site-search-scope button {
+    min-height: 30px;
+    padding: 0.28rem 0.45rem;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.site-search-scope button.active {
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+
+.site-search-empty {
+    padding: 0.85rem 0.7rem 1rem;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    line-height: 1.45;
+    text-align: center;
+}
+
 .search-result-item {
     display: flex;
     flex-direction: column;
@@ -397,6 +439,68 @@ mark.search-result-term {
    слишком резкий «прыжок»); подсветка — фоном из .nav-link:hover. */
 body:not(.no-hover) .nav-submenu .nav-link:hover {
     padding-left: calc(var(--spacing) + 1rem);
+}
+
+/* Статичное оглавление: структура видна сразу, без вложенных аккордеонов. */
+.nav-group {
+    margin: 0.8rem 0 1rem;
+}
+
+.nav-group-toggle,
+.nav-group-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    width: 100%;
+    padding: 0.38rem var(--spacing) 0.48rem;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 0;
+    font-size: 0.76rem;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: 0.055em;
+    text-align: left;
+    text-transform: uppercase;
+}
+
+.nav-group-toggle::before,
+.nav-group-heading::before {
+    content: '';
+    width: 0.34rem;
+    height: 0.34rem;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.5;
+}
+
+.nav-group-toggle .toggle-icon { display: none; }
+
+.nav-submenu,
+.nav-group.open .nav-submenu,
+.nav-group:not(.open) .nav-submenu {
+    max-height: none;
+    margin: 0 0.72rem 0 1.05rem;
+    padding: 0.08rem 0 0.08rem 0.62rem;
+    overflow: visible;
+    background: transparent;
+    border-left: 1px solid var(--border-color);
+    transition: none;
+}
+
+.nav-submenu .nav-link {
+    margin: 0.08rem 0;
+    padding: 0.56rem 0.68rem;
+    border: 0;
+    border-radius: 8px;
+    font-size: 0.86rem;
+    line-height: 1.32;
+}
+
+body:not(.no-hover) .nav-submenu .nav-link:hover {
+    padding-left: 0.68rem;
+    transform: none;
 }
 
 /* РЎСЃС‹Р»РєРё РЅР° РґСЂСѓРіРёРµ РїСЂРµРґРјРµС‚С‹ - Р°РґР°РїС‚РёРІРЅС‹Рµ Рє С‚РµРјРµ */
@@ -2379,7 +2483,8 @@ input:focus:not(:focus-visible) {
 
 /* РЈР»СѓС‡С€РµРЅРёРµ РєРѕРЅС‚СЂР°СЃС‚РЅРѕСЃС‚Рё РґР»СЏ С‚РµРєСЃС‚Р° */
 .nav-link,
-.nav-group-toggle {
+.nav-group-toggle,
+.nav-group-heading {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -2391,15 +2496,35 @@ input:focus:not(:focus-visible) {
 
 /* РЈР»СѓС‡С€РµРЅРёРµ РїСЂРѕРёР·РІРѕРґРёС‚РµР»СЊРЅРѕСЃС‚Рё Р°РЅРёРјР°С†РёР№ */
 .sidebar,
-.nav-submenu,
 .toggle-icon,
 .sidebar-overlay {
     will-change: transform;
 }
 
 .sidebar:not(.open),
-.nav-group:not(.open) .nav-submenu,
 .sidebar-overlay:not(.active) {
     will-change: auto;
+}
+
+@media (max-width: 768px) {
+    .nav-group-toggle,
+    .nav-group-heading {
+        padding: 0.42rem var(--m-pad) 0.46rem;
+        font-size: 0.72rem;
+    }
+
+    .nav-submenu,
+    .nav-group.open .nav-submenu,
+    .nav-group:not(.open) .nav-submenu {
+        margin-right: 0.7rem;
+        margin-left: 1rem;
+        padding-left: 0.56rem;
+    }
+
+    .nav-submenu .nav-link,
+    body:not(.no-hover) .nav-submenu .nav-link:hover {
+        padding: 0.6rem 0.64rem;
+        font-size: 0.84rem;
+    }
 }
 

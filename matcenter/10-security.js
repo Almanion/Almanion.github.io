@@ -216,7 +216,8 @@ function createSession(passwordHash) {
 
 function clearSession() {
     safeRemove('matcenter_session');
-    // НЕ удаляем matcenter_auth - пароль должен сохраняться для автовхода
+    // В legacy-режиме пароль остаётся для совместимости со старым endpoint.
+    // В account-режиме 00-core.js удаляет его: доступ хранится на сервере по UID.
     console.log('🗑️ Сессия очищена');
 }
 

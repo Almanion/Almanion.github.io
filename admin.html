@@ -1142,13 +1142,35 @@
             loginError.style.display = 'block';
         }
 
-        // Слушаем состояние авторизации
-        auth.onAuthStateChanged((user) => {
+        // Одного Firebase-входа недостаточно: любой посетитель может создать
+        // обычный аккаунт на сайте. Право администратора хранится отдельно в
+        // /admins/<uid> и дополнительно проверяется правилами Realtime Database.
+        let adminAuthCheckGeneration = 0;
+
+        auth.onAuthStateChanged(async (user) => {
+            const generation = ++adminAuthCheckGeneration;
             if (user) {
-                loginScreen.style.display = 'none';
-                dashboard.style.display = 'block';
-                document.getElementById('adminEmail').textContent = user.email;
-                initDashboard();
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'Проверка доступа...';
+                try {
+                    const accessSnapshot = await db.ref('admins/' + user.uid).once('value');
+                    if (generation !== adminAuthCheckGeneration) return;
+                    if (accessSnapshot.val() !== true) {
+                        await auth.signOut();
+                        showLoginError('У этого аккаунта нет прав администратора');
+                        return;
+                    }
+
+                    loginError.style.display = 'none';
+                    loginScreen.style.display = 'none';
+                    dashboard.style.display = 'block';
+                    document.getElementById('adminEmail').textContent = user.email;
+                    initDashboard();
+                } catch (error) {
+                    if (generation !== adminAuthCheckGeneration) return;
+                    await auth.signOut().catch(() => {});
+                    showLoginError('Не удалось проверить права администратора');
+                }
             } else {
                 loginScreen.style.display = 'flex';
                 dashboard.style.display = 'none';

@@ -225,29 +225,35 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
 
 async function loadFromOneEndpoint(endpoint, endpointIdx) {
     const clientId = deviceFingerprint ? deviceFingerprint.substring(0, 16) : 'unknown';
-    const url = `${endpoint}?password=${encodeURIComponent(authToken)}&clientId=${encodeURIComponent(clientId)}`;
-
-    let response;
-    try {
-        response = await fetch(url);
-    } catch (error) {
-        const wrapped = new Error('Сеть: ' + (error && error.message || error));
-        wrapped.code = 'NETWORK';
-        throw wrapped;
-    }
-
-    if (!response.ok) {
-        const httpError = new Error(`HTTP ${response.status}`);
-        httpError.code = response.status === 401 || response.status === 403 ? 'AUTH' : 'HTTP';
-        throw httpError;
-    }
-
-    const text = await response.text();
     let data;
-    try {
-        data = JSON.parse(text);
-    } catch (e) {
-        throw new Error('Невалидный JSON: ' + text.substring(0, 100));
+    if (matcenterAuthMode === 'account') {
+        try {
+            data = await postMatcenterJson(endpoint, {
+                idToken: await getMatcenterIdToken(),
+                clientId
+            });
+        } catch (error) {
+            if (!error.code) error.code = 'NETWORK';
+            throw error;
+        }
+    } else {
+        const url = `${endpoint}?password=${encodeURIComponent(authToken)}&clientId=${encodeURIComponent(clientId)}`;
+        let response;
+        try {
+            response = await fetch(url);
+        } catch (error) {
+            const wrapped = new Error('Сеть: ' + (error && error.message || error));
+            wrapped.code = 'NETWORK';
+            throw wrapped;
+        }
+        if (!response.ok) {
+            const httpError = new Error(`HTTP ${response.status}`);
+            httpError.code = response.status === 401 || response.status === 403 ? 'AUTH' : 'HTTP';
+            throw httpError;
+        }
+        const text = await response.text();
+        try { data = JSON.parse(text); }
+        catch (_) { throw new Error('Невалидный JSON: ' + text.substring(0, 100)); }
     }
 
     if (!data.success) {

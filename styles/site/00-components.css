@@ -794,6 +794,28 @@ body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color)
 body.dark-theme .sidebar-header .account-btn { background: rgba(255,255,255,0.2); color: #fff; }
 body.dark-theme .sidebar-header .account-btn:hover { background: rgba(255,255,255,0.3); }
 
+.account-btn.home-account-btn {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 9998;
+    width: 44px;
+    height: 44px;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.account-btn.home-account-btn svg { width: 20px; height: 20px; }
+
+@media (max-width: 768px) {
+    .account-btn.home-account-btn {
+        top: 0.75rem;
+        left: 0.75rem;
+    }
+}
+
 .account-modal { max-width: 360px; text-align: center; }
 .account-modal .auth-icon { color: var(--accent-color); }
 .account-modal h2 { margin: 0.25rem 0 0.4rem; }
@@ -995,6 +1017,18 @@ body.lightbox-open { overflow: hidden; }
     transform: scale(1.15);
 }
 
+.bookmark-btn .bookmark-icon {
+    display: block;
+    width: 1.2em;
+    height: 1.2em;
+    transition: fill 0.14s ease, transform 0.14s ease;
+}
+
+body:not(.no-hover) .bookmark-btn:not(.bookmarked):hover .bookmark-icon,
+.bookmark-btn:not(.bookmarked):focus-visible .bookmark-icon {
+    fill: currentColor;
+}
+
 .bookmark-btn.bookmarked {
     opacity: 1;
     color: var(--warning-color);
@@ -1167,15 +1201,10 @@ body:not(.no-hover) .bm-drag-handle:hover { opacity: 1; background: var(--bg-ter
     height: auto;
 }
 
-/* Подвал «Перейти к блоку»: у коротких карточек виден всегда,
-   у обрезанных появляется в раскрытом состоянии */
+/* Переход — самостоятельное действие, поэтому он виден и у свёрнутой карточки. */
 .bm-card-foot {
-    display: none;
-    padding: 0 0.75rem 0.55rem;
-}
-.bm-card:not(.bm-clamped) .bm-card-foot,
-.bm-card.expanded .bm-card-foot {
     display: block;
+    padding: 0 0.75rem 0.55rem;
 }
 .bm-card-goto {
     background: none;

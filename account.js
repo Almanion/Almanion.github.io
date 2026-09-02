@@ -71,14 +71,7 @@
     // ---------- Кнопка в шапке меню ----------
     function buildButton() {
         const header = document.querySelector('.sidebar-header');
-        if (!header) return;
         if (document.getElementById('accountBtn')) return;
-        let container = header.querySelector('.sidebar-header-buttons');
-        if (!container) {
-            container = document.createElement('div');
-            container.className = 'sidebar-header-buttons';
-            header.appendChild(container);
-        }
         const btn = document.createElement('button');
         btn.id = 'accountBtn';
         btn.className = 'account-btn';
@@ -86,6 +79,19 @@
         btn.setAttribute('aria-label', 'Войти в аккаунт');
         btn.innerHTML = IC_USER;
         btn.addEventListener('click', onAccountClick);
+        if (!header) {
+            if (!document.body.classList.contains('home-page')) return;
+            btn.classList.add('home-account-btn');
+            document.body.appendChild(btn);
+            updateButton();
+            return;
+        }
+        let container = header.querySelector('.sidebar-header-buttons');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'sidebar-header-buttons';
+            header.appendChild(container);
+        }
         // Иконка аккаунта — левее кнопки сворачивания «‹» (она должна быть правее аккаунта).
         const collapseBtn = container.querySelector('.sidebar-collapse-btn');
         const settingsBtn = container.querySelector('#settingsButtonSidebar');

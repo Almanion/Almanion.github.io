@@ -787,6 +787,24 @@ body.matcenter-hint-open {
     font-size: 0.9rem;
 }
 
+.matcenter-account-note {
+    max-width: 31rem;
+    margin-right: auto;
+    margin-left: auto;
+    line-height: 1.5;
+}
+
+.matcenter-account-login {
+    width: 100%;
+    margin-bottom: 0.7rem;
+}
+
+.matcenter-account-login[hidden],
+#passwordInput[hidden],
+#authSubmit[hidden] {
+    display: none !important;
+}
+
 #authForm {
     display: flex;
     flex-direction: column;

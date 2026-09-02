@@ -8,6 +8,10 @@
     const VISITOR_ID_KEY = 'almanion_visitor_id';
     const LOCAL_BOOKMARKS_KEY = 'almanion_bookmarks';
     let db = null;
+    let auth = null;
+    let bookmarkRef = null;
+    let bookmarkOwnerUid = null;
+    let bookmarkCacheKey = LOCAL_BOOKMARKS_KEY + '_guest';
     let visitorId = null;
     let bookmarks = {};
     let bookmarksPanelOpen = false;
@@ -31,67 +35,147 @@
 
     function initFirebase() {
         if (typeof firebase === 'undefined') return false;
-        if (!firebaseConfig || firebaseConfig.apiKey === "AIzaSyD7pwdKZZJapEdD60TS_z_UFD9IijB_UYU") return false;
+        if (typeof firebaseConfig === 'undefined' || !firebaseConfig || firebaseConfig.apiKey === "ВСТАВЬ_СВОЙ_API_KEY") return false;
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         db = firebase.database();
+        auth = typeof firebase.auth === 'function' ? firebase.auth() : null;
         return true;
     }
 
     function getBookmarksRef() {
-        if (!db || !visitorId) return null;
-        return db.ref('bookmarks/' + visitorId);
+        return bookmarkRef;
     }
 
     function loadBookmarks() {
         try {
-            bookmarks = JSON.parse(safeGet(LOCAL_BOOKMARKS_KEY) || '{}');
+            const guest = safeGet(bookmarkCacheKey);
+            const legacy = safeGet(LOCAL_BOOKMARKS_KEY);
+            bookmarks = JSON.parse(guest || legacy || '{}');
+            if (!guest && legacy) safeSet(bookmarkCacheKey, legacy);
         } catch { bookmarks = {}; }
 
-        const ref = getBookmarksRef();
-        if (ref) {
-            ref.on('value', (snap) => {
-                const remote = snap.val() || {};
-                const merged = { ...bookmarks, ...remote };
-                bookmarks = merged;
-                safeSet(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
-                refreshAllButtons();
-                // Не пересобираем панель из-за собственного эха (порядок/добавление/
-                // удаление уже отражены локально) — иначе мигание и сброс раскрытых карточек.
-                if (bookmarksPanelOpen && !bmDragging && (Date.now() - lastLocalWriteAt > 1200)) {
-                    renderBookmarksPanel();
-                }
-            }, () => {});
+        if (auth) auth.onAuthStateChanged(connectBookmarksAccount);
+    }
+
+    function bookmarkUpdatedAt(entry) {
+        return Number(entry && (entry.updatedAt || entry.timestamp)) || 0;
+    }
+
+    function mergeBookmarkStores(local, remote) {
+        const merged = {};
+        new Set(Object.keys(local || {}).concat(Object.keys(remote || {}))).forEach(id => {
+            const a = local && local[id];
+            const b = remote && remote[id];
+            if (!a) merged[id] = b;
+            else if (!b) merged[id] = a;
+            else merged[id] = bookmarkUpdatedAt(b) >= bookmarkUpdatedAt(a) ? b : a;
+        });
+        return merged;
+    }
+
+    function connectBookmarksAccount(user) {
+        safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
+        if (bookmarkRef) {
+            try { bookmarkRef.off(); } catch (_) {}
+            bookmarkRef = null;
         }
+        const previousOwnerUid = bookmarkOwnerUid;
+        bookmarkOwnerUid = user && user.uid ? user.uid : null;
+        bookmarkCacheKey = bookmarkOwnerUid
+            ? LOCAL_BOOKMARKS_KEY + '_uid_' + bookmarkOwnerUid
+            : LOCAL_BOOKMARKS_KEY + '_guest';
+
+        let cachedForOwner = {};
+        try { cachedForOwner = JSON.parse(safeGet(bookmarkCacheKey) || '{}'); } catch (_) {}
+        if (bookmarkOwnerUid && !previousOwnerUid) {
+            // Первые локальные закладки гостя переносим в вошедший аккаунт.
+            bookmarks = mergeBookmarkStores(cachedForOwner, bookmarks);
+        } else {
+            bookmarks = cachedForOwner;
+        }
+
+        if (!db || !bookmarkOwnerUid) {
+            refreshAllButtons();
+            if (bookmarksPanelOpen) renderBookmarksPanel();
+            return;
+        }
+
+        bookmarkRef = db.ref('bookmarks/' + bookmarkOwnerUid);
+        const ref = bookmarkRef;
+        ref.once('value').then(snap => {
+            if (bookmarkRef !== ref) return null;
+            bookmarks = mergeBookmarkStores(bookmarks, snap.val() || {});
+            safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
+            return ref.update(bookmarks);
+        }).then(() => {
+            if (bookmarkRef !== ref) return;
+            ref.on('value', applyRemoteBookmarks, () => {});
+            refreshAllButtons();
+            if (bookmarksPanelOpen) renderBookmarksPanel();
+        }).catch(() => {
+            refreshAllButtons();
+        });
+    }
+
+    function applyRemoteBookmarks(snap) {
+        bookmarks = mergeBookmarkStores(bookmarks, snap.val() || {});
+        safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
+        refreshAllButtons();
+        if (bookmarksPanelOpen && !bmDragging && (Date.now() - lastLocalWriteAt > 1200)) {
+            renderBookmarksPanel();
+        }
+    }
+
+    function hasBookmark(id) {
+        return !!(bookmarks[id] && !bookmarks[id].deleted);
     }
 
     function saveBookmark(id, data) {
-        bookmarks[id] = data;
+        bookmarks[id] = { ...data, deleted: false, updatedAt: Date.now() };
         lastLocalWriteAt = Date.now();
         const ref = getBookmarksRef();
         if (ref) {
-            ref.child(id).set(data);
+            ref.child(id).set(bookmarks[id]).catch(() => {});
         }
-        safeSet(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
+        safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
     }
 
     function removeBookmark(id) {
-        delete bookmarks[id];
+        bookmarks[id] = {
+            deleted: true,
+            updatedAt: Date.now(),
+            timestamp: bookmarkUpdatedAt(bookmarks[id])
+        };
         lastLocalWriteAt = Date.now();
         const ref = getBookmarksRef();
         if (ref) {
-            ref.child(id).remove();
+            ref.child(id).set(bookmarks[id]).catch(() => {});
         }
-        safeSet(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
+        safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
     }
 
     function generateBookmarkId(box) {
-        const topic = box.closest('.topic');
+        const topic = box.closest('.topic[id], .content-section[id]');
         const topicId = topic ? topic.id : 'unknown';
+        const pageId = (location.pathname.split('/').pop() || 'index').replace(/\.html$/i, '');
         const boxes = topic ? Array.from(topic.querySelectorAll('.definition-box, .formula-box, .theorem-box, .remark-box, .lemma-box, .example-box, .statement-box, .corollary-box, .properties-box, .experiment-box, .derivation-box, .system-box')) : [];
         const idx = boxes.indexOf(box);
-        return topicId + '_' + idx;
+        return pageId + '__' + topicId + '_' + idx;
+    }
+
+    function migrateLegacyBookmark(box, newId) {
+        const topic = box.closest('.topic[id], .content-section[id]');
+        if (!topic) return;
+        const boxes = Array.from(topic.querySelectorAll('.definition-box, .formula-box, .theorem-box, .remark-box, .lemma-box, .example-box, .statement-box, .corollary-box, .properties-box, .experiment-box, .derivation-box, .system-box'));
+        const legacyId = topic.id + '_' + boxes.indexOf(box);
+        const legacy = bookmarks[legacyId];
+        if (!legacy || legacy.deleted || bookmarks[newId]) return;
+        const samePage = !legacy.page || legacy.page === location.pathname || legacy.page.endsWith('/' + (location.pathname.split('/').pop() || ''));
+        if (!samePage || (legacy.topicId && legacy.topicId !== topic.id)) return;
+        saveBookmark(newId, { ...legacy, timestamp: legacy.timestamp || Date.now() });
+        removeBookmark(legacyId);
     }
 
     function getBookmarkPreview(box) {
@@ -163,21 +247,23 @@
 
             const btn = document.createElement('button');
             btn.className = 'bookmark-btn';
-            btn.setAttribute('aria-label', 'Добавить в закладки');
             const bmId = generateBookmarkId(box);
+            migrateLegacyBookmark(box, bmId);
             btn.dataset.bmId = bmId;
-            btn.innerHTML = bookmarkSvg(!!bookmarks[bmId]);
-            if (bookmarks[bmId]) btn.classList.add('bookmarked');
+            btn.innerHTML = bookmarkSvg(hasBookmark(bmId));
+            if (hasBookmark(bmId)) btn.classList.add('bookmarked');
+            btn.setAttribute('aria-label', hasBookmark(bmId) ? 'Удалить из закладок' : 'Добавить в закладки');
 
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const id = btn.dataset.bmId;
-                if (bookmarks[id]) {
+                if (hasBookmark(id)) {
                     removeBookmark(id);
                     btn.innerHTML = bookmarkSvg(false);
                     btn.classList.remove('bookmarked');
+                    btn.setAttribute('aria-label', 'Добавить в закладки');
                 } else {
-                    const topic = box.closest('.topic');
+                    const topic = box.closest('.topic[id], .content-section[id]');
                     const topicTitle = topic ? (topic.querySelector('.topic-title')?.textContent.trim() || '') : '';
                     saveBookmark(id, {
                         page: location.pathname,
@@ -190,6 +276,7 @@
                     });
                     btn.innerHTML = bookmarkSvg(true);
                     btn.classList.add('bookmarked');
+                    btn.setAttribute('aria-label', 'Удалить из закладок');
                     btn.style.transform = 'scale(1.3)';
                     setTimeout(() => btn.style.transform = '', 200);
                 }
@@ -211,12 +298,14 @@
     function refreshAllButtons() {
         document.querySelectorAll('.bookmark-btn').forEach(btn => {
             const id = btn.dataset.bmId;
-            if (bookmarks[id]) {
+            if (hasBookmark(id)) {
                 btn.innerHTML = bookmarkSvg(true);
                 btn.classList.add('bookmarked');
+                btn.setAttribute('aria-label', 'Удалить из закладок');
             } else {
                 btn.innerHTML = bookmarkSvg(false);
                 btn.classList.remove('bookmarked');
+                btn.setAttribute('aria-label', 'Добавить в закладки');
             }
         });
     }
@@ -338,7 +427,10 @@
     }
 
     function findBoxById(bmId) {
-        const parts = bmId.split('_');
+        const scopedId = String(bmId || '').includes('__')
+            ? String(bmId).slice(String(bmId).indexOf('__') + 2)
+            : String(bmId || '');
+        const parts = scopedId.split('_');
         const idx = parseInt(parts.pop());
         const topicId = parts.join('_');
         const topic = document.getElementById(topicId);
@@ -349,6 +441,7 @@
 
     function sortedEntries() {
         return Object.entries(bookmarks)
+            .filter(([, data]) => data && !data.deleted)
             .map(([id, data]) => ({ id, ...data }))
             .sort((a, b) => {
                 const oa = typeof a.order === 'number' ? a.order : Infinity;
@@ -361,9 +454,12 @@
     function persistOrder(orderedIds) {
         lastLocalWriteAt = Date.now();
         orderedIds.forEach((id, i) => {
-            if (bookmarks[id]) bookmarks[id].order = i;
+            if (hasBookmark(id)) {
+                bookmarks[id].order = i;
+                bookmarks[id].updatedAt = Date.now();
+            }
         });
-        safeSet(LOCAL_BOOKMARKS_KEY, JSON.stringify(bookmarks));
+        safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
         const ref = getBookmarksRef();
         if (ref) {
             const updates = {};
@@ -394,7 +490,7 @@
 
         const modal = document.getElementById('bookmarksModal');
         const currentPage = location.pathname;
-        const entries = sortedEntries().filter(bm => bm.page === currentPage);
+        const entries = sortedEntries();
 
         modal.innerHTML = '';
 
@@ -406,7 +502,7 @@
         if (entries.length === 0) {
             const empty = document.createElement('p');
             empty.style.cssText = 'color: var(--text-secondary); text-align: center; padding: 2rem 0;';
-            empty.innerHTML = 'Нет закладок на этой странице.<br>Нажмите <span class="eic eic-bookmark" aria-hidden="true"></span> на любом блоке, чтобы добавить.';
+            empty.innerHTML = 'Закладок пока нет.<br>Нажмите <span class="eic eic-bookmark" aria-hidden="true"></span> на любом блоке, чтобы добавить.';
             modal.appendChild(empty);
         } else {
             const hint = document.createElement('div');
@@ -417,7 +513,7 @@
             const list = document.createElement('div');
             list.className = 'bm-sortable-list';
             entries.forEach(bm => {
-                const card = createBookmarkCard(bm, true);
+                const card = createBookmarkCard(bm, bm.page === currentPage);
                 card.dataset.bmId = bm.id;
                 list.appendChild(card);
             });
@@ -667,8 +763,28 @@
                 setTimeout(() => box.classList.remove('nav-highlight'), 1500);
             }, 100);
         } else {
+            try { sessionStorage.setItem('almanion_bookmark_target', bm.id); } catch (_) {}
             window.location.href = bm.page + '#' + bm.topicId;
         }
+    }
+
+    function restoreBookmarkTarget() {
+        let bookmarkId = '';
+        try { bookmarkId = sessionStorage.getItem('almanion_bookmark_target') || ''; } catch (_) {}
+        if (!bookmarkId) return;
+        const box = findBoxById(bookmarkId);
+        if (!box) return;
+        try { sessionStorage.removeItem('almanion_bookmark_target'); } catch (_) {}
+        if (window.experimentalReader?.isActive?.()) {
+            window.experimentalReader.revealElement(box, {
+                source: 'bookmark', animate: false, scroll: false, updateHash: true
+            });
+        }
+        setTimeout(() => {
+            box.scrollIntoView({ behavior: 'auto', block: 'center' });
+            box.classList.add('nav-highlight');
+            setTimeout(() => box.classList.remove('nav-highlight'), 1500);
+        }, 120);
     }
 
     function createBookmarkCard(bm, isCurrentPage) {
@@ -769,6 +885,7 @@
         setTimeout(() => {
             addBookmarkButtons();
             addBookmarksSidebarButton();
+            restoreBookmarkTarget();
         }, 300);
     });
 })();

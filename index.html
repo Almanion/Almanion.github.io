@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -36,7 +36,7 @@
     <meta name="apple-mobile-web-app-title" content="Almanion">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Мои Конспекты | Almanion</title>
-    <link rel="stylesheet" href="styles/site/index.css?v=20260902-3">
+    <link rel="stylesheet" href="styles/site/index.css?v=20260902-5">
     <link rel="stylesheet" href="styles/tokens.css">
     <link rel="stylesheet" href="styles/buttons.css">
     <link rel="stylesheet" href="styles/mobile-overrides.css">
@@ -243,9 +243,18 @@
 
         .subjects-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(6, minmax(0, 1fr));
             gap: 2rem;
             margin-bottom: 3rem;
+        }
+
+        .subjects-grid > .subject-card {
+            grid-column: span 2;
+        }
+
+        /* При неполной последней строке карточки остаются по центру сетки. */
+        .subjects-grid > .subject-card:nth-last-child(2):nth-child(3n + 1) {
+            grid-column: 2 / span 2;
         }
 
         .subjects-grid.coming-soon {
@@ -254,7 +263,19 @@
 
         @media (max-width: 1200px) {
             .subjects-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+
+            .subjects-grid > .subject-card {
+                grid-column: span 2;
+            }
+
+            .subjects-grid > .subject-card:nth-last-child(2):nth-child(3n + 1) {
+                grid-column: span 2;
+            }
+
+            .subjects-grid > .subject-card:last-child:nth-child(odd) {
+                grid-column: 2 / span 2;
             }
             
             .subjects-grid.coming-soon {
@@ -267,6 +288,12 @@
             .subjects-grid.coming-soon {
                 grid-template-columns: 1fr;
                 gap: 0.65rem;
+            }
+
+            .subjects-grid > .subject-card,
+            .subjects-grid > .subject-card:nth-last-child(2):nth-child(3n + 1),
+            .subjects-grid > .subject-card:last-child:nth-child(odd) {
+                grid-column: 1;
             }
 
             .home-container {
@@ -634,8 +661,24 @@
         }
 
         .status-active {
-            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-            color: #047857;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.38rem;
+            padding-inline: 0;
+            background: transparent;
+            color: var(--text-secondary);
+            font-weight: 550;
+        }
+
+        .status-active .eic { display: none; }
+
+        .status-active::before {
+            content: '';
+            width: 0.42rem;
+            height: 0.42rem;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            background: #22a45d;
         }
 
         .status-coming {
@@ -742,11 +785,11 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="style-new.css?v=20260902-5">
+    <link rel="stylesheet" href="style-new.css?v=20260902-7">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260902-5">
 </head>
-<body>
+<body class="home-page">
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
     <!-- Кнопка настроек создается автоматически через settings.js -->
 
@@ -924,13 +967,15 @@
 
     <!-- Firebase Analytics -->
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="firebase-analytics.js"></script>
 
-    <script src="script.js?v=20260902-4"></script>
+    <script src="script.js?v=20260902-5"></script>
     <script src="newyear.js"></script>
     <script src="settings.js?v=20260902-2"></script>
+    <script src="account.js?v=20260902-4"></script>
     <script>
         // Анимация карточек при загрузке
         document.addEventListener('DOMContentLoaded', () => {

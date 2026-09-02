@@ -1,73 +1,9 @@
 // ============================================
 // FIREBASE КОНФИГУРАЦИЯ
 // ============================================
-//
-// ПРАВИЛА REALTIME DATABASE:
-// {
-//   "rules": {
-//     "presence": {
-//       ".read": true,
-//       "$uid": {
-//         ".write": true
-//       }
-//     },
-//     "polls": {
-//       ".read": true,
-//       ".write": "auth != null"
-//     },
-//     "pollResponses": {
-//       ".read": true,
-//       "$pollId": {
-//         "$visitorId": {
-//           ".write": true
-//         }
-//       }
-//     },
-//     "visitors": {
-//       ".read": "auth != null",
-//       ".write": true
-//     },
-//     "dailyStats": {
-//       ".read": "auth != null",
-//       ".write": true
-//     },
-//     "visitorNames": {
-//       ".read": "auth != null",
-//       ".write": "auth != null"
-//     },
-//     "directMessages": {
-//       ".read": true,
-//       ".write": "auth != null",
-//       "$visitorId": {
-//         "$msgId": {
-//           "read": { ".write": true },
-//           "readAt": { ".write": true }
-//         }
-//       }
-//     },
-//     "bookmarks": {
-//       "$visitorId": {
-//         ".read": true,
-//         ".write": true
-//       }
-//     },
-//     "matcenterSolved": {
-//       "$uid": {
-//         ".read": "auth != null && auth.uid === $uid",
-//         ".write": "auth != null && auth.uid === $uid"
-//       }
-//     },
-//     "ticketBuilder": {
-//       "$uid": {
-//         ".read": "auth != null && auth.uid === $uid",
-//         ".write": "auth != null && auth.uid === $uid"
-//       }
-//     }
-//   }
-// }
-//
-// ПРАВИЛА FIRESTORE:
-// Не используется в этой версии (всё через Realtime Database)
+// Актуальные правила Realtime Database лежат в firebase/database.rules.json.
+// Их нужно публиковать через Firebase Console: комментарий в клиентском файле
+// сам по себе не является границей безопасности.
 
 // Import the functions you need from the SDKs you need
 // ============================================

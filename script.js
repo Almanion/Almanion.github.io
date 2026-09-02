@@ -117,7 +117,10 @@ function showPwaInstallButton() {
             <span>Установить</span>
         `;
         btn.addEventListener('click', handlePwaInstallClick);
-        document.body.appendChild(btn);
+        const homeContainer = document.querySelector('.home-container');
+        const homeFooter = homeContainer?.querySelector('.home-footer');
+        if (homeContainer && homeFooter) homeContainer.insertBefore(btn, homeFooter);
+        else document.body.appendChild(btn);
     }
 
     requestAnimationFrame(() => btn.classList.add('is-visible'));
@@ -303,13 +306,18 @@ function initNavigation() {
         group.classList.add('open');
     });
     
-    // Обработка кликов по кнопкам раскрытия групп
+    // В новом оглавлении группы — постоянные смысловые разделители, а не
+    // аккордеоны. Пользователь сразу видит структуру и может быстро прокрутить
+    // список, не угадывая, внутри какой свёрнутой группы находится тема.
     navGroupToggles.forEach(toggle => {
-        toggle.addEventListener('click', (e) => {
-            e.preventDefault();
-            const navGroup = toggle.closest('.nav-group');
-            navGroup.classList.toggle('open');
-        });
+        const heading = document.createElement('div');
+        heading.className = 'nav-group-heading';
+        heading.setAttribute('role', 'heading');
+        heading.setAttribute('aria-level', '4');
+        const label = toggle.cloneNode(true);
+        label.querySelector('.toggle-icon')?.remove();
+        heading.textContent = label.textContent.replace(/^[\s▼▶▾▸]+/, '').trim();
+        toggle.replaceWith(heading);
     });
     
     // Клик по ссылке навигации
@@ -358,9 +366,11 @@ function initNavigation() {
         
         navLinks.forEach(link => {
             link.classList.remove('active');
+            link.removeAttribute('aria-current');
             
             if (link.getAttribute('href') === `#${sectionId}`) {
                 link.classList.add('active');
+                link.setAttribute('aria-current', 'location');
                 
                 // Автоматически раскрываем группу навигации с активной ссылкой
                 const parentGroup = link.closest('.nav-group');
@@ -444,6 +454,11 @@ const searchState = {
 };
 
 function initSearch() {
+    if (window.AlmanionSearch && typeof window.AlmanionSearch.init === 'function') {
+        window.AlmanionSearch.init();
+        return;
+    }
+
     // На Матцентре используется отдельный поиск в модулях matcenter/.
     // Здесь отключаем общий полнотекстовый поиск, чтобы не было конфликта обработчиков.
     if (document.body.classList.contains('matcenter-page')) return;

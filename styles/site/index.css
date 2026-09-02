@@ -2,10 +2,10 @@
  * Main site stylesheet entry point.
  * Imports are intentionally ordered to preserve the cascade of the former style.css.
  */
-@import url('./00-components.css?v=20260902-3');
-@import url('./10-foundation.css?v=20260902-3');
-@import url('./20-layout-content.css?v=20260902-3');
-@import url('./30-matcenter-core.css?v=20260902-3');
-@import url('./40-extras-settings.css?v=20260902-3');
-@import url('./50-matcenter-responsive.css?v=20260902-3');
-@import url('./60-poll-pwa.css?v=20260902-3');
+@import url('./00-components.css?v=20260902-5');
+@import url('./10-foundation.css?v=20260902-5');
+@import url('./20-layout-content.css?v=20260902-5');
+@import url('./30-matcenter-core.css?v=20260902-5');
+@import url('./40-extras-settings.css?v=20260902-5');
+@import url('./50-matcenter-responsive.css?v=20260902-5');
+@import url('./60-poll-pwa.css?v=20260902-5');

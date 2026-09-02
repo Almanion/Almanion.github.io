@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -36,7 +36,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://*.googleapis.com https://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebaseio.com wss://*.firebasedatabase.app https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://accounts.google.com; img-src 'self' data: https://www.gstatic.com https://lh3.googleusercontent.com; frame-src https://accounts.google.com https://*.firebaseapp.com; font-src 'self' https://cdn.jsdelivr.net;">
     <title>МатЦентр 2025/2026 | Almanion</title>
-    <link rel="stylesheet" href="styles/site/index.css?v=20260902-3">
+    <link rel="stylesheet" href="styles/site/index.css?v=20260902-5">
     <link rel="stylesheet" href="styles/tokens.css">
     <link rel="stylesheet" href="styles/buttons.css">
     <link rel="stylesheet" href="styles/mobile-overrides.css">
@@ -46,7 +46,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-    <link rel="stylesheet" href="style-new.css?v=20260902-5">
+    <link rel="stylesheet" href="style-new.css?v=20260902-7">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260902-5">
 </head>
@@ -105,7 +105,9 @@
         <div class="auth-modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
             <div class="auth-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
             <h2 id="authTitle">Введите пароль</h2>
+            <p class="matcenter-account-note" id="matcenterAccountNote">Доступ к Матцентру подтверждается отдельно.</p>
             <form id="authForm">
+                <button type="button" class="auth-submit matcenter-account-login" id="matcenterAccountLogin" hidden>Войти в аккаунт Almanion</button>
                 <input
                     type="password"
                     id="passwordInput"
@@ -341,18 +343,18 @@
     <script src="firebase-config.js"></script>
     <script src="firebase-analytics.js"></script>
 
-    <script src="script.js?v=20260902-4"></script>
-    <script src="matcenter/00-core.js"></script>
-    <script src="matcenter/10-security.js"></script>
-    <script src="matcenter/20-auth.js"></script>
-    <script src="matcenter/30-data.js"></script>
-    <script src="matcenter/40-personal-progress.js"></script>
-    <script src="matcenter/50-render.js"></script>
-    <script src="matcenter/60-navigation-search.js"></script>
-    <script src="matcenter/70-hints.js"></script>
+    <script src="script.js?v=20260902-5"></script>
+    <script src="matcenter/00-core.js?v=20260902-2"></script>
+    <script src="matcenter/10-security.js?v=20260902-2"></script>
+    <script src="matcenter/20-auth.js?v=20260902-2"></script>
+    <script src="matcenter/30-data.js?v=20260902-2"></script>
+    <script src="matcenter/40-personal-progress.js?v=20260902-2"></script>
+    <script src="matcenter/50-render.js?v=20260902-2"></script>
+    <script src="matcenter/60-navigation-search.js?v=20260902-2"></script>
+    <script src="matcenter/70-hints.js?v=20260902-2"></script>
     <script src="newyear.js"></script>
     <script src="settings.js?v=20260902-2"></script>
-    <script src="account.js?v=20260902-3"></script>
+    <script src="account.js?v=20260902-4"></script>
     <script src="poll.js"></script>
 </body>
 </html>

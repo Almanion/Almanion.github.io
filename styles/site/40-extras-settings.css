@@ -1910,8 +1910,19 @@ body.dark-theme .settings-button-sidebar:hover {
 
 /* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ РґР»СЏ РЅР°СЃС‚СЂРѕРµРє */
 @media (max-width: 768px) {
-    .settings-button {
+    body:not(.home-page) .settings-button {
         display: none !important;
+    }
+
+    body.home-page .settings-button {
+        display: flex !important;
+        top: 0.75rem;
+        right: 0.75rem;
+        bottom: auto !important;
+        left: auto !important;
+        width: 44px;
+        height: 44px;
+        font-size: 1.25rem;
     }
     
     .settings-button-sidebar {
