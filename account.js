@@ -16,7 +16,10 @@
     try { if (!firebase.apps.length) firebase.initializeApp(firebaseConfig); } catch (_) {}
 
     let auth, db;
-    try { auth = firebase.auth(); db = firebase.database(); } catch (_) { return; }
+    try { auth = firebase.auth(); db = firebase.database(); } catch (err) {
+        console.error('Almanion account: Firebase Auth is unavailable.', err);
+        return;
+    }
 
     const KC_PREFIX = 'kc_fsrs_';
     const sGet = window.safeStorageGet || function (k) { try { return localStorage.getItem(k); } catch (_) { return null; } };
@@ -25,6 +28,36 @@
     let user = null;
     let kcRef = null;
     let applyingRemote = false;
+    let authBusy = false;
+    let authBusyTarget = '';
+    let authStateKnown = false;
+    let persistenceReady = false;
+    let persistenceMode = 'local';
+    let persistenceFailure = false;
+    let syncGeneration = 0;
+
+    // Явно закрепляем сессию за устройством. По умолчанию Firebase также использует
+    // LOCAL, но явная настройка защищает от унаследованного SESSION/NONE между
+    // вкладками. Запускаем её заранее, чтобы Google popup открывался прямо из клика
+    // пользователя и не блокировался браузером после асинхронного ожидания.
+    try { auth.useDeviceLanguage(); } catch (_) {}
+    const persistencePromise = auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+        .catch(function (err) {
+            console.warn('Almanion account: persistent session is unavailable.', err);
+            persistenceMode = 'session';
+            return auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+        })
+        .catch(function (err) {
+            console.warn('Almanion account: tab session is unavailable.', err);
+            persistenceMode = 'memory';
+            return auth.setPersistence(firebase.auth.Auth.Persistence.NONE);
+        })
+        .then(function () { persistenceReady = true; })
+        .catch(function (err) {
+            persistenceFailure = true;
+            console.warn('Almanion account: authentication storage is unavailable.', err);
+        })
+        .finally(updateAuthControls);
 
     // ---------- Иконки ----------
     const IC_USER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
@@ -65,6 +98,7 @@
     function updateButton() {
         const btn = document.getElementById('accountBtn');
         if (!btn) return;
+        btn.classList.toggle('is-loading', !authStateKnown);
         if (user) {
             const name = user.displayName || user.email || '';
             const initial = (name.trim()[0] || '?').toUpperCase();
@@ -95,13 +129,17 @@
         ov.id = 'accountOverlay';
         ov.className = 'auth-overlay hidden';
         ov.addEventListener('click', function (e) { if (e.target === ov) hideOverlay(); });
+        ov.setAttribute('aria-hidden', 'true');
         document.body.appendChild(ov);
         initSwipeClose(ov);
         return ov;
     }
     function hideOverlay() {
         const ov = document.getElementById('accountOverlay');
-        if (ov) ov.classList.add('hidden');
+        if (ov) {
+            ov.classList.add('hidden');
+            ov.setAttribute('aria-hidden', 'true');
+        }
     }
 
     // Свайп вниз закрывает окно (как и остальные модальные окна на мобильных).
@@ -156,6 +194,7 @@
                         '<input type="email" id="accEmail" placeholder="Почта" autocomplete="email" required>' +
                         '<input type="password" id="accPass" placeholder="Пароль (не менее 6 символов)" autocomplete="' + (mode === 'register' ? 'new-password' : 'current-password') + '" required minlength="6">' +
                         '<div class="account-error" id="accError" hidden></div>' +
+                        '<div class="account-notice" id="accStorageNotice" hidden></div>' +
                         '<button type="submit" class="auth-submit" id="accSubmit">' + (mode === 'register' ? 'Зарегистрироваться' : 'Войти') + '</button>' +
                     '</form>' +
                     '<button type="button" class="account-link" id="accToggle">' +
@@ -172,23 +211,90 @@
                 e.preventDefault();
                 const email = ov.querySelector('#accEmail').value.trim();
                 const pass = ov.querySelector('#accPass').value;
-                if (mode === 'register') doEmail(auth.createUserWithEmailAndPassword(email, pass));
-                else doEmail(auth.signInWithEmailAndPassword(email, pass));
+                if (mode === 'register') doEmail(function () { return auth.createUserWithEmailAndPassword(email, pass); });
+                else doEmail(function () { return auth.signInWithEmailAndPassword(email, pass); });
             });
+            updateAuthControls();
         }
         render();
         ov.classList.remove('hidden');
+        ov.setAttribute('aria-hidden', 'false');
+        const email = ov.querySelector('#accEmail');
+        if (email) setTimeout(function () { try { email.focus(); } catch (_) {} }, 0);
     }
 
-    function doEmail(promise) {
-        const sub = document.getElementById('accSubmit');
-        if (sub) { sub.disabled = true; }
-        promise.then(function () { hideOverlay(); }).catch(function (err) { showError(authMessage(err)); })
-            .finally(function () { if (sub) sub.disabled = false; });
+    function doEmail(action) {
+        if (authBusy) return;
+        clearError();
+        setAuthBusy(true, 'Входим…', 'email');
+        persistencePromise
+            .then(function () {
+                if (!persistenceReady) throw { code: 'auth/web-storage-unsupported' };
+                return action();
+            })
+            .then(function () { hideOverlay(); })
+            .catch(function (err) { showError(authMessage(err)); })
+            .finally(function () { setAuthBusy(false); });
     }
+
     function signInGoogle() {
+        if (authBusy) return;
+        clearError();
+        if (!persistenceReady) {
+            showError('Вход ещё загружается. Подождите секунду и повторите.');
+            return;
+        }
         const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).then(function () { hideOverlay(); }).catch(function (err) { showError(authMessage(err)); });
+        setAuthBusy(true, 'Открываем Google…', 'google');
+        // Вызов должен остаться синхронной реакцией на клик: иначе Safari и часть
+        // мобильных браузеров считают окно нежелательным и блокируют его.
+        auth.signInWithPopup(provider)
+            .then(function () { hideOverlay(); })
+            .catch(function (err) {
+                if (err && err.code === 'auth/cancelled-popup-request') return;
+                showError(authMessage(err));
+            })
+            .finally(function () { setAuthBusy(false); });
+    }
+
+    function setAuthBusy(value, label, target) {
+        authBusy = value;
+        authBusyTarget = value ? (target || '') : '';
+        updateAuthControls(label);
+    }
+
+    function updateAuthControls(label) {
+        const google = document.getElementById('accGoogle');
+        const submit = document.getElementById('accSubmit');
+        const signout = document.getElementById('accSignout');
+        const notice = document.getElementById('accStorageNotice');
+        if (google) {
+            google.disabled = authBusy || !persistenceReady;
+            const span = google.querySelector('span');
+            if (span) span.textContent = authBusyTarget === 'google' && label ? label : 'Войти через Google';
+        }
+        if (submit) {
+            submit.disabled = authBusy || !persistenceReady;
+            if (!authBusy) submit.textContent = submit.closest('.auth-modal')?.querySelector('h2')?.textContent === 'Регистрация'
+                ? 'Зарегистрироваться' : 'Войти';
+            else if (authBusyTarget === 'email' && label) submit.textContent = label;
+        }
+        if (signout) {
+            signout.disabled = authBusy;
+            signout.textContent = authBusyTarget === 'signout' && label ? label : 'Выйти';
+        }
+        if (notice) {
+            notice.hidden = persistenceMode === 'local' || persistenceFailure;
+            notice.textContent = persistenceMode === 'session'
+                ? 'В приватном режиме вход сохранится только до закрытия браузера.'
+                : 'Вход сохранится только до обновления этой вкладки.';
+        }
+        if (persistenceFailure) showError('Браузер полностью запретил хранилище авторизации. Разрешите данные сайта и обновите страницу.');
+    }
+
+    function clearError() {
+        const el = document.getElementById('accError');
+        if (el) { el.textContent = ''; el.hidden = true; }
     }
     function showError(msg) {
         const el = document.getElementById('accError');
@@ -200,10 +306,16 @@
         if (c === 'auth/email-already-in-use') return 'Эта почта уже зарегистрирована — войдите.';
         if (c === 'auth/weak-password') return 'Пароль слишком короткий (мин. 6 символов).';
         if (c === 'auth/invalid-email') return 'Некорректная почта.';
-        if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') return 'Вход отменён.';
+        if (c === 'auth/popup-closed-by-user') return 'Окно Google закрыто до завершения входа.';
+        if (c === 'auth/popup-blocked') return 'Браузер заблокировал окно Google. Разрешите всплывающие окна для этого сайта и повторите вход.';
+        if (c === 'auth/network-request-failed') return 'Нет связи с сервером входа. Проверьте интернет и повторите попытку.';
+        if (c === 'auth/web-storage-unsupported') return 'Браузер запретил локальное хранилище, поэтому сохранить вход нельзя. Отключите строгий приватный режим для сайта.';
+        if (c === 'auth/too-many-requests') return 'Слишком много попыток входа. Подождите несколько минут и попробуйте снова.';
+        if (c === 'auth/account-exists-with-different-credential') return 'Аккаунт с этой почтой уже создан другим способом. Войдите по почте, затем повторите вход через Google.';
+        if (c === 'auth/user-disabled') return 'Этот аккаунт отключён.';
         if (c === 'auth/operation-not-allowed') return 'Этот способ входа не включён в Firebase.';
         if (c === 'auth/unauthorized-domain') return 'Домен не разрешён в настройках Firebase Auth.';
-        return (err && err.message) || 'Не удалось войти.';
+        return 'Не удалось войти. Повторите попытку; если ошибка сохранится, обновите страницу.';
     }
 
     // ---------- Окно «вы вошли» ----------
@@ -216,13 +328,20 @@
                 '<div class="auth-icon">' + IC_USER + '</div>' +
                 '<h2>Вы вошли</h2>' +
                 '<p class="account-email">' + escapeHtml(email) + '</p>' +
+                '<div class="account-error" id="accError" hidden></div>' +
                 '<button type="button" class="auth-submit account-signout" id="accSignout">Выйти</button>' +
             '</div>';
         ov.querySelector('#accClose').addEventListener('click', hideOverlay);
         ov.querySelector('#accSignout').addEventListener('click', function () {
-            auth.signOut().then(hideOverlay);
+            if (authBusy) return;
+            setAuthBusy(true, 'Выходим…', 'signout');
+            auth.signOut()
+                .then(hideOverlay)
+                .catch(function (err) { showError(authMessage(err)); })
+                .finally(function () { setAuthBusy(false); });
         });
         ov.classList.remove('hidden');
+        ov.setAttribute('aria-hidden', 'false');
     }
 
     // ---------- Синхронизация прогресса ----------
@@ -244,11 +363,26 @@
         const out = {};
         const keys = new Set(Object.keys(a).concat(Object.keys(b)));
         keys.forEach(function (k) {
-            if (k === '__meta') { out.__meta = a.__meta || b.__meta; return; }
+            if (k === '__meta') { out.__meta = mergeMeta(a.__meta, b.__meta); return; }
             const av = a[k], bv = b[k];
             if (av && bv) out[k] = ((bv.last || 0) >= (av.last || 0)) ? bv : av; // позже повторённая версия побеждает
             else out[k] = av || bv;
         });
+        return out;
+    }
+
+    function mergeMeta(a, b) {
+        a = a || {}; b = b || {};
+        const newer = (b.updatedAt || 0) >= (a.updatedAt || 0) ? b : a;
+        const older = newer === b ? a : b;
+        const out = Object.assign({}, older, newer);
+        // Две вкладки могут познакомить пользователя с новыми карточками в один
+        // день. Берём больший счётчик, чтобы синхронизация не обнулила дневной лимит.
+        if (a.introDate && a.introDate === b.introDate) {
+            out.introDate = a.introDate;
+            out.introCount = Math.max(a.introCount || 0, b.introCount || 0);
+        }
+        out.updatedAt = Math.max(a.updatedAt || 0, b.updatedAt || 0);
         return out;
     }
 
@@ -261,12 +395,17 @@
     }
     function pushPage(storeKey) {
         if (!kcRef) return;
-        kcRef.child(pageKey(storeKey)).set(JSON.stringify({ key: storeKey, store: getLocal(storeKey) }));
+        kcRef.child(pageKey(storeKey))
+            .set(JSON.stringify({ key: storeKey, store: getLocal(storeKey) }))
+            .catch(function (err) { console.warn('Almanion account: progress sync failed.', err); });
     }
 
     function startKcSync(uid) {
+        stopKcSync();
+        const generation = ++syncGeneration;
         kcRef = db.ref('kc/' + uid);
         kcRef.once('value').then(function (snap) {
+            if (generation !== syncGeneration || !user || user.uid !== uid || !kcRef) return;
             const remote = snap.val() || {};
             Object.keys(remote).forEach(function (pk) {
                 try { const blob = JSON.parse(remote[pk]); if (blob && blob.key) applyRemotePage(blob.key, blob.store); } catch (_) {}
@@ -274,7 +413,9 @@
             // выгружаем все локальные страницы (объединённые) в облако
             allKcKeys().forEach(pushPage);
             kcRef.on('value', onRemote, function () {});
-        }).catch(function () {
+        }).catch(function (err) {
+            if (generation !== syncGeneration || !kcRef) return;
+            console.warn('Almanion account: initial progress sync failed.', err);
             try { kcRef.on('value', onRemote, function () {}); } catch (_) {}
         });
     }
@@ -284,7 +425,10 @@
             try { const blob = JSON.parse(remote[pk]); if (blob && blob.key) applyRemotePage(blob.key, blob.store); } catch (_) {}
         });
     }
-    function stopKcSync() { if (kcRef) { try { kcRef.off(); } catch (_) {} kcRef = null; } }
+    function stopKcSync() {
+        syncGeneration++;
+        if (kcRef) { try { kcRef.off(); } catch (_) {} kcRef = null; }
+    }
 
     // Локальные изменения прогресса (событие из knowledge-check.js) → выгрузка
     window.addEventListener('kc-store-changed', function (e) {
@@ -295,9 +439,16 @@
 
     // ---------- Состояние входа ----------
     auth.onAuthStateChanged(function (u) {
+        authStateKnown = true;
         user = u;
         updateButton();
         if (u) startKcSync(u.uid); else stopKcSync();
+        window.dispatchEvent(new CustomEvent('almanion-account-ready', { detail: { user: user } }));
+    }, function (err) {
+        authStateKnown = true;
+        user = null;
+        updateButton();
+        console.warn('Almanion account: auth state restore failed.', err);
     });
 
     window.AlmanionAccount = {
@@ -308,8 +459,6 @@
         auth: auth,
         database: db
     };
-    window.dispatchEvent(new CustomEvent('almanion-account-ready', { detail: { user: user } }));
-
     function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildButton);

@@ -1,5 +1,5 @@
 // ============================================
-// ПРОВЕРКА ЗНАНИЙ — интервальное повторение (FSRS), в духе AnkiDroid
+// ПРОВЕРКА ЗНАНИЙ — адаптивное интервальное повторение
 // ============================================
 //
 // Самодостаточный модуль: сам создаёт кнопку в сайдбаре и модальные окна,
@@ -7,10 +7,11 @@
 // и определениями (.definition-box). Прогресс карточек хранится локально
 // (localStorage) по странице и переживает перезагрузки и закрытие сайта.
 //
-// Алгоритм FSRS‑4.5 (Free Spaced Repetition Scheduler), дефолтные веса:
-//   R(t,S) = (1 + FACTOR·t/S)^DECAY,  DECAY = −0.5,  FACTOR = 19/81  ⇒ R(S,S)=0.9
-//   Интервал под удержание r:  I = S/FACTOR · (r^(1/DECAY) − 1)   ⇒ I(0.9,S)=S
-// Кнопки: Снова(1) / Трудно(2) / Хорошо(3) / Легко(4) — как в Anki.
+// Планировщик использует модель DSR: difficulty (трудность), stability
+// (устойчивость памяти) и retrievability (текущая вероятность вспомнить).
+// Слабые и просроченные карточки идут первыми, число новых карточек зависит от
+// накопившихся повторов, а повтор внутри сессии назначается только после
+// «Снова»/«Трудно». Старые записи с лестницей step мигрируют без потери due/last.
 
 (function () {
     'use strict';
@@ -19,17 +20,24 @@
     const kcGet = (window.safeStorageGet) || function (k) { try { return localStorage.getItem(k); } catch (_) { return null; } };
     const kcSet = (window.safeStorageSet) || function (k, v) { try { localStorage.setItem(k, v); return true; } catch (_) { return false; } };
 
-    // ---------- Расписание: лесенка интервалов (шаги заучивания) ----------
-    // Каждый успешный ответ поднимает карточку на ступень: «Снова» → в начало,
-    // «Трудно» → та же ступень, «Хорошо» → +1, «Лёгко» → +2. После последней
-    // ступени интервал удваивается. Лесенка (в минутах): 1м 3м 5м 10м 30м 1ч 3ч 5ч 1д 3д 5д …
+    // ---------- Адаптивное расписание ----------
+    const MINUTE = 60000;
+    const DAY = 86400000;
+    const TARGET_RETENTION = 0.90;
+    const DECAY = -0.5;
+    const FACTOR = 19 / 81;
+    const MIN_STABILITY = 1 / 1440;
+    const MAX_DAYS = 36500;
+    const NEW_PER_DAY = 12;
+    const MAX_SESSION_CARDS = 30;
+    const MAX_SAME_SESSION_PRESENTATIONS = 5;
+
+    // Нужна только для точной миграции старых состояний.
     const STEPS_MIN = [1, 3, 5, 10, 30, 60, 180, 300, 1440, 4320, 7200];
     const LAST_STEP = STEPS_MIN.length - 1;
-    const NEW_PER_DAY = 200;    // лимит новых карточек за день
-    const MAX_DAYS = 36500;     // потолок интервала
-    const DAY = 86400000;
 
     const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+    const finite = (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 
     // Длина ступени в минутах (после лесенки — удвоение от последней ступени).
     function stepMinutes(step) {
@@ -37,7 +45,8 @@
         if (step <= LAST_STEP) return STEPS_MIN[step];
         return Math.min(STEPS_MIN[LAST_STEP] * Math.pow(2, step - LAST_STEP), MAX_DAYS * 1440);
     }
-    // Новая ступень для оценки G (1 Снова · 2 Трудно · 3 Хорошо · 4 Лёгко).
+    // Старая ступень сохраняется в записи для совместимости с уже закэшированной
+    // версией сайта, но больше не управляет расписанием.
     function nextStep(state, G) {
         const s = (state && typeof state.step === 'number') ? state.step : -1; // -1 = новая
         if (s < 0) return [0, 1, 2, 4][G - 1];   // новая карточка
@@ -47,19 +56,104 @@
         return s + 2;                             // Лёгко → через одну
     }
 
-    // Рассчитать новое состояние карточки для оценки G (без сохранения).
-    // state: {step,last,reps,lapses} либо null/старое (тогда — как новая).
+    function isNewState(state) {
+        return !state || (state.step == null && state.stability == null && state.reps == null);
+    }
+
+    function normalizeState(state) {
+        if (isNewState(state)) return null;
+        const last = finite(state.last, Date.now());
+        const legacyDays = Math.max(MIN_STABILITY, (finite(state.due, last) - last) / DAY);
+        const legacyStepDays = typeof state.step === 'number' ? stepMinutes(state.step) / 1440 : legacyDays;
+        const stability = clamp(finite(state.stability, Math.max(legacyDays, legacyStepDays)), MIN_STABILITY, MAX_DAYS);
+        const reps = Math.max(0, Math.round(finite(state.reps, 0)));
+        const lapses = Math.max(0, Math.round(finite(state.lapses, 0)));
+        return {
+            v: 2,
+            step: typeof state.step === 'number' ? state.step : Math.max(0, reps - lapses),
+            phase: state.phase || (state.learning ? 'learning' : 'review'),
+            stability: stability,
+            difficulty: clamp(finite(state.difficulty, 5 + Math.min(3, lapses * 0.35)), 1, 10),
+            due: finite(state.due, last),
+            last: last,
+            reps: reps,
+            lapses: lapses,
+            lastGrade: finite(state.lastGrade, 0)
+        };
+    }
+
+    function retrievability(state, now) {
+        const st = normalizeState(state);
+        if (!st) return 0;
+        const elapsed = Math.max(0, (now - st.last) / DAY);
+        return clamp(Math.pow(1 + FACTOR * elapsed / st.stability, DECAY), 0, 1);
+    }
+
+    function intervalForStability(stability, retention) {
+        return clamp(stability / FACTOR * (Math.pow(retention, 1 / DECAY) - 1), MIN_STABILITY, MAX_DAYS);
+    }
+
+    function nextDifficulty(previous, G) {
+        if (!previous) return [8.5, 7, 5, 3.5][G - 1];
+        const delta = [1.2, 0.4, -0.15, -0.65][G - 1];
+        return clamp(previous + 0.08 * (5 - previous) + delta, 1, 10);
+    }
+
+    function finishProjection(previous, G, now, stability, intervalDays, phase) {
+        const old = normalizeState(previous);
+        return {
+            v: 2,
+            step: nextStep(previous, G),
+            phase: phase,
+            stability: clamp(stability, MIN_STABILITY, MAX_DAYS),
+            difficulty: nextDifficulty(old && old.difficulty, G),
+            intervalDays: clamp(intervalDays, MIN_STABILITY, MAX_DAYS),
+            due: now + clamp(intervalDays, MIN_STABILITY, MAX_DAYS) * DAY,
+            last: now,
+            reps: (old ? old.reps : 0) + 1,
+            lapses: (old ? old.lapses : 0) + (G === 1 ? 1 : 0),
+            learning: phase !== 'review',
+            lastGrade: G
+        };
+    }
+
+    // Рассчитать состояние после оценки (1 Снова · 2 Трудно · 3 Хорошо · 4 Легко).
     function project(state, G, now) {
-        const res = {};
-        res.step = nextStep(state, G);
-        res.reps = ((state && state.reps) || 0) + 1;
-        res.lapses = ((state && state.lapses) || 0) + (G === 1 ? 1 : 0);
-        const minutes = stepMinutes(res.step);
-        res.intervalDays = minutes / 1440;
-        res.learning = minutes < 1440;            // короче суток → вернуть в этой же сессии
-        res.due = now + minutes * 60000;
-        res.last = now;
-        return res;
+        G = clamp(Math.round(finite(G, 3)), 1, 4);
+        const old = normalizeState(state);
+
+        if (!old) {
+            const stability = [0.08, 0.30, 1, 4][G - 1];
+            const intervals = [1 / 1440, 8 / 1440, 1, 4];
+            return finishProjection(null, G, now, stability, intervals[G - 1], G < 3 ? 'learning' : 'review');
+        }
+
+        if (old.phase === 'learning' || old.phase === 'relearning') {
+            if (G === 1) return finishProjection(old, G, now, Math.max(0.04, old.stability * 0.7), 1 / 1440, old.phase);
+            if (G === 2) return finishProjection(old, G, now, Math.max(0.25, old.stability * 1.05), 8 / 1440, old.phase);
+            const relearning = old.phase === 'relearning';
+            const multiplier = G === 4 ? (relearning ? 1.8 : 3.2) : (relearning ? 1.25 : 2.2);
+            const floor = G === 4 ? (relearning ? 3 : 4) : 1;
+            const stability = Math.max(floor, old.stability * multiplier);
+            return finishProjection(old, G, now, stability, intervalForStability(stability, TARGET_RETENTION), 'review');
+        }
+
+        const R = retrievability(old, now);
+        const difficulty = nextDifficulty(old.difficulty, G);
+        if (G === 1) {
+            const lapseStability = Math.min(old.stability, Math.max(0.15,
+                0.5 * Math.pow(old.stability, 0.65) * (11 - difficulty) / 10));
+            return finishProjection(old, G, now, lapseStability, 2 / 1440, 'relearning');
+        }
+
+        const memoryGain = (11 - difficulty) * Math.pow(old.stability, -0.20) *
+            (Math.exp((1 - R) * 2.8) - 1);
+        const gradeGain = G === 2 ? 0.35 : (G === 3 ? 0.75 : 1.15);
+        const minimumGrowth = G === 2 ? 1.12 : (G === 3 ? 1.30 : 1.75);
+        let stability = Math.max(old.stability * minimumGrowth, old.stability * (1 + memoryGain * gradeGain));
+        if (G === 4) stability *= 1.08;
+        stability = clamp(stability, MIN_STABILITY, MAX_DAYS);
+        return finishProjection(old, G, now, stability, intervalForStability(stability, TARGET_RETENTION), 'review');
     }
 
     // ---------- Иконки ----------
@@ -83,6 +177,9 @@
         try { return JSON.parse(kcGet(STORE_KEY) || '{}') || {}; } catch (_) { return {}; }
     }
     function saveStore() {
+        if (!store.__meta) store.__meta = {};
+        store.__meta.schema = 2;
+        store.__meta.updatedAt = Date.now();
         kcSet(STORE_KEY, JSON.stringify(store));
         // Сигнал для account.js (синхронизация прогресса в облако).
         try { window.dispatchEvent(new CustomEvent('kc-store-changed', { detail: { key: STORE_KEY } })); } catch (_) {}
@@ -147,10 +244,82 @@
         let due = 0, fresh = 0;
         extractCards([tid]).forEach(c => {
             const st = store[c.id];
-            if (!st || st.step == null) fresh++;
-            else if (st.due <= now) due++;
+            if (isNewState(st)) fresh++;
+            else if (normalizeState(st).due <= now) due++;
         });
         return { due, fresh };
+    }
+
+    function recommendationScore(state, now) {
+        const st = normalizeState(state);
+        if (!st) return -1;
+        if (st.phase === 'learning' || st.phase === 'relearning') return 100 + (now - st.due) / DAY;
+        const risk = 1 - retrievability(st, now);
+        const overdueDays = Math.max(0, (now - st.due) / DAY);
+        const overdueRelative = overdueDays / Math.max(0.25, st.stability);
+        const lapseRate = st.lapses / Math.max(1, st.reps);
+        return risk * 8 + Math.min(4, overdueRelative) + st.difficulty * 0.08 + lapseRate * 2;
+    }
+
+    function spreadNewCards(cards) {
+        const buckets = new Map();
+        cards.forEach(card => {
+            if (!buckets.has(card.topicId)) buckets.set(card.topicId, []);
+            buckets.get(card.topicId).push(card);
+        });
+        const out = [];
+        const groups = Array.from(buckets.values());
+        let added = true;
+        while (added) {
+            added = false;
+            groups.forEach(group => {
+                if (group.length) { out.push(group.shift()); added = true; }
+            });
+        }
+        return out;
+    }
+
+    function mixRecommendedQueue(review, fresh) {
+        const queue = [];
+        let ri = 0, ni = 0;
+        while (ri < review.length || ni < fresh.length) {
+            for (let i = 0; i < 3 && ri < review.length; i++, ri++) queue.push(review[ri]);
+            if (ni < fresh.length) queue.push(fresh[ni++]);
+            if (ri >= review.length && ni < fresh.length) queue.push(fresh[ni++]);
+        }
+        return queue;
+    }
+
+    function buildRecommendation(cards, now) {
+        const due = [];
+        const fresh = [];
+        cards.forEach(card => {
+            const state = store[card.id];
+            if (isNewState(state)) fresh.push(card);
+            else {
+                const normalized = normalizeState(state);
+                if (normalized.due <= now) due.push({ card: card, state: normalized, score: recommendationScore(normalized, now) });
+            }
+        });
+        due.sort((a, b) => b.score - a.score || a.state.due - b.state.due || a.card.id.localeCompare(b.card.id));
+
+        const reviewPicked = due.slice(0, MAX_SESSION_CARDS).map(x => ({
+            card: x.card,
+            type: x.state.phase === 'review' ? 'review' : 'learn'
+        }));
+        const freeSlots = Math.max(0, MAX_SESSION_CARDS - reviewPicked.length);
+        const suggestedNew = due.length >= 24 ? 0 : clamp(Math.round(8 - due.length / 4), 2, 8);
+        const newCount = Math.min(freeSlots, introAllowance(), suggestedNew, fresh.length);
+        const newPicked = spreadNewCards(fresh).slice(0, newCount).map(card => ({ card: card, type: 'new' }));
+
+        return {
+            queue: mixRecommendedQueue(reviewPicked, newPicked),
+            dueTotal: due.length,
+            reviewCount: reviewPicked.length,
+            newCount: newPicked.length,
+            newTotal: fresh.length,
+            deferred: Math.max(0, due.length - reviewPicked.length)
+        };
     }
 
     // ---------- Рендер математики ----------
@@ -222,7 +391,8 @@
                 '<button class="kc-close" id="kcSelectClose" aria-label="Закрыть">' + IC.close + '</button>' +
                 '<div class="kc-head"><span class="kc-head-icon">' + IC.brain + '</span>' +
                     '<div class="kc-head-text"><h2 class="kc-title">Проверка знаний</h2>' +
-                    '<p class="kc-subtitle">Интервальное повторение определений</p></div></div>' +
+                    '<p class="kc-subtitle">Адаптивное повторение определений</p></div></div>' +
+                '<div class="kc-recommendation" id="kcRecommendation" aria-live="polite"></div>' +
                 '<div class="kc-deck-list" id="kcDeckList"></div>' +
                 '<div class="kc-actions">' +
                     '<button class="kc-btn kc-btn-ghost" id="kcSelectAll">Выбрать всё</button>' +
@@ -307,17 +477,28 @@
 
     function updateStartBtn() {
         const now = Date.now();
-        let count = 0, allowance = introAllowance(), newSeen = 0;
-        selected.forEach(tid => extractCards([tid]).forEach(c => {
-            const st = store[c.id];
-            if (!st || st.step == null) { if (newSeen < allowance) { newSeen++; count++; } }
-            else if (st.due <= now) count++;
-        }));
+        const plan = buildRecommendation(extractCards(selected), now);
+        const count = plan.queue.length;
         const badge = document.getElementById('kcStartCount');
         badge.textContent = count;
         badge.classList.toggle('is-empty', count === 0);
         const start = document.getElementById('kcStart');
         start.disabled = selected.length === 0;
+        const recommendation = document.getElementById('kcRecommendation');
+        if (recommendation) {
+            if (selected.length === 0) {
+                recommendation.innerHTML = '<strong>Выберите темы</strong><span>Алгоритм соберёт короткую сессию.</span>';
+            } else if (count === 0) {
+                recommendation.innerHTML = '<strong>На сейчас всё</strong><span>Повторения появятся, когда начнёт снижаться вероятность вспомнить.</span>';
+            } else {
+                const parts = [];
+                if (plan.reviewCount) parts.push(plan.reviewCount + ' к повторению');
+                if (plan.newCount) parts.push(plan.newCount + ' ' + plural(plan.newCount, 'новая', 'новые', 'новых'));
+                recommendation.innerHTML = '<strong>Рекомендовано: ' + count + ' ' + plural(count, 'карточка', 'карточки', 'карточек') + '</strong>' +
+                    '<span><span class="kc-visually-hidden">Состав: </span>' + parts.join(' · ') +
+                    (plan.deferred ? ' · ещё ' + plan.deferred + ' в следующую сессию' : '') + '</span>';
+            }
+        }
     }
 
     function updateSelectAllLabel() {
@@ -337,24 +518,19 @@
         if (selected.length === 0) return;
         const now = Date.now();
         const cards = extractCards(selected);
-        const learn = [], review = [], fresh = [];
-        cards.forEach(c => {
-            const st = store[c.id];
-            if (!st || st.step == null) fresh.push(c);
-            else if (st.due <= now) (st.learning ? learn : review).push(c);
-        });
-        shuffle(review); shuffle(fresh);
-        const allowance = introAllowance();
-        const newCards = fresh.slice(0, allowance);
-
-        const queue = []
-            .concat(learn.map(c => ({ card: c, type: 'learn' })))
-            .concat(review.map(c => ({ card: c, type: 'review' })))
-            .concat(newCards.map(c => ({ card: c, type: 'new' })));
+        const plan = buildRecommendation(cards, now);
+        const queue = plan.queue;
 
         if (queue.length === 0) { showEmptyState(); document.getElementById('kcSelectOverlay').classList.add('hidden'); document.getElementById('kcReviewOverlay').classList.remove('hidden'); return; }
 
-        session = { queue, reviewed: 0, again: 0, good: 0, planned: queue.length };
+        session = {
+            queue: queue,
+            reviewed: 0,
+            again: 0,
+            recalled: 0,
+            planned: queue.length,
+            cardStats: Object.create(null)
+        };
         document.getElementById('kcSelectOverlay').classList.add('hidden');
         document.getElementById('kcReviewOverlay').classList.remove('hidden');
         showCard();
@@ -443,20 +619,42 @@
         const item = session.queue.shift();
         const def = item.card;
         const prev = store[def.id];
-        const wasNew = !prev || prev.step == null;
+        const wasNew = isNewState(prev);
         const now = Date.now();
         const res = project(prev, G, now);
 
-        store[def.id] = { step: res.step, due: res.due, last: res.last, reps: res.reps, lapses: res.lapses, learning: res.learning };
+        store[def.id] = {
+            v: res.v,
+            step: res.step,
+            phase: res.phase,
+            stability: res.stability,
+            difficulty: res.difficulty,
+            due: res.due,
+            last: res.last,
+            reps: res.reps,
+            lapses: res.lapses,
+            learning: res.learning,
+            lastGrade: res.lastGrade
+        };
         if (wasNew) recordIntro();
         saveStore();
 
         session.reviewed++;
-        if (G === 1) session.again++; else session.good++;
+        if (G === 1) session.again++; else session.recalled++;
 
-        if (res.learning) {
-            // Вернуть карточку в этой же сессии (через несколько других)
-            const pos = Math.min(session.queue.length, 2 + Math.floor(Math.random() * 2));
+        // Внутрисессионные повторы адаптивны: уверенно вспомненная карточка не
+        // дублируется, «Трудно» требует ещё одного успешного извлечения, «Снова» —
+        // двух. Ограничение не даёт одной сложной карточке захватить всю сессию.
+        const stats = session.cardStats[def.id] || { shown: 0, pendingSuccesses: 0 };
+        stats.shown++;
+        if (G === 1) stats.pendingSuccesses = Math.max(stats.pendingSuccesses, 2);
+        else if (G === 2) stats.pendingSuccesses = Math.max(stats.pendingSuccesses, 1);
+        else stats.pendingSuccesses = Math.max(0, stats.pendingSuccesses - 1);
+        session.cardStats[def.id] = stats;
+
+        if (stats.pendingSuccesses > 0 && stats.shown < MAX_SAME_SESSION_PRESENTATIONS) {
+            const distance = G === 1 ? 2 : 4;
+            const pos = Math.min(session.queue.length, distance);
             session.queue.splice(pos, 0, { card: def, type: 'learn' });
         }
         showCard();
@@ -486,6 +684,7 @@
         document.getElementById('kcCounts').innerHTML = '';
         const reviewed = session ? session.reviewed : 0;
         const again = session ? session.again : 0;
+        const unique = session ? Object.keys(session.cardStats).length : 0;
         const acc = reviewed ? Math.round((1 - again / reviewed) * 100) : 100;
 
         // Когда следующая карта снова станет due
@@ -497,8 +696,9 @@
                 '<div class="kc-final-icon kc-final-icon-ok">' + IC.trophy + '</div>' +
                 '<h3 class="kc-final-title">Сессия завершена</h3>' +
                 '<div class="kc-final-stats">' +
-                    '<div class="kc-fstat"><span class="kc-fstat-val">' + reviewed + '</span><span class="kc-fstat-lbl">' + plural(reviewed, 'повтор', 'повтора', 'повторов') + '</span></div>' +
-                    '<div class="kc-fstat kc-fstat-ok"><span class="kc-fstat-val">' + acc + '%</span><span class="kc-fstat-lbl">верно</span></div>' +
+                    '<div class="kc-fstat"><span class="kc-fstat-val">' + unique + '</span><span class="kc-fstat-lbl">' + plural(unique, 'карточка', 'карточки', 'карточек') + '</span></div>' +
+                    '<div class="kc-fstat"><span class="kc-fstat-val">' + reviewed + '</span><span class="kc-fstat-lbl">' + plural(reviewed, 'ответ', 'ответа', 'ответов') + '</span></div>' +
+                    '<div class="kc-fstat kc-fstat-ok"><span class="kc-fstat-val">' + acc + '%</span><span class="kc-fstat-lbl">вспомнено</span></div>' +
                     (nextLbl ? '<div class="kc-fstat"><span class="kc-fstat-val">' + nextLbl + '</span><span class="kc-fstat-lbl">до повтора</span></div>' : '') +
                 '</div>' +
                 '<div class="kc-final-actions">' +
@@ -517,7 +717,7 @@
         const now = Date.now();
         let min = null;
         extractCards(selected).forEach(c => {
-            const st = store[c.id];
+            const st = normalizeState(store[c.id]);
             if (st && st.due > now) min = (min == null) ? st.due : Math.min(min, st.due);
         });
         return min;
@@ -600,7 +800,20 @@
     else init();
 
     // Экспорт для отладки/тестов
-    window.__kcFSRS = { project, stepMinutes, nextStep, STEPS_MIN, fmtInterval };
+    window.__kcFSRS = {
+        project,
+        normalizeState,
+        retrievability,
+        intervalForStability,
+        recommendationScore,
+        buildRecommendation,
+        stepMinutes,
+        nextStep,
+        STEPS_MIN,
+        TARGET_RETENTION,
+        MAX_SESSION_CARDS,
+        fmtInterval
+    };
 
     // Хук для синхронизации аккаунта (account.js): перечитать прогресс из localStorage,
     // когда облако прислало изменения (но не посреди активной сессии повторения).

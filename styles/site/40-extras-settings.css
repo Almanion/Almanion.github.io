@@ -1676,15 +1676,11 @@ body.animations-medium.new-year-mode .task-card:hover::after {
 }
 
 /* Р’С‹РєР»СЋС‡РµРЅРЅС‹Рµ Р°РЅРёРјР°С†РёРё */
-body.animations-off *:not(#progressBar),
+body.animations-off *,
 body.animations-off *::before,
 body.animations-off *::after {
     animation: none !important;
     transition: none !important;
-}
-
-body.animations-off #progressBar {
-    transition: width 0.4s linear !important;
 }
 
 body.animations-off .task-card:hover,

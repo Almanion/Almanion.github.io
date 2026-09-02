@@ -9,8 +9,8 @@ const defaultSettings = {
     animationLevel: 'max',
     hoverEffects: true,
     // Экспериментальный режим (новый дизайн)
-    experimental: false,
-    expMode: 'graphite',   // 'graphite' | 'prism'
+    experimental: true,
+    expMode: 'prism',      // 'graphite' | 'prism'
     expDark: false,
     matcenterSolvedAnimation: 'circle' // 'circle' | 'strike'
 };

@@ -401,8 +401,8 @@ body:not(.no-hover) .properties-box:hover {
 }
 
 body {
-    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Oxygen',
-        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    font-family: var(--font-sans, 'Onest', 'Segoe UI Variable Text', 'Segoe UI',
+        -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif);
     background-color: var(--bg-primary);
     color: var(--text-primary);
     line-height: 1.8;

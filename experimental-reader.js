@@ -7,9 +7,9 @@
         index: 0,
         topics: [],
         sections: [],
+        anchor: null,
         toolbar: null,
         footer: null,
-        exitTimer: 0,
         enterTimer: 0,
         swipe: null
     };
@@ -39,6 +39,10 @@
     }
 
     function buildReaderUi(main) {
+        const anchor = document.createElement('span');
+        anchor.className = 'exp-reader-anchor';
+        anchor.setAttribute('aria-hidden', 'true');
+
         const toolbar = document.createElement('nav');
         toolbar.className = 'exp-reader-toolbar';
         toolbar.hidden = true;
@@ -74,10 +78,12 @@
                 ${ICON_RIGHT}
             </button>`;
 
+        main.insertBefore(anchor, state.sections[0]);
         main.insertBefore(toolbar, state.sections[0]);
         const pageFooter = main.querySelector(':scope > .page-footer');
         main.insertBefore(footer, pageFooter || null);
 
+        state.anchor = anchor;
         state.toolbar = toolbar;
         state.footer = footer;
     }
@@ -220,25 +226,14 @@
         const outgoing = state.topics[state.index];
         const animate = settings.animate && !prefersReducedReaderMotion();
 
+        const readerScrollTop = settings.scroll ? getReaderScrollTop() : null;
         const commit = () => {
-            outgoing.classList.remove(`exp-reader-leave-${direction}`);
             state.index = nextIndex;
             applyTopicVisibility();
             updateReaderUi();
             if (settings.updateHash) updateLocationHash();
-            if (settings.scroll) scrollToReader();
-
-            const incoming = state.topics[state.index];
-            if (!animate) {
-                finishReaderTransition();
-                return;
-            }
-
-            incoming.classList.add(`exp-reader-enter-${direction}`);
-            state.enterTimer = window.setTimeout(() => {
-                incoming.classList.remove(`exp-reader-enter-${direction}`);
-                finishReaderTransition();
-            }, getReaderEnterDuration());
+            if (readerScrollTop !== null) scrollToReader(readerScrollTop);
+            return state.topics[state.index];
         };
 
         if (!animate) {
@@ -248,8 +243,33 @@
 
         state.animating = true;
         document.body.classList.add('exp-reader-transitioning');
-        outgoing.classList.add(`exp-reader-leave-${direction}`);
-        state.exitTimer = window.setTimeout(commit, getReaderExitDuration());
+
+        if (typeof document.startViewTransition === 'function') {
+            const root = document.documentElement;
+            root.classList.add('exp-reader-vt-active', `exp-reader-vt-${direction}`);
+            outgoing.style.viewTransitionName = 'exp-reader-topic';
+            let incoming = null;
+            const transition = document.startViewTransition(() => {
+                outgoing.style.removeProperty('view-transition-name');
+                incoming = commit();
+                incoming.style.viewTransitionName = 'exp-reader-topic';
+            });
+            const cleanup = () => {
+                outgoing.style.removeProperty('view-transition-name');
+                if (incoming) incoming.style.removeProperty('view-transition-name');
+                root.classList.remove('exp-reader-vt-active', `exp-reader-vt-${direction}`);
+                finishReaderTransition();
+            };
+            transition.finished.then(cleanup, cleanup);
+            return true;
+        }
+
+        const incoming = commit();
+        incoming.classList.add(`exp-reader-enter-${direction}`);
+        state.enterTimer = window.setTimeout(() => {
+            incoming.classList.remove(`exp-reader-enter-${direction}`);
+            finishReaderTransition();
+        }, getReaderEnterDuration());
         return true;
     }
 
@@ -259,9 +279,7 @@
     }
 
     function clearReaderTimers() {
-        window.clearTimeout(state.exitTimer);
         window.clearTimeout(state.enterTimer);
-        state.exitTimer = 0;
         state.enterTimer = 0;
     }
 
@@ -270,12 +288,8 @@
             || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
 
-    function getReaderExitDuration() {
-        return document.body.classList.contains('animations-medium') ? 70 : 120;
-    }
-
     function getReaderEnterDuration() {
-        return document.body.classList.contains('animations-medium') ? 140 : 260;
+        return document.body.classList.contains('animations-medium') ? 110 : 180;
     }
 
     function applyTopicVisibility() {
@@ -375,11 +389,16 @@
         window.history.replaceState(window.history.state, '', url);
     }
 
-    function scrollToReader() {
-        window.requestAnimationFrame(() => {
-            const y = state.toolbar.getBoundingClientRect().top + window.pageYOffset - 8;
-            window.scrollTo({ top: Math.max(0, y), behavior: 'auto' });
-        });
+    function getReaderScrollTop() {
+        if (!state.anchor || !state.toolbar) return window.scrollY;
+        const anchorTop = state.anchor.getBoundingClientRect().top + window.scrollY;
+        const stickyOffset = Number.parseFloat(window.getComputedStyle(state.toolbar).top) || 0;
+        return Math.max(0, Math.round(anchorTop - stickyOffset));
+    }
+
+    function scrollToReader(targetTop) {
+        const y = Number.isFinite(targetTop) ? targetTop : getReaderScrollTop();
+        window.scrollTo({ top: y, behavior: 'auto' });
     }
 
     function onPointerDown(event) {
@@ -421,8 +440,8 @@
         const current = state.topics[state.index];
         const againstEdge = (state.index === 0 && deltaX > 0)
             || (state.index === state.topics.length - 1 && deltaX < 0);
-        const distance = Math.max(-30, Math.min(30, deltaX * (againstEdge ? 0.08 : 0.18)));
-        const opacity = Math.max(0.84, 1 - Math.abs(deltaX) / 700);
+        const distance = Math.max(-12, Math.min(12, deltaX * (againstEdge ? 0.035 : 0.075)));
+        const opacity = Math.max(0.94, 1 - Math.abs(deltaX) / 1400);
         current.classList.add('exp-reader-dragging');
         current.style.setProperty('--exp-reader-drag-x', `${distance}px`);
         current.style.setProperty('--exp-reader-drag-opacity', String(opacity));

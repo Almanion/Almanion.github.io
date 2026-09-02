@@ -1,0 +1,693 @@
+/* =========================================================
+   TYPOGRAPHY SYSTEM
+   Onest keeps Cyrillic and Latin visually consistent while KaTeX
+   remains responsible for mathematical notation.
+   ========================================================= */
+
+/* Onest variable — only the subsets used by the project are requested. */
+@font-face {
+    font-family: 'Onest';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('https://fonts.gstatic.com/s/onest/v11/gNMKW3F-SZuj7xmS-HY6EQ.woff2') format('woff2');
+    unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+
+@font-face {
+    font-family: 'Onest';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('https://fonts.gstatic.com/s/onest/v11/gNMKW3F-SZuj7xmb-HY6EQ.woff2') format('woff2');
+    unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+    font-family: 'Onest';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('https://fonts.gstatic.com/s/onest/v11/gNMKW3F-SZuj7xmR-HY6EQ.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+        U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF,
+        U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Onest';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('https://fonts.gstatic.com/s/onest/v11/gNMKW3F-SZuj7xmf-HY.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+        U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+        U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+    --font-sans: 'Onest', 'Segoe UI Variable Text', 'Segoe UI', -apple-system,
+        BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    --font-display: var(--font-sans);
+
+    --type-caption: 0.72rem;
+    --type-small: clamp(0.79rem, 0.77rem + 0.09vw, 0.86rem);
+    --type-ui: clamp(0.86rem, 0.83rem + 0.12vw, 0.94rem);
+    --type-body: clamp(1rem, 0.975rem + 0.11vw, 1.07rem);
+    --type-lead: clamp(1.06rem, 1.01rem + 0.2vw, 1.18rem);
+    --type-subheading: clamp(1.16rem, 1.07rem + 0.34vw, 1.38rem);
+    --type-section: clamp(1.38rem, 1.19rem + 0.67vw, 1.78rem);
+    --type-topic: clamp(1.58rem, 1.32rem + 0.92vw, 2.12rem);
+    --type-page: clamp(1.9rem, 1.58rem + 1.05vw, 2.5rem);
+    --type-hero: clamp(2.08rem, 1.52rem + 2.05vw, 3.45rem);
+
+    --leading-tight: 1.08;
+    --leading-heading: 1.18;
+    --leading-ui: 1.42;
+    --leading-body: 1.7;
+    --leading-compact: 1.58;
+
+    --tracking-display: -0.044em;
+    --tracking-heading: -0.03em;
+    --tracking-subheading: -0.018em;
+    --tracking-body: -0.004em;
+    --tracking-label: 0.085em;
+
+    --type-measure: 46rem;
+    --type-measure-wide: 50rem;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+body {
+    font-family: var(--font-sans);
+    font-size: var(--type-body);
+    font-weight: 400;
+    line-height: var(--leading-body);
+    letter-spacing: var(--tracking-body);
+    font-kerning: normal;
+    font-variant-numeric: proportional-nums;
+    text-rendering: optimizeLegibility;
+}
+
+/* Experimental themes previously set their own font shorthand and therefore
+   need an equally specific reset to inherit the same system. */
+body.experimental {
+    font-family: var(--font-sans);
+    font-size: var(--type-body);
+    font-weight: 400;
+    line-height: var(--leading-body);
+    letter-spacing: var(--tracking-body);
+}
+
+button,
+input,
+textarea,
+select {
+    font-family: var(--font-sans);
+    letter-spacing: inherit;
+}
+
+:where(h1, h2, h3, h4, h5, h6) {
+    font-family: var(--font-display);
+    text-wrap: balance;
+}
+
+:where(p, li, dd, figcaption) {
+    text-wrap: pretty;
+}
+
+/* Page-level hierarchy */
+body .page-header h1 {
+    font-size: var(--type-page);
+    font-weight: 710;
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-heading);
+}
+
+body.experimental .page-header h1 {
+    font-size: var(--type-page);
+    font-weight: 710;
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-heading);
+}
+
+body .page-header :is(.subtitle, p) {
+    font-size: var(--type-small);
+    font-weight: 450;
+    line-height: 1.55;
+    letter-spacing: 0.006em;
+}
+
+body.experimental .page-header :is(.subtitle, p) {
+    font-size: var(--type-small);
+    font-weight: 450;
+    line-height: 1.55;
+    letter-spacing: 0.006em;
+}
+
+body .part-title {
+    font-size: var(--type-section);
+    font-weight: 670;
+    line-height: var(--leading-heading);
+    letter-spacing: var(--tracking-heading);
+}
+
+body.experimental .part-title {
+    font-size: var(--type-section);
+    font-weight: 670;
+    line-height: var(--leading-heading);
+    letter-spacing: var(--tracking-heading);
+}
+
+body .topic-title {
+    font-size: var(--type-topic);
+    font-weight: 680;
+    line-height: 1.14;
+    letter-spacing: -0.034em;
+}
+
+body.experimental .topic-title {
+    font-size: var(--type-topic);
+    font-weight: 680;
+    line-height: 1.14;
+    letter-spacing: -0.034em;
+}
+
+body .subsection-title {
+    font-size: var(--type-subheading);
+    font-weight: 640;
+    line-height: 1.28;
+    letter-spacing: var(--tracking-subheading);
+}
+
+body.experimental .subsection-title {
+    font-size: var(--type-subheading);
+    font-weight: 640;
+    line-height: 1.28;
+    letter-spacing: var(--tracking-subheading);
+}
+
+.main-content {
+    font-size: var(--type-body);
+}
+
+.main-content :is(p, li) {
+    line-height: var(--leading-body);
+}
+
+.main-content p {
+    margin-block: 0.68em;
+}
+
+.main-content :is(ul, ol) li + li {
+    margin-top: 0.3em;
+}
+
+.main-content :is(strong, b) {
+    font-weight: 650;
+}
+
+body.experimental .main-content :is(strong, b) {
+    font-weight: 650;
+}
+
+.topic > :is(p, ul, ol, blockquote) {
+    max-inline-size: var(--type-measure);
+}
+
+/* Educational blocks: readable prose, compact labels, untouched KaTeX fonts. */
+body .main-content :is(
+    .definition-box,
+    .formula-box,
+    .remark-box,
+    .experiment-box,
+    .derivation-box,
+    .theorem-box,
+    .lemma-box,
+    .example-box,
+    .statement-box,
+    .corollary-box,
+    .proof-box,
+    .exercise-box,
+    .properties-box,
+    .system-box
+) {
+    font-size: 1em;
+    line-height: 1.67;
+}
+
+body.experimental .main-content :is(
+    .definition-box,
+    .formula-box,
+    .remark-box,
+    .experiment-box,
+    .derivation-box,
+    .theorem-box,
+    .lemma-box,
+    .example-box,
+    .statement-box,
+    .corollary-box,
+    .proof-box,
+    .exercise-box,
+    .properties-box,
+    .system-box
+)::before {
+    font-size: 0.675rem;
+    font-weight: 720;
+    line-height: 1;
+    letter-spacing: var(--tracking-label);
+}
+
+.katex {
+    font-size: 1.015em;
+}
+
+.katex-display {
+    margin-block: 1em;
+}
+
+/* Navigation and search */
+body .sidebar-header h2,
+body .sidebar-header h2 a {
+    font-size: 1.08rem;
+    font-weight: 660;
+    line-height: 1.2;
+    letter-spacing: -0.022em;
+}
+
+body .nav-section h3 {
+    font-size: 0.69rem;
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: 0.09em;
+}
+
+body .nav-link {
+    font-size: var(--type-ui);
+    font-weight: 510;
+    line-height: var(--leading-ui);
+    letter-spacing: -0.008em;
+}
+
+body.experimental .nav-link {
+    font-size: var(--type-ui);
+    font-weight: 510;
+    line-height: var(--leading-ui);
+    letter-spacing: -0.008em;
+}
+
+body .nav-link.active {
+    font-weight: 650;
+}
+
+body.experimental .nav-link.active {
+    font-weight: 650;
+}
+
+body .search-box input,
+body .search-input-wrap input,
+body .mobile-search-bar input {
+    font-size: var(--type-ui);
+    font-weight: 450;
+    line-height: 1.35;
+}
+
+body .search-results-head strong {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: var(--tracking-label);
+}
+
+body .search-result-meta strong {
+    font-size: 0.81rem;
+    font-weight: 650;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+}
+
+body .search-result-meta small {
+    font-size: 0.67rem;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: 0.045em;
+}
+
+body .search-result-snippet {
+    font-size: 0.78rem;
+    font-weight: 420;
+    line-height: 1.47;
+}
+
+/* Controls, labels and secondary information */
+body :is(
+    .btn,
+    .auth-submit,
+    .knowledge-check-btn,
+    .toggle-proof,
+    .task-toggle,
+    .task-condition-toggle,
+    .hint-toggle,
+    .refresh-button,
+    .builder-open-btn
+) {
+    font-size: var(--type-ui);
+    font-weight: 610;
+    line-height: 1.25;
+    letter-spacing: -0.008em;
+}
+
+body :is(
+    .status-badge,
+    .task-status-badge,
+    .matcenter-progress-badge,
+    .grade-card-eyebrow,
+    .grade-card-sub,
+    .task-note
+) {
+    font-weight: 570;
+}
+
+body .page-footer,
+body .page-footer p {
+    font-size: var(--type-small);
+    font-weight: 430;
+    line-height: 1.58;
+    letter-spacing: 0.006em;
+}
+
+:is(
+    .exp-reader-count,
+    .stat-number,
+    .grade-card-count,
+    .task-number,
+    .matcenter-progress-value,
+    .ticket-number
+) {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Home page */
+body .home-header h1 {
+    font-size: var(--type-hero);
+    font-weight: 720;
+    line-height: 1.02;
+    letter-spacing: var(--tracking-display);
+    margin-bottom: clamp(0.65rem, 1.3vw, 0.95rem);
+}
+
+body.experimental .home-header h1 {
+    font-size: var(--type-hero);
+    font-weight: 720;
+    line-height: 1.02;
+    letter-spacing: var(--tracking-display);
+}
+
+body .home-header h1 svg {
+    width: clamp(2rem, 1.65rem + 1vw, 2.7rem);
+    height: clamp(2rem, 1.65rem + 1vw, 2.7rem);
+}
+
+body .home-header p {
+    max-inline-size: 52ch;
+    margin-inline: auto;
+    font-size: var(--type-lead);
+    font-weight: 430;
+    line-height: 1.55;
+    letter-spacing: -0.008em;
+}
+
+body .stat-item .number {
+    font-size: var(--type-ui);
+    font-weight: 620;
+    line-height: 1.3;
+    letter-spacing: -0.012em;
+}
+
+body .grade-tab {
+    font-size: var(--type-ui);
+    font-weight: 570;
+    line-height: 1;
+    letter-spacing: -0.01em;
+}
+
+body .grade-tab.active {
+    font-weight: 650;
+}
+
+body .section-title {
+    font-size: var(--type-section);
+    font-weight: 660;
+    line-height: 1.2;
+    letter-spacing: var(--tracking-heading);
+}
+
+body.experimental .section-title {
+    font-size: var(--type-section);
+    font-weight: 660;
+    line-height: 1.2;
+    letter-spacing: var(--tracking-heading);
+}
+
+body .subject-card h2 {
+    font-size: clamp(1.08rem, 0.98rem + 0.42vw, 1.42rem);
+    font-weight: 660;
+    line-height: 1.22;
+    letter-spacing: -0.024em;
+}
+
+body .status-badge {
+    font-size: var(--type-caption);
+    font-weight: 620;
+    line-height: 1.25;
+    letter-spacing: 0.012em;
+}
+
+.home-footer {
+    margin-top: clamp(2.8rem, 5vw, 4.8rem);
+    padding: 1.2rem 1rem 0.5rem;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.home-footer p {
+    margin: 0;
+    font-size: var(--type-small);
+    font-weight: 450;
+    line-height: 1.5;
+    letter-spacing: 0.035em;
+}
+
+.home-footer strong {
+    color: var(--text-primary);
+    font-weight: 620;
+}
+
+/* Matcenter */
+body.matcenter-page .stat-number {
+    font-size: clamp(1.55rem, 1.42rem + 0.55vw, 1.95rem);
+    font-weight: 710;
+    line-height: 1;
+    letter-spacing: -0.035em;
+}
+
+body.matcenter-page .stat-label {
+    font-size: var(--type-small);
+    font-weight: 550;
+    line-height: 1.3;
+    letter-spacing: -0.004em;
+}
+
+body.matcenter-page .grade-card-eyebrow {
+    font-size: 0.68rem;
+    font-weight: 650;
+    line-height: 1.3;
+    letter-spacing: 0.065em;
+}
+
+body.matcenter-page .grade-card-title {
+    font-size: 1.08rem;
+    font-weight: 640;
+    line-height: 1.2;
+    letter-spacing: -0.018em;
+}
+
+body.matcenter-page .grade-card-count {
+    font-size: 1.24rem;
+    font-weight: 680;
+    letter-spacing: -0.025em;
+}
+
+body.matcenter-page .grade-card-sub {
+    font-size: 0.7rem;
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+body.matcenter-page .task-number {
+    font-size: 1.04rem;
+    font-weight: 650;
+    line-height: 1.3;
+    letter-spacing: -0.016em;
+}
+
+body.matcenter-page .task-note {
+    font-size: 0.79rem;
+    font-weight: 450;
+    line-height: 1.4;
+}
+
+body.matcenter-page :is(.task-description, .task-description-inner) {
+    font-size: 0.98rem;
+    font-weight: 400;
+    line-height: 1.7;
+}
+
+body.matcenter-page .task-status-badge {
+    font-size: 0.76rem;
+    font-weight: 610;
+    line-height: 1.25;
+    letter-spacing: 0;
+}
+
+/* Dialogs and knowledge check */
+body :is(.auth-modal, .settings-modal-content, .kc-modal) h2 {
+    font-size: var(--type-section);
+    font-weight: 680;
+    line-height: 1.18;
+    letter-spacing: var(--tracking-heading);
+}
+
+body :is(.auth-modal, .settings-modal-content, .kc-modal) h3 {
+    font-size: var(--type-subheading);
+    font-weight: 640;
+    line-height: 1.28;
+    letter-spacing: var(--tracking-subheading);
+}
+
+body .kc-definition {
+    font-size: var(--type-lead);
+    font-weight: 450;
+    line-height: 1.62;
+}
+
+body .kc-deck {
+    font-size: var(--type-ui);
+    line-height: 1.4;
+}
+
+/* Long lines are reduced only in the roomy paged reader. Wide tables and
+   formula-only/system blocks keep the full card width. */
+@media (min-width: 1024px) {
+    body.experimental.exp-reader-active .page-header > :is(h1, .subtitle, p) {
+        width: min(100%, var(--type-measure-wide));
+        margin-right: auto !important;
+        margin-left: auto !important;
+    }
+
+    body:not(.matcenter-page) .topic > :is(
+        .topic-title,
+        .definition-box,
+        .remark-box,
+        .theorem-box,
+        .lemma-box,
+        .example-box,
+        .statement-box,
+        .corollary-box,
+        .proof-box,
+        .exercise-box,
+        .properties-box,
+        .derivation-box
+    ) {
+        width: min(100%, 52rem);
+        margin-inline: auto;
+    }
+
+    body.experimental.exp-reader-active .topic.exp-reader-current > :is(
+        .topic-title,
+        p,
+        ul,
+        ol,
+        blockquote,
+        .definition-box,
+        .remark-box,
+        .theorem-box,
+        .lemma-box,
+        .example-box,
+        .statement-box,
+        .corollary-box,
+        .proof-box,
+        .exercise-box,
+        .properties-box,
+        .derivation-box
+    ) {
+        width: min(100%, var(--type-measure-wide));
+        margin-inline: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    :root {
+        --leading-body: 1.66;
+    }
+
+    body .page-header h1 {
+        font-weight: 700;
+        letter-spacing: -0.032em;
+    }
+
+    body .home-header h1 {
+        letter-spacing: -0.038em;
+    }
+
+    body .topic-title {
+        letter-spacing: -0.03em;
+    }
+
+    body.experimental.exp-reader-active .content-section > .topic.exp-reader-current {
+        font-size: 1rem;
+    }
+
+    body.experimental.exp-reader-active .topic.exp-reader-current > .topic-title {
+        font-size: clamp(1.38rem, 5.8vw, 1.58rem);
+        font-weight: 680;
+        line-height: 1.18;
+        letter-spacing: -0.03em;
+    }
+
+    body .subject-card h2 {
+        font-weight: 640;
+    }
+
+    body .nav-link {
+        font-size: 0.93rem;
+    }
+
+    .main-content :is(p, li) {
+        line-height: 1.66;
+    }
+
+    .home-footer {
+        margin-top: 2.6rem;
+        padding-bottom: calc(0.7rem + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+@media (max-width: 380px) {
+    :root {
+        --type-hero: 1.95rem;
+        --type-page: 1.78rem;
+        --type-topic: 1.48rem;
+    }
+
+    body .grade-tab {
+        font-size: 0.82rem;
+    }
+
+    body .subject-card h2 {
+        font-size: 1.02rem;
+    }
+}

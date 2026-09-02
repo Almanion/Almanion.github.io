@@ -649,6 +649,16 @@
         if (isCurrentPage) {
             const box = findBoxById(bm.id);
             if (!box) return;
+            // В постраничном экспериментальном режиме нужная тема может быть
+            // display:none/inert. Сначала делаем её текущей, затем прокручиваем.
+            if (window.experimentalReader && window.experimentalReader.isActive()) {
+                window.experimentalReader.revealElement(box, {
+                    source: 'bookmark',
+                    animate: false,
+                    scroll: false,
+                    updateHash: true
+                });
+            }
             closeBookmarksPanel();
             if (typeof window.closeMobileMenu === 'function') window.closeMobileMenu();
             setTimeout(() => {

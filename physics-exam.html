@@ -8,10 +8,11 @@
             try {
                 var s = localStorage.getItem('siteSettings');
                 var p = s ? JSON.parse(s) : {};
+                var useExperimental = p.experimental !== false;
                 var bg, fg;
-                if (p && p.experimental) {
+                if (useExperimental) {
                     var dark = !!p.expDark;
-                    var mode = p.expMode === 'prism' ? 'prism' : 'graphite';
+                    var mode = p.expMode === 'graphite' ? 'graphite' : 'prism';
                     if (mode === 'graphite') { bg = dark ? '#09090b' : '#fafafa'; fg = dark ? '#f4f4f5' : '#18181b'; }
                     else { bg = dark ? '#0e0e16' : '#fbfbfe'; fg = dark ? '#ececf4' : '#16161f'; }
                     document.documentElement.dataset.exp = mode + (dark ? '-dark' : '-light');
@@ -34,7 +35,7 @@
     <meta name="apple-mobile-web-app-title" content="Almanion">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Билеты к экзамену | Физика | Almanion</title>
-    <link rel="stylesheet" href="styles/site/index.css">
+    <link rel="stylesheet" href="styles/site/index.css?v=20260902-3">
     <link rel="stylesheet" href="styles/tokens.css">
     <link rel="stylesheet" href="styles/buttons.css">
     <link rel="stylesheet" href="styles/mobile-overrides.css">
@@ -1151,10 +1152,12 @@
         .builder-sync-badge.syncing { background: #fef9c3; color: #a16207; }
         body.dark-theme .builder-sync-badge.syncing { background: #422006; color: #fde68a; }
     </style>
-    <link rel="stylesheet" href="style-new.css">
+    <link rel="stylesheet" href="style-new.css?v=20260902-5">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="styles/typography.css?v=20260902-5">
 </head>
 <body>
-    <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p&&p.experimental){document.body.classList.add('experimental',p.expMode==='prism'?'exp-prism':'exp-graphite');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
+    <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
     <!-- Боковая панель навигации -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -1392,16 +1395,16 @@
     <div class="easter-eggs-container" id="easterEggsContainer"></div>
 
     <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="firebase-analytics.js"></script>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=20260902-4"></script>
     <script src="newyear.js"></script>
-    <script src="settings.js"></script>
-    <script src="bookmarks.js"></script>
+    <script src="settings.js?v=20260902-2"></script>
+    <script src="bookmarks.js?v=20260902-3"></script>
 
     <!-- ====================================================
          КОНСТРУКТОР БИЛЕТОВ — HTML
@@ -1726,19 +1729,18 @@
         saveAll(data);
     }
 
-    // ---- Re-инициализация формул и выводов после вставки HTML ----
+    // ---- Re-инициализация формул после вставки HTML ----
 
     function reInit(container) {
-        // Переинициализируем кнопки раскрытия вывода
+        // Вывод формулы всегда открыт: отдельный переключатель только прячет
+        // важную часть ответа и дублирует управление содержимым.
         container.querySelectorAll('.toggle-derivation').forEach(function (btn) {
-            var fresh = btn.cloneNode(true);
-            btn.parentNode.replaceChild(fresh, btn);
-            fresh.addEventListener('click', function () {
-                var content = this.nextElementSibling;
-                if (!content) return;
-                var open = content.classList.toggle('show');
-                this.innerHTML = open ? '<span class="eic eic-book" aria-hidden="true"></span> Скрыть вывод' : '<span class="eic eic-book" aria-hidden="true"></span> Показать вывод';
-            });
+            var content = btn.nextElementSibling;
+            if (content && content.classList.contains('derivation-content')) {
+                content.classList.add('show');
+                content.removeAttribute('aria-hidden');
+            }
+            btn.remove();
         });
         // KaTeX
         if (window.renderMathInElement) {

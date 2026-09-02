@@ -183,7 +183,8 @@ body.experimental.exp-dark {
    3. ТИПОГРАФИКА И БАЗА
    ========================================================= */
 body.experimental {
-    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+    font-family: var(--font-sans, 'Onest', 'Segoe UI Variable Text', 'Segoe UI',
+        -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif);
     line-height: 1.65;
     letter-spacing: 0;
     -webkit-font-smoothing: antialiased;
@@ -1038,8 +1039,27 @@ body.experimental .main-content figcaption {
    ПОСТРАНИЧНЫЙ РЕЖИМ КОНСПЕКТОВ
    Одна тема за раз, навигация стрелками и горизонтальным свайпом.
    ========================================================= */
+.exp-reader-anchor,
 .exp-reader-toolbar,
 .exp-reader-footer {
+    display: none;
+}
+
+body.experimental.exp-reader-active {
+    --exp-reader-shell: min(100%, 61.25rem);
+    --exp-reader-radius: 14px;
+    --exp-reader-accent: color-mix(in srgb, var(--exp-accent) 52%, var(--exp-text-dim));
+}
+
+body.experimental.exp-reader-active .exp-reader-anchor {
+    display: block;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    overflow-anchor: none;
+}
+
+body.experimental.exp-reader-active #readingProgress {
     display: none;
 }
 
@@ -1050,16 +1070,15 @@ body.experimental.exp-reader-active .exp-reader-toolbar {
     display: grid;
     grid-template-columns: 42px minmax(0, 1fr) 42px;
     align-items: center;
-    gap: 0.75rem;
-    width: min(100%, 980px);
-    margin: 0 auto 1.1rem;
-    padding: 0.6rem;
+    gap: 0.65rem;
+    width: var(--exp-reader-shell);
+    margin: 0 auto 0.85rem;
+    padding: 0.5rem;
     color: var(--exp-text);
-    background: color-mix(in srgb, var(--exp-surface) 94%, transparent);
+    background: color-mix(in srgb, var(--exp-surface) 98%, var(--exp-bg));
     border: 1px solid var(--exp-border);
-    border-radius: var(--exp-r-lg);
-    box-shadow: 0 8px 28px color-mix(in srgb, var(--exp-text) 7%, transparent);
-    backdrop-filter: blur(12px);
+    border-radius: var(--exp-reader-radius);
+    box-shadow: 0 3px 12px color-mix(in srgb, var(--exp-text) 4%, transparent);
 }
 
 .exp-reader-arrow {
@@ -1070,9 +1089,9 @@ body.experimental.exp-reader-active .exp-reader-toolbar {
     height: 42px;
     padding: 0;
     color: var(--exp-text);
-    background: var(--exp-surface-2);
-    border: 1px solid var(--exp-border);
-    border-radius: var(--exp-r);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     transition: color 0.16s ease, background-color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
@@ -1084,19 +1103,18 @@ body.experimental.exp-reader-active .exp-reader-toolbar {
 }
 
 body:not(.no-hover).experimental .exp-reader-arrow:hover:not(:disabled) {
-    color: var(--exp-accent);
-    background: var(--exp-accent-soft);
-    border-color: color-mix(in srgb, var(--exp-accent) 45%, var(--exp-border));
-    transform: translateY(-1px);
+    color: var(--exp-text);
+    background: var(--exp-surface-2);
+    border-color: var(--exp-border);
 }
 
 .exp-reader-arrow:active:not(:disabled) {
-    transform: scale(0.96);
+    transform: scale(0.98);
 }
 
 .exp-reader-arrow:focus-visible,
 .exp-reader-footer-button:focus-visible {
-    outline: 3px solid color-mix(in srgb, var(--exp-accent) 28%, transparent);
+    outline: 2px solid color-mix(in srgb, var(--exp-reader-accent) 42%, transparent);
     outline-offset: 2px;
 }
 
@@ -1115,7 +1133,7 @@ body:not(.no-hover).experimental .exp-reader-arrow:hover:not(:disabled) {
     align-items: baseline;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 0.45rem;
+    margin-bottom: 0.38rem;
 }
 
 .exp-reader-part {
@@ -1137,7 +1155,7 @@ body:not(.no-hover).experimental .exp-reader-arrow:hover:not(:disabled) {
 }
 
 .exp-reader-progress {
-    height: 3px;
+    height: 2px;
     overflow: hidden;
     background: var(--exp-border);
     border-radius: 999px;
@@ -1147,14 +1165,15 @@ body:not(.no-hover).experimental .exp-reader-arrow:hover:not(:disabled) {
     display: block;
     width: 0;
     height: 100%;
-    background: var(--exp-accent);
+    background: var(--exp-reader-accent);
     border-radius: inherit;
-    transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: width 0.18s ease-out;
 }
 
 body.experimental.exp-reader-active .content-section {
     display: none !important;
     margin: 0 !important;
+    overflow-anchor: none;
 }
 
 body.experimental.exp-reader-active .content-section.exp-reader-section-current {
@@ -1171,15 +1190,15 @@ body.experimental.exp-reader-active .content-section > .topic {
 
 body.experimental.exp-reader-active .content-section > .topic.exp-reader-current {
     display: block !important;
-    width: min(100%, 980px);
+    width: var(--exp-reader-shell);
     min-height: min(54vh, 36rem);
-    margin: 0 auto 1.25rem !important;
+    margin: 0 auto 1rem !important;
     padding: clamp(1.15rem, 2.4vw, 2rem) !important;
     overflow-wrap: anywhere;
     opacity: 1;
     background: var(--exp-surface) !important;
     border: 1px solid var(--exp-border) !important;
-    border-radius: var(--exp-r-lg) !important;
+    border-radius: var(--exp-reader-radius) !important;
     box-shadow: none !important;
     touch-action: pan-y;
 }
@@ -1188,20 +1207,53 @@ body.experimental.exp-reader-active .topic.exp-reader-current > .topic-title {
     position: static;
     top: auto;
     z-index: auto;
-    padding: 0 0 0.8rem !important;
-    margin: 0 0 1.15rem !important;
+    padding: 0 0 0.9rem !important;
+    margin-top: 0 !important;
+    margin-bottom: 1.25rem !important;
     background: transparent !important;
+}
+
+body.experimental.exp-reader-active .topic.exp-reader-current :is(
+    .definition-box,
+    .formula-box,
+    .remark-box,
+    .experiment-box,
+    .derivation-box,
+    .theorem-box,
+    .lemma-box,
+    .example-box,
+    .statement-box,
+    .corollary-box,
+    .proof-box,
+    .exercise-box,
+    .properties-box,
+    .system-box
+)::before {
+    opacity: 0.78;
+    background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+body.experimental.exp-reader-active .nav-link.active {
+    color: var(--exp-text) !important;
+    background: var(--exp-surface-2) !important;
+    box-shadow: inset 2px 0 0 color-mix(in srgb, var(--exp-reader-accent) 48%, var(--exp-border)) !important;
 }
 
 body.experimental.exp-reader-active:not(.exp-reader-at-end) .page-footer {
     display: none;
 }
 
+body.experimental.exp-reader-active.exp-reader-at-end .page-footer {
+    width: var(--exp-reader-shell);
+    margin-right: auto;
+    margin-left: auto;
+}
+
 body.experimental.exp-reader-active .exp-reader-footer {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.8rem;
-    width: min(100%, 980px);
+    width: var(--exp-reader-shell);
     margin: 0 auto 1.5rem;
 }
 
@@ -1211,13 +1263,13 @@ body.experimental.exp-reader-active .exp-reader-footer {
     align-items: center;
     gap: 0.75rem;
     min-width: 0;
-    min-height: 68px;
+    min-height: 64px;
     padding: 0.8rem 1rem;
     color: var(--exp-text);
     text-align: left;
     background: var(--exp-surface);
     border: 1px solid var(--exp-border);
-    border-radius: var(--exp-r-lg);
+    border-radius: 12px;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     transition: border-color 0.16s ease, background-color 0.16s ease, transform 0.16s ease;
@@ -1266,7 +1318,6 @@ body.experimental.exp-reader-active .exp-reader-footer {
 body:not(.no-hover).experimental .exp-reader-footer-button:hover:not(:disabled) {
     background: var(--exp-surface-2);
     border-color: var(--exp-border-strong);
-    transform: translateY(-1px);
 }
 
 body.experimental.exp-reader-active .topic.exp-reader-dragging {
@@ -1281,37 +1332,70 @@ body.exp-reader-pointer-active {
 }
 
 body.experimental.exp-reader-active .topic.exp-reader-leave-next {
-    animation: expReaderLeaveNext 0.12s ease-in both;
+    animation: expReaderLeaveNext 0.1s ease-in both;
 }
 
 body.experimental.exp-reader-active .topic.exp-reader-leave-prev {
-    animation: expReaderLeavePrev 0.12s ease-in both;
+    animation: expReaderLeavePrev 0.1s ease-in both;
 }
 
 body.experimental.exp-reader-active .topic.exp-reader-enter-next {
-    animation: expReaderEnterNext 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: expReaderEnterNext 0.18s ease-out both;
 }
 
 body.experimental.exp-reader-active .topic.exp-reader-enter-prev {
-    animation: expReaderEnterPrev 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: expReaderEnterPrev 0.18s ease-out both;
 }
 
 @keyframes expReaderLeaveNext {
-    to { opacity: 0; transform: translate3d(-16px, 0, 0); }
+    to { opacity: 0; transform: translate3d(-4px, 0, 0); }
 }
 
 @keyframes expReaderLeavePrev {
-    to { opacity: 0; transform: translate3d(16px, 0, 0); }
+    to { opacity: 0; transform: translate3d(4px, 0, 0); }
 }
 
 @keyframes expReaderEnterNext {
-    from { opacity: 0; transform: translate3d(22px, 0, 0); }
+    from { opacity: 0; transform: translate3d(6px, 0, 0); }
     to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes expReaderEnterPrev {
-    from { opacity: 0; transform: translate3d(-22px, 0, 0); }
+    from { opacity: 0; transform: translate3d(-6px, 0, 0); }
     to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+/* В поддерживаемых браузерах старый и новый раздел движутся одновременно —
+   без белой паузы между двумя последовательными анимациями. */
+html.exp-reader-vt-active::view-transition-old(root),
+html.exp-reader-vt-active::view-transition-new(root) {
+    animation: none;
+}
+
+html.exp-reader-vt-next::view-transition-old(exp-reader-topic) {
+    animation: expReaderVtOldNext 0.11s ease-in both;
+}
+html.exp-reader-vt-next::view-transition-new(exp-reader-topic) {
+    animation: expReaderVtNewNext 0.17s ease-out both;
+}
+html.exp-reader-vt-prev::view-transition-old(exp-reader-topic) {
+    animation: expReaderVtOldPrev 0.11s ease-in both;
+}
+html.exp-reader-vt-prev::view-transition-new(exp-reader-topic) {
+    animation: expReaderVtNewPrev 0.17s ease-out both;
+}
+
+@keyframes expReaderVtOldNext {
+    to { opacity: 0; transform: translate3d(-4px, 0, 0); }
+}
+@keyframes expReaderVtNewNext {
+    from { opacity: 0; transform: translate3d(6px, 0, 0); }
+}
+@keyframes expReaderVtOldPrev {
+    to { opacity: 0; transform: translate3d(4px, 0, 0); }
+}
+@keyframes expReaderVtNewPrev {
+    from { opacity: 0; transform: translate3d(-6px, 0, 0); }
 }
 
 body.animations-medium.experimental .topic.exp-reader-leave-next,
@@ -1321,7 +1405,7 @@ body.animations-medium.experimental .topic.exp-reader-leave-prev {
 
 body.animations-medium.experimental .topic.exp-reader-enter-next,
 body.animations-medium.experimental .topic.exp-reader-enter-prev {
-    animation-duration: 0.14s;
+    animation-duration: 0.11s;
 }
 
 body.animations-off.experimental .topic.exp-reader-current,
@@ -1330,18 +1414,94 @@ body.animations-off.experimental .exp-reader-progress > span {
     transition: none !important;
 }
 
+@media (min-width: 769px) {
+    body.experimental.exp-reader-active .settings-button {
+        display: none !important;
+    }
+
+    body.experimental.exp-reader-active .settings-button-sidebar {
+        display: flex;
+    }
+
+    body.experimental.exp-reader-active .page-header {
+        width: var(--exp-reader-shell);
+        margin-right: auto !important;
+        margin-left: auto !important;
+    }
+}
+
+@media (min-width: 1024px) {
+    body.experimental.exp-reader-active {
+        --exp-reader-shell: min(100%, 62.5rem);
+    }
+
+    body.experimental.exp-reader-active .exp-reader-toolbar,
+    body.experimental.exp-reader-active .page-header,
+    body.experimental.exp-reader-active .content-section > .topic.exp-reader-current,
+    body.experimental.exp-reader-active .exp-reader-footer {
+        width: var(--exp-reader-shell);
+    }
+
+    body.experimental.exp-reader-active .exp-reader-toolbar {
+        top: 1rem;
+        grid-template-columns: 44px minmax(0, 1fr) 44px;
+        gap: 0.75rem;
+        padding: 0.5rem;
+        border-radius: var(--exp-reader-radius);
+        box-shadow: 0 3px 12px color-mix(in srgb, var(--exp-text) 4%, transparent);
+    }
+
+    body.experimental.exp-reader-active .exp-reader-toolbar .exp-reader-arrow {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+    }
+
+    body.experimental.exp-reader-active .content-section > .topic.exp-reader-current {
+        min-height: clamp(32rem, 62vh, 40rem);
+        padding: clamp(2rem, 3vw, 3rem) !important;
+        border-radius: 16px !important;
+        box-shadow: none !important;
+    }
+
+    body.experimental.exp-reader-active .topic.exp-reader-current > .topic-title {
+        margin-bottom: 1.5rem !important;
+        line-height: 1.18;
+    }
+
+    body.experimental.exp-reader-active .exp-reader-footer {
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    body.experimental.exp-reader-active .exp-reader-footer-button {
+        min-height: 68px;
+        padding: 0.85rem 1rem;
+        border-radius: 12px;
+    }
+
+    body.experimental.exp-reader-active .exp-reader-footer-button strong {
+        font-size: 0.88rem;
+    }
+}
+
 @media (max-width: 768px) {
+    body.experimental.exp-reader-active {
+        --exp-reader-shell: 100%;
+        --exp-reader-radius: 0;
+    }
+
     body.experimental.exp-reader-active .exp-reader-toolbar {
         top: 0;
         grid-template-columns: 40px minmax(0, 1fr) 40px;
         gap: 0.6rem;
         width: 100%;
-        margin: 0 0 0.65rem;
-        padding: 0.55rem var(--m-pad);
+        margin: 0 0 0.55rem;
+        padding: 0.45rem var(--m-pad);
         border-right: 0;
         border-left: 0;
         border-radius: 0;
-        box-shadow: 0 6px 20px color-mix(in srgb, var(--exp-text) 6%, transparent);
+        box-shadow: 0 2px 8px color-mix(in srgb, var(--exp-text) 4%, transparent);
     }
 
     .exp-reader-arrow {
@@ -1352,8 +1512,8 @@ body.animations-off.experimental .exp-reader-progress > span {
     body.experimental.exp-reader-active .content-section > .topic.exp-reader-current {
         width: 100%;
         min-height: 56vh;
-        margin-bottom: 0.7rem !important;
-        padding: 0.55rem var(--m-pad) 0.9rem !important;
+        margin-bottom: 0.6rem !important;
+        padding: 0.7rem var(--m-pad) 0.95rem !important;
         border-right: 0 !important;
         border-left: 0 !important;
         border-radius: 0 !important;

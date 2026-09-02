@@ -17,22 +17,6 @@ const _safeRemove = (typeof window !== 'undefined' && window.safeStorageRemove)
 
 let __pwaReloading = false;
 let __pwaInstallPrompt = null;
-let __pwaInstallButtonReady = false;
-const PWA_UPDATE_DISMISSED_KEY = 'almanion_pwa_update_dismissed_for_session';
-
-function isPwaUpdateDismissed() {
-    try {
-        return sessionStorage.getItem(PWA_UPDATE_DISMISSED_KEY) === '1';
-    } catch (_) {
-        return false;
-    }
-}
-
-function dismissPwaUpdateForSession() {
-    try {
-        sessionStorage.setItem(PWA_UPDATE_DISMISSED_KEY, '1');
-    } catch (_) {}
-}
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -42,19 +26,8 @@ if ('serviceWorker' in navigator) {
             .then((registration) => {
                 window.__almanionServiceWorker = registration;
 
-                if (registration.waiting) {
-                    showPwaUpdatePrompt(registration);
-                }
-
-                registration.addEventListener('updatefound', () => {
-                    const worker = registration.installing;
-                    if (!worker) return;
-                    worker.addEventListener('statechange', () => {
-                        if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-                            showPwaUpdatePrompt(registration);
-                        }
-                    });
-                });
+                // Обновление остаётся ждать естественной смены вкладки/сеанса.
+                // Не прерываем чтение навязчивым баннером и автоперезагрузкой.
             })
             .catch(() => {});
 
@@ -70,7 +43,6 @@ if ('serviceWorker' in navigator) {
 window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault();
     __pwaInstallPrompt = event;
-    __pwaInstallButtonReady = true;
     showPwaInstallButton();
 });
 
@@ -234,41 +206,6 @@ function closePwaInstallHelp() {
     if (!overlay || !overlay.classList.contains('is-visible')) return;
     overlay.classList.remove('is-visible');
     document.body.classList.remove('modal-open');
-}
-
-function showPwaUpdatePrompt(registration) {
-    if (!registration || !registration.waiting) return;
-    if (isPwaUpdateDismissed()) return;
-    if (document.getElementById('pwaUpdateToast')) return;
-
-    const toast = document.createElement('div');
-    toast.id = 'pwaUpdateToast';
-    toast.className = 'pwa-update-toast';
-    toast.setAttribute('role', 'status');
-    toast.innerHTML = `
-        <div class="pwa-update-text">
-            <strong>Доступна новая версия</strong>
-            <span>Обновить приложение и открыть свежие конспекты?</span>
-        </div>
-        <button type="button" class="pwa-update-action">Обновить</button>
-        <button type="button" class="pwa-update-close" aria-label="Скрыть">×</button>
-    `;
-
-    const action = toast.querySelector('.pwa-update-action');
-    const close = toast.querySelector('.pwa-update-close');
-
-    action.addEventListener('click', () => {
-        if (registration.waiting) {
-            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        }
-    });
-    close.addEventListener('click', () => {
-        dismissPwaUpdateForSession();
-        toast.remove();
-    });
-
-    document.body.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.add('is-visible'));
 }
 
 function showPwaMiniToast(message) {
@@ -496,12 +433,14 @@ function initNavigation() {
 // ============================================
 
 const searchState = {
-    matches: [],
+    results: [],
     currentIndex: -1,
     term: '',
-    bar: null,
+    panel: null,
+    input: null,
     debounce: null,
-    active: false
+    active: false,
+    totalResults: 0
 };
 
 function initSearch() {
@@ -512,202 +451,292 @@ function initSearch() {
     const searchInput = document.getElementById('searchInput');
     if (!searchInput) return;
 
-    createSearchBar();
+    searchState.input = searchInput;
+    createSearchResultsPanel(searchInput);
+    searchInput.setAttribute('autocomplete', 'off');
+    searchInput.setAttribute('aria-autocomplete', 'list');
+    searchInput.setAttribute('aria-controls', 'searchResultsPanel');
+    searchInput.setAttribute('aria-expanded', 'false');
 
     searchInput.addEventListener('input', () => {
         if (searchState.debounce) clearTimeout(searchState.debounce);
         const term = searchInput.value.trim();
         if (term.length < 2) {
-            clearSearch();
+            clearSearchPanel();
             return;
         }
         searchState.debounce = setTimeout(() => {
-            performSearch(term.toLowerCase());
-        }, 300);
+            performSearchPanel(term);
+        }, 160);
     });
 
     searchInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && searchState.matches.length > 0) {
+        if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && searchState.results.length) {
             e.preventDefault();
-            closeMobileMenu();
-            navigateMatch(e.shiftKey ? -1 : 1);
-        }
-    });
-}
-
-function createSearchBar() {
-    if (document.getElementById('searchNavBar')) return;
-    const bar = document.createElement('div');
-    bar.id = 'searchNavBar';
-    bar.className = 'search-nav-bar hidden';
-    bar.innerHTML =
-        '<span class="search-nav-count"></span>' +
-        '<div class="search-nav-sections"></div>' +
-        '<div class="search-nav-controls">' +
-            '<button class="search-nav-btn" id="searchPrev" aria-label="Предыдущее">▲</button>' +
-            '<button class="search-nav-btn" id="searchNext" aria-label="Следующее">▼</button>' +
-            '<button class="search-nav-btn search-nav-close" id="searchClose" aria-label="Закрыть"><span class="eic eic-x" aria-hidden="true"></span></button>' +
-        '</div>';
-    document.body.appendChild(bar);
-    searchState.bar = bar;
-
-    bar.querySelector('#searchPrev').addEventListener('click', () => navigateMatch(-1));
-    bar.querySelector('#searchNext').addEventListener('click', () => navigateMatch(1));
-    bar.querySelector('#searchClose').addEventListener('click', () => {
-        const input = document.getElementById('searchInput');
-        if (input) input.value = '';
-        clearSearch();
-    });
-}
-
-function performSearch(term) {
-    clearHighlights();
-    searchState.matches = [];
-    searchState.currentIndex = -1;
-    searchState.term = term;
-    searchState.active = true;
-
-    const root = document.querySelector('.main-content') || document.body;
-
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-        acceptNode(node) {
-            const p = node.parentElement;
-            if (!p) return NodeFilter.FILTER_REJECT;
-            if (p.closest('.katex, .sidebar, .search-nav-bar, .exp-reader-toolbar, .exp-reader-footer, script, style, noscript')) {
-                return NodeFilter.FILTER_REJECT;
-            }
-            if (node.textContent.toLowerCase().indexOf(term) === -1) {
-                return NodeFilter.FILTER_REJECT;
-            }
-            return NodeFilter.FILTER_ACCEPT;
+            const delta = e.key === 'ArrowDown' ? 1 : -1;
+            const start = searchState.currentIndex < 0 ? (delta > 0 ? -1 : 0) : searchState.currentIndex;
+            searchState.currentIndex = (start + delta + searchState.results.length) % searchState.results.length;
+            updateSearchResultSelection();
+        } else if (e.key === 'Enter' && searchState.results.length) {
+            e.preventDefault();
+            openSearchResult(searchState.currentIndex < 0 ? 0 : searchState.currentIndex);
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            searchInput.value = '';
+            clearSearchPanel();
+            searchInput.blur();
         }
     });
 
-    const nodes = [];
-    while (walker.nextNode()) nodes.push(walker.currentNode);
-
-    nodes.forEach(node => {
-        const text = node.textContent;
-        const lower = text.toLowerCase();
-        const parent = node.parentNode;
-        if (!parent) return;
-
-        const frag = document.createDocumentFragment();
-        let pos = 0;
-        let idx;
-        while ((idx = lower.indexOf(term, pos)) !== -1) {
-            if (idx > pos) frag.appendChild(document.createTextNode(text.slice(pos, idx)));
-            const mark = document.createElement('mark');
-            mark.className = 'search-hl';
-            mark.textContent = text.slice(idx, idx + term.length);
-            searchState.matches.push(mark);
-            frag.appendChild(mark);
-            pos = idx + term.length;
+    searchInput.addEventListener('focus', () => {
+        if (searchInput.value.trim().length >= 2 && searchState.panel) {
+            searchState.panel.classList.remove('hidden');
+            searchInput.setAttribute('aria-expanded', 'true');
         }
-        if (pos < text.length) frag.appendChild(document.createTextNode(text.slice(pos)));
-        parent.replaceChild(frag, node);
     });
 
-    if (searchState.matches.length > 0) {
-        searchState.currentIndex = 0;
-        searchState.matches[0].classList.add('search-hl-active');
-        scrollToSearchMatch(searchState.matches[0]);
-    }
-
-    showSearchBar();
-}
-
-function navigateMatch(dir) {
-    const m = searchState.matches;
-    if (!m.length) return;
-    m[searchState.currentIndex]?.classList.remove('search-hl-active');
-    searchState.currentIndex = (searchState.currentIndex + dir + m.length) % m.length;
-    const el = m[searchState.currentIndex];
-    el.classList.add('search-hl-active');
-    scrollToSearchMatch(el);
-    showSearchBar();
-}
-
-function scrollToSearchMatch(element) {
-    if (window.experimentalReader && window.experimentalReader.isActive()) {
-        window.experimentalReader.revealElement(element, { source: 'search' });
-    }
-    requestAnimationFrame(() => {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.addEventListener('click', (event) => {
+        if (!searchState.panel || searchState.panel.classList.contains('hidden')) return;
+        if (event.target.closest('.search-box, .search-results-panel')) return;
+        searchState.panel.classList.add('hidden');
+        searchInput.setAttribute('aria-expanded', 'false');
     });
 }
 
-function showSearchBar() {
-    const bar = searchState.bar;
-    if (!bar) return;
-    const total = searchState.matches.length;
-    const countEl = bar.querySelector('.search-nav-count');
-    const secEl = bar.querySelector('.search-nav-sections');
+const SEARCH_CONTENT_SELECTOR = [
+    '.topic-title', '.definition-box', '.formula-box', '.theorem-box', '.remark-box',
+    '.lemma-box', '.example-box', '.statement-box', '.corollary-box', '.properties-box',
+    '.experiment-box', '.derivation-box', '.system-box', '.proof-box',
+    ':scope > p', ':scope > ul > li', ':scope > ol > li'
+].join(', ');
 
-    if (total === 0) {
-        bar.classList.remove('hidden');
-        countEl.textContent = searchState.term ? 'Ничего не найдено' : '';
-        secEl.innerHTML = '';
+const SEARCH_SEMANTIC_SELECTOR = [
+    '.definition-box', '.formula-box', '.theorem-box', '.remark-box', '.lemma-box',
+    '.example-box', '.statement-box', '.corollary-box', '.properties-box',
+    '.experiment-box', '.derivation-box', '.system-box', '.proof-box'
+].join(', ');
+
+function createSearchResultsPanel(input) {
+    if (document.getElementById('searchResultsPanel')) {
+        searchState.panel = document.getElementById('searchResultsPanel');
         return;
     }
-
-    bar.classList.remove('hidden');
-    countEl.textContent = (searchState.currentIndex + 1) + ' / ' + total;
-
-    const map = new Map();
-    searchState.matches.forEach((el, i) => {
-        const sec = el.closest('.topic, .content-section');
-        if (!sec) return;
-        if (!map.has(sec)) {
-            const tEl = sec.querySelector('.topic-title, h3');
-            let name = '';
-            if (tEl) {
-                tEl.childNodes.forEach(n => {
-                    if (n.nodeType === Node.TEXT_NODE) name += n.textContent;
-                });
-                name = name.trim() || tEl.textContent.trim();
-            }
-            if (!name) name = sec.id || '?';
-            map.set(sec, { name, count: 0, first: i });
-        }
-        map.get(sec).count++;
+    const panel = document.createElement('div');
+    panel.id = 'searchResultsPanel';
+    panel.className = 'search-results-panel hidden';
+    panel.setAttribute('role', 'region');
+    panel.setAttribute('aria-label', 'Результаты поиска');
+    panel.innerHTML =
+        '<div class="search-results-head"><strong></strong>' +
+            '<button type="button" class="search-results-close" aria-label="Закрыть результаты"><span class="eic eic-x" aria-hidden="true"></span></button>' +
+        '</div>' +
+        '<div class="search-results-list" role="listbox"></div>';
+    input.closest('.search-box').insertAdjacentElement('afterend', panel);
+    panel.querySelector('.search-results-close').addEventListener('click', () => {
+        input.value = '';
+        clearSearchPanel();
+        input.focus();
     });
+    searchState.panel = panel;
+}
 
-    let html = '';
-    map.forEach((info) => {
-        const cur = searchState.currentIndex;
-        const active = cur >= info.first && cur < info.first + info.count;
-        html += '<button class="search-nav-section' + (active ? ' active' : '') +
-            '" data-i="' + info.first + '">' +
-            escapeSearchHtml(info.name) +
-            ' <span class="search-section-badge">' + info.count + '</span></button>';
+function normalizeSearchText(value) {
+    return String(value || '').toLocaleLowerCase('ru-RU').replace(/ё/g, 'е');
+}
+
+function readableSearchText(element) {
+    const clone = element.cloneNode(true);
+    clone.querySelectorAll('.katex').forEach(node => {
+        const annotation = node.querySelector('annotation[encoding="application/x-tex"]');
+        const source = annotation ? annotation.textContent.trim() : '';
+        node.replaceWith(document.createTextNode(source ? ' ' + source + ' ' : ''));
     });
-    secEl.innerHTML = html;
+    clone.querySelectorAll('button, script, style, [aria-hidden="true"]').forEach(node => node.remove());
+    return String(clone.textContent || '').replace(/\s+/g, ' ').trim();
+}
 
-    secEl.querySelectorAll('.search-nav-section').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const i = parseInt(btn.dataset.i);
-            searchState.matches[searchState.currentIndex]?.classList.remove('search-hl-active');
-            searchState.currentIndex = i;
-            searchState.matches[i].classList.add('search-hl-active');
-            scrollToSearchMatch(searchState.matches[i]);
-            closeMobileMenu();
-            showSearchBar();
+function countSearchOccurrences(text, term) {
+    let count = 0;
+    let pos = 0;
+    while ((pos = text.indexOf(term, pos)) !== -1) { count++; pos += Math.max(1, term.length); }
+    return count;
+}
+
+function searchResultKind(element) {
+    const labels = [
+        ['definition-box', 'Определение'], ['formula-box', 'Формула'], ['theorem-box', 'Теорема'],
+        ['remark-box', 'Замечание'], ['lemma-box', 'Лемма'], ['example-box', 'Пример'],
+        ['statement-box', 'Утверждение'], ['corollary-box', 'Следствие'], ['properties-box', 'Свойства'],
+        ['experiment-box', 'Опыт'], ['derivation-box', 'Вывод'], ['system-box', 'Система'],
+        ['proof-box', 'Доказательство'], ['topic-title', 'Раздел']
+    ];
+    const found = labels.find(([className]) => element.classList.contains(className));
+    return found ? found[1] : 'Текст';
+}
+
+function buildSearchSnippet(text, normalizedTerm) {
+    const normalized = normalizeSearchText(text);
+    const index = normalized.indexOf(normalizedTerm);
+    const radius = 58;
+    const start = Math.max(0, index - radius);
+    const end = Math.min(text.length, index + normalizedTerm.length + radius);
+    const prefix = start > 0 ? '…' : '';
+    const suffix = end < text.length ? '…' : '';
+    const before = text.slice(start, index);
+    const match = text.slice(index, index + normalizedTerm.length);
+    const after = text.slice(index + normalizedTerm.length, end);
+    return prefix + escapeSearchHtml(before) + '<mark class="search-result-term">' +
+        escapeSearchHtml(match) + '</mark>' + escapeSearchHtml(after) + suffix;
+}
+
+function performSearchPanel(rawTerm) {
+    clearHighlights();
+    const normalizedTerm = normalizeSearchText(rawTerm.trim());
+    searchState.term = normalizedTerm;
+    searchState.results = [];
+    searchState.currentIndex = -1;
+    searchState.active = true;
+
+    const seen = new Set();
+    document.querySelectorAll('.main-content .topic[id]').forEach(topic => {
+        const title = topic.querySelector('.topic-title');
+        const topicName = title ? readableSearchText(title) : (topic.id || 'Раздел');
+        topic.querySelectorAll(SEARCH_CONTENT_SELECTOR).forEach(element => {
+            if (seen.has(element)) return;
+            const semanticParent = element.parentElement && element.parentElement.closest(SEARCH_SEMANTIC_SELECTOR);
+            if (semanticParent && semanticParent !== element) return;
+            const text = readableSearchText(element);
+            const normalized = normalizeSearchText(text);
+            if (!text || !normalized.includes(normalizedTerm)) return;
+            seen.add(element);
+            searchState.results.push({
+                element,
+                topic,
+                topicName,
+                kind: searchResultKind(element),
+                text,
+                occurrences: countSearchOccurrences(normalized, normalizedTerm)
+            });
         });
     });
+
+    searchState.totalResults = searchState.results.length;
+    searchState.results = searchState.results.slice(0, 60);
+    renderSearchResults();
+}
+
+function renderSearchResults() {
+    const panel = searchState.panel;
+    if (!panel) return;
+    const head = panel.querySelector('.search-results-head strong');
+    const list = panel.querySelector('.search-results-list');
+    const total = searchState.totalResults;
+    head.textContent = total
+        ? (total > searchState.results.length ? searchState.results.length + ' из ' + total : total) + ' ' + pluralSearch(total, 'результат', 'результата', 'результатов')
+        : 'Ничего не найдено';
+    list.innerHTML = '';
+
+    searchState.results.forEach((result, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'search-result-item';
+        button.dataset.index = String(index);
+        button.setAttribute('role', 'option');
+        button.setAttribute('aria-selected', 'false');
+        button.innerHTML =
+            '<span class="search-result-meta"><strong>' + escapeSearchHtml(result.topicName) + '</strong>' +
+                '<small>' + escapeSearchHtml(result.kind) + (result.occurrences > 1 ? ' · ' + result.occurrences : '') + '</small></span>' +
+            '<span class="search-result-snippet">' + buildSearchSnippet(result.text, searchState.term) + '</span>';
+        button.addEventListener('click', () => openSearchResult(index));
+        list.appendChild(button);
+    });
+
+    panel.classList.remove('hidden');
+    searchState.input?.setAttribute('aria-expanded', 'true');
+}
+
+function pluralSearch(n, one, few, many) {
+    if (n % 10 === 1 && n % 100 !== 11) return one;
+    if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return few;
+    return many;
+}
+
+function updateSearchResultSelection() {
+    if (!searchState.panel) return;
+    searchState.panel.querySelectorAll('.search-result-item').forEach((button, index) => {
+        const active = index === searchState.currentIndex;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', String(active));
+        if (active) button.scrollIntoView({ block: 'nearest' });
+    });
+}
+
+function highlightSearchResult(element, term) {
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+            const parent = node.parentElement;
+            if (!parent || parent.closest('.katex, button, script, style, noscript')) return NodeFilter.FILTER_REJECT;
+            return normalizeSearchText(node.textContent).includes(term) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+        }
+    });
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    let first = null;
+    nodes.forEach(node => {
+        const text = node.textContent;
+        const normalized = normalizeSearchText(text);
+        const fragment = document.createDocumentFragment();
+        let pos = 0;
+        let index;
+        while ((index = normalized.indexOf(term, pos)) !== -1) {
+            if (index > pos) fragment.appendChild(document.createTextNode(text.slice(pos, index)));
+            const mark = document.createElement('mark');
+            mark.className = 'search-hl';
+            mark.textContent = text.slice(index, index + term.length);
+            if (!first) { first = mark; mark.classList.add('search-hl-active'); }
+            fragment.appendChild(mark);
+            pos = index + term.length;
+        }
+        if (pos < text.length) fragment.appendChild(document.createTextNode(text.slice(pos)));
+        node.parentNode.replaceChild(fragment, node);
+    });
+    return first;
+}
+
+function openSearchResult(index) {
+    const result = searchState.results[index];
+    if (!result) return;
+    searchState.currentIndex = index;
+    updateSearchResultSelection();
+    clearHighlights();
+
+    if (window.experimentalReader && window.experimentalReader.isActive()) {
+        window.experimentalReader.revealElement(result.element, { source: 'search', animate: false, scroll: false });
+    }
+    if (typeof window.closeMobileMenu === 'function') window.closeMobileMenu();
+
+    requestAnimationFrame(() => {
+        const mark = highlightSearchResult(result.element, searchState.term);
+        (mark || result.element).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        result.element.classList.add('search-target-pulse');
+        setTimeout(() => result.element.classList.remove('search-target-pulse'), 1100);
+    });
+}
+
+function clearSearchPanel() {
+    if (searchState.debounce) clearTimeout(searchState.debounce);
+    clearHighlights();
+    searchState.results = [];
+    searchState.currentIndex = -1;
+    searchState.term = '';
+    searchState.totalResults = 0;
+    searchState.active = false;
+    if (searchState.panel) searchState.panel.classList.add('hidden');
+    searchState.input?.setAttribute('aria-expanded', 'false');
 }
 
 function escapeSearchHtml(s) {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-}
-
-function clearSearch() {
-    clearHighlights();
-    searchState.matches = [];
-    searchState.currentIndex = -1;
-    searchState.term = '';
-    searchState.active = false;
-    if (searchState.bar) searchState.bar.classList.add('hidden');
 }
 
 function clearHighlights() {
@@ -813,28 +842,12 @@ function setToggleLabel(button, text) {
 }
 
 function initDerivationToggles() {
-    const toggleButtons = document.querySelectorAll('.toggle-derivation');
-
-    toggleButtons.forEach((button, index) => {
-        const derivationContent = button.nextElementSibling;
-
-        // Показываем все выводы по умолчанию
-        if (derivationContent && derivationContent.classList.contains('derivation-content')) {
-            if (!derivationContent.id) derivationContent.id = `derivation-content-${index + 1}`;
-            button.setAttribute('aria-controls', derivationContent.id);
-            derivationContent.classList.add('show');
-            button.setAttribute('aria-expanded', 'true');
-            setToggleLabel(button, 'Скрыть вывод формулы');
-        }
-
-        button.addEventListener('click', () => {
-            if (!derivationContent || !derivationContent.classList.contains('derivation-content')) return;
-            const shown = derivationContent.classList.toggle('show');
-            button.setAttribute('aria-expanded', shown ? 'true' : 'false');
-            setToggleLabel(button, shown ? 'Скрыть вывод формулы' : 'Показать вывод формулы');
-            if (shown) renderMathOnce(derivationContent);
-        });
+    document.querySelectorAll('.derivation-content').forEach((derivationContent) => {
+        derivationContent.classList.add('show');
+        derivationContent.removeAttribute('aria-hidden');
+        renderMathOnce(derivationContent);
     });
+    document.querySelectorAll('.toggle-derivation').forEach(button => button.remove());
 }
 
 // ============================================
@@ -1484,61 +1497,6 @@ if (footer) {
     exportBtn.addEventListener('click', exportToPDF);
     footer.insertBefore(exportBtn, footer.firstChild);
 }
-
-// ============================================
-// СТАТИСТИКА ПРОГРЕССА (опционально)
-// ============================================
-
-// Создаём прогресс-бар один раз при загрузке
-let progressBarElement = null;
-
-function initProgressBar() {
-    if (!progressBarElement) {
-        progressBarElement = document.createElement('div');
-        progressBarElement.id = 'progressBar';
-        progressBarElement.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 0%;
-            height: 4px;
-            background: var(--accent-color);
-            z-index: 9999;
-            transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-        `;
-        document.body.appendChild(progressBarElement);
-    }
-}
-
-function updateProgress() {
-    if (!progressBarElement) {
-        initProgressBar();
-    }
-    
-    const windowHeight = window.innerHeight;
-    const documentHeight = document.documentElement.scrollHeight;
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    
-    // Предотвращаем деление на ноль
-    const progress = documentHeight > windowHeight 
-        ? Math.min(100, (scrollTop / (documentHeight - windowHeight)) * 100)
-        : 0;
-    
-    progressBarElement.style.width = Math.round(progress) + '%';
-}
-
-// Дебаунс для оптимизации производительности
-let progressTimeout;
-function debouncedUpdateProgress() {
-    if (progressTimeout) {
-        cancelAnimationFrame(progressTimeout);
-    }
-    progressTimeout = requestAnimationFrame(updateProgress);
-}
-
-window.addEventListener('scroll', debouncedUpdateProgress, { passive: true });
-initProgressBar();
-updateProgress();
 
 // ============================================
 // СОХРАНЕНИЕ ПОЗИЦИИ СКРОЛЛА

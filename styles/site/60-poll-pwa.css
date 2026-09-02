@@ -251,7 +251,6 @@
     width: 18px;
 }
 
-.pwa-update-toast,
 .pwa-mini-toast {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -264,70 +263,9 @@
     z-index: 12000;
 }
 
-.pwa-update-toast {
-    align-items: center;
-    border-radius: 18px;
-    bottom: calc(1rem + env(safe-area-inset-bottom));
-    display: flex;
-    gap: 0.85rem;
-    left: 50%;
-    max-width: min(92vw, 560px);
-    padding: 0.75rem 0.8rem 0.75rem 1rem;
-}
-
-.pwa-update-toast.is-visible,
 .pwa-mini-toast.is-visible {
     opacity: 1;
     transform: translate(-50%, 0);
-}
-
-.pwa-update-text {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: 0.16rem;
-    min-width: 0;
-}
-
-.pwa-update-text strong {
-    font-size: 0.94rem;
-    line-height: 1.15;
-}
-
-.pwa-update-text span {
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-    line-height: 1.25;
-}
-
-.pwa-update-action,
-.pwa-update-close {
-    border: 0;
-    cursor: pointer;
-    font-family: inherit;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.pwa-update-action {
-    background: var(--accent-color);
-    border-radius: 999px;
-    color: #fff;
-    font-size: 0.84rem;
-    font-weight: 700;
-    padding: 0.58rem 0.82rem;
-}
-
-.pwa-update-close {
-    align-items: center;
-    background: var(--bg-tertiary);
-    border-radius: 50%;
-    color: var(--text-secondary);
-    display: inline-flex;
-    font-size: 1.15rem;
-    height: 2rem;
-    justify-content: center;
-    line-height: 1;
-    width: 2rem;
 }
 
 .pwa-mini-toast {
@@ -457,16 +395,11 @@ body.experimental .pwa-install-btn {
     color: var(--exp-accent-contrast, #fff);
 }
 
-body.experimental .pwa-update-toast,
 body.experimental .pwa-mini-toast,
 body.experimental .pwa-install-help-card {
     background: var(--exp-surface, var(--bg-secondary));
     border-color: var(--exp-border, var(--border-color));
     color: var(--exp-text, var(--text-primary));
-}
-
-body.experimental .pwa-update-text span {
-    color: var(--exp-text-dim, var(--text-secondary));
 }
 
 body.experimental .pwa-install-help-list > div {
@@ -477,24 +410,6 @@ body.experimental .pwa-install-help-list > div {
 @media (max-width: 768px) {
     body.experimental .pwa-install-btn {
         bottom: calc(74px + env(safe-area-inset-bottom));
-    }
-
-    .pwa-update-toast {
-        align-items: stretch;
-        border-radius: 20px 20px 0 0;
-        bottom: 0;
-        flex-wrap: wrap;
-        max-width: none;
-        padding: 0.85rem 0.95rem calc(0.95rem + env(safe-area-inset-bottom));
-        width: 100%;
-    }
-
-    .pwa-update-text {
-        flex-basis: calc(100% - 3rem);
-    }
-
-    .pwa-update-action {
-        flex: 1 1 auto;
     }
 
     .pwa-install-help {
