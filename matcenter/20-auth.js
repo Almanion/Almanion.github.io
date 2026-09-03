@@ -31,14 +31,14 @@ function updateMatcenterAuthCopy() {
     const user = getMatcenterFirebaseAuth()?.currentUser || null;
     if (!user) {
         title.textContent = 'Сначала войдите в аккаунт';
-        note.textContent = 'Закладки, решённые задачи и доступ к Матцентру привязываются к одному аккаунту Almanion.';
+        note.textContent = 'Закладки, решённые задачи и доступ к Матцентру привязываются к одному аккаунту.';
         accountButton.hidden = false;
         accountButton.textContent = 'Войти или зарегистрироваться';
         passwordInput.hidden = true;
         submit.hidden = true;
     } else {
         title.textContent = 'Подтвердите доступ';
-        note.textContent = `Аккаунт ${user.email || 'Almanion'} ещё не подтверждён для Матцентра. Введите пароль один раз.`;
+        note.textContent = `Аккаунт ${user.email || 'пользователя'} ещё не подтверждён для Матцентра. Введите пароль один раз.`;
         accountButton.hidden = true;
         passwordInput.hidden = false;
         submit.hidden = false;
@@ -232,7 +232,7 @@ async function initAuth() {
             // Network and server failures are not failed password attempts and
             // must not lock a legitimate user out.
             if (error && error.code === 'ACCOUNT_REQUIRED') {
-                showMatcenterAuthMessage('Сначала войдите в аккаунт Almanion.', false);
+                showMatcenterAuthMessage('Сначала войдите в аккаунт.', false);
                 updateMatcenterAuthCopy();
                 submitText.style.display = 'inline';
                 submitSpinner.style.display = 'none';

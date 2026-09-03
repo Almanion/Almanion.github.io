@@ -1,6 +1,6 @@
 /* =====================================================================
-   ЭКСПЕРИМЕНТАЛЬНЫЙ РЕЖИМ — полная переработка дизайна
-   Включается тумблером в настройках (body.experimental).
+   СОВРЕМЕННЫЙ ИНТЕРФЕЙС — основной дизайн сайта
+   Класс body.experimental сохранён как техническое имя для совместимости.
 
    Два дизайн-режима, у каждого светлая и тёмная тема:
      • «Графит» (body.exp-graphite) — нейтральный монохром (Linear/Notion-стиль)
@@ -1402,11 +1402,19 @@ body.experimental.exp-reader-active .topic.exp-reader-leave-prev {
 }
 
 body.experimental.exp-reader-active .topic.exp-reader-enter-next {
-    animation: expReaderEnterNext 0.18s ease-out both;
+    animation: expReaderEnterNext 0.17s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 body.experimental.exp-reader-active .topic.exp-reader-enter-prev {
-    animation: expReaderEnterPrev 0.18s ease-out both;
+    animation: expReaderEnterPrev 0.17s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+body.experimental.exp-reader-transitioning .topic.exp-reader-current {
+    will-change: opacity, transform;
+}
+
+body.experimental.exp-reader-active .topic.exp-reader-enter-rapid {
+    animation-duration: 0.072s;
 }
 
 @keyframes expReaderLeaveNext {
@@ -1418,13 +1426,29 @@ body.experimental.exp-reader-active .topic.exp-reader-enter-prev {
 }
 
 @keyframes expReaderEnterNext {
-    from { opacity: 0; transform: translate3d(6px, 0, 0); }
+    from { opacity: 0.38; transform: translate3d(7px, 0, 0); }
     to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes expReaderEnterPrev {
-    from { opacity: 0; transform: translate3d(-6px, 0, 0); }
+    from { opacity: 0.38; transform: translate3d(-7px, 0, 0); }
     to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+body.experimental.exp-reader-rapid .topic.exp-reader-enter-next {
+    animation-name: expReaderEnterRapidNext;
+}
+
+body.experimental.exp-reader-rapid .topic.exp-reader-enter-prev {
+    animation-name: expReaderEnterRapidPrev;
+}
+
+@keyframes expReaderEnterRapidNext {
+    from { opacity: 0.74; transform: translate3d(2px, 0, 0); }
+}
+
+@keyframes expReaderEnterRapidPrev {
+    from { opacity: 0.74; transform: translate3d(-2px, 0, 0); }
 }
 
 /* В поддерживаемых браузерах старый и новый раздел движутся одновременно —
@@ -1622,5 +1646,743 @@ body.animations-off.experimental .exp-reader-progress > span {
     body.experimental .exp-reader-footer-button {
         animation: none !important;
         transition: none !important;
+    }
+}
+
+/* Единый короткий переход между цветовыми темами. Снимки страницы
+   компонуются браузером, поэтому смена не запускает сотни CSS-transition. */
+html.site-theme-transition::view-transition-old(root) {
+    animation: siteThemeFadeOut 0.2s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+html.site-theme-transition::view-transition-new(root) {
+    animation: siteThemeFadeIn 0.24s cubic-bezier(0, 0, 0.2, 1) both;
+}
+
+@keyframes siteThemeFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes siteThemeFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.site-theme-transition-veil {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483647;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.24s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.site-theme-transition-veil.is-leaving {
+    opacity: 0;
+}
+
+body.experimental .settings-modal-heading p,
+body.experimental .settings-section-description,
+body.experimental .settings-subgroup-heading > small {
+    color: var(--exp-text-dim);
+}
+
+body.experimental .design-mode-option,
+body.experimental .toggle-switch {
+    color: var(--exp-text);
+    background: var(--exp-surface-2);
+    border-color: var(--exp-border);
+}
+
+body.experimental .design-mode-option.active {
+    background: color-mix(in srgb, var(--exp-accent) 6%, var(--exp-surface-2));
+    border-color: var(--exp-accent);
+}
+
+body.experimental .design-mode-option.active .settings-choice-dot {
+    box-shadow: inset 0 0 0 3px var(--exp-surface-2);
+}
+
+body.experimental .exp-subpanel {
+    background: color-mix(in srgb, var(--exp-surface-2) 72%, transparent);
+    border-color: var(--exp-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.site-theme-transition::view-transition-old(root),
+    html.site-theme-transition::view-transition-new(root),
+    .site-theme-transition-veil {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* Финальный каскад панели настроек: одинаковая ширина и ритм для всех блоков. */
+.settings-modal-content {
+    width: min(620px, calc(100% - 32px));
+    max-height: min(88dvh, 780px);
+    border-radius: 20px;
+}
+
+.settings-modal-header {
+    padding: 1.2rem 1.5rem;
+    border-radius: 20px 20px 0 0;
+}
+
+.settings-modal-body {
+    display: grid;
+    gap: 1.25rem;
+    padding: 1.4rem 1.5rem 1.5rem;
+}
+
+.settings-section,
+.settings-section:last-of-type {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.settings-section + .settings-section {
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.settings-section h3 {
+    margin: 0;
+    font-size: 0.98rem;
+}
+
+.settings-option {
+    width: 100%;
+    margin-top: 0.8rem;
+}
+
+.exp-subpanel {
+    width: 100%;
+    margin-top: 0.75rem;
+    padding: 0.9rem;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+}
+
+.exp-mode-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    margin-top: 0.65rem;
+}
+
+.exp-mode-card {
+    width: 100%;
+    padding: 0.72rem;
+    border-width: 1px;
+    border-radius: 10px;
+}
+
+.exp-mode-swatch {
+    height: 34px;
+    border-radius: 7px;
+}
+
+.exp-lightdark {
+    width: 100%;
+    margin-top: 0.45rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+
+.exp-ld-btn {
+    border-radius: 7px;
+}
+
+.theme-selector {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.55rem;
+}
+
+.theme-option {
+    min-width: 0;
+    padding: 0.58rem;
+    border-width: 1px;
+    border-radius: 10px;
+}
+
+.theme-preview {
+    height: 44px;
+}
+
+.animation-level-selector {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
+}
+
+.animation-level-option {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "icon title" "icon description";
+    align-content: center;
+    column-gap: 0.55rem;
+    row-gap: 0.12rem;
+    min-height: 82px;
+    padding: 0.72rem;
+    border-width: 1px;
+    border-radius: 10px;
+}
+
+.animation-level-option .level-icon { grid-area: icon; width: 26px; height: 26px; }
+.animation-level-option .level-icon-svg { width: 21px; height: 21px; }
+.animation-level-option .level-title { grid-area: title; align-self: end; margin: 0; font-size: 0.83rem; line-height: 1.2; }
+.animation-level-option .level-desc { grid-area: description; align-self: start; font-size: 0.7rem; line-height: 1.32; }
+
+.toggle-switch {
+    width: 100%;
+    padding: 0.8rem 0.9rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+
+.settings-actions { justify-content: flex-start; margin: 0; padding-top: 1.1rem; }
+.settings-reset-btn { padding: 0.55rem 0.75rem; background: transparent; border-color: transparent; font-size: 0.78rem; }
+
+@media (max-width: 768px) {
+    .settings-modal-content {
+        width: 100%;
+        max-height: 90dvh;
+        border-radius: 18px 18px 0 0;
+    }
+
+    .settings-modal-header { padding: 0.85rem 1.1rem 0.9rem; }
+    .settings-modal-body { gap: 1.05rem; padding: 1rem 1.1rem 1.4rem; }
+    .settings-section + .settings-section { padding-top: 1.05rem; }
+    .theme-selector { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .animation-level-selector { grid-template-columns: 1fr; }
+    .animation-level-option { min-height: 66px; }
+    body.experimental .exp-mode-grid { grid-template-columns: 1fr; }
+}
+
+.settings-modal-content,
+.settings-modal-header,
+.settings-modal-body,
+.settings-section,
+.settings-option,
+.design-mode-selector,
+.design-mode-option,
+.exp-subpanel,
+.exp-mode-grid,
+.exp-mode-card,
+.exp-lightdark,
+.animation-level-selector,
+.animation-level-option {
+    box-sizing: border-box;
+    min-width: 0;
+}
+
+.settings-modal-heading { min-width: 0; }
+.settings-modal-heading h2 { display: block; font-size: 1.28rem; line-height: 1.2; }
+.settings-modal-heading p {
+    margin: 0.25rem 0 0;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.settings-section-description {
+    margin: 0.32rem 0 0;
+    color: var(--text-secondary);
+    font-size: 0.81rem;
+    line-height: 1.45;
+}
+
+.design-mode-selector {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+    width: 100%;
+}
+
+.design-mode-option {
+    position: relative;
+    display: grid;
+    gap: 0.28rem;
+    width: 100%;
+    min-height: 92px;
+    padding: 0.9rem 2.25rem 0.9rem 0.95rem;
+    color: var(--text-primary);
+    text-align: left;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    cursor: pointer;
+    font: inherit;
+    transition: border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+body:not(.no-hover) .design-mode-option:hover {
+    border-color: color-mix(in srgb, var(--accent-color) 55%, var(--border-color));
+}
+
+.design-mode-option.active {
+    background: color-mix(in srgb, var(--accent-color) 6%, var(--bg-secondary));
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color) 12%, transparent);
+}
+
+.design-mode-name { font-size: 0.94rem; font-weight: 700; line-height: 1.25; }
+.design-mode-desc { color: var(--text-secondary); font-size: 0.76rem; line-height: 1.38; }
+
+.settings-choice-dot {
+    position: absolute;
+    top: 0.9rem;
+    right: 0.9rem;
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid var(--border-color);
+    border-radius: 50%;
+}
+
+.design-mode-option.active .settings-choice-dot {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    box-shadow: inset 0 0 0 3px var(--bg-secondary);
+}
+
+.settings-subgroup-heading { display: grid; gap: 0.12rem; }
+.settings-subgroup-heading > span { color: var(--text-primary); font-size: 0.8rem; font-weight: 700; }
+.settings-subgroup-heading > small { color: var(--text-secondary); font-size: 0.72rem; line-height: 1.35; }
+.settings-subgroup-heading-compact { margin-top: 0.85rem; }
+
+.toggle-slider { width: 46px; height: 26px; border-width: 1px; }
+.toggle-slider::before { top: 3px; left: 3px; width: 18px; height: 18px; }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+.toggle-label { font-size: 0.82rem; line-height: 1.4; }
+
+body:not(.no-hover) .settings-reset-btn:hover {
+    color: var(--error-color);
+    background: color-mix(in srgb, var(--error-color) 8%, transparent);
+    border-color: color-mix(in srgb, var(--error-color) 18%, transparent);
+    box-shadow: none;
+}
+
+@media (max-width: 520px) {
+    .design-mode-selector { grid-template-columns: 1fr; }
+    .design-mode-option { min-height: 78px; }
+}
+
+/* =========================================================
+   MATCENTER — единая композиция с основным интерфейсом
+   ========================================================= */
+body.experimental.matcenter-page {
+    --mc-content-width: 1120px;
+}
+
+body.experimental.matcenter-page .main-content {
+    padding-top: clamp(1rem, 2.2vw, 2rem);
+    padding-bottom: 3rem;
+}
+
+body.experimental.matcenter-page .main-content > * {
+    width: min(100%, var(--mc-content-width));
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+}
+
+body.experimental.matcenter-page .matcenter-page-header {
+    padding: clamp(1.35rem, 2.5vw, 1.85rem) clamp(1.25rem, 3vw, 2rem) !important;
+    margin-bottom: 1.25rem !important;
+    border-radius: 18px !important;
+}
+
+body.experimental.matcenter-page .matcenter-page-eyebrow {
+    margin: 0 0 0.45rem !important;
+    color: var(--exp-text-faint) !important;
+    font-size: 0.72rem !important;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+body.experimental.matcenter-page .matcenter-page-header h1 {
+    margin-bottom: 0.6rem !important;
+    font-size: clamp(1.8rem, 3.2vw, 2.35rem);
+}
+
+body.experimental.matcenter-page .matcenter-page-header .subtitle {
+    margin: 0 !important;
+}
+
+body.experimental.matcenter-page .matcenter-author-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0.28rem 0.68rem;
+    color: var(--exp-accent) !important;
+    text-decoration: none !important;
+    background: var(--exp-accent-soft);
+    border: 1px solid color-mix(in srgb, var(--exp-accent) 18%, var(--exp-border));
+    border-radius: var(--exp-r-pill);
+    font-size: 0.8rem;
+    font-weight: 650;
+}
+
+body.experimental.matcenter-page .grade-switcher {
+    gap: 0.65rem;
+    margin: 0 auto 1.1rem;
+}
+
+body.experimental.matcenter-page .grade-card {
+    min-height: 94px;
+    padding: 0.82rem 0.9rem 0.78rem;
+    overflow: hidden;
+    border-radius: 13px !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+body.experimental.matcenter-page .grade-card::before {
+    top: 12px;
+    bottom: 12px;
+    width: 2px;
+    opacity: 0.42;
+}
+
+body.experimental.matcenter-page .grade-card:hover {
+    border-color: var(--exp-border-strong) !important;
+    background: var(--exp-surface-2) !important;
+}
+
+body.experimental.matcenter-page .grade-card.active,
+body.experimental.matcenter-page .grade-card-summer.active {
+    color: var(--exp-text) !important;
+    background: color-mix(in srgb, var(--exp-accent) 6%, var(--exp-surface)) !important;
+    border-color: color-mix(in srgb, var(--exp-accent) 62%, var(--exp-border)) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--exp-accent) 10%, transparent) !important;
+}
+
+body.experimental.matcenter-page .grade-card.active::before,
+body.experimental.matcenter-page .grade-card-summer.active::before {
+    background: var(--exp-accent) !important;
+    opacity: 1;
+}
+
+body.experimental.matcenter-page .grade-card.active .grade-card-title,
+body.experimental.matcenter-page .grade-card.active .grade-card-count {
+    color: var(--exp-text) !important;
+}
+
+body.experimental.matcenter-page .grade-card.active .grade-card-eyebrow,
+body.experimental.matcenter-page .grade-card.active .grade-card-sub {
+    color: var(--exp-text-dim) !important;
+    opacity: 1;
+}
+
+body.experimental.matcenter-page .grade-card-eyebrow {
+    color: var(--exp-text-faint);
+    font-size: 0.65rem;
+    font-weight: 680;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+body.experimental.matcenter-page .grade-card-title {
+    margin-top: 0.28rem;
+    font-size: 1rem;
+    font-weight: 680;
+}
+
+body.experimental.matcenter-page .grade-card-meta {
+    padding-top: 0.55rem;
+}
+
+body.experimental.matcenter-page .grade-card-count {
+    font-size: 1.1rem;
+    font-weight: 720;
+}
+
+body.experimental.matcenter-page .matcenter-stats-section {
+    margin-bottom: 1.25rem;
+}
+
+body.experimental.matcenter-page .stats-container {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin-bottom: 1rem;
+}
+
+body.experimental.matcenter-page .stat-card {
+    min-height: 78px;
+    gap: 0.7rem;
+    padding: 0.85rem 0.9rem;
+    overflow: hidden;
+    border-radius: 13px !important;
+    transform: none !important;
+}
+
+body.experimental.matcenter-page .stat-card-icon {
+    width: 38px;
+    height: 38px;
+    color: var(--exp-text-dim);
+    background: var(--exp-surface-2);
+    border: 1px solid var(--exp-border);
+    border-radius: 10px;
+}
+
+body.experimental.matcenter-page .stat-card-icon svg {
+    width: 19px;
+    height: 19px;
+}
+
+body.experimental.matcenter-page .stat-number {
+    color: var(--exp-text) !important;
+    font-size: 1.5rem;
+    font-weight: 730;
+}
+
+body.experimental.matcenter-page .stat-label {
+    color: var(--exp-text-dim) !important;
+    font-size: 0.74rem;
+    font-weight: 570;
+}
+
+body.experimental.matcenter-page .stat-card.active {
+    outline: none !important;
+    color: var(--exp-text) !important;
+    background: color-mix(in srgb, var(--exp-accent) 5%, var(--exp-surface)) !important;
+    border-color: color-mix(in srgb, var(--exp-accent) 55%, var(--exp-border)) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--exp-accent) 10%, transparent) !important;
+}
+
+body.experimental.matcenter-page .stat-card.active .stat-card-icon {
+    color: var(--exp-accent) !important;
+    background: var(--exp-accent-soft) !important;
+    border-color: color-mix(in srgb, var(--exp-accent) 22%, var(--exp-border)) !important;
+}
+
+body.experimental.matcenter-page .stat-card.active .stat-number {
+    color: var(--exp-text) !important;
+}
+
+body.experimental.matcenter-page .stat-card.active .stat-label {
+    color: var(--exp-text-dim) !important;
+    font-weight: 570;
+}
+
+body.experimental.matcenter-page .matcenter-progress {
+    margin-bottom: 1rem;
+    padding: 0.9rem 1rem 0.8rem;
+    border-radius: 13px !important;
+}
+
+body.experimental.matcenter-page .matcenter-task-view {
+    padding: 0;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+body.experimental.matcenter-page .matcenter-task-view .part-title-row {
+    top: 0;
+    min-height: 54px;
+    margin-bottom: 0.8rem;
+    padding: 0.55rem 0.2rem 0.65rem;
+    background: color-mix(in srgb, var(--exp-bg) 94%, transparent) !important;
+    border-bottom: 1px solid var(--exp-border);
+    backdrop-filter: blur(10px);
+}
+
+body.experimental.matcenter-page .part-title-row .part-title {
+    color: var(--exp-text) !important;
+    font-size: clamp(1.2rem, 2vw, 1.45rem);
+    font-weight: 710;
+    letter-spacing: -0.018em;
+}
+
+body.experimental.matcenter-page .tasks-container {
+    gap: 0.75rem;
+}
+
+body.experimental.matcenter-page .task-card {
+    padding: 0.9rem;
+    border-left-width: 2px !important;
+    border-radius: 13px !important;
+    transition: border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease !important;
+}
+
+body.experimental.matcenter-page .task-card:hover,
+body.experimental.matcenter-page .task-card.open {
+    transform: none !important;
+    border-left-width: 2px !important;
+    box-shadow: var(--exp-shadow-sm) !important;
+}
+
+body.experimental.matcenter-page .task-card.open {
+    border-color: var(--exp-border-strong) !important;
+}
+
+body.experimental.matcenter-page .task-status-badge {
+    border: 1px solid var(--exp-border);
+    font-size: 0.72rem;
+    font-weight: 620;
+}
+
+body.experimental.matcenter-page .task-card.open .task-toggle {
+    color: var(--exp-accent) !important;
+    background: var(--exp-accent-soft) !important;
+    border-color: color-mix(in srgb, var(--exp-accent) 22%, var(--exp-border)) !important;
+    box-shadow: none !important;
+}
+
+body.experimental.matcenter-page .task-section-banner {
+    background: var(--exp-surface) !important;
+    border: 1px solid var(--exp-border) !important;
+    border-left: 2px solid var(--exp-accent) !important;
+    border-radius: 13px;
+}
+
+body.experimental.matcenter-page .matcenter-data-warning {
+    width: min(100%, var(--mc-content-width));
+    margin: 0 auto 1rem;
+    color: var(--exp-text-dim);
+    background: color-mix(in srgb, #d97706 7%, var(--exp-surface));
+    border: 1px solid color-mix(in srgb, #d97706 25%, var(--exp-border));
+    border-radius: 12px;
+}
+
+body.experimental.matcenter-page .sidebar .search-box {
+    padding: 0.85rem 0.75rem;
+    background: transparent !important;
+}
+
+body.experimental.matcenter-page .sidebar .search-box input,
+body.experimental.matcenter-page .sidebar .status-filter-select {
+    min-height: 42px;
+    background: var(--exp-bg) !important;
+}
+
+body.experimental.matcenter-page .sidebar .nav-menu {
+    padding: 0.75rem;
+}
+
+body.experimental.matcenter-page .sidebar .nav-section h3 {
+    margin: 0.35rem 0.55rem 0.55rem;
+}
+
+body.experimental.matcenter-page .sidebar .nav-link {
+    padding: 0.68rem 0.75rem;
+    font-size: 0.86rem;
+}
+
+@media (max-width: 980px) {
+    body.experimental.matcenter-page .stats-container {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    body.experimental.matcenter-page .main-content {
+        padding-top: 0.75rem;
+        padding-bottom: 2rem;
+    }
+
+    body.experimental.matcenter-page .matcenter-page-header {
+        width: calc(100% - (2 * var(--m-pad)));
+        margin-left: var(--m-pad) !important;
+        margin-right: var(--m-pad) !important;
+        padding: 1.15rem !important;
+        border-radius: 15px !important;
+    }
+
+    body.experimental.matcenter-page .matcenter-page-eyebrow {
+        font-size: 0.66rem !important;
+    }
+
+    body.experimental.matcenter-page .grade-switcher {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+        margin-bottom: 0.85rem;
+    }
+
+    body.experimental.matcenter-page .grade-card {
+        width: 100%;
+        min-width: 0;
+        min-height: 82px;
+        padding: 0.7rem 0.78rem;
+    }
+
+    body.experimental.matcenter-page .matcenter-stats-section {
+        padding-left: var(--m-pad);
+        padding-right: var(--m-pad);
+    }
+
+    body.experimental.matcenter-page .stats-container {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+    }
+
+    body.experimental.matcenter-page .stat-card {
+        min-width: 0;
+        min-height: 70px;
+        padding: 0.72rem;
+    }
+
+    body.experimental.matcenter-page .mobile-search-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(5.5rem, 7.5rem);
+    }
+
+    body.experimental.matcenter-page .mobile-status-filter {
+        width: 100%;
+        max-width: none;
+    }
+
+    body.experimental.matcenter-page .stat-card-icon {
+        width: 34px;
+        height: 34px;
+    }
+
+    body.experimental.matcenter-page .matcenter-task-view .part-title-row {
+        top: 56px;
+        padding: 0.65rem var(--m-pad);
+        margin-bottom: 0.65rem;
+        background: color-mix(in srgb, var(--exp-bg) 96%, transparent) !important;
+    }
+
+    body.experimental.matcenter-page .task-card {
+        margin-left: var(--m-pad);
+        margin-right: var(--m-pad);
+        padding: 0.82rem;
+        border-left-width: 2px !important;
+        border-radius: 12px !important;
+    }
+
+    body.experimental.matcenter-page .task-card:hover,
+    body.experimental.matcenter-page .task-card.open {
+        border-left-width: 2px !important;
+    }
+
+    body.experimental.matcenter-page .task-section-banner {
+        margin-left: var(--m-pad);
+        margin-right: var(--m-pad);
+        border-right: 1px solid var(--exp-border) !important;
+        border-radius: 12px;
+    }
+}
+
+@media (max-width: 520px) {
+    body.experimental.matcenter-page .stats-container {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    body.experimental.matcenter-page .stat-card {
+        gap: 0.55rem;
+    }
+
+    body.experimental.matcenter-page .stat-label {
+        white-space: normal;
     }
 }

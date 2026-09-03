@@ -11,7 +11,13 @@
         toolbar: null,
         footer: null,
         enterTimer: 0,
+        rapidTimer: 0,
         transitionGeneration: 0,
+        transitionAnimation: null,
+        animatedTopic: null,
+        lastNavigationAt: 0,
+        sidebarLinks: new Map(),
+        activeSidebarLink: null,
         swipe: null
     };
 
@@ -27,6 +33,10 @@
         if (state.topics.length < 2) return;
 
         state.sections = Array.from(new Set(state.topics.map(topic => topic.closest('.content-section'))));
+        document.querySelectorAll('.nav-link[href^="#"]').forEach(link => {
+            const id = decodeURIComponent(link.getAttribute('href').slice(1));
+            if (id) state.sidebarLinks.set(id, link);
+        });
         buildReaderUi(main);
         bindReaderEvents(main);
 
@@ -116,10 +126,10 @@
 
             if (event.key === 'ArrowRight') {
                 event.preventDefault();
-                goToIndex(state.index + 1, { source: 'keyboard' });
+                goToIndex(state.index + 1, { source: 'keyboard', rapid: event.repeat });
             } else if (event.key === 'ArrowLeft') {
                 event.preventDefault();
-                goToIndex(state.index - 1, { source: 'keyboard' });
+                goToIndex(state.index - 1, { source: 'keyboard', rapid: event.repeat });
             }
         });
 
@@ -152,6 +162,13 @@
 
     function deactivateReader() {
         clearReaderTimers();
+        window.clearTimeout(state.rapidTimer);
+        state.rapidTimer = 0;
+        if (state.transitionAnimation) {
+            state.transitionAnimation.cancel();
+            state.transitionAnimation = null;
+        }
+        state.animatedTopic = null;
         cancelSwipe();
         state.active = false;
         state.animating = false;
@@ -160,6 +177,7 @@
         document.body.classList.remove(
             'exp-reader-active',
             'exp-reader-transitioning',
+            'exp-reader-rapid',
             'exp-reader-at-start',
             'exp-reader-at-end'
         );
@@ -209,11 +227,6 @@
         if (!state.active) return false;
         if (nextIndex < 0 || nextIndex >= state.topics.length) return false;
 
-        // Повторный клик/свайп не должен ждать окончания предыдущей анимации.
-        // Текущее состояние уже переключено, поэтому безопасно отменяем только
-        // визуальный хвост и сразу принимаем следующую команду.
-        cancelReaderTransition();
-
         const settings = {
             animate: true,
             scroll: true,
@@ -228,13 +241,24 @@
             return true;
         }
 
-        const direction = nextIndex > state.index ? 'next' : 'prev';
+        const previousIndex = state.index;
+        const direction = nextIndex > previousIndex ? 'next' : 'prev';
         const animate = settings.animate && !prefersReducedReaderMotion();
+        const now = performance.now();
+        const rapid = !!settings.rapid
+            || ((settings.source === 'keyboard' || settings.source === 'controls')
+                && now - state.lastNavigationAt < 130);
+        state.lastNavigationAt = now;
+
+        // Состояние меняется сразу, даже если предыдущий визуальный переход ещё
+        // идёт. Отменяем только одну активную animation вместо обхода всех тем.
+        cancelReaderTransition();
+        setRapidNavigationState(rapid);
 
         const readerScrollTop = settings.scroll ? getReaderScrollTop() : null;
         const commit = () => {
             state.index = nextIndex;
-            applyTopicVisibility();
+            applyTopicVisibility(previousIndex);
             updateReaderUi();
             if (settings.updateHash) updateLocationHash();
             if (readerScrollTop !== null) scrollToReader(readerScrollTop);
@@ -251,32 +275,63 @@
         document.body.classList.add('exp-reader-transitioning');
 
         const incoming = commit();
+        startReaderTransition(incoming, direction, rapid, generation);
+        return true;
+    }
+
+    function startReaderTransition(incoming, direction, rapid, generation) {
+        const offset = direction === 'next' ? 1 : -1;
+        const duration = rapid ? 72 : getReaderEnterDuration();
+        state.animatedTopic = incoming;
+
+        if (typeof incoming.animate === 'function') {
+            const animation = incoming.animate([
+                {
+                    opacity: rapid ? 0.74 : 0.38,
+                    transform: `translate3d(${offset * (rapid ? 2 : 7)}px, 0, 0)`
+                },
+                { opacity: 1, transform: 'translate3d(0, 0, 0)' }
+            ], {
+                duration,
+                easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                fill: 'both'
+            });
+            state.transitionAnimation = animation;
+            animation.finished.then(() => {
+                if (generation !== state.transitionGeneration) return;
+                animation.cancel();
+                state.transitionAnimation = null;
+                state.animatedTopic = null;
+                finishReaderTransition();
+            }).catch(() => {});
+            return;
+        }
+
         incoming.classList.add(`exp-reader-enter-${direction}`);
+        if (rapid) incoming.classList.add('exp-reader-enter-rapid');
         state.enterTimer = window.setTimeout(() => {
             if (generation !== state.transitionGeneration) return;
-            incoming.classList.remove(`exp-reader-enter-${direction}`);
+            incoming.classList.remove(`exp-reader-enter-${direction}`, 'exp-reader-enter-rapid');
+            state.animatedTopic = null;
             finishReaderTransition();
-        }, getReaderEnterDuration());
-        return true;
+        }, duration);
     }
 
     function cancelReaderTransition() {
         state.transitionGeneration++;
         clearReaderTimers();
-        state.topics.forEach(topic => {
-            topic.classList.remove(
+        if (state.transitionAnimation) {
+            state.transitionAnimation.cancel();
+            state.transitionAnimation = null;
+        }
+        if (state.animatedTopic) {
+            state.animatedTopic.classList.remove(
                 'exp-reader-enter-next',
                 'exp-reader-enter-prev',
-                'exp-reader-leave-next',
-                'exp-reader-leave-prev'
+                'exp-reader-enter-rapid'
             );
-            topic.style.removeProperty('view-transition-name');
-        });
-        document.documentElement.classList.remove(
-            'exp-reader-vt-active',
-            'exp-reader-vt-next',
-            'exp-reader-vt-prev'
-        );
+            state.animatedTopic = null;
+        }
         state.animating = false;
         document.body.classList.remove('exp-reader-transitioning');
     }
@@ -291,18 +346,63 @@
         state.enterTimer = 0;
     }
 
+    function setRapidNavigationState(rapid) {
+        window.clearTimeout(state.rapidTimer);
+        if (!rapid) {
+            document.body.classList.remove('exp-reader-rapid');
+            state.toolbar.querySelector('.exp-reader-status').setAttribute('aria-live', 'polite');
+            return;
+        }
+
+        document.body.classList.add('exp-reader-rapid');
+        state.toolbar.querySelector('.exp-reader-status').setAttribute('aria-live', 'off');
+        state.rapidTimer = window.setTimeout(() => {
+            document.body.classList.remove('exp-reader-rapid');
+            state.toolbar.querySelector('.exp-reader-status').setAttribute('aria-live', 'polite');
+            state.rapidTimer = 0;
+        }, 160);
+    }
+
     function prefersReducedReaderMotion() {
         return document.body.classList.contains('animations-off')
             || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
 
     function getReaderEnterDuration() {
-        return document.body.classList.contains('animations-medium') ? 110 : 180;
+        return document.body.classList.contains('animations-medium') ? 110 : 170;
     }
 
-    function applyTopicVisibility() {
+    function applyTopicVisibility(previousIndex) {
         const currentTopic = state.topics[state.index];
         const currentSection = currentTopic.closest('.content-section');
+
+        // При обычном перелистывании достаточно обновить предыдущий и новый
+        // элементы. Полный проход нужен только при первой активации режима.
+        if (Number.isInteger(previousIndex) && previousIndex !== state.index) {
+            const previousTopic = state.topics[previousIndex];
+            const previousSection = previousTopic && previousTopic.closest('.content-section');
+
+            if (previousTopic) {
+                previousTopic.classList.remove('exp-reader-current');
+                previousTopic.setAttribute('aria-hidden', 'true');
+                setElementInert(previousTopic, true);
+            }
+            currentTopic.classList.add('exp-reader-current');
+            currentTopic.setAttribute('aria-hidden', 'false');
+            setElementInert(currentTopic, false);
+
+            if (previousSection !== currentSection) {
+                if (previousSection) {
+                    previousSection.classList.remove('exp-reader-section-current');
+                    previousSection.setAttribute('aria-hidden', 'true');
+                    setElementInert(previousSection, true);
+                }
+                currentSection.classList.add('exp-reader-section-current');
+                currentSection.setAttribute('aria-hidden', 'false');
+                setElementInert(currentSection, false);
+            }
+            return;
+        }
 
         state.sections.forEach(section => {
             const isCurrent = section === currentSection;
@@ -382,12 +482,16 @@
     }
 
     function syncSidebarLink(id) {
-        document.querySelectorAll('.nav-link').forEach(link => {
-            const active = link.getAttribute('href') === `#${id}`;
-            link.classList.toggle('active', active);
-            if (active) link.setAttribute('aria-current', 'location');
-            else link.removeAttribute('aria-current');
-        });
+        if (state.activeSidebarLink) {
+            state.activeSidebarLink.classList.remove('active');
+            state.activeSidebarLink.removeAttribute('aria-current');
+        }
+        const nextLink = state.sidebarLinks.get(id) || null;
+        if (nextLink) {
+            nextLink.classList.add('active');
+            nextLink.setAttribute('aria-current', 'location');
+        }
+        state.activeSidebarLink = nextLink;
     }
 
     function updateLocationHash() {

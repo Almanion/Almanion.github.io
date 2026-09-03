@@ -46,9 +46,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-    <link rel="stylesheet" href="style-new.css?v=20260903-1">
+    <link rel="stylesheet" href="style-new.css?v=20260903-3">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="styles/typography.css?v=20260902-5">
+    <link rel="stylesheet" href="styles/typography.css?v=20260903-1">
 </head>
 <body class="matcenter-page">
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -107,7 +107,7 @@
             <h2 id="authTitle">Введите пароль</h2>
             <p class="matcenter-account-note" id="matcenterAccountNote">Доступ к Матцентру подтверждается отдельно.</p>
             <form id="authForm">
-                <button type="button" class="auth-submit matcenter-account-login" id="matcenterAccountLogin" hidden>Войти в аккаунт Almanion</button>
+                <button type="button" class="auth-submit matcenter-account-login" id="matcenterAccountLogin" hidden>Войти в аккаунт</button>
                 <input
                     type="password"
                     id="passwordInput"
@@ -156,9 +156,10 @@
 
     <!-- Основной контент -->
     <main class="main-content">
-        <header class="page-header">
+        <header class="page-header matcenter-page-header">
+            <p class="matcenter-page-eyebrow">Архив задач кружка</p>
             <h1>МатЦентр 2025/2026</h1>
-            <p class="subtitle"><a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a></p>
+            <p class="subtitle"><a class="matcenter-author-link" href="https://t.me/Almanion239" target="_blank" rel="noopener noreferrer">@Almanion239</a></p>
         </header>
 
         <!-- Мобильная строка поиска (видна только на мобильных) -->
@@ -344,17 +345,17 @@
     <script src="firebase-analytics.js"></script>
 
     <script src="script.js?v=20260903-1"></script>
-    <script src="matcenter/00-core.js?v=20260903-1"></script>
+    <script src="matcenter/00-core.js?v=20260903-2"></script>
     <script src="matcenter/10-security.js?v=20260902-2"></script>
-    <script src="matcenter/20-auth.js?v=20260903-1"></script>
-    <script src="matcenter/30-data.js?v=20260903-3"></script>
+    <script src="matcenter/20-auth.js?v=20260903-2"></script>
+    <script src="matcenter/30-data.js?v=20260903-4"></script>
     <script src="matcenter/40-personal-progress.js?v=20260903-1"></script>
     <script src="matcenter/50-render.js?v=20260903-1"></script>
-    <script src="matcenter/60-navigation-search.js?v=20260902-2"></script>
+    <script src="matcenter/60-navigation-search.js?v=20260903-1"></script>
     <script src="matcenter/70-hints.js?v=20260903-1"></script>
     <script src="newyear.js?v=20260903-1"></script>
-    <script src="settings.js?v=20260903-1"></script>
-    <script src="account.js?v=20260903-4"></script>
+    <script src="settings.js?v=20260903-2"></script>
+    <script src="account.js?v=20260903-5"></script>
     <script src="poll.js"></script>
 </body>
 </html>

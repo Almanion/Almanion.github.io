@@ -164,7 +164,7 @@ async function waitForMatcenterUser() {
 async function getMatcenterIdToken(forceRefresh = false) {
     const user = await waitForMatcenterUser();
     if (!user) {
-        const error = new Error('Сначала войдите в аккаунт Almanion');
+        const error = new Error('Сначала войдите в аккаунт');
         error.code = 'ACCOUNT_REQUIRED';
         throw error;
     }

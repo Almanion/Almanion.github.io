@@ -70,6 +70,40 @@ function getEndpointLabel(endpointIdx) {
     return `источник №${endpointIdx + 1}`;
 }
 
+function normalizeMatcenterGrade(value, endpointIdx = 0) {
+    const raw = String(value == null ? '' : value).trim().toLowerCase();
+    const compact = raw
+        .replace(/[—–]/g, '-')
+        .replace(/ё/g, 'е')
+        .replace(/\s+/g, '');
+    const aliases = {
+        '9': 'grade-9',
+        '9класс': 'grade-9',
+        'grade9': 'grade-9',
+        'grade-9': 'grade-9',
+        '10': 'grade-10',
+        '10класс': 'grade-10',
+        'grade10': 'grade-10',
+        'grade-10': 'grade-10',
+        '11': 'grade-11',
+        '11класс': 'grade-11',
+        'grade11': 'grade-11',
+        'grade-11': 'grade-11',
+        'лето9-10': 'grade-summer-9-10',
+        'summer9-10': 'grade-summer-9-10',
+        'grade-summer-9-10': 'grade-summer-9-10',
+        'лето10-11': 'grade-summer-10-11',
+        'summer10-11': 'grade-summer-10-11',
+        'grade-summer-10-11': 'grade-summer-10-11'
+    };
+    const normalized = aliases[compact];
+    if (normalized && GRADE_SECTIONS.some(section => section.id === normalized)) return normalized;
+
+    // Старые версии backend не всегда присылали Grade. Источник летней серии
+    // однозначно задаёт раздел, основной endpoint по умолчанию относится к 9 классу.
+    return endpointIdx === 1 ? 'grade-summer-9-10' : DEFAULT_GRADE;
+}
+
 function applyTasksFromCache() {
     try {
         const parsed = readTasksCache();
@@ -308,26 +342,27 @@ async function loadFromOneEndpoint(endpoint, endpointIdx) {
 
     const tasks = data.tasks.map((task, index) => {
         if (!task || typeof task !== 'object') return null;
-        if (task.number === undefined || task.number === null || task.number === '') return null;
+        const rawNumber = task.number !== undefined && task.number !== null && task.number !== ''
+            ? task.number
+            : task.numberText;
+        if (rawNumber === undefined || rawNumber === null || rawNumber === '') return null;
 
-        const cleanNumber = extractNumber(task.number);
+        const cleanNumber = extractNumber(rawNumber);
         if (cleanNumber === null || isNaN(cleanNumber)) return null;
 
-        const gradeRaw = task.grade ? String(task.grade).trim() : '';
-        const grade = gradeRaw && GRADE_SECTIONS.some(g => g.id === gradeRaw)
-            ? gradeRaw
-            : DEFAULT_GRADE;
+        const grade = normalizeMatcenterGrade(task.grade, endpointIdx);
 
         const statusRaw = task.status == null ? '' : String(task.status).trim();
 
         return {
             taskId: String(task.taskId || task.id || '').trim(),
             number: cleanNumber,
-            numberText: String(task.number),
+            numberText: String(task.numberText || rawNumber),
             status: statusRaw,
             description: task.description ? String(task.description) : 'Условие не указано',
             hint: task.hint ? String(task.hint) : '',
             grade,
+            sourceSheet: task.sourceSheet ? String(task.sourceSheet) : '',
             _endpointIdx: endpointIdx
         };
     }).filter(t => t !== null);

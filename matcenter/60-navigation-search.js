@@ -11,9 +11,7 @@ function normalizeAllTasks(tasks) {
     if (!Array.isArray(tasks)) return [];
     return tasks.map(task => ({
         ...task,
-        grade: task.grade && GRADE_SECTIONS.some(g => g.id === task.grade)
-            ? task.grade
-            : DEFAULT_GRADE
+        grade: normalizeMatcenterGrade(task.grade, getTaskEndpointIndex(task))
     }));
 }
 

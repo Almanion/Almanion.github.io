@@ -201,6 +201,9 @@
                     '<form id="accForm" autocomplete="on">' +
                         '<input type="email" id="accEmail" placeholder="Почта" autocomplete="email" required>' +
                         '<input type="password" id="accPass" placeholder="Пароль (не менее 6 символов)" autocomplete="' + (mode === 'register' ? 'new-password' : 'current-password') + '" required minlength="6">' +
+                        (mode === 'register'
+                            ? '<input type="password" id="accPassConfirm" placeholder="Повторите пароль" autocomplete="new-password" required minlength="6">'
+                            : '') +
                         '<div class="account-error" id="accError" hidden></div>' +
                         '<div class="account-notice" id="accStorageNotice" hidden></div>' +
                         '<button type="submit" class="auth-submit" id="accSubmit">' + (mode === 'register' ? 'Зарегистрироваться' : 'Войти') + '</button>' +
@@ -219,8 +222,17 @@
                 e.preventDefault();
                 const email = ov.querySelector('#accEmail').value.trim();
                 const pass = ov.querySelector('#accPass').value;
-                if (mode === 'register') doEmail(function () { return auth.createUserWithEmailAndPassword(email, pass); });
-                else doEmail(function () { return auth.signInWithEmailAndPassword(email, pass); });
+                if (mode === 'register') {
+                    const confirmationInput = ov.querySelector('#accPassConfirm');
+                    if (!confirmationInput || pass !== confirmationInput.value) {
+                        showError('Пароли не совпадают. Проверьте оба поля.');
+                        if (confirmationInput) confirmationInput.focus();
+                        return;
+                    }
+                    doEmail(function () { return auth.createUserWithEmailAndPassword(email, pass); });
+                } else {
+                    doEmail(function () { return auth.signInWithEmailAndPassword(email, pass); });
+                }
             });
             updateAuthControls();
         }

@@ -2,7 +2,7 @@
  * matcenter — Google Apps Script backend.
  *
  * Что делает:
- *  - Возвращает все задачи из активного листа в JSON-формате, который ждут модули matcenter/.
+ *  - Возвращает задачи со всех листов таблицы, где есть колонка Number или NumberText.
  *  - Один раз подтверждает Firebase-аккаунт паролем Матцентра.
  *  - После подтверждения принимает Firebase ID token, а пароль больше не передаётся.
  *  - Изменение статуса и подсказки доступно только аккаунтам с ролью admin.
@@ -31,7 +31,12 @@ function handle(e) {
     const action = params.action || '';
 
     if (action === 'capabilities') {
-      return json({ success: true, authVersion: AUTH_VERSION, accountConfirmation: true });
+      return json({
+        success: true,
+        authVersion: AUTH_VERSION,
+        accountConfirmation: true,
+        multiSheetTasks: true
+      });
     }
 
     if (action === 'authorizeAccount') {
@@ -77,36 +82,44 @@ function handle(e) {
 
 // === Чтение задач =========================================================
 function getTasks(isAdmin) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
-  const values = sheet.getDataRange().getValues();
-
-  if (values.length < 2) {
-    return json({ success: true, count: 0, isAdmin: isAdmin, tasks: [] });
-  }
-
-  const headers = values[0].map(function (h) { return String(h || '').trim(); });
   const tasks = [];
+  const sheets = getTaskSheets();
 
-  for (let i = 1; i < values.length; i++) {
-    const row = values[i];
-    const task = {};
-    let hasNumber = false;
+  sheets.forEach(function (sheet) {
+    const values = getSheetValues(sheet);
+    if (values.length < 2) return;
 
-    headers.forEach(function (h, j) {
-      if (!h) return;
-      const key = headerToKey(h); // Number -> number, NumberText -> numberText, ...
-      const val = row[j];
-      task[key] = (val === '' || val === null || val === undefined) ? '' : String(val);
-      if (key === 'number' && task[key] !== '') hasNumber = true;
-    });
+    const headers = values[0].map(function (h) { return String(h || '').trim(); });
+    const headerKeys = headers.map(headerToKey);
+    const inferredGrade = inferGradeFromSheetName(sheet.getName());
 
-    if (hasNumber) tasks.push(task);
-  }
+    for (let i = 1; i < values.length; i++) {
+      const row = values[i];
+      const task = {};
+
+      headerKeys.forEach(function (key, j) {
+        if (!key) return;
+        const val = row[j];
+        task[key] = (val === '' || val === null || val === undefined) ? '' : String(val).trim();
+      });
+
+      // В старых таблицах номер иногда находился только в NumberText.
+      const taskNumber = task.number || task.numberText;
+      if (!taskNumber) continue;
+
+      task.number = taskNumber;
+      if (!task.numberText) task.numberText = taskNumber;
+      task.grade = normalizeGrade(task.grade, inferredGrade);
+      task.sourceSheet = sheet.getName();
+      tasks.push(task);
+    }
+  });
 
   return json({
     success: true,
     count: tasks.length,
     isAdmin: isAdmin,
+    sheets: sheets.map(function (sheet) { return sheet.getName(); }),
     tasks: tasks
   });
 }
@@ -115,17 +128,13 @@ function getTasks(isAdmin) {
 function changeStatus(taskNumber, newStatus, grade, taskId) {
   if (!taskNumber) return json({ success: false, error: 'taskNumber обязателен' });
 
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
-  const values = sheet.getDataRange().getValues();
-  const headers = values[0].map(function (h) { return String(h || '').trim(); });
-
-  const statusCol = findColumn(headers, ['Status', 'status']);
-  if (statusCol === -1) return json({ success: false, error: 'Колонка Status не найдена' });
-
-  const found = findTaskRow(values, headers, taskNumber, grade, taskId);
+  const found = findTaskLocation(taskNumber, grade, taskId);
   if (found.error) return json({ success: false, error: found.error });
 
-  sheet.getRange(found.rowIndex + 1, statusCol + 1).setValue(newStatus || '');
+  const statusCol = findColumnByKey(found.headers, 'status');
+  if (statusCol === -1) return json({ success: false, error: 'Колонка Status не найдена' });
+
+  found.sheet.getRange(found.rowIndex + 1, statusCol + 1).setValue(newStatus || '');
   return json({ success: true });
 }
 
@@ -216,7 +225,7 @@ function authorizeExternalRequests() {
 }
 
 function verifyFirebaseToken(idToken) {
-  if (!idToken) throw new Error('Сначала войдите в аккаунт Almanion');
+  if (!idToken) throw new Error('Сначала войдите в аккаунт');
   const apiKey = PropertiesService.getScriptProperties().getProperty('FIREBASE_WEB_API_KEY');
   if (!apiKey) throw new Error('На сервере не задан FIREBASE_WEB_API_KEY');
 
@@ -249,25 +258,119 @@ function secureEqual(left, right) {
 function setHint(taskNumber, hintText, grade, taskId) {
   if (!taskNumber) return json({ success: false, error: 'taskNumber обязателен' });
 
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
-  const values = sheet.getDataRange().getValues();
-  const headers = values[0].map(function (h) { return String(h || '').trim(); });
-
-  const hintCol = findColumn(headers, ['Hint', 'hint']);
-  if (hintCol === -1) return json({ success: false, error: 'Колонка Hint не найдена' });
-
-  const found = findTaskRow(values, headers, taskNumber, grade, taskId);
+  const found = findTaskLocation(taskNumber, grade, taskId);
   if (found.error) return json({ success: false, error: found.error });
 
-  sheet.getRange(found.rowIndex + 1, hintCol + 1).setValue(hintText || '');
+  const hintCol = findColumnByKey(found.headers, 'hint');
+  if (hintCol === -1) return json({ success: false, error: 'Колонка Hint не найдена' });
+
+  found.sheet.getRange(found.rowIndex + 1, hintCol + 1).setValue(hintText || '');
   return json({ success: true });
 }
 
 // === Утилиты ==============================================================
 function headerToKey(h) {
-  // 'Number' -> 'number', 'NumberText' -> 'numberText'
-  if (!h) return '';
-  return h.charAt(0).toLowerCase() + h.slice(1);
+  const normalized = String(h || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_.\-]+/g, '');
+  const aliases = {
+    taskid: 'taskId',
+    id: 'taskId',
+    number: 'number',
+    num: 'number',
+    numbertext: 'numberText',
+    description: 'description',
+    condition: 'description',
+    status: 'status',
+    hint: 'hint',
+    grade: 'grade',
+    class: 'grade',
+    номер: 'number',
+    текстномера: 'numberText',
+    условие: 'description',
+    статус: 'status',
+    подсказка: 'hint',
+    класс: 'grade'
+  };
+  return aliases[normalized] || '';
+}
+
+function getSheetValues(sheet) {
+  const range = sheet.getDataRange();
+  return typeof range.getDisplayValues === 'function'
+    ? range.getDisplayValues()
+    : range.getValues();
+}
+
+function findColumnByKey(headers, key) {
+  for (let i = 0; i < headers.length; i++) {
+    if (headerToKey(headers[i]) === key) return i;
+  }
+  return -1;
+}
+
+function getTaskSheets() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const allSheets = spreadsheet.getSheets();
+  const configured = String(
+    PropertiesService.getScriptProperties().getProperty('MATCENTER_SHEET_NAMES') || ''
+  ).trim();
+
+  if (configured) {
+    const requestedNames = configured.split(',').map(function (name) { return name.trim(); }).filter(Boolean);
+    const selected = requestedNames.map(function (name) { return spreadsheet.getSheetByName(name); });
+    const missing = requestedNames.filter(function (_name, index) { return !selected[index]; });
+    if (missing.length) throw new Error('Не найдены листы MATCENTER_SHEET_NAMES: ' + missing.join(', '));
+    return selected;
+  }
+
+  const detected = allSheets.filter(function (sheet) {
+    if (sheet.getLastRow() < 1 || sheet.getLastColumn() < 1) return false;
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
+    return findColumnByKey(headers, 'number') !== -1 || findColumnByKey(headers, 'numberText') !== -1;
+  });
+
+  if (!detected.length) {
+    throw new Error('Не найден ни один лист с колонкой Number или NumberText');
+  }
+  return detected;
+}
+
+function normalizeGrade(value, fallback) {
+  const raw = String(value || '').trim().toLowerCase();
+  const compact = raw.replace(/[—–]/g, '-').replace(/ё/g, 'е').replace(/\s+/g, '');
+  const aliases = {
+    '9': 'grade-9',
+    '9класс': 'grade-9',
+    'grade9': 'grade-9',
+    'grade-9': 'grade-9',
+    '10': 'grade-10',
+    '10класс': 'grade-10',
+    'grade10': 'grade-10',
+    'grade-10': 'grade-10',
+    '11': 'grade-11',
+    '11класс': 'grade-11',
+    'grade11': 'grade-11',
+    'grade-11': 'grade-11',
+    'лето9-10': 'grade-summer-9-10',
+    'summer9-10': 'grade-summer-9-10',
+    'grade-summer-9-10': 'grade-summer-9-10',
+    'лето10-11': 'grade-summer-10-11',
+    'summer10-11': 'grade-summer-10-11',
+    'grade-summer-10-11': 'grade-summer-10-11'
+  };
+  return aliases[compact] || fallback || 'grade-9';
+}
+
+function inferGradeFromSheetName(name) {
+  const raw = String(name || '').trim().toLowerCase().replace(/[—–]/g, '-');
+  if (/(лето|summer).*10\D*11/.test(raw)) return 'grade-summer-10-11';
+  if (/(лето|summer).*9\D*10/.test(raw)) return 'grade-summer-9-10';
+  if (/(^|\D)11(\D|$)/.test(raw)) return 'grade-11';
+  if (/(^|\D)10(\D|$)/.test(raw)) return 'grade-10';
+  if (/(^|\D)9(\D|$)/.test(raw)) return 'grade-9';
+  return '';
 }
 
 function findColumn(headers, candidates) {
@@ -278,10 +381,43 @@ function findColumn(headers, candidates) {
   return -1;
 }
 
+function findTaskLocation(taskNumber, grade, taskId) {
+  const locations = [];
+  let ambiguousError = '';
+
+  getTaskSheets().forEach(function (sheet) {
+    const values = getSheetValues(sheet);
+    if (values.length < 2) return;
+    const headers = values[0].map(function (h) { return String(h || '').trim(); });
+    if (taskId && findColumnByKey(headers, 'taskId') === -1) return;
+    const inferredGrade = inferGradeFromSheetName(sheet.getName());
+    if (
+      grade &&
+      findColumnByKey(headers, 'grade') === -1 &&
+      inferredGrade &&
+      normalizeGrade(inferredGrade, '') !== normalizeGrade(grade, '')
+    ) return;
+    const found = findTaskRow(values, headers, taskNumber, grade, taskId);
+    if (found.rowIndex !== undefined) {
+      locations.push({ sheet: sheet, values: values, headers: headers, rowIndex: found.rowIndex });
+    } else if (/Найдено несколько/.test(found.error || '')) {
+      ambiguousError = found.error;
+    }
+  });
+
+  if (ambiguousError) return { error: ambiguousError };
+  if (locations.length === 1) return locations[0];
+  if (locations.length === 0) {
+    return { error: 'Задача №' + taskNumber + (grade ? ' (' + grade + ')' : '') + ' не найдена' };
+  }
+  return { error: 'Задача №' + taskNumber + ' найдена на нескольких листах. Добавьте уникальную колонку TaskId.' };
+}
+
 function findTaskRow(values, headers, taskNumber, grade, taskId) {
-  const numCol = findColumn(headers, ['Number', 'number']);
-  const gradeCol = findColumn(headers, ['Grade', 'grade']);
-  const taskIdCol = findColumn(headers, ['TaskId', 'taskId', 'ID', 'Id', 'id']);
+  const numCol = findColumnByKey(headers, 'number');
+  const numberTextCol = findColumnByKey(headers, 'numberText');
+  const gradeCol = findColumnByKey(headers, 'grade');
+  const taskIdCol = findColumnByKey(headers, 'taskId');
 
   if (taskId && taskIdCol !== -1) {
     const idTarget = String(taskId).trim();
@@ -293,16 +429,20 @@ function findTaskRow(values, headers, taskNumber, grade, taskId) {
     if (idMatches.length > 1) {
       return { error: 'TaskId должен быть уникальным: найдено строк ' + idMatches.length };
     }
+    return { error: 'Задача с TaskId ' + idTarget + ' не найдена' };
   }
 
-  if (numCol === -1) return { error: 'Колонка Number не найдена' };
+  if (numCol === -1 && numberTextCol === -1) return { error: 'Колонка Number или NumberText не найдена' };
 
   const numberTarget = String(taskNumber || '').trim();
   const gradeTarget = String(grade || '').trim();
   const matches = [];
   for (let i = 1; i < values.length; i++) {
-    if (String(values[i][numCol]).trim() !== numberTarget) continue;
-    if (gradeTarget && gradeCol !== -1 && String(values[i][gradeCol]).trim() !== gradeTarget) continue;
+    const rowNumber = numCol !== -1 && String(values[i][numCol] || '').trim()
+      ? String(values[i][numCol]).trim()
+      : String(values[i][numberTextCol] || '').trim();
+    if (rowNumber !== numberTarget) continue;
+    if (gradeTarget && gradeCol !== -1 && normalizeGrade(values[i][gradeCol], '') !== normalizeGrade(gradeTarget, '')) continue;
     matches.push(i);
   }
 
@@ -336,6 +476,10 @@ function json(obj) {
         FIREBASE_WEB_API_KEY          API key из firebase-config.js
         MATCENTER_USER_PASSWORD       пароль доступа учеников
         MATCENTER_ADMIN_PASSWORD      отдельный пароль администратора
+      Необязательно:
+        MATCENTER_SHEET_NAMES         имена листов с задачами через запятую
+      Без MATCENTER_SHEET_NAMES backend сам найдёт все листы, где в первой
+      строке есть Number или NumberText.
       Пароли больше не хранятся в репозитории и не попадают в URL.
 
    5) Сохраните проект (Ctrl/Cmd+S). При первом сохранении даст имя — например
@@ -362,15 +506,16 @@ function json(obj) {
       поочерёдного обновления можно поставить MATCENTER_ALLOW_LEGACY=true, но
       после обновления обоих deployment обязательно удалите это свойство.
 
-   11) Войдите в обычный аккаунт Almanion и один раз введите пароль Матцентра.
+   11) Войдите в обычный аккаунт сайта и один раз введите пароль Матцентра.
        UID получит постоянную роль user/admin в Script properties каждого endpoint.
 
    Дальше при изменении кода Apps Script нужно делать НОВЫЙ deploy (или Manage
    deployments → редактировать существующий и нажать Deploy). URL может остаться
    тем же — это от настройки зависит.
 
-   Если хотите добавить ещё классы (9, 10, 11 и т.д.) в эту же таблицу —
-   просто продолжайте добавлять строки на тот же лист, меняя значение в колонке
-   Grade. Apps Script отдаёт всё содержимое листа сразу, фильтрация по классу
-   уже происходит на фронте.
+   Если хотите добавить ещё классы (9, 10, 11 и т.д.), можно продолжать
+   добавлять строки на один лист с колонкой Grade или создать отдельные листы.
+   В названии отдельного листа укажите класс (например, «9 класс») либо заполните
+   Grade. Apps Script объединит все найденные листы, а фронтенд разложит задачи
+   по разделам.
    ========================================================================== */

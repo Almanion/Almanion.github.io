@@ -8,7 +8,7 @@ const defaultSettings = {
     newYearMode: false,
     animationLevel: 'max',
     hoverEffects: true,
-    // Экспериментальный режим (новый дизайн)
+    // Современный интерфейс (внутреннее имя сохранено для совместимости)
     experimental: true,
     expMode: 'prism',      // 'graphite' | 'prism'
     expDark: false,
@@ -138,10 +138,6 @@ function applyTheme(theme) {
         return;
     }
 
-    // Race-guard: если предыдущая смена темы ещё не завершилась — игнорируем.
-    if (body.dataset.themeBusy === '1') return;
-    body.dataset.themeBusy = '1';
-
     // Отключаем все transitions на момент смены темы — иначе сотни элементов
     // одновременно начинают анимировать цвета и страница лагает.
     body.classList.add('theme-transitioning');
@@ -172,12 +168,55 @@ function applyTheme(theme) {
         if (cleared) return;
         cleared = true;
         body.classList.remove('theme-transitioning');
-        delete body.dataset.themeBusy;
     };
     requestAnimationFrame(() => {
         requestAnimationFrame(clearTransitioning);
     });
     setTimeout(clearTransitioning, 250);
+}
+
+let themeTransitionGeneration = 0;
+let activeThemeTransition = null;
+
+/**
+ * Меняет цветовую тему одним композитным cross-fade. Так браузер не запускает
+ * сотни отдельных transition у карточек и формул, а частые клики всегда
+ * применяют последний выбор пользователя.
+ */
+function animateThemeChange(update) {
+    const reduceMotion = document.body.classList.contains('animations-off')
+        || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+        update();
+        return;
+    }
+
+    const generation = ++themeTransitionGeneration;
+    if (activeThemeTransition && typeof activeThemeTransition.skipTransition === 'function') {
+        activeThemeTransition.skipTransition();
+    }
+
+    if (typeof document.startViewTransition === 'function') {
+        document.documentElement.classList.add('site-theme-transition');
+        const transition = document.startViewTransition(update);
+        activeThemeTransition = transition;
+        transition.finished.catch(() => {}).finally(() => {
+            if (generation !== themeTransitionGeneration) return;
+            activeThemeTransition = null;
+            document.documentElement.classList.remove('site-theme-transition');
+        });
+        return;
+    }
+
+    const previousVeil = document.querySelector('.site-theme-transition-veil');
+    if (previousVeil) previousVeil.remove();
+    const veil = document.createElement('div');
+    veil.className = 'site-theme-transition-veil';
+    veil.style.backgroundColor = getComputedStyle(document.body).backgroundColor;
+    document.body.appendChild(veil);
+    update();
+    requestAnimationFrame(() => veil.classList.add('is-leaving'));
+    window.setTimeout(() => veil.remove(), 260);
 }
 
 function applyAnimationLevel(level) {
@@ -300,36 +339,54 @@ function createSettingsModal() {
     modal.innerHTML = `
         <div class="settings-modal-content">
             <div class="settings-modal-header">
-                <h2 id="settingsModalTitle"><span class="settings-title-icon">${ICONS.settings}</span>Настройки</h2>
+                <div class="settings-modal-heading">
+                    <h2 id="settingsModalTitle">Настройки</h2>
+                    <p>Внешний вид и поведение сайта</p>
+                </div>
                 <button class="settings-close-btn" id="settingsCloseBtn" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>
             </div>
 
             <div class="settings-modal-body">
-                <!-- Экспериментальный режим -->
+                <!-- Основной и старый интерфейс -->
                 <div class="settings-section">
-                    <h3><svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6.5L4.5 18a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9.5V3"/><path d="M7.5 14h9"/></svg><span>Экспериментальный режим</span></h3>
+                    <h3>${ICONS.settings}<span>Интерфейс</span></h3>
+                    <p class="settings-section-description">Выберите способ отображения конспектов и навигации.</p>
                     <div class="settings-option">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="experimentalToggle" ${siteSettings.experimental ? 'checked' : ''}>
-                            <span class="toggle-slider"></span>
-                            <span class="toggle-label">Новый дизайн сайта (бета) — минималистичный и современный</span>
-                        </label>
+                        <div class="design-mode-selector" role="radiogroup" aria-label="Дизайн сайта">
+                            <button type="button" class="design-mode-option ${siteSettings.experimental ? 'active' : ''}" data-design-mode="modern" role="radio" aria-checked="${siteSettings.experimental}">
+                                <span class="design-mode-name">Современный</span>
+                                <span class="design-mode-desc">Основной дизайн с перелистыванием разделов</span>
+                                <span class="settings-choice-dot" aria-hidden="true"></span>
+                            </button>
+                            <button type="button" class="design-mode-option ${siteSettings.experimental ? '' : 'active'}" data-design-mode="legacy" role="radio" aria-checked="${!siteSettings.experimental}">
+                                <span class="design-mode-name">Старый</span>
+                                <span class="design-mode-desc">Классическая лента со всеми разделами подряд</span>
+                                <span class="settings-choice-dot" aria-hidden="true"></span>
+                            </button>
+                        </div>
                         <div class="exp-subpanel" id="expSubpanel" ${siteSettings.experimental ? '' : 'hidden'}>
+                            <div class="settings-subgroup-heading">
+                                <span>Цветовая система</span>
+                                <small>Акценты и общий тон основного дизайна</small>
+                            </div>
                             <div class="exp-mode-grid">
-                                <button type="button" class="exp-mode-card ${siteSettings.expMode === 'graphite' ? 'active' : ''}" data-exp-mode="graphite">
+                                <button type="button" class="exp-mode-card ${siteSettings.expMode === 'graphite' ? 'active' : ''}" data-exp-mode="graphite" aria-pressed="${siteSettings.expMode === 'graphite'}">
                                     <span class="exp-mode-swatch exp-swatch-graphite"><span></span><span></span><span></span></span>
                                     <span class="exp-mode-name">Графит</span>
-                                    <span class="exp-mode-desc">Нейтральный монохром, максимум воздуха</span>
+                                    <span class="exp-mode-desc">Нейтральная палитра без цветных акцентов</span>
                                 </button>
-                                <button type="button" class="exp-mode-card ${siteSettings.expMode === 'prism' ? 'active' : ''}" data-exp-mode="prism">
+                                <button type="button" class="exp-mode-card ${siteSettings.expMode === 'prism' ? 'active' : ''}" data-exp-mode="prism" aria-pressed="${siteSettings.expMode === 'prism'}">
                                     <span class="exp-mode-swatch exp-swatch-prism"><span></span><span></span><span></span></span>
                                     <span class="exp-mode-name">Призма</span>
-                                    <span class="exp-mode-desc">Акцентный цвет и цветные ярлыки блоков</span>
+                                    <span class="exp-mode-desc">Спокойные цветовые акценты учебных блоков</span>
                                 </button>
                             </div>
+                            <div class="settings-subgroup-heading settings-subgroup-heading-compact">
+                                <span>Освещение</span>
+                            </div>
                             <div class="exp-lightdark" role="group" aria-label="Светлая или тёмная тема">
-                                <button type="button" class="exp-ld-btn ${!siteSettings.expDark ? 'active' : ''}" data-exp-dark="false">${ICONS.sun}<span>Светлая</span></button>
-                                <button type="button" class="exp-ld-btn ${siteSettings.expDark ? 'active' : ''}" data-exp-dark="true">${ICONS.moon}<span>Тёмная</span></button>
+                                <button type="button" class="exp-ld-btn ${!siteSettings.expDark ? 'active' : ''}" data-exp-dark="false" aria-pressed="${!siteSettings.expDark}">${ICONS.sun}<span>Светлая</span></button>
+                                <button type="button" class="exp-ld-btn ${siteSettings.expDark ? 'active' : ''}" data-exp-dark="true" aria-pressed="${siteSettings.expDark}">${ICONS.moon}<span>Тёмная</span></button>
                             </div>
                         </div>
                     </div>
@@ -337,7 +394,8 @@ function createSettingsModal() {
 
                 <!-- Тема -->
                 <div class="settings-section" id="themeSection" ${siteSettings.experimental ? 'style="display:none;"' : ''}>
-                    <h3>${ICONS.palette}<span>Тема оформления</span></h3>
+                    <h3>${ICONS.palette}<span>Темы старого дизайна</span></h3>
+                    <p class="settings-section-description">Цветовая тема применяется только к старому интерфейсу.</p>
                     <div class="settings-option">
                         <div class="theme-selector">
                             <button class="theme-option ${siteSettings.theme === 'light' ? 'active' : ''}" data-theme="light">
@@ -366,7 +424,7 @@ function createSettingsModal() {
                                     <div class="preview-header"></div>
                                     <div class="preview-content"></div>
                                 </div>
-                                <span class="theme-option-label">${ICONS.moonStars}<span>Midnight</span></span>
+                                <span class="theme-option-label">${ICONS.moonStars}<span>Полночь</span></span>
                             </button>
                         </div>
                     </div>
@@ -389,23 +447,24 @@ function createSettingsModal() {
 
                 <!-- Анимации -->
                 <div class="settings-section">
-                    <h3>${ICONS.sparkles}<span>Уровень анимаций</span></h3>
+                    <h3>${ICONS.sparkles}<span>Движение интерфейса</span></h3>
+                    <p class="settings-section-description">Интенсивность переходов и визуальных откликов.</p>
                     <div class="settings-option">
                         <div class="animation-level-selector">
                             <button class="animation-level-option ${siteSettings.animationLevel === 'max' ? 'active' : ''}" data-level="max">
                                 <span class="level-icon">${ICONS.rocket}</span>
-                                <span class="level-title">Максимальный</span>
-                                <span class="level-desc">Все анимации и эффекты</span>
+                                <span class="level-title">Полное</span>
+                                <span class="level-desc">Плавные переходы и отклики</span>
                             </button>
                             <button class="animation-level-option ${siteSettings.animationLevel === 'medium' ? 'active' : ''}" data-level="medium">
                                 <span class="level-icon">${ICONS.zap}</span>
-                                <span class="level-title">Средний</span>
-                                <span class="level-desc">Основные анимации</span>
+                                <span class="level-title">Умеренное</span>
+                                <span class="level-desc">Только основные переходы</span>
                             </button>
                             <button class="animation-level-option ${siteSettings.animationLevel === 'off' ? 'active' : ''}" data-level="off">
                                 <span class="level-icon">${ICONS.muted}</span>
-                                <span class="level-title">Выключено</span>
-                                <span class="level-desc">Без анимаций (быстрее)</span>
+                                <span class="level-title">Минимальное</span>
+                                <span class="level-desc">Без декоративного движения</span>
                             </button>
                         </div>
                     </div>
@@ -414,15 +473,15 @@ function createSettingsModal() {
                 ${isMatcenterPage() ? `
                 <!-- Матцентр -->
                 <div class="settings-section" id="matcenterSolvedSection">
-                    <h3>${ICONS.checkCircle}<span>Матцентр</span></h3>
+                    <h3>${ICONS.checkCircle}<span>Отметка решённых задач</span></h3>
                     <div class="settings-option">
                         <div class="matcenter-solved-settings">
-                            <div class="matcenter-solved-settings-title">Анимация отметки «решено»</div>
+                            <div class="matcenter-solved-settings-title">Вид отметки «решено»</div>
                             <div class="matcenter-solved-animation-selector" role="group" aria-label="Анимация отметки решённой задачи">
                                 <button type="button" class="matcenter-solved-animation-option ${normalizeMatcenterSolvedAnimation(siteSettings.matcenterSolvedAnimation) === 'circle' ? 'active' : ''}" data-solved-animation="circle">
                                     <span class="mc-solved-preview mc-solved-preview-circle"><span class="mc-prev-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><span class="mc-prev-num">17</span></span>
-                                    <span class="level-title">Кружок</span>
-                                    <span class="level-desc">Галочка со всплеском-кольцом</span>
+                                    <span class="level-title">Кольцо</span>
+                                    <span class="level-desc">Галочка с мягким обведением</span>
                                 </button>
                                 <button type="button" class="matcenter-solved-animation-option ${normalizeMatcenterSolvedAnimation(siteSettings.matcenterSolvedAnimation) === 'strike' ? 'active' : ''}" data-solved-animation="strike">
                                     <span class="mc-solved-preview mc-solved-preview-strike"><span class="mc-prev-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><span class="mc-prev-num">17</span></span>
@@ -437,12 +496,12 @@ function createSettingsModal() {
 
                 <!-- Hover-эффекты -->
                 <div class="settings-section">
-                    <h3>${ICONS.pointer}<span>Hover-эффекты</span></h3>
+                    <h3>${ICONS.pointer}<span>Отклик курсора</span></h3>
                     <div class="settings-option">
                         <label class="toggle-switch">
                             <input type="checkbox" id="hoverToggle" ${siteSettings.hoverEffects ? 'checked' : ''}>
                             <span class="toggle-slider"></span>
-                            <span class="toggle-label">Эффекты при наведении курсора (масштабирование, подсветка, тени)</span>
+                            <span class="toggle-label">Подсветка и лёгкое движение интерактивных элементов</span>
                         </label>
                     </div>
                 </div>
@@ -450,7 +509,7 @@ function createSettingsModal() {
                 <!-- Кнопки действий -->
                 <div class="settings-actions">
                     <button class="settings-reset-btn" id="settingsResetBtn">
-                        ${ICONS.refresh}<span>Сбросить всё</span>
+                        ${ICONS.refresh}<span>Вернуть настройки по умолчанию</span>
                     </button>
                 </div>
             </div>
@@ -497,53 +556,73 @@ function bindSettingsHandlers() {
     themeButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const theme = btn.dataset.theme;
-            siteSettings.theme = theme;
-            
-            // Обновляем UI
-            themeButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            // Применяем и сохраняем
-            applyTheme(theme);
-            saveSettings();
-            
-            // Анимация кнопки
-            btn.style.transform = 'scale(0.95)';
-            setTimeout(() => btn.style.transform = '', 150);
+            if (theme === siteSettings.theme) return;
+            animateThemeChange(() => {
+                siteSettings.theme = theme;
+                themeButtons.forEach(b => b.classList.toggle('active', b === btn));
+                applyTheme(theme);
+                saveSettings();
+            });
         });
     });
 
-    // ---- Экспериментальный режим ----
-    const experimentalToggle = document.getElementById('experimentalToggle');
+    // ---- Основной и старый интерфейс ----
+    const designModeButtons = document.querySelectorAll('.design-mode-option');
     const expSubpanel = document.getElementById('expSubpanel');
     const themeSection = document.getElementById('themeSection');
-    if (experimentalToggle) {
-        experimentalToggle.addEventListener('change', (e) => {
-            siteSettings.experimental = e.target.checked;
-            if (expSubpanel) expSubpanel.hidden = !e.target.checked;
-            if (themeSection) themeSection.style.display = e.target.checked ? 'none' : '';
-            applyExperimental();
-            applyTheme(siteSettings.theme); // вкл: no-op; выкл: восстановит легаси-тему
-            saveSettings();
-            showNotification(e.target.checked ? 'Экспериментальный режим включён' : 'Экспериментальный режим выключен');
+    designModeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const modern = btn.dataset.designMode === 'modern';
+            if (modern === siteSettings.experimental) return;
+            animateThemeChange(() => {
+                siteSettings.experimental = modern;
+                designModeButtons.forEach(button => {
+                    const active = button === btn;
+                    button.classList.toggle('active', active);
+                    button.setAttribute('aria-checked', String(active));
+                });
+                if (expSubpanel) expSubpanel.hidden = !modern;
+                if (themeSection) themeSection.style.display = modern ? 'none' : '';
+                applyExperimental();
+                applyTheme(siteSettings.theme);
+                saveSettings();
+            });
+            showNotification(modern ? 'Включён современный интерфейс' : 'Включён старый интерфейс');
         });
-    }
+    });
+
     const expModeCards = document.querySelectorAll('.exp-mode-card');
     expModeCards.forEach(card => {
         card.addEventListener('click', () => {
-            siteSettings.expMode = card.dataset.expMode;
-            expModeCards.forEach(c => c.classList.toggle('active', c === card));
-            applyExperimental();
-            saveSettings();
+            const mode = card.dataset.expMode;
+            if (mode === siteSettings.expMode) return;
+            animateThemeChange(() => {
+                siteSettings.expMode = mode;
+                expModeCards.forEach(c => {
+                    const active = c === card;
+                    c.classList.toggle('active', active);
+                    c.setAttribute('aria-pressed', String(active));
+                });
+                applyExperimental();
+                saveSettings();
+            });
         });
     });
     const expLdBtns = document.querySelectorAll('.exp-ld-btn');
     expLdBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            siteSettings.expDark = btn.dataset.expDark === 'true';
-            expLdBtns.forEach(b => b.classList.toggle('active', b === btn));
-            applyExperimental();
-            saveSettings();
+            const dark = btn.dataset.expDark === 'true';
+            if (dark === siteSettings.expDark) return;
+            animateThemeChange(() => {
+                siteSettings.expDark = dark;
+                expLdBtns.forEach(b => {
+                    const active = b === btn;
+                    b.classList.toggle('active', active);
+                    b.setAttribute('aria-pressed', String(active));
+                });
+                applyExperimental();
+                saveSettings();
+            });
         });
     });
 
@@ -630,14 +709,14 @@ function bindSettingsHandlers() {
         });
     });
     
-    // Hover-эффекты
+    // Отклик курсора
     const hoverToggle = document.getElementById('hoverToggle');
     if (hoverToggle) {
         hoverToggle.addEventListener('change', (e) => {
             siteSettings.hoverEffects = e.target.checked;
             applyHoverEffects(e.target.checked);
             saveSettings();
-            showNotification(e.target.checked ? 'Hover-эффекты включены' : 'Hover-эффекты выключены');
+            showNotification(e.target.checked ? 'Отклик курсора включён' : 'Отклик курсора выключен');
         });
     }
 
@@ -648,9 +727,9 @@ function bindSettingsHandlers() {
 
 function getAnimationLevelMessage(level) {
     const messages = {
-        'max': 'Максимальный уровень анимаций включен!',
-        'medium': 'Средний уровень анимаций включен',
-        'off': 'Анимации выключены'
+        'max': 'Включено полное движение интерфейса',
+        'medium': 'Включено умеренное движение интерфейса',
+        'off': 'Декоративное движение отключено'
     };
     return messages[level] || 'Настройки применены';
 }
