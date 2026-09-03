@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-03-note-constructor-21';
+const CACHE_VERSION = 'almanion-pwa-2026-09-03-grade-10-subjects-22';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -45,6 +45,9 @@ const APP_SHELL = [
     '/content/geometry/manifest.json',
     '/content/chemistry/manifest.json',
     '/content/likbez/manifest.json',
+    '/content/physics-10/manifest.json',
+    '/content/chemistry-10/manifest.json',
+    '/content/literature-10/manifest.json',
     '/matcenter/00-core.js',
     '/matcenter/10-security.js',
     '/matcenter/20-auth.js',
@@ -68,8 +71,11 @@ const APP_SHELL = [
     '/favicons/favicon-ph.svg',
     '/math.html',
     '/physics.html',
+    '/physics-10.html',
     '/physics-exam.html',
     '/chemistry.html',
+    '/chemistry-10.html',
+    '/literature-10.html',
     '/geometry.html',
     '/geometry-formulas.html',
     '/likbez.html',

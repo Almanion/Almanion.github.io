@@ -63,7 +63,32 @@ function testBuild() {
     }
 }
 
+function testEmptySubjectBuild() {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'almanion-notes-empty-source-'));
+    const output = fs.mkdtempSync(path.join(os.tmpdir(), 'almanion-notes-empty-output-'));
+    try {
+        fs.mkdirSync(path.join(root, 'content', 'literature-10', 'sections'), { recursive: true });
+        fs.writeFileSync(path.join(root, 'content', 'subjects.json'), JSON.stringify([{
+            id: 'literature-10',
+            title: 'Литература · 10 класс',
+            page: 'literature-10.html',
+            emptyMessage: 'Конспекты скоро появятся.'
+        }]));
+        fs.writeFileSync(path.join(root, 'content', 'literature-10', 'manifest.json'), JSON.stringify({ subject: 'literature-10', sections: [] }));
+        fs.writeFileSync(path.join(root, 'literature-10.html'), '<nav>' + Builder.MARKERS.navStart + '\n' + Builder.MARKERS.navEnd + '</nav><main>' + Builder.MARKERS.contentStart + '\n' + Builder.MARKERS.contentEnd + '</main>');
+        const result = Builder.build({ root, output });
+        const html = fs.readFileSync(path.join(output, 'literature-10.html'), 'utf8');
+        assert.deepStrictEqual(result, { subjects: 1, sections: 0 });
+        assert.ok(html.includes('notes-empty-state'));
+        assert.ok(html.includes('Конспекты скоро появятся.'));
+    } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+        fs.rmSync(output, { recursive: true, force: true });
+    }
+}
+
 testModel();
 testRenderer();
 testBuild();
+testEmptySubjectBuild();
 console.log('note-constructor tests: ok');

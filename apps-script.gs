@@ -331,7 +331,7 @@ function publishNoteFiles(identity, params) {
 
   const subject = String(params.subject || '');
   const sectionId = String(params.sectionId || '');
-  if (!/^(physics|math|geometry|chemistry|likbez)$/.test(subject)) throw new Error('Неизвестный предмет');
+  if (!/^(physics|math|geometry|chemistry|likbez|physics-10|chemistry-10|literature-10)$/.test(subject)) throw new Error('Неизвестный предмет');
   if (!/^[a-z0-9][a-z0-9-]{1,63}$/.test(sectionId)) throw new Error('Некорректный адрес раздела');
 
   let totalLength = 0;

@@ -450,6 +450,7 @@
         body:not(.no-hover) .subject-card[data-subject="math"]:hover::before { color: #f59e0b; }
         body:not(.no-hover) .subject-card[data-subject="geometry"]:hover::before { color: #6366f1; }
         body:not(.no-hover) .subject-card[data-subject="likbez"]:hover::before { color: #ec4899; }
+        body:not(.no-hover) .subject-card[data-subject="literature"]:hover::before { color: #a16207; }
 
         .card-header {
             background: transparent;
@@ -479,6 +480,7 @@
         .subject-card[data-subject="math"] .subject-icon { color: #f59e0b; }
         .subject-card[data-subject="geometry"] .subject-icon { color: #6366f1; }
         .subject-card[data-subject="likbez"] .subject-icon { color: #ec4899; }
+        .subject-card[data-subject="literature"] .subject-icon { color: #a16207; }
 
         .card-body {
             padding: 1.5rem 2rem 2rem;
@@ -895,7 +897,37 @@
             </div>
 
             <div class="grade-panel" data-grade-panel="10" hidden>
-                <div class="grade-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><div>Материалы для 10 класса скоро появятся</div></div>
+                <div class="subjects-grid">
+                    <a href="physics-10.html" class="subject-card" data-subject="physics">
+                        <div class="card-header">
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1.5" fill="currentColor"/><ellipse cx="12" cy="12" rx="9.5" ry="3.3"/><ellipse cx="12" cy="12" rx="9.5" ry="3.3" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9.5" ry="3.3" transform="rotate(120 12 12)"/></svg></div>
+                        </div>
+                        <div class="card-body">
+                            <h2>Физика</h2>
+                            <div class="card-info"><div style="text-align: center;"><span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> Активно</span></div></div>
+                        </div>
+                    </a>
+
+                    <a href="chemistry-10.html" class="subject-card" data-subject="chemistry">
+                        <div class="card-header">
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v6L3.5 18a2 2 0 0 0 1.75 3h13.5a2 2 0 0 0 1.75-3L15 9V3"/><line x1="8" y1="3" x2="16" y2="3"/><path d="M6.5 14h11"/><circle cx="10" cy="17" r="0.6" fill="currentColor"/><circle cx="13.5" cy="18.5" r="0.5" fill="currentColor"/></svg></div>
+                        </div>
+                        <div class="card-body">
+                            <h2>Химия</h2>
+                            <div class="card-info"><div style="text-align: center;"><span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> Активно</span></div></div>
+                        </div>
+                    </a>
+
+                    <a href="literature-10.html" class="subject-card" data-subject="literature">
+                        <div class="card-header">
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h7"/></svg></div>
+                        </div>
+                        <div class="card-body">
+                            <h2>Литература</h2>
+                            <div class="card-info"><div style="text-align: center;"><span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> Активно</span></div></div>
+                        </div>
+                    </a>
+                </div>
             </div>
 
             <div class="grade-panel" data-grade-panel="11" hidden>

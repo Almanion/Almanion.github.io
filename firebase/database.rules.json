@@ -168,7 +168,7 @@
           ".validate": "newData.hasChildren(['schemaVersion', 'id', 'subject', 'title', 'navTitle', 'blocks', 'order', 'revision', 'createdAt', 'updatedAt', 'updatedBy', 'reviewStatus']) && newData.child('id').val() === $sectionId && newData.child('subject').val() === $subject",
           "schemaVersion": { ".validate": "newData.isNumber() && newData.val() === 1" },
           "id": { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 64" },
-          "subject": { ".validate": "newData.val() === 'physics' || newData.val() === 'math' || newData.val() === 'geometry' || newData.val() === 'chemistry' || newData.val() === 'likbez'" },
+          "subject": { ".validate": "newData.val() === 'physics' || newData.val() === 'math' || newData.val() === 'geometry' || newData.val() === 'chemistry' || newData.val() === 'likbez' || newData.val() === 'physics-10' || newData.val() === 'chemistry-10' || newData.val() === 'literature-10'" },
           "title": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 140" },
           "navTitle": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 90" },
           "blocks": { ".validate": "newData.exists()" },

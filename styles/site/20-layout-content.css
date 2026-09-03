@@ -810,6 +810,52 @@ body.dark-theme .page-header {
                 color 0.3s ease;
 }
 
+.notes-empty-state {
+    min-height: min(48vh, 430px);
+    padding: clamp(2.5rem, 7vw, 5.5rem) 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.notes-empty-icon {
+    width: 58px;
+    height: 58px;
+    margin-bottom: 1.25rem;
+    display: grid;
+    place-items: center;
+    color: var(--accent-color);
+    background: color-mix(in srgb, var(--accent-color) 9%, transparent);
+    border-radius: 16px;
+}
+
+.notes-empty-icon svg {
+    width: 28px;
+    height: 28px;
+}
+
+.notes-empty-state h2 {
+    margin: 0 0 0.55rem;
+    color: var(--text-primary);
+    font-size: clamp(1.35rem, 2.4vw, 1.8rem);
+    font-weight: 680;
+    letter-spacing: -0.02em;
+}
+
+.notes-empty-state p {
+    max-width: 42rem;
+    margin: 0;
+    font-size: 0.98rem;
+    line-height: 1.65;
+}
+
 .part-title {
     font-size: 2rem;
     color: var(--text-primary);

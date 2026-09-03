@@ -3,5 +3,8 @@
   { "id": "math", "title": "Алгебра", "page": "math.html" },
   { "id": "geometry", "title": "Геометрия", "page": "geometry.html" },
   { "id": "chemistry", "title": "Химия", "page": "chemistry.html" },
-  { "id": "likbez", "title": "Ликбезы", "page": "likbez.html" }
+  { "id": "likbez", "title": "Ликбезы", "page": "likbez.html" },
+  { "id": "physics-10", "title": "Физика · 10 класс", "page": "physics-10.html", "emptyMessage": "Здесь появятся конспекты по физике за 10 класс." },
+  { "id": "chemistry-10", "title": "Химия · 10 класс", "page": "chemistry-10.html", "emptyMessage": "Здесь появятся конспекты по химии за 10 класс." },
+  { "id": "literature-10", "title": "Литература · 10 класс", "page": "literature-10.html", "emptyMessage": "Здесь появятся конспекты по литературе за 10 класс." }
 ]

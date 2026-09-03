@@ -73,13 +73,28 @@ function buildSubject(root, output, subject) {
     const targetPath = path.join(output, subject.page);
     const sections = loadSections(root, subject);
     const nav = sections.map(NoteRenderer.renderNavItem).join('\n');
-    const content = sections.map(NoteRenderer.renderSection).join('\n\n');
+    const content = sections.length
+        ? sections.map(NoteRenderer.renderSection).join('\n\n')
+        : renderEmptySubject(subject);
     let html = fs.readFileSync(sourcePath, 'utf8');
     html = replaceMarked(html, MARKERS.navStart, MARKERS.navEnd, nav, subject.page);
     html = replaceMarked(html, MARKERS.contentStart, MARKERS.contentEnd, content, subject.page);
     fs.mkdirSync(path.dirname(targetPath), { recursive: true });
     fs.writeFileSync(targetPath, html);
     return sections.length;
+}
+
+function renderEmptySubject(subject) {
+    if (!subject.emptyMessage) return '';
+    return [
+        '<section class="content-section notes-empty-state" aria-label="Материалы пока не добавлены">',
+        '    <div class="notes-empty-icon" aria-hidden="true">',
+        '        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+        '    </div>',
+        '    <h2>Материалы готовятся</h2>',
+        '    <p>' + NoteRenderer.escapeHtml(subject.emptyMessage) + '</p>',
+        '</section>'
+    ].join('\n');
 }
 
 function build(options) {
@@ -99,4 +114,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = { MARKERS, parseArgs, replaceMarked, loadSections, buildSubject, build };
+module.exports = { MARKERS, parseArgs, replaceMarked, loadSections, renderEmptySubject, buildSubject, build };
