@@ -276,11 +276,54 @@
         el('blockList').innerHTML = state.current.blocks.map((block, index) => renderBlockEditor(block, 0, index, state.current.blocks.length)).join('');
     }
 
+    function currentPreviewTheme() {
+        let settings = {};
+        try { settings = JSON.parse(localStorage.getItem('siteSettings') || '{}') || {}; } catch (_) {}
+        if (settings.experimental === false) {
+            const theme = settings.theme || (localStorage.getItem('theme') === 'dark' ? 'dark' : 'light');
+            const labels = { light: 'Старый · светлая', dark: 'Старый · тёмная', sepia: 'Старый · сепия', midnight: 'Старый · полночь' };
+            return {
+                bodyClass: (theme && theme !== 'light' ? theme + '-theme ' : '') + 'no-hover constructor-preview-page',
+                label: labels[theme] || labels.light
+            };
+        }
+        const mode = settings.expMode === 'graphite' ? 'graphite' : 'prism';
+        const dark = settings.expDark === true;
+        return {
+            bodyClass: 'experimental exp-' + mode + (dark ? ' exp-dark' : '') + ' no-hover constructor-preview-page',
+            label: (mode === 'graphite' ? 'Графит' : 'Призма') + (dark ? ' · тёмная' : ' · светлая')
+        };
+    }
+
+    function ensurePreviewRoot() {
+        const frame = el('previewFrame');
+        let doc = frame.contentDocument;
+        if (!doc || !doc.getElementById('previewContent')) {
+            const baseHref = new URL('.', window.location.href).href;
+            doc.open();
+            doc.write('<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+                '<base href="' + escapeHtml(baseHref) + '">' +
+                '<link rel="stylesheet" href="styles/site/index.css?v=20260903-5">' +
+                '<link rel="stylesheet" href="styles/tokens.css?v=20260903-1">' +
+                '<link rel="stylesheet" href="style-new.css?v=20260903-3">' +
+                '<link rel="stylesheet" href="styles/typography.css?v=20260903-1">' +
+                '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">' +
+                '<link rel="stylesheet" href="constructor/preview.css?v=20260903-1">' +
+                '</head><body><main class="main-content" id="previewContent"></main></body></html>');
+            doc.close();
+            doc = frame.contentDocument;
+        }
+        const theme = currentPreviewTheme();
+        doc.body.className = theme.bodyClass;
+        el('previewThemeLabel').textContent = theme.label;
+        return doc.getElementById('previewContent');
+    }
+
     async function renderPreview() {
-        const root = el('previewPage');
+        const root = ensurePreviewRoot();
         const generation = ++state.previewGeneration;
         if (!state.current) {
-            root.innerHTML = '<div class="builder-preview-placeholder">Здесь появится новый раздел</div>';
+            root.innerHTML = '<div class="builder-preview-placeholder"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><strong>Здесь появится раздел</strong><span>Создайте материал или выберите черновик слева</span></div>';
             return;
         }
         root.innerHTML = Renderer.renderSection(state.current);
@@ -630,13 +673,33 @@
             state.dragId = '';
             el('blockList').querySelectorAll('.is-dragging,.is-drop-target').forEach(node => node.classList.remove('is-dragging', 'is-drop-target'));
         });
-        el('previewToggle').addEventListener('click', () => el('builderPreview').classList.toggle('is-open'));
+        el('previewToggle').addEventListener('click', () => {
+            const open = !el('builderPreview').classList.contains('is-open');
+            el('builderPreview').classList.toggle('is-open', open);
+            el('previewToggle').setAttribute('aria-pressed', open ? 'true' : 'false');
+        });
+        el('previewCloseButton').addEventListener('click', () => {
+            el('builderPreview').classList.remove('is-open');
+            el('previewToggle').setAttribute('aria-pressed', 'false');
+        });
+        el('builderPreview').addEventListener('click', event => {
+            const button = event.target.closest('[data-preview-size]');
+            if (!button) return;
+            const size = button.dataset.previewSize === 'mobile' ? 'mobile' : 'wide';
+            el('previewCanvas').dataset.size = size;
+            el('builderPreview').querySelectorAll('[data-preview-size]').forEach(item => {
+                const active = item.dataset.previewSize === size;
+                item.classList.toggle('is-active', active);
+                item.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
+        });
         el('exportButton').addEventListener('click', exportBundle);
         el('publishButton').addEventListener('click', publishCurrent);
         document.addEventListener('keydown', event => {
             if (event.key === 'Escape') {
                 closeSectionDialog();
                 el('builderPreview').classList.remove('is-open');
+                el('previewToggle').setAttribute('aria-pressed', 'false');
             }
         });
         window.addEventListener('beforeunload', () => {

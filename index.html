@@ -762,6 +762,36 @@
             font-weight: 600;
         }
 
+        .home-editor-link {
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.55rem;
+            padding: 0.65rem 1.05rem;
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 0.88rem;
+            font-weight: 650;
+            line-height: 1;
+            text-decoration: none;
+            transition: color 0.16s ease, border-color 0.16s ease, background-color 0.16s ease;
+        }
+
+        .home-editor-link svg {
+            width: 17px;
+            height: 17px;
+            color: var(--accent-color);
+        }
+
+        body:not(.no-hover) .home-editor-link:hover {
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+            background: color-mix(in srgb, var(--accent-color) 5%, var(--bg-secondary));
+        }
+
         @media (max-width: 768px) {
             .home-header h1 {
                 font-size: 1.85rem;
@@ -811,18 +841,22 @@
                         <span class="number">@Almanion239</span>
                     </a>
                 </div>
+                <a class="home-editor-link" id="homeConstructorLink" href="constructor.html" hidden>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                    <span>Открыть конструктор</span>
+                </a>
             </div>
         </div>
 
         <!-- Предметы по классам -->
         <div class="subjects-section">
             <div class="grade-tabs" role="tablist" aria-label="Выбор класса">
-                <button class="grade-tab active" data-grade="9" role="tab" aria-selected="true">9 класс</button>
-                <button class="grade-tab" data-grade="10" role="tab" aria-selected="false">10 класс</button>
+                <button class="grade-tab" data-grade="9" role="tab" aria-selected="false">9 класс</button>
+                <button class="grade-tab active" data-grade="10" role="tab" aria-selected="true">10 класс</button>
                 <button class="grade-tab" data-grade="11" role="tab" aria-selected="false">11 класс</button>
             </div>
 
-            <div class="grade-panel" data-grade-panel="9">
+            <div class="grade-panel" data-grade-panel="9" hidden>
                 <div class="subjects-grid">
                     <a href="physics.html" class="subject-card" data-subject="physics">
                         <div class="card-header">
@@ -896,7 +930,7 @@
                 </div>
             </div>
 
-            <div class="grade-panel" data-grade-panel="10" hidden>
+            <div class="grade-panel" data-grade-panel="10">
                 <div class="subjects-grid">
                     <a href="physics-10.html" class="subject-card" data-subject="physics">
                         <div class="card-header">
@@ -987,6 +1021,7 @@
         tabs.forEach(function(t){ t.addEventListener('click', function(){ sel(t.dataset.grade); }); });
         var saved = null; try { saved = localStorage.getItem('homeGrade'); } catch(e){}
         if (saved && document.querySelector('.grade-panel[data-grade-panel="'+saved+'"]')) sel(saved);
+        else sel('10');
     })();
     </script>
 
@@ -1007,7 +1042,7 @@
     <script src="script.js?v=20260903-1"></script>
     <script src="newyear.js?v=20260903-1"></script>
     <script src="settings.js?v=20260903-2"></script>
-    <script src="account.js?v=20260903-7"></script>
+    <script src="account.js?v=20260903-8"></script>
     <script>
         // Анимация карточек при загрузке
         document.addEventListener('DOMContentLoaded', () => {

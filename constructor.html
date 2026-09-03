@@ -10,19 +10,21 @@
     <script>
         (function () {
             var dark = false;
+            var palette = 'prism';
             try {
                 var saved = JSON.parse(localStorage.getItem('siteSettings') || '{}');
                 dark = saved.experimental === false ? saved.theme === 'dark' || saved.theme === 'midnight' : saved.expDark === true;
+                palette = saved.experimental === false || saved.expMode === 'graphite' ? 'graphite' : 'prism';
             } catch (_) {
                 dark = localStorage.getItem('theme') === 'dark';
             }
             document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-palette', palette);
         })();
     </script>
     <link rel="stylesheet" href="styles/tokens.css?v=20260903-1">
     <link rel="stylesheet" href="styles/typography.css?v=20260903-1">
-    <link rel="stylesheet" href="styles/site/index.css?v=20260903-4">
-    <link rel="stylesheet" href="constructor/index.css?v=20260903-3">
+    <link rel="stylesheet" href="constructor/index.css?v=20260903-4">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 </head>
 <body>
@@ -39,8 +41,8 @@
     <div class="builder-shell" id="builderShell" hidden>
         <header class="builder-topbar">
             <a href="index.html" class="builder-brand" aria-label="На главную">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 10v10h13V10M9.5 20v-6h5v6"/></svg>
-                <span>Конструктор</span>
+                <span class="builder-brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 10v10h13V10M9.5 20v-6h5v6"/></svg></span>
+                <span class="builder-brand-copy"><strong>Конструктор</strong><small>Конспекты</small></span>
             </a>
             <label class="builder-subject-control">
                 <span>Предмет</span>
@@ -51,8 +53,8 @@
                 <span id="saveStateText">Все изменения сохранены</span>
             </div>
             <div class="builder-top-actions">
-                <button class="builder-button is-quiet" id="previewToggle" type="button">Предпросмотр</button>
-                <button class="builder-button is-quiet" id="exportButton" type="button">Скачать</button>
+                <button class="builder-button is-quiet" id="previewToggle" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg><span>Предпросмотр</span></button>
+                <button class="builder-button is-quiet" id="exportButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg><span>Экспорт</span></button>
                 <button class="builder-button is-primary" id="publishButton" type="button" hidden>Опубликовать</button>
             </div>
         </header>
@@ -68,8 +70,8 @@
                 </div>
                 <div class="builder-section-list" id="sectionList"></div>
                 <div class="builder-section-help">
-                    <b>Отдельный файл для каждого раздела</b>
-                    <span>Опубликованные материалы автоматически появятся в меню выбранного предмета.</span>
+                    <b>Автосохранение включено</b>
+                    <span>Каждый раздел хранится отдельно — черновик останется на устройстве и в аккаунте.</span>
                 </div>
             </aside>
 
@@ -109,11 +111,11 @@
 
                     <div class="builder-block-toolbar">
                         <label>
-                            <span class="sr-only">Тип нового блока</span>
+                            <span class="builder-toolbar-label">Новый блок</span>
                             <select id="newBlockType"></select>
                         </label>
-                        <button class="builder-button is-secondary" id="addBlockButton" type="button">Добавить блок</button>
-                        <span class="builder-toolbar-hint">Блоки можно перетаскивать или перемещать стрелками</span>
+                        <button class="builder-button is-secondary" id="addBlockButton" type="button">Добавить</button>
+                        <span class="builder-toolbar-hint">Перетаскивайте блоки или используйте стрелки</span>
                     </div>
                     <div class="builder-block-list" id="blockList"></div>
                 </div>
@@ -123,11 +125,20 @@
                 <div class="builder-preview-heading">
                     <div>
                         <span class="builder-eyebrow">Так увидит читатель</span>
-                        <h2>Предпросмотр</h2>
+                        <div class="builder-preview-title"><h2>Предпросмотр</h2><span id="previewThemeLabel"></span></div>
+                    </div>
+                    <button class="builder-icon-button builder-preview-close" id="previewCloseButton" type="button" aria-label="Закрыть предпросмотр">×</button>
+                </div>
+                <div class="builder-preview-controls">
+                    <div class="builder-preview-sizes" role="group" aria-label="Ширина предпросмотра">
+                        <button class="is-active" type="button" data-preview-size="wide" aria-pressed="true">Страница</button>
+                        <button type="button" data-preview-size="mobile" aria-pressed="false">Телефон</button>
                     </div>
                     <a id="subjectPageLink" href="physics.html" target="_blank" rel="noopener">Открыть предмет ↗</a>
                 </div>
-                <div class="builder-preview-page" id="previewPage"></div>
+                <div class="builder-preview-canvas" id="previewCanvas" data-size="wide">
+                    <iframe class="builder-preview-frame" id="previewFrame" title="Предпросмотр раздела" sandbox="allow-same-origin"></iframe>
+                </div>
             </aside>
         </main>
     </div>
@@ -157,11 +168,11 @@
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
     <script src="firebase-config.js?v=20260903-3"></script>
-    <script src="account.js?v=20260903-7"></script>
+    <script src="account.js?v=20260903-8"></script>
     <script src="constructor/config.js?v=20260903-2"></script>
     <script src="constructor/model.js?v=20260903-2"></script>
     <script src="constructor/renderer.js?v=20260903-2"></script>
     <script src="constructor/storage.js?v=20260903-2"></script>
-    <script src="constructor/index.js?v=20260903-2"></script>
+    <script src="constructor/index.js?v=20260903-3"></script>
 </body>
 </html>

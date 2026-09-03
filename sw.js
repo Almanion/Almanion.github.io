@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-03-grade-10-subjects-22';
+const CACHE_VERSION = 'almanion-pwa-2026-09-03-constructor-preview-23';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -34,6 +34,7 @@ const APP_SHELL = [
     '/admin-dashboard.js',
     '/constructor.html',
     '/constructor/index.css',
+    '/constructor/preview.css',
     '/constructor/config.js',
     '/constructor/model.js',
     '/constructor/renderer.js',

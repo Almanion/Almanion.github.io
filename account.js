@@ -36,6 +36,7 @@
     let persistenceFailure = false;
     let syncGeneration = 0;
     let googleAttemptId = 0;
+    let editorAccessGeneration = 0;
     const GOOGLE_POPUP_TIMEOUT_MS = 45000;
 
     // Явно закрепляем сессию за устройством. По умолчанию Firebase также использует
@@ -425,15 +426,34 @@
         return out;
     }
 
+    function hasContentEditorAccess(account) {
+        if (!account) return Promise.resolve(false);
+        const owner = String(account.email || '').trim().toLowerCase() === 'dmb23930@gmail.com';
+        return owner
+            ? Promise.resolve(true)
+            : db.ref('adminRoles/' + account.uid + '/contentEditor').once('value')
+                .then(function (snapshot) { return snapshot.val() === true; })
+                .catch(function () { return false; });
+    }
+
+    function updateHomeEditorLink() {
+        const link = document.getElementById('homeConstructorLink');
+        if (!link) return;
+        const checkedUser = user;
+        const generation = ++editorAccessGeneration;
+        link.hidden = true;
+        if (!checkedUser) return;
+        hasContentEditorAccess(checkedUser).then(function (allowed) {
+            if (generation !== editorAccessGeneration || user !== checkedUser || !link.isConnected) return;
+            link.hidden = !allowed;
+        });
+    }
+
     function showContentEditorLink(overlay) {
         if (!user || !overlay) return;
         const slot = overlay.querySelector('#accountEditorSlot');
         if (!slot) return;
-        const owner = String(user.email || '').trim().toLowerCase() === 'dmb23930@gmail.com';
-        const rolePromise = owner
-            ? Promise.resolve(true)
-            : db.ref('adminRoles/' + user.uid + '/contentEditor').once('value').then(function (snapshot) { return snapshot.val() === true; }).catch(function () { return false; });
-        rolePromise.then(function (allowed) {
+        hasContentEditorAccess(user).then(function (allowed) {
             if (!allowed || !slot.isConnected) return;
             const link = document.createElement('a');
             link.href = 'constructor.html';
@@ -527,6 +547,7 @@
         authStateKnown = true;
         user = u;
         updateButton();
+        updateHomeEditorLink();
         if (u) {
             registerAccountDirectory(u);
             startKcSync(u.uid);
@@ -536,6 +557,7 @@
         authStateKnown = true;
         user = null;
         updateButton();
+        updateHomeEditorLink();
         console.warn('Almanion account: auth state restore failed.', err);
     });
 
