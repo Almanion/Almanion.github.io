@@ -24,7 +24,7 @@
     </script>
     <link rel="stylesheet" href="styles/tokens.css?v=20260903-1">
     <link rel="stylesheet" href="styles/typography.css?v=20260903-1">
-    <link rel="stylesheet" href="constructor/index.css?v=20260903-4">
+    <link rel="stylesheet" href="constructor/index.css?v=20260903-5">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 </head>
 <body>
@@ -85,10 +85,16 @@
 
                 <div id="editorContent" hidden>
                     <div class="builder-document-head">
-                        <label class="builder-field is-title">
-                            <span>Заголовок раздела</span>
-                            <input id="sectionTitle" type="text" maxlength="140" autocomplete="off">
-                        </label>
+                        <div class="builder-document-title-row">
+                            <label class="builder-field is-title">
+                                <span>Заголовок раздела</span>
+                                <input id="sectionTitle" type="text" maxlength="140" autocomplete="off">
+                            </label>
+                            <button class="builder-button is-danger builder-delete-section" id="deleteSectionButton" type="button" aria-label="Удалить раздел" title="Удалить раздел">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 15H6L5 6m5 4v7m4-7v7"/></svg>
+                                <span>Удалить</span>
+                            </button>
+                        </div>
                         <div class="builder-document-meta">
                             <label class="builder-field">
                                 <span>Название в меню</span>
@@ -160,6 +166,23 @@
         </form>
     </div>
 
+    <div class="builder-dialog-backdrop" id="deleteSectionDialog" hidden>
+        <div class="builder-dialog builder-delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="deleteSectionTitle" aria-describedby="deleteSectionDescription">
+            <button class="builder-dialog-close" id="deleteSectionClose" type="button" aria-label="Закрыть">×</button>
+            <span class="builder-eyebrow">Необратимое действие</span>
+            <h2 id="deleteSectionTitle">Удалить раздел?</h2>
+            <p id="deleteSectionDescription">Черновик будет удалён с устройства и из аккаунта.</p>
+            <div class="builder-delete-summary">
+                <span>Раздел</span>
+                <strong id="deleteSectionName"></strong>
+            </div>
+            <div class="builder-dialog-actions">
+                <button class="builder-button is-quiet" id="deleteSectionCancel" type="button">Отмена</button>
+                <button class="builder-button is-danger is-solid" id="deleteSectionConfirm" type="button">Удалить раздел</button>
+            </div>
+        </div>
+    </div>
+
     <div class="builder-toast-stack" id="builderToastStack" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
@@ -172,7 +195,7 @@
     <script src="constructor/config.js?v=20260903-2"></script>
     <script src="constructor/model.js?v=20260903-2"></script>
     <script src="constructor/renderer.js?v=20260903-2"></script>
-    <script src="constructor/storage.js?v=20260903-2"></script>
-    <script src="constructor/index.js?v=20260903-3"></script>
+    <script src="constructor/storage.js?v=20260903-3"></script>
+    <script src="constructor/index.js?v=20260903-4"></script>
 </body>
 </html>

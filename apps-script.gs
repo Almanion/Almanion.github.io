@@ -38,7 +38,8 @@ function handle(e) {
         authVersion: AUTH_VERSION,
         accountConfirmation: true,
         multiSheetTasks: true,
-        notePublisher: true
+        notePublisher: true,
+        noteDeletion: true
       });
     }
 
@@ -49,13 +50,19 @@ function handle(e) {
       return json({
         success: true,
         owner: publisherIdentity.email,
-        ready: !!PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN')
+        ready: !!PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN'),
+        noteDeletion: true
       });
     }
 
     if (action === 'publishNotes') {
       const publisherIdentity = requireSiteOwner(params.idToken || '');
       return publishNoteFiles(publisherIdentity, params);
+    }
+
+    if (action === 'deleteNotes') {
+      const publisherIdentity = requireSiteOwner(params.idToken || '');
+      return deleteNoteFiles(publisherIdentity, params);
     }
 
     if (action === 'authorizeAccount') {
@@ -391,8 +398,101 @@ function publishNoteFiles(identity, params) {
   }
 }
 
+function deleteNoteFiles(identity, params) {
+  const subject = String(params.subject || '');
+  const sectionId = String(params.sectionId || '');
+  if (!/^(physics|math|geometry|chemistry|likbez|physics-10|chemistry-10|literature-10)$/.test(subject)) throw new Error('Неизвестный предмет');
+  if (!/^[a-z0-9][a-z0-9-]{1,63}$/.test(sectionId)) throw new Error('Некорректный адрес раздела');
+
+  const files = Array.isArray(params.files) ? params.files : [];
+  if (files.length !== 1) throw new Error('Для удаления требуется обновлённый манифест');
+  const manifestPath = 'content/' + subject + '/manifest.json';
+  const manifestFile = files[0] || {};
+  if (String(manifestFile.path || '').replace(/\\/g, '/') !== manifestPath) throw new Error('Некорректный файл манифеста');
+  const manifestContent = String(manifestFile.content || '');
+  if (!manifestContent || manifestContent.length > 1024 * 1024) throw new Error('Некорректный манифест');
+  let manifest;
+  try {
+    manifest = JSON.parse(manifestContent);
+  } catch (error) {
+    throw new Error('Манифест содержит некорректный JSON');
+  }
+  if (!manifest || manifest.subject !== subject || !Array.isArray(manifest.sections)) {
+    throw new Error('Манифест не соответствует выбранному предмету');
+  }
+  const manifestSectionIds = manifest.sections.map(function (entry) {
+    return typeof entry === 'string' ? entry : entry && entry.id;
+  });
+  if (manifestSectionIds.includes(sectionId)) throw new Error('Удаляемый раздел остался в манифесте');
+  if (manifestSectionIds.some(function (id) { return !/^[a-z0-9][a-z0-9-]{1,63}$/.test(String(id || '')); })) {
+    throw new Error('Манифест содержит некорректный адрес раздела');
+  }
+  if (new Set(manifestSectionIds).size !== manifestSectionIds.length) throw new Error('Манифест содержит повторяющиеся разделы');
+
+  const requestedDeletes = Array.isArray(params.deletePaths) ? params.deletePaths : [];
+  const deletePaths = Array.from(new Set(requestedDeletes.map(function (path) {
+    return String(path || '').replace(/\\/g, '/');
+  }).filter(Boolean)));
+  const sectionPath = 'content/' + subject + '/sections/' + sectionId + '.json';
+  if (!deletePaths.includes(sectionPath)) throw new Error('Не указан файл удаляемого раздела');
+  if (!deletePaths.length || deletePaths.length > 64) throw new Error('Некорректный набор удаляемых файлов');
+  deletePaths.forEach(function (path) {
+    if (!isAllowedNoteDeletePath(path, subject, sectionId)) throw new Error('Удаление пути запрещено: ' + path);
+  });
+
+  const properties = PropertiesService.getScriptProperties();
+  const token = properties.getProperty('GITHUB_TOKEN') || '';
+  if (!token) throw new Error('На сервере не задан GITHUB_TOKEN');
+  const repository = properties.getProperty('GITHUB_REPOSITORY') || 'Almanion/Almanion.github.io';
+  const branch = properties.getProperty('GITHUB_BRANCH') || 'main';
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) throw new Error('Некорректный GITHUB_REPOSITORY');
+  if (!/^[A-Za-z0-9._\/-]+$/.test(branch)) throw new Error('Некорректный GITHUB_BRANCH');
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const ref = githubRequest('get', repository, '/git/ref/heads/' + branch, token);
+    const parentSha = ref.object && ref.object.sha;
+    if (!parentSha) throw new Error('GitHub не вернул текущий commit');
+    const parentCommit = githubRequest('get', repository, '/git/commits/' + parentSha, token);
+    const baseTreeSha = parentCommit.tree && parentCommit.tree.sha;
+    if (!baseTreeSha) throw new Error('GitHub не вернул дерево файлов');
+
+    const manifestBlob = githubRequest('post', repository, '/git/blobs', token, {
+      content: manifestContent,
+      encoding: 'utf-8'
+    });
+    const treeItems = [{ path: manifestPath, mode: '100644', type: 'blob', sha: manifestBlob.sha }]
+      .concat(deletePaths.map(function (path) {
+        return { path: path, mode: '100644', type: 'blob', sha: null };
+      }));
+    const tree = githubRequest('post', repository, '/git/trees', token, {
+      base_tree: baseTreeSha,
+      tree: treeItems
+    });
+    const commit = githubRequest('post', repository, '/git/commits', token, {
+      message: 'Delete ' + subject + ' notes: ' + sectionId,
+      tree: tree.sha,
+      parents: [parentSha],
+      author: { name: 'Конструктор конспектов', email: identity.email }
+    });
+    githubRequest('patch', repository, '/git/refs/heads/' + branch, token, {
+      sha: commit.sha,
+      force: false
+    });
+    return json({ success: true, commitSha: commit.sha, deleted: deletePaths.length });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function isAllowedNotePath(path, subject, sectionId) {
   if (path === 'content/' + subject + '/manifest.json') return true;
+  if (path === 'content/' + subject + '/sections/' + sectionId + '.json') return true;
+  return new RegExp('^images/notes/' + subject + '/[a-zA-Z0-9][a-zA-Z0-9._-]{0,119}$').test(path);
+}
+
+function isAllowedNoteDeletePath(path, subject, sectionId) {
   if (path === 'content/' + subject + '/sections/' + sectionId + '.json') return true;
   return new RegExp('^images/notes/' + subject + '/[a-zA-Z0-9][a-zA-Z0-9._-]{0,119}$').test(path);
 }

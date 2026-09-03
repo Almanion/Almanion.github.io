@@ -8,7 +8,7 @@ const defaultSettings = {
     newYearMode: false,
     animationLevel: 'max',
     hoverEffects: true,
-    // Современный интерфейс (внутреннее имя сохранено для совместимости)
+    // Новый интерфейс (внутреннее имя experimental сохранено для совместимости)
     experimental: true,
     expMode: 'prism',      // 'graphite' | 'prism'
     expDark: false,
@@ -347,14 +347,14 @@ function createSettingsModal() {
             </div>
 
             <div class="settings-modal-body">
-                <!-- Основной и старый интерфейс -->
+                <!-- Новый и старый интерфейс -->
                 <div class="settings-section">
                     <h3>${ICONS.settings}<span>Интерфейс</span></h3>
                     <p class="settings-section-description">Выберите способ отображения конспектов и навигации.</p>
                     <div class="settings-option">
                         <div class="design-mode-selector" role="radiogroup" aria-label="Дизайн сайта">
-                            <button type="button" class="design-mode-option ${siteSettings.experimental ? 'active' : ''}" data-design-mode="modern" role="radio" aria-checked="${siteSettings.experimental}">
-                                <span class="design-mode-name">Современный</span>
+                            <button type="button" class="design-mode-option ${siteSettings.experimental ? 'active' : ''}" data-design-mode="new" role="radio" aria-checked="${siteSettings.experimental}">
+                                <span class="design-mode-name">Новый</span>
                                 <span class="design-mode-desc">Основной дизайн с перелистыванием разделов</span>
                                 <span class="settings-choice-dot" aria-hidden="true"></span>
                             </button>
@@ -566,28 +566,28 @@ function bindSettingsHandlers() {
         });
     });
 
-    // ---- Основной и старый интерфейс ----
+    // ---- Новый и старый интерфейс ----
     const designModeButtons = document.querySelectorAll('.design-mode-option');
     const expSubpanel = document.getElementById('expSubpanel');
     const themeSection = document.getElementById('themeSection');
     designModeButtons.forEach(btn => {
         btn.addEventListener('click', () => {
-            const modern = btn.dataset.designMode === 'modern';
-            if (modern === siteSettings.experimental) return;
+            const newDesign = btn.dataset.designMode === 'new';
+            if (newDesign === siteSettings.experimental) return;
             animateThemeChange(() => {
-                siteSettings.experimental = modern;
+                siteSettings.experimental = newDesign;
                 designModeButtons.forEach(button => {
                     const active = button === btn;
                     button.classList.toggle('active', active);
                     button.setAttribute('aria-checked', String(active));
                 });
-                if (expSubpanel) expSubpanel.hidden = !modern;
-                if (themeSection) themeSection.style.display = modern ? 'none' : '';
+                if (expSubpanel) expSubpanel.hidden = !newDesign;
+                if (themeSection) themeSection.style.display = newDesign ? 'none' : '';
                 applyExperimental();
                 applyTheme(siteSettings.theme);
                 saveSettings();
             });
-            showNotification(modern ? 'Включён современный интерфейс' : 'Включён старый интерфейс');
+            showNotification(newDesign ? 'Включён новый интерфейс' : 'Включён старый интерфейс');
         });
     });
 

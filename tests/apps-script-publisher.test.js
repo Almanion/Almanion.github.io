@@ -17,5 +17,10 @@ assert.strictEqual(context.isAllowedNotePath('../firebase-config.js', 'physics',
 assert.strictEqual(context.isAllowedNotePath('images/notes/math/secret.png', 'physics', 'waves'), false);
 assert.strictEqual(context.isAllowedNotePath('content/literature-10/manifest.json', 'literature-10', 'tolstoy'), true);
 assert.strictEqual(context.isAllowedNotePath('content/literature-10/sections/tolstoy.json', 'literature-10', 'tolstoy'), true);
+assert.strictEqual(context.isAllowedNoteDeletePath('content/physics/sections/waves.json', 'physics', 'waves'), true);
+assert.strictEqual(context.isAllowedNoteDeletePath('images/notes/physics/123-waves.webp', 'physics', 'waves'), true);
+assert.strictEqual(context.isAllowedNoteDeletePath('content/physics/manifest.json', 'physics', 'waves'), false);
+assert.strictEqual(context.isAllowedNoteDeletePath('content/physics/sections/other.json', 'physics', 'waves'), false);
+assert.strictEqual(context.isAllowedNoteDeletePath('images/notes/math/secret.png', 'physics', 'waves'), false);
 
 console.log('apps script note publisher paths: all tests passed');

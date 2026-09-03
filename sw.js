@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-03-constructor-preview-23';
+const CACHE_VERSION = 'almanion-pwa-2026-09-03-section-delete-legacy-refresh-24';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -16,6 +16,7 @@ const APP_SHELL = [
     '/styles/site/50-matcenter-responsive.css',
     '/styles/site/60-poll-pwa.css',
     '/styles/typography.css',
+    '/styles/legacy-refresh.css',
     '/styles/matcenter-refresh.css',
     '/styles/admin.css',
     '/style-new.css',

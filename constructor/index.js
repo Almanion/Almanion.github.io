@@ -18,12 +18,14 @@
         sections: [],
         current: null,
         publishedManifest: null,
+        publishedSections: [],
         hydrated: false,
         localTimer: 0,
         remoteTimer: 0,
         saveGeneration: 0,
         dragId: '',
-        previewGeneration: 0
+        previewGeneration: 0,
+        deleting: false
     };
 
     const el = id => document.getElementById(id);
@@ -115,6 +117,17 @@
         return (Number(a.order) || 0) - (Number(b.order) || 0) || String(a.title).localeCompare(String(b.title), 'ru');
     }
 
+    function manifestEntryId(entry) {
+        return typeof entry === 'string' ? entry : entry && entry.id;
+    }
+
+    function isPublishedSection(id) {
+        const entries = state.publishedManifest && Array.isArray(state.publishedManifest.sections)
+            ? state.publishedManifest.sections
+            : [];
+        return entries.some(entry => manifestEntryId(entry) === id);
+    }
+
     function newestSection() {
         const candidates = Array.prototype.slice.call(arguments).filter(Boolean);
         return candidates.sort((a, b) => (Number(b.updatedAt) || 0) - (Number(a.updatedAt) || 0))[0] || null;
@@ -151,6 +164,7 @@
         state.subject = subject;
         state.current = null;
         state.sections = [];
+        state.publishedSections = [];
         localStorage.setItem('note-constructor-subject', subject);
         setSaveState('saving', 'Загружаем разделы…');
         renderEditor();
@@ -165,6 +179,7 @@
             ? publishedResult.value
             : { manifest: { schemaVersion: 1, subject, title: subject, sections: [] }, sections: [] };
         state.publishedManifest = published.manifest;
+        state.publishedSections = published.sections.map(section => clone(section));
         const remote = remoteResult.status === 'fulfilled' ? remoteResult.value : [];
         const local = localResult.status === 'fulfilled' ? localResult.value.map(entry => Model.normalizeSection(entry.section, subject)) : [];
 
@@ -273,6 +288,11 @@
         el('sectionNavTitle').value = state.current.navTitle;
         el('sectionSlug').textContent = '#' + state.current.id;
         el('reviewStatus').value = state.current.reviewStatus;
+        const published = isPublishedSection(state.current.id);
+        const deleteButton = el('deleteSectionButton');
+        deleteButton.hidden = published && !state.isOwner;
+        deleteButton.title = published ? 'Удалить раздел с сайта' : 'Удалить черновик';
+        deleteButton.setAttribute('aria-label', deleteButton.title);
         el('blockList').innerHTML = state.current.blocks.map((block, index) => renderBlockEditor(block, 0, index, state.current.blocks.length)).join('');
     }
 
@@ -305,7 +325,7 @@
                 '<base href="' + escapeHtml(baseHref) + '">' +
                 '<link rel="stylesheet" href="styles/site/index.css?v=20260903-5">' +
                 '<link rel="stylesheet" href="styles/tokens.css?v=20260903-1">' +
-                '<link rel="stylesheet" href="style-new.css?v=20260903-3">' +
+                '<link rel="stylesheet" href="style-new.css?v=20260903-5">' +
                 '<link rel="stylesheet" href="styles/typography.css?v=20260903-1">' +
                 '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">' +
                 '<link rel="stylesheet" href="constructor/preview.css?v=20260903-1">' +
@@ -431,6 +451,32 @@
         toast('Раздел создан и сохранён как черновик');
     }
 
+    function openDeleteSectionDialog() {
+        if (!state.current || state.deleting) return;
+        const published = isPublishedSection(state.current.id);
+        if (published && !state.isOwner) return;
+        el('deleteSectionTitle').textContent = published ? 'Удалить опубликованный раздел?' : 'Удалить черновик?';
+        el('deleteSectionDescription').textContent = published
+            ? 'Раздел исчезнет с сайта после обновления GitHub Pages. История останется доступна в GitHub.'
+            : 'Черновик будет удалён с этого устройства и из аккаунта. Вернуть его после удаления не получится.';
+        el('deleteSectionName').textContent = state.current.navTitle || state.current.title;
+        el('deleteSectionConfirm').textContent = published ? 'Удалить с сайта' : 'Удалить черновик';
+        el('deleteSectionDialog').hidden = false;
+        window.setTimeout(() => el('deleteSectionCancel').focus(), 30);
+    }
+
+    function closeDeleteSectionDialog() {
+        if (state.deleting) return;
+        el('deleteSectionDialog').hidden = true;
+    }
+
+    function removeSectionFromWorkspace(sectionId) {
+        const index = state.sections.findIndex(section => section.id === sectionId);
+        if (index === -1) return;
+        state.sections.splice(index, 1);
+        state.current = state.sections[Math.min(index, state.sections.length - 1)] || null;
+    }
+
     function selectSection(id) {
         const section = state.sections.find(item => item.id === id);
         if (!section || section === state.current) return;
@@ -519,6 +565,104 @@
         return manifest;
     }
 
+    function manifestWithoutSection(sectionId) {
+        const manifest = clone(state.publishedManifest || { schemaVersion: 1, subject: state.subject, title: state.subject, sections: [] });
+        manifest.sections = (Array.isArray(manifest.sections) ? manifest.sections : [])
+            .filter(entry => manifestEntryId(entry) !== sectionId);
+        return manifest;
+    }
+
+    function collectImagePaths(section) {
+        const paths = new Set();
+        const visit = blocks => (Array.isArray(blocks) ? blocks : []).forEach(block => {
+            const path = block && block.type === 'image' ? String(block.src || '').replace(/\\/g, '/') : '';
+            if (path.startsWith('images/notes/' + state.subject + '/')) paths.add(path);
+            visit(block && block.children);
+        });
+        visit(section && section.blocks);
+        return paths;
+    }
+
+    function publishedDeletePaths(sectionId) {
+        const publishedSection = state.publishedSections.find(section => section.id === sectionId);
+        const sectionImages = collectImagePaths(publishedSection);
+        const sharedImages = new Set();
+        state.publishedSections.forEach(section => {
+            if (section.id === sectionId) return;
+            collectImagePaths(section).forEach(path => sharedImages.add(path));
+        });
+        return ['content/' + state.subject + '/sections/' + sectionId + '.json']
+            .concat(Array.from(sectionImages).filter(path => !sharedImages.has(path)));
+    }
+
+    async function deletePublishedSection(section) {
+        const manifest = manifestWithoutSection(section.id);
+        const idToken = await state.user.getIdToken(true);
+        const response = await fetch(config.publisherEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+                action: 'deleteNotes',
+                idToken,
+                subject: state.subject,
+                sectionId: section.id,
+                files: [{
+                    path: 'content/' + state.subject + '/manifest.json',
+                    content: JSON.stringify(manifest, null, 2) + '\n',
+                    encoding: 'utf-8'
+                }],
+                deletePaths: publishedDeletePaths(section.id)
+            })
+        });
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'Сервер удаления вернул ошибку');
+        state.publishedManifest = manifest;
+        state.publishedSections = state.publishedSections.filter(item => item.id !== section.id);
+    }
+
+    async function deleteCurrentSection() {
+        if (!state.current || state.deleting) return;
+        const section = clone(state.current);
+        const published = isPublishedSection(section.id);
+        if (published && !state.isOwner) return;
+
+        const confirmButton = el('deleteSectionConfirm');
+        state.deleting = true;
+        confirmButton.disabled = true;
+        confirmButton.textContent = published ? 'Удаляем с сайта…' : 'Удаляем…';
+        flushTimers();
+        state.saveGeneration += 1;
+        state.hydrated = false;
+
+        try {
+            if (published) {
+                await deletePublishedSection(section);
+                await window.AlmanionAccount.database.ref('noteDrafts/' + section.subject + '/' + section.id).remove().catch(() => {});
+            } else {
+                await window.AlmanionAccount.database.ref('noteDrafts/' + section.subject + '/' + section.id).remove();
+            }
+            await Storage.removeDraft(state.user.uid, section.subject, section.id);
+            await Storage.removeSectionAssets(state.user.uid, section.subject, section.id).catch(() => {});
+            removeSectionFromWorkspace(section.id);
+            state.hydrated = true;
+            el('deleteSectionDialog').hidden = true;
+            renderAll();
+            toast(published ? 'Раздел удалён. GitHub Pages обновится через несколько минут.' : 'Черновик удалён');
+        } catch (error) {
+            state.hydrated = true;
+            console.error('Delete section:', error);
+            const message = String(error && error.message || error);
+            const backendHint = published && /Неизвестное действие|Unknown action/i.test(message)
+                ? ' Обновите deployment Apps Script кодом из актуального apps-script.gs.'
+                : '';
+            toast('Не удалось удалить раздел: ' + message + '.' + backendHint, true);
+        } finally {
+            state.deleting = false;
+            confirmButton.disabled = false;
+            confirmButton.textContent = published ? 'Удалить с сайта' : 'Удалить черновик';
+        }
+    }
+
     async function publicationFiles() {
         const section = clone(state.current);
         section.reviewStatus = 'published';
@@ -575,6 +719,9 @@
             if (!result.success) throw new Error(result.error || 'Сервер публикации вернул ошибку');
             Object.assign(state.current, bundle.section);
             state.publishedManifest = bundle.manifest;
+            const publishedIndex = state.publishedSections.findIndex(section => section.id === bundle.section.id);
+            if (publishedIndex === -1) state.publishedSections.push(clone(bundle.section));
+            else state.publishedSections[publishedIndex] = clone(bundle.section);
             await Storage.putDraft(state.user.uid, state.current);
             await saveRemote(clone(state.current), ++state.saveGeneration);
             renderAll();
@@ -602,6 +749,13 @@
             if (!title) return;
             closeSectionDialog();
             createSection(title);
+        });
+        el('deleteSectionButton').addEventListener('click', openDeleteSectionDialog);
+        el('deleteSectionClose').addEventListener('click', closeDeleteSectionDialog);
+        el('deleteSectionCancel').addEventListener('click', closeDeleteSectionDialog);
+        el('deleteSectionConfirm').addEventListener('click', deleteCurrentSection);
+        el('deleteSectionDialog').addEventListener('click', event => {
+            if (event.target === el('deleteSectionDialog')) closeDeleteSectionDialog();
         });
         el('sectionList').addEventListener('click', event => {
             const select = event.target.closest('[data-section-select]');
@@ -698,6 +852,7 @@
         document.addEventListener('keydown', event => {
             if (event.key === 'Escape') {
                 closeSectionDialog();
+                closeDeleteSectionDialog();
                 el('builderPreview').classList.remove('is-open');
                 el('previewToggle').setAttribute('aria-pressed', 'false');
             }

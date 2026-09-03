@@ -1,0 +1,298 @@
+/* Спокойная финальная система для старого режима.
+   Она сохраняет классическую ленту разделов, но убирает случайные градиенты,
+   тяжёлые тени и несогласованные отступы прежней темы. */
+
+body:not(.experimental) {
+    --header-bg: var(--bg-secondary);
+    --header-text: var(--text-primary);
+    --border-radius: 12px;
+    --border-radius-sm: 8px;
+    --border-radius-lg: 16px;
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.045);
+    --shadow-md: 0 5px 18px rgba(15, 23, 42, 0.065);
+    --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.075);
+    --shadow-xl: 0 18px 44px rgba(15, 23, 42, 0.09);
+    line-height: 1.72;
+    letter-spacing: 0;
+}
+
+body:not(.experimental):is(.dark-theme, .midnight-theme) {
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.22);
+    --shadow-md: 0 7px 22px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 14px 38px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.34);
+}
+
+body:not(.experimental) .sidebar {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+body:not(.experimental) .sidebar .sidebar-header {
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border-bottom-color: var(--border-color);
+}
+
+body:not(.experimental) .sidebar .sidebar-header h2 a,
+body:not(.experimental) .sidebar .sidebar-header .home-icon {
+    color: var(--text-primary) !important;
+}
+
+body:not(.experimental) .sidebar .sidebar-header .home-icon {
+    color: var(--accent-color);
+}
+
+body:not(.experimental) .sidebar-header-buttons {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+body:not(.experimental) .search-box {
+    padding-block: 0.75rem;
+    background: var(--bg-secondary);
+}
+
+body:not(.experimental) .search-box input {
+    min-height: 42px;
+    background: var(--bg-primary);
+    border-color: var(--border-color);
+    border-radius: 10px;
+}
+
+body:not(.experimental) .nav-menu {
+    padding: 0.7rem 0.65rem 1rem;
+}
+
+body:not(.experimental) .nav-section {
+    margin-bottom: 1rem;
+}
+
+body:not(.experimental) .nav-section h3,
+body:not(.experimental) .nav-group-toggle,
+body:not(.experimental) .nav-group-heading {
+    padding-inline: 0.7rem;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 680;
+    letter-spacing: 0.075em;
+}
+
+body:not(.experimental) .nav-link {
+    margin: 0.12rem 0;
+    padding: 0.68rem 0.75rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    font-size: 0.88rem;
+}
+
+body:not(.no-hover):not(.experimental) .nav-link:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+    box-shadow: none;
+}
+
+body:not(.experimental) .nav-link.active {
+    color: var(--accent-color);
+    background: color-mix(in srgb, var(--accent-color) 8%, var(--bg-secondary));
+    border-color: color-mix(in srgb, var(--accent-color) 24%, var(--border-color));
+}
+
+body:not(.experimental) .main-content > :is(.page-header, .content-section, .page-footer) {
+    width: min(100%, 1120px);
+    margin-right: auto;
+    margin-left: auto;
+}
+
+body:not(.experimental) .page-header {
+    padding: clamp(1.7rem, 4vw, 2.6rem);
+    color: var(--text-primary);
+    text-align: left;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+body:not(.experimental) .page-header h1 {
+    margin-bottom: 0.55rem;
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    line-height: 1.08;
+    letter-spacing: -0.04em;
+}
+
+body:not(.experimental) .page-header :is(.subtitle, p) {
+    color: var(--text-secondary);
+    opacity: 1;
+}
+
+body:not(.experimental) .part-title {
+    margin-bottom: 1.15rem;
+    padding-bottom: 0.7rem;
+    border-bottom-width: 1px;
+    font-size: clamp(1.55rem, 3vw, 2rem);
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+}
+
+body:not(.experimental) .part-title::after {
+    bottom: -1px;
+    width: 54px;
+    height: 2px;
+    background: var(--accent-color);
+    animation: none;
+}
+
+body:not(.experimental) .topic {
+    margin-bottom: 1.25rem;
+    padding: clamp(1.25rem, 2.5vw, 1.7rem);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    box-shadow: none;
+}
+
+body:not(.no-hover):not(.experimental) .topic:hover {
+    border-color: color-mix(in srgb, var(--accent-color) 28%, var(--border-color));
+    box-shadow: none;
+}
+
+body:not(.experimental) .topic-title {
+    margin-bottom: 1.15rem;
+    font-size: clamp(1.3rem, 2.5vw, 1.65rem);
+    line-height: 1.25;
+    letter-spacing: -0.025em;
+}
+
+body:not(.experimental) .topic-title::before {
+    width: 18px;
+    height: 18px;
+    opacity: 0.8;
+}
+
+body:not(.experimental) .subsection-title {
+    margin: 2rem 0 1rem;
+    padding-bottom: 0.55rem;
+    border-bottom-width: 1px;
+    font-size: 1.25rem;
+}
+
+body:not(.experimental) :is(
+    .definition-box, .formula-box, .remark-box, .experiment-box,
+    .derivation-box, .theorem-box, .lemma-box, .example-box,
+    .statement-box, .corollary-box, .proof-box, .exercise-box,
+    .properties-box, .system-box
+) {
+    margin: 1rem 0;
+    padding: 1.15rem 1.25rem;
+    border-width: 1px;
+    border-left-width: 3px;
+    border-radius: 11px;
+    box-shadow: none;
+}
+
+body:not(.no-hover):not(.experimental) :is(
+    .definition-box, .formula-box, .remark-box, .experiment-box,
+    .derivation-box, .theorem-box, .lemma-box, .example-box,
+    .statement-box, .corollary-box, .proof-box, .exercise-box,
+    .properties-box, .system-box
+):hover {
+    transform: none;
+    box-shadow: none;
+}
+
+body:not(.experimental) .page-footer {
+    margin-top: 2.5rem;
+    padding: 1.5rem;
+    border-top-width: 1px;
+}
+
+body:not(.experimental) .scroll-to-top {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+}
+
+body:not(.experimental) .settings-button {
+    width: 44px;
+    height: 44px;
+    color: var(--accent-color);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    animation: none;
+}
+
+body:not(.no-hover):not(.experimental) .settings-button:hover {
+    color: var(--accent-hover);
+    background: var(--bg-tertiary);
+    border-color: color-mix(in srgb, var(--accent-color) 35%, var(--border-color));
+    box-shadow: var(--shadow-md);
+    transform: none;
+}
+
+body:not(.experimental).home-page .home-header :is(h1, p),
+body:not(.experimental).home-page .subject-card {
+    animation: none;
+}
+
+body:not(.experimental).home-page .subject-card {
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+}
+
+body:not(.no-hover):not(.experimental).home-page .subject-card:hover {
+    transform: none;
+    border-color: color-mix(in srgb, var(--accent-color) 34%, var(--border-color));
+    box-shadow: var(--shadow-md);
+}
+
+body:not(.experimental).home-page .subject-icon {
+    filter: none;
+}
+
+body:not(.experimental).home-page .topics-count,
+body:not(.experimental).home-page .coming-soon-card .card-header,
+body:not(.experimental).home-page .status-coming {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+body:not(.experimental).home-page .last-update {
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+}
+
+@media (max-width: 768px) {
+    body:not(.experimental) .main-content {
+        padding-top: 1rem;
+    }
+
+    body:not(.experimental) .page-header {
+        padding: 1.35rem 1.2rem;
+        border-radius: 13px;
+    }
+
+    body:not(.experimental) .page-header h1 {
+        font-size: 1.75rem;
+    }
+
+    body:not(.experimental) .topic {
+        padding: 1.1rem;
+        border-radius: 12px;
+    }
+
+    body:not(.experimental) :is(
+        .definition-box, .formula-box, .remark-box, .experiment-box,
+        .derivation-box, .theorem-box, .lemma-box, .example-box,
+        .statement-box, .corollary-box, .proof-box, .exercise-box,
+        .properties-box, .system-box
+    ) {
+        padding: 1rem;
+    }
+}

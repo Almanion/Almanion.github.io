@@ -129,5 +129,24 @@
         await withStore('readwrite', store => store.delete(key(uid, subject, sectionId) + ':' + String(blockId)), ASSET_STORE);
     }
 
-    window.NoteStorage = { putDraft, listDrafts, removeDraft, putAsset, listAssets, removeAsset };
+    async function removeSectionAssets(uid, subject, sectionId) {
+        const db = await openDatabase();
+        await new Promise((resolve, reject) => {
+            const transaction = db.transaction(ASSET_STORE, 'readwrite');
+            const store = transaction.objectStore(ASSET_STORE);
+            const request = store.getAll();
+            request.onsuccess = () => {
+                (request.result || []).forEach(entry => {
+                    if (entry.uid === String(uid) && entry.subject === String(subject) && entry.sectionId === String(sectionId)) {
+                        store.delete(entry.key);
+                    }
+                });
+            };
+            request.onerror = () => reject(request.error || new Error('Не удалось прочитать изображения раздела'));
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error || new Error('Не удалось удалить изображения раздела'));
+        });
+    }
+
+    window.NoteStorage = { putDraft, listDrafts, removeDraft, putAsset, listAssets, removeAsset, removeSectionAssets };
 })();

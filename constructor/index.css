@@ -173,6 +173,8 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .builder-button.is-quiet { color: var(--builder-muted); background: var(--builder-panel); border-color: var(--builder-line); }
 .builder-button.is-quiet:hover:not(:disabled) { color: var(--builder-text); border-color: var(--builder-line-strong); }
 .builder-button.is-danger { color: var(--builder-danger); border-color: color-mix(in srgb, var(--builder-danger) 28%, var(--builder-line)); }
+.builder-button.is-danger.is-solid { color: #fff; background: var(--builder-danger); border-color: var(--builder-danger); }
+.builder-button.is-danger.is-solid:hover:not(:disabled) { background: color-mix(in srgb, var(--builder-danger) 88%, #000); border-color: transparent; }
 .builder-icon-button { width: 38px; padding: 0; display: grid; place-items: center; color: var(--builder-accent); background: var(--builder-accent-soft); font-size: 1.25rem; }
 
 /* Three-column workspace */
@@ -213,6 +215,9 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .builder-empty h2 { margin: 10px 0 7px; font-size: clamp(1.65rem, 4vw, 2.3rem); font-weight: 720; line-height: 1.1; letter-spacing: -.042em; }
 .builder-empty p { max-width: 48ch; margin: 0 0 22px; color: var(--builder-muted); }
 .builder-document-head { padding: 24px; background: var(--builder-panel); border: 1px solid var(--builder-line); border-radius: var(--builder-radius-lg); box-shadow: var(--builder-shadow-sm); }
+.builder-document-title-row { display: flex; align-items: flex-end; gap: 18px; }
+.builder-document-title-row .builder-field { flex: 1; min-width: 0; }
+.builder-delete-section { flex: 0 0 auto; min-height: 38px; margin-bottom: 7px; padding-inline: 12px; }
 .builder-field { min-width: 0; display: grid; gap: 7px; }
 .builder-field input, .builder-field textarea { width: 100%; color: var(--builder-text); background: var(--builder-panel-soft); border: 1px solid var(--builder-line); border-radius: var(--builder-radius-sm); outline: none; }
 .builder-field input { min-height: 42px; padding: 8px 11px; }
@@ -275,6 +280,10 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .builder-dialog p { margin: 0 0 21px; color: var(--builder-muted); }
 .builder-dialog-close { position: absolute; top: 13px; right: 13px; width: 34px; height: 34px; color: var(--builder-muted); background: transparent; border: 0; border-radius: 50%; font-size: 1.35rem; }
 .builder-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 21px; }
+.builder-delete-dialog .builder-eyebrow { color: var(--builder-danger); }
+.builder-delete-summary { display: grid; gap: 4px; padding: 13px 14px; background: var(--builder-panel-soft); border: 1px solid var(--builder-line); border-radius: 10px; }
+.builder-delete-summary span { color: var(--builder-faint); font-size: .65rem; font-weight: 720; letter-spacing: .075em; text-transform: uppercase; }
+.builder-delete-summary strong { overflow: hidden; font-size: .9rem; font-weight: 660; text-overflow: ellipsis; white-space: nowrap; }
 .builder-toast-stack { position: fixed; z-index: 200; right: 18px; bottom: 18px; width: min(360px, calc(100vw - 36px)); display: grid; gap: 8px; }
 .builder-toast { padding: 12px 14px; color: var(--builder-text); background: var(--builder-panel); border: 1px solid var(--builder-line); border-left: 3px solid var(--builder-accent); border-radius: 10px; box-shadow: var(--builder-shadow); font-size: .8rem; animation: builder-toast-in .18s ease-out; }
 .builder-toast.is-error { border-left-color: var(--builder-danger); }
@@ -330,6 +339,9 @@ button:disabled { cursor: not-allowed; opacity: .48; }
     .builder-top-actions .builder-button { width: 36px; padding: 0; }
     .builder-top-actions .builder-button.is-primary { width: auto; padding: 6px 11px; }
     .builder-document-head { padding: 18px 15px; border-radius: 14px; }
+    .builder-document-title-row { align-items: flex-start; gap: 9px; }
+    .builder-delete-section { width: 38px; min-width: 38px; padding: 0; }
+    .builder-delete-section span { display: none; }
     .builder-field.is-title input { font-size: 1.65rem; }
     .builder-block { padding: 12px; }
     .builder-block-head { align-items: flex-start; }
