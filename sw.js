@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-03-matcenter-admin-19';
+const CACHE_VERSION = 'almanion-pwa-2026-09-03-matcenter-nav-20';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 

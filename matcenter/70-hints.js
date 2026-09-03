@@ -48,6 +48,7 @@ function setTaskHint(taskOrNumber, hintText) {
     const task = resolveTaskReference(taskOrNumber);
     if (task) {
         task.hint = hintText.trim();
+        if (typeof invalidateMatcenterRenderCache === 'function') invalidateMatcenterRenderCache();
         console.log(`✅ Подсказка для задачи №${task.numberText || task.number} обновлена локально`);
     } else {
         console.warn('⚠️ Задача не найдена в allTasks');

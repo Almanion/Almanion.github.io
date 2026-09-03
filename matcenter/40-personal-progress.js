@@ -249,8 +249,9 @@ function getSolvedTaskPayload(task, solved = true) {
     return payload;
 }
 
-function applyPersonalSolvedMarks() {
-    document.querySelectorAll('.task-card[data-solved-key]').forEach(card => {
+function applyPersonalSolvedMarks(root = document) {
+    const scope = root && typeof root.querySelectorAll === 'function' ? root : document;
+    scope.querySelectorAll('.task-card[data-solved-key]').forEach(card => {
         const key = card.dataset.solvedKey;
         setPersonalSolvedCardState(card, isTaskPersonallySolved(key), false);
     });

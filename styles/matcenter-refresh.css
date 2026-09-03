@@ -41,70 +41,154 @@ body.experimental.matcenter-page .matcenter-author-link {
     font-size: inherit;
 }
 
-body.experimental.matcenter-page .grade-switcher {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0;
-    padding: 0.3rem;
+body.experimental.matcenter-page .matcenter-grade-picker {
+    padding: 1rem;
     margin-bottom: 1rem;
     background: var(--exp-surface);
     border: 1px solid var(--exp-border);
-    border-radius: 14px;
-    overflow: hidden;
+    border-radius: var(--exp-r-lg);
+}
+
+body.experimental.matcenter-page .matcenter-grade-picker-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.85rem;
+    padding: 0 0.15rem;
+}
+
+body.experimental.matcenter-page .matcenter-grade-picker-heading h2 {
+    margin: 0.12rem 0 0;
+    color: var(--exp-text);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+}
+
+body.experimental.matcenter-page .matcenter-grade-picker-heading p,
+body.experimental.matcenter-page .matcenter-grade-picker-kicker {
+    color: var(--exp-text-faint);
+    font-size: 0.7rem;
+    font-weight: 650;
+    letter-spacing: 0.055em;
+    line-height: 1.25;
+    text-transform: uppercase;
+}
+
+body.experimental.matcenter-page .matcenter-grade-picker-heading p {
+    margin: 0 0 0.05rem;
+    letter-spacing: 0.025em;
+}
+
+body.experimental.matcenter-page .grade-switcher {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.55rem;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
 }
 
 body.experimental.matcenter-page .grade-card,
 body.experimental.matcenter-page .grade-card-summer {
-    min-height: 58px;
-    padding: 0.55rem 0.8rem;
+    display: grid !important;
+    grid-template: "eyebrow meta" auto "title meta" 1fr / minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 0.2rem 0.65rem;
+    min-width: 0;
+    min-height: 76px;
+    padding: 0.8rem 0.85rem;
     color: var(--exp-text-dim) !important;
-    background: transparent !important;
-    border: 0 !important;
-    border-radius: 10px !important;
+    text-align: left;
+    background: var(--exp-bg) !important;
+    border: 1px solid var(--exp-border) !important;
+    border-radius: 11px !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: color 140ms ease, background-color 140ms ease, border-color 140ms ease !important;
 }
 
-body.experimental.matcenter-page .grade-card + .grade-card {
-    border-left: 1px solid var(--exp-border) !important;
-    border-top-left-radius: 0 !important;
-    border-bottom-left-radius: 0 !important;
+body.experimental.matcenter-page .grade-card::before {
+    content: none !important;
 }
 
-body.experimental.matcenter-page .grade-card::before,
-body.experimental.matcenter-page .grade-card-eyebrow,
-body.experimental.matcenter-page .grade-card-sub {
-    display: none !important;
+body.experimental.matcenter-page .grade-card-eyebrow {
+    display: block !important;
+    grid-area: eyebrow;
+    color: var(--exp-text-faint) !important;
+    font-size: 0.64rem;
+    font-weight: 680;
+    letter-spacing: 0.055em;
+    line-height: 1.2;
+    text-transform: uppercase;
 }
 
 body.experimental.matcenter-page .grade-card-title {
+    grid-area: title;
+    align-self: end;
     margin: 0;
     color: inherit !important;
-    font-size: 0.9rem;
-    font-weight: 650;
+    font-size: 0.94rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
 }
 
 body.experimental.matcenter-page .grade-card-meta {
-    padding: 0.16rem 0 0;
+    display: flex !important;
+    grid-area: meta;
+    align-items: baseline;
+    align-self: center;
+    gap: 0.22rem;
+    padding: 0.26rem 0.42rem;
     color: var(--exp-text-faint);
+    background: var(--exp-surface);
+    border: 1px solid var(--exp-border);
+    border-radius: var(--exp-r-pill);
     line-height: 1;
 }
 
 body.experimental.matcenter-page .grade-card-count {
     color: inherit !important;
-    font-size: 0.72rem;
-    font-weight: 600;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+body.experimental.matcenter-page .grade-card-sub {
+    display: inline !important;
+    color: inherit !important;
+    font-size: 0.61rem;
+    font-weight: 550;
 }
 
 body.experimental.matcenter-page .grade-card:hover {
     color: var(--exp-text) !important;
     background: var(--exp-surface-2) !important;
+    border-color: var(--exp-border-strong) !important;
 }
 
 body.experimental.matcenter-page .grade-card.active,
 body.experimental.matcenter-page .grade-card-summer.active {
     color: var(--exp-text) !important;
-    background: var(--exp-accent-soft) !important;
-    border-color: transparent !important;
-    box-shadow: none !important;
+    background: color-mix(in srgb, var(--exp-accent) 7%, var(--exp-surface)) !important;
+    border-color: color-mix(in srgb, var(--exp-accent) 42%, var(--exp-border)) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--exp-accent) 10%, transparent) !important;
+}
+
+body.experimental.matcenter-page .grade-card.active .grade-card-eyebrow,
+body.experimental.matcenter-page .grade-card-summer.active .grade-card-eyebrow {
+    color: var(--exp-accent) !important;
+}
+
+body.experimental.matcenter-page .grade-card.active .grade-card-meta,
+body.experimental.matcenter-page .grade-card-summer.active .grade-card-meta {
+    color: var(--exp-text-dim);
+    border-color: color-mix(in srgb, var(--exp-accent) 22%, var(--exp-border));
 }
 
 body.experimental.matcenter-page .matcenter-stats-section {
@@ -208,6 +292,8 @@ body.experimental.matcenter-page .task-card {
     padding: 1rem;
     border-left-width: 1px !important;
     border-radius: var(--exp-r) !important;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 170px;
 }
 
 body.experimental.matcenter-page .task-card:hover,
@@ -223,11 +309,18 @@ body.experimental.matcenter-page .task-card.open {
 
 @media (max-width: 980px) {
     body.experimental.matcenter-page .grade-switcher {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        display: flex;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scroll-snap-type: x proximity;
+        scrollbar-width: thin;
     }
 
-    body.experimental.matcenter-page .grade-card + .grade-card {
-        border-left: 0 !important;
+    body.experimental.matcenter-page .grade-card,
+    body.experimental.matcenter-page .grade-card-summer {
+        flex: 0 0 154px;
+        width: 154px !important;
+        scroll-snap-align: start;
     }
 
     body.experimental.matcenter-page .tasks-container {
@@ -248,21 +341,48 @@ body.experimental.matcenter-page .task-card.open {
         border-radius: 0 !important;
     }
 
-    body.experimental.matcenter-page .grade-switcher {
-        display: flex;
+    body.experimental.matcenter-page .matcenter-grade-picker {
         width: calc(100% - (2 * var(--m-pad)));
         margin-right: var(--m-pad);
         margin-left: var(--m-pad);
-        overflow-x: auto;
-        scroll-snap-type: x proximity;
+        padding: 0.75rem;
+        border-radius: 13px;
+    }
+
+    body.experimental.matcenter-page .matcenter-grade-picker-heading {
+        align-items: center;
+        margin-bottom: 0.7rem;
+    }
+
+    body.experimental.matcenter-page .matcenter-grade-picker-heading p {
+        display: none;
+    }
+
+    body.experimental.matcenter-page .grade-switcher {
+        width: 100%;
+        margin: 0;
     }
 
     body.experimental.matcenter-page .grade-card,
     body.experimental.matcenter-page .grade-card-summer {
-        flex: 0 0 auto;
-        min-width: 112px;
-        min-height: 52px;
+        flex-basis: 154px;
+        width: 154px !important;
+        min-width: 154px;
+        min-height: 72px;
         scroll-snap-align: start;
+    }
+
+    body.experimental.matcenter-page .grade-card-title {
+        white-space: nowrap;
+    }
+
+    body.experimental.matcenter-page .grade-card-meta {
+        gap: 0.12rem;
+        padding: 0.22rem 0.3rem;
+    }
+
+    body.experimental.matcenter-page .grade-card-sub {
+        font-size: 0.56rem;
     }
 
     body.experimental.matcenter-page .matcenter-stats-section {

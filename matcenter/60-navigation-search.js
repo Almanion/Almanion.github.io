@@ -50,7 +50,15 @@ function getSummerSectionById(grade, id) {
 
 function syncGradeNavUI() {
     document.querySelectorAll('.grade-link, .grade-card').forEach(el => {
-        el.classList.toggle('active', el.dataset.grade === currentGrade);
+        const isActive = el.dataset.grade === currentGrade;
+        el.classList.toggle('active', isActive);
+        if (el.classList.contains('grade-card')) {
+            el.setAttribute('aria-pressed', String(isActive));
+        } else if (isActive) {
+            el.setAttribute('aria-current', 'page');
+        } else {
+            el.removeAttribute('aria-current');
+        }
     });
 
     const title = getGradeTitle(currentGrade);
@@ -126,7 +134,13 @@ function updateGradeCounts() {
         // Меняем подпись «задача/задачи/задач» под числом
         const card = document.querySelector(`.grade-card[data-grade="${g.id}"]`);
         const subEl = card ? card.querySelector('.grade-card-sub') : null;
-        if (subEl) subEl.textContent = pluralizeTasks(count);
+        const taskWord = pluralizeTasks(count);
+        if (subEl) subEl.textContent = taskWord;
+        if (card) {
+            const sectionType = card.querySelector('.grade-card-eyebrow')?.textContent?.trim() || 'Раздел';
+            const sectionTitle = card.querySelector('.grade-card-title')?.textContent?.trim() || g.title;
+            card.setAttribute('aria-label', `${sectionType} ${sectionTitle}, ${count} ${taskWord}`);
+        }
     });
 }
 
@@ -184,9 +198,8 @@ function setCurrentGrade(gradeId) {
     if (!GRADE_SECTIONS.some(g => g.id === gradeId)) return;
 
     const gradeChanged = gradeId !== currentGrade;
-    if (gradeChanged) {
-        resetMatcenterTaskFilters();
-    }
+    if (!gradeChanged) return;
+    resetMatcenterTaskFilters();
 
     currentGrade = gradeId;
     try {
@@ -202,7 +215,7 @@ function setCurrentGrade(gradeId) {
     updateStatistics(getTasksForCurrentGrade());
     refreshCurrentView();
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
 function initGradeNavigation() {
@@ -425,7 +438,7 @@ function setCurrentFilter(filterId, opts = {}) {
     refreshCurrentView(); // сам выберет runSearch() или filterAndDisplayTasks()
 
     if (opts.scrollTop) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: 'auto' });
     }
 }
 

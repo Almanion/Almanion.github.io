@@ -49,7 +49,7 @@
     <link rel="stylesheet" href="style-new.css?v=20260903-3">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260903-1">
-    <link rel="stylesheet" href="styles/matcenter-refresh.css?v=20260903-1">
+    <link rel="stylesheet" href="styles/matcenter-refresh.css?v=20260903-2">
 </head>
 <body class="matcenter-page">
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -159,7 +159,7 @@
     <main class="main-content">
         <header class="page-header matcenter-page-header">
             <h1>МатЦентр 2025/2026</h1>
-            <p class="subtitle">Архив задач математического кружка · <a class="matcenter-author-link" href="https://t.me/Almanion239" target="_blank" rel="noopener noreferrer">@Almanion239</a></p>
+            <p class="subtitle">Архив задач</p>
         </header>
 
         <!-- Мобильная строка поиска (видна только на мобильных) -->
@@ -180,49 +180,58 @@
             </div>
         </div>
 
-        <!-- Переключатель разделов по классам — крупные карточки -->
-        <nav class="grade-switcher" id="gradeSwitcher" aria-label="Раздел по классу">
-            <button type="button" class="grade-card active" data-grade="grade-9">
-                <span class="grade-card-eyebrow">Раздел</span>
+        <!-- Переключатель классов и летних серий -->
+        <section class="matcenter-grade-picker" aria-labelledby="gradePickerTitle">
+            <div class="matcenter-grade-picker-heading">
+                <div>
+                    <span class="matcenter-grade-picker-kicker">Навигация по архиву</span>
+                    <h2 id="gradePickerTitle">Выберите раздел</h2>
+                </div>
+                <p>Классы и летние серии</p>
+            </div>
+            <nav class="grade-switcher" id="gradeSwitcher" aria-label="Выбор класса или летней серии">
+            <button type="button" class="grade-card active" data-grade="grade-9" aria-pressed="true">
+                <span class="grade-card-eyebrow">Класс</span>
                 <span class="grade-card-title">9 класс</span>
                 <span class="grade-card-meta">
                     <span class="grade-card-count" data-count-grade="grade-9">—</span>
                     <span class="grade-card-sub">задач</span>
                 </span>
             </button>
-            <button type="button" class="grade-card grade-card-summer" data-grade="grade-summer-9-10">
-                <span class="grade-card-eyebrow">Лето</span>
+            <button type="button" class="grade-card grade-card-summer" data-grade="grade-summer-9-10" aria-pressed="false">
+                <span class="grade-card-eyebrow">Летняя серия</span>
                 <span class="grade-card-title">9 — 10</span>
                 <span class="grade-card-meta">
                     <span class="grade-card-count" data-count-grade="grade-summer-9-10">—</span>
                     <span class="grade-card-sub">задач</span>
                 </span>
             </button>
-            <button type="button" class="grade-card" data-grade="grade-10">
-                <span class="grade-card-eyebrow">Раздел</span>
+            <button type="button" class="grade-card" data-grade="grade-10" aria-pressed="false">
+                <span class="grade-card-eyebrow">Класс</span>
                 <span class="grade-card-title">10 класс</span>
                 <span class="grade-card-meta">
                     <span class="grade-card-count" data-count-grade="grade-10">—</span>
                     <span class="grade-card-sub">задач</span>
                 </span>
             </button>
-            <button type="button" class="grade-card grade-card-summer" data-grade="grade-summer-10-11">
-                <span class="grade-card-eyebrow">Лето</span>
+            <button type="button" class="grade-card grade-card-summer" data-grade="grade-summer-10-11" aria-pressed="false">
+                <span class="grade-card-eyebrow">Летняя серия</span>
                 <span class="grade-card-title">10 — 11</span>
                 <span class="grade-card-meta">
                     <span class="grade-card-count" data-count-grade="grade-summer-10-11">—</span>
                     <span class="grade-card-sub">задач</span>
                 </span>
             </button>
-            <button type="button" class="grade-card" data-grade="grade-11">
-                <span class="grade-card-eyebrow">Раздел</span>
+            <button type="button" class="grade-card" data-grade="grade-11" aria-pressed="false">
+                <span class="grade-card-eyebrow">Класс</span>
                 <span class="grade-card-title">11 класс</span>
                 <span class="grade-card-meta">
                     <span class="grade-card-count" data-count-grade="grade-11">—</span>
                     <span class="grade-card-sub">задач</span>
                 </span>
             </button>
-        </nav>
+            </nav>
+        </section>
 
         <!-- Статистика -->
         <section class="content-section matcenter-stats-section">
@@ -348,12 +357,12 @@
     <script src="script.js?v=20260903-1"></script>
     <script src="matcenter/00-core.js?v=20260903-3"></script>
     <script src="matcenter/10-security.js?v=20260902-2"></script>
-    <script src="matcenter/20-auth.js?v=20260903-2"></script>
-    <script src="matcenter/30-data.js?v=20260903-5"></script>
-    <script src="matcenter/40-personal-progress.js?v=20260903-1"></script>
-    <script src="matcenter/50-render.js?v=20260903-1"></script>
-    <script src="matcenter/60-navigation-search.js?v=20260903-1"></script>
-    <script src="matcenter/70-hints.js?v=20260903-1"></script>
+    <script src="matcenter/20-auth.js?v=20260903-3"></script>
+    <script src="matcenter/30-data.js?v=20260903-6"></script>
+    <script src="matcenter/40-personal-progress.js?v=20260903-2"></script>
+    <script src="matcenter/50-render.js?v=20260903-2"></script>
+    <script src="matcenter/60-navigation-search.js?v=20260903-2"></script>
+    <script src="matcenter/70-hints.js?v=20260903-2"></script>
     <script src="newyear.js?v=20260903-1"></script>
     <script src="settings.js?v=20260903-2"></script>
     <script src="account.js?v=20260903-6"></script>

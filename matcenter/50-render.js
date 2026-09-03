@@ -56,6 +56,91 @@ function restoreTaskCardUiState(container, uiState) {
     });
 }
 
+// Переключение разделов не должно заново создавать сотни карточек. Готовые DOM-узлы
+// храним небольшим LRU-кэшем: обработчики и раскрытое состояние сохраняются вместе с ними.
+const MATCENTER_RENDER_CACHE_LIMIT = 6;
+const matcenterRenderCache = new Map();
+let matcenterRenderRevision = 0;
+
+function invalidateMatcenterRenderCache() {
+    matcenterRenderRevision += 1;
+    matcenterRenderCache.clear();
+    document.querySelectorAll('.tasks-container').forEach(container => {
+        delete container.dataset.renderKey;
+        delete container.dataset.renderCacheable;
+    });
+}
+
+function isMatcenterRenderCacheable() {
+    const hasSearch = ['searchInput', 'mobileSearchInput'].some(id => {
+        const input = document.getElementById(id);
+        return input && input.value.trim();
+    });
+    const hasStatusFilter = !isSummerGrade(currentGrade) && ['statusFilter', 'mobileStatusFilter'].some(id => {
+        const select = document.getElementById(id);
+        return select && select.value;
+    });
+    return !hasSearch && !hasStatusFilter;
+}
+
+function getMatcenterRenderKey(tasks, containerId) {
+    const taskKeys = tasks.map(task => {
+        const endpoint = Number.isInteger(task?._endpointIdx) ? task._endpointIdx : '';
+        const identity = task?.taskId ?? task?.numberText ?? task?.number ?? '';
+        return `${endpoint}:${identity}`;
+    }).join(',');
+    return [
+        matcenterRenderRevision,
+        currentGrade,
+        currentFilter,
+        containerId,
+        isAdmin ? 'admin' : 'reader',
+        taskKeys
+    ].join('|');
+}
+
+function rememberMatcenterRender(container) {
+    const key = container.dataset.renderKey;
+    if (!key || container.dataset.renderCacheable !== 'true' || !container.hasChildNodes()) return;
+
+    const fragment = document.createDocumentFragment();
+    while (container.firstChild) fragment.appendChild(container.firstChild);
+    matcenterRenderCache.delete(key);
+    matcenterRenderCache.set(key, fragment);
+
+    while (matcenterRenderCache.size > MATCENTER_RENDER_CACHE_LIMIT) {
+        const oldestKey = matcenterRenderCache.keys().next().value;
+        matcenterRenderCache.delete(oldestKey);
+    }
+}
+
+function prepareMatcenterRender(container, tasks, containerId) {
+    const renderKey = getMatcenterRenderKey(tasks, containerId);
+    const cacheable = isMatcenterRenderCacheable();
+
+    if (container.dataset.renderKey === renderKey && container.hasChildNodes()) {
+        applyPersonalSolvedMarks(container);
+        return { reused: true, renderKey, cacheable };
+    }
+
+    rememberMatcenterRender(container);
+
+    if (cacheable && matcenterRenderCache.has(renderKey)) {
+        const cachedFragment = matcenterRenderCache.get(renderKey);
+        matcenterRenderCache.delete(renderKey);
+        container.replaceChildren(cachedFragment);
+        container.dataset.renderKey = renderKey;
+        container.dataset.renderCacheable = 'true';
+        applyPersonalSolvedMarks(container);
+        return { reused: true, renderKey, cacheable };
+    }
+
+    container.replaceChildren();
+    container.dataset.renderKey = renderKey;
+    container.dataset.renderCacheable = String(cacheable);
+    return { reused: false, renderKey, cacheable };
+}
+
 function displayTasks(tasks, containerId = 'tasksContainer') {
     const container = document.getElementById(containerId);
     if (!container) {
@@ -67,6 +152,10 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
         console.warn(`⚠️ Некорректный массив задач`);
         return;
     }
+
+    const uiState = captureTaskCardUiState(container);
+    const renderState = prepareMatcenterRender(container, tasks, containerId);
+    if (renderState.reused) return;
     
     if (tasks.length === 0) {
         if (getTasksForCurrentGrade().length === 0) {
@@ -103,9 +192,6 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
     const ascending = typeof currentGrade === 'string' && currentGrade.indexOf('summer') !== -1;
     const sortedTasks = [...tasks].sort((a, b) => ascending ? a.number - b.number : b.number - a.number);
 
-    const uiState = captureTaskCardUiState(container);
-    container.innerHTML = '';
-
     // Собираем все карточки в DocumentFragment — один reflow вместо N
     const fragment = document.createDocumentFragment();
     let addedCount = 0;
@@ -119,7 +205,7 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
         }
     });
     container.appendChild(fragment);
-    applyPersonalSolvedMarks();
+    applyPersonalSolvedMarks(container);
     restoreTaskCardUiState(container, uiState);
 }
 
@@ -396,6 +482,7 @@ function showStatusDropdown(badgeElement, task) {
                 // task is the exact object rendered from allTasks; no ambiguous
                 // number-only lookup across grades/endpoints is needed.
                 task.status = status.code;
+                invalidateMatcenterRenderCache();
                 
                 updateStatistics(getTasksForCurrentGrade());
                 refreshCurrentView();

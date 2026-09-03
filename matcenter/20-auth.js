@@ -453,6 +453,7 @@ function logout() {
     
     // Очищаем данные
     allTasks = [];
+    if (typeof invalidateMatcenterRenderCache === 'function') invalidateMatcenterRenderCache();
     document.getElementById('tasksContainer').innerHTML = '';
     document.getElementById('currentSeriesContainer').innerHTML = '';
     document.getElementById('postponedContainer').innerHTML = '';

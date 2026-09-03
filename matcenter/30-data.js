@@ -126,6 +126,7 @@ function applyTasksFromCache() {
         if (!parsed || parsed.tasks.length === 0) return false;
 
         allTasks = normalizeAllTasks(parsed.tasks);
+        if (typeof invalidateMatcenterRenderCache === 'function') invalidateMatcenterRenderCache();
         lastTasksPayloadSignature = buildTasksPayloadSignature(parsed.tasks);
         updateStatistics(getTasksForCurrentGrade());
         refreshCurrentView();
@@ -232,6 +233,7 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
         lastTasksPayloadSignature = newSignature;
         
         allTasks = normalizeAllTasks(tasks);
+        if (typeof invalidateMatcenterRenderCache === 'function') invalidateMatcenterRenderCache();
         isAdmin = adminFlag;
         
         // Детальная статистика по загруженным задачам
@@ -297,6 +299,7 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
             const cached = readTasksCache();
             if (cached && cached.tasks.length > 0) {
                 allTasks = normalizeAllTasks(cached.tasks);
+                if (typeof invalidateMatcenterRenderCache === 'function') invalidateMatcenterRenderCache();
                 updateStatistics(getTasksForCurrentGrade());
                 refreshCurrentView();
             }
