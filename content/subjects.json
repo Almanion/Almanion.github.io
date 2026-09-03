@@ -1,0 +1,7 @@
+[
+  { "id": "physics", "title": "Физика", "page": "physics.html" },
+  { "id": "math", "title": "Алгебра", "page": "math.html" },
+  { "id": "geometry", "title": "Геометрия", "page": "geometry.html" },
+  { "id": "chemistry", "title": "Химия", "page": "chemistry.html" },
+  { "id": "likbez", "title": "Ликбезы", "page": "likbez.html" }
+]

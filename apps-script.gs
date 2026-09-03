@@ -37,8 +37,25 @@ function handle(e) {
         success: true,
         authVersion: AUTH_VERSION,
         accountConfirmation: true,
-        multiSheetTasks: true
+        multiSheetTasks: true,
+        notePublisher: true
       });
+    }
+
+    // Публикация конспектов не зависит от доступа в Матцентр. Firebase-токен
+    // проверяется отдельно, а изменять GitHub может только владелец сайта.
+    if (action === 'publisherCapabilities') {
+      const publisherIdentity = requireSiteOwner(params.idToken || '');
+      return json({
+        success: true,
+        owner: publisherIdentity.email,
+        ready: !!PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN')
+      });
+    }
+
+    if (action === 'publishNotes') {
+      const publisherIdentity = requireSiteOwner(params.idToken || '');
+      return publishNoteFiles(publisherIdentity, params);
     }
 
     if (action === 'authorizeAccount') {
@@ -299,6 +316,113 @@ function verifyFirebaseToken(idToken) {
   return { uid: user.localId, email: user.email || '' };
 }
 
+function requireSiteOwner(idToken) {
+  const identity = verifyFirebaseToken(idToken);
+  if (String(identity.email || '').trim().toLowerCase() !== SITE_OWNER_EMAIL) {
+    throw new Error('Публиковать конспекты может только владелец сайта');
+  }
+  return identity;
+}
+
+// === Публикация конспектов в GitHub =======================================
+function publishNoteFiles(identity, params) {
+  const files = Array.isArray(params.files) ? params.files : [];
+  if (!files.length || files.length > 24) throw new Error('Некорректный набор файлов публикации');
+
+  const subject = String(params.subject || '');
+  const sectionId = String(params.sectionId || '');
+  if (!/^(physics|math|geometry|chemistry|likbez)$/.test(subject)) throw new Error('Неизвестный предмет');
+  if (!/^[a-z0-9][a-z0-9-]{1,63}$/.test(sectionId)) throw new Error('Некорректный адрес раздела');
+
+  let totalLength = 0;
+  const normalizedFiles = files.map(function (file) {
+    const path = String(file && file.path || '').replace(/\\/g, '/');
+    const content = String(file && file.content || '');
+    const encoding = file && file.encoding === 'base64' ? 'base64' : 'utf-8';
+    if (!isAllowedNotePath(path, subject, sectionId)) throw new Error('Публикация пути запрещена: ' + path);
+    if (encoding === 'base64' && !/^[A-Za-z0-9+/]*={0,2}$/.test(content)) throw new Error('Некорректное изображение');
+    totalLength += content.length;
+    return { path: path, content: content, encoding: encoding };
+  });
+  if (totalLength > 9 * 1024 * 1024) throw new Error('Пакет публикации слишком велик');
+
+  const properties = PropertiesService.getScriptProperties();
+  const token = properties.getProperty('GITHUB_TOKEN') || '';
+  if (!token) throw new Error('На сервере не задан GITHUB_TOKEN');
+  const repository = properties.getProperty('GITHUB_REPOSITORY') || 'Almanion/Almanion.github.io';
+  const branch = properties.getProperty('GITHUB_BRANCH') || 'main';
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) throw new Error('Некорректный GITHUB_REPOSITORY');
+  if (!/^[A-Za-z0-9._\/-]+$/.test(branch)) throw new Error('Некорректный GITHUB_BRANCH');
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const ref = githubRequest('get', repository, '/git/ref/heads/' + branch, token);
+    const parentSha = ref.object && ref.object.sha;
+    if (!parentSha) throw new Error('GitHub не вернул текущий commit');
+    const parentCommit = githubRequest('get', repository, '/git/commits/' + parentSha, token);
+    const baseTreeSha = parentCommit.tree && parentCommit.tree.sha;
+    if (!baseTreeSha) throw new Error('GitHub не вернул дерево файлов');
+
+    const treeItems = normalizedFiles.map(function (file) {
+      const blob = githubRequest('post', repository, '/git/blobs', token, {
+        content: file.content,
+        encoding: file.encoding
+      });
+      return { path: file.path, mode: '100644', type: 'blob', sha: blob.sha };
+    });
+    const tree = githubRequest('post', repository, '/git/trees', token, {
+      base_tree: baseTreeSha,
+      tree: treeItems
+    });
+    const commit = githubRequest('post', repository, '/git/commits', token, {
+      message: 'Publish ' + subject + ' notes: ' + sectionId,
+      tree: tree.sha,
+      parents: [parentSha],
+      author: { name: 'Конструктор конспектов', email: identity.email }
+    });
+    githubRequest('patch', repository, '/git/refs/heads/' + branch, token, {
+      sha: commit.sha,
+      force: false
+    });
+    return json({ success: true, commitSha: commit.sha, files: normalizedFiles.length });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function isAllowedNotePath(path, subject, sectionId) {
+  if (path === 'content/' + subject + '/manifest.json') return true;
+  if (path === 'content/' + subject + '/sections/' + sectionId + '.json') return true;
+  return new RegExp('^images/notes/' + subject + '/[a-zA-Z0-9][a-zA-Z0-9._-]{0,119}$').test(path);
+}
+
+function githubRequest(method, repository, resource, token, body) {
+  const options = {
+    method: method,
+    headers: {
+      Authorization: 'Bearer ' + token,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    },
+    muteHttpExceptions: true
+  };
+  if (body !== undefined) {
+    options.contentType = 'application/json';
+    options.payload = JSON.stringify(body);
+  }
+  const response = UrlFetchApp.fetch('https://api.github.com/repos/' + repository + resource, options);
+  const code = response.getResponseCode();
+  const text = response.getContentText() || '{}';
+  let payload;
+  try { payload = JSON.parse(text); } catch (_) { payload = {}; }
+  if (code < 200 || code >= 300) {
+    const message = payload && payload.message ? payload.message : 'HTTP ' + code;
+    throw new Error('GitHub: ' + message);
+  }
+  return payload;
+}
+
 function secureEqual(left, right) {
   const a = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(left), Utilities.Charset.UTF_8);
   const b = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(right), Utilities.Charset.UTF_8);
@@ -537,9 +661,12 @@ function json(obj) {
          FIREBASE_WEB_API_KEY          API key из firebase-config.js
          FIREBASE_DATABASE_URL         databaseURL из firebase-config.js
          MATCENTER_USER_PASSWORD       пароль доступа учеников
-        MATCENTER_ADMIN_PASSWORD      отдельный пароль администратора
+         MATCENTER_ADMIN_PASSWORD      отдельный пароль администратора
+         GITHUB_TOKEN                  fine-grained token с Contents: Read and write
       Необязательно:
         MATCENTER_SHEET_NAMES         имена листов с задачами через запятую
+        GITHUB_REPOSITORY             по умолчанию Almanion/Almanion.github.io
+        GITHUB_BRANCH                 по умолчанию main
       Без MATCENTER_SHEET_NAMES backend сам найдёт все листы, где в первой
       строке есть Number или NumberText.
       Пароли больше не хранятся в репозитории и не попадают в URL.

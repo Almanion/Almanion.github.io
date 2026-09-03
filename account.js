@@ -381,6 +381,7 @@
                 '<h2>Вы вошли</h2>' +
                 '<p class="account-email">' + escapeHtml(email) + '</p>' +
                 '<div class="account-error" id="accError" hidden></div>' +
+                '<div class="account-editor-slot" id="accountEditorSlot"></div>' +
                 '<button type="button" class="auth-submit account-signout" id="accSignout">Выйти</button>' +
             '</div>';
         ov.querySelector('#accClose').addEventListener('click', hideOverlay);
@@ -392,6 +393,7 @@
                 .catch(function (err) { showError(authMessage(err)); })
                 .finally(function () { setAuthBusy(false); });
         });
+        showContentEditorLink(ov);
         ov.classList.remove('hidden');
         ov.setAttribute('aria-hidden', 'false');
     }
@@ -421,6 +423,24 @@
             else out[k] = av || bv;
         });
         return out;
+    }
+
+    function showContentEditorLink(overlay) {
+        if (!user || !overlay) return;
+        const slot = overlay.querySelector('#accountEditorSlot');
+        if (!slot) return;
+        const owner = String(user.email || '').trim().toLowerCase() === 'dmb23930@gmail.com';
+        const rolePromise = owner
+            ? Promise.resolve(true)
+            : db.ref('adminRoles/' + user.uid + '/contentEditor').once('value').then(function (snapshot) { return snapshot.val() === true; }).catch(function () { return false; });
+        rolePromise.then(function (allowed) {
+            if (!allowed || !slot.isConnected) return;
+            const link = document.createElement('a');
+            link.href = 'constructor.html';
+            link.className = 'auth-submit account-editor-link';
+            link.textContent = 'Конструктор конспектов';
+            slot.appendChild(link);
+        });
     }
 
     function mergeMeta(a, b) {

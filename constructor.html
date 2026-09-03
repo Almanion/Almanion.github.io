@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="robots" content="noindex">
+    <title>Конструктор конспектов</title>
+    <link rel="icon" href="favicons/favicon.svg" type="image/svg+xml">
+    <script>
+        (function () {
+            var dark = false;
+            try {
+                var saved = JSON.parse(localStorage.getItem('siteSettings') || '{}');
+                dark = saved.experimental === false ? saved.theme === 'dark' || saved.theme === 'midnight' : saved.expDark === true;
+            } catch (_) {
+                dark = localStorage.getItem('theme') === 'dark';
+            }
+            document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        })();
+    </script>
+    <link rel="stylesheet" href="styles/tokens.css?v=20260903-1">
+    <link rel="stylesheet" href="styles/typography.css?v=20260903-1">
+    <link rel="stylesheet" href="styles/site/index.css?v=20260903-4">
+    <link rel="stylesheet" href="constructor/index.css?v=20260903-3">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+</head>
+<body>
+    <div class="builder-gate" id="builderGate">
+        <div class="builder-gate-card">
+            <span class="builder-gate-icon" aria-hidden="true">✦</span>
+            <h1>Конструктор конспектов</h1>
+            <p id="builderGateText">Проверяем аккаунт и права редактора…</p>
+            <button class="builder-button is-primary" id="builderLoginButton" type="button" hidden>Войти в аккаунт</button>
+            <a class="builder-text-link" href="index.html">Вернуться на главную</a>
+        </div>
+    </div>
+
+    <div class="builder-shell" id="builderShell" hidden>
+        <header class="builder-topbar">
+            <a href="index.html" class="builder-brand" aria-label="На главную">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 10v10h13V10M9.5 20v-6h5v6"/></svg>
+                <span>Конструктор</span>
+            </a>
+            <label class="builder-subject-control">
+                <span>Предмет</span>
+                <select id="subjectSelect" aria-label="Предмет"></select>
+            </label>
+            <div class="builder-save-state" id="saveState" data-state="idle">
+                <span class="builder-save-dot"></span>
+                <span id="saveStateText">Все изменения сохранены</span>
+            </div>
+            <div class="builder-top-actions">
+                <button class="builder-button is-quiet" id="previewToggle" type="button">Предпросмотр</button>
+                <button class="builder-button is-quiet" id="exportButton" type="button">Скачать</button>
+                <button class="builder-button is-primary" id="publishButton" type="button" hidden>Опубликовать</button>
+            </div>
+        </header>
+
+        <main class="builder-workspace">
+            <aside class="builder-sections" aria-label="Разделы">
+                <div class="builder-panel-heading">
+                    <div>
+                        <span class="builder-eyebrow">Структура</span>
+                        <h2>Разделы</h2>
+                    </div>
+                    <button class="builder-icon-button" id="newSectionButton" type="button" aria-label="Создать раздел" title="Создать раздел">+</button>
+                </div>
+                <div class="builder-section-list" id="sectionList"></div>
+                <div class="builder-section-help">
+                    <b>Отдельный файл для каждого раздела</b>
+                    <span>Опубликованные материалы автоматически появятся в меню выбранного предмета.</span>
+                </div>
+            </aside>
+
+            <section class="builder-editor" id="builderEditor">
+                <div class="builder-empty" id="editorEmpty">
+                    <span>Новый материал начинается с раздела</span>
+                    <h2>Создайте первый раздел</h2>
+                    <p>Добавляйте определения, формулы, доказательства, изображения и вложенные блоки.</p>
+                    <button class="builder-button is-primary" id="emptyNewSectionButton" type="button">Создать раздел</button>
+                </div>
+
+                <div id="editorContent" hidden>
+                    <div class="builder-document-head">
+                        <label class="builder-field is-title">
+                            <span>Заголовок раздела</span>
+                            <input id="sectionTitle" type="text" maxlength="140" autocomplete="off">
+                        </label>
+                        <div class="builder-document-meta">
+                            <label class="builder-field">
+                                <span>Название в меню</span>
+                                <input id="sectionNavTitle" type="text" maxlength="90" autocomplete="off">
+                            </label>
+                            <div class="builder-slug">
+                                <span>Адрес</span>
+                                <code id="sectionSlug"></code>
+                            </div>
+                            <label class="builder-review-control">
+                                <span>Состояние</span>
+                                <select id="reviewStatus">
+                                    <option value="draft">Черновик</option>
+                                    <option value="ready">Готово к проверке</option>
+                                    <option value="published" disabled>Опубликовано</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="builder-block-toolbar">
+                        <label>
+                            <span class="sr-only">Тип нового блока</span>
+                            <select id="newBlockType"></select>
+                        </label>
+                        <button class="builder-button is-secondary" id="addBlockButton" type="button">Добавить блок</button>
+                        <span class="builder-toolbar-hint">Блоки можно перетаскивать или перемещать стрелками</span>
+                    </div>
+                    <div class="builder-block-list" id="blockList"></div>
+                </div>
+            </section>
+
+            <aside class="builder-preview" id="builderPreview" aria-label="Предпросмотр">
+                <div class="builder-preview-heading">
+                    <div>
+                        <span class="builder-eyebrow">Так увидит читатель</span>
+                        <h2>Предпросмотр</h2>
+                    </div>
+                    <a id="subjectPageLink" href="physics.html" target="_blank" rel="noopener">Открыть предмет ↗</a>
+                </div>
+                <div class="builder-preview-page" id="previewPage"></div>
+            </aside>
+        </main>
+    </div>
+
+    <div class="builder-dialog-backdrop" id="sectionDialog" hidden>
+        <form class="builder-dialog" id="sectionDialogForm">
+            <button class="builder-dialog-close" id="sectionDialogClose" type="button" aria-label="Закрыть">×</button>
+            <span class="builder-eyebrow">Новый материал</span>
+            <h2>Создать раздел</h2>
+            <p>Он сохранится как отдельный файл и пока будет виден только редакторам.</p>
+            <label class="builder-field">
+                <span>Название раздела</span>
+                <input id="newSectionTitle" type="text" maxlength="140" required autocomplete="off" placeholder="Например, Электромагнитная индукция">
+            </label>
+            <div class="builder-dialog-actions">
+                <button class="builder-button is-quiet" id="sectionDialogCancel" type="button">Отмена</button>
+                <button class="builder-button is-primary" type="submit">Создать</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="builder-toast-stack" id="builderToastStack" aria-live="polite"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js?v=20260903-3"></script>
+    <script src="account.js?v=20260903-7"></script>
+    <script src="constructor/config.js?v=20260903-2"></script>
+    <script src="constructor/model.js?v=20260903-2"></script>
+    <script src="constructor/renderer.js?v=20260903-2"></script>
+    <script src="constructor/storage.js?v=20260903-2"></script>
+    <script src="constructor/index.js?v=20260903-2"></script>
+</body>
+</html>

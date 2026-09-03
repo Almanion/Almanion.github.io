@@ -8,10 +8,11 @@
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || auth.token.email === 'dmb23930@gmail.com')",
         ".write": "auth != null && auth.token.email === 'dmb23930@gmail.com'",
-        ".validate": "newData.hasChildren(['email', 'siteAdmin', 'matcenterAdmin', 'updatedAt', 'updatedBy'])",
+        ".validate": "newData.hasChildren(['email', 'siteAdmin', 'matcenterAdmin', 'contentEditor', 'updatedAt', 'updatedBy'])",
         "email": { ".validate": "newData.isString() && newData.val().length <= 254" },
         "siteAdmin": { ".validate": "newData.isBoolean()" },
         "matcenterAdmin": { ".validate": "newData.isBoolean()" },
+        "contentEditor": { ".validate": "newData.isBoolean()" },
         "updatedAt": { ".validate": "newData.isNumber()" },
         "updatedBy": { ".validate": "newData.isString() && newData.val() === auth.uid" },
         "$other": { ".validate": false }
@@ -156,6 +157,29 @@
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "noteDrafts": {
+      "$subject": {
+        ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+        "$sectionId": {
+          ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+          ".validate": "newData.hasChildren(['schemaVersion', 'id', 'subject', 'title', 'navTitle', 'blocks', 'order', 'revision', 'createdAt', 'updatedAt', 'updatedBy', 'reviewStatus']) && newData.child('id').val() === $sectionId && newData.child('subject').val() === $subject",
+          "schemaVersion": { ".validate": "newData.isNumber() && newData.val() === 1" },
+          "id": { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 64" },
+          "subject": { ".validate": "newData.val() === 'physics' || newData.val() === 'math' || newData.val() === 'geometry' || newData.val() === 'chemistry' || newData.val() === 'likbez'" },
+          "title": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 140" },
+          "navTitle": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 90" },
+          "blocks": { ".validate": "newData.exists()" },
+          "order": { ".validate": "newData.isNumber()" },
+          "revision": { ".validate": "newData.isNumber() && newData.val() >= 1" },
+          "createdAt": { ".validate": "newData.isNumber()" },
+          "updatedAt": { ".validate": "newData.isNumber()" },
+          "updatedBy": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+          "reviewStatus": { ".validate": "newData.val() === 'draft' || newData.val() === 'ready' || newData.val() === 'published'" },
+          "$other": { ".validate": false }
+        }
       }
     }
   }

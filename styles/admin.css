@@ -245,14 +245,14 @@ body.admin-page.experimental.exp-dark {
 .usage-page-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .usage-page-row strong { color: var(--text); }
 
-.admin-role-form { display: grid; grid-template-columns: minmax(240px, 1.5fr) minmax(210px, 1fr) minmax(210px, 1fr) auto; gap: .7rem; align-items: stretch; }
+.admin-role-form { display: grid; grid-template-columns: minmax(240px, 1.35fr) repeat(3, minmax(180px, 1fr)); gap: .7rem; align-items: stretch; }
 .admin-role-form .form-group { margin: 0; }
 .admin-role-check { display: flex; align-items: center; gap: .7rem; padding: .68rem .78rem; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-input); cursor: pointer; }
 .admin-role-check input { width: 17px; height: 17px; accent-color: var(--accent); }
 .admin-role-check span { display: grid; gap: .16rem; }
 .admin-role-check b { color: var(--text); font-size: .77rem; }
 .admin-role-check small { color: var(--text-secondary); font-size: .66rem; line-height: 1.3; }
-.admin-role-save { width: auto !important; align-self: end; }
+.admin-role-save { grid-column: 1 / -1; width: auto !important; justify-self: end; align-self: end; }
 .admin-roles-list { display: grid; gap: .45rem; margin-top: 1rem; }
 .admin-role-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: .7rem; padding: .72rem .8rem; border: 1px solid var(--border); border-radius: 10px; }
 .admin-role-identity { min-width: 0; }
@@ -281,6 +281,7 @@ body.admin-page.experimental.exp-dark {
     .admin-page .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .admin-role-form { grid-template-columns: 1fr 1fr; }
     .admin-role-account-field { grid-column: 1 / -1; }
+    .admin-role-save { grid-column: 1 / -1; }
 }
 
 @media (max-width: 720px) {

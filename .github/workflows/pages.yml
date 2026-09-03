@@ -27,6 +27,7 @@ jobs:
           mkdir _site
           git ls-files -z | tar --null -T - -cf - | tar -xf - -C _site
           rm -rf _site/.git _site/.github
+          node tools/build-notes.js --root . --output _site
           touch _site/.nojekyll
 
       - name: Upload Pages artifact

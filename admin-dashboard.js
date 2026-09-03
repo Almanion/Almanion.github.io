@@ -255,6 +255,7 @@
         byId('adminRoleAccount').value = account.email || uid;
         byId('siteAdminRole').checked = role.siteAdmin === true;
         byId('matcenterAdminRole').checked = role.matcenterAdmin === true;
+        byId('contentEditorRole').checked = role.contentEditor === true;
         byId('adminRoleAccount').focus();
     }
 
@@ -283,7 +284,7 @@
         ownerIdentity.append(ownerEmail, ownerCaption);
         const ownerBadges = document.createElement('div');
         ownerBadges.className = 'admin-role-badges';
-        ownerBadges.append(roleBadge('Владелец', true), roleBadge('Сайт'), roleBadge('Матцентр'));
+        ownerBadges.append(roleBadge('Владелец', true), roleBadge('Сайт'), roleBadge('Матцентр'), roleBadge('Редактор'));
         ownerRow.append(ownerIdentity, ownerBadges);
         list.appendChild(ownerRow);
 
@@ -291,7 +292,7 @@
             return String((adminRoles[a] || {}).email || '').localeCompare(String((adminRoles[b] || {}).email || ''), 'ru');
         }).forEach(function (uid) {
             const role = adminRoles[uid] || {};
-            if (!role.siteAdmin && !role.matcenterAdmin) return;
+            if (!role.siteAdmin && !role.matcenterAdmin && !role.contentEditor) return;
             if (String(role.email || '').toLowerCase() === SITE_OWNER_EMAIL) return;
             const account = accountDirectory[uid] || {};
             const row = document.createElement('div');
@@ -307,6 +308,7 @@
             badges.className = 'admin-role-badges';
             if (role.siteAdmin) badges.appendChild(roleBadge('Сайт'));
             if (role.matcenterAdmin) badges.appendChild(roleBadge('Матцентр'));
+            if (role.contentEditor) badges.appendChild(roleBadge('Редактор'));
             const edit = document.createElement('button');
             edit.type = 'button';
             edit.className = 'btn btn-outline btn-sm';
@@ -365,23 +367,25 @@
         }
         const siteAdmin = byId('siteAdminRole').checked;
         const matcenterAdmin = byId('matcenterAdminRole').checked;
+        const contentEditor = byId('contentEditorRole').checked;
         const saveButton = event.currentTarget.querySelector('button[type="submit"]');
         saveButton.disabled = true;
         try {
             const ref = db.ref('adminRoles/' + target.uid);
-            if (!siteAdmin && !matcenterAdmin) {
+            if (!siteAdmin && !matcenterAdmin && !contentEditor) {
                 await ref.remove();
             } else {
                 await ref.set({
                     email: String(target.account.email || '').trim(),
                     siteAdmin: siteAdmin,
                     matcenterAdmin: matcenterAdmin,
+                    contentEditor: contentEditor,
                     updatedAt: firebase.database.ServerValue.TIMESTAMP,
                     updatedBy: user.uid
                 });
             }
             byId('adminRoleForm').reset();
-            showAdminToast(siteAdmin || matcenterAdmin ? 'Права администратора сохранены' : 'Права администратора отозваны');
+            showAdminToast(siteAdmin || matcenterAdmin || contentEditor ? 'Роли пользователя сохранены' : 'Все дополнительные роли отозваны');
             await loadRoleManager(user);
         } catch (error) {
             console.error('Save admin roles:', error);

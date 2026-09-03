@@ -875,7 +875,7 @@
     <link rel="stylesheet" href="style-new.css">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260903-1">
-    <link rel="stylesheet" href="styles/admin.css?v=20260903-1">
+    <link rel="stylesheet" href="styles/admin.css?v=20260903-2">
 </head>
 <body class="admin-page">
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -1066,8 +1066,8 @@
         <!-- Управление данными -->
         <div class="section admin-roles-section" id="adminRolesSection" hidden>
             <div class="section-kicker">Только владелец</div>
-            <div class="section-title"><span class="eic eic-lock" aria-hidden="true"></span> Администраторы</div>
-            <p class="section-description">Назначайте доступ отдельно к панели сайта и к административным функциям Матцентра.</p>
+            <div class="section-title"><span class="eic eic-lock" aria-hidden="true"></span> Роли доступа</div>
+            <p class="section-description">Назначайте доступ отдельно к панели сайта, Матцентру и редактированию конспектов. Публиковать материалы может только владелец.</p>
             <form class="admin-role-form" id="adminRoleForm">
                 <div class="form-group admin-role-account-field">
                     <label for="adminRoleAccount">Аккаунт пользователя</label>
@@ -1076,8 +1076,10 @@
                 </div>
                 <label class="admin-role-check"><input type="checkbox" id="siteAdminRole"> <span><b>Администратор сайта</b><small>Аналитика, посетители, сообщения и опросы</small></span></label>
                 <label class="admin-role-check"><input type="checkbox" id="matcenterAdminRole"> <span><b>Администратор Матцентра</b><small>Статусы задач и подсказки</small></span></label>
+                <label class="admin-role-check"><input type="checkbox" id="contentEditorRole"> <span><b>Редактор конспектов</b><small>Создание и редактирование новых разделов</small></span></label>
                 <button class="btn btn-primary admin-role-save" type="submit">Сохранить роли</button>
             </form>
+            <p class="section-description"><a href="constructor.html">Открыть конструктор конспектов →</a></p>
             <div id="adminRolesList"><div class="no-data">Загрузка...</div></div>
         </div>
 
@@ -2164,6 +2166,6 @@
             });
         }
     </script>
-    <script src="admin-dashboard.js?v=20260903-1"></script>
+    <script src="admin-dashboard.js?v=20260903-2"></script>
 </body>
 </html>

@@ -817,6 +817,8 @@ body.dark-theme .sidebar-header .account-btn:hover { background: rgba(255,255,25
 }
 
 .account-modal { max-width: 360px; text-align: center; }
+.account-editor-slot:empty { display: none; }
+.account-editor-link { display: flex; align-items: center; justify-content: center; margin-bottom: 0.65rem; text-decoration: none; }
 .account-modal .auth-icon { color: var(--accent-color); }
 .account-modal h2 { margin: 0.25rem 0 0.4rem; }
 .account-modal p { margin: 0 0 1rem; }

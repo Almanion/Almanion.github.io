@@ -153,6 +153,47 @@ body.dark-theme .search-box input:focus {
     box-shadow: 0 0 0 3px rgba(241, 245, 249, 0.1);
 }
 
+/* Разделы, опубликованные через конструктор, используют те же учебные блоки,
+   что и ручная разметка. Эти правила отвечают только за вложенность и медиа. */
+.constructor-content-section .constructor-nested-content {
+    display: grid;
+    gap: 0.85rem;
+    margin-top: 0.9rem;
+    padding-left: clamp(0.75rem, 2vw, 1.2rem);
+    border-left: 1px solid var(--border-color);
+}
+
+.constructor-content-section .constructor-note-image {
+    width: 100%;
+    margin: 1.35rem 0;
+    text-align: center;
+}
+
+.constructor-content-section .constructor-note-image img {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    max-height: min(70vh, 720px);
+    margin: 0 auto;
+    border-radius: 10px;
+}
+
+.constructor-content-section .constructor-note-image figcaption {
+    max-width: 68ch;
+    margin: 0.55rem auto 0;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    line-height: 1.5;
+}
+
+.constructor-content-section .constructor-note-list {
+    padding-left: 1.35rem;
+}
+
+.constructor-content-section .constructor-subsection + .constructor-subsection {
+    margin-top: clamp(1.4rem, 3vw, 2.2rem);
+}
+
 .search-results-panel {
     flex: 0 0 auto;
     max-height: min(54vh, 520px);

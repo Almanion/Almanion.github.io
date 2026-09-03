@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-03-matcenter-nav-20';
+const CACHE_VERSION = 'almanion-pwa-2026-09-03-note-constructor-21';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -32,6 +32,19 @@ const APP_SHELL = [
     '/firebase-config.js',
     '/firebase-analytics.js',
     '/admin-dashboard.js',
+    '/constructor.html',
+    '/constructor/index.css',
+    '/constructor/config.js',
+    '/constructor/model.js',
+    '/constructor/renderer.js',
+    '/constructor/storage.js',
+    '/constructor/index.js',
+    '/content/subjects.json',
+    '/content/physics/manifest.json',
+    '/content/math/manifest.json',
+    '/content/geometry/manifest.json',
+    '/content/chemistry/manifest.json',
+    '/content/likbez/manifest.json',
     '/matcenter/00-core.js',
     '/matcenter/10-security.js',
     '/matcenter/20-auth.js',
