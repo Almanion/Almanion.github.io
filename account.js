@@ -284,6 +284,7 @@
             })
             .catch(function (err) {
                 if (attemptId !== googleAttemptId) return;
+                console.warn('Almanion account: Google sign-in failed.', err);
                 showError(authMessage(err));
             })
             .finally(function () {
@@ -353,7 +354,8 @@
         if (c === 'auth/user-disabled') return 'Этот аккаунт отключён.';
         if (c === 'auth/operation-not-allowed') return 'Этот способ входа не включён в Firebase.';
         if (c === 'auth/unauthorized-domain') return 'Домен не разрешён в настройках Firebase Auth.';
-        return 'Не удалось войти. Повторите попытку; если ошибка сохранится, обновите страницу.';
+        const publicCode = c ? c.replace(/^auth\//, '') : '';
+        return 'Не удалось войти' + (publicCode ? ` (${publicCode})` : '') + '. Повторите попытку; если ошибка сохранится, обновите страницу.';
     }
 
     // ---------- Окно «вы вошли» ----------

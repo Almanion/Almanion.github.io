@@ -34,12 +34,46 @@ function showMatcenterDataWarning(message) {
     warning.textContent = message;
 }
 
-function applyTasksFromCache() {
+function readTasksCache() {
     try {
         const raw = safeGet(TASKS_CACHE_KEY);
-        if (!raw) return false;
+        if (!raw) return null;
         const parsed = JSON.parse(raw);
-        if (!parsed || !Array.isArray(parsed.tasks) || parsed.tasks.length === 0) return false;
+        return parsed && Array.isArray(parsed.tasks) ? parsed : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function getTaskEndpointIndex(task) {
+    const explicitIndex = Number(task && task._endpointIdx);
+    if (Number.isInteger(explicitIndex) && explicitIndex >= 0) return explicitIndex;
+    // Миграция старого кеша, созданного до появления _endpointIdx.
+    return task && task.grade === 'grade-summer-9-10' ? 1 : 0;
+}
+
+function getCachedTasksByEndpoint() {
+    const cache = readTasksCache();
+    const grouped = new Map();
+    if (!cache) return grouped;
+    cache.tasks.forEach(task => {
+        const endpointIdx = getTaskEndpointIndex(task);
+        if (!grouped.has(endpointIdx)) grouped.set(endpointIdx, []);
+        grouped.get(endpointIdx).push(Object.assign({}, task, { _endpointIdx: endpointIdx }));
+    });
+    return grouped;
+}
+
+function getEndpointLabel(endpointIdx) {
+    if (endpointIdx === 0) return 'основная таблица (9 класс)';
+    if (endpointIdx === 1) return 'летняя серия 9–10';
+    return `источник №${endpointIdx + 1}`;
+}
+
+function applyTasksFromCache() {
+    try {
+        const parsed = readTasksCache();
+        if (!parsed || parsed.tasks.length === 0) return false;
 
         allTasks = normalizeAllTasks(parsed.tasks);
         lastTasksPayloadSignature = buildTasksPayloadSignature(parsed.tasks);
@@ -116,8 +150,14 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
         adminFlag = result.isAdmin;
 
         if (result.failures.length > 0) {
+            const failedSources = result.failures.map(item => getEndpointLabel(item.endpointIdx));
+            const restoredCount = result.failures.filter(item => item.usedCache).length;
+            const restoredAll = restoredCount === result.failures.length;
             showMatcenterDataWarning(
-                `Загружены не все источники данных (${result.successCount} из ${TASKS_ENDPOINTS.length}). Часть задач может отсутствовать.`
+                `Временно не обновились: ${failedSources.join(', ')}. ` +
+                (restoredAll
+                    ? 'Показана последняя сохранённая копия; уже загруженные задачи не потеряны.'
+                    : 'Сохранённой копии нет, поэтому часть задач пока отсутствует.')
             );
         } else {
             showMatcenterDataWarning('');
@@ -310,6 +350,7 @@ async function loadFromAppsScript() {
     );
 
     const allTasks = [];
+    const cachedByEndpoint = getCachedTasksByEndpoint();
     let isAdmin = false;
     let successCount = 0;
     let lastError = null;
@@ -318,16 +359,34 @@ async function loadFromAppsScript() {
     results.forEach((r, idx) => {
         if (r.status === 'fulfilled') {
             successCount++;
-            allTasks.push(...r.value.tasks);
+            const freshTasks = r.value.tasks;
+            const cachedTasks = cachedByEndpoint.get(idx) || [];
+            if (freshTasks.length === 0 && cachedTasks.length > 0) {
+                allTasks.push(...cachedTasks);
+                failures.push({
+                    endpointIdx: idx,
+                    message: 'Источник неожиданно вернул пустой список',
+                    usedCache: true
+                });
+                console.warn(`⚠️ Endpoint #${idx} вернул пустой список; сохранено ${cachedTasks.length} задач из кеша`);
+            } else {
+                allTasks.push(...freshTasks);
+            }
             if (r.value.isAdmin) isAdmin = true;
-            console.log(`✅ Endpoint #${idx}: ${r.value.tasks.length} задач${r.value.isAdmin ? ' (АДМИН)' : ''}`);
+            console.log(`✅ Endpoint #${idx}: ${freshTasks.length} задач${r.value.isAdmin ? ' (АДМИН)' : ''}`);
         } else {
             lastError = r.reason;
+            const cachedTasks = cachedByEndpoint.get(idx) || [];
+            if (cachedTasks.length > 0) allTasks.push(...cachedTasks);
             failures.push({
                 endpointIdx: idx,
-                message: r.reason && r.reason.message ? r.reason.message : String(r.reason || 'Ошибка')
+                message: r.reason && r.reason.message ? r.reason.message : String(r.reason || 'Ошибка'),
+                usedCache: cachedTasks.length > 0
             });
-            console.warn(`⚠️ Endpoint #${idx} не отвечает:`, r.reason && r.reason.message || r.reason);
+            console.warn(
+                `⚠️ Endpoint #${idx} не отвечает${cachedTasks.length ? `; восстановлено из кеша: ${cachedTasks.length}` : ''}:`,
+                r.reason && r.reason.message || r.reason
+            );
         }
     });
 
