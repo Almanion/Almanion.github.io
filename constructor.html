@@ -24,7 +24,7 @@
     </script>
     <link rel="stylesheet" href="styles/tokens.css?v=20260903-1">
     <link rel="stylesheet" href="styles/typography.css?v=20260903-1">
-    <link rel="stylesheet" href="constructor/index.css?v=20260903-5">
+    <link rel="stylesheet" href="constructor/index.css?v=20260904-8">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 </head>
 <body>
@@ -66,7 +66,10 @@
                         <span class="builder-eyebrow">Структура</span>
                         <h2>Разделы</h2>
                     </div>
-                    <button class="builder-icon-button" id="newSectionButton" type="button" aria-label="Создать раздел" title="Создать раздел">+</button>
+                    <div class="builder-panel-actions">
+                        <button class="builder-icon-button is-neutral" id="outlineFullscreenButton" type="button" aria-label="Развернуть структуру" title="Развернуть структуру" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg></button>
+                        <button class="builder-icon-button" id="newSectionButton" type="button" aria-label="Создать раздел" title="Создать раздел">+</button>
+                    </div>
                 </div>
                 <div class="builder-section-list" id="sectionList"></div>
                 <div class="builder-section-help">
@@ -74,6 +77,8 @@
                     <span>Каждый раздел хранится отдельно — черновик останется на устройстве и в аккаунте.</span>
                 </div>
             </aside>
+
+            <div class="builder-resizer builder-outline-resizer" id="outlineResizer" role="separator" aria-label="Изменить ширину структуры" aria-orientation="vertical" tabindex="0"></div>
 
             <section class="builder-editor" id="builderEditor">
                 <div class="builder-empty" id="editorEmpty">
@@ -85,26 +90,27 @@
 
                 <div id="editorContent" hidden>
                     <div class="builder-document-head">
+                        <span class="builder-document-kind" id="documentKind">Раздел</span>
                         <div class="builder-document-title-row">
                             <label class="builder-field is-title">
-                                <span>Заголовок раздела</span>
+                                <span id="documentTitleLabel">Заголовок раздела</span>
                                 <input id="sectionTitle" type="text" maxlength="140" autocomplete="off">
                             </label>
                             <button class="builder-button is-danger builder-delete-section" id="deleteSectionButton" type="button" aria-label="Удалить раздел" title="Удалить раздел">
                                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 15H6L5 6m5 4v7m4-7v7"/></svg>
-                                <span>Удалить</span>
+                                <span id="deleteDocumentLabel">Удалить</span>
                             </button>
                         </div>
                         <div class="builder-document-meta">
                             <label class="builder-field">
-                                <span>Название в меню</span>
+                                <span id="documentNavTitleLabel">Название в меню</span>
                                 <input id="sectionNavTitle" type="text" maxlength="90" autocomplete="off">
                             </label>
                             <div class="builder-slug">
                                 <span>Адрес</span>
                                 <code id="sectionSlug"></code>
                             </div>
-                            <label class="builder-review-control">
+                            <label class="builder-review-control" id="reviewStatusControl">
                                 <span>Состояние</span>
                                 <select id="reviewStatus">
                                     <option value="draft">Черновик</option>
@@ -115,17 +121,18 @@
                         </div>
                     </div>
 
-                    <div class="builder-block-toolbar">
-                        <label>
-                            <span class="builder-toolbar-label">Новый блок</span>
-                            <select id="newBlockType"></select>
-                        </label>
-                        <button class="builder-button is-secondary" id="addBlockButton" type="button">Добавить</button>
-                        <span class="builder-toolbar-hint">Перетаскивайте блоки или используйте стрелки</span>
-                    </div>
                     <div class="builder-block-list" id="blockList"></div>
+                    <div class="builder-add-dock" id="addBlockDock">
+                        <div class="builder-add-dock-copy">
+                            <strong id="addDockTitle">Продолжить конспект</strong>
+                            <span id="addDockContext">Новый блок появится в конце</span>
+                        </div>
+                        <button class="builder-button is-primary" id="openBlockPickerButton" type="button"><span aria-hidden="true">＋</span> Добавить блок</button>
+                    </div>
                 </div>
             </section>
+
+            <div class="builder-resizer builder-preview-resizer" id="previewResizer" role="separator" aria-label="Изменить ширину предпросмотра" aria-orientation="vertical" tabindex="0"></div>
 
             <aside class="builder-preview" id="builderPreview" aria-label="Предпросмотр">
                 <div class="builder-preview-heading">
@@ -133,13 +140,17 @@
                         <span class="builder-eyebrow">Так увидит читатель</span>
                         <div class="builder-preview-title"><h2>Предпросмотр</h2><span id="previewThemeLabel"></span></div>
                     </div>
-                    <button class="builder-icon-button builder-preview-close" id="previewCloseButton" type="button" aria-label="Закрыть предпросмотр">×</button>
+                    <div class="builder-preview-heading-actions">
+                        <button class="builder-icon-button is-neutral" id="previewFullscreenButton" type="button" aria-label="Развернуть предпросмотр" title="Развернуть предпросмотр" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg></button>
+                        <button class="builder-icon-button builder-preview-close" id="previewCloseButton" type="button" aria-label="Закрыть предпросмотр">×</button>
+                    </div>
                 </div>
                 <div class="builder-preview-controls">
                     <div class="builder-preview-sizes" role="group" aria-label="Ширина предпросмотра">
                         <button class="is-active" type="button" data-preview-size="wide" aria-pressed="true">Страница</button>
                         <button type="button" data-preview-size="mobile" aria-pressed="false">Телефон</button>
                     </div>
+                    <label class="builder-preview-theme-control"><span class="sr-only">Тема предпросмотра</span><select id="previewThemeSelect" aria-label="Тема предпросмотра"><option value="site">Как на сайте</option><option value="prism-light">Призма · светлая</option><option value="prism-dark">Призма · тёмная</option><option value="graphite-light">Графит · светлая</option><option value="graphite-dark">Графит · тёмная</option><option value="legacy-light">Старый · светлая</option><option value="legacy-dark">Старый · тёмная</option></select></label>
                     <a id="subjectPageLink" href="physics.html" target="_blank" rel="noopener">Открыть предмет ↗</a>
                 </div>
                 <div class="builder-preview-canvas" id="previewCanvas" data-size="wide">
@@ -147,6 +158,38 @@
                 </div>
             </aside>
         </main>
+    </div>
+
+    <div class="builder-dialog-backdrop" id="subsectionDialog" hidden>
+        <form class="builder-dialog" id="subsectionDialogForm">
+            <button class="builder-dialog-close" id="subsectionDialogClose" type="button" aria-label="Закрыть">×</button>
+            <span class="builder-eyebrow">Внутри раздела</span>
+            <h2>Создать подраздел</h2>
+            <p>Он появится отдельным пунктом в структуре и в меню готового конспекта.</p>
+            <label class="builder-field">
+                <span>Полное название</span>
+                <input id="newSubsectionTitle" type="text" maxlength="140" required autocomplete="off" placeholder="Например, Закон электромагнитной индукции">
+            </label>
+            <label class="builder-field builder-dialog-second-field">
+                <span>Короткое название в меню</span>
+                <input id="newSubsectionNavTitle" type="text" maxlength="90" autocomplete="off" placeholder="Если оставить пустым, используется полное название">
+            </label>
+            <div class="builder-dialog-actions">
+                <button class="builder-button is-quiet" id="subsectionDialogCancel" type="button">Отмена</button>
+                <button class="builder-button is-primary" type="submit">Создать подраздел</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="builder-block-picker-backdrop" id="blockPicker" hidden>
+        <div class="builder-block-picker" role="dialog" aria-modal="true" aria-labelledby="blockPickerTitle">
+            <div class="builder-block-picker-head">
+                <div><span class="builder-eyebrow">Структура материала</span><h2 id="blockPickerTitle">Добавить блок</h2><p id="blockPickerContext">Выберите подходящий формат — блок сразу появится в документе.</p></div>
+                <button class="builder-dialog-close" id="blockPickerClose" type="button" aria-label="Закрыть">×</button>
+            </div>
+            <div class="builder-block-picker-groups" id="blockPickerOptions"></div>
+            <div class="builder-block-picker-footer"><span><kbd>Ctrl</kbd> + <kbd>Enter</kbd> — открыть</span><button class="builder-button is-quiet" id="blockPickerCancel" type="button">Отмена</button></div>
+        </div>
     </div>
 
     <div class="builder-dialog-backdrop" id="sectionDialog" hidden>
@@ -173,7 +216,7 @@
             <h2 id="deleteSectionTitle">Удалить раздел?</h2>
             <p id="deleteSectionDescription">Черновик будет удалён с устройства и из аккаунта.</p>
             <div class="builder-delete-summary">
-                <span>Раздел</span>
+                <span id="deleteSectionKind">Раздел</span>
                 <strong id="deleteSectionName"></strong>
             </div>
             <div class="builder-dialog-actions">
@@ -191,11 +234,11 @@
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
     <script src="firebase-config.js?v=20260903-3"></script>
-    <script src="account.js?v=20260903-8"></script>
+    <script src="account.js?v=20260903-9"></script>
     <script src="constructor/config.js?v=20260903-2"></script>
-    <script src="constructor/model.js?v=20260903-2"></script>
-    <script src="constructor/renderer.js?v=20260903-2"></script>
+    <script src="constructor/model.js?v=20260903-3"></script>
+    <script src="constructor/renderer.js?v=20260904-5"></script>
     <script src="constructor/storage.js?v=20260903-3"></script>
-    <script src="constructor/index.js?v=20260903-4"></script>
+    <script src="constructor/index.js?v=20260904-8"></script>
 </body>
 </html>

@@ -10,7 +10,7 @@
     const BLOCK_TYPES = {
         paragraph:  { label: 'Текст', leaf: true },
         heading:    { label: 'Малый заголовок', leaf: true },
-        subsection: { label: 'Подраздел' },
+        subsection: { label: 'Подраздел', structural: true },
         formula:    { label: 'Формула', leaf: true },
         list:       { label: 'Список', leaf: true },
         image:      { label: 'Изображение', leaf: true },
@@ -70,7 +70,7 @@
 
     function createSection(subject, title) {
         const now = Date.now();
-        const sectionTitle = String(title || 'Новый раздел').trim();
+        const sectionTitle = smartDashes(String(title || 'Новый раздел')).trim();
         return {
             schemaVersion: SCHEMA_VERSION,
             id: slugify(sectionTitle),
@@ -78,6 +78,7 @@
             title: sectionTitle,
             navTitle: sectionTitle,
             blocks: [createBlock('paragraph')],
+            subsections: [],
             order: now,
             revision: 1,
             createdAt: now,
@@ -85,6 +86,16 @@
             updatedBy: '',
             reviewStatus: 'draft'
         };
+    }
+
+    function createSubsection(title, navTitle) {
+        const subsectionTitle = smartDashes(String(title || 'Новый подраздел')).trim();
+        const block = createBlock('subsection');
+        block.id = slugify(subsectionTitle);
+        block.title = subsectionTitle;
+        block.navTitle = smartDashes(String(navTitle || subsectionTitle)).trim();
+        block.children = [createBlock('paragraph')];
+        return block;
     }
 
     function normalizeBlock(value, depth) {
@@ -118,13 +129,23 @@
         const source = value && typeof value === 'object' ? value : {};
         const now = Date.now();
         const title = String(source.title || 'Новый раздел').trim();
+        const normalizedBlocks = Array.isArray(source.blocks) ? source.blocks.map(block => normalizeBlock(block, 0)) : [];
+        const legacySubsections = normalizedBlocks.filter(block => block.type === 'subsection');
+        const subsectionSources = Array.isArray(source.subsections) ? source.subsections : legacySubsections;
+        const subsections = subsectionSources.map(item => {
+            const subsection = normalizeBlock(Object.assign({}, item, { type: 'subsection' }), 0);
+            subsection.id = slugify(item && (item.id || item.title) || subsection.id);
+            subsection.navTitle = String(item && (item.navTitle || item.title) || 'Подраздел').trim();
+            return subsection;
+        });
         return {
             schemaVersion: SCHEMA_VERSION,
             id: slugify(source.id || title),
             subject: String(source.subject || fallbackSubject || 'physics'),
             title,
             navTitle: String(source.navTitle || title).trim(),
-            blocks: Array.isArray(source.blocks) ? source.blocks.map(block => normalizeBlock(block, 0)) : [],
+            blocks: normalizedBlocks.filter(block => block.type !== 'subsection'),
+            subsections,
             order: Number.isFinite(Number(source.order)) ? Number(source.order) : now,
             revision: Math.max(1, Number(source.revision) || 1),
             createdAt: Number(source.createdAt) || now,
@@ -219,6 +240,28 @@
         return true;
     }
 
+    function maxChildDepth(block) {
+        const children = Array.isArray(block && block.children) ? block.children : [];
+        if (!children.length) return 0;
+        return 1 + Math.max.apply(null, children.map(maxChildDepth));
+    }
+
+    function moveIntoContainer(section, sourceId, targetId) {
+        const source = findLocation(section.blocks, sourceId, null, 0);
+        const target = findLocation(section.blocks, targetId, null, 0);
+        if (!source || !target || sourceId === targetId || !isContainerType(target.block.type)) return false;
+        if (findLocation(source.block.children, targetId, source.block, source.depth + 1)) return false;
+        if (target.depth + 1 + maxChildDepth(source.block) > MAX_NESTING_DEPTH) return false;
+        const item = source.list.splice(source.index, 1)[0];
+        target.block.children = Array.isArray(target.block.children) ? target.block.children : [];
+        target.block.children.push(item);
+        return true;
+    }
+
+    function smartDashes(value) {
+        return String(value == null ? '' : value).replace(/--/g, '—');
+    }
+
     function touch(section, uid) {
         section.updatedAt = Date.now();
         section.updatedBy = String(uid || '');
@@ -233,7 +276,12 @@
         if (!/^[a-z0-9][a-z0-9-]{1,63}$/.test(String(section.id || ''))) errors.push('Адрес раздела должен содержать 2–64 латинских символа, цифры или дефисы');
         if (!String(section.title || '').trim()) errors.push('Укажите название раздела');
         if (!String(section.navTitle || '').trim()) errors.push('Укажите название для меню');
-        if (!Array.isArray(section.blocks) || section.blocks.length === 0) errors.push('Добавьте хотя бы один блок');
+        const subsections = Array.isArray(section.subsections) ? section.subsections : [];
+        if ((!Array.isArray(section.blocks) || section.blocks.length === 0) && subsections.length === 0) errors.push('Добавьте хотя бы один блок или подраздел');
+        const subsectionIds = subsections.map(item => String(item && item.id || ''));
+        if (subsections.some(item => !item || !item.title || !item.navTitle)) errors.push('Укажите названия подразделов и подписи для меню');
+        if (subsectionIds.some(id => !/^[a-z0-9][a-z0-9-]{1,63}$/.test(id))) errors.push('Адрес подраздела должен содержать 2–64 латинских символа, цифры или дефисы');
+        if (new Set(subsectionIds).size !== subsectionIds.length) errors.push('Адреса подразделов не должны повторяться');
         return errors;
     }
 
@@ -246,6 +294,7 @@
         isContainerType,
         createBlock,
         createSection,
+        createSubsection,
         normalizeBlock,
         normalizeSection,
         clone,
@@ -257,6 +306,8 @@
         duplicateBlock,
         addChild,
         moveBefore,
+        moveIntoContainer,
+        smartDashes,
         touch,
         validateSection
     };

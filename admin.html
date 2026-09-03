@@ -875,7 +875,7 @@
     <link rel="stylesheet" href="style-new.css?v=20260903-5">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260903-1">
-    <link rel="stylesheet" href="styles/admin.css?v=20260903-2">
+    <link rel="stylesheet" href="styles/admin.css?v=20260903-3">
 </head>
 <body class="admin-page">
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -1051,15 +1051,20 @@
         </div>
 
         <!-- Журнал всех посетителей -->
-        <div class="section">
-            <div class="section-title"><span class="eic eic-book" aria-hidden="true"></span> Все посетители</div>
-            <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
-                <button class="btn btn-outline btn-sm" onclick="loadAllVisitors('all')" style="font-size:0.8rem;">Все</button>
-                <button class="btn btn-outline btn-sm" onclick="loadAllVisitors('today')" style="font-size:0.8rem;">Сегодня</button>
-                <button class="btn btn-outline btn-sm" onclick="loadAllVisitors('week')" style="font-size:0.8rem;">За неделю</button>
+        <div class="section" id="allVisitorsSection">
+            <div class="admin-collapsible-heading">
+                <div class="section-title"><span class="eic eic-book" aria-hidden="true"></span> Все посетители</div>
+                <button class="btn btn-outline btn-sm admin-collapse-button" id="allVisitorsToggle" type="button" aria-expanded="true" aria-controls="allVisitorsBody"><span aria-hidden="true">−</span><span class="admin-collapse-label">Скрыть</span></button>
             </div>
-            <div id="allVisitorsList">
-                <div class="no-data">Нажмите кнопку для загрузки</div>
+            <div id="allVisitorsBody">
+                <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+                    <button class="btn btn-outline btn-sm" onclick="loadAllVisitors('all')" style="font-size:0.8rem;">Все</button>
+                    <button class="btn btn-outline btn-sm" onclick="loadAllVisitors('today')" style="font-size:0.8rem;">Сегодня</button>
+                    <button class="btn btn-outline btn-sm" onclick="loadAllVisitors('week')" style="font-size:0.8rem;">За неделю</button>
+                </div>
+                <div id="allVisitorsList">
+                    <div class="no-data">Нажмите кнопку для загрузки</div>
+                </div>
             </div>
         </div>
 
@@ -2002,9 +2007,26 @@
         let visitorsListPeriod = 'all';
         let visitorsListener = null;
         let lastVisitorsSnapshot = null;
+        let visitorsWasLoaded = false;
+
+        function setAllVisitorsCollapsed(collapsed) {
+            const body = document.getElementById('allVisitorsBody');
+            const button = document.getElementById('allVisitorsToggle');
+            if (!body || !button) return;
+            body.hidden = collapsed;
+            button.setAttribute('aria-expanded', String(!collapsed));
+            button.querySelector('[aria-hidden]').textContent = collapsed ? '+' : '−';
+            button.querySelector('.admin-collapse-label').textContent = collapsed ? 'Показать' : 'Скрыть';
+            localStorage.setItem('admin-all-visitors-collapsed', collapsed ? '1' : '0');
+            if (collapsed && visitorsListener) {
+                db.ref('visitors').off('value', visitorsListener);
+                visitorsListener = null;
+            } else if (!collapsed && visitorsWasLoaded) loadAllVisitors(visitorsListPeriod);
+        }
 
         function loadAllVisitors(period) {
             visitorsListPeriod = period;
+            visitorsWasLoaded = true;
 
             // Снимаем старый слушатель
             if (visitorsListener) {
@@ -2125,6 +2147,15 @@
                 alert('Посетитель удалён');
             }).catch(err => {
                 alert('Ошибка: ' + err.message);
+            });
+        }
+
+        const allVisitorsToggle = document.getElementById('allVisitorsToggle');
+        if (allVisitorsToggle) {
+            const initiallyCollapsed = localStorage.getItem('admin-all-visitors-collapsed') === '1';
+            setAllVisitorsCollapsed(initiallyCollapsed);
+            allVisitorsToggle.addEventListener('click', () => {
+                setAllVisitorsCollapsed(allVisitorsToggle.getAttribute('aria-expanded') === 'true');
             });
         }
 

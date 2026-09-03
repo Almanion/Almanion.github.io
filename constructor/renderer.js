@@ -103,11 +103,25 @@
         const id = String(section && section.id || 'section');
         const title = String(section && section.title || 'Раздел');
         const blocks = Array.isArray(section && section.blocks) ? section.blocks : [];
+        const subsections = Array.isArray(section && section.subsections) ? section.subsections : [];
+        const subsectionHtml = subsections.map(subsection => {
+            const subsectionId = escapeHtml(subsection && subsection.id || 'subsection');
+            const subsectionTitle = String(subsection && subsection.title || 'Подраздел');
+            const children = Array.isArray(subsection && subsection.children) ? subsection.children : [];
+            return [
+                '    <section id="' + subsectionId + '" class="constructor-subsection">',
+                '        <h3 class="topic-title">' + renderInline(subsectionTitle) + '</h3>',
+                (String(subsection && subsection.content || '').trim() ? '        <p>' + renderInline(subsection.content) + '</p>' : ''),
+                children.map(block => renderBlock(block, 0)).filter(Boolean).join('\n'),
+                '    </section>'
+            ].join('\n');
+        }).join('\n');
         return [
             '<section id="' + escapeHtml(id) + '" class="content-section constructor-content-section" data-constructor-section="' + escapeHtml(id) + '">',
             '    <h2 class="part-title">' + escapeHtml(title) + '</h2>',
             '    <article class="topic constructor-topic">',
             blocks.map(block => renderBlock(block, 0)).filter(Boolean).join('\n'),
+            subsectionHtml,
             '    </article>',
             '</section>'
         ].join('\n');
@@ -116,6 +130,19 @@
     function renderNavItem(section) {
         const id = escapeHtml(section && section.id || 'section');
         const title = escapeHtml(section && (section.navTitle || section.title) || 'Раздел');
+        const subsections = Array.isArray(section && section.subsections) ? section.subsections : [];
+        if (subsections.length) {
+            const overview = Array.isArray(section && section.blocks) && section.blocks.length
+                ? '<li><a href="#' + id + '" class="nav-link">Обзор</a></li>'
+                : '';
+            return '<li class="nav-group">' +
+                '<button class="nav-group-toggle" type="button"><span class="toggle-icon">▼</span>' + title + '</button>' +
+                '<ul class="nav-submenu">' + overview + subsections.map(subsection => {
+                    const subsectionId = escapeHtml(subsection && subsection.id || 'subsection');
+                    const subsectionTitle = escapeHtml(subsection && (subsection.navTitle || subsection.title) || 'Подраздел');
+                    return '<li><a href="#' + subsectionId + '" class="nav-link">' + subsectionTitle + '</a></li>';
+                }).join('') + '</ul></li>';
+        }
         return '<li class="constructor-nav-item" data-constructor-nav="' + id + '"><a href="#' + id + '" class="nav-link">' + title + '</a></li>';
     }
 

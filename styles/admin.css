@@ -271,6 +271,11 @@ body.admin-page.experimental.exp-dark {
 .admin-page .poll-card,
 .admin-page .message-panel { border: 1px solid var(--border); background: var(--bg-input); box-shadow: none; }
 .admin-page .no-data { color: var(--text-secondary); }
+.admin-collapsible-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .8rem; }
+.admin-collapsible-heading .section-title { margin: 0; }
+.admin-collapse-button { min-width: 92px; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; }
+.admin-collapse-button > span[aria-hidden] { width: .8rem; font-size: 1rem; line-height: 1; }
+#allVisitorsBody[hidden] { display: none; }
 
 .admin-toast-stack { position: fixed; right: 1rem; bottom: 1rem; z-index: 10000; display: grid; gap: .55rem; width: min(360px, calc(100vw - 2rem)); }
 .admin-toast { padding: .78rem .9rem; border: 1px solid var(--border); border-radius: 11px; background: color-mix(in srgb, var(--bg-card) 96%, transparent); color: var(--text); box-shadow: var(--exp-shadow-md, 0 8px 24px rgba(0,0,0,.15)); font-size: .8rem; line-height: 1.45; animation: adminToastIn .18s ease-out; }

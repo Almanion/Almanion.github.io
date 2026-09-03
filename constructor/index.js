@@ -9,6 +9,15 @@
     const MAX_IMAGE_BYTES = 2.5 * 1024 * 1024;
     const BLOCK_ICONS = { up: '↑', down: '↓', indent: '↳', outdent: '↰', duplicate: '⧉', remove: '×' };
     const STATUS_LABELS = { draft: 'Черновик', ready: 'К проверке', published: 'Опубликовано' };
+    const BLOCK_PICKER_GROUPS = [
+        { title: 'Текст и структура', types: ['paragraph', 'heading', 'list', 'formula', 'image'] },
+        { title: 'Учебные блоки', types: ['definition', 'theorem', 'lemma', 'proof', 'derivation', 'example', 'experiment', 'remark'] }
+    ];
+    const BLOCK_DESCRIPTIONS = {
+        paragraph: ['Т', 'Обычный текст'], heading: ['Aa', 'Малый заголовок'], list: ['≡', 'Список пунктов'], formula: ['ƒ', 'LaTeX-формула'], image: ['▧', 'Изображение'],
+        definition: ['О', 'Термин и смысл'], theorem: ['Т', 'Утверждение'], lemma: ['Л', 'Вспомогательный факт'], proof: ['Д', 'Ход доказательства'], derivation: ['→', 'Вывод формулы'],
+        example: ['П', 'Разобранный пример'], experiment: ['Э', 'Описание опыта'], remark: ['!', 'Важное уточнение']
+    };
 
     const state = {
         user: null,
@@ -17,6 +26,7 @@
         subject: '',
         sections: [],
         current: null,
+        currentSubsectionId: '',
         publishedManifest: null,
         publishedSections: [],
         hydrated: false,
@@ -24,7 +34,10 @@
         remoteTimer: 0,
         saveGeneration: 0,
         dragId: '',
+        insertAfterId: '',
+        pickerParentId: '',
         previewGeneration: 0,
+        previewTheme: localStorage.getItem('note-constructor-preview-theme') || 'site',
         deleting: false
     };
 
@@ -128,6 +141,35 @@
         return entries.some(entry => manifestEntryId(entry) === id);
     }
 
+    function sectionSubsections(section) {
+        return section && Array.isArray(section.subsections) ? section.subsections : [];
+    }
+
+    function activeSubsection() {
+        return state.currentSubsectionId && state.current
+            ? sectionSubsections(state.current).find(item => item.id === state.currentSubsectionId) || null
+            : null;
+    }
+
+    function activeDocument() {
+        return activeSubsection() || state.current;
+    }
+
+    function activeBlockList() {
+        const subsection = activeSubsection();
+        if (subsection) {
+            subsection.children = Array.isArray(subsection.children) ? subsection.children : [];
+            return subsection.children;
+        }
+        if (!state.current) return [];
+        state.current.blocks = Array.isArray(state.current.blocks) ? state.current.blocks : [];
+        return state.current.blocks;
+    }
+
+    function activeBlockTree() {
+        return { blocks: activeBlockList() };
+    }
+
     function newestSection() {
         const candidates = Array.prototype.slice.call(arguments).filter(Boolean);
         return candidates.sort((a, b) => (Number(b.updatedAt) || 0) - (Number(a.updatedAt) || 0))[0] || null;
@@ -163,6 +205,7 @@
         state.hydrated = false;
         state.subject = subject;
         state.current = null;
+        state.currentSubsectionId = '';
         state.sections = [];
         state.publishedSections = [];
         localStorage.setItem('note-constructor-subject', subject);
@@ -191,8 +234,10 @@
         )).sort(compareSections);
         state.hydrated = true;
         state.current = state.sections[0] || null;
+        state.currentSubsectionId = '';
         setSaveState('idle', remoteResult.status === 'rejected' ? 'Черновики доступны на устройстве' : 'Все изменения сохранены');
         renderAll();
+        el('builderPreview').scrollTop = 0;
         const subjectConfig = state.subjects.find(item => item.id === subject);
         el('subjectPageLink').href = subjectConfig ? subjectConfig.page : subject + '.html';
         if (publishedResult.status === 'rejected') toast('Не удалось прочитать опубликованные разделы.', true);
@@ -212,25 +257,23 @@
             return;
         }
         root.innerHTML = state.sections.map((section, index) => {
-            const active = state.current && state.current.id === section.id;
-            return '<div class="builder-section-row' + (active ? ' is-active' : '') + '" data-section-id="' + escapeHtml(section.id) + '">' +
-                '<button class="builder-section-item' + (active ? ' is-active' : '') + '" type="button" data-section-select="' + escapeHtml(section.id) + '">' +
+            const selectedSection = state.current && state.current.id === section.id;
+            const active = selectedSection && !state.currentSubsectionId;
+            const subsections = sectionSubsections(section);
+            return '<div class="builder-section-row" data-section-id="' + escapeHtml(section.id) + '">' +
+                '<div class="builder-section-main"><button class="builder-section-item' + (active ? ' is-active' : '') + '" type="button" data-section-select="' + escapeHtml(section.id) + '">' +
                     '<strong>' + escapeHtml(section.navTitle || section.title) + '</strong>' +
                     '<span class="builder-section-status is-' + escapeHtml(section.reviewStatus) + '"></span>' +
                     '<small>' + escapeHtml(STATUS_LABELS[section.reviewStatus] || 'Черновик') + '</small>' +
-                '</button>' +
+                '</button><button class="builder-add-subsection" type="button" data-add-subsection="' + escapeHtml(section.id) + '" aria-label="Добавить подраздел" title="Добавить подраздел">＋</button></div>' +
                 '<div class="builder-section-order" aria-label="Порядок раздела">' +
                     '<button type="button" data-section-move="-1" title="Выше"' + (index === 0 ? ' disabled' : '') + '>↑</button>' +
                     '<button type="button" data-section-move="1" title="Ниже"' + (index === state.sections.length - 1 ? ' disabled' : '') + '>↓</button>' +
-                '</div>' +
+                '</div>' + (subsections.length ? '<div class="builder-subsection-list">' + subsections.map(subsection =>
+                    '<button class="builder-subsection-item' + (selectedSection && state.currentSubsectionId === subsection.id ? ' is-active' : '') + '" type="button" data-subsection-select="' + escapeHtml(subsection.id) + '" title="' + escapeHtml(subsection.title) + '">' + escapeHtml(subsection.navTitle || subsection.title) + '</button>'
+                ).join('') + '</div>' : '') +
             '</div>';
         }).join('');
-    }
-
-    function typeOptions(selected) {
-        return Object.keys(Model.BLOCK_TYPES).map(type =>
-            '<option value="' + type + '"' + (type === selected ? ' selected' : '') + '>' + escapeHtml(Model.BLOCK_TYPES[type].label) + '</option>'
-        ).join('');
     }
 
     function actionButton(action, label, disabled) {
@@ -262,8 +305,9 @@
     function renderBlockEditor(block, depth, index, count) {
         const canNest = Model.isContainerType(block.type) && depth < Model.MAX_NESTING_DEPTH;
         const children = Array.isArray(block.children) ? block.children : [];
-        return '<article class="builder-block" draggable="true" data-block-id="' + escapeHtml(block.id) + '" data-depth="' + depth + '">' +
+        return '<article class="builder-block' + (state.insertAfterId === block.id ? ' is-selected' : '') + '" data-block-id="' + escapeHtml(block.id) + '" data-depth="' + depth + '">' +
             '<div class="builder-block-head">' +
+                '<button class="builder-drag-handle" type="button" draggable="true" data-drag-handle aria-label="Перетащить блок" title="Перетащить блок">⠿</button>' +
                 '<span class="builder-block-kind">' + escapeHtml(Model.BLOCK_TYPES[block.type].label) + '</span>' +
                 '<div class="builder-block-actions">' +
                     actionButton('up', 'Переместить выше', index === 0) +
@@ -275,7 +319,7 @@
                 '</div>' +
             '</div>' +
             '<div class="builder-block-fields">' + blockFields(block) + '</div>' +
-            (canNest ? '<div class="builder-child-zone"><div class="builder-child-zone-head"><span>Вложенные блоки</span><div class="builder-child-add"><select aria-label="Тип вложенного блока">' + typeOptions('paragraph') + '</select><button class="builder-button is-quiet" type="button" data-add-child>Добавить</button></div></div><div class="builder-child-list">' + children.map((child, childIndex) => renderBlockEditor(child, depth + 1, childIndex, children.length)).join('') + '</div></div>' : '') +
+            (canNest ? '<div class="builder-child-zone"><div class="builder-child-zone-head"><span>Вложенные блоки</span><div class="builder-child-add"><button class="builder-button is-quiet" type="button" data-open-block-picker data-parent-id="' + escapeHtml(block.id) + '">＋ Добавить</button></div></div><div class="builder-child-list">' + children.map((child, childIndex) => renderBlockEditor(child, depth + 1, childIndex, children.length)).join('') + '</div><div class="builder-drop-zone" data-drop-parent="' + escapeHtml(block.id) + '">Перетащите блок сюда, чтобы вложить</div></div>' : '') +
         '</article>';
     }
 
@@ -284,19 +328,44 @@
         el('editorEmpty').hidden = hasCurrent;
         el('editorContent').hidden = !hasCurrent;
         if (!hasCurrent) return;
-        el('sectionTitle').value = state.current.title;
-        el('sectionNavTitle').value = state.current.navTitle;
-        el('sectionSlug').textContent = '#' + state.current.id;
+        const subsection = activeSubsection();
+        const document = subsection || state.current;
+        el('documentKind').textContent = subsection ? 'Подраздел' : 'Раздел';
+        el('documentTitleLabel').textContent = subsection ? 'Полное название подраздела' : 'Заголовок раздела';
+        el('documentNavTitleLabel').textContent = subsection ? 'Короткое название в меню' : 'Название в меню';
+        el('sectionTitle').value = document.title;
+        el('sectionNavTitle').value = document.navTitle;
+        el('sectionSlug').textContent = '#' + document.id;
         el('reviewStatus').value = state.current.reviewStatus;
+        el('reviewStatusControl').hidden = !!subsection;
         const published = isPublishedSection(state.current.id);
         const deleteButton = el('deleteSectionButton');
-        deleteButton.hidden = published && !state.isOwner;
-        deleteButton.title = published ? 'Удалить раздел с сайта' : 'Удалить черновик';
+        deleteButton.hidden = !subsection && published && !state.isOwner;
+        deleteButton.title = subsection ? 'Удалить подраздел' : (published ? 'Удалить раздел с сайта' : 'Удалить черновик');
         deleteButton.setAttribute('aria-label', deleteButton.title);
-        el('blockList').innerHTML = state.current.blocks.map((block, index) => renderBlockEditor(block, 0, index, state.current.blocks.length)).join('');
+        el('deleteDocumentLabel').textContent = subsection ? 'Удалить подраздел' : 'Удалить';
+        const blocks = activeBlockList();
+        if (state.insertAfterId && !Model.findLocation(blocks, state.insertAfterId, null, 0)) state.insertAfterId = '';
+        el('blockList').innerHTML = blocks.map((block, index) => renderBlockEditor(block, 0, index, blocks.length)).join('');
+        updateAddDockContext();
+        window.requestAnimationFrame(autoResizeTextareas);
     }
 
     function currentPreviewTheme() {
+        const selected = state.previewTheme;
+        if (selected && selected !== 'site') {
+            const parts = selected.split('-');
+            const mode = parts[0];
+            const dark = parts[1] === 'dark';
+            if (mode === 'legacy') {
+                return { bodyClass: (dark ? 'dark-theme ' : '') + 'no-hover constructor-preview-page', label: 'Старый · ' + (dark ? 'тёмная' : 'светлая') };
+            }
+            const palette = mode === 'graphite' ? 'graphite' : 'prism';
+            return {
+                bodyClass: 'experimental exp-' + palette + (dark ? ' exp-dark' : '') + ' no-hover constructor-preview-page',
+                label: (palette === 'graphite' ? 'Графит' : 'Призма') + (dark ? ' · тёмная' : ' · светлая')
+            };
+        }
         let settings = {};
         try { settings = JSON.parse(localStorage.getItem('siteSettings') || '{}') || {}; } catch (_) {}
         if (settings.experimental === false) {
@@ -368,6 +437,11 @@
                 });
             } catch (_) {}
         }
+        const subsection = activeSubsection();
+        if (subsection) {
+            const target = root.querySelector('#' + CSS.escape(subsection.id));
+            if (target) target.scrollIntoView({ block: 'start' });
+        } else if (root.ownerDocument.defaultView) root.ownerDocument.defaultView.scrollTo(0, 0);
     }
 
     function flushTimers() {
@@ -446,21 +520,61 @@
         state.sections.push(section);
         state.sections.sort(compareSections);
         state.current = section;
+        state.currentSubsectionId = '';
         renderAll();
         scheduleSave();
         toast('Раздел создан и сохранён как черновик');
     }
 
+    function openSubsectionDialog(sectionId) {
+        const section = state.sections.find(item => item.id === sectionId);
+        if (!section) return;
+        state.current = section;
+        state.currentSubsectionId = '';
+        el('newSubsectionTitle').value = '';
+        el('newSubsectionNavTitle').value = '';
+        el('subsectionDialog').hidden = false;
+        renderAll();
+        window.setTimeout(() => el('newSubsectionTitle').focus(), 30);
+    }
+
+    function closeSubsectionDialog() { el('subsectionDialog').hidden = true; }
+
+    function uniqueSubsectionId(title) {
+        const base = Model.slugify(title);
+        const used = new Set(state.sections.flatMap(section => sectionSubsections(section).map(item => item.id)).concat(state.sections.map(section => section.id)));
+        let id = base;
+        let suffix = 2;
+        while (used.has(id)) id = base.slice(0, 58) + '-' + suffix++;
+        return id;
+    }
+
+    function createSubsection(title, navTitle) {
+        if (!state.current) return;
+        const subsection = Model.createSubsection(title, navTitle);
+        subsection.id = uniqueSubsectionId(title);
+        state.current.subsections = sectionSubsections(state.current);
+        state.current.subsections.push(subsection);
+        state.currentSubsectionId = subsection.id;
+        state.insertAfterId = '';
+        changed(true);
+        toast('Подраздел создан');
+    }
+
     function openDeleteSectionDialog() {
         if (!state.current || state.deleting) return;
+        const subsection = activeSubsection();
         const published = isPublishedSection(state.current.id);
-        if (published && !state.isOwner) return;
-        el('deleteSectionTitle').textContent = published ? 'Удалить опубликованный раздел?' : 'Удалить черновик?';
-        el('deleteSectionDescription').textContent = published
+        if (!subsection && published && !state.isOwner) return;
+        el('deleteSectionTitle').textContent = subsection ? 'Удалить подраздел?' : (published ? 'Удалить опубликованный раздел?' : 'Удалить черновик?');
+        el('deleteSectionDescription').textContent = subsection
+            ? 'Подраздел и все вложенные в него блоки будут удалены из текущего черновика.'
+            : published
             ? 'Раздел исчезнет с сайта после обновления GitHub Pages. История останется доступна в GitHub.'
             : 'Черновик будет удалён с этого устройства и из аккаунта. Вернуть его после удаления не получится.';
-        el('deleteSectionName').textContent = state.current.navTitle || state.current.title;
-        el('deleteSectionConfirm').textContent = published ? 'Удалить с сайта' : 'Удалить черновик';
+        el('deleteSectionKind').textContent = subsection ? 'Подраздел' : 'Раздел';
+        el('deleteSectionName').textContent = subsection ? (subsection.navTitle || subsection.title) : (state.current.navTitle || state.current.title);
+        el('deleteSectionConfirm').textContent = subsection ? 'Удалить подраздел' : (published ? 'Удалить с сайта' : 'Удалить черновик');
         el('deleteSectionDialog').hidden = false;
         window.setTimeout(() => el('deleteSectionCancel').focus(), 30);
     }
@@ -475,12 +589,19 @@
         if (index === -1) return;
         state.sections.splice(index, 1);
         state.current = state.sections[Math.min(index, state.sections.length - 1)] || null;
+        state.currentSubsectionId = '';
+        state.insertAfterId = '';
     }
 
-    function selectSection(id) {
+    function selectSection(id, subsectionId) {
         const section = state.sections.find(item => item.id === id);
-        if (!section || section === state.current) return;
+        if (!section) return;
+        const nextSubsectionId = subsectionId && sectionSubsections(section).some(item => item.id === subsectionId) ? subsectionId : '';
+        if (section === state.current && nextSubsectionId === state.currentSubsectionId) return;
         state.current = section;
+        state.currentSubsectionId = nextSubsectionId;
+        state.insertAfterId = '';
+        if (el('builderShell').classList.contains('is-outline-fullscreen')) setFullscreenPanel('outline', false);
         renderAll();
         if (window.innerWidth < 760) el('builderEditor').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -502,19 +623,20 @@
     }
 
     function findBlock(blockId) {
-        return state.current ? Model.findLocation(state.current.blocks, blockId, null, 0) : null;
+        return state.current ? Model.findLocation(activeBlockList(), blockId, null, 0) : null;
     }
 
     function handleBlockAction(blockId, action) {
         if (!state.current) return;
-        if (action === 'up') Model.moveWithinLevel(state.current, blockId, -1);
-        else if (action === 'down') Model.moveWithinLevel(state.current, blockId, 1);
-        else if (action === 'indent') Model.indentBlock(state.current, blockId);
-        else if (action === 'outdent') Model.outdentBlock(state.current, blockId);
-        else if (action === 'duplicate') Model.duplicateBlock(state.current, blockId);
+        const tree = activeBlockTree();
+        if (action === 'up') Model.moveWithinLevel(tree, blockId, -1);
+        else if (action === 'down') Model.moveWithinLevel(tree, blockId, 1);
+        else if (action === 'indent') Model.indentBlock(tree, blockId);
+        else if (action === 'outdent') Model.outdentBlock(tree, blockId);
+        else if (action === 'duplicate') Model.duplicateBlock(tree, blockId);
         else if (action === 'remove') {
             const snapshot = clone(state.current);
-            if (!Model.removeBlock(state.current, blockId)) return;
+            if (!Model.removeBlock(tree, blockId)) return;
             changed(true);
             toast('Блок удалён.', false, { label: 'Отменить', run: function () { Object.assign(state.current, snapshot); changed(true); } });
             return;
@@ -522,13 +644,87 @@
         changed(true);
     }
 
-    function addRootBlock() {
+    function renderBlockPicker() {
+        el('blockPickerOptions').innerHTML = BLOCK_PICKER_GROUPS.map(group =>
+            '<section class="builder-block-picker-group"><h3>' + escapeHtml(group.title) + '</h3><div class="builder-block-picker-grid">' + group.types.map(type => {
+                const meta = BLOCK_DESCRIPTIONS[type] || ['', ''];
+                return '<button class="builder-block-choice" type="button" data-create-block="' + type + '"><span class="builder-block-choice-icon" aria-hidden="true">' + escapeHtml(meta[0]) + '</span><strong>' + escapeHtml(Model.BLOCK_TYPES[type].label) + '</strong><small>' + escapeHtml(meta[1]) + '</small></button>';
+            }).join('') + '</div></section>'
+        ).join('');
+    }
+
+    function updateAddDockContext() {
+        const location = state.insertAfterId ? findBlock(state.insertAfterId) : null;
+        const subsection = activeSubsection();
+        el('addDockTitle').textContent = subsection ? 'Продолжить подраздел' : 'Продолжить раздел';
+        el('addDockContext').textContent = location
+            ? 'Новый блок появится после «' + Model.BLOCK_TYPES[location.block.type].label + '»'
+            : 'Новый блок появится в конце';
+    }
+
+    function openBlockPicker(parentId) {
         if (!state.current) return;
-        state.current.blocks.push(Model.createBlock(el('newBlockType').value));
+        state.pickerParentId = parentId || '';
+        const parent = state.pickerParentId ? findBlock(state.pickerParentId) : null;
+        el('blockPickerContext').textContent = parent
+            ? 'Блок будет вложен в «' + Model.BLOCK_TYPES[parent.block.type].label + '».'
+            : (state.insertAfterId ? 'Блок появится сразу после выбранного.' : 'Блок появится в конце текущего материала.');
+        el('blockPicker').hidden = false;
+        document.body.classList.add('builder-modal-open');
+        window.setTimeout(() => el('blockPicker').querySelector('[data-create-block]')?.focus(), 30);
+    }
+
+    function closeBlockPicker() {
+        state.pickerParentId = '';
+        el('blockPicker').hidden = true;
+        document.body.classList.remove('builder-modal-open');
+    }
+
+    function createBlockFromPicker(type) {
+        if (!state.current || !Model.BLOCK_TYPES[type] || Model.BLOCK_TYPES[type].structural) return;
+        const block = Model.createBlock(type);
+        if (state.pickerParentId) {
+            const parent = findBlock(state.pickerParentId);
+            if (!parent || !Model.isContainerType(parent.block.type)) return;
+            parent.block.children = Array.isArray(parent.block.children) ? parent.block.children : [];
+            parent.block.children.push(block);
+        } else {
+            const selected = state.insertAfterId ? findBlock(state.insertAfterId) : null;
+            if (selected) selected.list.splice(selected.index + 1, 0, block);
+            else activeBlockList().push(block);
+        }
+        state.insertAfterId = block.id;
+        closeBlockPicker();
         changed(true);
-        const blocks = el('blockList').querySelectorAll('.builder-block[data-depth="0"]');
-        const last = blocks[blocks.length - 1];
-        if (last) last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.requestAnimationFrame(() => {
+            const card = el('blockList').querySelector('[data-block-id="' + CSS.escape(block.id) + '"]');
+            card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const field = card?.querySelector('textarea,input');
+            if (field) field.focus();
+        });
+    }
+
+    function autoResizeTextareas() {
+        el('blockList').querySelectorAll('textarea').forEach(area => {
+            area.style.height = 'auto';
+            area.style.height = Math.min(420, Math.max(92, area.scrollHeight)) + 'px';
+        });
+    }
+
+    function applySmartDashes(target) {
+        if (!target || typeof target.value !== 'string') return;
+        const field = target.dataset.blockField;
+        if (field === 'latex' || field === 'src') return;
+        const before = target.value;
+        if (!before.includes('--')) return;
+        const start = target.selectionStart;
+        const prefix = typeof start === 'number' ? before.slice(0, start) : '';
+        target.value = Model.smartDashes(before);
+        if (typeof start === 'number') {
+            const removed = (prefix.match(/--/g) || []).length;
+            const next = start - removed;
+            target.setSelectionRange(next, next);
+        }
     }
 
     async function handleImage(blockId, file) {
@@ -580,6 +776,7 @@
             visit(block && block.children);
         });
         visit(section && section.blocks);
+        sectionSubsections(section).forEach(subsection => visit(subsection.children));
         return paths;
     }
 
@@ -622,6 +819,16 @@
 
     async function deleteCurrentSection() {
         if (!state.current || state.deleting) return;
+        const subsection = activeSubsection();
+        if (subsection) {
+            const snapshot = clone(state.current);
+            state.current.subsections = sectionSubsections(state.current).filter(item => item.id !== subsection.id);
+            state.currentSubsectionId = '';
+            el('deleteSectionDialog').hidden = true;
+            changed(true);
+            toast('Подраздел удалён.', false, { label: 'Отменить', run: function () { Object.assign(state.current, snapshot); state.currentSubsectionId = subsection.id; changed(true); } });
+            return;
+        }
         const section = clone(state.current);
         const published = isPublishedSection(section.id);
         if (published && !state.isOwner) return;
@@ -674,7 +881,8 @@
             { path: 'content/' + state.subject + '/manifest.json', content: JSON.stringify(manifest, null, 2) + '\n', encoding: 'utf-8' }
         ];
         const assets = await Storage.listAssets(state.user.uid, state.subject, section.id).catch(() => []);
-        assets.forEach(asset => {
+        const referencedImages = collectImagePaths(section);
+        assets.filter(asset => referencedImages.has(String(asset.path || '').replace(/\\/g, '/'))).forEach(asset => {
             const comma = asset.dataUrl.indexOf(',');
             if (comma !== -1) files.push({ path: asset.path, content: asset.dataUrl.slice(comma + 1), encoding: 'base64' });
         });
@@ -735,8 +943,82 @@
         }
     }
 
+    function setFullscreenPanel(kind, open) {
+        const shell = el('builderShell');
+        const preview = kind === 'preview';
+        shell.classList.toggle(preview ? 'is-preview-fullscreen' : 'is-outline-fullscreen', open);
+        if (open) shell.classList.remove(preview ? 'is-outline-fullscreen' : 'is-preview-fullscreen');
+        const button = el(preview ? 'previewFullscreenButton' : 'outlineFullscreenButton');
+        button.setAttribute('aria-pressed', String(open));
+        button.title = open ? 'Вернуть обычный размер' : (preview ? 'Развернуть предпросмотр' : 'Развернуть структуру');
+        button.setAttribute('aria-label', button.title);
+        if (preview && open) {
+            el('builderPreview').classList.add('is-open');
+            el('builderPreview').scrollTop = 0;
+        }
+    }
+
+    function toggleFullscreenPanel(kind) {
+        const shell = el('builderShell');
+        const className = kind === 'preview' ? 'is-preview-fullscreen' : 'is-outline-fullscreen';
+        setFullscreenPanel(kind, !shell.classList.contains(className));
+    }
+
+    function setupResizablePanels() {
+        const shell = el('builderShell');
+        const root = document.documentElement;
+        const storedOutline = Number(localStorage.getItem('note-constructor-outline-width'));
+        const storedPreview = Number(localStorage.getItem('note-constructor-preview-width'));
+        if (storedOutline >= 220 && storedOutline <= 520) root.style.setProperty('--builder-outline-width', storedOutline + 'px');
+        if (storedPreview >= 340 && storedPreview <= 760) root.style.setProperty('--builder-preview-width', storedPreview + 'px');
+
+        function bind(handle, kind) {
+            const property = kind === 'outline' ? '--builder-outline-width' : '--builder-preview-width';
+            const key = kind === 'outline' ? 'note-constructor-outline-width' : 'note-constructor-preview-width';
+            const bounds = kind === 'outline' ? [220, 520] : [340, 760];
+            function apply(value) {
+                const limited = Math.max(bounds[0], Math.min(bounds[1], Math.round(value)));
+                root.style.setProperty(property, limited + 'px');
+                localStorage.setItem(key, String(limited));
+            }
+            handle.addEventListener('pointerdown', event => {
+                if (window.innerWidth <= 1280) return;
+                event.preventDefault();
+                const startX = event.clientX;
+                const panel = kind === 'outline' ? el('sectionList').closest('.builder-sections') : el('builderPreview');
+                const startWidth = panel.getBoundingClientRect().width;
+                handle.classList.add('is-active');
+                shell.classList.add('is-resizing');
+                function move(moveEvent) {
+                    const delta = kind === 'outline' ? moveEvent.clientX - startX : startX - moveEvent.clientX;
+                    apply(startWidth + delta);
+                }
+                function stop() {
+                    handle.classList.remove('is-active');
+                    shell.classList.remove('is-resizing');
+                    window.removeEventListener('pointermove', move);
+                    window.removeEventListener('pointerup', stop);
+                    window.removeEventListener('pointercancel', stop);
+                }
+                window.addEventListener('pointermove', move);
+                window.addEventListener('pointerup', stop, { once: true });
+                window.addEventListener('pointercancel', stop, { once: true });
+            });
+            handle.addEventListener('keydown', event => {
+                if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+                event.preventDefault();
+                const current = parseFloat(getComputedStyle(root).getPropertyValue(property)) || (kind === 'outline' ? 270 : 440);
+                const direction = event.key === 'ArrowRight' ? 1 : -1;
+                apply(current + direction * 16 * (kind === 'outline' ? 1 : -1));
+            });
+        }
+        bind(el('outlineResizer'), 'outline');
+        bind(el('previewResizer'), 'preview');
+    }
+
     function bindEvents() {
         el('builderLoginButton').addEventListener('click', () => window.AlmanionAccount.openLogin());
+        ['newSectionTitle', 'newSubsectionTitle', 'newSubsectionNavTitle'].forEach(id => el(id).addEventListener('input', event => applySmartDashes(event.target)));
         el('subjectSelect').addEventListener('change', event => loadSubject(event.target.value));
         el('newSectionButton').addEventListener('click', openSectionDialog);
         el('emptyNewSectionButton').addEventListener('click', openSectionDialog);
@@ -750,6 +1032,17 @@
             closeSectionDialog();
             createSection(title);
         });
+        el('subsectionDialogClose').addEventListener('click', closeSubsectionDialog);
+        el('subsectionDialogCancel').addEventListener('click', closeSubsectionDialog);
+        el('subsectionDialog').addEventListener('click', event => { if (event.target === el('subsectionDialog')) closeSubsectionDialog(); });
+        el('subsectionDialogForm').addEventListener('submit', event => {
+            event.preventDefault();
+            const title = el('newSubsectionTitle').value.trim();
+            const navTitle = el('newSubsectionNavTitle').value.trim();
+            if (!title) return;
+            closeSubsectionDialog();
+            createSubsection(title, navTitle);
+        });
         el('deleteSectionButton').addEventListener('click', openDeleteSectionDialog);
         el('deleteSectionClose').addEventListener('click', closeDeleteSectionDialog);
         el('deleteSectionCancel').addEventListener('click', closeDeleteSectionDialog);
@@ -758,6 +1051,14 @@
             if (event.target === el('deleteSectionDialog')) closeDeleteSectionDialog();
         });
         el('sectionList').addEventListener('click', event => {
+            const addSubsection = event.target.closest('[data-add-subsection]');
+            if (addSubsection) return openSubsectionDialog(addSubsection.dataset.addSubsection);
+            const subsection = event.target.closest('[data-subsection-select]');
+            if (subsection) {
+                const row = subsection.closest('[data-section-id]');
+                if (row) selectSection(row.dataset.sectionId, subsection.dataset.subsectionSelect);
+                return;
+            }
             const select = event.target.closest('[data-section-select]');
             if (select) return selectSection(select.dataset.sectionSelect);
             const move = event.target.closest('[data-section-move]');
@@ -767,19 +1068,36 @@
                 moveSection(Number(move.dataset.sectionMove));
             }
         });
-        el('sectionTitle').addEventListener('input', event => { state.current.title = event.target.value; changed(false); });
-        el('sectionNavTitle').addEventListener('input', event => { state.current.navTitle = event.target.value; changed(false); });
+        el('sectionTitle').addEventListener('input', event => { applySmartDashes(event.target); const document = activeDocument(); if (document) document.title = event.target.value; changed(false); });
+        el('sectionNavTitle').addEventListener('input', event => { applySmartDashes(event.target); const document = activeDocument(); if (document) document.navTitle = event.target.value; changed(false); });
         el('reviewStatus').addEventListener('change', event => { state.current.reviewStatus = event.target.value; changed(false); });
-        el('addBlockButton').addEventListener('click', addRootBlock);
+        el('openBlockPickerButton').addEventListener('click', () => openBlockPicker(''));
+        el('blockPickerClose').addEventListener('click', closeBlockPicker);
+        el('blockPickerCancel').addEventListener('click', closeBlockPicker);
+        el('blockPicker').addEventListener('click', event => {
+            if (event.target === el('blockPicker')) return closeBlockPicker();
+            const choice = event.target.closest('[data-create-block]');
+            if (choice) createBlockFromPicker(choice.dataset.createBlock);
+        });
         el('blockList').addEventListener('input', event => {
             const field = event.target.dataset.blockField;
             if (!field) return;
+            applySmartDashes(event.target);
             const card = event.target.closest('[data-block-id]');
             const location = card && findBlock(card.dataset.blockId);
             if (!location) return;
             if (field === 'items') location.block.items = event.target.value.split(/\r?\n/);
             else location.block[field] = event.target.value;
+            if (event.target.matches('textarea')) autoResizeTextareas();
             changed(false);
+        });
+        el('blockList').addEventListener('focusin', event => {
+            const card = event.target.closest('[data-block-id]');
+            if (!card) return;
+            state.insertAfterId = card.dataset.blockId;
+            el('blockList').querySelectorAll('.builder-block.is-selected').forEach(item => item.classList.remove('is-selected'));
+            card.classList.add('is-selected');
+            updateAddDockContext();
         });
         el('blockList').addEventListener('change', event => {
             if (!event.target.matches('[data-image-file]')) return;
@@ -793,35 +1111,52 @@
                 if (card) handleBlockAction(card.dataset.blockId, action.dataset.blockAction);
                 return;
             }
-            const addChild = event.target.closest('[data-add-child]');
-            if (addChild) {
-                const card = addChild.closest('[data-block-id]');
-                const select = addChild.parentElement.querySelector('select');
-                if (card && select && Model.addChild(state.current, card.dataset.blockId, select.value)) changed(true);
-            }
+            const addChild = event.target.closest('[data-open-block-picker]');
+            if (addChild) openBlockPicker(addChild.dataset.parentId);
         });
         el('blockList').addEventListener('dragstart', event => {
+            if (!event.target.closest('[data-drag-handle]')) return event.preventDefault();
             const card = event.target.closest('[data-block-id]');
             if (!card) return;
             state.dragId = card.dataset.blockId;
             card.classList.add('is-dragging');
             event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', state.dragId);
         });
         el('blockList').addEventListener('dragover', event => {
+            const zone = event.target.closest('[data-drop-parent]');
+            if (zone && zone.dataset.dropParent !== state.dragId) {
+                event.preventDefault();
+                zone.classList.add('is-drop-target');
+                event.dataTransfer.dropEffect = 'move';
+                return;
+            }
             const card = event.target.closest('[data-block-id]');
             if (!card || card.dataset.blockId === state.dragId) return;
             event.preventDefault();
             card.classList.add('is-drop-target');
         });
         el('blockList').addEventListener('dragleave', event => {
+            const zone = event.target.closest('[data-drop-parent]');
+            if (zone && !zone.contains(event.relatedTarget)) zone.classList.remove('is-drop-target');
             const card = event.target.closest('[data-block-id]');
-            if (card) card.classList.remove('is-drop-target');
+            if (card && !card.contains(event.relatedTarget)) card.classList.remove('is-drop-target');
         });
         el('blockList').addEventListener('drop', event => {
+            const zone = event.target.closest('[data-drop-parent]');
+            if (zone) {
+                event.preventDefault();
+                const moved = Model.moveIntoContainer(activeBlockTree(), state.dragId, zone.dataset.dropParent);
+                state.dragId = '';
+                if (moved) changed(true);
+                return;
+            }
             const card = event.target.closest('[data-block-id]');
             if (!card) return;
             event.preventDefault();
-            if (Model.moveBefore(state.current, state.dragId, card.dataset.blockId)) changed(true);
+            const moved = Model.moveBefore(activeBlockTree(), state.dragId, card.dataset.blockId);
+            state.dragId = '';
+            if (moved) changed(true);
         });
         el('blockList').addEventListener('dragend', () => {
             state.dragId = '';
@@ -833,9 +1168,17 @@
             el('previewToggle').setAttribute('aria-pressed', open ? 'true' : 'false');
         });
         el('previewCloseButton').addEventListener('click', () => {
+            setFullscreenPanel('preview', false);
             el('builderPreview').classList.remove('is-open');
             el('previewToggle').setAttribute('aria-pressed', 'false');
         });
+        el('previewThemeSelect').addEventListener('change', event => {
+            state.previewTheme = event.target.value;
+            localStorage.setItem('note-constructor-preview-theme', state.previewTheme);
+            renderPreview();
+        });
+        el('previewFullscreenButton').addEventListener('click', () => toggleFullscreenPanel('preview'));
+        el('outlineFullscreenButton').addEventListener('click', () => toggleFullscreenPanel('outline'));
         el('builderPreview').addEventListener('click', event => {
             const button = event.target.closest('[data-preview-size]');
             if (!button) return;
@@ -850,9 +1193,23 @@
         el('exportButton').addEventListener('click', exportBundle);
         el('publishButton').addEventListener('click', publishCurrent);
         document.addEventListener('keydown', event => {
+            if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                event.preventDefault();
+                openBlockPicker('');
+                return;
+            }
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+                event.preventDefault();
+                saveNow();
+                return;
+            }
             if (event.key === 'Escape') {
+                if (!el('blockPicker').hidden) closeBlockPicker();
                 closeSectionDialog();
+                closeSubsectionDialog();
                 closeDeleteSectionDialog();
+                setFullscreenPanel('preview', false);
+                setFullscreenPanel('outline', false);
                 el('builderPreview').classList.remove('is-open');
                 el('previewToggle').setAttribute('aria-pressed', 'false');
             }
@@ -863,7 +1220,11 @@
     }
 
     function start() {
-        el('newBlockType').innerHTML = typeOptions('paragraph');
+        renderBlockPicker();
+        const allowedPreviewThemes = Array.from(el('previewThemeSelect').options).map(option => option.value);
+        if (!allowedPreviewThemes.includes(state.previewTheme)) state.previewTheme = 'site';
+        el('previewThemeSelect').value = state.previewTheme;
+        setupResizablePanels();
         bindEvents();
         const account = window.AlmanionAccount;
         if (!account || !account.auth) return showGate('Не удалось запустить систему аккаунтов. Обновите страницу.', false);

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-03-section-delete-legacy-refresh-24';
+const CACHE_VERSION = 'almanion-pwa-2026-09-03-constructor-workflow-25';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 

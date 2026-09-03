@@ -22,6 +22,19 @@ function testModel() {
     assert.strictEqual(Model.moveWithinLevel(section, copy.id, -1), true);
     assert.strictEqual(section.blocks[1].id, copy.id);
     assert.deepStrictEqual(Model.validateSection(section), []);
+
+    const subsection = Model.createSubsection('Закон электромагнитной индукции', 'Закон индукции');
+    assert.strictEqual(subsection.navTitle, 'Закон индукции');
+    section.blocks = [Model.createBlock('definition'), Model.createBlock('paragraph')];
+    const paragraphId = section.blocks[1].id;
+    assert.strictEqual(Model.moveIntoContainer(section, paragraphId, section.blocks[0].id), true);
+    assert.strictEqual(section.blocks[0].children[0].id, paragraphId);
+    assert.strictEqual(Model.smartDashes('Причина -- следствие'), 'Причина — следствие');
+
+    const legacy = Model.normalizeSection({ title: 'Раздел', navTitle: 'Раздел', blocks: [Object.assign(Model.createBlock('subsection'), { title: 'Старый подраздел' })] }, 'physics');
+    assert.strictEqual(legacy.blocks.length, 0);
+    assert.strictEqual(legacy.subsections.length, 1);
+    assert.strictEqual(legacy.subsections[0].navTitle, 'Старый подраздел');
 }
 
 function testRenderer() {
@@ -32,11 +45,17 @@ function testRenderer() {
         Object.assign(Model.createBlock('formula'), { latex: String.raw`E &= mc^2` }),
         Object.assign(Model.createBlock('image'), { src: 'javascript:alert(1)', alt: 'x' })
     ];
+    section.subsections = [Object.assign(Model.createSubsection('Полное название', 'Короткое'), { id: 'short-subsection' })];
     const html = Renderer.renderSection(section);
     assert.ok(html.includes('&lt;script&gt;'));
     assert.ok(html.includes('<strong>Энергия</strong>'));
     assert.ok(html.includes('E &amp;= mc^2'));
     assert.ok(!html.includes('javascript:'));
+    assert.ok(html.includes('id="short-subsection"'));
+    const nav = Renderer.renderNavItem(section);
+    assert.ok(nav.includes('nav-group-toggle'));
+    assert.ok(nav.includes('href="#short-subsection"'));
+    assert.ok(nav.includes('Короткое'));
     assert.strictEqual(Renderer.safeImageSource('//example.com/track.png'), '');
 }
 
@@ -50,6 +69,10 @@ function testBuild() {
         const section = Model.createSection('physics', 'Тестовый раздел');
         section.id = 'test-section';
         section.blocks[0].content = 'Проверка сборки';
+        const subsection = Model.createSubsection('Полное название подраздела', 'Короткое меню');
+        subsection.id = 'test-subsection';
+        subsection.children[0].content = 'Текст подраздела';
+        section.subsections.push(subsection);
         fs.writeFileSync(path.join(root, 'content', 'physics', 'sections', 'test-section.json'), JSON.stringify(section));
         fs.writeFileSync(path.join(root, 'physics.html'), '<nav>' + Builder.MARKERS.navStart + '\n' + Builder.MARKERS.navEnd + '</nav><main>' + Builder.MARKERS.contentStart + '\n' + Builder.MARKERS.contentEnd + '</main>');
         const result = Builder.build({ root, output });
@@ -57,6 +80,9 @@ function testBuild() {
         assert.deepStrictEqual(result, { subjects: 1, sections: 1 });
         assert.ok(html.includes('href="#test-section"'));
         assert.ok(html.includes('Проверка сборки'));
+        assert.ok(html.includes('href="#test-subsection"'));
+        assert.ok(html.includes('Короткое меню'));
+        assert.ok(html.includes('Текст подраздела'));
     } finally {
         fs.rmSync(root, { recursive: true, force: true });
         fs.rmSync(output, { recursive: true, force: true });
