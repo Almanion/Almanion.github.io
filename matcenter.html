@@ -49,13 +49,14 @@
     <link rel="stylesheet" href="style-new.css?v=20260903-3">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260903-1">
+    <link rel="stylesheet" href="styles/matcenter-refresh.css?v=20260903-1">
 </head>
 <body class="matcenter-page">
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
     <!-- Боковая панель навигации -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h2><a href="index.html" style="color: white; text-decoration: none;"><svg class="home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg><span>Главная</span></a></h2>
+            <h2><a href="index.html" style="color: white; text-decoration: none;"><svg class="home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg><span>Конспекты</span></a></h2>
             <!-- Кнопка настроек создается автоматически через settings.js -->
             <button class="close-sidebar" id="closeSidebar" aria-label="Закрыть меню"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>
         </div>
@@ -157,9 +158,8 @@
     <!-- Основной контент -->
     <main class="main-content">
         <header class="page-header matcenter-page-header">
-            <p class="matcenter-page-eyebrow">Архив задач кружка</p>
             <h1>МатЦентр 2025/2026</h1>
-            <p class="subtitle"><a class="matcenter-author-link" href="https://t.me/Almanion239" target="_blank" rel="noopener noreferrer">@Almanion239</a></p>
+            <p class="subtitle">Архив задач математического кружка · <a class="matcenter-author-link" href="https://t.me/Almanion239" target="_blank" rel="noopener noreferrer">@Almanion239</a></p>
         </header>
 
         <!-- Мобильная строка поиска (видна только на мобильных) -->
@@ -272,6 +272,7 @@
                                 <path d="M13 7.5 17.5 12 13 16.5"/>
                                 <path d="M10 5H7.5A3.5 3.5 0 0 0 4 8.5v7A3.5 3.5 0 0 0 7.5 19H10"/>
                             </svg>
+                            <span>Поделиться</span>
                         </button>
                     </span>
                 </div>
@@ -342,20 +343,20 @@
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
     <script src="firebase-config.js?v=20260903-3"></script>
-    <script src="firebase-analytics.js"></script>
+    <script src="firebase-analytics.js?v=20260903-1"></script>
 
     <script src="script.js?v=20260903-1"></script>
-    <script src="matcenter/00-core.js?v=20260903-2"></script>
+    <script src="matcenter/00-core.js?v=20260903-3"></script>
     <script src="matcenter/10-security.js?v=20260902-2"></script>
     <script src="matcenter/20-auth.js?v=20260903-2"></script>
-    <script src="matcenter/30-data.js?v=20260903-4"></script>
+    <script src="matcenter/30-data.js?v=20260903-5"></script>
     <script src="matcenter/40-personal-progress.js?v=20260903-1"></script>
     <script src="matcenter/50-render.js?v=20260903-1"></script>
     <script src="matcenter/60-navigation-search.js?v=20260903-1"></script>
     <script src="matcenter/70-hints.js?v=20260903-1"></script>
     <script src="newyear.js?v=20260903-1"></script>
     <script src="settings.js?v=20260903-2"></script>
-    <script src="account.js?v=20260903-5"></script>
+    <script src="account.js?v=20260903-6"></script>
     <script src="poll.js"></script>
 </body>
 </html>

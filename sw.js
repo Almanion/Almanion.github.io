@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-03-matcenter-sheets-18';
+const CACHE_VERSION = 'almanion-pwa-2026-09-03-matcenter-admin-19';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -16,6 +16,8 @@ const APP_SHELL = [
     '/styles/site/50-matcenter-responsive.css',
     '/styles/site/60-poll-pwa.css',
     '/styles/typography.css',
+    '/styles/matcenter-refresh.css',
+    '/styles/admin.css',
     '/style-new.css',
     '/script.js',
     '/search.js',
@@ -29,6 +31,7 @@ const APP_SHELL = [
     '/knowledge-check-exam.js',
     '/firebase-config.js',
     '/firebase-analytics.js',
+    '/admin-dashboard.js',
     '/matcenter/00-core.js',
     '/matcenter/10-security.js',
     '/matcenter/20-auth.js',

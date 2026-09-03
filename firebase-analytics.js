@@ -48,6 +48,9 @@
     // ============================================
 
     let presenceIntervalId = null;
+    let usageIntervalId = null;
+    let usageSessionRef = null;
+    let usageSessionStartedAt = 0;
 
     function trackPresence() {
         const presenceRef = db.ref('presence/' + visitorId);
@@ -114,6 +117,59 @@
 
         // Счётчик уникальных посетителей за день
         db.ref('dailyStats/' + today + '/' + visitorId).set(true);
+    }
+
+    function getUsageDevice() {
+        const ua = navigator.userAgent || '';
+        if (/iPad|Tablet|PlayBook|Silk/i.test(ua)) return 'tablet';
+        if (/Mobile|Android|iPhone|iPod/i.test(ua)) return 'mobile';
+        return 'desktop';
+    }
+
+    function getReferrerHost() {
+        if (!document.referrer) return 'direct';
+        try {
+            const host = new URL(document.referrer).hostname;
+            return host === location.hostname ? 'internal' : (host || 'direct');
+        } catch (_) {
+            return 'direct';
+        }
+    }
+
+    function trackUsageSession() {
+        const today = new Date().toISOString().split('T')[0];
+        usageSessionStartedAt = Date.now();
+        usageSessionRef = db.ref('analyticsSessions/' + today + '/' + visitorId).push();
+        const sessionData = {
+            visitorId: visitorId,
+            page: String(location.pathname || '/').slice(0, 180),
+            pageTitle: String(document.title || '').slice(0, 180),
+            startedAt: firebase.database.ServerValue.TIMESTAMP,
+            lastActive: firebase.database.ServerValue.TIMESTAMP,
+            durationSeconds: 0,
+            device: getUsageDevice(),
+            referrerHost: getReferrerHost().slice(0, 120)
+        };
+
+        const updateDuration = (force) => {
+            if (!usageSessionRef || (!force && document.hidden)) return;
+            const durationSeconds = Math.max(0, Math.min(86400, Math.round((Date.now() - usageSessionStartedAt) / 1000)));
+            usageSessionRef.update({
+                durationSeconds: durationSeconds,
+                lastActive: firebase.database.ServerValue.TIMESTAMP
+            }).catch(() => {});
+        };
+
+        usageSessionRef.set(sessionData).then(() => {
+            if (usageIntervalId) clearInterval(usageIntervalId);
+            usageIntervalId = setInterval(() => updateDuration(false), 30000);
+            document.addEventListener('visibilitychange', () => updateDuration(document.hidden));
+            window.addEventListener('pagehide', () => updateDuration(true));
+        }).catch(() => {
+            // Пока новые Firebase Rules ещё не опубликованы, не повторяем
+            // заведомо запрещённую запись каждые 30 секунд.
+            usageSessionRef = null;
+        });
     }
 
     // ============================================
@@ -386,8 +442,9 @@
 
     function init() {
         try {
-            trackPresence();
-            registerVisitor();
+        trackPresence();
+        registerVisitor();
+        trackUsageSession();
             listenForPolls();
             listenForDirectMessages();
         } catch (e) {

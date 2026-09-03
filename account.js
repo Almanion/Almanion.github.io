@@ -482,6 +482,19 @@
         if (kcRef) { try { kcRef.off(); } catch (_) {} kcRef = null; }
     }
 
+    function registerAccountDirectory(account) {
+        if (!account || !account.uid || !account.email) return;
+        db.ref('accountDirectory/' + account.uid).set({
+            email: String(account.email).trim(),
+            displayName: String(account.displayName || '').slice(0, 120),
+            lastSeen: firebase.database.ServerValue.TIMESTAMP
+        }).catch(function (err) {
+            // Старые Firebase Rules могут ещё не содержать accountDirectory.
+            // На вход и синхронизацию пользовательских данных это не влияет.
+            console.warn('Almanion account: directory update failed.', err);
+        });
+    }
+
     // Локальные изменения прогресса (событие из knowledge-check.js) → выгрузка
     window.addEventListener('kc-store-changed', function (e) {
         if (!user || !kcRef || applyingRemote) return;
@@ -494,7 +507,10 @@
         authStateKnown = true;
         user = u;
         updateButton();
-        if (u) startKcSync(u.uid); else stopKcSync();
+        if (u) {
+            registerAccountDirectory(u);
+            startKcSync(u.uid);
+        } else stopKcSync();
         window.dispatchEvent(new CustomEvent('almanion-account-ready', { detail: { user: user } }));
     }, function (err) {
         authStateKnown = true;

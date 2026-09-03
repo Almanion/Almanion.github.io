@@ -479,6 +479,14 @@ body.experimental .system-box {
     padding: 1.05rem 1.25rem !important;
     margin: 1rem 0 !important;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+}
+
+/* Длинная формула прокручивается внутри карточки и не расширяет её. */
+body.experimental .formula-box {
+    width: 100%;
 }
 body:not(.no-hover).experimental .definition-box:hover,
 body:not(.no-hover).experimental .formula-box:hover,
@@ -584,6 +592,11 @@ body.experimental .derivation-content,
 body.experimental .proof-content {
     border-top: 1px dashed var(--exp-border) !important;
     border-left: none !important;
+}
+
+body.experimental .derivation-content {
+    border-top: 0 !important;
+    padding-top: 0.75rem;
 }
 
 /* Кнопки-тогглы вывода/доказательства */

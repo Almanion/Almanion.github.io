@@ -3,16 +3,35 @@
     ".read": false,
     ".write": false,
 
-    "admins": {
+    "adminRoles": {
+      ".read": "auth != null && auth.token.email === 'dmb23930@gmail.com'",
       "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": false,
-        ".validate": "newData.isBoolean()"
+        ".read": "auth != null && (auth.uid === $uid || auth.token.email === 'dmb23930@gmail.com')",
+        ".write": "auth != null && auth.token.email === 'dmb23930@gmail.com'",
+        ".validate": "newData.hasChildren(['email', 'siteAdmin', 'matcenterAdmin', 'updatedAt', 'updatedBy'])",
+        "email": { ".validate": "newData.isString() && newData.val().length <= 254" },
+        "siteAdmin": { ".validate": "newData.isBoolean()" },
+        "matcenterAdmin": { ".validate": "newData.isBoolean()" },
+        "updatedAt": { ".validate": "newData.isNumber()" },
+        "updatedBy": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "accountDirectory": {
+      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      "$uid": {
+        ".write": "auth != null && ((auth.uid === $uid && newData.exists()) || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+        ".validate": "newData.hasChildren(['email', 'displayName', 'lastSeen'])",
+        "email": { ".validate": "newData.isString() && newData.val().length <= 254 && (auth.uid !== $uid || newData.val() === auth.token.email)" },
+        "displayName": { ".validate": "newData.isString() && newData.val().length <= 120" },
+        "lastSeen": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
       }
     },
 
     "presence": {
-      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$visitorId": {
         ".write": true,
         "visitorId": { ".validate": "newData.isString() && newData.val() === $visitorId" },
@@ -24,14 +43,35 @@
       }
     },
 
+    "analyticsSessions": {
+      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      "$day": {
+        "$visitorId": {
+          "$sessionId": {
+            ".write": "newData.exists() || (auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true))",
+            ".validate": "newData.hasChildren(['visitorId', 'page', 'pageTitle', 'startedAt', 'lastActive', 'durationSeconds', 'device', 'referrerHost'])",
+            "visitorId": { ".validate": "newData.isString() && newData.val() === $visitorId" },
+            "page": { ".validate": "newData.isString() && newData.val().length <= 180" },
+            "pageTitle": { ".validate": "newData.isString() && newData.val().length <= 180" },
+            "startedAt": { ".validate": "newData.isNumber()" },
+            "lastActive": { ".validate": "newData.isNumber()" },
+            "durationSeconds": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 86400" },
+            "device": { ".validate": "newData.val() === 'mobile' || newData.val() === 'tablet' || newData.val() === 'desktop'" },
+            "referrerHost": { ".validate": "newData.isString() && newData.val().length <= 120" },
+            "$other": { ".validate": false }
+          }
+        }
+      }
+    },
+
     "polls": {
       ".read": true,
-      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       ".indexOn": ["active", "createdAt"]
     },
 
     "pollResponses": {
-      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$pollId": {
         "$visitorId": {
           ".write": "!data.exists()",
@@ -46,9 +86,9 @@
     },
 
     "visitors": {
-      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$visitorId": {
-        ".write": "newData.exists() || (auth != null && root.child('admins').child(auth.uid).val() === true)",
+        ".write": "newData.exists() || (auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true))",
         "id": { ".validate": "newData.isString() && newData.val() === $visitorId" },
         "lastVisit": { ".validate": "newData.isNumber()" },
         "lastPage": { ".validate": "newData.isString() && newData.val().length <= 180" },
@@ -58,7 +98,7 @@
     },
 
     "dailyStats": {
-      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$day": {
         "$visitorId": {
           ".write": "newData.val() === true",
@@ -68,13 +108,13 @@
     },
 
     "visitorNames": {
-      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
-      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)"
     },
 
     "directMessages": {
-      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
-      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$visitorId": {
         ".read": true,
         "$msgId": {

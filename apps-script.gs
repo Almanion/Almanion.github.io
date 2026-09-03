@@ -13,6 +13,8 @@
 const AUTH_VERSION = 2;
 const ACCESS_PREFIX = 'MATCENTER_ACCESS_';
 const FAILED_PREFIX = 'MATCENTER_FAILED_';
+const SITE_OWNER_EMAIL = 'dmb23930@gmail.com';
+const DEFAULT_FIREBASE_DATABASE_URL = 'https://almanion-70120-default-rtdb.europe-west1.firebasedatabase.app';
 
 // Ожидаемые заголовки колонок (первая строка листа):
 // TaskId (рекомендуется) | Number | NumberText | Description | Status | Hint | Grade
@@ -45,7 +47,7 @@ function handle(e) {
 
     if (action === 'accessStatus') {
       const identity = verifyFirebaseToken(params.idToken || '');
-      const role = getAccountRole(identity.uid);
+      const role = getAccountRole(identity, params.idToken || '');
       return json({
         success: true,
         authVersion: AUTH_VERSION,
@@ -93,6 +95,9 @@ function getTasks(isAdmin) {
     const headerKeys = headers.map(headerToKey);
     const inferredGrade = inferGradeFromSheetName(sheet.getName());
 
+    const sheetTasks = [];
+    const legacyHints = {};
+
     for (let i = 1; i < values.length; i++) {
       const row = values[i];
       const task = {};
@@ -107,12 +112,31 @@ function getTasks(isAdmin) {
       const taskNumber = task.number || task.numberText;
       if (!taskNumber) continue;
 
+      const description = String(task.description || '').trim();
+      const status = String(task.status || '').trim();
+
+      // В таблице 2025/2026 ниже основного массива находится небольшой
+      // справочник «номер → подсказка». Его строки используют первые две
+      // колонки и раньше ошибочно становились пустыми задачами. Сохраняем
+      // содержательные строки как подсказки, а все строки без условия не
+      // включаем в выдачу.
+      if (!description) {
+        if (isLegacyHintValue(status)) legacyHints[String(taskNumber).trim()] = status;
+        continue;
+      }
+
       task.number = taskNumber;
       if (!task.numberText) task.numberText = taskNumber;
       task.grade = normalizeGrade(task.grade, inferredGrade);
       task.sourceSheet = sheet.getName();
-      tasks.push(task);
+      sheetTasks.push(task);
     }
+
+    sheetTasks.forEach(function (task) {
+      const legacyHint = legacyHints[String(task.number || task.numberText || '').trim()];
+      if (!task.hint && legacyHint) task.hint = legacyHint;
+      tasks.push(task);
+    });
   });
 
   return json({
@@ -170,6 +194,7 @@ function authorizeAccount(idToken, password) {
 
   cache.remove(failedKey);
   properties.setProperty(ACCESS_PREFIX + identity.uid, role);
+  role = getAccountRole(identity, idToken) || role;
   return json({
     success: true,
     authVersion: AUTH_VERSION,
@@ -181,7 +206,7 @@ function authorizeAccount(idToken, password) {
 function resolveAccess(params) {
   if (params.idToken) {
     const identity = verifyFirebaseToken(params.idToken);
-    const role = getAccountRole(identity.uid);
+    const role = getAccountRole(identity, params.idToken);
     return { allowed: !!role, role: role, uid: identity.uid };
   }
 
@@ -198,8 +223,37 @@ function resolveAccess(params) {
   return { allowed: false, role: '' };
 }
 
-function getAccountRole(uid) {
-  return PropertiesService.getScriptProperties().getProperty(ACCESS_PREFIX + uid) || '';
+function getAccountRole(identityOrUid, idToken) {
+  const identity = typeof identityOrUid === 'object'
+    ? identityOrUid
+    : { uid: String(identityOrUid || ''), email: '' };
+  const email = String(identity.email || '').trim().toLowerCase();
+
+  // Владелец проекта всегда имеет обе административные роли. Это правило
+  // дублируется в Firebase Rules, поэтому одной клиентской проверки недостаточно.
+  if (email === SITE_OWNER_EMAIL) return 'admin';
+  if (idToken && hasFirebaseMatcenterAdminRole(identity.uid, idToken)) return 'admin';
+
+  return PropertiesService.getScriptProperties().getProperty(ACCESS_PREFIX + identity.uid) || '';
+}
+
+function hasFirebaseMatcenterAdminRole(uid, idToken) {
+  if (!uid || !idToken) return false;
+  const properties = PropertiesService.getScriptProperties();
+  const databaseUrl = String(
+    properties.getProperty('FIREBASE_DATABASE_URL') || DEFAULT_FIREBASE_DATABASE_URL
+  ).replace(/\/$/, '');
+
+  try {
+    const response = UrlFetchApp.fetch(
+      databaseUrl + '/adminRoles/' + encodeURIComponent(uid) + '/matcenterAdmin.json?auth=' + encodeURIComponent(idToken),
+      { method: 'get', muteHttpExceptions: true }
+    );
+    return response.getResponseCode() === 200 && JSON.parse(response.getContentText() || 'false') === true;
+  } catch (_) {
+    // Сбой проверки роли не должен лишать пользователя обычного доступа.
+    return false;
+  }
 }
 
 /**
@@ -288,12 +342,19 @@ function headerToKey(h) {
     class: 'grade',
     номер: 'number',
     текстномера: 'numberText',
+    текстзадачи: 'description',
     условие: 'description',
     статус: 'status',
     подсказка: 'hint',
     класс: 'grade'
   };
   return aliases[normalized] || '';
+}
+
+function isLegacyHintValue(value) {
+  const normalized = String(value || '').trim();
+  if (!normalized) return false;
+  return !/^(?:Р|Н|П|От|\?)$/i.test(normalized);
 }
 
 function getSheetValues(sheet) {
@@ -473,8 +534,9 @@ function json(obj) {
    3) Удалите всё содержимое файла Code.gs и вставьте содержимое ЭТОГО файла.
 
    4) Project Settings → Script properties. Добавьте:
-        FIREBASE_WEB_API_KEY          API key из firebase-config.js
-        MATCENTER_USER_PASSWORD       пароль доступа учеников
+         FIREBASE_WEB_API_KEY          API key из firebase-config.js
+         FIREBASE_DATABASE_URL         databaseURL из firebase-config.js
+         MATCENTER_USER_PASSWORD       пароль доступа учеников
         MATCENTER_ADMIN_PASSWORD      отдельный пароль администратора
       Необязательно:
         MATCENTER_SHEET_NAMES         имена листов с задачами через запятую

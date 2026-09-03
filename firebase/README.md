@@ -1,14 +1,27 @@
-# Firebase access setup
+# Firebase: доступ и аналитика
 
-The admin interface now requires an explicit flag at `admins/<uid>` in Realtime Database.
+Владелец сайта — `dmb23930@gmail.com`. Этот адрес проверяется как в интерфейсе,
+так и в `firebase/database.rules.json`, поэтому отдельная запись для владельца не
+нужна.
 
-1. Open Firebase Console → Authentication → Users and copy the administrator UID.
-2. In Realtime Database create `admins/<uid>` with the boolean value `true`.
-3. Publish the rules from `firebase/database.rules.json` in Realtime Database → Rules.
+1. Откройте Firebase Console → Realtime Database → Rules.
+2. Полностью замените правила содержимым `firebase/database.rules.json`.
+3. Нажмите Publish.
 
-The client only uses the flag to display the dashboard. The rules remain the actual
-security boundary and must be deployed before the public site is considered protected.
+После публикации владелец может открыть `admin.html` и назначать две независимые
+роли по email или Firebase UID:
 
-Bookmarks, knowledge-check data, solved Matcenter tasks and ticket-builder data are
-stored under the Firebase UID. The account-confirmation setup for Matcenter is
-documented separately in `matcenter/AUTH_SETUP.md`.
+- администратор сайта — аналитика, посетители, сообщения и опросы;
+- администратор Матцентра — изменение статусов задач и подсказок.
+
+Пользователь должен хотя бы один раз войти в обычный аккаунт на сайте, чтобы его
+email появился в каталоге аккаунтов. Владелец остаётся администратором сайта и
+Матцентра независимо от содержимого базы.
+
+Новая статистика сессий записывается в `analyticsSessions`: просмотры страниц,
+длительность, тип устройства и источник перехода. Содержимое форм, пароли,
+поисковые запросы и тексты конспектов туда не отправляются.
+
+Закладки, проверка знаний, решённые задачи Матцентра и конструктор билетов
+по-прежнему хранятся отдельно под Firebase UID пользователя. Настройка Матцентра
+описана отдельно в `matcenter/AUTH_SETUP.md`.

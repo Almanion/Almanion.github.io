@@ -11,6 +11,7 @@
 `apps-script.gs`. Затем в **Project Settings → Script properties** добавьте:
 
 - `FIREBASE_WEB_API_KEY` — значение `apiKey` из `firebase-config.js`;
+- `FIREBASE_DATABASE_URL` — значение `databaseURL` из `firebase-config.js`;
 - `MATCENTER_USER_PASSWORD` — общий пароль учеников;
 - `MATCENTER_ADMIN_PASSWORD` — отдельный пароль с правом менять статусы и подсказки.
 
@@ -37,11 +38,18 @@
 свойство. Клиент автоматически включит новый режим, когда оба endpoint сообщат
 `authVersion: 2`.
 
-## Администратор сайта
+## Администраторы
 
-Доступ к `admin.html` не связан с паролем Матцентра. Для него в Firebase
-Realtime Database нужно вручную создать `admins/<uid> = true` и опубликовать
-правила из `firebase/database.rules.json`.
+Доступ к `admin.html` не связан с паролем Матцентра. Владелец
+`dmb23930@gmail.com` имеет постоянный доступ. После публикации правил из
+`firebase/database.rules.json` он может назначать в админ-панели две отдельные
+роли: администратора сайта и администратора Матцентра.
+
+Назначенная роль Матцентра начинает работать в Apps Script без повторного ввода
+общего пароля. Для этого у deployment должно быть задано
+`FIREBASE_DATABASE_URL`, а функция `authorizeExternalRequests` должна быть один
+раз запущена вручную после обновления кода.
 
 Для отзыва доступа к Матцентру удалите свойство
-`MATCENTER_ACCESS_<uid>` в обоих Apps Script проектах.
+`MATCENTER_ACCESS_<uid>` в обоих Apps Script проектах, если пользователь ранее
+подтверждал доступ общим паролем, и снимите роль Матцентра в админ-панели.

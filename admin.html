@@ -9,9 +9,9 @@
                 var s = localStorage.getItem('siteSettings');
                 var p = s ? JSON.parse(s) : {};
                 var bg, fg;
-                if (p && p.experimental) {
+                if (p.experimental !== false) {
                     var dark = !!p.expDark;
-                    var mode = p.expMode === 'prism' ? 'prism' : 'graphite';
+                    var mode = p.expMode === 'graphite' ? 'graphite' : 'prism';
                     if (mode === 'graphite') { bg = dark ? '#09090b' : '#fafafa'; fg = dark ? '#f4f4f5' : '#18181b'; }
                     else { bg = dark ? '#0e0e16' : '#fbfbfe'; fg = dark ? '#ececf4' : '#16161f'; }
                     document.documentElement.dataset.exp = mode + (dark ? '-dark' : '-light');
@@ -875,18 +875,19 @@
     <link rel="stylesheet" href="style-new.css">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260903-1">
+    <link rel="stylesheet" href="styles/admin.css?v=20260903-1">
 </head>
-<body>
-    <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p&&p.experimental){document.body.classList.add('experimental',p.expMode==='prism'?'exp-prism':'exp-graphite');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
+<body class="admin-page">
+    <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
 
     <!-- ============ ЭКРАН ВХОДА ============ -->
     <div class="login-screen" id="loginScreen">
         <div class="login-card">
             <h1><span class="eic eic-lock" aria-hidden="true"></span> Админ-панель</h1>
-            <p>Almanion Analytics</p>
+            <p>Управление сайтом и аналитика</p>
             <div class="form-group">
                 <label for="loginEmail">Email</label>
-                <input type="email" id="loginEmail" placeholder="admin@example.com" autocomplete="email">
+                <input type="email" id="loginEmail" placeholder="dmb23930@gmail.com" autocomplete="email">
             </div>
             <div class="form-group">
                 <label for="loginPassword">Пароль</label>
@@ -900,7 +901,11 @@
     <!-- ============ DASHBOARD ============ -->
     <div class="dashboard" id="dashboard">
         <div class="dashboard-header">
-            <h1><span class="eic eic-chart" aria-hidden="true"></span> Панель управления</h1>
+            <div class="admin-header-identity">
+                <a class="admin-home-link" href="index.html" aria-label="На главную">Конспекты</a>
+                <span class="admin-header-divider" aria-hidden="true"></span>
+                <h1><span class="eic eic-chart" aria-hidden="true"></span> Панель управления</h1>
+            </div>
             <div class="header-actions">
                 <span style="font-size: 0.85rem; color: var(--text-secondary);" id="adminEmail"></span>
                 <button class="btn btn-outline btn-sm" id="logoutBtn">Выйти</button>
@@ -927,7 +932,45 @@
             <div class="stat-card pages">
                 <div class="stat-icon"><span class="eic eic-file" aria-hidden="true"></span></div>
                 <div class="stat-value" id="pagesCount">—</div>
-                <div class="stat-label">Страниц просмотрено</div>
+                <div class="stat-label">Просмотров сегодня</div>
+            </div>
+            <div class="stat-card duration">
+                <div class="stat-icon"><span class="eic eic-calendar" aria-hidden="true"></span></div>
+                <div class="stat-value" id="avgDuration">—</div>
+                <div class="stat-label">Среднее время</div>
+            </div>
+            <div class="stat-card returning">
+                <div class="stat-icon"><span class="eic eic-refresh" aria-hidden="true"></span></div>
+                <div class="stat-value" id="returningRate">—</div>
+                <div class="stat-label">Вернулись за неделю</div>
+            </div>
+        </div>
+
+        <div class="section admin-usage-section">
+            <div class="section-heading-row">
+                <div>
+                    <div class="section-kicker">Последние 14 дней</div>
+                    <div class="section-title"><span class="eic eic-chart" aria-hidden="true"></span> Использование сайта</div>
+                </div>
+                <button class="btn btn-outline btn-sm" id="refreshUsageBtn">Обновить</button>
+            </div>
+            <div class="usage-dashboard-grid">
+                <div class="usage-panel usage-panel-wide">
+                    <h3>Просмотры по дням</h3>
+                    <div class="usage-trend" id="usageTrend"><div class="no-data">Загрузка...</div></div>
+                </div>
+                <div class="usage-panel">
+                    <h3>Устройства</h3>
+                    <div id="deviceBreakdown"><div class="no-data">Загрузка...</div></div>
+                </div>
+                <div class="usage-panel">
+                    <h3>Источники переходов</h3>
+                    <div id="trafficSources"><div class="no-data">Загрузка...</div></div>
+                </div>
+                <div class="usage-panel usage-panel-wide">
+                    <h3>Популярные страницы</h3>
+                    <div id="topPages"><div class="no-data">Загрузка...</div></div>
+                </div>
             </div>
         </div>
 
@@ -1021,6 +1064,23 @@
         </div>
 
         <!-- Управление данными -->
+        <div class="section admin-roles-section" id="adminRolesSection" hidden>
+            <div class="section-kicker">Только владелец</div>
+            <div class="section-title"><span class="eic eic-lock" aria-hidden="true"></span> Администраторы</div>
+            <p class="section-description">Назначайте доступ отдельно к панели сайта и к административным функциям Матцентра.</p>
+            <form class="admin-role-form" id="adminRoleForm">
+                <div class="form-group admin-role-account-field">
+                    <label for="adminRoleAccount">Аккаунт пользователя</label>
+                    <input id="adminRoleAccount" list="accountDirectoryOptions" placeholder="Email или Firebase UID" autocomplete="off" required>
+                    <datalist id="accountDirectoryOptions"></datalist>
+                </div>
+                <label class="admin-role-check"><input type="checkbox" id="siteAdminRole"> <span><b>Администратор сайта</b><small>Аналитика, посетители, сообщения и опросы</small></span></label>
+                <label class="admin-role-check"><input type="checkbox" id="matcenterAdminRole"> <span><b>Администратор Матцентра</b><small>Статусы задач и подсказки</small></span></label>
+                <button class="btn btn-primary admin-role-save" type="submit">Сохранить роли</button>
+            </form>
+            <div id="adminRolesList"><div class="no-data">Загрузка...</div></div>
+        </div>
+
         <div class="section">
             <div class="section-title"><span class="eic eic-gear" aria-hidden="true"></span> Управление данными</div>
             <div style="display:flex; flex-wrap:wrap; gap:0.75rem;">
@@ -1051,6 +1111,7 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.database();
+        const SITE_OWNER_EMAIL = 'dmb23930@gmail.com';
 
         // ============================================
         // КЭШ ИМЁН ПОСЕТИТЕЛЕЙ
@@ -1144,7 +1205,7 @@
 
         // Одного Firebase-входа недостаточно: любой посетитель может создать
         // обычный аккаунт на сайте. Право администратора хранится отдельно в
-        // /admins/<uid> и дополнительно проверяется правилами Realtime Database.
+        // /adminRoles/<uid>/siteAdmin и дополнительно проверяется правилами Realtime Database.
         let adminAuthCheckGeneration = 0;
 
         auth.onAuthStateChanged(async (user) => {
@@ -1153,9 +1214,14 @@
                 loginBtn.disabled = true;
                 loginBtn.textContent = 'Проверка доступа...';
                 try {
-                    const accessSnapshot = await db.ref('admins/' + user.uid).once('value');
+                    const normalizedEmail = String(user.email || '').trim().toLowerCase();
+                    let hasAccess = normalizedEmail === SITE_OWNER_EMAIL;
+                    if (!hasAccess) {
+                        const accessSnapshot = await db.ref('adminRoles/' + user.uid + '/siteAdmin').once('value');
+                        hasAccess = accessSnapshot.val() === true;
+                    }
                     if (generation !== adminAuthCheckGeneration) return;
-                    if (accessSnapshot.val() !== true) {
+                    if (!hasAccess) {
                         await auth.signOut();
                         showLoginError('У этого аккаунта нет прав администратора');
                         return;
@@ -1208,9 +1274,6 @@
 
                 const users = Object.values(data);
                 document.getElementById('onlineCount').textContent = users.length;
-
-                const pages = new Set(users.map(u => u.page));
-                document.getElementById('pagesCount').textContent = pages.size;
 
                 renderOnlineTable(data);
             });
@@ -2092,6 +2155,7 @@
                 db.ref('directMessages').remove(),
                 db.ref('polls').remove(),
                 db.ref('pollResponses').remove(),
+                db.ref('analyticsSessions').remove(),
                 db.ref('presence').remove()
             ]).then(() => {
                 alert('Все данные удалены');
@@ -2100,5 +2164,6 @@
             });
         }
     </script>
+    <script src="admin-dashboard.js?v=20260903-1"></script>
 </body>
 </html>

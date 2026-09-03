@@ -9,6 +9,7 @@ function createContext(cachedTasks, loader) {
     const sandbox = {
         TASKS_ENDPOINTS: ['main', 'summer'],
         TASKS_CACHE_KEY: 'matcenter_tasks_cache',
+        TASKS_CACHE_VERSION: 3,
         DEFAULT_GRADE: 'grade-9',
         GRADE_SECTIONS: [
             { id: 'grade-9' },
@@ -17,7 +18,7 @@ function createContext(cachedTasks, loader) {
             { id: 'grade-summer-10-11' },
             { id: 'grade-11' }
         ],
-        safeGet: () => JSON.stringify({ version: 2, tasks: cachedTasks }),
+        safeGet: () => JSON.stringify({ version: 3, tasks: cachedTasks }),
         console: { log() {}, warn() {}, error() {} },
         Map,
         Set,
@@ -76,6 +77,14 @@ async function run() {
     assert.equal(
         vm.runInContext("normalizeMatcenterGrade('', 1)", unexpectedEmpty),
         'grade-summer-9-10'
+    );
+    assert.equal(
+        vm.runInContext("getMatcenterTaskDescription({'текст задачи':'Старое условие'})", unexpectedEmpty),
+        'Старое условие'
+    );
+    assert.equal(
+        vm.runInContext("getMatcenterTaskDescription({description:'  '})", unexpectedEmpty),
+        ''
     );
 
     console.log('matcenter data fallback: all tests passed');

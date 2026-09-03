@@ -39,7 +39,7 @@ function readTasksCache() {
         const raw = safeGet(TASKS_CACHE_KEY);
         if (!raw) return null;
         const parsed = JSON.parse(raw);
-        return parsed && Array.isArray(parsed.tasks) ? parsed : null;
+        return parsed && parsed.version === TASKS_CACHE_VERSION && Array.isArray(parsed.tasks) ? parsed : null;
     } catch (_) {
         return null;
     }
@@ -102,6 +102,22 @@ function normalizeMatcenterGrade(value, endpointIdx = 0) {
     // Старые версии backend не всегда присылали Grade. Источник летней серии
     // однозначно задаёт раздел, основной endpoint по умолчанию относится к 9 классу.
     return endpointIdx === 1 ? 'grade-summer-9-10' : DEFAULT_GRADE;
+}
+
+function readMatcenterTaskField(task, aliases) {
+    for (const key of aliases) {
+        if (!Object.prototype.hasOwnProperty.call(task, key)) continue;
+        const value = task[key];
+        if (value !== undefined && value !== null && String(value).trim() !== '') return String(value).trim();
+    }
+    return '';
+}
+
+function getMatcenterTaskDescription(task) {
+    return readMatcenterTaskField(task, [
+        'description', 'condition', 'taskText', 'text',
+        'Текст задачи', 'текст задачи', 'текстЗадачи', 'Условие', 'условие'
+    ]);
 }
 
 function applyTasksFromCache() {
@@ -278,14 +294,11 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
 
         // Пробуем загрузить из кэша
         try {
-            const raw = safeGet(TASKS_CACHE_KEY);
-            if (raw) {
-                const { tasks } = JSON.parse(raw);
-                if (Array.isArray(tasks) && tasks.length > 0) {
-                    allTasks = normalizeAllTasks(tasks);
-                    updateStatistics(getTasksForCurrentGrade());
-                    refreshCurrentView();
-                }
+            const cached = readTasksCache();
+            if (cached && cached.tasks.length > 0) {
+                allTasks = normalizeAllTasks(cached.tasks);
+                updateStatistics(getTasksForCurrentGrade());
+                refreshCurrentView();
             }
         } catch (e) { /* ignore */ }
 
@@ -350,6 +363,12 @@ async function loadFromOneEndpoint(endpoint, endpointIdx) {
         const cleanNumber = extractNumber(rawNumber);
         if (cleanNumber === null || isNaN(cleanNumber)) return null;
 
+        // Старый deployment возвращал русский заголовок «Текст задачи» как
+        // JSON-ключ, а служебные и заготовленные строки содержали только номер.
+        // Поддерживаем оба формата и не рисуем карточки без условия.
+        const description = getMatcenterTaskDescription(task);
+        if (!description) return null;
+
         const grade = normalizeMatcenterGrade(task.grade, endpointIdx);
 
         const statusRaw = task.status == null ? '' : String(task.status).trim();
@@ -359,7 +378,7 @@ async function loadFromOneEndpoint(endpoint, endpointIdx) {
             number: cleanNumber,
             numberText: String(task.numberText || rawNumber),
             status: statusRaw,
-            description: task.description ? String(task.description) : 'Условие не указано',
+            description,
             hint: task.hint ? String(task.hint) : '',
             grade,
             sourceSheet: task.sourceSheet ? String(task.sourceSheet) : '',
