@@ -403,7 +403,7 @@ function showStatusDropdown(badgeElement, task) {
             } catch (error) {
                 option.innerHTML = status.text;
                 option.style.pointerEvents = 'auto';
-                alert('Ошибка изменения статуса: ' + error.message);
+                window.AlmanionToast?.show('Не удалось изменить статус: ' + error.message, { type: 'error' });
             }
         });
         

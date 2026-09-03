@@ -193,6 +193,28 @@ function getAccountRole(uid) {
   return PropertiesService.getScriptProperties().getProperty(ACCESS_PREFIX + uid) || '';
 }
 
+/**
+ * Запустите эту функцию один раз вручную из редактора Apps Script после
+ * перехода на v2. Так Google покажет владельцу диалог для выдачи разрешения
+ * script.external_request, которое нужно для проверки Firebase ID token.
+ */
+function authorizeExternalRequests() {
+  const apiKey = PropertiesService.getScriptProperties().getProperty('FIREBASE_WEB_API_KEY');
+  if (!apiKey) throw new Error('Сначала задайте FIREBASE_WEB_API_KEY в Script properties');
+
+  const response = UrlFetchApp.fetch(
+    'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' + encodeURIComponent(apiKey),
+    {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify({ idToken: 'permission-check' }),
+      muteHttpExceptions: true
+    }
+  );
+  Logger.log('Разрешение внешних запросов выдано. Проверочный HTTP-код: ' + response.getResponseCode());
+  return 'Готово: внешние запросы разрешены';
+}
+
 function verifyFirebaseToken(idToken) {
   if (!idToken) throw new Error('Сначала войдите в аккаунт Almanion');
   const apiKey = PropertiesService.getScriptProperties().getProperty('FIREBASE_WEB_API_KEY');
@@ -319,24 +341,28 @@ function json(obj) {
    5) Сохраните проект (Ctrl/Cmd+S). При первом сохранении даст имя — например
       «matcenter-backend».
 
-   6) Deploy → New deployment.
+   6) В верхнем списке функций выберите authorizeExternalRequests и нажмите Run.
+      Подтвердите запрошенные Google разрешения. Этот шаг нужно выполнить один
+      раз в КАЖДОМ из двух Apps Script проектов до публикации Web app.
+
+   7) Deploy → New deployment.
         - Тип: Web app
         - Description: matcenter v2 account access
         - Execute as: Me (ваш гугл-аккаунт)
         - Who has access: Anyone   ← важно, иначе фронт не сможет дёргать
       Нажмите Deploy. Google попросит подтвердить разрешения — соглашайтесь.
 
-   7) После деплоя появится Web app URL вида:
+   8) После деплоя появится Web app URL вида:
         https://script.google.com/macros/s/AKfycb.../exec
       Скопируйте его.
 
-   8) В matcenter/00-core.js замените значение API_ENDPOINT на этот URL.
+   9) В matcenter/00-core.js замените значение API_ENDPOINT на этот URL.
 
-   9) Повторите обновление для ОБОИХ endpoint из matcenter/00-core.js. На время
+   10) Повторите обновление для ОБОИХ endpoint из matcenter/00-core.js. На время
       поочерёдного обновления можно поставить MATCENTER_ALLOW_LEGACY=true, но
       после обновления обоих deployment обязательно удалите это свойство.
 
-   10) Войдите в обычный аккаунт Almanion и один раз введите пароль Матцентра.
+   11) Войдите в обычный аккаунт Almanion и один раз введите пароль Матцентра.
        UID получит постоянную роль user/admin в Script properties каждого endpoint.
 
    Дальше при изменении кода Apps Script нужно делать НОВЫЙ deploy (или Manage

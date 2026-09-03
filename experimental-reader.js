@@ -387,7 +387,6 @@
             link.classList.toggle('active', active);
             if (active) link.setAttribute('aria-current', 'location');
             else link.removeAttribute('aria-current');
-            if (active) link.closest('.nav-group')?.classList.add('open');
         });
     }
 

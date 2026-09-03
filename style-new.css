@@ -262,6 +262,29 @@ body.experimental .sidebar-header {
 body.experimental .sidebar-header h2,
 body.experimental .sidebar-header h2 a { color: var(--exp-text) !important; }
 body.experimental .sidebar-header .home-icon { color: var(--exp-accent); }
+body.experimental .sidebar-header-buttons {
+    background: var(--exp-surface-2);
+    border-color: var(--exp-border);
+}
+body.experimental .sidebar-header-buttons > .account-btn,
+body.experimental .sidebar-header-buttons > .close-sidebar,
+body.experimental .sidebar-header-buttons > .sidebar-collapse-btn,
+body.experimental .sidebar-header-buttons > .settings-button-sidebar {
+    color: var(--exp-text-dim);
+    background: transparent !important;
+}
+body.experimental .sidebar-header-buttons > .account-btn.signed-in {
+    color: var(--exp-accent) !important;
+    background: var(--exp-accent-soft) !important;
+}
+body:not(.no-hover).experimental .sidebar-header-buttons > button:hover {
+    color: var(--exp-text) !important;
+    background: var(--exp-surface) !important;
+}
+body:not(.no-hover).experimental .sidebar-header-buttons > .account-btn.signed-in:hover {
+    color: var(--exp-accent) !important;
+    background: color-mix(in srgb, var(--exp-accent) 17%, transparent) !important;
+}
 
 body.experimental .search-box input {
     background: var(--exp-surface-2);
@@ -319,6 +342,21 @@ body.experimental .nav-group-heading {
     border-left: none;
 }
 body.experimental .nav-submenu { border-left-color: var(--exp-border); }
+body.experimental .nav-group:not(.open) > .nav-submenu {
+    border-left-color: transparent;
+}
+
+body.experimental .site-toast {
+    color: var(--exp-text);
+    background: color-mix(in srgb, var(--exp-surface) 96%, transparent);
+    border-color: var(--exp-border);
+    box-shadow: var(--exp-shadow-md);
+}
+body.experimental .site-toast-close { color: var(--exp-text-faint); }
+body:not(.no-hover).experimental .site-toast-close:hover {
+    color: var(--exp-text);
+    background: var(--exp-surface-2);
+}
 
 /* Кнопки сайдбара/FAB */
 body.experimental .menu-toggle,

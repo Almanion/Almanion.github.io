@@ -463,7 +463,7 @@ function initRefreshButtons() {
         loadTasksFromGoogleSheets(false, true)
             .catch(err => {
                 console.error('Ошибка обновления данных:', err);
-                alert('Не удалось обновить данные. Проверьте соединение.');
+                window.AlmanionToast?.show('Не удалось обновить данные. Проверьте соединение.', { type: 'error' });
             })
             .finally(() => {
                 allButtons.forEach(b => { b.disabled = false; b.classList.remove('spinning'); });

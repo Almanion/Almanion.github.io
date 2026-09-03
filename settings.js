@@ -739,6 +739,10 @@ function resetAllSettings() {
 // ============================================
 
 function showNotification(message) {
+    if (window.AlmanionToast) {
+        window.AlmanionToast.show(message, { type: 'info' });
+        return;
+    }
     // Создаём уведомление
     const notification = document.createElement('div');
     notification.className = 'settings-notification';

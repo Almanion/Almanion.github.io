@@ -242,11 +242,16 @@ async function initAuth() {
             }
 
             if (!error || error.code !== 'AUTH') {
-                authError.style.display = 'flex';
-                authError.style.background = 'rgba(245, 158, 11, 0.12)';
-                authError.querySelector('.error-icon').innerHTML = '<span class="eic eic-alert" aria-hidden="true"></span>';
-                authError.querySelector('.error-text').textContent =
-                    'Не удалось связаться с сервером. Попробуйте ещё раз.';
+                const serverMessage = String(error && error.message || '');
+                const permissionMissing = /UrlFetchApp\.fetch|script\.external_request|нет разрешения на вызов/i.test(serverMessage);
+                const configMissing = /FIREBASE_WEB_API_KEY/i.test(serverMessage);
+                let message = 'Не удалось связаться с сервером. Попробуйте ещё раз.';
+                if (permissionMissing) {
+                    message = 'Сервер Матцентра ещё не получил разрешение Google на проверку аккаунтов. Владельцу нужно один раз запустить authorizeExternalRequests в обоих Apps Script проектах.';
+                } else if (configMissing) {
+                    message = 'В настройках сервера Матцентра не задан FIREBASE_WEB_API_KEY.';
+                }
+                showMatcenterAuthMessage(message, true);
                 submitText.style.display = 'inline';
                 submitSpinner.style.display = 'none';
                 authSubmit.disabled = false;

@@ -85,7 +85,7 @@ function initKnowledgeCheck() {
     if (startBtn) {
         startBtn.addEventListener('click', () => {
             if (selectedTopics.length === 0) {
-                alert('Пожалуйста, выберите хотя бы одну тему');
+                window.AlmanionToast?.show('Выберите хотя бы одну тему', { type: 'warning' });
                 return;
             }
             startKnowledgeCheck();
@@ -259,7 +259,7 @@ function startKnowledgeCheck() {
     });
 
     if (extractedDefinitions.length === 0) {
-        alert('В выбранных темах не найдено определений');
+        window.AlmanionToast?.show('В выбранных темах не найдено определений', { type: 'warning' });
         return;
     }
 

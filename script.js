@@ -15,8 +15,66 @@ const _safeRemove = (typeof window !== 'undefined' && window.safeStorageRemove)
     ? window.safeStorageRemove
     : function(k){ try { localStorage.removeItem(k); } catch (_) {} };
 
+// Единая система коротких уведомлений. Остальные модули используют этот API,
+// чтобы настройки, копирование и служебные сообщения выглядели одинаково.
+const SITE_TOAST_ICONS = {
+    info: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg>',
+    success: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>',
+    warning: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.4 4.3 3.1 17a2 2 0 0 0 1.7 3h14.4a2 2 0 0 0 1.7-3L13.6 4.3a2 2 0 0 0-3.2 0Z"/><path d="M12 9v4M12 16h.01"/></svg>',
+    error: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></svg>'
+};
+
+function getSiteToastRegion() {
+    let region = document.getElementById('siteToastRegion');
+    if (region) return region;
+    region = document.createElement('div');
+    region.id = 'siteToastRegion';
+    region.className = 'site-toast-region';
+    region.setAttribute('aria-live', 'polite');
+    region.setAttribute('aria-atomic', 'false');
+    document.body.appendChild(region);
+    return region;
+}
+
+function showSiteToast(message, options = {}) {
+    const type = ['info', 'success', 'warning', 'error'].includes(options.type)
+        ? options.type
+        : 'info';
+    const duration = Number.isFinite(options.duration) ? Math.max(0, options.duration) : 2800;
+    const region = getSiteToastRegion();
+    const toast = document.createElement('div');
+    toast.className = `site-toast site-toast-${type}`;
+    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    toast.innerHTML = `
+        <span class="site-toast-icon">${SITE_TOAST_ICONS[type]}</span>
+        <span class="site-toast-message"></span>
+        <button type="button" class="site-toast-close" aria-label="Закрыть уведомление">×</button>`;
+    toast.querySelector('.site-toast-message').textContent = String(message || '');
+
+    let timer = 0;
+    const dismiss = () => {
+        if (toast.classList.contains('is-leaving')) return;
+        window.clearTimeout(timer);
+        toast.classList.add('is-leaving');
+        window.setTimeout(() => toast.remove(), 180);
+    };
+    const scheduleDismiss = () => {
+        if (duration > 0) timer = window.setTimeout(dismiss, duration);
+    };
+
+    toast.querySelector('.site-toast-close').addEventListener('click', dismiss);
+    toast.addEventListener('mouseenter', () => window.clearTimeout(timer));
+    toast.addEventListener('mouseleave', scheduleDismiss);
+    region.appendChild(toast);
+    while (region.children.length > 3) region.firstElementChild?.remove();
+    requestAnimationFrame(() => toast.classList.add('is-visible'));
+    scheduleDismiss();
+    return { dismiss, element: toast };
+}
+
+window.AlmanionToast = { show: showSiteToast };
+
 let __pwaReloading = false;
-let __pwaInstallPrompt = null;
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -40,22 +98,8 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-window.addEventListener('beforeinstallprompt', (event) => {
-    event.preventDefault();
-    __pwaInstallPrompt = event;
-    showPwaInstallButton();
-});
-
 window.addEventListener('appinstalled', () => {
-    __pwaInstallPrompt = null;
-    hidePwaInstallButton();
-    showPwaMiniToast('Almanion установлен как приложение');
-});
-
-window.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-        closePwaInstallHelp();
-    }
+    showSiteToast('Almanion установлен как приложение', { type: 'success' });
 });
 
 // Guard от двойной инициализации — DOMContentLoaded может прилететь дважды
@@ -75,156 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initBottomSheetSwipe();
     initSidebarCollapse();
     initCopyableBlocks();
-    initPwaInstallUi();
 });
-
-// ============================================
-// PWA: установка приложения и обновления
-// ============================================
-
-function isRunningAsPwa() {
-    return window.matchMedia('(display-mode: standalone)').matches ||
-        window.matchMedia('(display-mode: fullscreen)').matches ||
-        window.navigator.standalone === true;
-}
-
-function isPwaInstallLandingPage() {
-    const path = window.location.pathname.replace(/\/+$/, '/');
-    return path === '/' || path.endsWith('/index.html');
-}
-
-function initPwaInstallUi() {
-    if (isRunningAsPwa() || !isPwaInstallLandingPage()) return;
-    window.setTimeout(showPwaInstallButton, 500);
-}
-
-function showPwaInstallButton() {
-    if (isRunningAsPwa() || !isPwaInstallLandingPage()) return;
-
-    let btn = document.getElementById('pwaInstallBtn');
-    if (!btn) {
-        btn = document.createElement('button');
-        btn.id = 'pwaInstallBtn';
-        btn.className = 'pwa-install-btn';
-        btn.type = 'button';
-        btn.innerHTML = `
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 3v12"/>
-                <path d="m7 10 5 5 5-5"/>
-                <path d="M5 21h14"/>
-            </svg>
-            <span>Установить</span>
-        `;
-        btn.addEventListener('click', handlePwaInstallClick);
-        const homeContainer = document.querySelector('.home-container');
-        const homeFooter = homeContainer?.querySelector('.home-footer');
-        if (homeContainer && homeFooter) homeContainer.insertBefore(btn, homeFooter);
-        else document.body.appendChild(btn);
-    }
-
-    requestAnimationFrame(() => btn.classList.add('is-visible'));
-}
-
-function hidePwaInstallButton() {
-    const btn = document.getElementById('pwaInstallBtn');
-    if (!btn) return;
-    btn.classList.remove('is-visible');
-    setTimeout(() => btn.remove(), 220);
-}
-
-async function handlePwaInstallClick() {
-    if (!__pwaInstallPrompt) {
-        openPwaInstallHelp();
-        return;
-    }
-
-    const promptEvent = __pwaInstallPrompt;
-    __pwaInstallPrompt = null;
-
-    try {
-        promptEvent.prompt();
-        const result = await promptEvent.userChoice;
-        if (result && result.outcome === 'accepted') {
-            hidePwaInstallButton();
-        } else {
-            openPwaInstallHelp();
-            showPwaInstallButton();
-        }
-    } catch (_) {
-        // Браузер может отменить prompt, если PWA уже установлена или условия installability изменились.
-        openPwaInstallHelp();
-        showPwaInstallButton();
-    }
-}
-
-function openPwaInstallHelp() {
-    let overlay = document.getElementById('pwaInstallHelp');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'pwaInstallHelp';
-        overlay.className = 'pwa-install-help';
-        overlay.innerHTML = `
-            <div class="pwa-install-help-card" role="dialog" aria-modal="true" aria-labelledby="pwaInstallHelpTitle">
-                <button type="button" class="pwa-install-help-close" aria-label="Закрыть">×</button>
-                <div class="pwa-install-help-icon" aria-hidden="true">
-                    <svg viewBox="0 0 32 32">
-                        <rect x="4" y="4" width="5" height="25" rx="2" fill="#1a7a3c"/>
-                        <rect x="8" y="4" width="20" height="25" rx="2" fill="#2ea84f"/>
-                        <rect x="11" y="7" width="2" height="19" rx="1" fill="#4ecf70" opacity="0.6"/>
-                        <rect x="26" y="5" width="2" height="23" rx="1" fill="#e8f5e9" opacity="0.7"/>
-                    </svg>
-                </div>
-                <h2 id="pwaInstallHelpTitle">Установка приложения</h2>
-                <p class="pwa-install-help-lead">Если системная кнопка установки не появилась, открой сайт в обычном браузере и установи вручную.</p>
-                <div class="pwa-install-help-list">
-                    <div>
-                        <strong>Chrome / Edge на компьютере</strong>
-                        <span>Иконка установки в адресной строке или меню ⋮ → “Установить Almanion”.</span>
-                    </div>
-                    <div>
-                        <strong>Android</strong>
-                        <span>Chrome → меню ⋮ → “Установить приложение” или “Добавить на главный экран”.</span>
-                    </div>
-                    <div>
-                        <strong>iPhone / iPad</strong>
-                        <span>Safari → Поделиться → “На экран Домой”.</span>
-                    </div>
-                </div>
-            </div>
-        `;
-        overlay.addEventListener('click', (event) => {
-            if (event.target === overlay) closePwaInstallHelp();
-        });
-        overlay.querySelector('.pwa-install-help-close').addEventListener('click', closePwaInstallHelp);
-        document.body.appendChild(overlay);
-    }
-
-    overlay.classList.add('is-visible');
-    document.body.classList.add('modal-open');
-}
-
-function closePwaInstallHelp() {
-    const overlay = document.getElementById('pwaInstallHelp');
-    if (!overlay || !overlay.classList.contains('is-visible')) return;
-    overlay.classList.remove('is-visible');
-    document.body.classList.remove('modal-open');
-}
-
-function showPwaMiniToast(message) {
-    const old = document.getElementById('pwaMiniToast');
-    if (old) old.remove();
-
-    const toast = document.createElement('div');
-    toast.id = 'pwaMiniToast';
-    toast.className = 'pwa-mini-toast';
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.add('is-visible'));
-
-    setTimeout(() => toast.classList.remove('is-visible'), 2200);
-    setTimeout(() => toast.remove(), 2500);
-}
 
 // ============================================
 // ПЕРЕКЛЮЧЕНИЕ ТЕМЫ
@@ -306,18 +201,21 @@ function initNavigation() {
         group.classList.add('open');
     });
     
-    // В новом оглавлении группы — постоянные смысловые разделители, а не
-    // аккордеоны. Пользователь сразу видит структуру и может быстро прокрутить
-    // список, не угадывая, внутри какой свёрнутой группы находится тема.
-    navGroupToggles.forEach(toggle => {
-        const heading = document.createElement('div');
-        heading.className = 'nav-group-heading';
-        heading.setAttribute('role', 'heading');
-        heading.setAttribute('aria-level', '4');
-        const label = toggle.cloneNode(true);
-        label.querySelector('.toggle-icon')?.remove();
-        heading.textContent = label.textContent.replace(/^[\s▼▶▾▸]+/, '').trim();
-        toggle.replaceWith(heading);
+    // Все группы раскрыты при загрузке, но любую можно свернуть для экономии
+    // места. Состояние намеренно не сохраняется между визитами.
+    navGroupToggles.forEach((toggle, index) => {
+        const group = toggle.closest('.nav-group');
+        const submenu = group?.querySelector(':scope > .nav-submenu');
+        if (!group || !submenu) return;
+        const icon = toggle.querySelector('.toggle-icon');
+        if (icon) toggle.appendChild(icon);
+        if (!submenu.id) submenu.id = `nav-submenu-${index + 1}`;
+        toggle.setAttribute('aria-controls', submenu.id);
+        toggle.setAttribute('aria-expanded', 'true');
+        toggle.addEventListener('click', () => {
+            const isOpen = group.classList.toggle('open');
+            toggle.setAttribute('aria-expanded', String(isOpen));
+        });
     });
     
     // Клик по ссылке навигации
@@ -372,11 +270,6 @@ function initNavigation() {
                 link.classList.add('active');
                 link.setAttribute('aria-current', 'location');
                 
-                // Автоматически раскрываем группу навигации с активной ссылкой
-                const parentGroup = link.closest('.nav-group');
-                if (parentGroup && !parentGroup.classList.contains('open')) {
-                    parentGroup.classList.add('open');
-                }
             }
         });
     }
@@ -1366,6 +1259,13 @@ async function longPressCopyBlock(block) {
 }
 
 function showCopyToast(text) {
+    if (window.AlmanionToast) {
+        window.AlmanionToast.show(text, {
+            type: /не удалось/i.test(text) ? 'error' : 'success',
+            duration: 1800
+        });
+        return;
+    }
     let toast = document.getElementById('copyToast');
     if (!toast) {
         toast = document.createElement('div');

@@ -581,6 +581,11 @@ function showNewYearNotification() {
     ];
     
     const message = messages[Math.floor(Math.random() * messages.length)];
+
+    if (window.AlmanionToast) {
+        window.AlmanionToast.show(message, { type: 'info' });
+        return;
+    }
     
     // Создаём уведомление
     const notification = document.createElement('div');
@@ -838,6 +843,10 @@ function applySnowSettings() {
     nyCloseSnowSettings();
     
     // Показываем уведомление
+    if (window.AlmanionToast) {
+        window.AlmanionToast.show('Настройки применены', { type: 'success' });
+        return;
+    }
     const notification = document.createElement('div');
     notification.className = 'ny-notification';
     notification.textContent = 'Настройки применены!';

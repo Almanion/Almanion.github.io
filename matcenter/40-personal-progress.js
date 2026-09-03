@@ -372,6 +372,10 @@ function openAccountLoginFromMatcenter() {
 }
 
 function showPersonalSolvedNotice(message) {
+    if (window.AlmanionToast) {
+        window.AlmanionToast.show(message, { type: 'info' });
+        return;
+    }
     if (typeof showNotification === 'function') {
         showNotification(message);
         return;

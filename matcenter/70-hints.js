@@ -269,7 +269,7 @@ async function pushHintToServer(taskOrNumber, hintText) {
         
     } catch (error) {
         console.error('❌ Не удалось отправить подсказку на сервер:', error);
-        alert('Не удалось сохранить подсказку: ' + error.message);
+        window.AlmanionToast?.show('Не удалось сохранить подсказку: ' + error.message, { type: 'error' });
         throw error;
     }
 }
