@@ -35,6 +35,11 @@
     let persistenceMode = 'local';
     let persistenceFailure = false;
     let syncGeneration = 0;
+    let googleIdentityLoadPromise = null;
+    let googleIdentityInitialized = false;
+    const GOOGLE_IDENTITY_CLIENT_ID = typeof googleIdentityClientId !== 'undefined'
+        ? googleIdentityClientId
+        : '';
 
     // Явно закрепляем сессию за устройством. По умолчанию Firebase также использует
     // LOCAL, но явная настройка защищает от унаследованного SESSION/NONE между
@@ -194,7 +199,12 @@
                     '<button class="kc-close" id="accClose" aria-label="Закрыть">' + IC_CLOSE + '</button>' +
                     '<div class="auth-icon">' + IC_USER + '</div>' +
                     '<h2>' + (mode === 'register' ? 'Регистрация' : 'Вход в аккаунт') + '</h2>' +
-                    '<button type="button" class="account-google-btn" id="accGoogle">' + IC_GOOGLE + '<span>Войти через Google</span></button>' +
+                    '<div class="account-google-shell" id="accGoogleShell" aria-live="polite">' +
+                        '<div class="account-google-loading" id="accGoogleLoading">Загружаем безопасный вход Google…</div>' +
+                        '<div class="account-google-native" id="accGoogleNative"></div>' +
+                        '<button type="button" class="account-google-btn" id="accGoogleRetry" hidden>' + IC_GOOGLE + '<span>Повторить загрузку Google</span></button>' +
+                        '<div class="account-google-busy" id="accGoogleBusy" hidden>Завершаем вход…</div>' +
+                    '</div>' +
                     '<div class="account-or"><span>или</span></div>' +
                     '<form id="accForm" autocomplete="on">' +
                         '<input type="email" id="accEmail" placeholder="Почта" autocomplete="email" required>' +
@@ -208,7 +218,10 @@
                     '</button>' +
                 '</div>';
             ov.querySelector('#accClose').addEventListener('click', hideOverlay);
-            ov.querySelector('#accGoogle').addEventListener('click', signInGoogle);
+            ov.querySelector('#accGoogleRetry').addEventListener('click', function () {
+                resetGoogleIdentityLoader();
+                initGoogleIdentityButton();
+            });
             ov.querySelector('#accToggle').addEventListener('click', function () {
                 mode = (mode === 'register') ? 'login' : 'register';
                 render();
@@ -221,6 +234,7 @@
                 else doEmail(function () { return auth.signInWithEmailAndPassword(email, pass); });
             });
             updateAuthControls();
+            initGoogleIdentityButton();
         }
         render();
         ov.classList.remove('hidden');
@@ -243,23 +257,137 @@
             .finally(function () { setAuthBusy(false); });
     }
 
-    function signInGoogle() {
-        if (authBusy) return;
+    function loadGoogleIdentityLibrary() {
+        if (window.google && window.google.accounts && window.google.accounts.id) {
+            return Promise.resolve(window.google.accounts.id);
+        }
+        if (googleIdentityLoadPromise) return googleIdentityLoadPromise;
+
+        googleIdentityLoadPromise = new Promise(function (resolve, reject) {
+            let script = document.getElementById('googleIdentityScript');
+            let shouldAppend = false;
+            let settled = false;
+            const finish = function (error) {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                if (error) reject(error);
+                else resolve(window.google.accounts.id);
+            };
+            const timer = setTimeout(function () {
+                finish(new Error('Google Identity Services не ответил вовремя'));
+            }, 12000);
+
+            if (!script) {
+                script = document.createElement('script');
+                script.id = 'googleIdentityScript';
+                script.src = 'https://accounts.google.com/gsi/client?hl=ru';
+                script.async = true;
+                script.defer = true;
+                shouldAppend = true;
+            }
+            script.addEventListener('load', function () {
+                if (window.google && window.google.accounts && window.google.accounts.id) finish();
+                else finish(new Error('Библиотека Google загрузилась некорректно'));
+            }, { once: true });
+            script.addEventListener('error', function () {
+                finish(new Error('Не удалось загрузить библиотеку Google'));
+            }, { once: true });
+            if (shouldAppend) document.head.appendChild(script);
+        }).catch(function (error) {
+            googleIdentityLoadPromise = null;
+            throw error;
+        });
+        return googleIdentityLoadPromise;
+    }
+
+    function resetGoogleIdentityLoader() {
+        googleIdentityLoadPromise = null;
+        if (window.google && window.google.accounts && window.google.accounts.id) return;
+        const script = document.getElementById('googleIdentityScript');
+        if (script) script.remove();
+    }
+
+    function initGoogleIdentityButton() {
+        const shell = document.getElementById('accGoogleShell');
+        const loading = document.getElementById('accGoogleLoading');
+        const target = document.getElementById('accGoogleNative');
+        const retry = document.getElementById('accGoogleRetry');
+        if (!shell || !loading || !target || !retry) return;
+
+        loading.hidden = false;
+        loading.textContent = 'Загружаем безопасный вход Google…';
+        retry.hidden = true;
+        target.replaceChildren();
         clearError();
-        if (!persistenceReady) {
-            showError('Вход ещё загружается. Подождите секунду и повторите.');
+
+        if (!GOOGLE_IDENTITY_CLIENT_ID) {
+            loading.hidden = true;
+            retry.hidden = false;
+            showError('Для сайта не настроен Google Client ID. Используйте вход по почте.');
             return;
         }
-        const provider = new firebase.auth.GoogleAuthProvider();
-        setAuthBusy(true, 'Открываем Google…', 'google');
-        // Вызов должен остаться синхронной реакцией на клик: иначе Safari и часть
-        // мобильных браузеров считают окно нежелательным и блокируют его.
-        auth.signInWithPopup(provider)
-            .then(function () { hideOverlay(); })
-            .catch(function (err) {
-                if (err && err.code === 'auth/cancelled-popup-request') return;
-                showError(authMessage(err));
+
+        loadGoogleIdentityLibrary()
+            .then(function (googleIdentity) {
+                if (!document.body.contains(shell)) return;
+                if (!googleIdentityInitialized) {
+                    googleIdentity.initialize({
+                        client_id: GOOGLE_IDENTITY_CLIENT_ID,
+                        callback: handleGoogleCredential,
+                        auto_select: false,
+                        cancel_on_tap_outside: false,
+                        itp_support: true
+                    });
+                    googleIdentityInitialized = true;
+                }
+
+                const availableWidth = Math.max(220, Math.min(320, Math.floor(shell.getBoundingClientRect().width || 320)));
+                googleIdentity.renderButton(target, {
+                    type: 'standard',
+                    theme: document.body.classList.contains('dark-theme') ? 'filled_black' : 'outline',
+                    size: 'large',
+                    text: 'signin_with',
+                    shape: 'rectangular',
+                    logo_alignment: 'left',
+                    width: availableWidth,
+                    locale: 'ru'
+                });
+                loading.hidden = true;
+
+                setTimeout(function () {
+                    if (!target.childElementCount && document.body.contains(shell)) {
+                        retry.hidden = false;
+                        showError('Google не смог показать кнопку входа. Проверьте блокировщик содержимого или войдите по почте.');
+                    }
+                }, 500);
             })
+            .catch(function (error) {
+                console.warn('Almanion account: Google Identity Services is unavailable.', error);
+                if (!document.body.contains(shell)) return;
+                loading.hidden = true;
+                retry.hidden = false;
+                showError('Не удалось загрузить вход Google. Проверьте соединение, блокировщик содержимого или войдите по почте.');
+            });
+    }
+
+    function handleGoogleCredential(response) {
+        if (authBusy) return;
+        clearError();
+        if (!response || !response.credential) {
+            showError('Google не вернул данные для входа. Повторите попытку.');
+            return;
+        }
+
+        setAuthBusy(true, 'Завершаем вход…', 'google');
+        persistencePromise
+            .then(function () {
+                if (!persistenceReady) throw { code: 'auth/web-storage-unsupported' };
+                const credential = firebase.auth.GoogleAuthProvider.credential(response.credential);
+                return auth.signInWithCredential(credential);
+            })
+            .then(function () { hideOverlay(); })
+            .catch(function (err) { showError(authMessage(err)); })
             .finally(function () { setAuthBusy(false); });
     }
 
@@ -270,14 +398,25 @@
     }
 
     function updateAuthControls(label) {
-        const google = document.getElementById('accGoogle');
+        const googleShell = document.getElementById('accGoogleShell');
+        const googleRetry = document.getElementById('accGoogleRetry');
+        const googleBusy = document.getElementById('accGoogleBusy');
+        const googleNative = document.getElementById('accGoogleNative');
+        const googleLoading = document.getElementById('accGoogleLoading');
         const submit = document.getElementById('accSubmit');
         const signout = document.getElementById('accSignout');
         const notice = document.getElementById('accStorageNotice');
-        if (google) {
-            google.disabled = authBusy || !persistenceReady;
-            const span = google.querySelector('span');
-            if (span) span.textContent = authBusyTarget === 'google' && label ? label : 'Войти через Google';
+        if (googleShell) {
+            const googleIsBusy = authBusy && authBusyTarget === 'google';
+            googleShell.classList.toggle('is-busy', googleIsBusy);
+            googleShell.setAttribute('aria-busy', String(googleIsBusy));
+            if (googleRetry) googleRetry.disabled = authBusy || !persistenceReady;
+            if (googleBusy) {
+                googleBusy.hidden = !googleIsBusy;
+                if (googleIsBusy && label) googleBusy.textContent = label;
+            }
+            if (googleNative) googleNative.hidden = googleIsBusy;
+            if (googleLoading && googleIsBusy) googleLoading.hidden = true;
         }
         if (submit) {
             submit.disabled = authBusy || !persistenceReady;

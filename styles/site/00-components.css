@@ -832,6 +832,44 @@ body.dark-theme .sidebar-header .account-btn:hover { background: rgba(255,255,25
 .account-google-btn:disabled,
 .account-signout:disabled { opacity: 0.62; cursor: wait; box-shadow: none; }
 
+.account-google-shell {
+    display: grid;
+    width: 100%;
+    min-height: 44px;
+    place-items: center;
+}
+.account-google-shell > [hidden] { display: none !important; }
+.account-google-native {
+    display: flex;
+    width: 100%;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+}
+.account-google-native > div { max-width: 100%; }
+.account-google-native iframe { max-width: 100%; }
+.account-google-loading,
+.account-google-busy {
+    width: 100%;
+    padding: 0.72rem 0.8rem;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.35;
+}
+.account-google-loading { animation: accountGooglePulse 1.2s ease-in-out infinite; }
+.account-google-shell.is-busy { cursor: progress; }
+@keyframes accountGooglePulse {
+    0%, 100% { opacity: 0.62; }
+    50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .account-google-loading { animation: none; }
+}
+
 .account-or { display: flex; align-items: center; gap: 0.6rem; margin: 0.9rem 0; color: var(--text-secondary); font-size: 0.8rem; }
 .account-or::before, .account-or::after { content: ''; flex: 1; height: 1px; background: var(--border-color); }
 
