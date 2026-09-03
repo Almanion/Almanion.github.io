@@ -395,7 +395,7 @@
                 '<link rel="stylesheet" href="styles/site/index.css?v=20260903-5">' +
                 '<link rel="stylesheet" href="styles/tokens.css?v=20260903-1">' +
                 '<link rel="stylesheet" href="style-new.css?v=20260903-5">' +
-                '<link rel="stylesheet" href="styles/typography.css?v=20260903-1">' +
+                '<link rel="stylesheet" href="styles/typography.css?v=20260904-2">' +
                 '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">' +
                 '<link rel="stylesheet" href="constructor/preview.css?v=20260903-1">' +
                 '</head><body><main class="main-content" id="previewContent"></main></body></html>');

@@ -579,8 +579,8 @@ body .kc-deck {
     line-height: 1.4;
 }
 
-/* Long lines are reduced only in the roomy paged reader. Wide tables and
-   formula-only/system blocks keep the full card width. */
+/* Cards follow the full topic grid. Only unboxed prose keeps a shorter measure:
+   limiting the cards themselves left an accidental empty column on the right. */
 @media (min-width: 1024px) {
     body.experimental.exp-reader-active .page-header > :is(h1, .subtitle, p) {
         width: min(100%, var(--type-measure-wide));
@@ -603,16 +603,22 @@ body .kc-deck {
         .properties-box,
         .derivation-box
     ) {
-        width: min(100%, 52rem);
+        width: 100%;
+        margin-inline: 0;
+    }
+
+    body.experimental.exp-reader-active .topic.exp-reader-current > :is(
+        p,
+        ul,
+        ol,
+        blockquote
+    ) {
+        width: min(100%, var(--type-measure-wide));
         margin-inline: auto;
     }
 
     body.experimental.exp-reader-active .topic.exp-reader-current > :is(
         .topic-title,
-        p,
-        ul,
-        ol,
-        blockquote,
         .definition-box,
         .remark-box,
         .experiment-box,
@@ -626,8 +632,8 @@ body .kc-deck {
         .properties-box,
         .derivation-box
     ) {
-        width: min(100%, var(--type-measure-wide));
-        margin-inline: auto;
+        width: 100%;
+        margin-inline: 0;
     }
 }
 
