@@ -42,7 +42,18 @@
 
     function renderChildren(block, depth) {
         if (!Array.isArray(block.children) || block.children.length === 0) return '';
-        return '<div class="constructor-nested-content">' + block.children.map(child => renderBlock(child, depth + 1)).join('\n') + '</div>';
+        return block.children.map(child => renderBlock(child, depth + 1)).filter(Boolean).join('\n');
+    }
+
+    function definitionParts(block) {
+        let term = String(block.term || block.title || '').trim();
+        let separator = block.separator === ':' ? ':' : '—';
+        const trailingSeparator = term.match(/\s*(--|—|:)\s*$/);
+        if (!block.term && trailingSeparator) {
+            separator = trailingSeparator[1] === ':' ? ':' : '—';
+            term = term.slice(0, trailingSeparator.index).trim();
+        }
+        return { term, separator };
     }
 
     function renderBlock(block, depth) {
@@ -84,10 +95,21 @@
 
         const className = CONTAINER_CLASSES[type];
         if (!className) return '';
+        if (type === 'definition') {
+            const parts = definitionParts(block);
+            const content = String(block.content || '').trim();
+            const separator = parts.separator === ':' ? ': ' : ' — ';
+            const inner = (parts.term ? '<strong>' + renderInline(parts.term) + '</strong>' : '') +
+                (parts.term && (content || (block.children || []).length) ? separator : '') +
+                (content ? renderInline(content) : '') +
+                renderChildren(block, depth || 0);
+            return inner ? '<div class="definition-box">' + inner + '</div>' : '';
+        }
         const title = String(block.title || '').trim();
         const content = String(block.content || '').trim();
-        const inner = (title ? '<strong>' + renderInline(title) + '</strong>' : '') +
-            (title && content ? '<br>' : '') +
+        const showTitle = type !== 'remark' && type !== 'derivation';
+        const inner = (showTitle && title ? '<strong>' + renderInline(title) + '</strong>' : '') +
+            (showTitle && title && content ? '<br>' : '') +
             (content ? renderInline(content) : '') +
             renderChildren(block, depth || 0);
         if (type === 'derivation') {
@@ -104,25 +126,30 @@
         const title = String(section && section.title || 'Раздел');
         const blocks = Array.isArray(section && section.blocks) ? section.blocks : [];
         const subsections = Array.isArray(section && section.subsections) ? section.subsections : [];
+        const renderedBlocks = blocks.map(block => renderBlock(block, 0)).filter(Boolean);
+        const rootTopic = renderedBlocks.length ? [
+            '    <article id="' + escapeHtml(id) + '" class="topic constructor-topic">',
+            '        <h3 class="topic-title">' + (subsections.length ? 'Обзор' : renderInline(title)) + '</h3>',
+            renderedBlocks.join('\n'),
+            '    </article>'
+        ].join('\n') : '';
         const subsectionHtml = subsections.map(subsection => {
             const subsectionId = escapeHtml(subsection && subsection.id || 'subsection');
             const subsectionTitle = String(subsection && subsection.title || 'Подраздел');
             const children = Array.isArray(subsection && subsection.children) ? subsection.children : [];
             return [
-                '    <section id="' + subsectionId + '" class="constructor-subsection">',
+                '    <article id="' + subsectionId + '" class="topic constructor-topic">',
                 '        <h3 class="topic-title">' + renderInline(subsectionTitle) + '</h3>',
                 (String(subsection && subsection.content || '').trim() ? '        <p>' + renderInline(subsection.content) + '</p>' : ''),
                 children.map(block => renderBlock(block, 0)).filter(Boolean).join('\n'),
-                '    </section>'
+                '    </article>'
             ].join('\n');
         }).join('\n');
         return [
-            '<section id="' + escapeHtml(id) + '" class="content-section constructor-content-section" data-constructor-section="' + escapeHtml(id) + '">',
-            '    <h2 class="part-title">' + escapeHtml(title) + '</h2>',
-            '    <article class="topic constructor-topic">',
-            blocks.map(block => renderBlock(block, 0)).filter(Boolean).join('\n'),
+            '<section class="content-section constructor-content-section" data-constructor-section="' + escapeHtml(id) + '">',
+            (subsections.length ? '    <h2 class="part-title">' + escapeHtml(title) + '</h2>' : ''),
+            rootTopic,
             subsectionHtml,
-            '    </article>',
             '</section>'
         ].join('\n');
     }
@@ -132,7 +159,7 @@
         const title = escapeHtml(section && (section.navTitle || section.title) || 'Раздел');
         const subsections = Array.isArray(section && section.subsections) ? section.subsections : [];
         if (subsections.length) {
-            const overview = Array.isArray(section && section.blocks) && section.blocks.length
+            const overview = Array.isArray(section && section.blocks) && section.blocks.some(block => !!renderBlock(block, 0))
                 ? '<li><a href="#' + id + '" class="nav-link">Обзор</a></li>'
                 : '';
             return '<li class="nav-group">' +

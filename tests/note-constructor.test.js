@@ -31,6 +31,18 @@ function testModel() {
     assert.strictEqual(section.blocks[0].children[0].id, paragraphId);
     assert.strictEqual(Model.smartDashes('Причина -- следствие'), 'Причина — следствие');
 
+    const definition = Model.createBlock('definition');
+    definition.term = 'I закон Ньютона';
+    definition.separator = ':';
+    definition.content = 'ускорение определяется силой';
+    section.blocks = [definition];
+    assert.deepStrictEqual(Model.validateSection(section), []);
+
+    const legacyDefinition = Model.normalizeBlock({ type: 'definition', title: 'Импульс:', content: 'произведение массы на скорость' }, 0);
+    assert.strictEqual(legacyDefinition.term, 'Импульс');
+    assert.strictEqual(legacyDefinition.separator, ':');
+    assert.strictEqual(legacyDefinition.title, '');
+
     const legacy = Model.normalizeSection({ title: 'Раздел', navTitle: 'Раздел', blocks: [Object.assign(Model.createBlock('subsection'), { title: 'Старый подраздел' })] }, 'physics');
     assert.strictEqual(legacy.blocks.length, 0);
     assert.strictEqual(legacy.subsections.length, 1);
@@ -42,6 +54,7 @@ function testRenderer() {
     section.id = 'safe-section';
     section.blocks = [
         Object.assign(Model.createBlock('paragraph'), { content: '**Энергия** <img src=x>' }),
+        Object.assign(Model.createBlock('definition'), { term: 'Кинетическая энергия', separator: '—', content: 'энергия движения' }),
         Object.assign(Model.createBlock('formula'), { latex: String.raw`E &= mc^2` }),
         Object.assign(Model.createBlock('image'), { src: 'javascript:alert(1)', alt: 'x' })
     ];
@@ -49,13 +62,20 @@ function testRenderer() {
     const html = Renderer.renderSection(section);
     assert.ok(html.includes('&lt;script&gt;'));
     assert.ok(html.includes('<strong>Энергия</strong>'));
+    assert.ok(html.includes('<div class="definition-box"><strong>Кинетическая энергия</strong> — энергия движения</div>'));
     assert.ok(html.includes('E &amp;= mc^2'));
     assert.ok(!html.includes('javascript:'));
-    assert.ok(html.includes('id="short-subsection"'));
+    assert.ok(html.includes('<article id="safe-section" class="topic constructor-topic">'));
+    assert.ok(html.includes('<article id="short-subsection" class="topic constructor-topic">'));
+    assert.ok(!html.includes('constructor-nested-content'));
     const nav = Renderer.renderNavItem(section);
     assert.ok(nav.includes('nav-group-toggle'));
     assert.ok(nav.includes('href="#short-subsection"'));
     assert.ok(nav.includes('Короткое'));
+    const nestedDefinition = Object.assign(Model.createBlock('definition'), { term: 'Сила', separator: ':', content: 'мера взаимодействия' });
+    nestedDefinition.children.push(Object.assign(Model.createBlock('formula'), { latex: 'F = ma' }));
+    assert.strictEqual(Renderer.renderBlock(nestedDefinition, 0), '<div class="definition-box"><strong>Сила</strong>: мера взаимодействия<div class="formula-box">\\[F = ma\\]</div></div>');
+    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('remark'), { title: 'Лишний заголовок', content: 'Только текст' }), 0), '<div class="remark-box">Только текст</div>');
     assert.strictEqual(Renderer.safeImageSource('//example.com/track.png'), '');
 }
 

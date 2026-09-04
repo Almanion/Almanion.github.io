@@ -62,6 +62,7 @@
             content: '',
             children: []
         };
+        if (normalizedType === 'definition') Object.assign(block, { term: '', separator: '—' });
         if (normalizedType === 'formula') block.latex = '';
         if (normalizedType === 'image') Object.assign(block, { src: '', alt: '', caption: '' });
         if (normalizedType === 'list') block.items = [''];
@@ -108,6 +109,22 @@
             content: String(source.content || ''),
             children: []
         };
+        if (type === 'definition') {
+            let term = String(source.term || source.title || '').trim();
+            let separator = source.separator === ':' ? ':' : '—';
+            const trailingSeparator = term.match(/\s*(--|—|:)\s*$/);
+            if (!source.term && trailingSeparator) {
+                separator = trailingSeparator[1] === ':' ? ':' : '—';
+                term = term.slice(0, trailingSeparator.index).trim();
+            }
+            block.term = term;
+            block.separator = separator;
+            block.title = '';
+        }
+        if ((type === 'remark' || type === 'derivation') && block.title) {
+            block.content = block.title + (block.content ? '\n' + block.content : '');
+            block.title = '';
+        }
         if (type === 'formula') block.latex = String(source.latex || source.content || '');
         if (type === 'image') {
             block.src = String(source.src || '');
@@ -282,7 +299,18 @@
         if (subsections.some(item => !item || !item.title || !item.navTitle)) errors.push('Укажите названия подразделов и подписи для меню');
         if (subsectionIds.some(id => !/^[a-z0-9][a-z0-9-]{1,63}$/.test(id))) errors.push('Адрес подраздела должен содержать 2–64 латинских символа, цифры или дефисы');
         if (new Set(subsectionIds).size !== subsectionIds.length) errors.push('Адреса подразделов не должны повторяться');
+        const definitionWithoutTerm = [section.blocks].concat(subsections.map(item => item && item.children))
+            .some(blocks => hasInvalidDefinition(blocks));
+        if (definitionWithoutTerm) errors.push('Укажите термин во всех блоках определений');
         return errors;
+    }
+
+    function hasInvalidDefinition(blocks) {
+        return Array.isArray(blocks) && blocks.some(block => {
+            if (!block || typeof block !== 'object') return false;
+            if (block.type === 'definition' && !String(block.term || block.title || '').trim()) return true;
+            return hasInvalidDefinition(block.children);
+        });
     }
 
     return {

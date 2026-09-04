@@ -7,7 +7,7 @@
     const config = window.NOTE_CONSTRUCTOR_CONFIG || {};
     const OWNER_EMAIL = String(config.ownerEmail || 'dmb23930@gmail.com').toLowerCase();
     const MAX_IMAGE_BYTES = 2.5 * 1024 * 1024;
-    const BLOCK_ICONS = { up: '↑', down: '↓', indent: '↳', outdent: '↰', duplicate: '⧉', remove: '×' };
+    const BLOCK_ICONS = { up: '↑', down: '↓', indent: '↳', outdent: '↰', add: '+', duplicate: '⧉', remove: '×' };
     const STATUS_LABELS = { draft: 'Черновик', ready: 'К проверке', published: 'Опубликовано' };
     const BLOCK_PICKER_GROUPS = [
         { title: 'Текст и структура', types: ['paragraph', 'heading', 'list', 'formula', 'image'] },
@@ -298,6 +298,17 @@
                 '<span class="builder-image-note">Файл хранится локально до публикации, затем попадёт в <code>images/notes/' + escapeHtml(state.subject) + '/</code>.</span>';
         }
         if (block.type === 'paragraph') return textArea('content', 'Текст', block.content, '', 'Текст конспекта. Доступны **полужирный**, *курсив* и `код`.');
+        if (block.type === 'definition') {
+            const separator = block.separator === ':' ? ':' : '—';
+            return '<div class="builder-definition-structure">' +
+                '<label class="builder-field"><span>Термин</span><input data-block-field="term" value="' + escapeHtml(block.term || block.title || '') + '" placeholder="Например, I закон Ньютона"></label>' +
+                '<label class="builder-field builder-definition-separator"><span>Разделитель</span><select data-block-field="separator" aria-label="Разделитель определения"><option value="—"' + (separator === '—' ? ' selected' : '') + '>— тире</option><option value=":"' + (separator === ':' ? ' selected' : '') + '>: двоеточие</option></select></label>' +
+                '</div>' +
+                textArea('content', 'Определение', block.content, '', 'Содержание определения');
+        }
+        if (block.type === 'remark' || block.type === 'derivation') {
+            return textArea('content', block.type === 'remark' ? 'Текст замечания' : 'Текст вывода', block.content, '', 'Основной текст блока');
+        }
         return '<label class="builder-field"><span>Короткий заголовок — необязательно</span><input data-block-field="title" value="' + escapeHtml(block.title || '') + '"></label>' +
             textArea('content', 'Содержание', block.content, '', 'Основной текст блока');
     }
@@ -314,6 +325,7 @@
                     actionButton('down', 'Переместить ниже', index === count - 1) +
                     actionButton('indent', 'Вложить в предыдущий блок', index === 0 || depth >= Model.MAX_NESTING_DEPTH) +
                     actionButton('outdent', 'Поднять на уровень выше', depth === 0) +
+                    actionButton('add', 'Добавить блок после этого') +
                     actionButton('duplicate', 'Создать копию') +
                     actionButton('remove', 'Удалить блок') +
                 '</div>' +
@@ -394,7 +406,7 @@
                 '<base href="' + escapeHtml(baseHref) + '">' +
                 '<link rel="stylesheet" href="styles/site/index.css?v=20260903-5">' +
                 '<link rel="stylesheet" href="styles/tokens.css?v=20260903-1">' +
-                '<link rel="stylesheet" href="style-new.css?v=20260903-5">' +
+                '<link rel="stylesheet" href="style-new.css?v=20260904-6">' +
                 '<link rel="stylesheet" href="styles/typography.css?v=20260904-2">' +
                 '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">' +
                 '<link rel="stylesheet" href="constructor/preview.css?v=20260903-1">' +
@@ -629,6 +641,12 @@
     function handleBlockAction(blockId, action) {
         if (!state.current) return;
         const tree = activeBlockTree();
+        if (action === 'add') {
+            state.insertAfterId = blockId;
+            updateAddDockContext();
+            openBlockPicker('');
+            return;
+        }
         if (action === 'up') Model.moveWithinLevel(tree, blockId, -1);
         else if (action === 'down') Model.moveWithinLevel(tree, blockId, 1);
         else if (action === 'indent') Model.indentBlock(tree, blockId);
@@ -969,18 +987,49 @@
         const root = document.documentElement;
         const storedOutline = Number(localStorage.getItem('note-constructor-outline-width'));
         const storedPreview = Number(localStorage.getItem('note-constructor-preview-width'));
-        if (storedOutline >= 220 && storedOutline <= 520) root.style.setProperty('--builder-outline-width', storedOutline + 'px');
-        if (storedPreview >= 340 && storedPreview <= 760) root.style.setProperty('--builder-preview-width', storedPreview + 'px');
+        const minimumEditorWidth = 480;
+        const resizerWidth = 12;
+        const limits = { outline: [220, 520], preview: [340, 760] };
+        const properties = { outline: '--builder-outline-width', preview: '--builder-preview-width' };
+        const storageKeys = { outline: 'note-constructor-outline-width', preview: 'note-constructor-preview-width' };
+        let storedWidthsApplied = false;
+
+        function readWidth(kind) {
+            const fallback = kind === 'outline' ? 270 : 440;
+            return Number.parseFloat(getComputedStyle(root).getPropertyValue(properties[kind])) || fallback;
+        }
+
+        function setWidth(kind, value, persist) {
+            const otherKind = kind === 'outline' ? 'preview' : 'outline';
+            const bounds = limits[kind];
+            const availableMaximum = window.innerWidth - minimumEditorWidth - resizerWidth - readWidth(otherKind);
+            const maximum = Math.max(bounds[0], Math.min(bounds[1], availableMaximum));
+            const limited = Math.max(bounds[0], Math.min(maximum, Math.round(value)));
+            root.style.setProperty(properties[kind], limited + 'px');
+            if (persist !== false) localStorage.setItem(storageKeys[kind], String(limited));
+            return limited;
+        }
+
+        function fitPanels(persist) {
+            if (window.innerWidth <= 1280) return;
+            let outline = !storedWidthsApplied && storedOutline >= 220 && storedOutline <= 520 ? storedOutline : readWidth('outline');
+            let preview = !storedWidthsApplied && storedPreview >= 340 && storedPreview <= 760 ? storedPreview : readWidth('preview');
+            storedWidthsApplied = true;
+            const maximumCombined = window.innerWidth - minimumEditorWidth - resizerWidth;
+            const excess = Math.max(0, outline + preview - maximumCombined);
+            preview = Math.max(limits.preview[0], preview - excess);
+            outline = Math.max(limits.outline[0], Math.min(outline, maximumCombined - preview));
+            root.style.setProperty(properties.outline, Math.round(outline) + 'px');
+            root.style.setProperty(properties.preview, Math.round(preview) + 'px');
+            if (persist !== false) {
+                localStorage.setItem(storageKeys.outline, String(Math.round(outline)));
+                localStorage.setItem(storageKeys.preview, String(Math.round(preview)));
+            }
+        }
+
+        fitPanels(true);
 
         function bind(handle, kind) {
-            const property = kind === 'outline' ? '--builder-outline-width' : '--builder-preview-width';
-            const key = kind === 'outline' ? 'note-constructor-outline-width' : 'note-constructor-preview-width';
-            const bounds = kind === 'outline' ? [220, 520] : [340, 760];
-            function apply(value) {
-                const limited = Math.max(bounds[0], Math.min(bounds[1], Math.round(value)));
-                root.style.setProperty(property, limited + 'px');
-                localStorage.setItem(key, String(limited));
-            }
             handle.addEventListener('pointerdown', event => {
                 if (window.innerWidth <= 1280) return;
                 event.preventDefault();
@@ -991,7 +1040,7 @@
                 shell.classList.add('is-resizing');
                 function move(moveEvent) {
                     const delta = kind === 'outline' ? moveEvent.clientX - startX : startX - moveEvent.clientX;
-                    apply(startWidth + delta);
+                    setWidth(kind, startWidth + delta, true);
                 }
                 function stop() {
                     handle.classList.remove('is-active');
@@ -1007,13 +1056,14 @@
             handle.addEventListener('keydown', event => {
                 if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
                 event.preventDefault();
-                const current = parseFloat(getComputedStyle(root).getPropertyValue(property)) || (kind === 'outline' ? 270 : 440);
+                const current = readWidth(kind);
                 const direction = event.key === 'ArrowRight' ? 1 : -1;
-                apply(current + direction * 16 * (kind === 'outline' ? 1 : -1));
+                setWidth(kind, current + direction * 16 * (kind === 'outline' ? 1 : -1), true);
             });
         }
         bind(el('outlineResizer'), 'outline');
         bind(el('previewResizer'), 'preview');
+        window.addEventListener('resize', () => fitPanels(true));
     }
 
     function bindEvents() {
@@ -1100,6 +1150,16 @@
             updateAddDockContext();
         });
         el('blockList').addEventListener('change', event => {
+            const field = event.target.dataset.blockField;
+            if (field && event.target.matches('select')) {
+                const card = event.target.closest('[data-block-id]');
+                const location = card && findBlock(card.dataset.blockId);
+                if (location) {
+                    location.block[field] = event.target.value;
+                    changed(false);
+                }
+                return;
+            }
             if (!event.target.matches('[data-image-file]')) return;
             const card = event.target.closest('[data-block-id]');
             if (card) handleImage(card.dataset.blockId, event.target.files && event.target.files[0]);

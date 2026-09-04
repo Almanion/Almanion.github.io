@@ -24,7 +24,7 @@
     </script>
     <link rel="stylesheet" href="styles/tokens.css?v=20260903-1">
     <link rel="stylesheet" href="styles/typography.css?v=20260904-2">
-    <link rel="stylesheet" href="constructor/index.css?v=20260904-8">
+    <link rel="stylesheet" href="constructor/index.css?v=20260904-10">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 </head>
 <body>
@@ -89,7 +89,8 @@
                 </div>
 
                 <div id="editorContent" hidden>
-                    <div class="builder-document-head">
+                    <div class="builder-editor-scroll" id="builderEditorScroll">
+                      <div class="builder-document-head">
                         <span class="builder-document-kind" id="documentKind">Раздел</span>
                         <div class="builder-document-title-row">
                             <label class="builder-field is-title">
@@ -119,9 +120,10 @@
                                 </select>
                             </label>
                         </div>
-                    </div>
+                      </div>
 
-                    <div class="builder-block-list" id="blockList"></div>
+                      <div class="builder-block-list" id="blockList"></div>
+                    </div>
                     <div class="builder-add-dock" id="addBlockDock">
                         <div class="builder-add-dock-copy">
                             <strong id="addDockTitle">Продолжить конспект</strong>
@@ -236,9 +238,9 @@
     <script src="firebase-config.js?v=20260903-3"></script>
     <script src="account.js?v=20260903-9"></script>
     <script src="constructor/config.js?v=20260903-2"></script>
-    <script src="constructor/model.js?v=20260903-3"></script>
-    <script src="constructor/renderer.js?v=20260904-5"></script>
+    <script src="constructor/model.js?v=20260904-4"></script>
+    <script src="constructor/renderer.js?v=20260904-6"></script>
     <script src="constructor/storage.js?v=20260903-3"></script>
-    <script src="constructor/index.js?v=20260904-8"></script>
+    <script src="constructor/index.js?v=20260904-10"></script>
 </body>
 </html>

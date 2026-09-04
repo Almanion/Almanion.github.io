@@ -516,6 +516,10 @@
 
     function onPointerDown(event) {
         if (!state.active || state.swipe || !event.isPrimary || event.button !== 0) return;
+        // Перелистывание жестом предназначено только для сенсорных экранов.
+        // Перетаскивание мышью на компьютере должно оставаться обычным
+        // выделением текста для копирования.
+        if (event.pointerType !== 'touch') return;
         if (!event.target.closest || event.target.closest(SWIPE_BLOCK_SELECTOR)) return;
         if (document.querySelector('.settings-modal:not(.hidden), .auth-overlay:not(.hidden), .lightbox-overlay.open')) return;
 
@@ -571,8 +575,7 @@
         document.body.classList.remove('exp-reader-pointer-active');
 
         if (!swipe.horizontal || swipe.cancelled) return;
-        const threshold = swipe.pointerType === 'mouse' ? 72 : 56;
-        const isLongEnough = Math.abs(swipe.deltaX) >= threshold;
+        const isLongEnough = Math.abs(swipe.deltaX) >= 56;
         const isHorizontal = Math.abs(swipe.deltaX) > Math.abs(swipe.deltaY) * 1.25;
         if (!isLongEnough || !isHorizontal) return;
 
