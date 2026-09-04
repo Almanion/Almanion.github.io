@@ -603,7 +603,7 @@ body.experimental .remark-box > .proof-box {
 /* Вывод/доказательство — раскрытый контент */
 body.experimental .derivation-content,
 body.experimental .proof-content {
-    border-top: 1px dashed var(--exp-border) !important;
+    border-top: 0 !important;
     border-left: none !important;
 }
 
