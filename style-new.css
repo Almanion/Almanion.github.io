@@ -535,6 +535,7 @@ body.experimental .exercise-box::before    { content: "Упражнение"; co
 body.experimental .properties-box::before  { content: "Свойства"; color: var(--t-properties); }
 body.experimental .system-box::before      { content: "Система"; color: var(--t-system); }
 body.experimental .remark-box::before      { content: "Замечание"; color: var(--t-remark); }
+body.experimental .example-box > strong:first-child { color: var(--t-example) !important; }
 
 body.experimental .definition-box::before,
 body.experimental .theorem-box::before,
@@ -549,7 +550,8 @@ body.experimental .experiment-box::before,
 body.experimental .exercise-box::before,
 body.experimental .properties-box::before,
 body.experimental .system-box::before,
-body.experimental .remark-box::before {
+body.experimental .remark-box::before,
+body.experimental .example-box > strong:first-child {
     display: block;
     width: fit-content;
     margin: 0 0 0.7rem 0 !important;
@@ -566,12 +568,18 @@ body.experimental .remark-box::before {
     -webkit-text-fill-color: currentColor;
 }
 
-/* remark-box: текстовый ярлык «Замечание» (жёлтый) как у остальных блоков —
-   content и цвет заданы в списке ярлыков выше, общий стиль чипа — в группе выше.
-   Здесь сбрасываем остатки базовой угловой лампочки из обычного режима: её
-   SVG-маска иначе обрезала бы текст чипа в силуэт лампочки, а height/opacity
-   ломали бы вид. position/top/left уже снимает общий стиль чипа (position: static). */
-body.experimental .remark-box::before {
+/* В старых конспектах подпись «Пример» уже записана первым strong. Используем
+   её как ярлык карточки, а не показываем второй такой же ярлык из ::before. */
+body.experimental .example-box:has(> strong:first-child)::before {
+    content: none !important;
+    display: none !important;
+}
+
+/* remark/example: текстовые ярлыки как у остальных учебных блоков.
+   Сбрасываем угловые SVG-иконки старого режима: их маски иначе обрезают текст
+   ярлыка, а фиксированные height/opacity нарушают размеры и контраст чипа. */
+body.experimental .remark-box::before,
+body.experimental .example-box::before {
     -webkit-mask: none !important;
     mask: none !important;
     right: auto !important;
