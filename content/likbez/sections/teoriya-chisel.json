@@ -9,13 +9,12 @@
     {
       "id": "lte-i-teorema-dirihle",
       "type": "subsection",
-      "title": "§ 1. Лемма об уточнении показателя",
-      "navTitle": "§ 1. Лемма об уточнении показателя",
+      "title": "§ 1. Лемма",
       "content": "",
       "children": [
         {
           "id": "p-adic-valuation",
-          "type": "reminder",
+          "type": "paragraph",
           "title": "Напоминание",
           "content": "Пусть \\(r\\in\\mathbb Q\\) и \\(r=p^k\\dfrac ab\\), где \\(k\\in\\mathbb Z\\), \\(p\\nmid a\\), \\(p\\nmid b\\). Тогда **\\(p\\)-адическая валюация** равна \\(v_p(r)=k\\), а **\\(p\\)-адическая норма** — \\(\\lvert r\\rvert_p=p^{-v_p(r)}\\).",
           "children": []
@@ -30,9 +29,9 @@
               "id": "lte-formula",
               "type": "formula",
               "title": "",
-              "latex": "v_p(a^n-b^n)=v_p(a-b)+v_p(n)",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "v_p(a^n-b^n)=v_p(a-b)+v_p(n)"
             },
             {
               "id": "lte-proof-1",
@@ -51,9 +50,9 @@
                   "id": "lte-binomial",
                   "type": "formula",
                   "title": "",
-                  "latex": "a^p-b^p=(b+tp)^p-b^p=\\binom p1b^{p-1}tp+\\dots+\\binom pk b^{p-k}(tp)^k+\\dots+(tp)^p",
                   "content": "",
-                  "children": []
+                  "children": [],
+                  "latex": "a^p-b^p=(b+tp)^p-b^p=\\binom p1b^{p-1}tp+\\dots+\\binom pk b^{p-k}(tp)^k+\\dots+(tp)^p"
                 },
                 {
                   "id": "lte-binomial-explanation",
@@ -73,9 +72,9 @@
                   "id": "lte-general-chain",
                   "type": "formula",
                   "title": "",
-                  "latex": "v_p(a^n-b^n)=v_p\\!\\left((a^{p^\\alpha})^k-(b^{p^\\alpha})^k\\right)=v_p(a^{p^\\alpha}-b^{p^\\alpha})=v_p(a-b)+\\alpha",
                   "content": "",
-                  "children": []
+                  "children": [],
+                  "latex": "v_p(a^n-b^n)=v_p\\!\\left((a^{p^\\alpha})^k-(b^{p^\\alpha})^k\\right)=v_p(a^{p^\\alpha}-b^{p^\\alpha})=v_p(a-b)+\\alpha"
                 }
               ]
             }
@@ -84,22 +83,24 @@
         {
           "id": "order-definition",
           "type": "definition",
-          "title": "Порядок по модулю \\(p\\)",
+          "title": "",
           "content": "Пусть \\(p\\in\\mathbb P\\), \\(a\\in\\mathbb Z\\), \\(p\\nmid a\\). Порядком числа \\(a\\) по модулю \\(p\\) называется число",
           "children": [
             {
               "id": "order-formula",
               "type": "formula",
               "title": "",
-              "latex": "\\operatorname{ord}_p a\\stackrel{\\mathrm{def}}=\\min\\{k\\in\\mathbb N\\mid a^k\\equiv1\\pmod p\\}",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "\\operatorname{ord}_p a\\stackrel{\\mathrm{def}}=\\min\\{k\\in\\mathbb N\\mid a^k\\equiv1\\pmod p\\}"
             }
-          ]
+          ],
+          "term": "Порядок по модулю \\(p\\)",
+          "separator": "—"
         },
         {
           "id": "order-corollary",
-          "type": "corollary",
+          "type": "paragraph",
           "title": "Делимость порядка",
           "content": "Если \\(a^s\\equiv1\\pmod p\\), то \\(\\operatorname{ord}_p a\\mid s\\).",
           "children": []
@@ -118,44 +119,48 @@
           "content": "Если \\((a,b)=1\\), то в арифметической прогрессии \\(an+b\\) бесконечно много простых чисел.",
           "children": []
         }
-      ]
+      ],
+      "navTitle": "§ 1. Лемма об уточнении показателя"
     },
     {
       "id": "kvadratichnye-vychety",
       "type": "subsection",
       "title": "§ 2. Квадратичные вычеты",
-      "navTitle": "§ 2. Квадратичные вычеты",
       "content": "",
       "children": [
         {
           "id": "quadratic-residue",
           "type": "definition",
-          "title": "Квадратичный вычет",
+          "title": "",
           "content": "Пусть \\(p\\in\\mathbb P\\) — нечётное простое, \\(a\\in\\mathbb F_p\\), \\(a\\ne0\\). Число \\(a\\) называется **квадратичным вычетом по модулю \\(p\\)**, если существует \\(x\\in\\mathbb F_p\\), для которого \\(x^2=a\\).",
-          "children": []
+          "children": [],
+          "term": "Квадратичный вычет",
+          "separator": "—"
         },
         {
           "id": "residue-count",
           "type": "remark",
-          "title": "Замечание",
-          "content": "Для нечётного простого \\(p\\) из \\(x^2=a\\) следует \\((-x)^2=a\\). Кроме того, \\(x^2\\equiv y^2\\pmod p\\Rightarrow p\\mid(x-y)(x+y)\\). Поэтому \\(1^2,2^2,\\ldots,\\left(\\frac{p-1}{2}\\right)^2\\) — в точности все ненулевые квадратичные вычеты по модулю \\(p\\).",
+          "title": "",
+          "content": "Замечание\nДля нечётного простого \\(p\\) из \\(x^2=a\\) следует \\((-x)^2=a\\). Кроме того, \\(x^2\\equiv y^2\\pmod p\\Rightarrow p\\mid(x-y)(x+y)\\). Поэтому \\(1^2,2^2,\\ldots,\\left(\\frac{p-1}{2}\\right)^2\\) — в точности все ненулевые квадратичные вычеты по модулю \\(p\\).",
           "children": []
         },
         {
           "id": "legendre-definition",
           "type": "definition",
-          "title": "Символ Лежандра",
+          "title": "",
           "content": "Для нечётного простого \\(p\\) символ Лежандра определяется формулой",
           "children": [
             {
               "id": "legendre-cases",
               "type": "formula",
               "title": "",
-              "latex": "\\left(\\frac ap\\right)=\\begin{cases}0,&p\\mid a,\\\\1,&a\\text{ — квадратичный вычет},\\\\-1,&a\\text{ — невычет}.\\end{cases}",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "\\left(\\frac ap\\right)=\\begin{cases}0,&p\\mid a,\\\\1,&a\\text{ — квадратичный вычет},\\\\-1,&a\\text{ — невычет}.\\end{cases}"
             }
-          ]
+          ],
+          "term": "Символ Лежандра",
+          "separator": "—"
         },
         {
           "id": "euler-criterion",
@@ -167,9 +172,9 @@
               "id": "euler-formula",
               "type": "formula",
               "title": "",
-              "latex": "\\left(\\frac ap\\right)\\equiv a^{\\frac{p-1}{2}}\\pmod p",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "\\left(\\frac ap\\right)\\equiv a^{\\frac{p-1}{2}}\\pmod p"
             },
             {
               "id": "euler-proof",
@@ -182,25 +187,10 @@
         },
         {
           "id": "legendre-properties",
-          "type": "properties",
+          "type": "paragraph",
           "title": "Свойства символа Лежандра",
           "content": "",
-          "children": [
-            {
-              "id": "legendre-properties-list",
-              "type": "list",
-              "title": "",
-              "items": [
-              "\\(\\left(\\frac1p\\right)=1\\), \\(\\left(\\frac{-1}{p}\\right)=(-1)^{(p-1)/2}\\), \\(\\left(\\frac{x^2}{p}\\right)=1\\) при \\(p\\nmid x\\).",
-                "\\(\\left(\\frac{ab}{p}\\right)=\\left(\\frac ap\\right)\\left(\\frac bp\\right)\\). Действительно, \\((ab)^{(p-1)/2}=a^{(p-1)/2}b^{(p-1)/2}\\).",
-                "\\(\\left(\\frac{a_1\\cdots a_n}{p}\\right)=\\left(\\frac{a_1}{p}\\right)\\cdots\\left(\\frac{a_n}{p}\\right)\\).",
-              "\\(\\left(\\frac{ab^2}{p}\\right)=\\left(\\frac ap\\right)\\) при \\(p\\nmid b\\).",
-                "Если \\(a=\\prod q_i^{\\alpha_i}\\), то \\(\\left(\\frac ap\\right)=\\prod_{2\\nmid\\alpha_i}\\left(\\frac{q_i}{p}\\right)\\)."
-              ],
-              "content": "",
-              "children": []
-            }
-          ]
+          "children": []
         },
         {
           "id": "gauss-criterion",
@@ -218,9 +208,9 @@
                   "id": "gauss-product",
                   "type": "formula",
                   "title": "",
-                  "latex": "\\left(\\frac{p-1}{2}\\right)!a^{\\frac{p-1}{2}}\\equiv(-1)^{\\ell}\\left(\\frac{p-1}{2}\\right)!\\pmod p",
                   "content": "",
-                  "children": []
+                  "children": [],
+                  "latex": "\\left(\\frac{p-1}{2}\\right)!a^{\\frac{p-1}{2}}\\equiv(-1)^{\\ell}\\left(\\frac{p-1}{2}\\right)!\\pmod p"
                 },
                 {
                   "id": "gauss-conclusion",
@@ -235,55 +225,49 @@
         },
         {
           "id": "supplement-two",
-          "type": "corollary",
+          "type": "paragraph",
           "title": "Второе дополнение к закону взаимности",
           "content": "Для нечётного простого \\(p\\) выполняется \\(\\left(\\frac2p\\right)=(-1)^{(p^2-1)/8}\\).",
-          "children": [
-            {
-              "id": "supplement-two-proof",
-              "type": "proof",
-              "title": "Доказательство",
-              "content": "Рассмотрим \\(2,4,\\ldots,p-1\\). У \\(\\lfloor p/4\\rfloor\\) из них положительный наименьший вычет. Поэтому \\(\\ell=\\frac{p-1}{2}-\\lfloor p/4\\rfloor\\). Отсюда \\(2\\mid\\ell\\iff p\\equiv1,7\\pmod8\\), а \\(2\\nmid\\ell\\iff p\\equiv3,5\\pmod8\\).",
-              "children": []
-            }
-          ]
+          "children": []
         },
         {
           "id": "jacobi-definition",
           "type": "definition",
-          "title": "Символ Якоби",
+          "title": "",
           "content": "Пусть \\(m\\in\\mathbb N\\), \\(2\\nmid m\\), \\(m=p_1\\cdots p_k\\), причём простые множители могут совпадать. Тогда \\(\\left(\\frac am\\right)\\stackrel{\\mathrm{def}}=\\left(\\frac a{p_1}\\right)\\cdots\\left(\\frac a{p_k}\\right)\\).",
-          "children": []
+          "children": [],
+          "term": "Символ Якоби",
+          "separator": "—"
         },
         {
           "id": "jacobi-notes",
           "type": "remark",
-          "title": "Замечания",
-          "content": "",
+          "title": "",
+          "content": "Замечания",
           "children": [
             {
               "id": "jacobi-notes-list",
               "type": "list",
               "title": "",
+              "content": "",
+              "children": [],
               "items": [
                 "\\(\\left(\\frac2{15}\\right)=\\left(\\frac23\\right)\\left(\\frac25\\right)=1\\), но \\(2\\) — невычет по модулю \\(15\\).",
                 "Выполняются свойства символа Лежандра; формулы для \\(\\left(\\frac{-1}{m}\\right)\\) и \\(\\left(\\frac2m\\right)\\) рассматриваются отдельно.",
                 "Критерий Эйлера в общем случае неверен: \\(\\left(\\frac7{15}\\right)=\\left(\\frac75\\right)\\left(\\frac73\\right)=-1\\).",
                 "\\(\\left(\\frac{-1}{m}\\right)=(-1)^{(m-1)/2}\\), поскольку \\(\\frac{p_1-1}{2}+\\cdots+\\frac{p_k-1}{2}\\equiv\\frac{p_1\\cdots p_k-1}{2}\\pmod2\\).",
                 "\\(\\left(\\frac2m\\right)=(-1)^{(m^2-1)/8}\\)."
-              ],
-              "content": "",
-              "children": []
+              ]
             }
           ]
         }
-      ]
+      ],
+      "navTitle": "§ 2. Квадратичные вычеты"
     },
     {
       "id": "kvadratichnyy-zakon-vzaimnosti",
       "type": "subsection",
       "title": "§ 3. Квадратичный закон взаимности",
-      "navTitle": "§ 3. Квадратичный закон взаимности",
       "content": "",
       "children": [
         {
@@ -296,9 +280,9 @@
               "id": "reciprocity-formula",
               "type": "formula",
               "title": "",
-              "latex": "\\left(\\frac pq\\right)\\left(\\frac qp\\right)=(-1)^{\\frac{p-1}{2}\\cdot\\frac{q-1}{2}}",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "\\left(\\frac pq\\right)\\left(\\frac qp\\right)=(-1)^{\\frac{p-1}{2}\\cdot\\frac{q-1}{2}}"
             },
             {
               "id": "reciprocity-proof",
@@ -310,9 +294,9 @@
                   "id": "reciprocity-involution",
                   "type": "formula",
                   "title": "",
-                  "latex": "(x,y)\\longmapsto\\left(\\frac{q+1}{2}-x,\\frac{p+1}{2}-y\\right)",
                   "content": "",
-                  "children": []
+                  "children": [],
+                  "latex": "(x,y)\\longmapsto\\left(\\frac{q+1}{2}-x,\\frac{p+1}{2}-y\\right)"
                 },
                 {
                   "id": "reciprocity-proof-end",
@@ -336,37 +320,30 @@
           "id": "eisenstein-lemma",
           "type": "lemma",
           "title": "Лемма Эйзенштейна",
-          "content": "Пусть \\(p\\) — нечётное простое и \\(p\\nmid a\\). Тогда \\(\\left(\\frac ap\\right)=(-1)^{\\sum_{i=1}^{(p-1)/2}\\lfloor2ai/p\\rfloor}\\).",
+          "content": "\\(\\left(\\frac ap\\right)=(-1)^{\\sum_{i=1}^{(p-1)/2}\\lfloor2ai/p\\rfloor}\\).",
           "children": [
             {
               "id": "eisenstein-proof",
               "type": "proof",
               "title": "Доказательство",
-              "content": "Для \\(i=1,\\ldots,(p-1)/2\\) положим \\(t_i=\\lfloor2ai/p\\rfloor\\). Тогда \\(t_ip/2<ai<(t_i+1)p/2\\); равенство на границе невозможно, поскольку \\(p\\nmid ai\\). Если \\(t_i=2m\\), то \\(mp<ai<mp+p/2\\), поэтому наименьший по абсолютной величине вычет числа \\(ai\\) положителен. Если \\(t_i=2m+1\\), то \\(mp+p/2<ai<(m+1)p\\), поэтому этот вычет отрицателен. Следовательно, число отрицательных наименьших вычетов сравнимо по модулю \\(2\\) с \\(\\sum_i t_i\\). По критерию Гаусса получаем требуемую формулу.",
+              "content": "Равенство \\(\\lfloor2ai/p\\rfloor=k\\) равносильно \\(pk/2<ai<pk/2+p/2\\). Число \\(ai\\) имеет отрицательный наименьший вычет тогда и только тогда, когда \\(k\\) нечётно. Формула следует из критерия Гаусса.",
+              "children": []
+            },
+            {
+              "id": "eisenstein-geometric",
+              "type": "proof",
+              "title": "Геометрическое доказательство",
+              "content": "Сумма \\(\\sum_{i=1}^{(p-1)/2}\\lfloor2ai/p\\rfloor\\) считает целые точки \\((2i,j)\\) на чётных вертикалях под графиком \\(y=(a/p)x\\). Поэтому знак символа Лежандра определяется чётностью числа таких точек. При наложении подсчётов для \\(p\\) и \\(q\\) два треугольника без общих точек заполняют прямоугольник из \\((p-1)(q-1)/4\\) точек, что даёт показатель в квадратичном законе взаимности.",
               "children": [
-                {
-                  "id": "eisenstein-lattice-intro",
-                  "type": "paragraph",
-                  "title": "",
-                  "content": "**Геометрическая интерпретация.** Пусть \\(\\ell\\ne p\\) — нечётное простое. При \\(a=\\ell\\) сумма \\(\\sum_{i=1}^{(p-1)/2}\\lfloor2\\ell i/p\\rfloor\\) равна числу целых узлов \\((2i,j)\\) на чётных вертикалях \\(x=2i\\), лежащих ниже прямой \\(y=(\\ell/p)x\\) в треугольнике \\(ABC\\). Обозначим через \\(E(S)\\) и \\(O(S)\\) числа узлов области \\(S\\) с чётной и нечётной абсциссой соответственно.",
-                  "children": []
-                },
                 {
                   "id": "reciprocity-lattice",
                   "type": "image",
-                  "title": "Геометрическая интерпретация леммы Эйзенштейна",
-                  "src": "images/notes/likbez/quadratic-reciprocity-lattice.svg",
-                  "alt": "Прямоугольная решётка с диагональю AB, областями AML, AMK, LMBC и BMT и отмеченными узлами на чётных вертикалях под прямой",
-                  "caption": "Пример \\(p=11\\), \\(\\ell=7\\). Бирюзовые узлы на чётных вертикалях под \\(AB\\) дают сумму из леммы Эйзенштейна. Центральная симметрия относительно \\(M\\) сопоставляет чётные узлы \\(BMT\\) нечётным узлам \\(AML\\).",
+                  "title": "Геометрическая интерпретация",
                   "content": "",
-                  "children": []
-                },
-                {
-                  "id": "eisenstein-lattice-conclusion",
-                  "type": "paragraph",
-                  "title": "",
-                  "content": "В правой половине \\(E(LMBC)\\equiv E(BMT)\\pmod2\\): на каждой чётной вертикали эти области вместе содержат \\(\\ell-1\\) узлов, а \\(\\ell-1\\) чётно. Поворот на \\(180^\\circ\\) относительно \\(M\\) переводит \\(BMT\\) в \\(AML\\) и меняет чётность абсциссы, поэтому \\(E(BMT)=O(AML)\\). Следовательно, \\(E(ABC)\\equiv E(AML)+O(AML)=\\#AML\\pmod2\\), откуда \\(\\left(\\frac{\\ell}{p}\\right)=(-1)^{\\#AML}\\). Аналогично, \\(\\left(\\frac p\\ell\\right)=(-1)^{\\#AMK}\\). На отрезке \\(AM\\) нет целых узлов, поскольку \\(p\\ne\\ell\\) — простые, поэтому \\(\\#AML+\\#AMK=\\frac{p-1}{2}\\frac{\\ell-1}{2}\\). Это даёт квадратичный закон взаимности.",
-                  "children": []
+                  "children": [],
+                  "src": "images/notes/likbez/quadratic-reciprocity-lattice.svg",
+                  "alt": "Схема подсчёта целых точек под прямой для квадратичного закона взаимности",
+                  "caption": "Для примера \\(p=11\\), \\(q=7\\): отмечены точки \\((2i,j)\\), где \\(1\\le i\\le(p-1)/2\\) и \\(1\\le j\\le\\lfloor2qi/p\\rfloor\\). Их число равно сумме из леммы Эйзенштейна."
                 }
               ]
             }
@@ -394,21 +371,23 @@
           "content": "\\(\\left(\\frac{77}{101}\\right)=\\left(\\frac{101}{77}\\right)=\\left(\\frac{24}{77}\\right)=\\left(\\frac2{77}\\right)\\left(\\frac3{77}\\right)=(-1)\\left(\\frac{77}{3}\\right)=(-1)\\left(\\frac23\\right)=1\\).",
           "children": []
         }
-      ]
+      ],
+      "navTitle": "§ 3. Квадратичный закон взаимности"
     },
     {
       "id": "pervoobraznye-korni",
       "type": "subsection",
       "title": "§ 4. Первообразные корни",
-      "navTitle": "§ 4. Первообразные корни",
       "content": "",
       "children": [
         {
           "id": "primitive-root-definition",
           "type": "definition",
-          "title": "Первообразный корень",
+          "title": "",
           "content": "Пусть \\(m\\in\\mathbb N\\). Число \\(g\\) называется **первообразным корнем по модулю \\(m\\)**, если \\(\\operatorname{ord}_m g=\\varphi(m)\\). Тогда \\(g,g^2,\\ldots,g^{\\varphi(m)}\\) — приведённая система вычетов по модулю \\(m\\).",
-          "children": []
+          "children": [],
+          "term": "Первообразный корень",
+          "separator": "—"
         },
         {
           "id": "primitive-root-prime",
@@ -456,9 +435,9 @@
                   "id": "primitive-root-lift",
                   "type": "formula",
                   "title": "",
-                  "latex": "v_p\\!\\left(\\xi^{p^{n-1}(p-1)}-1\\right)=v_p(\\xi^{p-1}-1)+v_p(p^{n-1})=n",
                   "content": "",
-                  "children": []
+                  "children": [],
+                  "latex": "v_p\\!\\left(\\xi^{p^{n-1}(p-1)}-1\\right)=v_p(\\xi^{p-1}-1)+v_p(p^{n-1})=n"
                 },
                 {
                   "id": "primitive-root-lte",
@@ -478,20 +457,20 @@
             }
           ]
         }
-      ]
+      ],
+      "navTitle": "§ 4. Первообразные корни"
     },
     {
       "id": "sravneniya-s-neizvestnymi",
       "type": "subsection",
       "title": "§ 5. Сравнения с неизвестными",
-      "navTitle": "§ 5. Сравнения с неизвестными",
       "content": "",
       "children": [
         {
           "id": "primitive-polynomial-note",
           "type": "remark",
-          "title": "Замечание",
-          "content": "Сравнение \\(a_nx^n+\\dots+a_0\\equiv0\\pmod p\\), где \\(p\\nmid a_n\\), эквивалентно сравнению \\(f(x)\\equiv0\\pmod p\\) с примитивным многочленом \\(f\\).",
+          "title": "",
+          "content": "Замечание\nСравнение \\(a_nx^n+\\dots+a_0\\equiv0\\pmod p\\), где \\(p\\nmid a_n\\), эквивалентно сравнению \\(f(x)\\equiv0\\pmod p\\) с примитивным многочленом \\(f\\).",
           "children": []
         },
         {
@@ -547,9 +526,9 @@
                   "id": "chevalley-identity",
                   "type": "formula",
                   "title": "",
-                  "latex": "f(x_1,\\ldots,x_n)^{p-1}\\equiv1-(1-x_1^{p-1})(1-x_2^{p-1})\\cdots(1-x_n^{p-1})\\pmod p",
                   "content": "",
-                  "children": []
+                  "children": [],
+                  "latex": "f(x_1,\\ldots,x_n)^{p-1}\\equiv1-(1-x_1^{p-1})(1-x_2^{p-1})\\cdots(1-x_n^{p-1})\\pmod p"
                 },
                 {
                   "id": "chevalley-contradiction",
@@ -564,7 +543,7 @@
         },
         {
           "id": "crt-solutions",
-          "type": "reminder",
+          "type": "paragraph",
           "title": "Напоминание: китайская теорема об остатках",
           "content": "Если \\(m=p_1^{\\alpha_1}\\cdots p_k^{\\alpha_k}\\), то \\(f(x)\\equiv0\\pmod m\\) равносильно системе сравнений по модулям \\(p_i^{\\alpha_i}\\). Если по модулю \\(p_i^{\\alpha_i}\\) имеется \\(\\ell_i\\) решений, то по модулю \\(m\\) имеется \\(\\ell_1\\cdots\\ell_k\\) решений.",
           "children": []
@@ -599,39 +578,43 @@
             }
           ]
         }
-      ]
+      ],
+      "navTitle": "§ 5. Сравнения с неизвестными"
     },
     {
       "id": "gaussovy-celye",
       "type": "subsection",
       "title": "§ 6. Гауссовы целые числа",
-      "navTitle": "§ 6. Гауссовы целые числа",
       "content": "",
       "children": [
         {
           "id": "gaussian-definition",
           "type": "definition",
-          "title": "Гауссовы целые числа",
+          "title": "",
           "content": "Множество гауссовых целых чисел — это \\(\\mathbb Z[i]\\stackrel{\\mathrm{def}}=\\{a+bi\\mid a,b\\in\\mathbb Z\\}\\).",
-          "children": []
+          "children": [],
+          "term": "Гауссовы целые числа",
+          "separator": "—"
         },
         {
           "id": "gaussian-ring",
           "type": "remark",
-          "title": "Замечание",
-          "content": "Арифметические операции в \\(\\mathbb Z[i]\\) наследуются из \\(\\mathbb C\\), поэтому выполняются коммутативность и ассоциативность сложения и умножения, существование нуля, противоположного элемента и единицы, а также дистрибутивность. Следовательно, \\(\\mathbb Z[i]\\) — коммутативное кольцо с единицей.",
+          "title": "",
+          "content": "Замечание\nАрифметические операции в \\(\\mathbb Z[i]\\) наследуются из \\(\\mathbb C\\), поэтому выполняются коммутативность и ассоциативность сложения и умножения, существование нуля, противоположного элемента и единицы, а также дистрибутивность. Следовательно, \\(\\mathbb Z[i]\\) — коммутативное кольцо с единицей.",
           "children": []
         },
         {
           "id": "gaussian-norm",
           "type": "definition",
-          "title": "Норма",
+          "title": "",
           "content": "Для \\(z=a+bi\\) положим \\(N(z)\\stackrel{\\mathrm{def}}=a^2+b^2=|z|^2\\).",
-          "children": []
+          "children": [],
+          "term": "Норма",
+          "separator": "—"
         },
         {
           "id": "norm-properties",
-          "type": "properties",
+          "type": "paragraph",
           "title": "Свойства нормы",
           "content": "\\(N(z_1z_2)=N(z_1)N(z_2)\\). Элемент \\(z\\) обратим тогда и только тогда, когда \\(N(z)=1\\). Поэтому множество единиц равно \\(U=\\{-1,1,-i,i\\}\\).",
           "children": []
@@ -639,40 +622,27 @@
         {
           "id": "gaussian-divisibility",
           "type": "definition",
-          "title": "Делимость",
+          "title": "",
           "content": "Для \\(z_1,z_2\\in\\mathbb Z[i]\\) пишут \\(z_1\\mid z_2\\), если существует \\(z_3\\in\\mathbb Z[i]\\), такое что \\(z_2=z_1z_3\\).",
-          "children": []
+          "children": [],
+          "term": "Делимость",
+          "separator": "—"
         },
         {
           "id": "gaussian-divisibility-properties",
-          "type": "properties",
+          "type": "paragraph",
           "title": "Свойства делимости",
           "content": "",
-          "children": [
-            {
-              "id": "gaussian-divisibility-list",
-              "type": "list",
-              "title": "",
-              "items": [
-                "\\(z\\mid0\\) и \\(u\\mid z\\) для любого \\(u\\in U\\).",
-                "Если \\(z_1\\ne0\\) и \\(z_1\\mid z_2\\), то частное единственно.",
-                "\\(z_3\\mid z_1\\), \\(z_3\\mid z_2\\Rightarrow z_3\\mid(z_1\\pm z_2)\\).",
-                "\\(z_1\\mid z_2\\), \\(z_2\\mid z_3\\Rightarrow z_1\\mid z_3\\).",
-                "\\(z_1\\mid z_2\\Rightarrow z_1\\mid z_2z_3\\).",
-                "\\(z_1\\mid z_2\\Rightarrow N(z_1)\\mid N(z_2)\\).",
-                "\\(z_1\\mid z_2\\), \\(u\\in U\\Rightarrow z_1u\\mid z_2\\)."
-              ],
-              "content": "",
-              "children": []
-            }
-          ]
+          "children": []
         },
         {
           "id": "gaussian-prime",
           "type": "definition",
-          "title": "Неприводимый элемент",
+          "title": "",
           "content": "Элемент \\(p\\in\\mathbb Z[i]\\setminus U\\) называется неприводимым, если из \\(p=ab\\) следует, что \\(a\\in U\\) или \\(b\\in U\\). Если \\(N(z)\\in\\mathbb P\\), то \\(z\\) неприводим в \\(\\mathbb Z[i]\\). После доказательства факториальности увидим, что здесь неприводимые элементы являются простыми.",
-          "children": []
+          "children": [],
+          "term": "Неприводимый элемент",
+          "separator": "—"
         },
         {
           "id": "gaussian-division",
@@ -684,17 +654,27 @@
               "id": "gaussian-division-proof",
               "type": "proof",
               "title": "Доказательство",
-              "content": "Рассмотрим \\(z=a/b\\in\\mathbb C\\). Округлим отдельно \\(\\operatorname{Re}z\\) и \\(\\operatorname{Im}z\\) до ближайших целых и получим \\(q\\in\\mathbb Z[i]\\). Для \\(\\delta=z-q\\) имеем \\(|\\operatorname{Re}\\delta|\\le1/2\\) и \\(|\\operatorname{Im}\\delta|\\le1/2\\), поэтому \\(|\\delta|^2\\le1/2\\). Положим \\(r=a-qb=b\\delta\\). Тогда \\(a=qb+r\\) и \\(N(r)=N(b)|\\delta|^2\\le N(b)/2<N(b)\\). Геометрически умножение на \\(b\\) поворачивает и растягивает единичную решётку \\(\\mathbb Z[i]\\), переводя узел \\(q\\) в \\(qb\\), а вектор \\(\\delta\\) — в остаток \\(r\\).",
+              "content": "Все числа вида \\(c=(k+\\ell i)b\\), \\(k,\\ell\\in\\mathbb Z\\), лежат в узлах квадратной решётки со стороной \\(|b|\\). Любая точка плоскости находится в одной из её ячеек. Выберем ближайшую вершину \\(qb\\); для остатка \\(r=a-qb\\) расстояние до этой вершины не превосходит \\(|b|/\\sqrt2\\), поэтому \\(N(r)\\le N(b)/2<N(b)\\).",
               "children": [
+                {
+                  "id": "gaussian-cell-image",
+                  "type": "image",
+                  "title": "Остаток в квадратной ячейке",
+                  "content": "",
+                  "children": [],
+                  "src": "images/notes/likbez/gaussian-remainder-cell.svg",
+                  "alt": "Квадратная ячейка решётки гауссовых чисел и вектор остатка",
+                  "caption": "Каждая точка плоскости попадает в квадрат со стороной \\(|b|\\); расстояние до ближайшей вершины \\(qb\\) не превосходит \\(|b|/\\sqrt2\\)."
+                },
                 {
                   "id": "gaussian-lattice-image",
                   "type": "image",
-                  "title": "Выбор частного и остатка",
-                  "src": "images/notes/likbez/gaussian-division-lattice.svg",
-                  "alt": "Два этапа выбора ближайшего гауссова целого q и остатка r после умножения на b",
-                  "caption": "Слева координаты \\(a/b\\) округляются до ближайшего узла \\(q\\). Справа умножение на \\(b\\) переводит центральную единичную ячейку в ячейку решётки \\(b\\mathbb Z[i]\\), а \\(a-qb=r\\); из оценки половины диагонали следует \\(N(r)\\le N(b)/2\\).",
+                  "title": "Решётка кратных \\(b\\)",
                   "content": "",
-                  "children": []
+                  "children": [],
+                  "src": "images/notes/likbez/gaussian-division-lattice.svg",
+                  "alt": "Решётка, порождённая векторами b и ib",
+                  "caption": "Кратные \\(b\\) образуют квадратную решётку, порождённую векторами \\(b\\) и \\(ib\\)."
                 }
               ]
             }
@@ -703,31 +683,25 @@
         {
           "id": "gaussian-nonuniqueness",
           "type": "remark",
-          "title": "Замечание",
-          "content": "Остаток не обязан быть единственным. Например, \\(7+2i=(2+i)(3-i)+i=(1+i)(3-i)+3\\).",
+          "title": "",
+          "content": "Замечание\nОстаток не обязан быть единственным. Например, \\(7+2i=(2+i)(3-i)+i=(1+i)(3-i)+3\\).",
           "children": []
         },
         {
           "id": "gaussian-gcd",
           "type": "definition",
-          "title": "Наибольший общий делитель",
+          "title": "",
           "content": "Наибольшим общим делителем \\(a,b\\in\\mathbb Z[i]\\) называется общий делитель \\(d\\), который делится на любой другой общий делитель \\(a\\) и \\(b\\). Он определён с точностью до умножения на единицу.",
-          "children": []
+          "children": [],
+          "term": "Наибольший общий делитель",
+          "separator": "—"
         },
         {
           "id": "gaussian-euclid",
-          "type": "statement",
+          "type": "paragraph",
           "title": "Алгоритм Евклида",
           "content": "\\(a=q_1b+r_1,\\ b=q_2r_1+r_2,\\ r_1=q_3r_2+r_3,\\ldots\\). Нормы строго убывают: \\(N(b)>N(r_1)>N(r_2)>\\cdots\\), поэтому процесс заканчивается. Последний ненулевой остаток делит \\(a\\) и \\(b\\) и делится на любой их общий делитель; это \\(\\gcd(a,b)\\).",
-          "children": [
-            {
-              "id": "gaussian-bezout",
-              "type": "corollary",
-              "title": "Линейное представление НОД",
-              "content": "Если \\(d=\\gcd(a,b)\\), то существуют \\(x,y\\in\\mathbb Z[i]\\), для которых \\(d=ax+by\\). В частности, \\(a\\) и \\(b\\) взаимно просты тогда и только тогда, когда \\(ax+by=1\\) для некоторых \\(x,y\\in\\mathbb Z[i]\\).",
-              "children": []
-            }
-          ]
+          "children": []
         },
         {
           "id": "gaussian-fta",
@@ -754,48 +728,56 @@
         {
           "id": "euclidean-ring",
           "type": "definition",
-          "title": "Евклидово кольцо",
+          "title": "",
           "content": "Кольцо \\(K\\) без делителей нуля называется евклидовым, если существует евклидова норма \\(d:K\\to\\mathbb N\\cup\\{0\\}\\), такая что для любых \\(a,b\\in K\\), \\(b\\ne0\\), существуют \\(q,r\\) с \\(a=qb+r\\) и \\(d(r)<d(b)\\).",
-          "children": []
+          "children": [],
+          "term": "Евклидово кольцо",
+          "separator": "—"
         },
         {
           "id": "irreducible-prime",
           "type": "definition",
-          "title": "Неприводимые и простые элементы",
+          "title": "",
           "content": "Элемент \\(p\\notin U\\) **неприводим**, если из \\(p=ab\\) следует \\(a\\in U\\) или \\(b\\in U\\). Элемент \\(p\\notin U\\) **прост**, если из \\(p\\mid ab\\) следует \\(p\\mid a\\) или \\(p\\mid b\\).",
-          "children": []
+          "children": [],
+          "term": "Неприводимые и простые элементы",
+          "separator": "—"
         },
         {
           "id": "factorial-ring",
           "type": "definition",
-          "title": "Факториальное кольцо",
+          "title": "",
           "content": "Кольцо без делителей нуля называется факториальным, если любой ненулевой необратимый элемент раскладывается на неприводимые множители единственным образом с точностью до порядка и единиц. В атомарном кольце единственность такого разложения равносильна тому, что каждый неприводимый элемент прост. Любое евклидово кольцо факториально.",
-          "children": []
+          "children": [],
+          "term": "Факториальное кольцо",
+          "separator": "—"
         }
-      ]
+      ],
+      "navTitle": "§ 6. Гауссовы целые числа"
     },
     {
       "id": "funkciya-mebiusa",
       "type": "subsection",
       "title": "§ 7. Функция Мёбиуса",
-      "navTitle": "§ 7. Функция Мёбиуса",
       "content": "",
       "children": [
         {
           "id": "mobius-definition",
           "type": "definition",
-          "title": "Функция Мёбиуса",
+          "title": "",
           "content": "",
           "children": [
             {
               "id": "mobius-cases",
               "type": "formula",
               "title": "",
-              "latex": "\\mu(n)\\stackrel{\\mathrm{def}}=\\begin{cases}0,&p^2\\mid n\\text{ для некоторого }p\\in\\mathbb P,\\\\(-1)^k,&n=p_1\\cdots p_k,\\ p_i\\in\\mathbb P,\\ p_i\\ne p_j,\\\\1,&n=1.\\end{cases}",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "\\mu(n)\\stackrel{\\mathrm{def}}=\\begin{cases}0,&p^2\\mid n\\text{ для некоторого }p\\in\\mathbb P,\\\\(-1)^k,&n=p_1\\cdots p_k,\\ p_i\\in\\mathbb P,\\ p_i\\ne p_j,\\\\1,&n=1.\\end{cases}"
             }
-          ]
+          ],
+          "term": "Функция Мёбиуса",
+          "separator": "—"
         },
         {
           "id": "multiplicative-sum-lemma",
@@ -836,7 +818,7 @@
         },
         {
           "id": "totient-observation",
-          "type": "statement",
+          "type": "paragraph",
           "title": "Сумма значений функции Эйлера по делителям",
           "content": "Функция \\(F(n)=\\sum_{d\\mid n}\\varphi(d)\\) мультипликативна. Для простой степени \\(F(p^\\alpha)=1+(p-1)+p(p-1)+\\cdots+p^{\\alpha-1}(p-1)=p^\\alpha\\). Поэтому для \\(n=p_1^{\\alpha_1}\\cdots p_k^{\\alpha_k}\\) получаем \\(F(n)=n\\).",
           "children": []
@@ -866,22 +848,22 @@
               "id": "mobius-examples-list",
               "type": "list",
               "title": "",
+              "content": "",
+              "children": [],
               "items": [
                 "Если \\(\\sum_{d\\mid n}1=d(n)\\), то \\(\\sum_{k\\mid n}d(n/k)\\mu(k)=1\\).",
                 "Из \\(\\sum_{d\\mid n}\\varphi(d)=n\\) получаем \\(\\varphi(n)=\\sum_{d\\mid n}(n/d)\\mu(d)=n\\sum_{d\\mid n}\\mu(d)/d=n\\prod_{p\\mid n}(1-1/p)\\)."
-              ],
-              "content": "",
-              "children": []
+              ]
             }
           ]
         }
-      ]
+      ],
+      "navTitle": "§ 7. Функция Мёбиуса"
     },
     {
       "id": "postulat-bertrana",
       "type": "subsection",
       "title": "§ 8. Постулат Бертрана",
-      "navTitle": "§ 8. Постулат Бертрана",
       "content": "",
       "children": [
         {
@@ -990,9 +972,9 @@
                   "id": "bertrand-upper",
                   "type": "formula",
                   "title": "",
-                  "latex": "\\binom{2n}{n}\\le(2n)^{\\sqrt{2n}}\\prod_{\\sqrt{2n}<p\\le2n/3}p\\le(2n)^{\\sqrt{2n}}4^{2n/3}",
                   "content": "",
-                  "children": []
+                  "children": [],
+                  "latex": "\\binom{2n}{n}\\le(2n)^{\\sqrt{2n}}\\prod_{\\sqrt{2n}<p\\le2n/3}p\\le(2n)^{\\sqrt{2n}}4^{2n/3}"
                 },
                 {
                   "id": "bertrand-lower",
@@ -1012,21 +994,21 @@
                   "id": "bertrand-primes",
                   "type": "formula",
                   "title": "",
-                  "latex": "2,3,5,7,13,23,43,67,83,163,317,631,1259,2503,4001,7993,8209",
                   "content": "",
-                  "children": []
+                  "children": [],
+                  "latex": "2,3,5,7,13,23,43,67,83,163,317,631,1259,2503,4001,7993,8209"
                 }
               ]
             }
           ]
         }
-      ]
+      ],
+      "navTitle": "§ 8. Постулат Бертрана"
     },
     {
       "id": "cepnye-drobi",
       "type": "subsection",
       "title": "§ 9. Цепные дроби",
-      "navTitle": "§ 9. Цепные дроби",
       "content": "",
       "children": [
         {
@@ -1039,32 +1021,36 @@
               "id": "continued-fraction-expansion",
               "type": "formula",
               "title": "",
-              "latex": "\\frac mn=a_0+\\cfrac1{a_1+\\cfrac1{a_2+\\cfrac1{\\ddots+\\cfrac1{a_k}}}}",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "\\frac mn=a_0+\\cfrac1{a_1+\\cfrac1{a_2+\\cfrac1{\\ddots+\\cfrac1{a_k}}}}"
             }
           ]
         },
         {
           "id": "finite-cf-definition",
           "type": "definition",
-          "title": "Конечная цепная дробь",
+          "title": "",
           "content": "Пусть \\(a_0\\in\\mathbb Z\\), \\(a_1,\\ldots,a_k\\in\\mathbb N\\). Выражение выше называется конечной цепной дробью и обозначается \\([a_0;a_1,\\ldots,a_k]\\).",
-          "children": []
+          "children": [],
+          "term": "Конечная цепная дробь",
+          "separator": "—"
         },
         {
           "id": "finite-cf-uniqueness",
           "type": "remark",
-          "title": "Замечание",
-          "content": "Любое рациональное число представимо конечной цепной дробью, причём представление единственно при условии \\(a_k\\ne1\\).",
+          "title": "",
+          "content": "Замечание\nЛюбое рациональное число представимо конечной цепной дробью, причём представление единственно при условии \\(a_k\\ne1\\).",
           "children": []
         },
         {
           "id": "convergent-definition",
           "type": "definition",
-          "title": "Подходящая дробь",
+          "title": "",
           "content": "Число \\(p_n/q_n\\stackrel{\\mathrm{def}}=[a_0;a_1,\\ldots,a_n]\\) называется \\(n\\)-й подходящей дробью.",
-          "children": []
+          "children": [],
+          "term": "Подходящая дробь",
+          "separator": "—"
         },
         {
           "id": "convergent-recurrence",
@@ -1096,7 +1082,7 @@
             },
             {
               "id": "coprime-convergents",
-              "type": "corollary",
+              "type": "paragraph",
               "title": "Несократимость подходящих дробей",
               "content": "\\((p_n,q_n)=1\\), поэтому каждая подходящая дробь несократима.",
               "children": []
@@ -1121,9 +1107,11 @@
         {
           "id": "infinite-cf-definition",
           "type": "definition",
-          "title": "Бесконечная цепная дробь",
+          "title": "",
           "content": "Бесконечной цепной дробью называется выражение \\(a_0+1/(a_1+1/(a_2+\\cdots))\\), а также предел \\(\\lim p_n/q_n\\), если он существует.",
-          "children": []
+          "children": [],
+          "term": "Бесконечная цепная дробь",
+          "separator": "—"
         },
         {
           "id": "infinite-cf-convergence",
@@ -1156,9 +1144,9 @@
                   "id": "cf-error-exact",
                   "type": "formula",
                   "title": "",
-                  "latex": "\\alpha=\\frac{\\alpha_{n+1}p_n+p_{n-1}}{\\alpha_{n+1}q_n+q_{n-1}},\\qquad\\left|\\alpha-\\frac{p_n}{q_n}\\right|=\\frac1{q_n(\\alpha_{n+1}q_n+q_{n-1})}\\longrightarrow0",
                   "content": "",
-                  "children": []
+                  "children": [],
+                  "latex": "\\alpha=\\frac{\\alpha_{n+1}p_n+p_{n-1}}{\\alpha_{n+1}q_n+q_{n-1}},\\qquad\\left|\\alpha-\\frac{p_n}{q_n}\\right|=\\frac1{q_n(\\alpha_{n+1}q_n+q_{n-1})}\\longrightarrow0"
                 }
               ]
             }
@@ -1167,8 +1155,8 @@
         {
           "id": "continued-fraction-notes",
           "type": "remark",
-          "title": "Замечания",
-          "content": "Если \\(\\alpha=[a_0;a_1,a_2,\\ldots]\\), то хвост \\(\\alpha_k=[a_k;a_{k+1},\\ldots]\\) и \\(\\alpha=[a_0;a_1,\\ldots,a_{k-1},\\alpha_k]\\). Разложение рационального числа существенно единственно: \\([a_0;\\ldots,a_k]=[a_0;\\ldots,a_k-1,1]\\).",
+          "title": "",
+          "content": "Замечания\nЕсли \\(\\alpha=[a_0;a_1,a_2,\\ldots]\\), то хвост \\(\\alpha_k=[a_k;a_{k+1},\\ldots]\\) и \\(\\alpha=[a_0;a_1,\\ldots,a_{k-1},\\alpha_k]\\). Разложение рационального числа существенно единственно: \\([a_0;\\ldots,a_k]=[a_0;\\ldots,a_k-1,1]\\).",
           "children": []
         },
         {
@@ -1178,40 +1166,21 @@
           "content": "1. \\([1;1,1,\\ldots]=\\alpha\\Rightarrow\\alpha=1+1/\\alpha\\Rightarrow\\alpha=(1+\\sqrt5)/2\\). 2. \\(\\sqrt2=1+(\\sqrt2-1)=1+1/(1+\\sqrt2)=1+1/(2+1/(2+\\cdots))=[1;2,2,\\ldots]\\).",
           "children": []
         }
-      ]
+      ],
+      "navTitle": "§ 9. Цепные дроби"
     },
     {
       "id": "priblizhenie-k-racionalnym",
       "type": "subsection",
       "title": "§ 10. Приближение вещественных чисел к рациональным",
-      "navTitle": "§ 10. Приближение к рациональным",
       "content": "",
       "children": [
         {
           "id": "convergent-error-properties",
-          "type": "properties",
+          "type": "paragraph",
           "title": "Оценки для подходящих дробей",
           "content": "",
-          "children": [
-            {
-              "id": "convergent-error-list",
-              "type": "list",
-              "title": "",
-              "items": [
-                "Для соседних подходящих дробей \\(p_n/q_n\\), \\(p_{n+1}/q_{n+1}\\) к \\(\\alpha\\) выполняется \\(\\left|\\alpha-p_n/q_n\\right|<1/(q_nq_{n+1})\\).",
-                "Для каждой подходящей дроби \\(p_n/q_n\\) выполняется \\(\\left|\\alpha-p_n/q_n\\right|<1/q_n^2\\)."
-              ],
-              "content": "",
-              "children": []
-            },
-            {
-              "id": "convergent-error-proof",
-              "type": "proof",
-              "title": "Доказательство",
-              "content": "Число \\(\\alpha\\) лежит строго между соседними подходящими дробями, поэтому \\(\\left|\\alpha-p_n/q_n\\right|<\\left|p_{n+1}/q_{n+1}-p_n/q_n\\right|=1/(q_nq_{n+1})\\). Если следующей дроби нет, то \\(\\alpha=p_n/q_n\\). Так как \\(q_{n+1}\\ge q_n\\) при \\(n\\ge1\\), получаем второе утверждение; для \\(n=0\\): \\(\\left|\\alpha-p_0/q_0\\right|=\\{\\alpha\\}<1=1/q_0^2\\).",
-              "children": []
-            }
-          ]
+          "children": []
         },
         {
           "id": "best-approximation",
@@ -1246,8 +1215,8 @@
         {
           "id": "golden-ratio-sharpness",
           "type": "remark",
-          "title": "Замечание",
-          "content": "Для любого \\(\\lambda\\in(0,1/\\sqrt5)\\) и \\(\\alpha=(1+\\sqrt5)/2\\) существует лишь конечное число дробей \\(a/b\\), удовлетворяющих \\(\\left|\\alpha-a/b\\right|<\\lambda/b^2\\). Действительно, положим \\(t=a-b\\alpha\\). Тогда \\(|t|<\\lambda/b\\), а \\(a^2-ab-b^2=t(t+b\\sqrt5)\\) — целое число. Для больших \\(b\\) выполняется \\(-1<-\\sqrt5\\lambda<a^2-ab-b^2<\\sqrt5\\lambda+\\lambda^2/b^2<1\\), поэтому \\(a^2-ab-b^2=0\\), что невозможно в целых числах.",
+          "title": "",
+          "content": "Замечание\nДля любого \\(\\lambda\\in(0,1/\\sqrt5)\\) и \\(\\alpha=(1+\\sqrt5)/2\\) существует лишь конечное число дробей \\(a/b\\), удовлетворяющих \\(\\left|\\alpha-a/b\\right|<\\lambda/b^2\\). Действительно, положим \\(t=a-b\\alpha\\). Тогда \\(|t|<\\lambda/b\\), а \\(a^2-ab-b^2=t(t+b\\sqrt5)\\) — целое число. Для больших \\(b\\) выполняется \\(-1<-\\sqrt5\\lambda<a^2-ab-b^2<\\sqrt5\\lambda+\\lambda^2/b^2<1\\), поэтому \\(a^2-ab-b^2=0\\), что невозможно в целых числах.",
           "children": []
         },
         {
@@ -1267,71 +1236,51 @@
         },
         {
           "id": "transcendental-corollary",
-          "type": "corollary",
+          "type": "paragraph",
           "title": "Существование трансцендентных чисел",
           "content": "Существует трансцендентное число.",
-          "children": [
-            {
-              "id": "transcendental-proof",
-              "type": "proof",
-              "title": "Доказательство",
-              "content": "Положим \\(\\alpha=\\sum_{k=1}^{\\infty}2^{-k!}\\). Для любого \\(k\\) её частичная сумма имеет вид \\(p/q\\), где \\(q=2^{k!}\\), и \\(0<\\alpha-p/q\\le2/2^{(k+1)!}=2/q^{k+1}\\). Для любой заранее заданной степени \\(n\\) выбираем \\(k>n\\); такая точность противоречит теореме Лиувилля для алгебраического числа степени \\(n\\).",
-              "children": []
-            }
-          ]
+          "children": []
         }
-      ]
+      ],
+      "navTitle": "§ 10. Приближение к рациональным"
     },
     {
       "id": "uravnenie-pellya",
       "type": "subsection",
       "title": "§ 11. Уравнение Пелля",
-      "navTitle": "§ 11. Уравнение Пелля",
       "content": "",
       "children": [
         {
           "id": "pell-definition",
           "type": "definition",
-          "title": "Уравнение Пелля",
+          "title": "",
           "content": "Уравнение \\(x^2-dy^2=1\\), где \\(d\\in\\mathbb N\\), \\(d>1\\) и \\(d\\) не является квадратом, называется уравнением Пелля.",
-          "children": []
+          "children": [],
+          "term": "Уравнение Пелля",
+          "separator": "—"
         },
         {
           "id": "quadratic-ring",
           "type": "definition",
-          "title": "Кольцо \\(\\mathbb Z[\\sqrt d]\\)",
+          "title": "",
           "content": "\\(\\mathbb Z[\\sqrt d]=\\{a+b\\sqrt d\\mid a,b\\in\\mathbb Z\\}\\). Норма равна \\(N(a+b\\sqrt d)=a^2-b^2d\\).",
-          "children": []
+          "children": [],
+          "term": "Кольцо \\(\\mathbb Z[\\sqrt d]\\)",
+          "separator": "—"
         },
         {
           "id": "quadratic-norm",
-          "type": "properties",
+          "type": "paragraph",
           "title": "Сопряжение и норма",
           "content": "Если \\(\\alpha=a+b\\sqrt d\\), то \\(\\bar\\alpha=a-b\\sqrt d\\) и \\(N(\\alpha)=\\alpha\\bar\\alpha\\). Поэтому \\(N(\\alpha\\beta)=N(\\alpha)N(\\beta)\\).",
           "children": []
         },
         {
           "id": "quadratic-quotient",
-          "type": "statement",
+          "type": "paragraph",
           "title": "Критерий принадлежности частного кольцу",
           "content": "Пусть \\(\\alpha_1=a_1+b_1\\sqrt d\\), \\(\\alpha_2=a_2+b_2\\sqrt d\\), \\(N(\\alpha_2)=n\\). Тогда",
-          "children": [
-            {
-              "id": "quadratic-quotient-formula",
-              "type": "formula",
-              "title": "",
-              "latex": "\\frac{\\alpha_1}{\\alpha_2}=\\frac{(a_1+b_1\\sqrt d)(a_2-b_2\\sqrt d)}{N(a_2+b_2\\sqrt d)}=\\frac{a_1a_2-b_1b_2d}{n}+\\frac{a_2b_1-a_1b_2}{n}\\sqrt d",
-              "content": "",
-              "children": []
-            },
-            {
-              "id": "quadratic-quotient-condition",
-              "type": "paragraph",
-              "title": "",
-              "content": "Следовательно, \\(\\alpha_1/\\alpha_2\\in\\mathbb Z[\\sqrt d]\\) тогда и только тогда, когда \\(a_1a_2-b_1b_2d\\equiv0\\pmod n\\) и \\(a_2b_1-a_1b_2\\equiv0\\pmod n\\).",
-              "children": []
-            }
-          ]
+          "children": []
         },
         {
           "id": "pigeonhole-approximation",
@@ -1363,7 +1312,7 @@
             },
             {
               "id": "pell-powers",
-              "type": "corollary",
+              "type": "paragraph",
               "title": "Степени решения",
               "content": "Если \\(\\alpha\\in\\mathbb Z[\\sqrt d]\\) — решение уравнения Пелля, то \\(\\alpha^n\\) также является решением для любого \\(n\\in\\mathbb N\\).",
               "children": []
@@ -1385,7 +1334,7 @@
             },
             {
               "id": "pell-all-solutions",
-              "type": "corollary",
+              "type": "paragraph",
               "title": "Все целые решения",
               "content": "Если \\(a+b\\sqrt d\\) — минимальное положительное решение, то все решения описываются формулой \\(x+y\\sqrt d=\\pm(a+b\\sqrt d)^k\\), \\(k\\in\\mathbb Z\\).",
               "children": []
@@ -1394,26 +1343,19 @@
         },
         {
           "id": "pell-convergent",
-          "type": "statement",
+          "type": "paragraph",
           "title": "Связь с цепными дробями",
           "content": "Если \\(x^2-dy^2=1\\), \\(x,y\\in\\mathbb N\\), то \\(x/y\\) — подходящая дробь к \\(\\sqrt d\\).",
-          "children": [
-            {
-              "id": "pell-convergent-proof",
-              "type": "proof",
-              "title": "Доказательство",
-              "content": "Так как \\((x-y\\sqrt d)(x+y\\sqrt d)=1\\), то \\(\\left|x/y-\\sqrt d\\right|=1/(y(x+y\\sqrt d))<1/(2y^2)\\). По теореме о подходящей дроби \\(x/y\\) является подходящей дробью к \\(\\sqrt d\\).",
-              "children": []
-            }
-          ]
+          "children": []
         }
-      ]
+      ],
+      "navTitle": "§ 11. Уравнение Пелля"
     }
   ],
-  "order": 1,
-  "revision": 2,
+  "order": 2,
+  "revision": 28,
   "createdAt": 1788535467260,
-  "updatedAt": 1788538206567,
-  "updatedBy": "",
+  "updatedAt": 1788556303430,
+  "updatedBy": "2M2ZdLQcJAhluPjUVFNJ6MyQrdH2",
   "reviewStatus": "published"
 }

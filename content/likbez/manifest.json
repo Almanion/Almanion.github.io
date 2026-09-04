@@ -3,8 +3,17 @@
   "subject": "likbez",
   "title": "Ликбезы",
   "sections": [
-    { "id": "integral-riemana" },
-    { "id": "teoriya-chisel" },
-    { "id": "lineynaya-algebra" }
+    {
+      "id": "integral-riemana"
+    },
+    {
+      "id": "teoriya-chisel",
+      "title": "Теория чисел",
+      "navTitle": "Теория чисел",
+      "updatedAt": 1788556303430
+    },
+    {
+      "id": "lineynaya-algebra"
+    }
   ]
 }
