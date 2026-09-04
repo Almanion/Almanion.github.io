@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-04-mobile-reading-bookmarks-28';
+const CACHE_VERSION = 'almanion-pwa-2026-09-04-inline-note-editor-29';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -16,6 +16,7 @@ const APP_SHELL = [
     '/styles/site/50-matcenter-responsive.css',
     '/styles/site/60-poll-pwa.css',
     '/styles/typography.css',
+    '/styles/note-editor.css',
     '/styles/legacy-refresh.css',
     '/styles/matcenter-refresh.css',
     '/styles/admin.css',
@@ -27,6 +28,7 @@ const APP_SHELL = [
     '/bookmarks.js',
     '/newyear.js',
     '/account.js',
+    '/note-editor.js',
     '/poll.js',
     '/knowledge-check.js',
     '/knowledge-check-exam.js',

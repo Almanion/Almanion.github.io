@@ -7,6 +7,14 @@
     const config = window.NOTE_CONSTRUCTOR_CONFIG || {};
     const OWNER_EMAIL = String(config.ownerEmail || 'dmb23930@gmail.com').toLowerCase();
     const MAX_IMAGE_BYTES = 2.5 * 1024 * 1024;
+    const query = new URLSearchParams(window.location.search);
+    const requestedContext = {
+        subject: query.get('subject') || '',
+        section: query.get('section') || '',
+        subsection: query.get('subsection') || '',
+        embedded: query.get('embedded') === '1',
+        applied: false
+    };
     const BLOCK_ICONS = { up: '↑', down: '↓', indent: '↳', outdent: '↰', add: '+', duplicate: '⧉', remove: '×' };
     const STATUS_LABELS = { draft: 'Черновик', ready: 'К проверке', published: 'Опубликовано' };
     const BLOCK_PICKER_GROUPS = [
@@ -38,12 +46,36 @@
         pickerParentId: '',
         previewGeneration: 0,
         previewTheme: localStorage.getItem('note-constructor-preview-theme') || 'site',
-        deleting: false
+        deleting: false,
+        remoteVersions: new Map(),
+        conflictedSections: new Set(),
+        dirtySections: new Set()
     };
 
     const el = id => document.getElementById(id);
     const clone = value => JSON.parse(JSON.stringify(value));
     const escapeHtml = Renderer.escapeHtml;
+
+    function sectionKey(subject, id) {
+        return String(subject || '') + '/' + String(id || '');
+    }
+
+    function versionOf(section) {
+        if (!section) return null;
+        return {
+            revision: Number(section.revision) || 0,
+            updatedAt: Number(section.updatedAt) || 0,
+            updatedBy: String(section.updatedBy || '')
+        };
+    }
+
+    function sameVersion(section, expected) {
+        if (!section || !expected) return !section && !expected;
+        const actual = versionOf(section);
+        return actual.revision === expected.revision
+            && actual.updatedAt === expected.updatedAt
+            && actual.updatedBy === expected.updatedBy;
+    }
 
     function toast(message, isError, action) {
         const item = document.createElement('div');
@@ -121,7 +153,8 @@
             ).join('');
         }
         const remembered = localStorage.getItem('note-constructor-subject');
-        const initial = state.subjects.some(subject => subject.id === remembered) ? remembered : state.subjects[0].id;
+        const requested = state.subjects.some(subject => subject.id === requestedContext.subject) ? requestedContext.subject : '';
+        const initial = requested || (state.subjects.some(subject => subject.id === remembered) ? remembered : state.subjects[0].id);
         el('subjectSelect').value = initial;
         await loadSubject(initial);
     }
@@ -197,10 +230,11 @@
 
     async function loadSubject(subject) {
         const pendingSection = state.hydrated && state.current ? clone(state.current) : null;
+        const pendingKey = pendingSection ? sectionKey(pendingSection.subject, pendingSection.id) : '';
         flushTimers();
-        if (pendingSection && state.user) {
+        if (pendingSection && state.user && state.dirtySections.has(pendingKey)) {
             await Storage.putDraft(state.user.uid, pendingSection);
-            await window.AlmanionAccount.database.ref('noteDrafts/' + pendingSection.subject + '/' + pendingSection.id).set(pendingSection).catch(function () {});
+            await saveRemote(pendingSection, ++state.saveGeneration);
         }
         state.hydrated = false;
         state.subject = subject;
@@ -226,20 +260,51 @@
         const remote = remoteResult.status === 'fulfilled' ? remoteResult.value : [];
         const local = localResult.status === 'fulfilled' ? localResult.value.map(entry => Model.normalizeSection(entry.section, subject)) : [];
 
+        Array.from(state.remoteVersions.keys()).forEach(key => {
+            if (key.startsWith(subject + '/')) state.remoteVersions.delete(key);
+        });
+        Array.from(state.dirtySections).forEach(key => {
+            if (key.startsWith(subject + '/')) state.dirtySections.delete(key);
+        });
+        Array.from(state.conflictedSections).forEach(key => {
+            if (key.startsWith(subject + '/')) state.conflictedSections.delete(key);
+        });
+        remote.forEach(section => state.remoteVersions.set(sectionKey(subject, section.id), versionOf(section)));
+
         const ids = new Set(published.sections.concat(remote, local).map(section => section.id));
         state.sections = Array.from(ids).map(id => newestSection(
             published.sections.find(section => section.id === id),
             remote.find(section => section.id === id),
             local.find(section => section.id === id)
         )).sort(compareSections);
+        state.sections.forEach(section => {
+            const key = sectionKey(subject, section.id);
+            if (!state.remoteVersions.has(key)) state.remoteVersions.set(key, null);
+            const localSection = local.find(item => item.id === section.id);
+            const remoteSection = remote.find(item => item.id === section.id);
+            const publishedSection = published.sections.find(item => item.id === section.id);
+            const localIsNewest = localSection && Number(localSection.updatedAt) >= Math.max(
+                Number(remoteSection && remoteSection.updatedAt) || 0,
+                Number(publishedSection && publishedSection.updatedAt) || 0
+            );
+            if (localIsNewest && !sameVersion(localSection, remoteSection || publishedSection || null)) state.dirtySections.add(key);
+        });
         state.hydrated = true;
-        state.current = state.sections[0] || null;
-        state.currentSubsectionId = '';
-        setSaveState('idle', remoteResult.status === 'rejected' ? 'Черновики доступны на устройстве' : 'Все изменения сохранены');
+        const applyRequestedContext = !requestedContext.applied && requestedContext.subject === subject;
+        state.current = (applyRequestedContext && state.sections.find(section => section.id === requestedContext.section)) || state.sections[0] || null;
+        state.currentSubsectionId = applyRequestedContext && state.current && sectionSubsections(state.current).some(item => item.id === requestedContext.subsection)
+            ? requestedContext.subsection
+            : '';
+        if (applyRequestedContext) requestedContext.applied = true;
+        const currentKey = state.current ? sectionKey(state.current.subject, state.current.id) : '';
+        const currentNeedsSync = currentKey && state.dirtySections.has(currentKey);
+        setSaveState(currentNeedsSync ? 'saving' : 'idle', currentNeedsSync
+            ? 'Синхронизируем локальные изменения…'
+            : (remoteResult.status === 'rejected' ? 'Черновики доступны на устройстве' : 'Все изменения сохранены'));
         renderAll();
+        if (currentNeedsSync) scheduleSave();
         el('builderPreview').scrollTop = 0;
-        const subjectConfig = state.subjects.find(item => item.id === subject);
-        el('subjectPageLink').href = subjectConfig ? subjectConfig.page : subject + '.html';
+        updateSubjectPageLink();
         if (publishedResult.status === 'rejected') toast('Не удалось прочитать опубликованные разделы.', true);
         if (remoteResult.status === 'rejected') toast('Облачные черновики недоступны. Локальное сохранение продолжает работать.', true);
     }
@@ -248,6 +313,18 @@
         renderSections();
         renderEditor();
         renderPreview();
+        updateSubjectPageLink();
+    }
+
+    function updateSubjectPageLink() {
+        const link = el('subjectPageLink');
+        if (!link || !state.subject) return;
+        const subjectConfig = state.subjects.find(item => item.id === state.subject);
+        const page = subjectConfig ? subjectConfig.page : state.subject + '.html';
+        const active = activeSubsection();
+        const hash = active ? active.id : (state.current ? state.current.id : '');
+        link.href = page + (hash ? '#' + encodeURIComponent(hash) : '');
+        link.textContent = state.current ? 'Открыть этот раздел ↗' : 'Открыть предмет ↗';
     }
 
     function renderSections() {
@@ -466,6 +543,7 @@
     function changed(structural) {
         if (!state.current || !state.hydrated) return;
         Model.touch(state.current, state.user.uid);
+        state.dirtySections.add(sectionKey(state.current.subject, state.current.id));
         el('reviewStatus').value = state.current.reviewStatus;
         setSaveState('saving', 'Сохраняем…');
         if (structural) renderEditor();
@@ -490,12 +568,81 @@
 
     async function saveRemote(section, generation) {
         if (!state.hydrated || !state.user || section.subject !== state.subject) return;
+        const key = sectionKey(section.subject, section.id);
+        if (state.conflictedSections.has(key)) {
+            if (generation === state.saveGeneration) setSaveState('error', 'Есть более новая облачная версия');
+            return false;
+        }
+        const expectedVersion = state.remoteVersions.has(key) ? state.remoteVersions.get(key) : null;
+        let conflictDetected = false;
         try {
-            await window.AlmanionAccount.database.ref('noteDrafts/' + section.subject + '/' + section.id).set(section);
+            const reference = window.AlmanionAccount.database.ref('noteDrafts/' + section.subject + '/' + section.id);
+            const result = await reference.transaction(function (remoteSection) {
+                if (!sameVersion(remoteSection, expectedVersion)) {
+                    conflictDetected = true;
+                    return;
+                }
+                conflictDetected = false;
+                return section;
+            }, undefined, false);
+            if (!result.committed) {
+                if (conflictDetected) showDraftConflict(section);
+                else if (generation === state.saveGeneration) setSaveState('error', 'Сохранено только на устройстве');
+                return false;
+            }
+            state.remoteVersions.set(key, versionOf(section));
+            const liveSection = state.sections.find(item => item.subject === section.subject && item.id === section.id);
+            if (!liveSection || Number(liveSection.revision) <= Number(section.revision)) state.dirtySections.delete(key);
             if (generation === state.saveGeneration) setSaveState('idle', 'Все изменения сохранены');
+            if (requestedContext.embedded && window.parent !== window) {
+                window.parent.postMessage({ type: 'note-constructor:saved', subject: section.subject, section: section.id }, window.location.origin);
+            }
+            return true;
         } catch (error) {
             console.error('Remote draft:', error);
             if (generation === state.saveGeneration) setSaveState('error', 'Сохранено только на устройстве');
+            return false;
+        }
+    }
+
+    function showDraftConflict(section) {
+        const key = sectionKey(section.subject, section.id);
+        const firstNotice = !state.conflictedSections.has(key);
+        state.conflictedSections.add(key);
+        setSaveState('error', 'Есть более новая облачная версия');
+        if (!firstNotice) return;
+        toast('Этот раздел изменён в другой вкладке. Ваша версия сохранена на устройстве и не перезаписала чужие изменения.', true, {
+            label: 'Загрузить облачную',
+            run: function () { loadCloudSection(section.subject, section.id); }
+        });
+    }
+
+    async function loadCloudSection(subject, id) {
+        const key = sectionKey(subject, id);
+        try {
+            const snapshot = await window.AlmanionAccount.database.ref('noteDrafts/' + subject + '/' + id).once('value');
+            if (!snapshot.exists()) throw new Error('Облачный черновик удалён');
+            const cloudSection = Model.normalizeSection(snapshot.val(), subject);
+            const index = state.sections.findIndex(section => section.id === id);
+            if (index === -1) state.sections.push(cloudSection);
+            else state.sections[index] = cloudSection;
+            state.sections.sort(compareSections);
+            if (state.current && state.current.id === id) {
+                state.current = cloudSection;
+                if (state.currentSubsectionId && !sectionSubsections(cloudSection).some(item => item.id === state.currentSubsectionId)) {
+                    state.currentSubsectionId = '';
+                }
+            }
+            state.remoteVersions.set(key, versionOf(cloudSection));
+            state.conflictedSections.delete(key);
+            state.dirtySections.delete(key);
+            await Storage.putDraft(state.user.uid, cloudSection);
+            renderAll();
+            setSaveState('idle', 'Загружена облачная версия');
+            toast('Облачная версия раздела загружена');
+        } catch (error) {
+            console.error('Load cloud draft:', error);
+            toast('Не удалось загрузить облачную версию: ' + (error.message || error), true);
         }
     }
 
@@ -503,9 +650,14 @@
         if (!state.current) return;
         flushTimers();
         const section = clone(state.current);
+        const key = sectionKey(section.subject, section.id);
         const generation = ++state.saveGeneration;
         await Storage.putDraft(state.user.uid, section);
-        await saveRemote(section, generation);
+        if (!state.dirtySections.has(key)) {
+            setSaveState('idle', 'Все изменения сохранены');
+            return true;
+        }
+        return saveRemote(section, generation);
     }
 
     function openSectionDialog() {
@@ -533,6 +685,8 @@
         state.sections.sort(compareSections);
         state.current = section;
         state.currentSubsectionId = '';
+        state.remoteVersions.set(sectionKey(section.subject, section.id), null);
+        state.dirtySections.add(sectionKey(section.subject, section.id));
         renderAll();
         scheduleSave();
         toast('Раздел создан и сохранён как черновик');
@@ -599,6 +753,11 @@
     function removeSectionFromWorkspace(sectionId) {
         const index = state.sections.findIndex(section => section.id === sectionId);
         if (index === -1) return;
+        const removed = state.sections[index];
+        const key = sectionKey(removed.subject, removed.id);
+        state.remoteVersions.delete(key);
+        state.conflictedSections.delete(key);
+        state.dirtySections.delete(key);
         state.sections.splice(index, 1);
         state.current = state.sections[Math.min(index, state.sections.length - 1)] || null;
         state.currentSubsectionId = '';
@@ -933,7 +1092,8 @@
         button.disabled = true;
         button.textContent = 'Публикуем…';
         try {
-            await saveNow();
+            const saved = await saveNow();
+            if (saved === false) throw new Error('обнаружена более новая версия черновика');
             const bundle = await publicationFiles();
             const idToken = await state.user.getIdToken(true);
             const response = await fetch(config.publisherEndpoint, {
@@ -951,6 +1111,9 @@
             await Storage.putDraft(state.user.uid, state.current);
             await saveRemote(clone(state.current), ++state.saveGeneration);
             renderAll();
+            if (requestedContext.embedded && window.parent !== window) {
+                window.parent.postMessage({ type: 'note-constructor:published', subject: state.subject, section: state.current.id }, window.location.origin);
+            }
             toast('Опубликовано. GitHub Pages обновится через несколько минут.');
         } catch (error) {
             console.error('Publish notes:', error);
@@ -1280,6 +1443,7 @@
     }
 
     function start() {
+        if (requestedContext.embedded) document.body.classList.add('builder-embedded');
         renderBlockPicker();
         const allowedPreviewThemes = Array.from(el('previewThemeSelect').options).map(option => option.value);
         if (!allowedPreviewThemes.includes(state.previewTheme)) state.previewTheme = 'site';

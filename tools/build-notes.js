@@ -35,7 +35,7 @@ function replaceMarked(source, start, end, replacement, file) {
     const lineStart = source.lastIndexOf('\n', startIndex) + 1;
     const indent = (source.slice(lineStart, startIndex).match(/^\s*/) || [''])[0];
     const rendered = replacement.trim()
-        ? replacement.trim().split('\n').map(line => indent + line).join('\n') + '\n'
+        ? replacement.trim().split('\n').map(line => line ? indent + line : '').join('\n') + '\n'
         : '';
     return source.slice(0, startIndex) + start + '\n' + rendered + indent + end + source.slice(endIndex + end.length);
 }

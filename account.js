@@ -592,6 +592,8 @@
         openLogin: function () { openLoginModal(false); },
         openAccount: function () { if (user) openAccountMenu(); else openLoginModal(false); },
         getUser: function () { return user; },
+        hasContentEditorAccess: hasContentEditorAccess,
+        hasSiteAdminAccess: hasSiteAdminAccess,
         auth: auth,
         database: db
     };

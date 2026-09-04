@@ -1,0 +1,165 @@
+.constructor-topic.note-inline-editable,
+.constructor-content-section.note-inline-editable {
+    position: relative;
+}
+
+.constructor-topic.note-inline-editable > .topic-title {
+    padding-right: 10.5rem;
+}
+
+.note-inline-edit-button {
+    position: absolute;
+    z-index: 6;
+    top: 1.15rem;
+    right: 1.15rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .45rem;
+    min-height: 2.25rem;
+    padding: .45rem .72rem;
+    border: 1px solid color-mix(in srgb, var(--exp-border, #d7d9e2) 88%, transparent);
+    border-radius: .68rem;
+    color: var(--exp-text-dim, #555969);
+    background: color-mix(in srgb, var(--exp-surface, #fff) 94%, transparent);
+    box-shadow: 0 5px 16px color-mix(in srgb, #151522 8%, transparent);
+    font: 650 .78rem/1 var(--font-ui, system-ui, sans-serif);
+    letter-spacing: .005em;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: color .15s ease, border-color .15s ease, background-color .15s ease, transform .15s ease;
+}
+
+.note-inline-edit-button svg {
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+body:not(.no-hover) .note-inline-edit-button:hover {
+    color: var(--exp-accent, #555ce7);
+    border-color: color-mix(in srgb, var(--exp-accent, #555ce7) 35%, var(--exp-border, #d7d9e2));
+    background: color-mix(in srgb, var(--exp-accent-soft, #eef0ff) 48%, var(--exp-surface, #fff));
+    transform: translateY(-1px);
+}
+
+.note-inline-edit-button:focus-visible,
+.note-editor-close:focus-visible,
+.note-editor-external:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--exp-accent, #555ce7) 62%, transparent);
+    outline-offset: 2px;
+}
+
+.note-editor-overlay {
+    position: fixed;
+    z-index: 12000;
+    inset: 0;
+    display: grid;
+    grid-template-columns: minmax(2rem, 1fr) min(94vw, 1540px);
+    background: rgba(12, 12, 20, .48);
+    opacity: 0;
+    transition: opacity .18s ease;
+}
+
+.note-editor-overlay.is-open { opacity: 1; }
+
+.note-editor-panel {
+    grid-column: 2;
+    min-width: 0;
+    height: 100dvh;
+    display: grid;
+    grid-template-rows: 3.4rem minmax(0, 1fr);
+    color: var(--exp-text, #181822);
+    background: var(--exp-bg, #f8f8fc);
+    border-left: 1px solid color-mix(in srgb, var(--exp-border, #d7d9e2) 88%, transparent);
+    box-shadow: -22px 0 64px rgba(8, 8, 16, .22);
+    transform: translateX(1.5rem);
+    transition: transform .2s cubic-bezier(.2, .75, .2, 1);
+}
+
+.note-editor-overlay.is-open .note-editor-panel { transform: translateX(0); }
+
+.note-editor-bar {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+    padding: .55rem .75rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--exp-border, #d7d9e2) 88%, transparent);
+    background: color-mix(in srgb, var(--exp-surface, #fff) 96%, transparent);
+}
+
+.note-editor-close,
+.note-editor-external {
+    min-height: 2.25rem;
+    border: 1px solid var(--exp-border, #d7d9e2);
+    border-radius: .65rem;
+    color: var(--exp-text, #181822);
+    background: var(--exp-surface, #fff);
+    font: 650 .8rem/1 var(--font-ui, system-ui, sans-serif);
+    cursor: pointer;
+}
+
+.note-editor-close {
+    display: inline-flex;
+    align-items: center;
+    gap: .42rem;
+    padding: .45rem .72rem;
+}
+
+.note-editor-close svg {
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.note-editor-title {
+    min-width: 0;
+    margin-right: auto;
+    overflow: hidden;
+    color: var(--exp-text-dim, #5f6270);
+    font: 600 .8rem/1.2 var(--font-ui, system-ui, sans-serif);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.note-editor-external {
+    display: inline-flex;
+    align-items: center;
+    padding: .45rem .72rem;
+    text-decoration: none;
+}
+
+.note-editor-frame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: var(--exp-bg, #f8f8fc);
+}
+
+body.note-editor-open { overflow: hidden !important; }
+
+@media (max-width: 760px) {
+    .constructor-topic.note-inline-editable > .topic-title { padding-right: 3.25rem; }
+    .note-inline-edit-button { top: .8rem; right: .8rem; width: 2.35rem; min-height: 2.35rem; padding: 0; border-radius: .72rem; }
+    .note-inline-edit-button span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+    .note-editor-overlay { grid-template-columns: 1fr; }
+    .note-editor-panel { grid-column: 1; width: 100vw; border-left: 0; transform: translateY(.75rem); }
+    .note-editor-overlay.is-open .note-editor-panel { transform: translateY(0); }
+    .note-editor-title { display: none; }
+    .note-editor-external { margin-left: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .note-editor-overlay,
+    .note-editor-panel,
+    .note-inline-edit-button { transition: none; }
+}
