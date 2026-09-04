@@ -93,13 +93,59 @@
         }, true);
     }
 
+    function initPageWarmup() {
+        if (!document.createElement || !document.querySelectorAll) return;
+        var connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if (connection && (connection.saveData || /(^|-)2g$/.test(connection.effectiveType || ''))) return;
+        var warmed = new Set();
+
+        function warm(link) {
+            if (!link || !link.href) return;
+            var url;
+            try { url = new URL(link.href, window.location.href); } catch (_) { return; }
+            if (url.origin !== window.location.origin || !SITE_PAGES.has(pageName(url.pathname))) return;
+            var key = url.pathname + url.search;
+            if (warmed.has(key) || key === window.location.pathname + window.location.search) return;
+            warmed.add(key);
+            var hint = document.createElement('link');
+            hint.rel = 'prefetch';
+            hint.as = 'document';
+            hint.href = url.href;
+            document.head.appendChild(hint);
+        }
+
+        ['pointerenter', 'focusin', 'touchstart'].forEach(function (eventName) {
+            document.addEventListener(eventName, function (event) {
+                var target = event.target;
+                warm(target && typeof target.closest === 'function' ? target.closest('a[href]') : null);
+            }, true);
+        });
+
+        // На главной заранее загружаются только видимые карточки текущего класса.
+        // Подсказка браузеру имеет низкий приоритет и отключается при экономии трафика.
+        if (pageName(window.location.pathname) === 'index.html') {
+            var warmVisible = function () {
+                Array.from(document.querySelectorAll('a.subject-card[href]'))
+                    .filter(function (link) { return link.getClientRects().length > 0; })
+                    .slice(0, 4)
+                    .forEach(warm);
+            };
+            if (window.requestIdleCallback) window.requestIdleCallback(warmVisible, { timeout: 1800 });
+            else window.setTimeout(warmVisible, 700);
+        }
+    }
+
     setMotionClass();
     consumeEntryMarker();
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initFallbackNavigation, { once: true });
+        document.addEventListener('DOMContentLoaded', function () {
+            initFallbackNavigation();
+            initPageWarmup();
+        }, { once: true });
     } else {
         initFallbackNavigation();
+        initPageWarmup();
     }
 
     window.addEventListener('pageshow', function (event) {

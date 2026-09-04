@@ -4,7 +4,7 @@
 //
 // Самодостаточный модуль: сам создаёт кнопку в сайдбаре и модальные окна,
 // поэтому достаточно подключить этот скрипт на странице с темами (.topic[id])
-// и определениями (.definition-box). Прогресс карточек хранится локально
+// и смысловыми учебными блоками. Прогресс карточек хранится локально
 // (localStorage) по странице и переживает перезагрузки и закрытие сайта.
 //
 // Планировщик использует модель DSR: difficulty (трудность), stability
@@ -170,8 +170,36 @@
     const STORE_KEY = 'kc_fsrs_' + location.pathname;
     let store = loadStore();
     let TOPICS = [];
+    let cardCache = new Map();
     let session = null;
     let revealed = false;
+
+    const LIKBEZ_CARD_TYPES = [
+        { selector: '.definition-box', kind: 'definition', label: 'Определение' },
+        { selector: '.theorem-box', kind: 'theorem', label: 'Теорема' },
+        { selector: '.lemma-box', kind: 'lemma', label: 'Лемма' },
+        { selector: '.statement-box', kind: 'statement', label: 'Утверждение' },
+        { selector: '.corollary-box', kind: 'corollary', label: 'Следствие' }
+    ];
+    const DEFAULT_CARD_TYPES = [LIKBEZ_CARD_TYPES[0]];
+
+    function isLikbezPage() {
+        return /(?:^|\/)likbez\.html$/i.test(location.pathname);
+    }
+
+    function studyProfile() {
+        return isLikbezPage()
+            ? {
+                types: LIKBEZ_CARD_TYPES,
+                subtitle: 'Определения, теоремы и ключевые утверждения',
+                empty: 'В выбранных разделах пока нет формулировок для проверки.'
+            }
+            : {
+                types: DEFAULT_CARD_TYPES,
+                subtitle: 'Адаптивное повторение определений',
+                empty: 'В выбранных разделах пока нет определений для проверки.'
+            };
+    }
 
     function loadStore() {
         try { return JSON.parse(kcGet(STORE_KEY) || '{}') || {}; } catch (_) { return {}; }
@@ -203,38 +231,92 @@
     // ---------- Темы и карточки ----------
     function discoverTopics() {
         const out = [];
+        const selector = studyProfile().types.map(type => type.selector).join(', ');
         document.querySelectorAll('article.topic[id]').forEach(a => {
             const t = a.querySelector('.topic-title');
-            if (t) out.push({ id: a.id, name: t.textContent.trim() });
+            if (t && a.querySelector(selector)) out.push({ id: a.id, name: t.textContent.trim() });
         });
         return out;
     }
 
-    function extractCards(topicIds) {
+    function directStrong(box) {
+        return Array.from(box.children || []).find(child => child.tagName === 'STRONG')
+            || box.querySelector('strong');
+    }
+
+    function readableTerm(strong) {
+        if (!strong) return '';
+        const clone = strong.cloneNode(true);
+        clone.querySelectorAll('.katex').forEach(el => el.remove());
+        return clone.textContent
+            .replace(/\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]|\$[^$]*\$/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function answerHTML(box, kind) {
+        const back = box.cloneNode(true);
+        back.querySelectorAll('.bookmark-btn, .copy-block-btn').forEach(el => el.remove());
+        if (kind !== 'definition') {
+            // Доказательство — отдельный этап понимания, а не часть проверяемой
+            // формулировки. Также не захватываем случайно вложенное следствие.
+            back.querySelectorAll('.proof-box, .theorem-box, .lemma-box, .statement-box, .corollary-box')
+                .forEach(el => el.remove());
+        }
+        return back.innerHTML;
+    }
+
+    function isGenericCardTitle(value) {
+        return /^(определение|теорема|лемма|утверждение|следствие)[:.]?$/i.test(String(value || '').trim());
+    }
+
+    function extractTopicCards(tid) {
+        if (cardCache.has(tid)) return cardCache.get(tid);
         const cards = [];
-        topicIds.forEach(tid => {
-            const topic = document.getElementById(tid);
-            if (!topic) return;
-            const tname = topic.querySelector('.topic-title')?.textContent.trim() || '';
-            topic.querySelectorAll('.definition-box').forEach((box, i) => {
-                const strong = box.querySelector('strong');
-                if (!strong) return;
-                const termClone = strong.cloneNode(true);
-                termClone.querySelectorAll('.katex').forEach(el => el.remove());
-                const term = termClone.textContent.trim();
-                if (!term) return;
-                const back = box.cloneNode(true);
-                back.querySelectorAll('.bookmark-btn, .copy-block-btn').forEach(el => el.remove());
+        const topic = document.getElementById(tid);
+        if (!topic) return cards;
+        const tname = topic.querySelector('.topic-title')?.textContent.trim() || '';
+
+        studyProfile().types.forEach(type => {
+            const typeBoxes = Array.from(topic.querySelectorAll(type.selector));
+            typeBoxes.forEach((box, i) => {
+                const strong = directStrong(box);
+                const term = readableTerm(strong);
+                if (type.kind === 'definition' && !term) return;
+                const fallbackTerm = type.label + ' ' + (i + 1);
+                const genericTitle = isGenericCardTitle(term);
+                const displayTerm = genericTitle
+                    ? tname + (typeBoxes.length > 1 ? ' · ' + type.label.toLocaleLowerCase('ru-RU') + ' ' + (i + 1) : '')
+                    : (term || fallbackTerm);
+                const questionLead = type.kind === 'definition' && !genericTitle
+                    ? ''
+                    : (type.kind === 'definition'
+                        ? 'Воспроизведите определение из раздела'
+                        : 'Сформулируйте ' + type.label.toLocaleLowerCase('ru-RU'));
+                const legacyDefinitionId = tid + '::' + i + '::' + (term || fallbackTerm);
                 cards.push({
-                    id: tid + '::' + i + '::' + term,
+                    id: type.kind === 'definition'
+                        ? legacyDefinitionId
+                        : tid + '::likbez-' + type.kind + '::' + i + '::' + displayTerm,
                     topicId: tid,
                     topicName: tname,
-                    term: term,
-                    termHTML: strong.innerHTML,
-                    backHTML: back.innerHTML
+                    kind: type.kind,
+                    kindLabel: type.label,
+                    term: displayTerm,
+                    termHTML: strong && !genericTitle ? strong.innerHTML : escapeHtml(displayTerm),
+                    questionLead: questionLead,
+                    backHTML: answerHTML(box, type.kind)
                 });
             });
         });
+
+        cardCache.set(tid, cards);
+        return cards;
+    }
+
+    function extractCards(topicIds) {
+        const cards = [];
+        topicIds.forEach(tid => cards.push(...extractTopicCards(tid)));
         return cards;
     }
 
@@ -362,6 +444,7 @@
     //  DOM: кнопка + модальные окна
     // ============================================
     function buildUI() {
+        const profile = studyProfile();
         // Убираем старую инлайн-разметку (если осталась на странице)
         ['topicSelectionOverlay', 'knowledgeCheckOverlay', 'newFeatureOverlay'].forEach(id => {
             const el = document.getElementById(id);
@@ -391,7 +474,7 @@
                 '<button class="kc-close" id="kcSelectClose" aria-label="Закрыть">' + IC.close + '</button>' +
                 '<div class="kc-head"><span class="kc-head-icon">' + IC.brain + '</span>' +
                     '<div class="kc-head-text"><h2 class="kc-title">Проверка знаний</h2>' +
-                    '<p class="kc-subtitle">Адаптивное повторение определений</p></div></div>' +
+                    '<p class="kc-subtitle">' + escapeHtml(profile.subtitle) + '</p></div></div>' +
                 '<div class="kc-recommendation" id="kcRecommendation" aria-live="polite"></div>' +
                 '<div class="kc-deck-list" id="kcDeckList"></div>' +
                 '<div class="kc-actions">' +
@@ -437,8 +520,10 @@
     let selected = [];
 
     function openSelect() {
+        cardCache = new Map();
         TOPICS = discoverTopics();
         store = loadStore();
+        selected = selected.filter(id => TOPICS.some(topic => topic.id === id));
         if (selected.length === 0) selected = TOPICS.map(t => t.id); // по умолчанию — всё
         renderDeckList();
         document.getElementById('kcSelectOverlay').classList.remove('hidden');
@@ -477,7 +562,8 @@
 
     function updateStartBtn() {
         const now = Date.now();
-        const plan = buildRecommendation(extractCards(selected), now);
+        const selectedCards = extractCards(selected);
+        const plan = buildRecommendation(selectedCards, now);
         const count = plan.queue.length;
         const badge = document.getElementById('kcStartCount');
         badge.textContent = count;
@@ -488,6 +574,9 @@
         if (recommendation) {
             if (selected.length === 0) {
                 recommendation.innerHTML = '<strong>Выберите темы</strong><span>Алгоритм соберёт короткую сессию.</span>';
+            } else if (selectedCards.length === 0) {
+                recommendation.innerHTML = '<strong>Пока нечего проверять</strong><span>' +
+                    escapeHtml(studyProfile().empty) + '</span>';
             } else if (count === 0) {
                 recommendation.innerHTML = '<strong>На сейчас всё</strong><span>Повторения появятся, когда начнёт снижаться вероятность вспомнить.</span>';
             } else {
@@ -567,8 +656,11 @@
         const content = document.getElementById('kcContent');
         content.innerHTML =
             '<div class="kc-card-wrap">' +
-                '<div class="kc-topic-label">' + escapeHtml(def.topicName) + '</div>' +
+                '<div class="kc-card-context"><div class="kc-topic-label">' + escapeHtml(def.topicName) + '</div>' +
+                    (def.kindLabel ? '<span class="kc-kind-label kc-kind-' + escapeHtml(def.kind || 'definition') + '">' + escapeHtml(def.kindLabel) + '</span>' : '') +
+                '</div>' +
                 '<button type="button" class="kc-flashcard" id="kcFront">' +
+                    (def.questionLead ? '<span class="kc-flashcard-prompt">' + escapeHtml(def.questionLead) + '</span>' : '') +
                     '<span class="kc-flashcard-term">' + (def.termHTML || escapeHtml(def.term)) + '</span>' +
                     '<span class="kc-flashcard-tap">' + IC.eye + '<span>показать ответ</span></span>' +
                 '</button>' +
@@ -812,7 +904,10 @@
         STEPS_MIN,
         TARGET_RETENTION,
         MAX_SESSION_CARDS,
-        fmtInterval
+        fmtInterval,
+        isLikbezPage,
+        studyProfile,
+        extractCards
     };
 
     // Хук для синхронизации аккаунта (account.js): перечитать прогресс из localStorage,

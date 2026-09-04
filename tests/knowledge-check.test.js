@@ -6,7 +6,7 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '..', 'knowledge-check.js'), 'utf8');
 const DAY = 86400000;
 
-function loadScheduler(initialStore = {}) {
+function loadScheduler(initialStore = {}, pathname = '/test.html') {
     const window = {
         safeStorageGet: () => JSON.stringify(initialStore),
         safeStorageSet: () => true,
@@ -16,7 +16,7 @@ function loadScheduler(initialStore = {}) {
     };
     const sandbox = {
         window,
-        location: { pathname: '/test.html' },
+        location: { pathname },
         document: {
             readyState: 'loading',
             addEventListener: () => {},
@@ -41,6 +41,19 @@ function loadScheduler(initialStore = {}) {
 
 const now = Date.UTC(2026, 8, 2, 12, 0, 0);
 const scheduler = loadScheduler();
+
+// В обычных конспектах остаются карточки определений, а «Ликбезы» дополнительно
+// проверяют именно формулировки теорем, лемм, утверждений и следствий.
+assert.deepEqual(
+    Array.from(scheduler.studyProfile().types, type => type.kind),
+    ['definition']
+);
+const likbezScheduler = loadScheduler({}, '/likbez.html');
+assert.deepEqual(
+    Array.from(likbezScheduler.studyProfile().types, type => type.kind),
+    ['definition', 'theorem', 'lemma', 'statement', 'corollary']
+);
+assert.match(likbezScheduler.studyProfile().subtitle, /теоремы/i);
 
 // В точке stability вероятность воспоминания должна быть целевыми 90%.
 const stable = { v: 2, phase: 'review', stability: 10, difficulty: 5, last: now - 10 * DAY, due: now, reps: 8, lapses: 1, step: 8 };

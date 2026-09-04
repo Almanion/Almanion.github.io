@@ -134,16 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================
 
 function initMath() {
-    const katexOptions = {
-        delimiters: [
-            {left: '\\[', right: '\\]', display: true},
-            {left: '\\(', right: '\\)', display: false},
-            {left: '$', right: '$', display: false}
-        ],
-        throwOnError: false,
-        trust: true
-    };
-
     // Если на странице нет ни одного math-блока — KaTeX не нужен, не дёргаем CDN.
     // (index.html и admin.html не имеют формул — нет смысла ждать загрузки 15 секунд.)
     const hasMathContent = !!document.querySelector(
@@ -153,34 +143,100 @@ function initMath() {
     );
     if (!hasMathContent) return;
 
-    // Помечаем уже отрендеренные derivation/proof, чтобы при тогле не вызывать KaTeX второй раз
-    function markRenderedBlocks() {
-        document.querySelectorAll('.derivation-content, .proof-content').forEach(el => {
+    const topics = Array.from(document.querySelectorAll('.main-content .topic[id]'));
+    const pending = new Set();
+    let observer = null;
+    let waitTimer = 0;
+    let waitStartedAt = 0;
+    const scheduleIdle = window.requestIdleCallback
+        ? callback => window.requestIdleCallback(callback, { timeout: 900 })
+        : callback => window.setTimeout(() => callback(null), 30);
+
+    function markNestedBlocks(root) {
+        if (root.matches?.('.derivation-content, .proof-content')) root.dataset.latexRendered = '1';
+        root.querySelectorAll?.('.derivation-content, .proof-content').forEach(el => {
             el.dataset.latexRendered = '1';
         });
     }
 
-    if (typeof renderMathInElement !== 'undefined') {
-        renderMathInElement(document.body, katexOptions);
-        markRenderedBlocks();
+    function render(root) {
+        if (!root || root.dataset?.latexRendered === '1') return true;
+        if (typeof renderMathInElement === 'undefined') {
+            pending.add(root);
+            waitForKaTeX();
+            return false;
+        }
+        try {
+            renderMathInElement(root, KATEX_OPTIONS);
+            root.dataset.latexRendered = '1';
+            markNestedBlocks(root);
+            pending.delete(root);
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function flushPending() {
+        Array.from(pending).forEach(render);
+    }
+
+    function waitForKaTeX() {
+        if (waitTimer) return;
+        if (!waitStartedAt) waitStartedAt = Date.now();
+        waitTimer = window.setTimeout(() => {
+            waitTimer = 0;
+            if (typeof renderMathInElement !== 'undefined') {
+                flushPending();
+                return;
+            }
+            if (Date.now() - waitStartedAt < 15000) waitForKaTeX();
+        }, 120);
+    }
+
+    function renderAll() {
+        if (observer) observer.disconnect();
+        if (topics.length) topics.forEach(render);
+        else render(document.body);
+    }
+
+    window.AlmanionMath = { render, renderAll };
+
+    if (!topics.length) {
+        render(document.body);
         return;
     }
 
-    // KaTeX ещё не загружен (медленный CDN на мобильных) — ждём
-    let attempts = 0;
-    const maxAttempts = 30; // до 15 секунд
+    const hashTarget = window.location.hash
+        ? document.getElementById(decodeURIComponent(window.location.hash.slice(1)))?.closest('.topic[id]')
+        : null;
+    const firstTarget = hashTarget || topics[0];
+    render(firstTarget);
 
-    const waitForKaTeX = setInterval(() => {
-        attempts++;
-        if (typeof renderMathInElement !== 'undefined') {
-            clearInterval(waitForKaTeX);
-            renderMathInElement(document.body, katexOptions);
-            markRenderedBlocks();
-        } else if (attempts >= maxAttempts) {
-            clearInterval(waitForKaTeX);
-            console.warn('⚠️ KaTeX не удалось загрузить за 15 секунд');
-        }
-    }, 500);
+    // Остальные темы обрабатываются только перед тем, как действительно понадобятся.
+    // Это сохраняет формулы и оформление, но не заставляет KaTeX строить тысячи DOM-узлов
+    // до первого отображения страницы.
+    if ('IntersectionObserver' in window) {
+        observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                observer.unobserve(entry.target);
+                render(entry.target);
+            });
+        }, { rootMargin: '700px 0px' });
+        topics.forEach(topic => {
+            if (topic !== firstTarget) observer.observe(topic);
+        });
+    } else {
+        const queue = topics.filter(topic => topic !== firstTarget);
+        const drain = deadline => {
+            while (queue.length && (!deadline || deadline.timeRemaining() > 4)) render(queue.shift());
+            if (queue.length) scheduleIdle(drain);
+        };
+        scheduleIdle(drain);
+    }
+
+    window.addEventListener('beforeprint', renderAll);
 }
 
 // ============================================
@@ -739,8 +795,13 @@ const KATEX_OPTIONS = {
 
 // Рендерим формулы один раз на элемент, помечая флагом.
 function renderMathOnce(el) {
-    if (!el || typeof renderMathInElement === 'undefined') return;
+    if (!el) return;
     if (el.dataset.latexRendered === '1') return;
+    if (window.AlmanionMath) {
+        window.AlmanionMath.render(el);
+        return;
+    }
+    if (typeof renderMathInElement === 'undefined') return;
     renderMathInElement(el, KATEX_OPTIONS);
     el.dataset.latexRendered = '1';
 }
@@ -753,7 +814,6 @@ function initDerivationToggles() {
     document.querySelectorAll('.derivation-content').forEach((derivationContent) => {
         derivationContent.classList.add('show');
         derivationContent.removeAttribute('aria-hidden');
-        renderMathOnce(derivationContent);
     });
     document.querySelectorAll('.toggle-derivation').forEach(button => button.remove());
 }
@@ -767,7 +827,6 @@ function initProofToggles() {
         proofContent.classList.add('show');
         proofContent.removeAttribute('aria-hidden');
         if (!proofContent.id) proofContent.id = `proof-content-${index + 1}`;
-        renderMathOnce(proofContent);
     });
 
     document.querySelectorAll('.toggle-proof').forEach(button => button.remove());
@@ -1128,8 +1187,8 @@ const COPY_ICONS = {
 // (Сам раздел .topic — это обёртка с заголовком и блоками внутри, у каждого блока уже своя copy-кнопка.)
 const COPY_EXCLUDE_SELECTOR = 'h1, h2, h3, h4, h5, h6, .topic, .topic-title, .subsection-title, .section-title';
 
-function initCopyableBlocks() {
-    document.querySelectorAll(COPYABLE_BLOCK_SELECTOR).forEach(block => {
+function addCopyButtons(root = document) {
+    root.querySelectorAll(COPYABLE_BLOCK_SELECTOR).forEach(block => {
         if (block.dataset.copyReady === 'true') return;
         if (block.matches(COPY_EXCLUDE_SELECTOR)) return;
 
@@ -1166,6 +1225,39 @@ function initCopyableBlocks() {
 
         block.appendChild(copyBtn);
     });
+}
+
+function initCopyableBlocks() {
+    const topics = Array.from(document.querySelectorAll('.main-content .topic[id]'));
+
+    if (topics.length && 'IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                observer.unobserve(entry.target);
+                addCopyButtons(entry.target);
+            });
+        }, { rootMargin: '700px 0px' });
+
+        const hashTarget = window.location.hash
+            ? document.getElementById(decodeURIComponent(window.location.hash.slice(1)))?.closest('.topic[id]')
+            : null;
+        const initial = hashTarget || topics[0];
+        addCopyButtons(initial);
+        topics.forEach(topic => {
+            if (topic !== initial) observer.observe(topic);
+        });
+
+        window.addEventListener('almanion:topic-visible', event => {
+            const topic = event.detail?.topic;
+            if (topic) {
+                observer.unobserve(topic);
+                addCopyButtons(topic);
+            }
+        });
+    } else {
+        addCopyButtons(document);
+    }
 
     // Один раз вешаем общий обработчик: на touch-устройстве кнопка копирования
     // появляется при касании блока (через класс .is-active) и убирается при касании

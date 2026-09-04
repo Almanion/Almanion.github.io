@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-05-page-transitions-39';
+const CACHE_VERSION = 'almanion-pwa-2026-09-05-subject-performance-40';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 

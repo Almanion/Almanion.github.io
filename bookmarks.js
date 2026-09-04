@@ -237,9 +237,9 @@
         return colors[type] || '#6b7280';
     }
 
-    function addBookmarkButtons() {
+    function addBookmarkButtons(root = document) {
         const selector = '.definition-box, .formula-box, .theorem-box, .remark-box, .lemma-box, .example-box, .statement-box, .corollary-box, .properties-box, .experiment-box, .derivation-box, .system-box';
-        document.querySelectorAll(selector).forEach(box => {
+        root.querySelectorAll(selector).forEach(box => {
             if (box.querySelector('.bookmark-btn')) return;
             if (box.closest('.definition-box, .formula-box, .theorem-box, .remark-box, .properties-box, .experiment-box, .derivation-box, .system-box')) {
                 if (box.parentElement.closest('.definition-box, .formula-box, .theorem-box, .remark-box, .properties-box, .experiment-box, .derivation-box, .system-box')) return;
@@ -287,6 +287,38 @@
 
             box.style.position = 'relative';
             box.appendChild(btn);
+        });
+    }
+
+    function initLazyBookmarkButtons() {
+        const topics = Array.from(document.querySelectorAll('.main-content .topic[id]'));
+        if (!topics.length || !('IntersectionObserver' in window)) {
+            addBookmarkButtons();
+            return;
+        }
+
+        const topicObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                topicObserver.unobserve(entry.target);
+                addBookmarkButtons(entry.target);
+            });
+        }, { rootMargin: '700px 0px' });
+
+        const hashTarget = window.location.hash
+            ? document.getElementById(decodeURIComponent(window.location.hash.slice(1)))?.closest('.topic[id]')
+            : null;
+        const initial = hashTarget || topics[0];
+        addBookmarkButtons(initial);
+        topics.forEach(topic => {
+            if (topic !== initial) topicObserver.observe(topic);
+        });
+
+        window.addEventListener('almanion:topic-visible', event => {
+            const topic = event.detail?.topic;
+            if (!topic) return;
+            topicObserver.unobserve(topic);
+            addBookmarkButtons(topic);
         });
     }
 
@@ -564,6 +596,7 @@
                     if (box) {
                         el.textContent = '';
                         el.appendChild(cloneBoxContent(box));
+                        window.AlmanionMath?.render(el);
                     }
                     delete el.dataset.lazyBmId;
                     applyClampState(el);
@@ -753,6 +786,7 @@
                 if (box) {
                     contentDiv.textContent = '';
                     contentDiv.appendChild(cloneBoxContent(box));
+                    window.AlmanionMath?.render(contentDiv);
                 }
                 delete contentDiv.dataset.lazyBmId;
                 applyClampState(contentDiv);
@@ -902,7 +936,7 @@
         initFirebase();
         loadBookmarks();
         setTimeout(() => {
-            addBookmarkButtons();
+            initLazyBookmarkButtons();
             addBookmarksSidebarButton();
             restoreBookmarkTarget();
         }, 300);

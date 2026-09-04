@@ -155,6 +155,7 @@
         const hashIndex = state.topics.findIndex(topic => topic.id === hashId);
         state.index = hashIndex >= 0 ? hashIndex : 0;
         applyTopicVisibility();
+        prepareTopic(state.topics[state.index]);
         updateReaderUi();
 
         if (hashIndex >= 0) scrollToReader();
@@ -259,6 +260,7 @@
         const commit = () => {
             state.index = nextIndex;
             applyTopicVisibility(previousIndex);
+            prepareTopic(state.topics[state.index]);
             updateReaderUi();
             if (settings.updateHash) updateLocationHash();
             if (readerScrollTop !== null) scrollToReader(readerScrollTop);
@@ -421,6 +423,23 @@
 
     function setElementInert(element, inert) {
         if ('inert' in element) element.inert = inert;
+    }
+
+    function prepareTopic(topic) {
+        if (!topic) return;
+        if (window.AlmanionMath) window.AlmanionMath.render(topic);
+        window.dispatchEvent(new CustomEvent('almanion:topic-visible', {
+            detail: { topic }
+        }));
+
+        // Пока пользователь читает текущий раздел, заранее готовим только соседний.
+        // Поэтому первое перелистывание остаётся мгновенным, а вся длинная страница
+        // по-прежнему не обрабатывается при открытии.
+        const next = state.topics[state.index + 1];
+        if (!next || !window.AlmanionMath) return;
+        const warm = () => window.AlmanionMath?.render(next);
+        if (window.requestIdleCallback) window.requestIdleCallback(warm, { timeout: 1200 });
+        else window.setTimeout(warm, 160);
     }
 
     function updateReaderUi() {
