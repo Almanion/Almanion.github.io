@@ -21,6 +21,38 @@
         example: 'example-box'
     };
 
+    const TYPE_LABELS = {
+        definition: 'Определение',
+        derivation: 'Вывод',
+        experiment: 'Эксперимент',
+        remark: 'Замечание',
+        reminder: 'Напоминание',
+        theorem: 'Теорема',
+        lemma: 'Лемма',
+        statement: 'Утверждение',
+        corollary: 'Следствие',
+        properties: 'Свойства',
+        exercise: 'Упражнение',
+        proof: 'Доказательство',
+        example: 'Пример',
+        formula: 'Формула'
+    };
+
+    const GENERIC_TITLES = {
+        derivation: ['вывод'],
+        experiment: ['эксперимент'],
+        remark: ['замечание', 'замечания'],
+        reminder: ['напоминание'],
+        theorem: ['теорема'],
+        lemma: ['лемма'],
+        statement: ['утверждение', 'утверждения'],
+        corollary: ['следствие'],
+        properties: ['свойства'],
+        exercise: ['упражнение', 'упражнения'],
+        proof: ['доказательство'],
+        example: ['пример', 'примеры']
+    };
+
     function escapeHtml(value) {
         return String(value == null ? '' : value)
             .replace(/&/g, '&amp;')
@@ -56,6 +88,18 @@
         return block.children.map(child => renderBlock(child, depth + 1)).filter(Boolean).join('\n');
     }
 
+    function renderTypeLabel(type) {
+        const label = TYPE_LABELS[type];
+        return label
+            ? '<span class="constructor-note-block-label" data-note-block-type="' + escapeHtml(type) + '">' + escapeHtml(label) + '</span> '
+            : '';
+    }
+
+    function isGenericTitle(type, title) {
+        const normalized = String(title || '').trim().replace(/[.:]+$/, '').toLowerCase();
+        return !!normalized && Array.isArray(GENERIC_TITLES[type]) && GENERIC_TITLES[type].includes(normalized);
+    }
+
     function definitionParts(block) {
         let term = String(block.term || block.title || '').trim();
         let separator = block.separator === ':' ? ':' : '—';
@@ -73,7 +117,7 @@
         if (type === 'heading') return '<h4 class="subsection-title">' + renderInline(block.title || block.content) + '</h4>';
         if (type === 'formula') {
             const latex = String(block.latex || block.content || '').trim();
-            return latex ? '<div class="formula-box">\\[' + escapeHtml(latex) + '\\]</div>' : '';
+            return latex ? '<div class="formula-box">' + renderTypeLabel(type) + '\\[' + escapeHtml(latex) + '\\]</div>' : '';
         }
         if (type === 'list') {
             const items = Array.isArray(block.items) ? block.items : String(block.content || '').split(/\r?\n/);
@@ -110,7 +154,8 @@
             const parts = definitionParts(block);
             const content = String(block.content || '').trim();
             const separator = parts.separator === ':' ? ': ' : ' — ';
-            const inner = (parts.term ? '<strong>' + renderInline(parts.term) + '</strong>' : '') +
+            const inner = renderTypeLabel(type) +
+                (parts.term ? '<strong>' + renderInline(parts.term) + '</strong>' : '') +
                 (parts.term && (content || (block.children || []).length) ? separator : '') +
                 (content ? renderInline(content) : '') +
                 renderChildren(block, depth || 0);
@@ -118,9 +163,10 @@
         }
         const title = String(block.title || '').trim();
         const content = String(block.content || '').trim();
-        const showTitle = type !== 'remark' && type !== 'derivation';
-        const inner = (showTitle && title ? '<strong>' + renderInline(title) + '</strong>' : '') +
-            (showTitle && title && content ? '<br>' : '') +
+        const showTitle = title && !isGenericTitle(type, title);
+        const inner = renderTypeLabel(type) +
+            (showTitle ? '<strong>' + renderInline(title) + '</strong>' : '') +
+            (showTitle && content ? '<br>' : '') +
             (content ? renderInline(content) : '') +
             renderChildren(block, depth || 0);
         if (type === 'derivation') {
@@ -184,5 +230,5 @@
         return '<li class="constructor-nav-item" data-constructor-nav="' + id + '"><a href="#' + id + '" class="nav-link">' + title + '</a></li>';
     }
 
-    return { escapeHtml, renderInline, safeImageSource, renderBlock, renderSection, renderNavItem };
+    return { TYPE_LABELS, escapeHtml, renderInline, safeImageSource, renderBlock, renderSection, renderNavItem };
 });

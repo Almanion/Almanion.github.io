@@ -945,6 +945,39 @@ body.dark-theme .page-header {
    ============================================ */
 
 /* РћРїСЂРµРґРµР»РµРЅРёСЏ */
+/* Semantic labels are real markup, so block types stay visible and accessible
+   in both the classic and experimental readers. */
+.constructor-note-block-label {
+    display: block;
+    width: fit-content;
+    margin: 0 0 0.7rem;
+    padding: 0.18rem 0.52rem;
+    border-radius: 6px;
+    background: color-mix(in srgb, currentColor 13%, transparent);
+    font-family: var(--font-sans, system-ui, sans-serif);
+    font-size: 0.68rem;
+    font-style: normal;
+    font-weight: 800;
+    letter-spacing: 0.055em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.definition-box > .constructor-note-block-label { color: var(--definition-border); }
+.formula-box > .constructor-note-block-label { color: var(--formula-border); }
+.remark-box > .constructor-note-block-label { color: var(--remark-border); }
+.reminder-box > .constructor-note-block-label { color: var(--definition-border); }
+.experiment-box > .constructor-note-block-label { color: var(--experiment-border); }
+.derivation-content > .constructor-note-block-label { color: var(--derivation-border); }
+.theorem-box > .constructor-note-block-label { color: var(--theorem-border); }
+.lemma-box > .constructor-note-block-label { color: var(--lemma-border); }
+.statement-box > .constructor-note-block-label { color: var(--statement-border); }
+.corollary-box > .constructor-note-block-label { color: var(--corollary-border); }
+.properties-box > .constructor-note-block-label { color: var(--definition-border); }
+.exercise-box > .constructor-note-block-label { color: var(--exercise-border); }
+.proof-content > .constructor-note-block-label { color: var(--proof-border); }
+.example-box > .constructor-note-block-label { color: var(--example-border); }
+
 .definition-box {
     background: var(--definition-bg);
     border-left: 4px solid var(--definition-border);
@@ -1002,8 +1035,6 @@ body:not(.no-hover) .formula-box:hover {
 /* Р—Р°РјРµС‡Р°РЅРёСЏ */
 .remark-box,
 .reminder-box {
-    background: var(--remark-bg);
-    border-left: 4px solid var(--remark-border);
     padding: 1.25rem;
     padding-right: 3.25rem; /* место под SVG-иконку, чтобы текст не налезал */
     margin: 1.25rem 0;
@@ -1016,6 +1047,16 @@ body:not(.no-hover) .formula-box:hover {
                 border-width 0.3s ease,
                 background-color 0.3s ease,
                 border-color 0.3s ease;
+}
+
+.remark-box {
+    background: var(--remark-bg);
+    border-left: 4px solid var(--remark-border);
+}
+
+.reminder-box {
+    background: color-mix(in srgb, var(--definition-bg) 82%, var(--bg-primary));
+    border-left: 4px solid var(--definition-border);
 }
 
 body:not(.no-hover) .remark-box:hover,
@@ -2636,7 +2677,7 @@ input:focus:not(:focus-visible) {
     right: 1rem;
     width: 22px;
     height: 22px;
-    background-color: var(--remark-border);
+    background-color: var(--definition-border);
     opacity: 0.55;
     -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3Cpath d='M8 2h8'/%3E%3C/svg%3E") no-repeat center / contain;
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3Cpath d='M8 2h8'/%3E%3C/svg%3E") no-repeat center / contain;

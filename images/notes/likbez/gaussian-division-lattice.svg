@@ -1,56 +1,69 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" role="img" aria-labelledby="title desc">
-  <title id="title">Квадратная решётка кратных гауссова числа b</title>
-  <desc id="desc">Ортогональные векторы b и ib одинаковой длины порождают квадратную решётку. Точка a соединена с ближайшим узлом qb вектором остатка r.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 650" role="img" aria-labelledby="title desc">
+  <title id="title">Геометрическое доказательство деления с остатком в гауссовых целых</title>
+  <desc id="desc">Слева число a делить на b округляется до ближайшего гауссова целого q. Справа умножение на b переносит единичную ячейку в квадратную ячейку решётки b умножить на Z от i; вектор от qb до a является остатком r.</desc>
   <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0 10 5 0 10Z" fill="#173f70"/>
-    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8.7" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#173f70"/></marker>
+    <marker id="arrow-teal" viewBox="0 0 10 10" refX="8.7" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#0b8f87"/></marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="8.7" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#d4674c"/></marker>
+    <clipPath id="right-clip"><rect x="582" y="92" width="477" height="438" rx="12"/></clipPath>
     <style>
-      .axis{stroke:#173f70;stroke-width:3;marker-end:url(#arrow)}
-      .lat{stroke:#9bb8d4;stroke-width:1.7}
-      .cell{fill:#0b8f87;opacity:.08;stroke:#0b8f87;stroke-width:2}
-      .basis{stroke:#0b8f87;stroke-width:5;marker-end:url(#arrow)}
-      .rem{stroke:#d4674c;stroke-width:5;stroke-dasharray:9 6;marker-end:url(#arrow)}
-      .node{fill:#173f70}
-      .near{fill:#0b8f87;stroke:#fff;stroke-width:3}
-      .point{fill:#d4674c;stroke:#fff;stroke-width:3}
-      .label{font:23px Georgia,serif;fill:#173f70}
-      .small{font:19px system-ui,sans-serif;fill:#415d7a}
+      .frame{fill:#fbfdff;stroke:#d6e1ed;stroke-width:2}.panel{fill:#fff;stroke:#d6e1ed;stroke-width:2}
+      .grid{stroke:#c5d3e1;stroke-width:1.4}.cell{fill:#e8f5f3;stroke:#0b8f87;stroke-width:2.5}
+      .radius{fill:none;stroke:#7aa9a5;stroke-width:1.7;stroke-dasharray:7 7}.component{stroke:#d49b8d;stroke-width:1.6;stroke-dasharray:5 5}
+      .basis{stroke:#0b8f87;stroke-width:4;marker-end:url(#arrow-teal)}.remainder{stroke:#d4674c;stroke-width:5;marker-end:url(#arrow-red)}
+      .flow{stroke:#173f70;stroke-width:3;marker-end:url(#arrow-blue)}.node{fill:#173f70}.chosen{fill:#0b8f87;stroke:#fff;stroke-width:3}.point{fill:#d4674c;stroke:#fff;stroke-width:3}
+      .heading{font:700 22px system-ui,sans-serif;fill:#173f70}.label{font:21px Georgia,serif;fill:#173f70}
+      .small{font:16px system-ui,sans-serif;fill:#526b84}.formula{font:20px Georgia,serif;fill:#173f70}.result{font:700 20px system-ui,sans-serif;fill:#08746e}
     </style>
   </defs>
 
-  <path class="axis" d="M55 500H850"/>
-  <path class="axis" d="M180 585V48"/>
+  <rect class="frame" x="18" y="18" width="1064" height="614" rx="18"/>
+  <text class="heading" x="50" y="61">1. Округляем  z = a/b  в решётке ℤ[i]</text>
+  <text class="heading" x="605" y="61">2. Умножаем картину на b</text>
+  <rect class="panel" x="35" y="86" width="490" height="450" rx="14"/>
+  <rect class="panel" x="575" y="86" width="490" height="450" rx="14"/>
 
-  <!-- Локальная квадратная сетка повёрнута вместе с b. Шаг равен |b|. -->
-  <g transform="translate(180 480) rotate(-26.565)">
-    <path class="cell" d="M0 0H179V-179H0Z"/>
-    <g class="lat" aria-hidden="true">
-      <path d="M-358 -537V358M-179 -537V358M0 -537V358M179 -537V358M358 -537V358M537 -537V358M716 -537V358"/>
-      <path d="M-358 -537H716M-358 -358H716M-358 -179H716M-358 0H716M-358 179H716M-358 358H716"/>
-    </g>
+  <g>
+    <path class="grid" d="M70 110V520M170 110V520M270 110V520M370 110V520M470 110V520M55 120H505M55 220H505M55 320H505M55 420H505M55 520H505"/>
+    <rect class="cell" x="220" y="270" width="100" height="100" rx="3"/>
+    <path class="component" d="M270 290H306M306 290V320"/>
+    <path class="remainder" d="M270 320L303 292"/>
     <g class="node">
-      <circle cx="-179" cy="179" r="7"/><circle cx="0" cy="179" r="7"/><circle cx="179" cy="179" r="7"/><circle cx="358" cy="179" r="7"/><circle cx="537" cy="179" r="7"/>
-      <circle cx="-179" cy="0" r="7"/><circle cx="0" cy="0" r="7"/><circle cx="179" cy="0" r="7"/><circle cx="358" cy="0" r="7"/><circle cx="537" cy="0" r="7"/>
-      <circle cx="-179" cy="-179" r="7"/><circle cx="0" cy="-179" r="7"/><circle cx="179" cy="-179" r="7"/><circle cx="358" cy="-179" r="7"/><circle cx="537" cy="-179" r="7"/>
-      <circle cx="-179" cy="-358" r="7"/><circle cx="0" cy="-358" r="7"/><circle cx="179" cy="-358" r="7"/><circle cx="358" cy="-358" r="7"/><circle cx="537" cy="-358" r="7"/>
+      <circle cx="70" cy="120" r="5"/><circle cx="170" cy="120" r="5"/><circle cx="270" cy="120" r="5"/><circle cx="370" cy="120" r="5"/><circle cx="470" cy="120" r="5"/>
+      <circle cx="70" cy="220" r="5"/><circle cx="170" cy="220" r="5"/><circle cx="270" cy="220" r="5"/><circle cx="370" cy="220" r="5"/><circle cx="470" cy="220" r="5"/>
+      <circle cx="70" cy="320" r="5"/><circle cx="170" cy="320" r="5"/><circle cx="370" cy="320" r="5"/><circle cx="470" cy="320" r="5"/>
+      <circle cx="70" cy="420" r="5"/><circle cx="170" cy="420" r="5"/><circle cx="270" cy="420" r="5"/><circle cx="370" cy="420" r="5"/><circle cx="470" cy="420" r="5"/>
+      <circle cx="70" cy="520" r="5"/><circle cx="170" cy="520" r="5"/><circle cx="270" cy="520" r="5"/><circle cx="370" cy="520" r="5"/><circle cx="470" cy="520" r="5"/>
     </g>
+    <circle class="chosen" cx="270" cy="320" r="10"/><circle class="point" cx="306" cy="290" r="10"/>
+    <text class="label" x="244" y="350">q</text><text class="label" x="316" y="283">z = a/b</text><text class="label" x="293" y="336">δ = z − q</text>
+    <text class="small" x="326" y="314">Re δ</text><text class="small" x="312" y="304" transform="rotate(-90 312 304)">Im δ</text>
+    <text class="formula" x="72" y="471">|Re δ| ≤ 1/2,   |Im δ| ≤ 1/2</text><text class="result" x="133" y="503">|δ|² ≤ 1/2</text>
   </g>
 
-  <!-- b=(160,-80), ib=(-80,-160): одинаковая длина и нулевое скалярное произведение. -->
-  <path class="basis" d="M180 480L340 400"/>
-  <path class="basis" d="M180 480L100 320"/>
+  <path class="flow" d="M523 214H570"/><text class="small" x="546" y="186" text-anchor="middle">× b</text>
+  <text class="small" x="550" y="247" text-anchor="middle">поворот</text><text class="small" x="550" y="267" text-anchor="middle">и масштаб</text>
 
-  <circle class="near" cx="260" cy="240" r="12"/>
-  <circle class="point" cx="230" cy="315" r="12"/>
-  <path class="rem" d="M260 240L233 307"/>
+  <g clip-path="url(#right-clip)">
+    <g transform="translate(810 330) rotate(-26.565)">
+      <path class="grid" d="M-330 -330V330M-220 -330V330M-110 -330V330M0 -330V330M110 -330V330M220 -330V330M330 -330V330M-330 -330H330M-330 -220H330M-330 -110H330M-330 0H330M-330 110H330M-330 220H330M-330 330H330"/>
+      <rect class="cell" x="-55" y="-55" width="110" height="110" rx="3"/><circle class="radius" cx="0" cy="0" r="77.78"/>
+      <path class="basis" d="M0 0H110"/><path class="basis" d="M0 0V-110"/><path class="remainder" d="M0 0L39.6 -30.8"/>
+      <g class="node">
+        <circle cx="-220" cy="-220" r="5"/><circle cx="-110" cy="-220" r="5"/><circle cx="0" cy="-220" r="5"/><circle cx="110" cy="-220" r="5"/><circle cx="220" cy="-220" r="5"/>
+        <circle cx="-220" cy="-110" r="5"/><circle cx="-110" cy="-110" r="5"/><circle cx="0" cy="-110" r="5"/><circle cx="110" cy="-110" r="5"/><circle cx="220" cy="-110" r="5"/>
+        <circle cx="-220" cy="0" r="5"/><circle cx="-110" cy="0" r="5"/><circle cx="110" cy="0" r="5"/><circle cx="220" cy="0" r="5"/>
+        <circle cx="-220" cy="110" r="5"/><circle cx="-110" cy="110" r="5"/><circle cx="0" cy="110" r="5"/><circle cx="110" cy="110" r="5"/><circle cx="220" cy="110" r="5"/>
+        <circle cx="-220" cy="220" r="5"/><circle cx="-110" cy="220" r="5"/><circle cx="0" cy="220" r="5"/><circle cx="110" cy="220" r="5"/><circle cx="220" cy="220" r="5"/>
+      </g>
+    </g>
+  </g>
+  <circle class="chosen" cx="810" cy="330" r="10"/><circle class="point" cx="832" cy="285" r="10"/>
+  <text class="label" x="773" y="363">qb</text><text class="label" x="844" y="279">a</text><text class="label" x="842" y="319">r = a − qb</text>
+  <text class="label" x="916" y="292">b</text><text class="label" x="730" y="225">ib</text>
+  <text class="small" x="890" y="404">радиус до вершины:</text><text class="formula" x="913" y="430">|b|/√2</text>
+  <text class="small" x="615" y="505">узлы (k+ℓi)b; векторы b и ib перпендикулярны и равны по длине</text>
 
-  <text class="label" x="824" y="534">Re</text>
-  <text class="label" x="196" y="67">Im</text>
-  <text class="label" x="350" y="398">b</text>
-  <text class="label" x="75" y="305">ib</text>
-  <text class="label" x="274" y="225">qb</text>
-  <text class="label" x="205" y="349">a</text>
-  <text class="label" x="278" y="286">r = a − qb</text>
-  <text class="small" x="505" y="574">узлы: (k + ℓi)b, k, ℓ ∈ ℤ</text>
+  <rect x="56" y="562" width="988" height="48" rx="10" fill="#e8f5f3"/>
+  <text class="result" x="550" y="593" text-anchor="middle">r = bδ   ⇒   N(r) = N(b)|δ|² ≤ N(b)/2 &lt; N(b)</text>
 </svg>

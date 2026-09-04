@@ -127,10 +127,6 @@
             block.separator = separator;
             block.title = '';
         }
-        if ((type === 'remark' || type === 'derivation') && block.title) {
-            block.content = block.title + (block.content ? '\n' + block.content : '');
-            block.title = '';
-        }
         if (type === 'reminder' && !block.title) block.title = 'Напоминание';
         if (type === 'formula') block.latex = String(source.latex || source.content || '');
         if (type === 'image') {

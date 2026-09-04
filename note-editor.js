@@ -104,7 +104,7 @@
 
     function loadDependencies() {
         if (!dependenciesPromise) {
-            dependenciesPromise = loadScript('constructor/model.js?v=20260904-inline-3', () => !!window.NoteModel)
+            dependenciesPromise = loadScript('constructor/model.js?v=20260904-inline-4', () => !!window.NoteModel)
                 .then(() => loadScript('constructor/storage.js?v=20260904-inline-2', () => !!window.NoteStorage));
         }
         return dependenciesPromise;

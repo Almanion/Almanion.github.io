@@ -75,7 +75,7 @@ function testRenderer() {
     const html = Renderer.renderSection(section);
     assert.ok(html.includes('&lt;script&gt;'));
     assert.ok(html.includes('<strong>Энергия</strong>'));
-    assert.ok(html.includes('<div class="definition-box"><strong>Кинетическая энергия</strong> — энергия движения</div>'));
+    assert.ok(html.includes('<div class="definition-box"><span class="constructor-note-block-label" data-note-block-type="definition">Определение</span> <strong>Кинетическая энергия</strong> — энергия движения</div>'));
     assert.ok(html.includes('E &amp;= mc^2'));
     assert.ok(!html.includes('javascript:'));
     assert.ok(html.includes('<article id="safe-section" class="topic constructor-topic">'));
@@ -91,10 +91,11 @@ function testRenderer() {
     );
     const nestedDefinition = Object.assign(Model.createBlock('definition'), { term: 'Сила', separator: ':', content: 'мера взаимодействия' });
     nestedDefinition.children.push(Object.assign(Model.createBlock('formula'), { latex: 'F = ma' }));
-    assert.strictEqual(Renderer.renderBlock(nestedDefinition, 0), '<div class="definition-box"><strong>Сила</strong>: мера взаимодействия<div class="formula-box">\\[F = ma\\]</div></div>');
-    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('remark'), { title: 'Лишний заголовок', content: 'Только текст' }), 0), '<div class="remark-box">Только текст</div>');
-    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('reminder'), { content: 'Вспомним определение.' }), 0), '<div class="reminder-box"><strong>Напоминание</strong><br>Вспомним определение.</div>');
-    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('corollary'), { title: 'Следствие', content: 'Результат.' }), 0), '<div class="corollary-box"><strong>Следствие</strong><br>Результат.</div>');
+    assert.strictEqual(Renderer.renderBlock(nestedDefinition, 0), '<div class="definition-box"><span class="constructor-note-block-label" data-note-block-type="definition">Определение</span> <strong>Сила</strong>: мера взаимодействия<div class="formula-box"><span class="constructor-note-block-label" data-note-block-type="formula">Формула</span> \\[F = ma\\]</div></div>');
+    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('remark'), { title: 'Замечание', content: 'Только текст' }), 0), '<div class="remark-box"><span class="constructor-note-block-label" data-note-block-type="remark">Замечание</span> Только текст</div>');
+    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('remark'), { title: 'О границах применимости', content: 'Только текст' }), 0), '<div class="remark-box"><span class="constructor-note-block-label" data-note-block-type="remark">Замечание</span> <strong>О границах применимости</strong><br>Только текст</div>');
+    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('reminder'), { content: 'Вспомним определение.' }), 0), '<div class="reminder-box"><span class="constructor-note-block-label" data-note-block-type="reminder">Напоминание</span> Вспомним определение.</div>');
+    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('corollary'), { title: 'Следствие', content: 'Результат.' }), 0), '<div class="corollary-box"><span class="constructor-note-block-label" data-note-block-type="corollary">Следствие</span> Результат.</div>');
     assert.strictEqual(Renderer.safeImageSource('//example.com/track.png'), '');
 }
 
@@ -165,6 +166,22 @@ function testNumberTheoryStructure() {
     assert.strictEqual(section.subsections[0].children[0].type, 'reminder');
     assert.strictEqual(section.subsections[5].children.find(block => block.id === 'gaussian-norm').type, 'definition');
     assert.strictEqual(section.subsections[5].children.find(block => block.id === 'norm-properties').type, 'properties');
+
+    const visit = block => {
+        if (Renderer.TYPE_LABELS[block.type]) {
+            const html = Renderer.renderBlock(block, 0);
+            assert.ok(
+                html.includes(`data-note-block-type="${block.type}"`),
+                `${block.id}: смысловой блок ${block.type} должен иметь явную подпись типа`
+            );
+        }
+        if (block.type === 'definition') {
+            assert.ok(String(block.term || '').trim(), `${block.id}: у определения должен быть термин`);
+        }
+        (block.children || []).forEach(visit);
+    };
+    section.blocks.forEach(visit);
+    section.subsections.forEach(subsection => (subsection.children || []).forEach(visit));
 }
 
 testModel();

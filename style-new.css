@@ -38,7 +38,7 @@ body.experimental {
     --t-statement: #71717a; --t-corollary: #71717a; --t-example: #71717a;
     --t-formula: #71717a; --t-proof: #71717a; --t-derivation: #71717a;
     --t-experiment: #71717a; --t-exercise: #71717a; --t-properties: #71717a;
-    --t-system: #71717a; --t-remark: #ca8a04;
+    --t-system: #71717a; --t-remark: #ca8a04; --t-reminder: #71717a;
 
     /* ---- РЕМАП легаси-переменных на --exp-* ---- */
     --bg-primary: var(--exp-bg);
@@ -137,7 +137,7 @@ body.experimental.exp-prism {
     --t-statement: #6366f1; --t-corollary: #64748b; --t-example: #ea580c;
     --t-formula: #4f46e5; --t-proof: #16a34a; --t-derivation: #16a34a;
     --t-experiment: #9333ea; --t-exercise: #475569; --t-properties: #2563eb;
-    --t-system: #475569; --t-remark: #ca8a04;
+    --t-system: #475569; --t-remark: #ca8a04; --t-reminder: #0284c7;
 }
 
 /* ---- ПРИЗМА · тёмная ---- */
@@ -160,7 +160,7 @@ body.experimental.exp-prism.exp-dark {
     --t-statement: #818cf8; --t-corollary: #94a3b8; --t-example: #fb923c;
     --t-formula: #818cf8; --t-proof: #4ade80; --t-derivation: #4ade80;
     --t-experiment: #c084fc; --t-exercise: #94a3b8; --t-properties: #60a5fa;
-    --t-system: #94a3b8; --t-remark: #facc15;
+    --t-system: #94a3b8; --t-remark: #facc15; --t-reminder: #38bdf8;
 }
 
 /* ---- Нейтральные токены типов для ТЁМНОГО Графита ----
@@ -170,7 +170,7 @@ body.experimental.exp-dark {
     --t-statement: #a1a1aa; --t-corollary: #a1a1aa; --t-example: #a1a1aa;
     --t-formula: #a1a1aa; --t-proof: #a1a1aa; --t-derivation: #a1a1aa;
     --t-experiment: #a1a1aa; --t-exercise: #a1a1aa; --t-properties: #a1a1aa;
-    --t-system: #a1a1aa; --t-remark: #facc15;
+    --t-system: #a1a1aa; --t-remark: #facc15; --t-reminder: #a1a1aa;
 }
 
 /* ---- Тёмные тени ---- */
@@ -537,6 +537,7 @@ body.experimental .exercise-box::before    { content: "Упражнение"; co
 body.experimental .properties-box::before  { content: "Свойства"; color: var(--t-properties); }
 body.experimental .system-box::before      { content: "Система"; color: var(--t-system); }
 body.experimental .remark-box::before      { content: "Замечание"; color: var(--t-remark); }
+body.experimental .reminder-box::before    { content: "Напоминание"; color: var(--t-reminder); }
 body.experimental .example-box > strong:first-child { color: var(--t-example) !important; }
 
 body.experimental .definition-box::before,
@@ -553,6 +554,7 @@ body.experimental .exercise-box::before,
 body.experimental .properties-box::before,
 body.experimental .system-box::before,
 body.experimental .remark-box::before,
+body.experimental .reminder-box::before,
 body.experimental .example-box > strong:first-child {
     display: block;
     width: fit-content;
@@ -581,6 +583,7 @@ body.experimental .example-box:has(> strong:first-child)::before {
    Сбрасываем угловые SVG-иконки старого режима: их маски иначе обрезают текст
    ярлыка, а фиксированные height/opacity нарушают размеры и контраст чипа. */
 body.experimental .remark-box::before,
+body.experimental .reminder-box::before,
 body.experimental .example-box::before {
     -webkit-mask: none !important;
     mask: none !important;
@@ -589,17 +592,40 @@ body.experimental .example-box::before {
     opacity: 1 !important;
 }
 
-/* У этих блоков содержание само задаёт контекст: термин определения,
-   формула, текст замечания или ход вывода. Повторяющий его ярлык занимал
-   место и отличал материал конструктора от ручной разметки. */
-body.experimental .definition-box::before,
-body.experimental .formula-box::before,
-body.experimental .remark-box::before,
-body.experimental .reminder-box::before,
-body.experimental .derivation-box::before {
+/* Конструктор выводит семантический ярлык настоящим элементом разметки:
+   это доступнее, работает в обоих режимах и не зависит от псевдоэлемента. */
+body.experimental .constructor-topic .definition-box::before,
+body.experimental .constructor-topic .formula-box::before,
+body.experimental .constructor-topic .remark-box::before,
+body.experimental .constructor-topic .reminder-box::before,
+body.experimental .constructor-topic .derivation-box::before,
+body.experimental .constructor-topic .theorem-box::before,
+body.experimental .constructor-topic .lemma-box::before,
+body.experimental .constructor-topic .statement-box::before,
+body.experimental .constructor-topic .corollary-box::before,
+body.experimental .constructor-topic .example-box::before,
+body.experimental .constructor-topic .proof-box::before,
+body.experimental .constructor-topic .experiment-box::before,
+body.experimental .constructor-topic .exercise-box::before,
+body.experimental .constructor-topic .properties-box::before {
     content: none !important;
     display: none !important;
 }
+
+body.experimental .definition-box > .constructor-note-block-label { color: var(--t-definition); }
+body.experimental .formula-box > .constructor-note-block-label { color: var(--t-formula); }
+body.experimental .remark-box > .constructor-note-block-label { color: var(--t-remark); }
+body.experimental .reminder-box > .constructor-note-block-label { color: var(--t-reminder); }
+body.experimental .experiment-box > .constructor-note-block-label { color: var(--t-experiment); }
+body.experimental .derivation-content > .constructor-note-block-label { color: var(--t-derivation); }
+body.experimental .theorem-box > .constructor-note-block-label { color: var(--t-theorem); }
+body.experimental .lemma-box > .constructor-note-block-label { color: var(--t-lemma); }
+body.experimental .statement-box > .constructor-note-block-label { color: var(--t-statement); }
+body.experimental .corollary-box > .constructor-note-block-label { color: var(--t-corollary); }
+body.experimental .properties-box > .constructor-note-block-label { color: var(--t-properties); }
+body.experimental .exercise-box > .constructor-note-block-label { color: var(--t-exercise); }
+body.experimental .proof-content > .constructor-note-block-label { color: var(--t-proof); }
+body.experimental .example-box > .constructor-note-block-label { color: var(--t-example); }
 
 /* Вложенный proof внутри теоремы/леммы — компактный ярлык */
 body.experimental .theorem-box > .proof-box,
