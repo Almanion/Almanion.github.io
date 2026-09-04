@@ -341,7 +341,7 @@
                   "title": "Геометрическая интерпретация",
                   "content": "",
                   "children": [],
-                  "src": "images/notes/likbez/quadratic-reciprocity-lattice.svg",
+                  "src": "images/notes/likbez/quadratic-reciprocity-lattice.svg?v=20260905-1",
                   "alt": "Схема подсчёта целых точек под прямой для квадратичного закона взаимности",
                   "caption": "Для примера \\(p=11\\), \\(q=7\\): отмечены точки \\((2i,j)\\), где \\(1\\le i\\le(p-1)/2\\) и \\(1\\le j\\le\\lfloor2qi/p\\rfloor\\). Их число равно сумме из леммы Эйзенштейна."
                 }
