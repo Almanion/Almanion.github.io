@@ -9,7 +9,7 @@
     {
       "id": "lte-i-teorema-dirihle",
       "type": "subsection",
-      "title": "§ 1. Лемма",
+      "title": "§ 1. Лемма об уточнении показателя",
       "content": "",
       "children": [
         {
@@ -1353,9 +1353,9 @@
     }
   ],
   "order": 2,
-  "revision": 28,
+  "revision": 29,
   "createdAt": 1788535467260,
-  "updatedAt": 1788556303430,
+  "updatedAt": 1788559076595,
   "updatedBy": "2M2ZdLQcJAhluPjUVFNJ6MyQrdH2",
   "reviewStatus": "published"
 }
