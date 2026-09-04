@@ -403,6 +403,7 @@
         }
 
         .subject-card {
+            --subject-color: var(--accent-color);
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
             border-radius: 16px;
@@ -444,13 +445,16 @@
             opacity: 1;
         }
 
-        body:not(.no-hover) .subject-card[data-subject="physics"]:hover::before { color: #3b82f6; }
-        body:not(.no-hover) .subject-card[data-subject="physics-exam"]:hover::before { color: #8b5cf6; }
-        body:not(.no-hover) .subject-card[data-subject="chemistry"]:hover::before { color: #10b981; }
-        body:not(.no-hover) .subject-card[data-subject="math"]:hover::before { color: #f59e0b; }
-        body:not(.no-hover) .subject-card[data-subject="geometry"]:hover::before { color: #6366f1; }
-        body:not(.no-hover) .subject-card[data-subject="likbez"]:hover::before { color: #ec4899; }
-        body:not(.no-hover) .subject-card[data-subject="literature"]:hover::before { color: #a16207; }
+        .subject-card[data-subject="physics"] { --subject-color: #4777a0; }
+        .subject-card[data-subject="physics-exam"] { --subject-color: #69668f; }
+        .subject-card[data-subject="chemistry"] { --subject-color: #427a67; }
+        .subject-card[data-subject="math"] { --subject-color: #9b6928; }
+        .subject-card[data-subject="geometry"] { --subject-color: #68609a; }
+        .subject-card[data-subject="likbez"] { --subject-color: #735d7e; }
+        .subject-card[data-subject="literature"] { --subject-color: #935f50; }
+        .subject-card[data-subject="matcenter"] { --subject-color: #58668e; }
+
+        body:not(.no-hover) .subject-card:hover::before { color: var(--subject-color); }
 
         .card-header {
             background: transparent;
@@ -464,23 +468,20 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--accent-color, #2563eb);
-            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+            width: 76px;
+            height: 76px;
+            margin-inline: auto;
+            color: var(--subject-color);
+            background: color-mix(in srgb, var(--subject-color) 9%, var(--bg-secondary));
+            border: 1px solid color-mix(in srgb, var(--subject-color) 22%, var(--border-color));
+            border-radius: 20px;
         }
 
         .subject-icon svg {
-            width: 64px;
-            height: 64px;
+            width: 44px;
+            height: 44px;
             display: block;
         }
-
-        .subject-card[data-subject="physics"] .subject-icon { color: #3b82f6; }
-        .subject-card[data-subject="physics-exam"] .subject-icon { color: #8b5cf6; }
-        .subject-card[data-subject="chemistry"] .subject-icon { color: #10b981; }
-        .subject-card[data-subject="math"] .subject-icon { color: #f59e0b; }
-        .subject-card[data-subject="geometry"] .subject-icon { color: #6366f1; }
-        .subject-card[data-subject="likbez"] .subject-icon { color: #ec4899; }
-        .subject-card[data-subject="literature"] .subject-icon { color: #a16207; }
 
         .card-body {
             padding: 1.5rem 2rem 2rem;
@@ -535,12 +536,15 @@
 
             .subject-icon {
                 margin-bottom: 0;
+                width: 42px;
+                height: 42px;
+                border-radius: 12px;
                 filter: none; /* Drop-shadow на иконке съедает производительность */
             }
 
             .subject-icon svg {
-                width: 32px;
-                height: 32px;
+                width: 25px;
+                height: 25px;
             }
 
             .card-body {
@@ -585,8 +589,8 @@
             }
 
             .subject-icon svg {
-                width: 28px;
-                height: 28px;
+                width: 23px;
+                height: 23px;
             }
 
             .card-body {
@@ -607,8 +611,8 @@
                 min-width: 52px;
             }
             .subject-icon svg {
-                width: 26px;
-                height: 26px;
+                width: 22px;
+                height: 22px;
             }
             .subject-card h2 {
                 font-size: 0.95rem;
@@ -823,15 +827,51 @@
 </head>
 <body class="home-page">
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <symbol id="academic-site" viewBox="0 0 24 24">
+            <path d="M3.75 5.25c3.25-.85 5.9-.22 8.25 1.55v12.05c-2.35-1.77-5-2.4-8.25-1.55V5.25Z"/>
+            <path d="M20.25 5.25c-3.25-.85-5.9-.22-8.25 1.55v12.05c2.35-1.77 5-2.4 8.25-1.55V5.25Z"/>
+            <path d="M12 6.8v12.05M7.25 4.8v4.5l1.6-.9 1.6.9V5.75"/>
+        </symbol>
+        <symbol id="academic-physics" viewBox="0 0 24 24">
+            <circle cx="5.2" cy="18.5" r="1.45" fill="currentColor" stroke="none"/>
+            <path d="M5.2 18.5C8.1 9.7 13.2 5.25 20.3 6.2M16.8 4.4l3.5 1.8-2.7 2.85M8.2 20.5h11.5"/>
+        </symbol>
+        <symbol id="academic-chemistry" viewBox="0 0 24 24">
+            <path d="M9 3.75v5.7L4.7 17.2a2.15 2.15 0 0 0 1.88 3.2h10.84a2.15 2.15 0 0 0 1.88-3.2L15 9.45v-5.7M8 3.75h8M7.35 14.4h9.3"/>
+            <circle cx="10" cy="17.2" r=".75" fill="currentColor" stroke="none"/>
+            <circle cx="14.25" cy="18.15" r=".55" fill="currentColor" stroke="none"/>
+        </symbol>
+        <symbol id="academic-algebra" viewBox="0 0 24 24">
+            <path d="m5.25 8 7 9m0-9-7 9M15.5 7.45c.12-1.32 1.04-2.2 2.34-2.2 1.17 0 2.08.73 2.08 1.8 0 .9-.56 1.45-1.4 2.04l-3.02 2.06h4.55"/>
+        </symbol>
+        <symbol id="academic-geometry" viewBox="0 0 24 24">
+            <path d="M4.5 19.5h15L7.7 5.2 4.5 19.5ZM4.9 15.5a4.1 4.1 0 0 1 4.05 4"/>
+            <circle cx="7.7" cy="5.2" r="1" fill="currentColor" stroke="none"/>
+        </symbol>
+        <symbol id="academic-literature" viewBox="0 0 24 24">
+            <path d="M3.8 5.4c3.25-.85 5.9-.22 8.2 1.5v12c-2.3-1.72-4.95-2.35-8.2-1.5v-12ZM20.2 5.4c-3.25-.85-5.9-.22-8.2 1.5v12c2.3-1.72 4.95-2.35 8.2-1.5v-12M12 6.9v12M6.7 9.2v2.15h1.8M15.6 9.2v2.15h1.8"/>
+        </symbol>
+        <symbol id="academic-likbez" viewBox="0 0 24 24">
+            <path d="m7 7 5 5m5-5-5 5m0 0-5 5m5-5 5 5"/>
+            <circle cx="7" cy="7" r="2.25"/><circle cx="17" cy="7" r="2.25"/><circle cx="7" cy="17" r="2.25"/><circle cx="17" cy="17" r="2.25"/>
+            <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>
+        </symbol>
+        <symbol id="academic-matcenter" viewBox="0 0 24 24">
+            <rect x="4.5" y="4.5" width="6" height="6" rx="1.35"/><rect x="13.5" y="4.5" width="6" height="6" rx="1.35"/><rect x="4.5" y="13.5" width="6" height="6" rx="1.35"/><rect x="13.5" y="13.5" width="6" height="6" rx="1.35"/>
+            <path d="m14.85 16.45 1.35 1.35 2.55-3.05"/>
+        </symbol>
+        <symbol id="academic-physics-exam" viewBox="0 0 24 24">
+            <circle cx="5" cy="15.5" r="1.3" fill="currentColor" stroke="none"/>
+            <path d="M5 15.5C7.2 8.7 11.1 5.45 16.65 6.1M14.05 4.55l2.6 1.55-2.15 2.15M12.8 17.1l2.25 2.15 4.35-5.1"/>
+        </symbol>
+    </svg>
     <!-- Кнопка настроек создается автоматически через settings.js -->
 
     <div class="home-container">
         <div class="home-header">
             <h1>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M3 12l9-9 9 9"/>
-                    <path d="M5 10v10h14V10"/>
-                </svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-site"/></svg>
                 <span>Конспекты</span>
             </h1>
 
@@ -864,7 +904,7 @@
                 <div class="subjects-grid">
                     <a href="physics.html" class="subject-card" data-subject="physics">
                         <div class="card-header">
-                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1.5" fill="currentColor"/><ellipse cx="12" cy="12" rx="9.5" ry="3.3"/><ellipse cx="12" cy="12" rx="9.5" ry="3.3" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9.5" ry="3.3" transform="rotate(120 12 12)"/></svg></div>
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-physics"/></svg></div>
                         </div>
                         <div class="card-body">
                             <h2>Физика</h2>
@@ -878,7 +918,7 @@
 
                     <a href="chemistry.html" class="subject-card" data-subject="chemistry">
                         <div class="card-header">
-                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v6L3.5 18a2 2 0 0 0 1.75 3h13.5a2 2 0 0 0 1.75-3L15 9V3"/><line x1="8" y1="3" x2="16" y2="3"/><path d="M6.5 14h11"/><circle cx="10" cy="17" r="0.6" fill="currentColor"/><circle cx="13.5" cy="18.5" r="0.5" fill="currentColor"/></svg></div>
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-chemistry"/></svg></div>
                         </div>
                         <div class="card-body">
                             <h2>Химия</h2>
@@ -892,7 +932,7 @@
 
                     <a href="math.html" class="subject-card" data-subject="math">
                         <div class="card-header">
-                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="3" x2="4" y2="20"/><line x1="4" y1="20" x2="21" y2="20"/><path d="M7 5 C9 20 15 20 17 5"/></svg></div>
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-algebra"/></svg></div>
                         </div>
                         <div class="card-body">
                             <h2>Алгебра</h2>
@@ -906,7 +946,7 @@
 
                     <a href="geometry.html" class="subject-card" data-subject="geometry">
                         <div class="card-header">
-                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polygon points="5.5 16.5 18.5 16.5 12 5"/><circle cx="12" cy="12" r="0.9" fill="currentColor"/></svg></div>
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-geometry"/></svg></div>
                         </div>
                         <div class="card-body">
                             <h2>Геометрия</h2>
@@ -920,7 +960,7 @@
 
                     <a href="physics-exam.html" class="subject-card" data-subject="physics-exam">
                         <div class="card-header">
-                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg></div>
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-physics-exam"/></svg></div>
                         </div>
                         <div class="card-body">
                             <h2>Физика билеты</h2>
@@ -938,7 +978,7 @@
                 <div class="subjects-grid">
                     <a href="physics-10.html" class="subject-card" data-subject="physics">
                         <div class="card-header">
-                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1.5" fill="currentColor"/><ellipse cx="12" cy="12" rx="9.5" ry="3.3"/><ellipse cx="12" cy="12" rx="9.5" ry="3.3" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9.5" ry="3.3" transform="rotate(120 12 12)"/></svg></div>
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-physics"/></svg></div>
                         </div>
                         <div class="card-body">
                             <h2>Физика</h2>
@@ -948,7 +988,7 @@
 
                     <a href="chemistry-10.html" class="subject-card" data-subject="chemistry">
                         <div class="card-header">
-                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v6L3.5 18a2 2 0 0 0 1.75 3h13.5a2 2 0 0 0 1.75-3L15 9V3"/><line x1="8" y1="3" x2="16" y2="3"/><path d="M6.5 14h11"/><circle cx="10" cy="17" r="0.6" fill="currentColor"/><circle cx="13.5" cy="18.5" r="0.5" fill="currentColor"/></svg></div>
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-chemistry"/></svg></div>
                         </div>
                         <div class="card-body">
                             <h2>Химия</h2>
@@ -958,7 +998,7 @@
 
                     <a href="literature-10.html" class="subject-card" data-subject="literature">
                         <div class="card-header">
-                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h7"/></svg></div>
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-literature"/></svg></div>
                         </div>
                         <div class="card-body">
                             <h2>Литература</h2>
@@ -977,7 +1017,7 @@
                 <div class="subjects-grid">
                     <a href="matcenter.html" class="subject-card" data-subject="matcenter">
                         <div class="card-header">
-                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4H8l4 8-4 8h8"/></svg></div>
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-matcenter"/></svg></div>
                         </div>
                         <div class="card-body">
                             <h2>МатЦентр</h2>
@@ -991,7 +1031,7 @@
 
                     <a href="likbez.html" class="subject-card" data-subject="likbez">
                         <div class="card-header">
-                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/><path d="M22 10v6"/></svg></div>
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-likbez"/></svg></div>
                         </div>
                         <div class="card-body">
                             <h2>Ликбезы</h2>

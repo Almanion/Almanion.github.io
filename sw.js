@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-04-eisenstein-figure-34';
+const CACHE_VERSION = 'almanion-pwa-2026-09-04-academic-icons-35';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -71,8 +71,10 @@ const APP_SHELL = [
     '/favicons/favicon-ch.svg',
     '/favicons/favicon-geo.svg',
     '/favicons/favicon-lik.svg',
+    '/favicons/favicon-lit.svg',
     '/favicons/favicon-mc.svg',
     '/favicons/favicon-ph.svg',
+    '/favicons/favicon-ph-exam.svg',
     '/math.html',
     '/physics.html',
     '/physics-10.html',

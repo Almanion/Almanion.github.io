@@ -130,12 +130,17 @@ body.admin-page.experimental.exp-dark {
 }
 
 .admin-home-link {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
     color: var(--accent);
     font-size: .82rem;
     font-weight: 750;
     letter-spacing: .015em;
     text-decoration: none;
 }
+
+.admin-home-link svg { width: 21px; height: 21px; flex: none; }
 
 .admin-header-divider { width: 1px; height: 24px; background: var(--border); }
 

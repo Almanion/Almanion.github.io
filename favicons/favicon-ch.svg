@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect x="4" y="4" width="5" height="25" rx="2" fill="#bf360c"/>
-  <rect x="8" y="4" width="20" height="25" rx="2" fill="#e64a19"/>
-  <rect x="11" y="7" width="2" height="19" rx="1" fill="#ff8a65" opacity="0.6"/>
-  <rect x="26" y="5" width="2" height="23" rx="1" fill="#fbe9e7" opacity="0.7"/>
-  <text x="17" y="17" text-anchor="middle" dominant-baseline="central"
-        font-family="Georgia, serif" font-size="13" font-weight="bold" fill="white">&#x0425;</text>
+  <title>Химия</title>
+  <rect x="1.5" y="1.5" width="29" height="29" rx="8" fill="#EDF5F1" stroke="#D2E3DB"/>
+  <g transform="translate(4 4)" fill="none" stroke="#427A67" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 3.75v5.7L4.7 17.2a2.15 2.15 0 0 0 1.88 3.2h10.84a2.15 2.15 0 0 0 1.88-3.2L15 9.45v-5.7M8 3.75h8M7.35 14.4h9.3"/>
+    <circle cx="10" cy="17.2" r=".75" fill="#427A67" stroke="none"/>
+    <circle cx="14.25" cy="18.15" r=".55" fill="#427A67" stroke="none"/>
+  </g>
 </svg>

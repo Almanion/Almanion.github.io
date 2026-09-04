@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect x="4" y="4" width="5" height="25" rx="2" fill="#4a148c"/>
-  <rect x="8" y="4" width="20" height="25" rx="2" fill="#7b1fa2"/>
-  <rect x="11" y="7" width="2" height="19" rx="1" fill="#ce93d8" opacity="0.6"/>
-  <rect x="26" y="5" width="2" height="23" rx="1" fill="#f3e5f5" opacity="0.7"/>
-  <text x="17" y="17" text-anchor="middle" dominant-baseline="central"
-        font-family="Georgia, serif" font-size="13" font-weight="bold" fill="white">&#x041C;</text>
+  <title>Матцентр</title>
+  <rect x="1.5" y="1.5" width="29" height="29" rx="8" fill="#F0F2F7" stroke="#D9DEEA"/>
+  <g transform="translate(4 4)" fill="none" stroke="#58668E" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4.5" y="4.5" width="6" height="6" rx="1.35"/><rect x="13.5" y="4.5" width="6" height="6" rx="1.35"/><rect x="4.5" y="13.5" width="6" height="6" rx="1.35"/><rect x="13.5" y="13.5" width="6" height="6" rx="1.35"/>
+    <path d="m14.85 16.45 1.35 1.35 2.55-3.05"/>
+  </g>
 </svg>
