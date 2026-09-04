@@ -199,6 +199,7 @@ function testNumberTheoryStructure() {
     assert.strictEqual((countedGroup[1].match(/<circle\b/g) || []).length, 17);
     assert.strictEqual((pairedGroup[1].match(/<circle\b/g) || []).length, 8);
     assert.ok(eisensteinSvg.includes('markerUnits="userSpaceOnUse"'));
+    assert.ok(!/body\.experimental \.remark-box::before\s*\{\s*content:\s*"Замечание"/.test(experimentalStyles));
 
     const visit = block => {
         if (Renderer.TYPE_LABELS[block.type]) {
@@ -207,14 +208,16 @@ function testNumberTheoryStructure() {
                 html.includes(`class="${semanticClasses[block.type]}`),
                 `${block.id}: смысловой блок ${block.type} должен сохранять семантический класс`
             );
-            assert.ok(
-                experimentalStyles.includes(`body.experimental .${semanticClasses[block.type]}::before`),
-                `${block.id}: для блока ${block.type} должна быть верхняя плашка типа`
-            );
-            assert.ok(
-                experimentalStyles.includes(`content: "${Renderer.TYPE_LABELS[block.type]}"`),
-                `${block.id}: плашка блока ${block.type} должна называться «${Renderer.TYPE_LABELS[block.type]}»`
-            );
+            if (block.type !== 'remark') {
+                assert.ok(
+                    experimentalStyles.includes(`body.experimental .${semanticClasses[block.type]}::before`),
+                    `${block.id}: для блока ${block.type} должна быть верхняя плашка типа`
+                );
+                assert.ok(
+                    experimentalStyles.includes(`content: "${Renderer.TYPE_LABELS[block.type]}"`),
+                    `${block.id}: плашка блока ${block.type} должна называться «${Renderer.TYPE_LABELS[block.type]}»`
+                );
+            }
         }
         if (block.type === 'definition') {
             assert.ok(String(block.term || '').trim(), `${block.id}: у определения должен быть термин`);

@@ -43,34 +43,34 @@
   <path class="axis" d="M75 590H686"/><path class="axis" d="M90 608V126"/>
 
   <g class="node">
-    <circle cx="140" cy="530" r="3.4"/><circle cx="140" cy="470" r="3.4"/><circle cx="140" cy="410" r="3.4"/><circle cx="140" cy="350" r="3.4"/><circle cx="140" cy="290" r="3.4"/><circle cx="140" cy="230" r="3.4"/>
-    <circle cx="190" cy="530" r="3.4"/><circle cx="190" cy="470" r="3.4"/><circle cx="190" cy="410" r="3.4"/><circle cx="190" cy="350" r="3.4"/><circle cx="190" cy="290" r="3.4"/><circle cx="190" cy="230" r="3.4"/>
-    <circle cx="240" cy="530" r="3.4"/><circle cx="240" cy="470" r="3.4"/><circle cx="240" cy="410" r="3.4"/><circle cx="240" cy="350" r="3.4"/><circle cx="240" cy="290" r="3.4"/><circle cx="240" cy="230" r="3.4"/>
-    <circle cx="290" cy="530" r="3.4"/><circle cx="290" cy="470" r="3.4"/><circle cx="290" cy="410" r="3.4"/><circle cx="290" cy="350" r="3.4"/><circle cx="290" cy="290" r="3.4"/><circle cx="290" cy="230" r="3.4"/>
-    <circle cx="340" cy="530" r="3.4"/><circle cx="340" cy="470" r="3.4"/><circle cx="340" cy="410" r="3.4"/><circle cx="340" cy="350" r="3.4"/><circle cx="340" cy="290" r="3.4"/><circle cx="340" cy="230" r="3.4"/>
-    <circle cx="390" cy="530" r="3.4"/><circle cx="390" cy="470" r="3.4"/><circle cx="390" cy="410" r="3.4"/><circle cx="390" cy="350" r="3.4"/><circle cx="390" cy="290" r="3.4"/><circle cx="390" cy="230" r="3.4"/>
-    <circle cx="440" cy="530" r="3.4"/><circle cx="440" cy="470" r="3.4"/><circle cx="440" cy="410" r="3.4"/><circle cx="440" cy="350" r="3.4"/><circle cx="440" cy="290" r="3.4"/><circle cx="440" cy="230" r="3.4"/>
-    <circle cx="490" cy="530" r="3.4"/><circle cx="490" cy="470" r="3.4"/><circle cx="490" cy="410" r="3.4"/><circle cx="490" cy="350" r="3.4"/><circle cx="490" cy="290" r="3.4"/><circle cx="490" cy="230" r="3.4"/>
-    <circle cx="540" cy="530" r="3.4"/><circle cx="540" cy="470" r="3.4"/><circle cx="540" cy="410" r="3.4"/><circle cx="540" cy="350" r="3.4"/><circle cx="540" cy="290" r="3.4"/><circle cx="540" cy="230" r="3.4"/>
-    <circle cx="590" cy="530" r="3.4"/><circle cx="590" cy="470" r="3.4"/><circle cx="590" cy="410" r="3.4"/><circle cx="590" cy="350" r="3.4"/><circle cx="590" cy="290" r="3.4"/><circle cx="590" cy="230" r="3.4"/>
+    <circle cx="140" cy="530" r="2.8"/><circle cx="140" cy="470" r="2.8"/><circle cx="140" cy="410" r="2.8"/><circle cx="140" cy="350" r="2.8"/><circle cx="140" cy="290" r="2.8"/><circle cx="140" cy="230" r="2.8"/>
+    <circle cx="190" cy="530" r="2.8"/><circle cx="190" cy="470" r="2.8"/><circle cx="190" cy="410" r="2.8"/><circle cx="190" cy="350" r="2.8"/><circle cx="190" cy="290" r="2.8"/><circle cx="190" cy="230" r="2.8"/>
+    <circle cx="240" cy="530" r="2.8"/><circle cx="240" cy="470" r="2.8"/><circle cx="240" cy="410" r="2.8"/><circle cx="240" cy="350" r="2.8"/><circle cx="240" cy="290" r="2.8"/><circle cx="240" cy="230" r="2.8"/>
+    <circle cx="290" cy="530" r="2.8"/><circle cx="290" cy="470" r="2.8"/><circle cx="290" cy="410" r="2.8"/><circle cx="290" cy="350" r="2.8"/><circle cx="290" cy="290" r="2.8"/><circle cx="290" cy="230" r="2.8"/>
+    <circle cx="340" cy="530" r="2.8"/><circle cx="340" cy="470" r="2.8"/><circle cx="340" cy="410" r="2.8"/><circle cx="340" cy="350" r="2.8"/><circle cx="340" cy="290" r="2.8"/><circle cx="340" cy="230" r="2.8"/>
+    <circle cx="390" cy="530" r="2.8"/><circle cx="390" cy="470" r="2.8"/><circle cx="390" cy="410" r="2.8"/><circle cx="390" cy="350" r="2.8"/><circle cx="390" cy="290" r="2.8"/><circle cx="390" cy="230" r="2.8"/>
+    <circle cx="440" cy="530" r="2.8"/><circle cx="440" cy="470" r="2.8"/><circle cx="440" cy="410" r="2.8"/><circle cx="440" cy="350" r="2.8"/><circle cx="440" cy="290" r="2.8"/><circle cx="440" cy="230" r="2.8"/>
+    <circle cx="490" cy="530" r="2.8"/><circle cx="490" cy="470" r="2.8"/><circle cx="490" cy="410" r="2.8"/><circle cx="490" cy="350" r="2.8"/><circle cx="490" cy="290" r="2.8"/><circle cx="490" cy="230" r="2.8"/>
+    <circle cx="540" cy="530" r="2.8"/><circle cx="540" cy="470" r="2.8"/><circle cx="540" cy="410" r="2.8"/><circle cx="540" cy="350" r="2.8"/><circle cx="540" cy="290" r="2.8"/><circle cx="540" cy="230" r="2.8"/>
+    <circle cx="590" cy="530" r="2.8"/><circle cx="590" cy="470" r="2.8"/><circle cx="590" cy="410" r="2.8"/><circle cx="590" cy="350" r="2.8"/><circle cx="590" cy="290" r="2.8"/><circle cx="590" cy="230" r="2.8"/>
   </g>
 
   <g class="counted">
-    <circle cx="190" cy="530" r="6"/>
-    <circle cx="290" cy="530" r="6"/><circle cx="290" cy="470" r="6"/>
-    <circle cx="390" cy="530" r="6"/><circle cx="390" cy="470" r="6"/><circle cx="390" cy="410" r="6"/>
-    <circle cx="490" cy="530" r="6"/><circle cx="490" cy="470" r="6"/><circle cx="490" cy="410" r="6"/><circle cx="490" cy="350" r="6"/><circle cx="490" cy="290" r="6"/>
-    <circle cx="590" cy="530" r="6"/><circle cx="590" cy="470" r="6"/><circle cx="590" cy="410" r="6"/><circle cx="590" cy="350" r="6"/><circle cx="590" cy="290" r="6"/><circle cx="590" cy="230" r="6"/>
+    <circle cx="190" cy="530" r="5"/>
+    <circle cx="290" cy="530" r="5"/><circle cx="290" cy="470" r="5"/>
+    <circle cx="390" cy="530" r="5"/><circle cx="390" cy="470" r="5"/><circle cx="390" cy="410" r="5"/>
+    <circle cx="490" cy="530" r="5"/><circle cx="490" cy="470" r="5"/><circle cx="490" cy="410" r="5"/><circle cx="490" cy="350" r="5"/><circle cx="490" cy="290" r="5"/>
+    <circle cx="590" cy="530" r="5"/><circle cx="590" cy="470" r="5"/><circle cx="590" cy="410" r="5"/><circle cx="590" cy="350" r="5"/><circle cx="590" cy="290" r="5"/><circle cx="590" cy="230" r="5"/>
   </g>
 
   <g class="pair">
     <path d="M390 350L340 410"/><path d="M390 290L340 470"/><path d="M390 230L340 530"/><path d="M490 230L240 530"/>
   </g>
   <g class="paired">
-    <circle cx="390" cy="350" r="6"/><circle cx="390" cy="290" r="6"/><circle cx="390" cy="230" r="6"/><circle cx="490" cy="230" r="6"/>
-    <circle cx="340" cy="410" r="6"/><circle cx="340" cy="470" r="6"/><circle cx="340" cy="530" r="6"/><circle cx="240" cy="530" r="6"/>
+    <circle cx="390" cy="350" r="5"/><circle cx="390" cy="290" r="5"/><circle cx="390" cy="230" r="5"/><circle cx="490" cy="230" r="5"/>
+    <circle cx="340" cy="410" r="5"/><circle cx="340" cy="470" r="5"/><circle cx="340" cy="530" r="5"/><circle cx="240" cy="530" r="5"/>
   </g>
-  <circle class="center" cx="365" cy="380" r="6"/>
+  <circle class="center" cx="365" cy="380" r="5"/>
 
   <g class="small" text-anchor="middle">
     <text x="140" y="613">1</text><text x="190" y="613">2</text><text x="240" y="613">3</text><text x="290" y="613">4</text><text x="340" y="613">5</text>
@@ -91,9 +91,9 @@
 
   <rect class="card" x="735" y="102" width="375" height="154" rx="13"/>
   <text class="subheading" x="760" y="133">Что отмечено</text>
-  <circle class="legend-teal" cx="772" cy="166" r="6"/><text class="small" x="790" y="171">чётные x под AB: E(ABC) = 17</text>
-  <circle class="legend-coral" cx="772" cy="198" r="6"/><text class="small" x="790" y="203">пары при повороте на 180° вокруг M</text>
-  <circle class="node" cx="772" cy="230" r="4"/><text class="small" x="790" y="235">остальные целые узлы решётки</text>
+  <circle class="legend-teal" cx="772" cy="166" r="5"/><text class="small" x="790" y="171">чётные x под AB: E(ABC) = 17</text>
+  <circle class="legend-coral" cx="772" cy="198" r="5"/><text class="small" x="790" y="203">пары при повороте на 180° вокруг M</text>
+  <circle class="node" cx="772" cy="230" r="3.3"/><text class="small" x="790" y="235">остальные целые узлы решётки</text>
 
   <rect class="card" x="735" y="274" width="375" height="245" rx="13"/>
   <text class="subheading" x="760" y="306">Чётности областей</text>

@@ -536,7 +536,6 @@ body.experimental .experiment-box::before  { content: "Эксперимент"; 
 body.experimental .exercise-box::before    { content: "Упражнение"; color: var(--t-exercise); }
 body.experimental .properties-box::before  { content: "Свойства"; color: var(--t-properties); }
 body.experimental .system-box::before      { content: "Система"; color: var(--t-system); }
-body.experimental .remark-box::before      { content: "Замечание"; color: var(--t-remark); }
 body.experimental .reminder-box::before    { content: "Напоминание"; color: var(--t-reminder); }
 body.experimental .example-box > strong:first-child { color: var(--t-example) !important; }
 
@@ -553,7 +552,6 @@ body.experimental .experiment-box::before,
 body.experimental .exercise-box::before,
 body.experimental .properties-box::before,
 body.experimental .system-box::before,
-body.experimental .remark-box::before,
 body.experimental .reminder-box::before,
 body.experimental .example-box > strong:first-child {
     display: block;
@@ -579,10 +577,9 @@ body.experimental .example-box:has(> strong:first-child)::before {
     display: none !important;
 }
 
-/* remark/example: текстовые ярлыки как у остальных учебных блоков.
-   Сбрасываем угловые SVG-иконки старого режима: их маски иначе обрезают текст
-   ярлыка, а фиксированные height/opacity нарушают размеры и контраст чипа. */
-body.experimental .remark-box::before,
+/* reminder/example: текстовые ярлыки как у остальных учебных блоков.
+   У замечания остаётся собственная угловая иконка: отдельная текстовая плашка
+   здесь повторяла уже понятный тип карточки. */
 body.experimental .reminder-box::before,
 body.experimental .example-box::before {
     -webkit-mask: none !important;
@@ -1123,11 +1120,9 @@ body.experimental.exp-animate .definition-box {
         padding: 0.9rem 1rem !important;
     }
 
-    /* На телефоне угловая лампочка/перо remark/example прячется, если рядом есть
-       кнопка закладки (иначе значки накладываются). Только для ОБЫЧНОГО режима —
-       в эксп-режиме ::before это верхний чип-ярлык («Замечание»/«Пример»), он не
-       в углу и не конфликтует с закладкой, поэтому его НЕ прячем. */
-    body:not(.experimental) .remark-box:has(.bookmark-btn)::before,
+    /* На телефоне угловая лампочка/перо прячется рядом с кнопкой закладки,
+       чтобы значки не накладывались. */
+    .remark-box:has(.bookmark-btn)::before,
     body:not(.experimental) .reminder-box:has(.bookmark-btn)::before,
     body:not(.experimental) .example-box:has(.bookmark-btn)::before {
         display: none !important;
