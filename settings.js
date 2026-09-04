@@ -3,15 +3,33 @@
 // ============================================
 
 // Настройки по умолчанию
+const VISUAL_DEFAULTS_MIGRATION_KEY = 'almanion:visual-defaults:2026-09-05-v1';
+
+function systemPrefersDark() {
+    return typeof window.matchMedia === 'function'
+        && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function normalizeExperimentalTheme(value, fallbackDark) {
+    if (value === 'system' || value === 'light' || value === 'dark') return value;
+    return typeof fallbackDark === 'boolean' ? (fallbackDark ? 'dark' : 'light') : 'system';
+}
+
+function resolveExperimentalDark(theme) {
+    if (theme === 'system') return systemPrefersDark();
+    return theme === 'dark';
+}
+
 const defaultSettings = {
-    theme: 'light',
+    theme: systemPrefersDark() ? 'dark' : 'light',
     newYearMode: false,
     animationLevel: 'max',
     hoverEffects: true,
     // Новый интерфейс (внутреннее имя experimental сохранено для совместимости)
     experimental: true,
     expMode: 'prism',      // 'graphite' | 'prism'
-    expDark: false,
+    expTheme: 'system',    // 'system' | 'light' | 'dark'
+    expDark: systemPrefersDark(), // resolved value kept for early page rendering
     matcenterSolvedAnimation: 'circle' // 'circle' | 'strike'
 };
 
@@ -45,6 +63,7 @@ if (typeof window !== 'undefined') {
 document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     applyAllSettings();
+    initSystemThemeSync();
     initSettingsButton();
     createSettingsModal();
 });
@@ -62,9 +81,18 @@ function loadSettings() {
             siteSettings = { ...defaultSettings };
         }
     }
-    if (!saved && (('ontouchstart' in window) || window.innerWidth <= 768)) {
-        siteSettings.hoverEffects = false;
+    // Apply the new visual defaults exactly once per browser. This only touches
+    // appearance settings; account data, bookmarks, progress and drafts live elsewhere.
+    if (safeStorageGet(VISUAL_DEFAULTS_MIGRATION_KEY) !== '1') {
+        siteSettings = { ...defaultSettings, expDark: systemPrefersDark() };
+        saveSettings();
+        safeStorageSet('newYearMode', false);
+        safeStorageSet(VISUAL_DEFAULTS_MIGRATION_KEY, '1');
     }
+
+    siteSettings.expTheme = normalizeExperimentalTheme(siteSettings.expTheme, siteSettings.expDark);
+    siteSettings.expDark = resolveExperimentalDark(siteSettings.expTheme);
+    window.siteSettings = siteSettings;
 }
 
 function saveSettings() {
@@ -87,7 +115,10 @@ function applyAllSettings() {
 // body.experimental + body.exp-graphite|exp-prism + (body.exp-dark для тёмной).
 function applyExperimental() {
     const body = document.body;
+    const html = document.documentElement;
     const on = !!siteSettings.experimental;
+    siteSettings.expTheme = normalizeExperimentalTheme(siteSettings.expTheme, siteSettings.expDark);
+    siteSettings.expDark = resolveExperimentalDark(siteSettings.expTheme);
 
     // ВАЖНО: подавляем CSS-переходы на время переключения. Без этого при смене
     // режима/темы/включении 300+ элементов одновременно анимируют цвета волной
@@ -100,6 +131,15 @@ function applyExperimental() {
     body.classList.toggle('exp-graphite', on && siteSettings.expMode === 'graphite');
     body.classList.toggle('exp-prism', on && siteSettings.expMode === 'prism');
     body.classList.toggle('exp-dark', on && !!siteSettings.expDark);
+
+    if (on) {
+        const mode = siteSettings.expMode === 'graphite' ? 'graphite' : 'prism';
+        html.dataset.exp = `${mode}-${siteSettings.expDark ? 'dark' : 'light'}`;
+        html.style.backgroundColor = mode === 'graphite'
+            ? (siteSettings.expDark ? '#09090b' : '#fafafa')
+            : (siteSettings.expDark ? '#0e0e16' : '#fbfbfe');
+        html.style.color = siteSettings.expDark ? '#ececf4' : '#16161f';
+    }
 
     // Когда экспериментальный режим включён, его собственная светлая/тёмная
     // тема управляет видом — снимаем легаси-классы тем, чтобы не было конфликта.
@@ -117,6 +157,27 @@ function applyExperimental() {
     const clear = () => { if (cleared) return; cleared = true; body.classList.remove('exp-switching'); };
     requestAnimationFrame(() => requestAnimationFrame(clear));
     setTimeout(clear, 260);
+}
+
+function initSystemThemeSync() {
+    const applySystemTheme = (dark) => {
+        if (siteSettings.expTheme !== 'system') return;
+        siteSettings.expDark = !!dark;
+        applyExperimental();
+        saveSettings();
+    };
+
+    window.addEventListener('almanion-system-theme-changed', (event) => {
+        applySystemTheme(event.detail && event.detail.dark);
+    });
+
+    // Fallback for a cached page that receives settings.js before theme-bootstrap.js.
+    if (!window.AlmanionThemeBootstrap && typeof window.matchMedia === 'function') {
+        const query = window.matchMedia('(prefers-color-scheme: dark)');
+        const listener = (event) => applySystemTheme(event.matches);
+        if (typeof query.addEventListener === 'function') query.addEventListener('change', listener);
+        else if (typeof query.addListener === 'function') query.addListener(listener);
+    }
 }
 
 function applyHoverEffects(enabled) {
@@ -328,6 +389,7 @@ function createSettingsModal() {
         pointer: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11V6a2 2 0 0 1 4 0v6"/><path d="M13 9a2 2 0 0 1 4 0v4"/><path d="M17 11a2 2 0 0 1 4 0v6a5 5 0 0 1-5 5h-3.5a5 5 0 0 1-4.3-2.5L4 14a2 2 0 0 1 3.5-2L9 14"/></svg>`,
         sun: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="5" y1="5" x2="7" y2="7"/><line x1="17" y1="17" x2="19" y2="19"/><line x1="5" y1="19" x2="7" y2="17"/><line x1="17" y1="7" x2="19" y2="5"/></svg>`,
         moon: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>`,
+        device: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>`,
         rocket: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 16.5c-1.5 1.5-2 5-2 5s3.5-.5 5-2c.85-.85.86-2.15.05-3-.81-.85-2.2-.85-3.05 0"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>`,
         zap: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
         muted: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>`,
@@ -384,9 +446,10 @@ function createSettingsModal() {
                             <div class="settings-subgroup-heading settings-subgroup-heading-compact">
                                 <span>Освещение</span>
                             </div>
-                            <div class="exp-lightdark" role="group" aria-label="Светлая или тёмная тема">
-                                <button type="button" class="exp-ld-btn ${!siteSettings.expDark ? 'active' : ''}" data-exp-dark="false" aria-pressed="${!siteSettings.expDark}">${ICONS.sun}<span>Светлая</span></button>
-                                <button type="button" class="exp-ld-btn ${siteSettings.expDark ? 'active' : ''}" data-exp-dark="true" aria-pressed="${siteSettings.expDark}">${ICONS.moon}<span>Тёмная</span></button>
+                            <div class="exp-lightdark" role="group" aria-label="Цветовая тема">
+                                <button type="button" class="exp-ld-btn ${siteSettings.expTheme === 'system' ? 'active' : ''}" data-exp-theme="system" aria-pressed="${siteSettings.expTheme === 'system'}">${ICONS.device}<span>Как на устройстве</span></button>
+                                <button type="button" class="exp-ld-btn ${siteSettings.expTheme === 'light' ? 'active' : ''}" data-exp-theme="light" aria-pressed="${siteSettings.expTheme === 'light'}">${ICONS.sun}<span>Светлая</span></button>
+                                <button type="button" class="exp-ld-btn ${siteSettings.expTheme === 'dark' ? 'active' : ''}" data-exp-theme="dark" aria-pressed="${siteSettings.expTheme === 'dark'}">${ICONS.moon}<span>Тёмная</span></button>
                             </div>
                         </div>
                     </div>
@@ -611,10 +674,11 @@ function bindSettingsHandlers() {
     const expLdBtns = document.querySelectorAll('.exp-ld-btn');
     expLdBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            const dark = btn.dataset.expDark === 'true';
-            if (dark === siteSettings.expDark) return;
+            const theme = normalizeExperimentalTheme(btn.dataset.expTheme, siteSettings.expDark);
+            if (theme === siteSettings.expTheme) return;
             animateThemeChange(() => {
-                siteSettings.expDark = dark;
+                siteSettings.expTheme = theme;
+                siteSettings.expDark = resolveExperimentalDark(theme);
                 expLdBtns.forEach(b => {
                     const active = b === btn;
                     b.classList.toggle('active', active);
@@ -788,7 +852,8 @@ function closeSettingsModal() {
 function resetAllSettings() {
     if (confirm('Вы уверены, что хотите сбросить все настройки на значения по умолчанию?')) {
         // Сбрасываем настройки
-        siteSettings = { ...defaultSettings };
+        siteSettings = { ...defaultSettings, expDark: systemPrefersDark() };
+        window.siteSettings = siteSettings;
         
         // Применяем
         applyAllSettings();

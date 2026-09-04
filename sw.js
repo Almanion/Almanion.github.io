@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-05-adaptive-favicons-38';
+const CACHE_VERSION = 'almanion-pwa-2026-09-05-page-transitions-39';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -20,8 +20,11 @@ const APP_SHELL = [
     '/styles/legacy-refresh.css',
     '/styles/matcenter-refresh.css',
     '/styles/admin.css',
+    '/styles/page-transitions.css',
     '/style-new.css',
+    '/theme-bootstrap.js',
     '/favicon-theme.js',
+    '/page-transitions.js',
     '/script.js',
     '/search.js',
     '/experimental-reader.js',
