@@ -620,6 +620,21 @@ body.experimental .derivation-content {
     padding-top: 0.75rem;
 }
 
+/* Доказательство всегда является частью материала: отдельное раскрытие только
+   прячет полезный текст и добавляет лишнее действие. Стили служат fallback,
+   если JavaScript не успел удалить старую кнопку из ручной разметки. */
+.toggle-proof {
+    display: none !important;
+}
+
+.proof-content {
+    display: block !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    border-top: 0 !important;
+    animation: none !important;
+}
+
 /* Кнопки-тогглы вывода/доказательства */
 body.experimental .toggle-derivation,
 body.experimental .toggle-proof {

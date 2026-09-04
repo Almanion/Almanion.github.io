@@ -763,29 +763,14 @@ function initDerivationToggles() {
 // ============================================
 
 function initProofToggles() {
-    const toggleButtons = document.querySelectorAll('.toggle-proof');
-
-    toggleButtons.forEach((button, index) => {
-        const proofContent = button.nextElementSibling;
-        // Изначальное состояние кнопки определяет текущий текст
-        const initiallyOpen = proofContent && proofContent.classList.contains('show');
-        if (proofContent && proofContent.classList.contains('proof-content')) {
-            if (!proofContent.id) proofContent.id = `proof-content-${index + 1}`;
-            button.setAttribute('aria-controls', proofContent.id);
-            button.setAttribute('aria-expanded', initiallyOpen ? 'true' : 'false');
-        }
-        if (!button.innerHTML.includes('toggle-book-icon')) {
-            setToggleLabel(button, initiallyOpen ? 'Скрыть доказательство' : 'Показать доказательство');
-        }
-
-        button.addEventListener('click', () => {
-            if (!proofContent || !proofContent.classList.contains('proof-content')) return;
-            const shown = proofContent.classList.toggle('show');
-            button.setAttribute('aria-expanded', shown ? 'true' : 'false');
-            setToggleLabel(button, shown ? 'Скрыть доказательство' : 'Показать доказательство');
-            if (shown) renderMathOnce(proofContent);
-        });
+    document.querySelectorAll('.proof-content').forEach((proofContent, index) => {
+        proofContent.classList.add('show');
+        proofContent.removeAttribute('aria-hidden');
+        if (!proofContent.id) proofContent.id = `proof-content-${index + 1}`;
+        renderMathOnce(proofContent);
     });
+
+    document.querySelectorAll('.toggle-proof').forEach(button => button.remove());
 }
 
 // ============================================
