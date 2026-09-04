@@ -579,7 +579,7 @@
         try {
             const reference = window.AlmanionAccount.database.ref('noteDrafts/' + section.subject + '/' + section.id);
             const result = await reference.transaction(function (remoteSection) {
-                if (!sameVersion(remoteSection, expectedVersion)) {
+                if (!Model.canReplaceRemoteDraft(remoteSection, expectedVersion, section)) {
                     conflictDetected = true;
                     return;
                 }

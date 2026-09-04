@@ -294,6 +294,39 @@
         return section;
     }
 
+    function draftVersion(section) {
+        if (!section) return null;
+        return {
+            revision: Number(section.revision) || 0,
+            updatedAt: Number(section.updatedAt) || 0,
+            updatedBy: String(section.updatedBy || '')
+        };
+    }
+
+    function sameDraftVersion(section, expected) {
+        if (!section || !expected) return !section && !expected;
+        const actual = draftVersion(section);
+        return actual.revision === Number(expected.revision || 0)
+            && actual.updatedAt === Number(expected.updatedAt || 0)
+            && actual.updatedBy === String(expected.updatedBy || '');
+    }
+
+    function canReplaceRemoteDraft(remoteSection, expectedVersion, nextSection) {
+        if (sameDraftVersion(remoteSection, expectedVersion)) return true;
+        if (!nextSection) return false;
+        // Realtime Database may first invoke a transaction with an empty local
+        // cache and then retry it with the real server value.
+        if (!remoteSection) return true;
+        const actual = draftVersion(remoteSection);
+        const next = draftVersion(nextSection);
+        // A delayed autosave from the same account is safe to replace with a
+        // newer local revision. Other authors and newer cloud data still win.
+        return !!actual.updatedBy
+            && actual.updatedBy === next.updatedBy
+            && actual.revision <= next.revision
+            && actual.updatedAt <= next.updatedAt;
+    }
+
     function validateSection(section) {
         const errors = [];
         if (!section || typeof section !== 'object') return ['Документ отсутствует'];
@@ -344,6 +377,8 @@
         moveIntoContainer,
         smartDashes,
         touch,
+        draftVersion,
+        canReplaceRemoteDraft,
         validateSection
     };
 });

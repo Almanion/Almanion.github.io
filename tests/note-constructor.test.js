@@ -31,6 +31,19 @@ function testModel() {
     assert.strictEqual(section.blocks[0].children[0].id, paragraphId);
     assert.strictEqual(Model.smartDashes('Причина -- следствие'), 'Причина — следствие');
 
+    const remoteDraft = Object.assign(Model.createSection('physics', 'Черновик'), {
+        revision: 4,
+        updatedAt: 100,
+        updatedBy: 'editor-a'
+    });
+    const expectedDraftVersion = Model.draftVersion(remoteDraft);
+    const nextDraft = Object.assign(Model.clone(remoteDraft), { revision: 5, updatedAt: 120 });
+    assert.strictEqual(Model.canReplaceRemoteDraft(remoteDraft, expectedDraftVersion, nextDraft), true);
+    assert.strictEqual(Model.canReplaceRemoteDraft(null, expectedDraftVersion, nextDraft), true);
+    assert.strictEqual(Model.canReplaceRemoteDraft(Object.assign(Model.clone(remoteDraft), { revision: 5, updatedAt: 110 }), expectedDraftVersion, nextDraft), true);
+    assert.strictEqual(Model.canReplaceRemoteDraft(Object.assign(Model.clone(remoteDraft), { revision: 6, updatedAt: 130 }), expectedDraftVersion, nextDraft), false);
+    assert.strictEqual(Model.canReplaceRemoteDraft(Object.assign(Model.clone(remoteDraft), { updatedBy: 'editor-b' }), expectedDraftVersion, nextDraft), false);
+
     const definition = Model.createBlock('definition');
     definition.term = 'I закон Ньютона';
     definition.separator = ':';

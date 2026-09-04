@@ -49,14 +49,6 @@
         };
     }
 
-    function sameVersion(section, expected) {
-        if (!section || !expected) return !section && !expected;
-        const actual = versionOf(section);
-        return actual.revision === expected.revision
-            && actual.updatedAt === expected.updatedAt
-            && actual.updatedBy === expected.updatedBy;
-    }
-
     async function resolveSubject() {
         const page = fileName(location.pathname);
         const response = await fetch('content/subjects.json?v=' + Date.now(), { cache: 'no-store' });
@@ -112,7 +104,7 @@
 
     function loadDependencies() {
         if (!dependenciesPromise) {
-            dependenciesPromise = loadScript('constructor/model.js?v=20260904-inline-2', () => !!window.NoteModel)
+            dependenciesPromise = loadScript('constructor/model.js?v=20260904-inline-3', () => !!window.NoteModel)
                 .then(() => loadScript('constructor/storage.js?v=20260904-inline-2', () => !!window.NoteStorage));
         }
         return dependenciesPromise;
@@ -402,7 +394,7 @@
         try {
             const reference = window.AlmanionAccount.database.ref('noteDrafts/' + section.subject + '/' + section.id);
             const result = await reference.transaction(remote => {
-                if (!sameVersion(remote, expected)) {
+                if (!window.NoteModel.canReplaceRemoteDraft(remote, expected, section)) {
                     conflict = true;
                     return;
                 }
