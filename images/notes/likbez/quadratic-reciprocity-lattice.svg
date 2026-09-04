@@ -1,75 +1,113 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" role="img" aria-labelledby="title desc">
-  <title id="title">Полуинтервалы в доказательстве леммы Эйзенштейна</title>
-  <desc id="desc">На примере p равно 11 и a равно 7 показано, в какой полуинтервал длины p пополам попадает каждое число ai. Нечётный номер полуинтервала соответствует отрицательному наименьшему вычету.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 720" role="img" aria-labelledby="title desc">
+  <title id="title">Геометрическая интерпретация леммы Эйзенштейна</title>
+  <desc id="desc">Для p равно 11 и эл равно 7 показан прямоугольник с диагональю игрек равно эл делить на p умножить на икс. Бирюзовые точки имеют чётную абсциссу и лежат ниже диагонали. Центральная симметрия вокруг точки M связывает области BMT и AML.</desc>
   <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="8.4" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto">
+    <marker id="axis-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto">
       <path d="M0 0 10 5 0 10Z" fill="#173f70"/>
     </marker>
     <style>
       .frame{fill:#fbfdff;stroke:#d6e1ed;stroke-width:2}
-      .even{fill:#e8f5f3}.odd{fill:#fff0e8}
-      .boundary{stroke:#91a8c0;stroke-width:1.5;stroke-dasharray:6 6}
-      .axis{stroke:#173f70;stroke-width:3;marker-end:url(#arrow)}
-      .point-pos{fill:#0b8f87;stroke:#fff;stroke-width:3}.point-neg{fill:#d4674c;stroke:#fff;stroke-width:3}
-      .title{font:700 25px system-ui,sans-serif;fill:#173f70}.formula{font:22px Georgia,serif;fill:#173f70}
-      .small{font:16px system-ui,sans-serif;fill:#526b84}.band{font:700 17px system-ui,sans-serif;text-anchor:middle}
-      .band-even{fill:#08746e}.band-odd{fill:#bb553c}.table-line{stroke:#d6e1ed;stroke-width:1.4}
-      .table-head{font:700 17px system-ui,sans-serif;fill:#173f70}.table-text{font:18px Georgia,serif;fill:#294a6e;text-anchor:middle}
-      .conclusion{font:700 19px system-ui,sans-serif;fill:#173f70}
+      .plot-bg{fill:#fff;stroke:#d6e1ed;stroke-width:2}
+      .amk{fill:#fff4d9}.aml{fill:#e3f4f1}.bmt{fill:#fff0e8}.lmbc{fill:#edf4fb}
+      .grid{stroke:#d9e3ed;stroke-width:1}.half{stroke:#7f99b3;stroke-width:1.7;stroke-dasharray:7 6}
+      .axis{stroke:#173f70;stroke-width:2.4;marker-end:url(#axis-arrow)}
+      .diagonal{stroke:#173f70;stroke-width:3}.pair{stroke:#d98b76;stroke-width:1.4;stroke-dasharray:5 5;opacity:.72}
+      .node{fill:#fff;stroke:#b7c7d8;stroke-width:1.15}.counted{fill:#0b8f87;stroke:#fff;stroke-width:2}
+      .paired{fill:#fff;stroke:#d4674c;stroke-width:2.3}.center{fill:#173f70;stroke:#fff;stroke-width:2}
+      .heading{font:700 24px system-ui,sans-serif;fill:#173f70}.subheading{font:700 18px system-ui,sans-serif;fill:#173f70}
+      .label{font:18px Georgia,serif;fill:#173f70}.small{font:15px system-ui,sans-serif;fill:#536d87}
+      .point-label{font:700 17px system-ui,sans-serif;fill:#173f70}.region{font:700 16px system-ui,sans-serif;text-anchor:middle}
+      .formula{font:18px Georgia,serif;fill:#173f70}.formula-strong{font:700 18px Georgia,serif;fill:#0a7771}
+      .card{fill:#fff;stroke:#d6e1ed;stroke-width:1.5}.result{fill:#e7f4f2;stroke:#b8ddd8;stroke-width:1.5}
+      .legend-teal{fill:#0b8f87}.legend-coral{fill:#fff;stroke:#d4674c;stroke-width:2.2}
     </style>
   </defs>
 
-  <rect class="frame" x="18" y="18" width="964" height="584" rx="18"/>
-  <text class="title" x="48" y="58">Почему важна чётность  tᵢ = ⌊2ai / p⌋</text>
-  <text class="formula" x="48" y="92">tᵢp/2 &lt; ai &lt; (tᵢ+1)p/2</text>
-  <g transform="translate(610 72)">
-    <rect class="even" x="0" y="-19" width="28" height="22" rx="5"/>
-    <text class="small" x="38" y="-3">tᵢ чётно  →  наименьший вычет положителен</text>
-    <rect class="odd" x="0" y="12" width="28" height="22" rx="5"/>
-    <text class="small" x="38" y="28">tᵢ нечётно →  наименьший вычет отрицателен</text>
+  <rect class="frame" x="18" y="18" width="1124" height="684" rx="18"/>
+  <text class="heading" x="50" y="58">Лемма Эйзенштейна как подсчёт узлов решётки</text>
+  <text class="small" x="50" y="84">пример: p = 11, ℓ = 7; прямая AB не проходит через целые узлы</text>
+
+  <rect class="plot-bg" x="62" y="102" width="646" height="524" rx="14"/>
+  <polygon class="amk" points="90,590 365,380 90,380"/>
+  <polygon class="aml" points="90,590 365,380 365,590"/>
+  <polygon class="bmt" points="365,380 365,170 640,170"/>
+  <polygon class="lmbc" points="365,590 365,380 640,170 640,590"/>
+
+  <g class="grid">
+    <path d="M140 170V590M190 170V590M240 170V590M290 170V590M340 170V590M390 170V590M440 170V590M490 170V590M540 170V590M590 170V590"/>
+    <path d="M90 530H640M90 470H640M90 410H640M90 350H640M90 290H640M90 230H640"/>
+  </g>
+  <rect x="90" y="170" width="550" height="420" fill="none" stroke="#9bb0c4" stroke-width="1.5"/>
+  <path class="half" d="M365 170V590M90 380H640"/>
+  <path class="diagonal" d="M90 590L640 170"/>
+  <path class="axis" d="M75 590H686"/><path class="axis" d="M90 608V126"/>
+
+  <g class="node">
+    <circle cx="140" cy="530" r="3.4"/><circle cx="140" cy="470" r="3.4"/><circle cx="140" cy="410" r="3.4"/><circle cx="140" cy="350" r="3.4"/><circle cx="140" cy="290" r="3.4"/><circle cx="140" cy="230" r="3.4"/>
+    <circle cx="190" cy="530" r="3.4"/><circle cx="190" cy="470" r="3.4"/><circle cx="190" cy="410" r="3.4"/><circle cx="190" cy="350" r="3.4"/><circle cx="190" cy="290" r="3.4"/><circle cx="190" cy="230" r="3.4"/>
+    <circle cx="240" cy="530" r="3.4"/><circle cx="240" cy="470" r="3.4"/><circle cx="240" cy="410" r="3.4"/><circle cx="240" cy="350" r="3.4"/><circle cx="240" cy="290" r="3.4"/><circle cx="240" cy="230" r="3.4"/>
+    <circle cx="290" cy="530" r="3.4"/><circle cx="290" cy="470" r="3.4"/><circle cx="290" cy="410" r="3.4"/><circle cx="290" cy="350" r="3.4"/><circle cx="290" cy="290" r="3.4"/><circle cx="290" cy="230" r="3.4"/>
+    <circle cx="340" cy="530" r="3.4"/><circle cx="340" cy="470" r="3.4"/><circle cx="340" cy="410" r="3.4"/><circle cx="340" cy="350" r="3.4"/><circle cx="340" cy="290" r="3.4"/><circle cx="340" cy="230" r="3.4"/>
+    <circle cx="390" cy="530" r="3.4"/><circle cx="390" cy="470" r="3.4"/><circle cx="390" cy="410" r="3.4"/><circle cx="390" cy="350" r="3.4"/><circle cx="390" cy="290" r="3.4"/><circle cx="390" cy="230" r="3.4"/>
+    <circle cx="440" cy="530" r="3.4"/><circle cx="440" cy="470" r="3.4"/><circle cx="440" cy="410" r="3.4"/><circle cx="440" cy="350" r="3.4"/><circle cx="440" cy="290" r="3.4"/><circle cx="440" cy="230" r="3.4"/>
+    <circle cx="490" cy="530" r="3.4"/><circle cx="490" cy="470" r="3.4"/><circle cx="490" cy="410" r="3.4"/><circle cx="490" cy="350" r="3.4"/><circle cx="490" cy="290" r="3.4"/><circle cx="490" cy="230" r="3.4"/>
+    <circle cx="540" cy="530" r="3.4"/><circle cx="540" cy="470" r="3.4"/><circle cx="540" cy="410" r="3.4"/><circle cx="540" cy="350" r="3.4"/><circle cx="540" cy="290" r="3.4"/><circle cx="540" cy="230" r="3.4"/>
+    <circle cx="590" cy="530" r="3.4"/><circle cx="590" cy="470" r="3.4"/><circle cx="590" cy="410" r="3.4"/><circle cx="590" cy="350" r="3.4"/><circle cx="590" cy="290" r="3.4"/><circle cx="590" cy="230" r="3.4"/>
   </g>
 
-  <g>
-    <rect class="even" x="80" y="132" width="120" height="188"/><rect class="odd" x="200" y="132" width="120" height="188"/>
-    <rect class="even" x="320" y="132" width="120" height="188"/><rect class="odd" x="440" y="132" width="120" height="188"/>
-    <rect class="even" x="560" y="132" width="120" height="188"/><rect class="odd" x="680" y="132" width="120" height="188"/>
-    <rect class="even" x="800" y="132" width="120" height="188"/>
-    <path class="boundary" d="M80 132V320M200 132V320M320 132V320M440 132V320M560 132V320M680 132V320M800 132V320M920 132V320"/>
+  <g class="counted">
+    <circle cx="190" cy="530" r="6"/>
+    <circle cx="290" cy="530" r="6"/><circle cx="290" cy="470" r="6"/>
+    <circle cx="390" cy="530" r="6"/><circle cx="390" cy="470" r="6"/><circle cx="390" cy="410" r="6"/>
+    <circle cx="490" cy="530" r="6"/><circle cx="490" cy="470" r="6"/><circle cx="490" cy="410" r="6"/><circle cx="490" cy="350" r="6"/><circle cx="490" cy="290" r="6"/>
+    <circle cx="590" cy="530" r="6"/><circle cx="590" cy="470" r="6"/><circle cx="590" cy="410" r="6"/><circle cx="590" cy="350" r="6"/><circle cx="590" cy="290" r="6"/><circle cx="590" cy="230" r="6"/>
   </g>
 
-  <g class="band">
-    <text class="band-even" x="140" y="158">t = 0 · +</text><text class="band-odd" x="260" y="158">t = 1 · −</text>
-    <text class="band-even" x="380" y="158">t = 2 · +</text><text class="band-odd" x="500" y="158">t = 3 · −</text>
-    <text class="band-even" x="620" y="158">t = 4 · +</text><text class="band-odd" x="740" y="158">t = 5 · −</text>
-    <text class="band-even" x="860" y="158">t = 6 · +</text>
+  <g class="pair">
+    <path d="M390 350L340 410"/><path d="M390 290L340 470"/><path d="M390 230L340 530"/><path d="M490 230L240 530"/>
   </g>
-
-  <g>
-    <circle class="point-neg" cx="233" cy="231" r="10"/><circle class="point-pos" cx="385" cy="260" r="10"/>
-    <circle class="point-neg" cx="538" cy="231" r="10"/><circle class="point-neg" cx="691" cy="260" r="10"/>
-    <circle class="point-pos" cx="844" cy="231" r="10"/>
-    <text class="formula" x="209" y="207">7·1</text><text class="formula" x="357" y="294">7·2</text>
-    <text class="formula" x="510" y="207">7·3</text><text class="formula" x="663" y="294">7·4</text>
-    <text class="formula" x="816" y="207">7·5</text>
+  <g class="paired">
+    <circle cx="390" cy="350" r="6"/><circle cx="390" cy="290" r="6"/><circle cx="390" cy="230" r="6"/><circle cx="490" cy="230" r="6"/>
+    <circle cx="340" cy="410" r="6"/><circle cx="340" cy="470" r="6"/><circle cx="340" cy="530" r="6"/><circle cx="240" cy="530" r="6"/>
   </g>
+  <circle class="center" cx="365" cy="380" r="6"/>
 
-  <path class="axis" d="M62 320H948"/>
   <g class="small" text-anchor="middle">
-    <text x="80" y="347">0</text><text x="200" y="347">p/2</text><text x="320" y="347">p</text><text x="440" y="347">3p/2</text>
-    <text x="560" y="347">2p</text><text x="680" y="347">5p/2</text><text x="800" y="347">3p</text><text x="920" y="347">7p/2</text>
+    <text x="140" y="613">1</text><text x="190" y="613">2</text><text x="240" y="613">3</text><text x="290" y="613">4</text><text x="340" y="613">5</text>
+    <text x="390" y="613">6</text><text x="440" y="613">7</text><text x="490" y="613">8</text><text x="540" y="613">9</text><text x="590" y="613">10</text>
   </g>
-  <text class="small" x="77" y="376">пример: p = 11, a = 7</text>
+  <g class="small" text-anchor="end">
+    <text x="80" y="535">1</text><text x="80" y="475">2</text><text x="80" y="415">3</text><text x="80" y="355">4</text><text x="80" y="295">5</text><text x="80" y="235">6</text>
+  </g>
 
-  <g>
-    <path class="table-line" d="M80 408H920M80 447H920M80 486H920M80 525H920M80 564H920M80 408V564M245 408V564M380 408V564M515 408V564M650 408V564M785 408V564M920 408V564"/>
-    <text class="table-head" x="96" y="434">i</text><text class="table-head" x="96" y="473">ai</text>
-    <text class="table-head" x="96" y="512">tᵢ</text><text class="table-head" x="96" y="551">наим. вычет</text>
-    <g class="table-text">
-      <text x="313" y="434">1</text><text x="448" y="434">2</text><text x="583" y="434">3</text><text x="718" y="434">4</text><text x="853" y="434">5</text>
-      <text x="313" y="473">7</text><text x="448" y="473">14</text><text x="583" y="473">21</text><text x="718" y="473">28</text><text x="853" y="473">35</text>
-      <text x="313" y="512" fill="#bb553c">1</text><text x="448" y="512">2</text><text x="583" y="512" fill="#bb553c">3</text><text x="718" y="512" fill="#bb553c">5</text><text x="853" y="512">6</text>
-      <text x="313" y="551" fill="#bb553c">−4</text><text x="448" y="551">+3</text><text x="583" y="551" fill="#bb553c">−1</text><text x="718" y="551" fill="#bb553c">−5</text><text x="853" y="551">+2</text>
-    </g>
-  </g>
-  <text class="conclusion" x="80" y="590">3 отрицательных вычета;  1+2+3+5+6 = 17  ⇒  чётности совпадают</text>
+  <text class="point-label" x="73" y="611">A</text><text class="point-label" x="649" y="165">B</text><text class="point-label" x="650" y="580">C</text>
+  <text class="point-label" x="72" y="374">K</text><text class="point-label" x="355" y="616">L</text><text class="point-label" x="344" y="373">M</text><text class="point-label" x="373" y="188">T</text>
+  <text class="small" x="380" y="148">x = p/2</text><text class="small" x="646" y="375">y = ℓ/2</text>
+  <text class="label" x="521" y="245" transform="rotate(-37.4 521 245)">y = (ℓ/p)x</text>
+  <text class="label" x="677" y="608">x</text><text class="label" x="72" y="135">y</text><text class="label" x="646" y="613">p</text><text class="label" x="66" y="176">ℓ</text>
+
+  <text class="region" x="247" y="458" fill="#08746e">AML</text><text class="region" x="205" y="337" fill="#a06b00">AMK</text>
+  <text class="region" x="510" y="416" fill="#416b91">LMBC</text><text class="region" x="500" y="275" fill="#b95740">BMT</text>
+
+  <rect class="card" x="735" y="102" width="375" height="154" rx="13"/>
+  <text class="subheading" x="760" y="133">Что отмечено</text>
+  <circle class="legend-teal" cx="772" cy="166" r="6"/><text class="small" x="790" y="171">чётные x под AB: E(ABC) = 17</text>
+  <circle class="legend-coral" cx="772" cy="198" r="6"/><text class="small" x="790" y="203">пары при повороте на 180° вокруг M</text>
+  <circle class="node" cx="772" cy="230" r="4"/><text class="small" x="790" y="235">остальные целые узлы решётки</text>
+
+  <rect class="card" x="735" y="274" width="375" height="245" rx="13"/>
+  <text class="subheading" x="760" y="306">Чётности областей</text>
+  <text class="formula" x="760" y="342">E(LMBC) = 14 ≡ 4 = E(BMT)  (mod 2)</text>
+  <text class="small" x="760" y="367">вместе — ℓ−1 узлов на каждой чётной вертикали</text>
+  <text class="formula" x="760" y="406">E(BMT) = 4 = O(AML)</text>
+  <text class="small" x="760" y="431">центральная симметрия меняет чётность x</text>
+  <text class="formula-strong" x="760" y="472">E(ABC) ≡ #AML = 7  (mod 2)</text>
+  <text class="formula" x="760" y="500">#AMK = 8,     #AML + #AMK = 15</text>
+
+  <rect class="result" x="735" y="538" width="375" height="88" rx="13"/>
+  <text class="small" x="760" y="568">общая формула</text>
+  <text class="formula-strong" x="760" y="601">(ℓ/p)(p/ℓ) = (−1)^((p−1)(ℓ−1)/4)</text>
+
+  <rect x="62" y="646" width="1048" height="34" rx="9" fill="#edf4fb"/>
+  <text class="small" x="586" y="668" text-anchor="middle">AM не содержит целых узлов: из ℓx = py при 0 &lt; x &lt; p следовало бы p | x</text>
 </svg>

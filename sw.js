@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-04-note-block-plaques-33';
+const CACHE_VERSION = 'almanion-pwa-2026-09-04-eisenstein-figure-34';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 

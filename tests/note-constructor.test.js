@@ -184,6 +184,22 @@ function testNumberTheoryStructure() {
     assert.strictEqual(section.subsections[5].children.find(block => block.id === 'gaussian-norm').type, 'definition');
     assert.strictEqual(section.subsections[5].children.find(block => block.id === 'norm-properties').type, 'properties');
 
+    const reciprocity = section.subsections.find(subsection => subsection.id === 'kvadratichnyy-zakon-vzaimnosti');
+    const eisenstein = reciprocity.children.find(block => block.id === 'eisenstein-lemma');
+    const eisensteinProof = eisenstein.children.find(block => block.id === 'eisenstein-proof');
+    const eisensteinFigure = eisensteinProof.children.find(block => block.id === 'reciprocity-lattice');
+    assert.ok(eisensteinProof.children.some(block => block.id === 'eisenstein-lattice-intro'));
+    assert.ok(eisensteinProof.children.some(block => block.id === 'eisenstein-lattice-conclusion'));
+    assert.strictEqual(eisensteinFigure.title, 'Геометрическая интерпретация леммы Эйзенштейна');
+    assert.ok(eisensteinFigure.caption.includes('Центральная симметрия'));
+
+    const eisensteinSvg = fs.readFileSync(path.join(__dirname, '..', eisensteinFigure.src), 'utf8');
+    const countedGroup = eisensteinSvg.match(/<g class="counted">([\s\S]*?)<\/g>/);
+    const pairedGroup = eisensteinSvg.match(/<g class="paired">([\s\S]*?)<\/g>/);
+    assert.strictEqual((countedGroup[1].match(/<circle\b/g) || []).length, 17);
+    assert.strictEqual((pairedGroup[1].match(/<circle\b/g) || []).length, 8);
+    assert.ok(eisensteinSvg.includes('markerUnits="userSpaceOnUse"'));
+
     const visit = block => {
         if (Renderer.TYPE_LABELS[block.type]) {
             const html = Renderer.renderBlock(block, 0);
