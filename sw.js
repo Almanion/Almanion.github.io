@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-04-manual-note-parity-27';
+const CACHE_VERSION = 'almanion-pwa-2026-09-04-mobile-reading-bookmarks-28';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 

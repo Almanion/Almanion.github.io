@@ -261,6 +261,7 @@
                     removeBookmark(id);
                     btn.innerHTML = bookmarkSvg(false);
                     btn.classList.remove('bookmarked');
+                    keepRemovedButtonVisuallyEmpty(btn);
                     btn.setAttribute('aria-label', 'Добавить в закладки');
                 } else {
                     const topic = box.closest('.topic[id], .content-section[id]');
@@ -275,6 +276,7 @@
                         timestamp: Date.now()
                     });
                     btn.innerHTML = bookmarkSvg(true);
+                    btn.classList.remove('bookmark-just-removed');
                     btn.classList.add('bookmarked');
                     btn.setAttribute('aria-label', 'Удалить из закладок');
                     btn.style.transform = 'scale(1.3)';
@@ -295,11 +297,28 @@
              + '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
     }
 
+    function keepRemovedButtonVisuallyEmpty(btn) {
+        if (!btn) return;
+        btn.classList.add('bookmark-just-removed');
+
+        // A clicked control may keep :hover on touch screens (and while the
+        // mouse remains over it). Keep the icon empty until a genuinely new
+        // interaction starts, then restore the normal hover preview.
+        const clear = () => {
+            btn.classList.remove('bookmark-just-removed');
+            btn.removeEventListener('pointerenter', clear);
+            btn.removeEventListener('blur', clear);
+        };
+        btn.addEventListener('pointerenter', clear);
+        btn.addEventListener('blur', clear);
+    }
+
     function refreshAllButtons() {
         document.querySelectorAll('.bookmark-btn').forEach(btn => {
             const id = btn.dataset.bmId;
             if (hasBookmark(id)) {
                 btn.innerHTML = bookmarkSvg(true);
+                btn.classList.remove('bookmark-just-removed');
                 btn.classList.add('bookmarked');
                 btn.setAttribute('aria-label', 'Удалить из закладок');
             } else {

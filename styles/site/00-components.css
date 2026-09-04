@@ -1036,6 +1036,20 @@ body:not(.no-hover) .bookmark-btn:not(.bookmarked):hover .bookmark-icon,
     color: var(--warning-color);
 }
 
+/* После удаления :hover может оставаться активным до следующего касания.
+   Данные уже удалены, поэтому не позволяем hover/focus снова залить SVG. */
+.bookmark-btn.bookmark-just-removed,
+.bookmark-btn.bookmark-just-removed:hover,
+.bookmark-btn.bookmark-just-removed:focus-visible {
+    color: var(--text-secondary) !important;
+}
+
+.bookmark-btn.bookmark-just-removed .bookmark-icon,
+.bookmark-btn.bookmark-just-removed:hover .bookmark-icon,
+.bookmark-btn.bookmark-just-removed:focus-visible .bookmark-icon {
+    fill: none !important;
+}
+
 .bookmarks-section-title {
     font-size: 0.8rem;
     font-weight: 700;

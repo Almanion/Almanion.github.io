@@ -639,6 +639,7 @@ body .kc-deck {
 
 @media (max-width: 768px) {
     :root {
+        --type-body: 1.04rem;
         --leading-body: 1.66;
     }
 
@@ -656,7 +657,7 @@ body .kc-deck {
     }
 
     body.experimental.exp-reader-active .content-section > .topic.exp-reader-current {
-        font-size: 1rem;
+        font-size: var(--type-body);
     }
 
     body.experimental.exp-reader-active .topic.exp-reader-current > .topic-title {
