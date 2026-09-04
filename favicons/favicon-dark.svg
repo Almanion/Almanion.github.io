@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>Конспекты — тёмная тема</title>
+  <rect width="32" height="32" rx="7.5" fill="#171925"/>
+  <rect x="1" y="1" width="30" height="30" rx="6.75" fill="none" stroke="#30344B"/>
+  <g transform="translate(4 4)" fill="none" stroke="#B2BAFF" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3.75 5.25c3.25-.85 5.9-.22 8.25 1.55v12.05c-2.35-1.77-5-2.4-8.25-1.55V5.25Z"/>
+    <path d="M20.25 5.25c-3.25-.85-5.9-.22-8.25 1.55v12.05c2.35-1.77 5-2.4 8.25-1.55V5.25Z"/>
+    <path d="M12 6.8v12.05M7.25 4.8v4.5l1.6-.9 1.6.9V5.75"/>
+  </g>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>Физика — тёмная тема</title>
+  <rect x="1.5" y="1.5" width="29" height="29" rx="8" fill="#151B24" stroke="#2A3A48"/>
+  <g transform="translate(4 4)" fill="none" stroke="#8FB9DB" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="5.2" cy="18.5" r="1.45" fill="#8FB9DB" stroke="none"/>
+    <path d="M5.2 18.5C8.1 9.7 13.2 5.25 20.3 6.2M16.8 4.4l3.5 1.8-2.7 2.85M8.2 20.5h11.5"/>
+  </g>
+</svg>

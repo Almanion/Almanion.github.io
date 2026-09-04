@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>Матцентр — тёмная тема</title>
+  <rect x="1.5" y="1.5" width="29" height="29" rx="8" fill="#171A22" stroke="#303746"/>
+  <g transform="translate(4 4)" fill="none" stroke="#A2AED1" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4.5" y="4.5" width="6" height="6" rx="1.35"/><rect x="13.5" y="4.5" width="6" height="6" rx="1.35"/><rect x="4.5" y="13.5" width="6" height="6" rx="1.35"/><rect x="13.5" y="13.5" width="6" height="6" rx="1.35"/>
+    <path d="m14.85 16.45 1.35 1.35 2.55-3.05"/>
+  </g>
+</svg>

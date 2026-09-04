@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>Геометрия — тёмная тема</title>
+  <rect x="1.5" y="1.5" width="29" height="29" rx="8" fill="#181724" stroke="#333047"/>
+  <g transform="translate(4 4)" fill="none" stroke="#A9A2D7" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4.5 19.5h15L7.7 5.2 4.5 19.5ZM4.9 15.5a4.1 4.1 0 0 1 4.05 4"/>
+    <circle cx="7.7" cy="5.2" r="1" fill="#A9A2D7" stroke="none"/>
+  </g>
+</svg>

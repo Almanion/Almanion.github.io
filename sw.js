@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-04-compact-diagram-points-36';
+const CACHE_VERSION = 'almanion-pwa-2026-09-05-adaptive-favicons-38';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -21,6 +21,7 @@ const APP_SHELL = [
     '/styles/matcenter-refresh.css',
     '/styles/admin.css',
     '/style-new.css',
+    '/favicon-theme.js',
     '/script.js',
     '/search.js',
     '/experimental-reader.js',
@@ -66,15 +67,24 @@ const APP_SHELL = [
     '/styles/copy-blocks.css',
     '/styles/chemistry-interactive-hub.css',
     '/favicons/favicon.svg',
+    '/favicons/favicon-dark.svg',
     '/favicons/app-icon.svg',
     '/favicons/favicon-al.svg',
+    '/favicons/favicon-al-dark.svg',
     '/favicons/favicon-ch.svg',
+    '/favicons/favicon-ch-dark.svg',
     '/favicons/favicon-geo.svg',
+    '/favicons/favicon-geo-dark.svg',
     '/favicons/favicon-lik.svg',
+    '/favicons/favicon-lik-dark.svg',
     '/favicons/favicon-lit.svg',
+    '/favicons/favicon-lit-dark.svg',
     '/favicons/favicon-mc.svg',
+    '/favicons/favicon-mc-dark.svg',
     '/favicons/favicon-ph.svg',
+    '/favicons/favicon-ph-dark.svg',
     '/favicons/favicon-ph-exam.svg',
+    '/favicons/favicon-ph-exam-dark.svg',
     '/math.html',
     '/physics.html',
     '/physics-10.html',

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>Химия — тёмная тема</title>
+  <rect x="1.5" y="1.5" width="29" height="29" rx="8" fill="#141D1A" stroke="#284039"/>
+  <g transform="translate(4 4)" fill="none" stroke="#83B8A4" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 3.75v5.7L4.7 17.2a2.15 2.15 0 0 0 1.88 3.2h10.84a2.15 2.15 0 0 0 1.88-3.2L15 9.45v-5.7M8 3.75h8M7.35 14.4h9.3"/>
+    <circle cx="10" cy="17.2" r=".75" fill="#83B8A4" stroke="none"/>
+    <circle cx="14.25" cy="18.15" r=".55" fill="#83B8A4" stroke="none"/>
+  </g>
+</svg>
