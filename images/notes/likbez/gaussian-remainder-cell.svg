@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 620" role="img" aria-labelledby="title desc">
+  <title id="title">Выбор остатка в квадратной ячейке решётки</title>
+  <desc id="desc">Точка a лежит в квадратной ячейке, построенной на векторах b и ib. Ближайшая вершина qb задаёт остаток r.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 10 5 0 10Z" fill="#173f70"/>
+    </marker>
+    <style>
+      .cell{fill:#eaf5f3;stroke:#0b8f87;stroke-width:4}
+      .diag{stroke:#9ab0c7;stroke-width:2;stroke-dasharray:7 7}
+      .vec{stroke:#173f70;stroke-width:4;marker-end:url(#arrow)}
+      .rem{stroke:#d4674c;stroke-width:5;marker-end:url(#arrow)}
+      .pt{fill:#173f70}
+      .a{fill:#d4674c}
+      .label{font:24px Georgia,serif;fill:#173f70}
+      .note{font:20px system-ui,sans-serif;fill:#415d7a}
+      .formula{font:25px Georgia,serif;fill:#0b6e68}
+    </style>
+  </defs>
+
+  <path class="cell" d="M205 380L485 250L615 530L335 660Z" transform="translate(0 -105)"/>
+  <path class="diag" d="M205 275L615 425M485 145L335 555"/>
+
+  <path class="vec" d="M205 275L478 149"/>
+  <path class="vec" d="M205 275L329 546"/>
+  <path class="rem" d="M205 275L330 304"/>
+
+  <circle class="pt" cx="205" cy="275" r="9"/>
+  <circle class="pt" cx="485" cy="145" r="8"/>
+  <circle class="pt" cx="335" cy="555" r="8"/>
+  <circle class="pt" cx="615" cy="425" r="8"/>
+  <circle class="a" cx="330" cy="304" r="11"/>
+
+  <text class="label" x="151" y="307">qb</text>
+  <text class="label" x="490" y="132">qb + b</text>
+  <text class="label" x="252" y="493">qb + ib</text>
+  <text class="label" x="620" y="449">qb + b + ib</text>
+  <text class="label" x="342" y="297">a</text>
+  <text class="label" x="244" y="267">r = a − qb</text>
+  <text class="note" x="337" y="183">|b|</text>
+  <text class="note" x="227" y="427">|b|</text>
+  <text class="formula" x="520" y="255">N(r) &lt; N(b)</text>
+  <text class="note" x="520" y="292">выбираем ближайшую вершину</text>
+</svg>

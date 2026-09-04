@@ -57,7 +57,7 @@
             <h2><a href="index.html" style="color: white; text-decoration: none;"><svg class="home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg><span>Конспекты</span></a></h2>
             <button class="close-sidebar" id="closeSidebar" aria-label="Закрыть меню"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>
         </div>
-        
+
         <div class="search-box">
             <svg class="sidebar-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-3.6-3.6"/></svg>
             <input type="text" id="searchInput" placeholder="Поиск..." aria-label="Поиск">
@@ -78,10 +78,12 @@
                     <li><a href="#computation" class="nav-link">1.6 Вычисление интеграла</a></li>
                     <li><a href="#area" class="nav-link">1.7 Квадрируемость</a></li>
                     <!-- NOTE_CONSTRUCTOR_NAV_START -->
+                    <li class="nav-group"><button class="nav-group-toggle" type="button"><span class="toggle-icon">▼</span>Теория чисел</button><ul class="nav-submenu"><li><a href="#lte-i-teorema-dirihle" class="nav-link">§ 1. Лемма об уточнении показателя</a></li><li><a href="#kvadratichnye-vychety" class="nav-link">§ 2. Квадратичные вычеты</a></li><li><a href="#kvadratichnyy-zakon-vzaimnosti" class="nav-link">§ 3. Квадратичный закон взаимности</a></li><li><a href="#pervoobraznye-korni" class="nav-link">§ 4. Первообразные корни</a></li><li><a href="#sravneniya-s-neizvestnymi" class="nav-link">§ 5. Сравнения с неизвестными</a></li><li><a href="#gaussovy-celye" class="nav-link">§ 6. Гауссовы целые числа</a></li><li><a href="#funkciya-mebiusa" class="nav-link">§ 7. Функция Мёбиуса</a></li><li><a href="#postulat-bertrana" class="nav-link">§ 8. Постулат Бертрана</a></li><li><a href="#cepnye-drobi" class="nav-link">§ 9. Цепные дроби</a></li><li><a href="#priblizhenie-k-racionalnym" class="nav-link">§ 10. Приближение к рациональным</a></li><li><a href="#uravnenie-pellya" class="nav-link">§ 11. Уравнение Пелля</a></li></ul></li>
+                    <li class="constructor-nav-item" data-constructor-nav="lineynaya-algebra"><a href="#lineynaya-algebra" class="nav-link">Линейная алгебра</a></li>
                     <!-- NOTE_CONSTRUCTOR_NAV_END -->
                 </ul>
             </div>
-            
+
             <div class="nav-section other-subjects">
                 <h3>Другие предметы</h3>
                 <ul>
@@ -679,6 +681,233 @@
         </section>
 
         <!-- NOTE_CONSTRUCTOR_CONTENT_START -->
+        <section class="content-section constructor-content-section" data-constructor-section="teoriya-chisel">
+            <h2 class="part-title">Теория чисел</h2>
+
+            <article id="lte-i-teorema-dirihle" class="topic constructor-topic">
+                <h3 class="topic-title">§ 1. Лемма об уточнении показателя</h3>
+
+        <div class="remark-box">Напоминание<br>Пусть \(r\in\mathbb Q\) и \(r=p^k\dfrac ab\), где \(k\in\mathbb Z\), а \(p\nmid a\), \(p\nmid b\). Тогда \(\lvert r\rvert_p=p^{-k}\).</div>
+        <div class="theorem-box"><strong>Теорема (LTE-лемма)</strong><br>Пусть \(a,b\in\mathbb Z\), \(p\in\mathbb P\), \(p\nmid a\), \(p\nmid b\) и \(p\mid(a-b)\). При \(p\ne2\), а также при \(p=2\) и дополнительном условии \(4\mid(a-b)\), выполняется равенство</div>
+        <div class="formula-box">\[\lvert a^n-b^n\rvert_p=\lvert a-b\rvert_p+\lvert n\rvert_p\]</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство. 1. Случай \(p\nmid n\)</strong><br>Разложим разность степеней: \(a^n-b^n=(a-b)(a^{n-1}+a^{n-2}b+\dots+b^{n-1})\). Вторая скобка сравнима с \(na^{n-1}\not\equiv0\pmod p\). Поэтому \(\lvert a^n-b^n\rvert_p=\lvert a-b\rvert_p\).</div></div>
+        <div class="proof-box"><div class="proof-content show"><strong>2. Случай \(n=p\)</strong><br>Запишем \(a=b+tp\). Тогда</div></div>
+        <div class="formula-box">\[a^p-b^p=(b+tp)^p-b^p=\binom p1b^{p-1}tp+\dots+\binom pk b^{p-k}(tp)^k+\dots+(tp)^p\]</div>
+        <p>У первого слагаемого показатель равен \(\lvert a-b\rvert_p+1\). При \(2\le k\le p-1\) имеем \(p\mid\binom pk\), поэтому соответствующие слагаемые делятся как минимум на \(p^3\); последнее слагаемое равно \((tp)^p\). Следовательно, \(\lvert a^p-b^p\rvert_p=\lvert a-b\rvert_p+1\).</p>
+        <div class="proof-box"><div class="proof-content show"><strong>3. Общий случай</strong><br>Пусть \(n=kp^\alpha\), где \(p\nmid k\). Применим случай \(n=p\) ровно \(\alpha\) раз, а затем случай \(p\nmid n\):</div></div>
+        <div class="formula-box">\[\lvert a^n-b^n\rvert_p=\lvert(a^{p^\alpha})^k-(b^{p^\alpha})^k\rvert_p=\lvert a^{p^\alpha}-b^{p^\alpha}\rvert_p=\lvert a-b\rvert_p+\alpha\]</div>
+        <div class="definition-box"><strong>Порядок по модулю \(p\)</strong> — Пусть \(p\in\mathbb P\), \(a\in\mathbb Z\), \(p\nmid a\). Порядком числа \(a\) по модулю \(p\) называется число</div>
+        <div class="formula-box">\[\operatorname{ord}_p a\stackrel{\mathrm{def}}=\min\{k\in\mathbb N\mid a^k\equiv1\pmod p\}\]</div>
+        <div class="remark-box">Следствие<br>Если \(a^s\equiv1\pmod p\), то \(\operatorname{ord}_p a\mid s\).</div>
+        <div class="example-box"><strong>Пример</strong><br>Пусть \(p\in\mathbb P\), \(x=\dfrac{p^p+1}{p+1}\), а \(q\in\mathbb P\) и \(q\mid x\). Предположим, что \(q\mid(p+1)\). По LTE \(\lvert p^p+1\rvert_q=\lvert p+1\rvert_q+\lvert p\rvert_q=\lvert p+1\rvert_q\), что противоречит \(q\mid x\). Значит, \(p^p\equiv-1\pmod q\), но \(p\not\equiv-1\pmod q\), поэтому \(\operatorname{ord}_q p=2p\). Отсюда \(2p\mid(q-1)\), в частности \(q\equiv1\pmod p\).</div>
+        <div class="theorem-box"><strong>Теорема Дирихле</strong><br>Если \((a,b)=1\), то в арифметической прогрессии \(an+b\) бесконечно много простых чисел.</div>
+            </article>
+            <article id="kvadratichnye-vychety" class="topic constructor-topic">
+                <h3 class="topic-title">§ 2. Квадратичные вычеты</h3>
+
+        <div class="definition-box"><strong>Квадратичный вычет</strong> — Пусть \(p\in\mathbb P\), \(a\in\mathbb F_p\), \(a\ne0\). Число \(a\) называется <strong>квадратичным вычетом по модулю \(p\)</strong>, если существует \(x\in\mathbb F_p\), для которого \(x^2=a\).</div>
+        <div class="remark-box">Замечание<br>Из \(x^2=a\) следует \((-x)^2=a\). Кроме того, \(x^2\equiv y^2\pmod p\Rightarrow p\mid(x-y)(x+y)\). Поэтому \(1^2,2^2,\ldots,\left(\frac{p-1}{2}\right)^2\) — в точности все квадратичные вычеты по модулю \(p\).</div>
+        <div class="definition-box"><strong>Символ Лежандра</strong></div>
+        <div class="formula-box">\[\left(\frac ap\right)=\begin{cases}0,&amp;p\mid a,\\1,&amp;a\text{ — квадратичный вычет},\\-1,&amp;a\text{ — невычет}.\end{cases}\]</div>
+        <div class="theorem-box"><strong>Теорема (критерий Эйлера)</strong><br>Для \(p\nmid a\) выполняется</div>
+        <div class="formula-box">\[\left(\frac ap\right)\equiv a^{\frac{p-1}{2}}\pmod p\]</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Квадратичные вычеты — в точности все корни многочлена \(x^{(p-1)/2}-1\). Поэтому \(a\) — квадратичный вычет тогда и только тогда, когда \(a^{(p-1)/2}\equiv1\pmod p\). Из \(x^{p-1}-1=(x^{(p-1)/2}-1)(x^{(p-1)/2}+1)\) следует, что для невычетов значение равно \(-1\).</div></div>
+        <div class="remark-box">Свойства</div>
+        <ul class="constructor-note-list"><li>\(\left(\frac1p\right)=1\), \(\left(\frac{-1}{p}\right)=(-1)^{(p-1)/2}\), \(\left(\frac{x^2}{p}\right)=1\).</li><li>\(\left(\frac{ab}{p}\right)=\left(\frac ap\right)\left(\frac bp\right)\). Действительно, \((ab)^{(p-1)/2}=a^{(p-1)/2}b^{(p-1)/2}\).</li><li>\(\left(\frac{a_1\cdots a_n}{p}\right)=\left(\frac{a_1}{p}\right)\cdots\left(\frac{a_n}{p}\right)\).</li><li>\(\left(\frac{ab^2}{p}\right)=\left(\frac ap\right)\).</li><li>Если \(a=\prod q_i^{\alpha_i}\), то \(\left(\frac ap\right)=\prod_{2\nmid\alpha_i}\left(\frac{q_i}{p}\right)\).</li></ul>
+        <div class="theorem-box"><strong>Теорема (критерий Гаусса)</strong><br>Пусть \(p\nmid a\). Тогда \(\left(\frac ap\right)=(-1)^\ell\), где \(\ell\) — количество чисел среди \(a,2a,\ldots,\frac{p-1}{2}a\), у которых наименьший по абсолютной величине вычет отрицателен.</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Сравним с единицей числа \(\pm1,\pm2,\ldots,\pm\frac{p-1}{2}\). Если два наименьших по абсолютной величине вычета совпадают, то \(r_i=r_j\Rightarrow(\pm i)a\equiv(\pm j)a\pmod p\), откуда \(i=j\). Значит, \(\{r_1,\ldots,r_{(p-1)/2}\}=\{1,2,\ldots,(p-1)/2\}\). Перемножая сравнения, получаем</div></div>
+        <div class="formula-box">\[\left(\frac{p-1}{2}\right)!a^{\frac{p-1}{2}}\equiv(-1)^{\ell_1+\cdots+\ell_{(p-1)/2}}\left(\frac{p-1}{2}\right)!\pmod p\]</div>
+        <p>По критерию Эйлера отсюда следует требуемое равенство.</p>
+        <div class="remark-box">Следствие<br>\(\left(\frac2p\right)=(-1)^{(p^2-1)/8}\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Рассмотрим \(2,4,\ldots,p-1\). У \(\lfloor p/4\rfloor\) из них положительный наименьший вычет. Поэтому \(\ell=\frac{p-1}{2}-\lfloor p/4\rfloor\). Отсюда \(2\mid\ell\iff p\equiv1,7\pmod8\), а \(2\nmid\ell\iff p\equiv3,5\pmod8\).</div></div>
+        <div class="definition-box"><strong>Символ Якоби</strong> — Пусть \(m\in\mathbb N\), \(2\nmid m\), \(m=p_1\cdots p_k\), причём простые множители могут совпадать. Тогда \(\left(\frac am\right)\stackrel{\mathrm{def}}=\left(\frac a{p_1}\right)\cdots\left(\frac a{p_k}\right)\).</div>
+        <div class="remark-box">Замечания</div>
+        <ul class="constructor-note-list"><li>\(\left(\frac2{15}\right)=\left(\frac23\right)\left(\frac25\right)=1\), но \(2\) — невычет по модулю \(15\).</li><li>Выполняются свойства символа Лежандра; формулы для \(\left(\frac{-1}{m}\right)\) и \(\left(\frac2m\right)\) рассматриваются отдельно.</li><li>Критерий Эйлера в общем случае неверен: \(\left(\frac7{15}\right)=\left(\frac75\right)\left(\frac73\right)=-1\).</li><li>\(\left(\frac{-1}{m}\right)=(-1)^{(m-1)/2}\), поскольку \(\frac{p_1-1}{2}+\cdots+\frac{p_k-1}{2}\equiv\frac{p_1\cdots p_k-1}{2}\pmod2\).</li><li>\(\left(\frac2m\right)=(-1)^{(m^2-1)/8}\).</li></ul>
+            </article>
+            <article id="kvadratichnyy-zakon-vzaimnosti" class="topic constructor-topic">
+                <h3 class="topic-title">§ 3. Квадратичный закон взаимности</h3>
+
+        <div class="theorem-box"><strong>Теорема</strong><br>Пусть \(p,q\in\mathbb P\), \(p\ne q\), \(2\nmid p\), \(2\nmid q\). Тогда</div>
+        <div class="formula-box">\[\left(\frac pq\right)\left(\frac qp\right)=(-1)^{\frac{p-1}{2}\cdot\frac{q-1}{2}}\]</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>По критерию Гаусса \(\left(\frac pq\right)=(-1)^{\ell_1}\), где \(\ell_1\) — число таких \(x=1,\ldots,\frac{q-1}{2}\), для которых наименьший по абсолютной величине вычет \(px\) отрицателен. Для каждого такого \(x\) существует не более одного \(y\), причём \(-q/2&lt;px-qy&lt;0\), \(y&gt;0\) и \(y\le(p-1)/2\). Поэтому \(\ell_1\) считает пары \((x,y)\) из прямоугольника \(1\le x\le(q-1)/2\), \(1\le y\le(p-1)/2\), для которых \(-q/2&lt;px-qy&lt;0\). Аналогично, \(\left(\frac qp\right)=(-1)^{\ell_2}\), где \(0&lt;px-qy&lt;p/2\). Значит, произведение символов равно \((-1)^\ell\), где \(\ell\) — число пар с \(-q/2&lt;px-qy&lt;p/2\).</div></div>
+        <div class="formula-box">\[(x,y)\longmapsto\left(\frac{q+1}{2}-x,\frac{p+1}{2}-y\right)\]</div>
+        <p>Это отображение разбивает пары на пары, кроме возможной неподвижной точки. Она существует тогда и только тогда, когда \(q=4x-1\) и \(p=4y-1\), то есть \(p\equiv q\equiv3\pmod4\). Поэтому \(\ell\) нечётно ровно в этом случае.</p>
+        <div class="lemma-box"><strong>Лемма Эйзенштейна</strong><br>\(\left(\frac ap\right)=(-1)^{\sum_{i=1}^{(p-1)/2}\lfloor2ai/p\rfloor}\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Равенство \(\lfloor2ai/p\rfloor=k\) равносильно \(pk/2&lt;ai&lt;pk/2+p/2\). Число \(ai\) имеет отрицательный наименьший вычет тогда и только тогда, когда \(k\) нечётно. Формула следует из критерия Гаусса.</div></div>
+        <figure class="constructor-note-image" data-note-block="reciprocity-lattice"><img src="images/notes/likbez/quadratic-reciprocity-lattice.svg" alt="Схема подсчёта целых точек под прямой для квадратичного закона взаимности" loading="lazy" decoding="async"><figcaption>Целые точки в прямоугольнике \(1\le x\le(q-1)/2\), \(1\le y\le(p-1)/2\); прямая разделяет области, подсчитываемые в доказательстве.</figcaption></figure>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство леммы Эйзенштейна (геометрическое)</strong><br>Сумма \(\sum_{i=1}^{(p-1)/2}\lfloor2ai/p\rfloor\) считает целые точки на вертикалях \(x=2i\) под графиком \(y=(a/p)x\). Поэтому знак символа Лежандра определяется чётностью числа целых точек в соответствующем треугольнике. При наложении двух таких подсчётов для \(p\) и \(q\) остаётся прямоугольник из \((p-1)(q-1)/4\) точек, что вновь даёт показатель в квадратичном законе взаимности.</div></div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство Руссо</strong><br>Рассмотрим \(\mathbb Z_{pq}^{<em>}=\{k=1,\ldots,pq-1\mid(k,pq)=1\}\) и его образ в \(\mathbb Z_p^{</em>}\times\mathbb Z_q^{*}\). Положим \(A=\{(a,b)\mid1\le a\le(p-1)/2,1\le b\le q-1\}\), \(B=\{(a,b)\mid1\le a\le p-1,1\le b\le(q-1)/2\}\), \(C=\{k\le(pq-1)/2\mid(k,pq)=1\}\). По китайской теореме об остатках произведение всех элементов равно \(((p-1)!)^{q-1},((q-1)!)^{p-1})=(1,1)\). Попарное объединение элемента с противоположным показывает, что произведения по \(A,B,C\) различаются только знаками. Их сравнение по модулю \(p\) и \(q\) даёт множители \(\left(\frac qp\right)\) и \(\left(\frac pq\right)\); при переходе от \(A\) к \(B\) меняется \((p-1)(q-1)/4\) знаков. Отсюда следует закон взаимности.</div></div>
+        <div class="theorem-box"><strong>Квадратичный закон взаимности для символов Якоби</strong><br>Пусть \(m,n\in\mathbb N\), \(m,n&gt;1\), \(2\nmid m\), \(2\nmid n\). Тогда \(\left(\frac mn\right)\left(\frac nm\right)=(-1)^{(m-1)(n-1)/4}\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Пусть \(m=p_1\cdots p_k\), \(n=q_1\cdots q_\ell\). Перемножая закон взаимности для всех пар \((p_i,q_j)\), получаем показатель \(\left(\sum_i(p_i-1)/2\right)\left(\sum_j(q_j-1)/2\right)\equiv(m-1)(n-1)/4\pmod2\).</div></div>
+        <div class="example-box"><strong>Пример</strong><br>\(\left(\frac{77}{101}\right)=\left(\frac{101}{77}\right)(-1)^{50\cdot38}=\left(\frac{24}{77}\right)=\left(\frac2{77}\right)\left(\frac3{77}\right)=(-1)\left(\frac{77}{3}\right)=\left(\frac23\right)=-1\).</div>
+            </article>
+            <article id="pervoobraznye-korni" class="topic constructor-topic">
+                <h3 class="topic-title">§ 4. Первообразные корни</h3>
+
+        <div class="definition-box"><strong>Первообразный корень</strong> — Пусть \(m\in\mathbb N\). Число \(g\) называется <strong>первообразным корнем по модулю \(m\)</strong>, если \(\operatorname{ord}_m g=\varphi(m)\). Тогда \(g,g^2,\ldots,g^{\varphi(m)}\) — приведённая система вычетов по модулю \(m\).</div>
+        <div class="theorem-box"><strong>Теорема</strong><br>Для каждого простого \(p\) существует первообразный корень по модулю \(p\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство. I</strong><br>Многочлен \(x^{p-1}-1\) в \(\mathbb F_p\) имеет ровно \(p-1\) корней. Если \(d\mid p-1\), то из \(x^{p-1}-1=(x^d-1)(\ldots)\) следует, что \(x^d-1\) имеет \(d\) корней. Пусть \(p-1=p_1^{\alpha_1}\cdots p_k^{\alpha_k}\). Для каждого \(i\) найдётся \(x_i\), такое что \(x_i^{p_i^{\alpha_i}}\equiv1\pmod p\), но \(x_i^{p_i^{\alpha_i-1}}\not\equiv1\pmod p\). Следовательно, \(\operatorname{ord}_p x_i=p_i^{\alpha_i}\).</div></div>
+        <div class="lemma-box"><strong>Вспомогательное утверждение</strong><br>Если \(\operatorname{ord}_p x=a\), \(\operatorname{ord}_p y=b\), \((a,b)=1\), то \(\operatorname{ord}_p(xy)=ab\). Действительно, из \((xy)^n\equiv1\) следует \(x^{bn}\equiv1\), значит \(a\mid bn\) и \(a\mid n\); аналогично \(b\mid n\), поэтому \(ab\mid n\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>II</strong><br>Используем тождество \(\sum_{d\mid n}\varphi(d)=n\). Оно получается, если выписать дроби \(1/n,2/n,\ldots,n/n\) и после сокращения сгруппировать их по знаменателям. Если \(d\mid p-1\), то \(\operatorname{ord}_p(g^k)=d\iff(k,d)=1\), поэтому элементов порядка \(d\) не более \(\varphi(d)\). Сумма оценок равна \(p-1\), то есть числу ненулевых вычетов. Следовательно, все оценки достигаются; в частности, существует элемент порядка \(p-1\).</div></div>
+        <div class="theorem-box"><strong>Теорема</strong><br>Первообразный корень по модулю \(m\) существует тогда и только тогда, когда \(m=2,4,p^n,2p^n\), где \(p\) — нечётное простое, \(n\in\mathbb N\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство существования для \(p^n\)</strong><br>Пусть \(\xi\) — первообразный корень по модулю \(p\). База \(n=1\) доказана. Пусть \(\xi\) — первообразный корень по модулю \(p^n\), но не по модулю \(p^{n+1}\). Один из элементов \(\xi\) и \(\xi+p\) является первообразным по модулю \(p^{n+1}\), поскольку</div></div>
+        <div class="formula-box">\[(\xi+p)^{p^{n-1}(p-1)}\equiv\xi^{p^{n-1}(p-1)}+p^n(p-1)\xi^{p^{n-1}(p-1)-1}\pmod{p^{n+1}}\]</div>
+        <p>Первое слагаемое сравнимо с \(1\) по модулю \(p^n\), но не по модулю \(p^{n+1}\), а второе содержит ровно \(p^n\). Если \(x\) — выбранный элемент, то по LTE \(\lvert x^{p^{n-1}(p-1)}-1\rvert_p=\lvert x^{p-1}-1\rvert_p+\lvert p^{n-1}\rvert_p=1+n-1=n\). Поэтому \(\operatorname{ord}_{p^n}x=\varphi(p^n)\).</p>
+        <div class="proof-box"><div class="proof-content show"><strong>Необходимость</strong><br>Пусть \(m=p_1^{\alpha_1}\cdots p_k^{\alpha_k}\) и \(x\) — первообразный корень по модулю \(m\). Тогда \(x^{\varphi(p_i^{\alpha_i})}\equiv1\pmod{p_i^{\alpha_i}}\). Числа \(\varphi(p_i^{\alpha_i})\) должны быть попарно взаимно просты; отсюда нечётный простой делитель у \(m\) не более одного и \(v_2(m)\le1\), кроме отдельного случая \(m=4\). Получаются ровно указанные модули.</div></div>
+            </article>
+            <article id="sravneniya-s-neizvestnymi" class="topic constructor-topic">
+                <h3 class="topic-title">§ 5. Сравнения с неизвестными</h3>
+
+        <div class="remark-box">Замечание<br>Сравнение \(a_nx^n+\dots+a_0\equiv0\pmod p\), где \(p\nmid a_n\), эквивалентно сравнению \(f(x)\equiv0\pmod p\) с примитивным многочленом \(f\).</div>
+        <div class="theorem-box"><strong>Теорема</strong><br>Любое сравнение \(f(x)\equiv0\pmod p\) можно заменить эквивалентным \(g(x)\equiv0\pmod p\), где \(\deg g&lt;p\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Разделим \(f\) с остатком на \(x^p-x\): \(f(x)=g_1(x)(x^p-x)+g(x)\). Первый множитель равен нулю во всех точках \(\mathbb F_p\), поэтому сравнения эквивалентны.</div></div>
+        <div class="theorem-box"><strong>Теорема</strong><br>Любое сравнение \(f(x_1,\ldots,x_n)\equiv0\pmod p\) можно заменить эквивалентным \(g(x_1,\ldots,x_n)\equiv0\pmod p\), где степень \(g\) по каждой переменной меньше \(p\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Пусть имеется одночлен \(Ax_1^{i_1}\cdots x_n^{i_n}\) с \(i_k\ge p\). Вычтем \(Ax_1^{i_1}\cdots x_k^{i_k-p}\cdots x_n^{i_n}(x_k^p-x_k)\). Степень по \(x_k\) уменьшится, а значения во всех точках не изменятся. Повторяем для каждой переменной.</div></div>
+        <div class="theorem-box"><strong>Теорема</strong><br>Если степень \(f\in\mathbb Z[x_1,\ldots,x_n]\) по каждой переменной меньше \(p\) и \(f(x_1,\ldots,x_n)\equiv0\pmod p\) для всех \((x_1,\ldots,x_n)\), то все коэффициенты \(f\) делятся на \(p\).</div>
+        <div class="theorem-box"><strong>Теорема Шевалле</strong><br>Пусть \(f\in\mathbb Z[x_1,\ldots,x_n]\), \(\deg f&lt;n\), \(f(0,\ldots,0)=0\). Тогда для каждого \(p\in\mathbb P\) сравнение \(f(x_1,\ldots,x_n)\equiv0\pmod p\) имеет нетривиальное решение.</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Предположим, что нулевой набор — единственное решение. Тогда как функции на \(\mathbb F_p^n\) имеем</div></div>
+        <div class="formula-box">\[f(x_1,\ldots,x_n)^{p-1}\equiv1-(1-x_1^{p-1})(1-x_2^{p-1})\cdots(1-x_n^{p-1})\pmod p\]</div>
+        <p>Степень левой части не превосходит \((p-1)\deg f&lt;n(p-1)\), а справа одночлен \((-1)^{n+1}x_1^{p-1}\cdots x_n^{p-1}\) ни с чем не сокращается. По предыдущей теореме разность не может быть тождественно нулевой как функция — противоречие.</p>
+        <div class="remark-box">Замечание<br>Если \(m=p_1^{\alpha_1}\cdots p_k^{\alpha_k}\), то \(f(x)\equiv0\pmod m\) равносильно системе сравнений по модулям \(p_i^{\alpha_i}\). Если по модулю \(p_i^{\alpha_i}\) имеется \(\ell_i\) решений, то по модулю \(m\) имеется \(\ell_1\cdots\ell_k\) решений.</div>
+        <div class="theorem-box"><strong>Теорема (подъём простого корня)</strong><br>В каждом классе \(\bar a\pmod p\), для которого \(f(a)\equiv0\pmod p\) и \(f&#039;(a)\not\equiv0\pmod p\), решения \(f(x)\equiv0\pmod{p^k}\) образуют один класс по модулю \(p^k\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Индукция по \(k\). Для перехода рассмотрим числа \(b+tp^k\), \(t=0,\ldots,p-1\), образующие класс \(b\pmod{p^k}\). По формуле Тейлора \(f(b+tp^k)\equiv f(b)+f&#039;(b)tp^k\pmod{p^{k+1}}\). Так как \(p\nmid f&#039;(b)\), значение \(t\) находится единственным образом по модулю \(p\).</div></div>
+        <div class="theorem-box"><strong>Теорема (случай кратного корня)</strong><br>Пусть \(x\equiv a\pmod{p^k}\) — решение и \(f&#039;(a)\equiv0\pmod p\). Тогда: 1) если \(f(a)\not\equiv0\pmod{p^{k+1}}\), среди чисел \(x\equiv a\pmod{p^k}\) нет решений по модулю \(p^{k+1}\); 2) если \(f(a)\equiv0\pmod{p^{k+1}}\), все такие числа удовлетворяют сравнению по модулю \(p^{k+1}\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>\(f(a+tp^k)\equiv f(a)+f&#039;(a)tp^k\equiv f(a)\pmod{p^{k+1}}\).</div></div>
+            </article>
+            <article id="gaussovy-celye" class="topic constructor-topic">
+                <h3 class="topic-title">§ 6. Гауссовы целые числа</h3>
+
+        <div class="definition-box"><strong>Гауссовы целые числа</strong> — Множество гауссовых целых чисел — это \(\mathbb Z[i]\stackrel{\mathrm{def}}=\{a+bi\mid a,b\in\mathbb Z\}\).</div>
+        <div class="remark-box">Замечание<br>Арифметические операции в \(\mathbb Z[i]\) наследуются из \(\mathbb C\), поэтому выполняются коммутативность и ассоциативность сложения и умножения, существование нуля, противоположного элемента и единицы, а также дистрибутивность. Следовательно, \(\mathbb Z[i]\) — коммутативное кольцо с единицей.</div>
+        <div class="definition-box"><strong>Норма</strong> — Для \(z=a+bi\) положим \(N(z)\stackrel{\mathrm{def}}=a^2+b^2=|z|^2\).</div>
+        <div class="remark-box">Свойства нормы<br>\(N(z_1z_2)=N(z_1)N(z_2)\). Элемент \(z\) обратим тогда и только тогда, когда \(N(z)=1\). Поэтому множество единиц равно \(U=\{-1,1,-i,i\}\).</div>
+        <div class="definition-box"><strong>Делимость</strong> — Для \(z_1,z_2\in\mathbb Z[i]\) пишут \(z_1\mid z_2\), если существует \(z_3\in\mathbb Z[i]\), такое что \(z_2=z_1z_3\).</div>
+        <div class="remark-box">Свойства делимости</div>
+        <ul class="constructor-note-list"><li>\(z\mid0\) и \(u\mid z\) для любого \(u\in U\).</li><li>Если \(z_1\ne0\) и \(z_1\mid z_2\), то частное единственно.</li><li>\(z_3\mid z_1\), \(z_3\mid z_2\Rightarrow z_3\mid(z_1\pm z_2)\).</li><li>\(z_1\mid z_2\), \(z_2\mid z_3\Rightarrow z_1\mid z_3\).</li><li>\(z_1\mid z_2\Rightarrow z_1\mid z_2z_3\).</li><li>\(z_1\mid z_2\Rightarrow N(z_1)\mid N(z_2)\).</li><li>\(z_1\mid z_2\), \(u\in U\Rightarrow z_1u\mid z_2\).</li></ul>
+        <div class="definition-box"><strong>Простой элемент</strong> — Элемент \(p\in\mathbb Z[i]\setminus U\) называется простым, если из \(p=ab\) следует, что \(a\in U\) или \(b\in U\). Если \(N(z)\in\mathbb P\), то \(z\) прост в \(\mathbb Z[i]\).</div>
+        <div class="theorem-box"><strong>Теорема о делении с остатком</strong><br>Пусть \(a,b\in\mathbb Z[i]\), \(b\ne0\). Тогда существуют \(q,r\in\mathbb Z[i]\), для которых \(a=qb+r\) и \(N(r)&lt;N(b)\).</div>
+        <figure class="constructor-note-image" data-note-block="gaussian-cell-image"><img src="images/notes/likbez/gaussian-remainder-cell.svg" alt="Квадратная ячейка решётки гауссовых чисел и вектор остатка" loading="lazy" decoding="async"><figcaption>Каждая точка плоскости попадает в квадрат со стороной \(|b|\); вершина \(qb\) выбирается так, чтобы \(N(a-qb)&lt;N(b)\).</figcaption></figure>
+        <figure class="constructor-note-image" data-note-block="gaussian-lattice-image"><img src="images/notes/likbez/gaussian-division-lattice.svg" alt="Решётка, порождённая векторами b и ib" loading="lazy" decoding="async"><figcaption>Кратные \(b\) образуют квадратную решётку, порождённую векторами \(b\) и \(ib\).</figcaption></figure>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Все числа вида \(c=(k+\ell i)b\), \(k,\ell\in\mathbb Z\), лежат в узлах квадратной решётки со стороной \(|b|\). Любая точка плоскости находится в одной из её ячеек. Выберем ближайшую вершину \(qb\); для остатка \(r=a-qb\) расстояние до этой вершины меньше \(|b|\), поэтому \(N(r)&lt;N(b)\).</div></div>
+        <div class="remark-box">Замечание<br>Остаток не обязан быть единственным. Например, \(7+2i=(2+i)(3-i)+1=(1+i)(3-i)+3\).</div>
+        <div class="definition-box"><strong>Наибольший общий делитель</strong> — Наибольшим общим делителем \(a,b\in\mathbb Z[i]\) называется любой максимальный по модулю их общий делитель. Он определён с точностью до умножения на единицу.</div>
+        <p>\(a=q_1b+r_1,\ b=q_2r_1+r_2,\ r_1=q_3r_2+r_3,\ldots\). Нормы строго убывают: \(N(b)&gt;N(r_1)&gt;N(r_2)&gt;\cdots\), поэтому процесс заканчивается. Последний ненулевой остаток делит \(a\) и \(b\) и делится на любой их общий делитель; это \(\gcd(a,b)\).</p>
+        <div class="remark-box">Следствие<br>Если \(d=\gcd(a,b)\), то существуют \(x,y\in\mathbb Z[i]\), для которых \(d=ax+by\). В частности, \(a\) и \(b\) взаимно просты тогда и только тогда, когда \(ax+by=1\) для некоторых \(x,y\in\mathbb Z[i]\).</div>
+        <div class="theorem-box"><strong>Основная теорема арифметики для \(\mathbb Z[i]\)</strong><br>Любое целое гауссово число, необратимое и отличное от нуля, раскладывается в произведение простых; разложение единственно с точностью до порядка множителей и умножения их на обратимые элементы.</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Существование доказывается индукцией по \(N(a)\): если \(a\) не прост, то \(a=bc\) и \(N(b),N(c)&lt;N(a)\). Для единственности используется лемма Евклида: если простой \(p\mid ab\), то \(p\mid a\) или \(p\mid b\); затем простые множители последовательно сокращаются.</div></div>
+        <h4 class="subsection-title">Отступление</h4>
+        <div class="definition-box"><strong>Евклидово кольцо</strong> — Кольцо \(K\) без делителей нуля называется евклидовым, если существует евклидова норма \(d:K\to\mathbb N\cup\{0\}\), такая что для любых \(a,b\in K\), \(b\ne0\), существуют \(q,r\) с \(a=qb+r\) и \(d(r)&lt;d(b)\).</div>
+        <div class="definition-box"><strong>Неприводимые и простые элементы</strong> — Элемент \(p\notin U\) <strong>неприводим</strong>, если из \(p=ab\) следует \(a\in U\) или \(b\in U\). Элемент \(p\notin U\) <strong>прост</strong>, если из \(p\mid ab\) следует \(p\mid a\) или \(p\mid b\).</div>
+        <div class="definition-box"><strong>Факториальное кольцо</strong> — Кольцо без делителей нуля называется факториальным, если любой ненулевой необратимый элемент единственным образом раскладывается на неприводимые множители. Кольцо факториально тогда и только тогда, когда в нём любой неприводимый элемент прост. Любое евклидово кольцо факториально.</div>
+            </article>
+            <article id="funkciya-mebiusa" class="topic constructor-topic">
+                <h3 class="topic-title">§ 7. Функция Мёбиуса</h3>
+
+        <div class="definition-box"><strong>Функция Мёбиуса</strong></div>
+        <div class="formula-box">\[\mu(n)\stackrel{\mathrm{def}}=\begin{cases}0,&amp;p^2\mid n\text{ для некоторого }p\in\mathbb P,\\(-1)^k,&amp;n=p_1\cdots p_k,\ p_i\in\mathbb P,\ p_i\ne p_j,\\1,&amp;n=1.\end{cases}\]</div>
+        <div class="theorem-box"><strong>Теорема</strong><br>\(\sum_{d\mid n}\mu(d)=1\) при \(n=1\) и \(\sum_{d\mid n}\mu(d)=0\) при \(n&gt;1\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Для \(n=1\) утверждение очевидно. Если \(n=p_1^{\alpha_1}\cdots p_k^{\alpha_k}\), то вклад дают только свободные от квадратов делители: \(1+\sum_i\mu(p_i)+\sum_{i&lt;j}\mu(p_ip_j)+\cdots=1-\binom k1+\binom k2-\cdots+(-1)^k=(1-1)^k=0\).</div></div>
+        <div class="lemma-box"><strong>Лемма</strong><br>Если \(f\) мультипликативна и \(F(n)=\sum_{d\mid n}f(d)\), то \(F\) мультипликативна.</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>При \((a,b)=1\) каждый делитель \(d\mid ab\) единственным образом представляется как \(d=d_1d_2\), где \(d_1\mid a\), \(d_2\mid b\). Поэтому \(F(a)F(b)=\sum_{d_1\mid a}f(d_1)\sum_{d_2\mid b}f(d_2)=\sum_{d\mid ab}f(d)=F(ab)\).</div></div>
+        <div class="proof-box"><div class="proof-content show"><strong>Другое доказательство теоремы</strong><br>Функция \(\mu\) мультипликативна, значит \(F(n)=\sum_{d\mid n}\mu(d)\) мультипликативна. Для простого \(p\) имеем \(F(p^\alpha)=\mu(1)+\mu(p)=0\), следовательно, \(F(n)=0\) для всех \(n&gt;1\).</div></div>
+        <div class="remark-box">Наблюдение<br>Функция \(F(n)=\sum_{d\mid n}\varphi(d)\) мультипликативна. Для простой степени \(F(p^\alpha)=1+(p-1)+p(p-1)+\cdots+p^{\alpha-1}(p-1)=p^\alpha\). Поэтому для \(n=p_1^{\alpha_1}\cdots p_k^{\alpha_k}\) получаем \(F(n)=n\).</div>
+        <div class="theorem-box"><strong>Теорема (формула обращения Мёбиуса)</strong><br>Если \(F(n)=\sum_{d\mid n}f(d)\), то \(f(n)=\sum_{d\mid n}F(n/d)\mu(d)\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Переставим суммирование: \(\sum_{d\mid n}F(n/d)\mu(d)=\sum_{d\mid n}(\sum_{d_1\mid n/d}f(d_1))\mu(d)=\sum_{d_1\mid n}f(d_1)\sum_{d\mid n/d_1}\mu(d)\). Внутренняя сумма равна нулю, кроме случая \(n/d_1=1\), то есть \(d_1=n\). Остаётся \(f(n)\).</div></div>
+        <div class="example-box"><strong>Примеры</strong></div>
+        <ul class="constructor-note-list"><li>Если \(\sum_{d\mid n}1=d(n)\), то \(\sum_{k\mid n}d(n/k)\mu(k)=1\).</li><li>Из \(\sum_{d\mid n}\varphi(d)=n\) получаем \(\varphi(n)=\sum_{d\mid n}(n/d)\mu(d)=n\sum_{d\mid n}\mu(d)/d=n\prod_{p\mid n}(1-1/p)\).</li></ul>
+            </article>
+            <article id="postulat-bertrana" class="topic constructor-topic">
+                <h3 class="topic-title">§ 8. Постулат Бертрана</h3>
+
+        <div class="theorem-box"><strong>Теорема</strong><br>Для каждого \(n&gt;1\) существует простое число \(p\), такое что \(n&lt;p&lt;2n\).</div>
+        <div class="lemma-box"><strong>Лемма 1</strong><br>Если \(n&lt;p&lt;2n\) и \(p\in\mathbb P\), то \(p\mid\binom{2n-1}{n-1}\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>В произведении \(\binom{2n-1}{n-1}=\dfrac{(2n-1)(2n-2)\cdots(n+1)}{(n-1)!}\) числитель содержит множитель \(p\), а знаменатель — нет.</div></div>
+        <div class="lemma-box"><strong>Лемма 2</strong><br>\(\prod_{n&lt;p&lt;2n}p\le\binom{2n-1}{n-1}&lt;4^{n-1}\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>По лемме 1 биномиальный коэффициент делится на все простые \(p\) из интервала, поэтому не меньше их произведения. Далее \(\binom{2n-1}{n-1}=\frac12(\binom{2n-1}{n-1}+\binom{2n-1}{n})\le\frac12\sum_{k=0}^{2n-1}\binom{2n-1}{k}=4^{n-1}\).</div></div>
+        <div class="lemma-box"><strong>Лемма 3</strong><br>\(\prod_{p\le n}p&lt;4^n\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Индукция по \(n\). База \(n=2\): \(2&lt;16\). Переход достаточно делать для нечётного \(n=2k-1\), поскольку при чётном \(n&gt;2\) множество простых не меняется. Тогда \(\prod_{p\le2k-1}p=\prod_{p\le k}p\prod_{k&lt;p&lt;2k}p&lt;4^k\cdot4^{k-1}=4^{2k-1}\) по предположению индукции и лемме 2.</div></div>
+        <div class="lemma-box"><strong>Лемма 4</strong><br>Если \(2n/3&lt;p&lt;n\), то \(p\nmid\binom{2n}{n}\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Из \(2n/3&lt;p&lt;n\) следует \(3p&gt;2n\). В числителе \(\binom{2n}{n}=\dfrac{2n\cdots(n+1)}{n!}\) встречается только кратное \(2p\), а в знаменателе — только \(p\); они сокращаются.</div></div>
+        <div class="lemma-box"><strong>Лемма 5</strong><br>Если \(p&gt;\sqrt{2n}\), то \(p^2\nmid\binom{2n}{n}\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>\(v_p\!\left(\binom{2n}{n}\right)=\lfloor2n/p\rfloor-2\lfloor n/p\rfloor\in\{0,1\}\), поскольку \(p^2&gt;2n\); члены с \(p^2,p^3,\ldots\) отсутствуют.</div></div>
+        <div class="lemma-box"><strong>Лемма 6</strong><br>Любой простой сомножитель \(p^k\), входящий в \(\binom{2n}{n}\), не превосходит \(2n\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>\(v_p\!\left(\binom{2n}{n}\right)=\sum_{j\ge1}(\lfloor2n/p^j\rfloor-2\lfloor n/p^j\rfloor)\). Каждая скобка равна \(0\) или \(1\), а ненулевые слагаемые возможны лишь при \(p^j\le2n\). Поэтому \(k\le\log_p(2n)\), то есть \(p^k\le2n\).</div></div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство теоремы</strong><br>Предположим, что для некоторого \(n\) простых между \(n\) и \(2n\) нет. По леммам 3–6</div></div>
+        <div class="formula-box">\[\binom{2n}{n}\le(2n)^{\sqrt{2n}}\prod_{\sqrt{2n}&lt;p\le2n/3}p\le(2n)^{\sqrt{2n}}4^{2n/3}\]</div>
+        <p>С другой стороны, \(4^n=(1+1)^{2n}=\sum_{k=0}^{2n}\binom{2n}{k}\le2n\binom{2n}{n}\), поэтому \(\binom{2n}{n}\ge4^n/(2n)\). Следовательно, \(2n/3\le2\sqrt{2n}\log_2(2n)\). Положим \(x=\sqrt{2n}\). При \(x\ge128\) функция \(x/12-\log_2x\) возрастает и уже положительна при \(x=128\), так что полученное неравенство невозможно для \(n\ge8192\).</p>
+        <p>Для \(n&lt;8192\) достаточно последовательности простых, у которой каждый следующий член меньше удвоенного предыдущего, а последний больше \(8192\):</p>
+        <div class="formula-box">\[2,3,5,7,13,23,43,67,83,163,317,631,1259,2503,4001,7993,8209\]</div>
+            </article>
+            <article id="cepnye-drobi" class="topic constructor-topic">
+                <h3 class="topic-title">§ 9. Цепные дроби</h3>
+
+        <p>Пусть \(m/n=a_0+1/\alpha_1\), \(\alpha_1&gt;1\). Тогда \(a_0=\lfloor m/n\rfloor=q_0\), \(m=q_0n+r_0\), \(\alpha_1=n/r_0\). Далее \(a_1=\lfloor n/r_0\rfloor=q_1\), \(n=q_1r_0+r_1\), и так продолжаем, пока последний ненулевой остаток делит предыдущий.</p>
+        <div class="formula-box">\[\frac mn=a_0+\cfrac1{a_1+\cfrac1{a_2+\cfrac1{\ddots+\cfrac1{a_k}}}}\]</div>
+        <div class="definition-box"><strong>Конечная цепная дробь</strong> — Пусть \(a_0\in\mathbb Z\), \(a_1,\ldots,a_k\in\mathbb N\). Выражение выше называется конечной цепной дробью и обозначается \([a_0;a_1,\ldots,a_k]\).</div>
+        <div class="remark-box">Замечание<br>Любое рациональное число представимо конечной цепной дробью, причём представление единственно при условии \(a_k\ne1\).</div>
+        <div class="definition-box"><strong>Подходящая дробь</strong> — Число \(p_n/q_n\stackrel{\mathrm{def}}=[a_0;a_1,\ldots,a_n]\) называется \(n\)-й подходящей дробью.</div>
+        <div class="theorem-box"><strong>Теорема</strong><br>Для \(n\ge2\) выполняются рекуррентные формулы \(p_n=a_np_{n-1}+p_{n-2}\), \(q_n=a_nq_{n-1}+q_{n-2}\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>База: \(p_0=a_0\), \(q_0=1\), \(p_1=a_0a_1+1\), \(q_1=a_1\). Для перехода заменим последнюю часть дроби \(a_{n-1}+1/a_n\) на \((a_{n-1}a_n+1)/a_n\) и применим предположение индукции. После приведения числителя и знаменателя получаются указанные рекуррентности.</div></div>
+        <div class="lemma-box"><strong>Лемма</strong><br>Пусть \(p_n,q_n\) заданы начальными условиями и рекуррентностями выше. Тогда \(p_nq_{n-1}-p_{n-1}q_n=(-1)^{n+1}\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>База \(n=1\) очевидна. При переходе \(p_{n+1}q_n-p_nq_{n+1}=(a_{n+1}p_n+p_{n-1})q_n-p_n(a_{n+1}q_n+q_{n-1})=p_{n-1}q_n-p_nq_{n-1}=(-1)^{n+2}\).</div></div>
+        <div class="remark-box">Следствие<br>\((p_n,q_n)=1\), поэтому каждая подходящая дробь несократима.</div>
+        <div class="lemma-box"><strong>Лемма</strong><br>\(p_nq_{n-2}-p_{n-2}q_n=(-1)^na_n\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>\(p_nq_{n-2}-p_{n-2}q_n=(a_np_{n-1}+p_{n-2})q_{n-2}-p_{n-2}(a_nq_{n-1}+q_{n-2})=a_n(p_{n-1}q_{n-2}-p_{n-2}q_{n-1})=(-1)^na_n\).</div></div>
+        <div class="definition-box"><strong>Бесконечная цепная дробь</strong> — Бесконечной цепной дробью называется выражение \(a_0+1/(a_1+1/(a_2+\cdots))\), а также предел \(\lim p_n/q_n\), если он существует.</div>
+        <div class="theorem-box"><strong>Теорема</strong><br>Последовательность подходящих дробей \(p_n/q_n\) сходится.</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Из определителя \(p_n/q_n-p_{n-2}/q_{n-2}=(-1)^na_n/(q_nq_{n-2})\) следует: чётные подходящие дроби возрастают, нечётные убывают. Кроме того, \(p_n/q_n-p_{n-1}/q_{n-1}=(-1)^{n+1}/(q_nq_{n-1})\), поэтому любая нечётная дробь больше любой чётной. Получаем стягивающуюся последовательность вложенных отрезков; их длина равна \(1/(q_nq_{n-1})\to0\), так как \(q_n\to\infty\). Значит, все отрезки имеют единственную общую точку, и обе подпоследовательности стремятся к ней.</div></div>
+        <div class="theorem-box"><strong>Теорема</strong><br>Любое вещественное число представимо в виде цепной дроби.</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Для \(\alpha\notin\mathbb Q\) положим \(a_0=\lfloor\alpha\rfloor\), \(\alpha_1=1/(\alpha-a_0)\), далее \(a_i=\lfloor\alpha_i\rfloor\), \(\alpha_{i+1}=1/(\alpha_i-a_i)\). Тогда \(\alpha=[a_0;a_1,\ldots,a_n,\alpha_{n+1}]\) и</div></div>
+        <div class="formula-box">\[\alpha=\frac{\alpha_{n+1}p_n+p_{n-1}}{\alpha_{n+1}q_n+q_{n-1}},\qquad\left|\alpha-\frac{p_n}{q_n}\right|=\frac1{q_n(\alpha_{n+1}q_n+q_{n-1})}\longrightarrow0\]</div>
+        <div class="remark-box">Замечания<br>Если \(\alpha=[a_0;a_1,a_2,\ldots]\), то хвост \(\alpha_k=[a_k;a_{k+1},\ldots]\) и \(\alpha=[a_0;a_1,\ldots,a_{k-1},\alpha_k]\). Разложение рационального числа существенно единственно: \([a_0;\ldots,a_k]=[a_0;\ldots,a_k-1,1]\).</div>
+        <div class="example-box"><strong>Примеры</strong><br>1. \([1;1,1,\ldots]=\alpha\Rightarrow\alpha=1+1/\alpha\Rightarrow\alpha=(1+\sqrt5)/2\). 2. \(\sqrt2=1+(\sqrt2-1)=1+1/(1+\sqrt2)=1+1/(2+1/(2+\cdots))=[1;2,2,\ldots]\).</div>
+            </article>
+            <article id="priblizhenie-k-racionalnym" class="topic constructor-topic">
+                <h3 class="topic-title">§ 10. Приближение вещественных чисел к рациональным</h3>
+
+        <div class="remark-box">Утверждения</div>
+        <ul class="constructor-note-list"><li>Для соседних подходящих дробей \(p_n/q_n\), \(p_{n+1}/q_{n+1}\) к \(\alpha\) выполняется \(\left|\alpha-p_n/q_n\right|&lt;1/(q_nq_{n+1})\).</li><li>Для каждой подходящей дроби \(p_n/q_n\) выполняется \(\left|\alpha-p_n/q_n\right|&lt;1/q_n^2\).</li></ul>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Число \(\alpha\) лежит строго между соседними подходящими дробями, поэтому \(\left|\alpha-p_n/q_n\right|&lt;\left|p_{n+1}/q_{n+1}-p_n/q_n\right|=1/(q_nq_{n+1})\). Если следующей дроби нет, то \(\alpha=p_n/q_n\). Так как \(q_{n+1}\ge q_n\) при \(n\ge1\), получаем второе утверждение; для \(n=0\): \(\left|\alpha-p_0/q_0\right|=\{\alpha\}&lt;1=1/q_0^2\).</div></div>
+        <div class="theorem-box"><strong>Теорема о подходящей дроби</strong><br>Пусть \(\alpha\in\mathbb R\), \(a\in\mathbb Z\), \(b\in\mathbb N\), \((a,b)=1\) и \(\left|\alpha-a/b\right|&lt;1/(2b^2)\). Тогда \(a/b\) — подходящая дробь к \(\alpha\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Пусть \(a/b=[a_0;a_1,\ldots,a_k]\). Возьмём \(\omega&gt;1\) так, чтобы \(\alpha=[a_0;a_1,\ldots,a_k,a_{k+1},\ldots]\) было равносильно \(\omega=[a_{k+1};a_{k+2},\ldots]\). Из формулы для дробно-линейного преобразования получается выражение \(\omega=\frac{q_{k-1}}{q_k}\left(1+\frac{(-1)^k}{\alpha-p_k/q_k}\cdot\frac1{q_kq_{k-1}}\right)\). Выбирая одно из двух представлений числа \(a/b\), то есть обеспечивая нужную чётность \(k\), и используя \(1/|\alpha-p_k/q_k|&gt;2q_k^2\), получаем \(\omega&gt;q_{k-1}(2q_k^2-1)/q_k&gt;1\). Значит, продолжение существует и \(a/b\) является подходящей дробью.</div></div>
+        <div class="theorem-box"><strong>Теорема Гурвица</strong><br>Для каждого \(\alpha\notin\mathbb Q\) существует бесконечно много \(a/b\in\mathbb Q\), для которых \(\left|\alpha-a/b\right|&lt;1/(\sqrt5\,b^2)\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Предположим, что три последовательные подходящие дроби \(p_n/q_n,p_{n+1}/q_{n+1},p_{n+2}/q_{n+2}\) не удовлетворяют оценке. Так как \(\alpha\) лежит между соседними дробями, после сложения двух соответствующих нижних оценок и использования \(p_{n+1}/q_{n+1}-p_n/q_n=1/(q_nq_{n+1})\) получаем \((q_{n+1}/q_n)^2-\sqrt5(q_{n+1}/q_n)+1&lt;0\), откуда \(q_{n+1}/q_n&lt;(1+\sqrt5)/2\). Аналогично из следующей пары следует \(q_{n+2}/q_{n+1}&lt;(1+\sqrt5)/2\). Но \(q_{n+2}/q_{n+1}=a_{n+2}+q_n/q_{n+1}&gt;1+2/(1+\sqrt5)=(1+\sqrt5)/2\) — противоречие.</div></div>
+        <div class="remark-box">Замечание<br>Для любого \(\lambda\in(0,1/\sqrt5)\) и \(\alpha=(1+\sqrt5)/2\) существует лишь конечное число дробей \(a/b\), удовлетворяющих \(\left|\alpha-a/b\right|&lt;\lambda/b^2\). Действительно, после умножения сопряжённых выражений получаем \(\lambda^2/b^2-\sqrt5\lambda&lt;a^2-ab-b^2&lt;\lambda^2/b^2+\sqrt5\lambda\). При больших \(b\) обе границы лежат между \(-1\) и \(1\), поэтому \(a^2-ab-b^2=0\), что невозможно в целых числах.</div>
+        <div class="theorem-box"><strong>Теорема Лиувилля</strong><br>Пусть \(\alpha\) — алгебраическое число степени \(n\). Тогда существует \(C=C(\alpha)\), такое что для любого \(p/q\in\mathbb Q\), \(p/q\ne\alpha\), выполняется \(\left|\alpha-p/q\right|&gt;1/(Cq^n)\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Пусть \(f\in\mathbb Z[x]\) — минимальный многочлен \(\alpha\). Из \(f(p/q)\ne0\) следует \(1/q^n\le|f(p/q)|\). По теореме Лагранжа \(|f(p/q)-f(\alpha)|=|f&#039;(t)|\,|p/q-\alpha|\le C|p/q-\alpha|\), где \(C\) — максимум \(|f&#039;|\) на \([\alpha-1,\alpha+1]\); для дробей вне этого интервала оценка очевидна.</div></div>
+        <div class="remark-box">Следствие<br>Существует трансцендентное число.</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Положим \(\alpha=\sum_{k=1}^{\infty}2^{-k!}\). Для любого \(k\) её частичная сумма имеет вид \(p/q\), где \(q=2^{k!}\), и \(0&lt;\alpha-p/q\le2/2^{(k+1)!}=2/q^{k+1}\). Для любой заранее заданной степени \(n\) выбираем \(k&gt;n\); такая точность противоречит теореме Лиувилля для алгебраического числа степени \(n\).</div></div>
+            </article>
+            <article id="uravnenie-pellya" class="topic constructor-topic">
+                <h3 class="topic-title">§ 11. Уравнение Пелля</h3>
+
+        <div class="definition-box"><strong>Уравнение Пелля</strong> — Уравнение \(x^2-dy^2=1\), где \(d\in\mathbb N\), \(d&gt;1\) и \(d\) не является квадратом, называется уравнением Пелля.</div>
+        <div class="definition-box"><strong>Кольцо \(\mathbb Z[\sqrt d]\)</strong> — \(\mathbb Z[\sqrt d]=\{a+b\sqrt d\mid a,b\in\mathbb Z\}\). Норма равна \(N(a+b\sqrt d)=a^2-b^2d\).</div>
+        <div class="remark-box">Замечание<br>Если \(\alpha=a+b\sqrt d\), то \(\bar\alpha=a-b\sqrt d\) и \(N(\alpha)=\alpha\bar\alpha\). Поэтому \(N(\alpha\beta)=N(\alpha)N(\beta)\).</div>
+        <p>Пусть \(\alpha_1=a_1+b_1\sqrt d\), \(\alpha_2=a_2+b_2\sqrt d\), \(N(\alpha_2)=n\). Тогда</p>
+        <div class="formula-box">\[\frac{\alpha_1}{\alpha_2}=\frac{(a_1+b_1\sqrt d)(a_2-b_2\sqrt d)}{N(a_2+b_2\sqrt d)}=\frac{a_1a_2-b_1b_2d}{n}+\frac{a_2b_1-a_1b_2}{n}\sqrt d\]</div>
+        <p>Следовательно, \(\alpha_1/\alpha_2\in\mathbb Z[\sqrt d]\) тогда и только тогда, когда \(a_1a_2-b_1b_2d\equiv0\pmod n\) и \(a_2b_1-a_1b_2\equiv0\pmod n\).</p>
+        <div class="lemma-box"><strong>Лемма о приближении</strong><br>Пусть \(\varepsilon\in\mathbb R\), \(n\in\mathbb N\). Тогда существуют \(a\in\mathbb Z\), \(b\in\mathbb N\), для которых \(1\le b\le n\) и \(\lvert a-\varepsilon b\rvert\le1/(n+1)\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Рассмотрим дробные части \(\{\varepsilon\},\{2\varepsilon\},\ldots,\{n\varepsilon\}\subset[0,1]\). Если какая-то из них лежит на расстоянии не более \(1/(n+1)\) от \(0\) или \(1\), утверждение следует сразу. Иначе две из \(n\) точек попадают в один из \(n-1\) оставшихся промежутков длины \(1/(n+1)\); их разность даёт нужные \(a\) и \(b\).</div></div>
+        <div class="theorem-box"><strong>Теорема</strong><br>Уравнение Пелля имеет нетривиальное решение.</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>По лемме для каждого \(k\) найдутся \(a_k,b_k\), \(b_k\le k\), такие что \(\lvert a_k-b_k\sqrt d\rvert\le1/(k+1)\). Тогда \(N(a_k+b_k\sqrt d)=|a_k-b_k\sqrt d| |a_k+b_k\sqrt d|\le1+2\sqrt d\), поэтому нормы принимают лишь конечное число целых значений. Некоторое значение \(h\) встречается бесконечно часто. Среди соответствующих пар найдутся две, \((a_{k_1},b_{k_1})\equiv(a_{k_2},b_{k_2})\pmod h\), но \((a_{k_1},b_{k_1})\ne(a_{k_2},b_{k_2})\). Условия на частное показывают, что \(\alpha=(a_{k_1}+b_{k_1}\sqrt d)/(a_{k_2}+b_{k_2}\sqrt d)\in\mathbb Z[\sqrt d]\), а \(N(\alpha)=1\). Это даёт нетривиальное решение.</div></div>
+        <div class="remark-box">Замечание<br>Если \(\alpha\in\mathbb Z[\sqrt d]\) — решение уравнения Пелля, то \(\alpha^n\) также является решением для любого \(n\in\mathbb N\).</div>
+        <div class="theorem-box"><strong>Теорема</strong><br>Пусть \(\alpha=a+b\sqrt d\), \(a,b\in\mathbb N\), \(N(\alpha)=1\), и \(b\) минимально. Тогда для любого решения \(x^2-dy^2=1\), \(x,y\in\mathbb N\), существует \(n\in\mathbb N\), такое что \(x+y\sqrt d=\alpha^n\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Разделим \(x+y\sqrt d\) на \(a+b\sqrt d\): \((x+y\sqrt d)/(a+b\sqrt d)=ax-byd+(ay-bx)\sqrt d\). Проверим, что оба коэффициента положительны. Если \(ax\le byd\), то \(x\le byd/a\) и \(1=x^2-dy^2\le dy^2(b^2d/a^2-1)=-dy^2/a^2&lt;0\), противоречие. Если \(ay\le bx\), то \(x\ge ay/b\) и \(1=x^2-dy^2\ge y^2(a^2-db^2)/b^2=y^2/b^2&gt;1\), поскольку \(b\) минимально, — снова противоречие. Наконец, если \(ay-bx\ge y\), то \(x\le(a-1)y/b\) и \(1\le y^2((a-1)^2-db^2)/b^2=y^2(2-2a)/b^2&lt;0\), противоречие. Значит, при делении коэффициент при \(\sqrt d\) остаётся натуральным и строго уменьшается. Продолжаем, пока не получим \(1\); отсюда исходное решение — степень \(\alpha\).</div></div>
+        <div class="remark-box">Замечание<br>Если \(a+b\sqrt d\) — минимальное положительное решение, то все решения описываются формулой \(x+y\sqrt d=\pm(a+b\sqrt d)^k\), \(k\in\mathbb Z\).</div>
+        <div class="remark-box">Утверждение<br>Если \(x^2-dy^2=1\), \(x,y\in\mathbb N\), то \(x/y\) — подходящая дробь к \(\sqrt d\).</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Так как \((x-y\sqrt d)(x+y\sqrt d)=1\), то \(\left|x/y-\sqrt d\right|=1/(y(x+y\sqrt d))&lt;1/(2y^2)\). По теореме о подходящей дроби \(x/y\) является подходящей дробью к \(\sqrt d\).</div></div>
+            </article>
+        </section>
+
+        <section class="content-section constructor-content-section" data-constructor-section="lineynaya-algebra">
+
+            <article id="lineynaya-algebra" class="topic constructor-topic">
+                <h3 class="topic-title">Линейная алгебра</h3>
+        <p>Конспект готовится.</p>
+            </article>
+
+        </section>
         <!-- NOTE_CONSTRUCTOR_CONTENT_END -->
 
         <!-- Футер -->
@@ -692,7 +921,7 @@
 
     <!-- Контейнер для снега -->
     <div class="snow-container" id="snowContainer"></div>
-    
+
     <!-- Контейнер для пасхалок -->
     <div class="easter-eggs-container" id="easterEggsContainer"></div>
 

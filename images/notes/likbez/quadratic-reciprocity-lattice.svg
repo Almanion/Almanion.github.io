@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" role="img" aria-labelledby="title desc">
+  <title id="title">Подсчёт целых точек для квадратичного закона взаимности</title>
+  <desc id="desc">Прямоугольная решётка, разделённая прямой. Точки по разные стороны прямой соответствуют двум применениям критерия Гаусса.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.6" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10Z" fill="#173f70"/>
+    </marker>
+    <style>
+      .axis{stroke:#173f70;stroke-width:3;marker-end:url(#arrow)}
+      .grid{stroke:#cbd8e7;stroke-width:1.25}
+      .bound{stroke:#6682a3;stroke-width:2;stroke-dasharray:7 7}
+      .line{stroke:#0b8f87;stroke-width:4}
+      .below{fill:#0b8f87}
+      .above{fill:#d4674c}
+      .even{stroke:#78a8d8;stroke-width:8;opacity:.12}
+      .label{font:22px Georgia,serif;fill:#173f70}
+      .small{font:18px system-ui,sans-serif;fill:#415d7a}
+      .region-a{fill:#0b8f87;opacity:.08}
+      .region-b{fill:#d4674c;opacity:.08}
+    </style>
+  </defs>
+
+  <path class="region-a" d="M100 470H780V90Z"/>
+  <path class="region-b" d="M100 470L780 90H100Z"/>
+
+  <g aria-hidden="true">
+    <path class="even" d="M294 470V90M488 470V90M682 470V90"/>
+    <path class="grid" d="M197 470V90M294 470V90M391 470V90M488 470V90M585 470V90M682 470V90M779 470V90"/>
+    <path class="grid" d="M100 394H780M100 318H780M100 242H780M100 166H780M100 90H780"/>
+  </g>
+
+  <path class="bound" d="M780 470V90H100"/>
+  <path class="axis" d="M80 470H832"/>
+  <path class="axis" d="M100 500V48"/>
+  <path class="line" d="M100 470L780 90"/>
+
+  <g class="below">
+    <circle cx="197" cy="394" r="7"/><circle cx="294" cy="394" r="7"/>
+    <circle cx="294" cy="318" r="7"/><circle cx="391" cy="394" r="7"/>
+    <circle cx="391" cy="318" r="7"/><circle cx="488" cy="394" r="7"/>
+    <circle cx="488" cy="318" r="7"/><circle cx="488" cy="242" r="7"/>
+    <circle cx="585" cy="394" r="7"/><circle cx="585" cy="318" r="7"/>
+    <circle cx="585" cy="242" r="7"/><circle cx="682" cy="394" r="7"/>
+    <circle cx="682" cy="318" r="7"/><circle cx="682" cy="242" r="7"/>
+    <circle cx="682" cy="166" r="7"/>
+  </g>
+  <g class="above">
+    <circle cx="197" cy="318" r="7"/><circle cx="197" cy="242" r="7"/>
+    <circle cx="197" cy="166" r="7"/><circle cx="197" cy="90" r="7"/>
+    <circle cx="294" cy="242" r="7"/><circle cx="294" cy="166" r="7"/>
+    <circle cx="294" cy="90" r="7"/><circle cx="391" cy="242" r="7"/>
+    <circle cx="391" cy="166" r="7"/><circle cx="391" cy="90" r="7"/>
+    <circle cx="488" cy="166" r="7"/><circle cx="488" cy="90" r="7"/>
+    <circle cx="585" cy="166" r="7"/><circle cx="585" cy="90" r="7"/>
+    <circle cx="682" cy="90" r="7"/>
+  </g>
+
+  <text class="label" x="790" y="454">x</text>
+  <text class="label" x="114" y="64">y</text>
+  <text class="label" x="610" y="157" transform="rotate(-29 610 157)">y = (p/q)x</text>
+  <text class="label" x="739" y="510">(q−1)/2</text>
+  <text class="label" x="18" y="98">(p−1)/2</text>
+  <text class="small" x="525" y="442">точки под прямой</text>
+  <text class="small" x="130" y="139">точки над прямой</text>
+  <text class="small" x="224" y="535">выделены вертикали x = 2i</text>
+</svg>
