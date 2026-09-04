@@ -68,16 +68,9 @@
 
         <nav class="nav-menu">
             <div class="nav-section">
-                <h3>Интеграл Римана</h3>
                 <ul>
-                    <li><a href="#def-riemann" class="nav-link active">1.1 Определение интеграла Римана</a></li>
-                    <li><a href="#darboux-sum" class="nav-link">1.2 Сумма Дарбу</a></li>
-                    <li><a href="#integral-properties" class="nav-link">1.3 Свойства интеграла</a></li>
-                    <li><a href="#variable-upper" class="nav-link">1.4 Интеграл с переменным верхним пределом</a></li>
-                    <li><a href="#indefinite" class="nav-link">1.5 Неопределённый интеграл</a></li>
-                    <li><a href="#computation" class="nav-link">1.6 Вычисление интеграла</a></li>
-                    <li><a href="#area" class="nav-link">1.7 Квадрируемость</a></li>
                     <!-- NOTE_CONSTRUCTOR_NAV_START -->
+                    <li class="nav-group"><button class="nav-group-toggle" type="button"><span class="toggle-icon">▼</span>Интеграл Римана</button><ul class="nav-submenu"><li><a href="#def-riemann" class="nav-link">1.1 Определение интеграла Римана</a></li><li><a href="#darboux-sum" class="nav-link">1.2 Сумма Дарбу</a></li><li><a href="#integral-properties" class="nav-link">1.3 Свойства интеграла</a></li><li><a href="#variable-upper" class="nav-link">1.4 Интеграл с переменным верхним пределом</a></li><li><a href="#indefinite" class="nav-link">1.5 Неопределённый интеграл</a></li><li><a href="#computation" class="nav-link">1.6 Вычисление интеграла</a></li><li><a href="#area" class="nav-link">1.7 Квадрируемость</a></li></ul></li>
                     <li class="nav-group"><button class="nav-group-toggle" type="button"><span class="toggle-icon">▼</span>Теория чисел</button><ul class="nav-submenu"><li><a href="#lte-i-teorema-dirihle" class="nav-link">§ 1. Лемма об уточнении показателя</a></li><li><a href="#kvadratichnye-vychety" class="nav-link">§ 2. Квадратичные вычеты</a></li><li><a href="#kvadratichnyy-zakon-vzaimnosti" class="nav-link">§ 3. Квадратичный закон взаимности</a></li><li><a href="#pervoobraznye-korni" class="nav-link">§ 4. Первообразные корни</a></li><li><a href="#sravneniya-s-neizvestnymi" class="nav-link">§ 5. Сравнения с неизвестными</a></li><li><a href="#gaussovy-celye" class="nav-link">§ 6. Гауссовы целые числа</a></li><li><a href="#funkciya-mebiusa" class="nav-link">§ 7. Функция Мёбиуса</a></li><li><a href="#postulat-bertrana" class="nav-link">§ 8. Постулат Бертрана</a></li><li><a href="#cepnye-drobi" class="nav-link">§ 9. Цепные дроби</a></li><li><a href="#priblizhenie-k-racionalnym" class="nav-link">§ 10. Приближение к рациональным</a></li><li><a href="#uravnenie-pellya" class="nav-link">§ 11. Уравнение Пелля</a></li></ul></li>
                     <li class="constructor-nav-item" data-constructor-nav="lineynaya-algebra"><a href="#lineynaya-algebra" class="nav-link">Линейная алгебра</a></li>
                     <!-- NOTE_CONSTRUCTOR_NAV_END -->
@@ -107,580 +100,109 @@
             <p class="subtitle"><a href="https://t.me/Almanion239" target="_blank" style="color: white; text-decoration: none; font-weight: 600;">@Almanion239</a> | МатЦентр 2025 — 2026</p>
         </header>
 
-        <!-- §1. Интеграл Римана -->
-        <section class="content-section">
+        <!-- NOTE_CONSTRUCTOR_CONTENT_START -->
+        <section class="content-section constructor-content-section" data-constructor-section="integral-riemana">
             <h2 class="part-title">1. Интеграл Римана</h2>
 
-            <!-- 1.1 Определение интеграла Римана -->
-            <article id="def-riemann" class="topic">
+            <article id="def-riemann" class="topic constructor-topic">
                 <h3 class="topic-title">1.1 Определение интеграла Римана</h3>
 
-                <div class="definition-box">
-                    <strong>Определение:</strong>
-                    \(f: [a, b]\). \(T = \{a = t_0 < t_1 < \dots < t_n = b\}\) — <strong>разбиение</strong> отрезка \([a, b]\).<br>
-                    \(C=\{c_k \in [t_{k-1}, t_k]\}\) — <strong>оснащение</strong> разбиения.<br>
-                    \(\sigma(f, T, C) = \sum_{k=1}^n f(c_k) \cdot (t_k - t_{k-1})\) — <strong>риманова сумма</strong> функции \(f\) на \([a, b]\), соответствующая разбиению \(T\), оснащённому \(C\).<br>
-                    \(\Delta(T) = \max_{k=1}^n (t_k - t_{k-1})\) — <strong>мелкость</strong> разбиения \(T\).<br><br>
-                    Число \(I\) называется <strong>интегралом</strong> (Римана) функции \(f\) по \([a, b]\), если
-                    \[\forall \varepsilon > 0 \; \exists \delta > 0 \colon \forall T \colon \Delta(T) < \delta \Rightarrow \forall C \; |\sigma(f, T, C) - I| < \varepsilon.\]
-                    В таком случае \(f\) называется <strong>интегрируемой</strong> на \([a, b]\).<br>
-                    <strong>Обозначение:</strong> \(I = \int_a^b f(x)\,dx\)
-                </div>
-
-                <div class="example-box">
-                    <strong>Пример:</strong> \(f(x) \equiv C \Rightarrow f\) интегрируема на \([a, b]\) и \(\int_a^b C\,dx = C(b - a)\)
-                </div>
-
-                <div class="statement-box">
-                    <strong>Утверждение:</strong> \(f\) интегрируема на \([a, b] \Rightarrow f\) ограничена на \([a, b]\)
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>Предположим \(f\) неограничена, \(T = \{x_k\}\).<br>
-                            Тогда \(f\) не ограничена на некотором \([x_{k_0-1}, x_{k_0}]\).<br>
-                            Выберем \(C_k\) при \(k \neq k_0\) произвольно.<br>
-                            \(c_{k_0}\) можно выбрать так, что \(f(c_{k_0})\) — достаточно большое по модулю \(\Rightarrow \sigma(f, T, C)\) будет сколь угодно большой по модулю.</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
+        <div class="definition-box"><strong>Определение</strong>: \(f:[a,b]\). \(T=\{a=t_0&lt;t_1&lt;\dots&lt;t_n=b\}\) — <strong>разбиение</strong> отрезка \([a,b]\).<br>\(C=\{c_k\in[t_{k-1},t_k]\}\) — <strong>оснащение</strong> разбиения.<br>\(\sigma(f,T,C)=\sum_{k=1}^n f(c_k)(t_k-t_{k-1})\) — <strong>риманова сумма</strong> функции \(f\) на \([a,b]\), соответствующая разбиению \(T\), оснащённому \(C\).<br>\(\Delta(T)=\max_{k=1}^n(t_k-t_{k-1})\) — <strong>мелкость</strong> разбиения \(T\).<br><br>Число \(I\) называется <strong>интегралом</strong> (Римана) функции \(f\) по \([a,b]\), если<div class="formula-box">\[\forall\varepsilon&gt;0\ \exists\delta&gt;0:\ \forall T:\ \Delta(T)&lt;\delta\Rightarrow\forall C\ \lvert\sigma(f,T,C)-I\rvert&lt;\varepsilon\]</div>
+        <p>В таком случае \(f\) называется <strong>интегрируемой</strong> на \([a,b]\).<br><strong>Обозначение:</strong> \(I=\int_a^b f(x)\,dx\).</p></div>
+        <div class="example-box"><strong>Пример</strong><br>\(f(x)\equiv C\Rightarrow f\) интегрируема на \([a,b]\) и \(\int_a^b C\,dx=C(b-a)\).</div>
+        <div class="theorem-box"><strong>Утверждение</strong><br>Если \(f\) интегрируема на \([a,b]\), то \(f\) ограничена на \([a,b]\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Предположим, что \(f\) неограничена, \(T=\{x_k\}\). Тогда \(f\) не ограничена на некотором \([x_{k_0-1},x_{k_0}]\). Выберем \(c_k\) при \(k\ne k_0\) произвольно. Точку \(c_{k_0}\) можно выбрать так, что \(f(c_{k_0})\) достаточно велико по модулю; тогда \(\sigma(f,T,C)\) будет сколь угодно большой по модулю.</div></div></div>
             </article>
-
-            <!-- 1.2 Сумма Дарбу -->
-            <article id="darboux-sum" class="topic">
+            <article id="darboux-sum" class="topic constructor-topic">
                 <h3 class="topic-title">1.2 Сумма Дарбу</h3>
 
-                <div class="definition-box">
-                    <strong>Определение:</strong>
-                    \([a, b]\), \(T = \{x_k\}\) — разбиение, \(f: [a, b] \to \mathbb{R}\) — ограничена.<br>
-                    \(m_k = \inf_{[x_{k-1}, x_k]} f\), \(M_k = \sup_{[x_{k-1}, x_k]} f\), \(\Delta_k = x_k - x_{k-1}\).<br>
-                    \(s(f, T) = \sum_{k=1}^n m_k \Delta_k\), \(S(f, T) = \sum_{k=1}^n M_k \Delta_k\) — <strong>нижняя и верхняя суммы Дарбу</strong>.
-                </div>
-
-                <div class="properties-box">
-                    <strong>Свойства:</strong>
-                    <ol>
-                        <li>\(s(f, T) = \inf_C \sigma(f, T, C)\), \(S(f, T) = \sup_C \sigma(f, T, C)\).
-                            <div class="proof-box">
-                                <button class="toggle-proof">📖 Показать доказательство</button>
-                                <div class="proof-content">
-                                    <p>\(f(c_k) \le M_k \Rightarrow f(c_k)\Delta_k \le M_k \Delta_k \Rightarrow \sigma(f, T, C) \le S(f, T)\).<br>
-                                    \(\forall k = 1 \dots n\) подберём \(c_k \colon f(c_k) > M_k - \frac{\varepsilon}{b-a}\).<br>
-                                    \(\sigma(f, T, C) = \sum_{k=1}^n f(c_k)\Delta_k > \sum_{k=1}^n M_k \Delta_k - \frac{\varepsilon}{b-a} \cdot \sum_{k=1}^n \Delta_k = S(f, T) - \varepsilon\).</p>
-                                    <div class="proof-qed">∎</div>
-                                </div>
-                            </div>
-                        </li>
-                        <li>От добавления точки в разбиение верхняя сумма не увеличивается, а нижняя — не уменьшается.
-                            <div class="proof-box">
-                                <button class="toggle-proof">📖 Показать доказательство</button>
-                                <div class="proof-content">
-                                    <p>Пусть добавлена \(c\) на \([x_{k_0-1}, x_{k_0}]\).<br>
-                                    \(M' = \sup_{[x_{k_0-1}, c]} f\), \(M'' = \sup_{[c, x_{k_0}]} f \Rightarrow M', M'' \le M_{k_0}\).<br>
-                                    Было: \(\dots + M_{k_0}(x_{k_0} - x_{k_0-1})\).<br>
-                                    Стало: \(\dots + M'(c - x_{k_0-1}) + M''(x_{k_0} - c) \le M_{k_0}(c - x_{k_0-1}) + M_{k_0}(x_{k_0} - c)\).</p>
-                                    <div class="proof-qed">∎</div>
-                                </div>
-                            </div>
-                        </li>
-                        <li>Любая нижняя сумма Дарбу не превосходит любую верхнюю.
-                            <div class="proof-box">
-                                <button class="toggle-proof">📖 Показать доказательство</button>
-                                <div class="proof-content">
-                                    <p>\(s(f, T_1) \le S(f, T_2)\)<br>
-                                    \(\widetilde{T} = T_1 \cup T_2\)<br>
-                                    \(s(f, T_1) \le s(f, \widetilde{T}) \le S(f, \widetilde{T}) \le S(f, T_2)\).</p>
-                                    <div class="proof-qed">∎</div>
-                                </div>
-                            </div>
-                        </li>
-                    </ol>
-                </div>
-
-                <div class="definition-box">
-                    <strong>Определение:</strong>
-                    \(I_* \overset{\text{def}}{=} \sup_T s(f, T)\), \(I^* \overset{\text{def}}{=} \inf_T S(f, T)\) — <strong>нижний и верхний интегралы Дарбу</strong>.
-                </div>
-
-                <div class="theorem-box">
-                    <strong>Теорема (Критерий интегрируемости):</strong>
-                    \(f: [a, b] \to \mathbb{R}\) — ограничена. Тогда \(f\) интегрируема на \([a, b] \Leftrightarrow \forall \varepsilon > 0 \; \exists \delta > 0 \colon \forall T \; \Delta(T) < \delta \Rightarrow S(f, T) - s(f, T) < \varepsilon\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>\(\Rightarrow)\) \(\varepsilon > 0\). Возьмём \(\delta > 0\) из определения интегрируемости для \(\frac{\varepsilon}{3} \colon \Delta(T) < \delta \Rightarrow\)<br>
-                            \(\Rightarrow \forall C \; |\sigma(f, T, C) - I| < \frac{\varepsilon}{3}\)<br>
-                            \(I - \frac{\varepsilon}{3} < \sigma(f, T, C) < I + \frac{\varepsilon}{3}\)<br>
-                            \(I - \frac{\varepsilon}{3} \le s(f, T) \le I_* \le I^* \le S(f, T) \le I + \frac{\varepsilon}{3}\)<br>
-                            Тогда \(S(f, T) - s(f, T) \le \frac{2\varepsilon}{3} < \varepsilon\).</p>
-                            <p>\(\Leftarrow)\) \(s(f, T) \le I_* \le I^* \le S(f, T) \Rightarrow I^* - I_* \le S(f, T) - s(f, T)\) (может быть сколь угодно малым).<br>
-                            \(I^* = I_* \overset{\text{def}}{=} I\).<br>
-                            \(\varepsilon > 0\). Подберём \(\delta > 0\) из \((*)\)<br>
-                            \(T \colon \Delta(T) < \delta\), \(C\) — произвольное<br>
-                            \(s(f, T) \le \sigma(f, T, C) \le S(f, T)\)<br>
-                            \(s(f, T) \le I = I_* = I^* \le S(f, T) \Rightarrow |I - \sigma(f, T, C)| \le S(f, T) - s(f, T) < \varepsilon\).</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="remark-box">
-                    \(I_* \le I^*\)
-                </div>
-
-                <div class="theorem-box">
-                    <strong>Теорема:</strong> \(f\) непрерывна на \([a, b] \Rightarrow f\) интегрируема на \([a, b]\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>\(\varepsilon > 0\). По теореме Кантора о равномерной непрерывности найдём такое \(\delta \colon |t_1 - t_2| < \delta \Rightarrow |f(t_1) - f(t_2)| < \frac{\varepsilon}{b-a}\).<br>
-                            Возьмём разбиение \(T\) с \(\Delta(T) < \frac{\delta}{2}\).<br>
-                            Тогда \(\forall k \; M_k - m_k < \varepsilon\) (по теореме Вейерштрасса).<br>
-                            \(S(f, T) - s(f, T) = \sum_{k=1}^n (M_k - m_k)\Delta_k < \varepsilon \cdot \sum_{k=1}^n \Delta_k = \varepsilon \cdot (b-a)\).</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="theorem-box">
-                    <strong>Теорема:</strong> \(f\) монотонна на \([a, b] \Rightarrow f\) интегрируема на \([a, b]\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>Без ограничения общности \(f \uparrow\). \(M_k = f(x_k), m_k = f(x_{k-1})\).<br>
-                            \(S(f, T) - s(f, T) = \sum_{k=1}^n (f(x_k) - f(x_{k-1})) \Delta_k < \delta \cdot \sum_{k=1}^n (f(x_k) - f(x_{k-1})) = \delta \cdot (f(b) - f(a))\).<br>
-                            Подойдёт \(\delta = \frac{\varepsilon}{f(b) - f(a)}\).<br>
-                            При \(f(b) = f(a)\), так как \(f\) монотонна на \([a, b]\), \(f \equiv f(a)\) на \([a, b]\).</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="example-box">
-                    <strong>Пример:</strong> \(\int_0^1 x^2\,dx = \frac{1}{3}\)<br>
-                    \(S_n = \sum_{k=1}^n \frac{1}{n} \cdot \frac{k^2}{n^2} = \frac{1^2 + 2^2 + \dots + n^2}{n^3} = \frac{n(n+1)(2n+1)}{6n^3} \xrightarrow{n \to \infty} \frac{1}{3}\)
-                </div>
-
-                <div class="example-box">
-                    <strong>Пример:</strong> \(D\) — функция Дирихле. \(D\) — не интегрируема ни на одном отрезке.<br>
-                    \[D(x) = \begin{cases} 1, & x \in \mathbb{Q} \\ 0, & x \notin \mathbb{Q} \end{cases}\]
-                    \(\forall [a, b] \; \forall T \; \forall k \; M_k = 1, m_k = 0 \Rightarrow S(D, T) - s(D, T) = \sum \Delta_k = b - a\) (!).
-                </div>
-
-                <div class="remark-box">
-                    Если изменить значение функции в конечном наборе точек, то интегрируемость сохранится, и интеграл не изменится.
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>Пусть значение изменено в \(m\) точках. Была \(f\), стала \(\widetilde{f}\). \(|f| \le C_1 \Rightarrow |\widetilde{f}| \le \widetilde{C}_1\).<br>
-                            \(|\sigma(f, T, C) - \sigma(\widetilde{f}, T, C)| \le \underbrace{2m(C_1 + \widetilde{C}_1)}_{\text{const}} \Delta(T) \xrightarrow{\Delta(T) \to 0} 0\).</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="theorem-box">
-                    <strong>Теорема (Интегрируемость на подотрезках):</strong><br>
-                    1) \(f\) интегрируема на \([a, b]\), \([c, d] \subset [a, b] \Rightarrow f\) интегрируема на \([c, d]\).<br>
-                    2) \(c \in [a, b]\), \(f\) интегрируема на \([a, c]\) и на \([c, b] \Rightarrow f\) интегрируема на \([a, b]\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>1. \(\varepsilon > 0\). Найдём \(\delta > 0\) для \([a, b] \colon \forall T \; \Delta(T) < \delta \Rightarrow S(f, T) - s(f, T) < \varepsilon\).<br>
-                            Проверим, что это \(\delta\) подходит для \([c, d]\).<br>
-                            \(T_1\) — разбиение \([c, d]\) с \(\Delta(T_1) < \delta\). Тогда \(S(f, T_1) - s(f, T_1) \le S(f, T) - s(f, T) < \varepsilon\).</p>
-                            <p>2. \(\varepsilon > 0\). Найдём \(\delta > 0 \colon \forall T_1\) — разбиение \([a, c]\), \(\forall T_2\) — разбиение \([c, b]\): \(\Delta(T_i) < \delta \Rightarrow S(f, T_i) - s(f, T_i) < \frac{\varepsilon}{3}\).<br>
-                            Пусть \(T\) — разбиение \([a, b]\), \(\Delta(T) < \delta\), \(c \in [x_{k-1}, x_k]\).<br>
-                            \(S(f, T) - s(f, T) = \Sigma_1 + \underbrace{(M_k - m_k)}_{\le 2M}\underbrace{\Delta_k}_{< \delta < \frac{\varepsilon}{6M}} + \Sigma_2 < \frac{\varepsilon}{3} + \frac{\varepsilon}{3} + \frac{\varepsilon}{3} = \varepsilon\).<br>
-                            \(|f| \le M\).</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="corollary-box">
-                    <strong>Следствие:</strong> \(f\) кусочно непрерывна на \([a, b] \Rightarrow f\) интегрируема на \([a, b]\).
-                </div>
+        <div class="definition-box"><strong>Определение</strong>: \([a,b]\), \(T=\{x_k\}\) — разбиение, \(f:[a,b]\to\mathbb R\) — ограничена.<br>\(m_k=\inf_{[x_{k-1},x_k]}f\), \(M_k=\sup_{[x_{k-1},x_k]}f\), \(\Delta_k=x_k-x_{k-1}\).<br>\(s(f,T)=\sum_{k=1}^n m_k\Delta_k\), \(S(f,T)=\sum_{k=1}^n M_k\Delta_k\) — <strong>нижняя и верхняя суммы Дарбу</strong>.</div>
+        <h4 class="subsection-title">Свойства сумм Дарбу</h4>
+        <div class="lemma-box"><strong>Свойство 1</strong><br>\(s(f,T)=\inf_C\sigma(f,T,C)\), \(S(f,T)=\sup_C\sigma(f,T,C)\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>\(f(c_k)\le M_k\Rightarrow f(c_k)\Delta_k\le M_k\Delta_k\Rightarrow\sigma(f,T,C)\le S(f,T)\).<br>Для каждого \(k=1,\dots,n\) подберём \(c_k\), такое что \(f(c_k)&gt;M_k-\dfrac{\varepsilon}{b-a}\). Тогда<br>\(\sigma(f,T,C)=\sum_{k=1}^n f(c_k)\Delta_k&gt;\sum_{k=1}^n M_k\Delta_k-\dfrac{\varepsilon}{b-a}\sum_{k=1}^n\Delta_k=S(f,T)-\varepsilon\).<br>Для нижней суммы рассуждение аналогично.</div></div></div>
+        <div class="lemma-box"><strong>Свойство 2</strong><br>От добавления точки в разбиение верхняя сумма не увеличивается, а нижняя — не уменьшается.<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Пусть добавлена точка \(c\in[x_{k_0-1},x_{k_0}]\). Обозначим \(M&#039;=\sup_{[x_{k_0-1},c]}f\), \(M&#039;&#039;=\sup_{[c,x_{k_0}]}f\). Тогда \(M&#039;,M&#039;&#039;\le M_{k_0}\). Было: \(\dots+M_{k_0}(x_{k_0}-x_{k_0-1})\). Стало: \(\dots+M&#039;(c-x_{k_0-1})+M&#039;&#039;(x_{k_0}-c)\le M_{k_0}(c-x_{k_0-1})+M_{k_0}(x_{k_0}-c)\). Для нижней суммы аналогично.</div></div></div>
+        <div class="lemma-box"><strong>Свойство 3</strong><br>Любая нижняя сумма Дарбу не превосходит любую верхнюю.<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Пусть \(T_1,T_2\) — разбиения и \(\widetilde T=T_1\cup T_2\). Тогда \(s(f,T_1)\le s(f,\widetilde T)\le S(f,\widetilde T)\le S(f,T_2)\).</div></div></div>
+        <div class="definition-box"><strong>Определение</strong>: \(I_*\overset{\mathrm{def}}=\sup_Ts(f,T)\), \(I^*\overset{\mathrm{def}}=\inf_TS(f,T)\) — <strong>нижний и верхний интегралы Дарбу</strong>.</div>
+        <div class="theorem-box"><strong>Теорема (критерий интегрируемости)</strong><br>Пусть \(f:[a,b]\to\mathbb R\) ограничена. Тогда \(f\) интегрируема на \([a,b]\) тогда и только тогда, когда \(\forall\varepsilon&gt;0\ \exists\delta&gt;0\), такое что для любого разбиения \(T\) из \(\Delta(T)&lt;\delta\) следует \(S(f,T)-s(f,T)&lt;\varepsilon\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство, \(\Rightarrow\)</strong><br>Пусть \(\varepsilon&gt;0\). Возьмём \(\delta&gt;0\) из определения интегрируемости для \(\varepsilon/3\). Тогда из \(\Delta(T)&lt;\delta\) следует \(\lvert\sigma(f,T,C)-I\rvert&lt;\varepsilon/3\) для любого оснащения \(C\). Значит,<br>\(I-\varepsilon/3\le s(f,T)\le I_*\le I^*\le S(f,T)\le I+\varepsilon/3\),<br>поэтому \(S(f,T)-s(f,T)\le2\varepsilon/3&lt;\varepsilon\).</div></div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство, \(\Leftarrow\)</strong><br>Имеем \(s(f,T)\le I_*\le I^*\le S(f,T)\), поэтому \(I^*-I_*\le S(f,T)-s(f,T)\), а правая часть может быть сколь угодно малой. Следовательно, \(I^*=I_*\overset{\mathrm{def}}=I\). Для произвольного оснащения \(C\): \(s(f,T)\le\sigma(f,T,C)\le S(f,T)\) и \(s(f,T)\le I\le S(f,T)\). Поэтому \(\lvert I-\sigma(f,T,C)\rvert\le S(f,T)-s(f,T)&lt;\varepsilon\).</div></div></div>
+        <div class="remark-box">\(I_*\le I^*\).</div>
+        <div class="theorem-box"><strong>Теорема</strong><br>Если \(f\) непрерывна на \([a,b]\), то \(f\) интегрируема на \([a,b]\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Пусть \(\varepsilon&gt;0\). По теореме Кантора о равномерной непрерывности найдём \(\delta&gt;0\), для которого \(\lvert t_1-t_2\rvert&lt;\delta\Rightarrow\lvert f(t_1)-f(t_2)\rvert&lt;\varepsilon/(b-a)\). Возьмём разбиение \(T\) с \(\Delta(T)&lt;\delta/2\). Тогда по теореме Вейерштрасса \(M_k-m_k&lt;\varepsilon/(b-a)\), и<br>\(S(f,T)-s(f,T)=\sum_{k=1}^n(M_k-m_k)\Delta_k&lt;\dfrac{\varepsilon}{b-a}\sum_{k=1}^n\Delta_k=\varepsilon\).</div></div></div>
+        <div class="theorem-box"><strong>Теорема</strong><br>Если \(f\) монотонна на \([a,b]\), то \(f\) интегрируема на \([a,b]\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Без ограничения общности \(f\uparrow\). Тогда \(M_k=f(x_k)\), \(m_k=f(x_{k-1})\), и<br>\(S(f,T)-s(f,T)=\sum_{k=1}^n(f(x_k)-f(x_{k-1}))\Delta_k&lt;\delta\sum_{k=1}^n(f(x_k)-f(x_{k-1}))=\delta(f(b)-f(a))\).<br>Подойдёт \(\delta=\varepsilon/(f(b)-f(a))\). Если \(f(b)=f(a)\), то из монотонности следует \(f\equiv f(a)\) на \([a,b]\).</div></div></div>
+        <div class="example-box"><strong>Пример</strong><br>\(\int_0^1x^2\,dx=1/3\), поскольку<br>\(S_n=\sum_{k=1}^n\dfrac1n\dfrac{k^2}{n^2}=\dfrac{1^2+2^2+\dots+n^2}{n^3}=\dfrac{n(n+1)(2n+1)}{6n^3}\xrightarrow[n\to\infty]{}\dfrac13\).</div>
+        <div class="example-box"><strong>Пример</strong><br>\(D\) — функция Дирихле. Она не интегрируема ни на одном отрезке.<div class="formula-box">\[D(x)=\begin{cases}1,&amp;x\in\mathbb Q,\\0,&amp;x\notin\mathbb Q.\end{cases}\]</div>
+        <p>Для любого \([a,b]\), любого разбиения \(T\) и каждого \(k\) имеем \(M_k=1\), \(m_k=0\). Следовательно, \(S(D,T)-s(D,T)=\sum\Delta_k=b-a\) (!).</p></div>
+        <div class="remark-box">Если изменить значение функции в конечном наборе точек, то интегрируемость сохранится и интеграл не изменится.<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Пусть значение изменено в \(m\) точках: была \(f\), стала \(\widetilde f\). Если \(\lvert f\rvert\le C_1\), то \(\lvert\widetilde f\rvert\le\widetilde C_1\). Тогда<br>\(\lvert\sigma(f,T,C)-\sigma(\widetilde f,T,C)\rvert\le\underbrace{2m(C_1+\widetilde C_1)}_{\mathrm{const}}\Delta(T)\xrightarrow[\Delta(T)\to0]{}0\).</div></div></div>
+        <div class="theorem-box"><strong>Теорема (интегрируемость на подотрезках)</strong><br>1. Если \(f\) интегрируема на \([a,b]\) и \([c,d]\subset[a,b]\), то \(f\) интегрируема на \([c,d]\).<br>2. Если \(c\in[a,b]\), а \(f\) интегрируема на \([a,c]\) и \([c,b]\), то \(f\) интегрируема на \([a,b]\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство пункта 1</strong><br>Пусть \(\varepsilon&gt;0\). Найдём \(\delta&gt;0\) для \([a,b]\), такое что \(\Delta(T)&lt;\delta\Rightarrow S(f,T)-s(f,T)&lt;\varepsilon\). Если \(T_1\) — разбиение \([c,d]\) с \(\Delta(T_1)&lt;\delta\), дополним его до разбиения \(T\) отрезка \([a,b]\). Тогда \(S(f,T_1)-s(f,T_1)\le S(f,T)-s(f,T)&lt;\varepsilon\).</div></div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство пункта 2</strong><br>Пусть \(\varepsilon&gt;0\). Найдём \(\delta&gt;0\), подходящее одновременно для разбиений \(T_1\) отрезка \([a,c]\) и \(T_2\) отрезка \([c,b]\), так что \(\Delta(T_i)&lt;\delta\Rightarrow S(f,T_i)-s(f,T_i)&lt;\varepsilon/3\). Пусть \(T\) — разбиение \([a,b]\), \(\Delta(T)&lt;\delta\), и \(c\in[x_{k-1},x_k]\). При \(\lvert f\rvert\le M\) и \(\delta&lt;\varepsilon/(6M)\) получаем<br>\(S(f,T)-s(f,T)=\Sigma_1+(M_k-m_k)\Delta_k+\Sigma_2&lt;\varepsilon/3+\varepsilon/3+\varepsilon/3=\varepsilon\).</div></div></div>
+        <div class="theorem-box"><strong>Следствие</strong><br>Если \(f\) кусочно непрерывна на \([a,b]\), то \(f\) интегрируема на \([a,b]\).</div>
             </article>
-
-            <!-- 1.3 Свойства интеграла -->
-            <article id="integral-properties" class="topic">
+            <article id="integral-properties" class="topic constructor-topic">
                 <h3 class="topic-title">1.3 Свойства интеграла</h3>
 
-                <p><strong>1. Аддитивность по отрезку.</strong></p>
-                <div class="theorem-box">
-                    <strong>Теорема:</strong> \(f\) интегрируема на \([a, b]\), \(c \in (a, b)\). Тогда \(\int_a^b f = \int_a^c f + \int_c^b f\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>По теореме из §2 \(f\) интегрируема на \([a, c]\) и на \([c, b]\).<br>
-                            Разобьём отрезки \([a, c]\) и \([c, b]\) на \(n\) равных частей.<br>
-                            \(\sigma_n'\) — интегральная сумма для \([a, c]\), \(\sigma_n''\) — для \([c, b]\).<br>
-                            \(\sigma_n = \sigma_n' + \sigma_n''\) — интегральная сумма для \([a, b]\).<br>
-                            При \(n \to \infty\): \(\int_a^b f = \int_a^c f + \int_c^b f\).</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="remark-box">
-                    Если для \(a > b\) положить по определению \(\int_a^b f = - \int_b^a f\), \(\int_a^a f = 0\), то свойство 1 будет верно для любого расположения \(a, b, c\) (\(f\) интегрируема на наибольшем отрезке).
-                </div>
-
-                <div class="lemma-box">
-                    <strong>Лемма:</strong> \(f, g\) интегрируемы на \([a, b]\). Тогда<br>
-                    1) \(|f|\) интегрируема на \([a, b]\)<br>
-                    2) \(\alpha f + \beta g\) интегрируемы на \([a, b]\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>Интегрируемость функции \(h\):<br>
-                            \(S(h, T) - s(h, T) = \sum_{k=1}^n (M_k - m_k) \cdot \Delta_k\)<br>
-                            \(x, y \in [x_{k-1}, x_k]\)<br>
-                            \(|\alpha f(x) + \beta g(x) - \alpha f(y) - \beta g(y)| \le \alpha|f(x) - f(y)| + \beta|g(x) - g(y)|\)<br>
-                            \(\le \alpha(M_k(f) - m_k(f)) + \beta(M_k(g) - m_k(g))\)<br>
-                            \(d(\alpha f + \beta g) \le \alpha\, d(f) + \beta\, d(g)\)</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <p><strong>2. Линейность по функции.</strong></p>
-                <div class="theorem-box">
-                    <strong>Теорема:</strong> \(f, g\) интегрируемы на \([a, b]\), \(\alpha, \beta \in \mathbb{R} \Rightarrow \int_a^b (\alpha f + \beta g) = \alpha \int_a^b f + \beta \int_a^b g\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>Разобьём отрезок на \(n\) частей.<br>
-                            \(\sigma_n(\alpha f + \beta g) = \alpha \sigma_n(f) + \beta \sigma_n(g)\)<br>
-                            \(\sum (\alpha f(c_k) + \beta g(c_k)) \Delta_k = \alpha \sum f(c_k) \Delta_k + \beta \sum g(c_k) \Delta_k\)</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <p><strong>3. Монотонность интеграла.</strong></p>
-                <div class="theorem-box">
-                    <strong>Теорема:</strong> \(f, g\) интегрируемы на \([a, b]\), \(f \le g\) на \([a, b] \Rightarrow \int_a^b f \le \int_a^b g\).
-                </div>
-                <div class="corollary-box">
-                    <strong>Следствие 1:</strong> \(f \ge 0 \Rightarrow \int_a^b f \ge 0\).
-                </div>
-                <div class="corollary-box">
-                    <strong>Следствие 2:</strong> \(M \ge f \ge m \Rightarrow M(b-a) \ge \int_a^b f \ge m(b-a)\).
-                </div>
-                <div class="corollary-box">
-                    <strong>Следствие 3:</strong> \(f \ge 0\), \(f(x_0) > 0\), \(f\) непрерывна в точке \(x_0 \Rightarrow \int_a^b f > 0\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>\(f\) непрерывна в \(x_0\), \(f(x_0) > 0 \Rightarrow \exists U(x_0) \colon f(x) > \varepsilon > 0 \; \forall x \in U(x_0)\).<br>
-                            \(\int_a^b f = \underbrace{\int_a^\alpha f}_{\ge 0} + \underbrace{\int_\alpha^\beta f}_{> \varepsilon(\beta - \alpha)} + \underbrace{\int_\beta^b f}_{\ge 0} > 0\).</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <p><strong>4.</strong></p>
-                <div class="theorem-box">
-                    <strong>Теорема:</strong> \(f\) интегрируема на \([a, b] \Rightarrow \left| \int_a^b f \right| \le \int_a^b |f|\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>\(-|f| \le f \le |f|\) и воспользуемся монотонностью интеграла.</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="theorem-box">
-                    <strong>Теорема:</strong> Пусть \(f\) и \(g\) интегрируемы на \([a, b]\), \(m \le f(x) \le M\) на \([a, b]\).                 Тогда \(\int_a^b f(x)g(x)\,dx = \mu \int_a^b g(x)\,dx, \; \mu \in [m, M]\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>\(mg(x) \le f(x)g(x) \le Mg(x)\)<br>
-                            \(m \int_a^b g(x)\,dx \le \int_a^b f(x)g(x)\,dx \le M \int_a^b g(x)\,dx\).</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="remark-box">
-                    \(f, g\) интегрируемы на \([a, b] \Rightarrow fg\) — тоже.
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>\(|f(x)g(x) - f(y)g(y)| = |f(x)g(x) - f(x)g(y) + f(x)g(y) - f(y)g(y)| \le |f(x)| \cdot |g(x) - g(y)| + |g(y)| \cdot |f(x) - f(y)|\).</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="corollary-box">
-                    <strong>Следствие 1:</strong> \(f\) непрерывна на \([a, b]\), \(g\) интегрируема, \(g \ge 0\). Тогда \(\exists c \in [a, b] \colon \int_a^b f(x)g(x)\,dx = f(c) \int_a^b g(x)\,dx\).
-                </div>
-                <div class="corollary-box">
-                    <strong>Следствие 2:</strong> \(f\) интегрируема на \([a, b] \Rightarrow \exists \mu \colon \int_a^b f(x)\,dx = \mu \cdot (b - a)\).
-                </div>
-                <div class="corollary-box">
-                    <strong>Следствие 3:</strong> \(f\) непрерывна на \([a, b] \Rightarrow \exists c \in [a, b] \colon \int_a^b f(x)\,dx = f(c) \cdot (b - a)\).
-                </div>
+        <h4 class="subsection-title">1. Аддитивность по отрезку</h4>
+        <div class="theorem-box"><strong>Теорема</strong><br>Пусть \(f\) интегрируема на \([a,b]\), \(c\in(a,b)\). Тогда \(\int_a^bf=\int_a^cf+\int_c^bf\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>По теореме из § 1.2 функция \(f\) интегрируема на \([a,c]\) и \([c,b]\). Разобьём оба отрезка на \(n\) равных частей. Пусть \(\sigma_n&#039;\) — интегральная сумма для \([a,c]\), \(\sigma_n&#039;&#039;\) — для \([c,b]\). Тогда \(\sigma_n=\sigma_n&#039;+\sigma_n&#039;&#039;\) — интегральная сумма для \([a,b]\). Переходя к пределу при \(n\to\infty\), получаем \(\int_a^bf=\int_a^cf+\int_c^bf\).</div></div></div>
+        <div class="remark-box">Если для \(a&gt;b\) положить по определению \(\int_a^bf=-\int_b^af\), а \(\int_a^af=0\), то аддитивность верна при любом расположении \(a,b,c\), если \(f\) интегрируема на наибольшем отрезке.</div>
+        <div class="lemma-box"><strong>Лемма</strong><br>Пусть \(f,g\) интегрируемы на \([a,b]\). Тогда \(\lvert f\rvert\) и \(\alpha f+\beta g\) интегрируемы на \([a,b]\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Для функции \(h\): \(S(h,T)-s(h,T)=\sum_{k=1}^n(M_k-m_k)\Delta_k\). Если \(x,y\in[x_{k-1},x_k]\), то<br>\(\lvert\alpha f(x)+\beta g(x)-\alpha f(y)-\beta g(y)\rvert\le\lvert\alpha\rvert\,\lvert f(x)-f(y)\rvert+\lvert\beta\rvert\,\lvert g(x)-g(y)\rvert\).<br>Следовательно, колебание \(\alpha f+\beta g\) не превосходит суммы соответствующих колебаний \(f\) и \(g\), умноженных на \(\lvert\alpha\rvert\) и \(\lvert\beta\rvert\). Для \(\lvert f\rvert\) используем неравенство \(\bigl\lvert|f(x)|-|f(y)|\bigr\rvert\le|f(x)-f(y)|\).</div></div></div>
+        <h4 class="subsection-title">2. Линейность по функции</h4>
+        <div class="theorem-box"><strong>Теорема</strong><br>Если \(f,g\) интегрируемы на \([a,b]\), \(\alpha,\beta\in\mathbb R\), то \(\int_a^b(\alpha f+\beta g)=\alpha\int_a^bf+\beta\int_a^bg\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Разобьём отрезок на \(n\) частей. Тогда \(\sigma_n(\alpha f+\beta g)=\alpha\sigma_n(f)+\beta\sigma_n(g)\), поскольку \(\sum(\alpha f(c_k)+\beta g(c_k))\Delta_k=\alpha\sum f(c_k)\Delta_k+\beta\sum g(c_k)\Delta_k\). Переходим к пределу.</div></div></div>
+        <h4 class="subsection-title">3. Монотонность интеграла</h4>
+        <div class="theorem-box"><strong>Теорема</strong><br>Пусть \(f,g\) интегрируемы на \([a,b]\) и \(f\le g\) на \([a,b]\). Тогда \(\int_a^bf\le\int_a^bg\).</div>
+        <div class="theorem-box"><strong>Следствие 1</strong><br>Если \(f\ge0\), то \(\int_a^bf\ge0\).</div>
+        <div class="theorem-box"><strong>Следствие 2</strong><br>Если \(m\le f\le M\), то \(m(b-a)\le\int_a^bf\le M(b-a)\).</div>
+        <div class="theorem-box"><strong>Следствие 3</strong><br>Пусть \(f\ge0\), \(f(x_0)&gt;0\), и \(f\) непрерывна в точке \(x_0\). Тогда \(\int_a^bf&gt;0\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Из непрерывности в \(x_0\) и \(f(x_0)&gt;0\) следует, что существует окрестность \(U(x_0)\), на которой \(f(x)&gt;\varepsilon&gt;0\). Выберем \([\alpha,\beta]\subset U(x_0)\). Тогда<br>\(\int_a^bf=\underbrace{\int_a^\alpha f}_{\ge0}+\underbrace{\int_\alpha^\beta f}_{&gt;\varepsilon(\beta-\alpha)}+\underbrace{\int_\beta^bf}_{\ge0}&gt;0\).</div></div></div>
+        <h4 class="subsection-title">4. Оценка модуля интеграла</h4>
+        <div class="theorem-box"><strong>Теорема</strong><br>Если \(f\) интегрируема на \([a,b]\), то \(\left|\int_a^bf\right|\le\int_a^b|f|\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Имеем \(-|f|\le f\le|f|\). Применим монотонность интеграла.</div></div></div>
+        <div class="theorem-box"><strong>Теорема</strong><br>Пусть \(f,g\) интегрируемы на \([a,b]\), \(m\le f(x)\le M\) на \([a,b]\), \(g\ge0\). Тогда \(\int_a^bf(x)g(x)\,dx=\mu\int_a^bg(x)\,dx\), где \(\mu\in[m,M]\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Из \(mg(x)\le f(x)g(x)\le Mg(x)\) следует<br>\(m\int_a^bg(x)\,dx\le\int_a^bf(x)g(x)\,dx\le M\int_a^bg(x)\,dx\).</div></div></div>
+        <div class="remark-box">Если \(f,g\) интегрируемы на \([a,b]\), то \(fg\) также интегрируема.<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>\(\lvert f(x)g(x)-f(y)g(y)\rvert=\lvert f(x)g(x)-f(x)g(y)+f(x)g(y)-f(y)g(y)\rvert\le|f(x)|\,|g(x)-g(y)|+|g(y)|\,|f(x)-f(y)|\). Ограниченность \(f,g\) и критерий Дарбу дают требуемое.</div></div></div>
+        <div class="theorem-box"><strong>Следствие 1</strong><br>Пусть \(f\) непрерывна на \([a,b]\), \(g\) интегрируема и \(g\ge0\). Тогда существует \(c\in[a,b]\), для которого \(\int_a^bf(x)g(x)\,dx=f(c)\int_a^bg(x)\,dx\).</div>
+        <div class="theorem-box"><strong>Следствие 2</strong><br>Если \(f\) интегрируема на \([a,b]\), то существует \(\mu\), такое что \(\int_a^bf(x)\,dx=\mu(b-a)\).</div>
+        <div class="theorem-box"><strong>Следствие 3</strong><br>Если \(f\) непрерывна на \([a,b]\), то существует \(c\in[a,b]\), для которого \(\int_a^bf(x)\,dx=f(c)(b-a)\).</div>
             </article>
-
-            <!-- 1.4 Интеграл с переменным верхним пределом. Первообразная -->
-            <article id="variable-upper" class="topic">
+            <article id="variable-upper" class="topic constructor-topic">
                 <h3 class="topic-title">1.4 Интеграл с переменным верхним пределом. Первообразная</h3>
 
-                <div class="definition-box">
-                    <strong>Определение:</strong>
-                    \(f\) интегрируема на \([a, b]\).<br>
-                    \(\Phi(x) = \int_a^x f, \; x \in [a, b]\) — интеграл с переменным верхним пределом.
-                </div>
-
-                <div class="theorem-box">
-                    <strong>Теорема (Барроу):</strong> \(f\) непрерывна в точке \(x_0\), \(\Phi\) определена в окрестности \(x_0 \Rightarrow \Phi'(x_0) = f(x_0)\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>Докажем по определению:<br>
-                            \(\left| \frac{\Phi(x_0 + h) - \Phi(x_0)}{h} - f(x_0) \right| = \left| \frac{1}{h} \left( \int_a^{x_0+h} f - \int_a^{x_0} f \right) - \frac{1}{h} \int_{x_0}^{x_0+h} f(x_0) \right| =\)<br>
-                            \(= \left| \frac{1}{h} \int_{x_0}^{x_0+h} (f(x) - f(x_0))\,dx \right| \le \frac{1}{|h|} \cdot \left| \int_{x_0}^{x_0+h} |f(x) - f(x_0)|\,dx \right| \quad (*)\)<br>
-                            По непрерывности в \(x_0 \; \forall \varepsilon > 0 \; \exists \delta > 0 \colon |x - x_0| < \delta \Rightarrow |f(x) - f(x_0)| < \varepsilon\)<br>
-                            \(|h| < \delta \Rightarrow (*) \le \frac{1}{|h|} \cdot |h| \cdot \varepsilon = \varepsilon\).</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="definition-box">
-                    <strong>Определение:</strong>
-                    \(A \subset \mathbb{R}\). Функция \(F\) называется <strong>первообразной</strong> функции \(f\) на \(A\), если \(F'(x) = f(x) \; \forall x \in A\).
-                </div>
-
-                <div class="statement-box">
-                    <strong>Утверждение:</strong> Пусть \(F_1\) и \(F_2\) — первообразные \(f\) на \(\langle a, b \rangle\). Тогда \(F_1 - F_2 = \text{const}\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>\(g(x) = F_1(x) - F_2(x)\). Тогда \(\forall x \in \langle a, b \rangle \; g'(x) = F_1'(x) - F_2'(x) = 0\).<br>
-                            \(x_1, x_2 \in \langle a, b \rangle \; \exists c \in \langle x_1, x_2 \rangle \colon g(x_1) - g(x_2) = g'(c)(x_1 - x_2) = 0 \Rightarrow g(x) = \text{const}\).</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="theorem-box">
-                    <strong>Теорема (Формула Ньютона-Лейбница):</strong> Пусть \(F\) — первообразная \(f\) на \([a, b]\), \(f\) интегрируема на \([a, b]\).                 Тогда \(\int_a^b f(x)\,dx = F(b) - F(a) = F(x) \big|_a^b\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>Заметим, что \(\Phi(x) = \int_a^x f\) — первообразная \(f \Rightarrow \Phi = F + C\) \(\Rightarrow\)<br>
-                            \(\Rightarrow F(b) - F(a) = \Phi(b) - \Phi(a) = \int_a^b f\).</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="example-box">
-                    <strong>Пример:</strong><br>
-                    \(\int_0^1 x^2\,dx = \frac{x^3}{3} \bigg|_0^1 = \frac{1}{3}\)<br>
-                    \(\int_0^\pi \sin x\,dx = (-\cos x) \bigg|_0^\pi = -\cos \pi + \cos 0 = 2\)
-                </div>
+        <div class="definition-box"><strong>Определение</strong>: Пусть \(f\) интегрируема на \([a,b]\). Функция \(\Phi(x)=\int_a^xf\), \(x\in[a,b]\), называется интегралом с переменным верхним пределом.</div>
+        <div class="theorem-box"><strong>Теорема Барроу</strong><br>Пусть \(f\) непрерывна в точке \(x_0\), а \(\Phi\) определена в окрестности \(x_0\). Тогда \(\Phi&#039;(x_0)=f(x_0)\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Докажем по определению:<br>\(\left|\dfrac{\Phi(x_0+h)-\Phi(x_0)}h-f(x_0)\right|=\left|\dfrac1h\left(\int_a^{x_0+h}f-\int_a^{x_0}f\right)-\dfrac1h\int_{x_0}^{x_0+h}f(x_0)\right|\)<br>\(=\left|\dfrac1h\int_{x_0}^{x_0+h}(f(x)-f(x_0))\,dx\right|\le\dfrac1{|h|}\left|\int_{x_0}^{x_0+h}|f(x)-f(x_0)|\,dx\right|.\)<br>По непрерывности в \(x_0\), для любого \(\varepsilon&gt;0\) существует \(\delta&gt;0\), такое что \(|x-x_0|&lt;\delta\Rightarrow|f(x)-f(x_0)|&lt;\varepsilon\). Поэтому при \(|h|&lt;\delta\) последнее выражение не превосходит \(|h|\varepsilon/|h|=\varepsilon\).</div></div></div>
+        <div class="definition-box"><strong>Определение</strong>: Пусть \(A\subset\mathbb R\). Функция \(F\) называется <strong>первообразной</strong> функции \(f\) на \(A\), если \(F&#039;(x)=f(x)\) для всех \(x\in A\).</div>
+        <div class="theorem-box"><strong>Утверждение</strong><br>Пусть \(F_1,F_2\) — первообразные \(f\) на \(\langle a,b\rangle\). Тогда \(F_1-F_2=\mathrm{const}\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Положим \(g(x)=F_1(x)-F_2(x)\). Для каждого \(x\in\langle a,b\rangle\) имеем \(g&#039;(x)=F_1&#039;(x)-F_2&#039;(x)=0\). Для любых \(x_1,x_2\in\langle a,b\rangle\) по теореме Лагранжа существует \(c\in\langle x_1,x_2\rangle\), такое что \(g(x_1)-g(x_2)=g&#039;(c)(x_1-x_2)=0\). Значит, \(g\) постоянна.</div></div></div>
+        <div class="theorem-box"><strong>Теорема (формула Ньютона–Лейбница)</strong><br>Пусть \(F\) — первообразная \(f\) на \([a,b]\), а \(f\) интегрируема на \([a,b]\). Тогда \(\int_a^bf(x)\,dx=F(b)-F(a)=F(x)\big|_a^b\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Функция \(\Phi(x)=\int_a^xf\) является первообразной \(f\). Поэтому \(\Phi=F+C\), и \(F(b)-F(a)=\Phi(b)-\Phi(a)=\int_a^bf\).</div></div></div>
+        <div class="example-box"><strong>Примеры</strong><br>\(\int_0^1x^2\,dx=\dfrac{x^3}{3}\big|_0^1=\dfrac13\).<br>\(\int_0^\pi\sin x\,dx=(-\cos x)\big|_0^\pi=-\cos\pi+\cos0=2\).</div>
             </article>
-
-            <!-- 1.5 Неопределённый интеграл -->
-            <article id="indefinite" class="topic">
+            <article id="indefinite" class="topic constructor-topic">
                 <h3 class="topic-title">1.5 Неопределённый интеграл</h3>
 
-                <div class="definition-box">
-                    <strong>Определение:</strong>
-                    \(f: \langle a, b \rangle \to \mathbb{R}\), у \(f\) есть первообразная.<br>
-                    <strong>Неопределённым интегралом</strong> \(f\) называется множество всех первообразных \(f\) на \(\langle a, b \rangle\).<br>
-                    Обозначение: \(\int f(x)\,dx\).
-                </div>
-
-                <div class="remark-box">
-                    \(\int f(x)\,dx = \{F(x) + C \mid C \in \mathbb{R}\}\), \(F\) — некоторая первообразная.<br>
-                    Обычно пишут \(\int f(x)\,dx = F(x) + C\).
-                </div>
-
-                <div class="formula-box">
-                    <strong>Таблица интегралов:</strong>
-                    <ol>
-                        <li>\(\int x^\alpha\,dx = \frac{x^{\alpha+1}}{\alpha+1} + C, \; \alpha \neq -1\)</li>
-                        <li>\(\int \frac{dx}{x} = \ln|x| + C\)</li>
-                        <li>\(\int a^x\,dx = \frac{a^x}{\ln a} + C \; \left(\int e^x\,dx = e^x + C\right)\)</li>
-                        <li>\(\int \cos x\,dx = \sin x + C \; ; \; \int \sin x\,dx = -\cos x + C\)</li>
-                        <li>\(\int \frac{dx}{\cos^2 x} = \operatorname{tg} x + C \; ; \; \int \frac{dx}{\sin^2 x} = -\operatorname{ctg} x + C\)</li>
-                        <li>\(\int \frac{dx}{\sqrt{1-x^2}} = \arcsin x + C\)</li>
-                        <li>\(\int \frac{dx}{1+x^2} = \operatorname{arctg} x + C\)</li>
-                    </ol>
-                </div>
-
-                <div class="statement-box">
-                    <strong>Утверждение (Линейность неопределённого интеграла):</strong>
-                    \(f, g\) имеют первообразные на \(\langle a, b \rangle\), \(\alpha, \beta \in \mathbb{R}\), \(\alpha^2 + \beta^2 > 0 \Rightarrow \alpha f + \beta g\) имеет первообразную и \(\int (\alpha f + \beta g) = \alpha \int f + \beta \int g\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>Пусть \(H \in \text{правой части} \Rightarrow H = \alpha F + \beta G\), где \(F' = f, G' = g \Rightarrow H' = \alpha f + \beta g \Rightarrow H \in \text{левой части}\).<br>
-                            Пусть \(H \in \text{левой части}\), \(F\) — первообразная \(f\), б.о.о. \(\beta \neq 0\).<br>
-                            \(G = \frac{H - \alpha F}{\beta}\), \(G' = \frac{H' - \alpha F'}{\beta} = \frac{\alpha f + \beta g - \alpha f}{\beta} = g\). Таким образом, \(H = \alpha F + \beta G\).</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="remark-box">
-                    <strong>Сумма Минковского:</strong> \(A + B = \{a + b \mid a \in A, b \in B\}\).
-                </div>
-
-                <div class="theorem-box">
-                    <strong>Теорема (О замене переменной в неопределённом интеграле):</strong>
-                    \(\varphi\) — непрерывно дифференцируема. Тогда \(\int f(\varphi(t)) \varphi'(t)\,dt = \int f(x)\,dx \quad (x = \varphi(t))\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>\(F\) — первообразная \(f \Rightarrow \int f(x)\,dx = F(x) + C\)<br>
-                            \((F(x))' = (F(\varphi(t)))' = F'(\varphi(t)) \cdot \varphi'(t) = f(\varphi(t)) \cdot \varphi'(t)\).</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="example-box">
-                    <strong>Пример:</strong><br>
-                    \(\int \sqrt{1-x^2}\,dx = \left[ \begin{array}{l} x = \cos t \\ dx = -\sin t \, dt \end{array} \right] = \int -\sin^2 t \, dt = \frac{1}{2} \int (\cos 2t - 1)\,dt =\)<br>
-                    \(= \frac{1}{4} \sin 2t - \frac{1}{2} t + C = \frac{1}{2} x \sqrt{1-x^2} - \frac{1}{2} \arccos x + C\)<br><br>
-                    \(\int_{-1}^1 \sqrt{1-x^2}\,dx = F(1) - F(-1) = -\frac{1}{2} \arccos 1 + \frac{1}{2} \arccos(-1) = \frac{\pi}{2}\)
-                </div>
-
-                <div class="theorem-box">
-                    <strong>Теорема (Интегрирование по частям):</strong>
-                    \(f, g\) — дифференцируемы, функция \(fg'\) имеет первообразную, тогда \(f'g\) — тоже и \(\int f'g = fg - \int fg'\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>\((fg)' = f'g + fg' \Rightarrow f'g = (fg)' - fg'\).<br>
-                            \(\int g(x) \underbrace{f'(x)\,dx}_{df} = f(x)g(x) - \int f(x) \underbrace{g'(x)\,dx}_{dg}\)<br>
-                            \(\int g \, df = fg - \int f \, dg\)</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="example-box">
-                    <strong>Примеры:</strong><br>
-                    1. \(\int x \sin x\,dx = -x \cos x + \int \cos x \, dx = -x \cos x + \sin x + C\)<br><br>
-                    2. \(\int \ln x\,dx = x \ln x - \int dx = x(\ln x - 1) + C\)<br><br>
-                    3. \(\int e^x \sin x\,dx = e^x \sin x - \int e^x \cos x\,dx = e^x \sin x - (e^x \cos x + \int e^x \sin x \, dx)\)<br>
-                    \(\int e^x \sin x \, dx = \frac{1}{2} e^x (\sin x - \cos x) + C\)
-                </div>
+        <div class="definition-box"><strong>Определение</strong>: Пусть \(f:\langle a,b\rangle\to\mathbb R\) и у \(f\) есть первообразная. <strong>Неопределённым интегралом</strong> \(f\) называется множество всех первообразных \(f\) на \(\langle a,b\rangle\).<br><strong>Обозначение:</strong> \(\int f(x)\,dx\).</div>
+        <div class="remark-box">\(\int f(x)\,dx=\{F(x)+C\mid C\in\mathbb R\}\), где \(F\) — некоторая первообразная. Обычно пишут \(\int f(x)\,dx=F(x)+C\).</div>
+        <h4 class="subsection-title">Таблица интегралов</h4>
+        <ul class="constructor-note-list"><li>\(\int x^\alpha\,dx=\dfrac{x^{\alpha+1}}{\alpha+1}+C\), \(\alpha\ne-1\).</li><li>\(\int\dfrac{dx}{x}=\ln|x|+C\).</li><li>\(\int a^x\,dx=\dfrac{a^x}{\ln a}+C\); в частности, \(\int e^x\,dx=e^x+C\).</li><li>\(\int\cos x\,dx=\sin x+C\); \(\int\sin x\,dx=-\cos x+C\).</li><li>\(\int\dfrac{dx}{\cos^2x}=\operatorname{tg}x+C\); \(\int\dfrac{dx}{\sin^2x}=-\operatorname{ctg}x+C\).</li><li>\(\int\dfrac{dx}{\sqrt{1-x^2}}=\arcsin x+C\).</li><li>\(\int\dfrac{dx}{1+x^2}=\operatorname{arctg}x+C\).</li></ul>
+        <div class="theorem-box"><strong>Утверждение (линейность неопределённого интеграла)</strong><br>Пусть \(f,g\) имеют первообразные на \(\langle a,b\rangle\), \(\alpha,\beta\in\mathbb R\), \(\alpha^2+\beta^2&gt;0\). Тогда \(\alpha f+\beta g\) имеет первообразную и \(\int(\alpha f+\beta g)=\alpha\int f+\beta\int g\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Пусть \(H\) принадлежит правой части. Тогда \(H=\alpha F+\beta G\), где \(F&#039;=f\), \(G&#039;=g\), поэтому \(H&#039;=\alpha f+\beta g\), то есть \(H\) принадлежит левой части. Обратно, пусть \(H\) принадлежит левой части, а \(F\) — первообразная \(f\). Без ограничения общности \(\beta\ne0\). Положим \(G=(H-\alpha F)/\beta\). Тогда \(G&#039;=(H&#039;-\alpha F&#039;)/\beta=(\alpha f+\beta g-\alpha f)/\beta=g\), и \(H=\alpha F+\beta G\).</div></div></div>
+        <div class="remark-box"><strong>Сумма Минковского:</strong> \(A+B=\{a+b\mid a\in A,\ b\in B\}\).</div>
+        <div class="theorem-box"><strong>Теорема о замене переменной в неопределённом интеграле</strong><br>Пусть \(\varphi\) непрерывно дифференцируема. Тогда \(\int f(\varphi(t))\varphi&#039;(t)\,dt=\int f(x)\,dx\), где \(x=\varphi(t)\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Пусть \(F\) — первообразная \(f\), то есть \(\int f(x)\,dx=F(x)+C\). Тогда \((F(\varphi(t)))&#039;=F&#039;(\varphi(t))\varphi&#039;(t)=f(\varphi(t))\varphi&#039;(t)\).</div></div></div>
+        <div class="example-box"><strong>Пример</strong><br>\(\int\sqrt{1-x^2}\,dx=\left[\begin{array}{l}x=\cos t\\dx=-\sin t\,dt\end{array}\right]=\int-\sin^2t\,dt=\dfrac12\int(\cos2t-1)\,dt\)<br>\(=\dfrac14\sin2t-\dfrac12t+C=\dfrac12x\sqrt{1-x^2}-\dfrac12\arccos x+C\).<br>Поэтому \(\int_{-1}^1\sqrt{1-x^2}\,dx=F(1)-F(-1)=-\dfrac12\arccos1+\dfrac12\arccos(-1)=\dfrac\pi2\).</div>
+        <div class="theorem-box"><strong>Теорема (интегрирование по частям)</strong><br>Пусть \(f,g\) дифференцируемы и функция \(fg&#039;\) имеет первообразную. Тогда \(f&#039;g\) также имеет первообразную и \(\int f&#039;g=fg-\int fg&#039;\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>\((fg)&#039;=f&#039;g+fg&#039;\Rightarrow f&#039;g=(fg)&#039;-fg&#039;\). Значит,<br>\(\int g(x)\underbrace{f&#039;(x)\,dx}_{df}=f(x)g(x)-\int f(x)\underbrace{g&#039;(x)\,dx}_{dg}\),<br>то есть \(\int g\,df=fg-\int f\,dg\).</div></div></div>
+        <div class="example-box"><strong>Примеры</strong><br>1. \(\int x\sin x\,dx=-x\cos x+\int\cos x\,dx=-x\cos x+\sin x+C\).<br>2. \(\int\ln x\,dx=x\ln x-\int dx=x(\ln x-1)+C\).<br>3. \(\int e^x\sin x\,dx=e^x\sin x-\int e^x\cos x\,dx=e^x\sin x-(e^x\cos x+\int e^x\sin x\,dx)\), поэтому \(\int e^x\sin x\,dx=\dfrac12e^x(\sin x-\cos x)+C\).</div>
             </article>
-
-            <!-- 1.6 Вычисление интеграла -->
-            <article id="computation" class="topic">
+            <article id="computation" class="topic constructor-topic">
                 <h3 class="topic-title">1.6 Вычисление интеграла</h3>
 
-                <div class="theorem-box">
-                    <strong>Теорема (Замена переменной в определённом интеграле):</strong>
-                    \(\varphi: [\alpha, \beta] \to [A, B]\), \(\varphi\) дифференцируема на \([\alpha, \beta]\), \(f\) непрерывна на \([A, B]\). Тогда
-                    \[\int_\alpha^\beta f(\varphi(t)) \cdot \varphi'(t)\,dt = \int_{\varphi(\alpha)}^{\varphi(\beta)} f(x)\,dx\]
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>\(F\) — первообразная \(f\) на \([A, B] \Rightarrow (F(\varphi(t)))' = F'(\varphi(t)) \cdot \varphi'(t) = f(\varphi(t)) \cdot \varphi'(t)\)<br>
-                            \(\int_\alpha^\beta f(\varphi(t))\varphi'(t)\,dt = F(\varphi(t)) \big|_\alpha^\beta = F(x) \big|_{\varphi(\alpha)}^{\varphi(\beta)} = \int_{\varphi(\alpha)}^{\varphi(\beta)} f(x)\,dx\)</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="example-box">
-                    <strong>Пример:</strong><br>
-                    \(\int_0^1 \sqrt{1-x^2}\,dx = \left[ \begin{array}{l} x = \cos t \\ dx = -\sin t \, dt \end{array} \right] = -\int_{\pi/2}^0 \sqrt{1-\cos^2 t} \sin t \, dt = \int_0^{\pi/2} \sin^2 t \, dt =\)<br>
-                    \(= \int_0^{\pi/2} \frac{1-\cos 2t}{2}\,dt = \left( \frac{1}{2} t - \frac{\sin 2t}{4} \right) \bigg|_0^{\pi/2} = \frac{\pi}{4}\)
-                </div>
-
-                <div class="theorem-box">
-                    <strong>Теорема (Интегрирование по частям):</strong>
-                    \(f, g\) непрерывно дифференцируемы на \([a, b]\). Тогда
-                    \[\int_a^b f'g = (fg) \big|_a^b - \int_a^b fg'\]
-                </div>
-
-                <div class="exercise-box">
-                    <strong>Упражнения:</strong>
-                    <ol>
-                        <li>\(\int_{-\pi/4}^{\pi/4} \ln(\cos x) \sin x \, dx\)</li>
-                        <li>\(\int_1^2 x^2 e^x \, dx\)</li>
-                        <li>\(\int_0^1 x \sqrt{1-x^2}\,dx\)</li>
-                        <li>\(\int_0^1 \operatorname{arctg} x \, dx\)</li>
-                    </ol>
-                </div>
-
-                <div class="statement-box">
-                    <strong>Утверждение:</strong><br>
-                    1. \(f\) нечётная \(\Rightarrow \int_{-a}^a f = 0\)<br>
-                    2. \(f\) чётная \(\Rightarrow \int_{-a}^a f = 2 \int_0^a f\)
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>1. \(\int_{-a}^0 f(x)\,dx = \left[ \begin{array}{l} x = -t \\ dx = -dt \end{array} \right] = -\int_a^0 f(-t)\,dt = \int_0^a -f(t)\,dt = -\int_0^a f(t)\,dt\)</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="statement-box">
-                    <strong>Утверждение:</strong> \(f\) периодическая с периодом \(T\). Тогда \(\forall a \; \int_a^{a+T} f = \int_0^T f\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>\(\int_a^{a+T} f(x)\,dx \overset{x \to x+kT}{=} \int_{a_0}^{a_0+T} f(x)\,dx = \int_{a_0}^0 f(x)\,dx + \int_0^{a_0+T} f = \int_{a_0+T}^T f + \int_0^{a_0+T} f\)</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
+        <div class="theorem-box"><strong>Теорема (замена переменной в определённом интеграле)</strong><br>Пусть \(\varphi:[\alpha,\beta]\to[A,B]\), \(\varphi\) дифференцируема на \([\alpha,\beta]\), а \(f\) непрерывна на \([A,B]\). Тогда<div class="formula-box">\[\int_\alpha^\beta f(\varphi(t))\varphi&#039;(t)\,dt=\int_{\varphi(\alpha)}^{\varphi(\beta)}f(x)\,dx\]</div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Пусть \(F\) — первообразная \(f\) на \([A,B]\). Тогда \((F(\varphi(t)))&#039;=F&#039;(\varphi(t))\varphi&#039;(t)=f(\varphi(t))\varphi&#039;(t)\), и<br>\(\int_\alpha^\beta f(\varphi(t))\varphi&#039;(t)\,dt=F(\varphi(t))\big|_\alpha^\beta=F(x)\big|_{\varphi(\alpha)}^{\varphi(\beta)}=\int_{\varphi(\alpha)}^{\varphi(\beta)}f(x)\,dx\).</div></div></div>
+        <div class="example-box"><strong>Пример</strong><br>\(\int_0^1\sqrt{1-x^2}\,dx=\left[\begin{array}{l}x=\cos t\\dx=-\sin t\,dt\end{array}\right]=-\int_{\pi/2}^0\sqrt{1-\cos^2t}\sin t\,dt=\int_0^{\pi/2}\sin^2t\,dt\)<br>\(=\int_0^{\pi/2}\dfrac{1-\cos2t}{2}\,dt=\left(\dfrac t2-\dfrac{\sin2t}{4}\right)\big|_0^{\pi/2}=\dfrac\pi4\).</div>
+        <div class="theorem-box"><strong>Теорема (интегрирование по частям)</strong><br>Пусть \(f,g\) непрерывно дифференцируемы на \([a,b]\). Тогда \(\int_a^bf&#039;g=(fg)\big|_a^b-\int_a^bfg&#039;\).</div>
+        <h4 class="subsection-title">Упражнения</h4>
+        <ul class="constructor-note-list"><li>\(\int_{-\pi/4}^{\pi/4}\ln(\cos x)\sin x\,dx\).</li><li>\(\int_1^2x^2e^x\,dx\).</li><li>\(\int_0^1x\sqrt{1-x^2}\,dx\).</li><li>\(\int_0^1\operatorname{arctg}x\,dx\).</li></ul>
+        <div class="theorem-box"><strong>Утверждение</strong><br>1. Если \(f\) нечётная, то \(\int_{-a}^af=0\).<br>2. Если \(f\) чётная, то \(\int_{-a}^af=2\int_0^af\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Для нечётной функции заменой \(x=-t\) получаем<br>\(\int_{-a}^0f(x)\,dx=-\int_a^0f(-t)\,dt=\int_0^a-f(t)\,dt=-\int_0^af(t)\,dt\).<br>Следовательно, интеграл на симметричном отрезке равен нулю. Для чётной функции аналогично обе половины интеграла равны.</div></div></div>
+        <div class="theorem-box"><strong>Утверждение</strong><br>Пусть \(f\) периодическая с периодом \(T\). Тогда для любого \(a\) выполняется \(\int_a^{a+T}f=\int_0^Tf\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Сдвигом на целое число периодов приведём \(a\) к \(a_0\in[0,T)\). Тогда<br>\(\int_a^{a+T}f(x)\,dx=\int_{a_0}^{a_0+T}f(x)\,dx=\int_{a_0}^0f(x)\,dx+\int_0^{a_0+T}f(x)\,dx\)<br>\(=\int_{a_0+T}^Tf(x)\,dx+\int_0^{a_0+T}f(x)\,dx=\int_0^Tf(x)\,dx\).</div></div></div>
             </article>
-
-            <!-- 1.7 Квадрируемость. Интеграл как площадь -->
-            <article id="area" class="topic">
+            <article id="area" class="topic constructor-topic">
                 <h3 class="topic-title">1.7 Квадрируемость. Интеграл как площадь</h3>
 
-                <div class="definition-box">
-                    <strong>Определение:</strong>
-                    \(P\) — множество всех многоугольных фигур. \(A\) — множество точек плоскости.<br>
-                    \(S_*(A) = \sup_{\substack{P \in \mathcal{P} \\ P \subset A}} S(P)\) — <strong>внутренняя площадь</strong>.<br>
-                    \(S^*(A) = \inf_{\substack{P \in \mathcal{P} \\ P \supset A}} S(P)\) — <strong>внешняя площадь</strong>.<br>
-                    Если \(S^*(A) = S_*(A)\), то множество \(A\) называется <strong>квадрируемым</strong>, а их общее значение — <strong>площадью</strong> \(A\).
-                </div>
-
-                <div class="example-box">
-                    <strong>Пример:</strong> \(A = \underbrace{K}_{\text{квадрат}} \cap \mathbb{Q}^2\). Тогда \(S_*(A) = 0\); \(S^*(A) = 1\).
-                </div>
-
-                <div class="definition-box">
-                    <strong>Определение:</strong>
-                    \(f \ge 0\) на \([a, b]\). <strong>Подграфиком</strong> \(f\) называется множество \(\{(x, y) \mid x \in [a, b], 0 \le y \le f(x)\}\).
-                </div>
-
-                <div class="remark-box">
-                    \(A\) (ограниченное) квадрируемо \(\Leftrightarrow \forall \varepsilon > 0 \; \exists P, Q \in \mathcal{P} \colon P \subset A \subset Q \colon S(Q) - S(P) < \varepsilon\).
-                </div>
-
-                <div class="theorem-box">
-                    <strong>Теорема:</strong> Пусть \(f\) интегрируема на \([a, b]\) и неотрицательна на \([a, b]\). Тогда подграфик \(f\) квадрируем, и \(S_{\text{подгр}} = \int_a^b f(x)\,dx\).
-                    <div class="proof-box">
-                        <button class="toggle-proof">📖 Показать доказательство</button>
-                        <div class="proof-content">
-                            <p>\(\varepsilon > 0\). Выберем такое разбиение \([a, b]\), что \(S(f, T) - s(f, T) < \varepsilon\).</p>
-                            <div class="proof-qed">∎</div>
-                        </div>
-                    </div>
-                </div>
+        <div class="definition-box"><strong>Определение</strong>: Пусть \(\mathcal P\) — множество всех многоугольных фигур, \(A\) — множество точек плоскости.<br>\(S_*(A)=\sup_{P\in\mathcal P,\,P\subset A}S(P)\) — <strong>внутренняя площадь</strong>.<br>\(S^*(A)=\inf_{P\in\mathcal P,\,P\supset A}S(P)\) — <strong>внешняя площадь</strong>.<br>Если \(S^*(A)=S_*(A)\), то множество \(A\) называется <strong>квадрируемым</strong>, а их общее значение — <strong>площадью</strong> \(A\).</div>
+        <div class="example-box"><strong>Пример</strong><br>Пусть \(A=K\cap\mathbb Q^2\), где \(K\) — единичный квадрат. Тогда \(S_*(A)=0\), а \(S^*(A)=1\).</div>
+        <div class="definition-box"><strong>Определение</strong>: Пусть \(f\ge0\) на \([a,b]\). <strong>Подграфиком</strong> \(f\) называется множество \(\{(x,y)\mid x\in[a,b],\ 0\le y\le f(x)\}\).</div>
+        <div class="remark-box">Ограниченное множество \(A\) квадрируемо тогда и только тогда, когда для каждого \(\varepsilon&gt;0\) существуют \(P,Q\in\mathcal P\), такие что \(P\subset A\subset Q\) и \(S(Q)-S(P)&lt;\varepsilon\).</div>
+        <div class="theorem-box"><strong>Теорема</strong><br>Пусть \(f\) интегрируема и неотрицательна на \([a,b]\). Тогда подграфик \(f\) квадрируем и \(S_{\mathrm{подгр}}=\int_a^bf(x)\,dx\).<div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Пусть \(\varepsilon&gt;0\). Выберем разбиение \(T\) отрезка \([a,b]\), для которого \(S(f,T)-s(f,T)&lt;\varepsilon\). Прямоугольники высот \(m_k\) образуют внутреннюю многоугольную фигуру площади \(s(f,T)\), а прямоугольники высот \(M_k\) — внешнюю фигуру площади \(S(f,T)\). Разность их площадей меньше \(\varepsilon\), поэтому подграфик квадрируем. Переход к общей площади даёт \(S_{\mathrm{подгр}}=\int_a^bf(x)\,dx\).</div></div></div>
             </article>
-
         </section>
 
-        <!-- NOTE_CONSTRUCTOR_CONTENT_START -->
         <section class="content-section constructor-content-section" data-constructor-section="teoriya-chisel">
             <h2 class="part-title">Теория чисел</h2>
 
@@ -736,7 +258,7 @@
         <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Равенство \(\lfloor2ai/p\rfloor=k\) равносильно \(pk/2&lt;ai&lt;pk/2+p/2\). Число \(ai\) имеет отрицательный наименьший вычет тогда и только тогда, когда \(k\) нечётно. Формула следует из критерия Гаусса.</div></div>
         <figure class="constructor-note-image" data-note-block="reciprocity-lattice"><img src="images/notes/likbez/quadratic-reciprocity-lattice.svg" alt="Схема подсчёта целых точек под прямой для квадратичного закона взаимности" loading="lazy" decoding="async"><figcaption>Целые точки в прямоугольнике \(1\le x\le(q-1)/2\), \(1\le y\le(p-1)/2\); прямая разделяет области, подсчитываемые в доказательстве.</figcaption></figure>
         <div class="proof-box"><div class="proof-content show"><strong>Доказательство леммы Эйзенштейна (геометрическое)</strong><br>Сумма \(\sum_{i=1}^{(p-1)/2}\lfloor2ai/p\rfloor\) считает целые точки на вертикалях \(x=2i\) под графиком \(y=(a/p)x\). Поэтому знак символа Лежандра определяется чётностью числа целых точек в соответствующем треугольнике. При наложении двух таких подсчётов для \(p\) и \(q\) остаётся прямоугольник из \((p-1)(q-1)/4\) точек, что вновь даёт показатель в квадратичном законе взаимности.</div></div>
-        <div class="proof-box"><div class="proof-content show"><strong>Доказательство Руссо</strong><br>Рассмотрим \(\mathbb Z_{pq}^{<em>}=\{k=1,\ldots,pq-1\mid(k,pq)=1\}\) и его образ в \(\mathbb Z_p^{</em>}\times\mathbb Z_q^{*}\). Положим \(A=\{(a,b)\mid1\le a\le(p-1)/2,1\le b\le q-1\}\), \(B=\{(a,b)\mid1\le a\le p-1,1\le b\le(q-1)/2\}\), \(C=\{k\le(pq-1)/2\mid(k,pq)=1\}\). По китайской теореме об остатках произведение всех элементов равно \(((p-1)!)^{q-1},((q-1)!)^{p-1})=(1,1)\). Попарное объединение элемента с противоположным показывает, что произведения по \(A,B,C\) различаются только знаками. Их сравнение по модулю \(p\) и \(q\) даёт множители \(\left(\frac qp\right)\) и \(\left(\frac pq\right)\); при переходе от \(A\) к \(B\) меняется \((p-1)(q-1)/4\) знаков. Отсюда следует закон взаимности.</div></div>
+        <div class="proof-box"><div class="proof-content show"><strong>Доказательство Руссо</strong><br>Рассмотрим \(\mathbb Z_{pq}^{*}=\{k=1,\ldots,pq-1\mid(k,pq)=1\}\) и его образ в \(\mathbb Z_p^{*}\times\mathbb Z_q^{*}\). Положим \(A=\{(a,b)\mid1\le a\le(p-1)/2,1\le b\le q-1\}\), \(B=\{(a,b)\mid1\le a\le p-1,1\le b\le(q-1)/2\}\), \(C=\{k\le(pq-1)/2\mid(k,pq)=1\}\). По китайской теореме об остатках произведение всех элементов равно \(((p-1)!)^{q-1},((q-1)!)^{p-1})=(1,1)\). Попарное объединение элемента с противоположным показывает, что произведения по \(A,B,C\) различаются только знаками. Их сравнение по модулю \(p\) и \(q\) даёт множители \(\left(\frac qp\right)\) и \(\left(\frac pq\right)\); при переходе от \(A\) к \(B\) меняется \((p-1)(q-1)/4\) знаков. Отсюда следует закон взаимности.</div></div>
         <div class="theorem-box"><strong>Квадратичный закон взаимности для символов Якоби</strong><br>Пусть \(m,n\in\mathbb N\), \(m,n&gt;1\), \(2\nmid m\), \(2\nmid n\). Тогда \(\left(\frac mn\right)\left(\frac nm\right)=(-1)^{(m-1)(n-1)/4}\).</div>
         <div class="proof-box"><div class="proof-content show"><strong>Доказательство</strong><br>Пусть \(m=p_1\cdots p_k\), \(n=q_1\cdots q_\ell\). Перемножая закон взаимности для всех пар \((p_i,q_j)\), получаем показатель \(\left(\sum_i(p_i-1)/2\right)\left(\sum_j(q_j-1)/2\right)\equiv(m-1)(n-1)/4\pmod2\).</div></div>
         <div class="example-box"><strong>Пример</strong><br>\(\left(\frac{77}{101}\right)=\left(\frac{101}{77}\right)(-1)^{50\cdot38}=\left(\frac{24}{77}\right)=\left(\frac2{77}\right)\left(\frac3{77}\right)=(-1)\left(\frac{77}{3}\right)=\left(\frac23\right)=-1\).</div>

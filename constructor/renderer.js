@@ -27,9 +27,15 @@
 
     function renderInline(value) {
         let text = escapeHtml(value);
+        const inlineMath = [];
+        text = text.replace(/\\\([\s\S]*?\\\)/g, match => {
+            const index = inlineMath.push(match) - 1;
+            return '\uE000' + index + '\uE001';
+        });
         text = text.replace(/`([^`\n]+)`/g, '<code>$1</code>');
         text = text.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
         text = text.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+        text = text.replace(/\uE000(\d+)\uE001/g, (match, index) => inlineMath[Number(index)] || match);
         return text.replace(/\n/g, '<br>');
     }
 

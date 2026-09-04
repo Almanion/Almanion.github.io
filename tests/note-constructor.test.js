@@ -72,6 +72,10 @@ function testRenderer() {
     assert.ok(nav.includes('nav-group-toggle'));
     assert.ok(nav.includes('href="#short-subsection"'));
     assert.ok(nav.includes('Короткое'));
+    assert.strictEqual(
+        Renderer.renderInline(String.raw`Нижний \(I_*\), верхний \(I^*\), группа \(\mathbb Z_p^*\); **снаружи**.`),
+        String.raw`Нижний \(I_*\), верхний \(I^*\), группа \(\mathbb Z_p^*\); <strong>снаружи</strong>.`
+    );
     const nestedDefinition = Object.assign(Model.createBlock('definition'), { term: 'Сила', separator: ':', content: 'мера взаимодействия' });
     nestedDefinition.children.push(Object.assign(Model.createBlock('formula'), { latex: 'F = ma' }));
     assert.strictEqual(Renderer.renderBlock(nestedDefinition, 0), '<div class="definition-box"><strong>Сила</strong>: мера взаимодействия<div class="formula-box">\\[F = ma\\]</div></div>');

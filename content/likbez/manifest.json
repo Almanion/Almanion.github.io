@@ -3,6 +3,7 @@
   "subject": "likbez",
   "title": "Ликбезы",
   "sections": [
+    { "id": "integral-riemana" },
     { "id": "teoriya-chisel" },
     { "id": "lineynaya-algebra" }
   ]

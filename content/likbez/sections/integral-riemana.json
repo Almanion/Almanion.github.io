@@ -1,0 +1,394 @@
+{
+  "schemaVersion": 1,
+  "id": "integral-riemana",
+  "subject": "likbez",
+  "title": "1. Интеграл Римана",
+  "navTitle": "Интеграл Римана",
+  "blocks": [],
+  "subsections": [
+    {
+      "id": "def-riemann",
+      "type": "subsection",
+      "title": "1.1 Определение интеграла Римана",
+      "navTitle": "1.1 Определение интеграла Римана",
+      "content": "",
+      "children": [
+        {
+          "id": "riemann-definition",
+          "type": "definition",
+          "title": "Определение",
+          "separator": ":",
+          "content": "\\(f:[a,b]\\). \\(T=\\{a=t_0<t_1<\\dots<t_n=b\\}\\) — **разбиение** отрезка \\([a,b]\\).\n\\(C=\\{c_k\\in[t_{k-1},t_k]\\}\\) — **оснащение** разбиения.\n\\(\\sigma(f,T,C)=\\sum_{k=1}^n f(c_k)(t_k-t_{k-1})\\) — **риманова сумма** функции \\(f\\) на \\([a,b]\\), соответствующая разбиению \\(T\\), оснащённому \\(C\\).\n\\(\\Delta(T)=\\max_{k=1}^n(t_k-t_{k-1})\\) — **мелкость** разбиения \\(T\\).\n\nЧисло \\(I\\) называется **интегралом** (Римана) функции \\(f\\) по \\([a,b]\\), если",
+          "children": [
+            {"id":"riemann-epsilon-definition","type":"formula","title":"","latex":"\\forall\\varepsilon>0\\ \\exists\\delta>0:\\ \\forall T:\\ \\Delta(T)<\\delta\\Rightarrow\\forall C\\ \\lvert\\sigma(f,T,C)-I\\rvert<\\varepsilon","content":"","children":[]},
+            {"id":"riemann-integrable-notation","type":"paragraph","title":"","content":"В таком случае \\(f\\) называется **интегрируемой** на \\([a,b]\\).\n**Обозначение:** \\(I=\\int_a^b f(x)\\,dx\\).","children":[]}
+          ]
+        },
+        {"id":"constant-function-example","type":"example","title":"Пример","content":"\\(f(x)\\equiv C\\Rightarrow f\\) интегрируема на \\([a,b]\\) и \\(\\int_a^b C\\,dx=C(b-a)\\).","children":[]},
+        {
+          "id": "integrable-implies-bounded",
+          "type": "theorem",
+          "title": "Утверждение",
+          "content": "Если \\(f\\) интегрируема на \\([a,b]\\), то \\(f\\) ограничена на \\([a,b]\\).",
+          "children": [
+            {"id":"integrable-implies-bounded-proof","type":"proof","title":"Доказательство","content":"Предположим, что \\(f\\) неограничена, \\(T=\\{x_k\\}\\). Тогда \\(f\\) не ограничена на некотором \\([x_{k_0-1},x_{k_0}]\\). Выберем \\(c_k\\) при \\(k\\ne k_0\\) произвольно. Точку \\(c_{k_0}\\) можно выбрать так, что \\(f(c_{k_0})\\) достаточно велико по модулю; тогда \\(\\sigma(f,T,C)\\) будет сколь угодно большой по модулю.","children":[]}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "darboux-sum",
+      "type": "subsection",
+      "title": "1.2 Сумма Дарбу",
+      "navTitle": "1.2 Сумма Дарбу",
+      "content": "",
+      "children": [
+        {
+          "id": "darboux-definition",
+          "type": "definition",
+          "title": "Определение",
+          "separator": ":",
+          "content": "\\([a,b]\\), \\(T=\\{x_k\\}\\) — разбиение, \\(f:[a,b]\\to\\mathbb R\\) — ограничена.\n\\(m_k=\\inf_{[x_{k-1},x_k]}f\\), \\(M_k=\\sup_{[x_{k-1},x_k]}f\\), \\(\\Delta_k=x_k-x_{k-1}\\).\n\\(s(f,T)=\\sum_{k=1}^n m_k\\Delta_k\\), \\(S(f,T)=\\sum_{k=1}^n M_k\\Delta_k\\) — **нижняя и верхняя суммы Дарбу**.",
+          "children": []
+        },
+        {"id":"darboux-properties-heading","type":"heading","title":"Свойства сумм Дарбу","content":"","children":[]},
+        {
+          "id": "darboux-property-extrema",
+          "type": "lemma",
+          "title": "Свойство 1",
+          "content": "\\(s(f,T)=\\inf_C\\sigma(f,T,C)\\), \\(S(f,T)=\\sup_C\\sigma(f,T,C)\\).",
+          "children": [
+            {"id":"darboux-property-extrema-proof","type":"proof","title":"Доказательство","content":"\\(f(c_k)\\le M_k\\Rightarrow f(c_k)\\Delta_k\\le M_k\\Delta_k\\Rightarrow\\sigma(f,T,C)\\le S(f,T)\\).\nДля каждого \\(k=1,\\dots,n\\) подберём \\(c_k\\), такое что \\(f(c_k)>M_k-\\dfrac{\\varepsilon}{b-a}\\). Тогда\n\\(\\sigma(f,T,C)=\\sum_{k=1}^n f(c_k)\\Delta_k>\\sum_{k=1}^n M_k\\Delta_k-\\dfrac{\\varepsilon}{b-a}\\sum_{k=1}^n\\Delta_k=S(f,T)-\\varepsilon\\).\nДля нижней суммы рассуждение аналогично.","children":[]}
+          ]
+        },
+        {
+          "id": "darboux-property-refinement",
+          "type": "lemma",
+          "title": "Свойство 2",
+          "content": "От добавления точки в разбиение верхняя сумма не увеличивается, а нижняя — не уменьшается.",
+          "children": [
+            {"id":"darboux-property-refinement-proof","type":"proof","title":"Доказательство","content":"Пусть добавлена точка \\(c\\in[x_{k_0-1},x_{k_0}]\\). Обозначим \\(M'=\\sup_{[x_{k_0-1},c]}f\\), \\(M''=\\sup_{[c,x_{k_0}]}f\\). Тогда \\(M',M''\\le M_{k_0}\\). Было: \\(\\dots+M_{k_0}(x_{k_0}-x_{k_0-1})\\). Стало: \\(\\dots+M'(c-x_{k_0-1})+M''(x_{k_0}-c)\\le M_{k_0}(c-x_{k_0-1})+M_{k_0}(x_{k_0}-c)\\). Для нижней суммы аналогично.","children":[]}
+          ]
+        },
+        {
+          "id": "darboux-property-comparison",
+          "type": "lemma",
+          "title": "Свойство 3",
+          "content": "Любая нижняя сумма Дарбу не превосходит любую верхнюю.",
+          "children": [
+            {"id":"darboux-property-comparison-proof","type":"proof","title":"Доказательство","content":"Пусть \\(T_1,T_2\\) — разбиения и \\(\\widetilde T=T_1\\cup T_2\\). Тогда \\(s(f,T_1)\\le s(f,\\widetilde T)\\le S(f,\\widetilde T)\\le S(f,T_2)\\).","children":[]}
+          ]
+        },
+        {
+          "id": "darboux-integrals-definition",
+          "type": "definition",
+          "title": "Определение",
+          "separator": ":",
+          "content": "\\(I_*\\overset{\\mathrm{def}}=\\sup_Ts(f,T)\\), \\(I^*\\overset{\\mathrm{def}}=\\inf_TS(f,T)\\) — **нижний и верхний интегралы Дарбу**.",
+          "children": []
+        },
+        {
+          "id": "darboux-integrability-criterion",
+          "type": "theorem",
+          "title": "Теорема (критерий интегрируемости)",
+          "content": "Пусть \\(f:[a,b]\\to\\mathbb R\\) ограничена. Тогда \\(f\\) интегрируема на \\([a,b]\\) тогда и только тогда, когда \\(\\forall\\varepsilon>0\\ \\exists\\delta>0\\), такое что для любого разбиения \\(T\\) из \\(\\Delta(T)<\\delta\\) следует \\(S(f,T)-s(f,T)<\\varepsilon\\).",
+          "children": [
+            {"id":"darboux-integrability-criterion-proof-forward","type":"proof","title":"Доказательство, \\(\\Rightarrow\\)","content":"Пусть \\(\\varepsilon>0\\). Возьмём \\(\\delta>0\\) из определения интегрируемости для \\(\\varepsilon/3\\). Тогда из \\(\\Delta(T)<\\delta\\) следует \\(\\lvert\\sigma(f,T,C)-I\\rvert<\\varepsilon/3\\) для любого оснащения \\(C\\). Значит,\n\\(I-\\varepsilon/3\\le s(f,T)\\le I_*\\le I^*\\le S(f,T)\\le I+\\varepsilon/3\\),\nпоэтому \\(S(f,T)-s(f,T)\\le2\\varepsilon/3<\\varepsilon\\).","children":[]},
+            {"id":"darboux-integrability-criterion-proof-back","type":"proof","title":"Доказательство, \\(\\Leftarrow\\)","content":"Имеем \\(s(f,T)\\le I_*\\le I^*\\le S(f,T)\\), поэтому \\(I^*-I_*\\le S(f,T)-s(f,T)\\), а правая часть может быть сколь угодно малой. Следовательно, \\(I^*=I_*\\overset{\\mathrm{def}}=I\\). Для произвольного оснащения \\(C\\): \\(s(f,T)\\le\\sigma(f,T,C)\\le S(f,T)\\) и \\(s(f,T)\\le I\\le S(f,T)\\). Поэтому \\(\\lvert I-\\sigma(f,T,C)\\rvert\\le S(f,T)-s(f,T)<\\varepsilon\\).","children":[]}
+          ]
+        },
+        {"id":"lower-upper-integrals-order","type":"remark","title":"","content":"\\(I_*\\le I^*\\).","children":[]},
+        {
+          "id": "continuous-integrable",
+          "type": "theorem",
+          "title": "Теорема",
+          "content": "Если \\(f\\) непрерывна на \\([a,b]\\), то \\(f\\) интегрируема на \\([a,b]\\).",
+          "children": [
+            {"id":"continuous-integrable-proof","type":"proof","title":"Доказательство","content":"Пусть \\(\\varepsilon>0\\). По теореме Кантора о равномерной непрерывности найдём \\(\\delta>0\\), для которого \\(\\lvert t_1-t_2\\rvert<\\delta\\Rightarrow\\lvert f(t_1)-f(t_2)\\rvert<\\varepsilon/(b-a)\\). Возьмём разбиение \\(T\\) с \\(\\Delta(T)<\\delta/2\\). Тогда по теореме Вейерштрасса \\(M_k-m_k<\\varepsilon/(b-a)\\), и\n\\(S(f,T)-s(f,T)=\\sum_{k=1}^n(M_k-m_k)\\Delta_k<\\dfrac{\\varepsilon}{b-a}\\sum_{k=1}^n\\Delta_k=\\varepsilon\\).","children":[]}
+          ]
+        },
+        {
+          "id": "monotone-integrable",
+          "type": "theorem",
+          "title": "Теорема",
+          "content": "Если \\(f\\) монотонна на \\([a,b]\\), то \\(f\\) интегрируема на \\([a,b]\\).",
+          "children": [
+            {"id":"monotone-integrable-proof","type":"proof","title":"Доказательство","content":"Без ограничения общности \\(f\\uparrow\\). Тогда \\(M_k=f(x_k)\\), \\(m_k=f(x_{k-1})\\), и\n\\(S(f,T)-s(f,T)=\\sum_{k=1}^n(f(x_k)-f(x_{k-1}))\\Delta_k<\\delta\\sum_{k=1}^n(f(x_k)-f(x_{k-1}))=\\delta(f(b)-f(a))\\).\nПодойдёт \\(\\delta=\\varepsilon/(f(b)-f(a))\\). Если \\(f(b)=f(a)\\), то из монотонности следует \\(f\\equiv f(a)\\) на \\([a,b]\\).","children":[]}
+          ]
+        },
+        {"id":"x-square-integral-example","type":"example","title":"Пример","content":"\\(\\int_0^1x^2\\,dx=1/3\\), поскольку\n\\(S_n=\\sum_{k=1}^n\\dfrac1n\\dfrac{k^2}{n^2}=\\dfrac{1^2+2^2+\\dots+n^2}{n^3}=\\dfrac{n(n+1)(2n+1)}{6n^3}\\xrightarrow[n\\to\\infty]{}\\dfrac13\\).","children":[]},
+        {
+          "id": "dirichlet-function-example",
+          "type": "example",
+          "title": "Пример",
+          "content": "\\(D\\) — функция Дирихле. Она не интегрируема ни на одном отрезке.",
+          "children": [
+            {"id":"dirichlet-function-formula","type":"formula","title":"","latex":"D(x)=\\begin{cases}1,&x\\in\\mathbb Q,\\\\0,&x\\notin\\mathbb Q.\\end{cases}","content":"","children":[]},
+            {"id":"dirichlet-function-explanation","type":"paragraph","title":"","content":"Для любого \\([a,b]\\), любого разбиения \\(T\\) и каждого \\(k\\) имеем \\(M_k=1\\), \\(m_k=0\\). Следовательно, \\(S(D,T)-s(D,T)=\\sum\\Delta_k=b-a\\) (!).","children":[]}
+          ]
+        },
+        {
+          "id": "finite-value-changes",
+          "type": "remark",
+          "title": "",
+          "content": "Если изменить значение функции в конечном наборе точек, то интегрируемость сохранится и интеграл не изменится.",
+          "children": [
+            {"id":"finite-value-changes-proof","type":"proof","title":"Доказательство","content":"Пусть значение изменено в \\(m\\) точках: была \\(f\\), стала \\(\\widetilde f\\). Если \\(\\lvert f\\rvert\\le C_1\\), то \\(\\lvert\\widetilde f\\rvert\\le\\widetilde C_1\\). Тогда\n\\(\\lvert\\sigma(f,T,C)-\\sigma(\\widetilde f,T,C)\\rvert\\le\\underbrace{2m(C_1+\\widetilde C_1)}_{\\mathrm{const}}\\Delta(T)\\xrightarrow[\\Delta(T)\\to0]{}0\\).","children":[]}
+          ]
+        },
+        {
+          "id": "subinterval-integrability",
+          "type": "theorem",
+          "title": "Теорема (интегрируемость на подотрезках)",
+          "content": "1. Если \\(f\\) интегрируема на \\([a,b]\\) и \\([c,d]\\subset[a,b]\\), то \\(f\\) интегрируема на \\([c,d]\\).\n2. Если \\(c\\in[a,b]\\), а \\(f\\) интегрируема на \\([a,c]\\) и \\([c,b]\\), то \\(f\\) интегрируема на \\([a,b]\\).",
+          "children": [
+            {"id":"subinterval-integrability-proof-1","type":"proof","title":"Доказательство пункта 1","content":"Пусть \\(\\varepsilon>0\\). Найдём \\(\\delta>0\\) для \\([a,b]\\), такое что \\(\\Delta(T)<\\delta\\Rightarrow S(f,T)-s(f,T)<\\varepsilon\\). Если \\(T_1\\) — разбиение \\([c,d]\\) с \\(\\Delta(T_1)<\\delta\\), дополним его до разбиения \\(T\\) отрезка \\([a,b]\\). Тогда \\(S(f,T_1)-s(f,T_1)\\le S(f,T)-s(f,T)<\\varepsilon\\).","children":[]},
+            {"id":"subinterval-integrability-proof-2","type":"proof","title":"Доказательство пункта 2","content":"Пусть \\(\\varepsilon>0\\). Найдём \\(\\delta>0\\), подходящее одновременно для разбиений \\(T_1\\) отрезка \\([a,c]\\) и \\(T_2\\) отрезка \\([c,b]\\), так что \\(\\Delta(T_i)<\\delta\\Rightarrow S(f,T_i)-s(f,T_i)<\\varepsilon/3\\). Пусть \\(T\\) — разбиение \\([a,b]\\), \\(\\Delta(T)<\\delta\\), и \\(c\\in[x_{k-1},x_k]\\). При \\(\\lvert f\\rvert\\le M\\) и \\(\\delta<\\varepsilon/(6M)\\) получаем\n\\(S(f,T)-s(f,T)=\\Sigma_1+(M_k-m_k)\\Delta_k+\\Sigma_2<\\varepsilon/3+\\varepsilon/3+\\varepsilon/3=\\varepsilon\\).","children":[]}
+          ]
+        },
+        {"id":"piecewise-continuous-corollary","type":"theorem","title":"Следствие","content":"Если \\(f\\) кусочно непрерывна на \\([a,b]\\), то \\(f\\) интегрируема на \\([a,b]\\).","children":[]}
+      ]
+    },
+    {
+      "id": "integral-properties",
+      "type": "subsection",
+      "title": "1.3 Свойства интеграла",
+      "navTitle": "1.3 Свойства интеграла",
+      "content": "",
+      "children": [
+        {"id":"interval-additivity-heading","type":"heading","title":"1. Аддитивность по отрезку","content":"","children":[]},
+        {
+          "id": "interval-additivity",
+          "type": "theorem",
+          "title": "Теорема",
+          "content": "Пусть \\(f\\) интегрируема на \\([a,b]\\), \\(c\\in(a,b)\\). Тогда \\(\\int_a^bf=\\int_a^cf+\\int_c^bf\\).",
+          "children": [
+            {"id":"interval-additivity-proof","type":"proof","title":"Доказательство","content":"По теореме из § 1.2 функция \\(f\\) интегрируема на \\([a,c]\\) и \\([c,b]\\). Разобьём оба отрезка на \\(n\\) равных частей. Пусть \\(\\sigma_n'\\) — интегральная сумма для \\([a,c]\\), \\(\\sigma_n''\\) — для \\([c,b]\\). Тогда \\(\\sigma_n=\\sigma_n'+\\sigma_n''\\) — интегральная сумма для \\([a,b]\\). Переходя к пределу при \\(n\\to\\infty\\), получаем \\(\\int_a^bf=\\int_a^cf+\\int_c^bf\\).","children":[]}
+          ]
+        },
+        {"id":"oriented-integral-remark","type":"remark","title":"","content":"Если для \\(a>b\\) положить по определению \\(\\int_a^bf=-\\int_b^af\\), а \\(\\int_a^af=0\\), то аддитивность верна при любом расположении \\(a,b,c\\), если \\(f\\) интегрируема на наибольшем отрезке.","children":[]},
+        {
+          "id": "integrability-combinations-lemma",
+          "type": "lemma",
+          "title": "Лемма",
+          "content": "Пусть \\(f,g\\) интегрируемы на \\([a,b]\\). Тогда \\(\\lvert f\\rvert\\) и \\(\\alpha f+\\beta g\\) интегрируемы на \\([a,b]\\).",
+          "children": [
+            {"id":"integrability-combinations-proof","type":"proof","title":"Доказательство","content":"Для функции \\(h\\): \\(S(h,T)-s(h,T)=\\sum_{k=1}^n(M_k-m_k)\\Delta_k\\). Если \\(x,y\\in[x_{k-1},x_k]\\), то\n\\(\\lvert\\alpha f(x)+\\beta g(x)-\\alpha f(y)-\\beta g(y)\\rvert\\le\\lvert\\alpha\\rvert\\,\\lvert f(x)-f(y)\\rvert+\\lvert\\beta\\rvert\\,\\lvert g(x)-g(y)\\rvert\\).\nСледовательно, колебание \\(\\alpha f+\\beta g\\) не превосходит суммы соответствующих колебаний \\(f\\) и \\(g\\), умноженных на \\(\\lvert\\alpha\\rvert\\) и \\(\\lvert\\beta\\rvert\\). Для \\(\\lvert f\\rvert\\) используем неравенство \\(\\bigl\\lvert|f(x)|-|f(y)|\\bigr\\rvert\\le|f(x)-f(y)|\\).","children":[]}
+          ]
+        },
+        {"id":"function-linearity-heading","type":"heading","title":"2. Линейность по функции","content":"","children":[]},
+        {
+          "id": "integral-linearity",
+          "type": "theorem",
+          "title": "Теорема",
+          "content": "Если \\(f,g\\) интегрируемы на \\([a,b]\\), \\(\\alpha,\\beta\\in\\mathbb R\\), то \\(\\int_a^b(\\alpha f+\\beta g)=\\alpha\\int_a^bf+\\beta\\int_a^bg\\).",
+          "children": [
+            {"id":"integral-linearity-proof","type":"proof","title":"Доказательство","content":"Разобьём отрезок на \\(n\\) частей. Тогда \\(\\sigma_n(\\alpha f+\\beta g)=\\alpha\\sigma_n(f)+\\beta\\sigma_n(g)\\), поскольку \\(\\sum(\\alpha f(c_k)+\\beta g(c_k))\\Delta_k=\\alpha\\sum f(c_k)\\Delta_k+\\beta\\sum g(c_k)\\Delta_k\\). Переходим к пределу.","children":[]}
+          ]
+        },
+        {"id":"integral-monotonicity-heading","type":"heading","title":"3. Монотонность интеграла","content":"","children":[]},
+        {"id":"integral-monotonicity","type":"theorem","title":"Теорема","content":"Пусть \\(f,g\\) интегрируемы на \\([a,b]\\) и \\(f\\le g\\) на \\([a,b]\\). Тогда \\(\\int_a^bf\\le\\int_a^bg\\).","children":[]},
+        {"id":"integral-monotonicity-corollary-1","type":"theorem","title":"Следствие 1","content":"Если \\(f\\ge0\\), то \\(\\int_a^bf\\ge0\\).","children":[]},
+        {"id":"integral-monotonicity-corollary-2","type":"theorem","title":"Следствие 2","content":"Если \\(m\\le f\\le M\\), то \\(m(b-a)\\le\\int_a^bf\\le M(b-a)\\).","children":[]},
+        {
+          "id": "positive-integral-corollary",
+          "type": "theorem",
+          "title": "Следствие 3",
+          "content": "Пусть \\(f\\ge0\\), \\(f(x_0)>0\\), и \\(f\\) непрерывна в точке \\(x_0\\). Тогда \\(\\int_a^bf>0\\).",
+          "children": [
+            {"id":"positive-integral-proof","type":"proof","title":"Доказательство","content":"Из непрерывности в \\(x_0\\) и \\(f(x_0)>0\\) следует, что существует окрестность \\(U(x_0)\\), на которой \\(f(x)>\\varepsilon>0\\). Выберем \\([\\alpha,\\beta]\\subset U(x_0)\\). Тогда\n\\(\\int_a^bf=\\underbrace{\\int_a^\\alpha f}_{\\ge0}+\\underbrace{\\int_\\alpha^\\beta f}_{>\\varepsilon(\\beta-\\alpha)}+\\underbrace{\\int_\\beta^bf}_{\\ge0}>0\\).","children":[]}
+          ]
+        },
+        {"id":"absolute-integral-heading","type":"heading","title":"4. Оценка модуля интеграла","content":"","children":[]},
+        {
+          "id": "absolute-integral-bound",
+          "type": "theorem",
+          "title": "Теорема",
+          "content": "Если \\(f\\) интегрируема на \\([a,b]\\), то \\(\\left|\\int_a^bf\\right|\\le\\int_a^b|f|\\).",
+          "children": [
+            {"id":"absolute-integral-bound-proof","type":"proof","title":"Доказательство","content":"Имеем \\(-|f|\\le f\\le|f|\\). Применим монотонность интеграла.","children":[]}
+          ]
+        },
+        {
+          "id": "weighted-mean-value",
+          "type": "theorem",
+          "title": "Теорема",
+          "content": "Пусть \\(f,g\\) интегрируемы на \\([a,b]\\), \\(m\\le f(x)\\le M\\) на \\([a,b]\\), \\(g\\ge0\\). Тогда \\(\\int_a^bf(x)g(x)\\,dx=\\mu\\int_a^bg(x)\\,dx\\), где \\(\\mu\\in[m,M]\\).",
+          "children": [
+            {"id":"weighted-mean-value-proof","type":"proof","title":"Доказательство","content":"Из \\(mg(x)\\le f(x)g(x)\\le Mg(x)\\) следует\n\\(m\\int_a^bg(x)\\,dx\\le\\int_a^bf(x)g(x)\\,dx\\le M\\int_a^bg(x)\\,dx\\).","children":[]}
+          ]
+        },
+        {
+          "id": "product-integrability",
+          "type": "remark",
+          "title": "",
+          "content": "Если \\(f,g\\) интегрируемы на \\([a,b]\\), то \\(fg\\) также интегрируема.",
+          "children": [
+            {"id":"product-integrability-proof","type":"proof","title":"Доказательство","content":"\\(\\lvert f(x)g(x)-f(y)g(y)\\rvert=\\lvert f(x)g(x)-f(x)g(y)+f(x)g(y)-f(y)g(y)\\rvert\\le|f(x)|\\,|g(x)-g(y)|+|g(y)|\\,|f(x)-f(y)|\\). Ограниченность \\(f,g\\) и критерий Дарбу дают требуемое.","children":[]}
+          ]
+        },
+        {"id":"weighted-mean-value-corollary-1","type":"theorem","title":"Следствие 1","content":"Пусть \\(f\\) непрерывна на \\([a,b]\\), \\(g\\) интегрируема и \\(g\\ge0\\). Тогда существует \\(c\\in[a,b]\\), для которого \\(\\int_a^bf(x)g(x)\\,dx=f(c)\\int_a^bg(x)\\,dx\\).","children":[]},
+        {"id":"weighted-mean-value-corollary-2","type":"theorem","title":"Следствие 2","content":"Если \\(f\\) интегрируема на \\([a,b]\\), то существует \\(\\mu\\), такое что \\(\\int_a^bf(x)\\,dx=\\mu(b-a)\\).","children":[]},
+        {"id":"weighted-mean-value-corollary-3","type":"theorem","title":"Следствие 3","content":"Если \\(f\\) непрерывна на \\([a,b]\\), то существует \\(c\\in[a,b]\\), для которого \\(\\int_a^bf(x)\\,dx=f(c)(b-a)\\).","children":[]}
+      ]
+    },
+    {
+      "id": "variable-upper",
+      "type": "subsection",
+      "title": "1.4 Интеграл с переменным верхним пределом. Первообразная",
+      "navTitle": "1.4 Интеграл с переменным верхним пределом",
+      "content": "",
+      "children": [
+        {"id":"variable-upper-definition","type":"definition","title":"Определение","separator":":","content":"Пусть \\(f\\) интегрируема на \\([a,b]\\). Функция \\(\\Phi(x)=\\int_a^xf\\), \\(x\\in[a,b]\\), называется интегралом с переменным верхним пределом.","children":[]},
+        {
+          "id": "barrow-theorem",
+          "type": "theorem",
+          "title": "Теорема Барроу",
+          "content": "Пусть \\(f\\) непрерывна в точке \\(x_0\\), а \\(\\Phi\\) определена в окрестности \\(x_0\\). Тогда \\(\\Phi'(x_0)=f(x_0)\\).",
+          "children": [
+            {"id":"barrow-proof","type":"proof","title":"Доказательство","content":"Докажем по определению:\n\\(\\left|\\dfrac{\\Phi(x_0+h)-\\Phi(x_0)}h-f(x_0)\\right|=\\left|\\dfrac1h\\left(\\int_a^{x_0+h}f-\\int_a^{x_0}f\\right)-\\dfrac1h\\int_{x_0}^{x_0+h}f(x_0)\\right|\\)\n\\(=\\left|\\dfrac1h\\int_{x_0}^{x_0+h}(f(x)-f(x_0))\\,dx\\right|\\le\\dfrac1{|h|}\\left|\\int_{x_0}^{x_0+h}|f(x)-f(x_0)|\\,dx\\right|.\\)\nПо непрерывности в \\(x_0\\), для любого \\(\\varepsilon>0\\) существует \\(\\delta>0\\), такое что \\(|x-x_0|<\\delta\\Rightarrow|f(x)-f(x_0)|<\\varepsilon\\). Поэтому при \\(|h|<\\delta\\) последнее выражение не превосходит \\(|h|\\varepsilon/|h|=\\varepsilon\\).","children":[]}
+          ]
+        },
+        {"id":"antiderivative-definition","type":"definition","title":"Определение","separator":":","content":"Пусть \\(A\\subset\\mathbb R\\). Функция \\(F\\) называется **первообразной** функции \\(f\\) на \\(A\\), если \\(F'(x)=f(x)\\) для всех \\(x\\in A\\).","children":[]},
+        {
+          "id": "antiderivatives-differ-constant",
+          "type": "theorem",
+          "title": "Утверждение",
+          "content": "Пусть \\(F_1,F_2\\) — первообразные \\(f\\) на \\(\\langle a,b\\rangle\\). Тогда \\(F_1-F_2=\\mathrm{const}\\).",
+          "children": [
+            {"id":"antiderivatives-differ-constant-proof","type":"proof","title":"Доказательство","content":"Положим \\(g(x)=F_1(x)-F_2(x)\\). Для каждого \\(x\\in\\langle a,b\\rangle\\) имеем \\(g'(x)=F_1'(x)-F_2'(x)=0\\). Для любых \\(x_1,x_2\\in\\langle a,b\\rangle\\) по теореме Лагранжа существует \\(c\\in\\langle x_1,x_2\\rangle\\), такое что \\(g(x_1)-g(x_2)=g'(c)(x_1-x_2)=0\\). Значит, \\(g\\) постоянна.","children":[]}
+          ]
+        },
+        {
+          "id": "newton-leibniz",
+          "type": "theorem",
+          "title": "Теорема (формула Ньютона–Лейбница)",
+          "content": "Пусть \\(F\\) — первообразная \\(f\\) на \\([a,b]\\), а \\(f\\) интегрируема на \\([a,b]\\). Тогда \\(\\int_a^bf(x)\\,dx=F(b)-F(a)=F(x)\\big|_a^b\\).",
+          "children": [
+            {"id":"newton-leibniz-proof","type":"proof","title":"Доказательство","content":"Функция \\(\\Phi(x)=\\int_a^xf\\) является первообразной \\(f\\). Поэтому \\(\\Phi=F+C\\), и \\(F(b)-F(a)=\\Phi(b)-\\Phi(a)=\\int_a^bf\\).","children":[]}
+          ]
+        },
+        {"id":"newton-leibniz-examples","type":"example","title":"Примеры","content":"\\(\\int_0^1x^2\\,dx=\\dfrac{x^3}{3}\\big|_0^1=\\dfrac13\\).\n\\(\\int_0^\\pi\\sin x\\,dx=(-\\cos x)\\big|_0^\\pi=-\\cos\\pi+\\cos0=2\\).","children":[]}
+      ]
+    },
+    {
+      "id": "indefinite",
+      "type": "subsection",
+      "title": "1.5 Неопределённый интеграл",
+      "navTitle": "1.5 Неопределённый интеграл",
+      "content": "",
+      "children": [
+        {"id":"indefinite-integral-definition","type":"definition","title":"Определение","separator":":","content":"Пусть \\(f:\\langle a,b\\rangle\\to\\mathbb R\\) и у \\(f\\) есть первообразная. **Неопределённым интегралом** \\(f\\) называется множество всех первообразных \\(f\\) на \\(\\langle a,b\\rangle\\).\n**Обозначение:** \\(\\int f(x)\\,dx\\).","children":[]},
+        {"id":"indefinite-integral-form","type":"remark","title":"","content":"\\(\\int f(x)\\,dx=\\{F(x)+C\\mid C\\in\\mathbb R\\}\\), где \\(F\\) — некоторая первообразная. Обычно пишут \\(\\int f(x)\\,dx=F(x)+C\\).","children":[]},
+        {"id":"integral-table-heading","type":"heading","title":"Таблица интегралов","content":"","children":[]},
+        {"id":"integral-table","type":"list","title":"","items":["\\(\\int x^\\alpha\\,dx=\\dfrac{x^{\\alpha+1}}{\\alpha+1}+C\\), \\(\\alpha\\ne-1\\).","\\(\\int\\dfrac{dx}{x}=\\ln|x|+C\\).","\\(\\int a^x\\,dx=\\dfrac{a^x}{\\ln a}+C\\); в частности, \\(\\int e^x\\,dx=e^x+C\\).","\\(\\int\\cos x\\,dx=\\sin x+C\\); \\(\\int\\sin x\\,dx=-\\cos x+C\\).","\\(\\int\\dfrac{dx}{\\cos^2x}=\\operatorname{tg}x+C\\); \\(\\int\\dfrac{dx}{\\sin^2x}=-\\operatorname{ctg}x+C\\).","\\(\\int\\dfrac{dx}{\\sqrt{1-x^2}}=\\arcsin x+C\\).","\\(\\int\\dfrac{dx}{1+x^2}=\\operatorname{arctg}x+C\\)."],"content":"","children":[]},
+        {
+          "id": "indefinite-linearity",
+          "type": "theorem",
+          "title": "Утверждение (линейность неопределённого интеграла)",
+          "content": "Пусть \\(f,g\\) имеют первообразные на \\(\\langle a,b\\rangle\\), \\(\\alpha,\\beta\\in\\mathbb R\\), \\(\\alpha^2+\\beta^2>0\\). Тогда \\(\\alpha f+\\beta g\\) имеет первообразную и \\(\\int(\\alpha f+\\beta g)=\\alpha\\int f+\\beta\\int g\\).",
+          "children": [
+            {"id":"indefinite-linearity-proof","type":"proof","title":"Доказательство","content":"Пусть \\(H\\) принадлежит правой части. Тогда \\(H=\\alpha F+\\beta G\\), где \\(F'=f\\), \\(G'=g\\), поэтому \\(H'=\\alpha f+\\beta g\\), то есть \\(H\\) принадлежит левой части. Обратно, пусть \\(H\\) принадлежит левой части, а \\(F\\) — первообразная \\(f\\). Без ограничения общности \\(\\beta\\ne0\\). Положим \\(G=(H-\\alpha F)/\\beta\\). Тогда \\(G'=(H'-\\alpha F')/\\beta=(\\alpha f+\\beta g-\\alpha f)/\\beta=g\\), и \\(H=\\alpha F+\\beta G\\).","children":[]}
+          ]
+        },
+        {"id":"minkowski-sum","type":"remark","title":"","content":"**Сумма Минковского:** \\(A+B=\\{a+b\\mid a\\in A,\\ b\\in B\\}\\).","children":[]},
+        {
+          "id": "indefinite-substitution",
+          "type": "theorem",
+          "title": "Теорема о замене переменной в неопределённом интеграле",
+          "content": "Пусть \\(\\varphi\\) непрерывно дифференцируема. Тогда \\(\\int f(\\varphi(t))\\varphi'(t)\\,dt=\\int f(x)\\,dx\\), где \\(x=\\varphi(t)\\).",
+          "children": [
+            {"id":"indefinite-substitution-proof","type":"proof","title":"Доказательство","content":"Пусть \\(F\\) — первообразная \\(f\\), то есть \\(\\int f(x)\\,dx=F(x)+C\\). Тогда \\((F(\\varphi(t)))'=F'(\\varphi(t))\\varphi'(t)=f(\\varphi(t))\\varphi'(t)\\).","children":[]}
+          ]
+        },
+        {"id":"semicircle-antiderivative-example","type":"example","title":"Пример","content":"\\(\\int\\sqrt{1-x^2}\\,dx=\\left[\\begin{array}{l}x=\\cos t\\\\dx=-\\sin t\\,dt\\end{array}\\right]=\\int-\\sin^2t\\,dt=\\dfrac12\\int(\\cos2t-1)\\,dt\\)\n\\(=\\dfrac14\\sin2t-\\dfrac12t+C=\\dfrac12x\\sqrt{1-x^2}-\\dfrac12\\arccos x+C\\).\nПоэтому \\(\\int_{-1}^1\\sqrt{1-x^2}\\,dx=F(1)-F(-1)=-\\dfrac12\\arccos1+\\dfrac12\\arccos(-1)=\\dfrac\\pi2\\).","children":[]},
+        {
+          "id": "indefinite-integration-by-parts",
+          "type": "theorem",
+          "title": "Теорема (интегрирование по частям)",
+          "content": "Пусть \\(f,g\\) дифференцируемы и функция \\(fg'\\) имеет первообразную. Тогда \\(f'g\\) также имеет первообразную и \\(\\int f'g=fg-\\int fg'\\).",
+          "children": [
+            {"id":"indefinite-integration-by-parts-proof","type":"proof","title":"Доказательство","content":"\\((fg)'=f'g+fg'\\Rightarrow f'g=(fg)'-fg'\\). Значит,\n\\(\\int g(x)\\underbrace{f'(x)\\,dx}_{df}=f(x)g(x)-\\int f(x)\\underbrace{g'(x)\\,dx}_{dg}\\),\nто есть \\(\\int g\\,df=fg-\\int f\\,dg\\).","children":[]}
+          ]
+        },
+        {"id":"integration-by-parts-examples","type":"example","title":"Примеры","content":"1. \\(\\int x\\sin x\\,dx=-x\\cos x+\\int\\cos x\\,dx=-x\\cos x+\\sin x+C\\).\n2. \\(\\int\\ln x\\,dx=x\\ln x-\\int dx=x(\\ln x-1)+C\\).\n3. \\(\\int e^x\\sin x\\,dx=e^x\\sin x-\\int e^x\\cos x\\,dx=e^x\\sin x-(e^x\\cos x+\\int e^x\\sin x\\,dx)\\), поэтому \\(\\int e^x\\sin x\\,dx=\\dfrac12e^x(\\sin x-\\cos x)+C\\).","children":[]}
+      ]
+    },
+    {
+      "id": "computation",
+      "type": "subsection",
+      "title": "1.6 Вычисление интеграла",
+      "navTitle": "1.6 Вычисление интеграла",
+      "content": "",
+      "children": [
+        {
+          "id": "definite-substitution",
+          "type": "theorem",
+          "title": "Теорема (замена переменной в определённом интеграле)",
+          "content": "Пусть \\(\\varphi:[\\alpha,\\beta]\\to[A,B]\\), \\(\\varphi\\) дифференцируема на \\([\\alpha,\\beta]\\), а \\(f\\) непрерывна на \\([A,B]\\). Тогда",
+          "children": [
+            {"id":"definite-substitution-formula","type":"formula","title":"","latex":"\\int_\\alpha^\\beta f(\\varphi(t))\\varphi'(t)\\,dt=\\int_{\\varphi(\\alpha)}^{\\varphi(\\beta)}f(x)\\,dx","content":"","children":[]},
+            {"id":"definite-substitution-proof","type":"proof","title":"Доказательство","content":"Пусть \\(F\\) — первообразная \\(f\\) на \\([A,B]\\). Тогда \\((F(\\varphi(t)))'=F'(\\varphi(t))\\varphi'(t)=f(\\varphi(t))\\varphi'(t)\\), и\n\\(\\int_\\alpha^\\beta f(\\varphi(t))\\varphi'(t)\\,dt=F(\\varphi(t))\\big|_\\alpha^\\beta=F(x)\\big|_{\\varphi(\\alpha)}^{\\varphi(\\beta)}=\\int_{\\varphi(\\alpha)}^{\\varphi(\\beta)}f(x)\\,dx\\).","children":[]}
+          ]
+        },
+        {"id":"quarter-circle-integral","type":"example","title":"Пример","content":"\\(\\int_0^1\\sqrt{1-x^2}\\,dx=\\left[\\begin{array}{l}x=\\cos t\\\\dx=-\\sin t\\,dt\\end{array}\\right]=-\\int_{\\pi/2}^0\\sqrt{1-\\cos^2t}\\sin t\\,dt=\\int_0^{\\pi/2}\\sin^2t\\,dt\\)\n\\(=\\int_0^{\\pi/2}\\dfrac{1-\\cos2t}{2}\\,dt=\\left(\\dfrac t2-\\dfrac{\\sin2t}{4}\\right)\\big|_0^{\\pi/2}=\\dfrac\\pi4\\).","children":[]},
+        {"id":"definite-integration-by-parts","type":"theorem","title":"Теорема (интегрирование по частям)","content":"Пусть \\(f,g\\) непрерывно дифференцируемы на \\([a,b]\\). Тогда \\(\\int_a^bf'g=(fg)\\big|_a^b-\\int_a^bfg'\\).","children":[]},
+        {"id":"integration-exercises-heading","type":"heading","title":"Упражнения","content":"","children":[]},
+        {"id":"integration-exercises","type":"list","title":"","items":["\\(\\int_{-\\pi/4}^{\\pi/4}\\ln(\\cos x)\\sin x\\,dx\\).","\\(\\int_1^2x^2e^x\\,dx\\).","\\(\\int_0^1x\\sqrt{1-x^2}\\,dx\\).","\\(\\int_0^1\\operatorname{arctg}x\\,dx\\)."],"content":"","children":[]},
+        {
+          "id": "even-odd-integrals",
+          "type": "theorem",
+          "title": "Утверждение",
+          "content": "1. Если \\(f\\) нечётная, то \\(\\int_{-a}^af=0\\).\n2. Если \\(f\\) чётная, то \\(\\int_{-a}^af=2\\int_0^af\\).",
+          "children": [
+            {"id":"even-odd-integrals-proof","type":"proof","title":"Доказательство","content":"Для нечётной функции заменой \\(x=-t\\) получаем\n\\(\\int_{-a}^0f(x)\\,dx=-\\int_a^0f(-t)\\,dt=\\int_0^a-f(t)\\,dt=-\\int_0^af(t)\\,dt\\).\nСледовательно, интеграл на симметричном отрезке равен нулю. Для чётной функции аналогично обе половины интеграла равны.","children":[]}
+          ]
+        },
+        {
+          "id": "periodic-integral",
+          "type": "theorem",
+          "title": "Утверждение",
+          "content": "Пусть \\(f\\) периодическая с периодом \\(T\\). Тогда для любого \\(a\\) выполняется \\(\\int_a^{a+T}f=\\int_0^Tf\\).",
+          "children": [
+            {"id":"periodic-integral-proof","type":"proof","title":"Доказательство","content":"Сдвигом на целое число периодов приведём \\(a\\) к \\(a_0\\in[0,T)\\). Тогда\n\\(\\int_a^{a+T}f(x)\\,dx=\\int_{a_0}^{a_0+T}f(x)\\,dx=\\int_{a_0}^0f(x)\\,dx+\\int_0^{a_0+T}f(x)\\,dx\\)\n\\(=\\int_{a_0+T}^Tf(x)\\,dx+\\int_0^{a_0+T}f(x)\\,dx=\\int_0^Tf(x)\\,dx\\).","children":[]}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "area",
+      "type": "subsection",
+      "title": "1.7 Квадрируемость. Интеграл как площадь",
+      "navTitle": "1.7 Квадрируемость",
+      "content": "",
+      "children": [
+        {
+          "id": "quadrable-set-definition",
+          "type": "definition",
+          "title": "Определение",
+          "separator": ":",
+          "content": "Пусть \\(\\mathcal P\\) — множество всех многоугольных фигур, \\(A\\) — множество точек плоскости.\n\\(S_*(A)=\\sup_{P\\in\\mathcal P,\\,P\\subset A}S(P)\\) — **внутренняя площадь**.\n\\(S^*(A)=\\inf_{P\\in\\mathcal P,\\,P\\supset A}S(P)\\) — **внешняя площадь**.\nЕсли \\(S^*(A)=S_*(A)\\), то множество \\(A\\) называется **квадрируемым**, а их общее значение — **площадью** \\(A\\).",
+          "children": []
+        },
+        {"id":"nonquadrable-rational-points","type":"example","title":"Пример","content":"Пусть \\(A=K\\cap\\mathbb Q^2\\), где \\(K\\) — единичный квадрат. Тогда \\(S_*(A)=0\\), а \\(S^*(A)=1\\).","children":[]},
+        {"id":"subgraph-definition","type":"definition","title":"Определение","separator":":","content":"Пусть \\(f\\ge0\\) на \\([a,b]\\). **Подграфиком** \\(f\\) называется множество \\(\\{(x,y)\\mid x\\in[a,b],\\ 0\\le y\\le f(x)\\}\\).","children":[]},
+        {"id":"quadrability-criterion","type":"remark","title":"","content":"Ограниченное множество \\(A\\) квадрируемо тогда и только тогда, когда для каждого \\(\\varepsilon>0\\) существуют \\(P,Q\\in\\mathcal P\\), такие что \\(P\\subset A\\subset Q\\) и \\(S(Q)-S(P)<\\varepsilon\\).","children":[]},
+        {
+          "id": "subgraph-area-theorem",
+          "type": "theorem",
+          "title": "Теорема",
+          "content": "Пусть \\(f\\) интегрируема и неотрицательна на \\([a,b]\\). Тогда подграфик \\(f\\) квадрируем и \\(S_{\\mathrm{подгр}}=\\int_a^bf(x)\\,dx\\).",
+          "children": [
+            {"id":"subgraph-area-proof","type":"proof","title":"Доказательство","content":"Пусть \\(\\varepsilon>0\\). Выберем разбиение \\(T\\) отрезка \\([a,b]\\), для которого \\(S(f,T)-s(f,T)<\\varepsilon\\). Прямоугольники высот \\(m_k\\) образуют внутреннюю многоугольную фигуру площади \\(s(f,T)\\), а прямоугольники высот \\(M_k\\) — внешнюю фигуру площади \\(S(f,T)\\). Разность их площадей меньше \\(\\varepsilon\\), поэтому подграфик квадрируем. Переход к общей площади даёт \\(S_{\\mathrm{подгр}}=\\int_a^bf(x)\\,dx\\).","children":[]}
+          ]
+        }
+      ]
+    }
+  ],
+  "order": 0,
+  "revision": 1,
+  "createdAt": 1788539000000,
+  "updatedAt": 1788539000000,
+  "updatedBy": "",
+  "reviewStatus": "published"
+}
