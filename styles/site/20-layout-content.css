@@ -1000,7 +1000,8 @@ body:not(.no-hover) .formula-box:hover {
 }
 
 /* Р—Р°РјРµС‡Р°РЅРёСЏ */
-.remark-box {
+.remark-box,
+.reminder-box {
     background: var(--remark-bg);
     border-left: 4px solid var(--remark-border);
     padding: 1.25rem;
@@ -1017,14 +1018,16 @@ body:not(.no-hover) .formula-box:hover {
                 border-color 0.3s ease;
 }
 
-body:not(.no-hover) .remark-box:hover {
+body:not(.no-hover) .remark-box:hover,
+body:not(.no-hover) .reminder-box:hover {
     box-shadow: var(--shadow-md);
     transform: translateX(2px) translateY(-2px);
 }
 
 /* Заголовок-«надпись» как у остальных блоков (определение/теорема/пример):
    прямой (не курсив, хотя тело замечания остаётся курсивным) и того же размера. */
-.remark-box strong {
+.remark-box strong,
+.reminder-box strong {
     font-size: 1.1rem;
     font-style: normal;
 }
@@ -1251,6 +1254,7 @@ body:not(.no-hover) .example-box:hover {
 /* Если на блоке есть кнопка закладки — двигаем декоративную иконку левее,
    чтобы они не накладывались друг на друга. */
 .remark-box:has(.bookmark-btn)::before,
+.reminder-box:has(.bookmark-btn)::before,
 .example-box:has(.bookmark-btn)::before {
     right: 2.5rem;
 }
@@ -1379,6 +1383,7 @@ body:not(.no-hover) .proof-box:hover {
 .theorem-box > .proof-box,
 .statement-box > .proof-box,
 .remark-box > .proof-box,
+.reminder-box > .proof-box,
 .corollary-box > .proof-box,
 .lemma-box > .proof-box {
     background: transparent;
@@ -1393,6 +1398,7 @@ body:not(.no-hover) .proof-box:hover {
 .theorem-box > .proof-box:hover,
 .statement-box > .proof-box:hover,
 .remark-box > .proof-box:hover,
+.reminder-box > .proof-box:hover,
 .corollary-box > .proof-box:hover,
 .lemma-box > .proof-box:hover {
     transform: none;
@@ -1403,6 +1409,7 @@ body:not(.no-hover) .proof-box:hover {
 .theorem-box > .proof-box .toggle-proof,
 .statement-box > .proof-box .toggle-proof,
 .remark-box > .proof-box .toggle-proof,
+.reminder-box > .proof-box .toggle-proof,
 .corollary-box > .proof-box .toggle-proof,
 .lemma-box > .proof-box .toggle-proof {
     padding: 0.55rem 1.2rem;
@@ -1415,6 +1422,7 @@ body:not(.no-hover) .proof-box:hover {
 .theorem-box > .proof-box .toggle-proof:hover,
 .statement-box > .proof-box .toggle-proof:hover,
 .remark-box > .proof-box .toggle-proof:hover,
+.reminder-box > .proof-box .toggle-proof:hover,
 .corollary-box > .proof-box .toggle-proof:hover,
 .lemma-box > .proof-box .toggle-proof:hover {
     opacity: 1;
@@ -1425,6 +1433,7 @@ body:not(.no-hover) .proof-box:hover {
 .theorem-box > .proof-box .proof-content,
 .statement-box > .proof-box .proof-content,
 .remark-box > .proof-box .proof-content,
+.reminder-box > .proof-box .proof-content,
 .corollary-box > .proof-box .proof-content,
 .lemma-box > .proof-box .proof-content {
     margin-top: 0.75rem;
@@ -1896,6 +1905,7 @@ em {
     .definition-box,
     .formula-box,
     .remark-box,
+    .reminder-box,
     .experiment-box,
     .derivation-box,
     .theorem-box,
@@ -1918,7 +1928,8 @@ em {
 
     /* --- CONTENT BOXES: EDGE-TO-EDGE (direct children of .topic) --- */
     .topic > .definition-box,
-    .topic > .remark-box {
+    .topic > .remark-box,
+    .topic > .reminder-box {
         margin-left: calc(-1 * var(--m-pad));
         margin-right: calc(-1 * var(--m-pad));
         padding: 0.75rem var(--m-pad);
@@ -1933,7 +1944,8 @@ em {
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
-    .topic > .remark-box {
+    .topic > .remark-box,
+    .topic > .reminder-box {
         background: var(--remark-bg);
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
@@ -2045,7 +2057,9 @@ em {
     .definition-box .formula-box,
     .definition-box .derivation-box,
     .definition-box .remark-box,
+    .definition-box .reminder-box,
     .remark-box .formula-box,
+    .reminder-box .formula-box,
     .experiment-box .formula-box,
     .derivation-box .formula-box,
     .derivation-content .formula-box,
@@ -2068,6 +2082,7 @@ em {
     .lemma-box > .proof-box,
     .statement-box > .proof-box,
     .remark-box > .proof-box,
+    .reminder-box > .proof-box,
     .corollary-box > .proof-box {
         background: transparent;
         border: none;
@@ -2092,6 +2107,7 @@ em {
     .definition-box:hover,
     .formula-box:hover,
     .remark-box:hover,
+    .reminder-box:hover,
     .experiment-box:hover,
     .derivation-box:hover,
     .theorem-box:hover,
@@ -2119,7 +2135,8 @@ em {
         margin: 0.5rem 0;
     }
 
-    .remark-box::before {
+    .remark-box::before,
+    .reminder-box::before {
         font-size: 1rem;
         top: 0.4rem;
         right: 0.5rem;
@@ -2415,6 +2432,7 @@ em {
 .definition-box,
 .formula-box,
 .remark-box,
+.reminder-box,
 .experiment-box,
 .derivation-box,
 .nav-link,
@@ -2609,6 +2627,19 @@ input:focus:not(:focus-visible) {
 .nav-group-heading {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}
+
+.reminder-box::before {
+    content: '';
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 22px;
+    height: 22px;
+    background-color: var(--remark-border);
+    opacity: 0.55;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3Cpath d='M8 2h8'/%3E%3C/svg%3E") no-repeat center / contain;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3Cpath d='M8 2h8'/%3E%3C/svg%3E") no-repeat center / contain;
 }
 
 /* РџСЂРµРґРѕС‚РІСЂР°С‰РµРЅРёРµ FOUT (Flash of Unstyled Text) */

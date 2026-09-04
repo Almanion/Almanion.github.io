@@ -181,7 +181,7 @@ body:not(.experimental) .subsection-title {
 }
 
 body:not(.experimental) :is(
-    .definition-box, .formula-box, .remark-box, .experiment-box,
+    .definition-box, .formula-box, .remark-box, .reminder-box, .experiment-box,
     .derivation-box, .theorem-box, .lemma-box, .example-box,
     .statement-box, .corollary-box, .proof-box, .exercise-box,
     .properties-box, .system-box
@@ -195,7 +195,7 @@ body:not(.experimental) :is(
 }
 
 body:not(.no-hover):not(.experimental) :is(
-    .definition-box, .formula-box, .remark-box, .experiment-box,
+    .definition-box, .formula-box, .remark-box, .reminder-box, .experiment-box,
     .derivation-box, .theorem-box, .lemma-box, .example-box,
     .statement-box, .corollary-box, .proof-box, .exercise-box,
     .properties-box, .system-box
@@ -288,7 +288,7 @@ body:not(.experimental).home-page .last-update {
     }
 
     body:not(.experimental) :is(
-        .definition-box, .formula-box, .remark-box, .experiment-box,
+        .definition-box, .formula-box, .remark-box, .reminder-box, .experiment-box,
         .derivation-box, .theorem-box, .lemma-box, .example-box,
         .statement-box, .corollary-box, .proof-box, .exercise-box,
         .properties-box, .system-box

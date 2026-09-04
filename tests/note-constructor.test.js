@@ -80,6 +80,8 @@ function testRenderer() {
     nestedDefinition.children.push(Object.assign(Model.createBlock('formula'), { latex: 'F = ma' }));
     assert.strictEqual(Renderer.renderBlock(nestedDefinition, 0), '<div class="definition-box"><strong>Сила</strong>: мера взаимодействия<div class="formula-box">\\[F = ma\\]</div></div>');
     assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('remark'), { title: 'Лишний заголовок', content: 'Только текст' }), 0), '<div class="remark-box">Только текст</div>');
+    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('reminder'), { content: 'Вспомним определение.' }), 0), '<div class="reminder-box"><strong>Напоминание</strong><br>Вспомним определение.</div>');
+    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('corollary'), { title: 'Следствие', content: 'Результат.' }), 0), '<div class="corollary-box"><strong>Следствие</strong><br>Результат.</div>');
     assert.strictEqual(Renderer.safeImageSource('//example.com/track.png'), '');
 }
 
@@ -137,8 +139,24 @@ function testEmptySubjectBuild() {
     }
 }
 
+function testNumberTheoryStructure() {
+    const file = path.join(__dirname, '..', 'content', 'likbez', 'sections', 'teoriya-chisel.json');
+    const section = Model.normalizeSection(JSON.parse(fs.readFileSync(file, 'utf8')), 'likbez');
+    assert.deepStrictEqual(Model.validateSection(section), []);
+    const detachedTypes = new Set(['paragraph', 'formula', 'list', 'image', 'proof']);
+    section.subsections.forEach(subsection => {
+        subsection.children.forEach(block => {
+            assert.ok(!detachedTypes.has(block.type), `${subsection.id}: блок ${block.id} должен быть вложен в смысловой контейнер`);
+        });
+    });
+    assert.strictEqual(section.subsections[0].children[0].type, 'reminder');
+    assert.strictEqual(section.subsections[5].children.find(block => block.id === 'gaussian-norm').type, 'definition');
+    assert.strictEqual(section.subsections[5].children.find(block => block.id === 'norm-properties').type, 'properties');
+}
+
 testModel();
 testRenderer();
 testBuild();
 testEmptySubjectBuild();
+testNumberTheoryStructure();
 console.log('note-constructor tests: ok');

@@ -371,7 +371,7 @@ img {
    ============================================ */
 .subject-card,
 .nav-link, .task-card, .stat-card,
-.definition-box, .formula-box, .remark-box, .experiment-box, .derivation-box,
+.definition-box, .formula-box, .remark-box, .reminder-box, .experiment-box, .derivation-box,
 .theorem-box, .lemma-box, .example-box, .statement-box, .corollary-box,
 .proof-box, .properties-box {
     transition: box-shadow 0.24s cubic-bezier(0.33, 1, 0.68, 1),
@@ -388,6 +388,7 @@ body:not(.no-hover) .toggle-proof:hover,
 body:not(.no-hover) .definition-box:hover,
 body:not(.no-hover) .formula-box:hover,
 body:not(.no-hover) .remark-box:hover,
+body:not(.no-hover) .reminder-box:hover,
 body:not(.no-hover) .experiment-box:hover,
 body:not(.no-hover) .derivation-box:hover,
 body:not(.no-hover) .theorem-box:hover,

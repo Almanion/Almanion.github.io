@@ -412,14 +412,14 @@ function initSearch() {
 }
 
 const SEARCH_CONTENT_SELECTOR = [
-    '.topic-title', '.definition-box', '.formula-box', '.theorem-box', '.remark-box',
+    '.topic-title', '.definition-box', '.formula-box', '.theorem-box', '.remark-box', '.reminder-box',
     '.lemma-box', '.example-box', '.statement-box', '.corollary-box', '.properties-box',
     '.experiment-box', '.derivation-box', '.system-box', '.proof-box',
     ':scope > p', ':scope > ul > li', ':scope > ol > li'
 ].join(', ');
 
 const SEARCH_SEMANTIC_SELECTOR = [
-    '.definition-box', '.formula-box', '.theorem-box', '.remark-box', '.lemma-box',
+    '.definition-box', '.formula-box', '.theorem-box', '.remark-box', '.reminder-box', '.lemma-box',
     '.example-box', '.statement-box', '.corollary-box', '.properties-box',
     '.experiment-box', '.derivation-box', '.system-box', '.proof-box'
 ].join(', ');
@@ -473,7 +473,7 @@ function countSearchOccurrences(text, term) {
 function searchResultKind(element) {
     const labels = [
         ['definition-box', 'Определение'], ['formula-box', 'Формула'], ['theorem-box', 'Теорема'],
-        ['remark-box', 'Замечание'], ['lemma-box', 'Лемма'], ['example-box', 'Пример'],
+        ['remark-box', 'Замечание'], ['reminder-box', 'Напоминание'], ['lemma-box', 'Лемма'], ['example-box', 'Пример'],
         ['statement-box', 'Утверждение'], ['corollary-box', 'Следствие'], ['properties-box', 'Свойства'],
         ['experiment-box', 'Опыт'], ['derivation-box', 'Вывод'], ['system-box', 'Система'],
         ['proof-box', 'Доказательство'], ['topic-title', 'Раздел']
@@ -1105,6 +1105,7 @@ const COPYABLE_BLOCK_SELECTOR = [
     '.definition-box',
     '.formula-box',
     '.remark-box',
+    '.reminder-box',
     '.experiment-box',
     '.derivation-box',
     '.theorem-box',

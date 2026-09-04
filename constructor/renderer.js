@@ -10,8 +10,13 @@
         derivation: 'derivation-box',
         experiment: 'experiment-box',
         remark: 'remark-box',
+        reminder: 'reminder-box',
         theorem: 'theorem-box',
         lemma: 'lemma-box',
+        statement: 'statement-box',
+        corollary: 'corollary-box',
+        properties: 'properties-box',
+        exercise: 'exercise-box',
         proof: 'proof-box',
         example: 'example-box'
     };

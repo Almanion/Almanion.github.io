@@ -18,8 +18,13 @@
         derivation: { label: 'Вывод' },
         experiment: { label: 'Эксперимент' },
         remark:     { label: 'Замечание' },
+        reminder:   { label: 'Напоминание' },
         theorem:    { label: 'Теорема' },
         lemma:      { label: 'Лемма' },
+        statement:  { label: 'Утверждение' },
+        corollary:  { label: 'Следствие' },
+        properties: { label: 'Свойства' },
+        exercise:   { label: 'Упражнение' },
         proof:      { label: 'Доказательство' },
         example:    { label: 'Пример' }
     };
@@ -63,6 +68,7 @@
             children: []
         };
         if (normalizedType === 'definition') Object.assign(block, { term: '', separator: '—' });
+        if (normalizedType === 'reminder') block.title = 'Напоминание';
         if (normalizedType === 'formula') block.latex = '';
         if (normalizedType === 'image') Object.assign(block, { src: '', alt: '', caption: '' });
         if (normalizedType === 'list') block.items = [''];
@@ -125,6 +131,7 @@
             block.content = block.title + (block.content ? '\n' + block.content : '');
             block.title = '';
         }
+        if (type === 'reminder' && !block.title) block.title = 'Напоминание';
         if (type === 'formula') block.latex = String(source.latex || source.content || '');
         if (type === 'image') {
             block.src = String(source.src || '');

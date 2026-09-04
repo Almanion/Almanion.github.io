@@ -19,12 +19,12 @@
     const STATUS_LABELS = { draft: 'Черновик', ready: 'К проверке', published: 'Опубликовано' };
     const BLOCK_PICKER_GROUPS = [
         { title: 'Текст и структура', types: ['paragraph', 'heading', 'list', 'formula', 'image'] },
-        { title: 'Учебные блоки', types: ['definition', 'theorem', 'lemma', 'proof', 'derivation', 'example', 'experiment', 'remark'] }
+        { title: 'Учебные блоки', types: ['definition', 'theorem', 'lemma', 'statement', 'corollary', 'properties', 'proof', 'derivation', 'example', 'exercise', 'experiment', 'remark', 'reminder'] }
     ];
     const BLOCK_DESCRIPTIONS = {
         paragraph: ['Т', 'Обычный текст'], heading: ['Aa', 'Малый заголовок'], list: ['≡', 'Список пунктов'], formula: ['ƒ', 'LaTeX-формула'], image: ['▧', 'Изображение'],
-        definition: ['О', 'Термин и смысл'], theorem: ['Т', 'Утверждение'], lemma: ['Л', 'Вспомогательный факт'], proof: ['Д', 'Ход доказательства'], derivation: ['→', 'Вывод формулы'],
-        example: ['П', 'Разобранный пример'], experiment: ['Э', 'Описание опыта'], remark: ['!', 'Важное уточнение']
+        definition: ['О', 'Термин и смысл'], theorem: ['Т', 'Теорема'], lemma: ['Л', 'Вспомогательный факт'], statement: ['У', 'Самостоятельное утверждение'], corollary: ['С', 'Следствие из результата'], properties: ['≡', 'Набор свойств'], proof: ['Д', 'Ход доказательства'], derivation: ['→', 'Вывод формулы'],
+        example: ['П', 'Разобранный пример'], exercise: ['З', 'Задача или упражнение'], experiment: ['Э', 'Описание опыта'], remark: ['!', 'Важное уточнение'], reminder: ['↻', 'Ранее известный факт']
     };
 
     const state = {
@@ -383,8 +383,9 @@
                 '</div>' +
                 textArea('content', 'Определение', block.content, '', 'Содержание определения');
         }
-        if (block.type === 'remark' || block.type === 'derivation') {
-            return textArea('content', block.type === 'remark' ? 'Текст замечания' : 'Текст вывода', block.content, '', 'Основной текст блока');
+        if (block.type === 'remark' || block.type === 'reminder' || block.type === 'derivation') {
+            const label = block.type === 'remark' ? 'Текст замечания' : (block.type === 'reminder' ? 'Текст напоминания' : 'Текст вывода');
+            return textArea('content', label, block.content, '', 'Основной текст блока');
         }
         return '<label class="builder-field"><span>Короткий заголовок — необязательно</span><input data-block-field="title" value="' + escapeHtml(block.title || '') + '"></label>' +
             textArea('content', 'Содержание', block.content, '', 'Основной текст блока');

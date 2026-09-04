@@ -462,6 +462,7 @@ body.experimental .subsection-title {
 body.experimental .definition-box,
 body.experimental .formula-box,
 body.experimental .remark-box,
+body.experimental .reminder-box,
 body.experimental .experiment-box,
 body.experimental .derivation-box,
 body.experimental .theorem-box,
@@ -492,6 +493,7 @@ body.experimental .formula-box {
 }
 body:not(.no-hover).experimental .definition-box:hover,
 body:not(.no-hover).experimental .formula-box:hover,
+body:not(.no-hover).experimental .reminder-box:hover,
 body:not(.no-hover).experimental .theorem-box:hover,
 body:not(.no-hover).experimental .lemma-box:hover,
 body:not(.no-hover).experimental .example-box:hover,
@@ -593,6 +595,7 @@ body.experimental .example-box::before {
 body.experimental .definition-box::before,
 body.experimental .formula-box::before,
 body.experimental .remark-box::before,
+body.experimental .reminder-box::before,
 body.experimental .derivation-box::before {
     content: none !important;
     display: none !important;
@@ -603,7 +606,8 @@ body.experimental .theorem-box > .proof-box,
 body.experimental .statement-box > .proof-box,
 body.experimental .lemma-box > .proof-box,
 body.experimental .corollary-box > .proof-box,
-body.experimental .remark-box > .proof-box {
+body.experimental .remark-box > .proof-box,
+body.experimental .reminder-box > .proof-box {
     background: var(--exp-surface-2) !important;
     margin-top: 0.85rem !important;
 }
@@ -1089,6 +1093,7 @@ body.experimental.exp-animate .definition-box {
     body.experimental .definition-box,
     body.experimental .formula-box,
     body.experimental .remark-box,
+    body.experimental .reminder-box,
     body.experimental .experiment-box,
     body.experimental .derivation-box,
     body.experimental .theorem-box,
@@ -1108,13 +1113,16 @@ body.experimental.exp-animate .definition-box {
        в эксп-режиме ::before это верхний чип-ярлык («Замечание»/«Пример»), он не
        в углу и не конфликтует с закладкой, поэтому его НЕ прячем. */
     body:not(.experimental) .remark-box:has(.bookmark-btn)::before,
+    body:not(.experimental) .reminder-box:has(.bookmark-btn)::before,
     body:not(.experimental) .example-box:has(.bookmark-btn)::before {
         display: none !important;
     }
     /* Под лампочку место больше не резервируем — оставляем только под закладку. */
     .remark-box:has(.bookmark-btn),
+    .reminder-box:has(.bookmark-btn),
     .example-box:has(.bookmark-btn),
     body.experimental .remark-box:has(.bookmark-btn),
+    body.experimental .reminder-box:has(.bookmark-btn),
     body.experimental .example-box:has(.bookmark-btn) {
         padding-right: 2.7rem !important;
     }
@@ -1328,6 +1336,7 @@ body.experimental.exp-reader-active .topic.exp-reader-current :is(
     .definition-box,
     .formula-box,
     .remark-box,
+    .reminder-box,
     .experiment-box,
     .derivation-box,
     .theorem-box,
