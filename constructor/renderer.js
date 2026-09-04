@@ -88,13 +88,6 @@
         return block.children.map(child => renderBlock(child, depth + 1)).filter(Boolean).join('\n');
     }
 
-    function renderTypeLabel(type) {
-        const label = TYPE_LABELS[type];
-        return label
-            ? '<span class="constructor-note-block-label" data-note-block-type="' + escapeHtml(type) + '">' + escapeHtml(label) + '</span> '
-            : '';
-    }
-
     function isGenericTitle(type, title) {
         const normalized = String(title || '').trim().replace(/[.:]+$/, '').toLowerCase();
         return !!normalized && Array.isArray(GENERIC_TITLES[type]) && GENERIC_TITLES[type].includes(normalized);
@@ -117,7 +110,7 @@
         if (type === 'heading') return '<h4 class="subsection-title">' + renderInline(block.title || block.content) + '</h4>';
         if (type === 'formula') {
             const latex = String(block.latex || block.content || '').trim();
-            return latex ? '<div class="formula-box">' + renderTypeLabel(type) + '\\[' + escapeHtml(latex) + '\\]</div>' : '';
+            return latex ? '<div class="formula-box">\\[' + escapeHtml(latex) + '\\]</div>' : '';
         }
         if (type === 'list') {
             const items = Array.isArray(block.items) ? block.items : String(block.content || '').split(/\r?\n/);
@@ -154,8 +147,7 @@
             const parts = definitionParts(block);
             const content = String(block.content || '').trim();
             const separator = parts.separator === ':' ? ': ' : ' — ';
-            const inner = renderTypeLabel(type) +
-                (parts.term ? '<strong>' + renderInline(parts.term) + '</strong>' : '') +
+            const inner = (parts.term ? '<strong>' + renderInline(parts.term) + '</strong>' : '') +
                 (parts.term && (content || (block.children || []).length) ? separator : '') +
                 (content ? renderInline(content) : '') +
                 renderChildren(block, depth || 0);
@@ -164,8 +156,7 @@
         const title = String(block.title || '').trim();
         const content = String(block.content || '').trim();
         const showTitle = title && !isGenericTitle(type, title);
-        const inner = renderTypeLabel(type) +
-            (showTitle ? '<strong>' + renderInline(title) + '</strong>' : '') +
+        const inner = (showTitle ? '<strong>' + renderInline(title) + '</strong>' : '') +
             (showTitle && content ? '<br>' : '') +
             (content ? renderInline(content) : '') +
             renderChildren(block, depth || 0);

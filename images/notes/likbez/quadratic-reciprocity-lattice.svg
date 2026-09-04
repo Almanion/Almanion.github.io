@@ -2,7 +2,7 @@
   <title id="title">Полуинтервалы в доказательстве леммы Эйзенштейна</title>
   <desc id="desc">На примере p равно 11 и a равно 7 показано, в какой полуинтервал длины p пополам попадает каждое число ai. Нечётный номер полуинтервала соответствует отрицательному наименьшему вычету.</desc>
   <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="8.6" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.4" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto">
       <path d="M0 0 10 5 0 10Z" fill="#173f70"/>
     </marker>
     <style>

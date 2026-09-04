@@ -2,16 +2,16 @@
   <title id="title">Геометрическое доказательство деления с остатком в гауссовых целых</title>
   <desc id="desc">Слева число a делить на b округляется до ближайшего гауссова целого q. Справа умножение на b переносит единичную ячейку в квадратную ячейку решётки b умножить на Z от i; вектор от qb до a является остатком r.</desc>
   <defs>
-    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8.7" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#173f70"/></marker>
-    <marker id="arrow-teal" viewBox="0 0 10 10" refX="8.7" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#0b8f87"/></marker>
-    <marker id="arrow-red" viewBox="0 0 10 10" refX="8.7" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#d4674c"/></marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8.6" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#173f70"/></marker>
+    <marker id="arrow-teal" viewBox="0 0 10 10" refX="8.6" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#0b8f87"/></marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="8.6" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#d4674c"/></marker>
     <clipPath id="right-clip"><rect x="582" y="92" width="477" height="438" rx="12"/></clipPath>
     <style>
       .frame{fill:#fbfdff;stroke:#d6e1ed;stroke-width:2}.panel{fill:#fff;stroke:#d6e1ed;stroke-width:2}
       .grid{stroke:#c5d3e1;stroke-width:1.4}.cell{fill:#e8f5f3;stroke:#0b8f87;stroke-width:2.5}
       .radius{fill:none;stroke:#7aa9a5;stroke-width:1.7;stroke-dasharray:7 7}.component{stroke:#d49b8d;stroke-width:1.6;stroke-dasharray:5 5}
-      .basis{stroke:#0b8f87;stroke-width:4;marker-end:url(#arrow-teal)}.remainder{stroke:#d4674c;stroke-width:5;marker-end:url(#arrow-red)}
-      .flow{stroke:#173f70;stroke-width:3;marker-end:url(#arrow-blue)}.node{fill:#173f70}.chosen{fill:#0b8f87;stroke:#fff;stroke-width:3}.point{fill:#d4674c;stroke:#fff;stroke-width:3}
+      .basis{stroke:#0b8f87;stroke-width:3.2;marker-end:url(#arrow-teal)}.remainder{stroke:#d4674c;stroke-width:3.6;marker-end:url(#arrow-red)}
+      .flow{stroke:#173f70;stroke-width:2.5;marker-end:url(#arrow-blue)}.node{fill:#173f70}.chosen{fill:#0b8f87;stroke:#fff;stroke-width:3}.point{fill:#d4674c;stroke:#fff;stroke-width:3}
       .heading{font:700 22px system-ui,sans-serif;fill:#173f70}.label{font:21px Georgia,serif;fill:#173f70}
       .small{font:16px system-ui,sans-serif;fill:#526b84}.formula{font:20px Georgia,serif;fill:#173f70}.result{font:700 20px system-ui,sans-serif;fill:#08746e}
     </style>

@@ -592,40 +592,29 @@ body.experimental .example-box::before {
     opacity: 1 !important;
 }
 
-/* Конструктор выводит семантический ярлык настоящим элементом разметки:
-   это доступнее, работает в обоих режимах и не зависит от псевдоэлемента. */
-body.experimental .constructor-topic .definition-box::before,
-body.experimental .constructor-topic .formula-box::before,
-body.experimental .constructor-topic .remark-box::before,
-body.experimental .constructor-topic .reminder-box::before,
-body.experimental .constructor-topic .derivation-box::before,
-body.experimental .constructor-topic .theorem-box::before,
-body.experimental .constructor-topic .lemma-box::before,
-body.experimental .constructor-topic .statement-box::before,
-body.experimental .constructor-topic .corollary-box::before,
-body.experimental .constructor-topic .example-box::before,
-body.experimental .constructor-topic .proof-box::before,
-body.experimental .constructor-topic .experiment-box::before,
-body.experimental .constructor-topic .exercise-box::before,
-body.experimental .constructor-topic .properties-box::before {
-    content: none !important;
-    display: none !important;
+/* В материалах конструктора плашка типа всегда создаётся псевдоэлементом.
+   Даже если у примера есть собственное название, оно остаётся заголовком
+   внутри карточки, а не подменяет плашку «Пример». */
+body.experimental .constructor-topic .example-box::before {
+    content: "Пример" !important;
+    display: block !important;
 }
 
-body.experimental .definition-box > .constructor-note-block-label { color: var(--t-definition); }
-body.experimental .formula-box > .constructor-note-block-label { color: var(--t-formula); }
-body.experimental .remark-box > .constructor-note-block-label { color: var(--t-remark); }
-body.experimental .reminder-box > .constructor-note-block-label { color: var(--t-reminder); }
-body.experimental .experiment-box > .constructor-note-block-label { color: var(--t-experiment); }
-body.experimental .derivation-content > .constructor-note-block-label { color: var(--t-derivation); }
-body.experimental .theorem-box > .constructor-note-block-label { color: var(--t-theorem); }
-body.experimental .lemma-box > .constructor-note-block-label { color: var(--t-lemma); }
-body.experimental .statement-box > .constructor-note-block-label { color: var(--t-statement); }
-body.experimental .corollary-box > .constructor-note-block-label { color: var(--t-corollary); }
-body.experimental .properties-box > .constructor-note-block-label { color: var(--t-properties); }
-body.experimental .exercise-box > .constructor-note-block-label { color: var(--t-exercise); }
-body.experimental .proof-content > .constructor-note-block-label { color: var(--t-proof); }
-body.experimental .example-box > .constructor-note-block-label { color: var(--t-example); }
+body.experimental .constructor-topic .example-box > strong:first-child {
+    display: inline;
+    width: auto;
+    margin: 0 !important;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    color: var(--exp-text) !important;
+    font-size: inherit;
+    font-weight: 700;
+    letter-spacing: normal;
+    line-height: inherit;
+    text-transform: none;
+    -webkit-text-fill-color: currentColor;
+}
 
 /* Вложенный proof внутри теоремы/леммы — компактный ярлык */
 body.experimental .theorem-box > .proof-box,

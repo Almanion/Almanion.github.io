@@ -945,39 +945,6 @@ body.dark-theme .page-header {
    ============================================ */
 
 /* РћРїСЂРµРґРµР»РµРЅРёСЏ */
-/* Semantic labels are real markup, so block types stay visible and accessible
-   in both the classic and experimental readers. */
-.constructor-note-block-label {
-    display: block;
-    width: fit-content;
-    margin: 0 0 0.7rem;
-    padding: 0.18rem 0.52rem;
-    border-radius: 6px;
-    background: color-mix(in srgb, currentColor 13%, transparent);
-    font-family: var(--font-sans, system-ui, sans-serif);
-    font-size: 0.68rem;
-    font-style: normal;
-    font-weight: 800;
-    letter-spacing: 0.055em;
-    line-height: 1.2;
-    text-transform: uppercase;
-}
-
-.definition-box > .constructor-note-block-label { color: var(--definition-border); }
-.formula-box > .constructor-note-block-label { color: var(--formula-border); }
-.remark-box > .constructor-note-block-label { color: var(--remark-border); }
-.reminder-box > .constructor-note-block-label { color: var(--definition-border); }
-.experiment-box > .constructor-note-block-label { color: var(--experiment-border); }
-.derivation-content > .constructor-note-block-label { color: var(--derivation-border); }
-.theorem-box > .constructor-note-block-label { color: var(--theorem-border); }
-.lemma-box > .constructor-note-block-label { color: var(--lemma-border); }
-.statement-box > .constructor-note-block-label { color: var(--statement-border); }
-.corollary-box > .constructor-note-block-label { color: var(--corollary-border); }
-.properties-box > .constructor-note-block-label { color: var(--definition-border); }
-.exercise-box > .constructor-note-block-label { color: var(--exercise-border); }
-.proof-content > .constructor-note-block-label { color: var(--proof-border); }
-.example-box > .constructor-note-block-label { color: var(--example-border); }
-
 .definition-box {
     background: var(--definition-bg);
     border-left: 4px solid var(--definition-border);

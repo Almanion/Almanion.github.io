@@ -75,7 +75,7 @@ function testRenderer() {
     const html = Renderer.renderSection(section);
     assert.ok(html.includes('&lt;script&gt;'));
     assert.ok(html.includes('<strong>Энергия</strong>'));
-    assert.ok(html.includes('<div class="definition-box"><span class="constructor-note-block-label" data-note-block-type="definition">Определение</span> <strong>Кинетическая энергия</strong> — энергия движения</div>'));
+    assert.ok(html.includes('<div class="definition-box"><strong>Кинетическая энергия</strong> — энергия движения</div>'));
     assert.ok(html.includes('E &amp;= mc^2'));
     assert.ok(!html.includes('javascript:'));
     assert.ok(html.includes('<article id="safe-section" class="topic constructor-topic">'));
@@ -91,11 +91,11 @@ function testRenderer() {
     );
     const nestedDefinition = Object.assign(Model.createBlock('definition'), { term: 'Сила', separator: ':', content: 'мера взаимодействия' });
     nestedDefinition.children.push(Object.assign(Model.createBlock('formula'), { latex: 'F = ma' }));
-    assert.strictEqual(Renderer.renderBlock(nestedDefinition, 0), '<div class="definition-box"><span class="constructor-note-block-label" data-note-block-type="definition">Определение</span> <strong>Сила</strong>: мера взаимодействия<div class="formula-box"><span class="constructor-note-block-label" data-note-block-type="formula">Формула</span> \\[F = ma\\]</div></div>');
-    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('remark'), { title: 'Замечание', content: 'Только текст' }), 0), '<div class="remark-box"><span class="constructor-note-block-label" data-note-block-type="remark">Замечание</span> Только текст</div>');
-    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('remark'), { title: 'О границах применимости', content: 'Только текст' }), 0), '<div class="remark-box"><span class="constructor-note-block-label" data-note-block-type="remark">Замечание</span> <strong>О границах применимости</strong><br>Только текст</div>');
-    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('reminder'), { content: 'Вспомним определение.' }), 0), '<div class="reminder-box"><span class="constructor-note-block-label" data-note-block-type="reminder">Напоминание</span> Вспомним определение.</div>');
-    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('corollary'), { title: 'Следствие', content: 'Результат.' }), 0), '<div class="corollary-box"><span class="constructor-note-block-label" data-note-block-type="corollary">Следствие</span> Результат.</div>');
+    assert.strictEqual(Renderer.renderBlock(nestedDefinition, 0), '<div class="definition-box"><strong>Сила</strong>: мера взаимодействия<div class="formula-box">\\[F = ma\\]</div></div>');
+    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('remark'), { title: 'Замечание', content: 'Только текст' }), 0), '<div class="remark-box">Только текст</div>');
+    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('remark'), { title: 'О границах применимости', content: 'Только текст' }), 0), '<div class="remark-box"><strong>О границах применимости</strong><br>Только текст</div>');
+    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('reminder'), { content: 'Вспомним определение.' }), 0), '<div class="reminder-box">Вспомним определение.</div>');
+    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('corollary'), { title: 'Следствие', content: 'Результат.' }), 0), '<div class="corollary-box">Результат.</div>');
     assert.strictEqual(Renderer.safeImageSource('//example.com/track.png'), '');
 }
 
@@ -155,6 +155,23 @@ function testEmptySubjectBuild() {
 
 function testNumberTheoryStructure() {
     const file = path.join(__dirname, '..', 'content', 'likbez', 'sections', 'teoriya-chisel.json');
+    const experimentalStyles = fs.readFileSync(path.join(__dirname, '..', 'style-new.css'), 'utf8');
+    const semanticClasses = {
+        definition: 'definition-box',
+        derivation: 'derivation-box',
+        experiment: 'experiment-box',
+        remark: 'remark-box',
+        reminder: 'reminder-box',
+        theorem: 'theorem-box',
+        lemma: 'lemma-box',
+        statement: 'statement-box',
+        corollary: 'corollary-box',
+        properties: 'properties-box',
+        exercise: 'exercise-box',
+        proof: 'proof-box',
+        example: 'example-box',
+        formula: 'formula-box'
+    };
     const section = Model.normalizeSection(JSON.parse(fs.readFileSync(file, 'utf8')), 'likbez');
     assert.deepStrictEqual(Model.validateSection(section), []);
     const detachedTypes = new Set(['paragraph', 'formula', 'list', 'image', 'proof']);
@@ -171,8 +188,16 @@ function testNumberTheoryStructure() {
         if (Renderer.TYPE_LABELS[block.type]) {
             const html = Renderer.renderBlock(block, 0);
             assert.ok(
-                html.includes(`data-note-block-type="${block.type}"`),
-                `${block.id}: смысловой блок ${block.type} должен иметь явную подпись типа`
+                html.includes(`class="${semanticClasses[block.type]}`),
+                `${block.id}: смысловой блок ${block.type} должен сохранять семантический класс`
+            );
+            assert.ok(
+                experimentalStyles.includes(`body.experimental .${semanticClasses[block.type]}::before`),
+                `${block.id}: для блока ${block.type} должна быть верхняя плашка типа`
+            );
+            assert.ok(
+                experimentalStyles.includes(`content: "${Renderer.TYPE_LABELS[block.type]}"`),
+                `${block.id}: плашка блока ${block.type} должна называться «${Renderer.TYPE_LABELS[block.type]}»`
             );
         }
         if (block.type === 'definition') {
