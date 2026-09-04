@@ -2,5 +2,8 @@
   "schemaVersion": 1,
   "subject": "likbez",
   "title": "Ликбезы",
-  "sections": []
+  "sections": [
+    { "id": "teoriya-chisel" },
+    { "id": "lineynaya-algebra" }
+  ]
 }

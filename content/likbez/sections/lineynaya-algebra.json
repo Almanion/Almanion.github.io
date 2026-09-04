@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "lineynaya-algebra",
+  "subject": "likbez",
+  "title": "Линейная алгебра",
+  "navTitle": "Линейная алгебра",
+  "blocks": [
+    {
+      "id": "paragraph-placeholder",
+      "type": "paragraph",
+      "title": "",
+      "content": "Конспект готовится.",
+      "children": []
+    }
+  ],
+  "subsections": [],
+  "order": 2,
+  "revision": 1,
+  "createdAt": 1788535467260,
+  "updatedAt": 1788535467260,
+  "updatedBy": "",
+  "reviewStatus": "published"
+}

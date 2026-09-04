@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "teoriya-chisel",
+  "subject": "likbez",
+  "title": "Теория чисел",
+  "navTitle": "Теория чисел",
+  "blocks": [
+    {
+      "id": "paragraph-placeholder",
+      "type": "paragraph",
+      "title": "",
+      "content": "Конспект готовится.",
+      "children": []
+    }
+  ],
+  "subsections": [],
+  "order": 1,
+  "revision": 1,
+  "createdAt": 1788535467260,
+  "updatedAt": 1788535467260,
+  "updatedBy": "",
+  "reviewStatus": "published"
+}
