@@ -77,7 +77,7 @@ assert.ok(css.includes('prefers-reduced-motion: reduce'));
 const transitionPages = [
     'index.html', 'physics.html', 'physics-10.html', 'physics-exam.html',
     'chemistry.html', 'chemistry-10.html', 'math.html', 'geometry.html',
-    'geometry-formulas.html', 'likbez.html', 'literature-10.html', 'matcenter.html'
+    'geometry-formulas.html', 'likbez.html', 'literature-10.html', 'english.html', 'matcenter.html'
 ];
 transitionPages.forEach(file => {
     const html = fs.readFileSync(path.join(root, file), 'utf8');

@@ -256,6 +256,7 @@
         byId('siteAdminRole').checked = role.siteAdmin === true;
         byId('matcenterAdminRole').checked = role.matcenterAdmin === true;
         byId('contentEditorRole').checked = role.contentEditor === true;
+        byId('englishAccessRole').checked = role.englishAccess === true;
         byId('adminRoleAccount').focus();
     }
 
@@ -284,7 +285,7 @@
         ownerIdentity.append(ownerEmail, ownerCaption);
         const ownerBadges = document.createElement('div');
         ownerBadges.className = 'admin-role-badges';
-        ownerBadges.append(roleBadge('Владелец', true), roleBadge('Сайт'), roleBadge('Матцентр'), roleBadge('Редактор'));
+        ownerBadges.append(roleBadge('Владелец', true), roleBadge('Сайт'), roleBadge('Матцентр'), roleBadge('Редактор'), roleBadge('Английский'));
         ownerRow.append(ownerIdentity, ownerBadges);
         list.appendChild(ownerRow);
 
@@ -292,7 +293,7 @@
             return String((adminRoles[a] || {}).email || '').localeCompare(String((adminRoles[b] || {}).email || ''), 'ru');
         }).forEach(function (uid) {
             const role = adminRoles[uid] || {};
-            if (!role.siteAdmin && !role.matcenterAdmin && !role.contentEditor) return;
+            if (!role.siteAdmin && !role.matcenterAdmin && !role.contentEditor && !role.englishAccess) return;
             if (String(role.email || '').toLowerCase() === SITE_OWNER_EMAIL) return;
             const account = accountDirectory[uid] || {};
             const row = document.createElement('div');
@@ -309,6 +310,7 @@
             if (role.siteAdmin) badges.appendChild(roleBadge('Сайт'));
             if (role.matcenterAdmin) badges.appendChild(roleBadge('Матцентр'));
             if (role.contentEditor) badges.appendChild(roleBadge('Редактор'));
+            if (role.englishAccess) badges.appendChild(roleBadge('Английский'));
             const edit = document.createElement('button');
             edit.type = 'button';
             edit.className = 'btn btn-outline btn-sm';
@@ -368,11 +370,12 @@
         const siteAdmin = byId('siteAdminRole').checked;
         const matcenterAdmin = byId('matcenterAdminRole').checked;
         const contentEditor = byId('contentEditorRole').checked;
+        const englishAccess = byId('englishAccessRole').checked;
         const saveButton = event.currentTarget.querySelector('button[type="submit"]');
         saveButton.disabled = true;
         try {
             const ref = db.ref('adminRoles/' + target.uid);
-            if (!siteAdmin && !matcenterAdmin && !contentEditor) {
+            if (!siteAdmin && !matcenterAdmin && !contentEditor && !englishAccess) {
                 await ref.remove();
             } else {
                 await ref.set({
@@ -380,12 +383,13 @@
                     siteAdmin: siteAdmin,
                     matcenterAdmin: matcenterAdmin,
                     contentEditor: contentEditor,
+                    englishAccess: englishAccess,
                     updatedAt: firebase.database.ServerValue.TIMESTAMP,
                     updatedBy: user.uid
                 });
             }
             byId('adminRoleForm').reset();
-            showAdminToast(siteAdmin || matcenterAdmin || contentEditor ? 'Роли пользователя сохранены' : 'Все дополнительные роли отозваны');
+            showAdminToast(siteAdmin || matcenterAdmin || contentEditor || englishAccess ? 'Роли пользователя сохранены' : 'Все дополнительные роли отозваны');
             await loadRoleManager(user);
         } catch (error) {
             console.error('Save admin roles:', error);

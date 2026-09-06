@@ -134,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================
 
 function initMath() {
+    if (document.body?.hasAttribute('data-no-math')) return;
     // Если на странице нет ни одного math-блока — KaTeX не нужен, не дёргаем CDN.
     // (index.html и admin.html не имеют формул — нет смысла ждать загрузки 15 секунд.)
     const hasMathContent = !!document.querySelector(
@@ -1226,6 +1227,10 @@ function addCopyButtons(root = document) {
         block.appendChild(copyBtn);
     });
 }
+
+window.addEventListener('almanion:content-ready', event => {
+    addCopyButtons(event.detail?.root || document);
+});
 
 function initCopyableBlocks() {
     const topics = Array.from(document.querySelectorAll('.main-content .topic[id]'));

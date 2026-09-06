@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-05-subject-performance-40';
+const CACHE_VERSION = 'almanion-pwa-2026-09-06-private-english-41';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -69,6 +69,7 @@ const APP_SHELL = [
     '/styles/mobile-overrides.css',
     '/styles/copy-blocks.css',
     '/styles/chemistry-interactive-hub.css',
+    '/styles/english.css',
     '/favicons/favicon.svg',
     '/favicons/favicon-dark.svg',
     '/favicons/app-icon.svg',
@@ -88,6 +89,8 @@ const APP_SHELL = [
     '/favicons/favicon-ph-dark.svg',
     '/favicons/favicon-ph-exam.svg',
     '/favicons/favicon-ph-exam-dark.svg',
+    '/favicons/favicon-en.svg',
+    '/favicons/favicon-en-dark.svg',
     '/math.html',
     '/physics.html',
     '/physics-10.html',
@@ -98,6 +101,8 @@ const APP_SHELL = [
     '/geometry.html',
     '/geometry-formulas.html',
     '/likbez.html',
+    '/english.html',
+    '/english.js',
     '/matcenter.html'
 ];
 

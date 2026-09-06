@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <script src="theme-bootstrap.js?v=20260905-1"></script>
     <link rel="stylesheet" href="styles/page-transitions.css?v=20260905-1">
-    <script src="page-transitions.js?v=20260905-2"></script>
+    <script src="page-transitions.js?v=20260906-1"></script>
     <script>
         // FOUC-prevention: тема + экспериментальный режим до загрузки CSS
         (function(){
@@ -256,8 +256,16 @@
             grid-column: span 2;
         }
 
+        #homeEnglishCard[hidden] {
+            display: none !important;
+        }
+
         /* При неполной последней строке карточки остаются по центру сетки. */
         .subjects-grid > .subject-card:nth-last-child(2):nth-child(3n + 1) {
+            grid-column: 2 / span 2;
+        }
+
+        .extra-section .subjects-grid.english-card-hidden > .subject-card:first-child {
             grid-column: 2 / span 2;
         }
 
@@ -275,6 +283,10 @@
             }
 
             .subjects-grid > .subject-card:nth-last-child(2):nth-child(3n + 1) {
+                grid-column: span 2;
+            }
+
+            .extra-section .subjects-grid.english-card-hidden > .subject-card:first-child {
                 grid-column: span 2;
             }
 
@@ -297,6 +309,10 @@
             .subjects-grid > .subject-card,
             .subjects-grid > .subject-card:nth-last-child(2):nth-child(3n + 1),
             .subjects-grid > .subject-card:last-child:nth-child(odd) {
+                grid-column: 1;
+            }
+
+            .extra-section .subjects-grid.english-card-hidden > .subject-card:first-child {
                 grid-column: 1;
             }
 
@@ -457,6 +473,7 @@
         .subject-card[data-subject="likbez"] { --subject-color: #735d7e; }
         .subject-card[data-subject="literature"] { --subject-color: #935f50; }
         .subject-card[data-subject="matcenter"] { --subject-color: #58668e; }
+        .subject-card[data-subject="english"] { --subject-color: #4f6f82; }
 
         body:not(.no-hover) .subject-card:hover::before { color: var(--subject-color); }
 
@@ -868,6 +885,10 @@
             <circle cx="5" cy="15.5" r="1.3" fill="currentColor" stroke="none"/>
             <path d="M5 15.5C7.2 8.7 11.1 5.45 16.65 6.1M14.05 4.55l2.6 1.55-2.15 2.15M12.8 17.1l2.25 2.15 4.35-5.1"/>
         </symbol>
+        <symbol id="academic-english" viewBox="0 0 24 24">
+            <path d="M4.25 5.25h10.5v8.5H8.2L4.25 17V5.25Z"/>
+            <path d="M9.25 13.75v3h6.55l3.95 3.25V8.25h-5M7.35 10.9l2.15-4.2 2.15 4.2M8.15 9.35h2.7"/>
+        </symbol>
     </svg>
     <!-- Кнопка настроек создается автоматически через settings.js -->
 
@@ -1017,7 +1038,7 @@
 
             <div class="extra-section">
                 <h2 class="section-title">Дополнительно</h2>
-                <div class="subjects-grid">
+                <div class="subjects-grid english-card-hidden">
                     <a href="matcenter.html" class="subject-card" data-subject="matcenter">
                         <div class="card-header">
                             <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-matcenter"/></svg></div>
@@ -1041,6 +1062,20 @@
                             <div class="card-info">
                                 <div style="text-align: center;">
                                     <span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> Активно</span>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="english.html" class="subject-card" data-subject="english" id="homeEnglishCard" hidden>
+                        <div class="card-header">
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-english"/></svg></div>
+                        </div>
+                        <div class="card-body">
+                            <h2>Английский язык</h2>
+                            <div class="card-info">
+                                <div style="text-align: center;">
+                                    <span class="status-badge status-active"><span class="eic eic-lock" aria-hidden="true"></span> По приглашению</span>
                                 </div>
                             </div>
                         </div>
@@ -1089,7 +1124,7 @@
     <script src="script.js?v=20260905-2"></script>
     <script src="newyear.js?v=20260903-1"></script>
     <script src="settings.js?v=20260905-1"></script>
-    <script src="account.js?v=20260903-9"></script>
+    <script src="account.js?v=20260906-1"></script>
     <script>
         // Анимация карточек при загрузке
         document.addEventListener('DOMContentLoaded', () => {

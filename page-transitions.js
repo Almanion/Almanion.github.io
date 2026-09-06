@@ -15,6 +15,7 @@
         'geometry-formulas.html',
         'likbez.html',
         'literature-10.html',
+        'english.html',
         'matcenter.html'
     ]);
 

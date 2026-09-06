@@ -941,4 +941,10 @@
             restoreBookmarkTarget();
         }, 300);
     });
+
+    window.addEventListener('almanion:content-ready', event => {
+        const root = event.detail?.root || document;
+        addBookmarkButtons(root);
+        restoreBookmarkTarget();
+    });
 })();

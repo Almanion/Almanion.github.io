@@ -38,6 +38,7 @@
     let googleAttemptId = 0;
     let editorAccessGeneration = 0;
     let adminAccessGeneration = 0;
+    let englishAccessGeneration = 0;
     const GOOGLE_POPUP_TIMEOUT_MS = 45000;
 
     // Явно закрепляем сессию за устройством. По умолчанию Firebase также использует
@@ -447,6 +448,16 @@
                 .catch(function () { return false; });
     }
 
+    function hasEnglishAccess(account) {
+        if (!account) return Promise.resolve(false);
+        const owner = String(account.email || '').trim().toLowerCase() === 'dmb23930@gmail.com';
+        return owner
+            ? Promise.resolve(true)
+            : db.ref('adminRoles/' + account.uid + '/englishAccess').once('value')
+                .then(function (snapshot) { return snapshot.val() === true; })
+                .catch(function () { return false; });
+    }
+
     function updateHomeEditorLink() {
         const link = document.getElementById('homeConstructorLink');
         if (!link) return;
@@ -470,6 +481,22 @@
         hasSiteAdminAccess(checkedUser).then(function (allowed) {
             if (generation !== adminAccessGeneration || user !== checkedUser || !link.isConnected) return;
             link.hidden = !allowed;
+        });
+    }
+
+    function updateHomeEnglishCard() {
+        const link = document.getElementById('homeEnglishCard');
+        if (!link) return;
+        const grid = link.closest('.subjects-grid');
+        const checkedUser = user;
+        const generation = ++englishAccessGeneration;
+        link.hidden = true;
+        if (grid) grid.classList.add('english-card-hidden');
+        if (!checkedUser) return;
+        hasEnglishAccess(checkedUser).then(function (allowed) {
+            if (generation !== englishAccessGeneration || user !== checkedUser || !link.isConnected) return;
+            link.hidden = !allowed;
+            if (grid) grid.classList.toggle('english-card-hidden', !allowed);
         });
     }
 
@@ -573,6 +600,7 @@
         updateButton();
         updateHomeEditorLink();
         updateHomeAdminLink();
+        updateHomeEnglishCard();
         if (u) {
             registerAccountDirectory(u);
             startKcSync(u.uid);
@@ -584,6 +612,7 @@
         updateButton();
         updateHomeEditorLink();
         updateHomeAdminLink();
+        updateHomeEnglishCard();
         console.warn('Almanion account: auth state restore failed.', err);
     });
 
@@ -594,6 +623,7 @@
         getUser: function () { return user; },
         hasContentEditorAccess: hasContentEditorAccess,
         hasSiteAdminAccess: hasSiteAdminAccess,
+        hasEnglishAccess: hasEnglishAccess,
         auth: auth,
         database: db
     };

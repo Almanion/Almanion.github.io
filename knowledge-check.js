@@ -173,6 +173,8 @@
     let cardCache = new Map();
     let session = null;
     let revealed = false;
+    let uiInitialized = false;
+    let keyboardInitialized = false;
 
     const LIKBEZ_CARD_TYPES = [
         { selector: '.definition-box', kind: 'definition', label: 'Определение' },
@@ -884,12 +886,20 @@
     function init() {
         TOPICS = discoverTopics();
         if (TOPICS.length === 0) return; // нет тем — нечего повторять
-        buildUI();
-        initKeyboard();
+        cardCache = new Map();
+        if (!uiInitialized) {
+            buildUI();
+            uiInitialized = true;
+        }
+        if (!keyboardInitialized) {
+            initKeyboard();
+            keyboardInitialized = true;
+        }
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
     else init();
+    window.addEventListener('almanion:content-ready', init);
 
     // Экспорт для отладки/тестов
     window.__kcFSRS = {

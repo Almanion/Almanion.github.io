@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>English — dark theme</title>
+  <rect x="1.5" y="1.5" width="29" height="29" rx="8" fill="#111A1F" stroke="#2D424C"/>
+  <g transform="translate(4 4)" fill="none" stroke="#8FB2C2" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4.25 5.25h10.5v8.5H8.2L4.25 17V5.25Z"/>
+    <path d="M9.25 13.75v3h6.55l3.95 3.25V8.25h-5M7.35 10.9l2.15-4.2 2.15 4.2M8.15 9.35h2.7"/>
+  </g>
+</svg>
