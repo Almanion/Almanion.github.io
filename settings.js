@@ -850,7 +850,10 @@ function closeSettingsModal() {
 // ============================================
 
 function resetAllSettings() {
-    if (confirm('Вы уверены, что хотите сбросить все настройки на значения по умолчанию?')) {
+    const resetPrompt = document.body?.dataset.uiLanguage === 'en'
+        ? 'Are you sure you want to restore all settings to their defaults?'
+        : 'Вы уверены, что хотите сбросить все настройки на значения по умолчанию?';
+    if (confirm(resetPrompt)) {
         // Сбрасываем настройки
         siteSettings = { ...defaultSettings, expDark: systemPrefersDark() };
         window.siteSettings = siteSettings;

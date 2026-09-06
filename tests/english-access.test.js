@@ -13,9 +13,11 @@ const page = read('english.html');
 const client = read('english.js');
 const home = read('index.html');
 const account = read('account.js');
+const settings = read('settings.js');
 const admin = read('admin.html');
 const dashboard = read('admin-dashboard.js');
 const css = read(path.join('styles', 'english.css'));
+const ui = read('english-ui.js');
 
 assert.ok(rules.englishVocabulary, 'protected vocabulary rules are missing');
 assert.match(rules.englishVocabulary['.read'], /auth != null/);
@@ -36,8 +38,11 @@ assert.match(dashboard, /englishAccess:\s*englishAccess/);
 assert.match(dashboard, /db\.ref\('accountDirectory'\)\.once\('value'\)/);
 
 assert.match(page, /class="english-page english-locked"/);
+assert.match(page, /data-ui-language="en"/);
+assert.match(page, /english-ui\.js\?v=/);
 assert.match(page, /data-range-start="1" data-range-end="27"/);
 assert.match(page, /data-range-start="108" data-range-end="135"/);
+assert.doesNotMatch(page, />\s*(?:Конспекты|Дополнительно|МатЦентр|Ликбезы|Вернуться на главную)\s*</);
 assert.match(client, /englishVocabulary\/v1/);
 assert.match(client, /EXPECTED_WORDS = 135/);
 assert.match(client, /getIdToken\(true\)/);
@@ -49,8 +54,14 @@ assert.doesNotMatch(page, /Illusory|Impeding|Pretentiousness/, 'private vocabula
 assert.doesNotMatch(client, /based on illusion|obstructing or slowing/, 'private vocabulary leaked into public JavaScript');
 
 assert.match(css, /content:\s*"Definition"/);
+assert.match(css, /\.english-word-list\s*\{[\s\S]*?gap:\s*0\.55rem/);
 assert.match(client, /summary\.textContent = 'Translate'/);
 assert.match(client, /translation\.append\(summary, translatedLine\)/);
+assert.match(ui, /dataset\.uiLanguage !== 'en'/);
+assert.match(ui, /'\u041fроверка знаний': 'Knowledge check'/);
+assert.match(ui, /'\u041dастройки': 'Settings'/);
+assert.match(ui, /CONTENT_EXCLUSIONS = '[^']*\[lang="ru"\]/);
+assert.match(settings, /dataset\.uiLanguage === 'en'[\s\S]*?restore all settings to their defaults/);
 
 const normalizeSource = client.match(/function normalizeItems\(value\) \{[\s\S]*?\n    \}(?=\n\n    function makeWordBlock)/);
 assert.ok(normalizeSource, 'normalizeItems could not be extracted for ordering test');

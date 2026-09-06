@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-06-private-english-42';
+const CACHE_VERSION = 'almanion-pwa-2026-09-06-private-english-43';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -103,6 +103,7 @@ const APP_SHELL = [
     '/likbez.html',
     '/english.html',
     '/english.js',
+    '/english-ui.js',
     '/matcenter.html'
 ];
 
