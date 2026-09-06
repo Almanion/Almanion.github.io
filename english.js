@@ -2,6 +2,7 @@
     'use strict';
 
     const OWNER_EMAIL = 'dmb23930@gmail.com';
+    const OWNER_UID = '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
     const DATA_PATH = 'englishVocabulary/v1';
     const EXPECTED_WORDS = 135;
 
@@ -26,7 +27,7 @@
     }
 
     function isOwner(user) {
-        return normalizedEmail(user) === OWNER_EMAIL;
+        return !!user && (user.uid === OWNER_UID || normalizedEmail(user) === OWNER_EMAIL);
     }
 
     function showGate(state, title, message, actionLabel, action) {
@@ -132,11 +133,14 @@
         }));
     }
 
-    function showDataError(user, generation) {
+    function showDataError(user, generation, error) {
+        const permissionDenied = String(error && (error.code || error.message) || '').toLowerCase().includes('permission');
         showGate(
             'error',
             'Vocabulary is unavailable',
-            'The protected data could not be loaded. Check the connection and try again.',
+            permissionDenied
+                ? 'Your account session could not be verified. Refresh access and try again.'
+                : 'The protected data could not be loaded. Check the connection and try again.',
             'Try again',
             function () { loadVocabulary(user, generation); }
         );
@@ -145,7 +149,14 @@
     function loadVocabulary(user, generation) {
         if (!user || generation !== authGeneration) return;
         showGate('loading', 'Loading vocabulary…', 'Your access has been confirmed.', '', null);
-        db.ref(DATA_PATH).once('value').then(function (snapshot) {
+        // Обновляем ID-токен перед защищённым чтением. Это исключает короткое окно,
+        // когда Auth уже восстановил пользователя, а Realtime Database ещё видит
+        // предыдущий токен сессии.
+        user.getIdToken(true).then(function () {
+            if (generation !== authGeneration || currentUser !== user) return null;
+            return db.ref(DATA_PATH).once('value');
+        }).then(function (snapshot) {
+            if (!snapshot) return;
             if (generation !== authGeneration || currentUser !== user) return;
             if (!snapshot.exists()) throw new Error('Vocabulary data is missing.');
             renderVocabulary(snapshot.val());
@@ -153,7 +164,7 @@
             if (generation !== authGeneration || currentUser !== user) return;
             console.error('English vocabulary:', error);
             clearVocabulary();
-            showDataError(user, generation);
+            showDataError(user, generation, error);
         });
     }
 

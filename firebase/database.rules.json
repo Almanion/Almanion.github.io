@@ -4,10 +4,10 @@
     ".write": false,
 
     "adminRoles": {
-      ".read": "auth != null && auth.token.email === 'dmb23930@gmail.com'",
+      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com')",
       "$uid": {
-        ".read": "auth != null && (auth.uid === $uid || auth.token.email === 'dmb23930@gmail.com')",
-        ".write": "auth != null && auth.token.email === 'dmb23930@gmail.com'",
+        ".read": "auth != null && (auth.uid === $uid || auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com')",
+        ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com')",
         ".validate": "newData.hasChildren(['email', 'siteAdmin', 'matcenterAdmin', 'contentEditor', 'englishAccess', 'updatedAt', 'updatedBy'])",
         "email": { ".validate": "newData.isString() && newData.val().length <= 254" },
         "siteAdmin": { ".validate": "newData.isBoolean()" },
@@ -21,9 +21,9 @@
     },
 
     "accountDirectory": {
-      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$uid": {
-        ".write": "auth != null && ((auth.uid === $uid && newData.exists()) || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+        ".write": "auth != null && ((auth.uid === $uid && newData.exists()) || auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
         ".validate": "newData.hasChildren(['email', 'displayName', 'lastSeen'])",
         "email": { ".validate": "newData.isString() && newData.val().length <= 254 && (auth.uid !== $uid || newData.val() === auth.token.email)" },
         "displayName": { ".validate": "newData.isString() && newData.val().length <= 120" },
@@ -162,8 +162,8 @@
     },
 
     "englishVocabulary": {
-      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('englishAccess').val() === true)",
-      ".write": "auth != null && auth.token.email === 'dmb23930@gmail.com'",
+      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('englishAccess').val() === true)",
+      ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com')",
       "$release": {
         ".validate": "newData.hasChildren(['version', 'updatedAt', 'items'])",
         "version": { ".validate": "newData.isNumber() && newData.val() === 1" },

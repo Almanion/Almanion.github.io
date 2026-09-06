@@ -3,6 +3,7 @@
 
     const ANALYTICS_DAYS = 14;
     let analyticsLoading = false;
+    let accountDirectoryLoading = false;
     let accountDirectory = {};
     let adminRoles = {};
 
@@ -238,6 +239,117 @@
         return !!user && String(user.email || '').trim().toLowerCase() === SITE_OWNER_EMAIL;
     }
 
+    function formatAccountDate(value) {
+        const timestamp = Number(value);
+        if (!Number.isFinite(timestamp) || timestamp <= 0) return 'Время входа неизвестно';
+        return 'Последний вход: ' + new Date(timestamp).toLocaleString('ru-RU', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    function updateAccountDatalist() {
+        const datalist = byId('accountDirectoryOptions');
+        if (!datalist) return;
+        datalist.replaceChildren();
+        Object.keys(accountDirectory).forEach(function (uid) {
+            const account = accountDirectory[uid] || {};
+            if (!account.email) return;
+            const option = document.createElement('option');
+            option.value = account.email;
+            option.label = (account.displayName ? account.displayName + ' · ' : '') + uid;
+            datalist.appendChild(option);
+        });
+    }
+
+    function renderRegisteredAccounts() {
+        const root = byId('registeredAccountsList');
+        const count = byId('registeredAccountsCount');
+        const search = byId('registeredAccountsSearch');
+        if (!root) return;
+
+        const query = String(search && search.value || '').trim().toLowerCase();
+        const allEntries = Object.keys(accountDirectory).map(function (uid) {
+            return { uid: uid, account: accountDirectory[uid] || {} };
+        }).filter(function (entry) {
+            return !!entry.account.email;
+        }).sort(function (a, b) {
+            return (Number(b.account.lastSeen) || 0) - (Number(a.account.lastSeen) || 0);
+        });
+        const entries = query ? allEntries.filter(function (entry) {
+            const haystack = [entry.account.email, entry.account.displayName, entry.uid].join(' ').toLowerCase();
+            return haystack.includes(query);
+        }) : allEntries;
+
+        if (count) count.textContent = String(allEntries.length);
+        root.replaceChildren();
+        if (!entries.length) {
+            const empty = document.createElement('div');
+            empty.className = 'no-data';
+            empty.textContent = allEntries.length ? 'По этому запросу ничего не найдено' : 'Зарегистрированных аккаунтов пока нет';
+            root.appendChild(empty);
+            return;
+        }
+
+        const list = document.createElement('div');
+        list.className = 'registered-accounts-list';
+        entries.forEach(function (entry) {
+            const row = document.createElement('div');
+            row.className = 'registered-account-row';
+
+            const avatar = document.createElement('span');
+            avatar.className = 'registered-account-avatar';
+            avatar.setAttribute('aria-hidden', 'true');
+            avatar.textContent = String(entry.account.displayName || entry.account.email || '?').trim().charAt(0).toUpperCase() || '?';
+
+            const identity = document.createElement('div');
+            identity.className = 'registered-account-identity';
+            const email = document.createElement('b');
+            email.textContent = entry.account.email;
+            const name = document.createElement('span');
+            name.textContent = entry.account.displayName || 'Имя не указано';
+            identity.append(email, name);
+
+            const meta = document.createElement('div');
+            meta.className = 'registered-account-meta';
+            const lastSeen = document.createElement('span');
+            lastSeen.textContent = formatAccountDate(entry.account.lastSeen);
+            const uid = document.createElement('code');
+            uid.textContent = entry.uid;
+            uid.title = 'Firebase UID';
+            meta.append(lastSeen, uid);
+
+            row.append(avatar, identity, meta);
+            list.appendChild(row);
+        });
+        root.appendChild(list);
+    }
+
+    async function loadAccountDirectory(showFeedback) {
+        if (accountDirectoryLoading) return;
+        accountDirectoryLoading = true;
+        const button = byId('refreshRegisteredAccountsBtn');
+        if (button) button.disabled = true;
+        try {
+            const snapshot = await db.ref('accountDirectory').once('value');
+            accountDirectory = snapshot.val() || {};
+            renderRegisteredAccounts();
+            updateAccountDatalist();
+            if (showFeedback) showAdminToast('Список аккаунтов обновлён');
+        } catch (error) {
+            console.error('Account directory:', error);
+            const root = byId('registeredAccountsList');
+            if (root) root.innerHTML = '<div class="no-data">Не удалось загрузить аккаунты</div>';
+            showAdminToast('Не удалось загрузить список аккаунтов', true);
+        } finally {
+            accountDirectoryLoading = false;
+            if (button) button.disabled = false;
+        }
+    }
+
     function findAccount(value) {
         const query = String(value || '').trim();
         if (!query) return null;
@@ -337,16 +449,8 @@
             ]);
             accountDirectory = results[0].val() || {};
             adminRoles = results[1].val() || {};
-            const datalist = byId('accountDirectoryOptions');
-            datalist.replaceChildren();
-            Object.keys(accountDirectory).forEach(function (uid) {
-                const account = accountDirectory[uid] || {};
-                if (!account.email) return;
-                const option = document.createElement('option');
-                option.value = account.email;
-                option.label = (account.displayName ? account.displayName + ' · ' : '') + uid;
-                datalist.appendChild(option);
-            });
+            updateAccountDatalist();
+            renderRegisteredAccounts();
             renderAdminRoles();
         } catch (error) {
             console.error('Admin roles:', error);
@@ -402,6 +506,10 @@
     function initControls() {
         const refresh = byId('refreshUsageBtn');
         if (refresh) refresh.addEventListener('click', function () { loadUsageAnalytics(true); });
+        const refreshAccounts = byId('refreshRegisteredAccountsBtn');
+        if (refreshAccounts) refreshAccounts.addEventListener('click', function () { loadAccountDirectory(true); });
+        const accountSearch = byId('registeredAccountsSearch');
+        if (accountSearch) accountSearch.addEventListener('input', renderRegisteredAccounts);
         const roleForm = byId('adminRoleForm');
         if (roleForm) roleForm.addEventListener('submit', saveAdminRoles);
         const roleAccount = byId('adminRoleAccount');
@@ -425,6 +533,7 @@
         }
         if (!hasSiteAccess || !auth.currentUser || auth.currentUser.uid !== user.uid) return;
         loadUsageAnalytics(false);
+        loadAccountDirectory(false);
         loadRoleManager(user);
     });
 })();

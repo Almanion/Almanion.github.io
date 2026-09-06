@@ -250,6 +250,83 @@ body.admin-page.experimental.exp-dark {
 .usage-page-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .usage-page-row strong { color: var(--text); }
 
+.registered-accounts-heading { margin-bottom: .65rem; }
+.registered-accounts-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.65rem;
+    min-height: 1.35rem;
+    padding: .12rem .42rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 10%, var(--bg-input));
+    color: var(--accent);
+    font-size: .68rem;
+    font-weight: 750;
+}
+.registered-accounts-search {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    width: min(520px, 100%);
+    min-height: 42px;
+    margin-bottom: .85rem;
+    padding: 0 .8rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-input);
+    color: var(--text-secondary);
+}
+.registered-accounts-search:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 13%, transparent);
+}
+.registered-accounts-search > span { font-size: 1rem; line-height: 1; }
+.registered-accounts-search input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: .82rem;
+}
+.registered-accounts-search input::placeholder { color: var(--text-secondary); opacity: .82; }
+.registered-accounts-list { display: grid; gap: .45rem; }
+.registered-account-row {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) minmax(220px, auto);
+    align-items: center;
+    gap: .75rem;
+    padding: .7rem .8rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-input);
+}
+.registered-account-avatar {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 11%, var(--bg-card));
+    color: var(--accent);
+    font-size: .78rem;
+    font-weight: 800;
+}
+.registered-account-identity,
+.registered-account-meta { min-width: 0; }
+.registered-account-identity b,
+.registered-account-identity span,
+.registered-account-meta span,
+.registered-account-meta code { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.registered-account-identity b { color: var(--text); font-size: .82rem; }
+.registered-account-identity span { margin-top: .18rem; color: var(--text-secondary); font-size: .69rem; }
+.registered-account-meta { text-align: right; }
+.registered-account-meta span { color: var(--text-secondary); font-size: .68rem; }
+.registered-account-meta code { margin-top: .22rem; color: var(--text-secondary); font: 600 .62rem/1.3 var(--font-mono, ui-monospace, monospace); }
+
 .admin-role-form { display: grid; grid-template-columns: minmax(240px, 1.35fr) repeat(4, minmax(155px, 1fr)); gap: .7rem; align-items: stretch; }
 .admin-role-form .form-group { margin: 0; }
 .admin-role-check { display: flex; align-items: center; gap: .7rem; padding: .68rem .78rem; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-input); cursor: pointer; }
@@ -309,6 +386,9 @@ body.admin-page.experimental.exp-dark {
     .admin-role-save { width: 100% !important; }
     .admin-role-row { grid-template-columns: minmax(0, 1fr) auto; }
     .admin-role-badges { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; }
+    .registered-account-row { grid-template-columns: 32px minmax(0, 1fr); }
+    .registered-account-avatar { width: 32px; height: 32px; }
+    .registered-account-meta { grid-column: 2; text-align: left; }
 }
 
 @media (prefers-reduced-motion: reduce) {
