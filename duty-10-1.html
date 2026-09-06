@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="style-new.css?v=20260905-1">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
-    <link rel="stylesheet" href="styles/duty.css?v=20260906-2">
+    <link rel="stylesheet" href="styles/duty.css?v=20260907-1">
 </head>
 <body class="duty-page" data-no-math>
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -39,10 +39,7 @@
 
     <main class="duty-shell">
         <header class="duty-hero">
-            <div>
-                <p class="duty-eyebrow">Класс 10‑1</p>
-                <h1>Дежурство</h1>
-            </div>
+            <h1>Дежурство 10‑1</h1>
             <button class="duty-edit-button" id="dutyEditButton" type="button" hidden>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
                 <span>Изменить расписание</span>
@@ -67,10 +64,7 @@
 
         <section class="duty-schedule" aria-labelledby="dutyScheduleTitle">
             <div class="duty-section-heading">
-                <div>
-                    <p class="duty-section-kicker">2026/2027 учебный год</p>
-                    <h2 id="dutyScheduleTitle">Все недели</h2>
-                </div>
+                <h2 id="dutyScheduleTitle">2026/2027</h2>
                 <p class="duty-sync-status" id="dutySyncStatus" role="status">Подключаемся…</p>
             </div>
 
@@ -93,18 +87,13 @@
 
         <footer class="duty-footer">
             <a href="index.html">Вернуться к конспектам</a>
-            <span aria-hidden="true">·</span>
-            <span>Расписание класса 10‑1</span>
         </footer>
     </main>
 
     <div class="duty-editor-overlay" id="dutyEditorOverlay" hidden aria-hidden="true">
         <section class="duty-editor" role="dialog" aria-modal="true" aria-labelledby="dutyEditorTitle">
             <header class="duty-editor-header">
-                <div>
-                    <p class="duty-editor-kicker">Редактор дежурства</p>
-                    <h2 id="dutyEditorTitle">Расписание 10‑1</h2>
-                </div>
+                <h2 id="dutyEditorTitle">Расписание 10‑1</h2>
                 <button class="duty-icon-button" id="dutyEditorClose" type="button" aria-label="Закрыть редактор">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
                 </button>
@@ -116,22 +105,88 @@
                     <p id="dutyEditorNoticeText">Выберите, какую версию продолжить редактировать.</p>
                 </div>
                 <div class="duty-editor-notice-actions">
-                    <button id="dutyUseCloudButton" type="button">Взять облачную</button>
-                    <button id="dutyKeepDraftButton" type="button">Оставить мой вариант</button>
+                    <button id="dutyUseCloudButton" type="button">Открыть облачную</button>
+                    <button id="dutyKeepDraftButton" type="button">Продолжить с черновиком</button>
                 </div>
             </div>
 
             <div class="duty-editor-toolbar">
-                <button class="duty-add-week" id="dutyAddWeekButton" type="button">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                    <span>Добавить следующую неделю</span>
-                </button>
+                <div class="duty-editor-tabs" id="dutyEditorTabs" role="tablist" aria-label="Раздел редактора">
+                    <button class="duty-editor-tab is-active" id="dutyEditorTabSchedule" type="button" role="tab" aria-selected="true" aria-controls="dutyEditorPanelSchedule" data-duty-tab="schedule">График</button>
+                    <button class="duty-editor-tab" id="dutyEditorTabCycle" type="button" role="tab" aria-selected="false" aria-controls="dutyEditorPanelCycle" data-duty-tab="cycle" tabindex="-1">Цикл</button>
+                    <button class="duty-editor-tab" id="dutyEditorTabCalendar" type="button" role="tab" aria-selected="false" aria-controls="dutyEditorPanelCalendar" data-duty-tab="calendar" tabindex="-1">Календарь</button>
+                </div>
                 <div class="duty-draft-state" id="dutyDraftState">Изменений нет</div>
+                <p class="sr-only" id="dutyEditorScheduleStatus" role="status" aria-live="polite"></p>
             </div>
 
             <div class="duty-editor-content" id="dutyEditorContent">
-                <div class="duty-editor-list" id="dutyEditorList"></div>
-                <button class="duty-undo-button" id="dutyUndoButton" type="button" hidden>Вернуть удалённую неделю</button>
+                <section class="duty-editor-panel is-active" id="dutyEditorPanelSchedule" role="tabpanel" aria-labelledby="dutyEditorTabSchedule" data-duty-panel="schedule">
+                    <div class="duty-editor-panel-actions">
+                        <p class="duty-editor-schedule-summary" id="dutyEditorScheduleSummary" role="status" hidden></p>
+                    </div>
+                    <div class="duty-editor-list" id="dutyEditorList"></div>
+                    <button class="duty-undo-button" id="dutyUndoButton" type="button" hidden>Вернуть удалённую неделю</button>
+                </section>
+
+                <section class="duty-editor-panel" id="dutyEditorPanelCycle" role="tabpanel" aria-labelledby="dutyEditorTabCycle" data-duty-panel="cycle" hidden>
+                    <div class="duty-editor-panel-heading">
+                        <h3>Цикл дежурств</h3>
+                        <button class="duty-compact-action" id="dutyCycleAddGroupButton" type="button">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                            <span>Добавить группу</span>
+                        </button>
+                    </div>
+                    <div class="duty-cycle-list" id="dutyCycleList"></div>
+                </section>
+
+                <section class="duty-editor-panel" id="dutyEditorPanelCalendar" role="tabpanel" aria-labelledby="dutyEditorTabCalendar" data-duty-panel="calendar" hidden>
+                    <fieldset class="duty-calendar-bounds">
+                        <legend>Учебный год</legend>
+                        <label class="duty-editor-field">
+                            <span>Начало</span>
+                            <input id="dutyCalendarSchoolStart" type="date" value="2026-09-02" autocomplete="off">
+                        </label>
+                        <label class="duty-editor-field">
+                            <span>Окончание</span>
+                            <input id="dutyCalendarSchoolEnd" type="date" value="2027-05-25" autocomplete="off">
+                        </label>
+                    </fieldset>
+
+                    <section class="duty-calendar-section" aria-labelledby="dutyCalendarPeriodsTitle">
+                        <div class="duty-editor-panel-heading">
+                            <h3 id="dutyCalendarPeriodsTitle">Каникулы</h3>
+                            <button class="duty-compact-action" id="dutyCalendarAddPeriodButton" type="button">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                <span>Добавить период</span>
+                            </button>
+                        </div>
+                        <div class="duty-calendar-list" id="dutyCalendarPeriods"></div>
+                    </section>
+
+                    <section class="duty-calendar-section" aria-labelledby="dutyCalendarMergesTitle">
+                        <div class="duty-editor-panel-heading">
+                            <h3 id="dutyCalendarMergesTitle">Объединённые смены</h3>
+                            <button class="duty-compact-action" id="dutyCalendarAddMergeButton" type="button">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 12h8M12 8v8"/><path d="M7 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2M17 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/></svg>
+                                <span>Объединить</span>
+                            </button>
+                        </div>
+                        <div class="duty-calendar-list" id="dutyCalendarMerges"></div>
+                    </section>
+
+                    <section class="duty-calendar-section" aria-labelledby="dutyCalendarDaysTitle">
+                        <div class="duty-editor-panel-heading">
+                            <h3 id="dutyCalendarDaysTitle">Отдельные выходные</h3>
+                            <button class="duty-compact-action" id="dutyCalendarAddDayButton" type="button">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                <span>Добавить день</span>
+                            </button>
+                        </div>
+                        <div class="duty-calendar-list" id="dutyCalendarDays"></div>
+                    </section>
+                </section>
+
                 <div class="duty-editor-error" id="dutyEditorError" hidden role="alert"></div>
             </div>
 
@@ -152,6 +207,6 @@
     <script src="script.js?v=20260906-1"></script>
     <script src="settings.js?v=20260906-2"></script>
     <script src="account.js?v=20260906-2"></script>
-    <script src="duty.js?v=20260906-2"></script>
+    <script src="duty.js?v=20260907-1"></script>
 </body>
 </html>

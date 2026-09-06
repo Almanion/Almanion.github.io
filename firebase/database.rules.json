@@ -25,24 +25,138 @@
       "grade10_1": {
         ".read": true,
         ".write": "auth != null && newData.exists() && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('dutyEditor').val() === true)",
-        ".validate": "newData.hasChildren(['version', 'className', 'academicYear', 'revision', 'updatedAt', 'updatedBy', 'entries']) && newData.child('revision').val() === (data.exists() ? data.child('revision').val() + 1 : 1)",
-        "version": { ".validate": "newData.isNumber() && newData.val() === 1" },
+        ".validate": "newData.hasChildren(['version', 'className', 'academicYear', 'revision', 'updatedAt', 'updatedBy', 'entries']) && newData.child('revision').val() === (data.exists() ? data.child('revision').val() + 1 : 1) && (!data.child('version').exists() || newData.child('version').val() >= data.child('version').val()) && ((newData.child('version').val() === 1 && !newData.child('config').exists()) || (newData.child('version').val() === 2 && newData.child('config').exists()))",
+        "version": { ".validate": "newData.isNumber() && (newData.val() === 1 || newData.val() === 2)" },
         "className": { ".validate": "newData.isString() && newData.val() === '10-1'" },
         "academicYear": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 20" },
         "revision": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() % 1 === 0" },
-        "updatedAt": { ".validate": "newData.isNumber()" },
+        "updatedAt": { ".validate": "newData.isNumber() && newData.val() === now" },
         "updatedBy": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "config": {
+          ".validate": "newData.hasChildren(['cycle', 'calendar'])",
+          "cycle": {
+            ".validate": "newData.hasChildren()",
+            "$group": {
+              ".validate": "$group.matches(/^group-(0[1-9]|[1-3][0-9]|40)$/) && newData.hasChildren(['order', 'people']) && (($group !== 'group-01' && newData.parent().child('group-01').exists()) || ($group !== 'group-02' && newData.parent().child('group-02').exists()) || ($group !== 'group-03' && newData.parent().child('group-03').exists()) || ($group !== 'group-04' && newData.parent().child('group-04').exists()) || ($group !== 'group-05' && newData.parent().child('group-05').exists()) || ($group !== 'group-06' && newData.parent().child('group-06').exists()) || ($group !== 'group-07' && newData.parent().child('group-07').exists()) || ($group !== 'group-08' && newData.parent().child('group-08').exists()) || ($group !== 'group-09' && newData.parent().child('group-09').exists()) || ($group !== 'group-10' && newData.parent().child('group-10').exists()) || ($group !== 'group-11' && newData.parent().child('group-11').exists()) || ($group !== 'group-12' && newData.parent().child('group-12').exists()) || ($group !== 'group-13' && newData.parent().child('group-13').exists()) || ($group !== 'group-14' && newData.parent().child('group-14').exists()) || ($group !== 'group-15' && newData.parent().child('group-15').exists()) || ($group !== 'group-16' && newData.parent().child('group-16').exists()) || ($group !== 'group-17' && newData.parent().child('group-17').exists()) || ($group !== 'group-18' && newData.parent().child('group-18').exists()) || ($group !== 'group-19' && newData.parent().child('group-19').exists()) || ($group !== 'group-20' && newData.parent().child('group-20').exists()) || ($group !== 'group-21' && newData.parent().child('group-21').exists()) || ($group !== 'group-22' && newData.parent().child('group-22').exists()) || ($group !== 'group-23' && newData.parent().child('group-23').exists()) || ($group !== 'group-24' && newData.parent().child('group-24').exists()) || ($group !== 'group-25' && newData.parent().child('group-25').exists()) || ($group !== 'group-26' && newData.parent().child('group-26').exists()) || ($group !== 'group-27' && newData.parent().child('group-27').exists()) || ($group !== 'group-28' && newData.parent().child('group-28').exists()) || ($group !== 'group-29' && newData.parent().child('group-29').exists()) || ($group !== 'group-30' && newData.parent().child('group-30').exists()) || ($group !== 'group-31' && newData.parent().child('group-31').exists()) || ($group !== 'group-32' && newData.parent().child('group-32').exists()) || ($group !== 'group-33' && newData.parent().child('group-33').exists()) || ($group !== 'group-34' && newData.parent().child('group-34').exists()) || ($group !== 'group-35' && newData.parent().child('group-35').exists()) || ($group !== 'group-36' && newData.parent().child('group-36').exists()) || ($group !== 'group-37' && newData.parent().child('group-37').exists()) || ($group !== 'group-38' && newData.parent().child('group-38').exists()) || ($group !== 'group-39' && newData.parent().child('group-39').exists()) || ($group !== 'group-40' && newData.parent().child('group-40').exists())) && (($group === 'group-01' || !newData.parent().child('group-01').exists() || newData.parent().child('group-01/order').val() !== newData.child('order').val()) && ($group === 'group-02' || !newData.parent().child('group-02').exists() || newData.parent().child('group-02/order').val() !== newData.child('order').val()) && ($group === 'group-03' || !newData.parent().child('group-03').exists() || newData.parent().child('group-03/order').val() !== newData.child('order').val()) && ($group === 'group-04' || !newData.parent().child('group-04').exists() || newData.parent().child('group-04/order').val() !== newData.child('order').val()) && ($group === 'group-05' || !newData.parent().child('group-05').exists() || newData.parent().child('group-05/order').val() !== newData.child('order').val()) && ($group === 'group-06' || !newData.parent().child('group-06').exists() || newData.parent().child('group-06/order').val() !== newData.child('order').val()) && ($group === 'group-07' || !newData.parent().child('group-07').exists() || newData.parent().child('group-07/order').val() !== newData.child('order').val()) && ($group === 'group-08' || !newData.parent().child('group-08').exists() || newData.parent().child('group-08/order').val() !== newData.child('order').val()) && ($group === 'group-09' || !newData.parent().child('group-09').exists() || newData.parent().child('group-09/order').val() !== newData.child('order').val()) && ($group === 'group-10' || !newData.parent().child('group-10').exists() || newData.parent().child('group-10/order').val() !== newData.child('order').val()) && ($group === 'group-11' || !newData.parent().child('group-11').exists() || newData.parent().child('group-11/order').val() !== newData.child('order').val()) && ($group === 'group-12' || !newData.parent().child('group-12').exists() || newData.parent().child('group-12/order').val() !== newData.child('order').val()) && ($group === 'group-13' || !newData.parent().child('group-13').exists() || newData.parent().child('group-13/order').val() !== newData.child('order').val()) && ($group === 'group-14' || !newData.parent().child('group-14').exists() || newData.parent().child('group-14/order').val() !== newData.child('order').val()) && ($group === 'group-15' || !newData.parent().child('group-15').exists() || newData.parent().child('group-15/order').val() !== newData.child('order').val()) && ($group === 'group-16' || !newData.parent().child('group-16').exists() || newData.parent().child('group-16/order').val() !== newData.child('order').val()) && ($group === 'group-17' || !newData.parent().child('group-17').exists() || newData.parent().child('group-17/order').val() !== newData.child('order').val()) && ($group === 'group-18' || !newData.parent().child('group-18').exists() || newData.parent().child('group-18/order').val() !== newData.child('order').val()) && ($group === 'group-19' || !newData.parent().child('group-19').exists() || newData.parent().child('group-19/order').val() !== newData.child('order').val()) && ($group === 'group-20' || !newData.parent().child('group-20').exists() || newData.parent().child('group-20/order').val() !== newData.child('order').val()) && ($group === 'group-21' || !newData.parent().child('group-21').exists() || newData.parent().child('group-21/order').val() !== newData.child('order').val()) && ($group === 'group-22' || !newData.parent().child('group-22').exists() || newData.parent().child('group-22/order').val() !== newData.child('order').val()) && ($group === 'group-23' || !newData.parent().child('group-23').exists() || newData.parent().child('group-23/order').val() !== newData.child('order').val()) && ($group === 'group-24' || !newData.parent().child('group-24').exists() || newData.parent().child('group-24/order').val() !== newData.child('order').val()) && ($group === 'group-25' || !newData.parent().child('group-25').exists() || newData.parent().child('group-25/order').val() !== newData.child('order').val()) && ($group === 'group-26' || !newData.parent().child('group-26').exists() || newData.parent().child('group-26/order').val() !== newData.child('order').val()) && ($group === 'group-27' || !newData.parent().child('group-27').exists() || newData.parent().child('group-27/order').val() !== newData.child('order').val()) && ($group === 'group-28' || !newData.parent().child('group-28').exists() || newData.parent().child('group-28/order').val() !== newData.child('order').val()) && ($group === 'group-29' || !newData.parent().child('group-29').exists() || newData.parent().child('group-29/order').val() !== newData.child('order').val()) && ($group === 'group-30' || !newData.parent().child('group-30').exists() || newData.parent().child('group-30/order').val() !== newData.child('order').val()) && ($group === 'group-31' || !newData.parent().child('group-31').exists() || newData.parent().child('group-31/order').val() !== newData.child('order').val()) && ($group === 'group-32' || !newData.parent().child('group-32').exists() || newData.parent().child('group-32/order').val() !== newData.child('order').val()) && ($group === 'group-33' || !newData.parent().child('group-33').exists() || newData.parent().child('group-33/order').val() !== newData.child('order').val()) && ($group === 'group-34' || !newData.parent().child('group-34').exists() || newData.parent().child('group-34/order').val() !== newData.child('order').val()) && ($group === 'group-35' || !newData.parent().child('group-35').exists() || newData.parent().child('group-35/order').val() !== newData.child('order').val()) && ($group === 'group-36' || !newData.parent().child('group-36').exists() || newData.parent().child('group-36/order').val() !== newData.child('order').val()) && ($group === 'group-37' || !newData.parent().child('group-37').exists() || newData.parent().child('group-37/order').val() !== newData.child('order').val()) && ($group === 'group-38' || !newData.parent().child('group-38').exists() || newData.parent().child('group-38/order').val() !== newData.child('order').val()) && ($group === 'group-39' || !newData.parent().child('group-39').exists() || newData.parent().child('group-39/order').val() !== newData.child('order').val()) && ($group === 'group-40' || !newData.parent().child('group-40').exists() || newData.parent().child('group-40/order').val() !== newData.child('order').val()))",
+              "order": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 40 && newData.val() % 1 === 0" },
+              "people": {
+                ".validate": "newData.hasChild('person-0')",
+                "$person": { ".validate": "$person.matches(/^person-([0-9]|1[0-9])$/) && newData.isString() && newData.val().length > 0 && newData.val().length <= 120" }
+              },
+              "$other": { ".validate": false }
+            }
+          },
+          "calendar": {
+            ".validate": "newData.hasChildren(['schoolStart', 'schoolEnd', 'weekStartsOn', 'weekEndsOn']) && newData.child('schoolStart').val() <= newData.child('schoolEnd').val()",
+            "schoolStart": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+            "schoolEnd": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+            "weekStartsOn": { ".validate": "newData.isNumber() && newData.val() === 1" },
+            "weekEndsOn": { ".validate": "newData.isNumber() && newData.val() === 6" },
+            "vacations": {
+              ".validate": "newData.hasChildren()",
+              "$vacation": {
+                ".validate": "$vacation.matches(/^vacation-[a-zA-Z0-9_-]{1,55}$/) && newData.hasChildren(['start', 'end', 'label']) && newData.child('start').val() <= newData.child('end').val() && newData.child('start').val() >= newData.parent().parent().child('schoolStart').val() && newData.child('end').val() <= newData.parent().parent().child('schoolEnd').val()",
+                "start": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+                "end": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+                "label": { ".validate": "newData.isString() && newData.val().length <= 120" },
+                "$other": { ".validate": false }
+              }
+            },
+            "daysOff": {
+              ".validate": "newData.hasChildren()",
+              "$day": {
+                ".validate": "$day.matches(/^day-off-[a-zA-Z0-9_-]{1,56}$/) && newData.hasChildren(['date', 'label']) && newData.child('date').val() >= newData.parent().parent().child('schoolStart').val() && newData.child('date').val() <= newData.parent().parent().child('schoolEnd').val()",
+                "date": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+                "label": { ".validate": "newData.isString() && newData.val().length <= 120" },
+                "$other": { ".validate": false }
+              }
+            },
+            "turnMerges": {
+              ".validate": "newData.hasChildren()",
+              "$merge": {
+                ".validate": "$merge.matches(/^merge-[a-zA-Z0-9_-]{1,58}$/) && newData.hasChildren(['start', 'end', 'label']) && newData.child('start').val() <= newData.child('end').val() && newData.child('start').val() >= newData.parent().parent().child('schoolStart').val() && newData.child('end').val() <= newData.parent().parent().child('schoolEnd').val()",
+                "start": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+                "end": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+                "label": { ".validate": "newData.isString() && newData.val().length <= 120" },
+                "$other": { ".validate": false }
+              }
+            },
+            "$other": { ".validate": false }
+          },
+          "overrides": {
+            ".validate": "newData.hasChildren()",
+            "$week": {
+              ".validate": "$week.matches(/^week-[0-9]{4}-[0-9]{2}-[0-9]{2}$/) && ((newData.child('removed').val() === true && !newData.child('groupId').exists() && !newData.child('start').exists() && !newData.child('end').exists() && !newData.child('people').exists() && !newData.child('note').exists() && !newData.child('segments').exists()) || (!newData.child('removed').exists() && (newData.child('groupId').exists() || newData.child('start').exists() || newData.child('people').exists() || newData.child('note').exists() || newData.child('segments').exists()) && newData.child('start').exists() === newData.child('end').exists() && (!newData.child('start').exists() || newData.child('start').val() <= newData.child('end').val()) && (!newData.child('segments').exists() || (newData.child('start').exists() && newData.child('segments/segment-0/start').val() === newData.child('start').val() && ((!newData.child('segments/segment-2').exists() && newData.child('segments/segment-1/end').val() === newData.child('end').val()) || (newData.child('segments/segment-2').exists() && newData.child('segments/segment-2/end').val() === newData.child('end').val()))))))",
+              "groupId": { ".validate": "newData.isString() && newData.val().matches(/^group-(0[1-9]|[1-3][0-9]|40)$/) && newData.parent().parent().parent().child('cycle').child(newData.val()).exists()" },
+              "start": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+              "end": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+              "people": {
+                ".validate": "newData.hasChild('person-0')",
+                "$person": { ".validate": "$person.matches(/^person-([0-9]|1[0-9])$/) && newData.isString() && newData.val().length > 0 && newData.val().length <= 120" }
+              },
+              "note": { ".validate": "newData.isString() && newData.val().length <= 500" },
+              "removed": { ".validate": "newData.isBoolean() && newData.val() === true" },
+              "segments": {
+                ".validate": "newData.hasChildren(['segment-0', 'segment-1']) && newData.child('segment-0/start').val() <= newData.child('segment-0/end').val() && newData.child('segment-1/start').val() <= newData.child('segment-1/end').val() && newData.child('segment-0/end').val() < newData.child('segment-1/start').val() && (!newData.child('segment-2').exists() || (newData.child('segment-2/start').val() <= newData.child('segment-2/end').val() && newData.child('segment-1/end').val() < newData.child('segment-2/start').val()))",
+                "segment-0": {
+                  ".validate": "newData.hasChildren(['start', 'end'])",
+                  "start": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+                  "end": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+                  "$other": { ".validate": false }
+                },
+                "segment-1": {
+                  ".validate": "newData.hasChildren(['start', 'end'])",
+                  "start": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+                  "end": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+                  "$other": { ".validate": false }
+                },
+                "segment-2": {
+                  ".validate": "newData.hasChildren(['start', 'end'])",
+                  "start": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+                  "end": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+                  "$other": { ".validate": false }
+                },
+                "$other": { ".validate": false }
+              },
+              "$other": { ".validate": false }
+            }
+          },
+          "$other": { ".validate": false }
+        },
         "entries": {
           ".validate": "newData.hasChildren()",
           "$week": {
-            ".validate": "$week.matches(/^week-[0-9]{4}-[0-9]{2}-[0-9]{2}$/) && newData.hasChildren(['start', 'end', 'people', 'note'])",
-            "start": { ".validate": "newData.isString() && newData.val().length === 10 && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)" },
-            "end": { ".validate": "newData.isString() && newData.val().length === 10 && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)" },
+            ".validate": "$week.matches(/^week-[0-9]{4}-[0-9]{2}-[0-9]{2}$/) && newData.hasChildren(['start', 'end', 'people', 'note']) && newData.child('start').val() <= newData.child('end').val() && ((newData.parent().parent().child('version').val() === 1 && !newData.child('groupId').exists() && !newData.child('segments').exists()) || (newData.parent().parent().child('version').val() === 2 && (!newData.child('groupId').exists() || newData.parent().parent().child('config/cycle').child(newData.child('groupId').val()).exists()) && newData.child('start').val() >= newData.parent().parent().child('config/calendar/schoolStart').val() && newData.child('end').val() <= newData.parent().parent().child('config/calendar/schoolEnd').val() && (!newData.child('segments').exists() || (newData.child('segments/segment-0/start').val() === newData.child('start').val() && ((!newData.child('segments/segment-2').exists() && newData.child('segments/segment-1/end').val() === newData.child('end').val()) || (newData.child('segments/segment-2').exists() && newData.child('segments/segment-2/end').val() === newData.child('end').val()))))))",
+            "start": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+            "end": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+            "groupId": { ".validate": "newData.isString() && newData.val().matches(/^group-(0[1-9]|[1-3][0-9]|40)$/)" },
             "people": {
-              ".validate": "newData.hasChildren()",
-              "$person": { ".validate": "$person.matches(/^person-[0-9]+$/) && newData.isString() && newData.val().length > 0 && newData.val().length <= 120" }
+              ".validate": "newData.hasChild('person-0')",
+              "$person": { ".validate": "$person.matches(/^person-([0-9]|1[0-9])$/) && newData.isString() && newData.val().length > 0 && newData.val().length <= 120" }
             },
             "note": { ".validate": "newData.isString() && newData.val().length <= 500" },
+            "segments": {
+              ".validate": "newData.hasChildren(['segment-0', 'segment-1']) && newData.child('segment-0/start').val() <= newData.child('segment-0/end').val() && newData.child('segment-1/start').val() <= newData.child('segment-1/end').val() && newData.child('segment-0/end').val() < newData.child('segment-1/start').val() && (!newData.child('segment-2').exists() || (newData.child('segment-2/start').val() <= newData.child('segment-2/end').val() && newData.child('segment-1/end').val() < newData.child('segment-2/start').val()))",
+              "segment-0": {
+                ".validate": "newData.hasChildren(['start', 'end'])",
+                "start": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+                "end": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+                "$other": { ".validate": false }
+              },
+              "segment-1": {
+                ".validate": "newData.hasChildren(['start', 'end'])",
+                "start": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+                "end": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+                "$other": { ".validate": false }
+              },
+              "segment-2": {
+                ".validate": "newData.hasChildren(['start', 'end'])",
+                "start": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+                "end": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])$/)" },
+                "$other": { ".validate": false }
+              },
+              "$other": { ".validate": false }
+            },
             "$other": { ".validate": false }
           }
         },

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-06-class-duty-layout-49';
+const CACHE_VERSION = 'almanion-pwa-2026-09-07-annual-duty-50';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
