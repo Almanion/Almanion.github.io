@@ -265,8 +265,8 @@
             grid-column: 2 / span 2;
         }
 
-        .extra-section .subjects-grid.english-card-hidden > .subject-card:first-child {
-            grid-column: 2 / span 2;
+        .extra-section .subjects-grid:not(.english-card-hidden) > #homeEnglishCard {
+            grid-column: 3 / span 2;
         }
 
         .subjects-grid.coming-soon {
@@ -286,8 +286,12 @@
                 grid-column: span 2;
             }
 
-            .extra-section .subjects-grid.english-card-hidden > .subject-card:first-child {
+            .extra-section .subjects-grid:not(.english-card-hidden) > #homeEnglishCard {
                 grid-column: span 2;
+            }
+
+            .extra-section .subjects-grid.english-card-hidden > #homeDutyCard {
+                grid-column: 2 / span 2;
             }
 
             .subjects-grid > .subject-card:last-child:nth-child(odd) {
@@ -312,7 +316,8 @@
                 grid-column: 1;
             }
 
-            .extra-section .subjects-grid.english-card-hidden > .subject-card:first-child {
+            .extra-section .subjects-grid:not(.english-card-hidden) > #homeEnglishCard,
+            .extra-section .subjects-grid.english-card-hidden > #homeDutyCard {
                 grid-column: 1;
             }
 
@@ -474,6 +479,7 @@
         .subject-card[data-subject="literature"] { --subject-color: #935f50; }
         .subject-card[data-subject="matcenter"] { --subject-color: #58668e; }
         .subject-card[data-subject="english"] { --subject-color: #4f6f82; }
+        .subject-card[data-subject="duty"] { --subject-color: #4f7774; }
 
         body:not(.no-hover) .subject-card:hover::before { color: var(--subject-color); }
 
@@ -889,6 +895,10 @@
             <path d="M4.25 5.25h10.5v8.5H8.2L4.25 17V5.25Z"/>
             <path d="M9.25 13.75v3h6.55l3.95 3.25V8.25h-5M7.35 10.9l2.15-4.2 2.15 4.2M8.15 9.35h2.7"/>
         </symbol>
+        <symbol id="academic-duty" viewBox="0 0 24 24">
+            <rect x="3.75" y="5.25" width="16.5" height="15" rx="2.25"/>
+            <path d="M7.75 3.25v4M16.25 3.25v4M3.75 9.5h16.5m-11.1 5.15 2.05 2.05 3.85-4.25"/>
+        </symbol>
     </svg>
     <!-- Кнопка настроек создается автоматически через settings.js -->
 
@@ -1062,6 +1072,20 @@
                             <div class="card-info">
                                 <div style="text-align: center;">
                                     <span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> Активно</span>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="duty-10-1.html" class="subject-card" data-subject="duty" id="homeDutyCard">
+                        <div class="card-header">
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-duty"/></svg></div>
+                        </div>
+                        <div class="card-body">
+                            <h2>Дежурство 10‑1</h2>
+                            <div class="card-info">
+                                <div style="text-align: center;">
+                                    <span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> Расписание класса</span>
                                 </div>
                             </div>
                         </div>

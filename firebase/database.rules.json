@@ -8,14 +8,44 @@
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com')",
         ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com')",
-        ".validate": "newData.hasChildren(['email', 'siteAdmin', 'matcenterAdmin', 'contentEditor', 'englishAccess', 'updatedAt', 'updatedBy'])",
+        ".validate": "newData.hasChildren(['email', 'siteAdmin', 'matcenterAdmin', 'contentEditor', 'dutyEditor', 'englishAccess', 'updatedAt', 'updatedBy'])",
         "email": { ".validate": "newData.isString() && newData.val().length <= 254" },
         "siteAdmin": { ".validate": "newData.isBoolean()" },
         "matcenterAdmin": { ".validate": "newData.isBoolean()" },
         "contentEditor": { ".validate": "newData.isBoolean()" },
+        "dutyEditor": { ".validate": "newData.isBoolean()" },
         "englishAccess": { ".validate": "newData.isBoolean()" },
         "updatedAt": { ".validate": "newData.isNumber()" },
         "updatedBy": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "classDuty": {
+      "grade10_1": {
+        ".read": true,
+        ".write": "auth != null && newData.exists() && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('dutyEditor').val() === true)",
+        ".validate": "newData.hasChildren(['version', 'className', 'academicYear', 'revision', 'updatedAt', 'updatedBy', 'entries']) && newData.child('revision').val() === (data.exists() ? data.child('revision').val() + 1 : 1)",
+        "version": { ".validate": "newData.isNumber() && newData.val() === 1" },
+        "className": { ".validate": "newData.isString() && newData.val() === '10-1'" },
+        "academicYear": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 20" },
+        "revision": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() % 1 === 0" },
+        "updatedAt": { ".validate": "newData.isNumber()" },
+        "updatedBy": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "entries": {
+          ".validate": "newData.hasChildren()",
+          "$week": {
+            ".validate": "$week.matches(/^week-[0-9]{4}-[0-9]{2}-[0-9]{2}$/) && newData.hasChildren(['start', 'end', 'people', 'note'])",
+            "start": { ".validate": "newData.isString() && newData.val().length === 10 && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)" },
+            "end": { ".validate": "newData.isString() && newData.val().length === 10 && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)" },
+            "people": {
+              ".validate": "newData.hasChildren()",
+              "$person": { ".validate": "$person.matches(/^person-[0-9]+$/) && newData.isString() && newData.val().length > 0 && newData.val().length <= 120" }
+            },
+            "note": { ".validate": "newData.isString() && newData.val().length <= 500" },
+            "$other": { ".validate": false }
+          }
+        },
         "$other": { ".validate": false }
       }
     },

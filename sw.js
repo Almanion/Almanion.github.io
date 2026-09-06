@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-06-divisibility-47';
+const CACHE_VERSION = 'almanion-pwa-2026-09-06-class-duty-48';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -70,6 +70,7 @@ const APP_SHELL = [
     '/styles/copy-blocks.css',
     '/styles/chemistry-interactive-hub.css',
     '/styles/english.css',
+    '/styles/duty.css',
     '/favicons/favicon.svg',
     '/favicons/favicon-dark.svg',
     '/favicons/app-icon.svg',
@@ -105,6 +106,8 @@ const APP_SHELL = [
     '/english.js',
     '/english-deepl.js',
     '/english-ui.js',
+    '/duty-10-1.html',
+    '/duty.js',
     '/matcenter.html'
 ];
 

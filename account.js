@@ -458,6 +458,16 @@
                 .catch(function () { return false; });
     }
 
+    function hasDutyEditorAccess(account) {
+        if (!account) return Promise.resolve(false);
+        const owner = String(account.email || '').trim().toLowerCase() === 'dmb23930@gmail.com';
+        return owner
+            ? Promise.resolve(true)
+            : db.ref('adminRoles/' + account.uid + '/dutyEditor').once('value')
+                .then(function (snapshot) { return snapshot.val() === true; })
+                .catch(function () { return false; });
+    }
+
     function updateHomeEditorLink() {
         const link = document.getElementById('homeConstructorLink');
         if (!link) return;
@@ -624,6 +634,7 @@
         hasContentEditorAccess: hasContentEditorAccess,
         hasSiteAdminAccess: hasSiteAdminAccess,
         hasEnglishAccess: hasEnglishAccess,
+        hasDutyEditorAccess: hasDutyEditorAccess,
         auth: auth,
         database: db
     };
