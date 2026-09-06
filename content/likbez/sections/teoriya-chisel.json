@@ -17,14 +17,14 @@
           "id": "p-adic-valuation",
           "type": "reminder",
           "title": "Напоминание",
-          "content": "Пусть \\(r\\in\\mathbb Q\\) и \\(r=p^k\\dfrac ab\\), где \\(k\\in\\mathbb Z\\), \\(p\\nmid a\\), \\(p\\nmid b\\). Тогда \\(v_p(r)=k\\), а \\(\\lvert r\\rvert_p=p^{-k}\\).",
+          "content": "Пусть \\(r\\in\\mathbb Q\\) и \\(r=p^k\\dfrac ab\\), где \\(k\\in\\mathbb Z\\), \\(a\\ndivby p\\), \\(b\\ndivby p\\). Тогда \\(v_p(r)=k\\), а \\(\\lvert r\\rvert_p=p^{-k}\\).",
           "children": []
         },
         {
           "id": "lte-theorem",
           "type": "theorem",
           "title": "Теорема (LTE-лемма)",
-          "content": "Пусть \\(a,b\\in\\mathbb Z\\), \\(n\\in\\mathbb N\\), \\(p\\in\\mathbb P\\), \\(p\\nmid a\\), \\(p\\nmid b\\) и \\(p\\mid(a-b)\\). При \\(p\\ne2\\), а также при \\(p=2\\) и дополнительном условии \\(4\\mid(a-b)\\), выполняется равенство",
+          "content": "Пусть \\(a,b\\in\\mathbb Z\\), \\(n\\in\\mathbb N\\), \\(p\\in\\mathbb P\\), \\(a\\ndivby p\\), \\(b\\ndivby p\\) и \\((a-b)\\divby p\\). При \\(p\\ne2\\), а также при \\(p=2\\) и дополнительном условии \\((a-b)\\divby 4\\), выполняется равенство",
           "children": [
             {
               "id": "lte-formula",
@@ -38,7 +38,7 @@
               "id": "lte-proof-1",
               "type": "proof",
               "title": "Доказательство",
-              "content": "**1. Случай \\(p\\nmid n\\).** Разложим разность степеней: \\(a^n-b^n=(a-b)(a^{n-1}+a^{n-2}b+\\dots+b^{n-1})\\). Вторая скобка сравнима с \\(na^{n-1}\\not\\equiv0\\pmod p\\). Поэтому \\(v_p(a^n-b^n)=v_p(a-b)\\).",
+              "content": "**1. Случай \\(n\\ndivby p\\).** Разложим разность степеней: \\(a^n-b^n=(a-b)(a^{n-1}+a^{n-2}b+\\dots+b^{n-1})\\). Вторая скобка сравнима с \\(na^{n-1}\\not\\equiv0\\pmod p\\). Поэтому \\(v_p(a^n-b^n)=v_p(a-b)\\).",
               "children": [
                 {
                   "id": "lte-proof-2",
@@ -59,14 +59,14 @@
                   "id": "lte-binomial-explanation",
                   "type": "paragraph",
                   "title": "",
-                  "content": "У первого слагаемого валюация равна \\(v_p(a-b)+1\\). Все остальные слагаемые имеют строго большую валюацию: при \\(2\\le k\\le p-1\\) дополнительно используется \\(p\\mid\\binom pk\\), а для последнего слагаемого — условие \\(p\\ne2\\) либо \\(4\\mid(a-b)\\). Следовательно, \\(v_p(a^p-b^p)=v_p(a-b)+1\\).",
+                  "content": "У первого слагаемого валюация равна \\(v_p(a-b)+1\\). Все остальные слагаемые имеют строго большую валюацию: при \\(2\\le k\\le p-1\\) дополнительно используется \\(\\binom pk\\divby p\\), а для последнего слагаемого — условие \\(p\\ne2\\) либо \\((a-b)\\divby 4\\). Следовательно, \\(v_p(a^p-b^p)=v_p(a-b)+1\\).",
                   "children": []
                 },
                 {
                   "id": "lte-proof-3",
                   "type": "paragraph",
                   "title": "",
-                  "content": "**3. Общий случай.** Пусть \\(n=kp^\\alpha\\), где \\(p\\nmid k\\). Применим случай \\(n=p\\) ровно \\(\\alpha\\) раз, а затем случай \\(p\\nmid n\\):",
+                  "content": "**3. Общий случай.** Пусть \\(n=kp^\\alpha\\), где \\(k\\ndivby p\\). Применим случай \\(n=p\\) ровно \\(\\alpha\\) раз, а затем случай \\(n\\ndivby p\\):",
                   "children": []
                 },
                 {
@@ -85,7 +85,7 @@
           "id": "order-definition",
           "type": "definition",
           "title": "",
-          "content": "Пусть \\(p\\in\\mathbb P\\), \\(a\\in\\mathbb Z\\), \\(p\\nmid a\\). Порядком числа \\(a\\) по модулю \\(p\\) называется число",
+          "content": "Пусть \\(p\\in\\mathbb P\\), \\(a\\in\\mathbb Z\\), \\(a\\ndivby p\\). Порядком числа \\(a\\) по модулю \\(p\\) называется число",
           "children": [
             {
               "id": "order-formula",
@@ -103,14 +103,14 @@
           "id": "order-corollary",
           "type": "corollary",
           "title": "Делимость порядка",
-          "content": "Если \\(a^s\\equiv1\\pmod p\\), то \\(\\operatorname{ord}_p a\\mid s\\).",
+          "content": "Если \\(a^s\\equiv1\\pmod p\\), то \\(s\\divby\\operatorname{ord}_p a\\).",
           "children": []
         },
         {
           "id": "order-example",
           "type": "example",
           "title": "Пример",
-          "content": "Пусть \\(p\\in\\mathbb P\\), \\(x=\\dfrac{p^p-1}{p-1}\\), а \\(q\\in\\mathbb P\\) и \\(q\\mid x\\). Предположим, что \\(q\\mid(p-1)\\). Тогда по LTE \\(v_q(p^p-1)=v_q(p-1)+v_q(p)=v_q(p-1)\\), что противоречит \\(q\\mid x\\). Значит, \\(p^p\\equiv1\\pmod q\\), но \\(p\\not\\equiv1\\pmod q\\). Следовательно, \\(\\operatorname{ord}_q p=p\\), откуда \\(p\\mid(q-1)\\), то есть \\(q\\equiv1\\pmod p\\).",
+          "content": "Пусть \\(p\\in\\mathbb P\\), \\(x=\\dfrac{p^p-1}{p-1}\\), а \\(q\\in\\mathbb P\\) и \\(x\\divby q\\). Предположим, что \\((p-1)\\divby q\\). Тогда по LTE \\(v_q(p^p-1)=v_q(p-1)+v_q(p)=v_q(p-1)\\), что противоречит \\(x\\divby q\\). Значит, \\(p^p\\equiv1\\pmod q\\), но \\(p\\not\\equiv1\\pmod q\\). Следовательно, \\(\\operatorname{ord}_q p=p\\), откуда \\((q-1)\\divby p\\), то есть \\(q\\equiv1\\pmod p\\).",
           "children": []
         },
         {
@@ -142,7 +142,7 @@
           "id": "residue-count",
           "type": "remark",
           "title": "",
-          "content": "Для нечётного простого \\(p\\) из \\(x^2=a\\) следует \\((-x)^2=a\\). Кроме того, \\(x^2\\equiv y^2\\pmod p\\Rightarrow p\\mid(x-y)(x+y)\\). Поэтому \\(1^2,2^2,\\ldots,\\left(\\frac{p-1}{2}\\right)^2\\) — в точности все ненулевые квадратичные вычеты по модулю \\(p\\).",
+          "content": "Для нечётного простого \\(p\\) из \\(x^2=a\\) следует \\((-x)^2=a\\). Кроме того, \\(x^2\\equiv y^2\\pmod p\\Rightarrow (x-y)(x+y)\\divby p\\). Поэтому \\(1^2,2^2,\\ldots,\\left(\\frac{p-1}{2}\\right)^2\\) — в точности все ненулевые квадратичные вычеты по модулю \\(p\\).",
           "children": []
         },
         {
@@ -155,7 +155,7 @@
               "id": "legendre-cases",
               "type": "formula",
               "title": "",
-              "latex": "\\left(\\frac ap\\right)=\\begin{cases}0,&p\\mid a,\\\\1,&a\\text{ — квадратичный вычет},\\\\-1,&a\\text{ — невычет}.\\end{cases}",
+              "latex": "\\left(\\frac ap\\right)=\\begin{cases}0,&a\\divby p,\\\\1,&a\\text{ — квадратичный вычет},\\\\-1,&a\\text{ — невычет}.\\end{cases}",
               "content": "",
               "children": []
             }
@@ -167,7 +167,7 @@
           "id": "euler-criterion",
           "type": "theorem",
           "title": "Теорема (критерий Эйлера)",
-          "content": "Для нечётного простого \\(p\\) и \\(p\\nmid a\\) выполняется",
+          "content": "Для нечётного простого \\(p\\) и \\(a\\ndivby p\\) выполняется",
           "children": [
             {
               "id": "euler-formula",
@@ -197,11 +197,11 @@
               "type": "list",
               "title": "",
               "items": [
-                "\\(\\left(\\frac1p\\right)=1\\), \\(\\left(\\frac{-1}{p}\\right)=(-1)^{(p-1)/2}\\), \\(\\left(\\frac{x^2}{p}\\right)=1\\) при \\(p\\nmid x\\).",
+                "\\(\\left(\\frac1p\\right)=1\\), \\(\\left(\\frac{-1}{p}\\right)=(-1)^{(p-1)/2}\\), \\(\\left(\\frac{x^2}{p}\\right)=1\\) при \\(x\\ndivby p\\).",
                 "\\(\\left(\\frac{ab}{p}\\right)=\\left(\\frac ap\\right)\\left(\\frac bp\\right)\\). Действительно, \\((ab)^{(p-1)/2}=a^{(p-1)/2}b^{(p-1)/2}\\).",
                 "\\(\\left(\\frac{a_1\\cdots a_n}{p}\\right)=\\left(\\frac{a_1}{p}\\right)\\cdots\\left(\\frac{a_n}{p}\\right)\\).",
-                "\\(\\left(\\frac{ab^2}{p}\\right)=\\left(\\frac ap\\right)\\) при \\(p\\nmid b\\).",
-                "Если \\(a=\\prod q_i^{\\alpha_i}\\), то \\(\\left(\\frac ap\\right)=\\prod_{2\\nmid\\alpha_i}\\left(\\frac{q_i}{p}\\right)\\)."
+                "\\(\\left(\\frac{ab^2}{p}\\right)=\\left(\\frac ap\\right)\\) при \\(b\\ndivby p\\).",
+                "Если \\(a=\\prod q_i^{\\alpha_i}\\), то \\(\\left(\\frac ap\\right)=\\prod_{\\alpha_i\\ndivby 2}\\left(\\frac{q_i}{p}\\right)\\)."
               ],
               "content": "",
               "children": []
@@ -212,7 +212,7 @@
           "id": "gauss-criterion",
           "type": "theorem",
           "title": "Теорема (критерий Гаусса)",
-          "content": "Пусть \\(p\\) — нечётное простое и \\(p\\nmid a\\). Тогда \\(\\left(\\frac ap\\right)=(-1)^\\ell\\), где \\(\\ell\\) — количество чисел среди \\(a,2a,\\ldots,\\frac{p-1}{2}a\\), у которых наименьший по абсолютной величине вычет отрицателен.",
+          "content": "Пусть \\(p\\) — нечётное простое и \\(a\\ndivby p\\). Тогда \\(\\left(\\frac ap\\right)=(-1)^\\ell\\), где \\(\\ell\\) — количество чисел среди \\(a,2a,\\ldots,\\frac{p-1}{2}a\\), у которых наименьший по абсолютной величине вычет отрицателен.",
           "children": [
             {
               "id": "gauss-proof",
@@ -249,7 +249,7 @@
               "id": "supplement-two-proof",
               "type": "proof",
               "title": "Доказательство",
-              "content": "Рассмотрим \\(2,4,\\ldots,p-1\\). У \\(\\lfloor p/4\\rfloor\\) из них положительный наименьший вычет. Поэтому \\(\\ell=\\frac{p-1}{2}-\\lfloor p/4\\rfloor\\). Отсюда \\(2\\mid\\ell\\iff p\\equiv1,7\\pmod8\\), а \\(2\\nmid\\ell\\iff p\\equiv3,5\\pmod8\\).",
+              "content": "Рассмотрим \\(2,4,\\ldots,p-1\\). У \\(\\lfloor p/4\\rfloor\\) из них положительный наименьший вычет. Поэтому \\(\\ell=\\frac{p-1}{2}-\\lfloor p/4\\rfloor\\). Отсюда \\(\\ell\\divby 2\\iff p\\equiv1,7\\pmod8\\), а \\(\\ell\\ndivby 2\\iff p\\equiv3,5\\pmod8\\).",
               "children": []
             }
           ]
@@ -258,7 +258,7 @@
           "id": "jacobi-definition",
           "type": "definition",
           "title": "",
-          "content": "Пусть \\(m\\in\\mathbb N\\), \\(2\\nmid m\\), \\(m=p_1\\cdots p_k\\), причём простые множители могут совпадать. Тогда \\(\\left(\\frac am\\right)\\stackrel{\\mathrm{def}}=\\left(\\frac a{p_1}\\right)\\cdots\\left(\\frac a{p_k}\\right)\\).",
+          "content": "Пусть \\(m\\in\\mathbb N\\), \\(m\\ndivby 2\\), \\(m=p_1\\cdots p_k\\), причём простые множители могут совпадать. Тогда \\(\\left(\\frac am\\right)\\stackrel{\\mathrm{def}}=\\left(\\frac a{p_1}\\right)\\cdots\\left(\\frac a{p_k}\\right)\\).",
           "children": [],
           "term": "Символ Якоби",
           "separator": "—"
@@ -298,7 +298,7 @@
           "id": "reciprocity-theorem",
           "type": "theorem",
           "title": "Теорема",
-          "content": "Пусть \\(p,q\\in\\mathbb P\\), \\(p\\ne q\\), \\(2\\nmid p\\), \\(2\\nmid q\\). Тогда",
+          "content": "Пусть \\(p,q\\in\\mathbb P\\), \\(p\\ne q\\), \\(p\\ndivby 2\\), \\(q\\ndivby 2\\). Тогда",
           "children": [
             {
               "id": "reciprocity-formula",
@@ -384,7 +384,7 @@
           "id": "jacobi-reciprocity",
           "type": "theorem",
           "title": "Квадратичный закон взаимности для символов Якоби",
-          "content": "Пусть \\(m,n\\in\\mathbb N\\), \\(m,n>1\\), \\(2\\nmid m\\), \\(2\\nmid n\\). Тогда \\(\\left(\\frac mn\\right)\\left(\\frac nm\\right)=(-1)^{(m-1)(n-1)/4}\\).",
+          "content": "Пусть \\(m,n\\in\\mathbb N\\), \\(m,n>1\\), \\(m\\ndivby 2\\), \\(n\\ndivby 2\\). Тогда \\(\\left(\\frac mn\\right)\\left(\\frac nm\\right)=(-1)^{(m-1)(n-1)/4}\\).",
           "children": [
             {
               "id": "jacobi-reciprocity-proof",
@@ -443,7 +443,7 @@
                   "id": "coprime-orders",
                   "type": "lemma",
                   "title": "Вспомогательное утверждение",
-                  "content": "Если \\(\\operatorname{ord}_p x=a\\), \\(\\operatorname{ord}_p y=b\\), \\((a,b)=1\\), то \\(\\operatorname{ord}_p(xy)=ab\\). Действительно, из \\((xy)^n\\equiv1\\) следует \\(x^{bn}\\equiv1\\), значит \\(a\\mid bn\\) и \\(a\\mid n\\); аналогично \\(b\\mid n\\), поэтому \\(ab\\mid n\\).",
+                  "content": "Если \\(\\operatorname{ord}_p x=a\\), \\(\\operatorname{ord}_p y=b\\), \\((a,b)=1\\), то \\(\\operatorname{ord}_p(xy)=ab\\). Действительно, из \\((xy)^n\\equiv1\\) следует \\(x^{bn}\\equiv1\\), значит \\(bn\\divby a\\) и \\(n\\divby a\\); аналогично \\(n\\divby b\\), поэтому \\(n\\divby ab\\).",
                   "children": []
                 }
               ]
@@ -452,7 +452,7 @@
               "id": "totient-sum",
               "type": "proof",
               "title": "Второе доказательство",
-              "content": "Используем тождество \\(\\sum_{d\\mid n}\\varphi(d)=n\\). Оно получается, если выписать дроби \\(1/n,2/n,\\ldots,n/n\\) и после сокращения сгруппировать их по знаменателям. Пусть \\(N_d\\) — число элементов порядка \\(d\\) в \\(\\mathbb F_p^*\\). Если такой элемент \\(x\\) существует, то \\(x^k\\) имеет порядок \\(d\\) ровно при \\((k,d)=1\\), поэтому в циклической подгруппе \\(\\langle x\\rangle\\) имеется \\(\\varphi(d)\\) таких элементов. Эта подгруппа уже содержит все \\(d\\) корней многочлена \\(X^d-1\\), следовательно, \\(N_d=\\varphi(d)\\); если элемента порядка \\(d\\) нет, то \\(N_d=0\\). Но \\(\\sum_{d\\mid p-1}N_d=p-1=\\sum_{d\\mid p-1}\\varphi(d)\\). Значит, \\(N_d=\\varphi(d)\\) для каждого \\(d\\mid p-1\\), и в частности существует элемент порядка \\(p-1\\).",
+              "content": "Используем тождество \\(\\sum_{n\\divby d}\\varphi(d)=n\\). Оно получается, если выписать дроби \\(1/n,2/n,\\ldots,n/n\\) и после сокращения сгруппировать их по знаменателям. Пусть \\(N_d\\) — число элементов порядка \\(d\\) в \\(\\mathbb F_p^*\\). Если такой элемент \\(x\\) существует, то \\(x^k\\) имеет порядок \\(d\\) ровно при \\((k,d)=1\\), поэтому в циклической подгруппе \\(\\langle x\\rangle\\) имеется \\(\\varphi(d)\\) таких элементов. Эта подгруппа уже содержит все \\(d\\) корней многочлена \\(X^d-1\\), следовательно, \\(N_d=\\varphi(d)\\); если элемента порядка \\(d\\) нет, то \\(N_d=0\\). Но \\(\\sum_{(p-1)\\divby d}N_d=p-1=\\sum_{(p-1)\\divby d}\\varphi(d)\\). Значит, \\(N_d=\\varphi(d)\\) для каждого \\(d\\), такого что \\((p-1)\\divby d\\), и в частности существует элемент порядка \\(p-1\\).",
               "children": []
             }
           ]
@@ -508,7 +508,7 @@
           "id": "primitive-polynomial-note",
           "type": "remark",
           "title": "",
-          "content": "Сравнение \\(a_nx^n+\\dots+a_0\\equiv0\\pmod p\\), где \\(p\\nmid a_n\\), эквивалентно сравнению \\(f(x)\\equiv0\\pmod p\\) с примитивным многочленом \\(f\\).",
+          "content": "Сравнение \\(a_nx^n+\\dots+a_0\\equiv0\\pmod p\\), где \\(a_n\\ndivby p\\), эквивалентно сравнению \\(f(x)\\equiv0\\pmod p\\) с примитивным многочленом \\(f\\).",
           "children": []
         },
         {
@@ -596,7 +596,7 @@
               "id": "hensel-simple-proof",
               "type": "proof",
               "title": "Доказательство",
-              "content": "Индукция по \\(k\\). Для перехода рассмотрим числа \\(b+tp^k\\), \\(t=0,\\ldots,p-1\\), образующие класс \\(b\\pmod{p^k}\\). По формуле Тейлора \\(f(b+tp^k)\\equiv f(b)+f'(b)tp^k\\pmod{p^{k+1}}\\). Так как \\(p\\nmid f'(b)\\), значение \\(t\\) находится единственным образом по модулю \\(p\\).",
+              "content": "Индукция по \\(k\\). Для перехода рассмотрим числа \\(b+tp^k\\), \\(t=0,\\ldots,p-1\\), образующие класс \\(b\\pmod{p^k}\\). По формуле Тейлора \\(f(b+tp^k)\\equiv f(b)+f'(b)tp^k\\pmod{p^{k+1}}\\). Так как \\(f'(b)\\ndivby p\\), значение \\(t\\) находится единственным образом по модулю \\(p\\).",
               "children": []
             }
           ]
@@ -661,7 +661,7 @@
           "id": "gaussian-divisibility",
           "type": "definition",
           "title": "",
-          "content": "Для \\(z_1,z_2\\in\\mathbb Z[i]\\) пишут \\(z_1\\mid z_2\\), если существует \\(z_3\\in\\mathbb Z[i]\\), такой что \\(z_2=z_1z_3\\).",
+          "content": "Для \\(z_1,z_2\\in\\mathbb Z[i]\\) пишут \\(z_2\\divby z_1\\), если существует \\(z_3\\in\\mathbb Z[i]\\), такой что \\(z_2=z_1z_3\\).",
           "children": [],
           "term": "Делимость",
           "separator": "—"
@@ -677,13 +677,13 @@
               "type": "list",
               "title": "",
               "items": [
-                "\\(z\\mid0\\) и \\(u\\mid z\\) для любого \\(u\\in U\\).",
-                "Если \\(z_1\\ne0\\) и \\(z_1\\mid z_2\\), то частное единственно.",
-                "\\(z_3\\mid z_1\\), \\(z_3\\mid z_2\\Rightarrow z_3\\mid(z_1\\pm z_2)\\).",
-                "\\(z_1\\mid z_2\\), \\(z_2\\mid z_3\\Rightarrow z_1\\mid z_3\\).",
-                "\\(z_1\\mid z_2\\Rightarrow z_1\\mid z_2z_3\\).",
-                "\\(z_1\\mid z_2\\Rightarrow N(z_1)\\mid N(z_2)\\).",
-                "\\(z_1\\mid z_2\\), \\(u\\in U\\Rightarrow z_1u\\mid z_2\\)."
+                "\\(0\\divby z\\) и \\(z\\divby u\\) для любого \\(u\\in U\\).",
+                "Если \\(z_1\\ne0\\) и \\(z_2\\divby z_1\\), то частное единственно.",
+                "\\(z_1\\divby z_3\\), \\(z_2\\divby z_3\\Rightarrow (z_1\\pm z_2)\\divby z_3\\).",
+                "\\(z_2\\divby z_1\\), \\(z_3\\divby z_2\\Rightarrow z_3\\divby z_1\\).",
+                "\\(z_2\\divby z_1\\Rightarrow z_2z_3\\divby z_1\\).",
+                "\\(z_2\\divby z_1\\Rightarrow N(z_2)\\divby N(z_1)\\).",
+                "\\(z_2\\divby z_1\\), \\(u\\in U\\Rightarrow z_2\\divby z_1u\\)."
               ],
               "content": "",
               "children": []
@@ -773,7 +773,7 @@
               "id": "gaussian-fta-proof",
               "type": "proof",
               "title": "Доказательство",
-              "content": "Существование доказывается индукцией по \\(N(a)\\): если \\(a\\) не является неприводимым, то \\(a=bc\\) и \\(N(b),N(c)<N(a)\\). Для единственности докажем лемму Евклида. Если неприводимый \\(p\\mid ab\\), то либо \\(\\gcd(p,a)\\) ассоциирован с \\(p\\), и тогда \\(p\\mid a\\), либо \\(\\gcd(p,a)=1\\). Во втором случае равенство Безу \\(px+ay=1\\) после умножения на \\(b\\) даёт \\(p\\mid b\\). Теперь неприводимые множители в двух разложениях последовательно сокращаются.",
+              "content": "Существование доказывается индукцией по \\(N(a)\\): если \\(a\\) не является неприводимым, то \\(a=bc\\) и \\(N(b),N(c)<N(a)\\). Для единственности докажем лемму Евклида. Если для неприводимого \\(p\\) выполнено \\(ab\\divby p\\), то либо \\(\\gcd(p,a)\\) ассоциирован с \\(p\\), и тогда \\(a\\divby p\\), либо \\(\\gcd(p,a)=1\\). Во втором случае равенство Безу \\(px+ay=1\\) после умножения на \\(b\\) даёт \\(b\\divby p\\). Теперь неприводимые множители в двух разложениях последовательно сокращаются.",
               "children": []
             }
           ]
@@ -798,7 +798,7 @@
           "id": "irreducible-prime",
           "type": "definition",
           "title": "",
-          "content": "Элемент \\(p\\notin U\\) **неприводим**, если из \\(p=ab\\) следует \\(a\\in U\\) или \\(b\\in U\\). Элемент \\(p\\notin U\\) **прост**, если из \\(p\\mid ab\\) следует \\(p\\mid a\\) или \\(p\\mid b\\).",
+          "content": "Элемент \\(p\\notin U\\) **неприводим**, если из \\(p=ab\\) следует \\(a\\in U\\) или \\(b\\in U\\). Элемент \\(p\\notin U\\) **прост**, если из \\(ab\\divby p\\) следует \\(a\\divby p\\) или \\(b\\divby p\\).",
           "children": [],
           "term": "Неприводимые и простые элементы",
           "separator": "—"
@@ -845,7 +845,7 @@
               "id": "mobius-cases",
               "type": "formula",
               "title": "",
-              "latex": "\\mu(n)\\stackrel{\\mathrm{def}}=\\begin{cases}0,&p^2\\mid n\\text{ для некоторого }p\\in\\mathbb P,\\\\(-1)^k,&n=p_1\\cdots p_k,\\ p_i\\in\\mathbb P,\\ p_i\\ne p_j,\\\\1,&n=1.\\end{cases}",
+              "latex": "\\mu(n)\\stackrel{\\mathrm{def}}=\\begin{cases}0,&n\\divby p^2\\text{ для некоторого }p\\in\\mathbb P,\\\\(-1)^k,&n=p_1\\cdots p_k,\\ p_i\\in\\mathbb P,\\ p_i\\ne p_j,\\\\1,&n=1.\\end{cases}",
               "content": "",
               "children": []
             }
@@ -857,7 +857,7 @@
           "id": "mobius-divisor-sum",
           "type": "theorem",
           "title": "Теорема",
-          "content": "\\(\\sum_{d\\mid n}\\mu(d)=1\\) при \\(n=1\\) и \\(\\sum_{d\\mid n}\\mu(d)=0\\) при \\(n>1\\).",
+          "content": "\\(\\sum_{n\\divby d}\\mu(d)=1\\) при \\(n=1\\) и \\(\\sum_{n\\divby d}\\mu(d)=0\\) при \\(n>1\\).",
           "children": [
             {
               "id": "mobius-divisor-sum-proof",
@@ -870,13 +870,13 @@
               "id": "multiplicative-sum-lemma",
               "type": "lemma",
               "title": "Лемма",
-              "content": "Если \\(f\\) мультипликативна и \\(F(n)=\\sum_{d\\mid n}f(d)\\), то \\(F\\) мультипликативна.",
+              "content": "Если \\(f\\) мультипликативна и \\(F(n)=\\sum_{n\\divby d}f(d)\\), то \\(F\\) мультипликативна.",
               "children": [
                 {
                   "id": "multiplicative-sum-proof",
                   "type": "proof",
                   "title": "Доказательство",
-                  "content": "При \\((a,b)=1\\) каждый делитель \\(d\\mid ab\\) единственным образом представляется как \\(d=d_1d_2\\), где \\(d_1\\mid a\\), \\(d_2\\mid b\\). Поэтому \\(F(a)F(b)=\\sum_{d_1\\mid a}f(d_1)\\sum_{d_2\\mid b}f(d_2)=\\sum_{d\\mid ab}f(d)=F(ab)\\).",
+                  "content": "При \\((a,b)=1\\) каждый \\(d\\), для которого \\(ab\\divby d\\), единственным образом представляется как \\(d=d_1d_2\\), где \\(a\\divby d_1\\), \\(b\\divby d_2\\). Поэтому \\(F(a)F(b)=\\sum_{a\\divby d_1}f(d_1)\\sum_{b\\divby d_2}f(d_2)=\\sum_{ab\\divby d}f(d)=F(ab)\\).",
                   "children": []
                 }
               ]
@@ -885,7 +885,7 @@
               "id": "mobius-second-proof",
               "type": "proof",
               "title": "Другое доказательство теоремы",
-              "content": "Функция \\(\\mu\\) мультипликативна, значит \\(F(n)=\\sum_{d\\mid n}\\mu(d)\\) мультипликативна. Для простого \\(p\\) имеем \\(F(p^\\alpha)=\\mu(1)+\\mu(p)=0\\), следовательно, \\(F(n)=0\\) для всех \\(n>1\\).",
+              "content": "Функция \\(\\mu\\) мультипликативна, значит \\(F(n)=\\sum_{n\\divby d}\\mu(d)\\) мультипликативна. Для простого \\(p\\) имеем \\(F(p^\\alpha)=\\mu(1)+\\mu(p)=0\\), следовательно, \\(F(n)=0\\) для всех \\(n>1\\).",
               "children": []
             }
           ]
@@ -894,20 +894,20 @@
           "id": "totient-observation",
           "type": "statement",
           "title": "Сумма значений функции Эйлера по делителям",
-          "content": "Функция \\(F(n)=\\sum_{d\\mid n}\\varphi(d)\\) мультипликативна. Для простой степени \\(F(p^\\alpha)=1+(p-1)+p(p-1)+\\cdots+p^{\\alpha-1}(p-1)=p^\\alpha\\). Поэтому для \\(n=p_1^{\\alpha_1}\\cdots p_k^{\\alpha_k}\\) получаем \\(F(n)=n\\).",
+          "content": "Функция \\(F(n)=\\sum_{n\\divby d}\\varphi(d)\\) мультипликативна. Для простой степени \\(F(p^\\alpha)=1+(p-1)+p(p-1)+\\cdots+p^{\\alpha-1}(p-1)=p^\\alpha\\). Поэтому для \\(n=p_1^{\\alpha_1}\\cdots p_k^{\\alpha_k}\\) получаем \\(F(n)=n\\).",
           "children": []
         },
         {
           "id": "mobius-inversion",
           "type": "theorem",
           "title": "Теорема (формула обращения Мёбиуса)",
-          "content": "Если \\(F(n)=\\sum_{d\\mid n}f(d)\\), то \\(f(n)=\\sum_{d\\mid n}F(n/d)\\mu(d)\\).",
+          "content": "Если \\(F(n)=\\sum_{n\\divby d}f(d)\\), то \\(f(n)=\\sum_{n\\divby d}F(n/d)\\mu(d)\\).",
           "children": [
             {
               "id": "mobius-inversion-proof",
               "type": "proof",
               "title": "Доказательство",
-              "content": "Переставим суммирование: \\(\\sum_{d\\mid n}F(n/d)\\mu(d)=\\sum_{d\\mid n}(\\sum_{d_1\\mid n/d}f(d_1))\\mu(d)=\\sum_{d_1\\mid n}f(d_1)\\sum_{d\\mid n/d_1}\\mu(d)\\). Внутренняя сумма равна нулю, кроме случая \\(n/d_1=1\\), то есть \\(d_1=n\\). Остаётся \\(f(n)\\).",
+              "content": "Переставим суммирование: \\(\\sum_{n\\divby d}F(n/d)\\mu(d)=\\sum_{n\\divby d}(\\sum_{(n/d)\\divby d_1}f(d_1))\\mu(d)=\\sum_{n\\divby d_1}f(d_1)\\sum_{(n/d_1)\\divby d}\\mu(d)\\). Внутренняя сумма равна нулю, кроме случая \\(n/d_1=1\\), то есть \\(d_1=n\\). Остаётся \\(f(n)\\).",
               "children": []
             }
           ]
@@ -923,8 +923,8 @@
               "type": "list",
               "title": "",
               "items": [
-                "Если \\(\\sum_{d\\mid n}1=d(n)\\), то \\(\\sum_{k\\mid n}d(n/k)\\mu(k)=1\\).",
-                "Из \\(\\sum_{d\\mid n}\\varphi(d)=n\\) получаем \\(\\varphi(n)=\\sum_{d\\mid n}(n/d)\\mu(d)=n\\sum_{d\\mid n}\\mu(d)/d=n\\prod_{p\\mid n}(1-1/p)\\)."
+                "Если \\(\\sum_{n\\divby d}1=d(n)\\), то \\(\\sum_{n\\divby k}d(n/k)\\mu(k)=1\\).",
+                "Из \\(\\sum_{n\\divby d}\\varphi(d)=n\\) получаем \\(\\varphi(n)=\\sum_{n\\divby d}(n/d)\\mu(d)=n\\sum_{n\\divby d}\\mu(d)/d=n\\prod_{n\\divby p}(1-1/p)\\)."
               ],
               "content": "",
               "children": []
@@ -950,7 +950,7 @@
               "id": "bertrand-lemma-1",
               "type": "lemma",
               "title": "Лемма 1",
-              "content": "Если \\(n<p<2n\\) и \\(p\\in\\mathbb P\\), то \\(p\\mid\\binom{2n-1}{n-1}\\).",
+              "content": "Если \\(n<p<2n\\) и \\(p\\in\\mathbb P\\), то \\(\\binom{2n-1}{n-1}\\divby p\\).",
               "children": [
                 {
                   "id": "bertrand-lemma-1-proof",
@@ -995,7 +995,7 @@
               "id": "bertrand-lemma-4",
               "type": "lemma",
               "title": "Лемма 4",
-              "content": "Если \\(2n/3<p<n\\), то \\(p\\nmid\\binom{2n}{n}\\).",
+              "content": "Если \\(2n/3<p<n\\), то \\(\\binom{2n}{n}\\ndivby p\\).",
               "children": [
                 {
                   "id": "bertrand-lemma-4-proof",
@@ -1010,7 +1010,7 @@
               "id": "bertrand-lemma-5",
               "type": "lemma",
               "title": "Лемма 5",
-              "content": "Если \\(p>\\sqrt{2n}\\), то \\(p^2\\nmid\\binom{2n}{n}\\).",
+              "content": "Если \\(p>\\sqrt{2n}\\), то \\(\\binom{2n}{n}\\ndivby p^2\\).",
               "children": [
                 {
                   "id": "bertrand-lemma-5-proof",
@@ -1477,9 +1477,9 @@
     }
   ],
   "order": 2,
-  "revision": 33,
+  "revision": 34,
   "createdAt": 1788535467260,
-  "updatedAt": 1788698625504,
+  "updatedAt": 1788723280691,
   "updatedBy": "2M2ZdLQcJAhluPjUVFNJ6MyQrdH2",
   "reviewStatus": "published"
 }

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-06-english-deepl-hotfix-46';
+const CACHE_VERSION = 'almanion-pwa-2026-09-06-divisibility-47';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 

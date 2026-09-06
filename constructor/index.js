@@ -523,6 +523,10 @@
                         { left: '\\[', right: '\\]', display: true },
                         { left: '\\(', right: '\\)', display: false }
                     ],
+                    macros: {
+                        "\\divby": "\\mathrel{\\scriptstyle\\vdots}",
+                        "\\ndivby": "\\mathrel{\\scriptstyle\\not\\vdots}"
+                    },
                     throwOnError: false
                 });
             } catch (_) {}

@@ -156,6 +156,8 @@ function testEmptySubjectBuild() {
 function testNumberTheoryStructure() {
     const file = path.join(__dirname, '..', 'content', 'likbez', 'sections', 'teoriya-chisel.json');
     const experimentalStyles = fs.readFileSync(path.join(__dirname, '..', 'style-new.css'), 'utf8');
+    const siteScript = fs.readFileSync(path.join(__dirname, '..', 'script.js'), 'utf8');
+    const constructorScript = fs.readFileSync(path.join(__dirname, '..', 'constructor', 'index.js'), 'utf8');
     const semanticClasses = {
         definition: 'definition-box',
         derivation: 'derivation-box',
@@ -173,6 +175,22 @@ function testNumberTheoryStructure() {
         formula: 'formula-box'
     };
     const section = Model.normalizeSection(JSON.parse(fs.readFileSync(file, 'utf8')), 'likbez');
+    const textFragments = [];
+    const collectText = value => {
+        if (typeof value === 'string') textFragments.push(value);
+        else if (Array.isArray(value)) value.forEach(collectText);
+        else if (value && typeof value === 'object') Object.values(value).forEach(collectText);
+    };
+    collectText(section);
+    const noteText = textFragments.join('\n');
+    assert.match(noteText, /\\divby\b/);
+    assert.match(noteText, /\\ndivby\b/);
+    assert.doesNotMatch(noteText, /\\nmid\b/, 'знак «не делит» должен быть записан в форме «не делится»');
+    assert.strictEqual((noteText.match(/\\mid(?![A-Za-z])/g) || []).length, 7, 'обычная черта должна остаться только в обозначениях множеств');
+    [siteScript, constructorScript].forEach(source => {
+        assert.ok(source.includes('"\\\\divby": "\\\\mathrel{\\\\scriptstyle\\\\vdots}"'));
+        assert.ok(source.includes('"\\\\ndivby": "\\\\mathrel{\\\\scriptstyle\\\\not\\\\vdots}"'));
+    });
     assert.deepStrictEqual(Model.validateSection(section), []);
     const detachedTypes = new Set(['paragraph', 'formula', 'list', 'image', 'proof']);
     section.subsections.forEach(subsection => {

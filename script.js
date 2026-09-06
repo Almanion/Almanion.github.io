@@ -790,6 +790,10 @@ const KATEX_OPTIONS = {
         {left: '\\(', right: '\\)', display: false},
         {left: '$', right: '$', display: false}
     ],
+    macros: {
+        "\\divby": "\\mathrel{\\scriptstyle\\vdots}",
+        "\\ndivby": "\\mathrel{\\scriptstyle\\not\\vdots}"
+    },
     throwOnError: false,
     trust: true
 };
