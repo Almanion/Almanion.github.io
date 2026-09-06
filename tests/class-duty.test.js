@@ -84,11 +84,18 @@ async function run() {
     assert.match(page, /account\.js\?v=/);
     assert.match(page, /id="dutyEditButton"[^>]*hidden/);
     assert.match(page, /id="dutyEditorOverlay"[^>]*hidden[^>]*aria-hidden="true"/);
+    assert.match(page, /id="dutyEditorContent"/);
+    assert.doesNotMatch(page, /Понятное расписание без таблиц/);
     assert.match(worker, /['"]\/duty-10-1\.html['"]/);
     assert.match(worker, /['"]\/duty\.js['"]/);
     assert.match(worker, /['"]\/styles\/duty\.css['"]/);
     assert.match(css, /@media \(max-width: 640px\)/);
+    assert.match(css, /@media \(max-width: 380px\)/);
     assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+    assert.match(css, /\.duty-editor\s*\{[\s\S]*?grid-template-areas:/);
+    assert.match(css, /\.duty-editor-content\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?overflow-y:\s*auto;/);
+    assert.match(css, /\.duty-topbar \.sidebar-header-buttons\s*\{[\s\S]*?border-radius:\s*999px;/);
+    assert.match(client, /byId\('dutyEditorContent'\)\.scrollTop\s*=\s*0/);
 
     // The schedule renderer must treat names and notes as text, not markup from Firebase.
     assert.match(client, /item\.textContent\s*=\s*person/);

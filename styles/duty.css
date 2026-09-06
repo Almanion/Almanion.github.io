@@ -66,6 +66,9 @@
 }
 
 .duty-topbar h2 a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
     color: var(--text-primary) !important;
     text-decoration: none;
 }
@@ -86,6 +89,16 @@
 
 .duty-topbar .sidebar-header-buttons {
     margin-left: auto;
+    gap: 0.16rem;
+    padding: 0.2rem;
+    background: color-mix(in srgb, var(--bg-tertiary) 72%, transparent);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+}
+
+.duty-topbar .sidebar-header-buttons > .account-btn,
+.duty-topbar .sidebar-header-buttons > .settings-button-sidebar {
+    border-radius: 50% !important;
 }
 
 .duty-topbar .settings-button-sidebar {
@@ -124,14 +137,6 @@
     font-weight: 720;
     line-height: 1.02;
     letter-spacing: -0.045em;
-}
-
-.duty-hero-copy {
-    max-width: 37rem;
-    margin: 0.8rem 0 0;
-    color: var(--text-secondary);
-    font-size: clamp(0.94rem, 1.4vw, 1.05rem);
-    line-height: 1.55;
 }
 
 .duty-edit-button,
@@ -233,12 +238,15 @@ body:not(.no-hover) .duty-edit-button:hover {
 }
 
 .duty-focus-month {
+    max-width: 100%;
     margin-top: 0.35rem;
     font-size: 0.68rem;
     font-weight: 720;
     line-height: 1.2;
     letter-spacing: 0.08em;
+    text-align: center;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .duty-focus-body {
@@ -318,11 +326,13 @@ body:not(.no-hover) .duty-share-button:hover {
 }
 
 .duty-sync-status {
+    max-width: 100%;
     margin: 0;
     color: var(--text-secondary);
     font-size: 0.76rem;
     line-height: 1.4;
     text-align: right;
+    overflow-wrap: anywhere;
 }
 
 .duty-sync-status.is-offline {
@@ -482,12 +492,14 @@ body:not(.no-hover) .duty-share-button:hover {
 
 .duty-week-topline {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 0.75rem;
 }
 
 .duty-week-range {
+    flex: 1 1 auto;
+    min-width: 0;
     margin: 0;
     color: var(--text-primary);
     font-size: 0.77rem;
@@ -602,7 +614,16 @@ body:not(.no-hover) .duty-share-button:hover {
 .duty-editor {
     display: grid;
     grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+        'header'
+        'notice'
+        'toolbar'
+        'content'
+        'footer';
     width: min(1120px, 100%);
+    height: min(92vh, 920px);
+    height: min(92dvh, 920px);
+    min-height: 0;
     max-height: min(92vh, 920px);
     max-height: min(92dvh, 920px);
     color: var(--text-primary);
@@ -612,6 +633,10 @@ body:not(.no-hover) .duty-share-button:hover {
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
     overflow: hidden;
     animation: duty-editor-in 0.2s ease-out both;
+}
+
+.duty-editor > * {
+    min-width: 0;
 }
 
 @keyframes duty-editor-in {
@@ -626,6 +651,7 @@ body:not(.no-hover) .duty-share-button:hover {
 }
 
 .duty-editor-header {
+    grid-area: header;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -664,6 +690,7 @@ body:not(.no-hover) :is(.duty-icon-button, .duty-remove-row):hover {
 }
 
 .duty-editor-notice {
+    grid-area: notice;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -709,6 +736,7 @@ body:not(.no-hover) :is(.duty-icon-button, .duty-remove-row):hover {
 }
 
 .duty-editor-toolbar {
+    grid-area: toolbar;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -743,13 +771,20 @@ body:not(.no-hover) :is(.duty-icon-button, .duty-remove-row):hover {
 }
 
 .duty-editor-content {
-    overflow: auto;
+    grid-area: content;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    -webkit-overflow-scrolling: touch;
     padding: 1rem clamp(1rem, 3vw, 1.5rem) 1.25rem;
 }
 
 .duty-editor-list {
     display: grid;
     gap: 0.65rem;
+    min-width: 0;
 }
 
 .duty-editor-row {
@@ -778,8 +813,11 @@ body:not(.no-hover) :is(.duty-icon-button, .duty-remove-row):hover {
 
 .duty-editor-field input {
     width: 100%;
+    max-width: 100%;
     min-width: 0;
+    min-inline-size: 0;
     min-height: 40px;
+    box-sizing: border-box;
     padding: 0.55rem 0.65rem;
     color: var(--text-primary);
     background: var(--bg-secondary);
@@ -815,18 +853,16 @@ body:not(.no-hover) :is(.duty-icon-button, .duty-remove-row):hover {
 }
 
 .duty-editor-footer {
+    grid-area: footer;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 1rem;
     padding-block: 0.9rem;
+    position: relative;
+    z-index: 2;
+    background: var(--bg-secondary);
     border-top: 1px solid var(--border-color);
-}
-
-.duty-editor-footer p {
-    margin: 0;
-    color: var(--text-secondary);
-    font-size: 0.68rem;
 }
 
 .duty-editor-footer > div {
@@ -892,6 +928,19 @@ body.duty-editor-open {
         padding: 0.55rem 0.8rem;
     }
 
+    .duty-topbar .sidebar-header-buttons {
+        gap: 0.08rem;
+        padding: 0.14rem;
+    }
+
+    .duty-topbar .sidebar-header-buttons > .account-btn,
+    .duty-topbar .sidebar-header-buttons > .settings-button-sidebar {
+        width: 38px;
+        min-width: 38px;
+        height: 38px;
+        min-height: 38px;
+    }
+
     .duty-topbar h2 {
         font-size: 0.9rem;
     }
@@ -929,8 +978,15 @@ body.duty-editor-open {
     }
 
     .duty-focus-date {
-        width: 76px;
+        width: 72px;
+        padding: 0.65rem 0.35rem;
         border-radius: 14px;
+    }
+
+    .duty-focus-month {
+        margin-top: 0.3rem;
+        font-size: 0.59rem;
+        letter-spacing: 0.045em;
     }
 
     .duty-focus h2 {
@@ -980,6 +1036,12 @@ body.duty-editor-open {
         min-height: 132px;
     }
 
+    .duty-week-topline {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.5rem;
+    }
+
     .duty-footer {
         flex-wrap: wrap;
     }
@@ -993,6 +1055,7 @@ body.duty-editor-open {
         width: 100%;
         height: 100vh;
         height: 100dvh;
+        min-height: 0;
         max-height: none;
         border: 0;
         border-radius: 0;
@@ -1029,9 +1092,22 @@ body.duty-editor-open {
     }
 
     .duty-editor-row {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) 40px;
+        position: relative;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 0.55rem;
-        padding: 0.7rem;
+        padding: 3rem 0.7rem 0.7rem;
+    }
+
+    .duty-editor-row::before {
+        content: 'Неделя ' attr(data-week-number);
+        position: absolute;
+        top: 0.85rem;
+        left: 0.75rem;
+        color: var(--text-secondary);
+        font-size: 0.66rem;
+        font-weight: 690;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
     }
 
     .duty-editor-field:nth-child(3),
@@ -1040,20 +1116,68 @@ body.duty-editor-open {
     }
 
     .duty-remove-row {
-        grid-column: 3;
-        grid-row: 1;
+        position: absolute;
+        grid-column: auto;
+        grid-row: auto;
+        top: 0.55rem;
+        right: 0.55rem;
+        width: 36px;
+        height: 36px;
     }
 
     .duty-editor-footer {
-        align-items: stretch;
-        flex-direction: column;
-        gap: 0.65rem;
         padding-bottom: max(0.9rem, env(safe-area-inset-bottom));
     }
 
     .duty-editor-footer > div {
         display: grid;
         grid-template-columns: 0.8fr 1.2fr;
+        width: 100%;
+    }
+}
+
+@media (max-width: 380px) {
+    .duty-focus {
+        grid-template-columns: 64px minmax(0, 1fr);
+        gap: 0.75rem;
+        padding: 0.85rem;
+    }
+
+    .duty-focus-date {
+        width: 64px;
+        padding-inline: 0.2rem;
+    }
+
+    .duty-focus-day {
+        font-size: 1.7rem;
+    }
+
+    .duty-focus-month {
+        font-size: 0.54rem;
+        letter-spacing: 0.02em;
+    }
+
+    .duty-focus h2 {
+        font-size: 1.16rem;
+    }
+
+    .duty-week-topline {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .duty-week-state {
+        justify-self: start;
+    }
+
+    .duty-editor-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .duty-editor-field:nth-child(1),
+    .duty-editor-field:nth-child(2),
+    .duty-editor-field:nth-child(3),
+    .duty-editor-field:nth-child(4) {
+        grid-column: 1;
     }
 }
 

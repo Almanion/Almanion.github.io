@@ -589,6 +589,7 @@
             const row = document.createElement('div');
             row.className = 'duty-editor-row';
             row.dataset.index = String(index);
+            row.dataset.weekNumber = String(index + 1);
             row.append(
                 makeEditorField('Начало', 'date', entry.start, 'start', index),
                 makeEditorField('Окончание', 'date', entry.end, 'end', index),
@@ -667,6 +668,7 @@
         overlay.setAttribute('aria-hidden', 'false');
         document.body.classList.add('duty-editor-open');
         editorOpen = true;
+        byId('dutyEditorContent').scrollTop = 0;
         byId('dutyEditorClose').focus();
     }
 
@@ -691,7 +693,8 @@
         const rows = byId('dutyEditorList').children;
         const row = rows[rows.length - 1];
         if (row) {
-            row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            const content = byId('dutyEditorContent');
+            content.scrollTo({ top: content.scrollHeight, behavior: 'smooth' });
             const people = row.querySelector('[data-field="people"]');
             if (people) people.focus();
         }
