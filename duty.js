@@ -1261,6 +1261,7 @@
                     const normalized = normalizeSegments(candidate);
                     if (normalized.length !== candidate.length) {
                         showEditorError('Части смены должны идти по порядку, не пересекаться и содержать корректные даты.');
+                        input.value = currentSegments[segmentIndex][field];
                         input.setAttribute('aria-invalid', 'true');
                         input.focus();
                         return;

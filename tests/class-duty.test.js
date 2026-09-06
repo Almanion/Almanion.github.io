@@ -106,6 +106,11 @@ async function run() {
         /entry\.segments\s*=\s*isIsoDate\(entry\.start\)[\s\S]*?\?\s*\[\{\s*start:\s*entry\.start,\s*end:\s*entry\.end\s*\}\][\s\S]*?:\s*\[\]/,
         'an invalid direct date edit must clear stale segments so validation cannot silently publish the old range'
     );
+    assert.match(
+        client,
+        /input\.value\s*=\s*currentSegments\[segmentIndex\]\[field\]/,
+        'an invalid segmented date edit must roll the visible field back to the preserved model value'
+    );
 
     const pageIds = new Set(Array.from(page.matchAll(/\bid="([^"]+)"/g), match => match[1]));
     const requiredIds = new Set(Array.from(client.matchAll(/byId\('([^']+)'\)/g), match => match[1]));
