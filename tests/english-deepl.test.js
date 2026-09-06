@@ -22,6 +22,7 @@ assert.match(client, /speechSynthesis/);
 assert.match(client, /SpeechSynthesisUtterance/);
 assert.match(client, /englishTranslatorMobileButton/);
 assert.match(client, /english-translator-resizer/);
+assert.match(client, /english-locked'[\s\S]*?&& document\.body\.classList\.contains\('english-deepl-open'\)/, 'the access observer must not mutate an already closed panel');
 assert.doesNotMatch(client, /DeepL-Auth-Key|DEEPL_API_KEY/, 'the DeepL secret must not be present in browser code');
 assert.match(css, /@media \(min-width: 769px\)[\s\S]*?english-deepl-open \.main-content/);
 assert.match(css, /@media \(max-width: 768px\)[\s\S]*?\.english-translator-panel\s*\{[\s\S]*?width:\s*100%/);

@@ -149,6 +149,8 @@
 
     function closePanel() {
         if (!panel) return;
+        const wasOpen = document.body.classList.contains('english-deepl-open');
+        if (!wasOpen && panel.inert) return;
         document.body.classList.remove('english-deepl-open');
         panel.setAttribute('aria-hidden', 'true');
         panel.inert = true;
@@ -346,7 +348,10 @@
 
     function observeAccessState() {
         const observer = new MutationObserver(function () {
-            if (document.body.classList.contains('english-locked')) closePanel();
+            // Не трогаем class повторно, пока панель уже закрыта: DOMTokenList.remove
+            // всё равно может породить новую mutation-запись и зациклить observer.
+            if (document.body.classList.contains('english-locked')
+                && document.body.classList.contains('english-deepl-open')) closePanel();
         });
         observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
     }
