@@ -51,10 +51,10 @@
 
     function normalizeItems(value) {
         const source = value && value.items;
-        const items = source
+        const rawItems = source
             ? (Array.isArray(source) ? source.filter(Boolean) : Object.keys(source).map(function (key) { return source[key]; }))
             : [];
-        const valid = items.filter(function (item) {
+        const items = rawItems.filter(function (item) {
             return item
                 && Number.isInteger(Number(item.number))
                 && typeof item.term === 'string'
