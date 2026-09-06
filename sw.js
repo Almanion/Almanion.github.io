@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-06-private-english-43';
+const CACHE_VERSION = 'almanion-pwa-2026-09-06-number-theory-44';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 

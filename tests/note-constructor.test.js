@@ -193,7 +193,7 @@ function testNumberTheoryStructure() {
     assert.strictEqual(eisensteinFigure.title, 'Геометрическая интерпретация леммы Эйзенштейна');
     assert.ok(eisensteinFigure.caption.includes('Центральная симметрия'));
 
-    const eisensteinSvg = fs.readFileSync(path.join(__dirname, '..', eisensteinFigure.src), 'utf8');
+    const eisensteinSvg = fs.readFileSync(path.join(__dirname, '..', eisensteinFigure.src.split('?')[0]), 'utf8');
     const countedGroup = eisensteinSvg.match(/<g class="counted">([\s\S]*?)<\/g>/);
     const pairedGroup = eisensteinSvg.match(/<g class="paired">([\s\S]*?)<\/g>/);
     assert.strictEqual((countedGroup[1].match(/<circle\b/g) || []).length, 17);
