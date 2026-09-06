@@ -33,13 +33,16 @@ function handle(e) {
     const action = params.action || '';
 
     if (action === 'capabilities') {
+      const scriptProperties = PropertiesService.getScriptProperties();
       return json({
         success: true,
         authVersion: AUTH_VERSION,
         accountConfirmation: true,
         multiSheetTasks: true,
         notePublisher: true,
-        noteDeletion: true
+        noteDeletion: true,
+        deeplTranslate: true,
+        deeplReady: !!scriptProperties.getProperty('DEEPL_API_KEY')
       });
     }
 
@@ -63,6 +66,12 @@ function handle(e) {
     if (action === 'deleteNotes') {
       const publisherIdentity = requireSiteOwner(params.idToken || '');
       return deleteNoteFiles(publisherIdentity, params);
+    }
+
+    // Перевод английских конспектов не зависит от доступа к Матцентру.
+    // Проверяем отдельную роль englishAccess и держим ключ DeepL только на сервере.
+    if (action === 'translateEnglish') {
+      return translateEnglish(params);
     }
 
     if (action === 'authorizeAccount') {
@@ -329,6 +338,82 @@ function requireSiteOwner(idToken) {
     throw new Error('Публиковать конспекты может только владелец сайта');
   }
   return identity;
+}
+
+function requireEnglishAccess(idToken) {
+  const identity = verifyFirebaseToken(idToken);
+  if (String(identity.email || '').trim().toLowerCase() === SITE_OWNER_EMAIL) return identity;
+
+  const uid = String(identity.uid || '');
+  const properties = PropertiesService.getScriptProperties();
+  const databaseUrl = String(
+    properties.getProperty('FIREBASE_DATABASE_URL') || DEFAULT_FIREBASE_DATABASE_URL
+  ).replace(/\/$/, '');
+  const response = UrlFetchApp.fetch(
+    databaseUrl + '/adminRoles/' + encodeURIComponent(uid) + '/englishAccess.json?auth=' + encodeURIComponent(idToken),
+    { method: 'get', muteHttpExceptions: true }
+  );
+  const allowed = response.getResponseCode() === 200
+    && JSON.parse(response.getContentText() || 'false') === true;
+  if (!allowed) throw new Error('English section access has not been granted for this account');
+  return identity;
+}
+
+function translateEnglish(params) {
+  const idToken = String(params.idToken || '');
+  const identity = requireEnglishAccess(idToken);
+  const text = String(params.text || '').trim();
+  if (!text) throw new Error('Enter English text to translate');
+  if (text.length > 5000) throw new Error('The text is too long. The limit is 5,000 characters');
+
+  const properties = PropertiesService.getScriptProperties();
+  const authKey = String(properties.getProperty('DEEPL_API_KEY') || '').trim();
+  if (!authKey) throw new Error('DeepL has not been configured on the server yet');
+
+  // Простое серверное ограничение защищает личную квоту от случайного цикла
+  // запросов на клиенте. Счётчик живёт десять минут и не хранит текст.
+  const cache = CacheService.getScriptCache();
+  const rateKey = 'DEEPL_REQUESTS_' + identity.uid;
+  const requestCount = Number(cache.get(rateKey) || 0);
+  if (requestCount >= 45) throw new Error('Too many translation requests. Try again in a few minutes');
+  cache.put(rateKey, String(requestCount + 1), 600);
+
+  const configuredBase = String(properties.getProperty('DEEPL_API_URL') || '').trim().replace(/\/$/, '');
+  const apiBase = configuredBase || (/\:fx$/i.test(authKey)
+    ? 'https://api-free.deepl.com'
+    : 'https://api.deepl.com');
+  if (!/^https:\/\/api(?:-free)?\.deepl\.com$/i.test(apiBase)) {
+    throw new Error('DEEPL_API_URL must point to the official DeepL API');
+  }
+
+  const response = UrlFetchApp.fetch(apiBase + '/v2/translate', {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { Authorization: 'DeepL-Auth-Key ' + authKey },
+    payload: JSON.stringify({
+      text: [text],
+      source_lang: 'EN',
+      target_lang: 'RU',
+      preserve_formatting: true
+    }),
+    muteHttpExceptions: true
+  });
+  const responseCode = response.getResponseCode();
+  let payload = {};
+  try { payload = JSON.parse(response.getContentText() || '{}'); } catch (_) {}
+  const translated = payload.translations && payload.translations[0] && payload.translations[0].text;
+  if (responseCode < 200 || responseCode >= 300 || !translated) {
+    if (responseCode === 403) throw new Error('DeepL rejected the API key or plan');
+    if (responseCode === 456) throw new Error('The DeepL character quota has been reached');
+    if (responseCode === 429) throw new Error('DeepL is receiving too many requests. Try again shortly');
+    throw new Error('DeepL translation failed (HTTP ' + responseCode + ')');
+  }
+
+  return json({
+    success: true,
+    translation: String(translated),
+    detectedSourceLanguage: String(payload.translations[0].detected_source_language || 'EN')
+  });
 }
 
 // === Публикация конспектов в GitHub =======================================
@@ -763,10 +848,13 @@ function json(obj) {
          MATCENTER_USER_PASSWORD       пароль доступа учеников
          MATCENTER_ADMIN_PASSWORD      отдельный пароль администратора
          GITHUB_TOKEN                  fine-grained token с Contents: Read and write
+         DEEPL_API_KEY                 ключ DeepL API для встроенного перевода
       Необязательно:
         MATCENTER_SHEET_NAMES         имена листов с задачами через запятую
         GITHUB_REPOSITORY             по умолчанию Almanion/Almanion.github.io
         GITHUB_BRANCH                 по умолчанию main
+        DEEPL_API_URL                 https://api-free.deepl.com для старого API Free;
+                                      https://api.deepl.com для остальных планов
       Без MATCENTER_SHEET_NAMES backend сам найдёт все листы, где в первой
       строке есть Number или NumberText.
       Пароли больше не хранятся в репозитории и не попадают в URL.

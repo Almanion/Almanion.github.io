@@ -759,7 +759,7 @@
     function cloneBoxContent(box) {
         const clone = box.cloneNode(true);
         // Убираем интерактив, который в карточке не нужен и может всплыть при наведении.
-        clone.querySelectorAll('.bookmark-btn, .copy-block-btn').forEach(b => b.remove());
+        clone.querySelectorAll('.bookmark-btn, .copy-block-btn, .english-speak-button').forEach(b => b.remove());
         clone.style.cssText = 'margin:0;border:none;box-shadow:none;border-radius:0;border-left:none;';
         return clone;
     }
