@@ -386,7 +386,7 @@ function translateEnglish(params) {
     throw new Error('DEEPL_API_URL must point to the official DeepL API');
   }
 
-  const response = UrlFetchApp.fetch(apiBase + '/v2/translate', {
+  const response = fetchDeepLWithRetry(apiBase + '/v2/translate', {
     method: 'post',
     contentType: 'application/json',
     headers: { Authorization: 'DeepL-Auth-Key ' + authKey },
@@ -405,7 +405,7 @@ function translateEnglish(params) {
   if (responseCode < 200 || responseCode >= 300 || !translated) {
     if (responseCode === 403) throw new Error('DeepL rejected the API key or plan');
     if (responseCode === 456) throw new Error('The DeepL character quota has been reached');
-    if (responseCode === 429) throw new Error('DeepL is receiving too many requests. Try again shortly');
+    if (responseCode === 429) throw new Error('DeepL is temporarily limiting requests. Wait a minute and try again');
     throw new Error('DeepL translation failed (HTTP ' + responseCode + ')');
   }
 
@@ -414,6 +414,31 @@ function translateEnglish(params) {
     translation: String(translated),
     detectedSourceLanguage: String(payload.translations[0].detected_source_language || 'EN')
   });
+}
+
+function fetchDeepLWithRetry(url, options) {
+  const retryDelays = [500, 1500, 3500];
+  let response = null;
+
+  for (let attempt = 0; attempt <= retryDelays.length; attempt++) {
+    response = UrlFetchApp.fetch(url, options);
+    const code = response.getResponseCode();
+    // DeepL рекомендует повторять 429 и временные 5xx с экспоненциальной
+    // задержкой. Ошибки ключа и квоты, напротив, повторять бессмысленно.
+    if (code !== 429 && (code < 500 || code >= 600)) return response;
+    if (attempt === retryDelays.length) return response;
+
+    let delay = retryDelays[attempt];
+    try {
+      const headers = response.getAllHeaders ? response.getAllHeaders() : {};
+      const retryAfter = Number(headers['Retry-After'] || headers['retry-after'] || 0);
+      if (Number.isFinite(retryAfter) && retryAfter > 0) {
+        delay = Math.min(8000, Math.max(delay, retryAfter * 1000));
+      }
+    } catch (_) {}
+    Utilities.sleep(delay);
+  }
+  return response;
 }
 
 // === Публикация конспектов в GitHub =======================================

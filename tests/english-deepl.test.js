@@ -29,6 +29,8 @@ assert.match(css, /@media \(max-width: 768px\)[\s\S]*?\.english-translator-panel
 assert.match(css, /\.english-speak-button/);
 
 const calls = [];
+const retryDelays = [];
+let deepLAttempts = 0;
 const properties = {
     FIREBASE_WEB_API_KEY: 'firebase-public-key',
     DEEPL_API_KEY: 'server-only-key:fx'
@@ -50,14 +52,24 @@ const sandbox = {
                 };
             }
             if (url.includes('api-free.deepl.com')) {
+                deepLAttempts += 1;
+                if (deepLAttempts === 1) {
+                    return {
+                        getResponseCode: () => 429,
+                        getContentText: () => JSON.stringify({ message: 'Too many requests' }),
+                        getAllHeaders: () => ({})
+                    };
+                }
                 return {
                     getResponseCode: () => 200,
-                    getContentText: () => JSON.stringify({ translations: [{ text: 'Умный перевод', detected_source_language: 'EN' }] })
+                    getContentText: () => JSON.stringify({ translations: [{ text: 'Умный перевод', detected_source_language: 'EN' }] }),
+                    getAllHeaders: () => ({})
                 };
             }
             throw new Error('unexpected URL: ' + url);
         }
     },
+    Utilities: { sleep: delay => retryDelays.push(delay) },
     ContentService: {
         MimeType: { JSON: 'json' },
         createTextOutput: text => ({ text, setMimeType() { return this; } })
@@ -77,8 +89,11 @@ vm.runInContext(backend, sandbox, { filename: 'apps-script.gs' });
 const result = JSON.parse(vm.runInContext("translateEnglish({ idToken: 'valid-token', text: 'A thoughtful sentence.' }).text", sandbox));
 assert.equal(result.success, true);
 assert.equal(result.translation, 'Умный перевод');
-const deepLCall = calls.find(call => call.url.includes('deepl.com'));
+const deepLCalls = calls.filter(call => call.url.includes('deepl.com'));
+const deepLCall = deepLCalls[0];
 assert.ok(deepLCall, 'DeepL API was not called');
+assert.equal(deepLCalls.length, 2, 'a temporary 429 must be retried automatically');
+assert.deepEqual(retryDelays, [500]);
 assert.equal(deepLCall.url, 'https://api-free.deepl.com/v2/translate');
 assert.equal(deepLCall.options.headers.Authorization, 'DeepL-Auth-Key server-only-key:fx');
 const deepLPayload = JSON.parse(deepLCall.options.payload);
