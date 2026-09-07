@@ -42,7 +42,7 @@ assert.match(styles, /body\.animations-off\.home-page[\s\S]*animation: none !imp
 assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 assert.doesNotMatch(styles, /transition:\s*all\b/, 'home motion must animate explicit compositor-friendly properties');
 
-assert.match(worker, /home-motion-51/);
+assert.match(worker, /home-access-52/);
 assert.match(worker, /'\/styles\/home-motion\.css\?v=20260907-1'/);
 assert.match(worker, /'\/home-motion\.js\?v=20260907-1'/);
 

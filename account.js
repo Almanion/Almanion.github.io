@@ -36,8 +36,9 @@
     let persistenceFailure = false;
     let syncGeneration = 0;
     let googleAttemptId = 0;
-    let editorAccessGeneration = 0;
-    let adminAccessGeneration = 0;
+    let homeAccessGeneration = 0;
+    let homeRolesRef = null;
+    let homeRolesHandler = null;
     let englishAccessGeneration = 0;
     const GOOGLE_POPUP_TIMEOUT_MS = 45000;
 
@@ -468,29 +469,70 @@
                 .catch(function () { return false; });
     }
 
-    function updateHomeEditorLink() {
-        const link = document.getElementById('homeConstructorLink');
-        if (!link) return;
-        const checkedUser = user;
-        const generation = ++editorAccessGeneration;
-        link.hidden = true;
-        if (!checkedUser) return;
-        hasContentEditorAccess(checkedUser).then(function (allowed) {
-            if (generation !== editorAccessGeneration || user !== checkedUser || !link.isConnected) return;
-            link.hidden = !allowed;
-        });
+    function createHomeAccessLink(kind) {
+        const link = document.createElement('a');
+        link.className = 'home-editor-link';
+        if (kind === 'constructor') {
+            link.id = 'homeConstructorLink';
+            link.href = 'constructor.html';
+            link.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Открыть конструктор</span>';
+        } else {
+            link.id = 'homeAdminLink';
+            link.href = 'admin.html';
+            link.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.6-2.8 8-7 10-4.2-2-7-5.4-7-10V6l7-3Z"/><path d="M9 12l2 2 4-4"/></svg><span>Админ-панель</span>';
+        }
+        return link;
     }
 
-    function updateHomeAdminLink() {
-        const link = document.getElementById('homeAdminLink');
-        if (!link) return;
+    function detachHomeRolesListener() {
+        if (homeRolesRef && homeRolesHandler) {
+            try { homeRolesRef.off('value', homeRolesHandler); } catch (_) {}
+        }
+        homeRolesRef = null;
+        homeRolesHandler = null;
+    }
+
+    function clearHomeAccessLinks(slot) {
+        slot.replaceChildren();
+        slot.hidden = true;
+        delete slot.dataset.accessSignature;
+    }
+
+    function renderHomeAccessLinks(slot, contentEditor, siteAdmin) {
+        const signature = (contentEditor ? '1' : '0') + (siteAdmin ? '1' : '0');
+        if (slot.dataset.accessSignature === signature) return;
+        slot.dataset.accessSignature = signature;
+        slot.replaceChildren();
+        if (contentEditor) slot.appendChild(createHomeAccessLink('constructor'));
+        if (siteAdmin) slot.appendChild(createHomeAccessLink('admin'));
+        slot.hidden = slot.childElementCount === 0;
+    }
+
+    function updateHomeAccessLinks() {
+        const slot = document.getElementById('homePrivilegedActions');
+        if (!slot) return;
         const checkedUser = user;
-        const generation = ++adminAccessGeneration;
-        link.hidden = true;
+        const generation = ++homeAccessGeneration;
+        detachHomeRolesListener();
+        clearHomeAccessLinks(slot);
         if (!checkedUser) return;
-        hasSiteAdminAccess(checkedUser).then(function (allowed) {
-            if (generation !== adminAccessGeneration || user !== checkedUser || !link.isConnected) return;
-            link.hidden = !allowed;
+        const owner = String(checkedUser.email || '').trim().toLowerCase() === 'dmb23930@gmail.com';
+        if (owner) {
+            renderHomeAccessLinks(slot, true, true);
+            return;
+        }
+
+        const rolesRef = db.ref('adminRoles/' + checkedUser.uid);
+        const handleRoles = function (snapshot) {
+            if (generation !== homeAccessGeneration || user !== checkedUser || !slot.isConnected) return;
+            const roles = snapshot.val() || {};
+            renderHomeAccessLinks(slot, roles.contentEditor === true, roles.siteAdmin === true);
+        };
+        homeRolesRef = rolesRef;
+        homeRolesHandler = handleRoles;
+        rolesRef.on('value', handleRoles, function () {
+            if (generation !== homeAccessGeneration || user !== checkedUser || !slot.isConnected) return;
+            renderHomeAccessLinks(slot, false, false);
         });
     }
 
@@ -608,8 +650,7 @@
         authStateKnown = true;
         user = u;
         updateButton();
-        updateHomeEditorLink();
-        updateHomeAdminLink();
+        updateHomeAccessLinks();
         updateHomeEnglishCard();
         if (u) {
             registerAccountDirectory(u);
@@ -620,10 +661,21 @@
         authStateKnown = true;
         user = null;
         updateButton();
-        updateHomeEditorLink();
-        updateHomeAdminLink();
+        updateHomeAccessLinks();
         updateHomeEnglishCard();
         console.warn('Almanion account: auth state restore failed.', err);
+    });
+
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted) updateHomeAccessLinks();
+    });
+
+    window.addEventListener('pagehide', function (event) {
+        if (!event.persisted) return;
+        homeAccessGeneration++;
+        detachHomeRolesListener();
+        const slot = document.getElementById('homePrivilegedActions');
+        if (slot) clearHomeAccessLinks(slot);
     });
 
     window.AlmanionAccount = {

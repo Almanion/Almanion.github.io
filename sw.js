@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-07-home-motion-51';
+const CACHE_VERSION = 'almanion-pwa-2026-09-07-home-access-52';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -34,6 +34,7 @@ const APP_SHELL = [
     '/bookmarks.js',
     '/newyear.js',
     '/account.js',
+    '/account.js?v=20260907-2',
     '/note-editor.js',
     '/poll.js',
     '/knowledge-check.js',
