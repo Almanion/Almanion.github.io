@@ -1,0 +1,687 @@
+{
+  "schemaVersion": 1,
+  "id": "molekulyarnaya-fizika",
+  "subject": "physics-10",
+  "title": "1. Молекулярная физика",
+  "navTitle": "Молекулярная физика",
+  "blocks": [],
+  "subsections": [
+    {
+      "id": "metody-molekulyarnoy-fiziki",
+      "type": "subsection",
+      "title": "1.1 Термодинамический и статистический методы",
+      "navTitle": "Методы молекулярной физики",
+      "content": "",
+      "children": [
+        {
+          "id": "molekulyarnaya-fizika-definition",
+          "type": "definition",
+          "term": "Молекулярная физика",
+          "separator": "—",
+          "content": "раздел физики, кот. изучает физ. св-ва тел на основе представлений о движении и взаимодействии частиц, сост. физ. тела.",
+          "children": []
+        },
+        {
+          "id": "metody-izucheniya",
+          "type": "properties",
+          "title": "Методы изучения и объяснения",
+          "content": "",
+          "children": [
+            {
+              "id": "metody-izucheniya-list",
+              "type": "list",
+              "items": [
+                "**Термодинамический:** изучение объектов на основе экспериментальных зависимостей термодинамических параметров.",
+                "**Статистический (МКТ):** изучает св-ва, исходя из движения частиц, с помощью мат. аппарата."
+              ],
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "osnovnye-polozheniya-mkt",
+      "type": "subsection",
+      "title": "1.2 Основные положения МКТ",
+      "navTitle": "Основные положения МКТ",
+      "content": "",
+      "children": [
+        {
+          "id": "polozheniya-mkt",
+          "type": "properties",
+          "title": "Основные положения МКТ",
+          "content": "",
+          "children": [
+            {
+              "id": "polozheniya-mkt-list",
+              "type": "list",
+              "items": [
+                "Все в-ва состоят из частиц, между которыми есть промежутки.",
+                "Все частицы в-ва находятся в непрерывном хаотическом (тепловом) движении.",
+                "Между частицами действуют силы притяжения и отталкивания. Они действуют на малых расстояниях."
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "atom-himicheskie-svoystva",
+          "type": "definition",
+          "term": "Атом",
+          "separator": "—",
+          "content": "наименьшая частица хим. элемента, кот. является носителем его хим. св-в.",
+          "children": []
+        },
+        {
+          "id": "atom-elektroneytralnyy",
+          "type": "definition",
+          "term": "Атом",
+          "separator": "—",
+          "content": "мельчайшая электронейтральная химически неделимая частица в-ва.",
+          "children": []
+        },
+        {
+          "id": "molekula-definition",
+          "type": "definition",
+          "term": "Молекула",
+          "separator": "—",
+          "content": "наименьшая устойчивая частица в-ва, обладающая всеми хим. св-вами в-ва.",
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "opytnye-obosnovaniya-mkt",
+      "type": "subsection",
+      "title": "1.3 Опытные обоснования положений МКТ",
+      "navTitle": "Опытные обоснования МКТ",
+      "content": "",
+      "children": [
+        {
+          "id": "opytnye-obosnovaniya-list",
+          "type": "properties",
+          "title": "Опытные обоснования положений МКТ",
+          "content": "",
+          "children": [
+            {
+              "id": "opytnye-obosnovaniya-items",
+              "type": "list",
+              "items": [
+                "Делимость в-ва.",
+                "Явление диффузии.",
+                "Закон кратных отношений.",
+                "Закон Авогадро.",
+                "Наблюдение молекул с помощью ионного проектора и т. п."
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "diffuziya-definition",
+          "type": "definition",
+          "term": "Диффузия",
+          "separator": "—",
+          "content": "явление взаимного проникновения частиц одного тела в межмолекулярное пространство другого.",
+          "children": []
+        },
+        {
+          "id": "zakon-kratnyh-otnosheniy",
+          "type": "statement",
+          "title": "Закон кратных отношений",
+          "content": "При образовании из двух элементов различных в-в массы одного из элементов в разных соединениях находятся в кратных отношениях.",
+          "children": []
+        },
+        {
+          "id": "zakon-avogadro",
+          "type": "statement",
+          "title": "Закон Авогадро",
+          "content": "Равные объёмы газообразных в-в при одинаковых давлениях и температурах содержат равное число молекул, т. е. плотности различных газов представляют собой меру масс молекул, составляющих газы.",
+          "children": []
+        },
+        {
+          "id": "nablyudenie-atomov",
+          "type": "experiment",
+          "title": "Наблюдение атомов",
+          "content": "Почему нельзя увидеть молекулы в оптический микроскоп? Был придуман электронный микроскоп. Электронный микроскоп уничтожает изучаемый объект и всё ещё не позволяет увидеть атомы напрямую.",
+          "children": [
+            {
+              "id": "electron-microscope-image",
+              "type": "image",
+              "src": "images/notes/physics-10/electron-microscope.svg?v=20260907-1",
+              "alt": "Схема электронного микроскопа",
+              "caption": "Электронный микроскоп: катод, система электромагнитных линз и экран.",
+              "children": []
+            },
+            {
+              "id": "microscope-history",
+              "type": "list",
+              "items": [
+                "Автоэмиссионный микроскоп (1936) — всё ещё не позволял увидеть атомы.",
+                "Ионный проектор (1951), или автоионный микроскоп. Эрвин Вильгельм Мюллер — первый человек, наблюдавший атомы.",
+                "Туннельный микроскоп позволяет увидеть атомарную поверхность проводящих в-в.",
+                "Атомно-силовой микроскоп позволяет увидеть непроводящие в-ва."
+              ],
+              "children": []
+            },
+            {
+              "id": "atomic-force-microscope-image",
+              "type": "image",
+              "src": "images/notes/physics-10/atomic-force-microscope.svg?v=20260907-1",
+              "alt": "Схема атомно-силового микроскопа",
+              "caption": "Атомно-силовой микроскоп: лазерный луч отражается от кантилевера на фотодиод; детектор управляет системой обратной связи.",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "nalichie-promezhutkov",
+          "type": "properties",
+          "title": "Опытные обоснования наличия промежутков",
+          "content": "",
+          "children": [
+            {
+              "id": "nalichie-promezhutkov-list",
+              "type": "list",
+              "items": [
+                "При смешивании разных жидкостей объём смеси меньше суммы объёмов жидкостей.",
+                "Диффузия.",
+                "Деформация.",
+                "Опыт Бриджмана."
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "opyt-bridzhmana",
+          "type": "experiment",
+          "title": "Опыт Бриджмана",
+          "content": "Возьмём толстостенный стальной сосуд. Внутрь поместим масло и будем повышать давление. При давлении в \\(10^5\\) ат масло начнёт просачиваться через стенки.",
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "razmery-i-massy-molekul",
+      "type": "subsection",
+      "title": "1.4 Размеры и массы молекул",
+      "navTitle": "Размеры и массы молекул",
+      "content": "",
+      "children": [
+        {
+          "id": "opyt-s-monomolekulyarnoy-plenkoy",
+          "type": "experiment",
+          "title": "Опыт Ленгмюра, Марселей и Дево",
+          "content": "Вода покрылась несмачиваемым порошком (тальком), после чего на неё наносилось определённое кол-во масла, кот. растекалось мономолекулярной плёнкой. При этом порошок отодвигался за пределы плёнки, площадь которой легко могла быть измерена.",
+          "children": [
+            {
+              "id": "molecule-size-formula",
+              "type": "formula",
+              "latex": "d\\approx2\\cdot10^{-10}\\,\\text{м}",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "chislo-molekul",
+          "type": "derivation",
+          "title": "Число молекул в жидкостях и твёрдых телах",
+          "content": "Капля воды: \\(V=10^{-6}\\,\\text{м}^3\\). Размер молекулы воды: \\(d=3\\cdot10^{-10}\\,\\text{м}\\).",
+          "children": [
+            {
+              "id": "molecule-volume-formula",
+              "type": "formula",
+              "latex": "V_0=d^3=27\\cdot10^{-30}\\,\\text{м}^3",
+              "children": []
+            },
+            {
+              "id": "molecule-count-formula",
+              "type": "formula",
+              "latex": "N=\\frac{V}{V_0}=\\frac{10^{-6}}{27\\cdot10^{-30}}\\approx3{,}7\\cdot10^{22}",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "massa-molekuly",
+          "type": "derivation",
+          "title": "Масса молекулы",
+          "content": "Масса капли воды:",
+          "children": [
+            {
+              "id": "drop-mass-formula",
+              "type": "formula",
+              "latex": "m=\\rho V=10^3\\,\\frac{\\text{кг}}{\\text{м}^3}\\cdot10^{-6}\\,\\text{м}^3=10^{-3}\\,\\text{кг}",
+              "children": []
+            },
+            {
+              "id": "single-molecule-mass-formula",
+              "type": "formula",
+              "latex": "m_0=\\frac{m}{N}=\\frac{10^{-3}}{3{,}7\\cdot10^{22}}\\approx3\\cdot10^{-26}\\,\\text{кг}",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "atomic-mass-unit",
+          "type": "definition",
+          "term": "Атомная единица массы",
+          "separator": "—",
+          "content": "внесистемная единица массы молекул, атомов, атомных ядер и элементарных частиц; равна \\(\\frac1{12}\\) массы атома углерода (нуклида углерода-12).",
+          "children": [
+            {
+              "id": "atomic-mass-unit-formula",
+              "type": "formula",
+              "latex": "1\\,\\text{а. е. м.}=\\frac1{12}m_{0C}=1{,}66\\cdot10^{-27}\\,\\text{кг}",
+              "children": []
+            },
+            {
+              "id": "carbon-atom-mass-formula",
+              "type": "formula",
+              "latex": "m_{0C}=1{,}995\\cdot10^{-26}\\,\\text{кг}",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "relative-molecular-mass",
+          "type": "definition",
+          "term": "Относительная молекулярная масса",
+          "separator": "—",
+          "content": "отношение массы молекулы данного в-ва к а. е. м.",
+          "children": [
+            {
+              "id": "relative-molecular-mass-formula",
+              "type": "formula",
+              "latex": "M_r=\\frac{m_0}{\\frac1{12}m_{0C}}",
+              "children": []
+            },
+            {
+              "id": "relative-mass-remark",
+              "type": "remark",
+              "title": "",
+              "content": "Если \\(N=6{,}02\\cdot10^{23}\\), то масса частиц в граммах численно равна относительной молекулярной массе в-ва.",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "avogadro-number-derivation",
+          "type": "derivation",
+          "title": "Число Авогадро",
+          "content": "Возьмём 12 г нуклида углерода-12. \\(M_r(C)\\approx12\\), \\(m_{0C}\\approx1{,}995\\cdot10^{-26}\\,\\text{кг}\\).",
+          "children": [
+            {
+              "id": "avogadro-number-formula",
+              "type": "formula",
+              "latex": "N_A=\\frac{m}{m_{0C}}=\\frac{12\\cdot10^{-3}\\,\\text{кг}}{1{,}995\\cdot10^{-26}\\,\\text{кг}}\\approx6{,}02\\cdot10^{23}",
+              "children": []
+            },
+            {
+              "id": "carbon-atoms-count",
+              "type": "paragraph",
+              "content": "12 г углерода содержит \\(N_A=6{,}02\\cdot10^{23}\\) атомов.",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "amount-of-substance",
+          "type": "definition",
+          "term": "Кол-во в-ва",
+          "separator": "—",
+          "content": "отношение числа молекул \\(N\\) в данном в-ве к числу атомов в 12 г углерода.",
+          "children": [
+            {
+              "id": "amount-of-substance-formula",
+              "type": "formula",
+              "latex": "\\nu=\\frac{N}{N_A},\\qquad[\\nu]=1\\,\\text{моль}",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "mole-definition",
+          "type": "definition",
+          "term": "1 моль",
+          "separator": "—",
+          "content": "кол-во в-ва, содержащее столько же структурных единиц данного в-ва, сколько содержится в 12 г углерода-12.",
+          "children": []
+        },
+        {
+          "id": "avogadro-constant",
+          "type": "definition",
+          "term": "Постоянная Авогадро",
+          "separator": "—",
+          "content": "число частиц в 1 моле в-ва.",
+          "children": [
+            {
+              "id": "avogadro-constant-formula",
+              "type": "formula",
+              "latex": "N_A=6{,}02214\\cdot10^{23}\\,\\text{моль}^{-1}",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "molar-mass",
+          "type": "definition",
+          "term": "Молярная масса",
+          "separator": "—",
+          "content": "масса в-ва, взятого в кол-ве одного моля.",
+          "children": [
+            {
+              "id": "molar-mass-formula",
+              "type": "formula",
+              "latex": "M=m_0N_A=M_r\\,\\frac{\\text{г}}{\\text{моль}}=M_r\\cdot10^{-3}\\,\\frac{\\text{кг}}{\\text{моль}}",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "particle-concentration",
+          "type": "definition",
+          "term": "Концентрация частиц",
+          "separator": "—",
+          "content": "скалярная физ. величина, равная отношению числа частиц к объёму, в кот. эти частицы содержатся.",
+          "children": [
+            {
+              "id": "particle-concentration-formula",
+              "type": "formula",
+              "latex": "n=\\frac{N}{V}",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "solution-concentration",
+          "type": "definition",
+          "term": "Концентрация раствора",
+          "separator": "—",
+          "content": "скалярная физ. величина, равная отношению массы в-ва к массе раствора.",
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "osnovnoe-uravnenie-mkt",
+      "type": "subsection",
+      "title": "1.5 Вывод основного уравнения МКТ",
+      "navTitle": "Основное уравнение МКТ",
+      "content": "",
+      "children": [
+        {
+          "id": "masshtaby-obektov",
+          "type": "properties",
+          "title": "Все объекты можно разделить на три вида",
+          "content": "",
+          "children": [
+            {
+              "id": "masshtaby-obektov-list",
+              "type": "list",
+              "items": ["Микромир.", "Макромир.", "Мегамир."],
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "macroscopic-system",
+          "type": "definition",
+          "term": "Макроскопические системы",
+          "separator": "—",
+          "content": "такие системы, число составляющих частиц которых сопоставимо с числом Авогадро \\((10^{20}—10^{30})\\).",
+          "children": []
+        },
+        {
+          "id": "macroparameters",
+          "type": "definition",
+          "term": "Макропараметры",
+          "separator": "—",
+          "content": "параметры, кот. описывают систему как единое целое.",
+          "children": []
+        },
+        {
+          "id": "microparameters",
+          "type": "definition",
+          "term": "Микропараметры",
+          "separator": "—",
+          "content": "параметры отдельных частиц, входящих в систему.",
+          "children": []
+        },
+        {
+          "id": "ideal-gas-model",
+          "type": "definition",
+          "term": "Идеальный газ",
+          "separator": "—",
+          "content": "модель макроскопической системы, для кот. верно:",
+          "children": [
+            {
+              "id": "ideal-gas-properties",
+              "type": "list",
+              "items": [
+                "Все частицы — материальные точки.",
+                "Между частицами нет сил притяжения и отталкивания, т. е. потенциальной энергией частиц можно пренебречь.",
+                "Удары между частицами и со стенками сосуда являются абсолютно упругими, т. е. выполняются ЗСИ и ЗСЭ."
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "pressure-derivation",
+          "type": "derivation",
+          "title": "Давление идеального газа",
+          "content": "Рассм. ид. газ, помещённый в некоторый сосуд, и одну частицу. Пусть она ударяется о стенку сосуда — абсолютно упругий удар. Угол падения равен углу отражения, а импульс системы сохраняется по ЗСИ.",
+          "children": [
+            {
+              "id": "ideal-gas-collision-image",
+              "type": "image",
+              "src": "images/notes/physics-10/ideal-gas-collision.svg?v=20260907-1",
+              "alt": "Столкновение молекулы идеального газа со стенкой сосуда",
+              "caption": "При упругом столкновении со стенкой меняется знак проекции скорости \\(v_x\\).",
+              "children": []
+            },
+            {
+              "id": "single-particle-force",
+              "type": "formula",
+              "latex": "\\Delta\\vec p=\\vec p_2-\\vec p_1=\\vec F_1\\Delta t,\\qquad F_{\\text{ст},1}=-F_1=\\frac{2m_1v_{1x}}{\\Delta t}",
+              "children": []
+            },
+            {
+              "id": "many-particles-force",
+              "type": "paragraph",
+              "content": "Пусть за некоторое время о стенку ударилось \\(N\\) частиц. Будем считать, что все частицы движутся с одной скоростью \\(v_{1x}\\) по модулю. Так как частицы движутся хаотично, к данной стенке направлена половина частиц:",
+              "children": []
+            },
+            {
+              "id": "particles-reaching-wall",
+              "type": "formula",
+              "latex": "N=\\frac12nSv_{1x}\\Delta t",
+              "children": []
+            },
+            {
+              "id": "pressure-one-speed",
+              "type": "formula",
+              "latex": "F_{\\text{ст}}=nSm_1v_{1x}^2,\\qquad p=\\frac{F_{\\text{ст}}}{S}=nm_0v_{1x}^2",
+              "children": []
+            },
+            {
+              "id": "velocity-averages",
+              "type": "formula",
+              "latex": "\\overline{v_x}=\\frac1N\\sum_{i=1}^{N}v_{ix}=0,\\qquad \\overline{v_x^2}=\\frac1N\\sum_{i=1}^{N}v_{ix}^2",
+              "children": []
+            },
+            {
+              "id": "velocity-components",
+              "type": "formula",
+              "latex": "\\overline{v^2}=\\overline{v_x^2}+\\overline{v_y^2}+\\overline{v_z^2}=3\\overline{v_x^2}",
+              "children": []
+            },
+            {
+              "id": "main-mkt-equation",
+              "type": "formula",
+              "latex": "\\boxed{p=\\frac13m_0n\\overline{v^2}=\\frac23n\\overline{W_k}}",
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "temperatura-i-uravnenie-sostoyaniya",
+      "type": "subsection",
+      "title": "1.6 Температура и уравнение состояния идеального газа",
+      "navTitle": "Температура и уравнение состояния",
+      "content": "",
+      "children": [
+        {
+          "id": "thermostat-definition",
+          "type": "definition",
+          "term": "Термостат",
+          "separator": "—",
+          "content": "устр-во, кот. поддерживает одинаковую температуру внутри.",
+          "children": []
+        },
+        {
+          "id": "thermos-remark",
+          "type": "remark",
+          "title": "",
+          "content": "Термос не является термостатом.",
+          "children": []
+        },
+        {
+          "id": "thermostat-experiment",
+          "type": "experiment",
+          "title": "Опыт с термостатами",
+          "content": "Возьмём термостат и поместим туда три баллона с газами. Затем возьмём два термостата: с кипящей водой \\(t_2=100^\\circ\\mathrm C\\) и с плавающим льдом \\(t_1=0^\\circ\\mathrm C\\).",
+          "children": [
+            {
+              "id": "thermostat-gases-image",
+              "type": "image",
+              "src": "images/notes/physics-10/thermostat-gases.svg?v=20260907-1",
+              "alt": "Три баллона с газами в термостатах",
+              "caption": "Для разных газов при одинаковой температуре отношение \\(pV/N\\) одинаково.",
+              "children": []
+            },
+            {
+              "id": "theta-zero-formula",
+              "type": "formula",
+              "latex": "\\frac{p_1V_1}{N_1}=\\frac{p_2V_2}{N_2}=\\frac{p_3V_3}{N_3}=\\Theta_{0^\\circ\\mathrm C}",
+              "children": []
+            },
+            {
+              "id": "theta-hundred-formula",
+              "type": "formula",
+              "latex": "\\frac{p'_1V_1}{N_1}=\\frac{p'_2V_2}{N_2}=\\frac{p'_3V_3}{N_3}=\\Theta_{100^\\circ\\mathrm C}",
+              "children": []
+            },
+            {
+              "id": "theta-dimension-formula",
+              "type": "formula",
+              "latex": "[\\Theta]=[\\text{Па}\\cdot\\text{м}^3]=[\\text{Н}\\cdot\\text{м}]=[\\text{Дж}]",
+              "children": []
+            },
+            {
+              "id": "theta-energy-paragraph",
+              "type": "paragraph",
+              "content": "Очевидно, что \\(\\Theta\\) — это энергия.",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "boltzmann-constant",
+          "type": "definition",
+          "term": "Постоянная Больцмана",
+          "separator": "—",
+          "content": "коэффициент пропорциональности между изменением энергетической температуры \\(\\Theta\\) и изменением абсолютной температуры \\(T\\).",
+          "children": [
+            {
+              "id": "boltzmann-constant-formula",
+              "type": "formula",
+              "latex": "\\Delta\\Theta=k\\Delta T,\\qquad k=\\frac{\\Delta\\Theta}{\\Delta T}=1{,}38\\cdot10^{-23}\\,\\frac{\\text{Дж}}{\\text{К}}",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "pressure-temperature-relation",
+          "type": "derivation",
+          "title": "Связь давления и температуры",
+          "content": "",
+          "children": [
+            {
+              "id": "pressure-temperature-formula",
+              "type": "formula",
+              "latex": "\\frac{pV}{N}=kT\\quad\\Rightarrow\\quad\\boxed{p=nkT}",
+              "children": []
+            },
+            {
+              "id": "mean-kinetic-energy-formula",
+              "type": "formula",
+              "latex": "p=\\frac23n\\overline{W_k}=nkT\\quad\\Rightarrow\\quad\\boxed{\\overline{W_k}=\\frac32kT}",
+              "children": []
+            },
+            {
+              "id": "mean-energy-limitation",
+              "type": "remark",
+              "title": "",
+              "content": "Последнее соотношение верно не всегда.",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "temperature-definition",
+          "type": "definition",
+          "term": "Температура (с точки зрения МКТ)",
+          "separator": "—",
+          "content": "мера хаотического движения частиц и средней кинетической энергии их движения.",
+          "children": []
+        },
+        {
+          "id": "mendeleev-clapeyron-derivation",
+          "type": "derivation",
+          "title": "Вывод уравнения Менделеева — Клапейрона",
+          "content": "",
+          "children": [
+            {
+              "id": "mendeleev-clapeyron-formula",
+              "type": "formula",
+              "latex": "pV=NkT\\cdot\\frac{N_A}{N_A}=\\nu(N_Ak)T=\\nu RT",
+              "children": []
+            },
+            {
+              "id": "universal-gas-constant",
+              "type": "formula",
+              "latex": "R=kN_A=8{,}31\\,\\frac{\\text{Дж}}{\\text{моль}\\cdot\\text{К}}",
+              "children": []
+            },
+            {
+              "id": "ideal-gas-state-equation",
+              "type": "formula",
+              "latex": "\\boxed{pV=\\nu RT}",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "state-equation-definition",
+          "type": "definition",
+          "term": "Уравнение состояния макроскопической (термодинамической) системы",
+          "separator": "—",
+          "content": "ур-е, связывающее термодинамические параметры: объём, давление и температуру.",
+          "children": []
+        }
+      ]
+    }
+  ],
+  "order": 1,
+  "revision": 1,
+  "createdAt": 1788739200000,
+  "updatedAt": 1788739200000,
+  "updatedBy": "codex",
+  "reviewStatus": "published"
+}

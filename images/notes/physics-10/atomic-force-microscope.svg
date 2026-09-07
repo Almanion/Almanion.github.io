@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 650" role="img" aria-labelledby="title desc">
+  <title id="title">Схема атомно-силового микроскопа</title>
+  <desc id="desc">Лазерный луч отражается от кантилевера на фотодиод, а детектор передаёт сигнал системе обратной связи.</desc>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8.6" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M0 0 10 5 0 10Z" fill="#173f70"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="8.6" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M0 0 10 5 0 10Z" fill="#d4674c"/>
+    </marker>
+    <style>
+      .frame{fill:#fbfdff;stroke:#d6e1ed;stroke-width:2}.panel{fill:#fff;stroke:#d6e1ed;stroke-width:2}
+      .heading{font:700 26px system-ui,sans-serif;fill:#173f70}.label{font:19px system-ui,sans-serif;fill:#173f70}
+      .small{font:16px system-ui,sans-serif;fill:#526b84}.signal{fill:none;stroke:#173f70;stroke-width:2.7;marker-end:url(#arrow-blue)}
+      .laser{fill:none;stroke:#d4674c;stroke-width:4;marker-end:url(#arrow-red)}.device{fill:#e8f5f3;stroke:#0b8f87;stroke-width:3}
+      .sample{fill:#fff4df;stroke:#d59b37;stroke-width:3}.cantilever{fill:#dce8f4;stroke:#173f70;stroke-width:3}
+    </style>
+  </defs>
+  <rect class="frame" x="20" y="20" width="960" height="610" rx="20"/>
+  <text class="heading" x="500" y="62" text-anchor="middle">Атомно-силовой микроскоп</text>
+  <rect class="panel" x="64" y="92" width="292" height="130" rx="14"/>
+  <text class="label" x="210" y="130" text-anchor="middle">Детектор и система</text>
+  <text class="label" x="210" y="159" text-anchor="middle">обратной связи</text>
+  <path class="signal" d="M174 222V486H339"/>
+  <path class="signal" d="M728 199H356"/>
+  <rect class="device" x="723" y="128" width="150" height="70" rx="12"/>
+  <line x1="798" y1="128" x2="798" y2="198" stroke="#0b8f87" stroke-width="2"/>
+  <text class="label" x="798" y="238" text-anchor="middle">Фотодиод</text>
+  <rect class="device" x="724" y="360" width="138" height="62" rx="12"/>
+  <text class="label" x="793" y="399" text-anchor="middle">Лазер</text>
+  <path class="laser" d="M724 391L559 486"/>
+  <path class="laser" d="M560 484L721 184"/>
+  <path class="cantilever" d="M337 472L583 450L603 482L352 505Z"/>
+  <path d="M558 481L578 553L598 481Z" fill="#173f70"/>
+  <path class="sample" d="M258 564L331 545L403 568L475 548L548 570L621 550L694 569L742 558V601H258Z"/>
+  <text class="label" x="500" y="622" text-anchor="middle">Поверхность изучаемого образца</text>
+  <text class="small" x="376" y="443">кантилевер</text>
+  <path d="M454 445L477 466" stroke="#526b84" stroke-width="1.8"/>
+</svg>

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" role="img" aria-labelledby="title desc">
+  <title id="title">Газы в двух термостатах</title>
+  <desc id="desc">Три баллона с различными газами сравниваются при нуле и ста градусах Цельсия.</desc>
+  <defs>
+    <style>
+      .frame{fill:#fbfdff;stroke:#d6e1ed;stroke-width:2}.bath-cold{fill:#e8f5f3;stroke:#0b8f87;stroke-width:3}
+      .bath-hot{fill:#fff0eb;stroke:#d4674c;stroke-width:3}.cylinder{fill:#fff;stroke:#173f70;stroke-width:2.5}
+      .gas1{fill:#dce8f4}.gas2{fill:#d9f0ed}.gas3{fill:#fff0d4}
+      .heading{font:700 26px system-ui,sans-serif;fill:#173f70}.label{font:19px system-ui,sans-serif;fill:#173f70}
+      .small{font:16px system-ui,sans-serif;fill:#526b84}.temp-cold{font:700 20px system-ui,sans-serif;fill:#08746e}
+      .temp-hot{font:700 20px system-ui,sans-serif;fill:#b8513d}
+    </style>
+  </defs>
+  <rect class="frame" x="20" y="20" width="960" height="580" rx="20"/>
+  <text class="heading" x="500" y="64" text-anchor="middle">Сравнение газов при одинаковой температуре</text>
+  <rect class="bath-cold" x="62" y="119" width="408" height="397" rx="18"/>
+  <rect class="bath-hot" x="530" y="119" width="408" height="397" rx="18"/>
+  <text class="temp-cold" x="266" y="157" text-anchor="middle">Плавающий лёд: 0 °C</text>
+  <text class="temp-hot" x="734" y="157" text-anchor="middle">Кипящая вода: 100 °C</text>
+  <g transform="translate(91 195)">
+    <rect class="cylinder gas1" x="0" y="0" width="96" height="235" rx="18"/>
+    <rect class="cylinder gas2" x="101" y="0" width="96" height="235" rx="18"/>
+    <rect class="cylinder gas3" x="202" y="0" width="96" height="235" rx="18"/>
+    <text class="label" x="48" y="104" text-anchor="middle">p₁</text><text class="label" x="48" y="133" text-anchor="middle">V₁, N₁</text>
+    <text class="label" x="149" y="104" text-anchor="middle">p₂</text><text class="label" x="149" y="133" text-anchor="middle">V₂, N₂</text>
+    <text class="label" x="250" y="104" text-anchor="middle">p₃</text><text class="label" x="250" y="133" text-anchor="middle">V₃, N₃</text>
+  </g>
+  <g transform="translate(559 195)">
+    <rect class="cylinder gas1" x="0" y="0" width="96" height="235" rx="18"/>
+    <rect class="cylinder gas2" x="101" y="0" width="96" height="235" rx="18"/>
+    <rect class="cylinder gas3" x="202" y="0" width="96" height="235" rx="18"/>
+    <text class="label" x="48" y="104" text-anchor="middle">p′₁</text><text class="label" x="48" y="133" text-anchor="middle">V₁, N₁</text>
+    <text class="label" x="149" y="104" text-anchor="middle">p′₂</text><text class="label" x="149" y="133" text-anchor="middle">V₂, N₂</text>
+    <text class="label" x="250" y="104" text-anchor="middle">p′₃</text><text class="label" x="250" y="133" text-anchor="middle">V₃, N₃</text>
+  </g>
+  <text class="small" x="266" y="554" text-anchor="middle">pV/N = Θ₀ °C</text>
+  <text class="small" x="734" y="554" text-anchor="middle">p′V/N = Θ₁₀₀ °C</text>
+</svg>

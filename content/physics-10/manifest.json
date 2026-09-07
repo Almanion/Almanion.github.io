@@ -2,5 +2,7 @@
   "schemaVersion": 1,
   "subject": "physics-10",
   "title": "Физика · 10 класс",
-  "sections": []
+  "sections": [
+    { "id": "molekulyarnaya-fizika" }
+  ]
 }
