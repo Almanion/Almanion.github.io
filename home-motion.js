@@ -6,6 +6,9 @@
     var tabList = document.querySelector('.grade-tabs');
     var extraSection = document.querySelector('.extra-section');
     var extraAnimation = null;
+    var layoutFrame = 0;
+    var layoutStartGrade = '';
+    var layoutStartTop = null;
     var initialEntranceTimer = 0;
     var currentGrade = '';
 
@@ -30,16 +33,36 @@
         document.body.classList.remove('home-motion-initial');
     }
 
+    function cancelExtraAnimation() {
+        if (!extraAnimation) return;
+        extraAnimation.cancel();
+        extraAnimation = null;
+    }
+
+    function visibleExtraTop() {
+        if (!extraSection) return null;
+        var rect = extraSection.getBoundingClientRect();
+        var margin = 180;
+        if (rect.top > window.innerHeight + margin || rect.bottom < -margin) return null;
+        return rect.top;
+    }
+
     function glideExtraSection(previousTop) {
-        if (!extraSection || !motionAllowed() || typeof extraSection.animate !== 'function') return;
-        var nextTop = extraSection.getBoundingClientRect().top;
+        if (previousTop === null || !extraSection || !motionAllowed()
+            || typeof extraSection.animate !== 'function') return;
+        var nextRect = extraSection.getBoundingClientRect();
+        var nextTop = nextRect.top;
         var delta = previousTop - nextTop;
+        var margin = 180;
+        var maxGlide = Math.max(160, window.innerHeight * 0.28);
+        if (nextRect.top > window.innerHeight + margin || nextRect.bottom < -margin
+            || Math.abs(delta) > maxGlide) return;
         if (Math.abs(delta) < 1) return;
         var animation = extraSection.animate([
             { transform: 'translateY(' + delta + 'px)' },
             { transform: 'translateY(0)' }
         ], {
-            duration: document.body.classList.contains('animations-medium') ? 160 : 230,
+            duration: document.body.classList.contains('animations-medium') ? 150 : 210,
             easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
         });
         extraAnimation = animation;
@@ -51,20 +74,44 @@
         }, { once: true });
     }
 
+    function flushGradeVisuals() {
+        layoutFrame = 0;
+        var previousTop = layoutStartTop;
+        layoutStartGrade = '';
+        layoutStartTop = null;
+        glideExtraSection(previousTop);
+    }
+
+    function prepareGradeVisuals(nextGrade) {
+        if (!motionAllowed()) {
+            if (layoutFrame) window.cancelAnimationFrame(layoutFrame);
+            layoutFrame = 0;
+            layoutStartGrade = '';
+            layoutStartTop = null;
+            cancelExtraAnimation();
+            document.body.style.setProperty('--home-grade-shift', '0px');
+            return;
+        }
+
+        if (!layoutFrame) {
+            layoutStartGrade = currentGrade;
+            layoutStartTop = visibleExtraTop();
+            cancelExtraAnimation();
+            layoutFrame = window.requestAnimationFrame(flushGradeVisuals);
+        }
+
+        var direction = Number(nextGrade) < Number(layoutStartGrade || nextGrade) ? -1 : 1;
+        var shift = document.body.classList.contains('animations-medium') ? 0 : direction * 4;
+        document.body.style.setProperty('--home-grade-shift', shift + 'px');
+    }
+
     function selectGrade(grade, options) {
         var target = panelFor(grade);
         if (!target) return;
         var settings = options || {};
         if (settings.animate) finishInitialEntrance();
         if (grade === currentGrade) return;
-        var oldNumber = Number(currentGrade || grade);
-        var newNumber = Number(grade);
-        var direction = newNumber < oldNumber ? 'prev' : 'next';
-        if (extraAnimation) {
-            extraAnimation.cancel();
-            extraAnimation = null;
-        }
-        var previousTop = extraSection ? extraSection.getBoundingClientRect().top : 0;
+        if (settings.animate) prepareGradeVisuals(grade);
 
         tabs.forEach(function (tab) {
             var active = tab.dataset.grade === grade;
@@ -74,15 +121,10 @@
         });
 
         panels.forEach(function (panel) {
-            panel.classList.remove('home-grade-enter-next', 'home-grade-enter-prev');
             panel.hidden = panel !== target;
         });
 
         if (tabList) tabList.dataset.activeGrade = grade;
-        if (settings.animate && grade !== currentGrade && motionAllowed()) {
-            target.classList.add(direction === 'prev' ? 'home-grade-enter-prev' : 'home-grade-enter-next');
-            glideExtraSection(previousTop);
-        }
 
         currentGrade = grade;
         try { localStorage.setItem('homeGrade', grade); } catch (_) { /* storage may be unavailable */ }

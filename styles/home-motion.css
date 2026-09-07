@@ -50,7 +50,7 @@ body.home-page .grade-tabs::before {
     background: var(--accent-color);
     box-shadow: 0 1px 2px color-mix(in srgb, var(--accent-color) 22%, transparent);
     transform: translateX(calc(var(--home-grade-index) * (100% + 0.3rem)));
-    transition: transform 220ms var(--home-motion-out),
+    transition: transform 240ms var(--home-motion-out),
                 background-color 180ms ease,
                 box-shadow 180ms ease;
 }
@@ -69,7 +69,7 @@ body.experimental.home-page .grade-tab.active {
     position: relative;
     z-index: 1;
     background: transparent;
-    transition: color 170ms ease, transform 130ms ease;
+    transition: color 170ms ease, background-color 170ms ease, transform 130ms ease;
 }
 
 body.home-page .grade-tab.active,
@@ -81,6 +81,10 @@ body.experimental.home-page .grade-tab.active {
     color: var(--exp-accent-contrast, #fff);
 }
 
+body:not(.no-hover).home-page .grade-tab:not(.active):hover {
+    background: color-mix(in srgb, var(--accent-color) 7%, transparent);
+}
+
 body.experimental.home-page .grade-tabs::before {
     background: var(--exp-accent);
 }
@@ -90,15 +94,7 @@ body.home-page .grade-tab:active {
 }
 
 body.home-page .grade-panel:not([hidden]) {
-    animation: home-panel-in 210ms var(--home-motion-out) both;
-}
-
-body.home-page .grade-panel.home-grade-enter-prev:not([hidden]) {
-    animation-name: home-panel-in-prev;
-}
-
-body.home-page .grade-panel.home-grade-enter-next:not([hidden]) {
-    animation-name: home-panel-in-next;
+    animation: home-panel-in 205ms var(--home-motion-out) both;
 }
 
 body.home-page .subjects-grid > .subject-card {
@@ -131,6 +127,8 @@ body.home-page.home-motion-initial .extra-section .subjects-grid > .subject-card
 }
 
 body.home-page .subject-card::before {
+    background: var(--subject-color);
+    color: var(--subject-color);
     transform: scaleX(0.28);
     transform-origin: left center;
     transition: opacity 180ms ease, transform 240ms var(--home-motion-out);
@@ -223,18 +221,9 @@ body.home-page .account-btn.home-account-btn {
 }
 
 @keyframes home-panel-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes home-panel-in-next {
-    from { opacity: 0; transform: translateX(7px); }
-    to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes home-panel-in-prev {
-    from { opacity: 0; transform: translateX(-7px); }
-    to { opacity: 1; transform: translateX(0); }
+    from { opacity: 0.58; transform: translate3d(var(--home-grade-shift, 0px), 0, 0); }
+    68% { opacity: 1; }
+    to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 body.animations-medium.home-page .home-header h1,
@@ -253,6 +242,14 @@ body.animations-medium.home-page .home-editor-link:not([hidden]),
 body.animations-medium.home-page .settings-button,
 body.animations-medium.home-page .account-btn.home-account-btn {
     animation-duration: 180ms;
+}
+
+body.animations-medium.home-page .grade-panel:not([hidden]) {
+    animation-duration: 160ms;
+}
+
+body.animations-medium.home-page .grade-tabs::before {
+    transition-duration: 180ms, 160ms, 160ms;
 }
 
 body.animations-off.home-page .home-header h1,

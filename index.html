@@ -460,8 +460,8 @@
             left: 0;
             width: 100%;
             height: 2px;
-            background: currentColor;
-            color: var(--accent-color);
+            background: var(--subject-color);
+            color: var(--subject-color);
             opacity: 0;
             transition: opacity 0.22s ease;
         }
@@ -480,8 +480,6 @@
         .subject-card[data-subject="matcenter"] { --subject-color: #58668e; }
         .subject-card[data-subject="english"] { --subject-color: #4f6f82; }
         .subject-card[data-subject="duty"] { --subject-color: #4f7774; }
-
-        body:not(.no-hover) .subject-card:hover::before { color: var(--subject-color); }
 
         .card-header {
             background: transparent;
@@ -855,7 +853,7 @@
     <link rel="stylesheet" href="style-new.css?v=20260905-1">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
-    <link rel="stylesheet" href="styles/home-motion.css?v=20260907-1">
+    <link rel="stylesheet" href="styles/home-motion.css?v=20260907-2">
 </head>
 <body class="home-page">
     <script>(function(){document.body.classList.add('home-motion-initial');try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};var l=/^(max|medium|off)$/.test(p.animationLevel||'')?p.animationLevel:'max';document.body.classList.add('animations-'+l);if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){document.body.classList.add('animations-max');}})();</script>
@@ -1113,7 +1111,7 @@
             </p>
         </footer>
     </div>
-    <script src="home-motion.js?v=20260907-1"></script>
+    <script src="home-motion.js?v=20260907-2"></script>
 
 
     <!-- Контейнер для снега -->
