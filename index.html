@@ -851,9 +851,10 @@
     <link rel="stylesheet" href="style-new.css?v=20260905-1">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
+    <link rel="stylesheet" href="styles/home-motion.css?v=20260907-1">
 </head>
 <body class="home-page">
-    <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
+    <script>(function(){document.body.classList.add('home-motion-initial');try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};var l=/^(max|medium|off)$/.test(p.animationLevel||'')?p.animationLevel:'max';document.body.classList.add('animations-'+l);if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){document.body.classList.add('animations-max');}})();</script>
     <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
         <symbol id="academic-site" viewBox="0 0 24 24">
             <path d="M3.75 5.25c3.25-.85 5.9-.22 8.25 1.55v12.05c-2.35-1.77-5-2.4-8.25-1.55V5.25Z"/>
@@ -929,12 +930,12 @@
         <!-- Предметы по классам -->
         <div class="subjects-section">
             <div class="grade-tabs" role="tablist" aria-label="Выбор класса">
-                <button class="grade-tab" data-grade="9" role="tab" aria-selected="false">9 класс</button>
-                <button class="grade-tab active" data-grade="10" role="tab" aria-selected="true">10 класс</button>
-                <button class="grade-tab" data-grade="11" role="tab" aria-selected="false">11 класс</button>
+                <button class="grade-tab" id="gradeTab9" data-grade="9" role="tab" aria-controls="gradePanel9" aria-selected="false" tabindex="-1">9 класс</button>
+                <button class="grade-tab active" id="gradeTab10" data-grade="10" role="tab" aria-controls="gradePanel10" aria-selected="true">10 класс</button>
+                <button class="grade-tab" id="gradeTab11" data-grade="11" role="tab" aria-controls="gradePanel11" aria-selected="false" tabindex="-1">11 класс</button>
             </div>
 
-            <div class="grade-panel" data-grade-panel="9" hidden>
+            <div class="grade-panel" id="gradePanel9" data-grade-panel="9" role="tabpanel" aria-labelledby="gradeTab9" hidden>
                 <div class="subjects-grid">
                     <a href="physics.html" class="subject-card" data-subject="physics">
                         <div class="card-header">
@@ -1008,7 +1009,7 @@
                 </div>
             </div>
 
-            <div class="grade-panel" data-grade-panel="10">
+            <div class="grade-panel" id="gradePanel10" data-grade-panel="10" role="tabpanel" aria-labelledby="gradeTab10">
                 <div class="subjects-grid">
                     <a href="physics-10.html" class="subject-card" data-subject="physics">
                         <div class="card-header">
@@ -1042,7 +1043,7 @@
                 </div>
             </div>
 
-            <div class="grade-panel" data-grade-panel="11" hidden>
+            <div class="grade-panel" id="gradePanel11" data-grade-panel="11" role="tabpanel" aria-labelledby="gradeTab11" hidden>
                 <div class="grade-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><div>Материалы для 11 класса скоро появятся</div></div>
             </div>
 
@@ -1115,21 +1116,7 @@
             </p>
         </footer>
     </div>
-    <script>
-    (function(){
-        var tabs = document.querySelectorAll('.grade-tab');
-        var panels = document.querySelectorAll('.grade-panel');
-        function sel(g){
-            tabs.forEach(function(t){ var on = t.dataset.grade === g; t.classList.toggle('active', on); t.setAttribute('aria-selected', on ? 'true' : 'false'); });
-            panels.forEach(function(p){ p.hidden = p.dataset.gradePanel !== g; });
-            try { localStorage.setItem('homeGrade', g); } catch(e){}
-        }
-        tabs.forEach(function(t){ t.addEventListener('click', function(){ sel(t.dataset.grade); }); });
-        var saved = null; try { saved = localStorage.getItem('homeGrade'); } catch(e){}
-        if (saved && document.querySelector('.grade-panel[data-grade-panel="'+saved+'"]')) sel(saved);
-        else sel('10');
-    })();
-    </script>
+    <script src="home-motion.js?v=20260907-1"></script>
 
 
     <!-- Контейнер для снега -->
@@ -1149,15 +1136,6 @@
     <script src="newyear.js?v=20260903-1"></script>
     <script src="settings.js?v=20260905-1"></script>
     <script src="account.js?v=20260906-1"></script>
-    <script>
-        // Анимация карточек при загрузке
-        document.addEventListener('DOMContentLoaded', () => {
-            const cards = document.querySelectorAll('.subject-card');
-            cards.forEach((card, index) => {
-                card.style.animationDelay = `${index * 0.1}s`;
-            });
-        });
-    </script>
     <script src="poll.js"></script>
 </body>
 </html>

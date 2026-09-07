@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-07-annual-duty-50';
+const CACHE_VERSION = 'almanion-pwa-2026-09-07-home-motion-51';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -21,10 +21,12 @@ const APP_SHELL = [
     '/styles/matcenter-refresh.css',
     '/styles/admin.css',
     '/styles/page-transitions.css',
+    '/styles/home-motion.css?v=20260907-1',
     '/style-new.css',
     '/theme-bootstrap.js',
     '/favicon-theme.js',
     '/page-transitions.js',
+    '/home-motion.js?v=20260907-1',
     '/script.js',
     '/search.js',
     '/experimental-reader.js',
