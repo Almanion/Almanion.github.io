@@ -64,6 +64,58 @@
         return sessions;
     }
 
+    function flattenVitals(dayValue) {
+        const samples = [];
+        Object.keys(dayValue || {}).forEach(function (visitorId) {
+            const sessions = dayValue[visitorId] || {};
+            Object.keys(sessions).forEach(function (sessionId) {
+                const sample = sessions[sessionId];
+                if (!sample || typeof sample !== 'object') return;
+                samples.push(Object.assign({ visitorId: visitorId, sessionId: sessionId }, sample));
+            });
+        });
+        return samples;
+    }
+
+    function percentile(values, fraction) {
+        const sorted = values.map(Number).filter(Number.isFinite).sort(function (a, b) { return a - b; });
+        if (!sorted.length) return null;
+        return sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * fraction) - 1))];
+    }
+
+    function renderWebVitals(samples) {
+        const root = byId('webVitalsSummary');
+        if (!root) return;
+        root.replaceChildren();
+        if (!samples.length) {
+            const empty = document.createElement('div');
+            empty.className = 'no-data';
+            empty.textContent = 'Данные появятся после следующего обновления сайта';
+            root.appendChild(empty);
+            return;
+        }
+        const metrics = [
+            ['LCP', percentile(samples.map(function (item) { return item.lcp; }), 0.75), ' мс'],
+            ['INP', percentile(samples.map(function (item) { return item.inp; }).filter(function (value) { return value > 0; }), 0.75), ' мс'],
+            ['CLS', percentile(samples.map(function (item) { return item.cls; }), 0.75), ''],
+            ['Загрузка', percentile(samples.map(function (item) { return item.navigationMs; }), 0.75), ' мс'],
+            ['Ошибки ресурсов', samples.reduce(function (sum, item) { return sum + (Number(item.failedResources) || 0); }, 0), '']
+        ];
+        const list = document.createElement('div');
+        list.className = 'usage-breakdown-list';
+        metrics.forEach(function (metric) {
+            const row = document.createElement('div');
+            row.className = 'usage-breakdown-row';
+            const name = document.createElement('span');
+            name.textContent = metric[0];
+            const value = document.createElement('strong');
+            value.textContent = metric[1] == null ? '—' : String(metric[1]) + metric[2];
+            row.append(name, value);
+            list.appendChild(row);
+        });
+        root.appendChild(list);
+    }
+
     function formatDuration(seconds) {
         const value = Math.max(0, Math.round(Number(seconds) || 0));
         if (value < 60) return value + ' сек';
@@ -185,18 +237,28 @@
             const snapshots = await Promise.all(days.map(function (day) {
                 return db.ref('analyticsSessions/' + day.key).once('value');
             }));
+            const vitalSnapshots = await Promise.all(days.map(function (day) {
+                return db.ref('webVitals/' + day.key).once('value');
+            }));
             const analyticsDays = days.map(function (day, index) {
                 return Object.assign({}, day, { sessions: flattenSessions(snapshots[index].val()) });
             });
             const sessions = analyticsDays.flatMap(function (day) { return day.sessions; });
+            const vitals = vitalSnapshots.flatMap(function (snapshot) { return flattenVitals(snapshot.val()); });
             const todaySessions = analyticsDays[analyticsDays.length - 1].sessions;
             const pages = {};
             const devices = {};
             const sources = {};
+            const identities = {};
+            const browserContexts = {};
             sessions.forEach(function (session) {
                 increment(pages, session.page || '/');
                 increment(devices, session.device || 'desktop');
                 increment(sources, session.referrerHost || 'direct');
+                increment(identities, !session.authProvider
+                    ? 'legacy'
+                    : (session.authProvider === 'anonymous' ? 'anonymous' : 'account'));
+                increment(browserContexts, session.browserContext || 'web');
             });
 
             const completedDurations = sessions
@@ -209,7 +271,9 @@
             const weeklyDays = analyticsDays.slice(-7);
             const visitorDays = {};
             weeklyDays.forEach(function (day) {
-                const seenToday = new Set(day.sessions.map(function (session) { return session.visitorId; }));
+                const seenToday = new Set(day.sessions
+                    .filter(function (session) { return session.authProvider && session.authProvider !== 'anonymous'; })
+                    .map(function (session) { return session.visitorId; }));
                 seenToday.forEach(function (visitorId) {
                     if (!visitorDays[visitorId]) visitorDays[visitorId] = new Set();
                     visitorDays[visitorId].add(day.key);
@@ -224,7 +288,10 @@
             renderTrend(analyticsDays);
             renderBreakdown('deviceBreakdown', devices, { desktop: 'Компьютеры', mobile: 'Телефоны', tablet: 'Планшеты' });
             renderBreakdown('trafficSources', sources, { direct: 'Прямые переходы', internal: 'Внутри сайта' });
+            renderBreakdown('identityBreakdown', identities, { account: 'Аккаунты', anonymous: 'Анонимные браузеры', legacy: 'Старые данные' });
+            renderBreakdown('browserContextBreakdown', browserContexts, { web: 'Обычный браузер', telegram: 'Telegram' });
             renderTopPages(pages);
+            renderWebVitals(vitals);
             if (showFeedback) showAdminToast('Аналитика обновлена');
         } catch (error) {
             console.error('Admin analytics:', error);
@@ -481,21 +548,34 @@
         const saveButton = event.currentTarget.querySelector('button[type="submit"]');
         saveButton.disabled = true;
         try {
-            const ref = db.ref('adminRoles/' + target.uid);
-            if (!siteAdmin && !matcenterAdmin && !contentEditor && !dutyEditor && !englishAccess) {
-                await ref.remove();
-            } else {
-                await ref.set({
-                    email: String(target.account.email || '').trim(),
-                    siteAdmin: siteAdmin,
-                    matcenterAdmin: matcenterAdmin,
-                    contentEditor: contentEditor,
-                    dutyEditor: dutyEditor,
-                    englishAccess: englishAccess,
-                    updatedAt: firebase.database.ServerValue.TIMESTAMP,
-                    updatedBy: user.uid
-                });
-            }
+            const roles = {
+                email: String(target.account.email || '').trim(),
+                siteAdmin: siteAdmin,
+                matcenterAdmin: matcenterAdmin,
+                contentEditor: contentEditor,
+                dutyEditor: dutyEditor,
+                englishAccess: englishAccess,
+                updatedAt: firebase.database.ServerValue.TIMESTAMP,
+                updatedBy: user.uid
+            };
+            const enabledRoleNames = [
+                siteAdmin && 'siteAdmin',
+                matcenterAdmin && 'matcenterAdmin',
+                contentEditor && 'contentEditor',
+                dutyEditor && 'dutyEditor',
+                englishAccess && 'englishAccess'
+            ].filter(Boolean);
+            const auditKey = db.ref('auditLog').push().key;
+            const updates = {};
+            updates['adminRoles/' + target.uid] = enabledRoleNames.length ? roles : null;
+            updates['auditLog/' + auditKey] = {
+                actorUid: user.uid,
+                action: 'admin_roles_updated',
+                targetUid: target.uid,
+                summary: enabledRoleNames.length ? enabledRoleNames.join(', ') : 'all roles revoked',
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            };
+            await db.ref().update(updates);
             byId('adminRoleForm').reset();
             showAdminToast(siteAdmin || matcenterAdmin || contentEditor || dutyEditor || englishAccess ? 'Роли пользователя сохранены' : 'Все дополнительные роли отозваны');
             await loadRoleManager(user);

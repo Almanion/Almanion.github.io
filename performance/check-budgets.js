@@ -37,8 +37,10 @@ function check(rootDir) {
         if (bytes > limit) errors.push(relativePath + ' is ' + bytes + ' bytes; budget is ' + limit);
     });
 
-    const workerPath = path.join(root, 'sw.js');
-    const precacheEntries = countPrecacheEntries(fs.readFileSync(workerPath, 'utf8'));
+    const shellConfigPath = path.join(root, 'performance', 'sw-shell.json');
+    const precacheEntries = fs.existsSync(shellConfigPath)
+        ? new Set(JSON.parse(fs.readFileSync(shellConfigPath, 'utf8')).assets || []).size
+        : countPrecacheEntries(fs.readFileSync(path.join(root, 'sw.js'), 'utf8'));
     if (precacheEntries > budgets.maxPrecacheEntries) {
         errors.push('sw.js precaches ' + precacheEntries + ' URLs; budget is ' + budgets.maxPrecacheEntries);
     }

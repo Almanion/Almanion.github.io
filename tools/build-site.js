@@ -7,6 +7,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const NotesBuilder = require('./build-notes.js');
 const SearchIndex = require('../performance/build-search-index.js');
+const ServiceWorker = require('../performance/build-service-worker.js');
 
 const CONFIG_PATH = path.join(__dirname, 'site-files.json');
 
@@ -130,7 +131,7 @@ function hashArtifact(output) {
     return { sha256: digest.digest('hex'), fileCount: files.length, bytes };
 }
 
-function writeMetadata(root, output, notes, search) {
+function writeMetadata(root, output, notes, search, serviceWorker) {
     const revision = process.env.GITHUB_SHA || gitValue(root, ['rev-parse', 'HEAD']);
     const sourceTimestamp = process.env.SOURCE_DATE_EPOCH
         ? new Date(Number(process.env.SOURCE_DATE_EPOCH) * 1000).toISOString()
@@ -149,6 +150,10 @@ function writeMetadata(root, output, notes, search) {
                 entries: search.entries,
                 bytes: search.bytes,
                 version: search.version
+            },
+            serviceWorker: {
+                version: serviceWorker.version,
+                shellEntries: serviceWorker.shell.length
             }
         }
     };
@@ -168,9 +173,10 @@ function build(options) {
         site: output,
         output: path.join(output, 'search-index.json')
     });
+    const serviceWorker = ServiceWorker.build({ root, site: output });
     fs.writeFileSync(path.join(output, '.nojekyll'), '', 'utf8');
-    const metadata = writeMetadata(root, output, notes, search);
-    return { copied: copied.length, notes, search, metadata, output };
+    const metadata = writeMetadata(root, output, notes, search, serviceWorker);
+    return { copied: copied.length, notes, search, serviceWorker, metadata, output };
 }
 
 if (require.main === module) {

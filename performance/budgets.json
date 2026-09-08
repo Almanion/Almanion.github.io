@@ -6,7 +6,7 @@
     ".css": 100000,
     ".json": 120000
   },
-  "maxPrecacheEntries": 115,
+  "maxPrecacheEntries": 30,
   "maxSearchSourceBytes": 1100000,
   "searchSourcePages": [
     "physics.html",

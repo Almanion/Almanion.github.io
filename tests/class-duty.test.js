@@ -74,7 +74,7 @@ async function run() {
     const account = read('account.js');
     const admin = read('admin.html');
     const dashboard = read('admin-dashboard.js');
-    const worker = read('sw.js');
+    const shell = JSON.parse(read(path.join('performance', 'sw-shell.json'))).assets;
     const rules = JSON.parse(read(path.join('firebase', 'database.rules.json'))).rules;
 
     // Public page and asset wiring.
@@ -89,9 +89,7 @@ async function run() {
     assert.match(page, /id="dutyCalendarAddMergeButton"/);
     assert.doesNotMatch(page, /id="dutyAddWeekButton"/, 'the generated annual schedule must not expose a dead add-week action');
     assert.doesNotMatch(page, /Понятное расписание без таблиц/);
-    assert.match(worker, /['"]\/duty-10-1\.html['"]/);
-    assert.match(worker, /['"]\/duty\.js['"]/);
-    assert.match(worker, /['"]\/styles\/duty\.css['"]/);
+    assert.equal(shell.includes('/duty-10-1.html'), false, 'secondary pages must be cached on demand');
     assert.match(css, /@media \(max-width: 640px\)/);
     assert.match(css, /@media \(max-width: 380px\)/);
     assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
@@ -382,7 +380,7 @@ async function run() {
     assert.match(dashboard, /!role\.dutyEditor/);
     assert.match(dashboard, /if \(role\.dutyEditor\) badges\.appendChild\(roleBadge\('Дежурство'\)\)/);
     assert.match(dashboard, /const dutyEditor\s*=\s*byId\('dutyEditorRole'\)\.checked/);
-    assert.match(dashboard, /!siteAdmin\s*&&\s*!matcenterAdmin\s*&&\s*!contentEditor\s*&&\s*!dutyEditor\s*&&\s*!englishAccess/);
+    assert.match(dashboard, /updates\['adminRoles\/' \+ target\.uid\] = enabledRoleNames\.length \? roles : null/);
     assert.match(dashboard, /dutyEditor:\s*dutyEditor/);
     assert.match(dashboard, /siteAdmin\s*\|\|\s*matcenterAdmin\s*\|\|\s*contentEditor\s*\|\|\s*dutyEditor\s*\|\|\s*englishAccess/);
 

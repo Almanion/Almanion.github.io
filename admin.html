@@ -925,12 +925,12 @@
             <div class="stat-card unique">
                 <div class="stat-icon"><span class="eic eic-users" aria-hidden="true"></span></div>
                 <div class="stat-value" id="uniqueCount">—</div>
-                <div class="stat-label">Всего уникальных</div>
+                <div class="stat-label">Зарегистрированные аккаунты</div>
             </div>
             <div class="stat-card today">
                 <div class="stat-icon"><span class="eic eic-calendar" aria-hidden="true"></span></div>
                 <div class="stat-value" id="todayCount">—</div>
-                <div class="stat-label">Сегодня посетило</div>
+                <div class="stat-label">Аккаунты / анонимные сегодня</div>
             </div>
             <div class="stat-card pages">
                 <div class="stat-icon"><span class="eic eic-file" aria-hidden="true"></span></div>
@@ -945,7 +945,7 @@
             <div class="stat-card returning">
                 <div class="stat-icon"><span class="eic eic-refresh" aria-hidden="true"></span></div>
                 <div class="stat-value" id="returningRate">—</div>
-                <div class="stat-label">Вернулись за неделю</div>
+                <div class="stat-label">Аккаунты вернулись за неделю</div>
             </div>
         </div>
 
@@ -970,9 +970,21 @@
                     <h3>Источники переходов</h3>
                     <div id="trafficSources"><div class="no-data">Загрузка...</div></div>
                 </div>
+                <div class="usage-panel">
+                    <h3>Тип посетителей</h3>
+                    <div id="identityBreakdown"><div class="no-data">Загрузка...</div></div>
+                </div>
+                <div class="usage-panel">
+                    <h3>Контекст браузера</h3>
+                    <div id="browserContextBreakdown"><div class="no-data">Загрузка...</div></div>
+                </div>
                 <div class="usage-panel usage-panel-wide">
                     <h3>Популярные страницы</h3>
                     <div id="topPages"><div class="no-data">Загрузка...</div></div>
+                </div>
+                <div class="usage-panel usage-panel-wide">
+                    <h3>Скорость и стабильность · 75-й процентиль</h3>
+                    <div id="webVitalsSummary"><div class="no-data">Загрузка...</div></div>
                 </div>
             </div>
         </div>
@@ -1364,18 +1376,27 @@
 
         // --- Уникальные посетители ---
         function loadUniqueVisitors() {
-            db.ref('visitors').on('value', (snapshot) => {
+            db.ref('accountDirectory').on('value', (snapshot) => {
                 const data = snapshot.val() || {};
-                document.getElementById('uniqueCount').textContent = Object.keys(data).length;
+                const accountEmails = new Set(Object.values(data)
+                    .map(account => String(account && account.email || '').trim().toLowerCase())
+                    .filter(Boolean));
+                document.getElementById('uniqueCount').textContent = accountEmails.size;
             });
         }
 
         // --- Посетители сегодня ---
         function loadTodayVisitors() {
-            const today = new Date().toISOString().split('T')[0];
+            const now = new Date();
+            const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
             db.ref('dailyStats/' + today).on('value', (snapshot) => {
                 const data = snapshot.val() || {};
-                document.getElementById('todayCount').textContent = Object.keys(data).length;
+                const identities = Object.values(data).filter(value => value && typeof value === 'object');
+                const accounts = identities.filter(value => value.authProvider && value.authProvider !== 'anonymous').length;
+                const anonymous = identities.filter(value => value.authProvider === 'anonymous').length;
+                const counter = document.getElementById('todayCount');
+                counter.textContent = accounts + ' / ' + anonymous;
+                counter.title = accounts + ' аккаунтов и ' + anonymous + ' анонимных браузеров';
             });
         }
 
@@ -2092,7 +2113,9 @@
                 id,
                 name: getVisitorDisplayName(id),
                 lastVisit: v.lastVisit || 0,
-                visitCount: v.visitCount || 0,
+                pageViews: v.pageViews || v.visitCount || 0,
+                authProvider: v.authProvider || 'legacy',
+                browserContext: v.browserContext || 'web',
                 lastPage: v.lastPage || '/'
             }));
 
@@ -2121,7 +2144,7 @@
                             <tr>
                                 <th>Посетитель</th>
                                 <th>Посл. визит</th>
-                                <th>Визитов</th>
+                                <th>Просмотров</th>
                                 <th>Посл. страница</th>
                                 <th>Действия</th>
                             </tr>
@@ -2141,7 +2164,7 @@
                                         </span>
                                     </td>
                                     <td style="color:var(--text-secondary); font-size:0.85rem;">${time}</td>
-                                    <td style="text-align:center;">${v.visitCount}</td>
+                                    <td style="text-align:center;" title="${v.authProvider === 'anonymous' ? 'Анонимный браузер' : (v.authProvider === 'legacy' ? 'Старая запись' : 'Аккаунт')}${v.browserContext === 'telegram' ? ' · Telegram' : ''}">${v.pageViews}</td>
                                     <td><span class="page-badge">${escapeHtml(page)}</span></td>
                                     <td style="white-space:nowrap;">
                                         <button class="action-btn" onclick="openVisitorProfile('${v.id}')" title="Профиль"><span class="eic eic-clip" aria-hidden="true"></span></button>
@@ -2185,7 +2208,7 @@
         // ============================================
 
         function clearDailyStats() {
-            if (!confirm('Очистить дневную статистику? Счётчик "Сегодня посетило" обнулится.')) return;
+            if (!confirm('Очистить дневную статистику? Счётчик активности за сегодня обнулится.')) return;
             db.ref('dailyStats').remove()
                 .then(() => alert('Дневная статистика очищена'))
                 .catch(err => alert('' + err.message));
@@ -2210,6 +2233,7 @@
                 db.ref('polls').remove(),
                 db.ref('pollResponses').remove(),
                 db.ref('analyticsSessions').remove(),
+                db.ref('webVitals').remove(),
                 db.ref('presence').remove()
             ]).then(() => {
                 alert('Все данные удалены');
@@ -2218,6 +2242,6 @@
             });
         }
     </script>
-    <script src="admin-dashboard.js?v=20260906-3"></script>
+    <script src="admin-dashboard.js?v=20260908-1"></script>
 </body>
 </html>

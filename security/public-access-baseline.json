@@ -4,16 +4,7 @@
   "publicReads": {
     "classDuty/grade10_1": "true",
     "polls": "true",
-    "directMessages/$visitorId": "true",
     "publicTickets": "true"
   },
-  "anonymousWrites": {
-    "presence/$visitorId": "true",
-    "analyticsSessions/$day/$visitorId/$sessionId": "newData.exists() || (auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true))",
-    "pollResponses/$pollId/$visitorId": "!data.exists()",
-    "visitors/$visitorId": "newData.exists() || (auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true))",
-    "dailyStats/$day/$visitorId": "newData.val() === true",
-    "directMessages/$visitorId/$msgId/read": "true",
-    "directMessages/$visitorId/$msgId/readAt": "true"
-  }
+  "anonymousWrites": {}
 }

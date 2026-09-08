@@ -1,206 +1,86 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-08-foundation-56';
-const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
-const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
-const NETWORK_TIMEOUT_MS = 5000;
-const RUNTIME_MAX_ENTRIES = 120;
+/* The build writes sw-manifest.js with a content-derived version and a small shell. */
+try { importScripts('/sw-manifest.js'); } catch (_) {}
 
-const APP_SHELL = [
-    '/',
-    '/index.html',
-    '/offline.html',
-    '/manifest.json',
-    '/search-index.json',
-    '/styles/site/index.css',
-    '/styles/site/00-components.css',
-    '/styles/site/10-foundation.css',
-    '/styles/site/20-layout-content.css',
-    '/styles/site/30-matcenter-core.css',
-    '/styles/site/40-extras-settings.css',
-    '/styles/site/50-matcenter-responsive.css',
-    '/styles/site/60-poll-pwa.css',
-    '/styles/typography.css',
-    '/styles/note-editor.css',
-    '/styles/legacy-refresh.css',
-    '/styles/matcenter-refresh.css',
-    '/styles/admin.css',
-    '/styles/page-transitions.css',
-    '/styles/home-motion.css?v=20260907-2',
-    '/style-new.css',
-    '/theme-bootstrap.js?v=20260908-1',
-    '/favicon-theme.js',
-    '/page-transitions.js',
-    '/home-motion.js?v=20260907-2',
-    '/script.js',
-    '/search.js?v=20260907-1',
-    '/data-sync.js?v=20260908-1',
-    '/experimental-reader.js',
-    '/settings.js?v=20260908-1',
-    '/bookmarks.js?v=20260907-3',
-    '/newyear.js',
-    '/account.js?v=20260908-1',
-    '/note-editor.js',
-    '/poll.js',
-    '/knowledge-check.js?v=20260908-1',
-    '/knowledge-check-exam.js',
-    '/firebase-config.js',
-    '/firebase-analytics.js',
-    '/admin-dashboard.js',
-    '/constructor.html',
-    '/constructor/index.css',
-    '/constructor/preview.css',
-    '/constructor/config.js',
-    '/constructor/model.js?v=20260908-1',
-    '/constructor/renderer.js',
-    '/constructor/storage.js?v=20260908-1',
-    '/constructor/history.js?v=20260908-1',
-    '/constructor/index.js?v=20260908-1',
-    '/content/subjects.json',
-    '/content/physics/manifest.json',
-    '/content/math/manifest.json',
-    '/content/geometry/manifest.json',
-    '/content/chemistry/manifest.json',
-    '/content/likbez/manifest.json',
-    '/content/physics-10/manifest.json',
-    '/content/chemistry-10/manifest.json',
-    '/content/literature-10/manifest.json',
-    '/matcenter/00-core.js',
-    '/matcenter/10-security.js',
-    '/matcenter/20-auth.js',
-    '/matcenter/30-data.js',
-    '/matcenter/40-personal-progress.js',
-    '/matcenter/50-render.js',
-    '/matcenter/60-navigation-search.js',
-    '/matcenter/70-hints.js',
-    '/styles/tokens.css',
-    '/styles/buttons.css',
-    '/styles/mobile-overrides.css',
-    '/styles/copy-blocks.css',
-    '/styles/chemistry-interactive-hub.css',
-    '/styles/english.css',
-    '/styles/duty.css',
-    '/favicons/favicon.svg',
-    '/favicons/favicon-dark.svg',
-    '/favicons/app-icon.svg',
-    '/favicons/favicon-al.svg',
-    '/favicons/favicon-al-dark.svg',
-    '/favicons/favicon-ch.svg',
-    '/favicons/favicon-ch-dark.svg',
-    '/favicons/favicon-geo.svg',
-    '/favicons/favicon-geo-dark.svg',
-    '/favicons/favicon-lik.svg',
-    '/favicons/favicon-lik-dark.svg',
-    '/favicons/favicon-lit.svg',
-    '/favicons/favicon-lit-dark.svg',
-    '/favicons/favicon-mc.svg',
-    '/favicons/favicon-mc-dark.svg',
-    '/favicons/favicon-ph.svg',
-    '/favicons/favicon-ph-dark.svg',
-    '/favicons/favicon-ph-exam.svg',
-    '/favicons/favicon-ph-exam-dark.svg',
-    '/favicons/favicon-en.svg',
-    '/favicons/favicon-en-dark.svg',
-    '/math.html',
-    '/physics.html',
-    '/physics-10.html',
-    '/physics-exam.html',
-    '/chemistry.html',
-    '/chemistry-10.html',
-    '/literature-10.html',
-    '/geometry.html',
-    '/geometry-formulas.html',
-    '/likbez.html',
-    '/english.html',
-    '/english.js',
-    '/english-deepl.js',
-    '/english-ui.js',
-    '/duty-10-1.html',
-    '/duty.js',
-    '/matcenter.html'
-];
+const GENERATED_MANIFEST = self.__ALMANION_SW_MANIFEST || {
+    version: 'development',
+    shell: ['/', '/index.html', '/offline.html', '/manifest.json']
+};
+const CACHE_VERSION = 'almanion-pwa-' + GENERATED_MANIFEST.version;
+const APP_SHELL_CACHE = CACHE_VERSION + '-shell';
+const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
+const NETWORK_TIMEOUT_MS = 5000;
+const RUNTIME_MAX_ENTRIES = 80;
+const RUNTIME_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
+const APP_SHELL = GENERATED_MANIFEST.shell;
 
 const CACHEABLE_CROSS_ORIGINS = new Set([
     'https://cdn.jsdelivr.net',
     'https://www.gstatic.com'
 ]);
 
-self.addEventListener('install', (event) => {
+self.addEventListener('install', function (event) {
     event.waitUntil(precacheAppShell());
 });
 
-self.addEventListener('activate', (event) => {
-    event.waitUntil((async () => {
+self.addEventListener('activate', function (event) {
+    event.waitUntil((async function () {
         const keep = new Set([APP_SHELL_CACHE, RUNTIME_CACHE]);
         const keys = await caches.keys();
-        await Promise.all(keys.map(key => keep.has(key) ? null : caches.delete(key)));
+        await Promise.all(keys.map(function (key) { return keep.has(key) ? null : caches.delete(key); }));
+        await pruneRuntimeCache();
         await self.clients.claim();
     })());
 });
 
-self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SKIP_WAITING') {
-        self.skipWaiting();
-    }
+self.addEventListener('message', function (event) {
+    if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
-self.addEventListener('fetch', (event) => {
+self.addEventListener('fetch', function (event) {
     const request = event.request;
     if (request.method !== 'GET') return;
-
     const url = new URL(request.url);
 
     if (url.origin !== self.location.origin) {
-        if (CACHEABLE_CROSS_ORIGINS.has(url.origin)) {
-            event.respondWith(staleWhileRevalidate(request, RUNTIME_CACHE));
-        }
+        if (CACHEABLE_CROSS_ORIGINS.has(url.origin)) event.respondWith(staleWhileRevalidate(request));
         return;
     }
-
-    if (request.mode === 'navigate') {
-        event.respondWith(networkFirst(request, APP_SHELL_CACHE, '/offline.html'));
+    if (request.mode === 'navigate' || url.pathname.endsWith('.html')) {
+        event.respondWith(networkFirst(request, '/offline.html'));
         return;
     }
-
     if (isStaticAsset(request, url)) {
-        event.respondWith(staleWhileRevalidate(request, RUNTIME_CACHE));
+        event.respondWith(staleWhileRevalidate(request));
         return;
     }
-
-    if (url.pathname.endsWith('.html')) {
-        event.respondWith(networkFirst(request, APP_SHELL_CACHE, '/offline.html'));
-        return;
-    }
-
-    event.respondWith(networkFirst(request, RUNTIME_CACHE));
+    event.respondWith(networkFirst(request));
 });
 
 async function precacheAppShell() {
     const cache = await caches.open(APP_SHELL_CACHE);
-    await Promise.all(APP_SHELL.map(async (url) => {
+    await Promise.all(APP_SHELL.map(async function (url) {
         try {
             const request = new Request(url, { cache: 'reload' });
             const response = await fetch(request);
-            if (response.ok) await cache.put(url, response);
-        } catch (err) {
-            // Часть страниц может отсутствовать в локальной сборке — PWA не должна падать целиком.
-            console.warn('SW: failed to precache', url, err);
+            if (await cacheableResponse(request, response)) await cache.put(url, response);
+        } catch (_) {
+            // One unavailable optional asset must not prevent offline installation.
         }
     }));
 }
 
 function isStaticAsset(request, url) {
     if (['style', 'script', 'worker', 'font', 'image'].includes(request.destination)) return true;
-    return /\.(?:css|js|mjs|svg|png|jpg|jpeg|webp|gif|ico|woff2?|ttf|otf)$/i.test(url.pathname);
+    return /\.(?:css|js|mjs|svg|png|jpg|jpeg|webp|gif|ico|woff2?|ttf|otf|json)$/i.test(url.pathname);
 }
 
-async function networkFirst(request, cacheName, fallbackUrl) {
-    const cache = await caches.open(cacheName);
-
+async function networkFirst(request, fallbackUrl) {
     try {
         const response = await fetchWithTimeout(request, NETWORK_TIMEOUT_MS);
-        if (canCache(response)) await storeResponse(cacheName, cache, request, response.clone());
+        if (await cacheableResponse(request, response)) await storeRuntimeResponse(request, response.clone());
         return response;
     } catch (_) {
-        const cached = await caches.match(request);
+        const cached = await freshCachedResponse(request);
         if (cached) return cached;
         if (fallbackUrl) {
             const fallback = await caches.match(fallbackUrl);
@@ -214,28 +94,40 @@ async function networkFirst(request, cacheName, fallbackUrl) {
     }
 }
 
-async function staleWhileRevalidate(request, cacheName) {
-    const cache = await caches.open(cacheName);
-    const cached = await cache.match(request);
-
-    const fetched = fetch(request)
-        .then(async (response) => {
-            if (canCache(response)) await storeResponse(cacheName, cache, request, response.clone());
-            return response;
-        })
-        .catch(() => null);
-
+async function staleWhileRevalidate(request) {
+    const cached = await freshCachedResponse(request);
+    const fetched = fetch(request).then(async function (response) {
+        if (await cacheableResponse(request, response)) await storeRuntimeResponse(request, response.clone());
+        return response;
+    }).catch(function () { return null; });
     return cached || await fetched || new Response('', { status: 504, statusText: 'Offline' });
 }
 
-function canCache(response) {
-    return response && (response.ok || response.type === 'opaque');
+async function cacheableResponse(request, response) {
+    if (!response || (!response.ok && response.type !== 'opaque')) return false;
+    if (response.type === 'opaque') return true;
+    const url = new URL(request.url);
+    if (!url.pathname.endsWith('.json')) return true;
+    try {
+        const value = await response.clone().json();
+        if (url.pathname.includes('/content/') && url.pathname.endsWith('/manifest.json')) {
+            return !!value && Array.isArray(value.sections);
+        }
+        if (url.pathname.includes('/content/') && url.pathname.includes('/sections/')) {
+            return !!value && typeof value === 'object' && !!value.id
+                && (Array.isArray(value.blocks) || Array.isArray(value.subsections));
+        }
+        if (url.pathname.endsWith('/search-index.json')) return !!value && Array.isArray(value.entries);
+        return value !== null && typeof value === 'object';
+    } catch (_) {
+        return false;
+    }
 }
 
 async function fetchWithTimeout(request, timeoutMs) {
     if (typeof AbortController !== 'function' || !timeoutMs) return fetch(request);
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const timer = setTimeout(function () { controller.abort(); }, timeoutMs);
     try {
         return await fetch(request, { signal: controller.signal });
     } finally {
@@ -243,12 +135,51 @@ async function fetchWithTimeout(request, timeoutMs) {
     }
 }
 
-async function storeResponse(cacheName, cache, request, response) {
-    await cache.put(request, response);
-    if (cacheName !== RUNTIME_CACHE) return;
+async function timestampedResponse(response) {
+    if (response.type === 'opaque') return response;
+    const headers = new Headers(response.headers);
+    headers.set('x-almanion-cached-at', String(Date.now()));
+    return new Response(await response.blob(), {
+        status: response.status,
+        statusText: response.statusText,
+        headers: headers
+    });
+}
+
+async function storeRuntimeResponse(request, response) {
+    const cache = await caches.open(RUNTIME_CACHE);
+    await cache.put(request, await timestampedResponse(response));
+    await pruneRuntimeCache(cache);
+}
+
+async function freshCachedResponse(request) {
+    const shell = await caches.open(APP_SHELL_CACHE);
+    const shellHit = await shell.match(request, { ignoreSearch: true });
+    if (shellHit) return shellHit;
+    const cache = await caches.open(RUNTIME_CACHE);
+    const response = await cache.match(request);
+    if (!response) return null;
+    const cachedAt = Number(response.headers.get('x-almanion-cached-at'));
+    if (cachedAt && Date.now() - cachedAt > RUNTIME_MAX_AGE_MS) {
+        await cache.delete(request);
+        return null;
+    }
+    return response;
+}
+
+async function pruneRuntimeCache(existingCache) {
+    const cache = existingCache || await caches.open(RUNTIME_CACHE);
     const keys = await cache.keys();
-    const overflow = keys.length - RUNTIME_MAX_ENTRIES;
+    const expired = [];
+    for (const key of keys) {
+        const response = await cache.match(key);
+        const cachedAt = response && Number(response.headers.get('x-almanion-cached-at'));
+        if (cachedAt && Date.now() - cachedAt > RUNTIME_MAX_AGE_MS) expired.push(key);
+    }
+    await Promise.all(expired.map(function (key) { return cache.delete(key); }));
+    const remaining = await cache.keys();
+    const overflow = remaining.length - RUNTIME_MAX_ENTRIES;
     if (overflow > 0) {
-        await Promise.all(keys.slice(0, overflow).map(key => cache.delete(key)));
+        await Promise.all(remaining.slice(0, overflow).map(function (key) { return cache.delete(key); }));
     }
 }

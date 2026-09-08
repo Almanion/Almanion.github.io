@@ -28,11 +28,20 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 22
           cache: npm
+
+      - name: Set up Java for Firebase rules tests
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
 
       - name: Install build tooling
         run: npm ci --ignore-scripts
+
+      - name: Verify Firebase access rules
+        run: npm run test:rules
 
       - name: Test, build, and validate
         run: npm run ci

@@ -5,11 +5,16 @@
   "description": "Deterministic build and validation commands for Almanion GitHub Pages",
   "scripts": {
     "test": "node tools/run-tests.js",
+    "test:rules": "npx --yes firebase-tools@14.22.0 emulators:exec --project almanion-rules-test --only database \"node tests/firebase-rules.integration.js\"",
     "site:build": "node tools/build-site.js --output _site",
     "site:validate": "node tools/validate-site.js --site _site",
     "ci": "node tools/ci.js"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.0",
+    "firebase": "^12.3.0"
   }
 }

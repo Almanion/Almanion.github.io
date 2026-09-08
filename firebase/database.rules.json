@@ -178,9 +178,13 @@
 
     "presence": {
       ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$visitorId": {
-        ".write": true,
+        ".write": "auth != null && (auth.uid === $visitorId || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+        ".validate": "!newData.exists() || newData.hasChildren(['visitorId', 'authProvider', 'browserContext', 'page', 'pageTitle', 'timestamp', 'userAgent'])",
         "visitorId": { ".validate": "newData.isString() && newData.val() === $visitorId" },
+        "authProvider": { ".validate": "newData.isString() && newData.val() === auth.token.firebase.sign_in_provider" },
+        "browserContext": { ".validate": "newData.val() === 'web' || newData.val() === 'telegram'" },
         "page": { ".validate": "newData.isString() && newData.val().length <= 180" },
         "pageTitle": { ".validate": "newData.isString() && newData.val().length <= 180" },
         "timestamp": { ".validate": "newData.isNumber()" },
@@ -191,12 +195,15 @@
 
     "analyticsSessions": {
       ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$day": {
         "$visitorId": {
           "$sessionId": {
-            ".write": "newData.exists() || (auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true))",
-            ".validate": "newData.hasChildren(['visitorId', 'page', 'pageTitle', 'startedAt', 'lastActive', 'durationSeconds', 'device', 'referrerHost'])",
+            ".write": "auth != null && ((auth.uid === $visitorId && newData.exists()) || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+            ".validate": "newData.hasChildren(['visitorId', 'authProvider', 'browserContext', 'page', 'pageTitle', 'startedAt', 'lastActive', 'durationSeconds', 'device', 'referrerHost'])",
             "visitorId": { ".validate": "newData.isString() && newData.val() === $visitorId" },
+            "authProvider": { ".validate": "newData.isString() && newData.val() === auth.token.firebase.sign_in_provider" },
+            "browserContext": { ".validate": "newData.val() === 'web' || newData.val() === 'telegram'" },
             "page": { ".validate": "newData.isString() && newData.val().length <= 180" },
             "pageTitle": { ".validate": "newData.isString() && newData.val().length <= 180" },
             "startedAt": { ".validate": "newData.isNumber()" },
@@ -218,10 +225,14 @@
 
     "pollResponses": {
       ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$pollId": {
         "$visitorId": {
-          ".write": "!data.exists()",
-          ".validate": "newData.hasChildren(['optionIndex', 'optionText', 'timestamp', 'page'])",
+          ".write": "auth != null && auth.uid === $visitorId && !data.exists()",
+          ".validate": "newData.hasChildren(['visitorId', 'authProvider', 'browserContext', 'optionIndex', 'optionText', 'timestamp', 'page'])",
+          "visitorId": { ".validate": "newData.val() === $visitorId" },
+          "authProvider": { ".validate": "newData.val() === auth.token.firebase.sign_in_provider" },
+          "browserContext": { ".validate": "newData.val() === 'web' || newData.val() === 'telegram'" },
           "optionIndex": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 20" },
           "optionText": { ".validate": "newData.isString() && newData.val().length <= 240" },
           "timestamp": { ".validate": "newData.isNumber()" },
@@ -233,22 +244,59 @@
 
     "visitors": {
       ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$visitorId": {
-        ".write": "newData.exists() || (auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true))",
+        ".write": "auth != null && ((auth.uid === $visitorId && newData.exists()) || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+        ".validate": "!newData.exists() || newData.hasChildren(['id', 'visitorId', 'authProvider', 'browserContext', 'firstVisit', 'lastVisit', 'lastPage', 'pageViews'])",
         "id": { ".validate": "newData.isString() && newData.val() === $visitorId" },
+        "visitorId": { ".validate": "newData.isString() && newData.val() === $visitorId" },
+        "authProvider": { ".validate": "newData.isString() && newData.val() === auth.token.firebase.sign_in_provider" },
+        "browserContext": { ".validate": "newData.val() === 'web' || newData.val() === 'telegram'" },
+        "firstVisit": { ".validate": "newData.isNumber()" },
         "lastVisit": { ".validate": "newData.isNumber()" },
         "lastPage": { ".validate": "newData.isString() && newData.val().length <= 180" },
-        "visitCount": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "pageViews": { ".validate": "newData.isNumber() && newData.val() >= 1" },
         "$other": { ".validate": false }
       }
     },
 
     "dailyStats": {
       ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$day": {
         "$visitorId": {
-          ".write": "newData.val() === true",
-          ".validate": "newData.isBoolean()"
+          ".write": "auth != null && auth.uid === $visitorId && newData.exists()",
+          ".validate": "newData.hasChildren(['visitorId', 'authProvider', 'browserContext', 'lastVisit'])",
+          "visitorId": { ".validate": "newData.val() === $visitorId" },
+          "authProvider": { ".validate": "newData.val() === auth.token.firebase.sign_in_provider" },
+          "browserContext": { ".validate": "newData.val() === 'web' || newData.val() === 'telegram'" },
+          "lastVisit": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
+    "webVitals": {
+      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      "$day": {
+        "$visitorId": {
+          "$sessionId": {
+            ".write": "auth != null && auth.uid === $visitorId && newData.exists()",
+            ".validate": "newData.hasChildren(['visitorId', 'authProvider', 'browserContext', 'page', 'deployment', 'lcp', 'cls', 'inp', 'navigationMs', 'failedResources', 'recordedAt'])",
+            "visitorId": { ".validate": "newData.val() === $visitorId" },
+            "authProvider": { ".validate": "newData.val() === auth.token.firebase.sign_in_provider" },
+            "browserContext": { ".validate": "newData.val() === 'web' || newData.val() === 'telegram'" },
+            "page": { ".validate": "newData.isString() && newData.val().length <= 180" },
+            "deployment": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "lcp": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 120000" },
+            "cls": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+            "inp": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 120000" },
+            "navigationMs": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 120000" },
+            "failedResources": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+            "recordedAt": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
         }
       }
     },
@@ -262,11 +310,25 @@
       ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$visitorId": {
-        ".read": true,
+        ".read": "auth != null && (auth.uid === $visitorId || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
         "$msgId": {
-          "read": { ".write": true, ".validate": "newData.isBoolean()" },
-          "readAt": { ".write": true, ".validate": "newData.isNumber()" }
+          "read": { ".write": "auth != null && auth.uid === $visitorId", ".validate": "newData.isBoolean()" },
+          "readAt": { ".write": "auth != null && auth.uid === $visitorId", ".validate": "newData.isNumber()" }
         }
+      }
+    },
+
+    "auditLog": {
+      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      "$eventId": {
+        ".write": "auth != null && !data.exists() && newData.exists() && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+        ".validate": "newData.hasChildren(['actorUid', 'action', 'targetUid', 'summary', 'timestamp'])",
+        "actorUid": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "action": { ".validate": "newData.val() === 'admin_roles_updated'" },
+        "targetUid": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128" },
+        "summary": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 240" },
+        "timestamp": { ".validate": "newData.isNumber() && newData.val() === now" },
+        "$other": { ".validate": false }
       }
     },
 

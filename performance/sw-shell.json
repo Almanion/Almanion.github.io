@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    "/",
+    "/index.html",
+    "/offline.html",
+    "/manifest.json",
+    "/theme-bootstrap.js",
+    "/favicon-theme.js",
+    "/page-transitions.js",
+    "/home-motion.js",
+    "/script.js",
+    "/settings.js",
+    "/firebase-config.js",
+    "/data-sync.js",
+    "/account.js",
+    "/styles/site/index.css",
+    "/styles/site/00-components.css",
+    "/styles/site/10-foundation.css",
+    "/styles/site/20-layout-content.css",
+    "/styles/site/40-extras-settings.css",
+    "/styles/site/60-poll-pwa.css",
+    "/styles/tokens.css",
+    "/styles/buttons.css",
+    "/styles/mobile-overrides.css",
+    "/styles/page-transitions.css",
+    "/styles/home-motion.css",
+    "/favicons/favicon.svg",
+    "/favicons/favicon-dark.svg",
+    "/favicons/app-icon.svg"
+  ]
+}

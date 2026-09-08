@@ -6,6 +6,7 @@ const os = require('os');
 const path = require('path');
 const BuildSite = require('../tools/build-site.js');
 const ValidateSite = require('../tools/validate-site.js');
+const ServiceWorker = require('../performance/build-service-worker.js');
 
 const config = BuildSite.readConfig();
 
@@ -40,6 +41,8 @@ assert.deepStrictEqual(
 );
 assert.strictEqual(ValidateSite.resolveLocalReference('index.html', 'https://cdn.example.test/file.js'), null);
 assert.strictEqual(ValidateSite.resolveLocalReference('index.html', '#section'), null);
+assert.strictEqual(ServiceWorker.normalizedPath('/?source=pwa'), 'index.html');
+assert.strictEqual(ServiceWorker.normalizedPath('/styles/site/index.css?v=2'), 'styles/site/index.css');
 
 const references = ValidateSite.htmlReferences('index.html', `
     <a href="physics.html#intro">Physics</a>
@@ -73,6 +76,7 @@ try {
     fs.writeFileSync(path.join(fixture, 'manifest.json'), '{"start_url":"/"}');
     fs.writeFileSync(path.join(fixture, 'search-index.json'), '{"schemaVersion":1,"entries":[]}');
     fs.writeFileSync(path.join(fixture, 'sw.js'), "const APP_SHELL = ['/index.html', '/offline.html'];");
+    fs.writeFileSync(path.join(fixture, 'sw-manifest.js'), 'self.__ALMANION_SW_MANIFEST = Object.freeze({"version":"fixture","shell":["/index.html","/offline.html"]});\n');
     fs.writeFileSync(path.join(fixture, 'styles', 'site', 'index.css'), 'body { background: none; }');
     writeFixtureMetadata(fixture);
 

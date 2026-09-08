@@ -12,7 +12,8 @@ const REQUIRED_FILES = [
     'manifest.json',
     'offline.html',
     'search-index.json',
-    'sw.js'
+    'sw.js',
+    'sw-manifest.js'
 ];
 
 function parseArgs(argv) {
@@ -88,10 +89,27 @@ function manifestReferences(relative, content) {
 function serviceWorkerReferences(relative, content) {
     const references = [];
     const shell = content.match(/\bconst\s+APP_SHELL\s*=\s*\[([\s\S]*?)\];/);
-    if (!shell) throw new Error(`${relative}: APP_SHELL list was not found.`);
     const strings = /(["'])(.*?)\1/g;
     let match;
-    while ((match = strings.exec(shell[1]))) addReference(references, relative, 'app-shell', match[2]);
+    if (shell) {
+        while ((match = strings.exec(shell[1]))) addReference(references, relative, 'app-shell', match[2]);
+        return references;
+    }
+    const imports = /importScripts\(\s*(["'])(.*?)\1\s*\)/g;
+    while ((match = imports.exec(content))) addReference(references, relative, 'worker-import', match[2]);
+    if (!references.length) throw new Error(`${relative}: neither an app shell nor a generated manifest import was found.`);
+    return references;
+}
+
+function serviceWorkerManifestReferences(relative, content) {
+    const references = [];
+    const match = String(content || '').match(/Object\.freeze\((\{[\s\S]*\})\);?\s*$/);
+    if (!match) throw new Error(`${relative}: generated service-worker manifest was not recognized.`);
+    const manifest = JSON.parse(match[1]);
+    if (!manifest || !Array.isArray(manifest.shell) || !manifest.version) {
+        throw new Error(`${relative}: generated service-worker manifest is incomplete.`);
+    }
+    manifest.shell.forEach(value => addReference(references, relative, 'app-shell', value));
     return references;
 }
 
@@ -137,6 +155,7 @@ function collectReferences(site, files) {
         else if (extension === '.css') references.push(...cssReferences(relative, content));
         else if (relative === 'manifest.json') references.push(...manifestReferences(relative, content));
         else if (relative === 'sw.js') references.push(...serviceWorkerReferences(relative, content));
+        else if (relative === 'sw-manifest.js') references.push(...serviceWorkerManifestReferences(relative, content));
     }
     return references;
 }
@@ -220,6 +239,7 @@ module.exports = {
     cssReferences,
     manifestReferences,
     serviceWorkerReferences,
+    serviceWorkerManifestReferences,
     resolveLocalReference,
     collectReferences,
     validateMetadata,

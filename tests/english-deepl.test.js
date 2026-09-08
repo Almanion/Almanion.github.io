@@ -10,11 +10,11 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const page = read('english.html');
 const client = read('english-deepl.js');
 const css = read(path.join('styles', 'english.css'));
-const worker = read('sw.js');
+const shell = JSON.parse(read(path.join('performance', 'sw-shell.json'))).assets;
 const backend = read('apps-script.gs');
 
 assert.match(page, /english-deepl\.js\?v=/);
-assert.match(worker, /'\/english-deepl\.js'/);
+assert.equal(shell.includes('/english-deepl.js'), false, 'private tools must be cached only after use');
 assert.match(client, /action:\s*'translateEnglish'/);
 assert.match(client, /getIdToken\(true\)/);
 assert.match(client, /Content-Type': 'text\/plain;charset=utf-8'/);

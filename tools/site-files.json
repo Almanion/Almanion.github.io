@@ -45,6 +45,7 @@
     "settings.js",
     "style-new.css",
     "sw.js",
+    "sw-manifest.js",
     "the-secret-game.html",
     "theme-bootstrap.js"
   ],

@@ -8,7 +8,7 @@ const root = path.join(__dirname, '..');
 const page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const client = fs.readFileSync(path.join(root, 'home-motion.js'), 'utf8');
 const styles = fs.readFileSync(path.join(root, 'styles', 'home-motion.css'), 'utf8');
-const worker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+const shell = JSON.parse(fs.readFileSync(path.join(root, 'performance', 'sw-shell.json'), 'utf8')).assets;
 
 assert.match(page, /styles\/home-motion\.css\?v=20260907-2/, 'home motion stylesheet must be versioned');
 assert.match(page, /home-motion\.js\?v=20260907-2/, 'home motion client must be versioned');
@@ -59,8 +59,7 @@ assert.match(styles, /body\.animations-off\.home-page[\s\S]*animation: none !imp
 assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 assert.doesNotMatch(styles, /transition:\s*all\b/, 'home motion must animate explicit compositor-friendly properties');
 
-assert.match(worker, /foundation-56/);
-assert.match(worker, /'\/styles\/home-motion\.css\?v=20260907-2'/);
-assert.match(worker, /'\/home-motion\.js\?v=20260907-2'/);
+assert.ok(shell.includes('/styles/home-motion.css'));
+assert.ok(shell.includes('/home-motion.js'));
 
 console.log('home page motion: all tests passed');

@@ -6,6 +6,9 @@
     'use strict';
 
     // Проверяем, что Firebase загружен и конфиг заполнен
+    // Analytics uses the signed-in account UID when one exists. Signed-out
+    // visitors receive a Firebase Anonymous Auth UID in a secondary app, so
+    // analytics authentication never changes the site's account session.
     if (typeof firebase === 'undefined') return;
     if (!firebaseConfig || firebaseConfig.apiKey === "ВСТАВЬ_СВОЙ_API_KEY") {
         console.warn('⚠️ Firebase конфиг не настроен. Аналитика отключена.');
@@ -17,9 +20,15 @@
         firebase.initializeApp(firebaseConfig);
     }
 
-    const db = firebase.database();
+    const primaryApp = firebase.app();
+    const primaryAuth = typeof firebase.auth === 'function' ? primaryApp.auth() : null;
+    let db = null;
+    let identityProvider = '';
+    let identityContext = 'web';
+    let visitorId = '';
+    let identityGeneration = 0;
+    let identityCleanup = [];
     const VISITOR_ID_KEY = 'almanion_visitor_id';
-    const VISITOR_NAME_KEY = 'almanion_visitor_name';
 
     // ============================================
     // УНИКАЛЬНЫЙ ID ПОСЕТИТЕЛЯ
@@ -32,16 +41,48 @@
         try { localStorage.setItem(key, value); } catch (_) { /* приватный режим / quota */ }
     }
 
-    function getVisitorId() {
-        let id = safeGet(VISITOR_ID_KEY);
-        if (!id) {
-            id = 'v_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-            safeSet(VISITOR_ID_KEY, id);
-        }
-        return id;
+    function getBrowserContext() {
+        const ua = String(navigator.userAgent || '');
+        const referrer = String(document.referrer || '');
+        let referrerHost = '';
+        try { referrerHost = new URL(referrer).hostname; } catch (_) {}
+        return /Telegram|TelegramBot|\bTG\//i.test(ua) || /(^|\.)t\.me$/i.test(referrerHost)
+            ? 'telegram'
+            : 'web';
     }
 
-    const visitorId = getVisitorId();
+    function providerFor(user) {
+        if (!user) return '';
+        if (user.isAnonymous) return 'anonymous';
+        const providers = Array.isArray(user.providerData) ? user.providerData : [];
+        return String(providers[0] && providers[0].providerId || 'account');
+    }
+
+    function getTelemetryApp() {
+        const existing = firebase.apps.find(function (app) { return app.name === 'almanion-telemetry'; });
+        return existing || firebase.initializeApp(firebaseConfig, 'almanion-telemetry');
+    }
+
+    async function getAnonymousIdentity() {
+        const app = getTelemetryApp();
+        const auth = app.auth();
+        try {
+            await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        } catch (_) {
+            await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(function () {});
+        }
+        let account = auth.currentUser;
+        if (!account) account = (await auth.signInAnonymously()).user;
+        return { user: account, database: app.database(), provider: 'anonymous' };
+    }
+
+    function identityMeta() {
+        return {
+            visitorId: visitorId,
+            authProvider: identityProvider,
+            browserContext: identityContext
+        };
+    }
 
     // ============================================
     // ТРЕКИНГ ПРИСУТСТВИЯ (КТО ОНЛАЙН)
@@ -56,20 +97,25 @@
         const presenceRef = db.ref('presence/' + visitorId);
         const connectedRef = db.ref('.info/connected');
 
-        connectedRef.on('value', (snap) => {
+        const onConnected = (snap) => {
             if (snap.val() === true) {
                 // Устанавливаем данные присутствия
-                presenceRef.set({
-                    visitorId: visitorId,
+                presenceRef.set(Object.assign(identityMeta(), {
                     page: location.pathname,
                     pageTitle: document.title,
                     timestamp: firebase.database.ServerValue.TIMESTAMP,
                     userAgent: navigator.userAgent.substring(0, 100)
-                });
+                }));
 
                 // При отключении — удаляем
                 presenceRef.onDisconnect().remove();
             }
+        };
+        connectedRef.on('value', onConnected);
+        identityCleanup.push(function () {
+            connectedRef.off('value', onConnected);
+            presenceRef.onDisconnect().cancel().catch(function () {});
+            presenceRef.remove().catch(function () {});
         });
 
         // Обновляем текущую страницу каждые 30 секунд
@@ -101,22 +147,32 @@
     // ============================================
 
     function registerVisitor() {
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const today = localDayKey(new Date());
         const visitorRef = db.ref('visitors/' + visitorId);
-
-        // set() гарантированно создаёт/обновляет узел без необходимости чтения
-        visitorRef.child('lastVisit').set(firebase.database.ServerValue.TIMESTAMP);
-        visitorRef.child('lastPage').set(location.pathname);
-        visitorRef.child('visitCount').set(firebase.database.ServerValue.increment(1));
-
-        visitorRef.child('id').set(visitorId).then(() => {
-            console.log('✅ Visitor registered:', visitorId);
-        }).catch(err => {
-            console.error('❌ Visitor registration failed:', err.message);
+        const meta = identityMeta();
+        visitorRef.transaction(function (current) {
+            const value = current && typeof current === 'object' ? current : {};
+            return Object.assign({}, meta, {
+                id: visitorId,
+                firstVisit: Number(value.firstVisit) || firebase.database.ServerValue.TIMESTAMP,
+                lastVisit: firebase.database.ServerValue.TIMESTAMP,
+                lastPage: String(location.pathname || '/').slice(0, 180),
+                pageViews: Math.max(0, Number(value.pageViews || value.visitCount) || 0) + 1
+            });
+        }).catch(function (err) {
+            console.warn('Almanion analytics: visitor registration deferred.', err);
         });
 
-        // Счётчик уникальных посетителей за день
-        db.ref('dailyStats/' + today + '/' + visitorId).set(true);
+        db.ref('dailyStats/' + today + '/' + visitorId).set(Object.assign({}, meta, {
+            lastVisit: firebase.database.ServerValue.TIMESTAMP
+        })).catch(function () {});
+    }
+
+    function localDayKey(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return year + '-' + month + '-' + day;
     }
 
     function getUsageDevice() {
@@ -137,11 +193,10 @@
     }
 
     function trackUsageSession() {
-        const today = new Date().toISOString().split('T')[0];
+        const today = localDayKey(new Date());
         usageSessionStartedAt = Date.now();
         usageSessionRef = db.ref('analyticsSessions/' + today + '/' + visitorId).push();
-        const sessionData = {
-            visitorId: visitorId,
+        const sessionData = Object.assign(identityMeta(), {
             page: String(location.pathname || '/').slice(0, 180),
             pageTitle: String(document.title || '').slice(0, 180),
             startedAt: firebase.database.ServerValue.TIMESTAMP,
@@ -149,7 +204,7 @@
             durationSeconds: 0,
             device: getUsageDevice(),
             referrerHost: getReferrerHost().slice(0, 120)
-        };
+        });
 
         const updateDuration = (force) => {
             if (!usageSessionRef || (!force && document.hidden)) return;
@@ -163,8 +218,14 @@
         usageSessionRef.set(sessionData).then(() => {
             if (usageIntervalId) clearInterval(usageIntervalId);
             usageIntervalId = setInterval(() => updateDuration(false), 30000);
-            document.addEventListener('visibilitychange', () => updateDuration(document.hidden));
-            window.addEventListener('pagehide', () => updateDuration(true));
+            const onVisibility = () => updateDuration(document.hidden);
+            const onPageHide = () => updateDuration(true);
+            document.addEventListener('visibilitychange', onVisibility);
+            window.addEventListener('pagehide', onPageHide);
+            identityCleanup.push(function () {
+                document.removeEventListener('visibilitychange', onVisibility);
+                window.removeEventListener('pagehide', onPageHide);
+            });
         }).catch(() => {
             // Пока новые Firebase Rules ещё не опубликованы, не повторяем
             // заведомо запрещённую запись каждые 30 секунд.
@@ -178,8 +239,8 @@
 
     function listenForPolls() {
         const pollsRef = db.ref('polls');
-
-        pollsRef.orderByChild('active').equalTo(true).on('value', (snapshot) => {
+        const query = pollsRef.orderByChild('active').equalTo(true);
+        const handlePolls = (snapshot) => {
             snapshot.forEach((childSnap) => {
                 const poll = childSnap.val();
                 const pollId = childSnap.key;
@@ -192,7 +253,9 @@
                 // Показываем опрос
                 showPoll(pollId, poll);
             });
-        });
+        };
+        query.on('value', handlePolls);
+        identityCleanup.push(function () { query.off('value', handlePolls); });
     }
 
     function showPoll(pollId, poll) {
@@ -308,12 +371,12 @@
 
     function submitPollResponse(pollId, optionIndex, optionText, overlay) {
         // Сохраняем ответ в Firebase
-        db.ref('pollResponses/' + pollId + '/' + visitorId).set({
+        db.ref('pollResponses/' + pollId + '/' + visitorId).set(Object.assign(identityMeta(), {
             optionIndex: optionIndex,
             optionText: optionText,
             timestamp: firebase.database.ServerValue.TIMESTAMP,
             page: location.pathname
-        });
+        }));
 
         markPollAnswered(pollId);
 
@@ -347,8 +410,7 @@
 
     function listenForDirectMessages() {
         const dmRef = db.ref('directMessages/' + visitorId);
-
-        dmRef.on('child_added', (snapshot) => {
+        const handleMessage = (snapshot) => {
             const msg = snapshot.val();
             const msgId = snapshot.key;
             if (!msg || msg.read) return;
@@ -367,7 +429,9 @@
                 // Простое сообщение — показываем уведомление
                 showDirectMessage(msgId, msg);
             }
-        });
+        };
+        dmRef.on('child_added', handleMessage);
+        identityCleanup.push(function () { dmRef.off('child_added', handleMessage); });
     }
 
     function showDirectMessage(msgId, msg) {
@@ -440,16 +504,134 @@
     // ЗАПУСК
     // ============================================
 
-    function init() {
-        try {
+    function trackPerformanceMetrics() {
+        if (!window.performance || !usageSessionRef) return;
+        const values = { lcp: 0, cls: 0, inp: 0, failedResources: 0 };
+        const observers = [];
+        const onResourceError = function (event) {
+            const target = event && event.target;
+            if (target && target !== window && (target.src || target.href)) values.failedResources += 1;
+        };
+        window.addEventListener('error', onResourceError, true);
+
+        function observe(type, callback) {
+            if (typeof PerformanceObserver !== 'function') return;
+            try {
+                const observer = new PerformanceObserver(function (list) {
+                    list.getEntries().forEach(callback);
+                });
+                observer.observe({ type: type, buffered: true });
+                observers.push(observer);
+            } catch (_) {}
+        }
+
+        observe('largest-contentful-paint', function (entry) {
+            values.lcp = Math.max(values.lcp, Math.round(entry.startTime || 0));
+        });
+        observe('layout-shift', function (entry) {
+            if (!entry.hadRecentInput) values.cls += Number(entry.value) || 0;
+        });
+        observe('event', function (entry) {
+            if (entry.interactionId) values.inp = Math.max(values.inp, Math.round(entry.duration || 0));
+        });
+
+        let deployment = 'unknown';
+        fetch('/_build.json', { cache: 'force-cache' })
+            .then(function (response) { return response.ok ? response.json() : null; })
+            .then(function (metadata) {
+                const revision = metadata && metadata.source && metadata.source.revision;
+                if (revision) deployment = String(revision).slice(0, 40);
+            })
+            .catch(function () {});
+
+        const metricRef = db.ref('webVitals/' + localDayKey(new Date()) + '/' + visitorId + '/' + usageSessionRef.key);
+        const metricIdentity = identityMeta();
+        let sent = false;
+        function send() {
+            if (sent) return;
+            sent = true;
+            const navigation = performance.getEntriesByType('navigation')[0];
+            metricRef.set(Object.assign({}, metricIdentity, {
+                page: String(location.pathname || '/').slice(0, 180),
+                deployment: deployment,
+                lcp: Math.max(0, Math.min(120000, Math.round(values.lcp))),
+                cls: Math.max(0, Math.min(100, Math.round(values.cls * 10000) / 10000)),
+                inp: Math.max(0, Math.min(120000, Math.round(values.inp))),
+                navigationMs: Math.max(0, Math.min(120000, Math.round(navigation && navigation.duration || 0))),
+                failedResources: Math.max(0, Math.min(100, values.failedResources)),
+                recordedAt: firebase.database.ServerValue.TIMESTAMP
+            })).catch(function () {});
+        }
+
+        const timer = window.setTimeout(send, 10000);
+        const onPageHide = send;
+        window.addEventListener('pagehide', onPageHide);
+        identityCleanup.push(function () {
+            window.clearTimeout(timer);
+            window.removeEventListener('error', onResourceError, true);
+            window.removeEventListener('pagehide', onPageHide);
+            observers.forEach(function (observer) { observer.disconnect(); });
+            send();
+        });
+    }
+
+    function stopIdentityTracking() {
+        if (presenceIntervalId) clearInterval(presenceIntervalId);
+        if (usageIntervalId) clearInterval(usageIntervalId);
+        presenceIntervalId = null;
+        usageIntervalId = null;
+        identityCleanup.splice(0).forEach(function (cleanup) {
+            try { cleanup(); } catch (_) {}
+        });
+        usageSessionRef = null;
+    }
+
+    function startTracking(selection) {
+        stopIdentityTracking();
+        identityProvider = selection.provider || providerFor(selection.user);
+        identityContext = getBrowserContext();
+        visitorId = selection.user.uid;
+        db = selection.database;
+        safeSet(VISITOR_ID_KEY, visitorId);
         trackPresence();
         registerVisitor();
         trackUsageSession();
-            listenForPolls();
-            listenForDirectMessages();
-        } catch (e) {
-            console.warn('⚠️ Ошибка инициализации аналитики:', e);
+        trackPerformanceMetrics();
+        listenForPolls();
+        listenForDirectMessages();
+        window.AlmanionAnalyticsIdentity = Object.freeze({
+            id: visitorId,
+            provider: identityProvider,
+            context: identityContext,
+            isAccount: identityProvider !== 'anonymous'
+        });
+        window.dispatchEvent(new CustomEvent('almanion:analytics-identity', {
+            detail: window.AlmanionAnalyticsIdentity
+        }));
+    }
+
+    async function selectIdentity(account) {
+        if (account && !account.isAnonymous) {
+            return { user: account, database: primaryApp.database(), provider: providerFor(account) };
         }
+        return getAnonymousIdentity();
+    }
+
+    function init() {
+        if (primaryAuth) {
+            primaryAuth.onAuthStateChanged(async function (account) {
+                const generation = ++identityGeneration;
+                try {
+                    const selection = await selectIdentity(account);
+                    if (generation !== identityGeneration) return;
+                    startTracking(selection);
+                } catch (error) {
+                    console.warn('Almanion analytics: authenticated telemetry is unavailable.', error);
+                }
+            });
+            return;
+        }
+        console.warn('Almanion analytics: Firebase Auth is unavailable; telemetry is disabled.');
     }
 
     // Ждём загрузки DOM
