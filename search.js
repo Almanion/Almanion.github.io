@@ -3,8 +3,8 @@
 (function () {
     'use strict';
 
-    const INDEX_VERSION = '2026-09-02-2';
-    const CACHE_KEY = `almanion_search_${INDEX_VERSION}`;
+    const FALLBACK_INDEX_VERSION = '2026-09-07-1';
+    const CACHE_KEY = 'almanion_search_prebuilt_v1';
     const PAGES = [
         { path: 'physics.html', label: 'Физика' },
         { path: 'chemistry.html', label: 'Химия' },
@@ -94,14 +94,51 @@
     function readCache() {
         try {
             const parsed = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
-            return Array.isArray(parsed) ? parsed : null;
+            if (Array.isArray(parsed)) return parsed;
+            return parsed && Array.isArray(parsed.entries) ? parsed.entries : null;
         } catch (_) {
             return null;
         }
     }
 
-    function writeCache(entries) {
-        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(entries)); } catch (_) {}
+    function writeCache(entries, version) {
+        try {
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+                schemaVersion: 1,
+                version: String(version || FALLBACK_INDEX_VERSION),
+                entries
+            }));
+        } catch (_) {}
+    }
+
+    function normalizeIndexEntry(entry) {
+        const title = displayText(entry?.title);
+        const text = displayText(entry?.text);
+        return {
+            page: pagePath(entry?.page),
+            subject: String(entry?.subject || ''),
+            id: String(entry?.id || ''),
+            title,
+            text,
+            normalizedTitle: normalize(title),
+            normalizedText: normalize(text)
+        };
+    }
+
+    async function loadBuiltIndex() {
+        const response = await fetch(new URL('search-index.json', location.href), {
+            credentials: 'same-origin'
+        });
+        if (!response.ok) throw new Error(`Search index HTTP ${response.status}`);
+        const document = await response.json();
+        if (document?.schemaVersion !== 1 || !Array.isArray(document.entries)) {
+            throw new Error('Unsupported search index');
+        }
+        const entries = document.entries.map(normalizeIndexEntry)
+            .filter(entry => entry.page && entry.id && entry.title && entry.text);
+        if (!entries.length) throw new Error('Search index is empty');
+        writeCache(entries, document.version);
+        return entries;
     }
 
     async function loadPage(page) {
@@ -125,13 +162,19 @@
             return Promise.resolve(state.index);
         }
 
-        state.indexPromise = Promise.allSettled(PAGES.map(loadPage)).then(results => {
-            state.index = results.flatMap(result => result.status === 'fulfilled' ? result.value : []);
-            if (state.index.length) writeCache(state.index);
-            return state.index;
-        }).finally(() => {
-            state.indexPromise = null;
-        });
+        state.indexPromise = loadBuiltIndex()
+            .catch(() => Promise.allSettled(PAGES.map(loadPage)).then(results => {
+                const entries = results.flatMap(result => result.status === 'fulfilled' ? result.value : []);
+                if (entries.length) writeCache(entries, FALLBACK_INDEX_VERSION);
+                return entries;
+            }))
+            .then(entries => {
+                state.index = entries;
+                return state.index;
+            })
+            .finally(() => {
+                state.indexPromise = null;
+            });
         return state.indexPromise;
     }
 

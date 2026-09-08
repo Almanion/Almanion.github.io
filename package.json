@@ -1,0 +1,15 @@
+{
+  "name": "almanion-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Deterministic build and validation commands for Almanion GitHub Pages",
+  "scripts": {
+    "test": "node tools/run-tests.js",
+    "site:build": "node tools/build-site.js --output _site",
+    "site:validate": "node tools/validate-site.js --site _site",
+    "ci": "node tools/ci.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -57,6 +57,7 @@ assert.strictEqual(settings.expTheme, 'system');
 assert.strictEqual(settings.expDark, true);
 assert.strictEqual(settings.animationLevel, 'max');
 assert.strictEqual(settings.hoverEffects, true);
+assert.strictEqual(settings.visualDefaultsVersion, 1);
 assert.strictEqual(storage.get('almanion:visual-defaults:2026-09-05-v1'), '1');
 assert.strictEqual(storage.get('newYearMode'), 'false');
 assert.strictEqual(first.root.dataset.exp, 'prism-dark');
@@ -77,6 +78,7 @@ assert.strictEqual(settings.expMode, 'graphite');
 assert.strictEqual(settings.expTheme, 'light');
 assert.strictEqual(settings.animationLevel, 'off');
 assert.strictEqual(settings.hoverEffects, false);
+assert.strictEqual(settings.visualDefaultsVersion, 1);
 
 settings.experimental = true;
 settings.expTheme = 'system';

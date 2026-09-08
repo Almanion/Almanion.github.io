@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner() {
+      return signedIn() && request.auth.token.email == 'dmb23930@gmail.com';
+    }
+
+    function hasEditorClaim() {
+      return signedIn() && request.auth.token.contentEditor == true;
+    }
+
+    match /note-drafts/{uploaderUid}/{subject}/{sectionId}/{blockId}/{fileName} {
+      // Every editor can upload into their own namespace. The owner can always
+      // read the staged file and include it in the GitHub publication bundle.
+      // A contentEditor custom claim additionally enables cross-editor preview.
+      allow read: if isOwner() || request.auth.uid == uploaderUid || hasEditorClaim();
+      allow create, update: if request.auth.uid == uploaderUid
+        && request.resource.size < 2621440
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth.uid == uploaderUid || isOwner();
+    }
+  }
+}

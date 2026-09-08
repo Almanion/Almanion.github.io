@@ -22,11 +22,16 @@
     }
 
     const KC_PREFIX = 'kc_fsrs_';
+    const KC_LOCAL_OWNER_KEY = 'almanion_kc_local_owner_v1';
     const sGet = window.safeStorageGet || function (k) { try { return localStorage.getItem(k); } catch (_) { return null; } };
     const sSet = window.safeStorageSet || function (k, v) { try { localStorage.setItem(k, v); return true; } catch (_) { return false; } };
+    const sRemove = window.safeStorageRemove || function (k) { try { localStorage.removeItem(k); } catch (_) {} };
 
     let user = null;
     let kcRef = null;
+    let kcStore = null;
+    let settingsStore = null;
+    let settingsSyncUid = null;
     let applyingRemote = false;
     let authBusy = false;
     let authBusyTarget = '';
@@ -415,6 +420,19 @@
     }
     function pageKey(storeKey) { return storeKey.replace(/[.#$/\[\]]/g, '_'); }
     function getLocal(k) { try { return JSON.parse(sGet(k) || '{}') || {}; } catch (_) { return {}; } }
+    function dataSyncApi() { return window.AlmanionDataSync || null; }
+
+    function storeUpdatedAt(store) {
+        store = store || {};
+        let updatedAt = Number(store.__meta && store.__meta.updatedAt) || 0;
+        Object.keys(store).forEach(function (key) {
+            if (key === '__meta') return;
+            // `due` is a future study deadline, not a modification time. Using it
+            // here can make an older schedule overwrite answers from another device.
+            updatedAt = Math.max(updatedAt, Number(store[key] && store[key].last) || 0);
+        });
+        return updatedAt;
+    }
 
     function mergeStores(a, b) {
         a = a || {}; b = b || {};
@@ -590,6 +608,13 @@
     }
     function pushPage(storeKey) {
         if (!kcRef) return;
+        if (kcStore) {
+            const local = getLocal(storeKey);
+            kcStore.set(pageKey(storeKey), { key: storeKey, store: local }, {
+                updatedAt: storeUpdatedAt(local) || Date.now()
+            });
+            return;
+        }
         kcRef.child(pageKey(storeKey))
             .set(JSON.stringify({ key: storeKey, store: getLocal(storeKey) }))
             .catch(function (err) { console.warn('Almanion account: progress sync failed.', err); });
@@ -598,7 +623,105 @@
     function startKcSync(uid) {
         stopKcSync();
         const generation = ++syncGeneration;
+        const previousLocalOwner = sGet(KC_LOCAL_OWNER_KEY);
+        if (previousLocalOwner && previousLocalOwner !== uid) {
+            // The visible KC cache is shared with the page UI. Never import one
+            // account's answers into another account merely because they used
+            // the same browser; each account keeps its own versioned sync cache.
+            allKcKeys().forEach(sRemove);
+        }
+        sSet(KC_LOCAL_OWNER_KEY, uid);
         kcRef = db.ref('kc/' + uid);
+        const sync = dataSyncApi();
+        if (sync) {
+            kcStore = sync.createCollection({
+                namespace: 'knowledgeCheck',
+                owner: uid,
+                storageKey: 'almanion_kc_sync_uid_' + uid,
+                decodeRemote: function (remote) {
+                    const records = {};
+                    Object.keys(remote || {}).forEach(function (pk) {
+                        try {
+                            const blob = typeof remote[pk] === 'string' ? JSON.parse(remote[pk]) : remote[pk];
+                            if (!blob || !blob.key) return;
+                            records[pk] = {
+                                key: blob.key,
+                                store: blob.store || {},
+                                updatedAt: storeUpdatedAt(blob.store || {}),
+                                __sync: blob.__sync
+                            };
+                        } catch (_) {}
+                    });
+                    return records;
+                },
+                encodeRemote: function (record) {
+                    const clean = sync.remoteRecord(record);
+                    return JSON.stringify({ key: clean.key, store: clean.store, __sync: clean.__sync });
+                },
+                mergeRecord: function (localRecord, remoteRecord) {
+                    const localMeta = sync.metadata(localRecord);
+                    const remoteMeta = sync.metadata(remoteRecord);
+                    if (localMeta.deleted || remoteMeta.deleted) {
+                        return sync.compareRecords(localRecord, remoteRecord) >= 0 ? localRecord : remoteRecord;
+                    }
+                    const mergedStore = mergeStores(localRecord.store || {}, remoteRecord.store || {});
+                    const winner = sync.compareRecords(localRecord, remoteRecord) >= 0 ? localRecord : remoteRecord;
+                    const differsFromRemote = JSON.stringify(mergedStore) !== JSON.stringify(remoteRecord.store || {});
+                    const updatedAt = Math.max(
+                        localMeta.updatedAt,
+                        remoteMeta.updatedAt,
+                        storeUpdatedAt(mergedStore)
+                    );
+                    return {
+                        key: winner.key || localRecord.key || remoteRecord.key,
+                        store: mergedStore,
+                        updatedAt: updatedAt,
+                        __sync: {
+                            schema: 1,
+                            revision: Math.max(localMeta.revision, remoteMeta.revision) + (differsFromRemote ? 1 : 0),
+                            updatedAt: updatedAt,
+                            deviceId: differsFromRemote
+                                ? (localMeta.deviceId || remoteMeta.deviceId)
+                                : (sync.metadata(winner).deviceId || ''),
+                            deleted: false,
+                            pending: differsFromRemote
+                        }
+                    };
+                },
+                onChange: function (records, detail) {
+                    if (generation !== syncGeneration || !user || user.uid !== uid) return;
+                    if (detail && detail.type === 'error') {
+                        console.warn('Almanion account: progress sync deferred.', detail.error);
+                        return;
+                    }
+                    if (detail && (detail.type === 'set' || detail.type === 'ack')) return;
+                    Object.keys(records || {}).forEach(function (pk) {
+                        const record = records[pk];
+                        if (record && record.key && !(record.__sync && record.__sync.deleted)) {
+                            applyRemotePage(record.key, record.store || {});
+                        }
+                    });
+                }
+            });
+
+            // Первый вход переносит имеющийся локальный прогресс. Повторный
+            // импорт безопасен: сравнение идёт по времени страницы и ревизии.
+            allKcKeys().forEach(function (storeKey) {
+                const local = getLocal(storeKey);
+                if (!Object.keys(local).length) return;
+                const id = pageKey(storeKey);
+                const current = kcStore.get(id, { includeDeleted: true });
+                const localAt = storeUpdatedAt(local);
+                const currentAt = current ? sync.metadata(current).updatedAt : 0;
+                if (!current || localAt > currentAt) {
+                    kcStore.set(id, { key: storeKey, store: local }, {
+                        updatedAt: localAt || Date.now(), flush: false
+                    });
+                }
+            });
+            kcStore.connect(kcRef);
+            return;
+        }
         kcRef.once('value').then(function (snap) {
             if (generation !== syncGeneration || !user || user.uid !== uid || !kcRef) return;
             const remote = snap.val() || {};
@@ -622,7 +745,97 @@
     }
     function stopKcSync() {
         syncGeneration++;
+        if (kcStore) { kcStore.disconnect(); kcStore = null; }
         if (kcRef) { try { kcRef.off(); } catch (_) {} kcRef = null; }
+    }
+
+    function startSettingsSync(uid) {
+        settingsSyncUid = uid;
+        const sync = dataSyncApi();
+        const settingsApi = window.AlmanionSettings;
+        if (!sync || !settingsApi || !settingsApi.ready || !user || user.uid !== uid) return;
+        if (settingsStore) settingsStore.disconnect();
+
+        const storageKey = 'almanion_settings_sync_uid_' + uid;
+        const visualDefaultsVersion = Number(settingsApi.visualDefaultsVersion || 1);
+        const mergeSettingsRecord = function (localRecord, remoteRecord) {
+            const localValue = (localRecord && localRecord.value) || {};
+            const remoteValue = (remoteRecord && remoteRecord.value) || {};
+            const localVersion = Number(localValue.visualDefaultsVersion) || 0;
+            const remoteVersion = Number(remoteValue.visualDefaultsVersion) || 0;
+
+            // Once another device has completed the one-time migration, its
+            // current preferences are authoritative and must not be reset again.
+            if (remoteVersion >= visualDefaultsVersion) {
+                if (localVersion < visualDefaultsVersion) return remoteRecord;
+                return sync.compareRecords(localRecord, remoteRecord) >= 0 ? localRecord : remoteRecord;
+            }
+            if (localVersion >= visualDefaultsVersion) {
+                const mergedValue = settingsApi.migrateVisualDefaults(Object.assign({}, localValue, remoteValue));
+                const localMeta = sync.metadata(localRecord);
+                const remoteMeta = sync.metadata(remoteRecord);
+                return sync.normalizeRecord(Object.assign({}, localRecord, { value: mergedValue }), {
+                    revision: Math.max(localMeta.revision, remoteMeta.revision),
+                    updatedAt: Math.max(localMeta.updatedAt, remoteMeta.updatedAt),
+                    deviceId: localMeta.deviceId,
+                    pending: true
+                });
+            }
+            return sync.compareRecords(localRecord, remoteRecord) >= 0 ? localRecord : remoteRecord;
+        };
+        let preferencesReady = false;
+        const reconcilePreferences = function (records) {
+            if (!settingsStore || !user || user.uid !== uid) return;
+            const preferences = records && records.preferences;
+            if (!preferences || (preferences.__sync && preferences.__sync.deleted)) {
+                // Do not invent a fresh account value after a failed initial read:
+                // it could overwrite an existing cloud preference set on another device.
+                if (!settingsStore.remoteObserved || preferencesReady) return;
+                const migrated = settingsApi.migrateVisualDefaults(settingsApi.get());
+                preferencesReady = true;
+                settingsApi.applySynced(migrated);
+                settingsStore.set('preferences', { value: migrated }, { updatedAt: Date.now() });
+                return;
+            }
+
+            const value = preferences.value || {};
+            if (Number(value.visualDefaultsVersion) < visualDefaultsVersion) {
+                const migrated = settingsApi.migrateVisualDefaults(value);
+                preferencesReady = true;
+                settingsApi.applySynced(migrated);
+                settingsStore.set('preferences', { value: migrated }, { updatedAt: Date.now() });
+                return;
+            }
+            preferencesReady = true;
+            settingsApi.applySynced(value);
+        };
+
+        settingsStore = sync.createCollection({
+            namespace: 'settings',
+            owner: uid,
+            storageKey: storageKey,
+            mergeRecord: mergeSettingsRecord,
+            onChange: function (records, detail) {
+                if (!user || user.uid !== uid || settingsStore == null) return;
+                if (detail && detail.type === 'error') {
+                    console.warn('Almanion account: settings sync deferred.', detail.error);
+                    return;
+                }
+                if (detail && (detail.type === 'set' || detail.type === 'ack')) return;
+                reconcilePreferences(records);
+            }
+        });
+        const activeStore = settingsStore;
+        activeStore.connect(db.ref('userSettings/' + uid)).then(function () {
+            if (settingsStore !== activeStore || !user || user.uid !== uid) return;
+            reconcilePreferences(activeStore.snapshot({ includeDeleted: true }));
+        });
+    }
+
+    function stopSettingsSync() {
+        settingsSyncUid = null;
+        if (settingsStore) settingsStore.disconnect();
+        settingsStore = null;
     }
 
     function registerAccountDirectory(account) {
@@ -645,6 +858,25 @@
         if (k) pushPage(k);
     });
 
+    window.addEventListener('almanion-sync-retry', function () {
+        if (kcStore) kcStore.flush();
+        if (settingsStore) settingsStore.flush();
+        else if (user && kcRef) allKcKeys().forEach(pushPage);
+    });
+
+    window.addEventListener('almanion-settings-ready', function () {
+        if (user && settingsSyncUid === user.uid) startSettingsSync(user.uid);
+    });
+
+    window.addEventListener('almanion-settings-changed', function (event) {
+        if (!user || !settingsStore) return;
+        const detail = event && event.detail;
+        if (!detail || !detail.settings) return;
+        settingsStore.set('preferences', { value: detail.settings }, {
+            updatedAt: Number(detail.updatedAt) || Date.now()
+        });
+    });
+
     // ---------- Состояние входа ----------
     auth.onAuthStateChanged(function (u) {
         authStateKnown = true;
@@ -655,7 +887,11 @@
         if (u) {
             registerAccountDirectory(u);
             startKcSync(u.uid);
-        } else stopKcSync();
+            startSettingsSync(u.uid);
+        } else {
+            stopKcSync();
+            stopSettingsSync();
+        }
         window.dispatchEvent(new CustomEvent('almanion-account-ready', { detail: { user: user } }));
     }, function (err) {
         authStateKnown = true;
@@ -687,6 +923,26 @@
         hasSiteAdminAccess: hasSiteAdminAccess,
         hasEnglishAccess: hasEnglishAccess,
         hasDutyEditorAccess: hasDutyEditorAccess,
+        exportData: function () {
+            const sync = dataSyncApi();
+            if (!sync) throw new Error('Слой синхронизации ещё не загружен');
+            return sync.exportData();
+        },
+        importData: function (backup, options) {
+            const sync = dataSyncApi();
+            if (!sync) throw new Error('Слой синхронизации ещё не загружен');
+            const changed = sync.importData(backup);
+            window.dispatchEvent(new CustomEvent('almanion-data-imported', { detail: { changed: changed } }));
+            if (!options || options.reload !== false) window.location.reload();
+            return changed;
+        },
+        syncNow: function () {
+            const tasks = [];
+            if (kcStore) tasks.push(kcStore.flush());
+            if (settingsStore) tasks.push(settingsStore.flush());
+            window.dispatchEvent(new CustomEvent('almanion-sync-retry'));
+            return Promise.all(tasks);
+        },
         auth: auth,
         database: db
     };

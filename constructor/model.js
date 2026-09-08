@@ -91,7 +91,16 @@
             createdAt: now,
             updatedAt: now,
             updatedBy: '',
-            reviewStatus: 'draft'
+            reviewStatus: 'draft',
+            review: {
+                submittedAt: 0,
+                submittedBy: '',
+                returnedAt: 0,
+                returnedBy: '',
+                publishedAt: 0,
+                publishedBy: '',
+                comments: []
+            }
         };
     }
 
@@ -158,6 +167,7 @@
             subsection.navTitle = String(item && (item.navTitle || item.title) || 'Подраздел').trim();
             return subsection;
         });
+        const sourceReview = source.review && typeof source.review === 'object' ? source.review : {};
         return {
             schemaVersion: SCHEMA_VERSION,
             id: slugify(source.id || title),
@@ -171,7 +181,24 @@
             createdAt: Number(source.createdAt) || now,
             updatedAt: Number(source.updatedAt) || now,
             updatedBy: String(source.updatedBy || ''),
-            reviewStatus: ['draft', 'ready', 'published'].includes(source.reviewStatus) ? source.reviewStatus : 'draft'
+            reviewStatus: ['draft', 'ready', 'published'].includes(source.reviewStatus) ? source.reviewStatus : 'draft',
+            review: {
+                submittedAt: Number(sourceReview.submittedAt) || 0,
+                submittedBy: String(sourceReview.submittedBy || ''),
+                returnedAt: Number(sourceReview.returnedAt) || 0,
+                returnedBy: String(sourceReview.returnedBy || ''),
+                publishedAt: Number(sourceReview.publishedAt) || 0,
+                publishedBy: String(sourceReview.publishedBy || ''),
+                comments: Array.isArray(sourceReview.comments) ? sourceReview.comments.map(comment => ({
+                    id: String(comment && comment.id || createId('review')),
+                    text: String(comment && comment.text || ''),
+                    authorUid: String(comment && comment.authorUid || ''),
+                    authorEmail: String(comment && comment.authorEmail || ''),
+                    createdAt: Number(comment && comment.createdAt) || 0,
+                    resolvedAt: Number(comment && comment.resolvedAt) || 0,
+                    resolvedBy: String(comment && comment.resolvedBy || '')
+                })).filter(comment => comment.text.trim()) : []
+            }
         };
     }
 
@@ -286,7 +313,7 @@
         section.updatedAt = Date.now();
         section.updatedBy = String(uid || '');
         section.revision = Math.max(1, Number(section.revision) || 1) + 1;
-        if (section.reviewStatus === 'published') section.reviewStatus = 'draft';
+        if (section.reviewStatus === 'published' || section.reviewStatus === 'ready') section.reviewStatus = 'draft';
         return section;
     }
 
@@ -307,20 +334,20 @@
             && actual.updatedBy === String(expected.updatedBy || '');
     }
 
-    function canReplaceRemoteDraft(remoteSection, expectedVersion, nextSection) {
-        if (sameDraftVersion(remoteSection, expectedVersion)) return true;
-        if (!nextSection) return false;
-        // Realtime Database may first invoke a transaction with an empty local
-        // cache and then retry it with the real server value.
-        if (!remoteSection) return true;
-        const actual = draftVersion(remoteSection);
-        const next = draftVersion(nextSection);
-        // A delayed autosave from the same account is safe to replace with a
-        // newer local revision. Other authors and newer cloud data still win.
-        return !!actual.updatedBy
-            && actual.updatedBy === next.updatedBy
-            && actual.revision <= next.revision
-            && actual.updatedAt <= next.updatedAt;
+    function canReplaceRemoteDraft(remoteSection, expectedVersion) {
+        // updatedBy is the account UID, not a browser-tab identifier. Treating
+        // a matching UID as ownership of the last write lets a stale second tab
+        // overwrite a newer draft. Only the exact version loaded by this client
+        // is a valid compare-and-swap predecessor.
+        return sameDraftVersion(remoteSection, expectedVersion);
+    }
+
+    function deletionCoversSection(deletion, section) {
+        if (!deletion || !section) return false;
+        const deletedRevision = Number(deletion.revision) || 0;
+        const sectionRevision = Number(section.revision) || 0;
+        if (deletedRevision !== sectionRevision) return deletedRevision > sectionRevision;
+        return (Number(deletion.deletedAt) || 0) >= (Number(section.updatedAt) || 0);
     }
 
     function validateSection(section) {
@@ -375,6 +402,7 @@
         touch,
         draftVersion,
         canReplaceRemoteDraft,
+        deletionCoversSection,
         validateSection
     };
 });

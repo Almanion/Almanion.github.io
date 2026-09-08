@@ -1,12 +1,15 @@
-const CACHE_VERSION = 'almanion-pwa-2026-09-07-home-interactions-53';
+const CACHE_VERSION = 'almanion-pwa-2026-09-08-foundation-56';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
+const NETWORK_TIMEOUT_MS = 5000;
+const RUNTIME_MAX_ENTRIES = 120;
 
 const APP_SHELL = [
     '/',
     '/index.html',
     '/offline.html',
     '/manifest.json',
+    '/search-index.json',
     '/styles/site/index.css',
     '/styles/site/00-components.css',
     '/styles/site/10-foundation.css',
@@ -23,21 +26,21 @@ const APP_SHELL = [
     '/styles/page-transitions.css',
     '/styles/home-motion.css?v=20260907-2',
     '/style-new.css',
-    '/theme-bootstrap.js',
+    '/theme-bootstrap.js?v=20260908-1',
     '/favicon-theme.js',
     '/page-transitions.js',
     '/home-motion.js?v=20260907-2',
     '/script.js',
-    '/search.js',
+    '/search.js?v=20260907-1',
+    '/data-sync.js?v=20260908-1',
     '/experimental-reader.js',
-    '/settings.js',
-    '/bookmarks.js',
+    '/settings.js?v=20260908-1',
+    '/bookmarks.js?v=20260907-3',
     '/newyear.js',
-    '/account.js',
-    '/account.js?v=20260907-2',
+    '/account.js?v=20260908-1',
     '/note-editor.js',
     '/poll.js',
-    '/knowledge-check.js',
+    '/knowledge-check.js?v=20260908-1',
     '/knowledge-check-exam.js',
     '/firebase-config.js',
     '/firebase-analytics.js',
@@ -46,10 +49,11 @@ const APP_SHELL = [
     '/constructor/index.css',
     '/constructor/preview.css',
     '/constructor/config.js',
-    '/constructor/model.js',
+    '/constructor/model.js?v=20260908-1',
     '/constructor/renderer.js',
-    '/constructor/storage.js',
-    '/constructor/index.js',
+    '/constructor/storage.js?v=20260908-1',
+    '/constructor/history.js?v=20260908-1',
+    '/constructor/index.js?v=20260908-1',
     '/content/subjects.json',
     '/content/physics/manifest.json',
     '/content/math/manifest.json',
@@ -192,8 +196,8 @@ async function networkFirst(request, cacheName, fallbackUrl) {
     const cache = await caches.open(cacheName);
 
     try {
-        const response = await fetch(request);
-        if (canCache(response)) cache.put(request, response.clone());
+        const response = await fetchWithTimeout(request, NETWORK_TIMEOUT_MS);
+        if (canCache(response)) await storeResponse(cacheName, cache, request, response.clone());
         return response;
     } catch (_) {
         const cached = await caches.match(request);
@@ -215,8 +219,8 @@ async function staleWhileRevalidate(request, cacheName) {
     const cached = await cache.match(request);
 
     const fetched = fetch(request)
-        .then((response) => {
-            if (canCache(response)) cache.put(request, response.clone());
+        .then(async (response) => {
+            if (canCache(response)) await storeResponse(cacheName, cache, request, response.clone());
             return response;
         })
         .catch(() => null);
@@ -226,4 +230,25 @@ async function staleWhileRevalidate(request, cacheName) {
 
 function canCache(response) {
     return response && (response.ok || response.type === 'opaque');
+}
+
+async function fetchWithTimeout(request, timeoutMs) {
+    if (typeof AbortController !== 'function' || !timeoutMs) return fetch(request);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(request, { signal: controller.signal });
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+async function storeResponse(cacheName, cache, request, response) {
+    await cache.put(request, response);
+    if (cacheName !== RUNTIME_CACHE) return;
+    const keys = await cache.keys();
+    const overflow = keys.length - RUNTIME_MAX_ENTRIES;
+    if (overflow > 0) {
+        await Promise.all(keys.slice(0, overflow).map(key => cache.delete(key)));
+    }
 }

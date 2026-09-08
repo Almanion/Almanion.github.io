@@ -2,9 +2,10 @@
     'use strict';
 
     const DB_NAME = 'almanion-note-constructor';
-    const DB_VERSION = 2;
+    const DB_VERSION = 3;
     const STORE = 'drafts';
     const ASSET_STORE = 'assets';
+    const REVISION_STORE = 'revisions';
     const FALLBACK_PREFIX = 'note-constructor-draft:';
     let dbPromise = null;
 
@@ -21,6 +22,7 @@
                 const db = request.result;
                 if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: 'key' });
                 if (!db.objectStoreNames.contains(ASSET_STORE)) db.createObjectStore(ASSET_STORE, { keyPath: 'key' });
+                if (!db.objectStoreNames.contains(REVISION_STORE)) db.createObjectStore(REVISION_STORE, { keyPath: 'key' });
             };
             request.onsuccess = () => resolve(request.result);
             request.onerror = () => reject(request.error || new Error('Не удалось открыть IndexedDB'));
@@ -64,10 +66,26 @@
         };
         // Синхронная страховочная копия создаётся до первой асинхронной
         // операции. Даже закрытие вкладки сразу после ввода не теряет текст.
-        try { localStorage.setItem(FALLBACK_PREFIX + entry.key, JSON.stringify(entry)); } catch (_) {}
+        let fallbackSaved = false;
+        let indexedSaved = false;
+        const failures = [];
+        try {
+            localStorage.setItem(FALLBACK_PREFIX + entry.key, JSON.stringify(entry));
+            fallbackSaved = true;
+        } catch (error) {
+            failures.push(error);
+        }
         try {
             await withStore('readwrite', store => store.put(entry));
-        } catch (_) {}
+            indexedSaved = true;
+        } catch (error) {
+            failures.push(error);
+        }
+        if (!fallbackSaved && !indexedSaved) {
+            const error = new Error('Не удалось сохранить черновик на устройстве');
+            error.failures = failures;
+            throw error;
+        }
         return entry;
     }
 
@@ -108,9 +126,18 @@
             path: String(asset.path || ''),
             mimeType: String(asset.mimeType || 'application/octet-stream'),
             dataUrl: String(asset.dataUrl || ''),
+            cloudPath: String(asset.cloudPath || ''),
+            downloadUrl: String(asset.downloadUrl || ''),
+            cloudState: String(asset.cloudState || ''),
             updatedAt: Date.now()
         };
-        await withStore('readwrite', store => store.put(entry), ASSET_STORE);
+        try {
+            await withStore('readwrite', store => store.put(entry), ASSET_STORE);
+        } catch (cause) {
+            const error = new Error('Не удалось сохранить изображение на устройстве');
+            error.cause = cause;
+            throw error;
+        }
         return entry;
     }
 
@@ -148,5 +175,51 @@
         });
     }
 
-    window.NoteStorage = { putDraft, listDrafts, removeDraft, putAsset, listAssets, removeAsset, removeSectionAssets };
+    async function putRevision(uid, subject, sectionId, revision) {
+        const entry = Object.assign({}, JSON.parse(JSON.stringify(revision || {})), {
+            key: key(uid, subject, sectionId) + ':' + String(revision && revision.id || Date.now()),
+            uid: String(uid),
+            subject: String(subject),
+            sectionId: String(sectionId)
+        });
+        await withStore('readwrite', store => store.put(entry), REVISION_STORE);
+        const entries = await listRevisions(uid, subject, sectionId);
+        if (entries.length > 50) {
+            const remove = entries.slice(50);
+            await withStore('readwrite', store => remove.forEach(item => store.delete(item.key)), REVISION_STORE);
+        }
+        return entry;
+    }
+
+    async function listRevisions(uid, subject, sectionId) {
+        const db = await openDatabase();
+        const entries = await new Promise((resolve, reject) => {
+            const tx = db.transaction(REVISION_STORE, 'readonly');
+            const request = tx.objectStore(REVISION_STORE).getAll();
+            request.onsuccess = () => resolve(request.result || []);
+            request.onerror = () => reject(request.error);
+        });
+        return entries
+            .filter(entry => entry.uid === String(uid) && entry.subject === String(subject) && entry.sectionId === String(sectionId))
+            .sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
+    }
+
+    async function removeSectionRevisions(uid, subject, sectionId) {
+        const entries = await listRevisions(uid, subject, sectionId).catch(() => []);
+        if (!entries.length) return;
+        await withStore('readwrite', store => entries.forEach(item => store.delete(item.key)), REVISION_STORE);
+    }
+
+    window.NoteStorage = {
+        putDraft,
+        listDrafts,
+        removeDraft,
+        putAsset,
+        listAssets,
+        removeAsset,
+        removeSectionAssets,
+        putRevision,
+        listRevisions,
+        removeSectionRevisions
+    };
 })();

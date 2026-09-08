@@ -305,6 +305,13 @@
       }
     },
 
+    "userSettings": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
     "englishVocabulary": {
       ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('englishAccess').val() === true)",
       ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com')",
@@ -345,8 +352,92 @@
           "createdAt": { ".validate": "newData.isNumber()" },
           "updatedAt": { ".validate": "newData.isNumber()" },
           "updatedBy": { ".validate": "newData.isString() && newData.val() === auth.uid" },
-          "reviewStatus": { ".validate": "newData.val() === 'draft' || newData.val() === 'ready' || newData.val() === 'published'" },
+          "reviewStatus": { ".validate": "newData.val() === 'draft' || newData.val() === 'ready' || (newData.val() === 'published' && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com'))" },
+          "review": {
+            ".validate": "newData.hasChildren(['submittedAt', 'submittedBy', 'returnedAt', 'returnedBy', 'publishedAt', 'publishedBy'])",
+            "submittedAt": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+            "submittedBy": { ".validate": "newData.isString() && newData.val().length <= 128 && (newData.val() === '' || newData.val() === data.val() || newData.val() === auth.uid)" },
+            "returnedAt": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+            "returnedBy": { ".validate": "newData.isString() && newData.val().length <= 128 && (newData.val() === '' || newData.val() === data.val() || auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com')" },
+            "publishedAt": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+            "publishedBy": { ".validate": "newData.isString() && newData.val().length <= 128 && (newData.val() === '' || newData.val() === data.val() || auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com')" },
+            "comments": {
+              "$comment": {
+                ".validate": "$comment.matches(/^(0|[1-9][0-9]{0,2})$/) && newData.hasChildren(['id', 'text', 'authorUid', 'authorEmail', 'createdAt', 'resolvedAt', 'resolvedBy'])",
+                "id": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 90" },
+                "text": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1200" },
+                "authorUid": { ".validate": "newData.isString() && newData.val().length <= 128 && (newData.val() === data.val() || newData.val() === auth.uid)" },
+                "authorEmail": { ".validate": "newData.isString() && newData.val().length <= 254" },
+                "createdAt": { ".validate": "newData.isNumber() && newData.val() > 0" },
+                "resolvedAt": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+                "resolvedBy": { ".validate": "newData.isString() && newData.val().length <= 128" },
+                "$other": { ".validate": false }
+              }
+            },
+            "$other": { ".validate": false }
+          },
           "$other": { ".validate": false }
+        }
+      }
+    },
+
+    "noteDraftDeletions": {
+      "$subject": {
+        ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+        "$sectionId": {
+          ".write": "auth != null && newData.exists() && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+          ".validate": "newData.hasChildren(['schemaVersion', 'subject', 'id', 'revision', 'deletedAt', 'deletedBy']) && newData.child('schemaVersion').val() === 1 && newData.child('subject').val() === $subject && newData.child('id').val() === $sectionId && newData.child('revision').isNumber() && newData.child('revision').val() > (data.exists() ? data.child('revision').val() : 0) && (!root.child('noteDrafts').child($subject).child($sectionId).exists() || newData.child('revision').val() > root.child('noteDrafts').child($subject).child($sectionId).child('revision').val()) && newData.child('deletedAt').isNumber() && newData.child('deletedAt').val() > 0 && newData.child('deletedBy').val() === auth.uid",
+          "schemaVersion": { ".validate": "newData.isNumber() && newData.val() === 1" },
+          "subject": { ".validate": "newData.isString() && newData.val() === $subject" },
+          "id": { ".validate": "newData.isString() && newData.val() === $sectionId" },
+          "revision": { ".validate": "newData.isNumber() && newData.val() >= 1" },
+          "deletedAt": { ".validate": "newData.isNumber() && newData.val() > 0" },
+          "deletedBy": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
+    "noteDraftHistory": {
+      "$subject": {
+        ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+        "$sectionId": {
+          ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+          "slots": {
+            "$slot": {
+              ".validate": "$slot.matches(/^[0-3][0-9]$/) && newData.hasChildren(['id', 'revision', 'createdAt', 'createdBy', 'createdByEmail', 'label', 'reviewStatus', 'section']) && newData.child('createdBy').val() === auth.uid && newData.child('section/id').val() === $sectionId && newData.child('section/subject').val() === $subject",
+              "id": { ".validate": "newData.isString() && newData.val().length <= 180" },
+              "revision": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+              "createdAt": { ".validate": "newData.isNumber() && newData.val() > 0" },
+              "createdBy": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+              "createdByEmail": { ".validate": "newData.isString() && newData.val().length <= 254" },
+              "label": { ".validate": "newData.isString() && newData.val().length <= 180" },
+              "reviewStatus": { ".validate": "newData.val() === 'draft' || newData.val() === 'ready' || newData.val() === 'published'" },
+              "section": { ".validate": "newData.hasChildren(['schemaVersion', 'id', 'subject', 'title', 'navTitle', 'order', 'revision', 'createdAt', 'updatedAt', 'updatedBy', 'reviewStatus'])" },
+              "$other": { ".validate": false }
+            }
+          },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
+    "noteDraftAssets": {
+      "$subject": {
+        ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+        "$sectionId": {
+          "$blockId": {
+            ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+            ".validate": "newData.hasChildren(['path', 'cloudPath', 'downloadUrl', 'mimeType', 'size', 'uploadedAt', 'uploadedBy']) && newData.child('uploadedBy').val() === auth.uid && newData.child('cloudPath').val().beginsWith('note-drafts/' + auth.uid + '/' + $subject + '/' + $sectionId + '/' + $blockId + '/')",
+            "path": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 240 && !newData.val().contains('..')" },
+            "cloudPath": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500" },
+            "downloadUrl": { ".validate": "newData.isString() && newData.val().beginsWith('https://firebasestorage.googleapis.com/') && newData.val().length <= 2000" },
+            "mimeType": { ".validate": "newData.isString() && newData.val().matches(/^image\\/.+$/)" },
+            "size": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 2621440" },
+            "uploadedAt": { ".validate": "newData.isNumber() && newData.val() > 0" },
+            "uploadedBy": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+            "$other": { ".validate": false }
+          }
         }
       }
     }

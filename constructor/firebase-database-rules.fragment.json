@@ -1,0 +1,50 @@
+{
+  "noteDraftDeletions": {
+    "$subject": {
+      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+      "$sectionId": {
+        ".write": "auth != null && newData.exists() && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+        ".validate": "newData.hasChildren(['schemaVersion', 'subject', 'id', 'revision', 'deletedAt', 'deletedBy']) && newData.child('subject').val() === $subject && newData.child('id').val() === $sectionId && newData.child('revision').val() > (data.exists() ? data.child('revision').val() : 0) && (!root.child('noteDrafts').child($subject).child($sectionId).exists() || newData.child('revision').val() > root.child('noteDrafts').child($subject).child($sectionId).child('revision').val()) && newData.child('deletedBy').val() === auth.uid"
+      }
+    }
+  },
+  "noteDraftHistory": {
+    "$subject": {
+      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+      "$sectionId": {
+        ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+        "slots": {
+          "$slot": {
+            ".validate": "$slot.matches(/^[0-3][0-9]$/) && newData.hasChildren(['id', 'revision', 'createdAt', 'createdBy', 'label', 'reviewStatus', 'section']) && newData.child('section/id').val() === $sectionId && newData.child('section/subject').val() === $subject"
+          }
+        },
+        "$other": { ".validate": false }
+      }
+    }
+  },
+  "noteDraftAssets": {
+    "$subject": {
+      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+      "$sectionId": {
+        "$blockId": {
+          ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+          ".validate": "newData.hasChildren(['path', 'cloudPath', 'mimeType', 'size', 'uploadedAt', 'uploadedBy']) && newData.child('uploadedBy').val() === auth.uid && newData.child('path').isString() && newData.child('path').val().length <= 240 && newData.child('cloudPath').isString() && newData.child('cloudPath').val().length <= 500 && newData.child('mimeType').isString() && newData.child('mimeType').val().matches(/^image\\/.+$/) && newData.child('size').isNumber() && newData.child('size').val() <= 2621440"
+        }
+      }
+    }
+  },
+  "noteDraftsReviewField": {
+    "instructions": "Merge the review child below into rules/noteDrafts/$subject/$sectionId and keep $other false.",
+    "review": {
+      ".validate": "newData.hasChildren(['submittedAt', 'submittedBy', 'returnedAt', 'returnedBy', 'publishedAt', 'publishedBy'])",
+      "submittedAt": { ".validate": "newData.isNumber()" },
+      "submittedBy": { ".validate": "newData.isString()" },
+      "returnedAt": { ".validate": "newData.isNumber()" },
+      "returnedBy": { ".validate": "newData.isString()" },
+      "publishedAt": { ".validate": "newData.isNumber()" },
+      "publishedBy": { ".validate": "newData.isString()" },
+      "comments": { ".validate": "newData.hasChildren()" },
+      "$other": { ".validate": false }
+    }
+  }
+}

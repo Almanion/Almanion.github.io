@@ -4,6 +4,7 @@
     const Model = window.NoteModel;
     const Renderer = window.NoteRenderer;
     const Storage = window.NoteStorage;
+    const History = window.NoteHistory;
     const config = window.NOTE_CONSTRUCTOR_CONFIG || {};
     const OWNER_EMAIL = String(config.ownerEmail || 'dmb23930@gmail.com').toLowerCase();
     const MAX_IMAGE_BYTES = 2.5 * 1024 * 1024;
@@ -38,8 +39,8 @@
         publishedManifest: null,
         publishedSections: [],
         hydrated: false,
-        localTimer: 0,
-        remoteTimer: 0,
+        saveTimers: new Map(),
+        remoteSaveQueues: new Map(),
         saveGeneration: 0,
         dragId: '',
         insertAfterId: '',
@@ -48,8 +49,13 @@
         previewTheme: localStorage.getItem('note-constructor-preview-theme') || 'site',
         deleting: false,
         remoteVersions: new Map(),
+        deletions: new Map(),
         conflictedSections: new Set(),
-        dirtySections: new Set()
+        dirtySections: new Set(),
+        undoManagers: new Map(),
+        knownSnapshots: new Map(),
+        pendingRevisionLabel: 'Автосохранение',
+        cloudAssets: new Map()
     };
 
     const el = id => document.getElementById(id);
@@ -96,6 +102,34 @@
     function setSaveState(kind, text) {
         el('saveState').dataset.state = kind;
         el('saveStateText').textContent = text;
+        el('saveState').title = text;
+    }
+
+    function currentKey() {
+        return state.current ? sectionKey(state.current.subject, state.current.id) : '';
+    }
+
+    function undoManager(key) {
+        const value = key || currentKey();
+        if (!value) return null;
+        if (!state.undoManagers.has(value)) state.undoManagers.set(value, new History.UndoStack(80));
+        return state.undoManagers.get(value);
+    }
+
+    function rememberSnapshot(section) {
+        if (!section) return;
+        state.knownSnapshots.set(sectionKey(section.subject, section.id), clone(section));
+    }
+
+    function updateUndoControls() {
+        const manager = undoManager();
+        const undo = el('undoButton');
+        const redo = el('redoButton');
+        if (!undo || !redo) return;
+        undo.disabled = !manager || !manager.canUndo;
+        redo.disabled = !manager || !manager.canRedo;
+        undo.title = manager && manager.canUndo ? 'Отменить: ' + manager.undoLabel + ' · Ctrl+Z' : 'Нечего отменять · Ctrl+Z';
+        redo.title = manager && manager.canRedo ? 'Вернуть: ' + manager.redoLabel + ' · Ctrl+Shift+Z' : 'Нечего возвращать · Ctrl+Shift+Z';
     }
 
     function normalizeEmail(user) {
@@ -228,13 +262,30 @@
         return Object.keys(value).map(id => Model.normalizeSection(value[id], subject));
     }
 
+    function normalizeDeletion(value, subject, id) {
+        return {
+            schemaVersion: 1,
+            subject,
+            id,
+            revision: Number(value && value.revision) || 0,
+            deletedAt: Number(value && value.deletedAt) || 0,
+            deletedBy: String(value && value.deletedBy || '')
+        };
+    }
+
+    async function loadRemoteDeletions(subject) {
+        const snapshot = await window.AlmanionAccount.database.ref('noteDraftDeletions/' + subject).once('value');
+        const value = snapshot.val() || {};
+        return Object.keys(value).map(id => normalizeDeletion(value[id], subject, id));
+    }
+
     async function loadSubject(subject) {
         const pendingSection = state.hydrated && state.current ? clone(state.current) : null;
         const pendingKey = pendingSection ? sectionKey(pendingSection.subject, pendingSection.id) : '';
-        flushTimers();
+        flushTimers(pendingKey);
         if (pendingSection && state.user && state.dirtySections.has(pendingKey)) {
             await Storage.putDraft(state.user.uid, pendingSection);
-            await saveRemote(pendingSection, ++state.saveGeneration);
+            await queueRemoteSave(pendingSection, ++state.saveGeneration);
         }
         state.hydrated = false;
         state.subject = subject;
@@ -247,21 +298,31 @@
         renderEditor();
         renderSections();
 
-        const [publishedResult, remoteResult, localResult] = await Promise.allSettled([
+        const [publishedResult, remoteResult, localResult, deletionResult] = await Promise.allSettled([
             loadPublished(subject),
             loadRemoteDrafts(subject),
-            Storage.listDrafts(state.user.uid, subject)
+            Storage.listDrafts(state.user.uid, subject),
+            loadRemoteDeletions(subject)
         ]);
         const published = publishedResult.status === 'fulfilled'
             ? publishedResult.value
             : { manifest: { schemaVersion: 1, subject, title: subject, sections: [] }, sections: [] };
-        state.publishedManifest = published.manifest;
-        state.publishedSections = published.sections.map(section => clone(section));
-        const remote = remoteResult.status === 'fulfilled' ? remoteResult.value : [];
-        const local = localResult.status === 'fulfilled' ? localResult.value.map(entry => Model.normalizeSection(entry.section, subject)) : [];
+        const deletions = deletionResult.status === 'fulfilled' ? deletionResult.value : [];
+        const deletionById = new Map(deletions.map(deletion => [deletion.id, deletion]));
+        const survivesDeletion = section => !Model.deletionCoversSection(deletionById.get(section.id), section);
+        const publishedSections = published.sections.filter(survivesDeletion);
+        state.publishedManifest = clone(published.manifest);
+        state.publishedManifest.sections = (Array.isArray(state.publishedManifest.sections) ? state.publishedManifest.sections : [])
+            .filter(entry => publishedSections.some(section => section.id === manifestEntryId(entry)));
+        state.publishedSections = publishedSections.map(section => clone(section));
+        const remote = (remoteResult.status === 'fulfilled' ? remoteResult.value : []).filter(survivesDeletion);
+        const local = (localResult.status === 'fulfilled' ? localResult.value.map(entry => Model.normalizeSection(entry.section, subject)) : []).filter(survivesDeletion);
 
         Array.from(state.remoteVersions.keys()).forEach(key => {
             if (key.startsWith(subject + '/')) state.remoteVersions.delete(key);
+        });
+        Array.from(state.deletions.keys()).forEach(key => {
+            if (key.startsWith(subject + '/')) state.deletions.delete(key);
         });
         Array.from(state.dirtySections).forEach(key => {
             if (key.startsWith(subject + '/')) state.dirtySections.delete(key);
@@ -269,11 +330,21 @@
         Array.from(state.conflictedSections).forEach(key => {
             if (key.startsWith(subject + '/')) state.conflictedSections.delete(key);
         });
+        Array.from(state.undoManagers.keys()).forEach(key => {
+            if (key.startsWith(subject + '/')) state.undoManagers.delete(key);
+        });
+        Array.from(state.knownSnapshots.keys()).forEach(key => {
+            if (key.startsWith(subject + '/')) state.knownSnapshots.delete(key);
+        });
+        Array.from(state.cloudAssets.keys()).forEach(key => {
+            if (key.startsWith(subject + '/')) state.cloudAssets.delete(key);
+        });
         remote.forEach(section => state.remoteVersions.set(sectionKey(subject, section.id), versionOf(section)));
+        deletions.forEach(deletion => state.deletions.set(sectionKey(subject, deletion.id), deletion));
 
-        const ids = new Set(published.sections.concat(remote, local).map(section => section.id));
+        const ids = new Set(publishedSections.concat(remote, local).map(section => section.id));
         state.sections = Array.from(ids).map(id => newestSection(
-            published.sections.find(section => section.id === id),
+            publishedSections.find(section => section.id === id),
             remote.find(section => section.id === id),
             local.find(section => section.id === id)
         )).sort(compareSections);
@@ -282,12 +353,13 @@
             if (!state.remoteVersions.has(key)) state.remoteVersions.set(key, null);
             const localSection = local.find(item => item.id === section.id);
             const remoteSection = remote.find(item => item.id === section.id);
-            const publishedSection = published.sections.find(item => item.id === section.id);
+            const publishedSection = publishedSections.find(item => item.id === section.id);
             const localIsNewest = localSection && Number(localSection.updatedAt) >= Math.max(
                 Number(remoteSection && remoteSection.updatedAt) || 0,
                 Number(publishedSection && publishedSection.updatedAt) || 0
             );
             if (localIsNewest && !sameVersion(localSection, remoteSection || publishedSection || null)) state.dirtySections.add(key);
+            rememberSnapshot(section);
         });
         state.hydrated = true;
         const applyRequestedContext = !requestedContext.applied && requestedContext.subject === subject;
@@ -413,11 +485,65 @@
         '</article>';
     }
 
+    function renderWorkflow() {
+        const subsection = activeSubsection();
+        const workflow = el('builderWorkflow');
+        const notes = el('reviewNotes');
+        if (!state.current || subsection) {
+            workflow.hidden = true;
+            notes.hidden = true;
+            el('publishButton').hidden = true;
+            return;
+        }
+        workflow.hidden = false;
+        notes.hidden = false;
+        const review = History.ensureReview(state.current);
+        const status = state.current.reviewStatus || 'draft';
+        const labels = {
+            draft: ['Черновик', 'Материал виден редакторам и продолжает сохраняться автоматически.'],
+            ready: ['На проверке', state.isOwner ? 'Материал готов к решению главного администратора.' : 'Главный администратор может опубликовать или вернуть материал.'],
+            published: ['Опубликовано', 'Эта версия уже доступна читателям. Новая правка снова создаст черновик.']
+        };
+        const meta = labels[status] || labels.draft;
+        const badge = el('workflowStatus');
+        badge.textContent = meta[0];
+        badge.className = 'builder-workflow-status is-' + status;
+        el('workflowHint').textContent = meta[1];
+        const submit = el('submitReviewButton');
+        submit.hidden = status === 'published' || (state.isOwner && status === 'ready');
+        submit.dataset.action = status === 'ready' ? 'withdraw' : 'submit';
+        submit.textContent = status === 'ready' ? 'Отозвать с проверки' : 'Отправить на проверку';
+        const returnButton = el('returnReviewButton');
+        returnButton.hidden = !state.isOwner || status !== 'ready';
+        el('publishButton').hidden = !state.isOwner || status !== 'ready';
+        el('publishButton').title = status === 'ready' ? 'Опубликовать проверенную версию' : 'Сначала отправьте материал на проверку';
+
+        const comments = review.comments.slice().sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
+        const openCount = comments.filter(comment => !comment.resolvedAt).length;
+        el('reviewCommentCount').textContent = String(openCount);
+        el('reviewCommentCount').title = openCount ? 'Открытых комментариев: ' + openCount : 'Открытых комментариев нет';
+        el('reviewCommentList').innerHTML = comments.length ? comments.map(comment => {
+            const resolved = !!comment.resolvedAt;
+            const canResolve = !resolved && (state.isOwner || String(comment.authorUid) === String(state.user && state.user.uid || ''));
+            const author = comment.authorEmail || 'Редактор';
+            const date = comment.createdAt ? new Date(comment.createdAt).toLocaleString('ru-RU', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+            return '<article class="builder-review-comment' + (resolved ? ' is-resolved' : '') + '">' +
+                '<div><strong>' + escapeHtml(author) + '</strong><time>' + escapeHtml(date) + '</time></div>' +
+                '<p>' + escapeHtml(comment.text) + '</p>' +
+                (resolved ? '<small>Закрыто</small>' : (canResolve ? '<button class="builder-text-action" type="button" data-resolve-comment="' + escapeHtml(comment.id) + '">Отметить исправленным</button>' : '')) +
+            '</article>';
+        }).join('') : '<p class="builder-review-empty">Комментариев пока нет.</p>';
+    }
+
     function renderEditor() {
         const hasCurrent = !!state.current;
         el('editorEmpty').hidden = hasCurrent;
         el('editorContent').hidden = !hasCurrent;
-        if (!hasCurrent) return;
+        if (!hasCurrent) {
+            el('publishButton').hidden = true;
+            updateUndoControls();
+            return;
+        }
         const subsection = activeSubsection();
         const document = subsection || state.current;
         el('documentKind').textContent = subsection ? 'Подраздел' : 'Раздел';
@@ -427,7 +553,7 @@
         el('sectionNavTitle').value = document.navTitle;
         el('sectionSlug').textContent = '#' + document.id;
         el('reviewStatus').value = state.current.reviewStatus;
-        el('reviewStatusControl').hidden = !!subsection;
+        el('reviewStatusControl').hidden = true;
         const published = isPublishedSection(state.current.id);
         const deleteButton = el('deleteSectionButton');
         deleteButton.hidden = !subsection && published && !state.isOwner;
@@ -437,6 +563,8 @@
         const blocks = activeBlockList();
         if (state.insertAfterId && !Model.findLocation(blocks, state.insertAfterId, null, 0)) state.insertAfterId = '';
         el('blockList').innerHTML = blocks.map((block, index) => renderBlockEditor(block, 0, index, blocks.length)).join('');
+        renderWorkflow();
+        updateUndoControls();
         updateAddDockContext();
         window.requestAnimationFrame(autoResizeTextareas);
     }
@@ -506,13 +634,17 @@
             return;
         }
         root.innerHTML = Renderer.renderSection(state.current);
+        const localAssetIds = new Set();
         try {
             const assets = await Storage.listAssets(state.user.uid, state.subject, state.current.id);
             if (generation !== state.previewGeneration) return;
             assets.forEach(asset => {
                 const figure = root.querySelector('[data-note-block="' + CSS.escape(asset.blockId) + '"]');
                 const image = figure && figure.querySelector('img');
-                if (image && asset.dataUrl) image.src = asset.dataUrl;
+                if (image && asset.dataUrl) {
+                    image.src = asset.dataUrl;
+                    localAssetIds.add(asset.blockId);
+                }
             });
         } catch (_) {}
         if (typeof window.renderMathInElement === 'function') {
@@ -531,6 +663,15 @@
                 });
             } catch (_) {}
         }
+        loadCloudAssets(state.subject, state.current.id, false).then(cloudAssets => {
+            if (generation !== state.previewGeneration) return;
+            cloudAssets.forEach(asset => {
+                if (localAssetIds.has(asset.blockId) || !asset.downloadUrl) return;
+                const figure = root.querySelector('[data-note-block="' + CSS.escape(asset.blockId) + '"]');
+                const image = figure && figure.querySelector('img');
+                if (image) image.src = asset.downloadUrl;
+            });
+        }).catch(() => {});
         const subsection = activeSubsection();
         if (subsection) {
             const target = root.querySelector('#' + CSS.escape(subsection.id));
@@ -538,42 +679,110 @@
         } else if (root.ownerDocument.defaultView) root.ownerDocument.defaultView.scrollTo(0, 0);
     }
 
-    function flushTimers() {
-        window.clearTimeout(state.localTimer);
-        window.clearTimeout(state.remoteTimer);
-        state.localTimer = 0;
-        state.remoteTimer = 0;
+    function finishSaveTimer(key, timers, field) {
+        if (state.saveTimers.get(key) !== timers) return;
+        timers[field] = 0;
+        if (!timers.revision && !timers.remote) state.saveTimers.delete(key);
     }
 
-    function changed(structural) {
+    function flushTimers(key) {
+        const keys = key ? [key] : Array.from(state.saveTimers.keys());
+        keys.forEach(saveKey => {
+            const timers = state.saveTimers.get(saveKey);
+            if (!timers) return;
+            window.clearTimeout(timers.revision);
+            window.clearTimeout(timers.remote);
+            state.saveTimers.delete(saveKey);
+        });
+    }
+
+    function changed(structural, details) {
         if (!state.current || !state.hydrated) return;
+        const change = details || {};
+        const key = currentKey();
+        const previous = state.knownSnapshots.get(key);
+        if (!change.skipUndo && previous) {
+            undoManager(key).record(previous, change.label || (structural ? 'Изменена структура' : 'Изменён текст'), change.mergeKey || '');
+        }
+        const reviewStatus = state.current.reviewStatus;
         Model.touch(state.current, state.user.uid);
-        state.dirtySections.add(sectionKey(state.current.subject, state.current.id));
+        if (change.preserveReviewStatus) state.current.reviewStatus = reviewStatus;
+        state.dirtySections.add(key);
+        state.pendingRevisionLabel = change.label || (structural ? 'Изменена структура' : 'Изменён текст');
+        rememberSnapshot(state.current);
         el('reviewStatus').value = state.current.reviewStatus;
         setSaveState('saving', 'Сохраняем…');
         if (structural) renderEditor();
+        else {
+            renderWorkflow();
+            updateUndoControls();
+        }
         renderSections();
         renderPreview();
         scheduleSave();
     }
 
+    async function saveRevision(section, label, cloud) {
+        if (!section || !state.user) return null;
+        const revision = History.createRevision(section, {
+            createdAt: Number(section.updatedAt) || Date.now(),
+            createdBy: state.user.uid,
+            createdByEmail: normalizeEmail(state.user),
+            label: label || state.pendingRevisionLabel || 'Автосохранение'
+        });
+        await Storage.putRevision(state.user.uid, section.subject, section.id, revision).catch(() => {});
+        if (cloud && window.AlmanionAccount && window.AlmanionAccount.database) {
+            const slot = String(Math.abs(Number(revision.revision) || 0) % 40).padStart(2, '0');
+            await window.AlmanionAccount.database
+                .ref('noteDraftHistory/' + section.subject + '/' + section.id + '/slots/' + slot)
+                .set(revision)
+                .catch(error => console.warn('Cloud revision:', error));
+        }
+        return revision;
+    }
+
     function scheduleSave() {
         if (!state.current || !state.hydrated) return;
         const section = clone(state.current);
+        const key = sectionKey(section.subject, section.id);
+        const revisionLabel = state.pendingRevisionLabel;
         const generation = ++state.saveGeneration;
-        window.clearTimeout(state.remoteTimer);
-        Storage.putDraft(state.user.uid, section).then(function () {
+        flushTimers(key);
+        const localSave = Storage.putDraft(state.user.uid, section).then(function () {
             if (generation === state.saveGeneration) setSaveState('saving', 'Сохранено на устройстве…');
+            return true;
         }).catch(function (error) {
             console.error('Local draft:', error);
             if (generation === state.saveGeneration) setSaveState('error', 'Не удалось сохранить на устройстве');
+            return false;
         });
-        state.remoteTimer = window.setTimeout(() => saveRemote(section, generation), 1100);
+        const timers = { revision: 0, remote: 0 };
+        state.saveTimers.set(key, timers);
+        timers.revision = window.setTimeout(() => {
+            finishSaveTimer(key, timers, 'revision');
+            saveRevision(section, revisionLabel, false);
+        }, 1450);
+        timers.remote = window.setTimeout(() => {
+            finishSaveTimer(key, timers, 'remote');
+            localSave.then(localSaved => queueRemoteSave(section, generation, revisionLabel, localSaved));
+        }, 1100);
     }
 
-    async function saveRemote(section, generation) {
-        if (!state.hydrated || !state.user || section.subject !== state.subject) return;
+    function queueRemoteSave(section, generation, revisionLabel, localSaved) {
         const key = sectionKey(section.subject, section.id);
+        const previous = state.remoteSaveQueues.get(key) || Promise.resolve();
+        const queued = previous.catch(() => false).then(() => saveRemote(section, generation, revisionLabel, localSaved));
+        state.remoteSaveQueues.set(key, queued);
+        queued.finally(() => {
+            if (state.remoteSaveQueues.get(key) === queued) state.remoteSaveQueues.delete(key);
+        });
+        return queued;
+    }
+
+    async function saveRemote(section, generation, revisionLabel, localSaved) {
+        if (!state.user) return false;
+        const key = sectionKey(section.subject, section.id);
+        const fallbackMessage = localSaved === false ? 'Не удалось сохранить изменения на устройстве или в облаке' : 'Сохранено только на устройстве';
         if (state.conflictedSections.has(key)) {
             if (generation === state.saveGeneration) setSaveState('error', 'Есть более новая облачная версия');
             return false;
@@ -581,9 +790,25 @@
         const expectedVersion = state.remoteVersions.has(key) ? state.remoteVersions.get(key) : null;
         let conflictDetected = false;
         try {
+            const deletionSnapshot = await window.AlmanionAccount.database
+                .ref('noteDraftDeletions/' + section.subject + '/' + section.id)
+                .once('value');
+            if (deletionSnapshot.exists()) {
+                const deletion = normalizeDeletion(deletionSnapshot.val(), section.subject, section.id);
+                state.deletions.set(key, deletion);
+                if (Model.deletionCoversSection(deletion, section)) {
+                    showDeletedDraftConflict(section);
+                    return false;
+                }
+            }
             const reference = window.AlmanionAccount.database.ref('noteDrafts/' + section.subject + '/' + section.id);
+            const currentSnapshot = await reference.once('value');
+            if (!Model.canReplaceRemoteDraft(currentSnapshot.val(), expectedVersion)) {
+                showDraftConflict(section);
+                return false;
+            }
             const result = await reference.transaction(function (remoteSection) {
-                if (!Model.canReplaceRemoteDraft(remoteSection, expectedVersion, section)) {
+                if (!Model.canReplaceRemoteDraft(remoteSection, expectedVersion)) {
                     conflictDetected = true;
                     return;
                 }
@@ -592,22 +817,32 @@
             }, undefined, false);
             if (!result.committed) {
                 if (conflictDetected) showDraftConflict(section);
-                else if (generation === state.saveGeneration) setSaveState('error', 'Сохранено только на устройстве');
+                else if (generation === state.saveGeneration) setSaveState('error', fallbackMessage);
                 return false;
             }
             state.remoteVersions.set(key, versionOf(section));
             const liveSection = state.sections.find(item => item.subject === section.subject && item.id === section.id);
             if (!liveSection || Number(liveSection.revision) <= Number(section.revision)) state.dirtySections.delete(key);
             if (generation === state.saveGeneration) setSaveState('idle', 'Все изменения сохранены');
+            await saveRevision(section, revisionLabel, true);
             if (requestedContext.embedded && window.parent !== window) {
                 window.parent.postMessage({ type: 'note-constructor:saved', subject: section.subject, section: section.id }, window.location.origin);
             }
             return true;
         } catch (error) {
             console.error('Remote draft:', error);
-            if (generation === state.saveGeneration) setSaveState('error', 'Сохранено только на устройстве');
+            if (generation === state.saveGeneration) setSaveState('error', fallbackMessage);
             return false;
         }
+    }
+
+    function showDeletedDraftConflict(section) {
+        const key = sectionKey(section.subject, section.id);
+        const firstNotice = !state.conflictedSections.has(key);
+        state.conflictedSections.add(key);
+        setSaveState('error', 'Р Р°Р·РґРµР» СѓРґР°Р»С‘РЅ РІ РґСЂСѓРіРѕР№ РІРєР»Р°РґРєРµ');
+        if (!firstNotice) return;
+        toast('Р­С‚РѕС‚ СЂР°Р·РґРµР» СѓР¶Рµ СѓРґР°Р»С‘РЅ РІ РѕР±Р»Р°РєРµ. Р›РѕРєР°Р»СЊРЅР°СЏ РєРѕРїРёСЏ РѕСЃС‚Р°Р»Р°СЃСЊ РЅР° СѓСЃС‚СЂРѕР№СЃС‚РІРµ Рё РЅРµ Р±С‹Р»Р° Р·Р°РіСЂСѓР¶РµРЅР° РѕР±СЂР°С‚РЅРѕ.', true);
     }
 
     function showDraftConflict(section) {
@@ -641,6 +876,8 @@
             state.remoteVersions.set(key, versionOf(cloudSection));
             state.conflictedSections.delete(key);
             state.dirtySections.delete(key);
+            state.undoManagers.delete(key);
+            rememberSnapshot(cloudSection);
             await Storage.putDraft(state.user.uid, cloudSection);
             renderAll();
             setSaveState('idle', 'Загружена облачная версия');
@@ -653,16 +890,120 @@
 
     async function saveNow() {
         if (!state.current) return;
-        flushTimers();
         const section = clone(state.current);
         const key = sectionKey(section.subject, section.id);
+        flushTimers(key);
         const generation = ++state.saveGeneration;
         await Storage.putDraft(state.user.uid, section);
+        await saveRevision(section, state.pendingRevisionLabel, false);
         if (!state.dirtySections.has(key)) {
             setSaveState('idle', 'Все изменения сохранены');
             return true;
         }
-        return saveRemote(section, generation);
+        return queueRemoteSave(section, generation, state.pendingRevisionLabel);
+    }
+
+    function replaceCurrentSnapshot(snapshot, label) {
+        if (!state.current || !snapshot) return false;
+        const previousRevision = Number(state.current.revision) || 1;
+        const replacement = Model.normalizeSection(snapshot, state.subject);
+        replacement.revision = Math.max(previousRevision, Number(replacement.revision) || 1);
+        replacement.updatedBy = state.user.uid;
+        Model.touch(replacement, state.user.uid);
+        const index = state.sections.findIndex(section => section.id === state.current.id);
+        if (index === -1) return false;
+        state.sections[index] = replacement;
+        state.current = replacement;
+        state.sections.sort(compareSections);
+        if (state.currentSubsectionId && !sectionSubsections(replacement).some(item => item.id === state.currentSubsectionId)) state.currentSubsectionId = '';
+        state.dirtySections.add(currentKey());
+        state.pendingRevisionLabel = label;
+        rememberSnapshot(replacement);
+        renderAll();
+        setSaveState('saving', 'Сохраняем восстановленную версию…');
+        scheduleSave();
+        return true;
+    }
+
+    function applyUndo(direction) {
+        if (!state.current) return;
+        const manager = undoManager();
+        const result = direction === 'redo' ? manager.redo(state.current) : manager.undo(state.current);
+        if (!result) return;
+        const label = (direction === 'redo' ? 'Возвращено: ' : 'Отменено: ') + result.label;
+        if (replaceCurrentSnapshot(result.snapshot, label)) toast(label);
+    }
+
+    async function loadCloudRevisions(section) {
+        try {
+            const snapshot = await window.AlmanionAccount.database
+                .ref('noteDraftHistory/' + section.subject + '/' + section.id + '/slots')
+                .once('value');
+            const value = snapshot.val() || {};
+            return Object.keys(value).map(key => value[key]).filter(item => item && item.section);
+        } catch (_) {
+            return [];
+        }
+    }
+
+    async function openHistoryDialog() {
+        if (!state.current) return toast('Сначала выберите раздел.', true);
+        const dialog = el('historyDialog');
+        dialog.hidden = false;
+        document.body.classList.add('builder-modal-open');
+        el('historyLoading').hidden = false;
+        el('historyList').innerHTML = '';
+        const section = clone(state.current);
+        const [local, cloud] = await Promise.all([
+            Storage.listRevisions(state.user.uid, section.subject, section.id).catch(() => []),
+            loadCloudRevisions(section)
+        ]);
+        if (dialog.hidden || !state.current || state.current.id !== section.id) return;
+        const published = state.publishedSections.find(item => item.id === section.id);
+        const publishedRevision = published ? History.createRevision(published, {
+            createdAt: Number(published.updatedAt) || 1,
+            createdBy: published.updatedBy,
+            label: 'Опубликованная версия'
+        }) : null;
+        const revisions = History.mergeRevisions(local, cloud, publishedRevision ? [publishedRevision] : []);
+        state.historyRevisions = new Map(revisions.map(item => [item.id, item]));
+        el('historyLoading').hidden = true;
+        el('historyList').innerHTML = revisions.length ? revisions.map(revision => {
+            const summary = History.summarizeChanges(revision.section, section).slice(0, 3).join(' · ');
+            const date = new Date(Number(revision.createdAt) || 0).toLocaleString('ru-RU', { dateStyle: 'medium', timeStyle: 'short' });
+            const author = revision.createdByEmail || revision.createdBy || 'Редактор';
+            return '<article class="builder-history-item">' +
+                '<div class="builder-history-item-head"><div><strong>' + escapeHtml(revision.label || 'Версия') + '</strong><span>' + escapeHtml(date) + ' · ' + escapeHtml(author) + '</span></div><span class="builder-history-revision">r' + escapeHtml(revision.revision) + '</span></div>' +
+                '<p>' + escapeHtml(summary) + '</p>' +
+                '<button class="builder-button is-secondary" type="button" data-restore-revision="' + escapeHtml(revision.id) + '">Восстановить эту версию</button>' +
+            '</article>';
+        }).join('') : '<div class="builder-history-empty"><strong>История пока пуста</strong><span>Первая версия появится после ближайшего автосохранения.</span></div>';
+    }
+
+    function closeHistoryDialog() {
+        el('historyDialog').hidden = true;
+        document.body.classList.remove('builder-modal-open');
+    }
+
+    function restoreRevision(id) {
+        const revision = state.historyRevisions && state.historyRevisions.get(id);
+        if (!revision || !state.current) return;
+        undoManager().record(state.current, 'Восстановление версии', '', Date.now());
+        closeHistoryDialog();
+        replaceCurrentSnapshot(revision.section, 'Восстановлена версия r' + revision.revision);
+        toast('Версия восстановлена. Предыдущий вариант можно вернуть через Ctrl+Z.');
+    }
+
+    function changeReview(action) {
+        if (!state.current) return;
+        try {
+            History.transitionReview(state.current, action, state.user, state.isOwner);
+            const labels = { submit: 'Отправлено на проверку', withdraw: 'Отозвано с проверки', return: 'Возвращено на доработку' };
+            changed(false, { label: labels[action] || 'Изменён статус проверки', preserveReviewStatus: true });
+            toast(labels[action] || 'Статус проверки изменён');
+        } catch (error) {
+            toast(error.message || String(error), true);
+        }
     }
 
     function openSectionDialog() {
@@ -684,6 +1025,8 @@
     function createSection(title) {
         const section = Model.createSection(state.subject, title);
         section.id = uniqueSectionId(title);
+        const deletion = state.deletions.get(sectionKey(section.subject, section.id));
+        if (deletion) section.revision = Math.max(section.revision, Number(deletion.revision) + 1);
         section.order = state.sections.length ? Math.max(...state.sections.map(item => Number(item.order) || 0)) + 1000 : 1000;
         section.updatedBy = state.user.uid;
         state.sections.push(section);
@@ -692,6 +1035,8 @@
         state.currentSubsectionId = '';
         state.remoteVersions.set(sectionKey(section.subject, section.id), null);
         state.dirtySections.add(sectionKey(section.subject, section.id));
+        rememberSnapshot(section);
+        state.pendingRevisionLabel = 'Создан раздел';
         renderAll();
         scheduleSave();
         toast('Раздел создан и сохранён как черновик');
@@ -763,6 +1108,9 @@
         state.remoteVersions.delete(key);
         state.conflictedSections.delete(key);
         state.dirtySections.delete(key);
+        state.undoManagers.delete(key);
+        state.knownSnapshots.delete(key);
+        state.cloudAssets.delete(key);
         state.sections.splice(index, 1);
         state.current = state.sections[Math.min(index, state.sections.length - 1)] || null;
         state.currentSubsectionId = '';
@@ -787,15 +1135,11 @@
         const index = state.sections.indexOf(state.current);
         const target = index + delta;
         if (target < 0 || target >= state.sections.length) return;
-        const other = state.sections[target];
-        const currentOrder = state.current.order;
-        state.current.order = other.order;
-        other.order = currentOrder;
-        Model.touch(other, state.user.uid);
-        Storage.putDraft(state.user.uid, clone(other));
-        saveRemote(clone(other), -1);
+        const nextOrder = History.orderForMove(state.sections, index, delta);
+        if (nextOrder == null) return;
+        state.current.order = nextOrder;
         state.sections.sort(compareSections);
-        changed(false);
+        changed(true, { label: 'Перемещён раздел' });
     }
 
     function findBlock(blockId) {
@@ -909,6 +1253,73 @@
         }
     }
 
+    function firebaseStorage() {
+        try {
+            return window.firebase && typeof window.firebase.storage === 'function' ? window.firebase.storage() : null;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function cloudAssetKey(subject, sectionId) {
+        return sectionKey(subject, sectionId);
+    }
+
+    async function loadCloudAssets(subject, sectionId, refresh) {
+        const cacheKey = cloudAssetKey(subject, sectionId);
+        if (!refresh && state.cloudAssets.has(cacheKey)) return state.cloudAssets.get(cacheKey);
+        const promise = (async function () {
+            if (!window.AlmanionAccount || !window.AlmanionAccount.database) return [];
+            const snapshot = await window.AlmanionAccount.database.ref('noteDraftAssets/' + subject + '/' + sectionId).once('value');
+            const value = snapshot.val() || {};
+            const storage = firebaseStorage();
+            return Promise.all(Object.keys(value).map(async blockId => {
+                const meta = Object.assign({ blockId }, value[blockId] || {});
+                if (!meta.downloadUrl && storage && meta.cloudPath) {
+                    try { meta.downloadUrl = await storage.ref(meta.cloudPath).getDownloadURL(); } catch (_) {}
+                }
+                return meta;
+            }));
+        })().catch(() => []);
+        state.cloudAssets.set(cacheKey, promise);
+        return promise;
+    }
+
+    async function stageCloudAsset(section, blockId, file, asset) {
+        const storage = firebaseStorage();
+        if (!storage) return false;
+        const filename = asset.path.split('/').pop();
+        const cloudPath = ['note-drafts', state.user.uid, section.subject, section.id, blockId, filename].join('/');
+        try {
+            setSaveState('saving', 'Загружаем изображение в облако…');
+            const task = await storage.ref(cloudPath).put(file, {
+                contentType: file.type,
+                customMetadata: { targetPath: asset.path, sectionId: section.id, blockId }
+            });
+            const downloadUrl = await task.ref.getDownloadURL();
+            const meta = {
+                path: asset.path,
+                cloudPath,
+                downloadUrl,
+                mimeType: file.type,
+                size: Number(file.size) || 0,
+                uploadedAt: Date.now(),
+                uploadedBy: state.user.uid
+            };
+            await window.AlmanionAccount.database.ref('noteDraftAssets/' + section.subject + '/' + section.id + '/' + blockId).set(meta);
+            await Storage.putAsset(state.user.uid, section.subject, section.id, blockId, Object.assign({}, asset, meta, { cloudState: 'ready' }));
+            state.cloudAssets.delete(cloudAssetKey(section.subject, section.id));
+            if (state.current && state.subject === section.subject && state.current.id === section.id) setSaveState('idle', 'Изображение сохранено в облаке');
+            return true;
+        } catch (error) {
+            console.warn('Cloud image staging:', error);
+            await Storage.putAsset(state.user.uid, section.subject, section.id, blockId, Object.assign({}, asset, { cloudState: 'local' }));
+            if (state.current && state.subject === section.subject && state.current.id === section.id) setSaveState('error', 'Изображение сохранено только на устройстве');
+            toast('Облачная загрузка изображения недоступна. Локальная копия сохранена и войдёт в экспорт с этого устройства.', true);
+            return false;
+        }
+    }
+
     async function handleImage(blockId, file) {
         if (!file) return;
         if (!file.type.startsWith('image/')) return toast('Можно выбрать только изображение.', true);
@@ -926,9 +1337,12 @@
         });
         location.block.src = targetPath;
         if (!location.block.alt) location.block.alt = file.name.replace(/\.[^.]+$/, '');
-        await Storage.putAsset(state.user.uid, state.subject, state.current.id, blockId, { path: targetPath, mimeType: file.type, dataUrl });
-        changed(true);
-        toast('Изображение прикреплено к черновику');
+        const section = clone(state.current);
+        const asset = { path: targetPath, mimeType: file.type, dataUrl, cloudState: 'pending' };
+        await Storage.putAsset(state.user.uid, state.subject, state.current.id, blockId, asset);
+        changed(true, { label: 'Прикреплено изображение' });
+        toast('Изображение прикреплено и сохранено на устройстве');
+        stageCloudAsset(section, blockId, file, asset);
     }
 
     function manifestWithCurrent(section) {
@@ -974,6 +1388,24 @@
             .concat(Array.from(sectionImages).filter(path => !sharedImages.has(path)));
     }
 
+    function deletionFor(section) {
+        const key = sectionKey(section.subject, section.id);
+        const remoteVersion = state.remoteVersions.get(key);
+        const previousDeletion = state.deletions.get(key);
+        return {
+            schemaVersion: 1,
+            subject: section.subject,
+            id: section.id,
+            revision: Math.max(
+                Number(section.revision) || 0,
+                Number(remoteVersion && remoteVersion.revision) || 0,
+                Number(previousDeletion && previousDeletion.revision) || 0
+            ) + 1,
+            deletedAt: Date.now(),
+            deletedBy: state.user.uid
+        };
+    }
+
     async function deletePublishedSection(section) {
         const manifest = manifestWithoutSection(section.id);
         const idToken = await state.user.getIdToken(true);
@@ -1013,25 +1445,35 @@
         }
         const section = clone(state.current);
         const published = isPublishedSection(section.id);
+        const deletion = deletionFor(section);
         if (published && !state.isOwner) return;
 
         const confirmButton = el('deleteSectionConfirm');
         state.deleting = true;
         confirmButton.disabled = true;
         confirmButton.textContent = published ? 'Удаляем с сайта…' : 'Удаляем…';
-        flushTimers();
+        flushTimers(currentKey());
         state.saveGeneration += 1;
         state.hydrated = false;
 
         try {
             if (published) {
                 await deletePublishedSection(section);
-                await window.AlmanionAccount.database.ref('noteDrafts/' + section.subject + '/' + section.id).remove().catch(() => {});
-            } else {
-                await window.AlmanionAccount.database.ref('noteDrafts/' + section.subject + '/' + section.id).remove();
             }
+            const cloudAssets = await loadCloudAssets(section.subject, section.id, true).catch(() => []);
+            const storage = firebaseStorage();
+            if (storage) await Promise.all(cloudAssets.filter(asset => asset.cloudPath).map(asset => storage.ref(asset.cloudPath).delete().catch(() => {})));
+            const basePath = section.subject + '/' + section.id;
+            await window.AlmanionAccount.database.ref().update({
+                ['noteDrafts/' + basePath]: null,
+                ['noteDraftAssets/' + basePath]: null,
+                ['noteDraftHistory/' + basePath]: null,
+                ['noteDraftDeletions/' + basePath]: deletion
+            });
             await Storage.removeDraft(state.user.uid, section.subject, section.id);
             await Storage.removeSectionAssets(state.user.uid, section.subject, section.id).catch(() => {});
+            await Storage.removeSectionRevisions(state.user.uid, section.subject, section.id).catch(() => {});
+            state.deletions.set(sectionKey(section.subject, section.id), deletion);
             removeSectionFromWorkspace(section.id);
             state.hydrated = true;
             el('deleteSectionDialog').hidden = true;
@@ -1052,14 +1494,16 @@
         }
     }
 
-    async function publicationFiles() {
+    async function publicationFiles(markPublished) {
         const section = clone(state.current);
-        section.reviewStatus = 'published';
+        if (markPublished) History.transitionReview(section, 'publish', state.user, true);
         section.updatedAt = Date.now();
         section.updatedBy = state.user.uid;
-        const manifest = manifestWithCurrent(section);
+        const publishedSection = clone(section);
+        delete publishedSection.review;
+        const manifest = manifestWithCurrent(publishedSection);
         const files = [
-            { path: 'content/' + state.subject + '/sections/' + section.id + '.json', content: JSON.stringify(section, null, 2) + '\n', encoding: 'utf-8' },
+            { path: 'content/' + state.subject + '/sections/' + section.id + '.json', content: JSON.stringify(publishedSection, null, 2) + '\n', encoding: 'utf-8' },
             { path: 'content/' + state.subject + '/manifest.json', content: JSON.stringify(manifest, null, 2) + '\n', encoding: 'utf-8' }
         ];
         const assets = await Storage.listAssets(state.user.uid, state.subject, section.id).catch(() => []);
@@ -1068,7 +1512,24 @@
             const comma = asset.dataUrl.indexOf(',');
             if (comma !== -1) files.push({ path: asset.path, content: asset.dataUrl.slice(comma + 1), encoding: 'base64' });
         });
-        return { section, manifest, files };
+        const includedPaths = new Set(files.map(file => file.path));
+        const cloudAssets = await loadCloudAssets(state.subject, section.id, true);
+        for (const asset of cloudAssets) {
+            const path = String(asset.path || '').replace(/\\/g, '/');
+            if (!referencedImages.has(path) || includedPaths.has(path)) continue;
+            if (!asset.downloadUrl) throw new Error('облачное изображение «' + path + '» временно недоступно');
+            const response = await fetch(asset.downloadUrl);
+            if (!response.ok) throw new Error('не удалось получить изображение «' + path + '»');
+            const bytes = new Uint8Array(await response.arrayBuffer());
+            let binary = '';
+            const chunkSize = 0x8000;
+            for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+                binary += String.fromCharCode.apply(null, bytes.subarray(offset, offset + chunkSize));
+            }
+            files.push({ path, content: btoa(binary), encoding: 'base64' });
+            includedPaths.add(path);
+        }
+        return { section, publishedSection, manifest, files };
     }
 
     function downloadJson(value, filename) {
@@ -1084,13 +1545,14 @@
 
     async function exportBundle() {
         if (!state.current) return toast('Сначала создайте раздел.', true);
-        const bundle = await publicationFiles();
+        const bundle = await publicationFiles(false);
         downloadJson({ schemaVersion: 1, subject: state.subject, createdAt: Date.now(), files: bundle.files }, state.subject + '-' + state.current.id + '-publication.json');
         toast('Пакет публикации скачан');
     }
 
     async function publishCurrent() {
         if (!state.isOwner || !state.current) return;
+        if (state.current.reviewStatus !== 'ready') return toast('Сначала отправьте материал на проверку.', true);
         const errors = Model.validateSection(state.current);
         if (errors.length) return toast(errors[0], true);
         const button = el('publishButton');
@@ -1099,7 +1561,7 @@
         try {
             const saved = await saveNow();
             if (saved === false) throw new Error('обнаружена более новая версия черновика');
-            const bundle = await publicationFiles();
+            const bundle = await publicationFiles(true);
             const idToken = await state.user.getIdToken(true);
             const response = await fetch(config.publisherEndpoint, {
                 method: 'POST',
@@ -1109,12 +1571,14 @@
             const result = await response.json();
             if (!result.success) throw new Error(result.error || 'Сервер публикации вернул ошибку');
             Object.assign(state.current, bundle.section);
+            rememberSnapshot(state.current);
             state.publishedManifest = bundle.manifest;
-            const publishedIndex = state.publishedSections.findIndex(section => section.id === bundle.section.id);
-            if (publishedIndex === -1) state.publishedSections.push(clone(bundle.section));
-            else state.publishedSections[publishedIndex] = clone(bundle.section);
+            const publishedIndex = state.publishedSections.findIndex(section => section.id === bundle.publishedSection.id);
+            if (publishedIndex === -1) state.publishedSections.push(clone(bundle.publishedSection));
+            else state.publishedSections[publishedIndex] = clone(bundle.publishedSection);
             await Storage.putDraft(state.user.uid, state.current);
-            await saveRemote(clone(state.current), ++state.saveGeneration);
+            state.pendingRevisionLabel = 'Опубликовано';
+            await saveRemote(clone(state.current), ++state.saveGeneration, 'Опубликовано');
             renderAll();
             if (requestedContext.embedded && window.parent !== window) {
                 window.parent.postMessage({ type: 'note-constructor:published', subject: state.subject, section: state.current.id }, window.location.origin);
@@ -1286,9 +1750,43 @@
                 moveSection(Number(move.dataset.sectionMove));
             }
         });
-        el('sectionTitle').addEventListener('input', event => { applySmartDashes(event.target); const document = activeDocument(); if (document) document.title = event.target.value; changed(false); });
-        el('sectionNavTitle').addEventListener('input', event => { applySmartDashes(event.target); const document = activeDocument(); if (document) document.navTitle = event.target.value; changed(false); });
-        el('reviewStatus').addEventListener('change', event => { state.current.reviewStatus = event.target.value; changed(false); });
+        el('sectionTitle').addEventListener('input', event => {
+            applySmartDashes(event.target);
+            const document = activeDocument();
+            if (document) document.title = event.target.value;
+            changed(false, { label: 'Изменён заголовок', mergeKey: 'document:' + (state.currentSubsectionId || state.current.id) + ':title' });
+        });
+        el('sectionNavTitle').addEventListener('input', event => {
+            applySmartDashes(event.target);
+            const document = activeDocument();
+            if (document) document.navTitle = event.target.value;
+            changed(false, { label: 'Изменено название в меню', mergeKey: 'document:' + (state.currentSubsectionId || state.current.id) + ':navTitle' });
+        });
+        el('submitReviewButton').addEventListener('click', event => changeReview(event.currentTarget.dataset.action || 'submit'));
+        el('returnReviewButton').addEventListener('click', () => changeReview('return'));
+        el('reviewCommentForm').addEventListener('submit', event => {
+            event.preventDefault();
+            if (!state.current) return;
+            try {
+                History.addComment(state.current, state.user, el('reviewCommentInput').value);
+                el('reviewCommentInput').value = '';
+                changed(false, { label: 'Добавлен комментарий к проверке', preserveReviewStatus: true });
+                el('reviewNotes').open = true;
+            } catch (error) {
+                toast(error.message || String(error), true);
+            }
+        });
+        el('reviewCommentList').addEventListener('click', event => {
+            const button = event.target.closest('[data-resolve-comment]');
+            if (!button || !state.current) return;
+            try {
+                if (History.resolveComment(state.current, button.dataset.resolveComment, state.user, state.isOwner)) {
+                    changed(false, { label: 'Закрыт комментарий к проверке', preserveReviewStatus: true });
+                }
+            } catch (error) {
+                toast(error.message || String(error), true);
+            }
+        });
         el('openBlockPickerButton').addEventListener('click', () => openBlockPicker(''));
         el('blockPickerClose').addEventListener('click', closeBlockPicker);
         el('blockPickerCancel').addEventListener('click', closeBlockPicker);
@@ -1307,7 +1805,7 @@
             if (field === 'items') location.block.items = event.target.value.split(/\r?\n/);
             else location.block[field] = event.target.value;
             if (event.target.matches('textarea')) autoResizeTextareas();
-            changed(false);
+            changed(false, { label: 'Изменён блок', mergeKey: 'block:' + card.dataset.blockId + ':' + field });
         });
         el('blockList').addEventListener('focusin', event => {
             const card = event.target.closest('[data-block-id]');
@@ -1324,7 +1822,7 @@
                 const location = card && findBlock(card.dataset.blockId);
                 if (location) {
                     location.block[field] = event.target.value;
-                    changed(false);
+                    changed(false, { label: 'Изменён блок', mergeKey: 'block:' + card.dataset.blockId + ':' + field });
                 }
                 return;
             }
@@ -1420,7 +1918,27 @@
         });
         el('exportButton').addEventListener('click', exportBundle);
         el('publishButton').addEventListener('click', publishCurrent);
+        el('undoButton').addEventListener('click', () => applyUndo('undo'));
+        el('redoButton').addEventListener('click', () => applyUndo('redo'));
+        el('historyButton').addEventListener('click', openHistoryDialog);
+        el('historyDialogClose').addEventListener('click', closeHistoryDialog);
+        el('historyDialogDone').addEventListener('click', closeHistoryDialog);
+        el('historyDialog').addEventListener('click', event => { if (event.target === el('historyDialog')) closeHistoryDialog(); });
+        el('historyList').addEventListener('click', event => {
+            const button = event.target.closest('[data-restore-revision]');
+            if (button) restoreRevision(button.dataset.restoreRevision);
+        });
         document.addEventListener('keydown', event => {
+            if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'z') {
+                event.preventDefault();
+                applyUndo(event.shiftKey ? 'redo' : 'undo');
+                return;
+            }
+            if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'y') {
+                event.preventDefault();
+                applyUndo('redo');
+                return;
+            }
             if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
                 event.preventDefault();
                 openBlockPicker('');
@@ -1436,6 +1954,7 @@
                 closeSectionDialog();
                 closeSubsectionDialog();
                 closeDeleteSectionDialog();
+                closeHistoryDialog();
                 setFullscreenPanel('preview', false);
                 setFullscreenPanel('outline', false);
                 el('builderPreview').classList.remove('is-open');

@@ -85,6 +85,7 @@ let personalSolvedDb = null;
 let personalSolvedUser = null;
 let personalSolvedRef = null;
 let personalSolvedMap = {};
+let personalSolvedStore = null;
 let personalSolvedInitialized = false;
 // Подсказки теперь хранятся в Google Sheet (столбец Hint)
 

@@ -9,9 +9,10 @@
 //
 // Планировщик использует модель DSR: difficulty (трудность), stability
 // (устойчивость памяти) и retrievability (текущая вероятность вспомнить).
-// Слабые и просроченные карточки идут первыми, число новых карточек зависит от
-// накопившихся повторов, а повтор внутри сессии назначается только после
-// «Снова»/«Трудно». Старые записи с лестницей step мигрируют без потери due/last.
+// Слабые и просроченные карточки идут первыми, но в сессию входят все новые и
+// назначенные к повторению карточки без дневной квоты. После «Снова»/«Трудно»
+// карточка возвращается до уверенного ответа. Старые записи с лестницей step
+// мигрируют без потери due/last.
 
 (function () {
     'use strict';
@@ -28,9 +29,6 @@
     const FACTOR = 19 / 81;
     const MIN_STABILITY = 1 / 1440;
     const MAX_DAYS = 36500;
-    const NEW_PER_DAY = 12;
-    const MAX_SESSION_CARDS = 30;
-    const MAX_SAME_SESSION_PRESENTATIONS = 5;
 
     // Нужна только для точной миграции старых состояний.
     const STEPS_MIN = [1, 3, 5, 10, 30, 60, 180, 300, 1440, 4320, 7200];
@@ -215,21 +213,6 @@
         try { window.dispatchEvent(new CustomEvent('kc-store-changed', { detail: { key: STORE_KEY } })); } catch (_) {}
     }
 
-    function todayStr() {
-        const d = new Date();
-        return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
-    }
-    function introAllowance() {
-        const m = store.__meta || {};
-        if (m.introDate !== todayStr()) return NEW_PER_DAY;
-        return Math.max(0, NEW_PER_DAY - (m.introCount || 0));
-    }
-    function recordIntro() {
-        if (!store.__meta) store.__meta = {};
-        if (store.__meta.introDate !== todayStr()) { store.__meta.introDate = todayStr(); store.__meta.introCount = 0; }
-        store.__meta.introCount++;
-    }
-
     // ---------- Темы и карточки ----------
     function discoverTopics() {
         const out = [];
@@ -387,14 +370,11 @@
         });
         due.sort((a, b) => b.score - a.score || a.state.due - b.state.due || a.card.id.localeCompare(b.card.id));
 
-        const reviewPicked = due.slice(0, MAX_SESSION_CARDS).map(x => ({
+        const reviewPicked = due.map(x => ({
             card: x.card,
             type: x.state.phase === 'review' ? 'review' : 'learn'
         }));
-        const freeSlots = Math.max(0, MAX_SESSION_CARDS - reviewPicked.length);
-        const suggestedNew = due.length >= 24 ? 0 : clamp(Math.round(8 - due.length / 4), 2, 8);
-        const newCount = Math.min(freeSlots, introAllowance(), suggestedNew, fresh.length);
-        const newPicked = spreadNewCards(fresh).slice(0, newCount).map(card => ({ card: card, type: 'new' }));
+        const newPicked = spreadNewCards(fresh).map(card => ({ card: card, type: 'new' }));
 
         return {
             queue: mixRecommendedQueue(reviewPicked, newPicked),
@@ -402,8 +382,18 @@
             reviewCount: reviewPicked.length,
             newCount: newPicked.length,
             newTotal: fresh.length,
-            deferred: Math.max(0, due.length - reviewPicked.length)
+            deferred: 0
         };
+    }
+
+    // «Снова» требует двух последующих уверенных ответов, «Трудно» — одного.
+    // Ограничения по числу показов нет: карточка остаётся в очереди, пока это
+    // требование не обнулится ответами «Хорошо» или «Легко».
+    function pendingSuccessesAfterGrade(current, G) {
+        const pending = Math.max(0, Math.round(finite(current, 0)));
+        if (G === 1) return Math.max(pending, 2);
+        if (G === 2) return Math.max(pending, 1);
+        return Math.max(0, pending - 1);
     }
 
     // ---------- Рендер математики ----------
@@ -575,19 +565,19 @@
         const recommendation = document.getElementById('kcRecommendation');
         if (recommendation) {
             if (selected.length === 0) {
-                recommendation.innerHTML = '<strong>Выберите темы</strong><span>Алгоритм соберёт короткую сессию.</span>';
+                recommendation.innerHTML = '<strong>Выберите темы</strong><span>Алгоритм соберёт все новые и назначенные к повторению карточки.</span>';
             } else if (selectedCards.length === 0) {
                 recommendation.innerHTML = '<strong>Пока нечего проверять</strong><span>' +
                     escapeHtml(studyProfile().empty) + '</span>';
             } else if (count === 0) {
-                recommendation.innerHTML = '<strong>На сейчас всё</strong><span>Повторения появятся, когда начнёт снижаться вероятность вспомнить.</span>';
+                recommendation.innerHTML = '<strong>Всё усвоено</strong><span>Следующие повторения появятся по интервальному расписанию.</span>';
             } else {
                 const parts = [];
                 if (plan.reviewCount) parts.push(plan.reviewCount + ' к повторению');
                 if (plan.newCount) parts.push(plan.newCount + ' ' + plural(plan.newCount, 'новая', 'новые', 'новых'));
                 recommendation.innerHTML = '<strong>Рекомендовано: ' + count + ' ' + plural(count, 'карточка', 'карточки', 'карточек') + '</strong>' +
                     '<span><span class="kc-visually-hidden">Состав: </span>' + parts.join(' · ') +
-                    (plan.deferred ? ' · ещё ' + plan.deferred + ' в следующую сессию' : '') + '</span>';
+                    '</span>';
             }
         }
     }
@@ -620,7 +610,8 @@
             again: 0,
             recalled: 0,
             planned: queue.length,
-            cardStats: Object.create(null)
+            cardStats: Object.create(null),
+            mastered: Object.create(null)
         };
         document.getElementById('kcSelectOverlay').classList.add('hidden');
         document.getElementById('kcReviewOverlay').classList.remove('hidden');
@@ -643,9 +634,8 @@
             '<span class="kc-count kc-count-review" title="К повторению">' + c.review + '</span>';
         const fill = document.getElementById('kcProgressFill');
         if (fill) {
-            const done = session.reviewed;
-            const total = done + session.queue.length;
-            fill.style.width = (total ? Math.round(done / total * 100) : 100) + '%';
+            const mastered = Object.keys(session.mastered).length;
+            fill.style.width = (session.planned ? Math.round(mastered / session.planned * 100) : 100) + '%';
         }
     }
 
@@ -713,7 +703,6 @@
         const item = session.queue.shift();
         const def = item.card;
         const prev = store[def.id];
-        const wasNew = isNewState(prev);
         const now = Date.now();
         const res = project(prev, G, now);
 
@@ -730,7 +719,6 @@
             learning: res.learning,
             lastGrade: res.lastGrade
         };
-        if (wasNew) recordIntro();
         saveStore();
 
         session.reviewed++;
@@ -738,18 +726,19 @@
 
         // Внутрисессионные повторы адаптивны: уверенно вспомненная карточка не
         // дублируется, «Трудно» требует ещё одного успешного извлечения, «Снова» —
-        // двух. Ограничение не даёт одной сложной карточке захватить всю сессию.
+        // двух. Неусвоенная карточка не может исчезнуть из сессии из-за лимита.
         const stats = session.cardStats[def.id] || { shown: 0, pendingSuccesses: 0 };
         stats.shown++;
-        if (G === 1) stats.pendingSuccesses = Math.max(stats.pendingSuccesses, 2);
-        else if (G === 2) stats.pendingSuccesses = Math.max(stats.pendingSuccesses, 1);
-        else stats.pendingSuccesses = Math.max(0, stats.pendingSuccesses - 1);
+        stats.pendingSuccesses = pendingSuccessesAfterGrade(stats.pendingSuccesses, G);
         session.cardStats[def.id] = stats;
 
-        if (stats.pendingSuccesses > 0 && stats.shown < MAX_SAME_SESSION_PRESENTATIONS) {
+        if (stats.pendingSuccesses > 0) {
+            delete session.mastered[def.id];
             const distance = G === 1 ? 2 : 4;
             const pos = Math.min(session.queue.length, distance);
             session.queue.splice(pos, 0, { card: def, type: 'learn' });
+        } else {
+            session.mastered[def.id] = true;
         }
         showCard();
     }
@@ -764,7 +753,7 @@
             '<div class="kc-final">' +
                 '<div class="kc-final-icon kc-final-icon-ok">' + IC.check + '</div>' +
                 '<h3 class="kc-final-title">Всё повторено</h3>' +
-                '<p class="kc-final-sub">На сегодня карточек к повторению нет. Возвращайтесь позже — расписание подскажет, когда.</p>' +
+                '<p class="kc-final-sub">Все выбранные карточки уже усвоены. Расписание подскажет время следующего повторения.</p>' +
                 '<div class="kc-final-actions"><button class="kc-btn kc-btn-primary" id="kcEmptyDone">Готово</button></div>' +
             '</div>';
         document.getElementById('kcEmptyDone').addEventListener('click', closeReview);
@@ -788,7 +777,7 @@
         content.innerHTML =
             '<div class="kc-final">' +
                 '<div class="kc-final-icon kc-final-icon-ok">' + IC.trophy + '</div>' +
-                '<h3 class="kc-final-title">Сессия завершена</h3>' +
+                '<h3 class="kc-final-title">Все карточки усвоены</h3>' +
                 '<div class="kc-final-stats">' +
                     '<div class="kc-fstat"><span class="kc-fstat-val">' + unique + '</span><span class="kc-fstat-lbl">' + plural(unique, 'карточка', 'карточки', 'карточек') + '</span></div>' +
                     '<div class="kc-fstat"><span class="kc-fstat-val">' + reviewed + '</span><span class="kc-fstat-lbl">' + plural(reviewed, 'ответ', 'ответа', 'ответов') + '</span></div>' +
@@ -909,11 +898,11 @@
         intervalForStability,
         recommendationScore,
         buildRecommendation,
+        pendingSuccessesAfterGrade,
         stepMinutes,
         nextStep,
         STEPS_MIN,
         TARGET_RETENTION,
-        MAX_SESSION_CARDS,
         fmtInterval,
         isLikbezPage,
         studyProfile,

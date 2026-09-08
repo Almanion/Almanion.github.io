@@ -86,13 +86,13 @@ assert.equal(Math.round(again.intervalDays * 1440), 2);
 assert.ok(again.stability < stable.stability);
 assert.equal(scheduler.project(again, 3, now + 3 * 60000).phase, 'review');
 
-// Без долга алгоритм рекомендует не больше восьми новых карточек.
+// Дневного лимита нет: все новые карточки выбранных тем входят в сессию.
 const freshCards = Array.from({ length: 20 }, (_, i) => ({ id: 'new-' + i, topicId: 't' + (i % 3) }));
 const freshPlan = scheduler.buildRecommendation(freshCards, now);
-assert.equal(freshPlan.queue.length, 8);
-assert.equal(freshPlan.newCount, 8);
+assert.equal(freshPlan.queue.length, 20);
+assert.equal(freshPlan.newCount, 20);
 
-// Большой долг ограничивается короткой сессией; новые слова не добавляются.
+// Большой долг и новые карточки проходят целиком, без переноса части на потом.
 const backlogStore = {};
 const backlogCards = Array.from({ length: 40 }, (_, i) => {
     const id = 'due-' + i;
@@ -101,9 +101,34 @@ const backlogCards = Array.from({ length: 40 }, (_, i) => {
 });
 const backlogScheduler = loadScheduler(backlogStore);
 const backlogPlan = backlogScheduler.buildRecommendation(backlogCards.concat(freshCards), now);
-assert.equal(backlogPlan.queue.length, 30);
-assert.equal(backlogPlan.reviewCount, 30);
-assert.equal(backlogPlan.newCount, 0);
-assert.equal(backlogPlan.deferred, 10);
+assert.equal(backlogPlan.queue.length, 60);
+assert.equal(backlogPlan.reviewCount, 40);
+assert.equal(backlogPlan.newCount, 20);
+assert.equal(backlogPlan.deferred, 0);
+
+// Отмена лимитов не ломает интервальность: выученная карточка не появляется
+// раньше рассчитанного срока следующего повторения.
+const futureStore = {
+    later: { v: 2, step: 8, phase: 'review', stability: 12, difficulty: 4, last: now, due: now + 12 * DAY, reps: 6, lapses: 0 }
+};
+const futurePlan = loadScheduler(futureStore).buildRecommendation([{ id: 'later', topicId: 't' }], now);
+assert.equal(futurePlan.queue.length, 0);
+
+// Сложная карточка не исчезает по числу показов: после любого количества
+// ответов «Снова» всё ещё нужны два уверенных воспроизведения.
+let pending = 0;
+for (let i = 0; i < 20; i++) pending = scheduler.pendingSuccessesAfterGrade(pending, 1);
+assert.equal(pending, 2);
+pending = scheduler.pendingSuccessesAfterGrade(pending, 3);
+assert.equal(pending, 1);
+pending = scheduler.pendingSuccessesAfterGrade(pending, 4);
+assert.equal(pending, 0);
+assert.equal(scheduler.pendingSuccessesAfterGrade(0, 2), 1);
+
+// Интервальный прогресс по-прежнему сохраняется после каждой оценки и
+// сообщает слою аккаунта о записи, чтобы облачная синхронизация не менялась.
+assert.match(source, /saveStore\(\);\s*\n\s*session\.reviewed\+\+/);
+assert.match(source, /CustomEvent\('kc-store-changed'/);
+assert.doesNotMatch(source, /NEW_PER_DAY|MAX_SESSION_CARDS|MAX_SAME_SESSION_PRESENTATIONS/);
 
 console.log('knowledge-check scheduler: all tests passed');

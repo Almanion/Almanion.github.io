@@ -442,6 +442,81 @@ function fetchDeepLWithRetry(url, options) {
 }
 
 // === Публикация конспектов в GitHub =======================================
+function noteManifestEntryId(entry) {
+  return typeof entry === 'string' ? entry : entry && entry.id;
+}
+
+function validateNoteManifest(manifest, subject) {
+  if (!manifest || manifest.subject !== subject || !Array.isArray(manifest.sections)) {
+    throw new Error('Manifest does not match the selected subject');
+  }
+  const ids = manifest.sections.map(noteManifestEntryId);
+  if (ids.some(function (id) { return !/^[a-z0-9][a-z0-9-]{1,63}$/.test(String(id || '')); })) {
+    throw new Error('Manifest contains an invalid section id');
+  }
+  if (new Set(ids).size !== ids.length) throw new Error('Manifest contains duplicate section ids');
+  return manifest;
+}
+
+function mergeNoteManifest(currentManifest, requestedManifest, subject, sectionId, section) {
+  validateNoteManifest(currentManifest, subject);
+  validateNoteManifest(requestedManifest, subject);
+  if (!section || section.id !== sectionId || section.subject !== subject) throw new Error('Section file does not match publication request');
+
+  const requestedIds = requestedManifest.sections.map(noteManifestEntryId);
+  const requestedEntry = requestedManifest.sections.find(function (entry) { return noteManifestEntryId(entry) === sectionId; });
+  if (!requestedEntry) throw new Error('Published section is missing from manifest');
+
+  const nextEntry = {
+    id: sectionId,
+    title: String(section.title || ''),
+    navTitle: String(section.navTitle || section.title || ''),
+    updatedAt: Number(section.updatedAt) || Date.now()
+  };
+  const entries = currentManifest.sections.filter(function (entry) { return noteManifestEntryId(entry) !== sectionId; });
+  const targetIndex = requestedIds.indexOf(sectionId);
+  let insertAt = entries.length;
+  let anchored = false;
+  for (let index = targetIndex - 1; index >= 0; index -= 1) {
+    const previousIndex = entries.findIndex(function (entry) { return noteManifestEntryId(entry) === requestedIds[index]; });
+    if (previousIndex !== -1) {
+      insertAt = previousIndex + 1;
+      anchored = true;
+      break;
+    }
+  }
+  if (!anchored) {
+    for (let index = targetIndex + 1; index < requestedIds.length; index += 1) {
+      const nextIndex = entries.findIndex(function (entry) { return noteManifestEntryId(entry) === requestedIds[index]; });
+      if (nextIndex !== -1) {
+        insertAt = nextIndex;
+        break;
+      }
+    }
+  }
+  entries.splice(insertAt, 0, nextEntry);
+  return Object.assign({}, currentManifest, { sections: entries });
+}
+
+function removeNoteManifestSection(currentManifest, subject, sectionId) {
+  validateNoteManifest(currentManifest, subject);
+  return Object.assign({}, currentManifest, {
+    sections: currentManifest.sections.filter(function (entry) { return noteManifestEntryId(entry) !== sectionId; })
+  });
+}
+
+function readGithubJsonFile(repository, path, ref, token) {
+  const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+  const payload = githubRequest('get', repository, '/contents/' + encodedPath + '?ref=' + encodeURIComponent(ref), token);
+  if (!payload || payload.encoding !== 'base64' || !payload.content) throw new Error('GitHub did not return ' + path);
+  const text = Utilities.newBlob(Utilities.base64Decode(String(payload.content).replace(/\s/g, ''))).getDataAsString('UTF-8');
+  try {
+    return JSON.parse(text);
+  } catch (_) {
+    throw new Error(path + ' contains invalid JSON');
+  }
+}
+
 function publishNoteFiles(identity, params) {
   const files = Array.isArray(params.files) ? params.files : [];
   if (!files.length || files.length > 24) throw new Error('Некорректный набор файлов публикации');
@@ -461,6 +536,23 @@ function publishNoteFiles(identity, params) {
     totalLength += content.length;
     return { path: path, content: content, encoding: encoding };
   });
+  const manifestPath = 'content/' + subject + '/manifest.json';
+  const sectionPath = 'content/' + subject + '/sections/' + sectionId + '.json';
+  const manifestFiles = normalizedFiles.filter(function (file) { return file.path === manifestPath && file.encoding === 'utf-8'; });
+  const sectionFiles = normalizedFiles.filter(function (file) { return file.path === sectionPath && file.encoding === 'utf-8'; });
+  if (manifestFiles.length !== 1 || sectionFiles.length !== 1) throw new Error('Publication requires exactly one manifest and one section file');
+  let requestedManifest;
+  let requestedSection;
+  try {
+    requestedManifest = JSON.parse(manifestFiles[0].content);
+    requestedSection = JSON.parse(sectionFiles[0].content);
+  } catch (_) {
+    throw new Error('Manifest or section file contains invalid JSON');
+  }
+  validateNoteManifest(requestedManifest, subject);
+  if (!requestedSection || requestedSection.id !== sectionId || requestedSection.subject !== subject) {
+    throw new Error('Section file does not match publication request');
+  }
   if (totalLength > 9 * 1024 * 1024) throw new Error('Пакет публикации слишком велик');
 
   const properties = PropertiesService.getScriptProperties();
@@ -480,6 +572,13 @@ function publishNoteFiles(identity, params) {
     const parentCommit = githubRequest('get', repository, '/git/commits/' + parentSha, token);
     const baseTreeSha = parentCommit.tree && parentCommit.tree.sha;
     if (!baseTreeSha) throw new Error('GitHub не вернул дерево файлов');
+
+    const currentManifest = readGithubJsonFile(repository, manifestPath, parentSha, token);
+    manifestFiles[0].content = JSON.stringify(
+      mergeNoteManifest(currentManifest, requestedManifest, subject, sectionId, requestedSection),
+      null,
+      2
+    ) + '\n';
 
     const treeItems = normalizedFiles.map(function (file) {
       const blob = githubRequest('post', repository, '/git/blobs', token, {
@@ -568,8 +667,10 @@ function deleteNoteFiles(identity, params) {
     const baseTreeSha = parentCommit.tree && parentCommit.tree.sha;
     if (!baseTreeSha) throw new Error('GitHub не вернул дерево файлов');
 
+    const currentManifest = readGithubJsonFile(repository, manifestPath, parentSha, token);
+    const finalManifestContent = JSON.stringify(removeNoteManifestSection(currentManifest, subject, sectionId), null, 2) + '\n';
     const manifestBlob = githubRequest('post', repository, '/git/blobs', token, {
-      content: manifestContent,
+      content: finalManifestContent,
       encoding: 'utf-8'
     });
     const treeItems = [{ path: manifestPath, mode: '100644', type: 'blob', sha: manifestBlob.sha }]

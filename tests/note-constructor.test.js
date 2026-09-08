@@ -6,6 +6,7 @@ const os = require('os');
 const path = require('path');
 const Model = require('../constructor/model.js');
 const Renderer = require('../constructor/renderer.js');
+const History = require('../constructor/history.js');
 const Builder = require('../tools/build-notes.js');
 
 function testModel() {
@@ -39,10 +40,16 @@ function testModel() {
     const expectedDraftVersion = Model.draftVersion(remoteDraft);
     const nextDraft = Object.assign(Model.clone(remoteDraft), { revision: 5, updatedAt: 120 });
     assert.strictEqual(Model.canReplaceRemoteDraft(remoteDraft, expectedDraftVersion, nextDraft), true);
-    assert.strictEqual(Model.canReplaceRemoteDraft(null, expectedDraftVersion, nextDraft), true);
-    assert.strictEqual(Model.canReplaceRemoteDraft(Object.assign(Model.clone(remoteDraft), { revision: 5, updatedAt: 110 }), expectedDraftVersion, nextDraft), true);
+    assert.strictEqual(Model.canReplaceRemoteDraft(null, expectedDraftVersion, nextDraft), false);
+    assert.strictEqual(Model.canReplaceRemoteDraft(null, null, nextDraft), true);
+    assert.strictEqual(Model.canReplaceRemoteDraft(Object.assign(Model.clone(remoteDraft), { revision: 5, updatedAt: 110 }), expectedDraftVersion, nextDraft), false);
     assert.strictEqual(Model.canReplaceRemoteDraft(Object.assign(Model.clone(remoteDraft), { revision: 6, updatedAt: 130 }), expectedDraftVersion, nextDraft), false);
     assert.strictEqual(Model.canReplaceRemoteDraft(Object.assign(Model.clone(remoteDraft), { updatedBy: 'editor-b' }), expectedDraftVersion, nextDraft), false);
+
+    const deletion = { revision: 5, deletedAt: 130 };
+    assert.strictEqual(Model.deletionCoversSection(deletion, remoteDraft), true);
+    assert.strictEqual(Model.deletionCoversSection(deletion, Object.assign(Model.clone(remoteDraft), { revision: 6, updatedAt: 140 })), false);
+    assert.strictEqual(Model.deletionCoversSection({ revision: 4, deletedAt: 90 }, remoteDraft), false);
 
     const definition = Model.createBlock('definition');
     definition.term = 'I закон Ньютона';
@@ -60,6 +67,88 @@ function testModel() {
     assert.strictEqual(legacy.blocks.length, 0);
     assert.strictEqual(legacy.subsections.length, 1);
     assert.strictEqual(legacy.subsections[0].navTitle, 'Старый подраздел');
+
+    const reviewed = Model.normalizeSection({
+        title: 'Проверяемый раздел',
+        navTitle: 'Проверка',
+        reviewStatus: 'ready',
+        review: {
+            submittedAt: 10,
+            submittedBy: 'editor-a',
+            comments: [{ id: 'review-1', text: 'Проверьте формулу', authorUid: 'editor-a', authorEmail: 'editor@example.com', createdAt: 11 }]
+        },
+        blocks: [Model.createBlock('paragraph')]
+    }, 'physics');
+    assert.strictEqual(reviewed.reviewStatus, 'ready');
+    assert.strictEqual(reviewed.review.comments[0].text, 'Проверьте формулу');
+    Model.touch(reviewed, 'editor-a');
+    assert.strictEqual(reviewed.reviewStatus, 'draft', 'правка материала на проверке возвращает его в черновик');
+}
+
+function testHistoryAndReview() {
+    const section = Model.createSection('physics', 'История');
+    section.blocks[0].content = 'Первая версия';
+    const undo = new History.UndoStack(20);
+    undo.record(section, 'Изменён текст', 'block:text', 1000);
+    section.blocks[0].content = 'Вторая версия';
+    undo.record(section, 'Изменён текст', 'block:text', 1500);
+    section.blocks[0].content = 'Третья версия';
+    assert.strictEqual(undo.undoEntries.length, 1, 'непрерывный ввод объединяется в одну команду');
+    const undone = undo.undo(section);
+    assert.strictEqual(undone.snapshot.blocks[0].content, 'Первая версия');
+    assert.strictEqual(undo.canRedo, true);
+    const redone = undo.redo(undone.snapshot);
+    assert.strictEqual(redone.snapshot.blocks[0].content, 'Третья версия');
+
+    const before = Model.clone(section);
+    section.title = 'Новая история';
+    section.blocks.push(Object.assign(Model.createBlock('formula'), { latex: 'F = ma' }));
+    const summary = History.summarizeChanges(before, section);
+    assert.ok(summary.includes('Изменён заголовок'));
+    assert.ok(summary.includes('Добавлено блоков: 1'));
+
+    const actor = { uid: 'editor-a', email: 'editor@example.com' };
+    History.transitionReview(section, 'submit', actor, false, 2000);
+    assert.strictEqual(section.reviewStatus, 'ready');
+    assert.throws(() => History.transitionReview(section, 'publish', actor, false, 2100), /главный администратор/);
+    const comment = History.addComment(section, actor, 'Уточнить обозначение', 2200);
+    assert.strictEqual(section.review.comments.length, 1);
+    assert.strictEqual(History.resolveComment(section, comment.id, actor, false, 2300), true);
+    assert.strictEqual(section.review.comments[0].resolvedAt, 2300);
+    History.transitionReview(section, 'return', { uid: 'owner' }, true, 2400);
+    assert.strictEqual(section.reviewStatus, 'draft');
+    History.transitionReview(section, 'submit', actor, false, 2500);
+    History.transitionReview(section, 'publish', { uid: 'owner' }, true, 2600);
+    assert.strictEqual(section.reviewStatus, 'published');
+
+    const revision = History.createRevision(section, { createdAt: 3000, createdBy: 'owner', createdByEmail: 'owner@example.com', label: 'Проверено' });
+    assert.strictEqual(revision.id, '3000-' + section.revision);
+    assert.strictEqual(History.mergeRevisions([revision], [revision]).length, 1);
+}
+
+function testConstructorV2Wiring() {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'constructor.html'), 'utf8');
+    const script = fs.readFileSync(path.join(__dirname, '..', 'constructor', 'index.js'), 'utf8');
+    const storage = fs.readFileSync(path.join(__dirname, '..', 'constructor', 'storage.js'), 'utf8');
+    const storageRules = fs.readFileSync(path.join(__dirname, '..', 'firebase', 'storage.rules'), 'utf8');
+    const databaseFragment = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'constructor', 'firebase-database-rules.fragment.json'), 'utf8'));
+    assert.ok(html.includes('id="undoButton"'));
+    assert.ok(html.includes('id="historyDialog"'));
+    assert.ok(html.includes('firebase-storage-compat.js'));
+    assert.ok(html.includes('constructor/history.js'));
+    assert.ok(script.includes("event.key.toLowerCase() === 'z'"));
+    assert.ok(script.includes("noteDraftHistory/"));
+    assert.ok(script.includes("noteDraftAssets/"));
+    assert.ok(script.includes("noteDraftDeletions/"));
+    assert.ok(script.includes("History.transitionReview(section, 'publish'"));
+    assert.ok(script.includes('delete publishedSection.review'));
+    assert.ok(storage.includes("const REVISION_STORE = 'revisions'"));
+    assert.ok(storageRules.includes('request.auth.uid == uploaderUid'));
+    assert.ok(storageRules.includes("request.resource.contentType.matches('image/.*')"));
+    assert.ok(databaseFragment.noteDraftHistory);
+    assert.ok(databaseFragment.noteDraftAssets);
+    assert.ok(databaseFragment.noteDraftDeletions);
+    assert.ok(databaseFragment.noteDraftsReviewField.review);
 }
 
 function testRenderer() {
@@ -247,6 +336,8 @@ function testNumberTheoryStructure() {
 }
 
 testModel();
+testHistoryAndReview();
+testConstructorV2Wiring();
 testRenderer();
 testBuild();
 testEmptySubjectBuild();

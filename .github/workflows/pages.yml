@@ -4,47 +4,68 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 concurrency:
-  group: github-pages
+  group: github-pages-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
 
-      - name: Prepare static site
-        run: |
-          mkdir _site
-          git ls-files -z | tar --null -T - -cf - | tar -xf - -C _site
-          rm -rf _site/.git _site/.github
-          node tools/build-notes.js --root . --output _site
-          touch _site/.nojekyll
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install build tooling
+        run: npm ci --ignore-scripts
+
+      - name: Test, build, and validate
+        run: npm run ci
+
+      - name: Preserve verified site for rollback
+        uses: actions/upload-artifact@v7
+        with:
+          name: site-build-${{ github.sha }}
+          path: _site
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: _site
+          include-hidden-files: true
 
   deploy:
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
         with:
           timeout: 1800000

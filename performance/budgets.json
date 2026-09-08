@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "maxBytesByExtension": {
+    ".html": 320000,
+    ".js": 120000,
+    ".css": 100000,
+    ".json": 120000
+  },
+  "maxPrecacheEntries": 115,
+  "maxSearchSourceBytes": 1100000,
+  "searchSourcePages": [
+    "physics.html",
+    "chemistry.html",
+    "math.html",
+    "geometry.html",
+    "geometry-formulas.html",
+    "likbez.html",
+    "physics-exam.html"
+  ]
+}

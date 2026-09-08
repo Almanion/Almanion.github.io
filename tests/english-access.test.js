@@ -63,7 +63,7 @@ assert.match(ui, /'\u041dастройки': 'Settings'/);
 assert.match(ui, /CONTENT_EXCLUSIONS = '[^']*\[lang="ru"\]/);
 assert.match(settings, /dataset\.uiLanguage === 'en'[\s\S]*?restore all settings to their defaults/);
 
-const normalizeSource = client.match(/function normalizeItems\(value\) \{[\s\S]*?\n    \}(?=\n\n    function makeWordBlock)/);
+const normalizeSource = client.match(/function normalizeItems\(value\) \{[\s\S]*?\r?\n    \}(?=\r?\n\r?\n    function makeWordBlock)/);
 assert.ok(normalizeSource, 'normalizeItems could not be extracted for ordering test');
 const shuffledItems = {};
 for (let number = 135; number >= 1; number--) {

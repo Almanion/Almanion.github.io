@@ -1,0 +1,9 @@
+[
+  { "path": "physics.html", "label": "Физика" },
+  { "path": "chemistry.html", "label": "Химия" },
+  { "path": "math.html", "label": "Алгебра" },
+  { "path": "geometry.html", "label": "Геометрия" },
+  { "path": "geometry-formulas.html", "label": "Формулы по геометрии" },
+  { "path": "likbez.html", "label": "Ликбезы" },
+  { "path": "physics-exam.html", "label": "Билеты по физике" }
+]

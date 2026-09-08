@@ -11,7 +11,7 @@ const worker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 
 assert.match(page, /id="homePrivilegedActions"[^>]*hidden/, 'privileged action slot must start hidden');
 assert.doesNotMatch(page, /<a[^>]+id="home(?:Constructor|Admin)Link"/, 'privileged links must not exist in initial markup');
-assert.match(page, /account\.js\?v=20260907-2/, 'home page must request the access-aware account script');
+assert.match(page, /account\.js\?v=20260908-1/, 'home page must request the access-aware account script');
 
 assert.match(account, /function clearHomeAccessLinks\(slot\)[\s\S]*slot\.replaceChildren\(\);\s*slot\.hidden = true;/,
     'all privileged actions must be removed before each access check');
@@ -32,6 +32,6 @@ assert.match(account, /if \(event\.persisted\) updateHomeAccessLinks\(\)/,
 assert.match(account, /addEventListener\('pagehide'[\s\S]*if \(!event\.persisted\) return;[\s\S]*clearHomeAccessLinks\(slot\)/,
     'privileged actions must be cleared before a page enters BFCache');
 
-assert.match(worker, /'\/account\.js\?v=20260907-2'/, 'the versioned account script must be listed in the app shell');
+assert.match(worker, /'\/account\.js\?v=20260908-1'/, 'the versioned account script must be listed in the app shell');
 
 console.log('home privileged links: all tests passed');

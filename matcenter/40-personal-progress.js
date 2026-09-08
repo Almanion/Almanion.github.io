@@ -57,6 +57,10 @@ function handlePersonalSolvedUser(user) {
         try { personalSolvedRef.off(); } catch (_) {}
         personalSolvedRef = null;
     }
+    if (personalSolvedStore) {
+        personalSolvedStore.disconnect();
+        personalSolvedStore = null;
+    }
 
     personalSolvedUser = user || null;
     document.body.classList.toggle('matcenter-account-signed-in', !!personalSolvedUser);
@@ -73,6 +77,33 @@ function handlePersonalSolvedUser(user) {
     applyPersonalSolvedMarks();
 
     personalSolvedRef = personalSolvedDb.ref(`${MATCENTER_SOLVED_DB_PATH}/${personalSolvedUser.uid}`);
+    if (window.AlmanionDataSync) {
+        // Старый cache v1 был оболочкой { version, entries }. Перед первым
+        // открытием общей Collection разворачиваем именно карту entries.
+        const cacheKey = getPersonalSolvedCacheKey(personalSolvedUser.uid);
+        try {
+            const legacyCache = JSON.parse(safeGet(cacheKey) || 'null');
+            if (legacyCache && !legacyCache.schema && legacyCache.version === MATCENTER_SOLVED_CACHE_VERSION && legacyCache.entries) {
+                safeSet(cacheKey, JSON.stringify(legacyCache.entries));
+            }
+        } catch (_) {}
+        personalSolvedStore = window.AlmanionDataSync.createCollection({
+            namespace: 'matcenterSolved',
+            owner: personalSolvedUser.uid,
+            storageKey: cacheKey,
+            onChange: (records, detail) => {
+                personalSolvedMap = normalizePersonalSolvedMap(records);
+                applyPersonalSolvedMarks();
+                if (detail && detail.type === 'error') {
+                    console.warn('⚠️ Синхронизация прогресса Матцентра отложена:', detail.error);
+                }
+            }
+        });
+        personalSolvedMap = normalizePersonalSolvedMap(personalSolvedStore.snapshot({ includeDeleted: true }));
+        applyPersonalSolvedMarks();
+        personalSolvedStore.connect(personalSolvedRef);
+        return;
+    }
     personalSolvedRef.on('value', (snap) => {
         const remoteMap = normalizePersonalSolvedMap(snap.val() || {});
         personalSolvedMap = mergePersonalSolvedMaps(personalSolvedMap, remoteMap);
@@ -105,7 +136,7 @@ function normalizePersonalSolvedMap(value) {
             ...entry,
             solved: entry.solved !== false,
             updatedAt: Number(entry.updatedAt) || 0,
-            _pending: entry._pending === true
+            _pending: entry._pending === true || entry.__sync?.pending === true
         };
         return result;
     }, {});
@@ -118,6 +149,7 @@ function readPersonalSolvedCache(uid) {
         const raw = safeGet(getPersonalSolvedCacheKey(uid));
         if (!raw) return {};
         const parsed = JSON.parse(raw);
+        if (parsed && parsed.schema && parsed.records) return normalizePersonalSolvedMap(parsed.records);
         if (!parsed || parsed.version !== MATCENTER_SOLVED_CACHE_VERSION) return {};
         return normalizePersonalSolvedMap(parsed.entries);
     } catch (err) {
@@ -128,6 +160,7 @@ function readPersonalSolvedCache(uid) {
 
 function writePersonalSolvedCache() {
     if (!personalSolvedUser || !personalSolvedUser.uid) return;
+    if (personalSolvedStore) return; // Collection сохраняет versioned envelope сама.
 
     try {
         safeSet(getPersonalSolvedCacheKey(personalSolvedUser.uid), JSON.stringify({
@@ -145,6 +178,9 @@ function getPersonalSolvedEntryTime(entry) {
 }
 
 function mergePersonalSolvedMaps(localValue, remoteValue) {
+    if (typeof window !== 'undefined' && window.AlmanionDataSync) {
+        return window.AlmanionDataSync.mergeRecords(localValue, remoteValue, { markLocalOnlyPending: true });
+    }
     const localMap = normalizePersonalSolvedMap(localValue);
     const remoteMap = normalizePersonalSolvedMap(remoteValue);
     const merged = {};
@@ -184,6 +220,11 @@ function getRemotePersonalSolvedEntry(entry) {
 }
 
 async function syncPendingPersonalSolvedEntries() {
+    if (personalSolvedStore) {
+        await personalSolvedStore.flush();
+        personalSolvedMap = normalizePersonalSolvedMap(personalSolvedStore.snapshot({ includeDeleted: true }));
+        return;
+    }
     if (personalSolvedSyncInFlight || !personalSolvedUser || !personalSolvedRef) return;
 
     const pendingKeys = Object.keys(personalSolvedMap).filter(key => personalSolvedMap[key]?._pending);
@@ -341,6 +382,16 @@ async function togglePersonalSolvedTask(task, card) {
         ...getSolvedTaskPayload(task, nextSolved),
         _pending: true
     };
+    if (personalSolvedStore) {
+        const options = { updatedAt: personalSolvedMap[key].updatedAt };
+        if (nextSolved) personalSolvedStore.set(key, personalSolvedMap[key], options);
+        else personalSolvedStore.remove(key, personalSolvedMap[key], options);
+        personalSolvedMap = normalizePersonalSolvedMap(personalSolvedStore.snapshot({ includeDeleted: true }));
+        setPersonalSolvedCardState(card, nextSolved, true);
+        updatePersonalSolvedProgress();
+        if (btn) btn.disabled = false;
+        return;
+    }
     writePersonalSolvedCache();
     setPersonalSolvedCardState(card, nextSolved, true);
     updatePersonalSolvedProgress();

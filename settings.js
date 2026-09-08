@@ -4,6 +4,7 @@
 
 // Настройки по умолчанию
 const VISUAL_DEFAULTS_MIGRATION_KEY = 'almanion:visual-defaults:2026-09-05-v1';
+const VISUAL_DEFAULTS_VERSION = 1;
 
 function systemPrefersDark() {
     return typeof window.matchMedia === 'function'
@@ -30,8 +31,24 @@ const defaultSettings = {
     expMode: 'prism',      // 'graphite' | 'prism'
     expTheme: 'system',    // 'system' | 'light' | 'dark'
     expDark: systemPrefersDark(), // resolved value kept for early page rendering
-    matcenterSolvedAnimation: 'circle' // 'circle' | 'strike'
+    matcenterSolvedAnimation: 'circle', // 'circle' | 'strike'
+    visualDefaultsVersion: VISUAL_DEFAULTS_VERSION
 };
+
+function migrateVisualDefaults(value) {
+    return {
+        ...defaultSettings,
+        ...(value && typeof value === 'object' && !Array.isArray(value) ? value : {}),
+        newYearMode: false,
+        animationLevel: 'max',
+        hoverEffects: true,
+        experimental: true,
+        expMode: 'prism',
+        expTheme: 'system',
+        expDark: systemPrefersDark(),
+        visualDefaultsVersion: VISUAL_DEFAULTS_VERSION
+    };
+}
 
 // Текущие настройки
 let siteSettings = { ...defaultSettings };
@@ -66,6 +83,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initSystemThemeSync();
     initSettingsButton();
     createSettingsModal();
+    window.AlmanionSettings.ready = true;
+    window.dispatchEvent(new CustomEvent('almanion-settings-ready', {
+        detail: { settings: { ...siteSettings } }
+    }));
 });
 
 // ============================================
@@ -84,7 +105,7 @@ function loadSettings() {
     // Apply the new visual defaults exactly once per browser. This only touches
     // appearance settings; account data, bookmarks, progress and drafts live elsewhere.
     if (safeStorageGet(VISUAL_DEFAULTS_MIGRATION_KEY) !== '1') {
-        siteSettings = { ...defaultSettings, expDark: systemPrefersDark() };
+        siteSettings = migrateVisualDefaults(siteSettings);
         saveSettings();
         safeStorageSet('newYearMode', false);
         safeStorageSet(VISUAL_DEFAULTS_MIGRATION_KEY, '1');
@@ -95,8 +116,33 @@ function loadSettings() {
     window.siteSettings = siteSettings;
 }
 
-function saveSettings() {
+function saveSettings(options = {}) {
     safeStorageSet('siteSettings', JSON.stringify(siteSettings));
+    const updatedAt = Date.now();
+    safeStorageSet('almanion_site_settings_updated_at', String(updatedAt));
+    if (!options.silent) {
+        window.dispatchEvent(new CustomEvent('almanion-settings-changed', {
+            detail: { settings: { ...siteSettings }, updatedAt }
+        }));
+    }
+}
+
+function applySyncedSettings(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return;
+    siteSettings = { ...defaultSettings, ...value };
+    siteSettings.expTheme = normalizeExperimentalTheme(siteSettings.expTheme, siteSettings.expDark);
+    siteSettings.expDark = resolveExperimentalDark(siteSettings.expTheme);
+    window.siteSettings = siteSettings;
+    saveSettings({ silent: true });
+    applyAllSettings();
+
+    // Закрытая панель пересоздаётся с актуальными состояниями кнопок. Открытую
+    // не заменяем под руками пользователя; она обновится при следующем открытии.
+    const modal = document.getElementById('settingsModal');
+    if (modal && modal.classList.contains('hidden')) {
+        modal.remove();
+        createSettingsModal();
+    }
 }
 
 // ============================================
@@ -1011,5 +1057,12 @@ document.addEventListener('DOMContentLoaded', initSettingsSwipe);
 window.openSettingsModal = openSettingsModal;
 window.closeSettingsModal = closeSettingsModal;
 window.siteSettings = siteSettings;
+window.AlmanionSettings = {
+    ready: false,
+    get: () => ({ ...siteSettings }),
+    applySynced: applySyncedSettings,
+    migrateVisualDefaults,
+    visualDefaultsVersion: VISUAL_DEFAULTS_VERSION
+};
 
 console.log('⚙️ Система настроек загружена');

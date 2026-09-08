@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <script src="theme-bootstrap.js?v=20260905-1"></script>
+    <script src="theme-bootstrap.js?v=20260908-1"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light dark">
     <meta name="robots" content="noindex">
@@ -26,7 +26,7 @@
     </script>
     <link rel="stylesheet" href="styles/tokens.css?v=20260903-1">
     <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
-    <link rel="stylesheet" href="constructor/index.css?v=20260904-10">
+    <link rel="stylesheet" href="constructor/index.css?v=20260907-11">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 </head>
 <body>
@@ -55,6 +55,11 @@
                 <span id="saveStateText">Все изменения сохранены</span>
             </div>
             <div class="builder-top-actions">
+                <div class="builder-history-actions" role="group" aria-label="История изменений">
+                    <button class="builder-icon-button is-neutral" id="undoButton" type="button" aria-label="Отменить изменение" title="Отменить · Ctrl+Z" disabled><span aria-hidden="true">↶</span></button>
+                    <button class="builder-icon-button is-neutral" id="redoButton" type="button" aria-label="Вернуть изменение" title="Вернуть · Ctrl+Shift+Z" disabled><span aria-hidden="true">↷</span></button>
+                    <button class="builder-icon-button is-neutral" id="historyButton" type="button" aria-label="Открыть историю версий" title="История версий"><span aria-hidden="true">◷</span></button>
+                </div>
                 <button class="builder-button is-quiet" id="previewToggle" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg><span>Предпросмотр</span></button>
                 <button class="builder-button is-quiet" id="exportButton" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg><span>Экспорт</span></button>
                 <button class="builder-button is-primary" id="publishButton" type="button" hidden>Опубликовать</button>
@@ -115,14 +120,33 @@
                             </div>
                             <label class="builder-review-control" id="reviewStatusControl">
                                 <span>Состояние</span>
-                                <select id="reviewStatus">
+                                <select id="reviewStatus" aria-describedby="workflowHint">
                                     <option value="draft">Черновик</option>
                                     <option value="ready">Готово к проверке</option>
                                     <option value="published" disabled>Опубликовано</option>
                                 </select>
                             </label>
                         </div>
+                        <div class="builder-workflow" id="builderWorkflow">
+                            <div class="builder-workflow-copy">
+                                <span class="builder-workflow-status" id="workflowStatus">Черновик</span>
+                                <span id="workflowHint">Материал виден только редакторам.</span>
+                            </div>
+                            <div class="builder-workflow-actions">
+                                <button class="builder-button is-secondary" id="submitReviewButton" type="button">Отправить на проверку</button>
+                                <button class="builder-button is-quiet" id="returnReviewButton" type="button" hidden>Вернуть на доработку</button>
+                            </div>
+                        </div>
                       </div>
+
+                      <details class="builder-review-notes" id="reviewNotes">
+                        <summary><span>Комментарии к проверке</span><span class="builder-review-count" id="reviewCommentCount">0</span></summary>
+                        <div class="builder-review-comments" id="reviewCommentList"></div>
+                        <form class="builder-review-form" id="reviewCommentForm">
+                            <label class="builder-field"><span>Новый комментарий</span><textarea id="reviewCommentInput" maxlength="1200" placeholder="Что нужно проверить или исправить"></textarea></label>
+                            <button class="builder-button is-secondary" type="submit">Добавить</button>
+                        </form>
+                      </details>
 
                       <div class="builder-block-list" id="blockList"></div>
                     </div>
@@ -230,6 +254,20 @@
         </div>
     </div>
 
+    <div class="builder-dialog-backdrop builder-history-backdrop" id="historyDialog" hidden>
+        <section class="builder-dialog builder-history-dialog" role="dialog" aria-modal="true" aria-labelledby="historyDialogTitle">
+            <button class="builder-dialog-close" id="historyDialogClose" type="button" aria-label="Закрыть">×</button>
+            <span class="builder-eyebrow">Страховочные копии</span>
+            <h2 id="historyDialogTitle">История версий</h2>
+            <p>Версии сохраняются после паузы в работе. Облачные копии доступны редакторам на других устройствах.</p>
+            <div class="builder-history-loading" id="historyLoading">Загружаем историю…</div>
+            <div class="builder-history-list" id="historyList"></div>
+            <div class="builder-dialog-actions">
+                <button class="builder-button is-quiet" id="historyDialogDone" type="button">Готово</button>
+            </div>
+        </section>
+    </div>
+
     <div class="builder-toast-stack" id="builderToastStack" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
@@ -237,12 +275,15 @@
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-storage-compat.js"></script>
     <script src="firebase-config.js?v=20260903-3"></script>
-    <script src="account.js?v=20260904-1"></script>
+    <script src="data-sync.js?v=20260908-1"></script>
+    <script src="account.js?v=20260908-1"></script>
     <script src="constructor/config.js?v=20260903-2"></script>
-    <script src="constructor/model.js?v=20260904-6"></script>
+    <script src="constructor/model.js?v=20260908-1"></script>
     <script src="constructor/renderer.js?v=20260904-8"></script>
-    <script src="constructor/storage.js?v=20260903-3"></script>
-    <script src="constructor/index.js?v=20260906-1"></script>
+    <script src="constructor/history.js?v=20260908-1"></script>
+    <script src="constructor/storage.js?v=20260908-1"></script>
+    <script src="constructor/index.js?v=20260908-1"></script>
 </body>
 </html>

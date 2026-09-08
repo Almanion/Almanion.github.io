@@ -10,6 +10,7 @@
     let db = null;
     let auth = null;
     let bookmarkRef = null;
+    let bookmarkStore = null;
     let bookmarkOwnerUid = null;
     let bookmarkCacheKey = LOCAL_BOOKMARKS_KEY + '_guest';
     let visitorId = null;
@@ -48,15 +49,53 @@
         return bookmarkRef;
     }
 
+    function syncApi() {
+        return window.AlmanionDataSync || null;
+    }
+
+    function handleBookmarkStoreChange(nextBookmarks, detail) {
+        bookmarks = nextBookmarks || {};
+        if (detail && detail.type === 'error') {
+            console.warn('Almanion bookmarks: sync deferred.', detail.error);
+        }
+        refreshAllButtons();
+        if (bookmarksPanelOpen && !bmDragging && (Date.now() - lastLocalWriteAt > 1200)) {
+            renderBookmarksPanel();
+        }
+    }
+
+    function openBookmarkStore(owner, key, migrateGuest) {
+        const api = syncApi();
+        if (!api) return null;
+        const options = {
+            namespace: 'bookmarks',
+            owner: owner || 'guest',
+            storageKey: key,
+            onChange: handleBookmarkStoreChange
+        };
+        if (migrateGuest) {
+            options.guestStorageKey = LOCAL_BOOKMARKS_KEY + '_guest';
+            options.accountStorageKey = key;
+            return api.migrateGuest(options);
+        }
+        return api.createCollection(options);
+    }
+
     function loadBookmarks() {
         try {
             const guest = safeGet(bookmarkCacheKey);
             const legacy = safeGet(LOCAL_BOOKMARKS_KEY);
-            bookmarks = JSON.parse(guest || legacy || '{}');
             if (!guest && legacy) safeSet(bookmarkCacheKey, legacy);
+            bookmarkStore = openBookmarkStore('guest', bookmarkCacheKey, false);
+            bookmarks = bookmarkStore
+                ? bookmarkStore.snapshot({ includeDeleted: true })
+                : JSON.parse(guest || legacy || '{}');
         } catch { bookmarks = {}; }
 
         if (auth) auth.onAuthStateChanged(connectBookmarksAccount);
+        window.addEventListener('almanion-sync-retry', function () {
+            if (bookmarkStore) bookmarkStore.flush();
+        });
     }
 
     function bookmarkUpdatedAt(entry) {
@@ -64,6 +103,7 @@
     }
 
     function mergeBookmarkStores(local, remote) {
+        if (syncApi()) return syncApi().mergeRecords(local, remote);
         const merged = {};
         new Set(Object.keys(local || {}).concat(Object.keys(remote || {}))).forEach(id => {
             const a = local && local[id];
@@ -76,7 +116,8 @@
     }
 
     function connectBookmarksAccount(user) {
-        safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
+        if (bookmarkStore) bookmarkStore.disconnect();
+        else safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
         if (bookmarkRef) {
             try { bookmarkRef.off(); } catch (_) {}
             bookmarkRef = null;
@@ -88,12 +129,21 @@
             : LOCAL_BOOKMARKS_KEY + '_guest';
 
         let cachedForOwner = {};
-        try { cachedForOwner = JSON.parse(safeGet(bookmarkCacheKey) || '{}'); } catch (_) {}
-        if (bookmarkOwnerUid && !previousOwnerUid) {
-            // Первые локальные закладки гостя переносим в вошедший аккаунт.
-            bookmarks = mergeBookmarkStores(cachedForOwner, bookmarks);
+        if (syncApi()) {
+            bookmarkStore = openBookmarkStore(
+                bookmarkOwnerUid || 'guest',
+                bookmarkCacheKey,
+                !!bookmarkOwnerUid && !previousOwnerUid
+            );
+            bookmarks = bookmarkStore.snapshot({ includeDeleted: true });
         } else {
-            bookmarks = cachedForOwner;
+            try { cachedForOwner = JSON.parse(safeGet(bookmarkCacheKey) || '{}'); } catch (_) {}
+            if (bookmarkOwnerUid && !previousOwnerUid) {
+                // Первые локальные закладки гостя переносим в вошедший аккаунт.
+                bookmarks = mergeBookmarkStores(cachedForOwner, bookmarks);
+            } else {
+                bookmarks = cachedForOwner;
+            }
         }
 
         if (!db || !bookmarkOwnerUid) {
@@ -104,6 +154,10 @@
 
         bookmarkRef = db.ref('bookmarks/' + bookmarkOwnerUid);
         const ref = bookmarkRef;
+        if (bookmarkStore) {
+            bookmarkStore.connect(ref);
+            return;
+        }
         ref.once('value').then(snap => {
             if (bookmarkRef !== ref) return null;
             bookmarks = mergeBookmarkStores(bookmarks, snap.val() || {});
@@ -133,8 +187,14 @@
     }
 
     function saveBookmark(id, data) {
-        bookmarks[id] = { ...data, deleted: false, updatedAt: Date.now() };
+        const value = { ...data, deleted: false, updatedAt: Date.now() };
+        bookmarks[id] = value;
         lastLocalWriteAt = Date.now();
+        if (bookmarkStore) {
+            bookmarkStore.set(id, value, { updatedAt: value.updatedAt });
+            bookmarks = bookmarkStore.snapshot({ includeDeleted: true });
+            return;
+        }
         const ref = getBookmarksRef();
         if (ref) {
             ref.child(id).set(bookmarks[id]).catch(() => {});
@@ -143,12 +203,18 @@
     }
 
     function removeBookmark(id) {
-        bookmarks[id] = {
+        const value = {
             deleted: true,
             updatedAt: Date.now(),
             timestamp: bookmarkUpdatedAt(bookmarks[id])
         };
+        bookmarks[id] = value;
         lastLocalWriteAt = Date.now();
+        if (bookmarkStore) {
+            bookmarkStore.remove(id, value, { updatedAt: value.updatedAt });
+            bookmarks = bookmarkStore.snapshot({ includeDeleted: true });
+            return;
+        }
         const ref = getBookmarksRef();
         if (ref) {
             ref.child(id).set(bookmarks[id]).catch(() => {});
@@ -504,12 +570,19 @@
 
     function persistOrder(orderedIds) {
         lastLocalWriteAt = Date.now();
+        const updatedAt = Date.now();
         orderedIds.forEach((id, i) => {
             if (hasBookmark(id)) {
                 bookmarks[id].order = i;
-                bookmarks[id].updatedAt = Date.now();
+                bookmarks[id].updatedAt = updatedAt;
+                if (bookmarkStore) bookmarkStore.set(id, bookmarks[id], { updatedAt, flush: false });
             }
         });
+        if (bookmarkStore) {
+            bookmarks = bookmarkStore.snapshot({ includeDeleted: true });
+            bookmarkStore.flush();
+            return;
+        }
         safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
         const ref = getBookmarksRef();
         if (ref) {

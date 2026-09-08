@@ -3,6 +3,7 @@
 
     var SETTINGS_KEY = 'siteSettings';
     var MIGRATION_KEY = 'almanion:visual-defaults:2026-09-05-v1';
+    var VISUAL_DEFAULTS_VERSION = 1;
     var colorSchemeQuery = typeof window.matchMedia === 'function'
         ? window.matchMedia('(prefers-color-scheme: dark)')
         : null;
@@ -22,7 +23,8 @@
             expMode: 'prism',
             expTheme: 'system',
             expDark: dark,
-            matcenterSolvedAnimation: 'circle'
+            matcenterSolvedAnimation: 'circle',
+            visualDefaultsVersion: VISUAL_DEFAULTS_VERSION
         };
     }
 
