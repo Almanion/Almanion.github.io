@@ -803,12 +803,14 @@
             }
             const reference = window.AlmanionAccount.database.ref('noteDrafts/' + section.subject + '/' + section.id);
             const currentSnapshot = await reference.once('value');
-            if (!Model.canReplaceRemoteDraft(currentSnapshot.val(), expectedVersion)) {
+            // This is a server-backed read, so unlike the first transaction
+            // callback an empty value here is real and must stay strict.
+            if (!sameVersion(currentSnapshot.val(), expectedVersion)) {
                 showDraftConflict(section);
                 return false;
             }
             const result = await reference.transaction(function (remoteSection) {
-                if (!Model.canReplaceRemoteDraft(remoteSection, expectedVersion)) {
+                if (!Model.canReplaceRemoteDraft(remoteSection, expectedVersion, section)) {
                     conflictDetected = true;
                     return;
                 }

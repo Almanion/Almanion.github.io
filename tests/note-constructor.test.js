@@ -40,7 +40,8 @@ function testModel() {
     const expectedDraftVersion = Model.draftVersion(remoteDraft);
     const nextDraft = Object.assign(Model.clone(remoteDraft), { revision: 5, updatedAt: 120 });
     assert.strictEqual(Model.canReplaceRemoteDraft(remoteDraft, expectedDraftVersion, nextDraft), true);
-    assert.strictEqual(Model.canReplaceRemoteDraft(null, expectedDraftVersion, nextDraft), false);
+    assert.strictEqual(Model.canReplaceRemoteDraft(null, expectedDraftVersion, nextDraft), true, 'первый пустой проход Firebase-транзакции не является конфликтом');
+    assert.strictEqual(Model.canReplaceRemoteDraft(null, expectedDraftVersion), false, 'вне транзакции отсутствие ожидаемого облачного черновика остаётся конфликтом');
     assert.strictEqual(Model.canReplaceRemoteDraft(null, null, nextDraft), true);
     assert.strictEqual(Model.canReplaceRemoteDraft(Object.assign(Model.clone(remoteDraft), { revision: 5, updatedAt: 110 }), expectedDraftVersion, nextDraft), false);
     assert.strictEqual(Model.canReplaceRemoteDraft(Object.assign(Model.clone(remoteDraft), { revision: 6, updatedAt: 130 }), expectedDraftVersion, nextDraft), false);

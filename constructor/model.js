@@ -334,12 +334,17 @@
             && actual.updatedBy === String(expected.updatedBy || '');
     }
 
-    function canReplaceRemoteDraft(remoteSection, expectedVersion) {
+    function canReplaceRemoteDraft(remoteSection, expectedVersion, nextSection) {
         // updatedBy is the account UID, not a browser-tab identifier. Treating
         // a matching UID as ownership of the last write lets a stale second tab
-        // overwrite a newer draft. Only the exact version loaded by this client
-        // is a valid compare-and-swap predecessor.
-        return sameDraftVersion(remoteSection, expectedVersion);
+        // overwrite a newer draft. A real cloud value must therefore be the
+        // exact version loaded by this client.
+        if (sameDraftVersion(remoteSection, expectedVersion)) return true;
+        // Realtime Database can invoke a transaction once with an empty local
+        // cache before retrying it with the server value. The caller verifies
+        // the server snapshot immediately before starting the transaction, so
+        // this provisional pass is safe; a newer real value still fails above.
+        return !remoteSection && !!expectedVersion && !!nextSection;
     }
 
     function deletionCoversSection(deletion, section) {
