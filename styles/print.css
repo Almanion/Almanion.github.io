@@ -1,36 +1,377 @@
-/* Print-only document layout for subject notes and browser PDF export. */
+/* PDF selection interface and print-only document layout for subject notes. */
 
-.print-export-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.55rem;
-    min-height: 42px;
-    margin: 0 0 1rem;
-    padding: 0.68rem 1rem;
-    color: var(--exp-accent-contrast, #fff);
-    background: var(--exp-accent, var(--accent-color));
-    border: 1px solid transparent;
-    border-radius: 10px;
-    font: inherit;
-    font-size: 0.88rem;
-    font-weight: 650;
-    cursor: pointer;
-    transition: opacity 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;
+.print-export-menu-slot {
+    flex: 0 0 auto;
+    padding: 0.62rem var(--spacing, 1rem);
+    border-bottom: 1px solid var(--border-color);
 }
 
-.print-export-button:hover { opacity: 0.9; }
-.print-export-button:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 3px; }
-.print-export-button:disabled { cursor: wait; opacity: 0.68; }
-.print-export-button svg {
-    width: 18px;
-    height: 18px;
+.english-page.english-locked .print-export-menu-slot {
+    display: none;
+}
+
+.print-export-button {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.65rem;
+    width: 100%;
+    min-height: 44px;
+    margin: 0;
+    padding: 0.68rem 0.78rem;
+    color: var(--text-color);
+    background: color-mix(in srgb, var(--bg-secondary) 90%, var(--accent-color) 10%);
+    border: 1px solid var(--border-color);
+    border-radius: 11px;
+    box-shadow: none;
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 650;
+    line-height: 1.2;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.16s ease, background-color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+
+.print-export-button:hover {
+    color: var(--accent-color);
+    background: color-mix(in srgb, var(--bg-secondary) 82%, var(--accent-color) 18%);
+    border-color: color-mix(in srgb, var(--border-color) 48%, var(--accent-color) 52%);
+    transform: translateY(-1px);
+}
+
+.print-export-button:focus-visible,
+.print-export-dialog button:focus-visible,
+.print-export-dialog input:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+.print-export-button:disabled { cursor: wait; opacity: 0.62; transform: none; }
+.print-export-button svg,
+.print-export-dialog-icon svg {
+    width: 19px;
+    height: 19px;
+    flex: 0 0 auto;
     fill: none;
     stroke: currentColor;
     stroke-width: 1.7;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
+
+.print-export-chevron {
+    margin-left: auto;
+    color: var(--text-secondary);
+    font-size: 1.15rem;
+    font-weight: 400;
+}
+
+body.experimental .print-export-button {
+    color: var(--exp-text);
+    background: var(--exp-surface-2);
+    border-color: var(--exp-border);
+    border-radius: var(--exp-r-sm);
+}
+
+body.experimental .print-export-button:hover {
+    color: var(--exp-accent);
+    background: var(--exp-accent-soft);
+    border-color: color-mix(in srgb, var(--exp-border) 40%, var(--exp-accent) 60%);
+}
+
+.print-export-button-floating {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 8900;
+    width: auto;
+    min-width: 150px;
+    box-shadow: 0 12px 34px rgba(15, 23, 42, 0.16);
+}
+
+body.print-export-dialog-open { overflow: hidden !important; }
+
+.print-export-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100020;
+    display: grid;
+    place-items: center;
+    padding: clamp(0.75rem, 2.5vw, 1.75rem);
+    color: var(--text-color);
+    background: rgba(15, 18, 28, 0.58);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    transition: opacity 0.18s ease;
+}
+
+.print-export-overlay[hidden] { display: none !important; }
+.print-export-overlay.is-open { opacity: 1; }
+
+.print-export-dialog {
+    width: min(740px, 100%);
+    max-height: min(820px, calc(100dvh - 2rem));
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    overflow: hidden;
+    color: var(--text-color);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    box-shadow: 0 28px 80px rgba(7, 11, 23, 0.3);
+    transform: translateY(7px) scale(0.992);
+    transition: transform 0.18s ease;
+}
+
+.print-export-overlay.is-open .print-export-dialog { transform: none; }
+
+.print-export-dialog-header {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 0.9rem;
+    padding: 1.35rem 1.4rem 1.15rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.print-export-dialog-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    color: var(--accent-color);
+    background: color-mix(in srgb, var(--bg-secondary) 78%, var(--accent-color) 22%);
+    border: 1px solid color-mix(in srgb, var(--border-color) 55%, var(--accent-color) 45%);
+    border-radius: 12px;
+}
+
+.print-export-eyebrow {
+    margin: 0 0 0.22rem;
+    color: var(--accent-color);
+    font-size: 0.69rem;
+    font-weight: 750;
+    line-height: 1;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.print-export-dialog-header h2 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: clamp(1.2rem, 2vw, 1.48rem);
+    font-weight: 720;
+    line-height: 1.18;
+    letter-spacing: -0.025em;
+}
+
+.print-export-dialog-header p:last-child {
+    margin: 0.35rem 0 0;
+    color: var(--text-secondary);
+    font-size: 0.87rem;
+    line-height: 1.45;
+}
+
+.print-export-close {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 1.6rem;
+    font-weight: 300;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.print-export-close:hover { color: var(--text-color); background: var(--bg-color); border-color: var(--border-color); }
+
+.print-export-dialog-body {
+    min-height: 0;
+    padding: 1rem 1.4rem 1.2rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
+.print-export-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.05rem;
+}
+
+.print-export-presets button,
+.print-export-cancel,
+.print-export-download {
+    min-height: 38px;
+    padding: 0.55rem 0.78rem;
+    border-radius: 9px;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.print-export-presets button,
+.print-export-cancel {
+    color: var(--text-color);
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+}
+
+.print-export-presets button:hover,
+.print-export-cancel:hover { border-color: var(--accent-color); color: var(--accent-color); }
+
+.print-export-presets button.is-active {
+    color: var(--accent-color);
+    background: color-mix(in srgb, var(--bg-color) 78%, var(--accent-color) 22%);
+    border-color: color-mix(in srgb, var(--border-color) 45%, var(--accent-color) 55%);
+}
+
+.print-export-selection-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0 0 0.65rem;
+}
+
+.print-export-selection-heading strong { font-size: 0.88rem; font-weight: 700; }
+.print-export-selection-heading span { color: var(--text-secondary); font-size: 0.76rem; }
+.print-export-selection { display: grid; gap: 0.7rem; }
+
+.print-export-group {
+    overflow: hidden;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+}
+
+.print-export-group-heading,
+.print-export-option {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    cursor: pointer;
+}
+
+.print-export-group-heading {
+    padding: 0.78rem 0.9rem;
+    background: color-mix(in srgb, var(--bg-color) 85%, var(--accent-color) 15%);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.print-export-group-heading > span {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.8rem;
+}
+
+.print-export-group-heading strong {
+    overflow: hidden;
+    color: var(--text-color);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.print-export-group-heading small { flex: 0 0 auto; color: var(--text-secondary); font-size: 0.69rem; }
+.print-export-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0.4rem; }
+
+.print-export-option {
+    min-width: 0;
+    padding: 0.62rem 0.68rem;
+    border-radius: 8px;
+    transition: background-color 0.12s ease;
+}
+
+.print-export-option:hover { background: color-mix(in srgb, var(--bg-color) 82%, var(--accent-color) 18%); }
+.print-export-option span { min-width: 0; color: var(--text-color); font-size: 0.79rem; line-height: 1.35; }
+.print-export-dialog input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 auto;
+    margin: 0;
+    accent-color: var(--accent-color);
+    cursor: pointer;
+}
+
+.print-export-dialog-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 1.4rem calc(0.9rem + env(safe-area-inset-bottom, 0px));
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+}
+
+.print-export-dialog-footer > p {
+    max-width: 330px;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.48rem;
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.73rem;
+    line-height: 1.4;
+}
+
+.print-export-dialog-footer > p span {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-size: 0.65rem;
+    font-weight: 700;
+}
+
+.print-export-dialog-footer > div { display: flex; gap: 0.55rem; }
+.print-export-download {
+    min-width: 132px;
+    color: var(--button-text, #fff);
+    background: var(--accent-color);
+    border: 1px solid var(--accent-color);
+}
+.print-export-download:hover { filter: brightness(0.96); }
+.print-export-download:disabled { cursor: not-allowed; opacity: 0.48; filter: none; }
+
+body.experimental .print-export-dialog,
+body.experimental .print-export-dialog-footer { color: var(--exp-text); background: var(--exp-surface); border-color: var(--exp-border); }
+body.experimental .print-export-dialog-header,
+body.experimental .print-export-dialog-footer { border-color: var(--exp-border); }
+body.experimental .print-export-dialog-header h2,
+body.experimental .print-export-group-heading strong,
+body.experimental .print-export-option span { color: var(--exp-text); }
+body.experimental .print-export-dialog-header p:last-child,
+body.experimental .print-export-selection-heading span,
+body.experimental .print-export-group-heading small,
+body.experimental .print-export-dialog-footer > p { color: var(--exp-text-dim); }
+body.experimental .print-export-dialog-icon { color: var(--exp-accent); background: var(--exp-accent-soft); border-color: var(--exp-border); }
+body.experimental .print-export-eyebrow { color: var(--exp-accent); }
+body.experimental .print-export-presets button,
+body.experimental .print-export-cancel,
+body.experimental .print-export-group { color: var(--exp-text); background: var(--exp-surface-2); border-color: var(--exp-border); }
+body.experimental .print-export-group-heading { background: color-mix(in srgb, var(--exp-surface-2) 82%, var(--exp-accent) 18%); border-color: var(--exp-border); }
+body.experimental .print-export-presets button.is-active { color: var(--exp-accent); background: var(--exp-accent-soft); border-color: var(--exp-accent); }
+body.experimental .print-export-option:hover { background: var(--exp-accent-soft); }
+body.experimental .print-export-download { color: var(--exp-accent-contrast); background: var(--exp-accent); border-color: var(--exp-accent); }
+body.experimental .print-export-dialog input[type="checkbox"] { accent-color: var(--exp-accent); }
 
 .print-export-button.is-preparing svg { animation: printExportPulse 0.9s ease-in-out infinite alternate; }
 
@@ -39,8 +380,31 @@
     to { opacity: 1; }
 }
 
+@media (max-width: 680px) {
+    .print-export-overlay { place-items: end center; padding: 0; }
+    .print-export-dialog {
+        width: 100%;
+        max-height: min(92dvh, 820px);
+        border-right: 0;
+        border-bottom: 0;
+        border-left: 0;
+        border-radius: 18px 18px 0 0;
+        transform: translateY(18px);
+    }
+    .print-export-dialog-header { gap: 0.7rem; padding: 1rem 1rem 0.9rem; }
+    .print-export-dialog-icon { width: 38px; height: 38px; }
+    .print-export-dialog-body { padding: 0.85rem 1rem 1rem; }
+    .print-export-options { grid-template-columns: minmax(0, 1fr); }
+    .print-export-dialog-footer { align-items: stretch; flex-direction: column; padding-right: 1rem; padding-left: 1rem; }
+    .print-export-dialog-footer > p { max-width: none; }
+    .print-export-dialog-footer > div { display: grid; grid-template-columns: 0.8fr 1.2fr; }
+    .print-export-cancel, .print-export-download { width: 100%; }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .print-export-button,
+    .print-export-overlay,
+    .print-export-dialog,
     .print-export-button.is-preparing svg { transition: none; animation: none; }
 }
 
@@ -111,6 +475,8 @@
     .english-translator-panel,
     .english-translator-sidebar-button,
     .english-translator-mobile-button,
+    .print-export-overlay,
+    .print-export-menu-slot,
     .print-export-button,
     .page-footer,
     [data-note-editor-control] {
@@ -199,6 +565,15 @@
     .main-content > .content-section + .content-section {
         break-before: page;
         page-break-before: always !important;
+    }
+
+    .main-content > .content-section[data-print-first-section] {
+        break-before: auto !important;
+        page-break-before: auto !important;
+    }
+
+    .main-content [data-print-excluded] {
+        display: none !important;
     }
 
     .part-title,
@@ -449,4 +824,9 @@
     mark,
     mark.search-highlight,
     mark.search-result-term { color: inherit !important; background: transparent !important; }
+
+    body.print-export-active .main-content > .content-section[data-print-excluded],
+    body.print-export-active .main-content > .content-section > .topic[data-print-excluded] {
+        display: none !important;
+    }
 }
