@@ -275,13 +275,13 @@ function testNumberTheoryStructure() {
     assert.match(noteText, /\\divby\b/);
     assert.match(noteText, /\\ndivby\b/);
     assert.doesNotMatch(noteText, /\\nmid\b/, 'знак «не делит» должен быть записан в форме «не делится»');
-    assert.strictEqual((noteText.match(/\\mid(?![A-Za-z])/g) || []).length, 7, 'обычная черта должна остаться только в обозначениях множеств');
+    assert.strictEqual((noteText.match(/\\mid(?![A-Za-z])/g) || []).length, 8, 'обычная черта должна остаться только в обозначениях множеств');
     [siteScript, constructorScript].forEach(source => {
         assert.ok(source.includes('"\\\\divby": "\\\\mathrel{\\\\scriptstyle\\\\vdots}"'));
         assert.ok(source.includes('"\\\\ndivby": "\\\\mathrel{\\\\scriptstyle\\\\not\\\\vdots}"'));
     });
     assert.deepStrictEqual(Model.validateSection(section), []);
-    const detachedTypes = new Set(['paragraph', 'formula', 'list', 'image', 'proof']);
+    const detachedTypes = new Set(['paragraph', 'formula', 'list', 'image']);
     section.subsections.forEach(subsection => {
         subsection.children.forEach(block => {
             assert.ok(!detachedTypes.has(block.type), `${subsection.id}: блок ${block.id} должен быть вложен в смысловой контейнер`);
@@ -294,9 +294,11 @@ function testNumberTheoryStructure() {
     const reciprocity = section.subsections.find(subsection => subsection.id === 'kvadratichnyy-zakon-vzaimnosti');
     const eisenstein = reciprocity.children.find(block => block.id === 'eisenstein-lemma');
     const eisensteinProof = eisenstein.children.find(block => block.id === 'eisenstein-proof');
-    const eisensteinFigure = eisensteinProof.children.find(block => block.id === 'reciprocity-lattice');
-    assert.ok(eisensteinProof.children.some(block => block.id === 'eisenstein-lattice-intro'));
-    assert.ok(eisensteinProof.children.some(block => block.id === 'eisenstein-lattice-conclusion'));
+    const eisensteinReciprocityProof = reciprocity.children.find(block => block.id === 'eisenstein-reciprocity-proof');
+    const eisensteinFigure = eisensteinReciprocityProof.children.find(block => block.id === 'reciprocity-lattice');
+    assert.strictEqual(eisensteinProof.children.length, 0);
+    assert.strictEqual(eisensteinReciprocityProof.type, 'proof');
+    assert.ok(eisensteinReciprocityProof.children.some(block => block.id === 'eisenstein-lattice-conclusion'));
     assert.strictEqual(eisensteinFigure.title, 'Геометрическая интерпретация леммы Эйзенштейна');
     assert.ok(eisensteinFigure.caption.includes('Центральная симметрия'));
 
