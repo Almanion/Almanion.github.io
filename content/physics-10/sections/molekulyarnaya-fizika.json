@@ -213,133 +213,53 @@
           "id": "opyt-s-monomolekulyarnoy-plenkoy",
           "type": "experiment",
           "title": "Опыт Ленгмюра, Марселей и Дево",
-          "content": "Вода покрылась несмачиваемым порошком (тальком), после чего на неё наносилось определённое количество масла, которое растекалось мономолекулярной плёнкой. При этом порошок отодвигался за пределы плёнки, площадь которой легко могла быть измерена.",
-          "children": [
-            {
-              "id": "molecule-size-formula",
-              "type": "formula",
-              "latex": "d\\approx2\\cdot10^{-10}\\,\\text{м}",
-              "children": []
-            }
-          ]
+          "content": "Вода покрылась несмачиваемым порошком (тальком), после чего на неё наносилось определённое количество масла, которое растекалось мономолекулярной плёнкой. При этом порошок отодвигался за пределы плёнки, площадь которой легко могла быть измерена.\n\nТолщина мономолекулярной плёнки равна диаметру молекулы. Если объём масла равен \\(V_{\\text{масла}}\\), а площадь плёнки равна \\(S_{\\text{плёнки}}\\), то:\n\\[d=\\frac{V_{\\text{масла}}}{S_{\\text{плёнки}}}\\approx2\\cdot10^{-10}\\,\\text{м}.\\]",
+          "children": []
         },
         {
           "id": "chislo-molekul",
           "type": "derivation",
           "title": "Число молекул в жидкостях и твёрдых телах",
-          "content": "Капля воды: \\(V=10^{-6}\\,\\text{м}^3\\). Размер молекулы воды: \\(d=3\\cdot10^{-10}\\,\\text{м}\\).",
-          "children": [
-            {
-              "id": "molecule-volume-formula",
-              "type": "formula",
-              "latex": "V_0=d^3=27\\cdot10^{-30}\\,\\text{м}^3",
-              "children": []
-            },
-            {
-              "id": "molecule-count-formula",
-              "type": "formula",
-              "latex": "N=\\frac{V}{V_0}=\\frac{10^{-6}}{27\\cdot10^{-30}}\\approx3{,}7\\cdot10^{22}",
-              "children": []
-            }
-          ]
+          "content": "Объём капли воды равен \\(V=10^{-6}\\,\\text{м}^3\\), а размер молекулы воды равен \\(d=3\\cdot10^{-10}\\,\\text{м}\\). Будем считать, что каждая молекула занимает куб объёмом \\(V_0=d^3\\). Тогда:\n\\[\\begin{aligned}V_0&=d^3=\\left(3\\cdot10^{-10}\\,\\text{м}\\right)^3=27\\cdot10^{-30}\\,\\text{м}^3,\\\\[6pt]N&=\\frac{V}{V_0}=\\frac{10^{-6}\\,\\text{м}^3}{27\\cdot10^{-30}\\,\\text{м}^3}\\approx3{,}7\\cdot10^{22}.\\end{aligned}\\]\nСледовательно, в капле воды объёмом \\(10^{-6}\\,\\text{м}^3\\) содержится примерно \\(3{,}7\\cdot10^{22}\\) молекул.",
+          "children": []
         },
         {
           "id": "massa-molekuly",
           "type": "derivation",
           "title": "Масса молекулы",
-          "content": "Масса капли воды:",
-          "children": [
-            {
-              "id": "drop-mass-formula",
-              "type": "formula",
-              "latex": "m=\\rho V=10^3\\,\\frac{\\text{кг}}{\\text{м}^3}\\cdot10^{-6}\\,\\text{м}^3=10^{-3}\\,\\text{кг}",
-              "children": []
-            },
-            {
-              "id": "single-molecule-mass-formula",
-              "type": "formula",
-              "latex": "m_0=\\frac{m}{N}=\\frac{10^{-3}}{3{,}7\\cdot10^{22}}\\approx3\\cdot10^{-26}\\,\\text{кг}",
-              "children": []
-            }
-          ]
+          "content": "Плотность воды равна \\(\\rho=10^3\\,\\frac{\\text{кг}}{\\text{м}^3}\\), а объём капли равен \\(V=10^{-6}\\,\\text{м}^3\\). Сначала найдём массу всей капли, а затем разделим её на число молекул:\n\\[\\begin{aligned}m&=\\rho V=10^3\\,\\frac{\\text{кг}}{\\text{м}^3}\\cdot10^{-6}\\,\\text{м}^3=10^{-3}\\,\\text{кг},\\\\[6pt]m_0&=\\frac{m}{N}=\\frac{10^{-3}\\,\\text{кг}}{3{,}7\\cdot10^{22}}\\approx2{,}7\\cdot10^{-26}\\,\\text{кг}\\approx3\\cdot10^{-26}\\,\\text{кг}.\\end{aligned}\\]\nТаким образом, масса одной молекулы воды имеет порядок \\(10^{-26}\\,\\text{кг}\\).",
+          "children": []
         },
         {
           "id": "atomic-mass-unit",
           "type": "definition",
           "term": "Атомная единица массы",
           "separator": "—",
-          "content": "внесистемная единица массы молекул, атомов, атомных ядер и элементарных частиц; равна \\(\\frac1{12}\\) массы атома углерода (нуклида углерода-12).",
-          "children": [
-            {
-              "id": "atomic-mass-unit-formula",
-              "type": "formula",
-              "latex": "1\\,\\text{атомная единица массы}=\\frac1{12}m_{0C}=1{,}66\\cdot10^{-27}\\,\\text{кг}",
-              "children": []
-            },
-            {
-              "id": "carbon-atom-mass-formula",
-              "type": "formula",
-              "latex": "m_{0C}=1{,}995\\cdot10^{-26}\\,\\text{кг}",
-              "children": []
-            }
-          ]
+          "content": "внесистемная единица массы молекул, атомов, атомных ядер и элементарных частиц; равна \\(\\frac1{12}\\) массы атома углерода (нуклида углерода-12):\n\\[\\begin{aligned}m_{0C}&=1{,}995\\cdot10^{-26}\\,\\text{кг},\\\\[6pt]1\\,\\text{атомная единица массы}&=\\frac1{12}m_{0C}=1{,}66\\cdot10^{-27}\\,\\text{кг}.\\end{aligned}\\]",
+          "children": []
         },
         {
           "id": "relative-molecular-mass",
           "type": "definition",
           "term": "Относительная молекулярная масса",
           "separator": "—",
-          "content": "отношение массы молекулы данного вещества к атомной единице массы.",
-          "children": [
-            {
-              "id": "relative-molecular-mass-formula",
-              "type": "formula",
-              "latex": "M_r=\\frac{m_0}{\\frac1{12}m_{0C}}",
-              "children": []
-            },
-            {
-              "id": "relative-mass-remark",
-              "type": "remark",
-              "title": "",
-              "content": "Если \\(N=6{,}02\\cdot10^{23}\\), то масса частиц в граммах численно равна относительной молекулярной массе вещества.",
-              "children": []
-            }
-          ]
+          "content": "отношение массы молекулы данного вещества к атомной единице массы. Обозначим атомную единицу массы через \\(m_u=\\frac1{12}m_{0C}\\). Тогда:\n\\[M_r=\\frac{m_0}{m_u}=\\frac{m_0}{\\frac1{12}m_{0C}},\\qquad m_0=M_rm_u.\\]\nЕсли взять \\(N_A=6{,}02\\cdot10^{23}\\) молекул, то их масса равна:\n\\[m=N_Am_0=N_AM_rm_u=M_r\\,\\text{г}.\\]\nПоэтому масса одного моля вещества, выраженная в граммах, численно равна относительной молекулярной массе.",
+          "children": []
         },
         {
           "id": "avogadro-number-derivation",
           "type": "derivation",
           "title": "Число Авогадро",
-          "content": "Возьмём 12 г нуклида углерода-12. \\(M_r(C)\\approx12\\), \\(m_{0C}\\approx1{,}995\\cdot10^{-26}\\,\\text{кг}\\).",
-          "children": [
-            {
-              "id": "avogadro-number-formula",
-              "type": "formula",
-              "latex": "N_A=\\frac{m}{m_{0C}}=\\frac{12\\cdot10^{-3}\\,\\text{кг}}{1{,}995\\cdot10^{-26}\\,\\text{кг}}\\approx6{,}02\\cdot10^{23}",
-              "children": []
-            },
-            {
-              "id": "carbon-atoms-count",
-              "type": "paragraph",
-              "content": "12 г углерода содержит \\(N_A=6{,}02\\cdot10^{23}\\) атомов.",
-              "children": []
-            }
-          ]
+          "content": "Возьмём \\(12\\,\\text{г}=12\\cdot10^{-3}\\,\\text{кг}\\) нуклида углерода-12. Масса одного атома равна \\(m_{0C}\\approx1{,}995\\cdot10^{-26}\\,\\text{кг}\\). Число атомов равно отношению общей массы образца к массе одного атома:\n\\[\\begin{aligned}N_A&=\\frac{m}{m_{0C}}\\\\[4pt]&=\\frac{12\\cdot10^{-3}\\,\\text{кг}}{1{,}995\\cdot10^{-26}\\,\\text{кг}}\\\\[4pt]&\\approx6{,}02\\cdot10^{23}.\\end{aligned}\\]\nСледовательно, в \\(12\\,\\text{г}\\) углерода-12 содержится примерно \\(6{,}02\\cdot10^{23}\\) атомов.",
+          "children": []
         },
         {
           "id": "amount-of-substance",
           "type": "definition",
           "term": "Количество вещества",
           "separator": "—",
-          "content": "отношение числа молекул \\(N\\) в данном веществе к числу атомов в 12 г углерода.",
-          "children": [
-            {
-              "id": "amount-of-substance-formula",
-              "type": "formula",
-              "latex": "\\nu=\\frac{N}{N_A},\\qquad[\\nu]=1\\,\\text{моль}",
-              "children": []
-            }
-          ]
+          "content": "отношение числа молекул \\(N\\) в данном веществе к числу атомов в 12 г углерода:\n\\[\\nu=\\frac{N}{N_A},\\qquad[\\nu]=1\\,\\text{моль}.\\]",
+          "children": []
         },
         {
           "id": "mole-definition",
@@ -354,52 +274,31 @@
           "type": "definition",
           "term": "Постоянная Авогадро",
           "separator": "—",
-          "content": "число частиц в 1 моле вещества.",
-          "children": [
-            {
-              "id": "avogadro-constant-formula",
-              "type": "formula",
-              "latex": "N_A=6{,}02214\\cdot10^{23}\\,\\text{моль}^{-1}",
-              "children": []
-            }
-          ]
+          "content": "число частиц в 1 моле вещества:\n\\[N_A=6{,}02214\\cdot10^{23}\\,\\text{моль}^{-1}.\\]",
+          "children": []
         },
         {
           "id": "molar-mass",
           "type": "definition",
           "term": "Молярная масса",
           "separator": "—",
-          "content": "масса вещества, взятого в количестве одного моля.",
-          "children": [
-            {
-              "id": "molar-mass-formula",
-              "type": "formula",
-              "latex": "M=m_0N_A=M_r\\,\\frac{\\text{г}}{\\text{моль}}=M_r\\cdot10^{-3}\\,\\frac{\\text{кг}}{\\text{моль}}",
-              "children": []
-            }
-          ]
+          "content": "масса вещества, взятого в количестве одного моля. Поскольку \\(m_0=M_rm_u\\), а \\(m_uN_A=10^{-3}\\,\\frac{\\text{кг}}{\\text{моль}}\\), получаем:\n\\[\\begin{aligned}M&=m_0N_A=M_rm_uN_A\\\\[4pt]&=M_r\\cdot10^{-3}\\,\\frac{\\text{кг}}{\\text{моль}}=M_r\\,\\frac{\\text{г}}{\\text{моль}}.\\end{aligned}\\]\nСледовательно, молярная масса в граммах на моль численно равна относительной молекулярной массе.",
+          "children": []
         },
         {
           "id": "particle-concentration",
           "type": "definition",
           "term": "Концентрация частиц",
           "separator": "—",
-          "content": "скалярная физическая величина, равная отношению числа частиц к объёму, в котором эти частицы содержатся.",
-          "children": [
-            {
-              "id": "particle-concentration-formula",
-              "type": "formula",
-              "latex": "n=\\frac{N}{V}",
-              "children": []
-            }
-          ]
+          "content": "скалярная физическая величина, равная отношению числа частиц к объёму, в котором эти частицы содержатся:\n\\[n=\\frac{N}{V},\\qquad[n]=\\text{м}^{-3}.\\]",
+          "children": []
         },
         {
           "id": "solution-concentration",
           "type": "definition",
           "term": "Концентрация раствора",
           "separator": "—",
-          "content": "скалярная физическая величина, равная отношению массы вещества к массе раствора.",
+          "content": "скалярная физическая величина, равная отношению массы вещества к массе раствора:\n\\[\\omega=\\frac{m_{\\text{вещества}}}{m_{\\text{раствора}}}.\\]",
           "children": []
         }
       ]
@@ -483,45 +382,9 @@
               "children": []
             },
             {
-              "id": "single-particle-force",
-              "type": "formula",
-              "latex": "\\Delta\\vec p=\\vec p_2-\\vec p_1=\\vec F_1\\Delta t,\\qquad F_{\\text{ст},1}=-F_1=\\frac{2m_1v_{1x}}{\\Delta t}",
-              "children": []
-            },
-            {
-              "id": "many-particles-force",
+              "id": "pressure-derivation-steps",
               "type": "paragraph",
-              "content": "Пусть за некоторое время о стенку ударилось \\(N\\) частиц. Будем считать, что все частицы движутся с одной скоростью \\(v_{1x}\\) по модулю. Так как частицы движутся хаотично, к данной стенке направлена половина частиц:",
-              "children": []
-            },
-            {
-              "id": "particles-reaching-wall",
-              "type": "formula",
-              "latex": "N=\\frac12nSv_{1x}\\Delta t",
-              "children": []
-            },
-            {
-              "id": "pressure-one-speed",
-              "type": "formula",
-              "latex": "F_{\\text{ст}}=nSm_1v_{1x}^2,\\qquad p=\\frac{F_{\\text{ст}}}{S}=nm_0v_{1x}^2",
-              "children": []
-            },
-            {
-              "id": "velocity-averages",
-              "type": "formula",
-              "latex": "\\overline{v_x}=\\frac1N\\sum_{i=1}^{N}v_{ix}=0,\\qquad \\overline{v_x^2}=\\frac1N\\sum_{i=1}^{N}v_{ix}^2",
-              "children": []
-            },
-            {
-              "id": "velocity-components",
-              "type": "formula",
-              "latex": "\\overline{v^2}=\\overline{v_x^2}+\\overline{v_y^2}+\\overline{v_z^2}=3\\overline{v_x^2}",
-              "children": []
-            },
-            {
-              "id": "main-mkt-equation",
-              "type": "formula",
-              "latex": "\\boxed{p=\\frac13m_0n\\overline{v^2}=\\frac23n\\overline{W_k}}",
+              "content": "Пусть масса одной молекулы равна \\(m_0\\), а модуль её проекции скорости на ось \\(Ox\\) перед ударом равен \\(v_x\\). После упругого отражения знак этой проекции меняется:\n\\[\\begin{aligned}p_{1x}&=m_0v_x,\\qquad p_{2x}=-m_0v_x,\\\\[4pt]\\Delta p_x&=p_{2x}-p_{1x}=-m_0v_x-m_0v_x=-2m_0v_x.\\end{aligned}\\]\nПо теореме об изменении импульса \\(\\Delta p_x=F_x\\Delta t\\). Поэтому сила стенки, действующая на молекулу, и равная ей по модулю сила молекулы, действующая на стенку, равны:\n\\[\\begin{aligned}F_x&=\\frac{\\Delta p_x}{\\Delta t}=-\\frac{2m_0v_x}{\\Delta t},\\\\[4pt]F_{\\text{ст},1}&=-F_x=\\frac{2m_0v_x}{\\Delta t}.\\end{aligned}\\]\nЗа время \\(\\Delta t\\) поверхности площадью \\(S\\) достигнут молекулы из слоя толщиной \\(v_x\\Delta t\\). Их концентрация равна \\(n\\), а к стенке движется половина молекул, поэтому число столкновений равно:\n\\[\\Delta N=\\frac12nSv_x\\Delta t.\\]\nСуммарная сила давления этих молекул на стенку:\n\\[\\begin{aligned}F_{\\text{ст}}&=\\Delta N\\,F_{\\text{ст},1}\\\\[4pt]&=\\frac12nSv_x\\Delta t\\cdot\\frac{2m_0v_x}{\\Delta t}\\\\[4pt]&=nSm_0v_x^2.\\end{aligned}\\]\nПо определению давления:\n\\[p=\\frac{F_{\\text{ст}}}{S}=nm_0v_x^2.\\]\nВ действительности скорости молекул различаются. Средняя проекция скорости равна нулю из-за хаотичности движения, но средний квадрат проекции отличен от нуля:\n\\[\\overline{v_x}=\\frac1N\\sum_{i=1}^{N}v_{ix}=0,\\qquad \\overline{v_x^2}=\\frac1N\\sum_{i=1}^{N}v_{ix}^2.\\]\nПоэтому давление выражается через средний квадрат проекции скорости:\n\\[p=m_0n\\overline{v_x^2}.\\]\nДвижение молекул равноправно по всем направлениям, следовательно:\n\\[\\overline{v_x^2}=\\overline{v_y^2}=\\overline{v_z^2},\\qquad \\overline{v^2}=\\overline{v_x^2}+\\overline{v_y^2}+\\overline{v_z^2}=3\\overline{v_x^2}.\\]\nОтсюда \\(\\overline{v_x^2}=\\frac13\\overline{v^2}\\), и давление равно:\n\\[p=\\frac13m_0n\\overline{v^2}.\\]\nСредняя кинетическая энергия поступательного движения одной молекулы равна \\(\\overline{W_k}=\\frac{m_0\\overline{v^2}}2\\). Подставим это выражение в формулу давления:\n\\[\\boxed{p=\\frac13m_0n\\overline{v^2}=\\frac23n\\overline{W_k}}.\\]\nЭто основное уравнение молекулярно-кинетической теории идеального газа.",
               "children": []
             }
           ]
@@ -565,27 +428,9 @@
               "children": []
             },
             {
-              "id": "theta-zero-formula",
-              "type": "formula",
-              "latex": "\\frac{p_1V_1}{N_1}=\\frac{p_2V_2}{N_2}=\\frac{p_3V_3}{N_3}=\\Theta_{0^\\circ\\mathrm C}",
-              "children": []
-            },
-            {
-              "id": "theta-hundred-formula",
-              "type": "formula",
-              "latex": "\\frac{p'_1V_1}{N_1}=\\frac{p'_2V_2}{N_2}=\\frac{p'_3V_3}{N_3}=\\Theta_{100^\\circ\\mathrm C}",
-              "children": []
-            },
-            {
-              "id": "theta-dimension-formula",
-              "type": "formula",
-              "latex": "[\\Theta]=[\\text{Па}\\cdot\\text{м}^3]=[\\text{Н}\\cdot\\text{м}]=[\\text{Дж}]",
-              "children": []
-            },
-            {
-              "id": "theta-energy-paragraph",
+              "id": "thermostat-experiment-results",
               "type": "paragraph",
-              "content": "Очевидно, что \\(\\Theta\\) — это энергия.",
+              "content": "При температуре \\(0^\\circ\\mathrm C\\) для всех трёх газов экспериментально получается одно и то же отношение:\n\\[\\frac{p_1V_1}{N_1}=\\frac{p_2V_2}{N_2}=\\frac{p_3V_3}{N_3}=\\Theta_{0^\\circ\\mathrm C}.\\]\nПосле переноса баллонов в термостат с температурой \\(100^\\circ\\mathrm C\\) давления изменяются до \\(p'_1\\), \\(p'_2\\) и \\(p'_3\\), но отношение снова одинаково для всех газов:\n\\[\\frac{p'_1V_1}{N_1}=\\frac{p'_2V_2}{N_2}=\\frac{p'_3V_3}{N_3}=\\Theta_{100^\\circ\\mathrm C}.\\]\nСледовательно, величина \\(\\Theta=\\frac{pV}{N}\\) не зависит от рода газа и определяется только температурой. Проверим её размерность:\n\\[\\begin{aligned}[\\Theta]&=[pV]=[\\text{Па}\\cdot\\text{м}^3]\\\\[4pt]&=\\left[\\frac{\\text{Н}}{\\text{м}^2}\\cdot\\text{м}^3\\right]=[\\text{Н}\\cdot\\text{м}]=[\\text{Дж}].\\end{aligned}\\]\nЗначит, \\(\\Theta\\) имеет размерность энергии и называется энергетической температурой. При повышении температуры от \\(0^\\circ\\mathrm C\\) до \\(100^\\circ\\mathrm C\\) эксперимент даёт:\n\\[\\Delta\\Theta=\\Theta_{100^\\circ\\mathrm C}-\\Theta_{0^\\circ\\mathrm C}=1{,}38\\cdot10^{-21}\\,\\text{Дж},\\qquad \\Delta T=100\\,\\text{К}.\\]",
               "children": []
             }
           ]
@@ -595,42 +440,15 @@
           "type": "definition",
           "term": "Постоянная Больцмана",
           "separator": "—",
-          "content": "коэффициент пропорциональности между изменением энергетической температуры \\(\\Theta\\) и изменением абсолютной температуры \\(T\\).",
-          "children": [
-            {
-              "id": "boltzmann-constant-formula",
-              "type": "formula",
-              "latex": "\\Delta\\Theta=k\\Delta T,\\qquad k=\\frac{\\Delta\\Theta}{\\Delta T}=1{,}38\\cdot10^{-23}\\,\\frac{\\text{Дж}}{\\text{К}}",
-              "children": []
-            }
-          ]
+          "content": "коэффициент пропорциональности между изменением энергетической температуры \\(\\Theta\\) и изменением абсолютной температуры \\(T\\). Из опыта следует:\n\\[\\begin{aligned}\\Delta\\Theta&=k\\Delta T,\\\\[4pt]k&=\\frac{\\Delta\\Theta}{\\Delta T}=\\frac{1{,}38\\cdot10^{-21}\\,\\text{Дж}}{100\\,\\text{К}}=1{,}38\\cdot10^{-23}\\,\\frac{\\text{Дж}}{\\text{К}}.\\end{aligned}\\]\nПри выборе абсолютной шкалы температур \\(\\Theta=0\\) при \\(T=0\\), поэтому \\(\\Theta=kT\\).",
+          "children": []
         },
         {
           "id": "pressure-temperature-relation",
           "type": "derivation",
           "title": "Связь давления и температуры",
-          "content": "",
-          "children": [
-            {
-              "id": "pressure-temperature-formula",
-              "type": "formula",
-              "latex": "\\frac{pV}{N}=kT\\quad\\Rightarrow\\quad\\boxed{p=nkT}",
-              "children": []
-            },
-            {
-              "id": "mean-kinetic-energy-formula",
-              "type": "formula",
-              "latex": "p=\\frac23n\\overline{W_k}=nkT\\quad\\Rightarrow\\quad\\boxed{\\overline{W_k}=\\frac32kT}",
-              "children": []
-            },
-            {
-              "id": "mean-energy-limitation",
-              "type": "remark",
-              "title": "",
-              "content": "Последнее соотношение верно не всегда.",
-              "children": []
-            }
-          ]
+          "content": "Энергетическая температура определена как \\(\\Theta=\\frac{pV}{N}\\), а через абсолютную температуру она выражается формулой \\(\\Theta=kT\\). Приравняем эти выражения и последовательно преобразуем их:\n\\[\\begin{aligned}\\frac{pV}{N}&=kT,\\\\[4pt]pV&=NkT,\\\\[4pt]p&=\\frac{N}{V}kT.\\end{aligned}\\]\nТак как концентрация частиц равна \\(n=\\frac{N}{V}\\), получаем:\n\\[\\boxed{p=nkT}.\\]\nТеперь сравним эту формулу с основным уравнением молекулярно-кинетической теории \\(p=\\frac23n\\overline{W_k}\\):\n\\[\\begin{aligned}\\frac23n\\overline{W_k}&=nkT,\\\\[4pt]\\frac23\\overline{W_k}&=kT.\\end{aligned}\\]\nУмножив обе части последнего равенства на \\(\\frac32\\), окончательно получаем:\n\\[\\boxed{\\overline{W_k}=\\frac32kT}.\\]\nПоследнее соотношение описывает среднюю кинетическую энергию поступательного движения частицы одноатомного идеального газа. Для молекул с внутренними степенями свободы выражение для полной средней энергии будет другим.",
+          "children": []
         },
         {
           "id": "temperature-definition",
@@ -644,27 +462,8 @@
           "id": "mendeleev-clapeyron-derivation",
           "type": "derivation",
           "title": "Вывод уравнения Менделеева — Клапейрона",
-          "content": "",
-          "children": [
-            {
-              "id": "mendeleev-clapeyron-formula",
-              "type": "formula",
-              "latex": "pV=NkT\\cdot\\frac{N_A}{N_A}=\\nu(N_Ak)T=\\nu RT",
-              "children": []
-            },
-            {
-              "id": "universal-gas-constant",
-              "type": "formula",
-              "latex": "R=kN_A=8{,}31\\,\\frac{\\text{Дж}}{\\text{моль}\\cdot\\text{К}}",
-              "children": []
-            },
-            {
-              "id": "ideal-gas-state-equation",
-              "type": "formula",
-              "latex": "\\boxed{pV=\\nu RT}",
-              "children": []
-            }
-          ]
+          "content": "Начнём с уравнения \\(p=nkT\\) и определения концентрации \\(n=\\frac{N}{V}\\):\n\\[p=\\frac{N}{V}kT\\quad\\Longrightarrow\\quad pV=NkT.\\]\nКоличество вещества связано с числом частиц формулой \\(\\nu=\\frac{N}{N_A}\\), откуда \\(N=\\nu N_A\\). Подставим это выражение:\n\\[\\begin{aligned}pV&=NkT\\\\[4pt]&=\\nu N_AkT\\\\[4pt]&=\\nu\\left(N_Ak\\right)T.\\end{aligned}\\]\nПроизведение постоянной Авогадро и постоянной Больцмана называется универсальной газовой постоянной:\n\\[R=N_Ak=6{,}022\\cdot10^{23}\\,\\text{моль}^{-1}\\cdot1{,}38\\cdot10^{-23}\\,\\frac{\\text{Дж}}{\\text{К}}\\approx8{,}31\\,\\frac{\\text{Дж}}{\\text{моль}\\cdot\\text{К}}.\\]\nПосле подстановки \\(R=N_Ak\\) получаем уравнение Менделеева — Клапейрона:\n\\[\\boxed{pV=\\nu RT}.\\]",
+          "children": []
         },
         {
           "id": "state-equation-definition",
