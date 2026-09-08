@@ -9,6 +9,7 @@
     const WIDE_CLASS = 'print-wide';
     const EXCLUDED_ATTRIBUTE = 'data-print-excluded';
     const FIRST_SECTION_ATTRIBUTE = 'data-print-first-section';
+    const FIRST_TOPIC_ATTRIBUTE = 'data-print-first-topic';
     const SELECTED_SECTION_ATTRIBUTE = 'data-print-selected-section';
     const BLOCK_SELECTOR = [
         '.definition-box', '.formula-box', '.remark-box', '.reminder-box',
@@ -203,9 +204,10 @@
     }
 
     function applySelectionToDocument() {
-        document.querySelectorAll('[' + EXCLUDED_ATTRIBUTE + '],[' + FIRST_SECTION_ATTRIBUTE + '],[' + SELECTED_SECTION_ATTRIBUTE + ']').forEach(function (element) {
+        document.querySelectorAll('[' + EXCLUDED_ATTRIBUTE + '],[' + FIRST_SECTION_ATTRIBUTE + '],[' + FIRST_TOPIC_ATTRIBUTE + '],[' + SELECTED_SECTION_ATTRIBUTE + ']').forEach(function (element) {
             element.removeAttribute(EXCLUDED_ATTRIBUTE);
             element.removeAttribute(FIRST_SECTION_ATTRIBUTE);
+            element.removeAttribute(FIRST_TOPIC_ATTRIBUTE);
             element.removeAttribute(SELECTED_SECTION_ATTRIBUTE);
         });
         const visibleGroups = [];
@@ -217,6 +219,9 @@
             }
             group.element.setAttribute(SELECTED_SECTION_ATTRIBUTE, '');
             visibleGroups.push(group.element);
+            if (visibleItems[0].element !== group.element) {
+                visibleItems[0].element.setAttribute(FIRST_TOPIC_ATTRIBUTE, '');
+            }
             group.items.forEach(function (item) {
                 if (!selectedKeys.has(item.key) && item.element !== group.element) item.element.setAttribute(EXCLUDED_ATTRIBUTE, '');
             });
@@ -287,9 +292,10 @@
             element.classList.remove(WIDE_CLASS);
             element.style.removeProperty('--print-formula-scale');
         });
-        document.querySelectorAll('[' + EXCLUDED_ATTRIBUTE + '],[' + FIRST_SECTION_ATTRIBUTE + '],[' + SELECTED_SECTION_ATTRIBUTE + ']').forEach(function (element) {
+        document.querySelectorAll('[' + EXCLUDED_ATTRIBUTE + '],[' + FIRST_SECTION_ATTRIBUTE + '],[' + FIRST_TOPIC_ATTRIBUTE + '],[' + SELECTED_SECTION_ATTRIBUTE + ']').forEach(function (element) {
             element.removeAttribute(EXCLUDED_ATTRIBUTE);
             element.removeAttribute(FIRST_SECTION_ATTRIBUTE);
+            element.removeAttribute(FIRST_TOPIC_ATTRIBUTE);
             element.removeAttribute(SELECTED_SECTION_ATTRIBUTE);
         });
         document.body.classList.remove(PRINT_CLASS);

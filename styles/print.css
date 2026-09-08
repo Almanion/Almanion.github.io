@@ -412,7 +412,14 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
     size: A4 portrait;
     margin: 15mm 14mm 18mm;
 
-    @bottom-center {
+    @bottom-left {
+        content: "@Almanion239";
+        color: #7a818c;
+        font-family: "Onest", "Segoe UI", Arial, sans-serif;
+        font-size: 8pt;
+    }
+
+    @bottom-right {
         content: counter(page) " / " counter(pages);
         color: #7a818c;
         font-family: "Onest", "Segoe UI", Arial, sans-serif;
@@ -478,7 +485,11 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
     .print-export-overlay,
     .print-export-menu-slot,
     .print-export-button,
+    .page-header,
     .page-footer,
+    .note-inline-edit-button,
+    .note-inline-editor,
+    .note-inline-load-error,
     [data-note-editor-control] {
         display: none !important;
     }
@@ -495,48 +506,6 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
         overflow: visible !important;
         color: var(--print-ink) !important;
         background: #fff !important;
-    }
-
-    .page-header,
-    body.experimental .page-header,
-    body.experimental.exp-reader-active .page-header {
-        display: block !important;
-        position: static !important;
-        min-height: 0 !important;
-        margin: 0 0 9mm !important;
-        padding: 0 0 5mm !important;
-        color: var(--print-ink) !important;
-        background: transparent !important;
-        border: 0 !important;
-        border-bottom: 0.45mm solid var(--print-ink) !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-        break-after: avoid-page;
-        page-break-after: avoid !important;
-    }
-
-    .page-header h1,
-    body.experimental .page-header h1 {
-        margin: 0 0 1.8mm !important;
-        padding: 0 !important;
-        color: var(--print-ink) !important;
-        font-size: 23pt !important;
-        font-weight: 720 !important;
-        line-height: 1.08 !important;
-        letter-spacing: -0.035em !important;
-    }
-
-    .page-header h1 svg { display: none !important; }
-
-    .page-header :is(.subtitle, p),
-    body.experimental .page-header :is(.subtitle, p),
-    .page-header a {
-        margin: 0 !important;
-        color: var(--print-muted) !important;
-        font-size: 9pt !important;
-        font-weight: 450 !important;
-        line-height: 1.4 !important;
-        text-decoration: none !important;
     }
 
     body.experimental.exp-reader-active .content-section,
@@ -614,11 +583,17 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
         opacity: 1 !important;
         transform: none !important;
         animation: none !important;
-        page-break-before: auto !important;
+        break-before: page !important;
+        page-break-before: always !important;
         page-break-after: auto !important;
     }
 
-    .topic + .topic { margin-top: 8mm !important; }
+    body.print-export-active .main-content > .content-section > .topic[data-print-first-topic] {
+        break-before: auto !important;
+        page-break-before: auto !important;
+    }
+
+    .topic + .topic { margin-top: 0 !important; }
 
     .topic-title,
     body.experimental .topic-title,
@@ -639,13 +614,14 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
 
     .subsection-title,
     body.experimental .subsection-title {
-        margin: 5mm 0 2.5mm !important;
+        margin: 0 0 2.5mm !important;
         padding: 0 !important;
         color: var(--print-ink) !important;
         font-size: 11.5pt !important;
         font-weight: 680 !important;
+        break-before: page !important;
         break-after: avoid-page;
-        page-break-before: auto !important;
+        page-break-before: always !important;
         page-break-after: avoid !important;
     }
 
@@ -824,6 +800,10 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
     mark,
     mark.search-highlight,
     mark.search-result-term { color: inherit !important; background: transparent !important; }
+
+    .note-inline-editing > :not(.note-inline-editor):not(.note-inline-edit-button) {
+        display: revert !important;
+    }
 
     body.print-export-active .main-content > .content-section[data-print-excluded],
     body.print-export-active .main-content > .content-section > .topic[data-print-excluded] {
