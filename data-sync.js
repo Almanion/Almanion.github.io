@@ -235,7 +235,11 @@
         Object.keys(legacy).forEach(function (key) {
             const item = legacy[key];
             if (!item || item.id == null) return;
-            writeItem(storage, queueStorageKey(item.namespace, item.owner, item.id), JSON.stringify(item));
+            const storageKey = queueStorageKey(item.namespace, item.owner, item.id);
+            const existing = parseJson(readItem(storage, storageKey), null);
+            if (!existing || compareRecords(item.record, existing.record) > 0) {
+                writeItem(storage, storageKey, JSON.stringify(item));
+            }
         });
         if (Object.keys(legacy).length) {
             try { storage.removeItem(QUEUE_KEY); } catch (_) { fallbackStorage.removeItem(QUEUE_KEY); }
@@ -250,20 +254,14 @@
     }
 
     function writeQueue(storage, queue) {
-        const wanted = new Set();
         Object.keys(objectValue(queue)).forEach(function (key) {
             const item = queue[key];
             if (!item || item.id == null) return;
             const storageKey = queueStorageKey(item.namespace, item.owner, item.id);
-            wanted.add(storageKey);
             writeItem(storage, storageKey, JSON.stringify(item));
         });
-        storageKeys(storage).forEach(function (key) {
-            if (key.indexOf(QUEUE_ITEM_PREFIX) !== 0 || wanted.has(key)) return;
-            const item = parseJson(readItem(storage, key), null);
-            if (!item || queue[queueId(item.namespace, item.owner, item.id)]) return;
-            try { storage.removeItem(key); } catch (_) { fallbackStorage.removeItem(key); }
-        });
+        // Never remove an unlisted per-record key here: another tab may have
+        // created it after this caller read its queue snapshot.
         try { storage.removeItem(QUEUE_KEY); } catch (_) { fallbackStorage.removeItem(QUEUE_KEY); }
     }
 
@@ -430,6 +428,7 @@
                 const current = this.state.records[item.id];
                 if (!current || !metadata(current).pending) {
                     delete queue[key];
+                    removeQueueItem(this.storage, this.namespace, this.owner, item.id);
                     changed = true;
                     return;
                 }

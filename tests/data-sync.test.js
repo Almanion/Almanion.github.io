@@ -264,6 +264,30 @@ async function run() {
     assert.equal(afterTabs.get('b').value, 'from B');
     assert.equal(afterTabs.pending().length, 2, 'pending edits from both tabs must survive');
 
+    // A queue snapshot may become stale while another tab is writing. Removing
+    // an acknowledged item must never sweep an unlisted item created meanwhile.
+    const ackStorage = new MemoryStorage();
+    const ackRace = Sync.createCollection({
+        namespace: 'ack-race', owner: 'uid', storageKey: 'ack_race_uid',
+        storage: ackStorage, deviceId: 'tab-a', now: () => 1450
+    });
+    ackRace.set('x', { value: 1 }, { flush: false });
+    const acknowledged = ackRace.pending();
+    const originalRemove = ackStorage.removeItem.bind(ackStorage);
+    ackStorage.removeItem = function (key) {
+        originalRemove(key);
+        if (!String(key).endsWith('|x')) return;
+        const concurrent = Sync.normalizeRecord({ value: 'new tab' }, {
+            revision: 1, updatedAt: 1451, deviceId: 'tab-b', pending: true
+        });
+        this.setItem('almanion_data_sync_pending_v1:ack-race|uid|z', JSON.stringify({
+            namespace: 'ack-race', owner: 'uid', id: 'z', revision: 1, record: concurrent
+        }));
+    };
+    ackRace.acknowledge(acknowledged);
+    assert.equal(ackRace.pending().some((item) => item.id === 'z'), true,
+        'acknowledging one tab must preserve a concurrent queue item from another tab');
+
     // A Firebase transaction must re-evaluate against a concurrent cloud edit.
     // The later remote record wins instead of being overwritten by the stale
     // offline candidate that initiated the transaction.
