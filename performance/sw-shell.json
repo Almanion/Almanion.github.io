@@ -9,6 +9,7 @@
     "/favicon-theme.js",
     "/page-transitions.js",
     "/home-motion.js",
+    "/print-export.js",
     "/script.js",
     "/settings.js",
     "/firebase-config.js",
@@ -25,6 +26,7 @@
     "/styles/mobile-overrides.css",
     "/styles/page-transitions.css",
     "/styles/home-motion.css",
+    "/styles/print.css",
     "/favicons/favicon.svg",
     "/favicons/favicon-dark.svg",
     "/favicons/app-icon.svg"

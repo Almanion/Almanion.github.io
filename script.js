@@ -1452,55 +1452,6 @@ function showCopyState(button, content, className) {
 }
 
 // ============================================
-// ЭКСПОРТ В PDF (опционально)
-// ============================================
-
-function exportToPDF() {
-    document.querySelectorAll('.derivation-content').forEach(el => {
-        el.style.display = 'block';
-        el.style.maxHeight = 'none';
-    });
-
-    document.querySelectorAll('.toggle-derivation').forEach(el => {
-        el.style.display = 'none';
-    });
-
-    setTimeout(() => window.print(), 200);
-
-    window.addEventListener('afterprint', function restoreUI() {
-        document.querySelectorAll('.derivation-content').forEach(el => {
-            el.style.display = '';
-            el.style.maxHeight = '';
-        });
-        document.querySelectorAll('.toggle-derivation').forEach(el => {
-            el.style.display = '';
-        });
-        window.removeEventListener('afterprint', restoreUI);
-    });
-}
-
-// Добавляем кнопку экспорта в футер
-const footer = document.querySelector('.page-footer');
-if (footer) {
-    const exportBtn = document.createElement('button');
-    exportBtn.innerHTML = '<span class="eic eic-file" aria-hidden="true"></span> Экспорт в PDF';
-    exportBtn.style.cssText = `
-        margin-top: 1rem;
-        padding: 0.75rem 1.5rem;
-        background: var(--accent-color);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 1rem;
-        font-weight: 500;
-        transition: var(--transition);
-    `;
-    exportBtn.addEventListener('click', exportToPDF);
-    footer.insertBefore(exportBtn, footer.firstChild);
-}
-
-// ============================================
 // СОХРАНЕНИЕ ПОЗИЦИИ СКРОЛЛА
 // ============================================
 

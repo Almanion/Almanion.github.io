@@ -1,0 +1,452 @@
+/* Print-only document layout for subject notes and browser PDF export. */
+
+.print-export-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    min-height: 42px;
+    margin: 0 0 1rem;
+    padding: 0.68rem 1rem;
+    color: var(--exp-accent-contrast, #fff);
+    background: var(--exp-accent, var(--accent-color));
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 650;
+    cursor: pointer;
+    transition: opacity 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;
+}
+
+.print-export-button:hover { opacity: 0.9; }
+.print-export-button:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 3px; }
+.print-export-button:disabled { cursor: wait; opacity: 0.68; }
+.print-export-button svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.print-export-button.is-preparing svg { animation: printExportPulse 0.9s ease-in-out infinite alternate; }
+
+@keyframes printExportPulse {
+    from { opacity: 0.48; }
+    to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .print-export-button,
+    .print-export-button.is-preparing svg { transition: none; animation: none; }
+}
+
+@page {
+    size: A4 portrait;
+    margin: 15mm 14mm 18mm;
+
+    @bottom-center {
+        content: counter(page) " / " counter(pages);
+        color: #7a818c;
+        font-family: "Onest", "Segoe UI", Arial, sans-serif;
+        font-size: 8pt;
+    }
+}
+
+@media print {
+    :root {
+        color-scheme: light !important;
+        --print-ink: #17191d;
+        --print-muted: #606773;
+        --print-rule: #cfd3da;
+        --print-surface: #f6f7f9;
+        --print-surface-nested: #fbfbfc;
+    }
+
+    html,
+    body,
+    body.experimental,
+    body.exp-dark,
+    body.dark-theme,
+    body.midnight-theme,
+    body.sepia-theme {
+        width: auto !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        color: var(--print-ink) !important;
+        background: #fff !important;
+        font-family: "Onest", "Segoe UI", Arial, sans-serif !important;
+        font-size: 10.25pt !important;
+        line-height: 1.5 !important;
+        letter-spacing: -0.003em !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .sidebar,
+    .menu-toggle,
+    .settings-button,
+    .scroll-to-top,
+    .snow-container,
+    .easter-eggs-container,
+    #readingProgress,
+    .exp-reader-toolbar,
+    .exp-reader-footer,
+    .exp-bottom-nav,
+    .ticket-nav-controls,
+    .builder-open-btn,
+    .builder-overlay,
+    .auth-overlay,
+    .copy-block-btn,
+    .bookmark-btn,
+    .toggle-derivation,
+    .toggle-proof,
+    .english-speak-button,
+    .english-translator-panel,
+    .english-translator-sidebar-button,
+    .english-translator-mobile-button,
+    .print-export-button,
+    .page-footer,
+    [data-note-editor-control] {
+        display: none !important;
+    }
+
+    .main-content,
+    body.experimental .main-content,
+    body.experimental.exp-reader-active .main-content {
+        display: block !important;
+        width: auto !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        color: var(--print-ink) !important;
+        background: #fff !important;
+    }
+
+    .page-header,
+    body.experimental .page-header,
+    body.experimental.exp-reader-active .page-header {
+        display: block !important;
+        position: static !important;
+        min-height: 0 !important;
+        margin: 0 0 9mm !important;
+        padding: 0 0 5mm !important;
+        color: var(--print-ink) !important;
+        background: transparent !important;
+        border: 0 !important;
+        border-bottom: 0.45mm solid var(--print-ink) !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        break-after: avoid-page;
+        page-break-after: avoid !important;
+    }
+
+    .page-header h1,
+    body.experimental .page-header h1 {
+        margin: 0 0 1.8mm !important;
+        padding: 0 !important;
+        color: var(--print-ink) !important;
+        font-size: 23pt !important;
+        font-weight: 720 !important;
+        line-height: 1.08 !important;
+        letter-spacing: -0.035em !important;
+    }
+
+    .page-header h1 svg { display: none !important; }
+
+    .page-header :is(.subtitle, p),
+    body.experimental .page-header :is(.subtitle, p),
+    .page-header a {
+        margin: 0 !important;
+        color: var(--print-muted) !important;
+        font-size: 9pt !important;
+        font-weight: 450 !important;
+        line-height: 1.4 !important;
+        text-decoration: none !important;
+    }
+
+    body.experimental.exp-reader-active .content-section,
+    body.experimental.exp-reader-active .content-section.exp-reader-section-current,
+    .main-content > .content-section,
+    .ticket-section,
+    .ticket-section.active-ticket {
+        display: block !important;
+        position: static !important;
+        width: auto !important;
+        max-width: none !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        color: var(--print-ink) !important;
+        background: transparent !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+        animation: none !important;
+    }
+
+    .main-content > .content-section + .content-section {
+        break-before: page;
+        page-break-before: always !important;
+    }
+
+    .part-title,
+    body.experimental .part-title,
+    body.experimental.exp-reader-active .content-section > .part-title {
+        display: block !important;
+        margin: 0 0 6mm !important;
+        padding: 0 0 2.4mm !important;
+        color: var(--print-ink) !important;
+        background: transparent !important;
+        border: 0 !important;
+        border-bottom: 0.25mm solid var(--print-rule) !important;
+        font-size: 17pt !important;
+        font-weight: 700 !important;
+        line-height: 1.15 !important;
+        letter-spacing: -0.025em !important;
+        break-after: avoid-page;
+        page-break-before: auto !important;
+        page-break-after: avoid !important;
+    }
+
+    body.experimental.exp-reader-active .content-section > .topic,
+    body.experimental.exp-reader-active .content-section > .topic.exp-reader-current,
+    .main-content .topic {
+        display: block !important;
+        position: static !important;
+        width: auto !important;
+        max-width: none !important;
+        min-height: 0 !important;
+        margin: 0 0 7mm !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        color: var(--print-ink) !important;
+        background: transparent !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+        animation: none !important;
+        page-break-before: auto !important;
+        page-break-after: auto !important;
+    }
+
+    .topic + .topic { margin-top: 8mm !important; }
+
+    .topic-title,
+    body.experimental .topic-title,
+    body.experimental.exp-reader-active .topic.exp-reader-current > .topic-title {
+        position: static !important;
+        margin: 0 0 4mm !important;
+        padding: 0 !important;
+        color: var(--print-ink) !important;
+        background: transparent !important;
+        border: 0 !important;
+        font-size: 14.5pt !important;
+        font-weight: 690 !important;
+        line-height: 1.2 !important;
+        letter-spacing: -0.02em !important;
+        break-after: avoid-page;
+        page-break-after: avoid !important;
+    }
+
+    .subsection-title,
+    body.experimental .subsection-title {
+        margin: 5mm 0 2.5mm !important;
+        padding: 0 !important;
+        color: var(--print-ink) !important;
+        font-size: 11.5pt !important;
+        font-weight: 680 !important;
+        break-after: avoid-page;
+        page-break-before: auto !important;
+        page-break-after: avoid !important;
+    }
+
+    .main-content :is(
+        .definition-box, .formula-box, .remark-box, .reminder-box,
+        .experiment-box, .derivation-box, .theorem-box, .lemma-box,
+        .example-box, .statement-box, .corollary-box, .proof-box,
+        .exercise-box, .properties-box, .system-box, .english-word-card
+    ),
+    body.experimental .main-content :is(
+        .definition-box, .formula-box, .remark-box, .reminder-box,
+        .experiment-box, .derivation-box, .theorem-box, .lemma-box,
+        .example-box, .statement-box, .corollary-box, .proof-box,
+        .exercise-box, .properties-box, .system-box, .english-word-card
+    ) {
+        position: static !important;
+        box-sizing: border-box !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        margin: 0 0 3.2mm !important;
+        padding: 3.4mm 4mm !important;
+        overflow: visible !important;
+        color: var(--print-ink) !important;
+        background: var(--print-surface) !important;
+        border: 0.25mm solid var(--print-rule) !important;
+        border-left: 0.65mm solid #8c939e !important;
+        border-radius: 1.8mm !important;
+        box-shadow: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+        animation: none !important;
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
+        break-inside: avoid-page;
+        page-break-inside: avoid;
+    }
+
+    .main-content :is(
+        .definition-box, .formula-box, .remark-box, .reminder-box,
+        .experiment-box, .derivation-box, .theorem-box, .lemma-box,
+        .example-box, .statement-box, .corollary-box, .proof-box,
+        .exercise-box, .properties-box, .system-box, .english-word-card
+    ).print-splittable {
+        break-inside: auto;
+        page-break-inside: auto;
+    }
+
+    .main-content :is(
+        .definition-box, .remark-box, .reminder-box, .experiment-box,
+        .derivation-box, .theorem-box, .lemma-box, .example-box,
+        .statement-box, .corollary-box, .proof-box, .exercise-box,
+        .properties-box, .system-box
+    ) :is(
+        .formula-box, .remark-box, .reminder-box, .derivation-box, .proof-box,
+        .example-box, .properties-box, .system-box
+    ) {
+        margin-top: 3mm !important;
+        background: var(--print-surface-nested) !important;
+    }
+
+    body.experimental .main-content :is(
+        .definition-box, .formula-box, .remark-box, .reminder-box,
+        .experiment-box, .derivation-box, .theorem-box, .lemma-box,
+        .example-box, .statement-box, .corollary-box, .proof-box,
+        .exercise-box, .properties-box, .system-box
+    )::before,
+    body.experimental .constructor-topic .example-box::before {
+        display: block !important;
+        width: fit-content !important;
+        height: auto !important;
+        margin: 0 0 2mm !important;
+        padding: 0 !important;
+        color: #606773 !important;
+        background: transparent !important;
+        border: 0 !important;
+        font-size: 7pt !important;
+        font-weight: 760 !important;
+        line-height: 1.2 !important;
+        letter-spacing: 0.08em !important;
+        text-transform: uppercase !important;
+        -webkit-text-fill-color: currentColor !important;
+    }
+
+    .main-content :is(p, li, dd, ul, ol) {
+        color: var(--print-ink) !important;
+        page-break-inside: auto !important;
+        orphans: 3;
+        widows: 3;
+    }
+
+    .main-content p { margin: 0 0 2.2mm !important; }
+    .main-content p:last-child { margin-bottom: 0 !important; }
+    .main-content :is(ul, ol) { margin: 2mm 0 !important; padding-left: 6mm !important; }
+    .main-content li + li { margin-top: 0.8mm !important; }
+    .main-content :is(strong, b) { color: var(--print-ink) !important; font-weight: 700 !important; }
+    .main-content :is(em, i) { color: inherit !important; }
+    .main-content a { color: inherit !important; text-decoration: underline !important; text-decoration-color: #a6abb3 !important; }
+
+    .derivation-content,
+    .proof-content,
+    .english-translation-content {
+        display: block !important;
+        max-height: none !important;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+        overflow: visible !important;
+        border-top: 0 !important;
+        animation: none !important;
+    }
+
+    details,
+    details[open] { display: block !important; }
+    details > summary { display: none !important; }
+
+    .katex,
+    body.experimental .katex { color: var(--print-ink) !important; }
+    .katex-display {
+        max-width: 100% !important;
+        margin: 2mm 0 !important;
+        overflow: visible !important;
+        font-size: calc(10.25pt * var(--print-formula-scale, 1)) !important;
+        break-inside: avoid-page;
+    }
+    .katex-display.print-wide { font-size: calc(9.4pt * var(--print-formula-scale, 0.9)) !important; }
+
+    .main-content :is(img, svg:not(.katex svg)) {
+        max-width: 100% !important;
+        height: auto !important;
+        break-inside: avoid-page;
+        page-break-inside: avoid;
+    }
+    .main-content figure {
+        max-width: 100% !important;
+        margin: 4mm auto !important;
+        break-inside: avoid-page;
+    }
+    .main-content figcaption {
+        margin-top: 1.5mm !important;
+        color: var(--print-muted) !important;
+        font-size: 8.5pt !important;
+        line-height: 1.35 !important;
+    }
+
+    .main-content table {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 3mm 0 !important;
+        border-collapse: collapse !important;
+        table-layout: auto !important;
+        font-size: 8.6pt !important;
+        line-height: 1.35 !important;
+        page-break-inside: auto !important;
+    }
+    .main-content table.print-wide { table-layout: fixed !important; font-size: 7.8pt !important; }
+    .main-content thead { display: table-header-group !important; }
+    .main-content tr { break-inside: avoid-page; page-break-inside: avoid; }
+    .main-content :is(th, td) {
+        padding: 1.6mm 2mm !important;
+        color: var(--print-ink) !important;
+        background: transparent !important;
+        border: 0.25mm solid var(--print-rule) !important;
+        overflow-wrap: anywhere !important;
+    }
+    .main-content th { background: #eceef1 !important; font-weight: 700 !important; }
+
+    .main-content pre {
+        max-width: 100% !important;
+        overflow: hidden !important;
+        white-space: pre-wrap !important;
+        overflow-wrap: anywhere !important;
+        font-size: 8.5pt !important;
+        break-inside: auto;
+    }
+
+    mark,
+    mark.search-highlight,
+    mark.search-result-term { color: inherit !important; background: transparent !important; }
+}
