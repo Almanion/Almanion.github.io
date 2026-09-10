@@ -58,7 +58,8 @@
     "favicons": [".svg", ".png", ".ico"],
     "images": [".svg", ".png", ".jpg", ".jpeg", ".webp", ".avif", ".gif"],
     "matcenter": [".js", ".json"],
-    "styles": [".css"]
+    "styles": [".css"],
+    "vendor": [".js", ".txt"]
   },
   "deniedPaths": [
     ".github",

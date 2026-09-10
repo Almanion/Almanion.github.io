@@ -408,28 +408,218 @@
     }
 
     // ---------- Синхронизация прогресса ----------
+    const volatileKcStores = new Map();
+
     function allKcKeys() {
-        const out = [];
+        const out = new Set(volatileKcStores.keys());
         try {
             for (let i = 0; i < localStorage.length; i++) {
                 const k = localStorage.key(i);
-                if (k && k.indexOf(KC_PREFIX) === 0) out.push(k);
+                if (k && k.indexOf(KC_PREFIX) === 0) out.add(k);
             }
         } catch (_) {}
-        return out;
+        return Array.from(out);
     }
     function pageKey(storeKey) { return storeKey.replace(/[.#$/\[\]]/g, '_'); }
-    function getLocal(k) { try { return JSON.parse(sGet(k) || '{}') || {}; } catch (_) { return {}; } }
     function dataSyncApi() { return window.AlmanionDataSync || null; }
+
+    function kcObject(value) {
+        return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    }
+
+    function cloneKcValue(value) {
+        if (value == null) return value;
+        try { return JSON.parse(JSON.stringify(value)); } catch (_) { return value; }
+    }
+
+    function stableKcValue(value) {
+        if (Array.isArray(value)) return value.map(stableKcValue);
+        if (!value || typeof value !== 'object') return value;
+        const out = {};
+        Object.keys(value).sort().forEach(function (key) { out[key] = stableKcValue(value[key]); });
+        return out;
+    }
+
+    function stableKcJson(value) {
+        try { return JSON.stringify(stableKcValue(value)); } catch (_) { return String(value); }
+    }
+
+    function reviewEventId(event, fallbackId) {
+        if (!event || typeof event !== 'object') return '';
+        const id = event.id != null ? event.id : event.eventId;
+        if (id != null && String(id)) return String(id);
+        return fallbackId == null ? '' : String(fallbackId);
+    }
+
+    function reviewEventAt(event) {
+        event = kcObject(event);
+        return Number(event.at || event.reviewedAt || event.timestamp || event.updatedAt) || 0;
+    }
+
+    function reviewEventList(value) {
+        if (Array.isArray(value)) return value.map(cloneKcValue).filter(function (event) { return event && typeof event === 'object'; });
+        if (!value || typeof value !== 'object') return [];
+        return Object.keys(value).map(function (key) {
+            const event = cloneKcValue(value[key]);
+            if (!event || typeof event !== 'object' || Array.isArray(event)) return null;
+            if (!reviewEventId(event)) event.id = key;
+            return event;
+        }).filter(Boolean);
+    }
+
+    function compareReviewEvents(a, b) {
+        const atDiff = reviewEventAt(a) - reviewEventAt(b);
+        if (atDiff) return atDiff > 0 ? 1 : -1;
+        const aid = reviewEventId(a);
+        const bid = reviewEventId(b);
+        if (aid !== bid) return aid > bid ? 1 : -1;
+        const aj = stableKcJson(a);
+        const bj = stableKcJson(b);
+        return aj === bj ? 0 : (aj > bj ? 1 : -1);
+    }
+
+    function mergeReviewEvents(a, b) {
+        const events = new Map();
+        reviewEventList(a).concat(reviewEventList(b)).forEach(function (event) {
+            const explicitId = reviewEventId(event);
+            const key = explicitId ? 'id:' + explicitId : 'legacy:' + stableKcJson(event);
+            const previous = events.get(key);
+            if (!previous) {
+                events.set(key, cloneKcValue(event));
+                return;
+            }
+            // Event ids are immutable. If an interrupted write nevertheless left
+            // one side with a partial event, retain every field and resolve the
+            // overlap deterministically so every tab converges on the same value.
+            const winner = compareReviewEvents(previous, event) >= 0 ? previous : event;
+            const loser = winner === previous ? event : previous;
+            events.set(key, Object.assign({}, cloneKcValue(loser), cloneKcValue(winner)));
+        });
+        return Array.from(events.values()).sort(compareReviewEvents);
+    }
+
+    function explicitReviewEventIds(card) {
+        const ids = new Set();
+        reviewEventList(kcObject(card).reviewEvents).forEach(function (event) {
+            const id = reviewEventId(event);
+            if (id) ids.add(id);
+        });
+        return ids;
+    }
+
+    function isStrictSuperset(left, right) {
+        if (left.size <= right.size) return false;
+        for (const id of right) if (!left.has(id)) return false;
+        return true;
+    }
+
+    function cardRevision(card) {
+        card = kcObject(card);
+        return Number(card.reviewRevision || card.stateRevision || card.revision
+            || (card.__sync && card.__sync.revision)) || 0;
+    }
+
+    function compareCardStates(a, b) {
+        if (a == null && b == null) return 0;
+        if (a == null) return -1;
+        if (b == null) return 1;
+        if (typeof a !== 'object' || typeof b !== 'object' || Array.isArray(a) || Array.isArray(b)) {
+            const aj = stableKcJson(a), bj = stableKcJson(b);
+            return aj === bj ? 0 : (aj > bj ? 1 : -1);
+        }
+
+        const aIds = explicitReviewEventIds(a);
+        const bIds = explicitReviewEventIds(b);
+        if (isStrictSuperset(aIds, bIds)) return 1;
+        if (isStrictSuperset(bIds, aIds)) return -1;
+
+        // v3 event histories provide a causal signal that is stronger than a
+        // client clock. For divergent histories use revision/count first, then
+        // a deterministic latest-event tie break. The legacy `last` comparison
+        // remains the primary rule only for v2 cards without reviewEvents.
+        if (aIds.size || bIds.size) {
+            const vectors = [
+                [cardRevision(a), cardRevision(b)],
+                [aIds.size, bIds.size],
+                [Number(a.reps) || 0, Number(b.reps) || 0]
+            ];
+            for (const pair of vectors) if (pair[0] !== pair[1]) return pair[0] > pair[1] ? 1 : -1;
+            const aEvents = reviewEventList(a.reviewEvents).sort(compareReviewEvents);
+            const bEvents = reviewEventList(b.reviewEvents).sort(compareReviewEvents);
+            const latestCmp = compareReviewEvents(aEvents[aEvents.length - 1], bEvents[bEvents.length - 1]);
+            if (latestCmp) return latestCmp;
+        }
+
+        const legacyVectors = [
+            [Number(a.last) || 0, Number(b.last) || 0],
+            [Number(a.updatedAt) || 0, Number(b.updatedAt) || 0],
+            [cardRevision(a), cardRevision(b)],
+            [Number(a.reps) || 0, Number(b.reps) || 0],
+            [Number(a.lapses) || 0, Number(b.lapses) || 0]
+        ];
+        for (const pair of legacyVectors) if (pair[0] !== pair[1]) return pair[0] > pair[1] ? 1 : -1;
+        const aj = stableKcJson(a), bj = stableKcJson(b);
+        return aj === bj ? 0 : (aj > bj ? 1 : -1);
+    }
+
+    function mergeCardStates(a, b) {
+        if (a == null) return cloneKcValue(b);
+        if (b == null) return cloneKcValue(a);
+        if (typeof a !== 'object' || typeof b !== 'object' || Array.isArray(a) || Array.isArray(b)) {
+            return cloneKcValue(compareCardStates(a, b) >= 0 ? a : b);
+        }
+        const useA = compareCardStates(a, b) >= 0;
+        const winner = useA ? a : b;
+        const loser = useA ? b : a;
+        const out = Object.assign({}, cloneKcValue(loser), cloneKcValue(winner));
+        if (Object.prototype.hasOwnProperty.call(a, 'reviewEvents')
+            || Object.prototype.hasOwnProperty.call(b, 'reviewEvents')) {
+            out.reviewEvents = mergeReviewEvents(a.reviewEvents, b.reviewEvents);
+        }
+        return out;
+    }
+
+    function parseKcStore(raw) {
+        try {
+            const parsed = JSON.parse(raw || '{}');
+            return kcObject(parsed);
+        } catch (_) { return {}; }
+    }
+
+    function getLocal(k) {
+        const persisted = parseKcStore(sGet(k));
+        const volatile = volatileKcStores.get(k);
+        return volatile ? mergeStores(persisted, volatile) : persisted;
+    }
+
+    function reportKcPersistence(storeKey, persisted, source) {
+        if (persisted !== false) return;
+        console.warn('Almanion account: knowledge progress is kept in memory because local storage is unavailable.');
+        try {
+            window.dispatchEvent(new CustomEvent('kc-store-sync-status', {
+                detail: { key: storeKey, persisted: false, source: source || 'account' }
+            }));
+        } catch (_) {}
+    }
 
     function storeUpdatedAt(store) {
         store = store || {};
         let updatedAt = Number(store.__meta && store.__meta.updatedAt) || 0;
+        reviewEventList(store.reviewEvents).forEach(function (event) {
+            updatedAt = Math.max(updatedAt, reviewEventAt(event));
+        });
+        reviewEventList(store.__meta && store.__meta.reviewEvents).forEach(function (event) {
+            updatedAt = Math.max(updatedAt, reviewEventAt(event));
+        });
         Object.keys(store).forEach(function (key) {
-            if (key === '__meta') return;
+            if (key === '__meta' || key === 'reviewEvents') return;
             // `due` is a future study deadline, not a modification time. Using it
             // here can make an older schedule overwrite answers from another device.
-            updatedAt = Math.max(updatedAt, Number(store[key] && store[key].last) || 0);
+            const card = kcObject(store[key]);
+            updatedAt = Math.max(updatedAt, Number(card.updatedAt) || 0, Number(card.last) || 0);
+            reviewEventList(card.reviewEvents).forEach(function (event) {
+                updatedAt = Math.max(updatedAt, reviewEventAt(event));
+            });
         });
         return updatedAt;
     }
@@ -440,9 +630,9 @@
         const keys = new Set(Object.keys(a).concat(Object.keys(b)));
         keys.forEach(function (k) {
             if (k === '__meta') { out.__meta = mergeMeta(a.__meta, b.__meta); return; }
+            if (k === 'reviewEvents') { out.reviewEvents = mergeReviewEvents(a.reviewEvents, b.reviewEvents); return; }
             const av = a[k], bv = b[k];
-            if (av && bv) out[k] = ((bv.last || 0) >= (av.last || 0)) ? bv : av; // позже повторённая версия побеждает
-            else out[k] = av || bv;
+            out[k] = mergeCardStates(av, bv);
         });
         return out;
     }
@@ -586,7 +776,11 @@
 
     function mergeMeta(a, b) {
         a = a || {}; b = b || {};
-        const newer = (b.updatedAt || 0) >= (a.updatedAt || 0) ? b : a;
+        const aUpdatedAt = Number(a.updatedAt) || 0;
+        const bUpdatedAt = Number(b.updatedAt) || 0;
+        const newer = bUpdatedAt !== aUpdatedAt
+            ? (bUpdatedAt > aUpdatedAt ? b : a)
+            : (stableKcJson(b) >= stableKcJson(a) ? b : a);
         const older = newer === b ? a : b;
         const out = Object.assign({}, older, newer);
         // Две вкладки могут познакомить пользователя с новыми карточками в один
@@ -595,29 +789,50 @@
             out.introDate = a.introDate;
             out.introCount = Math.max(a.introCount || 0, b.introCount || 0);
         }
-        out.updatedAt = Math.max(a.updatedAt || 0, b.updatedAt || 0);
+        if (Object.prototype.hasOwnProperty.call(a, 'reviewEvents')
+            || Object.prototype.hasOwnProperty.call(b, 'reviewEvents')) {
+            out.reviewEvents = mergeReviewEvents(a.reviewEvents, b.reviewEvents);
+        }
+        out.schema = Math.max(Number(a.schema) || 0, Number(b.schema) || 0) || out.schema;
+        out.updatedAt = Math.max(aUpdatedAt, bUpdatedAt);
         return out;
     }
 
     function applyRemotePage(storeKey, remoteStore) {
         const merged = mergeStores(getLocal(storeKey), remoteStore);
         applyingRemote = true;
-        sSet(storeKey, JSON.stringify(merged));
-        applyingRemote = false;
-        if (window.KC && typeof window.KC.reload === 'function') window.KC.reload(storeKey);
+        let persisted = false;
+        try { persisted = sSet(storeKey, JSON.stringify(merged)) === true; }
+        catch (_) { persisted = false; }
+        finally { applyingRemote = false; }
+        if (persisted) volatileKcStores.delete(storeKey);
+        else volatileKcStores.set(storeKey, cloneKcValue(merged));
+        reportKcPersistence(storeKey, persisted, 'cloud');
+        if (window.KC && typeof window.KC.reload === 'function') {
+            window.KC.reload(storeKey, cloneKcValue(merged), { persisted: persisted, source: 'cloud' });
+        }
     }
-    function pushPage(storeKey) {
-        if (!kcRef) return;
+    function pushPage(storeKey, suppliedStore, suppliedUpdatedAt) {
+        if (!kcRef) return false;
+        const hasSuppliedStore = suppliedStore && typeof suppliedStore === 'object' && !Array.isArray(suppliedStore);
+        const local = hasSuppliedStore
+            ? mergeStores(getLocal(storeKey), suppliedStore)
+            : getLocal(storeKey);
+        const updatedAt = Math.max(storeUpdatedAt(local), Number(suppliedUpdatedAt) || 0) || Date.now();
         if (kcStore) {
-            const local = getLocal(storeKey);
-            kcStore.set(pageKey(storeKey), { key: storeKey, store: local }, {
-                updatedAt: storeUpdatedAt(local) || Date.now()
-            });
-            return;
+            try {
+                kcStore.set(pageKey(storeKey), { key: storeKey, store: local }, { updatedAt: updatedAt });
+                return true;
+            } catch (err) {
+                console.warn('Almanion account: progress could not be queued for sync.', err);
+                reportKcPersistence(storeKey, false, 'sync-queue');
+                return false;
+            }
         }
         kcRef.child(pageKey(storeKey))
-            .set(JSON.stringify({ key: storeKey, store: getLocal(storeKey) }))
+            .set(JSON.stringify({ key: storeKey, store: local }))
             .catch(function (err) { console.warn('Almanion account: progress sync failed.', err); });
+        return true;
     }
 
     function startKcSync(uid) {
@@ -628,7 +843,10 @@
             // The visible KC cache is shared with the page UI. Never import one
             // account's answers into another account merely because they used
             // the same browser; each account keeps its own versioned sync cache.
-            allKcKeys().forEach(sRemove);
+            allKcKeys().forEach(function (storeKey) {
+                volatileKcStores.delete(storeKey);
+                sRemove(storeKey);
+            });
         }
         sSet(KC_LOCAL_OWNER_KEY, uid);
         kcRef = db.ref('kc/' + uid);
@@ -666,7 +884,7 @@
                     }
                     const mergedStore = mergeStores(localRecord.store || {}, remoteRecord.store || {});
                     const winner = sync.compareRecords(localRecord, remoteRecord) >= 0 ? localRecord : remoteRecord;
-                    const differsFromRemote = JSON.stringify(mergedStore) !== JSON.stringify(remoteRecord.store || {});
+                    const differsFromRemote = stableKcJson(mergedStore) !== stableKcJson(remoteRecord.store || {});
                     const updatedAt = Math.max(
                         localMeta.updatedAt,
                         remoteMeta.updatedAt,
@@ -704,18 +922,25 @@
                 }
             });
 
-            // Первый вход переносит имеющийся локальный прогресс. Повторный
-            // импорт безопасен: сравнение идёт по времени страницы и ревизии.
+            // Первый вход переносит имеющийся локальный прогресс. Сравниваем
+            // содержимое по карточкам: одинаковое клиентское время не должно
+            // скрыть карточку или событие, созданные в другой вкладке.
             allKcKeys().forEach(function (storeKey) {
                 const local = getLocal(storeKey);
                 if (!Object.keys(local).length) return;
                 const id = pageKey(storeKey);
                 const current = kcStore.get(id, { includeDeleted: true });
-                const localAt = storeUpdatedAt(local);
-                const currentAt = current ? sync.metadata(current).updatedAt : 0;
-                if (!current || localAt > currentAt) {
-                    kcStore.set(id, { key: storeKey, store: local }, {
-                        updatedAt: localAt || Date.now(), flush: false
+                const currentStore = current && !(current.__sync && current.__sync.deleted)
+                    ? (current.store || {})
+                    : {};
+                const mergedStore = mergeStores(currentStore, local);
+                if (!current || stableKcJson(mergedStore) !== stableKcJson(currentStore)) {
+                    kcStore.set(id, { key: storeKey, store: mergedStore }, {
+                        updatedAt: Math.max(
+                            storeUpdatedAt(mergedStore),
+                            current ? sync.metadata(current).updatedAt : 0
+                        ) || Date.now(),
+                        flush: false
                     });
                 }
             });
@@ -729,7 +954,7 @@
                 try { const blob = JSON.parse(remote[pk]); if (blob && blob.key) applyRemotePage(blob.key, blob.store); } catch (_) {}
             });
             // выгружаем все локальные страницы (объединённые) в облако
-            allKcKeys().forEach(pushPage);
+            allKcKeys().forEach(function (storeKey) { pushPage(storeKey); });
             kcRef.on('value', onRemote, function () {});
         }).catch(function (err) {
             if (generation !== syncGeneration || !kcRef) return;
@@ -853,15 +1078,32 @@
 
     // Локальные изменения прогресса (событие из knowledge-check.js) → выгрузка
     window.addEventListener('kc-store-changed', function (e) {
-        if (!user || !kcRef || applyingRemote) return;
-        const k = e && e.detail && e.detail.key;
-        if (k) pushPage(k);
+        if (applyingRemote) return;
+        const detail = e && e.detail || {};
+        const k = detail.key;
+        if (!k) return;
+        const hasPayload = detail.store && typeof detail.store === 'object' && !Array.isArray(detail.store);
+        let payload = null;
+        if (hasPayload) {
+            // The event payload is the state that produced the event. Reading
+            // localStorage again can return an older value after quota/private-mode
+            // failures or a write from another tab.
+            payload = mergeStores(getLocal(k), detail.store);
+            if (detail.persisted === false) {
+                volatileKcStores.set(k, cloneKcValue(payload));
+                reportKcPersistence(k, false, 'knowledge-check');
+            } else if (detail.persisted === true) {
+                volatileKcStores.delete(k);
+            }
+        }
+        if (!user || !kcRef) return;
+        pushPage(k, payload, detail.updatedAt);
     });
 
     window.addEventListener('almanion-sync-retry', function () {
+        if (user && kcRef) allKcKeys().forEach(function (storeKey) { pushPage(storeKey); });
         if (kcStore) kcStore.flush();
         if (settingsStore) settingsStore.flush();
-        else if (user && kcRef) allKcKeys().forEach(pushPage);
     });
 
     window.addEventListener('almanion-settings-ready', function () {

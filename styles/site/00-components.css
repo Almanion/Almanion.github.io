@@ -1402,3 +1402,1060 @@ body:not(.no-hover) .site-toast-close:hover {
     .site-toast { transition: none; }
 }
 
+/* =====================================================================
+   KNOWLEDGE CHECK — adaptive session controls
+
+   These classes deliberately build on the existing .kc-* components. They
+   can be added progressively by knowledge-check.js without changing the
+   appearance or behaviour of the current markup.
+   ===================================================================== */
+
+/* Keep one scrolling surface in each dialog: the selection dialog itself,
+   and only the card content in an active review. */
+.auth-modal.kc-modal {
+    box-sizing: border-box;
+    width: calc(100% - 2rem);
+    max-width: 640px;
+    scrollbar-gutter: stable;
+}
+
+.auth-modal.kc-modal:not(.kc-modal-game) {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.auth-modal.kc-modal:not(.kc-modal-game) .kc-deck-list {
+    max-height: none;
+    overflow: visible;
+}
+
+.auth-modal.kc-modal.kc-modal-game {
+    max-width: 760px;
+    overflow: hidden;
+}
+
+.auth-modal.kc-modal.kc-modal-game .kc-content {
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    overscroll-behavior: contain;
+}
+
+.auth-modal.kc-modal:not(.kc-modal-game) > .kc-actions {
+    position: sticky;
+    z-index: 3;
+    bottom: 0;
+    margin-top: 0.15rem;
+    padding-top: 0.8rem;
+    padding-bottom: 0.05rem;
+    background: var(--bg-primary);
+    border-top: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+}
+
+.auth-modal.kc-modal .kc-head-text {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.auth-modal.kc-modal :is(.kc-title, .kc-subtitle) {
+    overflow-wrap: anywhere;
+}
+
+/* Card-type filters */
+.kc-filter-section {
+    min-width: 0;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.kc-filter-heading-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.55rem;
+}
+
+.auth-modal.kc-modal .kc-filter-heading {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: 0.025em;
+}
+
+.kc-filter-hint {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    line-height: 1.35;
+}
+
+.kc-type-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+    gap: 0.45rem;
+}
+
+.kc-type-chip {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 44px;
+    min-width: 0;
+    padding: 0.55rem 0.65rem;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 11px;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+body:not(.no-hover) .kc-type-chip:not(:disabled):hover {
+    color: var(--text-primary);
+    border-color: color-mix(in srgb, var(--accent-color) 55%, var(--border-color));
+}
+
+.kc-type-chip.is-selected,
+.kc-type-chip.selected,
+.kc-type-chip.active,
+.kc-type-chip[aria-pressed="true"] {
+    color: var(--text-primary);
+    background: rgba(var(--accent-rgb, 37, 99, 235), 0.07);
+    border-color: color-mix(in srgb, var(--accent-color) 68%, var(--border-color));
+}
+
+.kc-type-chip:disabled,
+.kc-type-chip.is-unavailable {
+    opacity: 0.48;
+    cursor: not-allowed;
+}
+
+.kc-type-icon {
+    display: grid;
+    width: 1.65rem;
+    height: 1.65rem;
+    place-items: center;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    border-radius: 7px;
+}
+
+.kc-type-chip.is-selected .kc-type-icon,
+.kc-type-chip.selected .kc-type-icon,
+.kc-type-chip.active .kc-type-icon,
+.kc-type-chip[aria-pressed="true"] .kc-type-icon {
+    color: var(--accent-color);
+    background: rgba(var(--accent-rgb, 37, 99, 235), 0.11);
+}
+
+.kc-type-icon svg {
+    width: 0.95rem;
+    height: 0.95rem;
+}
+
+.kc-type-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.08rem;
+}
+
+.kc-type-name {
+    overflow: hidden;
+    color: inherit;
+    font-size: 0.82rem;
+    font-weight: 650;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kc-type-description {
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: 0.68rem;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kc-type-count {
+    display: inline-flex;
+    min-width: 1.65rem;
+    min-height: 1.45rem;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 0.38rem;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.kc-type-chip.is-selected .kc-type-count,
+.kc-type-chip.selected .kc-type-count,
+.kc-type-chip.active .kc-type-count,
+.kc-type-chip[aria-pressed="true"] .kc-type-count {
+    color: var(--accent-color);
+    background: rgba(var(--accent-rgb, 37, 99, 235), 0.11);
+}
+
+/* Persisted-session continuation */
+.kc-session-resume {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.85rem;
+    margin: 0.8rem 0 0;
+    padding: 0.8rem;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    background: color-mix(in srgb, var(--bg-secondary) 90%, var(--accent-color) 10%);
+    border: 1px solid var(--border-color);
+    border-color: color-mix(in srgb, var(--border-color) 70%, var(--accent-color) 30%);
+    border-radius: 12px;
+}
+
+.kc-session-resume[hidden] {
+    display: none;
+}
+
+.kc-session-resume-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.18rem;
+}
+
+.kc-session-resume-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.kc-session-resume-meta {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+}
+
+.kc-session-resume-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.kc-session-resume-actions .kc-btn {
+    min-height: 38px;
+    padding: 0.45rem 0.72rem;
+    border-radius: 9px;
+    font-size: 0.8rem;
+}
+
+/* Honest progress: the main value is unique cards secured in this session;
+   attempts and cards still learning remain explicit secondary information. */
+.kc-progress-summary {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 0 0 0.45rem;
+}
+
+.kc-progress-copy {
+    min-width: 0;
+    color: var(--text-primary);
+    font-size: 0.79rem;
+    font-weight: 650;
+    line-height: 1.35;
+}
+
+.kc-progress-value {
+    flex: 0 0 auto;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.3;
+    font-variant-numeric: tabular-nums;
+}
+
+.kc-progress-detail {
+    flex: 0 1 auto;
+    min-width: 0;
+    margin: 0 0 0 auto;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    line-height: 1.4;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.auth-modal.kc-modal-game > .kc-progress-track {
+    height: 4px;
+    margin-bottom: 0.85rem;
+}
+
+.kc-progress-fill {
+    transition: width 0.22s cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Short rubric for the four self-assessment grades. */
+.kc-grade-guide {
+    box-sizing: border-box;
+    width: 100%;
+    margin-top: 0.15rem;
+    padding: 0.65rem 0.7rem;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 11px;
+}
+
+.kc-grade-guide[hidden] {
+    display: none;
+}
+
+details.kc-grade-guide > summary {
+    list-style: none;
+    cursor: pointer;
+}
+
+details.kc-grade-guide > summary::-webkit-details-marker {
+    display: none;
+}
+
+.kc-grade-guide-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    font-weight: 650;
+    line-height: 1.35;
+}
+
+details.kc-grade-guide .kc-grade-guide-title::after {
+    content: '';
+    width: 0.42rem;
+    height: 0.42rem;
+    flex: 0 0 auto;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg) translateY(-0.12rem);
+    transition: transform 0.15s ease;
+}
+
+details.kc-grade-guide[open] .kc-grade-guide-title::after {
+    transform: rotate(225deg) translate(-0.08rem, -0.08rem);
+}
+
+.kc-grade-guide-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.35rem 0.7rem;
+    margin-top: 0.55rem;
+}
+
+.kc-grade-guide-item {
+    --kc-grade-tone: var(--text-secondary);
+    display: grid;
+    grid-template-columns: 0.4rem minmax(0, 1fr);
+    gap: 0.42rem;
+    align-items: start;
+    min-width: 0;
+    color: var(--text-secondary);
+    font-size: 0.69rem;
+    line-height: 1.38;
+}
+
+.kc-grade-guide-item::before {
+    content: '';
+    width: 0.38rem;
+    height: 0.38rem;
+    margin-top: 0.27rem;
+    background: var(--kc-grade-tone);
+    border-radius: 50%;
+}
+
+.kc-grade-guide-label {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.kc-grade-guide-again { --kc-grade-tone: var(--error-color); }
+.kc-grade-guide-hard { --kc-grade-tone: var(--warning-color, #a66b16); }
+.kc-grade-guide-good { --kc-grade-tone: var(--success-color); }
+.kc-grade-guide-easy { --kc-grade-tone: var(--accent-color); }
+
+/* Keep the four choices readable without turning the footer into four bright
+   colour blocks. Colour identifies the label; the surfaces stay neutral. */
+.auth-modal.kc-modal .kc-grade {
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+.auth-modal.kc-modal .kc-grade-again { --kc-grade-tone: var(--error-color); }
+.auth-modal.kc-modal .kc-grade-hard { --kc-grade-tone: var(--warning-color, #a66b16); }
+.auth-modal.kc-modal .kc-grade-good { --kc-grade-tone: var(--success-color); }
+.auth-modal.kc-modal .kc-grade-easy { --kc-grade-tone: var(--accent-color); }
+
+.auth-modal.kc-modal .kc-grade .kc-grade-lbl {
+    color: var(--kc-grade-tone, var(--text-primary));
+}
+
+body:not(.no-hover) .auth-modal.kc-modal .kc-grade:hover {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--bg-secondary) 93%, var(--kc-grade-tone, var(--accent-color)) 7%);
+    border-color: color-mix(in srgb, var(--border-color) 62%, var(--kc-grade-tone, var(--accent-color)) 38%);
+}
+
+/* Contextual actions under a revealed card. */
+.kc-card-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    margin-top: 0.1rem;
+}
+
+.kc-tool-btn {
+    display: inline-flex;
+    min-height: 34px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.38rem 0.58rem;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 0.73rem;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.kc-tool-btn svg {
+    width: 0.9rem;
+    height: 0.9rem;
+    flex: 0 0 auto;
+}
+
+body:not(.no-hover) .kc-tool-btn:not(:disabled):hover {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+.kc-tool-btn:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+}
+
+.kc-tool-btn.is-active,
+.kc-tool-undo.is-active {
+    color: var(--accent-color);
+    background: rgba(var(--accent-rgb, 37, 99, 235), 0.08);
+    border-color: rgba(var(--accent-rgb, 37, 99, 235), 0.2);
+}
+
+.kc-tool-report.is-active {
+    color: var(--warning-color, #a66b16);
+    background: rgba(166, 107, 22, 0.08);
+    border-color: rgba(166, 107, 22, 0.22);
+}
+
+.kc-undo-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    padding: 0.55rem 0.65rem;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 0.74rem;
+    line-height: 1.35;
+}
+
+.kc-undo-bar[hidden] {
+    display: none;
+}
+
+.kc-undo-bar .kc-tool-btn {
+    flex: 0 0 auto;
+    color: var(--accent-color);
+}
+
+/* Quiet inline status instead of an extra popup. */
+.kc-session-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    margin: 0.55rem 0;
+    padding: 0.58rem 0.65rem;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 0.75rem;
+    line-height: 1.42;
+}
+
+.kc-session-notice[hidden] {
+    display: none;
+}
+
+.kc-session-notice-success { color: var(--success-color); }
+.kc-session-notice-warning { color: var(--warning-color, #a66b16); }
+.kc-session-notice-error { color: var(--error-color); }
+
+/* Session length is a recommendation, never a daily limit. */
+.kc-session-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    margin-top: 0.9rem;
+}
+
+.kc-session-size {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.kc-session-size-label {
+    display: block;
+    margin: 0 0 0.48rem;
+    padding: 0;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.kc-size-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+}
+
+.kc-size-option {
+    display: flex;
+    min-width: 0;
+    min-height: 48px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0.08rem;
+    padding: 0.5rem 0.62rem;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+body:not(.no-hover) .kc-size-option:not(:disabled):hover {
+    color: var(--text-primary);
+    border-color: color-mix(in srgb, var(--accent-color) 48%, var(--border-color));
+}
+
+.kc-size-option.is-selected,
+.kc-size-option.selected,
+.kc-size-option.active,
+.kc-size-option[aria-pressed="true"] {
+    color: var(--text-primary);
+    background: rgba(var(--accent-rgb, 37, 99, 235), 0.07);
+    border-color: color-mix(in srgb, var(--accent-color) 68%, var(--border-color));
+}
+
+.kc-size-option:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
+}
+
+.kc-size-name {
+    max-width: 100%;
+    overflow: hidden;
+    color: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kc-size-meta {
+    max-width: 100%;
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: 0.66rem;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Compact controls in the active-session header. */
+.kc-game-actions {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* .kc-close is absolutely positioned in selection/auth dialogs. Inside the
+   session toolbar it is a regular peer of Undo and Pause. Reset every inset
+   explicitly so later generic auth styles cannot pull it out of the row. */
+.kc-game-actions .kc-close {
+    position: static;
+    inset: auto;
+    z-index: auto;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: 10px;
+}
+
+.auth-modal.kc-modal .kc-game-bar {
+    min-width: 0;
+}
+
+.auth-modal.kc-modal .kc-counts {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+}
+
+.kc-icon-btn,
+.kc-pause-btn {
+    display: inline-grid;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+    padding: 0;
+    place-items: center;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font: inherit;
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.kc-icon-btn svg,
+.kc-pause-btn svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+body:not(.no-hover) .kc-icon-btn:not(:disabled):hover,
+body:not(.no-hover) .kc-pause-btn:not(:disabled):hover {
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+.kc-icon-btn:disabled,
+.kc-pause-btn:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+}
+
+/* Shared quiet state screen for a paused session and for the short wait
+   before a failed card may be shown again. */
+.kc-state-screen {
+    box-sizing: border-box;
+    width: 100%;
+    display: flex;
+    min-height: 260px;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    padding: 1.25rem 0.75rem;
+    text-align: center;
+}
+
+.kc-state-screen[hidden] {
+    display: none;
+}
+
+.kc-state-icon {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    margin-bottom: 0.15rem;
+    place-items: center;
+    color: var(--accent-color);
+    background: rgba(var(--accent-rgb, 37, 99, 235), 0.09);
+    border-radius: 12px;
+}
+
+.kc-state-icon svg {
+    width: 1.3rem;
+    height: 1.3rem;
+}
+
+.auth-modal.kc-modal .kc-state-title {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.05rem;
+    font-weight: 720;
+    line-height: 1.3;
+}
+
+.kc-state-copy {
+    max-width: 38ch;
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.48;
+}
+
+.kc-state-meta {
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+}
+
+.kc-state-actions {
+    display: flex;
+    width: min(100%, 25rem);
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.45rem;
+}
+
+.kc-state-actions .kc-btn {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.kc-wait-time {
+    color: var(--text-primary);
+    font-size: 1.35rem;
+    font-weight: 750;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+}
+
+.kc-wait-track {
+    width: min(100%, 16rem);
+    height: 4px;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+    border-radius: 999px;
+}
+
+.kc-wait-fill {
+    width: 0;
+    height: 100%;
+    background: var(--accent-color);
+    border-radius: inherit;
+    transition: width 0.2s linear;
+}
+
+/* Optional in-place issue report. It stays inside the card scroll region and
+   therefore does not introduce another modal or another scroll container. */
+.kc-report-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    margin-top: 0.2rem;
+    padding: 0.7rem;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 11px;
+}
+
+/* Rendered note blocks may carry their original page widths. In the review
+   dialog they must conform to the card column while wide formulas remain
+   horizontally scrollable inside that single content surface. */
+.auth-modal.kc-modal .kc-flashcard,
+.auth-modal.kc-modal .kc-definition {
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+.auth-modal.kc-modal .kc-flashcard-term,
+.auth-modal.kc-modal .kc-definition {
+    overflow-wrap: anywhere;
+}
+
+.auth-modal.kc-modal .kc-definition img,
+.auth-modal.kc-modal .kc-definition video,
+.auth-modal.kc-modal .kc-definition canvas,
+.auth-modal.kc-modal .kc-definition svg {
+    max-width: 100%;
+    height: auto;
+}
+
+.auth-modal.kc-modal .kc-definition :is(.katex-display, pre, table) {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+}
+
+.kc-report-panel[hidden] {
+    display: none;
+}
+
+.kc-report-title {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.kc-report-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.kc-report-choice {
+    min-height: 34px;
+    padding: 0.35rem 0.58rem;
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    font: inherit;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.kc-report-choice.is-selected,
+.kc-report-choice[aria-pressed="true"] {
+    color: var(--accent-color);
+    background: rgba(var(--accent-rgb, 37, 99, 235), 0.07);
+    border-color: rgba(var(--accent-rgb, 37, 99, 235), 0.35);
+}
+
+.kc-report-text {
+    width: 100%;
+    min-height: 74px;
+    box-sizing: border-box;
+    resize: vertical;
+    padding: 0.6rem 0.68rem;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 9px;
+    font: inherit;
+    font-size: 0.76rem;
+    line-height: 1.45;
+}
+
+.kc-report-text::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.72;
+}
+
+.kc-report-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.4rem;
+}
+
+.kc-report-actions .kc-btn {
+    min-height: 36px;
+    padding: 0.4rem 0.7rem;
+    border-radius: 9px;
+    font-size: 0.75rem;
+}
+
+.kc-type-chip:focus-visible,
+.kc-size-option:focus-visible,
+.kc-icon-btn:focus-visible,
+.kc-pause-btn:focus-visible,
+.kc-tool-btn:focus-visible,
+.kc-report-choice:focus-visible,
+.kc-report-text:focus-visible,
+.kc-grade-guide:focus-visible,
+.kc-grade-guide > summary:focus-visible,
+.kc-session-resume .kc-btn:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+    .auth-modal.kc-modal {
+        width: 100%;
+        max-width: 100%;
+        max-height: calc(100dvh - 0.5rem);
+        padding: 1rem 0.9rem calc(0.9rem + env(safe-area-inset-bottom, 0px));
+        border-radius: 18px 18px 0 0;
+    }
+
+    .auth-modal.kc-modal:not(.kc-modal-game) > .kc-actions {
+        margin-inline: -0.1rem;
+        padding-bottom: 0.1rem;
+    }
+
+    .auth-modal.kc-modal.kc-modal-game .kc-content {
+        padding-right: 0.1rem;
+    }
+
+    .kc-filter-heading-row,
+    .kc-progress-summary {
+        align-items: flex-start;
+    }
+
+    .kc-type-list {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
+    }
+
+    .kc-type-chip {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 0.45rem;
+        min-height: 46px;
+        padding: 0.52rem 0.55rem;
+    }
+
+    .kc-type-count {
+        min-height: 1.25rem;
+        font-size: 0.65rem;
+    }
+
+    .kc-type-description {
+        display: none;
+    }
+
+    .kc-session-resume {
+        grid-template-columns: 1fr;
+        gap: 0.65rem;
+    }
+
+    .kc-session-resume-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+    }
+
+    .kc-session-resume-actions .kc-btn {
+        width: 100%;
+    }
+
+    .kc-size-list {
+        gap: 0.32rem;
+    }
+
+    .kc-size-option {
+        min-height: 50px;
+        padding-inline: 0.48rem;
+    }
+
+    .kc-size-name {
+        font-size: 0.74rem;
+    }
+
+    .kc-state-screen {
+        min-height: 220px;
+        padding: 1rem 0.4rem;
+    }
+
+    .kc-report-options {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .kc-report-choice {
+        border-radius: 9px;
+        text-align: center;
+    }
+
+    .kc-progress-summary {
+        gap: 0.5rem;
+    }
+
+    .kc-progress-detail {
+        font-size: 0.7rem;
+    }
+
+    .kc-grade-guide-list {
+        grid-template-columns: 1fr;
+    }
+
+    .kc-card-tools {
+        justify-content: stretch;
+    }
+
+    .kc-tool-btn {
+        flex: 1 1 calc(50% - 0.35rem);
+        min-height: 40px;
+    }
+
+    .auth-modal.kc-modal-game .kc-grade-row {
+        padding-bottom: 0.15rem;
+    }
+}
+
+@media (max-width: 390px) {
+    .kc-size-option {
+        min-height: 56px;
+    }
+
+    .kc-size-meta {
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
+    }
+
+    .kc-state-actions {
+        flex-direction: column;
+    }
+
+    .kc-state-actions .kc-btn {
+        width: 100%;
+    }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .kc-type-chip,
+    .kc-size-option,
+    .kc-icon-btn,
+    .kc-pause-btn,
+    .kc-tool-btn,
+    details.kc-grade-guide .kc-grade-guide-title::after,
+    .kc-progress-fill,
+    .kc-wait-fill {
+        transition: none;
+    }
+}
+

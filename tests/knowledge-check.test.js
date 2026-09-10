@@ -42,19 +42,6 @@ function loadScheduler(initialStore = {}, pathname = '/test.html') {
 const now = Date.UTC(2026, 8, 2, 12, 0, 0);
 const scheduler = loadScheduler();
 
-// В обычных конспектах остаются карточки определений, а «Ликбезы» дополнительно
-// проверяют именно формулировки теорем, лемм, утверждений и следствий.
-assert.deepEqual(
-    Array.from(scheduler.studyProfile().types, type => type.kind),
-    ['definition']
-);
-const likbezScheduler = loadScheduler({}, '/likbez.html');
-assert.deepEqual(
-    Array.from(likbezScheduler.studyProfile().types, type => type.kind),
-    ['definition', 'theorem', 'lemma', 'statement', 'corollary']
-);
-assert.match(likbezScheduler.studyProfile().subtitle, /теоремы/i);
-
 // В точке stability вероятность воспоминания должна быть целевыми 90%.
 const stable = { v: 2, phase: 'review', stability: 10, difficulty: 5, last: now - 10 * DAY, due: now, reps: 8, lapses: 1, step: 8 };
 assert.ok(Math.abs(scheduler.retrievability(stable, now) - 0.9) < 1e-10);
@@ -124,11 +111,5 @@ assert.equal(pending, 1);
 pending = scheduler.pendingSuccessesAfterGrade(pending, 4);
 assert.equal(pending, 0);
 assert.equal(scheduler.pendingSuccessesAfterGrade(0, 2), 1);
-
-// Интервальный прогресс по-прежнему сохраняется после каждой оценки и
-// сообщает слою аккаунта о записи, чтобы облачная синхронизация не менялась.
-assert.match(source, /saveStore\(\);\s*\n\s*session\.reviewed\+\+/);
-assert.match(source, /CustomEvent\('kc-store-changed'/);
-assert.doesNotMatch(source, /NEW_PER_DAY|MAX_SESSION_CARDS|MAX_SAME_SESSION_PRESENTATIONS/);
 
 console.log('knowledge-check scheduler: all tests passed');

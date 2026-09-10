@@ -165,11 +165,13 @@ function testRenderer() {
     const html = Renderer.renderSection(section);
     assert.ok(html.includes('&lt;script&gt;'));
     assert.ok(html.includes('<strong>Энергия</strong>'));
-    assert.ok(html.includes('<div class="definition-box"><strong>Кинетическая энергия</strong> — энергия движения</div>'));
+    assert.ok(html.includes('<div class="definition-box" data-note-block="' + section.blocks[1].id
+        + '" data-kc-id="' + section.blocks[1].id
+        + '"><strong>Кинетическая энергия</strong> — энергия движения</div>'));
     assert.ok(html.includes('E &amp;= mc^2'));
     assert.ok(!html.includes('javascript:'));
     assert.ok(html.includes('<article id="safe-section" class="topic constructor-topic">'));
-    assert.ok(html.includes('<article id="short-subsection" class="topic constructor-topic">'));
+    assert.ok(html.includes('<article id="short-subsection" class="topic constructor-topic" data-note-block="short-subsection" data-kc-id="short-subsection">'));
     assert.ok(!html.includes('constructor-nested-content'));
     const nav = Renderer.renderNavItem(section);
     assert.ok(nav.includes('nav-group-toggle'));
@@ -180,12 +182,23 @@ function testRenderer() {
         String.raw`Нижний \(I_*\), верхний \(I^*\), группа \(\mathbb Z_p^*\); <strong>снаружи</strong>.`
     );
     const nestedDefinition = Object.assign(Model.createBlock('definition'), { term: 'Сила', separator: ':', content: 'мера взаимодействия' });
-    nestedDefinition.children.push(Object.assign(Model.createBlock('formula'), { latex: 'F = ma' }));
-    assert.strictEqual(Renderer.renderBlock(nestedDefinition, 0), '<div class="definition-box"><strong>Сила</strong>: мера взаимодействия<div class="formula-box">\\[F = ma\\]</div></div>');
-    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('remark'), { title: 'Замечание', content: 'Только текст' }), 0), '<div class="remark-box">Только текст</div>');
-    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('remark'), { title: 'О границах применимости', content: 'Только текст' }), 0), '<div class="remark-box"><strong>О границах применимости</strong><br>Только текст</div>');
-    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('reminder'), { content: 'Вспомним определение.' }), 0), '<div class="reminder-box">Вспомним определение.</div>');
-    assert.strictEqual(Renderer.renderBlock(Object.assign(Model.createBlock('corollary'), { title: 'Следствие', content: 'Результат.' }), 0), '<div class="corollary-box">Результат.</div>');
+    const nestedFormula = Object.assign(Model.createBlock('formula'), { latex: 'F = ma' });
+    nestedDefinition.children.push(nestedFormula);
+    assert.strictEqual(Renderer.renderBlock(nestedDefinition, 0), '<div class="definition-box" data-note-block="' + nestedDefinition.id
+        + '" data-kc-id="' + nestedDefinition.id + '"><strong>Сила</strong>: мера взаимодействия<div class="formula-box" data-note-block="'
+        + nestedFormula.id + '" data-kc-id="' + nestedFormula.id + '">\\[F = ma\\]</div></div>');
+    const genericRemark = Object.assign(Model.createBlock('remark'), { title: 'Замечание', content: 'Только текст' });
+    assert.strictEqual(Renderer.renderBlock(genericRemark, 0), '<div class="remark-box" data-note-block="' + genericRemark.id
+        + '" data-kc-id="' + genericRemark.id + '">Только текст</div>');
+    const titledRemark = Object.assign(Model.createBlock('remark'), { title: 'О границах применимости', content: 'Только текст' });
+    assert.strictEqual(Renderer.renderBlock(titledRemark, 0), '<div class="remark-box" data-note-block="' + titledRemark.id
+        + '" data-kc-id="' + titledRemark.id + '"><strong>О границах применимости</strong><br>Только текст</div>');
+    const reminder = Object.assign(Model.createBlock('reminder'), { content: 'Вспомним определение.' });
+    assert.strictEqual(Renderer.renderBlock(reminder, 0), '<div class="reminder-box" data-note-block="' + reminder.id
+        + '" data-kc-id="' + reminder.id + '">Вспомним определение.</div>');
+    const corollary = Object.assign(Model.createBlock('corollary'), { title: 'Следствие', content: 'Результат.' });
+    assert.strictEqual(Renderer.renderBlock(corollary, 0), '<div class="corollary-box" data-note-block="' + corollary.id
+        + '" data-kc-id="' + corollary.id + '">Результат.</div>');
     assert.strictEqual(Renderer.safeImageSource('//example.com/track.png'), '');
 }
 
@@ -213,6 +226,9 @@ function testBuild() {
         assert.ok(html.includes('href="#test-subsection"'));
         assert.ok(html.includes('Короткое меню'));
         assert.ok(html.includes('Текст подраздела'));
+        assert.ok(html.includes('<article id="test-subsection" class="topic constructor-topic" data-note-block="test-subsection" data-kc-id="test-subsection">'));
+        assert.ok(html.includes('data-note-block="' + section.blocks[0].id + '" data-kc-id="' + section.blocks[0].id + '"'));
+        assert.ok(html.includes('data-note-block="' + subsection.children[0].id + '" data-kc-id="' + subsection.children[0].id + '"'));
     } finally {
         fs.rmSync(root, { recursive: true, force: true });
         fs.rmSync(output, { recursive: true, force: true });
@@ -312,8 +328,12 @@ function testNumberTheoryStructure() {
     assert.ok(!/body\.experimental \.remark-box::before\s*\{\s*content:\s*"Замечание"/.test(experimentalStyles));
 
     const visit = block => {
+        const html = Renderer.renderBlock(block, 0);
+        if (html) {
+            assert.ok(html.includes(`data-note-block="${block.id}"`), `${block.id}: блок должен сохранять id конструктора`);
+            assert.ok(html.includes(`data-kc-id="${block.id}"`), `${block.id}: блок должен иметь стабильный id проверки знаний`);
+        }
         if (Renderer.TYPE_LABELS[block.type]) {
-            const html = Renderer.renderBlock(block, 0);
             assert.ok(
                 html.includes(`class="${semanticClasses[block.type]}`),
                 `${block.id}: смысловой блок ${block.type} должен сохранять семантический класс`
@@ -338,6 +358,30 @@ function testNumberTheoryStructure() {
     section.subsections.forEach(subsection => (subsection.children || []).forEach(visit));
 }
 
+function testGeneratedStableBlockIds() {
+    const root = path.join(__dirname, '..');
+    const subjects = JSON.parse(fs.readFileSync(path.join(root, 'content', 'subjects.json'), 'utf8'));
+    let renderedBlocks = 0;
+    subjects.forEach(subject => {
+        const html = fs.readFileSync(path.join(root, subject.page), 'utf8');
+        const sections = Builder.loadSections(root, subject);
+        const visit = block => {
+            if (Renderer.renderBlock(block, 0)) {
+                const id = Renderer.escapeHtml(block.id);
+                assert.ok(html.includes(`data-note-block="${id}"`), `${subject.page}: отсутствует data-note-block для ${block.id}`);
+                assert.ok(html.includes(`data-kc-id="${id}"`), `${subject.page}: отсутствует data-kc-id для ${block.id}`);
+                renderedBlocks += 1;
+            }
+            (block.children || []).forEach(visit);
+        };
+        sections.forEach(section => {
+            (section.blocks || []).forEach(visit);
+            (section.subsections || []).forEach(visit);
+        });
+    });
+    assert.ok(renderedBlocks > 300, 'каноническая сборка должна проверить все существующие учебные блоки');
+}
+
 testModel();
 testHistoryAndReview();
 testConstructorV2Wiring();
@@ -345,4 +389,5 @@ testRenderer();
 testBuild();
 testEmptySubjectBuild();
 testNumberTheoryStructure();
+testGeneratedStableBlockIds();
 console.log('note-constructor tests: ok');

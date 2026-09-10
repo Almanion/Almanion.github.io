@@ -83,6 +83,13 @@
         return '';
     }
 
+    function blockIdentityAttributes(block) {
+        const id = String(block && block.id || '').trim();
+        if (!id) return '';
+        const escapedId = escapeHtml(id);
+        return ' data-note-block="' + escapedId + '" data-kc-id="' + escapedId + '"';
+    }
+
     function renderChildren(block, depth) {
         if (!Array.isArray(block.children) || block.children.length === 0) return '';
         return block.children.map(child => renderBlock(child, depth + 1)).filter(Boolean).join('\n');
@@ -107,34 +114,35 @@
     function renderBlock(block, depth) {
         if (!block || typeof block !== 'object' || depth > 4) return '';
         const type = String(block.type || 'paragraph');
-        if (type === 'heading') return '<h4 class="subsection-title">' + renderInline(block.title || block.content) + '</h4>';
+        const identity = blockIdentityAttributes(block);
+        if (type === 'heading') return '<h4 class="subsection-title"' + identity + '>' + renderInline(block.title || block.content) + '</h4>';
         if (type === 'formula') {
             const latex = String(block.latex || block.content || '').trim();
-            return latex ? '<div class="formula-box">\\[' + escapeHtml(latex) + '\\]</div>' : '';
+            return latex ? '<div class="formula-box"' + identity + '>\\[' + escapeHtml(latex) + '\\]</div>' : '';
         }
         if (type === 'list') {
             const items = Array.isArray(block.items) ? block.items : String(block.content || '').split(/\r?\n/);
             const rendered = items.filter(item => String(item).trim()).map(item => '<li>' + renderInline(item) + '</li>').join('');
-            return rendered ? '<ul class="constructor-note-list">' + rendered + '</ul>' : '';
+            return rendered ? '<ul class="constructor-note-list"' + identity + '>' + rendered + '</ul>' : '';
         }
         if (type === 'image') {
             const src = safeImageSource(block.src);
             if (!src) return '';
             const caption = String(block.caption || '').trim();
-            return '<figure class="constructor-note-image" data-note-block="' + escapeHtml(block.id || '') + '">' +
+            return '<figure class="constructor-note-image"' + identity + '>' +
                 '<img src="' + escapeHtml(src) + '" alt="' + escapeHtml(block.alt || caption || '') + '" loading="lazy" decoding="async">' +
                 (caption ? '<figcaption>' + renderInline(caption) + '</figcaption>' : '') +
                 '</figure>';
         }
         if (type === 'paragraph') {
             const content = String(block.content || '').trim();
-            return content ? '<p>' + renderInline(content) + '</p>' : '';
+            return content ? '<p' + identity + '>' + renderInline(content) + '</p>' : '';
         }
 
         if (type === 'subsection') {
             const title = String(block.title || '').trim();
             const content = String(block.content || '').trim();
-            return '<section class="constructor-subsection">' +
+            return '<section class="constructor-subsection"' + identity + '>' +
                 (title ? '<h3 class="topic-title">' + renderInline(title) + '</h3>' : '') +
                 (content ? '<p>' + renderInline(content) + '</p>' : '') +
                 renderChildren(block, depth || 0) +
@@ -151,7 +159,7 @@
                 (parts.term && (content || (block.children || []).length) ? separator : '') +
                 (content ? renderInline(content) : '') +
                 renderChildren(block, depth || 0);
-            return inner ? '<div class="definition-box">' + inner + '</div>' : '';
+            return inner ? '<div class="definition-box"' + identity + '>' + inner + '</div>' : '';
         }
         const title = String(block.title || '').trim();
         const content = String(block.content || '').trim();
@@ -161,12 +169,12 @@
             (content ? renderInline(content) : '') +
             renderChildren(block, depth || 0);
         if (type === 'derivation') {
-            return '<div class="derivation-box"><div class="derivation-content show">' + inner + '</div></div>';
+            return '<div class="derivation-box"' + identity + '><div class="derivation-content show">' + inner + '</div></div>';
         }
         if (type === 'proof') {
-            return '<div class="proof-box"><div class="proof-content show">' + inner + '</div></div>';
+            return '<div class="proof-box"' + identity + '><div class="proof-content show">' + inner + '</div></div>';
         }
-        return '<div class="' + className + '">' + inner + '</div>';
+        return '<div class="' + className + '"' + identity + '>' + inner + '</div>';
     }
 
     function renderSection(section) {
@@ -186,7 +194,7 @@
             const subsectionTitle = String(subsection && subsection.title || 'Подраздел');
             const children = Array.isArray(subsection && subsection.children) ? subsection.children : [];
             return [
-                '    <article id="' + subsectionId + '" class="topic constructor-topic">',
+                '    <article id="' + subsectionId + '" class="topic constructor-topic"' + blockIdentityAttributes(subsection) + '>',
                 '        <h3 class="topic-title">' + renderInline(subsectionTitle) + '</h3>',
                 (String(subsection && subsection.content || '').trim() ? '        <p>' + renderInline(subsection.content) + '</p>' : ''),
                 children.map(block => renderBlock(block, 0)).filter(Boolean).join('\n'),
@@ -221,5 +229,5 @@
         return '<li class="constructor-nav-item" data-constructor-nav="' + id + '"><a href="#' + id + '" class="nav-link">' + title + '</a></li>';
     }
 
-    return { TYPE_LABELS, escapeHtml, renderInline, safeImageSource, renderBlock, renderSection, renderNavItem };
+    return { TYPE_LABELS, escapeHtml, renderInline, safeImageSource, blockIdentityAttributes, renderBlock, renderSection, renderNavItem };
 });
