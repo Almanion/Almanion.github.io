@@ -245,6 +245,24 @@
         const sections = await Promise.all(entries.map(async (entry, index) => {
             const id = typeof entry === 'string' ? entry : entry.id;
             const raw = await fetchJson('content/' + subject + '/sections/' + id + '.json');
+            if (raw && raw.sourceFormat === 'html-fragment-v1') {
+                return {
+                    schemaVersion: Number(raw.schemaVersion) || 1,
+                    sourceFormat: raw.sourceFormat,
+                    id,
+                    subject,
+                    title: String(raw.title || id),
+                    navTitle: String(raw.navTitle || raw.title || id),
+                    order: Number(raw.order) || (index + 1) * 1000,
+                    contentHtml: String(raw.contentHtml || ''),
+                    navHtml: String(raw.navHtml || ''),
+                    blocks: [],
+                    subsections: [],
+                    reviewStatus: 'published',
+                    updatedAt: Number(raw.updatedAt) || 0,
+                    compatibilityReadOnly: true
+                };
+            }
             const section = Model.normalizeSection(raw, subject);
             section.reviewStatus = 'published';
             section.order = Number(raw.order) || (index + 1) * 1000;
@@ -340,18 +358,24 @@
         deletions.forEach(deletion => state.deletions.set(sectionKey(subject, deletion.id), deletion));
 
         const ids = new Set(publishedSections.concat(remote, local).map(section => section.id));
-        state.sections = Array.from(ids).map(id => newestSection(
-            publishedSections.find(section => section.id === id),
-            remote.find(section => section.id === id),
-            local.find(section => section.id === id)
-        )).sort(compareSections);
+        state.sections = Array.from(ids).map(id => {
+            const publishedSection = publishedSections.find(section => section.id === id);
+            // Compatibility sections are the canonical copy of complex legacy material.
+            // A stale pre-migration draft with the same slug must never hide or overwrite it.
+            if (publishedSection && publishedSection.compatibilityReadOnly) return publishedSection;
+            return newestSection(
+                publishedSection,
+                remote.find(section => section.id === id),
+                local.find(section => section.id === id)
+            );
+        }).sort(compareSections);
         state.sections.forEach(section => {
             const key = sectionKey(subject, section.id);
             if (!state.remoteVersions.has(key)) state.remoteVersions.set(key, null);
             const localSection = local.find(item => item.id === section.id);
             const remoteSection = remote.find(item => item.id === section.id);
             const publishedSection = publishedSections.find(item => item.id === section.id);
-            const localIsNewest = localSection && Number(localSection.updatedAt) >= Math.max(
+            const localIsNewest = !publishedSection?.compatibilityReadOnly && localSection && Number(localSection.updatedAt) >= Math.max(
                 Number(remoteSection && remoteSection.updatedAt) || 0,
                 Number(publishedSection && publishedSection.updatedAt) || 0
             );
@@ -403,18 +427,19 @@
             return;
         }
         root.innerHTML = state.sections.map((section, index) => {
+            const compatibility = section.compatibilityReadOnly === true;
             const selectedSection = state.current && state.current.id === section.id;
             const active = selectedSection && !state.currentSubsectionId;
             const subsections = sectionSubsections(section);
             return '<div class="builder-section-row" data-section-id="' + escapeHtml(section.id) + '">' +
-                '<div class="builder-section-main"><button class="builder-section-item' + (active ? ' is-active' : '') + '" type="button" data-section-select="' + escapeHtml(section.id) + '">' +
+                '<div class="builder-section-main"><button class="builder-section-item' + (active ? ' is-active' : '') + (compatibility ? ' is-compatibility' : '') + '" type="button" data-section-select="' + escapeHtml(section.id) + '">' +
                     '<strong>' + escapeHtml(section.navTitle || section.title) + '</strong>' +
                     '<span class="builder-section-status is-' + escapeHtml(section.reviewStatus) + '"></span>' +
-                    '<small>' + escapeHtml(STATUS_LABELS[section.reviewStatus] || 'Черновик') + '</small>' +
-                '</button><button class="builder-add-subsection" type="button" data-add-subsection="' + escapeHtml(section.id) + '" aria-label="Добавить подраздел" title="Добавить подраздел">＋</button></div>' +
+                    '<small>' + escapeHtml(compatibility ? 'Опубликован · исходная разметка' : (STATUS_LABELS[section.reviewStatus] || 'Черновик')) + '</small>' +
+                '</button>' + (compatibility ? '' : '<button class="builder-add-subsection" type="button" data-add-subsection="' + escapeHtml(section.id) + '" aria-label="Добавить подраздел" title="Добавить подраздел">＋</button>') + '</div>' +
                 '<div class="builder-section-order" aria-label="Порядок раздела">' +
-                    '<button type="button" data-section-move="-1" title="Выше"' + (index === 0 ? ' disabled' : '') + '>↑</button>' +
-                    '<button type="button" data-section-move="1" title="Ниже"' + (index === state.sections.length - 1 ? ' disabled' : '') + '>↓</button>' +
+                    '<button type="button" data-section-move="-1" title="Выше"' + (compatibility || index === 0 ? ' disabled' : '') + '>↑</button>' +
+                    '<button type="button" data-section-move="1" title="Ниже"' + (compatibility || index === state.sections.length - 1 ? ' disabled' : '') + '>↓</button>' +
                 '</div>' + (subsections.length ? '<div class="builder-subsection-list">' + subsections.map(subsection =>
                     '<button class="builder-subsection-item' + (selectedSection && state.currentSubsectionId === subsection.id ? ' is-active' : '') + '" type="button" data-subsection-select="' + escapeHtml(subsection.id) + '" title="' + escapeHtml(subsection.title) + '">' + escapeHtml(subsection.navTitle || subsection.title) + '</button>'
                 ).join('') + '</div>' : '') +
@@ -486,7 +511,7 @@
         const subsection = activeSubsection();
         const workflow = el('builderWorkflow');
         const notes = el('reviewNotes');
-        if (!state.current || subsection) {
+        if (!state.current || subsection || state.current.compatibilityReadOnly) {
             workflow.hidden = true;
             notes.hidden = true;
             el('publishButton').hidden = true;
@@ -543,20 +568,32 @@
         }
         const subsection = activeSubsection();
         const document = subsection || state.current;
-        el('documentKind').textContent = subsection ? 'Подраздел' : 'Раздел';
+        const compatibility = state.current.compatibilityReadOnly === true;
+        el('documentKind').textContent = compatibility ? 'Опубликованный раздел' : (subsection ? 'Подраздел' : 'Раздел');
         el('documentTitleLabel').textContent = subsection ? 'Полное название подраздела' : 'Заголовок раздела';
         el('documentNavTitleLabel').textContent = subsection ? 'Короткое название в меню' : 'Название в меню';
         el('sectionTitle').value = document.title;
         el('sectionNavTitle').value = document.navTitle;
+        el('sectionTitle').disabled = compatibility;
+        el('sectionNavTitle').disabled = compatibility;
         el('sectionSlug').textContent = '#' + document.id;
         el('reviewStatus').value = state.current.reviewStatus;
         el('reviewStatusControl').hidden = true;
         const published = isPublishedSection(state.current.id);
         const deleteButton = el('deleteSectionButton');
-        deleteButton.hidden = !subsection && published && !state.isOwner;
+        deleteButton.hidden = compatibility || (!subsection && published && !state.isOwner);
         deleteButton.title = subsection ? 'Удалить подраздел' : (published ? 'Удалить раздел с сайта' : 'Удалить черновик');
         deleteButton.setAttribute('aria-label', deleteButton.title);
         el('deleteDocumentLabel').textContent = subsection ? 'Удалить подраздел' : 'Удалить';
+        const addDock = el('openBlockPickerButton').closest('.builder-add-dock');
+        if (addDock) addDock.hidden = compatibility;
+        el('historyButton').disabled = compatibility;
+        if (compatibility) {
+            el('blockList').innerHTML = '<div class="builder-list-empty"><strong>Раздел перенесён без изменения исходной разметки</strong><br>Он уже собирается из отдельного JSON-файла и доступен поиску, проверке знаний и экспорту. Визуальный редактор сложных старых схем будет подключён отдельной миграцией; сейчас раздел защищён от случайной перезаписи.</div>';
+            renderWorkflow();
+            updateUndoControls();
+            return;
+        }
         const blocks = activeBlockList();
         if (state.insertAfterId && !Model.findLocation(blocks, state.insertAfterId, null, 0)) state.insertAfterId = '';
         el('blockList').innerHTML = blocks.map((block, index) => renderBlockEditor(block, 0, index, blocks.length)).join('');
@@ -630,7 +667,9 @@
             root.innerHTML = '<div class="builder-preview-placeholder"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><strong>Здесь появится раздел</strong><span>Создайте материал или выберите черновик слева</span></div>';
             return;
         }
-        root.innerHTML = Renderer.renderSection(state.current);
+        root.innerHTML = state.current.compatibilityReadOnly
+            ? state.current.contentHtml
+            : Renderer.renderSection(state.current);
         const localAssetIds = new Set();
         try {
             const assets = await Storage.listAssets(state.user.uid, state.subject, state.current.id);
@@ -1043,7 +1082,7 @@
 
     function openSubsectionDialog(sectionId) {
         const section = state.sections.find(item => item.id === sectionId);
-        if (!section) return;
+        if (!section || section.compatibilityReadOnly) return;
         state.current = section;
         state.currentSubsectionId = '';
         el('newSubsectionTitle').value = '';
@@ -1130,7 +1169,7 @@
     }
 
     function moveSection(delta) {
-        if (!state.current) return;
+        if (!state.current || state.current.compatibilityReadOnly) return;
         const index = state.sections.indexOf(state.current);
         const target = index + delta;
         if (target < 0 || target >= state.sections.length) return;
@@ -1188,6 +1227,7 @@
     }
 
     function openBlockPicker(parentId) {
+        if (state.current && state.current.compatibilityReadOnly) return;
         if (!state.current) return;
         state.pickerParentId = parentId || '';
         const parent = state.pickerParentId ? findBlock(state.pickerParentId) : null;

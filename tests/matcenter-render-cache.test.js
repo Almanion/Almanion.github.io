@@ -9,6 +9,7 @@ class FakeNode {
         this.dataset = {};
         this.children = [];
         this.parentNode = null;
+        this.listeners = new Map();
     }
 
     get childNodes() {
@@ -43,6 +44,17 @@ class FakeNode {
         nodes.forEach(node => this.appendChild(node));
     }
 
+    remove() {
+        if (!this.parentNode) return;
+        const index = this.parentNode.children.indexOf(this);
+        if (index >= 0) this.parentNode.children.splice(index, 1);
+        this.parentNode = null;
+    }
+
+    addEventListener(type, listener) {
+        this.listeners.set(type, listener);
+    }
+
     querySelectorAll() {
         return [];
     }
@@ -64,10 +76,14 @@ const context = vm.createContext({
     isAdmin: false,
     document: {
         createDocumentFragment: () => new FakeFragment(),
+        createElement: name => new FakeNode(name),
         getElementById: id => containers.get(id) || null,
         querySelectorAll: () => []
     },
+    setTimeout,
+    clearTimeout,
     isSummerGrade: grade => String(grade).includes('summer'),
+    getTasksForCurrentGrade: () => [],
     applyPersonalSolvedMarks: () => { solvedRefreshes += 1; }
 });
 
@@ -81,24 +97,37 @@ const prepareRender = vm.runInContext('prepareMatcenterRender', context);
 const container = new FakeNode('tasksContainer');
 containers.set('tasksContainer', container);
 
-const grade9Tasks = [{ taskId: 'grade-9:1', number: 1, _endpointIdx: 0 }];
-const grade10Tasks = [{ taskId: 'grade-10:1', number: 1, _endpointIdx: 0 }];
-const grade9Card = new FakeNode('grade-9-card');
-const grade10Card = new FakeNode('grade-10-card');
+// Function declarations in a script context are replaceable global bindings.
+context.FakeCard = FakeNode;
+vm.runInContext('createTaskElement = task => { const card = new FakeCard(task.taskId); card.task = task; return card; };', context);
 
-assert.strictEqual(prepareRender(container, grade9Tasks, 'tasksContainer').reused, false);
-container.appendChild(grade9Card);
-assert.strictEqual(prepareRender(container, grade9Tasks, 'tasksContainer').reused, true);
-assert.strictEqual(container.firstChild, grade9Card, 'same section should keep its DOM nodes');
+const tasks = Array.from({ length: 130 }, (_, index) => ({
+    taskId: `grade-9:${index + 1}`,
+    number: index + 1,
+    _endpointIdx: 0
+}));
+context.tasks = tasks;
+vm.runInContext("displayTasks(tasks, 'tasksContainer')", context);
+assert.strictEqual(container.children.length, 49, 'first frame should contain 48 cards and the continuation control');
+assert.strictEqual(container.children.filter(node => node.name !== 'button').length, 48);
 
+vm.runInContext("renderNextMatcenterBatch(matcenterRenderSessions.get(document.getElementById('tasksContainer')))", context);
+assert.strictEqual(container.children.length, 121, 'second frame should add 72 cards and keep one continuation control');
+
+vm.runInContext("renderNextMatcenterBatch(matcenterRenderSessions.get(document.getElementById('tasksContainer')))", context);
+assert.strictEqual(container.children.length, 130, 'the final frame should contain every task without a sentinel');
+assert.strictEqual(container.dataset.renderComplete, 'true');
+
+const priorSession = vm.runInContext("matcenterRenderSessions.get(document.getElementById('tasksContainer'))", context);
 context.currentGrade = 'grade-10';
-assert.strictEqual(prepareRender(container, grade10Tasks, 'tasksContainer').reused, false);
-container.appendChild(grade10Card);
-assert.strictEqual(container.firstChild, grade10Card);
+context.tasks = [{ taskId: 'grade-10:1', number: 1, _endpointIdx: 0 }];
+vm.runInContext("displayTasks(tasks, 'tasksContainer')", context);
+assert.strictEqual(priorSession.cancelled, true, 'changing section must cancel obsolete rendering work');
+assert.strictEqual(container.children.length, 1);
+assert.ok(solvedRefreshes >= 3, 'every rendered batch should apply personal solved state');
 
-context.currentGrade = 'grade-9';
-assert.strictEqual(prepareRender(container, grade9Tasks, 'tasksContainer').reused, true);
-assert.strictEqual(container.firstChild, grade9Card, 'returning to a section should restore cached DOM nodes');
-assert.ok(solvedRefreshes >= 2, 'restored cards should refresh personal solved state');
+assert.match(renderSource, /IntersectionObserver/);
+assert.match(renderSource, /MATCENTER_INITIAL_RENDER_COUNT = 48/);
+assert.doesNotMatch(renderSource, /MATCENTER_RENDER_CACHE_LIMIT/);
 
-console.log('matcenter-render-cache.test.js: all assertions passed');
+console.log('matcenter progressive rendering: all assertions passed');

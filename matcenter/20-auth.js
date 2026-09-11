@@ -51,6 +51,7 @@ async function refreshMatcenterAccountGate() {
         authToken = 'account';
         isAdmin = access.isAdmin;
         hideAuthForm();
+        await hydrateTasksCacheFromIndexedDb();
         const hadCache = applyTasksFromCache();
         await loadTasksFromGoogleSheets(false, hadCache);
     } catch (error) {
@@ -153,7 +154,16 @@ async function initAuth() {
             isAdmin = access.isAdmin;
             safeRemove('matcenter_auth');
             passwordInput.value = '';
-            await loadTasksFromGoogleSheets(true);
+            await hydrateTasksCacheFromIndexedDb();
+            const hadCache = applyTasksFromCache();
+            try {
+                await loadTasksFromGoogleSheets(true, hadCache);
+            } catch (loadError) {
+                // Доступ уже подтверждён. Если сохранённая копия есть, временный
+                // сетевой сбой не должен снова запирать пользователя на экране входа.
+                if (!hadCache) throw loadError;
+                showMatcenterDataWarning('Не удалось обновить задачи. Показана последняя сохранённая копия.');
+            }
             
             // 3. Логируем успешную попытку
             addAttemptToHistory(true, deviceFingerprint);

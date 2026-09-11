@@ -133,13 +133,15 @@ function check(rootDir) {
 
     trackedFiles(root).forEach(relativePath => {
         const extension = path.extname(relativePath).toLowerCase();
-        const limit = budgets.maxBytesByExtension[extension];
+        const normalizedPath = relativePath.replace(/\\/g, '/');
+        const pathLimits = budgets.maxBytesByPath || {};
+        const limit = pathLimits[normalizedPath] || budgets.maxBytesByExtension[extension];
         if (!limit) return;
         const absolutePath = path.join(root, relativePath);
         if (!fs.existsSync(absolutePath) || !fs.statSync(absolutePath).isFile()) return;
         const bytes = fs.statSync(absolutePath).size;
         if (!largest[extension] || bytes > largest[extension].bytes) {
-            largest[extension] = { path: relativePath.replace(/\\/g, '/'), bytes };
+            largest[extension] = { path: normalizedPath, bytes };
         }
         if (bytes > limit) errors.push(relativePath + ' is ' + bytes + ' bytes; budget is ' + limit);
     });

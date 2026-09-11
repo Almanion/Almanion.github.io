@@ -94,6 +94,9 @@ function testResponsiveAndAutosaveWiring() {
     assert.ok(script.includes('localSave.then(localSaved => queueRemoteSave'));
     assert.ok(!script.includes('state.localTimer'));
     assert.ok(!script.includes('state.remoteTimer'));
+    assert.match(script, /sourceFormat === 'html-fragment-v1'/);
+    assert.match(script, /compatibilityReadOnly/);
+    assert.match(script, /stale pre-migration draft/);
     assert.match(css, /is-outline-fullscreen \.builder-sections[^}]*overflow-y:\s*auto/);
     assert.match(css, /@media \(max-width: 540px\)[\s\S]*grid-template-rows:\s*40px 38px 38px/);
 }

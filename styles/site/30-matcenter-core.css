@@ -336,6 +336,41 @@ body.animations-off .matcenter-progress.is-complete .matcenter-progress-badge {
     gap: 1rem;
 }
 
+.matcenter-render-more {
+    grid-column: 1 / -1;
+    min-height: 3.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.8rem;
+    background: color-mix(in srgb, var(--bg-secondary) 92%, var(--accent-color) 8%);
+    color: var(--text-primary);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+    transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+
+.matcenter-render-more small {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 550;
+}
+
+body:not(.no-hover) .matcenter-render-more:hover {
+    border-color: color-mix(in srgb, var(--accent-color) 48%, var(--border-color));
+    background: color-mix(in srgb, var(--bg-secondary) 84%, var(--accent-color) 16%);
+    color: var(--accent-color);
+}
+
+.matcenter-render-more:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
 /* РќР° Р±РѕР»СЊС€РёС… СЌРєСЂР°РЅР°С… - РЅРµ Р±РѕР»РµРµ 3 РєРѕР»РѕРЅРѕРє */
 @media (min-width: 1400px) {
     .tasks-container {

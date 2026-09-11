@@ -2,5 +2,10 @@
   "schemaVersion": 1,
   "subject": "math",
   "title": "Алгебра",
-  "sections": []
+  "sections": [
+    {
+      "id": "functions-and-equations",
+      "order": 1000
+    }
+  ]
 }

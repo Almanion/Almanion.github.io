@@ -14,6 +14,51 @@ function buildTasksPayloadSignature(tasks) {
     ]));
 }
 
+let matcenterTasksLoadController = null;
+let matcenterTasksLoadSequence = 0;
+let matcenterTasksCacheHydrated = false;
+let matcenterHydratedCacheSnapshot = null;
+
+function getMatcenterTaskCacheApi() {
+    return typeof globalThis !== 'undefined' && globalThis.MatcenterTaskCache
+        ? globalThis.MatcenterTaskCache
+        : null;
+}
+
+async function hydrateTasksCacheFromIndexedDb() {
+    if (matcenterTasksCacheHydrated) return readTasksCache();
+    matcenterTasksCacheHydrated = true;
+    const cacheApi = getMatcenterTaskCacheApi();
+    if (!cacheApi || typeof cacheApi.read !== 'function') return readTasksCache();
+    try {
+        const stored = await cacheApi.read(TASKS_CACHE_VERSION);
+        const local = readTasksCache();
+        if (stored && (!local || Number(stored.timestamp) > Number(local.timestamp))) {
+            matcenterHydratedCacheSnapshot = stored;
+            safeSet(TASKS_CACHE_KEY, JSON.stringify(stored));
+            return stored;
+        }
+        matcenterHydratedCacheSnapshot = local || stored || null;
+        return matcenterHydratedCacheSnapshot;
+    } catch (_) {
+        return readTasksCache();
+    }
+}
+
+function persistTasksCache(tasks) {
+    const snapshot = {
+        version: TASKS_CACHE_VERSION,
+        tasks,
+        timestamp: Date.now()
+    };
+    matcenterHydratedCacheSnapshot = snapshot;
+    safeSet(TASKS_CACHE_KEY, JSON.stringify(snapshot));
+    const cacheApi = getMatcenterTaskCacheApi();
+    if (cacheApi && typeof cacheApi.write === 'function') {
+        cacheApi.write(snapshot).catch(() => false);
+    }
+}
+
 function showMatcenterDataWarning(message) {
     let warning = document.getElementById('matcenterDataWarning');
     if (!message) {
@@ -37,11 +82,13 @@ function showMatcenterDataWarning(message) {
 function readTasksCache() {
     try {
         const raw = safeGet(TASKS_CACHE_KEY);
-        if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        return parsed && parsed.version === TASKS_CACHE_VERSION && Array.isArray(parsed.tasks) ? parsed : null;
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.version === TASKS_CACHE_VERSION && Array.isArray(parsed.tasks)) return parsed;
+        }
+        return matcenterHydratedCacheSnapshot;
     } catch (_) {
-        return null;
+        return matcenterHydratedCacheSnapshot;
     }
 }
 
@@ -140,6 +187,10 @@ function applyTasksFromCache() {
 }
 
 async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false) {
+    const loadSequence = ++matcenterTasksLoadSequence;
+    if (matcenterTasksLoadController) matcenterTasksLoadController.abort();
+    const loadController = typeof AbortController === 'function' ? new AbortController() : null;
+    matcenterTasksLoadController = loadController;
     const loadingMessage = document.getElementById('loadingMessage');
     const retryBtn = document.getElementById('retryButton');
 
@@ -196,7 +247,8 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
         // Загружаем данные с проверкой пароля
         console.log('📍 Метод загрузки: Авторизованный доступ');
         console.log('Endpoint:', API_ENDPOINT.substring(0, 30) + '...');
-        const result = await loadFromAppsScript();
+        const result = await loadFromAppsScript(loadController ? loadController.signal : undefined);
+        if (loadSequence !== matcenterTasksLoadSequence) return;
         tasks = result.tasks;
         adminFlag = result.isAdmin;
 
@@ -259,13 +311,7 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
         refreshCurrentView();
         
         // Сохраняем в кэш для офлайн-режима
-        try {
-            safeSet(TASKS_CACHE_KEY, JSON.stringify({
-                version: TASKS_CACHE_VERSION,
-                tasks,
-                timestamp: Date.now()
-            }));
-        } catch (e) { /* ignore */ }
+        persistTasksCache(tasks);
         
         // Скрываем сообщение о загрузке и очищаем его содержимое
         if (!silent && loadingMessage) {
@@ -276,6 +322,7 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
         console.log('✅ УСПЕХ! Данные отображены на странице');
 
     } catch (error) {
+        if (loadSequence !== matcenterTasksLoadSequence || (error && error.name === 'AbortError')) return;
         console.error('=================================');
         console.error('❌ ОШИБКА ЗАГРУЗКИ:');
         console.error('Тип:', error.name);
@@ -306,6 +353,8 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
         } catch (e) { /* ignore */ }
 
         showRetryUI(error.message || 'Ошибка загрузки');
+    } finally {
+        if (loadSequence === matcenterTasksLoadSequence) matcenterTasksLoadController = null;
     }
 }
 
@@ -313,14 +362,14 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
 // DATA LOADING
 // ============================================
 
-async function loadFromOneEndpoint(endpoint, endpointIdx) {
+async function loadFromOneEndpoint(endpoint, endpointIdx, signal) {
     const clientId = deviceFingerprint ? deviceFingerprint.substring(0, 16) : 'unknown';
     let data;
     try {
         data = await postMatcenterJson(endpoint, {
             idToken: await getMatcenterIdToken(),
             clientId
-        });
+        }, { signal });
     } catch (error) {
         if (!error.code) error.code = 'NETWORK';
         throw error;
@@ -375,7 +424,7 @@ async function loadFromOneEndpoint(endpoint, endpointIdx) {
     };
 }
 
-async function loadFromAppsScript() {
+async function loadFromAppsScript(signal) {
     console.log('🔵 Загрузка с', TASKS_ENDPOINTS.length, 'таблиц(ы)...');
 
     if (TASKS_ENDPOINTS.length === 0) {
@@ -383,7 +432,7 @@ async function loadFromAppsScript() {
     }
 
     const results = await Promise.allSettled(
-        TASKS_ENDPOINTS.map((url, idx) => loadFromOneEndpoint(url, idx))
+        TASKS_ENDPOINTS.map((url, idx) => loadFromOneEndpoint(url, idx, signal))
     );
 
     const allTasks = [];

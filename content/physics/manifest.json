@@ -2,5 +2,14 @@
   "schemaVersion": 1,
   "subject": "physics",
   "title": "Физика",
-  "sections": []
+  "sections": [
+    {
+      "id": "main-definitions",
+      "order": 1000
+    },
+    {
+      "id": "mechanics",
+      "order": 2000
+    }
+  ]
 }

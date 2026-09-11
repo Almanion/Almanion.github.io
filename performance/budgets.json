@@ -6,6 +6,9 @@
     ".css": 100000,
     ".json": 120000
   },
+  "maxBytesByPath": {
+    "content/physics/sections/mechanics.json": 300000
+  },
   "maxPrecacheEntries": 30,
   "maxSearchSourceBytes": 1100000,
   "routes": {
@@ -24,7 +27,7 @@
     "chemistry.html": {
       "maxInitialLocalJsBytes": 135000,
       "maxInitialLocalCssBytes": 335000,
-      "maxInitialLocalRequests": 20,
+      "maxInitialLocalRequests": 21,
       "maxExternalRequests": 3
     },
     "physics-10.html": {
@@ -34,9 +37,9 @@
       "maxExternalRequests": 3
     },
     "matcenter.html": {
-      "maxInitialLocalJsBytes": 500000,
+      "maxInitialLocalJsBytes": 400000,
       "maxInitialLocalCssBytes": 495000,
-      "maxInitialLocalRequests": 37,
+      "maxInitialLocalRequests": 36,
       "maxExternalRequests": 6
     },
     "english.html": {

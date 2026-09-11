@@ -13,6 +13,8 @@ const MARKERS = {
     contentEnd: '<!-- NOTE_CONSTRUCTOR_CONTENT_END -->'
 };
 
+const HTML_FRAGMENT_FORMAT = 'html-fragment-v1';
+
 function parseArgs(argv) {
     const result = { root: process.cwd(), output: process.cwd() };
     for (let i = 0; i < argv.length; i += 1) {
@@ -46,6 +48,48 @@ function assertSafeSectionId(id) {
     }
 }
 
+function assertSafeHtmlFragment(value, field, sectionPath) {
+    if (typeof value !== 'string' || !value.trim()) {
+        throw new Error(sectionPath + ': поле ' + field + ' должно содержать HTML');
+    }
+    const forbidden = [
+        /<\s*(?:script|iframe|object|embed|base|meta|link)\b/i,
+        /\son[a-z]+\s*=/i,
+        /(?:href|src)\s*=\s*["']?\s*javascript:/i,
+        /(?:href|src)\s*=\s*["']?\s*data\s*:\s*text\/html/i,
+        /<!--\s*NOTE_CONSTRUCTOR_/i
+    ];
+    if (forbidden.some(pattern => pattern.test(value))) {
+        throw new Error(sectionPath + ': небезопасная разметка в поле ' + field);
+    }
+}
+
+function normalizeHtmlFragmentSection(raw, subject, id, sectionPath) {
+    const errors = [];
+    if (!raw || raw.sourceFormat !== HTML_FRAGMENT_FORMAT) errors.push('неизвестный sourceFormat');
+    if (raw.id !== id) errors.push('id внутри файла не совпадает с именем файла');
+    if (raw.subject !== subject.id) errors.push('предмет внутри файла не совпадает с папкой');
+    if (typeof raw.title !== 'string' || !raw.title.trim()) errors.push('не задан title');
+    if (errors.length) throw new Error(sectionPath + ': ' + errors.join('; '));
+
+    assertSafeHtmlFragment(raw.navHtml, 'navHtml', sectionPath);
+    assertSafeHtmlFragment(raw.contentHtml, 'contentHtml', sectionPath);
+    if (!/<section\b[^>]*class=["'][^"']*\bcontent-section\b/i.test(raw.contentHtml)) {
+        throw new Error(sectionPath + ': contentHtml должен содержать корневой .content-section');
+    }
+
+    return {
+        schemaVersion: Number(raw.schemaVersion) || 1,
+        sourceFormat: HTML_FRAGMENT_FORMAT,
+        id,
+        subject: subject.id,
+        title: raw.title.trim(),
+        navHtml: raw.navHtml.trim(),
+        contentHtml: raw.contentHtml.trim(),
+        order: Number(raw.order) || 0
+    };
+}
+
 function loadSections(root, subject) {
     const manifestPath = path.join(root, 'content', subject.id, 'manifest.json');
     const manifest = readJson(manifestPath);
@@ -59,7 +103,11 @@ function loadSections(root, subject) {
         if (seen.has(id)) throw new Error('Раздел ' + id + ' повторяется в ' + manifestPath);
         seen.add(id);
         const sectionPath = path.join(root, 'content', subject.id, 'sections', id + '.json');
-        const section = NoteModel.normalizeSection(readJson(sectionPath), subject.id);
+        const raw = readJson(sectionPath);
+        if (raw && raw.sourceFormat === HTML_FRAGMENT_FORMAT) {
+            return normalizeHtmlFragmentSection(raw, subject, id, sectionPath);
+        }
+        const section = NoteModel.normalizeSection(raw, subject.id);
         const errors = NoteModel.validateSection(section);
         if (section.id !== id) errors.push('id внутри файла не совпадает с именем файла');
         if (section.subject !== subject.id) errors.push('предмет внутри файла не совпадает с папкой');
@@ -68,13 +116,25 @@ function loadSections(root, subject) {
     });
 }
 
+function renderSectionNav(section) {
+    return section.sourceFormat === HTML_FRAGMENT_FORMAT
+        ? section.navHtml
+        : NoteRenderer.renderNavItem(section);
+}
+
+function renderSectionContent(section) {
+    return section.sourceFormat === HTML_FRAGMENT_FORMAT
+        ? section.contentHtml
+        : NoteRenderer.renderSection(section);
+}
+
 function buildSubject(root, output, subject) {
     const sourcePath = path.join(root, subject.page);
     const targetPath = path.join(output, subject.page);
     const sections = loadSections(root, subject);
-    const nav = sections.map(NoteRenderer.renderNavItem).join('\n');
+    const nav = sections.map(renderSectionNav).join('\n');
     const content = sections.length
-        ? sections.map(NoteRenderer.renderSection).join('\n\n')
+        ? sections.map(renderSectionContent).join('\n\n')
         : renderEmptySubject(subject);
     let html = fs.readFileSync(sourcePath, 'utf8');
     html = replaceMarked(html, MARKERS.navStart, MARKERS.navEnd, nav, subject.page);
@@ -114,4 +174,15 @@ if (require.main === module) {
     }
 }
 
-module.exports = { MARKERS, parseArgs, replaceMarked, loadSections, renderEmptySubject, buildSubject, build };
+module.exports = {
+    MARKERS,
+    HTML_FRAGMENT_FORMAT,
+    parseArgs,
+    replaceMarked,
+    assertSafeHtmlFragment,
+    normalizeHtmlFragmentSection,
+    loadSections,
+    renderEmptySubject,
+    buildSubject,
+    build
+};

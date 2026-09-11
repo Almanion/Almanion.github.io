@@ -89,9 +89,15 @@ let personalSolvedStore = null;
 let personalSolvedInitialized = false;
 // Подсказки теперь хранятся в Google Sheet (столбец Hint)
 
-async function postMatcenterJson(endpoint, payload) {
+async function postMatcenterJson(endpoint, payload, options = {}) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 9000);
+    const externalSignal = options && options.signal;
+    const abortFromExternal = () => controller.abort();
+    if (externalSignal) {
+        if (externalSignal.aborted) controller.abort();
+        else externalSignal.addEventListener('abort', abortFromExternal, { once: true });
+    }
     try {
         const response = await fetch(endpoint, {
             method: 'POST',
@@ -109,6 +115,7 @@ async function postMatcenterJson(endpoint, payload) {
         catch (_) { throw new Error('Сервер вернул некорректный ответ'); }
     } finally {
         clearTimeout(timeout);
+        if (externalSignal) externalSignal.removeEventListener('abort', abortFromExternal);
     }
 }
 
@@ -211,6 +218,7 @@ async function initializeMatcenterAccess(fingerprintPromise) {
         authToken = 'account';
         isAdmin = access.isAdmin;
         hideAuthForm();
+        await hydrateTasksCacheFromIndexedDb();
         const hadCache = applyTasksFromCache();
         await loadTasksFromGoogleSheets(false, hadCache);
     } catch (error) {
@@ -343,14 +351,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     initGradeNavigation();
     initMatCenterNavigation();
     initMatCenterSearch();
-    initHintModal();
     initStatusFilter();
     initStatsClick();
     initRefreshButtons();
     initPersonalSolvedTasks();
     initSolvedTasksShare();
     initEscapeKey();
-    initHintSwipe();
     restoreCurrentFilter();
     
     // Загружаем или генерируем отпечаток

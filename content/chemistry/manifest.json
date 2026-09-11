@@ -2,5 +2,18 @@
   "schemaVersion": 1,
   "subject": "chemistry",
   "title": "Химия",
-  "sections": []
+  "sections": [
+    {
+      "id": "theoretical-foundations",
+      "order": 1000
+    },
+    {
+      "id": "inorganic-chemistry",
+      "order": 2000
+    },
+    {
+      "id": "elements-and-reactions",
+      "order": 3000
+    }
+  ]
 }

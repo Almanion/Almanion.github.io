@@ -14,6 +14,7 @@ assert.deepStrictEqual(['b', 'A', 'a'].sort(BuildSite.compareNames), ['A', 'a', 
 
 assert.strictEqual(BuildSite.isPublishable('index.html', config), true);
 assert.strictEqual(BuildSite.isPublishable('style-new.css', config), true);
+assert.strictEqual(BuildSite.isPublishable('chemistry-interactive.js', config), true);
 assert.strictEqual(BuildSite.isPublishable('search-index.json', config), true);
 assert.strictEqual(BuildSite.isPublishable('unexpected-debug.html', config), false);
 assert.strictEqual(BuildSite.isPublishable('private-helper.js', config), false);

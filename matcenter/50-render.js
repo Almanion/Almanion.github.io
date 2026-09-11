@@ -56,89 +56,133 @@ function restoreTaskCardUiState(container, uiState) {
     });
 }
 
-// Переключение разделов не должно заново создавать сотни карточек. Готовые DOM-узлы
-// храним небольшим LRU-кэшем: обработчики и раскрытое состояние сохраняются вместе с ними.
-const MATCENTER_RENDER_CACHE_LIMIT = 6;
-const matcenterRenderCache = new Map();
+// Длинные подборки не должны создавать сотни тяжёлых карточек до первого кадра.
+// Рисуем ближайшую порцию, а следующие добавляем при приближении к концу списка.
+// Каждый новый фильтр отменяет незавершённую работу предыдущего.
+const MATCENTER_INITIAL_RENDER_COUNT = 48;
+const MATCENTER_RENDER_BATCH_COUNT = 72;
+const matcenterRenderSessions = new WeakMap();
 let matcenterRenderRevision = 0;
+
+function cancelMatcenterRender(container) {
+    if (!container) return;
+    const session = matcenterRenderSessions.get(container);
+    if (!session) return;
+    session.cancelled = true;
+    if (session.observer) session.observer.disconnect();
+    if (session.frameId) {
+        if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(session.frameId);
+        else clearTimeout(session.frameId);
+    }
+    matcenterRenderSessions.delete(container);
+}
 
 function invalidateMatcenterRenderCache() {
     matcenterRenderRevision += 1;
-    matcenterRenderCache.clear();
     document.querySelectorAll('.tasks-container').forEach(container => {
+        cancelMatcenterRender(container);
         delete container.dataset.renderKey;
-        delete container.dataset.renderCacheable;
     });
-}
-
-function isMatcenterRenderCacheable() {
-    const hasSearch = ['searchInput', 'mobileSearchInput'].some(id => {
-        const input = document.getElementById(id);
-        return input && input.value.trim();
-    });
-    const hasStatusFilter = !isSummerGrade(currentGrade) && ['statusFilter', 'mobileStatusFilter'].some(id => {
-        const select = document.getElementById(id);
-        return select && select.value;
-    });
-    return !hasSearch && !hasStatusFilter;
 }
 
 function getMatcenterRenderKey(tasks, containerId) {
-    const taskKeys = tasks.map(task => {
+    const identity = task => {
         const endpoint = Number.isInteger(task?._endpointIdx) ? task._endpointIdx : '';
-        const identity = task?.taskId ?? task?.numberText ?? task?.number ?? '';
-        return `${endpoint}:${identity}`;
-    }).join(',');
+        const key = task?.taskId ?? task?.numberText ?? task?.number ?? '';
+        return `${endpoint}:${key}`;
+    };
+    let fingerprint = 2166136261;
+    tasks.forEach(task => {
+        const value = identity(task);
+        for (let index = 0; index < value.length; index += 1) {
+            fingerprint ^= value.charCodeAt(index);
+            fingerprint = Math.imul(fingerprint, 16777619);
+        }
+    });
     return [
         matcenterRenderRevision,
         currentGrade,
         currentFilter,
         containerId,
         isAdmin ? 'admin' : 'reader',
-        taskKeys
+        tasks.length,
+        (fingerprint >>> 0).toString(36)
     ].join('|');
-}
-
-function rememberMatcenterRender(container) {
-    const key = container.dataset.renderKey;
-    if (!key || container.dataset.renderCacheable !== 'true' || !container.hasChildNodes()) return;
-
-    const fragment = document.createDocumentFragment();
-    while (container.firstChild) fragment.appendChild(container.firstChild);
-    matcenterRenderCache.delete(key);
-    matcenterRenderCache.set(key, fragment);
-
-    while (matcenterRenderCache.size > MATCENTER_RENDER_CACHE_LIMIT) {
-        const oldestKey = matcenterRenderCache.keys().next().value;
-        matcenterRenderCache.delete(oldestKey);
-    }
 }
 
 function prepareMatcenterRender(container, tasks, containerId) {
     const renderKey = getMatcenterRenderKey(tasks, containerId);
-    const cacheable = isMatcenterRenderCacheable();
 
     if (container.dataset.renderKey === renderKey && container.hasChildNodes()) {
         applyPersonalSolvedMarks(container);
-        return { reused: true, renderKey, cacheable };
+        return { reused: true, renderKey };
     }
 
-    rememberMatcenterRender(container);
-
-    if (cacheable && matcenterRenderCache.has(renderKey)) {
-        const cachedFragment = matcenterRenderCache.get(renderKey);
-        matcenterRenderCache.delete(renderKey);
-        container.replaceChildren(cachedFragment);
-        container.dataset.renderKey = renderKey;
-        container.dataset.renderCacheable = 'true';
-        applyPersonalSolvedMarks(container);
-        return { reused: true, renderKey, cacheable };
-    }
-
+    cancelMatcenterRender(container);
     container.replaceChildren();
     container.dataset.renderKey = renderKey;
-    container.dataset.renderCacheable = String(cacheable);
-    return { reused: false, renderKey, cacheable };
+    return { reused: false, renderKey };
+}
+
+function queueMatcenterRenderBatch(session) {
+    if (!session || session.cancelled || session.queued) return;
+    session.queued = true;
+    const run = () => {
+        session.frameId = 0;
+        session.queued = false;
+        renderNextMatcenterBatch(session);
+    };
+    if (typeof requestAnimationFrame === 'function') session.frameId = requestAnimationFrame(run);
+    else session.frameId = setTimeout(run, 0);
+}
+
+function appendMatcenterRenderSentinel(session) {
+    if (session.nextIndex >= session.tasks.length || session.cancelled) return;
+    const remaining = session.tasks.length - session.nextIndex;
+    const sentinel = document.createElement('button');
+    sentinel.type = 'button';
+    sentinel.className = 'matcenter-render-more';
+    sentinel.innerHTML = `<span>Показать ещё</span><small>Осталось ${remaining}</small>`;
+    sentinel.addEventListener('click', () => queueMatcenterRenderBatch(session), { once: true });
+    session.container.appendChild(sentinel);
+    session.sentinel = sentinel;
+
+    if (typeof IntersectionObserver !== 'function') return;
+    if (session.observer) session.observer.disconnect();
+    session.observer = new IntersectionObserver(entries => {
+        if (!entries.some(entry => entry.isIntersecting)) return;
+        session.observer.disconnect();
+        queueMatcenterRenderBatch(session);
+    }, { rootMargin: '700px 0px' });
+    session.observer.observe(sentinel);
+}
+
+function renderNextMatcenterBatch(session) {
+    if (!session || session.cancelled || matcenterRenderSessions.get(session.container) !== session) return;
+    if (session.sentinel && session.sentinel.parentNode) session.sentinel.remove();
+    session.sentinel = null;
+
+    const count = session.nextIndex === 0 ? MATCENTER_INITIAL_RENDER_COUNT : MATCENTER_RENDER_BATCH_COUNT;
+    const end = Math.min(session.nextIndex + count, session.tasks.length);
+    const fragment = document.createDocumentFragment();
+    for (let index = session.nextIndex; index < end; index += 1) {
+        const task = session.tasks[index];
+        try {
+            fragment.appendChild(createTaskElement(task));
+        } catch (error) {
+            console.error(`❌ Ошибка при создании элемента для задачи #${task && task.number} (индекс ${index}):`, error);
+        }
+    }
+    session.nextIndex = end;
+    applyPersonalSolvedMarks(fragment);
+    restoreTaskCardUiState(fragment, session.uiState);
+    session.container.appendChild(fragment);
+
+    if (session.nextIndex < session.tasks.length) appendMatcenterRenderSentinel(session);
+    else {
+        if (session.observer) session.observer.disconnect();
+        session.container.dataset.renderComplete = 'true';
+    }
 }
 
 function displayTasks(tasks, containerId = 'tasksContainer') {
@@ -192,21 +236,20 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
     const ascending = typeof currentGrade === 'string' && currentGrade.indexOf('summer') !== -1;
     const sortedTasks = [...tasks].sort((a, b) => ascending ? a.number - b.number : b.number - a.number);
 
-    // Собираем все карточки в DocumentFragment — один reflow вместо N
-    const fragment = document.createDocumentFragment();
-    let addedCount = 0;
-    sortedTasks.forEach((task, index) => {
-        try {
-            const taskElement = createTaskElement(task);
-            fragment.appendChild(taskElement);
-            addedCount++;
-        } catch (error) {
-            console.error(`❌ Ошибка при создании элемента для задачи #${task.number} (индекс ${index}):`, error);
-        }
-    });
-    container.appendChild(fragment);
-    applyPersonalSolvedMarks(container);
-    restoreTaskCardUiState(container, uiState);
+    delete container.dataset.renderComplete;
+    const session = {
+        container,
+        tasks: sortedTasks,
+        nextIndex: 0,
+        uiState,
+        observer: null,
+        sentinel: null,
+        frameId: 0,
+        queued: false,
+        cancelled: false
+    };
+    matcenterRenderSessions.set(container, session);
+    renderNextMatcenterBatch(session);
 }
 
 function createTaskElement(task) {
@@ -397,9 +440,17 @@ function createTaskElement(task) {
     // Обработчик кнопки админа для добавления/изменения подсказки
     const adminButton = taskCard.querySelector('.admin-hint-button');
     if (adminButton) {
-        adminButton.addEventListener('click', (e) => {
+        adminButton.addEventListener('click', async (e) => {
             e.stopPropagation();
-            showHintModal(task, hint || '');
+            try {
+                if (typeof showHintModal !== 'function') {
+                    await window.MatcenterRuntime?.ensure('hints');
+                }
+                if (typeof showHintModal === 'function') showHintModal(task, hint || '');
+            } catch (error) {
+                console.error('Не удалось загрузить редактор подсказки:', error);
+                if (typeof showToast === 'function') showToast('Не удалось открыть редактор подсказки', 'error');
+            }
         });
     }
 

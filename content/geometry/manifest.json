@@ -2,5 +2,10 @@
   "schemaVersion": 1,
   "subject": "geometry",
   "title": "Геометрия",
-  "sections": []
+  "sections": [
+    {
+      "id": "vector-geometry",
+      "order": 1000
+    }
+  ]
 }
