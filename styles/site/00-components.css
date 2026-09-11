@@ -190,7 +190,10 @@ body.dark-theme .new-feature-list li::before {
    ============================================ */
 
 .knowledge-check-btn {
-    display: block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     width: 100%;
     padding: 0.7rem 1rem;
     margin: 0.5rem 0;
@@ -204,6 +207,13 @@ body.dark-theme .new-feature-list li::before {
     text-align: center;
     transition: var(--transition);
     letter-spacing: 0.01em;
+}
+
+.knowledge-check-btn .btn-icon {
+    display: block;
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 1rem;
 }
 
 .knowledge-check-btn:hover {

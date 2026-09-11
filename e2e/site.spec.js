@@ -61,6 +61,24 @@ test('note page renders first and loads the PDF interface on demand', async func
     await expectNoHorizontalOverflow(page);
 });
 
+test('note sidebar keeps study action icons compact', async function ({ page }) {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/physics-10.html', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(function () { return window.AlmanionNoteRuntime.ensure('knowledge'); });
+
+    const button = page.locator('#knowledgeCheckBtn');
+    const icon = button.locator('.btn-icon');
+    await expect(button).toBeVisible();
+    await expect(icon).toBeVisible();
+
+    const buttonBox = await button.boundingBox();
+    const iconBox = await icon.boundingBox();
+    expect(buttonBox.height).toBeLessThanOrEqual(52);
+    expect(iconBox.width).toBeLessThanOrEqual(18);
+    expect(iconBox.height).toBeLessThanOrEqual(18);
+    await expectNoHorizontalOverflow(page);
+});
+
 test('mobile note menu opens and closes without page overflow', async function ({ page }) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/physics.html', { waitUntil: 'domcontentloaded' });
