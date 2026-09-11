@@ -39,7 +39,7 @@
     <meta name="apple-mobile-web-app-title" content="Almanion">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Конспекты по Геометрии | Almanion</title>
-    <link rel="stylesheet" href="styles/site/index.css?v=20260905-2">
+    <link rel="stylesheet" href="styles/site/reader.css?v=20260911-1">
     <link rel="stylesheet" href="styles/tokens.css">
     <link rel="stylesheet" href="styles/buttons.css">
     <link rel="stylesheet" href="styles/mobile-overrides.css">
@@ -52,8 +52,6 @@
     <link rel="stylesheet" href="style-new.css?v=20260905-1">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
-    <link rel="stylesheet" href="styles/note-editor.css?v=20260904-2">
-    <link rel="stylesheet" href="styles/print.css?v=20260908-3">
 </head>
 <body>
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -122,23 +120,23 @@
             <article id="vectors" class="topic">
                 <h3 class="topic-title">1. Векторы / направленные отрезки</h3>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-slt68z-definition-1">
                     <strong>Вектор</strong> — упорядоченная пара точек.
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-slt68z-definition-2">
                     <strong>Длина (модуль) вектора</strong> — длина соответствующего направленного отрезка.
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-slt68z-formula-1">
                         \[|\vec{AB}| = AB\]
                     </div>
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-slt68z-definition-3">
                     Направленные отрезки называются <strong>сонаправленными</strong>, если прямые, их содержащие, параллельны или совпадают, а относительно прямой, перпендикулярной им и проходящей через их концы, они лежат в одной полуплоскости.
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-slt68z-definition-4">
                     <strong>Отношение эквивалентности</strong> — отношение, обладающее тремя свойствами:
                     <ol>
                         <li>Рефлексивность: \(a \sim a\)</li>
@@ -147,10 +145,10 @@
                     </ol>
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-slt68z-definition-5">
                     <strong>Вектор</strong> — класс эквивалентности направленных отрезков.
                 </div>
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-slt68z-definition-6">
                     <strong>Свойства векторов:</strong>
                     <ol>
                         <li>Если \(ABCD\) параллелограмм, то \(\vec{AB} = \vec{DC}\).</li>
@@ -165,23 +163,23 @@
                 
                 <h4 class="subsection-title">2.1 Сложение векторов</h4>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-zmj0hb-definition-1">
                     <strong>Правило треугольника</strong>: чтобы сложить векторы \(\vec{a}\) и \(\vec{b}\), нужно от конца вектора \(\vec{a}\) отложить вектор \(\vec{b}\). Тогда вектор, соединяющий начало \(\vec{a}\) с концом \(\vec{b}\), будет их суммой.
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-zmj0hb-formula-1">
                         \[\vec{AB} + \vec{BC} = \vec{AC}\]
                     </div>
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-zmj0hb-definition-2">
                     <strong>Правило параллелограмма</strong>: если векторы \(\vec{a}\) и \(\vec{b}\) приведены к общему началу, то их сумма изображается диагональю параллелограмма, построенного на этих векторах.
                     
-                    <div class="remark-box">
+                    <div class="remark-box" data-kc-id="legacy-zmj0hb-remark-1">
                         Применяется, когда векторы имеют общее начало
                     </div>
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-zmj0hb-definition-3">
                     <strong>Свойства сложения векторов:</strong>
                     <ol>
                         <li>\(\vec{a} + \vec{b} = \vec{b} + \vec{a}\)</li>
@@ -193,10 +191,10 @@
 
                 <h4 class="subsection-title">2.2 Вычитание векторов</h4>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-zmj0hb-definition-4">
                     <strong>Разность векторов</strong>: вектор \(\vec{a} - \vec{b}\) определяется как сумма вектора \(\vec{a}\) и вектора, противоположного \(\vec{b}\).
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-zmj0hb-formula-2">
                         \[\vec{a} - \vec{b} = \vec{a} + (-\vec{b})\]
                     </div>
                 </div>
@@ -206,15 +204,15 @@
             <article id="division-theorem" class="topic">
                 <h3 class="topic-title">3. Теорема о делении отрезка в заданном отношении</h3>
                 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-18609rj-definition-1">
                     <strong>Теорема:</strong> Пусть точка \(M\) делит отрезок \(AB\) в отношении \(m:n\) (считая от точки \(A\)). Тогда \(\vec{OM}\) выражается через векторы \(\vec{OA}\) и \(\vec{OB}\) следующим образом:
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-18609rj-formula-1">
                         \[\vec{OM} = \frac{n}{n+m}\vec{OA} + \frac{m}{n+m}\vec{OB}\]
                     </div>
                 </div>
 
-                <div class="derivation-box">
+                <div class="derivation-box" data-kc-id="legacy-18609rj-derivation-1">
                     <button class="toggle-derivation">📖 Показать вывод</button>
                     <div class="derivation-content">
                         <p>По условию точка \(M\) делит отрезок \(AB\) в отношении \(m:n\), то есть:</p>
@@ -236,9 +234,9 @@
                     </div>
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-18609rj-definition-2">
                     <strong>Теорема:</strong> Пусть точки \(A\), \(B\), \(O\) не лежат на одной прямой. Тогда точка \(M\) принадлежит прямой \(AB\) тогда и только тогда, когда \(\vec{OM} = \alpha\vec{OA} + \beta\vec{OB}\), где \(\alpha + \beta = 1\).
-                    <div class="remark-box">
+                    <div class="remark-box" data-kc-id="legacy-18609rj-remark-1">
                         Если \(\alpha \geq 0\), \(\beta \geq 0\), то точка \(M\) лежит на отрезке \(AB\).
                     </div>
                 </div>
@@ -248,20 +246,20 @@
             <article id="coordinates" class="topic">
                 <h3 class="topic-title">4. Координаты вектора. Простейшие формулы в координатах</h3>
                 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-57tnag-definition-1">
                     <strong>Линейной комбинацией векторов \(\vec{a}\) и \(\vec{b}\)</strong> называется вектор \(\alpha\vec{a} + \beta\vec{b}\). 
-                    <div class="remark-box">
+                    <div class="remark-box" data-kc-id="legacy-57tnag-remark-1">
                         \(\alpha\) и \(\beta\) называются <strong>коэффициентами линейной комбинации</strong>
                     </div>
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-57tnag-definition-2">
                     <strong>Лемма</strong>: Если векторы \(\vec{a}\) и \(\vec{b}\) не коллинеарны и \(x\vec{a} + y\vec{b} = 0\), то \(x = y = 0\).
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-57tnag-definition-3">
                     <strong>Теорема:</strong> Любой вектор можно представить единственным образом в виде линейной комбинации двух заданных неколлинеарных векторов.
-                    <div class="derivation-box">
+                    <div class="derivation-box" data-kc-id="legacy-57tnag-derivation-1">
                         <button class="toggle-derivation">📖 Показать вывод</button>
                         <div class="derivation-content">
                             <p>\(\vec{a} = x\vec{b} + y\vec{a}\)</p>
@@ -272,11 +270,11 @@
                     </div>
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-57tnag-definition-4">
                     <strong>Базисом</strong> называется любая пара неколлинеарных векторов.
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-57tnag-definition-5">
                     <strong>Свойства координат вектора:</strong>
                     <ol>
                         <li>Два вектора равны тогда и только тогда, когда их координаты соответственно равны.</li>
@@ -284,41 +282,41 @@
                         <li>При умножении вектора на число его координаты умножаются на это число.</li>
                     </ol>
                 </div>
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-57tnag-definition-6">
                     <strong>Теорема:</strong> Если даны точки \(A(x_1; y_1)\) и \(B(x_2; y_2)\), то координаты вектора \(\vec{AB}\):
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-57tnag-formula-1">
                         \[\vec{AB} = (x_2 - x_1; y_2 - y_1)\]
                     </div>
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-57tnag-definition-7">
                     <strong>Теорема:</strong> Если даны точки \(A(x_1; y_1)\) и \(B(x_2; y_2)\), то длина вектора \(\vec{AB}\):
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-57tnag-formula-2">
                         \[|\vec{a}| = \sqrt{a_x^2 + a_y^2}\]
                     </div>
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-57tnag-definition-8">
                     <strong>Теорема:</strong> Расстояние между точками \(A(x_1; y_1)\) и \(B(x_2; y_2)\), вычисляется по формуле:
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-57tnag-formula-3">
                         \[|AB| = \sqrt{(x_1-x_2)^2 + (y_1-y_2)^2}\]
                     </div>
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-57tnag-definition-9">
                     <strong>Теорема:</strong> Если \(A(x_1; y_1)\) и \(B(x_2; y_2)\), то середина \(AB\) имеет координаты:
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-57tnag-formula-4">
                         \[M\left(\frac{x_1 + x_2}{2}; \frac{y_1 + y_2}{2}\right)\]
                     </div>
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-57tnag-definition-10">
                     <strong>Теорема:</strong> Векторы \(\vec{a} = (a_x; a_y)\) и \(\vec{b} = (b_x; b_y)\) коллинеарны тогда и только тогда, когда:
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-57tnag-formula-5">
                         \[a_x b_y - a_y b_x = 0\]
                     </div>
                 </div>
@@ -328,22 +326,22 @@
             <article id="scalar-product" class="topic">
                 <h3 class="topic-title">5. Скалярное произведение векторов</h3>
                 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-s6yji7-definition-1">
                     <strong>Скалярное произведение векторов</strong> — число, равное произведению длин этих векторов на косинус угла между ними.
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-s6yji7-formula-1">
                         \[\vec{a} \cdot \vec{b} = |\vec{a}| \cdot |\vec{b}| \cdot \cos\varphi\]
                     </div>
 
-                    <div class="remark-box">
+                    <div class="remark-box" data-kc-id="legacy-s6yji7-remark-1">
                         Ненулевые векторы \(\vec{a}\) и \(\vec{b}\) перпендикулярны тогда и только тогда, когда их скалярное произведение равно нулю
                     </div>
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-s6yji7-definition-2">
                     <strong>Скалярное произведение в координатах:</strong> Если \(\vec{a} = (a_x; a_y)\) и \(\vec{b} = (b_x; b_y)\), то:
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-s6yji7-formula-2">
                         \[\vec{a} \cdot \vec{b} = a_x b_x + a_y b_y\]
                     </div>
                 </div>
@@ -355,52 +353,52 @@
                 
                 <h4 class="subsection-title">6.1 Общее уравнение прямой</h4>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-16tpd79-definition-1">
                     <strong>Общее уравнение прямой</strong> — уравнение вида:
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-16tpd79-formula-1">
                         \[Ax + By + C = 0\]
                     </div>
                     
                     где \(A\), \(B\), \(C\) — числа, причём \(A\) и \(B\) одновременно не равны нулю.
                     
-                    <div class="remark-box">
+                    <div class="remark-box" data-kc-id="legacy-16tpd79-remark-1">
                         <span class="eic eic-bulb" aria-hidden="true"></span> Вектор \(\vec{n} = (A; B)\) называется <strong>нормальным вектором</strong> прямой (перпендикулярен прямой)
                     </div>
                 </div>
 
                 <h4 class="subsection-title">6.2 Уравнение прямой с угловым коэффициентом</h4>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-16tpd79-definition-2">
                     <strong>Уравнение прямой с угловым коэффициентом:</strong>
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-16tpd79-formula-2">
                         \[y = kx + b\]
                     </div>
                     
                     где \(k\) — <strong>угловой коэффициент</strong> (тангенс угла наклона прямой к оси \(Ox\)), \(b\) — смещение (ордината точки пересечения прямой с осью \(Oy\)).
                     
-                    <div class="remark-box">
+                    <div class="remark-box" data-kc-id="legacy-16tpd79-remark-2">
                         \(k = \tan\alpha\), где \(\alpha\) — угол между прямой и положительным направлением оси \(Ox\)
                     </div>
                 </div>
 
                 <h4 class="subsection-title">6.3 Уравнение прямой, проходящей через две точки</h4>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-16tpd79-definition-3">
                     <strong>Уравнение прямой через две точки:</strong> Если прямая проходит через точки \(A(x_1; y_1)\) и \(B(x_2; y_2)\), то её уравнение:
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-16tpd79-formula-3">
                         \[\frac{x - x_1}{x_2 - x_1} = \frac{y - y_1}{y_2 - y_1}\]
                     </div>
                 </div>
 
                 <h4 class="subsection-title">6.4 Уравнение прямой по точке и нормальному вектору</h4>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-16tpd79-definition-4">
                     <strong>Уравнение прямой по точке и нормальному вектору:</strong> Если прямая проходит через точку \(M_0(x_0; y_0)\) и перпендикулярна вектору \(\vec{n} = (A; B)\), то:
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-16tpd79-formula-4">
                         \[A(x - x_0) + B(y - y_0) = 0\]
                     </div>
                 </div>
@@ -412,15 +410,15 @@
                 
                 <h4 class="subsection-title">7.1 Расстояние от точки до прямой</h4>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-17vmdsw-definition-1">
                     <strong>Формула расстояния от точки до прямой:</strong> Расстояние от точки \(M_0(x_0; y_0)\) до прямой \(Ax + By + C = 0\) вычисляется по формуле:
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-17vmdsw-formula-1">
                         \[\rho_l(M_0) = \frac{|Ax_0 + By_0 + C|}{\sqrt{A^2 + B^2}}\]
                     </div>
                 </div>
 
-                <div class="derivation-box">
+                <div class="derivation-box" data-kc-id="legacy-17vmdsw-derivation-1">
                     <button class="toggle-derivation">📖 Показать вывод формулы</button>
                     <div class="derivation-content">
                         <p>Пусть прямая задана уравнением \(Ax + By + C = 0\), а точка имеет координаты \(M_0(x_0; y_0)\).</p>
@@ -445,22 +443,22 @@
 
                 <h4 class="subsection-title">7.2 Угол между прямыми</h4>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-17vmdsw-definition-2">
                     <strong>Формула угла между прямыми (через угловые коэффициенты):</strong> Если две прямые заданы уравнениями \(y = k_1x + b_1\) и \(y = k_2x + b_2\), то угол \(\varphi\) между ними находится по формуле:
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-17vmdsw-formula-2">
                         \[\tan\varphi = \left|\frac{k_1 - k_2}{1 + k_1k_2}\right|\]
                     </div>
                     
-                    <div class="remark-box">
+                    <div class="remark-box" data-kc-id="legacy-17vmdsw-remark-1">
                         При \(k_1k_2 = -1\) прямые перпендикулярны
                     </div>
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-17vmdsw-definition-3">
                     <strong>Формула угла между прямыми (через нормальные векторы):</strong> Если прямые заданы общими уравнениями \(A_1x + B_1y + C_1 = 0\) и \(A_2x + B_2y + C_2 = 0\), то:
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-17vmdsw-formula-3">
                         \[\cos\varphi = \frac{|A_1A_2 + B_1B_2|}{\sqrt{A_1^2 + B_1^2} \cdot \sqrt{A_2^2 + B_2^2}}\]
                     </div>
                 </div>
@@ -470,33 +468,33 @@
             <article id="ellipse" class="topic">
                 <h3 class="topic-title">8. Эллипс</h3>
                 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-184gfo1-definition-1">
                     <strong>Эллипс</strong> — геометрическое место точек, для которых сумма расстояний до двух фиксированных точек (называемых фокусами) есть постоянная величина.
                     
-                    <div class="remark-box">
+                    <div class="remark-box" data-kc-id="legacy-184gfo1-remark-1">
                         <span class="eic eic-bulb" aria-hidden="true"></span> Если \(F_1\) и \(F_2\) — фокусы эллипса, а \(M\) — произвольная точка эллипса, то \(|MF_1| + |MF_2| = 2a\), где \(a\) — большая полуось эллипса.
                     </div>
                 </div>
 
                 <h4 class="subsection-title">8.1 Каноническое уравнение эллипса</h4>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-184gfo1-definition-2">
                     <strong>Каноническое уравнение эллипса</strong> с центром в начале координат:
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-184gfo1-formula-1">
                         \[\frac{x^2}{a^2} + \frac{y^2}{b^2} = 1\]
                     </div>
                     
                     где \(a > b > 0\), \(a\) — <strong>большая полуось</strong>, \(b\) — <strong>малая полуось</strong>.
                     
-                    <div class="remark-box">
+                    <div class="remark-box" data-kc-id="legacy-184gfo1-remark-2">
                         <span class="eic eic-bulb" aria-hidden="true"></span> При \(a = b\) эллипс превращается в окружность
                     </div>
                 </div>
 
                 <h4 class="subsection-title">8.2 Основные элементы эллипса</h4>
 
-                <div class="properties-box">
+                <div class="properties-box" data-kc-id="legacy-184gfo1-properties-1">
                     <strong>Основные элементы эллипса:</strong>
                     <ol>
                         <li><strong>Фокусы</strong> \(F_1(-c; 0)\) и \(F_2(c; 0)\), где \(c = \sqrt{a^2 - b^2}\)</li>
@@ -507,14 +505,14 @@
                     </ol>
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-184gfo1-definition-3">
                     <strong>Эксцентриситет эллипса</strong> — число \(e\), характеризующее степень "вытянутости" эллипса:
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-184gfo1-formula-2">
                         \[e = \frac{c}{a} = \frac{\sqrt{a^2 - b^2}}{a}\]
                     </div>
                     
-                    <div class="remark-box">
+                    <div class="remark-box" data-kc-id="legacy-184gfo1-remark-3">
                         • При \(e \to 0\) эллипс приближается к окружности<br>
                         • При \(e \to 1\) эллипс становится всё более вытянутым
                     </div>
@@ -522,7 +520,7 @@
 
                 <h4 class="subsection-title">8.3 Вывод уравнения эллипса</h4>
 
-                <div class="derivation-box">
+                <div class="derivation-box" data-kc-id="legacy-184gfo1-derivation-1">
                     <button class="toggle-derivation">📖 Показать вывод канонического уравнения</button>
                     <div class="derivation-content">
                         <p>Пусть фокусы эллипса \(F_1(-c; 0)\) и \(F_2(c; 0)\), а точка \(M(x; y)\) лежит на эллипсе.</p>
@@ -567,7 +565,7 @@
 
                 <h4 class="subsection-title">8.4 Свойства эллипса</h4>
 
-                <div class="properties-box">
+                <div class="properties-box" data-kc-id="legacy-184gfo1-properties-2">
                     <strong>Основные свойства эллипса:</strong>
                     <ol>
                         <li>Эллипс симметричен относительно обеих координатных осей</li>
@@ -581,10 +579,10 @@
 
                 <h4 class="subsection-title">8.5 Уравнение эллипса со смещённым центром</h4>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-184gfo1-definition-4">
                     <strong>Уравнение эллипса с центром в точке \((x_0; y_0)\):</strong>
                     
-                    <div class="formula-box">
+                    <div class="formula-box" data-kc-id="legacy-184gfo1-formula-3">
                         \[\frac{(x - x_0)^2}{a^2} + \frac{(y - y_0)^2}{b^2} = 1\]
                     </div>
                 </div>
@@ -609,23 +607,10 @@
     <!-- Контейнер для пасхалок -->
     <div class="easter-eggs-container" id="easterEggsContainer"></div>
 
-    <!-- Firebase Analytics -->
-    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
-    <script src="firebase-config.js?v=20260903-3"></script>
-    <script src="data-sync.js?v=20260908-1"></script>
-    <script src="firebase-analytics.js?v=20260908-1"></script>
-
-    <script src="script.js?v=20260905-2"></script><script src="print-export.js?v=20260908-3"></script>
-    <script src="search.js?v=20260907-1"></script>
-    <script src="experimental-reader.js?v=20260905-2"></script>
-    <script src="newyear.js?v=20260903-1"></script>
-    <script src="settings.js?v=20260908-1"></script>
-    <script src="bookmarks.js?v=20260907-3"></script>
-    <script src="knowledge-check.js?v=20260908-1"></script>
-    <script src="account.js?v=20260908-1"></script>
-    <script src="note-editor.js?v=20260904-3"></script>
-    <script src="poll.js"></script>
+    <!-- Основное чтение загружается сразу; тяжёлые функции — в первый idle-период. -->
+    <script defer src="script.js?v=20260905-2"></script>
+    <script defer src="experimental-reader.js?v=20260905-2"></script>
+    <script defer src="kc-storage.js?v=20260911-1"></script>
+    <script defer src="note-runtime.js?v=20260911-1"></script>
 </body>
 </html>

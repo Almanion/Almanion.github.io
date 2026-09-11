@@ -57,8 +57,8 @@ IndexedDB и только после этого отправляется в `not
    Deploy. URL менять не нужно.
 
 Токен никогда не передаётся браузеру: он остаётся в Script properties. Backend
-проверяет Firebase ID token и точный email владельца
-`dmb23930@gmail.com`. Все JSON-файлы и изображения попадают в один атомарный Git
+проверяет Firebase ID token и точный UID владельца
+`2M2ZdLQcJAhluPjUVFNJ6MyQrdH2`. Все JSON-файлы и изображения попадают в один атомарный Git
 commit. Если backend временно не настроен, кнопка «Скачать» сохраняет тот же
 набор файлов как резервный publication bundle.
 

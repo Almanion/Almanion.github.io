@@ -74,8 +74,6 @@ function showSiteToast(message, options = {}) {
 
 window.AlmanionToast = { show: showSiteToast };
 
-let __pwaReloading = false;
-
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         const hadController = !!navigator.serviceWorker.controller;
@@ -91,9 +89,10 @@ if ('serviceWorker' in navigator) {
 
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             if (!hadController) return;
-            if (__pwaReloading) return;
-            __pwaReloading = true;
-            window.location.reload();
+            // Новая версия активируется без принудительной перезагрузки. Так
+            // ввод в конструкторе и незавершённая проверка знаний не теряются.
+            window.__almanionUpdateReady = true;
+            window.dispatchEvent(new CustomEvent('almanion-update-ready'));
         });
     });
 }
@@ -1533,10 +1532,15 @@ function initExpBottomNav() {
         { label: 'Поиск', icon: ICONS.search, act: openSearch }
     ];
     if (!isMatcenter) {
-        items.push(
-            { label: 'Закладки', icon: ICONS.bm, act: function () { clickById('bookmarksBtn'); } },
-            { label: 'Знания', icon: ICONS.kc, act: function () { clickById('knowledgeCheckBtn'); } }
+        items.push({ label: 'Закладки', icon: ICONS.bm, act: function () { clickById('bookmarksBtn'); } });
+        const hasKnowledgeCards = !!document.querySelector(
+            '.definition-box, .formula-box, .derivation-box, .remark-box, .theorem-box, ' +
+            '.lemma-box, .statement-box, .corollary-box, .properties-box, .proof-box, ' +
+            '.experiment-box, .example-box'
         );
+        if (hasKnowledgeCards || document.getElementById('knowledgeCheckBtn')) {
+            items.push({ label: 'Знания', icon: ICONS.kc, act: function () { clickById('knowledgeCheckBtn'); } });
+        }
     }
     items.push({ label: 'Аккаунт', icon: ICONS.acc, act: function () { clickById('accountBtn'); } });
 

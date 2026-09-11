@@ -459,18 +459,29 @@
             text-align: center;
         `;
 
-        modal.innerHTML = `
-            <div style="font-size: 2rem; margin-bottom: 1rem;"><span class="eic eic-chat" aria-hidden="true"></span></div>
-            <h3 style="margin: 0 0 1rem 0; font-size: 1.2rem; font-weight: 700;">Сообщение от администратора</h3>
-            <p style="margin: 0 0 1.5rem 0; font-size: 1rem; line-height: 1.6; color: ${isDark ? '#cbd5e1' : '#374151'};">${msg.message.replace(/\n/g, '<br>')}</p>
-            <button style="
-                padding: 0.7rem 2rem; border: none; border-radius: 10px;
-                background: #3b82f6; color: white; font-size: 1rem;
-                cursor: pointer; font-family: inherit; font-weight: 600;
-            ">Понятно</button>
-        `;
+        const icon = document.createElement('div');
+        icon.style.cssText = 'font-size: 2rem; margin-bottom: 1rem;';
+        icon.innerHTML = '<span class="eic eic-chat" aria-hidden="true"></span>';
 
-        modal.querySelector('button').addEventListener('click', () => {
+        const heading = document.createElement('h3');
+        heading.style.cssText = 'margin: 0 0 1rem 0; font-size: 1.2rem; font-weight: 700;';
+        heading.textContent = 'Сообщение от администратора';
+
+        const message = document.createElement('p');
+        message.style.cssText = `margin: 0 0 1.5rem 0; font-size: 1rem; line-height: 1.6; white-space: pre-line; color: ${isDark ? '#cbd5e1' : '#374151'};`;
+        message.textContent = String(msg && msg.message || '');
+
+        const closeButton = document.createElement('button');
+        closeButton.style.cssText = `
+            padding: 0.7rem 2rem; border: none; border-radius: 10px;
+            background: #3b82f6; color: white; font-size: 1rem;
+            cursor: pointer; font-family: inherit; font-weight: 600;
+        `;
+        closeButton.textContent = 'Понятно';
+
+        modal.append(icon, heading, message, closeButton);
+
+        closeButton.addEventListener('click', () => {
             overlay.style.opacity = '0';
             overlay.style.transition = 'opacity 0.3s ease';
             setTimeout(() => overlay.remove(), 300);

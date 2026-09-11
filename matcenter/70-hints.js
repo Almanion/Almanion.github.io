@@ -245,20 +245,10 @@ async function pushHintToServer(taskOrNumber, hintText) {
             grade: mutation.grade,
             taskId: mutation.taskId
         };
-        let data;
-        if (matcenterAuthMode === 'account') {
-            data = await postMatcenterJson(endpoint, {
-                ...payload,
-                idToken: await getMatcenterIdToken()
-            });
-        } else {
-            const params = new URLSearchParams({ ...payload, password: authToken || '' });
-            const response = await fetch(`${endpoint}?${params.toString()}`);
-            const responseText = await response.text();
-            console.log('📥 Ответ сервера (raw):', responseText);
-            try { data = JSON.parse(responseText); }
-            catch (_) { throw new Error('Сервер вернул некорректный JSON: ' + responseText); }
-        }
+        const data = await postMatcenterJson(endpoint, {
+            ...payload,
+            idToken: await getMatcenterIdToken()
+        });
         
         if (!data.success) {
             console.error('❌ Сервер вернул ошибку:', data.error || 'неизвестная ошибка');

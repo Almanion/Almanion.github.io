@@ -7,6 +7,7 @@
     const History = window.NoteHistory;
     const config = window.NOTE_CONSTRUCTOR_CONFIG || {};
     const OWNER_EMAIL = String(config.ownerEmail || 'dmb23930@gmail.com').toLowerCase();
+    const OWNER_UID = String(config.ownerUid || '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2');
     const MAX_IMAGE_BYTES = 2.5 * 1024 * 1024;
     const query = new URLSearchParams(window.location.search);
     const requestedContext = {
@@ -132,13 +133,9 @@
         redo.title = manager && manager.canRedo ? 'Вернуть: ' + manager.redoLabel + ' · Ctrl+Shift+Z' : 'Нечего возвращать · Ctrl+Shift+Z';
     }
 
-    function normalizeEmail(user) {
-        return String(user && user.email || '').trim().toLowerCase();
-    }
-
     async function checkAccess(user) {
         if (!user) return false;
-        if (normalizeEmail(user) === OWNER_EMAIL) return true;
+        if (user.uid === OWNER_UID) return true;
         const snapshot = await window.AlmanionAccount.database.ref('adminRoles/' + user.uid + '/contentEditor').once('value');
         return snapshot.val() === true;
     }
@@ -152,7 +149,7 @@
 
     async function onAuthState(user) {
         state.user = user || null;
-        state.isOwner = normalizeEmail(user) === OWNER_EMAIL;
+        state.isOwner = !!user && user.uid === OWNER_UID;
         if (!user) {
             showGate('Войдите в аккаунт редактора, чтобы открыть конструктор.', true);
             return;
@@ -1981,7 +1978,7 @@
         // Локальный режим нужен только для визуальных тестов интерфейса. На
         // github.io это условие недостижимо и не ослабляет проверку ролей.
         if ((location.hostname === '127.0.0.1' || location.hostname === 'localhost') && new URLSearchParams(location.search).get('demo') === '1') {
-            onAuthState({ uid: 'local-preview', email: OWNER_EMAIL, getIdToken: function () { return Promise.reject(new Error('Локальный режим')); } });
+            onAuthState({ uid: OWNER_UID, email: OWNER_EMAIL, getIdToken: function () { return Promise.reject(new Error('Локальный режим')); } });
             return;
         }
         account.auth.onAuthStateChanged(onAuthState, error => {

@@ -25,6 +25,10 @@ function meta(uid, provider) {
     };
 }
 
+function serverTimestamp() {
+    return { '.sv': 'timestamp' };
+}
+
 (async function () {
     const environment = await initializeTestEnvironment({
         projectId: projectId,
@@ -45,33 +49,75 @@ function meta(uid, provider) {
             'password',
             { email: 'dmb23930@gmail.com' }
         )).database();
+        const forgedOwnerDb = environment.authenticatedContext('forged-owner-email', auth(
+            'forged-owner-email',
+            'password',
+            { email: 'dmb23930@gmail.com' }
+        )).database();
 
         await assertSucceeds(anonDb.ref('presence/' + anonUid).set(Object.assign(meta(anonUid, 'anonymous'), {
-            page: '/', pageTitle: 'Home', timestamp: 1, userAgent: 'test'
+            page: '/', pageTitle: 'Home', timestamp: serverTimestamp(), userAgent: 'test'
         })));
         await assertFails(anonDb.ref('presence/' + otherUid).set(Object.assign(meta(otherUid, 'anonymous'), {
-            page: '/', pageTitle: 'Home', timestamp: 1, userAgent: 'test'
+            page: '/', pageTitle: 'Home', timestamp: serverTimestamp(), userAgent: 'test'
         })));
 
         await assertSucceeds(accountDb.ref('visitors/' + accountUid).set(Object.assign(meta(accountUid, 'password'), {
-            id: accountUid, firstVisit: 1, lastVisit: 2, lastPage: '/', pageViews: 1
+            id: accountUid, firstVisit: serverTimestamp(), lastVisit: serverTimestamp(), lastPage: '/', pageViews: 1
         })));
         await assertFails(accountDb.ref('visitors/' + accountUid).update({ authProvider: 'anonymous' }));
+        await assertFails(accountDb.ref('visitors/' + accountUid).update({ firstVisit: serverTimestamp(), pageViews: 2 }));
+        await assertFails(accountDb.ref('visitors/' + accountUid).update({ lastVisit: serverTimestamp(), pageViews: 3 }));
+        await assertSucceeds(accountDb.ref('visitors/' + accountUid).update({
+            lastVisit: serverTimestamp(),
+            pageViews: 2
+        }));
+        await assertSucceeds(accountDb.ref('accountDirectory/' + accountUid).set({
+            email: 'reader@example.test',
+            displayName: 'Reader',
+            lastSeen: serverTimestamp()
+        }));
+        await assertFails(accountDb.ref('accountDirectory/' + accountUid).update({ lastSeen: 1 }));
+        await assertFails(accountDb.ref('accountDirectory/' + otherUid).set({
+            email: 'reader@example.test',
+            displayName: 'Reader',
+            lastSeen: serverTimestamp()
+        }));
 
         await assertSucceeds(anonDb.ref('dailyStats/2026-09-08/' + anonUid).set(Object.assign(meta(anonUid, 'anonymous'), {
-            lastVisit: 1
+            lastVisit: serverTimestamp()
         })));
         await assertSucceeds(anonDb.ref('analyticsSessions/2026-09-08/' + anonUid + '/session-1').set(Object.assign(meta(anonUid, 'anonymous'), {
-            page: '/', pageTitle: 'Home', startedAt: 1, lastActive: 2,
+            page: '/', pageTitle: 'Home', startedAt: serverTimestamp(), lastActive: serverTimestamp(),
             durationSeconds: 1, device: 'desktop', referrerHost: 'direct'
         })));
+        await assertSucceeds(anonDb.ref('analyticsSessions/2026-09-08/' + anonUid + '/session-1').update({
+            lastActive: serverTimestamp(),
+            durationSeconds: 2
+        }));
+        await assertFails(anonDb.ref('analyticsSessions/2026-09-08/' + anonUid + '/session-1').update({
+            lastActive: serverTimestamp(),
+            durationSeconds: 1
+        }));
         await assertSucceeds(anonDb.ref('webVitals/2026-09-08/' + anonUid + '/session-1').set(Object.assign(meta(anonUid, 'anonymous'), {
             page: '/', deployment: 'test', lcp: 1200, cls: 0.02, inp: 80,
-            navigationMs: 400, failedResources: 0, recordedAt: 2
+            navigationMs: 400, failedResources: 0, recordedAt: serverTimestamp()
         })));
         await assertFails(accountDb.ref('webVitals/2026-09-08/' + anonUid + '/session-2').set(Object.assign(meta(anonUid, 'password'), {
             page: '/', deployment: 'test', lcp: 1, cls: 0, inp: 0,
-            navigationMs: 1, failedResources: 0, recordedAt: 2
+            navigationMs: 1, failedResources: 0, recordedAt: serverTimestamp()
+        })));
+        await assertSucceeds(accountDb.ref('pollResponses/poll-1/' + accountUid).set(Object.assign(meta(accountUid, 'password'), {
+            optionIndex: 0,
+            optionText: 'Yes',
+            timestamp: serverTimestamp(),
+            page: '/'
+        })));
+        await assertFails(accountDb.ref('pollResponses/poll-2/' + accountUid).set(Object.assign(meta(accountUid, 'password'), {
+            optionIndex: 0,
+            optionText: 'Yes',
+            timestamp: 1,
+            page: '/'
         })));
 
         await environment.withSecurityRulesDisabled(async function (context) {
@@ -84,6 +130,38 @@ function meta(uid, provider) {
         await assertSucceeds(anonDb.ref('directMessages/' + anonUid + '/message-1/read').set(true));
         await assertSucceeds(ownerDb.ref('visitors').once('value'));
         await assertFails(anonDb.ref('visitors').once('value'));
+        await assertFails(forgedOwnerDb.ref('visitors').once('value'));
+        await assertFails(forgedOwnerDb.ref('adminRoles').once('value'));
+        await assertFails(forgedOwnerDb.ref('adminRoles/' + accountUid).set({
+            email: 'reader@example.test',
+            siteAdmin: true,
+            matcenterAdmin: true,
+            contentEditor: true,
+            dutyEditor: true,
+            englishAccess: true,
+            updatedAt: serverTimestamp(),
+            updatedBy: 'forged-owner-email'
+        }));
+
+        const suggestion = {
+            html: '<div class="definition-box">Safe suggestion</div>',
+            type: 'definition-box',
+            preview: 'Safe suggestion',
+            author: 'reader@example.test',
+            uid: accountUid,
+            createdAt: serverTimestamp()
+        };
+        await assertSucceeds(accountDb.ref('blockSuggestions/' + accountUid + '/1788796800000').set(suggestion));
+        await assertFails(accountDb.ref('blockSuggestions/' + accountUid + '/1788796800000').update({
+            preview: 'Overwrite'
+        }));
+        await assertFails(accountDb.ref('blockSuggestions/' + anonUid + '/1788796800001').set(Object.assign({}, suggestion, {
+            author: 'reader@example.test',
+            uid: anonUid
+        })));
+        await assertFails(forgedOwnerDb.ref('blockSuggestions').once('value'));
+        await assertSucceeds(ownerDb.ref('blockSuggestions').once('value'));
+        await assertSucceeds(ownerDb.ref('blockSuggestions/' + accountUid + '/1788796800000').remove());
 
         const auditRecord = {
             actorUid: '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2',

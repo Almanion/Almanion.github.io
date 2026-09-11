@@ -44,8 +44,14 @@ assert.match(css, /\.derivation-content,[\s\S]*\.proof-content,[\s\S]*\.english-
 
 pages.forEach(function (file) {
     const html = fs.readFileSync(path.join(root, file), 'utf8');
-    assert.match(html, /styles\/print\.css\?v=20260908-3/, file + ' must load print CSS');
-    assert.match(html, /print-export\.js\?v=20260908-3/, file + ' must load print controller');
+    const direct = /styles\/print\.css\?v=20260908-3/.test(html)
+        && /print-export\.js\?v=20260908-3/.test(html);
+    const progressive = /note-runtime\.js\?v=20260911-1/.test(html);
+    assert.ok(direct || progressive, file + ' must load the print feature directly or through note-runtime');
 });
+
+const runtime = fs.readFileSync(path.join(root, 'note-runtime.js'), 'utf8');
+assert.match(runtime, /printStyles:\s*'styles\/print\.css\?v=20260908-3'/);
+assert.match(runtime, /print:\s*function \(\) \{ return loadStyle\('printStyles'\).*loadScript\('print'\)/);
 
 console.log('print-ready PDF export: all tests passed');

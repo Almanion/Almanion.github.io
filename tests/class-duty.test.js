@@ -30,9 +30,9 @@ async function testAccountAccessHelper(accountSource) {
 
     assert.equal(await sandbox.checkDutyAccess(null), false, 'signed-out visitors must not receive edit access');
     assert.equal(
-        await sandbox.checkDutyAccess({ uid: 'owner', email: ' DMB23930@GMAIL.COM ' }),
+        await sandbox.checkDutyAccess({ uid: '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2', email: 'changed-address@example.com' }),
         true,
-        'the owner email must retain edit access'
+        'the immutable owner UID must retain edit access'
     );
     assert.deepEqual(requestedPaths, [], 'the owner bypass must not depend on a role record');
 
@@ -390,7 +390,6 @@ async function run() {
     assert.equal(dutyRules['.read'], true, 'the published schedule must remain publicly readable');
     assert.match(dutyRules['.write'], /auth != null/);
     assert.match(dutyRules['.write'], /newData\.exists\(\)/, 'deleting the complete schedule must be denied');
-    assert.match(dutyRules['.write'], /dmb23930@gmail\.com/);
     assert.match(dutyRules['.write'], /2M2ZdLQcJAhluPjUVFNJ6MyQrdH2/);
     assert.match(dutyRules['.write'], /adminRoles.*dutyEditor/);
     assert.doesNotMatch(
@@ -407,7 +406,9 @@ async function run() {
     assert.ok(rules.adminRoles.$uid.dutyEditor, 'admin role schema is missing dutyEditor');
     assert.match(rules.adminRoles.$uid['.validate'], /dutyEditor/);
     assert.match(rules.adminRoles.$uid.dutyEditor['.validate'], /newData\.isBoolean\(\)/);
-    assert.match(rules.adminRoles.$uid['.write'], /dmb23930@gmail\.com/);
+    assert.match(rules.adminRoles.$uid['.write'], /2M2ZdLQcJAhluPjUVFNJ6MyQrdH2/);
+    assert.doesNotMatch(rules.adminRoles.$uid['.write'], /auth\.token\.email/,
+        'owner authorization must rely on immutable UID, not an email claim');
     assert.doesNotMatch(
         rules.adminRoles.$uid['.write'],
         /dutyEditor/,

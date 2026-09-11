@@ -4,7 +4,7 @@
     const DATA_PATH = 'classDuty/grade10_1';
     const CACHE_KEY = 'almanion:class-duty:grade10_1:cache:v2';
     const DRAFT_PREFIX = 'almanion:class-duty:grade10_1:draft:v2:';
-    const OWNER_EMAIL = 'dmb23930@gmail.com';
+    const OWNER_UID = '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
 
     const DEFAULT_DUTY_CONFIG = {
         cycle: [
@@ -1857,7 +1857,7 @@
         const edit = byId('dutyEditButton');
         edit.hidden = true;
         if (!account) return;
-        const isOwner = String(account.email || '').trim().toLowerCase() === OWNER_EMAIL;
+        const isOwner = account.uid === OWNER_UID;
         const checker = root.AlmanionAccount && root.AlmanionAccount.hasDutyEditorAccess;
         const accessPromise = isOwner
             ? Promise.resolve(true)

@@ -1405,6 +1405,7 @@
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js?v=20260903-3"></script>
     <script src="data-sync.js?v=20260908-1"></script>
+    <script src="kc-storage.js?v=20260911-1"></script>
     <script src="firebase-analytics.js?v=20260908-1"></script>
 
     <script src="script.js?v=20260905-2"></script><script src="print-export.js?v=20260908-3"></script>
@@ -1413,6 +1414,7 @@
     <script src="settings.js?v=20260908-1"></script>
     <script src="bookmarks.js?v=20260907-3"></script>
     <script src="account.js?v=20260908-1"></script>
+    <script src="safe-html.js?v=20260911-1"></script>
 
     <!-- ====================================================
          КОНСТРУКТОР БИЛЕТОВ — HTML
@@ -1696,7 +1698,7 @@
 
     function textOf(html) {
         var d = document.createElement('div');
-        d.innerHTML = html;
+        window.AlmanionSafeHtml.setHTML(d, html);
         return (d.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 95);
     }
 
@@ -1780,7 +1782,7 @@
 
             blocks.forEach(function (block) {
                 var wrap = document.createElement('div');
-                wrap.innerHTML = block.html;
+                window.AlmanionSafeHtml.setHTML(wrap, block.html);
                 while (wrap.firstChild) article.appendChild(wrap.firstChild);
             });
 
@@ -2112,7 +2114,7 @@
         popup.appendChild(closeSpan);
 
         var content = document.createElement('div');
-        content.innerHTML = block.html;
+        window.AlmanionSafeHtml.setHTML(content, block.html);
         popup.appendChild(content);
 
         document.body.appendChild(popup);
@@ -2205,7 +2207,7 @@
         pubViewBody.innerHTML = '';
         blocks.forEach(function (block) {
             var wrap = document.createElement('div');
-            wrap.innerHTML = block.html;
+            window.AlmanionSafeHtml.setHTML(wrap, block.html);
             wrap.style.marginBottom = '0.6rem';
             pubViewBody.appendChild(wrap);
         });
@@ -2282,7 +2284,7 @@
                 if (h3) article.appendChild(h3);
                 session.forEach(function (block) {
                     var wrap = document.createElement('div');
-                    wrap.innerHTML = block.html;
+                    window.AlmanionSafeHtml.setHTML(wrap, block.html);
                     while (wrap.firstChild) article.appendChild(wrap.firstChild);
                 });
                 reInit(article);
@@ -2525,7 +2527,7 @@
     // Если у пользователя нет ни одного блока ни в одном билете,
     // тихо клонируем публичные билеты автора сайта (dmb23930@gmail.com).
 
-    var DEFAULT_AUTHOR_EMAIL = 'dmb23930@gmail.com';
+    var DEFAULT_AUTHOR_UID   = '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
     var DEFAULT_LOADED_KEY   = 'physics-exam-defaults-loaded';
 
     function hasAnyBlocks() {
@@ -2553,11 +2555,8 @@
             db.ref('publicTickets').once('value').then(function (snap) {
                 var data = snap.val();
                 if (!data) return;
-                // Ищем запись автора сайта по email
-                var entry = null;
-                Object.keys(data).forEach(function (uid) {
-                    if (data[uid].email === DEFAULT_AUTHOR_EMAIL) entry = data[uid];
-                });
+                // UID владельца неизменяем, в отличие от почты в профиле.
+                var entry = data[DEFAULT_AUTHOR_UID] || null;
                 if (!entry || !entry.tickets) return;
                 // Клонируем тихо (без confirm и уведомлений)
                 var all = getAll();
@@ -2723,7 +2722,7 @@
     var suggestCloseX       = document.getElementById('beditorSuggestClose');
     var suggestCopyBtn      = document.getElementById('beditorSuggestCopy');
     var suggestAdminSection = document.getElementById('beditorSuggestAdminSection');
-    var ADMIN_EMAIL         = 'dmb23930@gmail.com';
+    var ADMIN_UID           = '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
     document.getElementById('beditorSave').addEventListener('click', saveEditorBlock);
     document.getElementById('beditorSuggest').addEventListener('click', suggestEditorBlock);
     document.getElementById('beditorClear').addEventListener('click', function () {
@@ -2859,7 +2858,7 @@
 
     function updateBeditorPreview() {
         var wrapped = wrapWithType(getEditorRawHtml());
-        beditorPreview.innerHTML = wrapped;
+        window.AlmanionSafeHtml.setHTML(beditorPreview, wrapped);
         if (window.renderMathInElement) {
             try {
                 renderMathInElement(beditorPreview, {
@@ -2885,7 +2884,7 @@
     function saveEditorBlock() {
         var raw = getEditorRawHtml();
         if (!raw) { showToast('Редактор пуст'); return; }
-        var html    = wrapWithType(raw);
+        var html    = window.AlmanionSafeHtml.sanitize(wrapWithType(raw));
         var preview = beditorContent.textContent.trim().slice(0, 80) || '(блок)';
         var block = {
             id:        'custom-' + Date.now(),
@@ -2999,11 +2998,11 @@
         }
 
         var raw       = getEditorRawHtml();
-        var html      = wrapWithType(raw);
+        var html      = window.AlmanionSafeHtml.sanitize(wrapWithType(raw));
         var preview   = textContent.slice(0, 200);
         var type      = beditorType.value;
         var formatted = formatHtmlForSuggest(html);
-        var isAdmin   = currentUser && currentUser.email === ADMIN_EMAIL;
+        var isAdmin   = currentUser && currentUser.uid === ADMIN_UID;
 
         if (suggestAdminSection) suggestAdminSection.style.display = isAdmin ? '' : 'none';
         if (suggestCode)         suggestCode.textContent = formatted;
@@ -3016,6 +3015,8 @@
                     html: html, type: type, preview: preview,
                     author: currentUser.email, uid: currentUser.uid,
                     createdAt: Date.now()
+                }).catch(function (error) {
+                    console.warn('Не удалось сохранить предложение в Firebase.', error);
                 });
             }
         }
@@ -3111,7 +3112,12 @@
         var all = getAll();
         var toPublish = {};
         Object.keys(all).forEach(function (n) {
-            if (Array.isArray(all[n]) && all[n].length > 0) toPublish[n] = all[n];
+            if (!Array.isArray(all[n]) || all[n].length === 0) return;
+            toPublish[n] = all[n].map(function (block) {
+                return Object.assign({}, block, {
+                    html: window.AlmanionSafeHtml.sanitize(block && block.html)
+                });
+            });
         });
 
         if (Object.keys(toPublish).length === 0) {
@@ -3130,7 +3136,6 @@
 
         db.ref(PUBLIC_ROOT + '/' + currentUser.uid).set({
             author:      author,
-            email:       currentUser.email,
             publishedAt: Date.now(),
             tickets:     toPublish
         }).then(function () {

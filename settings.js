@@ -77,7 +77,8 @@ if (typeof window !== 'undefined') {
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================
 
-document.addEventListener('DOMContentLoaded', () => {
+function initializeSettingsSystem() {
+    if (window.AlmanionSettings && window.AlmanionSettings.ready) return;
     loadSettings();
     applyAllSettings();
     initSystemThemeSync();
@@ -87,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.dispatchEvent(new CustomEvent('almanion-settings-ready', {
         detail: { settings: { ...siteSettings } }
     }));
-});
+}
 
 // ============================================
 // ЗАГРУЗКА И СОХРАНЕНИЕ НАСТРОЕК
@@ -749,6 +750,8 @@ function bindSettingsHandlers() {
             } else if (!enabled && isNewYearMode) {
                 toggleNewYearMode();
             }
+        } else if (enabled) {
+            window.dispatchEvent(new CustomEvent('almanion-load-newyear'));
         }
         
         // Сохраняем
@@ -761,7 +764,10 @@ function bindSettingsHandlers() {
     nyAdvancedBtn.addEventListener('click', () => {
         // Открываем модальное окно настроек снега из newyear.js
         closeSettingsModal(); // Закрываем наше окно настроек
-        setTimeout(() => {
+        const ready = window.AlmanionNoteRuntime
+            ? window.AlmanionNoteRuntime.ensure('newyear').catch(() => null)
+            : Promise.resolve();
+        ready.then(() => setTimeout(() => {
             // Используем глобальную функцию из newyear.js
             if (typeof window.nyOpenSettingsModal === 'function') {
                 window.nyOpenSettingsModal();
@@ -773,7 +779,7 @@ function bindSettingsHandlers() {
                     document.body.style.overflow = 'hidden';
                 }
             }
-        }, 300);
+        }, 120));
     });
     
     // Переключение уровня анимаций
@@ -1048,8 +1054,6 @@ function initSettingsSwipe() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', initSettingsSwipe);
-
 // ============================================
 // ЭКСПОРТ ДЛЯ СОВМЕСТИМОСТИ
 // ============================================
@@ -1064,5 +1068,13 @@ window.AlmanionSettings = {
     migrateVisualDefaults,
     visualDefaultsVersion: VISUAL_DEFAULTS_VERSION
 };
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeSettingsSystem, { once: true });
+    document.addEventListener('DOMContentLoaded', initSettingsSwipe, { once: true });
+} else {
+    initializeSettingsSystem();
+    initSettingsSwipe();
+}
 
 console.log('⚙️ Система настроек загружена');

@@ -32,6 +32,6 @@ assert.match(account, /if \(event\.persisted\) updateHomeAccessLinks\(\)/,
 assert.match(account, /addEventListener\('pagehide'[\s\S]*if \(!event\.persisted\) return;[\s\S]*clearHomeAccessLinks\(slot\)/,
     'privileged actions must be cleared before a page enters BFCache');
 
-assert.ok(shell.includes('/account.js'), 'the account script must be listed in the app shell');
+assert.ok(!shell.includes('/account.js'), 'account UI must not delay installation of the minimal offline shell');
 
 console.log('home privileged links: all tests passed');

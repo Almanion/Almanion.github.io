@@ -10,10 +10,10 @@
  * Как подключить — см. в самом конце файла (INSTRUCTIONS).
  */
 
-const AUTH_VERSION = 2;
+const AUTH_VERSION = 3;
 const ACCESS_PREFIX = 'MATCENTER_ACCESS_';
 const FAILED_PREFIX = 'MATCENTER_FAILED_';
-const SITE_OWNER_EMAIL = 'dmb23930@gmail.com';
+const SITE_OWNER_UID = '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
 const DEFAULT_FIREBASE_DATABASE_URL = 'https://almanion-70120-default-rtdb.europe-west1.firebasedatabase.app';
 
 // Ожидаемые заголовки колонок (первая строка листа):
@@ -38,6 +38,7 @@ function handle(e) {
         success: true,
         authVersion: AUTH_VERSION,
         accountConfirmation: true,
+        legacyAuth: false,
         multiSheetTasks: true,
         notePublisher: true,
         noteDeletion: true,
@@ -237,34 +238,19 @@ function authorizeAccount(idToken, password) {
 }
 
 function resolveAccess(params) {
-  if (params.idToken) {
-    const identity = verifyFirebaseToken(params.idToken);
-    const role = getAccountRole(identity, params.idToken);
-    return { allowed: !!role, role: role, uid: identity.uid };
-  }
-
-  // Только для короткого переходного периода между двумя deployment URL.
-  // После обновления обоих endpoint удалите MATCENTER_ALLOW_LEGACY или задайте false.
-  const properties = PropertiesService.getScriptProperties();
-  if (properties.getProperty('MATCENTER_ALLOW_LEGACY') === 'true') {
-    const password = params.password || '';
-    const userPassword = properties.getProperty('MATCENTER_USER_PASSWORD') || '';
-    const adminPassword = properties.getProperty('MATCENTER_ADMIN_PASSWORD') || '';
-    if (adminPassword && secureEqual(password, adminPassword)) return { allowed: true, role: 'admin' };
-    if (userPassword && secureEqual(password, userPassword)) return { allowed: true, role: 'user' };
-  }
-  return { allowed: false, role: '' };
+  if (!params.idToken) return { allowed: false, role: '' };
+  const identity = verifyFirebaseToken(params.idToken);
+  const role = getAccountRole(identity, params.idToken);
+  return { allowed: !!role, role: role, uid: identity.uid };
 }
 
 function getAccountRole(identityOrUid, idToken) {
   const identity = typeof identityOrUid === 'object'
     ? identityOrUid
     : { uid: String(identityOrUid || ''), email: '' };
-  const email = String(identity.email || '').trim().toLowerCase();
-
   // Владелец проекта всегда имеет обе административные роли. Это правило
   // дублируется в Firebase Rules, поэтому одной клиентской проверки недостаточно.
-  if (email === SITE_OWNER_EMAIL) return 'admin';
+  if (identity.uid === SITE_OWNER_UID) return 'admin';
   if (idToken && hasFirebaseMatcenterAdminRole(identity.uid, idToken)) return 'admin';
 
   return PropertiesService.getScriptProperties().getProperty(ACCESS_PREFIX + identity.uid) || '';
@@ -329,12 +315,16 @@ function verifyFirebaseToken(idToken) {
   const payload = JSON.parse(response.getContentText() || '{}');
   const user = payload.users && payload.users[0];
   if (!user || !user.localId) throw new Error('Не удалось проверить аккаунт');
-  return { uid: user.localId, email: user.email || '' };
+  return {
+    uid: user.localId,
+    email: user.email || '',
+    emailVerified: user.emailVerified === true
+  };
 }
 
 function requireSiteOwner(idToken) {
   const identity = verifyFirebaseToken(idToken);
-  if (String(identity.email || '').trim().toLowerCase() !== SITE_OWNER_EMAIL) {
+  if (identity.uid !== SITE_OWNER_UID) {
     throw new Error('Публиковать конспекты может только владелец сайта');
   }
   return identity;
@@ -342,7 +332,7 @@ function requireSiteOwner(idToken) {
 
 function requireEnglishAccess(idToken) {
   const identity = verifyFirebaseToken(idToken);
-  if (String(identity.email || '').trim().toLowerCase() === SITE_OWNER_EMAIL) return identity;
+  if (identity.uid === SITE_OWNER_UID) return identity;
 
   const uid = String(identity.uid || '');
   const properties = PropertiesService.getScriptProperties();
@@ -1005,9 +995,8 @@ function json(obj) {
 
    9) В matcenter/00-core.js замените значение API_ENDPOINT на этот URL.
 
-   10) Повторите обновление для ОБОИХ endpoint из matcenter/00-core.js. На время
-      поочерёдного обновления можно поставить MATCENTER_ALLOW_LEGACY=true, но
-      после обновления обоих deployment обязательно удалите это свойство.
+   10) Повторите обновление для ОБОИХ endpoint из matcenter/00-core.js. Оба
+       deployment должны работать на v3: старый вход с паролем в URL удалён.
 
    11) Войдите в обычный аккаунт сайта и один раз введите пароль Матцентра.
        UID получит постоянную роль user/admin в Script properties каждого endpoint.

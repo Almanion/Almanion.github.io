@@ -46,9 +46,11 @@ function userPrefersReducedMotion() {
 function _nyGet(k) { try { return localStorage.getItem(k); } catch(_) { return null; } }
 function _nySet(k, v) { try { localStorage.setItem(k, v); } catch(_) {} }
 
-document.addEventListener('DOMContentLoaded', () => {
+function initializeNewYearFeatures() {
+    if (initializeNewYearFeatures.done) return;
+    initializeNewYearFeatures.done = true;
     // Загружаем настройки из localStorage
-    loadSettings();
+    loadNewYearSettings();
 
     // Оптимизируем для мобильных устройств
     optimizeForMobile();
@@ -79,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Инициализируем модальное окно настроек
     initSettingsModal();
-});
+}
 
 // ============================================
 // ОБРАБОТКА КЛИКОВ
@@ -614,7 +616,7 @@ function showNewYearNotification() {
 // НАСТРОЙКИ
 // ============================================
 
-function loadSettings() {
+function loadNewYearSettings() {
     const saved = _nyGet('snowSettings');
     if (saved) {
         try {
@@ -625,7 +627,7 @@ function loadSettings() {
     }
 }
 
-function saveSettings() {
+function saveNewYearSettings() {
     _nySet('snowSettings', JSON.stringify(snowSettings));
 }
 
@@ -831,7 +833,7 @@ function applySnowSettings() {
     snowSettings.mergeEnabled = document.getElementById('snowMerge').checked;
     
     // Сохраняем
-    saveSettings();
+    saveNewYearSettings();
     
     // Перезапускаем снегопад, если он активен
     if (isNewYearMode) {
@@ -969,4 +971,10 @@ function optimizeForMobile() {
         snowSettings.count = Math.min(snowSettings.count, 40); // Максимум 40 снежинок
         snowSettings.speed = Math.max(snowSettings.speed, 1.2); // Быстрее падают
     }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeNewYearFeatures, { once: true });
+} else {
+    initializeNewYearFeatures();
 }

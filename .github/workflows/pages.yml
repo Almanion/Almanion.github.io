@@ -40,11 +40,17 @@ jobs:
       - name: Install build tooling
         run: npm ci --ignore-scripts
 
+      - name: Install browser for interface checks
+        run: npx playwright install --with-deps chromium
+
       - name: Verify Firebase access rules
         run: npm run test:rules
 
       - name: Test, build, and validate
         run: npm run ci
+
+      - name: Check desktop and mobile interfaces
+        run: npm run test:e2e
 
       - name: Preserve verified site for rollback
         uses: actions/upload-artifact@v7
@@ -78,3 +84,16 @@ jobs:
         uses: actions/deploy-pages@v5
         with:
           timeout: 1800000
+
+      - name: Checkout verifier
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Verify the published revision
+        run: node tools/verify-production.js --url "${{ steps.deployment.outputs.page_url }}" --revision "${{ github.sha }}"

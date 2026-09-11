@@ -6,6 +6,8 @@ const result = check(path.join(__dirname, '..'));
 assert.deepStrictEqual(result.errors, [], result.errors.join('\n'));
 assert.ok(result.precacheEntries > 0, 'the service-worker shell must be measurable');
 assert.ok(result.searchSourceBytes > 0, 'the current search baseline must be measurable');
+assert.ok(result.routes.length >= 6, 'the main routes need route-level performance budgets');
+assert.ok(result.routes.every(route => route.missing.length === 0), 'budgeted routes must not reference missing assets');
 
 const worker = require('fs').readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
 const shell = require('../performance/sw-shell.json').assets;

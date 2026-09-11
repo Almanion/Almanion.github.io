@@ -4,10 +4,10 @@
     ".write": false,
 
     "adminRoles": {
-      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com')",
+      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2')",
       "$uid": {
-        ".read": "auth != null && (auth.uid === $uid || auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com')",
-        ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com')",
+        ".read": "auth != null && (auth.uid === $uid || auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2')",
+        ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2')",
         ".validate": "newData.hasChildren(['email', 'siteAdmin', 'matcenterAdmin', 'contentEditor', 'dutyEditor', 'englishAccess', 'updatedAt', 'updatedBy'])",
         "email": { ".validate": "newData.isString() && newData.val().length <= 254" },
         "siteAdmin": { ".validate": "newData.isBoolean()" },
@@ -24,7 +24,7 @@
     "classDuty": {
       "grade10_1": {
         ".read": true,
-        ".write": "auth != null && newData.exists() && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('dutyEditor').val() === true)",
+        ".write": "auth != null && newData.exists() && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('dutyEditor').val() === true)",
         ".validate": "newData.hasChildren(['version', 'className', 'academicYear', 'revision', 'updatedAt', 'updatedBy', 'entries']) && newData.child('revision').val() === (data.exists() ? data.child('revision').val() + 1 : 1) && (!data.child('version').exists() || newData.child('version').val() >= data.child('version').val()) && ((newData.child('version').val() === 1 && !newData.child('config').exists()) || (newData.child('version').val() === 2 && newData.child('config').exists()))",
         "version": { ".validate": "newData.isNumber() && (newData.val() === 1 || newData.val() === 2)" },
         "className": { ".validate": "newData.isString() && newData.val() === '10-1'" },
@@ -165,50 +165,50 @@
     },
 
     "accountDirectory": {
-      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$uid": {
-        ".write": "auth != null && ((auth.uid === $uid && newData.exists()) || auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+        ".write": "auth != null && ((auth.uid === $uid && newData.exists()) || auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
         ".validate": "newData.hasChildren(['email', 'displayName', 'lastSeen'])",
         "email": { ".validate": "newData.isString() && newData.val().length <= 254 && (auth.uid !== $uid || newData.val() === auth.token.email)" },
         "displayName": { ".validate": "newData.isString() && newData.val().length <= 120" },
-        "lastSeen": { ".validate": "newData.isNumber()" },
+        "lastSeen": { ".validate": "newData.isNumber() && newData.val() >= now - 60000 && newData.val() <= now + 10000 && (!data.exists() || newData.val() >= data.val())" },
         "$other": { ".validate": false }
       }
     },
 
     "presence": {
-      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
-      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$visitorId": {
-        ".write": "auth != null && (auth.uid === $visitorId || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+        ".write": "auth != null && (auth.uid === $visitorId || auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
         ".validate": "!newData.exists() || newData.hasChildren(['visitorId', 'authProvider', 'browserContext', 'page', 'pageTitle', 'timestamp', 'userAgent'])",
         "visitorId": { ".validate": "newData.isString() && newData.val() === $visitorId" },
         "authProvider": { ".validate": "newData.isString() && newData.val() === auth.token.firebase.sign_in_provider" },
         "browserContext": { ".validate": "newData.val() === 'web' || newData.val() === 'telegram'" },
         "page": { ".validate": "newData.isString() && newData.val().length <= 180" },
         "pageTitle": { ".validate": "newData.isString() && newData.val().length <= 180" },
-        "timestamp": { ".validate": "newData.isNumber()" },
+        "timestamp": { ".validate": "newData.isNumber() && newData.val() >= now - 60000 && newData.val() <= now + 10000" },
         "userAgent": { ".validate": "newData.isString() && newData.val().length <= 120" },
         "$other": { ".validate": false }
       }
     },
 
     "analyticsSessions": {
-      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
-      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$day": {
         "$visitorId": {
           "$sessionId": {
-            ".write": "auth != null && ((auth.uid === $visitorId && newData.exists()) || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+            ".write": "auth != null && ((auth.uid === $visitorId && newData.exists()) || auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
             ".validate": "newData.hasChildren(['visitorId', 'authProvider', 'browserContext', 'page', 'pageTitle', 'startedAt', 'lastActive', 'durationSeconds', 'device', 'referrerHost'])",
             "visitorId": { ".validate": "newData.isString() && newData.val() === $visitorId" },
             "authProvider": { ".validate": "newData.isString() && newData.val() === auth.token.firebase.sign_in_provider" },
             "browserContext": { ".validate": "newData.val() === 'web' || newData.val() === 'telegram'" },
             "page": { ".validate": "newData.isString() && newData.val().length <= 180" },
             "pageTitle": { ".validate": "newData.isString() && newData.val().length <= 180" },
-            "startedAt": { ".validate": "newData.isNumber()" },
-            "lastActive": { ".validate": "newData.isNumber()" },
-            "durationSeconds": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 86400" },
+            "startedAt": { ".validate": "newData.isNumber() && ((!data.exists() && newData.val() >= now - 60000 && newData.val() <= now + 10000) || (data.exists() && newData.val() === data.val()))" },
+            "lastActive": { ".validate": "newData.isNumber() && newData.val() >= newData.parent().child('startedAt').val() && newData.val() >= now - 60000 && newData.val() <= now + 10000" },
+            "durationSeconds": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 86400 && (!data.exists() || newData.val() >= data.val())" },
             "device": { ".validate": "newData.val() === 'mobile' || newData.val() === 'tablet' || newData.val() === 'desktop'" },
             "referrerHost": { ".validate": "newData.isString() && newData.val().length <= 120" },
             "$other": { ".validate": false }
@@ -219,13 +219,13 @@
 
     "polls": {
       ".read": true,
-      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       ".indexOn": ["active", "createdAt"]
     },
 
     "pollResponses": {
-      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
-      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$pollId": {
         "$visitorId": {
           ".write": "auth != null && auth.uid === $visitorId && !data.exists()",
@@ -235,7 +235,7 @@
           "browserContext": { ".validate": "newData.val() === 'web' || newData.val() === 'telegram'" },
           "optionIndex": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 20" },
           "optionText": { ".validate": "newData.isString() && newData.val().length <= 240" },
-          "timestamp": { ".validate": "newData.isNumber()" },
+          "timestamp": { ".validate": "newData.isNumber() && newData.val() >= now - 60000 && newData.val() <= now + 10000" },
           "page": { ".validate": "newData.isString() && newData.val().length <= 180" },
           "$other": { ".validate": false }
         }
@@ -243,26 +243,26 @@
     },
 
     "visitors": {
-      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
-      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$visitorId": {
-        ".write": "auth != null && ((auth.uid === $visitorId && newData.exists()) || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+        ".write": "auth != null && ((auth.uid === $visitorId && newData.exists()) || auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
         ".validate": "!newData.exists() || newData.hasChildren(['id', 'visitorId', 'authProvider', 'browserContext', 'firstVisit', 'lastVisit', 'lastPage', 'pageViews'])",
         "id": { ".validate": "newData.isString() && newData.val() === $visitorId" },
         "visitorId": { ".validate": "newData.isString() && newData.val() === $visitorId" },
         "authProvider": { ".validate": "newData.isString() && newData.val() === auth.token.firebase.sign_in_provider" },
         "browserContext": { ".validate": "newData.val() === 'web' || newData.val() === 'telegram'" },
-        "firstVisit": { ".validate": "newData.isNumber()" },
-        "lastVisit": { ".validate": "newData.isNumber()" },
+        "firstVisit": { ".validate": "newData.isNumber() && ((!data.exists() && newData.val() >= now - 60000 && newData.val() <= now + 10000) || (data.exists() && newData.val() === data.val()))" },
+        "lastVisit": { ".validate": "newData.isNumber() && newData.val() >= newData.parent().child('firstVisit').val() && newData.val() >= now - 60000 && newData.val() <= now + 10000" },
         "lastPage": { ".validate": "newData.isString() && newData.val().length <= 180" },
-        "pageViews": { ".validate": "newData.isNumber() && newData.val() >= 1" },
+        "pageViews": { ".validate": "newData.isNumber() && ((!data.exists() && newData.val() === 1) || (data.exists() && newData.val() === data.val() + 1))" },
         "$other": { ".validate": false }
       }
     },
 
     "dailyStats": {
-      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
-      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$day": {
         "$visitorId": {
           ".write": "auth != null && auth.uid === $visitorId && newData.exists()",
@@ -270,15 +270,15 @@
           "visitorId": { ".validate": "newData.val() === $visitorId" },
           "authProvider": { ".validate": "newData.val() === auth.token.firebase.sign_in_provider" },
           "browserContext": { ".validate": "newData.val() === 'web' || newData.val() === 'telegram'" },
-          "lastVisit": { ".validate": "newData.isNumber()" },
+          "lastVisit": { ".validate": "newData.isNumber() && newData.val() >= now - 60000 && newData.val() <= now + 10000" },
           "$other": { ".validate": false }
         }
       }
     },
 
     "webVitals": {
-      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
-      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$day": {
         "$visitorId": {
           "$sessionId": {
@@ -294,7 +294,7 @@
             "inp": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 120000" },
             "navigationMs": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 120000" },
             "failedResources": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
-            "recordedAt": { ".validate": "newData.isNumber()" },
+            "recordedAt": { ".validate": "newData.isNumber() && newData.val() >= now - 60000 && newData.val() <= now + 10000" },
             "$other": { ".validate": false }
           }
         }
@@ -302,15 +302,15 @@
     },
 
     "visitorNames": {
-      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
-      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)"
+      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)"
     },
 
     "directMessages": {
-      ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
-      ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$visitorId": {
-        ".read": "auth != null && (auth.uid === $visitorId || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+        ".read": "auth != null && (auth.uid === $visitorId || auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
         "$msgId": {
           "read": { ".write": "auth != null && auth.uid === $visitorId", ".validate": "newData.isBoolean()" },
           "readAt": { ".write": "auth != null && auth.uid === $visitorId", ".validate": "newData.isNumber()" }
@@ -319,9 +319,9 @@
     },
 
     "auditLog": {
-      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
       "$eventId": {
-        ".write": "auth != null && !data.exists() && newData.exists() && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+        ".write": "auth != null && !data.exists() && newData.exists() && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
         ".validate": "newData.hasChildren(['actorUid', 'action', 'targetUid', 'summary', 'timestamp'])",
         "actorUid": { ".validate": "newData.isString() && newData.val() === auth.uid" },
         "action": { ".validate": "newData.val() === 'admin_roles_updated'" },
@@ -346,10 +346,48 @@
       }
     },
 
+    "blockSuggestions": {
+      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)",
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$suggestionId": {
+          ".write": "auth != null && ((auth.uid === $uid && !data.exists() && newData.exists()) || (!newData.exists() && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('siteAdmin').val() === true)))",
+          ".validate": "!newData.exists() || ($suggestionId.matches(/^[0-9]{13}$/) && newData.hasChildren(['html', 'type', 'preview', 'author', 'uid', 'createdAt']))",
+          "html": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100000" },
+          "type": { ".validate": "newData.val() === 'definition-box' || newData.val() === 'formula-box' || newData.val() === 'h4' || newData.val() === 'paragraph'" },
+          "preview": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 240" },
+          "author": { ".validate": "newData.isString() && newData.val() === auth.token.email && newData.val().length <= 254" },
+          "uid": { ".validate": "newData.isString() && newData.val() === $uid" },
+          "createdAt": { ".validate": "newData.isNumber() && newData.val() >= now - 60000 && newData.val() <= now + 10000" },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
     "publicTickets": {
       ".read": true,
       "$uid": {
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "!newData.exists() || newData.hasChildren(['author', 'publishedAt', 'tickets'])",
+        "author": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80" },
+        "publishedAt": { ".validate": "newData.isNumber() && newData.val() <= now && newData.val() >= now - 60000" },
+        "tickets": {
+          "$ticket": {
+            ".validate": "$ticket.matches(/^([1-9]|[1-9][0-9])$/) && newData.hasChildren()",
+            "$block": {
+              ".validate": "$block.matches(/^(0|[1-9][0-9]{0,2})$/) && newData.hasChild('html')",
+              "id": { ".validate": "newData.isString() && newData.val().length <= 180" },
+              "html": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100000" },
+              "preview": { ".validate": "newData.isString() && newData.val().length <= 240" },
+              "type": { ".validate": "newData.isString() && newData.val().matches(/^(definition|heading|figure|text|derivation|remark|formula|example|proof|other)$/)" },
+              "srcId": { ".validate": "newData.isString() && newData.val().length <= 180" },
+              "topicId": { ".validate": "newData.isString() && newData.val().length <= 180" },
+              "topicTitle": { ".validate": "newData.isString() && newData.val().length <= 180" },
+              "$other": { ".validate": false }
+            }
+          }
+        },
+        "$other": { ".validate": false }
       }
     },
 
@@ -375,8 +413,8 @@
     },
 
     "englishVocabulary": {
-      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('englishAccess').val() === true)",
-      ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com')",
+      ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('englishAccess').val() === true)",
+      ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2')",
       "$release": {
         ".validate": "newData.hasChildren(['version', 'updatedAt', 'items'])",
         "version": { ".validate": "newData.isNumber() && newData.val() === 1" },
@@ -398,9 +436,9 @@
 
     "noteDrafts": {
       "$subject": {
-        ".read": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+        ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
         "$sectionId": {
-          ".write": "auth != null && (auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+          ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
           ".validate": "newData.hasChildren(['schemaVersion', 'id', 'subject', 'title', 'navTitle', 'order', 'revision', 'createdAt', 'updatedAt', 'updatedBy', 'reviewStatus']) && (newData.child('blocks').exists() || newData.child('subsections').exists()) && newData.child('id').val() === $sectionId && newData.child('subject').val() === $subject",
           "schemaVersion": { ".validate": "newData.isNumber() && newData.val() === 1" },
           "id": { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 64" },
@@ -414,15 +452,15 @@
           "createdAt": { ".validate": "newData.isNumber()" },
           "updatedAt": { ".validate": "newData.isNumber()" },
           "updatedBy": { ".validate": "newData.isString() && newData.val() === auth.uid" },
-          "reviewStatus": { ".validate": "newData.val() === 'draft' || newData.val() === 'ready' || (newData.val() === 'published' && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com'))" },
+          "reviewStatus": { ".validate": "newData.val() === 'draft' || newData.val() === 'ready' || (newData.val() === 'published' && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2'))" },
           "review": {
             ".validate": "newData.hasChildren(['submittedAt', 'submittedBy', 'returnedAt', 'returnedBy', 'publishedAt', 'publishedBy'])",
             "submittedAt": { ".validate": "newData.isNumber() && newData.val() >= 0" },
             "submittedBy": { ".validate": "newData.isString() && newData.val().length <= 128 && (newData.val() === '' || newData.val() === data.val() || newData.val() === auth.uid)" },
             "returnedAt": { ".validate": "newData.isNumber() && newData.val() >= 0" },
-            "returnedBy": { ".validate": "newData.isString() && newData.val().length <= 128 && (newData.val() === '' || newData.val() === data.val() || auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com')" },
+            "returnedBy": { ".validate": "newData.isString() && newData.val().length <= 128 && (newData.val() === '' || newData.val() === data.val() || auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2')" },
             "publishedAt": { ".validate": "newData.isNumber() && newData.val() >= 0" },
-            "publishedBy": { ".validate": "newData.isString() && newData.val().length <= 128 && (newData.val() === '' || newData.val() === data.val() || auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com')" },
+            "publishedBy": { ".validate": "newData.isString() && newData.val().length <= 128 && (newData.val() === '' || newData.val() === data.val() || auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2')" },
             "comments": {
               "$comment": {
                 ".validate": "$comment.matches(/^(0|[1-9][0-9]{0,2})$/) && newData.hasChildren(['id', 'text', 'authorUid', 'authorEmail', 'createdAt', 'resolvedAt', 'resolvedBy'])",
@@ -445,9 +483,9 @@
 
     "noteDraftDeletions": {
       "$subject": {
-        ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+        ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
         "$sectionId": {
-          ".write": "auth != null && newData.exists() && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+          ".write": "auth != null && newData.exists() && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
           ".validate": "newData.hasChildren(['schemaVersion', 'subject', 'id', 'revision', 'deletedAt', 'deletedBy']) && newData.child('schemaVersion').val() === 1 && newData.child('subject').val() === $subject && newData.child('id').val() === $sectionId && newData.child('revision').isNumber() && newData.child('revision').val() > (data.exists() ? data.child('revision').val() : 0) && (!root.child('noteDrafts').child($subject).child($sectionId).exists() || newData.child('revision').val() > root.child('noteDrafts').child($subject).child($sectionId).child('revision').val()) && newData.child('deletedAt').isNumber() && newData.child('deletedAt').val() > 0 && newData.child('deletedBy').val() === auth.uid",
           "schemaVersion": { ".validate": "newData.isNumber() && newData.val() === 1" },
           "subject": { ".validate": "newData.isString() && newData.val() === $subject" },
@@ -462,9 +500,9 @@
 
     "noteDraftHistory": {
       "$subject": {
-        ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+        ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
         "$sectionId": {
-          ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+          ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
           "slots": {
             "$slot": {
               ".validate": "$slot.matches(/^[0-3][0-9]$/) && newData.hasChildren(['id', 'revision', 'createdAt', 'createdBy', 'createdByEmail', 'label', 'reviewStatus', 'section']) && newData.child('createdBy').val() === auth.uid && newData.child('section/id').val() === $sectionId && newData.child('section/subject').val() === $subject",
@@ -486,10 +524,10 @@
 
     "noteDraftAssets": {
       "$subject": {
-        ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+        ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
         "$sectionId": {
           "$blockId": {
-            ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || auth.token.email === 'dmb23930@gmail.com' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
+            ".write": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('contentEditor').val() === true)",
             ".validate": "newData.hasChildren(['path', 'cloudPath', 'downloadUrl', 'mimeType', 'size', 'uploadedAt', 'uploadedBy']) && newData.child('uploadedBy').val() === auth.uid && newData.child('cloudPath').val().beginsWith('note-drafts/' + auth.uid + '/' + $subject + '/' + $sectionId + '/' + $blockId + '/')",
             "path": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 240 && !newData.val().contains('..')" },
             "cloudPath": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500" },

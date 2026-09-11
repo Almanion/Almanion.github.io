@@ -39,7 +39,7 @@
     <meta name="apple-mobile-web-app-title" content="Almanion">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Конспекты по Алгебре | Almanion</title>
-    <link rel="stylesheet" href="styles/site/index.css?v=20260905-2">
+    <link rel="stylesheet" href="styles/site/reader.css?v=20260911-1">
     <link rel="stylesheet" href="styles/tokens.css">
     <link rel="stylesheet" href="styles/buttons.css">
     <link rel="stylesheet" href="styles/mobile-overrides.css">
@@ -52,8 +52,6 @@
     <link rel="stylesheet" href="style-new.css?v=20260905-1">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
-    <link rel="stylesheet" href="styles/note-editor.css?v=20260904-2">
-    <link rel="stylesheet" href="styles/print.css?v=20260908-3">
 </head>
 <body>
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -122,11 +120,11 @@
             <article id="function" class="topic">
                 <h3 class="topic-title">1. Функция</h3>
                 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-182kt3d-definition-1">
                     <strong>Функция</strong> — это правило \(f\), сопоставляющее каждому элементу \(x\) из множества \(X\) единственный элемент \(y\) из множества \(Y\), обозначается \(f: X \to Y\).
                 </div>
 
-                <div class="remark-box">
+                <div class="remark-box" data-kc-id="legacy-182kt3d-remark-1">
                     <span class="eic eic-bulb" aria-hidden="true"></span> <strong>Обозначения:</strong><br>
                     • \(x\) — аргумент (независимая переменная)<br>
                     • \(y\) — значение функции (зависимая переменная)<br>
@@ -134,31 +132,31 @@
                     • \(Y\) — область значений (множество всех значений \(f(x)\))
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-182kt3d-definition-2">
                     <strong>Область определения функции</strong> \(D(f)\) — множество всех значений аргумента, при которых функция имеет смысл.
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-182kt3d-definition-3">
                     <strong>Область значений функции</strong> \(E(f)\) — множество всех значений, которые принимает функция.
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-182kt3d-definition-4">
                     <strong>Отображение "на" или "суръекция"</strong> — это функция, которая отображает множество \(X\) на множество \(Y\) так, что во множестве \(Y\) нет "лишних" элементов \((Y = E(f))\).
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-182kt3d-definition-5">
                     <strong>Инъекция</strong> — это функция, которая отображает множество \(X\) на множество \(Y\) так, что у каждого элемента из множества \(X\) "свой" элемент из множества \(Y\) и они не повторяются.
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-182kt3d-definition-6">
                     <strong>Биекция</strong> — это функция, являющаяся одновременно инъекцией и суръекцией.
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-182kt3d-definition-7">
                     <strong>Образ \(x_0\) под действием \(f\)</strong> — это значение функции \(f(x_0)\).
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-182kt3d-definition-8">
                     <strong>Прообраз \(y_0\) под действием \(f\)</strong> — это элемент \(x_0\) из множества \(X\), такой что \(f(x_0) = y_0\). Обозначается \(f^{-1}(y_0)\).
                 </div>
 
@@ -168,19 +166,19 @@
             <article id="bounded" class="topic">
                 <h3 class="topic-title">2. Ограниченность функции</h3>
                 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-1yufgbu-definition-1">
                     Функция \(f(x)\) называется <strong>ограниченной сверху</strong> на множестве \(X\), если существует число \(M\) такое, что для всех \(x \in X\) выполняется \(f(x) \leq M\).
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-1yufgbu-definition-2">
                     Функция \(f(x)\) называется <strong>ограниченной снизу</strong> на множестве \(X\), если существует число \(m\) такое, что для всех \(x \in X\) выполняется \(f(x) \geq m\).
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-1yufgbu-definition-3">
                     Функция \(f(x)\) называется <strong>ограниченной</strong> на множестве \(X\), если она ограничена и сверху, и снизу, то есть существует число \(C > 0\) такое, что \(|f(x)| \leq C\) для всех \(x \in X\).
                 </div>
 
-                <div class="properties-box">
+                <div class="properties-box" data-kc-id="legacy-1yufgbu-properties-1">
                     <strong>Свойства ограниченных функций:</strong>
                     <ul>
                         <li>Если функция ограничена сверху и снизу, то она ограничена</li>
@@ -196,19 +194,19 @@
             <article id="monotonic" class="topic">
                 <h3 class="topic-title">3. Монотонная функция</h3>
                 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-i8n27r-definition-1">
                     Функция \(f(x)\) называется <strong>возрастающей</strong> на множестве \(X\), если для любых \(x_1, x_2 \in X\) таких, что \(x_1 < x_2\), выполняется \(f(x_1) < f(x_2)\).
                 </div>
 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-i8n27r-definition-2">
                     Функция \(f(x)\) называется <strong>убывающей</strong> на множестве \(X\), если для любых \(x_1, x_2 \in X\) таких, что \(x_1 < x_2\), выполняется \(f(x_1) > f(x_2)\).
                 </div>
 
-                <div class="remark-box">
+                <div class="remark-box" data-kc-id="legacy-i8n27r-remark-1">
                     <span class="eic eic-bulb" aria-hidden="true"></span> Если неравенства нестрогие (\(f(x_1) \leq f(x_2)\) или \(f(x_1) \geq f(x_2)\)), то функция называется <strong>неубывающей</strong> или <strong>невозрастающей</strong> соответственно.
                 </div>
 
-                <div class="properties-box">
+                <div class="properties-box" data-kc-id="legacy-i8n27r-properties-1">
                     <strong>Свойства монотонных функций:</strong>
                     <ol>
                         <li>Монотонная функция каждое своё значение принимает ровно один раз.</li>
@@ -224,11 +222,11 @@
             <article id="composition" class="topic">
                 <h3 class="topic-title">4. Композиция функций</h3>
                 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-dtjbp5-definition-1">
                     <strong>Композицией</strong> функций \(f\) и \(g\) называется функция \(h(x) = f(g(x))\), обозначается \((f \circ g)(x)\) или \(f(g(x))\).
                 </div>
 
-                <div class="formula-box">
+                <div class="formula-box" data-kc-id="legacy-dtjbp5-formula-1">
                     <p><strong>Область определения композиции:</strong></p>
                     <p>Для функции \(h(x) = f(g(x))\) область определения состоит из тех \(x\), для которых:</p>
                     <ol>
@@ -242,7 +240,7 @@
             <article id="monotonic-composition" class="topic">
                 <h3 class="topic-title">5. Монотонность композиции функций</h3>
                 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-orj4l8-definition-1">
                     <p>Пусть функция \(f(x)\) монотонна на \(A\), \(g(x)\) монотонна на \(B\). Пусть функция \(\varphi(x) = g(f(x))\). Тогда:</p>
                     <ul>
                         <li>Если \(f(x)\) возрастает на \(A\), \(g(x)\) возрастает на \(B\) , то \(\varphi(x)\) возрастает на \(A\);</li>
@@ -256,12 +254,12 @@
             <article id="periodicity" class="topic">
                 <h3 class="topic-title">6. Периодичность функции</h3>
                 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-1oqweug-definition-1">
                     Функция \(f(x)\) называется <strong>периодической</strong> с периодом \(T > 0\), если для всех \(x\) из области определения, \(x + T\) и \(x - T\) также принадлежат области определения, и выполняется:
                     \[f(x + T) = f(x - T)\]
                 </div>
 
-                <div class="remark-box">
+                <div class="remark-box" data-kc-id="legacy-1oqweug-remark-1">
                     <strong>Основной период</strong> — наименьший период.
                 </div>
 
@@ -271,13 +269,13 @@
             <article id="fractional-linear" class="topic">
                 <h3 class="topic-title">7. Дробно-линейная функция</h3>
                 
-                <div class="definition-box">
+                <div class="definition-box" data-kc-id="legacy-h837kc-definition-1">
                     <strong>Дробно-линейная функция</strong> — функция вида
                     \[f(x) = \frac{ax + b}{cx + d}\]
                     где \(a, b, c, d\) — действительные числа, причём \(c \neq 0\) и \(ad - bc \neq 0\).
                 </div>
 
-                <div class="formula-box">
+                <div class="formula-box" data-kc-id="legacy-h837kc-formula-1">
                     <p><strong>Преобразование к стандартному виду:</strong></p>
                     \[f(x) = \frac{ax + b}{cx + d} = \frac{a}{c} + \frac{bc - ad}{c(cx + d)}\]
                     
@@ -388,24 +386,11 @@
     <!-- Контейнер для пасхалок -->
     <div class="easter-eggs-container" id="easterEggsContainer"></div>
 
-    <!-- Firebase Analytics -->
-    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
-    <script src="firebase-config.js?v=20260903-3"></script>
-    <script src="data-sync.js?v=20260908-1"></script>
-    <script src="firebase-analytics.js?v=20260908-1"></script>
-
-    <script src="script.js?v=20260905-2"></script><script src="print-export.js?v=20260908-3"></script>
-    <script src="search.js?v=20260907-1"></script>
-    <script src="experimental-reader.js?v=20260905-2"></script>
-    <script src="newyear.js?v=20260903-1"></script>
-    <script src="settings.js?v=20260908-1"></script>
-    <script src="bookmarks.js?v=20260907-3"></script>
-    <script src="knowledge-check.js?v=20260908-1"></script>
-    <script src="account.js?v=20260908-1"></script>
-    <script src="note-editor.js?v=20260904-3"></script>
-    <script src="poll.js"></script>
+    <!-- Основное чтение загружается сразу; тяжёлые функции — в первый idle-период. -->
+    <script defer src="script.js?v=20260905-2"></script>
+    <script defer src="experimental-reader.js?v=20260905-2"></script>
+    <script defer src="kc-storage.js?v=20260911-1"></script>
+    <script defer src="note-runtime.js?v=20260911-1"></script>
 </body>
 </html>
 

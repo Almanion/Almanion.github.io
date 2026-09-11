@@ -551,19 +551,10 @@ async function changeTaskStatus(taskOrNumber, newStatus) {
     };
     
     try {
-        let data;
-        if (matcenterAuthMode === 'account') {
-            data = await postMatcenterJson(endpoint, {
-                ...payload,
-                idToken: await getMatcenterIdToken()
-            });
-        } else {
-            const params = new URLSearchParams({ ...payload, password: authToken || '' });
-            const response = await fetch(`${endpoint}?${params.toString()}`);
-            const responseText = await response.text();
-            try { data = JSON.parse(responseText); }
-            catch (_) { throw new Error('Сервер вернул некорректный JSON: ' + responseText); }
-        }
+        const data = await postMatcenterJson(endpoint, {
+            ...payload,
+            idToken: await getMatcenterIdToken()
+        });
         
         if (!data.success) {
             console.error('❌ Сервер вернул ошибку:', data.error);

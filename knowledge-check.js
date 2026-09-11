@@ -18,9 +18,16 @@
     'use strict';
 
     // ---------- Безопасный localStorage ----------
-    const kcGet = (window.safeStorageGet) || function (k) { try { return localStorage.getItem(k); } catch (_) { return null; } };
-    const kcSet = (window.safeStorageSet) || function (k, v) { try { localStorage.setItem(k, v); return true; } catch (_) { return false; } };
-    const kcRemove = (window.safeStorageRemove) || function (k) { try { localStorage.removeItem(k); return true; } catch (_) { return false; } };
+    const scopedStorage = window.AlmanionKCStorage || null;
+    const kcGet = scopedStorage
+        ? function (k) { return scopedStorage.get(k); }
+        : ((window.safeStorageGet) || function (k) { try { return localStorage.getItem(k); } catch (_) { return null; } });
+    const kcSet = scopedStorage
+        ? function (k, v) { return scopedStorage.set(k, v); }
+        : ((window.safeStorageSet) || function (k, v) { try { localStorage.setItem(k, v); return true; } catch (_) { return false; } });
+    const kcRemove = scopedStorage
+        ? function (k) { return scopedStorage.remove(k); }
+        : ((window.safeStorageRemove) || function (k) { try { localStorage.removeItem(k); return true; } catch (_) { return false; } });
 
     // ---------- Адаптивное расписание ----------
     const MINUTE = 60000;
@@ -368,11 +375,13 @@
     const SESSION_KEY = 'kc_session_v3_' + location.pathname;
     const PREFS_KEY = 'kc_preferences_v3_' + location.pathname;
     const DEVICE_KEY = 'kc_device_id';
-    let deviceId = kcGet(DEVICE_KEY) || '';
+    const kcGlobalGet = scopedStorage ? scopedStorage.globalGet : kcGet;
+    const kcGlobalSet = scopedStorage ? scopedStorage.globalSet : kcSet;
+    let deviceId = kcGlobalGet(DEVICE_KEY) || '';
     function getDeviceId() {
         if (!deviceId) {
             deviceId = 'device-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-            kcSet(DEVICE_KEY, deviceId);
+            kcGlobalSet(DEVICE_KEY, deviceId);
         }
         return deviceId;
     }
@@ -387,6 +396,7 @@
     let lastDialogOpener = null;
     let pendingProjections = null;
     let waitTimer = null;
+    let dialogInerted = [];
 
     const CARD_TYPES = [
         { selector: '.definition-box', kind: 'definition', label: 'Определения', singular: 'определение', prompt: 'Дайте определение' },
@@ -451,7 +461,13 @@
         // Сигнал для account.js (синхронизация прогресса в облако).
         try {
             window.dispatchEvent(new CustomEvent('kc-store-changed', {
-                detail: { key: STORE_KEY, store: snapshot, updatedAt: store.__meta.updatedAt, persisted: persisted }
+                detail: {
+                    key: STORE_KEY,
+                    scope: scopedStorage ? scopedStorage.scope() : '',
+                    store: snapshot,
+                    updatedAt: store.__meta.updatedAt,
+                    persisted: persisted
+                }
             }));
         } catch (_) {}
         return persisted;
@@ -1087,6 +1103,7 @@
         const select = document.createElement('div');
         select.className = 'auth-overlay hidden';
         select.id = 'kcSelectOverlay';
+        select.setAttribute('aria-hidden', 'true');
         select.innerHTML =
             '<div class="auth-modal kc-modal" id="kcSelectModal" role="dialog" aria-modal="true" aria-labelledby="kcSelectTitle" tabindex="-1">' +
                 '<button class="kc-close" id="kcSelectClose" aria-label="Закрыть">' + IC.close + '</button>' +
@@ -1123,6 +1140,7 @@
         const review = document.createElement('div');
         review.className = 'auth-overlay hidden';
         review.id = 'kcReviewOverlay';
+        review.setAttribute('aria-hidden', 'true');
         review.innerHTML =
             '<div class="auth-modal kc-modal kc-modal-game" id="kcReviewModal" role="dialog" aria-modal="true" aria-label="Сессия проверки знаний" tabindex="-1">' +
                 '<div class="kc-game-bar">' +
@@ -1169,6 +1187,83 @@
 
         initSwipe('kcSelectOverlay', 'kcSelectModal', () => hide('kcSelectOverlay'));
         initSwipe('kcReviewOverlay', 'kcReviewModal', closeReview);
+        initDialogAccessibility(select, review);
+    }
+
+    function restoreDialogBackground() {
+        dialogInerted.forEach(function (entry) {
+            entry.element.inert = entry.inert;
+            if (entry.ariaHidden == null) entry.element.removeAttribute('aria-hidden');
+            else entry.element.setAttribute('aria-hidden', entry.ariaHidden);
+        });
+        dialogInerted = [];
+    }
+
+    function visibleDialogOverlay() {
+        return ['kcReviewOverlay', 'kcSelectOverlay']
+            .map(function (id) { return document.getElementById(id); })
+            .find(function (element) { return element && !element.classList.contains('hidden'); }) || null;
+    }
+
+    function syncDialogAccessibility() {
+        restoreDialogBackground();
+        const visible = visibleDialogOverlay();
+        ['kcReviewOverlay', 'kcSelectOverlay'].forEach(function (id) {
+            const overlay = document.getElementById(id);
+            if (overlay) overlay.setAttribute('aria-hidden', overlay === visible ? 'false' : 'true');
+        });
+        if (!visible) {
+            if (lastDialogOpener && lastDialogOpener.isConnected && typeof lastDialogOpener.focus === 'function') {
+                lastDialogOpener.focus({ preventScroll: true });
+            }
+            return;
+        }
+        Array.from(document.body.children).forEach(function (element) {
+            if (element === visible || element.tagName === 'SCRIPT' || element.tagName === 'STYLE') return;
+            dialogInerted.push({
+                element: element,
+                inert: !!element.inert,
+                ariaHidden: element.getAttribute('aria-hidden')
+            });
+            element.inert = true;
+            element.setAttribute('aria-hidden', 'true');
+        });
+    }
+
+    function initDialogAccessibility(select, review) {
+        const observer = new MutationObserver(syncDialogAccessibility);
+        observer.observe(select, { attributes: true, attributeFilter: ['class'] });
+        observer.observe(review, { attributes: true, attributeFilter: ['class'] });
+        document.addEventListener('keydown', function (event) {
+            const overlay = visibleDialogOverlay();
+            if (!overlay) return;
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                if (overlay.id === 'kcReviewOverlay') closeReview();
+                else hide('kcSelectOverlay');
+                return;
+            }
+            if (event.key !== 'Tab') return;
+            const modal = overlay.querySelector('[role="dialog"]');
+            if (!modal) return;
+            const focusable = Array.from(modal.querySelectorAll(
+                'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter(function (element) { return element.offsetParent !== null; });
+            if (!focusable.length) {
+                event.preventDefault();
+                modal.focus();
+                return;
+            }
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (event.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+                event.preventDefault();
+                first.focus();
+            }
+        });
     }
 
     function hide(id) {
@@ -1413,7 +1508,6 @@
         persistSession();
         document.getElementById('kcSelectOverlay').classList.add('hidden');
         document.getElementById('kcReviewOverlay').classList.remove('hidden');
-        lastDialogOpener = document.activeElement;
         setTimeout(() => document.getElementById('kcReviewModal')?.focus(), 0);
         showCard();
     }
@@ -1427,6 +1521,7 @@
         sessionLimit = restored.limit;
         document.getElementById('kcSelectOverlay').classList.add('hidden');
         document.getElementById('kcReviewOverlay').classList.remove('hidden');
+        setTimeout(() => document.getElementById('kcReviewModal')?.focus(), 0);
         showCard();
     }
 
@@ -1833,10 +1928,41 @@
         undoSession
     };
 
-    // Хук для синхронизации аккаунта (account.js): перечитать прогресс из localStorage,
-    // когда облако прислало изменения (но не посреди активной сессии повторения).
+    function resetForStorageScope() {
+        clearWait();
+        session = null;
+        revealed = false;
+        store = loadStore();
+        selected = [];
+        selectedKinds = [];
+        sessionLimit = 'all';
+        ['kcReviewOverlay', 'kcSelectOverlay'].forEach(function (id) {
+            document.getElementById(id)?.classList.add('hidden');
+        });
+        cardCache = new Map();
+    }
+
+    window.addEventListener('almanion-kc-scope-changing', function () {
+        if (session && session.queue && session.queue.length) persistSession();
+    });
+    window.addEventListener('almanion-kc-scope-changed', resetForStorageScope);
+    window.addEventListener('almanion-kc-external-change', function (event) {
+        const detail = event && event.detail || {};
+        if (detail.key === STORE_KEY) {
+            store = loadStore();
+            cardCache = new Map();
+        }
+    });
+
+    // Хук для синхронизации аккаунта (account.js): применить уже объединённый
+    // снимок сразу, в том числе если облако ответило во время открытой сессии.
     window.KC = window.KC || {};
-    window.KC.reload = function (key) {
-        if (key === STORE_KEY && !session) store = loadStore();
+    window.KC.reload = function (key, snapshot) {
+        if (key !== STORE_KEY) return;
+        store = snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot)
+            ? cloneJSON(snapshot)
+            : loadStore();
+        if (!store.__meta) store.__meta = { schema: SCHEMA_VERSION, updatedAt: 0 };
+        cardCache = new Map();
     };
 })();

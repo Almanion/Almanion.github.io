@@ -1,7 +1,6 @@
 (function () {
     'use strict';
 
-    const OWNER_EMAIL = 'dmb23930@gmail.com';
     const OWNER_UID = '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
     const DATA_PATH = 'englishVocabulary/v1';
     const EXPECTED_WORDS = 135;
@@ -22,12 +21,8 @@
     let authGeneration = 0;
     let retry = null;
 
-    function normalizedEmail(user) {
-        return String(user && user.email || '').trim().toLowerCase();
-    }
-
     function isOwner(user) {
-        return !!user && (user.uid === OWNER_UID || normalizedEmail(user) === OWNER_EMAIL);
+        return !!user && user.uid === OWNER_UID;
     }
 
     function showGate(state, title, message, actionLabel, action) {

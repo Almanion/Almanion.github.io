@@ -10,6 +10,10 @@
     function byId(id) { return document.getElementById(id); }
 
     function showAdminToast(message, isError) {
+        if (window.AdminUI && typeof window.AdminUI.notify === 'function') {
+            window.AdminUI.notify(message, { tone: isError ? 'error' : 'success' });
+            return;
+        }
         let stack = byId('adminToastStack');
         if (!stack) {
             stack = document.createElement('div');
@@ -24,13 +28,6 @@
         stack.appendChild(toast);
         window.setTimeout(function () { toast.remove(); }, 4200);
     }
-
-    // Существующие действия панели вызывают alert(). Переводим такие сообщения
-    // в ненавязчивые уведомления, оставляя системный confirm только для удаления.
-    window.alert = function (message) {
-        const text = String(message == null ? '' : message);
-        showAdminToast(text, /ошиб|не удалось|недостаточно/i.test(text));
-    };
 
     function localDayKey(date) {
         const year = date.getFullYear();
@@ -303,7 +300,7 @@
     }
 
     function isOwner(user) {
-        return !!user && String(user.email || '').trim().toLowerCase() === SITE_OWNER_EMAIL;
+        return !!user && user.uid === SITE_OWNER_UID;
     }
 
     function formatAccountDate(value) {
@@ -474,7 +471,7 @@
         }).forEach(function (uid) {
             const role = adminRoles[uid] || {};
             if (!role.siteAdmin && !role.matcenterAdmin && !role.contentEditor && !role.dutyEditor && !role.englishAccess) return;
-            if (String(role.email || '').toLowerCase() === SITE_OWNER_EMAIL) return;
+            if (uid === SITE_OWNER_UID) return;
             const account = accountDirectory[uid] || {};
             const row = document.createElement('div');
             row.className = 'admin-role-row';
@@ -536,7 +533,7 @@
             showAdminToast('Аккаунт не найден. Пользователю нужно хотя бы один раз войти на сайт.', true);
             return;
         }
-        if (String(target.account.email || '').trim().toLowerCase() === SITE_OWNER_EMAIL) {
+        if (target.uid === SITE_OWNER_UID) {
             showAdminToast('Права владельца заданы системой и не требуют изменения');
             return;
         }

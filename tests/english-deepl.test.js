@@ -48,7 +48,7 @@ const sandbox = {
             if (url.includes('identitytoolkit.googleapis.com')) {
                 return {
                     getResponseCode: () => 200,
-                    getContentText: () => JSON.stringify({ users: [{ localId: 'owner-uid', email: 'dmb23930@gmail.com' }] })
+                    getContentText: () => JSON.stringify({ users: [{ localId: '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2', email: 'dmb23930@gmail.com' }] })
                 };
             }
             if (url.includes('api-free.deepl.com')) {

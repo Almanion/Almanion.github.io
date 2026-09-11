@@ -1004,7 +1004,9 @@
         return card;
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    function initializeBookmarks() {
+        if (initializeBookmarks.done) return;
+        initializeBookmarks.done = true;
         visitorId = getVisitorId();
         initFirebase();
         loadBookmarks();
@@ -1013,7 +1015,10 @@
             addBookmarksSidebarButton();
             restoreBookmarkTarget();
         }, 300);
-    });
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeBookmarks, { once: true });
+    else initializeBookmarks();
 
     window.addEventListener('almanion:content-ready', event => {
         const root = event.detail?.root || document;

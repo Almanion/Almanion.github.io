@@ -22,7 +22,7 @@
     }
 
     const KC_PREFIX = 'kc_fsrs_';
-    const KC_LOCAL_OWNER_KEY = 'almanion_kc_local_owner_v1';
+    const kcStorage = window.AlmanionKCStorage || null;
     const sGet = window.safeStorageGet || function (k) { try { return localStorage.getItem(k); } catch (_) { return null; } };
     const sSet = window.safeStorageSet || function (k, v) { try { localStorage.setItem(k, v); return true; } catch (_) { return false; } };
     const sRemove = window.safeStorageRemove || function (k) { try { localStorage.removeItem(k); } catch (_) {} };
@@ -410,8 +410,18 @@
     // ---------- Синхронизация прогресса ----------
     const volatileKcStores = new Map();
 
-    function allKcKeys() {
-        const out = new Set(volatileKcStores.keys());
+    function volatileKcKey(scope, key) { return String(scope || 'guest') + '|' + key; }
+    function allKcKeys(scope) {
+        const activeScope = String(scope || (user && user.uid) || 'guest');
+        const scopedPrefix = activeScope + '|';
+        const out = new Set();
+        volatileKcStores.forEach(function (_, key) {
+            if (key.indexOf(scopedPrefix) === 0) out.add(key.slice(scopedPrefix.length));
+        });
+        if (kcStorage) {
+            kcStorage.list(activeScope, KC_PREFIX).forEach(function (key) { out.add(key); });
+            return Array.from(out);
+        }
         try {
             for (let i = 0; i < localStorage.length; i++) {
                 const k = localStorage.key(i);
@@ -586,9 +596,10 @@
         } catch (_) { return {}; }
     }
 
-    function getLocal(k) {
-        const persisted = parseKcStore(sGet(k));
-        const volatile = volatileKcStores.get(k);
+    function getLocal(k, scope) {
+        const activeScope = scope || (user && user.uid) || 'guest';
+        const persisted = parseKcStore(kcStorage ? kcStorage.get(k, activeScope) : sGet(k));
+        const volatile = volatileKcStores.get(volatileKcKey(activeScope, k));
         return volatile ? mergeStores(persisted, volatile) : persisted;
     }
 
@@ -639,7 +650,7 @@
 
     function hasContentEditorAccess(account) {
         if (!account) return Promise.resolve(false);
-        const owner = String(account.email || '').trim().toLowerCase() === 'dmb23930@gmail.com';
+        const owner = account.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
         return owner
             ? Promise.resolve(true)
             : db.ref('adminRoles/' + account.uid + '/contentEditor').once('value')
@@ -649,7 +660,7 @@
 
     function hasSiteAdminAccess(account) {
         if (!account) return Promise.resolve(false);
-        const owner = String(account.email || '').trim().toLowerCase() === 'dmb23930@gmail.com';
+        const owner = account.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
         return owner
             ? Promise.resolve(true)
             : db.ref('adminRoles/' + account.uid + '/siteAdmin').once('value')
@@ -659,7 +670,7 @@
 
     function hasEnglishAccess(account) {
         if (!account) return Promise.resolve(false);
-        const owner = String(account.email || '').trim().toLowerCase() === 'dmb23930@gmail.com';
+        const owner = account.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
         return owner
             ? Promise.resolve(true)
             : db.ref('adminRoles/' + account.uid + '/englishAccess').once('value')
@@ -669,7 +680,7 @@
 
     function hasDutyEditorAccess(account) {
         if (!account) return Promise.resolve(false);
-        const owner = String(account.email || '').trim().toLowerCase() === 'dmb23930@gmail.com';
+        const owner = account.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
         return owner
             ? Promise.resolve(true)
             : db.ref('adminRoles/' + account.uid + '/dutyEditor').once('value')
@@ -724,7 +735,7 @@
         detachHomeRolesListener();
         clearHomeAccessLinks(slot);
         if (!checkedUser) return;
-        const owner = String(checkedUser.email || '').trim().toLowerCase() === 'dmb23930@gmail.com';
+        const owner = checkedUser.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
         if (owner) {
             renderHomeAccessLinks(slot, true, true);
             return;
@@ -798,15 +809,17 @@
         return out;
     }
 
-    function applyRemotePage(storeKey, remoteStore) {
-        const merged = mergeStores(getLocal(storeKey), remoteStore);
+    function applyRemotePage(storeKey, remoteStore, uid) {
+        const scope = uid || (user && user.uid) || 'guest';
+        const merged = mergeStores(getLocal(storeKey, scope), remoteStore);
         applyingRemote = true;
         let persisted = false;
-        try { persisted = sSet(storeKey, JSON.stringify(merged)) === true; }
+        try { persisted = (kcStorage ? kcStorage.set(storeKey, JSON.stringify(merged), scope) : sSet(storeKey, JSON.stringify(merged))) === true; }
         catch (_) { persisted = false; }
         finally { applyingRemote = false; }
-        if (persisted) volatileKcStores.delete(storeKey);
-        else volatileKcStores.set(storeKey, cloneKcValue(merged));
+        const volatileKey = volatileKcKey(scope, storeKey);
+        if (persisted) volatileKcStores.delete(volatileKey);
+        else volatileKcStores.set(volatileKey, cloneKcValue(merged));
         reportKcPersistence(storeKey, persisted, 'cloud');
         if (window.KC && typeof window.KC.reload === 'function') {
             window.KC.reload(storeKey, cloneKcValue(merged), { persisted: persisted, source: 'cloud' });
@@ -816,8 +829,8 @@
         if (!kcRef) return false;
         const hasSuppliedStore = suppliedStore && typeof suppliedStore === 'object' && !Array.isArray(suppliedStore);
         const local = hasSuppliedStore
-            ? mergeStores(getLocal(storeKey), suppliedStore)
-            : getLocal(storeKey);
+            ? mergeStores(getLocal(storeKey, user && user.uid), suppliedStore)
+            : getLocal(storeKey, user && user.uid);
         const updatedAt = Math.max(storeUpdatedAt(local), Number(suppliedUpdatedAt) || 0) || Date.now();
         if (kcStore) {
             try {
@@ -838,17 +851,6 @@
     function startKcSync(uid) {
         stopKcSync();
         const generation = ++syncGeneration;
-        const previousLocalOwner = sGet(KC_LOCAL_OWNER_KEY);
-        if (previousLocalOwner && previousLocalOwner !== uid) {
-            // The visible KC cache is shared with the page UI. Never import one
-            // account's answers into another account merely because they used
-            // the same browser; each account keeps its own versioned sync cache.
-            allKcKeys().forEach(function (storeKey) {
-                volatileKcStores.delete(storeKey);
-                sRemove(storeKey);
-            });
-        }
-        sSet(KC_LOCAL_OWNER_KEY, uid);
         kcRef = db.ref('kc/' + uid);
         const sync = dataSyncApi();
         if (sync) {
@@ -916,7 +918,7 @@
                     Object.keys(records || {}).forEach(function (pk) {
                         const record = records[pk];
                         if (record && record.key && !(record.__sync && record.__sync.deleted)) {
-                            applyRemotePage(record.key, record.store || {});
+                            applyRemotePage(record.key, record.store || {}, uid);
                         }
                     });
                 }
@@ -925,8 +927,8 @@
             // Первый вход переносит имеющийся локальный прогресс. Сравниваем
             // содержимое по карточкам: одинаковое клиентское время не должно
             // скрыть карточку или событие, созданные в другой вкладке.
-            allKcKeys().forEach(function (storeKey) {
-                const local = getLocal(storeKey);
+            allKcKeys(uid).forEach(function (storeKey) {
+                const local = getLocal(storeKey, uid);
                 if (!Object.keys(local).length) return;
                 const id = pageKey(storeKey);
                 const current = kcStore.get(id, { includeDeleted: true });
@@ -951,10 +953,10 @@
             if (generation !== syncGeneration || !user || user.uid !== uid || !kcRef) return;
             const remote = snap.val() || {};
             Object.keys(remote).forEach(function (pk) {
-                try { const blob = JSON.parse(remote[pk]); if (blob && blob.key) applyRemotePage(blob.key, blob.store); } catch (_) {}
+                try { const blob = JSON.parse(remote[pk]); if (blob && blob.key) applyRemotePage(blob.key, blob.store, uid); } catch (_) {}
             });
             // выгружаем все локальные страницы (объединённые) в облако
-            allKcKeys().forEach(function (storeKey) { pushPage(storeKey); });
+            allKcKeys(uid).forEach(function (storeKey) { pushPage(storeKey); });
             kcRef.on('value', onRemote, function () {});
         }).catch(function (err) {
             if (generation !== syncGeneration || !kcRef) return;
@@ -965,7 +967,7 @@
     function onRemote(snap) {
         const remote = snap.val() || {};
         Object.keys(remote).forEach(function (pk) {
-            try { const blob = JSON.parse(remote[pk]); if (blob && blob.key) applyRemotePage(blob.key, blob.store); } catch (_) {}
+            try { const blob = JSON.parse(remote[pk]); if (blob && blob.key) applyRemotePage(blob.key, blob.store, user && user.uid); } catch (_) {}
         });
     }
     function stopKcSync() {
@@ -1088,12 +1090,13 @@
             // The event payload is the state that produced the event. Reading
             // localStorage again can return an older value after quota/private-mode
             // failures or a write from another tab.
-            payload = mergeStores(getLocal(k), detail.store);
+            if (kcStorage && detail.scope && detail.scope !== user?.uid) return;
+            payload = mergeStores(getLocal(k, user && user.uid), detail.store);
             if (detail.persisted === false) {
-                volatileKcStores.set(k, cloneKcValue(payload));
+                volatileKcStores.set(volatileKcKey(user && user.uid, k), cloneKcValue(payload));
                 reportKcPersistence(k, false, 'knowledge-check');
             } else if (detail.persisted === true) {
-                volatileKcStores.delete(k);
+                volatileKcStores.delete(volatileKcKey(user && user.uid, k));
             }
         }
         if (!user || !kcRef) return;
@@ -1101,7 +1104,7 @@
     });
 
     window.addEventListener('almanion-sync-retry', function () {
-        if (user && kcRef) allKcKeys().forEach(function (storeKey) { pushPage(storeKey); });
+        if (user && kcRef) allKcKeys(user.uid).forEach(function (storeKey) { pushPage(storeKey); });
         if (kcStore) kcStore.flush();
         if (settingsStore) settingsStore.flush();
     });
@@ -1123,6 +1126,7 @@
     auth.onAuthStateChanged(function (u) {
         authStateKnown = true;
         user = u;
+        if (kcStorage) kcStorage.setScope(u ? u.uid : 'guest');
         updateButton();
         updateHomeAccessLinks();
         updateHomeEnglishCard();
@@ -1138,6 +1142,7 @@
     }, function (err) {
         authStateKnown = true;
         user = null;
+        if (kcStorage) kcStorage.setScope('guest');
         updateButton();
         updateHomeAccessLinks();
         updateHomeEnglishCard();

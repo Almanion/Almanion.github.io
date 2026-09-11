@@ -19,15 +19,6 @@ function updateMatcenterAuthCopy() {
     const submit = document.getElementById('authSubmit');
     if (!title || !note || !accountButton || !passwordInput || !submit) return;
 
-    if (matcenterAuthMode !== 'account') {
-        title.textContent = 'Введите пароль';
-        note.textContent = 'Пароль открывает доступ к материалам Матцентра.';
-        accountButton.hidden = true;
-        passwordInput.hidden = false;
-        submit.hidden = false;
-        return;
-    }
-
     const user = getMatcenterFirebaseAuth()?.currentUser || null;
     if (!user) {
         title.textContent = 'Сначала войдите в аккаунт';
@@ -47,7 +38,7 @@ function updateMatcenterAuthCopy() {
 }
 
 async function refreshMatcenterAccountGate() {
-    if (matcenterAuthMode !== 'account' || authToken || matcenterAccountGateBusy) {
+    if (authToken || matcenterAccountGateBusy) {
         updateMatcenterAuthCopy();
         return;
     }
@@ -116,40 +107,9 @@ async function initAuth() {
         logoutButton.dataset.listenerAttached = 'true';
     }
 
-    // 🔒 Проверяем, есть ли уже отпечаток (если был сгенерирован ранее)
-    if (matcenterAuthMode === 'legacy' && !deviceFingerprint) {
-        console.log('🔍 Генерация отпечатка устройства...');
-        deviceFingerprint = await generateFingerprint();
-        console.log(`✅ Отпечаток: ${deviceFingerprint.substring(0, 16)}...`);
-    }
-    
-    // 🔍 Проверяем подозрительную активность (неблокирующая проверка)
-    if (matcenterAuthMode === 'legacy' && detectSuspiciousActivity()) {
-        console.warn('⚠️ Обнаружена подозрительная активность! Рекомендуется усиленная защита.');
-    }
-    
-    // 🔐 Проверяем существующую сессию (только если не было автозагрузки)
+    // Доступ всегда проверяется сервером по свежему Firebase ID token.
     if (authToken) {
         return; // Уже загружено в DOMContentLoaded
-    }
-    
-    const existingSession = matcenterAuthMode === 'legacy' ? getSessionData() : null;
-    if (existingSession) {
-        console.log('✅ Найдена действительная сессия');
-        authToken = safeGet('matcenter_auth');
-        if (authToken) {
-            try {
-                hideAuthForm();
-                const hadCache = applyTasksFromCache();
-                await loadTasksFromGoogleSheets(false, hadCache);
-                
-                console.log(isAdmin ? '✅ Автоматический вход выполнен через сессию (АДМИН)' : '✅ Автоматический вход выполнен через сессию');
-                return;
-            } catch (error) {
-                console.warn('⚠️ Сессия недействительна, требуется повторный вход');
-                clearSession();
-            }
-        }
     }
     
     // Проверка блокировки при загрузке
@@ -186,29 +146,14 @@ async function initAuth() {
         authSubmit.disabled = true;
         passwordInput.disabled = true;
         
-        const passwordHash = matcenterAuthMode === 'legacy' ? await hashPassword(password) : '';
-        
-        // Пробуем загрузить данные с этим паролем
+        // Пароль отправляется только один раз в POST-теле и никогда не хранится.
         try {
-            if (matcenterAuthMode === 'account') {
-                const access = await authorizeMatcenterAccount(password);
-                authToken = 'account';
-                isAdmin = access.isAdmin;
-                safeRemove('matcenter_auth');
-                passwordInput.value = '';
-            } else {
-                authToken = password;
-            }
+            const access = await authorizeMatcenterAccount(password);
+            authToken = 'account';
+            isAdmin = access.isAdmin;
+            safeRemove('matcenter_auth');
+            passwordInput.value = '';
             await loadTasksFromGoogleSheets(true);
-            
-            // Если успешно:
-            // 1. Создаём сессию
-            if (matcenterAuthMode === 'legacy') createSession(passwordHash);
-            
-            // isAdmin уже установлен внутри loadTasksFromGoogleSheets()
-            
-            // 2. Сохраняем пароль (для API)
-            if (matcenterAuthMode === 'legacy') safeSet('matcenter_auth', password);
             
             // 3. Логируем успешную попытку
             addAttemptToHistory(true, deviceFingerprint);
@@ -469,9 +414,7 @@ function logout() {
     
     console.log('👋 Выход выполнен');
     
-    if (matcenterAuthMode === 'account') {
-        getMatcenterFirebaseAuth()?.signOut().catch(() => {});
-    }
+    getMatcenterFirebaseAuth()?.signOut().catch(() => {});
     showAuthForm();
 }
 

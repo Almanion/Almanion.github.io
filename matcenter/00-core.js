@@ -75,7 +75,7 @@ let searchStatusFilter = 'all'; // all | current | postponed | unsolved
 let currentGrade = DEFAULT_GRADE;
 let currentFilter = 'all-tasks';
 let authToken = null;
-let matcenterAuthMode = 'detecting'; // account (v2) | legacy (старые deployment)
+let matcenterAuthMode = 'account'; // Только Firebase-аккаунт (v3).
 let lockoutTimer = null;
 let autoRefreshTimer = null; // Таймер автообновления
 let deviceFingerprint = null;
@@ -113,19 +113,15 @@ async function postMatcenterJson(endpoint, payload) {
 }
 
 async function detectMatcenterAuthMode() {
-    const remembered = safeGet('matcenter_auth_mode');
     const checks = await Promise.allSettled(
         TASKS_ENDPOINTS.map(endpoint => postMatcenterJson(endpoint, { action: 'capabilities' }))
     );
     const responses = checks.filter(item => item.status === 'fulfilled').map(item => item.value);
-    if (responses.length === TASKS_ENDPOINTS.length && responses.every(data => Number(data.authVersion) >= 2)) {
-        safeSet('matcenter_auth_mode', 'account');
-        return 'account';
+    if (responses.length && responses.some(data => Number(data.authVersion) < 3)) {
+        console.warn('Один из Apps Script endpoint ещё не обновлён до безопасной авторизации v3.');
     }
-    // После перехода на v2 сетевой сбой не должен возвращать пароль в legacy URL.
-    if (remembered === 'account') return 'account';
-    safeSet('matcenter_auth_mode', 'legacy');
-    return 'legacy';
+    safeSet('matcenter_auth_mode', 'account');
+    return 'account';
 }
 
 function getMatcenterFirebaseAuth() {
@@ -199,61 +195,29 @@ async function authorizeMatcenterAccount(password) {
 
 async function initializeMatcenterAccess(fingerprintPromise) {
     matcenterAuthMode = await detectMatcenterAuthMode();
-    if (matcenterAuthMode === 'account') {
-        safeRemove('matcenter_auth');
-        clearSession();
-        const user = await waitForMatcenterUser();
-        if (!user) {
-            showAuthForm();
-            return;
-        }
-        try {
-            const access = await checkMatcenterAccountAccess();
-            if (!access.allowed) {
-                showAuthForm();
-                return;
-            }
-            authToken = 'account';
-            isAdmin = access.isAdmin;
-            hideAuthForm();
-            const hadCache = applyTasksFromCache();
-            await loadTasksFromGoogleSheets(false, hadCache);
-        } catch (error) {
-            authToken = null;
-            showAuthForm();
-            showMatcenterAuthMessage(error.message || 'Не удалось проверить доступ', false);
-        }
-        return;
-    }
-
-    const savedPassword = safeGet('matcenter_auth');
-    if (!savedPassword) {
+    safeRemove('matcenter_auth');
+    clearSession();
+    const user = await waitForMatcenterUser();
+    if (!user) {
         showAuthForm();
         return;
     }
-
-    authToken = savedPassword;
-    hideAuthForm();
-    const hadCache = applyTasksFromCache();
     try {
-        await loadTasksFromGoogleSheets(false, hadCache);
-        try {
-            await fingerprintPromise;
-            createSession(await hashPassword(savedPassword));
-        } catch (error) {
-            console.warn('Ошибка создания legacy-сессии:', error);
-        }
-    } catch (error) {
-        const isAuthFailure = error && (error.code === 'AUTH'
-            || /парол|недостаточно прав|unauthor|\b401\b|\b403\b/i.test(error.message || ''));
-        if (hadCache && !isAuthFailure) {
-            showMatcenterDataWarning('Сервер временно недоступен. Показана сохранённая копия задач.');
-        } else {
-            authToken = null;
-            isAdmin = false;
-            safeRemove('matcenter_auth');
+        const access = await checkMatcenterAccountAccess();
+        if (!access.allowed) {
             showAuthForm();
+            return;
         }
+        authToken = 'account';
+        isAdmin = access.isAdmin;
+        hideAuthForm();
+        const hadCache = applyTasksFromCache();
+        await loadTasksFromGoogleSheets(false, hadCache);
+    } catch (error) {
+        authToken = null;
+        isAdmin = false;
+        showAuthForm();
+        showMatcenterAuthMessage(error.message || 'Не удалось проверить доступ', false);
     }
 }
 

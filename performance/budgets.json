@@ -8,6 +8,44 @@
   },
   "maxPrecacheEntries": 30,
   "maxSearchSourceBytes": 1100000,
+  "routes": {
+    "index.html": {
+      "maxInitialLocalJsBytes": 335000,
+      "maxInitialLocalCssBytes": 400000,
+      "maxInitialLocalRequests": 28,
+      "maxExternalRequests": 4
+    },
+    "physics.html": {
+      "maxInitialLocalJsBytes": 135000,
+      "maxInitialLocalCssBytes": 315000,
+      "maxInitialLocalRequests": 19,
+      "maxExternalRequests": 3
+    },
+    "chemistry.html": {
+      "maxInitialLocalJsBytes": 135000,
+      "maxInitialLocalCssBytes": 335000,
+      "maxInitialLocalRequests": 20,
+      "maxExternalRequests": 3
+    },
+    "physics-10.html": {
+      "maxInitialLocalJsBytes": 135000,
+      "maxInitialLocalCssBytes": 315000,
+      "maxInitialLocalRequests": 19,
+      "maxExternalRequests": 3
+    },
+    "matcenter.html": {
+      "maxInitialLocalJsBytes": 500000,
+      "maxInitialLocalCssBytes": 495000,
+      "maxInitialLocalRequests": 37,
+      "maxExternalRequests": 6
+    },
+    "english.html": {
+      "maxInitialLocalJsBytes": 285000,
+      "maxInitialLocalCssBytes": 340000,
+      "maxInitialLocalRequests": 26,
+      "maxExternalRequests": 3
+    }
+  },
   "searchSourcePages": [
     "physics.html",
     "chemistry.html",

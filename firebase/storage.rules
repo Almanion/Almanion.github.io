@@ -7,7 +7,7 @@ service firebase.storage {
     }
 
     function isOwner() {
-      return signedIn() && request.auth.token.email == 'dmb23930@gmail.com';
+      return signedIn() && request.auth.uid == '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
     }
 
     function hasEditorClaim() {

@@ -22,9 +22,9 @@ const ui = read('english-ui.js');
 assert.ok(rules.englishVocabulary, 'protected vocabulary rules are missing');
 assert.match(rules.englishVocabulary['.read'], /auth != null/);
 assert.match(rules.englishVocabulary['.read'], /englishAccess/);
-assert.match(rules.englishVocabulary['.read'], /dmb23930@gmail\.com/);
 assert.match(rules.englishVocabulary['.read'], /2M2ZdLQcJAhluPjUVFNJ6MyQrdH2/);
-assert.match(rules.englishVocabulary['.write'], /dmb23930@gmail\.com/);
+assert.match(rules.englishVocabulary['.write'], /2M2ZdLQcJAhluPjUVFNJ6MyQrdH2/);
+assert.doesNotMatch(rules.englishVocabulary['.write'], /auth\.token\.email/);
 assert.doesNotMatch(rules.englishVocabulary['.write'], /siteAdmin|contentEditor|matcenterAdmin/);
 assert.ok(rules.adminRoles.$uid.englishAccess, 'role schema is missing englishAccess');
 
