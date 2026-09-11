@@ -35,7 +35,6 @@ function restoreTaskCardUiState(container, uiState) {
             const descEl = card.querySelector('.task-description');
             if (descEl && typeof renderLatexInElement === 'function') {
                 renderLatexInElement(descEl);
-                descEl.dataset.latexRendered = 'true';
             }
         }
 
@@ -50,7 +49,6 @@ function restoreTaskCardUiState(container, uiState) {
             const hintElement = card.querySelector('.task-hint');
             if (hintElement && typeof renderLatexInElement === 'function') {
                 renderLatexInElement(hintElement);
-                hintElement.dataset.latexRendered = 'true';
             }
         }
     });
@@ -409,7 +407,6 @@ function createTaskElement(task) {
                 const descEl = taskCard.querySelector('.task-description');
                 if (descEl && !descEl.dataset.latexRendered && typeof renderLatexInElement === 'function') {
                     renderLatexInElement(descEl);
-                    descEl.dataset.latexRendered = 'true';
                 }
             }
         });
@@ -429,9 +426,8 @@ function createTaskElement(task) {
             // Рендерим LaTeX формулы при первом открытии
             if (isOpen) {
                 const hintElement = taskCard.querySelector('.task-hint');
-                if (hintElement && !hintElement.dataset.latexRendered) {
+                if (hintElement && !hintElement.dataset.latexRendered && typeof renderLatexInElement === 'function') {
                     renderLatexInElement(hintElement);
-                    hintElement.dataset.latexRendered = 'true';
                 }
             }
         });

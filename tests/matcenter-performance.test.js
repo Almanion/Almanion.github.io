@@ -19,10 +19,13 @@ async function run() {
     assert.equal(await sandbox.MatcenterTaskCache.write({ version: 3, tasks: [] }), false);
 
     const html = read('matcenter.html');
+    const coreAt = html.indexOf('matcenter/00-core.js?v=20260911-2');
     const cacheAt = html.indexOf('matcenter/25-cache.js?v=20260911-1');
     const dataAt = html.indexOf('matcenter/30-data.js?v=20260911-1');
+    const renderAt = html.indexOf('matcenter/50-render.js?v=20260911-2');
+    assert.ok(coreAt >= 0 && coreAt < renderAt, 'core LaTeX renderer must load before task cards');
     assert.ok(cacheAt >= 0 && cacheAt < dataAt, 'persistent cache must load before the data module');
-    assert.match(html, /<script defer src="matcenter\/runtime\.js\?v=20260911-1"><\/script>/);
+    assert.match(html, /<script defer src="matcenter\/runtime\.js\?v=20260911-2"><\/script>/);
     assert.doesNotMatch(html, /<script[^>]+src="matcenter\/70-hints\.js/);
     assert.doesNotMatch(html, /<script[^>]+src="firebase-analytics\.js/);
     assert.doesNotMatch(html, /<script[^>]+src="newyear\.js/);
@@ -33,6 +36,13 @@ async function run() {
         assert.match(runtime, new RegExp(`${feature}:`), `${feature} must remain available on demand`);
     }
     assert.match(runtime, /requestIdleCallback/);
+
+    const core = read('matcenter/00-core.js');
+    const hints = read('matcenter/70-hints.js');
+    assert.match(core, /function renderLatexInElement\(/, 'LaTeX rendering must be part of the critical Matcenter runtime');
+    assert.match(core, /latexPending/);
+    assert.match(core, /latexRendered/);
+    assert.doesNotMatch(hints, /function renderLatexInElement\(/, 'the lazy hint editor must reuse the core renderer');
 
     const data = read('matcenter/30-data.js');
     assert.match(data, /matcenterTasksLoadController\.abort\(\)/);

@@ -17,7 +17,7 @@ const accountPages = [
 accountPages.forEach((file) => {
     const html = read(file);
     const noteProgressive = html.includes('note-runtime.js?v=20260911-1');
-    const matcenterProgressive = html.includes('matcenter/runtime.js?v=20260911-1');
+    const matcenterProgressive = html.includes('matcenter/runtime.js?v=20260911-2');
     const progressive = noteProgressive || matcenterProgressive;
     const syncAt = html.indexOf('data-sync.js?v=20260908-1');
     const kcStorageAt = html.indexOf('kc-storage.js?v=20260911-1');
@@ -42,7 +42,7 @@ assert.match(runtime, /bookmarks:\s*'bookmarks\.js\?v=20260911-1'/);
 const matcenterRuntime = read(path.join('matcenter', 'runtime.js'));
 assert.match(matcenterRuntime, /settings:\s*'settings\.js\?v=20260911-1'/);
 assert.match(matcenterRuntime, /analytics:\s*'firebase-analytics\.js\?v=20260911-1'/);
-assert.match(matcenterRuntime, /hints:\s*'matcenter\/70-hints\.js\?v=20260911-1'/);
+assert.match(matcenterRuntime, /hints:\s*'matcenter\/70-hints\.js\?v=20260911-2'/);
 
 const account = read('account.js');
 assert.match(account, /namespace: 'knowledgeCheck'/);

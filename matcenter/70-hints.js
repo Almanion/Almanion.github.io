@@ -2,37 +2,6 @@
 // СИСТЕМА ПОДСКАЗОК (АДМИН)
 // ============================================
 
-// Рендеринг LaTeX формул в элементе
-function renderLatexInElement(element, attempts = 0) {
-    const maxAttempts = 50; // Максимум 5 секунд ожидания (50 * 100ms)
-    
-    if (typeof renderMathInElement === 'undefined') {
-        if (attempts < maxAttempts) {
-            console.warn(`⚠️ KaTeX auto-render ещё не загружен, попытка ${attempts + 1}/${maxAttempts}...`);
-            setTimeout(() => renderLatexInElement(element, attempts + 1), 100);
-        } else {
-            console.error('❌ KaTeX не загрузился за 5 секунд');
-        }
-        return;
-    }
-    
-    try {
-        renderMathInElement(element, {
-            delimiters: [
-                {left: '$$', right: '$$', display: true},
-                {left: '\\[', right: '\\]', display: true},
-                {left: '$', right: '$', display: false},
-                {left: '\\(', right: '\\)', display: false}
-            ],
-            throwOnError: false,
-            trust: false
-        });
-        console.log('✅ LaTeX отрендерен в подсказке');
-    } catch (error) {
-        console.error('❌ Ошибка рендеринга LaTeX:', error);
-    }
-}
-
 // Подсказки теперь хранятся в Google Sheet и загружаются вместе с задачами
 
 let activeHintTask = null;

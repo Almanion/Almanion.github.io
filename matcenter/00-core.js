@@ -30,6 +30,52 @@ const safeRemove = (typeof window !== 'undefined' && window.safeStorageRemove)
 })();
 
 // ============================================
+// РЕНДЕРИНГ МАТЕМАТИЧЕСКИХ ФОРМУЛ
+// Это часть основного интерфейса задач, поэтому она должна быть доступна
+// независимо от лениво загружаемого редактора подсказок.
+// ============================================
+function renderLatexInElement(element, attempts = 0) {
+    const maxAttempts = 50;
+    if (!element) return false;
+    if (element.dataset && element.dataset.latexRendered === 'true') return true;
+    if (attempts === 0 && element.dataset && element.dataset.latexPending === 'true') return false;
+
+    if (element.dataset) element.dataset.latexPending = 'true';
+
+    if (typeof renderMathInElement !== 'function') {
+        if (attempts < maxAttempts) {
+            setTimeout(() => renderLatexInElement(element, attempts + 1), 100);
+        } else {
+            if (element.dataset) delete element.dataset.latexPending;
+            console.error('KaTeX не загрузился за 5 секунд');
+        }
+        return false;
+    }
+
+    try {
+        renderMathInElement(element, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$', right: '$', display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false,
+            trust: false
+        });
+        if (element.dataset) {
+            element.dataset.latexRendered = 'true';
+            delete element.dataset.latexPending;
+        }
+        return true;
+    } catch (error) {
+        if (element.dataset) delete element.dataset.latexPending;
+        console.error('Ошибка рендеринга LaTeX:', error);
+        return false;
+    }
+}
+
+// ============================================
 // CONFIGURATION
 // ============================================
 

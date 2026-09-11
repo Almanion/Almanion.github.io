@@ -105,3 +105,30 @@ test('protected pages are complete in the assembled site', async function ({ req
         expect(await response.text()).toContain(entry.marker);
     }
 });
+
+test('Matcenter keeps LaTeX rendering in its core runtime', async function ({ page }) {
+    await page.goto('/matcenter.html', { waitUntil: 'domcontentloaded' });
+    await expect.poll(async function () {
+        return page.evaluate(function () { return typeof window.renderLatexInElement; });
+    }).toBe('function');
+
+    const result = await page.evaluate(function () {
+        let receivedOptions = null;
+        window.renderMathInElement = function (element, options) {
+            receivedOptions = options;
+            element.textContent = 'rendered';
+        };
+        const element = document.createElement('div');
+        element.id = 'matcenterLatexSmoke';
+        element.textContent = 'Решите $x^2=4$';
+        document.body.appendChild(element);
+        const rendered = window.renderLatexInElement(element);
+        return {
+            rendered,
+            marked: element.dataset.latexRendered,
+            delimiters: receivedOptions && receivedOptions.delimiters.length
+        };
+    });
+
+    expect(result).toEqual({ rendered: true, marked: 'true', delimiters: 4 });
+});
