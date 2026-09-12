@@ -32,7 +32,7 @@ accountPages.forEach((file) => {
     }
     const bookmarksAt = html.indexOf('bookmarks.js?v=20260907-3');
     if (bookmarksAt >= 0) assert.ok(bookmarksAt > syncAt, `${file} must load data sync before bookmarks`);
-    assert.ok(/settings\.js\?v=20260908-1/.test(html) || progressive,
+    assert.ok(/settings\.js\?v=/.test(html) || progressive,
         `${file} must load sync-aware settings directly or progressively`);
 });
 

@@ -12,6 +12,7 @@ const rules = JSON.parse(read(path.join('firebase', 'database.rules.json'))).rul
 const page = read('english.html');
 const client = read('english.js');
 const home = read('index.html');
+const homeDashboard = read('home-dashboard.js');
 const account = read('account.js');
 const settings = read('settings.js');
 const admin = read('admin.html');
@@ -28,8 +29,12 @@ assert.doesNotMatch(rules.englishVocabulary['.write'], /auth\.token\.email/);
 assert.doesNotMatch(rules.englishVocabulary['.write'], /siteAdmin|contentEditor|matcenterAdmin/);
 assert.ok(rules.adminRoles.$uid.englishAccess, 'role schema is missing englishAccess');
 
-assert.match(home, /id="homeEnglishCard"[^>]*hidden/);
-assert.match(home, /href="english\.html"/);
+assert.doesNotMatch(home, /href="english\.html"/, 'the protected English link must not be present before access is known');
+assert.match(home, /home-dashboard\.js\?v=20260912-2/);
+assert.match(homeDashboard, /href: 'english\.html'/);
+assert.match(homeDashboard, /requiresEnglish: true/);
+assert.match(homeDashboard, /accountApi\.hasEnglishAccess\(user\)/,
+    'English must only become available after the current account permission check');
 assert.match(account, /function hasEnglishAccess/);
 assert.match(account, /adminRoles\/.*englishAccess/);
 assert.match(admin, /id="englishAccessRole"/);

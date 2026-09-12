@@ -9,6 +9,8 @@
     "/favicon-theme.js",
     "/page-transitions.js",
     "/home-motion.js",
+    "/home-dashboard.js",
+    "/home-quick-editor.js",
     "/script.js",
     "/styles/site/index.css",
     "/styles/site/00-components.css",

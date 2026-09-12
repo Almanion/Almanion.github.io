@@ -254,20 +254,8 @@
             grid-column: span 2;
         }
 
-        #homeEnglishCard[hidden] {
-            display: none !important;
-        }
-
         /* При неполной последней строке карточки остаются по центру сетки. */
         .subjects-grid > .subject-card:nth-last-child(2):nth-child(3n + 1) {
-            grid-column: 2 / span 2;
-        }
-
-        .extra-section .subjects-grid:not(.english-card-hidden) > #homeEnglishCard {
-            grid-column: 3 / span 2;
-        }
-
-        .extra-section .subjects-grid.english-card-hidden > .subject-card:first-child {
             grid-column: 2 / span 2;
         }
 
@@ -285,14 +273,6 @@
             }
 
             .subjects-grid > .subject-card:nth-last-child(2):nth-child(3n + 1) {
-                grid-column: span 2;
-            }
-
-            .extra-section .subjects-grid:not(.english-card-hidden) > #homeEnglishCard {
-                grid-column: span 2;
-            }
-
-            .extra-section .subjects-grid.english-card-hidden > .subject-card:first-child {
                 grid-column: span 2;
             }
 
@@ -315,11 +295,6 @@
             .subjects-grid > .subject-card,
             .subjects-grid > .subject-card:nth-last-child(2):nth-child(3n + 1),
             .subjects-grid > .subject-card:last-child:nth-child(odd) {
-                grid-column: 1;
-            }
-
-            .extra-section .subjects-grid:not(.english-card-hidden) > #homeEnglishCard,
-            .extra-section .subjects-grid.english-card-hidden > .subject-card:first-child {
                 grid-column: 1;
             }
 
@@ -857,7 +832,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
     <link rel="stylesheet" href="styles/home-motion.css?v=20260907-2">
-    <link rel="stylesheet" href="styles/home-dashboard.css?v=20260912-1">
+    <link rel="stylesheet" href="styles/home-dashboard.css?v=20260912-2">
 </head>
 <body class="home-page">
     <script>(function(){document.body.classList.add('home-motion-initial');try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};var l=/^(max|medium|off)$/.test(p.animationLevel||'')?p.animationLevel:'max';document.body.classList.add('animations-'+l);if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){document.body.classList.add('animations-max');}})();</script>
@@ -931,39 +906,73 @@
         </div>
 
         <section class="extra-section home-quick-section" aria-labelledby="homeQuickTitle">
-            <h2 class="section-title" id="homeQuickTitle">Быстрый доступ</h2>
-            <div class="subjects-grid home-quick-grid english-card-hidden">
-                <a href="matcenter.html" class="subject-card home-quick-card" data-subject="matcenter">
+            <div class="home-section-heading">
+                <h2 class="section-title" id="homeQuickTitle">Быстрый доступ</h2>
+                <button class="home-quick-customize" id="homeQuickCustomize" type="button" hidden>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+                    <span>Настроить</span>
+                </button>
+            </div>
+            <div class="subjects-grid home-quick-grid" id="homeQuickGrid" data-count="3">
+                <a href="physics-10.html" class="subject-card home-quick-card" data-subject="physics" data-quick-id="physics-10">
+                    <div class="card-header">
+                        <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-physics"/></svg></div>
+                    </div>
+                    <div class="card-body">
+                        <div class="home-quick-copy"><h2>Физика</h2><span class="home-quick-context">10 класс</span></div>
+                        <svg class="home-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+                    </div>
+                </a>
+
+                <a href="matcenter.html" class="subject-card home-quick-card" data-subject="matcenter" data-quick-id="matcenter">
                     <div class="card-header">
                         <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-matcenter"/></svg></div>
                     </div>
                     <div class="card-body">
-                        <h2>МатЦентр</h2>
+                        <div class="home-quick-copy"><h2>МатЦентр</h2><span class="home-quick-context">Задачи</span></div>
                         <svg class="home-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
                     </div>
                 </a>
 
-                <a href="likbez.html" class="subject-card home-quick-card" data-subject="likbez">
+                <a href="likbez.html" class="subject-card home-quick-card" data-subject="likbez" data-quick-id="likbez">
                     <div class="card-header">
                         <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-likbez"/></svg></div>
                     </div>
                     <div class="card-body">
-                        <h2>Ликбезы</h2>
-                        <svg class="home-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
-                    </div>
-                </a>
-
-                <a href="english.html" class="subject-card home-quick-card" data-subject="english" id="homeEnglishCard" hidden>
-                    <div class="card-header">
-                        <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-english"/></svg></div>
-                    </div>
-                    <div class="card-body">
-                        <h2>Английский</h2>
+                        <div class="home-quick-copy"><h2>Ликбезы</h2><span class="home-quick-context">Короткие курсы</span></div>
                         <svg class="home-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
                     </div>
                 </a>
             </div>
         </section>
+
+        <div class="home-quick-dialog" id="homeQuickDialog" role="dialog" aria-modal="true" aria-labelledby="homeQuickDialogTitle" tabindex="-1" hidden>
+            <section class="home-quick-dialog-panel">
+                <header class="home-quick-dialog-header">
+                    <div>
+                        <span class="home-quick-dialog-kicker">Главная страница</span>
+                        <h2 id="homeQuickDialogTitle">Настроить быстрый доступ</h2>
+                    </div>
+                    <button class="home-quick-dialog-close" type="button" aria-label="Закрыть" data-home-quick-close>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                    </button>
+                </header>
+                <div class="home-quick-dialog-body">
+                    <p class="home-quick-dialog-intro">Выберите от одного до трёх пунктов. Они будут синхронизированы с вашим аккаунтом.</p>
+                    <div class="home-quick-options" id="homeQuickOptions"></div>
+                </div>
+                <footer class="home-quick-dialog-footer">
+                    <div class="home-quick-selection-meta">
+                        <strong id="homeQuickCount">0 из 3</strong>
+                        <span id="homeQuickHint">Порядок выбора станет порядком карточек.</span>
+                    </div>
+                    <div class="home-quick-dialog-actions">
+                        <button class="home-quick-cancel" type="button" data-home-quick-close>Отмена</button>
+                        <button class="home-quick-save" id="homeQuickSave" type="button">Сохранить</button>
+                    </div>
+                </footer>
+            </section>
+        </div>
 
         <!-- Предметы по классам -->
         <section class="subjects-section" aria-labelledby="homeSubjectsTitle">
@@ -1142,8 +1151,21 @@
 
     <script src="script.js?v=20260905-2"></script>
     <script src="newyear.js?v=20260903-1"></script>
-    <script src="settings.js?v=20260908-1"></script>
-    <script src="account.js?v=20260908-1"></script>
+    <script src="settings.js?v=20260912-2"></script>
+    <script src="account.js?v=20260912-2"></script>
+    <script>
+        (function () {
+            function loadHomeDashboard() {
+                if (document.querySelector('script[data-home-dashboard]')) return;
+                var script = document.createElement('script');
+                script.src = 'home-dashboard.js?v=20260912-2';
+                script.dataset.homeDashboard = 'true';
+                document.head.appendChild(script);
+            }
+            if ('requestIdleCallback' in window) requestIdleCallback(loadHomeDashboard, { timeout: 900 });
+            else setTimeout(loadHomeDashboard, 250);
+        }());
+    </script>
 </body>
 </html>
 

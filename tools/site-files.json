@@ -26,6 +26,8 @@
     "geometry-formulas.html",
     "geometry.html",
     "home-motion.js",
+    "home-dashboard.js",
+    "home-quick-editor.js",
     "index.html",
     "knowledge-check-exam.js",
     "knowledge-check.js",

@@ -44,7 +44,6 @@
     let homeAccessGeneration = 0;
     let homeRolesRef = null;
     let homeRolesHandler = null;
-    let englishAccessGeneration = 0;
     const GOOGLE_POPUP_TIMEOUT_MS = 45000;
 
     // Явно закрепляем сессию за устройством. По умолчанию Firebase также использует
@@ -704,7 +703,7 @@
         if (kind === 'constructor') {
             link.id = 'homeConstructorLink';
             link.href = 'constructor.html';
-            link.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Открыть конструктор</span>';
+            link.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Конструктор</span>';
         } else {
             link.id = 'homeAdminLink';
             link.href = 'admin.html';
@@ -762,22 +761,6 @@
         rolesRef.on('value', handleRoles, function () {
             if (generation !== homeAccessGeneration || user !== checkedUser || !slot.isConnected) return;
             renderHomeAccessLinks(slot, false, false);
-        });
-    }
-
-    function updateHomeEnglishCard() {
-        const link = document.getElementById('homeEnglishCard');
-        if (!link) return;
-        const grid = link.closest('.subjects-grid');
-        const checkedUser = user;
-        const generation = ++englishAccessGeneration;
-        link.hidden = true;
-        if (grid) grid.classList.add('english-card-hidden');
-        if (!checkedUser) return;
-        hasEnglishAccess(checkedUser).then(function (allowed) {
-            if (generation !== englishAccessGeneration || user !== checkedUser || !link.isConnected) return;
-            link.hidden = !allowed;
-            if (grid) grid.classList.toggle('english-card-hidden', !allowed);
         });
     }
 
@@ -1139,7 +1122,6 @@
         if (kcStorage) kcStorage.setScope(u ? u.uid : 'guest');
         updateButton();
         updateHomeAccessLinks();
-        updateHomeEnglishCard();
         if (u) {
             registerAccountDirectory(u);
             startKcSync(u.uid);
@@ -1155,8 +1137,8 @@
         if (kcStorage) kcStorage.setScope('guest');
         updateButton();
         updateHomeAccessLinks();
-        updateHomeEnglishCard();
         console.warn('Almanion account: auth state restore failed.', err);
+        window.dispatchEvent(new CustomEvent('almanion-account-ready', { detail: { user: null } }));
     });
 
     window.addEventListener('pageshow', function (event) {

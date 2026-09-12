@@ -128,6 +128,19 @@ function saveSettings(options = {}) {
     }
 }
 
+function updateSettings(patch, options = {}) {
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+        return { ...siteSettings };
+    }
+    siteSettings = { ...siteSettings, ...patch };
+    siteSettings.expTheme = normalizeExperimentalTheme(siteSettings.expTheme, siteSettings.expDark);
+    siteSettings.expDark = resolveExperimentalDark(siteSettings.expTheme);
+    window.siteSettings = siteSettings;
+    saveSettings();
+    if (options.apply !== false) applyAllSettings();
+    return { ...siteSettings };
+}
+
 function applySyncedSettings(value) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return;
     siteSettings = { ...defaultSettings, ...value };
@@ -136,6 +149,9 @@ function applySyncedSettings(value) {
     window.siteSettings = siteSettings;
     saveSettings({ silent: true });
     applyAllSettings();
+    window.dispatchEvent(new CustomEvent('almanion-settings-applied', {
+        detail: { settings: { ...siteSettings }, source: 'sync' }
+    }));
 
     // Закрытая панель пересоздаётся с актуальными состояниями кнопок. Открытую
     // не заменяем под руками пользователя; она обновится при следующем открытии.
@@ -1064,6 +1080,7 @@ window.siteSettings = siteSettings;
 window.AlmanionSettings = {
     ready: false,
     get: () => ({ ...siteSettings }),
+    update: updateSettings,
     applySynced: applySyncedSettings,
     migrateVisualDefaults,
     visualDefaultsVersion: VISUAL_DEFAULTS_VERSION

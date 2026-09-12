@@ -11,7 +11,7 @@ const shell = JSON.parse(fs.readFileSync(path.join(root, 'performance', 'sw-shel
 
 assert.match(page, /id="homePrivilegedActions"[^>]*hidden/, 'privileged action slot must start hidden');
 assert.doesNotMatch(page, /<a[^>]+id="home(?:Constructor|Admin)Link"/, 'privileged links must not exist in initial markup');
-assert.match(page, /account\.js\?v=20260908-1/, 'home page must request the access-aware account script');
+assert.match(page, /account\.js\?v=20260912-2/, 'home page must request the access-aware account script');
 
 assert.match(account, /function clearHomeAccessLinks\(slot\)[\s\S]*slot\.replaceChildren\(\);\s*slot\.hidden = true;/,
     'all privileged actions must be removed before each access check');
@@ -23,6 +23,8 @@ assert.match(account, /if \(contentEditor\) slot\.appendChild\(createHomeAccessL
     'constructor link must only be created for a content editor');
 assert.match(account, /if \(siteAdmin\) slot\.appendChild\(createHomeAccessLink\('admin'\)\)/,
     'admin link must only be created for a site administrator');
+assert.match(account, /<span>Конструктор<\/span>/,
+    'the compact constructor label must fit alongside the admin action on phones');
 assert.match(account, /generation !== homeAccessGeneration \|\| user !== checkedUser/,
     'stale permission checks must not reveal actions after an account change');
 assert.match(account, /slot\.dataset\.accessSignature === signature\) return/,
