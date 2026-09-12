@@ -123,6 +123,16 @@ test('class tour renders its next event and content on desktop and mobile', asyn
     await expect(page.locator('#next-event')).toBeVisible();
     await expect(page.locator('#tourNextEventTitle')).toBeVisible();
     await expect(page.locator('#overview')).toHaveCount(0);
+    await page.locator('#tourPersonSearch').fill('Петров');
+    await expect(page.locator('body')).toHaveClass(/tour-filtering/);
+    await expect(page.locator('#tourPersonSearchStatus')).toContainText('Найдено:');
+    await expect(page.locator('.tour-activity-card').first()).toBeVisible();
+    expect((await page.locator('.tour-activity-card').allTextContents()).every(function (text) {
+        return text.includes('Дима Петров');
+    })).toBeTruthy();
+    await page.locator('#tourPersonSearchClear').click();
+    await expect(page.locator('body')).not.toHaveClass(/tour-filtering/);
+    await expect(page.locator('.tour-hero')).toBeVisible();
     const lightBackground = await page.locator('body').evaluate(function (body) { return getComputedStyle(body).backgroundColor; });
     await page.locator('#settingsButtonSidebar').click();
     await page.locator('[data-exp-theme="dark"]').click();

@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="style-new.css?v=20260905-1">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
-    <link rel="stylesheet" href="styles/tour-10-1.css?v=20260913-1">
+    <link rel="stylesheet" href="styles/tour-10-1.css?v=20260913-2">
 </head>
 <body class="tour-page" data-no-math>
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -38,6 +38,22 @@
     </header>
 
     <main class="tour-shell">
+        <section class="tour-person-search" aria-label="Поиск участия по фамилии">
+            <label class="tour-person-search-field" for="tourPersonSearch">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+                <input id="tourPersonSearch" type="search" inputmode="search" autocomplete="off" placeholder="Найти по фамилии">
+                <button id="tourPersonSearchClear" type="button" aria-label="Очистить поиск" hidden>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg>
+                </button>
+            </label>
+            <span class="tour-person-search-status" id="tourPersonSearchStatus" role="status" hidden></span>
+        </section>
+
+        <div class="tour-search-empty" id="tourSearchEmpty" hidden>
+            <span aria-hidden="true">0</span>
+            <p>Участие не найдено</p>
+        </div>
+
         <header class="tour-hero">
             <div class="tour-hero-copy">
                 <p class="tour-hero-eyebrow">10‑1 · осень 2026</p>
@@ -227,6 +243,6 @@
     <script src="script.js?v=20260906-1"></script>
     <script src="settings.js?v=20260908-1"></script>
     <script src="account.js?v=20260912-1"></script>
-    <script src="tour-10-1.js?v=20260913-1"></script>
+    <script src="tour-10-1.js?v=20260913-2"></script>
 </body>
 </html>

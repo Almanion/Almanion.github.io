@@ -406,6 +406,7 @@
     let pickerTarget = null;
     let pickerSelection = new Set();
     let statusTimer = 0;
+    let personFilter = '';
 
     function setSyncStatus(message, offline) {
         const node = byId('tourSyncStatus');
@@ -419,6 +420,16 @@
         catch (_) { return ''; }
     }
     function personName(id, currentTour) { return (currentTour.people && currentTour.people[id]) || (roster[id] && roster[id].displayName) || 'Участник'; }
+    function searchText(value) {
+        return String(value || '').trim().toLocaleLowerCase('ru').replace(/ё/g, 'е').replace(/\s+/g, ' ');
+    }
+    function participantMatches(ids, currentTour) {
+        if (!personFilter) return true;
+        return participantIds(ids).some(function (id) { return searchText(personName(id, currentTour)).includes(personFilter); });
+    }
+    function personInitials(name) {
+        return String(name || '').trim().split(/\s+/).slice(0, 2).map(function (part) { return part.charAt(0); }).join('').toLocaleUpperCase('ru');
+    }
     function appendPeople(container, ids, currentTour) {
         const values = participantIds(ids);
         if (!values.length) return;
@@ -529,25 +540,47 @@
     function renderTents() {
         const rootNode = byId('tourTents');
         const empty = byId('tourTentsEmpty');
+        const section = byId('tents');
         rootNode.replaceChildren();
-        empty.hidden = tour.tents.length > 0;
-        tour.tents.forEach(function (tent) {
+        const visible = tour.tents.map(function (tent, index) { return { tent: tent, index: index }; }).filter(function (entry) {
+            return participantMatches(entry.tent.participants, tour);
+        });
+        section.hidden = !!personFilter && !visible.length;
+        empty.hidden = tour.tents.length > 0 || !!personFilter;
+        visible.forEach(function (entry) {
+            const tent = entry.tent;
             const card = make('article', 'tour-tent-card');
+            const header = make('div', 'tour-tent-header');
+            const number = make('span', 'tour-tent-number', String(entry.index + 1).padStart(2, '0'));
+            number.setAttribute('aria-label', 'Палатка ' + (entry.index + 1));
             const capacity = make('span', 'tour-tent-capacity', tent.participants.length + ' / ' + tent.capacity);
             capacity.setAttribute('aria-label', 'Занято мест: ' + tent.participants.length + ' из ' + tent.capacity);
-            card.appendChild(capacity);
-            appendPeople(card, tent.participants, tour);
+            header.append(number, capacity);
+            card.appendChild(header);
+            const people = make('ol', 'tour-tent-people');
+            participantIds(tent.participants).forEach(function (id) {
+                const name = personName(id, tour);
+                const row = make('li', 'tour-tent-person');
+                row.append(make('span', 'tour-tent-initials', personInitials(name)), make('span', 'tour-tent-name', name));
+                people.appendChild(row);
+            });
+            card.appendChild(people);
             if (tent.note) card.appendChild(make('p', 'tour-meal-note', tent.note));
             rootNode.appendChild(card);
         });
+        return visible.length;
     }
 
     function renderActivities() {
         const rootNode = byId('tourActivities');
         const empty = byId('tourActivitiesEmpty');
+        const section = byId('activities');
         rootNode.replaceChildren();
-        const assigned = tour.activities.filter(function (activity) { return participantIds(activity.participants).length > 0; });
-        empty.hidden = assigned.length > 0;
+        const assigned = tour.activities.filter(function (activity) {
+            return participantIds(activity.participants).length > 0 && participantMatches(activity.participants, tour);
+        });
+        section.hidden = !!personFilter && !assigned.length;
+        empty.hidden = assigned.length > 0 || !!personFilter;
         assigned.forEach(function (activity) {
             const card = make('article', 'tour-activity-card');
             const titleRow = make('div', 'tour-card-title-row');
@@ -556,16 +589,20 @@
             appendPeople(card, activity.participants, tour);
             rootNode.appendChild(card);
         });
+        return assigned.length;
     }
 
     function renderMeals() {
         const rootNode = byId('tourMeals');
         const empty = byId('tourMealsEmpty');
+        const section = byId('meals');
         rootNode.replaceChildren();
         const publishedMeals = tour.meals.filter(function (meal) {
-            return participantIds(meal.participants).length > 0 || !!String(meal.note || '').trim();
+            const published = participantIds(meal.participants).length > 0 || !!String(meal.note || '').trim();
+            return published && participantMatches(meal.participants, tour);
         });
-        empty.hidden = publishedMeals.length > 0;
+        section.hidden = !!personFilter && !publishedMeals.length;
+        empty.hidden = publishedMeals.length > 0 || !!personFilter;
         const dates = new Map();
         publishedMeals.forEach(function (meal) {
             if (!dates.has(meal.date)) dates.set(meal.date, []);
@@ -585,15 +622,28 @@
             });
             rootNode.appendChild(card);
         });
+        return publishedMeals.length;
+    }
+
+    function updatePersonSearch() {
+        const activitiesCount = renderActivities();
+        const tentsCount = renderTents();
+        const mealsCount = renderMeals();
+        const total = activitiesCount + tentsCount + mealsCount;
+        const active = !!personFilter;
+        document.body.classList.toggle('tour-filtering', active);
+        byId('tourPersonSearchClear').hidden = !active;
+        const status = byId('tourPersonSearchStatus');
+        status.hidden = !active;
+        status.textContent = active ? 'Найдено: ' + total : '';
+        byId('tourSearchEmpty').hidden = !active || total > 0;
     }
 
     function renderAll() {
         renderOverview();
         renderTimeline();
         renderProgram();
-        renderTents();
-        renderActivities();
-        renderMeals();
+        updatePersonSearch();
     }
 
     function loadFallback() {
@@ -1094,6 +1144,17 @@
     }
     function bindEvents() {
         bindOverviewInputs(); bindTabs();
+        const personSearch = byId('tourPersonSearch');
+        const clearPersonSearch = function () {
+            personSearch.value = '';
+            personFilter = '';
+            updatePersonSearch();
+        };
+        personSearch.addEventListener('input', function () {
+            personFilter = searchText(personSearch.value);
+            updatePersonSearch();
+        });
+        byId('tourPersonSearchClear').addEventListener('click', function () { clearPersonSearch(); personSearch.focus(); });
         byId('tourEditButton').addEventListener('click', function () { openEditor('overview'); });
         document.querySelectorAll('[data-open-editor]').forEach(function (button) { button.addEventListener('click', function () { openEditor(button.dataset.openEditor); }); });
         byId('tourEditorClose').addEventListener('click', closeEditor); byId('tourEditorCancel').addEventListener('click', closeEditor); byId('tourEditorSave').addEventListener('click', saveEditor);
@@ -1106,7 +1167,12 @@
         byId('tourAddActivity').addEventListener('click', function () { editorTour.activities.push({ id: nextId(editorTour.activities, 'activity'), title: 'Новое мероприятие', order: editorTour.activities.length + 1, participants: [] }); renderActivitiesEditor(); scheduleDraftSave(); revealLastEditorRow('tourActivitiesEditor'); });
         byId('tourAddMeal').addEventListener('click', function () { const type = 'breakfast'; editorTour.meals.push({ id: nextId(editorTour.meals, 'meal'), date: editorTour.info.startDate, type: type, title: MEAL_TYPES[type], note: '', order: editorTour.meals.length + 1, participants: [] }); renderMealsEditor(); scheduleDraftSave(); revealLastEditorRow('tourMealsEditor'); });
         document.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape') { if (!byId('tourPickerOverlay').hidden) closePicker(); else if (editorOpen) closeEditor(); return; }
+            if (event.key === 'Escape') {
+                if (!byId('tourPickerOverlay').hidden) closePicker();
+                else if (editorOpen) closeEditor();
+                else if (personFilter) { clearPersonSearch(); personSearch.focus(); }
+                return;
+            }
             if (!byId('tourPickerOverlay').hidden) trapFocus(event, byId('tourPickerOverlay')); else if (editorOpen) trapFocus(event, byId('tourEditorOverlay'));
         });
         root.addEventListener('beforeunload', function () { window.clearTimeout(draftTimer); if (editorOpen && editorDirty) saveDraft(); });

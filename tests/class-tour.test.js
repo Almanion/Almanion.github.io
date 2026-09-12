@@ -100,6 +100,9 @@ async function run() {
     assert.match(page, /id="tourMealsEmpty" hidden/);
     assert.match(page, /id="next-event"/);
     assert.match(page, /id="tourNextEventTitle"/);
+    assert.match(page, /id="tourPersonSearch"/);
+    assert.match(page, /id="tourPersonSearchClear"/);
+    assert.match(page, /id="tourSearchEmpty" hidden/);
     assert.doesNotMatch(page, /href="#overview"/);
     assert.doesNotMatch(page, /tour-card-kicker">Место</);
     assert.doesNotMatch(page, /tour-card-kicker">Дорога</);
@@ -110,6 +113,10 @@ async function run() {
     assert.doesNotMatch(source, /состав уточняется|Состав пока не назначен/, 'empty assignments must not create repetitive public captions');
     assert.match(source, /const assigned = tour\.activities\.filter/);
     assert.match(source, /const publishedMeals = tour\.meals\.filter/);
+    assert.match(source, /participantMatches\(activity\.participants, tour\)/);
+    assert.match(source, /participantMatches\(entry\.tent\.participants, tour\)/);
+    assert.match(source, /participantMatches\(meal\.participants, tour\)/);
+    assert.match(source, /tour-tent-person/);
     assert.doesNotMatch(source, /titleRow\.append\(make\('h3', '', tent\.title\)/,
         'public tent cards must not render tent names');
     assert.match(source, /node\.hidden = !offline/, 'successful sync must remain visually quiet');
