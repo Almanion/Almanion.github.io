@@ -21,6 +21,7 @@
     "/styles/mobile-overrides.css",
     "/styles/page-transitions.css",
     "/styles/home-motion.css",
+    "/styles/home-dashboard.css",
     "/favicons/favicon.svg",
     "/favicons/favicon-dark.svg",
     "/favicons/app-icon.svg"

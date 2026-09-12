@@ -35,6 +35,14 @@ test('home page switches grades without losing its layout', async function ({ pa
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     await expect(page.locator('.home-header h1')).toContainText('Конспекты');
+    await expect(page.locator('.home-quick-section')).toBeVisible();
+    await expect(page.locator('.home-quick-card[href="matcenter.html"]')).toBeVisible();
+    await expect(page.locator('.home-quick-card[href="likbez.html"]')).toBeVisible();
+    const quickBounds = await page.locator('.home-quick-section').boundingBox();
+    const subjectsBounds = await page.locator('.subjects-section').boundingBox();
+    expect(quickBounds).not.toBeNull();
+    expect(subjectsBounds).not.toBeNull();
+    expect(quickBounds.y).toBeLessThan(subjectsBounds.y);
     await expect(page.locator('#gradeTab10')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('#gradePanel10')).toBeVisible();
     await page.locator('#gradeTab9').click();
@@ -112,6 +120,16 @@ test('class tour renders its offline-safe overview on desktop and mobile', async
     await expect(page.getByRole('heading', { name: 'Туристический слёт', level: 1 })).toBeVisible();
     await expect(page.getByText('Ориентирование', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('Дима Петров', { exact: true }).first()).toBeVisible();
+    await expect(page.locator('.tour-overview').getByText('Место', { exact: true })).toHaveCount(0);
+    await expect(page.locator('.tour-overview').getByText('Дорога', { exact: true })).toHaveCount(0);
+    const lightBackground = await page.locator('body').evaluate(function (body) { return getComputedStyle(body).backgroundColor; });
+    await page.locator('#settingsButtonSidebar').click();
+    await page.locator('[data-exp-theme="dark"]').click();
+    await expect(page.locator('body')).toHaveClass(/exp-dark/);
+    await expect.poll(function () {
+        return page.locator('body').evaluate(function (body) { return getComputedStyle(body).backgroundColor; });
+    }).not.toBe(lightBackground);
+    await page.keyboard.press('Escape');
     await expectNoHorizontalOverflow(page);
 
     await page.setViewportSize({ width: 390, height: 844 });

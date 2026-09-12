@@ -387,6 +387,7 @@
         const node = byId('tourSyncStatus');
         node.textContent = message;
         node.classList.toggle('is-offline', !!offline);
+        node.hidden = !offline;
     }
     function formatUpdatedAt(timestamp) {
         if (!timestamp) return '';
@@ -396,10 +397,7 @@
     function personName(id, currentTour) { return (currentTour.people && currentTour.people[id]) || (roster[id] && roster[id].displayName) || 'Участник'; }
     function appendPeople(container, ids, currentTour) {
         const values = participantIds(ids);
-        if (!values.length) {
-            container.appendChild(make('p', 'tour-unassigned', 'Состав пока не назначен'));
-            return;
-        }
+        if (!values.length) return;
         const list = make('div', 'tour-people-list');
         values.forEach(function (id) { list.appendChild(make('span', 'tour-person-chip', personName(id, currentTour))); });
         container.appendChild(list);
@@ -502,11 +500,14 @@
 
     function renderActivities() {
         const rootNode = byId('tourActivities');
+        const empty = byId('tourActivitiesEmpty');
         rootNode.replaceChildren();
-        tour.activities.forEach(function (activity) {
+        const assigned = tour.activities.filter(function (activity) { return participantIds(activity.participants).length > 0; });
+        empty.hidden = assigned.length > 0;
+        assigned.forEach(function (activity) {
             const card = make('article', 'tour-activity-card');
             const titleRow = make('div', 'tour-card-title-row');
-            titleRow.append(make('h3', '', activity.title), make('span', '', activity.participants.length ? activity.participants.length + ' чел.' : 'состав уточняется'));
+            titleRow.append(make('h3', '', activity.title), make('span', '', activity.participants.length + ' чел.'));
             card.appendChild(titleRow);
             appendPeople(card, activity.participants, tour);
             rootNode.appendChild(card);
@@ -515,9 +516,14 @@
 
     function renderMeals() {
         const rootNode = byId('tourMeals');
+        const empty = byId('tourMealsEmpty');
         rootNode.replaceChildren();
+        const publishedMeals = tour.meals.filter(function (meal) {
+            return participantIds(meal.participants).length > 0 || !!String(meal.note || '').trim();
+        });
+        empty.hidden = publishedMeals.length > 0;
         const dates = new Map();
-        tour.meals.forEach(function (meal) {
+        publishedMeals.forEach(function (meal) {
             if (!dates.has(meal.date)) dates.set(meal.date, []);
             dates.get(meal.date).push(meal);
         });

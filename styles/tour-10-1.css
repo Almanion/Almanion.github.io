@@ -6,18 +6,67 @@
     --tour-past: #7b8190;
     --tour-topbar-height: 64px;
     min-height: 100vh;
+    color-scheme: light;
     background: var(--bg-primary);
     color: var(--text-primary);
 }
 
-.tour-page.experimental.exp-dark,
-.tour-page.dark-theme,
-.tour-page.midnight-theme {
+.tour-page.experimental.exp-prism {
+    --tour-accent: #667052;
+    --tour-accent-strong: #4f593d;
+    --tour-accent-soft: rgba(102, 112, 82, 0.1);
+}
+
+.tour-page.experimental.exp-prism.exp-dark {
     --tour-accent: #a9b78a;
     --tour-accent-strong: #c0cda5;
     --tour-accent-soft: rgba(169, 183, 138, 0.12);
     --tour-warm: #d39a67;
     --tour-past: #8e93a3;
+    color-scheme: dark;
+}
+
+.tour-page.experimental.exp-graphite {
+    --tour-accent: #606068;
+    --tour-accent-strong: #303036;
+    --tour-accent-soft: rgba(39, 39, 42, 0.07);
+    --tour-warm: #94623b;
+    --tour-past: #85858f;
+}
+
+.tour-page.experimental.exp-graphite.exp-dark {
+    --tour-accent: #b4b4bc;
+    --tour-accent-strong: #e4e4e7;
+    --tour-accent-soft: rgba(212, 212, 216, 0.09);
+    --tour-warm: #d09a70;
+    --tour-past: #81818b;
+    color-scheme: dark;
+}
+
+.tour-page.dark-theme {
+    --tour-accent: #a9b78a;
+    --tour-accent-strong: #c0cda5;
+    --tour-accent-soft: rgba(169, 183, 138, 0.12);
+    --tour-warm: #d39a67;
+    --tour-past: #8e93a3;
+    color-scheme: dark;
+}
+
+.tour-page.sepia-theme {
+    --tour-accent: #75744c;
+    --tour-accent-strong: #545332;
+    --tour-accent-soft: rgba(117, 116, 76, 0.11);
+    --tour-warm: #98653a;
+    --tour-past: #83796b;
+}
+
+.tour-page.midnight-theme {
+    --tour-accent: #b0a7d5;
+    --tour-accent-strong: #d2cbed;
+    --tour-accent-soft: rgba(176, 167, 213, 0.11);
+    --tour-warm: #d39a67;
+    --tour-past: #8f8b9f;
+    color-scheme: dark;
 }
 
 .tour-page #settingsButton { display: none !important; }
@@ -90,6 +139,12 @@
     min-width: 40px;
     border-radius: 50%;
 }
+.tour-topbar .sidebar-header-buttons > .account-btn,
+.tour-topbar .sidebar-header-buttons > .settings-button-sidebar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
 .tour-topbar .sidebar-collapse-btn { display: none !important; }
 
 .tour-shell {
@@ -123,9 +178,6 @@
     background: linear-gradient(90deg, transparent, var(--tour-accent));
     opacity: 0.7;
 }
-.tour-eyebrow,
-.tour-section-kicker,
-.tour-card-kicker,
 .tour-editor-header p,
 .tour-picker header p {
     margin: 0 0 0.35rem;
@@ -415,7 +467,6 @@ body:not(.no-hover) .tour-section-nav a:hover { color: var(--tour-accent-strong)
     font-size: 0.72rem;
     font-weight: 620;
 }
-.tour-unassigned { margin: 0.65rem 0 0; color: var(--text-secondary); font-size: 0.78rem; }
 .tour-empty {
     min-height: 140px;
     display: flex;
@@ -447,7 +498,7 @@ body:not(.no-hover) .tour-section-nav a:hover { color: var(--tour-accent-strong)
 .tour-footer {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 1rem;
     margin-top: 2.5rem;
     padding-top: 1.15rem;
@@ -715,7 +766,6 @@ body:not(.no-hover) .tour-icon-button:hover { color: var(--text-primary); backgr
     .tour-info-card { padding: 0.85rem; }
     .tour-section { padding-top: 1.7rem; scroll-margin-top: 112px; }
     .tour-section-heading { align-items: center; }
-    .tour-section-kicker { margin-bottom: 0.2rem; }
     .tour-section-heading h2 { font-size: 1.3rem; }
     .tour-timeline-item { grid-template-columns: 70px 14px minmax(0, 1fr); gap: 0.55rem; padding: 0.8rem; }
     .tour-timeline-state { grid-column: 3; justify-self: start; margin-top: 0.25rem; }

@@ -83,8 +83,18 @@ async function run() {
     assert.match(page, /data-open-editor="schedule" hidden/);
     assert.match(page, /styles\/tour-10-1\.css\?v=/);
     assert.match(page, /tour-10-1\.js\?v=/);
+    assert.match(page, /id="tourActivitiesEmpty" hidden/);
+    assert.match(page, /id="tourMealsEmpty" hidden/);
+    assert.doesNotMatch(page, /tour-card-kicker">Место</);
+    assert.doesNotMatch(page, /tour-card-kicker">Дорога</);
+    assert.doesNotMatch(page, /Предложенный руководитель группы/);
+    assert.doesNotMatch(page, /Информация обновляется редакторами класса/);
     assert.doesNotMatch(page, /Нонна Близнец|Маша Кессель/, 'the public HTML must not expose a full class roster');
     assert.doesNotMatch(source, /Маша Кессель/, 'unassigned roster members must not be embedded in the public tour source');
+    assert.doesNotMatch(source, /состав уточняется|Состав пока не назначен/, 'empty assignments must not create repetitive public captions');
+    assert.match(source, /const assigned = tour\.activities\.filter/);
+    assert.match(source, /const publishedMeals = tour\.meals\.filter/);
+    assert.match(source, /node\.hidden = !offline/, 'successful sync must remain visually quiet');
     assert.doesNotMatch(source, /\.innerHTML\s*=/, 'Firebase-backed tour data must never be rendered through innerHTML');
     assert.match(source, /database\.ref\(TOUR_PATH\)\.transaction/);
     assert.match(source, /DRAFT_PREFIX/);
@@ -98,6 +108,10 @@ async function run() {
     assert.match(css, /height:\s*100dvh/);
     assert.match(css, /grid-template-areas:[\s\S]*?"footer"/);
     assert.match(css, /\.tour-page \.sr-only/);
+    assert.match(css, /\.tour-page\.experimental\.exp-graphite\.exp-dark/);
+    assert.match(css, /\.tour-page\.sepia-theme/);
+    assert.match(css, /\.tour-page\.midnight-theme/);
+    assert.match(css, /color-scheme:\s*dark/);
 
     assert.match(home, /<h2 class="section-title">Класс 10‑1<\/h2>/);
     assert.match(home, /href="tour-10-1\.html"/);

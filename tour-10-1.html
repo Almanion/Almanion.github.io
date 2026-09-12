@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="style-new.css?v=20260905-1">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
-    <link rel="stylesheet" href="styles/tour-10-1.css?v=20260912-2">
+    <link rel="stylesheet" href="styles/tour-10-1.css?v=20260912-3">
 </head>
 <body class="tour-page" data-no-math>
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -40,11 +40,10 @@
     <main class="tour-shell">
         <header class="tour-hero">
             <div>
-                <p class="tour-eyebrow">Класс 10‑1 · осень 2026</p>
                 <h1 id="tourTitle">Туристический слёт 10-1</h1>
                 <div class="tour-hero-meta">
                     <span class="tour-event-state is-upcoming" id="tourEventState">17–19 сентября</span>
-                    <span class="tour-sync-status" id="tourSyncStatus" role="status">Загружаем актуальные данные…</span>
+                    <span class="tour-sync-status" id="tourSyncStatus" role="status" hidden></span>
                 </div>
             </div>
             <button class="tour-edit-button" id="tourEditButton" type="button" hidden>
@@ -66,41 +65,40 @@
             <article class="tour-date-card">
                 <div class="tour-date-mark" aria-hidden="true"><strong>17</strong><span>сентября</span></div>
                 <div>
-                    <p class="tour-card-kicker">Даты проведения</p>
                     <h3 id="tourDateRange">17–19 сентября 2026</h3>
                     <p id="tourDeparture">Отъезд в четверг после 4-го урока</p>
                 </div>
             </article>
-            <article class="tour-info-card tour-place-card">
+            <article class="tour-info-card tour-place-card" aria-label="Место проведения">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-                <div><p class="tour-card-kicker">Место</p><h3 id="tourLocation">Озеро Уловное</h3><p id="tourLocationDetail">Район ст. Сосново, Приозерский район Ленинградской области</p></div>
+                <div><h3 id="tourLocation">Озеро Уловное</h3><p id="tourLocationDetail">Район ст. Сосново, Приозерский район Ленинградской области</p></div>
             </article>
-            <article class="tour-info-card">
+            <article class="tour-info-card" aria-label="Дорога до места">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17h16M6 17l1.4-8.4A2 2 0 0 1 9.37 7h5.26a2 2 0 0 1 1.97 1.6L18 17"/><path d="M8.5 11h7M9 20h.01M15 20h.01"/></svg>
-                <div><p class="tour-card-kicker">Дорога</p><h3 id="tourRouteTitle">Электропоезд в 14:19</h3><p id="tourRoute">Финляндский вокзал → о. п. Колосково, 78 км</p></div>
+                <div><h3 id="tourRouteTitle">Электропоезд в 14:19</h3><p id="tourRoute">Финляндский вокзал → о. п. Колосково, 78 км</p></div>
             </article>
-            <article class="tour-info-card">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10l1 8a6 6 0 0 1-12 0l1-8Z"/><path d="M9 8h6"/></svg>
-                <div><p class="tour-card-kicker">Предложенный руководитель группы</p><h3 id="tourLeader">Алёна Александровна Лобанова</h3><p id="tourReturn">Возвращение 19 сентября, время можно выбрать</p></div>
+            <article class="tour-info-card" aria-label="Руководитель группы">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.25"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>
+                <div><h3 id="tourLeader">Алёна Александровна Лобанова</h3><p id="tourReturn">Возвращение 19 сентября, время можно выбрать</p></div>
             </article>
         </section>
 
         <section class="tour-section" id="schedule" aria-labelledby="tourScheduleTitle">
             <div class="tour-section-heading">
-                <div><p class="tour-section-kicker">По времени</p><h2 id="tourScheduleTitle">Расписание</h2></div>
+                <h2 id="tourScheduleTitle">Расписание</h2>
                 <button class="tour-section-edit" type="button" data-open-editor="schedule" hidden>Изменить</button>
             </div>
             <div class="tour-timeline" id="tourTimeline"></div>
         </section>
 
         <section class="tour-section" aria-labelledby="tourProgramTitle">
-            <div class="tour-section-heading"><div><p class="tour-section-kicker">Что будет</p><h2 id="tourProgramTitle">Программа</h2></div></div>
+            <div class="tour-section-heading"><h2 id="tourProgramTitle">Программа</h2></div>
             <div class="tour-program" id="tourProgram"></div>
         </section>
 
         <section class="tour-section" id="tents" aria-labelledby="tourTentsTitle">
             <div class="tour-section-heading">
-                <div><p class="tour-section-kicker">Размещение</p><h2 id="tourTentsTitle">Палатки</h2></div>
+                <h2 id="tourTentsTitle">Палатки</h2>
                 <button class="tour-section-edit" type="button" data-open-editor="tents" hidden>Распределить</button>
             </div>
             <div class="tour-card-grid" id="tourTents"></div>
@@ -109,21 +107,23 @@
 
         <section class="tour-section" id="activities" aria-labelledby="tourActivitiesTitle">
             <div class="tour-section-heading">
-                <div><p class="tour-section-kicker">Команды</p><h2 id="tourActivitiesTitle">Участие в мероприятиях</h2></div>
+                <h2 id="tourActivitiesTitle">Участие в мероприятиях</h2>
                 <button class="tour-section-edit" type="button" data-open-editor="activities" hidden>Изменить</button>
             </div>
             <div class="tour-activities" id="tourActivities"></div>
+            <div class="tour-empty" id="tourActivitiesEmpty" hidden><p>Список участников пока не опубликован.</p></div>
         </section>
 
         <section class="tour-section" id="meals" aria-labelledby="tourMealsTitle">
             <div class="tour-section-heading">
-                <div><p class="tour-section-kicker">По дням</p><h2 id="tourMealsTitle">Кто готовит</h2></div>
+                <h2 id="tourMealsTitle">Кто готовит</h2>
                 <button class="tour-section-edit" type="button" data-open-editor="meals" hidden>Назначить</button>
             </div>
             <div class="tour-meals" id="tourMeals"></div>
+            <div class="tour-empty" id="tourMealsEmpty" hidden><p>Распределение пока не опубликовано.</p></div>
         </section>
 
-        <footer class="tour-footer"><a href="index.html">Вернуться к конспектам</a><span>Информация обновляется редакторами класса</span></footer>
+        <footer class="tour-footer"><a href="index.html">Вернуться к конспектам</a></footer>
     </main>
 
     <div class="tour-editor-overlay" id="tourEditorOverlay" hidden aria-hidden="true">
@@ -203,6 +203,6 @@
     <script src="script.js?v=20260906-1"></script>
     <script src="settings.js?v=20260908-1"></script>
     <script src="account.js?v=20260912-1"></script>
-    <script src="tour-10-1.js?v=20260912-2"></script>
+    <script src="tour-10-1.js?v=20260912-3"></script>
 </body>
 </html>
