@@ -19,6 +19,11 @@ assert.match(dialogs, /role', 'dialog'/);
 assert.match(dialogs, /aria-modal/);
 assert.match(dialogs, /event\.key === 'Escape'/);
 assert.match(dialogs, /event\.key !== 'Tab'/);
+assert.match(dialogs, /recoverOrphanedDialogState/);
+assert.doesNotMatch(html + app, /\sonclick\s*=/i,
+    'admin actions must use delegated listeners instead of fragile inline handlers');
+assert.match(app, /function handleAdminAction/);
+assert.match(app, /data-admin-command=/);
 assert.match(app, /user\.uid === SITE_OWNER_UID/);
 assert.match(dashboard, /user\.uid === SITE_OWNER_UID/);
 assert.match(html, /Анонимный профиль[^<]*—[^<]*не гарантированно отдельный человек/);

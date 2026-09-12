@@ -878,7 +878,7 @@
     <link rel="stylesheet" href="style-new.css?v=20260905-1">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
-    <link rel="stylesheet" href="styles/admin.css?v=20260906-3">
+    <link rel="stylesheet" href="styles/admin.css?v=20260912-4">
 </head>
 <body class="admin-page">
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -896,7 +896,7 @@
                 <label for="loginPassword">Пароль</label>
                 <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
             </div>
-            <button class="btn btn-primary" id="loginBtn">Войти</button>
+            <button class="btn btn-primary" id="loginBtn" type="button">Войти</button>
             <p class="login-error" id="loginError"></p>
         </div>
     </div>
@@ -911,7 +911,7 @@
             </div>
             <div class="header-actions">
                 <span style="font-size: 0.85rem; color: var(--text-secondary);" id="adminEmail"></span>
-                <button class="btn btn-outline btn-sm" id="logoutBtn">Выйти</button>
+                <button class="btn btn-outline btn-sm" id="logoutBtn" type="button">Выйти</button>
             </div>
         </div>
 
@@ -962,7 +962,7 @@
                     <div class="section-kicker">Последние 14 дней</div>
                     <div class="section-title"><span class="eic eic-chart" aria-hidden="true"></span> Использование сайта</div>
                 </div>
-                <button class="btn btn-outline btn-sm" id="refreshUsageBtn">Обновить</button>
+                <button class="btn btn-outline btn-sm" id="refreshUsageBtn" type="button">Обновить</button>
             </div>
             <div class="usage-dashboard-grid">
                 <div class="usage-panel usage-panel-wide">
@@ -1053,17 +1053,17 @@
                     <div class="options-list" id="optionsList">
                         <div class="option-row">
                             <input type="text" placeholder="Вариант 1" class="poll-option">
-                            <button class="remove-option" title="Удалить">×</button>
+                            <button class="remove-option" type="button" data-admin-command="poll-remove-option" title="Удалить вариант" aria-label="Удалить вариант 1">×</button>
                         </div>
                         <div class="option-row">
                             <input type="text" placeholder="Вариант 2" class="poll-option">
-                            <button class="remove-option" title="Удалить">×</button>
+                            <button class="remove-option" type="button" data-admin-command="poll-remove-option" title="Удалить вариант" aria-label="Удалить вариант 2">×</button>
                         </div>
                     </div>
-                    <button class="add-option-btn" id="addOptionBtn">+ Добавить вариант</button>
+                    <button class="add-option-btn" id="addOptionBtn" type="button" data-admin-command="poll-add-option">+ Добавить вариант</button>
                 </div>
                 <div class="poll-actions">
-                    <button class="btn btn-success" id="sendPollBtn"><span class="eic eic-send" aria-hidden="true"></span> Отправить опрос</button>
+                    <button class="btn btn-success" id="sendPollBtn" type="button" data-admin-command="send-poll"><span class="eic eic-send" aria-hidden="true"></span> Отправить опрос</button>
                 </div>
             </div>
         </div>
@@ -1076,7 +1076,7 @@
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <span style="font-size:0.8rem; color:var(--text-secondary);">Получат: <strong id="broadcastCount">0</strong> человек</span>
-                <button class="btn btn-primary btn-sm" id="broadcastBtn"><span class="eic eic-megaphone" aria-hidden="true"></span> Отправить всем</button>
+                <button class="btn btn-primary btn-sm" id="broadcastBtn" type="button" data-admin-command="send-broadcast"><span class="eic eic-megaphone" aria-hidden="true"></span> Отправить всем</button>
             </div>
         </div>
 
@@ -1092,13 +1092,13 @@
         <div class="section" id="allVisitorsSection">
             <div class="admin-collapsible-heading">
                 <div class="section-title"><span class="eic eic-book" aria-hidden="true"></span> Все посетители</div>
-                <button class="btn btn-outline btn-sm admin-collapse-button" id="allVisitorsToggle" type="button" aria-expanded="true" aria-controls="allVisitorsBody"><span aria-hidden="true">−</span><span class="admin-collapse-label">Скрыть</span></button>
+                <button class="btn btn-outline btn-sm admin-collapse-button" id="allVisitorsToggle" type="button" data-admin-command="visitors-toggle" aria-expanded="true" aria-controls="allVisitorsBody"><span aria-hidden="true">−</span><span class="admin-collapse-label">Скрыть</span></button>
             </div>
             <div id="allVisitorsBody">
                 <div style="margin-bottom:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
-                    <button class="btn btn-outline btn-sm" onclick="loadAllVisitors('all')" style="font-size:0.8rem;">Все</button>
-                    <button class="btn btn-outline btn-sm" onclick="loadAllVisitors('today')" style="font-size:0.8rem;">Сегодня</button>
-                    <button class="btn btn-outline btn-sm" onclick="loadAllVisitors('week')" style="font-size:0.8rem;">За неделю</button>
+                    <button class="btn btn-outline btn-sm" type="button" data-admin-command="load-visitors" data-admin-value="all" style="font-size:0.8rem;">Все</button>
+                    <button class="btn btn-outline btn-sm" type="button" data-admin-command="load-visitors" data-admin-value="today" style="font-size:0.8rem;">Сегодня</button>
+                    <button class="btn btn-outline btn-sm" type="button" data-admin-command="load-visitors" data-admin-value="week" style="font-size:0.8rem;">За неделю</button>
                 </div>
                 <div id="allVisitorsList">
                     <div class="no-data">Нажмите кнопку для загрузки</div>
@@ -1132,9 +1132,9 @@
         <div class="section">
             <div class="section-title"><span class="eic eic-gear" aria-hidden="true"></span> Управление данными</div>
             <div style="display:flex; flex-wrap:wrap; gap:0.75rem;">
-                <button class="btn btn-outline btn-sm" onclick="clearDailyStats()"><span class="eic eic-trash" aria-hidden="true"></span> Очистить дневную статистику</button>
-                <button class="btn btn-outline btn-sm" onclick="clearAllPresence()"><span class="eic eic-refresh" aria-hidden="true"></span> Сбросить онлайн</button>
-                <button class="btn btn-danger btn-sm" onclick="clearAllData()"><span class="eic eic-warn" aria-hidden="true"></span> Удалить ВСЕ данные</button>
+                <button class="btn btn-outline btn-sm" type="button" data-admin-command="clear-daily-stats"><span class="eic eic-trash" aria-hidden="true"></span> Очистить дневную статистику</button>
+                <button class="btn btn-outline btn-sm" type="button" data-admin-command="clear-presence"><span class="eic eic-refresh" aria-hidden="true"></span> Сбросить онлайн</button>
+                <button class="btn btn-danger btn-sm" type="button" data-admin-command="clear-all-data"><span class="eic eic-warn" aria-hidden="true"></span> Удалить ВСЕ данные</button>
             </div>
         </div>
     </div>
@@ -1144,8 +1144,8 @@
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
     <script src="firebase-config.js?v=20260903-3"></script>
-    <script src="admin-dialogs.js?v=20260911-1"></script>
-    <script src="admin-app.js?v=20260911-1"></script>
-    <script src="admin-dashboard.js?v=20260912-1"></script>
+    <script src="admin-dialogs.js?v=20260912-2"></script>
+    <script src="admin-app.js?v=20260912-2"></script>
+    <script src="admin-dashboard.js?v=20260912-2"></script>
 </body>
 </html>

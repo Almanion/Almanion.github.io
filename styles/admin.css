@@ -22,6 +22,31 @@ body.admin-page.experimental.exp-dark {
     --danger: #ef7b86;
 }
 
+body.admin-page.admin-legacy-modal-open,
+body.admin-page.admin-dialog-open { overflow: hidden; }
+
+.admin-page [data-admin-command] { touch-action: manipulation; }
+
+.admin-page button.visitor-name,
+.admin-page button.poll-voter-name {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+}
+
+.admin-page button.visitor-name:focus-visible,
+.admin-page button.poll-voter-name:focus-visible,
+.admin-page .action-btn:focus-visible,
+.admin-page .poll-details-toggle:focus-visible,
+.admin-page .add-option-btn:focus-visible,
+.admin-page .remove-option:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
 .admin-dialog-overlay {
     position: fixed;
     inset: 0;

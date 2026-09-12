@@ -163,17 +163,41 @@ function initDashboard() {
     if (dashboardInitialized) return;
     dashboardInitialized = true;
 
-    loadVisitorNames();
-    listenOnlineUsers();
-    loadUniqueVisitors();
-    loadTodayVisitors();
-    listenPolls();
-    initPollForm();
-    loadAllVisitors('all');
+    const modules = [
+        ['имена посетителей', loadVisitorNames],
+        ['посетители онлайн', listenOnlineUsers],
+        ['счётчик аккаунтов', loadUniqueVisitors],
+        ['активность за сегодня', loadTodayVisitors],
+        ['опросы', listenPolls]
+    ];
+    const failedModules = [];
+    modules.forEach(([name, start]) => {
+        try {
+            start();
+        } catch (error) {
+            failedModules.push(name);
+            console.error(`Admin module «${name}»:`, error);
+        }
+    });
+
+    const visitorsBody = document.getElementById('allVisitorsBody');
+    if (!visitorsBody || !visitorsBody.hidden) {
+        try {
+            loadAllVisitors('all');
+        } catch (error) {
+            failedModules.push('журнал посетителей');
+            console.error('Admin module «журнал посетителей»:', error);
+        }
+    }
+
+    if (failedModules.length) {
+        AdminUI.notify('Часть данных не загрузилась. Кнопки панели остаются доступны; обновите страницу или повторите действие.', { tone: 'error' });
+    }
 }
 
 // --- Онлайн пользователи ---
 let lastOnlineSnapshot = null;
+let onlineVisitorIds = [];
 
 function listenOnlineUsers() {
     db.ref('presence').on('value', (snapshot) => {
@@ -181,15 +205,28 @@ function listenOnlineUsers() {
         lastOnlineSnapshot = data;
 
         const users = Object.values(data);
-        document.getElementById('onlineCount').textContent = users.length;
+        const onlineCount = document.getElementById('onlineCount');
+        if (onlineCount) onlineCount.textContent = users.length;
+
+        onlineVisitorIds = users.map(user => user && user.visitorId).filter(Boolean);
+        const broadcastCount = document.getElementById('broadcastCount');
+        if (broadcastCount) broadcastCount.textContent = onlineVisitorIds.length;
 
         renderOnlineTable(data);
+        if (lastVisitorsSnapshot) renderAllVisitors(lastVisitorsSnapshot, visitorsListPeriod);
+    }, (error) => {
+        console.error('Admin presence listener:', error);
+        const onlineCount = document.getElementById('onlineCount');
+        if (onlineCount) onlineCount.textContent = '—';
+        const broadcastCount = document.getElementById('broadcastCount');
+        if (broadcastCount) broadcastCount.textContent = '0';
     });
 }
 
 function renderOnlineTable(data) {
     const users = Object.values(data || {});
     const tbody = document.getElementById('onlineTableBody');
+    if (!tbody) return;
 
     if (users.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="no-data">Никого нет онлайн</td></tr>';
@@ -209,16 +246,17 @@ function renderOnlineTable(data) {
         const pageDisplay = page.replace('.html', '');
         const timeAgo = getTimeAgo(user.timestamp);
 
+        const encodedVisitorId = escapeHtml(vid);
         const nameHtml = name
-            ? `<span class="visitor-name" onclick="renameVisitor(${inlineArg(vid)})" title="Клик для переименования">
+            ? `<button class="visitor-name" type="button" data-admin-command="rename-visitor" data-admin-value="${encodedVisitorId}" title="Клик для переименования">
                    <span class="name-label">${escapeHtml(name)}</span>
                    <span class="name-id">${shortId}…</span>
                    <span class="edit-icon"><span class="eic eic-pen" aria-hidden="true"></span></span>
-               </span>`
-            : `<span class="visitor-name" onclick="renameVisitor(${inlineArg(vid)})" title="Клик для присвоения имени">
+               </button>`
+            : `<button class="visitor-name" type="button" data-admin-command="rename-visitor" data-admin-value="${encodedVisitorId}" title="Клик для присвоения имени">
                    <code style="font-size:0.8rem; color:var(--text-secondary)">${shortId}…</code>
                    <span class="edit-icon"><span class="eic eic-pen" aria-hidden="true"></span></span>
-               </span>`;
+               </button>`;
 
         return `<tr>
             <td>${nameHtml}</td>
@@ -226,8 +264,8 @@ function renderOnlineTable(data) {
             <td><span class="device-badge ${deviceClass}">${deviceLabel}</span></td>
             <td style="color:var(--text-secondary)">${timeAgo}</td>
             <td style="white-space:nowrap;">
-                <button class="action-btn" onclick="openVisitorProfile(${inlineArg(vid)})" title="Профиль посетителя"><span class="eic eic-clip" aria-hidden="true"></span></button>
-                <button class="action-btn" onclick="openDirectMessage(${inlineArg(vid)})" title="Написать сообщение"><span class="eic eic-mail" aria-hidden="true"></span></button>
+                <button class="action-btn" type="button" data-admin-command="open-visitor-profile" data-admin-value="${encodedVisitorId}" title="Профиль посетителя"><span class="eic eic-clip" aria-hidden="true"></span></button>
+                <button class="action-btn" type="button" data-admin-command="open-direct-message" data-admin-value="${encodedVisitorId}" title="Написать сообщение"><span class="eic eic-mail" aria-hidden="true"></span></button>
             </td>
         </tr>`;
     }).join('');
@@ -275,14 +313,32 @@ function loadTodayVisitors() {
 // ПРОФИЛЬ ПОСЕТИТЕЛЯ (ИСТОРИЯ)
 // ============================================
 
+function closeLegacyModal(overlay) {
+    const target = overlay || document.querySelector('.modal-overlay');
+    if (target) target.remove();
+    if (!document.querySelector('.modal-overlay')) {
+        document.body.classList.remove('admin-legacy-modal-open');
+    }
+}
+
+function mountLegacyModal(overlay) {
+    document.querySelectorAll('.modal-overlay').forEach(node => node.remove());
+    overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) closeLegacyModal(overlay);
+    });
+    document.body.appendChild(overlay);
+    document.body.classList.add('admin-legacy-modal-open');
+    const focusTarget = overlay.querySelector('textarea, input, button');
+    if (focusTarget) window.requestAnimationFrame(() => focusTarget.focus());
+}
+
 function openVisitorProfile(visitorId) {
     const name = getVisitorDisplayName(visitorId);
     const displayName = name || visitorId.substring(0, 20) + '…';
-    const existing = document.querySelector('.modal-overlay');
-    if (existing) existing.remove();
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
+    const encodedVisitorId = escapeHtml(visitorId);
 
     overlay.innerHTML = `
         <div class="modal profile-modal">
@@ -290,7 +346,7 @@ function openVisitorProfile(visitorId) {
                 <div class="profile-avatar"><span class="eic eic-user" aria-hidden="true"></span></div>
                 <div class="profile-info">
                     <h3>${escapeHtml(displayName)}
-                        <span class="edit-icon" style="cursor:pointer; font-size:0.8rem; opacity:0.5;" onclick="renameVisitor(${inlineArg(visitorId)})" title="Переименовать"><span class="eic eic-pen" aria-hidden="true"></span></span>
+                        <button class="action-btn edit-icon" type="button" data-admin-command="rename-visitor" data-admin-value="${encodedVisitorId}" title="Переименовать" aria-label="Переименовать посетителя"><span class="eic eic-pen" aria-hidden="true"></span></button>
                     </h3>
                     <div class="profile-id">${escapeHtml(visitorId)}</div>
                 </div>
@@ -299,17 +355,13 @@ function openVisitorProfile(visitorId) {
                 <div class="history-empty pulse">Загрузка истории...</div>
             </div>
             <div class="modal-actions" style="padding-top:1rem; border-top: 1px solid var(--border); flex-shrink:0;">
-                <button class="btn btn-outline btn-sm" onclick="openDirectMessage(${inlineArg(visitorId)}); this.closest('.modal-overlay').remove();"><span class="eic eic-mail" aria-hidden="true"></span> Написать</button>
-                <button class="btn btn-outline btn-sm" onclick="this.closest('.modal-overlay').remove()">Закрыть</button>
+                <button class="btn btn-outline btn-sm" type="button" data-admin-command="open-direct-message" data-admin-value="${encodedVisitorId}"><span class="eic eic-mail" aria-hidden="true"></span> Написать</button>
+                <button class="btn btn-outline btn-sm" type="button" data-admin-command="close-legacy-modal">Закрыть</button>
             </div>
         </div>
     `;
 
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) overlay.remove();
-    });
-
-    document.body.appendChild(overlay);
+    mountLegacyModal(overlay);
     currentProfileVisitorId = visitorId;
     loadVisitorProfile(visitorId);
 }
@@ -432,7 +484,7 @@ function renderHistoryItem(item) {
     }
 
     const deleteBtn = item.deletePath
-        ? `<button class="action-btn" style="width:24px; height:24px; font-size:0.7rem;" onclick="deleteHistoryItem(${inlineArg(item.deletePath)})" title="Удалить"><span class="eic eic-trash" aria-hidden="true"></span></button>`
+        ? `<button class="action-btn" type="button" style="width:24px; height:24px; font-size:0.7rem;" data-admin-command="delete-history" data-admin-value="${escapeHtml(item.deletePath)}" title="Удалить"><span class="eic eic-trash" aria-hidden="true"></span></button>`
         : '';
 
     return `
@@ -493,19 +545,18 @@ function formatDate(timestamp) {
 
 function openDirectMessage(visitorId) {
     const name = getVisitorDisplayName(visitorId) || visitorId.substring(0, 15) + '…';
-    const existing = document.querySelector('.modal-overlay');
-    if (existing) existing.remove();
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
+    const encodedVisitorId = escapeHtml(visitorId);
 
     overlay.innerHTML = `
         <div class="modal">
             <h3><span class="eic eic-mail" aria-hidden="true"></span> Сообщение для <span style="color:var(--accent-hover)">${escapeHtml(name)}</span></h3>
 
             <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
-                <button class="btn btn-sm btn-outline dm-mode-btn active" data-mode="message" onclick="switchDmMode(this, 'message')"><span class="eic eic-chat" aria-hidden="true"></span> Сообщение</button>
-                <button class="btn btn-sm btn-outline dm-mode-btn" data-mode="poll" onclick="switchDmMode(this, 'poll')"><span class="eic eic-chart" aria-hidden="true"></span> Опрос</button>
+                <button class="btn btn-sm btn-outline dm-mode-btn active" type="button" data-mode="message" data-admin-command="dm-mode" data-admin-value="message"><span class="eic eic-chat" aria-hidden="true"></span> Сообщение</button>
+                <button class="btn btn-sm btn-outline dm-mode-btn" type="button" data-mode="poll" data-admin-command="dm-mode" data-admin-value="poll"><span class="eic eic-chart" aria-hidden="true"></span> Опрос</button>
             </div>
 
             <div id="dmMessageForm">
@@ -530,22 +581,18 @@ function openDirectMessage(visitorId) {
                         <input type="text" class="dm-poll-option" placeholder="Вариант 1">
                         <input type="text" class="dm-poll-option" placeholder="Вариант 2">
                     </div>
-                    <button class="add-option-btn" style="margin-top:0.5rem;" onclick="addDmOption()">+ Добавить</button>
+                    <button class="add-option-btn" type="button" style="margin-top:0.5rem;" data-admin-command="add-dm-option">+ Добавить</button>
                 </div>
             </div>
 
             <div class="modal-actions">
-                <button class="btn btn-outline btn-sm" onclick="this.closest('.modal-overlay').remove()">Отмена</button>
-                <button class="btn btn-primary btn-sm" onclick="sendDirectMessage(${inlineArg(visitorId)})">Отправить</button>
+                <button class="btn btn-outline btn-sm" type="button" data-admin-command="close-legacy-modal">Отмена</button>
+                <button class="btn btn-primary btn-sm" type="button" data-admin-command="send-direct-message" data-admin-value="${encodedVisitorId}">Отправить</button>
             </div>
         </div>
     `;
 
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) overlay.remove();
-    });
-
-    document.body.appendChild(overlay);
+    mountLegacyModal(overlay);
 }
 
 function switchDmMode(btn, mode) {
@@ -589,7 +636,7 @@ function sendDirectMessage(visitorId) {
             read: false
         }).then(() => {
             const overlay = document.querySelector('.modal-overlay');
-            if (overlay) overlay.remove();
+            closeLegacyModal(overlay);
             AdminUI.notify('Сообщение отправлено.', { tone: 'success' });
         }).catch(err => {
             console.error('Ошибка отправки:', err);
@@ -616,7 +663,7 @@ function sendDirectMessage(visitorId) {
             read: false
         }).then(() => {
             const overlay = document.querySelector('.modal-overlay');
-            if (overlay) overlay.remove();
+            closeLegacyModal(overlay);
             AdminUI.notify('Опрос отправлен посетителю.', { tone: 'success' });
         }).catch(err => {
             console.error('Ошибка отправки:', err);
@@ -631,41 +678,45 @@ function sendDirectMessage(visitorId) {
 // ============================================
 
 function initPollForm() {
-    const addBtn = document.getElementById('addOptionBtn');
-    const sendBtn = document.getElementById('sendPollBtn');
-    const optionsList = document.getElementById('optionsList');
-
-    addBtn.addEventListener('click', () => {
-        const count = optionsList.querySelectorAll('.option-row').length;
-        if (count >= 6) {
-            AdminUI.notify('Можно добавить не больше шести вариантов.');
-            return;
-        }
-        const row = document.createElement('div');
-        row.className = 'option-row';
-        row.innerHTML = `
-            <input type="text" placeholder="Вариант ${count + 1}" class="poll-option">
-            <button class="remove-option" title="Удалить">×</button>
-        `;
-        optionsList.appendChild(row);
-        bindRemoveButtons();
-    });
-
-    sendBtn.addEventListener('click', sendPoll);
-    bindRemoveButtons();
+    updatePollOptionLabels();
 }
 
-function bindRemoveButtons() {
-    document.querySelectorAll('.remove-option').forEach(btn => {
-        btn.onclick = function() {
-            const rows = document.querySelectorAll('.option-row');
-            if (rows.length <= 2) {
-                AdminUI.notify('В опросе должно остаться минимум два варианта.');
-                return;
-            }
-            this.closest('.option-row').remove();
-        };
+function updatePollOptionLabels() {
+    document.querySelectorAll('#optionsList .option-row').forEach((row, index) => {
+        const input = row.querySelector('.poll-option');
+        const button = row.querySelector('.remove-option');
+        if (input) input.placeholder = `Вариант ${index + 1}`;
+        if (button) button.setAttribute('aria-label', `Удалить вариант ${index + 1}`);
     });
+}
+
+function addPollOption() {
+    const optionsList = document.getElementById('optionsList');
+    if (!optionsList) return;
+    const count = optionsList.querySelectorAll('.option-row').length;
+    if (count >= 6) {
+        AdminUI.notify('Можно добавить не больше шести вариантов.');
+        return;
+    }
+    const row = document.createElement('div');
+    row.className = 'option-row';
+    row.innerHTML = `
+        <input type="text" placeholder="Вариант ${count + 1}" class="poll-option">
+        <button class="remove-option" type="button" data-admin-command="poll-remove-option" title="Удалить вариант" aria-label="Удалить вариант ${count + 1}">×</button>
+    `;
+    optionsList.appendChild(row);
+    updatePollOptionLabels();
+    row.querySelector('.poll-option')?.focus();
+}
+
+function removePollOption(button) {
+    const rows = document.querySelectorAll('#optionsList .option-row');
+    if (rows.length <= 2) {
+        AdminUI.notify('В опросе должно остаться минимум два варианта.');
+        return;
+    }
+    button.closest('.option-row')?.remove();
+    updatePollOptionLabels();
 }
 
 function sendPoll() {
@@ -729,6 +780,7 @@ function listenPolls() {
         pollsList.innerHTML = polls.map(poll => {
             const statusClass = poll.active ? 'poll-active' : 'poll-closed';
             const statusText = poll.active ? '● Активен' : '○ Закрыт';
+            const encodedPollId = escapeHtml(poll.id);
 
             return `
                 <div class="poll-card" id="poll-${poll.id}">
@@ -740,8 +792,8 @@ function listenPolls() {
                         <div style="display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0;">
                             <span class="poll-status ${statusClass}">${statusText}</span>
                             ${poll.active ?
-                                `<button class="btn btn-danger btn-sm" onclick="closePoll(${inlineArg(poll.id)})">Закрыть</button>` :
-                                `<button class="btn btn-outline btn-sm" onclick="deletePoll(${inlineArg(poll.id)})">Удалить</button>`
+                                `<button class="btn btn-danger btn-sm" type="button" data-admin-command="close-poll" data-admin-value="${encodedPollId}">Закрыть</button>` :
+                                `<button class="btn btn-outline btn-sm" type="button" data-admin-command="delete-poll" data-admin-value="${encodedPollId}">Удалить</button>`
                             }
                         </div>
                     </div>
@@ -810,7 +862,7 @@ function loadPollResults(poll) {
             const colors = ['var(--accent)', 'var(--success)', 'var(--warning)', '#a78bfa', '#f472b6', '#34d399'];
             return `
                 <div class="poll-voter-row">
-                    <span class="poll-voter-name" style="cursor:pointer;" onclick="renameVisitor(${inlineArg(v.visitorId)})" title="Клик для переименования">${escapeHtml(displayName)}</span>
+                    <button class="poll-voter-name" type="button" data-admin-command="rename-visitor" data-admin-value="${escapeHtml(v.visitorId)}" title="Клик для переименования">${escapeHtml(displayName)}</button>
                     <span class="poll-voter-answer" style="color:${colors[colorIdx]}">${escapeHtml(v.optionText)}</span>
                 </div>
             `;
@@ -820,7 +872,7 @@ function loadPollResults(poll) {
 
         container.innerHTML = barsHtml +
             `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.5rem;">
-                <button class="poll-details-toggle" onclick="toggleVoterList(${inlineArg('voters-' + pollCardId)})"><span class="eic eic-users" aria-hidden="true"></span> Показать ответы по посетителям (${total})</button>
+                <button class="poll-details-toggle" type="button" data-admin-command="toggle-voters" data-admin-value="${escapeHtml('voters-' + pollCardId)}"><span class="eic eic-users" aria-hidden="true"></span> Показать ответы по посетителям (${total})</button>
                 <span style="font-size:0.8rem; color:var(--text-secondary);">Всего: ${total}</span>
             </div>
             <div class="poll-voter-list" id="voters-${pollCardId}">
@@ -872,29 +924,13 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function inlineArg(value) {
-    return escapeHtml(JSON.stringify(String(value)));
-}
-
 // ============================================
 // МАССОВАЯ РАССЫЛКА
 // ============================================
 
-// Обновляем счётчик получателей
-let onlineVisitorIds = [];
-
-// Подписка на онлайн для счётчика рассылки + обновление списка посетителей
-db.ref('presence').on('value', (snap) => {
-    const data = snap.val() || {};
-    onlineVisitorIds = Object.values(data).map(u => u.visitorId).filter(Boolean);
-    const el = document.getElementById('broadcastCount');
-    if (el) el.textContent = onlineVisitorIds.length;
-    // Перерисовываем список всех посетителей — обновить онлайн-точки
-    if (lastVisitorsSnapshot) renderAllVisitors(lastVisitorsSnapshot, visitorsListPeriod);
-});
-
-document.getElementById('broadcastBtn')?.addEventListener('click', async () => {
-    const text = document.getElementById('broadcastText').value.trim();
+async function sendBroadcast() {
+    const field = document.getElementById('broadcastText');
+    const text = field ? field.value.trim() : '';
     if (!text) { AdminUI.notify('Введите текст сообщения.'); return; }
     if (onlineVisitorIds.length === 0) { AdminUI.notify('Сейчас нет посетителей онлайн.'); return; }
 
@@ -903,6 +939,8 @@ document.getElementById('broadcastBtn')?.addEventListener('click', async () => {
     })) return;
 
     const btn = document.getElementById('broadcastBtn');
+    const idleMarkup = btn ? btn.innerHTML : '';
+    if (!btn) return;
     btn.disabled = true;
     btn.textContent = 'Отправка...';
 
@@ -916,17 +954,17 @@ document.getElementById('broadcastBtn')?.addEventListener('click', async () => {
         })
     );
 
-    Promise.all(promises)
-        .then(() => {
-            document.getElementById('broadcastText').value = '';
-            AdminUI.notify(`Сообщение отправлено: ${onlineVisitorIds.length}.`, { tone: 'success' });
-        })
-        .catch(err => AdminUI.notify('Не удалось выполнить рассылку: ' + err.message, { tone: 'error' }))
-        .finally(() => {
-            btn.disabled = false;
-            btn.textContent = 'Отправить всем';
-        });
-});
+    try {
+        await Promise.all(promises);
+        field.value = '';
+        AdminUI.notify(`Сообщение отправлено: ${onlineVisitorIds.length}.`, { tone: 'success' });
+    } catch (error) {
+        AdminUI.notify('Не удалось выполнить рассылку: ' + error.message, { tone: 'error' });
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = idleMarkup;
+    }
+}
 
 // ============================================
 // ВСЕ ПОСЕТИТЕЛИ (ЖУРНАЛ) — REAL-TIME
@@ -943,13 +981,21 @@ function setAllVisitorsCollapsed(collapsed) {
     if (!body || !button) return;
     body.hidden = collapsed;
     button.setAttribute('aria-expanded', String(!collapsed));
-    button.querySelector('[aria-hidden]').textContent = collapsed ? '+' : '−';
-    button.querySelector('.admin-collapse-label').textContent = collapsed ? 'Показать' : 'Скрыть';
-    localStorage.setItem('admin-all-visitors-collapsed', collapsed ? '1' : '0');
+    const icon = button.querySelector('[aria-hidden]');
+    const label = button.querySelector('.admin-collapse-label');
+    if (icon) icon.textContent = collapsed ? '+' : '−';
+    if (label) label.textContent = collapsed ? 'Показать' : 'Скрыть';
+    try {
+        localStorage.setItem('admin-all-visitors-collapsed', collapsed ? '1' : '0');
+    } catch (_) {
+        // Настройка сворачивания необязательна; сама кнопка должна работать и без localStorage.
+    }
     if (collapsed && visitorsListener) {
         db.ref('visitors').off('value', visitorsListener);
         visitorsListener = null;
-    } else if (!collapsed && visitorsWasLoaded) loadAllVisitors(visitorsListPeriod);
+    } else if (!collapsed && dashboardInitialized) {
+        loadAllVisitors(visitorsListPeriod);
+    }
 }
 
 function loadAllVisitors(period) {
@@ -962,12 +1008,16 @@ function loadAllVisitors(period) {
     }
 
     const container = document.getElementById('allVisitorsList');
+    if (!container) return;
     container.innerHTML = '<div class="no-data pulse">Загрузка...</div>';
 
     // Подписываемся на real-time обновления
     visitorsListener = db.ref('visitors').on('value', (snap) => {
         lastVisitorsSnapshot = snap.val() || {};
         renderAllVisitors(lastVisitorsSnapshot, visitorsListPeriod);
+    }, (error) => {
+        console.error('Admin visitors listener:', error);
+        container.innerHTML = '<div class="no-data">Не удалось загрузить список посетителей</div>';
     });
 
     // Подсветим активную кнопку
@@ -1039,23 +1089,24 @@ function renderAllVisitors(data, period) {
                     ${visitors.map(v => {
                         const displayName = v.name || v.id.substring(0, 14) + '…';
                         const nameClass = v.name ? 'color:var(--accent-hover); font-weight:600;' : 'color:var(--text-secondary); font-size:0.8rem;';
+                        const encodedVisitorId = escapeHtml(v.id);
                         const page = (v.lastPage || '/').replace(/^\//, '').replace('.html', '') || 'index';
                         const time = v.lastVisit ? formatDate(v.lastVisit) : '—';
                         const isOnline = onlineVisitorIds.includes(v.id);
                         const onlineDot = isOnline ? '<span class="status-dot" style="margin-right:0.3rem;"></span>' : '';
                         return `<tr>
                             <td>
-                                ${onlineDot}<span style="${nameClass} cursor:pointer;" onclick="renameVisitor(${inlineArg(v.id)})" title="Переименовать">
+                                ${onlineDot}<button class="visitor-name" type="button" style="${nameClass}" data-admin-command="rename-visitor" data-admin-value="${encodedVisitorId}" title="Переименовать">
                                     ${escapeHtml(displayName)}
-                                </span>
+                                </button>
                             </td>
                             <td style="color:var(--text-secondary); font-size:0.85rem;">${time}</td>
                             <td style="text-align:center;" title="${v.authProvider === 'anonymous' ? 'Анонимный браузер' : (v.authProvider === 'legacy' ? 'Старая запись' : 'Аккаунт')}${v.browserContext === 'telegram' ? ' · Telegram' : ''}">${v.pageViews}</td>
                             <td><span class="page-badge">${escapeHtml(page)}</span></td>
                             <td style="white-space:nowrap;">
-                                <button class="action-btn" onclick="openVisitorProfile(${inlineArg(v.id)})" title="Профиль"><span class="eic eic-clip" aria-hidden="true"></span></button>
-                                <button class="action-btn" onclick="openDirectMessage(${inlineArg(v.id)})" title="Написать"><span class="eic eic-mail" aria-hidden="true"></span></button>
-                                <button class="action-btn" onclick="deleteVisitor(${inlineArg(v.id)})" title="Удалить" style="color:var(--danger);"><span class="eic eic-trash" aria-hidden="true"></span></button>
+                                <button class="action-btn" type="button" data-admin-command="open-visitor-profile" data-admin-value="${encodedVisitorId}" title="Профиль"><span class="eic eic-clip" aria-hidden="true"></span></button>
+                                <button class="action-btn" type="button" data-admin-command="open-direct-message" data-admin-value="${encodedVisitorId}" title="Написать"><span class="eic eic-mail" aria-hidden="true"></span></button>
+                                <button class="action-btn" type="button" data-admin-command="delete-visitor" data-admin-value="${encodedVisitorId}" title="Удалить" style="color:var(--danger);"><span class="eic eic-trash" aria-hidden="true"></span></button>
                             </td>
                         </tr>`;
                     }).join('')}
@@ -1079,15 +1130,6 @@ async function deleteVisitor(visitorId) {
         AdminUI.notify('Профиль посетителя удалён.', { tone: 'success' });
     }).catch(err => {
         AdminUI.notify('Не удалось удалить профиль: ' + err.message, { tone: 'error' });
-    });
-}
-
-const allVisitorsToggle = document.getElementById('allVisitorsToggle');
-if (allVisitorsToggle) {
-    const initiallyCollapsed = localStorage.getItem('admin-all-visitors-collapsed') === '1';
-    setAllVisitorsCollapsed(initiallyCollapsed);
-    allVisitorsToggle.addEventListener('click', () => {
-        setAllVisitorsCollapsed(allVisitorsToggle.getAttribute('aria-expanded') === 'true');
     });
 }
 
@@ -1138,3 +1180,115 @@ async function clearAllData() {
         AdminUI.notify('Не удалось удалить данные: ' + err.message, { tone: 'error' });
     });
 }
+
+// ============================================
+// ЕДИНАЯ МАРШРУТИЗАЦИЯ ДЕЙСТВИЙ
+// ============================================
+
+async function handleAdminAction(event) {
+    const control = event.target.closest('[data-admin-command]');
+    if (!control || control.disabled || !document.documentElement.contains(control)) return;
+
+    const action = control.dataset.adminCommand;
+    const value = control.dataset.adminValue || '';
+    event.preventDefault();
+
+    try {
+        switch (action) {
+            case 'rename-visitor':
+                await renameVisitor(value);
+                break;
+            case 'open-visitor-profile':
+                openVisitorProfile(value);
+                break;
+            case 'open-direct-message':
+                openDirectMessage(value);
+                break;
+            case 'close-legacy-modal':
+                closeLegacyModal(control.closest('.modal-overlay'));
+                break;
+            case 'delete-history':
+                await deleteHistoryItem(value);
+                break;
+            case 'dm-mode':
+                switchDmMode(control, value);
+                break;
+            case 'add-dm-option':
+                addDmOption();
+                break;
+            case 'send-direct-message':
+                sendDirectMessage(value);
+                break;
+            case 'poll-add-option':
+                addPollOption();
+                break;
+            case 'poll-remove-option':
+                removePollOption(control);
+                break;
+            case 'send-poll':
+                sendPoll();
+                break;
+            case 'close-poll':
+                await closePoll(value);
+                break;
+            case 'delete-poll':
+                await deletePoll(value);
+                break;
+            case 'toggle-voters':
+                toggleVoterList(value);
+                break;
+            case 'send-broadcast':
+                await sendBroadcast();
+                break;
+            case 'visitors-toggle':
+                setAllVisitorsCollapsed(control.getAttribute('aria-expanded') === 'true');
+                break;
+            case 'load-visitors':
+                if (['all', 'today', 'week'].includes(value)) loadAllVisitors(value);
+                break;
+            case 'delete-visitor':
+                await deleteVisitor(value);
+                break;
+            case 'clear-daily-stats':
+                await clearDailyStats();
+                break;
+            case 'clear-presence':
+                await clearAllPresence();
+                break;
+            case 'clear-all-data':
+                await clearAllData();
+                break;
+            default:
+                return;
+        }
+    } catch (error) {
+        console.error(`Admin action «${action}»:`, error);
+        AdminUI.notify('Не удалось выполнить действие. Попробуйте ещё раз.', { tone: 'error' });
+    }
+}
+
+function initStaticAdminControls() {
+    document.addEventListener('click', handleAdminAction);
+    initPollForm();
+    let initiallyCollapsed = false;
+    try {
+        initiallyCollapsed = localStorage.getItem('admin-all-visitors-collapsed') === '1';
+    } catch (_) {
+        initiallyCollapsed = false;
+    }
+    setAllVisitorsCollapsed(initiallyCollapsed);
+    document.addEventListener('keydown', (event) => {
+        if (event.defaultPrevented || document.querySelector('.admin-dialog-overlay')) return;
+        if (event.key === 'Escape' && document.querySelector('.modal-overlay')) {
+            event.preventDefault();
+            closeLegacyModal();
+        }
+    });
+    window.addEventListener('pageshow', () => {
+        if (!document.querySelector('.modal-overlay')) {
+            document.body.classList.remove('admin-legacy-modal-open');
+        }
+    });
+}
+
+initStaticAdminControls();

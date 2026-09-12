@@ -2,6 +2,35 @@
     'use strict';
 
     let dialogSequence = 0;
+    let activeDialog = null;
+
+    function restoreDialogBackground(state) {
+        if (!state || state.backgroundRestored) return;
+        state.backgroundRestored = true;
+        state.inertEntries.forEach(function (entry) {
+            if (!entry.node || !entry.node.isConnected) return;
+            entry.node.inert = entry.wasInert;
+            if (entry.previousMarker === null) entry.node.removeAttribute('data-admin-dialog-inert');
+            else entry.node.setAttribute('data-admin-dialog-inert', entry.previousMarker);
+        });
+        document.body.classList.remove('admin-dialog-open');
+    }
+
+    function recoverOrphanedDialogState() {
+        if (activeDialog && activeDialog.overlay && activeDialog.overlay.isConnected) return;
+        if (activeDialog && typeof activeDialog.finish === 'function') {
+            activeDialog.finish(activeDialog.cancelValue, true);
+        } else if (activeDialog) {
+            restoreDialogBackground(activeDialog);
+        }
+        activeDialog = null;
+        document.querySelectorAll('.admin-dialog-overlay').forEach(function (overlay) { overlay.remove(); });
+        document.querySelectorAll('[data-admin-dialog-inert="1"]').forEach(function (node) {
+            node.inert = false;
+            node.removeAttribute('data-admin-dialog-inert');
+        });
+        document.body.classList.remove('admin-dialog-open');
+    }
 
     function notify(message, options) {
         const settings = options || {};
@@ -49,6 +78,11 @@
 
     function openDialog(options) {
         const settings = options || {};
+        if (activeDialog && typeof activeDialog.finish === 'function') {
+            activeDialog.finish(activeDialog.cancelValue, true);
+        }
+        recoverOrphanedDialogState();
+
         const previousFocus = document.activeElement;
         const id = 'admin-dialog-title-' + (++dialogSequence);
         const overlay = document.createElement('div');
@@ -104,25 +138,48 @@
         dialog.appendChild(actions);
         overlay.appendChild(dialog);
 
-        const inertNodes = Array.from(document.body.children).filter(function (node) { return node !== overlay; });
-        const priorInert = inertNodes.map(function (node) { return node.inert === true; });
-        inertNodes.forEach(function (node) { node.inert = true; });
         document.body.appendChild(overlay);
+        const inertEntries = Array.from(document.body.children).filter(function (node) { return node !== overlay; }).map(function (node) {
+            return {
+                node: node,
+                wasInert: node.inert === true,
+                previousMarker: node.getAttribute('data-admin-dialog-inert')
+            };
+        });
+        inertEntries.forEach(function (entry) {
+            entry.node.inert = true;
+            entry.node.setAttribute('data-admin-dialog-inert', '1');
+        });
+        document.body.classList.add('admin-dialog-open');
 
         return new Promise(function (resolve) {
             let settled = false;
-            function finish(value) {
+            const state = {
+                overlay: overlay,
+                inertEntries: inertEntries,
+                backgroundRestored: false,
+                cancelValue: settings.input ? null : false,
+                finish: null
+            };
+            function finish(value, immediate) {
                 if (settled) return;
                 settled = true;
                 document.removeEventListener('keydown', onKeyDown, true);
-                overlay.classList.add('is-leaving');
-                inertNodes.forEach(function (node, index) { node.inert = priorInert[index]; });
-                window.setTimeout(function () { overlay.remove(); }, 160);
+                restoreDialogBackground(state);
+                if (activeDialog === state) activeDialog = null;
+                if (immediate) {
+                    overlay.remove();
+                } else {
+                    overlay.classList.add('is-leaving');
+                    window.setTimeout(function () { overlay.remove(); }, 160);
+                }
                 if (previousFocus && typeof previousFocus.focus === 'function' && previousFocus.isConnected) {
                     window.setTimeout(function () { previousFocus.focus(); }, 0);
                 }
                 resolve(value);
             }
+            state.finish = finish;
+            activeDialog = state;
             function onKeyDown(event) {
                 if (event.key === 'Escape') {
                     event.preventDefault();
@@ -159,6 +216,16 @@
             window.requestAnimationFrame(function () { (input || confirm).focus(); });
         });
     }
+
+    window.addEventListener('pagehide', function () {
+        if (activeDialog && typeof activeDialog.finish === 'function') {
+            activeDialog.finish(activeDialog.cancelValue, true);
+        }
+    });
+    window.addEventListener('pageshow', recoverOrphanedDialogState);
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') recoverOrphanedDialogState();
+    });
 
     window.AdminUI = Object.freeze({
         notify: notify,

@@ -9,6 +9,23 @@
 
     function byId(id) { return document.getElementById(id); }
 
+    function setButtonPending(button, pending, pendingLabel) {
+        if (!button) return;
+        if (pending) {
+            if (!button.dataset.idleMarkup) button.dataset.idleMarkup = button.innerHTML;
+            button.disabled = true;
+            button.setAttribute('aria-busy', 'true');
+            button.textContent = pendingLabel || 'Загрузка…';
+            return;
+        }
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        if (button.dataset.idleMarkup) {
+            button.innerHTML = button.dataset.idleMarkup;
+            delete button.dataset.idleMarkup;
+        }
+    }
+
     function showAdminToast(message, isError) {
         if (window.AdminUI && typeof window.AdminUI.notify === 'function') {
             window.AdminUI.notify(message, { tone: isError ? 'error' : 'success' });
@@ -228,7 +245,7 @@
         if (analyticsLoading) return;
         analyticsLoading = true;
         const button = byId('refreshUsageBtn');
-        if (button) button.disabled = true;
+        setButtonPending(button, true, 'Обновление…');
         try {
             const days = recentDays(ANALYTICS_DAYS);
             const snapshots = await Promise.all(days.map(function (day) {
@@ -295,7 +312,7 @@
             showAdminToast('Не удалось загрузить расширенную аналитику', true);
         } finally {
             analyticsLoading = false;
-            if (button) button.disabled = false;
+            setButtonPending(button, false);
         }
     }
 
@@ -396,7 +413,7 @@
         if (accountDirectoryLoading) return;
         accountDirectoryLoading = true;
         const button = byId('refreshRegisteredAccountsBtn');
-        if (button) button.disabled = true;
+        setButtonPending(button, true, 'Обновление…');
         try {
             const snapshot = await db.ref('accountDirectory').once('value');
             accountDirectory = snapshot.val() || {};
@@ -410,7 +427,7 @@
             showAdminToast('Не удалось загрузить список аккаунтов', true);
         } finally {
             accountDirectoryLoading = false;
-            if (button) button.disabled = false;
+            setButtonPending(button, false);
         }
     }
 
@@ -546,7 +563,7 @@
         const tourEditor = byId('tourEditorRole').checked;
         const englishAccess = byId('englishAccessRole').checked;
         const saveButton = event.currentTarget.querySelector('button[type="submit"]');
-        saveButton.disabled = true;
+        setButtonPending(saveButton, true, 'Сохранение…');
         try {
             const roles = {
                 email: String(target.account.email || '').trim(),
@@ -585,7 +602,7 @@
             console.error('Save admin roles:', error);
             showAdminToast('Не удалось сохранить права', true);
         } finally {
-            saveButton.disabled = false;
+            setButtonPending(saveButton, false);
         }
     }
 
