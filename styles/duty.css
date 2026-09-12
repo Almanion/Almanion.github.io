@@ -46,23 +46,27 @@
 
 .duty-topbar.sidebar-header {
     position: sticky;
-    inset: 0 0 auto;
-    z-index: 80;
+    top: 0;
+    z-index: 90;
     width: 100%;
+    height: 64px;
     min-height: 64px;
-    padding: 0.65rem clamp(1rem, 4vw, 2.5rem);
-    background: color-mix(in srgb, var(--bg-secondary) 94%, transparent) !important;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.65rem max(1rem, calc((100vw - 1180px) / 2));
+    background: color-mix(in srgb, var(--bg-primary) 88%, transparent) !important;
     color: var(--text-primary) !important;
-    border-bottom: 1px solid var(--border-color) !important;
+    border: 0 !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent) !important;
     box-shadow: none !important;
-    backdrop-filter: blur(16px);
+    backdrop-filter: blur(18px) saturate(130%);
 }
 
 .duty-topbar h2 {
-    flex: 0 1 auto;
     margin: 0;
     font-size: 1rem;
-    font-weight: 680;
 }
 
 .duty-topbar h2 a {
@@ -71,39 +75,49 @@
     gap: 0.55rem;
     color: var(--text-primary) !important;
     text-decoration: none;
+    font-weight: 720;
 }
 
 .duty-topbar .home-icon {
+    width: 21px;
+    height: 21px;
     color: var(--duty-accent);
 }
 
 .duty-topbar-context {
-    flex: 1 1 auto;
-    min-width: 0;
-    padding-left: 1.15rem;
+    padding-left: 0.8rem;
+    border-left: 1px solid var(--border-color);
     color: var(--text-secondary);
-    font-size: 0.78rem;
-    font-weight: 570;
-    letter-spacing: 0.01em;
+    font-size: 0.74rem;
+    font-weight: 650;
+    letter-spacing: 0.025em;
 }
 
 .duty-topbar .sidebar-header-buttons {
     margin-left: auto;
+    display: inline-flex;
+    align-items: center;
     gap: 0.16rem;
-    padding: 0.2rem;
-    background: color-mix(in srgb, var(--bg-tertiary) 72%, transparent);
+    padding: 0.16rem;
+    background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
     border: 1px solid var(--border-color);
     border-radius: 999px;
 }
 
-.duty-topbar .sidebar-header-buttons > .account-btn,
-.duty-topbar .sidebar-header-buttons > .settings-button-sidebar {
+.duty-topbar .sidebar-header-buttons > button {
+    width: 39px;
+    height: 39px;
+    min-width: 39px;
     border-radius: 50% !important;
 }
 
+.duty-topbar .sidebar-header-buttons > .account-btn,
 .duty-topbar .settings-button-sidebar {
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
+.duty-topbar .sidebar-collapse-btn { display: none !important; }
 
 .duty-shell {
     width: min(100% - 2rem, 1160px);
@@ -1281,30 +1295,19 @@ body.duty-editor-open {
 
 @media (max-width: 640px) {
     .duty-topbar.sidebar-header {
+        height: 58px;
         min-height: 58px;
-        padding: 0.55rem 0.8rem;
+        padding: 0.5rem 0.7rem;
     }
 
     .duty-topbar .sidebar-header-buttons {
-        gap: 0.08rem;
-        padding: 0.14rem;
+        gap: 0.16rem;
+        padding: 0.16rem;
     }
 
-    .duty-topbar .sidebar-header-buttons > .account-btn,
-    .duty-topbar .sidebar-header-buttons > .settings-button-sidebar {
-        width: 38px;
-        min-width: 38px;
-        height: 38px;
-        min-height: 38px;
-    }
-
-    .duty-topbar h2 {
-        font-size: 0.9rem;
-    }
-
-    .duty-topbar-context {
-        display: none;
-    }
+    .duty-topbar .sidebar-header-buttons > button { width: 37px; height: 37px; min-width: 37px; }
+    .duty-topbar h2 a span { display: none; }
+    .duty-topbar-context { padding-left: 0.62rem; font-size: 0.68rem; }
 
     .duty-shell {
         width: min(100% - 1rem, 1160px);
@@ -1546,6 +1549,12 @@ body.duty-editor-open {
 }
 
 @media (max-width: 380px) {
+    .duty-topbar-context {
+        max-width: 118px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
     .duty-focus {
         grid-template-columns: 64px minmax(0, 1fr);
         gap: 0.75rem;
