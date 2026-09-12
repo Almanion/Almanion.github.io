@@ -11,7 +11,7 @@ const accountPages = [
     'index.html', 'physics.html', 'math.html', 'geometry.html', 'chemistry.html',
     'likbez.html', 'english.html', 'physics-exam.html', 'geometry-formulas.html',
     'matcenter.html', 'duty-10-1.html', 'physics-10.html',
-    'chemistry-10.html', 'literature-10.html'
+    'chemistry-10.html', 'literature-10.html', 'tour-10-1.html'
 ];
 
 accountPages.forEach((file) => {
@@ -21,7 +21,8 @@ accountPages.forEach((file) => {
     const progressive = noteProgressive || matcenterProgressive;
     const syncAt = html.indexOf('data-sync.js?v=20260908-1');
     const kcStorageAt = html.indexOf('kc-storage.js?v=20260911-1');
-    const accountAt = html.indexOf('account.js?v=20260908-1');
+    const accountScript = html.match(/account\.js\?v=[^"']+/);
+    const accountAt = accountScript ? html.indexOf(accountScript[0]) : -1;
     assert.ok(syncAt >= 0 || progressive, `${file} must load the data sync runtime directly or progressively`);
     assert.ok(kcStorageAt >= 0, `${file} must load account-scoped knowledge storage`);
     if (!progressive) {

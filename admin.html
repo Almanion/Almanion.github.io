@@ -1110,7 +1110,7 @@
         <div class="section admin-roles-section" id="adminRolesSection" hidden>
             <div class="section-kicker">Только владелец</div>
             <div class="section-title"><span class="eic eic-lock" aria-hidden="true"></span> Роли доступа</div>
-            <p class="section-description">Назначайте доступ отдельно к панели сайта, Матцентру, редактированию конспектов, списку дежурства и закрытому разделу английского. Публиковать материалы может только владелец.</p>
+            <p class="section-description">Назначайте доступ отдельно к панели сайта, Матцентру, редактированию конспектов, списку дежурства, подготовке турслёта и закрытому разделу английского. Публиковать материалы может только владелец.</p>
             <form class="admin-role-form" id="adminRoleForm">
                 <div class="form-group admin-role-account-field">
                     <label for="adminRoleAccount">Аккаунт пользователя</label>
@@ -1121,6 +1121,7 @@
                 <label class="admin-role-check"><input type="checkbox" id="matcenterAdminRole"> <span><b>Администратор Матцентра</b><small>Статусы задач и подсказки</small></span></label>
                 <label class="admin-role-check"><input type="checkbox" id="contentEditorRole"> <span><b>Редактор конспектов</b><small>Создание и редактирование новых разделов</small></span></label>
                 <label class="admin-role-check"><input type="checkbox" id="dutyEditorRole"> <span><b>Редактор дежурства</b><small>Изменение списка дежурства 10-1</small></span></label>
+                <label class="admin-role-check"><input type="checkbox" id="tourEditorRole"> <span><b>Редактор турслёта</b><small>Участники, палатки, мероприятия и питание класса 10-1</small></span></label>
                 <label class="admin-role-check"><input type="checkbox" id="englishAccessRole"> <span><b>Доступ к английскому</b><small>Закрытый словарь в разделе «Дополнительно»</small></span></label>
                 <button class="btn btn-primary admin-role-save" type="submit">Сохранить роли</button>
             </form>
@@ -1145,6 +1146,6 @@
     <script src="firebase-config.js?v=20260903-3"></script>
     <script src="admin-dialogs.js?v=20260911-1"></script>
     <script src="admin-app.js?v=20260911-1"></script>
-    <script src="admin-dashboard.js?v=20260908-1"></script>
+    <script src="admin-dashboard.js?v=20260912-1"></script>
 </body>
 </html>

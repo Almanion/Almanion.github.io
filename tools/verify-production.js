@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-const DEFAULT_PATHS = ['/', '/physics.html', '/matcenter.html', '/english.html', '/note-runtime.js', '/safe-html.js'];
+const DEFAULT_PATHS = ['/', '/physics.html', '/matcenter.html', '/english.html', '/tour-10-1.html', '/tour-10-1.js', '/note-runtime.js', '/safe-html.js'];
 
 function parseArgs(argv) {
     const options = {

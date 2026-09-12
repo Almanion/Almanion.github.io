@@ -688,6 +688,16 @@
                 .catch(function () { return false; });
     }
 
+    function hasTourEditorAccess(account) {
+        if (!account) return Promise.resolve(false);
+        const owner = account.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
+        return owner
+            ? Promise.resolve(true)
+            : db.ref('adminRoles/' + account.uid + '/tourEditor').once('value')
+                .then(function (snapshot) { return snapshot.val() === true; })
+                .catch(function () { return false; });
+    }
+
     function createHomeAccessLink(kind) {
         const link = document.createElement('a');
         link.className = 'home-editor-link';
@@ -1170,6 +1180,7 @@
         hasSiteAdminAccess: hasSiteAdminAccess,
         hasEnglishAccess: hasEnglishAccess,
         hasDutyEditorAccess: hasDutyEditorAccess,
+        hasTourEditorAccess: hasTourEditorAccess,
         exportData: function () {
             const sync = dataSyncApi();
             if (!sync) throw new Error('Слой синхронизации ещё не загружен');

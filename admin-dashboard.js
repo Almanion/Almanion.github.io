@@ -433,6 +433,7 @@
         byId('matcenterAdminRole').checked = role.matcenterAdmin === true;
         byId('contentEditorRole').checked = role.contentEditor === true;
         byId('dutyEditorRole').checked = role.dutyEditor === true;
+        byId('tourEditorRole').checked = role.tourEditor === true;
         byId('englishAccessRole').checked = role.englishAccess === true;
         byId('adminRoleAccount').focus();
     }
@@ -462,7 +463,7 @@
         ownerIdentity.append(ownerEmail, ownerCaption);
         const ownerBadges = document.createElement('div');
         ownerBadges.className = 'admin-role-badges';
-        ownerBadges.append(roleBadge('Владелец', true), roleBadge('Сайт'), roleBadge('Матцентр'), roleBadge('Редактор'), roleBadge('Дежурство'), roleBadge('Английский'));
+        ownerBadges.append(roleBadge('Владелец', true), roleBadge('Сайт'), roleBadge('Матцентр'), roleBadge('Редактор'), roleBadge('Дежурство'), roleBadge('Турслёт'), roleBadge('Английский'));
         ownerRow.append(ownerIdentity, ownerBadges);
         list.appendChild(ownerRow);
 
@@ -470,7 +471,7 @@
             return String((adminRoles[a] || {}).email || '').localeCompare(String((adminRoles[b] || {}).email || ''), 'ru');
         }).forEach(function (uid) {
             const role = adminRoles[uid] || {};
-            if (!role.siteAdmin && !role.matcenterAdmin && !role.contentEditor && !role.dutyEditor && !role.englishAccess) return;
+            if (!role.siteAdmin && !role.matcenterAdmin && !role.contentEditor && !role.dutyEditor && !role.tourEditor && !role.englishAccess) return;
             if (uid === SITE_OWNER_UID) return;
             const account = accountDirectory[uid] || {};
             const row = document.createElement('div');
@@ -488,6 +489,7 @@
             if (role.matcenterAdmin) badges.appendChild(roleBadge('Матцентр'));
             if (role.contentEditor) badges.appendChild(roleBadge('Редактор'));
             if (role.dutyEditor) badges.appendChild(roleBadge('Дежурство'));
+            if (role.tourEditor) badges.appendChild(roleBadge('Турслёт'));
             if (role.englishAccess) badges.appendChild(roleBadge('Английский'));
             const edit = document.createElement('button');
             edit.type = 'button';
@@ -541,6 +543,7 @@
         const matcenterAdmin = byId('matcenterAdminRole').checked;
         const contentEditor = byId('contentEditorRole').checked;
         const dutyEditor = byId('dutyEditorRole').checked;
+        const tourEditor = byId('tourEditorRole').checked;
         const englishAccess = byId('englishAccessRole').checked;
         const saveButton = event.currentTarget.querySelector('button[type="submit"]');
         saveButton.disabled = true;
@@ -551,6 +554,7 @@
                 matcenterAdmin: matcenterAdmin,
                 contentEditor: contentEditor,
                 dutyEditor: dutyEditor,
+                tourEditor: tourEditor,
                 englishAccess: englishAccess,
                 updatedAt: firebase.database.ServerValue.TIMESTAMP,
                 updatedBy: user.uid
@@ -560,6 +564,7 @@
                 matcenterAdmin && 'matcenterAdmin',
                 contentEditor && 'contentEditor',
                 dutyEditor && 'dutyEditor',
+                tourEditor && 'tourEditor',
                 englishAccess && 'englishAccess'
             ].filter(Boolean);
             const auditKey = db.ref('auditLog').push().key;
@@ -574,7 +579,7 @@
             };
             await db.ref().update(updates);
             byId('adminRoleForm').reset();
-            showAdminToast(siteAdmin || matcenterAdmin || contentEditor || dutyEditor || englishAccess ? 'Роли пользователя сохранены' : 'Все дополнительные роли отозваны');
+            showAdminToast(siteAdmin || matcenterAdmin || contentEditor || dutyEditor || tourEditor || englishAccess ? 'Роли пользователя сохранены' : 'Все дополнительные роли отозваны');
             await loadRoleManager(user);
         } catch (error) {
             console.error('Save admin roles:', error);

@@ -11,6 +11,7 @@ body.home-page .stats,
 body.home-page .grade-tabs,
 body.home-page .grade-panel:not([hidden]),
 body.home-page .subject-card,
+body.home-page .class-section .section-title,
 body.home-page .extra-section .section-title,
 body.home-page .home-footer {
     animation: none;
@@ -120,6 +121,10 @@ body.home-page.home-motion-initial .extra-section .subjects-grid > .subject-card
 
 body.home-page .extra-section .section-title {
     animation: home-soft-in 300ms 150ms var(--home-motion-out) both;
+}
+
+body.home-page .class-section .section-title {
+    animation: home-soft-in 280ms 125ms var(--home-motion-out) both;
 }
 
 body.home-page.home-motion-initial .extra-section .subjects-grid > .subject-card {
@@ -232,6 +237,7 @@ body.animations-medium.home-page .stats,
 body.animations-medium.home-page .grade-tabs,
 body.animations-medium.home-page .grade-panel:not([hidden]),
 body.animations-medium.home-page .subject-card,
+body.animations-medium.home-page .class-section .section-title,
 body.animations-medium.home-page .extra-section .section-title,
 body.animations-medium.home-page .home-footer {
     animation-duration: 220ms;
@@ -258,6 +264,7 @@ body.animations-off.home-page .stats,
 body.animations-off.home-page .grade-tabs,
 body.animations-off.home-page .grade-panel:not([hidden]),
 body.animations-off.home-page .subject-card,
+body.animations-off.home-page .class-section .section-title,
 body.animations-off.home-page .extra-section .section-title,
 body.animations-off.home-page .home-footer {
     animation: none !important;
@@ -286,6 +293,7 @@ body.animations-off.home-page .home-editor-link svg {
     body.home-page .grade-tabs,
     body.home-page .grade-panel:not([hidden]),
     body.home-page .subject-card,
+    body.home-page .class-section .section-title,
     body.home-page .extra-section .section-title,
     body.home-page .home-footer {
         animation: none !important;

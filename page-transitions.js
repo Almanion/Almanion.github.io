@@ -16,7 +16,9 @@
         'likbez.html',
         'literature-10.html',
         'english.html',
-        'matcenter.html'
+        'matcenter.html',
+        'duty-10-1.html',
+        'tour-10-1.html'
     ]);
 
     function pageName(pathname) {

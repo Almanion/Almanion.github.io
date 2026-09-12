@@ -44,6 +44,14 @@ function serverTimestamp() {
         const accountDb = environment.authenticatedContext(accountUid, auth(accountUid, 'password', {
             email: 'reader@example.test'
         })).database();
+        const tourEditorUid = 'tour-editor-1';
+        const tourEditorDb = environment.authenticatedContext(tourEditorUid, auth(tourEditorUid, 'password', {
+            email: 'tour-editor@example.test'
+        })).database();
+        const ordinaryUid = 'ordinary-user-1';
+        const ordinaryDb = environment.authenticatedContext(ordinaryUid, auth(ordinaryUid, 'password', {
+            email: 'ordinary@example.test'
+        })).database();
         const ownerDb = environment.authenticatedContext('2M2ZdLQcJAhluPjUVFNJ6MyQrdH2', auth(
             '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2',
             'password',
@@ -138,6 +146,7 @@ function serverTimestamp() {
             matcenterAdmin: true,
             contentEditor: true,
             dutyEditor: true,
+            tourEditor: true,
             englishAccess: true,
             updatedAt: serverTimestamp(),
             updatedBy: 'forged-owner-email'
@@ -177,6 +186,7 @@ function serverTimestamp() {
                 matcenterAdmin: false,
                 contentEditor: true,
                 dutyEditor: false,
+                tourEditor: false,
                 englishAccess: false,
                 updatedAt: { '.sv': 'timestamp' },
                 updatedBy: '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2'
@@ -188,6 +198,133 @@ function serverTimestamp() {
         await assertFails(accountDb.ref('auditLog/event-2').set(Object.assign({}, auditRecord, {
             actorUid: accountUid
         })));
+
+        await assertSucceeds(ownerDb.ref('adminRoles/' + tourEditorUid).set({
+            email: 'tour-editor@example.test',
+            siteAdmin: false,
+            matcenterAdmin: false,
+            contentEditor: false,
+            dutyEditor: false,
+            tourEditor: true,
+            englishAccess: false,
+            updatedAt: serverTimestamp(),
+            updatedBy: '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2'
+        }));
+
+        const personA = 'p_0123456789abcdef01234567';
+        const personB = 'p_89abcdef0123456701234567';
+        const rosterPayload = function (revision, uid) {
+            return {
+                version: 1,
+                className: '10-1',
+                revision: revision,
+                updatedAt: serverTimestamp(),
+                updatedBy: uid,
+                members: {
+                    [personA]: { displayName: 'Аня Примерова', order: 1, active: true },
+                    [personB]: { displayName: 'Борис Примеров', order: 2, active: true }
+                }
+            };
+        };
+        await assertSucceeds(ownerDb.ref('classRosters/grade10_1').set(rosterPayload(
+            1,
+            '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2'
+        )));
+        await assertSucceeds(ownerDb.ref('classRosters/grade10_1').once('value'));
+        await assertSucceeds(tourEditorDb.ref('classRosters/grade10_1').once('value'));
+        await assertFails(anonDb.ref('classRosters/grade10_1').once('value'));
+        await assertFails(ordinaryDb.ref('classRosters/grade10_1').once('value'));
+        await assertFails(forgedOwnerDb.ref('classRosters/grade10_1').once('value'));
+        await assertFails(tourEditorDb.ref('classRosters/grade10_1').set(rosterPayload(2, tourEditorUid)));
+        await assertFails(ownerDb.ref('classRosters/grade10_1').remove());
+        const invalidRoster = rosterPayload(2, '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2');
+        invalidRoster.members.person_without_hash = { displayName: 'Ошибка', order: 3, active: true };
+        await assertFails(ownerDb.ref('classRosters/grade10_1').set(invalidRoster));
+
+        const tourPayload = function (revision, uid) {
+            return {
+                version: 1,
+                className: '10-1',
+                eventKey: 'autumn2026',
+                revision: revision,
+                updatedAt: serverTimestamp(),
+                updatedBy: uid,
+                info: {
+                    title: 'Туристический слёт 10-1',
+                    startDate: '2026-09-17',
+                    endDate: '2026-09-19',
+                    location: 'Озеро Уловное',
+                    route: 'Санкт-Петербург — Колосково',
+                    departure: '17 сентября после четвёртого урока',
+                    return: '19 сентября, время уточняется',
+                    leader: 'Алёна Александровна Лобанова'
+                },
+                schedule: {
+                    departure: {
+                        title: 'Отправление', date: '2026-09-17', order: 1,
+                        timeLabel: '14:19', startTime: '14:19', location: 'Финляндский вокзал', note: ''
+                    }
+                },
+                activities: {
+                    orientation: {
+                        title: 'Ориентирование', order: 1,
+                        participants: { [personA]: true }
+                    }
+                },
+                meals: {
+                    'dinner-day-1': {
+                        date: '2026-09-17', type: 'dinner', title: 'Ужин', order: 1, note: '',
+                        participants: { [personB]: true }
+                    }
+                },
+                tents: {
+                    'tent-1': {
+                        title: 'Палатка 1', order: 1, capacity: 4, note: '',
+                        participants: { [personA]: true, [personB]: true }
+                    }
+                },
+                people: {
+                    [personA]: 'Аня Примерова',
+                    [personB]: 'Борис Примеров'
+                }
+            };
+        };
+
+        await assertSucceeds(anonDb.ref('classTour/grade10_1/autumn2026').once('value'));
+        await assertFails(anonDb.ref('classTour/grade10_1/autumn2026').set(tourPayload(1, anonUid)));
+        await assertFails(ordinaryDb.ref('classTour/grade10_1/autumn2026').set(tourPayload(1, ordinaryUid)));
+        await assertFails(forgedOwnerDb.ref('classTour/grade10_1/autumn2026').set(tourPayload(1, 'forged-owner-email')));
+        await assertSucceeds(ownerDb.ref('classTour/grade10_1/autumn2026').set(tourPayload(
+            1,
+            '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2'
+        )));
+        await assertSucceeds(tourEditorDb.ref('classTour/grade10_1/autumn2026').set(tourPayload(2, tourEditorUid)));
+        await assertFails(tourEditorDb.ref('classTour/grade10_1/autumn2026').remove());
+        const emptyAssignmentsTour = tourPayload(3, tourEditorUid);
+        delete emptyAssignmentsTour.activities.orientation.participants;
+        delete emptyAssignmentsTour.meals['dinner-day-1'].participants;
+        delete emptyAssignmentsTour.tents['tent-1'].participants;
+        delete emptyAssignmentsTour.people;
+        await assertSucceeds(tourEditorDb.ref('classTour/grade10_1/autumn2026').set(emptyAssignmentsTour));
+        const invalidTour = tourPayload(4, tourEditorUid);
+        invalidTour.activities.orientation.participants[personA] = false;
+        await assertFails(tourEditorDb.ref('classTour/grade10_1/autumn2026').set(invalidTour));
+        const unknownFieldTour = tourPayload(4, tourEditorUid);
+        unknownFieldTour.unsafe = true;
+        await assertFails(tourEditorDb.ref('classTour/grade10_1/autumn2026').set(unknownFieldTour));
+        const unknownPerson = 'p_aaaaaaaaaaaaaaaaaaaaaaaa';
+        const unknownPersonTour = tourPayload(4, tourEditorUid);
+        unknownPersonTour.activities.orientation.participants[unknownPerson] = true;
+        unknownPersonTour.people[unknownPerson] = 'Посторонний участник';
+        await assertFails(tourEditorDb.ref('classTour/grade10_1/autumn2026').set(unknownPersonTour));
+        const renamedPersonTour = tourPayload(4, tourEditorUid);
+        renamedPersonTour.people[personA] = 'Другое имя';
+        await assertFails(tourEditorDb.ref('classTour/grade10_1/autumn2026').set(renamedPersonTour));
+        const endWithoutStartTour = tourPayload(4, tourEditorUid);
+        delete endWithoutStartTour.schedule.departure.startTime;
+        endWithoutStartTour.schedule.departure.endTime = '15:00';
+        await assertFails(tourEditorDb.ref('classTour/grade10_1/autumn2026').set(endWithoutStartTour));
+        await assertFails(tourEditorDb.ref('classTour/grade10_1/autumn2026').set(tourPayload(5, tourEditorUid)));
 
         await assertSucceeds(ownerDb.ref('presence').remove());
         await assertSucceeds(ownerDb.ref('visitors').remove());

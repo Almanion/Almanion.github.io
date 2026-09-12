@@ -66,6 +66,29 @@ async function testAccountAccessHelper(accountSource) {
     );
 }
 
+async function testTourAccessHelper(accountSource) {
+    const helperSource = accountSource.match(/function hasTourEditorAccess\(account\) \{[\s\S]*?\n    \}/);
+    assert.ok(helperSource, 'tour editor access helper could not be extracted');
+
+    const requestedPaths = [];
+    const sandbox = {
+        db: {
+            ref(refPath) {
+                requestedPaths.push(refPath);
+                return { once: () => Promise.resolve({ val: () => true }) };
+            }
+        }
+    };
+    vm.createContext(sandbox);
+    vm.runInContext(`${helperSource[0]}\nthis.checkTourAccess = hasTourEditorAccess;`, sandbox);
+
+    assert.equal(await sandbox.checkTourAccess(null), false);
+    assert.equal(await sandbox.checkTourAccess({ uid: '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' }), true);
+    assert.deepEqual(requestedPaths, []);
+    assert.equal(await sandbox.checkTourAccess({ uid: 'tour-editor-uid' }), true);
+    assert.deepEqual(requestedPaths, ['adminRoles/tour-editor-uid/tourEditor']);
+}
+
 async function run() {
     const page = read('duty-10-1.html');
     const client = read('duty.js');
@@ -374,15 +397,19 @@ async function run() {
 
     // Role helper and owner-only role manager wiring.
     await testAccountAccessHelper(account);
+    await testTourAccessHelper(account);
     assert.match(account, /hasDutyEditorAccess:\s*hasDutyEditorAccess/);
+    assert.match(account, /hasTourEditorAccess:\s*hasTourEditorAccess/);
     assert.match(admin, /id="dutyEditorRole"/);
+    assert.match(admin, /id="tourEditorRole"/);
     assert.match(dashboard, /byId\('dutyEditorRole'\)\.checked\s*=\s*role\.dutyEditor\s*===\s*true/);
     assert.match(dashboard, /!role\.dutyEditor/);
     assert.match(dashboard, /if \(role\.dutyEditor\) badges\.appendChild\(roleBadge\('Дежурство'\)\)/);
     assert.match(dashboard, /const dutyEditor\s*=\s*byId\('dutyEditorRole'\)\.checked/);
     assert.match(dashboard, /updates\['adminRoles\/' \+ target\.uid\] = enabledRoleNames\.length \? roles : null/);
     assert.match(dashboard, /dutyEditor:\s*dutyEditor/);
-    assert.match(dashboard, /siteAdmin\s*\|\|\s*matcenterAdmin\s*\|\|\s*contentEditor\s*\|\|\s*dutyEditor\s*\|\|\s*englishAccess/);
+    assert.match(dashboard, /tourEditor:\s*tourEditor/);
+    assert.match(dashboard, /siteAdmin\s*\|\|\s*matcenterAdmin\s*\|\|\s*contentEditor\s*\|\|\s*dutyEditor\s*\|\|\s*tourEditor\s*\|\|\s*englishAccess/);
 
     // Structural security contract for Realtime Database Rules.
     assert.ok(rules.classDuty && rules.classDuty.grade10_1, 'class duty rules are missing');
@@ -394,7 +421,7 @@ async function run() {
     assert.match(dutyRules['.write'], /adminRoles.*dutyEditor/);
     assert.doesNotMatch(
         dutyRules['.write'],
-        /siteAdmin|matcenterAdmin|contentEditor|englishAccess/,
+        /siteAdmin|matcenterAdmin|contentEditor|tourEditor|englishAccess/,
         'unrelated roles must not grant schedule write access'
     );
     assert.match(dutyRules['.validate'], /revision.*data\.exists\(\).*\+ 1/);
@@ -404,8 +431,11 @@ async function run() {
     assert.match(dutyRules.entries.$week.people.$person['.validate'], /length <= 120/);
 
     assert.ok(rules.adminRoles.$uid.dutyEditor, 'admin role schema is missing dutyEditor');
+    assert.ok(rules.adminRoles.$uid.tourEditor, 'admin role schema is missing tourEditor');
     assert.match(rules.adminRoles.$uid['.validate'], /dutyEditor/);
+    assert.match(rules.adminRoles.$uid['.validate'], /tourEditor/);
     assert.match(rules.adminRoles.$uid.dutyEditor['.validate'], /newData\.isBoolean\(\)/);
+    assert.match(rules.adminRoles.$uid.tourEditor['.validate'], /newData\.isBoolean\(\)/);
     assert.match(rules.adminRoles.$uid['.write'], /2M2ZdLQcJAhluPjUVFNJ6MyQrdH2/);
     assert.doesNotMatch(rules.adminRoles.$uid['.write'], /auth\.token\.email/,
         'owner authorization must rely on immutable UID, not an email claim');

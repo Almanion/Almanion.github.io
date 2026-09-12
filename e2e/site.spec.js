@@ -106,6 +106,35 @@ test('protected pages are complete in the assembled site', async function ({ req
     }
 });
 
+test('class tour renders its offline-safe overview on desktop and mobile', async function ({ page }) {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/tour-10-1.html', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: 'Туристический слёт', level: 1 })).toBeVisible();
+    await expect(page.getByText('Ориентирование', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Дима Петров', { exact: true }).first()).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('navigation', { name: 'Разделы страницы' })).toBeVisible();
+    await expect(page.getByText('Озеро Уловное', { exact: true })).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    expect(await page.locator('.tour-section-nav').evaluate(function (nav) { return nav.scrollWidth <= nav.clientWidth + 1; })).toBeTruthy();
+
+    await page.evaluate(function () {
+        const overlay = document.getElementById('tourEditorOverlay');
+        overlay.hidden = false;
+        overlay.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('tour-modal-open');
+    });
+    const closeBounds = await page.locator('#tourEditorClose').boundingBox();
+    const footerBounds = await page.locator('.tour-editor-footer').boundingBox();
+    expect(closeBounds).not.toBeNull();
+    expect(footerBounds).not.toBeNull();
+    expect(closeBounds.x + closeBounds.width).toBeLessThanOrEqual(390);
+    expect(footerBounds.y + footerBounds.height).toBeLessThanOrEqual(844);
+});
+
 test('Matcenter keeps LaTeX rendering in its core runtime', async function ({ page }) {
     await page.goto('/matcenter.html', { waitUntil: 'domcontentloaded' });
     await expect.poll(async function () {

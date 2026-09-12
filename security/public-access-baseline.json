@@ -3,6 +3,7 @@
   "rulesFile": "firebase/database.rules.json",
   "publicReads": {
     "classDuty/grade10_1": "true",
+    "classTour/grade10_1/autumn2026": "true",
     "polls": "true",
     "publicTickets": "true"
   },
