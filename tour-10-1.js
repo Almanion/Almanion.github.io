@@ -158,6 +158,10 @@
         const info = raw.info && typeof raw.info === 'object' ? raw.info : {};
         const startDate = text(info.startDate, 10);
         const endDate = text(info.endDate, 10);
+        const returnText = text(info.return, 240);
+        const normalizedReturn = returnText.toLocaleLowerCase('ru') === 'ответственный преподаватель'
+            ? DEFAULT_TOUR.info.return
+            : returnText;
         const normalized = {
             version: 1,
             className: '10-1',
@@ -168,7 +172,7 @@
             info: {
                 title: text(info.title, 120), startDate: startDate, endDate: endDate,
                 location: text(info.location, 300), route: text(info.route, 300),
-                departure: text(info.departure, 240), return: text(info.return, 240), leader: text(info.leader, 120)
+                departure: text(info.departure, 240), return: normalizedReturn, leader: text(info.leader, 120)
             },
             schedule: normalizeSchedule(raw.schedule),
             activities: normalizeActivities(raw.activities),
@@ -426,6 +430,15 @@
     function renderOverview() {
         const info = tour.info;
         byId('tourTitle').textContent = info.title;
+        const start = localDateParts(info.startDate);
+        const end = localDateParts(info.endDate);
+        byId('tourHeroDateRange').textContent = start.getDate() === end.getDate() ? String(start.getDate()) : start.getDate() + '–' + end.getDate();
+        byId('tourHeroMonth').textContent = MONTHS[start.getMonth()].replace(/я$/, 'ь');
+        byId('tourHeroYear').textContent = String(start.getFullYear());
+        byId('tourLocationSummary').textContent = info.location;
+        byId('tourRouteSummary').textContent = info.route;
+        byId('tourDepartureSummary').textContent = info.departure;
+        byId('tourReturnSummary').textContent = info.return;
         document.title = info.title + ' | Конспекты';
         updateTimeStates();
     }
@@ -506,7 +519,11 @@
     function renderProgram() {
         const rootNode = byId('tourProgram');
         rootNode.replaceChildren();
-        tour.activities.forEach(function (activity) { rootNode.appendChild(make('div', 'tour-program-item', activity.title)); });
+        tour.activities.forEach(function (activity, index) {
+            const item = make('div', 'tour-program-item');
+            item.append(make('span', 'tour-program-index', String(index + 1).padStart(2, '0')), make('span', 'tour-program-name', activity.title));
+            rootNode.appendChild(item);
+        });
     }
 
     function renderTents() {

@@ -35,6 +35,10 @@ async function run() {
     assert.match(initial.info.location, /Озеро Уловное/);
     assert.match(initial.info.route, /Колосково/);
     assert.equal(initial.activities.length, 10);
+    const staleReturnLabel = JSON.parse(JSON.stringify(initial));
+    staleReturnLabel.info.return = 'Ответственный преподаватель';
+    assert.equal(Tour.normalizeTour(staleReturnLabel).info.return, Tour.DEFAULT_TOUR.info.return,
+        'a legacy field label must not leak into the public trip summary');
 
     const activity = Object.fromEntries(initial.activities.map(item => [item.title, item]));
     assert.equal(activity['Ориентирование'].participants.length, 4);
@@ -118,7 +122,7 @@ async function run() {
     const ids = Array.from(source.matchAll(/byId\('([^']+)'\)/g), match => match[1]);
     ids.forEach(id => assert.match(page, new RegExp(`id=["']${id}["']`), `missing tour page dependency #${id}`));
     assert.match(css, /\.tour-editor-content\s*\{[^}]*overflow-y:\s*auto/s);
-    assert.match(css, /@media \(max-width: 640px\)/);
+    assert.match(css, /@media \(max-width: 720px\)/);
     assert.match(css, /height:\s*100dvh/);
     assert.match(css, /grid-template-areas:[\s\S]*?"footer"/);
     assert.match(css, /\.tour-page \.sr-only/);
