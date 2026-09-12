@@ -114,14 +114,15 @@ test('protected pages are complete in the assembled site', async function ({ req
     }
 });
 
-test('class tour renders its offline-safe overview on desktop and mobile', async function ({ page }) {
+test('class tour renders its next event and content on desktop and mobile', async function ({ page }) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/tour-10-1.html', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: 'Туристический слёт', level: 1 })).toBeVisible();
     await expect(page.getByText('Ориентирование', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('Дима Петров', { exact: true }).first()).toBeVisible();
-    await expect(page.locator('.tour-overview').getByText('Место', { exact: true })).toHaveCount(0);
-    await expect(page.locator('.tour-overview').getByText('Дорога', { exact: true })).toHaveCount(0);
+    await expect(page.locator('#next-event')).toBeVisible();
+    await expect(page.locator('#tourNextEventTitle')).toBeVisible();
+    await expect(page.locator('#overview')).toHaveCount(0);
     const lightBackground = await page.locator('body').evaluate(function (body) { return getComputedStyle(body).backgroundColor; });
     await page.locator('#settingsButtonSidebar').click();
     await page.locator('[data-exp-theme="dark"]').click();
@@ -135,7 +136,8 @@ test('class tour renders its offline-safe overview on desktop and mobile', async
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload({ waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('navigation', { name: 'Разделы страницы' })).toBeVisible();
-    await expect(page.getByText('Озеро Уловное', { exact: true })).toBeVisible();
+    await expect(page.locator('#tourNextEventCard')).toBeVisible();
+    await expect(page.locator('#tourNextEventMeta')).not.toHaveText('');
     await expectNoHorizontalOverflow(page);
     expect(await page.locator('.tour-section-nav').evaluate(function (nav) { return nav.scrollWidth <= nav.clientWidth + 1; })).toBeTruthy();
 

@@ -54,6 +54,10 @@ async function run() {
     const train = initial.schedule.find(item => item.id === 'train-koloscovo');
     assert.equal(JSON.stringify(Tour.scheduleItemState(train, new Date(2026, 8, 17, 14, 30))), JSON.stringify({ key: 'active', label: 'Сейчас' }));
     assert.equal(JSON.stringify(Tour.scheduleItemState(train, new Date(2026, 8, 17, 16, 0))), JSON.stringify({ key: 'past', label: 'Прошло' }));
+    assert.equal(Tour.nextScheduleEvent(initial.schedule, new Date(2026, 8, 12)).item.id, 'departure-school',
+        'the nearest future schedule item must appear in the summary');
+    assert.equal(Tour.nextScheduleEvent(initial.schedule, new Date(2026, 8, 17, 14, 30)).item.id, 'train-koloscovo',
+        'an active timed item must take priority in the summary');
 
     const roster = Object.fromEntries(Object.entries(initial.people).map(([id, displayName], index) => [id, { displayName, order: index + 1, active: true }]));
     const serialized = Tour.tourToFirebase(initial, roster);
@@ -76,6 +80,11 @@ async function run() {
         { id: 'tent-2', title: 'Палатка 2', capacity: 4, note: '', order: 2, participants: [Object.keys(initial.people)[0]] }
     ];
     assert.equal(Tour.validateTour(duplicateTentMember).valid, false, 'one person must not occupy two tents');
+    const titlelessTent = JSON.parse(JSON.stringify(initial));
+    titlelessTent.tents = [{ id: 'tent-1', capacity: 4, note: 'Keep this note', order: 1, participants: [Object.keys(initial.people)[0]] }];
+    const normalizedTitlelessTent = Tour.normalizeTour(titlelessTent);
+    assert.ok(normalizedTitlelessTent, 'tent names must be optional');
+    assert.equal(normalizedTitlelessTent.tents[0].title, 'Палатка 1', 'an internal fallback title keeps editor messages clear');
 
     assert.match(page, /id="tourEditorOverlay" hidden aria-hidden="true"/);
     assert.match(page, /id="tourPickerOverlay" hidden aria-hidden="true"/);
@@ -85,6 +94,9 @@ async function run() {
     assert.match(page, /tour-10-1\.js\?v=/);
     assert.match(page, /id="tourActivitiesEmpty" hidden/);
     assert.match(page, /id="tourMealsEmpty" hidden/);
+    assert.match(page, /id="next-event"/);
+    assert.match(page, /id="tourNextEventTitle"/);
+    assert.doesNotMatch(page, /href="#overview"/);
     assert.doesNotMatch(page, /tour-card-kicker">Место</);
     assert.doesNotMatch(page, /tour-card-kicker">Дорога</);
     assert.doesNotMatch(page, /Предложенный руководитель группы/);
@@ -94,6 +106,8 @@ async function run() {
     assert.doesNotMatch(source, /состав уточняется|Состав пока не назначен/, 'empty assignments must not create repetitive public captions');
     assert.match(source, /const assigned = tour\.activities\.filter/);
     assert.match(source, /const publishedMeals = tour\.meals\.filter/);
+    assert.doesNotMatch(source, /titleRow\.append\(make\('h3', '', tent\.title\)/,
+        'public tent cards must not render tent names');
     assert.match(source, /node\.hidden = !offline/, 'successful sync must remain visually quiet');
     assert.doesNotMatch(source, /\.innerHTML\s*=/, 'Firebase-backed tour data must never be rendered through innerHTML');
     assert.match(source, /database\.ref\(TOUR_PATH\)\.transaction/);

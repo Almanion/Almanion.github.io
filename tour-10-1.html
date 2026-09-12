@@ -14,14 +14,14 @@
     <meta name="theme-color" content="#59644a">
     <meta name="description" content="Актуальная информация о туристическом слёте класса 10-1">
     <title>Туристический слёт 10-1 | Конспекты</title>
-    <link rel="stylesheet" href="styles/site/index.css?v=20260905-2">
+    <link rel="stylesheet" href="styles/site/index.css?v=20260912-1">
     <link rel="stylesheet" href="styles/tokens.css">
     <link rel="stylesheet" href="styles/buttons.css">
     <link rel="stylesheet" href="styles/mobile-overrides.css">
     <link rel="stylesheet" href="style-new.css?v=20260905-1">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
-    <link rel="stylesheet" href="styles/tour-10-1.css?v=20260912-3">
+    <link rel="stylesheet" href="styles/tour-10-1.css?v=20260912-4">
 </head>
 <body class="tour-page" data-no-math>
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -53,33 +53,28 @@
         </header>
 
         <nav class="tour-section-nav" aria-label="Разделы страницы">
-            <a href="#overview">Обзор</a>
+            <a href="#next-event">Ближайшее</a>
             <a href="#schedule">Расписание</a>
             <a href="#tents">Палатки</a>
             <a href="#activities">Команды</a>
             <a href="#meals">Питание</a>
         </nav>
 
-        <section class="tour-overview" id="overview" aria-labelledby="tourOverviewTitle">
-            <h2 class="sr-only" id="tourOverviewTitle">Основная информация</h2>
-            <article class="tour-date-card">
-                <div class="tour-date-mark" aria-hidden="true"><strong>17</strong><span>сентября</span></div>
-                <div>
-                    <h3 id="tourDateRange">17–19 сентября 2026</h3>
-                    <p id="tourDeparture">Отъезд в четверг после 4-го урока</p>
+        <section class="tour-next-event" id="next-event" aria-labelledby="tourNextEventTitle">
+            <article class="tour-next-card" id="tourNextEventCard">
+                <div class="tour-next-date" aria-hidden="true">
+                    <strong id="tourNextEventDay">17</strong>
+                    <span id="tourNextEventMonth">сентября</span>
                 </div>
-            </article>
-            <article class="tour-info-card tour-place-card" aria-label="Место проведения">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-                <div><h3 id="tourLocation">Озеро Уловное</h3><p id="tourLocationDetail">Район ст. Сосново, Приозерский район Ленинградской области</p></div>
-            </article>
-            <article class="tour-info-card" aria-label="Дорога до места">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17h16M6 17l1.4-8.4A2 2 0 0 1 9.37 7h5.26a2 2 0 0 1 1.97 1.6L18 17"/><path d="M8.5 11h7M9 20h.01M15 20h.01"/></svg>
-                <div><h3 id="tourRouteTitle">Электропоезд в 14:19</h3><p id="tourRoute">Финляндский вокзал → о. п. Колосково, 78 км</p></div>
-            </article>
-            <article class="tour-info-card" aria-label="Руководитель группы">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.25"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>
-                <div><h3 id="tourLeader">Алёна Александровна Лобанова</h3><p id="tourReturn">Возвращение 19 сентября, время можно выбрать</p></div>
+                <div class="tour-next-copy">
+                    <div class="tour-next-eyebrow">
+                        <span id="tourNextEventKicker">Следующее мероприятие</span>
+                        <span class="tour-next-state is-upcoming" id="tourNextEventState">Впереди</span>
+                    </div>
+                    <h2 id="tourNextEventTitle">Отъезд из школы</h2>
+                    <p class="tour-next-meta" id="tourNextEventMeta">17 сентября, четверг · После 4-го урока</p>
+                    <p class="tour-next-detail" id="tourNextEventDetail" hidden></p>
+                </div>
             </article>
         </section>
 
@@ -138,7 +133,7 @@
             </div>
             <div class="tour-editor-toolbar">
                 <div class="tour-editor-tabs" id="tourEditorTabs" role="tablist" aria-label="Раздел редактора">
-                    <button class="is-active" type="button" role="tab" aria-selected="true" data-tour-tab="overview">Обзор</button>
+                    <button class="is-active" type="button" role="tab" aria-selected="true" data-tour-tab="overview">О слёте</button>
                     <button type="button" role="tab" aria-selected="false" tabindex="-1" data-tour-tab="schedule">Расписание</button>
                     <button type="button" role="tab" aria-selected="false" tabindex="-1" data-tour-tab="tents">Палатки</button>
                     <button type="button" role="tab" aria-selected="false" tabindex="-1" data-tour-tab="activities">Мероприятия</button>
@@ -203,6 +198,6 @@
     <script src="script.js?v=20260906-1"></script>
     <script src="settings.js?v=20260908-1"></script>
     <script src="account.js?v=20260912-1"></script>
-    <script src="tour-10-1.js?v=20260912-3"></script>
+    <script src="tour-10-1.js?v=20260912-4"></script>
 </body>
 </html>

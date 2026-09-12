@@ -23,7 +23,7 @@
         { id: 'geometry-9', href: 'geometry.html', title: 'Геометрия', context: '9 класс', subject: 'geometry', icon: 'academic-geometry', category: 'grade-9' },
         { id: 'physics-exam-9', href: 'physics-exam.html', title: 'Физика: билеты', context: '9 класс', subject: 'physics-exam', icon: 'academic-physics-exam', category: 'grade-9' },
         { id: 'matcenter', href: 'matcenter.html', title: 'МатЦентр', context: 'Задачи', subject: 'matcenter', icon: 'academic-matcenter', category: 'services' },
-        { id: 'likbez', href: 'likbez.html', title: 'Ликбезы', context: 'Короткие курсы', subject: 'likbez', icon: 'academic-likbez', category: 'services' },
+        { id: 'likbez', href: 'likbez.html', title: 'Ликбезы', context: '', subject: 'likbez', icon: 'academic-likbez', category: 'services' },
         { id: 'english', href: 'english.html', title: 'Английский', context: 'Vocabulary', subject: 'english', icon: 'academic-english', category: 'services', requiresEnglish: true },
         { id: 'duty-10-1', href: 'duty-10-1.html', title: 'Дежурство', context: '10‑1', subject: 'duty', icon: 'academic-duty', category: 'class-10-1' },
         { id: 'tour-10-1', href: 'tour-10-1.html', title: 'Туристический слёт', context: '10‑1', subject: 'tour', icon: 'academic-tour', category: 'class-10-1' }
@@ -92,11 +92,12 @@
             card.className = 'subject-card home-quick-card';
             card.dataset.subject = item.subject;
             card.dataset.quickId = item.id;
+            const context = item.context ? '<span class="home-quick-context">' + item.context + '</span>' : '';
             card.innerHTML = '<div class="card-header"><div class="subject-icon">' +
                 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#' + item.icon + '"/></svg>' +
                 '</div></div><div class="card-body"><div class="home-quick-copy"><h2>' + item.title +
-                '</h2><span class="home-quick-context">' + item.context +
-                '</span></div><svg class="home-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></div>';
+                '</h2>' + context +
+                '</div><svg class="home-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></div>';
             return card;
         }
 

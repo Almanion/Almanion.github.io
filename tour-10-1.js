@@ -129,10 +129,8 @@
     function normalizeTents(value) {
         return sortByOrder(collection(value).map(function (entry, index) {
             const raw = entry.value && typeof entry.value === 'object' ? entry.value : {};
-            const titleValue = text(raw.title, 120);
-            if (!titleValue) return null;
-            return { id: safeId(raw.id || entry.key, 'tent-' + (index + 1)), title: titleValue, capacity: Math.max(1, Math.min(20, Number.parseInt(raw.capacity, 10) || 4)), note: text(raw.note, 240), order: Number.isInteger(raw.order) && raw.order > 0 ? raw.order : index + 1, participants: participantIds(raw.participants) };
-        }).filter(Boolean));
+            return { id: safeId(raw.id || entry.key, 'tent-' + (index + 1)), title: text(raw.title, 120) || 'Палатка ' + (index + 1), capacity: Math.max(1, Math.min(20, Number.parseInt(raw.capacity, 10) || 4)), note: text(raw.note, 240), order: Number.isInteger(raw.order) && raw.order > 0 ? raw.order : index + 1, participants: participantIds(raw.participants) };
+        }));
     }
 
     function normalizeMeals(value) {
@@ -201,11 +199,12 @@
             return !isIsoDate(item.date) || item.date < info.startDate || item.date > info.endDate || !hasOwn(MEAL_TYPES, item.type) || !text(item.title, 80);
         });
         if (invalidMeal) return { valid: false, message: 'Проверьте дату и тип приёма пищи.' };
-        const invalidTent = value.tents.find(function (item) { return !item.title || item.capacity < 1 || item.capacity > 20; });
-        if (invalidTent) return { valid: false, message: 'Проверьте название и вместимость палатки.' };
+        const invalidTent = value.tents.find(function (item) { return item.capacity < 1 || item.capacity > 20; });
+        if (invalidTent) return { valid: false, message: 'Проверьте вместимость палатки.' };
         const tentMembers = new Set();
-        for (const tent of value.tents) {
-            if (participantIds(tent.participants).length > tent.capacity) return { valid: false, message: 'В палатке «' + tent.title + '» выбрано больше людей, чем мест.' };
+        for (let tentIndex = 0; tentIndex < value.tents.length; tentIndex += 1) {
+            const tent = value.tents[tentIndex];
+            if (participantIds(tent.participants).length > tent.capacity) return { valid: false, message: 'В палатке №' + (tentIndex + 1) + ' выбрано больше людей, чем мест.' };
             for (const id of participantIds(tent.participants)) {
                 if (tentMembers.has(id)) return { valid: false, message: 'Один человек не может быть указан сразу в нескольких палатках.' };
                 tentMembers.add(id);
@@ -321,6 +320,26 @@
         return { key: 'past', label: 'Прошло' };
     }
 
+    function nextScheduleEvent(items, now) {
+        const date = now && typeof now.getFullYear === 'function' ? now : new Date();
+        const ranked = (Array.isArray(items) ? items : []).map(function (item, index) {
+            return { item: item, index: index, state: scheduleItemState(item, date) };
+        });
+        const byMoment = function (left, right) {
+            const leftKey = left.item.date + 'T' + (left.item.startTime || '00:00');
+            const rightKey = right.item.date + 'T' + (right.item.startTime || '00:00');
+            return leftKey.localeCompare(rightKey) || left.item.order - right.item.order || left.index - right.index;
+        };
+        const active = ranked.filter(function (entry) { return entry.state.key === 'active'; }).sort(function (left, right) {
+            return Number(!!right.item.startTime) - Number(!!left.item.startTime) || byMoment(left, right);
+        });
+        if (active.length) return active[0];
+        const upcoming = ranked.filter(function (entry) { return entry.state.key === 'upcoming'; }).sort(byMoment);
+        if (upcoming.length) return upcoming[0];
+        const past = ranked.filter(function (entry) { return entry.state.key === 'past'; }).sort(function (left, right) { return -byMoment(left, right); });
+        return past[0] || null;
+    }
+
     async function personId(name) {
         if (!root.crypto || !root.crypto.subtle || typeof TextEncoder === 'undefined') throw new Error('Secure hashing is unavailable');
         const canonical = PERSON_PREFIX + text(name, 120).normalize('NFKC').toLocaleLowerCase('ru');
@@ -338,6 +357,7 @@
         tourToFirebase: tourToFirebase,
         tourState: tourState,
         scheduleItemState: scheduleItemState,
+        nextScheduleEvent: nextScheduleEvent,
         personId: personId,
         referencedPeople: referencedPeople
     });
@@ -407,37 +427,44 @@
         const info = tour.info;
         byId('tourTitle').textContent = info.title;
         document.title = info.title + ' | Конспекты';
-        const start = localDateParts(info.startDate);
-        const end = localDateParts(info.endDate);
-        const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
-        byId('tourDateRange').textContent = sameMonth
-            ? start.getDate() + '–' + end.getDate() + ' ' + MONTHS[start.getMonth()] + ' ' + start.getFullYear()
-            : dateLabel(info.startDate) + ' — ' + dateLabel(info.endDate) + ' ' + end.getFullYear();
-        const dateMark = document.querySelector('.tour-date-mark');
-        dateMark.querySelector('strong').textContent = String(start.getDate());
-        dateMark.querySelector('span').textContent = MONTHS[start.getMonth()];
-        byId('tourDeparture').textContent = info.departure;
-        const locationParts = info.location.split(' · ');
-        byId('tourLocation').textContent = locationParts[0] || info.location;
-        byId('tourLocationDetail').textContent = locationParts.slice(1).join(' · ');
-        byId('tourLocationDetail').hidden = locationParts.length < 2;
-        const train = tour.schedule.find(function (item) { return item.id === 'train-koloscovo'; });
-        byId('tourRouteTitle').textContent = train && train.startTime ? 'Электропоезд в ' + train.startTime : 'Дорога до места';
-        byId('tourRoute').textContent = info.route;
-        byId('tourLeader').textContent = info.leader;
-        byId('tourReturn').textContent = info.return;
         updateTimeStates();
     }
 
+    function renderNextEvent(now) {
+        const next = nextScheduleEvent(tour.schedule, now);
+        const card = byId('tourNextEventCard');
+        if (!next || !card) return;
+        const item = next.item;
+        const date = localDateParts(item.date);
+        const time = item.startTime && item.endTime ? item.startTime + '–' + item.endTime : (item.startTime || item.timeLabel || 'Время уточняется');
+        const detail = [item.location, item.note].filter(Boolean).join(' · ');
+        const kicker = next.state.key === 'active' ? 'Сейчас' : (next.state.key === 'past' ? 'Последнее мероприятие' : 'Следующее мероприятие');
+        byId('tourNextEventDay').textContent = String(date.getDate());
+        byId('tourNextEventMonth').textContent = MONTHS[date.getMonth()];
+        byId('tourNextEventKicker').textContent = kicker;
+        byId('tourNextEventTitle').textContent = item.title;
+        byId('tourNextEventMeta').textContent = dateLabel(item.date, true) + ' · ' + time;
+        const detailNode = byId('tourNextEventDetail');
+        detailNode.textContent = detail;
+        detailNode.hidden = !detail;
+        const stateNode = byId('tourNextEventState');
+        stateNode.textContent = next.state.label;
+        stateNode.className = 'tour-next-state is-' + next.state.key;
+        card.classList.remove('is-upcoming', 'is-active', 'is-past');
+        card.classList.add('is-' + next.state.key);
+    }
+
     function updateTimeStates() {
-        const state = tourState(tour.info, new Date());
+        const now = new Date();
+        const state = tourState(tour.info, now);
         const badge = byId('tourEventState');
         badge.textContent = state.label;
         badge.className = 'tour-event-state is-' + state.key;
+        renderNextEvent(now);
         document.querySelectorAll('.tour-timeline-item[data-event-id]').forEach(function (node) {
             const item = tour.schedule.find(function (candidate) { return candidate.id === node.dataset.eventId; });
             if (!item) return;
-            const itemState = scheduleItemState(item, new Date());
+            const itemState = scheduleItemState(item, now);
             node.classList.remove('is-upcoming', 'is-active', 'is-past');
             node.classList.add('is-' + itemState.key);
             const stateNode = node.querySelector('.tour-timeline-state');
@@ -489,9 +516,9 @@
         empty.hidden = tour.tents.length > 0;
         tour.tents.forEach(function (tent) {
             const card = make('article', 'tour-tent-card');
-            const titleRow = make('div', 'tour-card-title-row');
-            titleRow.append(make('h3', '', tent.title), make('span', '', tent.participants.length + ' из ' + tent.capacity));
-            card.appendChild(titleRow);
+            const capacity = make('span', 'tour-tent-capacity', tent.participants.length + ' / ' + tent.capacity);
+            capacity.setAttribute('aria-label', 'Занято мест: ' + tent.participants.length + ' из ' + tent.capacity);
+            card.appendChild(capacity);
             appendPeople(card, tent.participants, tour);
             if (tent.note) card.appendChild(make('p', 'tour-meal-note', tent.note));
             rootNode.appendChild(card);
@@ -750,13 +777,12 @@
         editorTour.tents.forEach(function (item, index) {
             const row = make('article', 'tour-editor-row');
             row.append(
-                createField('Название', 'text', item.title, 'span-6', function (value) { item.title = text(value, 120); }, null, { maxLength: 120 }),
                 createField('Мест', 'number', item.capacity, 'span-2', function (value) { item.capacity = Math.max(1, Math.min(20, Number.parseInt(value, 10) || 1)); return item.capacity; }, null, { min: 1, max: 20, step: 1 }),
-                createField('Примечание', 'text', item.note, 'span-2', function (value) { item.note = text(value, 240); }, null, { maxLength: 240 })
+                createField('Примечание', 'text', item.note, 'span-8', function (value) { item.note = text(value, 240); }, null, { maxLength: 240 })
             );
             const actions = make('div', 'tour-editor-row-actions'); actions.appendChild(removeButton(function () { editorTour.tents.splice(index, 1); reorder(editorTour.tents); renderTentsEditor(); scheduleDraftSave(); }, 'Удалить палатку')); row.appendChild(actions);
             const pickHolder = make('div', 'span-12');
-            pickHolder.append(peopleButton(item.title, item.participants, function (ids) {
+            pickHolder.append(peopleButton('Палатка ' + (index + 1), item.participants, function (ids) {
                 editorTour.tents.forEach(function (other) { if (other !== item) other.participants = participantIds(other.participants).filter(function (id) { return !ids.includes(id); }); });
                 item.participants = ids; renderTentsEditor(); scheduleDraftSave();
             }, { max: item.capacity }), selectedChips(item.participants));
@@ -1059,7 +1085,7 @@
         byId('tourPickerClose').addEventListener('click', closePicker); byId('tourPickerCancel').addEventListener('click', closePicker); byId('tourPickerApply').addEventListener('click', applyPicker);
         byId('tourPickerSearch').addEventListener('input', renderPickerList); byId('tourPickerOverlay').addEventListener('click', function (event) { if (event.target === event.currentTarget) closePicker(); });
         byId('tourAddSchedule').addEventListener('click', function () { editorTour.schedule.push({ id: nextId(editorTour.schedule, 'event'), title: 'Новое событие', date: editorTour.info.startDate, startTime: '', endTime: '', timeLabel: 'Время уточняется', location: '', note: '', order: editorTour.schedule.length + 1 }); renderScheduleEditor(); scheduleDraftSave(); revealLastEditorRow('tourScheduleEditor'); });
-        byId('tourAddTent').addEventListener('click', function () { editorTour.tents.push({ id: nextId(editorTour.tents, 'tent'), title: 'Новая палатка', capacity: 4, note: '', order: editorTour.tents.length + 1, participants: [] }); renderTentsEditor(); scheduleDraftSave(); revealLastEditorRow('tourTentsEditor'); });
+        byId('tourAddTent').addEventListener('click', function () { editorTour.tents.push({ id: nextId(editorTour.tents, 'tent'), title: 'Палатка ' + (editorTour.tents.length + 1), capacity: 4, note: '', order: editorTour.tents.length + 1, participants: [] }); renderTentsEditor(); scheduleDraftSave(); revealLastEditorRow('tourTentsEditor'); });
         byId('tourAddActivity').addEventListener('click', function () { editorTour.activities.push({ id: nextId(editorTour.activities, 'activity'), title: 'Новое мероприятие', order: editorTour.activities.length + 1, participants: [] }); renderActivitiesEditor(); scheduleDraftSave(); revealLastEditorRow('tourActivitiesEditor'); });
         byId('tourAddMeal').addEventListener('click', function () { const type = 'breakfast'; editorTour.meals.push({ id: nextId(editorTour.meals, 'meal'), date: editorTour.info.startDate, type: type, title: MEAL_TYPES[type], note: '', order: editorTour.meals.length + 1, participants: [] }); renderMealsEditor(); scheduleDraftSave(); revealLastEditorRow('tourMealsEditor'); });
         document.addEventListener('keydown', function (event) {

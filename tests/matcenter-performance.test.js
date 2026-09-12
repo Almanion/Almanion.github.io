@@ -30,6 +30,11 @@ async function run() {
     assert.doesNotMatch(html, /<script[^>]+src="firebase-analytics\.js/);
     assert.doesNotMatch(html, /<script[^>]+src="newyear\.js/);
     assert.doesNotMatch(html, /<script[^>]+src="settings\.js/);
+    assert.match(html, /class="matcenter-auth-home" href="index\.html"/,
+        'the Matcenter sign-in gate must provide a direct way back home');
+
+    const auth = read('matcenter/20-auth.js');
+    assert.match(auth, /a\[href\]/, 'the home link must participate in Matcenter focus trapping');
 
     const runtime = read('matcenter/runtime.js');
     for (const feature of ['hints', 'settings', 'analytics', 'newyear']) {

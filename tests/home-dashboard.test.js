@@ -12,8 +12,8 @@ const client = read('home-dashboard.js');
 const editor = read('home-quick-editor.js');
 const shell = JSON.parse(read(path.join('performance', 'sw-shell.json'))).assets;
 
-assert.match(page, /styles\/home-dashboard\.css\?v=20260912-2/, 'dashboard stylesheet must be versioned');
-assert.match(page, /home-dashboard\.js\?v=20260912-2/, 'personal dashboard controller must be versioned');
+assert.match(page, /styles\/home-dashboard\.css\?v=20260912-3/, 'dashboard stylesheet must be versioned');
+assert.match(page, /home-dashboard\.js\?v=20260912-3/, 'personal dashboard controller must be versioned');
 assert.doesNotMatch(page, /<script[^>]+src="home-dashboard\.js/, 'personalization must load during idle time, not block first paint');
 assert.match(page, /class="extra-section home-quick-section"[^>]*aria-labelledby="homeQuickTitle"/);
 assert.match(page, /id="homeQuickTitle">Быстрый доступ</);
@@ -29,6 +29,8 @@ assert.equal((page.match(/href="likbez\.html"/g) || []).length, 1);
 assert.equal((page.match(/href="physics-10\.html"/g) || []).length, 2,
     'physics appears once in quick access and once in the 10th-grade grid');
 assert.doesNotMatch(page, />Дополнительно</, 'frequent destinations must not remain in a distant footer section');
+assert.doesNotMatch(page, /Короткие курсы/, 'the Likbez card must not include a redundant subtitle');
+assert.doesNotMatch(client, /Короткие курсы/, 'the dynamic Likbez card must not restore a redundant subtitle');
 
 assert.match(css, /\.home-quick-grid[\s\S]*?grid-template-columns:\s*repeat\(3/);
 assert.match(css, /\.home-quick-grid > \.home-quick-card[\s\S]*?min-height:\s*108px/);
@@ -38,6 +40,8 @@ assert.match(css, /\.home-privileged-actions:not\(\[hidden\]\)[\s\S]*?grid-templ
     'mobile privileged actions must share one row');
 assert.match(css, /\.home-quick-grid\[data-count="3"\] > \.home-quick-card:first-child[\s\S]*?grid-column:\s*1 \/ -1/,
     'the mobile three-card layout must use a large lead tile');
+assert.match(css, /body\.home-page \.settings-button\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;/s,
+    'the home settings control must match the account control size');
 assert.match(client, /const MAX_ITEMS = 3/);
 assert.match(client, /homeQuickAccessByUser/);
 assert.match(client, /api\.update\(\{ \[SETTINGS_KEY\]: map \}, \{ apply: false \}\)/,

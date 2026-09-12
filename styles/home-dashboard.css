@@ -4,6 +4,37 @@ body.home-page {
     align-items: flex-start;
 }
 
+body.home-page .settings-button {
+    top: 1rem;
+    right: 1rem;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary) !important;
+    background: var(--bg-secondary) !important;
+    box-shadow: var(--shadow-sm) !important;
+    font-size: 1.2rem;
+    animation: none !important;
+}
+
+body.home-page .settings-button svg {
+    width: 20px;
+    height: 20px;
+}
+
+body:not(.no-hover).home-page .settings-button:hover {
+    color: var(--accent-color) !important;
+    background: var(--bg-tertiary) !important;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+    body.home-page .settings-button {
+        top: 0.75rem;
+        right: 0.75rem;
+    }
+}
+
 body.home-page .home-container {
     width: min(100%, 1280px);
     box-sizing: border-box;

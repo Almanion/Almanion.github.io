@@ -284,56 +284,73 @@ body:not(.no-hover) .tour-pick-people:hover { border-color: var(--tour-accent); 
 }
 body:not(.no-hover) .tour-section-nav a:hover { color: var(--tour-accent-strong); background: var(--tour-accent-soft); }
 
-.tour-overview {
-    display: grid;
-    grid-template-columns: 1.25fr 1fr 1fr;
-    gap: 0.8rem;
+.tour-next-event {
     scroll-margin-top: 130px;
 }
-.tour-date-card,
-.tour-info-card {
-    min-width: 0;
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    background: var(--bg-secondary);
-}
-.tour-date-card {
-    grid-row: span 2;
+
+.tour-next-card {
+    position: relative;
     display: grid;
-    grid-template-columns: 108px minmax(0, 1fr);
+    grid-template-columns: 92px minmax(0, 1fr);
     align-items: center;
-    gap: 1.25rem;
-    padding: 1.25rem;
+    gap: 1.15rem;
+    min-width: 0;
+    padding: 1.15rem 1.25rem;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    background: linear-gradient(110deg, var(--tour-accent-soft), transparent 64%), var(--bg-secondary);
 }
-.tour-date-mark {
+.tour-next-card::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 3px;
+    background: var(--tour-accent);
+    opacity: 0.68;
+}
+.tour-next-card.is-past::after { background: var(--tour-past); opacity: 0.4; }
+.tour-next-date {
     display: flex;
-    min-height: 112px;
+    min-height: 82px;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     border: 1px solid color-mix(in srgb, var(--tour-accent) 24%, var(--border-color));
-    border-radius: 18px;
+    border-radius: 15px;
     color: var(--tour-accent-strong);
     background: var(--tour-accent-soft);
 }
-.tour-date-mark strong { font-size: 2.65rem; line-height: 1; letter-spacing: -0.05em; }
-.tour-date-mark span { margin-top: 0.35rem; font-size: 0.72rem; font-weight: 720; }
-.tour-date-card h3,
-.tour-info-card h3 { margin: 0; font-size: 1rem; font-weight: 720; line-height: 1.28; }
-.tour-date-card > div:last-child > p:last-child,
-.tour-info-card p:last-child { margin: 0.45rem 0 0; color: var(--text-secondary); font-size: 0.82rem; line-height: 1.55; }
-.tour-info-card {
-    display: grid;
-    grid-template-columns: 36px minmax(0, 1fr);
-    gap: 0.85rem;
-    padding: 1rem;
+.tour-next-date strong { font-size: 2.2rem; line-height: 1; letter-spacing: -0.05em; }
+.tour-next-date span { margin-top: 0.3rem; font-size: 0.66rem; font-weight: 720; }
+.tour-next-copy { min-width: 0; }
+.tour-next-eyebrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.35rem;
+    color: var(--tour-accent-strong);
+    font-size: 0.68rem;
+    font-weight: 760;
+    letter-spacing: 0.065em;
+    text-transform: uppercase;
 }
-.tour-info-card > svg {
-    width: 22px;
-    height: 22px;
-    margin-top: 0.1rem;
-    color: var(--tour-accent);
+.tour-next-state {
+    padding: 0.24rem 0.5rem;
+    border-radius: 999px;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    font-size: 0.64rem;
+    letter-spacing: 0;
+    text-transform: none;
+    white-space: nowrap;
 }
+.tour-next-state.is-active { color: var(--tour-accent-strong); background: var(--tour-accent-soft); }
+.tour-next-copy h2 { margin: 0; font-size: clamp(1.15rem, 2vw, 1.45rem); font-weight: 740; line-height: 1.25; letter-spacing: -0.018em; }
+.tour-next-meta,
+.tour-next-detail { margin: 0.35rem 0 0; color: var(--text-secondary); font-size: 0.8rem; line-height: 1.5; }
+.tour-next-detail { color: var(--text-primary); }
 
 .tour-section {
     padding-top: 2.15rem;
@@ -450,6 +467,21 @@ body:not(.no-hover) .tour-section-nav a:hover { color: var(--tour-accent-strong)
     border: 1px solid var(--border-color);
     border-radius: 15px;
     background: var(--bg-secondary);
+}
+.tour-tent-capacity {
+    display: block;
+    color: var(--text-secondary);
+    text-align: right;
+    font-size: 0.7rem;
+    font-weight: 680;
+    font-variant-numeric: tabular-nums;
+}
+.tour-tent-card .tour-people-list { gap: 0.48rem; margin-top: 0.5rem; }
+.tour-tent-card .tour-person-chip {
+    min-height: 34px;
+    padding: 0.34rem 0.68rem;
+    font-size: clamp(0.84rem, 1.35vw, 0.96rem);
+    font-weight: 660;
 }
 .tour-card-title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
 .tour-card-title-row h3 { margin: 0; font-size: 0.95rem; font-weight: 720; }
@@ -734,8 +766,6 @@ body:not(.no-hover) .tour-icon-button:hover { color: var(--text-primary); backgr
 #tourPickerApply { color: #fff; background: var(--tour-accent); }
 
 @media (max-width: 900px) {
-    .tour-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .tour-date-card { grid-column: 1 / -1; grid-row: auto; }
     .tour-meals { grid-template-columns: 1fr; }
     .tour-editor-row .span-2,
     .tour-editor-row .span-3,
@@ -758,12 +788,14 @@ body:not(.no-hover) .tour-icon-button:hover { color: var(--text-primary); backgr
     .tour-edit-button { align-self: flex-start; }
     .tour-section-nav { gap: 0.12rem; margin: 0.65rem 0 0.9rem; border-radius: 12px; }
     .tour-section-nav a { padding: 0.58rem 0.42rem; font-size: 0.72rem; }
-    .tour-overview { grid-template-columns: 1fr; }
-    .tour-date-card { grid-template-columns: 76px minmax(0, 1fr); gap: 0.8rem; padding: 0.85rem; }
-    .tour-date-mark { min-height: 82px; border-radius: 14px; }
-    .tour-date-mark strong { font-size: 2rem; }
-    .tour-date-mark span { font-size: 0.62rem; }
-    .tour-info-card { padding: 0.85rem; }
+    .tour-next-card { grid-template-columns: 72px minmax(0, 1fr); gap: 0.8rem; padding: 0.85rem; border-radius: 15px; }
+    .tour-next-date { min-height: 72px; border-radius: 12px; }
+    .tour-next-date strong { font-size: 1.85rem; }
+    .tour-next-date span { font-size: 0.58rem; }
+    .tour-next-eyebrow { flex-wrap: wrap; gap: 0.3rem 0.5rem; }
+    .tour-next-copy h2 { font-size: 1.08rem; }
+    .tour-next-meta,
+    .tour-next-detail { font-size: 0.76rem; }
     .tour-section { padding-top: 1.7rem; scroll-margin-top: 112px; }
     .tour-section-heading { align-items: center; }
     .tour-section-heading h2 { font-size: 1.3rem; }

@@ -7,6 +7,7 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const account = fs.readFileSync(path.join(root, 'account.js'), 'utf8');
+const components = fs.readFileSync(path.join(root, 'styles', 'site', '00-components.css'), 'utf8');
 const shell = JSON.parse(fs.readFileSync(path.join(root, 'performance', 'sw-shell.json'), 'utf8')).assets;
 
 assert.match(page, /id="homePrivilegedActions"[^>]*hidden/, 'privileged action slot must start hidden');
@@ -33,6 +34,11 @@ assert.match(account, /if \(event\.persisted\) updateHomeAccessLinks\(\)/,
     'BFCache restores must recheck home access');
 assert.match(account, /addEventListener\('pagehide'[\s\S]*if \(!event\.persisted\) return;[\s\S]*clearHomeAccessLinks\(slot\)/,
     'privileged actions must be cleared before a page enters BFCache');
+
+assert.match(components, /#accountOverlay\.auth-overlay\s*\{[^}]*position:\s*fixed[^}]*z-index:\s*13000/s,
+    'the shared account dialog must overlay every page instead of joining page layout');
+assert.match(components, /#accountOverlay \.account-modal\s*\{[^}]*width:\s*min\(100%,\s*380px\)/s,
+    'the shared account dialog must retain a bounded card on non-Matcenter pages');
 
 assert.ok(!shell.includes('/account.js'), 'account UI must not delay installation of the minimal offline shell');
 

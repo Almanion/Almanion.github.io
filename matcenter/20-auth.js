@@ -83,7 +83,7 @@ async function initAuth() {
         authModal.dataset.focusTrapReady = 'true';
         authModal.addEventListener('keydown', (event) => {
             if (event.key !== 'Tab') return;
-            const focusable = Array.from(authModal.querySelectorAll('input, button, [tabindex]:not([tabindex="-1"])'))
+            const focusable = Array.from(authModal.querySelectorAll('a[href], input, button, [tabindex]:not([tabindex="-1"])'))
                 .filter(element => !element.disabled && element.offsetParent !== null);
             if (focusable.length === 0) return;
             const first = focusable[0];

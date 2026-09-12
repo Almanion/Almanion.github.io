@@ -40,7 +40,7 @@
     <meta name="apple-mobile-web-app-title" content="Almanion">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Мои Конспекты | Almanion</title>
-    <link rel="stylesheet" href="styles/site/index.css?v=20260905-2">
+    <link rel="stylesheet" href="styles/site/index.css?v=20260912-1">
     <link rel="stylesheet" href="styles/tokens.css">
     <link rel="stylesheet" href="styles/buttons.css">
     <style>
@@ -832,7 +832,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
     <link rel="stylesheet" href="styles/home-motion.css?v=20260907-2">
-    <link rel="stylesheet" href="styles/home-dashboard.css?v=20260912-2">
+    <link rel="stylesheet" href="styles/home-dashboard.css?v=20260912-3">
 </head>
 <body class="home-page">
     <script>(function(){document.body.classList.add('home-motion-initial');try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};var l=/^(max|medium|off)$/.test(p.animationLevel||'')?p.animationLevel:'max';document.body.classList.add('animations-'+l);if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){document.body.classList.add('animations-max');}})();</script>
@@ -939,7 +939,7 @@
                         <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-likbez"/></svg></div>
                     </div>
                     <div class="card-body">
-                        <div class="home-quick-copy"><h2>Ликбезы</h2><span class="home-quick-context">Короткие курсы</span></div>
+                        <div class="home-quick-copy"><h2>Ликбезы</h2></div>
                         <svg class="home-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
                     </div>
                 </a>
@@ -1158,7 +1158,7 @@
             function loadHomeDashboard() {
                 if (document.querySelector('script[data-home-dashboard]')) return;
                 var script = document.createElement('script');
-                script.src = 'home-dashboard.js?v=20260912-2';
+                script.src = 'home-dashboard.js?v=20260912-3';
                 script.dataset.homeDashboard = 'true';
                 document.head.appendChild(script);
             }
