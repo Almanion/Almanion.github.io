@@ -87,6 +87,34 @@ test('note sidebar keeps study action icons compact', async function ({ page }) 
     await expectNoHorizontalOverflow(page);
 });
 
+test('knowledge check stays closed until requested and opens as an overlay', async function ({ page }) {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/physics-10.html', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(function () { return window.AlmanionNoteRuntime.ensure('knowledge'); });
+
+    const selectOverlay = page.locator('#kcSelectOverlay');
+    const reviewOverlay = page.locator('#kcReviewOverlay');
+    await expect(selectOverlay).toBeHidden();
+    await expect(reviewOverlay).toBeHidden();
+
+    await page.locator('#knowledgeCheckBtn').click();
+    await expect(selectOverlay).toBeVisible();
+    const geometry = await selectOverlay.evaluate(function (element) {
+        const bounds = element.getBoundingClientRect();
+        return {
+            position: getComputedStyle(element).position,
+            top: Math.round(bounds.top),
+            bottom: Math.round(bounds.bottom),
+            viewport: window.innerHeight
+        };
+    });
+    expect(geometry).toEqual({ position: 'fixed', top: 0, bottom: 800, viewport: 800 });
+
+    await page.locator('#kcSelectClose').click();
+    await expect(selectOverlay).toBeHidden();
+    await expectNoHorizontalOverflow(page);
+});
+
 test('mobile note menu opens and closes without page overflow', async function ({ page }) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/physics.html', { waitUntil: 'domcontentloaded' });

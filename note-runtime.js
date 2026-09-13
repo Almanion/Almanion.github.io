@@ -8,7 +8,7 @@
 
     const loaded = new Map();
     const versions = {
-        featureStyles: 'styles/site/features.css?v=20260911-1',
+        featureStyles: 'styles/site/features.css?v=20260913-1',
         editorStyles: 'styles/note-editor.css?v=20260904-2',
         printStyles: 'styles/print.css?v=20260908-3',
         settings: 'settings.js?v=20260911-1',
@@ -115,7 +115,7 @@
         settings: loadSettings,
         search: loadSearch,
         print: function () { return loadStyle('printStyles').then(function () { return loadScript('print'); }); },
-        knowledge: function () { return loadScript('knowledge'); },
+        knowledge: function () { return loadStyle('featureStyles').then(function () { return loadScript('knowledge'); }); },
         account: loadAccount,
         newyear: function () { return loadScript('newyear'); }
     };

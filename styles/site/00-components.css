@@ -245,6 +245,8 @@ body.dark-theme .knowledge-check-btn:hover {
    ===================================================================== */
 
 /* --- Общий контейнер модалок --- */
+.auth-overlay.hidden { display: none !important; }
+
 .kc-modal {
     max-width: 640px;
     width: 100%;
