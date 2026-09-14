@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Геометрическая интерпретация определителя</title>
+  <desc id="desc">Площадь ориентированного параллелограмма, геометрическое получение формулы Крамера и знак определителя при повороте.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.4" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M0 0 10 5 0 10Z" fill="#173f70"/>
+    </marker>
+    <marker id="arrowTeal" viewBox="0 0 10 10" refX="8.4" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M0 0 10 5 0 10Z" fill="#0b8f87"/>
+    </marker>
+    <marker id="arrowCoral" viewBox="0 0 10 10" refX="8.4" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M0 0 10 5 0 10Z" fill="#d4674c"/>
+    </marker>
+    <style>
+      .frame{fill:#fbfdff;stroke:#d6e1ed;stroke-width:2}
+      .panel{fill:#fff;stroke:#d6e1ed;stroke-width:2}
+      .axis{fill:none;stroke:#173f70;stroke-width:2.3;marker-end:url(#arrow)}
+      .guide{fill:none;stroke:#a9bdd2;stroke-width:1.5;stroke-dasharray:6 6}
+      .shape{fill:#dff2ef;fill-opacity:.82;stroke:#0b8f87;stroke-width:3}
+      .shape2{fill:#e7eef8;fill-opacity:.82;stroke:#335f91;stroke-width:3}
+      .vector{fill:none;stroke:#0b8f87;stroke-width:3.2;marker-end:url(#arrowTeal)}
+      .vector2{fill:none;stroke:#d4674c;stroke-width:3.2;marker-end:url(#arrowCoral)}
+      .result{fill:none;stroke:#335f91;stroke-width:3.2;marker-end:url(#arrow)}
+      .arc{fill:none;stroke:#d4674c;stroke-width:2.5;marker-end:url(#arrowCoral)}
+      .point{fill:#173f70}
+      .heading{font:700 22px system-ui,sans-serif;fill:#173f70}
+      .label{font:19px Georgia,serif;fill:#173f70}
+      .small{font:16px system-ui,sans-serif;fill:#526b84}
+      .formula{font:18px Georgia,serif;fill:#173f70}
+      @media (prefers-color-scheme:dark){
+        .frame{fill:#171b27;stroke:#45536a}.panel{fill:#1d2230;stroke:#45536a}
+        .heading,.label,.formula{fill:#e7eef8}.small{fill:#b9c7d8}
+        .axis{stroke:#7fa8d8}.guide{stroke:#53677e}.shape{fill:#123d3a}.shape2{fill:#263b56}
+      }
+    </style>
+  </defs>
+
+  <rect class="frame" x="18" y="18" width="1164" height="724" rx="18"/>
+
+  <text class="heading" x="58" y="62">Определитель и площадь</text>
+  <rect class="panel" x="42" y="82" width="344" height="286" rx="14"/>
+  <path class="axis" d="M78 324H350M78 324V112"/>
+  <polygon class="shape" points="96,306 274,262 342,142 164,186"/>
+  <path class="vector" d="M96 306L274 262"/>
+  <path class="vector2" d="M96 306L164 186"/>
+  <circle class="point" cx="96" cy="306" r="4"/><circle class="point" cx="274" cy="262" r="4"/>
+  <circle class="point" cx="164" cy="186" r="4"/><circle class="point" cx="342" cy="142" r="4"/>
+  <text class="label" x="278" y="286">(a, b)</text>
+  <text class="label" x="118" y="171">(c, d)</text>
+  <text class="label" x="221" y="220">S</text>
+  <text class="formula" x="214" y="348" text-anchor="middle">det = ±S</text>
+
+  <text class="heading" x="426" y="62">Формула Крамера как отношение площадей</text>
+  <rect class="panel" x="410" y="82" width="748" height="286" rx="14"/>
+  <path class="axis" d="M444 324H1125M444 324V112"/>
+  <text class="small" x="462" y="125">v₁=(α₁₁, α₂₁),  v₂=(α₁₂, α₂₂)</text>
+  <text class="small" x="462" y="151">b=x₁v₁+x₂v₂</text>
+  <polygon class="shape" style="fill:none" points="445,306 585,306 1034,196 894,196"/>
+  <polygon class="shape" style="fill-opacity:.28" points="445,306 585,306 670,196 530,196"/>
+  <polygon class="shape2" style="fill-opacity:.46" points="445,306 585,306 640,235 500,235"/>
+  <path class="guide" d="M445 306L809 306L894 196M445 306L530 196M500 235L640 235M530 196L1034 196"/>
+  <path class="vector" d="M445 306L585 306"/>
+  <path class="vector2" d="M445 306L500 235"/>
+  <path class="result" d="M445 306L894 196"/>
+  <circle class="point" cx="445" cy="306" r="4"/><circle class="point" cx="585" cy="306" r="4"/>
+  <circle class="point" cx="500" cy="235" r="4"/><circle class="point" cx="640" cy="235" r="4"/>
+  <circle class="point" cx="530" cy="196" r="4"/><circle class="point" cx="670" cy="196" r="4"/>
+  <circle class="point" cx="809" cy="306" r="4"/><circle class="point" cx="894" cy="196" r="4"/>
+  <circle class="point" cx="1034" cy="196" r="4"/>
+  <text class="label" x="431" y="340">A</text><text class="label" x="575" y="340">D</text>
+  <text class="label" x="485" y="225">B</text><text class="label" x="630" y="225">C</text>
+  <text class="label" x="515" y="186">E</text><text class="label" x="660" y="186">F</text>
+  <text class="label" x="884" y="186">M=b</text><text class="label" x="1024" y="186">N</text>
+  <text class="small" x="506" y="298">v₁</text>
+  <text class="small" x="454" y="258">v₂</text>
+  <text class="small" x="690" y="299">x₁v₁</text>
+  <text class="small" x="535" y="190">x₂v₂</text>
+  <text class="small" x="545" y="266">S</text>
+  <text class="small" x="603" y="215">x₂S</text>
+  <text class="small" x="895" y="224">S₂=det(v₁,b)=x₂S</text>
+  <text class="formula" x="784" y="354" text-anchor="middle">x₂ = S₂ / S = det(v₁,b) / det(v₁,v₂)</text>
+
+  <text class="heading" x="58" y="414">Поворот и знак определителя</text>
+  <rect class="panel" x="42" y="434" width="1116" height="278" rx="14"/>
+  <path class="axis" d="M118 660H503M118 660V470"/>
+  <path class="guide" d="M118 660L454 660M118 660L380 500"/>
+  <path class="vector" d="M118 660L438 596"/>
+  <path class="vector2" d="M118 660L348 504"/>
+  <path class="arc" d="M244 635A130 130 0 0 0 224 583"/>
+  <circle class="point" cx="118" cy="660" r="4"/>
+  <text class="label" x="442" y="590">(a, b)</text>
+  <text class="label" x="352" y="496">(c, d)</text>
+  <text class="label" x="236" y="588">φ</text>
+  <text class="formula" x="570" y="506">c = a cos φ − b sin φ</text>
+  <text class="formula" x="570" y="544">d = a sin φ + b cos φ</text>
+  <text class="formula" x="570" y="592">ad − bc = sin φ</text>
+  <text class="small" x="570" y="635">0° &lt; φ &lt; 180°: det = S</text>
+  <text class="small" x="570" y="670">180° &lt; φ &lt; 360°: det = −S</text>
+</svg>
