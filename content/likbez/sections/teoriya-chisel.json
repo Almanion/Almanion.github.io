@@ -466,31 +466,99 @@
             {
               "id": "primitive-root-classification-proof",
               "type": "proof",
-              "title": "Существование",
-              "content": "Для \\(m=2\\) подходит \\(1\\), для \\(m=4\\) — \\(3\\). Докажем существование для \\(p^n\\) индукцией по \\(n\\). При \\(n=1\\) утверждение уже доказано. Пусть \\(\\xi\\) — первообразный корень по модулю \\(p^n\\). Если он первообразен и по модулю \\(p^{n+1}\\), переход выполнен. Иначе положим \\(m=p^{n-1}(p-1)\\); тогда \\(\\xi^m\\equiv1\\pmod{p^{n+1}}\\).",
+              "title": "Доказательство",
+              "content": "\\((\\Leftarrow)\\) Для \\(m=2\\) подходит \\(1\\), для \\(m=4\\) — \\(3\\). Пусть \\(p\\) — нечётное простое, \\(\\xi\\) — первообразный корень по модулю \\(p\\).",
               "children": [
                 {
                   "id": "primitive-root-inductive-lift",
                   "type": "paragraph",
                   "title": "",
-                  "content": "Разложим \\(\\displaystyle(\\xi+p)^m=\\xi^m+m\\xi^{m-1}p+\\sum_{k=2}^{m}\\binom{m}{k}\\xi^{m-k}p^k\\). Второе слагаемое делится на \\(p^n\\), но не на \\(p^{n+1}\\). При \\(k\\ge2\\) имеем \\(\\displaystyle v_p\\!\\left(\\binom{m}{k}p^k\\right)\\ge n-1-v_p(k)+k\\ge n+1\\), поэтому остальные слагаемые делятся на \\(p^{n+1}\\). Следовательно, \\((\\xi+p)^m\\not\\equiv1\\pmod{p^{n+1}}\\), и \\(\\xi+p\\) является первообразным корнем по модулю \\(p^{n+1}\\).",
+                  "content": "\\(\\xi^{p-1}\\not\\equiv(\\xi+p)^{p-1}\\pmod{p^2}\\), т. к.",
+                  "children": []
+                },
+                {
+                  "id": "primitive-root-p-square-difference",
+                  "type": "formula",
+                  "title": "",
+                  "latex": "\\begin{gathered}\\bigl\\lvert(\\xi+p)^{p-1}-\\xi^{p-1}\\bigr\\rvert_p\\\\=\\lvert p\\rvert_p+\\lvert p-1\\rvert_p=1.\\end{gathered}",
+                  "content": "",
+                  "children": []
+                },
+                {
+                  "id": "primitive-root-lift-choice",
+                  "type": "paragraph",
+                  "title": "",
+                  "content": "Хотя бы одно из чисел \\(\\xi^{p-1}\\) и \\((\\xi+p)^{p-1}\\) не сравнимо с \\(1\\) по модулю \\(p^2\\). Соответствующее число \\(\\xi\\) или \\(\\xi+p\\) обозначим \\(x\\).",
                   "children": []
                 },
                 {
                   "id": "primitive-root-lte",
+                  "type": "formula",
+                  "title": "",
+                  "latex": "\\begin{gathered}\\bigl\\lvert x^{p^{n-1}(p-1)}-1\\bigr\\rvert_p\\\\=\\lvert x^{p-1}-1\\rvert_p+\\bigl\\lvert p^{n-1}(p-1)\\bigr\\rvert_p\\\\=1+n-1=n.\\end{gathered}",
+                  "content": "",
+                  "children": []
+                },
+                {
+                  "id": "primitive-root-prime-power-order",
+                  "type": "formula",
+                  "title": "",
+                  "latex": "\\begin{gathered}d=\\operatorname{ord}_{p^n}x\\\\\\Rightarrow d\\divby p^{n-1},\\quad d\\divby(p-1)\\\\\\Rightarrow d\\divby p^{n-1}(p-1)=\\varphi(p^n).\\end{gathered}",
+                  "content": "",
+                  "children": []
+                },
+                {
+                  "id": "primitive-root-prime-power-conclusion",
                   "type": "paragraph",
                   "title": "",
-                  "content": "Нечётный представитель найденного числа является первообразным и по модулю \\(2p^n\\), поскольку \\(\\varphi(2p^n)=\\varphi(p^n)\\).",
+                  "content": "Следовательно, \\(d=\\varphi(p^n)\\), и \\(x\\) — первообразный корень по модулю \\(p^n\\). Нечётный представитель найденного числа является первообразным и по модулю \\(2p^n\\), поскольку \\(\\varphi(2p^n)=\\varphi(p^n)\\).",
+                  "children": []
+                },
+                {
+                  "id": "primitive-root-necessity",
+                  "type": "paragraph",
+                  "title": "",
+                  "content": "\\((\\Rightarrow)\\) Пусть \\(x\\) — первообразный корень по модулю \\(m\\). Для нечётного \\(x\\) имеем \\(x^2\\equiv1\\pmod8\\). Тогда при \\(n\\ge3\\)",
+                  "children": []
+                },
+                {
+                  "id": "primitive-root-two-power-lte",
+                  "type": "formula",
+                  "title": "",
+                  "latex": "\\begin{aligned}\\bigl\\lvert x^{2^{n-2}}-1\\bigr\\rvert_2&=\\lvert x^2-1\\rvert_2+\\lvert2^{n-3}\\rvert_2\\\\&\\ge3+n-3=n\\\\&\\Rightarrow x^{2^{n-2}}\\equiv1\\pmod{2^n}.\\end{aligned}",
+                  "content": "",
+                  "children": []
+                },
+                {
+                  "id": "primitive-root-two-power-conclusion",
+                  "type": "paragraph",
+                  "title": "",
+                  "content": "По модулю \\(2^n\\) при \\(n\\ge3\\) первообразного корня нет, так как \\(2^{n-2}<\\varphi(2^n)\\).",
+                  "children": []
+                },
+                {
+                  "id": "primitive-root-prime-factors",
+                  "type": "paragraph",
+                  "title": "",
+                  "content": "Пусть \\(m=p_1^{\\alpha_1}\\cdots p_k^{\\alpha_k}\\), где \\(p_i\\) — различные простые. Тогда",
+                  "children": []
+                },
+                {
+                  "id": "primitive-root-factor-totients",
+                  "type": "formula",
+                  "title": "",
+                  "latex": "\\begin{gathered}x^{\\varphi(p_i^{\\alpha_i})}\\equiv1\\pmod{p_i^{\\alpha_i}}\\\\\\Rightarrow x^{[\\varphi(p_1^{\\alpha_1}),\\ldots,\\varphi(p_k^{\\alpha_k})]}\\\\\\equiv1\\pmod m.\\end{gathered}",
+                  "content": "",
+                  "children": []
+                },
+                {
+                  "id": "primitive-root-classification-conclusion",
+                  "type": "paragraph",
+                  "title": "",
+                  "content": "\\(\\Rightarrow\\varphi(p_i^{\\alpha_i})\\) попарно взаимно просты. Значит, нечётных простых делителей не более одного. Если \\(m\\) чётен и имеет нечётный простой делитель, то \\(\\lvert m\\rvert_2=1\\). Следовательно, остаются только \\(m=2,4,p^n\\) и \\(2p^n\\).",
                   "children": []
                 }
               ]
-            },
-            {
-              "id": "primitive-root-necessity",
-              "type": "proof",
-              "title": "Необходимость",
-              "content": "Пусть \\(m=2^\\alpha p_1^{\\alpha_1}\\cdots p_k^{\\alpha_k}\\), где \\(p_i\\) — различные нечётные простые. Если \\(\\alpha\\ge3\\), то для любого нечётного \\(x\\) имеем \\(x^2\\equiv1\\pmod8\\). По LTE \\(v_2(x^{2^{\\alpha-2}}-1)\\ge3+(\\alpha-3)=\\alpha\\), поэтому порядок \\(x\\) по модулю \\(2^\\alpha\\) не превосходит \\(2^{\\alpha-2}<\\varphi(2^\\alpha)\\). Если присутствуют две различные нечётные простые степени \\(p_i^{\\alpha_i}\\) и \\(p_j^{\\alpha_j}\\), то порядок любого элемента по их произведению не превосходит \\(\\operatorname{lcm}(\\varphi(p_i^{\\alpha_i}),\\varphi(p_j^{\\alpha_j}))<\\varphi(p_i^{\\alpha_i})\\varphi(p_j^{\\alpha_j})\\), поскольку обе функции Эйлера чётны. Значит, нечётная простая степень может быть только одна. Наконец, для \\(4p^n\\) порядок любого элемента не превосходит \\(\\operatorname{lcm}(2,\\varphi(p^n))=\\varphi(p^n)<\\varphi(4p^n)\\). Следовательно, остаются только \\(m=2,4,p^n\\) и \\(2p^n\\).",
-              "children": []
             }
           ]
         }

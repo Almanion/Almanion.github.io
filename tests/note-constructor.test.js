@@ -308,6 +308,38 @@ function testNumberTheoryStructure() {
     assert.strictEqual(section.subsections[5].children.find(block => block.id === 'gaussian-norm').type, 'definition');
     assert.strictEqual(section.subsections[5].children.find(block => block.id === 'norm-properties').type, 'properties');
 
+    const primitiveRoots = section.subsections.find(subsection => subsection.id === 'pervoobraznye-korni');
+    const rootClassification = primitiveRoots.children.find(block => block.id === 'primitive-root-classification');
+    const rootProof = rootClassification.children.find(block => block.id === 'primitive-root-classification-proof');
+    const rootProofText = JSON.stringify(rootProof);
+    const rootDifference = rootProof.children.find(block => block.id === 'primitive-root-p-square-difference');
+    const rootLte = rootProof.children.find(block => block.id === 'primitive-root-lte');
+    const rootOrder = rootProof.children.find(block => block.id === 'primitive-root-prime-power-order');
+    const rootNecessity = rootProof.children.find(block => block.id === 'primitive-root-necessity');
+    const rootTwoPowerLte = rootProof.children.find(block => block.id === 'primitive-root-two-power-lte');
+    const rootTotients = rootProof.children.find(block => block.id === 'primitive-root-factor-totients');
+    const rootConclusion = rootProof.children.find(block => block.id === 'primitive-root-classification-conclusion');
+    assert.strictEqual(rootClassification.children.length, 1, 'оба направления доказательства должны находиться в одном блоке');
+    assert.strictEqual(rootProof.type, 'proof');
+    assert.ok(rootProof.content.includes('\\Leftarrow'));
+    assert.ok(rootProof.content.includes('\\xi\\) — первообразный корень по модулю \\(p\\)'));
+    assert.ok(rootProof.children.find(block => block.id === 'primitive-root-inductive-lift').content.includes('\\pmod{p^2}'));
+    assert.ok(rootDifference.latex.includes('(\\xi+p)^{p-1}-\\xi^{p-1}'));
+    assert.ok(rootDifference.latex.includes('=1.'));
+    assert.ok(rootLte.latex.includes('x^{p^{n-1}(p-1)}-1'));
+    assert.ok(rootLte.latex.includes('=1+n-1=n'));
+    assert.ok(rootOrder.latex.includes('d\\divby p^{n-1}'));
+    assert.ok(rootOrder.latex.includes('d\\divby(p-1)'));
+    assert.ok(rootNecessity.content.includes('\\Rightarrow'));
+    assert.ok(rootNecessity.content.includes('n\\ge3'));
+    assert.ok(rootTwoPowerLte.latex.includes('x^{2^{n-2}}'));
+    assert.ok(rootTwoPowerLte.latex.includes('\\lvert2^{n-3}\\rvert_2'));
+    assert.ok(rootTotients.latex.includes('[\\varphi(p_1^{\\alpha_1}),\\ldots,\\varphi(p_k^{\\alpha_k})]'));
+    assert.ok(rootConclusion.content.includes('попарно взаимно просты'));
+    assert.ok(rootConclusion.content.includes('Если \\(m\\) чётен и имеет нечётный простой делитель'));
+    assert.doesNotMatch(rootProofText, /индукци|binom|v_p\\\\!/, 'недоделанный индуктивный переход не должен оставаться в новом доказательстве');
+    assert.doesNotMatch(rootProofText, /src/, 'доказательство переносится текстом, без изменения рисунков');
+
     const reciprocity = section.subsections.find(subsection => subsection.id === 'kvadratichnyy-zakon-vzaimnosti');
     const eisenstein = reciprocity.children.find(block => block.id === 'eisenstein-lemma');
     const eisensteinProof = eisenstein.children.find(block => block.id === 'eisenstein-proof');
