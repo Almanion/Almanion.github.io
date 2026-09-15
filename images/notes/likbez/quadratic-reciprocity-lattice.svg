@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
   <title id="title">Геометрическая интерпретация леммы Эйзенштейна</title>
-  <desc id="desc">Для p равно 11 и эл равно 7 показан прямоугольник с диагональю игрек равно эл делить на p умножить на икс. Бирюзовые точки имеют чётную абсциссу и лежат ниже диагонали. Центральная симметрия вокруг точки M связывает области BMT и AML.</desc>
+  <desc id="desc">Для p равно 11 и q равно 7 показан прямоугольник с диагональю игрек равно q делить на p умножить на икс. Бирюзовые точки имеют чётную абсциссу и лежат ниже диагонали. Центральная симметрия вокруг точки M связывает области BMT и AML.</desc>
   <defs>
     <marker id="axis-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0 0 10 5 0 10Z" fill="#173f70"/>
@@ -25,7 +25,7 @@
 
   <rect class="frame" x="18" y="18" width="1244" height="724" rx="18"/>
   <text class="heading" x="50" y="58">Лемма Эйзенштейна как подсчёт узлов решётки</text>
-  <text class="small" x="50" y="84">пример: p = 11, ℓ = 7; прямая AB не проходит через целые узлы</text>
+  <text class="small" x="50" y="84">пример: p = 11, q = 7; прямая AB не проходит через целые узлы</text>
 
   <rect class="plot-bg" x="62" y="102" width="646" height="524" rx="14"/>
   <polygon class="amk" points="90,590 365,380 90,380"/>
@@ -82,9 +82,9 @@
 
   <text class="point-label" x="73" y="611">A</text><text class="point-label" x="649" y="165">B</text><text class="point-label" x="650" y="580">C</text>
   <text class="point-label" x="72" y="374">K</text><text class="point-label" x="355" y="616">L</text><text class="point-label" x="344" y="373">M</text><text class="point-label" x="373" y="188">T</text>
-  <text class="small" x="380" y="148">x = p/2</text><text class="small" x="646" y="375">y = ℓ/2</text>
-  <text class="label" x="500" y="244" transform="rotate(-37.4 500 244)" paint-order="stroke" stroke="#fff" stroke-width="6" stroke-linejoin="round">y = (ℓ/p)x</text>
-  <text class="label" x="677" y="608">x</text><text class="label" x="72" y="135">y</text><text class="label" x="646" y="613">p</text><text class="label" x="66" y="176">ℓ</text>
+  <text class="small" x="380" y="148">x = p/2</text><text class="small" x="646" y="375">y = q/2</text>
+  <text class="label" x="500" y="244" transform="rotate(-37.4 500 244)" paint-order="stroke" stroke="#fff" stroke-width="6" stroke-linejoin="round">y = (q/p)x</text>
+  <text class="label" x="677" y="608">x</text><text class="label" x="72" y="135">y</text><text class="label" x="646" y="613">p</text><text class="label" x="66" y="176">q</text>
 
   <text class="region" x="247" y="458" fill="#08746e">AML</text><text class="region" x="205" y="337" fill="#a06b00">AMK</text>
   <text class="region" x="510" y="416" fill="#416b91">LMBC</text><text class="region" x="500" y="275" fill="#b95740">BMT</text>
@@ -98,7 +98,7 @@
   <rect class="card" x="735" y="274" width="495" height="245" rx="13"/>
   <text class="subheading" x="760" y="306">Чётности областей</text>
   <text class="formula" x="760" y="342">E(LMBC) = 14 ≡ 4 = E(BMT)  (mod 2)</text>
-  <text class="small" x="760" y="367">вместе — ℓ−1 узлов на каждой чётной вертикали</text>
+  <text class="small" x="760" y="367">вместе — q−1 узлов на каждой чётной вертикали</text>
   <text class="formula" x="760" y="406">E(BMT) = 4 = O(AML)</text>
   <text class="small" x="760" y="431">центральная симметрия меняет чётность x</text>
   <text class="formula-strong" x="760" y="472">E(ABC) ≡ #AML = 7  (mod 2)</text>
@@ -106,9 +106,9 @@
 
   <rect class="result" x="735" y="538" width="495" height="88" rx="13"/>
   <text class="small" x="760" y="568">общая формула</text>
-  <text class="formula-strong" x="760" y="601">(ℓ/p)(p/ℓ) = (−1)^((p−1)(ℓ−1)/4)</text>
+  <text class="formula-strong" x="760" y="601">(q/p)(p/q) = (−1)^((p−1)(q−1)/4)</text>
 
   <rect x="62" y="646" width="1168" height="54" rx="10" fill="#edf4fb"/>
-  <text class="small" x="646" y="669" text-anchor="middle">На отрезке AM нет целых узлов: из ℓx = py при 0 &lt; x &lt; p следовало бы, что p делит x.</text>
-  <text class="small" x="646" y="690" text-anchor="middle">Поэтому #AML + #AMK = (p−1)(ℓ−1)/4.</text>
+  <text class="small" x="646" y="669" text-anchor="middle">На отрезке AM нет целых узлов: из qx = py при 0 &lt; x &lt; p следовало бы, что p делит x.</text>
+  <text class="small" x="646" y="690" text-anchor="middle">Поэтому #AML + #AMK = (p−1)(q−1)/4.</text>
 </svg>

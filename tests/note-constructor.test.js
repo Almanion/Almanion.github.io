@@ -318,8 +318,14 @@ function testNumberTheoryStructure() {
     assert.ok(eisensteinReciprocityProof.children.some(block => block.id === 'eisenstein-lattice-conclusion'));
     assert.strictEqual(eisensteinFigure.title, 'Геометрическая интерпретация леммы Эйзенштейна');
     assert.ok(eisensteinFigure.caption.includes('Центральная симметрия'));
+    assert.doesNotMatch(JSON.stringify(eisensteinReciprocityProof), /\\ell|ℓ/, 'во всём доказательстве по Эйзенштейну второй простой должен обозначаться q');
+    assert.ok(eisensteinReciprocityProof.content.includes('\\dfrac{2q i}{p}'));
+    assert.ok(eisensteinFigure.caption.includes('\\(q=7\\)'));
 
     const eisensteinSvg = fs.readFileSync(path.join(__dirname, '..', eisensteinFigure.src.split('?')[0]), 'utf8');
+    assert.doesNotMatch(eisensteinSvg, /ℓ|эл/, 'рисунок должен использовать то же обозначение q, что и доказательство');
+    assert.ok(eisensteinSvg.includes('y = (q/p)x'));
+    assert.ok(eisensteinSvg.includes('(q/p)(p/q) = (−1)^((p−1)(q−1)/4)'));
     const countedGroup = eisensteinSvg.match(/<g class="counted">([\s\S]*?)<\/g>/);
     const pairedGroup = eisensteinSvg.match(/<g class="paired">([\s\S]*?)<\/g>/);
     assert.strictEqual((countedGroup[1].match(/<circle\b/g) || []).length, 17);
