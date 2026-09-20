@@ -125,7 +125,16 @@
           "type": "statement",
           "title": "Доверительный интервал",
           "content": "Результат записывают в виде \\(x=\\overline{x}\\pm\\Delta x\\). Это означает, что оцениваемое истинное значение находится в интервале:\n\\[\\overline{x}-\\Delta x\\leqslant x\\leqslant\\overline{x}+\\Delta x.\\]\nШирина этого интервала равна \\(2\\Delta x\\), а точное положение истинного значения внутри интервала неизвестно.",
-          "children": []
+          "children": [
+            {
+              "id": "doveritelnyy-interval-image",
+              "type": "image",
+              "src": "images/notes/physics-10/confidence-interval.svg?v=20260920-1",
+              "alt": "Доверительный интервал с нижней и верхней границами, средним и истинным значениями",
+              "caption": "Абсолютная погрешность \\(\\Delta x\\) задаёт расстояние от среднего значения до каждой границы доверительного интервала.",
+              "children": []
+            }
+          ]
         },
         {
           "id": "otnositelnaya-pogreshnost-definition",
@@ -262,7 +271,23 @@
           "id": "pogreshnost-pryamyh-izmereniy",
           "type": "derivation",
           "title": "Погрешность прямых измерений",
-          "content": "Сначала определяют приборную погрешность \\(\\Delta x_{\\text{приборная}}\\). Затем по \\(N\\) отсчётам вычисляют среднее значение и отклонения отдельных отсчётов:\n\\[\\overline{x}=\\frac{1}{N}\\sum_{i=1}^{N}x_i,\\qquad \\Delta x_i=x_i-\\overline{x}.\\]\nСлучайную погрешность среднего оценивают с помощью коэффициента Стьюдента \\(t_{\\alpha}\\), который выбирают по доверительной вероятности и числу измерений:\n\\[\\Delta x_{\\text{случайная}}=t_{\\alpha}\\sqrt{\\frac{\\sum_{i=1}^{N}(\\Delta x_i)^2}{N(N-1)}}.\\]\nНезависимые случайную и приборную погрешности объединяют как корень из суммы квадратов:\n\\[\\boxed{\\Delta x=\\sqrt{(\\Delta x_{\\text{случайная}})^2+(\\Delta x_{\\text{приборная}})^2}}.\\]\nПосле округления вычисляют относительную погрешность и записывают окончательный результат:\n\\[\\varepsilon(x)=\\frac{\\Delta x}{\\overline{x}}\\cdot100\\%,\\qquad \\boxed{x=(\\overline{x}\\pm\\Delta x)\\,[x]}.\\]",
+          "content": "Обработка серии прямых измерений состоит из семи шагов. Сначала определяют приборную погрешность \\(\\Delta x_{\\text{приборная}}\\). Затем по \\(N\\) отсчётам вычисляют среднее значение и отклонения отдельных отсчётов:\n\\[\\begin{aligned}\\overline{x}&=\\frac{1}{N}\\sum_{i=1}^{N}x_i\\\\&=\\frac{x_1+x_2+\\ldots+x_N}{N},\\\\[3pt]\\Delta x_i&=x_i-\\overline{x}.\\end{aligned}\\]\nСлучайную погрешность среднего оценивают с помощью коэффициента Стьюдента \\(t_{\\alpha}\\), который выбирают по доверительной вероятности \\(\\alpha\\) и числу измерений:\n\\[\\boxed{\\Delta x_{\\text{случайная}}=t_{\\alpha}\\sqrt{\\frac{\\sum_{i=1}^{N}(\\Delta x_i)^2}{N(N-1)}}}.\\]\nНезависимые случайную и приборную погрешности объединяют как корень из суммы квадратов:\n\\[\\boxed{\\Delta x=\\sqrt{(\\Delta x_{\\text{случайная}})^2+(\\Delta x_{\\text{приборная}})^2}}.\\]\nПосле этого округляют \\(\\Delta x\\) и \\(\\overline{x}\\), вычисляют относительную погрешность и записывают результат:\n\\[\\begin{aligned}\\varepsilon(x)&=\\frac{\\Delta x}{\\overline{x}},\\\\[3pt]\\varepsilon_{\\%}(x)&=\\frac{\\Delta x}{\\overline{x}}\\cdot100\\%,\\\\[3pt]x&=(\\overline{x}\\pm\\Delta x)\\,[x].\\end{aligned}\\]",
+          "children": [
+            {
+              "id": "student-coefficients-image",
+              "type": "image",
+              "src": "images/notes/physics-10/student-coefficients.svg?v=20260920-1",
+              "alt": "Таблица коэффициентов Стьюдента для разных числа измерений и доверительных вероятностей",
+              "caption": "Коэффициент \\(t_{\\alpha}\\) выбирают на пересечении строки с числом измерений и столбца с требуемой доверительной вероятностью.",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "primer-pryamogo-izmereniya-diametra",
+          "type": "example",
+          "title": "Пример обработки прямых измерений",
+          "content": "Диаметр измерили семь раз и получили значения \\(2{,}35\\), \\(2{,}37\\), \\(2{,}33\\), \\(2{,}38\\), \\(2{,}31\\), \\(2{,}36\\) и \\(2{,}30\\) миллиметра. Приборная погрешность равна \\(\\Delta d_{\\text{приборная}}=0{,}01\\,\\text{мм}\\), доверительная вероятность равна \\(\\alpha=0{,}95\\). Сначала вычислим среднее значение:\n\\[\\begin{aligned}\\overline d&=\\frac{1}{7}\\bigl(2{,}35+2{,}37+2{,}33+2{,}38\\\\[-2pt]&\\qquad\\quad+2{,}31+2{,}36+2{,}30\\bigr)\\\\[3pt]&=2{,}342857\\ldots\\,\\text{мм}.\\end{aligned}\\]\nОтклонения от среднего после округления равны:\n\\[\\begin{aligned}\\Delta d_i&=d_i-\\overline d,\\\\[3pt](\\Delta d_1,\\ldots,\\Delta d_7)&=\\\\[-2pt]&\\quad(0{,}0071;\\ 0{,}0271;\\\\[-2pt]&\\quad-0{,}0129;\\ 0{,}0371;\\\\[-2pt]&\\quad-0{,}0329;\\ 0{,}0171;\\\\[-2pt]&\\quad-0{,}0429)\\,\\text{мм}.\\end{aligned}\\]\nДля семи измерений и доверительной вероятности \\(0{,}95\\) из таблицы получаем \\(t_{0{,}95}=2{,}4\\). Сумма квадратов отклонений равна \\(\\sum_{i=1}^{7}(\\Delta d_i)^2\\approx0{,}00554\\,\\text{мм}^2\\). Тогда:\n\\[\\begin{aligned}\\Delta d_{\\text{случайная}}&=2{,}4\\sqrt{\\frac{\\sum_{i=1}^{7}(\\Delta d_i)^2}{7(7-1)}}\\\\[3pt]&=2{,}4\\sqrt{\\frac{0{,}00554}{42}}\\,\\text{мм}\\\\[3pt]&\\approx0{,}0276\\,\\text{мм}.\\end{aligned}\\]\nПолная погрешность и относительная погрешность равны:\n\\[\\begin{aligned}\\Delta d&=\\sqrt{(0{,}0276)^2+(0{,}01)^2}\\\\&\\approx0{,}0293\\,\\text{мм}\\approx0{,}03\\,\\text{мм},\\\\[4pt]\\varepsilon(d)&=\\frac{0{,}03}{2{,}34}\\approx0{,}0128,\\\\[4pt]\\varepsilon_{\\%}(d)&=0{,}0128\\cdot100\\%\\approx1{,}28\\%\\approx1{,}3\\%.\\end{aligned}\\]\nСреднее значение округляем до того же разряда, что и абсолютную погрешность. Окончательно:\n\\[\\boxed{\\begin{aligned}d&=(2{,}34\\pm0{,}03)\\,\\text{мм},\\\\\\varepsilon_{\\%}(d)&\\approx1{,}3\\%.\\end{aligned}}\\]\nВажно не забывать перевод доли в проценты: числу \\(0{,}0128\\) соответствует \\(1{,}28\\%\\); запись \\(12{,}8\\%\\) была бы десятикратной арифметической ошибкой.",
           "children": []
         },
         {
@@ -296,16 +321,30 @@
           "id": "pogreshnost-kosvennyh-izmereniy",
           "type": "derivation",
           "title": "Погрешность косвенных измерений",
-          "content": "Пусть искомая величина зависит от независимо измеренных величин: \\(f=f(x,y,z,\\ldots)\\). При малых погрешностях изменение функции приближённо выражается её полным дифференциалом первого порядка:\n\\[df\\approx\\frac{\\partial f}{\\partial x}dx+\\frac{\\partial f}{\\partial y}dy+\\frac{\\partial f}{\\partial z}dz+\\ldots\\]\nЕсли погрешности независимы, их квадраты складываются. Поэтому абсолютная погрешность результата равна:\n\\[\\boxed{\\Delta f=\\sqrt{\\left(\\frac{\\partial f}{\\partial x}\\Delta x\\right)^2+\\left(\\frac{\\partial f}{\\partial y}\\Delta y\\right)^2+\\left(\\frac{\\partial f}{\\partial z}\\Delta z\\right)^2+\\ldots}}.\\]\nПосле вычисления \\(\\Delta f\\) результат округляют и записывают в виде \\(f=(\\overline{f}\\pm\\Delta f)[f]\\), а относительную погрешность находят по формуле \\(\\varepsilon(f)=\\Delta f/\\overline{f}\\cdot100\\%\\).",
+          "content": "Пусть искомая величина зависит от непосредственно измеренных величин: \\(f=f(x,y,z,\\ldots)\\). При малых изменениях функцию раскладывают до первого порядка:\n\\[df\\approx\\frac{\\partial f}{\\partial x}dx+\\frac{\\partial f}{\\partial y}dy+\\frac{\\partial f}{\\partial z}dz+\\ldots\\]\nЕсли требуется предельная, то есть максимально возможная, погрешность, модули отдельных вкладов складывают:\n\\[\\boxed{\\begin{aligned}\\Delta f_{\\max}&\\approx\\left|\\frac{\\partial f}{\\partial x}\\right|\\Delta x+\\left|\\frac{\\partial f}{\\partial y}\\right|\\Delta y\\\\&\\quad+\\left|\\frac{\\partial f}{\\partial z}\\right|\\Delta z+\\ldots\\end{aligned}}\\]\nЕсли погрешности независимы и имеют случайный характер, их вклады складывают квадратично:\n\\[\\boxed{\\begin{aligned}\\Delta f&\\approx\\Biggl[\\left(\\frac{\\partial f}{\\partial x}\\Delta x\\right)^2+\\left(\\frac{\\partial f}{\\partial y}\\Delta y\\right)^2\\\\&\\qquad+\\left(\\frac{\\partial f}{\\partial z}\\Delta z\\right)^2+\\ldots\\Biggr]^{1/2}.\\end{aligned}}\\]\nПосле вычисления погрешности результат округляют и записывают в виде \\(f=(\\overline f\\pm\\Delta f)[f]\\). Относительная погрешность как доля равна \\(\\varepsilon(f)=\\Delta f/|\\overline f|\\), а в процентах — \\(\\varepsilon_{\\%}(f)=\\Delta f/|\\overline f|\\cdot100\\%\\).",
+          "children": []
+        },
+        {
+          "id": "pravila-predelnyh-kosvennyh-pogreshnostey",
+          "type": "derivation",
+          "title": "Правила предельных погрешностей",
+          "content": "Для суммы или разности \\(A=B\\pm C\\) имеем \\(dA=dB\\pm dC\\). В наихудшем случае модули изменений складываются, поэтому:\n\\[\\boxed{\\Delta A=\\Delta B+\\Delta C},\\qquad \\varepsilon(A)=\\frac{\\Delta B+\\Delta C}{|B\\pm C|}.\\]\nДля произведения, частного и степеней удобно применить логарифмирование. Пусть \\(A=B^mC^nD^p\\). Тогда:\n\\[\\ln|A|=m\\ln|B|+n\\ln|C|+p\\ln|D|,\\]\nа после дифференцирования:\n\\[\\frac{dA}{A}=m\\frac{dB}{B}+n\\frac{dC}{C}+p\\frac{dD}{D}.\\]\nПереходя к модулям предельных погрешностей, получаем:\n\\[\\boxed{\\varepsilon(A)=|m|\\frac{\\Delta B}{|B|}+|n|\\frac{\\Delta C}{|C|}+|p|\\frac{\\Delta D}{|D|}}.\\]\nОтсюда следуют формулы из таблицы презентации:\n\\[\\begin{aligned}A=BCD:\\quad \\varepsilon(A)&=\\frac{\\Delta B}{|B|}+\\frac{\\Delta C}{|C|}\\\\&\\quad+\\frac{\\Delta D}{|D|},\\\\[4pt]A=\\frac{B}{CD}:\\quad \\varepsilon(A)&=\\frac{\\Delta B}{|B|}+\\frac{\\Delta C}{|C|}\\\\&\\quad+\\frac{\\Delta D}{|D|},\\\\[4pt]A=B+C:\\quad \\varepsilon(A)&=\\frac{\\Delta B+\\Delta C}{|B+C|},\\\\[4pt]A=B\\sqrt{\\frac{C}{D}}:\\quad \\varepsilon(A)&=\\frac{\\Delta B}{|B|}+\\frac{1}{2}\\frac{\\Delta C}{|C|}\\\\&\\quad+\\frac{1}{2}\\frac{\\Delta D}{|D|}.\\end{aligned}\\]",
+          "children": []
+        },
+        {
+          "id": "primer-kosvennogo-izmereniya-moshchnosti",
+          "type": "example",
+          "title": "Пример косвенного измерения мощности",
+          "content": "Напряжение и сопротивление измерены непосредственно:\n\\[U=(150\\pm10)\\,\\text{В},\\qquad R=(18\\pm1)\\,\\text{Ом}.\\]\nМощность вычисляется косвенно по формуле \\(P=U^2/R\\). Её оценка равна:\n\\[\\begin{aligned}\\overline P&=\\frac{\\overline U^2}{\\overline R}=\\frac{150^2}{18}\\\\&=1250\\,\\text{Вт}\\approx1{,}3\\cdot10^3\\,\\text{Вт}.\\end{aligned}\\]\nВыведем относительную погрешность логарифмированием:\n\\[\\begin{aligned}\\ln P&=2\\ln U-\\ln R,\\\\[3pt]\\frac{dP}{P}&=2\\frac{dU}{U}-\\frac{dR}{R}.\\end{aligned}\\]\nДля предельной погрешности складываем модули вкладов:\n\\[\\begin{aligned}\\varepsilon(P)&=2\\frac{\\Delta U}{U}+\\frac{\\Delta R}{R}\\\\&=2\\cdot\\frac{10}{150}+\\frac{1}{18}\\\\&=0{,}1889\\ldots\\approx0{,}19=19\\%.\\end{aligned}\\]\nАбсолютная погрешность равна:\n\\[\\begin{aligned}\\Delta P&=\\varepsilon(P)\\overline P\\\\&\\approx0{,}19\\cdot1250\\,\\text{Вт}\\\\&\\approx236\\,\\text{Вт}\\approx0{,}2\\cdot10^3\\,\\text{Вт}.\\end{aligned}\\]\nПосле согласованного округления получаем:\n\\[\\boxed{\\begin{aligned}P&=(1{,}3\\pm0{,}2)\\cdot10^3\\,\\text{Вт},\\\\\\varepsilon_{\\%}(P)&\\approx19\\%.\\end{aligned}}\\]",
           "children": []
         }
       ]
     }
   ],
   "order": 2,
-  "revision": 1,
+  "revision": 2,
   "createdAt": 1789894800000,
-  "updatedAt": 1789894800000,
+  "updatedAt": 1789925766764,
   "updatedBy": "codex",
   "reviewStatus": "published"
 }

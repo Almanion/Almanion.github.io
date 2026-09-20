@@ -186,6 +186,17 @@ body.dark-theme .search-box input:focus {
     line-height: 1.5;
 }
 
+.constructor-content-section [data-note-block="student-coefficients-image"] {
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+}
+
+.constructor-content-section [data-note-block="student-coefficients-image"] img {
+    min-width: 650px;
+    max-width: none;
+}
+
 .constructor-content-section .constructor-note-list {
     padding-left: 1.35rem;
 }

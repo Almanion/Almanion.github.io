@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 790" role="img" aria-labelledby="title desc">
+  <title id="title">Таблица коэффициентов Стьюдента</title>
+  <desc id="desc">Коэффициенты Стьюдента для числа измерений от двух до более двадцати и доверительных вероятностей от 0,5 до 0,999. Столбец доверительной вероятности 0,95 выделен цветом.</desc>
+  <defs>
+    <style>
+      .frame{fill:#fbfdff;stroke:#d6e1ed;stroke-width:2}.grid{stroke:#8298ad;stroke-width:1.6}.outer{stroke:#173f70;stroke-width:3;fill:none}
+      .head{fill:#eaf2f9}.highlight{fill:#eee9f8}.stripe{fill:#f6f9fc}
+      .heading{font:700 28px system-ui,sans-serif;fill:#173f70}.header{font:700 19px system-ui,sans-serif;fill:#173f70}
+      .cell{font:18px system-ui,sans-serif;fill:#263f58}.accent{font-weight:700;fill:#684493}.note{font:16px system-ui,sans-serif;fill:#526b84}
+    </style>
+  </defs>
+
+  <rect class="frame" x="15" y="15" width="1250" height="760" rx="22"/>
+  <text class="heading" x="60" y="55">Коэффициенты Стьюдента tα</text>
+
+  <rect class="head" x="40" y="82" width="1200" height="116"/>
+  <rect class="highlight" x="580" y="140" width="165" height="586"/>
+  <rect class="stripe" x="40" y="246" width="1200" height="48"/>
+  <rect class="stripe" x="40" y="342" width="1200" height="48"/>
+  <rect class="stripe" x="40" y="438" width="1200" height="48"/>
+  <rect class="stripe" x="40" y="534" width="1200" height="48"/>
+  <rect class="stripe" x="40" y="630" width="1200" height="48"/>
+
+  <path class="outer" d="M40 82H1240V726H40Z"/>
+  <g class="grid">
+    <path d="M250 82V726M415 140V726M580 140V726M745 140V726M910 140V726M1075 140V726"/>
+    <path d="M250 140H1240M40 198H1240M40 246H1240M40 294H1240M40 342H1240M40 390H1240M40 438H1240M40 486H1240M40 534H1240M40 582H1240M40 630H1240M40 678H1240"/>
+  </g>
+
+  <text class="header" x="145" y="118" text-anchor="middle">Число измерений</text>
+  <text class="header" x="745" y="118" text-anchor="middle">Доверительная вероятность α</text>
+  <g class="header" text-anchor="middle">
+    <text x="332.5" y="177">0,5</text><text x="497.5" y="177">0,9</text><text class="accent" x="662.5" y="177">0,95</text>
+    <text x="827.5" y="177">0,98</text><text x="992.5" y="177">0,99</text><text x="1157.5" y="177">0,999</text>
+  </g>
+
+  <g class="cell" text-anchor="middle">
+    <text x="145" y="229">2</text><text x="332.5" y="229">1</text><text x="497.5" y="229">6,3</text><text class="accent" x="662.5" y="229">12,7</text><text x="827.5" y="229">31,8</text><text x="992.5" y="229">63,7</text><text x="1157.5" y="229">636,6</text>
+    <text x="145" y="277">3</text><text x="332.5" y="277">0,82</text><text x="497.5" y="277">2,9</text><text class="accent" x="662.5" y="277">4,3</text><text x="827.5" y="277">7,0</text><text x="992.5" y="277">9,9</text><text x="1157.5" y="277">31,6</text>
+    <text x="145" y="325">4</text><text x="332.5" y="325">0,77</text><text x="497.5" y="325">2,4</text><text class="accent" x="662.5" y="325">3,2</text><text x="827.5" y="325">4,5</text><text x="992.5" y="325">5,8</text><text x="1157.5" y="325">12,9</text>
+    <text x="145" y="373">5</text><text x="332.5" y="373">0,74</text><text x="497.5" y="373">2,1</text><text class="accent" x="662.5" y="373">2,8</text><text x="827.5" y="373">3,7</text><text x="992.5" y="373">4,6</text><text x="1157.5" y="373">8,6</text>
+    <text x="145" y="421">6</text><text x="332.5" y="421">0,73</text><text x="497.5" y="421">2,0</text><text class="accent" x="662.5" y="421">2,6</text><text x="827.5" y="421">3,4</text><text x="992.5" y="421">4,0</text><text x="1157.5" y="421">6,9</text>
+    <text x="145" y="469">7</text><text x="332.5" y="469">0,72</text><text x="497.5" y="469">1,9</text><text class="accent" x="662.5" y="469">2,4</text><text x="827.5" y="469">3,1</text><text x="992.5" y="469">3,7</text><text x="1157.5" y="469">6,0</text>
+    <text x="145" y="517">8</text><text x="332.5" y="517">0,71</text><text x="497.5" y="517">1,9</text><text class="accent" x="662.5" y="517">2,4</text><text x="827.5" y="517">3,0</text><text x="992.5" y="517">3,5</text><text x="1157.5" y="517">5,4</text>
+    <text x="145" y="565">9</text><text x="332.5" y="565">0,71</text><text x="497.5" y="565">1,9</text><text class="accent" x="662.5" y="565">2,3</text><text x="827.5" y="565">2,9</text><text x="992.5" y="565">3,4</text><text x="1157.5" y="565">5,0</text>
+    <text x="145" y="613">10</text><text x="332.5" y="613">0,70</text><text x="497.5" y="613">1,8</text><text class="accent" x="662.5" y="613">2,3</text><text x="827.5" y="613">2,8</text><text x="992.5" y="613">3,2</text><text x="1157.5" y="613">4,8</text>
+    <text x="145" y="661">20</text><text x="332.5" y="661">0,69</text><text x="497.5" y="661">1,7</text><text class="accent" x="662.5" y="661">2,1</text><text x="827.5" y="661">2,5</text><text x="992.5" y="661">2,8</text><text x="1157.5" y="661">3,8</text>
+    <text x="145" y="709">более 20</text><text x="332.5" y="709">0,67</text><text x="497.5" y="709">1,6</text><text class="accent" x="662.5" y="709">2,0</text><text x="827.5" y="709">2,5</text><text x="992.5" y="709">2,8</text><text x="1157.5" y="709">3,3</text>
+  </g>
+  <text class="note" x="640" y="758" text-anchor="middle">Для доверительной вероятности 0,95 выделен соответствующий столбец.</text>
+</svg>

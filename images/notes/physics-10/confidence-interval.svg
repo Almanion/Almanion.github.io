@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 430" role="img" aria-labelledby="title desc">
+  <title id="title">Доверительный интервал результата измерения</title>
+  <desc id="desc">На числовой оси показаны нижняя и верхняя границы доверительного интервала, среднее значение, истинное значение и абсолютная погрешность.</desc>
+  <defs>
+    <style>
+      .frame{fill:#fbfdff;stroke:#d6e1ed;stroke-width:2}.axis{stroke:#173f70;stroke-width:4;fill:none;marker-end:url(#arrow)}
+      .interval{stroke:#0b8f87;stroke-width:12;stroke-linecap:round}.bound{stroke:#0b8f87;stroke-width:3}
+      .measure{stroke:#754fa8;stroke-width:3;fill:none;marker-start:url(#arrow-purple);marker-end:url(#arrow-purple)}
+      .guide{stroke:#8298ad;stroke-width:2;stroke-dasharray:8 8}.truth{fill:#d4674c}.mean{fill:#173f70}
+      .heading{font:700 28px system-ui,sans-serif;fill:#173f70}.label{font:20px system-ui,sans-serif;fill:#173f70}
+      .small{font:17px system-ui,sans-serif;fill:#526b84}.accent{fill:#684493}.truth-label{fill:#b8513d}
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#173f70"/>
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#754fa8"/>
+    </marker>
+  </defs>
+
+  <rect class="frame" x="15" y="15" width="1070" height="400" rx="22"/>
+  <text class="heading" x="550" y="58" text-anchor="middle">Доверительный интервал</text>
+
+  <path class="axis" d="M105 226H1010"/>
+  <line class="interval" x1="275" y1="226" x2="825" y2="226"/>
+  <line class="bound" x1="275" y1="198" x2="275" y2="254"/>
+  <line class="bound" x1="825" y1="198" x2="825" y2="254"/>
+  <line class="guide" x1="275" y1="105" x2="275" y2="258"/>
+  <line class="guide" x1="550" y1="105" x2="550" y2="258"/>
+  <line class="guide" x1="825" y1="105" x2="825" y2="258"/>
+
+  <path class="measure" d="M282 121H543"/>
+  <path class="measure" d="M557 121H818"/>
+  <text class="label accent" x="412" y="108" text-anchor="middle">Δx</text>
+  <text class="label accent" x="688" y="108" text-anchor="middle">Δx</text>
+  <path class="measure" d="M282 164H818"/>
+  <text class="label accent" x="550" y="151" text-anchor="middle">2Δx</text>
+
+  <circle class="mean" cx="550" cy="226" r="10"/>
+  <circle class="truth" cx="458" cy="226" r="9"/>
+
+  <text class="label" x="275" y="286" text-anchor="middle">x̄ − Δx</text>
+  <text class="small" x="275" y="311" text-anchor="middle">нижняя граница</text>
+  <text class="label" x="550" y="286" text-anchor="middle">x̄</text>
+  <text class="small" x="550" y="311" text-anchor="middle">среднее значение</text>
+  <text class="label" x="825" y="286" text-anchor="middle">x̄ + Δx</text>
+  <text class="small" x="825" y="311" text-anchor="middle">верхняя граница</text>
+
+  <path d="M458 238V346H350" stroke="#d4674c" stroke-width="2.5" fill="none"/>
+  <text class="label truth-label" x="342" y="343" text-anchor="end">истинное значение x</text>
+  <text class="small" x="550" y="382" text-anchor="middle">Точное положение истинного значения внутри интервала неизвестно.</text>
+</svg>
