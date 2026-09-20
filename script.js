@@ -471,13 +471,14 @@ const SEARCH_CONTENT_SELECTOR = [
     '.topic-title', '.definition-box', '.formula-box', '.theorem-box', '.remark-box', '.reminder-box',
     '.lemma-box', '.example-box', '.statement-box', '.corollary-box', '.properties-box',
     '.experiment-box', '.derivation-box', '.system-box', '.proof-box',
+    '.accent-word-card',
     ':scope > p', ':scope > ul > li', ':scope > ol > li'
 ].join(', ');
 
 const SEARCH_SEMANTIC_SELECTOR = [
     '.definition-box', '.formula-box', '.theorem-box', '.remark-box', '.reminder-box', '.lemma-box',
     '.example-box', '.statement-box', '.corollary-box', '.properties-box',
-    '.experiment-box', '.derivation-box', '.system-box', '.proof-box'
+    '.experiment-box', '.derivation-box', '.system-box', '.proof-box', '.accent-word-card'
 ].join(', ');
 
 function createSearchResultsPanel(input) {
@@ -527,6 +528,7 @@ function countSearchOccurrences(text, term) {
 }
 
 function searchResultKind(element) {
+    if (element.classList.contains('accent-word-card')) return 'Ударение';
     const labels = [
         ['definition-box', 'Определение'], ['formula-box', 'Формула'], ['theorem-box', 'Теорема'],
         ['remark-box', 'Замечание'], ['reminder-box', 'Напоминание'], ['lemma-box', 'Лемма'], ['example-box', 'Пример'],

@@ -2,8 +2,9 @@
     'use strict';
 
     const MAX_ITEMS = 5;
-    const CATEGORY_ORDER = ['grade-10', 'grade-9', 'services', 'class-10-1', 'archive'];
+    const CATEGORY_ORDER = ['grade-10-11', 'grade-10', 'grade-9', 'services', 'class-10-1', 'archive'];
     const CATEGORY_LABELS = {
+        'grade-10-11': '10–11 классы',
         'grade-10': '10 класс',
         'grade-9': '9 класс',
         services: 'Дополнительно',

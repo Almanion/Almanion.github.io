@@ -614,6 +614,7 @@ body.home-quick-dialog-open {
 .home-quick-option[data-subject="physics"] { --quick-option-color: #4777a0; }
 .home-quick-option[data-subject="chemistry"] { --quick-option-color: #427a67; }
 .home-quick-option[data-subject="literature"] { --quick-option-color: #935f50; }
+.home-quick-option[data-subject="russian"] { --quick-option-color: #a45262; }
 .home-quick-option[data-subject="math"] { --quick-option-color: #9b6928; }
 .home-quick-option[data-subject="geometry"] { --quick-option-color: #68609a; }
 .home-quick-option[data-subject="physics-exam"] { --quick-option-color: #69668f; }

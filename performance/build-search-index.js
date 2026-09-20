@@ -73,7 +73,8 @@ function parseEntries(html, page) {
             const index = activeEntries.lastIndexOf(frame.entry);
             if (index >= 0) activeEntries.splice(index, 1);
             const text = cleanText(frame.entry.text.join(' '));
-            if (frame.entry.id && text) {
+            if (!frame.entry.title && frame.entry.accentWord) frame.entry.title = text;
+            if (frame.entry.id && text && !frame.entry.hasAccentChildren) {
                 entries.push({
                     page: page.path,
                     subject: page.label,
@@ -110,8 +111,10 @@ function parseEntries(html, page) {
             };
             frame.ignored = isIgnored(frame);
 
-            if (!frame.ignored && tag.id && (tag.classes.has('topic') || tag.classes.has('content-section'))) {
-                frame.entry = { id: tag.id, title: '', text: [], heading: [] };
+            const accentWord = tag.classes.has('accent-word-card');
+            if (!frame.ignored && tag.id && (tag.classes.has('topic') || tag.classes.has('content-section') || accentWord)) {
+                if (accentWord) activeEntries.forEach(entry => { entry.hasAccentChildren = true; });
+                frame.entry = { id: tag.id, title: '', text: [], heading: [], accentWord, hasAccentChildren: false };
                 activeEntries.push(frame.entry);
             }
             const heading = !frame.ignored && (/^h[1-3]$/.test(tag.name)

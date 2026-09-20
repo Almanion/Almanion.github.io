@@ -944,6 +944,11 @@
         initLazyBookmarkButtons();
         addBookmarksSidebarButton();
         restoreBookmarkTarget();
+        document.addEventListener('keydown', function (event) {
+            if (event.key !== 'Escape' || !panelOpen) return;
+            event.preventDefault();
+            closeBookmarksPanel();
+        });
 
         window.addEventListener('almanion-account-ready', function (event) {
             initFirebase();

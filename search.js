@@ -3,8 +3,8 @@
 (function () {
     'use strict';
 
-    const FALLBACK_INDEX_VERSION = '2026-09-07-1';
-    const CACHE_KEY = 'almanion_search_prebuilt_v1';
+    const FALLBACK_INDEX_VERSION = '2026-09-20-2';
+    const CACHE_KEY = 'almanion_search_prebuilt_v3';
     const PAGES = [
         { path: 'physics.html', label: 'Физика' },
         { path: 'chemistry.html', label: 'Химия' },
@@ -12,7 +12,8 @@
         { path: 'geometry.html', label: 'Геометрия' },
         { path: 'geometry-formulas.html', label: 'Формулы по геометрии' },
         { path: 'likbez.html', label: 'Ликбезы' },
-        { path: 'physics-exam.html', label: 'Билеты по физике' }
+        { path: 'physics-exam.html', label: 'Билеты по физике' },
+        { path: 'russian-ege.html', label: 'Русский язык ЕГЭ' }
     ];
     const state = {
         input: null,
@@ -72,11 +73,14 @@
     }
 
     function entriesFromDocument(doc, page) {
-        let nodes = Array.from(doc.querySelectorAll('.topic[id]'));
+        let nodes = Array.from(doc.querySelectorAll('.topic[id], .accent-word-card[id]'))
+            .filter(node => !node.matches('.topic') || !node.querySelector('.accent-word-card[id]'));
         if (!nodes.length) nodes = Array.from(doc.querySelectorAll('.content-section[id]'));
 
         return nodes.map((node, order) => {
-            const heading = node.querySelector('.topic-title, .part-title, h1, h2, h3');
+            const heading = node.matches('.accent-word-card')
+                ? node.querySelector('.accent-word')
+                : node.querySelector('.topic-title, .part-title, h1, h2, h3');
             const title = displayText(heading?.textContent) || `Раздел ${order + 1}`;
             const text = textFromNode(node);
             return {
@@ -336,7 +340,7 @@
             const context = normalize(snippetFor(item.entry, tokens))
                 .replace(item.entry.normalizedTitle, '')
                 .slice(0, 135);
-            const key = `${item.entry.page}:${context}`;
+            const key = `${item.entry.page}:${item.entry.normalizedTitle}:${context}`;
             if (seenContexts.has(key)) return false;
             seenContexts.add(key);
             return true;

@@ -454,6 +454,7 @@
         .subject-card[data-subject="geometry"] { --subject-color: #68609a; }
         .subject-card[data-subject="likbez"] { --subject-color: #735d7e; }
         .subject-card[data-subject="literature"] { --subject-color: #935f50; }
+        .subject-card[data-subject="russian"] { --subject-color: #a45262; }
         .subject-card[data-subject="matcenter"] { --subject-color: #58668e; }
         .subject-card[data-subject="english"] { --subject-color: #4f6f82; }
         .subject-card[data-subject="duty"] { --subject-color: #4f7774; }
@@ -873,6 +874,10 @@
             <circle cx="5" cy="15.5" r="1.3" fill="currentColor" stroke="none"/>
             <path d="M5 15.5C7.2 8.7 11.1 5.45 16.65 6.1M14.05 4.55l2.6 1.55-2.15 2.15M12.8 17.1l2.25 2.15 4.35-5.1"/>
         </symbol>
+        <symbol id="academic-russian" viewBox="0 0 24 24">
+            <path d="M4.25 18.75 9.15 5.25h1.7l4.9 13.5M6.2 13.45h7.6M17.15 8.75h3.1M18.7 7.2v3.1"/>
+            <path d="m16.65 4.8 2.75-1.55"/>
+        </symbol>
         <symbol id="academic-english" viewBox="0 0 24 24">
             <path d="M4.25 5.25h10.5v8.5H8.2L4.25 17V5.25Z"/>
             <path d="M9.25 13.75v3h6.55l3.95 3.25V8.25h-5M7.35 10.9l2.15-4.2 2.15 4.2M8.15 9.35h2.7"/>
@@ -1091,6 +1096,16 @@
                             <div class="card-info"><div style="text-align: center;"><span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> Активно</span></div></div>
                         </div>
                     </a>
+
+                    <a href="russian-ege.html" class="subject-card" data-subject="russian">
+                        <div class="card-header">
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-russian"/></svg></div>
+                        </div>
+                        <div class="card-body">
+                            <h2>Русский язык ЕГЭ</h2>
+                            <div class="card-info"><div style="text-align: center;"><span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> 10–11 классы</span></div></div>
+                        </div>
+                    </a>
                 </div>
 
                 <div class="class-section">
@@ -1111,7 +1126,17 @@
             </div>
 
             <div class="grade-panel" id="gradePanel11" data-grade-panel="11" role="tabpanel" aria-labelledby="gradeTab11" hidden>
-                <div class="grade-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><div>Материалы для 11 класса скоро появятся</div></div>
+                <div class="subjects-grid">
+                    <a href="russian-ege.html" class="subject-card" data-subject="russian">
+                        <div class="card-header">
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-russian"/></svg></div>
+                        </div>
+                        <div class="card-body">
+                            <h2>Русский язык ЕГЭ</h2>
+                            <div class="card-info"><div style="text-align: center;"><span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> 10–11 классы</span></div></div>
+                        </div>
+                    </a>
+                </div>
             </div>
 
             <div class="grade-panel" id="gradePanelArchive" data-grade-panel="archive" role="tabpanel" aria-labelledby="gradeTabArchive" hidden>
@@ -1164,7 +1189,7 @@
             function loadHomeDashboard() {
                 if (document.querySelector('script[data-home-dashboard]')) return;
                 var script = document.createElement('script');
-                script.src = 'home-dashboard.js?v=20260920-2';
+                script.src = 'home-dashboard.js?v=20260920-3';
                 script.dataset.homeDashboard = 'true';
                 document.head.appendChild(script);
             }

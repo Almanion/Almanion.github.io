@@ -13,7 +13,7 @@
         editorStyles: 'styles/note-editor.css?v=20260904-2',
         printStyles: 'styles/print.css?v=20260908-3',
         settings: 'settings.js?v=20260920-2',
-        search: 'search.js?v=20260907-1',
+        search: 'search.js?v=20260920-2',
         print: 'print-export.js?v=20260908-3',
         knowledge: 'knowledge-check.js?v=20260911-1',
         newyear: 'newyear.js?v=20260911-1',
@@ -24,7 +24,7 @@
         dataSync: 'data-sync.js?v=20260908-1',
         analytics: 'firebase-analytics.js?v=20260911-1',
         account: 'account.js?v=20260911-1',
-        bookmarks: 'bookmarks.js?v=20260920-1',
+        bookmarks: 'bookmarks.js?v=20260920-2',
         editor: 'note-editor.js?v=20260904-4'
     };
 

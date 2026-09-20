@@ -17,6 +17,7 @@
         { id: 'physics-10', href: 'physics-10.html', title: 'Физика', context: '10 класс', subject: 'physics', icon: 'academic-physics', category: 'grade-10' },
         { id: 'chemistry-10', href: 'chemistry-10.html', title: 'Химия', context: '10 класс', subject: 'chemistry', icon: 'academic-chemistry', category: 'grade-10' },
         { id: 'literature-10', href: 'literature-10.html', title: 'Литература', context: '10 класс', subject: 'literature', icon: 'academic-literature', category: 'grade-10' },
+        { id: 'russian-ege', href: 'russian-ege.html', title: 'Русский язык ЕГЭ', context: '10–11 классы', subject: 'russian', icon: 'academic-russian', category: 'grade-10-11' },
         { id: 'physics-9', href: 'physics.html', title: 'Физика', context: '9 класс', subject: 'physics', icon: 'academic-physics', category: 'grade-9' },
         { id: 'chemistry-9', href: 'chemistry.html', title: 'Химия', context: '9 класс', subject: 'chemistry', icon: 'academic-chemistry', category: 'grade-9' },
         { id: 'math-9', href: 'math.html', title: 'Алгебра', context: '9 класс', subject: 'math', icon: 'academic-algebra', category: 'grade-9' },

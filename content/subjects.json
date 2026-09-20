@@ -6,5 +6,6 @@
   { "id": "likbez", "title": "Ликбезы", "page": "likbez.html" },
   { "id": "physics-10", "title": "Физика · 10 класс", "page": "physics-10.html", "emptyMessage": "Здесь появятся конспекты по физике за 10 класс." },
   { "id": "chemistry-10", "title": "Химия · 10 класс", "page": "chemistry-10.html", "emptyMessage": "Здесь появятся конспекты по химии за 10 класс." },
-  { "id": "literature-10", "title": "Литература · 10 класс", "page": "literature-10.html", "emptyMessage": "Здесь появятся конспекты по литературе за 10 класс." }
+  { "id": "literature-10", "title": "Литература · 10 класс", "page": "literature-10.html", "emptyMessage": "Здесь появятся конспекты по литературе за 10 класс." },
+  { "id": "russian-ege", "title": "Русский язык ЕГЭ · 10–11 классы", "page": "russian-ege.html" }
 ]
