@@ -1,5 +1,5 @@
 /* Controls that are revealed together with the deferred feature runtime. */
-@import url("40-extras-settings.css");
+@import url("40-extras-settings.css?v=20260920-2");
 @import url("60-poll-pwa.css");
 
 /* Knowledge check and bookmarks share this deferred modal foundation. */

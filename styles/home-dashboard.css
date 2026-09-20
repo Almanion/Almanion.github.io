@@ -265,7 +265,7 @@ body.home-page .subjects-toolbar > .section-title {
 }
 
 body.home-page .grade-tabs {
-    min-width: 306px;
+    min-width: 430px;
 }
 
 body.home-page .grade-tab {
@@ -804,6 +804,7 @@ body.home-quick-dialog-open {
     }
 
     body.home-page .home-quick-grid[data-count="3"] > .home-quick-card:first-child,
+    body.home-page .home-quick-grid[data-count="5"] > .home-quick-card:first-child,
     body.home-page .home-quick-grid[data-count="1"] > .home-quick-card:only-child {
         min-height: 96px;
         display: grid;
@@ -822,6 +823,7 @@ body.home-quick-dialog-open {
     }
 
     body.home-page .home-quick-grid[data-count="3"] > .home-quick-card:first-child .card-header,
+    body.home-page .home-quick-grid[data-count="5"] > .home-quick-card:first-child .card-header,
     body.home-page .home-quick-grid[data-count="1"] > .home-quick-card:only-child .card-header {
         align-self: stretch;
         padding: 0.7rem;
@@ -845,6 +847,7 @@ body.home-quick-dialog-open {
     }
 
     body.home-page .home-quick-grid[data-count="3"] > .home-quick-card:first-child .card-body,
+    body.home-page .home-quick-grid[data-count="5"] > .home-quick-card:first-child .card-body,
     body.home-page .home-quick-grid[data-count="1"] > .home-quick-card:only-child .card-body {
         display: flex;
         padding: 0.75rem 0.85rem;
@@ -856,6 +859,7 @@ body.home-quick-dialog-open {
     }
 
     body.home-page .home-quick-grid[data-count="3"] > .home-quick-card:first-child .home-quick-copy,
+    body.home-page .home-quick-grid[data-count="5"] > .home-quick-card:first-child .home-quick-copy,
     body.home-page .home-quick-grid[data-count="1"] > .home-quick-card:only-child .home-quick-copy {
         align-items: flex-start;
     }
@@ -868,6 +872,7 @@ body.home-quick-dialog-open {
     }
 
     body.home-page .home-quick-grid[data-count="3"] > .home-quick-card:first-child h2,
+    body.home-page .home-quick-grid[data-count="5"] > .home-quick-card:first-child h2,
     body.home-page .home-quick-grid[data-count="1"] > .home-quick-card:only-child h2 {
         text-align: left;
     }
@@ -880,6 +885,7 @@ body.home-quick-dialog-open {
     }
 
     body.home-page .home-quick-grid[data-count="3"] > .home-quick-card:first-child .home-quick-context,
+    body.home-page .home-quick-grid[data-count="5"] > .home-quick-card:first-child .home-quick-context,
     body.home-page .home-quick-grid[data-count="1"] > .home-quick-card:only-child .home-quick-context {
         text-align: left;
     }

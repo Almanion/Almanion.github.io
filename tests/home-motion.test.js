@@ -10,11 +10,11 @@ const client = fs.readFileSync(path.join(root, 'home-motion.js'), 'utf8');
 const styles = fs.readFileSync(path.join(root, 'styles', 'home-motion.css'), 'utf8');
 const shell = JSON.parse(fs.readFileSync(path.join(root, 'performance', 'sw-shell.json'), 'utf8')).assets;
 
-assert.match(page, /styles\/home-motion\.css\?v=20260907-2/, 'home motion stylesheet must be versioned');
-assert.match(page, /home-motion\.js\?v=20260907-2/, 'home motion client must be versioned');
+assert.match(page, /styles\/home-motion\.css\?v=20260920-2/, 'home motion stylesheet must be versioned');
+assert.match(page, /home-motion\.js\?v=20260920-2/, 'home motion client must be versioned');
 assert.doesNotMatch(page, /card\.style\.animationDelay/, 'cards must not inherit a global inline stagger');
 
-['9', '10', '11'].forEach(grade => {
+['9', '10', '11', 'Archive'].forEach(grade => {
     assert.match(page, new RegExp(`id="gradeTab${grade}"[^>]*aria-controls="gradePanel${grade}"`));
     assert.match(page, new RegExp(`id="gradePanel${grade}"[^>]*role="tabpanel"[^>]*aria-labelledby="gradeTab${grade}"`));
 });

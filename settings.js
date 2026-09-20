@@ -5,6 +5,9 @@
 // Настройки по умолчанию
 const VISUAL_DEFAULTS_MIGRATION_KEY = 'almanion:visual-defaults:2026-09-05-v1';
 const VISUAL_DEFAULTS_VERSION = 1;
+const NOTE_SCALE_MIN = 0.85;
+const NOTE_SCALE_MAX = 1.25;
+const NOTE_SCALE_STEP = 0.1;
 
 function systemPrefersDark() {
     return typeof window.matchMedia === 'function'
@@ -21,6 +24,16 @@ function resolveExperimentalDark(theme) {
     return theme === 'dark';
 }
 
+function normalizeNoteScale(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return 1;
+    return Math.min(NOTE_SCALE_MAX, Math.max(NOTE_SCALE_MIN, Math.round(numeric * 100) / 100));
+}
+
+function isNoteReadingPage() {
+    return !!document.body?.dataset.noteSubject && !!document.querySelector('.main-content');
+}
+
 const defaultSettings = {
     theme: systemPrefersDark() ? 'dark' : 'light',
     newYearMode: false,
@@ -31,6 +44,7 @@ const defaultSettings = {
     expMode: 'prism',      // 'graphite' | 'prism'
     expTheme: 'system',    // 'system' | 'light' | 'dark'
     expDark: systemPrefersDark(), // resolved value kept for early page rendering
+    noteScale: 1,
     matcenterSolvedAnimation: 'circle', // 'circle' | 'strike'
     visualDefaultsVersion: VISUAL_DEFAULTS_VERSION
 };
@@ -114,6 +128,7 @@ function loadSettings() {
 
     siteSettings.expTheme = normalizeExperimentalTheme(siteSettings.expTheme, siteSettings.expDark);
     siteSettings.expDark = resolveExperimentalDark(siteSettings.expTheme);
+    siteSettings.noteScale = normalizeNoteScale(siteSettings.noteScale);
     window.siteSettings = siteSettings;
 }
 
@@ -135,6 +150,7 @@ function updateSettings(patch, options = {}) {
     siteSettings = { ...siteSettings, ...patch };
     siteSettings.expTheme = normalizeExperimentalTheme(siteSettings.expTheme, siteSettings.expDark);
     siteSettings.expDark = resolveExperimentalDark(siteSettings.expTheme);
+    siteSettings.noteScale = normalizeNoteScale(siteSettings.noteScale);
     window.siteSettings = siteSettings;
     saveSettings();
     if (options.apply !== false) applyAllSettings();
@@ -146,6 +162,7 @@ function applySyncedSettings(value) {
     siteSettings = { ...defaultSettings, ...value };
     siteSettings.expTheme = normalizeExperimentalTheme(siteSettings.expTheme, siteSettings.expDark);
     siteSettings.expDark = resolveExperimentalDark(siteSettings.expTheme);
+    siteSettings.noteScale = normalizeNoteScale(siteSettings.noteScale);
     window.siteSettings = siteSettings;
     saveSettings({ silent: true });
     applyAllSettings();
@@ -171,6 +188,7 @@ function applyAllSettings() {
     applyTheme(siteSettings.theme);
     applyAnimationLevel(siteSettings.animationLevel);
     applyHoverEffects(siteSettings.hoverEffects);
+    applyNoteScale(siteSettings.noteScale);
     applyMatcenterSolvedAnimation();
 }
 
@@ -244,11 +262,16 @@ function initSystemThemeSync() {
 }
 
 function applyHoverEffects(enabled) {
-    if (enabled) {
-        document.body.classList.remove('no-hover');
-    } else {
-        document.body.classList.add('no-hover');
-    }
+    // Эта настройка относится только к спокойному чтению конспекта. На главной,
+    // в меню, настройках и служебных страницах обычная обратная связь остаётся.
+    document.body.classList.toggle('no-hover', !enabled && isNoteReadingPage());
+}
+
+function applyNoteScale(value) {
+    const scale = normalizeNoteScale(value);
+    siteSettings.noteScale = scale;
+    document.documentElement.style.setProperty('--note-scale', String(scale));
+    document.body.dataset.noteScale = String(Math.round(scale * 100));
 }
 
 function applyTheme(theme) {
@@ -456,6 +479,7 @@ function createSettingsModal() {
         rocket: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 16.5c-1.5 1.5-2 5-2 5s3.5-.5 5-2c.85-.85.86-2.15.05-3-.81-.85-2.2-.85-3.05 0"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>`,
         zap: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
         muted: `<svg class="level-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>`,
+        textSize: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6V4h16v2"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>`,
         refresh: `<svg class="reset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.45 6.36L3 16"/><path d="M3 12a9 9 0 0 1 15.45-6.36L21 8"/><polyline points="21 3 21 8 16 8"/><polyline points="3 21 3 16 8 16"/></svg>`,
         tree: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 6 9h3l-4 5h3l-4 5h16l-4-5h3l-4-5h3z"/><line x1="12" y1="19" x2="12" y2="22"/></svg>`,
         checkCircle: `<svg class="settings-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12.5 11.2 15 16 9"/><circle cx="12" cy="12" r="9"/></svg>`
@@ -579,18 +603,15 @@ function createSettingsModal() {
                         <div class="animation-level-selector">
                             <button class="animation-level-option ${siteSettings.animationLevel === 'max' ? 'active' : ''}" data-level="max">
                                 <span class="level-icon">${ICONS.rocket}</span>
-                                <span class="level-title">Полное</span>
-                                <span class="level-desc">Плавные переходы и отклики</span>
+                                <span class="level-copy"><span class="level-title">Полное</span><span class="level-desc">Плавные переходы и отклики</span></span>
                             </button>
                             <button class="animation-level-option ${siteSettings.animationLevel === 'medium' ? 'active' : ''}" data-level="medium">
                                 <span class="level-icon">${ICONS.zap}</span>
-                                <span class="level-title">Умеренное</span>
-                                <span class="level-desc">Только основные переходы</span>
+                                <span class="level-copy"><span class="level-title">Умеренное</span><span class="level-desc">Только основные переходы</span></span>
                             </button>
                             <button class="animation-level-option ${siteSettings.animationLevel === 'off' ? 'active' : ''}" data-level="off">
                                 <span class="level-icon">${ICONS.muted}</span>
-                                <span class="level-title">Минимальное</span>
-                                <span class="level-desc">Без декоративного движения</span>
+                                <span class="level-copy"><span class="level-title">Минимальное</span><span class="level-desc">Без декоративного движения</span></span>
                             </button>
                         </div>
                     </div>
@@ -620,6 +641,22 @@ function createSettingsModal() {
                 </div>
                 ` : ''}
 
+                ${isNoteReadingPage() ? `
+                <!-- Масштаб конспекта -->
+                <div class="settings-section">
+                    <h3>${ICONS.textSize}<span>Масштаб конспекта</span></h3>
+                    <p class="settings-section-description">Размер текста и учебных блоков только в области чтения.</p>
+                    <div class="settings-option">
+                        <div class="note-scale-control" role="group" aria-label="Масштаб конспекта">
+                            <button type="button" class="note-scale-button" data-note-scale-action="decrease" aria-label="Уменьшить масштаб">−</button>
+                            <output class="note-scale-value" id="noteScaleValue" aria-live="polite">${Math.round(normalizeNoteScale(siteSettings.noteScale) * 100)}%</output>
+                            <button type="button" class="note-scale-button" data-note-scale-action="increase" aria-label="Увеличить масштаб">＋</button>
+                            <button type="button" class="note-scale-reset" data-note-scale-action="reset">По умолчанию</button>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+
                 <!-- Hover-эффекты -->
                 <div class="settings-section">
                     <h3>${ICONS.pointer}<span>Отклик курсора</span></h3>
@@ -627,7 +664,7 @@ function createSettingsModal() {
                         <label class="toggle-switch">
                             <input type="checkbox" id="hoverToggle" ${siteSettings.hoverEffects ? 'checked' : ''}>
                             <span class="toggle-slider"></span>
-                            <span class="toggle-label">Подсветка и лёгкое движение интерактивных элементов</span>
+                            <span class="toggle-label">Подсветка учебных блоков при движении курсора</span>
                         </label>
                     </div>
                 </div>
@@ -813,10 +850,6 @@ function bindSettingsHandlers() {
             applyAnimationLevel(level);
             saveSettings();
             
-            // Анимация кнопки
-            btn.style.transform = 'scale(0.95)';
-            setTimeout(() => btn.style.transform = '', 150);
-            
             // Показываем уведомление
             showNotification(getAnimationLevelMessage(level));
         });
@@ -833,8 +866,6 @@ function bindSettingsHandlers() {
             applyMatcenterSolvedAnimation();
             saveSettings();
 
-            btn.style.transform = 'scale(0.95)';
-            setTimeout(() => btn.style.transform = '', 150);
             showNotification(mode === 'strike'
                 ? 'Отметка задач: диагональное зачёркивание'
                 : 'Отметка задач: обведение номера');
@@ -851,6 +882,29 @@ function bindSettingsHandlers() {
             showNotification(e.target.checked ? 'Отклик курсора включён' : 'Отклик курсора выключен');
         });
     }
+
+    const noteScaleValue = document.getElementById('noteScaleValue');
+    const updateNoteScaleControls = () => {
+        const current = normalizeNoteScale(siteSettings.noteScale);
+        if (noteScaleValue) noteScaleValue.textContent = Math.round(current * 100) + '%';
+        document.querySelector('[data-note-scale-action="decrease"]')?.toggleAttribute('disabled', current <= NOTE_SCALE_MIN);
+        document.querySelector('[data-note-scale-action="increase"]')?.toggleAttribute('disabled', current >= NOTE_SCALE_MAX);
+    };
+    document.querySelectorAll('[data-note-scale-action]').forEach(button => {
+        button.addEventListener('click', () => {
+            const action = button.dataset.noteScaleAction;
+            const current = normalizeNoteScale(siteSettings.noteScale);
+            const next = action === 'reset'
+                ? 1
+                : normalizeNoteScale(current + (action === 'increase' ? NOTE_SCALE_STEP : -NOTE_SCALE_STEP));
+            if (next === current) return;
+            siteSettings.noteScale = next;
+            applyNoteScale(next);
+            saveSettings();
+            updateNoteScaleControls();
+        });
+    });
+    updateNoteScaleControls();
 
     // Сброс настроек
     const resetBtn = document.getElementById('settingsResetBtn');

@@ -30,7 +30,7 @@ assert.doesNotMatch(rules.englishVocabulary['.write'], /siteAdmin|contentEditor|
 assert.ok(rules.adminRoles.$uid.englishAccess, 'role schema is missing englishAccess');
 
 assert.doesNotMatch(home, /href="english\.html"/, 'the protected English link must not be present before access is known');
-assert.match(home, /home-dashboard\.js\?v=20260912-3/);
+assert.match(home, /home-dashboard\.js\?v=20260920-2/);
 assert.match(homeDashboard, /href: 'english\.html'/);
 assert.match(homeDashboard, /requiresEnglish: true/);
 assert.match(homeDashboard, /accountApi\.hasEnglishAccess\(user\)/,

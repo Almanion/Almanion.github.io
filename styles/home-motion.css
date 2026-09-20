@@ -34,7 +34,7 @@ body.home-page .grade-tabs {
     --home-grade-index: 1;
     position: relative;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     isolation: isolate;
     animation: home-soft-in 300ms 75ms var(--home-motion-out) both;
 }
@@ -46,7 +46,7 @@ body.home-page .grade-tabs::before {
     top: 0.32rem;
     bottom: 0.32rem;
     left: 0.32rem;
-    width: calc((100% - 1.24rem) / 3);
+    width: calc((100% - 1.54rem) / 4);
     border-radius: 999px;
     background: var(--accent-color);
     box-shadow: 0 1px 2px color-mix(in srgb, var(--accent-color) 22%, transparent);
@@ -63,6 +63,7 @@ body.home-page .grade-tabs:not(.home-tabs-ready)::before {
 body.home-page .grade-tabs[data-active-grade='9'] { --home-grade-index: 0; }
 body.home-page .grade-tabs[data-active-grade='10'] { --home-grade-index: 1; }
 body.home-page .grade-tabs[data-active-grade='11'] { --home-grade-index: 2; }
+body.home-page .grade-tabs[data-active-grade='archive'] { --home-grade-index: 3; }
 
 body.home-page .grade-tab,
 body.experimental.home-page .grade-tab,

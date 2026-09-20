@@ -473,6 +473,224 @@ body.new-year-mode .ny-toggle {
     }
 }
 
+/* Stable settings layout. This final cascade intentionally lives in the
+   feature bundle so older page-level styles cannot stretch cards or icons. */
+.settings-modal .settings-modal-content {
+    width: min(620px, calc(100% - 32px));
+    max-width: 620px;
+    max-height: min(88dvh, 780px);
+    border-radius: 20px;
+}
+
+.settings-modal .settings-modal-header {
+    padding: 1.2rem 1.5rem;
+    border-radius: 20px 20px 0 0;
+}
+
+.settings-modal .settings-modal-body {
+    display: grid;
+    gap: 0.85rem;
+    padding: 1.4rem 1.5rem 1.5rem;
+}
+
+.settings-modal .settings-section,
+.settings-modal .settings-section:last-of-type {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 1rem;
+    background: color-mix(in srgb, var(--bg-secondary) 84%, transparent);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+}
+
+.settings-modal .settings-section + .settings-section {
+    padding-top: 1rem;
+}
+
+.settings-modal .settings-section h3 {
+    margin: 0;
+    font-size: 0.98rem;
+}
+
+.settings-modal .settings-option {
+    width: 100%;
+    margin-top: 0.8rem;
+}
+
+.settings-modal .animation-level-selector {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
+}
+
+.settings-modal .animation-level-option {
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 0.65rem;
+    min-width: 0;
+    min-height: 88px;
+    padding: 0.78rem;
+    border-width: 1px;
+    border-radius: 10px;
+    line-height: 1;
+}
+
+.settings-modal .animation-level-option .level-icon {
+    width: 26px;
+    height: 26px;
+}
+
+.settings-modal .animation-level-option .level-icon-svg {
+    width: 21px;
+    height: 21px;
+}
+
+.settings-modal .animation-level-option .level-copy {
+    display: grid;
+    align-content: center;
+    gap: 0.22rem;
+    min-width: 0;
+    min-height: 42px;
+}
+
+.settings-modal .animation-level-option .level-title {
+    margin: 0;
+    font-size: 0.83rem;
+    line-height: 1.2;
+}
+
+.settings-modal .animation-level-option .level-desc {
+    margin: 0;
+    font-size: 0.7rem;
+    line-height: 1.32;
+}
+
+.settings-modal .toggle-switch {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.8rem 0.9rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+
+.settings-modal .settings-actions {
+    justify-content: flex-start;
+    margin: 0;
+    padding-top: 0.45rem;
+    border-top: 0;
+}
+
+.settings-modal .settings-reset-btn {
+    width: auto;
+    padding: 0.55rem 0.75rem;
+    background: transparent;
+    border-color: transparent;
+    font-size: 0.78rem;
+}
+
+.settings-modal .note-scale-control {
+    display: grid;
+    grid-template-columns: 42px minmax(66px, auto) 42px minmax(110px, 1fr);
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.settings-modal .note-scale-button,
+.settings-modal .note-scale-reset {
+    min-height: 40px;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    font: inherit;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.settings-modal .note-scale-button {
+    padding: 0;
+    font-size: 1.2rem;
+}
+
+.settings-modal .note-scale-reset {
+    padding: 0.55rem 0.8rem;
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+}
+
+.settings-modal .note-scale-value {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 750;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.settings-modal .note-scale-button:hover:not(:disabled),
+.settings-modal .note-scale-reset:hover {
+    color: var(--accent-color);
+    border-color: color-mix(in srgb, var(--accent-color) 52%, var(--border-color));
+}
+
+.settings-modal .note-scale-button:disabled {
+    opacity: 0.38;
+    cursor: default;
+}
+
+.settings-modal :is(.settings-section-icon, .level-icon-svg, .settings-close-btn svg, .settings-reset-btn svg) {
+    display: block;
+    flex: 0 0 auto;
+    max-width: none;
+    aspect-ratio: 1;
+    overflow: visible;
+}
+
+@media (max-width: 768px) {
+    .settings-modal .settings-modal-content {
+        width: 100%;
+        max-height: 90dvh;
+        border-radius: 18px 18px 0 0;
+    }
+
+    .settings-modal .settings-modal-header {
+        padding: 0.85rem 1.1rem 0.9rem;
+    }
+
+    .settings-modal .settings-modal-body {
+        gap: 1.05rem;
+        padding: 1rem 1.1rem 1.4rem;
+    }
+
+    .settings-modal .animation-level-selector {
+        grid-template-columns: 1fr;
+    }
+
+    .settings-modal .animation-level-option {
+        min-height: 66px;
+    }
+
+    .settings-modal .note-scale-control {
+        grid-template-columns: 40px minmax(58px, auto) 40px minmax(104px, 1fr);
+    }
+}
+
+@media (max-width: 520px) {
+    .settings-modal .note-scale-control {
+        grid-template-columns: 40px minmax(56px, 1fr) 40px;
+    }
+
+    .settings-modal .note-scale-reset {
+        grid-column: 1 / -1;
+    }
+}
+
 /* РўРµРјРЅР°СЏ С‚РµРјР° РґР»СЏ РЅРѕРІРѕРіРѕРґРЅРёС… СЌР»РµРјРµРЅС‚РѕРІ */
 body.dark-theme .ny-notification {
     background: linear-gradient(135deg, #1a3310 0%, #2d5016 100%);
@@ -1125,7 +1343,7 @@ body.dark-theme .telegram-welcome-message {
     height: 18px;
 }
 
-body:not(.no-hover) .settings-close-btn:hover {
+.settings-close-btn:hover {
     background: var(--border-color);
     color: var(--text-primary);
 }
@@ -1183,7 +1401,7 @@ body:not(.no-hover) .settings-close-btn:hover {
     gap: 0.6rem;
 }
 
-body:not(.no-hover) .theme-option:hover {
+.theme-option:hover {
     border-color: var(--accent-color);
     box-shadow: var(--shadow-sm);
 }
@@ -1381,7 +1599,7 @@ body:not(.no-hover) .theme-option:hover {
     width: 100%;
 }
 
-body:not(.no-hover) .ny-advanced-settings:hover {
+.ny-advanced-settings:hover {
     background: var(--accent-color);
     color: white;
     border-color: var(--accent-color);
@@ -1409,7 +1627,7 @@ body:not(.no-hover) .ny-advanced-settings:hover {
     text-align: left;
 }
 
-body:not(.no-hover) .animation-level-option:hover {
+.animation-level-option:hover {
     border-color: var(--accent-color);
     box-shadow: var(--shadow-sm);
 }
@@ -1533,7 +1751,7 @@ body:not(.no-hover) .animation-level-option:hover {
     align-items: center;
 }
 
-body:not(.no-hover) .settings-reset-btn:hover {
+.settings-reset-btn:hover {
     background: var(--error-color);
     color: white;
     border-color: var(--error-color);
@@ -1731,31 +1949,12 @@ body.animations-off .nav-link:hover {
 }
 
 /* ============================================
-   NO-HOVER MODE — ПОЛНОЕ отключение hover-эффектов.
-   Цель: при наведении НИЧЕГО не меняется — ни сдвига, ни масштаба,
-   ни тени, ни подсветки фона/рамки, ни толщины рамки, ни прозрачности.
-   focus-visible НЕ трогаем (нужен для доступности с клавиатуры).
-
-   Стратегия:
-   1) Универсальный сброс свойств, у которых есть универсальное "выкл"
-      (transform / filter / transition / animation / box-shadow) — покрывает
-      ВСЁ, включая ::before/::after и правила из инлайновых <style> (через !important).
-   2) Точечно возвращаем постоянную тень/прозрачность/подсветку к базовым
-      значениям там, где :hover менял фон/рамку/opacity (у этих свойств нет
-      универсального "выкл", поэтому ставим базовое значение явно).
+   СПОКОЙНОЕ ЧТЕНИЕ
+   Класс no-hover теперь только не допускает hover-реакции учебных карточек
+   (их правила выше уже гейтятся через body:not(.no-hover)). Универсальный
+   сброс запрещён: он удалял постоянные тени, ломал transform сайдбара и
+   неожиданно отключал навигацию. focus-visible всегда остаётся видимым.
    ============================================ */
-body.no-hover *:hover,
-body.no-hover *:hover::before,
-body.no-hover *:hover::after {
-    transform: none !important;
-    filter: none !important;
-    transition: none !important;
-    box-shadow: none !important;
-}
-/* НЕ обнуляем animation глобально на :hover — это перезапускало бы анимации
-   появления (fadeIn/slideUp) при УВОДЕ курсора (свойство animation возвращается
-   и браузер проигрывает анимацию заново → блок «моргал»). Гасим точечно только
-   реальные hover-анимации (их одна — новогодний снег на карточке). */
 body.no-hover .new-year-mode .task-card:hover::after,
 body.no-hover.new-year-mode .task-card:hover::after {
     animation: none !important;
@@ -1773,62 +1972,7 @@ body.no-hover .sidebar.open:hover {
     transform: translateY(0) !important;
 }
 
-/* Тень — это оформление (а не hover-эффект) у карточек/блоков/FAB-кнопок:
-   возвращаем её, чтобы под курсором тень не «исчезала». */
-body.no-hover .stat-card:hover,
-body.no-hover .task-card:hover,
-body.no-hover .subject-card:hover,
-body.no-hover .bm-card:hover,
-body.no-hover .topic-select-card:hover,
-body.no-hover [class$="-box"]:hover {
-    box-shadow: var(--shadow-sm) !important;
-}
-body.no-hover .scroll-to-top:hover,
-body.no-hover .settings-button:hover,
-body.no-hover .menu-toggle:hover,
-body.no-hover .telegram-chat-button:hover {
-    box-shadow: var(--shadow-md) !important;
-}
-
-/* Псевдо-полоски-акценты остаются на базовой прозрачности (не «загораются»). */
-body.no-hover .grade-card:hover::before { opacity: 0.2 !important; }
-body.no-hover .grade-card-summer:hover::before { opacity: 0.55 !important; }
-body.no-hover .theme-toggle:hover::before { opacity: 0 !important; }
-
-/* Подсветка фона/рамки/сдвиг у навигации, заголовков, табов, карточек —
-   возвращаем к базовому виду. */
-body.no-hover .nav-link:hover {
-    background: transparent !important;
-    border-left-color: transparent !important;
-    /* padding-left НЕ трогаем: у вложенных пунктов меню свой отступ
-       (calc(--spacing + 1rem)); форсирование var(--spacing) сдвигало их влево
-       при наведении. Сдвига на hover больше нет, нормализовать нечего. */
-}
-body.no-hover .nav-group-toggle:hover {
-    background: transparent !important;
-    border-left-color: transparent !important;
-}
-body.no-hover .nav-submenu .nav-link:hover,
-body.no-hover .nav-section.other-subjects a:hover {
-    background: transparent !important;
-    opacity: 1 !important;
-}
-body.no-hover .subsection-title:hover {
-    border-bottom-color: var(--border-color) !important;
-}
-body.no-hover .grade-card:hover {
-    border-color: var(--border-color) !important;
-    background: var(--bg-secondary) !important;
-}
-body.no-hover .grade-card-summer:hover {
-    border-color: var(--border-color) !important;
-}
-body.no-hover .theme-option:hover,
-body.no-hover .animation-level-option:hover {
-    border-color: var(--border-color) !important;
-}
-
-/* Прозрачность кнопок-тогглов не меняется на hover. */
+/* Внутренние переключатели доказательства относятся к тексту конспекта. */
 body.no-hover .toggle-derivation:hover,
 body.no-hover .toggle-proof:hover {
     opacity: 1 !important;

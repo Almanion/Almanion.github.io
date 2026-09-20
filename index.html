@@ -40,7 +40,7 @@
     <meta name="apple-mobile-web-app-title" content="Almanion">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Мои Конспекты | Almanion</title>
-    <link rel="stylesheet" href="styles/site/index.css?v=20260912-1">
+    <link rel="stylesheet" href="styles/site/index.css?v=20260920-2">
     <link rel="stylesheet" href="styles/tokens.css">
     <link rel="stylesheet" href="styles/buttons.css">
     <style>
@@ -828,11 +828,11 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="style-new.css?v=20260905-1">
+    <link rel="stylesheet" href="style-new.css?v=20260920-2">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
-    <link rel="stylesheet" href="styles/home-motion.css?v=20260907-2">
-    <link rel="stylesheet" href="styles/home-dashboard.css?v=20260912-3">
+    <link rel="stylesheet" href="styles/home-motion.css?v=20260920-2">
+    <link rel="stylesheet" href="styles/home-dashboard.css?v=20260920-2">
 </head>
 <body class="home-page">
     <script>(function(){document.body.classList.add('home-motion-initial');try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};var l=/^(max|medium|off)$/.test(p.animationLevel||'')?p.animationLevel:'max';document.body.classList.add('animations-'+l);if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){document.body.classList.add('animations-max');}})();</script>
@@ -958,12 +958,12 @@
                     </button>
                 </header>
                 <div class="home-quick-dialog-body">
-                    <p class="home-quick-dialog-intro">Выберите от одного до трёх пунктов. Они будут синхронизированы с вашим аккаунтом.</p>
+                    <p class="home-quick-dialog-intro">Выберите от одного до пяти пунктов. Они будут синхронизированы с вашим аккаунтом.</p>
                     <div class="home-quick-options" id="homeQuickOptions"></div>
                 </div>
                 <footer class="home-quick-dialog-footer">
                     <div class="home-quick-selection-meta">
-                        <strong id="homeQuickCount">0 из 3</strong>
+                        <strong id="homeQuickCount">0 из 5</strong>
                         <span id="homeQuickHint">Порядок выбора станет порядком карточек.</span>
                     </div>
                     <div class="home-quick-dialog-actions">
@@ -982,6 +982,7 @@
                     <button class="grade-tab" id="gradeTab9" data-grade="9" role="tab" aria-controls="gradePanel9" aria-selected="false" tabindex="-1">9 класс</button>
                     <button class="grade-tab active" id="gradeTab10" data-grade="10" role="tab" aria-controls="gradePanel10" aria-selected="true">10 класс</button>
                     <button class="grade-tab" id="gradeTab11" data-grade="11" role="tab" aria-controls="gradePanel11" aria-selected="false" tabindex="-1">11 класс</button>
+                    <button class="grade-tab" id="gradeTabArchive" data-grade="archive" role="tab" aria-controls="gradePanelArchive" aria-selected="false" tabindex="-1">Архив</button>
                 </div>
             </div>
 
@@ -1105,21 +1106,26 @@
                             </div>
                         </a>
 
-                        <a href="tour-10-1.html" class="subject-card" data-subject="tour" id="homeTourCard">
-                            <div class="card-header">
-                                <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-tour"/></svg></div>
-                            </div>
-                            <div class="card-body">
-                                <h2>Туристический слёт</h2>
-                                <div class="card-info"><div style="text-align: center;"><span class="status-badge status-active">17–19 сентября</span></div></div>
-                            </div>
-                        </a>
                     </div>
                 </div>
             </div>
 
             <div class="grade-panel" id="gradePanel11" data-grade-panel="11" role="tabpanel" aria-labelledby="gradeTab11" hidden>
                 <div class="grade-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><div>Материалы для 11 класса скоро появятся</div></div>
+            </div>
+
+            <div class="grade-panel" id="gradePanelArchive" data-grade-panel="archive" role="tabpanel" aria-labelledby="gradeTabArchive" hidden>
+                <div class="subjects-grid">
+                    <a href="tour-10-1.html" class="subject-card" data-subject="tour" id="homeTourCard">
+                        <div class="card-header">
+                            <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-tour"/></svg></div>
+                        </div>
+                        <div class="card-body">
+                            <h2>Туристический слёт</h2>
+                            <div class="card-info"><div style="text-align: center;"><span class="status-badge">17–19 сентября 2026</span></div></div>
+                        </div>
+                    </a>
+                </div>
             </div>
 
         </section>
@@ -1131,7 +1137,7 @@
             </p>
         </footer>
     </div>
-    <script src="home-motion.js?v=20260907-2"></script>
+    <script src="home-motion.js?v=20260920-2"></script>
 
 
     <!-- Контейнер для снега -->
@@ -1151,14 +1157,14 @@
 
     <script src="script.js?v=20260905-2"></script>
     <script src="newyear.js?v=20260903-1"></script>
-    <script src="settings.js?v=20260912-2"></script>
+    <script src="settings.js?v=20260920-2"></script>
     <script src="account.js?v=20260912-2"></script>
     <script>
         (function () {
             function loadHomeDashboard() {
                 if (document.querySelector('script[data-home-dashboard]')) return;
                 var script = document.createElement('script');
-                script.src = 'home-dashboard.js?v=20260912-3';
+                script.src = 'home-dashboard.js?v=20260920-2';
                 script.dataset.homeDashboard = 'true';
                 document.head.appendChild(script);
             }

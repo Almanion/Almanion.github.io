@@ -16,7 +16,7 @@ const accountPages = [
 
 accountPages.forEach((file) => {
     const html = read(file);
-    const noteProgressive = html.includes('note-runtime.js?v=20260920-1');
+    const noteProgressive = html.includes('note-runtime.js?v=20260920-2');
     const matcenterProgressive = html.includes('matcenter/runtime.js?v=20260911-2');
     const progressive = noteProgressive || matcenterProgressive;
     const syncAt = html.indexOf('data-sync.js?v=20260908-1');

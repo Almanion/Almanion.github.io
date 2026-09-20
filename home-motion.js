@@ -100,7 +100,9 @@
             layoutFrame = window.requestAnimationFrame(flushGradeVisuals);
         }
 
-        var direction = Number(nextGrade) < Number(layoutStartGrade || nextGrade) ? -1 : 1;
+        var nextIndex = tabs.findIndex(function (tab) { return tab.dataset.grade === nextGrade; });
+        var startIndex = tabs.findIndex(function (tab) { return tab.dataset.grade === (layoutStartGrade || nextGrade); });
+        var direction = nextIndex < startIndex ? -1 : 1;
         var shift = document.body.classList.contains('animations-medium') ? 0 : direction * 4;
         document.body.style.setProperty('--home-grade-shift', shift + 'px');
     }

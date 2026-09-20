@@ -8,11 +8,11 @@
 
     const loaded = new Map();
     const versions = {
-        featureStyles: 'styles/site/features.css?v=20260920-1',
+        featureStyles: 'styles/site/features.css?v=20260920-2',
         bookmarksStyles: 'styles/bookmarks.css?v=20260920-1',
         editorStyles: 'styles/note-editor.css?v=20260904-2',
         printStyles: 'styles/print.css?v=20260908-3',
-        settings: 'settings.js?v=20260911-1',
+        settings: 'settings.js?v=20260920-2',
         search: 'search.js?v=20260907-1',
         print: 'print-export.js?v=20260908-3',
         knowledge: 'knowledge-check.js?v=20260911-1',

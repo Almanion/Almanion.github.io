@@ -12,8 +12,8 @@ const client = read('home-dashboard.js');
 const editor = read('home-quick-editor.js');
 const shell = JSON.parse(read(path.join('performance', 'sw-shell.json'))).assets;
 
-assert.match(page, /styles\/home-dashboard\.css\?v=20260912-3/, 'dashboard stylesheet must be versioned');
-assert.match(page, /home-dashboard\.js\?v=20260912-3/, 'personal dashboard controller must be versioned');
+assert.match(page, /styles\/home-dashboard\.css\?v=20260920-2/, 'dashboard stylesheet must be versioned');
+assert.match(page, /home-dashboard\.js\?v=20260920-2/, 'personal dashboard controller must be versioned');
 assert.doesNotMatch(page, /<script[^>]+src="home-dashboard\.js/, 'personalization must load during idle time, not block first paint');
 assert.match(page, /class="extra-section home-quick-section"[^>]*aria-labelledby="homeQuickTitle"/);
 assert.match(page, /id="homeQuickTitle">Быстрый доступ</);
@@ -36,19 +36,21 @@ assert.match(css, /\.home-quick-grid[\s\S]*?grid-template-columns:\s*repeat\(3/)
 assert.match(css, /\.home-quick-grid > \.home-quick-card[\s\S]*?min-height:\s*108px/);
 assert.match(css, /\.grade-panel > \.subjects-grid > \.subject-card[\s\S]*?min-height:\s*188px/);
 assert.match(css, /#gradePanel10 > \.class-section > \.subjects-grid[\s\S]*?repeat\(2/);
+assert.match(page, /id="gradeTabArchive"[^>]*aria-controls="gradePanelArchive"/);
+assert.match(page, /id="gradePanelArchive"[^>]*aria-labelledby="gradeTabArchive"/);
 assert.match(css, /\.home-privileged-actions:not\(\[hidden\]\)[\s\S]*?grid-template-columns:\s*repeat\(2/,
     'mobile privileged actions must share one row');
 assert.match(css, /\.home-quick-grid\[data-count="3"\] > \.home-quick-card:first-child[\s\S]*?grid-column:\s*1 \/ -1/,
     'the mobile three-card layout must use a large lead tile');
 assert.match(css, /body\.home-page \.settings-button\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;/s,
     'the home settings control must match the account control size');
-assert.match(client, /const MAX_ITEMS = 3/);
+assert.match(client, /const MAX_ITEMS = 5/);
 assert.match(client, /homeQuickAccessByUser/);
 assert.match(client, /api\.update\(\{ \[SETTINGS_KEY\]: map \}, \{ apply: false \}\)/,
     'personal quick access must use the account-synced settings channel');
-assert.match(client, /home-quick-editor\.js\?v=20260912-1/,
+assert.match(client, /home-quick-editor\.js\?v=20260920-2/,
     'the larger editor must stay out of the initial JavaScript path');
-assert.match(editor, /const MAX_ITEMS = 3/);
+assert.match(editor, /const MAX_ITEMS = 5/);
 assert.match(editor, /dashboard\(\)[\s\S]*?api\.saveSelection\(draft\)/,
     'the lazy editor must save through the account-aware dashboard controller');
 assert.ok(shell.includes('/styles/home-dashboard.css'));

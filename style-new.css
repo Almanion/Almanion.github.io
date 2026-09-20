@@ -279,11 +279,11 @@ body.experimental .sidebar-header-buttons > .account-btn.signed-in {
     color: var(--exp-accent) !important;
     background: var(--exp-accent-soft) !important;
 }
-body:not(.no-hover).experimental .sidebar-header-buttons > button:hover {
+body.experimental .sidebar-header-buttons > button:hover {
     color: var(--exp-text) !important;
     background: var(--exp-surface) !important;
 }
-body:not(.no-hover).experimental .sidebar-header-buttons > .account-btn.signed-in:hover {
+body.experimental .sidebar-header-buttons > .account-btn.signed-in:hover {
     color: var(--exp-accent) !important;
     background: color-mix(in srgb, var(--exp-accent) 17%, transparent) !important;
 }
@@ -325,7 +325,7 @@ body.experimental .nav-link {
     font-weight: 500;
     transition: background-color 0.15s ease, color 0.15s ease;
 }
-body:not(.no-hover).experimental .nav-link:hover {
+body.experimental .nav-link:hover {
     background: var(--exp-surface-2) !important;
     color: var(--exp-text) !important;
     border-left-color: transparent !important;
@@ -355,18 +355,29 @@ body.experimental .site-toast {
     box-shadow: var(--exp-shadow-md);
 }
 body.experimental .site-toast-close { color: var(--exp-text-faint); }
-body:not(.no-hover).experimental .site-toast-close:hover {
+body.experimental .site-toast-close:hover {
     color: var(--exp-text);
     background: var(--exp-surface-2);
 }
 
 /* Кнопки сайдбара/FAB */
-body.experimental .menu-toggle,
-body.experimental .sidebar-expand-btn {
+body.experimental .menu-toggle {
     background: var(--exp-accent);
     color: var(--exp-accent-contrast);
     border-radius: var(--exp-r);
     box-shadow: var(--exp-shadow-md);
+}
+body.experimental .sidebar-expand-btn {
+    background: color-mix(in srgb, var(--exp-surface) 96%, transparent);
+    color: var(--exp-text-dim);
+    border: 1px solid var(--exp-border);
+    border-radius: 10px;
+    box-shadow: var(--exp-shadow-sm);
+}
+body.experimental .sidebar-expand-btn:hover {
+    color: var(--exp-text);
+    background: var(--exp-surface-2);
+    border-color: var(--exp-border-strong);
 }
 body.experimental .close-sidebar,
 body.experimental .sidebar-collapse-btn,
@@ -375,8 +386,8 @@ body.experimental .settings-button-sidebar {
     color: var(--exp-text-dim);
     border-radius: var(--exp-r-sm);
 }
-body:not(.no-hover).experimental .close-sidebar:hover,
-body:not(.no-hover).experimental .sidebar-collapse-btn:hover {
+body.experimental .close-sidebar:hover,
+body.experimental .sidebar-collapse-btn:hover {
     background: var(--exp-border);
     color: var(--exp-text);
 }
@@ -533,6 +544,7 @@ body.experimental .formula-box::before     { content: "Формула"; color: v
 body.experimental .proof-box::before       { content: "Доказательство"; color: var(--t-proof); }
 body.experimental .derivation-box::before  { content: "Вывод"; color: var(--t-derivation); }
 body.experimental .experiment-box::before  { content: "Эксперимент"; color: var(--t-experiment); }
+body.experimental .remark-box::before      { content: "Замечание"; color: var(--t-remark); }
 body.experimental .exercise-box::before    { content: "Упражнение"; color: var(--t-exercise); }
 body.experimental .properties-box::before  { content: "Свойства"; color: var(--t-properties); }
 body.experimental .system-box::before      { content: "Система"; color: var(--t-system); }
@@ -549,6 +561,7 @@ body.experimental .formula-box::before,
 body.experimental .proof-box::before,
 body.experimental .derivation-box::before,
 body.experimental .experiment-box::before,
+body.experimental .remark-box::before,
 body.experimental .exercise-box::before,
 body.experimental .properties-box::before,
 body.experimental .system-box::before,
@@ -577,9 +590,8 @@ body.experimental .example-box:has(> strong:first-child)::before {
     display: none !important;
 }
 
-/* reminder/example: текстовые ярлыки как у остальных учебных блоков.
-   У замечания остаётся собственная угловая иконка: отдельная текстовая плашка
-   здесь повторяла уже понятный тип карточки. */
+/* remark/reminder/example: текстовые ярлыки как у остальных учебных блоков. */
+body.experimental .remark-box::before,
 body.experimental .reminder-box::before,
 body.experimental .example-box::before {
     -webkit-mask: none !important;
@@ -1007,7 +1019,7 @@ body.experimental .settings-section h3 { color: var(--exp-text); }
     font: inherit;
     color: var(--text-primary);
 }
-body:not(.no-hover) .exp-mode-card:hover { border-color: var(--accent-color); }
+.exp-mode-card:hover { border-color: var(--accent-color); }
 .exp-mode-card.active {
     border-color: var(--accent-color);
     background: color-mix(in srgb, var(--accent-color) 8%, var(--bg-secondary));
@@ -1786,160 +1798,6 @@ body.experimental .exp-subpanel {
     }
 }
 
-/* Финальный каскад панели настроек: одинаковая ширина и ритм для всех блоков. */
-.settings-modal-content {
-    width: min(620px, calc(100% - 32px));
-    max-height: min(88dvh, 780px);
-    border-radius: 20px;
-}
-
-.settings-modal-header {
-    padding: 1.2rem 1.5rem;
-    border-radius: 20px 20px 0 0;
-}
-
-.settings-modal-body {
-    display: grid;
-    gap: 1.25rem;
-    padding: 1.4rem 1.5rem 1.5rem;
-}
-
-.settings-section,
-.settings-section:last-of-type {
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    border: 0;
-}
-
-.settings-section + .settings-section {
-    padding-top: 1.25rem;
-    border-top: 1px solid var(--border-color);
-}
-
-.settings-section h3 {
-    margin: 0;
-    font-size: 0.98rem;
-}
-
-.settings-option {
-    width: 100%;
-    margin-top: 0.8rem;
-}
-
-.exp-subpanel {
-    width: 100%;
-    margin-top: 0.75rem;
-    padding: 0.9rem;
-    overflow: hidden;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-}
-
-.exp-mode-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
-    margin-top: 0.65rem;
-}
-
-.exp-mode-card {
-    width: 100%;
-    padding: 0.72rem;
-    border-width: 1px;
-    border-radius: 10px;
-}
-
-.exp-mode-swatch {
-    height: 34px;
-    border-radius: 7px;
-}
-
-.exp-lightdark {
-    display: grid;
-    grid-template-columns: minmax(0, 1.45fr) repeat(2, minmax(0, 1fr));
-    width: 100%;
-    margin-top: 0.45rem;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-}
-
-.exp-ld-btn {
-    min-width: 0;
-    min-height: 42px;
-    padding-inline: 0.55rem;
-    border-radius: 7px;
-    line-height: 1.2;
-}
-
-.exp-ld-btn span { min-width: 0; }
-
-.theme-selector {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.55rem;
-}
-
-.theme-option {
-    min-width: 0;
-    padding: 0.58rem;
-    border-width: 1px;
-    border-radius: 10px;
-}
-
-.theme-preview {
-    height: 44px;
-}
-
-.animation-level-selector {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.55rem;
-}
-
-.animation-level-option {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas: "icon title" "icon description";
-    align-content: center;
-    column-gap: 0.55rem;
-    row-gap: 0.12rem;
-    min-height: 82px;
-    padding: 0.72rem;
-    border-width: 1px;
-    border-radius: 10px;
-}
-
-.animation-level-option .level-icon { grid-area: icon; width: 26px; height: 26px; }
-.animation-level-option .level-icon-svg { width: 21px; height: 21px; }
-.animation-level-option .level-title { grid-area: title; align-self: end; margin: 0; font-size: 0.83rem; line-height: 1.2; }
-.animation-level-option .level-desc { grid-area: description; align-self: start; font-size: 0.7rem; line-height: 1.32; }
-
-.toggle-switch {
-    width: 100%;
-    padding: 0.8rem 0.9rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-}
-
-.settings-actions { justify-content: flex-start; margin: 0; padding-top: 1.1rem; }
-.settings-reset-btn { padding: 0.55rem 0.75rem; background: transparent; border-color: transparent; font-size: 0.78rem; }
-
-@media (max-width: 768px) {
-    .settings-modal-content {
-        width: 100%;
-        max-height: 90dvh;
-        border-radius: 18px 18px 0 0;
-    }
-
-    .settings-modal-header { padding: 0.85rem 1.1rem 0.9rem; }
-    .settings-modal-body { gap: 1.05rem; padding: 1rem 1.1rem 1.4rem; }
-    .settings-section + .settings-section { padding-top: 1.05rem; }
-    .theme-selector { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .animation-level-selector { grid-template-columns: 1fr; }
-    .animation-level-option { min-height: 66px; }
-    body.experimental .exp-mode-grid { grid-template-columns: 1fr; }
-}
-
 .settings-modal-content,
 .settings-modal-header,
 .settings-modal-body,
@@ -1997,7 +1855,7 @@ body.experimental .exp-subpanel {
     transition: border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease;
 }
 
-body:not(.no-hover) .design-mode-option:hover {
+.design-mode-option:hover {
     border-color: color-mix(in srgb, var(--accent-color) 55%, var(--border-color));
 }
 
@@ -2036,7 +1894,7 @@ body:not(.no-hover) .design-mode-option:hover {
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
 .toggle-label { font-size: 0.82rem; line-height: 1.4; }
 
-body:not(.no-hover) .settings-reset-btn:hover {
+.settings-reset-btn:hover {
     color: var(--error-color);
     background: color-mix(in srgb, var(--error-color) 8%, transparent);
     border-color: color-mix(in srgb, var(--error-color) 18%, transparent);
@@ -2048,6 +1906,8 @@ body:not(.no-hover) .settings-reset-btn:hover {
     .design-mode-option { min-height: 78px; }
     .exp-lightdark { grid-template-columns: 1fr 1fr; }
     .exp-ld-btn:first-child { grid-column: 1 / -1; }
+    .note-scale-control { grid-template-columns: 40px minmax(56px, 1fr) 40px; }
+    .note-scale-reset { grid-column: 1 / -1; }
 }
 
 /* =========================================================

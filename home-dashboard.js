@@ -10,7 +10,7 @@
     'use strict';
 
     const SETTINGS_KEY = 'homeQuickAccessByUser';
-    const MAX_ITEMS = 3;
+    const MAX_ITEMS = 5;
     const DEFAULT_PUBLIC = ['physics-10', 'matcenter', 'likbez'];
     const DEFAULT_WITH_ENGLISH = ['english', 'matcenter', 'likbez'];
     const CATALOG = [
@@ -26,7 +26,7 @@
         { id: 'likbez', href: 'likbez.html', title: 'Ликбезы', context: '', subject: 'likbez', icon: 'academic-likbez', category: 'services' },
         { id: 'english', href: 'english.html', title: 'Английский', context: 'Vocabulary', subject: 'english', icon: 'academic-english', category: 'services', requiresEnglish: true },
         { id: 'duty-10-1', href: 'duty-10-1.html', title: 'Дежурство', context: '10‑1', subject: 'duty', icon: 'academic-duty', category: 'class-10-1' },
-        { id: 'tour-10-1', href: 'tour-10-1.html', title: 'Туристический слёт', context: '10‑1', subject: 'tour', icon: 'academic-tour', category: 'class-10-1' }
+        { id: 'tour-10-1', href: 'tour-10-1.html', title: 'Туристический слёт', context: 'Архив', subject: 'tour', icon: 'academic-tour', category: 'archive' }
     ];
 
     let controller = null;
@@ -149,7 +149,7 @@
             if (editorPromise) return editorPromise;
             editorPromise = new Promise(function (resolve, reject) {
                 const script = doc.createElement('script');
-                script.src = 'home-quick-editor.js?v=20260912-1';
+        script.src = 'home-quick-editor.js?v=20260920-2';
                 script.onload = function () { resolve(win.AlmanionHomeQuickEditor); };
                 script.onerror = function () { editorPromise = null; reject(new Error('Quick access editor failed to load')); };
                 doc.head.appendChild(script);

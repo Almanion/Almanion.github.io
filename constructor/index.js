@@ -485,13 +485,20 @@
             textArea('content', 'Содержание', block.content, '', 'Основной текст блока');
     }
 
+    function blockTypeOptions(selectedType) {
+        return BLOCK_PICKER_GROUPS.flatMap(group => group.types).map(type =>
+            '<option value="' + type + '"' + (type === selectedType ? ' selected' : '') + '>' +
+            escapeHtml(Model.BLOCK_TYPES[type].label) + '</option>'
+        ).join('');
+    }
+
     function renderBlockEditor(block, depth, index, count) {
         const canNest = Model.isContainerType(block.type) && depth < Model.MAX_NESTING_DEPTH;
         const children = Array.isArray(block.children) ? block.children : [];
         return '<article class="builder-block' + (state.insertAfterId === block.id ? ' is-selected' : '') + '" data-block-id="' + escapeHtml(block.id) + '" data-depth="' + depth + '">' +
             '<div class="builder-block-head">' +
                 '<button class="builder-drag-handle" type="button" draggable="true" data-drag-handle aria-label="Перетащить блок" title="Перетащить блок">⠿</button>' +
-                '<span class="builder-block-kind">' + escapeHtml(Model.BLOCK_TYPES[block.type].label) + '</span>' +
+                '<label class="builder-block-kind"><span class="builder-visually-hidden">Тип блока</span><select data-block-type aria-label="Тип блока">' + blockTypeOptions(block.type) + '</select></label>' +
                 '<div class="builder-block-actions">' +
                     actionButton('up', 'Переместить выше', index === 0) +
                     actionButton('down', 'Переместить ниже', index === count - 1) +
@@ -644,9 +651,9 @@
             doc.open();
             doc.write('<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">' +
                 '<base href="' + escapeHtml(baseHref) + '">' +
-                '<link rel="stylesheet" href="styles/site/index.css?v=20260904-8">' +
+                '<link rel="stylesheet" href="styles/site/index.css?v=20260920-2">' +
                 '<link rel="stylesheet" href="styles/tokens.css?v=20260903-1">' +
-                '<link rel="stylesheet" href="style-new.css?v=20260904-11">' +
+                '<link rel="stylesheet" href="style-new.css?v=20260920-2">' +
                 '<link rel="stylesheet" href="styles/typography.css?v=20260904-2">' +
                 '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">' +
                 '<link rel="stylesheet" href="constructor/preview.css?v=20260903-1">' +
@@ -1182,6 +1189,56 @@
 
     function findBlock(blockId) {
         return state.current ? Model.findLocation(activeBlockList(), blockId, null, 0) : null;
+    }
+
+    function changeBlockType(blockId, nextType) {
+        const location = findBlock(blockId);
+        if (!location || !Model.BLOCK_TYPES[nextType] || Model.BLOCK_TYPES[nextType].structural) return;
+        const previous = location.block;
+        if (previous.type === nextType) return;
+
+        const previousChildren = Array.isArray(previous.children) ? previous.children : [];
+        const previousContent = previous.type === 'formula'
+            ? String(previous.latex || previous.content || '')
+            : previous.type === 'list'
+                ? (Array.isArray(previous.items) ? previous.items.join('\n') : String(previous.content || ''))
+                : previous.type === 'image'
+                    ? String(previous.caption || previous.alt || previous.content || '')
+                    : String(previous.content || '');
+        const replacement = Model.createBlock(nextType);
+        replacement.id = previous.id;
+        replacement.content = previousContent;
+        replacement.title = String(previous.title || '');
+
+        if (nextType === 'definition') {
+            replacement.term = String(previous.term || previous.title || '').trim();
+            replacement.separator = previous.separator === ':' ? ':' : '—';
+            replacement.title = '';
+        } else if (nextType === 'formula') {
+            replacement.latex = previous.type === 'formula' ? String(previous.latex || '') : previousContent;
+        } else if (nextType === 'list') {
+            replacement.items = previous.type === 'list' && Array.isArray(previous.items)
+                ? previous.items.slice()
+                : previousContent.split(/\r?\n/);
+        } else if (nextType === 'heading') {
+            replacement.title = String(previous.title || previous.term || previousContent || '');
+        } else if (nextType === 'image' && previous.type === 'image') {
+            replacement.src = String(previous.src || '');
+            replacement.alt = String(previous.alt || '');
+            replacement.caption = String(previous.caption || '');
+        }
+
+        if (Model.isContainerType(nextType)) {
+            replacement.children = previousChildren;
+        } else if (previousChildren.length) {
+            location.list.splice(location.index + 1, 0, ...previousChildren);
+        }
+
+        location.list[location.index] = replacement;
+        changed(true, { label: 'Изменён тип блока' });
+        if (!Model.isContainerType(nextType) && previousChildren.length) {
+            toast('Вложенные блоки сохранены следом.');
+        }
     }
 
     function handleBlockAction(blockId, action) {
@@ -1855,6 +1912,11 @@
             updateAddDockContext();
         });
         el('blockList').addEventListener('change', event => {
+            if (event.target.matches('[data-block-type]')) {
+                const card = event.target.closest('[data-block-id]');
+                if (card) changeBlockType(card.dataset.blockId, event.target.value);
+                return;
+            }
             const field = event.target.dataset.blockField;
             if (field && event.target.matches('select')) {
                 const card = event.target.closest('[data-block-id]');

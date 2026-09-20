@@ -97,6 +97,11 @@ function testResponsiveAndAutosaveWiring() {
     assert.match(script, /sourceFormat === 'html-fragment-v1'/);
     assert.match(script, /compatibilityReadOnly/);
     assert.match(script, /stale pre-migration draft/);
+    assert.match(script, /data-block-type/);
+    assert.match(script, /function changeBlockType\(/);
+    assert.match(script, /previousChildren/,
+        'changing a container to a leaf block must preserve its nested content');
+    assert.match(css, /\.builder-block-kind select/);
     assert.match(css, /is-outline-fullscreen \.builder-sections[^}]*overflow-y:\s*auto/);
     assert.match(css, /@media \(max-width: 540px\)[\s\S]*grid-template-rows:\s*40px 38px 38px/);
 }

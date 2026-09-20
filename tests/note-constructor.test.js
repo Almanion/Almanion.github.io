@@ -363,7 +363,8 @@ function testNumberTheoryStructure() {
     assert.strictEqual((countedGroup[1].match(/<circle\b/g) || []).length, 17);
     assert.strictEqual((pairedGroup[1].match(/<circle\b/g) || []).length, 8);
     assert.ok(eisensteinSvg.includes('markerUnits="userSpaceOnUse"'));
-    assert.ok(!/body\.experimental \.remark-box::before\s*\{\s*content:\s*"Замечание"/.test(experimentalStyles));
+    assert.match(experimentalStyles, /body\.experimental \.remark-box::before\s*\{\s*content:\s*"Замечание";\s*color:\s*var\(--t-remark\)/,
+        'remark blocks must have a yellow semantic plaque');
 
     const visit = block => {
         const html = Renderer.renderBlock(block, 0);
