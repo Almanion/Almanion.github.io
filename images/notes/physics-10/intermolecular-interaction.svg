@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 1220" role="img" aria-labelledby="title desc">
+  <title id="title">Сила межмолекулярного взаимодействия и потенциальная энергия</title>
+  <desc id="desc">Два графика показывают зависимость силы и потенциальной энергии взаимодействия молекул от расстояния между их центрами.</desc>
+  <defs>
+    <style>
+      .frame{fill:#fbfdff;stroke:#d6e1ed;stroke-width:2}.axis{stroke:#173f70;stroke-width:3;fill:none;marker-end:url(#arrow)}
+      .guide{stroke:#8298ad;stroke-width:2;stroke-dasharray:8 8}.zero{stroke:#b8c7d5;stroke-width:2}
+      .repulsion{stroke:#d4674c;stroke-width:5;fill:none}.attraction{stroke:#0b8f87;stroke-width:5;fill:none}
+      .result{stroke:#173f70;stroke-width:5;fill:none}.energy{stroke:#754fa8;stroke-width:5;fill:none}
+      .level-gas{stroke:#d4674c;stroke-width:3;stroke-dasharray:10 7}.level-solid{stroke:#0b8f87;stroke-width:3;stroke-dasharray:10 7}
+      .heading{font:700 25px system-ui,sans-serif;fill:#173f70}.label{font:19px system-ui,sans-serif;fill:#173f70}
+      .small{font:16px system-ui,sans-serif;fill:#526b84}.red{fill:#b8513d}.green{fill:#08746e}.purple{fill:#684493}
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#173f70"/>
+    </marker>
+  </defs>
+
+  <rect class="frame" x="20" y="20" width="560" height="1180" rx="22"/>
+  <text class="heading" x="300" y="62" text-anchor="middle">Межмолекулярное взаимодействие</text>
+
+  <g aria-label="График силы взаимодействия">
+    <text class="heading" x="280" y="105" text-anchor="middle">Сила взаимодействия</text>
+    <path class="axis" d="M88 302H510"/>
+    <path class="axis" d="M122 410V132"/>
+    <text class="label" x="516" y="318">r</text>
+    <text class="label" x="93" y="137">F</text>
+    <line class="guide" x1="257" y1="154" x2="257" y2="410"/>
+    <text class="small" x="257" y="434" text-anchor="middle">r₀</text>
+    <path class="repulsion" d="M149 151C176 174 203 212 228 266C246 304 278 313 493 306"/>
+    <path class="attraction" d="M147 301C188 303 221 312 246 347C274 386 319 365 358 337C402 307 448 306 493 305"/>
+    <path class="result" d="M151 151C181 185 218 258 246 295C253 304 260 310 272 317C306 337 342 324 374 313C414 300 455 302 493 304"/>
+    <circle cx="257" cy="302" r="7" fill="#173f70"/>
+    <text class="small red" x="344" y="196">сила отталкивания</text>
+    <text class="small green" x="349" y="376">сила притяжения</text>
+    <text class="small" x="337" y="286">равнодействующая</text>
+    <text class="small" x="257" y="458" text-anchor="middle">устойчивое равновесие</text>
+  </g>
+
+  <g aria-label="График потенциальной энергии" transform="translate(-524 570)">
+    <text class="heading" x="810" y="105" text-anchor="middle">Потенциальная энергия</text>
+    <path class="axis" d="M612 302H1032"/>
+    <path class="axis" d="M647 410V132"/>
+    <text class="label" x="1038" y="318">r</text>
+    <text class="label" x="615" y="137">U</text>
+    <path class="energy" d="M670 151C699 186 714 264 730 318C746 373 772 391 807 366C846 338 875 319 914 310C951 302 987 302 1018 302"/>
+    <line class="guide" x1="793" y1="302" x2="793" y2="410"/>
+    <circle cx="793" cy="374" r="7" fill="#754fa8"/>
+    <text class="small" x="793" y="434" text-anchor="middle">r₀</text>
+    <line class="level-gas" x1="647" y1="210" x2="1018" y2="210"/>
+    <line class="level-solid" x1="647" y1="353" x2="1018" y2="353"/>
+    <text class="small red" x="986" y="199" text-anchor="end">E₁ &gt; 0: газ</text>
+    <text class="small green" x="986" y="344" text-anchor="end">E₂ &lt; 0: связанное состояние</text>
+    <text class="small purple" x="812" y="397">минимум U</text>
+  </g>
+
+  <text class="small" x="300" y="1138" text-anchor="middle">
+    <tspan x="300">При r = r₀ равнодействующая сил равна нулю,</tspan>
+    <tspan x="300" dy="24">а потенциальная энергия минимальна.</tspan>
+  </text>
+</svg>

@@ -3,6 +3,7 @@
   "subject": "physics-10",
   "title": "Физика · 10 класс",
   "sections": [
-    { "id": "molekulyarnaya-fizika" }
+    { "id": "molekulyarnaya-fizika" },
+    { "id": "izmereniya-i-pogreshnosti" }
   ]
 }
