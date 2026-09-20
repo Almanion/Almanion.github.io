@@ -30,7 +30,7 @@ accountPages.forEach((file) => {
         assert.ok(accountAt > syncAt, `${file} must load data sync before the account module`);
         assert.ok(accountAt > kcStorageAt, `${file} must load account-scoped knowledge storage before the account module`);
     }
-    const bookmarksAt = html.indexOf('bookmarks.js?v=20260920-1');
+    const bookmarksAt = html.indexOf('bookmarks.js?v=20260920-3');
     if (bookmarksAt >= 0) assert.ok(bookmarksAt > syncAt, `${file} must load data sync before bookmarks`);
     assert.ok(/settings\.js\?v=/.test(html) || progressive,
         `${file} must load sync-aware settings directly or progressively`);
@@ -39,8 +39,8 @@ accountPages.forEach((file) => {
 const runtime = read('note-runtime.js');
 assert.match(runtime, /dataSync:\s*'data-sync\.js\?v=20260908-1'/);
 assert.match(runtime, /account:\s*'account\.js\?v=20260911-1'/);
-assert.match(runtime, /bookmarks:\s*'bookmarks\.js\?v=20260920-2'/);
-assert.match(runtime, /bookmarksStyles:\s*'styles\/bookmarks\.css\?v=20260920-1'/);
+assert.match(runtime, /bookmarks:\s*'bookmarks\.js\?v=20260920-3'/);
+assert.match(runtime, /bookmarksStyles:\s*'styles\/bookmarks\.css\?v=20260920-2'/);
 const matcenterRuntime = read(path.join('matcenter', 'runtime.js'));
 assert.match(matcenterRuntime, /settings:\s*'settings\.js\?v=20260920-3'/);
 assert.match(matcenterRuntime, /analytics:\s*'firebase-analytics\.js\?v=20260911-1'/);

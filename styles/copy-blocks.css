@@ -43,9 +43,9 @@
     transform: translateY(0);
 }
 
-/* Если на блоке уже есть кнопка закладки — сдвигаем копирование левее, чтобы не перекрывать */
-.copyable-block:has(.bookmark-btn) > .copy-block-btn {
-    right: 2.25rem;
+/* Кнопки блока образуют одну компактную горизонтальную группу. */
+.copyable-block:has(> .bookmark-btn) > .copy-block-btn {
+    right: 2.45rem;
 }
 
 .copy-block-btn.is-copied {

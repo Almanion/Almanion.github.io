@@ -63,6 +63,9 @@
     let restoreAttempts = 0;
     let restoreTimer = 0;
     let savedBodyOverflow = '';
+    let activeDrag = null;
+    let pendingPanelRender = false;
+    let orderPersisting = false;
 
     const safeGet = window.safeStorageGet || function (key) {
         try { return localStorage.getItem(key); } catch (_) { return null; }
@@ -133,7 +136,12 @@
         if (detail && detail.type === 'error') console.warn('Almanion bookmarks: sync deferred.', detail.error);
         refreshAllButtons();
         refreshSidebarCount();
-        if (panelOpen && Date.now() - lastLocalWriteAt > 500) renderBookmarksList();
+        if (!panelOpen) return;
+        if (activeDrag || orderPersisting) {
+            pendingPanelRender = true;
+            return;
+        }
+        if (Date.now() - lastLocalWriteAt > 500) renderBookmarksList();
     }
 
     function openBookmarkStore(owner, key, migrateGuest) {
@@ -297,7 +305,7 @@
     }
 
     function migrateLegacyBookmark(box, stableId) {
-        if (bookmarks[stableId] && !bookmarks[stableId].deleted) return;
+        const stableExists = !!(bookmarks[stableId] && !bookmarks[stableId].deleted);
         const topic = box.closest('.topic[id], .content-section[id]');
         if (!topic) return;
         const boxes = Array.from(topic.querySelectorAll(BLOCK_SELECTOR)).filter(isTopLevelBlock);
@@ -319,9 +327,11 @@
         }
         if (!legacyId) return;
         const legacy = bookmarks[legacyId];
-        saveBookmark(stableId, Object.assign({}, legacy, bookmarkMetadata(box), {
-            timestamp: legacy.timestamp || Date.now()
-        }), { deferFlush: true });
+        if (!stableExists) {
+            saveBookmark(stableId, Object.assign({}, legacy, bookmarkMetadata(box), {
+                timestamp: legacy.timestamp || Date.now()
+            }), { deferFlush: true });
+        }
         removeBookmark(legacyId);
     }
 
@@ -399,7 +409,7 @@
 
             const button = document.createElement('button');
             button.type = 'button';
-            button.className = 'bookmark-btn';
+            button.className = 'bookmark-btn block-action-btn';
             button.dataset.bmId = id;
             setBookmarkButtonState(button, hasBookmark(id));
             button.addEventListener('click', function (event) {
@@ -417,6 +427,7 @@
                 if (panelOpen) renderBookmarksList();
             });
             box.style.position = 'relative';
+            box.classList.add('has-bookmark-action');
             box.appendChild(button);
         });
     }
@@ -454,11 +465,68 @@
         });
     }
 
+    function bookmarkFingerprint(entry) {
+        if (!entry) return '';
+        const page = normalizePath(entry.page || location.pathname);
+        const blockKey = normalizeText(entry.blockKey);
+        return blockKey ? page + '|block:' + blockKey : '';
+    }
+
+    function legacyBookmarkFingerprint(entry) {
+        if (!entry) return '';
+        const page = normalizePath(entry.page || location.pathname);
+        const preview = normalizeText(entry.preview || entry.excerpt || entry.title).toLocaleLowerCase();
+        return preview && entry.topicId
+            ? page + '|legacy:' + normalizeText(entry.topicId) + '|' + preview
+            : '';
+    }
+
+    function preferBookmarkEntry(first, second) {
+        const firstStable = !!normalizeText(first && first.blockKey);
+        const secondStable = !!normalizeText(second && second.blockKey);
+        if (firstStable !== secondStable) return firstStable ? first : second;
+        return bookmarkUpdatedAt(second) > bookmarkUpdatedAt(first) ? second : first;
+    }
+
+    function deduplicateEntries(entries) {
+        const stableByFingerprint = new Map();
+        const stableByLegacyFingerprint = new Map();
+        entries.forEach(function (entry) {
+            if (!normalizeText(entry.blockKey)) return;
+            const fingerprint = bookmarkFingerprint(entry);
+            const current = stableByFingerprint.get(fingerprint);
+            const preferred = current ? preferBookmarkEntry(current, entry) : entry;
+            stableByFingerprint.set(fingerprint, preferred);
+            const legacyFingerprint = legacyBookmarkFingerprint(preferred);
+            if (legacyFingerprint) stableByLegacyFingerprint.set(legacyFingerprint, preferred);
+        });
+
+        const output = [];
+        const seenIds = new Set();
+        const seenStable = new Map();
+        entries.forEach(function (entry) {
+            if (!entry || !entry.id || seenIds.has(entry.id)) return;
+            seenIds.add(entry.id);
+            const fingerprint = bookmarkFingerprint(entry);
+            if (!normalizeText(entry.blockKey) && stableByLegacyFingerprint.has(legacyBookmarkFingerprint(entry))) return;
+            if (normalizeText(entry.blockKey) && fingerprint) {
+                const existingIndex = seenStable.get(fingerprint);
+                if (existingIndex != null) {
+                    output[existingIndex] = preferBookmarkEntry(output[existingIndex], entry);
+                    return;
+                }
+                seenStable.set(fingerprint, output.length);
+            }
+            output.push(entry);
+        });
+        return output;
+    }
+
     function sortedEntries() {
-        return Object.entries(bookmarks)
+        const entries = Object.entries(bookmarks)
             .filter(function (pair) { return pair[1] && !pair[1].deleted; })
-            .map(function (pair) { return Object.assign({ id: pair[0] }, pair[1]); })
-            .sort(function (a, b) {
+            .map(function (pair) { return Object.assign({ id: pair[0] }, pair[1]); });
+        return deduplicateEntries(entries).sort(function (a, b) {
                 const aOrder = typeof a.order === 'number' ? a.order : Infinity;
                 const bOrder = typeof b.order === 'number' ? b.order : Infinity;
                 if (aOrder !== bOrder) return aOrder - bOrder;
@@ -479,17 +547,24 @@
     }
 
     function addBookmarksSidebarButton() {
-        if (document.getElementById('bookmarksBtn')) return;
-        const container = document.querySelector('.sidebar-actions') || document.querySelector('.nav-menu');
-        if (!container) return;
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'knowledge-check-btn bookmarks-sidebar-button';
-        button.id = 'bookmarksBtn';
+        let button = document.getElementById('bookmarksBtn');
+        if (!button) {
+            const container = document.querySelector('.sidebar-actions') || document.querySelector('.nav-menu');
+            if (!container) return;
+            button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'knowledge-check-btn bookmarks-sidebar-button';
+            button.id = 'bookmarksBtn';
+            button.innerHTML = bookmarkSvg(false) + '<span>' + copy.sidebar + '</span><span class="bookmarks-sidebar-count" hidden></span>';
+            container.appendChild(button);
+        }
         button.setAttribute('aria-haspopup', 'dialog');
-        button.innerHTML = bookmarkSvg(false) + '<span>' + copy.sidebar + '</span><span class="bookmarks-sidebar-count" hidden></span>';
-        button.addEventListener('click', openBookmarksPanel);
-        container.appendChild(button);
+        button.setAttribute('aria-controls', 'bookmarksOverlay');
+        button.setAttribute('aria-expanded', 'false');
+        if (button.dataset.bookmarksBound !== 'true') {
+            button.dataset.bookmarksBound = 'true';
+            button.addEventListener('click', openBookmarksPanel);
+        }
         refreshSidebarCount();
     }
 
@@ -556,6 +631,11 @@
 
     function openBookmarksPanel() {
         const overlay = ensurePanel();
+        if (panelOpen) {
+            renderBookmarksList();
+            requestAnimationFrame(function () { overlay.querySelector('#bookmarksSearch').focus(); });
+            return;
+        }
         lastFocusedElement = document.activeElement;
         panelOpen = true;
         savedBodyOverflow = document.body.style.overflow;
@@ -571,6 +651,7 @@
     function closeBookmarksPanel() {
         const overlay = document.getElementById('bookmarksOverlay');
         if (!overlay || !panelOpen) return;
+        if (activeDrag) finishActiveDrag(true);
         panelOpen = false;
         overlay.classList.add('hidden');
         overlay.setAttribute('aria-hidden', 'true');
@@ -646,6 +727,11 @@
     }
 
     function renderBookmarksList() {
+        if (activeDrag || orderPersisting) {
+            pendingPanelRender = true;
+            return;
+        }
+        pendingPanelRender = false;
         const overlay = ensurePanel();
         const list = overlay.querySelector('#bookmarksList');
         const previousScroll = list.scrollTop;
@@ -703,6 +789,7 @@
         const card = document.createElement('article');
         card.className = 'bm-card';
         card.dataset.bmId = bookmark.id;
+        card.dataset.bmType = data.type;
         card.style.setProperty('--bm-type', getTypeColor(data.type));
 
         const meta = document.createElement('div');
@@ -714,13 +801,14 @@
         const context = document.createElement('span');
         context.className = 'bm-card-context';
         context.textContent = [bookmark.pageTitle, bookmark.topicTitle].filter(Boolean).join(' · ') || copy.currentPage;
+        context.title = context.textContent;
         meta.appendChild(context);
         card.appendChild(meta);
 
         const main = document.createElement('button');
         main.type = 'button';
         main.className = 'bm-card-main';
-        main.innerHTML = '<span class="bm-card-copy"><strong></strong><span></span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
+        main.innerHTML = '<span class="bm-card-copy"><strong></strong><span></span></span><span class="bm-card-open-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></span>';
         main.querySelector('strong').textContent = data.title;
         main.querySelector('.bm-card-copy > span').textContent = data.excerpt;
         main.setAttribute('aria-label', copy.open + ': ' + data.title);
@@ -776,24 +864,33 @@
     }
 
     function persistOrder(orderedIds) {
+        orderedIds = Array.from(new Set((orderedIds || []).filter(function (id) { return hasBookmark(id); })));
+        if (!orderedIds.length) return;
         const updatedAt = Date.now();
         lastLocalWriteAt = updatedAt;
-        orderedIds.forEach(function (id, index) {
-            if (!hasBookmark(id)) return;
-            bookmarks[id].order = index;
-            bookmarks[id].updatedAt = updatedAt;
-            if (bookmarkStore) bookmarkStore.set(id, bookmarks[id], { updatedAt: updatedAt, flush: false });
-        });
-        if (bookmarkStore) {
-            bookmarks = bookmarkStore.snapshot({ includeDeleted: true });
-            bookmarkStore.flush();
-        } else {
-            safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
-            if (bookmarkRef) {
-                const updates = {};
-                orderedIds.forEach(function (id, index) { updates[id + '/order'] = index; });
-                bookmarkRef.update(updates).catch(function () {});
+        orderPersisting = true;
+        try {
+            orderedIds.forEach(function (id, index) {
+                bookmarks[id].order = (index + 1) * 1000;
+                bookmarks[id].updatedAt = updatedAt;
+                if (bookmarkStore) bookmarkStore.set(id, bookmarks[id], { updatedAt: updatedAt, flush: false });
+            });
+            if (bookmarkStore) {
+                bookmarks = bookmarkStore.snapshot({ includeDeleted: true });
+                bookmarkStore.flush();
+            } else {
+                safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
+                if (bookmarkRef) {
+                    const updates = {};
+                    orderedIds.forEach(function (id, index) {
+                        updates[id + '/order'] = (index + 1) * 1000;
+                        updates[id + '/updatedAt'] = updatedAt;
+                    });
+                    bookmarkRef.update(updates).catch(function () {});
+                }
             }
+        } finally {
+            orderPersisting = false;
         }
     }
 
@@ -801,50 +898,161 @@
         const sibling = direction < 0 ? card.previousElementSibling : card.nextElementSibling;
         if (!sibling || !sibling.classList.contains('bm-card')) return;
         const list = card.parentElement;
+        const movedId = card.dataset.bmId;
         if (direction < 0) list.insertBefore(card, sibling);
         else list.insertBefore(sibling, card);
         persistOrder(Array.from(list.querySelectorAll('.bm-card')).map(function (item) { return item.dataset.bmId; }));
-        card.querySelector('.bm-drag-handle').focus();
+        announce((isEnglish ? 'Bookmark moved to position ' : 'Закладка перемещена на позицию ')
+            + (Array.from(list.querySelectorAll('.bm-card')).indexOf(card) + 1));
+        renderBookmarksList();
+        requestAnimationFrame(function () {
+            list.querySelector('[data-bm-id="' + CSS.escape(movedId) + '"] .bm-drag-handle')?.focus();
+        });
+    }
+
+    function cardIdsInList(list) {
+        return Array.from(new Set(Array.from(list.querySelectorAll(':scope > .bm-card')).map(function (item) {
+            return item.dataset.bmId;
+        }).filter(Boolean)));
+    }
+
+    function sameOrder(first, second) {
+        return first.length === second.length && first.every(function (id, index) { return id === second[index]; });
+    }
+
+    function placeDropPlaceholder(state, clientY) {
+        const cards = Array.from(state.list.querySelectorAll(':scope > .bm-card'));
+        const before = cards.find(function (item) {
+            const rect = item.getBoundingClientRect();
+            return clientY < rect.top + rect.height / 2;
+        });
+        if (before) state.list.insertBefore(state.placeholder, before);
+        else state.list.appendChild(state.placeholder);
+    }
+
+    function onActiveDragMove(event) {
+        const state = activeDrag;
+        if (!state || event.pointerId !== state.pointerId) return;
+        event.preventDefault();
+        state.moved = state.moved || Math.abs(event.clientY - state.startY) > 3;
+        const top = Math.max(8, Math.min(innerHeight - state.height - 8, event.clientY - state.offsetY));
+        state.card.style.top = top + 'px';
+        placeDropPlaceholder(state, event.clientY);
+
+        const bounds = state.list.getBoundingClientRect();
+        const edge = 58;
+        if (event.clientY < bounds.top + edge) {
+            state.list.scrollTop -= Math.ceil((bounds.top + edge - event.clientY) / 4);
+        } else if (event.clientY > bounds.bottom - edge) {
+            state.list.scrollTop += Math.ceil((event.clientY - (bounds.bottom - edge)) / 4);
+        }
+    }
+
+    function finishActiveDrag(cancelled) {
+        const state = activeDrag;
+        if (!state) return;
+        document.removeEventListener('pointermove', onActiveDragMove);
+        document.removeEventListener('pointerup', onActiveDragEnd);
+        document.removeEventListener('pointercancel', onActiveDragCancel);
+        try { state.handle.releasePointerCapture(state.pointerId); } catch (_) {}
+
+        if (state.placeholder.isConnected) state.placeholder.replaceWith(state.card);
+        else state.list.appendChild(state.card);
+        state.card.classList.remove('bm-dragging');
+        if (state.originalStyle == null) state.card.removeAttribute('style');
+        else state.card.setAttribute('style', state.originalStyle);
+        document.body.classList.remove('bookmarks-reordering');
+
+        if (cancelled) {
+            const cards = new Map(Array.from(state.list.querySelectorAll(':scope > .bm-card')).map(function (card) {
+                return [card.dataset.bmId, card];
+            }));
+            state.originalOrder.forEach(function (id) {
+                const card = cards.get(id);
+                if (card) state.list.appendChild(card);
+            });
+        }
+
+        const nextOrder = cardIdsInList(state.list);
+        const changed = !cancelled && state.moved && !sameOrder(state.originalOrder, nextOrder);
+        const movedId = state.card.dataset.bmId;
+        activeDrag = null;
+        if (changed) {
+            persistOrder(nextOrder);
+            announce((isEnglish ? 'Bookmark moved to position ' : 'Закладка перемещена на позицию ')
+                + (nextOrder.indexOf(movedId) + 1));
+        }
+
+        const shouldRender = changed || pendingPanelRender;
+        pendingPanelRender = false;
+        if (shouldRender && panelOpen) renderBookmarksList();
+        if (!cancelled && panelOpen) requestAnimationFrame(function () {
+            state.list.querySelector('[data-bm-id="' + CSS.escape(movedId) + '"] .bm-drag-handle')?.focus();
+        });
+    }
+
+    function onActiveDragEnd(event) {
+        if (!activeDrag || event.pointerId !== activeDrag.pointerId) return;
+        finishActiveDrag(false);
+    }
+
+    function onActiveDragCancel(event) {
+        if (!activeDrag || event.pointerId !== activeDrag.pointerId) return;
+        finishActiveDrag(true);
+    }
+
+    function startActiveDrag(event, handle, list) {
+        if (activeDrag || !canReorder()) return;
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        const card = handle.closest('.bm-card');
+        if (!card || card.parentElement !== list) return;
+        event.preventDefault();
+
+        const rect = card.getBoundingClientRect();
+        const placeholder = document.createElement('div');
+        placeholder.className = 'bm-drop-placeholder';
+        placeholder.setAttribute('aria-hidden', 'true');
+        placeholder.style.height = rect.height + 'px';
+        card.after(placeholder);
+
+        activeDrag = {
+            pointerId: event.pointerId,
+            handle: handle,
+            card: card,
+            list: list,
+            placeholder: placeholder,
+            originalOrder: cardIdsInList(list),
+            originalStyle: card.getAttribute('style'),
+            startY: event.clientY,
+            offsetY: event.clientY - rect.top,
+            height: rect.height,
+            moved: false
+        };
+        // The dragged card becomes a single floating preview; the placeholder is
+        // the only element that changes position inside the list.
+        document.body.appendChild(card);
+        card.classList.add('bm-dragging');
+        card.style.position = 'fixed';
+        card.style.left = rect.left + 'px';
+        card.style.top = rect.top + 'px';
+        card.style.width = rect.width + 'px';
+        card.style.height = rect.height + 'px';
+        card.style.margin = '0';
+        card.style.zIndex = '14020';
+        card.style.pointerEvents = 'none';
+        document.body.classList.add('bookmarks-reordering');
+        try { handle.setPointerCapture(event.pointerId); } catch (_) {}
+        document.addEventListener('pointermove', onActiveDragMove, { passive: false });
+        document.addEventListener('pointerup', onActiveDragEnd);
+        document.addEventListener('pointercancel', onActiveDragCancel);
     }
 
     function initDragSort(list) {
-        list.querySelectorAll('.bm-drag-handle').forEach(function (handle) {
-            let card = null;
-            let pointerId = null;
-            let moved = false;
-            function onMove(event) {
-                if (event.pointerId !== pointerId || !card) return;
-                moved = true;
-                const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('.bm-card');
-                if (!target || target === card || target.parentElement !== list) return;
-                const rect = target.getBoundingClientRect();
-                list.insertBefore(card, event.clientY < rect.top + rect.height / 2 ? target : target.nextElementSibling);
-                const listRect = list.getBoundingClientRect();
-                if (event.clientY < listRect.top + 45) list.scrollTop -= 12;
-                if (event.clientY > listRect.bottom - 45) list.scrollTop += 12;
-            }
-            function onEnd(event) {
-                if (event.pointerId !== pointerId) return;
-                document.removeEventListener('pointermove', onMove);
-                document.removeEventListener('pointerup', onEnd);
-                document.removeEventListener('pointercancel', onEnd);
-                if (card) card.classList.remove('bm-dragging');
-                if (moved) persistOrder(Array.from(list.querySelectorAll('.bm-card')).map(function (item) { return item.dataset.bmId; }));
-                card = null;
-                pointerId = null;
-            }
-            handle.addEventListener('pointerdown', function (event) {
-                if (event.pointerType === 'mouse' && event.button !== 0) return;
-                event.preventDefault();
-                card = handle.closest('.bm-card');
-                pointerId = event.pointerId;
-                moved = false;
-                card.classList.add('bm-dragging');
-                try { handle.setPointerCapture(pointerId); } catch (_) {}
-                document.addEventListener('pointermove', onMove);
-                document.addEventListener('pointerup', onEnd);
-                document.addEventListener('pointercancel', onEnd);
-            });
+        if (list.dataset.dragSortBound === 'true') return;
+        list.dataset.dragSortBound = 'true';
+        list.addEventListener('pointerdown', function (event) {
+            const handle = event.target.closest('.bm-drag-handle');
+            if (handle && list.contains(handle)) startActiveDrag(event, handle, list);
         });
     }
 

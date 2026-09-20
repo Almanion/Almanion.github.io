@@ -9,7 +9,7 @@
     const loaded = new Map();
     const versions = {
         featureStyles: 'styles/site/features.css?v=20260920-3',
-        bookmarksStyles: 'styles/bookmarks.css?v=20260920-1',
+        bookmarksStyles: 'styles/bookmarks.css?v=20260920-2',
         editorStyles: 'styles/note-editor.css?v=20260904-2',
         printStyles: 'styles/print.css?v=20260908-3',
         settings: 'settings.js?v=20260920-3',
@@ -24,7 +24,7 @@
         dataSync: 'data-sync.js?v=20260908-1',
         analytics: 'firebase-analytics.js?v=20260911-1',
         account: 'account.js?v=20260911-1',
-        bookmarks: 'bookmarks.js?v=20260920-2',
+        bookmarks: 'bookmarks.js?v=20260920-3',
         editor: 'note-editor.js?v=20260904-4'
     };
 

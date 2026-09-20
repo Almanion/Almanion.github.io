@@ -1507,6 +1507,23 @@ function initExpBottomNav() {
     };
 
     function clickById(id) { const el = document.getElementById(id); if (el) el.click(); }
+    function openBookmarks() {
+        if (window.AlmanionBookmarks && typeof window.AlmanionBookmarks.open === 'function') {
+            window.AlmanionBookmarks.open();
+            return;
+        }
+        if (window.AlmanionNoteRuntime && typeof window.AlmanionNoteRuntime.ensure === 'function') {
+            window.AlmanionNoteRuntime.ensure('bookmarks').then(function () {
+                if (window.AlmanionBookmarks && typeof window.AlmanionBookmarks.open === 'function') {
+                    window.AlmanionBookmarks.open();
+                } else {
+                    clickById('bookmarksBtn');
+                }
+            }).catch(function () {});
+            return;
+        }
+        clickById('bookmarksBtn');
+    }
     function toggleMenu() {
         const sb = document.getElementById('sidebar');
         if (sb && sb.classList.contains('open')) { if (window.closeMobileMenu) window.closeMobileMenu(); }
@@ -1535,7 +1552,7 @@ function initExpBottomNav() {
         { label: 'Поиск', icon: ICONS.search, act: openSearch }
     ];
     if (!isMatcenter) {
-        items.push({ label: 'Закладки', icon: ICONS.bm, act: function () { clickById('bookmarksBtn'); } });
+        items.push({ label: 'Закладки', icon: ICONS.bm, act: openBookmarks });
         const hasKnowledgeCards = !!document.querySelector(
             '.definition-box, .formula-box, .derivation-box, .remark-box, .theorem-box, ' +
             '.lemma-box, .statement-box, .corollary-box, .properties-box, .proof-box, ' +

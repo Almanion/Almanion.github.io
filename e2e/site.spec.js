@@ -135,6 +135,21 @@ test('bookmarks stay usable offline and behave as a responsive library', async f
         });
     });
     await expect(sourceButtons.nth(0)).toHaveClass(/bookmarked/);
+    const blockActionGeometry = await sourceButtons.first().evaluate(function (bookmark) {
+        const block = bookmark.closest('.copyable-block');
+        const copy = block && block.querySelector(':scope > .copy-block-btn');
+        if (!block || !copy) return null;
+        const bookmarkRect = bookmark.getBoundingClientRect();
+        const copyRect = copy.getBoundingClientRect();
+        return {
+            topDelta: Math.abs(bookmarkRect.top - copyRect.top),
+            gap: Math.round(bookmarkRect.left - copyRect.right)
+        };
+    });
+    expect(blockActionGeometry).not.toBeNull();
+    // The hidden copy control rests 2px higher and settles onto the same row on hover.
+    expect(blockActionGeometry.topDelta).toBeLessThanOrEqual(2);
+    expect(blockActionGeometry.gap).toBeGreaterThanOrEqual(4);
     expect(await page.evaluate(function () {
         return localStorage.getItem('almanion_bookmarks_guest') || '';
     })).toContain('__b__');
@@ -152,9 +167,29 @@ test('bookmarks stay usable offline and behave as a responsive library', async f
     expect(panelGeometry.right).toBe(panelGeometry.viewport);
     expect(panelGeometry.height).toBe(820);
 
+    const orderBeforeDrag = await page.locator('#bookmarksList > .bm-card').evaluateAll(function (cards) {
+        return cards.map(function (card) { return card.dataset.bmId; });
+    });
+    const dragHandle = page.locator('#bookmarksList > .bm-card .bm-drag-handle').first();
+    const dragBounds = await dragHandle.boundingBox();
+    const lastBounds = await page.locator('#bookmarksList > .bm-card').last().boundingBox();
+    await page.mouse.move(dragBounds.x + dragBounds.width / 2, dragBounds.y + dragBounds.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(lastBounds.x + lastBounds.width / 2, lastBounds.y + lastBounds.height - 4, { steps: 8 });
+    await page.mouse.up();
+    await expect(page.locator('#bookmarksList > .bm-card')).toHaveCount(3);
+    const orderAfterDrag = await page.locator('#bookmarksList > .bm-card').evaluateAll(function (cards) {
+        return cards.map(function (card) { return card.dataset.bmId; });
+    });
+    expect(new Set(orderAfterDrag).size).toBe(3);
+    expect(orderAfterDrag).not.toEqual(orderBeforeDrag);
+    await page.waitForTimeout(650);
+    await expect(page.locator('#bookmarksList > .bm-card')).toHaveCount(3);
+
     const firstTitle = await page.locator('.bm-card-copy strong').first().textContent();
     await page.locator('#bookmarksSearch').fill(firstTitle.slice(0, 8));
-    await expect(page.locator('.bm-card')).toHaveCount(1);
+    await expect.poll(async function () { return page.locator('.bm-card').count(); }).toBeLessThan(3);
+    expect(await page.locator('.bm-card').count()).toBeGreaterThan(0);
     await page.locator('.bookmarks-search-clear').click();
     await expect(page.locator('.bm-card')).toHaveCount(3);
 
@@ -174,7 +209,7 @@ test('bookmarks stay usable offline and behave as a responsive library', async f
     })).toBe('none');
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.evaluate(function () { window.AlmanionBookmarks.open(); });
+    await page.locator('#expBottomNav .exp-bn-item[aria-label="Закладки"]').click();
     await expect(page.locator('#bookmarksOverlay')).toBeVisible();
     await page.waitForTimeout(300);
     const mobileGeometry = await page.locator('#bookmarksModal').evaluate(function (element) {

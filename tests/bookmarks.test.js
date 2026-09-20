@@ -27,6 +27,14 @@ assert.match(script, /event\.key === 'Escape'/,
     'the bookmarks dialog must close from the keyboard');
 assert.match(script, /event\.key !== 'ArrowUp' && event\.key !== 'ArrowDown'/,
     'manual order must also be available from the keyboard');
+assert.match(script, /function deduplicateEntries/,
+    'legacy and stable bookmark records must be collapsed before rendering');
+assert.match(script, /if \(activeDrag \|\| orderPersisting\)/,
+    'cloud updates must not rebuild the list while a bookmark is moving');
+assert.match(script, /className = 'bm-drop-placeholder'/,
+    'pointer sorting must move one floating card around a stable placeholder');
+assert.match(script, /Array\.from\(new Set\(\(orderedIds \|\| \[\]\)/,
+    'persisted bookmark order must never contain duplicate ids');
 
 assert.match(css, /\.bookmarks-panel[\s\S]*width:\s*min\(36rem/,
     'desktop bookmarks must use a compact side panel');
@@ -34,14 +42,18 @@ assert.match(css, /@media \(max-width: 720px\)[\s\S]*\.bookmarks-panel[\s\S]*bor
     'mobile bookmarks must use a bottom sheet');
 assert.match(css, /\.bookmark-btn:not\(\.bookmarked\):hover \.bookmark-icon[\s\S]*fill:\s*none !important/,
     'hover must not make an unsaved bookmark look filled');
+assert.match(css, /\.copyable-block > \.bookmark-btn[\s\S]*position:\s*absolute/,
+    'copy and bookmark actions must share one anchored block control row');
+assert.match(css, /\.bm-drop-placeholder/,
+    'bookmark sorting must expose a stable visual drop target');
 assert.match(runtime, /ensure\('bookmarks'\)/,
     'bookmarks must load without waiting for account initialization');
 
 ['geometry-formulas.html', 'physics-exam.html'].forEach(function (page) {
     const html = fs.readFileSync(path.join(root, page), 'utf8');
-    assert.match(html, /styles\/bookmarks\.css\?v=20260920-1/,
+    assert.match(html, /styles\/bookmarks\.css\?v=20260920-2/,
         page + ' must load the redesigned bookmarks layer');
-    assert.match(html, /bookmarks\.js\?v=20260920-1/,
+    assert.match(html, /bookmarks\.js\?v=20260920-3/,
         page + ' must load the current bookmarks runtime');
 });
 

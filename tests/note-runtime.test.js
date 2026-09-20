@@ -29,7 +29,7 @@ assert.match(componentsCss, /\.knowledge-check-btn \.btn-icon\s*\{[\s\S]*?width:
 assert.match(componentsCss, /\.auth-overlay\.hidden\s*\{\s*display:\s*none\s*!important;/, 'closed dialogs must be hidden from the first paint');
 const featuresCss = fs.readFileSync(path.join(root, 'styles', 'site', 'features.css'), 'utf8');
 assert.match(runtime, /featureStyles:\s*'styles\/site\/features\.css\?v=20260920-3'/, 'feature layer must be cache-busted');
-assert.match(runtime, /bookmarksStyles:\s*'styles\/bookmarks\.css\?v=20260920-1'/, 'bookmarks must have a cache-busted deferred style layer');
+assert.match(runtime, /bookmarksStyles:\s*'styles\/bookmarks\.css\?v=20260920-2'/, 'bookmarks must have a cache-busted deferred style layer');
 assert.match(runtime, /bookmarks:\s*loadBookmarks/, 'bookmarks must be independently available when account services are offline');
 assert.match(runtime, /knowledge:\s*function \(\) \{ return loadStyle\('featureStyles'\)\.then\(function \(\) \{ return loadScript\('knowledge'\); \}\); \}/, 'knowledge check must wait for its modal foundation');
 assert.match(featuresCss, /\.auth-overlay\.hidden\s*\{\s*display:\s*none\s*!important;/, 'closed deferred dialogs must stay outside note-page layout');
