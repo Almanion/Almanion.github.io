@@ -115,6 +115,76 @@ test('knowledge check stays closed until requested and opens as an overlay', asy
     await expectNoHorizontalOverflow(page);
 });
 
+test('bookmarks stay usable offline and behave as a responsive library', async function ({ page }) {
+    await page.addInitScript(function () {
+        localStorage.removeItem('almanion_bookmarks');
+        localStorage.removeItem('almanion_bookmarks_guest');
+    });
+    await page.setViewportSize({ width: 1360, height: 820 });
+    await page.goto('/physics-10.html', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(function () { return window.AlmanionNoteRuntime.ensure('bookmarks'); });
+    await page.evaluate(function () {
+        window.dispatchEvent(new CustomEvent('almanion:content-ready', { detail: { root: document } }));
+    });
+
+    const sourceButtons = page.locator('.main-content .bookmark-btn');
+    await expect(sourceButtons.first()).toBeVisible();
+    await page.evaluate(function () {
+        Array.from(document.querySelectorAll('.main-content .bookmark-btn')).slice(0, 3).forEach(function (button) {
+            button.click();
+        });
+    });
+    await expect(sourceButtons.nth(0)).toHaveClass(/bookmarked/);
+    expect(await page.evaluate(function () {
+        return localStorage.getItem('almanion_bookmarks_guest') || '';
+    })).toContain('__b__');
+
+    const openButton = page.locator('#bookmarksBtn');
+    await expect(openButton).toBeVisible();
+    await openButton.click();
+    await expect(page.locator('#bookmarksOverlay')).toBeVisible();
+    await expect(page.locator('.bm-card')).toHaveCount(3);
+    await page.waitForTimeout(300);
+    const panelGeometry = await page.locator('#bookmarksModal').evaluate(function (element) {
+        const bounds = element.getBoundingClientRect();
+        return { right: Math.round(bounds.right), viewport: innerWidth, height: Math.round(bounds.height) };
+    });
+    expect(panelGeometry.right).toBe(panelGeometry.viewport);
+    expect(panelGeometry.height).toBe(820);
+
+    const firstTitle = await page.locator('.bm-card-copy strong').first().textContent();
+    await page.locator('#bookmarksSearch').fill(firstTitle.slice(0, 8));
+    await expect(page.locator('.bm-card')).toHaveCount(1);
+    await page.locator('.bookmarks-search-clear').click();
+    await expect(page.locator('.bm-card')).toHaveCount(3);
+
+    await page.locator('.bm-card-delete').first().click();
+    await expect(page.locator('.bm-card')).toHaveCount(2);
+    await expect(page.locator('#bookmarksUndo')).toBeVisible();
+    await page.locator('#bookmarksUndo button').click();
+    await expect(page.locator('.bm-card')).toHaveCount(3);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#bookmarksOverlay')).toBeHidden();
+    await expect(openButton).toBeFocused();
+
+    await sourceButtons.nth(0).click();
+    await expect(sourceButtons.nth(0)).not.toHaveClass(/bookmarked/);
+    expect(await sourceButtons.nth(0).locator('.bookmark-icon').evaluate(function (icon) {
+        return getComputedStyle(icon).fill;
+    })).toBe('none');
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.evaluate(function () { window.AlmanionBookmarks.open(); });
+    await expect(page.locator('#bookmarksOverlay')).toBeVisible();
+    await page.waitForTimeout(300);
+    const mobileGeometry = await page.locator('#bookmarksModal').evaluate(function (element) {
+        const bounds = element.getBoundingClientRect();
+        return { left: Math.round(bounds.left), bottom: Math.round(bounds.bottom), width: Math.round(bounds.width) };
+    });
+    expect(mobileGeometry).toEqual({ left: 0, bottom: 844, width: 390 });
+    await expectNoHorizontalOverflow(page);
+});
+
 test('mobile note menu opens and closes without page overflow', async function ({ page }) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/physics.html', { waitUntil: 'domcontentloaded' });

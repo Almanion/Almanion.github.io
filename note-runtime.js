@@ -8,7 +8,8 @@
 
     const loaded = new Map();
     const versions = {
-        featureStyles: 'styles/site/features.css?v=20260913-1',
+        featureStyles: 'styles/site/features.css?v=20260920-1',
+        bookmarksStyles: 'styles/bookmarks.css?v=20260920-1',
         editorStyles: 'styles/note-editor.css?v=20260904-2',
         printStyles: 'styles/print.css?v=20260908-3',
         settings: 'settings.js?v=20260911-1',
@@ -23,7 +24,7 @@
         dataSync: 'data-sync.js?v=20260908-1',
         analytics: 'firebase-analytics.js?v=20260911-1',
         account: 'account.js?v=20260911-1',
-        bookmarks: 'bookmarks.js?v=20260911-1',
+        bookmarks: 'bookmarks.js?v=20260920-1',
         editor: 'note-editor.js?v=20260904-4'
     };
 
@@ -103,12 +104,19 @@
             .then(function () { return Promise.all([loadScript('firebaseDatabase'), loadScript('firebaseAuth')]); })
             .then(function () { return loadScript('firebaseConfig'); });
     }
+    function loadBookmarks() {
+        return Promise.all([
+            loadStyle('featureStyles'),
+            loadStyle('bookmarksStyles'),
+            loadScript('dataSync')
+        ]).then(function () { return loadScript('bookmarks'); });
+    }
     function loadAccount() {
         return Promise.all([loadSettings(), loadFirebase()])
             .then(function () { return loadScript('dataSync'); })
             .then(function () { return Promise.all([loadScript('analytics'), loadScript('account')]); })
             .then(function () { return loadStyle('editorStyles'); })
-            .then(function () { return Promise.all([loadScript('bookmarks'), loadScript('editor')]); });
+            .then(function () { return Promise.all([loadBookmarks(), loadScript('editor')]); });
     }
 
     const features = {
@@ -116,6 +124,7 @@
         search: loadSearch,
         print: function () { return loadStyle('printStyles').then(function () { return loadScript('print'); }); },
         knowledge: function () { return loadStyle('featureStyles').then(function () { return loadScript('knowledge'); }); },
+        bookmarks: loadBookmarks,
         account: loadAccount,
         newyear: function () { return loadScript('newyear'); }
     };
@@ -150,6 +159,7 @@
                 ensure('search'),
                 ensure('print'),
                 ensure('knowledge'),
+                ensure('bookmarks'),
                 ensure('account')
             ]);
         }, 800);

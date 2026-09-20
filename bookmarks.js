@@ -2,66 +2,138 @@
 // ЗАКЛАДКИ
 // ============================================
 
-(function() {
+(function () {
     'use strict';
 
     const VISITOR_ID_KEY = 'almanion_visitor_id';
     const LOCAL_BOOKMARKS_KEY = 'almanion_bookmarks';
+    const RESTORE_TARGET_KEY = 'almanion_bookmark_target';
+    const BLOCK_SELECTOR = [
+        '.definition-box', '.formula-box', '.theorem-box', '.remark-box',
+        '.lemma-box', '.example-box', '.statement-box', '.corollary-box',
+        '.properties-box', '.experiment-box', '.derivation-box', '.system-box'
+    ].join(', ');
+
+    const isEnglish = document.documentElement.lang.toLowerCase().startsWith('en')
+        || /(^|\/)english(?:\.html)?$/i.test(location.pathname);
+    const copy = isEnglish ? {
+        sidebar: 'Bookmarks', title: 'Bookmarks', close: 'Close bookmarks',
+        search: 'Search bookmarks', clear: 'Clear search', all: 'All',
+        current: 'This page', reorder: 'Drag the handle to reorder bookmarks',
+        emptyTitle: 'No bookmarks yet', emptyText: 'Save a useful block and it will appear here.',
+        noResultsTitle: 'Nothing found', noResultsText: 'Try a different query or reset the filter.',
+        open: 'Open block', remove: 'Remove bookmark', add: 'Add bookmark',
+        move: 'Reorder bookmark', undoText: 'Bookmark removed', undo: 'Undo',
+        currentPage: 'Current page', unavailable: 'The original block is unavailable.',
+        types: {
+            definition: 'Definition', formula: 'Formula', theorem: 'Theorem', remark: 'Note',
+            lemma: 'Lemma', example: 'Example', statement: 'Statement', corollary: 'Corollary',
+            properties: 'Properties', experiment: 'Experiment', derivation: 'Derivation', system: 'System', other: 'Block'
+        }
+    } : {
+        sidebar: 'Закладки', title: 'Закладки', close: 'Закрыть закладки',
+        search: 'Поиск по закладкам', clear: 'Очистить поиск', all: 'Все',
+        current: 'Эта страница', reorder: 'Тяните за ручку, чтобы менять порядок закладок',
+        emptyTitle: 'Закладок пока нет', emptyText: 'Сохраните полезный блок — он появится здесь.',
+        noResultsTitle: 'Ничего не найдено', noResultsText: 'Попробуйте другой запрос или сбросьте фильтр.',
+        open: 'Перейти к блоку', remove: 'Удалить закладку', add: 'Добавить в закладки',
+        move: 'Изменить порядок закладки', undoText: 'Закладка удалена', undo: 'Отменить',
+        currentPage: 'Текущая страница', unavailable: 'Исходный блок больше недоступен.',
+        types: {
+            definition: 'Определение', formula: 'Формула', theorem: 'Теорема', remark: 'Замечание',
+            lemma: 'Лемма', example: 'Пример', statement: 'Утверждение', corollary: 'Следствие',
+            properties: 'Свойства', experiment: 'Опыт', derivation: 'Вывод', system: 'Система', other: 'Блок'
+        }
+    };
+
     let db = null;
     let auth = null;
+    let authSubscribed = false;
     let bookmarkRef = null;
     let bookmarkStore = null;
     let bookmarkOwnerUid = null;
     let bookmarkCacheKey = LOCAL_BOOKMARKS_KEY + '_guest';
-    let visitorId = null;
     let bookmarks = {};
-    let bookmarksPanelOpen = false;
-    let bmDragging = false;
-    let bmJustDragged = false; // подавляет «клик» по карточке сразу после перетаскивания
-    let lastLocalWriteAt = 0;  // окно, в котором эхо Firebase не пересобирает панель
-    let lazyObserver = null;
+    let panelOpen = false;
+    let panelScope = 'all';
+    let panelQuery = '';
+    let lastFocusedElement = null;
+    let lastRemoved = null;
+    let lastLocalWriteAt = 0;
+    let restoreAttempts = 0;
+    let restoreTimer = 0;
+    let savedBodyOverflow = '';
 
-    // Безопасные обёртки для localStorage — приватный режим и quota
-    const safeGet = (window.safeStorageGet) || function(k){ try { return localStorage.getItem(k); } catch(_) { return null; } };
-    const safeSet = (window.safeStorageSet) || function(k,v){ try { localStorage.setItem(k,v); return true; } catch(_) { return false; } };
+    const safeGet = window.safeStorageGet || function (key) {
+        try { return localStorage.getItem(key); } catch (_) { return null; }
+    };
+    const safeSet = window.safeStorageSet || function (key, value) {
+        try { localStorage.setItem(key, value); return true; } catch (_) { return false; }
+    };
+
+    function normalizeText(value) {
+        return String(value || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function normalizePath(value) {
+        try {
+            const url = new URL(value || location.pathname, location.href);
+            return url.pathname.replace(/\/+$/, '') || '/';
+        } catch (_) {
+            return String(value || '').split(/[?#]/)[0].replace(/\/+$/, '') || '/';
+        }
+    }
+
+    function pageKey() {
+        const file = location.pathname.split('/').pop() || 'index.html';
+        return file.replace(/\.html$/i, '') || 'index';
+    }
 
     function getVisitorId() {
         let id = safeGet(VISITOR_ID_KEY);
         if (!id) {
-            id = 'v_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+            id = 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
             safeSet(VISITOR_ID_KEY, id);
         }
         return id;
     }
 
     function initFirebase() {
-        if (typeof firebase === 'undefined') return false;
-        if (typeof firebaseConfig === 'undefined' || !firebaseConfig || firebaseConfig.apiKey === "ВСТАВЬ_СВОЙ_API_KEY") return false;
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        if (typeof firebase === 'undefined' || typeof firebaseConfig === 'undefined' || !firebaseConfig) return false;
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         db = firebase.database();
         auth = typeof firebase.auth === 'function' ? firebase.auth() : null;
         return true;
-    }
-
-    function getBookmarksRef() {
-        return bookmarkRef;
     }
 
     function syncApi() {
         return window.AlmanionDataSync || null;
     }
 
+    function bookmarkUpdatedAt(entry) {
+        return Number(entry && (entry.updatedAt || entry.timestamp)) || 0;
+    }
+
+    function mergeBookmarkStores(local, remote) {
+        const api = syncApi();
+        if (api) return api.mergeRecords(local, remote);
+        const merged = {};
+        new Set(Object.keys(local || {}).concat(Object.keys(remote || {}))).forEach(function (id) {
+            const a = local && local[id];
+            const b = remote && remote[id];
+            if (!a) merged[id] = b;
+            else if (!b) merged[id] = a;
+            else merged[id] = bookmarkUpdatedAt(b) >= bookmarkUpdatedAt(a) ? b : a;
+        });
+        return merged;
+    }
+
     function handleBookmarkStoreChange(nextBookmarks, detail) {
         bookmarks = nextBookmarks || {};
-        if (detail && detail.type === 'error') {
-            console.warn('Almanion bookmarks: sync deferred.', detail.error);
-        }
+        if (detail && detail.type === 'error') console.warn('Almanion bookmarks: sync deferred.', detail.error);
         refreshAllButtons();
-        if (bookmarksPanelOpen && !bmDragging && (Date.now() - lastLocalWriteAt > 1200)) {
-            renderBookmarksPanel();
-        }
+        refreshSidebarCount();
+        if (panelOpen && Date.now() - lastLocalWriteAt > 500) renderBookmarksList();
     }
 
     function openBookmarkStore(owner, key, migrateGuest) {
@@ -90,939 +162,809 @@
             bookmarks = bookmarkStore
                 ? bookmarkStore.snapshot({ includeDeleted: true })
                 : JSON.parse(guest || legacy || '{}');
-        } catch { bookmarks = {}; }
-
-        if (auth) auth.onAuthStateChanged(connectBookmarksAccount);
-        window.addEventListener('almanion-sync-retry', function () {
-            if (bookmarkStore) bookmarkStore.flush();
-        });
+        } catch (_) {
+            bookmarks = {};
+        }
+        refreshSidebarCount();
     }
 
-    function bookmarkUpdatedAt(entry) {
-        return Number(entry && (entry.updatedAt || entry.timestamp)) || 0;
-    }
-
-    function mergeBookmarkStores(local, remote) {
-        if (syncApi()) return syncApi().mergeRecords(local, remote);
-        const merged = {};
-        new Set(Object.keys(local || {}).concat(Object.keys(remote || {}))).forEach(id => {
-            const a = local && local[id];
-            const b = remote && remote[id];
-            if (!a) merged[id] = b;
-            else if (!b) merged[id] = a;
-            else merged[id] = bookmarkUpdatedAt(b) >= bookmarkUpdatedAt(a) ? b : a;
-        });
-        return merged;
+    function subscribeToAccount() {
+        initFirebase();
+        if (auth && !authSubscribed) {
+            authSubscribed = true;
+            auth.onAuthStateChanged(connectBookmarksAccount, function () { connectBookmarksAccount(null); });
+            return;
+        }
+        const knownUser = window.AlmanionAccount && typeof window.AlmanionAccount.getUser === 'function'
+            ? window.AlmanionAccount.getUser()
+            : null;
+        if (knownUser) connectBookmarksAccount(knownUser);
     }
 
     function connectBookmarksAccount(user) {
+        const nextUid = user && user.uid ? user.uid : null;
+        if (nextUid === bookmarkOwnerUid && bookmarkStore) return;
+
         if (bookmarkStore) bookmarkStore.disconnect();
         else safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
         if (bookmarkRef) {
             try { bookmarkRef.off(); } catch (_) {}
             bookmarkRef = null;
         }
-        const previousOwnerUid = bookmarkOwnerUid;
-        bookmarkOwnerUid = user && user.uid ? user.uid : null;
-        bookmarkCacheKey = bookmarkOwnerUid
-            ? LOCAL_BOOKMARKS_KEY + '_uid_' + bookmarkOwnerUid
+
+        const previousUid = bookmarkOwnerUid;
+        bookmarkOwnerUid = nextUid;
+        bookmarkCacheKey = nextUid
+            ? LOCAL_BOOKMARKS_KEY + '_uid_' + nextUid
             : LOCAL_BOOKMARKS_KEY + '_guest';
 
         let cachedForOwner = {};
         if (syncApi()) {
-            bookmarkStore = openBookmarkStore(
-                bookmarkOwnerUid || 'guest',
-                bookmarkCacheKey,
-                !!bookmarkOwnerUid && !previousOwnerUid
-            );
+            bookmarkStore = openBookmarkStore(nextUid || 'guest', bookmarkCacheKey, !!nextUid && !previousUid);
             bookmarks = bookmarkStore.snapshot({ includeDeleted: true });
         } else {
             try { cachedForOwner = JSON.parse(safeGet(bookmarkCacheKey) || '{}'); } catch (_) {}
-            if (bookmarkOwnerUid && !previousOwnerUid) {
-                // Первые локальные закладки гостя переносим в вошедший аккаунт.
-                bookmarks = mergeBookmarkStores(cachedForOwner, bookmarks);
-            } else {
-                bookmarks = cachedForOwner;
-            }
+            bookmarks = nextUid && !previousUid ? mergeBookmarkStores(cachedForOwner, bookmarks) : cachedForOwner;
         }
 
-        if (!db || !bookmarkOwnerUid) {
+        if (!db || !nextUid) {
             refreshAllButtons();
-            if (bookmarksPanelOpen) renderBookmarksPanel();
+            refreshSidebarCount();
+            if (panelOpen) renderBookmarksList();
             return;
         }
 
-        bookmarkRef = db.ref('bookmarks/' + bookmarkOwnerUid);
-        const ref = bookmarkRef;
+        bookmarkRef = db.ref('bookmarks/' + nextUid);
         if (bookmarkStore) {
-            bookmarkStore.connect(ref);
-            return;
+            bookmarkStore.connect(bookmarkRef);
+        } else {
+            const ref = bookmarkRef;
+            ref.once('value').then(function (snapshot) {
+                if (bookmarkRef !== ref) return null;
+                bookmarks = mergeBookmarkStores(bookmarks, snapshot.val() || {});
+                safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
+                return ref.update(bookmarks);
+            }).then(function () {
+                if (bookmarkRef !== ref) return;
+                ref.on('value', function (snapshot) {
+                    bookmarks = mergeBookmarkStores(bookmarks, snapshot.val() || {});
+                    safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
+                    handleBookmarkStoreChange(bookmarks);
+                }, function () {});
+            }).catch(function () {});
         }
-        ref.once('value').then(snap => {
-            if (bookmarkRef !== ref) return null;
-            bookmarks = mergeBookmarkStores(bookmarks, snap.val() || {});
-            safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
-            return ref.update(bookmarks);
-        }).then(() => {
-            if (bookmarkRef !== ref) return;
-            ref.on('value', applyRemoteBookmarks, () => {});
-            refreshAllButtons();
-            if (bookmarksPanelOpen) renderBookmarksPanel();
-        }).catch(() => {
-            refreshAllButtons();
-        });
-    }
-
-    function applyRemoteBookmarks(snap) {
-        bookmarks = mergeBookmarkStores(bookmarks, snap.val() || {});
-        safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
         refreshAllButtons();
-        if (bookmarksPanelOpen && !bmDragging && (Date.now() - lastLocalWriteAt > 1200)) {
-            renderBookmarksPanel();
-        }
+        refreshSidebarCount();
     }
 
     function hasBookmark(id) {
         return !!(bookmarks[id] && !bookmarks[id].deleted);
     }
 
-    function saveBookmark(id, data) {
-        const value = { ...data, deleted: false, updatedAt: Date.now() };
+    function saveBookmark(id, data, options) {
+        const updatedAt = Date.now();
+        const value = Object.assign({}, data, { deleted: false, updatedAt: updatedAt });
         bookmarks[id] = value;
-        lastLocalWriteAt = Date.now();
+        lastLocalWriteAt = updatedAt;
         if (bookmarkStore) {
-            bookmarkStore.set(id, value, { updatedAt: value.updatedAt });
+            bookmarkStore.set(id, value, { updatedAt: updatedAt, flush: !(options && options.deferFlush) });
             bookmarks = bookmarkStore.snapshot({ includeDeleted: true });
-            return;
+        } else {
+            if (bookmarkRef) bookmarkRef.child(id).set(value).catch(function () {});
+            safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
         }
-        const ref = getBookmarksRef();
-        if (ref) {
-            ref.child(id).set(bookmarks[id]).catch(() => {});
-        }
-        safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
+        refreshSidebarCount();
     }
 
     function removeBookmark(id) {
-        const value = {
-            deleted: true,
-            updatedAt: Date.now(),
-            timestamp: bookmarkUpdatedAt(bookmarks[id])
-        };
+        const updatedAt = Date.now();
+        const value = { deleted: true, updatedAt: updatedAt, timestamp: bookmarkUpdatedAt(bookmarks[id]) };
         bookmarks[id] = value;
-        lastLocalWriteAt = Date.now();
+        lastLocalWriteAt = updatedAt;
         if (bookmarkStore) {
-            bookmarkStore.remove(id, value, { updatedAt: value.updatedAt });
+            bookmarkStore.remove(id, value, { updatedAt: updatedAt });
             bookmarks = bookmarkStore.snapshot({ includeDeleted: true });
-            return;
+        } else {
+            if (bookmarkRef) bookmarkRef.child(id).set(value).catch(function () {});
+            safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
         }
-        const ref = getBookmarksRef();
-        if (ref) {
-            ref.child(id).set(bookmarks[id]).catch(() => {});
-        }
-        safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
+        refreshSidebarCount();
+    }
+
+    function getBlockKey(box) {
+        return normalizeText(box && (box.dataset.noteBlock || box.dataset.kcId));
+    }
+
+    function isTopLevelBlock(box) {
+        const parentBlock = box.parentElement && box.parentElement.closest(BLOCK_SELECTOR);
+        return !parentBlock;
+    }
+
+    function positionalBookmarkId(box) {
+        const topic = box.closest('.topic[id], .content-section[id]');
+        const topicId = topic ? topic.id : 'unknown';
+        const boxes = topic ? Array.from(topic.querySelectorAll(BLOCK_SELECTOR)).filter(isTopLevelBlock) : [];
+        return pageKey() + '__' + topicId + '_' + boxes.indexOf(box);
     }
 
     function generateBookmarkId(box) {
-        const topic = box.closest('.topic[id], .content-section[id]');
-        const topicId = topic ? topic.id : 'unknown';
-        const pageId = (location.pathname.split('/').pop() || 'index').replace(/\.html$/i, '');
-        const boxes = topic ? Array.from(topic.querySelectorAll('.definition-box, .formula-box, .theorem-box, .remark-box, .lemma-box, .example-box, .statement-box, .corollary-box, .properties-box, .experiment-box, .derivation-box, .system-box')) : [];
-        const idx = boxes.indexOf(box);
-        return pageId + '__' + topicId + '_' + idx;
+        const key = getBlockKey(box);
+        return key ? pageKey() + '__b__' + encodeURIComponent(key) : positionalBookmarkId(box);
     }
 
-    function migrateLegacyBookmark(box, newId) {
+    function pageMatches(entry) {
+        return !entry.page || normalizePath(entry.page) === normalizePath(location.pathname);
+    }
+
+    function migrateLegacyBookmark(box, stableId) {
+        if (bookmarks[stableId] && !bookmarks[stableId].deleted) return;
         const topic = box.closest('.topic[id], .content-section[id]');
         if (!topic) return;
-        const boxes = Array.from(topic.querySelectorAll('.definition-box, .formula-box, .theorem-box, .remark-box, .lemma-box, .example-box, .statement-box, .corollary-box, .properties-box, .experiment-box, .derivation-box, .system-box'));
-        const legacyId = topic.id + '_' + boxes.indexOf(box);
+        const boxes = Array.from(topic.querySelectorAll(BLOCK_SELECTOR)).filter(isTopLevelBlock);
+        const index = boxes.indexOf(box);
+        const exactIds = [pageKey() + '__' + topic.id + '_' + index, topic.id + '_' + index];
+        const preview = normalizeText(getBookmarkPreview(box)).toLocaleLowerCase();
+        let legacyId = exactIds.find(function (id) {
+            const item = bookmarks[id];
+            return item && !item.deleted && pageMatches(item)
+                && (!item.preview || normalizeText(item.preview).toLocaleLowerCase() === preview);
+        });
+        if (!legacyId) {
+            legacyId = Object.keys(bookmarks).find(function (id) {
+                const item = bookmarks[id];
+                return item && !item.deleted && !id.includes('__b__') && pageMatches(item)
+                    && (!item.topicId || item.topicId === topic.id)
+                    && normalizeText(item.preview).toLocaleLowerCase() === preview;
+            });
+        }
+        if (!legacyId) return;
         const legacy = bookmarks[legacyId];
-        if (!legacy || legacy.deleted || bookmarks[newId]) return;
-        const samePage = !legacy.page || legacy.page === location.pathname || legacy.page.endsWith('/' + (location.pathname.split('/').pop() || ''));
-        if (!samePage || (legacy.topicId && legacy.topicId !== topic.id)) return;
-        saveBookmark(newId, { ...legacy, timestamp: legacy.timestamp || Date.now() });
+        saveBookmark(stableId, Object.assign({}, legacy, bookmarkMetadata(box), {
+            timestamp: legacy.timestamp || Date.now()
+        }), { deferFlush: true });
         removeBookmark(legacyId);
     }
 
     function getBookmarkPreview(box) {
+        return normalizeText(box && (box.innerText || box.textContent)).slice(0, 320);
+    }
+
+    function getBookmarkTitle(box) {
         const strong = box.querySelector('strong');
-        if (strong) return strong.textContent.trim().substring(0, 80);
-        const text = box.textContent.trim().replace(/\s+/g, ' ');
-        return text.substring(0, 80);
+        if (strong && normalizeText(strong.textContent)) return normalizeText(strong.textContent).slice(0, 140);
+        const preview = getBookmarkPreview(box);
+        return preview.split(/[.!?]\s/)[0].slice(0, 140) || copy.types.other;
+    }
+
+    function getBookmarkExcerpt(box, title) {
+        let preview = getBookmarkPreview(box);
+        if (title && preview.toLocaleLowerCase().startsWith(title.toLocaleLowerCase())) {
+            preview = preview.slice(title.length).replace(/^\s*(?:—|–|-|:|\.)\s*/, '');
+        }
+        return preview.slice(0, 260);
     }
 
     function getBoxType(box) {
-        if (box.classList.contains('definition-box')) return 'definition';
-        if (box.classList.contains('formula-box')) return 'formula';
-        if (box.classList.contains('theorem-box')) return 'theorem';
-        if (box.classList.contains('remark-box')) return 'remark';
-        if (box.classList.contains('lemma-box')) return 'lemma';
-        if (box.classList.contains('example-box')) return 'example';
-        if (box.classList.contains('statement-box')) return 'statement';
-        if (box.classList.contains('corollary-box')) return 'corollary';
-        if (box.classList.contains('properties-box')) return 'properties';
-        if (box.classList.contains('experiment-box')) return 'experiment';
-        if (box.classList.contains('derivation-box')) return 'derivation';
-        if (box.classList.contains('system-box')) return 'system';
-        return 'other';
+        const types = ['definition', 'formula', 'theorem', 'remark', 'lemma', 'example', 'statement', 'corollary', 'properties', 'experiment', 'derivation', 'system'];
+        return types.find(function (type) { return box.classList.contains(type + '-box'); }) || 'other';
     }
 
-    function getTypeLabel(type) {
-        const labels = {
-            definition: 'Определение',
-            formula: 'Формула',
-            theorem: 'Теорема',
-            remark: 'Замечание',
-            lemma: 'Лемма',
-            example: 'Пример',
-            statement: 'Утверждение',
-            corollary: 'Следствие',
-            properties: 'Свойства',
-            experiment: 'Опыт',
-            derivation: 'Вывод',
-            system: 'Система'
+    function getTopicTitle(topic) {
+        if (!topic) return '';
+        const heading = topic.querySelector(':scope > .topic-title, :scope > h1, :scope > h2, :scope > h3');
+        return normalizeText(heading && heading.textContent);
+    }
+
+    function cleanPageTitle() {
+        const subject = document.querySelector('.subject-header h1, .subject-title, .page-title');
+        if (subject && normalizeText(subject.textContent)) return normalizeText(subject.textContent);
+        return normalizeText(document.title).split(/\s+[|·—]\s+/)[0] || location.pathname;
+    }
+
+    function bookmarkMetadata(box) {
+        const topic = box.closest('.topic[id], .content-section[id]');
+        const title = getBookmarkTitle(box);
+        return {
+            page: location.pathname,
+            pageTitle: cleanPageTitle(),
+            topicId: topic ? topic.id : '',
+            topicTitle: getTopicTitle(topic),
+            blockKey: getBlockKey(box),
+            title: title,
+            excerpt: getBookmarkExcerpt(box, title),
+            preview: getBookmarkPreview(box),
+            type: getBoxType(box)
         };
-        return labels[type] || 'Блок';
     }
 
-    function getTypeColor(type) {
-        const colors = {
-            definition: '#3b82f6',
-            formula: '#8b5cf6',
-            theorem: '#f59e0b',
-            remark: '#10b981',
-            lemma: '#f97316',
-            example: '#06b6d4',
-            statement: '#ec4899',
-            corollary: '#6366f1',
-            properties: '#14b8a6',
-            experiment: '#ef4444',
-            derivation: '#a855f7',
-            system: '#0ea5e9'
-        };
-        return colors[type] || '#6b7280';
+    function bookmarkSvg(filled) {
+        return '<svg class="bookmark-icon" viewBox="0 0 24 24" fill="' + (filled ? 'currentColor' : 'none')
+            + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+            + '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
     }
 
-    function addBookmarkButtons(root = document) {
-        const selector = '.definition-box, .formula-box, .theorem-box, .remark-box, .lemma-box, .example-box, .statement-box, .corollary-box, .properties-box, .experiment-box, .derivation-box, .system-box';
-        root.querySelectorAll(selector).forEach(box => {
-            if (box.querySelector('.bookmark-btn')) return;
-            if (box.closest('.definition-box, .formula-box, .theorem-box, .remark-box, .properties-box, .experiment-box, .derivation-box, .system-box')) {
-                if (box.parentElement.closest('.definition-box, .formula-box, .theorem-box, .remark-box, .properties-box, .experiment-box, .derivation-box, .system-box')) return;
-            }
+    function setBookmarkButtonState(button, active) {
+        button.classList.toggle('bookmarked', active);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+        button.setAttribute('aria-label', active ? copy.remove : copy.add);
+        button.title = active ? copy.remove : copy.add;
+        button.innerHTML = bookmarkSvg(active);
+    }
 
-            const btn = document.createElement('button');
-            btn.className = 'bookmark-btn';
-            const bmId = generateBookmarkId(box);
-            migrateLegacyBookmark(box, bmId);
-            btn.dataset.bmId = bmId;
-            btn.innerHTML = bookmarkSvg(hasBookmark(bmId));
-            if (hasBookmark(bmId)) btn.classList.add('bookmarked');
-            btn.setAttribute('aria-label', hasBookmark(bmId) ? 'Удалить из закладок' : 'Добавить в закладки');
+    function addBookmarkButtons(root) {
+        (root || document).querySelectorAll(BLOCK_SELECTOR).forEach(function (box) {
+            if (!isTopLevelBlock(box) || box.querySelector(':scope > .bookmark-btn')) return;
+            const id = generateBookmarkId(box);
+            migrateLegacyBookmark(box, id);
 
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const id = btn.dataset.bmId;
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'bookmark-btn';
+            button.dataset.bmId = id;
+            setBookmarkButtonState(button, hasBookmark(id));
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
                 if (hasBookmark(id)) {
                     removeBookmark(id);
-                    btn.innerHTML = bookmarkSvg(false);
-                    btn.classList.remove('bookmarked');
-                    keepRemovedButtonVisuallyEmpty(btn);
-                    btn.setAttribute('aria-label', 'Добавить в закладки');
+                    setBookmarkButtonState(button, false);
                 } else {
-                    const topic = box.closest('.topic[id], .content-section[id]');
-                    const topicTitle = topic ? (topic.querySelector('.topic-title')?.textContent.trim() || '') : '';
-                    saveBookmark(id, {
-                        page: location.pathname,
-                        pageTitle: document.title,
-                        topicId: topic ? topic.id : '',
-                        topicTitle: topicTitle,
-                        preview: getBookmarkPreview(box),
-                        type: getBoxType(box),
-                        timestamp: Date.now()
-                    });
-                    btn.innerHTML = bookmarkSvg(true);
-                    btn.classList.remove('bookmark-just-removed');
-                    btn.classList.add('bookmarked');
-                    btn.setAttribute('aria-label', 'Удалить из закладок');
-                    btn.style.transform = 'scale(1.3)';
-                    setTimeout(() => btn.style.transform = '', 200);
+                    saveBookmark(id, Object.assign(bookmarkMetadata(box), { timestamp: Date.now() }));
+                    setBookmarkButtonState(button, true);
+                    button.classList.remove('bookmark-pop');
+                    requestAnimationFrame(function () { button.classList.add('bookmark-pop'); });
                 }
-                if (bookmarksPanelOpen) renderBookmarksPanel();
+                if (panelOpen) renderBookmarksList();
             });
-
             box.style.position = 'relative';
-            box.appendChild(btn);
+            box.appendChild(button);
         });
     }
 
     function initLazyBookmarkButtons() {
         const topics = Array.from(document.querySelectorAll('.main-content .topic[id]'));
         if (!topics.length || !('IntersectionObserver' in window)) {
-            addBookmarkButtons();
+            addBookmarkButtons(document);
             return;
         }
-
-        const topicObserver = new IntersectionObserver(entries => {
-            entries.forEach(entry => {
+        const observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
                 if (!entry.isIntersecting) return;
-                topicObserver.unobserve(entry.target);
+                observer.unobserve(entry.target);
                 addBookmarkButtons(entry.target);
             });
-        }, { rootMargin: '700px 0px' });
-
-        const hashTarget = window.location.hash
-            ? document.getElementById(decodeURIComponent(window.location.hash.slice(1)))?.closest('.topic[id]')
+        }, { rootMargin: '900px 0px' });
+        const hashTarget = location.hash
+            ? document.getElementById(decodeURIComponent(location.hash.slice(1)))?.closest('.topic[id]')
             : null;
         const initial = hashTarget || topics[0];
-        addBookmarkButtons(initial);
-        topics.forEach(topic => {
-            if (topic !== initial) topicObserver.observe(topic);
-        });
-
-        window.addEventListener('almanion:topic-visible', event => {
-            const topic = event.detail?.topic;
+        if (initial) addBookmarkButtons(initial);
+        topics.forEach(function (topic) { if (topic !== initial) observer.observe(topic); });
+        window.addEventListener('almanion:topic-visible', function (event) {
+            const topic = event.detail && event.detail.topic;
             if (!topic) return;
-            topicObserver.unobserve(topic);
+            observer.unobserve(topic);
             addBookmarkButtons(topic);
         });
     }
 
-    function bookmarkSvg(filled) {
-        // Закладка — лента/тег. filled = заполнена цветом, иначе только обводка.
-        return '<svg class="bookmark-icon" viewBox="0 0 24 24" fill="' + (filled ? 'currentColor' : 'none')
-             + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
-             + '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
-    }
-
-    function keepRemovedButtonVisuallyEmpty(btn) {
-        if (!btn) return;
-        btn.classList.add('bookmark-just-removed');
-
-        // A clicked control may keep :hover on touch screens (and while the
-        // mouse remains over it). Keep the icon empty until a genuinely new
-        // interaction starts, then restore the normal hover preview.
-        const clear = () => {
-            btn.classList.remove('bookmark-just-removed');
-            btn.removeEventListener('pointerenter', clear);
-            btn.removeEventListener('blur', clear);
-        };
-        btn.addEventListener('pointerenter', clear);
-        btn.addEventListener('blur', clear);
-    }
-
     function refreshAllButtons() {
-        document.querySelectorAll('.bookmark-btn').forEach(btn => {
-            const id = btn.dataset.bmId;
-            if (hasBookmark(id)) {
-                btn.innerHTML = bookmarkSvg(true);
-                btn.classList.remove('bookmark-just-removed');
-                btn.classList.add('bookmarked');
-                btn.setAttribute('aria-label', 'Удалить из закладок');
-            } else {
-                btn.innerHTML = bookmarkSvg(false);
-                btn.classList.remove('bookmarked');
-                btn.setAttribute('aria-label', 'Добавить в закладки');
-            }
+        document.querySelectorAll('.bookmark-btn').forEach(function (button) {
+            setBookmarkButtonState(button, hasBookmark(button.dataset.bmId));
         });
-    }
-
-    function addBookmarksSidebarButton() {
-        let container = document.querySelector('.sidebar-actions');
-        if (!container) {
-            const navMenu = document.querySelector('.nav-menu');
-            if (!navMenu) return;
-            container = navMenu;
-        }
-
-        const btn = document.createElement('button');
-        btn.className = 'knowledge-check-btn';
-        btn.id = 'bookmarksBtn';
-        btn.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span>Закладки</span>';
-
-        btn.addEventListener('click', () => {
-            toggleBookmarksPanel();
-        });
-
-        container.appendChild(btn);
-    }
-
-    function toggleBookmarksPanel() {
-        const existing = document.getElementById('bookmarksOverlay');
-        if (existing && !existing.classList.contains('hidden')) {
-            existing.classList.add('hidden');
-            bookmarksPanelOpen = false;
-            return;
-        }
-        bookmarksPanelOpen = true;
-        renderBookmarksPanel();
-    }
-
-    function closeBookmarksPanel() {
-        bmDragging = false;
-        if (lazyObserver) { lazyObserver.disconnect(); lazyObserver = null; }
-        const overlay = document.getElementById('bookmarksOverlay');
-        if (overlay) {
-            overlay.classList.add('hidden');
-            bookmarksPanelOpen = false;
-        }
-    }
-
-    function initBookmarksSwipe() {
-        const overlay = document.getElementById('bookmarksOverlay');
-        if (!overlay || overlay.dataset.swipeInit) return;
-        overlay.dataset.swipeInit = 'true';
-
-        let startY = 0, currentY = 0, tracking = false, activated = false;
-        const DEAD_ZONE = 15;
-
-        function getModal() { return document.getElementById('bookmarksModal'); }
-
-        overlay.addEventListener('touchstart', (e) => {
-            if (bmDragging || window.innerWidth > 768) return;
-            const modal = getModal();
-            if (!modal || modal.scrollTop > 5) return;
-            startY = e.touches[0].clientY;
-            currentY = startY;
-            tracking = true;
-            activated = false;
-        }, { passive: true });
-
-        overlay.addEventListener('touchmove', (e) => {
-            if (!tracking || bmDragging) { tracking = false; return; }
-            const modal = getModal();
-            if (!modal) return;
-            currentY = e.touches[0].clientY;
-            const deltaY = currentY - startY;
-            if (!activated) {
-                if (deltaY > DEAD_ZONE) {
-                    activated = true;
-                    startY = currentY;
-                    modal.style.transition = 'none';
-                }
-                return;
-            }
-            const swipeDelta = currentY - startY;
-            if (swipeDelta > 0) {
-                e.preventDefault();
-                modal.style.transform = `translateY(${swipeDelta}px)`;
-                overlay.style.background = `rgba(0, 0, 0, ${Math.max(0, 0.75 - swipeDelta / 400)})`;
-            }
-        }, { passive: false });
-
-        overlay.addEventListener('touchend', () => {
-            if (!tracking) return;
-            tracking = false;
-            if (!activated) return;
-            activated = false;
-            const modal = getModal();
-            if (!modal) return;
-            const deltaY = currentY - startY;
-            if (deltaY > 60) {
-                modal.style.transition = 'transform 0.25s ease-out';
-                modal.style.transform = 'translateY(100vh)';
-                overlay.style.transition = 'background 0.25s ease-out';
-                overlay.style.background = 'rgba(0, 0, 0, 0)';
-                setTimeout(() => {
-                    closeBookmarksPanel();
-                    modal.style.transition = '';
-                    modal.style.transform = '';
-                    overlay.style.transition = '';
-                    overlay.style.background = '';
-                }, 250);
-            } else {
-                modal.style.transition = 'transform 0.25s ease-out';
-                modal.style.transform = '';
-                overlay.style.transition = 'background 0.25s ease-out';
-                overlay.style.background = '';
-                setTimeout(() => {
-                    modal.style.transition = '';
-                    overlay.style.transition = '';
-                }, 250);
-            }
-        });
-    }
-
-    function findBoxById(bmId) {
-        const scopedId = String(bmId || '').includes('__')
-            ? String(bmId).slice(String(bmId).indexOf('__') + 2)
-            : String(bmId || '');
-        const parts = scopedId.split('_');
-        const idx = parseInt(parts.pop());
-        const topicId = parts.join('_');
-        const topic = document.getElementById(topicId);
-        if (!topic) return null;
-        const boxes = topic.querySelectorAll('.definition-box, .formula-box, .theorem-box, .remark-box, .lemma-box, .example-box, .statement-box, .corollary-box, .properties-box, .experiment-box, .derivation-box, .system-box');
-        return boxes[idx] || null;
     }
 
     function sortedEntries() {
         return Object.entries(bookmarks)
-            .filter(([, data]) => data && !data.deleted)
-            .map(([id, data]) => ({ id, ...data }))
-            .sort((a, b) => {
-                const oa = typeof a.order === 'number' ? a.order : Infinity;
-                const ob = typeof b.order === 'number' ? b.order : Infinity;
-                if (oa !== ob) return oa - ob;
+            .filter(function (pair) { return pair[1] && !pair[1].deleted; })
+            .map(function (pair) { return Object.assign({ id: pair[0] }, pair[1]); })
+            .sort(function (a, b) {
+                const aOrder = typeof a.order === 'number' ? a.order : Infinity;
+                const bOrder = typeof b.order === 'number' ? b.order : Infinity;
+                if (aOrder !== bOrder) return aOrder - bOrder;
                 return (b.timestamp || 0) - (a.timestamp || 0);
             });
     }
 
+    function currentPageEntries(entries) {
+        return entries.filter(function (entry) { return pageMatches(entry); });
+    }
+
+    function refreshSidebarCount() {
+        const badge = document.querySelector('#bookmarksBtn .bookmarks-sidebar-count');
+        if (!badge) return;
+        const count = sortedEntries().length;
+        badge.textContent = String(count);
+        badge.hidden = count === 0;
+    }
+
+    function addBookmarksSidebarButton() {
+        if (document.getElementById('bookmarksBtn')) return;
+        const container = document.querySelector('.sidebar-actions') || document.querySelector('.nav-menu');
+        if (!container) return;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'knowledge-check-btn bookmarks-sidebar-button';
+        button.id = 'bookmarksBtn';
+        button.setAttribute('aria-haspopup', 'dialog');
+        button.innerHTML = bookmarkSvg(false) + '<span>' + copy.sidebar + '</span><span class="bookmarks-sidebar-count" hidden></span>';
+        button.addEventListener('click', openBookmarksPanel);
+        container.appendChild(button);
+        refreshSidebarCount();
+    }
+
+    function ensurePanel() {
+        let overlay = document.getElementById('bookmarksOverlay');
+        if (overlay) return overlay;
+
+        overlay = document.createElement('div');
+        overlay.id = 'bookmarksOverlay';
+        overlay.className = 'auth-overlay bookmarks-overlay hidden';
+        overlay.setAttribute('aria-hidden', 'true');
+        overlay.innerHTML = [
+            '<section id="bookmarksModal" class="bookmarks-panel" role="dialog" aria-modal="true" aria-labelledby="bookmarksTitle">',
+            '  <div class="bookmarks-grabber" aria-hidden="true"></div>',
+            '  <header class="bookmarks-header">',
+            '    <div class="bookmarks-heading-icon">' + bookmarkSvg(false) + '</div>',
+            '    <div class="bookmarks-heading-copy"><h2 id="bookmarksTitle">' + copy.title + '</h2><p><span id="bookmarksTotal">0</span></p></div>',
+            '    <button type="button" class="bookmarks-close" aria-label="' + copy.close + '"><span aria-hidden="true">×</span></button>',
+            '  </header>',
+            '  <div class="bookmarks-tools">',
+            '    <label class="bookmarks-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="bookmarksSearch" type="search" autocomplete="off" placeholder="' + copy.search + '" aria-label="' + copy.search + '"><button type="button" class="bookmarks-search-clear" aria-label="' + copy.clear + '" hidden>×</button></label>',
+            '    <div class="bookmarks-scope" role="group" aria-label="' + copy.title + '">',
+            '      <button type="button" data-bm-scope="all" aria-pressed="true"><span>' + copy.all + '</span><b id="bookmarksAllCount">0</b></button>',
+            '      <button type="button" data-bm-scope="current" aria-pressed="false"><span>' + copy.current + '</span><b id="bookmarksCurrentCount">0</b></button>',
+            '    </div>',
+            '    <p class="bookmarks-reorder-hint" id="bookmarksReorderHint">' + copy.reorder + '</p>',
+            '  </div>',
+            '  <div class="bookmarks-list" id="bookmarksList" tabindex="-1"></div>',
+            '  <div class="bookmarks-undo" id="bookmarksUndo" role="status" aria-live="polite" hidden><span>' + copy.undoText + '</span><button type="button">' + copy.undo + '</button></div>',
+            '  <p class="bookmarks-live" id="bookmarksLive" aria-live="polite"></p>',
+            '</section>'
+        ].join('');
+        document.body.appendChild(overlay);
+
+        overlay.addEventListener('pointerdown', function (event) {
+            if (event.target === overlay) closeBookmarksPanel();
+        });
+        overlay.querySelector('.bookmarks-close').addEventListener('click', closeBookmarksPanel);
+        const search = overlay.querySelector('#bookmarksSearch');
+        const clear = overlay.querySelector('.bookmarks-search-clear');
+        search.addEventListener('input', function () {
+            panelQuery = normalizeText(search.value).toLocaleLowerCase();
+            clear.hidden = !search.value;
+            renderBookmarksList();
+        });
+        clear.addEventListener('click', function () {
+            search.value = '';
+            panelQuery = '';
+            clear.hidden = true;
+            search.focus();
+            renderBookmarksList();
+        });
+        overlay.querySelectorAll('[data-bm-scope]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                panelScope = button.dataset.bmScope;
+                renderBookmarksList();
+            });
+        });
+        overlay.querySelector('#bookmarksUndo button').addEventListener('click', undoLastRemoval);
+        overlay.addEventListener('keydown', handlePanelKeydown);
+        initBookmarksSwipe(overlay);
+        return overlay;
+    }
+
+    function openBookmarksPanel() {
+        const overlay = ensurePanel();
+        lastFocusedElement = document.activeElement;
+        panelOpen = true;
+        savedBodyOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        document.body.classList.add('bookmarks-open');
+        overlay.classList.remove('hidden');
+        overlay.setAttribute('aria-hidden', 'false');
+        document.getElementById('bookmarksBtn')?.setAttribute('aria-expanded', 'true');
+        renderBookmarksList();
+        requestAnimationFrame(function () { overlay.querySelector('#bookmarksSearch').focus(); });
+    }
+
+    function closeBookmarksPanel() {
+        const overlay = document.getElementById('bookmarksOverlay');
+        if (!overlay || !panelOpen) return;
+        panelOpen = false;
+        overlay.classList.add('hidden');
+        overlay.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = savedBodyOverflow;
+        document.body.classList.remove('bookmarks-open');
+        document.getElementById('bookmarksBtn')?.setAttribute('aria-expanded', 'false');
+        if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') lastFocusedElement.focus();
+    }
+
+    function handlePanelKeydown(event) {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            closeBookmarksPanel();
+            return;
+        }
+        if (event.key !== 'Tab') return;
+        const overlay = document.getElementById('bookmarksOverlay');
+        const focusable = Array.from(overlay.querySelectorAll('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+            .filter(function (node) { return !node.hidden && node.offsetParent !== null; });
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    }
+
+    function initBookmarksSwipe(overlay) {
+        const handle = overlay.querySelector('.bookmarks-grabber');
+        const header = overlay.querySelector('.bookmarks-header');
+        let startY = 0;
+        let deltaY = 0;
+        let tracking = false;
+        function start(event) {
+            if (innerWidth > 720 || event.pointerType === 'mouse') return;
+            startY = event.clientY;
+            deltaY = 0;
+            tracking = true;
+            try { event.currentTarget.setPointerCapture(event.pointerId); } catch (_) {}
+        }
+        function move(event) {
+            if (!tracking) return;
+            deltaY = Math.max(0, event.clientY - startY);
+            overlay.querySelector('.bookmarks-panel').style.transform = 'translateY(' + deltaY + 'px)';
+        }
+        function end() {
+            if (!tracking) return;
+            tracking = false;
+            const panel = overlay.querySelector('.bookmarks-panel');
+            if (deltaY > 90) closeBookmarksPanel();
+            panel.style.transform = '';
+        }
+        [handle, header].forEach(function (target) {
+            target.addEventListener('pointerdown', start);
+            target.addEventListener('pointermove', move);
+            target.addEventListener('pointerup', end);
+            target.addEventListener('pointercancel', end);
+        });
+    }
+
+    function matchesSearch(bookmark) {
+        if (!panelQuery) return true;
+        return [bookmark.title, bookmark.excerpt, bookmark.preview, bookmark.topicTitle, bookmark.pageTitle, copy.types[bookmark.type]]
+            .map(normalizeText).join(' ').toLocaleLowerCase().includes(panelQuery);
+    }
+
+    function canReorder() {
+        return panelScope === 'all' && !panelQuery;
+    }
+
+    function renderBookmarksList() {
+        const overlay = ensurePanel();
+        const list = overlay.querySelector('#bookmarksList');
+        const previousScroll = list.scrollTop;
+        const activeId = document.activeElement && document.activeElement.closest('.bm-card')?.dataset.bmId;
+        const all = sortedEntries();
+        const current = currentPageEntries(all);
+        const scoped = panelScope === 'current' ? current : all;
+        const visible = scoped.filter(matchesSearch);
+
+        overlay.querySelector('#bookmarksTotal').textContent = all.length === 1
+            ? (isEnglish ? '1 saved block' : '1 сохранённый блок')
+            : (isEnglish ? all.length + ' saved blocks' : all.length + ' сохранённых блоков');
+        overlay.querySelector('#bookmarksAllCount').textContent = all.length;
+        overlay.querySelector('#bookmarksCurrentCount').textContent = current.length;
+        overlay.querySelectorAll('[data-bm-scope]').forEach(function (button) {
+            button.setAttribute('aria-pressed', button.dataset.bmScope === panelScope ? 'true' : 'false');
+        });
+        overlay.querySelector('#bookmarksReorderHint').hidden = !canReorder() || all.length < 2;
+
+        list.textContent = '';
+        if (!visible.length) {
+            const empty = document.createElement('div');
+            empty.className = 'bookmarks-empty';
+            const noResults = !!panelQuery || (panelScope === 'current' && all.length > 0);
+            empty.innerHTML = bookmarkSvg(false)
+                + '<h3>' + (noResults ? copy.noResultsTitle : copy.emptyTitle) + '</h3>'
+                + '<p>' + (noResults ? copy.noResultsText : copy.emptyText) + '</p>';
+            list.appendChild(empty);
+        } else {
+            const fragment = document.createDocumentFragment();
+            visible.forEach(function (bookmark) { fragment.appendChild(createBookmarkCard(bookmark, canReorder())); });
+            list.appendChild(fragment);
+            if (canReorder()) initDragSort(list);
+        }
+        requestAnimationFrame(function () {
+            list.scrollTop = previousScroll;
+            if (activeId) list.querySelector('[data-bm-id="' + CSS.escape(activeId) + '"] button')?.focus();
+        });
+        refreshSidebarCount();
+    }
+
+    function bookmarkDisplayData(bookmark) {
+        const box = pageMatches(bookmark) ? findBoxById(bookmark.id, bookmark) : null;
+        if (!box) return {
+            title: bookmark.title || bookmark.preview || copy.types.other,
+            excerpt: bookmark.excerpt || bookmark.preview || '',
+            type: bookmark.type || 'other'
+        };
+        const title = getBookmarkTitle(box);
+        return { title: title, excerpt: getBookmarkExcerpt(box, title), type: getBoxType(box) };
+    }
+
+    function createBookmarkCard(bookmark, reorderEnabled) {
+        const data = bookmarkDisplayData(bookmark);
+        const card = document.createElement('article');
+        card.className = 'bm-card';
+        card.dataset.bmId = bookmark.id;
+        card.style.setProperty('--bm-type', getTypeColor(data.type));
+
+        const meta = document.createElement('div');
+        meta.className = 'bm-card-meta';
+        const type = document.createElement('span');
+        type.className = 'bm-card-type';
+        type.textContent = copy.types[data.type] || copy.types.other;
+        meta.appendChild(type);
+        const context = document.createElement('span');
+        context.className = 'bm-card-context';
+        context.textContent = [bookmark.pageTitle, bookmark.topicTitle].filter(Boolean).join(' · ') || copy.currentPage;
+        meta.appendChild(context);
+        card.appendChild(meta);
+
+        const main = document.createElement('button');
+        main.type = 'button';
+        main.className = 'bm-card-main';
+        main.innerHTML = '<span class="bm-card-copy"><strong></strong><span></span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
+        main.querySelector('strong').textContent = data.title;
+        main.querySelector('.bm-card-copy > span').textContent = data.excerpt;
+        main.setAttribute('aria-label', copy.open + ': ' + data.title);
+        main.addEventListener('click', function () { navigateToBookmark(bookmark); });
+        card.appendChild(main);
+
+        const actions = document.createElement('div');
+        actions.className = 'bm-card-actions';
+        if (reorderEnabled) {
+            const handle = document.createElement('button');
+            handle.type = 'button';
+            handle.className = 'bm-drag-handle';
+            handle.setAttribute('aria-label', copy.move + ': ' + data.title);
+            handle.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>';
+            handle.addEventListener('keydown', function (event) {
+                if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+                event.preventDefault();
+                moveCardByKeyboard(card, event.key === 'ArrowUp' ? -1 : 1);
+            });
+            actions.appendChild(handle);
+        }
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'bm-card-delete';
+        remove.setAttribute('aria-label', copy.remove + ': ' + data.title);
+        remove.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 10v6m4-6v6"/></svg>';
+        remove.addEventListener('click', function () { deleteBookmarkFromPanel(bookmark); });
+        actions.appendChild(remove);
+        card.appendChild(actions);
+        return card;
+    }
+
+    function deleteBookmarkFromPanel(bookmark) {
+        const all = sortedEntries();
+        lastRemoved = { id: bookmark.id, data: Object.assign({}, bookmark), index: all.findIndex(function (item) { return item.id === bookmark.id; }) };
+        removeBookmark(bookmark.id);
+        refreshAllButtons();
+        const undo = document.getElementById('bookmarksUndo');
+        undo.hidden = false;
+        renderBookmarksList();
+    }
+
+    function undoLastRemoval() {
+        if (!lastRemoved) return;
+        const restored = Object.assign({}, lastRemoved.data);
+        delete restored.id;
+        delete restored.deleted;
+        saveBookmark(lastRemoved.id, restored);
+        lastRemoved = null;
+        document.getElementById('bookmarksUndo').hidden = true;
+        refreshAllButtons();
+        renderBookmarksList();
+    }
+
     function persistOrder(orderedIds) {
-        lastLocalWriteAt = Date.now();
         const updatedAt = Date.now();
-        orderedIds.forEach((id, i) => {
-            if (hasBookmark(id)) {
-                bookmarks[id].order = i;
-                bookmarks[id].updatedAt = updatedAt;
-                if (bookmarkStore) bookmarkStore.set(id, bookmarks[id], { updatedAt, flush: false });
-            }
+        lastLocalWriteAt = updatedAt;
+        orderedIds.forEach(function (id, index) {
+            if (!hasBookmark(id)) return;
+            bookmarks[id].order = index;
+            bookmarks[id].updatedAt = updatedAt;
+            if (bookmarkStore) bookmarkStore.set(id, bookmarks[id], { updatedAt: updatedAt, flush: false });
         });
         if (bookmarkStore) {
             bookmarks = bookmarkStore.snapshot({ includeDeleted: true });
             bookmarkStore.flush();
-            return;
-        }
-        safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
-        const ref = getBookmarksRef();
-        if (ref) {
-            const updates = {};
-            orderedIds.forEach((id, i) => { updates[id + '/order'] = i; });
-            ref.update(updates);
+        } else {
+            safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
+            if (bookmarkRef) {
+                const updates = {};
+                orderedIds.forEach(function (id, index) { updates[id + '/order'] = index; });
+                bookmarkRef.update(updates).catch(function () {});
+            }
         }
     }
 
-    function renderBookmarksPanel() {
-        if (lazyObserver) { lazyObserver.disconnect(); lazyObserver = null; }
-        let overlay = document.getElementById('bookmarksOverlay');
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'bookmarksOverlay';
-            overlay.className = 'auth-overlay hidden';
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) closeBookmarksPanel();
-            });
-
-            const modal = document.createElement('div');
-            modal.id = 'bookmarksModal';
-            modal.className = 'auth-modal';
-            modal.style.cssText = 'max-width: 700px; max-height: 85vh; overflow-y: auto;';
-            overlay.appendChild(modal);
-            document.body.appendChild(overlay);
-            initBookmarksSwipe();
-        }
-
-        const modal = document.getElementById('bookmarksModal');
-        const currentPage = location.pathname;
-        const entries = sortedEntries();
-
-        modal.innerHTML = '';
-
-        const header = document.createElement('h2');
-        header.style.cssText = 'margin-top: 0; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;';
-        header.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span>Закладки</span>';
-        modal.appendChild(header);
-
-        if (entries.length === 0) {
-            const empty = document.createElement('p');
-            empty.style.cssText = 'color: var(--text-secondary); text-align: center; padding: 2rem 0;';
-            empty.innerHTML = 'Закладок пока нет.<br>Нажмите <span class="eic eic-bookmark" aria-hidden="true"></span> на любом блоке, чтобы добавить.';
-            modal.appendChild(empty);
-        } else {
-            const hint = document.createElement('div');
-            hint.style.cssText = 'font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.6rem;';
-            hint.textContent = 'Тяните за ручку слева, чтобы менять порядок · нажмите на карточку, чтобы раскрыть';
-            modal.appendChild(hint);
-
-            const list = document.createElement('div');
-            list.className = 'bm-sortable-list';
-            entries.forEach(bm => {
-                const card = createBookmarkCard(bm, bm.page === currentPage);
-                card.dataset.bmId = bm.id;
-                list.appendChild(card);
-            });
-            modal.appendChild(list);
-            initDragSort(list);
-        }
-
-        const closeWrap = document.createElement('div');
-        closeWrap.style.cssText = 'text-align: center; margin-top: 1.5rem;';
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'auth-submit';
-        closeBtn.style.background = 'var(--text-secondary)';
-        closeBtn.textContent = 'Закрыть';
-        closeBtn.addEventListener('click', () => closeBookmarksPanel());
-        closeWrap.appendChild(closeBtn);
-        modal.appendChild(closeWrap);
-
-        overlay.classList.remove('hidden');
-
-        requestAnimationFrame(() => {
-            ensureLazyObserver();
-            if (lazyObserver) {
-                modal.querySelectorAll('.bm-card-content[data-lazy-bm-id]').forEach(el => {
-                    lazyObserver.observe(el);
-                });
-            } else {
-                modal.querySelectorAll('.bm-card-content[data-lazy-bm-id]').forEach(el => {
-                    const box = findBoxById(el.dataset.lazyBmId);
-                    if (box) {
-                        el.textContent = '';
-                        el.appendChild(cloneBoxContent(box));
-                        window.AlmanionMath?.render(el);
-                    }
-                    delete el.dataset.lazyBmId;
-                    applyClampState(el);
-                });
-            }
-        });
+    function moveCardByKeyboard(card, direction) {
+        const sibling = direction < 0 ? card.previousElementSibling : card.nextElementSibling;
+        if (!sibling || !sibling.classList.contains('bm-card')) return;
+        const list = card.parentElement;
+        if (direction < 0) list.insertBefore(card, sibling);
+        else list.insertBefore(sibling, card);
+        persistOrder(Array.from(list.querySelectorAll('.bm-card')).map(function (item) { return item.dataset.bmId; }));
+        card.querySelector('.bm-drag-handle').focus();
     }
 
     function initDragSort(list) {
-        const modal = document.getElementById('bookmarksModal');
-        let dragItem = null, placeholder = null, activePointer = null;
-        let dragOffsetY = 0, initialTop = 0, lastPointerY = 0, savedColor = '';
-        let rafId = null, modalTop = 0, modalBottom = 0;
-
-        function reattachLazy() {
-            if (!lazyObserver) return;
-            const m = document.getElementById('bookmarksModal');
-            if (!m) return;
-            m.querySelectorAll('.bm-card-content[data-lazy-bm-id]').forEach(function (el) {
-                lazyObserver.observe(el);
-            });
-        }
-
-        function tick() {
-            rafId = null;
-            if (!dragItem) return;
-
-            // --- ЧТЕНИЯ (без layout-trashing) ---
-            const cards = list.querySelectorAll('.bm-card:not(.bm-dragging)');
-            let beforeEl = null;
-            for (const c of cards) {
-                const r = c.getBoundingClientRect();
-                if (lastPointerY < r.top + r.height / 2) { beforeEl = c; break; }
+        list.querySelectorAll('.bm-drag-handle').forEach(function (handle) {
+            let card = null;
+            let pointerId = null;
+            let moved = false;
+            function onMove(event) {
+                if (event.pointerId !== pointerId || !card) return;
+                moved = true;
+                const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('.bm-card');
+                if (!target || target === card || target.parentElement !== list) return;
+                const rect = target.getBoundingClientRect();
+                list.insertBefore(card, event.clientY < rect.top + rect.height / 2 ? target : target.nextElementSibling);
+                const listRect = list.getBoundingClientRect();
+                if (event.clientY < listRect.top + 45) list.scrollTop -= 12;
+                if (event.clientY > listRect.bottom - 45) list.scrollTop += 12;
             }
-            let scrollDelta = 0;
-            if (modal) {
-                const edge = 48, maxSpeed = 12;
-                if (lastPointerY < modalTop + edge) {
-                    scrollDelta = -maxSpeed * Math.min(1, (modalTop + edge - lastPointerY) / edge);
-                } else if (lastPointerY > modalBottom - edge) {
-                    scrollDelta = maxSpeed * Math.min(1, (lastPointerY - (modalBottom - edge)) / edge);
-                }
-            }
-
-            // --- ЗАПИСИ ---
-            dragItem.style.transform = 'translateY(' + (lastPointerY - dragOffsetY - initialTop) + 'px)';
-            if (beforeEl) {
-                if (placeholder.nextElementSibling !== beforeEl) list.insertBefore(placeholder, beforeEl);
-            } else if (list.lastElementChild !== placeholder) {
-                list.appendChild(placeholder);
-            }
-            if (scrollDelta && modal) {
-                modal.scrollTop += scrollDelta;
-                rafId = requestAnimationFrame(tick); // продолжаем автоскролл, пока палец у края
-            }
-        }
-
-        function scheduleTick() { if (rafId == null) rafId = requestAnimationFrame(tick); }
-
-        function startDrag(card, startY) {
-            dragItem = card;
-            bmDragging = true;
-            savedColor = card.style.borderLeftColor || '';
-            if (lazyObserver) lazyObserver.disconnect();
-
-            const rect = card.getBoundingClientRect();
-            initialTop = rect.top;
-            dragOffsetY = startY - rect.top;
-            lastPointerY = startY;
-            if (modal) {
-                const mr = modal.getBoundingClientRect();
-                modalTop = mr.top;
-                modalBottom = mr.bottom;
-            }
-
-            placeholder = document.createElement('div');
-            placeholder.className = 'bm-drag-placeholder';
-            placeholder.style.height = rect.height + 'px';
-            card.parentNode.insertBefore(placeholder, card);
-
-            document.body.style.userSelect = 'none';
-            document.body.style.webkitUserSelect = 'none';
-            card.classList.add('bm-dragging');
-            card.style.cssText =
-                'position:fixed;z-index:99999;pointer-events:none;' +
-                'left:' + rect.left + 'px;width:' + rect.width + 'px;top:' + initialTop + 'px;' +
-                'margin:0;opacity:0.96;box-shadow:0 12px 34px rgba(0,0,0,0.28);' +
-                'border-left-color:' + savedColor + ';will-change:transform;';
-            if (navigator.vibrate) { try { navigator.vibrate(18); } catch (_) {} }
-        }
-
-        function endDrag() {
-            if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-            const card = dragItem;
-            dragItem = null;
-            activePointer = null;
-            document.body.style.userSelect = '';
-            document.body.style.webkitUserSelect = '';
-            bmDragging = false;
-            if (!card) return;
-
-            card.classList.remove('bm-dragging');
-            card.removeAttribute('style');
-            if (savedColor) card.style.borderLeftColor = savedColor;
-            if (placeholder && placeholder.parentNode) {
-                placeholder.parentNode.insertBefore(card, placeholder);
-                placeholder.remove();
-            }
-            placeholder = null;
-
-            // подавляем клик-переход карточки, который иначе срабатывает после перетаскивания
-            bmJustDragged = true;
-            setTimeout(function () { bmJustDragged = false; }, 80);
-
-            const ids = [].slice.call(list.querySelectorAll('.bm-card')).map(function (c) { return c.dataset.bmId; });
-            persistOrder(ids);
-            reattachLazy();
-        }
-
-        // Единый ввод (мышь + тач + перо) через Pointer Events.
-        // Захват только за «ручку»; перетаскивание начинается после небольшого
-        // смещения — без долгого нажатия и без конфликта с кликом/скроллом.
-        list.addEventListener('pointerdown', function (e) {
-            if (e.pointerType === 'mouse' && e.button !== 0) return;
-            const handle = e.target.closest('.bm-drag-handle');
-            if (!handle) return;
-            const card = handle.closest('.bm-card');
-            if (!card) return;
-            e.preventDefault();
-
-            const startY = e.clientY;
-            activePointer = e.pointerId;
-            let started = false;
-            try { handle.setPointerCapture(e.pointerId); } catch (_) {}
-
-            function onMove(ev) {
-                if (ev.pointerId !== activePointer) return;
-                if (!started) {
-                    if (Math.abs(ev.clientY - startY) < 4) return; // порог: тап ≠ перетаскивание
-                    started = true;
-                    startDrag(card, startY);
-                }
-                lastPointerY = ev.clientY;
-                scheduleTick();
-            }
-            function onUp(ev) {
-                if (ev.pointerId !== activePointer) return;
+            function onEnd(event) {
+                if (event.pointerId !== pointerId) return;
                 document.removeEventListener('pointermove', onMove);
-                document.removeEventListener('pointerup', onUp);
-                document.removeEventListener('pointercancel', onUp);
-                if (started) endDrag();
-                else activePointer = null;
+                document.removeEventListener('pointerup', onEnd);
+                document.removeEventListener('pointercancel', onEnd);
+                if (card) card.classList.remove('bm-dragging');
+                if (moved) persistOrder(Array.from(list.querySelectorAll('.bm-card')).map(function (item) { return item.dataset.bmId; }));
+                card = null;
+                pointerId = null;
             }
-            document.addEventListener('pointermove', onMove);
-            document.addEventListener('pointerup', onUp);
-            document.addEventListener('pointercancel', onUp);
+            handle.addEventListener('pointerdown', function (event) {
+                if (event.pointerType === 'mouse' && event.button !== 0) return;
+                event.preventDefault();
+                card = handle.closest('.bm-card');
+                pointerId = event.pointerId;
+                moved = false;
+                card.classList.add('bm-dragging');
+                try { handle.setPointerCapture(pointerId); } catch (_) {}
+                document.addEventListener('pointermove', onMove);
+                document.addEventListener('pointerup', onEnd);
+                document.addEventListener('pointercancel', onEnd);
+            });
         });
     }
 
-    function cloneBoxContent(box) {
-        const clone = box.cloneNode(true);
-        // Убираем интерактив, который в карточке не нужен и может всплыть при наведении.
-        clone.querySelectorAll('.bookmark-btn, .copy-block-btn, .english-speak-button').forEach(b => b.remove());
-        clone.style.cssText = 'margin:0;border:none;box-shadow:none;border-radius:0;border-left:none;';
-        return clone;
+    function getTypeColor(type) {
+        return {
+            definition: '#4f78b8', formula: '#7967ad', theorem: '#a46f35', remark: '#4e8775',
+            lemma: '#9a6944', example: '#477f91', statement: '#9a5e78', corollary: '#6672a5',
+            properties: '#4d827c', experiment: '#a85e59', derivation: '#8065a1', system: '#4d7996'
+        }[type] || '#727889';
     }
 
-    // Помечаем карточку «обрезанной», если содержимое не влезает в свёрнутую высоту —
-    // только таким нужны затухание снизу, шеврон и жест «тап = раскрыть».
-    function applyClampState(contentDiv) {
-        const card = contentDiv.closest('.bm-card');
-        if (!card) return;
-        card.classList.toggle('bm-clamped', contentDiv.scrollHeight - contentDiv.clientHeight > 4);
-    }
-
-    function ensureLazyObserver() {
-        if (lazyObserver) return;
-        if (!('IntersectionObserver' in window)) return;
-        lazyObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (!entry.isIntersecting) return;
-                const contentDiv = entry.target;
-                const bmId = contentDiv.dataset.lazyBmId;
-                if (!bmId) return;
-                lazyObserver.unobserve(contentDiv);
-                const box = findBoxById(bmId);
-                if (box) {
-                    contentDiv.textContent = '';
-                    contentDiv.appendChild(cloneBoxContent(box));
-                    window.AlmanionMath?.render(contentDiv);
-                }
-                delete contentDiv.dataset.lazyBmId;
-                applyClampState(contentDiv);
+    function findBoxById(bookmarkId, bookmark) {
+        let key = bookmark && bookmark.blockKey;
+        const marker = String(bookmarkId || '').indexOf('__b__');
+        if (!key && marker >= 0) {
+            try { key = decodeURIComponent(String(bookmarkId).slice(marker + 5)); } catch (_) {}
+        }
+        if (key) {
+            const found = Array.from(document.querySelectorAll(BLOCK_SELECTOR)).find(function (box) {
+                return getBlockKey(box) === key;
             });
-        }, { root: document.getElementById('bookmarksModal'), rootMargin: '100px' });
+            if (found) return found;
+        }
+
+        const scoped = String(bookmarkId || '').includes('__')
+            ? String(bookmarkId).slice(String(bookmarkId).indexOf('__') + 2)
+            : String(bookmarkId || '');
+        const parts = scoped.split('_');
+        const index = Number.parseInt(parts.pop(), 10);
+        const topic = document.getElementById(parts.join('_'));
+        if (!topic || !Number.isFinite(index)) return null;
+        return Array.from(topic.querySelectorAll(BLOCK_SELECTOR)).filter(isTopLevelBlock)[index] || null;
     }
 
-    function navigateToBookmark(bm, isCurrentPage) {
-        if (isCurrentPage) {
-            const box = findBoxById(bm.id);
-            if (!box) return;
-            // В постраничном экспериментальном режиме нужная тема может быть
-            // display:none/inert. Сначала делаем её текущей, затем прокручиваем.
+    function navigateToBookmark(bookmark) {
+        if (pageMatches(bookmark)) {
+            const box = findBoxById(bookmark.id, bookmark);
+            if (!box) {
+                announce(copy.unavailable);
+                return;
+            }
             if (window.experimentalReader && window.experimentalReader.isActive()) {
-                window.experimentalReader.revealElement(box, {
-                    source: 'bookmark',
-                    animate: false,
-                    scroll: false,
-                    updateHash: true
-                });
+                window.experimentalReader.revealElement(box, { source: 'bookmark', animate: false, scroll: false, updateHash: true });
             }
             closeBookmarksPanel();
             if (typeof window.closeMobileMenu === 'function') window.closeMobileMenu();
-            setTimeout(() => {
-                box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                box.classList.add('nav-highlight');
-                setTimeout(() => box.classList.remove('nav-highlight'), 1500);
-            }, 100);
-        } else {
-            try { sessionStorage.setItem('almanion_bookmark_target', bm.id); } catch (_) {}
-            window.location.href = bm.page + '#' + bm.topicId;
+            setTimeout(function () { highlightBookmarkTarget(box, true); }, 80);
+            return;
         }
+
+        let target;
+        try { target = new URL(bookmark.page, location.href); } catch (_) { return; }
+        if (target.origin !== location.origin) return;
+        if (bookmark.topicId) target.hash = bookmark.topicId;
+        try { sessionStorage.setItem(RESTORE_TARGET_KEY, bookmark.id); } catch (_) {}
+        location.href = target.href;
+    }
+
+    function highlightBookmarkTarget(box, smooth) {
+        box.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'center' });
+        box.classList.add('nav-highlight');
+        setTimeout(function () { box.classList.remove('nav-highlight'); }, 1500);
     }
 
     function restoreBookmarkTarget() {
-        let bookmarkId = '';
-        try { bookmarkId = sessionStorage.getItem('almanion_bookmark_target') || ''; } catch (_) {}
-        if (!bookmarkId) return;
-        const box = findBoxById(bookmarkId);
-        if (!box) return;
-        try { sessionStorage.removeItem('almanion_bookmark_target'); } catch (_) {}
-        if (window.experimentalReader?.isActive?.()) {
-            window.experimentalReader.revealElement(box, {
-                source: 'bookmark', animate: false, scroll: false, updateHash: true
-            });
+        clearTimeout(restoreTimer);
+        let id = '';
+        try { id = sessionStorage.getItem(RESTORE_TARGET_KEY) || ''; } catch (_) {}
+        if (!id) return;
+        const bookmark = bookmarks[id] && !bookmarks[id].deleted ? Object.assign({ id: id }, bookmarks[id]) : null;
+        const box = findBoxById(id, bookmark);
+        if (!box && restoreAttempts < 12) {
+            restoreAttempts += 1;
+            restoreTimer = setTimeout(restoreBookmarkTarget, 180);
+            return;
         }
-        setTimeout(() => {
-            box.scrollIntoView({ behavior: 'auto', block: 'center' });
-            box.classList.add('nav-highlight');
-            setTimeout(() => box.classList.remove('nav-highlight'), 1500);
-        }, 120);
+        restoreAttempts = 0;
+        try { sessionStorage.removeItem(RESTORE_TARGET_KEY); } catch (_) {}
+        if (!box) return;
+        if (window.experimentalReader && window.experimentalReader.isActive()) {
+            window.experimentalReader.revealElement(box, { source: 'bookmark', animate: false, scroll: false, updateHash: true });
+        }
+        setTimeout(function () { highlightBookmarkTarget(box, false); }, 100);
     }
 
-    function createBookmarkCard(bm, isCurrentPage) {
-        const card = document.createElement('div');
-        card.className = 'bm-card';
-        card.dataset.bmId = bm.id;
-        const color = getTypeColor(bm.type);
-        card.style.borderLeftColor = color;
-
-        const headerDiv = document.createElement('div');
-        headerDiv.className = 'bm-card-header';
-
-        // Ручка перетаскивания — захват только за неё (drag); тело карточки раскрывает.
-        const handle = document.createElement('span');
-        handle.className = 'bm-drag-handle';
-        handle.title = 'Перетащите, чтобы изменить порядок';
-        handle.setAttribute('aria-hidden', 'true');
-        handle.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
-        handle.addEventListener('click', (e) => { e.stopPropagation(); });
-        headerDiv.appendChild(handle);
-
-        const typeSpan = document.createElement('span');
-        typeSpan.className = 'bm-card-type';
-        typeSpan.style.color = color;
-        typeSpan.textContent = getTypeLabel(bm.type);
-        headerDiv.appendChild(typeSpan);
-
-        if (!isCurrentPage) {
-            const pageSpan = document.createElement('span');
-            pageSpan.className = 'bm-card-page';
-            pageSpan.textContent = bm.topicTitle || bm.pageTitle || '';
-            headerDiv.appendChild(pageSpan);
-        }
-
-        const chevron = document.createElement('span');
-        chevron.className = 'bm-card-chevron';
-        chevron.setAttribute('aria-hidden', 'true');
-        chevron.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
-        headerDiv.appendChild(chevron);
-
-        const delBtn = document.createElement('button');
-        delBtn.className = 'bm-card-delete';
-        delBtn.title = 'Удалить';
-        delBtn.setAttribute('aria-label', 'Удалить закладку');
-        delBtn.innerHTML = '<span class="eic eic-x" aria-hidden="true"></span>';
-        delBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            removeBookmark(bm.id);
-            refreshAllButtons();
-            renderBookmarksPanel();
-        });
-        headerDiv.appendChild(delBtn);
-        card.appendChild(headerDiv);
-
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'bm-card-content';
-        contentDiv.textContent = bm.preview || '';
-        if (isCurrentPage) {
-            contentDiv.dataset.lazyBmId = bm.id;
-        }
-        card.appendChild(contentDiv);
-
-        // Подвал «Перейти к блоку»: у коротких карточек виден всегда, у обрезанных —
-        // в раскрытом состоянии (видимостью управляет CSS).
-        const foot = document.createElement('div');
-        foot.className = 'bm-card-foot';
-        const gotoBtn = document.createElement('button');
-        gotoBtn.className = 'bm-card-goto';
-        gotoBtn.innerHTML = 'Перейти к блоку <span aria-hidden="true">→</span>';
-        gotoBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            navigateToBookmark(bm, isCurrentPage);
-        });
-        foot.appendChild(gotoBtn);
-        card.appendChild(foot);
-
-        // Тап по карточке раскрывает/сворачивает (drag — только за ручку, поэтому
-        // конфликта «клик после перетаскивания» нет; флаги — дополнительная страховка).
-        card.addEventListener('click', (e) => {
-            if (bmDragging || bmJustDragged) return;
-            if (e.target.closest('.bm-drag-handle') ||
-                e.target.closest('.bm-card-delete') ||
-                e.target.closest('.bm-card-goto')) return;
-            if (!card.classList.contains('bm-clamped')) return; // короткую нечего раскрывать
-            // Раскрытую карточку не сворачиваем кликом по содержимому — там выделяют
-            // текст и тыкают формулы; сворачивание — по шапке/шеврону.
-            if (card.classList.contains('expanded') && e.target.closest('.bm-card-content')) return;
-            card.classList.toggle('expanded');
-        });
-
-        return card;
+    function announce(message) {
+        const live = document.getElementById('bookmarksLive');
+        if (live) live.textContent = message;
     }
 
     function initializeBookmarks() {
         if (initializeBookmarks.done) return;
         initializeBookmarks.done = true;
-        visitorId = getVisitorId();
-        initFirebase();
+        getVisitorId();
         loadBookmarks();
-        setTimeout(() => {
-            initLazyBookmarkButtons();
-            addBookmarksSidebarButton();
-            restoreBookmarkTarget();
-        }, 300);
+        subscribeToAccount();
+        initLazyBookmarkButtons();
+        addBookmarksSidebarButton();
+        restoreBookmarkTarget();
+
+        window.addEventListener('almanion-account-ready', function (event) {
+            initFirebase();
+            connectBookmarksAccount(event.detail && event.detail.user);
+        });
+        window.addEventListener('almanion-sync-retry', function () {
+            if (bookmarkStore) bookmarkStore.flush();
+        });
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeBookmarks, { once: true });
     else initializeBookmarks();
 
-    window.addEventListener('almanion:content-ready', event => {
-        const root = event.detail?.root || document;
-        addBookmarkButtons(root);
+    window.addEventListener('almanion:content-ready', function (event) {
+        addBookmarkButtons((event.detail && event.detail.root) || document);
         restoreBookmarkTarget();
+    });
+
+    window.AlmanionBookmarks = Object.freeze({
+        open: openBookmarksPanel,
+        close: closeBookmarksPanel,
+        refresh: renderBookmarksList
     });
 })();
