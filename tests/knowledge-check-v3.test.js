@@ -317,10 +317,9 @@ const expectedKinds = [
     'experiment',
     'example'
 ];
-assert.deepEqual(
-    Array.from(scheduler.studyProfile().types, type => type.kind),
-    expectedKinds
-);
+const profileKinds = Array.from(scheduler.studyProfile().types, type => type.kind);
+assert.ok(profileKinds.includes('stress'));
+assert.deepEqual(profileKinds.filter(kind => kind !== 'stress'), expectedKinds);
 
 // Карточки извлекаются прямо из существующих блоков и могут быть отфильтрованы
 // по типу до построения очереди.
@@ -332,6 +331,30 @@ assert.deepEqual(new Set(extractedAll.map(card => card.kind)), new Set(expectedK
 const extractedSelected = plain(allKindsScheduler.extractCards(['all-kinds'], ['definition', 'formula', 'proof']));
 assert.deepEqual(new Set(extractedSelected.map(card => card.kind)), new Set(['definition', 'formula', 'proof']));
 assert.equal(extractedSelected.length, 3);
+
+const stressWord = element('div', {
+    id: 'stress-001',
+    className: 'accent-word-card',
+    attributes: {
+        id: 'stress-001',
+        class: 'accent-word-card',
+        'data-search-word': 'агент'
+    },
+    children: [element('strong', {
+        className: 'accent-word',
+        attributes: { class: 'accent-word' },
+        text: 'агЕнт'
+    })]
+});
+const stressTopic = topicFixture('stress-nouns', [stressWord], 'Имена существительные');
+const [stressCard] = plain(loadScheduler({
+    document: fakeDocument([stressTopic]),
+    pathname: '/russian-ege.html'
+}).scheduler.extractCards(['stress-nouns'], ['stress']));
+assert.equal(stressCard.kind, 'stress');
+assert.equal(stressCard.term, 'агент');
+assert.match(stressCard.backHTML, /агЕнт/);
+assert.doesNotMatch(stressCard.termHTML, /[АЕЁИОУЫЭЮЯ]/u);
 
 const unannotatedDefinition = element('div', {
     className: 'definition-box',

@@ -11,7 +11,7 @@ const legacy = fs.readFileSync(path.join(root, 'script.js'), 'utf8');
 const pages = [
     'chemistry-10.html', 'chemistry.html', 'english.html', 'geometry-formulas.html',
     'geometry.html', 'likbez.html', 'literature-10.html', 'math.html',
-    'physics-10.html', 'physics-exam.html', 'physics.html'
+    'physics-10.html', 'physics-exam.html', 'physics.html', 'russian-ege.html'
 ];
 
 assert.doesNotMatch(legacy, /function exportToPDF\s*\(/, 'legacy print mutation must be removed');
@@ -46,7 +46,7 @@ pages.forEach(function (file) {
     const html = fs.readFileSync(path.join(root, file), 'utf8');
     const direct = /styles\/print\.css\?v=20260908-3/.test(html)
         && /print-export\.js\?v=20260908-3/.test(html);
-    const progressive = /note-runtime\.js\?v=20260920-2/.test(html);
+    const progressive = /note-runtime\.js\?v=20260920-3/.test(html);
     assert.ok(direct || progressive, file + ' must load the print feature directly or through note-runtime');
 });
 

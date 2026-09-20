@@ -3,7 +3,7 @@
 
     const sources = Object.freeze({
         hints: 'matcenter/70-hints.js?v=20260911-2',
-        settings: 'settings.js?v=20260911-1',
+        settings: 'settings.js?v=20260920-3',
         analytics: 'firebase-analytics.js?v=20260911-1',
         newyear: 'newyear.js?v=20260911-1'
     });

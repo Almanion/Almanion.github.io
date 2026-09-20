@@ -19,6 +19,7 @@ assert.strictEqual(BuildSite.isPublishable('search-index.json', config), true);
 assert.strictEqual(BuildSite.isPublishable('unexpected-debug.html', config), false);
 assert.strictEqual(BuildSite.isPublishable('private-helper.js', config), false);
 assert.strictEqual(BuildSite.isPublishable('styles/site/index.css', config), true);
+assert.strictEqual(BuildSite.isPublishable('russian-ege.html', config), true);
 assert.strictEqual(BuildSite.isPublishable('content/physics/manifest.json', config), true);
 assert.strictEqual(BuildSite.isPublishable('dead souls/text/chapter-1.txt', config), true);
 assert.strictEqual(BuildSite.isPublishable('tests/home-motion.test.js', config), false);

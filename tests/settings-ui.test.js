@@ -14,9 +14,11 @@ assert.match(settings, /noteScale:\s*1/);
 assert.match(settings, /applyNoteScale\(siteSettings\.noteScale\)/);
 assert.match(settings, /classList\.toggle\('no-hover', !enabled && isNoteReadingPage\(\)\)/,
     'cursor response must only affect note reading pages');
-assert.match(settings, /data-note-scale-action="decrease"/);
-assert.match(settings, /data-note-scale-action="increase"/);
+assert.match(settings, /id="noteScaleInput" type="number" min="75" max="125" step="1"/);
+assert.match(settings, /id="noteScaleRange" type="range" min="75" max="125" step="1"/);
 assert.match(settings, /data-note-scale-action="reset"/);
+assert.ok(settings.indexOf('settings-scale-section') < settings.indexOf('<!-- Новый и старый интерфейс -->'),
+    'note scale must be the first settings section');
 
 assert.doesNotMatch(settingsCss, /body\.no-hover\s+\*\s*:hover/,
     'cursor response must not reset every hovered element');
@@ -25,7 +27,10 @@ assert.match(settingsCss, /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\
 assert.match(settingsCss, /\.settings-modal \.animation-level-option \.level-copy/);
 assert.match(settingsCss, /\.settings-modal :is\(\.settings-section-icon, \.level-icon-svg/,
     'settings SVGs must have explicit bounded sizing');
-assert.match(layout, /body\[data-note-subject\] \.main-content > \.content-section[\s\S]*zoom:\s*var\(--note-scale, 1\)/);
+assert.match(layout, /body\[data-note-subject\] \.main-content > \.content-section[\s\S]*\.exp-reader-toolbar[\s\S]*\.exp-reader-footer[\s\S]*zoom:\s*var\(--note-scale, 1\)/,
+    'reader content, progress navigation and next/previous controls must scale together');
+assert.match(settingsCss, /\.settings-modal \.settings-scale-section/);
+assert.match(settingsCss, /\.settings-modal \.note-scale-slider/);
 assert.match(layout, /\.sidebar-expand-btn\s*\{[\s\S]*width:\s*34px;[\s\S]*height:\s*34px;/);
 assert.match(layout, /\.nav-link:hover/,
     'sidebar feedback must remain available when note hover effects are disabled');

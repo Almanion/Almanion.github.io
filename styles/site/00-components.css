@@ -554,6 +554,28 @@ body.dark-theme .knowledge-check-btn:hover {
 }
 .kc-definition strong { color: var(--text-primary); }
 
+.kc-stress-answer {
+    display: grid;
+    justify-items: center;
+    gap: 0.55rem;
+    padding: 0.45rem 0.25rem;
+    text-align: center;
+}
+
+.kc-stress-word {
+    color: var(--text-primary);
+    font-size: clamp(1.85rem, 6vw, 2.65rem);
+    font-weight: 760;
+    line-height: 1.15;
+    letter-spacing: 0.025em;
+}
+
+.kc-stress-hint {
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    line-height: 1.35;
+}
+
 /* --- Кнопки ответа --- */
 .kc-answer-row {
     display: flex;

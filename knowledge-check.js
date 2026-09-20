@@ -399,6 +399,7 @@
     let dialogInerted = [];
 
     const CARD_TYPES = [
+        { selector: '.accent-word-card', kind: 'stress', label: 'Ударения', singular: 'слово', prompt: 'Поставьте ударение' },
         { selector: '.definition-box', kind: 'definition', label: 'Определения', singular: 'определение', prompt: 'Дайте определение' },
         { selector: '.formula-box', kind: 'formula', label: 'Формулы', singular: 'формулу', prompt: 'Воспроизведите формулу' },
         { selector: '.derivation-box', kind: 'derivation', label: 'Выводы', singular: 'вывод', prompt: 'Воспроизведите вывод' },
@@ -417,7 +418,7 @@
         'замечание', 'замечания', 'remark', 'теорема', 'theorem', 'лемма', 'lemma',
         'утверждение', 'утверждения', 'statement', 'следствие', 'corollary',
         'свойство', 'свойства', 'properties', 'доказательство', 'proof',
-        'эксперимент', 'experiment', 'пример', 'примеры', 'example'
+        'эксперимент', 'experiment', 'пример', 'примеры', 'example', 'ударение', 'ударения'
     ]);
     const LEGACY_TYPE_LABELS = {
         definition: 'Определение',
@@ -431,12 +432,18 @@
         return /(?:^|\/)likbez\.html$/i.test(location.pathname);
     }
 
+    function isRussianStressPage() {
+        return document.body?.dataset.noteSubject === 'russian-ege';
+    }
+
     function studyProfile() {
         return {
             types: CARD_TYPES,
-            defaultKinds: isLikbezPage()
-                ? ['definition', 'theorem', 'lemma', 'statement', 'corollary']
-                : ['definition'],
+            defaultKinds: isRussianStressPage()
+                ? ['stress']
+                : (isLikbezPage()
+                    ? ['definition', 'theorem', 'lemma', 'statement', 'corollary']
+                    : ['definition']),
             subtitle: 'Повторение материалов прямо из конспекта',
             empty: 'В выбранных разделах пока нет блоков выбранных типов.'
         };
@@ -544,6 +551,11 @@
     }
 
     function answerHTML(box, kind) {
+        if (kind === 'stress') {
+            const stressedWord = normalizeTitle(box.querySelector('.accent-word')?.textContent || box.textContent);
+            return '<div class="kc-stress-answer"><span class="kc-stress-word">' + escapeHtml(stressedWord) + '</span>' +
+                '<span class="kc-stress-hint">Ударная буква выделена прописной</span></div>';
+        }
         const back = box.cloneNode(true);
         if (back.querySelectorAll) {
             back.querySelectorAll('.bookmark-btn, .copy-block-btn, .inline-edit-btn, .note-edit-btn').forEach(el => el.remove());
@@ -564,6 +576,10 @@
     }
 
     function contextualTitle(box, type, topicName, index) {
+        if (type.kind === 'stress') {
+            const word = normalizeTitle(box.dataset.searchWord || box.textContent).toLocaleLowerCase('ru-RU');
+            return { text: word, html: escapeHtml(word) };
+        }
         const strong = semanticStrong(box);
         const own = readableTerm(strong);
         if (own) return { text: own, html: strong.innerHTML };

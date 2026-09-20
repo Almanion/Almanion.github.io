@@ -11,12 +11,12 @@ const accountPages = [
     'index.html', 'physics.html', 'math.html', 'geometry.html', 'chemistry.html',
     'likbez.html', 'english.html', 'physics-exam.html', 'geometry-formulas.html',
     'matcenter.html', 'duty-10-1.html', 'physics-10.html',
-    'chemistry-10.html', 'literature-10.html', 'tour-10-1.html'
+    'chemistry-10.html', 'literature-10.html', 'russian-ege.html', 'tour-10-1.html'
 ];
 
 accountPages.forEach((file) => {
     const html = read(file);
-    const noteProgressive = html.includes('note-runtime.js?v=20260920-2');
+    const noteProgressive = html.includes('note-runtime.js?v=20260920-3');
     const matcenterProgressive = html.includes('matcenter/runtime.js?v=20260911-2');
     const progressive = noteProgressive || matcenterProgressive;
     const syncAt = html.indexOf('data-sync.js?v=20260908-1');
@@ -42,7 +42,7 @@ assert.match(runtime, /account:\s*'account\.js\?v=20260911-1'/);
 assert.match(runtime, /bookmarks:\s*'bookmarks\.js\?v=20260920-2'/);
 assert.match(runtime, /bookmarksStyles:\s*'styles\/bookmarks\.css\?v=20260920-1'/);
 const matcenterRuntime = read(path.join('matcenter', 'runtime.js'));
-assert.match(matcenterRuntime, /settings:\s*'settings\.js\?v=20260911-1'/);
+assert.match(matcenterRuntime, /settings:\s*'settings\.js\?v=20260920-3'/);
 assert.match(matcenterRuntime, /analytics:\s*'firebase-analytics\.js\?v=20260911-1'/);
 assert.match(matcenterRuntime, /hints:\s*'matcenter\/70-hints\.js\?v=20260911-2'/);
 

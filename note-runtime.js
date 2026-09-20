@@ -8,14 +8,14 @@
 
     const loaded = new Map();
     const versions = {
-        featureStyles: 'styles/site/features.css?v=20260920-2',
+        featureStyles: 'styles/site/features.css?v=20260920-3',
         bookmarksStyles: 'styles/bookmarks.css?v=20260920-1',
         editorStyles: 'styles/note-editor.css?v=20260904-2',
         printStyles: 'styles/print.css?v=20260908-3',
-        settings: 'settings.js?v=20260920-2',
+        settings: 'settings.js?v=20260920-3',
         search: 'search.js?v=20260920-2',
         print: 'print-export.js?v=20260908-3',
-        knowledge: 'knowledge-check.js?v=20260911-1',
+        knowledge: 'knowledge-check.js?v=20260920-2',
         newyear: 'newyear.js?v=20260911-1',
         firebaseApp: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js',
         firebaseDatabase: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js',

@@ -5,9 +5,8 @@
 // Настройки по умолчанию
 const VISUAL_DEFAULTS_MIGRATION_KEY = 'almanion:visual-defaults:2026-09-05-v1';
 const VISUAL_DEFAULTS_VERSION = 1;
-const NOTE_SCALE_MIN = 0.85;
+const NOTE_SCALE_MIN = 0.75;
 const NOTE_SCALE_MAX = 1.25;
-const NOTE_SCALE_STEP = 0.1;
 
 function systemPrefersDark() {
     return typeof window.matchMedia === 'function'
@@ -496,6 +495,30 @@ function createSettingsModal() {
             </div>
 
             <div class="settings-modal-body">
+                ${isNoteReadingPage() ? `
+                <!-- Масштаб конспекта -->
+                <div class="settings-section settings-scale-section">
+                    <div class="settings-section-heading">
+                        <h3>${ICONS.textSize}<span>Масштаб конспекта</span></h3>
+                        <button type="button" class="note-scale-reset" data-note-scale-action="reset">Сбросить</button>
+                    </div>
+                    <p class="settings-section-description">Меняет размер материала, верхней навигации и кнопок перехода.</p>
+                    <div class="note-scale-control" role="group" aria-label="Масштаб конспекта">
+                        <label class="note-scale-number" for="noteScaleInput">
+                            <span>Точный размер</span>
+                            <span class="note-scale-input-wrap">
+                                <input id="noteScaleInput" type="number" min="75" max="125" step="1" inputmode="numeric" value="${Math.round(normalizeNoteScale(siteSettings.noteScale) * 100)}" aria-describedby="noteScaleLimits">
+                                <span aria-hidden="true">%</span>
+                            </span>
+                        </label>
+                        <div class="note-scale-slider-wrap">
+                            <input class="note-scale-slider" id="noteScaleRange" type="range" min="75" max="125" step="1" value="${Math.round(normalizeNoteScale(siteSettings.noteScale) * 100)}" aria-label="Масштаб конспекта">
+                            <div class="note-scale-limits" id="noteScaleLimits" aria-hidden="true"><span>75%</span><span>100%</span><span>125%</span></div>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+
                 <!-- Новый и старый интерфейс -->
                 <div class="settings-section">
                     <h3>${ICONS.settings}<span>Интерфейс</span></h3>
@@ -636,22 +659,6 @@ function createSettingsModal() {
                                     <span class="level-desc">Галочка и линия по номеру</span>
                                 </button>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                ` : ''}
-
-                ${isNoteReadingPage() ? `
-                <!-- Масштаб конспекта -->
-                <div class="settings-section">
-                    <h3>${ICONS.textSize}<span>Масштаб конспекта</span></h3>
-                    <p class="settings-section-description">Размер текста и учебных блоков только в области чтения.</p>
-                    <div class="settings-option">
-                        <div class="note-scale-control" role="group" aria-label="Масштаб конспекта">
-                            <button type="button" class="note-scale-button" data-note-scale-action="decrease" aria-label="Уменьшить масштаб">−</button>
-                            <output class="note-scale-value" id="noteScaleValue" aria-live="polite">${Math.round(normalizeNoteScale(siteSettings.noteScale) * 100)}%</output>
-                            <button type="button" class="note-scale-button" data-note-scale-action="increase" aria-label="Увеличить масштаб">＋</button>
-                            <button type="button" class="note-scale-reset" data-note-scale-action="reset">По умолчанию</button>
                         </div>
                     </div>
                 </div>
@@ -883,27 +890,38 @@ function bindSettingsHandlers() {
         });
     }
 
-    const noteScaleValue = document.getElementById('noteScaleValue');
+    const noteScaleInput = document.getElementById('noteScaleInput');
+    const noteScaleRange = document.getElementById('noteScaleRange');
     const updateNoteScaleControls = () => {
-        const current = normalizeNoteScale(siteSettings.noteScale);
-        if (noteScaleValue) noteScaleValue.textContent = Math.round(current * 100) + '%';
-        document.querySelector('[data-note-scale-action="decrease"]')?.toggleAttribute('disabled', current <= NOTE_SCALE_MIN);
-        document.querySelector('[data-note-scale-action="increase"]')?.toggleAttribute('disabled', current >= NOTE_SCALE_MAX);
+        const percent = Math.round(normalizeNoteScale(siteSettings.noteScale) * 100);
+        if (noteScaleInput && document.activeElement !== noteScaleInput) noteScaleInput.value = String(percent);
+        if (noteScaleRange) {
+            noteScaleRange.value = String(percent);
+            noteScaleRange.setAttribute('aria-valuetext', percent + '%');
+        }
     };
-    document.querySelectorAll('[data-note-scale-action]').forEach(button => {
-        button.addEventListener('click', () => {
-            const action = button.dataset.noteScaleAction;
-            const current = normalizeNoteScale(siteSettings.noteScale);
-            const next = action === 'reset'
-                ? 1
-                : normalizeNoteScale(current + (action === 'increase' ? NOTE_SCALE_STEP : -NOTE_SCALE_STEP));
-            if (next === current) return;
-            siteSettings.noteScale = next;
-            applyNoteScale(next);
-            saveSettings();
-            updateNoteScaleControls();
-        });
+    const setNoteScalePercent = (rawValue, persist = true) => {
+        const numeric = Number(rawValue);
+        if (!Number.isFinite(numeric)) return false;
+        const percent = Math.min(NOTE_SCALE_MAX * 100, Math.max(NOTE_SCALE_MIN * 100, Math.round(numeric)));
+        siteSettings.noteScale = normalizeNoteScale(percent / 100);
+        applyNoteScale(siteSettings.noteScale);
+        updateNoteScaleControls();
+        if (persist) saveSettings();
+        return true;
+    };
+    noteScaleRange?.addEventListener('input', event => setNoteScalePercent(event.target.value));
+    noteScaleInput?.addEventListener('input', event => {
+        const value = Number(event.target.value);
+        if (Number.isFinite(value) && value >= NOTE_SCALE_MIN * 100 && value <= NOTE_SCALE_MAX * 100) {
+            setNoteScalePercent(value, false);
+        }
     });
+    noteScaleInput?.addEventListener('change', event => {
+        if (!setNoteScalePercent(event.target.value)) updateNoteScaleControls();
+    });
+    noteScaleInput?.addEventListener('blur', updateNoteScaleControls);
+    document.querySelector('[data-note-scale-action="reset"]')?.addEventListener('click', () => setNoteScalePercent(100));
     updateNoteScaleControls();
 
     // Сброс настроек

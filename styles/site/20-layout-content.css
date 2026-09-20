@@ -823,11 +823,13 @@ body.dark-theme .page-header {
                 color 0.3s ease;
 }
 
-/* Персональный масштаб относится только к материалу конспекта: сайдбар,
-   плавающие кнопки и модальные окна сохраняют обычный размер. CSS zoom здесь
-   выбран намеренно — он пересчитывает раскладку, поэтому текст не обрезается. */
+/* Персональный масштаб относится к материалу и его локальной навигации:
+   сайдбар, плавающие кнопки и модальные окна сохраняют обычный размер. CSS zoom
+   здесь выбран намеренно — он пересчитывает раскладку, поэтому текст не обрезается. */
 body[data-note-subject] .main-content > .page-header,
-body[data-note-subject] .main-content > .content-section {
+body[data-note-subject] .main-content > .content-section,
+body[data-note-subject] .main-content > .exp-reader-toolbar,
+body[data-note-subject] .main-content > .exp-reader-footer {
     zoom: var(--note-scale, 1);
 }
 
