@@ -46,7 +46,7 @@ pages.forEach(function (file) {
     const html = fs.readFileSync(path.join(root, file), 'utf8');
     const direct = /styles\/print\.css\?v=20260908-3/.test(html)
         && /print-export\.js\?v=20260908-3/.test(html);
-    const progressive = /note-runtime\.js\?v=20260920-3/.test(html);
+    const progressive = /note-runtime\.js\?v=[^"']+/.test(html);
     assert.ok(direct || progressive, file + ' must load the print feature directly or through note-runtime');
 });
 

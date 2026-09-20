@@ -13,6 +13,7 @@ const searchPages = JSON.parse(fs.readFileSync(path.join(root, 'performance', 's
 const searchClient = fs.readFileSync(path.join(root, 'search.js'), 'utf8');
 const localSearch = fs.readFileSync(path.join(root, 'script.js'), 'utf8');
 const knowledgeCheck = fs.readFileSync(path.join(root, 'knowledge-check.js'), 'utf8');
+const russianRuntime = fs.readFileSync(path.join(root, 'russian-ege.js'), 'utf8');
 
 const cards = Array.from(source.contentHtml.matchAll(/<div class="accent-word-card" id="([^"]+)"[^>]*><strong class="accent-word">([^<]+)<\/strong><\/div>/g));
 assert.equal(cards.length, 255, 'all 255 photographed word forms must be present');
@@ -37,19 +38,24 @@ assert.ok(cards.some(match => match[2] === 'экспЕрт'));
     'stress-gerunds',
     'stress-adverbs'
 ].forEach(id => assert.match(source.contentHtml, new RegExp(`id="${id}"`), `${id} subsection must exist`));
+assert.match(source.navHtml, /href="#stress-all"[^>]*>Все</);
 assert.match(source.navHtml, /Существительные/);
 assert.match(source.navHtml, /Деепричастия/);
 assert.match(source.navHtml, /Наречия/);
 
 assert.equal((page.match(/class="accent-word-card"/g) || []).length, 255, 'published page must be generated from the canonical list');
+assert.match(page, /russian-ege\.js\?v=/, 'the All subsection must be assembled from canonical stress cards at runtime');
 assert.match(page, /data-note-subject="russian-ege"/);
 assert.equal((home.match(/href="russian-ege\.html" class="subject-card"/g) || []).length, 2,
     'Russian EGE must be visible in both grade 10 and grade 11 panels');
 assert.match(home, /id="academic-russian"/);
+assert.doesNotMatch(home, /m11\.2 8\.75 1\.85-1\.15/, 'the Russian subject icon must not contain a stress mark');
 
 assert.ok(searchPages.some(item => item.path === 'russian-ege.html'), 'site search must index the new subject');
 assert.match(searchClient, /\.accent-word-card\[id\]/);
 assert.match(localSearch, /accent-word-card/);
+assert.match(localSearch, /hasAttribute\('data-stress-clone'\)/,
+    'local search must not show the same stress word twice through the All subsection');
 const entries = SearchIndex.parseEntries(page, { path: 'russian-ege.html', label: 'Русский язык ЕГЭ' });
 assert.ok(entries.some(entry => entry.id === 'stress-001' && entry.title === 'агЕнт'));
 assert.ok(entries.some(entry => entry.id === 'stress-255' && entry.title === 'экспЕрт'));
@@ -62,5 +68,14 @@ assert.match(knowledgeCheck, /box\.dataset\.searchWord[\s\S]*toLocaleLowerCase\(
     'the question side must use the lowercase word form');
 assert.match(knowledgeCheck, /kc-stress-word[\s\S]*stressedWord/,
     'the revealed side must use the source form with its stressed capital');
+assert.doesNotMatch(knowledgeCheck, /Ударная буква выделена прописной/);
+assert.doesNotMatch(knowledgeCheck, /<kbd class="kc-kbd">/, 'grading buttons must not show numeric key badges');
+assert.match(russianRuntime, /id = 'stress-all'/, 'the All stress subsection must be created');
+assert.match(russianRuntime, /dataset\.kcIgnore = 'true'/,
+    'the derived All subsection must not duplicate cards in knowledge-check scheduling');
+assert.match(russianRuntime, /querySelectorAll\('\.russian-stress-topic:not\(#stress-all\) \.accent-word-card\[id\]'\)/,
+    'All must reuse the canonical 255 cards rather than duplicate their data');
+assert.match(russianRuntime, /numericStressId\(left\) - numericStressId\(right\)/,
+    'All must preserve the original photographed word order');
 
 console.log('Russian EGE stress list and search: all assertions passed');

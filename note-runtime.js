@@ -15,7 +15,7 @@
         settings: 'settings.js?v=20260920-3',
         search: 'search.js?v=20260920-2',
         print: 'print-export.js?v=20260908-3',
-        knowledge: 'knowledge-check.js?v=20260920-2',
+        knowledge: 'knowledge-check.js?v=20260920-3',
         newyear: 'newyear.js?v=20260911-1',
         firebaseApp: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js',
         firebaseDatabase: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js',

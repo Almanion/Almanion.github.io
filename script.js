@@ -568,6 +568,7 @@ function performSearchPanel(rawTerm) {
         const title = topic.querySelector('.topic-title');
         const topicName = title ? readableSearchText(title) : (topic.id || 'Раздел');
         topic.querySelectorAll(SEARCH_CONTENT_SELECTOR).forEach(element => {
+            if (element.hasAttribute('data-stress-clone')) return;
             if (seen.has(element)) return;
             const semanticParent = element.parentElement && element.parentElement.closest(SEARCH_SEMANTIC_SELECTOR);
             if (semanticParent && semanticParent !== element) return;

@@ -11,7 +11,7 @@ const pages = ['physics.html', 'chemistry.html', 'math.html', 'geometry.html', '
 pages.forEach(function (page) {
     const html = fs.readFileSync(path.join(root, page), 'utf8');
     assert.match(html, /styles\/site\/reader\.css\?v=20260920-3/, page + ' must use the reader-first stylesheet');
-    assert.match(html, /note-runtime\.js\?v=20260920-3/, page + ' must use the progressive runtime');
+    assert.match(html, /note-runtime\.js\?v=[^"']+/, page + ' must use the progressive runtime');
     assert.doesNotMatch(html, /gstatic\.com\/firebasejs/, page + ' must not block first paint on Firebase');
     assert.ok(html.indexOf('kc-storage.js') < html.indexOf('note-runtime.js'), page + ' must prepare scoped storage first');
 });

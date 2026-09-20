@@ -495,6 +495,7 @@
     function discoverTopics() {
         const out = [];
         document.querySelectorAll('article.topic[id]').forEach(a => {
+            if (a.dataset && a.dataset.kcIgnore === 'true') return;
             const t = a.querySelector('.topic-title');
             if (!t || !a.querySelector(CARD_SELECTOR)) return;
             const counts = {};
@@ -553,8 +554,7 @@
     function answerHTML(box, kind) {
         if (kind === 'stress') {
             const stressedWord = normalizeTitle(box.querySelector('.accent-word')?.textContent || box.textContent);
-            return '<div class="kc-stress-answer"><span class="kc-stress-word">' + escapeHtml(stressedWord) + '</span>' +
-                '<span class="kc-stress-hint">Ударная буква выделена прописной</span></div>';
+            return '<div class="kc-stress-answer"><span class="kc-stress-word">' + escapeHtml(stressedWord) + '</span></div>';
         }
         const back = box.cloneNode(true);
         if (back.querySelectorAll) {
@@ -1678,8 +1678,7 @@
             const p = item.practiceOnly ? null : project(st, L.g, now);
             return '<button class="kc-grade kc-grade-' + L.cls + '" data-g="' + L.g + '">' +
                 '<span class="kc-grade-iv">' + (p ? fmtInterval(p.intervalDays) : 'в сессии') + '</span>' +
-                '<span class="kc-grade-lbl">' + L.name + '</span>' +
-                '<kbd class="kc-kbd">' + L.g + '</kbd></button>';
+                '<span class="kc-grade-lbl">' + L.name + '</span></button>';
         }).join('');
         grades.hidden = false;
         grades.querySelectorAll('.kc-grade').forEach(b => {
