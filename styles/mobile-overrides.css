@@ -19,6 +19,11 @@
         --m-pad: 1.1rem;
     }
 
+    /* Notes get exactly 20% less side whitespace than the general mobile UI. */
+    body:not(.matcenter-page) .main-content > .content-section {
+        --m-pad: 0.88rem;
+    }
+
     /* --- БАЗОВАЯ ТИПОГРАФИКА --- */
     body {
         font-size: 16px;
@@ -487,6 +492,10 @@
         --m-pad: 0.95rem;
     }
 
+    body:not(.matcenter-page) .main-content > .content-section {
+        --m-pad: 0.76rem;
+    }
+
     body {
         line-height: 1.6;
     }
@@ -570,6 +579,10 @@
 @media (max-width: 360px) {
     :root {
         --m-pad: 0.75rem;
+    }
+
+    body:not(.matcenter-page) .main-content > .content-section {
+        --m-pad: 0.6rem;
     }
 
     body {

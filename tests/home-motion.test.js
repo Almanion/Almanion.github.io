@@ -8,6 +8,8 @@ const root = path.join(__dirname, '..');
 const page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const client = fs.readFileSync(path.join(root, 'home-motion.js'), 'utf8');
 const styles = fs.readFileSync(path.join(root, 'styles', 'home-motion.css'), 'utf8');
+const dashboardStyles = fs.readFileSync(path.join(root, 'styles', 'home-dashboard.css'), 'utf8');
+const mobileStyles = fs.readFileSync(path.join(root, 'styles', 'mobile-overrides.css'), 'utf8');
 const shell = JSON.parse(fs.readFileSync(path.join(root, 'performance', 'sw-shell.json'), 'utf8')).assets;
 
 assert.match(page, /styles\/home-motion\.css\?v=20260920-2/, 'home motion stylesheet must be versioned');
@@ -58,6 +60,12 @@ assert.doesNotMatch(page, /subject-card:hover::before\s*\{\s*color:/,
 assert.match(styles, /body\.animations-off\.home-page[\s\S]*animation: none !important/);
 assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 assert.doesNotMatch(styles, /transition:\s*all\b/, 'home motion must animate explicit compositor-friendly properties');
+assert.match(dashboardStyles, /@media \(max-width: 768px\)[\s\S]*\.grade-tabs::before\s*\{\s*display: none;/,
+    'mobile grade tabs must not depend on the desktop moving indicator');
+assert.match(dashboardStyles, /body\.experimental\.home-page \.grade-tab\.active[\s\S]*background: var\(--exp-accent\)/,
+    'the active mobile grade must retain a visible theme-aware background');
+assert.match(mobileStyles, /@media \(max-width: 480px\)[\s\S]*\.main-content > \.content-section\s*\{\s*--m-pad: 0\.76rem;/,
+    'note text side spacing must be 20% smaller on standard phones');
 
 assert.ok(shell.includes('/styles/home-motion.css'));
 assert.ok(shell.includes('/home-motion.js'));
