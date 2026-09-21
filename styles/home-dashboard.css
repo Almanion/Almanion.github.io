@@ -904,6 +904,7 @@ body.home-quick-dialog-open {
     }
 
     body.home-page .grade-tabs {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         width: 100%;
         min-width: 0;
         box-sizing: border-box;

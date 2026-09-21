@@ -60,8 +60,10 @@ assert.doesNotMatch(page, /subject-card:hover::before\s*\{\s*color:/,
 assert.match(styles, /body\.animations-off\.home-page[\s\S]*animation: none !important/);
 assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 assert.doesNotMatch(styles, /transition:\s*all\b/, 'home motion must animate explicit compositor-friendly properties');
-assert.match(dashboardStyles, /@media \(max-width: 768px\)[\s\S]*\.grade-tabs::before\s*\{\s*display: none;/,
-    'mobile grade tabs must not depend on the desktop moving indicator');
+assert.match(dashboardStyles, /@media \(max-width: 768px\)[\s\S]*\.grade-tabs\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/,
+    'mobile grade tabs must stay in one four-column row');
+assert.match(dashboardStyles, /\.grade-tabs::before\s*\{\s*display: none;/,
+    'mobile grade tabs must not depend on a stale desktop moving indicator');
 assert.match(dashboardStyles, /body\.experimental\.home-page \.grade-tab\.active[\s\S]*background: var\(--exp-accent\)/,
     'the active mobile grade must retain a visible theme-aware background');
 assert.match(mobileStyles, /@media \(max-width: 480px\)[\s\S]*\.main-content > \.content-section\s*\{\s*--m-pad: 0\.76rem;/,
