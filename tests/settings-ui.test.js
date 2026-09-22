@@ -48,7 +48,7 @@ function inspectInlineSvg(directory) {
             const tag = match[0];
             const hiddenSprite = /width\s*=\s*["']0["']/.test(tag)
                 && /height\s*=\s*["']0["']/.test(tag);
-            if (!/viewBox\s*=/.test(tag) && !hiddenSprite) {
+            if (!/viewBox\s*=/i.test(tag) && !hiddenSprite) {
                 svgProblems.push(path.relative(root, file) + ': ' + tag.slice(0, 100));
             }
         }

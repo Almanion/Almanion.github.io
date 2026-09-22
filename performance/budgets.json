@@ -7,7 +7,8 @@
     ".json": 120000
   },
   "maxBytesByPath": {
-    "content/physics/sections/mechanics.json": 300000
+    "content/physics/sections/mechanics.json": 300000,
+    "games/orbital-courier/index.html": 560000
   },
   "maxPrecacheEntries": 30,
   "maxSearchSourceBytes": 1100000,

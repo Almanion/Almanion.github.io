@@ -40,7 +40,7 @@ function htmlReferences(relative, content) {
     const markup = String(content || '')
         .replace(/(<script\b[^>]*>)[\s\S]*?(<\/script\s*>)/gi, '$1$2')
         .replace(/(<style\b[^>]*>)[\s\S]*?(<\/style\s*>)/gi, '$1$2');
-    const attributes = /\b(href|src|poster|action)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi;
+    const attributes = /\s(href|src|poster|action)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi;
     let match;
     const tags = markup.match(/<[a-z][^>]*>/gi) || [];
     for (const tag of tags) {

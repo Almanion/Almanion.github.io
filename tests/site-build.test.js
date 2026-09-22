@@ -22,6 +22,8 @@ assert.strictEqual(BuildSite.isPublishable('styles/site/index.css', config), tru
 assert.strictEqual(BuildSite.isPublishable('russian-ege.html', config), true);
 assert.strictEqual(BuildSite.isPublishable('content/physics/manifest.json', config), true);
 assert.strictEqual(BuildSite.isPublishable('dead souls/text/chapter-1.txt', config), true);
+assert.strictEqual(BuildSite.isPublishable('games/orbital-courier/index.html', config), true);
+assert.strictEqual(BuildSite.isPublishable('games/orbital-courier/LICENSE.txt', config), true);
 assert.strictEqual(BuildSite.isPublishable('tests/home-motion.test.js', config), false);
 assert.strictEqual(BuildSite.isPublishable('tools/build-notes.js', config), false);
 assert.strictEqual(BuildSite.isPublishable('firebase/database.rules.json', config), false);
@@ -49,6 +51,7 @@ assert.strictEqual(ServiceWorker.normalizedPath('/styles/site/index.css?v=2'), '
 const references = ValidateSite.htmlReferences('index.html', `
     <a href="physics.html#intro">Physics</a>
     <img src="images/example.png" srcset="images/example.png 1x, images/example@2x.png 2x">
+    <button data-action="launch">Launch</button>
     <script src=script.js></script>
 `);
 assert.deepStrictEqual(references.map(item => item.value), [
