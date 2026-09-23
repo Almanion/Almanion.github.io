@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <script src="theme-bootstrap.js?v=20260908-1"></script>
+    <link rel="stylesheet" href="styles/page-transitions.css?v=20260905-1">
+    <script src="page-transitions.js?v=20260912-1"></script>
+    <link rel="icon" href="favicons/favicon.svg?v=20260905-1" type="image/svg+xml">
+    <script src="favicon-theme.js?v=20260905-1"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#4d7d68">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Спорт | Almanion</title>
+    <link rel="stylesheet" href="styles/site/index.css?v=20260920-3">
+    <link rel="stylesheet" href="styles/tokens.css">
+    <link rel="stylesheet" href="styles/buttons.css">
+    <link rel="stylesheet" href="styles/mobile-overrides.css">
+    <link rel="stylesheet" href="style-new.css?v=20260920-2">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
+    <link rel="stylesheet" href="styles/planner.css?v=20260923-1">
+</head>
+<body class="planner-page sport-page" data-no-math>
+    <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
+
+    <header class="sidebar-header personal-topbar">
+        <h2><a href="index.html" aria-label="Вернуться на главную">
+            <svg class="home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.75 5.25c3.25-.85 5.9-.22 8.25 1.55v12.05c-2.35-1.77-5-2.4-8.25-1.55V5.25Z"/><path d="M20.25 5.25c-3.25-.85-5.9-.22-8.25 1.55v12.05c2.35-1.77 5-2.4 8.25-1.55V5.25Z"/><path d="M12 6.8v12.05"/></svg>
+            <span>Конспекты</span>
+        </a></h2>
+        <span class="personal-topbar-context">Личный план</span>
+        <nav class="personal-topbar-links" aria-label="Личные разделы"><a href="planner.html">План</a><a href="sport.html" aria-current="page">Спорт</a></nav>
+        <div class="sidebar-header-buttons"></div>
+    </header>
+
+    <section class="personal-gate" id="personalGate" aria-live="polite">
+        <div class="personal-gate-card">
+            <span class="personal-gate-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+            <p class="personal-gate-kicker">Личный раздел</p><h1 id="personalGateTitle">Проверяем аккаунт…</h1><p id="personalGateText">Дневник доступен только владельцу.</p>
+            <button id="personalGateLogin" type="button" hidden>Войти</button><a href="index.html">Вернуться на главную</a>
+        </div>
+    </section>
+
+    <main class="sport-shell" id="sportApp" hidden>
+        <header class="sport-hero">
+            <div><p>Тренировочный цикл</p><h1>Спорт</h1><span id="sportHeroStatus">Неделя 1 из 8</span></div>
+            <div class="sport-hero-actions">
+                <label><span>Неделя</span><select id="sportWeekSelect" aria-label="Текущая неделя программы"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label>
+                <button type="button" class="planner-primary-button" id="sportStartWorkout">Начать тренировку</button>
+            </div>
+        </header>
+
+        <section class="sport-stats" id="sportStats" aria-label="Сводка"></section>
+
+        <nav class="sport-tabs" id="sportTabs" aria-label="Разделы спортивного дневника">
+            <button type="button" class="is-active" data-sport-view="today">Сегодня</button>
+            <button type="button" data-sport-view="program">Программа</button>
+            <button type="button" data-sport-view="history">История</button>
+            <button type="button" data-sport-view="metrics">Показатели</button>
+            <button type="button" data-sport-view="export">Экспорт</button>
+        </nav>
+
+        <section class="sport-content" id="sportContent" aria-live="polite"></section>
+    </main>
+
+    <div class="planner-modal-layer" id="sportWorkoutModal" hidden aria-hidden="true">
+        <section class="planner-modal sport-workout-modal" role="dialog" aria-modal="true" aria-labelledby="sportWorkoutTitle">
+            <header><div><p id="sportWorkoutKicker">Тренировка</p><h2 id="sportWorkoutTitle">A · всё тело</h2></div><button type="button" class="planner-icon-button" data-close-modal aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>
+            <form id="sportWorkoutForm">
+                <input id="sportWorkoutId" type="hidden">
+                <div class="sport-session-picker" id="sportSessionPicker" role="radiogroup" aria-label="Выбор тренировки"></div>
+                <div class="sport-readiness-grid">
+                    <label class="planner-field"><span>Дата</span><input id="sportWorkoutDate" type="date" required></label>
+                    <label class="planner-field"><span>Сон, часов</span><input id="sportWorkoutSleep" type="number" min="0" max="16" step="0.25" inputmode="decimal"></label>
+                    <label class="planner-field"><span>До тренировки, 1–5</span><input id="sportWorkoutBefore" type="number" min="1" max="5" inputmode="numeric"></label>
+                    <label class="planner-field"><span>После, 1–5</span><input id="sportWorkoutAfter" type="number" min="1" max="5" inputmode="numeric"></label>
+                </div>
+                <div class="sport-exercise-log" id="sportExerciseLog"></div>
+                <div class="sport-workout-extras">
+                    <label class="planner-field"><span>Аэробная работа, минут</span><input id="sportWorkoutCardio" type="number" min="0" max="180" inputmode="numeric"></label>
+                    <label class="planner-check"><input id="sportWorkoutTalkPace" type="checkbox"><span>Разговорный темп сохранялся</span></label>
+                    <label class="planner-field planner-field-wide"><span>Самочувствие, боль, что изменить</span><textarea id="sportWorkoutNotes" maxlength="1600" rows="3"></textarea></label>
+                </div>
+                <div class="planner-form-error" id="sportWorkoutError" role="alert" hidden></div>
+                <footer><button type="button" class="planner-danger-button" id="sportSkipWorkout">Отметить пропуск</button><span></span><button type="button" data-close-modal>Закрыть</button><button type="submit" class="planner-primary-button">Сохранить</button></footer>
+            </form>
+        </section>
+    </div>
+
+    <div class="planner-modal-layer" id="sportMetricModal" hidden aria-hidden="true">
+        <section class="planner-modal" role="dialog" aria-modal="true" aria-labelledby="sportMetricTitle">
+            <header><div><p>Быстрая запись</p><h2 id="sportMetricTitle">Показатели дня</h2></div><button type="button" class="planner-icon-button" data-close-modal aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>
+            <form id="sportMetricForm">
+                <input id="sportMetricId" type="hidden">
+                <div class="planner-form-grid">
+                    <label class="planner-field"><span>Дата</span><input id="sportMetricDate" type="date" required></label>
+                    <label class="planner-field"><span>Вес, кг</span><input id="sportMetricWeight" type="number" min="25" max="250" step="0.1" inputmode="decimal"></label>
+                    <label class="planner-field"><span>Шаги</span><input id="sportMetricSteps" type="number" min="0" max="100000" inputmode="numeric"></label>
+                    <label class="planner-field"><span>Прогулка, минут</span><input id="sportMetricWalkMinutes" type="number" min="0" max="1000" inputmode="numeric"></label>
+                    <label class="planner-field"><span>Расстояние, км</span><input id="sportMetricDistance" type="number" min="0" max="200" step="0.1" inputmode="decimal"></label>
+                    <label class="planner-field"><span>Самочувствие, 1–5</span><input id="sportMetricFeeling" type="number" min="1" max="5" inputmode="numeric"></label>
+                </div>
+                <label class="planner-field planner-field-wide"><span>Заметка</span><textarea id="sportMetricNotes" maxlength="800" rows="3"></textarea></label>
+                <footer><button type="button" class="planner-danger-button" id="sportDeleteMetric" hidden>Удалить</button><span></span><button type="button" data-close-modal>Отмена</button><button type="submit" class="planner-primary-button">Сохранить</button></footer>
+            </form>
+        </section>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js?v=20260903-3"></script>
+    <script src="data-sync.js?v=20260908-1"></script>
+    <script src="kc-storage.js?v=20260911-1"></script>
+    <script src="firebase-analytics.js?v=20260908-1"></script>
+    <script src="script.js?v=20260906-1"></script>
+    <script src="settings.js?v=20260920-3"></script>
+    <script src="account.js?v=20260924-1"></script>
+    <script src="personal-planner-core.js?v=20260923-1"></script>
+    <script src="sport.js?v=20260923-1"></script>
+</body>
+</html>

@@ -238,7 +238,9 @@ test('mobile note menu opens and closes without page overflow', async function (
 test('protected pages are complete in the assembled site', async function ({ request }) {
     const pages = [
         { route: '/matcenter.html', marker: 'МатЦентр 2025/2026' },
-        { route: '/english.html', marker: 'Checking access…' }
+        { route: '/english.html', marker: 'Checking access…' },
+        { route: '/planner.html', marker: 'Планировщик доступен только владельцу' },
+        { route: '/sport.html', marker: 'Дневник доступен только владельцу' }
     ];
     for (const entry of pages) {
         const response = await request.get(entry.route);

@@ -700,7 +700,12 @@
     function createHomeAccessLink(kind) {
         const link = document.createElement('a');
         link.className = 'home-editor-link';
-        if (kind === 'constructor') {
+        if (kind === 'planner') {
+            link.id = 'homePlannerLink';
+            link.href = 'planner.html';
+            link.classList.add('home-planner-link');
+            link.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v3m12-3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/><path d="M8 12h3v3H8z"/></svg><span>Планировщик</span>';
+        } else if (kind === 'constructor') {
             link.id = 'homeConstructorLink';
             link.href = 'constructor.html';
             link.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Конструктор</span>';
@@ -726,13 +731,14 @@
         delete slot.dataset.accessSignature;
     }
 
-    function renderHomeAccessLinks(slot, contentEditor, siteAdmin) {
-        const signature = (contentEditor ? '1' : '0') + (siteAdmin ? '1' : '0');
+    function renderHomeAccessLinks(slot, contentEditor, siteAdmin, plannerOwner) {
+        const signature = (contentEditor ? '1' : '0') + (siteAdmin ? '1' : '0') + (plannerOwner ? '1' : '0');
         if (slot.dataset.accessSignature === signature) return;
         slot.dataset.accessSignature = signature;
         slot.replaceChildren();
         if (contentEditor) slot.appendChild(createHomeAccessLink('constructor'));
         if (siteAdmin) slot.appendChild(createHomeAccessLink('admin'));
+        if (plannerOwner) slot.appendChild(createHomeAccessLink('planner'));
         slot.hidden = slot.childElementCount === 0;
     }
 
@@ -746,7 +752,7 @@
         if (!checkedUser) return;
         const owner = checkedUser.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
         if (owner) {
-            renderHomeAccessLinks(slot, true, true);
+            renderHomeAccessLinks(slot, true, true, true);
             return;
         }
 
@@ -754,13 +760,13 @@
         const handleRoles = function (snapshot) {
             if (generation !== homeAccessGeneration || user !== checkedUser || !slot.isConnected) return;
             const roles = snapshot.val() || {};
-            renderHomeAccessLinks(slot, roles.contentEditor === true, roles.siteAdmin === true);
+            renderHomeAccessLinks(slot, roles.contentEditor === true, roles.siteAdmin === true, false);
         };
         homeRolesRef = rolesRef;
         homeRolesHandler = handleRoles;
         rolesRef.on('value', handleRoles, function () {
             if (generation !== homeAccessGeneration || user !== checkedUser || !slot.isConnected) return;
-            renderHomeAccessLinks(slot, false, false);
+            renderHomeAccessLinks(slot, false, false, false);
         });
     }
 

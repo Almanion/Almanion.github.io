@@ -140,6 +140,32 @@ function serverTimestamp() {
         await assertFails(anonDb.ref('visitors').once('value'));
         await assertFails(forgedOwnerDb.ref('visitors').once('value'));
         await assertFails(forgedOwnerDb.ref('adminRoles').once('value'));
+        const plannerPayload = {
+            meta: { version: 1, createdAt: 1, updatedAt: serverTimestamp() },
+            settings: {
+                sleepStart: '22:00', sleepEnd: '06:00', weekStartsOn: 1,
+                currentProgramWeek: 1, telegramEnabled: false,
+                calendarExportName: 'Личный план'
+            },
+            events: {
+                'event-1': {
+                    id: 'event-1', title: 'Личное событие', category: 'personal',
+                    date: '2026-09-24', startTime: '18:00', endTime: '19:00', allDay: false,
+                    recurrence: { frequency: 'none', interval: 1 },
+                    reminderMinutes: { 0: 60 }, notes: '', updatedAt: 1
+                }
+            },
+            sport: {
+                settings: {
+                    programStartedAt: '2026-09-24',
+                    preferredDays: { A: 1, B: 3, C: 6, D: 2 }
+                }
+            }
+        };
+        await assertSucceeds(ownerDb.ref('plannerUsers/2M2ZdLQcJAhluPjUVFNJ6MyQrdH2').set(plannerPayload));
+        await assertSucceeds(ownerDb.ref('plannerUsers/2M2ZdLQcJAhluPjUVFNJ6MyQrdH2').once('value'));
+        await assertFails(ordinaryDb.ref('plannerUsers/2M2ZdLQcJAhluPjUVFNJ6MyQrdH2').once('value'));
+        await assertFails(forgedOwnerDb.ref('plannerUsers/forged-owner-email').set(plannerPayload));
         await assertFails(forgedOwnerDb.ref('adminRoles/' + accountUid).set({
             email: 'reader@example.test',
             siteAdmin: true,

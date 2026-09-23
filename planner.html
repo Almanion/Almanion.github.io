@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <script src="theme-bootstrap.js?v=20260908-1"></script>
+    <link rel="stylesheet" href="styles/page-transitions.css?v=20260905-1">
+    <script src="page-transitions.js?v=20260912-1"></script>
+    <link rel="icon" href="favicons/favicon.svg?v=20260905-1" type="image/svg+xml">
+    <script src="favicon-theme.js?v=20260905-1"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#5c6fd8">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Планировщик | Almanion</title>
+    <link rel="stylesheet" href="styles/site/index.css?v=20260920-3">
+    <link rel="stylesheet" href="styles/tokens.css">
+    <link rel="stylesheet" href="styles/buttons.css">
+    <link rel="stylesheet" href="styles/mobile-overrides.css">
+    <link rel="stylesheet" href="style-new.css?v=20260920-2">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
+    <link rel="stylesheet" href="styles/planner.css?v=20260923-1">
+</head>
+<body class="planner-page" data-no-math>
+    <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
+
+    <header class="sidebar-header personal-topbar">
+        <h2><a href="index.html" aria-label="Вернуться на главную">
+            <svg class="home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.75 5.25c3.25-.85 5.9-.22 8.25 1.55v12.05c-2.35-1.77-5-2.4-8.25-1.55V5.25Z"/><path d="M20.25 5.25c-3.25-.85-5.9-.22-8.25 1.55v12.05c2.35-1.77 5-2.4 8.25-1.55V5.25Z"/><path d="M12 6.8v12.05"/></svg>
+            <span>Конспекты</span>
+        </a></h2>
+        <span class="personal-topbar-context">Личный план</span>
+        <nav class="personal-topbar-links" aria-label="Личные разделы">
+            <a href="planner.html" aria-current="page">План</a>
+            <a href="sport.html">Спорт</a>
+        </nav>
+        <div class="sidebar-header-buttons"></div>
+    </header>
+
+    <section class="personal-gate" id="personalGate" aria-live="polite">
+        <div class="personal-gate-card">
+            <span class="personal-gate-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+            <p class="personal-gate-kicker">Личный раздел</p>
+            <h1 id="personalGateTitle">Проверяем аккаунт…</h1>
+            <p id="personalGateText">Планировщик доступен только владельцу.</p>
+            <button id="personalGateLogin" type="button" hidden>Войти</button>
+            <a href="index.html">Вернуться на главную</a>
+        </div>
+    </section>
+
+    <div class="planner-layout" id="plannerApp" hidden>
+        <aside class="planner-rail" aria-label="Разделы планировщика">
+            <div class="planner-mini-date" id="plannerMiniDate"></div>
+            <nav class="planner-view-nav" id="plannerViewNav">
+                <button type="button" class="is-active" data-view="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 3v3m12-3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/><path d="M8 12h3v3H8z"/></svg><span>Сегодня</span></button>
+                <button type="button" data-view="week"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v15H4zM4 9h16M8 5v15m4-15v15m4-15v15"/></svg><span>Неделя</span></button>
+                <button type="button" data-view="month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 3v3m14-3v3M3 8h18M4 5h16a1 1 0 0 1 1 1v15H3V6a1 1 0 0 1 1-1Z"/><path d="M7 12h2m3 0h2m3 0h2M7 16h2m3 0h2m3 0h2"/></svg><span>Месяц</span></button>
+                <button type="button" data-view="goals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="m15 9 5-5m-4 0h4v4"/></svg><span>Цели</span></button>
+                <button type="button" data-view="inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v14H4zM4 14h4l2 2h4l2-2h4"/></svg><span>Входящие</span><b id="plannerInboxBadge" hidden>0</b></button>
+            </nav>
+            <div class="planner-rail-footer">
+                <button type="button" id="plannerExportButton"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3v12m-4-4 4 4 4-4M5 19h14"/></svg><span>Экспорт</span></button>
+                <button type="button" id="plannerIntegrationsButton"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 12h8m-6-4 4 8M5 7l3-3 3 3-3 3-3-3Zm8 10 3-3 3 3-3 3-3-3Z"/></svg><span>Связи</span></button>
+            </div>
+        </aside>
+
+        <main class="planner-main">
+            <header class="planner-heading">
+                <div>
+                    <p id="plannerHeadingEyebrow"></p>
+                    <h1 id="plannerHeadingTitle">Сегодня</h1>
+                </div>
+                <div class="planner-heading-actions">
+                    <button type="button" class="planner-icon-button" id="plannerPrev" aria-label="Предыдущий период"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m15 5-7 7 7 7"/></svg></button>
+                    <button type="button" id="plannerTodayButton">Сегодня</button>
+                    <button type="button" class="planner-icon-button" id="plannerNext" aria-label="Следующий период"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m9 5 7 7-7 7"/></svg></button>
+                    <button type="button" class="planner-primary-button" id="plannerAddButton"><span>+</span> Добавить</button>
+                </div>
+            </header>
+
+            <section class="planner-summary" id="plannerSummary" aria-label="Сводка дня"></section>
+            <section class="planner-content" id="plannerContent" aria-live="polite"></section>
+        </main>
+    </div>
+
+    <nav class="planner-mobile-nav" id="plannerMobileNav" hidden aria-label="Разделы планировщика">
+        <button type="button" class="is-active" data-view="today"><svg viewBox="0 0 24 24"><path d="M6 3v3m12-3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/></svg><span>Сегодня</span></button>
+        <button type="button" data-view="week"><svg viewBox="0 0 24 24"><path d="M4 5h16v15H4zM4 9h16M8 5v15m4-15v15m4-15v15"/></svg><span>Неделя</span></button>
+        <button type="button" class="planner-mobile-add" id="plannerMobileAdd" aria-label="Добавить"><span>+</span></button>
+        <button type="button" data-view="goals"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="m15 9 5-5"/></svg><span>Цели</span></button>
+        <button type="button" id="plannerMobileMore" data-mobile-more><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg><span>Ещё</span></button>
+    </nav>
+
+    <div class="planner-modal-layer" id="plannerItemModal" hidden aria-hidden="true">
+        <section class="planner-modal" role="dialog" aria-modal="true" aria-labelledby="plannerItemTitle">
+            <header><div><p>Планировщик</p><h2 id="plannerItemTitle">Новое событие</h2></div><button type="button" class="planner-icon-button" data-close-modal aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>
+            <form id="plannerItemForm">
+                <input id="plannerItemId" type="hidden">
+                <div class="planner-type-switch" role="radiogroup" aria-label="Тип записи">
+                    <label><input type="radio" name="itemType" value="event" checked><span>Событие</span></label>
+                    <label><input type="radio" name="itemType" value="task"><span>Задача</span></label>
+                    <label><input type="radio" name="itemType" value="series"><span>Серия</span></label>
+                    <label><input type="radio" name="itemType" value="goal"><span>Цель</span></label>
+                </div>
+                <label class="planner-field planner-field-wide"><span>Название</span><input id="plannerItemName" maxlength="160" required autocomplete="off"></label>
+                <div class="planner-form-grid">
+                    <label class="planner-field"><span>Дата</span><input id="plannerItemDate" type="date" required></label>
+                    <label class="planner-field"><span>Категория</span><select id="plannerItemCategory"><option value="school">Школа</option><option value="crimson">Crimson</option><option value="math">Математика</option><option value="programming">Программирование</option><option value="personal">Личное</option><option value="sport">Спорт</option></select></label>
+                    <label class="planner-field planner-event-only"><span>Начало</span><input id="plannerItemStart" type="time"></label>
+                    <label class="planner-field planner-event-only"><span>Окончание</span><input id="plannerItemEnd" type="time"></label>
+                    <label class="planner-field"><span>Повторение</span><select id="plannerItemRepeat"><option value="none">Не повторять</option><option value="daily">Ежедневно</option><option value="weekly">Еженедельно</option></select></label>
+                    <label class="planner-field planner-event-only"><span>Напомнить</span><select id="plannerItemReminder"><option value="">Не напоминать</option><option value="15">За 15 минут</option><option value="60">За час</option><option value="720">За 12 часов</option><option value="1440">За день</option></select></label>
+                    <label class="planner-field planner-series-only" hidden><span>Всего задач</span><input id="plannerSeriesTotal" type="number" min="1" max="200" value="10"></label>
+                    <label class="planner-field planner-goal-only" hidden><span>Целевое значение</span><input id="plannerGoalTarget" type="number" min="1" max="100000" value="1"></label>
+                    <label class="planner-field planner-goal-only" hidden><span>Единица</span><input id="plannerGoalUnit" maxlength="40" value="шагов"></label>
+                    <label class="planner-field planner-task-only" hidden><span>Срок</span><input id="plannerTaskDeadline" type="time"></label>
+                </div>
+                <fieldset class="planner-weekdays" id="plannerWeekdays" hidden><legend>Дни недели</legend><label><input type="checkbox" value="1"><span>Пн</span></label><label><input type="checkbox" value="2"><span>Вт</span></label><label><input type="checkbox" value="3"><span>Ср</span></label><label><input type="checkbox" value="4"><span>Чт</span></label><label><input type="checkbox" value="5"><span>Пт</span></label><label><input type="checkbox" value="6"><span>Сб</span></label><label><input type="checkbox" value="0"><span>Вс</span></label></fieldset>
+                <label class="planner-field planner-field-wide"><span>Заметка</span><textarea id="plannerItemNotes" maxlength="1200" rows="3"></textarea></label>
+                <div class="planner-form-error" id="plannerFormError" role="alert" hidden></div>
+                <footer><button type="button" class="planner-danger-button" id="plannerDeleteButton" hidden>Удалить</button><span></span><button type="button" data-close-modal>Отмена</button><button type="submit" class="planner-primary-button">Сохранить</button></footer>
+            </form>
+        </section>
+    </div>
+
+    <div class="planner-modal-layer" id="plannerUtilityModal" hidden aria-hidden="true">
+        <section class="planner-modal planner-utility-modal" role="dialog" aria-modal="true" aria-labelledby="plannerUtilityTitle">
+            <header><div><p>Личный план</p><h2 id="plannerUtilityTitle">Связи и импорт</h2></div><button type="button" class="planner-icon-button" data-close-modal aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>
+            <div class="planner-utility-content" id="plannerUtilityContent"></div>
+        </section>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js?v=20260903-3"></script>
+    <script src="data-sync.js?v=20260908-1"></script>
+    <script src="kc-storage.js?v=20260911-1"></script>
+    <script src="firebase-analytics.js?v=20260908-1"></script>
+    <script src="script.js?v=20260906-1"></script>
+    <script src="settings.js?v=20260920-3"></script>
+    <script src="account.js?v=20260924-1"></script>
+    <script src="personal-planner-core.js?v=20260923-1"></script>
+    <script src="planner.js?v=20260923-1"></script>
+</body>
+</html>
