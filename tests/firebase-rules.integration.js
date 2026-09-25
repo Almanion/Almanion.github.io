@@ -166,6 +166,19 @@ function serverTimestamp() {
         await assertSucceeds(ownerDb.ref('plannerUsers/2M2ZdLQcJAhluPjUVFNJ6MyQrdH2').once('value'));
         await assertFails(ordinaryDb.ref('plannerUsers/2M2ZdLQcJAhluPjUVFNJ6MyQrdH2').once('value'));
         await assertFails(forgedOwnerDb.ref('plannerUsers/forged-owner-email').set(plannerPayload));
+        // Exercise the real store and payloads against Firebase validation, not a hand-written happy-path fixture.
+        const plannerCore = require('../personal-planner-core.js');
+        const plannerStore = new plannerCore.Store();
+        await plannerStore.connect({ uid: plannerCore.OWNER_UID }, ownerDb);
+        const entry = { id: 'new-series', title: 'Серия с заметкой', category: 'math', date: '2026-09-25', notes: 'Проверка сохранения', recurrence: { frequency: 'none', interval: 1 } };
+        assert.strictEqual(await plannerStore.upsert('series', Object.assign({}, entry, { total: 12, solved: null })), true);
+        assert.strictEqual(await plannerStore.upsert('goals', Object.assign({}, entry, { id: 'new-goal', target: 10, current: null })), true);
+        assert.strictEqual(await plannerStore.upsert('tasks', Object.assign({}, entry, { id: 'new-task', done: null })), true);
+        assert.strictEqual(await plannerStore.upsert('events', Object.assign({}, entry, { id: 'new-event', startTime: '', endTime: '', allDay: true, reminderMinutes: [], recurrence: { frequency: 'weekly', interval: 2, days: [3, 6], until: '2026-12-31' } })), true);
+        assert.strictEqual(await plannerStore.upsertSport('measurements', { id: 'new-metric', date: '2026-09-25', weight: 70, notes: '' }), true);
+        assert.strictEqual(await plannerStore.upsertSport('workouts', { id: 'new-workout', date: '2026-09-25', session: 'A', status: 'completed', programWeek: 1, notes: '', exercises: [] }), true);
+        assert.strictEqual(await plannerStore.importState(plannerCore.defaultData()), true);
+        plannerStore.disconnect();
         await assertFails(forgedOwnerDb.ref('adminRoles/' + accountUid).set({
             email: 'reader@example.test',
             siteAdmin: true,

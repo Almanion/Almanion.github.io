@@ -69,11 +69,12 @@
     let state = core.defaultData();
     let authorized = false;
     let activeUid = '';
+    let accountGeneration = 0;
     let view = 'today';
     let activeSession = 'A';
 
     function byId(id) { return doc.getElementById(id); }
-    function esc(value) { const node = doc.createElement('div'); node.textContent = value == null ? '' : String(value); return node.innerHTML; }
+    function esc(value) { const node = doc.createElement('div'); node.textContent = value == null ? '' : String(value); return node.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
     function num(value, fallback) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : (fallback || 0); }
     function values(value) { return Object.values(core.objectMap(value)); }
     function toast(message, type) { if (win.AlmanionToast) win.AlmanionToast.show(message, { type: type || 'info' }); }
@@ -137,6 +138,9 @@
     }
 
     function handleAccount(user) {
+        if (user && core.isOwner(user) && activeUid === user.uid) return;
+        const generation = ++accountGeneration;
+        doc.querySelectorAll('.planner-modal-layer:not([hidden])').forEach(closeModal);
         if (!user) { activeUid = ''; store.disconnect(); showGate('guest'); return; }
         if (!core.isOwner(user)) { activeUid = ''; store.disconnect(); showGate('wrong'); return; }
         if (activeUid === user.uid && authorized) return;
@@ -144,7 +148,7 @@
         showGate('checking');
         const database = win.AlmanionAccount && win.AlmanionAccount.database;
         if (!database) { refs.personalGateTitle.textContent = 'Не удалось открыть дневник'; refs.personalGateText.textContent = 'Firebase недоступен. Обновите страницу.'; return; }
-        store.connect(user, database).then(showApp).catch(function () { refs.personalGateTitle.textContent = 'Не удалось открыть дневник'; refs.personalGateText.textContent = 'Проверьте подключение и правила доступа Firebase.'; });
+        store.connect(user, database).then(function () { if (generation === accountGeneration) showApp(); }).catch(function () { if (generation !== accountGeneration) return; activeUid = ''; refs.personalGateTitle.textContent = 'Не удалось открыть дневник'; refs.personalGateText.textContent = 'Проверьте подключение и правила доступа Firebase.'; });
     }
 
     function recentWorkouts() { return values(state.sport.workouts).sort(function (a, b) { return String(b.date).localeCompare(String(a.date)) || num(b.updatedAt) - num(a.updatedAt); }); }
@@ -260,16 +264,16 @@
 
     function exerciseLogMarkup(sessionKey, editedWorkout) {
         const session = PROGRAM[sessionKey];
-        const week = programWeek();
+        const week = editedWorkout && editedWorkout.programWeek || programWeek();
         return session.exercises.map(function (exercise, exerciseIndex) {
             const plan = prescription(exercise, week);
-            const count = plannedSets(plan);
             const edited = editedWorkout && (editedWorkout.exercises || []).find(function (item) { return item.name === exercise.name; });
+            const count = edited && edited.sets && edited.sets.length || plannedSets(plan);
             const previous = edited || latestExercise(sessionKey, exercise.name);
             let rows = '<span>№</span><span>Повторы</span><span>Вес, кг</span><span>RIR</span>';
             for (let setIndex = 0; setIndex < count; setIndex++) {
                 const previousSet = previous && previous.sets && previous.sets[setIndex] || {};
-                rows += '<span>' + (setIndex + 1) + '</span><input data-set-reps type="text" inputmode="numeric" maxlength="16" value="' + esc(previousSet.reps || '') + '" aria-label="Повторы, подход ' + (setIndex + 1) + '"><input data-set-weight type="number" min="0" max="300" step="0.25" inputmode="decimal" value="' + esc(previousSet.weight || '') + '" aria-label="Вес, подход ' + (setIndex + 1) + '"><input data-set-rir type="number" min="0" max="10" step="1" inputmode="numeric" value="' + esc(previousSet.rir || '') + '" aria-label="RIR, подход ' + (setIndex + 1) + '">';
+                rows += '<span>' + (setIndex + 1) + '</span><input data-set-reps type="text" inputmode="numeric" maxlength="16" value="' + esc(previousSet.reps ?? '') + '" aria-label="Повторы, подход ' + (setIndex + 1) + '"><input data-set-weight type="number" min="0" max="300" step="0.25" inputmode="decimal" value="' + esc(previousSet.weight ?? '') + '" aria-label="Вес, подход ' + (setIndex + 1) + '"><input data-set-rir type="number" min="0" max="10" step="1" inputmode="numeric" value="' + esc(previousSet.rir ?? '') + '" aria-label="RIR, подход ' + (setIndex + 1) + '">';
             }
             return '<article class="sport-log-row" data-exercise-index="' + exerciseIndex + '"><header><div><h3>' + esc(exercise.name) + '</h3><span>' + esc(exercise.note) + '</span></div><span>' + esc(plan + ' · ' + exercise.rest) + '</span></header><div class="sport-set-grid">' + rows + '</div></article>';
         }).join('');
@@ -287,7 +291,8 @@
         refs.sportWorkoutCardio.value = existing && existing.cardioMinutes || '';
         refs.sportWorkoutTalkPace.checked = !!(existing && existing.talkPace);
         refs.sportWorkoutNotes.value = existing && existing.notes || '';
-        refs.sportWorkoutKicker.textContent = 'Неделя ' + programWeek() + ' · ' + WEEK_INFO[programWeek()].rir;
+        const week = existing && existing.programWeek || programWeek();
+        refs.sportWorkoutKicker.textContent = 'Неделя ' + week + ' · ' + WEEK_INFO[week].rir;
         refs.sportWorkoutTitle.textContent = PROGRAM[activeSession].title;
         refs.sportSessionPicker.innerHTML = sessionPickerMarkup(activeSession);
         refs.sportExerciseLog.innerHTML = exerciseLogMarkup(activeSession, existing);
@@ -304,21 +309,24 @@
     }
 
     function collectExercises() {
+        const existing = state.sport.workouts[refs.sportWorkoutId.value];
         return Array.from(refs.sportExerciseLog.querySelectorAll('.sport-log-row')).map(function (row, exerciseIndex) {
             const exercise = PROGRAM[activeSession].exercises[exerciseIndex];
             const reps = row.querySelectorAll('[data-set-reps]');
             const weights = row.querySelectorAll('[data-set-weight]');
             const rirs = row.querySelectorAll('[data-set-rir]');
-            return { name: exercise.name, plan: prescription(exercise, programWeek()), sets: Array.from(reps).map(function (field, index) { return { reps: field.value.trim(), weight: weights[index].value ? Number(weights[index].value) : '', rir: rirs[index].value ? Number(rirs[index].value) : '' }; }) };
+            return { name: exercise.name, plan: prescription(exercise, existing && existing.programWeek || programWeek()), sets: Array.from(reps).map(function (field, index) { return { reps: field.value.trim(), weight: weights[index].value ? Number(weights[index].value) : '', rir: rirs[index].value ? Number(rirs[index].value) : '' }; }) };
         });
     }
 
     function saveWorkout(event, status) {
         if (event) event.preventDefault();
+        if (!authorized || !refs.sportWorkoutForm.reportValidity()) return;
         const date = refs.sportWorkoutDate.value || today();
         const id = refs.sportWorkoutId.value || core.safeId('workout');
+        const existing = state.sport.workouts[id];
         const workout = {
-            id: id, date: date, session: activeSession, programWeek: programWeek(), status: status || 'completed',
+            id: id, date: date, session: activeSession, programWeek: existing && existing.programWeek || programWeek(), status: status || 'completed',
             sleepHours: refs.sportWorkoutSleep.value ? Number(refs.sportWorkoutSleep.value) : '',
             feelingBefore: refs.sportWorkoutBefore.value ? Number(refs.sportWorkoutBefore.value) : '',
             feelingAfter: refs.sportWorkoutAfter.value ? Number(refs.sportWorkoutAfter.value) : '',
@@ -326,12 +334,12 @@
             cardioMinutes: refs.sportWorkoutCardio.value ? Number(refs.sportWorkoutCardio.value) : 0,
             talkPace: refs.sportWorkoutTalkPace.checked,
             notes: refs.sportWorkoutNotes.value.trim(),
-            completedAt: Date.now()
+            completedAt: existing && existing.completedAt || Date.now()
         };
+        view = 'history';
         store.upsertSport('workouts', workout);
         closeModal(refs.sportWorkoutModal);
         view = 'history';
-        toast(status === 'skipped' ? 'Пропуск отмечен' : 'Тренировка сохранена', 'success');
     }
 
     function openMetric(id) {
@@ -350,6 +358,7 @@
     }
     function saveMetric(event) {
         event.preventDefault();
+        if (!authorized) return;
         const date = refs.sportMetricDate.value || today();
         const existing = refs.sportMetricId.value && state.sport.measurements[refs.sportMetricId.value]
             || values(state.sport.measurements).find(function (item) { return item.date === date; });
@@ -363,7 +372,6 @@
             notes: refs.sportMetricNotes.value.trim()
         });
         closeModal(refs.sportMetricModal);
-        toast('Показатели сохранены', 'success');
     }
 
     function deleteMetric() {
@@ -371,7 +379,6 @@
         if (!id || !win.confirm('Удалить эту запись показателей?')) return;
         store.removeSport('measurements', id);
         closeModal(refs.sportMetricModal);
-        toast('Запись удалена', 'success');
     }
 
     function skipOrDeleteWorkout() {
@@ -381,7 +388,6 @@
             store.removeSport('workouts', id);
             closeModal(refs.sportWorkoutModal);
             view = 'history';
-            toast('Запись удалена', 'success');
             return;
         }
         saveWorkout(null, 'skipped');
@@ -435,7 +441,8 @@
     function init() {
         cacheRefs();
         bindEvents();
-        store.subscribe(function (next, detail) { state = next; if (authorized) render(); if (detail && detail.source === 'error') toast('Нет сети: запись сохранена на устройстве', 'info'); });
+        store.subscribe(function (next, detail) { state = next; if (authorized && detail.source !== 'sync' && detail.source !== 'error') render(); });
+        core.mountSyncStatus(store, byId('personalSyncStatus'));
         showGate('checking');
         win.addEventListener('almanion-account-ready', function (event) { handleAccount(event.detail && event.detail.user); });
         const account = win.AlmanionAccount;

@@ -44,7 +44,7 @@
     function esc(value) {
         const node = doc.createElement('div');
         node.textContent = value == null ? '' : String(value);
-        return node.innerHTML;
+        return node.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
     function num(value, fallback) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : (fallback || 0); }
     function values(map) { return Object.values(core.objectMap(map)); }
@@ -101,6 +101,7 @@
             }
             if (!response.ok) throw new Error('Сервер вернул HTTP ' + response.status);
             const result = await response.json();
+            if (requestGeneration !== accountGeneration || requestUid !== activeUid) throw Object.assign(new Error('Аккаунт изменился'), { code: 'STALE_ACCOUNT' });
             if (!result || result.success !== true) {
                 const message = String(result && result.error || 'Сервис Telegram недоступен');
                 if (!forceRefresh && /сессия|токен|account session|sign in/i.test(message)) {
@@ -243,6 +244,7 @@
 
     async function syncTelegramReminders(force, propagateError) {
         if (!authorized || !state.settings.telegramEnabled) return null;
+        if (Object.keys(store.pending).length || store.lastError || !store.remoteLoaded) return null;
         const syncGeneration = accountGeneration;
         const reminders = buildTelegramReminders();
         const hash = telegramSnapshotHash(reminders);
@@ -325,12 +327,14 @@
             'plannerItemTitle', 'plannerItemId', 'plannerItemName', 'plannerItemDate', 'plannerItemCategory', 'plannerItemStart',
             'plannerItemEnd', 'plannerItemRepeat', 'plannerItemReminder', 'plannerSeriesTotal', 'plannerGoalTarget',
             'plannerGoalUnit', 'plannerTaskDeadline', 'plannerWeekdays', 'plannerItemNotes', 'plannerFormError',
+            'plannerRepeatInterval', 'plannerRepeatUntil', 'plannerSeriesSolved', 'plannerSeriesWritten', 'plannerGoalCurrent',
             'plannerDeleteButton', 'plannerUtilityModal', 'plannerUtilityTitle', 'plannerUtilityContent'
         ].forEach(function (id) { refs[id] = byId(id); });
     }
 
     function showGate(mode) {
         authorized = false;
+        doc.querySelectorAll('.planner-modal-layer:not([hidden])').forEach(closeModal);
         win.clearTimeout(telegramSyncTimer);
         telegramRequestControllers.forEach(function (controller) { controller.abort(); });
         telegramRequestControllers.clear();
@@ -365,8 +369,9 @@
     }
 
     function handleAccount(user) {
-        if (user && core.isOwner(user) && activeUid === user.uid && authorized) return;
+        if (user && core.isOwner(user) && activeUid === user.uid) return;
         accountGeneration += 1;
+        const generation = accountGeneration;
         if (!user) {
             activeUid = '';
             store.disconnect();
@@ -387,7 +392,9 @@
             refs.personalGateText.textContent = 'Firebase недоступен. Обновите страницу.';
             return;
         }
-        store.connect(user, database).then(showApp).catch(function () {
+        store.connect(user, database).then(function () { if (generation === accountGeneration) showApp(); }).catch(function () {
+            if (generation !== accountGeneration) return;
+            activeUid = '';
             refs.personalGateTitle.textContent = 'Не удалось открыть план';
             refs.personalGateText.textContent = 'Проверьте подключение и правила доступа Firebase.';
         });
@@ -410,12 +417,20 @@
         return match ? Number(match[1]) * 60 + Number(match[2]) : 0;
     }
     function freeMinutes(date) {
-        const intervals = eventsFor(date).filter(function (item) { return !item.allDay && item.startTime && item.endTime && item.id !== 'system-sleep'; }).map(function (item) {
-            let start = Math.max(360, minutes(item.startTime));
-            let end = Math.min(1320, minutes(item.endTime));
-            if (end <= start) return null;
-            return [start, end];
-        }).filter(Boolean).sort(function (a, b) { return a[0] - b[0]; });
+        const intervals = [];
+        [core.addDays(date, -1), date].forEach(function (day) {
+            eventsFor(day).forEach(function (item) {
+                if (item.allDay || !item.startTime || !item.endTime) return;
+                let start = minutes(item.startTime);
+                let end = minutes(item.endTime);
+                if (end <= start) end += 1440;
+                if (day !== date) { start -= 1440; end -= 1440; }
+                start = Math.max(0, start);
+                end = Math.min(1440, end);
+                if (end > start) intervals.push([start, end]);
+            });
+        });
+        intervals.sort(function (a, b) { return a[0] - b[0]; });
         let used = 0;
         let current = null;
         intervals.forEach(function (range) {
@@ -424,7 +439,7 @@
             else { used += current[1] - current[0]; current = range.slice(); }
         });
         if (current) used += current[1] - current[0];
-        return Math.max(0, 960 - used);
+        return Math.max(0, 1440 - used);
     }
 
     function summaryMarkup() {
@@ -479,7 +494,7 @@
     }
 
     function seriesSnapshotMarkup() {
-        const series = values(state.series).sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); })[0];
+        const series = values(state.series).filter(function (item) { return item.date <= selectedDate; }).sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); })[0];
         if (!series) return '<section class="planner-panel"><div class="planner-section-heading"><h2>Серия кружка</h2><button type="button" data-add-series>Создать</button></div>' + emptyMarkup('Серия не добавлена', 'Укажите число задач и отмечайте продвижение.') + '</section>';
         const solved = num(series.solved);
         const total = Math.max(1, num(series.total, 1));
@@ -516,7 +531,7 @@
             const date = core.addDays(gridStart, index);
             const parsed = core.parseDate(date);
             const items = combinedForDate(date).slice(0, 3);
-            days += '<article class="planner-month-day' + (parsed.getMonth() !== selected.getMonth() ? ' is-outside' : '') + (isToday(date) ? ' is-today' : '') + '" data-select-date="' + date + '" role="button" tabindex="0"><strong>' + parsed.getDate() + '</strong><div class="planner-month-events">' + items.map(function (item) { return '<span class="planner-month-event" style="--item-color:' + categoryFor(item).color + '">' + esc(item.title) + '</span>'; }).join('') + (combinedForDate(date).length > 3 ? '<span class="planner-month-event">ещё ' + (combinedForDate(date).length - 3) + '</span>' : '') + '</div></article>';
+            days += '<article class="planner-month-day' + (parsed.getMonth() !== selected.getMonth() ? ' is-outside' : '') + (isToday(date) ? ' is-today' : '') + '" data-select-date="' + date + '" role="button" tabindex="0" aria-label="' + esc(formatDate(date) + (items.length ? ': ' + items.map(function (item) { return item.title; }).join(', ') : ', нет событий')) + '"><strong>' + parsed.getDate() + '</strong><div class="planner-month-events">' + items.map(function (item) { return '<span class="planner-month-event" style="--item-color:' + categoryFor(item).color + '">' + esc(item.title) + '</span>'; }).join('') + (combinedForDate(date).length > 3 ? '<span class="planner-month-event">ещё ' + (combinedForDate(date).length - 3) + '</span>' : '') + '</div></article>';
         }
         return '<div class="planner-board"><div class="planner-month">' + weekdays + days + '</div></div>';
     }
@@ -622,6 +637,10 @@
         refs.plannerItemForm.querySelectorAll('.planner-task-only').forEach(function (node) { node.hidden = type !== 'task'; });
         refs.plannerItemForm.querySelectorAll('.planner-series-only').forEach(function (node) { node.hidden = type !== 'series'; });
         refs.plannerItemForm.querySelectorAll('.planner-goal-only').forEach(function (node) { node.hidden = type !== 'goal'; });
+        refs.plannerItemForm.querySelectorAll('.planner-repeat-only').forEach(function (node) { node.hidden = type !== 'event' && type !== 'task'; });
+        refs.plannerItemForm.querySelectorAll('.planner-repeat-details').forEach(function (node) { node.hidden = !['event', 'task'].includes(type) || refs.plannerItemRepeat.value === 'none'; });
+        refs.plannerItemForm.querySelectorAll('.planner-field input, .planner-field select').forEach(function (field) { field.disabled = field.closest('.planner-field').hidden; });
+        refs.plannerWeekdays.hidden = !['event', 'task'].includes(type) || refs.plannerItemRepeat.value !== 'weekly';
     }
 
     function findItem(kind, id) { return state[TYPE_COLLECTION[kind]] && state[TYPE_COLLECTION[kind]][id]; }
@@ -637,8 +656,13 @@
         refs.plannerItemStart.value = item && item.startTime || '';
         refs.plannerItemEnd.value = item && item.endTime || '';
         refs.plannerItemRepeat.value = item && item.recurrence && item.recurrence.frequency || 'none';
+        refs.plannerRepeatInterval.value = item && item.recurrence && item.recurrence.interval || 1;
+        refs.plannerRepeatUntil.value = item && item.recurrence && item.recurrence.until || '';
         refs.plannerItemReminder.value = item && item.reminderMinutes && item.reminderMinutes[0] || '';
         refs.plannerSeriesTotal.value = item && item.total || 10;
+        refs.plannerSeriesSolved.value = num(item && item.solved);
+        refs.plannerSeriesWritten.value = num(item && item.written);
+        refs.plannerGoalCurrent.value = num(item && item.current);
         refs.plannerGoalTarget.value = item && item.target || 1;
         refs.plannerGoalUnit.value = item && item.unit || 'шагов';
         refs.plannerTaskDeadline.value = item && item.deadlineTime || '';
@@ -648,7 +672,7 @@
         setItemType(type);
         refs.plannerItemTitle.textContent = item ? 'Изменить запись' : (type === 'series' ? 'Новая серия' : type === 'goal' ? 'Новая цель' : type === 'task' ? 'Новая задача' : 'Новое событие');
         refs.plannerDeleteButton.hidden = !item || item.system === true;
-        refs.plannerWeekdays.hidden = refs.plannerItemRepeat.value !== 'weekly';
+        refs.plannerItemForm.querySelectorAll('[name="itemType"]').forEach(function (radio) { radio.disabled = !!(item && item.system); });
         const selectedDays = item && item.recurrence && item.recurrence.days || [core.parseDate(refs.plannerItemDate.value).getDay()];
         refs.plannerWeekdays.querySelectorAll('input').forEach(function (input) { input.checked = selectedDays.map(Number).includes(Number(input.value)); });
         openModal(refs.plannerItemModal);
@@ -659,6 +683,7 @@
 
     function saveItem(event) {
         event.preventDefault();
+        if (!authorized) return;
         const type = formType();
         const title = refs.plannerItemName.value.trim();
         if (!title) {
@@ -667,18 +692,32 @@
             return;
         }
         const id = refs.plannerItemId.value || core.safeId(type);
-        const repeat = refs.plannerItemRepeat.value;
+        const repeat = ['event', 'task'].includes(type) ? refs.plannerItemRepeat.value : 'none';
         const existing = editingKind ? findItem(editingKind, id) : null;
         const common = {
             id: id,
             title: title,
             category: refs.plannerItemCategory.value,
             date: refs.plannerItemDate.value,
-            recurrence: { frequency: repeat, interval: 1 },
+            recurrence: { frequency: repeat, interval: repeat === 'none' ? 1 : Number(refs.plannerRepeatInterval.value) || 1 },
             notes: refs.plannerItemNotes.value.trim(),
             createdAt: existing && existing.createdAt || Date.now()
         };
+        const until = refs.plannerRepeatUntil.value;
+        if (repeat !== 'none' && until) common.recurrence.until = until;
         if (repeat === 'weekly') common.recurrence.days = Array.from(refs.plannerWeekdays.querySelectorAll('input:checked')).map(function (input) { return Number(input.value); });
+        let validation = '';
+        if (!Number.isFinite(core.parseDate(common.date).getTime())) validation = 'Укажите корректную дату.';
+        else if (type === 'event' && refs.plannerItemEnd.value && !refs.plannerItemStart.value) validation = 'Укажите время начала или очистите время окончания для события на весь день.';
+        else if (repeat !== 'none' && until && until < common.date) validation = 'Окончание повторений не может быть раньше начала.';
+        else if (repeat === 'weekly' && !common.recurrence.days.length) validation = 'Выберите хотя бы один день недели.';
+        else if (type === 'series' && (num(refs.plannerSeriesSolved.value) > num(refs.plannerSeriesTotal.value) || num(refs.plannerSeriesWritten.value) > num(refs.plannerSeriesSolved.value))) validation = 'Оформленных задач не может быть больше решённых, а решённых — больше общего числа.';
+        if (validation) {
+            refs.plannerFormError.textContent = validation;
+            refs.plannerFormError.hidden = false;
+            return;
+        }
+        if (existing && existing.system && type === 'event') common.system = true;
         let item = common;
         if (type === 'event') item = Object.assign(common, {
             startTime: refs.plannerItemStart.value,
@@ -688,33 +727,32 @@
         });
         else if (type === 'task') item = Object.assign(common, {
             deadlineTime: refs.plannerTaskDeadline.value,
-            done: existing && existing.done === true,
+            done: !!(existing && existing.done === true),
             completedDates: existing && existing.completedDates || {}
         });
         else if (type === 'series') item = Object.assign(common, {
             total: Math.max(1, num(refs.plannerSeriesTotal.value, 1)),
-            attempted: existing && num(existing.attempted),
-            solved: existing && num(existing.solved),
-            independent: existing && num(existing.independent),
-            written: existing && num(existing.written),
-            checked: existing && num(existing.checked)
+            attempted: num(existing && existing.attempted),
+            solved: num(refs.plannerSeriesSolved.value),
+            independent: num(existing && existing.independent),
+            written: num(refs.plannerSeriesWritten.value),
+            checked: num(existing && existing.checked)
         });
-        else item = Object.assign(common, { target: Math.max(1, num(refs.plannerGoalTarget.value, 1)), current: existing && num(existing.current), unit: refs.plannerGoalUnit.value.trim() || 'шагов' });
+        else item = Object.assign(common, { target: Math.max(1, num(refs.plannerGoalTarget.value, 1)), current: num(refs.plannerGoalCurrent.value), unit: refs.plannerGoalUnit.value.trim() || 'шагов' });
 
         const collection = TYPE_COLLECTION[type];
-        const operations = [];
-        if (editingKind && editingKind !== type) operations.push(store.remove(TYPE_COLLECTION[editingKind], id));
-        operations.push(store.upsert(collection, item));
-        Promise.all(operations).then(function () { toast('Сохранено', 'success'); }).catch(function () { toast('Изменение сохранено локально и будет отправлено позже', 'info'); });
+        const updates = {};
+        if (editingKind && editingKind !== type) updates[TYPE_COLLECTION[editingKind] + '/' + id] = null;
+        updates[collection + '/' + id] = Object.assign(item, { updatedAt: Date.now() });
+        store.patch(updates);
         closeModal(refs.plannerItemModal);
     }
 
     function deleteItem() {
         const id = refs.plannerItemId.value;
-        if (!id || !editingKind) return;
+        if (!id || !editingKind || !authorized || !win.confirm('Удалить запись? Для повторяющейся записи будут удалены все повторения.')) return;
         store.remove(TYPE_COLLECTION[editingKind], id);
         closeModal(refs.plannerItemModal);
-        toast('Запись удалена', 'success');
     }
 
     function toggleTask(id, date) {
@@ -735,7 +773,7 @@
         const next = Object.assign({}, item);
         const key = kind === 'series' ? 'solved' : 'current';
         const maximum = Math.max(1, num(kind === 'series' ? item.total : item.target, 1));
-        next[key] = Math.max(0, Math.min(maximum, num(item[key]) + delta));
+        next[key] = Math.max(kind === 'series' ? num(item.written) : 0, Math.min(maximum, num(item[key]) + delta));
         store.upsert(collection, next);
     }
 
@@ -746,9 +784,10 @@
         if (!normalized) return toast('Предложение содержит некорректные данные', 'error');
         const payload = Object.assign({}, normalized);
         delete payload.type;
-        store.upsert(TYPE_COLLECTION[item.targetType], payload);
-        store.remove('inbox', id);
-        toast('Добавлено в план', 'success');
+        const updates = {};
+        updates[TYPE_COLLECTION[item.targetType] + '/' + payload.id] = Object.assign(payload, { updatedAt: Date.now() });
+        updates['inbox/' + id] = null;
+        store.patch(updates);
     }
 
     function utilityMarkup(mode) {
@@ -791,7 +830,7 @@
         if (type === 'event') {
             const startTime = /^([01]\d|2[0-3]):[0-5]\d$/.test(candidate.startTime || '') ? candidate.startTime : '';
             const endTime = /^([01]\d|2[0-3]):[0-5]\d$/.test(candidate.endTime || '') ? candidate.endTime : '';
-            return Object.assign(common, { startTime: startTime, endTime: endTime, allDay: !startTime, reminderMinutes: (candidate.reminderMinutes || []).map(Number).filter(function (minute) { return minute > 0 && minute <= 10080; }).slice(0, 4) });
+            return Object.assign(common, { startTime: startTime, endTime: endTime, allDay: !startTime, reminderMinutes: (Array.isArray(candidate.reminderMinutes) ? candidate.reminderMinutes : []).map(Number).filter(function (minute) { return minute > 0 && minute <= 10080; }).slice(0, 4) });
         }
         if (type === 'task') return Object.assign(common, { deadlineTime: /^([01]\d|2[0-3]):[0-5]\d$/.test(candidate.deadlineTime || '') ? candidate.deadlineTime : '', done: false, completedDates: {} });
         if (type === 'series') return Object.assign(common, { total: Math.max(1, Math.min(200, num(candidate.total, 1))), attempted: 0, solved: Math.max(0, num(candidate.solved)), independent: 0, written: 0, checked: 0 });
@@ -847,6 +886,7 @@
     }
 
     function contentClick(event) {
+        if (!authorized) return;
         const target = event.target.closest('button, [data-edit-kind], [data-select-date]');
         if (!target) return;
         if (target.dataset.editKind) return openItem(target.dataset.editKind, target.dataset.editId, selectedDate);
@@ -888,7 +928,7 @@
         });
         refs.plannerItemForm.addEventListener('change', function (event) {
             if (event.target.name === 'itemType') setItemType(event.target.value);
-            if (event.target === refs.plannerItemRepeat) refs.plannerWeekdays.hidden = event.target.value !== 'weekly';
+            if (event.target === refs.plannerItemRepeat) setItemType(formType());
         });
         refs.plannerItemForm.addEventListener('submit', saveItem);
         refs.plannerDeleteButton.addEventListener('click', deleteItem);
@@ -925,7 +965,7 @@
                     }
                 }
             }
-            if ((event.key.toLowerCase() === 'n' || (event.ctrlKey && event.key.toLowerCase() === 'k')) && !/INPUT|TEXTAREA|SELECT/.test(doc.activeElement && doc.activeElement.tagName || '')) {
+            if (authorized && !doc.querySelector('.planner-modal-layer:not([hidden])') && (event.key.toLowerCase() === 'n' || (event.ctrlKey && event.key.toLowerCase() === 'k')) && !/INPUT|TEXTAREA|SELECT/.test(doc.activeElement && doc.activeElement.tagName || '')) {
                 event.preventDefault();
                 openItem('event', '', selectedDate);
             }
@@ -937,10 +977,10 @@
         bindEvents();
         store.subscribe(function (next, detail) {
             state = next;
-            if (authorized) render();
-            if (authorized && state.settings.telegramEnabled && detail && !detail.initial) scheduleTelegramSync(false);
-            if (detail && detail.source === 'error') toast('Нет сети: изменение сохранено на устройстве', 'info');
+            if (authorized && detail.source !== 'sync' && detail.source !== 'error') render();
+            if (authorized && state.settings.telegramEnabled && detail && ['local', 'remote', 'seed', 'sync'].includes(detail.source)) scheduleTelegramSync(false);
         });
+        core.mountSyncStatus(store, byId('personalSyncStatus'));
         showGate('checking');
         win.addEventListener('almanion-account-ready', function (event) { handleAccount(event.detail && event.detail.user); });
         const account = win.AlmanionAccount;

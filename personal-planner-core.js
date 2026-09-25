@@ -28,7 +28,8 @@
     function parseDate(value) {
         const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
         if (!match) return new Date(NaN);
-        return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12, 0, 0, 0);
+        const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12, 0, 0, 0);
+        return dateKey(date) === value ? date : new Date(NaN);
     }
 
     function addDays(value, amount) {
@@ -136,9 +137,9 @@
             meta: Object.assign({}, defaults.meta, raw.meta || {}),
             settings: Object.assign({}, defaults.settings, raw.settings || {}),
             events: Object.assign({}, defaults.events, objectMap(raw.events)),
-            tasks: objectMap(raw.tasks),
-            goals: objectMap(raw.goals),
-            series: objectMap(raw.series),
+            tasks: normalizeRecords('tasks', raw.tasks),
+            goals: normalizeRecords('goals', raw.goals),
+            series: normalizeRecords('series', raw.series),
             inbox: objectMap(raw.inbox),
             sport: {
                 workouts: objectMap(raw.sport && raw.sport.workouts),
@@ -149,8 +150,31 @@
         };
     }
 
+    // Repair records queued by older clients: Firebase treats null as deletion.
+    function normalizeRecord(collection, item) {
+        if (!item || typeof item !== 'object') return item;
+        const result = clone(item);
+        const counters = collection === 'series' ? ['attempted', 'solved', 'independent', 'written', 'checked']
+            : collection === 'goals' ? ['current'] : [];
+        counters.forEach(function (key) {
+            if (result[key] == null || !Number.isFinite(Number(result[key]))) result[key] = 0;
+            else result[key] = Math.max(0, Number(result[key]));
+        });
+        if (collection === 'tasks') result.done = result.done === true;
+        return result;
+    }
+
+    function normalizeRecords(collection, value) {
+        const result = {};
+        Object.entries(objectMap(value)).forEach(function (entry) {
+            if (!['__proto__', 'constructor', 'prototype'].includes(entry[0])) result[entry[0]] = normalizeRecord(collection, entry[1]);
+        });
+        return result;
+    }
+
     function occursOn(item, targetDate) {
         if (!item || !item.date || targetDate < item.date) return false;
+        if (!Number.isFinite(parseDate(item.date).getTime()) || !Number.isFinite(parseDate(targetDate).getTime())) return false;
         const recurrence = item.recurrence || { frequency: 'none' };
         if (recurrence.until && targetDate > recurrence.until) return false;
         const frequency = recurrence.frequency || 'none';
@@ -170,6 +194,7 @@
 
     function expandItems(collection, fromDate, toDate) {
         const result = [];
+        if (!Number.isFinite(parseDate(fromDate).getTime()) || !Number.isFinite(parseDate(toDate).getTime())) return result;
         let cursor = fromDate;
         while (cursor <= toDate) {
             Object.keys(objectMap(collection)).forEach(function (id) {
@@ -223,6 +248,7 @@
 
     function applyPath(target, path, value) {
         const parts = String(path || '').split('/').filter(Boolean);
+        if (parts.some(function (part) { return ['__proto__', 'constructor', 'prototype'].includes(part); })) throw new Error('invalid-path');
         if (!parts.length) return target;
         let cursor = target;
         parts.slice(0, -1).forEach(function (part) {
@@ -244,6 +270,26 @@
         this.remoteHandler = null;
         this.pending = {};
         this.flushPromise = null;
+        this.generation = 0;
+        this.networkConnected = null;
+        this.remoteLoaded = false;
+        this.connectionRef = null;
+        this.connectionHandler = null;
+        this.lastError = null;
+        this.localPersisted = true;
+        this.seeding = false;
+    }
+
+    function queueChange(pending, path, value) {
+        // Firebase rejects updates containing both an ancestor and a child path.
+        const ancestor = Object.keys(pending).find(function (key) { return path.startsWith(key + '/'); });
+        if (ancestor) {
+            if (!pending[ancestor]) pending[ancestor] = {};
+            applyPath(pending[ancestor], path.slice(ancestor.length + 1), value);
+        } else {
+            Object.keys(pending).forEach(function (key) { if (key.startsWith(path + '/')) delete pending[key]; });
+            pending[path] = value == null ? null : clone(value);
+        }
     }
 
     Store.prototype.emit = function (detail) {
@@ -264,10 +310,25 @@
         if (!isOwner(user)) return Promise.reject(new Error('owner-only'));
         this.disconnect();
         this.user = user;
+        let hasCachedData = false;
+        try { hasCachedData = !!JSON.parse(root.localStorage.getItem(scopedKey(STORAGE_KEY, user.uid)) || 'null'); } catch (_) {}
         this.state = readLocal(user.uid);
-        this.pending = readPending(user.uid);
+        const queued = readPending(user.uid);
+        Object.keys(queued).forEach(function (path) {
+            const parts = path.split('/');
+            let value = queued[path];
+            if (['tasks', 'series', 'goals'].includes(parts[0]) && value != null) {
+                value = parts.length === 1 ? normalizeRecords(parts[0], value) : normalizeRecord(parts[0], value);
+            }
+            applyPath(self.state, path, value);
+            queueChange(self.pending, path, value);
+        });
+        this.persist();
         this.ref = database.ref('plannerUsers/' + user.uid);
         this.connected = true;
+        const generation = this.generation;
+        const ref = this.ref;
+        const isActive = function () { return generation === self.generation; };
         return new Promise(function (resolve, reject) {
             let settled = false;
             let seeding = false;
@@ -277,34 +338,45 @@
                 resolve(self);
             }
             self.remoteHandler = function (snapshot) {
+                if (!isActive() || seeding) return;
                 const remote = snapshot.val();
                 if (remote) {
+                    const firstSnapshot = !self.remoteLoaded;
+                    self.remoteLoaded = true;
                     self.state = normalizeData(remote);
                     Object.keys(self.pending).forEach(function (path) { applyPath(self.state, path, self.pending[path]); });
-                    writeLocal(self.state, user.uid);
+                    self.persist();
                     self.ready = true;
                     self.emit({ source: 'remote', ready: true });
-                    self.flush();
+                    if (firstSnapshot) self.flush();
                     finish();
                     return;
                 }
-                if (seeding) return;
+                if (self.remoteLoaded) return;
+                self.remoteLoaded = true;
                 seeding = true;
+                self.seeding = true;
                 self.state = normalizeData(self.state);
                 self.state.meta.updatedAt = Date.now();
                 const activePending = clone(self.pending);
                 const seedState = clone(self.state);
-                self.ref.set(seedState).then(function () {
+                Promise.resolve().then(function () { return isActive() && ref.set(seedState); }).then(function () {
+                    if (!isActive()) return;
+                    seeding = false;
+                    self.seeding = false;
                     Object.keys(activePending).forEach(function (path) {
                         if (JSON.stringify(self.pending[path]) === JSON.stringify(activePending[path])) delete self.pending[path];
                     });
-                    writePending(self.pending, user.uid);
+                    self.persist();
                     self.ready = true;
                     self.emit({ source: 'seed', ready: true });
                     finish();
                     if (Object.keys(self.pending).length) self.flush();
                 }).catch(function (error) {
+                    if (!isActive()) return;
                     seeding = false;
+                    self.seeding = false;
+                    self.lastError = error;
                     self.emit({ source: 'error', error: error, ready: false });
                     if (!settled) {
                         settled = true;
@@ -313,19 +385,43 @@
                 });
             };
             self.ref.on('value', self.remoteHandler, function (error) {
+                if (!isActive()) return;
+                self.lastError = error;
                 self.emit({ source: 'error', error: error, ready: false });
                 if (!settled) {
                     settled = true;
                     reject(error);
                 }
             });
+            self.connectionRef = database.ref('.info/connected');
+            self.connectionHandler = function (snapshot) {
+                if (!isActive()) return;
+                self.networkConnected = snapshot.val() === true;
+                if (!self.networkConnected && hasCachedData && !self.ready) {
+                    self.ready = true;
+                    self.emit({ source: 'cache', ready: true });
+                    finish();
+                }
+                if (self.networkConnected && self.lastError && /network|disconnect|unavailable/i.test(String(self.lastError.code || self.lastError.message))) self.lastError = null;
+                self.emit({ source: 'sync' });
+                if (self.networkConnected && !self.lastError) self.flush();
+            };
+            self.connectionRef.on('value', self.connectionHandler);
         });
     };
 
     Store.prototype.disconnect = function () {
+        this.generation += 1;
         if (this.ref && this.remoteHandler) {
             try { this.ref.off('value', this.remoteHandler); } catch (_) {}
         }
+        if (this.connectionRef && this.connectionHandler) this.connectionRef.off('value', this.connectionHandler);
+        this.connectionRef = null;
+        this.connectionHandler = null;
+        this.networkConnected = null;
+        this.remoteLoaded = false;
+        this.seeding = false;
+        this.lastError = null;
         this.ref = null;
         this.user = null;
         this.connected = false;
@@ -337,50 +433,86 @@
     };
 
     Store.prototype.commit = function (path, value) {
-        this.state.meta.updatedAt = Date.now();
+        const updates = {};
+        updates[path] = value;
+        return this.patch(updates);
+    };
+
+    Store.prototype.persist = function () {
         const uid = this.user && this.user.uid;
-        this.pending[path] = value == null ? null : clone(value);
-        writePending(this.pending, uid);
-        writeLocal(this.state, uid);
-        this.emit({ source: 'local', path: path });
+        const stateSaved = writeLocal(this.state, uid);
+        const pendingSaved = writePending(this.pending, uid);
+        this.localPersisted = stateSaved && pendingSaved;
+    };
+
+    Store.prototype.patch = function (updates) {
+        if (!isOwner(this.user)) return Promise.reject(new Error('owner-only'));
+        this.state.meta.updatedAt = Date.now();
+        Object.keys(updates).forEach(function (path) {
+            const value = updates[path];
+            applyPath(this.state, path, value);
+            queueChange(this.pending, path, value);
+        }, this);
+        this.persist();
+        this.emit({ source: 'local' });
         return this.flush();
     };
 
     Store.prototype.setPath = function (path, value) {
-        applyPath(this.state, path, value == null ? null : clone(value));
         return this.commit(path, value);
     };
 
     Store.prototype.flush = function () {
-        if (!this.ref || !Object.keys(this.pending).length) return Promise.resolve(false);
         if (this.flushPromise) return this.flushPromise;
+        if (!this.ref || !this.ready || !this.remoteLoaded || this.seeding || this.networkConnected === false || this.lastError) return Promise.resolve(false);
+        if (!Object.keys(this.pending).length) return Promise.resolve(true);
         const self = this;
-        let succeeded = false;
-        const active = clone(this.pending);
-        const updates = clone(active);
-        updates['meta/updatedAt'] = root.firebase && root.firebase.database
-            ? root.firebase.database.ServerValue.TIMESTAMP
-            : Date.now();
-        this.flushPromise = this.ref.update(updates).then(function () {
-            succeeded = true;
-            Object.keys(active).forEach(function (path) {
-                if (JSON.stringify(self.pending[path]) === JSON.stringify(active[path])) delete self.pending[path];
-            });
-            writePending(self.pending, self.user && self.user.uid);
-            return true;
-        }).catch(function (error) {
-            self.emit({ source: 'error', error: error, ready: self.ready });
-            return false;
+        const generation = this.generation;
+        const ref = this.ref;
+        // Acquire the lock BEFORE update(): Firebase emits optimistic value events synchronously.
+        this.flushPromise = Promise.resolve().then(async function () {
+            while (generation === self.generation && Object.keys(self.pending).length) {
+                if (self.networkConnected === false) return false;
+                const active = clone(self.pending);
+                const updates = clone(active);
+                const timestamp = root.firebase && root.firebase.database ? root.firebase.database.ServerValue.TIMESTAMP : Date.now();
+                if (updates.meta) updates.meta.updatedAt = timestamp;
+                else updates['meta/updatedAt'] = timestamp;
+                try {
+                    await ref.update(updates);
+                } catch (error) {
+                    if (generation === self.generation) {
+                        self.lastError = error;
+                        self.emit({ source: 'error', error: error, ready: self.ready });
+                    }
+                    return false;
+                }
+                if (generation !== self.generation) return false;
+                Object.keys(active).forEach(function (path) {
+                    if (JSON.stringify(self.pending[path]) === JSON.stringify(active[path])) delete self.pending[path];
+                });
+                self.persist();
+            }
+            return generation === self.generation;
         }).finally(function () {
-            self.flushPromise = null;
-            if (succeeded && self.ref && Object.keys(self.pending).length) Promise.resolve().then(function () { self.flush(); });
+            if (generation === self.generation) {
+                self.flushPromise = null;
+                self.emit({ source: 'sync' });
+            }
         });
+        this.emit({ source: 'sync' });
         return this.flushPromise;
+    };
+
+    Store.prototype.retry = function () {
+        this.lastError = null;
+        this.persist();
+        return this.flush();
     };
 
     Store.prototype.upsert = function (collection, item) {
         if (!item || !item.id) return Promise.reject(new Error('missing-id'));
-        const value = Object.assign({}, item, { updatedAt: Date.now() });
+        const value = Object.assign({}, normalizeRecord(collection, item), { updatedAt: Date.now() });
         this.state[collection] = objectMap(this.state[collection]);
         this.state[collection][value.id] = value;
         return this.commit(collection + '/' + value.id, value);
@@ -415,17 +547,37 @@
     };
 
     Store.prototype.importState = function (value) {
-        this.state = normalizeData(value);
-        this.state.meta.updatedAt = Date.now();
-        const uid = this.user && this.user.uid;
-        Object.keys(this.state).forEach(function (key) {
-            this.pending[key] = clone(this.state[key]);
-        }, this);
-        writePending(this.pending, uid);
-        writeLocal(this.state, uid);
-        this.emit({ source: 'import' });
-        return this.flush();
+        const imported = normalizeData(value);
+        imported.meta.updatedAt = Date.now();
+        return this.patch(imported);
     };
+
+    function mountSyncStatus(store, element) {
+        if (!element) return;
+        element.innerHTML = '<span role="status" aria-live="polite"></span><button type="button" data-sync-retry hidden>Повторить</button><button type="button" data-sync-backup hidden>Скачать копию</button>';
+        const label = element.querySelector('span');
+        const retry = element.querySelector('[data-sync-retry]');
+        const backup = element.querySelector('[data-sync-backup]');
+        retry.addEventListener('click', function () { store.retry(); });
+        backup.addEventListener('click', function () { download('almanion-backup-' + dateKey(new Date()) + '.json', JSON.stringify(store.state, null, 2), 'application/json'); });
+        return store.subscribe(function () {
+            const pending = Object.keys(store.pending).length > 0;
+            const code = String(store.lastError && (store.lastError.code || store.lastError.message) || '');
+            let message = 'Синхронизировано';
+            if (pending) {
+                if (!store.localPersisted) message = 'Не удалось сохранить на устройстве. Не закрывайте страницу до синхронизации или скачайте копию.';
+                else if (/permission|denied/i.test(code)) message = 'Сохранено на устройстве. Облако отклонило запись: проверьте правила доступа Firebase.';
+                else if (store.lastError) message = 'Сохранено на устройстве. Не удалось синхронизировать.';
+                else if (store.networkConnected === false) message = 'Сохранено на устройстве · ждём подключения';
+                else message = 'Синхронизация…';
+            } else if (store.networkConnected === false) message = 'Нет подключения к облаку';
+            if (label.textContent !== message) label.textContent = message;
+            element.dataset.state = pending ? (store.lastError || !store.localPersisted ? 'error' : 'pending') : 'synced';
+            retry.hidden = !pending || !store.lastError;
+            retry.disabled = !!store.flushPromise || store.networkConnected === false;
+            backup.hidden = !pending || (!store.lastError && store.localPersisted);
+        });
+    }
 
     function escapeIcs(value) {
         return String(value || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
@@ -481,6 +633,8 @@
         OWNER_EMAIL: OWNER_EMAIL,
         SCHEMA_VERSION: SCHEMA_VERSION,
         Store: Store,
+        mountSyncStatus: mountSyncStatus,
+        normalizeRecord: normalizeRecord,
         clone: clone,
         dateKey: dateKey,
         parseDate: parseDate,
