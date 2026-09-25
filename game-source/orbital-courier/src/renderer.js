@@ -21,10 +21,21 @@
       const glow=ctx.createLinearGradient(-7,0,-35,0);glow.addColorStop(0,color);glow.addColorStop(1,'transparent');
       ctx.fillStyle=glow;ctx.beginPath();ctx.moveTo(-8,-4);ctx.lineTo(-29-Math.sin(t*25)*7,0);ctx.lineTo(-8,4);ctx.fill();
     }
-    ctx.shadowColor=color;ctx.shadowBlur=12;
-    ctx.beginPath();ctx.moveTo(14,0);ctx.lineTo(-9,-8);ctx.lineTo(-5,0);ctx.lineTo(-9,8);ctx.closePath();
-    ctx.fillStyle='#eafaf8';ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle=color;ctx.lineWidth=1.4;ctx.stroke();
-    ctx.fillStyle=color;ctx.fillRect(-3,-2.3,6,4.6);ctx.restore();
+    // Twin engine courier: the silhouette stays legible at flight scale.
+    ctx.lineJoin='round';ctx.lineCap='round';ctx.strokeStyle=color;ctx.lineWidth=1;
+    for(const side of [-1,1]){
+      ctx.beginPath();ctx.moveTo(3,side*4);ctx.lineTo(-7,side*10);ctx.lineTo(-12,side*9);ctx.lineTo(-8,side*3);ctx.closePath();
+      ctx.fillStyle='#426471';ctx.fill();ctx.stroke();
+      ctx.fillStyle=color;ctx.fillRect(-12,side*8-1,4,2);
+    }
+    const hull=ctx.createLinearGradient(0,-6,0,6);hull.addColorStop(0,'#f3fffd');hull.addColorStop(.5,'#bcd4d8');hull.addColorStop(1,'#6e939d');
+    ctx.beginPath();ctx.moveTo(16,0);ctx.quadraticCurveTo(8,-7,-4,-5);ctx.lineTo(-10,-3);ctx.lineTo(-10,3);ctx.lineTo(-4,5);ctx.quadraticCurveTo(8,7,16,0);
+    ctx.fillStyle=hull;ctx.fill();ctx.strokeStyle='#defaf4';ctx.stroke();
+    ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(4,-3);ctx.lineTo(1,-2.4);ctx.lineTo(1,2.4);ctx.lineTo(4,3);ctx.closePath();
+    ctx.fillStyle='#123a4d';ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=.7;ctx.stroke();
+    ctx.fillStyle='#344c5b';ctx.fillRect(-7,-2.5,5,5);ctx.strokeStyle='#e9c990';ctx.strokeRect(-6.5,-2,4,4);
+    ctx.beginPath();ctx.moveTo(-4.5,-2);ctx.lineTo(-4.5,2);ctx.stroke();
+    ctx.restore();
   }
   class Renderer {
     constructor(canvas){
@@ -36,7 +47,9 @@
       const dpr=Math.min(root.devicePixelRatio||1,2),r=this.canvas.getBoundingClientRect();
       const w=Math.max(1,Math.round(r.width*dpr)),h=Math.max(1,Math.round(r.height*dpr));
       if(this.canvas.width!==w||this.canvas.height!==h){this.canvas.width=w;this.canvas.height=h;}
-      if(this.canvas.id==='gameCanvas'){this.ctx.setTransform(1,0,0,1,0,0);this.ctx.fillStyle='#07131e';this.ctx.fillRect(0,0,w,h);const fit=Math.min(w/1200,h/700);this.ctx.setTransform(fit,0,0,fit,(w-1200*fit)/2,(h-700*fit)/2);}else this.ctx.setTransform(w/1200,0,0,h/700,0,0);
+      this.ctx.setTransform(1,0,0,1,0,0);this.ctx.fillStyle='#07131e';this.ctx.fillRect(0,0,w,h);
+      const fit=Math.min(w/1200,h/700);
+      this.ctx.setTransform(fit,0,0,fit,(w-1200*fit)/2,(h-700*fit)/2);
       this.uiScale=this.canvas.id==='gameCanvas'?Math.max(1,Math.min(3.2,900/Math.max(1,r.width))):1;
     }
     background(t,sector=0){

@@ -14,7 +14,7 @@ assert.match(home, /href="games\/orbital-courier\/"[^>]*class="home-editor-link 
     'the home page must expose the game button');
 assert.strictEqual(game.toString('utf8'), require('../tools/build-game.js').bundle(),
     'the published standalone game must match its canonical sources exactly');
-assert.match(game.toString('utf8'), /ORBITAL COURIER \/ 10\.0/);
+assert.match(game.toString('utf8'), /ORBITAL COURIER \/ 10\.1/);
 assert.match(game.toString('utf8'), /SAVE_KEY='orbital-courier-save-v8'/,
     'upgrading the game must retain the existing save storage key');
 assert.doesNotMatch(game.toString('utf8'), /<script[^>]+src=["']https?:/i);

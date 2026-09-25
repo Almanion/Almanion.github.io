@@ -1,6 +1,6 @@
 {
   "name": "orbital-courier",
-  "version": "9.0.0",
+  "version": "10.1.0",
   "private": true,
   "description": "Offline orbital game: responsive cockpit, unified touch/mouse navigation; v8 physics and save format preserved",
   "scripts": {

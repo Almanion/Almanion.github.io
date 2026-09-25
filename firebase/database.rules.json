@@ -3,6 +3,21 @@
     ".read": false,
     ".write": false,
 
+    "gameProgress": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
+        "orbitalCourier": {
+          ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous' && newData.exists()",
+          ".validate": "newData.hasChildren(['version', 'revision', 'save', 'updatedAt']) && ((!data.exists() && newData.child('revision').val() === 1) || (data.exists() && newData.child('revision').val() === data.child('revision').val() + 1)) && newData.child('updatedAt').val() === now",
+          "version": { ".validate": "newData.val() === 1" },
+          "revision": { ".validate": "newData.isNumber() && newData.val() % 1 === 0 && ((!data.exists() && newData.val() === 1) || (data.exists() && newData.val() === data.val() + 1))" },
+          "save": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 2000000" },
+          "updatedAt": { ".validate": "newData.isNumber() && newData.val() === now" },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
     "adminRoles": {
       ".read": "auth != null && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2')",
       "$uid": {

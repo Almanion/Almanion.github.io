@@ -6,7 +6,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#09121b" name="theme-color"/>
 <meta content="Орбитальный курьер — офлайн-игра о гравитации, точных запусках и маленькой почте в большом космосе." name="description"/>
-<title>Орбитальный курьер 10 — На связи, пилот</title>
+<title>Орбитальный курьер 10.1 — На связи, пилот</title>
 <link href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2064%2064%22%20fill%3D%22none%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22oc-brand-g%22%20x1%3D%229%22%20y1%3D%2254%22%20x2%3D%2256%22%20y2%3D%2210%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20stop-color%3D%22%235be1bc%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23defff6%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2262%22%20height%3D%2262%22%20rx%3D%2220%22%20fill%3D%22%230d202b%22%20stroke%3D%22%233c706d%22/%3E%3Ccircle%20cx%3D%2231%22%20cy%3D%2233%22%20r%3D%2212%22%20fill%3D%22%23163b43%22%20stroke%3D%22%2377d8c2%22%20stroke-width%3D%221.6%22/%3E%3Cpath%20d%3D%22M22%2026c7%202%2010%2010%208%2019M21%2036c6-4%2014-3%2021%202%22%20stroke%3D%22%23427578%22%20stroke-width%3D%221.1%22/%3E%3Cpath%20d%3D%22M45%2014C35%209%2014%2024%2011%2040c-3%2014%209%2013%2020%207%22%20stroke%3D%22url%28%23oc-brand-g%29%22%20stroke-width%3D%222.4%22%20stroke-linecap%3D%22round%22/%3E%3Cpath%20d%3D%22m51%2013-6%2018-3-8-8-3Z%22%20fill%3D%22%23d4fff0%22%20stroke%3D%22%236af4cd%22%20stroke-width%3D%221.2%22%20stroke-linejoin%3D%22round%22/%3E%3Cpath%20d%3D%22m41%2026-4%206m1-9-4%204%22%20stroke%3D%22%236af4cd%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22/%3E%3Ccircle%20cx%3D%2219%22%20cy%3D%2249%22%20r%3D%222%22%20fill%3D%22%23ffd292%22/%3E%3Cpath%20d%3D%22m48%2044%204%202v5l-4%202-4-2v-5Z%22%20fill%3D%22%23344239%22%20stroke%3D%22%23e6c696%22/%3E%3Cpath%20d%3D%22m44%2046%204%202%204-2m-4%202v5%22%20stroke%3D%22%23e6c696%22%20stroke-width%3D%22.8%22/%3E%3C/svg%3E" rel="icon"/>
 
 
@@ -825,6 +825,73 @@ body[data-page=play] #saveWarning{display:none}
 #play .launch-secondary #nextLevelButton{background:var(--mint);border-color:var(--mint);color:#082d25;font-weight:700;}
 @media (max-width: 900px){#play .launch-secondary.with-next{grid-template-columns:1fr 1fr 1fr;}}
 
+</style><style>
+/* Store and account presentation, scoped to avoid changing the flight layout. */
+#home .hero{min-height:510px}
+#home .hero-art{right:-70px;top:15px;width:72%;height:auto;aspect-ratio:12/7;opacity:1}
+#home #heroCanvas{width:100%;height:100%;aspect-ratio:12/7}
+.cloud-entry{font:12px var(--mono);color:#b9e9dd;background:#16302d;border:1px solid #37665b;border-radius:9px;padding:9px 12px;min-height:36px;cursor:pointer}
+.cloud-entry[data-status=conflict],.cloud-entry[data-status=account-change],.cloud-entry[data-status=error]{color:#ffe0ac;border-color:#9b7745}
+.home-cloud{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:20px 0;color:#90aebc;font-size:12px}
+.home-cloud a{color:#a8d8cf}
+#hangar{max-width:1240px;margin:auto}
+#hangar .page-heading h2{font-size:clamp(30px,4vw,46px);letter-spacing:-1px}
+#hangar .page-heading p{color:#adc1ca;max-width:560px;line-height:1.6}
+#hangar .shop-summary{display:grid;grid-template-columns:minmax(260px,.9fr) minmax(0,1.1fr);gap:0;overflow:hidden;border:1px solid #315654;background:linear-gradient(120deg,#173331,#0c1b27 65%);border-radius:22px}
+#hangar .chassis-preview{background:radial-gradient(ellipse,#255b4e45,transparent 70%);padding:24px;border-right:1px solid #315654}
+#hangarShip{width:100%;height:auto;aspect-ratio:54/23;display:block}
+#hangar .hangar-ledger{padding:26px;display:flex;flex-direction:column;justify-content:center;min-width:0}
+#hangar .hangar-funds{display:flex;gap:36px;flex-wrap:wrap}
+#hangar .hangar-funds strong{font-size:clamp(26px,4vw,38px)}
+#hangar .hangar-license{display:flex;flex-wrap:wrap;gap:8px}
+#hangar .hangar-license span{padding:6px 9px;border:1px solid #2c464e;border-radius:7px;font-size:11px}
+.hangar-price-note{font-size:12px;line-height:1.7;color:#a8bfc7;margin:15px 0}
+#hangar .hangar-tools{display:flex;flex-wrap:wrap;gap:16px}
+#hangar .shop-context{padding:18px 0;margin:18px 0;border:0;border-bottom:1px solid #2b454c;border-radius:0;background:none}
+#hangar .shop-context>strong{font-size:17px}
+#hangar .shop-context p{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}
+#hangar .shop-context select{min-height:44px;max-width:100%;font:13px var(--sans);padding:10px 12px}
+#hangar .upgrade-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+#hangar .module-card{padding:24px;background:linear-gradient(150deg,#152b35,#101e2a);border:1px solid #2d4854;border-radius:18px;min-width:0;display:flex;flex-direction:column;gap:0;position:relative}
+#hangar .module-card[data-available=yes]{border-color:#56847a}
+#hangar .module-card.wishlisted{box-shadow:inset 0 0 0 1px var(--module)}
+#hangar .module-head{min-height:80px;gap:10px;align-items:flex-start}
+#hangar .module-identity{min-width:0}
+#hangar .module-identity h3{font-size:22px;line-height:1.2;margin:9px 0;overflow-wrap:anywhere}
+#hangar .module-code{font-size:9px;letter-spacing:.08em}
+#hangar .module-art{width:70px;min-width:70px;height:70px;opacity:.9}
+.module-status{align-self:flex-start;font:10px var(--mono);border-radius:6px;padding:5px 8px;background:#263d48;color:#b8ced8;margin:5px 0}
+[data-available=yes] .module-status{background:#21483d;color:#aaf7d7}
+#hangar .module-description{font-size:13px;line-height:1.65;color:#b3c7d0;min-height:44px}
+#hangar .module-spec{border-top:1px solid #2b4350;border-bottom:1px solid #2b4350;padding:16px 0;margin:8px 0;gap:16px}
+#hangar .module-spec strong{font-size:28px}
+#hangar .module-effect{font-size:12px;line-height:1.5;padding:11px 12px;border-radius:8px;background:#0c1e28;color:#bee3db;margin:4px 0 16px}
+#hangar .module-purchase{margin-top:auto;padding-top:18px}
+#hangar .module-price strong{font-size:30px}
+#hangar .module-actions{display:flex;gap:8px}
+#hangar .module-actions>.button{flex:1;min-height:46px;white-space:normal}
+#hangar .module-bookmark{min-width:46px;min-height:46px}
+#hangar .purchase-reason{display:block;min-height:34px;margin:8px 0;color:#abc3ce;line-height:1.5}
+#hangar .upgrade-plan{border-top:1px solid #29424f;margin-top:18px;padding-top:12px}
+#hangar .upgrade-plan summary{padding:8px 0;cursor:pointer;min-height:36px;color:#b7dcd3;font-size:12px}
+.price-table>div{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:8px 4px;border-bottom:1px solid #28414c;font:11px var(--mono);text-align:right}
+.price-table>div>:first-child{text-align:left}.price-table b{font-size:9px;color:#94acb7}.price-table .next{color:#a1efd0;background:#21453755}.price-table .owned{color:#739b8e}
+#hangar .upgrade-plan p{font-size:11px;color:#9fb8c4;line-height:1.5}
+#hangar .cosmetics-section{margin-top:46px}
+.skin-shape svg{width:55px;height:38px;color:var(--skin);display:block;margin:auto}
+.cloud-copies{display:grid;grid-template-columns:1fr 1fr;gap:12px}.cloud-copy{padding:16px;border:1px solid #3e5c64;border-radius:12px;background:#102a31}.cloud-copy h3{margin:0 0 12px;font-size:14px}.cloud-copy p{font-size:12px}.cloud-status{color:#a3e0cd;overflow-wrap:anywhere}
+@media(max-width:700px){
+ #home .hero{min-height:0;overflow:visible;gap:0}#home .hero-copy{width:100%;padding:30px 0 0}
+ #home .hero-art{position:relative;right:auto;top:auto;width:100%;height:auto;aspect-ratio:12/7;mask-image:none;-webkit-mask-image:none;opacity:1;margin-top:5px;overflow:hidden;border-radius:18px}
+ #home .art-label{font-size:8px;bottom:9px;left:12px}#home .hero-meta{flex-wrap:wrap}
+ #hangar .shop-summary{grid-template-columns:1fr}#hangar .chassis-preview{border-right:0;border-bottom:1px solid #315654;padding:18px}
+ #hangar .hangar-ledger{padding:20px}#hangar .upgrade-grid{grid-template-columns:1fr}#hangar .module-card{padding:20px}
+ #hangar .module-identity h3{font-size:21px}#hangar .module-art{width:58px;min-width:58px;height:58px}
+ #hangar .hangar-funds{gap:20px}#hangar .page-heading{align-items:flex-start;gap:12px;flex-wrap:wrap}
+ .cloud-copies{grid-template-columns:1fr}.home-cloud{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){#hangar *{scroll-behavior:auto}}
+
 </style></head>
 <body class="ui9">
 <noscript>Для игры нужно включить JavaScript. Интернет и установка библиотек не нужны.</noscript>
@@ -844,6 +911,7 @@ body[data-page=play] #saveWarning{display:none}
 <div class="hero-meta"><span>80 контрактов</span><span>20 секторов</span><span>Без интернета</span></div>
 </div><div class="hero-art"><canvas aria-label="Анимированная планета, курьер и движущаяся станция" height="700" id="heroCanvas" width="1200"></canvas><div class="art-label"><i class="live-dot"></i> ОРБИТАЛЬНЫЙ ТРАФИК / 239</div></div>
 </div>
+<div class="home-cloud"><button class="cloud-entry" data-action="cloud">На устройстве</button><span>Продолжай на другом устройстве с аккаунтом Almanion</span><a href="../../index.html">На сайт ↗</a></div>
 <div class="home-bottom"><div class="home-stat"><span class="eyebrow">ПОСЛУЖНОЙ СПИСОК</span><strong id="homeCompleted">00 <small>/ 80</small></strong><span>контрактов завершено</span></div><div class="home-stat"><span class="eyebrow">КАЧЕСТВО ДОСТАВКИ</span><strong id="homeMedals">00 <small>/ 240</small></strong><span>медалей получено</span></div><div class="home-stat rank-card"><span class="eyebrow">КАРЬЕРА ПИЛОТА</span><strong id="homeRank">Стажёр</strong><div class="progress"><i id="homeXPBar"></i></div><span id="homeXPLabel">До следующего ранга: 160 XP</span></div></div>
 <div class="home-note"><span>01 — ВЫБЕРИ КУРС</span><span>02 — ОБЛЕТИ ПЛАНЕТЫ</span><span>03 — ДОСТАВЬ ГРУЗ</span></div>
 </section>
@@ -852,7 +920,7 @@ body[data-page=play] #saveWarning{display:none}
 <div class="campaign-toolbar"><label class="contract-search"><span aria-hidden="true">⌕</span><input aria-label="Поиск контрактов" autocomplete="off" id="contractSearch" placeholder="Название или номер контракта" type="search"/></label><div aria-label="Фильтр контрактов" class="contract-filters" role="group"><button aria-pressed="true" data-action="contract-filter" data-filter="all">Все</button><button aria-pressed="false" data-action="contract-filter" data-filter="open">Доступные</button><button aria-pressed="false" data-action="contract-filter" data-filter="unfinished">Не пройдены</button><button aria-pressed="false" data-action="contract-filter" data-filter="new">Новые <b>16</b></button></div></div>
 <div class="campaign-workspace"><aside class="sector-rail"><div class="sector-rail-title"><span>СЕКТОРЫ</span><button class="text-button" data-action="current-sector">К текущему ↗</button></div><div class="sector-mobile-select"><button aria-label="Предыдущий сектор" data-action="sector-prev">‹</button><select aria-label="Выбор сектора" id="sectorSelect"></select><button aria-label="Следующий сектор" data-action="sector-next">›</button></div><div aria-label="Сектора кампании" class="sector-tabs" id="sectorTabs"></div></aside><div class="contracts-main"><div id="sectorOverview"></div><div id="missionGrid"></div><p aria-live="polite" class="contract-result-count" id="contractResultCount"></p></div></div>
 </section>
-<section class="screen" hidden="" id="hangar"><div class="page-heading"><div><div class="eyebrow">ИНЖЕНЕРНЫЙ ОТСЕК</div><h2>Ангар</h2><p>Оснащение и оформление капсулы.</p></div><button class="button quiet" data-action="return-flight">К контракту ↗</button></div><div class="shop-summary" id="shopSummary"></div><section class="shop-context" id="shopContext"></section><div class="upgrade-grid" id="upgradeGrid"></div><section aria-labelledby="cosmeticsTitle" class="cosmetics-section"><div class="cosmetics-heading"><div><div class="eyebrow">ЛИЧНАЯ ПОДПИСЬ ПИЛОТА</div><h3 id="cosmeticsTitle">Оставь свой след</h3></div><div aria-label="Внешний вид капсулы" class="cosmetic-tabs" role="tablist"><button aria-controls="skinPanel" aria-selected="true" data-action="cosmetic-tab" data-tab="skins" id="skinTab" role="tab">Окраски</button><button aria-controls="trailPanel" aria-selected="false" data-action="cosmetic-tab" data-tab="trails" id="trailTab" role="tab">Хвосты <span>11</span></button></div></div><div class="cosmetic-preview"><canvas aria-label="Предпросмотр выбранного хвоста" height="230" id="trailPreview" width="840"></canvas><div><span class="eyebrow">ПРЕДПРОСМОТР</span><strong id="trailPreviewName">Вектор</strong><p id="trailPreviewDescription"></p><small>Только внешний вид. Опыт не расходуется.</small></div></div><div aria-labelledby="skinTab" id="skinPanel" role="tabpanel"><div class="skin-grid" id="skinGrid"></div></div><div aria-labelledby="trailTab" hidden="" id="trailPanel" role="tabpanel"><div class="trail-grid" id="trailGrid"></div></div><p class="cosmetic-xp" id="cosmeticXP"></p></section></section>
+<section class="screen" hidden="" id="hangar"><div class="page-heading"><div><div class="eyebrow">ИНЖЕНЕРНЫЙ ОТСЕК</div><h2>Ангар</h2><p>Выбери, что поможет в следующем рейсе. Примерь улучшение, сравни цену и настрой свой курьер.</p></div><button class="button quiet" data-action="return-flight">К контракту ↗</button></div><div class="shop-summary" id="shopSummary"></div><section class="shop-context" id="shopContext"></section><div class="upgrade-grid" id="upgradeGrid"></div><section aria-labelledby="cosmeticsTitle" class="cosmetics-section"><div class="cosmetics-heading"><div><div class="eyebrow">ЛИЧНАЯ ПОДПИСЬ ПИЛОТА</div><h3 id="cosmeticsTitle">Оставь свой след</h3></div><div aria-label="Внешний вид капсулы" class="cosmetic-tabs" role="tablist"><button aria-controls="skinPanel" aria-selected="true" data-action="cosmetic-tab" data-tab="skins" id="skinTab" role="tab">Окраски</button><button aria-controls="trailPanel" aria-selected="false" data-action="cosmetic-tab" data-tab="trails" id="trailTab" role="tab">Хвосты <span>11</span></button></div></div><div class="cosmetic-preview"><canvas aria-label="Предпросмотр выбранного хвоста" height="230" id="trailPreview" width="840"></canvas><div><span class="eyebrow">ПРЕДПРОСМОТР</span><strong id="trailPreviewName">Вектор</strong><p id="trailPreviewDescription"></p><small>Только внешний вид. Опыт не расходуется.</small></div></div><div aria-labelledby="skinTab" id="skinPanel" role="tabpanel"><div class="skin-grid" id="skinGrid"></div></div><div aria-labelledby="trailTab" hidden="" id="trailPanel" role="tabpanel"><div class="trail-grid" id="trailGrid"></div></div><p class="cosmetic-xp" id="cosmeticXP"></p></section></section>
 <section class="screen" hidden="" id="awards"><div class="page-heading"><div><div class="eyebrow">ЛИЧНОЕ ДЕЛО</div><h2>Достижения</h2><p>Твои открытия, рекорды и завершённые маршруты.</p></div><div class="section-total" id="awardTotal">0 / 28 <span>достижений</span></div></div><div class="awards-controls"><label>Найти достижение<input id="awardSearch" placeholder="Название или условие" type="search"/></label><div class="award-filters"><button data-action="v8:award-filter" data-filter="all">Все</button><button data-action="v8:award-filter" data-filter="locked">Не получены</button><button data-action="v8:award-filter" data-filter="earned">Получены</button><button data-action="v8:award-filter" data-filter="near">Близкие цели</button></div></div><nav class="achievement-categories" id="achievementCategories"></nav><section class="achievement-focus" id="achievementFocus"></section><div class="achievement-grid" id="achievementGrid"></div><div class="policy-note">Достижения приносят опыт. Кредиты и данные — за рейсы.</div></section>
 <section class="screen" hidden id="play" aria-label="Полёт">
   <div class="flight-heading">
@@ -892,7 +960,7 @@ body[data-page=play] #saveWarning{display:none}
   <div class="mobile-dock" aria-label="Управление полётом"><button class="mobile-retry" data-action="retry" aria-label="Начать попытку заново">↺</button><button class="mobile-options" data-action="ui:memory" aria-label="Пульт и сохранённые курсы"><span>A/B</span><small>Курсы</small></button><button class="primary" data-action="launch" id="mobileLaunch">Запуск ↗</button></div>
 </section>
 </main><div hidden><button id="fieldButton" data-action="toggle-grid"></button><button id="pauseButton" data-action="pause"></button></div>
-<footer class="site-footer"><span>ORBITAL COURIER / 10.0</span><span>Маленькая посылка. Большой космос.</span><button class="text-button" data-action="settings">Сохранение и настройки</button></footer>
+<footer class="site-footer"><span>ORBITAL COURIER / 10.1</span><span>Маленькая посылка. Большой космос.</span><button class="text-button" data-action="settings">Сохранение и настройки</button></footer>
 <dialog aria-labelledby="modalTitle" id="modal"><div id="modalContent"></div></dialog>
 <dialog id="flightDrawer" class="flight-drawer" aria-labelledby="drawerTitle"><div class="sheet-header"><h2 id="drawerTitle">Пульт</h2><button class="icon-button" data-action="ui:close-sheet" aria-label="Закрыть панель">×</button></div><div id="drawerContent" class="sheet-content"></div><div class="sheet-footer"><button class="button primary" data-action="ui:close-sheet">К полёту</button></div></dialog>
 <div aria-label="Переход к контракту" aria-live="polite" class="route-transition" hidden="" id="routeTransition"><div aria-hidden="true" class="jump-tunnel"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i><i style="--i:8"></i><i style="--i:9"></i><i style="--i:10"></i><i style="--i:11"></i><i style="--i:12"></i><i style="--i:13"></i></div><div class="jump-card"><div class="eyebrow">ПЕРЕСТРОЕНИЕ МАРШРУТА</div><div class="jump-coordinates"><span id="jumpFrom">00</span><svg aria-hidden="true" viewbox="0 0 170 32"><path d="M0 16H150l-12-9M150 16l-12 9"></path></svg><strong id="jumpTo">01</strong></div><h2 id="jumpTitle"></h2><p id="jumpSector"></p><div class="jump-load"><i></i></div></div></div>
@@ -1732,10 +1800,21 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       const glow=ctx.createLinearGradient(-7,0,-35,0);glow.addColorStop(0,color);glow.addColorStop(1,'transparent');
       ctx.fillStyle=glow;ctx.beginPath();ctx.moveTo(-8,-4);ctx.lineTo(-29-Math.sin(t*25)*7,0);ctx.lineTo(-8,4);ctx.fill();
     }
-    ctx.shadowColor=color;ctx.shadowBlur=12;
-    ctx.beginPath();ctx.moveTo(14,0);ctx.lineTo(-9,-8);ctx.lineTo(-5,0);ctx.lineTo(-9,8);ctx.closePath();
-    ctx.fillStyle='#eafaf8';ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle=color;ctx.lineWidth=1.4;ctx.stroke();
-    ctx.fillStyle=color;ctx.fillRect(-3,-2.3,6,4.6);ctx.restore();
+    // Twin engine courier: the silhouette stays legible at flight scale.
+    ctx.lineJoin='round';ctx.lineCap='round';ctx.strokeStyle=color;ctx.lineWidth=1;
+    for(const side of [-1,1]){
+      ctx.beginPath();ctx.moveTo(3,side*4);ctx.lineTo(-7,side*10);ctx.lineTo(-12,side*9);ctx.lineTo(-8,side*3);ctx.closePath();
+      ctx.fillStyle='#426471';ctx.fill();ctx.stroke();
+      ctx.fillStyle=color;ctx.fillRect(-12,side*8-1,4,2);
+    }
+    const hull=ctx.createLinearGradient(0,-6,0,6);hull.addColorStop(0,'#f3fffd');hull.addColorStop(.5,'#bcd4d8');hull.addColorStop(1,'#6e939d');
+    ctx.beginPath();ctx.moveTo(16,0);ctx.quadraticCurveTo(8,-7,-4,-5);ctx.lineTo(-10,-3);ctx.lineTo(-10,3);ctx.lineTo(-4,5);ctx.quadraticCurveTo(8,7,16,0);
+    ctx.fillStyle=hull;ctx.fill();ctx.strokeStyle='#defaf4';ctx.stroke();
+    ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(4,-3);ctx.lineTo(1,-2.4);ctx.lineTo(1,2.4);ctx.lineTo(4,3);ctx.closePath();
+    ctx.fillStyle='#123a4d';ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=.7;ctx.stroke();
+    ctx.fillStyle='#344c5b';ctx.fillRect(-7,-2.5,5,5);ctx.strokeStyle='#e9c990';ctx.strokeRect(-6.5,-2,4,4);
+    ctx.beginPath();ctx.moveTo(-4.5,-2);ctx.lineTo(-4.5,2);ctx.stroke();
+    ctx.restore();
   }
   class Renderer {
     constructor(canvas){
@@ -1747,7 +1826,9 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       const dpr=Math.min(root.devicePixelRatio||1,2),r=this.canvas.getBoundingClientRect();
       const w=Math.max(1,Math.round(r.width*dpr)),h=Math.max(1,Math.round(r.height*dpr));
       if(this.canvas.width!==w||this.canvas.height!==h){this.canvas.width=w;this.canvas.height=h;}
-      if(this.canvas.id==='gameCanvas'){this.ctx.setTransform(1,0,0,1,0,0);this.ctx.fillStyle='#07131e';this.ctx.fillRect(0,0,w,h);const fit=Math.min(w/1200,h/700);this.ctx.setTransform(fit,0,0,fit,(w-1200*fit)/2,(h-700*fit)/2);}else this.ctx.setTransform(w/1200,0,0,h/700,0,0);
+      this.ctx.setTransform(1,0,0,1,0,0);this.ctx.fillStyle='#07131e';this.ctx.fillRect(0,0,w,h);
+      const fit=Math.min(w/1200,h/700);
+      this.ctx.setTransform(fit,0,0,fit,(w-1200*fit)/2,(h-700*fit)/2);
       this.uiScale=this.canvas.id==='gameCanvas'?Math.max(1,Math.min(3.2,900/Math.max(1,r.width))):1;
     }
     background(t,sector=0){
@@ -2131,6 +2212,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   function isAiming(){return app.screen==='play'&&!app.state;}
   function save(){
     app.storageOK=G.write(storage,app.profile);$('saveWarning').hidden=app.storageOK;
+    if(app.storageOK)root.dispatchEvent(new CustomEvent('orbital-save'));
   }
   function toast(message,error=false){
     const el=document.createElement('div');el.className='toast'+(error?' error':'');el.textContent=message;
@@ -2258,10 +2340,10 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       const q=G.quote(p,key),lv=q.lv,max=q.max,selected=p.wishlist===key;
       const label=max?'Максимальная ступень':q.canBuy?'Установить модуль ↗':!q.eligible?'Лицензия ещё закрыта':'Не хватает ресурсов';
       const reason=max?'Все пять ступеней установлены':!q.eligible?`Откроется после ${q.required} доставок · сейчас ${done}`:[q.missing?`ещё ${money(q.missing)} ◈`:'кредиты собраны',q.dataMissing?`ещё ${q.dataMissing} ⬡`:'данных достаточно'].join(' · ');
-      return `<article class="upgrade-card module-card ${selected?'wishlisted':''}" style="--module:${accents[key]}"><div class="module-head"><div class="module-identity"><span class="module-code">0${i+1} / ${['NAVIGATION','TRACTOR FIELD','DOCKING','PROPULSION'][i]}</span><h3>${d.name}</h3></div><div class="module-art">${moduleArt(key)}</div></div><p class="module-description">${d.description}</p><div class="module-spec"><div><span>СЕЙЧАС</span><strong>${d.values[lv]}<small>${d.unit}</small></strong></div>${!max?`<span class="spec-arrow">→</span><div class="spec-next"><span>ПОСЛЕ УСТАНОВКИ</span><strong>${d.values[lv+1]}<small>${d.unit}</small></strong></div>`:'<div class="module-max">✓ Полная мощность</div>'}</div><div class="module-tier"><span>СТУПЕНЬ ${lv} / 5</span><div class="level-bars" aria-label="Уровень ${lv} из 5">${[1,2,3,4,5].map(t=>`<i class="${t<=lv?'on':''}"></i>`).join('')}</div></div><div class="module-purchase"><div class="module-price">${max?'<span>ПОЛНОСТЬЮ ОСНАЩЁН</span>':`<strong>${money(q.cost)} <small>◈</small></strong><span class="data-price">${q.dataCost?`${q.dataCost} ⬡`:'Без данных'}</span>`}</div><span class="purchase-reason">${reason}</span><div class="module-actions"><button class="button ${q.canBuy?'primary':'quiet'}" data-action="upgrade" data-key="${key}" ${q.canBuy?'':'disabled'}>${label}</button>${!max?`<button class="module-bookmark ${selected?'selected':''}" data-action="wishlist" data-key="${key}" aria-pressed="${selected}" aria-label="${selected?'Убрать цель накопления':'Копить на этот модуль'}" title="${selected?'Цель накопления':'Планировать покупку'}">${selected?'✓':'＋'}</button>`:''}</div></div><details class="upgrade-plan"><summary>Пять ступеней развития</summary><div class="price-ladder">${[1,2,3,4,5].map((t,j)=>`<span class="${j<lv?'owned':j===lv?'next':''}"><small>${['I','II','III','IV','V'][j]}</small>${j<lv?'✓':money(E.price(key,t,installed+Math.max(0,j-lv),research))}<small>${j<lv?'':`${E.DATA_COSTS[j]} ⬡`}</small></span>`).join('')}</div><small>Расчётный порядок: сначала этот модуль. Другие покупки изменят смету.</small></details></article>`;
+      return `<article class="upgrade-card module-card ${selected?'wishlisted':''}" data-module="${key}" style="--module:${accents[key]}"><div class="module-head"><div class="module-identity"><span class="module-code">0${i+1} / ${['NAVIGATION','TRACTOR FIELD','DOCKING','PROPULSION'][i]}</span><h3>${d.name}</h3></div><div class="module-art">${moduleArt(key)}</div></div><p class="module-description">${d.description}</p><div class="module-spec"><div><span>СЕЙЧАС</span><strong>${d.values[lv]}<small>${d.unit}</small></strong></div>${!max?`<span class="spec-arrow">→</span><div class="spec-next"><span>ПОСЛЕ УСТАНОВКИ</span><strong>${d.values[lv+1]}<small>${d.unit}</small></strong></div>`:'<div class="module-max">✓ Полная мощность</div>'}</div><div class="module-tier"><span>СТУПЕНЬ ${lv} / 5</span><div class="level-bars" aria-label="Уровень ${lv} из 5">${[1,2,3,4,5].map(t=>`<i class="${t<=lv?'on':''}"></i>`).join('')}</div></div><div class="module-purchase"><div class="module-price">${max?'<span>ПОЛНОСТЬЮ ОСНАЩЁН</span>':`<strong>${money(q.cost)} <small>◈</small></strong><span class="data-price">${q.dataCost?`${q.dataCost} ⬡`:'Без данных'}</span>`}</div><span class="purchase-reason">${reason}</span><div class="module-actions"><button class="button ${q.canBuy?'primary':'quiet'}" data-action="upgrade" data-key="${key}" ${q.canBuy?'':'disabled'}>${label}</button>${!max?`<button class="module-bookmark ${selected?'selected':''}" data-action="wishlist" data-key="${key}" aria-pressed="${selected}" aria-label="${selected?'Убрать цель накопления':'Копить на этот модуль'}" title="${selected?'Цель накопления':'Планировать покупку'}">${selected?'✓':'＋'}</button>`:''}</div></div><details class="upgrade-plan"><summary>Пять ступеней развития</summary><div class="price-ladder">${[1,2,3,4,5].map((t,j)=>`<span class="${j<lv?'owned':j===lv?'next':''}"><small>${['I','II','III','IV','V'][j]}</small>${j<lv?'✓':money(E.price(key,t,installed+Math.max(0,j-lv),research))}<small>${j<lv?'':`${E.DATA_COSTS[j]} ⬡`}</small></span>`).join('')}</div><small>Расчётный порядок: сначала этот модуль. Другие покупки изменят смету.</small></details></article>`;
     }).join('');
     $('skinGrid').innerHTML=G.SKINS.map(s=>{const selected=p.skin===s.id,open=O.Cosmetics.unlocked(p,s)||selected;return `<button class="skin-card ${selected?'selected':''}" style="--skin:${s.color}" data-action="skin" data-key="${s.id}" ${open?'':'disabled'}><span class="skin-shape">➤</span><strong>${s.name}</strong><small>${selected?'Выбрано':open?'Выбрать окраску':`${s.xp} XP${s.requirement?' · '+s.requirement:''}`}</small></button>`;}).join('');
-    renderCosmetics();O.V8?.renderShop();
+    renderCosmetics();O.V8?.renderShop();O.Hangar?.enhance();
   }
   function trailThumbnail(t){
     const paths={vector:'<path d="M10 45Q48 46 67 26T113 22"/>',comet:'<path d="M8 43Q44 45 68 26T113 22" stroke-width="9" opacity=".16"/><path d="M8 43Q44 45 68 26T113 22"/><circle cx="36" cy="38" r="2"/><circle cx="58" cy="38" r="1.5"/>',ion:'<path d="M9 40Q49 44 68 23T113 22M9 46Q49 50 70 30T113 22"/>',photon:'<path d="M10 45Q48 46 67 26T113 22" stroke-dasharray="1 8" stroke-width="4"/>',plasma:'<path d="M10 45 23 40 36 43 47 33 60 38 72 22 84 30 95 19 113 22"/>',aurora:'<path d="M10 39Q38 61 67 24T113 22" stroke="#ac9fff"/><path d="M10 47Q40 32 67 32T113 22"/>',rift:'<path d="M10 45Q48 46 67 26T113 22"/><circle cx="30" cy="43" r="6"/><circle cx="61" cy="33" r="5"/><circle cx="87" cy="20" r="4"/>'};
@@ -2279,7 +2361,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   }
   function confirmUpgrade(key){
     const q=G.quote(app.profile,key),d=G.UPGRADE_DEFS[key];if(!q?.canBuy){renderHangar();return;}
-    openModal('Установить модуль?',`<div class="purchase-preview"><span>${d.icon}</span><div><h3>${d.name}</h3><strong>${d.values[q.lv]} → ${d.values[q.lv+1]} ${d.unit}</strong></div></div><div class="result-rewards"><div>Цена сейчас<strong>${q.cost} ◈ + ${q.dataCost} ⬡</strong></div><div>После установки<strong>${money(app.profile.credits-q.cost)} ◈ / ${app.profile.data-q.dataCost} ⬡</strong></div></div><p>Чек сохранится: при пересборке возвращаются потраченные ресурсы.</p><div class="modal-actions"><button class="button quiet" data-action="close">Отмена</button><button class="button primary" data-action="confirm-upgrade" data-key="${key}">Подтвердить покупку</button></div>`,'АНГАР / СМЕТА');
+    openModal('Установить модуль?',`<div class="purchase-preview"><span>${d.icon}</span><div><h3>${d.name}</h3><strong>${d.values[q.lv]} → ${d.values[q.lv+1]} ${d.unit}</strong></div></div><div class="result-rewards"><div>Цена сейчас<strong>${q.cost} ◈ + ${q.dataCost} ⬡</strong></div><div>После установки<strong>${money(app.profile.credits-q.cost)} ◈ / ${app.profile.data-q.dataCost} ⬡</strong></div></div><p>Чек сохранится: при пересборке возвращаются потраченные ресурсы.</p><div class="modal-actions"><button class="button quiet" data-action="close">Отмена</button><button class="button primary" data-action="confirm-upgrade" data-key="${key}" data-cost="${q.cost}" data-data="${q.dataCost}" data-tier="${q.lv}">Подтвердить покупку</button></div>`,'АНГАР / СМЕТА');
   }
   function economyInfo(){if(O.V8)return O.V8.economy();
     openModal('Платят за результат, а не за число рейсов',`<p>Оценка Q: <strong>50% груз + 20% точность захода + 15% экономия импульса + 15% темп</strong>. Награда результата: B × M × (0,25 + 0,75 × (Q/100)<sup>1,65</sup>), округление вниз. M = 1 в обычном режиме, 1,7 в ПРО.</p><div class="info-box">За контракт хранится одна максимальная уже выплаченная сумма. Улучшил результат — получил только разницу. Та же доставка, рестарт и слабый повтор денег не дают. Тренировка с точным курсом не даёт ничего и не открывает уровни.</div><p>Данные ⬡: 1 за оценку ≥80, ещё 1 за ≥94; в ПРО дополнительно 1 за доставку и 1 за оценку ≥85. Выплачивается только рост максимального права на данные. До 4 на контракт, без повторного фарма.</p><p>Цена ступени t: округление вверх до 5 от <strong>B<sub>модуля</sub> × t<sup>1,7</sup> × (1 + 0,025N) × (1 − скидка)</strong>. N — число установленных ступеней. Скидка — 0,2% за каждую когда-либо заработанную единицу данных, не более 8%.</p><p>Пять ступеней требуют 2/7/14/24/34 доставки и 0/1/3/6/10 данных. Высокая прокачка — выбор специализации, а не гарантированный выкуп всего магазина. Ошибки бесплатны; долгов и таймеров ожидания нет.</p><div class="modal-actions"><button class="button primary" data-action="close">Понятно</button></div>`,'ЭКОНОМИКА');
@@ -2543,6 +2625,9 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     dynamic:()=>{app.campaignSector=11;go('campaign');},
     upgrade:b=>confirmUpgrade(b.dataset.key),
     'confirm-upgrade':b=>{
+      const current=G.quote(app.profile,b.dataset.key);
+      if(!current?.canBuy){closeModal();renderHangar();toast('Условия покупки изменились. Проверь ресурсы.',true);return;}
+      if(current.cost!==+b.dataset.cost||current.dataCost!==+b.dataset.data||current.lv!==+b.dataset.tier){confirmUpgrade(b.dataset.key);toast('Цена обновилась. Проверь новую смету.');return;}
       const result=G.buy(app.profile,b.dataset.key);
       if(!result.ok){toast(result.message,true);closeModal();renderHangar();return;}
       closeModal();save();updateProfileUI();renderHangar();sound.play('upgrade');
@@ -2602,7 +2687,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
         grid:app.profile.settings.grid,reducedMotion:app.profile.settings.reducedMotion,particles:app.particles,banked:G.record(app.profile,app.currentId).cargo});
       if(now-lastTelemetry>85){updateTelemetry();lastTelemetry=now;}
     }else if(app.screen==='hangar'){
-      O.Cosmetics.preview($('trailPreview'),app.profile.trail,skin().color,now/1000,app.profile.settings.reducedMotion);
+      if(O.Hangar)O.Hangar.preview(now);else O.Cosmetics.preview($('trailPreview'),app.profile.trail,skin().color,now/1000,app.profile.settings.reducedMotion);
     }else if(app.screen==='campaign'&&!app.profile.settings.reducedMotion&&now-lastTelemetry>70){
       for(const item of app.contractPreviews||[]){if(!item.canvas.isConnected)continue;const card=item.canvas.closest('button');if(card.matches(':hover,:focus-visible')&&!card.disabled){item.renderer.draw(item.level,{hideShip:true,time:now/1000,state:{t:(now/1000)%12,x:item.level.start.x,y:item.level.start.y,status:'preview',cargo:[]}});}}
       lastTelemetry=now;
@@ -2665,8 +2750,8 @@ function renderShop(){let id=A.shopLevel??A.currentId,mode=A.shopMode||A.profile
 for(const key of ['docking','engine']){const lv=A.profile.upgrades[key],next=Math.min(5,lv+1),card=document.querySelector(`.upgrade-card[data-module="${key}"]`)||document.querySelector(`[data-action=upgrade][data-key="${key}"]`)?.closest('article');if(!card)continue;let text;if(key==='docking'){const p=structuredClone(A.profile);p.upgrades.docking=next;text=`Допуск здесь: ${P.captureRadius(l,G.stats(A.profile)).toFixed(1)} → ${P.captureRadius(l,G.stats(p)).toFixed(1)} ед.`;}else text=`Расчётный расход: ${Math.round((1-.03*lv)*100)}% → ${Math.round((1-.03*next)*100)}%`;let node=document.createElement('div');node.className='module-effect';node.innerHTML=`<b>${text}</b>${key==='docking'?'Бонус действует и на строгих станциях.':'Физическая скорость не меняется. Экономия улучшает топливную оценку при обычном запуске.'}`;card.querySelector('.module-spec')?.after(node);}}
 function settings(t=tab){tab=t;const p=A.profile,s=p.settings,opts={display:[['reducedMotion','Меньше анимаций','Только декоративные эффекты. Физика не меняется.'],['highContrast','Повышенный контраст','Более светлые важные подписи.'],['grid','Поле тяготения','Показывать направление ускорения.'],['ghost','След предыдущей попытки','Только действительно пройденная траектория.']],control:[['fineAim','Точная настройка','Шаг 0,1° и 1 единица скорости.'],['sound','Звуковые сигналы','Без фоновой музыки.']]};let body=opts[t]?opts[t].map(([k,n,d])=>`<label class="check-row"><span>${n}<small>${d}</small></span><input type="checkbox" data-setting="${k}" ${s[k]?'checked':''}></label>`).join(''):'';
 if(t==='control')body+='<div class="info-box">«Курс» меняет прицел, «Обзор» двигает карту. Два пальца — масштаб. На компьютере также работают колесо и Alt + перетаскивание. «Вся карта» возвращает общий вид.<p>Пробел — запуск/пауза; R — повтор; G — поле. Завершённый рейс можно пересмотреть по времени.</p></div>';
-if(t==='save')body=`<div class="storage-status ${A.storageOK?'':'bad'}"><strong>${A.storageOK?'Автосохранение доступно':'Автосохранение недоступно'}</strong><br>${G.completed(p)} контрактов · ${G.totalMedals(p)} медалей · ${money(p.credits)} кредитов.<br>Перед переносом игры экспортируй JSON.</div><div class="settings-grid"><button class="button primary" data-action="export">Экспорт JSON ↓</button><button class="button quiet" data-action="import">Импорт JSON ↑</button></div><p>Импорт заменяет профиль после подтверждения. В файл входят чеки, опыт, достижения, доказанные ветви и курсы A/B. Текущий полёт и записи повторов не экспортируются.</p><div class="settings-danger"><h3>Удаление прогресса</h3><button class="button danger" data-action="v8:reset-confirm">Сбросить профиль…</button></div>`;
-A.openModal('Настройки',`<div class="settings-tabs" role="tablist">${[['display','Экран'],['control','Управление'],['save','Прогресс']].map(([k,n])=>`<button role="tab" aria-selected="${k===t}" class="${k===t?'active':''}" data-action="v8:settings-tab" data-tab="${k}">${n}</button>`).join('')}</div><section class="settings-section">${body}</section><div class="modal-actions"><button class="button primary" data-action="close">Готово</button></div>`,'ОРБИТАЛЬНЫЙ КУРЬЕР / 9.0');}
+if(t==='save')body=`<div class="storage-status ${A.storageOK?'':'bad'}"><strong>${A.storageOK?'Автосохранение доступно':'Автосохранение недоступно'}</strong><br>${G.completed(p)} контрактов · ${G.totalMedals(p)} медалей · ${money(p.credits)} кредитов.<br>Перед переносом игры экспортируй JSON.</div><div class="settings-grid"><button class="button primary" data-action="cloud">Аккаунт и облако</button><button class="button quiet" data-action="export">Экспорт JSON ↓</button><button class="button quiet" data-action="import">Импорт JSON ↑</button></div><p>Импорт заменяет профиль после подтверждения. В файл входят чеки, опыт, достижения, доказанные ветви и курсы A/B. Текущий полёт и записи повторов не экспортируются.</p><div class="settings-danger"><h3>Удаление прогресса</h3><button class="button danger" data-action="v8:reset-confirm">Сбросить профиль…</button></div>`;
+A.openModal('Настройки',`<div class="settings-tabs" role="tablist">${[['display','Экран'],['control','Управление'],['save','Прогресс']].map(([k,n])=>`<button role="tab" aria-selected="${k===t}" class="${k===t?'active':''}" data-action="v8:settings-tab" data-tab="${k}">${n}</button>`).join('')}</div><section class="settings-section">${body}</section><div class="modal-actions"><button class="button primary" data-action="close">Готово</button></div>`,'ОРБИТАЛЬНЫЙ КУРЬЕР / 10.1');}
 function resetConfirm(){A.openModal('Удалить прогресс?','<p>Экспортированные копии останутся целыми. Для подтверждения введи <b>СБРОС</b>.</p><input id="resetWord" class="reset-word" autocomplete="off"><div class="modal-actions"><button class="button quiet" data-action="close">Отмена</button><button class="button danger" id="resetFinal" data-action="reset" disabled>Удалить профиль</button></div>');$('resetWord').addEventListener('input',e=>$('resetFinal').disabled=e.target.value.trim()!=='СБРОС');}
 function economy(){A.openModal('Экономика 80 контрактов','<p>Каждый контракт хранит один денежный рекорд: обе ветви и ПРО делят максимум. Повтор приносит только рост стоимости результата. Ошибки бесплатны.</p><p>Пять ступеней требуют 2 / 8 / 20 / 40 / 64 завершённых контракта и 0 / 2 / 5 / 9 / 14 данных.</p><p>Цена — округлённое вверх до 5 значение B × t<sup>1,88</sup> × (1 + 0,025N) × (1 − скидка). Исследования дают до 8% скидки. Покупки и возвраты записываются по фактическим чекам.</p><p>Высшие ступени предполагают специализацию, а не выкуп всех модулей. За достижения — только опыт.</p><div class="modal-actions"><button class="button primary" data-action="close">Понятно</button></div>');}
 function zoom(f){const c=A.camera;c.zoom=P.clamp(c.zoom*f,1,4);const edge=Math.max(28,64/c.zoom);c.cx=P.clamp(c.cx,600/c.zoom-edge,1200-600/c.zoom+edge);c.cy=P.clamp(c.cy,350/c.zoom-edge,700-350/c.zoom+edge);}
@@ -3197,6 +3282,266 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   $('flightDrawer').addEventListener('close',()=>{if(!drawer.open&&sheetState)closeSheet();});
   schedule();sync();
 })(typeof globalThis!=='undefined'?globalThis:window);
+
+</script><script>
+/* Hangar presentation uses the existing quote/buy functions unchanged. */
+(function(root){
+  'use strict';const O=root.Orbital,A=O.App,G=O.Progress,E=O.Economy,P=O.Physics;
+  const $=id=>document.getElementById(id),money=n=>n.toLocaleString('ru-RU');
+  const icon='<svg viewBox="-16 -12 36 24" aria-hidden="true"><path d="M3-4-7-10-12-9-8-3M3 4-7 10-12 9-8 3" fill="#426471" stroke="currentColor"/><path d="M16 0Q8-7-4-5L-10-3V3L-4 5Q8 7 16 0" fill="#d4e9e8" stroke="currentColor"/><path d="m10 0-6-3-3 1v4l3 1Z" fill="#123a4d" stroke="currentColor"/><path d="M-7-2h5v4h-5Z" fill="#344c5b" stroke="#e9c990"/></svg>';
+  function enhance(){
+    const p=A.profile,installed=G.installed(p),discount=Math.min(.08,G.research(p)*.002);
+    const old=$('shopSummary').querySelector('.hangar-ledger');
+    const preview=$('shopSummary').querySelector('.chassis-preview');
+    if(preview)preview.innerHTML='<div class="eyebrow">OC—239 / ПОЧТОВЫЙ КУРЬЕР</div><canvas id="hangarShip" aria-label="Твоя капсула с двумя двигателями и грузовым отсеком"></canvas><div class="chassis-caption"><span>Готов к следующему рейсу</span><b>'+installed+' / 20 <small>СТУПЕНЕЙ</small></b></div>';
+    if(old){const note=document.createElement('p');note.className='hangar-price-note';note.textContent=`Монтаж: +${(installed*2.5).toFixed(1)}% к базовой цене. Скидка за исследования: ${(discount*100).toFixed(1)}%. Возврат — по чекам.`;old.querySelector('.hangar-tools').before(note);}
+    const id=A.shopLevel??A.currentId,mode=A.shopMode||p.difficulty,l=P.prepareLevel(O.LEVELS[id],mode);
+    for(const [key,d]of Object.entries(G.UPGRADE_DEFS)){
+      const q=G.quote(p,key),card=$('upgradeGrid').querySelector(`[data-module="${key}"]`);if(!card)continue;
+      card.dataset.available=q.canBuy?'yes':q.max?'max':'locked';
+      const badge=document.createElement('span');badge.className='module-status';badge.textContent=q.max?'Установлено полностью':q.canBuy?'Можно установить':!q.eligible?`Нужно ${q.required} доставок`:'Копим ресурсы';card.querySelector('.module-description').before(badge);
+      // The selected preview mode must affect the scanner as well as docking.
+      card.querySelectorAll('.module-effect').forEach(e=>e.remove());
+      const next=Math.min(5,q.lv+1),effect=document.createElement('div');effect.className='module-effect';
+      let value;
+      if(key==='scanner')value=`Прогноз ${mode==='pro'?'в PRO':'здесь'}: ${+(d.values[q.lv]*(mode==='pro'?.6:1)).toFixed(1)} → ${+(d.values[next]*(mode==='pro'?.6:1)).toFixed(1)} с`;
+      if(key==='magnet')value=`Радиус захвата: ${d.values[q.lv]} → ${d.values[next]} ед.`;
+      if(key==='docking'){const upgraded=structuredClone(p);upgraded.upgrades.docking=next;value=`Допуск станции: ${P.captureRadius(l,G.stats(p)).toFixed(1)} → ${P.captureRadius(l,G.stats(upgraded)).toFixed(1)} ед.`;}
+      if(key==='engine')value=`Расчётный расход: ${Math.round((1-.03*q.lv)*100)}% → ${Math.round((1-.03*next)*100)}%`;
+      if(key==='scanner'||key==='docking'){
+        const values=[q.lv,next].map(tier=>{
+          if(key==='scanner')return +(d.values[tier]*(mode==='pro'?.6:1)).toFixed(1);
+          const candidate=structuredClone(p);candidate.upgrades.docking=tier;return +P.captureRadius(l,G.stats(candidate)).toFixed(1);
+        });
+        card.querySelectorAll('.module-spec strong').forEach((node,i)=>{node.innerHTML=`${values[i]}<small>${d.unit}</small>`;});
+      }
+      effect.textContent=value;card.querySelector('.module-spec').after(effect);
+      const plan=card.querySelector('.upgrade-plan');if(plan){
+        const total=[1,2,3,4,5].filter(t=>t>q.lv).reduce((n,t)=>n+E.price(key,t,installed+t-q.lv-1,G.research(p)),0);
+        plan.innerHTML=`<summary>Ступени и цены</summary><div class="price-table"><div><b>Ступень</b><b>Кредиты</b><b>Данные</b><b>Доставки</b></div>${[1,2,3,4,5].map(t=>`<div class="${t<=q.lv?'owned':t===q.lv+1?'next':''}"><span>${['I','II','III','IV','V'][t-1]}</span><span>${t<=q.lv?'✓':money(E.price(key,t,installed+t-q.lv-1,G.research(p)))}</span><span>${t<=q.lv?'—':E.DATA_COSTS[t-1]}</span><span>${E.TIER_UNLOCKS[t-1]}</span></div>`).join('')}</div>${!q.max?`<p>До V ступени: ${money(total)} ◈ при текущей скидке. Другие покупки изменят расчёт.</p>`:''}`;
+      }
+    }
+    for(const el of document.querySelectorAll('.skin-shape'))el.innerHTML=icon;
+    $('shopContext').querySelector('strong').textContent='Примерь улучшение к маршруту';
+  }
+  function canvasContext(canvas,w,h){
+    const r=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);
+    if(!r.width||!r.height)return null;
+    const width=Math.round(r.width*dpr),height=Math.round(r.height*dpr);
+    if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
+    const c=canvas.getContext('2d'),scale=Math.min(width/w,height/h);c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,width,height);c.setTransform(scale,0,0,scale,(width-w*scale)/2,(height-h*scale)/2);return c;
+  }
+  function preview(now){
+    const p=A.profile,color=G.SKINS.find(s=>s.id===p.skin)?.color||'#6af4cd',t=p.settings.reducedMotion?1.4:now/1000;
+    const canvas=$('hangarShip');if(canvas){const c=canvasContext(canvas,540,230);if(c){
+      c.strokeStyle='#94cfc52b';c.lineWidth=1;
+      for(const radius of [64,92]){c.beginPath();c.ellipse(270,124,radius*1.8,radius*.65,0,0,Math.PI*2);c.stroke();}
+      c.setLineDash([3,7]);c.beginPath();c.moveTo(40,124);c.lineTo(500,124);c.stroke();c.setLineDash([]);
+      O.drawShip(c,270,115+Math.sin(t*.9)*5,-.12,color,5,false,t);
+    }}
+    const c=canvasContext($('trailPreview'),560,155);if(!c)return;
+    const pts=[];for(let i=0;i<=95;i++){const a=t*.42-(95-i)*.022;pts.push({x:280+205*Math.cos(a),y:77+39*Math.sin(a)});}
+    O.Cosmetics.drawTrail(c,pts,p.trail,t,color,p.settings.reducedMotion,1.7);
+    const end=pts.at(-1),prev=pts.at(-2);O.drawShip(c,end.x,end.y,Math.atan2(end.y-prev.y,end.x-prev.x),color,1.1,false,t);
+  }
+  O.Hangar={enhance,preview};
+})(window);
+
+</script><script>
+/* Whole-save synchronization. Currency, receipts and upgrades are never merged. */
+(function(root){
+  'use strict';
+  const O=root.Orbital=root.Orbital||{};
+  function canonical(value){
+    if(Array.isArray(value))return value.map(canonical);
+    if(value&&typeof value==='object')return Object.fromEntries(Object.keys(value).sort().map(k=>[k,canonical(value[k])]));
+    return value;
+  }
+  const encode=p=>JSON.stringify(canonical(p));
+  class CloudSync {
+    constructor(options){this.o=options;this.uid=null;this.epoch=0;this.status='off';this.remote=null;this.base=null;this.revision=0;this.busy=false;this.again=false;}
+    notify(status){this.status=status;this.o.changed?.(this);}
+    readMeta(){try{return JSON.parse(this.o.storage.getItem('orbital-cloud-meta:'+this.uid)||'null');}catch{return null;}}
+    owner(){try{return this.o.storage.getItem('orbital-cloud-owner');}catch{return null;}}
+    remember(record){
+      // Persist ownership before authorizing future automatic writes.
+      this.o.storage.setItem('orbital-cloud-meta:'+this.uid,JSON.stringify({base:record.save,revision:record.revision}));
+      this.o.storage.setItem('orbital-cloud-owner',this.uid);
+      this.base=record.save;this.revision=record.revision;this.remote=record;this.attached=true;
+    }
+    backup(remote){
+      const key='orbital-cloud-backups',old=JSON.parse(this.o.storage.getItem(key)||'[]');
+      old.push({at:Date.now(),uid:this.uid,local:this.o.getSave(),cloud:remote?.save||null});
+      this.o.storage.setItem(key,JSON.stringify(old.slice(-3)));
+    }
+    async setUser(uid){
+      this.epoch++;this.uid=uid;this.remote=null;this.base=null;this.revision=0;this.again=false;
+      if(!uid){this.notify('signed-out');return;}
+      const owner=this.owner(),meta=this.readMeta();this.attached=!owner||owner===uid;
+      if(owner===uid&&meta){this.base=meta.base;this.revision=meta.revision;}
+      this.notify('connecting');await this.sync();
+    }
+    async sync(force=false){
+      if(!this.uid)return;
+      if(!force&&['conflict','account-change','error'].includes(this.status))return;
+      if(this.busy){this.again=true;return;}
+      const epoch=this.epoch,uid=this.uid;this.busy=true;
+      const valid=()=>this.epoch===epoch&&this.uid===uid;
+      try{
+        this.notify('syncing');
+        const remote=await this.o.transport.read(uid);if(!valid())return;
+        if(remote)this.validate(remote);
+        this.remote=remote;
+        if(!this.attached){this.notify('account-change');return;}
+        const local=this.o.getSave();
+        if(remote?.save===local){this.remember(remote);this.notify('synced');return;}
+        if(remote && (local===this.base || (!this.base&&this.o.isFresh()))){
+          if(!this.o.canApply()){this.notify('waiting');return;}
+          this.backup(remote);this.o.applySave(remote.save);this.remember(remote);this.notify('synced');return;
+        }
+        const unchanged=remote ? remote.revision===this.revision&&remote.save===this.base : this.base===null;
+        if(!unchanged){this.notify('conflict');return;}
+        await this.push(local,remote,valid);
+      }catch(e){if(valid()){this.error=e;this.notify('error');}}
+      finally{
+        this.busy=false;
+        if(this.again){this.again=false;queueMicrotask(()=>this.sync());}
+      }
+    }
+    validate(record){
+      if(record.version!==1||!Number.isSafeInteger(record.revision)||record.revision<1||typeof record.save!=='string'||record.save.length>2000000)throw Error('Некорректное облачное сохранение.');
+      this.o.validateSave(record.save);
+    }
+    async push(local,remote,valid){
+      const result=await this.o.transport.write(this.uid,remote?.revision||0,local,valid);
+      if(!valid())return;
+      if(!result.committed){
+        if(result.record)this.validate(result.record);
+        this.remote=result.record;this.notify('conflict');return;
+      }
+      this.remember(result.record);
+      if(this.o.getSave()!==local){this.again=true;this.notify('pending');}else this.notify('synced');
+    }
+    async resolve(choice){
+      if(this.busy||!this.uid||!['conflict','account-change','waiting'].includes(this.status))return;
+      if(!this.o.canApply()){this.notify('waiting');return;}
+      const epoch=this.epoch,uid=this.uid,valid=()=>this.epoch===epoch&&this.uid===uid;
+      this.busy=true;
+      try{
+        // The displayed comparison is a snapshot; do not overwrite a newer one.
+        const current=await this.o.transport.read(uid);if(!valid())return;
+        if(current)this.validate(current);
+        if((current?.revision||0)!==(this.remote?.revision||0)||current?.save!==this.remote?.save){this.remote=current;this.notify('conflict');return;}
+        this.backup(current);
+        if(choice==='cloud'&&current){this.o.applySave(current.save);this.remember(current);this.notify('synced');}
+        else if(choice==='local')await this.push(this.o.getSave(),current,valid);
+      }catch(e){if(valid()){this.error=e;this.notify('error');}}
+      finally{this.busy=false;if(this.again){this.again=false;queueMicrotask(()=>this.sync());}}
+    }
+  }
+  O.CloudCore={CloudSync,encode};
+  if(typeof module!=='undefined'&&module.exports)module.exports=O.CloudCore;
+})(typeof globalThis!=='undefined'?globalThis:window);
+
+</script><script>
+/* Account saves are optional; the portable game never needs a network. */
+(function(root){
+  'use strict';const O=root.Orbital,A=O.App,G=O.Progress,C=O.CloudCore;
+  const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const supported=/^https?:$/.test(location.protocol)&&location.pathname.startsWith('/games/orbital-courier/');
+  let sync=null,user=null,unsubscribe=null,timer=null,connecting=false,loadPromise=null,dialog=false,connectionId=0;
+  const labels={off:'На устройстве','signed-out':'Войти в аккаунт',connecting:'Подключение…',syncing:'Сохранение…',synced:'В облаке',pending:'Ожидает отправки',waiting:'Копия из облака',conflict:'Выбрать прогресс','account-change':'Другой аккаунт',error:'Сохранено здесь'};
+  function storage(){try{return root.localStorage;}catch{return null;}}
+  function enabled(){try{return storage()?.getItem('orbital-cloud-enabled')==='1';}catch{return false;}}
+  function validSave(text){
+    const p=JSON.parse(text);
+    if(p.game!=='orbital-courier'||p.version!==8)throw Error('Неподдерживаемая версия облачного прогресса.');
+    if(!Number.isFinite(p.credits)||!Number.isFinite(p.xp)||!p.records||!p.upgrades)throw Error('Облачная копия повреждена.');
+    return G.sanitize(p);
+  }
+  function make(transport){return new C.CloudSync({storage:storage(),transport,
+    getSave:()=>C.encode(A.profile),validateSave:validSave,
+    isFresh:()=>G.completed(A.profile)===0&&Object.keys(A.profile.records).length===0&&A.profile.credits===25&&A.profile.xp===0&&A.profile.data===0&&G.installed(A.profile)===0&&Object.keys(A.profile.courses).length===0,
+    canApply:()=>!A.state&&!A.transitioning&&(!$('modal').open||!!$('cloudPanel')),
+    applySave:text=>{
+      const profile=validSave(text);
+      if(!G.write(storage(),profile))throw Error('Не удалось сохранить копию на устройстве.');
+      const reopen=$('modal').open&&!!$('cloudPanel');
+      A.profile=profile;A.state=null;A.aims={};A.ghosts={};O.Review.clearView();A.go('home',true);A.updateProfileUI();
+      if(reopen)open();
+    },changed:()=>{update();if(dialog&&$('modal').open&&$('cloudPanel'))render();}
+  });}
+  function update(){
+    const status=sync?.status||'off';
+    for(const button of document.querySelectorAll('[data-action="cloud"]')){
+      button.textContent=labels[status]||'На устройстве';button.dataset.status=status;
+    }
+  }
+  async function connect(){
+    if(connecting||unsubscribe)return;connecting=true;const id=++connectionId;
+    try{
+      if(!supported)throw Error('Облачный прогресс доступен в игре на сайте Almanion.');
+      if(!A.storageOK||!storage())throw Error('Разреши сохранение данных в браузере.');
+      storage().setItem('orbital-cloud-enabled','1');
+      if(!root.AlmanionOrbitalAccount){
+        if(!loadPromise)loadPromise=new Promise((resolve,reject)=>{
+          const s=document.createElement('script');s.src='/orbital-account.js?v=20260925-1';s.onload=resolve;
+          s.onerror=()=>{s.remove();loadPromise=null;reject(Error('Нет связи с Almanion. Игра продолжает сохраняться здесь.'));};document.head.appendChild(s);
+        });
+        await loadPromise;
+      }
+      if(id!==connectionId)return;
+      const stop=await root.AlmanionOrbitalAccount.connect((next,transport)=>{
+        if(id!==connectionId)return;
+        user=next;if(!sync)sync=make(transport);sync.setUser(next?.uid||null);
+      });
+      if(id!==connectionId)stop();else unsubscribe=stop;
+    }catch(e){if(id===connectionId){A.toast(e.message,true);if(sync){sync.error=e;sync.notify('error');}}}
+    finally{if(id===connectionId){connecting=false;update();if(dialog&&$('cloudPanel'))render();}}
+  }
+  function summary(text,title){
+    if(!text)return `<div class="cloud-copy"><h3>${title}</h3><p>Копии пока нет</p></div>`;
+    try{const p=validSave(text);return `<div class="cloud-copy"><h3>${title}</h3><strong>${G.completed(p)} / 80 контрактов</strong><p>${p.credits.toLocaleString('ru-RU')} ◈ · ${p.data} ⬡ · ${p.xp.toLocaleString('ru-RU')} XP</p><small>${G.installed(p)} ступеней оборудования</small></div>`;}catch{return `<p>${title}: копия не читается</p>`;}
+  }
+  function render(){
+    const status=sync?.status||'off',compare=['conflict','account-change','waiting'].includes(status);
+    const messages={off:'Прогресс сохраняется в этом браузере. Подключи аккаунт Almanion, чтобы продолжать на другом устройстве.',
+      'signed-out':'Войди в свой аккаунт на главной странице Almanion и вернись сюда. Оба устройства должны использовать один аккаунт.',
+      connecting:'Проверяем аккаунт.',syncing:'Проверяем и сохраняем копию.',synced:'Прогресс этого аккаунта сохранён. На другом устройстве войди в тот же аккаунт и подключи облако.',
+      pending:'Локальная копия обновлена. Отправим её при восстановлении связи.',waiting:'В облаке есть другая копия. Вернись к подготовке через «Ещё раз», чтобы загрузить её.',
+      conflict:'На устройстве и в аккаунте разные версии. Выбери одну целиком: деньги и покупки не складываются. Перед заменой обе копии сохранятся в резерве.',
+      'account-change':'Аккаунт изменился. Прогресс этого браузера не будет отправлен в другой аккаунт без твоего выбора.',
+      error:'Облачное сохранение недоступно. Локальный прогресс сохранён. Проверь соединение и доступ к базе, затем повтори.'};
+    const busy=sync?.busy||connecting,canApply=!A.state&&!A.transitioning;
+    $('cloudPanel').innerHTML=`<p class="cloud-status" role="status">${esc(user?.email||user?.displayName||'Аккаунт Almanion')} · ${labels[status]}</p><p>${messages[status]}</p>
+      ${compare?`<div class="cloud-copies">${summary(C.encode(A.profile),'На устройстве')}${summary(sync.remote?.save,'В аккаунте')}</div><div class="settings-grid"><button class="button primary" data-action="cloud-local" ${busy||!canApply?'disabled':''}>Использовать местную</button><button class="button quiet" data-action="cloud-remote" ${busy||!canApply||!sync.remote?'disabled':''}>Загрузить из аккаунта</button></div>${!canApply?'<p>Сначала заверши рейс и нажми «Ещё раз». Копия не заменяется во время полёта или его разбора.</p>':''}`:''}
+      <div class="settings-grid">${!unsubscribe?`<button class="button primary" data-action="cloud-connect" ${connecting||!supported?'disabled':''}>Подключить аккаунт</button>`:''}${!user&&supported?'<a class="button quiet" href="/" target="_blank" rel="noopener">Войти на сайте ↗</a>':''}${user&&!compare?`<button class="button quiet" data-action="cloud-retry" ${busy?'disabled':''}>Проверить сейчас</button>`:''}<button class="button quiet" data-action="export">Экспорт прогресса</button><button class="button quiet" data-action="cloud-backup">Резервные копии ↓</button></div>
+      ${enabled()?'<button class="text-button" data-action="cloud-disconnect">Отключить облако на этом устройстве</button>':''}${!supported?'<p>Переносимый файл работает офлайн. Для аккаунта открой игру на almanion.github.io.</p>':''}`;
+  }
+  function open(){dialog=true;A.openModal('Прогресс и аккаунт','<div id="cloudPanel"></div><div class="modal-actions"><button class="button primary" data-action="close">Готово</button></div>');render();}
+  function schedule(){clearTimeout(timer);if(sync?.uid)timer=setTimeout(()=>sync.sync(),1000);}
+  Object.assign(A.actions,{
+    cloud:open,'cloud-connect':connect,'cloud-retry':()=>sync?.sync(true),
+    'cloud-local':()=>sync?.resolve('local'),'cloud-remote':()=>sync?.resolve('cloud'),
+    'cloud-disconnect':()=>{connectionId++;connecting=false;unsubscribe?.();unsubscribe=null;sync?.setUser(null);sync=null;user=null;storage()?.removeItem('orbital-cloud-enabled');update();render();},
+    'cloud-backup':()=>{
+      const data=storage()?.getItem('orbital-cloud-backups');if(!data)return A.toast('Резервных копий после синхронизации пока нет.');
+      const copies=JSON.parse(data);
+      A.openModal('Резервные копии',`<p>Скачай нужный JSON. Его можно восстановить через Настройки → Прогресс → Импорт.</p>${copies.map((copy,index)=>`<div class="cloud-copy"><h3>${esc(new Date(copy.at).toLocaleString('ru-RU'))}</h3><div class="settings-grid"><button class="button quiet" data-action="cloud-backup-copy" data-index="${index}" data-copy="local">На устройстве ↓</button>${copy.cloud?`<button class="button quiet" data-action="cloud-backup-copy" data-index="${index}" data-copy="cloud">Из аккаунта ↓</button>`:''}</div></div>`).reverse().join('')}<div class="modal-actions"><button class="button primary" data-action="cloud">Назад</button></div>`);
+    },
+    'cloud-backup-copy':button=>{
+      const copies=JSON.parse(storage()?.getItem('orbital-cloud-backups')||'[]'),copy=copies[+button.dataset.index],data=copy?.[button.dataset.copy];
+      if(!data)return A.toast('Копия недоступна.');
+      const url=URL.createObjectURL(new Blob([data],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download=`orbital-backup-${copy.at}-${button.dataset.copy}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }
+  });
+  root.addEventListener('orbital-save',schedule);
+  root.addEventListener('online',()=>sync?.sync(true));root.addEventListener('focus',()=>sync?.sync());
+  // While open on two devices, check for new revisions without writing unchanged saves.
+  setInterval(()=>{if(!document.hidden)sync?.sync();},30000);
+  O.Cloud={open,connect,get sync(){return sync;}};
+  update();if(enabled()&&supported)connect();
+})(window);
 
 </script></body>
 </html>

@@ -365,6 +365,25 @@ function serverTimestamp() {
         await assertFails(tourEditorDb.ref('classTour/grade10_1/autumn2026').set(endWithoutStartTour));
         await assertFails(tourEditorDb.ref('classTour/grade10_1/autumn2026').set(tourPayload(5, tourEditorUid)));
 
+        const gamePath = 'gameProgress/' + accountUid + '/orbitalCourier';
+        const gameSave = revision => ({ version: 1, revision, save: JSON.stringify({ game: 'orbital-courier', version: 8, credits: 25 }), updatedAt: serverTimestamp() });
+        await assertFails(environment.unauthenticatedContext().database().ref(gamePath).once('value'));
+        await assertFails(anonDb.ref('gameProgress/' + anonUid + '/orbitalCourier').set(gameSave(1)));
+        await assertFails(ordinaryDb.ref(gamePath).set(gameSave(1)));
+        await assertSucceeds(accountDb.ref(gamePath).set(gameSave(1)));
+        await assertSucceeds(accountDb.ref(gamePath).once('value'));
+        await assertFails(ordinaryDb.ref(gamePath).once('value'));
+        await assertFails(ownerDb.ref(gamePath).once('value'));
+        await assertSucceeds(accountDb.ref(gamePath).set(gameSave(2)));
+        await assertFails(accountDb.ref(gamePath).set(gameSave(2)));
+        await assertFails(accountDb.ref(gamePath).set(gameSave(4)));
+        await assertFails(accountDb.ref(gamePath).set({ ...gameSave(3), updatedAt: 1 }));
+        await assertFails(accountDb.ref(gamePath).set({ ...gameSave(3), save: 'x'.repeat(2000001) }));
+        await assertFails(accountDb.ref(gamePath).set({ ...gameSave(3), extra: true }));
+        await assertFails(accountDb.ref(gamePath).update({ save: '{}', updatedAt: serverTimestamp() }));
+        await assertFails(accountDb.ref(gamePath + '/save').set('{}'));
+        await assertFails(accountDb.ref(gamePath).remove());
+
         await assertSucceeds(ownerDb.ref('presence').remove());
         await assertSucceeds(ownerDb.ref('visitors').remove());
         await assertSucceeds(ownerDb.ref('dailyStats').remove());

@@ -41,6 +41,7 @@
     "note-runtime.js",
     "note-editor.js",
     "offline.html",
+    "orbital-account.js",
     "oxide_reactions_table.html",
     "oxide_type_cheatsheet.html",
     "page-transitions.js",
