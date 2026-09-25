@@ -134,6 +134,9 @@ function check(rootDir) {
     trackedFiles(root).forEach(relativePath => {
         const extension = path.extname(relativePath).toLowerCase();
         const normalizedPath = relativePath.replace(/\\/g, '/');
+        // Offline development sources are not shipped; their standalone bundle is checked below.
+        if ((budgets.excludedSourceDirectories || []).some(directory =>
+            normalizedPath.startsWith(directory + '/'))) return;
         const pathLimits = budgets.maxBytesByPath || {};
         const limit = pathLimits[normalizedPath] || budgets.maxBytesByExtension[extension];
         if (!limit) return;

@@ -1,0 +1,8 @@
+PASS Fresh profile: first contract opens, medals open, completed first delivery unlocks animated next-level action
+PASS Normal and reduced-motion level transitions do not run physics or skip levels on repeated request
+PASS JSON import cancellation, confirmation and malformed-file rejection preserve intended balances/receipts
+PASS Shop cancellation/confirmation/receipt refund and cosmetic selection work through visible controls
+PASS Pointer cancellation terminates held adjustment without a stuck increment loop
+PASS 320px replay report/seek/next controls work; portrait-to-landscape rotation preserves input state
+PASS High-density touch viewport (DPR 3): CSS geometry and camera controls remain consistent
+ALL EDGE CHECKS PASSED 7

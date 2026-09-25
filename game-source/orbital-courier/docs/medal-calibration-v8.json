@@ -1,0 +1,1402 @@
+[
+  {
+    "id": 0,
+    "name": "Первое отправление",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 232
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.79409568601988
+  },
+  {
+    "id": 1,
+    "name": "По касательной",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 247
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.6953939971999237
+  },
+  {
+    "id": 2,
+    "name": "Почта для спутника",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 232
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.5142732090211821
+  },
+  {
+    "id": 3,
+    "name": "Зелёный коридор",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 227
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.5277267195257835
+  },
+  {
+    "id": 4,
+    "name": "Кольца Титана",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 250
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.97943121400567
+  },
+  {
+    "id": 5,
+    "name": "Каменный дождь",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 207
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9268703795122482
+  },
+  {
+    "id": 6,
+    "name": "Двойной манёвр",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 157
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.8464857483612986
+  },
+  {
+    "id": 7,
+    "name": "Обратный адрес",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 157
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.23612450310211264
+  },
+  {
+    "id": 8,
+    "name": "Тройная система",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 217
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.48863242655576145
+  },
+  {
+    "id": 9,
+    "name": "Тёмная сторона",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 162
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.37629197306264695
+  },
+  {
+    "id": 10,
+    "name": "Игольное ушко",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 232
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.30985330934756916
+  },
+  {
+    "id": 11,
+    "name": "Последний маяк",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 232
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9746581431557297
+  },
+  {
+    "id": 12,
+    "name": "Полярная почта",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 170
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.3402527924230838
+  },
+  {
+    "id": 13,
+    "name": "Северный обход",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 165
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.2567857014400309
+  },
+  {
+    "id": 14,
+    "name": "Между льдинами",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 240
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.21419760316653014
+  },
+  {
+    "id": 15,
+    "name": "Полярный разворот",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 165
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.09482201297651027
+  },
+  {
+    "id": 16,
+    "name": "Красный гигант",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 175
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.8459484341661445
+  },
+  {
+    "id": 17,
+    "name": "Попутный импульс",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 225
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.6577997226460199
+  },
+  {
+    "id": 18,
+    "name": "Каменные арки",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 225
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9979093854350755
+  },
+  {
+    "id": 19,
+    "name": "Встречные течения",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 225
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.3403454020194284
+  },
+  {
+    "id": 20,
+    "name": "Две дуги Элары",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "branches"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9994262033752627
+  },
+  {
+    "id": 21,
+    "name": "Полярная развилка",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "branches"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9991563273503894
+  },
+  {
+    "id": 22,
+    "name": "Перекрёсток миров",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "branches"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9990977970502964
+  },
+  {
+    "id": 23,
+    "name": "Дальняя альтернатива",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "branches"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9997045616787315
+  },
+  {
+    "id": 24,
+    "name": "Каскад притяжений",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 210
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9238970571067817
+  },
+  {
+    "id": 25,
+    "name": "Большая фиолетовая дуга",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 250
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.7069106253139699
+  },
+  {
+    "id": 26,
+    "name": "Три каменных окна",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 250
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.7714506330606283
+  },
+  {
+    "id": 27,
+    "name": "За гранью видимости",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 165
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.6782187138868734
+  },
+  {
+    "id": 28,
+    "name": "Двойная петля",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 174
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.949281169380078
+  },
+  {
+    "id": 29,
+    "name": "Обратный адрес",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 174
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.975708490471021
+  },
+  {
+    "id": 30,
+    "name": "Восьмёрка Ориона",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 167
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9514421845132307
+  },
+  {
+    "id": 31,
+    "name": "Возвратная петля",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 156
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9608878568829932
+  },
+  {
+    "id": 32,
+    "name": "Резонанс двух миров",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 162
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9381552834477144
+  },
+  {
+    "id": 33,
+    "name": "Тройной разворот",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 133
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9429675212168432
+  },
+  {
+    "id": 34,
+    "name": "Перекрёсток орбит",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 181
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9355189298251777
+  },
+  {
+    "id": 35,
+    "name": "Письмо по кругу",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 141
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9236581672450043
+  },
+  {
+    "id": 36,
+    "name": "Клевер Кассиопеи",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 102
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.917930857010822
+  },
+  {
+    "id": 37,
+    "name": "Три центра притяжения",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 89
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9547632872087947
+  },
+  {
+    "id": 38,
+    "name": "Через три мира",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 109
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9870990181749427
+  },
+  {
+    "id": 39,
+    "name": "Гравитационный лабиринт",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 112
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9887734151607259
+  },
+  {
+    "id": 40,
+    "name": "Чёрный шлюз",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 165
+      },
+      {
+        "type": "precision",
+        "limit": 0.55
+      }
+    ],
+    "minimumWitnessPrecision": 0.598111830598102
+  },
+  {
+    "id": 41,
+    "name": "Гравитационная игла",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "time",
+        "limit": 4.3
+      }
+    ],
+    "minimumWitnessPrecision": 0.9985929461355142
+  },
+  {
+    "id": 42,
+    "name": "Без права на снос",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 245
+      },
+      {
+        "type": "precision",
+        "limit": 0.45
+      }
+    ],
+    "minimumWitnessPrecision": 0.5015111737546158
+  },
+  {
+    "id": 43,
+    "name": "Последний перицентр",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "time",
+        "limit": 4
+      }
+    ],
+    "minimumWitnessPrecision": 0.9990059061320397
+  },
+  {
+    "id": 44,
+    "name": "Блуждающая восьмёрка",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 140
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9706397452226146
+  },
+  {
+    "id": 45,
+    "name": "Петли в движении",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 122
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9635113910310463
+  },
+  {
+    "id": 46,
+    "name": "Обгон планеты",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 114
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.93793636937637
+  },
+  {
+    "id": 47,
+    "name": "Обратный гравитационный ход",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 112
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9217771991472463
+  },
+  {
+    "id": 48,
+    "name": "Вальс трёх миров",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 188
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9417943558041217
+  },
+  {
+    "id": 49,
+    "name": "Подвижный клевер",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 118
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9853698611477741
+  },
+  {
+    "id": 50,
+    "name": "Тройной резонанс",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 115
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.922026654031376
+  },
+  {
+    "id": 51,
+    "name": "Орбитальная хореография",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 103
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.970098018270958
+  },
+  {
+    "id": 52,
+    "name": "Свидание после петель",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 194
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9829882616875323
+  },
+  {
+    "id": 53,
+    "name": "Курьер на встречной орбите",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 126
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.985115809953037
+  },
+  {
+    "id": 54,
+    "name": "Доставка через резонанс",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 104
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9962478919385619
+  },
+  {
+    "id": 55,
+    "name": "Последний виток",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 131
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9540335868632824
+  },
+  {
+    "id": 56,
+    "name": "Тройной прилив",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 117
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9659819416910185
+  },
+  {
+    "id": 57,
+    "name": "Перекрёстные орбиты",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 146
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9764894172325363
+  },
+  {
+    "id": 58,
+    "name": "Резонансный маятник",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 105
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9001075308546158
+  },
+  {
+    "id": 59,
+    "name": "Последний резонанс",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 146
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9651042577543816
+  },
+  {
+    "id": 60,
+    "name": "Шов пространства",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 109
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.912033196596989
+  },
+  {
+    "id": 61,
+    "name": "За горизонтом событий",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 119
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9270293058986316
+  },
+  {
+    "id": 62,
+    "name": "Каскад переходов",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 136
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9288938542305759
+  },
+  {
+    "id": 63,
+    "name": "Топология бесконечности",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 129
+      },
+      {
+        "type": "precision",
+        "limit": 0.76
+      }
+    ],
+    "minimumWitnessPrecision": 0.8068564590414209
+  },
+  {
+    "id": 64,
+    "name": "Изнанка орбит",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 118
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9041332567279513
+  },
+  {
+    "id": 65,
+    "name": "Четыре горизонта",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 117
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9838190414497952
+  },
+  {
+    "id": 66,
+    "name": "Возвращение к истоку",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 135
+      },
+      {
+        "type": "precision",
+        "limit": 0.82
+      }
+    ],
+    "minimumWitnessPrecision": 0.8712741525370011
+  },
+  {
+    "id": 67,
+    "name": "Архитектор разломов",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "economy",
+        "limit": 122
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      }
+    ],
+    "minimumWitnessPrecision": 0.9539744694099244
+  },
+  {
+    "id": 68,
+    "name": "Развилка приливов",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "branches"
+      }
+    ],
+    "minimumWitnessPrecision": 0.998410848318213
+  },
+  {
+    "id": 69,
+    "name": "Два пути к Нерею",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "branches"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9961319708491498
+  },
+  {
+    "id": 70,
+    "name": "Каскад четырёх миров",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "branches"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9894957035172992
+  },
+  {
+    "id": 71,
+    "name": "Возвратная развилка",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "branches"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9940842869649577
+  },
+  {
+    "id": 72,
+    "name": "Согласование орбит",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "branches"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9990813925466819
+  },
+  {
+    "id": 73,
+    "name": "Двойная топология",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "branches"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9985836522717038
+  },
+  {
+    "id": 74,
+    "name": "Перекрёстный резонанс",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "branches"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9983834397221147
+  },
+  {
+    "id": 75,
+    "name": "Пять горизонтов",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "branches"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9998147886521637
+  },
+  {
+    "id": 76,
+    "name": "Почта обсерваторий",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9995597624354451
+  },
+  {
+    "id": 77,
+    "name": "Четыре адреса",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9991258932390027
+  },
+  {
+    "id": 78,
+    "name": "Дрейфующий получатель",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9985640652297623
+  },
+  {
+    "id": 79,
+    "name": "Последняя миля",
+    "rules": [
+      {
+        "type": "delivery"
+      },
+      {
+        "type": "precision",
+        "limit": 0.85
+      },
+      {
+        "type": "cargo"
+      }
+    ],
+    "minimumWitnessPrecision": 0.9979696450877777
+  }
+]

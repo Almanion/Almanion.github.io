@@ -1,0 +1,65 @@
+{
+  "status": "passed",
+  "assertions": 20,
+  "hashes": [
+    {
+      "file": "src/physics.js",
+      "sha256": "ac864aa6715e63ceb9d78fb94bc0d129636688a349d0a52ff0a85a908a2bf912",
+      "identical_to_v8": true
+    },
+    {
+      "file": "src/levels.js",
+      "sha256": "d7ebca99b96e25d5dd7eef09be97d3bdf1529650396ce0e0130c931c1198f7e6",
+      "identical_to_v8": true
+    },
+    {
+      "file": "src/progression.js",
+      "sha256": "2a7c9d83d61c496c35e17f133ed7c1dd07db1af1ce2b29820076894c00c5d91b",
+      "identical_to_v8": true
+    },
+    {
+      "file": "src/routes.js",
+      "sha256": "82fcb74a146d208d0f0e6c15fb5b26d4a4f2442e692a7afacf56ac8b0721677c",
+      "identical_to_v8": true
+    },
+    {
+      "file": "src/economy.js",
+      "sha256": "e482cbddebcba9da621124165add0a324643b41cdc9cff7859c277843f415e12",
+      "identical_to_v8": true
+    },
+    {
+      "file": "src/medals.js",
+      "sha256": "b551bb740d5292e42faa6f38917ad0c24d4edaf152c4fc59bb003cb5ca75eb5f",
+      "identical_to_v8": true
+    },
+    {
+      "file": "src/achievements.js",
+      "sha256": "87483ba7a5182484a49dfb4f74f7b3e8c6fbdb9347df1917e7d7463ccc4b4a3b",
+      "identical_to_v8": true
+    },
+    {
+      "file": "src/cosmetics.js",
+      "sha256": "72e06e4efc06ff3923161e86f4f190f44cb37a73810e87479381ec31f9d82c5d",
+      "identical_to_v8": true
+    },
+    {
+      "file": "src/renderer.js",
+      "sha256": "de8fddad80e94230563ec103ba6783ef9fa466dbae2dc998ef7f7ac6f0456601",
+      "identical_to_v8": true
+    },
+    {
+      "file": "src/audio.js",
+      "sha256": "d7bb658a4ae582c2f806bc59962d8314b5805b0f903881138cb43a1c14074110",
+      "identical_to_v8": true
+    },
+    {
+      "file": "src/flight-review.js",
+      "sha256": "433f5e57e74cbc109e3593c2449db32f29e52e90587c47cb16d5db573100692f",
+      "identical_to_v8": true
+    }
+  ],
+  "notes": [
+    "No gameplay/economy changes",
+    "v9 app retains v8 save schema"
+  ]
+}

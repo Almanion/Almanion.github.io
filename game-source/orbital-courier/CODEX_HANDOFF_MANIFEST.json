@@ -1,0 +1,11 @@
+{
+  "purpose": "Project handoff; original game code unchanged",
+  "sourceArchive": "Orbital_Courier_10_Game.zip",
+  "sourceSHA256": "2b0318219be07f06eb027e761691eab3633f9b09bb6adb8b58c71c12c8e6ea3f",
+  "addedFiles": [
+    "AGENTS.md",
+    "HANDOFF.md",
+    "START_IN_CODEX.txt"
+  ],
+  "testsRerunDuringHandoff": false
+}

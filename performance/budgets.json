@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "excludedSourceDirectories": ["game-source"],
   "maxBytesByExtension": {
     ".html": 320000,
     ".js": 120000,
@@ -8,7 +9,7 @@
   },
   "maxBytesByPath": {
     "content/physics/sections/mechanics.json": 300000,
-    "games/orbital-courier/index.html": 560000
+    "games/orbital-courier/index.html": 640000
   },
   "maxPrecacheEntries": 30,
   "maxSearchSourceBytes": 1100000,

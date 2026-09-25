@@ -1,0 +1,17 @@
+{
+  "game": "orbital-courier",
+  "version": "9.0.0",
+  "saveSchema": 8,
+  "base": "8.0.0",
+  "levels": 80,
+  "sectors": 20,
+  "achievements": 93,
+  "htmlSHA256": "957f5c649172c65441727266201b668f0c819c18ef69194349c77bb049e14f51",
+  "checks": {
+    "core": 3105,
+    "static": 20,
+    "browserScenarios": 23,
+    "viewportSizes": 13
+  },
+  "contentChanges": false
+}

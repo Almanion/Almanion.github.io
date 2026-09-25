@@ -1,0 +1,30 @@
+PASS v8 save schema, balances, modules, receipts, records and permanent courses preserved; unique DOM IDs
+PASS Comma and signed inputs, invalid fallback, bounds, Enter safety and coarse/fine keyboard increments
+PASS Single taps do not double-increment; hold repeats and stops on release or leaving the button
+PASS Map click never changes course; explicit pan, aim, Alt-pan and wheel zoom preserve intended controls
+PASS Native route/courses sheet traps focus, Escape restores focus, branching is visual-only and controls are not duplicated
+PASS A/B values round-trip; primary action remains reachable outside expanded panel scroller
+PASS Route sheet and pause freeze simulation; close resumes; restart requires confirmation; losing focus pauses
+PASS Settings switches/tabs, JSON export schema and reset guard work; fullscreen denial does not break play
+PASS All 80 levels and B routes of all 12 branching maps complete in production frame loop (92 flights)
+PASS All 16 most-recent/revised maps, including both branches, finish in PRO (28 flights)
+PASS Finished-flight replay seeks and compares without awarding money; repeat earned route remains unpaid
+VIEWPORT 320 568
+VIEWPORT 360 640
+VIEWPORT 390 844
+VIEWPORT 430 932
+VIEWPORT 568 320
+VIEWPORT 667 375
+VIEWPORT 768 1024
+VIEWPORT 820 1180
+VIEWPORT 844 390
+VIEWPORT 1024 600
+VIEWPORT 1024 768
+VIEWPORT 1366 768
+VIEWPORT 1920 1080
+PASS 13 phone/tablet/desktop sizes: map, next step, inputs and launch fit; click targets checked in preparation, flight and replay
+PASS Mobile exact mode, decimal comma and first-tap commit prevent launch while editing; reduced viewport keyboard simulation keeps controls reachable
+PASS CDP multitouch: pinch restores prior aim, changes zoom, and remaining finger cannot accidentally alter the course or launch
+PASS Mobile catalogue/hangar/achievements/home have no horizontal overflow; long settings keep Close reachable
+PASS Denied browser storage is signalled without covering map/actions; save-settings entry remains available
+ALL UI9 CHECKS PASSED 16

@@ -5,6 +5,8 @@
   "description": "Deterministic build and validation commands for Almanion GitHub Pages",
   "scripts": {
     "test": "node tools/run-tests.js",
+    "game:build": "node tools/build-game.js",
+    "game:test": "npm run game:build && npm --prefix game-source/orbital-courier test",
     "test:rules": "npx --yes firebase-tools@14.22.0 emulators:exec --project almanion-rules-test --only database \"node tests/firebase-rules.integration.js\"",
     "test:e2e": "node tools/build-site.js --output _site && playwright test",
     "notes:assign-kc-ids": "node tools/assign-kc-ids.js",

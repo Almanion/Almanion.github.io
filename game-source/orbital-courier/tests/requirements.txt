@@ -1,0 +1,2 @@
+playwright>=1.50,<2
+# Development tests only. Playing the ready HTML needs no Python packages.

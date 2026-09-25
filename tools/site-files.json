@@ -86,6 +86,7 @@
     "apps-script.gs",
     "firebase",
     "firebase.json",
+    "game-source",
     "node_modules",
     "package-lock.json",
     "package.json",

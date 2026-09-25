@@ -1,0 +1,400 @@
+{
+  "status": "passed",
+  "scenarios": 13,
+  "checks": [
+    "80 contracts, 20 sectors; new filter has 12 new and 4 revised maps; safe search",
+    "Transition does not advance flight; compact layout and medal detail dialog work",
+    "All 80 maps and all 12 alternative branches complete in live frame loop; all current medals earned",
+    "All 16 new/revised maps and both branches also finish in PRO via gameplay UI",
+    "Replay uses completed history, seeks without money changes and compares actual previous attempt",
+    "Branch briefing changes highlighting only; zoom does not modify the world",
+    "Exact course follows the selected branch and remains unpaid training",
+    "93 achievements, seven sections, search and progress filters render",
+    "Late cosmetics require milestones and do not spend XP; shop shows strict-station effect; receipts refund exact amount",
+    "Settings tabs, contrast, JSON export and typed reset guard work",
+    "v7 to v8 preserves money and archives old medals; v8 storage roundtrip retains both routes",
+    "Seven small/tablet/desktop viewports fit map, next step, numeric inputs and launch; mobile drawer and two-finger gesture work",
+    "Storage-denied warning does not push mobile launch offscreen"
+  ],
+  "errors": [],
+  "networkRequests": [],
+  "sizes": [
+    {
+      "viewport": [
+        320,
+        568
+      ],
+      "scroll": [
+        320,
+        568
+      ],
+      "launch": true,
+      "rects": {
+        "gameCanvas": {
+          "x": 9,
+          "y": 218,
+          "width": 302,
+          "height": 165,
+          "top": 218,
+          "right": 311,
+          "bottom": 383,
+          "left": 9
+        },
+        "flightPlan": {
+          "x": 7,
+          "y": 156,
+          "width": 306,
+          "height": 54,
+          "top": 156,
+          "right": 313,
+          "bottom": 210,
+          "left": 7
+        },
+        "angleInput": {
+          "x": 56,
+          "y": 451,
+          "width": 57.5,
+          "height": 41,
+          "top": 451,
+          "right": 113.5,
+          "bottom": 492,
+          "left": 56
+        },
+        "speedInput": {
+          "x": 206.5,
+          "y": 451,
+          "width": 57.5,
+          "height": 41,
+          "top": 451,
+          "right": 264,
+          "bottom": 492,
+          "left": 206.5
+        }
+      }
+    },
+    {
+      "viewport": [
+        360,
+        640
+      ],
+      "scroll": [
+        360,
+        640
+      ],
+      "launch": true,
+      "rects": {
+        "gameCanvas": {
+          "x": 9,
+          "y": 218,
+          "width": 342,
+          "height": 237,
+          "top": 218,
+          "right": 351,
+          "bottom": 455,
+          "left": 9
+        },
+        "flightPlan": {
+          "x": 7,
+          "y": 156,
+          "width": 346,
+          "height": 54,
+          "top": 156,
+          "right": 353,
+          "bottom": 210,
+          "left": 7
+        },
+        "angleInput": {
+          "x": 56,
+          "y": 523,
+          "width": 77.5,
+          "height": 41,
+          "top": 523,
+          "right": 133.5,
+          "bottom": 564,
+          "left": 56
+        },
+        "speedInput": {
+          "x": 226.5,
+          "y": 523,
+          "width": 77.5,
+          "height": 41,
+          "top": 523,
+          "right": 304,
+          "bottom": 564,
+          "left": 226.5
+        }
+      }
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "scroll": [
+        390,
+        844
+      ],
+      "launch": true,
+      "rects": {
+        "gameCanvas": {
+          "x": 9,
+          "y": 218,
+          "width": 372,
+          "height": 441,
+          "top": 218,
+          "right": 381,
+          "bottom": 659,
+          "left": 9
+        },
+        "flightPlan": {
+          "x": 7,
+          "y": 156,
+          "width": 376,
+          "height": 54,
+          "top": 156,
+          "right": 383,
+          "bottom": 210,
+          "left": 7
+        },
+        "angleInput": {
+          "x": 56,
+          "y": 727,
+          "width": 92.5,
+          "height": 41,
+          "top": 727,
+          "right": 148.5,
+          "bottom": 768,
+          "left": 56
+        },
+        "speedInput": {
+          "x": 241.5,
+          "y": 727,
+          "width": 92.5,
+          "height": 41,
+          "top": 727,
+          "right": 334,
+          "bottom": 768,
+          "left": 241.5
+        }
+      }
+    },
+    {
+      "viewport": [
+        768,
+        1024
+      ],
+      "scroll": [
+        768,
+        1024
+      ],
+      "launch": true,
+      "rects": {
+        "gameCanvas": {
+          "x": 18,
+          "y": 268,
+          "width": 460,
+          "height": 696,
+          "top": 268,
+          "right": 478,
+          "bottom": 964,
+          "left": 18
+        },
+        "flightPlan": {
+          "x": 16,
+          "y": 202,
+          "width": 464,
+          "height": 58,
+          "top": 202,
+          "right": 480,
+          "bottom": 260,
+          "left": 16
+        },
+        "angleInput": {
+          "x": 548,
+          "y": 334,
+          "width": 148,
+          "height": 44,
+          "top": 334,
+          "right": 696,
+          "bottom": 378,
+          "left": 548
+        },
+        "speedInput": {
+          "x": 548,
+          "y": 412,
+          "width": 148,
+          "height": 44,
+          "top": 412,
+          "right": 696,
+          "bottom": 456,
+          "left": 548
+        }
+      }
+    },
+    {
+      "viewport": [
+        844,
+        390
+      ],
+      "scroll": [
+        844,
+        390
+      ],
+      "launch": true,
+      "rects": {
+        "gameCanvas": {
+          "x": 10,
+          "y": 141,
+          "width": 586,
+          "height": 209,
+          "top": 141,
+          "right": 596,
+          "bottom": 350,
+          "left": 10
+        },
+        "flightPlan": {
+          "x": 8,
+          "y": 81,
+          "width": 590,
+          "height": 52,
+          "top": 81,
+          "right": 598,
+          "bottom": 133,
+          "left": 8
+        },
+        "angleInput": {
+          "x": 660,
+          "y": 152,
+          "width": 122,
+          "height": 36,
+          "top": 152,
+          "right": 782,
+          "bottom": 188,
+          "left": 660
+        },
+        "speedInput": {
+          "x": 660,
+          "y": 219,
+          "width": 122,
+          "height": 36,
+          "top": 219,
+          "right": 782,
+          "bottom": 255,
+          "left": 660
+        }
+      }
+    },
+    {
+      "viewport": [
+        1024,
+        600
+      ],
+      "scroll": [
+        1024,
+        600
+      ],
+      "launch": true,
+      "rects": {
+        "gameCanvas": {
+          "x": 18,
+          "y": 256,
+          "width": 676,
+          "height": 294,
+          "top": 256,
+          "right": 694,
+          "bottom": 550,
+          "left": 18
+        },
+        "flightPlan": {
+          "x": 16,
+          "y": 190,
+          "width": 680,
+          "height": 58,
+          "top": 190,
+          "right": 696,
+          "bottom": 248,
+          "left": 16
+        },
+        "angleInput": {
+          "x": 767,
+          "y": 309,
+          "width": 182,
+          "height": 44,
+          "top": 309,
+          "right": 949,
+          "bottom": 353,
+          "left": 767
+        },
+        "speedInput": {
+          "x": 767,
+          "y": 400,
+          "width": 182,
+          "height": 44,
+          "top": 400,
+          "right": 949,
+          "bottom": 444,
+          "left": 767
+        }
+      }
+    },
+    {
+      "viewport": [
+        1366,
+        768
+      ],
+      "scroll": [
+        1366,
+        768
+      ],
+      "launch": true,
+      "rects": {
+        "gameCanvas": {
+          "x": 18,
+          "y": 256,
+          "width": 1018,
+          "height": 462,
+          "top": 256,
+          "right": 1036,
+          "bottom": 718,
+          "left": 18
+        },
+        "flightPlan": {
+          "x": 16,
+          "y": 190,
+          "width": 1022,
+          "height": 58,
+          "top": 190,
+          "right": 1038,
+          "bottom": 248,
+          "left": 16
+        },
+        "angleInput": {
+          "x": 1109,
+          "y": 309,
+          "width": 182,
+          "height": 44,
+          "top": 309,
+          "right": 1291,
+          "bottom": 353,
+          "left": 1109
+        },
+        "speedInput": {
+          "x": 1109,
+          "y": 400,
+          "width": 182,
+          "height": 44,
+          "top": 400,
+          "right": 1291,
+          "bottom": 444,
+          "left": 1109
+        }
+      }
+    }
+  ],
+  "runtimeSeconds": 26.08,
+  "limitations": [
+    "set_content and in-memory storage",
+    "No physical devices or Safari",
+    "No independent human level playtest"
+  ]
+}

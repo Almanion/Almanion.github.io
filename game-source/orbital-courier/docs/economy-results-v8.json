@@ -1,0 +1,267 @@
+{
+  "maxCampaignCredits": 29141,
+  "baseCampaignCredits": 17165,
+  "maxResearch": 320,
+  "allShopData": 120,
+  "oldCurveOnExpandedCampaign": {
+    "minimum": 25445,
+    "states": 1296,
+    "order": [
+      {
+        "prev": 0,
+        "key": "magnet",
+        "tier": 1,
+        "price": 170
+      },
+      {
+        "prev": 6,
+        "key": "magnet",
+        "tier": 2,
+        "price": 555
+      },
+      {
+        "prev": 12,
+        "key": "magnet",
+        "tier": 3,
+        "price": 1130
+      },
+      {
+        "prev": 18,
+        "key": "magnet",
+        "tier": 4,
+        "price": 1880
+      },
+      {
+        "prev": 24,
+        "key": "magnet",
+        "tier": 5,
+        "price": 2810
+      },
+      {
+        "prev": 30,
+        "key": "docking",
+        "tier": 1,
+        "price": 170
+      },
+      {
+        "prev": 66,
+        "key": "docking",
+        "tier": 2,
+        "price": 550
+      },
+      {
+        "prev": 102,
+        "key": "docking",
+        "tier": 3,
+        "price": 1120
+      },
+      {
+        "prev": 138,
+        "key": "docking",
+        "tier": 4,
+        "price": 1865
+      },
+      {
+        "prev": 174,
+        "key": "docking",
+        "tier": 5,
+        "price": 2785
+      },
+      {
+        "prev": 210,
+        "key": "scanner",
+        "tier": 1,
+        "price": 165
+      },
+      {
+        "prev": 211,
+        "key": "scanner",
+        "tier": 2,
+        "price": 535
+      },
+      {
+        "prev": 212,
+        "key": "scanner",
+        "tier": 3,
+        "price": 1085
+      },
+      {
+        "prev": 213,
+        "key": "scanner",
+        "tier": 4,
+        "price": 1805
+      },
+      {
+        "prev": 214,
+        "key": "scanner",
+        "tier": 5,
+        "price": 2685
+      },
+      {
+        "prev": 215,
+        "key": "engine",
+        "tier": 1,
+        "price": 160
+      },
+      {
+        "prev": 431,
+        "key": "engine",
+        "tier": 2,
+        "price": 525
+      },
+      {
+        "prev": 647,
+        "key": "engine",
+        "tier": 3,
+        "price": 1065
+      },
+      {
+        "prev": 863,
+        "key": "engine",
+        "tier": 4,
+        "price": 1765
+      },
+      {
+        "prev": 1079,
+        "key": "engine",
+        "tier": 5,
+        "price": 2620
+      }
+    ]
+  },
+  "current": {
+    "minimum": 32420,
+    "states": 1296,
+    "order": [
+      {
+        "prev": 0,
+        "key": "magnet",
+        "tier": 1,
+        "price": 170
+      },
+      {
+        "prev": 6,
+        "key": "magnet",
+        "tier": 2,
+        "price": 625
+      },
+      {
+        "prev": 12,
+        "key": "magnet",
+        "tier": 3,
+        "price": 1375
+      },
+      {
+        "prev": 18,
+        "key": "magnet",
+        "tier": 4,
+        "price": 2415
+      },
+      {
+        "prev": 24,
+        "key": "magnet",
+        "tier": 5,
+        "price": 3755
+      },
+      {
+        "prev": 30,
+        "key": "docking",
+        "tier": 1,
+        "price": 170
+      },
+      {
+        "prev": 66,
+        "key": "docking",
+        "tier": 2,
+        "price": 625
+      },
+      {
+        "prev": 102,
+        "key": "docking",
+        "tier": 3,
+        "price": 1365
+      },
+      {
+        "prev": 138,
+        "key": "docking",
+        "tier": 4,
+        "price": 2395
+      },
+      {
+        "prev": 174,
+        "key": "docking",
+        "tier": 5,
+        "price": 3720
+      },
+      {
+        "prev": 210,
+        "key": "scanner",
+        "tier": 1,
+        "price": 165
+      },
+      {
+        "prev": 211,
+        "key": "scanner",
+        "tier": 2,
+        "price": 605
+      },
+      {
+        "prev": 212,
+        "key": "scanner",
+        "tier": 3,
+        "price": 1325
+      },
+      {
+        "prev": 213,
+        "key": "scanner",
+        "tier": 4,
+        "price": 2315
+      },
+      {
+        "prev": 214,
+        "key": "scanner",
+        "tier": 5,
+        "price": 3585
+      },
+      {
+        "prev": 215,
+        "key": "engine",
+        "tier": 1,
+        "price": 160
+      },
+      {
+        "prev": 431,
+        "key": "engine",
+        "tier": 2,
+        "price": 595
+      },
+      {
+        "prev": 647,
+        "key": "engine",
+        "tier": 3,
+        "price": 1295
+      },
+      {
+        "prev": 863,
+        "key": "engine",
+        "tier": 4,
+        "price": 2260
+      },
+      {
+        "prev": 1079,
+        "key": "engine",
+        "tier": 5,
+        "price": 3500
+      }
+    ]
+  },
+  "note": "Theoretical maximum payouts, not a proof all 100-point flights exist. Full 8% discount from the first purchase makes the minimum a generous lower bound; unlocks and solvency ignored.",
+  "actual": {
+    "xp": 30325,
+    "credits": 24514,
+    "data": 224,
+    "achievements": 93,
+    "precision": 48
+  },
+  "fundingGap": 3279
+}

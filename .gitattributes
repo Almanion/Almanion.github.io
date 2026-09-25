@@ -1,0 +1,5 @@
+# Keep the standalone game reproducible on Windows and GitHub Actions.
+/game-source/orbital-courier/index.html text eol=lf
+/game-source/orbital-courier/src/** text eol=lf
+/games/orbital-courier/*.html text eol=lf
+/games/orbital-courier/*.txt text eol=lf

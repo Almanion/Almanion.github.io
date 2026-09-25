@@ -1,0 +1,26 @@
+
+> orbital-courier@9.0.0 test
+> node tests/v8.test.cjs && node tests/ui9.static.cjs
+
+{
+  "flights": 184,
+  "motionCounterfactualFailures": 20,
+  "profileBeforeEngineering": {
+    "credits": 24174,
+    "data": 198,
+    "xp": 29537,
+    "achievements": 83
+  },
+  "achievementsMissing": [],
+  "finalCampaign": {
+    "xp": 30325,
+    "credits": 24514,
+    "data": 224,
+    "achievements": 93,
+    "precision": 48
+  },
+  "assertions": 3105,
+  "runtimeSeconds": 5.805,
+  "status": "passed"
+}
+UI9 static checks passed: 20

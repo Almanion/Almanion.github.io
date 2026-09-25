@@ -1,0 +1,465 @@
+/* v9 cockpit. Unlayered rules intentionally outrank the archived legacy theme.
+   Actual level physics, economics and save schema are unchanged. */
+:root {--ink:#edf5fa;--muted:#a4b8c6;--line:#294352;--panel:#101f2a;--mint:#79f0cc;--ui-radius:14px;--vv-height:100dvh;--vv-top:0px}
+[hidden],.screen[hidden]{display:none!important}
+*,*::before,*::after{box-sizing:border-box}
+html{scrollbar-gutter:auto;scroll-behavior:auto}
+body{color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-tap-highlight-color:transparent}
+button,input,select,summary{touch-action:manipulation}
+button{cursor:pointer;font:inherit}
+button:disabled{cursor:not-allowed;opacity:.42}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
+input,select{font-size:16px}
+button,summary{-webkit-user-select:none;user-select:none}
+.icon-button{width:44px;min-width:44px;height:44px;min-height:44px;border:1px solid var(--line);border-radius:12px;background:#12222c;color:#d4e9f1;display:inline-flex;justify-content:center;align-items:center;font-size:21px;padding:0}
+.button{min-height:44px;border-radius:11px}
+.button.primary,.primary{background:var(--mint);color:#062b26;border-color:var(--mint)}
+.text-button{min-height:40px;display:inline-flex;align-items:center;justify-content:center}
+.topbar{max-width:none;padding:12px 24px;gap:18px;height:76px;background:#09151f;border-bottom:1px solid #253b48}
+.brand{gap:10px;font-size:10px;letter-spacing:.18em}
+.brand strong{font-size:18px}.brand-mark{width:44px;height:44px;flex:none}
+.topbar nav{gap:6px}.topbar nav button{min-height:44px;padding:10px 18px;font-size:14px;border-radius:10px}
+.account{gap:10px}.account .rank-badge{font-size:11px}.wallet{font-size:13px}
+main{max-width:1500px;margin:auto;padding:32px 24px 50px}
+.page-heading h2,.dispatch-heading h2{font-size:clamp(27px,3vw,40px);line-height:1.12}
+.page-heading p{font-size:14px;line-height:1.6;color:var(--muted)}
+.save-warning{position:relative;padding:10px 16px;background:#553925;color:#fff0dc;font-size:13px}
+/* Game has one viewport, with controls reserved in the layout, not over the map. */
+body[data-page=play]{margin:0;padding:0;overflow:hidden;overscroll-behavior:none;height:var(--vv-height)}
+body[data-page=play] .topbar{position:relative;height:56px;min-height:56px;padding:6px 18px;margin:0}
+body[data-page=play] .brand-mark{width:36px;height:36px}body[data-page=play] .brand{font-size:9px}body[data-page=play] .brand strong{font-size:14px}
+body[data-page=play] .topbar .rank-badge{display:none}
+body[data-page=play] .topbar nav button{min-height:40px;padding:7px 16px;font-size:13px}
+body[data-page=play] .topbar .icon-button{min-height:40px;height:40px;width:40px;min-width:40px}
+body[data-page=play] .site-footer,body[data-page=play] .mobile-nav{display:none}
+body[data-page=play] .save-warning{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 68px);max-width:min(520px,96vw);z-index:45;border:1px solid #a87c4c;border-radius:10px;font-size:12px;padding:9px 12px;box-shadow:0 4px 24px #0008}
+body[data-page=play] main{padding:8px 16px 12px;height:calc(var(--vv-height) - 56px);max-width:1800px;width:100%;min-height:0;margin:auto}
+#play.active{display:flex;flex-direction:column;height:100%;gap:10px;margin:0;padding:0;min-height:0;overflow:visible;position:relative}
+#play .flight-heading{display:flex;align-items:center;flex:0 0 46px;height:46px;gap:12px;margin:0;min-height:0;flex-wrap:nowrap}
+.flight-back{border:0;background:#142833;font-size:28px;flex:none}
+.flight-title-group{flex:1;min-width:0}
+#play .flight-heading .eyebrow{font-size:9px;letter-spacing:.16em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#a1b8c7;margin:0 0 4px}
+#play .flight-heading h2{font-size:21px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
+#play .flight-actions{display:flex;gap:8px;flex:none;align-items:center;width:auto;flex-wrap:nowrap}
+#play .contract-pager{display:flex;align-items:center;gap:7px;min-width:138px;height:42px;border:1px solid var(--line);border-radius:12px;background:#10212c}
+#play .contract-pager button{width:40px;height:40px;min-height:40px;flex:none;font-size:22px}
+#play #levelPosition{font:12px var(--mono);color:#bfd3de;white-space:nowrap}
+.mode-chip{min-height:40px;padding:0 14px;background:#17362f;color:#91efcc;border:1px solid #2b6250;border-radius:10px;font-size:12px;white-space:nowrap}
+.mode-chip.pro{background:#3a294b;border-color:#70528e;color:#e0c4ff}
+#play .training-badge{position:absolute;z-index:6;top:50px;left:50%;transform:translateX(-50%);font:11px var(--mono);background:#543b26;color:#ffe3b6;border-radius:8px;padding:7px 12px;margin:0;width:max-content;max-width:95%;pointer-events:none}
+/* Conditions visible on wide screens, current progress on phones; details are one tap away. */
+#play .medal-deck{flex:0 0 60px;margin:0;min-height:0}
+#play .medal-deck-heading{display:none}
+#play .medal-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;height:100%}
+#play .medal-card{position:relative;display:flex;flex-direction:row;align-items:center;gap:10px;height:100%;min-height:0;padding:8px 12px;border-radius:12px;background:#11222c;cursor:pointer;overflow:hidden}
+#play .medal-symbol{position:static;flex:0 0 25px;width:25px;height:32px;min-width:0;align-self:center}
+#play .medal-copy{min-width:0;padding:0;flex:1}
+#play .medal-name{display:flex;justify-content:space-between;gap:7px;align-items:center}
+#play .medal-name h3{font-size:12px;font-weight:650;margin:0;line-height:1.2;min-height:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#play .medal-archive{position:static;font-size:10px;font-weight:500;white-space:nowrap;color:#a2b9c6}
+#play .medal-condition{font-size:10px;line-height:1.3;margin:4px 0 0;color:#b9cbd5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#play .medal-readout{margin:3px 0 0;display:flex}
+#play .medal-detail{font:10px var(--mono);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#play .medal-live{display:none}
+#play .medal-track{height:2px;position:absolute;bottom:0;left:12px;right:12px;margin:0}
+#play .medal-card[data-state=won]{background:#18382f;border-color:#63cfa9}
+#play .medal-card[data-state=missed],#play .medal-card[data-state=failed]{opacity:.8}
+#play .flight-layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:14px;flex:1;min-height:0;margin:0;align-items:stretch;height:auto}
+#play .flight-left{display:flex;flex-direction:column;gap:7px;min-width:0;min-height:0;overflow:hidden;height:100%}
+#play .flight-plan{flex:0 0 44px;position:relative;margin:0;border:1px solid var(--line);border-radius:12px;background:#112530;z-index:auto;min-height:44px;order:0}
+#play .flight-plan>summary{display:flex;align-items:center;gap:10px;min-height:42px;padding:7px 12px;cursor:pointer;list-style:none}
+summary::-webkit-details-marker{display:none}
+#play .flight-plan summary>div{min-width:0;flex:1;display:flex;align-items:center;gap:12px}
+#play .flight-plan summary small{font-size:9px;letter-spacing:.1em;color:#98b6c6;white-space:nowrap;margin:0;line-height:1}
+#play .flight-plan summary strong{font-size:12px;font-weight:550;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plan-marker{font-size:22px;color:#80d8c4}.plan-chevron{color:#cbe1e9}
+#planCounter{font:11px var(--mono);color:#b2e7d9;white-space:nowrap}
+#play .plan-body{display:none} /* moved, not copied, into a focus-trapped dialog */
+#play .map-controls{display:flex;align-items:center;justify-content:space-between;gap:6px;flex:0 0 38px;min-height:38px;order:0;padding:0 2px}
+.map-mode{display:flex;background:#0b1c27;border:1px solid #2b4655;border-radius:10px;overflow:hidden}
+.map-mode button{min-height:36px;padding:5px 12px;min-width:78px;border:0;background:transparent;color:#abc5d1;font-size:12px}
+.map-mode button[aria-pressed=true]{background:#25463f;color:#aefce4}
+#play .map-tools{display:flex;gap:4px;align-items:center;background:none;border:0;padding:0;pointer-events:auto}
+.map-icon,.map-fit{min-width:36px;height:36px;min-height:36px;border:1px solid #2d4654;border-radius:9px;background:#12232e;color:#cde4ed;padding:0 7px;font-size:20px}
+.map-fit{font:11px var(--mono);padding:0 10px;min-width:86px}
+#play .map-viewport{order:1;position:relative;flex:1;min-height:70px;display:flex;align-items:stretch;justify-content:center;border:1px solid #2c4757;border-radius:14px;background:#07131e;overflow:hidden;isolation:isolate}
+#play .stage{position:relative;aspect-ratio:auto;border:0;max-width:100%;max-height:100%;box-shadow:none;margin:0;border-radius:0;flex:1}
+#gameCanvas{width:100%;height:100%;display:block;touch-action:none;cursor:crosshair;outline-offset:-3px}
+body[data-map-mode=pan] #gameCanvas{cursor:grab}body.map-dragging #gameCanvas{cursor:grabbing}
+#play .stage-pill{top:10px;left:10px;pointer-events:none;font:9px var(--mono);letter-spacing:.08em;padding:5px 8px;background:#0b2027d9;border:1px solid #2b4a54;border-radius:7px;white-space:nowrap}
+#play .stage-corner{pointer-events:none;font-size:8px;right:12px;bottom:10px;color:#7592a4}
+#play .stage-bottom{display:none}
+.map-gesture-hint{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;width:max-content;max-width:94%;font-size:11px;padding:8px 12px;border:1px solid #436873;background:#102831ee;border-radius:9px;color:#d6e9ef;pointer-events:none;text-align:center}
+#play .telemetry{order:2;display:flex;align-items:center;gap:18px;flex:0 0 36px;min-height:36px;margin:0;padding:0 3px;border:0;overflow:hidden}
+#play .telemetry>div{display:flex;align-items:baseline;gap:7px;min-width:0}
+#play .telemetry span{font-size:9px;letter-spacing:.06em;color:#9fb6c4}
+#play .telemetry b{font:12px var(--mono);white-space:nowrap;color:#d9edf5}
+#play .telemetry b small{font-size:10px;color:#adc5d1}
+#play .telemetry #flightCargo{color:#edce9a}
+#play .speed-button{margin-left:auto;min-width:50px;height:36px;min-height:36px;border-radius:9px;padding:0 10px;background:#152f3d;border:1px solid #345363;color:#d4ebf3;font:13px var(--mono)}
+#play .flight-status,#play .mission-notes{display:none}
+/* Panel scrolls internally only when needed; main action is never in that scroller. */
+#play .flight-panel{display:flex;flex-direction:column;position:relative;inset:auto;margin:0;padding:0;min-width:0;min-height:0;height:100%;width:auto;max-height:none;overflow:hidden;background:#11212c;border:1px solid #304958;border-radius:14px;gap:0}
+.panel-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:16px;display:flex;flex-direction:column;gap:14px}
+#play .nav-panel-heading{display:flex;align-items:center;justify-content:space-between;min-height:28px;margin:0}
+#play .panel-tag{font-size:8px;letter-spacing:.16em;color:#93aebd;margin-bottom:4px}
+#play .nav-panel-heading strong{font-size:14px;line-height:1.2;font-weight:600}
+#play .heading-compass{width:34px;height:34px;flex:none;opacity:.8}
+.aim-controls{display:grid;grid-template-columns:1fr;gap:15px}
+#play .control{margin:0;min-width:0}
+#play .control label{display:flex;justify-content:space-between;font-size:12px;color:#cee1eb;margin:0 0 7px;align-items:center}
+#play .control label span{font-size:10px;color:#adc3ce}
+#play .number-wrap{display:flex;align-items:center;min-height:50px;height:50px;border:1px solid #466473;background:#0b1b26;border-radius:10px;overflow:hidden;transition:border-color .15s}
+#play .number-wrap:focus-within{border-color:var(--mint);box-shadow:0 0 0 2px #71e9c91b}
+#play .number-wrap button{width:46px;min-width:46px;height:48px;min-height:48px;flex:0 0 46px;font:22px var(--mono);border:0;background:transparent;color:#b5d3df;padding:0;touch-action:none}
+#play .number-wrap button:active{background:#234c46;color:#cbffe9}
+#play .number-wrap input{height:48px;min-width:0;width:100%;flex:1;font:24px var(--mono);text-align:center;border:0;outline:none;background:transparent;color:#f1fcff;padding:0 2px;letter-spacing:0}
+#play .number-wrap input[aria-invalid=true]{color:#ffb79e}
+#play .control input[type=range]{display:block;margin:5px 0 0;width:100%;height:22px;accent-color:var(--mint);cursor:ew-resize;padding:0;touch-action:pan-y}
+input[type=range]::-webkit-slider-thumb{min-height:18px;min-width:18px}
+#play .precision-row{display:flex;align-items:center;gap:8px;margin:0;min-height:38px;flex-wrap:nowrap}
+.precision-button{padding:7px 12px;min-height:38px;border:1px solid #405c6a;border-radius:9px;background:#182c39;color:#c6dce6;font-size:12px;white-space:nowrap}
+.precision-button[aria-pressed=true]{background:#204e42;color:#b6ffe6;border-color:#58ad91}
+#play #fineAimCaption{font:10px var(--mono);color:#a9c5d1;white-space:nowrap}
+.memory-shortcut{display:none}
+.aim-feedback{color:#ffd7a9;font-size:12px;line-height:1.4}
+.nav-more{border-top:1px solid #304654;margin:0}
+.nav-more>summary{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#c6dce7;padding:9px 0;cursor:pointer;min-height:40px;list-style:none}
+#play .nav-advanced{display:flex;flex-direction:column;gap:12px;padding:0 0 6px}
+#play .course-memory,.sheet-content .course-memory{margin:0;padding:0;border:0}
+.memory-title{font-size:9px;letter-spacing:.12em;color:#a4becc;margin:6px 0 10px}
+.course-slots{display:grid;grid-template-columns:1fr;gap:7px}
+.course-slot{display:grid;grid-template-columns:22px minmax(0,1fr) 48px;gap:5px;align-items:center;min-width:0}
+.course-slot>b{font:13px var(--mono);color:#a8ded0}
+.course-slot button{min-height:44px;font:13px var(--mono);border:1px solid #3a5563;border-radius:9px;background:#122734;color:#e0f1f7;padding:6px 9px}
+.course-slot .store-course{font:18px var(--mono)}
+.previous-aim{margin-top:7px;font-size:12px;min-height:40px;border:1px solid #304956;border-radius:9px;background:#10222c;color:#b5d2e1;width:100%;padding:5px 8px}
+#play .scanner-note,.sheet-content .scanner-note{display:flex;flex-direction:column;gap:4px;margin:0;border-top:1px solid #294351;padding:10px 0 0;color:#bcd5e1}
+.scanner-note strong{font-size:12px}.scanner-note small{font-size:11px;color:#a3bac7}
+#play .nav-reward,.sheet-content .nav-reward{display:flex;justify-content:space-between;font-size:11px;margin:0;padding:0;color:#a6c0cc}
+.nav-reward strong{font-size:12px;color:#ebcea0}
+.keyboard-tip{display:flex;align-items:center;gap:6px;font-size:10px;color:#95b2c2;margin-top:auto;padding-top:2px;flex-wrap:wrap}
+.keyboard-tip button{font-size:10px;color:#bedbcc;background:none;border:0;min-height:24px;margin-left:auto;padding:0}
+kbd{font:10px var(--mono);padding:3px 5px;border:1px solid #3d5463;border-radius:4px;background:#142630;color:#d4e7ed}
+.panel-actions{display:flex;flex-direction:column;gap:8px;flex:none;padding:12px 16px;border-top:1px solid #304b59;background:#11252f;position:relative}
+#play .launch-button{display:flex;align-items:center;justify-content:center;flex:none;width:100%;min-height:50px;height:50px;margin:0;font-size:15px;font-weight:700;letter-spacing:0;padding:10px;border-radius:11px;box-shadow:none}
+#play .launch-secondary{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0;padding:0;min-height:36px}
+.launch-secondary button{min-height:36px;color:#c7dce6;background:#142d39;border:1px solid #304e5c;border-radius:9px;font-size:12px;padding:4px 8px}
+#play .live-flight-panel{border:0;padding:0;margin:0;font-size:12px;color:#bed7e4;line-height:1.5}
+.flight-fact{margin:0 0 12px;padding:12px;background:#0b1a24;border:1px solid #294453;border-radius:10px}
+.flight-fact small{color:#a6c0ce;font-size:10px}.flight-fact strong{display:block;font:24px var(--mono);margin:4px 0;color:#e4f6fc}
+.flight-progress-line{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #29424e;color:#abc6d4}
+.flight-progress-line b{color:#b9f1df;font-weight:500}
+.flight-live-state{font-size:11px;color:#9bc7ba;margin-bottom:12px}
+#play .mobile-dock{display:none}
+body[data-flight=running] .aim-controls,body[data-flight=running] .nav-more,body[data-flight=running] .precision-row,body[data-flight=review] .aim-controls,body[data-flight=review] .nav-more,body[data-flight=review] .precision-row{display:none}
+body[data-flight=running] .keyboard-tip,body[data-flight=review] .keyboard-tip{display:none}
+body[data-flight=running] #mapAim{opacity:.45}
+/* Result stays next to the map; the record never masks launch/next actions. */
+#play .flight-review{order:3;flex:0 0 auto;padding:10px 12px;margin:0;border:1px solid #3c635c;border-radius:12px;background:#102b2c;max-height:180px;overflow:auto;scrollbar-width:thin}
+.review-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px}.review-title span{font:11px var(--mono);color:#acccda}
+.review-summary{font-size:12px;line-height:1.5;margin:6px 0;color:#d2e7ed}
+.review-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.review-controls input{flex:1 1 80px;min-width:60px;height:32px;accent-color:var(--mint)}
+.review-controls button{padding:6px 10px;min-height:38px;border:1px solid #41665f;background:#153c39;color:#d5ffef;border-radius:8px;font-size:11px}
+.review-stamp{font:11px var(--mono);color:#c4eadd}
+.review-comparison{font-size:11px;color:#a9cdc6;line-height:1.4;margin:6px 0 0}
+/* Native dialogs provide focus trapping and a backdrop on desktop and phone. */
+#modal,.flight-drawer{position:fixed;width:min(620px,calc(100vw - 32px));max-width:none;max-height:calc(var(--vv-height) - 32px);margin:auto;padding:0;inset:0;overflow:auto;background:#10232e;border:1px solid #3d5a69;border-radius:20px;color:#e4f2f8;box-shadow:0 20px 90px #000a;overscroll-behavior:contain;scrollbar-width:thin}
+#modal::backdrop,.flight-drawer::backdrop{background:#030b12b8;backdrop-filter:blur(5px)}
+#modal .modal-inner{padding:28px;position:relative}
+#modal h2{font-size:26px;line-height:1.18;padding-right:34px;margin:8px 0 18px}
+#modal .eyebrow{font-size:9px;color:#a7c4d0}
+#modal .modal-close{position:absolute;right:14px;top:14px;min-width:44px;min-height:44px;border-radius:12px;font-size:24px;background:#1d3542;border:1px solid #3e5a68;color:#d2ebf3;z-index:5}
+#modal p{font-size:14px;line-height:1.6;color:#c6dce6}
+#modal .info-box{font-size:13px;line-height:1.6;padding:14px;border-radius:12px;background:#0d1b26;border:1px solid #304d5a;margin:12px 0}
+#modal .modal-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+#modal .modal-actions .button{min-height:44px;flex:1 1 140px;font-size:13px;justify-content:center;text-align:center}
+#modal input:not([type=checkbox]):not([type=range]),#modal select{min-height:46px;border-radius:9px;font-size:16px;padding:10px;background:#0a1b25;color:#e3f5fa;border:1px solid #416171;width:100%}
+#modal .check-row{min-height:64px;padding:12px 0;gap:18px;border-bottom:1px solid #304652;align-items:center;font-size:14px;cursor:pointer}
+#modal .check-row small{font-size:12px;line-height:1.5;color:#aabfcc;margin:4px 0 0}
+#modal .check-row input[type=checkbox]{width:23px;height:23px;flex:none;accent-color:var(--mint)}
+#modal .settings-tabs{display:flex;gap:6px;flex-wrap:nowrap;border-bottom:1px solid #314958;padding-bottom:12px;position:sticky;top:-28px;background:#10232e;z-index:4}
+#modal .settings-tabs button{min-height:44px;flex:1;padding:8px 10px;font-size:13px;border-radius:10px}
+#modal .settings-section{min-height:0;font-size:13px}
+#modal .storage-status{padding:14px;border-radius:10px;background:#10392f;border:1px solid #37715c;font-size:13px;line-height:1.65}.storage-status.bad{background:#482e25}
+#modal .settings-grid{display:flex;gap:8px;flex-wrap:wrap}#modal .settings-grid>*{flex:1;white-space:nowrap}
+#modal .settings-danger{padding-top:14px;margin-top:18px;border-top:1px solid #634936}.settings-danger h3{font-size:14px}
+.flight-drawer{overflow:hidden}
+.flight-drawer[open]{display:flex;flex-direction:column}
+.sheet-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex:none;padding:14px 20px;border-bottom:1px solid #34515e}
+.sheet-header h2{font-size:21px;margin:0}
+.sheet-content{padding:18px 20px;overflow:auto;min-height:0;scrollbar-width:thin;overscroll-behavior:contain}
+.sheet-footer{flex:none;padding:12px 20px;border-top:1px solid #34515e}
+.sheet-footer .button{width:100%;justify-content:center}
+.sheet-content .plan-body{display:block;padding:0;position:static;max-height:none;overflow:visible;background:none;border:0;box-shadow:none}
+.sheet-content .route-panel{padding:0;margin:14px 0;border:0;background:none}
+.sheet-content .route-heading{font-size:11px;gap:12px;display:flex;align-items:center;flex-wrap:wrap}
+.sheet-content .route-steps{list-style:none;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.sheet-content .route-steps li{display:flex;align-items:center;gap:10px;padding:11px;background:#0d1e2a;border:1px solid #2d4b5b;border-radius:10px;font-size:12px}
+.sheet-content .route-steps li.active{border-color:#62b59d;background:#174335}.sheet-content .route-steps li.done{border-color:#34614f}
+.sheet-content .route-steps small{display:block;margin-top:5px;color:#a6c4d3;font:11px var(--mono)}
+.branch-picker{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.branch-card{min-width:0;padding:12px;border:1px solid #436170;border-radius:12px;background:#0f202d;color:#d6e9f0;text-align:left;min-height:70px}
+.branch-card.active{border-color:#73d4b7;background:#1a473d}.branch-card strong{font-size:14px}.branch-card small{font-size:11px;line-height:1.7;margin-top:6px;display:block}
+.branch-guide{grid-column:1/-1;color:#aac4d1;font-size:12px;line-height:1.6;margin:2px 0 10px}
+.sheet-content .contract-rules{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+.rule-chip{font-size:11px;line-height:1.5;padding:7px 10px;border:1px solid #3a5a67;border-radius:8px}
+.portal-progress{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px}.portal-progress>span{background:#24243d;color:#d4c3f1;border:1px solid #635b82;padding:7px 9px;border-radius:7px}
+.stop-progress{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.stop-chip{padding:8px;font-size:12px;border:1px solid #456773;border-radius:9px}
+.stop-chip.done{border-color:#62c397;color:#baf2d9}
+.sheet-content .precision-row{display:flex;align-items:center;gap:14px;margin:0 0 14px}.sheet-content .nav-advanced{display:flex;flex-direction:column;gap:16px}.sheet-content .course-slots{gap:10px}
+.ui-menu{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ui-menu button{display:flex;align-items:center;justify-content:flex-start;gap:10px;min-height:54px;padding:12px;border:1px solid #355564;border-radius:11px;background:#132f3c;color:#d9f0f6;text-align:left;font-size:14px}
+.ui-menu .wide{grid-column:1/-1}.ui-menu button .menu-symbol{font-size:21px;min-width:26px;color:#8cedcd}.ui-menu button small{display:block;font-size:11px;color:#a6c3d0;margin-top:4px}
+.map-settings{display:flex;flex-direction:column;gap:10px}.map-settings button{min-height:46px;background:#173645;border:1px solid #426475;border-radius:10px;color:#d9eef5;font-size:13px}
+.shortcut-table{width:100%;font-size:13px;border-collapse:collapse}.shortcut-table td{padding:11px;border-bottom:1px solid #304856;color:#c5dce6}.shortcut-table td:first-child{width:40%}
+/* Toast never covers controls and cannot intercept a press. */
+#toastArea{position:fixed;top:calc(env(safe-area-inset-top) + 12px);bottom:auto;left:50%;right:auto;transform:translateX(-50%);max-width:min(500px,calc(100vw - 28px));width:max-content;z-index:90;pointer-events:none;display:flex;flex-direction:column;gap:0}
+.toast{font-size:12px;line-height:1.5;padding:11px 16px;margin:0;background:#123b32f2;color:#d0f9e9;border:1px solid #519b80;border-radius:12px;box-shadow:0 4px 22px #0006;width:auto;max-width:100%}
+.toast.error{background:#492c20ee;border-color:#b17b55;color:#ffe5d0}
+/* Non-flight pages: concise headers, comfortable touch targets and natural scrolling. */
+.dispatch-heading{margin:0 0 22px;gap:15px;align-items:center}.dispatch-heading .eyebrow{font-size:9px}
+.campaign-toolbar{gap:12px;margin-bottom:20px}.contract-search input{font-size:15px;min-height:46px}.contract-filters button{min-height:44px;font-size:12px;padding:7px 13px}
+.sector-tabs button{min-height:54px}.sector-mobile-select button{min-width:44px;min-height:44px}.sector-mobile-select select{min-height:46px;font-size:14px;min-width:0}
+#missionGrid{gap:16px}.mission-card{border-radius:16px}.mission-card .mission-name{font-size:18px}.mission-card .mission-meta{font-size:12px}
+.upgrade-card{border-radius:16px}.upgrade-card .button{min-height:46px}.shop-summary{gap:18px}.shop-context{border-radius:12px}
+.shop-context select{min-height:44px;font-size:14px;max-width:100%;border:1px solid #3c5969;background:#0c1b26;color:#d9eef4;border-radius:9px;padding:8px}
+.cosmetic-tabs button{min-height:44px;padding:10px 18px}.skin-card,.trail-card{min-height:116px}.cosmetic-preview{border-radius:16px}
+.achievement-categories{gap:7px;margin-bottom:15px}.achievement-categories button,.award-filters button{min-height:44px;border-radius:10px;font-size:12px;padding:8px 12px;white-space:nowrap}
+.achievement-focus{border-radius:14px}.achievement-focus p{font-size:13px;line-height:1.5}
+.achievement-grid{gap:12px}.achievement-card{border-radius:14px;padding:17px}.achievement-card p{font-size:13px;line-height:1.5}.achievement-card h3{font-size:16px}
+.mobile-nav{min-height:62px;padding-bottom:env(safe-area-inset-bottom);background:#091822f5;border-top:1px solid #31505f}.mobile-nav button{min-height:56px;font-size:20px}.mobile-nav span{font-size:10px}
+body.high-contrast{--muted:#d4e4ed;--line:#617987;--ink:#fff}body.high-contrast .medal-condition,body.high-contrast .medal-detail,body.high-contrast .telemetry span{color:#e1edf1}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto;animation-duration:.001ms!important;transition-duration:.001ms!important}}
+.reduce-motion *, .reduce-motion *::before,.reduce-motion *::after{transition-duration:.001ms!important}
+/* Compact laptops / landscape tablets retain a two-column cockpit. */
+@media (min-width:700px) and (max-height:720px){
+ body[data-page=play] .topbar{display:none}
+ body[data-page=play] main{height:var(--vv-height);padding:8px 12px}
+ #play.active{gap:7px}#play .flight-heading{flex-basis:42px;height:42px}#play .flight-heading h2{font-size:18px}
+ #play .flight-layout{grid-template-columns:minmax(0,1fr) 268px;gap:10px}
+ #play .medal-deck{flex-basis:52px}#play .medal-card{padding:6px 10px;gap:7px}#play .medal-condition{display:none}#play .medal-detail{font-size:10px}
+ #play .map-controls{flex-basis:34px;min-height:34px}.map-mode button{min-height:32px;padding:3px 10px}.map-icon,.map-fit{height:32px;min-height:32px}
+ #play .flight-plan{flex-basis:40px;min-height:40px}#play .flight-plan summary{min-height:38px;padding:6px 10px}
+ .panel-scroll{padding:12px;gap:10px}.aim-controls{gap:10px}#play .nav-panel-heading{min-height:25px}
+ #play .control input[type=range]{height:20px;margin-top:1px}#play .control label{margin-bottom:5px}
+ .panel-actions{padding:10px 12px;gap:6px}#play .launch-button{height:46px;min-height:46px}#play .launch-secondary{min-height:32px}.launch-secondary button{min-height:32px}
+ .keyboard-tip{display:none}
+}
+@media (min-width:700px) and (max-height:480px){
+ #play .flight-layout{grid-template-columns:minmax(0,1fr) 238px;gap:8px}#play.active{gap:5px}
+ #play .medal-deck{flex-basis:40px}#play .medal-symbol{width:18px;flex-basis:18px;height:26px}#play .medal-card{gap:6px;padding:5px 8px}
+ #play .medal-name h3{font-size:10px}#play .medal-archive{display:none}#play .medal-detail{font-size:9px}
+ #play .flight-heading{height:36px;flex-basis:36px}.flight-back{height:36px;min-height:36px;min-width:36px;width:36px}
+ #play .flight-heading .eyebrow{display:none}#play .flight-actions .mode-chip{min-height:34px}#play .flight-menu{min-height:36px;height:36px;width:38px;min-width:38px}
+ #play .contract-pager{height:36px;min-width:114px}#play .contract-pager button{height:34px;min-height:34px;width:34px}
+ #play .flight-plan summary small{display:none}#play .flight-plan{flex-basis:36px;min-height:36px}#play .flight-plan summary{min-height:34px;font-size:11px}
+ #play .flight-left{gap:4px}#play .map-controls{flex-basis:32px;min-height:32px}
+ #play .telemetry{min-height:28px;flex-basis:28px;gap:10px}#play .telemetry span{font-size:8px}#play .telemetry b{font-size:10px}#play .speed-button{height:28px;min-height:28px;min-width:42px}
+ .panel-scroll{padding:8px;gap:7px}#play .nav-panel-heading{display:none}
+ .aim-controls{gap:7px}#play .control label{font-size:11px;margin-bottom:3px}#play .number-wrap{min-height:40px;height:40px}#play .number-wrap input{height:38px;font-size:20px}#play .number-wrap button{height:38px;min-height:38px;flex-basis:38px;width:38px;min-width:38px}
+ #play .control input[type=range]{display:none}#play .precision-row{min-height:32px;gap:6px}.precision-button{min-height:32px;padding:3px 8px;font-size:11px}#play #fineAimCaption{font-size:9px}
+ .nav-more>summary{min-height:32px;padding:4px 0;font-size:11px}.panel-actions{padding:7px 8px;gap:5px}#play .launch-button{min-height:40px;height:40px;font-size:13px}#play .launch-secondary{min-height:28px}.launch-secondary button{min-height:28px;font-size:11px}
+ #play .flight-review{max-height:94px;padding:7px 10px}.review-title{font-size:11px}.review-summary{display:none}.review-comparison{display:none}.review-controls button{min-height:30px;font-size:10px;padding:3px 7px}
+ .live-flight-panel .flight-fact{padding:7px;margin-bottom:6px}.live-flight-panel .flight-fact strong{font-size:18px}.flight-progress-line{padding:6px 0;font-size:11px}
+}
+/* Portrait phones: no full-width masthead; map does not sit in a huge empty letterbox. */
+@media (max-width:699px), (min-width:700px) and (max-width:999px) and (orientation:portrait){
+ .topbar{height:64px;padding:8px 12px;gap:8px}.brand-mark{width:40px;height:40px}.brand{font-size:8px;gap:8px}.brand strong{font-size:13px}.topbar nav{display:none}.account{gap:6px}.account .rank-badge{display:none}.account .wallet{font-size:11px}.account .icon-button{width:40px;min-width:40px;height:40px;min-height:40px}.account .icon-button[data-action=help]{display:none}
+ main{padding:20px 12px 92px}.page-heading{margin-bottom:22px;gap:14px}.page-heading h2{font-size:28px}.page-heading .eyebrow{font-size:9px}.page-heading p{font-size:13px}.page-heading>.button{min-width:110px;font-size:12px}
+ body[data-page=play] .topbar{display:none}
+ body[data-page=play] main{height:var(--vv-height);padding:calc(env(safe-area-inset-top) + 5px) 8px calc(env(safe-area-inset-bottom) + 6px);max-width:none}
+ #play.active{gap:7px;padding:0;height:100%;overflow:hidden}
+ #play .flight-heading{flex:0 0 44px;height:44px;gap:8px}
+ #play .flight-heading .eyebrow{font-size:8px;letter-spacing:.03em;margin-bottom:3px}
+ #play .flight-heading h2{font-size:16px;font-weight:650;line-height:1.15}
+ .flight-back{min-width:36px;width:36px;min-height:42px;height:42px;border-radius:10px}
+ #play .flight-actions{gap:5px}#play .contract-pager{display:none}
+ .mode-chip{font-size:10px;min-height:38px;padding:0 8px;border-radius:9px;max-width:76px}
+ #play .flight-menu{width:36px;min-width:36px;height:40px;min-height:40px;font-size:17px;border-radius:9px}
+ #play .medal-deck{flex:0 0 52px}
+ #play .medal-cards{gap:5px}#play .medal-card{padding:7px 6px;gap:5px;border-radius:10px}
+ #play .medal-symbol{flex-basis:19px;width:19px;height:27px}#play .medal-name h3{font-size:10px;line-height:1.2}
+ #play .medal-condition,#play .medal-archive{display:none}#play .medal-readout{margin-top:4px}#play .medal-detail{font-size:9px;letter-spacing:-.15px}
+ #play .medal-track{left:7px;right:7px}#play .training-badge{top:49px;font-size:10px;padding:6px 9px}
+ #play .flight-layout{display:flex;flex:1;min-height:0;flex-direction:column;gap:6px;height:auto}
+ #play .flight-left{flex:1;gap:5px;min-height:0;overflow:hidden;height:auto}
+ #play .flight-plan{flex:0 0 40px;min-height:40px;border-radius:10px}
+ #play .flight-plan>summary{min-height:38px;padding:6px 9px;gap:7px}
+ #play .flight-plan summary small{display:none}#play .flight-plan summary strong{font-size:11px}#planCounter{font-size:10px}
+ .plan-marker{font-size:20px}
+ #play .map-controls{flex:0 0 40px;min-height:40px;padding:0;gap:4px}
+ .map-mode button{min-height:38px;font-size:11px;min-width:69px;padding:5px 8px}.map-mode{border-radius:9px}
+ .map-icon{height:38px;min-height:38px;min-width:34px;width:34px;font-size:19px;padding:0}
+ .map-fit{font-size:10px;min-width:70px;padding:0 5px;height:38px;min-height:38px}#play .map-tools{gap:3px}
+ #play .map-viewport{min-height:110px;max-height:none;border-radius:12px}
+ #play .stage-pill{top:6px;left:6px;font-size:7px;padding:4px 6px}.stage-corner{display:none}
+ #play .telemetry{flex:0 0 32px;min-height:32px;gap:12px;padding:0 2px}
+ #play .telemetry>div{display:flex;flex-direction:column;align-items:flex-start;gap:2px}#play .telemetry span{font-size:7px;line-height:1}#play .telemetry b{font-size:11px;line-height:1.1}#play .telemetry b small{font-size:8px}
+ #play .speed-button{min-height:32px;height:32px;min-width:46px}
+ #play .flight-panel{flex:none;display:flex;flex-direction:column;min-height:0;height:auto;max-height:none;border-radius:12px;overflow:visible;background:#11232e;padding:0}
+ .panel-scroll{padding:9px 9px 7px;overflow:visible;display:flex;gap:7px;flex:none}
+ #play .nav-panel-heading{display:none}
+ .aim-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+ #play .control label{font-size:11px;margin:0 0 5px}#play .control label span{font-size:9px}
+ #play .number-wrap{height:46px;min-height:46px;border-radius:9px}
+ #play .number-wrap button{width:36px;min-width:36px;flex-basis:36px;min-height:44px;height:44px;font-size:21px}
+ #play .number-wrap input{font-size:22px;height:44px;min-width:0;padding:0}
+ #play .control input[type=range]{display:none}
+ #play .precision-row{min-height:34px;gap:8px;padding-top:0;justify-content:flex-start}
+ .precision-button{min-height:34px;font-size:11px;padding:4px 9px}#play #fineAimCaption{font-size:10px}
+ .memory-shortcut{display:inline-flex;margin-left:auto;align-items:center;justify-content:center;min-height:34px;min-width:54px;background:#152f3c;color:#b8d9e5;border:1px solid #355665;border-radius:8px;font:12px var(--mono)}
+ .panel-actions,#play .nav-more,.keyboard-tip{display:none}
+ #play .mobile-dock{position:relative;inset:auto;transform:none;flex:0 0 50px;height:50px;display:grid;grid-template-columns:46px 46px 1fr;align-items:stretch;gap:7px;padding:0;background:none;border:0;box-shadow:none;z-index:3;width:100%}
+ #play .mobile-dock button{min-height:48px;height:48px;border:1px solid #395967;border-radius:11px;background:#16313e;color:#dbf1f6;font-size:22px;padding:0;display:flex;align-items:center;justify-content:center}
+ #play .mobile-dock #mobileLaunch{border-color:var(--mint);background:var(--mint);color:#082d25;font-size:14px;font-weight:700}
+ #play .live-flight-panel{display:none}
+ body[data-flight=running] #play .flight-panel,body[data-flight=review] #play .flight-panel{display:none}
+ body[data-flight=running] #play .map-viewport,body[data-flight=review] #play .map-viewport{max-height:none}
+ #play .flight-review{max-height:172px;min-height:0;padding:10px;border-radius:11px;flex-shrink:0}
+ .review-title{font-size:12px}.review-title span{font-size:10px}.review-summary{font-size:11px;line-height:1.4;margin:5px 0}.review-controls{gap:5px}.review-controls input{flex-basis:75px}.review-controls button{min-height:36px;font-size:10px;padding:5px 7px}.review-comparison{font-size:10px;line-height:1.3}
+ #modal{width:calc(100vw - 16px);max-height:calc(var(--vv-height) - 16px);border-radius:16px}
+ #modal .modal-inner{padding:22px 18px 18px}#modal .modal-close{right:10px;top:10px}
+ #modal h2{font-size:23px;padding-right:30px}#modal p{font-size:13px}
+ #modal .settings-tabs{top:-22px;gap:5px}#modal .settings-tabs button{padding:8px 6px;font-size:12px}
+ #modal .modal-actions{gap:7px}.ui-menu{gap:7px}.ui-menu button{font-size:12px;padding:10px;min-height:52px}
+ .flight-drawer{position:fixed;top:auto;bottom:0;left:0;right:0;margin:0;width:100%;max-height:calc(var(--vv-height) - 18px);border-radius:20px 20px 0 0;border-bottom:0;max-width:none}
+ .sheet-header{padding:12px 16px}.sheet-header h2{font-size:20px}.sheet-content{padding:14px 16px}.sheet-footer{padding:10px 16px calc(env(safe-area-inset-bottom) + 12px)}
+ .sheet-content .route-steps{grid-template-columns:1fr 1fr;gap:6px}.sheet-content .route-steps li{padding:8px;font-size:11px}.branch-card{padding:10px}.branch-card strong{font-size:12px}.branch-card small{font-size:10px}.branch-guide{font-size:11px}
+ #toastArea{top:calc(env(safe-area-inset-top) + 7px);max-width:calc(100vw - 20px)}.toast{font-size:11px;padding:9px 12px}
+ .dispatch-heading{margin:0 0 16px;align-items:start}.dispatch-heading h2{font-size:26px}.section-total{font-size:20px}.section-total span{font-size:10px;line-height:1.4}
+ .campaign-toolbar{flex-direction:column;gap:9px;margin-bottom:14px}.contract-search{width:100%}.contract-search input{font-size:14px;min-height:46px}.contract-filters{width:100%;display:flex;gap:5px}.contract-filters button{flex:1;min-height:42px;padding:7px 5px;font-size:11px}
+ .sector-rail{margin:0 0 12px}.sector-mobile-select{gap:7px}.sector-mobile-select select{font-size:12px}.sector-overview{padding:15px}.sector-overview h3{font-size:20px}
+ #missionGrid{gap:12px}.mission-card{min-width:0}.mission-card h3{font-size:18px}
+ .shop-summary{padding:18px;gap:12px}.shop-context{padding:13px}.shop-context strong{font-size:13px}.shop-context p{display:flex;gap:6px}.shop-context select{font-size:12px;min-width:0}.shop-context select:first-child{flex:1}.shop-context small{font-size:11px;line-height:1.5}
+ .upgrade-grid{gap:12px}.upgrade-card{padding:18px}.upgrade-card h3{font-size:19px}.upgrade-card .button{font-size:12px}.module-effect{font-size:11px;line-height:1.5}
+ .cosmetics-heading{gap:10px}.cosmetics-heading h3{font-size:23px}.cosmetic-tabs{width:100%;gap:6px}.cosmetic-tabs button{flex:1;font-size:13px}
+ .cosmetic-preview{flex-direction:column;padding:16px}.cosmetic-preview canvas{width:100%;height:140px}.cosmetic-preview p{font-size:12px}.trail-grid,.skin-grid{grid-template-columns:1fr 1fr;gap:9px}.trail-card,.skin-card{padding:12px;min-width:0}.trail-card strong{font-size:13px}.trail-card small{font-size:10px}
+ .awards-controls{flex-direction:column;align-items:stretch;gap:10px;margin:12px 0}.awards-controls label{font-size:11px}.awards-controls input{font-size:15px}.award-filters{display:flex;gap:5px}.award-filters button{flex:1;font-size:11px;min-height:42px;padding:6px}
+ .achievement-categories{flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding:0 0 8px;scrollbar-width:thin}.achievement-categories button{flex:none;font-size:12px}.achievement-categories small{margin-left:6px}
+ .achievement-focus{padding:14px;gap:12px}.achievement-focus strong{font-size:13px}.achievement-focus p{font-size:12px}.achievement-focus b{font-size:14px;white-space:nowrap}
+ .achievement-grid{grid-template-columns:1fr}.achievement-card{padding:15px}.achievement-card h3{font-size:15px}.achievement-card p{font-size:12px}
+ .hero{display:flex;flex-direction:column;gap:5px}.hero-copy h1{font-size:clamp(38px,9.6vw,62px)}.hero-copy .eyebrow{font-size:8px}.hero-text{font-size:15px}.hero-actions{gap:8px}.hero-actions .button{min-height:48px;font-size:13px}.hero-art{height:200px;width:100%}.hero-meta{font-size:10px;gap:15px}.home-bottom{gap:14px;padding:18px 0}.home-stat strong{font-size:27px}.home-stat .eyebrow{font-size:8px}.home-note{font-size:8px;gap:9px}
+}
+/* On taller portrait screens use spare space for direct sliders, not blank canvas. */
+@media (max-width:699px) and (min-height:760px), (min-width:700px) and (max-width:999px) and (orientation:portrait) and (min-height:760px){
+ #play .control input[type=range]{display:block;height:24px;margin-top:3px}
+ .panel-scroll{padding:12px;gap:10px}#play .precision-row{min-height:40px}.precision-button,.memory-shortcut{min-height:40px}
+ #play .map-controls{flex-basis:44px;min-height:44px}.map-mode button{min-height:42px}.map-icon,.map-fit{height:42px;min-height:42px}
+}
+@media (max-width:699px) and (max-height:650px){
+ #play.active{gap:5px}#play .medal-deck{flex-basis:44px}#play .medal-name h3{font-size:9px}#play .medal-detail{font-size:8px}
+ #play .flight-left{gap:4px}#play .flight-plan{flex-basis:36px;min-height:36px}#play .flight-plan>summary{min-height:34px}
+ #play .map-controls{flex-basis:34px;min-height:34px}.map-mode button{min-height:32px;padding:3px 7px;font-size:10px;min-width:61px}.map-icon,.map-fit{min-height:32px;height:32px}.map-icon{min-width:31px;width:31px}.map-fit{min-width:65px;font-size:9px}
+ #play .precision-row{display:none}.panel-scroll{padding:7px 8px}.aim-controls{gap:8px}#play .control label{font-size:10px;margin-bottom:4px}#play .number-wrap input{font-size:20px}
+ #play .telemetry{flex-basis:30px;min-height:30px}#play .speed-button{height:30px;min-height:30px}
+ #play .flight-review{max-height:130px;padding:7px}.review-title{font-size:11px}.review-summary{font-size:10px;line-height:1.4}.review-controls button{min-height:32px}.review-comparison{display:none}
+}
+@media (max-width:355px){
+ body[data-page=play] main{padding-left:6px;padding-right:6px}#play .flight-heading{gap:6px}#play .flight-heading h2{font-size:14px}.flight-back{width:32px;min-width:32px}#play .mode-chip{display:none}#play .flight-menu{width:34px;min-width:34px}
+ #play .number-wrap button{width:32px;min-width:32px;flex-basis:32px}#play .number-wrap input{font-size:18px}
+ #play .map-mode button{min-width:59px;padding-left:6px;padding-right:6px}.map-fit{min-width:62px}#play .medal-symbol{flex-basis:16px;width:16px;height:23px}#play .medal-card{padding:5px;gap:4px}
+ .brand>span:last-child{display:none}.account{margin-left:auto}.cosmetic-tabs button{padding:7px 10px}.trail-grid,.skin-grid{grid-template-columns:1fr}
+}
+/* When the software keyboard reduces the visual viewport, keep edit + commit reachable. */
+body.keyboard-editing[data-page=play] main{height:var(--vv-height)}
+body.keyboard-editing #play .medal-deck,body.keyboard-editing #play .map-controls,body.keyboard-editing #play .telemetry,body.keyboard-editing #play .precision-row{display:none}
+body.keyboard-editing #play .map-viewport{min-height:32px}
+body.keyboard-editing #play .flight-panel{display:flex}
+body.keyboard-editing #play .mobile-options,body.keyboard-editing #play .mobile-retry{display:none}
+body.keyboard-editing #play .mobile-dock{grid-template-columns:1fr}
+@media (max-height:340px){
+ body[data-page=play] main{padding:3px 8px}#play .medal-deck{display:none}#play .flight-heading{flex-basis:34px;height:34px}#play .flight-left{gap:3px}
+ #play .flight-plan{flex-basis:32px;min-height:32px}#play .flight-plan>summary{min-height:30px}
+ #play .map-controls{flex-basis:30px;min-height:30px}#play .flight-review{max-height:80px}
+}
+
+/* Fit an iPad-like portrait viewport with a wide map rather than a narrow sidebar. */
+@media (min-width:700px) and (max-width:999px) and (orientation:portrait){
+ #play .flight-heading h2{font-size:23px}#play .medal-deck{flex-basis:62px}#play .medal-name h3{font-size:13px}#play .medal-condition{display:block;font-size:11px}#play .medal-detail{font-size:11px}
+ .panel-scroll{padding:14px 18px}#play .number-wrap{height:50px}#play .number-wrap input{height:48px;font-size:25px}#play .number-wrap button{width:50px;min-width:50px;flex-basis:50px;height:48px;min-height:48px}
+ #play .map-controls{flex-basis:46px}#play .map-mode button{min-height:44px;min-width:90px;font-size:13px}.map-icon,.map-fit{height:44px;min-height:44px}
+ #play .flight-plan summary strong{font-size:13px}#play .telemetry b{font-size:13px}#play .telemetry span{font-size:9px}#play .mobile-dock{flex-basis:54px;height:54px}#play .mobile-dock button{height:52px;min-height:52px}
+}
+/* Combine next step and map tools on wide screens to leave more room for orbits. */
+@media (min-width:1000px), (min-width:700px) and (orientation:landscape){
+ #play .flight-left{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:44px minmax(70px,1fr) 36px;gap:7px}
+ #play .flight-plan{grid-area:1/1/2/2;height:44px;min-height:0;width:auto;align-self:stretch}
+ #play .map-controls{grid-area:1/2/2/3;gap:8px;min-height:0;height:44px;width:auto}
+ #play .map-viewport{grid-area:2/1/3/3;min-height:0;height:auto}
+ #play .telemetry{grid-area:3/1/4/3;min-height:0;height:36px}
+ #play .flight-review{grid-area:4/1/5/3}
+}
+@media (min-width:700px) and (max-height:480px){
+ #play .flight-left{grid-template-rows:36px minmax(60px,1fr) 28px;gap:4px}
+ #play .flight-plan,#play .map-controls{height:36px}#play .telemetry{height:28px}
+ #play .map-mode button{min-width:58px;font-size:10px;padding:3px 6px}#play .map-fit{min-width:69px;padding:3px 5px;font-size:9px}#play .map-icon{min-width:30px;width:30px;font-size:18px}
+ #play .flight-plan summary strong{font-size:10px}
+}
+@media (min-width:360px) and (max-width:699px){
+ #play .number-wrap button{width:44px;min-width:44px;flex-basis:44px}#play .number-wrap input{font-size:20px}
+}
+@media (max-width:999px) and (orientation:portrait){
+ #play .flight-heading .eyebrow{display:block}
+ body:not([data-page=play]) .mobile-nav{display:flex}
+}
+/* Same custom range control in Chromium, Firefox and WebKit. */
+#play .control input[type=range]{appearance:none;-webkit-appearance:none;background:transparent;border:0;box-shadow:none;border-radius:0;height:24px;cursor:ew-resize}
+#play .control input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,#78efca var(--range-fill,50%),#344e5d var(--range-fill,50%));border:0}
+#play .control input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:18px;height:18px;margin-top:-7px;border:3px solid #0c222c;background:#9bffe0;border-radius:50%;box-shadow:0 0 0 1px #70c8b0}
+#play .control input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:#344e5d;border:0}
+#play .control input[type=range]::-moz-range-progress{height:4px;background:#78efca;border-radius:4px}
+#play .control input[type=range]::-moz-range-thumb{width:14px;height:14px;border:3px solid #0c222c;background:#9bffe0;border-radius:50%}
+.sheet-quick{display:flex;gap:8px;margin-bottom:16px}.sheet-quick .button{flex:1;font-size:12px}
+.live-warning{font-size:12px;color:#ffd3a2;line-height:1.5}
+
+/* Small refinements after the touch and dialog audit. */
+#modal .modal-close{position:sticky;float:right;top:0;right:0;margin:-6px -6px 0 10px;z-index:8}
+#modal h2{padding-right:0}
+#modal .check-row input[type=checkbox]{appearance:none;-webkit-appearance:none;position:relative;width:46px;height:28px;min-width:46px;border:1px solid #4b6c7a;border-radius:18px;background:#0b1b27;cursor:pointer;box-shadow:none}
+#modal .check-row input[type=checkbox]::before{content:"";position:absolute;width:18px;height:18px;top:4px;left:4px;background:#adc4d1;border-radius:50%;transition:transform .16s,background .16s}
+#modal .check-row input[type=checkbox]:checked{background:#245747;border-color:#78ccab}
+#modal .check-row input[type=checkbox]:checked::before{transform:translateX(18px);background:#a9fddd}
+.course-slot{grid-template-columns:22px minmax(0,1fr) 67px}.course-slot .store-course{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:3px;line-height:1}
+.course-slot .store-course small{font-size:9px;color:#b6d5df;display:block}
+.save-badge{min-width:36px;min-height:38px;background:#604226;color:#fff0c8;border:1px solid #be915a;border-radius:10px;font-size:17px;font-weight:700}
+body[data-page=play] #saveWarning{display:none}
+.dispatch-heading>div:first-child{min-width:0;flex:1}.dispatch-heading .section-total{flex:0 0 auto;max-width:145px;min-width:0}.dispatch-heading .section-total span{white-space:normal;line-height:1.5}
+@media (max-width:699px), (max-width:999px) and (orientation:portrait){
+ .dispatch-heading .section-total{max-width:115px;font-size:20px}.dispatch-heading .section-total span{font-size:10px}
+ #play .mobile-dock{grid-template-columns:46px 54px 1fr}
+ #play .mobile-dock .mobile-options{display:flex;flex-direction:column;gap:2px;font-size:14px}
+ #play .mobile-options small{font-size:9px;color:#bad5df}
+ .sheet-content .course-slot{grid-template-columns:22px minmax(0,1fr) 67px}
+ body[data-page=play] #saveBadge:not([hidden]) ~ .mode-chip{display:none}
+}
+/* Small phones turned sideways (including 568 x 320): compact two-column deck. */
+@media (min-width:520px) and (max-width:699px) and (max-height:480px) and (orientation:landscape){
+ body[data-page=play] main{padding:5px 8px;height:var(--vv-height)}
+ #play.active{gap:5px}#play .flight-heading{height:34px;flex-basis:34px}#play .flight-heading .eyebrow{display:none}#play .flight-heading h2{font-size:15px}
+ .flight-back{min-height:34px;height:34px;width:32px;min-width:32px}#play .flight-menu{min-height:34px;height:34px}
+ #play .mode-chip{display:block;min-height:32px;font-size:10px}#play .medal-deck{flex-basis:38px}#play .medal-card{padding:4px 7px}#play .medal-symbol{height:24px;width:17px;flex-basis:17px}#play .medal-name h3{font-size:10px}#play .medal-detail{font-size:9px}
+ #play .flight-layout{display:grid;grid-template-columns:minmax(0,1fr) 204px;gap:8px;flex:1;min-height:0}
+ #play .flight-left{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:32px minmax(40px,1fr) 27px;gap:4px;height:100%}
+ #play .flight-plan{grid-area:1/1/2/2;min-height:0;height:32px}#play .flight-plan>summary{min-height:30px;padding:4px 7px;gap:5px}#play .flight-plan .plan-marker,#play #planCounter{display:none}#play .flight-plan summary strong{font-size:10px}
+ #play .map-controls{grid-area:1/2/2/3;height:32px;min-height:0;width:auto}#play .map-mode{display:none}.map-fit{min-width:58px;font-size:9px;padding:0 3px}.map-icon{min-width:27px;width:27px;height:30px;min-height:30px}
+ #play .map-viewport{grid-area:2/1/3/3;min-height:0;height:auto;max-height:none}#play .telemetry{grid-area:3/1/4/3;height:27px;min-height:0;gap:10px}#play .telemetry>div{flex-direction:row;gap:4px;align-items:baseline}#play .telemetry span{font-size:7px}#play .telemetry b{font-size:9px}#play .telemetry b small{font-size:7px}#play .speed-button{height:27px;min-height:27px;min-width:32px;font-size:10px;padding:0 6px}
+ #play .flight-panel{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden;flex:initial}
+ #play .panel-scroll{flex:1;min-height:0;overflow:auto;padding:7px;gap:6px}
+ #play .aim-controls{grid-template-columns:1fr;gap:6px}#play .control label{font-size:10px;margin-bottom:3px}#play .number-wrap{height:36px;min-height:36px}#play .number-wrap input{height:34px;font-size:19px}#play .number-wrap button{height:34px;min-height:34px;width:36px;min-width:36px;flex-basis:36px}
+ #play .precision-row{display:flex;min-height:28px;gap:5px}.precision-button{min-height:28px;padding:3px 6px;font-size:10px}#play #fineAimCaption{font-size:8px}.memory-shortcut{display:none}
+ #play .nav-more{display:block}.nav-more>summary{font-size:10px;min-height:28px;padding:4px 0}.keyboard-tip{display:none}
+ #play .panel-actions{display:flex;flex:none;gap:4px;padding:6px 7px}#play .launch-button{display:flex;min-height:36px;height:36px;font-size:12px;padding:5px}#play .launch-secondary{display:grid;min-height:27px;gap:4px}#play .launch-secondary button{min-height:27px;padding:2px 4px;font-size:10px}
+ #play .mobile-dock{display:none}
+ body[data-flight=running] #play .flight-panel,body[data-flight=review] #play .flight-panel{display:flex}#play .live-flight-panel{display:block;font-size:11px}.flight-live-state{font-size:9px}.flight-fact{padding:7px;margin-bottom:7px}.flight-fact strong{font-size:17px}.flight-progress-line{padding:5px 0;font-size:10px}
+ #play .flight-review{grid-area:4/1/5/3;max-height:76px;padding:5px 7px}.review-summary,.review-comparison{display:none}.review-title{font-size:10px}.review-controls button{min-height:25px;font-size:9px;padding:2px 5px}.review-controls input{height:24px;flex-basis:45px;min-width:35px}.review-stamp{font-size:9px}
+}
+@media (max-width:699px), (max-width:999px) and (orientation:portrait){#play .memory-shortcut{display:none}}
+
+
+/* v10 usability tweaks */
+.review-controls button[data-action=next], .review-controls .review-next{background:var(--mint);border-color:var(--mint);color:#082d25;font-weight:700;}
+#play .launch-actions-row{display:grid;grid-template-columns:1fr auto;gap:8px;}
+#play .launch-secondary.with-next{grid-template-columns:1fr 1fr 1fr;}
+#play .launch-secondary #nextLevelButton{background:var(--mint);border-color:var(--mint);color:#082d25;font-weight:700;}
+@media (max-width: 900px){#play .launch-secondary.with-next{grid-template-columns:1fr 1fr 1fr;}}

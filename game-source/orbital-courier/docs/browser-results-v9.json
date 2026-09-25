@@ -1,0 +1,17 @@
+{
+  "status": "running",
+  "checks": [
+    "v8 save schema, balances, modules, receipts, records and permanent courses preserved; unique DOM IDs",
+    "Comma and signed inputs, invalid fallback, bounds, Enter safety and coarse/fine keyboard increments",
+    "Single taps do not double-increment; hold repeats and stops on release or leaving the button",
+    "Map click never changes course; explicit pan, aim, Alt-pan and wheel zoom preserve intended controls",
+    "Native route/courses sheet traps focus, Escape restores focus, branching is visual-only and controls are not duplicated",
+    "A/B values round-trip; primary action remains reachable outside expanded panel scroller",
+    "Route sheet and pause freeze simulation; close resumes; restart requires confirmation; losing focus pauses",
+    "Settings switches/tabs, JSON export schema and reset guard work; fullscreen denial does not break play",
+    "All 80 levels and B routes of all 12 branching maps complete in production frame loop (92 flights)",
+    "All 16 most-recent/revised maps, including both branches, finish in PRO (28 flights)",
+    "Finished-flight replay seeks and compares without awarding money; repeat earned route remains unpaid"
+  ],
+  "errors": []
+}
