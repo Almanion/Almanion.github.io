@@ -138,7 +138,7 @@ with sync_playwright() as pw:
   c.close()
  record('13 phone/tablet/desktop sizes: map, next step, inputs and launch fit; click targets checked in preparation, flight and replay')
  # Genuine touch dispatch in CDP; mobile input and keyboard-height simulation.
- c,p=load(390,844,touch=True);play(p);assert p.evaluate('document.body.dataset.mapMode')=='pan'
+ c,p=load(390,844,touch=True);play(p);assert p.evaluate('document.body.dataset.mapMode')=='aim'
  p.locator('.mobile-options').tap();assert p.locator('#flightDrawer').is_visible();p.locator('#sheetFine').tap();assert p.evaluate('Orbital.App.profile.settings.fineAim');closesheet(p)
  v=aim(p)['angle'];p.locator('[data-action=angle-up]').tap();ae(aim(p)['angle'],v+.1)
  p.locator('#angleInput').fill('-18,7');p.locator('#mobileLaunch').tap();assert p.evaluate('Orbital.App.state===null');ae(aim(p)['angle'],-18.7)

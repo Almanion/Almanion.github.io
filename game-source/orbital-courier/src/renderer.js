@@ -368,9 +368,10 @@
         const s=view.state;
         if(!['crash','lost','preview'].includes(s.status))ship(c,s.x,s.y,Math.atan2(s.vy,s.vx),color,Math.min(1.65,this.uiScale),false,t);
       }else if(!view.hideShip){
-        const angle=-P.rad(view.angle||0);const len=40+(view.speed||200)*0.35;
+        const angle=-P.rad(view.angle||0);const len=view.aimPointer?Math.hypot(view.aimPointer.x-level.start.x,view.aimPointer.y-level.start.y):40+(view.speed||200)*0.35;
         c.save();c.translate(level.start.x,level.start.y);c.rotate(angle);
         c.strokeStyle=color+'80';c.lineWidth=1.3;c.beginPath();c.moveTo(33,0);c.lineTo(len,0);c.lineTo(len-7,-4);c.moveTo(len,0);c.lineTo(len-7,4);c.stroke();c.restore();
+        if(view.aimPointer){const p=view.aimPointer;circle(c,p.x,p.y,9*this.uiScale,null,color+'90',1.5);text(c,Math.round(view.speed)+' ед./с',p.x,p.y-18*this.uiScale,11*this.uiScale,'#e0fff5','center');}
         ship(c,level.start.x,level.start.y,angle,color,Math.min(1.75,1.1*this.uiScale));
       }
       for(const p of view.particles||[]){

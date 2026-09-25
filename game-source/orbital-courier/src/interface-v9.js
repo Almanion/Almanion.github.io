@@ -13,7 +13,7 @@
   const flying = () => A.screen === 'play' && A.state?.status === 'flying';
   const controlsBlocked = () => modal.open || drawer.open || A.transitioning;
   const editing = () => ['angleInput', 'speedInput'].includes(document.activeElement?.id);
-  let mapMode = coarse() ? 'pan' : 'aim', lastMode = '', pending = false, inputMessageTimer;
+  let mapMode = 'aim', lastMode = '', pending = false, inputMessageTimer;
   let lastHeight = innerHeight, lastWidth = innerWidth, sheetState = null, modalFocus = null, lastInput = null;
   let lastLevel = null, hintTimer, lastFlightKey = '', initializedLive = false;
   const screenMode = () => !A.state ? 'aiming' : A.state.status === 'flying' ? 'running' : 'review';
@@ -65,9 +65,13 @@
     $('aimFeedback').hidden = true;
     $('flightReview').hidden = true;
     lastFlightKey = '';
-    if (lastLevel !== A.currentId) mapMode = coarse() ? 'pan' : 'aim';
+    if (lastLevel !== A.currentId) mapMode = 'aim';
     lastLevel = A.currentId;
     sync(); schedule();
+    if(coarse()&&mapMode==='aim'){
+      setText($('mapGestureHint'),'Укажи, куда лететь. Дальше палец — сильнее старт. Два пальца — обзор.');
+      $('mapGestureHint').hidden=false;clearTimeout(hintTimer);hintTimer=setTimeout(()=>$('mapGestureHint').hidden=true,6000);
+    }
   }
   function onResult() {
     closeSheet(false); clearPointers(); sync(); schedule();
@@ -381,7 +385,16 @@
   function resetCamera() { A.camera = {zoom:1,cx:600,cy:350}; sync(); }
   function clearPointers() {
     for (const id of pointers.keys()) { try { if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id); } catch (_) {} }
-    pointers.clear(); gesture = null; A.mapGesture = false; document.body.classList.remove('map-dragging');
+    pointers.clear(); gesture = null; A.aimPointer = null; A.mapGesture = false; document.body.classList.remove('map-dragging');
+  }
+  function pointAim(x,y,touch=false) {
+    const point=worldPoint(x,y),start=A.level().start,dx=point.x-start.x,dy=point.y-start.y;
+    const distance=Math.hypot(dx,dy),{fit}=metrics(),pixels=distance*fit*A.camera.zoom;
+    if(touch?pixels<12:distance<=15)return;
+    // Screen-space reach stays comfortable on small phones and at any zoom.
+    const speed=touch?60+P.clamp((pixels-12)/108,0,1)*(A.stats().maxSpeed-60):distance;
+    A.setAim(P.deg(Math.atan2(-dy,dx)),speed);
+    if(touch){A.aimPointer=point;$('mapGestureHint').hidden=true;}
   }
   function midpoint() {
     const [a,b] = [...pointers.values()];
@@ -397,9 +410,11 @@
       const pan = !aiming() || mapMode === 'pan' || event.altKey || event.button === 1;
       gesture = {kind:pan ? 'pan' : 'aim',x:p.x,y:p.y,cam:{...A.camera},angle:A.angle,speed:A.speed,type:event.pointerType,moved:false};
       document.body.classList.toggle('map-dragging',pan);
+      if(!pan&&event.pointerType==='touch')pointAim(p.x,p.y,true);
     } else if (pointers.size === 2) {
       const m = midpoint();
       if (gesture?.kind === 'aim' && aiming()) A.setAim(gesture.angle,gesture.speed);
+      A.aimPointer=null;
       gesture = {kind:'pinch',mid:m,cam:{...A.camera},anchor:worldPoint(m.x,m.y)};
       A.mapGesture = true;
     }
@@ -420,16 +435,16 @@
       const dx=event.clientX-g.x,dy=event.clientY-g.y;
       if (!g.moved && Math.hypot(dx,dy)<5) return; g.moved=true;
       if (g.type==='touch') {
-        A.setAim(g.angle+dx*(A.profile.settings.fineAim?.12:.6),g.speed-dy*(A.profile.settings.fineAim?.25:1));
+        pointAim(event.clientX,event.clientY,true);
       } else {
-        const p=worldPoint(event.clientX,event.clientY),start=A.level().start,wx=p.x-start.x,wy=p.y-start.y;
-        if (Math.hypot(wx,wy)>15) A.setAim(P.deg(Math.atan2(-wy,wx)),Math.hypot(wx,wy));
+        pointAim(event.clientX,event.clientY);
       }
     }
     event.preventDefault();
   });
   function releasePointer(event) {
     if (!pointers.has(event.pointerId)) return;
+    if(event.type==='pointerup'&&gesture?.kind==='aim'&&gesture.type==='touch'&&aiming()&&!controlsBlocked())pointAim(event.clientX,event.clientY,true);
     pointers.delete(event.pointerId);
     try { if(canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId); } catch(_){}
     if (!pointers.size) clearPointers();
@@ -448,7 +463,7 @@
     if (!aiming() && mode==='aim') return;
     clearPointers(); mapMode=mode;sync();
     clearTimeout(hintTimer);
-    const message=mode==='pan'?'Обзор не меняет курс. Масштаб — + / − или два пальца.':coarse()?'Проведи по карте: ↔ угол, ↕ скорость. Отпускание не запускает.':'Потяни в сторону полёта. Дальше от капсулы — сильнее импульс.';
+    const message=mode==='pan'?'Обзор не меняет курс. Масштаб — + / − или два пальца.':'Укажи направление от курьера. Дальше палец — сильнее запуск. Два пальца — обзор. Для полёта нажми «Запуск».';
     setText($('mapGestureHint'),message);$('mapGestureHint').hidden=false;
     hintTimer=setTimeout(()=>$('mapGestureHint').hidden=true,3400);
   }

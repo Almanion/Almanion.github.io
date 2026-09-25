@@ -2147,9 +2147,10 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
         const s=view.state;
         if(!['crash','lost','preview'].includes(s.status))ship(c,s.x,s.y,Math.atan2(s.vy,s.vx),color,Math.min(1.65,this.uiScale),false,t);
       }else if(!view.hideShip){
-        const angle=-P.rad(view.angle||0);const len=40+(view.speed||200)*0.35;
+        const angle=-P.rad(view.angle||0);const len=view.aimPointer?Math.hypot(view.aimPointer.x-level.start.x,view.aimPointer.y-level.start.y):40+(view.speed||200)*0.35;
         c.save();c.translate(level.start.x,level.start.y);c.rotate(angle);
         c.strokeStyle=color+'80';c.lineWidth=1.3;c.beginPath();c.moveTo(33,0);c.lineTo(len,0);c.lineTo(len-7,-4);c.moveTo(len,0);c.lineTo(len-7,4);c.stroke();c.restore();
+        if(view.aimPointer){const p=view.aimPointer;circle(c,p.x,p.y,9*this.uiScale,null,color+'90',1.5);text(c,Math.round(view.speed)+' ед./с',p.x,p.y-18*this.uiScale,11*this.uiScale,'#e0fff5','center');}
         ship(c,level.start.x,level.start.y,angle,color,Math.min(1.75,1.1*this.uiScale));
       }
       for(const p of view.particles||[]){
@@ -2751,7 +2752,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       const t=app.profile.settings.reducedMotion?0:now/1000;
       const review=O.Review?.renderModel();gameRenderer.draw(displayLevel(),{camera:app.camera,review:!!review,time:t,angle:app.angle,speed:app.speed,color:skin().color,stats:stats(),state:displayState(),
         preview:app.state?null:app.preview,trail:review?.trail||app.trail,trailStyle:app.profile.trail,ghost:review?.ghost||(app.profile.settings.ghost?app.ghosts[app.currentId]:null),
-        grid:app.profile.settings.grid,reducedMotion:app.profile.settings.reducedMotion,particles:app.particles,banked:G.record(app.profile,app.currentId).cargo});
+        aimPointer:app.aimPointer,grid:app.profile.settings.grid,reducedMotion:app.profile.settings.reducedMotion,particles:app.particles,banked:G.record(app.profile,app.currentId).cargo});
       if(now-lastTelemetry>85){updateTelemetry();lastTelemetry=now;}
     }else if(app.screen==='hangar'){
       if(O.Hangar)O.Hangar.preview(now);else O.Cosmetics.preview($('trailPreview'),app.profile.trail,skin().color,now/1000,app.profile.settings.reducedMotion);
@@ -2848,7 +2849,7 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   const flying = () => A.screen === 'play' && A.state?.status === 'flying';
   const controlsBlocked = () => modal.open || drawer.open || A.transitioning;
   const editing = () => ['angleInput', 'speedInput'].includes(document.activeElement?.id);
-  let mapMode = coarse() ? 'pan' : 'aim', lastMode = '', pending = false, inputMessageTimer;
+  let mapMode = 'aim', lastMode = '', pending = false, inputMessageTimer;
   let lastHeight = innerHeight, lastWidth = innerWidth, sheetState = null, modalFocus = null, lastInput = null;
   let lastLevel = null, hintTimer, lastFlightKey = '', initializedLive = false;
   const screenMode = () => !A.state ? 'aiming' : A.state.status === 'flying' ? 'running' : 'review';
@@ -2900,9 +2901,13 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
     $('aimFeedback').hidden = true;
     $('flightReview').hidden = true;
     lastFlightKey = '';
-    if (lastLevel !== A.currentId) mapMode = coarse() ? 'pan' : 'aim';
+    if (lastLevel !== A.currentId) mapMode = 'aim';
     lastLevel = A.currentId;
     sync(); schedule();
+    if(coarse()&&mapMode==='aim'){
+      setText($('mapGestureHint'),'Укажи, куда лететь. Дальше палец — сильнее старт. Два пальца — обзор.');
+      $('mapGestureHint').hidden=false;clearTimeout(hintTimer);hintTimer=setTimeout(()=>$('mapGestureHint').hidden=true,6000);
+    }
   }
   function onResult() {
     closeSheet(false); clearPointers(); sync(); schedule();
@@ -3216,7 +3221,16 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   function resetCamera() { A.camera = {zoom:1,cx:600,cy:350}; sync(); }
   function clearPointers() {
     for (const id of pointers.keys()) { try { if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id); } catch (_) {} }
-    pointers.clear(); gesture = null; A.mapGesture = false; document.body.classList.remove('map-dragging');
+    pointers.clear(); gesture = null; A.aimPointer = null; A.mapGesture = false; document.body.classList.remove('map-dragging');
+  }
+  function pointAim(x,y,touch=false) {
+    const point=worldPoint(x,y),start=A.level().start,dx=point.x-start.x,dy=point.y-start.y;
+    const distance=Math.hypot(dx,dy),{fit}=metrics(),pixels=distance*fit*A.camera.zoom;
+    if(touch?pixels<12:distance<=15)return;
+    // Screen-space reach stays comfortable on small phones and at any zoom.
+    const speed=touch?60+P.clamp((pixels-12)/108,0,1)*(A.stats().maxSpeed-60):distance;
+    A.setAim(P.deg(Math.atan2(-dy,dx)),speed);
+    if(touch){A.aimPointer=point;$('mapGestureHint').hidden=true;}
   }
   function midpoint() {
     const [a,b] = [...pointers.values()];
@@ -3232,9 +3246,11 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
       const pan = !aiming() || mapMode === 'pan' || event.altKey || event.button === 1;
       gesture = {kind:pan ? 'pan' : 'aim',x:p.x,y:p.y,cam:{...A.camera},angle:A.angle,speed:A.speed,type:event.pointerType,moved:false};
       document.body.classList.toggle('map-dragging',pan);
+      if(!pan&&event.pointerType==='touch')pointAim(p.x,p.y,true);
     } else if (pointers.size === 2) {
       const m = midpoint();
       if (gesture?.kind === 'aim' && aiming()) A.setAim(gesture.angle,gesture.speed);
+      A.aimPointer=null;
       gesture = {kind:'pinch',mid:m,cam:{...A.camera},anchor:worldPoint(m.x,m.y)};
       A.mapGesture = true;
     }
@@ -3255,16 +3271,16 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
       const dx=event.clientX-g.x,dy=event.clientY-g.y;
       if (!g.moved && Math.hypot(dx,dy)<5) return; g.moved=true;
       if (g.type==='touch') {
-        A.setAim(g.angle+dx*(A.profile.settings.fineAim?.12:.6),g.speed-dy*(A.profile.settings.fineAim?.25:1));
+        pointAim(event.clientX,event.clientY,true);
       } else {
-        const p=worldPoint(event.clientX,event.clientY),start=A.level().start,wx=p.x-start.x,wy=p.y-start.y;
-        if (Math.hypot(wx,wy)>15) A.setAim(P.deg(Math.atan2(-wy,wx)),Math.hypot(wx,wy));
+        pointAim(event.clientX,event.clientY);
       }
     }
     event.preventDefault();
   });
   function releasePointer(event) {
     if (!pointers.has(event.pointerId)) return;
+    if(event.type==='pointerup'&&gesture?.kind==='aim'&&gesture.type==='touch'&&aiming()&&!controlsBlocked())pointAim(event.clientX,event.clientY,true);
     pointers.delete(event.pointerId);
     try { if(canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId); } catch(_){}
     if (!pointers.size) clearPointers();
@@ -3283,7 +3299,7 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
     if (!aiming() && mode==='aim') return;
     clearPointers(); mapMode=mode;sync();
     clearTimeout(hintTimer);
-    const message=mode==='pan'?'Обзор не меняет курс. Масштаб — + / − или два пальца.':coarse()?'Проведи по карте: ↔ угол, ↕ скорость. Отпускание не запускает.':'Потяни в сторону полёта. Дальше от капсулы — сильнее импульс.';
+    const message=mode==='pan'?'Обзор не меняет курс. Масштаб — + / − или два пальца.':'Укажи направление от курьера. Дальше палец — сильнее запуск. Два пальца — обзор. Для полёта нажми «Запуск».';
     setText($('mapGestureHint'),message);$('mapGestureHint').hidden=false;
     hintTimer=setTimeout(()=>$('mapGestureHint').hidden=true,3400);
   }
