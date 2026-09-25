@@ -82,14 +82,14 @@ with sync_playwright() as pw:
  # Full-size button remains fixed when details expand/scroll.
  clickable(p,'#launchButton');p.locator('#navMore summary').click()
  record('A/B values round-trip; primary action remains reachable outside expanded panel scroller')
- # Pausing / restart confirms / blur.
+ # Pausing / immediate retry / blur.
  play(p);p.evaluate('Orbital.App.setAim(Orbital.LEVELS[68].solution.angle,Orbital.LEVELS[68].solution.speed)');p.locator('#launchButton').click();p.wait_for_timeout(80);assert p.evaluate("Orbital.App.state.status==='flying'")
  p.locator('#flightPlan summary').click();t=p.evaluate('Orbital.App.state.t');p.wait_for_timeout(200);ae(p.evaluate('Orbital.App.state.t'),t);closesheet(p);p.wait_for_timeout(80);assert p.evaluate('Orbital.App.state.t')>t
  p.locator('#launchButton').click();assert p.locator('#modal').is_visible();t=p.evaluate('Orbital.App.state.t');p.wait_for_timeout(120);ae(p.evaluate('Orbital.App.state.t'),t);closemodal(p);p.wait_for_timeout(30);assert not p.evaluate('Orbital.App.paused')
- p.locator('.launch-secondary [data-action=retry]').click();assert p.locator('#modal').is_visible();closemodal(p);assert p.evaluate("Orbital.App.state.status==='flying'")
+ p.locator('.launch-secondary [data-action=retry]').click();assert not p.locator('#modal').is_visible();assert p.evaluate('Orbital.App.state===null');p.locator('#launchButton').click()
  p.evaluate('window.dispatchEvent(new Event("blur"))');assert p.locator('#modal').is_visible();assert p.evaluate('Orbital.App.paused');closemodal(p)
- p.locator('.launch-secondary [data-action=retry]').click();p.locator('[data-action="ui:retry-confirm"]').click();assert p.evaluate('Orbital.App.state===null')
- record('Route sheet and pause freeze simulation; close resumes; restart requires confirmation; losing focus pauses')
+ p.locator('.launch-secondary [data-action=retry]').click();assert not p.locator('#modal').is_visible();assert p.evaluate('Orbital.App.state===null')
+ record('Route sheet and pause freeze simulation; close resumes; restart is immediate; losing focus pauses')
  # User-facing settings and storage actions.
  p.evaluate('Orbital.V8.settings()');p.locator('[data-setting=highContrast]').check();assert p.evaluate('Orbital.App.profile.settings.highContrast');p.locator('[data-setting=highContrast]').uncheck()
  p.locator('[data-action="v8:settings-tab"][data-tab=save]').click()

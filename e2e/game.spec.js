@@ -42,6 +42,15 @@ for (const [width, height] of [[1366, 768], [320, 568], [390, 844], [844, 390]])
             await page.screenshot({ path: testInfo.outputPath('game.png') });
             await launch.click();
             await expect.poll(() => page.evaluate(() => Orbital.App.state?.status)).toBe('flying');
+            const saved = await page.evaluate(() => JSON.stringify([Orbital.App.profile.credits, Orbital.App.profile.xp, Orbital.App.profile.records]));
+            await page.locator('[data-action=retry]:visible').first().click();
+            expect(await page.evaluate(() => Orbital.App.state)).toBeNull();
+            await expect(page.locator('#modal')).not.toBeVisible();
+            expect(await page.evaluate(() => JSON.stringify([Orbital.App.profile.credits, Orbital.App.profile.xp, Orbital.App.profile.records]))).toBe(saved);
+            await launch.click();
+            await page.keyboard.press('r');
+            expect(await page.evaluate(() => Orbital.App.state)).toBeNull();
+            await expect(page.locator('#modal')).not.toBeVisible();
             expect(errors).toEqual([]);
         } finally {
             await context.close();

@@ -1845,33 +1845,99 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       c.strokeStyle='#5b829838';c.strokeRect(14,14,1172,672);
       text(c,'NAV / 1200 × 700',32,42,10,'#567080');
     }
+    planetTexture(p){
+      const size=p.r>100?512:256,key=[p.name,p.tint,p.surface,p.ring,size].join('/');
+      if(this.planetCache.has(key))return this.planetCache.get(key);
+      const canvas=document.createElement('canvas');canvas.width=canvas.height=size;
+      const c=canvas.getContext('2d'),r=size/2,seed=[...(p.name||p.tint)].reduce((n,ch)=>Math.imul(n,31)+ch.charCodeAt(0)|0,239),random=rng(seed);
+      c.translate(r,r);c.scale(r/128,r/128);c.beginPath();c.arc(0,0,127,0,TAU);c.clip();
+      c.fillStyle=p.tint;c.fillRect(-128,-128,256,256);
+      const gas=p.surface==='gas'||(!p.surface&&(p.ring||seed%3===0));
+      c.save();c.rotate(-.24);
+      if(gas){
+        // Latitude bands curve around the sphere, with small turbulent eddies.
+        for(let i=0;i<45;i++){
+          const y=-145+i*6.5;c.beginPath();c.moveTo(-150,y);
+          c.bezierCurveTo(-50,y+18+random()*12,50,y-20,150,y+5);
+          c.strokeStyle=i%3?'#092b3824':'#edffed38';c.lineWidth=2+random()*7;c.stroke();
+        }
+        for(let i=0;i<26;i++){
+          const y=(random()-.5)*210,x=(random()-.5)*190;
+          c.beginPath();c.ellipse(x,y,5+random()*19,1.5+random()*4,-.1,0,TAU);
+          c.strokeStyle=i%2?'#e9ffe52c':'#143c4938';c.lineWidth=1.2;c.stroke();
+        }
+      }else{
+        // Overlapping geological plates and crater rims, stable between frames.
+        for(let i=0;i<55;i++){
+          const x=(random()-.5)*260,y=(random()-.5)*260,radius=5+random()*22;
+          c.beginPath();for(let k=0;k<=12;k++){const a=k*TAU/12,rr=radius*(.6+random()*.4);k?c.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr):c.moveTo(x+rr,y);}c.closePath();
+          c.fillStyle=i%3?'#16334627':'#e1dccc23';c.fill();
+        }
+        for(let i=0;i<60;i++){
+          const x=(random()-.5)*250,y=(random()-.5)*250,rr=1.3+random()**2*12;
+          circle(c,x,y,rr,'#13233442');
+          c.beginPath();c.arc(x,y,rr,-.7,2.4);c.strokeStyle='#f1eedb48';c.lineWidth=.8;c.stroke();
+          circle(c,x-rr*.2,y-rr*.2,rr*.64,'#11273825');
+        }
+      }
+      for(let i=0;i<1100;i++){
+        c.fillStyle=i%2?'#ffffff12':'#03142518';const dot=.25+random()*.7;c.fillRect((random()-.5)*256,(random()-.5)*256,dot,dot);
+      }
+      c.restore();
+      const light=c.createRadialGradient(-49,-52,10,-15,-18,150);
+      light.addColorStop(0,'#ffffe74a');light.addColorStop(.48,'#ffffff08');light.addColorStop(.8,'#03122550');light.addColorStop(1,'#020918dc');
+      c.fillStyle=light;c.fillRect(-128,-128,256,256);
+      const night=c.createLinearGradient(-100,-75,116,70);night.addColorStop(0,'transparent');night.addColorStop(.5,'#05152600');night.addColorStop(.78,'#06112266');night.addColorStop(1,'#020713ed');
+      c.fillStyle=night;c.fillRect(-128,-128,256,256);
+      c.beginPath();c.arc(0,0,125,2.8,5.1);c.strokeStyle='#effffb63';c.lineWidth=1;c.stroke();
+      // Bound retained textures when browsing many contracts in one renderer.
+      if(this.planetCache.size>=12)this.planetCache.delete(this.planetCache.keys().next().value);
+      this.planetCache.set(key,canvas);return canvas;
+    }
     planet(p){
       const c=this.ctx;
-      const halo=c.createRadialGradient(p.x,p.y,p.r*0.9,p.x,p.y,p.r*1.6);
-      halo.addColorStop(0,p.tint+'28');halo.addColorStop(1,'transparent');c.fillStyle=halo;
-      c.fillRect(p.x-p.r*1.6,p.y-p.r*1.6,p.r*3.2,p.r*3.2);
-      if(p.ring){
-        c.save();c.translate(p.x,p.y);c.rotate(-0.24);
-        c.beginPath();c.ellipse(0,0,p.r*1.65,p.r*0.42,0,0,TAU);
-        c.lineWidth=14;c.strokeStyle=p.tint+'36';c.stroke();
-        c.lineWidth=1.5;c.strokeStyle=p.tint+'80';c.stroke();c.restore();
-      }
-      c.save();c.beginPath();c.arc(p.x,p.y,p.r,0,TAU);c.clip();
-      const g=c.createRadialGradient(p.x-p.r*0.45,p.y-p.r*0.45,0,p.x+p.r*0.3,p.y+p.r*0.2,p.r*1.5);
-      g.addColorStop(0,p.tint);g.addColorStop(0.45,p.tint+'c9');g.addColorStop(1,'#10162a');
-      c.fillStyle=g;c.fillRect(p.x-p.r,p.y-p.r,p.r*2,p.r*2);
-      const seed=[...(p.name||'planet')].reduce((n,ch)=>Math.imul(n,31)+ch.charCodeAt(0)|0,239);
-      const random=rng(seed);
-      for(let i=0;i<14;i++){
-        const x=p.x+(random()-0.5)*p.r*1.9,y=p.y+(random()-0.5)*p.r*1.9,r=p.r*(0.03+random()*0.12);
-        circle(c,x,y,r,'#0b203724');c.beginPath();c.arc(x+1,y+1,r,Math.PI,Math.PI*1.55);c.strokeStyle='#ffffff18';c.lineWidth=1.2;c.stroke();
-      }
-      c.translate(p.x,p.y);c.rotate(-0.3);c.strokeStyle='#e1fff214';c.lineWidth=1;
-      for(const sy of [-0.48,0,0.48]){c.beginPath();c.ellipse(0,sy*p.r,p.r*1.05,p.r*0.14,0,0,TAU);c.stroke();}
-      const shade=c.createLinearGradient(-p.r,-p.r,p.r,p.r);shade.addColorStop(0,'#ffffff0a');shade.addColorStop(0.55,'transparent');shade.addColorStop(1,'#020615b0');
-      c.fillStyle=shade;c.fillRect(-p.r*2,-p.r*2,p.r*4,p.r*4);c.restore();
-      circle(c,p.x,p.y,p.r,null,p.tint+'75',1.4);
+      const halo=c.createRadialGradient(p.x,p.y,p.r*.94,p.x,p.y,p.r*1.3);
+      halo.addColorStop(0,p.tint+'36');halo.addColorStop(.35,p.tint+'12');halo.addColorStop(1,'transparent');circle(c,p.x,p.y,p.r*1.3,halo);
+      const rings=front=>{
+        if(!p.ring)return;c.save();c.translate(p.x,p.y);c.rotate(-.24);
+        for(let i=0;i<15;i++){c.beginPath();c.ellipse(0,0,p.r*(1.4+i*.023),p.r*(.34+i*.006),0,front?0:Math.PI,front?Math.PI:TAU);c.strokeStyle=p.tint+(i%4===0?'12':front?'68':'36');c.lineWidth=Math.max(.6,p.r*.012);c.stroke();}c.restore();
+      };
+      rings(false);c.drawImage(this.planetTexture(p),p.x-p.r,p.y-p.r,p.r*2,p.r*2);rings(true);
+      circle(c,p.x,p.y,p.r,null,p.tint+'75',1.1);
       if(p.name)text(c,p.name.toUpperCase(),p.x,p.y+p.r+18+11*this.uiScale,11*this.uiScale,'#9aaebf','center');
+    }
+    starClusters(t,pointer){
+      const c=this.ctx;
+      if(!this.clusterStars){
+        const random=rng(23991);
+        this.clusterStars=Array.from({length:820},(_,i)=>({group:i%3,a:random()*TAU,r:Math.pow(random(),.65),z:random(),size:.35+random()**4*2.1,phase:random()*TAU}));
+        this.starGlows=['133,211,255','186,169,255','255,218,169'].map(rgb=>{
+          const canvas=document.createElement('canvas');canvas.width=canvas.height=64;const ctx=canvas.getContext('2d'),g=ctx.createRadialGradient(32,32,0,32,32,32);
+          g.addColorStop(0,'rgba('+rgb+',.9)');g.addColorStop(.12,'rgba('+rgb+',.45)');g.addColorStop(.4,'rgba('+rgb+',.09)');g.addColorStop(1,'rgba('+rgb+',0)');ctx.fillStyle=g;ctx.fillRect(0,0,64,64);return canvas;
+        });
+      }
+      const px=(pointer.x+1)*600,py=(pointer.y+1)*350,strength=pointer.strength||0;
+      const groups=[[405,218,210,.48,-.35],[955,165,180,.62,.4],[925,572,225,.36,-.48]];
+      c.save();c.globalCompositeOperation='screen';
+      for(let j=0;j<groups.length;j++){
+        const [x,y,r,flatten,tilt]=groups[j];c.save();c.translate(x+pointer.x*12,y+pointer.y*8);c.rotate(tilt);c.scale(1,flatten);
+        c.globalAlpha=.3;c.drawImage(this.starGlows[j],-r,-r,r*2,r*2);c.restore();
+      }
+      const count=this.canvas.clientWidth<600?440:this.clusterStars.length;
+      for(let i=0;i<count;i++){
+        const s=this.clusterStars[i],[cx,cy,r,flatten,tilt]=groups[s.group],a=s.a+t*(.015+s.z*.012)+s.r*4.3;
+        const dx=Math.cos(a)*r*s.r,dy=Math.sin(a)*r*s.r*flatten;
+        let x=cx+dx*Math.cos(tilt)-dy*Math.sin(tilt)+pointer.x*(8+s.z*13),y=cy+dx*Math.sin(tilt)+dy*Math.cos(tilt)+pointer.y*(5+s.z*10);
+        const vx=px-x,vy=py-y,dist=Math.hypot(vx,vy),pull=Math.exp(-dist*dist/100000)*strength;
+        // Smooth attraction with a tangential component: a small stellar vortex.
+        x+=(vx*.55-vy*.20)*pull;y+=(vy*.55+vx*.20)*pull;
+        const light=(.38+.3*s.z+.16*Math.sin(t*.55+s.phase))*(1+pull*.6);
+        c.globalAlpha=Math.min(1,light);
+        if(s.size>1.1){const radius=s.size*(5+pull*5);c.drawImage(this.starGlows[s.group],x-radius,y-radius,radius*2,radius*2);}
+        circle(c,x,y,s.size*(.8+pull*.5),s.group===2?'#ffe1b1':s.group===1?'#ddd3ff':'#c8eeff');
+        if(s.size>2.2){c.globalAlpha=light*.3;c.strokeStyle='#edfaff';c.lineWidth=.6;c.beginPath();c.moveTo(x-5,y);c.lineTo(x+5,y);c.moveTo(x,y-5);c.lineTo(x,y+5);c.stroke();}
+      }
+      c.restore();
     }
     rock(p,index){
       const c=this.ctx,random=rng(index*827+37);c.save();c.translate(p.x,p.y);c.beginPath();
@@ -2099,6 +2165,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       // Pointer parallax is decorative and never influences the game physics.
       this.resize();const c=this.ctx,px=pointer.x||0,py=pointer.y||0;
       this.background(t,12);
+      this.starClusters(t,pointer);
       c.save();c.translate(px*7,py*5);
       for(const [x,y,r,rgb] of [[770,245,430,'91,93,191'],[520,460,330,'44,172,158']]){
         const glow=c.createRadialGradient(x+Math.sin(t*.09)*25,y,0,x,y,r);
@@ -2134,7 +2201,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       }c.restore();
       if(moon.z<0)moonDraw();
       if(q.z<0)courier();
-      this.planet({x:cx,y:cy,r:141,tint:'#6fcbbb',name:'',ring:false});
+      this.planet({x:cx,y:cy,r:141,tint:'#6fcbbb',name:'',ring:false,surface:'gas'});
       // Slowly moving cloud bands clipped to the sphere, with an atmosphere rim.
       c.save();c.beginPath();c.arc(cx,cy,140,0,TAU);c.clip();
       for(let k=0;k<8;k++){
@@ -2694,18 +2761,23 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     }else if(app.screen==='home'){
       if(!document.hidden)app.heroTime+=elapsed;
       const blend=1-Math.exp(-elapsed*5);
-      for(const key of ['x','y'])app.heroPointer[key]+=(app.heroTarget[key]-app.heroPointer[key])*blend;
+      for(const key of ['x','y','strength'])app.heroPointer[key]=(app.heroPointer[key]||0)+((app.heroTarget[key]||0)-(app.heroPointer[key]||0))*blend;
       heroRenderer.hero(app.profile.settings.reducedMotion?2:app.heroTime,skin().color,
         app.profile.settings.reducedMotion?{x:0,y:0}:app.heroPointer);
     }
     requestAnimationFrame(frame);
   }
-  $('heroCanvas').addEventListener('pointermove',event=>{
-    if(event.pointerType==='touch')return;
-    const r=event.currentTarget.getBoundingClientRect();
-    app.heroTarget={x:P.clamp((event.clientX-r.left)/r.width*2-1,-1,1),y:P.clamp((event.clientY-r.top)/r.height*2-1,-1,1)};
-  });
-  $('heroCanvas').addEventListener('pointerleave',()=>{app.heroTarget={x:0,y:0};});
+  const heroArea=$('heroCanvas').closest('.hero');
+  function guideStars(event){
+    const r=$('heroCanvas').getBoundingClientRect();
+    app.heroTarget={x:P.clamp((event.clientX-r.left)/r.width*2-1,-1,1),y:P.clamp((event.clientY-r.top)/r.height*2-1,-1,1),strength:1};
+  }
+  function releaseStars(){app.heroTarget={x:0,y:0,strength:0};}
+  heroArea.addEventListener('pointermove',guideStars,{passive:true});
+  heroArea.addEventListener('pointerdown',guideStars,{passive:true});
+  heroArea.addEventListener('pointerleave',releaseStars);
+  heroArea.addEventListener('pointercancel',releaseStars);
+  heroArea.addEventListener('pointerup',event=>{if(event.pointerType==='touch')releaseStars();});
   // Expose semantic commands for the included browser smoke test, not a server API.
   Object.assign(app,{travelToLevel,renderCampaign,storeCourse,recallCourse,loadLevel,setAim,launch,retry,go,save,updateProfileUI,exportSave,applySolution,finish,level,displayLevel,displayState,stats,openModal,closeModal,toast,showWin,showFail,syncControls,updateObjectives,renderHangar,renderAwards,actions});
   if(!Object.keys(app.profile.records).length&&root.matchMedia('(prefers-reduced-motion: reduce)').matches)app.profile.settings.reducedMotion=true;
@@ -3024,9 +3096,7 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   }
   function requestRetry() {
     if (A.screen !== 'play' || A.transitioning) return;
-    if (flying()) {
-      A.openModal('Начать попытку заново?', '<p>Текущий полёт прервётся. Курс и уже полученные награды сохранятся.</p><div class="modal-actions"><button class="button quiet" data-action="close">Продолжить полёт</button><button class="button primary" data-action="ui:retry-confirm">Заново</button></div>');
-    } else retryNow();
+    retryNow();
   }
   function retryNow() {
     const camera = {...A.camera}; A.closeModal(); closeSheet(false); A.retry();

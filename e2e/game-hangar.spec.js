@@ -5,6 +5,25 @@ test.use({serviceWorkers:'block'});
 test.beforeEach(async({page})=>{
     await page.route('**/*',r=>['127.0.0.1','localhost'].includes(new URL(r.request().url()).hostname)?r.continue():r.abort());
 });
+test('star clusters follow the pointer and reduced motion freezes the scene',async({page},testInfo)=>{
+    await page.setViewportSize({width:1366,height:768});
+    await page.goto('/games/orbital-courier/');
+    const canvas=page.locator('#heroCanvas'),box=await canvas.boundingBox();
+    await page.mouse.move(box.x+box.width*.75,box.y+box.height*.3);
+    await expect.poll(()=>page.evaluate(()=>Orbital.App.heroPointer.strength)).toBeGreaterThan(.8);
+    const right=await page.evaluate(()=>Orbital.App.heroPointer.x);
+    await page.mouse.move(box.x+box.width*.35,box.y+box.height*.65);
+    await expect.poll(()=>page.evaluate(()=>Orbital.App.heroPointer.x)).toBeLessThan(right-.3);
+    await page.screenshot({path:testInfo.outputPath('interactive-stars.png')});
+    await page.evaluate(()=>Orbital.App.profile.settings.reducedMotion=true);
+    await page.waitForTimeout(100);
+    const still=await canvas.evaluate(c=>c.toDataURL());
+    await page.mouse.move(box.x+box.width*.8,box.y+box.height*.2);
+    await page.waitForTimeout(150);
+    expect(await canvas.evaluate(c=>c.toDataURL())).toBe(still);
+    await page.mouse.move(2,2);
+    await expect.poll(()=>page.evaluate(()=>Orbital.App.heroPointer.strength)).toBeLessThan(.1);
+});
 for(const [width,height]of [[320,568],[390,844],[844,390],[1366,768]]){
     test(`hangar and circular hero at ${width}x${height}`,async({page},testInfo)=>{
         const errors=[];page.on('pageerror',e=>errors.push(e.message));

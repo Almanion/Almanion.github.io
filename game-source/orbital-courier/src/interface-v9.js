@@ -261,9 +261,7 @@
   }
   function requestRetry() {
     if (A.screen !== 'play' || A.transitioning) return;
-    if (flying()) {
-      A.openModal('Начать попытку заново?', '<p>Текущий полёт прервётся. Курс и уже полученные награды сохранятся.</p><div class="modal-actions"><button class="button quiet" data-action="close">Продолжить полёт</button><button class="button primary" data-action="ui:retry-confirm">Заново</button></div>');
-    } else retryNow();
+    retryNow();
   }
   function retryNow() {
     const camera = {...A.camera}; A.closeModal(); closeSheet(false); A.retry();

@@ -507,18 +507,23 @@
     }else if(app.screen==='home'){
       if(!document.hidden)app.heroTime+=elapsed;
       const blend=1-Math.exp(-elapsed*5);
-      for(const key of ['x','y'])app.heroPointer[key]+=(app.heroTarget[key]-app.heroPointer[key])*blend;
+      for(const key of ['x','y','strength'])app.heroPointer[key]=(app.heroPointer[key]||0)+((app.heroTarget[key]||0)-(app.heroPointer[key]||0))*blend;
       heroRenderer.hero(app.profile.settings.reducedMotion?2:app.heroTime,skin().color,
         app.profile.settings.reducedMotion?{x:0,y:0}:app.heroPointer);
     }
     requestAnimationFrame(frame);
   }
-  $('heroCanvas').addEventListener('pointermove',event=>{
-    if(event.pointerType==='touch')return;
-    const r=event.currentTarget.getBoundingClientRect();
-    app.heroTarget={x:P.clamp((event.clientX-r.left)/r.width*2-1,-1,1),y:P.clamp((event.clientY-r.top)/r.height*2-1,-1,1)};
-  });
-  $('heroCanvas').addEventListener('pointerleave',()=>{app.heroTarget={x:0,y:0};});
+  const heroArea=$('heroCanvas').closest('.hero');
+  function guideStars(event){
+    const r=$('heroCanvas').getBoundingClientRect();
+    app.heroTarget={x:P.clamp((event.clientX-r.left)/r.width*2-1,-1,1),y:P.clamp((event.clientY-r.top)/r.height*2-1,-1,1),strength:1};
+  }
+  function releaseStars(){app.heroTarget={x:0,y:0,strength:0};}
+  heroArea.addEventListener('pointermove',guideStars,{passive:true});
+  heroArea.addEventListener('pointerdown',guideStars,{passive:true});
+  heroArea.addEventListener('pointerleave',releaseStars);
+  heroArea.addEventListener('pointercancel',releaseStars);
+  heroArea.addEventListener('pointerup',event=>{if(event.pointerType==='touch')releaseStars();});
   // Expose semantic commands for the included browser smoke test, not a server API.
   Object.assign(app,{travelToLevel,renderCampaign,storeCourse,recallCourse,loadLevel,setAim,launch,retry,go,save,updateProfileUI,exportSave,applySolution,finish,level,displayLevel,displayState,stats,openModal,closeModal,toast,showWin,showFail,syncControls,updateObjectives,renderHangar,renderAwards,actions});
   if(!Object.keys(app.profile.records).length&&root.matchMedia('(prefers-reduced-motion: reduce)').matches)app.profile.settings.reducedMotion=true;
