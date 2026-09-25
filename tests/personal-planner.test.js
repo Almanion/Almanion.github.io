@@ -48,7 +48,17 @@ assert.match(plannerPage, /data-view="week"/);
 assert.match(plannerPage, /data-view="month"/);
 assert.match(plannerPage, /data-view="goals"/);
 assert.match(planner, /Импорт из ChatGPT/);
-assert.match(planner, /Telegram для Almanion/);
+assert.match(planner, /plannerTelegramStatus/);
+assert.match(planner, /plannerTelegramSync/);
+assert.match(planner, /plannerTelegramTest/);
+assert.match(planner, /plannerTelegramEnable/);
+assert.match(planner, /plannerTelegramDisable/);
+assert.match(planner, /text\/plain;charset=utf-8/);
+assert.match(planner, /getIdToken\(forceRefresh === true\)/);
+assert.match(planner, /TELEGRAM_ALL_DAY_TIME = '09:00'/);
+assert.match(planner, /core\.expandItems\(state\.events/);
+assert.doesNotMatch(planner, /\d{8,10}:[A-Za-z0-9_-]{20,}/,
+    'Telegram bot tokens must never be stored in browser code');
 assert.match(planner, /Crimson/);
 
 assert.match(sport, /Подтягивания/);

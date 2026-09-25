@@ -15,6 +15,19 @@ const ACCESS_PREFIX = 'MATCENTER_ACCESS_';
 const FAILED_PREFIX = 'MATCENTER_FAILED_';
 const SITE_OWNER_UID = '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
 const DEFAULT_FIREBASE_DATABASE_URL = 'https://almanion-70120-default-rtdb.europe-west1.firebasedatabase.app';
+const PLANNER_TELEGRAM_TRIGGER_HANDLER = 'runPlannerTelegramReminders';
+const PLANNER_TELEGRAM_QUEUE_PREFIX = 'PLANNER_TELEGRAM_QUEUE_CHUNK_';
+const PLANNER_TELEGRAM_QUEUE_META = 'PLANNER_TELEGRAM_QUEUE_META';
+const PLANNER_TELEGRAM_SENT = 'PLANNER_TELEGRAM_SENT';
+const PLANNER_TELEGRAM_ENABLED = 'PLANNER_TELEGRAM_ENABLED';
+const PLANNER_TELEGRAM_LAST_ERROR = 'PLANNER_TELEGRAM_LAST_ERROR';
+const PLANNER_TELEGRAM_LAST_SEND_AT = 'PLANNER_TELEGRAM_LAST_SEND_AT';
+const PLANNER_TELEGRAM_MAX_REMINDERS = 500;
+const PLANNER_TELEGRAM_MAX_QUEUE_BYTES = 150000;
+const PLANNER_TELEGRAM_CHUNK_BYTES = 7500;
+const PLANNER_TELEGRAM_MAX_FUTURE_MS = 45 * 24 * 60 * 60 * 1000;
+const PLANNER_TELEGRAM_MAX_LEAD_MS = 14 * 24 * 60 * 60 * 1000;
+const PLANNER_TELEGRAM_LATE_WINDOW_MS = 30 * 60 * 1000;
 
 // Ожидаемые заголовки колонок (первая строка листа):
 // TaskId (рекомендуется) | Number | NumberText | Description | Status | Hint | Grade
@@ -42,6 +55,7 @@ function handle(e) {
         multiSheetTasks: true,
         notePublisher: true,
         noteDeletion: true,
+        plannerTelegram: true,
         deeplTranslate: true,
         deeplReady: !!scriptProperties.getProperty('DEEPL_API_KEY')
       });
@@ -73,6 +87,33 @@ function handle(e) {
     // Проверяем отдельную роль englishAccess и держим ключ DeepL только на сервере.
     if (action === 'translateEnglish') {
       return translateEnglish(params);
+    }
+
+    // Telegram-напоминания принадлежат личному планировщику и не зависят от роли
+    // в Матцентре. Каждый запрос отдельно проверяет Firebase ID token владельца.
+    if (action === 'plannerTelegramStatus') {
+      requireSiteOwner(params.idToken || '');
+      return json(plannerTelegramStatus());
+    }
+
+    if (action === 'plannerTelegramSync') {
+      requireSiteOwner(params.idToken || '');
+      return json(plannerTelegramSync(params.reminders));
+    }
+
+    if (action === 'plannerTelegramTest') {
+      requireSiteOwner(params.idToken || '');
+      return json(plannerTelegramTest());
+    }
+
+    if (action === 'plannerTelegramEnable') {
+      requireSiteOwner(params.idToken || '');
+      return json(plannerTelegramEnable());
+    }
+
+    if (action === 'plannerTelegramDisable') {
+      requireSiteOwner(params.idToken || '');
+      return json(plannerTelegramDisable());
     }
 
     if (action === 'authorizeAccount') {
@@ -325,7 +366,7 @@ function verifyFirebaseToken(idToken) {
 function requireSiteOwner(idToken) {
   const identity = verifyFirebaseToken(idToken);
   if (identity.uid !== SITE_OWNER_UID) {
-    throw new Error('Публиковать конспекты может только владелец сайта');
+    throw new Error('Действие доступно только владельцу сайта');
   }
   return identity;
 }
@@ -429,6 +470,416 @@ function fetchDeepLWithRetry(url, options) {
     Utilities.sleep(delay);
   }
   return response;
+}
+
+// === Telegram-напоминания личного планировщика ================================
+// Токен бота и chat ID хранятся только в Script Properties. Браузер передаёт
+// ограниченный снимок ближайших напоминаний после проверки Firebase ID token.
+// Пятиминутный trigger работает без открытой вкладки и не получает доступ к Firebase.
+
+function plannerTelegramStatus() {
+  const properties = PropertiesService.getScriptProperties();
+  const config = plannerTelegramConfig(false);
+  let queueData = { reminders: [], lastSyncAt: 0 };
+  let queueError = '';
+  try {
+    queueData = readPlannerTelegramQueue();
+  } catch (err) {
+    queueError = safePlannerTelegramError(err);
+  }
+  const sent = readPlannerTelegramSent();
+  const pendingCount = queueData.reminders.filter(function (item) { return !sent[item.key]; }).length;
+  return {
+    success: true,
+    ready: config.ready,
+    enabled: properties.getProperty(PLANNER_TELEGRAM_ENABLED) === 'true',
+    triggerInstalled: hasPlannerTelegramTrigger(),
+    pendingCount: pendingCount,
+    lastSyncAt: Number(queueData.lastSyncAt || 0),
+    lastSendAt: Number(properties.getProperty(PLANNER_TELEGRAM_LAST_SEND_AT) || 0),
+    lastError: queueError || String(properties.getProperty(PLANNER_TELEGRAM_LAST_ERROR) || '')
+  };
+}
+
+function plannerTelegramSync(reminders) {
+  if (!Array.isArray(reminders)) throw new Error('reminders должен быть массивом');
+  if (reminders.length > PLANNER_TELEGRAM_MAX_REMINDERS) {
+    throw new Error('Слишком много напоминаний. Максимум: ' + PLANNER_TELEGRAM_MAX_REMINDERS);
+  }
+
+  return withPlannerTelegramLock(function () {
+    const now = Date.now();
+    const unique = {};
+    reminders.forEach(function (raw, index) {
+      const item = normalizePlannerTelegramReminder(raw, index, now);
+      if (item && !unique[item.key]) unique[item.key] = item;
+    });
+    const sent = readPlannerTelegramSent();
+    const normalized = Object.keys(unique).map(function (key) { return unique[key]; })
+      .filter(function (item) { return !sent[item.key]; })
+      .sort(function (left, right) { return left.sendAt - right.sendAt || left.title.localeCompare(right.title, 'ru'); });
+    if (plannerTelegramUtf8Bytes(JSON.stringify(normalized)) > PLANNER_TELEGRAM_MAX_QUEUE_BYTES) {
+      throw new Error('Снимок напоминаний слишком велик');
+    }
+
+    savePlannerTelegramQueue(normalized, now);
+    PropertiesService.getScriptProperties().deleteProperty(PLANNER_TELEGRAM_LAST_ERROR);
+    return Object.assign(plannerTelegramStatus(), {
+      synced: true,
+      acceptedCount: normalized.length
+    });
+  });
+}
+
+function plannerTelegramTest() {
+  return withPlannerTelegramLock(function () {
+    plannerTelegramConfig(true);
+    sendPlannerTelegramMessage(
+      '✅ Telegram подключён к Almanion.\n\nТестовое сообщение доставлено; напоминания можно включать в планировщике.'
+    );
+    PropertiesService.getScriptProperties().deleteProperty(PLANNER_TELEGRAM_LAST_ERROR);
+    return Object.assign(plannerTelegramStatus(), { tested: true });
+  });
+}
+
+function plannerTelegramEnable() {
+  return withPlannerTelegramLock(function () {
+    plannerTelegramConfig(true);
+    ensureSinglePlannerTelegramTrigger();
+    PropertiesService.getScriptProperties().setProperty(PLANNER_TELEGRAM_ENABLED, 'true');
+    return plannerTelegramStatus();
+  });
+}
+
+function plannerTelegramDisable() {
+  return withPlannerTelegramLock(function () {
+    const properties = PropertiesService.getScriptProperties();
+    properties.setProperty(PLANNER_TELEGRAM_ENABLED, 'false');
+    removePlannerTelegramTriggers();
+    clearPlannerTelegramQueue();
+    properties.deleteProperty(PLANNER_TELEGRAM_SENT);
+    properties.deleteProperty(PLANNER_TELEGRAM_LAST_ERROR);
+    return plannerTelegramStatus();
+  });
+}
+
+/**
+ * Ручная запасная установка. Её можно один раз запустить из редактора Apps Script,
+ * если Google попросит отдельно разрешить создание временных триггеров.
+ */
+function installPlannerTelegramTrigger() {
+  plannerTelegramConfig(true);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    ensureSinglePlannerTelegramTrigger();
+    PropertiesService.getScriptProperties().setProperty(PLANNER_TELEGRAM_ENABLED, 'true');
+    return plannerTelegramStatus();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** Запускается единственным time-driven trigger каждые пять минут. */
+function runPlannerTelegramReminders() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return;
+  try {
+    const properties = PropertiesService.getScriptProperties();
+    if (properties.getProperty(PLANNER_TELEGRAM_ENABLED) !== 'true') return;
+    plannerTelegramConfig(true);
+
+    const queueData = readPlannerTelegramQueue();
+    const sent = readPlannerTelegramSent();
+    const now = Date.now();
+    const due = [];
+    const future = [];
+    queueData.reminders.forEach(function (item) {
+      if (sent[item.key]) return;
+      if (item.sendAt < now - PLANNER_TELEGRAM_LATE_WINDOW_MS) return;
+      if (item.sendAt <= now) due.push(item);
+      else future.push(item);
+    });
+
+    if (!due.length) {
+      if (future.length !== queueData.reminders.length) {
+        savePlannerTelegramQueue(future, queueData.lastSyncAt);
+        savePlannerTelegramSent(sent, now);
+      }
+      return;
+    }
+
+    due.sort(function (left, right) { return left.eventAt - right.eventAt || left.title.localeCompare(right.title, 'ru'); });
+    sendPlannerTelegramMessage(formatPlannerTelegramReminderMessage(due));
+    due.forEach(function (item) { sent[item.key] = now; });
+    savePlannerTelegramSent(sent, now);
+    savePlannerTelegramQueue(future, queueData.lastSyncAt);
+    properties.deleteProperty(PLANNER_TELEGRAM_LAST_ERROR);
+  } catch (err) {
+    PropertiesService.getScriptProperties().setProperty(
+      PLANNER_TELEGRAM_LAST_ERROR,
+      safePlannerTelegramError(err)
+    );
+    console.error('Planner Telegram reminder failed: ' + safePlannerTelegramError(err));
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function normalizePlannerTelegramReminder(raw, index, now) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new Error('Некорректное напоминание №' + (index + 1));
+  }
+  const id = String(raw.id || '').trim();
+  const title = String(raw.title || '').replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const sendAt = Number(raw.sendAt);
+  const eventAt = Number(raw.eventAt);
+  if (!/^[a-zA-Z0-9_.:@-]{1,220}$/.test(id)) throw new Error('Некорректный id напоминания №' + (index + 1));
+  if (!title || title.length > 160) throw new Error('Некорректное название напоминания №' + (index + 1));
+  if (!Number.isSafeInteger(sendAt) || !Number.isSafeInteger(eventAt)) {
+    throw new Error('Некорректное время напоминания №' + (index + 1));
+  }
+  if (sendAt > now + PLANNER_TELEGRAM_MAX_FUTURE_MS) {
+    throw new Error('Напоминание №' + (index + 1) + ' находится слишком далеко в будущем');
+  }
+  if (eventAt < sendAt || eventAt - sendAt > PLANNER_TELEGRAM_MAX_LEAD_MS) {
+    throw new Error('Некорректный интервал напоминания №' + (index + 1));
+  }
+  // Уже безнадёжно просроченные записи не возвращаем в новую полную очередь.
+  if (sendAt < now - PLANNER_TELEGRAM_LATE_WINDOW_MS) return null;
+  return {
+    id: id,
+    title: title,
+    sendAt: sendAt,
+    eventAt: eventAt,
+    key: plannerTelegramFingerprint(id + '\n' + title + '\n' + sendAt + '\n' + eventAt)
+  };
+}
+
+function plannerTelegramConfig(requireReady) {
+  const properties = PropertiesService.getScriptProperties();
+  const token = String(properties.getProperty('TELEGRAM_BOT_TOKEN') || '').trim();
+  const chatId = String(properties.getProperty('TELEGRAM_CHAT_ID') || '').trim();
+  const validToken = /^\d{5,20}:[a-zA-Z0-9_-]{20,}$/.test(token);
+  const validChatId = /^-?\d{5,20}$/.test(chatId);
+  if (requireReady && (!validToken || !validChatId)) {
+    throw new Error('Задайте корректные TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в Script Properties');
+  }
+  return { ready: validToken && validChatId, token: token, chatId: chatId };
+}
+
+function sendPlannerTelegramMessage(text) {
+  const config = plannerTelegramConfig(true);
+  const properties = PropertiesService.getScriptProperties();
+  const lastSendAt = Number(properties.getProperty(PLANNER_TELEGRAM_LAST_SEND_AT) || 0);
+  const waitMs = 1100 - (Date.now() - lastSendAt);
+  if (waitMs > 0) Utilities.sleep(waitMs);
+
+  let response;
+  try {
+    response = UrlFetchApp.fetch('https://api.telegram.org/bot' + config.token + '/sendMessage', {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify({
+        chat_id: config.chatId,
+        text: String(text || '').slice(0, 4096),
+        disable_web_page_preview: true
+      }),
+      muteHttpExceptions: true
+    });
+  } catch (err) {
+    // Не позволяем UrlFetch-исключению вернуть URL с токеном в ответ Web app.
+    throw new Error('Telegram недоступен: ' + safePlannerTelegramError(err));
+  }
+  const code = response.getResponseCode();
+  let payload = {};
+  try { payload = JSON.parse(response.getContentText() || '{}'); } catch (_) {}
+  if (code < 200 || code >= 300 || payload.ok !== true) {
+    const retryAfter = Number(payload.parameters && payload.parameters.retry_after || 0);
+    const reason = String(payload.description || ('HTTP ' + code)).slice(0, 180);
+    throw new Error(safePlannerTelegramError(
+      'Telegram: ' + reason + (retryAfter > 0 ? ' (повтор через ' + retryAfter + ' с)' : '')
+    ));
+  }
+  properties.setProperty(PLANNER_TELEGRAM_LAST_SEND_AT, String(Date.now()));
+  return payload.result || true;
+}
+
+function formatPlannerTelegramReminderMessage(items) {
+  const heading = items.length === 1 ? '🔔 Напоминание' : '🔔 Напоминания';
+  const lines = [heading, ''];
+  let shown = 0;
+  for (let index = 0; index < items.length; index++) {
+    const item = items[index];
+    const when = Utilities.formatDate(new Date(item.eventAt), 'Europe/Moscow', 'dd.MM в HH:mm');
+    const line = '• ' + when + ' — ' + item.title;
+    if (lines.join('\n').length + line.length + 32 > 3800) break;
+    lines.push(line);
+    shown += 1;
+  }
+  if (shown < items.length) lines.push('• …и ещё ' + (items.length - shown));
+  lines.push('', 'Открыть план: https://almanion.github.io/planner.html');
+  return lines.join('\n');
+}
+
+function readPlannerTelegramQueue() {
+  const properties = PropertiesService.getScriptProperties();
+  const rawMeta = properties.getProperty(PLANNER_TELEGRAM_QUEUE_META);
+  if (!rawMeta) return { reminders: [], lastSyncAt: 0 };
+  let meta;
+  try { meta = JSON.parse(rawMeta); } catch (_) { throw new Error('Повреждены метаданные очереди Telegram'); }
+  if (
+    !meta || !/^[a-f0-9]{12}$/.test(String(meta.generation || '')) ||
+    !Number.isInteger(meta.chunks) || meta.chunks < 0 || meta.chunks > 100
+  ) throw new Error('Повреждены метаданные очереди Telegram');
+
+  let reminders = [];
+  for (let index = 0; index < meta.chunks; index++) {
+    const rawChunk = properties.getProperty(plannerTelegramChunkKey(meta.generation, index));
+    if (!rawChunk) throw new Error('Не найден фрагмент очереди Telegram');
+    let chunk;
+    try { chunk = JSON.parse(rawChunk); } catch (_) { throw new Error('Повреждён фрагмент очереди Telegram'); }
+    if (!Array.isArray(chunk)) throw new Error('Повреждён фрагмент очереди Telegram');
+    reminders = reminders.concat(chunk);
+  }
+  if (reminders.length !== Number(meta.count || 0) || reminders.length > PLANNER_TELEGRAM_MAX_REMINDERS) {
+    throw new Error('Нарушена целостность очереди Telegram');
+  }
+  return { reminders: reminders, lastSyncAt: Number(meta.lastSyncAt || 0) };
+}
+
+function savePlannerTelegramQueue(reminders, lastSyncAt) {
+  const properties = PropertiesService.getScriptProperties();
+  const chunks = packPlannerTelegramQueue(reminders);
+  const generation = Utilities.getUuid().replace(/-/g, '').slice(0, 12).toLowerCase();
+  const values = {};
+  chunks.forEach(function (chunk, index) {
+    values[plannerTelegramChunkKey(generation, index)] = chunk;
+  });
+  if (Object.keys(values).length) properties.setProperties(values, false);
+  properties.setProperty(PLANNER_TELEGRAM_QUEUE_META, JSON.stringify({
+    version: 1,
+    generation: generation,
+    chunks: chunks.length,
+    count: reminders.length,
+    lastSyncAt: Number(lastSyncAt || Date.now())
+  }));
+
+  // Метаданные уже указывают на новое поколение, поэтому старые фрагменты
+  // можно удалить без риска оставить trigger с частично записанной очередью.
+  properties.getKeys().forEach(function (key) {
+    if (key.indexOf(PLANNER_TELEGRAM_QUEUE_PREFIX) === 0 && key.indexOf(PLANNER_TELEGRAM_QUEUE_PREFIX + generation + '_') !== 0) {
+      properties.deleteProperty(key);
+    }
+  });
+}
+
+function packPlannerTelegramQueue(reminders) {
+  const chunks = [];
+  let current = [];
+  reminders.forEach(function (item) {
+    const candidate = current.concat([item]);
+    if (plannerTelegramUtf8Bytes(JSON.stringify(candidate)) <= PLANNER_TELEGRAM_CHUNK_BYTES) {
+      current = candidate;
+      return;
+    }
+    if (!current.length) throw new Error('Напоминание не помещается в безопасный фрагмент очереди');
+    chunks.push(JSON.stringify(current));
+    current = [item];
+  });
+  if (current.length) chunks.push(JSON.stringify(current));
+  return chunks;
+}
+
+function clearPlannerTelegramQueue() {
+  const properties = PropertiesService.getScriptProperties();
+  properties.deleteProperty(PLANNER_TELEGRAM_QUEUE_META);
+  properties.getKeys().forEach(function (key) {
+    if (key.indexOf(PLANNER_TELEGRAM_QUEUE_PREFIX) === 0) properties.deleteProperty(key);
+  });
+}
+
+function plannerTelegramChunkKey(generation, index) {
+  return PLANNER_TELEGRAM_QUEUE_PREFIX + generation + '_' + index;
+}
+
+function readPlannerTelegramSent() {
+  const raw = PropertiesService.getScriptProperties().getProperty(PLANNER_TELEGRAM_SENT);
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function savePlannerTelegramSent(sent, now) {
+  const cutoff = Number(now || Date.now()) - 7 * 24 * 60 * 60 * 1000;
+  const entries = Object.keys(sent || {}).map(function (key) { return [key, Number(sent[key] || 0)]; })
+    .filter(function (entry) { return /^[a-f0-9]{16}$/.test(entry[0]) && entry[1] >= cutoff; })
+    .sort(function (left, right) { return right[1] - left[1]; });
+  const compact = {};
+  for (let index = 0; index < entries.length; index++) {
+    compact[entries[index][0]] = entries[index][1];
+    if (plannerTelegramUtf8Bytes(JSON.stringify(compact)) > PLANNER_TELEGRAM_CHUNK_BYTES) {
+      delete compact[entries[index][0]];
+      break;
+    }
+  }
+  PropertiesService.getScriptProperties().setProperty(PLANNER_TELEGRAM_SENT, JSON.stringify(compact));
+}
+
+function plannerTelegramFingerprint(value) {
+  return Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    String(value || ''),
+    Utilities.Charset.UTF_8
+  ).slice(0, 8).map(function (byte) { return ('0' + ((byte + 256) % 256).toString(16)).slice(-2); }).join('');
+}
+
+function plannerTelegramUtf8Bytes(value) {
+  return Utilities.newBlob(String(value || ''), 'text/plain').getBytes().length;
+}
+
+function hasPlannerTelegramTrigger() {
+  return ScriptApp.getProjectTriggers().some(function (trigger) {
+    return trigger.getHandlerFunction() === PLANNER_TELEGRAM_TRIGGER_HANDLER;
+  });
+}
+
+function ensureSinglePlannerTelegramTrigger() {
+  const matching = ScriptApp.getProjectTriggers().filter(function (trigger) {
+    return trigger.getHandlerFunction() === PLANNER_TELEGRAM_TRIGGER_HANDLER;
+  });
+  matching.slice(1).forEach(function (trigger) { ScriptApp.deleteTrigger(trigger); });
+  if (!matching.length) {
+    ScriptApp.newTrigger(PLANNER_TELEGRAM_TRIGGER_HANDLER).timeBased().everyMinutes(5).create();
+  }
+}
+
+function removePlannerTelegramTriggers() {
+  ScriptApp.getProjectTriggers().forEach(function (trigger) {
+    if (trigger.getHandlerFunction() === PLANNER_TELEGRAM_TRIGGER_HANDLER) ScriptApp.deleteTrigger(trigger);
+  });
+}
+
+function withPlannerTelegramLock(callback) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) throw new Error('Сервис напоминаний занят. Повторите через несколько секунд');
+  try {
+    return callback();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function safePlannerTelegramError(error) {
+  const config = plannerTelegramConfig(false);
+  let message = String(error && error.message || error || 'Неизвестная ошибка');
+  if (config.token) message = message.split(config.token).join('[token]');
+  if (config.chatId) message = message.split(config.chatId).join('[chat]');
+  return message.replace(/[\u0000-\u001f\u007f]+/g, ' ').slice(0, 300);
 }
 
 // === Публикация конспектов в GitHub =======================================
@@ -965,6 +1416,9 @@ function json(obj) {
          MATCENTER_ADMIN_PASSWORD      отдельный пароль администратора
          GITHUB_TOKEN                  fine-grained token с Contents: Read and write
          DEEPL_API_KEY                 ключ DeepL API для встроенного перевода
+      Для Telegram-напоминаний личного планировщика:
+         TELEGRAM_BOT_TOKEN            токен бота от BotFather (никогда не добавляйте его на сайт)
+         TELEGRAM_CHAT_ID              числовой chat ID владельца
       Необязательно:
         MATCENTER_SHEET_NAMES         имена листов с задачами через запятую
         GITHUB_REPOSITORY             по умолчанию Almanion/Almanion.github.io
@@ -982,9 +1436,14 @@ function json(obj) {
       Подтвердите запрошенные Google разрешения. Этот шаг нужно выполнить один
       раз в КАЖДОМ из двух Apps Script проектов до публикации Web app.
 
+      Для Telegram после добавления TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID выберите
+      installPlannerTelegramTrigger и нажмите Run. Функция оставит ровно один
+      пяти-минутный trigger. Для проверки можно один раз вручную запустить
+      plannerTelegramTest. Токен и chat ID остаются только в Script Properties.
+
    7) Deploy → New deployment.
         - Тип: Web app
-        - Description: matcenter v2 account access
+        - Description: matcenter v3 + planner Telegram
         - Execute as: Me (ваш гугл-аккаунт)
         - Who has access: Anyone   ← важно, иначе фронт не сможет дёргать
       Нажмите Deploy. Google попросит подтвердить разрешения — соглашайтесь.

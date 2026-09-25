@@ -448,6 +448,15 @@
 .planner-import-box { margin-top: 0.75rem; }
 .planner-import-box textarea { min-height: 150px; resize: vertical; }
 .planner-import-status { margin-top: 0.55rem; color: var(--text-secondary); font-size: 0.74rem; }
+.planner-integration-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.planner-integration-state { display: inline-flex; align-items: center; min-height: 26px; padding: 0 0.58rem; border-radius: 999px; color: var(--text-secondary); background: color-mix(in srgb, var(--border-color) 48%, transparent); font-size: 0.65rem; font-weight: 720; white-space: nowrap; }
+.planner-integration-state.is-connected { color: var(--success-color); background: color-mix(in srgb, var(--success-color) 12%, transparent); }
+.planner-integration-state.is-error { color: var(--error-color); background: color-mix(in srgb, var(--error-color) 10%, transparent); }
+.planner-integration-state.is-setup { color: var(--warning-color, #b27a24); background: color-mix(in srgb, var(--warning-color, #b27a24) 11%, transparent); }
+.planner-integration-note { margin-top: -0.35rem !important; font-size: 0.69rem !important; }
+.planner-integration-meta { min-height: 1em; margin-top: 0.55rem; color: var(--text-secondary); font-size: 0.69rem; }
+.planner-utility-actions button:disabled { cursor: default; opacity: 0.56; }
+.planner-utility-actions button[aria-busy="true"] { cursor: wait; }
 
 /* Sport */
 .sport-shell { width: min(calc(100% - 2rem), 1180px); margin: 0 auto; padding: clamp(1rem, 2.5vw, 2.2rem) 0 3.5rem; }
@@ -614,6 +623,8 @@
     .planner-modal { width: 100%; max-height: 92dvh; border-radius: 22px 22px 0 0; border-bottom: 0; }
     .planner-form-grid { grid-template-columns: 1fr; }
     .planner-modal form > footer { position: sticky; bottom: -1rem; z-index: 2; grid-template-columns: auto 1fr auto auto; background: var(--bg-secondary); }
+    .planner-integration-section .planner-utility-actions { display: grid; grid-template-columns: 1fr; }
+    .planner-integration-section .planner-utility-actions button { justify-content: center; width: 100%; }
 
     .sport-shell { width: min(calc(100% - 1rem), 1180px); padding-top: 0.65rem; padding-bottom: 2rem; }
     .sport-hero { display: grid; padding: 1.05rem; border-radius: 18px; }

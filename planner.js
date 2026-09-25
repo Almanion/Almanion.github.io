@@ -14,6 +14,11 @@
     };
     const VIEW_LABELS = { today: 'Сегодня', week: 'Неделя', month: 'Месяц', goals: 'Цели', inbox: 'Входящие' };
     const TYPE_COLLECTION = { event: 'events', task: 'tasks', series: 'series', goal: 'goals' };
+    const PLANNER_API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyR_Iz_fyg2s-bviRtkvF1Zz_KMdRCUgpoIVT1CF-lG6UiNkVfvor_nMXILPzk8xslA/exec';
+    const TELEGRAM_ALL_DAY_TIME = '09:00';
+    const TELEGRAM_SYNC_DAYS = 44;
+    const TELEGRAM_SYNC_DELAY = 1200;
+    const TELEGRAM_MAX_REMINDERS = 500;
     const RU_MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
     const RU_WEEKDAYS = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
     const store = new core.Store();
@@ -25,6 +30,12 @@
     let authorized = false;
     let editingKind = '';
     let lastModalOpener = null;
+    let telegramSyncTimer = 0;
+    let telegramSyncInFlight = null;
+    let telegramSyncAgain = false;
+    let telegramStatusRequest = null;
+    let accountGeneration = 0;
+    const telegramRequestControllers = new Set();
 
     const doc = win.document;
     const refs = {};
@@ -57,6 +68,254 @@
         return !!(item.completedDates && item.completedDates[occurrenceDate]);
     }
 
+    function currentAccountUser() {
+        const account = win.AlmanionAccount;
+        return account && typeof account.getUser === 'function' ? account.getUser() : null;
+    }
+
+    async function plannerBackendRequest(action, payload, forceRefresh) {
+        const user = currentAccountUser();
+        if (!user || !core.isOwner(user)) throw new Error('Сначала войдите в аккаунт владельца');
+        const requestUid = user.uid;
+        const requestGeneration = accountGeneration;
+        const idToken = await user.getIdToken(forceRefresh === true);
+        if (requestGeneration !== accountGeneration || requestUid !== activeUid) {
+            const staleError = new Error('Аккаунт изменился');
+            staleError.code = 'STALE_ACCOUNT';
+            throw staleError;
+        }
+        const controller = typeof AbortController === 'function' ? new AbortController() : null;
+        if (controller) telegramRequestControllers.add(controller);
+        const timeout = win.setTimeout(function () { if (controller) controller.abort(); }, 25000);
+        try {
+            const response = await fetch(PLANNER_API_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(Object.assign({ action: action, idToken: idToken }, payload || {})),
+                signal: controller && controller.signal
+            });
+            if (requestGeneration !== accountGeneration || requestUid !== activeUid) {
+                const staleError = new Error('Аккаунт изменился');
+                staleError.code = 'STALE_ACCOUNT';
+                throw staleError;
+            }
+            if (!response.ok) throw new Error('Сервер вернул HTTP ' + response.status);
+            const result = await response.json();
+            if (!result || result.success !== true) {
+                const message = String(result && result.error || 'Сервис Telegram недоступен');
+                if (!forceRefresh && /сессия|токен|account session|sign in/i.test(message)) {
+                    return plannerBackendRequest(action, payload, true);
+                }
+                if (/неизвестное действие|unknown action/i.test(message)) {
+                    throw new Error('Обновите deployment Apps Script: в текущей версии ещё нет Telegram');
+                }
+                throw new Error(message);
+            }
+            return result;
+        } catch (error) {
+            if (error && error.name === 'AbortError') {
+                if (requestGeneration !== accountGeneration || requestUid !== activeUid) {
+                    const staleError = new Error('Аккаунт изменился');
+                    staleError.code = 'STALE_ACCOUNT';
+                    throw staleError;
+                }
+                throw new Error('Сервер не ответил вовремя');
+            }
+            throw error;
+        } finally {
+            win.clearTimeout(timeout);
+            if (controller) telegramRequestControllers.delete(controller);
+        }
+    }
+
+    function reminderInstant(date, time) {
+        const value = Date.parse(String(date || '') + 'T' + String(time || TELEGRAM_ALL_DAY_TIME) + ':00+03:00');
+        return Number.isFinite(value) ? value : 0;
+    }
+
+    function buildTelegramReminders() {
+        const now = Date.now();
+        const start = core.dateKey(new Date());
+        const end = core.addDays(start, TELEGRAM_SYNC_DAYS);
+        const result = [];
+        core.expandItems(state.events, start, end).forEach(function (item) {
+            const leads = Array.from(new Set((item.reminderMinutes || []).map(Number).filter(function (lead) {
+                return Number.isFinite(lead) && lead > 0 && lead <= 10080;
+            }))).slice(0, 4);
+            if (!leads.length) return;
+            const eventAt = reminderInstant(item.occurrenceDate, item.startTime || TELEGRAM_ALL_DAY_TIME);
+            if (!eventAt) return;
+            leads.forEach(function (lead) {
+                const sendAt = eventAt - lead * 60000;
+                if (sendAt < now - 30 * 60000 || sendAt > now + (TELEGRAM_SYNC_DAYS + 1) * 86400000) return;
+                result.push({
+                    id: String(item.id || 'event').slice(0, 120) + '@' + item.occurrenceDate + ':' + lead,
+                    title: String(item.title || 'Событие').trim().slice(0, 160),
+                    sendAt: Math.round(sendAt),
+                    eventAt: Math.round(eventAt)
+                });
+            });
+        });
+        return result.sort(function (left, right) {
+            return left.sendAt - right.sendAt || left.id.localeCompare(right.id);
+        }).slice(0, TELEGRAM_MAX_REMINDERS);
+    }
+
+    function telegramSnapshotHash(reminders) {
+        const input = JSON.stringify(reminders || []);
+        let hash = 2166136261;
+        for (let index = 0; index < input.length; index++) {
+            hash ^= input.charCodeAt(index);
+            hash = Math.imul(hash, 16777619);
+        }
+        return (hash >>> 0).toString(16);
+    }
+
+    function telegramHashStorageKey() {
+        return 'almanion:planner:telegram-hash:' + String(activeUid || 'owner');
+    }
+
+    function readTelegramHash() {
+        try { return win.localStorage.getItem(telegramHashStorageKey()) || ''; } catch (_) { return ''; }
+    }
+
+    function writeTelegramHash(value) {
+        try { win.localStorage.setItem(telegramHashStorageKey(), String(value || '')); } catch (_) {}
+    }
+
+    function formatTelegramSyncTime(timestamp) {
+        if (!Number(timestamp)) return '';
+        return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(Number(timestamp)));
+    }
+
+    function setTelegramPanel(status, message, meta, enabled) {
+        const badge = byId('plannerTelegramState');
+        const copy = byId('plannerTelegramStatus');
+        const details = byId('plannerTelegramMeta');
+        const toggle = refs.plannerUtilityContent && refs.plannerUtilityContent.querySelector('[data-telegram-toggle]');
+        const test = refs.plannerUtilityContent && refs.plannerUtilityContent.querySelector('[data-telegram-test]');
+        if (badge) {
+            badge.className = 'planner-integration-state is-' + (status || 'idle');
+            badge.textContent = status === 'connected' ? 'Подключено' : status === 'idle' ? 'Готово' : status === 'error' ? 'Ошибка' : status === 'setup' ? 'Нужна настройка' : 'Проверяем…';
+        }
+        if (copy && message) copy.textContent = message;
+        if (details) details.textContent = meta || '';
+        if (toggle && typeof enabled === 'boolean') {
+            toggle.dataset.telegramEnabled = enabled ? 'true' : 'false';
+            toggle.textContent = enabled ? 'Отключить' : 'Подключить';
+            toggle.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+            toggle.disabled = status === 'checking';
+            if (status === 'checking') toggle.setAttribute('aria-busy', 'true');
+            else toggle.removeAttribute('aria-busy');
+        }
+        if (test) test.disabled = status === 'checking' || status === 'setup';
+    }
+
+    function applyTelegramStatus(result) {
+        if (!result || !result.ready) {
+            if (state.settings.telegramEnabled) store.updateSettings({ telegramEnabled: false });
+            setTelegramPanel('setup', 'Добавьте TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в Script Properties.', '', false);
+            return;
+        }
+        const enabled = result.enabled === true;
+        if (!!state.settings.telegramEnabled !== enabled) store.updateSettings({ telegramEnabled: enabled });
+        const count = Math.max(0, Number(result.pendingCount) || 0);
+        const synced = formatTelegramSyncTime(result.lastSyncAt);
+        const lastError = String(result.lastError || '').trim();
+        setTelegramPanel(lastError ? 'error' : (enabled ? 'connected' : 'idle'), lastError || (enabled ? 'Напоминания будут приходить в личный чат с ботом.' : 'Бот настроен. Подключите напоминания.'), (enabled ? 'В очереди: ' + count : '') + (synced ? (enabled ? ' · ' : '') + 'Синхронизация: ' + synced : ''), enabled);
+    }
+
+    async function refreshTelegramStatus(quiet) {
+        if (telegramStatusRequest) return telegramStatusRequest;
+        const requestGeneration = accountGeneration;
+        setTelegramPanel('checking', 'Проверяем связь с ботом…', '', !!state.settings.telegramEnabled);
+        telegramStatusRequest = plannerBackendRequest('plannerTelegramStatus').then(function (result) {
+            applyTelegramStatus(result);
+            return result;
+        }).catch(function (error) {
+            if (error && error.code === 'STALE_ACCOUNT') return null;
+            setTelegramPanel('error', String(error && error.message || error), '', !!state.settings.telegramEnabled);
+            if (!quiet) toast(String(error && error.message || 'Не удалось проверить Telegram'), 'error');
+            return null;
+        }).finally(function () { if (requestGeneration === accountGeneration) telegramStatusRequest = null; });
+        return telegramStatusRequest;
+    }
+
+    async function syncTelegramReminders(force, propagateError) {
+        if (!authorized || !state.settings.telegramEnabled) return null;
+        const syncGeneration = accountGeneration;
+        const reminders = buildTelegramReminders();
+        const hash = telegramSnapshotHash(reminders);
+        if (!force && hash === readTelegramHash()) return null;
+        if (telegramSyncInFlight) {
+            telegramSyncAgain = true;
+            return telegramSyncInFlight;
+        }
+        telegramSyncInFlight = plannerBackendRequest('plannerTelegramSync', { reminders: reminders }).then(function (result) {
+            writeTelegramHash(hash);
+            applyTelegramStatus(result);
+            return result;
+        }).catch(function (error) {
+            if (error && error.code === 'STALE_ACCOUNT') return null;
+            setTelegramPanel('error', String(error && error.message || error), 'Изменения останутся в плане и будут отправлены при следующей синхронизации.', true);
+            if (propagateError) throw error;
+            return null;
+        }).finally(function () {
+            if (syncGeneration !== accountGeneration) return;
+            telegramSyncInFlight = null;
+            if (telegramSyncAgain) {
+                telegramSyncAgain = false;
+                scheduleTelegramSync(true, 0);
+            }
+        });
+        return telegramSyncInFlight;
+    }
+
+    function scheduleTelegramSync(force, delay) {
+        if (!authorized || !state.settings.telegramEnabled) return;
+        win.clearTimeout(telegramSyncTimer);
+        telegramSyncTimer = win.setTimeout(function () { syncTelegramReminders(force === true); }, typeof delay === 'number' ? delay : TELEGRAM_SYNC_DELAY);
+    }
+
+    async function toggleTelegram(button) {
+        const enabled = button && button.dataset.telegramEnabled === 'true';
+        if (button) { button.disabled = true; button.setAttribute('aria-busy', 'true'); }
+        setTelegramPanel('checking', enabled ? 'Отключаем напоминания…' : 'Подключаем напоминания…', '', enabled);
+        try {
+            if (enabled) {
+                const result = await plannerBackendRequest('plannerTelegramDisable');
+                await store.updateSettings({ telegramEnabled: false });
+                writeTelegramHash('');
+                applyTelegramStatus(result);
+                toast('Telegram-напоминания отключены', 'success');
+            } else {
+                const result = await plannerBackendRequest('plannerTelegramEnable');
+                await store.updateSettings({ telegramEnabled: true });
+                applyTelegramStatus(result);
+                await syncTelegramReminders(true, true);
+                toast('Telegram-напоминания подключены', 'success');
+            }
+        } catch (error) {
+            if (error && error.code === 'STALE_ACCOUNT') return;
+            setTelegramPanel('error', String(error && error.message || error), '', !!state.settings.telegramEnabled);
+            toast(String(error && error.message || 'Не удалось изменить Telegram'), 'error');
+            if (button) { button.disabled = false; button.removeAttribute('aria-busy'); }
+        }
+    }
+
+    async function testTelegram(button) {
+        if (button) { button.disabled = true; button.setAttribute('aria-busy', 'true'); }
+        try {
+            await plannerBackendRequest('plannerTelegramTest');
+            toast('Тестовое сообщение отправлено', 'success');
+        } catch (error) {
+            if (error && error.code === 'STALE_ACCOUNT') return;
+            toast(String(error && error.message || 'Не удалось отправить тест'), 'error');
+        } finally {
+            if (button) { button.disabled = false; button.removeAttribute('aria-busy'); }
+        }
+    }
+
     function cacheRefs() {
         [
             'personalGate', 'personalGateTitle', 'personalGateText', 'personalGateLogin', 'plannerApp', 'plannerMobileNav',
@@ -72,6 +331,12 @@
 
     function showGate(mode) {
         authorized = false;
+        win.clearTimeout(telegramSyncTimer);
+        telegramRequestControllers.forEach(function (controller) { controller.abort(); });
+        telegramRequestControllers.clear();
+        telegramStatusRequest = null;
+        telegramSyncInFlight = null;
+        telegramSyncAgain = false;
         refs.plannerApp.hidden = true;
         refs.plannerMobileNav.hidden = true;
         refs.personalGate.hidden = false;
@@ -96,9 +361,12 @@
         refs.plannerApp.hidden = false;
         refs.plannerMobileNav.hidden = false;
         render();
+        refreshTelegramStatus(true).then(function () { scheduleTelegramSync(false, 0); });
     }
 
     function handleAccount(user) {
+        if (user && core.isOwner(user) && activeUid === user.uid && authorized) return;
+        accountGeneration += 1;
         if (!user) {
             activeUid = '';
             store.disconnect();
@@ -111,7 +379,6 @@
             showGate('wrong');
             return;
         }
-        if (activeUid === user.uid && authorized) return;
         activeUid = user.uid;
         showGate('checking');
         const database = win.AlmanionAccount && win.AlmanionAccount.database;
@@ -488,7 +755,7 @@
         if (mode === 'export') return '<section class="planner-utility-section"><h3>Календарь</h3><p>Файл ICS содержит события на ближайший год и встроенные напоминания. Его можно открыть в Google Calendar.</p><div class="planner-utility-actions"><button type="button" data-export-ics>Скачать .ics</button></div></section>' +
             '<section class="planner-utility-section"><h3>Резервная копия</h3><p>Полный личный архив: календарь, задачи, цели и спортивные записи.</p><div class="planner-utility-actions"><button type="button" data-export-json>Скачать JSON</button><label>Восстановить из JSON<input type="file" accept="application/json" data-import-json-file></label></div></section>';
         if (mode === 'mobile') return '<section class="planner-utility-section"><h3>Разделы</h3><div class="planner-utility-actions planner-mobile-more-actions"><button type="button" data-mobile-view="month">Месяц</button><button type="button" data-mobile-view="inbox">Входящие</button><button type="button" data-mobile-utility="export">Экспорт и копия</button><button type="button" data-mobile-utility="integrations">Связи и импорт</button></div></section>';
-        return '<section class="planner-utility-section"><h3>Telegram</h3><p>Интерфейс напоминаний подготовлен. Для отправки сообщений понадобится токен отдельного бота, ваш chat ID и установка часового триггера в Apps Script. Секреты не будут храниться на сайте.</p><div class="planner-utility-actions"><button type="button" data-copy-telegram-setup>Скопировать список настройки</button></div></section>' +
+        return '<section class="planner-utility-section planner-integration-section"><div class="planner-integration-heading"><h3>Telegram</h3><span class="planner-integration-state is-checking" id="plannerTelegramState" role="status" aria-live="polite">Проверяем…</span></div><p id="plannerTelegramStatus">Проверяем связь с ботом…</p><p class="planner-integration-note">Для события без времени время начала считается равным 09:00 по Москве.</p><div class="planner-utility-actions"><button type="button" data-telegram-toggle data-telegram-enabled="' + (state.settings.telegramEnabled ? 'true' : 'false') + '" aria-pressed="' + (state.settings.telegramEnabled ? 'true' : 'false') + '">' + (state.settings.telegramEnabled ? 'Отключить' : 'Подключить') + '</button><button type="button" data-telegram-test disabled>Отправить тест</button><button type="button" data-telegram-refresh>Обновить статус</button></div><div class="planner-integration-meta" id="plannerTelegramMeta"></div></section>' +
             '<section class="planner-utility-section"><h3>Crimson</h3><p>Следующий этап — почтовый мост Apps Script: письма будут превращаться в предложения во «Входящих», а не сразу менять календарь.</p></section>' +
             '<section class="planner-utility-section"><h3>Импорт из ChatGPT</h3><p>Вставьте JSON с массивами events, tasks и goals либо массив объектов с полем type.</p><div class="planner-import-box"><textarea id="plannerStructuredImport" placeholder=\'{"tasks":[{"title":"Решить задачу","date":"2026-09-24","category":"math"}]}\'></textarea><div class="planner-utility-actions" style="margin-top:.55rem"><button type="button" data-import-structured>Разобрать план</button></div><div class="planner-import-status" id="plannerImportStatus"></div></div></section>';
     }
@@ -497,6 +764,7 @@
         refs.plannerUtilityTitle.textContent = mode === 'export' ? 'Экспорт и резервная копия' : mode === 'mobile' ? 'Ещё' : 'Связи и импорт';
         refs.plannerUtilityContent.innerHTML = utilityMarkup(mode);
         openModal(refs.plannerUtilityModal);
+        if (mode === 'integrations') refreshTelegramStatus(true);
     }
 
     function normalizeImportedCandidate(candidate) {
@@ -638,10 +906,9 @@
                 openUtility(target.dataset.mobileUtility);
                 lastModalOpener = opener;
             }
-            else if (target.hasAttribute('data-copy-telegram-setup')) {
-                const text = 'Telegram для Almanion: 1) создать бота через BotFather; 2) узнать chat ID; 3) сохранить TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в Script Properties; 4) развернуть новую версию Apps Script; 5) установить минутный триггер отправки напоминаний.';
-                if (win.navigator.clipboard) win.navigator.clipboard.writeText(text).then(function () { toast('Инструкция скопирована', 'success'); });
-            }
+            else if (target.hasAttribute('data-telegram-toggle')) toggleTelegram(target);
+            else if (target.hasAttribute('data-telegram-test')) testTelegram(target);
+            else if (target.hasAttribute('data-telegram-refresh')) refreshTelegramStatus(false);
         });
         refs.plannerUtilityContent.addEventListener('change', function (event) { if (event.target.hasAttribute('data-import-json-file')) importJsonFile(event.target.files && event.target.files[0]); });
         doc.addEventListener('keydown', function (event) {
@@ -671,6 +938,7 @@
         store.subscribe(function (next, detail) {
             state = next;
             if (authorized) render();
+            if (authorized && state.settings.telegramEnabled && detail && !detail.initial) scheduleTelegramSync(false);
             if (detail && detail.source === 'error') toast('Нет сети: изменение сохранено на устройстве', 'info');
         });
         showGate('checking');
@@ -678,6 +946,8 @@
         const account = win.AlmanionAccount;
         if (account && account.auth && typeof account.auth.onAuthStateChanged === 'function') account.auth.onAuthStateChanged(handleAccount);
         else handleAccount(account && account.getUser ? account.getUser() : null);
+        win.addEventListener('online', function () { scheduleTelegramSync(true, 0); });
+        doc.addEventListener('visibilitychange', function () { if (!doc.hidden) scheduleTelegramSync(false, 0); });
     }
 
     if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', init);
