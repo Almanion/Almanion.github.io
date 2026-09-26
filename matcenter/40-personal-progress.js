@@ -255,6 +255,11 @@ async function syncPendingPersonalSolvedEntries() {
 }
 
 function getSolvedTaskKey(task) {
+    // New, explicitly marked series get stable independent progress. Legacy keys are unchanged.
+    if (typeof MatcenterWorkspaceModel !== 'undefined' && MatcenterWorkspaceModel.series(task)) {
+        return 'series__' + encodeURIComponent(MatcenterWorkspaceModel.identity(task)).replace(/[.#$\[\]/]/g,
+            char => '%' + char.charCodeAt(0).toString(16));
+    }
     const grade = task && (task.grade || currentGrade || DEFAULT_GRADE);
     const number = task && task.number;
     return sanitizeFirebaseKey(`${grade}__${number}`);
@@ -305,7 +310,8 @@ function updatePersonalSolvedProgress() {
     const wrap = document.getElementById('matcenterProgress');
     if (!wrap) return;
 
-    const realTasks = getTasksForCurrentGrade().filter(t => Number.isInteger(t.number));
+    const selected = typeof getSelectedMatcenterSeries === 'function' ? getSelectedMatcenterSeries() : null;
+    const realTasks = (selected ? selected.tasks : getTasksForCurrentGrade()).filter(t => Number.isInteger(t.number));
     const total = realTasks.length;
     const solved = realTasks.reduce((acc, t) => acc + (isTaskPersonallySolved(t) ? 1 : 0), 0);
 
@@ -511,7 +517,8 @@ async function shareSolvedTasksProgress(anchorBtn) {
 }
 
 function buildSolvedTasksSharePayload() {
-    const realTasks = getTasksForCurrentGrade()
+    const selected = typeof getSelectedMatcenterSeries === 'function' ? getSelectedMatcenterSeries() : null;
+    const realTasks = (selected ? selected.tasks : getTasksForCurrentGrade())
         .filter(task => Number.isInteger(task.number));
     const solvedTasks = realTasks
         .filter(task => isTaskPersonallySolved(task))

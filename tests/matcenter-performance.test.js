@@ -19,10 +19,10 @@ async function run() {
     assert.equal(await sandbox.MatcenterTaskCache.write({ version: 3, tasks: [] }), false);
 
     const html = read('matcenter.html');
-    const coreAt = html.indexOf('matcenter/00-core.js?v=20260911-2');
+    const coreAt = html.indexOf('matcenter/00-core.js?');
     const cacheAt = html.indexOf('matcenter/25-cache.js?v=20260911-1');
-    const dataAt = html.indexOf('matcenter/30-data.js?v=20260911-1');
-    const renderAt = html.indexOf('matcenter/50-render.js?v=20260911-2');
+    const dataAt = html.indexOf('matcenter/30-data.js?');
+    const renderAt = html.indexOf('matcenter/50-render.js?');
     assert.ok(coreAt >= 0 && coreAt < renderAt, 'core LaTeX renderer must load before task cards');
     assert.ok(cacheAt >= 0 && cacheAt < dataAt, 'persistent cache must load before the data module');
     assert.match(html, /<script defer src="matcenter\/runtime\.js\?v=20260911-2"><\/script>/);

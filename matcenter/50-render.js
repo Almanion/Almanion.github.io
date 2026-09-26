@@ -85,8 +85,9 @@ function invalidateMatcenterRenderCache() {
 
 function getMatcenterRenderKey(tasks, containerId) {
     const identity = task => {
+        if (typeof MatcenterWorkspaceModel !== 'undefined') return MatcenterWorkspaceModel.identity(task);
         const endpoint = Number.isInteger(task?._endpointIdx) ? task._endpointIdx : '';
-        const key = task?.taskId ?? task?.numberText ?? task?.number ?? '';
+        const key = task?.taskId || task?.numberText || task?.number || '';
         return `${endpoint}:${key}`;
     };
     let fingerprint = 2166136261;
@@ -175,6 +176,7 @@ function renderNextMatcenterBatch(session) {
     applyPersonalSolvedMarks(fragment);
     restoreTaskCardUiState(fragment, session.uiState);
     session.container.appendChild(fragment);
+    if (typeof restoreMatcenterReadingPlace === 'function') restoreMatcenterReadingPlace(session.container);
 
     if (session.nextIndex < session.tasks.length) appendMatcenterRenderSentinel(session);
     else {
@@ -197,7 +199,10 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
 
     const uiState = captureTaskCardUiState(container);
     const renderState = prepareMatcenterRender(container, tasks, containerId);
-    if (renderState.reused) return;
+    if (renderState.reused) {
+        if (typeof restoreMatcenterReadingPlace === 'function') restoreMatcenterReadingPlace(container);
+        return;
+    }
     
     if (tasks.length === 0) {
         if (getTasksForCurrentGrade().length === 0) {
@@ -220,9 +225,8 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
             const resetBtn = document.getElementById('emptyGradeReset');
             if (resetBtn) {
                 resetBtn.addEventListener('click', () => {
-                    if (searchInput) searchInput.value = '';
-                    if (typeof setActiveFilter === 'function') setActiveFilter('all');
-                    if (typeof refreshCurrentView === 'function') refreshCurrentView();
+                    resetMatcenterTaskFilters();
+                    refreshCurrentView();
                 });
             }
         }
@@ -304,7 +308,7 @@ function createTaskElement(task) {
     
     // Безопасное получение numberText
     const numberText = task.numberText || String(task.number);
-    const taskDomKey = escapeHtml(String(task.taskId || `${task.grade}-${task.number}`).replace(/[^a-zA-Z0-9_-]/g, '-'));
+    const taskDomKey = escapeHtml(encodeURIComponent(MatcenterWorkspaceModel.identity(task) + currentFilter));
     
     // Отображаем номер с пометкой если есть (с защитой от XSS!)
     const safeNumberText = escapeHtml(numberText.replace(/^\d+\s*/, ''));
@@ -470,6 +474,7 @@ function createTaskElement(task) {
         }
     }
     
+    if (typeof decorateMatcenterTaskCard === 'function') decorateMatcenterTaskCard(taskCard, task);
     return taskCard;
 }
 

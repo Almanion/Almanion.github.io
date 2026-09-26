@@ -79,6 +79,19 @@ function run() {
     assert.equal(payload.tasks[1].description, 'Летняя задача');
     assert.equal(payload.tasks[1].grade, 'grade-summer-9-10');
 
+    // Only future, explicitly annotated rows acquire series metadata.
+    sheets.push(makeSheet('10 класс 2026-2027', [
+        ['Номер', 'Условие', 'TaskId', 'SeriesId', 'SeriesTitle', 'SeriesDate', 'AcademicYear'],
+        ['1', 'Новая задача', '2026-s1-t1', '2026-s1', 'Делимость', '26.09.2026', '2026/2027']
+    ]));
+    const extended = JSON.parse(vm.runInContext('getTasks(false).text', sandbox));
+    assert.deepEqual(extended.tasks.slice(0, 2), payload.tasks, 'legacy payload is unchanged');
+    assert.equal(extended.tasks[2].taskId, '2026-s1-t1');
+    assert.equal(extended.tasks[2].seriesId, '2026-s1');
+    assert.equal(extended.tasks[2].seriesDate, '26.09.2026');
+    assert.equal(extended.tasks[2].seriesTitle, 'Делимость');
+    assert.equal(extended.tasks[2].academicYear, '2026/2027');
+
     console.log('apps script multi-sheet loading: all tests passed');
 }
 

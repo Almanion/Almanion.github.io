@@ -15,274 +15,6 @@ body.experimental.matcenter-page .main-content {
     padding-top: 2rem;
 }
 
-body.experimental.matcenter-page .matcenter-page-header {
-    padding: 1.75rem 1.9rem !important;
-    margin-bottom: 1.35rem !important;
-    border-radius: var(--exp-r-lg) !important;
-}
-
-body.experimental.matcenter-page .matcenter-page-header h1 {
-    margin-bottom: 0.45rem !important;
-    font-size: clamp(1.8rem, 2.5vw, 2.15rem);
-}
-
-body.experimental.matcenter-page .matcenter-page-header .subtitle {
-    max-width: 70ch;
-    margin: 0 !important;
-}
-
-body.experimental.matcenter-page .matcenter-author-link {
-    display: inline;
-    min-height: 0;
-    padding: 0;
-    background: transparent;
-    border: 0;
-    border-radius: 0;
-    font-size: inherit;
-}
-
-body.experimental.matcenter-page .matcenter-grade-picker {
-    padding: 1rem;
-    margin-bottom: 1rem;
-    background: var(--exp-surface);
-    border: 1px solid var(--exp-border);
-    border-radius: var(--exp-r-lg);
-}
-
-body.experimental.matcenter-page .matcenter-grade-picker-heading {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 0.85rem;
-    padding: 0 0.15rem;
-}
-
-body.experimental.matcenter-page .matcenter-grade-picker-heading h2 {
-    margin: 0.12rem 0 0;
-    color: var(--exp-text);
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: -0.015em;
-    line-height: 1.25;
-}
-
-body.experimental.matcenter-page .matcenter-grade-picker-heading p,
-body.experimental.matcenter-page .matcenter-grade-picker-kicker {
-    color: var(--exp-text-faint);
-    font-size: 0.7rem;
-    font-weight: 650;
-    letter-spacing: 0.055em;
-    line-height: 1.25;
-    text-transform: uppercase;
-}
-
-body.experimental.matcenter-page .matcenter-grade-picker-heading p {
-    margin: 0 0 0.05rem;
-    letter-spacing: 0.025em;
-}
-
-body.experimental.matcenter-page .grade-switcher {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.55rem;
-    padding: 0;
-    margin: 0;
-    background: transparent;
-    border: 0;
-    border-radius: 0;
-    overflow: visible;
-}
-
-body.experimental.matcenter-page .grade-card,
-body.experimental.matcenter-page .grade-card-summer {
-    display: grid !important;
-    grid-template: "eyebrow meta" auto "title meta" 1fr / minmax(0, 1fr) auto;
-    align-items: start;
-    gap: 0.2rem 0.65rem;
-    min-width: 0;
-    min-height: 76px;
-    padding: 0.8rem 0.85rem;
-    color: var(--exp-text-dim) !important;
-    text-align: left;
-    background: var(--exp-bg) !important;
-    border: 1px solid var(--exp-border) !important;
-    border-radius: 11px !important;
-    box-shadow: none !important;
-    transform: none !important;
-    transition: color 140ms ease, background-color 140ms ease, border-color 140ms ease !important;
-}
-
-body.experimental.matcenter-page .grade-card::before {
-    content: none !important;
-}
-
-body.experimental.matcenter-page .grade-card-eyebrow {
-    display: block !important;
-    grid-area: eyebrow;
-    color: var(--exp-text-faint) !important;
-    font-size: 0.64rem;
-    font-weight: 680;
-    letter-spacing: 0.055em;
-    line-height: 1.2;
-    text-transform: uppercase;
-}
-
-body.experimental.matcenter-page .grade-card-title {
-    grid-area: title;
-    align-self: end;
-    margin: 0;
-    color: inherit !important;
-    font-size: 0.94rem;
-    font-weight: 700;
-    letter-spacing: -0.015em;
-    line-height: 1.2;
-}
-
-body.experimental.matcenter-page .grade-card-meta {
-    display: flex !important;
-    grid-area: meta;
-    align-items: baseline;
-    align-self: center;
-    gap: 0.22rem;
-    padding: 0.26rem 0.42rem;
-    color: var(--exp-text-faint);
-    background: var(--exp-surface);
-    border: 1px solid var(--exp-border);
-    border-radius: var(--exp-r-pill);
-    line-height: 1;
-}
-
-body.experimental.matcenter-page .grade-card-count {
-    color: inherit !important;
-    font-size: 0.68rem;
-    font-weight: 700;
-}
-
-body.experimental.matcenter-page .grade-card-sub {
-    display: inline !important;
-    color: inherit !important;
-    font-size: 0.61rem;
-    font-weight: 550;
-}
-
-body.experimental.matcenter-page .grade-card:hover {
-    color: var(--exp-text) !important;
-    background: var(--exp-surface-2) !important;
-    border-color: var(--exp-border-strong) !important;
-}
-
-body.experimental.matcenter-page .grade-card.active,
-body.experimental.matcenter-page .grade-card-summer.active {
-    color: var(--exp-text) !important;
-    background: color-mix(in srgb, var(--exp-accent) 7%, var(--exp-surface)) !important;
-    border-color: color-mix(in srgb, var(--exp-accent) 42%, var(--exp-border)) !important;
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--exp-accent) 10%, transparent) !important;
-}
-
-body.experimental.matcenter-page .grade-card.active .grade-card-eyebrow,
-body.experimental.matcenter-page .grade-card-summer.active .grade-card-eyebrow {
-    color: var(--exp-accent) !important;
-}
-
-body.experimental.matcenter-page .grade-card.active .grade-card-meta,
-body.experimental.matcenter-page .grade-card-summer.active .grade-card-meta {
-    color: var(--exp-text-dim);
-    border-color: color-mix(in srgb, var(--exp-accent) 22%, var(--exp-border));
-}
-
-body.experimental.matcenter-page .matcenter-stats-section {
-    padding: 1rem;
-    margin-bottom: 1rem;
-    background: var(--exp-surface) !important;
-    border: 1px solid var(--exp-border) !important;
-    border-radius: var(--exp-r-lg);
-}
-
-body.experimental.matcenter-page .stats-container {
-    margin-bottom: 0.8rem;
-}
-
-body.experimental.matcenter-page .stat-card {
-    min-height: 72px;
-    padding: 0.75rem 0.8rem;
-    background: transparent !important;
-    border-color: transparent !important;
-    box-shadow: none !important;
-}
-
-body.experimental.matcenter-page .stat-card.active {
-    background: var(--exp-surface-2) !important;
-    border-color: var(--exp-border) !important;
-    box-shadow: none !important;
-}
-
-body.experimental.matcenter-page .matcenter-progress {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 0.6rem 1rem;
-    margin: 0;
-    padding: 0.8rem 0.9rem;
-    background: var(--exp-surface-2);
-    border-color: var(--exp-border);
-    box-shadow: none;
-}
-
-body.experimental.matcenter-page .matcenter-progress[hidden] {
-    display: none;
-}
-
-body.experimental.matcenter-page .matcenter-progress-head {
-    display: contents;
-}
-
-body.experimental.matcenter-page .matcenter-progress-title {
-    grid-column: 1;
-    grid-row: 1;
-}
-
-body.experimental.matcenter-page .matcenter-progress-actions {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-}
-
-body.experimental.matcenter-page .matcenter-progress-track {
-    grid-column: 1;
-    grid-row: 2;
-    height: 6px;
-    background: var(--exp-border);
-}
-
-body.experimental.matcenter-page .matcenter-progress-percent {
-    display: none;
-}
-
-body.experimental.matcenter-page .matcenter-share-solved-btn {
-    width: auto;
-    height: 34px;
-    flex-basis: auto;
-    gap: 0.42rem;
-    padding: 0 0.7rem;
-    color: var(--exp-text-dim);
-    background: var(--exp-surface);
-    border-color: var(--exp-border);
-    border-radius: 9px;
-    box-shadow: none;
-    font: inherit;
-    font-size: 0.78rem;
-    font-weight: 650;
-}
-
-body.experimental.matcenter-page .matcenter-share-solved-btn:hover,
-body.experimental.matcenter-page .matcenter-share-solved-btn:focus-visible {
-    color: var(--exp-accent);
-    background: var(--exp-accent-soft);
-    border-color: color-mix(in srgb, var(--exp-accent) 30%, var(--exp-border));
-    box-shadow: none;
-    transform: none;
-}
-
 body.experimental.matcenter-page .tasks-container {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.8rem;
@@ -301,120 +33,140 @@ body.experimental.matcenter-page .task-card.open {
     border-left-width: 1px !important;
 }
 
-@media (min-width: 1600px) {
-    body.experimental.matcenter-page .tasks-container {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
+/* Compact archive workspace. Both visual themes share the same layout. */
+body.matcenter-page {
+    --mc-surface: var(--exp-surface, var(--card-bg, #fff));
+    --mc-bg: var(--exp-bg, var(--bg-color, #f8fafc));
+    --mc-line: var(--exp-border, var(--border-color, #e2e8f0));
+    --mc-ink: var(--exp-text, var(--text-color, #172033));
+    --mc-muted: var(--exp-text-muted, var(--text-secondary, #64748b));
+    --mc-accent: var(--exp-accent, var(--accent-color, #6366f1));
 }
-
-@media (max-width: 980px) {
-    body.experimental.matcenter-page .grade-switcher {
-        display: flex;
-        overflow-x: auto;
-        overscroll-behavior-x: contain;
-        scroll-snap-type: x proximity;
-        scrollbar-width: thin;
-    }
-
-    body.experimental.matcenter-page .grade-card,
-    body.experimental.matcenter-page .grade-card-summer {
-        flex: 0 0 154px;
-        width: 154px !important;
-        scroll-snap-align: start;
-    }
-
-    body.experimental.matcenter-page .tasks-container {
-        grid-template-columns: 1fr;
-    }
+body.matcenter-page .main-content > .matcenter-page-header {
+    display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
+    padding: 0 0 1rem !important; margin: 0 0 1rem !important;
+    background: none !important; border: 0 !important; border-bottom: 1px solid var(--mc-line) !important;
+    box-shadow: none !important; border-radius: 0 !important;
 }
-
+body.matcenter-page .matcenter-page-header h1 { font-size: 1.65rem !important; margin: 0 !important; }
+body.matcenter-page .matcenter-page-header .subtitle { font-size: .88rem; color: var(--mc-muted); }
+body.matcenter-page .mc-grades {
+    display: flex; gap: .35rem; margin: 0 0 1rem; padding: .25rem;
+    background: var(--mc-surface); border: 1px solid var(--mc-line); border-radius: 13px;
+    overflow-x: auto; scrollbar-width: thin; max-width: 100%;
+}
+body.matcenter-page #gradeSwitcher .grade-card {
+    display: flex !important; flex-direction: row; align-items: center; justify-content: center; gap: .55rem;
+    flex: 1 0 auto; width: auto !important; min-width: 0; min-height: 44px;
+    margin: 0; padding: .6rem .85rem; border: 1px solid transparent !important;
+    border-radius: 9px; box-shadow: none !important; background: transparent; color: var(--mc-muted);
+    font: inherit; cursor: pointer;
+}
+body.matcenter-page #gradeSwitcher .grade-card::before,
+body.matcenter-page #gradeSwitcher .grade-card::after { display: none; }
+body.matcenter-page #gradeSwitcher .grade-card.active {
+    background: color-mix(in srgb, var(--mc-accent) 13%, var(--mc-surface)) !important;
+    color: var(--mc-accent); border-color: color-mix(in srgb, var(--mc-accent) 30%, transparent) !important;
+}
+body.matcenter-page #gradeSwitcher .grade-card:hover { transform: none; background: color-mix(in srgb, var(--mc-accent) 8%, var(--mc-surface)); }
+body.matcenter-page #gradeSwitcher .grade-card-title { font-size: .88rem; white-space: nowrap; }
+.mc-count { font-size: .72rem; opacity: .75; font-variant-numeric: tabular-nums; }
+body.matcenter-page .mc-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin-bottom: .65rem; }
+body.matcenter-page .mc-search {
+    display: flex; align-items: center; position: relative; flex: 1 1 230px;
+    min-width: 0; min-height: 44px; background: var(--mc-surface); border: 1px solid var(--mc-line); border-radius: 10px;
+}
+.mc-search > svg { width: 18px; height: 18px; flex: 0 0 18px; margin-left: .8rem; color: var(--mc-muted); }
+body.matcenter-page .mc-search input {
+    flex: 1; width: 100%; min-width: 0; height: 44px; padding: .6rem 2rem .6rem .65rem;
+    border: 0; border-radius: 10px; background: transparent; color: var(--mc-ink); font: inherit; font-size: .9rem; box-shadow: none;
+}
+.mc-search input::-webkit-search-cancel-button { display: none; }
+body.matcenter-page .mc-search .search-clear-btn { right: .3rem; width: 32px; height: 32px; font-size: 1.25rem; }
+body.matcenter-page .mc-toolbar select,
+body.matcenter-page .mc-series-row select {
+    width: auto; max-width: 100%; min-width: 0; min-height: 44px; padding: .6rem 1.8rem .6rem .75rem;
+    margin: 0; border: 1px solid var(--mc-line); border-radius: 10px; color: var(--mc-ink);
+    background-color: var(--mc-surface); font: inherit; font-size: .82rem;
+}
+body.matcenter-page .mc-view-switch { display: flex; gap: .2rem; padding: .2rem; border: 1px solid var(--mc-line); border-radius: 10px; }
+body.matcenter-page .mc-view-switch button { min-height: 36px; padding: .4rem .7rem; border: 0; border-radius: 7px; color: var(--mc-muted); background: none; font: inherit; font-size: .82rem; cursor: pointer; }
+body.matcenter-page .mc-view-switch button[aria-pressed="true"] { background: color-mix(in srgb, var(--mc-accent) 12%, var(--mc-surface)); color: var(--mc-accent); }
+body.matcenter-page .mc-series-row { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; margin: .7rem 0; color: var(--mc-muted); font-size: .82rem; }
+body.matcenter-page .mc-series-row select { flex: 1 1 220px; }
+body.matcenter-page [hidden] { display: none !important; }
+body.matcenter-page .mc-result-summary { color: var(--mc-muted); font-size: .82rem; margin: .6rem 0; }
+body.matcenter-page .main-content > .matcenter-stats-section {
+    margin: 0 0 1rem !important; padding: 0 !important; background: transparent !important;
+    border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+}
+body.matcenter-page #statsContainer { display: flex; flex-wrap: wrap; gap: .35rem; margin: 0; }
+body.matcenter-page #statsContainer .stat-card {
+    display: inline-flex !important; align-items: center; gap: .45rem; min-height: 40px;
+    width: auto; min-width: 0; padding: .45rem .7rem !important; margin: 0;
+    font: inherit; font-size: .8rem; border: 1px solid transparent !important; border-radius: 8px;
+    background: none; color: var(--mc-muted); box-shadow: none !important; cursor: pointer;
+}
+body.matcenter-page #statsContainer .stat-card.active { color: var(--mc-accent); border-color: var(--mc-line) !important; background: var(--mc-surface); }
+body.matcenter-page #statsContainer .stat-card span { font-size: .72rem; font-variant-numeric: tabular-nums; opacity: .75; }
+body.matcenter-page #statsContainer .stat-card::before,
+body.matcenter-page #statsContainer .stat-card::after { display: none; }
+body.matcenter-page.is-summer-grade #statsContainer { display: none; }
+body.matcenter-page #matcenterProgress {
+    display: block; position: relative; padding: .65rem 0 .5rem; margin-top: .3rem;
+    border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: transparent !important;
+}
+body.matcenter-page #matcenterProgress .matcenter-progress-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+body.matcenter-page #matcenterProgress .matcenter-progress-title { font-size: .8rem; }
+body.matcenter-page #matcenterProgress .matcenter-progress-badge { display: none; }
+body.matcenter-page #matcenterProgress .matcenter-progress-actions { display: inline-flex; align-items: center; width: auto; gap: .7rem; }
+body.matcenter-page #matcenterProgress .matcenter-progress-value { font-size: .8rem; }
+body.matcenter-page #matcenterProgress .matcenter-progress-track { width: 100%; height: 3px; margin-top: .6rem; }
+body.matcenter-page #matcenterProgress .matcenter-progress-percent { display: none; }
+body.matcenter-page #matcenterProgress .matcenter-share-solved-btn { min-height: 30px; font-size: .75rem; }
+body.matcenter-page .mc-sidebar-grade { display: block; width: 100%; min-height: 44px; padding: .7rem 1rem; border: 0; border-radius: 8px; text-align: left; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+body.matcenter-page .mc-sidebar-grade.active { background: color-mix(in srgb, var(--mc-accent) 12%, transparent); color: var(--mc-accent); }
+body.matcenter-page .matcenter-task-view .part-title { font-size: 1.15rem; }
+body.matcenter-page .mc-task-context { display: none; color: var(--mc-muted); font-size: .74rem; margin: .2rem 0 .7rem; overflow-wrap: anywhere; }
+body.matcenter-page.mc-global-search .mc-task-context,
+body.matcenter-page .mc-has-series .mc-task-context { display: block; }
+body.matcenter-page .task-header { gap: .5rem; flex-wrap: wrap; }
+body.matcenter-page .task-number-wrap { flex: 1 1 auto; min-width: 0; }
+body.matcenter-page .mc-task-link { flex: 0 0 32px; width: 32px; height: 32px; padding: 6px; border: 1px solid transparent; border-radius: 7px; color: var(--mc-muted); background: transparent; cursor: pointer; }
+body.matcenter-page .mc-task-link:hover { border-color: var(--mc-line); color: var(--mc-accent); }
+body.matcenter-page .mc-task-link svg { display: block; width: 18px !important; height: 18px !important; }
+body.matcenter-page.mc-reading .tasks-container { display: flex !important; flex-direction: column; gap: .85rem; max-width: 920px; margin: 0 auto; }
+body.matcenter-page.mc-reading .task-condition-toggle { display: none; }
+body.matcenter-page.mc-reading .task-card { content-visibility: visible; }
+body.matcenter-page.mc-reading .task-card .task-description { max-height: none !important; opacity: 1; overflow: visible; margin-top: .75rem; padding-top: .75rem; border-top-width: 1px; transition: none; will-change: auto; }
+body.matcenter-page .task-card.open .task-description { max-height: none; }
+body.matcenter-page .task-description-inner { overflow-x: auto; }
+body.matcenter-page .task-card:focus { outline: 2px solid var(--mc-accent); outline-offset: 3px; }
+body.matcenter-page .mc-toolbar :focus-visible,
+body.matcenter-page .mc-grades :focus-visible,
+body.matcenter-page #statsContainer :focus-visible { outline: 2px solid var(--mc-accent); outline-offset: 2px; }
 @media (max-width: 768px) {
-    body.experimental.matcenter-page .main-content {
-        padding-top: 0;
+    body.matcenter-page .main-content > .matcenter-page-header,
+    body.matcenter-page .mc-grades,
+    body.matcenter-page .mc-toolbar,
+    body.matcenter-page .mc-series-row,
+    body.matcenter-page .mc-result-summary,
+    body.matcenter-page .main-content > .matcenter-stats-section {
+        width: auto !important; margin-left: var(--m-pad, 14px) !important; margin-right: var(--m-pad, 14px) !important;
     }
-
-    body.experimental.matcenter-page .matcenter-page-header {
-        width: 100%;
-        margin: 0 0 0.75rem !important;
-        padding: 1.15rem var(--m-pad) !important;
-        border-width: 0 0 1px !important;
-        border-radius: 0 !important;
-    }
-
-    body.experimental.matcenter-page .matcenter-grade-picker {
-        width: calc(100% - (2 * var(--m-pad)));
-        margin-right: var(--m-pad);
-        margin-left: var(--m-pad);
-        padding: 0.75rem;
-        border-radius: 13px;
-    }
-
-    body.experimental.matcenter-page .matcenter-grade-picker-heading {
-        align-items: center;
-        margin-bottom: 0.7rem;
-    }
-
-    body.experimental.matcenter-page .matcenter-grade-picker-heading p {
-        display: none;
-    }
-
-    body.experimental.matcenter-page .grade-switcher {
-        width: 100%;
-        margin: 0;
-    }
-
-    body.experimental.matcenter-page .grade-card,
-    body.experimental.matcenter-page .grade-card-summer {
-        flex-basis: 154px;
-        width: 154px !important;
-        min-width: 154px;
-        min-height: 72px;
-        scroll-snap-align: start;
-    }
-
-    body.experimental.matcenter-page .grade-card-title {
-        white-space: nowrap;
-    }
-
-    body.experimental.matcenter-page .grade-card-meta {
-        gap: 0.12rem;
-        padding: 0.22rem 0.3rem;
-    }
-
-    body.experimental.matcenter-page .grade-card-sub {
-        font-size: 0.56rem;
-    }
-
-    body.experimental.matcenter-page .matcenter-stats-section {
-        margin-right: var(--m-pad);
-        margin-left: var(--m-pad);
-        padding: 0.72rem;
-    }
-
-    body.experimental.matcenter-page .matcenter-progress {
-        grid-template-columns: 1fr;
-    }
-
-    body.experimental.matcenter-page .matcenter-progress-actions {
-        grid-column: 1;
-        grid-row: 3;
-        justify-content: space-between;
-        width: 100%;
-    }
-
-    body.experimental.matcenter-page .task-card {
-        padding: 0.86rem;
-        border-left-width: 1px !important;
-    }
+    body.matcenter-page .main-content > .matcenter-page-header { padding-top: 1rem !important; padding-bottom: .65rem !important; margin-bottom: .65rem !important; }
+    body.matcenter-page .matcenter-page-header h1 { font-size: 1.4rem !important; }
+    body.matcenter-page #gradeSwitcher .grade-card { padding: .45rem .65rem; min-height: 40px; }
+    body.matcenter-page #gradeSwitcher .grade-card-title { font-size: .8rem; }
+    body.matcenter-page .mc-toolbar { display: grid; grid-template-columns: 1fr 1fr; }
+    body.matcenter-page .mc-search { grid-column: 1 / -1; }
+    body.matcenter-page .mc-search input { font-size: 16px; }
+    body.matcenter-page .mc-toolbar select { width: 100%; font-size: .8rem; }
+    body.matcenter-page .mc-view-switch { grid-column: 1 / -1; justify-self: start; }
+    body.matcenter-page #statsContainer { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; padding-bottom: .2rem; }
+    body.matcenter-page #statsContainer .stat-card { flex-shrink: 0; }
+    body.matcenter-page #matcenterProgress .matcenter-progress-actions { gap: .3rem; }
+    body.matcenter-page .task-card { min-width: 0; }
 }
-
-@media (max-width: 440px) {
-    body.experimental.matcenter-page .matcenter-share-solved-btn span {
-        display: none;
-    }
-
-    body.experimental.matcenter-page .matcenter-share-solved-btn {
-        width: 34px;
-        padding: 0;
-    }
-}
+body.matcenter-page #gradeSwitcher .grade-card.active .grade-card-title { color: var(--mc-accent) !important; }
+body.matcenter-page #matcenterProgress .matcenter-share-solved-btn { flex: 0 0 auto; width: auto; height: 34px; min-width: max-content; padding: .3rem .65rem; gap: .4rem; border-radius: 8px; white-space: nowrap; color: var(--mc-muted); background: var(--mc-surface); border: 1px solid var(--mc-line); box-shadow: none; }

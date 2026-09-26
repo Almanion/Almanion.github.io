@@ -101,7 +101,7 @@ const TASKS_CACHE_KEY = 'matcenter_tasks_cache';
 const TASKS_CACHE_VERSION = 3;
 const GRADE_STORAGE_KEY = 'matcenter_grade';
 const FILTER_STORAGE_KEY = 'matcenter_filter';
-const DEFAULT_GRADE = 'grade-9';
+const DEFAULT_GRADE = 'grade-10';
 const DEFAULT_FILTER = 'all-tasks';
 const MATCENTER_SOLVED_DB_PATH = 'matcenterSolved';
 let lastTasksPayloadSignature = '';
@@ -404,6 +404,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initSolvedTasksShare();
     initEscapeKey();
     restoreCurrentFilter();
+    initMatcenterWorkspace();
     
     // Загружаем или генерируем отпечаток
     const cachedFP = safeGet('matcenter_fp');

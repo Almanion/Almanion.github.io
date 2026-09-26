@@ -10,7 +10,9 @@ function buildTasksPayloadSignature(tasks) {
         task && task.status,
         task && task.description,
         task && task.hint,
-        task && task._endpointIdx
+        task && task._endpointIdx,
+        task && task.sourceSheet,
+        task && task.series
     ]));
 }
 
@@ -148,7 +150,7 @@ function normalizeMatcenterGrade(value, endpointIdx = 0) {
 
     // Старые версии backend не всегда присылали Grade. Источник летней серии
     // однозначно задаёт раздел, основной endpoint по умолчанию относится к 9 классу.
-    return endpointIdx === 1 ? 'grade-summer-9-10' : DEFAULT_GRADE;
+    return endpointIdx === 1 ? 'grade-summer-9-10' : 'grade-9';
 }
 
 function readMatcenterTaskField(task, aliases) {
@@ -251,6 +253,7 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
         if (loadSequence !== matcenterTasksLoadSequence) return;
         tasks = result.tasks;
         adminFlag = result.isAdmin;
+        if (typeof matcenterWorkspaceDataSettled !== 'undefined') matcenterWorkspaceDataSettled = true;
 
         if (result.failures.length > 0) {
             const failedSources = result.failures.map(item => getEndpointLabel(item.endpointIdx));
@@ -283,6 +286,8 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
             return;
         }
         lastTasksPayloadSignature = newSignature;
+
+        if (typeof preserveMatcenterReadingPlaceForRefresh === 'function') preserveMatcenterReadingPlaceForRefresh();
         
         allTasks = normalizeAllTasks(tasks);
         if (typeof invalidateMatcenterRenderCache === 'function') invalidateMatcenterRenderCache();
@@ -414,6 +419,7 @@ async function loadFromOneEndpoint(endpoint, endpointIdx, signal) {
             hint: task.hint ? String(task.hint) : '',
             grade,
             sourceSheet: task.sourceSheet ? String(task.sourceSheet) : '',
+            series: MatcenterWorkspaceModel.series(task),
             _endpointIdx: endpointIdx
         };
     }).filter(t => t !== null);

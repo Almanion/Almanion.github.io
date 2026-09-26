@@ -49,10 +49,10 @@ function getSummerSectionById(grade, id) {
 }
 
 function syncGradeNavUI() {
-    document.querySelectorAll('.grade-link, .grade-card').forEach(el => {
+    document.querySelectorAll('.grade-link, .grade-card, .mc-sidebar-grade').forEach(el => {
         const isActive = el.dataset.grade === currentGrade;
         el.classList.toggle('active', isActive);
-        if (el.classList.contains('grade-card')) {
+        if (el.matches('button')) {
             el.setAttribute('aria-pressed', String(isActive));
         } else if (isActive) {
             el.setAttribute('aria-current', 'page');
@@ -77,6 +77,10 @@ function updateAllTasksTitleForFilter() {
     const el = document.getElementById('allTasksTitle');
     if (!el) return;
     const gradeTitle = getGradeTitle(currentGrade);
+    if (typeof getSelectedMatcenterSeries === 'function') {
+        const series = getSelectedMatcenterSeries();
+        if (series) { el.textContent = series.title; return; }
+    }
     if (typeof currentFilter === 'string' && currentFilter.indexOf('topic-') === 0) {
         const section = getSummerSectionById(currentGrade, currentFilter);
         if (section) {
@@ -89,7 +93,7 @@ function updateAllTasksTitleForFilter() {
 
 // Перестраивает список пунктов навигации в сайдбаре под текущий грейд.
 // Для летних серий — «Все задачи» + темы (Майские сборы, Алгебра, …).
-// Для обычных классов — стандартные «Все задачи / Текущая серия / Откладыши / Неразобранные».
+// Классы всегда доступны в боковой панели; категории задач находятся над лентой.
 function rebuildNavMenu(grade) {
     const navTitleEl = document.getElementById('gradeNavTitle');
     if (!navTitleEl) return;
@@ -98,18 +102,15 @@ function rebuildNavMenu(grade) {
     const listEl = navSection.querySelector('ul');
     if (!listEl) return;
 
-    const items = [{ id: 'all-tasks', title: 'Все задачи' }];
+    const items = [];
     if (isSummerGrade(grade)) {
+        items.push({ id: 'all-tasks', title: 'Все темы' });
         getSummerSectionsFor(grade).forEach(s => {
             items.push({ id: s.id, title: s.title });
         });
-    } else {
-        items.push({ id: 'current-series', title: 'Текущая серия' });
-        items.push({ id: 'postponed',      title: 'Откладыши' });
-        items.push({ id: 'unsolved',       title: 'Неразобранные' });
     }
 
-    listEl.innerHTML = items.map(item => {
+    listEl.innerHTML = GRADE_SECTIONS.map(section => `<li><button type="button" class="mc-sidebar-grade" data-grade="${section.id}" aria-pressed="${section.id === grade}">${escapeHtml(section.title)}</button></li>`).join('') + items.map(item => {
         const isActive = item.id === currentFilter ? ' active' : '';
         return `<li><a href="#${item.id}" class="nav-link${isActive}">${escapeHtml(item.title)}</a></li>`;
     }).join('');
@@ -152,6 +153,7 @@ function syncFilterUI() {
     });
     document.querySelectorAll('.stat-card.clickable[data-filter]').forEach(c => {
         c.classList.toggle('active', c.dataset.filter === currentFilter);
+        c.setAttribute('aria-pressed', String(c.dataset.filter === currentFilter));
     });
     // В летних сериях select-фильтр работает как переключатель тем —
     // обновляем выбранное значение, чтобы оно соответствовало активной секции.
@@ -199,6 +201,7 @@ function setCurrentGrade(gradeId) {
 
     const gradeChanged = gradeId !== currentGrade;
     if (!gradeChanged) return;
+    if (typeof resetMatcenterWorkspaceSelection === 'function') resetMatcenterWorkspaceSelection();
     resetMatcenterTaskFilters();
 
     currentGrade = gradeId;
@@ -215,15 +218,15 @@ function setCurrentGrade(gradeId) {
     updateStatistics(getTasksForCurrentGrade());
     refreshCurrentView();
 
+    if (typeof rememberMatcenterRoute === 'function') rememberMatcenterRoute();
+
     if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
 function initGradeNavigation() {
     try {
         const saved = safeGet(GRADE_STORAGE_KEY);
-        if (saved && GRADE_SECTIONS.some(g => g.id === saved)) {
-            currentGrade = saved;
-        }
+        currentGrade = MatcenterWorkspaceModel.initialGrade(saved, safeGet('homeGrade'));
     } catch (e) { /* ignore */ }
 
     rebuildNavMenu(currentGrade);
@@ -253,6 +256,7 @@ function showTaskView(viewId) {
 }
 
 function refreshCurrentView() {
+    if (typeof syncMatcenterWorkspace === 'function') syncMatcenterWorkspace();
     const searchInput = document.getElementById('searchInput');
     const statusFilterEl = document.getElementById('statusFilter');
     const hasSearch = searchInput && normalizeSearchText(searchInput.value);
@@ -279,6 +283,10 @@ function showEmptyGradeMessage(container) {
 }
 
 function updateStatistics(tasks) {
+    if (typeof getSelectedMatcenterSeries === 'function') {
+        const series = getSelectedMatcenterSeries();
+        if (series) tasks = series.tasks;
+    }
     // Псевдо-задачи (заголовки разделов / вводные тексты) — дробные номера,
     // их в статистике не учитываем.
     const realTasks = tasks.filter(t => Number.isInteger(t.number));
@@ -404,6 +412,12 @@ function initHintSwipe() {
 function initMatCenterNavigation() {
     // nav-link могут пересоздаваться при смене грейда — делегируем клик
     document.addEventListener('click', (e) => {
+        const grade = e.target.closest('.mc-sidebar-grade');
+        if (grade) {
+            setCurrentGrade(grade.dataset.grade);
+            if (typeof closeMobileMenu === 'function') closeMobileMenu();
+            return;
+        }
         const link = e.target.closest('.nav-link');
         if (!link) return;
         if (!link.closest('.nav-menu')) return; // только из sidebar-меню
@@ -436,6 +450,7 @@ function setCurrentFilter(filterId, opts = {}) {
     syncFilterUI();
     updateAllTasksTitleForFilter();
     refreshCurrentView(); // сам выберет runSearch() или filterAndDisplayTasks()
+    if (typeof rememberMatcenterRoute === 'function') rememberMatcenterRoute();
 
     if (opts.scrollTop) {
         if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: 'auto' });
@@ -459,44 +474,19 @@ function filterTasksByTopic(tasks, topicSection) {
 
 function filterAndDisplayTasks(filterId) {
     currentFilter = filterId;
-    const gradeTasks = getTasksForCurrentGrade();
-    let filteredTasks = [];
-    let containerId = 'tasksContainer';
-
-    if (filterId.indexOf('topic-') === 0) {
-        const section = getSummerSectionById(currentGrade, filterId);
-        filteredTasks = section ? filterTasksByTopic(gradeTasks, section) : gradeTasks;
-        containerId = 'tasksContainer';
-    } else {
-        switch (filterId) {
-            case 'all-tasks':
-                filteredTasks = gradeTasks;
-                containerId = 'tasksContainer';
-                break;
-            case 'current-series':
-                filteredTasks = gradeTasks.filter(t => t.status === 'Н');
-                containerId = 'currentSeriesContainer';
-                break;
-            case 'postponed':
-                filteredTasks = gradeTasks.filter(t => t.status === 'От' || t.status === 'П');
-                containerId = 'postponedContainer';
-                break;
-            case 'unsolved':
-                filteredTasks = gradeTasks.filter(t => t.status === 'Н' || t.status === 'От' || t.status === 'П');
-                containerId = 'unsolvedContainer';
-                break;
-            default:
-                filteredTasks = gradeTasks;
-                containerId = 'tasksContainer';
-        }
-    }
-
-    displayTasks(filteredTasks, containerId);
+    document.body.classList.remove('mc-global-search');
+    const summary = document.getElementById('mcResultSummary');
+    if (summary) summary.hidden = true;
+    displayTasks(getTasksForCurrentFilter(), getContainerIdForFilter());
 }
 
 // Получить задачи для текущего фильтра
 function getTasksForCurrentFilter() {
-    const gradeTasks = getTasksForCurrentGrade();
+    let gradeTasks = getTasksForCurrentGrade();
+    if (typeof getSelectedMatcenterSeries === 'function') {
+        const series = getSelectedMatcenterSeries();
+        if (series) gradeTasks = series.tasks;
+    }
 
     if (currentFilter.indexOf('topic-') === 0) {
         const section = getSummerSectionById(currentGrade, currentFilter);
@@ -535,7 +525,7 @@ function rebuildStatusFilters(grade) {
             ...getSummerSectionsFor(grade).map(s => ({ value: s.id, label: s.title }))
         ]
         : [
-            { value: '',   label: 'Все' },
+            { value: '',   label: 'Все статусы' },
             { value: 'Н',  label: 'Серия' },
             { value: 'П',  label: 'Подсказка' },
             { value: 'От', label: 'Отложена' },
@@ -544,6 +534,7 @@ function rebuildStatusFilters(grade) {
 
     [desktop, mobile].forEach(sel => {
         if (!sel) return;
+        sel.setAttribute('aria-label', summer ? 'Тема задач' : 'Статус задачи');
         const prev = sel.value;
         sel.innerHTML = opts.map(o =>
             `<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`
@@ -574,6 +565,7 @@ function initStatusFilter() {
         } else {
             // В обычных классах — фильтр по статусу
             searchStatusFilter = value || 'all';
+            if (typeof rememberMatcenterRoute === 'function') rememberMatcenterRoute(false);
             runSearch();
         }
     }
@@ -638,6 +630,7 @@ function splitSearchQuery(query) {
 }
 
 function taskMatchesSearch(task, queryTokens, fullQuery) {
+    if (typeof MatcenterWorkspaceModel !== 'undefined') return MatcenterWorkspaceModel.matches(task, fullQuery || queryTokens.join(' '));
     const haystack = normalizeSearchText([
         task.number,
         task.numberText,
@@ -727,6 +720,9 @@ function runSearch() {
         : '';
 
     let currentTasks = getTasksForCurrentFilter();
+    const wholeArchive = document.getElementById('mcSearchScope')?.value === 'archive' && !!normalizedTerm;
+    if (wholeArchive) currentTasks = allTasks.filter(task => Number.isInteger(task.number));
+    document.body.classList.toggle('mc-global-search', wholeArchive);
 
     if (activeStatus) {
         currentTasks = currentTasks.filter(t => t.status === activeStatus);
@@ -740,6 +736,11 @@ function runSearch() {
     }
 
     const containerId = getContainerIdForFilter();
+    const summary = document.getElementById('mcResultSummary');
+    if (summary) {
+        summary.hidden = !normalizedTerm && !activeStatus;
+        summary.textContent = `${wholeArchive ? 'Весь архив' : getGradeTitle(currentGrade)} · Найдено: ${currentTasks.filter(t => Number.isInteger(t.number)).length}`;
+    }
 
     if (currentTasks.length === 0 && (normalizedTerm || activeStatus)) {
         showNoResultsMessage(containerId, normalizedTerm, activeStatus);
@@ -751,6 +752,8 @@ function runSearch() {
 function showNoResultsMessage(containerId, searchTerm, statusFilter) {
     const container = document.getElementById(containerId);
     if (!container) return;
+    cancelMatcenterRender(container);
+    delete container.dataset.renderKey;
 
     const statusLabels = { 'Р': 'Разобрано', 'Н': 'Серия', 'От': 'Отложена', 'П': 'Подсказка' };
     const statusLabel = statusFilter ? (statusLabels[statusFilter] || statusFilter) : '';
@@ -793,7 +796,8 @@ function clearSearch() {
 
     searchStatusFilter = 'all';
 
-    displayTasks(getTasksForCurrentFilter(), getContainerIdForFilter());
+    refreshCurrentView();
+    if (typeof rememberMatcenterRoute === 'function') rememberMatcenterRoute(false);
 }
 
 window.clearSearch = clearSearch;
@@ -817,7 +821,10 @@ function initMatCenterSearch() {
         if (source === 'mobile' && searchInput) searchInput.value = value;
         updateClearBtns(value);
         if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(runSearch, 150);
+        debounceTimer = setTimeout(() => {
+            if (typeof rememberMatcenterRoute === 'function') rememberMatcenterRoute(false);
+            runSearch();
+        }, 150);
     }
 
     if (searchInput) {

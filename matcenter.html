@@ -39,7 +39,7 @@
     <meta name="apple-mobile-web-app-title" content="Almanion">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://*.googleapis.com https://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebaseio.com wss://*.firebasedatabase.app https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://accounts.google.com; img-src 'self' data: https://www.gstatic.com https://lh3.googleusercontent.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com; font-src 'self' https://cdn.jsdelivr.net;">
-    <title>МатЦентр 2025/2026 | Almanion</title>
+    <title>Матцентр | Almanion</title>
     <link rel="stylesheet" href="styles/site/index.css?v=20260920-3">
     <link rel="stylesheet" href="styles/site/matcenter.css?v=20260911-2">
     <link rel="stylesheet" href="styles/tokens.css">
@@ -54,7 +54,7 @@
     <link rel="stylesheet" href="style-new.css?v=20260920-2">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
-    <link rel="stylesheet" href="styles/matcenter-refresh.css?v=20260903-2">
+    <link rel="stylesheet" href="styles/matcenter-refresh.css?v=20260926-1">
 </head>
 <body class="matcenter-page">
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -66,24 +66,9 @@
             <button class="close-sidebar" id="closeSidebar" aria-label="Закрыть меню"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>
         </div>
         
-        <div class="search-box">
-            <div class="search-input-wrap">
-                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-3.6-3.6"/></svg>
-                <input type="text" id="searchInput" placeholder="Поиск задач..." aria-label="Поиск задач">
-                <button class="search-clear-btn" id="searchClearBtn" aria-label="Очистить поиск"><span class="eic eic-x" aria-hidden="true"></span></button>
-            </div>
-            <select id="statusFilter" class="status-filter-select" title="Фильтр по статусу" aria-label="Фильтр по статусу">
-                <option value="">Все</option>
-                <option value="Н">Серия</option>
-                <option value="П">Подсказка</option>
-                <option value="От">Отложена</option>
-                <option value="Р">Разобрано</option>
-            </select>
-        </div>
-
         <nav class="nav-menu">
             <div class="nav-section">
-                <h3 id="gradeNavTitle">9 класс</h3>
+                <h3 id="gradeNavTitle">10 класс</h3>
                 <ul>
                     <li><a href="#all-tasks" class="nav-link active">Все задачи</a></li>
                     <li><a href="#current-series" class="nav-link">Текущая серия</a></li>
@@ -164,113 +149,49 @@
     <!-- Основной контент -->
     <main class="main-content">
         <header class="page-header matcenter-page-header">
-            <h1>МатЦентр 2025/2026</h1>
+            <h1>Матцентр</h1>
             <p class="subtitle">Архив задач</p>
         </header>
 
-        <!-- Мобильная строка поиска (видна только на мобильных) -->
-        <div class="mobile-search-bar" id="mobileSearchBar">
-            <div class="mobile-search-row">
-                <div class="mobile-search-input-wrap">
-                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-3.6-3.6"/></svg>
-                    <input type="text" id="mobileSearchInput" placeholder="Поиск задач..." autocomplete="off" inputmode="search" aria-label="Поиск задач">
-                    <button class="mobile-search-clear" id="mobileSearchClear" aria-label="Очистить поиск"><span class="eic eic-x" aria-hidden="true"></span></button>
-                </div>
-                <select id="mobileStatusFilter" class="mobile-status-filter" title="Фильтр по статусу" aria-label="Фильтр по статусу">
-                    <option value="">Все</option>
-                    <option value="Н">Серия</option>
-                    <option value="П">Подсказка</option>
-                    <option value="От">Отложена</option>
-                    <option value="Р">Разобрано</option>
-                </select>
+        <nav class="mc-grades" id="gradeSwitcher" aria-label="Класс или летняя серия">
+            <button type="button" class="grade-card" data-grade="grade-9" aria-pressed="false"><span class="grade-card-title">9 класс</span><span data-count-grade="grade-9" class="mc-count">—</span></button>
+            <button type="button" class="grade-card" data-grade="grade-summer-9-10" aria-pressed="false"><span class="grade-card-title">Лето 9–10</span><span data-count-grade="grade-summer-9-10" class="mc-count">—</span></button>
+            <button type="button" class="grade-card active" data-grade="grade-10" aria-pressed="true"><span class="grade-card-title">10 класс</span><span data-count-grade="grade-10" class="mc-count">—</span></button>
+            <button type="button" class="grade-card" data-grade="grade-summer-10-11" aria-pressed="false"><span class="grade-card-title">Лето 10–11</span><span data-count-grade="grade-summer-10-11" class="mc-count">—</span></button>
+            <button type="button" class="grade-card" data-grade="grade-11" aria-pressed="false"><span class="grade-card-title">11 класс</span><span data-count-grade="grade-11" class="mc-count">—</span></button>
+        </nav>
+
+        <div class="mc-toolbar" role="search" aria-label="Поиск по Матцентру">
+            <div class="mc-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+                <input type="search" id="searchInput" placeholder="Номер или текст задачи" aria-label="Номер или текст задачи" autocomplete="off">
+                <button type="button" id="searchClearBtn" class="search-clear-btn" aria-label="Очистить поиск">×</button>
+            </div>
+            <select id="mcSearchScope" aria-label="Область поиска">
+                <option value="section">В этом разделе</option>
+                <option value="archive">Во всём архиве</option>
+            </select>
+            <select id="statusFilter" aria-label="Статус задачи"><option value="">Все статусы</option></select>
+            <div class="mc-view-switch" role="group" aria-label="Отображение задач">
+                <button type="button" data-mc-view="compact" aria-pressed="true">Компактно</button>
+                <button type="button" data-mc-view="reading" aria-pressed="false">Чтение</button>
             </div>
         </div>
-
-        <!-- Переключатель классов и летних серий -->
-        <section class="matcenter-grade-picker" aria-labelledby="gradePickerTitle">
-            <div class="matcenter-grade-picker-heading">
-                <div>
-                    <span class="matcenter-grade-picker-kicker">Навигация по архиву</span>
-                    <h2 id="gradePickerTitle">Выберите раздел</h2>
-                </div>
-                <p>Классы и летние серии</p>
-            </div>
-            <nav class="grade-switcher" id="gradeSwitcher" aria-label="Выбор класса или летней серии">
-            <button type="button" class="grade-card active" data-grade="grade-9" aria-pressed="true">
-                <span class="grade-card-eyebrow">Класс</span>
-                <span class="grade-card-title">9 класс</span>
-                <span class="grade-card-meta">
-                    <span class="grade-card-count" data-count-grade="grade-9">—</span>
-                    <span class="grade-card-sub">задач</span>
-                </span>
-            </button>
-            <button type="button" class="grade-card grade-card-summer" data-grade="grade-summer-9-10" aria-pressed="false">
-                <span class="grade-card-eyebrow">Летняя серия</span>
-                <span class="grade-card-title">9 — 10</span>
-                <span class="grade-card-meta">
-                    <span class="grade-card-count" data-count-grade="grade-summer-9-10">—</span>
-                    <span class="grade-card-sub">задач</span>
-                </span>
-            </button>
-            <button type="button" class="grade-card" data-grade="grade-10" aria-pressed="false">
-                <span class="grade-card-eyebrow">Класс</span>
-                <span class="grade-card-title">10 класс</span>
-                <span class="grade-card-meta">
-                    <span class="grade-card-count" data-count-grade="grade-10">—</span>
-                    <span class="grade-card-sub">задач</span>
-                </span>
-            </button>
-            <button type="button" class="grade-card grade-card-summer" data-grade="grade-summer-10-11" aria-pressed="false">
-                <span class="grade-card-eyebrow">Летняя серия</span>
-                <span class="grade-card-title">10 — 11</span>
-                <span class="grade-card-meta">
-                    <span class="grade-card-count" data-count-grade="grade-summer-10-11">—</span>
-                    <span class="grade-card-sub">задач</span>
-                </span>
-            </button>
-            <button type="button" class="grade-card" data-grade="grade-11" aria-pressed="false">
-                <span class="grade-card-eyebrow">Класс</span>
-                <span class="grade-card-title">11 класс</span>
-                <span class="grade-card-meta">
-                    <span class="grade-card-count" data-count-grade="grade-11">—</span>
-                    <span class="grade-card-sub">задач</span>
-                </span>
-            </button>
-            </nav>
-        </section>
+        <div class="mc-series-row" id="mcSeriesRow" hidden>
+            <label for="mcSeriesSelect">Серия</label>
+            <select id="mcSeriesSelect" aria-label="История серий"></select>
+            <span id="mcSeriesSummary"></span>
+        </div>
+        <p id="mcResultSummary" class="mc-result-summary" role="status" aria-live="polite" hidden></p>
 
         <!-- Статистика -->
         <section class="content-section matcenter-stats-section">
-            <div class="stats-container" id="statsContainer">
-                <div class="stat-card clickable stat-card--total" data-filter="all-tasks" title="Все задачи" role="button" tabindex="0">
-                    <span class="stat-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
-                    <span class="stat-card-text">
-                        <span class="stat-number" id="totalTasks">0</span>
-                        <span class="stat-label">Всего задач</span>
-                    </span>
-                </div>
-                <div class="stat-card clickable stat-card--unsolved" data-filter="unsolved" title="Неразобранные" role="button" tabindex="0">
-                    <span class="stat-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></span>
-                    <span class="stat-card-text">
-                        <span class="stat-number" id="unsolvedTasks">0</span>
-                        <span class="stat-label">Неразобрано</span>
-                    </span>
-                </div>
-                <div class="stat-card clickable stat-card--series" data-filter="current-series" title="Текущая серия" role="button" tabindex="0">
-                    <span class="stat-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5a.8.8 0 0 0 .65 1.25H11l-1 7.25L18.5 10a.8.8 0 0 0-.65-1.25H12l1-6.75Z"/></svg></span>
-                    <span class="stat-card-text">
-                        <span class="stat-number" id="currentSeries">0</span>
-                        <span class="stat-label">Текущая серия</span>
-                    </span>
-                </div>
-                <div class="stat-card clickable stat-card--postponed" data-filter="postponed" title="Откладыши" role="button" tabindex="0">
-                    <span class="stat-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
-                    <span class="stat-card-text">
-                        <span class="stat-number" id="postponedTasks">0</span>
-                        <span class="stat-label">Откладыши</span>
-                    </span>
-                </div>
-            </div>
+            <nav class="mc-filters" id="statsContainer" aria-label="Категория задач">
+                <button type="button" class="stat-card clickable" data-filter="all-tasks" aria-pressed="true">Все задачи <span id="totalTasks">0</span></button>
+                <button type="button" class="stat-card clickable" data-filter="current-series" aria-pressed="false">Текущая серия <span id="currentSeries">0</span></button>
+                <button type="button" class="stat-card clickable" data-filter="postponed" aria-pressed="false">Отложенные <span id="postponedTasks">0</span></button>
+                <button type="button" class="stat-card clickable" data-filter="unsolved" aria-pressed="false">Неразобранные <span id="unsolvedTasks">0</span></button>
+            </nav>
 
             <!-- Личный прогресс решённых задач (виден только вошедшим пользователям) -->
             <div class="matcenter-progress" id="matcenterProgress" hidden aria-live="polite">
@@ -310,7 +231,7 @@
         <!-- Список задач -->
         <section class="content-section matcenter-task-view" id="all-tasks">
             <div class="part-title-row">
-                <h2 class="part-title" id="allTasksTitle">9 класс — все задачи</h2>
+                <h2 class="part-title" id="allTasksTitle">10 класс — все задачи</h2>
                 <button type="button" class="refresh-button" data-refresh title="Обновить данные" aria-label="Обновить данные"><svg class="icon icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.45 6.36L3 16"/><path d="M3 12a9 9 0 0 1 15.45-6.36L21 8"/><polyline points="21 3 21 8 16 8"/><polyline points="3 21 3 16 8 16"/></svg></button>
             </div>
             <div id="tasksContainer" class="tasks-container"></div>
@@ -362,14 +283,16 @@
     <script defer src="kc-storage.js?v=20260911-1"></script>
 
     <script defer src="script.js?v=20260905-2"></script>
-    <script defer src="matcenter/00-core.js?v=20260911-2"></script>
+    <script defer src="matcenter/00-core.js?v=20260926-1"></script>
     <script defer src="matcenter/10-security.js?v=20260902-2"></script>
     <script defer src="matcenter/20-auth.js?v=20260912-1"></script>
     <script defer src="matcenter/25-cache.js?v=20260911-1"></script>
-    <script defer src="matcenter/30-data.js?v=20260911-1"></script>
-    <script defer src="matcenter/40-personal-progress.js?v=20260907-1"></script>
-    <script defer src="matcenter/50-render.js?v=20260911-2"></script>
-    <script defer src="matcenter/60-navigation-search.js?v=20260903-2"></script>
+    <script defer src="matcenter/35-workspace-model.js?v=20260926-1"></script>
+    <script defer src="matcenter/30-data.js?v=20260926-1"></script>
+    <script defer src="matcenter/40-personal-progress.js?v=20260926-1"></script>
+    <script defer src="matcenter/50-render.js?v=20260926-1"></script>
+    <script defer src="matcenter/60-navigation-search.js?v=20260926-1"></script>
+    <script defer src="matcenter/65-workspace.js?v=20260926-1"></script>
     <script defer src="matcenter/runtime.js?v=20260911-2"></script>
     <script defer src="account.js?v=20260908-1"></script>
 </body>
