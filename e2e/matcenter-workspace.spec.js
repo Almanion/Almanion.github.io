@@ -57,6 +57,67 @@ async function ready(page) {
     await expect(page.locator('#tasksContainer .task-card').first()).toBeVisible();
 }
 
+test('transient table failures retry only failed source, preserve cache and clear warning on recovery', async ({ page }) => {
+    await setup(page);
+    let mainCalls = 0;
+    let summerCalls = 0;
+    let outage = false;
+    await page.route('https://script.google.com/**', async route => {
+        const data = route.request().postDataJSON();
+        if (data.action) return route.fallback();
+        if (route.request().url().includes('AKfycbw_')) { summerCalls++; return route.fallback(); }
+        mainCalls++;
+        if (outage || mainCalls === 1) return route.fulfill({ status: 503, body: 'Temporary outage' });
+        return route.fallback();
+    });
+    await page.goto('/matcenter.html?grade=grade-10');
+    await ready(page);
+    expect(mainCalls).toBe(2);
+    expect(summerCalls).toBe(1);
+    await expect(page.locator('.matcenter-data-warning')).toHaveCount(0);
+    const before = await page.locator('#tasksContainer .task-number-label').allTextContents();
+    outage = true;
+    await page.evaluate(() => loadTasksFromGoogleSheets(false, true));
+    await expect(page.locator('.matcenter-data-warning')).toContainText('основная таблица');
+    expect(await page.locator('#tasksContainer .task-number-label').allTextContents()).toEqual(before);
+    expect(mainCalls).toBe(4);
+    outage = false;
+    await page.evaluate(() => loadTasksFromGoogleSheets(false, true));
+    await expect(page.locator('.matcenter-data-warning')).toHaveCount(0);
+    expect(mainCalls).toBe(5);
+});
+
+test('dropdowns have themed pickers, keyboard selection and fit mobile viewport', async ({ page }, info) => {
+    const errors = await setup(page, { dark: true });
+    for (const width of [1440, 320]) {
+        await page.setViewportSize({ width, height: 850 });
+        await page.goto('/matcenter.html?grade=grade-10');
+        await ready(page);
+        const select = page.locator('#mcSearchScope');
+        await select.click();
+        await expect(select).toHaveJSProperty('value', 'section');
+        expect(await select.evaluate(el => el.matches(':open'))).toBe(true);
+        const styles = await select.evaluate(el => {
+            const picker = getComputedStyle(el, '::picker(select)');
+            const option = el.options[1].getBoundingClientRect();
+            return { radius: picker.borderRadius, background: picker.backgroundColor, left: option.left, right: option.right };
+        });
+        expect(styles.radius).toBe('12px');
+        expect(styles.background).not.toBe('rgba(0, 0, 0, 0)');
+        expect(styles.left).toBeGreaterThanOrEqual(0);
+        expect(styles.right).toBeLessThanOrEqual(width);
+        await page.screenshot({ path: info.outputPath(`dropdown-${width}.png`) });
+        await page.keyboard.press('ArrowDown');
+        await page.keyboard.press('Enter');
+        await expect(select).toHaveValue('archive');
+        await select.click();
+        await page.keyboard.press('Escape');
+        expect(await select.evaluate(el => el.matches(':open'))).toBe(false);
+        await select.selectOption('section');
+    }
+    expect(errors).toEqual([]);
+});
+
 test('compact layout, opt-in series, legacy progress, reading and exact archive search', async ({ page }, info) => {
     const errors = await setup(page);
     await page.setViewportSize({ width: 1440, height: 950 });

@@ -40,7 +40,7 @@
     },
     "matcenter.html": {
       "maxInitialLocalJsBytes": 400000,
-      "maxInitialLocalCssBytes": 495000,
+      "maxInitialLocalCssBytes": 497000,
       "maxInitialLocalRequests": 37,
       "maxExternalRequests": 6
     },

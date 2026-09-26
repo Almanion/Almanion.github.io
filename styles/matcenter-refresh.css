@@ -89,6 +89,21 @@ body.matcenter-page .mc-series-row select {
     margin: 0; border: 1px solid var(--mc-line); border-radius: 10px; color: var(--mc-ink);
     background-color: var(--mc-surface); font: inherit; font-size: .82rem;
 }
+/* Keep native keyboard/mobile controls where customizable selects are unavailable. */
+@supports (appearance: base-select) {
+    body.matcenter-page .mc-select,
+    body.matcenter-page .mc-select::picker(select) { appearance: base-select; }
+    body.matcenter-page .mc-select { background-image: none; padding-right: .75rem; cursor: pointer; white-space: normal; overflow-wrap: anywhere; gap: .5rem; }
+    body.matcenter-page .mc-select::picker-icon { color: var(--mc-muted); margin-left: auto; }
+    body.matcenter-page .mc-select::picker(select) {
+        color: var(--mc-ink); background: var(--mc-surface); border: 1px solid var(--mc-line);
+        border-radius: 12px; padding: 5px; margin-block: 5px; max-height: min(360px, 60dvh);
+        box-shadow: 0 12px 32px #0003; overflow: auto; font: inherit;
+    }
+    body.matcenter-page .mc-select option { min-height: 42px; padding: .6rem .75rem; border-radius: 7px; white-space: normal; overflow-wrap: anywhere; }
+    body.matcenter-page .mc-select option:is(:checked,:hover,:focus-visible) { background: color-mix(in srgb, var(--mc-accent) 12%, var(--mc-surface)); color: var(--mc-accent); }
+    body.matcenter-page .mc-select:open { border-color: var(--mc-accent); }
+}
 body.matcenter-page .mc-view-switch { display: flex; gap: .2rem; padding: .2rem; border: 1px solid var(--mc-line); border-radius: 10px; }
 body.matcenter-page .mc-view-switch button { min-height: 36px; padding: .4rem .7rem; border: 0; border-radius: 7px; color: var(--mc-muted); background: none; font: inherit; font-size: .82rem; cursor: pointer; }
 body.matcenter-page .mc-view-switch button[aria-pressed="true"] { background: color-mix(in srgb, var(--mc-accent) 12%, var(--mc-surface)); color: var(--mc-accent); }

@@ -114,7 +114,7 @@ function rebuildNavMenu(grade) {
             { id: 'unsolved', title: 'Неразобранные' });
     }
 
-    listEl.innerHTML = `<li class="mc-sidebar-tools"><select id="mcSidebarGrade" aria-label="Раздел Матцентра">${GRADE_SECTIONS.map(section => `<option value="${section.id}" ${section.id === grade ? 'selected' : ''}>${escapeHtml(section.title)}</option>`).join('')}</select><button type="button" id="mcSidebarSearch">Поиск задач</button></li>` + items.map(item => {
+    listEl.innerHTML = `<li class="mc-sidebar-tools"><select class="mc-select" id="mcSidebarGrade" aria-label="Раздел Матцентра">${GRADE_SECTIONS.map(section => `<option value="${section.id}" ${section.id === grade ? 'selected' : ''}>${escapeHtml(section.title)}</option>`).join('')}</select><button type="button" id="mcSidebarSearch">Поиск задач</button></li>` + items.map(item => {
         const isActive = item.id === currentFilter ? ' active' : '';
         return `<li><a href="#${item.id}" class="nav-link${isActive}" ${isActive ? 'aria-current="page"' : ''}>${escapeHtml(item.title)}</a></li>`;
     }).join('');

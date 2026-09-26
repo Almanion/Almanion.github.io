@@ -137,7 +137,11 @@ let personalSolvedInitialized = false;
 
 async function postMatcenterJson(endpoint, payload, options = {}) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 9000);
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+    }, options.timeoutMs || 9000);
     const externalSignal = options && options.signal;
     const abortFromExternal = () => controller.abort();
     if (externalSignal) {
@@ -154,14 +158,55 @@ async function postMatcenterJson(endpoint, payload, options = {}) {
         if (!response.ok) {
             const error = new Error(`HTTP ${response.status}`);
             error.code = response.status === 401 || response.status === 403 ? 'AUTH' : 'HTTP';
+            error.status = response.status;
             throw error;
         }
         const text = await response.text();
         try { return JSON.parse(text); }
-        catch (_) { throw new Error('Сервер вернул некорректный ответ'); }
+        catch (_) {
+            const error = new Error('Сервер вернул некорректный ответ');
+            error.code = 'INVALID_RESPONSE';
+            throw error;
+        }
+    } catch (error) {
+        if (externalSignal?.aborted) throw new DOMException('Запрос отменён', 'AbortError');
+        if (timedOut) {
+            const timeoutError = new Error('Таблица не успела ответить');
+            timeoutError.code = 'TIMEOUT';
+            throw timeoutError;
+        }
+        throw error;
     } finally {
         clearTimeout(timeout);
         if (externalSignal) externalSignal.removeEventListener('abort', abortFromExternal);
+    }
+}
+
+// Only task reads are retried: repeating a write could apply it twice.
+async function readMatcenterTasksJson(endpoint, payload, signal) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+        if (signal?.aborted) throw new DOMException('Запрос отменён', 'AbortError');
+        try {
+            return await postMatcenterJson(endpoint, payload, { signal, timeoutMs: 25000 });
+        } catch (error) {
+            const transient = error.code === 'TIMEOUT' || error.code === 'INVALID_RESPONSE'
+                || error.name === 'TypeError'
+                || (error.code === 'HTTP' && (error.status === 429 || error.status >= 500));
+            if (signal?.aborted || !transient || attempt === 1) throw error;
+            await new Promise((resolve, reject) => {
+                const abort = () => {
+                    clearTimeout(timer);
+                    signal.removeEventListener('abort', abort);
+                    reject(new DOMException('Запрос отменён', 'AbortError'));
+                };
+                const timer = setTimeout(() => {
+                    signal?.removeEventListener('abort', abort);
+                    resolve();
+                }, 1000 + Math.random() * 500);
+                signal?.addEventListener('abort', abort, { once: true });
+                if (signal?.aborted) abort();
+            });
+        }
     }
 }
 

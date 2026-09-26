@@ -114,7 +114,7 @@ function getCachedTasksByEndpoint() {
 }
 
 function getEndpointLabel(endpointIdx) {
-    if (endpointIdx === 0) return 'основная таблица (9 класс)';
+    if (endpointIdx === 0) return 'основная таблица';
     if (endpointIdx === 1) return 'летняя серия 9–10';
     return `источник №${endpointIdx + 1}`;
 }
@@ -371,10 +371,10 @@ async function loadFromOneEndpoint(endpoint, endpointIdx, signal) {
     const clientId = deviceFingerprint ? deviceFingerprint.substring(0, 16) : 'unknown';
     let data;
     try {
-        data = await postMatcenterJson(endpoint, {
+        data = await readMatcenterTasksJson(endpoint, {
             idToken: await getMatcenterIdToken(),
             clientId
-        }, { signal });
+        }, signal);
     } catch (error) {
         if (!error.code) error.code = 'NETWORK';
         throw error;

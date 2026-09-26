@@ -54,7 +54,7 @@
     <link rel="stylesheet" href="style-new.css?v=20260920-2">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
-    <link rel="stylesheet" href="styles/matcenter-refresh.css?v=20260926-3">
+    <link rel="stylesheet" href="styles/matcenter-refresh.css?v=20260926-4">
 </head>
 <body class="matcenter-page">
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -167,11 +167,11 @@
                 <input type="search" id="searchInput" placeholder="Номер или текст задачи" aria-label="Номер или текст задачи" autocomplete="off">
                 <button type="button" id="searchClearBtn" class="search-clear-btn" aria-label="Очистить поиск">×</button>
             </div>
-            <select id="mcSearchScope" aria-label="Область поиска">
-                <option value="section">В этом разделе</option>
-                <option value="archive">Во всём архиве</option>
+            <select class="mc-select" id="mcSearchScope" aria-label="Область поиска">
+                <option value="section">В разделе</option>
+                <option value="archive">Весь архив</option>
             </select>
-            <select id="statusFilter" aria-label="Статус задачи"><option value="">Все статусы</option></select>
+            <select class="mc-select" id="statusFilter" aria-label="Статус задачи"><option value="">Все статусы</option></select>
             <div class="mc-view-switch" role="group" aria-label="Отображение задач">
                 <button type="button" data-mc-view="compact" aria-pressed="true">Компактно</button>
                 <button type="button" data-mc-view="reading" aria-pressed="false">Чтение</button>
@@ -179,7 +179,7 @@
         </div>
         <div class="mc-series-row" id="mcSeriesRow" hidden>
             <label for="mcSeriesSelect">Серия</label>
-            <select id="mcSeriesSelect" aria-label="История серий"></select>
+            <select class="mc-select" id="mcSeriesSelect" aria-label="История серий"></select>
             <span id="mcSeriesSummary"></span>
         </div>
         <p id="mcResultSummary" class="mc-result-summary" role="status" aria-live="polite" hidden></p>
@@ -283,15 +283,15 @@
     <script defer src="kc-storage.js?v=20260911-1"></script>
 
     <script defer src="script.js?v=20260905-2"></script>
-    <script defer src="matcenter/00-core.js?v=20260926-1"></script>
+    <script defer src="matcenter/00-core.js?v=20260926-4"></script>
     <script defer src="matcenter/10-security.js?v=20260902-2"></script>
     <script defer src="matcenter/20-auth.js?v=20260912-1"></script>
     <script defer src="matcenter/25-cache.js?v=20260911-1"></script>
     <script defer src="matcenter/35-workspace-model.js?v=20260926-1"></script>
-    <script defer src="matcenter/30-data.js?v=20260926-1"></script>
+    <script defer src="matcenter/30-data.js?v=20260926-4"></script>
     <script defer src="matcenter/40-personal-progress.js?v=20260926-1"></script>
     <script defer src="matcenter/50-render.js?v=20260926-1"></script>
-    <script defer src="matcenter/60-navigation-search.js?v=20260926-2"></script>
+    <script defer src="matcenter/60-navigation-search.js?v=20260926-4"></script>
     <script defer src="matcenter/65-workspace.js?v=20260926-1"></script>
     <script defer src="matcenter/runtime.js?v=20260911-2"></script>
     <script defer src="account.js?v=20260908-1"></script>
