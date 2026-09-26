@@ -31,6 +31,11 @@
     const el=document.createElement('div');el.className='toast'+(error?' error':'');el.textContent=message;
     $('toastArea').replaceChildren(el);setTimeout(()=>el.remove(),3800);
   }
+  function awardNotice(awards,prefix=''){
+    const message=awards.map(a=>`${a.name} · +${a.xp} XP`).join('; ');
+    if(message)toast(`${prefix?prefix+'\n':''}Достижения: ${message}`);
+    if(app.screen==='awards')renderAwards();
+  }
   function updateProfileUI(){
     const p=app.profile,r=G.rank(p),done=C.count(p),medals=G.totalMedals(p);
     $('creditValue').textContent=money(p.credits);$('dataValue').textContent=p.data;$('rankBadge').textContent=r.name;
@@ -189,7 +194,7 @@
     if(!Number.isFinite(angle)||!Number.isFinite(speed))return;
     app.angle=Math.round(P.clamp(angle,-180,180)*10)/10;
     app.speed=Math.round(P.clamp(speed,60,stats().maxSpeed));
-    app.aims[app.currentId]={angle:app.angle,speed:app.speed};app.previewDirty=true;syncControls();
+    app.aims[app.currentId]={angle:app.angle,speed:app.speed};app.previewDirty=true;syncControls();updateMedalStates();
   }
   function syncControls(){
     $('angleInput').value=app.angle.toFixed(1);$('angleRange').value=app.angle;
@@ -237,7 +242,8 @@
     return `<svg viewBox="0 0 48 58" aria-hidden="true"><path class="medal-ribbon" d="m11 37-3 17 10-4 6 6 3-16m10-3 3 17-10-4-6 6-3-16"/><circle class="medal-rim" cx="24" cy="25" r="21"/><circle class="medal-inner" cx="24" cy="25" r="17"/>${paths[key]||paths.delivery}</svg>`;
   }
   function updateMedalStates(){
-    const l=displayLevel(),r=G.viewRecord(app.profile,l.id),ds=O.Medals.describe(l,displayState(),app.speed,r,app.assisted,stats());
+    // Scrubbing the recording must not make the awarded medals disappear.
+    const l=O.Routes.view(level(),app.state,app.branchView),r=G.viewRecord(app.profile,l.id),ds=O.Medals.describe(l,app.state,app.speed,r,app.assisted,stats());
     for(const d of ds){const card=$('medal-'+d.key);if(!card)continue;
       if(card.dataset.state!==d.state)card.dataset.state=d.state;
       card.querySelector('.medal-detail').textContent=d.detail==='Этапы 0 / 0'?'До станции':d.detail;
@@ -247,7 +253,7 @@
       card.querySelector('.medal-track i').style.width=`${Math.max(0,Math.min(1,d.progress))*100}%`;
       card.setAttribute('aria-label',`${d.title}. ${d.condition}. ${d.detail}. ${d.status}. ${d.earned?'Уже есть в коллекции.':''}`);
     }
-    $('medalLegend').textContent=app.assisted?'Тренировка: медали не выдаются':'Засчитываются только после доставки';
+    $('medalLegend').textContent=app.assisted?'Тренировка: медали не выдаются':app.state?.status==='won'?'Итог рейса · перемотка не меняет награды':'Засчитываются только после доставки';
   }
   function updateObjectives(){
     const l=level(),r=G.viewRecord(app.profile,l.id),rules=l.rules||{};
@@ -379,10 +385,10 @@
     const options=[['sound','Звуковые сигналы','Синтезированные эффекты, без фоновой музыки.'],['grid','Поле тяготения','Показывать направление ускорения в разных точках.'],['ghost','След предыдущей попытки','Серая линия помогает уточнять маршрут.'],['reducedMotion','Меньше анимаций','Меньше декоративного движения. Планеты, станция и груз продолжают двигаться по правилам игры.']];
     openModal('Сохранение и настройки',`${options.map(([key,title,caption])=>`<label class="check-row"><span>${title}<small>${caption}</small></span><input type="checkbox" data-setting="${key}" ${s[key]?'checked':''}></label>`).join('')}<h3>Твой прогресс остаётся у тебя</h3><p>Автосохранение: <strong>${app.storageOK?'доступно в этом браузере':'недоступно — используй экспорт'}</strong>. Оно привязано к браузеру и адресу игры. При переносе папки, очистке данных или смене браузера импортируй резервную копию.</p><div class="modal-actions"><button class="button quiet" data-action="export">Экспорт в JSON ↓</button><button class="button quiet" data-action="import">Импорт из JSON ↑</button></div><div class="info-box">В игре нет сервера, аккаунта, рекламы и отправки данных. Для надёжности экспортируй сохранение перед переносом игры. Экспорт содержит прогресс, но не текущий полёт.</div><div class="modal-actions"><button class="button danger" data-action="reset-confirm">Сбросить прогресс</button><button class="button primary" data-action="close">Готово</button></div>`,'НАСТРОЙКИ');
   }
-  function exportSave(){app.profile.flags=app.profile.flags||{};app.profile.flags.export=true;G.awardAchievements(app.profile);save();updateProfileUI();
+  function exportSave(){app.profile.flags=app.profile.flags||{};app.profile.flags.export=true;const awards=G.awardAchievements(app.profile);save();updateProfileUI();
     const blob=new Blob([JSON.stringify(app.profile,null,2)],{type:'application/json;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
     a.href=url;a.download=`orbital-courier-save-${new Date().toISOString().slice(0,10)}.json`;
-    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);toast('Резервная копия подготовлена. Сохрани JSON-файл.');
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);const message='Резервная копия подготовлена. Сохрани JSON-файл.';toast(message);awardNotice(awards,message);
   }
   async function importSave(file){
     if(!file)return;if(file.size>2*1024*1024){toast('Сохранение слишком большое. Лимит — 2 МБ.',true);return;}
@@ -418,7 +424,7 @@
     'angle-down':()=>setAim(app.angle-(app.profile.settings.fineAim?0.1:0.5),app.speed),'angle-up':()=>setAim(app.angle+(app.profile.settings.fineAim?0.1:0.5),app.speed),
     'speed-down':()=>setAim(app.angle,app.speed-(app.profile.settings.fineAim?1:2)),'speed-up':()=>setAim(app.angle,app.speed+(app.profile.settings.fineAim?1:2)),
     'toggle-grid':()=>{app.profile.settings.grid=!app.profile.settings.grid;save();syncControls();},
-    speed:()=>{app.timeScale=app.timeScale===.5?1:app.timeScale===1?2:app.timeScale===2?4:.5;updateTelemetry();},
+    speed:()=>{const rates=[.5,1,2,4,10];app.timeScale=rates[(rates.indexOf(app.timeScale)+1)%rates.length];updateTelemetry();},
     next:()=>G.unlocked(app.profile,C.adjacent(app.currentId,1))?travelToLevel(C.adjacent(app.currentId,1)):go('campaign'),
     sector:b=>chooseSector(Number(b.dataset.sector)),
     'campaign-tier':b=>chooseSector(C.tiers[+b.dataset.tier].sectors[0]),
@@ -427,7 +433,7 @@
     'economy-info':economyInfo,
     'respec-info':respecInfo,
     'contract-info':()=>openModal('Условия приёмки',`<p>${escape(level().brief)}</p><div class="contract-rules modal-rules">${$('strictRules').innerHTML}</div>${level().dynamic?'<div class="info-box">Пунктирные петли — орбиты, а не маршрут корабля. Бледный контур — положение объекта в конце прогноза. Движение начинается при запуске; повтор возвращает начальные позиции. Для движущейся станции ограничение скорости проверяется относительно неё.</div>':''}<p>Условия проверяются при входе в зону станции.</p><div class="modal-actions"><button class="button primary" data-action="close">Понятно</button></div>`),
-    'respec-confirm':()=>{const r=G.respec(app.profile);closeModal();save();updateProfileUI();renderHangar();toast(`Пересборка: возвращено ${r.credits} ◈ и ${r.data} ⬡`);},
+    'respec-confirm':()=>{const r=G.respec(app.profile);closeModal();save();updateProfileUI();renderHangar();const message=`Пересборка: возвращено ${r.credits} ◈ и ${r.data} ⬡`;toast(message);awardNotice(r.awards,message);},
     difficulty:b=>{if(app.state)return;app.profile.difficulty=b.dataset.mode==='pro'?'pro':'normal';save();loadLevel(app.currentId);},
     experts:()=>{app.campaignSector=8;go('campaign');},
     dynamic:()=>{app.campaignSector=11;go('campaign');},
@@ -439,7 +445,7 @@
       const result=G.buy(app.profile,b.dataset.key);
       if(!result.ok){toast(result.message,true);closeModal();renderHangar();return;}
       closeModal();save();updateProfileUI();renderHangar();sound.play('upgrade');
-      toast(`Модуль улучшен · −${result.cost} ◈ / −${result.data} ⬡`);for(const a of result.awards)toast(`Достижение: ${a.name} · +${a.xp} XP`);
+      const message=`Модуль улучшен · −${result.cost} ◈ / −${result.data} ⬡`;toast(message);awardNotice(result.awards,message);
     },
     skin:b=>{const s=G.SKINS.find(x=>x.id===b.dataset.key);if(s&&O.Cosmetics.unlocked(app.profile,s)){app.profile.skin=s.id;save();renderHangar();}},
     export:exportSave,import:()=>{$('importFile').value='';$('importFile').click();},'reset-confirm':resetConfirm,

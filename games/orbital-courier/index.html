@@ -1054,7 +1054,7 @@ O.Routes={branch,view,cargoIds,collected};if(typeof module!=='undefined'&&module
 /* Bounded counters, seven sections; awards never pay credits. */
 (function(root){'use strict';const O=root.Orbital=root.Orbital||{};
 const CATEGORIES=[['campaign','Экспедиция','✧'],['mastery','Мастерство','★'],['routes','Маршруты','⌁'],['portals','Разломы','◎'],['courier','Курьерская служба','▣'],['engineering','Инженерия','⚙'],['legacy','Наследие','◇']];
-function create(legacy){let all=legacy.map(a=>({...a,category:'legacy',target:1,progress:p=>a.test(p)?1:0}));const records=p=>Object.values(p.records),L=()=>O.LEVELS||[],done=(p,id)=>!!p.records[id]?.medals;const add=(id,name,text,category,target,get,xp=80)=>all.push({id,name,text,category,target,progress:p=>Math.min(target,get(p)),test:p=>get(p)>=target,xp,icon:CATEGORIES.find(c=>c[0]===category)[2]});
+function create(legacy){let all=legacy.map(a=>({...a,category:'legacy'}));const records=p=>Object.values(p.records),L=()=>O.LEVELS||[],done=(p,id)=>!!(p.records[id]?.medals&1);const add=(id,name,text,category,target,get,xp=80)=>all.push({id,name,text,category,target,progress:p=>Math.min(target,get(p)),test:p=>get(p)>=target,xp,icon:CATEGORIES.find(c=>c[0]===category)[2]});
 for(let s=3;s<20;s++)add('sector-'+s,`${O.SECTORS[s].name}: полный маршрут`,`Завершить четыре контракта «${O.SECTORS[s].name}».`,'campaign',4,p=>L().filter(l=>l.sector===s&&(l.routeRevision>8?O.Campaign.current(p,l.id):done(p,l.id))).length,80+5*s);
 const series=(key,title,cat,ts,get,xp=80)=>ts.forEach((n,i)=>add(key+'-'+n,`${title} ${i+1}`,`${title}: ${n} разных подтверждений.` ,cat,n,get,xp+i*20));
 series('gold','Три актуальные медали','mastery',[5,15,30,60,80],p=>L().filter(l=>p.records[l.id]?.currentMedals===7&&(!(l.routeRevision>8)||p.records[l.id].routeVersion===l.routeRevision)).length);
@@ -1626,7 +1626,8 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   const totalMedals=p=>Object.values(p.records).reduce((n,r)=>n+medalCount(r.medals),0);
   const cargoCount=p=>Object.values(p.records).reduce((n,r)=>n+r.cargo.length,0);
   const totalCargo=()=>levels().reduce((n,l)=>n+l.cargo.length,0);
-  const firstN=(p,n)=>Array.from({length:n},(_,i)=>i).every(i=>record(p,i).medals&1);
+  const firstLevels=n=>Campaign.order.slice(0,n).map(id=>levels()[id]);
+  const firstN=(p,n)=>firstLevels(n).every(l=>Campaign.current(p,l.id));
   const milestones=[
     ['first','Есть контакт','Завершить первый контракт.','↗',25,p=>completed(p)>=1],
     ['perfect','Безупречная доставка','Три медали в одном контракте.','★',30,p=>Object.values(p.records).some(r=>r.medals===7)],
@@ -1643,15 +1644,15 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     ['frontier','Внешняя граница','Закрыть первые 24 контракта.','⟡',80,p=>firstN(p,24)],
     ['deep','За гранью света','Закрыть первые 28 контрактов.','◐',90,p=>firstN(p,28)],
     ['campaign32','Новая сеть маяков','Завершить первые 44 контракта.','✺',150,p=>firstN(p,44)],
-    ['manifest96','Абсолютная опись','Доставить все контейнеры первых 44 контрактов.','◈',130,p=>levels().slice(0,44).every(l=>record(p,l.id).cargo.length===l.cargo.length)],
-    ['medals96','Совершенный маршрут','Получить все медали первых 44 контрактов.','✦',200,p=>levels().slice(0,44).every(l=>record(p,l.id).medals===7)],
-    ['expert12','Вне зоны комфорта','Завершить 12 экспертных контрактов.','◉',250,p=>levels().filter(l=>l.expert&&(record(p,l.id).medals&1)).length>=12],
+    ['manifest96','Абсолютная опись','Доставить все контейнеры первых 44 контрактов, включая обе ветви.','◈',130,p=>firstLevels(44).every(l=>record(p,l.id).cargo.length===l.cargo.length)],
+    ['medals96','Совершенный маршрут','Получить все медали первых 44 контрактов.','✦',200,p=>firstLevels(44).every(l=>record(p,l.id).medals===7)],
+    ['expert12','Вне зоны комфорта','Завершить 12 контрактов сложности «Экспертная».','◉',250,p=>levels().filter(l=>Campaign.tiers[3].sectors.includes(l.sector)&&Campaign.current(p,l.id)).length>=12],
     ['pro10','Лицензия профессионала','Завершить 10 разных контрактов в режиме ПРО.','◆',180,p=>Object.values(p.records).filter(r=>r.proWon).length>=10],
     ['tractor','Своя гравитация','Установить гравитационный захват.','◎',50,p=>p.upgrades.magnet>=1],
     ['orbit4','Живые орбиты','Завершить первый блок с движущимися планетами.','◌',100,p=>[44,45,46,47].every(i=>record(p,i).medals&1)],
     ['dance4','В ритме планет','Завершить «Гравитационный танец».','✧',130,p=>[48,49,50,51].every(i=>record(p,i).medals&1)],
     ['intercept4','Точное свидание','Завершить четыре перехвата станции.','⌖',150,p=>[52,53,54,55].every(i=>record(p,i).medals&1)],
-    ['campaign56','Небо не стоит на месте','Завершить все 56 контрактов.','✺',200,p=>firstN(p,56)],
+    ['campaign56','Небо не стоит на месте','Завершить первые 56 контрактов.','✺',200,p=>firstN(p,56)],
     ['front64','В такт орбитам','Завершить «Резонансный фронт».','⌁',160,p=>[56,57,58,59].every(i=>record(p,i).medals&1)],
     ['rift4','По ту сторону','Доставить груз по всем четырём портальным маршрутам.','◎',180,p=>[60,61,62,63].every(i=>record(p,i).medals&1)],
     ['campaign64','Картограф разломов','Завершить первые 64 контракта.','✺',220,p=>firstN(p,64)],
@@ -1659,7 +1660,24 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     ['campaign68','Сквозь пространство','Завершить первые 68 контрактов.','✺',240,p=>firstN(p,68)],
     ['master','Капсула будущего','Улучшить любой модуль до уровня V.','⚙',100,p=>Object.values(p.upgrades).some(v=>v===5)]
   ];
-  const legacyAchievements=milestones.map(([id,name,text,icon,xp,test])=>({id,name,text,icon,xp,test,credits:0}));
+  // Use the same measured progress for the card and for granting its reward.
+  const milestoneProgress={
+    first:[1,completed],perfect:[3,p=>Math.max(0,...Object.values(p.records).map(r=>medalCount(r.medals)))],
+    collector:[12,cargoCount],allcargo:[36,cargoCount],medalist:[36,totalMedals],
+    engineer:[3,p=>Math.max(...Object.values(p.upgrades))],master:[5,p=>Math.max(...Object.values(p.upgrades))],
+    tractor:[1,p=>p.upgrades.magnet],pro10:[10,p=>Object.values(p.records).filter(r=>r.proWon).length],
+    expert12:[12,p=>levels().filter(l=>Campaign.tiers[3].sectors.includes(l.sector)&&Campaign.current(p,l.id)).length],
+    manifest96:[firstLevels(44).reduce((n,l)=>n+l.cargo.length,0),p=>firstLevels(44).reduce((n,l)=>n+record(p,l.id).cargo.length,0)],
+    medals96:[132,p=>firstLevels(44).reduce((n,l)=>n+medalCount(record(p,l.id).medals),0)]
+  };
+  for(const [id,n] of Object.entries({ring:4,titan:8,final:12,ice:16,storms:20,frontier:24,deep:28,campaign32:44,campaign56:56,campaign64:64,campaign68:68}))
+    milestoneProgress[id]=[n,p=>firstLevels(n).filter(l=>Campaign.current(p,l.id)).length];
+  for(const [id,sector] of Object.entries({orbit4:11,dance4:12,intercept4:13,front64:14,rift4:15,riftmasters:16}))
+    milestoneProgress[id]=[4,p=>levels().filter(l=>l.sector===sector&&Campaign.current(p,l.id)).length];
+  const legacyAchievements=milestones.map(([id,name,text,icon,xp,test])=>{
+    const [target,get]=milestoneProgress[id]||[1,p=>test(p)?1:0];
+    return {id,name,text,icon,xp,target,progress:p=>Math.min(target,get(p)),test:p=>get(p)>=target,credits:0};
+  });
   const achievements=A.create(legacyAchievements);
   function fresh(){return {game:'orbital-courier',version:8,credits:E.START_CREDITS,data:0,xp:0,
     upgrades:{scanner:0,magnet:0,docking:0,engine:0},records:{},flags:{},achievements:[],receipts:[],
@@ -1747,8 +1765,8 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   function dataInvested(p){return (p.receipts||[]).reduce((n,r)=>n+r.data,0);}
   function respec(p){
     const credits=invested(p),data=dataInvested(p),inherited=p.receipts.some(r=>r.inherited);
-    p.credits+=credits;p.data+=data;const inheritedReceipts=p.receipts.filter(r=>r.inherited);for(const key of Object.keys(UPGRADE_DEFS))p.upgrades[key]=Math.max(0,...inheritedReceipts.filter(r=>r.key===key).map(r=>r.tier));p.receipts=inheritedReceipts;p.flags=p.flags||{};if(credits||data)p.flags.respec=true;awardAchievements(p);
-    return {credits,data,inherited};
+    p.credits+=credits;p.data+=data;const inheritedReceipts=p.receipts.filter(r=>r.inherited);for(const key of Object.keys(UPGRADE_DEFS))p.upgrades[key]=Math.max(0,...inheritedReceipts.filter(r=>r.key===key).map(r=>r.tier));p.receipts=inheritedReceipts;p.flags=p.flags||{};if(credits||data)p.flags.respec=true;
+    return {credits,data,inherited,awards:awardAchievements(p)};
   }
   function earnedBudget(p){return E.START_CREDITS+Object.values(p.records).reduce((n,r)=>n+(r.paid||0),0);}
   function remainingRewards(p){return levels().reduce((n,l)=>n+Math.max(0,E.capReward(l)-(record(p,l.id).paid||0)),0);}
@@ -2434,6 +2452,11 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     const el=document.createElement('div');el.className='toast'+(error?' error':'');el.textContent=message;
     $('toastArea').replaceChildren(el);setTimeout(()=>el.remove(),3800);
   }
+  function awardNotice(awards,prefix=''){
+    const message=awards.map(a=>`${a.name} · +${a.xp} XP`).join('; ');
+    if(message)toast(`${prefix?prefix+'\n':''}Достижения: ${message}`);
+    if(app.screen==='awards')renderAwards();
+  }
   function updateProfileUI(){
     const p=app.profile,r=G.rank(p),done=C.count(p),medals=G.totalMedals(p);
     $('creditValue').textContent=money(p.credits);$('dataValue').textContent=p.data;$('rankBadge').textContent=r.name;
@@ -2592,7 +2615,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     if(!Number.isFinite(angle)||!Number.isFinite(speed))return;
     app.angle=Math.round(P.clamp(angle,-180,180)*10)/10;
     app.speed=Math.round(P.clamp(speed,60,stats().maxSpeed));
-    app.aims[app.currentId]={angle:app.angle,speed:app.speed};app.previewDirty=true;syncControls();
+    app.aims[app.currentId]={angle:app.angle,speed:app.speed};app.previewDirty=true;syncControls();updateMedalStates();
   }
   function syncControls(){
     $('angleInput').value=app.angle.toFixed(1);$('angleRange').value=app.angle;
@@ -2640,7 +2663,8 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     return `<svg viewBox="0 0 48 58" aria-hidden="true"><path class="medal-ribbon" d="m11 37-3 17 10-4 6 6 3-16m10-3 3 17-10-4-6 6-3-16"/><circle class="medal-rim" cx="24" cy="25" r="21"/><circle class="medal-inner" cx="24" cy="25" r="17"/>${paths[key]||paths.delivery}</svg>`;
   }
   function updateMedalStates(){
-    const l=displayLevel(),r=G.viewRecord(app.profile,l.id),ds=O.Medals.describe(l,displayState(),app.speed,r,app.assisted,stats());
+    // Scrubbing the recording must not make the awarded medals disappear.
+    const l=O.Routes.view(level(),app.state,app.branchView),r=G.viewRecord(app.profile,l.id),ds=O.Medals.describe(l,app.state,app.speed,r,app.assisted,stats());
     for(const d of ds){const card=$('medal-'+d.key);if(!card)continue;
       if(card.dataset.state!==d.state)card.dataset.state=d.state;
       card.querySelector('.medal-detail').textContent=d.detail==='Этапы 0 / 0'?'До станции':d.detail;
@@ -2650,7 +2674,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       card.querySelector('.medal-track i').style.width=`${Math.max(0,Math.min(1,d.progress))*100}%`;
       card.setAttribute('aria-label',`${d.title}. ${d.condition}. ${d.detail}. ${d.status}. ${d.earned?'Уже есть в коллекции.':''}`);
     }
-    $('medalLegend').textContent=app.assisted?'Тренировка: медали не выдаются':'Засчитываются только после доставки';
+    $('medalLegend').textContent=app.assisted?'Тренировка: медали не выдаются':app.state?.status==='won'?'Итог рейса · перемотка не меняет награды':'Засчитываются только после доставки';
   }
   function updateObjectives(){
     const l=level(),r=G.viewRecord(app.profile,l.id),rules=l.rules||{};
@@ -2782,10 +2806,10 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     const options=[['sound','Звуковые сигналы','Синтезированные эффекты, без фоновой музыки.'],['grid','Поле тяготения','Показывать направление ускорения в разных точках.'],['ghost','След предыдущей попытки','Серая линия помогает уточнять маршрут.'],['reducedMotion','Меньше анимаций','Меньше декоративного движения. Планеты, станция и груз продолжают двигаться по правилам игры.']];
     openModal('Сохранение и настройки',`${options.map(([key,title,caption])=>`<label class="check-row"><span>${title}<small>${caption}</small></span><input type="checkbox" data-setting="${key}" ${s[key]?'checked':''}></label>`).join('')}<h3>Твой прогресс остаётся у тебя</h3><p>Автосохранение: <strong>${app.storageOK?'доступно в этом браузере':'недоступно — используй экспорт'}</strong>. Оно привязано к браузеру и адресу игры. При переносе папки, очистке данных или смене браузера импортируй резервную копию.</p><div class="modal-actions"><button class="button quiet" data-action="export">Экспорт в JSON ↓</button><button class="button quiet" data-action="import">Импорт из JSON ↑</button></div><div class="info-box">В игре нет сервера, аккаунта, рекламы и отправки данных. Для надёжности экспортируй сохранение перед переносом игры. Экспорт содержит прогресс, но не текущий полёт.</div><div class="modal-actions"><button class="button danger" data-action="reset-confirm">Сбросить прогресс</button><button class="button primary" data-action="close">Готово</button></div>`,'НАСТРОЙКИ');
   }
-  function exportSave(){app.profile.flags=app.profile.flags||{};app.profile.flags.export=true;G.awardAchievements(app.profile);save();updateProfileUI();
+  function exportSave(){app.profile.flags=app.profile.flags||{};app.profile.flags.export=true;const awards=G.awardAchievements(app.profile);save();updateProfileUI();
     const blob=new Blob([JSON.stringify(app.profile,null,2)],{type:'application/json;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
     a.href=url;a.download=`orbital-courier-save-${new Date().toISOString().slice(0,10)}.json`;
-    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);toast('Резервная копия подготовлена. Сохрани JSON-файл.');
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);const message='Резервная копия подготовлена. Сохрани JSON-файл.';toast(message);awardNotice(awards,message);
   }
   async function importSave(file){
     if(!file)return;if(file.size>2*1024*1024){toast('Сохранение слишком большое. Лимит — 2 МБ.',true);return;}
@@ -2821,7 +2845,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     'angle-down':()=>setAim(app.angle-(app.profile.settings.fineAim?0.1:0.5),app.speed),'angle-up':()=>setAim(app.angle+(app.profile.settings.fineAim?0.1:0.5),app.speed),
     'speed-down':()=>setAim(app.angle,app.speed-(app.profile.settings.fineAim?1:2)),'speed-up':()=>setAim(app.angle,app.speed+(app.profile.settings.fineAim?1:2)),
     'toggle-grid':()=>{app.profile.settings.grid=!app.profile.settings.grid;save();syncControls();},
-    speed:()=>{app.timeScale=app.timeScale===.5?1:app.timeScale===1?2:app.timeScale===2?4:.5;updateTelemetry();},
+    speed:()=>{const rates=[.5,1,2,4,10];app.timeScale=rates[(rates.indexOf(app.timeScale)+1)%rates.length];updateTelemetry();},
     next:()=>G.unlocked(app.profile,C.adjacent(app.currentId,1))?travelToLevel(C.adjacent(app.currentId,1)):go('campaign'),
     sector:b=>chooseSector(Number(b.dataset.sector)),
     'campaign-tier':b=>chooseSector(C.tiers[+b.dataset.tier].sectors[0]),
@@ -2830,7 +2854,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     'economy-info':economyInfo,
     'respec-info':respecInfo,
     'contract-info':()=>openModal('Условия приёмки',`<p>${escape(level().brief)}</p><div class="contract-rules modal-rules">${$('strictRules').innerHTML}</div>${level().dynamic?'<div class="info-box">Пунктирные петли — орбиты, а не маршрут корабля. Бледный контур — положение объекта в конце прогноза. Движение начинается при запуске; повтор возвращает начальные позиции. Для движущейся станции ограничение скорости проверяется относительно неё.</div>':''}<p>Условия проверяются при входе в зону станции.</p><div class="modal-actions"><button class="button primary" data-action="close">Понятно</button></div>`),
-    'respec-confirm':()=>{const r=G.respec(app.profile);closeModal();save();updateProfileUI();renderHangar();toast(`Пересборка: возвращено ${r.credits} ◈ и ${r.data} ⬡`);},
+    'respec-confirm':()=>{const r=G.respec(app.profile);closeModal();save();updateProfileUI();renderHangar();const message=`Пересборка: возвращено ${r.credits} ◈ и ${r.data} ⬡`;toast(message);awardNotice(r.awards,message);},
     difficulty:b=>{if(app.state)return;app.profile.difficulty=b.dataset.mode==='pro'?'pro':'normal';save();loadLevel(app.currentId);},
     experts:()=>{app.campaignSector=8;go('campaign');},
     dynamic:()=>{app.campaignSector=11;go('campaign');},
@@ -2842,7 +2866,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       const result=G.buy(app.profile,b.dataset.key);
       if(!result.ok){toast(result.message,true);closeModal();renderHangar();return;}
       closeModal();save();updateProfileUI();renderHangar();sound.play('upgrade');
-      toast(`Модуль улучшен · −${result.cost} ◈ / −${result.data} ⬡`);for(const a of result.awards)toast(`Достижение: ${a.name} · +${a.xp} XP`);
+      const message=`Модуль улучшен · −${result.cost} ◈ / −${result.data} ⬡`;toast(message);awardNotice(result.awards,message);
     },
     skin:b=>{const s=G.SKINS.find(x=>x.id===b.dataset.key);if(s&&O.Cosmetics.unlocked(app.profile,s)){app.profile.skin=s.id;save();renderHangar();}},
     export:exportSave,import:()=>{$('importFile').value='';$('importFile').click();},'reset-confirm':resetConfirm,
@@ -2966,10 +2990,10 @@ const st=l.stops?.[s?.dropIndex||0],ready=st&&index>=(st.afterFlybys||0)&&pi>=(s
 $('activeStep').textContent=next;$('planCounter').textContent=legs.length?index+'/'+legs.length:'';$('routeStatus').textContent=index+' / '+legs.length+' облётов';for(let el of $('routeSteps').children){let i=+el.dataset.leg;el.classList.toggle('done',i<index);el.classList.toggle('active',i===index);el.querySelector('.route-value').textContent=i<index?'✓ Пройден':i===index?`${Math.min(legs[i].degrees,Math.floor(P.deg(s?.flybyAngle||0)))}° / ${legs[i].degrees}°`:legs[i].degrees+'°';}
 $('portalProgress').hidden=!ps.length;$('portalProgress').innerHTML=ps.map((id,i)=>`<span class="${i<pi?'done':''}">${i<pi?'✓':'◎'} ${id}</span>`).join('')+'<button class="text-button" data-action="portal-help">Правила переходов</button>';$('stopProgress').innerHTML=(l.stops||[]).map((d,i)=>`<span class="stop-chip ${i<(s?.dropIndex||0)?'done':''}">${i<(s?.dropIndex||0)?'✓':'▣'} ${d.id} · ${esc(d.name)}</span>`).join('');}
 function medalHelp(){let l=A.level();A.openModal('Три цели контракта',O.Medals.describe(l,A.state,A.speed,G.viewRecord(A.profile,l.id),A.assisted,A.stats()).map(d=>`<div class="info-box"><strong>${d.title}</strong><p>${d.condition}</p><small>${d.detail}. ${d.archive?'Архивная медаль сохранена, новое условие ещё не подтверждено.':d.earned?'Актуальная медаль получена.':'Новая цель.'}</small></div>`).join('')+'<p>Медаль исследователя накапливает прохождения обеих ветвей. Остальные цели проверяются в одном успешном рейсе. Тренировки не дают наград.</p><div class="modal-actions"><button class="button primary" data-action="close">Понятно</button></div>');}
-function showResult(result){const s=A.state;collapse();$('flightPlan').open=false;$('flightReview').hidden=false;const won=s.status==='won';$('flightReview').innerHTML=`<div class="review-title"><strong>${won?(result?.training?'Тренировка без наград':`Доставка · ${result.quality.grade} / ${result.quality.score}`):'Разбор попытки'}</strong><span>${s.launchAngle.toFixed(1)}° / ${s.launchSpeed}</span></div><p class="review-summary">${esc(O.Review.diagnosis(A.level(),s))}</p><div class="review-controls"><span class="review-stamp" id="reviewStamp">${s.t.toFixed(2)} с</span><input id="reviewRange" type="range" min="0" max="${s.t}" step=".05" value="${s.t}" aria-label="Время уже выполненного рейса"><button data-action="v8:compare" ${O.Review.prior()?'':'disabled'}>Сравнить</button><button data-action="v8:report">${won?'Награды':'Детали'}</button>${won&&!result?.training?`<button class="review-next" data-action="next">${O.Campaign.adjacent(A.currentId,1)<0?'Все маршруты':'Дальше ↗'}</button>`:''}</div><p id="reviewComparison" class="review-comparison">${won&&!result?.training?`Доплата +${result.totalCredits} ◈ · данные +${result.data} · опыт +${result.totalXP}.`:'Запись прошлого полёта, не прогноз. Нажми «Ещё раз», чтобы скорректировать курс.'}</p>`;$('reviewRange').addEventListener('input',e=>{O.Review.selectTime(+e.target.value);$('reviewStamp').textContent=O.Review.renderModel().state.t.toFixed(2)+' с';});sync();schedule();O.UI9?.onResult();}
-function renderAwards(){const p=A.profile,defs=G.achievements;$('awardTotal').innerHTML=`${p.achievements.length} / ${defs.length}<span>достижений · ${money(p.xp)} XP</span>`;$('achievementCategories').innerHTML=[['all','Все разделы','∞'],...O.Achievements.CATEGORIES].map(([id,n,icon])=>{let ds=id==='all'?defs:defs.filter(d=>d.category===id);return `<button class="${category===id?'active':''}" data-action="v8:award-category" data-category="${id}">${icon} ${n}<small>${ds.filter(a=>p.achievements.includes(a.id)).length}/${ds.length}</small></button>`;}).join('');for(let b of $$('.award-filters button'))b.classList.toggle('active',b.dataset.filter===filter);
-let near=defs.filter(a=>!p.achievements.includes(a.id)).sort((a,b)=>b.progress(p)/b.target-a.progress(p)/a.target)[0];$('achievementFocus').innerHTML=`<div><strong>${near?'Ближе всего: '+near.name:'Коллекция завершена'}</strong><p>${near?near.text:'Все 93 знака отличия получены.'}</p></div><b>${near?near.progress(p)+' / '+near.target:'✓'}</b>`;
-let list=defs.filter(a=>{let done=p.achievements.includes(a.id);return(category==='all'||a.category===category)&&(!query||(a.name+' '+a.text).toLowerCase().includes(query))&&(filter==='all'||filter==='earned'&&done||filter==='locked'&&!done||filter==='near'&&!done&&a.progress(p)/a.target>=.5);});$('achievementGrid').innerHTML=list.map(a=>{let done=p.achievements.includes(a.id),n=done?a.target:a.progress(p);return `<article class="achievement-card ${done?'earned':''}"><div class="achievement-icon">${a.icon}</div><div><span class="achievement-section">${O.Achievements.CATEGORIES.find(c=>c[0]===a.category)[1]}</span><h3>${a.name}</h3><p>${a.text}</p><div class="award-progress"><i style="width:${Math.min(100,n/a.target*100)}%"></i></div><small>${done?'✓ Получено':n+' / '+a.target+' · +'+a.xp+' XP'}</small></div></article>`;}).join('')||'<p>По этому запросу достижений нет.</p>';}
+function showResult(result){const s=A.state;collapse();$('flightPlan').open=false;$('flightReview').hidden=false;const won=s.status==='won';$('flightReview').innerHTML=`<div class="review-title"><strong>${won?(result?.training?'Тренировка без наград':`Доставка · ${result.quality.grade} / ${result.quality.score}`):'Разбор попытки'}</strong><span>${s.launchAngle.toFixed(1)}° / ${s.launchSpeed}</span></div><p class="review-summary">${esc(O.Review.diagnosis(A.level(),s))}</p><div class="review-controls"><span class="review-stamp" id="reviewStamp">${s.t.toFixed(2)} с</span><input id="reviewRange" type="range" min="0" max="${s.t}" step=".05" value="${s.t}" aria-label="Время уже выполненного рейса"><button data-action="v8:compare" ${O.Review.prior()?'':'disabled'}>Сравнить</button><button data-action="v8:report">${won?'Награды':'Детали'}</button>${won&&!result?.training?`<button class="review-next" data-action="next">${O.Campaign.adjacent(A.currentId,1)<0?'Все маршруты':'Дальше ↗'}</button>`:''}</div><p id="reviewComparison" class="review-comparison">${won&&!result?.training?`Доплата +${result.totalCredits} ◈ · данные +${result.data} · опыт +${result.totalXP}.`:'Запись прошлого полёта, не прогноз. Нажми «Ещё раз», чтобы скорректировать курс.'}</p>${result?.awards.length?`<details class="review-awards"><summary>Достижения: +${result.awards.length} · +${result.awards.reduce((n,a)=>n+a.xp,0)} XP</summary>${(result?.awards||[]).map(a=>`<div class="award-chip">${a.icon} ${esc(a.name)} · +${a.xp} XP</div>`).join('')}</details>`:''}`;$('reviewRange').addEventListener('input',e=>{O.Review.selectTime(+e.target.value);$('reviewStamp').textContent=O.Review.renderModel().state.t.toFixed(2)+' с';});sync();schedule();O.UI9?.onResult();}
+function renderAwards(){const p=A.profile,defs=G.achievements,earned=new Set(p.achievements),progress=new Map(defs.map(a=>[a.id,earned.has(a.id)?a.target:a.progress(p)]));$('awardTotal').innerHTML=`${p.achievements.length} / ${defs.length}<span>достижений · ${money(p.xp)} XP</span>`;$('achievementCategories').innerHTML=[['all','Все разделы','∞'],...O.Achievements.CATEGORIES].map(([id,n,icon])=>{let ds=id==='all'?defs:defs.filter(d=>d.category===id);return `<button class="${category===id?'active':''}" data-action="v8:award-category" data-category="${id}">${icon} ${n}<small>${ds.filter(a=>earned.has(a.id)).length}/${ds.length}</small></button>`;}).join('');for(let b of $$('.award-filters button'))b.classList.toggle('active',b.dataset.filter===filter);
+let near=defs.filter(a=>!earned.has(a.id)).sort((a,b)=>progress.get(b.id)/b.target-progress.get(a.id)/a.target)[0];$('achievementFocus').innerHTML=`<div><strong>${near?'Ближе всего: '+near.name:'Коллекция завершена'}</strong><p>${near?near.text:'Все 93 знака отличия получены.'}</p></div><b>${near?progress.get(near.id)+' / '+near.target:'✓'}</b>`;
+let list=defs.filter(a=>{let done=earned.has(a.id);return(category==='all'||a.category===category)&&(!query||(a.name+' '+a.text).toLowerCase().includes(query))&&(filter==='all'||filter==='earned'&&done||filter==='locked'&&!done||filter==='near'&&!done&&progress.get(a.id)/a.target>=.5);});$('achievementGrid').innerHTML=list.map(a=>{let done=earned.has(a.id),n=progress.get(a.id);return `<article data-achievement="${a.id}" class="achievement-card ${done?'earned':''}"><div class="achievement-icon">${a.icon}</div><div><span class="achievement-section">${O.Achievements.CATEGORIES.find(c=>c[0]===a.category)[1]}</span><h3>${a.name}</h3><p>${a.text}</p><div class="award-progress"><i style="width:${Math.min(100,n/a.target*100)}%"></i></div><small>${done?'✓ Получено':n+' / '+a.target+' · +'+a.xp+' XP'}</small></div></article>`;}).join('')||'<p>По этому запросу достижений нет.</p>';}
 function renderShop(){let id=A.shopLevel??A.currentId,mode=A.shopMode||A.profile.difficulty,l=P.prepareLevel(L[id],mode),st=A.stats();$('shopContext').innerHTML=`<strong>Эффект на выбранном контракте</strong><p><select id="shopLevelSelect" aria-label="Контракт для расчёта">${O.Campaign.order.map(id=>L[id]).map(q=>`<option value="${q.id}" ${q.id===id?'selected':''}>${O.Campaign.number(q.id)}. ${q.name}</option>`).join('')}</select> <select id="shopModeSelect" aria-label="Режим расчёта"><option value="normal" ${mode==='normal'?'selected':''}>Обычный</option><option value="pro" ${mode==='pro'?'selected':''}>ПРО</option></select></p><small>Покупка не отменяет обязательный маршрут, приём посылок и ограничения скорости.</small>`;
 for(const key of ['docking','engine']){const lv=A.profile.upgrades[key],next=Math.min(5,lv+1),card=document.querySelector(`.upgrade-card[data-module="${key}"]`)||document.querySelector(`[data-action=upgrade][data-key="${key}"]`)?.closest('article');if(!card)continue;let text;if(key==='docking'){const p=structuredClone(A.profile);p.upgrades.docking=next;text=`Допуск здесь: ${P.captureRadius(l,G.stats(A.profile)).toFixed(1)} → ${P.captureRadius(l,G.stats(p)).toFixed(1)} ед.`;}else text=`Расчётный расход: ${Math.round((1-.03*lv)*100)}% → ${Math.round((1-.03*next)*100)}%`;let node=document.createElement('div');node.className='module-effect';node.innerHTML=`<b>${text}</b>${key==='docking'?'Бонус действует и на строгих станциях.':'Физическая скорость не меняется. Экономия улучшает топливную оценку при обычном запуске.'}`;card.querySelector('.module-spec')?.after(node);}}
 function settings(t=tab){tab=t;const p=A.profile,s=p.settings,opts={display:[['reducedMotion','Меньше анимаций','Только декоративные эффекты. Физика не меняется.'],['highContrast','Повышенный контраст','Более светлые важные подписи.'],['grid','Поле тяготения','Показывать направление ускорения.'],['ghost','След предыдущей попытки','Только действительно пройденная траектория.']],control:[['fineAim','Точная настройка','Шаг 0,1° и 1 единица скорости.'],['sound','Звуковые сигналы','Сигналы маршрута, пространственные эффекты и тихий гул полёта.']]};let body=opts[t]?opts[t].map(([k,n,d])=>`<label class="check-row"><span>${n}<small>${d}</small></span><input type="checkbox" data-setting="${k}" ${s[k]?'checked':''}></label>`).join(''):'';

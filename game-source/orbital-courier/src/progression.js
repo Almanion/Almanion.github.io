@@ -44,7 +44,8 @@
   const totalMedals=p=>Object.values(p.records).reduce((n,r)=>n+medalCount(r.medals),0);
   const cargoCount=p=>Object.values(p.records).reduce((n,r)=>n+r.cargo.length,0);
   const totalCargo=()=>levels().reduce((n,l)=>n+l.cargo.length,0);
-  const firstN=(p,n)=>Array.from({length:n},(_,i)=>i).every(i=>record(p,i).medals&1);
+  const firstLevels=n=>Campaign.order.slice(0,n).map(id=>levels()[id]);
+  const firstN=(p,n)=>firstLevels(n).every(l=>Campaign.current(p,l.id));
   const milestones=[
     ['first','Есть контакт','Завершить первый контракт.','↗',25,p=>completed(p)>=1],
     ['perfect','Безупречная доставка','Три медали в одном контракте.','★',30,p=>Object.values(p.records).some(r=>r.medals===7)],
@@ -61,15 +62,15 @@
     ['frontier','Внешняя граница','Закрыть первые 24 контракта.','⟡',80,p=>firstN(p,24)],
     ['deep','За гранью света','Закрыть первые 28 контрактов.','◐',90,p=>firstN(p,28)],
     ['campaign32','Новая сеть маяков','Завершить первые 44 контракта.','✺',150,p=>firstN(p,44)],
-    ['manifest96','Абсолютная опись','Доставить все контейнеры первых 44 контрактов.','◈',130,p=>levels().slice(0,44).every(l=>record(p,l.id).cargo.length===l.cargo.length)],
-    ['medals96','Совершенный маршрут','Получить все медали первых 44 контрактов.','✦',200,p=>levels().slice(0,44).every(l=>record(p,l.id).medals===7)],
-    ['expert12','Вне зоны комфорта','Завершить 12 экспертных контрактов.','◉',250,p=>levels().filter(l=>l.expert&&(record(p,l.id).medals&1)).length>=12],
+    ['manifest96','Абсолютная опись','Доставить все контейнеры первых 44 контрактов, включая обе ветви.','◈',130,p=>firstLevels(44).every(l=>record(p,l.id).cargo.length===l.cargo.length)],
+    ['medals96','Совершенный маршрут','Получить все медали первых 44 контрактов.','✦',200,p=>firstLevels(44).every(l=>record(p,l.id).medals===7)],
+    ['expert12','Вне зоны комфорта','Завершить 12 контрактов сложности «Экспертная».','◉',250,p=>levels().filter(l=>Campaign.tiers[3].sectors.includes(l.sector)&&Campaign.current(p,l.id)).length>=12],
     ['pro10','Лицензия профессионала','Завершить 10 разных контрактов в режиме ПРО.','◆',180,p=>Object.values(p.records).filter(r=>r.proWon).length>=10],
     ['tractor','Своя гравитация','Установить гравитационный захват.','◎',50,p=>p.upgrades.magnet>=1],
     ['orbit4','Живые орбиты','Завершить первый блок с движущимися планетами.','◌',100,p=>[44,45,46,47].every(i=>record(p,i).medals&1)],
     ['dance4','В ритме планет','Завершить «Гравитационный танец».','✧',130,p=>[48,49,50,51].every(i=>record(p,i).medals&1)],
     ['intercept4','Точное свидание','Завершить четыре перехвата станции.','⌖',150,p=>[52,53,54,55].every(i=>record(p,i).medals&1)],
-    ['campaign56','Небо не стоит на месте','Завершить все 56 контрактов.','✺',200,p=>firstN(p,56)],
+    ['campaign56','Небо не стоит на месте','Завершить первые 56 контрактов.','✺',200,p=>firstN(p,56)],
     ['front64','В такт орбитам','Завершить «Резонансный фронт».','⌁',160,p=>[56,57,58,59].every(i=>record(p,i).medals&1)],
     ['rift4','По ту сторону','Доставить груз по всем четырём портальным маршрутам.','◎',180,p=>[60,61,62,63].every(i=>record(p,i).medals&1)],
     ['campaign64','Картограф разломов','Завершить первые 64 контракта.','✺',220,p=>firstN(p,64)],
@@ -77,7 +78,24 @@
     ['campaign68','Сквозь пространство','Завершить первые 68 контрактов.','✺',240,p=>firstN(p,68)],
     ['master','Капсула будущего','Улучшить любой модуль до уровня V.','⚙',100,p=>Object.values(p.upgrades).some(v=>v===5)]
   ];
-  const legacyAchievements=milestones.map(([id,name,text,icon,xp,test])=>({id,name,text,icon,xp,test,credits:0}));
+  // Use the same measured progress for the card and for granting its reward.
+  const milestoneProgress={
+    first:[1,completed],perfect:[3,p=>Math.max(0,...Object.values(p.records).map(r=>medalCount(r.medals)))],
+    collector:[12,cargoCount],allcargo:[36,cargoCount],medalist:[36,totalMedals],
+    engineer:[3,p=>Math.max(...Object.values(p.upgrades))],master:[5,p=>Math.max(...Object.values(p.upgrades))],
+    tractor:[1,p=>p.upgrades.magnet],pro10:[10,p=>Object.values(p.records).filter(r=>r.proWon).length],
+    expert12:[12,p=>levels().filter(l=>Campaign.tiers[3].sectors.includes(l.sector)&&Campaign.current(p,l.id)).length],
+    manifest96:[firstLevels(44).reduce((n,l)=>n+l.cargo.length,0),p=>firstLevels(44).reduce((n,l)=>n+record(p,l.id).cargo.length,0)],
+    medals96:[132,p=>firstLevels(44).reduce((n,l)=>n+medalCount(record(p,l.id).medals),0)]
+  };
+  for(const [id,n] of Object.entries({ring:4,titan:8,final:12,ice:16,storms:20,frontier:24,deep:28,campaign32:44,campaign56:56,campaign64:64,campaign68:68}))
+    milestoneProgress[id]=[n,p=>firstLevels(n).filter(l=>Campaign.current(p,l.id)).length];
+  for(const [id,sector] of Object.entries({orbit4:11,dance4:12,intercept4:13,front64:14,rift4:15,riftmasters:16}))
+    milestoneProgress[id]=[4,p=>levels().filter(l=>l.sector===sector&&Campaign.current(p,l.id)).length];
+  const legacyAchievements=milestones.map(([id,name,text,icon,xp,test])=>{
+    const [target,get]=milestoneProgress[id]||[1,p=>test(p)?1:0];
+    return {id,name,text,icon,xp,target,progress:p=>Math.min(target,get(p)),test:p=>get(p)>=target,credits:0};
+  });
   const achievements=A.create(legacyAchievements);
   function fresh(){return {game:'orbital-courier',version:8,credits:E.START_CREDITS,data:0,xp:0,
     upgrades:{scanner:0,magnet:0,docking:0,engine:0},records:{},flags:{},achievements:[],receipts:[],
@@ -165,8 +183,8 @@
   function dataInvested(p){return (p.receipts||[]).reduce((n,r)=>n+r.data,0);}
   function respec(p){
     const credits=invested(p),data=dataInvested(p),inherited=p.receipts.some(r=>r.inherited);
-    p.credits+=credits;p.data+=data;const inheritedReceipts=p.receipts.filter(r=>r.inherited);for(const key of Object.keys(UPGRADE_DEFS))p.upgrades[key]=Math.max(0,...inheritedReceipts.filter(r=>r.key===key).map(r=>r.tier));p.receipts=inheritedReceipts;p.flags=p.flags||{};if(credits||data)p.flags.respec=true;awardAchievements(p);
-    return {credits,data,inherited};
+    p.credits+=credits;p.data+=data;const inheritedReceipts=p.receipts.filter(r=>r.inherited);for(const key of Object.keys(UPGRADE_DEFS))p.upgrades[key]=Math.max(0,...inheritedReceipts.filter(r=>r.key===key).map(r=>r.tier));p.receipts=inheritedReceipts;p.flags=p.flags||{};if(credits||data)p.flags.respec=true;
+    return {credits,data,inherited,awards:awardAchievements(p)};
   }
   function earnedBudget(p){return E.START_CREDITS+Object.values(p.records).reduce((n,r)=>n+(r.paid||0),0);}
   function remainingRewards(p){return levels().reduce((n,l)=>n+Math.max(0,E.capReward(l)-(record(p,l.id).paid||0)),0);}
