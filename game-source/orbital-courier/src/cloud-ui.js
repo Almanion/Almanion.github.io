@@ -16,7 +16,7 @@
   function make(transport){return new C.CloudSync({storage:storage(),transport,
     getSave:()=>C.encode(A.profile),validateSave:validSave,
     isFresh:()=>G.completed(A.profile)===0&&Object.keys(A.profile.records).length===0&&A.profile.credits===25&&A.profile.xp===0&&A.profile.data===0&&G.installed(A.profile)===0&&Object.keys(A.profile.courses).length===0,
-    canApply:()=>!A.state&&!A.transitioning&&(!$('modal').open||!!$('cloudPanel')),
+    canApply:()=>!A.state&&!A.transitioning&&!$('flightDrawer').open&&(!$('modal').open||!!$('cloudPanel')),
     applySave:text=>{
       const profile=validSave(text);
       if(!G.write(storage(),profile))throw Error('Не удалось сохранить копию на устройстве.');

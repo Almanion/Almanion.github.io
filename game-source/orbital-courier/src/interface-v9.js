@@ -102,6 +102,10 @@
     $('modeChip').classList.toggle('pro', A.profile.difficulty === 'pro');
     setText($('navModeLabel'), mode === 'aiming' ? 'Начальный импульс' : mode === 'review' ? 'Полёт завершён' : A.paused ? 'Полёт на паузе' : 'Капсула в полёте');
     setText($('fineAimButton'), A.profile.settings.fineAim ? '✓ Точно' : 'Точно');
+    for(const b of $$('[data-action="fine-aim"]')){
+      b.setAttribute('aria-pressed',String(!!A.profile.settings.fineAim));b.disabled=mode!=='aiming';
+    }
+    if($('mobileFine'))setText($('mobileFine'),A.profile.settings.fineAim?'✓ Точно':'Точно');
     const text = !A.state ? 'Запуск ↗' : flying() ? (A.paused ? 'Продолжить' : 'Пауза') : 'Ещё раз ↺';
     setText($('launchButton'), text);
     setText($('mobileLaunch'), narrow() && editing() ? 'Готово ✓' : text);
@@ -145,26 +149,26 @@
   function openSheet(kind, opener) {
     if (A.transitioning) return;
     closeSheet(false); A.closeModal(); commitFocused(); clearPointers(); stopHold();
-    const node = kind === 'route' ? document.querySelector('.plan-body') : document.querySelector('.nav-advanced');
-    const marker = document.createComment('sheet return point');
-    node.before(marker);
-    sheetState = {kind, node, marker, opener:opener || document.activeElement, paused:A.paused, state:A.state};
+    const nodes = kind === 'route' ? [document.querySelector('.plan-body')] : [document.querySelector('.aim-controls'),$('aimFeedback'),document.querySelector('.nav-advanced')];
+    const entries=nodes.map(node=>{const marker=document.createComment('sheet return point');node.before(marker);return {node,marker};});
+    sheetState = {kind, entries, opener:opener || document.activeElement, paused:A.paused, state:A.state};
     if (flying()) A.paused = true;
-    setText($('drawerTitle'), kind === 'route' ? 'План маршрута' : 'Курсы и оснащение');
+    setText($('drawerTitle'), kind === 'route' ? 'План маршрута' : 'Точный пульт');
     $('drawerContent').replaceChildren();
     if (kind !== 'route') {
       const shortcuts = document.createElement('div'); shortcuts.className = 'sheet-quick';
-      shortcuts.innerHTML = `<button class="button quiet" data-action="fine-aim" id="sheetFine" ${A.state ? 'disabled' : ''} aria-pressed="${!!A.profile.settings.fineAim}">${A.profile.settings.fineAim ? '✓' : '◎'} Точная настройка</button><button class="button quiet" data-action="hint">Подсказка</button>`;
+      shortcuts.innerHTML = `<button class="button quiet" data-action="fine-aim" id="sheetFine" ${A.state ? 'disabled' : ''} aria-pressed="${!!A.profile.settings.fineAim}">${A.profile.settings.fineAim ? '✓' : '◎'} Точный прицел</button><button class="button quiet" data-action="hint">Подсказка</button><p class="fine-explanation">«Точно» уменьшает движения прицела в 5 раз. Касание не сбивает выбранный курс: веди палец для небольшой поправки. Ниже можно ввести числа или воспользоваться ползунками.</p>`;
       $('drawerContent').append(shortcuts);
     }
-    $('drawerContent').append(node);
+    $('drawerContent').append(...nodes);
     drawer.showModal(); drawer.scrollTop = 0;
     document.body.classList.add('sheet-open'); sync();
   }
   function closeSheet(restoreFocus = true) {
     if (!sheetState) { if (drawer.open) drawer.close(); return; }
+    commitFocused();stopHold();
     const x = sheetState; sheetState = null;
-    x.marker.replaceWith(x.node);
+    for(const {marker,node} of x.entries)marker.replaceWith(node);
     if (drawer.open) drawer.close();
     if (A.state === x.state) A.paused = x.paused;
     A.accumulator = 0;
@@ -215,6 +219,7 @@
     const prev = A.currentId > 0 && G.unlocked(A.profile, A.currentId - 1);
     const next = A.currentId < O.LEVELS.length - 1 && G.unlocked(A.profile, A.currentId + 1);
     A.openModal(A.level().name, `<div class="ui-menu">
+      <button data-action="ui:memory"><span class="menu-symbol">◎</span>Точный пульт</button>
       <button data-action="ui:route"><span class="menu-symbol">⌁</span>План маршрута</button>
       <button data-action="medal-help"><span class="menu-symbol">✧</span>Условия медалей</button>
       <button data-action="contract-info"><span class="menu-symbol">▤</span>Задание</button>
@@ -249,7 +254,7 @@
   function shortcuts() {
     A.openModal('Управление', `<table class="shortcut-table"><tbody>
       <tr><td>Пробел</td><td>Запуск / пауза</td></tr><tr><td>← → / ↑ ↓</td><td>Угол / скорость</td></tr>
-      <tr><td>Shift + стрелки</td><td>0,1° / 1 ед.</td></tr><tr><td>R / К</td><td>Повтор с подтверждением во время полёта</td></tr>
+      <tr><td>Shift + стрелки</td><td>0,1° / 1 ед.</td></tr><tr><td>R / К</td><td>Повтор без подтверждения</td></tr>
       <tr><td>G / П</td><td>Поле тяготения</td></tr><tr><td>Alt + мышь</td><td>Обзор без изменения курса</td></tr><tr><td>Esc</td><td>Закрыть панель / пауза</td></tr>
       </tbody></table><div class="info-box">На карте выбери <b>«Курс»</b> или <b>«Обзор»</b>. Для масштаба — два пальца. Кнопки + / − у чисел можно удерживать. Угол принимает точку или запятую. Нажми «Готово» на клавиатуре, затем запускай.</div>
       <div class="modal-actions"><button class="button primary" data-action="close">Понятно</button></div>`);
@@ -317,7 +322,7 @@
     });
   }
   for (const id of ['angleRange', 'speedRange']) $(id).addEventListener('input', event => {
-    if (!aiming() || controlsBlocked()) return;
+    if (!aiming() || modal.open || (drawer.open&&sheetState?.kind!=='memory')) return;
     const n = Number(event.target.value);
     A.setAim(id === 'angleRange' ? n : A.angle, id === 'speedRange' ? n : A.speed);
   });
@@ -326,18 +331,18 @@
   const suppressClick = new WeakMap();
   function stopHold() { clearTimeout(holdDelay); clearInterval(holdRepeat); held = null; }
   function nudge(button) {
-    if (!aiming() || controlsBlocked()) return;
+    if (!aiming() || modal.open || (drawer.open&&sheetState?.kind!=='memory')) return;
     A.actions[button.dataset.action]?.(button);
   }
   document.addEventListener('pointerdown', event => {
     const b = event.target.closest('.number-wrap button');
-    if (!b || b.disabled || event.button !== 0 || !aiming() || controlsBlocked()) return;
+    if (!b || b.disabled || event.button !== 0 || !aiming() || modal.open || (drawer.open&&sheetState?.kind!=='memory')) return;
     commitFocused(); stopHold(); held = {button:b, id:event.pointerId};
     suppressClick.set(b, performance.now() + 1800); nudge(b);
     try { b.setPointerCapture(event.pointerId); } catch (_) {}
     holdDelay = setTimeout(() => {
       holdRepeat = setInterval(() => {
-        if (!held || !aiming() || controlsBlocked()) return stopHold();
+        if (!held || !aiming() || modal.open || (drawer.open&&sheetState?.kind!=='memory')) return stopHold();
         suppressClick.set(b, performance.now() + 1800); nudge(b);
       }, 85);
     }, 360);
@@ -396,6 +401,15 @@
     A.setAim(P.deg(Math.atan2(-dy,dx)),speed);
     if(touch){A.aimPointer=point;$('mapGestureHint').hidden=true;}
   }
+  function touchAim(x,y,g){
+    if(!g.fine){pointAim(x,y,true);return;}
+    const {r,fit}=metrics(),start=A.level().start,angle=-P.rad(g.angle);
+    const reach=12+(g.speed-60)/Math.max(1,A.stats().maxSpeed-60)*108;
+    let dx=Math.cos(angle)*reach+(x-g.x)*.2,dy=Math.sin(angle)*reach+(y-g.y)*.2;
+    const length=Math.hypot(dx,dy);if(length<.01)return;
+    if(length<12.01){dx*=12.01/length;dy*=12.01/length;}
+    pointAim(r.left+r.width/2+(start.x-A.camera.cx)*fit*A.camera.zoom+dx,r.top+r.height/2+(start.y-A.camera.cy)*fit*A.camera.zoom+dy,true);
+  }
   function midpoint() {
     const [a,b] = [...pointers.values()];
     return {x:(a.x+b.x)/2,y:(a.y+b.y)/2,d:Math.hypot(a.x-b.x,a.y-b.y)};
@@ -408,9 +422,9 @@
     try { canvas.setPointerCapture(event.pointerId); } catch (_) {}
     if (pointers.size === 1) {
       const pan = !aiming() || mapMode === 'pan' || event.altKey || event.button === 1;
-      gesture = {kind:pan ? 'pan' : 'aim',x:p.x,y:p.y,cam:{...A.camera},angle:A.angle,speed:A.speed,type:event.pointerType,moved:false};
+      gesture = {kind:pan ? 'pan' : 'aim',x:p.x,y:p.y,cam:{...A.camera},angle:A.angle,speed:A.speed,type:event.pointerType,moved:false,fine:!!A.profile.settings.fineAim};
       document.body.classList.toggle('map-dragging',pan);
-      if(!pan&&event.pointerType==='touch')pointAim(p.x,p.y,true);
+      if(!pan&&event.pointerType==='touch'&&!gesture.fine)pointAim(p.x,p.y,true);
     } else if (pointers.size === 2) {
       const m = midpoint();
       if (gesture?.kind === 'aim' && aiming()) A.setAim(gesture.angle,gesture.speed);
@@ -435,7 +449,7 @@
       const dx=event.clientX-g.x,dy=event.clientY-g.y;
       if (!g.moved && Math.hypot(dx,dy)<5) return; g.moved=true;
       if (g.type==='touch') {
-        pointAim(event.clientX,event.clientY,true);
+        touchAim(event.clientX,event.clientY,g);
       } else {
         pointAim(event.clientX,event.clientY);
       }
@@ -444,7 +458,7 @@
   });
   function releasePointer(event) {
     if (!pointers.has(event.pointerId)) return;
-    if(event.type==='pointerup'&&gesture?.kind==='aim'&&gesture.type==='touch'&&aiming()&&!controlsBlocked())pointAim(event.clientX,event.clientY,true);
+    if(event.type==='pointerup'&&gesture?.kind==='aim'&&gesture.type==='touch'&&aiming()&&!controlsBlocked())touchAim(event.clientX,event.clientY,gesture);
     pointers.delete(event.pointerId);
     try { if(canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId); } catch(_){}
     if (!pointers.size) clearPointers();
@@ -501,7 +515,7 @@
     const b=event.target.closest('[data-action]');if(!b)return;
     if(['store-course','recall-course'].includes(b.dataset.action)){const act=b.dataset.action,slot=b.dataset.slot;requestAnimationFrame(()=>{const replacement=document.querySelector(`[data-action="${act}"][data-slot="${slot}"]`);if(replacement&&!replacement.disabled)replacement.focus({preventScroll:true});});}
     if(b.dataset.action==='fine-aim' && drawer.open) {
-      requestAnimationFrame(()=>{if($('sheetFine')){setText($('sheetFine'),(A.profile.settings.fineAim?'✓ ':'◎ ')+'Точная настройка');$('sheetFine').setAttribute('aria-pressed',String(!!A.profile.settings.fineAim));}});
+      requestAnimationFrame(()=>{if($('sheetFine')){setText($('sheetFine'),(A.profile.settings.fineAim?'✓ ':'◎ ')+'Точный прицел');$('sheetFine').setAttribute('aria-pressed',String(!!A.profile.settings.fineAim));}});
     }
   });
   document.addEventListener('keydown',event=>{

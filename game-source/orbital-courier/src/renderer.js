@@ -73,9 +73,9 @@
       const c=canvas.getContext('2d'),r=size/2,seed=[...(p.name||p.tint)].reduce((n,ch)=>Math.imul(n,31)+ch.charCodeAt(0)|0,239),random=rng(seed);
       c.translate(r,r);c.scale(r/128,r/128);c.beginPath();c.arc(0,0,127,0,TAU);c.clip();
       c.fillStyle=p.tint;c.fillRect(-128,-128,256,256);
-      const gas=p.surface==='gas'||(!p.surface&&(p.ring||seed%3===0));
+      const surface=p.surface||(p.ring?'gas':['rock','gas','ice','ocean','lava'][(seed>>>0)%5]);
       c.save();c.rotate(-.24);
-      if(gas){
+      if(surface==='gas'){
         // Latitude bands curve around the sphere, with small turbulent eddies.
         for(let i=0;i<45;i++){
           const y=-145+i*6.5;c.beginPath();c.moveTo(-150,y);
@@ -87,6 +87,34 @@
           c.beginPath();c.ellipse(x,y,5+random()*19,1.5+random()*4,-.1,0,TAU);
           c.strokeStyle=i%2?'#e9ffe52c':'#143c4938';c.lineWidth=1.2;c.stroke();
         }
+      }else if(surface==='ice'){
+        c.fillStyle='#7faccc';c.fillRect(-128,-128,256,256);
+        for(let i=0;i<32;i++){
+          const x=(random()-.5)*250,y=(random()-.5)*250;
+          c.beginPath();c.moveTo(x,y);for(let j=0;j<6;j++)c.lineTo(x+j*9+(random()-.5)*16,y+j*5+(random()-.5)*21);
+          c.strokeStyle='#234e6975';c.lineWidth=2+random()*3;c.stroke();c.translate(-1,-1);c.strokeStyle='#e1ffffa0';c.lineWidth=.8;c.stroke();c.translate(1,1);
+        }
+        for(let i=0;i<18;i++){c.beginPath();c.ellipse((random()-.5)*200,(random()-.5)*210,12+random()*25,3+random()*9,-.3,0,TAU);c.fillStyle='#d8ffff35';c.fill();}
+        c.beginPath();c.ellipse(-10,-104,93,33,-.12,0,TAU);c.fillStyle='#efffffbb';c.fill();
+        c.beginPath();c.ellipse(20,112,74,21,-.12,0,TAU);c.fillStyle='#ceeaf28a';c.fill();
+      }else if(surface==='ocean'){
+        c.fillStyle='#1d6886';c.fillRect(-128,-128,256,256);
+        for(let i=0;i<13;i++){
+          const x=(random()-.5)*235,y=(random()-.5)*220,radius=8+random()*30;
+          c.beginPath();for(let j=0;j<=22;j++){const a=j*TAU/22,rr=radius*(.5+random()*.5),px=x+Math.cos(a)*rr,py=y+Math.sin(a)*rr*.8;j?c.lineTo(px,py):c.moveTo(px,py);}c.closePath();
+          c.strokeStyle='#79e1c56b';c.lineWidth=5;c.stroke();c.fillStyle=i%2?'#699664':'#457b5e';c.fill();c.strokeStyle='#adc98c88';c.lineWidth=.7;c.stroke();
+        }
+        for(let i=0;i<24;i++){
+          const x=(random()-.5)*250,y=(random()-.5)*245;c.beginPath();c.moveTo(x-22,y);c.bezierCurveTo(x-5,y-9,x+15,y+10,x+30,y-2);c.strokeStyle='#edfff99b';c.lineWidth=2+random()*3;c.stroke();
+        }
+        const glint=c.createRadialGradient(-42,-45,0,-42,-45,47);glint.addColorStop(0,'#efffff70');glint.addColorStop(1,'transparent');circle(c,-42,-45,47,glint);
+      }else if(surface==='lava'){
+        c.fillStyle='#36282c';c.fillRect(-128,-128,256,256);
+        for(let i=0;i<40;i++){
+          const x=(random()-.5)*260,y=(random()-.5)*260;c.beginPath();c.moveTo(x,y);for(let j=1;j<7;j++)c.lineTo(x+j*7+(random()-.5)*25,y+j*5+(random()-.5)*24);
+          c.strokeStyle='#ef582438';c.lineWidth=7;c.stroke();c.strokeStyle='#ec6239c0';c.lineWidth=2;c.stroke();c.strokeStyle='#ffcf70cc';c.lineWidth=.65;c.stroke();
+        }
+        for(let i=0;i<16;i++){const x=(random()-.5)*200,y=(random()-.5)*220,radius=2+random()*6;circle(c,x,y,radius+3,'#120f20b0','#a64b36',1);circle(c,x,y,radius,'#f28a3a');circle(c,x-1,y-1,radius*.35,'#ffe4a1');}
       }else{
         // Overlapping geological plates and crater rims, stable between frames.
         for(let i=0;i<55;i++){
@@ -212,15 +240,18 @@
       c.save();c.translate(p.x,p.y);c.rotate(Math.sin(t*.8+i*1.7)*.07);c.scale(u,u);
       const amber=banked?'#b6ac92':'#ffd49b';
       const halo=c.createRadialGradient(0,0,2,0,0,25);halo.addColorStop(0,banked?'#ebd3a012':'#ffd79128');halo.addColorStop(1,'transparent');circle(c,0,0,25,halo);
-      // Bevelled titanium crate, with an amber cargo seal and readable ribs.
-      c.beginPath();c.moveTo(-11,-10);c.lineTo(-7,-15);c.lineTo(10,-15);c.lineTo(14,-10);c.lineTo(14,9);c.lineTo(9,14);c.lineTo(-8,14);c.lineTo(-11,10);c.closePath();
-      const g=c.createLinearGradient(-11,-15,14,14);g.addColorStop(0,'#ddc7a3');g.addColorStop(.35,'#8a7560');g.addColorStop(1,'#34404b');c.fillStyle=g;c.fill();c.lineWidth=1.2;c.strokeStyle=amber;c.stroke();
-      c.fillStyle=banked?'#51514a':'#714e30';c.fillRect(-6,-10,15,18);c.strokeStyle='#fbd49c70';c.lineWidth=.8;c.strokeRect(-6,-10,15,18);
-      c.fillStyle=amber;c.fillRect(-8,-12,3,22);c.fillRect(8,-12,3,22);
-      c.fillStyle='#e8d6b7';c.fillRect(-3,-9,8,3);c.fillStyle='#172831';c.fillRect(-3,-8,1,2);c.fillRect(0,-8,1,2);c.fillRect(3,-8,1,2);
-      c.fillStyle=banked?'#c6d3c9':'#fff3d7';c.font='bold 9px ui-monospace,Consolas,monospace';c.textAlign='center';c.fillText(p.label||String(i+1),1,5);
-      c.fillStyle='#101f2a';for(const [x,y] of [[-8,-11],[10,-11],[-8,10],[10,10]])circle(c,x,y,1.1,'#223947');
-      circle(c,10,-12,1.9,banked?'#80cbb3':'#ffe6ac');c.restore();
+      // Reinforced freight capsule with separate lit top, front and side faces.
+      const front=c.createLinearGradient(-12,-10,12,14);front.addColorStop(0,banked?'#78857e':'#f8ce83');front.addColorStop(.45,banked?'#526763':'#ba803d');front.addColorStop(1,'#425461');
+      c.beginPath();c.moveTo(-13,-8);c.lineTo(6,-8);c.lineTo(10,-4);c.lineTo(10,13);c.lineTo(-10,13);c.lineTo(-13,9);c.closePath();c.fillStyle=front;c.fill();c.strokeStyle=amber;c.lineWidth=1;c.stroke();
+      c.beginPath();c.moveTo(-13,-8);c.lineTo(-6,-15);c.lineTo(12,-15);c.lineTo(17,-10);c.lineTo(10,-4);c.lineTo(6,-8);c.closePath();c.fillStyle=banked?'#9cafac':'#f4dda8';c.fill();c.strokeStyle='#e6f1e2';c.lineWidth=.7;c.stroke();
+      c.beginPath();c.moveTo(10,-4);c.lineTo(17,-10);c.lineTo(17,7);c.lineTo(10,13);c.closePath();c.fillStyle='#334b58';c.fill();c.strokeStyle='#94adac';c.stroke();
+      for(const x of [-9,5]){c.fillStyle='#d5e4df';c.fillRect(x,-6,3,17);c.fillStyle='#526d75';c.fillRect(x+1,-3,1,12);c.fillStyle='#eef4de';c.fillRect(x-1,-7,5,3);c.fillRect(x-1,9,5,3);}
+      c.fillStyle='#193641';c.fillRect(-5,-3,9,12);c.strokeStyle='#70898c';c.strokeRect(-5,-3,9,12);
+      c.fillStyle=banked?'#b8d6ce':'#fff1c4';c.font='bold 9px ui-monospace,Consolas,monospace';c.textAlign='center';c.fillText(p.label||String(i+1),-.5,6);
+      c.strokeStyle='#718c92';c.lineWidth=1.5;c.beginPath();c.moveTo(-4,-11);c.lineTo(-1,-14);c.lineTo(6,-14);c.lineTo(8,-12);c.stroke();
+      c.fillStyle='#486f7b';for(let k=0;k<3;k++)c.fillRect(12,-3+k*3,3,1);
+      c.fillStyle='#1a323d';c.fillRect(-5,-6,8,2);c.fillStyle=banked?'#73ba9d':'#9dffe3';c.fillRect(-4,-6,5,1.3);
+      circle(c,8,-10,1.3,banked?'#8ec7b4':'#b8ffe5');c.restore();
     }
     flybys(level,state){
       if(!level.flybys?.length)return;

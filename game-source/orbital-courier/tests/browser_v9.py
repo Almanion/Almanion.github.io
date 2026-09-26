@@ -125,9 +125,12 @@ with sync_playwright() as pw:
   c,p=load(w,h,touch=w<1000);play(p)
   z=p.evaluate("""()=>{const rs=Object.fromEntries(['gameCanvas','flightPlan','angleInput','speedInput','launchButton','mobileLaunch'].map(k=>[k,document.getElementById(k).getBoundingClientRect().toJSON()]));return{viewport:[innerWidth,innerHeight],scroll:[document.documentElement.scrollWidth,document.documentElement.scrollHeight],rects:rs}}""")
   assert z['scroll'][0]<=w+1 and z['scroll'][1]<=h+1,z
-  for k in ['gameCanvas','flightPlan','angleInput','speedInput']:assert z['rects'][k]['width']>0 and z['rects'][k]['bottom']<=h+1 and z['rects'][k]['top']>=0,(k,z)
+  for k in ['gameCanvas','flightPlan']:assert z['rects'][k]['width']>0 and z['rects'][k]['bottom']<=h+1 and z['rects'][k]['top']>=0,(k,z)
   launch='#mobileLaunch' if p.locator('#mobileLaunch').is_visible() else '#launchButton';clickable(p,launch)
-  clickable(p,'#angleInput');clickable(p,'#speedInput');clickable(p,'#flightPlan summary')
+  if p.locator('#mobileLaunch').is_visible():
+   p.locator('.mobile-options').click();p.locator('#angleInput').scroll_into_view_if_needed();clickable(p,'#angleInput');p.locator('#speedInput').scroll_into_view_if_needed();clickable(p,'#speedInput');closesheet(p)
+  else:clickable(p,'#angleInput');clickable(p,'#speedInput')
+  clickable(p,'#flightPlan summary')
   p.locator('#flightPlan summary').click();assert p.locator('#flightDrawer').is_visible();clickable(p,'#flightDrawer .icon-button[data-action="ui:close-sheet"]');closesheet(p)
   p.evaluate('Orbital.App.setAim(Orbital.LEVELS[68].solution.angle,Orbital.LEVELS[68].solution.speed)');p.locator(launch).click();p.wait_for_timeout(80);clickable(p,launch)
   p.evaluate('Orbital.App.timeScale=110');p.wait_for_function("Orbital.App.state.status==='won'",timeout=15000);clickable(p,launch)
@@ -139,12 +142,12 @@ with sync_playwright() as pw:
  record('13 phone/tablet/desktop sizes: map, next step, inputs and launch fit; click targets checked in preparation, flight and replay')
  # Genuine touch dispatch in CDP; mobile input and keyboard-height simulation.
  c,p=load(390,844,touch=True);play(p);assert p.evaluate('document.body.dataset.mapMode')=='aim'
- p.locator('.mobile-options').tap();assert p.locator('#flightDrawer').is_visible();p.locator('#sheetFine').tap();assert p.evaluate('Orbital.App.profile.settings.fineAim');closesheet(p)
+ p.locator('.mobile-options').tap();assert p.locator('#flightDrawer').is_visible();p.locator('#sheetFine').tap();assert p.evaluate('Orbital.App.profile.settings.fineAim')
  v=aim(p)['angle'];p.locator('[data-action=angle-up]').tap();ae(aim(p)['angle'],v+.1)
- p.locator('#angleInput').fill('-18,7');p.locator('#mobileLaunch').tap();assert p.evaluate('Orbital.App.state===null');ae(aim(p)['angle'],-18.7)
- p.locator('#angleInput').focus();p.set_viewport_size({'width':390,'height':510});p.wait_for_timeout(150);assert p.evaluate('document.body.classList.contains("keyboard-editing")');clickable(p,'#angleInput');clickable(p,'#mobileLaunch')
- p.locator('#mobileLaunch').tap();assert p.evaluate('Orbital.App.state===null');p.set_viewport_size({'width':390,'height':844});p.wait_for_timeout(150)
- record('Mobile exact mode, decimal comma and first-tap commit prevent launch while editing; reduced viewport keyboard simulation keeps controls reachable')
+ p.locator('#angleInput').fill('-18,7');p.locator('#angleInput').press('Enter');assert p.evaluate('Orbital.App.state===null');ae(aim(p)['angle'],-18.7)
+ p.locator('#angleInput').focus();p.set_viewport_size({'width':390,'height':510});p.wait_for_timeout(150);assert p.evaluate('document.body.classList.contains("keyboard-editing")');p.locator('#angleInput').scroll_into_view_if_needed();clickable(p,'#angleInput');clickable(p,'#flightDrawer .sheet-footer button')
+ closesheet(p);assert p.evaluate('Orbital.App.state===null');p.set_viewport_size({'width':390,'height':844});p.wait_for_timeout(150)
+ record('Mobile exact mode, decimal comma and sheet editing never launches; reduced viewport keyboard simulation keeps controls reachable')
  p.locator('#mapAim').tap();box=p.locator('#gameCanvas').bounding_box();x=box['x']+box['width']*.45;y=box['y']+box['height']*.4;cdp=c.new_cdp_session(p)
  def touch(typ,points):
   cdp.send('Input.dispatchTouchEvent',{'type':typ,'touchPoints':[{'x':a,'y':b,'id':i} for i,a,b in points]});p.wait_for_timeout(45)
