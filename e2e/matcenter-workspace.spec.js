@@ -182,6 +182,31 @@ test('direct task links do not bypass access checks', async ({ page }) => {
     await expect(page.locator('.task-card')).toHaveCount(0);
 });
 
+for (const old of [false, true]) test(`mobile section header sticks without an obsolete search offset, legacy=${old}`, async ({ page }, info) => {
+    const errors = await setup(page, { dark: true, old });
+    for (const width of [320, 390, 768]) {
+        await page.setViewportSize({ width, height: 844 });
+        await page.goto('/matcenter.html?grade=grade-9&view=reading');
+        await ready(page);
+        const header = page.locator('#all-tasks .part-title-row');
+        for (const top of [1000, 1600, 1100]) {
+            await page.evaluate(y => window.scrollTo(0, y), top);
+            await expect.poll(async () => Math.abs((await header.boundingBox()).y)).toBeLessThanOrEqual(1);
+            const box = await header.boundingBox();
+            expect(box.x).toBeGreaterThanOrEqual(0);
+            expect(box.x + box.width).toBeLessThanOrEqual(width + 1);
+            expect(box.height).toBeLessThan(100);
+        }
+        await page.screenshot({ path: info.outputPath(`sticky-${width}.png`) });
+        await page.evaluate(() => openMobileMenu());
+        await expect(page.locator('#mcSidebarGrade')).toBeVisible();
+        await page.evaluate(() => closeMobileMenu());
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await expect.poll(async () => (await header.boundingBox()).y).toBeGreaterThan(100);
+    }
+    expect(errors).toEqual([]);
+});
+
 test('sidebar exposes categories, compact grade selection and search on desktop and phone', async ({ page }, info) => {
     const errors = await setup(page, { dark: true });
     for (const width of [1440, 390, 320]) {

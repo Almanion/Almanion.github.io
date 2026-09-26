@@ -123,7 +123,6 @@ body.matcenter-page #matcenterProgress .matcenter-progress-actions { display: in
 body.matcenter-page #matcenterProgress .matcenter-progress-value { font-size: .8rem; }
 body.matcenter-page #matcenterProgress .matcenter-progress-track { width: 100%; height: 3px; margin-top: .6rem; }
 body.matcenter-page #matcenterProgress .matcenter-progress-percent { display: none; }
-body.matcenter-page #matcenterProgress .matcenter-share-solved-btn { min-height: 30px; font-size: .75rem; }
 body.matcenter-page .mc-sidebar-tools { display: grid; gap: .5rem; padding: 0 .5rem 1rem; }
 body.matcenter-page .mc-sidebar-tools :is(select,button) { width: 100%; min-width: 0; min-height: 44px; padding: .65rem; border: 1px solid var(--mc-line); border-radius: 9px; background: var(--mc-surface); color: var(--mc-ink); font: inherit; font-size: .9rem; cursor: pointer; }
 body.matcenter-page #mcSidebarSearch { text-align: left; color: var(--mc-muted); }
@@ -148,6 +147,7 @@ body.matcenter-page .mc-toolbar :focus-visible,
 body.matcenter-page .mc-grades :focus-visible,
 body.matcenter-page #statsContainer :focus-visible { outline: 2px solid var(--mc-accent); outline-offset: 2px; }
 @media (max-width: 768px) {
+    body.matcenter-page .content-section.matcenter-task-view .part-title-row { top: 0; background: var(--mc-bg) !important; backdrop-filter: none; }
     body.matcenter-page .main-content > .matcenter-page-header,
     body.matcenter-page .mc-grades,
     body.matcenter-page .mc-toolbar,
@@ -164,7 +164,8 @@ body.matcenter-page #statsContainer :focus-visible { outline: 2px solid var(--mc
     body.matcenter-page .mc-search { grid-column: 1 / -1; }
     body.matcenter-page .mc-search input { font-size: 16px; }
     body.matcenter-page .mc-toolbar select { width: 100%; font-size: .8rem; }
-    body.matcenter-page .mc-view-switch { grid-column: 1 / -1; justify-self: start; }
+    body.matcenter-page .mc-view-switch { grid-column: 1 / -1; }
+    body.matcenter-page .mc-view-switch button { flex: 1; min-height: 40px; }
     body.matcenter-page #statsContainer { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; padding-bottom: .2rem; }
     body.matcenter-page #statsContainer .stat-card { flex-shrink: 0; }
     body.matcenter-page #matcenterProgress .matcenter-progress-actions { gap: .3rem; }
