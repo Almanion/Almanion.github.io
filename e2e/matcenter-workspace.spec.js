@@ -181,3 +181,33 @@ test('direct task links do not bypass access checks', async ({ page }) => {
     await expect(page.locator('#authOverlay')).toBeVisible();
     await expect(page.locator('.task-card')).toHaveCount(0);
 });
+
+test('sidebar exposes categories, compact grade selection and search on desktop and phone', async ({ page }, info) => {
+    const errors = await setup(page, { dark: true });
+    for (const width of [1440, 390, 320]) {
+        await page.setViewportSize({ width, height: 844 });
+        await page.goto('/matcenter.html?grade=grade-10');
+        await ready(page);
+        if (width < 769) await page.evaluate(() => openMobileMenu());
+        await expect(page.locator('#mcSidebarGrade')).toHaveValue('grade-10');
+        await expect(page.locator('#sidebar .nav-link')).toHaveCount(4);
+        await page.locator('#sidebar a[href="#current-series"]').click();
+        await expect(page.locator('#current-series')).toBeVisible();
+        await expect(page.locator('#sidebar a[href="#current-series"]')).toHaveAttribute('aria-current', 'page');
+        if (width < 769) await page.evaluate(() => openMobileMenu());
+        await page.locator('#mcSidebarGrade').selectOption('grade-summer-9-10');
+        await expect(page.locator('#sidebar .nav-link')).toHaveCount(9);
+        await expect(page.locator('#mcSidebarGrade')).toBeFocused();
+        await page.screenshot({ path: info.outputPath(`sidebar-${width}.png`) });
+        const bounds = await page.locator('#mcSidebarGrade').boundingBox();
+        expect(bounds.x).toBeGreaterThanOrEqual(0);
+        expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
+        await page.locator('#sidebar a[href="#topic-mayskie"]').click();
+        await expect(page.locator('#allTasksTitle')).toContainText('Майские сборы');
+        if (width < 769) await page.evaluate(() => openMobileMenu());
+        await page.locator('#mcSidebarSearch').click();
+        await expect(page.locator('#searchInput')).toBeFocused();
+        if (width < 769) await expect(page.locator('#sidebar')).not.toHaveClass(/open/);
+    }
+    expect(errors).toEqual([]);
+});

@@ -49,7 +49,7 @@ function getSummerSectionById(grade, id) {
 }
 
 function syncGradeNavUI() {
-    document.querySelectorAll('.grade-link, .grade-card, .mc-sidebar-grade').forEach(el => {
+    document.querySelectorAll('.grade-link, .grade-card').forEach(el => {
         const isActive = el.dataset.grade === currentGrade;
         el.classList.toggle('active', isActive);
         if (el.matches('button')) {
@@ -61,9 +61,10 @@ function syncGradeNavUI() {
         }
     });
 
-    const title = getGradeTitle(currentGrade);
     const navTitle = document.getElementById('gradeNavTitle');
-    if (navTitle) navTitle.textContent = title;
+    if (navTitle) navTitle.textContent = 'Матцентр';
+    const gradeSelect = document.getElementById('mcSidebarGrade');
+    if (gradeSelect) gradeSelect.value = currentGrade;
 
     // Помечаем body — у летних серий другие UI-правила (нет статусов, темы вместо фильтров)
     document.body.classList.toggle('is-summer-grade', isSummerGrade(currentGrade));
@@ -93,7 +94,7 @@ function updateAllTasksTitleForFilter() {
 
 // Перестраивает список пунктов навигации в сайдбаре под текущий грейд.
 // Для летних серий — «Все задачи» + темы (Майские сборы, Алгебра, …).
-// Классы всегда доступны в боковой панели; категории задач находятся над лентой.
+// Компактный выбор класса оставляет место категориям и темам.
 function rebuildNavMenu(grade) {
     const navTitleEl = document.getElementById('gradeNavTitle');
     if (!navTitleEl) return;
@@ -102,17 +103,20 @@ function rebuildNavMenu(grade) {
     const listEl = navSection.querySelector('ul');
     if (!listEl) return;
 
-    const items = [];
+    const items = [{ id: 'all-tasks', title: 'Все задачи' }];
     if (isSummerGrade(grade)) {
-        items.push({ id: 'all-tasks', title: 'Все темы' });
         getSummerSectionsFor(grade).forEach(s => {
             items.push({ id: s.id, title: s.title });
         });
+    } else {
+        items.push({ id: 'current-series', title: 'Текущая серия' },
+            { id: 'postponed', title: 'Отложенные' },
+            { id: 'unsolved', title: 'Неразобранные' });
     }
 
-    listEl.innerHTML = GRADE_SECTIONS.map(section => `<li><button type="button" class="mc-sidebar-grade" data-grade="${section.id}" aria-pressed="${section.id === grade}">${escapeHtml(section.title)}</button></li>`).join('') + items.map(item => {
+    listEl.innerHTML = `<li class="mc-sidebar-tools"><select id="mcSidebarGrade" aria-label="Раздел Матцентра">${GRADE_SECTIONS.map(section => `<option value="${section.id}" ${section.id === grade ? 'selected' : ''}>${escapeHtml(section.title)}</option>`).join('')}</select><button type="button" id="mcSidebarSearch">Поиск задач</button></li>` + items.map(item => {
         const isActive = item.id === currentFilter ? ' active' : '';
-        return `<li><a href="#${item.id}" class="nav-link${isActive}">${escapeHtml(item.title)}</a></li>`;
+        return `<li><a href="#${item.id}" class="nav-link${isActive}" ${isActive ? 'aria-current="page"' : ''}>${escapeHtml(item.title)}</a></li>`;
     }).join('');
 }
 
@@ -150,6 +154,8 @@ function syncFilterUI() {
     document.querySelectorAll('.nav-link').forEach(l => {
         const href = l.getAttribute('href') || '';
         l.classList.toggle('active', href === `#${currentFilter}`);
+        if (href === `#${currentFilter}`) l.setAttribute('aria-current', 'page');
+        else l.removeAttribute('aria-current');
     });
     document.querySelectorAll('.stat-card.clickable[data-filter]').forEach(c => {
         c.classList.toggle('active', c.dataset.filter === currentFilter);
@@ -410,12 +416,19 @@ function initHintSwipe() {
 // ============================================
 
 function initMatCenterNavigation() {
+    document.addEventListener('change', event => {
+        if (event.target.id !== 'mcSidebarGrade') return;
+        setCurrentGrade(event.target.value);
+        // Keep the menu open so a topic or category can be chosen next.
+        document.getElementById('mcSidebarGrade')?.focus({ preventScroll: true });
+    });
     // nav-link могут пересоздаваться при смене грейда — делегируем клик
     document.addEventListener('click', (e) => {
-        const grade = e.target.closest('.mc-sidebar-grade');
-        if (grade) {
-            setCurrentGrade(grade.dataset.grade);
+        if (e.target.closest('#mcSidebarSearch')) {
             if (typeof closeMobileMenu === 'function') closeMobileMenu();
+            const input = document.getElementById('searchInput');
+            input.scrollIntoView({ block: 'center', behavior: 'instant' });
+            input.focus({ preventScroll: true });
             return;
         }
         const link = e.target.closest('.nav-link');
