@@ -2,14 +2,16 @@
   "name": "orbital-courier",
   "version": "10.1.0",
   "private": true,
-  "description": "Offline orbital game: responsive cockpit, unified touch/mouse navigation; v8 physics and save format preserved",
+  "description": "Offline orbital game with five campaign tiers, detailed procedural artwork and synthesized sound",
   "scripts": {
     "build": "node tools/build.cjs",
     "test": "node tests/v8.test.cjs && node tests/ui9.static.cjs",
     "economy": "node tools/economy_v8.cjs",
     "test:browser": "python tests/browser_v9.py && python tests/browser_v9_edges.py",
     "author:v8": "node tools/author_v8.cjs 0,3 && node tools/author_v8.cjs 1 && node tools/author_v8.cjs 2 && node tools/assemble_v8.cjs",
-    "assemble": "node tools/assemble_v8.cjs"
+    "assemble": "node tools/assemble_v8.cjs",
+    "audit:campaign": "node tools/audit_campaign.cjs",
+    "author:finale": "node tools/author_v11.cjs && node tools/assemble_v11.cjs && node tools/audit_campaign.cjs"
   },
   "engines": {
     "node": ">=18"

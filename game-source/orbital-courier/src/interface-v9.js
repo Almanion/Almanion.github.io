@@ -134,7 +134,7 @@
     const flightKey = mode + ':' + (A.state?.reason || '') + ':' + A.paused;
     if (lastFlightKey !== flightKey) { lastFlightKey = flightKey; $('stagePill').setAttribute('aria-live', 'polite'); }
     for(const id of ['angleRange','speedRange']) { const e=$(id); e.style.setProperty('--range-fill', ((+e.value-+e.min)/(+e.max-+e.min)*100)+'%'); }
-    const nextReady = mode === 'review' && s?.status === 'won' && !A.lastResult?.training && A.currentId < O.LEVELS.length - 1;
+    const nextReady = mode === 'review' && A.state?.status === 'won' && !A.lastResult?.training && O.Campaign.adjacent(A.currentId,1)>=0;
     const nextDesktop = $('nextLevelButton');
     if (nextDesktop) {
       nextDesktop.hidden = !nextReady;
@@ -216,8 +216,8 @@
     schedule();
   }
   function menu() {
-    const prev = A.currentId > 0 && G.unlocked(A.profile, A.currentId - 1);
-    const next = A.currentId < O.LEVELS.length - 1 && G.unlocked(A.profile, A.currentId + 1);
+    const prev = G.unlocked(A.profile, O.Campaign.adjacent(A.currentId,-1));
+    const next = G.unlocked(A.profile, O.Campaign.adjacent(A.currentId,1));
     A.openModal(A.level().name, `<div class="ui-menu">
       <button data-action="ui:memory"><span class="menu-symbol">◎</span>Точный пульт</button>
       <button data-action="ui:route"><span class="menu-symbol">⌁</span>План маршрута</button>
@@ -231,7 +231,7 @@
       <button data-action="ui:mode"><span class="menu-symbol">◉</span>${A.profile.difficulty === 'pro' ? 'Выключить PRO' : 'Включить PRO'}</button>
       <button data-action="ui:shortcuts"><span class="menu-symbol">⌨</span>Управление</button>
       <button data-action="nav" data-page="campaign" class="wide">← Все контракты</button>
-    </div><div class="modal-actions"><button class="button primary" data-action="close">К полёту</button></div>`, `КОНТРАКТ ${A.currentId + 1} / 80`);
+    </div><div class="modal-actions"><button class="button primary" data-action="close">К полёту</button></div>`, `КОНТРАКТ ${O.Campaign.number(A.currentId)} / 80`);
   }
   function toggleDifficulty() {
     if (A.state) { A.toast('Режим можно переключать только до запуска.', true); return; }

@@ -7,6 +7,7 @@
   const C=O.Cosmetics||(typeof require==='function'?require('./cosmetics.js'):null);
   const A=O.Achievements||(typeof require==='function'?require('./achievements.js'):null);
   const M=O.Medals||(typeof require==='function'?require('./medals.js'):null);
+  const Campaign=O.Campaign||(typeof require==='function'?require('./campaign.js'):null);
   const SAVE_KEY='orbital-courier-save-v8',LEGACY_KEY='orbital-courier-save-v2';
   const levels=()=>O.LEVELS||[],count=()=>levels().length;
   const UPGRADE_DEFS={
@@ -31,13 +32,14 @@
     {id:'gold',name:'Солнечный ветер',color:'#ffc37c',xp:2300},{id:'nova',name:'Сверхновая',color:'#c4a3ff',xp:3600},
     {id:'coral',name:'Коралловая заря',color:'#ff958a',xp:7000},{id:'pearl',name:'Белый карлик',color:'#f2f1d7',xp:8000},
     {id:'twin',name:'Двойная звезда',color:'#98b9ff',xp:10000,gate:'both4',requirement:'Обе ветви четырёх карт'},
-    {id:'amber',name:'Янтарный резонанс',color:'#ffdd9b',xp:14000,gate:'sector18',requirement:'Все карты сектора 18'},
-    {id:'rose',name:'Адресная лента',color:'#ff9ec6',xp:18000,gate:'multi4',requirement:'Четыре многоадресных рейса'},
+    {id:'amber',name:'Янтарный резонанс',color:'#ffdd9b',xp:14000,gate:'sector18',requirement:'Все карты «Развилок приливов»'},
+    {id:'rose',name:'Лента горизонта',color:'#ff9ec6',xp:18000,gate:'multi4',requirement:'Все карты «Предела навигации»'},
     {id:'atlas',name:'Полный атлас',color:'#dffaff',xp:22000,gate:'all80',requirement:'Все 80 контрактов'}];
   const medalCount=m=>(m&1?1:0)+(m&2?1:0)+(m&4?1:0);
   const blankRecord=()=>({medals:0,cargo:[],attempts:0,bestTime:null,paid:0,dataPaid:0,bestScore:0,proScore:0,proWon:false,routeVersion:0,currentMedals:0,legacyMedals:0,routes:[],bestLoops:0,bestPortals:0,bestDrops:0,bestPrecision:0,tractorProof:false});
   const int=(x,min,max,fallback=0)=>Number.isFinite(x)?Math.max(min,Math.min(max,Math.floor(x))):fallback;
   const record=(p,id)=>p.records[String(id)]||blankRecord();
+  const viewRecord=(p,id)=>{const r=record(p,id),l=levels()[id];return l?.routeRevision>8&&r.routeVersion!==l.routeRevision?{...r,currentMedals:0,legacyMedals:r.medals|r.legacyMedals,cargo:[]}:r;};
   const completed=p=>Object.values(p.records).filter(r=>r.medals&1).length;
   const totalMedals=p=>Object.values(p.records).reduce((n,r)=>n+medalCount(r.medals),0);
   const cargoCount=p=>Object.values(p.records).reduce((n,r)=>n+r.cargo.length,0);
@@ -79,8 +81,8 @@
   const achievements=A.create(legacyAchievements);
   function fresh(){return {game:'orbital-courier',version:8,credits:E.START_CREDITS,data:0,xp:0,
     upgrades:{scanner:0,magnet:0,docking:0,engine:0},records:{},flags:{},achievements:[],receipts:[],
-    settings:{sound:true,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false},courses:{},skin:'mint',trail:'vector',lastLevel:0,wishlist:null,difficulty:'normal'};}
-  function unlocked(p,id){
+    campaignRevision:11,campaignAccess:[],settings:{sound:true,volume:.6,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false},courses:{},skin:'mint',trail:'vector',lastLevel:0,wishlist:null,difficulty:'normal'};}
+  function legacyUnlocked(p,id){
     if(!Number.isInteger(id)||id<0||id>=count())return false;
     if(id===0)return true;
     if(id===68||id===76)return completed(p)>=20;
@@ -94,7 +96,12 @@
     if(id===32)return levels().slice(0,32).filter(l=>record(p,l.id).medals&1).length>=12;
     return !!(record(p,id-1).medals&1);
   }
-  function nextLevel(p){for(let i=0;i<count();i++)if(unlocked(p,i)&&!(record(p,i).medals&1))return i;return p.lastLevel;}
+  function unlocked(p,id){
+    if(!Number.isInteger(id)||id<0||id>=count())return false;
+    const i=Campaign.position(id),r=record(p,id);
+    return i===0||!!(r.medals&1)||r.attempts>0||p.campaignAccess?.includes(id)||Campaign.current(p,Campaign.order[i-1]);
+  }
+  function nextLevel(p){for(const id of Campaign.order)if(unlocked(p,id)&&!Campaign.current(p,id))return id;return p.lastLevel;}
   function rank(p){let i=0;for(let j=1;j<RANKS.length;j++)if(p.xp>=RANKS[j].xp)i=j;return {...RANKS[i],index:i,next:RANKS[i+1]||null};}
   function research(p){return Object.values(p.records).reduce((n,r)=>n+(r.dataPaid||0),0);}
   function installed(p){return Object.values(p.upgrades).reduce((a,b)=>a+b,0);}
@@ -119,6 +126,7 @@
     const key=String(level.id),r=p.records[key]||(p.records[key]=blankRecord()),oldMask=r.medals,oldCargo=r.cargo.slice();
     const runCargo=[...new Set((flight.cargo||[]).filter(i=>Number.isInteger(i)&&i>=0&&i<level.cargo.length))];
     r.routes=Array.from(new Set([...(r.routes||[]),...(flight.branchId?[flight.branchId]:[])]));r.bestLoops=Math.max(r.bestLoops||0,flight.flybyIndex||0);r.bestPortals=Math.max(r.bestPortals||0,flight.portalIndex||0);r.bestDrops=Math.max(r.bestDrops||0,flight.dropIndex||0);r.bestPrecision=Math.max(r.bestPrecision||0,flight.dockPrecision||0);r.tractorProof=r.tractorProof||flight.pullCount>0;
+    if(level.routeRevision>8&&r.routeVersion!==level.routeRevision){r.legacyMedals|=r.medals;r.currentMedals=0;}
     const runMask=M.mask(level,flight,r),newMask=runMask&~oldMask;r.currentMedals=(r.currentMedals||0)|runMask;
     r.routeVersion=level.routeRevision||0;r.medals|=runMask;r.cargo=[...new Set([...oldCargo,...runCargo])].sort((a,b)=>a-b);
     r.bestTime=r.bestTime===null?flight.t:Math.min(r.bestTime,flight.t);
@@ -171,7 +179,7 @@
       const src=raw.records?.[String(l.id)];if(!src||typeof src!=='object')continue;
       const r=blankRecord(),mask=int(src.medals,0,7);r.medals=mask&1?mask:0;
       r.cargo=r.medals&1&&Array.isArray(src.cargo)?[...new Set(src.cargo.filter(x=>Number.isInteger(x)&&x>=0&&x<l.cargo.length))].sort((a,b)=>a-b):[];
-      r.routeVersion=int(src.routeVersion,0,8);
+      r.routeVersion=int(src.routeVersion,0,11);
       r.attempts=int(src.attempts,0,1000000);r.bestTime=Number.isFinite(src.bestTime)&&src.bestTime>0?Math.min(src.bestTime,10000):null;
       if(legacy&&(r.medals&1)){
         // Old saves have no precision rating: grant conservative legacy credit,
@@ -205,6 +213,8 @@
       if (!/^(0|[1-9]\d*):(normal|pro)$/.test(key) || +key.split(':')[0] >= count() || !Array.isArray(value)) continue;
       p.courses[key] = value.slice(0,2).map(v => v && Number.isFinite(v.angle) && Number.isFinite(v.speed) && v.angle >= -180 && v.angle <= 180 && v.speed >= 60 && v.speed <= 1000 ? {angle:Math.round(v.angle*10)/10,speed:Math.round(v.speed)} : null);
     }
+    p.settings.volume=Number.isFinite(raw.settings?.volume)?Math.max(0,Math.min(1,raw.settings.volume)):.6;
+    p.campaignAccess=raw.campaignRevision===11&&Array.isArray(raw.campaignAccess)?[...new Set(raw.campaignAccess.filter(id=>Number.isInteger(id)&&id>=0&&id<count()))]:Campaign.order.filter(id=>legacyUnlocked(p,id));
     p.lastLevel=int(raw.lastLevel,0,Math.max(0,count()-1));if(!unlocked(p,p.lastLevel))p.lastLevel=nextLevel(p);
     if(legacy){
       const equivalent=Object.entries(p.upgrades).reduce((n,[key,lv])=>n+Array.from({length:lv},(_,i)=>E.price(key,i+1,0,0)).reduce((a,b)=>a+b,0),0);
@@ -230,7 +240,7 @@
   }
   function write(storage,p){try{storage.setItem(SAVE_KEY,JSON.stringify(p));return true;}catch{return false;}}
   O.Progress={SAVE_KEY,LEGACY_KEY,UPGRADE_DEFS,RANKS,SKINS,achievements,fresh,record,completed,totalMedals,cargoCount,
-    unlocked,nextLevel,rank,stats,medalCount,launch,complete,buy,quote,invested,dataInvested,respec,research,installed,
+    viewRecord,unlocked,nextLevel,rank,stats,medalCount,launch,complete,buy,quote,invested,dataInvested,respec,research,installed,
     earnedBudget,remainingRewards,sanitize,read,write,awardAchievements};
   if(typeof module!=='undefined'&&module.exports)module.exports=O.Progress;
 })(typeof globalThis!=='undefined'?globalThis:window);

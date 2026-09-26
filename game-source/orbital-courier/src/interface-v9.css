@@ -498,3 +498,6 @@ body[data-page=play] #saveWarning{display:none}
  #play .mobile-dock{flex-basis:44px;height:44px}
  #play .mobile-dock button{min-height:44px;height:44px}
 }
+/* Campaign tiers and independent audio level. */
+.difficulty-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:14px 0 20px}.difficulty-tabs button{display:flex;flex-direction:column;gap:5px;align-items:flex-start;padding:12px;border:1px solid #294552;border-radius:12px;background:#10212d;color:#c4d5df;text-align:left;font-size:13px}.difficulty-tabs button small{color:var(--tier);font-size:10px;letter-spacing:.1em}.difficulty-tabs button[aria-pressed=true]{border-color:var(--tier);background:#1d303c;color:#fff;box-shadow:inset 0 -2px var(--tier)}.sound-volume{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;margin:16px 0;padding:16px;background:#112630;border-radius:12px}.sound-volume input{flex:0 0 100%;width:100%;accent-color:#78eaca}.sound-volume output{color:#78eaca}
+@media(max-width:600px){.difficulty-tabs{display:flex;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:5px;gap:6px}.difficulty-tabs button{min-width:112px;min-height:60px;scroll-snap-align:start;font-size:12px}}

@@ -4,16 +4,16 @@
   'use strict';
   const O=root.Orbital=root.Orbital||{};
   const TRAILS=Object.freeze([
-    {id:'vector',name:'Вектор',xp:0,color:'#6af4cd',description:'Тонкий световой след. Чистая траектория.',length:92},
-    {id:'comet',name:'Комета',xp:400,color:'#ffd396',description:'Мягкий золотой шлейф с искрами.',length:156},
-    {id:'ion',name:'Ионный след',xp:1000,color:'#8fdcff',description:'Два параллельных потока холодного света.',length:132},
-    {id:'photon',name:'Фотоны',xp:2100,color:'#eff6ff',description:'Цепочка световых частиц вдоль пути.',length:150},
-    {id:'plasma',name:'Плазма',xp:3600,color:'#ff9fba',description:'Пульсирующая нить с тёплым ореолом.',length:144},
+    {id:'vector',name:'Вектор',xp:0,color:'#6af4cd',description:'Мятное лезвие со световыми шевронами.',length:92},
+    {id:'comet',name:'Комета',xp:400,color:'#ffd396',description:'Золотое пламя и россыпь быстрых искр.',length:156},
+    {id:'ion',name:'Ионный след',xp:1000,color:'#8fdcff',description:'Две ледяные струи с магнитными перемычками.',length:132},
+    {id:'photon',name:'Фотоны',xp:2100,color:'#eff6ff',description:'Отдельные ромбы света с мерцающими ядрами.',length:150},
+    {id:'plasma',name:'Плазма',xp:3600,color:'#ff9fba',description:'Розовые разряды внутри горячей плазменной ленты.',length:144},
     {id:'aurora',name:'Полярное сияние',xp:5200,color:'#95e6dd',description:'Переплетение бирюзовой и сиреневой лент.',length:180},
-    {id:'rift',name:'Эхо разлома',xp:8000,color:'#bda4ff',description:'Угасающие кольца и фиолетовый след.',length:172},
-    {id:'fork',name:'Два вектора',xp:10000,gate:'both4',requirement:'Обе ветви четырёх карт',color:'#97bfff',description:'Двойная световая нить за исследованные развилки.',length:172},
-    {id:'tidal',name:'Резонанс',xp:14000,gate:'sector18',requirement:'Все карты сектора 18',color:'#ffe0a7',description:'Периодические импульсы за сложные приливные маршруты.',length:180},
-    {id:'postal',name:'Почтовое сияние',xp:18000,gate:'multi4',requirement:'Четыре многоадресных рейса',color:'#ffa6cb',description:'Переплетение света за доставку всем адресатам.',length:186},
+    {id:'rift',name:'Эхо разлома',xp:8000,color:'#bda4ff',description:'Цепочка раскрывающихся фиолетовых разломов.',length:172},
+    {id:'fork',name:'Два вектора',xp:10000,gate:'both4',requirement:'Обе ветви четырёх карт',color:'#97bfff',description:'Расходящиеся потоки с острыми развилками.',length:172},
+    {id:'tidal',name:'Резонанс',xp:14000,gate:'sector18',requirement:'Все карты «Развилок приливов»',color:'#ffe0a7',description:'Золотые волновые фронты вдоль орбиты.',length:180},
+    {id:'postal',name:'Лента горизонта',xp:18000,gate:'multi4',requirement:'Все карты «Предела навигации»',color:'#ffa6cb',description:'Тканая лента с золотыми почтовыми печатями.',length:186},
     {id:'cartographer',name:'Картограф',xp:22000,gate:'all80',requirement:'Все 80 контрактов',color:'#dcf7ff',description:'Четырёхлучевые звёзды полного атласа.',length:198}
   ]);
   function unlocked(p,item){if((p.xp||0)<item.xp)return false;const done=i=>!!(p.records?.[i]?.medals&1);switch(item.gate){case'both4':return Object.values(p.records||{}).filter(r=>r.routes?.length>=2).length>=4;case'sector18':return [68,69,70,71].every(done);case'multi4':return [76,77,78,79].every(done);case'all80':return Array.from({length:80},(_,i)=>i).every(done);default:return true;}}
@@ -49,27 +49,47 @@
     c.strokeStyle=color;c.lineWidth=width;c.stroke();
   }
   function drawTrail(c,points,id='vector',time=0,color='#6af4cd',reduced=false,scale=1){
-    const def=find(id),pts=samples(recent(points,def.length));if(pts.length<2)return;
-    const t=reduced?0:time,base=def.id==='vector'?color:def.color;
+    const def=find(id),pts=samples(recent(points,def.length),44);if(pts.length<2)return;
+    const t=reduced?0:time,base=def.id==='vector'?color:def.color,k=scale;
     c.save();c.lineCap='round';c.lineJoin='round';c.setLineDash([]);
-    const gradient=c.createLinearGradient(pts[0].x,pts[0].y,pts.at(-1).x,pts.at(-1).y);
-    gradient.addColorStop(0,base+'00');gradient.addColorStop(.5,base+'80');gradient.addColorStop(1,base+'ef');
-    stroke(c,pts,gradient,(def.id==='comet'?12:7)*scale);
-    if((def.id==='ion'||def.id==='fork')){
-      for(const side of [-1,1])stroke(c,pts,gradient,1.9*scale,p=>side*3.7*scale*Math.sin(p.f*Math.PI*.82));
-    }else if((def.id==='photon'||def.id==='tidal')){
-      for(let i=3;i<pts.length;i+=3){const p=pts[i];c.globalAlpha=p.f*.9;c.fillStyle=base;c.beginPath();c.arc(p.x,p.y,(1+1.5*p.f)*scale,0,Math.PI*2);c.fill();}
-    }else if((def.id==='aurora'||def.id==='postal')){
-      stroke(c,pts,'#ad9cffa0',2.2*scale,p=>Math.sin(p.f*13-t*2)*4.3*scale*(1-p.f));
-      stroke(c,pts,gradient,2.5*scale,p=>-Math.sin(p.f*13-t*2)*4.3*scale*(1-p.f));
-    }else if(def.id==='plasma'){
-      stroke(c,pts,gradient,3*scale,p=>Math.sin(p.f*22-t*3)*2.8*scale*(1-p.f));stroke(c,pts,'#fff4f270',.8*scale);
-    }else if((def.id==='rift'||def.id==='cartographer')){
-      stroke(c,pts,gradient,1.5*scale);
-      for(let i=5;i<pts.length-2;i+=7){const p=pts[i];c.globalAlpha=p.f*.6;c.strokeStyle=base;c.lineWidth=1*scale;c.beginPath();c.arc(p.x,p.y,(3+(1-p.f)*7)*scale,0,Math.PI*2);c.stroke();}
-    }else{
-      stroke(c,pts,gradient,(def.id==='comet'?3.4:1.8)*scale);
-      if(def.id==='comet')for(let i=3;i<pts.length-2;i+=5){const p=pts[i],o=Math.sin(i*2+t*1.4)*6*(1-p.f)*scale;c.globalAlpha=p.f*.85;c.fillStyle=base;c.beginPath();c.arc(p.x+p.nx*o,p.y+p.ny*o,1.1*scale,0,Math.PI*2);c.fill();}
+    const grad=(a,b=base)=>{const g=c.createLinearGradient(pts[0].x,pts[0].y,pts.at(-1).x,pts.at(-1).y);g.addColorStop(0,a+'00');g.addColorStop(.4,a+'60');g.addColorStop(1,b);return g;};
+    const glow=grad(base),thin=grad(base,'#f0fffc'),wave=p=>Math.sin(p.f*15-t*2)*(1-p.f)*7*k;
+    const ribbon=(col,width,offset=()=>0)=>{c.beginPath();for(const side of [-1,1]){const row=side===1?pts:[...pts].reverse();row.forEach((p,i)=>{const o=offset(p)+side*width*Math.sin(Math.PI*p.f)*k,x=p.x+p.nx*o,y=p.y+p.ny*o;if(side===1&&i===0)c.moveTo(x,y);else c.lineTo(x,y);});}c.closePath();c.fillStyle=col;c.fill();};
+    const at=(p,draw)=>{c.save();c.translate(p.x,p.y);c.rotate(Math.atan2(-p.nx,p.ny));c.globalAlpha=p.f*.85;c.scale(k,k);draw();c.restore();};
+    const star=(r)=>{c.beginPath();for(let j=0;j<8;j++){const a=j*Math.PI/4,q=j%2?r*.23:r;j?c.lineTo(Math.cos(a)*q,Math.sin(a)*q):c.moveTo(q,0);}c.closePath();c.fill();};
+    switch(def.id){
+      case 'vector':
+        ribbon(glow,2);stroke(c,pts,thin,.9*k);
+        for(const i of [14,25,36])at(pts[i],()=>{c.strokeStyle=base;c.lineWidth=.9;c.beginPath();c.moveTo(-4,-3);c.lineTo(0,0);c.lineTo(-4,3);c.stroke();});break;
+      case 'comet':
+        ribbon(grad('#dd7938','#ffeac2'),9);ribbon(glow,3.5);stroke(c,pts,thin,1.3*k);
+        for(let i=3;i<40;i+=4){const p=pts[i];at(p,()=>{const y=Math.sin(i*3+t*2)*11*(1-p.f);c.strokeStyle=i%3?'#ffd081':'#fff1d0';c.lineWidth=.9;c.beginPath();c.moveTo(-5,y);c.lineTo(1,y*.9);c.stroke();});}break;
+      case 'ion':
+        for(const side of [-1,1]){const o=p=>side*5*k*Math.sin(p.f*Math.PI*.9);stroke(c,pts,glow,4*k,o);stroke(c,pts,'#c5efffc0',1*k,o);}
+        for(let i=8;i<40;i+=5)at(pts[i],()=>{c.strokeStyle='#8fdcff';c.lineWidth=.7;c.strokeRect(-2,-5,4,10);});break;
+      case 'photon':
+        for(let i=2;i<43;i+=3){const p=pts[i];at(p,()=>{const r=1.3+2.2*p.f,b=.65+.35*Math.sin(i+t*4);c.globalAlpha*=b;c.fillStyle='#a8dfff';c.beginPath();c.moveTo(r*2,0);c.lineTo(0,r);c.lineTo(-r*2,0);c.lineTo(0,-r);c.fill();c.fillStyle='#fff';c.fillRect(-.7,-.7,1.4,1.4);});}break;
+      case 'plasma':
+        ribbon(grad('#ed5387','#ffd8e8'),6,wave);stroke(c,pts,thin,1.5*k,wave);
+        for(const side of [-1,1])stroke(c,pts,glow,1.1*k,(p,i)=>wave(p)+side*(1-p.f)*k*(4+Math.sin(i*2+t*4)*4));break;
+      case 'aurora':
+        ribbon(grad('#907cf5','#97fff0'),6,p=>wave(p)*1.4);ribbon(grad('#75e5ce','#d5bdff'),3.5,p=>-wave(p));
+        stroke(c,pts,'#c1fff178',.8*k,p=>wave(p)*1.4+Math.sin(p.f*Math.PI)*6*k);break;
+      case 'rift':
+        stroke(c,pts,glow,2*k);
+        for(let i=5;i<42;i+=6)at(pts[i],()=>{const r=3+(1-pts[i].f)*9;c.strokeStyle='#b19cff';c.lineWidth=1.3;c.beginPath();c.ellipse(0,0,r*.3,r,0,.2,Math.PI*1.85);c.stroke();c.strokeStyle='#efdbff';c.beginPath();c.ellipse(0,0,r*.3,r,0,-.6,.2);c.stroke();});break;
+      case 'fork':
+        for(const side of [-1,1]){const o=p=>side*(1-p.f)*12*k;stroke(c,pts,glow,3*k,o);stroke(c,pts,thin,.8*k,o);}
+        for(let i=10;i<40;i+=9)at(pts[i],()=>{c.fillStyle='#d8e5ff';const q=(1-pts[i].f)*12;c.beginPath();c.moveTo(3,0);c.lineTo(-4,-q);c.lineTo(-1,0);c.lineTo(-4,q);c.closePath();c.fill();});break;
+      case 'tidal':
+        stroke(c,pts,grad('#ff9a5c','#fff3cf'),1.3*k);
+        for(let i=5;i<42;i+=5)at(pts[i],()=>{const r=4+7*(1-pts[i].f);c.strokeStyle=i%2?'#ffe5a2':'#ffb982';c.lineWidth=1.5;c.beginPath();c.arc(-r*.6,0,r,-1.1,1.1);c.stroke();});break;
+      case 'postal':
+        ribbon(grad('#db68a4','#ffe0be'),5,p=>wave(p)*.65);stroke(c,pts,'#ffeed990',.9*k,p=>wave(p)*.65+4*k*Math.sin(Math.PI*p.f));
+        for(const i of [14,27,38])at(pts[i],()=>{c.fillStyle='#ffdbb8';c.strokeStyle='#ba507c';c.lineWidth=.7;c.fillRect(-4,-2.8,8,5.6);c.beginPath();c.moveTo(-4,-2.8);c.lineTo(0,.5);c.lineTo(4,-2.8);c.stroke();});break;
+      case 'cartographer':
+        c.setLineDash([2*k,5*k]);stroke(c,pts,glow,.8*k);c.setLineDash([]);
+        for(let i=5;i<43;i+=6)at(pts[i],()=>{c.fillStyle='#dbf7ff';star(i%2?4:5.5);c.strokeStyle='#84bccc';c.lineWidth=.6;c.beginPath();c.arc(0,0,7,0,Math.PI*1.45);c.stroke();});break;
     }
     c.restore();
   }

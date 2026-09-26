@@ -1,0 +1,21 @@
+{
+  "flights": 184,
+  "motionCounterfactualFailures": 20,
+  "profileBeforeEngineering": {
+    "credits": 24202,
+    "data": 202,
+    "xp": 29541,
+    "achievements": 83
+  },
+  "achievementsMissing": [],
+  "finalCampaign": {
+    "xp": 30329,
+    "credits": 24538,
+    "data": 224,
+    "achievements": 93,
+    "precision": 48
+  },
+  "assertions": 3101,
+  "runtimeSeconds": 4.993,
+  "status": "passed"
+}

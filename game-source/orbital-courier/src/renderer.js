@@ -188,15 +188,26 @@
       }
       c.restore();
     }
+    rockTexture(p,index){
+      this.rockCache??=new Map();const seed=(Math.round(p.x*31+p.y*71+p.r*113)+index*827)>>>0,key=String(seed);
+      if(this.rockCache.has(key))return this.rockCache.get(key);
+      const canvas=document.createElement('canvas');canvas.width=canvas.height=224;const c=canvas.getContext('2d'),random=rng(seed),kind=seed%3;
+      c.translate(112,112);const vertices=Array.from({length:14},(_,i)=>{const a=i*TAU/14,r=98*(.91+random()*.09);return {x:Math.cos(a)*r,y:Math.sin(a)*r};});
+      const outline=()=>{c.beginPath();vertices.forEach((v,i)=>i?c.lineTo(v.x,v.y):c.moveTo(v.x,v.y));c.closePath();};
+      outline();c.save();c.clip();const g=c.createLinearGradient(-70,-85,70,85),pal=[['#b2a18a','#665f59','#262f3c'],['#829bad','#485e70','#202d3b'],['#b2a8a0','#67626a','#272b39']][kind];g.addColorStop(0,pal[0]);g.addColorStop(.5,pal[1]);g.addColorStop(1,pal[2]);c.fillStyle=g;c.fillRect(-110,-110,220,220);
+      // Broad fracture planes, then small pitting: detail remains coherent when small.
+      for(let i=0;i<14;i++){const v=vertices[i],w=vertices[(i+1)%14];c.beginPath();c.moveTo(v.x,v.y);c.lineTo(w.x,w.y);c.lineTo((random()-.5)*70,(random()-.5)*65);c.closePath();c.fillStyle=i<7?'#07162526':'#fff1d318';c.fill();c.strokeStyle='#121c2b28';c.lineWidth=1;c.stroke();}
+      for(let i=0;i<13;i++){const x=(random()-.5)*158,y=(random()-.5)*158,r=5+random()*16;c.save();c.translate(x,y);c.rotate(random()*TAU);c.scale(1,.72);const pit=c.createRadialGradient(-r*.3,-r*.3,1,0,0,r);pit.addColorStop(0,'#162132bb');pit.addColorStop(.75,'#25314099');pit.addColorStop(1,'#e2d3b544');circle(c,0,0,r,pit);c.beginPath();c.arc(0,0,r,.2,2.7);c.strokeStyle='#e0d6c870';c.lineWidth=1.5;c.stroke();c.restore();}
+      for(let i=0;i<3;i++){c.beginPath();let x=(random()-.5)*110,y=-75+random()*30;c.moveTo(x,y);for(let j=0;j<5;j++){x+=(random()-.5)*28;y+=18+random()*9;c.lineTo(x,y);}c.strokeStyle='#101d2c99';c.lineWidth=2.3;c.stroke();c.translate(-1,-1);c.strokeStyle=kind===1?'#a0c6d566':'#d6bc9455';c.lineWidth=.7;c.stroke();c.translate(1,1);}
+      for(let i=0;i<140;i++){c.fillStyle=i%3?'#091b2926':'#ecdfc235';c.fillRect((random()-.5)*195,(random()-.5)*195,1+random()*2,1+random()*2);}
+      const shade=c.createRadialGradient(-38,-45,15,12,18,125);shade.addColorStop(0,'#ffffff00');shade.addColorStop(.65,'#101b3010');shade.addColorStop(1,'#081425aa');c.fillStyle=shade;c.fillRect(-110,-110,220,220);c.restore();
+      outline();c.strokeStyle='#d0d7d472';c.lineWidth=1.2;c.stroke();
+      if(this.rockCache.size>=48)this.rockCache.delete(this.rockCache.keys().next().value);this.rockCache.set(key,canvas);return canvas;
+    }
     rock(p,index){
-      const c=this.ctx,random=rng(index*827+37);c.save();c.translate(p.x,p.y);c.beginPath();
-      for(let i=0;i<10;i++){
-        const a=i*TAU/10,r=p.r*(0.86+random()*0.14),x=Math.cos(a)*r,y=Math.sin(a)*r;
-        i?c.lineTo(x,y):c.moveTo(x,y);
-      }
-      c.closePath();const g=c.createLinearGradient(-p.r,-p.r,p.r,p.r);g.addColorStop(0,'#78828a');g.addColorStop(1,'#303c4c');
-      c.fillStyle=g;c.fill();c.strokeStyle='#a9b6bf70';c.lineWidth=1.2;c.stroke();
-      circle(c,-p.r*0.2,-p.r*0.15,p.r*0.25,'#24313f66');circle(c,p.r*0.3,p.r*0.3,p.r*0.13,'#24313f66');c.restore();
+      const c=this.ctx;c.drawImage(this.rockTexture(p,index),p.x-p.r*112/98,p.y-p.r*112/98,p.r*224/98,p.r*224/98);
+      // Exact collision envelope: the broken silhouette never conceals its boundary.
+      circle(c,p.x,p.y,p.r,null,'#a6b7c433',.65);
     }
     station(p,t,capture){
       const c=this.ctx,ui=Math.min(1.28,this.uiScale||1),R=capture;

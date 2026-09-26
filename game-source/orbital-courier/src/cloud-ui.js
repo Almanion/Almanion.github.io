@@ -55,7 +55,7 @@
   }
   function summary(text,title){
     if(!text)return `<div class="cloud-copy"><h3>${title}</h3><p>Копии пока нет</p></div>`;
-    try{const p=validSave(text);return `<div class="cloud-copy"><h3>${title}</h3><strong>${G.completed(p)} / 80 контрактов</strong><p>${p.credits.toLocaleString('ru-RU')} ◈ · ${p.data} ⬡ · ${p.xp.toLocaleString('ru-RU')} XP</p><small>${G.installed(p)} ступеней оборудования</small></div>`;}catch{return `<p>${title}: копия не читается</p>`;}
+    try{const p=validSave(text);return `<div class="cloud-copy"><h3>${title}</h3><strong>${O.Campaign.count(p)} / 80 текущих контрактов</strong><p>${p.credits.toLocaleString('ru-RU')} ◈ · ${p.data} ⬡ · ${p.xp.toLocaleString('ru-RU')} XP</p><small>${G.installed(p)} ступеней оборудования</small></div>`;}catch{return `<p>${title}: копия не читается</p>`;}
   }
   function render(){
     const status=sync?.status||'off',compare=['conflict','account-change','waiting'].includes(status);

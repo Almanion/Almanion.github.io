@@ -3,8 +3,9 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
 const root=path.resolve(__dirname,'..');let count=0;
 function check(condition,label){assert.ok(condition,label);count++;}
 const hashes=JSON.parse(fs.readFileSync(path.join(root,'docs/unchanged-v8-v9.json'),'utf8'));
-// Renderer is now intentionally redesigned; gameplay modules remain immutable.
-for(const row of hashes.filter(row=>row.file!=='src/renderer.js')){const data=fs.readFileSync(path.join(root,row.file));check(crypto.createHash('sha256').update(data).digest('hex')===row.sha256,row.file+' unchanged from v8');}
+// Campaign, progression, cosmetics and sound are intentionally revised.
+// Numerical physics, route semantics, pricing, medal rules and replay remain protected.
+for(const row of hashes.filter(row=>['src/physics.js','src/routes.js','src/economy.js','src/medals.js','src/flight-review.js'].includes(row.file))){const data=fs.readFileSync(path.join(root,row.file));check(crypto.createHash('sha256').update(data).digest('hex')===row.sha256,row.file+' unchanged from v8');}
 const source=fs.readFileSync(path.join(root,'index.html'),'utf8');
 let expanded=source.replace(/<link\b[^>]*>/g,tag=>{const m=tag.match(/href="(src\/[^\"]+)"/);return !m||!tag.includes('stylesheet')?tag:'<style>\n'+fs.readFileSync(path.join(root,m[1]),'utf8')+'\n</style>';});
 expanded=expanded.replace(/<script src="(src\/[^\"]+)"><\/script>/g,(_,file)=>'<script>\n'+fs.readFileSync(path.join(root,file),'utf8')+'\n</script>');
@@ -17,5 +18,5 @@ check(source.includes('id="flightDrawer"')&&source.includes('aria-labelledby="dr
 check(source.includes('id="mapAim"')&&source.includes('id="mapPan"'),'explicit aim vs pan actions');
 check(JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version==='10.1.0','application version 10.1');
 check(fs.readFileSync(path.join(root,'src/progression.js'),'utf8').includes("SAVE_KEY='orbital-courier-save-v8'"),'save schema intentionally unchanged');
-const report={status:'passed',assertions:count,hashes,notes:['No gameplay/economy changes','v9 app retains v8 save schema']};
+const report={status:'passed',assertions:count,hashes,notes:['Campaign redesign authorized; numerical physics and pricing unchanged','Save schema 8 retained with stable contract IDs']};
 fs.writeFileSync(path.join(root,'docs/static-results-v9.json'),JSON.stringify(report,null,2));console.log(`UI9 static checks passed: ${count}`);

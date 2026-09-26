@@ -1,0 +1,1683 @@
+{
+  "date": "2026-09-26",
+  "method": "Fixed deterministic local grids around authored courses, base equipment, normal mode. This measures local tolerance, not human difficulty or all solutions.",
+  "tiers": [
+    {
+      "name": "Начальная",
+      "contracts": 16,
+      "averageBroadWinsOf25": 18.9375,
+      "averageFlybys": 0,
+      "averageTime": 5.020918106625898
+    },
+    {
+      "name": "Средняя",
+      "contracts": 12,
+      "averageBroadWinsOf25": 16.583333333333332,
+      "averageFlybys": 0,
+      "averageTime": 4.633736925586462
+    },
+    {
+      "name": "Сложная",
+      "contracts": 16,
+      "averageBroadWinsOf25": 14.9,
+      "averageFlybys": 2.25,
+      "averageTime": 9.623810532765422
+    },
+    {
+      "name": "Экспертная",
+      "contracts": 16,
+      "averageBroadWinsOf25": 6.625,
+      "averageFlybys": 3.7916666666666665,
+      "averageTime": 13.737855208896875
+    },
+    {
+      "name": "Предельная",
+      "contracts": 20,
+      "averageBroadWinsOf25": 3.25,
+      "averageFlybys": 3.65,
+      "averageTime": 17.40816644758026
+    }
+  ],
+  "rows": [
+    {
+      "id": 0,
+      "number": 1,
+      "tier": 1,
+      "name": "Первое отправление",
+      "straightCourseWon": true,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 25,
+          "flybys": 0,
+          "portals": 0,
+          "time": 4.169829012227116,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "number": 2,
+      "tier": 1,
+      "name": "По касательной",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 22,
+          "flybys": 0,
+          "portals": 0,
+          "time": 3.8871577725161672,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "number": 3,
+      "tier": 1,
+      "name": "Почта для спутника",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 20,
+          "flybys": 0,
+          "portals": 0,
+          "time": 4.170340461999502,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "number": 4,
+      "tier": 1,
+      "name": "Зелёный коридор",
+      "straightCourseWon": true,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 20,
+          "flybys": 0,
+          "portals": 0,
+          "time": 4.253826902101805,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "number": 5,
+      "tier": 1,
+      "name": "Кольца Титана",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 25,
+          "flybys": 0,
+          "portals": 0,
+          "time": 3.704592815655935,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "number": 6,
+      "tier": 1,
+      "name": "Каменный дождь",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 25,
+          "flybys": 0,
+          "portals": 0,
+          "time": 4.718914867918886,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "number": 7,
+      "tier": 1,
+      "name": "Двойной манёвр",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 15,
+          "flybys": 0,
+          "portals": 0,
+          "time": 6.457504546961544,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "number": 8,
+      "tier": 1,
+      "name": "Обратный адрес",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 13,
+          "broadWinsOf25": 14,
+          "flybys": 0,
+          "portals": 0,
+          "time": 6.553462456325018,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "number": 9,
+      "tier": 1,
+      "name": "Тройная система",
+      "straightCourseWon": true,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 20,
+          "flybys": 0,
+          "portals": 0,
+          "time": 4.55239511487462,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "number": 10,
+      "tier": 1,
+      "name": "Тёмная сторона",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 14,
+          "flybys": 0,
+          "portals": 0,
+          "time": 6.443612133030456,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "number": 11,
+      "tier": 1,
+      "name": "Игольное ушко",
+      "straightCourseWon": true,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 20,
+          "flybys": 0,
+          "portals": 0,
+          "time": 4.186147152844108,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "number": 12,
+      "tier": 1,
+      "name": "Последний маяк",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 17,
+          "flybys": 0,
+          "portals": 0,
+          "time": 4.436626183726955,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "number": 13,
+      "tier": 1,
+      "name": "Полярная почта",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 14,
+          "flybys": 0,
+          "portals": 0,
+          "time": 6.278089706661475,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "number": 14,
+      "tier": 1,
+      "name": "Северный обход",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 17,
+          "flybys": 0,
+          "portals": 0,
+          "time": 5.915333960133825,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "number": 15,
+      "tier": 1,
+      "name": "Между льдинами",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 20,
+          "flybys": 0,
+          "portals": 0,
+          "time": 4.260417620663067,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "number": 16,
+      "tier": 1,
+      "name": "Полярный разворот",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 15,
+          "flybys": 0,
+          "portals": 0,
+          "time": 6.346438998373892,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "number": 17,
+      "tier": 2,
+      "name": "Каменные арки",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 25,
+          "flybys": 0,
+          "portals": 0,
+          "time": 4.395406232613193,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "number": 18,
+      "tier": 2,
+      "name": "Попутный импульс",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 19,
+          "flybys": 0,
+          "portals": 0,
+          "time": 4.60982281257708,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "number": 19,
+      "tier": 2,
+      "name": "Встречные течения",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 18,
+          "flybys": 0,
+          "portals": 0,
+          "time": 4.528444676906686,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "number": 20,
+      "tier": 2,
+      "name": "Красный гигант",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 20,
+          "flybys": 0,
+          "portals": 0,
+          "time": 5.671376357906879,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "number": 21,
+      "tier": 2,
+      "name": "Три каменных окна",
+      "straightCourseWon": true,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 25,
+          "flybys": 0,
+          "portals": 0,
+          "time": 3.8967597723929237,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "number": 22,
+      "tier": 2,
+      "name": "Каскад притяжений",
+      "straightCourseWon": true,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 25,
+          "flybys": 0,
+          "portals": 0,
+          "time": 4.626312989198167,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "number": 23,
+      "tier": 2,
+      "name": "Большая фиолетовая дуга",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 22,
+          "flybys": 0,
+          "portals": 0,
+          "time": 3.6802332427485025,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "number": 24,
+      "tier": 2,
+      "name": "За гранью видимости",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 17,
+          "flybys": 0,
+          "portals": 0,
+          "time": 6.402835405741361,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "number": 25,
+      "tier": 2,
+      "name": "Гравитационная игла",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 5,
+          "flybys": 0,
+          "portals": 0,
+          "time": 3.9636176682685917,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "number": 26,
+      "tier": 2,
+      "name": "Последний перицентр",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 7,
+          "flybys": 0,
+          "portals": 0,
+          "time": 3.688492118246447,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "number": 27,
+      "tier": 2,
+      "name": "Без права на снос",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 12,
+          "broadWinsOf25": 10,
+          "flybys": 0,
+          "portals": 0,
+          "time": 4.069850962260426,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "number": 28,
+      "tier": 2,
+      "name": "Чёрный шлюз",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 12,
+          "broadWinsOf25": 6,
+          "flybys": 0,
+          "portals": 0,
+          "time": 6.07169086817731,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "number": 29,
+      "tier": 3,
+      "name": "Двойная петля",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 9,
+          "flybys": 2,
+          "portals": 0,
+          "time": 7.887166255294446,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "number": 30,
+      "tier": 3,
+      "name": "Обратный адрес",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 5,
+          "flybys": 2,
+          "portals": 0,
+          "time": 7.879222730341665,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "number": 31,
+      "tier": 3,
+      "name": "Восьмёрка Ориона",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 14,
+          "flybys": 3,
+          "portals": 0,
+          "time": 15.771907781506114,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "number": 32,
+      "tier": 3,
+      "name": "Возвратная петля",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 13,
+          "flybys": 3,
+          "portals": 0,
+          "time": 18.570863950012168,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "number": 33,
+      "tier": 3,
+      "name": "Письмо по кругу",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 8,
+          "flybys": 3,
+          "portals": 0,
+          "time": 10.314454914549172,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "number": 34,
+      "tier": 3,
+      "name": "Перекрёсток орбит",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 15,
+          "flybys": 3,
+          "portals": 0,
+          "time": 16.123871246400128,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "number": 35,
+      "tier": 3,
+      "name": "Тройной разворот",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 5,
+          "broadWinsOf25": 5,
+          "flybys": 3,
+          "portals": 0,
+          "time": 17.973902003957335,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "number": 36,
+      "tier": 3,
+      "name": "Резонанс двух миров",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 13,
+          "flybys": 4,
+          "portals": 0,
+          "time": 17.824819209135214,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 60,
+      "number": 37,
+      "tier": 3,
+      "name": "Шов пространства",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 15,
+          "flybys": 2,
+          "portals": 1,
+          "time": 5.929093494850679,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 61,
+      "number": 38,
+      "tier": 3,
+      "name": "За горизонтом событий",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 19,
+          "flybys": 2,
+          "portals": 1,
+          "time": 5.973642679188209,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 62,
+      "number": 39,
+      "tier": 3,
+      "name": "Каскад переходов",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 10,
+          "broadWinsOf25": 8,
+          "flybys": 3,
+          "portals": 2,
+          "time": 12.424069834543124,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "number": 40,
+      "tier": 3,
+      "name": "Топология бесконечности",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 10,
+          "broadWinsOf25": 8,
+          "flybys": 3,
+          "portals": 2,
+          "time": 16.312415693889253,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "number": 41,
+      "tier": 3,
+      "name": "Две дуги Элары",
+      "straightCourseWon": true,
+      "routes": [
+        {
+          "branch": "A",
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 25,
+          "flybys": 1,
+          "portals": 1,
+          "time": 2.532358665514919,
+          "frozenCourseWon": true
+        },
+        {
+          "branch": "B",
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 25,
+          "flybys": 1,
+          "portals": 1,
+          "time": 3.491717930783349,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "number": 42,
+      "tier": 3,
+      "name": "Полярная развилка",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": "A",
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 25,
+          "flybys": 1,
+          "portals": 1,
+          "time": 3.0759186192170254,
+          "frozenCourseWon": true
+        },
+        {
+          "branch": "B",
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 25,
+          "flybys": 1,
+          "portals": 1,
+          "time": 2.728397933565208,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "number": 43,
+      "tier": 3,
+      "name": "Перекрёсток миров",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": "A",
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 25,
+          "flybys": 2,
+          "portals": 2,
+          "time": 4.971407020562807,
+          "frozenCourseWon": true
+        },
+        {
+          "branch": "B",
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 9,
+          "flybys": 2,
+          "portals": 2,
+          "time": 7.70655767040051,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "number": 44,
+      "tier": 3,
+      "name": "Дальняя альтернатива",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": "A",
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 22,
+          "flybys": 2,
+          "portals": 2,
+          "time": 6.200033571452483,
+          "frozenCourseWon": true
+        },
+        {
+          "branch": "B",
+          "won": true,
+          "nearWinsOf15": 10,
+          "broadWinsOf25": 10,
+          "flybys": 2,
+          "portals": 2,
+          "time": 8.784389450144646,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 46,
+      "number": 45,
+      "tier": 4,
+      "name": "Обгон планеты",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 11,
+          "flybys": 3,
+          "portals": 0,
+          "time": 20.35066722827304,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 47,
+      "number": 46,
+      "tier": 4,
+      "name": "Обратный гравитационный ход",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 9,
+          "flybys": 3,
+          "portals": 0,
+          "time": 19.62797423896518,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "number": 47,
+      "tier": 4,
+      "name": "Блуждающая восьмёрка",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 11,
+          "flybys": 4,
+          "portals": 0,
+          "time": 23.162409252193857,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "number": 48,
+      "tier": 4,
+      "name": "Петли в движении",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 5,
+          "broadWinsOf25": 1,
+          "flybys": 4,
+          "portals": 0,
+          "time": 24.65775588418009,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "number": 49,
+      "tier": 4,
+      "name": "Изнанка орбит",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 5,
+          "broadWinsOf25": 1,
+          "flybys": 3,
+          "portals": 2,
+          "time": 13.668426623249692,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 65,
+      "number": 50,
+      "tier": 4,
+      "name": "Четыре горизонта",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 5,
+          "broadWinsOf25": 2,
+          "flybys": 4,
+          "portals": 3,
+          "time": 12.934844405326912,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 66,
+      "number": 51,
+      "tier": 4,
+      "name": "Возвращение к истоку",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 14,
+          "flybys": 4,
+          "portals": 3,
+          "time": 15.333195398861335,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 67,
+      "number": 52,
+      "tier": 4,
+      "name": "Архитектор разломов",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 9,
+          "broadWinsOf25": 2,
+          "flybys": 4,
+          "portals": 3,
+          "time": 13.124461123279023,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 72,
+      "number": 53,
+      "tier": 4,
+      "name": "Согласование орбит",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": "A",
+          "won": true,
+          "nearWinsOf15": 10,
+          "broadWinsOf25": 4,
+          "flybys": 4,
+          "portals": 4,
+          "time": 10.953565599748764,
+          "frozenCourseWon": false
+        },
+        {
+          "branch": "B",
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 8,
+          "flybys": 4,
+          "portals": 4,
+          "time": 9.38443986411173,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 73,
+      "number": 54,
+      "tier": 4,
+      "name": "Двойная топология",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": "A",
+          "won": true,
+          "nearWinsOf15": 5,
+          "broadWinsOf25": 1,
+          "flybys": 4,
+          "portals": 4,
+          "time": 8.69072872052655,
+          "frozenCourseWon": false
+        },
+        {
+          "branch": "B",
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 17,
+          "flybys": 4,
+          "portals": 4,
+          "time": 9.397044783184334,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 74,
+      "number": 55,
+      "tier": 4,
+      "name": "Перекрёстный резонанс",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": "A",
+          "won": true,
+          "nearWinsOf15": 13,
+          "broadWinsOf25": 8,
+          "flybys": 4,
+          "portals": 4,
+          "time": 10.630516012981355,
+          "frozenCourseWon": false
+        },
+        {
+          "branch": "B",
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 21,
+          "flybys": 4,
+          "portals": 4,
+          "time": 10.577906399364954,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "number": 56,
+      "tier": 4,
+      "name": "Пять горизонтов",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": "A",
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 17,
+          "flybys": 5,
+          "portals": 5,
+          "time": 9.171564653726469,
+          "frozenCourseWon": false
+        },
+        {
+          "branch": "B",
+          "won": true,
+          "nearWinsOf15": 3,
+          "broadWinsOf25": 1,
+          "flybys": 5,
+          "portals": 5,
+          "time": 15.081851137062754,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 68,
+      "number": 57,
+      "tier": 4,
+      "name": "Развилка приливов",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": "A",
+          "won": true,
+          "nearWinsOf15": 5,
+          "broadWinsOf25": 5,
+          "flybys": 3,
+          "portals": 3,
+          "time": 11.98812452439191,
+          "frozenCourseWon": false
+        },
+        {
+          "branch": "B",
+          "won": true,
+          "nearWinsOf15": 14,
+          "broadWinsOf25": 11,
+          "flybys": 3,
+          "portals": 3,
+          "time": 9.472546699601523,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 69,
+      "number": 58,
+      "tier": 4,
+      "name": "Два пути к Нерею",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": "A",
+          "won": true,
+          "nearWinsOf15": 5,
+          "broadWinsOf25": 5,
+          "flybys": 3,
+          "portals": 3,
+          "time": 10.678496869936255,
+          "frozenCourseWon": false
+        },
+        {
+          "branch": "B",
+          "won": true,
+          "nearWinsOf15": 5,
+          "broadWinsOf25": 2,
+          "flybys": 3,
+          "portals": 3,
+          "time": 9.976015320405457,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 70,
+      "number": 59,
+      "tier": 4,
+      "name": "Каскад четырёх миров",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": "A",
+          "won": true,
+          "nearWinsOf15": 7,
+          "broadWinsOf25": 2,
+          "flybys": 4,
+          "portals": 4,
+          "time": 15.964115249363655,
+          "frozenCourseWon": false
+        },
+        {
+          "branch": "B",
+          "won": true,
+          "nearWinsOf15": 5,
+          "broadWinsOf25": 3,
+          "flybys": 4,
+          "portals": 4,
+          "time": 12.886770213139156,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 71,
+      "number": 60,
+      "tier": 4,
+      "name": "Возвратная развилка",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": "A",
+          "won": true,
+          "nearWinsOf15": 3,
+          "broadWinsOf25": 1,
+          "flybys": 4,
+          "portals": 4,
+          "time": 17.87340778781102,
+          "frozenCourseWon": false
+        },
+        {
+          "branch": "B",
+          "won": true,
+          "nearWinsOf15": 5,
+          "broadWinsOf25": 2,
+          "flybys": 4,
+          "portals": 4,
+          "time": 14.121697023840001,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 58,
+      "number": 61,
+      "tier": 5,
+      "name": "Резонансный маятник",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 19,
+          "flybys": 6,
+          "portals": 0,
+          "time": 26.586340864858016,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 59,
+      "number": 62,
+      "tier": 5,
+      "name": "Последний резонанс",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 15,
+          "broadWinsOf25": 5,
+          "flybys": 5,
+          "portals": 0,
+          "time": 23.590000196569495,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 56,
+      "number": 63,
+      "tier": 5,
+      "name": "Тройной прилив",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 5,
+          "broadWinsOf25": 1,
+          "flybys": 3,
+          "portals": 0,
+          "time": 17.770634593282423,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 57,
+      "number": 64,
+      "tier": 5,
+      "name": "Перекрёстные орбиты",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 3,
+          "broadWinsOf25": 1,
+          "flybys": 3,
+          "portals": 0,
+          "time": 25.47160630831947,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 49,
+      "number": 65,
+      "tier": 5,
+      "name": "Подвижный клевер",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 5,
+          "broadWinsOf25": 5,
+          "flybys": 3,
+          "portals": 0,
+          "time": 13.19405289718054,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 50,
+      "number": 66,
+      "tier": 5,
+      "name": "Тройной резонанс",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 5,
+          "broadWinsOf25": 1,
+          "flybys": 3,
+          "portals": 0,
+          "time": 12.22371281203352,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 48,
+      "number": 67,
+      "tier": 5,
+      "name": "Вальс трёх миров",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 4,
+          "broadWinsOf25": 1,
+          "flybys": 3,
+          "portals": 0,
+          "time": 13.806269554094973,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "number": 68,
+      "tier": 5,
+      "name": "Орбитальная хореография",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 5,
+          "broadWinsOf25": 1,
+          "flybys": 3,
+          "portals": 0,
+          "time": 18.938659722895604,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 54,
+      "number": 69,
+      "tier": 5,
+      "name": "Доставка через резонанс",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 5,
+          "broadWinsOf25": 4,
+          "flybys": 3,
+          "portals": 0,
+          "time": 11.11353021367564,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 52,
+      "number": 70,
+      "tier": 5,
+      "name": "Свидание после петель",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 7,
+          "broadWinsOf25": 1,
+          "flybys": 3,
+          "portals": 0,
+          "time": 17.409090005008117,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 55,
+      "number": 71,
+      "tier": 5,
+      "name": "Последний виток",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 3,
+          "broadWinsOf25": 1,
+          "flybys": 3,
+          "portals": 0,
+          "time": 15.297424621346252,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 53,
+      "number": 72,
+      "tier": 5,
+      "name": "Курьер на встречной орбите",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 3,
+          "broadWinsOf25": 1,
+          "flybys": 3,
+          "portals": 0,
+          "time": 21.685474590724155,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "number": 73,
+      "tier": 5,
+      "name": "Клевер Кассиопеи",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 3,
+          "broadWinsOf25": 1,
+          "flybys": 3,
+          "portals": 0,
+          "time": 14.458063197450638,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "number": 74,
+      "tier": 5,
+      "name": "Три центра притяжения",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 4,
+          "broadWinsOf25": 1,
+          "flybys": 3,
+          "portals": 0,
+          "time": 18.541406354601236,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "number": 75,
+      "tier": 5,
+      "name": "Через три мира",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 3,
+          "broadWinsOf25": 1,
+          "flybys": 3,
+          "portals": 0,
+          "time": 18.332680073533407,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "number": 76,
+      "tier": 5,
+      "name": "Гравитационный лабиринт",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 3,
+          "broadWinsOf25": 1,
+          "flybys": 3,
+          "portals": 0,
+          "time": 19.69197570032013,
+          "frozenCourseWon": true
+        }
+      ]
+    },
+    {
+      "id": 76,
+      "number": 77,
+      "tier": 5,
+      "name": "Маятник разломов",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 14,
+          "broadWinsOf25": 15,
+          "flybys": 4,
+          "portals": 4,
+          "time": 11.896341539179359,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "number": 78,
+      "tier": 5,
+      "name": "Крест приливов",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 6,
+          "broadWinsOf25": 3,
+          "flybys": 5,
+          "portals": 5,
+          "time": 13.656849595696869,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 78,
+      "number": 79,
+      "tier": 5,
+      "name": "Окно синхронизации",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 5,
+          "broadWinsOf25": 1,
+          "flybys": 5,
+          "portals": 5,
+          "time": 18.340704030594022,
+          "frozenCourseWon": false
+        }
+      ]
+    },
+    {
+      "id": 79,
+      "number": 80,
+      "tier": 5,
+      "name": "За пределами карты",
+      "straightCourseWon": false,
+      "routes": [
+        {
+          "branch": null,
+          "won": true,
+          "nearWinsOf15": 5,
+          "broadWinsOf25": 1,
+          "flybys": 6,
+          "portals": 6,
+          "time": 16.15851208024141,
+          "frozenCourseWon": false
+        }
+      ]
+    }
+  ]
+}
