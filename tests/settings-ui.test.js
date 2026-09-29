@@ -22,14 +22,15 @@ assert.ok(settings.indexOf('settings-scale-section') < settings.indexOf('<!-- Н
 
 assert.doesNotMatch(settingsCss, /body\.no-hover\s+\*\s*:hover/,
     'cursor response must not reset every hovered element');
-assert.match(settingsCss, /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/,
-    'animation choices must stay aligned in three stable columns');
+assert.match(settingsCss, /\.settings-modal \.animation-level-selector\s*\{[^}]*grid-template-columns:\s*1fr/,
+    'animation choices must stay in stable full-width rows');
 assert.match(settingsCss, /\.settings-modal \.animation-level-option \.level-copy/);
 assert.match(settingsCss, /\.settings-modal :is\(\.settings-section-icon, \.level-icon-svg/,
     'settings SVGs must have explicit bounded sizing');
 assert.match(layout, /body\[data-note-subject\] \.main-content > \.content-section[\s\S]*\.exp-reader-toolbar[\s\S]*\.exp-reader-footer[\s\S]*zoom:\s*var\(--note-scale, 1\)/,
     'reader content, progress navigation and next/previous controls must scale together');
-assert.match(settingsCss, /\.settings-modal \.settings-scale-section/);
+assert.match(settingsCss, /\.settings-modal \.note-scale-control\s*\{[^}]*grid-template-columns:\s*90px minmax\(0, 1fr\)/,
+    'scale input and slider must share a compact row');
 assert.match(settingsCss, /\.settings-modal \.note-scale-slider/);
 assert.match(layout, /\.sidebar-expand-btn\s*\{[\s\S]*width:\s*34px;[\s\S]*height:\s*34px;/);
 assert.match(layout, /\.nav-link:hover/,

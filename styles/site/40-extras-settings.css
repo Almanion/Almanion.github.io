@@ -473,11 +473,10 @@ body.new-year-mode .ny-toggle {
     }
 }
 
-/* Stable settings layout. This final cascade intentionally lives in the
-   feature bundle so older page-level styles cannot stretch cards or icons. */
+/* Shared settings layout, including deferred note pages. */
 .settings-modal .settings-modal-content {
-    width: min(680px, calc(100% - 32px));
-    max-width: 680px;
+    width: min(600px, calc(100% - 32px));
+    max-width: 600px;
     max-height: min(90dvh, 820px);
     background: color-mix(in srgb, var(--bg-primary) 96%, var(--accent-color) 4%);
     border-color: color-mix(in srgb, var(--border-color) 82%, var(--accent-color) 18%);
@@ -486,23 +485,19 @@ body.new-year-mode .ny-toggle {
 }
 
 .settings-modal .settings-modal-header {
-    padding: 1.15rem 1.45rem;
-    background: color-mix(in srgb, var(--bg-primary) 91%, var(--accent-color) 9%);
+    flex-shrink: 0;
+    padding: 0.9rem 1.25rem;
+    background: var(--bg-primary);
     border-radius: 22px 22px 0 0;
-}
-
-.settings-modal .settings-modal-heading p {
-    margin: 0.22rem 0 0;
-    color: var(--text-secondary);
-    font-size: 0.78rem;
-    line-height: 1.35;
 }
 
 .settings-modal .settings-modal-body {
     display: grid;
-    gap: 0.72rem;
-    padding: 1.15rem 1.25rem 1.35rem;
-    background: color-mix(in srgb, var(--bg-secondary) 45%, transparent);
+    align-content: start;
+    gap: 1.25rem;
+    padding: 1.15rem 1.25rem;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
 }
 
 .settings-modal .settings-section,
@@ -511,15 +506,14 @@ body.new-year-mode .ny-toggle {
     width: 100%;
     min-width: 0;
     margin: 0;
-    padding: 1.05rem 1.1rem;
-    background: color-mix(in srgb, var(--bg-primary) 92%, var(--bg-secondary));
-    border: 1px solid color-mix(in srgb, var(--border-color) 88%, transparent);
-    border-radius: 15px;
-    box-shadow: 0 1px 0 color-mix(in srgb, var(--text-primary) 3%, transparent);
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
 }
 
 .settings-modal .settings-section + .settings-section {
-    padding-top: 1rem;
+    padding-top: 0;
 }
 
 .settings-modal .settings-section h3 {
@@ -532,17 +526,10 @@ body.new-year-mode .ny-toggle {
     box-sizing: content-box;
     width: 17px;
     height: 17px;
-    padding: 0.4rem;
+    padding: 0.2rem;
     color: var(--accent-color);
-    background: color-mix(in srgb, var(--accent-color) 10%, transparent);
+    background: transparent;
     border-radius: 10px;
-}
-
-.settings-modal .settings-section-description {
-    margin: 0.48rem 0 0;
-    color: var(--text-secondary);
-    font-size: 0.76rem;
-    line-height: 1.45;
 }
 
 .settings-modal .settings-option {
@@ -552,7 +539,7 @@ body.new-year-mode .ny-toggle {
 
 .settings-modal .animation-level-selector {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 0.55rem;
 }
 
@@ -563,7 +550,7 @@ body.new-year-mode .ny-toggle {
     align-items: center;
     column-gap: 0.65rem;
     min-width: 0;
-    min-height: 82px;
+    min-height: 62px;
     padding: 0.78rem;
     border-width: 1px;
     border-radius: 10px;
@@ -610,10 +597,12 @@ body.new-year-mode .ny-toggle {
 }
 
 .settings-modal .settings-actions {
-    justify-content: flex-start;
+    flex-shrink: 0;
+    justify-content: space-between;
+    gap: 12px;
     margin: 0;
-    padding-top: 0.45rem;
-    border-top: 0;
+    padding: 0.75rem 1.25rem max(0.75rem, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border-color);
 }
 
 .settings-modal .settings-reset-btn {
@@ -624,38 +613,24 @@ body.new-year-mode .ny-toggle {
     font-size: 0.76rem;
 }
 
-.settings-modal .settings-scale-section {
-    position: relative;
-    background: color-mix(in srgb, var(--accent-color) 7%, var(--bg-primary));
-    border-color: color-mix(in srgb, var(--accent-color) 26%, var(--border-color));
-}
-
-.settings-modal .settings-scale-section::after {
-    content: '';
-    position: absolute;
-    inset: 0 0 auto;
-    height: 2px;
-    background: linear-gradient(90deg, var(--accent-color), color-mix(in srgb, var(--accent-color) 18%, transparent));
-}
-
 .settings-modal .settings-section-heading {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
+    gap: 0.5rem;
 }
 
 .settings-modal .note-scale-control {
     display: grid;
-    grid-template-columns: minmax(142px, 0.52fr) minmax(220px, 1.48fr);
-    align-items: end;
+    grid-template-columns: 90px minmax(0, 1fr);
+    align-items: center;
     gap: 1rem;
     margin-top: 0.9rem;
 }
 
 .settings-modal .note-scale-reset {
     flex: 0 0 auto;
-    min-height: 32px;
+    min-height: 44px;
     padding: 0.42rem 0.68rem;
     color: var(--text-secondary);
     background: color-mix(in srgb, var(--bg-primary) 84%, transparent);
@@ -767,34 +742,34 @@ body.new-year-mode .ny-toggle {
     }
 
     .settings-modal .settings-modal-body {
-        gap: 1.05rem;
-        padding: 1rem 1.1rem 1.4rem;
-    }
-
-    .settings-modal .animation-level-selector {
-        grid-template-columns: 1fr;
-    }
-
-    .settings-modal .animation-level-option {
-        min-height: 66px;
+        padding: 1rem;
     }
 
     .settings-modal .note-scale-control {
-        grid-template-columns: minmax(130px, 0.55fr) minmax(190px, 1.45fr);
+        grid-template-columns: 80px minmax(0, 1fr);
     }
 }
 
+.settings-modal .design-mode-selector { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.settings-modal .design-mode-option { min-height: 68px; padding: 12px 30px 12px 12px; }
+.settings-modal .settings-option .exp-subpanel { margin-top: 16px; background: transparent; }
+.settings-modal .settings-option .exp-mode-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.settings-modal .exp-mode-card { min-height: 60px; padding: 10px 12px; gap: 8px; }
+.settings-modal .exp-mode-swatch { height: 8px; margin: 0; }
+.settings-modal .exp-lightdark { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; border-radius: 12px; }
+.settings-modal .exp-ld-btn { min-height: 44px; }
 @media (max-width: 520px) {
-    .settings-modal .note-scale-control {
-        grid-template-columns: 1fr;
-        align-items: stretch;
-        gap: 0.72rem;
-    }
-
-    .settings-modal .note-scale-reset {
-        min-height: 34px;
-    }
+    .settings-modal .exp-lightdark { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+.settings-modal .settings-done-btn {
+    min-height: 44px; padding: 8px 22px; border: 1px solid var(--accent-color);
+    border-radius: 10px; background: var(--accent-color); color: var(--bg-primary);
+    font: inherit; font-weight: 600; cursor: pointer;
+}
+.settings-modal :is(button, input):focus-visible { outline: 2px solid var(--accent-color); outline-offset: 3px; }
+.settings-modal .settings-close-btn { width: 44px; height: 44px; }
+.settings-modal .settings-reset-btn { min-height: 44px; }
+.settings-modal .toggle-switch:focus-within { outline: 2px solid var(--accent-color); outline-offset: 3px; }
 
 /* РўРµРјРЅР°СЏ С‚РµРјР° РґР»СЏ РЅРѕРІРѕРіРѕРґРЅРёС… СЌР»РµРјРµРЅС‚РѕРІ */
 body.dark-theme .ny-notification {
@@ -1377,19 +1352,12 @@ body.dark-theme .telegram-welcome-message {
     max-width: 620px;
     width: 90%;
     max-height: 85vh;
-    /* Скролл переехал внутрь .settings-modal-body, тут — hidden,
-       чтобы скроллбар не накладывался на закруглённые углы */
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    /* Анимацию входа НЕ держим тут (иначе она проигрывалась на этапе создания,
-       при закрытом окне, и могла «дёргаться»). Запускаем её только при открытии —
-       см. правило .settings-modal:not(.hidden) .settings-modal-content ниже. */
     transition: background-color 0.3s ease;
 }
 
-/* Плавный вход модалки настроек ИМЕННО при открытии. Спокойный ease-out
-   без overshoot — чтобы не выглядело как «переоткрытие пару раз». */
 .settings-modal:not(.hidden) .settings-modal-content {
     animation: modalSlideIn 0.28s ease-out;
 }

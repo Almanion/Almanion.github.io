@@ -489,7 +489,6 @@ function createSettingsModal() {
             <div class="settings-modal-header">
                 <div class="settings-modal-heading">
                     <h2 id="settingsModalTitle">Настройки</h2>
-                    <p>Внешний вид и поведение сайта</p>
                 </div>
                 <button class="settings-close-btn" id="settingsCloseBtn" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>
             </div>
@@ -502,12 +501,10 @@ function createSettingsModal() {
                         <h3>${ICONS.textSize}<span>Масштаб конспекта</span></h3>
                         <button type="button" class="note-scale-reset" data-note-scale-action="reset">Сбросить</button>
                     </div>
-                    <p class="settings-section-description">Меняет размер материала, верхней навигации и кнопок перехода.</p>
                     <div class="note-scale-control" role="group" aria-label="Масштаб конспекта">
                         <label class="note-scale-number" for="noteScaleInput">
-                            <span>Точный размер</span>
                             <span class="note-scale-input-wrap">
-                                <input id="noteScaleInput" type="number" min="75" max="125" step="1" inputmode="numeric" value="${Math.round(normalizeNoteScale(siteSettings.noteScale) * 100)}" aria-describedby="noteScaleLimits">
+                                <input id="noteScaleInput" type="number" min="75" max="125" step="1" inputmode="numeric" value="${Math.round(normalizeNoteScale(siteSettings.noteScale) * 100)}" aria-label="Масштаб конспекта, %" aria-describedby="noteScaleLimits">
                                 <span aria-hidden="true">%</span>
                             </span>
                         </label>
@@ -522,35 +519,31 @@ function createSettingsModal() {
                 <!-- Новый и старый интерфейс -->
                 <div class="settings-section">
                     <h3>${ICONS.settings}<span>Интерфейс</span></h3>
-                    <p class="settings-section-description">Выберите способ отображения конспектов и навигации.</p>
                     <div class="settings-option">
                         <div class="design-mode-selector" role="radiogroup" aria-label="Дизайн сайта">
                             <button type="button" class="design-mode-option ${siteSettings.experimental ? 'active' : ''}" data-design-mode="new" role="radio" aria-checked="${siteSettings.experimental}">
                                 <span class="design-mode-name">Новый</span>
-                                <span class="design-mode-desc">Основной дизайн с перелистыванием разделов</span>
+                                <span class="design-mode-desc">По разделам</span>
                                 <span class="settings-choice-dot" aria-hidden="true"></span>
                             </button>
                             <button type="button" class="design-mode-option ${siteSettings.experimental ? '' : 'active'}" data-design-mode="legacy" role="radio" aria-checked="${!siteSettings.experimental}">
                                 <span class="design-mode-name">Старый</span>
-                                <span class="design-mode-desc">Классическая лента со всеми разделами подряд</span>
+                                <span class="design-mode-desc">Общая лента</span>
                                 <span class="settings-choice-dot" aria-hidden="true"></span>
                             </button>
                         </div>
                         <div class="exp-subpanel" id="expSubpanel" ${siteSettings.experimental ? '' : 'hidden'}>
                             <div class="settings-subgroup-heading">
                                 <span>Цветовая система</span>
-                                <small>Акценты и общий тон основного дизайна</small>
                             </div>
                             <div class="exp-mode-grid">
                                 <button type="button" class="exp-mode-card ${siteSettings.expMode === 'graphite' ? 'active' : ''}" data-exp-mode="graphite" aria-pressed="${siteSettings.expMode === 'graphite'}">
                                     <span class="exp-mode-swatch exp-swatch-graphite"><span></span><span></span><span></span></span>
                                     <span class="exp-mode-name">Графит</span>
-                                    <span class="exp-mode-desc">Нейтральная палитра без цветных акцентов</span>
                                 </button>
                                 <button type="button" class="exp-mode-card ${siteSettings.expMode === 'prism' ? 'active' : ''}" data-exp-mode="prism" aria-pressed="${siteSettings.expMode === 'prism'}">
                                     <span class="exp-mode-swatch exp-swatch-prism"><span></span><span></span><span></span></span>
                                     <span class="exp-mode-name">Призма</span>
-                                    <span class="exp-mode-desc">Спокойные цветовые акценты учебных блоков</span>
                                 </button>
                             </div>
                             <div class="settings-subgroup-heading settings-subgroup-heading-compact">
@@ -568,7 +561,6 @@ function createSettingsModal() {
                 <!-- Тема -->
                 <div class="settings-section" id="themeSection" ${siteSettings.experimental ? 'style="display:none;"' : ''}>
                     <h3>${ICONS.palette}<span>Темы старого дизайна</span></h3>
-                    <p class="settings-section-description">Цветовая тема применяется только к старому интерфейсу.</p>
                     <div class="settings-option">
                         <div class="theme-selector">
                             <button class="theme-option ${siteSettings.theme === 'light' ? 'active' : ''}" data-theme="light">
@@ -621,7 +613,6 @@ function createSettingsModal() {
                 <!-- Анимации -->
                 <div class="settings-section">
                     <h3>${ICONS.sparkles}<span>Движение интерфейса</span></h3>
-                    <p class="settings-section-description">Интенсивность переходов и визуальных откликов.</p>
                     <div class="settings-option">
                         <div class="animation-level-selector">
                             <button class="animation-level-option ${siteSettings.animationLevel === 'max' ? 'active' : ''}" data-level="max">
@@ -676,12 +667,12 @@ function createSettingsModal() {
                     </div>
                 </div>
 
-                <!-- Кнопки действий -->
-                <div class="settings-actions">
-                    <button class="settings-reset-btn" id="settingsResetBtn">
-                        ${ICONS.refresh}<span>Вернуть настройки по умолчанию</span>
-                    </button>
-                </div>
+            </div>
+            <div class="settings-actions">
+                <button type="button" class="settings-reset-btn" id="settingsResetBtn">
+                    ${ICONS.refresh}<span>Сбросить всё</span>
+                </button>
+                <button type="button" class="settings-done-btn" id="settingsDoneBtn">Готово</button>
             </div>
         </div>
     `;
@@ -698,6 +689,7 @@ function bindSettingsHandlers() {
     const modal = document.getElementById('settingsModal');
     
     closeBtn.addEventListener('click', closeSettingsModal);
+    document.getElementById('settingsDoneBtn').addEventListener('click', closeSettingsModal);
     
     // Закрытие по клику на фон
     modal.addEventListener('click', (e) => {
@@ -857,8 +849,6 @@ function bindSettingsHandlers() {
             applyAnimationLevel(level);
             saveSettings();
             
-            // Показываем уведомление
-            showNotification(getAnimationLevelMessage(level));
         });
     });
 
@@ -886,7 +876,6 @@ function bindSettingsHandlers() {
             siteSettings.hoverEffects = e.target.checked;
             applyHoverEffects(e.target.checked);
             saveSettings();
-            showNotification(e.target.checked ? 'Отклик курсора включён' : 'Отклик курсора выключен');
         });
     }
 
@@ -1072,10 +1061,12 @@ function initSettingsSwipe() {
     }
 
     modal.addEventListener('touchstart', (e) => {
+        tracking = false;
         if (window.innerWidth > 768) return;
+        // The body scrolls independently; dragging its controls must not dismiss the sheet.
+        if (!e.target.closest('.settings-modal-header') || e.target.closest('button')) return;
         const content = getContent();
         if (!content) return;
-        if (content.scrollTop > 5) return;
         startY = e.touches[0].clientY;
         currentY = startY;
         tracking = true;

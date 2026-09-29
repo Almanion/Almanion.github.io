@@ -49,6 +49,7 @@
         previewGeneration: 0,
         previewTheme: localStorage.getItem('note-constructor-preview-theme') || 'site',
         deleting: false,
+        publishing: false,
         remoteVersions: new Map(),
         deletions: new Map(),
         conflictedSections: new Set(),
@@ -360,8 +361,7 @@
         const ids = new Set(publishedSections.concat(remote, local).map(section => section.id));
         state.sections = Array.from(ids).map(id => {
             const publishedSection = publishedSections.find(section => section.id === id);
-            // Compatibility sections are the canonical copy of complex legacy material.
-            // A stale pre-migration draft with the same slug must never hide or overwrite it.
+            // Keep canonical HTML over a stale pre-migration draft.
             if (publishedSection && publishedSection.compatibilityReadOnly) return publishedSection;
             return newestSection(
                 publishedSection,
@@ -651,7 +651,7 @@
             doc.open();
             doc.write('<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">' +
                 '<base href="' + escapeHtml(baseHref) + '">' +
-                '<link rel="stylesheet" href="styles/site/index.css?v=20260920-3">' +
+                '<link rel="stylesheet" href="styles/site/index.css?v=20260929-3">' +
                 '<link rel="stylesheet" href="styles/tokens.css?v=20260929-2">' +
                 '<link rel="stylesheet" href="style-new.css?v=20260929-2">' +
                 '<link rel="stylesheet" href="styles/typography.css?v=20260904-2">' +
@@ -770,7 +770,7 @@
         const revision = History.createRevision(section, {
             createdAt: Number(section.updatedAt) || Date.now(),
             createdBy: state.user.uid,
-            createdByEmail: normalizeEmail(state.user),
+            createdByEmail: String(state.user.email || '').trim().toLowerCase(),
             label: label || state.pendingRevisionLabel || 'Автосохранение'
         });
         await Storage.putRevision(state.user.uid, section.subject, section.id, revision).catch(() => {});
@@ -846,8 +846,6 @@
             }
             const reference = window.AlmanionAccount.database.ref('noteDrafts/' + section.subject + '/' + section.id);
             const currentSnapshot = await reference.once('value');
-            // This is a server-backed read, so unlike the first transaction
-            // callback an empty value here is real and must stay strict.
             if (!sameVersion(currentSnapshot.val(), expectedVersion)) {
                 showDraftConflict(section);
                 return false;
@@ -885,9 +883,9 @@
         const key = sectionKey(section.subject, section.id);
         const firstNotice = !state.conflictedSections.has(key);
         state.conflictedSections.add(key);
-        setSaveState('error', 'Р Р°Р·РґРµР» СѓРґР°Р»С‘РЅ РІ РґСЂСѓРіРѕР№ РІРєР»Р°РґРєРµ');
+        setSaveState('error', 'Раздел удалён в другой вкладке');
         if (!firstNotice) return;
-        toast('Р­С‚РѕС‚ СЂР°Р·РґРµР» СѓР¶Рµ СѓРґР°Р»С‘РЅ РІ РѕР±Р»Р°РєРµ. Р›РѕРєР°Р»СЊРЅР°СЏ РєРѕРїРёСЏ РѕСЃС‚Р°Р»Р°СЃСЊ РЅР° СѓСЃС‚СЂРѕР№СЃС‚РІРµ Рё РЅРµ Р±С‹Р»Р° Р·Р°РіСЂСѓР¶РµРЅР° РѕР±СЂР°С‚РЅРѕ.', true);
+        toast('Раздел уже удалён в облаке. Ваша локальная копия осталась на устройстве и не была загружена обратно.', true);
     }
 
     function showDraftConflict(section) {
@@ -1609,7 +1607,7 @@
             if (comma !== -1) files.push({ path: asset.path, content: asset.dataUrl.slice(comma + 1), encoding: 'base64' });
         });
         const includedPaths = new Set(files.map(file => file.path));
-        const cloudAssets = await loadCloudAssets(state.subject, section.id, true);
+        const cloudAssets = await loadCloudAssets(section.subject, section.id, true);
         for (const asset of cloudAssets) {
             const path = String(asset.path || '').replace(/\\/g, '/');
             if (!referencedImages.has(path) || includedPaths.has(path)) continue;
@@ -1647,43 +1645,56 @@
     }
 
     async function publishCurrent() {
-        if (!state.isOwner || !state.current) return;
+        if (!state.isOwner || !state.current || state.publishing) return;
         if (state.current.reviewStatus !== 'ready') return toast('Сначала отправьте материал на проверку.', true);
         const errors = Model.validateSection(state.current);
         if (errors.length) return toast(errors[0], true);
         const button = el('publishButton');
+        const target = state.current;
+        const expectedVersion = versionOf(target);
+        const user = state.user;
+        state.publishing = true;
         button.disabled = true;
         button.textContent = 'Публикуем…';
         try {
             const saved = await saveNow();
-            if (saved === false) throw new Error('обнаружена более новая версия черновика');
-            const bundle = await publicationFiles(true);
-            const idToken = await state.user.getIdToken(true);
+            if (saved === false) throw new Error(state.conflictedSections.has(sectionKey(target.subject, target.id))
+                ? 'обнаружена более новая версия черновика'
+                : 'не удалось сохранить черновик в облаке');
+            if (state.current !== target || !sameVersion(target, expectedVersion) || state.user !== user) {
+                throw new Error('раздел изменился. Проверьте его и повторите публикацию');
+            }
+            const { section, publishedSection, manifest, files } = await publicationFiles(true);
+            const idToken = await user.getIdToken(true);
             const response = await fetch(config.publisherEndpoint, {
                 method: 'POST',
+                signal: AbortSignal.timeout(45000),
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'publishNotes', idToken, subject: state.subject, sectionId: state.current.id, files: bundle.files })
+                body: JSON.stringify({ action: 'publishNotes', idToken, subject: section.subject, sectionId: section.id, files })
             });
             const result = await response.json();
             if (!result.success) throw new Error(result.error || 'Сервер публикации вернул ошибку');
-            Object.assign(state.current, bundle.section);
-            rememberSnapshot(state.current);
-            state.publishedManifest = bundle.manifest;
-            const publishedIndex = state.publishedSections.findIndex(section => section.id === bundle.publishedSection.id);
-            if (publishedIndex === -1) state.publishedSections.push(clone(bundle.publishedSection));
-            else state.publishedSections[publishedIndex] = clone(bundle.publishedSection);
-            await Storage.putDraft(state.user.uid, state.current);
-            state.pendingRevisionLabel = 'Опубликовано';
-            await saveRemote(clone(state.current), ++state.saveGeneration, 'Опубликовано');
-            renderAll();
-            if (requestedContext.embedded && window.parent !== window) {
-                window.parent.postMessage({ type: 'note-constructor:published', subject: state.subject, section: state.current.id }, window.location.origin);
+            if (state.user === user && state.subject === section.subject) {
+                state.publishedManifest = manifest;
+                state.publishedSections = state.publishedSections.filter(s => s.id !== section.id).concat(publishedSection);
+                const draft = state.sections.find(s => s.id === section.id);
+                if (draft && sameVersion(draft, expectedVersion)) {
+                    Object.assign(draft, section);
+                    rememberSnapshot(draft);
+                    await Storage.putDraft(user.uid, draft);
+                    await queueRemoteSave(clone(draft), ++state.saveGeneration, 'Опубликовано');
+                }
+                renderAll();
             }
-            toast('Опубликовано. GitHub Pages обновится через несколько минут.');
+            if (requestedContext.embedded && window.parent !== window) {
+                window.parent.postMessage({ type: 'note-constructor:published', subject: section.subject, section: section.id }, window.location.origin);
+            }
+            toast('Опубликовано. Ожидаем обновления GitHub Pages.');
         } catch (error) {
             console.error('Publish notes:', error);
-            toast('Не удалось опубликовать: ' + (error.message || error) + '. Можно скачать пакет публикации.', true);
+            toast('Не удалось опубликовать: ' + (error.message || error), true);
         } finally {
+            state.publishing = false;
             button.disabled = false;
             button.textContent = 'Опубликовать';
         }
@@ -2077,8 +2088,7 @@
         bindEvents();
         const account = window.AlmanionAccount;
         if (!account || !account.auth) return showGate('Не удалось запустить систему аккаунтов. Обновите страницу.', false);
-        // Локальный режим нужен только для визуальных тестов интерфейса. На
-        // github.io это условие недостижимо и не ослабляет проверку ролей.
+        // Local visual tests only; no publishing.
         if ((location.hostname === '127.0.0.1' || location.hostname === 'localhost') && new URLSearchParams(location.search).get('demo') === '1') {
             onAuthState({ uid: OWNER_UID, email: OWNER_EMAIL, getIdToken: function () { return Promise.reject(new Error('Локальный режим')); } });
             return;
