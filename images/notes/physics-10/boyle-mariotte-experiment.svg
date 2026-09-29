@@ -1,43 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="title desc">
-  <title id="title">Опыт Бойля и Мариотта</title>
-  <desc id="desc">Два состояния газа в закрытом колене U-образной трубки до и после добавления столба ртути высотой h.</desc>
-  <defs>
-    <style>
-      .frame{fill:#fbfdff;stroke:#d6e1ed;stroke-width:2}.glass{fill:none;stroke:#173f70;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
-      .mercury{fill:none;stroke:#8298ad;stroke-width:24;stroke-linecap:butt;stroke-linejoin:round}.gas{fill:#dce8f4;stroke:#4f78a2;stroke-width:2}
-      .heading{font:700 28px system-ui,sans-serif;fill:#173f70}.label{font:21px system-ui,sans-serif;fill:#173f70}.small{font:17px system-ui,sans-serif;fill:#526b84}
-      .measure{stroke:#d4674c;stroke-width:3;fill:none;marker-start:url(#arrow);marker-end:url(#arrow)}.guide{stroke:#d4674c;stroke-width:2;stroke-dasharray:7 6}
-    </style>
-    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#d4674c"/></marker>
-  </defs>
-  <rect class="frame" x="20" y="20" width="920" height="520" rx="22"/>
-  <text class="heading" x="480" y="65" text-anchor="middle">Опыт Бойля и Мариотта (1662)</text>
-
-  <g aria-label="Первое состояние">
-    <text class="label" x="245" y="112" text-anchor="middle">I</text>
-    <path class="glass" d="M154 142V356Q154 440 245 440Q336 440 336 356V142"/>
-    <path class="mercury" d="M176 306V356Q176 416 245 416Q314 416 314 356V306"/>
-    <rect class="gas" x="177" y="157" width="44" height="149" rx="18"/>
-    <line x1="177" y1="306" x2="221" y2="306" stroke="#526b84" stroke-width="3"/>
-    <line x1="314" y1="306" x2="336" y2="306" stroke="#526b84" stroke-width="3"/>
-    <text class="small" x="199" y="231" text-anchor="middle">p₀</text>
-    <text class="small" x="199" y="255" text-anchor="middle">V₀</text>
-    <text class="small" x="245" y="482" text-anchor="middle">p₀ = 1 атм</text>
-  </g>
-
-  <g aria-label="Второе состояние">
-    <text class="label" x="686" y="112" text-anchor="middle">II</text>
-    <path class="glass" d="M595 142V356Q595 440 686 440Q777 440 777 356V142"/>
-    <path class="mercury" d="M617 267V356Q617 416 686 416Q755 416 755 356V185"/>
-    <rect class="gas" x="618" y="157" width="44" height="110" rx="18"/>
-    <line x1="618" y1="267" x2="662" y2="267" stroke="#526b84" stroke-width="3"/>
-    <line x1="755" y1="185" x2="777" y2="185" stroke="#526b84" stroke-width="3"/>
-    <text class="small" x="640" y="209" text-anchor="middle">p</text>
-    <text class="small" x="640" y="233" text-anchor="middle">V</text>
-    <line class="guide" x1="790" y1="185" x2="824" y2="185"/>
-    <line class="guide" x1="675" y1="267" x2="824" y2="267"/>
-    <line class="measure" x1="812" y1="193" x2="812" y2="259"/>
-    <text class="label" x="835" y="233">h</text>
-    <text class="small" x="686" y="482" text-anchor="middle">после добавления ртути</text>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 855" role="img" aria-labelledby="title desc">
+<title id="title">Опыт Бойля и Мариотта</title><desc id="desc">В коротком запаянном колене заключён газ. Сначала поверхности ртути находятся на одной высоте. Добавленная в открытое колено ртуть сжимает газ; h обозначает разность высот поверхностей ртути.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M1 1 L7 4 L1 7" fill="none" stroke="#263747" stroke-width="1.7"/></marker><marker id="route" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse"><path d="M2 2 L10 6 L2 10" fill="none" stroke="#087f80" stroke-width="2.5"/></marker></defs>
+<style>text{font-family:Arial,Helvetica,sans-serif;font-size:24px;fill:#263747}.heading{font-size:24px;font-weight:600}.small{font-size:21px}.math{font-family:Georgia,'Times New Roman',serif;font-size:27px;font-style:italic}.guide{stroke:#64748b;stroke-width:1.4;stroke-dasharray:6 6;fill:none}.axis{stroke:#263747;stroke-width:1.7;fill:none;marker-end:url(#arrow)}.wall{stroke:#263747;stroke-width:2.5;fill:none;stroke-linejoin:round}</style>
+<rect width="720" height="855" rx="12" fill="#fff"/><g transform="translate(0 0)"><text x="28" y="34" class="heading">I. Начальное состояние</text><path d="M228 110 Q240 98 252 110 V225 H228 Z" fill="#d9eff9"/><path d="M228 225 H252 V270 A58 58 0 0 0 368 270 V225 H392 V270 A82 82 0 0 1 228 270 Z" fill="#7d8d9f"/><path d="M392 70 V270 A82 82 0 0 1 228 270 V110 Q240 98 252 110 V270 A58 58 0 0 0 368 270 V70" class="wall"/><line x1="228" y1="225" x2="252" y2="225" stroke="#263747" stroke-width="2"/><line x1="368" y1="225" x2="392" y2="225" stroke="#263747" stroke-width="2"/><text x="42" y="133" >Газ</text><text x="42" y="166" class="math">p<tspan baseline-shift="sub" font-size="70%" font-style="normal">0</tspan>, V<tspan baseline-shift="sub" font-size="70%" font-style="normal">0</tspan></text><line x1="110" y1="141" x2="221" y2="141" stroke="#64748b" stroke-width="1.5"/><text x="408" y="80" class="small">Открыто</text><text x="310" y="395" text-anchor="middle">Ртуть</text><line x1="258" y1="225" x2="361" y2="225" class="guide"/><text x="444" y="222" class="small">Уровни ртути</text><text x="444" y="250" class="small">одинаковы</text></g><line x1="28" y1="420" x2="692" y2="420" stroke="#e2e8f0"/><g transform="translate(0 435)"><text x="28" y="34" class="heading">II. После добавления ртути</text><path d="M228 110 Q240 98 252 110 V170 H228 Z" fill="#d9eff9"/><path d="M228 170 H252 V270 A58 58 0 0 0 368 270 V120 H392 V270 A82 82 0 0 1 228 270 Z" fill="#7d8d9f"/><path d="M392 70 V270 A82 82 0 0 1 228 270 V110 Q240 98 252 110 V270 A58 58 0 0 0 368 270 V70" class="wall"/><line x1="228" y1="170" x2="252" y2="170" stroke="#263747" stroke-width="2"/><line x1="368" y1="120" x2="392" y2="120" stroke="#263747" stroke-width="2"/><text x="42" y="133" >Газ</text><text x="42" y="166" class="math">p, V</text><line x1="110" y1="141" x2="221" y2="141" stroke="#64748b" stroke-width="1.5"/><text x="408" y="80" class="small">Открыто</text><text x="310" y="395" text-anchor="middle">Ртуть</text><line x1="398" y1="120" x2="474" y2="120" class="guide"/><line x1="256" y1="170" x2="474" y2="170" class="guide"/><line x1="464" y1="120" x2="464" y2="170" stroke="#263747" stroke-width="1.5" marker-start="url(#arrow)" marker-end="url(#arrow)"/><text x="482" y="153" class="math">h</text><text x="470" y="269" class="math">V &lt; V<tspan baseline-shift="sub" font-size="70%" font-style="normal">0</tspan></text><text x="470" y="308" class="math">p &gt; p<tspan baseline-shift="sub" font-size="70%" font-style="normal">0</tspan></text></g>
 </svg>

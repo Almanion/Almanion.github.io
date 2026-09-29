@@ -789,7 +789,7 @@
             {
               "id": "boyle-mariotte-experiment-image",
               "type": "image",
-              "src": "images/notes/physics-10/boyle-mariotte-experiment.svg?v=20260929-1",
+              "src": "images/notes/physics-10/boyle-mariotte-experiment.svg?v=20260929-2",
               "alt": "Опыт Бойля и Мариотта с U-образной трубкой и ртутью",
               "caption": "Первое и второе состояния газа в U-образной трубке.",
               "children": []
@@ -812,7 +812,7 @@
             {
               "id": "isothermal-process-graphs-image",
               "type": "image",
-              "src": "images/notes/physics-10/isothermal-process-graphs.svg?v=20260929-1",
+              "src": "images/notes/physics-10/isothermal-process-graphs.svg?v=20260929-2",
               "alt": "Графики изотермического процесса и семейства изотерм",
               "caption": "Графики изотермического процесса и семейства его графиков.",
               "children": []
@@ -842,7 +842,7 @@
             {
               "id": "isobaric-process-graphs-image",
               "type": "image",
-              "src": "images/notes/physics-10/isobaric-process-graphs.svg?v=20260929-1",
+              "src": "images/notes/physics-10/isobaric-process-graphs.svg?v=20260929-2",
               "alt": "Семейство графиков изобарного процесса и абсолютный ноль температуры",
               "caption": "Продолжения графиков пересекают ось температур при \\(-273^\\circ\\mathrm C\\).",
               "children": []
@@ -880,17 +880,17 @@
           "children": []
         },
         {
-          "id": "isochoric-process-graphs",
+          "id": "isobaric-coordinate-graphs",
           "type": "properties",
-          "title": "Графики изохорного процесса",
-          "content": "\\[\\frac{p}{T}=\\mathrm{const},\\qquad V=\\mathrm{const}.\\]",
+          "title": "Графики изобарного процесса в разных координатах",
+          "content": "\\[\\frac{V}{T}=\\mathrm{const},\\qquad p=\\mathrm{const}.\\]",
           "children": [
             {
-              "id": "isochoric-process-graphs-image",
+              "id": "isobaric-coordinate-graphs-image",
               "type": "image",
-              "src": "images/notes/physics-10/isochoric-process-graphs.svg?v=20260929-1",
-              "alt": "Графики изохорного процесса и семейство изохор",
-              "caption": "Графики изохорного процесса и семейство его графиков.",
+              "src": "images/notes/physics-10/isobaric-coordinate-graphs.svg?v=20260929-2",
+              "alt": "Графики изобарного процесса в координатах давления, объёма и температуры",
+              "caption": "Графики изобарного процесса и семейство изобар.",
               "children": []
             }
           ]
@@ -904,7 +904,7 @@
             {
               "id": "charles-experiment-image",
               "type": "image",
-              "src": "images/notes/physics-10/charles-experiment.svg?v=20260929-1",
+              "src": "images/notes/physics-10/charles-experiment.svg?v=20260929-2",
               "alt": "Опыт Шарля с сосудом постоянного объёма и ртутным манометром",
               "caption": "Состояния газа при постоянном объёме.",
               "children": []
@@ -942,7 +942,7 @@
             {
               "id": "combined-gas-law-image",
               "type": "image",
-              "src": "images/notes/physics-10/combined-gas-law.svg?v=20260929-1",
+              "src": "images/notes/physics-10/combined-gas-law.svg?v=20260929-2",
               "alt": "Переход между двумя состояниями газа через промежуточное состояние",
               "caption": "Переход между состояниями \\(1\\), \\(2\\) и промежуточным состоянием на диаграмме \\(p(V)\\).",
               "children": []
@@ -967,9 +967,9 @@
     }
   ],
   "order": 1,
-  "revision": 3,
+  "revision": 4,
   "createdAt": 1788739200000,
-  "updatedAt": 1790700179696,
+  "updatedAt": 1790702443800,
   "updatedBy": "codex",
   "reviewStatus": "published"
 }
