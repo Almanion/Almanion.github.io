@@ -809,4 +809,65 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
     body.print-export-active .main-content > .content-section > .topic[data-print-excluded] {
         display: none !important;
     }
+
+    /* Print is a separate reading surface, independent of theme and zoom. */
+    html body.print-export-active {
+        --exp-text: #17191d;
+        --exp-text-dim: #434951;
+        --exp-text-faint: #606773;
+        --text-primary: #17191d;
+        --text-secondary: #434951;
+        --note-scale: 1;
+    }
+    html body.print-export-active.print-export-active .main-content {
+        width: 182mm !important;
+        max-width: 100% !important;
+    }
+    html body.print-export-active.print-export-active .main-content *,
+    html body.print-export-active.print-export-active .main-content *::before,
+    html body.print-export-active.print-export-active .main-content *::after {
+        color: #17191d !important;
+        -webkit-text-fill-color: currentColor !important;
+        text-shadow: none !important;
+        box-shadow: none !important;
+        transition: none !important;
+        animation: none !important;
+        caret-color: transparent !important;
+    }
+    html body.print-export-active.print-export-active .main-content > .content-section {
+        zoom: 1 !important;
+    }
+    html body.print-export-active.print-export-active .main-content :is(p, li, dd) {
+        font-size: 10.25pt !important;
+        line-height: 1.5 !important;
+    }
+    html body.print-export-active.print-export-active .main-content .print-splittable {
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+    }
+    html body.print-export-active.print-export-active .main-content :is(.proof-content, .derivation-content, .english-translation-content) {
+        height: auto !important;
+        max-height: none !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        background: transparent !important;
+    }
+    html body.print-export-active.print-export-active .main-content :is(.katex-display, pre, table) {
+        background: transparent !important;
+    }
+    html body.print-export-active.print-export-active .main-content .katex-display {
+        font-size: calc(10.25pt * var(--print-formula-scale, 1)) !important;
+    }
+    html body.print-export-active.print-export-active .main-content :is(img, svg:not(.katex svg)) {
+        max-height: 220mm !important;
+        object-fit: contain;
+    }
+    html body.print-export-active.print-export-active .main-content svg text { fill: #17191d !important; }
+    html body.print-export-active.print-export-active .main-content :is(button, .note-filter, .note-filter-empty) {
+        display: none !important;
+    }
+    html body.print-export-active.print-export-active .main-content [data-note-filter-hidden] { display: none !important; }
+    html body.print-export-active.print-export-active .main-content [data-note-filter-shell] { display: contents !important; }
+    html body.print-export-active.print-export-active .main-content [data-note-filter-shell]::before,
+    html body.print-export-active.print-export-active .main-content [data-note-filter-shell]::after { display: none !important; }
 }

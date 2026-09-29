@@ -724,12 +724,252 @@
           "children": []
         }
       ]
+    },
+    {
+      "id": "izoprotsessy-gazovye-zakony",
+      "type": "subsection",
+      "title": "1.9 Изопроцессы. Газовые законы",
+      "navTitle": "1.9 Изопроцессы. Газовые законы",
+      "content": "",
+      "children": [
+        {
+          "id": "termodinamicheskaya-sistema-definition",
+          "type": "definition",
+          "term": "Термодинамическая система",
+          "separator": "—",
+          "content": "совокупность макросистем, способных обмениваться друг с другом и с другими термодинамическими системами энергией и веществами.",
+          "children": []
+        },
+        {
+          "id": "izoprotsess-definition",
+          "type": "definition",
+          "term": "Изопроцесс",
+          "separator": "—",
+          "content": "термодинамический процесс, происходящий с неизменными массой и составом газа при фиксированном одном термодинамическом параметре: объёме, давлении или температуре.",
+          "children": []
+        },
+        {
+          "id": "izotermicheskiy-protsess-definition",
+          "type": "definition",
+          "term": "Изотермический процесс",
+          "separator": "—",
+          "content": "изопроцесс при постоянной температуре.",
+          "children": []
+        },
+        {
+          "id": "izobarnyy-protsess-definition",
+          "type": "definition",
+          "term": "Изобарный процесс",
+          "separator": "—",
+          "content": "изопроцесс при постоянном давлении.",
+          "children": []
+        },
+        {
+          "id": "izohornyy-protsess-definition",
+          "type": "definition",
+          "term": "Изохорный процесс",
+          "separator": "—",
+          "content": "изопроцесс при постоянном объёме.",
+          "children": []
+        },
+        {
+          "id": "gazovye-zakony-definition",
+          "type": "definition",
+          "term": "Газовые законы",
+          "separator": "—",
+          "content": "количественные зависимости между двумя термодинамическими параметрами одной и той же массы газа при неизменном значении третьего параметра.",
+          "children": []
+        },
+        {
+          "id": "boyle-mariotte-experiment",
+          "type": "experiment",
+          "title": "Опыт Бойля и Мариотта (1662)",
+          "content": "В первом состоянии давление одинаковое в обоих коленах трубки и равно одной атмосфере. Параметры газа обозначим \\(p_0\\) и \\(V_0\\). Затем в трубку доливают ртуть высотой столба \\(h\\).\n\\[t_0=0^\\circ\\mathrm C:\\quad \\frac{p}{p_0}=\\frac{V_0}{V},\\qquad t_{100}=100^\\circ\\mathrm C:\\quad \\frac{p}{p_{100}}=\\frac{V_{100}}{V}.\\]",
+          "children": [
+            {
+              "id": "boyle-mariotte-experiment-image",
+              "type": "image",
+              "src": "images/notes/physics-10/boyle-mariotte-experiment.svg?v=20260929-1",
+              "alt": "Опыт Бойля и Мариотта с U-образной трубкой и ртутью",
+              "caption": "Первое и второе состояния газа в U-образной трубке.",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "boyle-mariotte-law",
+          "type": "statement",
+          "title": "Закон Бойля — Мариотта",
+          "content": "При неизменных температуре, массе и составе газа давление газа обратно пропорционально его объёму:\n\\[\\boxed{\\frac{p_1}{p_2}=\\frac{V_2}{V_1}},\\qquad \\boxed{pV=\\mathrm{const}}.\\]",
+          "children": []
+        },
+        {
+          "id": "isothermal-process-graphs",
+          "type": "properties",
+          "title": "Графики изотермического процесса",
+          "content": "\\[pV=\\mathrm{const},\\qquad p=\\frac{\\mathrm{const}}{V},\\qquad T=\\mathrm{const}.\\]",
+          "children": [
+            {
+              "id": "isothermal-process-graphs-image",
+              "type": "image",
+              "src": "images/notes/physics-10/isothermal-process-graphs.svg?v=20260929-1",
+              "alt": "Графики изотермического процесса и семейства изотерм",
+              "caption": "Графики изотермического процесса и семейства его графиков.",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "gay-lussac-experiment",
+          "type": "experiment",
+          "title": "Опыт Гей-Люссака (1802)",
+          "content": "Есть большой сосуд с кипящей жидкостью. Температуру меняют, сохраняя давление постоянным с помощью специальной трубки с ртутным перекрытием. Используют два термометра; \\(p_0=p_{100}\\).\n\\[\\frac{\\Delta V}{V_0}=\\alpha\\Delta t^\\circ,\\qquad \\alpha=\\frac{V_{100}-V_0}{100V_0},\\]\nгде \\(\\alpha\\) — температурный коэффициент объёмного расширения.",
+          "children": []
+        },
+        {
+          "id": "gay-lussac-law",
+          "type": "statement",
+          "title": "Закон Гей-Люссака",
+          "content": "При неизменных давлении, массе и составе газа объём газа прямо пропорционален его абсолютной температуре:\n\\[\\boxed{\\frac{V_1}{T_1}=\\frac{V_2}{T_2}},\\qquad \\boxed{\\frac{V}{T}=\\mathrm{const}}.\\]",
+          "children": []
+        },
+        {
+          "id": "isobaric-process-graphs",
+          "type": "properties",
+          "title": "Графики изобарного процесса",
+          "content": "Семейство графиков объёма от температуры продолжено до температуры \\(-273^\\circ\\mathrm C\\).",
+          "children": [
+            {
+              "id": "isobaric-process-graphs-image",
+              "type": "image",
+              "src": "images/notes/physics-10/isobaric-process-graphs.svg?v=20260929-1",
+              "alt": "Семейство графиков изобарного процесса и абсолютный ноль температуры",
+              "caption": "Продолжения графиков пересекают ось температур при \\(-273^\\circ\\mathrm C\\).",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "absolute-zero-definition",
+          "type": "definition",
+          "term": "Абсолютный ноль температуры",
+          "separator": "—",
+          "content": "температура, равная \\(0\\,\\text{К}\\). С точки зрения молекулярно-кинетической теории это температура, при которой частицы вещества имеют минимальный импульс, сохраняющийся только благодаря квантово-механическим эффектам. С точки зрения термодинамики это наиболее низкая возможная температура, при которой нельзя извлечь из вещества тепловую энергию.",
+          "children": []
+        },
+        {
+          "id": "absolute-zero-unattainable",
+          "type": "remark",
+          "title": "Абсолютный ноль температуры",
+          "content": "Абсолютный ноль температуры невозможно достигнуть.",
+          "children": []
+        },
+        {
+          "id": "volume-celsius-relation",
+          "type": "derivation",
+          "title": "Зависимость объёма от температуры по шкале Цельсия",
+          "content": "\\[\\frac{\\Delta V}{V_0}=\\alpha\\Delta t^\\circ\\quad\\Longrightarrow\\quad\\frac{V-V_0}{V_0}=\\alpha\\Delta t^\\circ\\quad\\Longrightarrow\\quad\\boxed{V=V_0\\left(1+\\alpha\\Delta t^\\circ\\right)}.\\]",
+          "children": []
+        },
+        {
+          "id": "kelvin-scale-definition",
+          "type": "definition",
+          "term": "Шкала Кельвина",
+          "separator": "—",
+          "content": "абсолютная шкала температур.",
+          "children": []
+        },
+        {
+          "id": "isochoric-process-graphs",
+          "type": "properties",
+          "title": "Графики изохорного процесса",
+          "content": "\\[\\frac{p}{T}=\\mathrm{const},\\qquad V=\\mathrm{const}.\\]",
+          "children": [
+            {
+              "id": "isochoric-process-graphs-image",
+              "type": "image",
+              "src": "images/notes/physics-10/isochoric-process-graphs.svg?v=20260929-1",
+              "alt": "Графики изохорного процесса и семейство изохор",
+              "caption": "Графики изохорного процесса и семейство его графиков.",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "charles-experiment",
+          "type": "experiment",
+          "title": "Опыт Шарля (1787)",
+          "content": "Опыт для изохорного процесса. Объём газа сохраняется: \\(V_0=V_{100}\\).\n\\[\\frac{\\Delta p}{p_0}=\\lambda\\Delta t^\\circ,\\qquad \\lambda=\\frac{p_{100}-p_0}{100p_0}=\\alpha,\\]\nгде \\(\\lambda\\) — температурный коэффициент давления.",
+          "children": [
+            {
+              "id": "charles-experiment-image",
+              "type": "image",
+              "src": "images/notes/physics-10/charles-experiment.svg?v=20260929-1",
+              "alt": "Опыт Шарля с сосудом постоянного объёма и ртутным манометром",
+              "caption": "Состояния газа при постоянном объёме.",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "charles-law",
+          "type": "statement",
+          "title": "Закон Шарля",
+          "content": "При неизменных объёме, массе газа и его составе давление газа прямо пропорционально его абсолютной температуре:\n\\[\\boxed{\\frac{p_1}{T_1}=\\frac{p_2}{T_2}},\\qquad \\boxed{\\frac{p}{T}=\\mathrm{const}}.\\]",
+          "children": []
+        },
+        {
+          "id": "ideal-gas-definition-isoprocesses",
+          "type": "definition",
+          "term": "Идеальный газ",
+          "separator": "—",
+          "content": "газ, который точно подчиняется газовым законам.",
+          "children": []
+        },
+        {
+          "id": "ideal-gas-model-limits",
+          "type": "remark",
+          "title": "Границы применения модели идеального газа",
+          "content": "Разреженные газы, давление которых не превышает \\(1\\,\\text{МПа}\\).",
+          "children": []
+        },
+        {
+          "id": "combined-gas-law-derivation",
+          "type": "derivation",
+          "title": "Связь термодинамических параметров",
+          "content": "Можно проводить изобарные, изотермические и изохорные процессы. Перейдём из состояния \\(\\{p_1,V_1,T_1\\}\\) в промежуточное состояние \\(\\{p',V',T'\\}\\), а затем в состояние \\(\\{p_2,V_2,T_2\\}\\). Выберем промежуточное состояние так, чтобы \\(p_1=p'\\) и \\(T'=T_2\\). Тогда:\n\\[\\begin{cases}\\dfrac{V_1}{T_1}=\\dfrac{V'}{T_2},\\\\[6pt]p_1V'=p_2V_2.\\end{cases}\\]\nИз первого равенства \\(V'=\\dfrac{V_1T_2}{T_1}\\). Подставим это выражение во второе равенство:\n\\[p_1\\frac{V_1T_2}{T_1}=p_2V_2\\quad\\Longrightarrow\\quad\\boxed{\\frac{p_1V_1}{T_1}=\\frac{p_2V_2}{T_2}}.\\]",
+          "children": [
+            {
+              "id": "combined-gas-law-image",
+              "type": "image",
+              "src": "images/notes/physics-10/combined-gas-law.svg?v=20260929-1",
+              "alt": "Переход между двумя состояниями газа через промежуточное состояние",
+              "caption": "Переход между состояниями \\(1\\), \\(2\\) и промежуточным состоянием на диаграмме \\(p(V)\\).",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "avogadro-law",
+          "type": "statement",
+          "title": "Закон Авогадро (1811)",
+          "content": "Разные газы, взятые в количестве один моль, имеют одинаковые объёмы при одинаковых давлении \\(p\\) и температуре \\(t\\).",
+          "children": []
+        },
+        {
+          "id": "universal-gas-constant-derivation",
+          "type": "derivation",
+          "title": "Универсальная газовая постоянная",
+          "content": "\\[\\frac{pV_m}{T}=\\frac{p_0V_{m0}}{T_0}=\\frac{101325\\cdot0{,}0224}{273}=8{,}31\\,\\frac{\\text{Дж}}{\\text{моль}\\cdot\\text{К}}.\\]\n\\[R=8{,}31\\,\\frac{\\text{Дж}}{\\text{моль}\\cdot\\text{К}}\\]\n— универсальная газовая постоянная. Далее:\n\\[\\begin{aligned}pV_m&=RT,\\\\[4pt]\\nu&=\\frac{V}{V_m}=\\frac{m}{\\mu},\\\\[4pt]pV&=\\frac{m}{\\mu}RT.\\end{aligned}\\]",
+          "children": []
+        }
+      ]
     }
   ],
   "order": 1,
-  "revision": 2,
+  "revision": 3,
   "createdAt": 1788739200000,
-  "updatedAt": 1789894800000,
+  "updatedAt": 1790700179696,
   "updatedBy": "codex",
   "reviewStatus": "published"
 }

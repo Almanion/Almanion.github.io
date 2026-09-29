@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 860" role="img" aria-labelledby="title desc">
+  <title id="title">Графики изотермического процесса</title>
+  <desc id="desc">Представления изотермического процесса в координатах p от V, p от T и V от T, а также семейства графиков.</desc>
+  <defs>
+    <style>
+      .frame,.panel{fill:#fbfdff;stroke:#d6e1ed;stroke-width:2}.axis{stroke:#173f70;stroke-width:3;fill:none;marker-end:url(#arrow)}
+      .curve{stroke:#0b8f87;stroke-width:4;fill:none}.curve2{stroke:#4f78a2;stroke-width:4;fill:none}.curve3{stroke:#754fa8;stroke-width:4;fill:none}
+      .guide{stroke:#8298ad;stroke-width:2;stroke-dasharray:7 7}.point{fill:#d4674c}.heading{font:700 27px system-ui,sans-serif;fill:#173f70}
+      .label{font:19px system-ui,sans-serif;fill:#173f70}.small{font:16px system-ui,sans-serif;fill:#526b84}.formula{font:21px system-ui,sans-serif;fill:#173f70}
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#173f70"/></marker>
+  </defs>
+  <rect class="frame" x="20" y="20" width="1040" height="820" rx="22"/>
+  <text class="heading" x="540" y="62" text-anchor="middle">Графики изотермического процесса</text>
+  <text class="formula" x="540" y="99" text-anchor="middle">pV = const  p = const / V  T = const</text>
+
+  <g transform="translate(55 125)">
+    <rect class="panel" width="300" height="270" rx="16"/><path class="axis" d="M55 224H264"/><path class="axis" d="M55 224V42"/>
+    <text class="label" x="270" y="241">V</text><text class="label" x="36" y="46">p</text>
+    <path class="curve" d="M78 65C92 103 119 144 157 174C187 197 220 207 249 211"/>
+    <circle class="point" cx="94" cy="102" r="6"/><circle class="point" cx="215" cy="203" r="6"/>
+    <text class="small" x="78" y="95">1</text><text class="small" x="220" y="196">2</text>
+    <text class="small" x="150" y="258" text-anchor="middle">p(V)</text>
+  </g>
+  <g transform="translate(390 125)">
+    <rect class="panel" width="300" height="270" rx="16"/><path class="axis" d="M55 224H264"/><path class="axis" d="M55 224V42"/>
+    <text class="label" x="270" y="241">T</text><text class="label" x="36" y="46">p</text>
+    <line class="curve2" x1="160" y1="72" x2="160" y2="198"/>
+    <circle class="point" cx="160" cy="174" r="6"/><circle class="point" cx="160" cy="96" r="6"/>
+    <text class="small" x="171" y="180">1</text><text class="small" x="171" y="102">2</text>
+    <text class="small" x="150" y="258" text-anchor="middle">p(T)</text>
+  </g>
+  <g transform="translate(725 125)">
+    <rect class="panel" width="300" height="270" rx="16"/><path class="axis" d="M55 224H264"/><path class="axis" d="M55 224V42"/>
+    <text class="label" x="270" y="241">T</text><text class="label" x="36" y="46">V</text>
+    <line class="curve3" x1="160" y1="72" x2="160" y2="198"/>
+    <circle class="point" cx="160" cy="174" r="6"/><circle class="point" cx="160" cy="96" r="6"/>
+    <text class="small" x="171" y="180">1</text><text class="small" x="171" y="102">2</text>
+    <text class="small" x="150" y="258" text-anchor="middle">V(T)</text>
+  </g>
+
+  <g transform="translate(55 435)">
+    <rect class="panel" width="465" height="350" rx="16"/><text class="label" x="232" y="32" text-anchor="middle">Семейство изотерм в координатах p(V)</text>
+    <path class="axis" d="M62 299H425"/><path class="axis" d="M62 299V63"/><text class="label" x="432" y="317">V</text><text class="label" x="43" y="67">p</text>
+    <path class="curve" d="M86 91C119 155 176 218 393 267"/><path class="curve2" d="M104 76C143 143 208 199 404 240"/><path class="curve3" d="M129 68C170 124 243 175 410 211"/>
+    <line class="guide" x1="263" y1="122" x2="263" y2="299"/>
+    <text class="small" x="263" y="326" text-anchor="middle">V₀</text><text class="small" x="111" y="281">T₁</text><text class="small" x="132" y="249">T₂</text><text class="small" x="153" y="217">T₃</text>
+    <text class="small" x="232" y="341" text-anchor="middle">T₁ &lt; T₂ &lt; T₃</text>
+  </g>
+  <g transform="translate(560 435)">
+    <rect class="panel" width="465" height="350" rx="16"/><text class="label" x="232" y="32" text-anchor="middle">Семейство графиков в координатах p(T)</text>
+    <path class="axis" d="M62 299H425"/><path class="axis" d="M62 299V63"/><text class="label" x="432" y="317">T</text><text class="label" x="43" y="67">p</text>
+    <path class="curve3" d="M62 299L330 90"/><path class="curve2" d="M62 299L385 155"/><path class="curve" d="M62 299L410 218"/>
+    <line class="guide" x1="300" y1="113" x2="300" y2="299"/>
+    <text class="small" x="300" y="326" text-anchor="middle">T₀</text><text class="small" x="307" y="121">p₃</text><text class="small" x="307" y="190">p₂</text><text class="small" x="307" y="249">p₁</text>
+    <text class="small" x="232" y="341" text-anchor="middle">V₁ &lt; V₂ &lt; V₃</text>
+  </g>
+</svg>

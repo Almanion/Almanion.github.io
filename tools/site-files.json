@@ -39,6 +39,7 @@
     "math.html",
     "newyear.js",
     "note-runtime.js",
+    "note-filter.js",
     "note-editor.js",
     "offline.html",
     "orbital-account.js",

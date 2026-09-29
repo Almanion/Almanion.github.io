@@ -186,7 +186,7 @@
         const summary = document.getElementById('printExportCount');
         if (summary) summary.textContent = text('Выбрано ', 'Selected ') + selectedCount + text(' из ', ' of ') + catalogue.items.length;
         const download = document.getElementById('printExportDownload');
-        if (download) download.disabled = selectedCount === 0 || exporting;
+        if (download) download.disabled = selectedItems().length === 0 || exporting;
         const current = currentItem();
         document.querySelectorAll('[data-print-preset]').forEach(function (preset) {
             const isActive = preset.dataset.printPreset === 'all'
@@ -200,7 +200,9 @@
     }
 
     function selectedItems() {
-        return catalogue.items.filter(function (item) { return selectedKeys.has(item.key); });
+        return catalogue.items.filter(function (item) {
+            return selectedKeys.has(item.key) && !item.element.querySelector('.note-filter-empty');
+        });
     }
 
     function applySelectionToDocument() {
@@ -212,7 +214,9 @@
         });
         const visibleGroups = [];
         catalogue.groups.forEach(function (group) {
-            const visibleItems = group.items.filter(function (item) { return selectedKeys.has(item.key); });
+            const visibleItems = group.items.filter(function (item) {
+                return selectedKeys.has(item.key) && !item.element.querySelector('.note-filter-empty');
+            });
             if (!visibleItems.length) {
                 group.element.setAttribute(EXCLUDED_ATTRIBUTE, '');
                 return;
@@ -223,7 +227,7 @@
                 visibleItems[0].element.setAttribute(FIRST_TOPIC_ATTRIBUTE, '');
             }
             group.items.forEach(function (item) {
-                if (!selectedKeys.has(item.key) && item.element !== group.element) item.element.setAttribute(EXCLUDED_ATTRIBUTE, '');
+                if (!visibleItems.includes(item) && item.element !== group.element) item.element.setAttribute(EXCLUDED_ATTRIBUTE, '');
             });
         });
         if (visibleGroups[0]) visibleGroups[0].setAttribute(FIRST_SECTION_ATTRIBUTE, '');
@@ -247,6 +251,9 @@
         document.title = printDocumentTitle();
         document.body.classList.add(PRINT_CLASS);
         applySelectionToDocument();
+        selectedItems().forEach(function (item) {
+            if (window.AlmanionMath) window.AlmanionMath.render(item.element);
+        });
 
         changedDetails = [];
         document.querySelectorAll('.main-content details:not([open])').forEach(function (details) {
@@ -265,19 +272,27 @@
             block.classList.toggle(SPLITTABLE_CLASS, hasNestedBlock || hasExpandableContent || isLong);
         });
 
-        document.querySelectorAll('.main-content .katex-display, .main-content table, .main-content pre').forEach(function (element) {
-            if (element.closest('[' + EXCLUDED_ATTRIBUTE + ']')) return;
-            const measured = Math.max(element.scrollWidth || 0, element.getBoundingClientRect().width || 0);
-            element.classList.toggle(WIDE_CLASS, measured > 680);
-            if (element.classList.contains('katex-display') && measured > 680) {
-                const scale = Math.max(0.68, Math.min(1, 680 / measured));
-                element.style.setProperty('--print-formula-scale', scale.toFixed(3));
-            }
-        });
-
         window.dispatchEvent(new CustomEvent('almanion:print-prepared', {
             detail: { title: pageTitle(), sections: selectedItems().map(function (item) { return item.element.id; }) }
         }));
+    }
+
+    function fitPrintLayout() {
+        // beforeprint runs with print styles applied. Measure the A4 column, not
+        // the current phone/desktop viewport or an invisible reader section.
+        document.querySelectorAll('.main-content .katex-display').forEach(function (element) {
+            element.style.removeProperty('--print-formula-scale');
+            const formula = element.querySelector('.katex-html');
+            const available = element.clientWidth;
+            const width = formula && formula.getBoundingClientRect().width;
+            if (available && width > available) {
+                element.classList.add(WIDE_CLASS);
+                element.style.setProperty('--print-formula-scale', String(Math.min(1, available / width)));
+            }
+        });
+        document.querySelectorAll(BLOCK_SELECTOR).forEach(function (block) {
+            if (block.getBoundingClientRect().height > 700) block.classList.add(SPLITTABLE_CLASS);
+        });
     }
 
     function restoreDocument() {
@@ -348,17 +363,35 @@
     }
 
     async function exportToPDF() {
-        if (exporting || !selectedKeys.size) return;
+        if (exporting || !selectedItems().length) return;
         exporting = true;
         closeDialog(false);
         updateBusyState(true);
-        preparePrintDocument();
         try {
+            const needsMath = selectedItems().some(function (item) {
+                return /\\\(|\\\[|\$\$/.test(item.element.textContent);
+            });
+            if (needsMath && typeof window.renderMathInElement !== 'function') {
+                const deadline = Date.now() + 8000;
+                while (typeof window.renderMathInElement !== 'function' && Date.now() < deadline) {
+                    await new Promise(function (resolve) { setTimeout(resolve, 200); });
+                }
+                if (typeof window.renderMathInElement !== 'function') throw new Error('math-unavailable');
+            }
+            preparePrintDocument();
             await waitForPrintableAssets();
             window.print();
         } catch (error) {
             console.error('Almanion print export:', error);
             restoreDocument();
+            openDialog();
+            const description = document.getElementById('printExportDescription');
+            if (description) {
+                description.setAttribute('role', 'alert');
+                description.textContent = error.message === 'math-unavailable'
+                    ? text('Не удалось загрузить формулы. Проверьте соединение и повторите экспорт.', 'Could not load formulas. Check your connection and retry.')
+                    : text('Не удалось подготовить PDF. Попробуйте ещё раз.', 'Could not prepare the PDF. Please try again.');
+            }
         }
     }
 
@@ -452,6 +485,11 @@
         if (exporting) return;
         collectCatalogue();
         renderSelectionList();
+        const description = document.getElementById('printExportDescription');
+        if (description) description.removeAttribute('role');
+        if (description) description.textContent = window.AlmanionNoteFilter && window.AlmanionNoteFilter.active()
+            ? text('В PDF войдут только выбранные типы блоков. Пустые разделы будут пропущены.', 'Only selected block types will be included. Empty sections will be skipped.')
+            : text('Выберите разделы, которые войдут в документ.', 'Choose the sections to include in the document.');
         const overlay = document.getElementById('printExportDialog');
         if (!overlay) return;
         lastFocusedElement = document.activeElement;
@@ -478,11 +516,22 @@
 
     function init() {
         if (!document.querySelector('.main-content')) return;
+        if (!document.querySelector('link[href^="styles/note-filter.css"]')) {
+            const style = document.createElement('link');
+            style.rel = 'stylesheet'; style.href = 'styles/note-filter.css?v=20260929-1';
+            document.head.appendChild(style);
+        }
+        if (!document.querySelector('script[src^="note-filter.js"]')) {
+            const script = document.createElement('script');
+            script.src = 'note-filter.js?v=20260929-1'; document.head.appendChild(script);
+        }
         collectCatalogue();
-        if (!catalogue.items.length) return;
         createLauncher();
         createDialog();
-        window.addEventListener('beforeprint', preparePrintDocument);
+        window.addEventListener('beforeprint', function () {
+            preparePrintDocument();
+            fitPrintLayout();
+        });
         window.addEventListener('afterprint', restoreDocument);
         window.addEventListener('focus', function () {
             if (!exporting || !document.body.classList.contains(PRINT_CLASS)) return;

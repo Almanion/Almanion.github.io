@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" role="img" aria-labelledby="title desc">
+  <title id="title">Опыт Шарля</title>
+  <desc id="desc">Газ в сосуде постоянного объёма соединён с ртутным манометром и сравнивается при двух температурах.</desc>
+  <defs>
+    <style>
+      .frame{fill:#fbfdff;stroke:#d6e1ed;stroke-width:2}.bath{fill:#e8f5f3;stroke:#0b8f87;stroke-width:3}.vessel{fill:#fff;stroke:#173f70;stroke-width:5}.tube{fill:none;stroke:#173f70;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}.mercury{fill:none;stroke:#8298ad;stroke-width:22;stroke-linecap:butt;stroke-linejoin:round}
+      .heading{font:700 28px system-ui,sans-serif;fill:#173f70}.label{font:21px system-ui,sans-serif;fill:#173f70}.small{font:17px system-ui,sans-serif;fill:#526b84}.measure{stroke:#d4674c;stroke-width:3;fill:none;marker-start:url(#arrow);marker-end:url(#arrow)}
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#d4674c"/></marker>
+  </defs>
+  <rect class="frame" x="20" y="20" width="960" height="580" rx="22"/>
+  <text class="heading" x="500" y="65" text-anchor="middle">Опыт Шарля (1787)</text>
+  <g transform="translate(55 100)">
+    <text class="label" x="205" y="30" text-anchor="middle">Первое состояние</text><rect class="bath" x="20" y="80" width="210" height="315" rx="15"/>
+    <rect class="vessel" x="70" y="155" width="110" height="145" rx="28"/><path class="tube" d="M125 155V105H270V315Q270 385 345 385Q420 385 420 315V112"/>
+    <path class="mercury" d="M292 285V315Q292 361 345 361Q398 361 398 315V228"/>
+    <text class="small" x="125" y="230" text-anchor="middle">V₀</text><text class="small" x="339" y="422" text-anchor="middle">p₀</text>
+    <line class="measure" x1="447" y1="236" x2="447" y2="277"/><text class="label" x="462" y="264">h</text>
+  </g>
+  <g transform="translate(525 100)">
+    <text class="label" x="205" y="30" text-anchor="middle">Второе состояние</text><rect class="bath" x="20" y="80" width="210" height="315" rx="15"/>
+    <rect class="vessel" x="70" y="155" width="110" height="145" rx="28"/><path class="tube" d="M125 155V105H270V315Q270 385 345 385Q420 385 420 315V112"/>
+    <path class="mercury" d="M292 245V315Q292 361 345 361Q398 361 398 315V190"/>
+    <text class="small" x="125" y="230" text-anchor="middle">V₁₀₀</text><text class="small" x="339" y="422" text-anchor="middle">p₁₀₀</text>
+  </g>
+  <text class="small" x="500" y="574" text-anchor="middle">V₀ = V₁₀₀</text>
+</svg>
