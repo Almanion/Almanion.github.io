@@ -1,8 +1,11 @@
 .english-page {
     --english-accent: #4f6f82;
+    --english-ink: #4f6f82;
     --english-accent-soft: color-mix(in srgb, var(--english-accent) 12%, transparent);
     --english-translator-width: 390px;
 }
+
+.english-page:is(.exp-dark, .dark-theme, .midnight-theme) { --english-ink: #98b7ca; }
 
 .english-page.english-locked .nav-menu,
 .english-page.english-locked .search-box,
@@ -54,7 +57,7 @@ body.experimental .english-access-gate {
     margin-bottom: 1.25rem;
     display: grid;
     place-items: center;
-    color: var(--english-accent);
+    color: var(--english-ink);
     background: var(--english-accent-soft);
     border-radius: 1.15rem;
 }
@@ -66,7 +69,7 @@ body.experimental .english-access-gate {
 
 .english-access-kicker {
     margin: 0 0 0.55rem;
-    color: var(--english-accent);
+    color: var(--english-ink);
     font-size: 0.7rem;
     font-weight: 750;
     letter-spacing: 0.085em;
@@ -146,7 +149,7 @@ body.experimental .english-access-home {
     width: fit-content;
     margin: 0 0 0.7rem;
     padding: 0.16rem 0.5rem;
-    color: var(--english-accent);
+    color: var(--english-ink);
     background: var(--english-accent-soft);
     border-radius: 0.35rem;
     font-size: 0.66rem;
@@ -213,7 +216,7 @@ body.experimental .english-translation {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--english-accent);
+    color: var(--english-ink);
     font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0.015em;
@@ -371,7 +374,7 @@ body.experimental .english-translator-header {
     width: 1.45rem;
     height: 1.45rem;
     flex: 0 0 auto;
-    color: var(--english-accent);
+    color: var(--english-ink);
 }
 
 .english-translator-title > div {
@@ -506,7 +509,7 @@ body.experimental .english-translator-field textarea {
 
 .english-use-selection {
     padding: 0;
-    color: var(--english-accent);
+    color: var(--english-ink);
     background: transparent;
     border: 0;
     font: inherit;
@@ -652,7 +655,7 @@ body.experimental .english-translator-result p.has-translation {
 }
 
 .english-translator-footer a {
-    color: var(--english-accent);
+    color: var(--english-ink);
     font-weight: 720;
     text-decoration: none;
 }
@@ -675,7 +678,7 @@ body.experimental .english-translator-footer {
 }
 
 .english-translator-sidebar-button.is-active {
-    color: var(--english-accent);
+    color: var(--english-ink);
     background: var(--english-accent-soft);
     border-color: color-mix(in srgb, var(--english-accent) 28%, var(--border-color));
 }
@@ -686,7 +689,7 @@ body.experimental .english-translator-footer {
 }
 
 .english-translator-mobile-button.is-active {
-    color: var(--english-accent);
+    color: var(--english-ink);
 }
 
 .english-speak-button {
@@ -716,7 +719,7 @@ body.experimental .english-translator-footer {
 .english-speak-button:hover,
 .english-speak-button:focus-visible,
 .english-speak-button.is-speaking {
-    color: var(--english-accent);
+    color: var(--english-ink);
     background: var(--english-accent-soft);
     opacity: 1;
 }

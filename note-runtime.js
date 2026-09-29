@@ -10,7 +10,7 @@
     const versions = {
         featureStyles: 'styles/site/features.css?v=20260920-3',
         bookmarksStyles: 'styles/bookmarks.css?v=20260920-2',
-        editorStyles: 'styles/note-editor.css?v=20260904-2',
+        editorStyles: 'styles/note-editor.css?v=20260929-2',
         printStyles: 'styles/print.css?v=20260929-1',
         settings: 'settings.js?v=20260920-3',
         search: 'search.js?v=20260920-2',

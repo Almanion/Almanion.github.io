@@ -128,9 +128,9 @@ body:not(.no-hover) .note-inline-edit-button:hover {
 }
 
 .note-inline-save-state.is-saving { color: var(--exp-accent, #555ce7); }
-.note-inline-save-state.is-local { color: #967024; }
-.note-inline-save-state.is-error { color: #b34c4c; }
-.note-inline-save-state.is-saved { color: #39775a; }
+.note-inline-save-state.is-local { color: var(--warning-color); }
+.note-inline-save-state.is-error { color: var(--error-color); }
+.note-inline-save-state.is-saved { color: var(--success-color); }
 
 .note-inline-open-builder,
 .note-inline-close,

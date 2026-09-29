@@ -2,17 +2,9 @@
    НОВЫЙ ИНТЕРФЕЙС — основной дизайн сайта
    Класс body.experimental сохранён как техническое имя для совместимости.
 
-   Два дизайн-режима, у каждого светлая и тёмная тема:
-     • «Графит» (body.exp-graphite) — нейтральный монохром (Linear/Notion-стиль)
-     • «Призма» (body.exp-prism)    — дисциплинированный цвет (акцент + цветные
-                                       ярлыки типов блоков)
-   Светлая/тёмная: отсутствие/наличие класса body.exp-dark.
-
-   Архитектура: токены --exp-* задаются для каждой комбинации (режим × тема),
-   а легаси-переменные сайта (--bg-primary и т.д.) РЕМАПЯТСЯ на них один раз —
-   так весь сайт перекрашивается автоматически, а сверху идёт точечная
-   структурная доработка (плоские шапки, нейтральные блоки с цветными
-   ярлыками-чипами, аккуратные карточки).
+   «Графит» — нейтральный; «Призма» — с цветными метками.
+   body.exp-dark включает тёмную тему. Токены --exp-* также задают
+   совместимые переменные --bg-*, --text-* для остальных страниц.
    ===================================================================== */
 
 @import url('./styles/legacy-refresh.css?v=20260903-2');
@@ -34,11 +26,11 @@ body.experimental {
     --exp-shadow-lg: 0 12px 32px rgba(15, 15, 25, 0.10);
 
     /* Цветовые токены типов блоков — по умолчанию нейтральные (для «Графита») */
-    --t-definition: #71717a; --t-theorem: #71717a; --t-lemma: #71717a;
-    --t-statement: #71717a; --t-corollary: #71717a; --t-example: #71717a;
-    --t-formula: #71717a; --t-proof: #71717a; --t-derivation: #71717a;
-    --t-experiment: #71717a; --t-exercise: #71717a; --t-properties: #71717a;
-    --t-system: #71717a; --t-remark: #ca8a04; --t-reminder: #71717a;
+    --t-definition: #62626c; --t-theorem: #62626c; --t-lemma: #62626c;
+    --t-statement: #62626c; --t-corollary: #62626c; --t-example: #62626c;
+    --t-formula: #62626c; --t-proof: #62626c; --t-derivation: #62626c;
+    --t-experiment: #62626c; --t-exercise: #62626c; --t-properties: #62626c;
+    --t-system: #62626c; --t-remark: #8a6000; --t-reminder: #62626c;
 
     /* ---- РЕМАП легаси-переменных на --exp-* ---- */
     --bg-primary: var(--exp-bg);
@@ -90,7 +82,7 @@ body.experimental.exp-graphite {
     --exp-surface-2: #f4f4f5;
     --exp-text: #18181b;
     --exp-text-dim: #52525b;
-    --exp-text-faint: #a1a1aa;
+    --exp-text-faint: #686872;
     --exp-border: #e8e8ea;
     --exp-border-strong: #d4d4d8;
     --exp-accent: #18181b;
@@ -107,7 +99,7 @@ body.experimental.exp-graphite.exp-dark {
     --exp-surface-2: #1c1c20;
     --exp-text: #f4f4f5;
     --exp-text-dim: #a1a1aa;
-    --exp-text-faint: #71717a;
+    --exp-text-faint: #94949e;
     --exp-border: #27272a;
     --exp-border-strong: #3f3f46;
     --exp-accent: #fafafa;
@@ -124,7 +116,7 @@ body.experimental.exp-prism {
     --exp-surface-2: #f3f4fb;
     --exp-text: #16161f;
     --exp-text-dim: #51526b;
-    --exp-text-faint: #9a9ab0;
+    --exp-text-faint: #68687f;
     --exp-border: #e8e8f2;
     --exp-border-strong: #d6d6e6;
     --exp-accent: #4f46e5;
@@ -133,11 +125,11 @@ body.experimental.exp-prism {
     --exp-accent-contrast: #ffffff;
     --exp-accent-rgb: 79, 70, 229;
 
-    --t-definition: #2563eb; --t-theorem: #7c3aed; --t-lemma: #0d9488;
-    --t-statement: #6366f1; --t-corollary: #64748b; --t-example: #ea580c;
-    --t-formula: #4f46e5; --t-proof: #16a34a; --t-derivation: #16a34a;
-    --t-experiment: #9333ea; --t-exercise: #475569; --t-properties: #2563eb;
-    --t-system: #475569; --t-remark: #ca8a04; --t-reminder: #0284c7;
+    --t-definition: #1d56cf; --t-theorem: #7c3aed; --t-lemma: #0e716a;
+    --t-statement: #4f46b8; --t-corollary: #526176; --t-example: #b44008;
+    --t-formula: #4f46e5; --t-proof: #147538; --t-derivation: #147538;
+    --t-experiment: #852acb; --t-exercise: #475569; --t-properties: #1d56cf;
+    --t-system: #475569; --t-remark: #8a6000; --t-reminder: #03699e;
 }
 
 /* ---- ПРИЗМА · тёмная ---- */
@@ -147,7 +139,7 @@ body.experimental.exp-prism.exp-dark {
     --exp-surface-2: #1e1e2b;
     --exp-text: #ececf4;
     --exp-text-dim: #a2a2b8;
-    --exp-text-faint: #6f6f86;
+    --exp-text-faint: #9292ab;
     --exp-border: #262638;
     --exp-border-strong: #34344c;
     --exp-accent: #818cf8;

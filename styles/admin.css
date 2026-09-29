@@ -8,9 +8,9 @@ body.admin-page.experimental {
     --accent: var(--exp-accent);
     --accent-hover: var(--exp-accent-hover);
     --border: var(--exp-border);
-    --success: #20865a;
-    --warning: #b7791f;
-    --danger: #c2414d;
+    --success: var(--success-color, #116b32);
+    --warning: var(--warning-color, #8a4f00);
+    --danger: var(--error-color, #b91c1c);
     background: var(--exp-bg);
     color: var(--exp-text);
     font-family: var(--font-ui, "Manrope"), system-ui, sans-serif;

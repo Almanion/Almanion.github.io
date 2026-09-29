@@ -34,7 +34,7 @@ assert.match(settingsCss, /\.settings-modal \.note-scale-slider/);
 assert.match(layout, /\.sidebar-expand-btn\s*\{[\s\S]*width:\s*34px;[\s\S]*height:\s*34px;/);
 assert.match(layout, /\.nav-link:hover/,
     'sidebar feedback must remain available when note hover effects are disabled');
-assert.match(layout, /\.remark-box::before\s*\{[\s\S]*content:\s*['"]Замечание['"][\s\S]*color:\s*#ca8a04/);
+assert.match(layout, /\.remark-box::before\s*\{[\s\S]*content:\s*['"]Замечание['"][\s\S]*color:\s*var\(--warning-color\)/);
 
 const svgProblems = [];
 function inspectInlineSvg(directory) {

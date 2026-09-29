@@ -1,5 +1,6 @@
 .tour-page {
     --tour-accent: #66725b;
+    --tour-on-accent: #fff;
     --tour-accent-strong: #43503c;
     --tour-accent-soft: color-mix(in srgb, var(--tour-accent) 11%, transparent);
     --tour-accent-faint: color-mix(in srgb, var(--tour-accent) 5%, transparent);
@@ -24,6 +25,7 @@
 .tour-page.experimental.exp-graphite.exp-dark,
 .tour-page.dark-theme {
     --tour-accent: #9fac8c;
+    --tour-on-accent: #16161f;
     --tour-accent-strong: #c4ceb5;
     --tour-warm: #d09b70;
     --tour-past: #818793;
@@ -49,6 +51,7 @@
 
 .tour-page.midnight-theme {
     --tour-accent: #aaa4c7;
+    --tour-on-accent: #16161f;
     --tour-accent-strong: #d2cdea;
     --tour-warm: #d09b70;
     --tour-past: #8d899b;
@@ -177,7 +180,7 @@
     font-size: 0.78rem;
     font-weight: 600;
 }
-.tour-person-search-field input::placeholder { color: var(--text-secondary); opacity: 0.78; }
+.tour-person-search-field input::placeholder { color: var(--text-secondary); opacity: 1; }
 .tour-person-search-field input::-webkit-search-cancel-button { display: none; }
 .tour-person-search-field input:focus-visible { outline: none; }
 .tour-person-search-field button {
@@ -298,7 +301,7 @@
     border-radius: 50%;
     background: currentColor;
 }
-.tour-event-state.is-active { color: #fff; background: var(--tour-accent); border-color: var(--tour-accent); }
+.tour-event-state.is-active { color: var(--tour-on-accent); background: var(--tour-accent); border-color: var(--tour-accent); }
 .tour-event-state.is-past { color: var(--text-secondary); background: var(--bg-tertiary); border-color: var(--border-color); }
 .tour-sync-status { color: var(--text-secondary); font-size: 0.73rem; }
 .tour-sync-status.is-offline { color: var(--tour-warm); }
@@ -647,7 +650,7 @@ body:not(.no-hover) .tour-section-nav a:hover { color: var(--tour-accent-strong)
     white-space: nowrap;
 }
 .tour-timeline-item.is-active .tour-timeline-state { color: var(--tour-accent-strong); background: var(--tour-accent-soft); }
-.tour-timeline-item.is-past { opacity: 0.72; }
+.tour-timeline-item.is-past { opacity: 1; }
 
 .tour-card-grid,
 .tour-activities {
@@ -955,13 +958,13 @@ body:not(.no-hover) .tour-icon-button:hover { color: var(--text-primary); backgr
     place-items: center;
     border: 1px solid var(--border-color);
     border-radius: 10px;
-    color: #b84d4d;
+    color: var(--error-color);
     background: var(--bg-secondary);
 }
 .tour-remove-button svg { width: 17px; height: 17px; }
 .tour-pick-people { width: 100%; min-height: 42px; text-align: left; }
 .tour-editor-selected { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.35rem; min-height: 28px; }
-.tour-editor-error { margin-top: 0.85rem; padding: 0.7rem 0.8rem; border: 1px solid rgba(190, 60, 60, 0.3); border-radius: 10px; color: #bd3f3f; background: rgba(190, 60, 60, 0.08); font-size: 0.74rem; }
+.tour-editor-error { margin-top: 0.85rem; padding: 0.7rem 0.8rem; border: 1px solid rgba(190, 60, 60, 0.3); border-radius: 10px; color: var(--error-color); background: rgba(190, 60, 60, 0.08); font-size: 0.74rem; }
 
 .tour-editor-footer {
     display: flex;
@@ -976,7 +979,7 @@ body:not(.no-hover) .tour-icon-button:hover { color: var(--text-primary); backgr
 .tour-editor-footer > div { display: flex; gap: 0.5rem; }
 .tour-editor-footer button { min-height: 42px; padding: 0.55rem 0.9rem; border-radius: 11px; font-size: 0.74rem; font-weight: 700; }
 .tour-editor-cancel { border: 1px solid var(--border-color) !important; color: var(--text-primary); background: var(--bg-tertiary); }
-.tour-editor-save { min-width: 132px; color: #fff; background: var(--tour-accent); }
+.tour-editor-save { min-width: 132px; color: var(--tour-on-accent); background: var(--tour-accent); }
 .tour-editor-save:disabled { cursor: wait; opacity: 0.65; }
 
 .tour-picker-overlay { z-index: 1300; display: grid; place-items: center end; padding: 0; }
@@ -1023,7 +1026,7 @@ body:not(.no-hover) .tour-icon-button:hover { color: var(--text-primary); backgr
 .tour-picker footer > div { display: flex; gap: 0.4rem; }
 .tour-picker footer button { min-height: 40px; padding: 0.5rem 0.75rem; border-radius: 9px; font-size: 0.72rem; font-weight: 690; }
 #tourPickerCancel { color: var(--text-primary); background: var(--bg-tertiary); }
-#tourPickerApply { color: #fff; background: var(--tour-accent); }
+#tourPickerApply { color: var(--tour-on-accent); background: var(--tour-accent); }
 
 .tour-page :focus-visible {
     outline: 2px solid color-mix(in srgb, var(--tour-accent) 72%, transparent);

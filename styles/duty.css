@@ -1,5 +1,6 @@
 .duty-page {
     --duty-accent: #437c78;
+    --duty-on-accent: #fff;
     --duty-accent-strong: #2f625f;
     --duty-accent-soft: rgba(67, 124, 120, 0.1);
     --duty-current: #2f766f;
@@ -22,6 +23,7 @@
 .duty-page.dark-theme,
 .duty-page.midnight-theme {
     --duty-accent: #72aaa6;
+    --duty-on-accent: #16161f;
     --duty-accent-strong: #91c4c0;
     --duty-accent-soft: rgba(114, 170, 166, 0.12);
     --duty-current: #75b9b3;
@@ -491,7 +493,7 @@ body:not(.no-hover) .duty-share-button:hover {
 }
 
 .duty-week-card.is-past {
-    opacity: 0.72;
+    opacity: 1;
 }
 
 .duty-week-topline {
@@ -1229,7 +1231,7 @@ body:not(.no-hover) :is(.duty-add-week, .duty-compact-action):hover {
 }
 
 .duty-editor-save {
-    color: #fff;
+    color: var(--duty-on-accent);
     background: var(--duty-accent-strong);
     border: 1px solid var(--duty-accent-strong);
 }

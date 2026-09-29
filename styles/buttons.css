@@ -88,7 +88,7 @@ body:not(.no-hover) :where(.btn-subtle, .task-toggle, .settings-reset-btn, .ny-s
 body:not(.no-hover) :where(.btn-danger, .builder-btn-reset, .hint-delete-btn):hover {
     background: var(--error-color);
     border-color: var(--error-color);
-    color: #ffffff;
+    color: var(--status-on-color, #fff);
 }
 
 :where(.btn, .btn-outline, .btn-subtle, .copy-block-btn):active {

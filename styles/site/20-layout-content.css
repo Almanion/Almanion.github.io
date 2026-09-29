@@ -1077,7 +1077,7 @@ body:not(.no-hover) .reminder-box:hover {
     height: auto;
     margin: 0 0 0.7rem;
     padding: 0.16rem 0.5rem;
-    color: #ca8a04;
+    color: var(--warning-color);
     background: color-mix(in srgb, #ca8a04 14%, transparent);
     border-radius: 6px;
     font-size: 0.68rem;

@@ -651,7 +651,7 @@ body.home-quick-dialog-open {
 }
 
 .home-quick-selection-meta span.is-warning {
-    color: #b76632;
+    color: var(--warning-color);
 }
 
 .home-quick-dialog-actions {

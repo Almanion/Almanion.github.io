@@ -604,9 +604,9 @@ body.dark-theme .knowledge-check-btn:hover {
 .kc-answer-ic { display: inline-flex; }
 .kc-answer-ic svg { width: 18px; height: 18px; }
 .kc-answer-forget { color: var(--error-color); border-color: rgba(var(--error-rgb, 239,68,68), 0.4); }
-body:not(.no-hover) .kc-answer-forget:hover { background: var(--error-color); color: #fff; border-color: var(--error-color); }
+body:not(.no-hover) .kc-answer-forget:hover { background: var(--error-color); color: var(--status-on-color, #fff); border-color: var(--error-color); }
 .kc-answer-remember { color: var(--success-color); border-color: rgba(var(--success-rgb, 34,197,94), 0.4); }
-body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color); color: #fff; border-color: var(--success-color); }
+body:not(.no-hover) .kc-answer-remember:hover { background: var(--success-color); color: var(--status-on-color, #fff); border-color: var(--success-color); }
 .kc-answer:active { transform: scale(0.97); }
 .kc-kbd {
     font-size: 0.7rem;
