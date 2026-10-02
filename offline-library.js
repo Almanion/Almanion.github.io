@@ -63,27 +63,49 @@
         const node = dialog?.querySelector('.offline-message');
         if (node) { node.textContent = message; node.classList.toggle('is-error', !!error); }
     }
-    function ping(worker) {
+    function abortError() { return new DOMException('Отменено', 'AbortError'); }
+    function deadline(promise, signal, milliseconds = 12000) {
+        if (signal.aborted) return Promise.reject(abortError());
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => finish(reject, new Error('Не удалось подготовить офлайн-чтение. Повторите попытку.')), milliseconds);
+            const abort = () => finish(reject, abortError());
+            function finish(callback, result) { clearTimeout(timer); signal.removeEventListener('abort', abort); callback(result); }
+            signal.addEventListener('abort', abort, { once: true });
+            Promise.resolve(promise).then(value => finish(resolve, value), error => finish(reject, error));
+        });
+    }
+    function ping(worker, signal) {
         return new Promise(resolve => {
             if (!worker) return resolve(false);
-            const channel = new MessageChannel(), timer = setTimeout(() => { channel.port1.close(); resolve(false); }, 1500);
-            channel.port1.onmessage = event => { clearTimeout(timer); channel.port1.close(); resolve(event.data?.offlineLibrary === 1); };
+            const channel = new MessageChannel();
+            const done = value => { clearTimeout(timer); signal.removeEventListener('abort', abort); channel.port1.close(); channel.port2.close(); resolve(value); };
+            const timer = setTimeout(() => done(false), 1500);
+            const abort = () => done(false);
+            if (signal.aborted) return done(false);
+            signal.addEventListener('abort', abort, { once: true });
+            channel.port1.onmessage = event => done(event.data?.offlineLibrary === 1);
             worker.postMessage({ type: 'OFFLINE_LIBRARY_PING' }, [channel.port2]);
         });
     }
-    async function prepareWorker() {
-        const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-        await navigator.serviceWorker.ready;
-        if (await ping(navigator.serviceWorker.controller || registration.active)) return;
-        await registration.update();
+    async function prepareWorker(signal) {
+        const registration = await deadline(navigator.serviceWorker.register('/sw.js', { scope: '/' }), signal);
+        await deadline(navigator.serviceWorker.ready, signal);
+        if (await ping(navigator.serviceWorker.controller || registration.active, signal)) return;
+        await deadline(registration.update(), signal);
         if (registration.installing) await new Promise(resolve => {
             const worker = registration.installing;
-            const timer = setTimeout(resolve, 12000);
-            worker.addEventListener('statechange', () => { if (worker.state === 'installed' || worker.state === 'redundant') { clearTimeout(timer); resolve(); } });
+            const timer = setTimeout(() => done(), 12000);
+            const done = () => { clearTimeout(timer); worker.removeEventListener('statechange', changed); signal.removeEventListener('abort', done); resolve(); };
+            const changed = () => { if (worker.state === 'installed' || worker.state === 'redundant') done(); };
+            worker.addEventListener('statechange', changed);
+            signal.addEventListener('abort', done, { once: true });
+            changed();
         });
+        if (signal.aborted) throw abortError();
         registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
         for (let attempt = 0; attempt < 6; attempt++) {
-            if (await ping(navigator.serviceWorker.controller || registration.active)) return;
+            if (signal.aborted) throw abortError();
+            if (await ping(navigator.serviceWorker.controller || registration.active, signal)) return;
         }
         throw new Error('Обновите страницу, чтобы включить офлайн-чтение.');
     }
@@ -97,7 +119,7 @@
         render(); announce('');
         let committed = false;
         try {
-            await prepareWorker();
+            await prepareWorker(controller.signal);
             const estimate = await navigator.storage?.estimate?.();
             if (estimate?.quota && estimate.quota - (estimate.usage || 0) < subject.bytes * 1.15) throw new Error('Недостаточно места. Удалите ненужную загрузку и повторите.');
             const cache = await caches.open(cacheName);
@@ -146,7 +168,7 @@
             navigator.storage?.persist?.().catch(() => {});
             announce('Готово: ' + subject.title);
         } catch (error) {
-            announce(error.name === 'AbortError' ? 'Загрузка отменена. Предыдущая копия сохранена.' : error.name === 'QuotaExceededError' ? 'Недостаточно места на устройстве.' : error.message || 'Не удалось скачать конспект.', error.name !== 'AbortError');
+            announce(error.name === 'AbortError' ? 'Загрузка отменена.' + (installed[id] ? ' Предыдущая копия сохранена.' : '') : error.name === 'QuotaExceededError' ? 'Недостаточно места на устройстве.' : error.message || 'Не удалось скачать конспект.', error.name !== 'AbortError');
         } finally {
             if (!committed) await caches.delete(cacheName);
             job = null; render();

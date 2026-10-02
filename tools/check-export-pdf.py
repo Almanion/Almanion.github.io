@@ -9,6 +9,7 @@ with pdfplumber.open(sys.argv[1]) as document:
         text = page.extract_text() or ""
         assert "@Almanion239" in text, f"Footer missing on page {number}"
         assert "�" not in text, f"Missing glyphs on page {number}"
+        assert "\x00" not in text, f"Unsupported glyphs on page {number}"
         body = [char for char in page.chars if char["top"] < 790]
         assert len(body) > 3 or page.curves or page.images, f"Blank page {number}"
         for char in body:

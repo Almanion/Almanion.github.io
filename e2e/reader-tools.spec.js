@@ -157,6 +157,21 @@ test('cancelling an offline update preserves the old complete package', async ({
     expect(after.cacheName).toBe(before.cacheName);
 });
 
+test('offline download can be cancelled while service worker preparation is stalled', async ({ page }) => {
+    await blockExternal(page); await notes(page);
+    await page.locator('#offlineLibraryButton').click();
+    await expect(page.locator('.offline-subject')).toHaveCount(9);
+    await page.evaluate(() => {
+        navigator.serviceWorker.register = () => Promise.resolve({});
+        Object.defineProperty(navigator.serviceWorker, 'ready', { configurable: true, value: new Promise(() => {}) });
+        window.__offlinePreparing = window.AlmanionOffline.download('physics-10').then(() => { window.__offlineCancelled = true; });
+    });
+    await page.locator('[data-offline-cancel]').click();
+    await expect.poll(() => page.evaluate(() => window.__offlineCancelled), { timeout: 3000 }).toBe(true);
+    await expect(page.locator('.offline-message')).toHaveText('Загрузка отменена.');
+    await expect(page.locator('[data-offline-subject="physics-10"] [data-offline-download]')).toBeEnabled();
+});
+
 test('reading dialogs fit narrow screens and both site themes', async ({ page }, testInfo) => {
     await blockExternal(page); await notes(page);
     await page.locator('#offlineLibraryButton').click();
@@ -174,6 +189,8 @@ test('reading dialogs fit narrow screens and both site themes', async ({ page },
             expect(geometry.right).toBeLessThanOrEqual(geometry.width);
             expect(Math.abs(geometry.left - (geometry.width - geometry.right))).toBeLessThanOrEqual(1);
             expect(geometry.overflow).toBeLessThanOrEqual(1);
+            const footerVisible = await page.locator('.offline-dialog').evaluate(dialog => dialog.querySelector('.reader-tool-footer').getBoundingClientRect().bottom <= dialog.getBoundingClientRect().bottom + 1);
+            expect(footerVisible).toBe(true);
             if (width === 320 || width === 1440) await page.screenshot({ path: testInfo.outputPath('offline-' + theme + '-' + width + '.png') });
         }
     }

@@ -18,6 +18,7 @@
 
     function dependencies() {
         if (!ready) ready = (async () => {
+            await load('pdf-block-frames.js?v=20261002-1');
             await load('vendor/pdf/pdfmake.min.js');
             window.MathJax = { startup: { typeset: false }, svg: { fontCache: 'none' }, tex: { packages: ['base', 'ams', 'newcommand', 'noundefined', 'textmacros'] } };
             await load('vendor/pdf/tex-svg.js');
@@ -25,20 +26,24 @@
             const fonts = {};
             await Promise.all([
                 ['NotoSans-Regular.ttf', '400', 'normal'], ['NotoSans-Bold.ttf', '700', 'normal'],
-                ['NotoSans-Italic.ttf', '400', 'italic'], ['NotoSans-BoldItalic.ttf', '700', 'italic']
-            ].map(async ([file, weight, style]) => {
-                const response = await fetch('vendor/pdf/' + file);
+                ['NotoSans-Italic.ttf', '400', 'italic'], ['NotoSans-BoldItalic.ttf', '700', 'italic'],
+                ['KaTeX_Main-Regular.ttf', '400', 'normal', 'AlmanionPDFSymbols', 'vendor/katex/fonts/']
+            ].map(async ([file, weight, style, family = 'AlmanionPDF', directory = 'vendor/pdf/']) => {
+                const response = await fetch(directory + file);
                 if (!response.ok) throw new Error('Не удалось загрузить печатный шрифт.');
                 const buffer = await response.arrayBuffer();
                 const bytes = new Uint8Array(buffer);
                 let binary = '';
                 for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
                 fonts[file] = btoa(binary);
-                const font = new FontFace('AlmanionPDF', buffer, { weight, style });
+                const font = new FontFace(family, buffer, { weight, style });
                 document.fonts.add(await font.load());
             }));
             pdfMake.addVirtualFileSystem(fonts);
-            pdfMake.fonts = { NotoSans: { normal: 'NotoSans-Regular.ttf', bold: 'NotoSans-Bold.ttf', italics: 'NotoSans-Italic.ttf', bolditalics: 'NotoSans-BoldItalic.ttf' } };
+            pdfMake.fonts = {
+                NotoSans: { normal: 'NotoSans-Regular.ttf', bold: 'NotoSans-Bold.ttf', italics: 'NotoSans-Italic.ttf', bolditalics: 'NotoSans-BoldItalic.ttf' },
+                AlmanionPDFSymbols: { normal: 'KaTeX_Main-Regular.ttf', bold: 'KaTeX_Main-Regular.ttf', italics: 'KaTeX_Main-Regular.ttf', bolditalics: 'KaTeX_Main-Regular.ttf' }
+            };
         })().catch(error => { ready = null; throw error; });
         return ready;
     }
@@ -88,6 +93,15 @@
         element.style.width = width * 4 / 3 + 'px';
         nodes.forEach(node => element.append(node.cloneNode(true)));
         measure.append(element);
+        // A collapsed leading space next to a bold/italic inline can have a
+        // zero-width Range in Chromium. Keep one real space at that boundary.
+        const spaces = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+        while (spaces.nextNode()) {
+            const node = spaces.currentNode;
+            if (node.parentElement.closest('svg,script,style,code,pre')) continue;
+            if (/^\s/.test(node.textContent) && /\S$/.test(node.previousSibling?.textContent || '')) node.textContent = node.textContent.replace(/^\s+/, '\u00a0');
+            if (/\s$/.test(node.textContent) && /^\S/.test(node.nextSibling?.textContent || '')) node.textContent = node.textContent.replace(/\s+$/, '\u00a0');
+        }
         await replaceMath(element);
         const origin = element.getBoundingClientRect();
         const parts = [];
@@ -105,7 +119,10 @@
                 const rect = range.getBoundingClientRect();
                 if (!rect.width || !rect.height) continue;
                 const x = rect.left - origin.left, y = rect.top - origin.top;
-                if (run && Math.abs(run.y - y) < 1) { run.text += char; run.right = rect.right - origin.left; }
+                // SVG-to-PDF trims whitespace at a text leaf's edges. Place
+                // the first glyph after its space instead of relying on it.
+                if ((!run || Math.abs(run.y - y) >= 1) && /\s/.test(char)) continue;
+                if (run && Math.abs(run.y - y) < 1) { run.text += char; if (!/\s/.test(char)) run.right = rect.right - origin.left; }
                 else {
                     run = { x, y, right: rect.right - origin.left, height: rect.height, text: char, weight: style.fontWeight, italic: style.fontStyle, size: parseFloat(style.fontSize) };
                     parts.push(run);
@@ -135,7 +152,7 @@
             const chunk = rows.slice(i, i + 4), top = chunk[0].top, height = chunk[chunk.length - 1].bottom - top + 3;
             const body = chunk.flatMap(row => row.parts).map(part => part.svg
                 ? '<g transform="translate(' + part.x + ',' + (part.y - top) + ')">' + part.svg + '</g>'
-                : '<text x="' + part.x + '" y="' + (part.y - top + part.size * .93) + '" textLength="' + (part.right - part.x) + '" lengthAdjust="spacingAndGlyphs" font-family="NotoSans" font-size="' + part.size + '" font-weight="' + part.weight + '" font-style="' + part.italic + '" xml:space="preserve">' + escape(part.text.replace(/ /g, '\u00a0')) + '</text>').join('');
+                : '<text x="' + part.x + '" y="' + (part.y - top + part.size * .93) + '" textLength="' + (part.right - part.x) + '" lengthAdjust="spacingAndGlyphs" font-family="NotoSans" font-size="' + part.size + '" font-weight="' + part.weight + '" font-style="' + part.italic + '" xml:space="preserve">' + escape(part.text.trimEnd().replace(/ /g, '\u00a0')) + '</text>').join('');
             result.push({ svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + width * 4 / 3 + ' ' + height + '" width="' + width * 4 / 3 + '" height="' + height + '" fill="' + INK + '">' + body + '</svg>', width, margin: [0, 0, 0, i + 4 >= rows.length ? 5 : 0] });
         }
         return result;
@@ -149,7 +166,25 @@
                 throw new Error('У одной из схем некорректные размеры. Исправьте её перед экспортом.');
             }
         }
-        return { svg: new XMLSerializer().serializeToString(svg).replace(/currentColor/g, INK), fit: [width, 410], alignment: 'center', margin: [0, 6, 0, 6] };
+        const copy = svg.cloneNode(true);
+        // Noto Sans covers our prose, but not these mathematical glyphs. The
+        // site's already bundled KaTeX font keeps SVG labels selectable too.
+        const walker = document.createTreeWalker(copy, NodeFilter.SHOW_TEXT);
+        const labels = [];
+        while (walker.nextNode()) if (walker.currentNode.parentElement.closest('text')) labels.push(walker.currentNode);
+        for (const node of labels) {
+            if (!/[−→←↔≤≥≈∈∞]/u.test(node.textContent)) continue;
+            const fragment = document.createDocumentFragment();
+            for (const text of node.textContent.split(/([−→←↔≤≥≈∈∞])/u)) {
+                if (!text) continue;
+                if (/^[−→←↔≤≥≈∈∞]$/u.test(text)) {
+                    const span = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+                    span.style.fontFamily = 'AlmanionPDFSymbols'; span.textContent = text; fragment.append(span);
+                } else fragment.append(document.createTextNode(text));
+            }
+            node.replaceWith(fragment);
+        }
+        return { svg: new XMLSerializer().serializeToString(copy).replace(/currentColor/g, INK), fit: [width, 410], alignment: 'center', margin: [0, 6, 0, 6] };
     }
 
     async function illustration(image, width) {
@@ -174,7 +209,7 @@
         return { image: data, fit: [width, 410], margin: [0, 6, 0, 6] };
     }
 
-    async function children(parent, width, measure, english) {
+    async function children(parent, width, measure, english, depth = 0, ancestors = []) {
         const output = [], inline = [];
         const flush = async () => { if (inline.length) output.push(...await paragraph(inline.splice(0), width, measure)); };
         for (const node of parent.childNodes) {
@@ -185,30 +220,56 @@
             if (node.matches('h1,h2,h3,h4,h5,h6,.part-title,.topic-title,.subsection-title')) {
                 output.push({ text: node.textContent.trim(), fontSize: node.matches('h1,h2,.part-title') ? 16 : 13, bold: true, margin: [0, 4, 0, 9], headlineLevel: 1, newSection: true });
             } else if (node.matches(BLOCKS)) {
+                const frames = window.AlmanionPdfBlockFrames;
+                const frame = { id: 'block-' + (++measure.pdfBlockId), width, depth };
                 const kind = Object.keys(LABELS).find(key => node.classList.contains(key + '-box'));
-                const stack = await children(node, width - 16, measure, english);
+                const stack = await children(node, width - 2 * frames.style.paddingX, measure, english, depth + 1, ancestors.concat(frame));
                 if (kind) stack.unshift({ text: english ? kind[0].toUpperCase() + kind.slice(1) : LABELS[kind], fontSize: 8, color: '#535963', bold: true, margin: [0, 0, 0, 6] });
-                if (stack.length) output.push({ table: { widths: ['*'], headerRows: kind ? 1 : 0, keepWithHeaderRows: Math.min(2, stack.length - 1), body: stack.map(content => [{ stack: [content], fillColor: '#f8f9fa' }]) }, layout: { hLineWidth: (i, table) => i === 0 || i === table.table.body.length ? .5 : 0, vLineWidth: () => .5, hLineColor: () => '#d5d9df', vLineColor: () => '#d5d9df', paddingLeft: () => 7, paddingRight: () => 7, paddingTop: i => i === 0 ? 8 : 0, paddingBottom: (i, table) => i === table.table.body.length - 1 ? 3 : 0 }, margin: [0, 0, 0, 9] });
+                if (stack.length) output.push({
+                    table: { widths: ['*'], headerRows: kind ? 1 : 0, keepWithHeaderRows: Math.min(1, stack.length - 1), body: stack.map((content, index) => [{
+                        stack: [...(index === 0 ? [frames.marker(frame, 'start', ancestors)] : []), content, frames.marker(frame, index === stack.length - 1 ? 'end' : 'rowEnd', ancestors)],
+                        fillColor: depth ? frames.style.nestedFill : frames.style.fill
+                    }]) },
+                    layout: { hLineWidth: () => 0, vLineWidth: () => 0, paddingLeft: () => frames.style.paddingX, paddingRight: () => frames.style.paddingX, paddingTop: index => index === 0 ? frames.style.paddingY : 0, paddingBottom: (index, table) => index === table.table.body.length - 1 ? frames.style.paddingY : 0 },
+                    margin: [0, 0, 0, frames.style.gap]
+                });
             } else if (node.tagName === 'IMG') output.push(await illustration(node, width));
             else if (node.localName === 'svg') output.push(svgFigure(node, width));
             else if (node.matches('ul,ol')) {
                 const list = [];
-                for (const li of node.children) list.push({ stack: await children(li, width - 14, measure, english) });
-                if (list.length) output.push({ [node.tagName === 'UL' ? 'ul' : 'ol']: list, margin: [0, 3, 0, 6] });
+                let ordinal = Number(node.getAttribute('start')) || 1;
+                for (const li of node.children) {
+                    if (li.tagName !== 'LI') continue;
+                    if (li.hasAttribute('value')) ordinal = Number(li.getAttribute('value'));
+                    const contents = await children(li, width - 18, measure, english, depth, ancestors);
+                    // pdfmake's native list markers only attach to text leaves;
+                    // our selectable vector paragraphs are SVG leaves instead.
+                    if (contents.length) list.push({ columns: [{ width: 14, text: node.tagName === 'UL' ? '•' : ordinal + '.', margin: [0, 1, 0, 0] }, { width: width - 18, stack: contents }], columnGap: 4 });
+                    ordinal++;
+                }
+                if (list.length) output.push({ stack: list, margin: [0, 3, 0, 6] });
             } else if (node.tagName === 'TABLE') {
                 const rows = [];
                 for (const row of node.rows) {
                     const cells = [];
                     for (const cell of row.cells) {
-                        cells.push({ stack: await children(cell, width / row.cells.length - 12, measure, english), colSpan: cell.colSpan, rowSpan: cell.rowSpan });
+                        cells.push({ stack: await children(cell, width / row.cells.length - 12, measure, english, depth, ancestors), colSpan: cell.colSpan, rowSpan: cell.rowSpan });
                         for (let i = 1; i < cell.colSpan; i++) cells.push({});
                     }
                     rows.push(cells);
                 }
                 if (rows.length) output.push({ table: { headerRows: node.tHead?.rows.length || 0, widths: rows[0].map(() => '*'), body: rows }, layout: 'lightHorizontalLines', margin: [0, 4, 0, 8] });
-            } else output.push(...await children(node, width, measure, english));
+            } else output.push(...await children(node, width, measure, english, depth, ancestors));
         }
         await flush();
+        const owners = ancestors.map(frame => frame.id);
+        function tagContent(node) {
+            if (node.svg || node.image || node.text !== undefined) node.pdfFrameOwners ??= owners;
+            for (const child of node.stack || []) tagContent(child);
+            for (const child of node.columns || []) tagContent(child);
+            for (const row of node.table?.body || []) for (const cell of row) tagContent(cell);
+        }
+        output.forEach(tagContent);
         return output;
     }
 
@@ -222,7 +283,7 @@
         const style = document.createElement('style');
         style.textContent = ':host{color:#17191d} .paragraph{font:14.6667px/1.5 AlmanionPDF,Roboto,sans-serif;white-space:normal;overflow-wrap:anywhere} strong,b{font-weight:700} em,i{font-style:italic} .pdf-math{display:inline-block;vertical-align:middle;line-height:0;margin-inline:.16em}.pdf-math.display{display:block;text-align:center;margin:10px 0}.pdf-math svg{max-width:100%;height:auto}';
         shadow.append(style);
-        const measure = document.createElement('div'); shadow.append(measure);
+        const measure = document.createElement('div'); measure.pdfBlockId = 0; shadow.append(measure);
         try {
             const content = [];
             let previousGroup = null;
@@ -259,11 +320,13 @@
                     // stream directly so layout failures reject this promise;
                     // the callback API otherwise throws in an internal promise
                     // and can leave the export button busy indefinitely.
-                    const stream = pdfMake.createPdf(definition).getStream();
+                    const stream = pdfMake.createPdf(definition).getStream({ bufferPages: true });
                     const chunks = [];
                     stream.on('data', chunk => chunks.push(chunk));
                     stream.on('error', reject);
                     stream.on('end', () => resolve(new Blob(chunks, { type: 'application/pdf' })));
+                    const frames = window.AlmanionPdfBlockFrames;
+                    frames.draw(stream, frames.collect(stream._pdfMakePages, definition.pageMargins));
                     stream.end();
                 } catch (error) { reject(error); }
             });

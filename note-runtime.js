@@ -12,15 +12,15 @@
         featureStyles: 'styles/site/features.css?v=20261002-1',
         bookmarksStyles: 'styles/bookmarks.css?v=20260920-2',
         editorStyles: 'styles/note-editor.css?v=20260929-2',
-        readerToolsStyles: 'styles/reader-tools.css?v=20261002-1',
+        readerToolsStyles: 'styles/reader-tools.css?v=20261002-2',
         personalNotes: 'personal-notes.js?v=20261002-1',
-        offline: 'offline-library.js?v=20261002-1',
+        offline: 'offline-library.js?v=20261002-2',
         printStyles: 'styles/print.css?v=20261002-1',
         filterStyles: 'styles/note-filter.css?v=20260929-3',
         filter: 'note-filter.js?v=20260929-1',
         settings: 'settings.js?v=20261002-1',
         search: 'search.js?v=20261002-1',
-        print: 'print-export.js?v=20261002-1',
+        print: 'print-export.js?v=20261002-2',
         knowledge: 'knowledge-check.js?v=20261002-2',
         newyear: 'newyear.js?v=20261002-1',
         firebaseApp: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js',
@@ -158,8 +158,7 @@
     }
 
     function start() {
-        // Filtering is part of the reading surface, not the export dialog.
-        // Its persisted selection must also be restored after a plain reload.
+        // Restore reading filters independently of the PDF dialog.
         loadStyle('filterStyles').then(function () { return loadScript('filter'); }).catch(function () {});
         onIntent('#searchInput, .search-box', 'pointerdown', 'search');
         onIntent('#searchInput', 'focusin', 'search');
@@ -177,8 +176,7 @@
             button.setAttribute('aria-haspopup', 'dialog');
             button.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' + icons[feature] + '</svg><span' + (feature === 'print' ? ' class="print-export-label"' : '') + '>' + label + '</span>';
             button.addEventListener('click', async function activate(event) {
-                // The real module attaches to this same button after loading.
-                // Suppress just the first click, then replay it exactly once.
+                // Load on first intent, then replay once on the real handler.
                 event.stopImmediatePropagation();
                 button.disabled = true;
                 try {
@@ -204,7 +202,12 @@
             const offline = document.createElement('button');
             offline.type = 'button'; offline.id = 'offlineLibraryButton'; offline.className = 'reader-tool-menu-button';
             offline.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5"/></svg><span>Читать без сети</span>';
-            offline.addEventListener('click', async function () { offline.disabled = true; try { await ensure('offline'); await window.AlmanionOffline.open(); } finally { offline.disabled = false; } });
+            offline.addEventListener('click', async function () {
+                offline.disabled = true;
+                try { await ensure('offline'); await window.AlmanionOffline.open(); }
+                catch (_) { window.AlmanionToast?.show('Не удалось открыть загрузки. Повторите попытку.', { type: 'error' }); }
+                finally { offline.disabled = false; }
+            });
             slot.append(offline);
         }
         function loadEditor() { return loadStyle('editorStyles').then(function () { return loadScript('editor'); }); }

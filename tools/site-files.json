@@ -58,6 +58,7 @@
     "planner.js",
     "print-export.js",
     "pdf-download.js",
+    "pdf-block-frames.js",
     "russian-ege.html",
     "russian-ege.js",
     "script.js",

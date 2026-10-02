@@ -696,10 +696,10 @@ function bindSettingsHandlers() {
             if (window.AlmanionNoteRuntime) await window.AlmanionNoteRuntime.ensure('offline');
             else {
                 if (!document.querySelector('link[data-reader-tools]')) {
-                    const style = document.createElement('link'); style.rel = 'stylesheet'; style.href = 'styles/reader-tools.css?v=20261002-1'; style.dataset.readerTools = 'true'; document.head.append(style);
+                    const style = document.createElement('link'); style.rel = 'stylesheet'; style.href = 'styles/reader-tools.css?v=20261002-2'; style.dataset.readerTools = 'true'; document.head.append(style);
                 }
                 if (!window.AlmanionOffline) await new Promise((resolve, reject) => {
-                    const script = document.createElement('script'); script.src = 'offline-library.js?v=20261002-1'; script.onload = resolve; script.onerror = reject; document.head.append(script);
+                    const script = document.createElement('script'); script.src = 'offline-library.js?v=20261002-2'; script.onload = resolve; script.onerror = () => { script.remove(); reject(new Error('Загрузки недоступны')); }; document.head.append(script);
                 });
             }
             closeSettingsModal();
