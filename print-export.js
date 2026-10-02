@@ -34,6 +34,8 @@
     let selectedKeys = new Set();
     let catalogue = { groups: [], items: [] };
     let lastFocusedElement = null;
+    let pdfModulePromise = null;
+    let previewUrl = '';
 
     function isEnglish() {
         return document.documentElement.lang === 'en' || document.body.dataset.uiLanguage === 'en';
@@ -187,6 +189,10 @@
         if (summary) summary.textContent = text('Выбрано ', 'Selected ') + selectedCount + text(' из ', ' of ') + catalogue.items.length;
         const download = document.getElementById('printExportDownload');
         if (download) download.disabled = selectedItems().length === 0 || exporting;
+        ['printExportPreview', 'printExportPrint'].forEach(function (id) {
+            const control = document.getElementById(id);
+            if (control) control.disabled = selectedItems().length === 0 || exporting;
+        });
         const current = currentItem();
         document.querySelectorAll('[data-print-preset]').forEach(function (preset) {
             const isActive = preset.dataset.printPreset === 'all'
@@ -359,10 +365,55 @@
             download.classList.toggle('is-preparing', busy);
             download.textContent = busy ? text('Подготовка…', 'Preparing…') : text('Скачать PDF', 'Download PDF');
         }
+        ['printExportPreview', 'printExportPrint'].forEach(function (id) {
+            const control = document.getElementById(id);
+            if (control) control.disabled = busy || !selectedItems().length;
+        });
         updateSelectionUi();
     }
 
-    async function exportToPDF() {
+    function loadPdfModule() {
+        if (window.AlmanionPdfDownload) return Promise.resolve();
+        if (!pdfModulePromise) pdfModulePromise = new Promise(function (resolve, reject) {
+            const script = document.createElement('script');
+            script.src = 'pdf-download.js?v=20261002-1';
+            script.onload = resolve;
+            script.onerror = function () { pdfModulePromise = null; script.remove(); reject(new Error('PDF module unavailable')); };
+            document.head.appendChild(script);
+        });
+        return pdfModulePromise;
+    }
+
+    async function exportToPDF(mode) {
+        if (typeof mode !== 'string') mode = 'download';
+        if (exporting || !selectedItems().length) return;
+        exporting = true;
+        updateBusyState(true);
+        try {
+            await loadPdfModule();
+            const blob = await window.AlmanionPdfDownload.generate(selectedItems(), printDocumentTitle());
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+            previewUrl = URL.createObjectURL(blob);
+            if (mode === 'preview') {
+                const frame = document.getElementById('printExportPreviewFrame');
+                frame.src = previewUrl;
+                document.getElementById('printExportPreviewPanel').hidden = false;
+                setPreviewBackgroundInert(true);
+                document.getElementById('printExportPreviewClose').focus({ preventScroll: true });
+            } else {
+                const link = document.createElement('a');
+                link.href = previewUrl;
+                link.download = printDocumentTitle().replace(/[<>:"/\\|?*]/g, '-') + '.pdf';
+                document.body.appendChild(link); link.click(); link.remove();
+            }
+        } catch (error) {
+            console.error('Almanion PDF download:', error);
+            const description = document.getElementById('printExportDescription');
+            if (description) { description.setAttribute('role', 'alert'); description.textContent = text('Не удалось создать PDF. ', 'Could not create PDF. ') + (error.message || ''); }
+        } finally { exporting = false; updateBusyState(false); }
+    }
+
+    async function printNotes() {
         if (exporting || !selectedItems().length) return;
         exporting = true;
         closeDialog(false);
@@ -396,7 +447,11 @@
     }
 
     function createLauncher() {
-        if (document.getElementById('printExportButton')) return;
+        const existing = document.getElementById('printExportButton');
+        if (existing) {
+            existing.addEventListener('click', openDialog);
+            return;
+        }
         const target = document.createElement('button');
         target.id = 'printExportButton';
         target.className = 'print-export-button';
@@ -442,9 +497,9 @@
                     '<div class="print-export-selection" id="printExportSelection"></div>' +
                 '</div>' +
                 '<footer class="print-export-dialog-footer">' +
-                    '<p><span aria-hidden="true">i</span>' + text('Откроется окно печати — выберите «Сохранить как PDF».', 'The print dialog will open — choose “Save as PDF”.') + '</p>' +
-                    '<div><button class="print-export-cancel" type="button" data-print-close>' + text('Отмена', 'Cancel') + '</button><button class="print-export-download" id="printExportDownload" type="button">' + text('Скачать PDF', 'Download PDF') + '</button></div>' +
+                    '<div><button class="print-export-cancel" id="printExportPrint" type="button">' + text('Печать', 'Print') + '</button><button class="print-export-cancel" id="printExportPreview" type="button">' + text('Предпросмотр', 'Preview') + '</button><button class="print-export-download" id="printExportDownload" type="button">' + text('Скачать PDF', 'Download PDF') + '</button></div>' +
                 '</footer>' +
+                '<section class="print-export-preview" id="printExportPreviewPanel" hidden><button type="button" class="print-export-cancel" id="printExportPreviewClose">' + text('Закрыть предпросмотр', 'Close preview') + '</button><iframe id="printExportPreviewFrame" title="' + text('Предпросмотр PDF', 'PDF preview') + '"></iframe></section>' +
             '</section>';
         document.body.appendChild(overlay);
 
@@ -479,6 +534,18 @@
             updateSelectionUi();
         });
         document.getElementById('printExportDownload').addEventListener('click', exportToPDF);
+        document.getElementById('printExportPrint').addEventListener('click', printNotes);
+        document.getElementById('printExportPreview').addEventListener('click', function () { exportToPDF('preview'); });
+        document.getElementById('printExportPreviewClose').addEventListener('click', function () {
+            document.getElementById('printExportPreviewPanel').hidden = true;
+            setPreviewBackgroundInert(false);
+            document.getElementById('printExportPreview').focus({ preventScroll: true });
+        });
+    }
+
+    function setPreviewBackgroundInert(inert) {
+        document.querySelectorAll('#printExportDialog .print-export-dialog-header, #printExportDialog .print-export-dialog-body, #printExportDialog .print-export-dialog-footer')
+            .forEach(function (node) { node.inert = inert; });
     }
 
     function openDialog() {
@@ -493,6 +560,8 @@
         const overlay = document.getElementById('printExportDialog');
         if (!overlay) return;
         lastFocusedElement = document.activeElement;
+        document.getElementById('printExportPreviewPanel').hidden = true;
+        setPreviewBackgroundInert(false);
         overlay.hidden = false;
         document.body.classList.add(DIALOG_CLASS);
         window.requestAnimationFrame(function () {
@@ -546,7 +615,8 @@
                 return;
             }
             if (event.key === 'Tab' && overlay && !overlay.hidden) {
-                const focusable = Array.from(overlay.querySelectorAll('button:not(:disabled), input:not(:disabled)'));
+                const focusable = Array.from(overlay.querySelectorAll('button:not(:disabled), input:not(:disabled)'))
+                    .filter(function (node) { return node.getClientRects().length && !node.closest('[inert]'); });
                 if (!focusable.length) return;
                 const first = focusable[0];
                 const last = focusable[focusable.length - 1];
@@ -565,7 +635,8 @@
         open: openDialog,
         prepare: preparePrintDocument,
         restore: restoreDocument,
-        print: exportToPDF
+        print: printNotes,
+        download: exportToPDF
     });
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });

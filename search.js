@@ -3,7 +3,7 @@
 (function () {
     'use strict';
 
-    const FALLBACK_INDEX_VERSION = '2026-09-20-2';
+    const FALLBACK_INDEX_VERSION = '2026-10-02';
     const CACHE_KEY = 'almanion_search_prebuilt_v3';
     const PAGES = [
         { path: 'physics.html', label: 'Физика' },
@@ -161,14 +161,14 @@
         if (state.indexPromise) return state.indexPromise;
 
         const cached = readCache();
-        if (cached?.length) {
-            state.index = cached;
-            return Promise.resolve(state.index);
-        }
-
         state.indexPromise = loadBuiltIndex()
             .catch(() => Promise.allSettled(PAGES.map(loadPage)).then(results => {
+                const current = { path: pagePath(location.pathname), label: document.querySelector('.page-header h1')?.textContent || document.title };
                 const entries = results.flatMap(result => result.status === 'fulfilled' ? result.value : []);
+                if (current.path !== 'english.html' && !PAGES.some(page => page.path === current.path)) entries.push(...entriesFromDocument(document, current));
+                // A stale cache is an offline fallback, not a reason to skip
+                // fetching the newly published index for the entire session.
+                if (!entries.length && cached?.length) return cached.map(normalizeIndexEntry);
                 if (entries.length) writeCache(entries, FALLBACK_INDEX_VERSION);
                 return entries;
             }))
@@ -421,6 +421,7 @@
         state.initialized = true;
         createPanel();
         state.input.setAttribute('autocomplete', 'off');
+        state.input.setAttribute('role', 'combobox');
         state.input.setAttribute('aria-autocomplete', 'list');
         state.input.setAttribute('aria-controls', 'searchResultsPanel');
         state.input.setAttribute('aria-expanded', 'false');
@@ -454,6 +455,8 @@
             close();
         });
         restoreTarget();
+        // The first input event may precede this intent-loaded script.
+        if (state.input.value.trim().length >= 2) run(state.input.value);
     }
 
     window.AlmanionSearch = { init };

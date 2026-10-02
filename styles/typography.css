@@ -136,6 +136,8 @@ body.experimental .page-header h1 {
 }
 
 body .page-header :is(.subtitle, p) {
+    opacity: 1;
+    color: var(--text-secondary);
     font-size: var(--type-small);
     font-weight: 450;
     line-height: 1.55;
@@ -143,6 +145,7 @@ body .page-header :is(.subtitle, p) {
 }
 
 body.experimental .page-header :is(.subtitle, p) {
+    color: var(--exp-text-secondary, var(--text-secondary));
     font-size: var(--type-small);
     font-weight: 450;
     line-height: 1.55;

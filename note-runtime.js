@@ -1,22 +1,25 @@
 /*
  * Progressive feature loader for ordinary note pages.
  * Reading/navigation paints first; account, cloud sync, study tools and editor
- * arrive during the first idle window or immediately when the user asks for one.
+ * load on intent. Authentication restores in the background so progress stays
+ * scoped to the right account even before opening the study tools.
  */
 (function () {
     'use strict';
 
     const loaded = new Map();
     const versions = {
-        featureStyles: 'styles/site/features.css?v=20260929-3',
+        featureStyles: 'styles/site/features.css?v=20261002-1',
         bookmarksStyles: 'styles/bookmarks.css?v=20260920-2',
         editorStyles: 'styles/note-editor.css?v=20260929-2',
-        printStyles: 'styles/print.css?v=20260929-1',
-        settings: 'settings.js?v=20260929-3',
-        search: 'search.js?v=20260920-2',
-        print: 'print-export.js?v=20260929-3',
-        knowledge: 'knowledge-check.js?v=20260920-3',
-        newyear: 'newyear.js?v=20260911-1',
+        printStyles: 'styles/print.css?v=20261002-1',
+        filterStyles: 'styles/note-filter.css?v=20260929-3',
+        filter: 'note-filter.js?v=20260929-1',
+        settings: 'settings.js?v=20261002-1',
+        search: 'search.js?v=20261002-1',
+        print: 'print-export.js?v=20261002-1',
+        knowledge: 'knowledge-check.js?v=20261002-1',
+        newyear: 'newyear.js?v=20261002-1',
         firebaseApp: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js',
         firebaseDatabase: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js',
         firebaseAuth: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js',
@@ -114,9 +117,7 @@
     function loadAccount() {
         return Promise.all([loadSettings(), loadFirebase()])
             .then(function () { return loadScript('dataSync'); })
-            .then(function () { return Promise.all([loadScript('analytics'), loadScript('account')]); })
-            .then(function () { return loadStyle('editorStyles'); })
-            .then(function () { return Promise.all([loadBookmarks(), loadScript('editor')]); });
+            .then(function () { return loadScript('account'); });
     }
 
     const features = {
@@ -145,9 +146,61 @@
     }
 
     function start() {
+        // Filtering is part of the reading surface, not the export dialog.
+        // Its persisted selection must also be restored after a plain reload.
+        loadStyle('filterStyles').then(function () { return loadScript('filter'); }).catch(function () {});
         onIntent('#searchInput, .search-box', 'pointerdown', 'search');
         onIntent('#searchInput', 'focusin', 'search');
         window.addEventListener('almanion-load-newyear', function () { ensure('newyear').catch(function () {}); });
+        const icons = {
+            knowledge: '<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/>',
+            print: '<path d="M7 3h7l3 3v5M14 3v4h3M6 14h12a2 2 0 0 1 2 2v3H4v-3a2 2 0 0 1 2-2ZM7 19v2h10v-2"/>'
+        };
+        function launcher(id, feature, label, container) {
+            if (!container || document.getElementById(id)) return;
+            const button = document.createElement('button');
+            button.id = id;
+            button.type = 'button';
+            button.className = feature === 'print' ? 'print-export-button' : 'knowledge-check-btn';
+            button.setAttribute('aria-haspopup', 'dialog');
+            button.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' + icons[feature] + '</svg><span' + (feature === 'print' ? ' class="print-export-label"' : '') + '>' + label + '</span>';
+            button.addEventListener('click', async function activate(event) {
+                // The real module attaches to this same button after loading.
+                // Suppress just the first click, then replay it exactly once.
+                event.stopImmediatePropagation();
+                button.disabled = true;
+                try {
+                    await ensure(feature);
+                    button.removeEventListener('click', activate);
+                    button.disabled = false;
+                    button.click();
+                } catch (_) {
+                    button.disabled = false;
+                    button.title = 'Не удалось загрузить. Нажмите, чтобы повторить.';
+                }
+            });
+            container.appendChild(button);
+        }
+        launcher('knowledgeCheckBtn', 'knowledge', 'Проверка знаний', document.querySelector('.sidebar-actions'));
+        loadStyle('printStyles').catch(function () {});
+        const nav = document.querySelector('.sidebar .nav-menu');
+        if (nav) {
+            const slot = document.createElement('div');
+            slot.className = 'print-export-menu-slot';
+            nav.before(slot);
+            launcher('printExportButton', 'print', 'Скачать PDF', slot);
+        }
+        function loadEditor() { return loadStyle('editorStyles').then(function () { return loadScript('editor'); }); }
+        if (['localhost', '127.0.0.1', '[::1]'].includes(location.hostname) && new URLSearchParams(location.search).get('editor-demo') === '1') {
+            loadEditor().catch(function () {});
+        }
+        window.addEventListener('almanion-account-ready', async function (event) {
+            const user = event.detail && event.detail.user;
+            if (!user || !window.AlmanionAccount) return;
+            try {
+                if (await window.AlmanionAccount.hasContentEditorAccess(user)) await loadEditor();
+            } catch (error) { console.warn('Almanion editor:', error); }
+        });
 
         const schedule = window.requestIdleCallback
             ? function (callback, timeout) { requestIdleCallback(callback, { timeout: timeout }); }
@@ -156,13 +209,11 @@
         schedule(function () {
             Promise.allSettled([
                 ensure('settings'),
-                ensure('search'),
-                ensure('print'),
-                ensure('knowledge'),
                 ensure('bookmarks'),
                 ensure('account')
             ]);
         }, 800);
+        schedule(function () { loadScript('analytics').catch(function () {}); }, 2400);
 
         try {
             const enabled = localStorage.getItem('newYearMode') === 'true';

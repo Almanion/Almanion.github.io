@@ -236,6 +236,7 @@ body.new-year-mode .ny-toggle {
 }
 
 .ny-settings-modal.hidden {
+    visibility: hidden;
     opacity: 0;
     pointer-events: none;
 }
@@ -1340,6 +1341,7 @@ body.dark-theme .telegram-welcome-message {
 }
 
 .settings-modal.hidden {
+    visibility: hidden;
     opacity: 0;
     pointer-events: none;
 }

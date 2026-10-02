@@ -7,6 +7,7 @@ test.beforeEach(async ({ page }) => {
         else route.abort();
     });
     await page.goto('/physics-10.html');
+    await page.evaluate(() => window.AlmanionNoteRuntime.ensure('print'));
     await page.waitForFunction(() => window.AlmanionNoteFilter && window.AlmanionPrintExport);
 });
 

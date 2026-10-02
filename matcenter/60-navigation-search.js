@@ -289,6 +289,12 @@ function showEmptyGradeMessage(container) {
 }
 
 function updateStatistics(tasks) {
+    if (typeof matcenterTasksState !== 'undefined' && matcenterTasksState !== 'ready' && !allTasks.length) {
+        ['totalTasks', 'unsolvedTasks', 'currentSeries', 'postponedTasks'].forEach(id => {
+            document.getElementById(id).textContent = '—';
+        });
+        return;
+    }
     if (typeof getSelectedMatcenterSeries === 'function') {
         const series = getSelectedMatcenterSeries();
         if (series) tasks = series.tasks;

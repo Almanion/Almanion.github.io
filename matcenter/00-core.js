@@ -117,6 +117,7 @@ const GRADE_SECTIONS = [
 const TASK_VIEW_IDS = ['all-tasks', 'current-series', 'postponed', 'unsolved'];
 
 let allTasks = [];
+let matcenterTasksState = 'pending';
 let searchStatusFilter = 'all'; // all | current | postponed | unsolved
 let currentGrade = DEFAULT_GRADE;
 let currentFilter = 'all-tasks';

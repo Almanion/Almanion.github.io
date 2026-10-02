@@ -18,6 +18,7 @@ const MIME_TYPES = Object.freeze({
     '.png': 'image/png',
     '.svg': 'image/svg+xml; charset=utf-8',
     '.txt': 'text/plain; charset=utf-8',
+    '.ttf': 'font/ttf',
     '.webp': 'image/webp'
 });
 

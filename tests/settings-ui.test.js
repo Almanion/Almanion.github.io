@@ -40,7 +40,7 @@ assert.match(layout, /\.remark-box::before\s*\{[\s\S]*content:\s*['"]Замеч�
 const svgProblems = [];
 function inspectInlineSvg(directory) {
     fs.readdirSync(directory, { withFileTypes: true }).forEach(entry => {
-        if (['.git', '_site', 'artifacts', 'node_modules', 'tests'].includes(entry.name)) return;
+        if (['.git', '_site', 'artifacts', 'node_modules', 'tests', 'vendor'].includes(entry.name)) return;
         const file = path.join(directory, entry.name);
         if (entry.isDirectory()) return inspectInlineSvg(file);
         if (!/\.(?:html|js)$/.test(entry.name)) return;

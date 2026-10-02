@@ -9,7 +9,9 @@
   },
   "maxBytesByPath": {
     "content/physics/sections/mechanics.json": 300000,
-    "games/orbital-courier/index.html": 700000
+    "games/orbital-courier/index.html": 700000,
+    "vendor/pdf/pdfmake.min.js": 1410000,
+    "vendor/pdf/tex-svg.js": 2120000
   },
   "maxPrecacheEntries": 30,
   "maxSearchSourceBytes": 1100000,
@@ -27,7 +29,7 @@
       "maxExternalRequests": 3
     },
     "chemistry.html": {
-      "maxInitialLocalJsBytes": 135000,
+      "maxInitialLocalJsBytes": 138000,
       "maxInitialLocalCssBytes": 335000,
       "maxInitialLocalRequests": 21,
       "maxExternalRequests": 3

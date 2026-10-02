@@ -111,6 +111,7 @@ body.print-export-dialog-open { overflow: hidden !important; }
 .print-export-overlay.is-open { opacity: 1; }
 
 .print-export-dialog {
+    position: relative;
     width: min(740px, 100%);
     max-height: min(820px, calc(100dvh - 2rem));
     display: grid;
@@ -397,7 +398,8 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
     .print-export-options { grid-template-columns: minmax(0, 1fr); }
     .print-export-dialog-footer { align-items: stretch; flex-direction: column; padding-right: 1rem; padding-left: 1rem; }
     .print-export-dialog-footer > p { max-width: none; }
-    .print-export-dialog-footer > div { display: grid; grid-template-columns: 0.8fr 1.2fr; }
+    .print-export-dialog-footer > div { display: grid; grid-template-columns: 1fr 1fr; }
+    .print-export-dialog-footer #printExportDownload { grid-column: 1 / -1; }
     .print-export-cancel, .print-export-download { width: 100%; }
 }
 
@@ -871,3 +873,8 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
     html body.print-export-active.print-export-active .main-content [data-note-filter-shell]::before,
     html body.print-export-active.print-export-active .main-content [data-note-filter-shell]::after { display: none !important; }
 }
+/* The preview displays the exact downloadable file, not the reading page. */
+.print-export-preview:not([hidden]) { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; gap: .6rem; padding: 1rem; background: var(--bg-primary); border-radius: inherit; }
+.print-export-preview[hidden] { display: none; }
+.print-export-preview iframe { width: 100%; flex: 1; min-height: 0; border: 1px solid var(--border-color); border-radius: 8px; background: #fff; }
+.print-export-preview > button { align-self: flex-end; }

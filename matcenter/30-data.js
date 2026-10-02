@@ -175,6 +175,7 @@ function applyTasksFromCache() {
         if (!parsed || parsed.tasks.length === 0) return false;
 
         allTasks = normalizeAllTasks(parsed.tasks);
+        matcenterTasksState = 'ready';
         if (typeof invalidateMatcenterRenderCache === 'function') invalidateMatcenterRenderCache();
         lastTasksPayloadSignature = buildTasksPayloadSignature(parsed.tasks);
         updateStatistics(getTasksForCurrentGrade());
@@ -189,6 +190,7 @@ function applyTasksFromCache() {
 }
 
 async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false) {
+    if (!allTasks.length) matcenterTasksState = 'loading';
     const loadSequence = ++matcenterTasksLoadSequence;
     if (matcenterTasksLoadController) matcenterTasksLoadController.abort();
     const loadController = typeof AbortController === 'function' ? new AbortController() : null;
@@ -290,6 +292,7 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
         if (typeof preserveMatcenterReadingPlaceForRefresh === 'function') preserveMatcenterReadingPlaceForRefresh();
         
         allTasks = normalizeAllTasks(tasks);
+        matcenterTasksState = 'ready';
         if (typeof invalidateMatcenterRenderCache === 'function') invalidateMatcenterRenderCache();
         isAdmin = adminFlag;
         
@@ -328,6 +331,7 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
 
     } catch (error) {
         if (loadSequence !== matcenterTasksLoadSequence || (error && error.name === 'AbortError')) return;
+        if (!allTasks.length) matcenterTasksState = 'error';
         console.error('=================================');
         console.error('❌ ОШИБКА ЗАГРУЗКИ:');
         console.error('Тип:', error.name);
@@ -351,6 +355,7 @@ async function loadTasksFromGoogleSheets(fromAuthAttempt = false, silent = false
             const cached = readTasksCache();
             if (cached && cached.tasks.length > 0) {
                 allTasks = normalizeAllTasks(cached.tasks);
+                matcenterTasksState = 'ready';
                 if (typeof invalidateMatcenterRenderCache === 'function') invalidateMatcenterRenderCache();
                 updateStatistics(getTasksForCurrentGrade());
                 refreshCurrentView();

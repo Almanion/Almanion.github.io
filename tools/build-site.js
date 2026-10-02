@@ -161,6 +161,16 @@ function writeMetadata(root, output, notes, search, serviceWorker) {
     return metadata;
 }
 
+function updateSubjectStatus(home, subject, active) {
+    const page = subject.page.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // The badge can contain an icon span. Match the entire badge, not just
+    // its first closing span, or the icon leaves orphan text in the card.
+    const badge = '<span class="status-badge[^>]*>(?:<span\\b[^>]*>[\\s\\S]*?<\\/span>\\s*)?[^<]*<\\/span>';
+    const pattern = new RegExp('(<a\\b[^>]*href="' + page + '"[^>]*class="subject-card"[\\s\\S]*?)(' + badge + ')([\\s\\S]*?<\\/a>)');
+    const status = active ? '<span class="status-badge status-active">Активно</span>' : '<span class="status-badge">Готовится</span>';
+    return home.replace(pattern, '$1' + status + '$3');
+}
+
 function build(options) {
     const root = path.resolve(options.root);
     const output = path.resolve(options.output);
@@ -168,6 +178,15 @@ function build(options) {
     resetOutput(root, output);
     const copied = copyPublicFiles(root, output, config);
     const notes = NotesBuilder.build({ root, output });
+    // Status follows published materials, including sections added later by the
+    // editor. Do not advertise an empty subject as active.
+    const homePath = path.join(output, 'index.html');
+    let home = fs.readFileSync(homePath, 'utf8');
+    JSON.parse(fs.readFileSync(path.join(root, 'content', 'subjects.json'), 'utf8')).forEach(subject => {
+        const manifest = JSON.parse(fs.readFileSync(path.join(root, 'content', subject.id, 'manifest.json'), 'utf8'));
+        home = updateSubjectStatus(home, subject, manifest.sections.length > 0);
+    });
+    fs.writeFileSync(homePath, home);
     const search = SearchIndex.build({
         root,
         site: output,
@@ -201,5 +220,6 @@ module.exports = {
     assertSafeOutput,
     walkFiles,
     hashArtifact,
-    build
+    build,
+    updateSubjectStatus
 };

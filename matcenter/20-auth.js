@@ -408,6 +408,7 @@ function logout() {
     
     // Очищаем данные
     allTasks = [];
+    matcenterTasksState = 'pending';
     if (typeof invalidateMatcenterRenderCache === 'function') invalidateMatcenterRenderCache();
     document.getElementById('tasksContainer').innerHTML = '';
     document.getElementById('currentSeriesContainer').innerHTML = '';

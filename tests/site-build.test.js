@@ -11,6 +11,10 @@ const ServiceWorker = require('../performance/build-service-worker.js');
 const config = BuildSite.readConfig();
 
 assert.deepStrictEqual(['b', 'A', 'a'].sort(BuildSite.compareNames), ['A', 'a', 'b']);
+const activeCard = '<a href="physics-10.html" class="subject-card"><span class="status-badge status-active"><span class="badge-icon">+</span>Активно</span><h3>Физика</h3></a>';
+assert.strictEqual(BuildSite.updateSubjectStatus(activeCard, { page: 'physics-10.html' }, false), '<a href="physics-10.html" class="subject-card"><span class="status-badge">Готовится</span><h3>Физика</h3></a>');
+assert.strictEqual(BuildSite.updateSubjectStatus(activeCard, { page: 'physics.html' }, false), activeCard);
+assert.strictEqual(BuildSite.updateSubjectStatus(BuildSite.updateSubjectStatus(activeCard, { page: 'physics-10.html' }, false), { page: 'physics-10.html' }, true), '<a href="physics-10.html" class="subject-card"><span class="status-badge status-active">Активно</span><h3>Физика</h3></a>');
 
 assert.strictEqual(BuildSite.isPublishable('index.html', config), true);
 assert.strictEqual(BuildSite.isPublishable('style-new.css', config), true);

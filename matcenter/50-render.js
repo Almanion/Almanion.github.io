@@ -205,6 +205,12 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
     }
     
     if (tasks.length === 0) {
+        // An empty collection is not an empty grade until its request succeeds.
+        // Never claim there are no tasks behind the access/loading screen.
+        if (typeof matcenterTasksState !== 'undefined' && matcenterTasksState !== 'ready') {
+            container.replaceChildren();
+            return;
+        }
         if (getTasksForCurrentGrade().length === 0) {
             showEmptyGradeMessage(container);
         } else {

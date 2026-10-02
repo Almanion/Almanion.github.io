@@ -497,9 +497,11 @@
         document.querySelectorAll('article.topic[id]').forEach(a => {
             if (a.dataset && a.dataset.kcIgnore === 'true') return;
             const t = a.querySelector('.topic-title');
-            if (!t || !a.querySelector(CARD_SELECTOR)) return;
+            if (!t) return;
             const counts = {};
-            CARD_TYPES.forEach(type => { counts[type.kind] = a.querySelectorAll(type.selector).length; });
+            CARD_TYPES.forEach(type => { counts[type.kind] = 0; });
+            extractTopicCards(a.id).forEach(card => { counts[card.kind]++; });
+            if (!Object.values(counts).some(Boolean)) return;
             out.push({ id: a.id, name: t.textContent.trim(), counts: counts });
         });
         return out;
@@ -689,6 +691,33 @@
         return normalized;
     }
 
+    function displayedFormulas(topic) {
+        const formulas = [], seen = new Set();
+        function add(node, tex) {
+            if (node.closest?.('.formula-box, .kc-modal')) return;
+            tex = String(tex || '').trim();
+            if (!tex) return;
+            const owner = node.closest?.(CARD_SELECTOR) || node.parentElement || topic;
+            const key = sourceIdFor(owner) + '|' + tex.replace(/\s+/g, ' ');
+            if (seen.has(key)) return;
+            seen.add(key);
+            formulas.push({ node: node, owner: owner, tex: tex, key: key });
+        }
+        topic.querySelectorAll('.katex-display').forEach(node => add(node, node.querySelector('annotation[encoding="application/x-tex"]')?.textContent));
+        if (document.createTreeWalker) {
+            const walker = document.createTreeWalker(topic, 4);
+            let text;
+            while ((text = walker.nextNode())) {
+                const parent = text.parentElement;
+                if (!parent || parent.closest('script, style, .katex, .katex-display, .formula-box, button')) continue;
+                const expression = /\\\[([\s\S]*?)\\\]|\$\$([\s\S]*?)\$\$/g;
+                let match;
+                while ((match = expression.exec(text.textContent))) add(parent, match[1] || match[2]);
+            }
+        }
+        return formulas;
+    }
+
     function extractTopicCards(tid) {
         if (cardCache.has(tid)) return cardCache.get(tid);
         const cards = [];
@@ -719,6 +748,20 @@
                     contentHash: hashString(normalizeTitle(box.textContent) + '|' + backHTML),
                     legacyIds: legacyCardIds(tid, type, box, i, typeBoxes.length, displayTerm, tname)
                 });
+            });
+        });
+
+        const formulaType = CARD_TYPES.find(type => type.kind === 'formula');
+        displayedFormulas(topic).forEach((formula, index) => {
+            const title = contextualTitle(formula.owner, formulaType, tname, index);
+            const sourceId = 'math:' + hashString(formula.key);
+            const backHTML = '<div class="formula-box">\\[' + escapeHtml(formula.tex) + '\\]</div>';
+            cards.push({
+                id: stableCardId({ topicId: tid, kind: 'formula', sourceId: sourceId }),
+                sourceId: sourceId, topicId: tid, topicName: tname, kind: 'formula', kindLabel: formulaType.label,
+                sourceOrdinal: index, term: title.text, termHTML: title.html || escapeHtml(title.text),
+                questionLead: formulaType.prompt, backHTML: backHTML,
+                contentHash: hashString(formula.tex), legacyIds: []
             });
         });
 
@@ -1356,6 +1399,7 @@
         list.innerHTML = '';
         CARD_TYPES.forEach(type => {
             const count = counts[type.kind] || 0;
+            if (!count) return;
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'kc-type-chip' + (selectedKinds.includes(type.kind) ? ' is-selected' : '') + (!count ? ' is-unavailable' : '');

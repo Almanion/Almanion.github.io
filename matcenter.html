@@ -38,9 +38,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Almanion">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://*.googleapis.com https://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebaseio.com wss://*.firebasedatabase.app https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://accounts.google.com; img-src 'self' data: https://www.gstatic.com https://lh3.googleusercontent.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com; font-src 'self' https://cdn.jsdelivr.net;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://*.googleapis.com https://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebaseio.com wss://*.firebasedatabase.app https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://accounts.google.com; img-src 'self' data: https://www.gstatic.com https://lh3.googleusercontent.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com;">
     <title>Матцентр | Almanion</title>
-    <link rel="stylesheet" href="styles/site/index.css?v=20260929-3">
+    <link rel="stylesheet" href="styles/site/index.css?v=20261002-1">
     <link rel="stylesheet" href="styles/site/matcenter.css?v=20260911-2">
     <link rel="stylesheet" href="styles/tokens.css?v=20260929-2">
     <link rel="stylesheet" href="styles/buttons.css?v=20260929-2">
@@ -53,7 +53,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="styles/typography.css?v=20260904-3">
+    <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
     <link rel="stylesheet" href="styles/matcenter-refresh.css?v=20260926-4">
 </head>
 <body class="matcenter-page">
@@ -187,10 +187,10 @@
         <!-- Статистика -->
         <section class="content-section matcenter-stats-section">
             <nav class="mc-filters" id="statsContainer" aria-label="Категория задач">
-                <button type="button" class="stat-card clickable" data-filter="all-tasks" aria-pressed="true">Все задачи <span id="totalTasks">0</span></button>
-                <button type="button" class="stat-card clickable" data-filter="current-series" aria-pressed="false">Текущая серия <span id="currentSeries">0</span></button>
-                <button type="button" class="stat-card clickable" data-filter="postponed" aria-pressed="false">Отложенные <span id="postponedTasks">0</span></button>
-                <button type="button" class="stat-card clickable" data-filter="unsolved" aria-pressed="false">Неразобранные <span id="unsolvedTasks">0</span></button>
+                <button type="button" class="stat-card clickable" data-filter="all-tasks" aria-pressed="true">Все задачи <span id="totalTasks">—</span></button>
+                <button type="button" class="stat-card clickable" data-filter="current-series" aria-pressed="false">Текущая серия <span id="currentSeries">—</span></button>
+                <button type="button" class="stat-card clickable" data-filter="postponed" aria-pressed="false">Отложенные <span id="postponedTasks">—</span></button>
+                <button type="button" class="stat-card clickable" data-filter="unsolved" aria-pressed="false">Неразобранные <span id="unsolvedTasks">—</span></button>
             </nav>
 
             <!-- Личный прогресс решённых задач (виден только вошедшим пользователям) -->
@@ -283,15 +283,15 @@
     <script defer src="kc-storage.js?v=20260911-1"></script>
 
     <script defer src="script.js?v=20260905-2"></script>
-    <script defer src="matcenter/00-core.js?v=20260926-4"></script>
+    <script defer src="matcenter/00-core.js?v=20261002-1"></script>
     <script defer src="matcenter/10-security.js?v=20260902-2"></script>
-    <script defer src="matcenter/20-auth.js?v=20260912-1"></script>
+    <script defer src="matcenter/20-auth.js?v=20261002-1"></script>
     <script defer src="matcenter/25-cache.js?v=20260911-1"></script>
     <script defer src="matcenter/35-workspace-model.js?v=20260926-1"></script>
-    <script defer src="matcenter/30-data.js?v=20260926-4"></script>
+    <script defer src="matcenter/30-data.js?v=20261002-1"></script>
     <script defer src="matcenter/40-personal-progress.js?v=20260926-1"></script>
-    <script defer src="matcenter/50-render.js?v=20260926-1"></script>
-    <script defer src="matcenter/60-navigation-search.js?v=20260926-4"></script>
+    <script defer src="matcenter/50-render.js?v=20261002-1"></script>
+    <script defer src="matcenter/60-navigation-search.js?v=20261002-1"></script>
     <script defer src="matcenter/65-workspace.js?v=20260926-1"></script>
     <script defer src="matcenter/runtime.js?v=20260911-2"></script>
     <script defer src="account.js?v=20260908-1"></script>

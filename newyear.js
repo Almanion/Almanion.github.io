@@ -637,6 +637,7 @@ function initSettingsModal() {
     
     const modal = document.createElement('div');
     modal.id = 'nySettingsModal';
+    modal.inert = true;
     modal.className = 'ny-settings-modal hidden';
     modal.setAttribute('role', 'dialog');
     modal.setAttribute('aria-modal', 'true');
@@ -762,6 +763,15 @@ function initSettingsModal() {
     
     // Закрытие по нажатию Escape (только если это окно открыто)
     document.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab' && !modal.inert) {
+            const controls = Array.from(modal.querySelectorAll('button, input, select, [tabindex]:not([tabindex="-1"])'))
+                .filter(node => !node.disabled && node.getClientRects().length);
+            const first = controls[0], last = controls[controls.length - 1];
+            if (controls.length && (e.shiftKey ? document.activeElement === first : document.activeElement === last)) {
+                e.preventDefault();
+                (e.shiftKey ? last : first).focus();
+            }
+        }
         if (e.key === 'Escape') {
             const nyModal = document.getElementById('nySettingsModal');
             const settingsModalElement = document.getElementById('settingsModal');
@@ -805,17 +815,24 @@ function nyOpenSnowSettings() {
         }
         
         modal.classList.remove('hidden');
+        nySettingsReturnFocus = document.activeElement;
+        modal.inert = false;
         modal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
+        document.getElementById('nySettingsClose').focus();
     }
 }
 
+let nySettingsReturnFocus = null;
 function nyCloseSnowSettings() {
     const modal = document.getElementById('nySettingsModal');
     if (modal) {
         modal.classList.add('hidden');
+        modal.inert = true;
         modal.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
+        if (nySettingsReturnFocus?.isConnected) nySettingsReturnFocus.focus();
+        nySettingsReturnFocus = null;
     }
 }
 

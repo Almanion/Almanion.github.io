@@ -463,6 +463,7 @@ function createSettingsModal() {
     const modal = document.createElement('div');
     modal.id = 'settingsModal';
     modal.className = 'settings-modal hidden';
+    modal.inert = true;
     modal.setAttribute('aria-hidden', 'true');
     // Inline SVG-иконки (Feather-style, наследуют currentColor)
     const ICONS = {
@@ -700,6 +701,16 @@ function bindSettingsHandlers() {
     
     // Закрытие по Escape (только если это окно открыто)
     document.addEventListener('keydown', (e) => {
+        const activeModal = document.getElementById('settingsModal');
+        if (e.key === 'Tab' && activeModal && !activeModal.inert) {
+            const controls = Array.from(activeModal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+                .filter(node => !node.disabled && node.getClientRects().length);
+            const first = controls[0], last = controls[controls.length - 1];
+            if (controls.length && (e.shiftKey ? document.activeElement === first : document.activeElement === last)) {
+                e.preventDefault();
+                (e.shiftKey ? last : first).focus();
+            }
+        }
         if (e.key === 'Escape') {
             const settingsModalElement = document.getElementById('settingsModal');
             const nySettingsModalElement = document.getElementById('nySettingsModal');
@@ -936,6 +947,7 @@ function openSettingsModal() {
     if (!modal) return;
 
     modal.classList.remove('hidden');
+    modal.inert = false;
     modal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('modal-open');
     // A11y
@@ -965,6 +977,7 @@ function closeSettingsModal() {
     const modal = document.getElementById('settingsModal');
     if (!modal) return;
     modal.classList.add('hidden');
+    modal.inert = true;
     modal.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('modal-open');
     // Возвращаем фокус на исходный элемент (кнопка настроек)

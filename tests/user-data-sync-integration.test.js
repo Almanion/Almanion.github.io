@@ -42,7 +42,7 @@ assert.match(runtime, /account:\s*'account\.js\?v=20260911-1'/);
 assert.match(runtime, /bookmarks:\s*'bookmarks\.js\?v=20260920-3'/);
 assert.match(runtime, /bookmarksStyles:\s*'styles\/bookmarks\.css\?v=20260920-2'/);
 const matcenterRuntime = read(path.join('matcenter', 'runtime.js'));
-assert.match(matcenterRuntime, /settings:\s*'settings\.js\?v=20260920-3'/);
+assert.match(matcenterRuntime, /settings:\s*'settings\.js\?v=20261002-1'/);
 assert.match(matcenterRuntime, /analytics:\s*'firebase-analytics\.js\?v=20260911-1'/);
 assert.match(matcenterRuntime, /hints:\s*'matcenter\/70-hints\.js\?v=20260911-2'/);
 

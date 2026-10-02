@@ -57,6 +57,29 @@ async function ready(page) {
     await expect(page.locator('#tasksContainer .task-card').first()).toBeVisible();
 }
 
+test('loading is not mistaken for an empty archive or zero progress', async ({ page }) => {
+    await setup(page);
+    let release;
+    const gate = new Promise(resolve => { release = resolve; });
+    let pending = 0;
+    await page.route('https://script.google.com/**', async route => {
+        if (route.request().postDataJSON().action) return route.fallback();
+        pending++;
+        await gate;
+        return route.fallback();
+    });
+    await page.goto('/matcenter.html?grade=grade-10');
+    await expect.poll(() => pending).toBeGreaterThan(0);
+    await expect(page.locator('#totalTasks')).toHaveText('—');
+    await expect(page.locator('#matcenterProgress')).toBeHidden();
+    await expect(page.locator('.no-results-message')).toHaveCount(0);
+    const csp = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content');
+    expect(csp.match(/font-src[^;]+/)[0]).toContain('https://fonts.gstatic.com');
+    release();
+    await ready(page);
+    await expect(page.locator('#solvedTotal')).toHaveText('6');
+});
+
 test('transient table failures retry only failed source, preserve cache and clear warning on recovery', async ({ page }) => {
     await setup(page);
     let mainCalls = 0;

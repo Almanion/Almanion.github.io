@@ -147,6 +147,14 @@ function build(options) {
     const site = path.resolve(options.site || root);
     const output = path.resolve(options.output || path.join(site, 'search-index.json'));
     const pages = JSON.parse(fs.readFileSync(path.join(root, 'performance', 'search-pages.json'), 'utf8'));
+    // The publication catalogue is authoritative. Private pages are deliberately
+    // absent from it and must never leak into the public search index.
+    const subjectsPath = path.join(root, 'content', 'subjects.json');
+    if (fs.existsSync(subjectsPath)) {
+        JSON.parse(fs.readFileSync(subjectsPath, 'utf8')).forEach(subject => {
+            if (!pages.some(page => page.path === subject.page)) pages.push({ path: subject.page, label: subject.title });
+        });
+    }
     const entries = pages.flatMap(page => {
         const file = path.join(site, page.path);
         if (!fs.existsSync(file)) throw new Error('Search source is missing: ' + page.path);

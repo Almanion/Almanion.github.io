@@ -54,6 +54,7 @@
     "planner.html",
     "planner.js",
     "print-export.js",
+    "pdf-download.js",
     "russian-ege.html",
     "russian-ege.js",
     "script.js",
@@ -79,7 +80,7 @@
     "images": [".svg", ".png", ".jpg", ".jpeg", ".webp", ".avif", ".gif"],
     "matcenter": [".js", ".json"],
     "styles": [".css"],
-    "vendor": [".js", ".txt"]
+    "vendor": [".js", ".txt", ".ttf"]
   },
   "deniedPaths": [
     ".github",

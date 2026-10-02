@@ -30,6 +30,8 @@ try {
     assert.match(document.version, /^[a-f0-9]{16}$/);
     assert.ok(document.entries.length > 50, 'production notes must produce a useful index');
     assert.ok(document.entries.every(entry => entry.page && entry.subject && entry.id && entry.title && entry.text));
+    assert.ok(document.entries.some(entry => entry.page === 'physics-10.html' && /Термодинамический/.test(entry.title)));
+    assert.ok(document.entries.every(entry => entry.page !== 'english.html'), 'private vocabulary must never be indexed');
 } finally {
     fs.rmSync(temporary, { recursive: true, force: true });
 }
