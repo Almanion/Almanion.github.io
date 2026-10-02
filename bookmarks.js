@@ -51,6 +51,7 @@
     let authSubscribed = false;
     let bookmarkRef = null;
     let bookmarkStore = null;
+    let bookmarkStoreGeneration = 0;
     let bookmarkOwnerUid = null;
     let bookmarkCacheKey = LOCAL_BOOKMARKS_KEY + '_guest';
     let bookmarks = {};
@@ -148,11 +149,15 @@
     function openBookmarkStore(owner, key, migrateGuest) {
         const api = syncApi();
         if (!api) return null;
+        const generation = ++bookmarkStoreGeneration;
         const options = {
             namespace: 'bookmarks',
             owner: owner || 'guest',
             storageKey: key,
-            onChange: handleBookmarkStoreChange
+            onChange: function (next, detail) {
+                // A disconnected account can still finish an earlier request.
+                if (generation === bookmarkStoreGeneration) handleBookmarkStoreChange(next, detail);
+            }
         };
         if (migrateGuest) {
             options.guestStorageKey = LOCAL_BOOKMARKS_KEY + '_guest';
@@ -194,7 +199,8 @@
         const nextUid = user && user.uid ? user.uid : null;
         if (nextUid === bookmarkOwnerUid && bookmarkStore) return;
 
-        if (bookmarkStore) bookmarkStore.disconnect();
+        bookmarkStoreGeneration++;
+        if (bookmarkStore) bookmarkStore.destroy();
         else safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
         if (bookmarkRef) {
             try { bookmarkRef.off(); } catch (_) {}
@@ -236,6 +242,7 @@
             }).then(function () {
                 if (bookmarkRef !== ref) return;
                 ref.on('value', function (snapshot) {
+                    if (bookmarkRef !== ref) return;
                     bookmarks = mergeBookmarkStores(bookmarks, snapshot.val() || {});
                     safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
                     handleBookmarkStoreChange(bookmarks);

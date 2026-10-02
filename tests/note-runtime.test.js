@@ -22,6 +22,10 @@ assert.match(runtime, /Promise\.allSettled/);
 assert.match(runtime, /onIntent\('#searchInput/);
 assert.match(runtime, /loadStyle\('filterStyles'\)\.then\(function \(\) \{ return loadScript\('filter'\); \}\)/, 'reading filters must load independently of PDF intent');
 assert.match(runtime, /firebaseApp:[\s\S]*firebaseDatabase:[\s\S]*firebaseAuth:/);
+assert.match(runtime, /ensure\('account'\)\.then\(function \(\) \{ return loadScript\('analytics'\); \}\)/, 'analytics must wait for the Firebase SDK and its config');
+assert.match(runtime, /script\.remove\(\)/, 'failed dynamic scripts must not masquerade as loaded on retry');
+const analytics = fs.readFileSync(path.join(root, 'firebase-analytics.js'), 'utf8');
+assert.match(analytics, /typeof firebaseConfig === 'undefined'/, 'analytics must safely skip a not-yet-loaded config');
 
 const readerCss = fs.readFileSync(path.join(root, 'styles', 'site', 'reader.css'), 'utf8');
 const componentsCss = fs.readFileSync(path.join(root, 'styles', 'site', '00-components.css'), 'utf8');

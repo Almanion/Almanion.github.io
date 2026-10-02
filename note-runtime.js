@@ -28,9 +28,9 @@
         firebaseAuth: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js',
         firebaseConfig: 'firebase-config.js?v=20260903-3',
         dataSync: 'data-sync.js?v=20260908-1',
-        analytics: 'firebase-analytics.js?v=20260911-1',
+        analytics: 'firebase-analytics.js?v=20261002-2',
         account: 'account.js?v=20260911-1',
-        bookmarks: 'bookmarks.js?v=20261002-1',
+        bookmarks: 'bookmarks.js?v=20261002-2',
         editor: 'note-editor.js?v=20261002-1'
     };
 
@@ -60,6 +60,7 @@
             }, { once: true });
             link.addEventListener('error', function () {
                 loaded.delete(key);
+                link.remove();
                 reject(new Error('Не удалось загрузить стили ' + key));
             }, { once: true });
             document.head.appendChild(link);
@@ -76,9 +77,13 @@
                 return script.src && script.src.split('?')[0] === new URL(source, location.href).href.split('?')[0];
             });
             if (existing) {
-                // The runtime is placed after all parser-loaded dependencies.
-                // An existing matching script has therefore already executed.
-                resolve(existing);
+                // Parser dependencies precede the runtime. A dynamically added
+                // script, however, may still be loading during another request.
+                if (!existing.dataset.runtimeFeature || existing.dataset.runtimeLoaded === 'true') resolve(existing);
+                else {
+                    existing.addEventListener('load', function () { resolve(existing); }, { once: true });
+                    existing.addEventListener('error', reject, { once: true });
+                }
                 return;
             }
             const script = document.createElement('script');
@@ -91,6 +96,7 @@
             }, { once: true });
             script.addEventListener('error', function () {
                 loaded.delete(key);
+                script.remove();
                 reject(new Error('Не удалось загрузить ' + key));
             }, { once: true });
             document.head.appendChild(script);
@@ -224,7 +230,9 @@
                 ensure('account')
             ]);
         }, 800);
-        schedule(function () { loadScript('analytics').catch(function () {}); }, 2400);
+        schedule(function () {
+            ensure('account').then(function () { return loadScript('analytics'); }).catch(function () {});
+        }, 2400);
 
         try {
             const enabled = localStorage.getItem('newYearMode') === 'true';

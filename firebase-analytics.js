@@ -10,7 +10,7 @@
     // visitors receive a Firebase Anonymous Auth UID in a secondary app, so
     // analytics authentication never changes the site's account session.
     if (typeof firebase === 'undefined') return;
-    if (!firebaseConfig || firebaseConfig.apiKey === "ВСТАВЬ_СВОЙ_API_KEY") {
+    if (typeof firebaseConfig === 'undefined' || !firebaseConfig || firebaseConfig.apiKey === "ВСТАВЬ_СВОЙ_API_KEY") {
         console.warn('⚠️ Firebase конфиг не настроен. Аналитика отключена.');
         return;
     }

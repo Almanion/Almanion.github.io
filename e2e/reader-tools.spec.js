@@ -30,9 +30,21 @@ test('personal notes survive bookmark removal, reload and cannot become public H
     await expect(page.locator('.personal-note-card')).toHaveCount(0);
 });
 
-test('personal notes are isolated on account switch', async ({ page }) => {
+test.describe('isolated account fixtures', () => {
+// Route interception must also cover SDK requests: a worker can otherwise
+// bypass page.route and restore a real anonymous session over the fixture.
+test.use({ serviceWorkers: 'block' });
+test('personal notes are isolated on account switch and ignore stale store callbacks', async ({ page }) => {
     await blockExternal(page); await notes(page);
     await page.evaluate(() => {
+        window.__noteStoreCallbacks = {};
+        for (const name of ['createCollection', 'migrateGuest']) {
+            const original = window.AlmanionDataSync[name];
+            window.AlmanionDataSync[name] = options => {
+                window.__noteStoreCallbacks[options.owner] = options.onChange;
+                return original(options);
+            };
+        }
         window.AlmanionAccount = { getUser: () => ({ uid: 'reader-one' }) };
         dispatchEvent(new CustomEvent('almanion-account-ready', { detail: { user: { uid: 'reader-one' } } }));
     });
@@ -40,8 +52,10 @@ test('personal notes are isolated on account switch', async ({ page }) => {
     await page.locator('#personalNoteText').fill('Only reader one');
     await page.locator('[data-note-save]').click();
     await page.evaluate(() => {
+        window.__previousReaderNotes = Object.fromEntries(window.AlmanionBookmarks.notes().map(note => [note.id, note]));
         window.AlmanionAccount = { getUser: () => ({ uid: 'reader-two' }) };
         dispatchEvent(new CustomEvent('almanion-account-ready', { detail: { user: { uid: 'reader-two' } } }));
+        window.__noteStoreCallbacks['reader-one'](window.__previousReaderNotes, { type: 'error', error: 'Delayed old-account request' });
     });
     await page.locator('#personalNotesButton').click();
     await expect(page.locator('.personal-note-card')).toHaveCount(0);
@@ -52,6 +66,7 @@ test('personal notes are isolated on account switch', async ({ page }) => {
     });
     await page.locator('#personalNotesButton').click();
     await expect(page.locator('.personal-note-card')).toContainText('Only reader one');
+});
 });
 
 test('study skips intermediates, respects editor choices and gives formula-specific titles', async ({ page }) => {
