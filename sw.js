@@ -12,6 +12,9 @@ const NETWORK_TIMEOUT_MS = 5000;
 const RUNTIME_MAX_ENTRIES = 80;
 const RUNTIME_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
 const APP_SHELL = GENERATED_MANIFEST.shell;
+const OFFLINE_INDEX = 'almanion-offline-index-v1';
+const OFFLINE_PREFIX = 'almanion-offline-pack-';
+let offlinePacks = null;
 
 const CACHEABLE_CROSS_ORIGINS = new Set([
     'https://cdn.jsdelivr.net',
@@ -26,7 +29,7 @@ self.addEventListener('activate', function (event) {
     event.waitUntil((async function () {
         const keep = new Set([APP_SHELL_CACHE, RUNTIME_CACHE]);
         const keys = await caches.keys();
-        await Promise.all(keys.map(function (key) { return keep.has(key) ? null : caches.delete(key); }));
+        await Promise.all(keys.map(function (key) { return keep.has(key) || key === OFFLINE_INDEX || key.startsWith(OFFLINE_PREFIX) ? null : caches.delete(key); }));
         await pruneRuntimeCache();
         await self.clients.claim();
     })());
@@ -34,12 +37,16 @@ self.addEventListener('activate', function (event) {
 
 self.addEventListener('message', function (event) {
     if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+    if (event.data?.type === 'OFFLINE_LIBRARY_PING') event.ports[0]?.postMessage({ offlineLibrary: 1 });
+    if (event.data?.type === 'OFFLINE_LIBRARY_CHANGED') offlinePacks = null;
 });
 
 self.addEventListener('fetch', function (event) {
     const request = event.request;
     if (request.method !== 'GET') return;
     const url = new URL(request.url);
+    // Verification/downloads must never be satisfied by an older cached copy.
+    if (url.searchParams.has('publication') || url.searchParams.has('offline-download')) return;
 
     if (url.origin !== self.location.origin) {
         if (CACHEABLE_CROSS_ORIGINS.has(url.origin)) event.respondWith(staleWhileRevalidate(request));
@@ -80,7 +87,7 @@ async function networkFirst(request, fallbackUrl) {
         if (await cacheableResponse(request, response)) await storeRuntimeResponse(request, response.clone());
         return response;
     } catch (_) {
-        const cached = await freshCachedResponse(request);
+        const cached = await pinnedResponse(request) || await freshCachedResponse(request);
         if (cached) return cached;
         if (fallbackUrl) {
             const fallback = await caches.match(fallbackUrl);
@@ -95,12 +102,35 @@ async function networkFirst(request, fallbackUrl) {
 }
 
 async function staleWhileRevalidate(request) {
-    const cached = await freshCachedResponse(request);
+    const cached = await freshCachedResponse(request) || await pinnedResponse(request);
     const fetched = fetch(request).then(async function (response) {
         if (await cacheableResponse(request, response)) await storeRuntimeResponse(request, response.clone());
         return response;
     }).catch(function () { return null; });
     return cached || await fetched || new Response('', { status: 504, statusText: 'Offline' });
+}
+
+async function pinnedResponse(request) {
+    if (!offlinePacks) {
+        const index = await caches.open(OFFLINE_INDEX);
+        offlinePacks = [];
+        for (const key of await index.keys()) {
+            if (!new URL(key.url).pathname.startsWith('/__offline/')) continue;
+            try {
+                const record = await (await index.match(key)).json();
+                if (record.cacheName?.startsWith(OFFLINE_PREFIX)) offlinePacks.push(record);
+            } catch (_) {}
+        }
+        offlinePacks.sort((a, b) => b.downloadedAt - a.downloadedAt);
+    }
+    const url = new URL(request.url); url.search = ''; url.hash = '';
+    for (const record of offlinePacks) {
+        if (!await caches.has(record.cacheName)) continue;
+        const cache = await caches.open(record.cacheName);
+        const response = await cache.match(url.href);
+        if (response) return response;
+    }
+    return null;
 }
 
 async function cacheableResponse(request, response) {

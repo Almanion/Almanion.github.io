@@ -1387,7 +1387,7 @@ function buildWordCopyPayload(sourceBlock) {
 
 function prepareCopyClone(root) {
     root.querySelectorAll('.derivation-content:not(.show), .proof-content:not(.show)').forEach(node => node.remove());
-    root.querySelectorAll('.copy-block-btn, .formula-copy-btn, .bookmark-btn, .toggle-derivation, .toggle-proof').forEach(node => node.remove());
+    root.querySelectorAll('.copy-block-btn, .formula-copy-btn, .bookmark-btn, .personal-note-btn, .toggle-derivation, .toggle-proof').forEach(node => node.remove());
 
     root.querySelectorAll('mark.search-hl, mark.search-hl-active').forEach(mark => {
         mark.replaceWith(document.createTextNode(mark.textContent));

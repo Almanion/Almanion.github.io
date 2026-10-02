@@ -365,6 +365,14 @@ function serverTimestamp() {
         await assertFails(tourEditorDb.ref('classTour/grade10_1/autumn2026').set(endWithoutStartTour));
         await assertFails(tourEditorDb.ref('classTour/grade10_1/autumn2026').set(tourPayload(5, tourEditorUid)));
 
+        const notePath = 'bookmarks/' + accountUid + '/personal-note';
+        await assertSucceeds(accountDb.ref(notePath).set({ noteOnly: true, noteText: 'Private explanation', updatedAt: serverTimestamp() }));
+        await assertSucceeds(accountDb.ref(notePath).once('value'));
+        await assertFails(ordinaryDb.ref(notePath).once('value'));
+        await assertFails(ownerDb.ref(notePath).once('value'));
+        await assertFails(environment.unauthenticatedContext().database().ref(notePath).once('value'));
+        await assertFails(ordinaryDb.ref(notePath).set({ noteText: 'Cannot overwrite another account' }));
+
         const gamePath = 'gameProgress/' + accountUid + '/orbitalCourier';
         const gameSave = revision => ({ version: 1, revision, save: JSON.stringify({ game: 'orbital-courier', version: 8, credits: 25 }), updatedAt: serverTimestamp() });
         await assertFails(environment.unauthenticatedContext().database().ref(gamePath).once('value'));

@@ -560,7 +560,7 @@
         }
         const back = box.cloneNode(true);
         if (back.querySelectorAll) {
-            back.querySelectorAll('.bookmark-btn, .copy-block-btn, .inline-edit-btn, .note-edit-btn').forEach(el => el.remove());
+            back.querySelectorAll('.bookmark-btn, .copy-block-btn, .inline-edit-btn, .note-edit-btn, .personal-note-btn, .personal-note-excerpt').forEach(el => el.remove());
             if (['theorem', 'lemma', 'statement', 'corollary'].includes(kind)) {
                 back.querySelectorAll('.proof-box').forEach(el => el.remove());
             }
@@ -571,13 +571,14 @@
     function plainCardText(box) {
         const clone = box.cloneNode(true);
         if (clone.querySelectorAll) {
-            clone.querySelectorAll(CARD_SELECTOR + ', .bookmark-btn, .copy-block-btn, .inline-edit-btn, .note-edit-btn')
+            clone.querySelectorAll(CARD_SELECTOR + ', .bookmark-btn, .copy-block-btn, .inline-edit-btn, .note-edit-btn, .personal-note-btn, .personal-note-excerpt')
                 .forEach(el => el.remove());
         }
         return normalizeTitle(clone.textContent || '');
     }
 
     function contextualTitle(box, type, topicName, index) {
+        if (box.dataset?.kcTitle) return { text: normalizeTitle(box.dataset.kcTitle), html: escapeHtml(normalizeTitle(box.dataset.kcTitle)) };
         if (type.kind === 'stress') {
             const word = normalizeTitle(box.dataset.searchWord || box.textContent).toLocaleLowerCase('ru-RU');
             return { text: word, html: escapeHtml(word) };
@@ -605,6 +606,7 @@
         if (box.previousElementSibling) {
             let previous = box.previousElementSibling;
             for (let depth = 0; previous && depth < 3; depth++, previous = previous.previousElementSibling) {
+                if (previous.closest?.('[data-kc-ignore="true"]')) continue;
                 const candidate = previous.matches && previous.matches('h3, h4, .subsection-title')
                     ? normalizeTitle(previous.textContent)
                     : readableTerm(previous.querySelector && previous.querySelector('strong'));
@@ -695,13 +697,17 @@
         const formulas = [], seen = new Set();
         function add(node, tex) {
             if (node.closest?.('.formula-box, .kc-modal')) return;
+            if (node.closest?.('[data-kc-ignore="true"]')) return;
             tex = String(tex || '').trim();
             if (!tex) return;
+            const policy = node.closest?.('[data-kc-formulas]')?.dataset.kcFormulas;
+            if (policy === 'exclude') return;
+            if (policy !== 'include' && node.closest?.('.proof-box, .example-box, .exercise-box')) return;
             const owner = node.closest?.(CARD_SELECTOR) || node.parentElement || topic;
             const key = sourceIdFor(owner) + '|' + tex.replace(/\s+/g, ' ');
             if (seen.has(key)) return;
             seen.add(key);
-            formulas.push({ node: node, owner: owner, tex: tex, key: key });
+            formulas.push({ node: node, owner: owner, tex: tex, key: key, policy: policy, derivation: node.closest?.('.derivation-box'), multiline: /\\begin\{(?:aligned|align\*?|gathered|split|eqnarray\*?)\}/.test(tex) });
         }
         topic.querySelectorAll('.katex-display').forEach(node => add(node, node.querySelector('annotation[encoding="application/x-tex"]')?.textContent));
         if (document.createTreeWalker) {
@@ -715,7 +721,9 @@
                 while ((match = expression.exec(text.textContent))) add(parent, match[1] || match[2]);
             }
         }
-        return formulas;
+        // A derivation contributes its final standalone result, not every
+        // intermediate substitution. Explicit editor inclusion overrides this.
+        return formulas.filter((formula, index) => formula.policy === 'include' || (!formula.multiline && (!formula.derivation || !formulas.slice(index + 1).some(next => next.derivation === formula.derivation))));
     }
 
     function extractTopicCards(tid) {
@@ -728,6 +736,8 @@
         CARD_TYPES.forEach(type => {
             const typeBoxes = Array.from(topic.querySelectorAll(type.selector));
             typeBoxes.forEach((box, i) => {
+                if (box.closest?.('[data-kc-ignore="true"]')) return;
+                if (type.kind === 'formula' && box.closest?.('[data-kc-formulas]')?.dataset.kcFormulas === 'exclude') return;
                 const title = contextualTitle(box, type, tname, i);
                 const displayTerm = title.text || (tname + ' · ' + type.singular + ' ' + (i + 1));
                 const backHTML = answerHTML(box, type.kind);
@@ -754,6 +764,11 @@
         const formulaType = CARD_TYPES.find(type => type.kind === 'formula');
         displayedFormulas(topic).forEach((formula, index) => {
             const title = contextualTitle(formula.owner, formulaType, tname, index);
+            const left = formula.tex.split(/=|\\(?:approx|sim|propto|equiv|leq|geq)\b/)[0].trim().replace(/[.,;]+$/, '');
+            if (left && left.length < 90 && left !== formula.tex.trim() && !/\\begin|\\end|\\\\/.test(left)) {
+                title.text += ' · ' + left;
+                title.html = (title.html || escapeHtml(title.text.slice(0, -(left.length + 3)))) + ' · \\(' + escapeHtml(left) + '\\)';
+            }
             const sourceId = 'math:' + hashString(formula.key);
             const backHTML = '<div class="formula-box">\\[' + escapeHtml(formula.tex) + '\\]</div>';
             cards.push({

@@ -137,6 +137,9 @@
             block.title = '';
         }
         if (type === 'reminder' && !block.title) block.title = 'Напоминание';
+        if (typeof source.studyEnabled === 'boolean') block.studyEnabled = source.studyEnabled;
+        if (source.studyTitle) block.studyTitle = String(source.studyTitle).trim().slice(0, 180);
+        if (['auto', 'include', 'exclude'].includes(source.studyFormulas)) block.studyFormulas = source.studyFormulas;
         if (type === 'formula') block.latex = String(source.latex || source.content || '');
         if (type === 'image') {
             block.src = String(source.src || '');

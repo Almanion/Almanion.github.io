@@ -133,6 +133,7 @@
 
     function handleBookmarkStoreChange(nextBookmarks, detail) {
         bookmarks = nextBookmarks || {};
+        window.dispatchEvent(new CustomEvent('almanion-personal-notes-changed'));
         if (detail && detail.type === 'error') console.warn('Almanion bookmarks: sync deferred.', detail.error);
         refreshAllButtons();
         refreshSidebarCount();
@@ -246,12 +247,12 @@
     }
 
     function hasBookmark(id) {
-        return !!(bookmarks[id] && !bookmarks[id].deleted);
+        return !!(bookmarks[id] && !bookmarks[id].deleted && !bookmarks[id].noteOnly);
     }
 
     function saveBookmark(id, data, options) {
         const updatedAt = Date.now();
-        const value = Object.assign({}, data, { deleted: false, updatedAt: updatedAt });
+        const value = Object.assign({}, bookmarks[id], data, { noteOnly: data.noteOnly === true, deleted: false, updatedAt: updatedAt });
         bookmarks[id] = value;
         lastLocalWriteAt = updatedAt;
         if (bookmarkStore) {
@@ -262,9 +263,14 @@
             safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
         }
         refreshSidebarCount();
+        window.dispatchEvent(new CustomEvent('almanion-personal-notes-changed'));
     }
 
     function removeBookmark(id) {
+        if (bookmarks[id]?.noteText && !bookmarks[id].deleted) {
+            saveBookmark(id, Object.assign({}, bookmarks[id], { noteOnly: true }));
+            return;
+        }
         const updatedAt = Date.now();
         const value = { deleted: true, updatedAt: updatedAt, timestamp: bookmarkUpdatedAt(bookmarks[id]) };
         bookmarks[id] = value;
@@ -277,6 +283,7 @@
             safeSet(bookmarkCacheKey, JSON.stringify(bookmarks));
         }
         refreshSidebarCount();
+        window.dispatchEvent(new CustomEvent('almanion-personal-notes-changed'));
     }
 
     function getBlockKey(box) {
@@ -305,7 +312,7 @@
     }
 
     function migrateLegacyBookmark(box, stableId) {
-        const stableExists = !!(bookmarks[stableId] && !bookmarks[stableId].deleted);
+        const stableExists = hasBookmark(stableId);
         const topic = box.closest('.topic[id], .content-section[id]');
         if (!topic) return;
         const boxes = Array.from(topic.querySelectorAll(BLOCK_SELECTOR)).filter(isTopLevelBlock);
@@ -430,6 +437,7 @@
             box.classList.add('has-bookmark-action');
             box.appendChild(button);
         });
+        window.dispatchEvent(new CustomEvent('almanion-block-actions-ready', { detail: { root: root || document } }));
     }
 
     function initLazyBookmarkButtons() {
@@ -524,7 +532,7 @@
 
     function sortedEntries() {
         const entries = Object.entries(bookmarks)
-            .filter(function (pair) { return pair[1] && !pair[1].deleted; })
+            .filter(function (pair) { return pair[1] && !pair[1].deleted && !pair[1].noteOnly; })
             .map(function (pair) { return Object.assign({ id: pair[0] }, pair[1]); });
         return deduplicateEntries(entries).sort(function (a, b) {
                 const aOrder = typeof a.order === 'number' ? a.order : Infinity;
@@ -1178,6 +1186,20 @@
     window.AlmanionBookmarks = Object.freeze({
         open: openBookmarksPanel,
         close: closeBookmarksPanel,
-        refresh: renderBookmarksList
+        refresh: renderBookmarksList,
+        navigate: navigateToBookmark,
+        blockSelector: BLOCK_SELECTOR,
+        blockId: generateBookmarkId,
+        metadata: bookmarkMetadata,
+        record(id) { return bookmarks[id] && !bookmarks[id].deleted ? Object.assign({}, bookmarks[id]) : null; },
+        notes() { return Object.entries(bookmarks).filter(pair => pair[1] && !pair[1].deleted && pair[1].noteText).map(pair => Object.assign({ id: pair[0] }, pair[1])).sort((a, b) => b.updatedAt - a.updatedAt); },
+        saveNote(id, text, metadata) {
+            const existing = bookmarks[id] && !bookmarks[id].deleted ? bookmarks[id] : null;
+            text = String(text || '').trim().slice(0, 4000);
+            if (!text && (!existing || existing.noteOnly)) {
+                if (existing) { bookmarks[id] = Object.assign({}, existing, { noteText: '' }); removeBookmark(id); }
+            } else saveBookmark(id, Object.assign({}, existing || metadata, { noteText: text, noteOnly: !existing || existing.noteOnly === true }));
+            refreshAllButtons();
+        }
     });
 })();

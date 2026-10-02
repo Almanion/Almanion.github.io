@@ -12,13 +12,16 @@
         featureStyles: 'styles/site/features.css?v=20261002-1',
         bookmarksStyles: 'styles/bookmarks.css?v=20260920-2',
         editorStyles: 'styles/note-editor.css?v=20260929-2',
+        readerToolsStyles: 'styles/reader-tools.css?v=20261002-1',
+        personalNotes: 'personal-notes.js?v=20261002-1',
+        offline: 'offline-library.js?v=20261002-1',
         printStyles: 'styles/print.css?v=20261002-1',
         filterStyles: 'styles/note-filter.css?v=20260929-3',
         filter: 'note-filter.js?v=20260929-1',
         settings: 'settings.js?v=20261002-1',
         search: 'search.js?v=20261002-1',
         print: 'print-export.js?v=20261002-1',
-        knowledge: 'knowledge-check.js?v=20261002-1',
+        knowledge: 'knowledge-check.js?v=20261002-2',
         newyear: 'newyear.js?v=20261002-1',
         firebaseApp: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js',
         firebaseDatabase: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js',
@@ -27,8 +30,8 @@
         dataSync: 'data-sync.js?v=20260908-1',
         analytics: 'firebase-analytics.js?v=20260911-1',
         account: 'account.js?v=20260911-1',
-        bookmarks: 'bookmarks.js?v=20260920-3',
-        editor: 'note-editor.js?v=20260904-4'
+        bookmarks: 'bookmarks.js?v=20261002-1',
+        editor: 'note-editor.js?v=20261002-1'
     };
 
     function loadStyle(key) {
@@ -112,7 +115,9 @@
             loadStyle('featureStyles'),
             loadStyle('bookmarksStyles'),
             loadScript('dataSync')
-        ]).then(function () { return loadScript('bookmarks'); });
+        ]).then(function () { return loadScript('bookmarks'); })
+            .then(function () { return loadStyle('readerToolsStyles'); })
+            .then(function () { return loadScript('personalNotes'); });
     }
     function loadAccount() {
         return Promise.all([loadSettings(), loadFirebase()])
@@ -126,6 +131,7 @@
         print: function () { return loadStyle('printStyles').then(function () { return loadScript('print'); }); },
         knowledge: function () { return loadStyle('featureStyles').then(function () { return loadScript('knowledge'); }); },
         bookmarks: loadBookmarks,
+        offline: function () { return loadStyle('readerToolsStyles').then(function () { return loadScript('offline'); }); },
         account: loadAccount,
         newyear: function () { return loadScript('newyear'); }
     };
@@ -189,6 +195,11 @@
             slot.className = 'print-export-menu-slot';
             nav.before(slot);
             launcher('printExportButton', 'print', 'Скачать PDF', slot);
+            const offline = document.createElement('button');
+            offline.type = 'button'; offline.id = 'offlineLibraryButton'; offline.className = 'reader-tool-menu-button';
+            offline.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5"/></svg><span>Читать без сети</span>';
+            offline.addEventListener('click', async function () { offline.disabled = true; try { await ensure('offline'); await window.AlmanionOffline.open(); } finally { offline.disabled = false; } });
+            slot.append(offline);
         }
         function loadEditor() { return loadStyle('editorStyles').then(function () { return loadScript('editor'); }); }
         if (['localhost', '127.0.0.1', '[::1]'].includes(location.hostname) && new URLSearchParams(location.search).get('editor-demo') === '1') {

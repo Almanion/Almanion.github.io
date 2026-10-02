@@ -1,0 +1,69 @@
+/* Shared, theme-aware reading utilities. Native dialogs provide focus trapping. */
+.reader-tool-dialog { position: fixed; inset: 0; margin: auto; box-sizing: border-box; height: fit-content; max-width: none; color: var(--text-primary); background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 22px; padding: 0; width: min(760px, calc(100vw - 32px)); max-height: min(820px, calc(100dvh - 40px)); box-shadow: var(--shadow-xl, 0 24px 80px #0004); overflow: auto; }
+.reader-tool-dialog::backdrop { background: #08081199; backdrop-filter: blur(5px); }
+.reader-tools-open { overflow: hidden; }
+.reader-tool-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 24px 26px 20px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; background: var(--bg-primary); z-index: 1; }
+.reader-tool-header h2 { margin: 5px 0 0; font-size: 1.45rem; line-height: 1.25; }
+.reader-tool-eyebrow { color: var(--text-secondary); font-size: .78rem; }
+.reader-tool-body { padding: 22px 26px; }
+.reader-tool-footer { border-top: 1px solid var(--border-color); padding: 16px 26px; background: var(--bg-secondary); font-size: .82rem; color: var(--text-secondary); }
+.reader-tool-dialog button, .reader-tool-dialog a { font: inherit; min-height: 40px; padding: 8px 13px; border-radius: 11px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+.reader-tool-dialog button:disabled { opacity: .5; cursor: default; }
+.reader-tool-dialog .reader-tool-icon { padding: 8px; width: 40px; flex: 0 0 40px; }
+.reader-tool-dialog .reader-tool-primary { background: var(--accent-color); color: var(--status-on-color, #fff); border-color: var(--accent-color); font-weight: 600; }
+.reader-tool-dialog svg, .reader-tool-menu-button svg { width: 19px; height: 19px; flex: 0 0 19px; }
+.reader-tool-dialog :is(button, a, input, textarea):focus-visible, .reader-tool-menu-button:focus-visible, .personal-note-btn:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 3px; }
+.offline-subjects { display: grid; gap: 10px; }
+.offline-subject { display: flex; align-items: center; gap: 14px; border: 1px solid var(--border-color); border-radius: 15px; padding: 17px; background: var(--bg-secondary); }
+.offline-subject-mark { width: 40px; height: 40px; border-radius: 12px; background: color-mix(in srgb, var(--accent-color) 10%, transparent); color: var(--accent-color); display: grid; place-items: center; flex-shrink: 0; }
+.offline-subject-mark svg { width: 22px; height: 22px; }
+.offline-subject-copy { min-width: 0; flex: 1; }
+.offline-subject-copy h3 { font-size: .98rem; line-height: 1.35; margin: 0 0 6px; overflow-wrap: anywhere; }
+.offline-subject-copy > div { display: flex; gap: 9px; flex-wrap: wrap; font-size: .76rem; color: var(--text-secondary); }
+.offline-subject.is-ready .offline-subject-state, .offline-subject.is-ready .offline-subject-mark { color: var(--success-color); }
+.offline-subject-actions { display: flex; gap: 6px; align-items: center; }
+.offline-subject-actions button, .offline-subject-actions a { font-size: .82rem; white-space: nowrap; }
+.offline-subject progress { display: block; width: 100%; height: 5px; margin-top: 10px; accent-color: var(--accent-color); border-radius: 8px; overflow: hidden; }
+.offline-subject progress::-webkit-progress-bar { background: var(--bg-tertiary); }
+.offline-subject progress::-webkit-progress-value { background: var(--accent-color); }
+.offline-message:empty, .offline-connection:empty { display: none; }
+.offline-message { margin: 8px 0 0; color: var(--success-color); }
+.offline-message.is-error, .reader-tool-dialog .is-danger { color: var(--error-color); }
+.offline-connection { color: var(--text-secondary); margin-top: 0; font-size: .84rem; }
+.reader-tool-menu-button { display: flex; gap: 9px; justify-content: center; align-items: center; width: 100%; font: inherit; font-size: .82rem; font-weight: 600; color: var(--text-secondary); background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 11px; min-height: 40px; padding: 9px 12px; cursor: pointer; margin-top: 7px; }
+.personal-note-btn { position: absolute; top: .45rem; right: 2.45rem; z-index: 5; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0; border: 1px solid transparent; border-radius: 50%; background: var(--bg-secondary); color: var(--text-secondary); opacity: .65; cursor: pointer; }
+.personal-note-btn svg { width: 14px; height: 14px; }
+.personal-note-btn.has-note { color: var(--accent-color); background: color-mix(in srgb, var(--accent-color) 12%, var(--bg-secondary)); opacity: 1; }
+.has-personal-note-action { position: relative; }
+.copyable-block.has-personal-note-action:has(> .bookmark-btn) > .copy-block-btn { right: 4.45rem; }
+.has-personal-note-action:not(:has(> .bookmark-btn)) > .personal-note-btn { right: .45rem; }
+.personal-notes-dialog { width: min(600px, calc(100vw - 32px)); }
+.personal-note-context { margin: 0 0 16px; font-weight: 600; line-height: 1.5; }
+.reader-tool-dialog textarea, .reader-tool-dialog input[type=search] { box-sizing: border-box; width: 100%; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); border-radius: 12px; padding: 13px 15px; font: inherit; font-size: 1rem; line-height: 1.6; }
+.reader-tool-dialog textarea { min-height: 210px; resize: vertical; }
+.personal-note-meta { text-align: right; font-size: .75rem; color: var(--text-secondary); margin: 5px 0 15px; }
+.personal-note-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.personal-note-actions [data-note-save] { margin-left: auto; }
+.personal-notes-list { display: grid; gap: 12px; margin-top: 16px; }
+.personal-note-card { border: 1px solid var(--border-color); border-radius: 14px; background: var(--bg-secondary); padding: 15px; min-width: 0; }
+.personal-note-card > span { color: var(--text-secondary); font-size: .73rem; display: block; overflow-wrap: anywhere; }
+.personal-note-card > button[data-note-edit] { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 10px 0; }
+.personal-note-card strong { display: block; line-height: 1.45; }
+.personal-note-card p { white-space: pre-wrap; overflow-wrap: anywhere; margin: 7px 0 0; font-size: .9rem; line-height: 1.6; }
+.personal-note-card > [data-note-navigate] { font-size: .76rem; min-height: 34px; }
+.reader-tool-empty { color: var(--text-secondary); text-align: center; padding: 20px; }
+.reader-tool-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.builder-study-options, .note-inline-study { margin: 8px 16px 15px; border-top: 1px solid var(--builder-border, var(--border-color)); padding-top: 10px; color: var(--builder-muted, var(--text-secondary)); font-size: .82rem; }
+.builder-study-options summary, .note-inline-study summary { cursor: pointer; padding-bottom: 8px; }
+.builder-publication-actions { display: flex; gap: 8px; margin-top: 8px; }
+@media (max-width: 540px) {
+    .reader-tool-dialog { width: calc(100vw - 16px); max-height: calc(100dvh - 20px); border-radius: 18px; }
+    .reader-tool-header { padding: 19px 17px 16px; }
+    .reader-tool-body { padding: 16px; }
+    .reader-tool-footer { padding: 14px 17px; }
+    .offline-subject { flex-wrap: wrap; padding: 14px; gap: 10px; }
+    .offline-subject-actions { flex-basis: 100%; justify-content: flex-end; padding-top: 2px; }
+    .offline-subject-copy { flex-basis: calc(100% - 60px); }
+    .reader-tool-header h2 { font-size: 1.25rem; }
+}
+@media print { .personal-note-btn, .reader-tool-menu-button, .reader-tool-dialog { display: none !important; } }

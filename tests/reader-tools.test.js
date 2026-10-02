@@ -1,0 +1,46 @@
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const Model = require('../constructor/model');
+const Renderer = require('../constructor/renderer');
+const Publication = require('../constructor/publication');
+const root = path.join(__dirname, '..');
+
+const block = Model.normalizeSection({ id: 'test', blocks: [{ id: 'term', type: 'definition', term: 'Термин', content: 'Определение', studyEnabled: false, studyTitle: '"<Имя>', studyFormulas: 'exclude' }] }).blocks[0];
+assert.equal(block.studyEnabled, false);
+assert.equal(block.studyFormulas, 'exclude');
+const html = Renderer.renderBlock(block, 0);
+assert.match(html, /data-kc-ignore="true"/);
+assert.match(html, /data-kc-title="&quot;&lt;Имя&gt;"/);
+assert.match(html, /data-kc-formulas="exclude"/);
+assert.ok(!Renderer.renderBlock(Model.createBlock('definition'), 0).includes('data-kc-ignore'));
+assert.equal(Publication.canonical({ b: 2, a: [{ z: 1, x: 2 }] }), Publication.canonical({ a: [{ x: 2, z: 1 }], b: 2 }));
+const worker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+assert.match(worker, /key === OFFLINE_INDEX \|\| key\.startsWith\(OFFLINE_PREFIX\)/);
+assert.match(worker, /url\.searchParams\.has\('publication'\)/);
+assert.match(worker, /url\.searchParams\.has\('offline-download'\)/);
+const notes = fs.readFileSync(path.join(root, 'bookmarks.js'), 'utf8');
+assert.match(notes, /!bookmarks\[id\]\.noteOnly/);
+assert.match(notes, /if \(bookmarks\[id\]\?\.noteText/);
+assert.match(notes, /slice\(0, 4000\)/);
+
+(async () => {
+    let deployed = { id: 'section', content: 'old' };
+    const expected = { id: 'section', content: 'new' };
+    const values = new Map(), storage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) };
+    const tracker = Publication.create({ owner: 'one', storage, fetch: async () => ({ ok: true, json: async () => deployed }) });
+    await tracker.track('physics', 'section', 'accepted-commit', expected);
+    await tracker.retry('physics', 'section');
+    assert.equal(tracker.get('physics', 'section').stage, 'pending', 'accepting a commit is not publication');
+    deployed = expected;
+    await tracker.retry('physics', 'section');
+    assert.equal(tracker.get('physics', 'section').stage, 'live');
+    tracker.stop();
+    const restored = Publication.create({ owner: 'one', storage, fetch: async () => { throw Error('Offline'); } });
+    assert.equal(restored.get('physics', 'section').stage, 'live');
+    const other = Publication.create({ owner: 'two', storage, fetch: async () => { throw Error('Offline'); } });
+    assert.equal(other.get('physics', 'section'), null);
+    restored.stop(); other.stop();
+    console.log('reader tools: metadata, publication confirmation, privacy and durable offline caches passed');
+})().catch(error => { console.error(error); process.exitCode = 1; });

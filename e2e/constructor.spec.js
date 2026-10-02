@@ -38,6 +38,18 @@ test('editor creates and reloads a draft, previews it and cannot publish', async
     await page.reload();
     await expect(page.locator('[data-block-field="term"]')).toHaveValue('Test term');
     await expect(page.getByRole('textbox', { name: 'Определение', exact: true })).toHaveValue('Test definition');
+    const study = page.locator('.builder-block').filter({ has: page.locator('[data-block-field="term"]') }).locator('> .builder-study-options');
+    await study.locator('summary').click();
+    await study.locator('[data-block-field="studyEnabled"]').selectOption('false');
+    await study.locator('[data-block-field="studyTitle"]').fill('Custom study term');
+    await study.locator('[data-block-field="studyFormulas"]').selectOption('exclude');
+    await expect(page.frameLocator('#previewFrame').locator('.definition-box')).toHaveAttribute('data-kc-ignore', 'true');
+    await expect(page.locator('#saveStateText')).toHaveText('Все изменения сохранены');
+    await page.reload();
+    await study.locator('summary').click();
+    await expect(study.locator('[data-block-field="studyEnabled"]')).toHaveValue('false');
+    await expect(study.locator('[data-block-field="studyTitle"]')).toHaveValue('Custom study term');
+    await expect(study.locator('[data-block-field="studyFormulas"]')).toHaveValue('exclude');
     await page.evaluate(() => window.testCloud.offline = true);
     await page.getByRole('textbox', { name: 'Определение', exact: true }).fill('Offline revision');
     await expect(page.locator('#saveStateText')).toHaveText('Сохранено только на устройстве');
@@ -62,7 +74,7 @@ test('publication sends the canonical bundle and recovers from a server error', 
     await expect(page.locator('#workflowStatus')).toHaveText('На проверке');
     success = true;
     await page.locator('#publishButton').click();
-    await expect(page.locator('#workflowStatus')).toHaveText('Опубликовано');
+    await expect(page.locator('#workflowStatus')).toHaveText('Сайт обновляется');
     expect(requests).toHaveLength(2);
     const payload = requests[1];
     expect(payload.action).toBe('publishNotes');
@@ -74,7 +86,15 @@ test('publication sends the canonical bundle and recovers from a server error', 
     const manifest = JSON.parse(payload.files.find(file => file.path.endsWith('/manifest.json')).content);
     expect(manifest.sections.some(item => item.id === section.id)).toBe(true);
     await page.reload();
+    await expect(page.locator('#workflowStatus')).toHaveText('Сайт обновляется');
+    // A second editor has no owner's local tracker, but must see the same
+    // pending state for the accepted cloud revision.
+    await page.goto('/constructor.html?subject=chemistry-10&testRole=editor');
+    await expect(page.locator('#workflowStatus')).toHaveText('Сайт обновляется');
+    await page.route('**/content/chemistry-10/sections/' + section.id + '.json?publication=*', route => route.fulfill({ json: section }));
+    await page.getByRole('button', { name: 'Проверить публикацию' }).click();
     await expect(page.locator('#workflowStatus')).toHaveText('Опубликовано');
+    await expect(page.getByRole('link', { name: 'Открыть на сайте ↗' })).toBeVisible();
 });
 
 test('anonymous users cannot open the constructor', async ({ page }) => {
@@ -123,7 +143,7 @@ test('switching sections during publication cannot change the destination or rep
     await expect(page.locator('#workflowStatus')).toHaveText('Черновик');
     expect(payload.sectionId).toBe('first-section');
     await page.locator('[data-section-select="first-section"]').click();
-    await expect(page.locator('#workflowStatus')).toHaveText('Опубликовано');
+    await expect(page.locator('#workflowStatus')).toHaveText('Сайт обновляется');
 });
 
 test('real remote conflicts do not overwrite either copy and can be resolved explicitly', async ({ page }) => {

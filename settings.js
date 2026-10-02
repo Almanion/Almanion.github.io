@@ -656,6 +656,11 @@ function createSettingsModal() {
                 </div>
                 ` : ''}
 
+                <div class="settings-section">
+                    <h3>${ICONS.bookOpen}<span>Без интернета</span></h3>
+                    <button type="button" class="settings-reset-btn" id="settingsOfflineButton">Конспекты на устройстве</button>
+                </div>
+
                 <!-- Hover-эффекты -->
                 <div class="settings-section">
                     <h3>${ICONS.pointer}<span>Отклик курсора</span></h3>
@@ -685,6 +690,23 @@ function createSettingsModal() {
 }
 
 function bindSettingsHandlers() {
+    document.getElementById('settingsOfflineButton').addEventListener('click', async function () {
+        this.disabled = true;
+        try {
+            if (window.AlmanionNoteRuntime) await window.AlmanionNoteRuntime.ensure('offline');
+            else {
+                if (!document.querySelector('link[data-reader-tools]')) {
+                    const style = document.createElement('link'); style.rel = 'stylesheet'; style.href = 'styles/reader-tools.css?v=20261002-1'; style.dataset.readerTools = 'true'; document.head.append(style);
+                }
+                if (!window.AlmanionOffline) await new Promise((resolve, reject) => {
+                    const script = document.createElement('script'); script.src = 'offline-library.js?v=20261002-1'; script.onload = resolve; script.onerror = reject; document.head.append(script);
+                });
+            }
+            closeSettingsModal();
+            await window.AlmanionOffline.open();
+        } catch (_) { window.AlmanionToast?.show('Не удалось открыть загрузки. Повторите попытку.', { type: 'error' }); }
+        finally { this.disabled = false; }
+    });
     // Закрытие модального окна
     const closeBtn = document.getElementById('settingsCloseBtn');
     const modal = document.getElementById('settingsModal');

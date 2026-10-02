@@ -11,7 +11,8 @@ test('study and export load on first intent; displayed formulas are study cards'
     await page.locator('#knowledgeCheckBtn').click();
     await expect(page.locator('#kcSelectOverlay')).toBeVisible();
     const formulas = await page.evaluate(() => window.__kcFSRS.extractCards(Array.from(document.querySelectorAll('article.topic[id]')).map(node => node.id), ['formula']));
-    expect(formulas.length).toBeGreaterThan(80);
+    expect(formulas.length).toBeGreaterThan(20);
+    expect(formulas.every(card => !card.backHTML.includes('\\begin{aligned}'))).toBe(true);
     expect(new Set(formulas.map(card => card.id)).size).toBe(formulas.length);
     await expect(page.locator('#kcTypeList [data-kind="formula"]')).toBeEnabled();
     await expect(page.locator('#kcTypeList button:disabled')).toHaveCount(0);

@@ -39,6 +39,8 @@
         currentSubsectionId: '',
         publishedManifest: null,
         publishedSections: [],
+        deployedVersions: new Map(),
+        publicationChecks: new Map(),
         hydrated: false,
         saveTimers: new Map(),
         remoteSaveQueues: new Map(),
@@ -57,7 +59,8 @@
         undoManagers: new Map(),
         knownSnapshots: new Map(),
         pendingRevisionLabel: 'Автосохранение',
-        cloudAssets: new Map()
+        cloudAssets: new Map(),
+        publication: null
     };
 
     const el = id => document.getElementById(id);
@@ -83,6 +86,28 @@
         return actual.revision === expected.revision
             && actual.updatedAt === expected.updatedAt
             && actual.updatedBy === expected.updatedBy;
+    }
+
+    function publicationFor(section) {
+        const record = state.publication?.get(section.subject, section.id);
+        return record?.version === JSON.stringify(versionOf(section)) ? record : null;
+    }
+
+    function publicationPending(section) {
+        if (section.compatibilityReadOnly || section.reviewStatus !== 'published') return false;
+        const record = publicationFor(section);
+        return record ? record.stage !== 'live' : !sameVersion(section, state.deployedVersions.get(sectionKey(section.subject, section.id)));
+    }
+
+    function ensurePublication(section) {
+        if (!state.publication || !publicationPending(section) || publicationFor(section)) return Promise.resolve();
+        const key = sectionKey(section.subject, section.id);
+        if (!state.publicationChecks.has(key)) {
+            const value = clone(section); delete value.review;
+            state.publicationChecks.set(key, state.publication.track(section.subject, section.id, '', value)
+                .catch(() => {}).finally(() => state.publicationChecks.delete(key)));
+        }
+        return state.publicationChecks.get(key);
     }
 
     function toast(message, isError, action) {
@@ -149,7 +174,9 @@
     }
 
     async function onAuthState(user) {
+        state.publication?.stop();
         state.user = user || null;
+        state.publication = user && window.NotePublication ? window.NotePublication.create({ owner: user.uid, storage: localStorage, fetch: window.fetch.bind(window), normalize(value) { const section = Model.normalizeSection(value, value.subject); delete section.review; return section; }, onChange() { if (state.current) { renderWorkflow(); renderSections(); } } }) : null;
         state.isOwner = !!user && user.uid === OWNER_UID;
         if (!user) {
             showGate('Войдите в аккаунт редактора, чтобы открыть конструктор.', true);
@@ -165,6 +192,7 @@
             el('builderShell').hidden = false;
             el('publishButton').hidden = !state.isOwner;
             await initializeWorkspace();
+            state.publication?.start();
         } catch (error) {
             console.error('Constructor access:', error);
             showGate('Не удалось проверить права. Проверьте соединение и правила Firebase, затем обновите страницу.', false);
@@ -309,6 +337,7 @@
         state.currentSubsectionId = '';
         state.sections = [];
         state.publishedSections = [];
+        state.deployedVersions.clear();
         localStorage.setItem('note-constructor-subject', subject);
         setSaveState('saving', 'Загружаем разделы…');
         renderEditor();
@@ -331,6 +360,7 @@
         state.publishedManifest.sections = (Array.isArray(state.publishedManifest.sections) ? state.publishedManifest.sections : [])
             .filter(entry => publishedSections.some(section => section.id === manifestEntryId(entry)));
         state.publishedSections = publishedSections.map(section => clone(section));
+        publishedSections.forEach(section => state.deployedVersions.set(sectionKey(subject, section.id), versionOf(section)));
         const remote = (remoteResult.status === 'fulfilled' ? remoteResult.value : []).filter(survivesDeletion);
         const local = (localResult.status === 'fulfilled' ? localResult.value.map(entry => Model.normalizeSection(entry.section, subject)) : []).filter(survivesDeletion);
 
@@ -435,7 +465,7 @@
                 '<div class="builder-section-main"><button class="builder-section-item' + (active ? ' is-active' : '') + (compatibility ? ' is-compatibility' : '') + '" type="button" data-section-select="' + escapeHtml(section.id) + '">' +
                     '<strong>' + escapeHtml(section.navTitle || section.title) + '</strong>' +
                     '<span class="builder-section-status is-' + escapeHtml(section.reviewStatus) + '"></span>' +
-                    '<small>' + escapeHtml(compatibility ? 'Опубликован · исходная разметка' : (STATUS_LABELS[section.reviewStatus] || 'Черновик')) + '</small>' +
+                    '<small>' + escapeHtml(compatibility ? 'Опубликован · исходная разметка' : (publicationPending(section) ? 'Сайт обновляется' : (STATUS_LABELS[section.reviewStatus] || 'Черновик'))) + '</small>' +
                 '</button>' + (compatibility ? '' : '<button class="builder-add-subsection" type="button" data-add-subsection="' + escapeHtml(section.id) + '" aria-label="Добавить подраздел" title="Добавить подраздел">＋</button>') + '</div>' +
                 '<div class="builder-section-order" aria-label="Порядок раздела">' +
                     '<button type="button" data-section-move="-1" title="Выше"' + (compatibility || index === 0 ? ' disabled' : '') + '>↑</button>' +
@@ -510,6 +540,11 @@
                 '</div>' +
             '</div>' +
             '<div class="builder-block-fields">' + blockFields(block) + '</div>' +
+            '<details class="builder-study-options"><summary>Проверка знаний</summary><div class="builder-block-fields">' +
+                '<label class="builder-field"><span>Использовать блок</span><select data-block-field="studyEnabled"><option value="true"' + (block.studyEnabled !== false ? ' selected' : '') + '>Включено</option><option value="false"' + (block.studyEnabled === false ? ' selected' : '') + '>Исключить из обучения</option></select></label>' +
+                '<label class="builder-field"><span>Название карточки — необязательно</span><input data-block-field="studyTitle" value="' + escapeHtml(block.studyTitle || '') + '" placeholder="По содержанию блока"></label>' +
+                '<label class="builder-field"><span>Формулы внутри блока</span><select data-block-field="studyFormulas"><option value="auto"' + (!block.studyFormulas || block.studyFormulas === 'auto' ? ' selected' : '') + '>Автоматически</option><option value="include"' + (block.studyFormulas === 'include' ? ' selected' : '') + '>Включать</option><option value="exclude"' + (block.studyFormulas === 'exclude' ? ' selected' : '') + '>Исключить промежуточные формулы</option></select></label>' +
+            '</div></details>' +
             (canNest ? '<div class="builder-child-zone"><div class="builder-child-zone-head"><span>Вложенные блоки</span><div class="builder-child-add"><button class="builder-button is-quiet" type="button" data-open-block-picker data-parent-id="' + escapeHtml(block.id) + '">＋ Добавить</button></div></div><div class="builder-child-list">' + children.map((child, childIndex) => renderBlockEditor(child, depth + 1, childIndex, children.length)).join('') + '</div><div class="builder-drop-zone" data-drop-parent="' + escapeHtml(block.id) + '">Перетащите блок сюда, чтобы вложить</div></div>' : '') +
         '</article>';
     }
@@ -533,11 +568,41 @@
             ready: ['На проверке', state.isOwner ? 'Материал готов к решению главного администратора.' : 'Главный администратор может опубликовать или вернуть материал.'],
             published: ['Опубликовано', 'Эта версия уже доступна читателям. Новая правка снова создаст черновик.']
         };
+        const publication = publicationFor(state.current);
+        const pending = publicationPending(state.current);
+        if (pending) {
+            labels.published = ['Сайт обновляется', publication?.error || 'Проверяем, когда эта версия станет доступна читателям.'];
+            ensurePublication(state.current);
+        }
         const meta = labels[status] || labels.draft;
         const badge = el('workflowStatus');
         badge.textContent = meta[0];
         badge.className = 'builder-workflow-status is-' + status;
         el('workflowHint').textContent = meta[1];
+        let publicationActions = el('publicationActions');
+        if (!publicationActions) {
+            publicationActions = document.createElement('div');
+            publicationActions.id = 'publicationActions';
+            publicationActions.className = 'builder-publication-actions';
+            el('workflowHint').after(publicationActions);
+        }
+        publicationActions.replaceChildren();
+        if (status === 'published') {
+            if (!pending) {
+                const link = document.createElement('a');
+                link.className = 'builder-text-action';
+                link.textContent = 'Открыть на сайте ↗';
+                link.href = (state.subjects.find(item => item.id === state.subject)?.page || '#') + '#' + state.current.id;
+                link.target = '_blank'; link.rel = 'noopener';
+                publicationActions.append(link);
+            } else {
+                const retry = document.createElement('button');
+                retry.type = 'button'; retry.className = 'builder-text-action';
+                retry.textContent = 'Проверить публикацию';
+                retry.onclick = async () => { const section = state.current; retry.disabled = true; await ensurePublication(section); await state.publication?.retry(section.subject, section.id); retry.disabled = false; };
+                publicationActions.append(retry);
+            }
+        }
         const submit = el('submitReviewButton');
         submit.hidden = status === 'published' || (state.isOwner && status === 'ready');
         submit.dataset.action = status === 'ready' ? 'withdraw' : 'submit';
@@ -1207,6 +1272,7 @@
         replacement.id = previous.id;
         replacement.content = previousContent;
         replacement.title = String(previous.title || '');
+        ['studyEnabled', 'studyTitle', 'studyFormulas'].forEach(field => { if (previous[field] !== undefined) replacement[field] = previous[field]; });
 
         if (nextType === 'definition') {
             replacement.term = String(previous.term || previous.title || '').trim();
@@ -1674,6 +1740,7 @@
             });
             const result = await response.json();
             if (!result.success) throw new Error(result.error || 'Сервер публикации вернул ошибку');
+            await state.publication?.track(section.subject, section.id, result.commitSha || result.commit, publishedSection);
             if (state.user === user && state.subject === section.subject) {
                 state.publishedManifest = manifest;
                 state.publishedSections = state.publishedSections.filter(s => s.id !== section.id).concat(publishedSection);
@@ -1682,14 +1749,14 @@
                     Object.assign(draft, section);
                     rememberSnapshot(draft);
                     await Storage.putDraft(user.uid, draft);
-                    await queueRemoteSave(clone(draft), ++state.saveGeneration, 'Опубликовано');
+                    await queueRemoteSave(clone(draft), ++state.saveGeneration, 'Изменения отправлены');
                 }
                 renderAll();
             }
             if (requestedContext.embedded && window.parent !== window) {
                 window.parent.postMessage({ type: 'note-constructor:published', subject: section.subject, section: section.id }, window.location.origin);
             }
-            toast('Опубликовано. Ожидаем обновления GitHub Pages.');
+            toast('Изменения отправлены. Проверяем обновление GitHub Pages.');
         } catch (error) {
             console.error('Publish notes:', error);
             toast('Не удалось опубликовать: ' + (error.message || error), true);
@@ -1933,7 +2000,7 @@
                 const card = event.target.closest('[data-block-id]');
                 const location = card && findBlock(card.dataset.blockId);
                 if (location) {
-                    location.block[field] = event.target.value;
+                    location.block[field] = field === 'studyEnabled' ? event.target.value !== 'false' : event.target.value;
                     changed(false, { label: 'Изменён блок', mergeKey: 'block:' + card.dataset.blockId + ':' + field });
                 }
                 return;

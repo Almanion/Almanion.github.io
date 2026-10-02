@@ -248,6 +248,11 @@
                 '</span>' +
             '</header>' +
             '<div class="note-inline-block-fields">' + blockFields(block) + '</div>' +
+            '<details class="note-inline-study"><summary>Проверка знаний</summary><div class="note-inline-block-fields">' +
+                '<label class="note-inline-field"><span>Использовать блок</span><select class="note-inline-input" data-field="studyEnabled" data-block-id="' + escapeHtml(block.id) + '"><option value="true"' + (block.studyEnabled !== false ? ' selected' : '') + '>Включено</option><option value="false"' + (block.studyEnabled === false ? ' selected' : '') + '>Исключить из обучения</option></select></label>' +
+                textInputField('Название карточки', 'studyTitle', block.studyTitle || '', { blockId: block.id, placeholder: 'По содержанию блока' }) +
+                '<label class="note-inline-field"><span>Формулы внутри блока</span><select class="note-inline-input" data-field="studyFormulas" data-block-id="' + escapeHtml(block.id) + '">' + ['auto', 'include', 'exclude'].map((value, i) => '<option value="' + value + '"' + ((block.studyFormulas || 'auto') === value ? ' selected' : '') + '>' + ['Автоматически', 'Включать', 'Исключить промежуточные формулы'][i] + '</option>').join('') + '</select></label>' +
+            '</div></details>' +
             (canNest ? '<div class="note-inline-children">' +
                 (children.length ? children.map((child, childIndex) => renderBlock(child, childIndex, children.length, depth + 1)).join('') : '<p class="note-inline-empty-children">Вложенных блоков пока нет</p>') +
                 '<button type="button" class="note-inline-add-child" data-action="open-picker" data-parent-id="' + escapeHtml(block.id) + '">+ Добавить внутрь</button>' +
@@ -346,7 +351,7 @@
             const location = blockLocation(blockId);
             if (!location) return;
             if (field === 'items') location.block.items = value.split(/\r?\n/);
-            else location.block[field] = value;
+            else location.block[field] = field === 'studyEnabled' ? value !== 'false' : value;
         } else {
             const document = activeDocument();
             if (!document) return;

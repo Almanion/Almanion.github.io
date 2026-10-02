@@ -41,6 +41,9 @@
     "note-runtime.js",
     "note-filter.js",
     "note-editor.js",
+    "offline-library.js",
+    "offline-library.json",
+    "personal-notes.js",
     "offline.html",
     "orbital-account.js",
     "oxide_reactions_table.html",
@@ -80,7 +83,7 @@
     "images": [".svg", ".png", ".jpg", ".jpeg", ".webp", ".avif", ".gif"],
     "matcenter": [".js", ".json"],
     "styles": [".css"],
-    "vendor": [".js", ".txt", ".ttf"]
+    "vendor": [".js", ".css", ".txt", ".ttf", ".woff", ".woff2"]
   },
   "deniedPaths": [
     ".github",

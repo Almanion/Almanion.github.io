@@ -87,7 +87,10 @@
         const id = String(block && block.id || '').trim();
         if (!id) return '';
         const escapedId = escapeHtml(id);
-        return ' data-note-block="' + escapedId + '" data-kc-id="' + escapedId + '"';
+        return ' data-note-block="' + escapedId + '" data-kc-id="' + escapedId + '"' +
+            (block.studyEnabled === false ? ' data-kc-ignore="true"' : '') +
+            (block.studyTitle ? ' data-kc-title="' + escapeHtml(block.studyTitle) + '"' : '') +
+            (block.studyFormulas ? ' data-kc-formulas="' + escapeHtml(block.studyFormulas) + '"' : '');
     }
 
     function renderChildren(block, depth) {

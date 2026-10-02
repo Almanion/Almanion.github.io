@@ -36,6 +36,10 @@ each migration so performance improvements cannot silently regress.
 October reader changes: search, study and export scripts load on intent; editor
 code loads only for editors. Authentication still restores in the background to
 keep study progress correctly scoped. The small first-click launchers add about
-3 KB (chemistry's initial-JS ceiling is 138 KB); the substantially larger feature
+3 KB (chemistry's initial-JS ceiling is 139 KB); the substantially larger feature
 scripts no longer load on every visit. PDF libraries have separate explicit file
 ceilings and are never part of initial loading or the service-worker shell.
+
+Offline subject packs are opt-in, hash-verified and kept in separate durable
+caches, outside the runtime eviction limit. Personal-note buttons follow the
+existing lazy bookmark observer instead of eagerly decorating every chapter.

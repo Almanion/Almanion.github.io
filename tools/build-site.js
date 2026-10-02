@@ -8,6 +8,7 @@ const { execFileSync } = require('child_process');
 const NotesBuilder = require('./build-notes.js');
 const SearchIndex = require('../performance/build-search-index.js');
 const ServiceWorker = require('../performance/build-service-worker.js');
+const OfflineLibrary = require('./build-offline.js');
 
 const CONFIG_PATH = path.join(__dirname, 'site-files.json');
 
@@ -178,6 +179,14 @@ function build(options) {
     resetOutput(root, output);
     const copied = copyPublicFiles(root, output, config);
     const notes = NotesBuilder.build({ root, output });
+    // Invalidate only the changed reading utilities. Existing service workers
+    // may still hold earlier query-versioned copies during a deployment.
+    for (const file of walkFiles(output).filter(file => file.endsWith('.html'))) {
+        const absolute = path.join(output, file);
+        const html = fs.readFileSync(absolute, 'utf8');
+        const updated = html.replace(/((?:src|href)=["'](?:note-runtime|settings|bookmarks|script)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261002-2$2');
+        if (updated !== html) fs.writeFileSync(absolute, updated);
+    }
     // Status follows published materials, including sections added later by the
     // editor. Do not advertise an empty subject as active.
     const homePath = path.join(output, 'index.html');
@@ -192,6 +201,7 @@ function build(options) {
         site: output,
         output: path.join(output, 'search-index.json')
     });
+    OfflineLibrary.build({ root, site: output });
     const serviceWorker = ServiceWorker.build({ root, site: output });
     fs.writeFileSync(path.join(output, '.nojekyll'), '', 'utf8');
     const metadata = writeMetadata(root, output, notes, search, serviceWorker);
