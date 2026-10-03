@@ -125,6 +125,10 @@ test('five shortcuts and permanent services fit dark and legacy home layouts', a
         expect(await page.locator('#homeQuickGrid a').first().evaluate(el => el === window.layoutQuickCard)).toBe(true);
         await page.waitForTimeout(450);
         expect(await page.locator('#homeQuickGrid a').first().evaluate(el => Number(getComputedStyle(el).opacity))).toBe(1);
+        const labels = await page.locator('#homeQuickGrid h2').evaluateAll(elements => elements.map(el => ({
+            whitespace: getComputedStyle(el).whiteSpace, overflow: el.scrollWidth - el.clientWidth
+        })));
+        for (const label of labels) { expect(label.whitespace).toBe('normal'); expect(label.overflow).toBeLessThan(2); }
         await expect(page.locator('.home-additional-section')).toBeVisible();
         const geometry = await page.evaluate(() => ({ overflow: document.documentElement.scrollWidth - innerWidth,
             cards: [...document.querySelectorAll('#homeQuickGrid a, .home-additional-grid a:not([hidden])')].map(el => ({ left: el.getBoundingClientRect().left, right: el.getBoundingClientRect().right })) }));
