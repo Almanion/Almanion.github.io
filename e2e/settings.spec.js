@@ -16,10 +16,10 @@ test('block filter follows reader width at every scale and viewport', async ({ p
                     const r = document.querySelector(selector).getBoundingClientRect();
                     return { x: r.x, width: r.width };
                 };
-                return { filter: rect('.note-filter'), reader: rect('.exp-reader-toolbar'), overflow: document.documentElement.scrollWidth - innerWidth };
+                return { filter: rect('.note-filter'), reader: rect('.note-reader-controls'), overflow: document.documentElement.scrollWidth - innerWidth };
             }, scale);
-            expect(Math.abs(boxes.filter.width - boxes.reader.width), `${width}px / ${scale}`).toBeLessThan(2);
-            expect(Math.abs(boxes.filter.x - boxes.reader.x)).toBeLessThan(2);
+            expect(boxes.filter.x, `${width}px / ${scale}`).toBeGreaterThanOrEqual(boxes.reader.x - 2);
+            expect(boxes.filter.x + boxes.filter.width).toBeLessThanOrEqual(boxes.reader.x + boxes.reader.width + 2);
             expect(boxes.overflow).toBeLessThan(2);
         }
     }

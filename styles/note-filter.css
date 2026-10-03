@@ -18,11 +18,92 @@ body[data-note-subject] .main-content > .note-filter { zoom: var(--note-scale, 1
 .note-filter-options input { width: 18px; height: 18px; accent-color: var(--accent-color, #4f46e5); }
 .note-filter-reset { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 8px; color: inherit; background: transparent; cursor: pointer; }
 .note-filter-empty { color: var(--text-secondary); padding: 20px 0; }
+
+/* A single compact reading bar, with one shared scale and sticky boundary. */
+@media screen {
+    body[data-note-subject] .main-content > .page-header {
+        padding: 1rem 1.4rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+    body[data-note-subject] .page-header h1 { font-size: 1.65rem; }
+    body[data-note-subject] .page-header .subtitle { margin: 0; }
+    body.experimental.exp-reader-active .note-reader-controls {
+        position: sticky;
+        top: 1rem;
+        z-index: 45;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        width: var(--exp-reader-shell);
+        max-width: 100%;
+        box-sizing: border-box;
+        margin: 0 auto 0.85rem;
+        border: 1px solid var(--exp-border);
+        border-radius: var(--exp-reader-radius);
+        color: var(--exp-text);
+        background: var(--exp-surface);
+        box-shadow: 0 2px 8px color-mix(in srgb, var(--exp-text) 4%, transparent);
+    }
+    body.experimental.exp-reader-active .note-reader-controls > .exp-reader-toolbar {
+        position: static;
+        min-width: 0;
+        width: 100%;
+        margin: 0;
+        border: 0;
+        border-radius: inherit;
+        box-shadow: none;
+        background: transparent;
+    }
+    body.experimental.exp-reader-active .note-reader-controls > .note-filter {
+        align-self: center;
+        width: auto;
+        min-width: 0;
+        max-width: 100%;
+        margin: 0;
+        padding: 0 0.8rem;
+        border: 0;
+        border-left: 1px solid var(--exp-border);
+        border-radius: 0;
+        background: transparent;
+    }
+    .note-reader-controls .note-filter summary { min-height: 44px; align-content: center; }
+    body.experimental.exp-reader-active .note-reader-controls:has(.note-filter[open]) { grid-template-columns: 1fr; }
+    body.experimental.exp-reader-active .note-reader-controls > .note-filter[open] {
+        align-self: stretch;
+        padding: 0 0.85rem 0.8rem;
+        border-left: 0;
+        border-top: 1px solid var(--exp-border);
+    }
+}
+@media screen and (min-width: 1024px) {
+    body.experimental.exp-reader-active .content-section > .topic.exp-reader-current { padding-top: 1.5rem !important; }
+}
+@media screen and (max-width: 768px) {
+    body[data-note-subject] .main-content > .page-header {
+        padding: 0.7rem var(--m-pad, 1rem) !important;
+        margin-bottom: 0.5rem !important;
+    }
+    body.experimental.exp-reader-active .note-reader-controls {
+        top: 0;
+        grid-template-columns: 1fr;
+        border-right: 0;
+        border-left: 0;
+        border-radius: 0;
+        margin-bottom: 0.5rem;
+    }
+    body.experimental.exp-reader-active .note-reader-controls > .note-filter {
+        align-self: stretch;
+        padding: 0 var(--m-pad, 1rem);
+        border-left: 0;
+        border-top: 1px solid var(--exp-border);
+        font-size: 0.82rem;
+    }
+    .note-reader-controls .note-filter summary { min-height: 36px; }
+}
 /* Higher specificity than theme, reader and print visibility rules. */
 html body .main-content [data-note-filter-hidden] { display: none !important; }
 html body .main-content [data-note-filter-shell] { display: contents !important; }
 html body .main-content [data-note-filter-shell]::before,
 html body .main-content [data-note-filter-shell]::after { display: none !important; }
 @media print {
-    .note-filter, .note-filter-empty { display: none !important; }
+    .note-filter, .note-filter-empty, .note-reader-controls { display: none !important; }
 }

@@ -29,7 +29,7 @@ assert.match(analytics, /typeof firebaseConfig === 'undefined'/, 'analytics must
 
 const readerCss = fs.readFileSync(path.join(root, 'styles', 'site', 'reader.css'), 'utf8');
 const componentsCss = fs.readFileSync(path.join(root, 'styles', 'site', '00-components.css'), 'utf8');
-assert.match(readerCss, /00-components\.css\?v=20260929-2/, 'reader CSS must cache-bust shared controls');
+assert.match(readerCss, /00-components\.css\?v=20261003-1/, 'reader CSS must cache-bust shared controls');
 assert.match(componentsCss, /\.knowledge-check-btn \.btn-icon\s*\{[\s\S]*?width:\s*1rem;[\s\S]*?height:\s*1rem;/, 'sidebar action icons must keep their compact size');
 assert.match(componentsCss, /\.auth-overlay\.hidden\s*\{\s*display:\s*none\s*!important;/, 'closed dialogs must be hidden from the first paint');
 const featuresCss = fs.readFileSync(path.join(root, 'styles', 'site', 'features.css'), 'utf8');

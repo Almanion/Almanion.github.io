@@ -184,7 +184,7 @@ function build(options) {
     for (const file of walkFiles(output).filter(file => file.endsWith('.html'))) {
         const absolute = path.join(output, file);
         const html = fs.readFileSync(absolute, 'utf8');
-        const updated = html.replace(/((?:src|href)=["'](?:note-runtime|settings|bookmarks|script|print-export)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261002-4$2');
+        const updated = html.replace(/((?:src|href)=["'](?:(?:note-runtime|settings|bookmarks|script|print-export|experimental-reader)\.js|styles\/site\/(?:reader|index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261003-1$2');
         if (updated !== html) fs.writeFileSync(absolute, updated);
     }
     // Status follows published materials, including sections added later by the

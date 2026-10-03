@@ -126,7 +126,7 @@ body:not(.no-hover).home-page .home-quick-customize:hover {
 
 body.home-page .home-quick-section {
     display: block;
-    margin: 0 0 clamp(1.7rem, 3.2vw, 2.45rem);
+    margin: 0 0 1.4rem;
     padding: clamp(1rem, 1.8vw, 1.3rem);
     border: 1px solid var(--border-color);
     border-radius: 20px;
@@ -137,7 +137,7 @@ body.home-page .home-quick-section {
 body.home-page .home-quick-grid,
 body.home-page .home-quick-grid.english-card-hidden {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     gap: clamp(0.75rem, 1.4vw, 1rem) !important;
     margin: 0;
 }
@@ -153,9 +153,9 @@ body.home-page .home-quick-grid[data-count="1"] {
 body.home-page .home-quick-grid > .home-quick-card,
 body.home-page .home-quick-grid > .home-quick-card:first-child,
 body.home-page .home-quick-grid > .home-quick-card:last-child {
-    min-height: 108px;
+    min-height: 80px;
     display: grid;
-    grid-template-columns: 82px minmax(0, 1fr);
+    grid-template-columns: 62px minmax(0, 1fr);
     align-items: stretch;
     grid-column: auto !important;
     padding: 0 !important;
@@ -174,8 +174,8 @@ body.home-page .home-quick-card .card-header {
 }
 
 body.home-page .home-quick-card .subject-icon {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     margin: 0;
     border: 0;
     border-radius: 14px;
@@ -193,7 +193,7 @@ body.home-page .home-quick-card .card-body {
     align-items: center;
     justify-content: space-between;
     gap: 0.7rem;
-    padding: 1rem;
+    padding: 0.75rem;
 }
 
 body.home-page .home-quick-copy {
@@ -244,6 +244,59 @@ body.home-page .subjects-section {
     text-align: left;
 }
 
+body.home-page .home-content-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 270px;
+    align-items: start;
+    gap: 1.4rem;
+}
+
+body.home-page .home-content-grid > .subjects-section {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+}
+
+body.home-page .home-additional-section {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    padding: 1.1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    background: var(--bg-secondary);
+}
+
+body.home-page .home-additional-section > .section-title {
+    margin: 0 0 0.85rem;
+    font-size: 1.15rem;
+    text-align: left;
+}
+
+body.home-page .home-additional-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+    margin: 0;
+}
+
+body.home-page .home-additional-grid > .subject-card:not([hidden]) {
+    display: grid;
+    grid-template-columns: 54px minmax(0, 1fr);
+    min-height: 72px;
+    padding: 0;
+    border-radius: 13px;
+    grid-column: auto !important;
+}
+
+body.home-page .home-additional-grid > .subject-card[hidden] { display: none !important; }
+
+body.home-page .home-additional-grid .card-header { padding: 0.6rem; }
+body.home-page .home-additional-grid .subject-icon { width: 34px; height: 34px; }
+body.home-page .home-additional-grid .subject-icon svg { width: 24px; height: 24px; }
+body.home-page .home-additional-grid .card-body { padding: 0.6rem; }
+body.home-page .home-additional-grid h2 { font-size: 1rem; white-space: normal; }
+
 body.home-page .subjects-toolbar {
     display: flex;
     align-items: center;
@@ -273,7 +326,7 @@ body.home-page .grade-tab {
 
 body.home-page .grade-panel > .subjects-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: clamp(0.9rem, 1.6vw, 1.2rem);
     margin-bottom: 0;
 }
@@ -281,18 +334,21 @@ body.home-page .grade-panel > .subjects-grid {
 body.home-page .grade-panel > .subjects-grid > .subject-card,
 body.home-page .grade-panel > .subjects-grid > .subject-card:last-child,
 body.home-page .grade-panel > .subjects-grid > .subject-card:nth-last-child(2) {
-    min-height: 188px;
+    min-height: 128px;
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    align-items: center;
     grid-column: auto !important;
 }
 
 body.home-page .grade-panel > .subjects-grid .card-header {
-    padding: 1.35rem 1.15rem 0.75rem;
+    padding: 0.8rem;
     border-bottom: 0;
 }
 
 body.home-page .grade-panel > .subjects-grid .subject-icon {
-    width: 64px;
-    height: 64px;
+    width: 50px;
+    height: 50px;
     margin-bottom: 0;
     border-radius: 18px;
 }
@@ -303,13 +359,18 @@ body.home-page .grade-panel > .subjects-grid .subject-icon svg {
 }
 
 body.home-page .grade-panel > .subjects-grid .card-body {
-    padding: 0.55rem 1.15rem 1.35rem;
+    min-width: 0;
+    padding: 1rem 0.85rem;
+    text-align: left;
 }
 
 body.home-page .grade-panel > .subjects-grid .subject-card h2 {
     margin-bottom: 0.42rem;
-    font-size: clamp(1.16rem, 1.7vw, 1.42rem);
+    font-size: clamp(1.08rem, 1.5vw, 1.25rem);
+    text-align: left;
 }
+
+body.home-page .grade-panel > .subjects-grid .card-info > div { text-align: left !important; }
 
 body.home-page .grade-panel > .subjects-grid .status-badge {
     margin-top: 0.22rem;
@@ -343,6 +404,8 @@ body.home-page #gradePanel10 > .class-section > .subjects-grid {
     gap: clamp(0.75rem, 1.4vw, 1rem);
     margin: 0;
 }
+
+body.home-page #gradePanel10 .class-section > .subjects-grid > .subject-card:only-child { grid-column: 1 / -1 !important; }
 
 body.home-page #gradePanel10 .class-section .subject-card,
 body.home-page #gradePanel10 .class-section .subject-card:last-child {
@@ -708,6 +771,17 @@ body.home-quick-dialog-open {
     }
 }
 
+@media (max-width: 1000px) {
+    body.home-page .home-content-grid { grid-template-columns: 1fr; gap: 1.3rem; }
+    body.home-page .home-content-grid > .subjects-section,
+    body.home-page .home-additional-section { grid-column: auto; grid-row: auto; }
+    body.home-page .home-additional-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+    body.home-page .home-header .stats { padding-right: 3rem; }
+}
+
 @media (max-width: 768px) {
     body.home-page .home-container {
         padding: 1rem 0.82rem 1.6rem;
@@ -716,17 +790,18 @@ body.home-quick-dialog-open {
     body.home-page .home-header {
         display: block;
         margin-bottom: 1.35rem;
-        padding: 0.15rem 3.4rem 0;
-        text-align: center;
+        padding: 0.15rem 0 0;
+        text-align: left;
     }
 
     body.home-page .home-header h1 {
-        justify-content: center;
+        justify-content: flex-start;
+        padding-right: 3.4rem;
         font-size: clamp(1.75rem, 7vw, 2.1rem);
     }
 
     body.home-page .home-header .stats {
-        justify-content: center;
+        justify-content: flex-start;
         gap: 0.48rem;
         margin-top: 0.8rem;
     }
@@ -779,37 +854,25 @@ body.home-quick-dialog-open {
     }
 
     body.home-page .home-quick-grid,
-    body.home-page .home-quick-grid.english-card-hidden,
-    body.home-page .home-quick-grid[data-count="2"] {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.62rem !important;
+    body.home-page .home-quick-grid.english-card-hidden {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.5rem !important;
     }
 
-    body.home-page .home-quick-grid[data-count="1"] {
-        grid-template-columns: 1fr;
-    }
+    body.home-page .home-quick-grid[data-count="1"] { grid-template-columns: 1fr; }
+    body.home-page .home-quick-grid[data-count="2"],
+    body.home-page .home-quick-grid[data-count="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
     body.home-page .home-quick-grid > .home-quick-card,
     body.home-page .home-quick-grid > .home-quick-card:first-child,
     body.home-page .home-quick-grid > .home-quick-card:last-child {
-        min-height: 124px;
+        min-height: 84px;
         display: flex;
         flex-direction: column;
         justify-content: center;
         gap: 0.38rem;
-        padding: 0.78rem 0.55rem !important;
+        padding: 0.6rem 0.35rem !important;
         border-radius: 14px !important;
-    }
-
-    body.home-page .home-quick-grid[data-count="3"] > .home-quick-card:first-child,
-    body.home-page .home-quick-grid[data-count="5"] > .home-quick-card:first-child,
-    body.home-page .home-quick-grid[data-count="1"] > .home-quick-card:only-child {
-        min-height: 96px;
-        display: grid;
-        grid-template-columns: 72px minmax(0, 1fr);
-        grid-column: 1 / -1 !important;
-        gap: 0;
-        padding: 0 !important;
     }
 
     body.home-page .home-quick-card .card-header {
@@ -820,23 +883,15 @@ body.home-quick-dialog-open {
         border: 0;
     }
 
-    body.home-page .home-quick-grid[data-count="3"] > .home-quick-card:first-child .card-header,
-    body.home-page .home-quick-grid[data-count="5"] > .home-quick-card:first-child .card-header,
-    body.home-page .home-quick-grid[data-count="1"] > .home-quick-card:only-child .card-header {
-        align-self: stretch;
-        padding: 0.7rem;
-        border-right: 1px solid var(--border-color);
-    }
-
     body.home-page .home-quick-card .subject-icon {
-        width: 48px;
-        height: 48px;
+        width: 32px;
+        height: 32px;
         border-radius: 14px;
     }
 
     body.home-page .home-quick-card .subject-icon svg {
-        width: 28px;
-        height: 28px;
+        width: 24px;
+        height: 24px;
     }
 
     body.home-page .home-quick-card .card-body {
@@ -844,35 +899,16 @@ body.home-quick-dialog-open {
         padding: 0;
     }
 
-    body.home-page .home-quick-grid[data-count="3"] > .home-quick-card:first-child .card-body,
-    body.home-page .home-quick-grid[data-count="5"] > .home-quick-card:first-child .card-body,
-    body.home-page .home-quick-grid[data-count="1"] > .home-quick-card:only-child .card-body {
-        display: flex;
-        padding: 0.75rem 0.85rem;
-    }
-
     body.home-page .home-quick-copy {
         align-items: center;
         gap: 0.18rem;
     }
 
-    body.home-page .home-quick-grid[data-count="3"] > .home-quick-card:first-child .home-quick-copy,
-    body.home-page .home-quick-grid[data-count="5"] > .home-quick-card:first-child .home-quick-copy,
-    body.home-page .home-quick-grid[data-count="1"] > .home-quick-card:only-child .home-quick-copy {
-        align-items: flex-start;
-    }
-
     body.home-page .home-quick-card h2 {
         max-width: 100%;
-        font-size: clamp(0.9rem, 4vw, 1.02rem);
+        font-size: 0.84rem;
         text-align: center;
         white-space: normal;
-    }
-
-    body.home-page .home-quick-grid[data-count="3"] > .home-quick-card:first-child h2,
-    body.home-page .home-quick-grid[data-count="5"] > .home-quick-card:first-child h2,
-    body.home-page .home-quick-grid[data-count="1"] > .home-quick-card:only-child h2 {
-        text-align: left;
     }
 
     body.home-page .home-quick-context {
@@ -882,15 +918,16 @@ body.home-quick-dialog-open {
         white-space: normal;
     }
 
-    body.home-page .home-quick-grid[data-count="3"] > .home-quick-card:first-child .home-quick-context,
-    body.home-page .home-quick-grid[data-count="5"] > .home-quick-card:first-child .home-quick-context,
-    body.home-page .home-quick-grid[data-count="1"] > .home-quick-card:only-child .home-quick-context {
-        text-align: left;
-    }
-
     body.home-page .home-quick-arrow {
         display: none;
     }
+
+    body.home-page .home-additional-section { padding: 0.85rem; border-radius: 16px; }
+    body.home-page .home-additional-section > .section-title { font-size: 1.05rem; margin-bottom: 0.65rem; }
+    body.home-page .home-additional-grid > .subject-card:not([hidden]) { min-height: 64px; grid-template-columns: 40px minmax(0, 1fr); }
+    body.home-page .home-additional-grid .card-header { border-right: 1px solid var(--border-color); padding: 0.3rem; }
+    body.home-page .home-additional-grid .card-body { display: flex; padding: 0.5rem; }
+    body.home-page .home-additional-grid h2 { font-size: 0.86rem; text-align: left; }
 
     body.home-page .subjects-toolbar {
         align-items: stretch;
@@ -1061,7 +1098,7 @@ body.home-quick-dialog-open {
 
 @media (max-width: 390px) {
     body.home-page .home-header {
-        padding-inline: 2.9rem;
+        padding-inline: 0;
     }
 
     body.home-page .home-privileged-actions > .home-editor-link {

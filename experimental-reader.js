@@ -9,6 +9,7 @@
         sections: [],
         anchor: null,
         toolbar: null,
+        controls: null,
         footer: null,
         enterTimer: 0,
         rapidTimer: 0,
@@ -90,12 +91,18 @@
             </button>`;
 
         main.insertBefore(anchor, state.sections[0]);
-        main.insertBefore(toolbar, state.sections[0]);
+        const controls = document.createElement('div');
+        controls.className = 'note-reader-controls';
+        controls.appendChild(toolbar);
+        const filter = main.querySelector(':scope > .note-filter');
+        if (filter) controls.appendChild(filter);
+        main.insertBefore(controls, state.sections[0]);
         const pageFooter = main.querySelector(':scope > .page-footer');
         main.insertBefore(footer, pageFooter || null);
 
         state.anchor = anchor;
         state.toolbar = toolbar;
+        state.controls = controls;
         state.footer = footer;
     }
 
@@ -251,8 +258,7 @@
                 && now - state.lastNavigationAt < 130);
         state.lastNavigationAt = now;
 
-        // Состояние меняется сразу, даже если предыдущий визуальный переход ещё
-        // идёт. Отменяем только одну активную animation вместо обхода всех тем.
+        // Commit immediately; cancel only the active transition.
         cancelReaderTransition();
         setRapidNavigationState(rapid);
 
@@ -432,9 +438,7 @@
             detail: { topic }
         }));
 
-        // Пока пользователь читает текущий раздел, заранее готовим только соседний.
-        // Поэтому первое перелистывание остаётся мгновенным, а вся длинная страница
-        // по-прежнему не обрабатывается при открытии.
+        // Warm only the adjacent topic; keep the initial page render lazy.
         const next = state.topics[state.index + 1];
         if (!next || !window.AlmanionMath) return;
         const warm = () => window.AlmanionMath?.render(next);
@@ -524,7 +528,7 @@
     function getReaderScrollTop() {
         if (!state.anchor || !state.toolbar) return window.scrollY;
         const anchorTop = state.anchor.getBoundingClientRect().top + window.scrollY;
-        const stickyOffset = Number.parseFloat(window.getComputedStyle(state.toolbar).top) || 0;
+        const stickyOffset = Number.parseFloat(window.getComputedStyle(state.controls || state.toolbar).top) || 0;
         return Math.max(0, Math.round(anchorTop - stickyOffset));
     }
 

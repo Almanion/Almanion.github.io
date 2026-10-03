@@ -833,7 +833,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
     <link rel="stylesheet" href="styles/home-motion.css?v=20260920-2">
-    <link rel="stylesheet" href="styles/home-dashboard.css?v=20260929-2">
+    <link rel="stylesheet" href="styles/home-dashboard.css?v=20261003-1">
 </head>
 <body class="home-page">
     <script>(function(){document.body.classList.add('home-motion-initial');try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};var l=/^(max|medium|off)$/.test(p.animationLevel||'')?p.animationLevel:'max';document.body.classList.add('animations-'+l);if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){document.body.classList.add('animations-max');}})();</script>
@@ -982,6 +982,25 @@
                 </footer>
             </section>
         </div>
+
+        <div class="home-content-grid">
+        <section class="home-additional-section" aria-labelledby="homeAdditionalTitle">
+            <h2 class="section-title" id="homeAdditionalTitle">Дополнительно</h2>
+            <div class="subjects-grid home-additional-grid">
+                <a href="matcenter.html" class="subject-card home-quick-card" data-subject="matcenter">
+                    <div class="card-header"><div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-matcenter"/></svg></div></div>
+                    <div class="card-body"><h2>МатЦентр</h2></div>
+                </a>
+                <a href="likbez.html" class="subject-card home-quick-card" data-subject="likbez">
+                    <div class="card-header"><div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-likbez"/></svg></div></div>
+                    <div class="card-body"><h2>Ликбезы</h2></div>
+                </a>
+                <a class="subject-card home-quick-card" data-subject="english" id="homeAdditionalEnglish" hidden>
+                    <div class="card-header"><div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-english"/></svg></div></div>
+                    <div class="card-body"><h2>Английский</h2></div>
+                </a>
+            </div>
+        </section>
 
         <!-- Предметы по классам -->
         <section class="subjects-section" aria-labelledby="homeSubjectsTitle">
@@ -1160,9 +1179,11 @@
         </section>
 
 
+        </div>
+
         <footer class="home-footer">
             <p>
-                <strong>Almanion</strong> · <strong>2025—2026</strong>
+                <strong>Almanion</strong> · <strong>2026—2027</strong>
             </p>
         </footer>
     </div>
@@ -1193,7 +1214,7 @@
             function loadHomeDashboard() {
                 if (document.querySelector('script[data-home-dashboard]')) return;
                 var script = document.createElement('script');
-                script.src = 'home-dashboard.js?v=20260920-3';
+                script.src = 'home-dashboard.js?v=20261003-1';
                 script.dataset.homeDashboard = 'true';
                 document.head.appendChild(script);
             }

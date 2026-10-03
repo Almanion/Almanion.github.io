@@ -70,6 +70,7 @@
         let englishKnown = false;
         let accessGeneration = 0;
         let editorPromise = null;
+        let renderedSelection = '';
 
         function settingsApi() {
             return win.AlmanionSettings && win.AlmanionSettings.ready ? win.AlmanionSettings : null;
@@ -104,10 +105,21 @@
 
         function render() {
             const byId = new Map(availableItems(englishAllowed).map(function (item) { return [item.id, item]; }));
-            const fragment = doc.createDocumentFragment();
-            selected().forEach(function (id) { if (byId.has(id)) fragment.appendChild(quickCard(byId.get(id))); });
-            grid.replaceChildren(fragment);
+            const ids = selected().filter(function (id) { return byId.has(id); });
+            const selectionKey = ids.join(',');
+            if (renderedSelection !== selectionKey) {
+                const fragment = doc.createDocumentFragment();
+                ids.forEach(function (id) { fragment.appendChild(quickCard(byId.get(id))); });
+                grid.replaceChildren(fragment);
+                renderedSelection = selectionKey;
+            }
             grid.dataset.count = String(grid.childElementCount);
+            const englishCard = doc.getElementById('homeAdditionalEnglish');
+            if (englishCard) {
+                englishCard.hidden = !englishAllowed;
+                if (englishAllowed) englishCard.href = byId.get('english').href;
+                else englishCard.removeAttribute('href');
+            }
         }
 
         function setAccount(account) {

@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
-    <link rel="stylesheet" href="styles/duty.css?v=20260929-2">
+    <link rel="stylesheet" href="styles/duty.css?v=20261003-1">
 </head>
 <body class="duty-page" data-no-math>
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -74,7 +74,11 @@
                     <span class="sr-only">Найти дежурного</span>
                     <input id="dutySearchInput" type="search" autocomplete="off" placeholder="Найти дежурного…">
                 </label>
-                <div class="duty-months" id="dutyMonthFilters" role="group" aria-label="Фильтр по месяцу"></div>
+                <div class="duty-month-navigation">
+                    <button class="duty-month-scroll" id="dutyMonthsPrev" type="button" aria-label="Предыдущие месяцы" aria-controls="dutyMonthFilters" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+                    <div class="duty-months" id="dutyMonthFilters" role="group" aria-label="Фильтр по месяцу"></div>
+                    <button class="duty-month-scroll" id="dutyMonthsNext" type="button" aria-label="Следующие месяцы" aria-controls="dutyMonthFilters" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+                </div>
             </div>
 
             <div class="duty-groups" id="dutyGroups"></div>
@@ -209,6 +213,6 @@
     <script src="script.js?v=20260906-1"></script>
     <script src="settings.js?v=20261002-1"></script>
     <script src="account.js?v=20260908-1"></script>
-    <script src="duty.js?v=20260907-1"></script>
+    <script src="duty.js?v=20261003-1"></script>
 </body>
 </html>

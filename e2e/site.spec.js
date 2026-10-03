@@ -36,8 +36,8 @@ test('home page switches grades without losing its layout', async function ({ pa
 
     await expect(page.locator('.home-header h1')).toContainText('Конспекты');
     await expect(page.locator('.home-quick-section')).toBeVisible();
-    await expect(page.locator('.home-quick-card[href="matcenter.html"]')).toBeVisible();
-    await expect(page.locator('.home-quick-card[href="likbez.html"]')).toBeVisible();
+    await expect(page.locator('#homeQuickGrid .home-quick-card[href="matcenter.html"]')).toBeVisible();
+    await expect(page.locator('#homeQuickGrid .home-quick-card[href="likbez.html"]')).toBeVisible();
     const quickBounds = await page.locator('.home-quick-section').boundingBox();
     const subjectsBounds = await page.locator('.subjects-section').boundingBox();
     expect(quickBounds).not.toBeNull();

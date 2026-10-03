@@ -958,8 +958,20 @@
         share.hidden = false;
     }
 
+    function updateMonthScroll() {
+        const list = byId('dutyMonthFilters');
+        const previous = byId('dutyMonthsPrev');
+        const next = byId('dutyMonthsNext');
+        if (!list || !previous || !next) return;
+        const overflowing = list.scrollWidth > list.clientWidth + 2;
+        previous.hidden = next.hidden = !overflowing;
+        previous.disabled = list.scrollLeft <= 2;
+        next.disabled = list.scrollLeft >= list.scrollWidth - list.clientWidth - 2;
+    }
+
     function renderMonthFilters() {
         const rootElement = byId('dutyMonthFilters');
+        const scrollLeft = rootElement.scrollLeft;
         const keys = Array.from(new Set(schedule.entries.flatMap(entryMonthKeys))).sort();
         if (selectedMonth !== 'all' && keys.indexOf(selectedMonth) === -1) selectedMonth = 'all';
         rootElement.replaceChildren();
@@ -972,13 +984,21 @@
             button.classList.toggle('is-active', selectedMonth === item.key);
             button.setAttribute('aria-pressed', selectedMonth === item.key ? 'true' : 'false');
             button.textContent = item.label;
+            button.dataset.month = item.key;
             button.addEventListener('click', function () {
                 selectedMonth = item.key;
-                renderMonthFilters();
+                // Keep both keyboard focus and the position of the month strip.
+                rootElement.querySelectorAll('button').forEach(function (filter) {
+                    const active = filter.dataset.month === selectedMonth;
+                    filter.classList.toggle('is-active', active);
+                    filter.setAttribute('aria-pressed', String(active));
+                });
                 renderGroups();
             });
             rootElement.appendChild(button);
         });
+        rootElement.scrollLeft = scrollLeft;
+        updateMonthScroll();
     }
 
     function makeWeekCard(entry, state) {
@@ -2023,6 +2043,16 @@
     function init() {
         bindEvents();
         renderAll();
+        const months = byId('dutyMonthFilters');
+        if (months) months.addEventListener('scroll', updateMonthScroll, { passive: true });
+        [['dutyMonthsPrev', -1], ['dutyMonthsNext', 1]].forEach(function (control) {
+            const button = byId(control[0]);
+            if (button && months) button.addEventListener('click', function () {
+                const reduced = root.matchMedia('(prefers-reduced-motion: reduce)').matches || document.body.classList.contains('animations-off');
+                months.scrollBy({ left: control[1] * Math.max(120, months.clientWidth * 0.8), behavior: reduced ? 'instant' : 'smooth' });
+            });
+        });
+        root.addEventListener('resize', updateMonthScroll);
         if (root.AlmanionAccount) {
             database = root.AlmanionAccount.database || null;
             updateEditorAccess(root.AlmanionAccount.getUser ? root.AlmanionAccount.getUser() : null);

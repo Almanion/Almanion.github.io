@@ -1,5 +1,11 @@
 (function () {
     'use strict';
+    // Stress words already have a part-of-speech selector. The generic block
+    // filter only offered "Other text" here and could hide the entire dictionary.
+    if (document.body?.dataset.noteSubject === 'russian-ege') {
+        try { localStorage.removeItem('note-block-filter:' + location.pathname); } catch (_) {}
+        return;
+    }
     function init() {
     if (window.AlmanionNoteFilter) return;
     const main = document.querySelector('.main-content');
@@ -30,7 +36,9 @@
         '<button type="button" class="note-filter-reset">' + (english ? 'Show all' : 'Показать всё') + '</button>';
     const first = main.querySelector(':scope > .content-section');
     if (!first) return;
-    main.insertBefore(panel, first);
+    const controls = main.querySelector(':scope > .note-reader-controls');
+    if (controls) controls.appendChild(panel);
+    else main.insertBefore(panel, first);
 
     function apply() {
         main.querySelectorAll('[data-note-filter-hidden],[data-note-filter-shell]').forEach(el => {

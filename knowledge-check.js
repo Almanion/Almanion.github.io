@@ -1184,6 +1184,7 @@
                 '<div class="kc-head"><span class="kc-head-icon">' + IC.brain + '</span>' +
                     '<div class="kc-head-text"><h2 class="kc-title" id="kcSelectTitle">Проверка знаний</h2>' +
                     '<p class="kc-subtitle">' + escapeHtml(profile.subtitle) + '</p></div></div>' +
+                '<div class="kc-select-scroll">' +
                 '<div class="kc-session-resume" id="kcSessionResume" hidden></div>' +
                 '<section class="kc-filter-section" aria-labelledby="kcTypesHeading">' +
                     '<div class="kc-filter-heading-row"><h3 class="kc-filter-heading" id="kcTypesHeading">Что повторять</h3>' +
@@ -1204,6 +1205,7 @@
                 '</div>' +
                 '<div class="kc-recommendation" id="kcRecommendation" aria-live="polite"></div>' +
                 '<div class="kc-session-notice kc-session-notice-error" id="kcSelectNotice" hidden aria-live="polite"></div>' +
+                '</div>' +
                 '<div class="kc-actions">' +
                     '<button class="kc-btn kc-btn-ghost" id="kcSelectAll">Выбрать всё</button>' +
                     '<button class="kc-btn kc-btn-primary" id="kcStart">' + IC.play + 'Учить<span class="kc-count-badge" id="kcStartCount">0</span></button>' +
@@ -1928,7 +1930,7 @@
             if (!m || m.scrollTop > 5) return;
             // Не перехватываем свайп, если внутренний прокручиваемый список не вверху —
             // иначе пролистывание списка случайно закрывает окно.
-            const sc = e.target.closest && e.target.closest('.kc-deck-list, .kc-content');
+            const sc = e.target.closest && e.target.closest('.kc-select-scroll, .kc-content');
             if (sc && sc.scrollTop > 5) return;
             startY = currentY = e.touches[0].clientY; tracking = true; activated = false;
         }, { passive: true });

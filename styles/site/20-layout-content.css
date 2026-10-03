@@ -843,6 +843,7 @@ body.dark-theme .page-header {
 body[data-note-subject] .main-content > .page-header,
 body[data-note-subject] .main-content > .content-section,
 body[data-note-subject] .main-content > .exp-reader-toolbar,
+body[data-note-subject] .main-content > .note-reader-controls,
 body[data-note-subject] .main-content > .exp-reader-footer {
     zoom: var(--note-scale, 1);
 }
