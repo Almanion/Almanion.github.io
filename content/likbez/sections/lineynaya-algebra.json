@@ -2,25 +2,24 @@
   "schemaVersion": 1,
   "id": "lineynaya-algebra",
   "subject": "likbez",
-  "title": "Линейный анализ",
-  "navTitle": "Линейный анализ",
+  "title": "Линейная алгебра",
+  "navTitle": "Линейная алгебра",
   "blocks": [],
   "subsections": [
     {
       "id": "vazhnye-opredeleniya",
       "type": "subsection",
       "title": "§ 1. Важные определения",
-      "navTitle": "§ 1. Важные определения",
       "content": "",
       "children": [
         {
           "id": "linear-space-definition",
           "type": "definition",
           "title": "",
-          "term": "Линейное пространство",
-          "separator": "—",
           "content": "\\(L\\) — множество, на котором введены операции \\(+\\colon L\\times L\\to L\\), \\(\\cdot\\colon K\\times L\\to L\\), где \\(K\\) — поле. \\(L\\) обладает следующими свойствами:\n\n1. \\(\\forall u,v\\in L\\quad u+v=v+u\\).\n2. \\(\\forall u,v,w\\in L\\quad (u+v)+w=u+(v+w)\\).\n3. \\(\\exists\\Theta\\in L\\colon \\forall u\\in L\\quad u+\\Theta=u\\).\n4. \\(\\forall u\\in L\\quad \\exists u'\\in L\\colon u+u'=\\Theta\\).\n\nСвойства 1–4 означают, что \\((L,+)\\) — абелева группа.\n\n5. \\(\\forall\\lambda,\\mu\\in K\\ \\forall u\\in L\\quad (\\lambda\\mu)u=\\lambda(\\mu u)\\).\n6. \\(\\forall\\lambda,\\mu\\in K\\ \\forall u\\in L\\quad (\\lambda+\\mu)u=\\lambda u+\\mu u\\).\n7. \\(\\forall\\lambda\\in K\\ \\forall u,v\\in L\\quad \\lambda(u+v)=\\lambda u+\\lambda v\\).\n8. \\(\\forall u\\in L\\quad 1\\cdot u=u\\).\n\nТогда \\(L\\) называется **линейным (векторным) пространством над полем \\(K\\)**. Элементы \\(L\\) будем называть **векторами**, а элементы \\(K\\) — **скалярами (числами)**.",
-          "children": []
+          "children": [],
+          "term": "Линейное пространство",
+          "separator": "—"
         },
         {
           "id": "linear-space-basic-properties",
@@ -69,19 +68,19 @@
           "id": "linear-combinations-definition",
           "type": "definition",
           "title": "",
-          "term": "Линейная комбинация",
-          "separator": "—",
           "content": "Пусть \\(u_1,\\ldots,u_n\\in L\\), \\(\\lambda_1,\\ldots,\\lambda_n\\in K\\). Выражение \\(\\sum_{i=1}^n\\lambda_i u_i\\) называется **линейной комбинацией** векторов \\(u_i\\) с коэффициентами \\(\\lambda_i\\).\n\nЕсли \\(\\sum_{i=1}^n\\lambda_i=1\\), то эта комбинация называется **аффинной комбинацией**.\n\nЕсли \\(\\lambda_i\\ge0\\) (над \\(\\mathbb Q\\) или \\(\\mathbb R\\)) и \\(\\sum_{i=1}^n\\lambda_i=1\\), то эта комбинация называется **выпуклой комбинацией**.",
-          "children": []
+          "children": [],
+          "term": "Линейная комбинация",
+          "separator": "—"
         },
         {
           "id": "subspace-definition",
           "type": "definition",
           "title": "",
-          "term": "Подпространство",
-          "separator": "—",
           "content": "\\(L_1\\subset L\\), \\(L_1\\ne\\varnothing\\), называется **подпространством** \\(L\\), если \\(\\forall u,v\\in L_1\\quad u+v\\in L_1\\) и \\(\\forall\\lambda\\in K\\ \\forall u\\in L_1\\quad \\lambda u\\in L_1\\).",
-          "children": []
+          "children": [],
+          "term": "Подпространство",
+          "separator": "—"
         },
         {
           "id": "subspace-remark",
@@ -94,19 +93,19 @@
           "id": "linear-span-definition",
           "type": "definition",
           "title": "",
-          "term": "Линейная оболочка",
-          "separator": "—",
           "content": "Линейной оболочкой векторов \\(u_1,\\ldots,u_n\\in L\\) называется множество",
           "children": [
             {
               "id": "linear-span-formula",
               "type": "formula",
               "title": "",
-              "latex": "\\operatorname{span}\\{u_1,\\ldots,u_n\\}\\stackrel{\\mathrm{def}}=\\left\\{\\sum_{i=1}^n\\alpha_i u_i\\ \\middle|\\ \\alpha_i\\in K\\right\\}",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "\\operatorname{span}\\{u_1,\\ldots,u_n\\}\\stackrel{\\mathrm{def}}=\\left\\{\\sum_{i=1}^n\\alpha_i u_i\\ \\middle|\\ \\alpha_i\\in K\\right\\}"
             }
-          ]
+          ],
+          "term": "Линейная оболочка",
+          "separator": "—"
         },
         {
           "id": "linear-span-subspace",
@@ -127,27 +126,27 @@
           "id": "affine-convex-hulls-definition",
           "type": "definition",
           "title": "",
-          "term": "Аффинная и выпуклая оболочки",
-          "separator": "—",
           "content": "",
           "children": [
             {
               "id": "affine-hull-formula",
               "type": "formula",
               "title": "",
-              "latex": "\\operatorname{aff}\\{u_1,\\ldots,u_n\\}\\stackrel{\\mathrm{def}}=\\left\\{\\sum_{i=1}^n\\alpha_i u_i\\ \\middle|\\ \\alpha_i\\in K,\\ \\sum_{i=1}^n\\alpha_i=1\\right\\}",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "\\operatorname{aff}\\{u_1,\\ldots,u_n\\}\\stackrel{\\mathrm{def}}=\\left\\{\\sum_{i=1}^n\\alpha_i u_i\\ \\middle|\\ \\alpha_i\\in K,\\ \\sum_{i=1}^n\\alpha_i=1\\right\\}"
             },
             {
               "id": "convex-hull-formula",
               "type": "formula",
               "title": "",
-              "latex": "\\operatorname{conv}\\{u_1,\\ldots,u_n\\}\\stackrel{\\mathrm{def}}=\\left\\{\\sum_{i=1}^n\\alpha_i u_i\\ \\middle|\\ \\alpha_i\\ge0,\\ \\sum_{i=1}^n\\alpha_i=1\\right\\}",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "\\operatorname{conv}\\{u_1,\\ldots,u_n\\}\\stackrel{\\mathrm{def}}=\\left\\{\\sum_{i=1}^n\\alpha_i u_i\\ \\middle|\\ \\alpha_i\\ge0,\\ \\sum_{i=1}^n\\alpha_i=1\\right\\}"
             }
-          ]
+          ],
+          "term": "Аффинная и выпуклая оболочки",
+          "separator": "—"
         },
         {
           "id": "linear-combination-observation",
@@ -171,23 +170,23 @@
             }
           ]
         }
-      ]
+      ],
+      "navTitle": "§ 1. Важные определения"
     },
     {
       "id": "lineynaya-nezavisimost-bazis",
       "type": "subsection",
       "title": "§ 2. Линейная независимость. Базис",
-      "navTitle": "§ 2. Линейная независимость. Базис",
       "content": "",
       "children": [
         {
           "id": "linear-dependence-definition",
           "type": "definition",
           "title": "",
-          "term": "Линейная зависимость",
-          "separator": "—",
           "content": "Пусть \\(L\\) — линейное пространство над \\(K\\). Векторы \\(u_1,\\ldots,u_n\\in L\\) называются **линейно зависимыми**, если существуют \\(\\alpha_1,\\ldots,\\alpha_n\\in K\\), не все равные нулю, такие что \\(\\sum_{i=1}^n\\alpha_i u_i=\\Theta\\).",
-          "children": []
+          "children": [],
+          "term": "Линейная зависимость",
+          "separator": "—"
         },
         {
           "id": "linear-dependence-properties",
@@ -230,10 +229,10 @@
           "id": "linear-independence-definition",
           "type": "definition",
           "title": "",
-          "term": "Линейная независимость",
-          "separator": "—",
           "content": "Векторы \\(u_1,\\ldots,u_n\\in L\\) называются **линейно независимыми**, если из \\(\\sum_{i=1}^n\\alpha_i u_i=\\Theta\\) следует, что \\(\\forall i\\quad \\alpha_i=0\\).",
-          "children": []
+          "children": [],
+          "term": "Линейная независимость",
+          "separator": "—"
         },
         {
           "id": "unique-linear-representation",
@@ -246,19 +245,19 @@
           "id": "finite-dimensional-definition",
           "type": "definition",
           "title": "",
-          "term": "Конечномерное пространство",
-          "separator": "—",
           "content": "Линейное пространство \\(L\\) называется **конечномерным**, если существуют \\(u_1,\\ldots,u_n\\in L\\), для которых \\(L=\\operatorname{span}\\{u_1,\\ldots,u_n\\}\\).",
-          "children": []
+          "children": [],
+          "term": "Конечномерное пространство",
+          "separator": "—"
         },
         {
           "id": "basis-definition",
           "type": "definition",
           "title": "",
-          "term": "Базис",
-          "separator": "—",
           "content": "Набор \\(\\{u_1,\\ldots,u_n\\}\\subset L\\) называется **базисом**, если:\n1. \\(L=\\operatorname{span}\\{u_1,\\ldots,u_n\\}\\);\n2. \\(u_1,\\ldots,u_n\\) линейно независимы.",
-          "children": []
+          "children": [],
+          "term": "Базис",
+          "separator": "—"
         },
         {
           "id": "basis-existence-theorem",
@@ -294,10 +293,10 @@
           "id": "dimension-definition",
           "type": "definition",
           "title": "",
-          "term": "Размерность",
-          "separator": "—",
           "content": "Пусть \\(L\\) конечномерно. Количество элементов в базисе называется **размерностью \\(L\\)**. Обозначение: \\(\\dim L\\).",
-          "children": []
+          "children": [],
+          "term": "Размерность",
+          "separator": "—"
         },
         {
           "id": "infinite-dimensional-criterion",
@@ -328,30 +327,28 @@
           "content": "1. \\(K^n=\\{(a_1,\\ldots,a_n)\\mid a_i\\in K\\}\\). Векторы \\(e_i=(0,\\ldots,0,1,0,\\ldots,0)\\) образуют базис, \\((a_1,\\ldots,a_n)=\\sum_{i=1}^n a_i e_i\\). Поэтому \\(\\dim K^n=n\\).\n2. Пусть \\(|A|=n\\), сложение подмножеств \\(A\\) — симметрическая разность, а умножение на скаляр — над \\(\\mathbb F_2\\). Базис образуют одноэлементные множества. В \\(\\mathbb F_2^n\\) сложение — побитовое исключающее «или» (xor).\n3. \\(K[x]\\) бесконечномерно, так как \\(1,x,x^2,\\ldots,x^n\\) линейно независимы. Иначе из \\(\\sum a_i x^i=0\\) следовало бы, что все коэффициенты равны нулю.\n4. \\(K^\\infty=\\{(a_1,a_2,\\ldots)\\mid a_i\\in K\\}\\). Векторы \\(e_i\\), определённые как в \\(K^n\\), линейно независимы в любом конечном количестве: \\(e_1,\\ldots,e_m\\) линейно независимы для любого \\(m\\). Соответствие \\(\\alpha_1u_1+\\cdots+\\alpha_mu_m\\longmapsto(\\alpha_1,\\ldots,\\alpha_m)\\in K^m\\).",
           "children": []
         }
-      ]
+      ],
+      "navTitle": "§ 2. Линейная независимость. Базис"
     },
     {
       "id": "sistemy-lineynyh-uravneniy",
       "type": "subsection",
       "title": "§ 3. Системы линейных уравнений",
-      "navTitle": "§ 3. Системы линейных уравнений",
       "content": "",
       "children": [
         {
           "id": "linear-system-definition",
           "type": "definition",
           "title": "",
-          "term": "Система линейных уравнений",
-          "separator": "—",
           "content": "Системой линейных уравнений называется множество равенств",
           "children": [
             {
               "id": "linear-system-formula",
               "type": "formula",
               "title": "",
-              "latex": "\\sum_{j=1}^n\\alpha_{ij}x_j=\\beta_i,\\qquad i=1,\\ldots,m.",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "\\sum_{j=1}^n\\alpha_{ij}x_j=\\beta_i,\\qquad i=1,\\ldots,m."
             },
             {
               "id": "linear-system-solution",
@@ -360,16 +357,18 @@
               "content": "Здесь \\(m\\) — число уравнений, \\(n\\) — число неизвестных. Набор \\((c_1,\\ldots,c_n)\\in K^n\\) является её **решением**, если при подстановке \\(x_1=c_1,\\ldots,x_n=c_n\\) все равенства становятся верными.",
               "children": []
             }
-          ]
+          ],
+          "term": "Система линейных уравнений",
+          "separator": "—"
         },
         {
           "id": "elementary-transformations-definition",
           "type": "definition",
           "title": "",
-          "term": "Элементарные преобразования",
-          "separator": "—",
           "content": "Элементарными преобразованиями называются:\n1. Перестановка уравнений (переобозначение индексов).\n2. Дописывание уравнения \\(\\sum 0\\cdot x_j=0\\).\n3. Вычёркивание уравнения \\(\\sum 0\\cdot x_j=0\\).\n4. Прибавление к одному уравнению другого уравнения, умноженного на \\(c\\in K\\): если\n\\(A\\colon \\alpha_{k1}x_1+\\cdots+\\alpha_{kn}x_n=\\beta_k\\),\n\\(B\\colon \\alpha_{\\ell1}x_1+\\cdots+\\alpha_{\\ell n}x_n=\\beta_\\ell\\),\nто вместо \\(B\\) записывается\n\\(F\\colon (\\alpha_{\\ell1}+c\\alpha_{k1})x_1+\\cdots+(\\alpha_{\\ell n}+c\\alpha_{kn})x_n=\\beta_\\ell+c\\beta_k\\).",
-          "children": []
+          "children": [],
+          "term": "Элементарные преобразования",
+          "separator": "—"
         },
         {
           "id": "elementary-transformations-theorem",
@@ -396,9 +395,9 @@
               "id": "gauss-echelon-formula",
               "type": "formula",
               "title": "",
-              "latex": "\\begin{cases}\\alpha_{11}x_1+\\alpha_{12}x_2+\\cdots+\\alpha_{1n}x_n=\\beta_1,\\\\\\alpha_{22}x_2+\\cdots+\\alpha_{2n}x_n=\\beta_2,\\\\\\qquad\\vdots\\\\\\alpha_{kk}x_k+\\cdots+\\alpha_{kn}x_n=\\beta_k,\\end{cases}\\qquad \\alpha_{ii}\\ne0.",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "\\begin{cases}\\alpha_{11}x_1+\\alpha_{12}x_2+\\cdots+\\alpha_{1n}x_n=\\beta_1,\\\\\\alpha_{22}x_2+\\cdots+\\alpha_{2n}x_n=\\beta_2,\\\\\\qquad\\vdots\\\\\\alpha_{kk}x_k+\\cdots+\\alpha_{kn}x_n=\\beta_k,\\end{cases}\\qquad \\alpha_{ii}\\ne0."
             },
             {
               "id": "gauss-back-substitution",
@@ -413,10 +412,10 @@
           "id": "homogeneous-system-definition",
           "type": "definition",
           "title": "",
-          "term": "Однородная система",
-          "separator": "—",
           "content": "Система называется **однородной**, если все \\(\\beta_i=0\\).",
-          "children": []
+          "children": [],
+          "term": "Однородная система",
+          "separator": "—"
         },
         {
           "id": "homogeneous-nontrivial-solution",
@@ -463,23 +462,23 @@
             }
           ]
         }
-      ]
+      ],
+      "navTitle": "§ 3. Системы линейных уравнений"
     },
     {
       "id": "rang-matricy",
       "type": "subsection",
       "title": "§ 4. Ранг матрицы",
-      "navTitle": "§ 4. Ранг матрицы",
       "content": "",
       "children": [
         {
           "id": "vector-system-rank-definition",
           "type": "definition",
           "title": "",
-          "term": "Ранг набора векторов",
-          "separator": "—",
           "content": "Пусть \\(u_1,\\ldots,u_m\\in L\\). **Рангом набора** \\(\\{u_1,\\ldots,u_m\\}\\) называется размерность его линейной оболочки: \\(\\operatorname{rg}\\{u_1,\\ldots,u_m\\}\\stackrel{\\mathrm{def}}=\\dim\\operatorname{span}\\{u_1,\\ldots,u_m\\}\\).",
-          "children": []
+          "children": [],
+          "term": "Ранг набора векторов",
+          "separator": "—"
         },
         {
           "id": "vector-system-rank-remark",
@@ -500,19 +499,19 @@
           "id": "matrix-definition",
           "type": "definition",
           "title": "",
-          "term": "Матрица",
-          "separator": "—",
           "content": "**Матрицей размера \\(m\\times n\\)** называется упорядоченный набор чисел \\(A=(\\alpha_{ij})\\), \\(i=1,\\ldots,m\\), \\(j=1,\\ldots,n\\). Её строки — это векторы \\(u_i=(\\alpha_{i1},\\ldots,\\alpha_{in})\\in K^n\\), а столбцы — векторы \\(v_j=(\\alpha_{1j},\\ldots,\\alpha_{mj})\\in K^m\\).",
-          "children": []
+          "children": [],
+          "term": "Матрица",
+          "separator": "—"
         },
         {
           "id": "matrix-rank-definition",
           "type": "definition",
           "title": "",
-          "term": "Ранг матрицы",
-          "separator": "—",
           "content": "**Рангом матрицы** называется \\(\\operatorname{rg}A\\stackrel{\\mathrm{def}}=\\operatorname{rg}\\{u_1,\\ldots,u_m\\}\\).",
-          "children": []
+          "children": [],
+          "term": "Ранг матрицы",
+          "separator": "—"
         },
         {
           "id": "row-column-rank-theorem",
@@ -559,19 +558,19 @@
             }
           ]
         }
-      ]
+      ],
+      "navTitle": "§ 4. Ранг матрицы"
     },
     {
       "id": "opredelitel-matricy",
       "type": "subsection",
       "title": "§ 5. Определитель матрицы",
-      "navTitle": "§ 5. Определитель матрицы",
       "content": "",
       "children": [
         {
           "id": "permutation-reminder",
           "type": "reminder",
-          "title": "",
+          "title": "Напоминание",
           "content": "\\(S_n=\\{\\sigma\\colon\\{1,\\ldots,n\\}\\to\\{1,\\ldots,n\\}\\mid\\sigma\\text{ — биекция}\\}\\) — группа перестановок.",
           "children": []
         },
@@ -579,17 +578,15 @@
           "id": "inversion-sign-definition",
           "type": "definition",
           "title": "",
-          "term": "Инверсия и знак перестановки",
-          "separator": "—",
           "content": "**Инверсия** в \\(\\sigma\\) — пара \\(i<j\\), для которой \\(\\sigma(i)>\\sigma(j)\\). Знак перестановки определяется равенством",
           "children": [
             {
               "id": "permutation-sign-formula",
               "type": "formula",
               "title": "",
-              "latex": "\\operatorname{sgn}\\sigma=\\begin{cases}-1,&\\text{количество инверсий нечётно},\\\\1,&\\text{количество инверсий чётно}.\\end{cases}",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "\\operatorname{sgn}\\sigma=\\begin{cases}-1,&\\text{количество инверсий нечётно},\\\\1,&\\text{количество инверсий чётно}.\\end{cases}"
             },
             {
               "id": "permutation-sign-product",
@@ -598,25 +595,27 @@
               "content": "\\(\\operatorname{sgn}(\\sigma_1\\circ\\sigma_2)=\\operatorname{sgn}\\sigma_1\\cdot\\operatorname{sgn}\\sigma_2\\).",
               "children": []
             }
-          ]
+          ],
+          "term": "Инверсия и знак перестановки",
+          "separator": "—"
         },
         {
           "id": "determinant-definition",
           "type": "definition",
           "title": "",
-          "term": "Определитель матрицы",
-          "separator": "—",
           "content": "Пусть \\(A=(\\alpha_{ij})\\) — матрица \\(n\\times n\\) над \\(K\\). **Определителем матрицы \\(A\\)** называется число",
           "children": [
             {
               "id": "determinant-formula",
               "type": "formula",
               "title": "",
-              "latex": "\\det A\\stackrel{\\mathrm{def}}=\\sum_{\\sigma\\in S_n}\\operatorname{sgn}\\sigma\\,\\alpha_{1\\sigma(1)}\\cdots\\alpha_{n\\sigma(n)}.",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "\\det A\\stackrel{\\mathrm{def}}=\\sum_{\\sigma\\in S_n}\\operatorname{sgn}\\sigma\\,\\alpha_{1\\sigma(1)}\\cdots\\alpha_{n\\sigma(n)}."
             }
-          ]
+          ],
+          "term": "Определитель матрицы",
+          "separator": "—"
         },
         {
           "id": "determinant-examples",
@@ -628,9 +627,9 @@
               "id": "three-by-three-determinant",
               "type": "formula",
               "title": "",
-              "latex": "\\begin{aligned}\\det A={}&\\alpha_{11}\\alpha_{22}\\alpha_{33}-\\alpha_{11}\\alpha_{23}\\alpha_{32}-\\alpha_{12}\\alpha_{21}\\alpha_{33}+\\alpha_{12}\\alpha_{23}\\alpha_{31}\\\\&+\\alpha_{13}\\alpha_{21}\\alpha_{32}-\\alpha_{13}\\alpha_{22}\\alpha_{31}\\\\={}&\\alpha_{11}\\begin{vmatrix}\\alpha_{22}&\\alpha_{23}\\\\\\alpha_{32}&\\alpha_{33}\\end{vmatrix}-\\alpha_{12}\\begin{vmatrix}\\alpha_{21}&\\alpha_{23}\\\\\\alpha_{31}&\\alpha_{33}\\end{vmatrix}+\\alpha_{13}\\begin{vmatrix}\\alpha_{21}&\\alpha_{22}\\\\\\alpha_{31}&\\alpha_{32}\\end{vmatrix}.\\end{aligned}",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "\\begin{aligned}\\det A={}&\\alpha_{11}\\alpha_{22}\\alpha_{33}-\\alpha_{11}\\alpha_{23}\\alpha_{32}-\\alpha_{12}\\alpha_{21}\\alpha_{33}+\\alpha_{12}\\alpha_{23}\\alpha_{31}\\\\&+\\alpha_{13}\\alpha_{21}\\alpha_{32}-\\alpha_{13}\\alpha_{22}\\alpha_{31}\\\\={}&\\alpha_{11}\\begin{vmatrix}\\alpha_{22}&\\alpha_{23}\\\\\\alpha_{32}&\\alpha_{33}\\end{vmatrix}-\\alpha_{12}\\begin{vmatrix}\\alpha_{21}&\\alpha_{23}\\\\\\alpha_{31}&\\alpha_{33}\\end{vmatrix}+\\alpha_{13}\\begin{vmatrix}\\alpha_{21}&\\alpha_{22}\\\\\\alpha_{31}&\\alpha_{32}\\end{vmatrix}.\\end{aligned}"
             }
           ]
         },
@@ -689,19 +688,19 @@
           "id": "nondegenerate-matrix-definition",
           "type": "definition",
           "title": "",
-          "term": "Невырожденная матрица",
-          "separator": "—",
           "content": "Если \\(\\det A\\ne0\\), то \\(A\\) называется **невырожденной**.",
-          "children": []
+          "children": [],
+          "term": "Невырожденная матрица",
+          "separator": "—"
         },
         {
           "id": "minor-definition",
           "type": "definition",
           "title": "",
-          "term": "Минор",
-          "separator": "—",
           "content": "Выделим в \\(A\\) \\(k\\) строк и \\(k\\) столбцов. Элементы на их пересечении образуют матрицу \\(k\\times k\\). Определитель этой матрицы называется **минором \\(k\\)-го порядка**.",
-          "children": []
+          "children": [],
+          "term": "Минор",
+          "separator": "—"
         },
         {
           "id": "rank-by-minors-theorem",
@@ -713,9 +712,9 @@
               "id": "rank-by-minors-formula",
               "type": "formula",
               "title": "",
-              "latex": "\\operatorname{rg}A=\\max\\{k\\mid\\exists M_k(A)\\ne0\\}.",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "\\operatorname{rg}A=\\max\\{k\\mid\\exists M_k(A)\\ne0\\}."
             },
             {
               "id": "rank-by-minors-proof",
@@ -726,23 +725,23 @@
             }
           ]
         }
-      ]
+      ],
+      "navTitle": "§ 5. Определитель матрицы"
     },
     {
       "id": "lineynye-operatory",
       "type": "subsection",
       "title": "§ 6. Линейные операторы. Перемножение матриц",
-      "navTitle": "§ 6. Линейные операторы",
       "content": "",
       "children": [
         {
           "id": "linear-operator-definition",
           "type": "definition",
           "title": "",
-          "term": "Линейный оператор",
-          "separator": "—",
           "content": "Пусть \\(U,V\\) — линейные пространства. Отображение \\(f\\colon U\\to V\\) называется **линейным оператором**, то есть \\(\\forall x,y\\in U\\quad\\forall\\alpha,\\beta\\in K\\quad f(\\alpha x+\\beta y)=\\alpha f(x)+\\beta f(y)\\).",
-          "children": []
+          "children": [],
+          "term": "Линейный оператор",
+          "separator": "—"
         },
         {
           "id": "linear-map-r-to-r",
@@ -763,10 +762,10 @@
           "id": "operator-matrix-definition",
           "type": "definition",
           "title": "",
-          "term": "Матрица оператора",
-          "separator": "—",
           "content": "Матрица \\(m\\times n\\) \\((\\alpha_{ij})\\) называется **матрицей оператора \\(f\\)** в базисах \\(u_j\\) и \\(\\delta_i\\).",
-          "children": []
+          "children": [],
+          "term": "Матрица оператора",
+          "separator": "—"
         },
         {
           "id": "composition-matrix-observation",
@@ -787,10 +786,10 @@
           "id": "matrix-product-definition",
           "type": "definition",
           "title": "",
-          "term": "Произведение матриц",
-          "separator": "—",
           "content": "Пусть \\(A=(\\alpha_{ij})\\) — матрица \\(m\\times n\\), \\(B=(\\beta_{ij})\\) — матрица \\(n\\times\\ell\\). Их **произведением** называется матрица \\(C=(\\gamma_{ij})\\) размера \\(m\\times\\ell\\), где \\(\\gamma_{ij}=\\sum_{k=1}^n\\alpha_{ik}\\beta_{kj}\\). Обозначение: \\(C=AB\\).",
-          "children": []
+          "children": [],
+          "term": "Произведение матриц",
+          "separator": "—"
         },
         {
           "id": "matrix-product-observations",
@@ -849,23 +848,23 @@
           "content": "1. Если \\(\\det A\\ne0\\) и \\(\\det B\\ne0\\), то \\(\\det(AB)\\ne0\\). Пусть \\(B\\) — матрица \\(g\\), \\(A\\) — матрица \\(f\\). По лемме \\(f\\) и \\(g\\) инъективны. Если \\(x_1\\ne x_2\\), то \\(g(x_1)\\ne g(x_2)\\), следовательно, \\(f(g(x_1))\\ne f(g(x_2))\\), то есть \\(f\\circ g\\) инъективен.\n\n2. Если \\(\\det B=0\\), то существуют \\(x_1\\ne x_2\\), для которых \\(g(x_1)=g(x_2)\\). Тогда \\(f(g(x_1))=f(g(x_2))\\).\n\nЕсли \\(\\det A=0\\), а \\(\\det B\\ne0\\), то существуют \\(v_1\\ne v_2\\), для которых \\(f(v_1)=f(v_2)\\). Так как \\(g\\) сюръективен, существуют \\(x_1\\ne x_2\\) с \\(g(x_1)=v_1\\), \\(g(x_2)=v_2\\). Тогда \\(f(g(x_1))=f(g(x_2))\\).",
           "children": []
         }
-      ]
+      ],
+      "navTitle": "§ 6. Линейные операторы"
     },
     {
       "id": "razlozhenie-opredelitelya",
       "type": "subsection",
       "title": "§ 7. Разложение определителя. Обратная матрица",
-      "navTitle": "§ 7. Разложение определителя",
       "content": "",
       "children": [
         {
           "id": "minor-cofactor-definition",
           "type": "definition",
           "title": "",
-          "term": "Минор и алгебраическое дополнение",
-          "separator": "—",
           "content": "Пусть \\(A\\) — матрица \\(n\\times n\\). \\(M_{ij}\\) — минор, который получается при вычёркивании \\(i\\)-й строки и \\(j\\)-го столбца. Число \\(A_{ij}\\stackrel{\\mathrm{def}}=(-1)^{i+j}M_{ij}\\) называется **алгебраическим дополнением элемента \\(\\alpha_{ij}\\)**.",
-          "children": []
+          "children": [],
+          "term": "Минор и алгебраическое дополнение",
+          "separator": "—"
         },
         {
           "id": "laplace-expansion-theorem",
@@ -877,9 +876,9 @@
               "id": "laplace-expansion-formula",
               "type": "formula",
               "title": "",
-              "latex": "\\det A=\\sum_{j=1}^n\\alpha_{ij}A_{ij}.",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "\\det A=\\sum_{j=1}^n\\alpha_{ij}A_{ij}."
             },
             {
               "id": "laplace-expansion-proof",
@@ -921,31 +920,31 @@
                   "id": "inverse-matrix-formula",
                   "type": "formula",
                   "title": "",
-                  "latex": "A^{-1}=\\frac1{\\det A}\\begin{pmatrix}A_{11}&A_{21}&\\cdots&A_{n1}\\\\A_{12}&A_{22}&\\cdots&A_{n2}\\\\\\vdots&\\vdots&\\ddots&\\vdots\\\\A_{1n}&A_{2n}&\\cdots&A_{nn}\\end{pmatrix}=\\left(\\frac{A_{ji}}{\\det A}\\right).",
                   "content": "",
-                  "children": []
+                  "children": [],
+                  "latex": "A^{-1}=\\frac1{\\det A}\\begin{pmatrix}A_{11}&A_{21}&\\cdots&A_{n1}\\\\A_{12}&A_{22}&\\cdots&A_{n2}\\\\\\vdots&\\vdots&\\ddots&\\vdots\\\\A_{1n}&A_{2n}&\\cdots&A_{nn}\\end{pmatrix}=\\left(\\frac{A_{ji}}{\\det A}\\right)."
                 }
               ]
             }
           ]
         }
-      ]
+      ],
+      "navTitle": "§ 7. Разложение определителя"
     },
     {
       "id": "skalyarnoe-proizvedenie",
       "type": "subsection",
       "title": "§ 8. Скалярное произведение",
-      "navTitle": "§ 8. Скалярное произведение",
       "content": "",
       "children": [
         {
           "id": "inner-product-definition",
           "type": "definition",
           "title": "",
-          "term": "Скалярное произведение",
-          "separator": "—",
           "content": "Пусть \\(L\\) — линейное пространство над \\(K\\). **Скалярным произведением** называется отображение \\(L\\times L\\to K\\), \\((x,y)\\mapsto\\langle x,y\\rangle\\), обладающее следующими свойствами.\n\nНад \\(\\mathbb Q\\) или \\(\\mathbb R\\):\n1. \\(\\forall x,y\\in L\\quad\\langle x,y\\rangle=\\langle y,x\\rangle\\).\n2. \\(\\forall\\alpha\\in K\\quad\\forall x,y\\in L\\quad\\langle\\alpha x,y\\rangle=\\alpha\\langle x,y\\rangle\\).\n3. \\(\\forall x_1,x_2,y\\in L\\quad\\langle x_1+x_2,y\\rangle=\\langle x_1,y\\rangle+\\langle x_2,y\\rangle\\).\n4. \\(\\forall x\\in L\\quad\\langle x,x\\rangle\\ge0\\), причём равенство выполняется тогда и только тогда, когда \\(x=\\Theta\\).\n\nНад \\(\\mathbb C\\) свойство 1 заменяется свойством \\(\\langle x,y\\rangle=\\overline{\\langle y,x\\rangle}\\).\n\nНад \\(\\mathbb F_p\\) используются свойства 1–3.",
-          "children": []
+          "children": [],
+          "term": "Скалярное произведение",
+          "separator": "—"
         },
         {
           "id": "inner-product-observations",
@@ -971,9 +970,9 @@
               "id": "cauchy-schwarz-formula",
               "type": "formula",
               "title": "",
-              "latex": "|\\langle x,y\\rangle|\\le\\sqrt{\\langle x,x\\rangle}\\,\\sqrt{\\langle y,y\\rangle}.",
               "content": "",
-              "children": []
+              "children": [],
+              "latex": "|\\langle x,y\\rangle|\\le\\sqrt{\\langle x,x\\rangle}\\,\\sqrt{\\langle y,y\\rangle}."
             },
             {
               "id": "cauchy-schwarz-proof",
@@ -988,10 +987,10 @@
           "id": "norm-definition-properties",
           "type": "definition",
           "title": "",
-          "term": "Норма",
-          "separator": "—",
           "content": "Обозначим \\(\\|x\\|=\\sqrt{\\langle x,x\\rangle}\\). Тогда:\n1. \\(\\|x\\|\\ge0\\), причём \\(\\|x\\|=0\\Longleftrightarrow x=\\Theta\\).\n2. \\(\\|\\alpha x\\|=|\\alpha|\\,\\|x\\|\\), поскольку \\(\\langle\\alpha x,\\alpha x\\rangle=|\\alpha|^2\\langle x,x\\rangle\\).\n3. \\(\\|x+y\\|\\le\\|x\\|+\\|y\\|\\). Действительно,\n\\(\\|x+y\\|^2=\\langle x+y,x+y\\rangle=\\langle x,x\\rangle+\\langle x,y\\rangle+\\langle y,x\\rangle+\\langle y,y\\rangle=\\|x\\|^2+2\\operatorname{Re}\\langle x,y\\rangle+\\|y\\|^2\\le(\\|x\\|+\\|y\\|)^2\\) по неравенству Коши.",
-          "children": []
+          "children": [],
+          "term": "Норма",
+          "separator": "—"
         },
         {
           "id": "euclidean-norm-example",
@@ -1022,13 +1021,13 @@
             }
           ]
         }
-      ]
+      ],
+      "navTitle": "§ 8. Скалярное произведение"
     },
     {
       "id": "metod-kramera",
       "type": "subsection",
       "title": "§ 9. Метод Крамера",
-      "navTitle": "§ 9. Метод Крамера",
       "content": "",
       "children": [
         {
@@ -1049,9 +1048,9 @@
           "id": "cramer-rule",
           "type": "formula",
           "title": "",
-          "latex": "x_j=\\frac1{\\det A}\\sum_{k=1}^n A_{kj}\\beta_k=\\frac{\\det A_j}{\\det A},",
           "content": "",
-          "children": []
+          "children": [],
+          "latex": "x_j=\\frac1{\\det A}\\sum_{k=1}^n A_{kj}\\beta_k=\\frac{\\det A_j}{\\det A},"
         },
         {
           "id": "cramer-rule-explanation",
@@ -1060,13 +1059,13 @@
           "content": "Матрица \\(A_j\\) получается из \\(A\\) заменой \\(j\\)-го столбца на \\(\\beta\\).",
           "children": []
         }
-      ]
+      ],
+      "navTitle": "§ 9. Метод Крамера"
     },
     {
       "id": "geometricheskaya-interpretaciya",
       "type": "subsection",
       "title": "Геометрическая интерпретация",
-      "navTitle": "Геометрическая интерпретация",
       "content": "",
       "children": [
         {
@@ -1080,11 +1079,11 @@
           "id": "determinant-geometric-image",
           "type": "image",
           "title": "",
+          "content": "",
+          "children": [],
           "src": "images/notes/likbez/linear-algebra-geometric-interpretation.svg",
           "alt": "Геометрическая интерпретация определителя, правила Крамера и поворота",
-          "caption": "",
-          "content": "",
-          "children": []
+          "caption": ""
         },
         {
           "id": "cramer-geometric-derivation",
@@ -1100,23 +1099,23 @@
           "content": "Без ограничения общности \\(a^2+b^2=c^2+d^2=1\\). Пусть \\(\\varphi\\in(0^\\circ,360^\\circ)\\) — угол поворота \\((a,b)\\) в \\((c,d)\\). Тогда\n\\(c+di=(a+bi)(\\cos\\varphi+i\\sin\\varphi)=a\\cos\\varphi-b\\sin\\varphi+(a\\sin\\varphi+b\\cos\\varphi)i\\),\nто есть\n\\(c=a\\cos\\varphi-b\\sin\\varphi\\), \\(d=a\\sin\\varphi+b\\cos\\varphi\\),\nили\n\\(\\binom cd=\\begin{pmatrix}\\cos\\varphi&-\\sin\\varphi\\\\\\sin\\varphi&\\cos\\varphi\\end{pmatrix}\\binom ab\\).\nОпределитель матрицы поворота равен \\(\\cos^2\\varphi+\\sin^2\\varphi=1\\), а\n\\(\\begin{vmatrix}a&c\\\\b&d\\end{vmatrix}=a(a\\sin\\varphi+b\\cos\\varphi)-b(a\\cos\\varphi-b\\sin\\varphi)=(a^2+b^2)\\sin\\varphi=\\sin\\varphi\\).\nСледовательно, \\(\\begin{vmatrix}a&c\\\\b&d\\end{vmatrix}=S\\) при \\(\\varphi\\in(0^\\circ,180^\\circ)\\) и \\(\\begin{vmatrix}a&c\\\\b&d\\end{vmatrix}=-S\\) при \\(\\varphi\\in(180^\\circ,360^\\circ)\\).",
           "children": []
         }
-      ]
+      ],
+      "navTitle": "Геометрическая интерпретация"
     },
     {
       "id": "faktorprostranstvo",
       "type": "subsection",
       "title": "§ 10. Факторпространство",
-      "navTitle": "§ 10. Факторпространство",
       "content": "",
       "children": [
         {
           "id": "congruence-mod-subspace-definition",
           "type": "definition",
           "title": "",
-          "term": "Сравнимость по модулю подпространства",
-          "separator": "—",
           "content": "Пусть \\(L\\) — линейное пространство над \\(K\\), \\(U\\) — его подпространство. Будем говорить, что \\(x,y\\in L\\) **сравнимы по модулю \\(U\\)**, если \\(x-y\\in U\\). Обозначение: \\(x\\equiv_U y\\).",
-          "children": []
+          "children": [],
+          "term": "Сравнимость по модулю подпространства",
+          "separator": "—"
         },
         {
           "id": "congruence-equivalence",
@@ -1167,10 +1166,10 @@
           "id": "quotient-space-definition",
           "type": "definition",
           "title": "",
-          "term": "Факторпространство",
-          "separator": "—",
           "content": "Получившееся линейное пространство называется **факторпространством \\(L\\) по \\(U\\)**. Обозначение: \\(L/U\\).",
-          "children": []
+          "children": [],
+          "term": "Факторпространство",
+          "separator": "—"
         },
         {
           "id": "quotient-dimension-theorem",
@@ -1187,13 +1186,14 @@
             }
           ]
         }
-      ]
+      ],
+      "navTitle": "§ 10. Факторпространство"
     }
   ],
   "order": 2,
-  "revision": 2,
+  "revision": 41,
   "createdAt": 1788535467260,
-  "updatedAt": 1789416000000,
-  "updatedBy": "",
+  "updatedAt": 1791060818961,
+  "updatedBy": "2M2ZdLQcJAhluPjUVFNJ6MyQrdH2",
   "reviewStatus": "published"
 }

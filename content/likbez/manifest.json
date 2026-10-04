@@ -7,13 +7,16 @@
       "id": "integral-riemana"
     },
     {
+      "id": "lineynaya-algebra",
+      "title": "Линейная алгебра",
+      "navTitle": "Линейная алгебра",
+      "updatedAt": 1791060818961
+    },
+    {
       "id": "teoriya-chisel",
       "title": "Теория чисел",
       "navTitle": "Теория чисел",
       "updatedAt": 1788723280691
-    },
-    {
-      "id": "lineynaya-algebra"
     }
   ]
 }
