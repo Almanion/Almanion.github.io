@@ -26,10 +26,15 @@
         function get(subject, section) { return records[id(subject, section)] || null; }
         async function json(url) {
             const response = await options.fetch(url + (url.includes('?') ? '&' : '?') + 'publication=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(12000) });
-            if (!response.ok) throw new Error('HTTP ' + response.status);
+            if (!response.ok) {
+                const error = new Error('HTTP ' + response.status);
+                error.status = response.status;
+                throw error;
+            }
             return response.json();
         }
         async function performCheck(record) {
+            let readError;
             try {
                 // Check the deployed section itself, not merely an accepted Git commit.
                 // This also works if another commit was published in the meantime.
@@ -39,31 +44,31 @@
                     record.stage = 'live';
                     record.liveAt = Date.now();
                     record.error = '';
-                } else {
-                    const waitingStage = Date.now() - record.acceptedAt >= 5 * 60 * 1000 ? 'delayed' : 'pending';
-                    const waitingError = waitingStage === 'delayed' ? 'Правки сохранены в GitHub, но ещё не появились на сайте. Проверьте сборку или повторите проверку.' : '';
-                    if (record.stage !== 'failed') { record.stage = waitingStage; record.error = waitingError; }
-                    if (record.commitSha && Date.now() - record.acceptedAt >= 30000 && Date.now() - (record.deploymentCheckedAt || 0) >= 60000) {
-                        record.deploymentCheckedAt = Date.now();
-                        try {
-                            const repository = options.repository || 'Almanion/almanion.github.io';
-                            const result = await json('https://api.github.com/repos/' + repository + '/actions/runs?head_sha=' + encodeURIComponent(record.commitSha) + '&per_page=5');
-                            const run = (result.workflow_runs || []).find(item => item.name === 'Deploy GitHub Pages' || /pages|deploy/i.test(item.name));
-                            if (run?.html_url?.startsWith('https://github.com/')) record.deploymentUrl = run.html_url;
-                            if (run?.status === 'completed' && !['success', 'neutral', 'skipped'].includes(run.conclusion)) {
-                                record.stage = 'failed';
-                                record.error = 'Правки сохранены в GitHub, но сборка сайта завершилась ошибкой. После исправления сборки они появятся на сайте.';
-                            } else if (run) {
-                                record.stage = waitingStage; record.error = waitingError;
-                            }
-                        } catch (_) { /* Public API can be unavailable; keep the verifiable deployment status. */ }
+                    record.checkedAt = Date.now();
+                    return;
+                }
+            } catch (error) { readError = error; }
+            const waitingStage = Date.now() - record.acceptedAt >= 5 * 60 * 1000 ? 'delayed' : 'pending';
+            // A new section normally returns 404 until its first deployment.
+            // Public-file availability and the GitHub run are independent checks.
+            const waitingError = readError && readError.status !== 404
+                ? 'Не удалось проверить сайт. Изменения отправлены; повторите проверку.'
+                : waitingStage === 'delayed' ? 'Правки сохранены в GitHub, но ещё не появились на сайте. Проверьте сборку или повторите проверку.' : '';
+            if (record.stage !== 'failed') { record.stage = waitingStage; record.error = waitingError; }
+            if (record.commitSha && Date.now() - record.acceptedAt >= 30000 && Date.now() - (record.deploymentCheckedAt || 0) >= 60000) {
+                record.deploymentCheckedAt = Date.now();
+                try {
+                    const repository = options.repository || 'Almanion/almanion.github.io';
+                    const result = await json('https://api.github.com/repos/' + repository + '/actions/runs?head_sha=' + encodeURIComponent(record.commitSha) + '&per_page=5');
+                    const run = (result.workflow_runs || []).find(item => item.name === 'Deploy GitHub Pages' || /pages|deploy/i.test(item.name));
+                    if (run?.html_url?.startsWith('https://github.com/')) record.deploymentUrl = run.html_url;
+                    if (run?.status === 'completed' && run.conclusion && !['success', 'neutral', 'skipped'].includes(run.conclusion)) {
+                        record.stage = 'failed';
+                        record.error = 'Правки сохранены в GitHub, но сборка сайта завершилась ошибкой. После исправления сборки они появятся на сайте.';
+                    } else if (run) {
+                        record.stage = waitingStage; record.error = waitingError;
                     }
-                }
-            } catch (_) {
-                if (record.stage !== 'failed') {
-                    record.stage = Date.now() - record.acceptedAt >= 5 * 60 * 1000 ? 'delayed' : 'pending';
-                    record.error = 'Не удалось проверить сайт. Изменения отправлены; повторите проверку.';
-                }
+                } catch (_) { /* API outages must not erase a confirmed deployment failure. */ }
             }
             record.checkedAt = Date.now();
         }

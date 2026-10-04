@@ -61,6 +61,18 @@ test('word search reveals its subsection and direct nested links survive reload'
     await expect(page.locator('#stress-055')).toBeVisible();
 });
 
+test('inflected selections prefer the full definition over literal words inside compound terms', async ({ page }) => {
+    await page.goto('/physics-10.html');
+    await expect(page.locator('.topic.exp-reader-current')).toBeVisible();
+    const popup = page.locator('.selection-definition-popover');
+    for (const [query, term] of [['молекулы', 'Молекула'], ['силы', 'Сила'], ['механического движения', 'Механическое движение']]) {
+        await select(page, query);
+        await expect(popup.locator('.definition-box')).toHaveCount(1);
+        await expect(popup.locator('.definition-box strong').first()).toHaveText(term);
+        expect(await page.evaluate(() => getSelection().toString())).toBe(query);
+    }
+});
+
 test('duty starts on the current month, preserves whole-year access and searches across months', async ({ page }) => {
     await page.clock.install({ time: new Date('2026-10-04T12:00:00+03:00') });
     await page.goto('/duty-10-1.html');

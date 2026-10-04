@@ -5,13 +5,13 @@
     if (root?.document) { root.AlmanionDefinitions = api; api.init(root); }
 })(typeof window !== 'undefined' ? window : null, function () {
     'use strict';
-    const normalize = value => String(value || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/ё/g, 'е').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ');
+    const normalize = value => String(value || '').normalize('NFD').replace(/и\u0306/g, 'й').replace(/И\u0306/g, 'Й').replace(/\p{M}/gu, '').toLowerCase().replace(/ё/g, 'е').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ');
     function stem(word) {
-        if (!/^[а-я]{5,}$/.test(word)) return word;
+        if (!/^[а-я]{4,}$/.test(word)) return word;
         // Case/adjective endings only, bounded to a meaningful root. Do not use
         // arbitrary substring matching (e.g. "масса" must not match "массив").
-        const root = word.replace(/(?:иями|ями|ами|ого|ему|ыми|ими|иях|ах|ях|ая|яя|ое|ее|ые|ие|ый|ий|ой|ей|ых|их|ую|юю|ою|ею|ом|ем|ов|ев|ам|ям|а|я|ы|и|у|ю|е|о|ь)$/, '');
-        return root.length >= 4 ? root : word;
+        const root = word.replace(/(?:иями|иям|ием|ией|иею|ями|ами|ого|его|ему|ыми|ими|иях|ах|ях|ая|яя|ое|ее|ые|ие|ия|ию|ии|ый|ий|ой|ей|ых|их|ую|юю|ою|ею|ом|ем|ов|ев|ам|ям|а|я|ы|и|у|ю|е|о|ь)$/, '');
+        return root.length >= 3 ? root : word;
     }
     function find(entries, value) {
         const query = normalize(value);
@@ -19,10 +19,16 @@
         const exact = entries.filter(entry => normalize(entry.term) === query);
         if (exact.length) return exact;
         if (query.length < 3) return [];
-        const words = entries.filter(entry => (' ' + normalize(entry.term) + ' ').includes(' ' + query + ' '));
-        if (words.length) return words;
-        const queryStem = query.split(' ').map(stem).join(' ');
-        return entries.filter(entry => (' ' + normalize(entry.term).split(' ').map(stem).join(' ') + ' ').includes(' ' + queryStem + ' '));
+        const queryWords = query.split(' ');
+        const rows = entries.map(entry => ({ entry, term: normalize(entry.term), words: normalize(entry.term).split(' ') }));
+        const equivalent = (word, term) => word === term || (word.length >= 4 && stem(word) === stem(term));
+        const sameTerm = rows.filter(row => row.words.length === queryWords.length && queryWords.every((word, i) => equivalent(word, row.words[i])));
+        if (sameTerm.length) return sameTerm.map(row => row.entry);
+        // Prefer the complete term ("Молекула") over an exact word occurring
+        // inside a longer name ("Эффективный диаметр молекулы").
+        const literal = rows.filter(row => (' ' + row.term + ' ').includes(' ' + query + ' '));
+        if (literal.length) return literal.map(row => row.entry);
+        return rows.filter(row => row.words.some((_, start) => start + queryWords.length <= row.words.length && queryWords.every((word, i) => equivalent(word, row.words[start + i])))).map(row => row.entry);
     }
 
     function init(win) {

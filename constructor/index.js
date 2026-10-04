@@ -18,7 +18,7 @@
         applied: false
     };
     const BLOCK_ICONS = { up: '↑', down: '↓', indent: '↳', outdent: '↰', add: '+', duplicate: '⧉', remove: '×' };
-    const STATUS_LABELS = { draft: 'Черновик', ready: 'К проверке', published: 'Опубликовано' };
+    const STATUS_LABELS = { draft: 'Черновик', ready: 'К проверке', published: 'Опубликовано', pending: 'Сайт обновляется', delayed: 'Публикация задерживается', failed: 'Ошибка сборки' };
     const BLOCK_PICKER_GROUPS = [
         { title: 'Текст и структура', types: ['paragraph', 'heading', 'list', 'formula', 'image'] },
         { title: 'Учебные блоки', types: ['definition', 'theorem', 'lemma', 'statement', 'corollary', 'properties', 'proof', 'derivation', 'example', 'exercise', 'experiment', 'remark', 'reminder'] }
@@ -461,11 +461,12 @@
             const selectedSection = state.current && state.current.id === section.id;
             const active = selectedSection && !state.currentSubsectionId;
             const subsections = sectionSubsections(section);
+            const stage = publicationPending(section) ? publicationFor(section)?.stage || 'pending' : section.reviewStatus;
             return '<div class="builder-section-row" data-section-id="' + escapeHtml(section.id) + '">' +
                 '<div class="builder-section-main"><button class="builder-section-item' + (active ? ' is-active' : '') + (compatibility ? ' is-compatibility' : '') + '" type="button" data-section-select="' + escapeHtml(section.id) + '">' +
                     '<strong>' + escapeHtml(section.navTitle || section.title) + '</strong>' +
-                    '<span class="builder-section-status is-' + escapeHtml(section.reviewStatus) + '"></span>' +
-                    '<small>' + escapeHtml(compatibility ? 'Опубликован · исходная разметка' : (publicationPending(section) ? 'Сайт обновляется' : (STATUS_LABELS[section.reviewStatus] || 'Черновик'))) + '</small>' +
+                    '<span class="builder-section-status is-' + escapeHtml(stage) + '"></span>' +
+                    '<small>' + escapeHtml(compatibility ? 'Опубликован · исходная разметка' : (STATUS_LABELS[stage] || 'Черновик')) + '</small>' +
                 '</button>' + (compatibility ? '' : '<button class="builder-add-subsection" type="button" data-add-subsection="' + escapeHtml(section.id) + '" aria-label="Добавить подраздел" title="Добавить подраздел">＋</button>') + '</div>' +
                 '<div class="builder-section-order" aria-label="Порядок раздела">' +
                     '<button type="button" data-section-move="-1" title="Выше"' + (compatibility || index === 0 ? ' disabled' : '') + '>↑</button>' +
@@ -571,14 +572,13 @@
         const publication = publicationFor(state.current);
         const pending = publicationPending(state.current);
         if (pending) {
-            const title = publication?.stage === 'failed' ? 'Ошибка сборки' : publication?.stage === 'delayed' ? 'Публикация задерживается' : 'Сайт обновляется';
-            labels.published = [title, publication?.error || 'Проверяем, когда эта версия станет доступна читателям.'];
+            labels.published = [STATUS_LABELS[publication?.stage] || STATUS_LABELS.pending, publication?.error || 'Проверяем, когда эта версия станет доступна читателям.'];
             ensurePublication(state.current);
         }
         const meta = labels[status] || labels.draft;
         const badge = el('workflowStatus');
         badge.textContent = meta[0];
-        badge.className = 'builder-workflow-status is-' + status;
+        badge.className = 'builder-workflow-status is-' + (pending ? publication?.stage || 'pending' : status);
         el('workflowHint').textContent = meta[1];
         let publicationActions = el('publicationActions');
         if (!publicationActions) {
@@ -1126,7 +1126,7 @@
     function openSectionDialog() {
         el('sectionDialog').hidden = false;
         el('newSectionTitle').value = '';
-        window.setTimeout(() => el('newSectionTitle').focus(), 30);
+        el('newSectionTitle').focus();
     }
 
     function closeSectionDialog() { el('sectionDialog').hidden = true; }
@@ -1168,7 +1168,7 @@
         el('newSubsectionNavTitle').value = '';
         el('subsectionDialog').hidden = false;
         renderAll();
-        window.setTimeout(() => el('newSubsectionTitle').focus(), 30);
+        el('newSubsectionTitle').focus();
     }
 
     function closeSubsectionDialog() { el('subsectionDialog').hidden = true; }
@@ -1209,7 +1209,7 @@
         el('deleteSectionName').textContent = subsection ? (subsection.navTitle || subsection.title) : (state.current.navTitle || state.current.title);
         el('deleteSectionConfirm').textContent = subsection ? 'Удалить подраздел' : (published ? 'Удалить с сайта' : 'Удалить черновик');
         el('deleteSectionDialog').hidden = false;
-        window.setTimeout(() => el('deleteSectionCancel').focus(), 30);
+        el('deleteSectionCancel').focus();
     }
 
     function closeDeleteSectionDialog() {
@@ -1366,7 +1366,7 @@
             : (state.insertAfterId ? 'Блок появится сразу после выбранного.' : 'Блок появится в конце текущего материала.');
         el('blockPicker').hidden = false;
         document.body.classList.add('builder-modal-open');
-        window.setTimeout(() => el('blockPicker').querySelector('[data-create-block]')?.focus(), 30);
+        el('blockPicker').querySelector('[data-create-block]')?.focus();
     }
 
     function closeBlockPicker() {

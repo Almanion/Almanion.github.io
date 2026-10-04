@@ -103,6 +103,48 @@ test('anonymous users cannot open the constructor', async ({ page }) => {
     await expect(page.locator('#builderGateText')).toContainText('Войдите');
 });
 
+test('first publication detects a failed GitHub build even while the public file is missing', async ({ page }, info) => {
+    await page.clock.install();
+    await open(page);
+    await create(page, 'First publication');
+    await page.locator('#submitReviewButton').click();
+    let section, available = false;
+    let apiChecks = 0;
+    await page.route('https://script.google.com/**', async route => {
+        const payload = route.request().postDataJSON();
+        section = JSON.parse(payload.files.find(file => file.path.includes('/sections/')).content);
+        await route.fulfill({ json: { success: true, commit: 'failed-first-commit' } });
+    });
+    await page.route('**/content/chemistry-10/sections/first-publication.json?publication=*', route => available ? route.fulfill({ json: section }) : route.fulfill({ status: 404, body: 'Not yet deployed' }));
+    await page.route('https://api.github.com/repos/Almanion/almanion.github.io/actions/runs?*', route => {
+        apiChecks++;
+        return route.fulfill({ json: { workflow_runs: [{ name: 'Deploy GitHub Pages', status: 'completed', conclusion: 'failure', html_url: 'https://github.com/Almanion/almanion.github.io/actions/runs/456' }] } });
+    });
+    await page.locator('#publishButton').click();
+    await expect(page.locator('#workflowStatus')).toHaveText('Сайт обновляется');
+    await expect(page.locator('#workflowStatus')).toHaveClass(/is-pending/);
+    await expect(page.locator('#workflowHint')).not.toContainText('Не удалось проверить');
+    expect(apiChecks).toBe(0);
+    await page.clock.fastForward(31000);
+    await page.getByRole('button', { name: 'Проверить публикацию' }).click();
+    await expect(page.locator('#workflowStatus')).toHaveText('Ошибка сборки');
+    await expect(page.locator('#workflowStatus')).toHaveClass(/is-failed/);
+    await expect(page.locator('[data-section-select="first-publication"] small')).toHaveText('Ошибка сборки');
+    await expect(page.locator('[data-section-select="first-publication"] .builder-section-status')).toHaveClass(/is-failed/);
+    await expect(page.locator('#workflowHint')).toContainText('сборка сайта завершилась ошибкой');
+    await expect(page.getByRole('link', { name: 'Открыть сборку ↗' })).toHaveAttribute('href', /runs\/456$/);
+    expect(apiChecks).toBe(1);
+    await page.screenshot({ path: info.outputPath('failed-first-publication.png') });
+    await page.reload();
+    await expect(page.locator('#workflowStatus')).toHaveText('Ошибка сборки');
+    available = true;
+    await page.getByRole('button', { name: 'Проверить публикацию' }).click();
+    await expect(page.locator('#workflowStatus')).toHaveText('Опубликовано');
+    await expect(page.locator('#workflowStatus')).toHaveClass(/is-published/);
+    await expect(page.locator('[data-section-select="first-publication"] small')).toHaveText('Опубликовано');
+    await expect(page.getByRole('link', { name: 'Открыть на сайте ↗' })).toBeVisible();
+});
+
 for (const width of [320, 390]) test(`mobile editing keeps add block available and parameters compact at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 320 ? 568 : 844 });
     await open(page);
@@ -185,6 +227,26 @@ test('real remote conflicts do not overwrite either copy and can be resolved exp
     await expect(page.locator('#sectionTitle')).toHaveValue('Remote title');
     await page.locator('#sectionTitle').fill('Resolved title');
     await expect(page.locator('#saveStateText')).toHaveText('Все изменения сохранены');
+});
+
+test('opening a subsection cannot steal focus after the user switches fields', async ({ page }) => {
+    await open(page);
+    await create(page);
+    await page.clock.install();
+    await page.evaluate(() => {
+        document.querySelector('[data-add-subsection="test-section"]').click();
+        document.getElementById('newSubsectionNavTitle').focus();
+    });
+    await page.clock.runFor(50);
+    await expect(page.locator('#newSubsectionNavTitle')).toBeFocused();
+    await page.locator('#newSubsectionNavTitle').fill('Short title');
+    await expect(page.locator('#newSubsectionTitle')).toHaveValue('');
+    await page.locator('#newSubsectionTitle').fill('Full title');
+    await page.locator('#subsectionDialogForm button[type="submit"]').click();
+    await expect(page.locator('#saveStateText')).toHaveText('Все изменения сохранены');
+    const saved = await page.evaluate(() => window.testCloud.read('noteDrafts/chemistry-10/test-section').subsections[0]);
+    expect(saved.title).toBe('Full title');
+    expect(saved.navTitle).toBe('Short title');
 });
 
 test('subsections, nesting, type changes and mobile preview preserve the document', async ({ page }, testInfo) => {

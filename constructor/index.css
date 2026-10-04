@@ -220,7 +220,8 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .builder-section-item strong { overflow: hidden; padding-right: 52px; font-size: .84rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
 .builder-section-item small { grid-column: 1 / -1; color: var(--builder-muted); font-size: .67rem; }
 .builder-section-status { align-self: center; width: 7px; height: 7px; border-radius: 50%; background: var(--builder-faint); }
-.builder-section-status.is-ready { background: var(--builder-warning); }
+.builder-section-status:is(.is-ready, .is-pending, .is-delayed) { background: var(--builder-warning); }
+.builder-section-status.is-failed { background: var(--builder-danger); }
 .builder-section-status.is-published { background: var(--builder-success); }
 .builder-list-empty { padding: 20px 12px; color: var(--builder-muted); font-size: .78rem; line-height: 1.5; text-align: center; background: var(--builder-panel-soft); border-radius: 10px; }
 .builder-add-subsection { width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center; padding: 0; color: var(--builder-muted); background: transparent; border: 1px solid transparent; border-radius: 8px; font-size: 1rem; }
@@ -254,7 +255,8 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .builder-workflow { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--builder-line); }
 .builder-workflow-copy { min-width: 0; display: flex; align-items: center; gap: 10px; color: var(--builder-muted); font-size: .74rem; }
 .builder-workflow-status { flex: 0 0 auto; display: inline-flex; align-items: center; min-height: 25px; padding: 4px 9px; color: var(--builder-muted); background: var(--builder-panel-soft); border-radius: 999px; font-size: .67rem; font-weight: 700; }
-.builder-workflow-status.is-ready { color: var(--builder-warning); background: color-mix(in srgb, var(--builder-warning) 11%, var(--builder-panel)); }
+.builder-workflow-status:is(.is-ready, .is-pending, .is-delayed) { color: var(--builder-warning); background: color-mix(in srgb, var(--builder-warning) 11%, var(--builder-panel)); }
+.builder-workflow-status.is-failed { color: var(--builder-danger); background: color-mix(in srgb, var(--builder-danger) 11%, var(--builder-panel)); }
 .builder-workflow-status.is-published { color: var(--builder-success); background: color-mix(in srgb, var(--builder-success) 11%, var(--builder-panel)); }
 .builder-workflow-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 7px; }
 

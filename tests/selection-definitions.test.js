@@ -22,6 +22,21 @@ assert.equal(Client.find([{ term: 'Массив' }], 'масса').length, 0, 'w
 assert.equal(Client.find(entries, 'Не термин').length, 0, 'look up terms, not incidental words inside a definition');
 assert.equal(Client.find(entries, 'м').length, 0, 'short arbitrary substrings must not match');
 assert.equal(Client.find([{ term: 'Атомная единица массы' }], 'массы').length, 1);
+const related = [
+    { term: 'Эффективный диаметр молекулы' }, { term: 'Молекула' },
+    { term: 'Импульс силы' }, { term: 'Сила' },
+    { term: 'Сила Архимеда' }, { term: 'Механическое движение' }
+];
+assert.deepEqual(Client.find(related, 'молекулы').map(entry => entry.term), ['Молекула'], 'a complete inflected term takes priority over a word inside another term');
+for (const query of ['силы', 'силе', 'силу', 'силой', 'силами']) {
+    assert.deepEqual(Client.find(related, query).map(entry => entry.term), ['Сила'], 'short Russian terms must support case endings: ' + query);
+}
+assert.deepEqual(Client.find(related, 'сила Архимеда').map(entry => entry.term), ['Сила Архимеда'], 'exact compound terms remain authoritative');
+assert.deepEqual(Client.find(related, 'силы Архимеда').map(entry => entry.term), ['Сила Архимеда']);
+assert.deepEqual(Client.find(related, 'механического движения').map(entry => entry.term), ['Механическое движение']);
+assert.equal(Client.find([{ term: 'Море' }], 'мор').length, 0, 'short arbitrary roots must not turn into unrelated terms');
+assert.notEqual(Client.normalize('край'), Client.normalize('краи'), 'the letter й is not a stress mark');
+assert.equal(Client.find([{ term: 'Honor' }], 'honors').length, 0, 'Russian case rules must not alter English words');
 assert.ok(!Search.publicPages(root).some(page => /english|planner|sport|tour|duty/.test(page.path)), 'private sources are never added to the public term index');
 const runtime = fs.readFileSync(path.join(root, 'script.js'), 'utf8');
 assert.match(runtime, /selectionchange/);

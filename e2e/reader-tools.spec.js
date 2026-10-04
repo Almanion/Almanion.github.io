@@ -8,6 +8,49 @@ async function notes(page) {
     await page.waitForFunction(() => !!window.AlmanionPersonalNotes);
 }
 
+test.describe('properties block actions', () => {
+    test.use({ serviceWorkers: 'block' });
+    for (const width of [320, 390]) test(`properties copy, bookmark and note controls fit a ${width}px phone at 125% scale`, async ({ page, context }, info) => {
+        await blockExternal(page);
+        await page.setViewportSize({ width, height: 844 });
+        await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+        await page.goto('/chemistry.html');
+        await page.waitForFunction(() => !!window.AlmanionPersonalNotes && window.AlmanionSettings?.ready);
+        await page.evaluate(() => AlmanionSettings.update({ noteScale: 125 }));
+        // Nested properties share their enclosing block's bookmark/note;
+        // the standalone properties block has all three independent actions.
+        const block = page.locator('.topic.exp-reader-current > .properties-box').first();
+        await expect(block).toHaveClass(/copyable-block/);
+        await expect(block.locator(':scope > .copy-block-btn')).toHaveCount(1);
+        const buttons = block.locator(':scope > :is(.copy-block-btn, .bookmark-btn, .personal-note-btn)');
+        await expect(buttons).toHaveCount(3);
+        const rects = await buttons.evaluateAll(nodes => nodes.map(el => { const r = el.getBoundingClientRect(); const icon = el.querySelector('svg').getBoundingClientRect(); return { width: r.width, height: r.height, left: r.left, right: r.right, iconWidth: icon.width, iconHeight: icon.height }; }));
+        for (const r of rects) {
+            expect(r.width).toBeGreaterThanOrEqual(44); expect(r.height).toBeGreaterThanOrEqual(44);
+            expect(r.iconWidth).toBeLessThanOrEqual(20); expect(r.iconHeight).toBeLessThanOrEqual(20);
+        }
+        rects.sort((a, b) => a.left - b.left);
+        for (let i = 1; i < rects.length; i++) expect(rects[i].left).toBeGreaterThanOrEqual(rects[i - 1].right - 1);
+        await block.locator(':scope > .copy-block-btn').click();
+        await expect(block.locator(':scope > .copy-block-btn')).toHaveClass(/is-copied/);
+        expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('Атомный номер');
+        await block.locator(':scope > .bookmark-btn').click();
+        await expect(block.locator(':scope > .bookmark-btn')).toHaveClass(/bookmarked/);
+        await block.locator(':scope > .bookmark-btn').click();
+        await expect(block.locator(':scope > .bookmark-btn')).not.toHaveClass(/bookmarked/);
+        await block.locator(':scope > .personal-note-btn').click();
+        await page.locator('#personalNoteText').fill('Properties test note');
+        await page.locator('[data-note-save]').click();
+        await expect(block.locator(':scope > .personal-note-btn')).toHaveClass(/has-note/);
+        await block.scrollIntoViewIfNeeded();
+        await page.screenshot({ path: info.outputPath('properties-actions-' + width + '.png') });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThan(2);
+        await page.reload();
+        await expect(block.locator(':scope > .copy-block-btn')).toHaveCount(1);
+        await expect(block.locator(':scope > .personal-note-btn')).toHaveClass(/has-note/);
+    });
+});
+
 test('personal notes survive bookmark removal, reload and cannot become public HTML', async ({ page }) => {
     await blockExternal(page); await notes(page);
     const block = page.locator('.definition-box').first();
