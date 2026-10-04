@@ -142,10 +142,7 @@ function parseEntries(html, page) {
     return entries;
 }
 
-function build(options) {
-    const root = path.resolve(options.root);
-    const site = path.resolve(options.site || root);
-    const output = path.resolve(options.output || path.join(site, 'search-index.json'));
+function publicPages(root) {
     const pages = JSON.parse(fs.readFileSync(path.join(root, 'performance', 'search-pages.json'), 'utf8'));
     // The publication catalogue is authoritative. Private pages are deliberately
     // absent from it and must never leak into the public search index.
@@ -155,7 +152,14 @@ function build(options) {
             if (!pages.some(page => page.path === subject.page)) pages.push({ path: subject.page, label: subject.title });
         });
     }
-    const entries = pages.flatMap(page => {
+    return pages;
+}
+
+function build(options) {
+    const root = path.resolve(options.root);
+    const site = path.resolve(options.site || root);
+    const output = path.resolve(options.output || path.join(site, 'search-index.json'));
+    const entries = publicPages(root).flatMap(page => {
         const file = path.join(site, page.path);
         if (!fs.existsSync(file)) throw new Error('Search source is missing: ' + page.path);
         return parseEntries(fs.readFileSync(file, 'utf8'), page);
@@ -190,4 +194,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = { build, parseEntries, cleanText, decodeEntities };
+module.exports = { build, parseEntries, cleanText, decodeEntities, publicPages };

@@ -117,6 +117,7 @@ test('dropdowns have themed pickers, keyboard selection and fit mobile viewport'
         await page.goto('/matcenter.html?grade=grade-10');
         await ready(page);
         const select = page.locator('#mcSearchScope');
+        if (width <= 768) await page.locator('#mcFilterToggle').click();
         await select.click();
         await expect(select).toHaveJSProperty('value', 'section');
         expect(await select.evaluate(el => el.matches(':open'))).toBe(true);
@@ -211,6 +212,9 @@ test('mobile compact controls fit and keep one task column in both themes', asyn
         const cards = await page.locator('#tasksContainer .task-card').evaluateAll(nodes => nodes.slice(0, 2).map(n => { const r = n.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width }; }));
         expect(cards[0].x).toBe(cards[1].x);
         expect(cards[1].y).toBeGreaterThan(cards[0].y);
+        expect(cards[0].y).toBeLessThan(530);
+        await expect(page.locator('#mcSearchScope')).toBeHidden();
+        await page.locator('#mcFilterToggle').click();
         for (const button of ['#mcSearchScope', '#statusFilter', '.mc-view-switch']) {
             const r = await page.locator(button).boundingBox();
             expect(r.x).toBeGreaterThanOrEqual(0);
@@ -252,6 +256,7 @@ test('legacy visual theme supports the toolbar and reading mode', async ({ page 
     await page.goto('/matcenter.html');
     await ready(page);
     await expect(page.locator('body')).not.toHaveClass(/experimental/);
+    await page.locator('#mcFilterToggle').click();
     await page.locator('[data-mc-view="reading"]').click();
     await expect(page.locator('#tasksContainer .task-card.open')).toHaveCount(6);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);

@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 const BuildNotes = require('../tools/build-notes.js');
 
 const root = path.join(__dirname, '..');
+const verificationRoot = process.env.ALMANION_TEST_SITE || root;
 const subjects = JSON.parse(fs.readFileSync(path.join(root, 'content', 'subjects.json'), 'utf8'));
 const migrated = new Set(['physics', 'chemistry', 'math', 'geometry']);
 
@@ -29,7 +30,7 @@ function fileSnapshot(directory) {
 for (const subject of subjects.filter(item => migrated.has(item.id))) {
     const sections = BuildNotes.loadSections(root, subject);
     assert.ok(sections.length > 0, `${subject.id} must have canonical sections`);
-    const page = fs.readFileSync(path.join(root, subject.page), 'utf8');
+    const page = fs.readFileSync(path.join(verificationRoot, subject.page), 'utf8');
 
     for (const section of sections) {
         assert.equal(section.sourceFormat, BuildNotes.HTML_FRAGMENT_FORMAT);
@@ -58,9 +59,19 @@ try {
     BuildNotes.build({ root, output });
     assert.deepEqual(fileSnapshot(output), first, 'building canonical notes twice must be byte-for-byte stable');
     for (const subject of subjects) {
+        const source = fs.readFileSync(path.join(output, subject.page), 'utf8');
+        const deployed = fs.readFileSync(path.join(verificationRoot, subject.page), 'utf8');
+        // Asset cache versions are rewritten by the site builder. Canonical
+        // navigation and content must still match exactly in the built artifact.
+        const canonicalRegions = html => ['NAV', 'CONTENT'].map(kind => {
+            const start = `<!-- NOTE_CONSTRUCTOR_${kind}_START -->`;
+            const end = `<!-- NOTE_CONSTRUCTOR_${kind}_END -->`;
+            assert.ok(html.includes(start) && html.includes(end));
+            return html.slice(html.indexOf(start), html.indexOf(end));
+        }).join('\n');
         assert.equal(
-            fs.readFileSync(path.join(output, subject.page), 'utf8'),
-            fs.readFileSync(path.join(root, subject.page), 'utf8'),
+            verificationRoot === root ? source : canonicalRegions(source),
+            verificationRoot === root ? deployed : canonicalRegions(deployed),
             `${subject.page} must be in sync with its canonical source`
         );
     }

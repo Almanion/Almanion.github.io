@@ -36,12 +36,12 @@ assert.deepEqual(
 );
 assert.deepEqual(
     dashboard.selectionFromSettings(settings, 'unknownUser', false),
-    ['physics-10', 'matcenter', 'likbez'],
+    ['physics-10', 'russian-ege', 'duty-10-1'],
     'a new account must receive a useful public default'
 );
 assert.deepEqual(
     dashboard.selectionFromSettings({}, 'englishUser', true),
-    ['english', 'matcenter', 'likbez'],
+    ['english', 'physics-10', 'russian-ege'],
     'English is a default shortcut only after permission is confirmed'
 );
 

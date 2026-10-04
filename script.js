@@ -118,6 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initBottomSheetSwipe();
     initSidebarCollapse();
     initCopyableBlocks();
+    initSelectionDefinitions();
 });
 
 // ============================================
@@ -1238,6 +1239,35 @@ window.addEventListener('almanion:content-ready', event => {
     addCopyButtons(event.detail?.root || document);
 });
 
+function initSelectionDefinitions() {
+    if (!document.querySelector('.main-content')) return;
+    let pending;
+    function resource(tag, url) {
+        return new Promise((resolve, reject) => {
+            const node = document.createElement(tag);
+            if (tag === 'link') { node.rel = 'stylesheet'; node.href = url; }
+            else { node.src = url; node.async = false; }
+            const timeout = setTimeout(() => { node.remove(); reject(new Error('Definition lookup timed out')); }, 12000);
+            node.onload = () => { clearTimeout(timeout); resolve(); };
+            node.onerror = () => { clearTimeout(timeout); node.remove(); reject(new Error('Definition lookup unavailable')); };
+            document.head.append(node);
+        });
+    }
+    document.addEventListener('selectionchange', () => {
+        if (window.AlmanionDefinitions || pending) return;
+        const selection = window.getSelection();
+        const element = selection?.anchorNode?.nodeType === 1 ? selection.anchorNode : selection?.anchorNode?.parentElement;
+        const text = selection?.toString().trim();
+        if (!text || text.length > 100 || !element?.closest('.main-content') || element.closest('input, textarea, [contenteditable]')) return;
+        pending = Promise.all([
+            resource('link', 'styles/selection-definitions.css?v=20261004-1'),
+            window.AlmanionSafeHtml ? Promise.resolve() : resource('script', 'safe-html.js?v=20261004-1')
+        ]).then(() => resource('script', 'selection-definitions.js?v=20261004-1')).catch(() => {
+            window.AlmanionToast?.show('Не удалось загрузить поиск определений. Выделите слово ещё раз.', { type: 'error' });
+        }).finally(() => { pending = null; });
+    });
+}
+
 function initCopyableBlocks() {
     const topics = Array.from(document.querySelectorAll('.main-content .topic[id]'));
 
@@ -1294,57 +1324,8 @@ function initCopyableBlocks() {
         });
     }
 
-    // На сенсорных устройствах кнопка копирования скрыта (CSS) — блок копируется
-    // ДОЛГИМ НАЖАТИЕМ (удержанием, а не прокруткой). Прокрутка отменяет жест.
-    // Само копирование делаем на touchend: там есть «жест пользователя», без которого
-    // Clipboard API не сработает (из setTimeout он бы упал). На 500 мс — вибро-подтверждение.
-    if (!window.__copyLongPressInit) {
-        window.__copyLongPressInit = true;
-        let lpTimer = null, lpX = 0, lpY = 0, lpReady = false, lpBlock = null;
-        const reset = () => {
-            if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
-            if (lpBlock) lpBlock.classList.remove('is-longpressing');
-            lpReady = false; lpBlock = null;
-        };
-        document.addEventListener('touchstart', (e) => {
-            if (e.touches.length !== 1) return;
-            const block = e.target.closest('.copyable-block');
-            if (!block) return;
-            if (e.target.closest('a, button, input, textarea, .bookmark-btn, .copy-block-btn, img')) return;
-            reset();
-            lpBlock = block;
-            lpX = e.touches[0].clientX; lpY = e.touches[0].clientY;
-            lpTimer = setTimeout(() => {
-                lpTimer = null; lpReady = true;
-                if (lpBlock) lpBlock.classList.add('is-longpressing');
-                if (navigator.vibrate) { try { navigator.vibrate(15); } catch (_) {} }
-            }, 500);
-        }, { passive: true });
-        document.addEventListener('touchmove', (e) => {
-            if (!lpBlock) return;
-            const t = e.touches[0];
-            if (Math.abs(t.clientX - lpX) > 10 || Math.abs(t.clientY - lpY) > 10) reset(); // прокрутка — отмена
-        }, { passive: true });
-        document.addEventListener('touchend', () => {
-            const block = lpBlock, ready = lpReady;
-            reset();
-            if (ready && block) longPressCopyBlock(block); // touchend = валидный жест → буфер доступен
-        });
-        document.addEventListener('touchcancel', reset);
-    }
-}
-
-async function longPressCopyBlock(block) {
-    try {
-        const payload = buildWordCopyPayload(block);
-        await writeRichClipboard(payload.html, payload.text);
-        block.classList.add('is-longcopied');
-        setTimeout(() => block.classList.remove('is-longcopied'), 600);
-        showCopyToast('Скопировано');
-        if (navigator.vibrate) { try { navigator.vibrate(20); } catch (_) {} }
-    } catch (error) {
-        showCopyToast('Не удалось скопировать');
-    }
+    // Long press belongs to native text selection. Copying a whole block is an
+    // explicit button action, so selecting a word never changes the clipboard.
 }
 
 function showCopyToast(text) {

@@ -109,7 +109,9 @@
                                 <span id="deleteDocumentLabel">Удалить</span>
                             </button>
                         </div>
-                        <div class="builder-document-meta">
+                        <details class="builder-document-parameters">
+                          <summary>Параметры раздела</summary>
+                          <div class="builder-document-meta">
                             <label class="builder-field">
                                 <span id="documentNavTitleLabel">Название в меню</span>
                                 <input id="sectionNavTitle" type="text" maxlength="90" autocomplete="off">
@@ -126,7 +128,8 @@
                                     <option value="published" disabled>Опубликовано</option>
                                 </select>
                             </label>
-                        </div>
+                          </div>
+                        </details>
                         <div class="builder-workflow" id="builderWorkflow">
                             <div class="builder-workflow-copy">
                                 <span class="builder-workflow-status" id="workflowStatus">Черновик</span>

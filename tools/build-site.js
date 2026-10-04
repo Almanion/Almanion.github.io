@@ -7,6 +7,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const NotesBuilder = require('./build-notes.js');
 const SearchIndex = require('../performance/build-search-index.js');
+const DefinitionIndex = require('../performance/build-definition-index.js');
 const ServiceWorker = require('../performance/build-service-worker.js');
 const OfflineLibrary = require('./build-offline.js');
 
@@ -184,7 +185,7 @@ function build(options) {
     for (const file of walkFiles(output).filter(file => file.endsWith('.html'))) {
         const absolute = path.join(output, file);
         const html = fs.readFileSync(absolute, 'utf8');
-        const updated = html.replace(/((?:src|href)=["'](?:(?:note-runtime|settings|bookmarks|script|print-export|experimental-reader)\.js|styles\/site\/(?:reader|index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261003-1$2');
+        const updated = html.replace(/((?:src|href)=["'](?:(?:note-runtime|settings|bookmarks|script|print-export|experimental-reader|home-dashboard|duty)\.js|constructor\/(?:index|publication)\.(?:js|css)|styles\/(?:admin|matcenter-refresh|copy-blocks)\.css|styles\/site\/(?:reader|index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261004-1$2');
         if (updated !== html) fs.writeFileSync(absolute, updated);
     }
     // Status follows published materials, including sections added later by the
@@ -201,6 +202,7 @@ function build(options) {
         site: output,
         output: path.join(output, 'search-index.json')
     });
+    DefinitionIndex.build({ root, site: output });
     OfflineLibrary.build({ root, site: output });
     const serviceWorker = ServiceWorker.build({ root, site: output });
     fs.writeFileSync(path.join(output, '.nojekyll'), '', 'utf8');

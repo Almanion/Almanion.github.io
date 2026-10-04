@@ -817,7 +817,7 @@
     let dataRef = null;
     let schedule = normalizeSchedule(DEFAULT_SCHEDULE);
     let sourceKind = 'default';
-    let selectedMonth = 'all';
+    let selectedMonth = null;
     let searchQuery = '';
     let account = null;
     let canEdit = false;
@@ -973,9 +973,13 @@
         const rootElement = byId('dutyMonthFilters');
         const scrollLeft = rootElement.scrollLeft;
         const keys = Array.from(new Set(schedule.entries.flatMap(entryMonthKeys))).sort();
+        if (selectedMonth === null) {
+            const current = todayIso().slice(0, 7);
+            selectedMonth = keys.includes(current) ? current : (keys.find(key => key >= current) || keys[keys.length - 1] || 'all');
+        }
         if (selectedMonth !== 'all' && keys.indexOf(selectedMonth) === -1) selectedMonth = 'all';
         rootElement.replaceChildren();
-        [{ key: 'all', label: 'Все' }].concat(keys.map(function (key) {
+        [{ key: 'all', label: 'Весь год' }].concat(keys.map(function (key) {
             return { key: key, label: monthLabel(key).replace(/ \d{4}$/, '') };
         })).forEach(function (item) {
             const button = document.createElement('button');
@@ -1065,8 +1069,9 @@
         const rootElement = byId('dutyGroups');
         const empty = byId('dutyEmpty');
         const query = searchQuery.trim().toLocaleLowerCase('ru-RU');
+        const visibleMonth = query ? 'all' : selectedMonth;
         const filtered = schedule.entries.filter(function (entry) {
-            const monthMatches = selectedMonth === 'all' || entryMonthKeys(entry).includes(selectedMonth);
+            const monthMatches = visibleMonth === 'all' || entryMonthKeys(entry).includes(visibleMonth);
             const queryMatches = !query || entry.people.concat(entry.note || '').join(' ').toLocaleLowerCase('ru-RU').includes(query);
             return monthMatches && queryMatches;
         });
@@ -1076,7 +1081,7 @@
         const state = scheduleState(schedule.entries);
         const groups = new Map();
         filtered.forEach(function (entry) {
-            const key = selectedMonth === 'all' ? monthKey(entry) : selectedMonth;
+            const key = visibleMonth === 'all' ? monthKey(entry) : visibleMonth;
             if (!groups.has(key)) groups.set(key, []);
             groups.get(key).push(entry);
         });

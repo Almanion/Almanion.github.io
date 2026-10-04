@@ -188,3 +188,17 @@ body.matcenter-page #statsContainer :focus-visible { outline: 2px solid var(--mc
 }
 body.matcenter-page #gradeSwitcher .grade-card.active .grade-card-title { color: var(--mc-accent) !important; }
 body.matcenter-page #matcenterProgress .matcenter-share-solved-btn { flex: 0 0 auto; width: auto; height: 34px; min-width: max-content; padding: .3rem .65rem; gap: .4rem; border-radius: 8px; white-space: nowrap; color: var(--mc-muted); background: var(--mc-surface); border: 1px solid var(--mc-line); box-shadow: none; }
+body.matcenter-page .mc-filter-toggle { display: none; }
+body.matcenter-page .mc-filter-options { display: contents; }
+@media (max-width: 768px) {
+    body.matcenter-page .mc-toolbar { grid-template-columns: minmax(0, 1fr) 44px; }
+    body.matcenter-page .mc-search { grid-column: 1; min-width: 0; }
+    body.matcenter-page .mc-filter-toggle { display: grid; place-items: center; width: 44px; height: 44px; padding: 10px; color: var(--mc-muted); background: var(--mc-surface); border: 1px solid var(--mc-line); border-radius: 10px; cursor: pointer; }
+    body.matcenter-page .mc-filter-toggle svg { width: 22px; height: 22px; }
+    body.matcenter-page .mc-filter-toggle[aria-expanded=true] { color: var(--mc-accent); border-color: var(--mc-accent); }
+    body.matcenter-page .mc-filter-options { display: none; grid-column: 1 / -1; grid-template-columns: 1fr 1fr; gap: 8px; }
+    body.matcenter-page .mc-filter-toggle[aria-expanded=true] + .mc-filter-options { display: grid; }
+    body.matcenter-page .mc-series-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px; margin-block: .5rem; }
+    body.matcenter-page #mcSeriesSummary { grid-column: 1 / -1; }
+    body.matcenter-page #mcSeriesSummary:empty { display: none; }
+}

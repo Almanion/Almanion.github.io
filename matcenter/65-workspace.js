@@ -178,6 +178,8 @@ function saveMatcenterReadingPlace() {
 
 function initMatcenterWorkspace() {
     matcenterWorkspaceReady = true;
+    const filterToggle = document.getElementById('mcFilterToggle');
+    filterToggle?.addEventListener('click', () => filterToggle.setAttribute('aria-expanded', String(filterToggle.getAttribute('aria-expanded') !== 'true')));
     document.querySelectorAll('[data-mc-view]').forEach(button => button.addEventListener('click', () => setMatcenterReadingMode(button.dataset.mcView)));
     document.getElementById('mcSearchScope').addEventListener('change', () => { rememberMatcenterRoute(false); runSearch(); });
     document.getElementById('mcSeriesSelect').addEventListener('change', event => {

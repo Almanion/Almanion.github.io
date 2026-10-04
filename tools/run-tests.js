@@ -17,7 +17,7 @@ function listTests(root) {
         .sort(compareNames);
 }
 
-function run(root) {
+function run(root, options = {}) {
     const tests = listTests(root);
     if (!tests.length) throw new Error('No tests/*.test.js files were found.');
 
@@ -26,7 +26,7 @@ function run(root) {
         process.stdout.write(`\n[test] ${test}\n`);
         const result = spawnSync(process.execPath, [test], {
             cwd: root,
-            env: process.env,
+            env: { ...process.env, ...(options.site ? { ALMANION_TEST_SITE: options.site } : {}) },
             stdio: 'inherit'
         });
         if (result.error) throw result.error;

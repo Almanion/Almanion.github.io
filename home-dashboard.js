@@ -11,8 +11,8 @@
 
     const SETTINGS_KEY = 'homeQuickAccessByUser';
     const MAX_ITEMS = 5;
-    const DEFAULT_PUBLIC = ['physics-10', 'matcenter', 'likbez'];
-    const DEFAULT_WITH_ENGLISH = ['english', 'matcenter', 'likbez'];
+    const DEFAULT_PUBLIC = ['physics-10', 'russian-ege', 'duty-10-1'];
+    const DEFAULT_WITH_ENGLISH = ['english', 'physics-10', 'russian-ege'];
     const CATALOG = [
         { id: 'physics-10', href: 'physics-10.html', title: 'Физика', context: '10 класс', subject: 'physics', icon: 'academic-physics', category: 'grade-10' },
         { id: 'chemistry-10', href: 'chemistry-10.html', title: 'Химия', context: '10 класс', subject: 'chemistry', icon: 'academic-chemistry', category: 'grade-10' },
@@ -60,6 +60,11 @@
 
     function init(win) {
         const doc = win.document;
+        doc.querySelectorAll('.grade-panel > .subjects-grid').forEach(function (subjects) {
+            const cards = Array.from(subjects.children);
+            cards.sort((a, b) => Number(!!b.querySelector('.status-active')) - Number(!!a.querySelector('.status-active')));
+            cards.forEach(card => subjects.append(card));
+        });
         const grid = doc.getElementById('homeQuickGrid');
         const customize = doc.getElementById('homeQuickCustomize');
         if (!grid || !customize || grid.dataset.dashboardReady === 'true') return;

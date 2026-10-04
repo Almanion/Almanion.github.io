@@ -159,13 +159,14 @@
         document.body.classList.add('exp-reader-active');
 
         const hashId = decodeURIComponent(window.location.hash.slice(1));
-        const hashIndex = state.topics.findIndex(topic => topic.id === hashId);
+        const hashTarget = document.getElementById(hashId);
+        const hashIndex = state.topics.indexOf(hashTarget?.closest('.topic'));
         state.index = hashIndex >= 0 ? hashIndex : 0;
         applyTopicVisibility();
         prepareTopic(state.topics[state.index]);
         updateReaderUi();
 
-        if (hashIndex >= 0) scrollToReader();
+        if (hashIndex >= 0) goToId(hashId, { animate: false, updateHash: false });
     }
 
     function deactivateReader() {
@@ -212,9 +213,22 @@
     }
 
     function goToId(id, options) {
-        const index = state.topics.findIndex(topic => topic.id === id);
+        const target = document.getElementById(id);
+        const index = state.topics.indexOf(target?.closest('.topic'));
         if (index < 0) return false;
-        return goToIndex(index, options);
+        const settings = { scroll: true, updateHash: true, ...(options || {}) };
+        const nested = target !== state.topics[index];
+        if (!goToIndex(index, { ...settings, scroll: nested ? false : settings.scroll, updateHash: nested ? false : settings.updateHash })) return false;
+        if (nested && settings.updateHash) {
+            const url = new URL(window.location.href);
+            url.hash = id;
+            window.history.replaceState(window.history.state, '', url);
+        }
+        if (nested && settings.scroll) {
+            const offset = state.controls.getBoundingClientRect().height + 16;
+            window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - offset), behavior: 'auto' });
+        }
+        return true;
     }
 
     function revealElement(element, options) {
@@ -560,6 +574,7 @@
 
     function onPointerMove(event) {
         if (!state.swipe || state.swipe.cancelled || event.pointerId !== state.swipe.pointerId) return;
+        if (window.getSelection()?.toString().trim()) { cancelSwipe(); return; }
         const deltaX = event.clientX - state.swipe.startX;
         const deltaY = event.clientY - state.swipe.startY;
         state.swipe.deltaX = deltaX;

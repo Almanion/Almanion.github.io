@@ -36,8 +36,10 @@ test('home page switches grades without losing its layout', async function ({ pa
 
     await expect(page.locator('.home-header h1')).toContainText('Конспекты');
     await expect(page.locator('.home-quick-section')).toBeVisible();
-    await expect(page.locator('#homeQuickGrid .home-quick-card[href="matcenter.html"]')).toBeVisible();
-    await expect(page.locator('#homeQuickGrid .home-quick-card[href="likbez.html"]')).toBeVisible();
+    await expect(page.locator('#homeQuickGrid .home-quick-card[href="russian-ege.html"]')).toBeVisible();
+    await expect(page.locator('#homeQuickGrid .home-quick-card[href="duty-10-1.html"]')).toBeVisible();
+    await expect(page.locator('.home-additional-grid [href="matcenter.html"]')).toBeVisible();
+    await expect(page.locator('.home-additional-grid [href="likbez.html"]')).toBeVisible();
     const quickBounds = await page.locator('.home-quick-section').boundingBox();
     const subjectsBounds = await page.locator('.subjects-section').boundingBox();
     expect(quickBounds).not.toBeNull();
@@ -479,6 +481,17 @@ test('admin controls stay interactive after dialogs and list changes', async fun
     await page.locator('.admin-dialog .btn-outline').click();
     await expect(page.locator('.admin-dialog-overlay')).toHaveCount(0);
     await expect(page.locator('#broadcastBtn')).toBeEnabled();
+    for (const width of [320, 390]) {
+        await page.setViewportSize({ width, height: 844 });
+        await page.locator('#registeredAccountsSection').scrollIntoViewIfNeeded();
+        const refresh = page.locator('#refreshRegisteredAccountsBtn');
+        const bounds = await refresh.boundingBox();
+        expect(bounds.x).toBeGreaterThanOrEqual(0);
+        expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
+        await refresh.click();
+        await expect(refresh).toBeEnabled();
+        await expectNoHorizontalOverflow(page);
+    }
     expect(pageErrors).toEqual([]);
 });
 

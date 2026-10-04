@@ -63,34 +63,32 @@
 }
 
 @media (max-width: 768px) {
-    /* На телефоне (мобильная вёрстка) кнопки копирования нет — блок копируется
-       ДОЛГИМ НАЖАТИЕМ (script.js). Скрываем по ширине, т.к. (pointer: coarse) не
-       срабатывает при эмуляции мобильного на десктопе. */
-    .copy-block-btn { display: none !important; }
+    .copy-block-btn { opacity: 1; transform: none; }
 }
 
-/* На сенсорных устройствах кнопки нет — блок копируется ДОЛГИМ НАЖАТИЕМ (script.js).
-   Отключаем нативное выделение/контекстное меню, чтобы удержание не выделяло текст. */
+/* Native selection remains available on touch screens. */
 @media (hover: none) and (pointer: coarse) {
-    .copy-block-btn { display: none !important; }
+    .copy-block-btn { opacity: 1; transform: none; }
     .copyable-block {
-        -webkit-user-select: none;
-        user-select: none;
-        -webkit-touch-callout: none;
+        -webkit-user-select: text;
+        user-select: text;
+        -webkit-touch-callout: default;
     }
 }
 
-/* Идёт удержание (жест распознан, отпусти — скопируется) */
-.copyable-block.is-longpressing {
-    outline: 2px dashed var(--accent-color);
-    outline-offset: 3px;
-    border-radius: 8px;
-}
-/* Блок скопирован удержанием */
-.copyable-block.is-longcopied {
-    outline: 2px solid var(--accent-color);
-    outline-offset: 3px;
-    border-radius: 8px;
+@media screen and (max-width: 768px), screen and (pointer: coarse) {
+    html body .main-content .copyable-block > :is(.copy-block-btn, .bookmark-btn, .personal-note-btn) {
+        width: 44px; height: 44px; min-height: 44px; top: 0; padding: 0;
+        border-radius: 10px; background: transparent; transform: none;
+    }
+    html body .main-content .copyable-block > .bookmark-btn { top: 0 !important; right: 0 !important; padding: 0 !important; }
+    html body .main-content .copyable-block > .personal-note-btn { right: 44px; }
+    html body .main-content .copyable-block > .copy-block-btn { right: 0; }
+    html body .main-content .copyable-block:has(> .bookmark-btn) > .copy-block-btn { right: 44px; }
+    html body .main-content .copyable-block:has(> .personal-note-btn):not(:has(> .bookmark-btn)) > .personal-note-btn { right: 0; }
+    html body .main-content .copyable-block:has(> .personal-note-btn) > .copy-block-btn { right: 88px; }
+    html body .main-content .copyable-block:has(> .personal-note-btn):not(:has(> .bookmark-btn)) > .copy-block-btn { right: 44px; }
+    html body .main-content .copyable-block > .bookmark-btn::before { inset: 0; }
 }
 
 /* Всплывающее уведомление «Скопировано» */

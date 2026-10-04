@@ -564,14 +564,15 @@
         const review = History.ensureReview(state.current);
         const status = state.current.reviewStatus || 'draft';
         const labels = {
-            draft: ['Черновик', 'Материал виден редакторам и продолжает сохраняться автоматически.'],
-            ready: ['На проверке', state.isOwner ? 'Материал готов к решению главного администратора.' : 'Главный администратор может опубликовать или вернуть материал.'],
+            draft: ['Черновик', 'Правки сохраняются автоматически.'],
+            ready: ['На проверке', state.isOwner ? 'Готово к публикации или возврату.' : 'Ожидает решения главного администратора.'],
             published: ['Опубликовано', 'Эта версия уже доступна читателям. Новая правка снова создаст черновик.']
         };
         const publication = publicationFor(state.current);
         const pending = publicationPending(state.current);
         if (pending) {
-            labels.published = ['Сайт обновляется', publication?.error || 'Проверяем, когда эта версия станет доступна читателям.'];
+            const title = publication?.stage === 'failed' ? 'Ошибка сборки' : publication?.stage === 'delayed' ? 'Публикация задерживается' : 'Сайт обновляется';
+            labels.published = [title, publication?.error || 'Проверяем, когда эта версия станет доступна читателям.'];
             ensurePublication(state.current);
         }
         const meta = labels[status] || labels.draft;
@@ -601,6 +602,14 @@
                 retry.textContent = 'Проверить публикацию';
                 retry.onclick = async () => { const section = state.current; retry.disabled = true; await ensurePublication(section); await state.publication?.retry(section.subject, section.id); retry.disabled = false; };
                 publicationActions.append(retry);
+                if (publication?.deploymentUrl) {
+                    const link = document.createElement('a');
+                    link.className = 'builder-text-action';
+                    link.textContent = 'Открыть сборку ↗';
+                    link.href = publication.deploymentUrl;
+                    link.target = '_blank'; link.rel = 'noopener';
+                    publicationActions.append(link);
+                }
             }
         }
         const submit = el('submitReviewButton');

@@ -1,0 +1,21 @@
+.selection-definition-popover {
+    position: fixed; z-index: 80; display: flex; flex-direction: column;
+    box-sizing: border-box; min-width: 0; overflow: hidden; border: 1px solid var(--border-color);
+    border-radius: 14px; background: var(--bg-secondary); color: var(--text-primary);
+    box-shadow: 0 8px 32px #0003; font-size: 15px; line-height: 1.65;
+}
+.selection-definition-popover[hidden] { display: none !important; }
+.selection-definition-popover > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 4px 0 16px; border-bottom: 1px solid var(--border-color); }
+.selection-definition-popover > header strong { min-width: 0; overflow-wrap: anywhere; }
+.selection-definition-popover button { color: var(--text-secondary); border: 0; background: transparent; font: inherit; cursor: pointer; min-height: 44px; padding: 8px 12px; }
+.selection-definition-popover > header button { flex: 0 0 44px; width: 44px; font-size: 26px; }
+.selection-definition-popover :is(button,a):focus-visible { outline: 2px solid var(--accent-color); outline-offset: -2px; }
+.selection-definition-body { overflow: auto; overscroll-behavior: contain; padding: 14px 16px; min-height: 0; }
+.selection-definition-body article + article { margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 14px; }
+.selection-definition-body .definition-box { font: inherit; padding: 0; margin: 0; border: 0; box-shadow: none; background: transparent; color: inherit; overflow-wrap: anywhere; }
+.selection-definition-body .definition-box::before, .selection-definition-body .definition-box::after { display: none; }
+.selection-definition-body p { margin: .45em 0; }
+.selection-definition-body a[data-definition-source] { display: inline-block; margin-top: 8px; font-size: 12px; color: var(--accent-color); }
+.selection-definition-body .katex-display { overflow-x: auto; overflow-y: hidden; }
+.selection-definition-body svg { max-width: 100%; height: auto; }
+@media print { .selection-definition-popover { display: none !important; } }

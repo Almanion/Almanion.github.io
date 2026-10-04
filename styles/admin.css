@@ -350,6 +350,14 @@ body.admin-page.admin-dialog-open { overflow: hidden; }
 .usage-page-row strong { color: var(--text); }
 
 .registered-accounts-heading { margin-bottom: .65rem; }
+.section-heading-row > div { min-width: 0; }
+.registered-accounts-heading .section-title { overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+    .section-heading-row { flex-wrap: wrap; }
+    .section-heading-row > div { flex: 1 1 200px; }
+    .section-heading-row > button { flex: 0 0 auto; }
+    .registered-accounts-heading .section-title { font-size: 1.05rem; }
+}
 .registered-accounts-count {
     display: inline-flex;
     align-items: center;

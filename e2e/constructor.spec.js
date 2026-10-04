@@ -103,6 +103,28 @@ test('anonymous users cannot open the constructor', async ({ page }) => {
     await expect(page.locator('#builderGateText')).toContainText('Войдите');
 });
 
+for (const width of [320, 390]) test(`mobile editing keeps add block available and parameters compact at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width === 320 ? 568 : 844 });
+    await open(page);
+    await create(page, 'Mobile section');
+    await expect(page.locator('.builder-document-parameters')).not.toHaveAttribute('open', '');
+    await expect(page.locator('#sectionNavTitle')).toBeHidden();
+    await page.locator('#openBlockPickerButton').click();
+    await page.locator('[data-create-block="definition"]').click();
+    await page.locator('[data-block-field="term"]').fill('Force');
+    await page.getByRole('textbox', { name: 'Определение', exact: true }).fill('A test definition');
+    await expect(page.locator('#saveStateText')).toHaveText('Все изменения сохранены');
+    await page.evaluate(() => scrollTo(0, document.body.scrollHeight));
+    const dock = await page.locator('#addBlockDock').boundingBox();
+    expect(dock.y).toBeGreaterThanOrEqual(0);
+    expect(dock.y + dock.height).toBeLessThanOrEqual(width === 320 ? 568 : 844);
+    const count = await page.locator('.builder-block-list > .builder-block').count();
+    await page.locator('#openBlockPickerButton').click();
+    await page.locator('[data-create-block="paragraph"]').click();
+    await expect(page.locator('.builder-block-list > .builder-block')).toHaveCount(count + 1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThan(2);
+});
+
 test('publication response must not overwrite edits made while the server is processing', async ({ page }) => {
     await open(page);
     await create(page, 'Original title');

@@ -13,7 +13,7 @@ const editor = read('home-quick-editor.js');
 const shell = JSON.parse(read(path.join('performance', 'sw-shell.json'))).assets;
 
 assert.match(page, /styles\/home-dashboard\.css\?v=20261003-1/, 'dashboard stylesheet must be versioned');
-assert.match(page, /home-dashboard\.js\?v=20261003-1/, 'personal dashboard controller must be versioned');
+assert.match(page, /home-dashboard\.js\?v=20261004-1/, 'personal dashboard controller must be versioned');
 assert.doesNotMatch(page, /<script[^>]+src="home-dashboard\.js/, 'personalization must load during idle time, not block first paint');
 assert.match(page, /class="extra-section home-quick-section"[^>]*aria-labelledby="homeQuickTitle"/);
 assert.match(page, /id="homeQuickTitle">Быстрый доступ</);
@@ -24,8 +24,8 @@ assert.match(page, /class="subjects-toolbar"/);
 assert.match(page, /id="homeSubjectsTitle">Предметы</);
 assert.ok(page.indexOf('<section class="extra-section home-quick-section"') < page.indexOf('<section class="subjects-section"'),
     'quick links must precede grade content');
-assert.equal((page.match(/href="matcenter\.html"/g) || []).length, 2);
-assert.equal((page.match(/href="likbez\.html"/g) || []).length, 2);
+assert.equal((page.match(/href="matcenter\.html"/g) || []).length, 1);
+assert.equal((page.match(/href="likbez\.html"/g) || []).length, 1);
 assert.equal((page.match(/href="physics-10\.html"/g) || []).length, 2,
     'physics appears once in quick access and once in the 10th-grade grid');
 assert.match(page, /id="homeAdditionalTitle">Дополнительно</, 'services must remain available independently of personal shortcuts');
