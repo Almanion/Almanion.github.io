@@ -1974,28 +1974,58 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     for(let i=1;i<points.length;i++){if(points[i].break)ctx.moveTo(points[i].x,points[i].y);else ctx.lineTo(points[i].x,points[i].y);}
     ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);ctx.stroke();ctx.setLineDash([]);
   }
+  const shipTextures=new Map();
+  function shipTexture(color){
+    if(shipTextures.has(color))return shipTextures.get(color);
+    const canvas=document.createElement('canvas');canvas.width=480;canvas.height=360;
+    const c=canvas.getContext('2d');c.translate(240,180);c.scale(10,10);c.lineJoin='round';c.lineCap='round';
+    const metal=(y1,y2)=>{const g=c.createLinearGradient(0,y1,0,y2);g.addColorStop(0,'#f0f7ee');g.addColorStop(.27,'#a6bdc0');g.addColorStop(.52,'#ecf5e9');g.addColorStop(.8,'#6d8998');g.addColorStop(1,'#243d50');return g;};
+    const panel=(pts,fill,edge='#7895a2',width=.45)=>{c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.fillStyle=fill;c.fill();c.strokeStyle=edge;c.lineWidth=width;c.stroke();};
+    // Swept cargo skids and twin nacelles give a readable silhouette at flight scale.
+    for(const side of [-1,1]){
+      panel([[-12,side*4],[2,side*5],[-7,side*14],[-16,side*13],[-13,side*9]],metal(-14,14));
+      panel([[-10,side*8],[-3,side*7],[-8,side*12],[-13,side*12]],'#233f51');
+      path(c,[{x:-13,y:side*12},{x:-8,y:side*12},{x:-4,y:side*8}],color,.7);
+      c.save();c.translate(-8,side*8);c.fillStyle='#101e2b';c.fillRect(-9,-2.6,12,5.2);
+      c.fillStyle=metal(-3,3);c.beginPath();c.roundRect(-7,-2.6,14,5.2,2);c.fill();c.strokeStyle='#acc3c9';c.lineWidth=.4;c.stroke();
+      c.fillStyle='#1d3346';c.fillRect(-7,-2,3,4);c.fillStyle=color;c.fillRect(-7.6,-1.7,.8,3.4);
+      c.strokeStyle='#567581';c.lineWidth=.3;for(let x=-1;x<5;x+=1.2){c.beginPath();c.moveTo(x,-1.4);c.lineTo(x,1.4);c.stroke();}
+      c.strokeStyle='#f6f3df';c.beginPath();c.moveTo(-3,-2);c.lineTo(4,-2);c.stroke();c.restore();
+    }
+    const hull=()=>{c.beginPath();c.moveTo(21,0);c.bezierCurveTo(14,-5.5,8,-7,0,-6.8);c.lineTo(-11,-5.3);c.quadraticCurveTo(-14,0,-11,5.3);c.lineTo(0,6.8);c.bezierCurveTo(8,7,14,5.5,21,0);c.closePath();};
+    hull();c.fillStyle=metal(-7,7);c.fill();c.strokeStyle='#e2eee4';c.lineWidth=.5;c.stroke();
+    c.save();hull();c.clip();const random=rng(9239);
+    for(let i=0;i<240;i++){const x=-13+random()*35,y=-7+random()*14;c.strokeStyle=i%2?'#09243612':'#ffffff16';c.lineWidth=.07;c.beginPath();c.moveTo(x,y);c.lineTo(x+random()*3+.2,y);c.stroke();}
+    panel([[-11,-4.8],[0,-6.2],[6,-5.2],[2,-2.8],[-10,-2.8]],'#edf2df','#879da2',.25);
+    panel([[-11,4.8],[0,6.2],[6,5.2],[2,2.8],[-10,2.8]],'#819daa','#56727f',.25);
+    path(c,[{x:-10,y:-5},{x:0,y:-6},{x:5,y:-5.2}],color,1.1);
+    path(c,[{x:-10,y:5},{x:0,y:6},{x:5,y:5.2}],color,.65);
+    for(let x=-9;x<=1;x+=3){path(c,[{x,y:-5.2},{x:x+.8,y:-3}], '#647e8d88',.22);path(c,[{x,y:5.2},{x:x+.8,y:3}], '#35556588',.22);}
+    c.restore();
+    // Recessed amber freight bay, locks, service seams and a polished cockpit.
+    c.fillStyle='#1c3443';c.beginPath();c.roundRect(-9,-2.6,10,5.2,.8);c.fill();c.strokeStyle='#77969c';c.lineWidth=.4;c.stroke();
+    const cargo=c.createLinearGradient(-7,-2,-2,2);cargo.addColorStop(0,'#f4d69b');cargo.addColorStop(.5,'#ac824b');cargo.addColorStop(1,'#69533b');
+    c.fillStyle=cargo;c.fillRect(-7.7,-1.8,6.7,3.6);c.strokeStyle='#f9e6b6';c.lineWidth=.25;c.strokeRect(-7.7,-1.8,6.7,3.6);
+    for(const x of [-6.5,-2.7]){c.fillStyle='#283b43';c.fillRect(x,-2,.65,4);c.fillStyle='#cfded6';c.fillRect(x-.1,-.55,.85,1.1);}
+    const glass=c.createLinearGradient(5,-4,11,4);glass.addColorStop(0,'#d9fff3');glass.addColorStop(.2,color);glass.addColorStop(.4,'#28617b');glass.addColorStop(.75,'#102c42');glass.addColorStop(1,'#071420');
+    c.beginPath();c.moveTo(14.5,0);c.quadraticCurveTo(10,-4.1,5,-3.8);c.quadraticCurveTo(2.3,0,5,3.8);c.quadraticCurveTo(10,4.1,14.5,0);c.fillStyle=glass;c.fill();c.strokeStyle='#193346';c.lineWidth=.7;c.stroke();
+    path(c,[{x:5.3,y:-2.9},{x:8.7,y:-2.4},{x:10.8,y:-1.5}], '#e4fff2bc',.45);
+    path(c,[{x:8,y:-3.4},{x:7.7,y:3.4}], '#183749b0',.4);
+    path(c,[{x:16.4,y:-1.2},{x:19,y:0},{x:16.4,y:1.2}], '#546e80',.3);
+    for(const side of [-1,1])for(const x of [-9,-3,2])circle(c,x,side*4.5,.24,'#f8fff4','#536e7e',.12);
+    c.fillStyle='#435e69';c.font='bold 1.65px ui-monospace,Consolas,monospace';c.textAlign='center';c.fillText('239',-2,-4.1);
+    circle(c,-10,-6,.55,'#dbfff2');circle(c,-10,6,.55,color);
+    if(shipTextures.size>=16)shipTextures.delete(shipTextures.keys().next().value);shipTextures.set(color,canvas);return canvas;
+  }
   function ship(ctx,x,y,angle,color,scale=1,thrust=false,t=0){
     ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.scale(scale,scale);
-    if(thrust){
-      const glow=ctx.createLinearGradient(-7,0,-35,0);glow.addColorStop(0,color);glow.addColorStop(1,'transparent');
-      ctx.fillStyle=glow;ctx.beginPath();ctx.moveTo(-8,-4);ctx.lineTo(-29-Math.sin(t*25)*7,0);ctx.lineTo(-8,4);ctx.fill();
+    if(thrust)for(const side of [-1,1]){
+      const length=18+Math.sin(t*11+side)*2,g=ctx.createLinearGradient(-14,0,-14-length,0);g.addColorStop(0,'#dffff1');g.addColorStop(.18,color);g.addColorStop(.65,color+'50');g.addColorStop(1,color+'00');
+      ctx.beginPath();ctx.moveTo(-15,side*8-1.7);ctx.quadraticCurveTo(-22,side*8-2.6,-15-length,side*8);ctx.quadraticCurveTo(-22,side*8+2.6,-15,side*8+1.7);ctx.closePath();ctx.fillStyle=g;ctx.fill();
     }
-    // Twin engine courier: the silhouette stays legible at flight scale.
-    ctx.lineJoin='round';ctx.lineCap='round';ctx.strokeStyle=color;ctx.lineWidth=1;
-    for(const side of [-1,1]){
-      ctx.beginPath();ctx.moveTo(3,side*4);ctx.lineTo(-7,side*10);ctx.lineTo(-12,side*9);ctx.lineTo(-8,side*3);ctx.closePath();
-      ctx.fillStyle='#426471';ctx.fill();ctx.stroke();
-      ctx.fillStyle=color;ctx.fillRect(-12,side*8-1,4,2);
-    }
-    const hull=ctx.createLinearGradient(0,-6,0,6);hull.addColorStop(0,'#f3fffd');hull.addColorStop(.5,'#bcd4d8');hull.addColorStop(1,'#6e939d');
-    ctx.beginPath();ctx.moveTo(16,0);ctx.quadraticCurveTo(8,-7,-4,-5);ctx.lineTo(-10,-3);ctx.lineTo(-10,3);ctx.lineTo(-4,5);ctx.quadraticCurveTo(8,7,16,0);
-    ctx.fillStyle=hull;ctx.fill();ctx.strokeStyle='#defaf4';ctx.stroke();
-    ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(4,-3);ctx.lineTo(1,-2.4);ctx.lineTo(1,2.4);ctx.lineTo(4,3);ctx.closePath();
-    ctx.fillStyle='#123a4d';ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=.7;ctx.stroke();
-    ctx.fillStyle='#344c5b';ctx.fillRect(-7,-2.5,5,5);ctx.strokeStyle='#e9c990';ctx.strokeRect(-6.5,-2,4,4);
-    ctx.beginPath();ctx.moveTo(-4.5,-2);ctx.lineTo(-4.5,2);ctx.stroke();
-    ctx.restore();
+    ctx.drawImage(shipTexture(color),-24,-18,48,36);ctx.restore();
   }
+  ship.texture=shipTexture;
   class Renderer {
     constructor(canvas){
       this.canvas=canvas;this.ctx=canvas.getContext('2d');
@@ -2168,41 +2198,62 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       // Exact collision envelope: the broken silhouette never conceals its boundary.
       circle(c,p.x,p.y,p.r,null,'#a6b7c433',.65);
     }
-    station(p,t,capture){
-      const c=this.ctx,ui=Math.min(1.28,this.uiScale||1),R=capture;
-      c.save();c.translate(p.x,p.y);
-      const halo=c.createRadialGradient(0,0,7,0,0,70*ui);
-      halo.addColorStop(0,'#69f7d324');halo.addColorStop(.5,'#54c9d412');halo.addColorStop(1,'transparent');
-      circle(c,0,0,70*ui,halo);
-      // Solar arrays and support trusses are artwork; the thin inner ring is
-      // the exact capture radius. No decorative wing is a collision obstacle.
-      c.save();c.scale(ui,ui);
-      c.strokeStyle='#567e94';c.lineWidth=4;c.beginPath();c.moveTo(-45,0);c.lineTo(45,0);c.stroke();
+    stationTexture(R,ui=1){
+      this.stationCache??=new Map();const key=R+':'+ui.toFixed(3);
+      if(this.stationCache.has(key))return this.stationCache.get(key);
+      const canvas=document.createElement('canvas'),extent=R+48*ui;canvas.width=canvas.height=640;canvas.extent=extent;
+      const c=canvas.getContext('2d');c.translate(320,320);c.scale(320/extent,320/extent);c.lineJoin='round';
+      const metal=c.createLinearGradient(-R-30,-R-30,R+30,R+30);metal.addColorStop(0,'#f0eee0');metal.addColorStop(.24,'#b9ccd0');metal.addColorStop(.48,'#607d8d');metal.addColorStop(.62,'#d2ddcf');metal.addColorStop(1,'#253e51');
       for(const side of [-1,1]){
-        const x=side<0?-57:35;
-        const panel=c.createLinearGradient(x,-24,x+22,24);panel.addColorStop(0,'#244f79');panel.addColorStop(.6,'#112f54');panel.addColorStop(1,'#39739c');
-        c.fillStyle=panel;c.fillRect(x,-23,22,46);c.strokeStyle='#82bedb';c.lineWidth=1.3;c.strokeRect(x,-23,22,46);
-        c.strokeStyle='#9dd3ee58';c.lineWidth=.65;
-        for(let y=-16;y<23;y+=8){c.beginPath();c.moveTo(x+2,y);c.lineTo(x+20,y);c.stroke();}
-        for(const dx of [7,15]){c.beginPath();c.moveTo(x+dx,-21);c.lineTo(x+dx,21);c.stroke();}
-        c.fillStyle='#c0d2dd';c.fillRect(side<0?-33:23,-4,10,8);
-        c.fillStyle='#365366';c.fillRect(-6,side*30-9,12,18);
-        c.strokeStyle='#afc9d4';c.strokeRect(-6,side*30-9,12,18);
+        c.save();c.scale(side,1);
+        const x=R+17*ui,pw=19*ui,ph=48*ui;
+        // Open trusses connect four independently framed photovoltaic leaves.
+        c.strokeStyle='#6d8996';c.lineWidth=1.2;c.strokeRect(R+5,-4*ui,17*ui,8*ui);
+        path(c,[{x:R+5,y:-4*ui},{x:R+12*ui,y:4*ui},{x:R+20*ui,y:-4*ui}], '#c1d2c9',.6);
+        for(const sy of [-1,1]){
+          const y=sy<0?-ph/2:-.5*ui,h=ph/2-2*ui;
+          c.fillStyle='#071725';c.fillRect(x-1,y-1,pw+2,h+2);
+          const solar=c.createLinearGradient(x,y,x+pw,y+h);solar.addColorStop(0,'#285c86');solar.addColorStop(.35,'#183b60');solar.addColorStop(.72,'#102b49');solar.addColorStop(1,'#3e768b');
+          c.fillStyle=solar;c.fillRect(x,y,pw,h);c.strokeStyle='#b5c9c9';c.lineWidth=.7;c.strokeRect(x,y,pw,h);
+          for(let col=0;col<3;col++)for(let row=0;row<5;row++){
+            const sx=x+1.3*ui+col*5.7*ui,sy=y+1.2*ui+row*4.2*ui;
+            c.strokeStyle='#97bed259';c.lineWidth=.2;c.strokeRect(sx,sy,4.6*ui,3.2*ui);
+            path(c,[{x:sx,y:sy+1.2*ui},{x:sx+4.6*ui,y:sy+1.2*ui}], '#78a8c633',.2);
+          }
+          path(c,[{x:x+2*ui,y:y+h-2*ui},{x:x+pw-2*ui,y:y+2*ui}], '#e9f3dc30',.6);
+          c.fillStyle='#d8b678';for(const dx of [0,pw-1.2*ui])c.fillRect(x+dx,y-1,1.2*ui,h+2);
+        }
+        c.restore();
+        const y=side*(R+19*ui);c.fillStyle=metal;c.beginPath();c.roundRect(-7*ui,y-10*ui,14*ui,20*ui,3*ui);c.fill();c.strokeStyle='#d1dbce';c.lineWidth=.6;c.stroke();
+        c.fillStyle='#1a3446';c.fillRect(-4.7*ui,y-7*ui,9.4*ui,4*ui);
+        for(let k=0;k<3;k++){c.fillStyle=k===1?'#e9ca8a':'#95c7d2';c.fillRect((-3.5+k*2.5)*ui,y-6*ui,1.6*ui,1.8*ui);}
+        c.strokeStyle='#557887';for(const dy of [1,3,5]){c.beginPath();c.moveTo(-4*ui,y+dy*ui);c.lineTo(4*ui,y+dy*ui);c.stroke();}
+        c.fillStyle='#9db2b7';c.fillRect(-3*ui,side>0?R+6:-R-10*ui,6*ui,7*ui);
       }
-      c.strokeStyle='#678ea3';c.lineWidth=1.5;c.beginPath();c.moveTo(0,-40);c.lineTo(0,-54);c.stroke();circle(c,0,-54,2,'#8cffe4');
-      c.beginPath();c.arc(0,-54,7,Math.PI*.12,Math.PI*.88);c.strokeStyle='#7dfbd19a';c.stroke();
-      c.restore();
-      const rim=c.createLinearGradient(-R,-R,R,R);rim.addColorStop(0,'#d1e5e8');rim.addColorStop(.4,'#678798');rim.addColorStop(1,'#233e51');
-      circle(c,0,0,R+6,'#081a27',rim,7);
-      circle(c,0,0,R+1,null,'#a3ffdf',1.7);
-      circle(c,0,0,Math.max(5,R-5),'#09212d','#467b85',1);
-      // Empty, illuminated docking aperture; no confusing solid square.
-      c.strokeStyle='#6debc7';c.lineWidth=1.3;
-      for(let k=0;k<6;k++){const a=k*TAU/6,r=R+7;c.save();c.translate(Math.cos(a)*r,Math.sin(a)*r);c.rotate(a);c.fillStyle='#dfedef';c.fillRect(-2,-3,4,6);c.restore();}
-      c.save();c.rotate(t*.16);c.strokeStyle='#7effdb';c.lineWidth=2.5;
-      for(let k=0;k<3;k++){c.beginPath();c.arc(0,0,R+13,k*TAU/3,k*TAU/3+.42);c.stroke();}c.restore();
-      c.strokeStyle='#9dffe5b0';c.lineWidth=1;c.beginPath();c.moveTo(-4,0);c.lineTo(4,0);c.moveTo(0,-4);c.lineTo(0,4);c.stroke();
-      if(!p.noLabel)text(c,'СТАНЦИЯ',0,Math.max(53*ui,R+24)+9*this.uiScale,10*this.uiScale,'#91d8c9','center');
+      // Bevelled annulus: the centre is deliberately left open for the courier.
+      circle(c,0,0,R+6,null,'#101f2c',12);circle(c,0,0,R+6,null,metal,8);
+      circle(c,0,0,R+10,null,'#dae5d5',.65);circle(c,0,0,R+2,null,'#304f62',1.6);
+      for(let k=0;k<16;k++){
+        const angle=k*TAU/16;c.save();c.rotate(angle);c.fillStyle=k%4===0?'#cfb079':'#324c60';c.fillRect(R+3,-1.1,6,2.2);
+        c.fillStyle='#eff1dd';c.fillRect(R+7,-.5,1,1);c.restore();
+      }
+      for(let k=0;k<4;k++){c.save();c.rotate(k*TAU/4+Math.PI/4);c.fillStyle='#213d4c';c.fillRect(R+9,-4,5,8);c.fillStyle='#91cec2';c.fillRect(R+10,-2.8,2,5.6);c.restore();}
+      path(c,[{x:0,y:-R-29*ui},{x:0,y:-R-41*ui}], '#acbfc0',1);
+      c.save();c.translate(0,-R-38*ui);c.rotate(-.4);c.beginPath();c.ellipse(0,0,6*ui,2.2*ui,0,0,Math.PI);c.fillStyle=metal;c.fill();c.strokeStyle='#d1decf';c.lineWidth=.65;c.stroke();c.restore();
+      const random=rng(781);for(let i=0;i<100;i++){const a=random()*TAU,r=R+3+random()*6;circle(c,Math.cos(a)*r,Math.sin(a)*r,.15,'#e5eadd60');}
+      if(this.stationCache.size>=12)this.stationCache.delete(this.stationCache.keys().next().value);this.stationCache.set(key,canvas);return canvas;
+    }
+    station(p,t,capture){
+      const c=this.ctx,ui=Math.min(1.28,this.uiScale||1),R=capture,texture=this.stationTexture(R,ui),e=texture.extent;
+      c.save();c.translate(p.x,p.y);
+      const halo=c.createRadialGradient(0,0,R*.5,0,0,R+34);halo.addColorStop(0,'#76e5ce08');halo.addColorStop(.55,'#76e5ce18');halo.addColorStop(1,'#76e5ce00');circle(c,0,0,R+34,halo);
+      c.drawImage(texture,-e,-e,e*2,e*2);
+      // The thin mint circle, unlike decorative modules, is the exact capture radius.
+      circle(c,0,0,R,null,'#9ef4d8',1.05);
+      c.save();c.rotate(t*.13);for(let k=0;k<3;k++){c.beginPath();c.arc(0,0,R+12,k*TAU/3,k*TAU/3+.3);c.strokeStyle='#91ead37a';c.lineWidth=1.8;c.stroke();}c.restore();
+      for(const sign of [-1,1]){path(c,[{x:sign*R*.58,y:-2},{x:sign*R*.46,y:0},{x:sign*R*.58,y:2}], '#a2e2cc65',.7);}
+      circle(c,0,-R-41*ui,1.3,'#b9f5dc');
+      if(!p.noLabel)text(c,'СТАНЦИЯ',0,R+34*ui+9*(this.uiScale||1),10*(this.uiScale||1),'#91d8c9','center');
       c.restore();
     }
     cargo(p,i,t,collected,banked){
