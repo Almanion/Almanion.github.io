@@ -21,7 +21,7 @@ test('star clusters follow the pointer and reduced motion freezes the scene',asy
     await page.mouse.move(box.x+box.width*.8,box.y+box.height*.2);
     await page.waitForTimeout(150);
     expect(await canvas.evaluate(c=>c.toDataURL())).toBe(still);
-    await page.mouse.move(2,2);
+    await page.mouse.move(-2,-2);
     await expect.poll(()=>page.evaluate(()=>Orbital.App.heroPointer.strength)).toBeLessThan(.1);
 });
 for(const [width,height]of [[320,568],[390,844],[844,390],[1366,768]]){

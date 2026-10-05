@@ -14,6 +14,8 @@
     cosmeticTab:'skins',campaignSector:null,campaignQuery:'',campaignFilter:'all',contractPreviews:[],attemptHistory:{},transitioning:false,transitionToken:0,previewDirty:true,particles:[],lastResult:null,storageOK:loaded.available,modalPause:false,frameTime:0};
   app.camera={zoom:1,cx:600,cy:350};app.branchView='A';O.App=app;
   const sound=new O.Sound(),gameRenderer=new O.Renderer($('gameCanvas')),heroRenderer=new O.Renderer($('heroCanvas'));
+  const homeMotionPreference=root.matchMedia('(prefers-reduced-motion: reduce)');
+  let heroPaused=false,heroLastDraw=-Infinity,heroStillKey='';
   app.sound=sound;const modal=$('modal');
 
   function skin(){return G.SKINS.find(s=>s.id===app.profile.skin)||G.SKINS[0];}
@@ -47,6 +49,9 @@
     $('continueButton').innerHTML=done===0&&G.record(p,0).attempts===0?'Первое отправление <span>↗</span>':done===L.length?'Переиграть маршруты <span>↗</span>':'Продолжить экспедицию <span>↗</span>';
     document.body.classList.toggle('high-contrast',!!p.settings.highContrast);sound.enabled=p.settings.sound;sound.setVolume(p.settings.volume);document.body.classList.toggle('reduce-motion',p.settings.reducedMotion);
     $('saveWarning').hidden=app.storageOK;
+    const motion=$('homeMotionToggle'),limited=p.settings.reducedMotion||homeMotionPreference.matches;
+    motion.disabled=limited;motion.setAttribute('aria-pressed',String(heroPaused||limited));
+    motion.textContent=limited?'Без анимации':heroPaused?'Оживить космос':'Пауза анимации';
   }
   function go(page,force=false){
     if(!['home','campaign','hangar','awards','play'].includes(page))return;
@@ -425,6 +430,7 @@
     'speed-down':()=>setAim(app.angle,app.speed-(app.profile.settings.fineAim?1:2)),'speed-up':()=>setAim(app.angle,app.speed+(app.profile.settings.fineAim?1:2)),
     'toggle-grid':()=>{app.profile.settings.grid=!app.profile.settings.grid;save();syncControls();},
     speed:()=>{const rates=[.5,1,2,4,10];app.timeScale=rates[(rates.indexOf(app.timeScale)+1)%rates.length];updateTelemetry();},
+    'home-motion':()=>{heroPaused=!heroPaused;updateProfileUI();},
     next:()=>G.unlocked(app.profile,C.adjacent(app.currentId,1))?travelToLevel(C.adjacent(app.currentId,1)):go('campaign'),
     sector:b=>chooseSector(Number(b.dataset.sector)),
     'campaign-tier':b=>chooseSector(C.tiers[+b.dataset.tier].sectors[0]),
@@ -514,16 +520,21 @@
       for(const item of app.contractPreviews||[]){if(!item.canvas.isConnected)continue;const card=item.canvas.closest('button');if(card.matches(':hover,:focus-visible')&&!card.disabled){item.renderer.draw(item.level,{hideShip:true,time:now/1000,state:{t:(now/1000)%12,x:item.level.start.x,y:item.level.start.y,status:'preview',cargo:[]}});}}
       lastTelemetry=now;
     }else if(app.screen==='home'){
-      if(!document.hidden)app.heroTime+=elapsed;
+      const reduced=app.profile.settings.reducedMotion||homeMotionPreference.matches,still=reduced||heroPaused;
+      if(!document.hidden&&!still)app.heroTime+=elapsed;
       const blend=1-Math.exp(-elapsed*5);
       for(const key of ['x','y','strength'])app.heroPointer[key]=(app.heroPointer[key]||0)+((app.heroTarget[key]||0)-(app.heroPointer[key]||0))*blend;
-      heroRenderer.hero(app.profile.settings.reducedMotion?2:app.heroTime,skin().color,
-        app.profile.settings.reducedMotion?{x:0,y:0}:app.heroPointer);
+      const key=[innerWidth,innerHeight,root.devicePixelRatio,skin().color,reduced,heroPaused].join(':');
+      if(!document.hidden&&(still?key!==heroStillKey:now-heroLastDraw>=32)){
+        heroRenderer.hero(reduced?2:app.heroTime,skin().color,still?{x:0,y:0}:app.heroPointer);
+        heroLastDraw=now;heroStillKey=still?key:'';
+      }
     }
     requestAnimationFrame(frame);
   }
-  const heroArea=$('heroCanvas').closest('.hero');
+  const heroArea=document.documentElement;
   function guideStars(event){
+    if(app.screen!=='home')return;
     const r=$('heroCanvas').getBoundingClientRect();
     app.heroTarget={x:P.clamp((event.clientX-r.left)/r.width*2-1,-1,1),y:P.clamp((event.clientY-r.top)/r.height*2-1,-1,1),strength:1};
   }
@@ -533,6 +544,8 @@
   heroArea.addEventListener('pointerleave',releaseStars);
   heroArea.addEventListener('pointercancel',releaseStars);
   heroArea.addEventListener('pointerup',event=>{if(event.pointerType==='touch')releaseStars();});
+  root.addEventListener('blur',releaseStars);
+  homeMotionPreference.addEventListener('change',()=>{heroStillKey='';updateProfileUI();});
   // Expose semantic commands for the included browser smoke test, not a server API.
   Object.assign(app,{travelToLevel,renderCampaign,storeCourse,recallCourse,loadLevel,setAim,launch,retry,go,save,updateProfileUI,exportSave,applySolution,finish,level,displayLevel,displayState,stats,openModal,closeModal,toast,showWin,showFail,syncControls,updateObjectives,renderHangar,renderAwards,actions});
   if(!Object.keys(app.profile.records).length&&root.matchMedia('(prefers-reduced-motion: reduce)').matches)app.profile.settings.reducedMotion=true;

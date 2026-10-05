@@ -155,7 +155,7 @@
       circle(c,p.x,p.y,p.r,null,p.tint+'75',1.1);
       if(p.name)text(c,p.name.toUpperCase(),p.x,p.y+p.r+18+11*this.uiScale,11*this.uiScale,'#9aaebf','center');
     }
-    starClusters(t,pointer){
+    starClusters(t,pointer,w=1200,h=700){
       const c=this.ctx;
       if(!this.clusterStars){
         const random=rng(23991);
@@ -165,8 +165,8 @@
           g.addColorStop(0,'rgba('+rgb+',.9)');g.addColorStop(.12,'rgba('+rgb+',.45)');g.addColorStop(.4,'rgba('+rgb+',.09)');g.addColorStop(1,'rgba('+rgb+',0)');ctx.fillStyle=g;ctx.fillRect(0,0,64,64);return canvas;
         });
       }
-      const px=(pointer.x+1)*600,py=(pointer.y+1)*350,strength=pointer.strength||0;
-      const groups=[[405,218,210,.48,-.35],[955,165,180,.62,.4],[925,572,225,.36,-.48]];
+      const px=(pointer.x+1)*w/2,py=(pointer.y+1)*h/2,strength=pointer.strength||0;
+      const groups=[[555,105,260,.42,-.3],[955,165,180,.62,.4],[925,572,225,.36,-.48]].map(([x,y,r,flat,tilt])=>[x*w/1200,y*h/700,r*Math.min(w/1200,h/700),flat,tilt]);
       c.save();c.globalCompositeOperation='screen';
       for(let j=0;j<groups.length;j++){
         const [x,y,r,flatten,tilt]=groups[j];c.save();c.translate(x+pointer.x*12,y+pointer.y*8);c.rotate(tilt);c.scale(1,flatten);
@@ -425,90 +425,48 @@
       c.restore();
     }
     hero(t,color='#6af4cd',pointer={x:0,y:0}){
-      // A full closed orbit: position and tangent are continuous at every wrap.
-      // Pointer parallax is decorative and never influences the game physics.
-      this.resize();const c=this.ctx,px=pointer.x||0,py=pointer.y||0;
-      this.background(t,12);
-      this.starClusters(t,pointer);
-      c.save();c.translate(px*7,py*5);
-      for(const [x,y,r,rgb] of [[770,245,430,'91,93,191'],[520,460,330,'44,172,158']]){
-        const glow=c.createRadialGradient(x+Math.sin(t*.09)*25,y,0,x,y,r);
-        glow.addColorStop(0,`rgba(${rgb},.13)`);glow.addColorStop(1,`rgba(${rgb},0)`);
-        circle(c,x,y,r,glow);
+      // The scene uses viewport pixels; spheres retain their shape at every ratio.
+      const c=this.ctx,w=this.canvas.clientWidth,h=this.canvas.clientHeight;
+      if(!w||!h)return;
+      const dpr=Math.min(root.devicePixelRatio||1,w*h>1800000?1.25:1.5);
+      const bw=Math.round(w*dpr),bh=Math.round(h*dpr);
+      if(this.canvas.width!==bw||this.canvas.height!==bh){this.canvas.width=bw;this.canvas.height=bh;}
+      c.setTransform(dpr,0,0,dpr,0,0);this.uiScale=1;
+      c.fillStyle='#060d15';c.fillRect(0,0,w,h);
+      const mobile=w<700,px=pointer.x||0,py=pointer.y||0;
+      const cx=w*(mobile?.87:.77)+px*9,cy=h*(mobile?.57:.48)+py*7;
+      const radius=mobile?Math.min(w*.35,190):Math.min(h*.25,w*.18,270);
+      const glow=(x,y,r,rgb,alpha)=>{const g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,'rgba('+rgb+','+alpha+')');g.addColorStop(1,'rgba('+rgb+',0)');circle(c,x,y,r,g);};
+      glow(cx,cy,radius*3.5,'43,108,120',.20);
+      glow(w*.55+Math.sin(t*.035)*w*.07,h*.15,w*.55,'64,62,113',.13);
+      glow(w*.18,h*.9,w*.42,'37,91,100',.12);
+      for(const [i,star] of this.stars.entries()){
+        const depth=.3+i%4*.24,x=(star.x/1200*w+t*depth*.9)%w-px*depth*9,y=star.y/700*h-py*depth*7;
+        circle(c,x,y,star.r*(i%7===0?1:.65),'rgba(205,227,239,'+(star.a*(.5+.12*Math.sin(t*.55+star.p)))+')');
       }
-      // Near stars drift a little faster than the background.
-      for(let i=0;i<22;i++){
-        const star=this.stars[i],x=(star.x+t*(.4+i%3*.23))%1200;
-        circle(c,x-px*(5+i%4),star.y-py*6,star.r*.85,'#d1eaf03d');
-      }
-      const cx=664,cy=354,tilt=-.26;
-      const orbit=(a,rx=324,ry=132)=>({x:cx+Math.cos(a)*rx*Math.cos(tilt)-Math.sin(a)*ry*Math.sin(tilt),
-        y:cy+Math.cos(a)*rx*Math.sin(tilt)+Math.sin(a)*ry*Math.cos(tilt),z:Math.sin(a)});
-      for(const [rx,ry] of [[265,110],[324,132],[395,212]]){
-        const points=[];for(let i=0;i<=120;i++)points.push(orbit(i*TAU/120,rx,ry));
-        path(c,points,rx===324?color+'35':'#aac8e01d',rx===324?1.5:1,[3,9]);
-      }
-      const theta=t*.23-1.05,q=orbit(theta),q2=orbit(theta+.001);
-      const moon=orbit(t*.13+2.4,230,112);
-      const courier=()=>{
-        const trail=[];for(let i=0;i<=48;i++)trail.push(orbit(theta-.46+i*.46/48));
-        path(c,trail,color+'12',12);path(c,trail,color+'49',3);
-        const short=[];for(let i=0;i<=15;i++)short.push(orbit(theta-.12+i*.12/15));
-        path(c,short,color+'b0',2);
-        ship(c,q.x,q.y,Math.atan2(q2.y-q.y,q2.x-q.x),color,1.55+(q.z+1)*.23,true,t);
+      // Star fields fill the whole window, independent from the planet composition.
+      c.save();c.globalAlpha=.65;this.starClusters(t,pointer,w,h);c.restore();
+      const tilt=-.32,orbit=(a,rx=radius*1.85,ry=radius*.64)=>({x:cx+Math.cos(a)*rx*Math.cos(tilt)-Math.sin(a)*ry*Math.sin(tilt),y:cy+Math.cos(a)*rx*Math.sin(tilt)+Math.sin(a)*ry*Math.cos(tilt),z:Math.sin(a)});
+      for(const scale of [1,1.28,1.62]){c.beginPath();c.ellipse(cx,cy,radius*1.85*scale,radius*.64*scale,tilt,0,TAU);c.strokeStyle=scale===1?'#a3cfcb25':'#a3cfcb10';c.lineWidth=.7;c.stroke();}
+      // Tiny markers drift along an outer orbit; there are no abrupt resets.
+      for(let i=0;i<8;i++){const p=orbit(i*TAU/8+t*.012,radius*3,radius*1.04);circle(c,p.x,p.y,1.5,'#a7d5cd65');}
+      const theta=t*.16-.65,q=orbit(theta),tangent=orbit(theta+.002),moon=orbit(t*.065+2.6,radius*2.3,radius*.8);
+      const courier=()=>{const trail=[];for(let i=0;i<65;i++){const p=orbit(theta-.7+i*.7/64);trail.push(p);}
+        path(c,trail,color+'10',9);path(c,trail,color+'35',3);path(c,trail.slice(40),color+'a0',1.5);
+        glow(q.x,q.y,24,'149,242,212',.14);
+        ship(c,q.x,q.y,Math.atan2(tangent.y-q.y,tangent.x-q.x),color,mobile?.85:1.1,true,t);
       };
-      const moonDraw=()=>this.planet({x:moon.x,y:moon.y,r:23,tint:'#c2b2ed',name:'',ring:false});
-      c.save();c.translate(cx,cy);c.rotate(tilt);
-      for(let k=0;k<6;k++){
-        c.beginPath();c.ellipse(0,0,225+k*3,63+k*.7,0,Math.PI,TAU);
-        c.strokeStyle='#8bbebd24';c.lineWidth=1.3;c.stroke();
-      }c.restore();
-      if(moon.z<0)moonDraw();
-      if(q.z<0)courier();
-      this.planet({x:cx,y:cy,r:141,tint:'#6fcbbb',name:'',ring:false,surface:'gas'});
-      // Slowly moving cloud bands clipped to the sphere, with an atmosphere rim.
-      c.save();c.beginPath();c.arc(cx,cy,140,0,TAU);c.clip();
-      for(let k=0;k<8;k++){
-        const sy=cy-95+k*29,offset=Math.sin(t*.13+k)*16;
-        c.beginPath();c.ellipse(cx+offset,sy,160,8+k%3, -.14,0,TAU);
-        c.strokeStyle=k%2?'#b3fff31a':'#1c7d8225';c.lineWidth=5+k%3*3;c.stroke();
-      }
-      c.restore();
-      circle(c,cx,cy,145,null,'#9dfff331',2);circle(c,cx,cy,149,null,'#8eeed31a',3);
-      // Front half of the rings lies in front of the sphere.
-      c.save();c.translate(cx,cy);c.rotate(tilt);
-      for(let k=0;k<6;k++){
-        c.beginPath();c.ellipse(0,0,225+k*3,63+k*.7,0,0,Math.PI);
-        c.strokeStyle=k%2?'#9af6df48':'#c5eee926';c.lineWidth=1.4;c.stroke();
-      }c.restore();
-      if(moon.z>=0)moonDraw();
-      if(q.z>=0)courier();
-      // A moving beacon and smooth radio waves, not a blinking/strobing overlay.
-      const dock=orbit(t*.095+1.1,398,208);
-      this.station({...dock,noLabel:true},t,20);
-      for(let k=0;k<2;k++){
-        const u=(t*.25+k*.5)%1;circle(c,dock.x,dock.y,32+u*37,null,`rgba(122,239,208,${.16*Math.sin(u*Math.PI)})`,1);
-      }
-      // A parcel on the route is gently drawn into the passing courier.
-      const parcelAngle=.8,parcel=orbit(parcelAngle),delta=((theta-parcelAngle+Math.PI)%TAU+TAU)%TAU-Math.PI;
-      const progress=delta>=-.38&&delta<.12?P.clamp((delta+.38)/.50,0,1):0,smooth=progress*progress*(3-2*progress);
-      const visible=delta<.12?1:delta<1.5?0:P.clamp((delta-1.5)/.5,0,1);
-      if(visible>0){
-        c.save();c.globalAlpha=visible;
-        const pos={x:parcel.x+(q.x-parcel.x)*smooth,y:parcel.y+(q.y-parcel.y)*smooth};
-        if(progress>0&&progress<1){
-          const mx=(pos.x+q.x)/2,my=(pos.y+q.y)/2-22;
-          c.beginPath();c.moveTo(pos.x,pos.y);c.quadraticCurveTo(mx,my,q.x,q.y);
-          c.strokeStyle='#cdb9ff75';c.lineWidth=1.2;c.stroke();
-        }
-        this.cargo(pos,0,t,false,false);c.restore();
-      }
-      // A rare, fading distant meteor. Both ends of its cycle are transparent.
-      const u=(t%17)/17;
-      if(u<.10){const f=u/.10,x=250+f*600,y=105+f*95;
-        path(c,[{x:x-90,y:y-14},{x,y}],`rgba(201,225,255,${.25*Math.sin(Math.PI*f)})`,1.5);}
-      text(c,'ТРАФИК / СЕКТОР 239',664,646,11,'#688b9d','center');
-      c.restore();
+      const drawMoon=()=>this.planet({x:moon.x,y:moon.y,r:radius*.13,tint:'#b8b7d1',surface:'crater',name:''});
+      if(moon.z<0)drawMoon();if(q.z<0)courier();
+      this.planet({x:cx,y:cy,r:radius,tint:'#76baa9',surface:'gas',name:'',ring:false});
+      c.save();c.beginPath();c.arc(cx,cy,radius,0,TAU);c.clip();
+      for(let i=0;i<9;i++){c.beginPath();c.ellipse(cx+Math.sin(t*.065+i)*radius*.07,cy-radius*.8+i*radius*.2,radius*1.2,radius*.03,-.15,0,TAU);c.lineWidth=radius*.025;c.strokeStyle=i%2?'#b6f7e416':'#052c3d24';c.stroke();}
+      const shadow=c.createLinearGradient(cx-radius,cy-radius,cx+radius,cy+radius*.2);shadow.addColorStop(0,'#06101a00');shadow.addColorStop(.46,'#06101a08');shadow.addColorStop(.77,'#06101a95');shadow.addColorStop(1,'#06101aed');c.fillStyle=shadow;c.fillRect(cx-radius,cy-radius,radius*2,radius*2);c.restore();
+      c.beginPath();c.arc(cx,cy,radius+1,Math.PI*.78,Math.PI*1.82);c.strokeStyle='#a2eee760';c.lineWidth=1.5;c.stroke();
+      if(moon.z>=0)drawMoon();if(q.z>=0)courier();
+      const dock=orbit(t*.045+1.3,radius*2.37,radius*.82);this.station({...dock,noLabel:true},t,mobile?10:15);
+      const wave=(t*.16)%1;circle(c,dock.x,dock.y,19+wave*30,null,'rgba(148,220,208,'+(.12*Math.sin(wave*Math.PI))+')',.8);
+      const meteor=(t%23)/23;if(meteor<.075){const f=meteor/.075,x=w*(.22+f*.36),y=h*(.12+f*.12);path(c,[{x:x-w*.06,y:y-h*.02},{x,y}],'rgba(201,225,255,'+(.3*Math.sin(Math.PI*f))+')',1);}
     }
   }
   O.Renderer=Renderer;O.drawShip=ship;
