@@ -1,9 +1,4 @@
-/*
- * Progressive feature loader for ordinary note pages.
- * Reading/navigation paints first; account, cloud sync, study tools and editor
- * load on intent. Authentication restores in the background so progress stays
- * scoped to the right account even before opening the study tools.
- */
+/* Note-page features load on intent; authentication restores in the background. */
 (function () {
     'use strict';
 
@@ -15,12 +10,12 @@
         readerToolsStyles: 'styles/reader-tools.css?v=20261002-2',
         personalNotes: 'personal-notes.js?v=20261002-1',
         offline: 'offline-library.js?v=20261002-2',
-        printStyles: 'styles/print.css?v=20261002-1',
+        printStyles: 'styles/print.css?v=20261006-1',
         filterStyles: 'styles/note-filter.css?v=20261004-1',
         filter: 'note-filter.js?v=20261003-1',
         settings: 'settings.js?v=20261002-1',
         search: 'search.js?v=20261002-1',
-        print: 'print-export.js?v=20261002-2',
+        print: 'print-export.js?v=20261006-1',
         knowledge: 'knowledge-check.js?v=20261003-1',
         newyear: 'newyear.js?v=20261002-1',
         firebaseApp: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js',
@@ -77,8 +72,7 @@
                 return script.src && script.src.split('?')[0] === new URL(source, location.href).href.split('?')[0];
             });
             if (existing) {
-                // Parser dependencies precede the runtime. A dynamically added
-                // script, however, may still be loading during another request.
+                // Dynamic dependencies can still be loading on a second request.
                 if (!existing.dataset.runtimeFeature || existing.dataset.runtimeLoaded === 'true') resolve(existing);
                 else {
                     existing.addEventListener('load', function () { resolve(existing); }, { once: true });
@@ -192,6 +186,11 @@
             container.appendChild(button);
         }
         launcher('knowledgeCheckBtn', 'knowledge', 'Проверка знаний', document.querySelector('.sidebar-actions'));
+        document.addEventListener('keydown', event => {
+            if (window.AlmanionPrintExport || !(event.ctrlKey || event.metaKey) || event.altKey || event.code !== 'KeyP') return;
+            event.preventDefault();
+            ensure('print').then(() => window.AlmanionPrintExport.open()).catch(() => {});
+        });
         loadStyle('printStyles').catch(function () {});
         const nav = document.querySelector('.sidebar .nav-menu');
         if (nav) {

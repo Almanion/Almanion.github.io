@@ -376,7 +376,7 @@
         if (window.AlmanionPdfDownload) return Promise.resolve();
         if (!pdfModulePromise) pdfModulePromise = new Promise(function (resolve, reject) {
             const script = document.createElement('script');
-            script.src = 'pdf-download.js?v=20261002-2';
+            script.src = 'pdf-download.js?v=20261006-1';
             script.onload = resolve;
             script.onerror = function () { pdfModulePromise = null; script.remove(); reject(new Error('PDF module unavailable')); };
             document.head.appendChild(script);
@@ -391,11 +391,14 @@
         updateBusyState(true);
         try {
             await loadPdfModule();
-            const blob = await window.AlmanionPdfDownload.generate(selectedItems(), printDocumentTitle());
+            const blob = await window.AlmanionPdfDownload.generate(selectedItems(), printDocumentTitle(), { autoPrint: mode === 'print' });
             if (previewUrl) URL.revokeObjectURL(previewUrl);
             previewUrl = URL.createObjectURL(blob);
-            if (mode === 'preview') {
+            if (mode === 'preview' || mode === 'print') {
                 const frame = document.getElementById('printExportPreviewFrame');
+                // The PDF's standard named Print action runs when its viewer is
+                // ready, without reaching into a browser-owned/cross-origin frame.
+                frame.onload = null;
                 frame.src = previewUrl;
                 document.getElementById('printExportPreviewPanel').hidden = false;
                 setPreviewBackgroundInert(true);
@@ -413,38 +416,7 @@
         } finally { exporting = false; updateBusyState(false); }
     }
 
-    async function printNotes() {
-        if (exporting || !selectedItems().length) return;
-        exporting = true;
-        closeDialog(false);
-        updateBusyState(true);
-        try {
-            const needsMath = selectedItems().some(function (item) {
-                return /\\\(|\\\[|\$\$/.test(item.element.textContent);
-            });
-            if (needsMath && typeof window.renderMathInElement !== 'function') {
-                const deadline = Date.now() + 8000;
-                while (typeof window.renderMathInElement !== 'function' && Date.now() < deadline) {
-                    await new Promise(function (resolve) { setTimeout(resolve, 200); });
-                }
-                if (typeof window.renderMathInElement !== 'function') throw new Error('math-unavailable');
-            }
-            preparePrintDocument();
-            await waitForPrintableAssets();
-            window.print();
-        } catch (error) {
-            console.error('Almanion print export:', error);
-            restoreDocument();
-            openDialog();
-            const description = document.getElementById('printExportDescription');
-            if (description) {
-                description.setAttribute('role', 'alert');
-                description.textContent = error.message === 'math-unavailable'
-                    ? text('Не удалось загрузить формулы. Проверьте соединение и повторите экспорт.', 'Could not load formulas. Check your connection and retry.')
-                    : text('Не удалось подготовить PDF. Попробуйте ещё раз.', 'Could not prepare the PDF. Please try again.');
-            }
-        }
-    }
+    function printNotes() { return exportToPDF('print'); }
 
     function createLauncher() {
         const existing = document.getElementById('printExportButton');
@@ -537,6 +509,8 @@
         document.getElementById('printExportPrint').addEventListener('click', printNotes);
         document.getElementById('printExportPreview').addEventListener('click', function () { exportToPDF('preview'); });
         document.getElementById('printExportPreviewClose').addEventListener('click', function () {
+            document.getElementById('printExportPreviewFrame').onload = null;
+            document.getElementById('printExportPreviewFrame').src = 'about:blank';
             document.getElementById('printExportPreviewPanel').hidden = true;
             setPreviewBackgroundInert(false);
             document.getElementById('printExportPreview').focus({ preventScroll: true });
@@ -574,6 +548,8 @@
     function closeDialog(restoreFocus) {
         const overlay = document.getElementById('printExportDialog');
         if (!overlay || overlay.hidden) return;
+        document.getElementById('printExportPreviewFrame').onload = null;
+        document.getElementById('printExportPreviewFrame').src = 'about:blank';
         overlay.classList.remove('is-open');
         overlay.hidden = true;
         document.body.classList.remove(DIALOG_CLASS);
@@ -608,6 +584,11 @@
             cleanupTimer = window.setTimeout(restoreDocument, 800);
         });
         document.addEventListener('keydown', function (event) {
+            if ((event.ctrlKey || event.metaKey) && !event.altKey && event.code === 'KeyP') {
+                event.preventDefault();
+                openDialog();
+                return;
+            }
             const overlay = document.getElementById('printExportDialog');
             if (event.key === 'Escape' && overlay && !overlay.hidden) {
                 event.preventDefault();

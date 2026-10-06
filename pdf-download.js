@@ -18,7 +18,8 @@
 
     function dependencies() {
         if (!ready) ready = (async () => {
-            await load('pdf-block-frames.js?v=20261002-1');
+            await load('pdf-pagination.js?v=20261006-1');
+            await load('pdf-block-frames.js?v=20261006-1');
             await load('vendor/pdf/pdfmake.min.js');
             window.MathJax = { startup: { typeset: false }, svg: { fontCache: 'none' }, tex: { packages: ['base', 'ams', 'newcommand', 'noundefined', 'textmacros'] } };
             await load('vendor/pdf/tex-svg.js');
@@ -218,7 +219,10 @@
             await flush();
             if (node.matches('button,script,style,[hidden],.note-filter-hidden,.note-filter-empty,.inline-edit-btn,.note-edit-btn,.copy-block-btn,.bookmark-btn')) continue;
             if (node.matches('h1,h2,h3,h4,h5,h6,.part-title,.topic-title,.subsection-title')) {
-                output.push({ text: node.textContent.trim(), fontSize: node.matches('h1,h2,.part-title') ? 16 : 13, bold: true, margin: [0, 4, 0, 9], headlineLevel: 1, newSection: true });
+                if (depth === 0 && node.textContent.trim()) {
+                    const level = node.matches('h1,h2,.part-title') ? 0 : node.matches('h3,.topic-title') ? 1 : 2;
+                    output.push(AlmanionPdfPagination.heading(node.textContent, level, measure.pdfHeadings));
+                } else output.push({ text: node.textContent.trim(), fontSize: 13, bold: true, margin: [0, 4, 0, 9] });
             } else if (node.matches(BLOCKS)) {
                 const frames = window.AlmanionPdfBlockFrames;
                 const frame = { id: 'block-' + (++measure.pdfBlockId), width, depth };
@@ -228,7 +232,6 @@
                 if (stack.length) output.push({
                     table: { widths: ['*'], headerRows: kind ? 1 : 0, keepWithHeaderRows: Math.min(1, stack.length - 1), body: stack.map((content, index) => [{
                         stack: [...(index === 0 ? [frames.marker(frame, 'start', ancestors)] : []), content, frames.marker(frame, index === stack.length - 1 ? 'end' : 'rowEnd', ancestors)],
-                        fillColor: depth ? frames.style.nestedFill : frames.style.fill
                     }]) },
                     layout: { hLineWidth: () => 0, vLineWidth: () => 0, paddingLeft: () => frames.style.paddingX, paddingRight: () => frames.style.paddingX, paddingTop: index => index === 0 ? frames.style.paddingY : 0, paddingBottom: (index, table) => index === table.table.body.length - 1 ? frames.style.paddingY : 0 },
                     margin: [0, 0, 0, frames.style.gap]
@@ -273,7 +276,7 @@
         return output;
     }
 
-    async function generate(items, title) {
+    async function generate(items, title, options = {}) {
         await dependencies();
         const host = document.createElement('div');
         host.style.cssText = 'position:fixed;left:-10000px;top:0;pointer-events:none;';
@@ -283,7 +286,7 @@
         const style = document.createElement('style');
         style.textContent = ':host{color:#17191d} .paragraph{font:14.6667px/1.5 AlmanionPDF,Roboto,sans-serif;white-space:normal;overflow-wrap:anywhere} strong,b{font-weight:700} em,i{font-style:italic} .pdf-math{display:inline-block;vertical-align:middle;line-height:0;margin-inline:.16em}.pdf-math.display{display:block;text-align:center;margin:10px 0}.pdf-math svg{max-width:100%;height:auto}';
         shadow.append(style);
-        const measure = document.createElement('div'); measure.pdfBlockId = 0; shadow.append(measure);
+        const measure = document.createElement('div'); measure.pdfBlockId = 0; measure.pdfHeadings = []; shadow.append(measure);
         try {
             const content = [];
             let previousGroup = null;
@@ -294,7 +297,7 @@
                 const group = item.element.closest('.content-section');
                 if (group && group !== previousGroup) {
                     const heading = group.querySelector('.part-title');
-                    if (heading && item.element !== group) content.push({ text: heading.textContent.trim(), fontSize: 16, bold: true, margin: [0, 0, 0, 10], pageBreak: content.length ? 'before' : undefined });
+                    if (heading && item.element !== group) content.push(AlmanionPdfPagination.heading(heading.textContent, 0, measure.pdfHeadings, { margin: [0, 0, 0, 10], pageBreak: content.length ? 'before' : undefined }));
                     previousGroup = group;
                 } else if (content.length) content.push({ text: '', pageBreak: 'before' });
                 const converted = await children(clone, WIDTH, measure, document.documentElement.lang === 'en');
@@ -307,20 +310,33 @@
                 await new Promise(resolve => setTimeout(resolve, 0));
             }
             if (!content.length) throw new Error('В выбранных разделах нет материала для экспорта.');
-            const definition = {
+            const pagination = window.AlmanionPdfPagination;
+            if (!measure.pdfHeadings.length) content.unshift(pagination.heading(title, 0, measure.pdfHeadings));
+            function definitionFor(locations) { return {
                 info: { title, author: '@Almanion239', subject: 'Конспект' }, pageSize: 'A4',
                 pageMargins: [39.69, 42.52, 39.69, 51.02], // 14 / 15 / 14 / 18 mm.
-                defaultStyle: { font: 'NotoSans', fontSize: 11, color: INK }, content,
-                footer: (page, pages) => ({ columns: [{ text: '@Almanion239' }, { text: page + ' / ' + pages, alignment: 'right' }], margin: [39.69, 16, 39.69, 0], fontSize: 9, color: '#535963' }),
+                defaultStyle: { font: 'NotoSans', fontSize: 11, color: INK },
+                content: [pagination.contents(measure.pdfHeadings, locations, document.documentElement.lang === 'en'), ...pagination.copy(content)],
+                footer: pagination.footer,
                 pageBreakBefore: (node, following) => node.headlineLevel === 1 && following.length === 0
-            };
+            }; }
+            // First resolve actual heading pages. Fixed-width number cells keep
+            // contents height unchanged when their placeholders are replaced.
+            const draft = pdfMake.createPdf(definitionFor()).getStream({ bufferPages: true });
+            let locations;
+            try { locations = pagination.locate(draft._pdfMakePages, measure.pdfHeadings); }
+            finally {
+                await new Promise((resolve, reject) => { draft.on('error', reject); draft.on('end', resolve); draft.resume(); draft.end(); });
+            }
+            const definition = definitionFor(locations);
             return await new Promise((resolve, reject) => {
                 try {
                     // Every image/font is already local or embedded. Build a
                     // stream directly so layout failures reject this promise;
                     // the callback API otherwise throws in an internal promise
                     // and can leave the export button busy indefinitely.
-                    const stream = pdfMake.createPdf(definition).getStream({ bufferPages: true });
+                    const stream = pdfMake.createPdf(definition).getStream({ bufferPages: true, autoPrint: options.autoPrint === true });
+                    pagination.verify(locations, pagination.locate(stream._pdfMakePages, measure.pdfHeadings));
                     const chunks = [];
                     stream.on('data', chunk => chunks.push(chunk));
                     stream.on('error', reject);

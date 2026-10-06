@@ -1,5 +1,7 @@
 """Read-only QA for the website's downloadable PDFs."""
 import sys
+import json
+import re
 import pdfplumber
 
 with pdfplumber.open(sys.argv[1]) as document:
@@ -8,6 +10,8 @@ with pdfplumber.open(sys.argv[1]) as document:
         assert abs(page.width - 595.28) < 1 and abs(page.height - 841.89) < 1, "Not A4"
         text = page.extract_text() or ""
         assert "@Almanion239" in text, f"Footer missing on page {number}"
+        footer = page.crop((0, 795, page.width, page.height)).extract_text() or ""
+        assert re.fullmatch(r"@Almanion239\s+" + str(number - 1), footer.strip()), f"Wrong serial footer on page {number}: {footer}"
         assert "�" not in text, f"Missing glyphs on page {number}"
         assert "\x00" not in text, f"Unsupported glyphs on page {number}"
         body = [char for char in page.chars if char["top"] < 790]
@@ -18,6 +22,20 @@ with pdfplumber.open(sys.argv[1]) as document:
             color = char.get("non_stroking_color")
             assert color not in [(1, 1, 1), 1], f"White text on page {number}"
     full_text = "\n".join(page.extract_text() or "" for page in document.pages)
-    assert "Молекулярная физика" in full_text, "Cyrillic title is not extractable"
-    assert "Термодинамический" in full_text, "Definition text is not extractable"
-    print(f"PDF QA passed: {len(document.pages)} A4 pages; Cyrillic, margins, ink and footers.")
+    assert "Содержание" in (document.pages[0].extract_text() or ""), "Contents missing on page zero"
+    if len(sys.argv) > 2:
+        with open(sys.argv[2], encoding="utf-8") as stream:
+            entries = json.load(stream)
+        for entry in entries:
+            assert 0 < entry["page"] < len(document.pages), "Invalid contents page reference"
+            page_text = re.sub(r"\s+", " ", document.pages[entry["page"]].extract_text() or "")
+            assert entry["text"] in page_text, f"Contents points to the wrong page: {entry}"
+            assert entry["text"] in re.sub(r"\s+", " ", document.pages[0].extract_text() or ""), f"Heading missing from contents: {entry}"
+        for page in document.pages:
+            for rectangle in page.rects:
+                if rectangle.get("fill") and rectangle["width"] > 100 and rectangle["height"] > 30:
+                    assert rectangle.get("non_stroking_color") in [(1, 1, 1), 1], "Large ink-consuming block background"
+    else:
+        assert "Молекулярная физика" in full_text, "Cyrillic title is not extractable"
+        assert "Термодинамический" in full_text, "Definition text is not extractable"
+    print(f"PDF QA passed: {len(document.pages)} A4 pages; contents, Cyrillic, margins, ink and serial footers.")

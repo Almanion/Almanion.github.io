@@ -26,10 +26,11 @@ assert.match(source, /printExportDownload/);
 assert.match(source, /print-export-menu-slot/);
 assert.match(source, /window\.addEventListener\('beforeprint'/);
 assert.match(source, /window\.addEventListener\('afterprint'/);
-assert.match(source, /window\.print\(\)/);
+assert.match(source, /exportToPDF\('print'\)/, 'print and download must share exact pagination');
 assert.match(css, /@page\s*\{[\s\S]*size:\s*A4 portrait/);
 assert.match(css, /@bottom-left\s*\{[\s\S]*@Almanion239/);
-assert.match(css, /@bottom-right\s*\{[\s\S]*counter\(page\)[\s\S]*counter\(pages\)/);
+assert.match(css, /@bottom-right\s*\{[\s\S]*content: counter\(page\);/);
+assert.doesNotMatch(css, /counter\(pages\)/, 'printed numbers must not contain a total');
 assert.match(css, /\.page-header,[\s\S]*\.note-inline-edit-button,[\s\S]*display:\s*none\s*!important/);
 assert.match(css, /\.main-content > \.content-section \+ \.content-section\s*\{\s*break-before:\s*page/);
 assert.match(css, /\.content-section\[data-print-first-section\]/);
@@ -51,7 +52,7 @@ pages.forEach(function (file) {
 });
 
 const runtime = fs.readFileSync(path.join(root, 'note-runtime.js'), 'utf8');
-assert.match(runtime, /printStyles:\s*'styles\/print\.css\?v=20261002-1'/);
+assert.match(runtime, /printStyles:\s*'styles\/print\.css\?v=20261006-1'/);
 assert.match(runtime, /print:\s*function \(\) \{ return loadStyle\('printStyles'\).*loadScript\('print'\)/);
 
 console.log('print-ready PDF export: all tests passed');

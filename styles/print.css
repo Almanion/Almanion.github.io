@@ -422,7 +422,7 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
     }
 
     @bottom-right {
-        content: counter(page) " / " counter(pages);
+        content: counter(page);
         color: #7a818c;
         font-family: "Onest", "Segoe UI", Arial, sans-serif;
         font-size: 8pt;
@@ -435,8 +435,8 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
         --print-ink: #17191d;
         --print-muted: #606773;
         --print-rule: #cfd3da;
-        --print-surface: #f6f7f9;
-        --print-surface-nested: #fbfbfc;
+        --print-surface: #fff;
+        --print-surface-nested: #fff;
     }
 
     html,
@@ -788,7 +788,7 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
         border: 0.25mm solid var(--print-rule) !important;
         overflow-wrap: anywhere !important;
     }
-    .main-content th { background: #eceef1 !important; font-weight: 700 !important; }
+    .main-content th { background: #fff !important; font-weight: 700 !important; }
 
     .main-content pre {
         max-width: 100% !important;

@@ -61,6 +61,7 @@
     "print-export.js",
     "pdf-download.js",
     "pdf-block-frames.js",
+    "pdf-pagination.js",
     "russian-ege.html",
     "russian-ege.js",
     "script.js",

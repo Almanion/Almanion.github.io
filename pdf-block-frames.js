@@ -8,7 +8,7 @@
 })(typeof window !== 'undefined' ? window : null, function () {
     'use strict';
     const mm = value => value * 72 / 25.4;
-    const style = Object.freeze({ radius: mm(1.8), border: mm(.25), stripe: mm(.65), paddingX: mm(4), paddingY: mm(3.4), gap: mm(3.2), fill: '#f6f7f9', nestedFill: '#fbfbfc', rule: '#cfd3da', accent: '#8c939e' });
+    const style = Object.freeze({ radius: mm(1.8), border: mm(.25), stripe: mm(.65), paddingX: mm(4), paddingY: mm(3.4), gap: mm(3.2), fill: '#ffffff', nestedFill: '#ffffff', rule: '#cfd3da', accent: '#8c939e' });
     function marker(frame, edge, ancestors = []) {
         return { canvas: [{ type: 'line', x1: 0, x2: 0, y1: 0, y2: 0, lineWidth: 0, lineOpacity: 0, pdfBlockFrame: { ...frame, edge }, pdfFrameAncestors: ancestors.map(parent => parent.id) }] };
     }
@@ -65,22 +65,9 @@
         for (const frame of frames) {
             document.switchToPage(frame.page);
             const { x, y, width: w, height: h } = frame;
-            const r = Math.min(style.radius, w / 2, h / 2), k = .5522847498;
-            // The table already painted a light surface. Trim its four square
-            // corners against the containing surface, without covering content.
-            const surround = frame.depth === 0 ? '#ffffff' : frame.depth === 1 ? style.fill : style.nestedFill;
-            const corners = [
-                `M${x},${y} L${x+r},${y} C${x+r-k*r},${y} ${x},${y+r-k*r} ${x},${y+r} Z`,
-                `M${x+w},${y} L${x+w},${y+r} C${x+w},${y+r-k*r} ${x+w-r+k*r},${y} ${x+w-r},${y} Z`,
-                `M${x+w},${y+h} L${x+w-r},${y+h} C${x+w-r+k*r},${y+h} ${x+w},${y+h-r+k*r} ${x+w},${y+h-r} Z`,
-                `M${x},${y+h} L${x},${y+h-r} C${x},${y+h-r+k*r} ${x+r-k*r},${y+h} ${x+r},${y+h} Z`
-            ];
+            const r = Math.min(style.radius, w / 2, h / 2);
+            // Frames are strokes only: no large filled rectangles consume ink.
             document.save();
-            if (Number.isFinite(frame.surfaceEnd) && frame.surfaceEnd < y + h) {
-                document.fillColor(frame.depth ? style.nestedFill : style.fill).rect(x, frame.surfaceEnd, w, y + h - frame.surfaceEnd).fill();
-            }
-            document.fillColor(surround);
-            for (const path of corners) document.path(path).fill();
             const inset = style.border / 2;
             document.lineWidth(style.border).strokeColor(style.rule).roundedRect(x + inset, y + inset, w - style.border, h - style.border, Math.max(0, r - inset)).stroke();
             document.lineWidth(style.stripe).strokeColor(style.accent).lineCap('round').moveTo(x + style.stripe / 2, y + r).lineTo(x + style.stripe / 2, y + h - r).stroke();
