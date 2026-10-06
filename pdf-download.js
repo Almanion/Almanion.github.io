@@ -49,7 +49,7 @@
         return ready;
     }
 
-    async function replaceMath(root) {
+    function restoreMath(root) {
         root.querySelectorAll('.katex').forEach(node => {
             const tex = node.querySelector('annotation[encoding="application/x-tex"]');
             if (!tex) return;
@@ -58,6 +58,10 @@
             raw.textContent = (outer.matches('.katex-display') ? '\\[' : '\\(') + tex.textContent + (outer.matches('.katex-display') ? '\\]' : '\\)');
             outer.replaceWith(raw);
         });
+    }
+
+    async function replaceMath(root) {
+        restoreMath(root);
         const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
         const nodes = [];
         while (walker.nextNode()) nodes.push(walker.currentNode);
@@ -168,6 +172,7 @@
             }
         }
         const copy = svg.cloneNode(true);
+        copy.querySelectorAll('script,foreignObject').forEach(node => node.remove());
         // Noto Sans covers our prose, but not these mathematical glyphs. The
         // site's already bundled KaTeX font keeps SVG labels selectable too.
         const walker = document.createTreeWalker(copy, NodeFilter.SHOW_TEXT);
@@ -188,10 +193,45 @@
         return { svg: new XMLSerializer().serializeToString(copy).replace(/currentColor/g, INK), fit: [width, 410], alignment: 'center', margin: [0, 6, 0, 6] };
     }
 
-    async function illustration(image, width) {
-        const url = new URL(image.src, location.href);
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Не удалось загрузить иллюстрацию: ' + (image.alt || url.pathname));
+    // Snapshot sources before detaching the reader DOM. currentSrc and baseURI
+    // are otherwise lost, and offscreen lazy pictures may not have loaded yet.
+    function imageSources(image) {
+        const candidates = [];
+        const add = value => {
+            if (!value) return;
+            const url = new URL(value, image.baseURI || location.href);
+            if (['http:', 'https:', 'data:', 'blob:'].includes(url.protocol) && !candidates.includes(url.href)) candidates.push(url.href);
+        };
+        const srcset = value => {
+            // URLs can contain commas (notably data: images); descriptors and
+            // separating whitespace are different from commas inside a URL.
+            const entries = [];
+            const pattern = /([^\s]+)(?:\s+(\d+(?:\.\d+)?)[wx])?\s*(?:,|$)/g;
+            let match;
+            while ((match = pattern.exec(value || ''))) entries.push({ url: match[1].replace(/,+$/, ''), size: Number(match[2]) || 1 });
+            entries.sort((a, b) => b.size - a.size).forEach(entry => add(entry.url));
+        };
+        add(image.getAttribute('data-src'));
+        add(image.currentSrc);
+        if (image.parentElement?.tagName === 'PICTURE') for (const source of image.parentElement.children) {
+            if (source.tagName !== 'SOURCE' || source.media && !matchMedia(source.media).matches) continue;
+            if (source.type && !/^image\/(png|jpeg|webp|avif|gif|svg\+xml)$/i.test(source.type)) continue;
+            srcset(source.srcset);
+        }
+        srcset(image.getAttribute('data-srcset') || image.srcset);
+        add(image.getAttribute('src'));
+        return candidates;
+    }
+
+    async function illustration(image, width, measure) {
+        let response, url;
+        for (const source of measure.pdfImages.get(image) || []) {
+            try {
+                const result = await fetch(source, { signal: AbortSignal.timeout(20000) });
+                if (result.ok) { response = result; url = new URL(source); break; }
+            } catch (_) { /* Try a picture's fallback after a failed source. */ }
+        }
+        if (!response) throw new Error('Не удалось загрузить иллюстрацию: ' + (image.alt || image.getAttribute('src') || 'не указан адрес'));
         const blob = await response.blob();
         if (/svg/.test(blob.type) || /\.svg(?:$|\?)/i.test(url.href)) {
             const source = await blob.text();
@@ -200,24 +240,66 @@
             svg.querySelectorAll('script, foreignObject').forEach(node => node.remove());
             return svgFigure(svg, width);
         }
-        const data = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob); });
-        if (!/image\/(png|jpeg)/.test(blob.type)) {
+        if (!/image\/jpeg/.test(blob.type)) {
+            // PNG colour-key transparency (including old grayscale diagrams)
+            // is not reliably handled by PDFKit. Composite losslessly on white
+            // paper in the browser, rather than printing grey/white artifacts.
             const bitmap = await createImageBitmap(blob);
             const canvas = document.createElement('canvas'); canvas.width = bitmap.width; canvas.height = bitmap.height;
-            canvas.getContext('2d').drawImage(bitmap, 0, 0); bitmap.close();
-            return { image: canvas.toDataURL('image/png'), fit: [width, 410], margin: [0, 6, 0, 6] };
+            const context = canvas.getContext('2d');
+            context.fillStyle = '#ffffff'; context.fillRect(0, 0, canvas.width, canvas.height);
+            context.drawImage(bitmap, 0, 0); bitmap.close();
+            return { image: canvas.toDataURL('image/png'), fit: [width, 410], alignment: 'center', margin: [0, 6, 0, 6] };
         }
-        return { image: data, fit: [width, 410], margin: [0, 6, 0, 6] };
+        const data = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob); });
+        return { image: data, fit: [width, 410], alignment: 'center', margin: [0, 6, 0, 6] };
+    }
+
+    async function tableContent(table, width, measure, english, depth, ancestors) {
+        const grid = Array.from(table.rows, () => []);
+        for (const [rowIndex, row] of Array.from(table.rows).entries()) {
+            let column = 0;
+            for (const cell of row.cells) {
+                while (grid[rowIndex][column]) column++;
+                const colSpan = cell.colSpan;
+                const groupRows = Array.from(row.parentElement.rows);
+                const available = groupRows.length - groupRows.indexOf(row);
+                const rowSpan = Math.min(cell.rowSpan || available, available);
+                grid[rowIndex][column] = { cell, colSpan, rowSpan };
+                for (let y = 0; y < rowSpan; y++) for (let x = 0; x < colSpan; x++) {
+                    if (x || y) grid[rowIndex + y][column + x] = {};
+                }
+                column += colSpan;
+            }
+        }
+        const count = Math.max(0, ...grid.map(row => row.length));
+        if (!count) return null;
+        const body = [];
+        for (const row of grid) {
+            const cells = [];
+            for (let index = 0; index < count; index++) {
+                const entry = row[index];
+                cells.push(entry?.cell ? {
+                    stack: await children(entry.cell, width * entry.colSpan / count - 12, measure, english, depth, ancestors),
+                    colSpan: entry.colSpan, rowSpan: entry.rowSpan
+                } : {});
+            }
+            body.push(cells);
+        }
+        // Explicit padding keeps the measured text/inner frames at exactly the
+        // same width as pdfmake's cells, including colSpan and rowSpan slots.
+        return { table: { headerRows: table.tHead?.rows.length || 0, widths: Array(count).fill('*'), body },
+            layout: { hLineWidth: () => .5, vLineWidth: () => 0, hLineColor: () => '#cfd3da', paddingLeft: () => 6, paddingRight: () => 6, paddingTop: () => 4, paddingBottom: () => 4 }, margin: [0, 4, 0, 8] };
     }
 
     async function children(parent, width, measure, english, depth = 0, ancestors = []) {
         const output = [], inline = [];
         const flush = async () => { if (inline.length) output.push(...await paragraph(inline.splice(0), width, measure)); };
         for (const node of parent.childNodes) {
-            if (node.nodeType === 3 || (node.nodeType === 1 && /^(STRONG|B|EM|I|SPAN|A|SUB|SUP|BR)$/.test(node.tagName) && !node.querySelector('svg,img,table'))) { inline.push(node); continue; }
+            if (node.nodeType === 1 && node.matches('button,script,style,summary,[hidden],.note-filter-hidden,.note-filter-empty,.inline-edit-btn,.note-edit-btn,.copy-block-btn,.bookmark-btn')) continue;
+            if (node.nodeType === 3 || (node.nodeType === 1 && /^(STRONG|B|EM|I|SPAN|A|SUB|SUP|BR)$/.test(node.tagName) && !node.matches(BLOCKS) && !node.querySelector(BLOCKS + ',svg,img,table,figure,p,ul,ol,details'))) { inline.push(node); continue; }
             if (node.nodeType !== 1) continue;
             await flush();
-            if (node.matches('button,script,style,[hidden],.note-filter-hidden,.note-filter-empty,.inline-edit-btn,.note-edit-btn,.copy-block-btn,.bookmark-btn')) continue;
             if (node.matches('h1,h2,h3,h4,h5,h6,.part-title,.topic-title,.subsection-title')) {
                 if (depth === 0 && node.textContent.trim()) {
                     const level = node.matches('h1,h2,.part-title') ? 0 : node.matches('h3,.topic-title') ? 1 : 2;
@@ -229,14 +311,19 @@
                 const kind = Object.keys(LABELS).find(key => node.classList.contains(key + '-box'));
                 const stack = await children(node, width - 2 * frames.style.paddingX, measure, english, depth + 1, ancestors.concat(frame));
                 if (kind) stack.unshift({ text: english ? kind[0].toUpperCase() + kind.slice(1) : LABELS[kind], fontSize: 8, color: '#535963', bold: true, margin: [0, 0, 0, 6] });
+                const firstBody = stack[1];
+                const keepBody = kind && firstBody && (firstBody.unbreakable || !firstBody.table && !firstBody.columns && !firstBody.stack);
                 if (stack.length) output.push({
-                    table: { widths: ['*'], headerRows: kind ? 1 : 0, keepWithHeaderRows: Math.min(1, stack.length - 1), body: stack.map((content, index) => [{
+                    // Never keep a whole nested table/list with its heading:
+                    // pdfmake treats that row as unbreakable and can silently
+                    // discard it when the nested content is longer than a page.
+                    table: { widths: ['*'], headerRows: kind ? 1 : 0, keepWithHeaderRows: keepBody ? 1 : 0, body: stack.map((content, index) => [{
                         stack: [...(index === 0 ? [frames.marker(frame, 'start', ancestors)] : []), content, frames.marker(frame, index === stack.length - 1 ? 'end' : 'rowEnd', ancestors)],
                     }]) },
                     layout: { hLineWidth: () => 0, vLineWidth: () => 0, paddingLeft: () => frames.style.paddingX, paddingRight: () => frames.style.paddingX, paddingTop: index => index === 0 ? frames.style.paddingY : 0, paddingBottom: (index, table) => index === table.table.body.length - 1 ? frames.style.paddingY : 0 },
-                    margin: [0, 0, 0, frames.style.gap]
+                    pdfBlockBox: true, margin: [0, 0, 0, frames.style.gap]
                 });
-            } else if (node.tagName === 'IMG') output.push(await illustration(node, width));
+            } else if (node.tagName === 'IMG') output.push(await illustration(node, width, measure));
             else if (node.localName === 'svg') output.push(svgFigure(node, width));
             else if (node.matches('ul,ol')) {
                 const list = [];
@@ -251,23 +338,28 @@
                     ordinal++;
                 }
                 if (list.length) output.push({ stack: list, margin: [0, 3, 0, 6] });
+            } else if (node.tagName === 'FIGURE') {
+                const figure = await children(node, width, measure, english, depth, ancestors);
+                // Keep a picture with the first four caption lines, not with
+                // an arbitrarily long caption that could exceed a whole page.
+                if (figure.length > 1 && node.firstElementChild?.matches('img,picture,svg') && node.lastElementChild?.tagName === 'FIGCAPTION') {
+                    output.push({ stack: figure.slice(0, 2), unbreakable: true }, ...figure.slice(2));
+                } else output.push(...figure);
             } else if (node.tagName === 'TABLE') {
-                const rows = [];
-                for (const row of node.rows) {
-                    const cells = [];
-                    for (const cell of row.cells) {
-                        cells.push({ stack: await children(cell, width / row.cells.length - 12, measure, english, depth, ancestors), colSpan: cell.colSpan, rowSpan: cell.rowSpan });
-                        for (let i = 1; i < cell.colSpan; i++) cells.push({});
-                    }
-                    rows.push(cells);
-                }
-                if (rows.length) output.push({ table: { headerRows: node.tHead?.rows.length || 0, widths: rows[0].map(() => '*'), body: rows }, layout: 'lightHorizontalLines', margin: [0, 4, 0, 8] });
+                const table = await tableContent(node, width, measure, english, depth, ancestors);
+                if (table) output.push(table);
             } else output.push(...await children(node, width, measure, english, depth, ancestors));
         }
         await flush();
+        output.forEach((node, index) => {
+            // A trailing gap can itself create an empty page, especially just
+            // before a subsection's explicit page break or after the final box.
+            if (node.pdfBlockBox && (!output[index + 1] || output[index + 1].newSection)) node.margin = [0, 0, 0, 0];
+        });
         const owners = ancestors.map(frame => frame.id);
         function tagContent(node) {
             if (node.svg || node.image || node.text !== undefined) node.pdfFrameOwners ??= owners;
+            if (node.svg || node.image) node.pdfContentId ??= 'content-' + (++measure.pdfLeafCount);
             for (const child of node.stack || []) tagContent(child);
             for (const child of node.columns || []) tagContent(child);
             for (const row of node.table?.body || []) for (const cell of row) tagContent(cell);
@@ -286,14 +378,26 @@
         const style = document.createElement('style');
         style.textContent = ':host{color:#17191d} .paragraph{font:14.6667px/1.5 AlmanionPDF,Roboto,sans-serif;white-space:normal;overflow-wrap:anywhere} strong,b{font-weight:700} em,i{font-style:italic} .pdf-math{display:inline-block;vertical-align:middle;line-height:0;margin-inline:.16em}.pdf-math.display{display:block;text-align:center;margin:10px 0}.pdf-math svg{max-width:100%;height:auto}';
         shadow.append(style);
-        const measure = document.createElement('div'); measure.pdfBlockId = 0; measure.pdfHeadings = []; shadow.append(measure);
+        const measure = document.createElement('div'); measure.pdfBlockId = 0; measure.pdfLeafCount = 0; measure.pdfHeadings = []; measure.pdfImages = new WeakMap(); shadow.append(measure);
         try {
             const content = [];
             let previousGroup = null;
             for (const item of items) {
                 const clone = item.element.cloneNode(true);
-                clone.querySelectorAll('[hidden],[data-note-filter-hidden],.note-filter-empty,button,script,style,.inline-edit-btn,.note-edit-btn').forEach(node => node.remove());
+                const originals = Array.from(item.element.querySelectorAll('img'));
+                clone.querySelectorAll('img').forEach((image, index) => measure.pdfImages.set(image, imageSources(originals[index])));
+                clone.querySelectorAll('.proof-content,.derivation-content,.english-translation-content').forEach(node => {
+                    node.hidden = false;
+                    node.removeAttribute('aria-hidden');
+                });
+                clone.querySelectorAll('details').forEach(node => { node.open = true; });
+                clone.querySelectorAll('[hidden],[data-note-filter-hidden],.note-filter-empty,button,script,.inline-edit-btn,.note-edit-btn').forEach(node => node.remove());
+                // A diagram's own stylesheet is part of its drawing, not UI.
+                clone.querySelectorAll('style').forEach(node => { if (!node.closest('svg')) node.remove(); });
                 clone.querySelectorAll('[data-note-filter-shell]').forEach(node => node.replaceWith(...node.childNodes));
+                // Restore before structural traversal: KaTeX fractions/arrows
+                // contain SVG fragments, but are one formula, not illustrations.
+                restoreMath(clone);
                 const group = item.element.closest('.content-section');
                 if (group && group !== previousGroup) {
                     const heading = group.querySelector('.part-title');
@@ -318,7 +422,7 @@
                 defaultStyle: { font: 'NotoSans', fontSize: 11, color: INK },
                 content: [pagination.contents(measure.pdfHeadings, locations, document.documentElement.lang === 'en'), ...pagination.copy(content)],
                 footer: pagination.footer,
-                pageBreakBefore: (node, following) => node.headlineLevel === 1 && following.length === 0
+                pageBreakBefore: (node, following) => node.headlineLevel === 1 && node.pageBreak !== 'before' && following.length === 0
             }; }
             // First resolve actual heading pages. Fixed-width number cells keep
             // contents height unchanged when their placeholders are replaced.
@@ -330,21 +434,27 @@
             }
             const definition = definitionFor(locations);
             return await new Promise((resolve, reject) => {
+                let stream;
                 try {
                     // Every image/font is already local or embedded. Build a
                     // stream directly so layout failures reject this promise;
                     // the callback API otherwise throws in an internal promise
                     // and can leave the export button busy indefinitely.
-                    const stream = pdfMake.createPdf(definition).getStream({ bufferPages: true, autoPrint: options.autoPrint === true });
+                    stream = pdfMake.createPdf(definition).getStream({ bufferPages: true, autoPrint: options.autoPrint === true });
                     pagination.verify(locations, pagination.locate(stream._pdfMakePages, measure.pdfHeadings));
                     const chunks = [];
                     stream.on('data', chunk => chunks.push(chunk));
                     stream.on('error', reject);
                     stream.on('end', () => resolve(new Blob(chunks, { type: 'application/pdf' })));
                     const frames = window.AlmanionPdfBlockFrames;
-                    frames.draw(stream, frames.collect(stream._pdfMakePages, definition.pageMargins));
+                    const layout = frames.collect(stream._pdfMakePages, definition.pageMargins);
+                    const rendered = new Set(stream._pdfMakePages.flatMap(page => page.items.map(({ item }) => item.pdfContentId).filter(Boolean)));
+                    if (new Set(layout.map(frame => frame.id)).size !== measure.pdfBlockId || rendered.size !== measure.pdfLeafCount) {
+                        throw new Error('Часть вложенного материала не поместилась в PDF. Экспорт остановлен, чтобы не потерять содержимое.');
+                    }
+                    frames.draw(stream, layout);
                     stream.end();
-                } catch (error) { reject(error); }
+                } catch (error) { stream?.destroy(); reject(error); }
             });
         } finally { host.remove(); }
     }

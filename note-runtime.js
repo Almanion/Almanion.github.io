@@ -15,7 +15,7 @@
         filter: 'note-filter.js?v=20261003-1',
         settings: 'settings.js?v=20261002-1',
         search: 'search.js?v=20261002-1',
-        print: 'print-export.js?v=20261006-1',
+        print: 'print-export.js?v=20261007-1',
         knowledge: 'knowledge-check.js?v=20261003-1',
         newyear: 'newyear.js?v=20261002-1',
         firebaseApp: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js',

@@ -28,6 +28,7 @@
 
     let originalTitle = '';
     let changedDetails = [];
+    let changedExpansions = [];
     let cleanupTimer = 0;
     let exporting = false;
     let selectionInitialized = false;
@@ -267,6 +268,12 @@
             changedDetails.push(details);
             details.open = true;
         });
+        changedExpansions = [];
+        document.querySelectorAll('.main-content :is(.proof-content,.derivation-content,.english-translation-content)[hidden]').forEach(function (content) {
+            if (content.closest('[' + EXCLUDED_ATTRIBUTE + ']')) return;
+            changedExpansions.push(content);
+            content.hidden = false;
+        });
 
         document.querySelectorAll(BLOCK_SELECTOR).forEach(function (block) {
             if (block.closest('[' + EXCLUDED_ATTRIBUTE + ']')) return;
@@ -306,6 +313,8 @@
         cleanupTimer = 0;
         changedDetails.forEach(function (details) { details.open = false; });
         changedDetails = [];
+        changedExpansions.forEach(function (content) { content.hidden = true; });
+        changedExpansions = [];
         document.querySelectorAll('.' + SPLITTABLE_CLASS).forEach(function (element) {
             element.classList.remove(SPLITTABLE_CLASS);
         });
@@ -376,7 +385,7 @@
         if (window.AlmanionPdfDownload) return Promise.resolve();
         if (!pdfModulePromise) pdfModulePromise = new Promise(function (resolve, reject) {
             const script = document.createElement('script');
-            script.src = 'pdf-download.js?v=20261006-1';
+            script.src = 'pdf-download.js?v=20261007-1';
             script.onload = resolve;
             script.onerror = function () { pdfModulePromise = null; script.remove(); reject(new Error('PDF module unavailable')); };
             document.head.appendChild(script);
