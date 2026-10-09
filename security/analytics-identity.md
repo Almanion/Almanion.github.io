@@ -2,7 +2,7 @@
 
 ## Metrics shown in the administration panel
 
-- **Registered accounts**: distinct normalized email addresses in
+- **Registered accounts**: distinct authenticated Firebase UIDs in
   `accountDirectory`. Opening the site in another browser, Telegram, or an
   incognito window does not increase this number when the visitor signs in to
   the same account.
@@ -10,8 +10,12 @@
   daily record today.
 - **Anonymous browsers today**: distinct Firebase Anonymous Auth UIDs. This is
   deliberately labelled as browser contexts, not people.
-- **Online now**: active authenticated or anonymous browser contexts. It is a
-  concurrency measure, not a unique-human count.
+- **Online now**: authenticated or anonymous Firebase UIDs with a heartbeat in
+  the last 90 seconds, using Firebase's server clock. Tabs sharing one UID count
+  once. Heartbeats repeat every 30 seconds and immediately on visibility or
+  connection recovery. This is an activity measure, not a unique-human count.
+  Closing one tab never deletes another tab's shared presence. Old records stay
+  in the database but expire from the count without requiring a manual reset.
 
 Legacy `v_*` records remain available for historical inspection, but are not
 mixed into the account totals.

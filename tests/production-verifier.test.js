@@ -25,4 +25,21 @@ assert.ok(args.paths.includes('/safe-html.js'));
 assert.throws(function () { verifier.normalizeBaseUrl('file:///tmp/site'); }, /HTTP or HTTPS/);
 assert.throws(function () { verifier.parseArgs(['--url', 'https://example.test']); }, /revision/);
 
-console.log('production deployment verifier: all tests passed');
+assert.deepEqual(verifier.homepageStyles('<link rel="icon" href="icon.svg"><link href="styles/a.css" rel="stylesheet">'), ['styles/a.css']);
+(async () => {
+    const realFetch = global.fetch;
+    try {
+        const seen = [];
+        global.fetch = async url => {
+            seen.push(url.pathname);
+            const body = url.pathname.endsWith('/a.css') ? '@import url("child.css"); body { color: black; }' : '.x{color:blue}';
+            return new Response(body, { headers: { 'Content-Type': 'text/css' } });
+        };
+        assert.equal(await verifier.verifyHomepageStyles(new URL('https://example.test/'), '<link rel="stylesheet" href="styles/a.css">', 1), 2);
+        assert.deepEqual(seen, ['/styles/a.css', '/styles/child.css']);
+        await assert.rejects(() => verifier.verifyHomepageStyles(new URL('https://example.test/'), '<link rel="stylesheet" href="styles/a.0000000000000000.css">', 1), /does not match/);
+        global.fetch = async () => new Response('<html>404 page</html>', { headers: { 'Content-Type': 'text/html' } });
+        await assert.rejects(() => verifier.verifyHomepageStyles(new URL('https://example.test/'), '<link rel="stylesheet" href="styles/a.css">', 1), /content type/);
+    } finally { global.fetch = realFetch; }
+    console.log('production deployment verifier, homepage CSS and imported versions: all tests passed');
+})().catch(error => { console.error(error); process.exitCode = 1; });

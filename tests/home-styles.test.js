@@ -1,0 +1,33 @@
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const Styles = require('../tools/build-home-styles');
+const site = fs.mkdtempSync(path.join(os.tmpdir(), 'almanion-home-styles-'));
+try {
+    fs.mkdirSync(path.join(site, 'styles'), { recursive: true });
+    const original = '<link rel="stylesheet" href="styles/index.css?v=old"><link rel="stylesheet" href="legacy.css"><link rel="stylesheet" href="https://example.test/font.css">';
+    fs.writeFileSync(path.join(site, 'index.html'), original);
+    fs.writeFileSync(path.join(site, 'styles/index.css'), '@import url("./child.css?v=old") screen;\nbody{color:black}');
+    fs.writeFileSync(path.join(site, 'styles/child.css'), '.icon{background:url(../images/icon.svg#star)}');
+    fs.writeFileSync(path.join(site, 'legacy.css'), '.x{background:url(images/a.png)}.y{filter:url(#filter)}');
+    const first = Styles.build(site);
+    assert.match(first.get('/styles/index.css'), /^\/styles\/index\.[a-f\d]{16}\.css$/);
+    assert.match(first.get('/legacy.css'), /^\/styles\/releases\/legacy\.[a-f\d]{16}\.css$/);
+    const read = url => fs.readFileSync(path.join(site, url.replace(/^\//, '')), 'utf8');
+    assert.ok(read(first.get('/styles/index.css')).includes(first.get('/styles/child.css')));
+    assert.ok(read(first.get('/styles/index.css')).includes('screen;'));
+    assert.match(read(first.get('/styles/child.css')), /url\("\/images\/icon.svg#star"\)/);
+    assert.match(read(first.get('/legacy.css')), /url\("\/images\/a.png"\)/);
+    assert.match(read(first.get('/legacy.css')), /url\(#filter\)/);
+    assert.match(fs.readFileSync(path.join(site, 'index.html'), 'utf8'), /https:\/\/example.test\/font.css/);
+    fs.writeFileSync(path.join(site, 'index.html'), original);
+    assert.deepEqual(Styles.build(site), first, 'identical contents give identical deployed filenames');
+    fs.writeFileSync(path.join(site, 'styles/child.css'), '.icon{background:red}');
+    fs.writeFileSync(path.join(site, 'index.html'), original);
+    const next = Styles.build(site);
+    assert.notEqual(next.get('/styles/index.css'), first.get('/styles/index.css'), 'a changed import also versions its parent');
+    assert.equal(next.get('/legacy.css'), first.get('/legacy.css'));
+    console.log('content-addressed homepage styles: all tests passed');
+} finally { fs.rmSync(site, { recursive: true, force: true }); }

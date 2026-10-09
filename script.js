@@ -78,12 +78,24 @@ if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         const hadController = !!navigator.serviceWorker.controller;
 
-        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' })
             .then((registration) => {
                 window.__almanionServiceWorker = registration;
 
-                // Обновление остаётся ждать естественной смены вкладки/сеанса.
-                // Не прерываем чтение навязчивым баннером и автоперезагрузкой.
+                // Home has no unsaved document: adopt a waiting cache fix
+                // there. Reading/editor tabs are never reloaded.
+                if (document.body.classList.contains('home-page')) {
+                    const activate = () => {
+                        if (registration.waiting) registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    };
+                    activate();
+                    registration.addEventListener('updatefound', () => {
+                        const worker = registration.installing;
+                        if (worker) worker.addEventListener('statechange', () => {
+                            if (worker.state === 'installed') activate();
+                        });
+                    });
+                }
             })
             .catch(() => {});
 

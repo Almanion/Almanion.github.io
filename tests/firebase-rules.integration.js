@@ -69,6 +69,11 @@ function serverTimestamp() {
         await assertFails(anonDb.ref('presence/' + otherUid).set(Object.assign(meta(otherUid, 'anonymous'), {
             page: '/', pageTitle: 'Home', timestamp: serverTimestamp(), userAgent: 'test'
         })));
+        await assertSucceeds(ownerDb.ref('presence/' + anonUid).remove());
+        await assertFails(anonDb.ref('presence/' + anonUid).update({ page: '/', pageTitle: 'Home', timestamp: serverTimestamp() }));
+        await assertSucceeds(anonDb.ref('presence/' + anonUid).set(Object.assign(meta(anonUid, 'anonymous'), {
+            page: '/', pageTitle: 'Home', timestamp: serverTimestamp(), userAgent: 'test'
+        })));
 
         await assertSucceeds(accountDb.ref('visitors/' + accountUid).set(Object.assign(meta(accountUid, 'password'), {
             id: accountUid, firstVisit: serverTimestamp(), lastVisit: serverTimestamp(), lastPage: '/', pageViews: 1

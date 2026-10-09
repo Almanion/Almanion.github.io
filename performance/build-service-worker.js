@@ -13,7 +13,7 @@ function build(options) {
     const root = path.resolve(options.root);
     const site = path.resolve(options.site);
     const config = JSON.parse(fs.readFileSync(path.join(root, 'performance', 'sw-shell.json'), 'utf8'));
-    const assets = Array.from(new Set(config.assets || []));
+    const assets = Array.from(new Set((config.assets || []).map(url => options.assetPaths?.get(url) || url)));
     const digest = crypto.createHash('sha256');
 
     assets.forEach(function (url) {

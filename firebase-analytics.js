@@ -89,51 +89,59 @@
     // ============================================
 
     let presenceIntervalId = null;
+    let stopPresenceTracking = null;
     let usageIntervalId = null;
     let usageSessionRef = null;
     let usageSessionStartedAt = 0;
 
     function trackPresence() {
+        cleanupPresence();
         const presenceRef = db.ref('presence/' + visitorId);
         const connectedRef = db.ref('.info/connected');
-
-        const onConnected = (snap) => {
-            if (snap.val() === true) {
-                // Устанавливаем данные присутствия
-                presenceRef.set(Object.assign(identityMeta(), {
-                    page: location.pathname,
-                    pageTitle: document.title,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP,
-                    userAgent: navigator.userAgent.substring(0, 100)
-                }));
-
-                // При отключении — удаляем
-                presenceRef.onDisconnect().remove();
-            }
-        };
-        connectedRef.on('value', onConnected);
-        identityCleanup.push(function () {
-            connectedRef.off('value', onConnected);
-            presenceRef.onDisconnect().cancel().catch(function () {});
-            presenceRef.remove().catch(function () {});
-        });
-
-        // Обновляем текущую страницу каждые 30 секунд
-        // Сохраняем id, чтобы можно было очистить при уходе со страницы.
-        if (presenceIntervalId) clearInterval(presenceIntervalId);
-        presenceIntervalId = setInterval(() => {
-            // visibilitychange optimization: не дёргаем Firebase, если вкладка скрыта
-            if (document.visibilityState === 'hidden') return;
-            presenceRef.update({
-                page: location.pathname,
-                pageTitle: document.title,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
+        const meta = identityMeta();
+        let connected = false;
+        let stopped = false;
+        let reportedError = false;
+        const heartbeat = () => {
+            if (stopped || !connected || document.visibilityState === 'hidden') return;
+            // Complete records restore presence after an admin reset too.
+            // Partial updates cannot recreate a rule-valid deleted record.
+            presenceRef.set(Object.assign({}, meta, {
+                page: String(location.pathname || '/').slice(0, 180),
+                pageTitle: String(document.title || '').slice(0, 180),
+                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                userAgent: String(navigator.userAgent || '').slice(0, 100)
+            })).then(() => { reportedError = false; }).catch((error) => {
+                if (!reportedError && !stopped) console.warn('Almanion presence: heartbeat deferred.', error);
+                reportedError = true;
             });
-        }, 30000);
+        };
+        const onConnected = (snap) => {
+            connected = snap.val() === true;
+            if (connected) heartbeat();
+        };
+        const onVisible = () => { if (document.visibilityState !== 'hidden') heartbeat(); };
+        const stop = () => {
+            if (stopped) return;
+            stopped = true;
+            connectedRef.off('value', onConnected);
+            document.removeEventListener('visibilitychange', onVisible);
+            clearInterval(timer);
+        };
+        const timer = setInterval(heartbeat, 30000);
+        presenceIntervalId = timer;
+        stopPresenceTracking = stop;
+        identityCleanup.push(stop);
+        document.addEventListener('visibilitychange', onVisible);
+        // All tabs with this UID share a record. One tab must not delete the
+        // other tabs' presence on disconnect; the admin expires it after 90s.
+        connectedRef.on('value', onConnected);
     }
 
     // Очищаем interval при выходе со страницы (и pagehide для мобильного Safari/iOS).
     function cleanupPresence() {
+        if (stopPresenceTracking) stopPresenceTracking();
+        stopPresenceTracking = null;
         if (presenceIntervalId) {
             clearInterval(presenceIntervalId);
             presenceIntervalId = null;
@@ -141,6 +149,9 @@
     }
     window.addEventListener('beforeunload', cleanupPresence);
     window.addEventListener('pagehide', cleanupPresence);
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted && db && visitorId) trackPresence();
+    });
 
     // ============================================
     // РЕГИСТРАЦИЯ УНИКАЛЬНОГО ПОСЕТИТЕЛЯ

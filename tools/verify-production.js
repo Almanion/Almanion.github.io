@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const crypto = require('node:crypto');
+
 const DEFAULT_PATHS = ['/', '/physics.html', '/matcenter.html', '/english.html', '/tour-10-1.html', '/tour-10-1.js', '/note-runtime.js', '/safe-html.js'];
 
 function parseArgs(argv) {
@@ -65,6 +67,35 @@ async function readDeployment(baseUrl, attempt) {
     return metadata;
 }
 
+function homepageStyles(html) {
+    return Array.from(String(html).matchAll(/<link\b[^>]*>/gi)).flatMap(([tag]) => {
+        if (!/\brel=["']stylesheet["']/i.test(tag)) return [];
+        const href = tag.match(/\bhref=["']([^"']+)["']/i);
+        return href ? [href[1]] : [];
+    });
+}
+
+async function verifyHomepageStyles(baseUrl, html, attempt) {
+    const checked = new Set();
+    async function visit(reference, parent) {
+        const url = new URL(reference, parent);
+        if (url.origin !== baseUrl.origin || checked.has(url.href)) return;
+        checked.add(url.href);
+        const response = await fetchChecked(url, attempt);
+        if (!/text\/css/i.test(response.headers.get('content-type') || '')) throw new Error('Invalid stylesheet content type: ' + url.pathname);
+        const css = await response.text();
+        if (!css.trim()) throw new Error('Empty stylesheet: ' + url.pathname);
+        const fingerprint = url.pathname.match(/\.([a-f\d]{16})\.css$/);
+        if (fingerprint && crypto.createHash('sha256').update(css).digest('hex').slice(0, 16) !== fingerprint[1]) {
+            throw new Error('Stylesheet content does not match its deployed version: ' + url.pathname);
+        }
+        const imports = Array.from(css.matchAll(/@import\s+(?:url\(\s*)?["']([^"']+)["']/gi));
+        await Promise.all(imports.map(match => visit(match[1], url)));
+    }
+    await Promise.all(homepageStyles(html).map(reference => visit(reference, baseUrl)));
+    return checked.size;
+}
+
 async function verify(options) {
     const baseUrl = normalizeBaseUrl(options.url);
     let lastError = null;
@@ -81,6 +112,7 @@ async function verify(options) {
                     const content = await response.text();
                     if (!content.trim()) throw new Error('Empty response for ' + relative + '.');
                     if (relative === '/' && !content.includes('Конспекты')) throw new Error('The deployed home page marker is missing.');
+                    if (relative === '/') await verifyHomepageStyles(baseUrl, content, attempt);
                 } else if (!type) {
                     throw new Error('Missing content type for ' + relative + '.');
                 }
@@ -104,4 +136,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { DEFAULT_PATHS, parseArgs, normalizeBaseUrl, withCacheBuster, readDeployment, verify };
+module.exports = { DEFAULT_PATHS, parseArgs, normalizeBaseUrl, withCacheBuster, readDeployment, homepageStyles, verifyHomepageStyles, verify };

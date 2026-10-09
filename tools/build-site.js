@@ -10,6 +10,7 @@ const SearchIndex = require('../performance/build-search-index.js');
 const DefinitionIndex = require('../performance/build-definition-index.js');
 const ServiceWorker = require('../performance/build-service-worker.js');
 const OfflineLibrary = require('./build-offline.js');
+const HomeStyles = require('./build-home-styles.js');
 
 const CONFIG_PATH = path.join(__dirname, 'site-files.json');
 
@@ -212,7 +213,8 @@ function build(options) {
             .replace(/(src=["'](?:note-runtime|print-export)\.js)\?v=20261006-1(["'])/g, '$1?v=20261007-1$2')
             .replace(/((?:src|href)=["'](?:settings\.js|home-dashboard\.js|styles\/home-dashboard\.css))\?v=20261006-1(["'])/g, '$1?v=20261009-1$2')
             .replace(/((?:src|href)=["'](?:script\.js|duty\.js|home-dashboard\.js|styles\/home-dashboard\.css|styles\/site\/index\.css))\?v=202610(?:06-1|09-1)(["'])/g, '$1?v=20261009-2$2')
-            .replace(/(src=["']script\.js)\?v=20261009-2(["'])/g, '$1?v=20261009-3$2');
+            .replace(/(src=["']script\.js)\?v=20261009-2(["'])/g, '$1?v=20261009-4$2')
+            .replace(/(src=["']firebase-analytics\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261009-4$2');
         if (updated !== html) fs.writeFileSync(absolute, updated);
     }
     // Status follows published materials, including sections added later by the
@@ -224,6 +226,8 @@ function build(options) {
         home = updateSubjectStatus(home, subject, manifest.sections.length > 0);
     });
     fs.writeFileSync(homePath, home);
+    // Unique file paths also bypass old workers that ignored query versions.
+    const homeStyles = HomeStyles.build(output);
     const search = SearchIndex.build({
         root,
         site: output,
@@ -231,7 +235,7 @@ function build(options) {
     });
     DefinitionIndex.build({ root, site: output });
     OfflineLibrary.build({ root, site: output });
-    const serviceWorker = ServiceWorker.build({ root, site: output });
+    const serviceWorker = ServiceWorker.build({ root, site: output, assetPaths: homeStyles });
     fs.writeFileSync(path.join(output, '.nojekyll'), '', 'utf8');
     const metadata = writeMetadata(root, output, notes, search, serviceWorker);
     return { copied: copied.length, notes, search, serviceWorker, metadata, output };

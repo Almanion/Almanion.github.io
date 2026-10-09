@@ -49,7 +49,7 @@ self.addEventListener('fetch', function (event) {
     if (url.searchParams.has('publication') || url.searchParams.has('offline-download')) return;
 
     if (url.origin !== self.location.origin) {
-        if (CACHEABLE_CROSS_ORIGINS.has(url.origin)) event.respondWith(staleWhileRevalidate(request));
+        if (CACHEABLE_CROSS_ORIGINS.has(url.origin)) event.respondWith(staleWhileRevalidate(request, event));
         return;
     }
     if (request.mode === 'navigate' || url.pathname.endsWith('.html')) {
@@ -57,7 +57,7 @@ self.addEventListener('fetch', function (event) {
         return;
     }
     if (isStaticAsset(request, url)) {
-        event.respondWith(staleWhileRevalidate(request));
+        event.respondWith(staleWhileRevalidate(request, event));
         return;
     }
     event.respondWith(networkFirst(request));
@@ -101,13 +101,16 @@ async function networkFirst(request, fallbackUrl) {
     }
 }
 
-async function staleWhileRevalidate(request) {
-    const cached = await freshCachedResponse(request) || await pinnedResponse(request);
+async function staleWhileRevalidate(request, event) {
+    const cached = await freshCachedResponse(request);
     const fetched = fetch(request).then(async function (response) {
         if (await cacheableResponse(request, response)) await storeRuntimeResponse(request, response.clone());
         return response;
     }).catch(function () { return null; });
-    return cached || await fetched || new Response('', { status: 504, statusText: 'Offline' });
+    // Finish refreshes after returning a cached response. Offline packs are
+    // fallbacks, not overrides of newer online resources.
+    if (event) event.waitUntil(fetched);
+    return cached || await fetched || await pinnedResponse(request) || new Response('', { status: 504, statusText: 'Offline' });
 }
 
 async function pinnedResponse(request) {
@@ -184,7 +187,8 @@ async function storeRuntimeResponse(request, response) {
 
 async function freshCachedResponse(request) {
     const shell = await caches.open(APP_SHELL_CACHE);
-    const shellHit = await shell.match(request, { ignoreSearch: true });
+    // A new ?v= must never resolve to the old unversioned precache entry.
+    const shellHit = await shell.match(request);
     if (shellHit) return shellHit;
     const cache = await caches.open(RUNTIME_CACHE);
     const response = await cache.match(request);

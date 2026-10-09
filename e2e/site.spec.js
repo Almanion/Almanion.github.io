@@ -311,6 +311,7 @@ test('admin controls stay interactive after dialogs and list changes', async fun
     await page.addInitScript(function () {
         const owner = { uid: '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2', email: 'dmb23930@gmail.com' };
         const values = {
+            '.info': { connected: true, serverTimeOffset: 0 },
             accountDirectory: {
                 '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2': { email: owner.email, displayName: 'Owner', lastSeen: Date.now() },
                 'editor-1': { email: 'editor@example.com', displayName: 'Editor', lastSeen: Date.now() - 1000 }

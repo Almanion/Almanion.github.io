@@ -198,36 +198,67 @@ function initDashboard() {
 // --- Онлайн пользователи ---
 let lastOnlineSnapshot = null;
 let onlineVisitorIds = [];
+let presenceClockOffset = 0;
+let presenceLoaded = false;
+let presenceConnected = true;
+
+function getActiveOnlineUsers(data, now = Date.now()) {
+    const newestByVisitor = new Map();
+    Object.values(data || {}).forEach(user => {
+        if (!user || typeof user.visitorId !== 'string' || !user.visitorId) return;
+        const timestamp = Number(user.timestamp);
+        if (!Number.isFinite(timestamp) || timestamp <= 0 || timestamp > now + 10000 || now - timestamp > 90000) return;
+        const previous = newestByVisitor.get(user.visitorId);
+        if (!previous || Number(previous.timestamp) < timestamp) newestByVisitor.set(user.visitorId, user);
+    });
+    return Array.from(newestByVisitor.values()).sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
+}
+
+function refreshOnlineUsers() {
+    const available = presenceLoaded && presenceConnected;
+    const users = available ? getActiveOnlineUsers(lastOnlineSnapshot, Date.now() + presenceClockOffset) : [];
+    onlineVisitorIds = users.map(user => user.visitorId);
+    const onlineCount = document.getElementById('onlineCount');
+    if (onlineCount) onlineCount.textContent = available ? users.length : '—';
+    const broadcastCount = document.getElementById('broadcastCount');
+    if (broadcastCount) broadcastCount.textContent = onlineVisitorIds.length;
+    renderOnlineTable(users, available);
+    if (lastVisitorsSnapshot) renderAllVisitors(lastVisitorsSnapshot, visitorsListPeriod);
+}
 
 function listenOnlineUsers() {
+    db.ref('.info/serverTimeOffset').on('value', snapshot => {
+        presenceClockOffset = Number(snapshot.val()) || 0;
+        refreshOnlineUsers();
+    });
+    db.ref('.info/connected').on('value', snapshot => {
+        presenceConnected = snapshot.val() === true;
+        refreshOnlineUsers();
+    });
     db.ref('presence').on('value', (snapshot) => {
         const data = snapshot.val() || {};
         lastOnlineSnapshot = data;
 
-        const users = Object.values(data);
-        const onlineCount = document.getElementById('onlineCount');
-        if (onlineCount) onlineCount.textContent = users.length;
-
-        onlineVisitorIds = users.map(user => user && user.visitorId).filter(Boolean);
-        const broadcastCount = document.getElementById('broadcastCount');
-        if (broadcastCount) broadcastCount.textContent = onlineVisitorIds.length;
-
-        renderOnlineTable(data);
-        if (lastVisitorsSnapshot) renderAllVisitors(lastVisitorsSnapshot, visitorsListPeriod);
+        presenceLoaded = true;
+        refreshOnlineUsers();
     }, (error) => {
         console.error('Admin presence listener:', error);
-        const onlineCount = document.getElementById('onlineCount');
-        if (onlineCount) onlineCount.textContent = '—';
-        const broadcastCount = document.getElementById('broadcastCount');
-        if (broadcastCount) broadcastCount.textContent = '0';
+        presenceLoaded = false;
+        refreshOnlineUsers();
     });
+    // Expire disconnected visitors even when no new snapshot arrives.
+    setInterval(refreshOnlineUsers, 10000);
 }
 
-function renderOnlineTable(data) {
-    const users = Object.values(data || {});
+function renderOnlineTable(data, available = presenceLoaded && presenceConnected) {
+    const users = available ? getActiveOnlineUsers(data, Date.now() + presenceClockOffset) : [];
     const tbody = document.getElementById('onlineTableBody');
     if (!tbody) return;
 
+    if (!available) {
+        tbody.innerHTML = '<tr><td colspan="5" class="no-data">Не удалось обновить онлайн. Ожидаем соединения.</td></tr>';
+        return;
+    }
     if (users.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="no-data">Никого нет онлайн</td></tr>';
         return;
@@ -273,7 +304,7 @@ function renderOnlineTable(data) {
 
 function getTimeAgo(timestamp) {
     if (!timestamp) return '—';
-    const diff = Math.floor((Date.now() - timestamp) / 1000);
+    const diff = Math.max(0, Math.floor((Date.now() + presenceClockOffset - timestamp) / 1000));
     if (diff < 10) return 'только что';
     if (diff < 60) return `${diff}с назад`;
     if (diff < 3600) return `${Math.floor(diff / 60)}м назад`;

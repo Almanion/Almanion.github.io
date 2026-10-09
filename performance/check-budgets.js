@@ -4,6 +4,15 @@ const fs = require('fs');
 const path = require('path');
 const childProcess = require('child_process');
 
+function publishedBytes(file) {
+    const bytes = fs.readFileSync(file);
+    // Match the build's canonical LF text, not Windows checkout line endings.
+    if (/[\\/]games[\\/]orbital-courier[\\/]/.test(file)) return bytes.length;
+    let size = bytes.length;
+    for (let i = 0; i < bytes.length - 1; i++) if (bytes[i] === 13 && bytes[i + 1] === 10) size--;
+    return size;
+}
+
 function trackedFiles(root) {
     const output = childProcess.execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], {
         cwd: root,
@@ -74,7 +83,7 @@ function inspectRoute(root, page) {
         const resolved = resolveLocalReference(root, page, reference);
         if (!resolved) return;
         if (!fs.existsSync(resolved.absolute)) missing.push(resolved.relative);
-        else scripts.set(resolved.relative, fs.statSync(resolved.absolute).size);
+        else scripts.set(resolved.relative, publishedBytes(resolved.absolute));
     });
 
     function visitStyle(from, reference) {
@@ -85,7 +94,7 @@ function inspectRoute(root, page) {
             return;
         }
         const content = fs.readFileSync(resolved.absolute, 'utf8');
-        styles.set(resolved.relative, fs.statSync(resolved.absolute).size);
+        styles.set(resolved.relative, publishedBytes(resolved.absolute));
         cssImports(content).forEach(function (child) { visitStyle(resolved.relative, child); });
     }
     assets.styles.forEach(function (reference) { visitStyle(page, reference); });
@@ -142,7 +151,7 @@ function check(rootDir) {
         if (!limit) return;
         const absolutePath = path.join(root, relativePath);
         if (!fs.existsSync(absolutePath) || !fs.statSync(absolutePath).isFile()) return;
-        const bytes = fs.statSync(absolutePath).size;
+        const bytes = publishedBytes(absolutePath);
         if (!largest[extension] || bytes > largest[extension].bytes) {
             largest[extension] = { path: normalizedPath, bytes };
         }
