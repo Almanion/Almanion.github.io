@@ -25,7 +25,7 @@ for (const width of [320, 390, 430, 768, 1024, 1440]) {
             const tabs = r(document.querySelector('.grade-tabs'));
             return { overflow: document.documentElement.scrollWidth - innerWidth,
                 cardY: cards.map(el => el.y), extraTop: extra.top, quickHeight: quick.height,
-                toolbarOverlap: title.right - tabs.left,
+                toolbarOverlap: title.bottom - tabs.top,
                 serviceY: [...document.querySelectorAll('.home-additional-grid > a:not([hidden])')].map(el => r(el).y),
                 dutyBottom: r(document.querySelector('#homeDutyCard')).bottom };
         });
@@ -34,8 +34,9 @@ for (const width of [320, 390, 430, 768, 1024, 1440]) {
         if (width > 1000) {
             expect(layout.toolbarOverlap).toBeLessThan(1);
             const settingsBounds = await page.locator('.settings-button').boundingBox();
-            const gameBounds = await page.locator('.home-game-link').boundingBox();
-            expect(gameBounds.x + gameBounds.width).toBeLessThanOrEqual(settingsBounds.x);
+            const headerBounds = await page.locator('.home-header').boundingBox();
+            expect(settingsBounds.y).toBeGreaterThanOrEqual(headerBounds.y);
+            expect(settingsBounds.y + settingsBounds.height).toBeLessThanOrEqual(headerBounds.y + headerBounds.height);
             expect(Math.abs(layout.cardY[0] - layout.cardY[1])).toBeLessThan(2);
             expect(Math.abs(layout.cardY[2] - layout.cardY[3])).toBeLessThan(2);
             expect(layout.dutyBottom).toBeLessThan(900);

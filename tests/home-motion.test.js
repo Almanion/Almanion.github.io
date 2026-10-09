@@ -53,9 +53,9 @@ assert.match(styles, /animations-medium\.home-page \.grade-panel:not\(\[hidden\]
     'medium motion must be shorter than the full transition');
 assert.match(styles, /animations-medium\.home-page \.grade-tabs::before[\s\S]*transition-duration: 180ms, 160ms, 160ms/,
     'the grade indicator must also be shorter in medium motion');
-assert.match(page, /\.subject-card::before\s*\{[\s\S]*?background: var\(--subject-color\);[\s\S]*?color: var\(--subject-color\);/,
+assert.match(dashboardStyles, /\.subject-card::before\s*\{[\s\S]*?background: var\(--subject-color\);[\s\S]*?color: var\(--subject-color\);/,
     'the subject stripe must keep its subject color while fading out');
-assert.doesNotMatch(page, /subject-card:hover::before\s*\{\s*color:/,
+assert.doesNotMatch(dashboardStyles, /subject-card:hover::before\s*\{\s*color:/,
     'the subject stripe color must not switch on mouse leave');
 assert.match(styles, /body\.animations-off\.home-page[\s\S]*animation: none !important/);
 assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);

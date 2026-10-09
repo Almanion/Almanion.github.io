@@ -138,7 +138,7 @@ async function run() {
     assert.match(css, /\.tour-page\.midnight-theme/);
     assert.match(css, /color-scheme:\s*dark/);
 
-    assert.match(home, /<h2 class="section-title">Класс 10‑1<\/h2>/);
+    assert.match(home, /<h2 class="section-title"[^>]*>Класс 10‑1<\/h2>/);
     assert.match(home, /href="tour-10-1\.html"/);
     assert.equal((home.match(/id="homeDutyCard"/g) || []).length, 1, 'duty card must exist exactly once');
     assert.match(account, /hasTourEditorAccess:\s*hasTourEditorAccess/);

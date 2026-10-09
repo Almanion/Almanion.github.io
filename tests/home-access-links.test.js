@@ -12,7 +12,9 @@ const shell = JSON.parse(fs.readFileSync(path.join(root, 'performance', 'sw-shel
 
 assert.match(page, /id="homePrivilegedActions"[^>]*hidden/, 'privileged action slot must start hidden');
 assert.doesNotMatch(page, /<a[^>]+id="home(?:Constructor|Admin)Link"/, 'privileged links must not exist in initial markup');
-assert.match(page, /account\.js\?v=20260924-1/, 'home page must request the access-aware account script');
+assert.match(page, /account\.js\?v=20261009-1/, 'home page must request the access-aware account script');
+assert.match(account, /document\.getElementById\('homeControls'\) \|\| document\.body/,
+    'home account control must be attached to the header, with a fallback for other pages');
 
 assert.match(account, /function clearHomeAccessLinks\(slot\)[\s\S]*slot\.replaceChildren\(\);\s*slot\.hidden = true;/,
     'all privileged actions must be removed before each access check');

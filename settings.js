@@ -409,7 +409,7 @@ function initSettingsButton() {
 
         button.addEventListener('click', openSettingsModal);
 
-        document.body.appendChild(button);
+        (document.getElementById('homeControls') || document.body).appendChild(button);
     }
     
     // Создаём кнопку в sidebar (для мобильных)

@@ -43,797 +43,11 @@
     <link rel="stylesheet" href="styles/site/index.css?v=20261002-1">
     <link rel="stylesheet" href="styles/tokens.css?v=20260929-2">
     <link rel="stylesheet" href="styles/buttons.css?v=20260929-2">
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: var(--bg-primary);
-            /* Лёгкий акцентный «облак» — едва заметный, не пёстрит */
-            background-image:
-                radial-gradient(circle at 15% 0%, rgba(var(--accent-rgb), 0.07), transparent 50%),
-                radial-gradient(circle at 85% 100%, rgba(139, 92, 246, 0.06), transparent 55%);
-            color: var(--text-primary);
-            font-family: 'Segoe UI', sans-serif;
-        }
-
-        /* Тёмная тема: тот же фон-токен + чуть-чуть свечения */
-        body.dark-theme {
-            background: var(--bg-primary);
-            background-image:
-                radial-gradient(circle at 15% 0%, rgba(var(--accent-rgb), 0.12), transparent 55%),
-                radial-gradient(circle at 85% 100%, rgba(139, 92, 246, 0.10), transparent 60%);
-        }
-
-        body.dark-theme .subject-card {
-            background: var(--bg-secondary);
-            border-color: var(--border-color);
-        }
-
-        body.dark-theme .card-header {
-            background: transparent;
-            border-bottom-color: var(--border-color);
-        }
-
-        body.dark-theme .subject-card h2 {
-            color: var(--text-primary);
-        }
-
-        body.dark-theme .status-active {
-            background: rgba(74, 222, 128, 0.12);
-            color: #6ee7b7;
-        }
-
-        /* Sepia (reader-mode) — тёплый бумажный фон с мягким свечением */
-        body.sepia-theme {
-            background: var(--bg-primary);
-            background-image:
-                radial-gradient(circle at 15% 0%, rgba(var(--accent-rgb), 0.10), transparent 55%),
-                radial-gradient(circle at 85% 100%, rgba(139, 96, 50, 0.10), transparent 60%);
-        }
-
-        body.sepia-theme .subject-card {
-            background: var(--bg-secondary);
-            border-color: var(--border-color);
-        }
-
-        body.sepia-theme .status-active {
-            background: rgba(94, 122, 58, 0.18);
-            color: #4a6328;
-        }
-
-        /* Midnight Mono — глубокий монохромный тёмный с фиолетовым свечением */
-        body.midnight-theme {
-            background: var(--bg-primary);
-            background-image:
-                radial-gradient(circle at 15% 0%, rgba(167, 139, 250, 0.10), transparent 55%),
-                radial-gradient(circle at 85% 100%, rgba(167, 139, 250, 0.06), transparent 60%);
-        }
-
-        body.midnight-theme .subject-card {
-            background: var(--bg-secondary);
-            border-color: var(--border-color);
-        }
-
-        body.midnight-theme .card-header {
-            background: transparent;
-            border-bottom-color: var(--border-color);
-        }
-
-        body.midnight-theme .subject-card h2 {
-            color: var(--text-primary);
-        }
-
-        body.midnight-theme .status-active {
-            background: rgba(74, 222, 128, 0.14);
-            color: #86efac;
-        }
-
-        /* Кнопка переключения темы на главной странице */
-        .theme-toggle {
-            position: fixed;
-            top: 1rem;
-            left: 1rem;
-            z-index: 9999;
-        }
-
-        .home-container {
-            max-width: 1200px;
-            padding: 2rem;
-        }
-
-        .home-header {
-            text-align: center;
-            color: var(--text-primary);
-            margin-bottom: 3rem;
-        }
-
-        .home-header h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.65rem;
-            animation: fadeInDown 0.8s ease;
-        }
-
-        .home-header h1 svg {
-            width: 42px;
-            height: 42px;
-            color: var(--accent-color);
-        }
-
-        .home-header p {
-            font-size: 1.1rem;
-            color: var(--text-secondary);
-            animation: fadeInUp 0.8s ease;
-        }
-
-        .subjects-section {
-            margin-top: 2rem;
-            text-align: center;
-        }
-
-        /* Селектор класса (вкладки 9/10/11) */
-        .grade-tabs {
-            display: flex;
-            width: fit-content;
-            margin: 0 auto 1.9rem;
-            gap: 0.3rem;
-            padding: 0.32rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 999px;
-            box-shadow: var(--shadow-sm);
-        }
-        .grade-tab {
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            font: inherit;
-            font-weight: 600;
-            font-size: 0.95rem;
-            padding: 0.55rem 1.3rem;
-            min-height: 42px;
-            border-radius: 999px;
-            cursor: pointer;
-            transition: background-color 0.15s ease, color 0.15s ease;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .grade-tab:hover { color: var(--text-primary); }
-        .grade-tab.active {
-            background: var(--accent-color);
-            color: #fff;
-        }
-        .grade-panel[hidden] { display: none; }
-        .grade-panel:not([hidden]) { animation: gradeFade 0.26s ease; }
-        @keyframes gradeFade {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .grade-empty {
-            max-width: 520px;
-            margin: 0 auto;
-            padding: 3rem 1.5rem;
-            text-align: center;
-            color: var(--text-secondary);
-            background: var(--bg-secondary);
-            border: 1px dashed var(--border-color);
-            border-radius: var(--border-radius-lg);
-            font-size: 1rem;
-            line-height: 1.5;
-        }
-        .grade-empty svg { width: 40px; height: 40px; opacity: 0.5; margin-bottom: 0.75rem; }
-        .extra-section { margin-top: 2.75rem; }
-        .extra-section .section-title { margin-bottom: 1.25rem; }
-
-        @media (max-width: 480px) {
-            .grade-tab { padding: 0.5rem 0.95rem; font-size: 0.9rem; }
-        }
-
-        .section-title {
-            color: var(--text-primary);
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            text-align: center;
-            font-weight: 600;
-        }
-
-        .subjects-grid {
-            display: grid;
-            grid-template-columns: repeat(6, minmax(0, 1fr));
-            gap: 2rem;
-            margin-bottom: 3rem;
-        }
-
-        .subjects-grid > .subject-card {
-            grid-column: span 2;
-        }
-
-        /* При неполной последней строке карточки остаются по центру сетки. */
-        .subjects-grid > .subject-card:nth-last-child(2):nth-child(3n + 1) {
-            grid-column: 2 / span 2;
-        }
-
-        .subjects-grid.coming-soon {
-            grid-template-columns: repeat(3, 1fr);
-        }
-
-        @media (max-width: 1200px) {
-            .subjects-grid {
-                grid-template-columns: repeat(4, minmax(0, 1fr));
-            }
-
-            .subjects-grid > .subject-card {
-                grid-column: span 2;
-            }
-
-            .subjects-grid > .subject-card:nth-last-child(2):nth-child(3n + 1) {
-                grid-column: span 2;
-            }
-
-            .subjects-grid > .subject-card:last-child:nth-child(odd) {
-                grid-column: 2 / span 2;
-            }
-            
-            .subjects-grid.coming-soon {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .subjects-grid,
-            .subjects-grid.coming-soon {
-                grid-template-columns: 1fr;
-                gap: 0.65rem;
-            }
-
-            .subjects-grid > .subject-card,
-            .subjects-grid > .subject-card:nth-last-child(2):nth-child(3n + 1),
-            .subjects-grid > .subject-card:last-child:nth-child(odd) {
-                grid-column: 1;
-            }
-
-            .home-container {
-                padding: 1rem 0.85rem 1.5rem;
-            }
-
-            .home-header {
-                margin-bottom: 1.5rem;
-                padding-top: 0.5rem;
-            }
-
-            .home-header h1 {
-                font-size: 1.85rem;
-                line-height: 1.15;
-                margin-bottom: 0.4rem;
-                gap: 0.4rem;
-            }
-
-            .home-header h1 svg {
-                width: 28px;
-                height: 28px;
-            }
-
-            .home-header p {
-                font-size: 0.95rem;
-                line-height: 1.5;
-            }
-
-            .section-title {
-                font-size: 1.15rem;
-                margin-bottom: 0.85rem;
-                font-weight: 700;
-            }
-
-            .subjects-section {
-                margin-top: 1.5rem;
-            }
-
-            .stats {
-                gap: 0.85rem;
-                margin-top: 1.5rem;
-            }
-
-            .stat-item {
-                padding: 0.75rem 1.1rem;
-                border-radius: 10px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .home-container {
-                padding: 0.85rem 0.7rem 1.25rem;
-            }
-
-            .home-header {
-                margin-bottom: 1.25rem;
-            }
-
-            .home-header h1 {
-                font-size: 1.6rem;
-            }
-
-            .home-header h1 svg {
-                width: 26px;
-                height: 26px;
-            }
-
-            .home-header p {
-                font-size: 0.9rem;
-            }
-
-            .section-title {
-                font-size: 1.05rem;
-                margin-bottom: 0.7rem;
-            }
-
-            .subjects-grid {
-                gap: 0.5rem;
-            }
-
-            .stat-item {
-                padding: 0.6rem 0.95rem;
-            }
-
-            .stat-item .number {
-                font-size: 1.2rem;
-            }
-        }
-
-        @media (max-width: 360px) {
-            .home-container {
-                padding: 0.7rem 0.55rem 1rem;
-            }
-            .home-header h1 {
-                font-size: 1.4rem;
-            }
-            .home-header h1 svg {
-                width: 24px;
-                height: 24px;
-            }
-            .home-header p {
-                font-size: 0.85rem;
-            }
-            .section-title {
-                font-size: 1rem;
-            }
-        }
-
-        .subject-card {
-            --subject-color: var(--accent-color);
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 0;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
-            cursor: pointer;
-            text-decoration: none;
-            color: inherit;
-            display: flex;
-            flex-direction: column;
-            animation: riseIn 0.55s var(--ease-out) both;
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* Hover-эффекты карточек гейтятся через body:not(.no-hover):
-           при отключённых hover-эффектах правила не применяются вовсе. */
-        body:not(.no-hover) .subject-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
-            border-color: var(--accent-color);
-        }
-
-        .subject-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: var(--subject-color);
-            color: var(--subject-color);
-            opacity: 0;
-            transition: opacity 0.22s ease;
-        }
-
-        body:not(.no-hover) .subject-card:hover::before {
-            opacity: 1;
-        }
-
-        .subject-card[data-subject="physics"] { --subject-color: #4777a0; }
-        .subject-card[data-subject="physics-exam"] { --subject-color: #69668f; }
-        .subject-card[data-subject="chemistry"] { --subject-color: #427a67; }
-        .subject-card[data-subject="math"] { --subject-color: #9b6928; }
-        .subject-card[data-subject="geometry"] { --subject-color: #68609a; }
-        .subject-card[data-subject="likbez"] { --subject-color: #735d7e; }
-        .subject-card[data-subject="literature"] { --subject-color: #935f50; }
-        .subject-card[data-subject="russian"] { --subject-color: #a45262; }
-        .subject-card[data-subject="matcenter"] { --subject-color: #58668e; }
-        .subject-card[data-subject="english"] { --subject-color: #4f6f82; }
-        .subject-card[data-subject="duty"] { --subject-color: #4f7774; }
-        .subject-card[data-subject="tour"] { --subject-color: #667052; }
-
-        .card-header {
-            background: transparent;
-            padding: 2rem;
-            text-align: center;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .subject-icon {
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 76px;
-            height: 76px;
-            margin-inline: auto;
-            color: var(--subject-color);
-            background: color-mix(in srgb, var(--subject-color) 9%, var(--bg-secondary));
-            border: 1px solid color-mix(in srgb, var(--subject-color) 22%, var(--border-color));
-            border-radius: 20px;
-        }
-
-        .subject-icon svg {
-            width: 44px;
-            height: 44px;
-            display: block;
-        }
-
-        .card-body {
-            padding: 1.5rem 2rem 2rem;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .subject-card h2 {
-            font-size: 1.6rem;
-            color: #1e293b;
-            margin-bottom: 0.8rem;
-            font-weight: 700;
-            text-align: center;
-        }
-
-        @media (max-width: 768px) {
-            .subject-card {
-                flex-direction: row;
-                border-radius: 12px;
-                /* Шадоу заметно легче — на мобиле тяжёлые тени выглядят перегружено */
-                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-                min-height: 72px;
-            }
-
-            /* Tap feedback — на :active даём чёткую реакцию */
-            .subject-card:active {
-                transform: scale(0.985);
-                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-            }
-
-            .subject-card:hover {
-                transform: none;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            }
-
-            .subject-card::before {
-                width: 100%;
-                height: 3px;
-            }
-
-            .card-header {
-                width: 68px;
-                min-width: 68px;
-                padding: 0.65rem;
-                border-bottom: none;
-                border-right: 1px solid var(--border-color);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            .subject-icon {
-                margin-bottom: 0;
-                width: 42px;
-                height: 42px;
-                border-radius: 12px;
-                filter: none; /* Drop-shadow на иконке съедает производительность */
-            }
-
-            .subject-icon svg {
-                width: 25px;
-                height: 25px;
-            }
-
-            .card-body {
-                padding: 0.7rem 0.9rem;
-                justify-content: center;
-                gap: 0.2rem;
-            }
-
-            .subject-card h2 {
-                font-size: 1.05rem;
-                text-align: left;
-                margin-bottom: 0.15rem;
-                line-height: 1.25;
-            }
-
-            .card-info {
-                margin-top: 0;
-            }
-
-            .status-badge {
-                margin-top: 0;
-                font-size: 0.72rem;
-                padding: 0.15rem 0.55rem;
-                border-radius: 999px;
-            }
-
-            .card-info > div {
-                text-align: left !important;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .subject-card {
-                border-radius: 10px;
-                min-height: 68px;
-            }
-
-            .card-header {
-                width: 60px;
-                min-width: 60px;
-                padding: 0.55rem;
-            }
-
-            .subject-icon svg {
-                width: 23px;
-                height: 23px;
-            }
-
-            .card-body {
-                padding: 0.6rem 0.8rem;
-            }
-
-            .subject-card h2 {
-                font-size: 1rem;
-            }
-        }
-
-        @media (max-width: 360px) {
-            .subject-card {
-                min-height: 60px;
-            }
-            .card-header {
-                width: 52px;
-                min-width: 52px;
-            }
-            .subject-icon svg {
-                width: 22px;
-                height: 22px;
-            }
-            .subject-card h2 {
-                font-size: 0.95rem;
-            }
-            .status-badge {
-                font-size: 0.68rem;
-                padding: 0.1rem 0.5rem;
-            }
-        }
-
-        .subject-card p {
-            color: #6c757d;
-            line-height: 1.6;
-        }
-
-        .card-info {
-            margin-top: auto;
-        }
-
-        .topics-count {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-bottom: 0.8rem;
-            padding: 0.6rem 1rem;
-            background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-            border-radius: 10px;
-            color: #475569;
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        .last-update {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.5rem;
-            color: #64748b;
-            font-size: 0.85rem;
-            border-top: 1px solid #f1f5f9;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            margin-top: 0.5rem;
-        }
-
-        .status-active {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.38rem;
-            padding-inline: 0;
-            background: transparent;
-            color: var(--text-secondary);
-            font-weight: 550;
-        }
-
-        .status-active .eic { display: none; }
-
-        .status-active::before {
-            content: '';
-            width: 0.42rem;
-            height: 0.42rem;
-            flex: 0 0 auto;
-            border-radius: 50%;
-            background: #22a45d;
-        }
-
-        .status-coming {
-            background: linear-gradient(135deg, #fef3c7, #fde68a);
-            color: #92400e;
-        }
-
-        .coming-soon-card {
-            opacity: 0.7;
-            pointer-events: none;
-        }
-
-        .coming-soon-card .card-header {
-            background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%);
-        }
-
-
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-
-        .stats {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-top: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .stat-item {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            padding: 0.65rem 1.4rem;
-            border-radius: 12px;
-            color: var(--text-primary);
-            text-align: center;
-            transition: border-color 0.2s ease, background-color 0.2s ease;
-        }
-
-        .stat-item:hover {
-            border-color: var(--accent-color);
-        }
-
-        .stat-item .number {
-            font-size: 1.1rem;
-            font-weight: 600;
-            display: block;
-        }
-
-        .stat-item a {
-            color: var(--accent-color) !important;
-            font-weight: 600;
-        }
-
-        .home-editor-link {
-            min-height: 44px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.55rem;
-            padding: 0.65rem 1.05rem;
-            color: var(--text-primary);
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            font-size: 0.88rem;
-            font-weight: 650;
-            line-height: 1;
-            text-decoration: none;
-            transition: color 0.16s ease, border-color 0.16s ease, background-color 0.16s ease;
-        }
-
-        .home-privileged-actions {
-            display: contents;
-        }
-
-        .home-editor-link svg {
-            width: 17px;
-            height: 17px;
-            color: var(--accent-color);
-        }
-
-        body:not(.no-hover) .home-editor-link:hover {
-            color: var(--accent-color);
-            border-color: var(--accent-color);
-            background: color-mix(in srgb, var(--accent-color) 5%, var(--bg-secondary));
-        }
-
-        @media (max-width: 768px) {
-            .home-header h1 {
-                font-size: 1.85rem;
-            }
-
-            .home-header p {
-                font-size: 0.95rem;
-            }
-        }
-
-        @media (max-width: 768px) {
-            body.dark-theme .card-header {
-                border-right-color: #475569;
-                border-bottom: none;
-            }
-
-            .subject-card p {
-                display: none;
-            }
-
-            .topics-count {
-                display: none;
-            }
-        }
-    </style>
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
     <link rel="stylesheet" href="styles/home-motion.css?v=20260920-2">
-    <link rel="stylesheet" href="styles/home-dashboard.css?v=20261004-1">
+    <link rel="stylesheet" href="styles/home-dashboard.css?v=20261009-1">
 </head>
 <body class="home-page">
     <script>(function(){document.body.classList.add('home-motion-initial');try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};var l=/^(max|medium|off)$/.test(p.animationLevel||'')?p.animationLevel:'max';document.body.classList.add('animations-'+l);if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){document.body.classList.add('animations-max');}})();</script>
@@ -893,26 +107,15 @@
     </svg>
     <!-- Кнопка настроек создается автоматически через settings.js -->
 
-    <div class="home-container">
-        <div class="home-header">
+    <main class="home-container" id="homeMain">
+        <header class="home-header">
             <h1>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-site"/></svg>
                 <span>Конспекты</span>
             </h1>
-
-            <div class="stats">
-                <div class="stat-item">
-                    <a href="https://t.me/Almanion239" target="_blank" style="text-decoration: none;">
-                        <span class="number">@Almanion239</span>
-                    </a>
-                </div>
-                <a href="games/orbital-courier/" class="home-editor-link home-game-link" aria-label="Открыть игру">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8.5h8a4.5 4.5 0 0 1 4.35 3.35l1.05 4a2.35 2.35 0 0 1-4.03 2.17l-1.55-1.77H8.18l-1.55 1.77a2.35 2.35 0 0 1-4.03-2.17l1.05-4A4.5 4.5 0 0 1 8 8.5Z"/><path d="M8 11.5v4M6 13.5h4M15.7 12.25h.01M18 14.55h.01"/></svg>
-                    <span>Игра</span>
-                </a>
-                <span class="home-privileged-actions" id="homePrivilegedActions" hidden></span>
-            </div>
-        </div>
+            <div class="home-controls" id="homeControls" role="group" aria-label="Аккаунт и настройки"></div>
+        </header>
+        <nav class="home-privileged-actions" id="homePrivilegedActions" aria-label="Рабочие инструменты" hidden></nav>
 
         <section class="extra-section home-quick-section" aria-labelledby="homeQuickTitle">
             <div class="home-section-heading">
@@ -984,7 +187,8 @@
         </div>
 
         <div class="home-content-grid">
-        <section class="home-additional-section" aria-labelledby="homeAdditionalTitle">
+        <aside class="home-secondary">
+            <section class="home-additional-section" aria-labelledby="homeAdditionalTitle">
             <h2 class="section-title" id="homeAdditionalTitle">Дополнительно</h2>
             <div class="subjects-grid home-additional-grid">
                 <a href="matcenter.html" class="subject-card home-quick-card" data-subject="matcenter">
@@ -1001,6 +205,27 @@
                 </a>
             </div>
         </section>
+            <section class="class-section" aria-labelledby="homeClassTitle">
+                    <h2 class="section-title" id="homeClassTitle">Класс 10‑1</h2>
+                    <div class="subjects-grid">
+                        <a href="duty-10-1.html" class="subject-card" data-subject="duty" id="homeDutyCard">
+                            <div class="card-header">
+                                <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-duty"/></svg></div>
+                            </div>
+                            <div class="card-body">
+                                <h2>Дежурство</h2>
+                                <div class="card-info"><div style="text-align: center;"><span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> Расписание класса</span></div></div>
+                            </div>
+                        </a>
+
+                    </div>
+                </section>
+            <a href="games/orbital-courier/" class="home-editor-link home-game-link" aria-label="Открыть игру">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8.5h8a4.5 4.5 0 0 1 4.35 3.35l1.05 4a2.35 2.35 0 0 1-4.03 2.17l-1.55-1.77H8.18l-1.55 1.77a2.35 2.35 0 0 1-4.03-2.17l1.05-4A4.5 4.5 0 0 1 8 8.5Z"/><path d="M8 11.5v4M6 13.5h4M15.7 12.25h.01M18 14.55h.01"/></svg>
+                <span>Игра</span>
+                <span class="home-game-name">Orbital Courier</span>
+            </a>
+        </aside>
 
         <!-- Предметы по классам -->
         <section class="subjects-section" aria-labelledby="homeSubjectsTitle">
@@ -1132,21 +357,6 @@
 
                 </div>
 
-                <div class="class-section">
-                    <h2 class="section-title">Класс 10‑1</h2>
-                    <div class="subjects-grid">
-                        <a href="duty-10-1.html" class="subject-card" data-subject="duty" id="homeDutyCard">
-                            <div class="card-header">
-                                <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-duty"/></svg></div>
-                            </div>
-                            <div class="card-body">
-                                <h2>Дежурство</h2>
-                                <div class="card-info"><div style="text-align: center;"><span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> Расписание класса</span></div></div>
-                            </div>
-                        </a>
-
-                    </div>
-                </div>
             </div>
 
             <div class="grade-panel" id="gradePanel11" data-grade-panel="11" role="tabpanel" aria-labelledby="gradeTab11" hidden>
@@ -1184,10 +394,11 @@
 
         <footer class="home-footer">
             <p>
-                <strong>Almanion</strong> · <strong>2026—2027</strong>
+                <span>Almanion · 2026—2027</span>
+                <a href="https://t.me/Almanion239" target="_blank" rel="noopener noreferrer">@Almanion239</a>
             </p>
         </footer>
-    </div>
+    </main>
     <script src="home-motion.js?v=20260920-2"></script>
 
 
@@ -1208,14 +419,14 @@
 
     <script src="script.js?v=20260905-2"></script>
     <script src="newyear.js?v=20261002-1"></script>
-    <script src="settings.js?v=20261002-1"></script>
-    <script src="account.js?v=20260924-1"></script>
+    <script src="settings.js?v=20261009-1"></script>
+    <script src="account.js?v=20261009-1"></script>
     <script>
         (function () {
             function loadHomeDashboard() {
                 if (document.querySelector('script[data-home-dashboard]')) return;
                 var script = document.createElement('script');
-                script.src = 'home-dashboard.js?v=20261004-1';
+                script.src = 'home-dashboard.js?v=20261009-1';
                 script.dataset.homeDashboard = 'true';
                 document.head.appendChild(script);
             }

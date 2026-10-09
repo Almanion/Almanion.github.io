@@ -92,7 +92,7 @@
         if (!header) {
             if (!document.body.classList.contains('home-page')) return;
             btn.classList.add('home-account-btn');
-            document.body.appendChild(btn);
+            (document.getElementById('homeControls') || document.body).appendChild(btn);
             updateButton();
             return;
         }
@@ -145,6 +145,11 @@
         ov.id = 'accountOverlay';
         ov.className = 'auth-overlay hidden';
         ov.addEventListener('click', function (e) { if (e.target === ov) hideOverlay(); });
+        ov.addEventListener('keydown', function (event) {
+            if (event.key !== 'Escape') return;
+            event.preventDefault();
+            hideOverlay();
+        });
         ov.setAttribute('aria-hidden', 'true');
         document.body.appendChild(ov);
         initSwipeClose(ov);
@@ -153,8 +158,11 @@
     function hideOverlay() {
         const ov = document.getElementById('accountOverlay');
         if (ov) {
+            const restoreFocus = ov.contains(document.activeElement);
             ov.classList.add('hidden');
             ov.setAttribute('aria-hidden', 'true');
+            const button = document.getElementById('accountBtn');
+            if (restoreFocus && button) button.focus();
         }
     }
 

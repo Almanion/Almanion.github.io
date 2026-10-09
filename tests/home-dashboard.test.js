@@ -12,8 +12,8 @@ const client = read('home-dashboard.js');
 const editor = read('home-quick-editor.js');
 const shell = JSON.parse(read(path.join('performance', 'sw-shell.json'))).assets;
 
-assert.match(page, /styles\/home-dashboard\.css\?v=20261004-1/, 'dashboard stylesheet must be versioned');
-assert.match(page, /home-dashboard\.js\?v=20261004-1/, 'personal dashboard controller must be versioned');
+assert.match(page, /styles\/home-dashboard\.css\?v=20261009-1/, 'dashboard stylesheet must be versioned');
+assert.match(page, /home-dashboard\.js\?v=20261009-1/, 'personal dashboard controller must be versioned');
 assert.doesNotMatch(page, /<script[^>]+src="home-dashboard\.js/, 'personalization must load during idle time, not block first paint');
 assert.match(page, /class="extra-section home-quick-section"[^>]*aria-labelledby="homeQuickTitle"/);
 assert.match(page, /id="homeQuickTitle">Быстрый доступ</);
@@ -37,8 +37,12 @@ assert.doesNotMatch(client, /Короткие курсы/, 'the dynamic Likbez c
 assert.match(css, /\.home-quick-grid[\s\S]*?grid-template-columns:\s*repeat\(auto-fit/);
 assert.match(css, /\.home-quick-grid > \.home-quick-card[\s\S]*?min-height:\s*80px/);
 assert.match(css, /\.grade-panel > \.subjects-grid[\s\S]*?grid-template-columns:\s*repeat\(2/);
-assert.match(css, /\.grade-panel > \.subjects-grid > \.subject-card[\s\S]*?min-height:\s*128px/);
-assert.match(css, /#gradePanel10 > \.class-section > \.subjects-grid[\s\S]*?repeat\(2/);
+assert.match(css, /\.grade-panel > \.subjects-grid > \.subject-card[\s\S]*?min-height:\s*150px/);
+assert.match(page, /<aside class="home-secondary">[\s\S]*<section class="class-section"/,
+    'class pages must remain independent of the selected grade');
+assert.match(page, /<main class="home-container"/);
+assert.match(page, /id="homeControls"/, 'account and settings must belong to the header');
+assert.doesNotMatch(page, /<style>/, 'the homepage must have a single maintained layout stylesheet');
 assert.match(page, /id="gradeTabArchive"[^>]*aria-controls="gradePanelArchive"/);
 assert.match(page, /id="gradePanelArchive"[^>]*aria-labelledby="gradeTabArchive"/);
 assert.match(css, /\.home-privileged-actions:not\(\[hidden\]\)[\s\S]*?grid-template-columns:\s*repeat\(2/,
