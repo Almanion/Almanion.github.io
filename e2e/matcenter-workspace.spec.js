@@ -284,6 +284,7 @@ for (const dark of [false, true]) test(`camp menu order and proportional three-d
         await page.setViewportSize({width,height:844});
         await page.goto('/matcenter.html?grade=grade-camp-2026');
         await ready(page);
+        await expect(page.locator('link[href*="styles/matcenter-refresh.css"]')).toHaveAttribute('href', 'styles/matcenter-refresh.css?v=20261009-camp2');
         expect(await page.locator('#gradeSwitcher [data-grade]').evaluateAll(els=>els.map(el=>el.dataset.grade))).toEqual(order);
         expect(await page.locator('#mcSidebarGrade option').evaluateAll(els=>els.map(el=>el.value))).toEqual(order);
         const active = page.locator('#gradeSwitcher [data-grade="grade-camp-2026"]');
