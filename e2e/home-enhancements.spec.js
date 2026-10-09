@@ -96,6 +96,9 @@ test('touch input leaves scrolling and navigation usable', async ({ page }, info
     const canvas = page.locator('.home-starfield');
     await expect(canvas).toBeAttached();
     await page.touchscreen.tap(4, 150);
+    expect(await page.evaluate(() => window.AlmanionHomeStars.getState().touchActive)).toBe(true);
+    await page.waitForTimeout(1100);
+    expect(await page.evaluate(() => window.AlmanionHomeStars.getState().touchActive)).toBe(false);
     await page.locator('#gradeTab9').tap();
     await expect(page.locator('#gradePanel9')).toBeVisible();
     await page.evaluate(() => scrollTo(0, 300));

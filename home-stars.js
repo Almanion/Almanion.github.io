@@ -8,6 +8,7 @@
     }
 })(typeof window !== 'undefined' ? window : null, function () {
     'use strict';
+    let readState = () => null;
     function createStars(width, height, random) {
         const count = Math.max(12, Math.min(64, Math.round(width * height / 25000)));
         const rand = random || Math.random;
@@ -44,6 +45,7 @@
         let width = 0, height = 0, stars = [], frame = 0, last = 0, color = '', paused = false;
         let mode = 'full', time = 0, touchUntil = 0;
         const pointer = { active: false, x: 0, y: 0 };
+        readState = () => ({ mode, count: stars.length, touchActive: pointer.active && touchUntil > win.performance.now() });
         const reduced = win.matchMedia('(prefers-reduced-motion: reduce)');
         const coarse = win.matchMedia('(pointer: coarse)');
         function stop() { if (frame) win.cancelAnimationFrame(frame); frame = 0; }
@@ -116,7 +118,8 @@
             pointer.x = event.clientX; pointer.y = event.clientY; pointer.active = true;
             touchUntil = win.performance.now() + 1000;
         }, { passive: true });
-        doc.addEventListener('pointerleave', () => { pointer.active = false; });
+        // A touch pointer leaves the document on finger-up: let its soft pulse finish.
+        doc.addEventListener('pointerleave', event => { if (event.pointerType !== 'touch') pointer.active = false; });
         doc.addEventListener('pointercancel', () => { pointer.active = false; });
         doc.addEventListener('visibilitychange', resume);
         win.addEventListener('resize', resize, { passive: true });
@@ -129,5 +132,5 @@
         coarse.addEventListener?.('change', resize);
         resize();
     }
-    return { createStars, influence, init };
+    return { createStars, influence, init, getState: () => readState() };
 });
