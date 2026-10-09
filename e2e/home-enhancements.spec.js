@@ -97,7 +97,7 @@ for (const width of [390, 1440]) test(`stars are visible in both themes at ${wid
     for (const expTheme of ['light', 'dark']) {
         await page.evaluate(expTheme => window.AlmanionSettings.update({ experimental: true, expMode: 'prism', expTheme, animationLevel: 'off' }), expTheme);
         await page.waitForTimeout(800);
-        await expect(canvas).toHaveCSS('opacity', '0.82');
+        await expect(canvas).toHaveCSS('opacity', '0.72');
         const pixels = await canvas.evaluate(field => {
             const data = field.getContext('2d').getImageData(0, 0, field.width, field.height).data;
             let visible = 0;

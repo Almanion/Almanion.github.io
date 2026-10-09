@@ -12,18 +12,50 @@
     function createStars(width, height, random) {
         const count = Math.max(24, Math.min(180, Math.round(width * height / 9000)));
         const rand = random || Math.random;
-        // Stratification avoids dense random clusters. Coordinates survive resizing.
-        const columns = Math.ceil(Math.sqrt(count * width / Math.max(1, height)));
-        const rows = Math.ceil(count / columns);
-        return Array.from({ length: count }, (_, i) => ({
-            u: (i % columns + .15 + rand() * .7) / columns,
-            v: (Math.floor(i / columns) + .15 + rand() * .7) / rows,
-            radius: .95 + rand() * .9,
-            alpha: .42 + rand() * .26,
-            phase: rand() * Math.PI * 2,
-            sparkle: i % 8 === 0,
-            dx: 0, dy: 0
+        const groupCount = Math.max(3, Math.min(6, Math.round(count / 28)));
+        // Loose, rotated elliptical clusters, with some centres near the outer
+        // margins so the cards don't conceal the whole star field.
+        const groups = Array.from({ length: groupCount }, (_, i) => ({
+            x: width * (i === groupCount - 1 ? .25 + rand() * .5
+                : i % 2 ? .88 + rand() * .08 : .04 + rand() * .08),
+            y: height * (i + .2 + rand() * .6) / groupCount,
+            spread: Math.min(width, height) * (.045 + rand() * .035),
+            stretch: 1.15 + rand() * .7,
+            angle: rand() * Math.PI * 2
         }));
+        const stars = [];
+        for (let i = 0; i < count; i++) {
+            const group = i < Math.round(count * .7) ? groups[i % groupCount] : null;
+            let point;
+            for (let attempt = 0; attempt < 16; attempt++) {
+                let x = width * (.015 + rand() * .97), y = height * (.015 + rand() * .97);
+                if (group) {
+                    // Box–Muller gives soft cores and sparse outskirts, not rings.
+                    const distance = Math.sqrt(-2 * Math.log(Math.max(.000001, rand())));
+                    const angle = rand() * Math.PI * 2;
+                    const gx = Math.cos(angle) * distance * group.spread;
+                    const gy = Math.sin(angle) * distance * group.spread * group.stretch;
+                    x = group.x + gx * Math.cos(group.angle) - gy * Math.sin(group.angle);
+                    y = group.y + gx * Math.sin(group.angle) + gy * Math.cos(group.angle);
+                }
+                if (x < 4 || y < 4 || x > width - 4 || y > height - 4) continue;
+                if (stars.some(star => (star.u * width - x) ** 2 + (star.v * height - y) ** 2 < 20.25)) continue;
+                point = { x, y }; break;
+            }
+            point ||= { x: width * (.015 + rand() * .97), y: height * (.015 + rand() * .97) };
+            const brightness = rand();
+            stars.push({
+                u: point.x / width, v: point.y / height,
+                radius: .95 + brightness * .9,
+                alpha: .38 + brightness * .28,
+                phase: rand() * Math.PI * 2,
+                sparkle: false,
+                dx: 0, dy: 0
+            });
+        }
+        stars.filter(star => star.alpha > .63).sort((a, b) => b.alpha - a.alpha)
+            .slice(0, Math.max(1, Math.round(count * .025))).forEach(star => { star.sparkle = true; });
+        return stars;
     }
     function influence(x, y, pointer, radius) {
         if (!pointer.active) return { x: 0, y: 0, glow: 0 };
@@ -61,14 +93,14 @@
                 star.dx += (target.x * touchFade - star.dx) * .13;
                 star.dy += (target.y * touchFade - star.dy) * .13;
                 const drift = moving && mode === 'full' ? Math.sin(time / 8500 + star.phase) * 1.8 : 0;
-                const alpha = star.alpha + (moving ? Math.sin(time / 3700 + star.phase) * .045 : 0) + target.glow * touchFade * .22;
+                const alpha = star.alpha + (moving ? Math.sin(time / 3700 + star.phase) * .025 : 0) + target.glow * touchFade * .16;
                 ctx.globalAlpha = alpha;
                 const px = x + star.dx + drift, py = y + star.dy + drift * .5;
                 ctx.beginPath(); ctx.arc(px, py, star.radius, 0, Math.PI * 2); ctx.fill();
                 if (star.sparkle) {
-                    const size = star.radius * 2.6 + target.glow;
-                    ctx.globalAlpha = alpha * .65;
-                    ctx.lineWidth = .85;
+                    const size = star.radius * 2.2 + target.glow * .5;
+                    ctx.globalAlpha = alpha * .5;
+                    ctx.lineWidth = .65;
                     ctx.beginPath();
                     ctx.moveTo(px - size, py); ctx.lineTo(px + size, py);
                     ctx.moveTo(px, py - size); ctx.lineTo(px, py + size);

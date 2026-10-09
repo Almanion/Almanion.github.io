@@ -18,7 +18,21 @@ for (const [w, h] of [[320,568], [390,844], [1440,900], [4000,2200]]) {
     const stars = Stars.createStars(w, h, () => .5);
     assert.ok(stars.length >= 24 && stars.length <= 180);
     assert.ok(stars.every(star => star.u > 0 && star.u < 1 && star.v > 0 && star.v < 1));
-    assert.ok(stars.every(star => star.radius >= .95 && star.alpha >= .42), 'stars remain readable without pointer interaction');
+    assert.ok(stars.every(star => star.radius >= .95 && star.alpha >= .38), 'dimmed stars remain readable without pointer interaction');
+}
+function seeded(seed) {
+    return () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+}
+for (const [width, height] of [[390, 844], [1440, 900]]) {
+    const stars = Stars.createStars(width, height, seeded(239));
+    const nearby = points => points.filter(point => points.some(other => other !== point &&
+        Math.hypot((point.u - other.u) * width, (point.v - other.v) * height) < Math.min(width, height) * .06)).length;
+    const rand = seeded(239);
+    const uniform = stars.map(() => ({ u: rand(), v: rand() }));
+    assert.ok(nearby(stars) > nearby(uniform), 'clustered sky must contain more close neighbours than uniform scatter');
+    assert.ok(stars.every(star => star.u > 0 && star.u < 1 && star.v > 0 && star.v < 1));
+    assert.ok(stars.filter(star => star.sparkle).length < stars.length * .1, 'diffraction crosses are reserved for the rare brightest stars');
+    assert.deepEqual(stars, Stars.createStars(width, height, seeded(239)), 'seeded layouts are reproducible');
 }
 assert.ok(Stars.createStars(390, 844).length >= 36, 'phones get enough stars in the gaps between cards');
 assert.ok(Stars.createStars(1440, 900).length >= 140, 'desktop density is about three times the previous field');
