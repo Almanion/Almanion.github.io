@@ -53,6 +53,8 @@ function handle(e) {
         accountConfirmation: true,
         legacyAuth: false,
         multiSheetTasks: true,
+        campTasks: true,
+        camp2026Ready: !!scriptProperties.getProperty('MATCENTER_CAMP_2026_SPREADSHEET_ID'),
         notePublisher: true,
         noteDeletion: true,
         plannerTelegram: true,
@@ -147,6 +149,10 @@ function handle(e) {
       return setHint(params.taskNumber, params.hintText || '', params.grade, params.taskId);
     }
 
+    if (action === 'campTasks') {
+      return getTasks(isAdmin, getCamp2026Sheets());
+    }
+
     if (action) {
       return json({ success: false, authVersion: AUTH_VERSION, error: 'Неизвестное действие: ' + action });
     }
@@ -158,9 +164,9 @@ function handle(e) {
 }
 
 // === Чтение задач =========================================================
-function getTasks(isAdmin) {
+function getTasks(isAdmin, selectedSheets) {
   const tasks = [];
-  const sheets = getTaskSheets();
+  const sheets = selectedSheets || getTaskSheets();
 
   sheets.forEach(function (sheet) {
     const values = getSheetValues(sheet);
@@ -1282,6 +1288,30 @@ function getTaskSheets() {
   return detected;
 }
 
+// Camp data lives in a separate private spreadsheet. Its ID is a server property,
+// and every read/write uses the same Firebase access check as existing archives.
+function getCamp2026Sheets() {
+  const id = String(PropertiesService.getScriptProperties()
+    .getProperty('MATCENTER_CAMP_2026_SPREADSHEET_ID') || '').trim();
+  if (!id) throw new Error('Таблица «Лагерь 2026» ещё не подключена');
+  const sheet = SpreadsheetApp.openById(id).getSheetByName('Лагерь 2026');
+  if (!sheet) throw new Error('В таблице лагеря не найден лист «Лагерь 2026»');
+  if (sheet.getLastRow() < 2) throw new Error('Лист «Лагерь 2026» не содержит задач');
+  return [sheet];
+}
+
+// Run once in the Apps Script editor to connect the verified camp workbook.
+// Other script properties, roles and deployments are left unchanged.
+function connectCamp2026Spreadsheet() {
+  const id = '1mUZyK3PHBjYD3_6ouI7PeVrtt7S3e3zVMNC-u6pUAOU';
+  const sheet = SpreadsheetApp.openById(id).getSheetByName('Лагерь 2026');
+  if (!sheet || sheet.getLastRow() !== 135) {
+    throw new Error('Ожидался лист «Лагерь 2026» с заголовком и 134 задачами');
+  }
+  PropertiesService.getScriptProperties().setProperty('MATCENTER_CAMP_2026_SPREADSHEET_ID', id);
+  console.log('Лагерь 2026 подключён: 134 задачи. Остальные настройки сохранены.');
+}
+
 function normalizeGrade(value, fallback) {
   const raw = String(value || '').trim().toLowerCase();
   const compact = raw.replace(/[—–]/g, '-').replace(/ё/g, 'е').replace(/\s+/g, '');
@@ -1303,13 +1333,17 @@ function normalizeGrade(value, fallback) {
     'grade-summer-9-10': 'grade-summer-9-10',
     'лето10-11': 'grade-summer-10-11',
     'summer10-11': 'grade-summer-10-11',
-    'grade-summer-10-11': 'grade-summer-10-11'
+    'grade-summer-10-11': 'grade-summer-10-11',
+    'лагерь2026': 'grade-camp-2026',
+    'camp2026': 'grade-camp-2026',
+    'grade-camp-2026': 'grade-camp-2026'
   };
   return aliases[compact] || fallback || 'grade-9';
 }
 
 function inferGradeFromSheetName(name) {
   const raw = String(name || '').trim().toLowerCase().replace(/[—–]/g, '-');
+  if (/(лагерь|camp).*2026/.test(raw)) return 'grade-camp-2026';
   if (/(лето|summer).*10\D*11/.test(raw)) return 'grade-summer-10-11';
   if (/(лето|summer).*9\D*10/.test(raw)) return 'grade-summer-9-10';
   if (/(^|\D)11(\D|$)/.test(raw)) return 'grade-11';
@@ -1330,7 +1364,8 @@ function findTaskLocation(taskNumber, grade, taskId) {
   const locations = [];
   let ambiguousError = '';
 
-  getTaskSheets().forEach(function (sheet) {
+  const taskSheets = grade === 'grade-camp-2026' ? getCamp2026Sheets() : getTaskSheets();
+  taskSheets.forEach(function (sheet) {
     const values = getSheetValues(sheet);
     if (values.length < 2) return;
     const headers = values[0].map(function (h) { return String(h || '').trim(); });

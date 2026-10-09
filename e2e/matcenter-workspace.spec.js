@@ -8,6 +8,10 @@ const future = [1, 2].flatMap(s => [1, 2, 12].map(number => ({ number, grade: 'g
     description: `Будущая задача ${number}: две окружности.`, hint: 'Не открывать автоматически', status: 'Н',
     taskId: `new-${s}-${number}`, seriesId: `2026-${s}`, seriesTitle: `Серия ${s}. Геометрия`, seriesDate: `2026-09-${25 + s}` })));
 const summer = [{ number: 1, description: 'Летняя задача', grade: 'grade-summer-9-10' }];
+const camp = [1, 134].map(number => ({ number, description: `Лагерная задача ${number}: $x^2+1$.`, grade: 'grade-camp-2026',
+    taskId: `camp-2026-t${String(number).padStart(3,'0')}`, seriesId: number === 1 ? 'camp-2026-add-01' : 'camp-2026-add-17',
+    seriesTitle: number === 1 ? 'Добавка №1. 8 августа 2026 года.' : 'Добавка №17. 27 августа 2026 года.',
+    seriesDate: number === 1 ? '2026-08-08' : '2026-08-27' }));
 
 async function setup(page, options = {}) {
     const errors = [];
@@ -19,7 +23,7 @@ async function setup(page, options = {}) {
             const tasks = url.pathname.includes('AKfycbw_') ? summer : [...legacy, ...future];
             return route.fulfill({ json: data.action === 'capabilities' ? { success: true, authVersion: 3 }
                 : data.action === 'accessStatus' ? { success: true, allowed: options.allowed !== false, isAdmin: false }
-                : { success: true, tasks, isAdmin: false } });
+                : { success: true, tasks: data.action === 'campTasks' ? camp : tasks, isAdmin: false } });
         }
         if (['127.0.0.1', 'localhost'].includes(url.hostname)) {
             if (/\/(account|firebase-analytics|analytics)\.js$/.test(url.pathname)) return route.fulfill({ contentType: 'application/javascript', body: '' });
@@ -269,6 +273,34 @@ test('direct task links do not bypass access checks', async ({ page }) => {
     await page.goto('/matcenter.html?grade=grade-9&task=1&view=reading');
     await expect(page.locator('#authOverlay')).toBeVisible();
     await expect(page.locator('.task-card')).toHaveCount(0);
+});
+
+test('camp is a separate archive with original ascending numbers, additions and independent progress', async ({page}) => {
+    const errors = await setup(page);
+    await page.setViewportSize({width:320,height:844});
+    await page.goto('/matcenter.html?grade=grade-camp-2026');
+    await ready(page);
+    await expect(page.locator('#mcSidebarGrade')).toHaveValue('grade-camp-2026');
+    await expect(page.locator('#allTasksTitle')).toHaveText('Лагерь 2026 — все задачи');
+    expect(await page.locator('#tasksContainer .task-number-label').allTextContents()).toEqual(['Задача 1','Задача 134']);
+    const active = await page.locator('#gradeSwitcher [data-grade="grade-camp-2026"]').boundingBox();
+    expect(active.x).toBeGreaterThanOrEqual(0);
+    expect(active.x+active.width).toBeLessThanOrEqual(320);
+    await expect(page.locator('#mcSeriesSelect option')).toHaveCount(3);
+    await page.locator('#mcSeriesSelect').selectOption(JSON.stringify(['grade-camp-2026',2,'camp-2026-add-01']));
+    await expect(page.locator('#tasksContainer .task-card')).toHaveCount(1);
+    await page.locator('#tasksContainer .task-solved-check').click();
+    await expect(page.locator('#solvedCount')).toHaveText('1');
+    const key = await page.locator('#tasksContainer .task-card').getAttribute('data-solved-key');
+    expect(key).toMatch(/^series__/);
+    await page.locator('#mcSeriesSelect').selectOption('');
+    await page.locator('#searchInput').fill('134');
+    await expect(page.locator('#tasksContainer .task-card')).toHaveCount(1);
+    await expect(page.locator('#tasksContainer .task-number-label')).toHaveText('Задача 134');
+    await page.reload();
+    await ready(page);
+    await expect(page.locator('#gradeSwitcher [data-grade="grade-camp-2026"]')).toHaveAttribute('aria-pressed','true');
+    expect(errors).toEqual([]);
 });
 
 for (const old of [false, true]) test(`mobile section header sticks without an obsolete search offset, legacy=${old}`, async ({ page }, info) => {

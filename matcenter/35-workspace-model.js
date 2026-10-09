@@ -39,7 +39,7 @@
         return Array.from(items.values()).sort((a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title, 'ru', { numeric: true }));
     }
     function initialGrade(saved, home) {
-        const allowed = ['grade-9', 'grade-10', 'grade-11', 'grade-summer-9-10', 'grade-summer-10-11'];
+        const allowed = ['grade-9', 'grade-10', 'grade-11', 'grade-summer-9-10', 'grade-summer-10-11', 'grade-camp-2026'];
         if (allowed.includes(saved)) return saved;
         return ['9', '10', '11'].includes(home) ? 'grade-' + home : 'grade-10';
     }

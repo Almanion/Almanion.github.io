@@ -16,7 +16,8 @@ function createContext(cachedTasks, loader) {
             { id: 'grade-summer-9-10' },
             { id: 'grade-10' },
             { id: 'grade-summer-10-11' },
-            { id: 'grade-11' }
+            { id: 'grade-11' },
+            { id: 'grade-camp-2026' }
         ],
         safeGet: () => JSON.stringify({ version: 3, tasks: cachedTasks }),
         console: { log() {}, warn() {}, error() {} },
@@ -86,6 +87,17 @@ async function run() {
         vm.runInContext("getMatcenterTaskDescription({description:'  '})", unexpectedEmpty),
         ''
     );
+    assert.equal(vm.runInContext("normalizeMatcenterGrade('Лагерь 2026', 2)", unexpectedEmpty), 'grade-camp-2026');
+    const cachedCamp = { number: 1, grade: 'grade-camp-2026', _endpointIdx: 2 };
+    const campFailure = createContext([cachedMain, cachedSummer, cachedCamp], async (_url, idx) => {
+        if (idx === 2) throw new Error('camp temporary failure');
+        return { tasks: [idx === 0 ? cachedMain : freshSummer], isAdmin: false };
+    });
+    vm.runInContext("TASKS_ENDPOINTS = ['main','summer','main'];", campFailure);
+    const preservedCamp = await vm.runInContext('loadFromAppsScript()', campFailure);
+    assert.deepEqual(Array.from(preservedCamp.tasks, task => `${task._endpointIdx}:${task.number}`), ['0:1','1:11','2:1']);
+    assert.equal(preservedCamp.failures[0].endpointIdx, 2);
+    assert.equal(preservedCamp.failures[0].usedCache, true);
 
     console.log('matcenter data fallback: all tests passed');
 }

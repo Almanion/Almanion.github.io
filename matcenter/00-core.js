@@ -85,7 +85,9 @@ function renderLatexInElement(element, attempts = 0) {
 const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyR_Iz_fyg2s-bviRtkvF1Zz_KMdRCUgpoIVT1CF-lG6UiNkVfvor_nMXILPzk8xslA/exec';
 const SUMMER_9_10_ENDPOINT = 'https://script.google.com/macros/s/AKfycbw_1QMpa29l9_ziOEVI13PLlHfhdUX5-Aqrg76hfIgXamUVitT0Sc_IwBwKb2Pqj0s/exec';
 
-const TASKS_ENDPOINTS = [API_ENDPOINT, SUMMER_9_10_ENDPOINT].filter(Boolean);
+// The camp spreadsheet is read separately through the main backend and its existing access rules.
+const TASKS_ENDPOINTS = [API_ENDPOINT, SUMMER_9_10_ENDPOINT, API_ENDPOINT].filter(Boolean);
+const MATCENTER_CAMP_SOURCE_INDEX = 2;
 
 // Security settings
 const MAX_FAILED_ATTEMPTS = 3;
@@ -111,7 +113,8 @@ const GRADE_SECTIONS = [
     { id: 'grade-summer-9-10', title: 'Летняя серия 9-10' },
     { id: 'grade-10', title: '10 класс' },
     { id: 'grade-summer-10-11', title: 'Летняя серия 10-11' },
-    { id: 'grade-11', title: '11 класс' }
+    { id: 'grade-11', title: '11 класс' },
+    { id: 'grade-camp-2026', title: 'Лагерь 2026' }
 ];
 
 const TASK_VIEW_IDS = ['all-tasks', 'current-series', 'postponed', 'unsolved'];
@@ -213,7 +216,7 @@ async function readMatcenterTasksJson(endpoint, payload, signal) {
 
 async function detectMatcenterAuthMode() {
     const checks = await Promise.allSettled(
-        TASKS_ENDPOINTS.map(endpoint => postMatcenterJson(endpoint, { action: 'capabilities' }))
+        [...new Set(TASKS_ENDPOINTS)].map(endpoint => postMatcenterJson(endpoint, { action: 'capabilities' }))
     );
     const responses = checks.filter(item => item.status === 'fulfilled').map(item => item.value);
     if (responses.length && responses.some(data => Number(data.authVersion) < 3)) {
@@ -269,7 +272,7 @@ async function getMatcenterIdToken(forceRefresh = false) {
 
 async function checkMatcenterAccountAccess() {
     const idToken = await getMatcenterIdToken();
-    const results = await Promise.all(TASKS_ENDPOINTS.map(endpoint =>
+    const results = await Promise.all([...new Set(TASKS_ENDPOINTS)].map(endpoint =>
         postMatcenterJson(endpoint, { action: 'accessStatus', idToken })
     ));
     return {
@@ -280,7 +283,7 @@ async function checkMatcenterAccountAccess() {
 
 async function authorizeMatcenterAccount(password) {
     const idToken = await getMatcenterIdToken(true);
-    const results = await Promise.all(TASKS_ENDPOINTS.map(endpoint =>
+    const results = await Promise.all([...new Set(TASKS_ENDPOINTS)].map(endpoint =>
         postMatcenterJson(endpoint, { action: 'authorizeAccount', idToken, password })
     ));
     const failure = results.find(data => !data || !data.success || !data.allowed);

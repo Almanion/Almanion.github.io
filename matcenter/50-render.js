@@ -241,7 +241,8 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
     
     // Летние серии выдаются целиком, удобнее по возрастанию (1, 2, 3, …).
     // Обычные классы — по убыванию (свежие задачи сверху).
-    const ascending = typeof currentGrade === 'string' && currentGrade.indexOf('summer') !== -1;
+    const ascending = currentGrade === 'grade-camp-2026'
+        || (typeof currentGrade === 'string' && currentGrade.indexOf('summer') !== -1);
     const sortedTasks = [...tasks].sort((a, b) => ascending ? a.number - b.number : b.number - a.number);
 
     delete container.dataset.renderComplete;

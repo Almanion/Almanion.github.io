@@ -66,6 +66,18 @@ function syncGradeNavUI() {
     const gradeSelect = document.getElementById('mcSidebarGrade');
     if (gradeSelect) gradeSelect.value = currentGrade;
 
+    // Keep the selected archive visible in the horizontally scrolling mobile strip.
+    const activeCard = document.querySelector(`#gradeSwitcher [data-grade="${currentGrade}"]`);
+    const gradeStrip = document.getElementById('gradeSwitcher');
+    if (activeCard && gradeStrip && gradeStrip.scrollWidth > gradeStrip.clientWidth) {
+        const cardBounds = activeCard.getBoundingClientRect();
+        const stripBounds = gradeStrip.getBoundingClientRect();
+        if (cardBounds.left < stripBounds.left || cardBounds.right > stripBounds.right) {
+            gradeStrip.scrollLeft += cardBounds.left - stripBounds.left
+                - (gradeStrip.clientWidth - cardBounds.width) / 2;
+        }
+    }
+
     // Помечаем body — у летних серий другие UI-правила (нет статусов, темы вместо фильтров)
     document.body.classList.toggle('is-summer-grade', isSummerGrade(currentGrade));
 

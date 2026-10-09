@@ -116,6 +116,7 @@ function getCachedTasksByEndpoint() {
 function getEndpointLabel(endpointIdx) {
     if (endpointIdx === 0) return 'основная таблица';
     if (endpointIdx === 1) return 'летняя серия 9–10';
+    if (endpointIdx === 2) return 'лагерь 2026';
     return `источник №${endpointIdx + 1}`;
 }
 
@@ -143,14 +144,17 @@ function normalizeMatcenterGrade(value, endpointIdx = 0) {
         'grade-summer-9-10': 'grade-summer-9-10',
         'лето10-11': 'grade-summer-10-11',
         'summer10-11': 'grade-summer-10-11',
-        'grade-summer-10-11': 'grade-summer-10-11'
+        'grade-summer-10-11': 'grade-summer-10-11',
+        'лагерь2026': 'grade-camp-2026',
+        'camp2026': 'grade-camp-2026',
+        'grade-camp-2026': 'grade-camp-2026'
     };
     const normalized = aliases[compact];
     if (normalized && GRADE_SECTIONS.some(section => section.id === normalized)) return normalized;
 
     // Старые версии backend не всегда присылали Grade. Источник летней серии
     // однозначно задаёт раздел, основной endpoint по умолчанию относится к 9 классу.
-    return endpointIdx === 1 ? 'grade-summer-9-10' : 'grade-9';
+    return endpointIdx === 2 ? 'grade-camp-2026' : endpointIdx === 1 ? 'grade-summer-9-10' : 'grade-9';
 }
 
 function readMatcenterTaskField(task, aliases) {
@@ -377,6 +381,8 @@ async function loadFromOneEndpoint(endpoint, endpointIdx, signal) {
     let data;
     try {
         data = await readMatcenterTasksJson(endpoint, {
+            ...(typeof MATCENTER_CAMP_SOURCE_INDEX !== 'undefined' && endpointIdx === MATCENTER_CAMP_SOURCE_INDEX
+                ? { action: 'campTasks' } : {}),
             idToken: await getMatcenterIdToken(),
             clientId
         }, signal);

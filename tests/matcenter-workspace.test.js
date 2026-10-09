@@ -12,6 +12,7 @@ assert.deepEqual(model.seriesList([legacy], 'grade-9'), []);
 assert.equal(model.initialGrade(null, null), 'grade-10');
 assert.equal(model.initialGrade(null, '9'), 'grade-9');
 assert.equal(model.initialGrade('grade-summer-9-10', '10'), 'grade-summer-9-10');
+assert.equal(model.initialGrade('grade-camp-2026', '10'), 'grade-camp-2026');
 assert.equal(model.date('31.02.2026'), '');
 assert.equal(model.date('26.09.2026'), '2026-09-26');
 const future = { ...legacy, grade: 'grade-10', seriesId: '2026-01', seriesTitle: 'Геометрия', seriesDate: '26.09.2026', academicYear: '2026/2027' };
@@ -35,6 +36,9 @@ vm.runInContext(fs.readFileSync(path.join(root, '30-data.js'), 'utf8'), sandbox)
 assert.equal(sandbox.normalizeMatcenterGrade('', 0), 'grade-9', 'UI default must not reclassify legacy data');
 vm.runInContext(fs.readFileSync(path.join(root, '40-personal-progress.js'), 'utf8'), sandbox);
 assert.equal(sandbox.getSolvedTaskKey(legacy), 'grade-9__12');
+const camp = { ...future, grade: 'grade-camp-2026', taskId: 'camp-2026-t012', seriesId: 'camp-2026-add-01', _endpointIdx: 2 };
+assert.notEqual(sandbox.getSolvedTaskKey(camp), sandbox.getSolvedTaskKey(legacy));
+assert.notEqual(sandbox.getSolvedTaskKey(camp), sandbox.getSolvedTaskKey(future));
 const keys = [sandbox.getSolvedTaskKey(future), sandbox.getSolvedTaskKey(next)];
 assert.notEqual(keys[0], keys[1]);
 keys.forEach(key => assert.doesNotMatch(key, /[.#$\[\]/]/));

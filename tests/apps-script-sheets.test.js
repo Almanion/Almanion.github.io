@@ -92,6 +92,36 @@ function run() {
     assert.equal(extended.tasks[2].seriesTitle, 'Делимость');
     assert.equal(extended.tasks[2].academicYear, '2026/2027');
 
+    const campSheet = makeSheet('Лагерь 2026', [
+        ['Номер', 'Условие', 'Класс', 'TaskId', 'SeriesId', 'Название серии', 'Дата серии'],
+        ['1', 'Дословное условие $x^2+1$.', 'grade-camp-2026', 'camp-2026-t001', 'camp-2026-add-01', 'Добавка №1. 8 августа 2026 года.', '08.08.2026']
+    ]);
+    const opened=[];
+    sandbox.SpreadsheetApp.openById = id => { opened.push(id); return { getSheetByName: name => name === 'Лагерь 2026' ? campSheet : null }; };
+    sandbox.PropertiesService.getScriptProperties = () => ({ getProperty: key => key === 'MATCENTER_CAMP_2026_SPREADSHEET_ID' ? 'camp-test-sheet' : '' });
+    const campPayload = JSON.parse(vm.runInContext('getTasks(false, getCamp2026Sheets()).text', sandbox));
+    assert.equal(campPayload.count, 1);
+    assert.equal(campPayload.tasks[0].grade, 'grade-camp-2026');
+    assert.equal(campPayload.tasks[0].description, 'Дословное условие $x^2+1$.');
+    assert.deepEqual(JSON.parse(vm.runInContext('getTasks(false).text', sandbox)), extended, 'camp must not change existing archives');
+    assert.equal(vm.runInContext("findTaskLocation('1', 'grade-camp-2026', 'camp-2026-t001').sheet.getName()", sandbox), 'Лагерь 2026');
+    assert.ok(opened.every(id => id === 'camp-test-sheet'));
+    const readCount = opened.length;
+    sandbox.resolveAccess = () => ({ allowed: false, role: '' });
+    const denied = JSON.parse(vm.runInContext("handle({postData:{contents:JSON.stringify({action:'campTasks'})}}).text", sandbox));
+    assert.equal(denied.success, false);
+    assert.equal(opened.length, readCount, 'unauthorized request must never open the camp spreadsheet');
+    sandbox.PropertiesService.getScriptProperties = () => ({ getProperty: () => '' });
+    assert.throws(() => vm.runInContext('getCamp2026Sheets()', sandbox), /ещё не подключена/);
+
+    const changedProperties = [];
+    sandbox.PropertiesService.getScriptProperties = () => ({ setProperty: (key, value) => changedProperties.push([key, value]) });
+    assert.throws(() => vm.runInContext('connectCamp2026Spreadsheet()', sandbox), /134 задачами/);
+    assert.equal(changedProperties.length, 0, 'setup refuses an incomplete workbook');
+    sandbox.SpreadsheetApp.openById = () => ({ getSheetByName: () => ({ getLastRow: () => 135 }) });
+    vm.runInContext('connectCamp2026Spreadsheet()', sandbox);
+    assert.deepEqual(changedProperties, [['MATCENTER_CAMP_2026_SPREADSHEET_ID', '1mUZyK3PHBjYD3_6ouI7PeVrtt7S3e3zVMNC-u6pUAOU']]);
+
     console.log('apps script multi-sheet loading: all tests passed');
 }
 
