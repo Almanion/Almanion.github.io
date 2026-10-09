@@ -237,6 +237,9 @@
         win.addEventListener('almanion-account-ready', () => {
             // A private page may replace its content when the account changes.
             // Never leave a snippet from the previous account in the popup.
+            // Public notes, however, must not lose a lookup when the delayed
+            // initial Auth callback arrives (including a signed-out callback).
+            if (!doc.body.classList.contains('english-page')) return;
             clearTimeout(timer); dismissUntil = Date.now() + 1000; close();
         });
         win.addEventListener('pagehide', close);

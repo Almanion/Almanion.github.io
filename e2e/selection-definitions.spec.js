@@ -84,6 +84,11 @@ for (const width of [320, 390, 1440]) {
         await expect(popup).toContainText('Определение не найдено на сайте');
         expect(requests).toHaveLength(1);
         await page.evaluate(() => window.dispatchEvent(new CustomEvent('almanion-account-ready', { detail: { user: null } })));
+        await expect(popup).toBeVisible();
+        await page.evaluate(() => {
+            document.body.classList.add('english-page');
+            window.dispatchEvent(new CustomEvent('almanion-account-ready', { detail: { user: null } }));
+        });
         await expect(popup).toBeHidden();
         await page.emulateMedia({ media: 'print' });
         await expect(popup).toBeHidden();

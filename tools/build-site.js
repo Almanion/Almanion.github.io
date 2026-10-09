@@ -211,7 +211,8 @@ function build(options) {
         const updated = html.replace(/((?:src|href)=["'](?:(?:note-runtime|settings|bookmarks|script|print-export|experimental-reader|home-dashboard|duty)\.js|constructor\/(?:index|publication)\.(?:js|css)|styles\/(?:admin|copy-blocks|home-dashboard|print)\.css|styles\/site\/(?:reader|index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261006-1$2')
             .replace(/(src=["'](?:note-runtime|print-export)\.js)\?v=20261006-1(["'])/g, '$1?v=20261007-1$2')
             .replace(/((?:src|href)=["'](?:settings\.js|home-dashboard\.js|styles\/home-dashboard\.css))\?v=20261006-1(["'])/g, '$1?v=20261009-1$2')
-            .replace(/((?:src|href)=["'](?:script\.js|duty\.js|home-dashboard\.js|styles\/home-dashboard\.css|styles\/site\/index\.css))\?v=202610(?:06-1|09-1)(["'])/g, '$1?v=20261009-2$2');
+            .replace(/((?:src|href)=["'](?:script\.js|duty\.js|home-dashboard\.js|styles\/home-dashboard\.css|styles\/site\/index\.css))\?v=202610(?:06-1|09-1)(["'])/g, '$1?v=20261009-2$2')
+            .replace(/(src=["']script\.js)\?v=20261009-2(["'])/g, '$1?v=20261009-3$2');
         if (updated !== html) fs.writeFileSync(absolute, updated);
     }
     // Status follows published materials, including sections added later by the
