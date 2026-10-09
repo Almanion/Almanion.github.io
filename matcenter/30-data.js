@@ -116,7 +116,7 @@ function getCachedTasksByEndpoint() {
 function getEndpointLabel(endpointIdx) {
     if (endpointIdx === 0) return 'основная таблица';
     if (endpointIdx === 1) return 'летняя серия 9–10';
-    if (endpointIdx === 2) return 'лагерь 2026';
+    if (endpointIdx === 2) return 'лагерь 9';
     return `источник №${endpointIdx + 1}`;
 }
 
@@ -146,6 +146,7 @@ function normalizeMatcenterGrade(value, endpointIdx = 0) {
         'summer10-11': 'grade-summer-10-11',
         'grade-summer-10-11': 'grade-summer-10-11',
         'лагерь2026': 'grade-camp-2026',
+        'лагерь9': 'grade-camp-2026',
         'camp2026': 'grade-camp-2026',
         'grade-camp-2026': 'grade-camp-2026'
     };

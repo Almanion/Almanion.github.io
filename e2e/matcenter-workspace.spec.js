@@ -23,7 +23,7 @@ async function setup(page, options = {}) {
             const tasks = url.pathname.includes('AKfycbw_') ? summer : [...legacy, ...future];
             return route.fulfill({ json: data.action === 'capabilities' ? { success: true, authVersion: 3 }
                 : data.action === 'accessStatus' ? { success: true, allowed: options.allowed !== false, isAdmin: false }
-                : { success: true, tasks: data.action === 'campTasks' ? camp : tasks, isAdmin: false } });
+                : { success: true, tasks: data.action === 'campTasks' ? (options.campTasks || camp) : tasks, isAdmin: false } });
         }
         if (['127.0.0.1', 'localhost'].includes(url.hostname)) {
             if (/\/(account|firebase-analytics|analytics)\.js$/.test(url.pathname)) return route.fulfill({ contentType: 'application/javascript', body: '' });
@@ -275,13 +275,52 @@ test('direct task links do not bypass access checks', async ({ page }) => {
     await expect(page.locator('.task-card')).toHaveCount(0);
 });
 
+for (const dark of [false, true]) test(`camp menu order and proportional three-digit counter, dark=${dark}`, async ({page}, info) => {
+    const fullCamp = Array.from({length:134}, (_, i) => ({...camp[0], number:i+1,
+        taskId:`camp-2026-t${String(i+1).padStart(3,'0')}`, status:i+1 === 120 ? '' : 'Р'}));
+    const errors = await setup(page, {dark, campTasks:fullCamp});
+    const order = ['grade-9','grade-summer-9-10','grade-camp-2026','grade-10','grade-summer-10-11','grade-11'];
+    for (const width of [1440, 320]) {
+        await page.setViewportSize({width,height:844});
+        await page.goto('/matcenter.html?grade=grade-camp-2026');
+        await ready(page);
+        expect(await page.locator('#gradeSwitcher [data-grade]').evaluateAll(els=>els.map(el=>el.dataset.grade))).toEqual(order);
+        expect(await page.locator('#mcSidebarGrade option').evaluateAll(els=>els.map(el=>el.value))).toEqual(order);
+        const active = page.locator('#gradeSwitcher [data-grade="grade-camp-2026"]');
+        await expect(active.locator('.grade-card-title')).toHaveText('Лагерь 9');
+        const counter = active.locator('.mc-count');
+        await expect(counter).toHaveText('134');
+        const typography = await counter.evaluate(el=>({numeric:getComputedStyle(el).fontVariantNumeric,
+            spacing:getComputedStyle(el).letterSpacing, whitespace:getComputedStyle(el).whiteSpace}));
+        expect(typography.numeric).toContain('proportional-nums');
+        expect(typography.numeric).not.toContain('tabular-nums');
+        expect(typography.spacing).toBe('normal');
+        expect(typography.whitespace).toBe('nowrap');
+        const box = await active.boundingBox();
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x+box.width).toBeLessThanOrEqual(width);
+        expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+        expect(await page.evaluate(()=>allTasks.filter(t=>t.grade==='grade-camp-2026'&&t.status==='Р').length)).toBe(133);
+        await page.screenshot({path:info.outputPath(`camp-menu-${width}.png`)});
+        await page.locator('#searchInput').fill('120');
+        await expect(page.locator('#tasksContainer .task-card')).toHaveCount(1);
+        await expect(page.locator('#tasksContainer .task-number-label')).toHaveText('Задача 120');
+        await expect(page.locator('#tasksContainer .task-status-badge')).toHaveCount(0);
+        await page.locator('#searchInput').fill('121');
+        await expect(page.locator('#tasksContainer .task-number-label')).toHaveText('Задача 121');
+        await expect(page.locator('#tasksContainer .task-status-badge')).toHaveText('Разобрано');
+        await page.locator('#searchInput').fill('');
+    }
+    expect(errors).toEqual([]);
+});
+
 test('camp is a separate archive with original ascending numbers, additions and independent progress', async ({page}) => {
     const errors = await setup(page);
     await page.setViewportSize({width:320,height:844});
     await page.goto('/matcenter.html?grade=grade-camp-2026');
     await ready(page);
     await expect(page.locator('#mcSidebarGrade')).toHaveValue('grade-camp-2026');
-    await expect(page.locator('#allTasksTitle')).toHaveText('Лагерь 2026 — все задачи');
+    await expect(page.locator('#allTasksTitle')).toHaveText('Лагерь 9 — все задачи');
     expect(await page.locator('#tasksContainer .task-number-label').allTextContents()).toEqual(['Задача 1','Задача 134']);
     const active = await page.locator('#gradeSwitcher [data-grade="grade-camp-2026"]').boundingBox();
     expect(active.x).toBeGreaterThanOrEqual(0);

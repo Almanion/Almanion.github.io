@@ -111,10 +111,10 @@ let lastTasksPayloadSignature = '';
 const GRADE_SECTIONS = [
     { id: 'grade-9', title: '9 класс' },
     { id: 'grade-summer-9-10', title: 'Летняя серия 9-10' },
+    { id: 'grade-camp-2026', title: 'Лагерь 9' },
     { id: 'grade-10', title: '10 класс' },
     { id: 'grade-summer-10-11', title: 'Летняя серия 10-11' },
-    { id: 'grade-11', title: '11 класс' },
-    { id: 'grade-camp-2026', title: 'Лагерь 2026' }
+    { id: 'grade-11', title: '11 класс' }
 ];
 
 const TASK_VIEW_IDS = ['all-tasks', 'current-series', 'postponed', 'unsolved'];
