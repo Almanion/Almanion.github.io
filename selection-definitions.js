@@ -31,9 +31,71 @@
         return rows.filter(row => row.words.some((_, start) => start + queryWords.length <= row.words.length && queryWords.every((word, i) => equivalent(word, row.words[start + i])))).map(row => row.entry);
     }
 
+    const INDEX_CACHE_KEY = 'almanion:public-definitions:v1';
+    function validateIndex(data) {
+        if (data?.schemaVersion !== 1 || !Array.isArray(data.entries)) throw new Error('Invalid definition index');
+        return data.entries.filter(entry => typeof entry.term === 'string' && typeof entry.html === 'string'
+            && /^[\w-]+\.html$/.test(entry.page) && !/^(?:english|planner|sport|tour-|duty-)/.test(entry.page)
+            && typeof entry.id === 'string');
+    }
+    function createIndexLoader(win) {
+        let index = null, request = null, refreshed = false, refreshAfter = 0;
+        try {
+            const cached = JSON.parse(win.localStorage.getItem(INDEX_CACHE_KEY) || 'null');
+            if (cached && Date.now() - cached.savedAt < 14 * 86400000) index = validateIndex(cached);
+        } catch (_) { /* Cache/storage may be unavailable; it is never required. */ }
+        async function fetchIndex(url, retry) {
+            // AbortSignal.timeout is missing in some Telegram/older mobile WebViews.
+            const controller = typeof win.AbortController === 'function' ? new win.AbortController() : null;
+            let timer;
+            const timeout = new Promise((_, reject) => {
+                timer = win.setTimeout(() => { controller?.abort(); reject(new Error('Definition index timed out')); }, 10000);
+            });
+            try {
+                return await Promise.race([timeout, (async () => {
+                    const response = await win.fetch(url.href, {
+                        ...(controller ? { signal: controller.signal } : {}), cache: retry ? 'reload' : 'default'
+                    });
+                    if (!response.ok) throw new Error('Definition index unavailable');
+                    const data = await response.json();
+                    const entries = validateIndex(data);
+                    index = entries;
+                    // Only the generated public index is stored, never local/private blocks.
+                    try { win.localStorage.setItem(INDEX_CACHE_KEY, JSON.stringify({ ...data, entries, savedAt: Date.now() })); } catch (_) {}
+                    return entries;
+                })()]);
+            } finally { win.clearTimeout(timer); }
+        }
+        function refresh() {
+            if (request) return request;
+            request = (async () => {
+                const url = new URL('definition-index.json', win.location.href);
+                try { return await fetchIndex(url, false); }
+                catch (_) {
+                    // Bypass an old service-worker/CDN response, not an unbounded retry loop.
+                    url.searchParams.set('publication', 'definitions');
+                    await new Promise(resolve => win.setTimeout(resolve, 250));
+                    return await fetchIndex(url, true);
+                }
+            })().then(entries => { refreshed = true; return entries; }).finally(() => { request = null; refreshAfter = Date.now() + 60000; });
+            return request;
+        }
+        return {
+            peek: () => index,
+            load: function () {
+                if (index) {
+                    if (!refreshed && Date.now() >= refreshAfter) refresh().catch(() => {});
+                    return Promise.resolve(index);
+                }
+                return refresh();
+            }
+        };
+    }
+
     function init(win) {
         const doc = win.document;
-        let popup, timer, index, request, generation = 0, current = '', anchor, dismissUntil = 0;
+        let popup, timer, generation = 0, current = '', anchor, dismissUntil = 0;
+        const indexLoader = createIndexLoader(win);
         let preserveUntil = 0;
         const english = doc.documentElement.lang === 'en';
         const label = (ru, en) => english ? en : ru;
@@ -100,18 +162,6 @@
             popup.style.left = Math.max(leftEdge + 10, Math.min(rect.left, leftEdge + width - size.width - 10)) + 'px';
             popup.style.top = Math.max(topEdge + 10, useAbove ? rect.top - size.height - 8 : Math.min(rect.bottom + 8, bottom - size.height)) + 'px';
         }
-        async function loadIndex() {
-            if (index) return index;
-            if (!request) request = win.fetch('definition-index.json', { signal: AbortSignal.timeout(12000) }).then(response => {
-                if (!response.ok) throw new Error('Definition index unavailable');
-                return response.json();
-            }).then(data => {
-                if (data.schemaVersion !== 1 || !Array.isArray(data.entries)) throw new Error('Invalid definition index');
-                index = data.entries.filter(entry => typeof entry.term === 'string' && typeof entry.html === 'string' && /^[\w-]+\.html$/.test(entry.page) && typeof entry.id === 'string');
-                return index;
-            }).finally(() => { request = null; });
-            return request;
-        }
         function localDefinitions() {
             // Only data already visible to this account. Private vocabulary never
             // enters the generated public index or shared browser storage.
@@ -125,9 +175,9 @@
                 return [{ term, html: copy.innerHTML, page: win.location.pathname.split('/').pop(), subject: doc.querySelector('.page-header h1')?.textContent || doc.title, id: block.id || block.closest('[id]')?.id || '' }];
             });
         }
-        async function showSelection() {
+        async function showSelection(keptSelection) {
             if (Date.now() < dismissUntil) return;
-            const selected = selection();
+            const selected = keptSelection || selection();
             if (!selected) { if (Date.now() >= preserveUntil && !popup?.contains(doc.activeElement)) close(); return; }
             anchor = selected.range;
             if (selected.text === current && popup && !popup.hidden) { position(); return; }
@@ -135,19 +185,33 @@
             const turn = ++generation;
             const body = shell(selected.text);
             body.textContent = label('Ищем определение…', 'Looking up definition…'); position();
+            const local = localDefinitions();
+            const immediate = find((indexLoader.peek() || []).concat(local), selected.text);
+            if (immediate.length) {
+                renderMatches(immediate, body, false, selected);
+                position();
+            }
             let entries, unavailable = false;
-            try { entries = await loadIndex(); }
+            try { entries = await indexLoader.load(); }
             catch (_) { entries = []; unavailable = true; }
             if (turn !== generation || popup.hidden) return;
-            const matches = find(entries.concat(localDefinitions()), selected.text);
+            const matches = find(entries.concat(local), selected.text);
+            renderMatches(matches, body, unavailable, selected);
+            position();
+        }
+        function renderMatches(matches, body, unavailable, selected) {
             const seen = new Set();
             const unique = matches.filter(entry => { const key = normalize(entry.term) + '\0' + entry.html.replace(/\s+/g, ' '); if (seen.has(key)) return false; seen.add(key); return true; });
             body.replaceChildren();
             if (!unique.length) {
-                body.textContent = unavailable ? label('Не удалось проверить весь сайт. Повторить', 'Unable to search the site. Retry') : label('Определение не найдено на сайте', 'No definition found on the site');
+                body.textContent = unavailable ? label('Словарь сайта пока недоступен', 'The site dictionary is temporarily unavailable') : label('Определение не найдено на сайте', 'No definition found on the site');
                 if (unavailable) {
                     const retry = doc.createElement('button'); retry.type = 'button'; retry.textContent = label('Повторить поиск', 'Retry lookup');
-                    retry.onclick = () => { current = ''; showSelection(); }; body.append(retry);
+                    retry.onclick = () => {
+                        const native = win.getSelection();
+                        native.removeAllRanges(); native.addRange(selected.range);
+                        current = ''; showSelection(selected);
+                    }; body.append(retry);
                 }
             }
             function append(entry) {
@@ -163,7 +227,6 @@
                 const more = doc.createElement('button'); more.type = 'button'; more.textContent = label('Ещё ', 'More: ') + (unique.length - 6);
                 more.onclick = () => { more.remove(); unique.slice(6).forEach(append); position(); }; body.append(more);
             }
-            position();
         }
         doc.addEventListener('selectionchange', () => { clearTimeout(timer); timer = setTimeout(showSelection, 240); });
         doc.addEventListener('pointerdown', event => { if (popup && !popup.hidden && !popup.contains(event.target)) close(); });
@@ -180,6 +243,6 @@
         api.showSelection = showSelection;
         showSelection();
     }
-    const api = { normalize, find, init };
+    const api = { normalize, find, validateIndex, createIndexLoader, INDEX_CACHE_KEY, init };
     return api;
 });

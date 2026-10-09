@@ -1263,7 +1263,7 @@ function initSelectionDefinitions() {
         pending = Promise.all([
             resource('link', 'styles/selection-definitions.css?v=20261004-1'),
             window.AlmanionSafeHtml ? Promise.resolve() : resource('script', 'safe-html.js?v=20261004-1')
-        ]).then(() => resource('script', 'selection-definitions.js?v=20261004-2')).catch(() => {
+        ]).then(() => resource('script', 'selection-definitions.js?v=20261009-2')).catch(() => {
             window.AlmanionToast?.show('Не удалось загрузить поиск определений. Выделите слово ещё раз.', { type: 'error' });
         }).finally(() => { pending = null; });
     });

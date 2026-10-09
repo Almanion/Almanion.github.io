@@ -47,7 +47,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
     <link rel="stylesheet" href="styles/home-motion.css?v=20260920-2">
-    <link rel="stylesheet" href="styles/home-dashboard.css?v=20261009-1">
+    <link rel="stylesheet" href="styles/home-dashboard.css?v=20261009-2">
 </head>
 <body class="home-page">
     <script>(function(){document.body.classList.add('home-motion-initial');try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};var l=/^(max|medium|off)$/.test(p.animationLevel||'')?p.animationLevel:'max';document.body.classList.add('animations-'+l);if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){document.body.classList.add('animations-max');}})();</script>
@@ -151,7 +151,7 @@
                         <div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-duty"/></svg></div>
                     </div>
                     <div class="card-body">
-                        <div class="home-quick-copy"><h2>Дежурство</h2><span class="home-quick-context">10‑1</span></div>
+                        <div class="home-quick-copy"><h2>Дежурство</h2><span class="home-quick-context home-duty-summary" data-duty-summary hidden></span></div>
                         <svg class="home-quick-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
                     </div>
                 </a>
@@ -214,7 +214,7 @@
                             </div>
                             <div class="card-body">
                                 <h2>Дежурство</h2>
-                                <div class="card-info"><div style="text-align: center;"><span class="status-badge status-active"><span class="eic eic-check" aria-hidden="true"></span> Расписание класса</span></div></div>
+                                <span class="home-duty-summary" data-duty-summary hidden></span>
                             </div>
                         </a>
 
@@ -426,9 +426,12 @@
             function loadHomeDashboard() {
                 if (document.querySelector('script[data-home-dashboard]')) return;
                 var script = document.createElement('script');
-                script.src = 'home-dashboard.js?v=20261009-1';
+                script.src = 'home-dashboard.js?v=20261009-2';
                 script.dataset.homeDashboard = 'true';
                 document.head.appendChild(script);
+                var stars = document.createElement('script');
+                stars.src = 'home-stars.js?v=20261009-2';
+                document.head.appendChild(stars);
             }
             if ('requestIdleCallback' in window) requestIdleCallback(loadHomeDashboard, { timeout: 900 });
             else setTimeout(loadHomeDashboard, 250);

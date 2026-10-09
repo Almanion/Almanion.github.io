@@ -14,6 +14,49 @@ async function select(page, text) {
     }, text);
 }
 
+test('older WebViews recover from one failed dictionary request', async ({ page }) => {
+    await page.addInitScript(() => { AbortSignal.timeout = undefined; });
+    let attempts = 0;
+    await page.route('**/definition-index.json*', async route => {
+        attempts++;
+        if (attempts === 1) await route.fulfill({ status: 503, body: 'Temporary failure' });
+        else await route.continue();
+    });
+    await page.goto('/physics-10.html');
+    await expect(page.locator('.topic.exp-reader-current')).toBeVisible();
+    await select(page, 'Эллипс');
+    await expect(page.locator('.selection-definition-popover .definition-box').first()).toContainText(/эллипс/i);
+    expect(attempts).toBe(2);
+    expect(await page.evaluate(() => !!localStorage.getItem(AlmanionDefinitions.INDEX_CACHE_KEY))).toBe(true);
+    await page.reload();
+    await page.route('**/definition-index.json*', route => route.abort());
+    await select(page, 'Эллипс');
+    await expect(page.locator('.selection-definition-popover .definition-box').first()).toContainText(/эллипс/i);
+});
+
+test('retry retains the selected word even when clicking the button clears native selection', async ({ page }) => {
+    let offline = true;
+    await page.route('**/definition-index.json*', route => offline ? route.abort() : route.continue());
+    await page.goto('/physics-10.html');
+    await expect(page.locator('.topic.exp-reader-current')).toBeVisible();
+    await select(page, 'Эллипс');
+    const popup = page.locator('.selection-definition-popover');
+    await expect(popup).toContainText('Словарь сайта пока недоступен');
+    await page.evaluate(() => getSelection().removeAllRanges());
+    offline = false;
+    await popup.getByRole('button', { name: 'Повторить поиск' }).click();
+    await expect(popup.locator('.definition-box').first()).toContainText(/эллипс/i);
+    expect(await page.evaluate(() => getSelection().toString())).toBe('Эллипс');
+});
+
+test('local definitions appear immediately while the shared dictionary is slow', async ({ page }) => {
+    await page.route('**/definition-index.json*', () => {});
+    await page.goto('/physics-10.html');
+    await expect(page.locator('.topic.exp-reader-current')).toBeVisible();
+    await select(page, 'Молекулярная физика');
+    await expect(page.locator('.selection-definition-popover .definition-box').first()).toContainText('Молекулярная физика');
+});
+
 for (const width of [320, 390, 1440]) {
     test(`selected word opens a cross-site definition at ${width}px`, async ({ page }, info) => {
         await page.setViewportSize({ width, height: width === 320 ? 568 : 900 });
@@ -89,7 +132,7 @@ test('small-screen filters scroll internally at 125% scale and native selection 
     const context = await browser.newContext({ viewport: { width: 320, height: 568 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
     const page = await context.newPage();
     await page.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());
-    await page.goto('http://127.0.0.1:4173/physics-10.html');
+    await page.goto(test.info().project.use.baseURL + '/physics-10.html');
     await page.waitForFunction(() => window.AlmanionSettings?.ready);
     await page.evaluate(() => AlmanionSettings.update({ noteScale: 125 }));
     await page.locator('.note-filter summary').click();

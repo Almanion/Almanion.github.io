@@ -777,6 +777,7 @@
 
     root.AlmanionDuty = {
         DATA_PATH: DATA_PATH,
+        CACHE_KEY: CACHE_KEY,
         DEFAULT_DUTY_CONFIG: DEFAULT_DUTY_CONFIG,
         DEFAULT_SCHEDULE: DEFAULT_SCHEDULE,
         isIsoDate: isIsoDate,
@@ -800,7 +801,8 @@
         entriesToFirebase: entriesToFirebase
     };
 
-    if (typeof document === 'undefined') return;
+    // The home page reuses the canonical calendar without starting the editor.
+    if (typeof document === 'undefined' || !document.getElementById('dutyFocus')) return;
 
     function byId(id) { return document.getElementById(id); }
     function safeRead(key) { try { return localStorage.getItem(key); } catch (_) { return null; } }

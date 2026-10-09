@@ -32,6 +32,31 @@
 
     let controller = null;
 
+    function surnames(people) {
+        return (people || []).map(function (person) {
+            const parts = String(person || '').trim().split(/\s+/);
+            // Published pairs use “first name + surname”; tolerate full names too.
+            return parts.length > 2 && /(?:ович|евич|овна|евна)$/i.test(parts[parts.length - 1])
+                ? parts[0] : parts[parts.length - 1];
+        }).filter(Boolean).join(', ');
+    }
+
+    function schoolDate(date) {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Europe/Moscow', year: 'numeric', month: '2-digit', day: '2-digit'
+        }).formatToParts(date || new Date());
+        const part = type => parts.find(item => item.type === type).value;
+        return part('year') + '-' + part('month') + '-' + part('day');
+    }
+
+    function weekDuty(duty, entries, date) {
+        const current = duty.scheduleState(entries, date).current;
+        if (current) return current;
+        // On Sunday the caption still belongs to the week that is ending.
+        return new Date(date + 'T12:00:00Z').getUTCDay() === 0
+            ? duty.scheduleState(entries, duty.addDays(date, -1)).current : null;
+    }
+
     function normalizeSelection(value, allowedIds) {
         if (!Array.isArray(value)) return [];
         const allowed = new Set(allowedIds || CATALOG.map(function (item) { return item.id; }));
@@ -76,6 +101,69 @@
         let accessGeneration = 0;
         let editorPromise = null;
         let renderedSelection = '';
+        let dutySchedule = null;
+        let dutyRef = null;
+        let dutyHandler = null;
+        let dutyDate = '';
+
+        function renderDuty() {
+            const duty = win.AlmanionDuty;
+            if (!duty || !dutySchedule) return;
+            dutyDate = schoolDate(new Date());
+            const entry = weekDuty(duty, dutySchedule.entries, dutyDate);
+            const text = entry ? surnames(entry.people) : 'Нет дежурства';
+            doc.querySelectorAll('[data-duty-summary]').forEach(function (element) {
+                element.textContent = text;
+                element.hidden = false;
+                element.title = entry ? entry.people.join(', ') : '';
+            });
+        }
+
+        function watchDuty() {
+            const duty = win.AlmanionDuty;
+            const database = win.AlmanionAccount?.database;
+            if (!duty || !database || dutyRef) return;
+            dutyRef = database.ref(duty.DATA_PATH);
+            dutyHandler = function (snapshot) {
+                const raw = snapshot.val() || duty.DEFAULT_SCHEDULE;
+                const next = duty.normalizeSchedule(raw);
+                if (!next.entries.length) return;
+                dutySchedule = next;
+                try { win.localStorage.setItem(duty.CACHE_KEY, JSON.stringify(raw)); } catch (_) {}
+                renderDuty();
+            };
+            dutyRef.on('value', dutyHandler, function () { renderDuty(); });
+        }
+
+        function initDuty() {
+            const ready = function () {
+                const duty = win.AlmanionDuty;
+                if (!duty) return;
+                let cached;
+                try { cached = JSON.parse(win.localStorage.getItem(duty.CACHE_KEY) || 'null'); } catch (_) {}
+                const normalized = duty.normalizeSchedule(cached);
+                dutySchedule = normalized.entries.length ? normalized : duty.normalizeSchedule(duty.DEFAULT_SCHEDULE);
+                renderDuty();
+                watchDuty();
+            };
+            if (win.AlmanionDuty) ready();
+            else {
+                const script = doc.createElement('script');
+                script.src = 'duty.js?v=20261009-2';
+                script.onload = ready;
+                doc.head.appendChild(script);
+            }
+            win.addEventListener('almanion-account-ready', watchDuty);
+            doc.addEventListener('visibilitychange', function () { if (!doc.hidden) renderDuty(); });
+            win.setInterval(function () {
+                if (!doc.hidden && dutyDate !== schoolDate(new Date())) renderDuty();
+            }, 60000);
+            win.addEventListener('pagehide', function () {
+                if (dutyRef) dutyRef.off('value', dutyHandler);
+                dutyRef = null;
+            });
+            win.addEventListener('pageshow', function (event) { if (event.persisted) { renderDuty(); watchDuty(); } });
+        }
 
         function settingsApi() {
             return win.AlmanionSettings && win.AlmanionSettings.ready ? win.AlmanionSettings : null;
@@ -99,7 +187,9 @@
             card.className = 'subject-card home-quick-card';
             card.dataset.subject = item.subject;
             card.dataset.quickId = item.id;
-            const context = item.context ? '<span class="home-quick-context">' + item.context + '</span>' : '';
+            const context = item.id === 'duty-10-1'
+                ? '<span class="home-quick-context home-duty-summary" data-duty-summary hidden></span>'
+                : item.context ? '<span class="home-quick-context">' + item.context + '</span>' : '';
             card.innerHTML = '<div class="card-header"><div class="subject-icon">' +
                 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#' + item.icon + '"/></svg>' +
                 '</div></div><div class="card-body"><div class="home-quick-copy"><h2>' + item.title +
@@ -119,6 +209,7 @@
                 renderedSelection = selectionKey;
             }
             grid.dataset.count = String(grid.childElementCount);
+            renderDuty();
             const englishCard = doc.getElementById('homeAdditionalEnglish');
             if (englishCard) {
                 englishCard.hidden = !englishAllowed;
@@ -197,12 +288,16 @@
         };
         const accountApi = win.AlmanionAccount;
         setAccount(accountApi && accountApi.getUser ? accountApi.getUser() : null);
+        initDuty();
     }
 
     return {
         init: init,
         catalog: CATALOG.slice(),
         maxItems: MAX_ITEMS,
+        surnames: surnames,
+        schoolDate: schoolDate,
+        weekDuty: weekDuty,
         normalizeSelection: normalizeSelection,
         selectionFromSettings: selectionFromSettings,
         getState: function () { return controller && controller.getState(); },
