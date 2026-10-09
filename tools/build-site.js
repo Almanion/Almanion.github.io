@@ -214,6 +214,7 @@ function build(options) {
             .replace(/((?:src|href)=["'](?:settings\.js|home-dashboard\.js|styles\/home-dashboard\.css))\?v=20261006-1(["'])/g, '$1?v=20261009-1$2')
             .replace(/((?:src|href)=["'](?:script\.js|duty\.js|home-dashboard\.js|styles\/home-dashboard\.css|styles\/site\/index\.css))\?v=202610(?:06-1|09-1)(["'])/g, '$1?v=20261009-2$2')
             .replace(/(src=["']script\.js)\?v=20261009-2(["'])/g, '$1?v=20261009-4$2')
+            .replace(/(src=["'](?:note-runtime|matcenter\/runtime)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261009-4$2')
             .replace(/(src=["']firebase-analytics\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261009-4$2');
         if (updated !== html) fs.writeFileSync(absolute, updated);
     }

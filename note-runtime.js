@@ -23,7 +23,7 @@
         firebaseAuth: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js',
         firebaseConfig: 'firebase-config.js?v=20260903-3',
         dataSync: 'data-sync.js?v=20260908-1',
-        analytics: 'firebase-analytics.js?v=20261002-2',
+        analytics: 'firebase-analytics.js?v=20261009-4',
         account: 'account.js?v=20260911-1',
         bookmarks: 'bookmarks.js?v=20261002-2',
         editor: 'note-editor.js?v=20261002-1'

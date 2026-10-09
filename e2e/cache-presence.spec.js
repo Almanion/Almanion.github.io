@@ -43,11 +43,13 @@ test('new homepage styles bypass an installed legacy worker and work offline', a
         expect(await page.evaluate(async () => (await fetch('/styles/home-dashboard.css?v=brand-new')).text())).toContain('display:block!important');
         await page.goto(origin + '/');
         await expect(page.locator('.home-content-grid')).toHaveCSS('display', 'grid');
+        await page.waitForTimeout(900);
         const stylesheet = await page.locator('link[rel="stylesheet"]').evaluateAll(links => links.map(link => link.href).find(href => /home-dashboard\.[a-f\d]{16}\.css/.test(href)));
         expect(stylesheet).toBeTruthy();
         await page.screenshot({ path: info.outputPath('legacy-cache-desktop.png'), fullPage: true });
         await page.setViewportSize({ width: 390, height: 844 });
         await expect(page.locator('.home-content-grid')).toHaveCSS('display', 'flex');
+        await page.waitForTimeout(500);
         await page.screenshot({ path: info.outputPath('legacy-cache-mobile.png'), fullPage: true });
         expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
         legacy = false;

@@ -34,5 +34,9 @@ assert.match(admin, /Аккаунты сегодня/);
 assert.match(admin, /Анонимные профили сегодня/);
 assert.match(admin, /а не гарантированно отдельный человек/);
 assert.match(adminApp, /это не число уникальных людей/);
+for (const file of ['note-runtime.js', 'matcenter/runtime.js']) {
+    assert.match(fs.readFileSync(path.join(root, file), 'utf8'), /firebase-analytics\.js\?v=20261009-4/,
+        'lazy analytics loaders must invalidate their old heartbeat implementation');
+}
 
 console.log('authenticated analytics identity: all tests passed');

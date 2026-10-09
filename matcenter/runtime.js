@@ -4,7 +4,7 @@
     const sources = Object.freeze({
         hints: 'matcenter/70-hints.js?v=20260911-2',
         settings: 'settings.js?v=20261002-1',
-        analytics: 'firebase-analytics.js?v=20260911-1',
+        analytics: 'firebase-analytics.js?v=20261009-4',
         newyear: 'newyear.js?v=20261002-1'
     });
     const pending = new Map();
