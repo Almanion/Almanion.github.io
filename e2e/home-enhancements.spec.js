@@ -60,14 +60,15 @@ test('settings hover rotates only the gear and honors reduced motion', async ({ 
     await expect(button.locator('svg')).toHaveCSS('transform', 'none');
 });
 
-test('sparse canvas is non-blocking, pointer-responsive and stops with animations off', async ({ page }, info) => {
+test('visible star canvas is bounded, non-blocking, pointer-responsive and stops with animations off', async ({ page }, info) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
     await page.waitForFunction(() => window.AlmanionSettings?.ready);
     const canvas = page.locator('.home-starfield');
     await expect(canvas).toHaveAttribute('aria-hidden', 'true');
     await expect(canvas).toHaveCSS('pointer-events', 'none');
-    expect(Number(await canvas.getAttribute('data-count'))).toBeLessThanOrEqual(64);
+    expect(Number(await canvas.getAttribute('data-count'))).toBeGreaterThanOrEqual(140);
+    expect(Number(await canvas.getAttribute('data-count'))).toBeLessThanOrEqual(180);
     await page.evaluate(() => {
         const field = document.querySelector('.home-starfield');
         window.__starFrame = field.getContext('2d').getImageData(0, 0, field.width, field.height).data.slice();
@@ -86,6 +87,26 @@ test('sparse canvas is non-blocking, pointer-responsive and stops with animation
     await page.waitForTimeout(200);
     expect(await canvas.evaluate(field => field.toDataURL())).toBe(image);
     await page.screenshot({ path: info.outputPath('stars-static.png'), fullPage: true });
+});
+
+for (const width of [390, 1440]) test(`stars are visible in both themes at ${width}px`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+    await page.waitForFunction(() => window.AlmanionSettings?.ready && window.AlmanionHomeStars);
+    const canvas = page.locator('.home-starfield');
+    for (const expTheme of ['light', 'dark']) {
+        await page.evaluate(expTheme => window.AlmanionSettings.update({ experimental: true, expMode: 'prism', expTheme, animationLevel: 'off' }), expTheme);
+        await page.waitForTimeout(800);
+        await expect(canvas).toHaveCSS('opacity', '0.82');
+        const pixels = await canvas.evaluate(field => {
+            const data = field.getContext('2d').getImageData(0, 0, field.width, field.height).data;
+            let visible = 0;
+            for (let i = 3; i < data.length; i += 4) if (data[i] > 75) visible++;
+            return visible;
+        });
+        expect(pixels).toBeGreaterThan(width < 500 ? 100 : 500);
+        await page.screenshot({ path: info.outputPath(`stars-${expTheme}.png`), fullPage: true });
+    }
 });
 
 test.describe('real mobile touch', () => {

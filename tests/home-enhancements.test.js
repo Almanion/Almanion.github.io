@@ -16,9 +16,12 @@ assert.equal(Home.weekDuty(duty, entries, '2026-11-01'), null, 'a holiday gap mu
 assert.equal(Home.weekDuty(duty, entries, '2027-06-01'), null, 'finished schedules must not retain the last team');
 for (const [w, h] of [[320,568], [390,844], [1440,900], [4000,2200]]) {
     const stars = Stars.createStars(w, h, () => .5);
-    assert.ok(stars.length >= 12 && stars.length <= 64);
+    assert.ok(stars.length >= 24 && stars.length <= 180);
     assert.ok(stars.every(star => star.u > 0 && star.u < 1 && star.v > 0 && star.v < 1));
+    assert.ok(stars.every(star => star.radius >= .95 && star.alpha >= .42), 'stars remain readable without pointer interaction');
 }
+assert.ok(Stars.createStars(390, 844).length >= 36, 'phones get enough stars in the gaps between cards');
+assert.ok(Stars.createStars(1440, 900).length >= 140, 'desktop density is about three times the previous field');
 assert.equal(Stars.influence(300, 300, { active: true, x: 0, y: 0 }, 150).glow, 0);
 assert.ok(Stars.influence(15, 0, { active: true, x: 0, y: 0 }, 150).x > 0, 'stars gently move away from the pointer');
 assert.deepEqual(Stars.influence(15, 0, { active: false }, 150), { x: 0, y: 0, glow: 0 });

@@ -10,7 +10,7 @@
     'use strict';
     let readState = () => null;
     function createStars(width, height, random) {
-        const count = Math.max(12, Math.min(64, Math.round(width * height / 25000)));
+        const count = Math.max(24, Math.min(180, Math.round(width * height / 9000)));
         const rand = random || Math.random;
         // Stratification avoids dense random clusters. Coordinates survive resizing.
         const columns = Math.ceil(Math.sqrt(count * width / Math.max(1, height)));
@@ -18,10 +18,10 @@
         return Array.from({ length: count }, (_, i) => ({
             u: (i % columns + .15 + rand() * .7) / columns,
             v: (Math.floor(i / columns) + .15 + rand() * .7) / rows,
-            radius: .6 + rand() * .75,
-            alpha: .22 + rand() * .24,
+            radius: .95 + rand() * .9,
+            alpha: .42 + rand() * .26,
             phase: rand() * Math.PI * 2,
-            sparkle: i % 9 === 0,
+            sparkle: i % 8 === 0,
             dx: 0, dy: 0
         }));
     }
@@ -68,7 +68,7 @@
                 if (star.sparkle) {
                     const size = star.radius * 2.6 + target.glow;
                     ctx.globalAlpha = alpha * .65;
-                    ctx.lineWidth = .65;
+                    ctx.lineWidth = .85;
                     ctx.beginPath();
                     ctx.moveTo(px - size, py); ctx.lineTo(px + size, py);
                     ctx.moveTo(px, py - size); ctx.lineTo(px, py + size);

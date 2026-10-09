@@ -80,8 +80,8 @@ body.home-page .home-starfield {
     width: 100%;
     height: 100%;
     pointer-events: none;
-    color: var(--text-secondary);
-    opacity: .6;
+    color: var(--accent-color);
+    opacity: .82;
 }
 body.home-page .home-duty-summary {
     display: block;
