@@ -63,6 +63,7 @@ function renderLatexInElement(element, attempts = 0) {
             throwOnError: false,
             trust: false
         });
+        if (typeof renderUndelimitedMatcenterMath === 'function') renderUndelimitedMatcenterMath(element);
         if (element.dataset) {
             element.dataset.latexRendered = 'true';
             delete element.dataset.latexPending;
@@ -221,6 +222,19 @@ async function detectMatcenterAuthMode() {
     const responses = checks.filter(item => item.status === 'fulfilled').map(item => item.value);
     if (responses.length && responses.some(data => Number(data.authVersion) < 3)) {
         console.warn('Один из Apps Script endpoint ещё не обновлён до безопасной авторизации v3.');
+        let warning = document.getElementById('matcenterAuthVersionWarning');
+        const strip = document.getElementById('gradeSwitcher');
+        if (!warning && strip?.parentNode) {
+            warning = document.createElement('div');
+            warning.id = 'matcenterAuthVersionWarning';
+            warning.className = 'matcenter-data-warning';
+            warning.setAttribute('role', 'status');
+            warning.setAttribute('aria-live', 'polite');
+            strip.parentNode.insertBefore(warning, strip);
+        }
+        if (warning) warning.textContent = 'Один из серверов Матцентра использует устаревшую авторизацию. Владельцу нужно обновить существующую публикацию Apps Script до v3. Вход остаётся только по аккаунту.';
+    } else if (checks.every(item => item.status === 'fulfilled')) {
+        document.getElementById('matcenterAuthVersionWarning')?.remove();
     }
     safeSet('matcenter_auth_mode', 'account');
     return 'account';

@@ -48,6 +48,26 @@ function getSummerSectionById(grade, id) {
     return getSummerSectionsFor(grade).find(s => s.id === id) || null;
 }
 
+let matcenterGradeVisibilityFrame = null;
+function ensureMatcenterGradeVisible() {
+    const activeCard = document.querySelector(`#gradeSwitcher [data-grade="${currentGrade}"]`);
+    const gradeStrip = document.getElementById('gradeSwitcher');
+    if (!activeCard || !gradeStrip || !gradeStrip.clientWidth || gradeStrip.scrollWidth <= gradeStrip.clientWidth) return;
+    const cardBounds = activeCard.getBoundingClientRect();
+    const stripBounds = gradeStrip.getBoundingClientRect();
+    if (cardBounds.left < stripBounds.left || cardBounds.right > stripBounds.right) {
+        gradeStrip.scrollLeft += cardBounds.left - stripBounds.left
+            - (gradeStrip.clientWidth - cardBounds.width) / 2;
+    }
+}
+function scheduleMatcenterGradeVisibility() {
+    if (matcenterGradeVisibilityFrame !== null) return;
+    matcenterGradeVisibilityFrame = requestAnimationFrame(() => {
+        matcenterGradeVisibilityFrame = null;
+        ensureMatcenterGradeVisible();
+    });
+}
+
 function syncGradeNavUI() {
     document.querySelectorAll('.grade-link, .grade-card').forEach(el => {
         const isActive = el.dataset.grade === currentGrade;
@@ -67,16 +87,8 @@ function syncGradeNavUI() {
     if (gradeSelect) gradeSelect.value = currentGrade;
 
     // Keep the selected archive visible in the horizontally scrolling mobile strip.
-    const activeCard = document.querySelector(`#gradeSwitcher [data-grade="${currentGrade}"]`);
-    const gradeStrip = document.getElementById('gradeSwitcher');
-    if (activeCard && gradeStrip && gradeStrip.scrollWidth > gradeStrip.clientWidth) {
-        const cardBounds = activeCard.getBoundingClientRect();
-        const stripBounds = gradeStrip.getBoundingClientRect();
-        if (cardBounds.left < stripBounds.left || cardBounds.right > stripBounds.right) {
-            gradeStrip.scrollLeft += cardBounds.left - stripBounds.left
-                - (gradeStrip.clientWidth - cardBounds.width) / 2;
-        }
-    }
+    ensureMatcenterGradeVisible();
+    scheduleMatcenterGradeVisibility();
 
     // Помечаем body — у летних серий другие UI-правила (нет статусов, темы вместо фильтров)
     document.body.classList.toggle('is-summer-grade', isSummerGrade(currentGrade));
@@ -159,6 +171,7 @@ function updateGradeCounts() {
             card.setAttribute('aria-label', `${sectionType} ${sectionTitle}, ${count} ${taskWord}`);
         }
     });
+    scheduleMatcenterGradeVisibility();
 }
 
 // Синхронизация active-классов на nav-link и стат-картах
@@ -249,6 +262,14 @@ function initGradeNavigation() {
 
     rebuildNavMenu(currentGrade);
     syncGradeNavUI();
+    const gradeStrip = document.getElementById('gradeSwitcher');
+    if (gradeStrip && typeof ResizeObserver === 'function') {
+        const observer = new ResizeObserver(scheduleMatcenterGradeVisibility);
+        observer.observe(gradeStrip);
+        gradeStrip.querySelectorAll('.grade-card').forEach(card => observer.observe(card));
+    }
+    window.addEventListener('resize', scheduleMatcenterGradeVisibility, { passive: true });
+    document.fonts?.ready.then(scheduleMatcenterGradeVisibility);
 
     document.querySelectorAll('.grade-link, .grade-card').forEach(link => {
         link.addEventListener('click', (e) => {

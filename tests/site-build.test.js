@@ -9,6 +9,17 @@ const ValidateSite = require('../tools/validate-site.js');
 const ServiceWorker = require('../performance/build-service-worker.js');
 
 const config = BuildSite.readConfig();
+const windowsText = Buffer.from('Текст\r\nnext\r\n', 'utf8');
+assert.deepStrictEqual(BuildSite.normalizePublicText('matcenter/00-core.js', windowsText), Buffer.from('Текст\nnext\n'));
+assert.strictEqual(BuildSite.normalizePublicText('images/example.png', windowsText), windowsText, 'binary artifacts stay byte-exact');
+assert.strictEqual(BuildSite.normalizePublicText('games/orbital-courier/index.html', windowsText), windowsText, 'the supplied game stays byte-exact');
+assert.deepStrictEqual(BuildSite.normalizePublicText('legacy.txt', Buffer.from([0xff, 13, 10, 0xfe])), Buffer.from([0xff, 10, 0xfe]), 'non-UTF8 bytes survive normalization');
+if (process.env.ALMANION_TEST_SITE) {
+    for (const file of BuildSite.walkFiles(process.env.ALMANION_TEST_SITE)) {
+        const content = fs.readFileSync(path.join(process.env.ALMANION_TEST_SITE, file));
+        assert.deepStrictEqual(BuildSite.normalizePublicText(file, content), content, `${file}: generated output must also use canonical line endings`);
+    }
+}
 
 assert.deepStrictEqual(['b', 'A', 'a'].sort(BuildSite.compareNames), ['A', 'a', 'b']);
 const activeCard = '<a href="physics-10.html" class="subject-card"><span class="status-badge status-active"><span class="badge-icon">+</span>Активно</span><h3>Физика</h3></a>';

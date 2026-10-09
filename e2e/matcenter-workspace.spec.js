@@ -1,6 +1,8 @@
 'use strict';
 const { test, expect } = require('@playwright/test');
 const model = require('../matcenter/35-workspace-model.js');
+const path = require('node:path');
+const katexDist = path.dirname(require.resolve('katex'));
 test.use({ serviceWorkers: 'block' });
 const legacy = Array.from({ length: 130 }, (_, i) => ({ number: i + 1, grade: 'grade-9',
     description: `Условие задачи ${i + 1}: найдите радиус окружности. $x^2=4$.`, hint: 'Закрытая подсказка', status: 'Н' }));
@@ -18,10 +20,13 @@ async function setup(page, options = {}) {
     page.on('pageerror', e => errors.push(e.message));
     await page.route('**/*', async route => {
         const url = new URL(route.request().url());
+        if (options.realMath && url.hostname === 'cdn.jsdelivr.net' && url.pathname.includes('/katex@')) {
+            return route.fulfill({path:path.join(katexDist,url.pathname.split('/dist/')[1])});
+        }
         if (url.hostname === 'script.google.com') {
             const data = JSON.parse(route.request().postData() || '{}');
-            const tasks = url.pathname.includes('AKfycbw_') ? summer : [...legacy, ...future];
-            return route.fulfill({ json: data.action === 'capabilities' ? { success: true, authVersion: 3 }
+            const tasks = url.pathname.includes('AKfycbw_') ? summer : (options.tasks || [...legacy, ...future]);
+            return route.fulfill({ json: data.action === 'capabilities' ? { success: true, authVersion: options.authVersion || 3 }
                 : data.action === 'accessStatus' ? { success: true, allowed: options.allowed !== false, isAdmin: false }
                 : { success: true, tasks: data.action === 'campTasks' ? (options.campTasks || camp) : tasks, isAdmin: false } });
         }
@@ -31,7 +36,7 @@ async function setup(page, options = {}) {
         }
         return route.abort();
     });
-    await page.addInitScript(({ home, dark, old }) => {
+    await page.addInitScript(({ home, dark, old, realMath }) => {
         if (!sessionStorage.getItem('mc-test-initialized')) {
             localStorage.setItem('almanion:visual-defaults:2026-09-05-v1', '1');
             localStorage.setItem('siteSettings', JSON.stringify({ experimental: !old, theme: dark ? 'dark' : 'light', expTheme: dark ? 'dark' : 'light', expMode: 'prism', expDark: !!dark, animationLevel: 'off' }));
@@ -52,7 +57,7 @@ async function setup(page, options = {}) {
         authFactory.Auth = { Persistence: { LOCAL: 'local', SESSION: 'session', NONE: 'none' } };
         auth.setPersistence = async () => {};
         window.firebase = { apps: [{}], app: () => ({ options: {} }), initializeApp() {}, auth: authFactory, database };
-        window.renderMathInElement = el => { el.dataset.mathChecked = 'true'; };
+        if (!realMath) window.renderMathInElement = el => { el.dataset.mathChecked = 'true'; };
     }, options);
     return errors;
 }
@@ -60,6 +65,67 @@ async function ready(page) {
     await expect(page.locator('#authOverlay')).toBeHidden();
     await expect(page.locator('#tasksContainer .task-card').first()).toBeVisible();
 }
+
+for (const dark of [false,true]) test(`real KaTeX renders legacy indices and delimited formulas without altering source, dark=${dark}`, async ({page},info) => {
+    const raw = 'Рассмотрите a_{n+1}, na_{n+1}, a_n. Обычное a1 остаётся прежним.';
+    const tasks = [{number:854,grade:'grade-9',description:raw,status:'Н'},
+        {number:855,grade:'grade-9',description:'Формула $\\frac{1}{2}+x^2$ и текст <img src=x onerror=alert(1)>.',status:'Н'}];
+    const errors = await setup(page,{dark,realMath:true,tasks});
+    for (const width of [1440,320]) {
+        await page.setViewportSize({width,height:844});
+        await page.goto('/matcenter.html?grade=grade-9&view=reading');
+        await ready(page);
+        const legacyCard = page.locator('#tasksContainer .task-card').filter({has:page.getByText('Задача 854',{exact:true})});
+        const explicitCard = page.locator('#tasksContainer .task-card').filter({has:page.getByText('Задача 855',{exact:true})});
+        await expect(legacyCard.locator('.katex')).toHaveCount(3);
+        await expect(explicitCard.locator('.katex')).toHaveCount(1);
+        await expect(page.locator('.katex-error')).toHaveCount(0);
+        await expect(legacyCard.locator('.task-description-inner')).toContainText('Обычное a1 остаётся прежним.');
+        await expect(explicitCard.locator('img')).toHaveCount(0);
+        expect(await legacyCard.locator('annotation[encoding="application/x-tex"]').allTextContents()).toEqual(['a_{n+1}','na_{n+1}','a_n']);
+        expect(await page.evaluate(()=>allTasks.find(t=>t.number===854).description)).toBe(raw);
+        expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('matcenter_tasks_cache')).tasks.find(t=>t.number===854).description)).toBe(raw);
+        expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+        await page.screenshot({path:info.outputPath(`real-math-${width}.png`)});
+        if (width <= 768) await page.locator('#mcFilterToggle').click();
+        await page.locator('[data-mc-view="compact"]').click();
+        await legacyCard.locator('.task-condition-toggle').click();
+        await expect(legacyCard.locator('.katex')).toHaveCount(3);
+    }
+    expect(errors).toEqual([]);
+});
+
+for (const dark of [false,true]) test(`extreme archive tabs remain visible after direct links, reload and layout changes, dark=${dark}`, async ({page},info) => {
+    const errors = await setup(page,{dark});
+    await page.setViewportSize({width:320,height:844});
+    async function visibleSelected(grade) {
+        await expect(page.locator('#gradeSwitcher [data-grade="'+grade+'"]').locator('.mc-count')).not.toHaveText('—');
+        await expect.poll(async()=>page.locator('#gradeSwitcher [data-grade="'+grade+'"]').evaluate(el=>{
+            const card=el.getBoundingClientRect(), strip=el.parentElement.getBoundingClientRect();
+            return card.left>=strip.left-1 && card.right<=strip.right+1 && card.left>=0 && card.right<=innerWidth;
+        })).toBe(true);
+    }
+    for (const grade of ['grade-11','grade-9']) {
+        await page.goto('/matcenter.html?grade='+grade);
+        await expect(page.locator('#authOverlay')).toBeHidden();
+        await visibleSelected(grade);
+        await page.reload();
+        await visibleSelected(grade);
+        await page.addStyleTag({content:'#gradeSwitcher .grade-card-title{font-size:1.15rem !important}'});
+        await visibleSelected(grade);
+        await page.screenshot({path:info.outputPath(`edge-tab-${grade}.png`)});
+    }
+    expect(errors).toEqual([]);
+});
+
+test('outdated authentication is reported visibly, without falling back to password-only access', async ({page}) => {
+    await setup(page,{authVersion:2});
+    await page.goto('/matcenter.html?grade=grade-9');
+    await ready(page);
+    await expect(page.locator('#matcenterAuthVersionWarning')).toContainText('до v3');
+    await expect(page.locator('#matcenterAuthVersionWarning')).toHaveAttribute('role','status');
+    expect(await page.evaluate(()=>localStorage.getItem('matcenter_auth_mode'))).toBe('account');
+});
 
 test('loading is not mistaken for an empty archive or zero progress', async ({ page }) => {
     await setup(page);
@@ -109,7 +175,7 @@ test('transient table failures retry only failed source, preserve cache and clea
     expect(await page.locator('#tasksContainer .task-number-label').allTextContents()).toEqual(before);
     expect(mainCalls).toBe(4);
     outage = false;
-    await page.evaluate(() => loadTasksFromGoogleSheets(false, true));
+    await page.locator('#matcenterDataWarning').getByRole('button',{name:'Попробовать снова'}).click();
     await expect(page.locator('.matcenter-data-warning')).toHaveCount(0);
     expect(mainCalls).toBe(5);
 });
@@ -284,7 +350,7 @@ for (const dark of [false, true]) test(`camp menu order and proportional three-d
         await page.setViewportSize({width,height:844});
         await page.goto('/matcenter.html?grade=grade-camp-2026');
         await ready(page);
-        await expect(page.locator('link[href*="styles/matcenter-refresh.css"]')).toHaveAttribute('href', 'styles/matcenter-refresh.css?v=20261009-camp2');
+        await expect(page.locator('link[href*="styles/matcenter-refresh.css"]')).toHaveAttribute('href', 'styles/matcenter-refresh.css?v=20261009-repairs1');
         expect(await page.locator('#gradeSwitcher [data-grade]').evaluateAll(els=>els.map(el=>el.dataset.grade))).toEqual(order);
         expect(await page.locator('#mcSidebarGrade option').evaluateAll(els=>els.map(el=>el.value))).toEqual(order);
         const active = page.locator('#gradeSwitcher [data-grade="grade-camp-2026"]');

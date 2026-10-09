@@ -71,6 +71,9 @@ body.matcenter-page #gradeSwitcher .grade-card.active {
 body.matcenter-page #gradeSwitcher .grade-card:hover { transform: none; background: color-mix(in srgb, var(--mc-accent) 8%, var(--mc-surface)); }
 body.matcenter-page #gradeSwitcher .grade-card-title { font-size: .88rem; white-space: nowrap; }
 .mc-count { font-size: .72rem; opacity: .75; font-variant-numeric: lining-nums proportional-nums; letter-spacing: normal; white-space: nowrap; }
+body.matcenter-page .matcenter-data-warning { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; }
+body.matcenter-page .matcenter-data-warning > span { flex: 1 1 260px; min-width: 0; }
+body.matcenter-page .matcenter-data-warning .retry-button { min-height: 44px; flex: 0 0 auto; }
 body.matcenter-page .mc-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin-bottom: .65rem; }
 body.matcenter-page .mc-search {
     display: flex; align-items: center; position: relative; flex: 1 1 230px;

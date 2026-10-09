@@ -88,9 +88,24 @@ function copyPublicFiles(root, output, config) {
         if (!stat.isFile()) throw new Error(`Public input must be a regular file: ${relative}`);
         const target = path.join(output, relative);
         fs.mkdirSync(path.dirname(target), { recursive: true });
-        fs.copyFileSync(source, target);
+        fs.writeFileSync(target, normalizePublicText(relative, fs.readFileSync(source)));
     }
     return files;
+}
+
+function normalizePublicText(relative, content) {
+    // Canonical LF output makes Windows/GitHub artifacts identical. Keep binary
+    // files and the supplied standalone game byte-for-byte; its checkout already
+    // has explicit eol=lf attributes. Work bytewise so legacy text encodings survive.
+    if (relative.startsWith('games/orbital-courier/') || !/\.(?:html|css|js|json|svg|txt|xml|webmanifest|md|csv|tsv)$/i.test(relative)) return content;
+    if (!content.includes(Buffer.from('\r\n'))) return content;
+    const normalized = Buffer.allocUnsafe(content.length);
+    let offset = 0;
+    for (let i = 0; i < content.length; i++) {
+        if (content[i] === 13 && content[i + 1] === 10) continue;
+        normalized[offset++] = content[i];
+    }
+    return normalized.subarray(0, offset);
 }
 
 function gitValue(root, args, fallback = 'unknown') {
@@ -180,6 +195,14 @@ function build(options) {
     resetOutput(root, output);
     const copied = copyPublicFiles(root, output, config);
     const notes = NotesBuilder.build({ root, output });
+    // Note generation can read source HTML again, reintroducing checkout line
+    // endings. Normalize those generated pages before any manifest/hash reads.
+    for (const file of walkFiles(output)) {
+        const absolute = path.join(output, file);
+        const content = fs.readFileSync(absolute);
+        const normalized = normalizePublicText(file, content);
+        if (normalized !== content) fs.writeFileSync(absolute, normalized);
+    }
     // Invalidate only the changed reading utilities. Existing service workers
     // may still hold earlier query-versioned copies during a deployment.
     for (const file of walkFiles(output).filter(file => file.endsWith('.html'))) {
@@ -225,6 +248,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+    normalizePublicText,
     normalizeRelative,
     compareNames,
     parseArgs,

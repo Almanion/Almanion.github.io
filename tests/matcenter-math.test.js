@@ -1,0 +1,12 @@
+'use strict';
+const assert = require('node:assert/strict');
+const { findUndelimitedMatcenterMath } = require('../matcenter/05-math.js');
+const formulas = text => findUndelimitedMatcenterMath(text).map(item => item.tex);
+assert.deepEqual(formulas('a1a2a3...a_{n+1} ≥ (S - na1)...(S - na_{n+1}), S = a_n + a_{n+1}'), ['a_{n+1}', 'na_{n+1}', 'a_n', 'a_{n+1}']);
+assert.deepEqual(formulas('Условие $a_{n+1}$ и \\(x^2\\) и `a_n` остаётся прежним.'), []);
+assert.deepEqual(formulas('file_name, a_nonsense, email_address, a1, C++'), []);
+assert.deepEqual(formulas('https://example.org/a_n'), []);
+assert.deepEqual(formulas('\\frac{a_{n+1}}{b^2} и \\sqrt{n} и \\alpha_n'), ['\\frac{a_{n+1}}{b^2}', '\\sqrt{n}', '\\alpha_n']);
+assert.deepEqual(formulas('a_{broken и \\frac{x}'), []);
+assert.deepEqual(formulas('Условие x^2 и a_{n+1}'), ['x^2', 'a_{n+1}']);
+console.log('Conservative undelimited Matcenter TeX parsing: all tests passed');

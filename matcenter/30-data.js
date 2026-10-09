@@ -78,7 +78,27 @@ function showMatcenterDataWarning(message) {
             loadingMessage.parentNode.insertBefore(warning, loadingMessage);
         }
     }
-    warning.textContent = message;
+    const text = document.createElement('span');
+    text.textContent = message;
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'retry-button';
+    retry.textContent = 'Попробовать снова';
+    retry.addEventListener('click', async () => {
+        retry.disabled = true;
+        retry.textContent = 'Обновление…';
+        try {
+            await loadTasksFromGoogleSheets(false, true);
+        } catch (_) {
+            showMatcenterDataWarning(message + ' Повторная загрузка пока не удалась.');
+        } finally {
+            if (retry.isConnected) {
+                retry.disabled = false;
+                retry.textContent = 'Попробовать снова';
+            }
+        }
+    });
+    warning.replaceChildren(text, retry);
 }
 
 function readTasksCache() {
