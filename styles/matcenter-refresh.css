@@ -138,26 +138,25 @@ body.matcenter-page #matcenterProgress .matcenter-progress-head { display: flex;
 body.matcenter-page #matcenterProgress .matcenter-progress-title { font-size: .8rem; }
 body.matcenter-page #matcenterProgress .matcenter-progress-badge { display: none; }
 body.matcenter-page #matcenterProgress .matcenter-progress-actions { display: inline-flex; align-items: center; width: auto; gap: .7rem; }
-body.matcenter-page #matcenterProgress .matcenter-progress-value { font-size: .8rem; }
+body.matcenter-page #matcenterProgress .matcenter-progress-value { font-size: .8rem; white-space:nowrap; font-variant-numeric:tabular-nums; }
 body.matcenter-page #matcenterProgress .matcenter-progress-track { width: 100%; height: 3px; margin-top: .6rem; }
-body.matcenter-page #matcenterProgress .matcenter-progress-percent { display: none; }
+body.matcenter-page #matcenterProgress .matcenter-progress-percent { display:inline; margin-left:.4rem; font-size:.68rem; font-weight:400; color:var(--mc-muted); }
 body.matcenter-page .mc-sidebar-tools { display: grid; gap: .5rem; padding: 0 .5rem 1rem; }
 body.matcenter-page .mc-sidebar-tools :is(select,button) { width: 100%; min-width: 0; min-height: 44px; padding: .65rem; border: 1px solid var(--mc-line); border-radius: 9px; background: var(--mc-surface); color: var(--mc-ink); font: inherit; font-size: .9rem; cursor: pointer; }
 body.matcenter-page #mcSidebarSearch { text-align: left; color: var(--mc-muted); }
 body.matcenter-page .mc-sidebar-tools :focus-visible { outline: 2px solid var(--mc-accent); outline-offset: 2px; }
 body.matcenter-page .matcenter-task-view .part-title { font-size: 1.15rem; }
-body.matcenter-page .mc-task-context { display: none; color: var(--mc-muted); font-size: .74rem; margin: .2rem 0 .7rem; overflow-wrap: anywhere; }
-body.matcenter-page.mc-global-search .mc-task-context,
-body.matcenter-page .mc-has-series .mc-task-context { display: block; }
-body.matcenter-page .task-header { gap: .5rem; flex-wrap: wrap; }
-body.matcenter-page .task-number-wrap { flex: 1 1 auto; min-width: 0; }
+body.matcenter-page .task-header { gap:.3rem .5rem; flex-wrap:wrap; margin-bottom:0; }
+body.matcenter-page .task-number-wrap { flex: 1 1 auto; min-width: 0; flex-wrap:wrap; gap:.4rem; }
+body.matcenter-page .task-number { flex:0 1 auto; }
+body.matcenter-page .mc-task-actions { display:inline-flex; align-items:center; flex:0 0 auto; gap:.3rem; margin-left:auto; }
 body.matcenter-page .mc-task-link { flex: 0 0 32px; width: 32px; height: 32px; padding: 6px; border: 1px solid transparent; border-radius: 7px; color: var(--mc-muted); background: transparent; cursor: pointer; }
 body.matcenter-page .mc-task-link:hover { border-color: var(--mc-line); color: var(--mc-accent); }
 body.matcenter-page .mc-task-link svg { display: block; width: 18px !important; height: 18px !important; }
 body.matcenter-page.mc-reading .tasks-container { display: flex !important; flex-direction: column; gap: .85rem; max-width: 920px; margin: 0 auto; }
 body.matcenter-page.mc-reading .task-condition-toggle { display: none; }
 body.matcenter-page.mc-reading .task-card { content-visibility: visible; }
-body.matcenter-page.mc-reading .task-card .task-description { max-height: none !important; opacity: 1; overflow: visible; margin-top: .75rem; padding-top: .75rem; border-top-width: 1px; transition: none; will-change: auto; }
+body.matcenter-page.mc-reading .task-card .task-description { max-height: none !important; opacity: 1; overflow: visible; margin-top: .5rem; padding-top: .5rem; border-top-width: 1px; transition: none; will-change: auto; }
 body.matcenter-page .task-card.open .task-description { max-height: none; }
 body.matcenter-page .task-description-inner { overflow-x: auto; }
 body.matcenter-page .task-card:focus { outline: 2px solid var(--mc-accent); outline-offset: 3px; }
@@ -190,7 +189,8 @@ body.matcenter-page #statsContainer :focus-visible { outline: 2px solid var(--mc
     body.matcenter-page .task-card { min-width: 0; }
 }
 body.matcenter-page #gradeSwitcher .grade-card.active .grade-card-title { color: var(--mc-accent) !important; }
-body.matcenter-page #matcenterProgress .matcenter-share-solved-btn { flex: 0 0 auto; width: auto; height: 34px; min-width: max-content; padding: .3rem .65rem; gap: .4rem; border-radius: 8px; white-space: nowrap; color: var(--mc-muted); background: var(--mc-surface); border: 1px solid var(--mc-line); box-shadow: none; }
+body.matcenter-page #matcenterProgress .matcenter-share-solved-btn { flex:0 0 30px; width:30px; height:30px; min-width:30px; padding:6px; border-radius:50%; color:var(--mc-muted); background:transparent; border:1px solid var(--mc-line); box-shadow:none; }
+body.matcenter-page #matcenterProgress .matcenter-share-solved-btn svg { width:16px; height:16px; }
 body.matcenter-page .mc-filter-toggle { display: none; }
 body.matcenter-page .mc-filter-options { display: contents; }
 @media (max-width: 768px) {
@@ -219,15 +219,25 @@ body.matcenter-page .mc-filter-options { display: contents; }
 @media (max-width:768px) {
     .mc-series-divider { font-size:.85rem; line-height:1.25; padding:.2rem 12px; }
 }
-.mc-task-parts { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; padding:.6rem 0; }
-.mc-task-parts-label,.mc-task-parts-count,.mc-personal-parts-progress { font-size:.85rem; opacity:.8; }
+.mc-task-parts { display:inline-flex; flex-wrap:wrap; align-items:center; gap:5px; margin-left:3px; }
 .mc-task-part {
-    min-width:44px; min-height:44px; padding:.35rem .7rem;
-    border:1px solid var(--border-color, #64748b); border-radius:9px;
-    background:transparent; color:inherit; cursor:pointer; font:inherit;
+    display:inline-grid; place-items:center; flex:0 0 28px;
+    width:28px; height:28px; min-width:28px; min-height:28px; padding:0;
+    border:1px solid var(--mc-line); border-radius:50%;
+    background:transparent; color:var(--mc-muted); cursor:pointer; font:inherit; font-size:.8rem;
 }
+.mc-task-part:hover { color:var(--mc-ink); border-color:var(--mc-accent); }
 .mc-task-part.is-solved { background:#166534; color:#fff; border-color:#15803d; }
 .mc-task-part:focus-visible { outline:2px solid var(--accent-color, #818cf8); outline-offset:3px; }
 .mc-task-part:disabled { cursor:wait; opacity:.6; }
-.mc-personal-parts-progress { display:block; margin-top:.6rem; }
-.mc-personal-parts-progress[hidden] { display:none; }
+/* The same status accent stays visible in compact and reading modes. */
+body.matcenter-page .task-card.solved { --mc-status-accent:var(--t-proof,var(--success-color,#16a34a)); }
+body.matcenter-page .task-card.current-series { --mc-status-accent:var(--t-example,#fb923c); }
+body.matcenter-page .task-card.postponed { --mc-status-accent:#ef4444; }
+body.matcenter-page .task-card.with-hint { --mc-status-accent:var(--t-theorem,#8b5cf6); }
+body.matcenter-page .task-card:is(.solved,.current-series,.postponed,.with-hint),
+body.experimental.matcenter-page .task-card:is(.solved,.current-series,.postponed,.with-hint),
+body.experimental.matcenter-page .task-card.open:is(.solved,.current-series,.postponed,.with-hint) {
+    border-left:3px solid var(--mc-status-accent) !important;
+    background:linear-gradient(90deg,color-mix(in srgb,var(--mc-status-accent) 7%,transparent),transparent 45%),var(--mc-surface) !important;
+}

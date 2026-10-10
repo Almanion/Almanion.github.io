@@ -173,7 +173,7 @@ function renderNextMatcenterBatch(session) {
                 const divider = document.createElement('h2');
                 divider.className = 'mc-series-divider';
                 divider.dataset.seriesKey = seriesKey;
-                divider.textContent = [series.title, series.year].filter(Boolean).join(' · ');
+                divider.textContent = series.title;
                 fragment.appendChild(divider);
             }
             session.lastSeriesKey = seriesKey;
@@ -410,7 +410,7 @@ function createTaskElement(task) {
                 </span>
                 <span class="task-solved-caption" ${personallySolved ? '' : 'hidden'}>решено</span>
             </div>
-            ${statusBadgeHTML}
+            <div class="mc-task-actions">${statusBadgeHTML}</div>
         </div>
         <button class="task-toggle task-condition-toggle" aria-expanded="false" aria-controls="description-${taskDomKey}">
             <span class="toggle-icon">▼</span>

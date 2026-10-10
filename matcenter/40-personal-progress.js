@@ -288,24 +288,32 @@ function isTaskPartPersonallySolved(task, part) {
     return value ? value.solved !== false : isTaskPersonallySolved(getSolvedTaskKey(task));
 }
 
+// Every task has equal weight; explicit points divide only their own task.
+function getPersonalTaskSolvedFraction(task) {
+    const parts = MatcenterWorkspaceModel.parts(task);
+    return parts.length
+        ? parts.filter(part => isTaskPartPersonallySolved(task, part)).length / parts.length
+        : (isTaskPersonallySolved(task) ? 1 : 0);
+}
+
+function formatPersonalSolvedCount(value) {
+    return Number(value).toLocaleString('ru-RU', { maximumFractionDigits: 2 });
+}
+
 function decoratePersonalTaskParts(card, task) {
     const parts = MatcenterWorkspaceModel.parts(task);
     if (!parts.length) return;
     const group = document.createElement('div');
     group.className = 'mc-task-parts';
     group.setAttribute('role', 'group');
-    group.setAttribute('aria-label', 'Решённые пункты задачи ' + task.numberText);
-    const label = document.createElement('span');
-    label.className = 'mc-task-parts-label';
-    label.textContent = 'Пункты:';
-    group.appendChild(label);
+    group.setAttribute('aria-label', 'Решённые пункты задачи ' + (task.numberText || task.number));
     parts.forEach(part => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'mc-task-part';
         button.dataset.part = part;
         button.dataset.partKey = getSolvedTaskPartKey(task, part);
-        button.textContent = part + ')';
+        button.textContent = part;
         button.addEventListener('click', event => {
             event.preventDefault();
             event.stopPropagation();
@@ -313,11 +321,7 @@ function decoratePersonalTaskParts(card, task) {
         });
         group.appendChild(button);
     });
-    const summary = document.createElement('span');
-    summary.className = 'mc-task-parts-count';
-    summary.setAttribute('aria-live', 'polite');
-    group.appendChild(summary);
-    card.querySelector('.task-header').after(group);
+    card.querySelector('.task-number-wrap').appendChild(group);
     updatePersonalTaskParts(card, task);
 }
 
@@ -329,11 +333,10 @@ function updatePersonalTaskParts(card, task) {
         const done = solved.includes(button.dataset.part);
         button.setAttribute('aria-pressed', done ? 'true' : 'false');
         button.setAttribute('aria-label', (done ? 'Убрать отметку решения пункта ' : 'Отметить решённым пункт ')
-            + button.dataset.part + ' задачи ' + task.numberText);
+            + button.dataset.part + ' задачи ' + (task.numberText || task.number));
+        button.title = button.getAttribute('aria-label');
         button.classList.toggle('is-solved', done);
     });
-    const counter = card.querySelector('.mc-task-parts-count');
-    if (counter) counter.textContent = solved.length + ' из ' + parts.length;
     card.classList.toggle('user-partially-solved', solved.length > 0 && solved.length < parts.length);
 }
 
@@ -377,7 +380,7 @@ function updatePersonalSolvedProgress() {
     const selected = typeof getSelectedMatcenterSeries === 'function' ? getSelectedMatcenterSeries() : null;
     const realTasks = (selected ? selected.tasks : getTasksForCurrentGrade()).filter(t => Number.isInteger(t.number));
     const total = realTasks.length;
-    const solved = realTasks.reduce((acc, t) => acc + (isTaskPersonallySolved(t) ? 1 : 0), 0);
+    const solved = realTasks.reduce((acc, t) => acc + getPersonalTaskSolvedFraction(t), 0);
 
     // Полоса нужна только когда пользователь вошёл и в разделе есть задачи.
     if (!personalSolvedUser || total === 0) {
@@ -387,30 +390,16 @@ function updatePersonalSolvedProgress() {
     }
     wrap.hidden = false;
 
-    const percent = total > 0 ? Math.round((solved / total) * 100) : 0;
+    const percent = total > 0 ? (solved / total) * 100 : 0;
     const countEl = document.getElementById('solvedCount');
     const totalEl = document.getElementById('solvedTotal');
     const fillEl = document.getElementById('solvedProgressFill');
     const percentEl = document.getElementById('solvedProgressPercent');
 
-    if (countEl) countEl.textContent = solved;
+    if (countEl) countEl.textContent = formatPersonalSolvedCount(solved);
     if (totalEl) totalEl.textContent = total;
     if (fillEl) fillEl.style.width = `${percent}%`;
-    if (percentEl) percentEl.textContent = `${percent}%`;
-    let partsEl = document.getElementById('personalSolvedPartsCount');
-    const partTotal = realTasks.reduce((sum, task) => sum + MatcenterWorkspaceModel.parts(task).length, 0);
-    if (partTotal && !partsEl) {
-        partsEl = document.createElement('span');
-        partsEl.id = 'personalSolvedPartsCount';
-        partsEl.className = 'mc-personal-parts-progress';
-        wrap.appendChild(partsEl);
-    }
-    if (partsEl) {
-        partsEl.hidden = !partTotal;
-        const done = realTasks.reduce((sum, task) => sum + MatcenterWorkspaceModel.parts(task)
-            .filter(part => isTaskPartPersonallySolved(task, part)).length, 0);
-        partsEl.textContent = 'Пункты: ' + done + ' из ' + partTotal;
-    }
+    if (percentEl) percentEl.textContent = `${formatPersonalSolvedCount(percent)}%`;
 
     updateSolvedTasksShareButton(solved, total);
     wrap.classList.toggle('is-complete', total > 0 && solved === total);
@@ -590,18 +579,18 @@ function updateSolvedTasksShareButton(solved, total) {
     const all = Number(total) || 0;
     btn.classList.toggle('has-solved', count > 0);
     btn.setAttribute('aria-label', count > 0
-        ? `Поделиться решёнными задачами: ${count} из ${all}`
+        ? `Поделиться решёнными задачами: ${formatPersonalSolvedCount(count)} из ${all}`
         : 'Поделиться решёнными задачами');
     btn.title = count > 0
         ? 'Поделиться решёнными задачами'
-        : 'Сначала отметьте хотя бы одну задачу как решённую';
+        : 'Сначала отметьте задачу или её пункт как решённые';
 }
 
 async function shareSolvedTasksProgress(anchorBtn) {
     const payload = buildSolvedTasksSharePayload();
     if (!payload.count) {
         hideSolvedTasksShareMenu();
-        showPersonalSolvedNotice('Сначала отметьте хотя бы одну задачу как решённую');
+        showPersonalSolvedNotice('Сначала отметьте задачу или её пункт как решённые');
         return;
     }
 
@@ -626,13 +615,13 @@ function buildSolvedTasksSharePayload() {
     const realTasks = (selected ? selected.tasks : getTasksForCurrentGrade())
         .filter(task => Number.isInteger(task.number));
     const solvedTasks = realTasks
-        .filter(task => isTaskPersonallySolved(task))
+        .filter(task => getPersonalTaskSolvedFraction(task) > 0)
         .sort(compareTasksForSharing);
 
-    const count = solvedTasks.length;
+    const count = solvedTasks.reduce((sum, task) => sum + getPersonalTaskSolvedFraction(task), 0);
     const total = realTasks.length;
     const numbers = solvedTasks.map(formatSolvedTaskNumberForShare);
-    const text = `${count}: ${numbers.join(', ')}`;
+    const text = `${formatPersonalSolvedCount(count)}: ${numbers.join(', ')}`;
 
     return {
         text,
@@ -649,7 +638,9 @@ function compareTasksForSharing(a, b) {
 }
 
 function formatSolvedTaskNumberForShare(task) {
-    return String(task.number);
+    if (isTaskPersonallySolved(task)) return String(task.number);
+    const solvedParts = MatcenterWorkspaceModel.parts(task).filter(part => isTaskPartPersonallySolved(task, part));
+    return `${task.number}(${solvedParts.join(', ')})`;
 }
 
 function showSolvedTasksShareMenu(anchorBtn, payload) {
@@ -660,7 +651,7 @@ function showSolvedTasksShareMenu(anchorBtn, payload) {
     menu.dataset.shareText = payload.text;
 
     const summary = menu.querySelector('.matcenter-share-summary');
-    if (summary) summary.textContent = `${payload.count} из ${payload.total} решено`;
+    if (summary) summary.textContent = `${formatPersonalSolvedCount(payload.count)} из ${payload.total} решено`;
 
     const rect = anchorBtn.getBoundingClientRect();
     const menuWidth = Math.min(280, window.innerWidth - 24);

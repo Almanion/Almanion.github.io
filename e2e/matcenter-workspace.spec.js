@@ -69,31 +69,40 @@ async function ready(page) {
 
 for (const dark of [false,true]) test(`new-year series and independent part progress persist, dark=${dark}`, async ({page},info) => {
     const yearTasks = [
-        {number:50,taskId:'g10-2026-t050',seriesId:'g10-2026-s05',seriesTitle:'Серия 5',parts:['a','b','c']},
-        {number:53,taskId:'g10-2026-t053',seriesId:'g10-2026-s05',seriesTitle:'Серия 5',parts:'["a","b"]'},
-        {number:110,taskId:'g10-2026-t110',seriesId:'g10-2026-s12',seriesTitle:'Серия 12',parts:['a','b']}
+        {number:50,taskId:'g10-2026-t050',seriesId:'g10-2026-s05',seriesTitle:'Серия 5',parts:['a','b','c'],status:'Р'},
+        {number:53,taskId:'g10-2026-t053',seriesId:'g10-2026-s05',seriesTitle:'Серия 5',parts:'["a","b"]',status:'От'},
+        {number:110,taskId:'g10-2026-t110',seriesId:'g10-2026-s12',seriesTitle:'Серия 12',parts:['a','b'],status:'Н'}
     ].map(task=>({...task,grade:'grade-10',academicYear:'2026/2027',description:'Сохранённый текст: a) $x^2$; b) $y^2$; c) $z^2$.'}));
     const errors = await setup(page,{dark,realMath:true,tasks:[],yearTasks});
     await page.setViewportSize({width:1440,height:1000});
     await page.goto('/matcenter.html?grade=grade-10&view=reading');
     await ready(page);
-    await expect(page.locator('.mc-series-divider')).toHaveText(['Серия 12 · 2026/2027','Серия 5 · 2026/2027']);
+    await expect(page.locator('.mc-series-divider')).toHaveText(['Серия 12','Серия 5']);
+    expect(await page.locator('#mcSeriesSelect option').allTextContents()).toEqual(['Все задачи раздела','Серия 5','Серия 12']);
+    await expect(page.locator('.mc-task-context, .mc-task-parts-label, .mc-task-parts-count, #personalSolvedPartsCount')).toHaveCount(0);
+    await expect(page.locator('#shareSolvedTasksBtn svg circle')).toHaveCount(3);
     const card = page.locator('.task-card').filter({has:page.getByText('Задача 50',{exact:true})});
     const a = card.locator('[data-part="a"]'), b = card.locator('[data-part="b"]'), c = card.locator('[data-part="c"]');
     await a.click();
     await expect(a).toHaveAttribute('aria-pressed','true');
     await expect(b).toHaveAttribute('aria-pressed','false');
-    await expect(card.locator('.mc-task-parts-count')).toHaveText('1 из 3');
-    await expect(page.locator('#solvedCount')).toHaveText('0');
+    await expect(card.locator('.task-number-wrap .mc-task-parts')).toBeVisible();
+    await expect(card.locator('.mc-task-part')).toHaveText(['a','b','c']);
+    await expect(page.locator('#solvedCount')).toHaveText('0,33');
+    await expect(page.locator('#solvedProgressPercent')).toHaveText('11,11%');
+    await expect(page.locator('#solvedProgressPercent')).toBeVisible();
     await page.reload();
     await expect(a).toHaveAttribute('aria-pressed','true');
+    await expect(page.locator('#solvedCount')).toHaveText('0,33');
     await b.click(); await c.click();
     await expect(card.locator('.task-solved-check')).toHaveAttribute('aria-pressed','true');
     await expect(page.locator('#solvedCount')).toHaveText('1');
+    await expect(page.locator('#solvedProgressPercent')).toHaveText('33,33%');
     await b.click();
     await expect(card.locator('.task-solved-check')).toHaveAttribute('aria-pressed','false');
     await expect(a).toHaveAttribute('aria-pressed','true');
     await expect(c).toHaveAttribute('aria-pressed','true');
+    await expect(page.locator('#solvedCount')).toHaveText('0,67');
     await card.locator('.task-solved-check').click();
     await expect(card.locator('.mc-task-part[aria-pressed="true"]')).toHaveCount(3);
     await card.locator('.task-solved-check').click();
@@ -104,16 +113,56 @@ for (const dark of [false,true]) test(`new-year series and independent part prog
     await page.reload();
     await expect(a).toHaveAttribute('aria-pressed','true');
     await expect.poll(()=>page.evaluate(()=>Object.values(JSON.parse(localStorage.getItem('mc-test-remote'))).some(e=>e.partId==='a'&&e.solved))).toBe(true);
-    await expect(page.locator('#personalSolvedPartsCount')).toHaveText('Пункты: 1 из 7');
+    await expect(page.locator('#personalSolvedPartsCount')).toHaveCount(0);
+    await expect(page.locator('#solvedCount')).toHaveText('0,33');
+    // Selecting a series changes the denominator, not the stored point marks.
+    await page.locator('#mcSeriesSelect').selectOption(model.seriesKey({...yearTasks[0],_endpointIdx:3}));
+    await expect(page.locator('#solvedProgressPercent')).toHaveText('16,67%');
+    await page.locator('#mcSeriesSelect').selectOption('');
     expect(await page.evaluate(()=>allTasks.find(t=>t.number===50).description)).toBe(yearTasks[0].description);
     for (const width of [1440,320]) {
         await page.setViewportSize({width,height:1000});
         expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+        const letters = await a.boundingBox(), number = await card.locator('.task-number-label').boundingBox();
+        expect(letters.height).toBeLessThanOrEqual(30);
+        expect(Math.abs(letters.y-number.y)).toBeLessThan(12);
+        expect(letters.x-(number.x+number.width)).toBeLessThan(20);
+        expect(await a.evaluate(el=>getComputedStyle(el).borderRadius)).toBe('50%');
+        expect((await page.locator('#shareSolvedTasksBtn').boundingBox()).width).toBeLessThanOrEqual(32);
+        for (const view of ['compact','reading']) {
+            await page.evaluate(view=>setMatcenterReadingMode(view),view);
+            for (const [status,color] of [['solved',dark?'rgb(74, 222, 128)':'rgb(20, 117, 56)'],['postponed','rgb(239, 68, 68)'],['current-series',dark?'rgb(251, 146, 60)':'rgb(180, 64, 8)']]) {
+                const sample = page.locator('.task-card.'+status);
+                await expect.poll(()=>sample.evaluate(el=>getComputedStyle(el).borderLeftColor)).toBe(color);
+                expect(await sample.evaluate(el=>getComputedStyle(el).backgroundImage)).not.toBe('none');
+            }
+        }
         await page.screenshot({path:info.outputPath(`year-series-parts-${width}.png`)});
     }
     await page.goto('/matcenter.html?grade=grade-camp-2026');
     await ready(page);
     await expect(page.locator('.mc-task-parts')).toHaveCount(0);
+    expect(errors).toEqual([]);
+});
+
+for (const dark of [false,true]) test(`all four status accents survive compact and open reading cards, dark=${dark}`, async ({page}) => {
+    const tasks = ['Р','Н','П','От'].map((status,index)=>({number:index+1,grade:'grade-10',description:'Неизменённое условие.',status}));
+    const errors=await setup(page,{dark,tasks});
+    await page.goto('/matcenter.html?grade=grade-10');
+    await ready(page);
+    const colors=[dark?'rgb(74, 222, 128)':'rgb(20, 117, 56)',dark?'rgb(251, 146, 60)':'rgb(180, 64, 8)',dark?'rgb(167, 139, 250)':'rgb(124, 58, 237)','rgb(239, 68, 68)'];
+    for (const width of [1440,320]) {
+        await page.setViewportSize({width,height:1000});
+        for (const view of ['compact','reading']) {
+            await page.evaluate(view=>setMatcenterReadingMode(view),view);
+            for (const [index,status] of ['solved','current-series','with-hint','postponed'].entries()) {
+                const card=page.locator('.task-card.'+status);
+                await expect.poll(()=>card.evaluate(el=>getComputedStyle(el).borderLeftColor)).toBe(colors[index]);
+                expect(await card.evaluate(el=>getComputedStyle(el).borderLeftWidth)).toBe('3px');
+                expect(await card.evaluate(el=>getComputedStyle(el).backgroundImage)).not.toBe('none');
+            }
+        }
+    }
     expect(errors).toEqual([]);
 });
 
@@ -284,7 +333,7 @@ test('compact layout, opt-in series, legacy progress, reading and exact archive 
     await page.locator('#searchInput').fill('№12');
     await page.locator('#mcSearchScope').selectOption('archive');
     await expect(page.locator('#tasksContainer .task-card')).toHaveCount(3);
-    await expect(page.locator('#tasksContainer .mc-task-context').first()).toBeVisible();
+    await expect(page.locator('#tasksContainer .mc-task-context')).toHaveCount(0);
     expect(await page.locator('#tasksContainer .task-number-label').allTextContents()).toEqual(['Задача 12', 'Задача 12', 'Задача 12']);
     expect(await page.locator('#tasksContainer [id]').evaluateAll(nodes => new Set(nodes.map(n => n.id)).size === nodes.length)).toBe(true);
     await page.locator('#searchInput').fill('неттакогословавзадачах');
@@ -403,7 +452,7 @@ for (const dark of [false, true]) test(`camp menu order and proportional three-d
         await page.setViewportSize({width,height:844});
         await page.goto('/matcenter.html?grade=grade-camp-2026');
         await ready(page);
-        await expect(page.locator('link[href*="styles/matcenter-refresh.css"]')).toHaveAttribute('href', 'styles/matcenter-refresh.css?v=20261010-series1');
+        await expect(page.locator('link[href*="styles/matcenter-refresh.css"]')).toHaveAttribute('href', 'styles/matcenter-refresh.css?v=20261010-compact2');
         expect(await page.locator('#gradeSwitcher [data-grade]').evaluateAll(els=>els.map(el=>el.dataset.grade))).toEqual(order);
         expect(await page.locator('#mcSidebarGrade option').evaluateAll(els=>els.map(el=>el.value))).toEqual(order);
         const active = page.locator('#gradeSwitcher [data-grade="grade-camp-2026"]');

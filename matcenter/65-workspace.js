@@ -23,7 +23,7 @@ function syncMatcenterWorkspace() {
     const series = MatcenterWorkspaceModel.seriesList(allTasks, currentGrade);
     document.getElementById('mcSeriesRow').hidden = !series.length;
     const options = [{ key: '', label: 'Все задачи раздела' }].concat(series.map(s => ({
-        key: s.key, label: [s.title, s.date ? s.date.split('-').reverse().join('.') : '', s.year].filter(Boolean).join(' · ')
+        key: s.key, label: [s.title, s.date ? s.date.split('-').reverse().join('.') : ''].filter(Boolean).join(' · ')
     })));
     const signature = JSON.stringify(options);
     if (select.dataset.options !== signature) {
@@ -71,12 +71,8 @@ function matcenterTaskUrl(task) {
 function decorateMatcenterTaskCard(card, task) {
     card.dataset.taskKey = MatcenterWorkspaceModel.identity(task);
     card.tabIndex = -1;
-    const info = document.createElement('div');
-    info.className = 'mc-task-context';
     const series = MatcenterWorkspaceModel.series(task);
     if (series) card.classList.add('mc-has-series');
-    info.textContent = [getGradeTitle(task.grade), series?.title, series?.date?.split('-').reverse().join('.')].filter(Boolean).join(' · ');
-    card.querySelector('.task-header').after(info);
     const link = document.createElement('button');
     link.type = 'button';
     link.className = 'mc-task-link';
@@ -87,7 +83,7 @@ function decorateMatcenterTaskCard(card, task) {
         const ok = await copySolvedShareText(matcenterTaskUrl(task));
         showPersonalSolvedNotice(ok ? 'Ссылка скопирована' : 'Не удалось скопировать ссылку');
     });
-    card.querySelector('.task-header').append(link);
+    card.querySelector('.mc-task-actions').append(link);
     if (matcenterReadingMode) setMatcenterReadingCard(card, true);
 }
 
