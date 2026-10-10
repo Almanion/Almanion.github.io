@@ -1124,9 +1124,8 @@ body.experimental.exp-animate .definition-box {
         padding: 0.9rem 1rem !important;
     }
 
-    /* На телефоне угловая лампочка/перо прячется рядом с кнопкой закладки,
-       чтобы значки не накладывались. */
-    .remark-box:has(.bookmark-btn)::before,
+    /* Only legacy corner icons are hidden beside bookmarks. The text label
+       of a remark must remain visible, just like the other block types. */
     body:not(.experimental) .reminder-box:has(.bookmark-btn)::before,
     body:not(.experimental) .example-box:has(.bookmark-btn)::before {
         display: none !important;

@@ -16,9 +16,10 @@ assert.match(css, /\.note-filter-popover\s*\{[^}]*position:\s*absolute/s, 'openi
 assert.match(css, /\.note-filter-options\s*\{[^}]*overflow-y:\s*auto/s);
 assert.match(css, /\.note-filter-actions\s*\{[^}]*flex-shrink:\s*0/s, 'footer actions must remain outside the scroll area');
 assert.match(css, /input:focus-visible/);
-assert.doesNotMatch(css, /:has\(\.note-filter\[open\]\)/, 'opening must not resize the reading bar');
+assert.doesNotMatch(css, /:has\(\.note-filter\[open\]\)[^{}]*\.note-reader-controls/, 'opening must not resize the reading bar');
+assert.match(css, /:has\(\.note-filter\[open\]\) \.scroll-to-top\s*\{[^}]*visibility: hidden/, 'floating navigation must not cover popover actions');
 for (const file of ['note-runtime.js', 'print-export.js']) {
-    assert.ok(read(file).includes('note-filter.js?v=20261010-1'));
-    assert.ok(read(file).includes('styles/note-filter.css?v=20261010-1'));
+    assert.ok(read(file).includes('note-filter.js?v=20261010-2'));
+    assert.ok(read(file).includes('styles/note-filter.css?v=20261010-2'));
 }
 console.log('block picker interface: all tests passed');

@@ -15,6 +15,10 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-secondary);
+    box-shadow: none;
     line-height: 1;
     opacity: 0;
     transform: translateY(-2px);
@@ -25,6 +29,10 @@
     height: 14px;
     display: block;
 }
+
+/* The blue outline belongs to keyboard focus, never the idle icon. */
+.copy-block-btn:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
+.copyable-block > .copy-block-btn:is(.is-copied, .is-error) { color: var(--button-accent); }
 
 /* Десктоп с мышью: кнопка появляется при наведении / фокусе */
 @media (hover: hover) {
@@ -88,7 +96,7 @@
     html body .main-content .copyable-block:has(> .personal-note-btn):not(:has(> .bookmark-btn)) > .personal-note-btn { right: 0; }
     html body .main-content .copyable-block:has(> .personal-note-btn) > .copy-block-btn { right: 88px; }
     html body .main-content .copyable-block:has(> .personal-note-btn):not(:has(> .bookmark-btn)) > .copy-block-btn { right: 44px; }
-    html body .main-content .copyable-block > .bookmark-btn::before { inset: 0; }
+    html body .main-content .copyable-block > :is(.copy-block-btn, .bookmark-btn)::before { inset: 0; }
 }
 
 /* Всплывающее уведомление «Скопировано» */

@@ -145,6 +145,7 @@
         selected = null; save();
     });
     const summary = panel.querySelector('summary');
+    summary.title = english ? 'Show blocks' : 'Показывать блоки';
     function close(restoreFocus) {
         panel.open = false;
         if (restoreFocus) summary.focus({ preventScroll: true });

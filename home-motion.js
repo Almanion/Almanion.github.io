@@ -12,6 +12,26 @@
     var initialEntranceTimer = 0;
     var currentGrade = '';
 
+    // Keep visual, reading and keyboard order aligned at each breakpoint.
+    // This runs before the account scripts, not after idle personalization.
+    var mobileLayout = window.matchMedia('(max-width: 768px)');
+    var contentGrid = document.querySelector('.home-content-grid');
+    var subjectsSection = document.querySelector('.subjects-section');
+    var quickSection = document.querySelector('.home-quick-section');
+    function orderHomeSections() {
+        if (!contentGrid || !subjectsSection || !quickSection) return;
+        var focused = document.activeElement;
+        if (contentGrid.firstElementChild !== subjectsSection) contentGrid.prepend(subjectsSection);
+        if (mobileLayout.matches) {
+            if (subjectsSection.nextElementSibling !== quickSection) subjectsSection.after(quickSection);
+        } else if (quickSection.parentElement === contentGrid) {
+            contentGrid.before(quickSection);
+        }
+        if (focused && focused !== document.activeElement && focused !== document.body) focused.focus({ preventScroll: true });
+    }
+    orderHomeSections();
+    mobileLayout.addEventListener('change', orderHomeSections);
+
     function readSettings() {
         try { return JSON.parse(localStorage.getItem('siteSettings') || '{}') || {}; }
         catch (_) { return {}; }

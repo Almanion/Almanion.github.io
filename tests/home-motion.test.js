@@ -13,7 +13,7 @@ const mobileStyles = fs.readFileSync(path.join(root, 'styles', 'mobile-overrides
 const shell = JSON.parse(fs.readFileSync(path.join(root, 'performance', 'sw-shell.json'), 'utf8')).assets;
 
 assert.match(page, /styles\/home-motion\.css\?v=20260920-2/, 'home motion stylesheet must be versioned');
-assert.match(page, /home-motion\.js\?v=20260920-2/, 'home motion client must be versioned');
+assert.match(page, /home-motion\.js\?v=20261010-2/, 'home motion client must be versioned');
 assert.doesNotMatch(page, /card\.style\.animationDelay/, 'cards must not inherit a global inline stagger');
 
 ['9', '10', '11', 'Archive'].forEach(grade => {

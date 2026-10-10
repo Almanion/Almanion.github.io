@@ -24,7 +24,7 @@ for (const width of [320, 390, 430, 768, 1024, 1440]) {
             const title = r(document.querySelector('#homeSubjectsTitle'));
             const tabs = r(document.querySelector('.grade-tabs'));
             return { overflow: document.documentElement.scrollWidth - innerWidth,
-                cardY: cards.map(el => el.y), extraTop: extra.top, quickHeight: quick.height,
+                cardY: cards.map(el => el.y), extraTop: extra.top, quickTop: quick.top, quickHeight: quick.height,
                 toolbarOverlap: title.bottom - tabs.top,
                 serviceY: [...document.querySelectorAll('.home-additional-grid > a:not([hidden])')].map(el => r(el).y),
                 dutyBottom: r(document.querySelector('#homeDutyCard')).bottom };
@@ -45,7 +45,11 @@ for (const width of [320, 390, 430, 768, 1024, 1440]) {
             const grid = await duty.locator('..').boundingBox();
             expect(bounds.width).toBeGreaterThan(grid.width - 2);
         } else {
-            expect(layout.extraTop).toBeLessThan(layout.cardY[0]);
+            if (width <= 768) {
+                expect(layout.cardY[0]).toBeLessThan(layout.quickTop);
+                expect(layout.quickTop).toBeLessThan(layout.extraTop);
+                expect(await page.locator('.home-content-grid > section').first().getAttribute('class')).toContain('subjects-section');
+            } else expect(layout.extraTop).toBeLessThan(layout.cardY[0]);
             expect(Math.abs(layout.serviceY[0] - layout.serviceY[1])).toBeLessThan(2);
         }
         for (const grade of ['9', '11', 'Archive']) {

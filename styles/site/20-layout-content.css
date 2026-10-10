@@ -1058,6 +1058,7 @@ body:not(.no-hover) .formula-box:hover {
     background: var(--remark-bg);
     border-left: 4px solid var(--remark-border);
     padding-right: 1.25rem;
+    font-style: normal;
 }
 
 .reminder-box {
@@ -1071,16 +1072,13 @@ body:not(.no-hover) .reminder-box:hover {
     transform: translateX(2px) translateY(-2px);
 }
 
-/* Заголовок-«надпись» как у остальных блоков (определение/теорема/пример):
-   прямой (не курсив, хотя тело замечания остаётся курсивным) и того же размера. */
+/* Именованный термин внутри замечания не заменяет метку типа блока. */
 .remark-box strong,
 .reminder-box strong {
     font-size: 1.1rem;
     font-style: normal;
 }
-/* Убираем дублирующую встроенную лампочку перед заголовком — маркер-лампочка
-   и так есть в углу (::before), как иконки-уголки у «примера»/«теоремы».
-   Так надпись становится чистой, как у остальных блоков. */
+/* Старую встроенную лампочку заменяет текстовая метка «Замечание». */
 .remark-box > .eic-bulb:first-child {
     display: none;
 }

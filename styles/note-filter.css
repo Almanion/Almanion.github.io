@@ -133,6 +133,8 @@ body[data-note-subject] .main-content > .note-filter { zoom: var(--note-scale, 1
 }
 @media (prefers-reduced-motion: reduce) { .note-filter .note-filter-chevron { transition: none; } }
 .note-filter-empty { color: var(--text-secondary); padding: 20px 0; }
+/* The floating top button must not cover the popover's Done action. */
+body[data-note-subject]:has(.note-filter[open]) .scroll-to-top { visibility: hidden; pointer-events: none; }
 
 /* A single compact reading bar, with one shared scale and sticky boundary. */
 @media screen {
@@ -194,20 +196,53 @@ body[data-note-subject] .main-content > .note-filter { zoom: var(--note-scale, 1
     }
     body.experimental.exp-reader-active .note-reader-controls {
         top: 0;
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        padding: 2px 4px;
         border-right: 0;
         border-left: 0;
         border-radius: 0;
         margin-bottom: 0.5rem;
     }
     body.experimental.exp-reader-active .note-reader-controls > .note-filter {
-        align-self: stretch;
-        padding: 2px var(--m-pad, 1rem);
-        border-left: 0;
-        border-top: 1px solid var(--exp-border);
+        position: static;
+        align-self: center;
+        padding: 0 0 0 4px;
+        border-left: 1px solid var(--exp-border);
+        border-top: 0;
         font-size: 0.82rem;
     }
     .note-reader-controls .note-filter summary { min-height: 40px; padding: 0 4px; }
+    body.experimental.exp-reader-active .note-reader-controls > .exp-reader-toolbar {
+        grid-template-columns: max(36px, calc(44px / var(--note-scale, 1))) minmax(0, 1fr) max(36px, calc(44px / var(--note-scale, 1)));
+        gap: 4px;
+        padding: 0;
+    }
+    body.experimental.exp-reader-active .note-reader-controls .exp-reader-arrow,
+    body.experimental.exp-reader-active .note-reader-controls .note-filter summary {
+        box-sizing: border-box;
+        width: max(36px, calc(44px / var(--note-scale, 1)));
+        height: max(36px, calc(44px / var(--note-scale, 1)));
+        min-height: 0;
+        padding: 0;
+        justify-content: center;
+        border-radius: 8px;
+    }
+    body.experimental.exp-reader-active .note-reader-controls .exp-reader-arrow svg { width: 17px; height: 17px; }
+    body.experimental.exp-reader-active .note-reader-controls .exp-reader-status-line { gap: 5px; margin-bottom: 4px; }
+    body.experimental.exp-reader-active .note-reader-controls .note-filter :is(.note-filter-title, .note-filter-count) {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+    body.experimental.exp-reader-active .note-reader-controls .note-filter-chevron { display: none; }
+    body.experimental.exp-reader-active .note-reader-controls .note-filter[data-active="true"] summary { color: var(--filter-accent); background: color-mix(in srgb, var(--filter-accent) 10%, var(--filter-surface)); }
+    body.experimental.exp-reader-active .note-reader-controls .note-filter[data-active="true"] .note-filter-icon { color: var(--filter-accent); }
     .note-filter-popover { left: 0; right: 0; width: auto; max-width: none; }
     .note-reader-controls .note-filter-popover { left: 8px; right: 8px; }
     .note-filter-option { min-height: max(40px, calc(44px / var(--note-scale, 1))); }
