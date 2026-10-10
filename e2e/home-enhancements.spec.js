@@ -82,11 +82,34 @@ test('visible star canvas is bounded, non-blocking, pointer-responsive and stops
     })).toBe(true);
     await page.evaluate(() => window.AlmanionSettings.update({ animationLevel: 'off' }));
     await expect(canvas).toHaveAttribute('data-motion', 'off');
+    expect(await page.evaluate(() => window.AlmanionHomeStars.getState().edges)).toBe(0);
     const image = await canvas.evaluate(field => field.toDataURL());
     await page.mouse.move(500, 300);
     await page.waitForTimeout(200);
     expect(await canvas.evaluate(field => field.toDataURL())).toBe(image);
     await page.screenshot({ path: info.outputPath('stars-static.png'), fullPage: true });
+});
+
+test('local star connections follow the cursor and fade out without it', async ({ page }, info) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await page.waitForFunction(() => window.AlmanionSettings?.ready && window.AlmanionHomeStars);
+    await page.evaluate(() => AlmanionSettings.update({ animationLevel: 'medium', expTheme: 'dark' }));
+    expect(await page.evaluate(() => AlmanionHomeStars.getState().edges)).toBe(0);
+    await page.mouse.move(65, 90);
+    await page.waitForFunction(() => AlmanionHomeStars.getState().edges > 5);
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: info.outputPath('star-connections-dark.png') });
+    await page.evaluate(() => AlmanionSettings.update({ expTheme: 'light' }));
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: info.outputPath('star-connections-light.png') });
+    await page.evaluate(() => document.dispatchEvent(new PointerEvent('pointerleave', { pointerType: 'mouse' })));
+    await page.waitForFunction(() => AlmanionHomeStars.getState().edges === 0);
+    await page.mouse.move(90, 240);
+    await page.waitForFunction(() => AlmanionHomeStars.getState().edges > 0);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(page.locator('.home-starfield')).toHaveAttribute('data-motion', 'off');
+    expect(await page.evaluate(() => AlmanionHomeStars.getState().edges)).toBe(0);
 });
 
 for (const width of [390, 1440]) test(`stars are visible in both themes at ${width}px`, async ({ page }, info) => {
@@ -118,8 +141,10 @@ test('touch input leaves scrolling and navigation usable', async ({ page }, info
     await expect(canvas).toBeAttached();
     await page.touchscreen.tap(4, 150);
     expect(await page.evaluate(() => window.AlmanionHomeStars.getState().touchActive)).toBe(true);
+    await page.waitForFunction(() => window.AlmanionHomeStars.getState().edges > 0);
     await page.waitForTimeout(1100);
     expect(await page.evaluate(() => window.AlmanionHomeStars.getState().touchActive)).toBe(false);
+    await page.waitForFunction(() => window.AlmanionHomeStars.getState().edges === 0);
     await page.locator('#gradeTab9').tap();
     await expect(page.locator('#gradePanel9')).toBeVisible();
     await page.evaluate(() => scrollTo(0, 300));

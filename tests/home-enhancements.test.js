@@ -39,6 +39,25 @@ assert.ok(Stars.createStars(1440, 900).length >= 140, 'desktop density is about 
 assert.equal(Stars.influence(300, 300, { active: true, x: 0, y: 0 }, 150).glow, 0);
 assert.ok(Stars.influence(15, 0, { active: true, x: 0, y: 0 }, 150).x > 0, 'stars gently move away from the pointer');
 assert.deepEqual(Stars.influence(15, 0, { active: false }, 150), { x: 0, y: 0, glow: 0 });
+const centre = { active: true, x: 0, y: 0 };
+const linkAlpha = distance => Stars.connectionOpacity({ x: distance, y: 0 }, { x: distance + 10, y: 0 }, centre, 220);
+assert.ok(linkAlpha(0) > linkAlpha(60) && linkAlpha(60) > linkAlpha(150), 'edges fade smoothly with distance from the cursor');
+assert.equal(linkAlpha(220), 0);
+assert.equal(Stars.connectionOpacity({ x: 0, y: 0 }, { x: 10, y: 0 }, { active: false }, 220), 0);
+assert.equal(Stars.connectionOpacity({ x: 0, y: 0 }, { x: 221, y: 0 }, centre, 220), 0, 'an outside endpoint must not leave a line extending beyond the interaction area');
+for (const [width, height] of [[390, 844], [1440, 900], [4000, 2200]]) {
+    const stars = Stars.createStars(width, height, seeded(239));
+    const edges = Stars.createConnections(stars, width, height, 120);
+    const degrees = stars.map(() => 0), pairs = new Set();
+    for (const edge of edges) {
+        assert.ok(edge.a < edge.b && edge.distance >= 5 && edge.distance <= 120);
+        assert.ok(!pairs.has(edge.a + ':' + edge.b), 'edges are never duplicated');
+        pairs.add(edge.a + ':' + edge.b);
+        degrees[edge.a]++; degrees[edge.b]++;
+    }
+    assert.ok(edges.length > 5 && edges.length <= stars.length * 5 / 2);
+    assert.ok(degrees.every(degree => degree <= 5), 'bounded degree keeps clusters and frame cost readable');
+}
 
 (async () => {
     const data = { schemaVersion: 1, version: 'fixture', entries: [{ term: 'Эллипс', html: '<strong>Эллипс</strong> — кривая.', page: 'geometry.html', subject: 'Геометрия', id: 'ellipse' }] };

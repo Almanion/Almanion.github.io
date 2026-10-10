@@ -65,6 +65,29 @@
         const eased = strength * strength;
         return { x: dx / Math.max(1, distance) * eased * 12, y: dy / Math.max(1, distance) * eased * 12, glow: eased };
     }
+    function createConnections(stars, width, height, maxLength) {
+        // Neighbours are computed only when the sky changes, not on each frame.
+        // Prefer short edges and bound each star's degree to avoid dense tangles.
+        const candidates = [], degree = new Uint8Array(stars.length), edges = [];
+        for (let a = 0; a < stars.length; a++) for (let b = a + 1; b < stars.length; b++) {
+            const distance = Math.hypot((stars[a].u - stars[b].u) * width, (stars[a].v - stars[b].v) * height);
+            if (distance >= 5 && distance <= maxLength) candidates.push({ a, b, distance });
+        }
+        candidates.sort((a, b) => a.distance - b.distance);
+        candidates.forEach(edge => {
+            if (degree[edge.a] >= 5 || degree[edge.b] >= 5) return;
+            degree[edge.a]++; degree[edge.b]++;
+            edges.push(edge);
+        });
+        return edges;
+    }
+    function connectionOpacity(a, b, pointer, radius) {
+        if (!pointer.active || radius <= 0) return 0;
+        const distance = Math.max(Math.hypot(a.x - pointer.x, a.y - pointer.y), Math.hypot(b.x - pointer.x, b.y - pointer.y));
+        const strength = Math.max(0, 1 - distance / radius);
+        // Both ends stay within the interaction circle; its rim fades to zero.
+        return strength * strength * (3 - 2 * strength) * .42;
+    }
     function init(win) {
         const doc = win.document;
         if (!doc.body.classList.contains('home-page') || doc.querySelector('.home-starfield')) return;
@@ -75,9 +98,9 @@
         const ctx = canvas.getContext('2d');
         if (!ctx) { canvas.remove(); return; }
         let width = 0, height = 0, stars = [], frame = 0, last = 0, color = '', paused = false;
-        let mode = 'full', time = 0, touchUntil = 0;
+        let mode = 'full', time = 0, touchUntil = 0, edges = [], edgeFade = 0, visibleEdges = 0;
         const pointer = { active: false, x: 0, y: 0 };
-        readState = () => ({ mode, count: stars.length, touchActive: pointer.active && touchUntil > win.performance.now() });
+        readState = () => ({ mode, count: stars.length, edges: visibleEdges, touchActive: pointer.active && touchUntil > win.performance.now() });
         const reduced = win.matchMedia('(prefers-reduced-motion: reduce)');
         const coarse = win.matchMedia('(pointer: coarse)');
         function stop() { if (frame) win.cancelAnimationFrame(frame); frame = 0; }
@@ -87,19 +110,36 @@
             ctx.strokeStyle = color;
             if (touchUntil && timestamp > touchUntil) { pointer.active = false; touchUntil = 0; }
             const touchFade = touchUntil ? Math.min(1, Math.max(0, (touchUntil - timestamp) / 650)) : 1;
-            stars.forEach(star => {
+            const points = stars.map(star => {
                 const x = star.u * width, y = star.v * height;
                 const target = moving ? influence(x, y, pointer, coarse.matches ? 100 : 155) : { x: 0, y: 0, glow: 0 };
                 star.dx += (target.x * touchFade - star.dx) * .13;
                 star.dy += (target.y * touchFade - star.dy) * .13;
                 const drift = moving && mode === 'full' ? Math.sin(time / 8500 + star.phase) * 1.8 : 0;
                 const alpha = star.alpha + (moving ? Math.sin(time / 3700 + star.phase) * .025 : 0) + target.glow * touchFade * .16;
-                ctx.globalAlpha = alpha;
-                const px = x + star.dx + drift, py = y + star.dy + drift * .5;
+                return { x: x + star.dx + drift, y: y + star.dy + drift * .5, alpha, glow: target.glow };
+            });
+            edgeFade = moving ? edgeFade + ((pointer.active ? touchFade : 0) - edgeFade) * .14 : 0;
+            visibleEdges = 0;
+            if (edgeFade > .005) {
+                const centre = { x: pointer.x, y: pointer.y, active: true };
+                ctx.lineWidth = .65;
+                edges.forEach(edge => {
+                    const a = points[edge.a], b = points[edge.b];
+                    const opacity = connectionOpacity(a, b, centre, coarse.matches ? 140 : 220) * edgeFade;
+                    if (opacity < .003) return;
+                    ctx.globalAlpha = opacity;
+                    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+                    visibleEdges++;
+                });
+            }
+            stars.forEach((star, i) => {
+                const point = points[i], px = point.x, py = point.y;
+                ctx.globalAlpha = point.alpha;
                 ctx.beginPath(); ctx.arc(px, py, star.radius, 0, Math.PI * 2); ctx.fill();
                 if (star.sparkle) {
-                    const size = star.radius * 2.2 + target.glow * .5;
-                    ctx.globalAlpha = alpha * .5;
+                    const size = star.radius * 2.2 + point.glow * .5;
+                    ctx.globalAlpha = point.alpha * .5;
                     ctx.lineWidth = .65;
                     ctx.beginPath();
                     ctx.moveTo(px - size, py); ctx.lineTo(px + size, py);
@@ -130,6 +170,7 @@
             color = win.getComputedStyle(canvas).color;
             mode = reduced.matches || doc.body.classList.contains('animations-off') ? 'off'
                 : doc.body.classList.contains('animations-medium') ? 'medium' : 'full';
+            if (mode === 'off') { pointer.active = false; touchUntil = 0; }
             resume();
         }
         function resize() {
@@ -138,6 +179,7 @@
             canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             stars = createStars(width, height);
+            edges = createConnections(stars, width, height, coarse.matches ? 90 : 120);
             canvas.dataset.count = String(stars.length);
             settings();
         }
@@ -164,5 +206,5 @@
         coarse.addEventListener?.('change', resize);
         resize();
     }
-    return { createStars, influence, init, getState: () => readState() };
+    return { createStars, createConnections, connectionOpacity, influence, init, getState: () => readState() };
 });
