@@ -186,14 +186,15 @@ body.dark-theme .search-box input:focus {
     line-height: 1.5;
 }
 
-/* Многопанельные схемы газовых законов сохраняют читаемый масштаб подписей. */
+/* Многопанельные физические схемы сохраняют читаемый масштаб подписей. */
 .constructor-content-section :is(
     [data-note-block="boyle-mariotte-experiment-image"],
     [data-note-block="isothermal-process-graphs-image"],
     [data-note-block="isobaric-process-graphs-image"],
     [data-note-block="isobaric-coordinate-graphs-image"],
     [data-note-block="charles-experiment-image"],
-    [data-note-block="combined-gas-law-image"]
+    [data-note-block="combined-gas-law-image"],
+    [data-note-block="intermolecular-interaction-image"]
 ) img {
     width: min(100%, 720px);
     height: auto;

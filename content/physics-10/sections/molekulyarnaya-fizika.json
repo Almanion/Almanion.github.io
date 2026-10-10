@@ -644,7 +644,7 @@
             {
               "id": "intermolecular-interaction-image",
               "type": "image",
-              "src": "images/notes/physics-10/intermolecular-interaction.svg?v=20260920-1",
+              "src": "images/notes/physics-10/intermolecular-interaction.svg?v=20261010-1",
               "alt": "Графики силы межмолекулярного взаимодействия и потенциальной энергии",
               "caption": "При расстоянии \\(r_0\\) равнодействующая сил равна нулю, а потенциальная энергия минимальна.",
               "children": []
@@ -967,9 +967,9 @@
     }
   ],
   "order": 1,
-  "revision": 4,
+  "revision": 5,
   "createdAt": 1788739200000,
-  "updatedAt": 1790702443800,
+  "updatedAt": 1791664361500,
   "updatedBy": "codex",
   "reviewStatus": "published"
 }
