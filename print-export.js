@@ -572,12 +572,12 @@
         if (!document.querySelector('.main-content')) return;
         if (!document.querySelector('link[href^="styles/note-filter.css"]')) {
             const style = document.createElement('link');
-            style.rel = 'stylesheet'; style.href = 'styles/note-filter.css?v=20260929-3';
+            style.rel = 'stylesheet'; style.href = 'styles/note-filter.css?v=20261010-1';
             document.head.appendChild(style);
         }
         if (!document.querySelector('script[src^="note-filter.js"]')) {
             const script = document.createElement('script');
-            script.src = 'note-filter.js?v=20260929-1'; document.head.appendChild(script);
+            script.src = 'note-filter.js?v=20261010-1'; document.head.appendChild(script);
         }
         collectCatalogue();
         createLauncher();

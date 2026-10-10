@@ -26,7 +26,9 @@ test('block filter preserves selected nested blocks, resets and survives reload'
     await expect(page.locator('#nested-proof .formula-box')).toBeHidden();
     expect(await page.locator('#filter-fixture').evaluate(el => getComputedStyle(el).display)).toBe('contents');
     await page.reload();
-    await expect(page.locator('.note-filter-count')).toHaveText('Фильтр включён');
+    // The injected proof is gone after reload; the saved filter is still active.
+    await expect(page.locator('.note-filter')).toHaveAttribute('data-active', 'true');
+    await expect(page.locator('.note-filter-count')).toHaveText(/^0\/\d+$/);
     await page.locator('.note-filter summary').click();
     await page.locator('.note-filter-reset').click();
     await expect(page.locator('[data-note-filter-hidden]')).toHaveCount(0);
