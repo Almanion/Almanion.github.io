@@ -167,6 +167,16 @@ function renderNextMatcenterBatch(session) {
     for (let index = session.nextIndex; index < end; index += 1) {
         const task = session.tasks[index];
         try {
+            const seriesKey = MatcenterWorkspaceModel.seriesKey(task);
+            if (seriesKey && seriesKey !== session.lastSeriesKey) {
+                const series = MatcenterWorkspaceModel.series(task);
+                const divider = document.createElement('h2');
+                divider.className = 'mc-series-divider';
+                divider.dataset.seriesKey = seriesKey;
+                divider.textContent = [series.title, series.year].filter(Boolean).join(' · ');
+                fragment.appendChild(divider);
+            }
+            session.lastSeriesKey = seriesKey;
             fragment.appendChild(createTaskElement(task));
         } catch (error) {
             console.error(`❌ Ошибка при создании элемента для задачи #${task && task.number} (индекс ${index}):`, error);
@@ -243,7 +253,18 @@ function displayTasks(tasks, containerId = 'tasksContainer') {
     // Обычные классы — по убыванию (свежие задачи сверху).
     const ascending = currentGrade === 'grade-camp-2026'
         || (typeof currentGrade === 'string' && currentGrade.indexOf('summer') !== -1);
-    const sortedTasks = [...tasks].sort((a, b) => ascending ? a.number - b.number : b.number - a.number);
+    const sortedTasks = [...tasks].sort((a, b) => {
+        const sa = MatcenterWorkspaceModel.series(a), sb = MatcenterWorkspaceModel.series(b);
+        if (sa && sb) {
+            const group = sb.year.localeCompare(sa.year) || (ascending ? sa.date.localeCompare(sb.date) : sb.date.localeCompare(sa.date))
+                || (ascending ? sa.title.localeCompare(sb.title, 'ru', {numeric:true})
+                    : sb.title.localeCompare(sa.title, 'ru', {numeric:true}))
+                || MatcenterWorkspaceModel.seriesKey(a).localeCompare(MatcenterWorkspaceModel.seriesKey(b));
+            return group || a.number - b.number;
+        }
+        if (!!sa !== !!sb) return sa ? -1 : 1;
+        return ascending ? a.number - b.number : b.number - a.number;
+    });
 
     delete container.dataset.renderComplete;
     const session = {
@@ -288,7 +309,7 @@ function createTaskElement(task) {
     const taskCard = document.createElement('div');
     taskCard.className = 'task-card';
     const solvedKey = getSolvedTaskKey(task);
-    const personallySolved = isTaskPersonallySolved(solvedKey);
+    const personallySolved = isTaskPersonallySolved(task);
     taskCard.dataset.solvedKey = solvedKey;
     if (personallySolved) taskCard.classList.add('user-solved');
 
@@ -401,6 +422,7 @@ function createTaskElement(task) {
         ${hintHTML}
         ${adminButtonHTML}
     `;
+    if (typeof decoratePersonalTaskParts === 'function') decoratePersonalTaskParts(taskCard, task);
     
     // Обработчик раскрытия/скрытия условия
     const toggleBtn = taskCard.querySelector('.task-condition-toggle');

@@ -122,6 +122,32 @@ function run() {
     vm.runInContext('connectCamp2026Spreadsheet()', sandbox);
     assert.deepEqual(changedProperties, [['MATCENTER_CAMP_2026_SPREADSHEET_ID', '1mUZyK3PHBjYD3_6ouI7PeVrtt7S3e3zVMNC-u6pUAOU']]);
 
+    const yearSheet = makeSheet('10 класс 2026-2027', [
+        ['Number','Description','Grade','TaskId','SeriesId','SeriesTitle','AcademicYear','Parts'],
+        ['16','Exact future text','grade-10','g10-2026-t016','g10-2026-s02','Серия 2','2026/2027','["a","b"]']
+    ]);
+    sandbox.PropertiesService.getScriptProperties = () => ({getProperty:key=>key==='MATCENTER_ACADEMIC_YEAR_SPREADSHEET_IDS'?'year-test-id':''});
+    let yearReads=0;
+    sandbox.SpreadsheetApp.openById = id => {
+        assert.equal(id,'year-test-id'); yearReads++;
+        return {getSheets:()=>[yearSheet]};
+    };
+    const yearlyPayload = JSON.parse(vm.runInContext('getTasks(false,getAcademicYearSheets()).text',sandbox));
+    assert.equal(yearlyPayload.tasks.length,1);
+    assert.equal(yearlyPayload.tasks[0].parts,'["a","b"]');
+    assert.equal(yearlyPayload.tasks[0].description,'Exact future text');
+    assert.equal(vm.runInContext("findTaskLocation('16','grade-10','g10-2026-t016').sheet.getName()",sandbox),'10 класс 2026-2027');
+    const previousReads=yearReads;
+    const deniedYear=JSON.parse(vm.runInContext("handle({postData:{contents:JSON.stringify({action:'academicYearTasks'})}}).text",sandbox));
+    assert.equal(deniedYear.success,false);
+    assert.equal(yearReads,previousReads,'unauthorized future-year requests cannot read Sheets');
+    sandbox.resolveAccess=()=>({allowed:true,role:'user'});
+    const allowedYear=JSON.parse(vm.runInContext("handle({postData:{contents:JSON.stringify({action:'academicYearTasks'})}}).text",sandbox));
+    assert.equal(allowedYear.count,1);
+    const readOnly=JSON.parse(vm.runInContext("handle({postData:{contents:JSON.stringify({action:'changeStatus',taskId:'g10-2026-t016'})}}).text",sandbox));
+    assert.equal(readOnly.success,false);
+    assert.match(readOnly.error,/Недостаточно прав/);
+    assert.deepEqual(JSON.parse(vm.runInContext('getTasks(false).text',sandbox)),extended,'future years do not mutate legacy archives');
     console.log('apps script multi-sheet loading: all tests passed');
 }
 

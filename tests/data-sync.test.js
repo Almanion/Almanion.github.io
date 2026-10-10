@@ -57,6 +57,9 @@ class TransactionRef extends FakeRef {
 }
 
 async function run() {
+    const pendingVersion = Sync.normalizeRecord({solved:true,updatedAt:1},{revision:2,deviceId:'same',pending:true});
+    const deliveredVersion = Sync.remoteRecord(pendingVersion);
+    assert.equal(Sync.compareRecords(pendingVersion,deliveredVersion),0,'delivery state does not compete with identical content');
     const storage = new MemoryStorage({
         legacy_bookmarks: JSON.stringify({ old: { title: 'Legacy', updatedAt: 10 } })
     });
@@ -102,6 +105,10 @@ async function run() {
     assert.equal(restored.remoteObserved, true, 'a successful empty snapshot must be distinguishable from a failed read');
     assert.equal(restored.pending().length, 0);
     assert.equal(workingRef.value['task-1'].solved, true);
+    assert.equal(restored.get('task-1').__sync.pending,false,'acknowledgment survives merging with persisted state');
+    workingRef.emit(workingRef.value);
+    await restored.flush();
+    assert.equal(restored.pending().length,0,'an acknowledged remote echo must not requeue itself');
 
     const remoteWinsStorage = new MemoryStorage();
     const remoteWins = Sync.createCollection({

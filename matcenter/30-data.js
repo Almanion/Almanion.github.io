@@ -12,7 +12,8 @@ function buildTasksPayloadSignature(tasks) {
         task && task.hint,
         task && task._endpointIdx,
         task && task.sourceSheet,
-        task && task.series
+        task && task.series,
+        task && task.parts
     ]));
 }
 
@@ -137,6 +138,7 @@ function getEndpointLabel(endpointIdx) {
     if (endpointIdx === 0) return 'основная таблица';
     if (endpointIdx === 1) return 'летняя серия 9–10';
     if (endpointIdx === 2) return 'лагерь 9';
+    if (endpointIdx === 3) return 'учебные годы с 2026/2027';
     return `источник №${endpointIdx + 1}`;
 }
 
@@ -404,6 +406,8 @@ async function loadFromOneEndpoint(endpoint, endpointIdx, signal) {
         data = await readMatcenterTasksJson(endpoint, {
             ...(typeof MATCENTER_CAMP_SOURCE_INDEX !== 'undefined' && endpointIdx === MATCENTER_CAMP_SOURCE_INDEX
                 ? { action: 'campTasks' } : {}),
+            ...(typeof MATCENTER_ACADEMIC_SOURCE_INDEX !== 'undefined' && endpointIdx === MATCENTER_ACADEMIC_SOURCE_INDEX
+                ? { action: 'academicYearTasks' } : {}),
             idToken: await getMatcenterIdToken(),
             clientId
         }, signal);
@@ -452,6 +456,7 @@ async function loadFromOneEndpoint(endpoint, endpointIdx, signal) {
             grade,
             sourceSheet: task.sourceSheet ? String(task.sourceSheet) : '',
             series: MatcenterWorkspaceModel.series(task),
+            parts: MatcenterWorkspaceModel.parts(task),
             _endpointIdx: endpointIdx
         };
     }).filter(t => t !== null);

@@ -28,7 +28,8 @@ async function setup(page, options = {}) {
             const tasks = url.pathname.includes('AKfycbw_') ? summer : (options.tasks || [...legacy, ...future]);
             return route.fulfill({ json: data.action === 'capabilities' ? { success: true, authVersion: options.authVersion || 3 }
                 : data.action === 'accessStatus' ? { success: true, allowed: options.allowed !== false, isAdmin: false }
-                : { success: true, tasks: data.action === 'campTasks' ? (options.campTasks || camp) : tasks, isAdmin: false } });
+                : { success: true, tasks: data.action === 'campTasks' ? (options.campTasks || camp)
+                    : data.action === 'academicYearTasks' ? (options.yearTasks || []) : tasks, isAdmin: false } });
         }
         if (['127.0.0.1', 'localhost'].includes(url.hostname)) {
             if (/\/(account|firebase-analytics|analytics)\.js$/.test(url.pathname)) return route.fulfill({ contentType: 'application/javascript', body: '' });
@@ -49,7 +50,7 @@ async function setup(page, options = {}) {
         const callbacks = new Set();
         const snapshot = () => ({ val: () => data });
         const ref = { once: async () => snapshot(), on(_event, callback) { callbacks.add(callback); setTimeout(() => callback(snapshot()), 0); },
-            off() { callbacks.clear(); }, async update(patch) { Object.assign(data, patch); localStorage.setItem('mc-test-remote', JSON.stringify(data)); callbacks.forEach(c => c(snapshot())); },
+            off() { callbacks.clear(); }, async update(patch) { if(window.__mcFailWrites) throw new Error('Test offline'); Object.assign(data, patch); localStorage.setItem('mc-test-remote', JSON.stringify(data)); callbacks.forEach(c => c(snapshot())); },
             child(key) { return { once: async () => ({ val: () => data[key] }), set: async value => ref.update({ [key]: value }) }; } };
         const database = () => ({ ref: () => ref });
         database.ServerValue = { TIMESTAMP: 1 };
@@ -65,6 +66,56 @@ async function ready(page) {
     await expect(page.locator('#authOverlay')).toBeHidden();
     await expect(page.locator('#tasksContainer .task-card').first()).toBeVisible();
 }
+
+for (const dark of [false,true]) test(`new-year series and independent part progress persist, dark=${dark}`, async ({page},info) => {
+    const yearTasks = [
+        {number:50,taskId:'g10-2026-t050',seriesId:'g10-2026-s05',seriesTitle:'Серия 5',parts:['a','b','c']},
+        {number:53,taskId:'g10-2026-t053',seriesId:'g10-2026-s05',seriesTitle:'Серия 5',parts:'["a","b"]'},
+        {number:110,taskId:'g10-2026-t110',seriesId:'g10-2026-s12',seriesTitle:'Серия 12',parts:['a','b']}
+    ].map(task=>({...task,grade:'grade-10',academicYear:'2026/2027',description:'Сохранённый текст: a) $x^2$; b) $y^2$; c) $z^2$.'}));
+    const errors = await setup(page,{dark,realMath:true,tasks:[],yearTasks});
+    await page.setViewportSize({width:1440,height:1000});
+    await page.goto('/matcenter.html?grade=grade-10&view=reading');
+    await ready(page);
+    await expect(page.locator('.mc-series-divider')).toHaveText(['Серия 12 · 2026/2027','Серия 5 · 2026/2027']);
+    const card = page.locator('.task-card').filter({has:page.getByText('Задача 50',{exact:true})});
+    const a = card.locator('[data-part="a"]'), b = card.locator('[data-part="b"]'), c = card.locator('[data-part="c"]');
+    await a.click();
+    await expect(a).toHaveAttribute('aria-pressed','true');
+    await expect(b).toHaveAttribute('aria-pressed','false');
+    await expect(card.locator('.mc-task-parts-count')).toHaveText('1 из 3');
+    await expect(page.locator('#solvedCount')).toHaveText('0');
+    await page.reload();
+    await expect(a).toHaveAttribute('aria-pressed','true');
+    await b.click(); await c.click();
+    await expect(card.locator('.task-solved-check')).toHaveAttribute('aria-pressed','true');
+    await expect(page.locator('#solvedCount')).toHaveText('1');
+    await b.click();
+    await expect(card.locator('.task-solved-check')).toHaveAttribute('aria-pressed','false');
+    await expect(a).toHaveAttribute('aria-pressed','true');
+    await expect(c).toHaveAttribute('aria-pressed','true');
+    await card.locator('.task-solved-check').click();
+    await expect(card.locator('.mc-task-part[aria-pressed="true"]')).toHaveCount(3);
+    await card.locator('.task-solved-check').click();
+    await expect(card.locator('.mc-task-part[aria-pressed="false"]')).toHaveCount(3);
+    await page.evaluate(()=>window.__mcFailWrites=true);
+    await a.click();
+    await expect(a).toHaveAttribute('aria-pressed','true');
+    await page.reload();
+    await expect(a).toHaveAttribute('aria-pressed','true');
+    await expect.poll(()=>page.evaluate(()=>Object.values(JSON.parse(localStorage.getItem('mc-test-remote'))).some(e=>e.partId==='a'&&e.solved))).toBe(true);
+    await expect(page.locator('#personalSolvedPartsCount')).toHaveText('Пункты: 1 из 7');
+    expect(await page.evaluate(()=>allTasks.find(t=>t.number===50).description)).toBe(yearTasks[0].description);
+    for (const width of [1440,320]) {
+        await page.setViewportSize({width,height:1000});
+        expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+        await page.screenshot({path:info.outputPath(`year-series-parts-${width}.png`)});
+    }
+    await page.goto('/matcenter.html?grade=grade-camp-2026');
+    await ready(page);
+    await expect(page.locator('.mc-task-parts')).toHaveCount(0);
+    expect(errors).toEqual([]);
+});
 
 for (const dark of [false,true]) test(`real KaTeX renders legacy indices and delimited formulas without altering source, dark=${dark}`, async ({page},info) => {
     const raw = 'Рассмотрите a_{n+1}, na_{n+1}, a_n. Обычное a1 остаётся прежним.';
@@ -282,7 +333,9 @@ test('mobile compact controls fit and keep one task column in both themes', asyn
         const cards = await page.locator('#tasksContainer .task-card').evaluateAll(nodes => nodes.slice(0, 2).map(n => { const r = n.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width }; }));
         expect(cards[0].x).toBe(cards[1].x);
         expect(cards[1].y).toBeGreaterThan(cards[0].y);
-        expect(cards[0].y).toBeLessThan(530);
+        // Explicit series add one compact heading while the first card stays above the fold.
+        expect(cards[0].y).toBeLessThan(570);
+        expect(await page.locator('.mc-series-divider').first().evaluate(el=>el.getBoundingClientRect().height)).toBeLessThan(40);
         await expect(page.locator('#mcSearchScope')).toBeHidden();
         await page.locator('#mcFilterToggle').click();
         for (const button of ['#mcSearchScope', '#statusFilter', '.mc-view-switch']) {
@@ -350,7 +403,7 @@ for (const dark of [false, true]) test(`camp menu order and proportional three-d
         await page.setViewportSize({width,height:844});
         await page.goto('/matcenter.html?grade=grade-camp-2026');
         await ready(page);
-        await expect(page.locator('link[href*="styles/matcenter-refresh.css"]')).toHaveAttribute('href', 'styles/matcenter-refresh.css?v=20261009-repairs1');
+        await expect(page.locator('link[href*="styles/matcenter-refresh.css"]')).toHaveAttribute('href', 'styles/matcenter-refresh.css?v=20261010-series1');
         expect(await page.locator('#gradeSwitcher [data-grade]').evaluateAll(els=>els.map(el=>el.dataset.grade))).toEqual(order);
         expect(await page.locator('#mcSidebarGrade option').evaluateAll(els=>els.map(el=>el.value))).toEqual(order);
         const active = page.locator('#gradeSwitcher [data-grade="grade-camp-2026"]');

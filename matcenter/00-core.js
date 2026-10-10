@@ -87,8 +87,9 @@ const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyR_Iz_fyg2s-bviRt
 const SUMMER_9_10_ENDPOINT = 'https://script.google.com/macros/s/AKfycbw_1QMpa29l9_ziOEVI13PLlHfhdUX5-Aqrg76hfIgXamUVitT0Sc_IwBwKb2Pqj0s/exec';
 
 // The camp spreadsheet is read separately through the main backend and its existing access rules.
-const TASKS_ENDPOINTS = [API_ENDPOINT, SUMMER_9_10_ENDPOINT, API_ENDPOINT].filter(Boolean);
+const TASKS_ENDPOINTS = [API_ENDPOINT, SUMMER_9_10_ENDPOINT, API_ENDPOINT, API_ENDPOINT].filter(Boolean);
 const MATCENTER_CAMP_SOURCE_INDEX = 2;
+const MATCENTER_ACADEMIC_SOURCE_INDEX = 3;
 
 // Security settings
 const MAX_FAILED_ATTEMPTS = 3;

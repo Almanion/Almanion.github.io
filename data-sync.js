@@ -108,8 +108,10 @@
         if (a.deviceId !== b.deviceId) return a.deviceId > b.deviceId ? 1 : -1;
         // При полном совпадении метаданных результат всё равно должен быть
         // детерминированным на всех устройствах.
-        const aj = JSON.stringify(left);
-        const bj = JSON.stringify(right);
+        // Pending is local delivery state, not a competing content revision.
+        // An acknowledged record must not lose to its identical stale pending copy.
+        const aj = JSON.stringify(remoteRecord(left));
+        const bj = JSON.stringify(remoteRecord(right));
         return aj === bj ? 0 : (aj > bj ? 1 : -1);
     }
 

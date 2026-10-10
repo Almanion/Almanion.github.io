@@ -205,3 +205,29 @@ body.matcenter-page .mc-filter-options { display: contents; }
     body.matcenter-page #mcSeriesSummary { grid-column: 1 / -1; }
     body.matcenter-page #mcSeriesSummary:empty { display: none; }
 }
+/* Explicit series and personal subtask progress, without altering conditions. */
+.mc-series-divider {
+    grid-column: 1 / -1;
+    margin: .75rem 0 .15rem;
+    padding: .4rem 0;
+    border-top: 2px solid var(--accent-color, #818cf8);
+    font-size: 1.05rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+.tasks-container > .mc-series-divider:first-child { margin-top:0; }
+@media (max-width:768px) {
+    .mc-series-divider { font-size:.85rem; line-height:1.25; padding:.2rem 12px; }
+}
+.mc-task-parts { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; padding:.6rem 0; }
+.mc-task-parts-label,.mc-task-parts-count,.mc-personal-parts-progress { font-size:.85rem; opacity:.8; }
+.mc-task-part {
+    min-width:44px; min-height:44px; padding:.35rem .7rem;
+    border:1px solid var(--border-color, #64748b); border-radius:9px;
+    background:transparent; color:inherit; cursor:pointer; font:inherit;
+}
+.mc-task-part.is-solved { background:#166534; color:#fff; border-color:#15803d; }
+.mc-task-part:focus-visible { outline:2px solid var(--accent-color, #818cf8); outline-offset:3px; }
+.mc-task-part:disabled { cursor:wait; opacity:.6; }
+.mc-personal-parts-progress { display:block; margin-top:.6rem; }
+.mc-personal-parts-progress[hidden] { display:none; }

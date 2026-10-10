@@ -71,6 +71,7 @@ const containers = new Map();
 let solvedRefreshes = 0;
 const context = vm.createContext({
     console,
+    MatcenterWorkspaceModel: require('../matcenter/35-workspace-model.js'),
     currentGrade: 'grade-9',
     currentFilter: 'all-tasks',
     isAdmin: false,
@@ -125,6 +126,13 @@ vm.runInContext("displayTasks(tasks, 'tasksContainer')", context);
 assert.strictEqual(priorSession.cancelled, true, 'changing section must cancel obsolete rendering work');
 assert.strictEqual(container.children.length, 1);
 assert.ok(solvedRefreshes >= 3, 'every rendered batch should apply personal solved state');
+context.tasks = Array.from({length:70},(_,index)=>({taskId:'future-'+index,number:index+1,grade:'grade-10',
+    seriesId:index<10?'series-1':'series-2',seriesTitle:index<10?'Серия 1':'Серия 2',academicYear:'2026/2027'}));
+vm.runInContext("displayTasks(tasks, 'tasksContainer')", context);
+assert.equal(container.children.filter(node=>node.name==='h2').length,1);
+vm.runInContext("renderNextMatcenterBatch(matcenterRenderSessions.get(document.getElementById('tasksContainer')))", context);
+assert.equal(container.children.filter(node=>node.name==='h2').length,2,'one divider per series even across render batches');
+assert.equal(container.children.filter(node=>node.task).length,70);
 
 assert.match(renderSource, /IntersectionObserver/);
 assert.match(renderSource, /MATCENTER_INITIAL_RENDER_COUNT = 48/);

@@ -270,9 +270,71 @@ function sanitizeFirebaseKey(value) {
 }
 
 function isTaskPersonallySolved(taskOrKey) {
+    if (typeof taskOrKey === 'object') {
+        const parts = MatcenterWorkspaceModel.parts(taskOrKey);
+        if (parts.length) return parts.every(part => isTaskPartPersonallySolved(taskOrKey, part));
+    }
     const key = typeof taskOrKey === 'string' ? taskOrKey : getSolvedTaskKey(taskOrKey);
     const value = personalSolvedMap && personalSolvedMap[key];
     return !!(value && value.solved !== false);
+}
+
+function getSolvedTaskPartKey(task, part) {
+    return getSolvedTaskKey(task) + '__part__' + encodeURIComponent(part);
+}
+
+function isTaskPartPersonallySolved(task, part) {
+    const value = personalSolvedMap[getSolvedTaskPartKey(task, part)];
+    return value ? value.solved !== false : isTaskPersonallySolved(getSolvedTaskKey(task));
+}
+
+function decoratePersonalTaskParts(card, task) {
+    const parts = MatcenterWorkspaceModel.parts(task);
+    if (!parts.length) return;
+    const group = document.createElement('div');
+    group.className = 'mc-task-parts';
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-label', 'Решённые пункты задачи ' + task.numberText);
+    const label = document.createElement('span');
+    label.className = 'mc-task-parts-label';
+    label.textContent = 'Пункты:';
+    group.appendChild(label);
+    parts.forEach(part => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'mc-task-part';
+        button.dataset.part = part;
+        button.dataset.partKey = getSolvedTaskPartKey(task, part);
+        button.textContent = part + ')';
+        button.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            togglePersonalSolvedTaskPart(task, part, card);
+        });
+        group.appendChild(button);
+    });
+    const summary = document.createElement('span');
+    summary.className = 'mc-task-parts-count';
+    summary.setAttribute('aria-live', 'polite');
+    group.appendChild(summary);
+    card.querySelector('.task-header').after(group);
+    updatePersonalTaskParts(card, task);
+}
+
+function updatePersonalTaskParts(card, task) {
+    if (!card) return;
+    const parts = MatcenterWorkspaceModel.parts(task);
+    const solved = parts.filter(part => isTaskPartPersonallySolved(task, part));
+    card.querySelectorAll('.mc-task-part').forEach(button => {
+        const done = solved.includes(button.dataset.part);
+        button.setAttribute('aria-pressed', done ? 'true' : 'false');
+        button.setAttribute('aria-label', (done ? 'Убрать отметку решения пункта ' : 'Отметить решённым пункт ')
+            + button.dataset.part + ' задачи ' + task.numberText);
+        button.classList.toggle('is-solved', done);
+    });
+    const counter = card.querySelector('.mc-task-parts-count');
+    if (counter) counter.textContent = solved.length + ' из ' + parts.length;
+    card.classList.toggle('user-partially-solved', solved.length > 0 && solved.length < parts.length);
 }
 
 function getSolvedTaskPayload(task, solved = true) {
@@ -299,7 +361,9 @@ function applyPersonalSolvedMarks(root = document) {
     const scope = root && typeof root.querySelectorAll === 'function' ? root : document;
     scope.querySelectorAll('.task-card[data-solved-key]').forEach(card => {
         const key = card.dataset.solvedKey;
-        setPersonalSolvedCardState(card, isTaskPersonallySolved(key), false);
+        const task = typeof allTasks !== 'undefined' && allTasks.find(item => getSolvedTaskKey(item) === key);
+        if (task) updatePersonalTaskParts(card, task);
+        setPersonalSolvedCardState(card, isTaskPersonallySolved(task || key), false);
     });
     updatePersonalSolvedProgress();
 }
@@ -333,6 +397,20 @@ function updatePersonalSolvedProgress() {
     if (totalEl) totalEl.textContent = total;
     if (fillEl) fillEl.style.width = `${percent}%`;
     if (percentEl) percentEl.textContent = `${percent}%`;
+    let partsEl = document.getElementById('personalSolvedPartsCount');
+    const partTotal = realTasks.reduce((sum, task) => sum + MatcenterWorkspaceModel.parts(task).length, 0);
+    if (partTotal && !partsEl) {
+        partsEl = document.createElement('span');
+        partsEl.id = 'personalSolvedPartsCount';
+        partsEl.className = 'mc-personal-parts-progress';
+        wrap.appendChild(partsEl);
+    }
+    if (partsEl) {
+        partsEl.hidden = !partTotal;
+        const done = realTasks.reduce((sum, task) => sum + MatcenterWorkspaceModel.parts(task)
+            .filter(part => isTaskPartPersonallySolved(task, part)).length, 0);
+        partsEl.textContent = 'Пункты: ' + done + ' из ' + partTotal;
+    }
 
     updateSolvedTasksShareButton(solved, total);
     wrap.classList.toggle('is-complete', total > 0 && solved === total);
@@ -367,6 +445,31 @@ function setPersonalSolvedCardState(card, solved, animate) {
 }
 
 async function togglePersonalSolvedTask(task, card) {
+    const nextSolved = !isTaskPersonallySolved(task);
+    const entries = [{key:getSolvedTaskKey(task), payload:getSolvedTaskPayload(task, nextSolved)}];
+    MatcenterWorkspaceModel.parts(task).forEach(part => entries.push({
+        key:getSolvedTaskPartKey(task, part), payload:{...getSolvedTaskPayload(task, nextSolved), partId:part}
+    }));
+    return savePersonalSolvedEntries(task, card, entries);
+}
+
+async function togglePersonalSolvedTaskPart(task, part, card) {
+    if (!MatcenterWorkspaceModel.parts(task).includes(part)) return;
+    const entries = [{key:getSolvedTaskPartKey(task, part),
+        payload:{...getSolvedTaskPayload(task, !isTaskPartPersonallySolved(task, part)), partId:part}}];
+    // Clear a former whole-task override, preserving the other explicitly solved parts.
+    const baseKey = getSolvedTaskKey(task);
+    if (isTaskPersonallySolved(baseKey)) {
+        MatcenterWorkspaceModel.parts(task).filter(id => id !== part).forEach(id => {
+            if (!personalSolvedMap[getSolvedTaskPartKey(task, id)]) entries.push({key:getSolvedTaskPartKey(task,id),
+                payload:{...getSolvedTaskPayload(task,true),partId:id}});
+        });
+        entries.push({key:baseKey,payload:getSolvedTaskPayload(task,false)});
+    }
+    return savePersonalSolvedEntries(task, card, entries);
+}
+
+async function savePersonalSolvedEntries(task, card, entries) {
     if (!personalSolvedAuth || !personalSolvedDb) {
         showPersonalSolvedNotice('Вход в аккаунт пока недоступен');
         return;
@@ -378,37 +481,39 @@ async function togglePersonalSolvedTask(task, card) {
         return;
     }
 
-    const key = getSolvedTaskKey(task);
-    const wasSolved = isTaskPersonallySolved(key);
-    const nextSolved = !wasSolved;
-    const btn = card ? card.querySelector('.task-solved-check') : null;
-
-    if (btn) btn.disabled = true;
-    personalSolvedMap[key] = {
-        ...getSolvedTaskPayload(task, nextSolved),
-        _pending: true
-    };
+    const buttons = card ? Array.from(card.querySelectorAll('.task-solved-check,.mc-task-part')) : [];
+    buttons.forEach(button => button.disabled = true);
+    entries.forEach(({key,payload}) => personalSolvedMap[key] = {...payload, _pending:true});
     if (personalSolvedStore) {
-        const options = { updatedAt: personalSolvedMap[key].updatedAt };
-        if (nextSolved) personalSolvedStore.set(key, personalSolvedMap[key], options);
-        else personalSolvedStore.remove(key, personalSolvedMap[key], options);
+        entries.forEach(({key,payload}) => {
+            const options = {updatedAt:payload.updatedAt};
+            if (payload.solved) personalSolvedStore.set(key, personalSolvedMap[key], options);
+            else personalSolvedStore.remove(key, personalSolvedMap[key], options);
+        });
         personalSolvedMap = normalizePersonalSolvedMap(personalSolvedStore.snapshot({ includeDeleted: true }));
-        setPersonalSolvedCardState(card, nextSolved, true);
+        updatePersonalTaskParts(card, task);
+        setPersonalSolvedCardState(card, isTaskPersonallySolved(task), true);
         updatePersonalSolvedProgress();
-        if (btn) btn.disabled = false;
+        buttons.forEach(button => button.disabled = false);
         return;
     }
     writePersonalSolvedCache();
-    setPersonalSolvedCardState(card, nextSolved, true);
+    updatePersonalTaskParts(card, task);
+    setPersonalSolvedCardState(card, isTaskPersonallySolved(task), true);
     updatePersonalSolvedProgress();
 
     try {
-        const ref = (personalSolvedRef || personalSolvedDb.ref(`${MATCENTER_SOLVED_DB_PATH}/${personalSolvedUser.uid}`)).child(key);
-        const version = getPersonalSolvedEntryTime(personalSolvedMap[key]);
-        await ref.set(getRemotePersonalSolvedEntry(personalSolvedMap[key]));
-        if (personalSolvedMap[key] && getPersonalSolvedEntryTime(personalSolvedMap[key]) === version) {
-            personalSolvedMap[key]._pending = false;
-        }
+        const ref = personalSolvedRef || personalSolvedDb.ref(`${MATCENTER_SOLVED_DB_PATH}/${personalSolvedUser.uid}`);
+        const updates = {}, versions = {};
+        entries.forEach(({key}) => {
+            updates[key] = getRemotePersonalSolvedEntry(personalSolvedMap[key]);
+            versions[key] = getPersonalSolvedEntryTime(personalSolvedMap[key]);
+        });
+        await ref.update(updates);
+        entries.forEach(({key}) => {
+            if (personalSolvedMap[key] && getPersonalSolvedEntryTime(personalSolvedMap[key]) === versions[key])
+                personalSolvedMap[key]._pending = false;
+        });
         writePersonalSolvedCache();
     } catch (err) {
         console.warn('⚠️ Не удалось сохранить личную отметку задачи:', err);
@@ -416,7 +521,7 @@ async function togglePersonalSolvedTask(task, card) {
         writePersonalSolvedCache();
         showPersonalSolvedNotice('Отметка сохранена на устройстве и синхронизируется позже');
     } finally {
-        if (btn) btn.disabled = false;
+        buttons.forEach(button => button.disabled = false);
     }
 }
 

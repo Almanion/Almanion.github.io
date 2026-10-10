@@ -55,6 +55,9 @@ function handle(e) {
         multiSheetTasks: true,
         campTasks: true,
         camp2026Ready: !!scriptProperties.getProperty('MATCENTER_CAMP_2026_SPREADSHEET_ID'),
+        academicYearTasks: true,
+        taskParts: true,
+        academicYearsReady: !!scriptProperties.getProperty('MATCENTER_ACADEMIC_YEAR_SPREADSHEET_IDS'),
         notePublisher: true,
         noteDeletion: true,
         plannerTelegram: true,
@@ -151,6 +154,9 @@ function handle(e) {
 
     if (action === 'campTasks') {
       return getTasks(isAdmin, getCamp2026Sheets());
+    }
+    if (action === 'academicYearTasks') {
+      return getTasks(isAdmin, getAcademicYearSheets());
     }
 
     if (action) {
@@ -1230,6 +1236,8 @@ function headerToKey(h) {
     названиесерии: 'seriesTitle',
     датасерии: 'seriesDate',
     учебныйгод: 'academicYear',
+    parts: 'parts',
+    пункты: 'parts',
     номер: 'number',
     текстномера: 'numberText',
     текстзадачи: 'description',
@@ -1300,6 +1308,26 @@ function getCamp2026Sheets() {
   return [sheet];
 }
 
+// Private future-year workbooks share the existing account/admin access rules.
+// Append workbook IDs to the property for later years; never renumber existing tasks.
+function getAcademicYearSheets() {
+  const configured = String(PropertiesService.getScriptProperties()
+    .getProperty('MATCENTER_ACADEMIC_YEAR_SPREADSHEET_IDS') || '').trim();
+  if (!configured) throw new Error('Таблицы учебных годов ещё не подключены');
+  const ids = configured.split(',').map(function (id) { return id.trim(); }).filter(Boolean);
+  const sheets = [];
+  ids.forEach(function (id) {
+    SpreadsheetApp.openById(id).getSheets().forEach(function (sheet) {
+      if (!sheet.getLastRow() || !sheet.getLastColumn()) return;
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
+      if (findColumnByKey(headers, 'number') !== -1 && findColumnByKey(headers, 'academicYear') !== -1)
+        sheets.push(sheet);
+    });
+  });
+  if (!sheets.length) throw new Error('В таблицах учебных годов не найдены листы задач');
+  return sheets;
+}
+
 // Run once in the Apps Script editor to connect the verified camp workbook.
 // Other script properties, roles and deployments are left unchanged.
 function connectCamp2026Spreadsheet() {
@@ -1310,6 +1338,21 @@ function connectCamp2026Spreadsheet() {
   }
   PropertiesService.getScriptProperties().setProperty('MATCENTER_CAMP_2026_SPREADSHEET_ID', id);
   console.log('Лагерь 2026 подключён: 134 задачи. Остальные настройки сохранены.');
+}
+
+function connectAcademicYear2026Spreadsheet() {
+  const id = '1NoZ1Qg128CE4IwDoGG5Gc7iOSfJh02XKXlolFULnB1c';
+  const sheet = SpreadsheetApp.openById(id).getSheetByName('10 класс 2026-2027');
+  if (!sheet || sheet.getLastRow() !== 84) throw new Error('Ожидался заголовок и 83 задачи 2026/2027');
+  const headers = getSheetValues(sheet)[0];
+  if (findColumnByKey(headers, 'academicYear') === -1 || findColumnByKey(headers, 'parts') === -1)
+    throw new Error('Нет колонок учебного года и пунктов');
+  const properties = PropertiesService.getScriptProperties();
+  const ids = String(properties.getProperty('MATCENTER_ACADEMIC_YEAR_SPREADSHEET_IDS') || '')
+    .split(',').map(function (value) { return value.trim(); }).filter(Boolean);
+  if (ids.indexOf(id) === -1) ids.push(id);
+  properties.setProperty('MATCENTER_ACADEMIC_YEAR_SPREADSHEET_IDS', ids.join(','));
+  console.log('Матцентр 2026/2027 подключён: 83 задачи. Старые архивы и настройки сохранены.');
 }
 
 function normalizeGrade(value, fallback) {
@@ -1364,7 +1407,9 @@ function findTaskLocation(taskNumber, grade, taskId) {
   const locations = [];
   let ambiguousError = '';
 
-  const taskSheets = grade === 'grade-camp-2026' ? getCamp2026Sheets() : getTaskSheets();
+  const yearlyId = /^g(?:9|10|11)-20\d\d-t\d+$/.test(String(taskId || ''));
+  const taskSheets = grade === 'grade-camp-2026' ? getCamp2026Sheets()
+    : yearlyId ? getAcademicYearSheets() : getTaskSheets();
   taskSheets.forEach(function (sheet) {
     const values = getSheetValues(sheet);
     if (values.length < 2) return;

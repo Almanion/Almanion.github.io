@@ -23,6 +23,18 @@
         const item = series(task);
         return item ? JSON.stringify([task.grade, Number(task._endpointIdx) || 0, item.id]) : '';
     }
+    function parts(task) {
+        if (!series(task) || !text(task.taskId)) return [];
+        const year = series(task)?.year || text(task.academicYear);
+        if (!/^(\d{4})[/-](\d{4})$/.test(year) || Number(year.slice(0, 4)) < 2026
+            || Number(year.slice(5)) !== Number(year.slice(0, 4)) + 1) return [];
+        let values = task.parts;
+        if (typeof values === 'string') {
+            try { values = JSON.parse(values); } catch (_) { values = values.split(/[,;\s]+/); }
+        }
+        if (!Array.isArray(values) || values.length > 30) return [];
+        return Array.from(new Set(values.map(text).filter(value => /^[a-zа-яё0-9]{1,8}$/i.test(value))));
+    }
     function identity(task) {
         return JSON.stringify([Number(task._endpointIdx) || 0, task.grade,
             task.taskId || [task.sourceSheet || '', series(task)?.id || '', String(task.numberText || task.number)]]);
@@ -73,7 +85,7 @@
             return /^[а-яa-z]{4,}$/.test(token) && data.stems.has(stem(token));
         });
     }
-    const api = { series, seriesKey, identity, seriesList, initialGrade, matches, normalize, date };
+    const api = { series, seriesKey, identity, seriesList, initialGrade, matches, normalize, date, parts };
     root.MatcenterWorkspaceModel = api;
     if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof window === 'undefined' ? globalThis : window);
