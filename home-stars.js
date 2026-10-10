@@ -9,6 +9,9 @@
 })(typeof window !== 'undefined' ? window : null, function () {
     'use strict';
     let readState = () => null;
+    // One switch removes only the click wave, preserving stars and hover links.
+    const CLICK_WAVES_ENABLED = true;
+    let configureWaves = () => {};
     function createStars(width, height, random) {
         const count = Math.max(24, Math.min(180, Math.round(width * height / 9000)));
         const rand = random || Math.random;
@@ -88,6 +91,47 @@
         // Both ends stay within the interaction circle; its rim fades to zero.
         return strength * strength * (3 - 2 * strength) * .42;
     }
+    function createWavePlan(stars, edges, width, height, x, y, radius) {
+        const neighbours = stars.map(() => []);
+        edges.forEach(edge => {
+            neighbours[edge.a].push({ node: edge.b, length: edge.distance });
+            neighbours[edge.b].push({ node: edge.a, length: edge.distance });
+        });
+        let source = -1, nearest = radius;
+        stars.forEach((star, i) => {
+            const distance = Math.hypot(star.u * width - x, star.v * height - y);
+            if (neighbours[i].length && distance <= nearest) { nearest = distance; source = i; }
+        });
+        if (source < 0) return null;
+        // Weighted shortest paths: a wave can reach only this component, and
+        // a long edge takes longer than a short one. Cycles never restart it.
+        const distances = stars.map(() => Infinity), visited = stars.map(() => false);
+        distances[source] = 0;
+        for (let step = 0; step < stars.length; step++) {
+            let next = -1;
+            for (let i = 0; i < stars.length; i++) {
+                if (!visited[i] && Number.isFinite(distances[i]) && (next < 0 || distances[i] < distances[next])) next = i;
+            }
+            if (next < 0) break;
+            visited[next] = true;
+            neighbours[next].forEach(edge => {
+                distances[edge.node] = Math.min(distances[edge.node], distances[next] + edge.length);
+            });
+        }
+        let reach = 0;
+        edges.forEach(edge => {
+            if (!Number.isFinite(distances[edge.a])) return;
+            // The two fronts may meet inside a cycle's edge, beyond either end.
+            reach = Math.max(reach, (distances[edge.a] + distances[edge.b] + edge.distance) / 2);
+        });
+        return { source, distances, reach };
+    }
+    function waveIntensity(distance, travelled) {
+        if (!Number.isFinite(distance) || travelled < 0) return 0;
+        const age = travelled - distance;
+        const strength = age < 0 ? Math.max(0, 1 + age / 22) : Math.max(0, 1 - age / 100);
+        return strength * strength * (3 - 2 * strength);
+    }
     function init(win) {
         const doc = win.document;
         if (!doc.body.classList.contains('home-page') || doc.querySelector('.home-starfield')) return;
@@ -99,8 +143,14 @@
         if (!ctx) { canvas.remove(); return; }
         let width = 0, height = 0, stars = [], frame = 0, last = 0, color = '', paused = false;
         let mode = 'full', time = 0, touchUntil = 0, edges = [], edgeFade = 0, visibleEdges = 0;
+        let waves = [], wavesEnabled = CLICK_WAVES_ENABLED, lastWave = -Infinity, visibleWaveEdges = 0, press = null;
         const pointer = { active: false, x: 0, y: 0 };
-        readState = () => ({ mode, count: stars.length, edges: visibleEdges, touchActive: pointer.active && touchUntil > win.performance.now() });
+        readState = () => ({ mode, count: stars.length, edges: visibleEdges, touchActive: pointer.active && touchUntil > win.performance.now(),
+            wavesEnabled, waves: waves.length, waveEdges: visibleWaveEdges, waveReach: Math.max(0, ...waves.map(wave => wave.reach)) });
+        configureWaves = enabled => {
+            wavesEnabled = CLICK_WAVES_ENABLED && enabled !== false;
+            if (!wavesEnabled) { waves = []; visibleWaveEdges = 0; }
+        };
         const reduced = win.matchMedia('(prefers-reduced-motion: reduce)');
         const coarse = win.matchMedia('(pointer: coarse)');
         function stop() { if (frame) win.cancelAnimationFrame(frame); frame = 0; }
@@ -110,14 +160,19 @@
             ctx.strokeStyle = color;
             if (touchUntil && timestamp > touchUntil) { pointer.active = false; touchUntil = 0; }
             const touchFade = touchUntil ? Math.min(1, Math.max(0, (touchUntil - timestamp) / 650)) : 1;
-            const points = stars.map(star => {
+            if (!moving) waves = [];
+            waves = waves.filter(wave => timestamp - wave.start < (wave.reach + 100) / wave.speed * 1000);
+            const travelling = waves.map(wave => ({ ...wave, travelled: Math.max(0, timestamp - wave.start) * wave.speed / 1000 }));
+            const glowAt = distanceFor => Math.min(1, travelling.reduce((glow, wave) => glow + waveIntensity(distanceFor(wave), wave.travelled), 0));
+            const points = stars.map((star, i) => {
                 const x = star.u * width, y = star.v * height;
                 const target = moving ? influence(x, y, pointer, coarse.matches ? 100 : 155) : { x: 0, y: 0, glow: 0 };
                 star.dx += (target.x * touchFade - star.dx) * .13;
                 star.dy += (target.y * touchFade - star.dy) * .13;
                 const drift = moving && mode === 'full' ? Math.sin(time / 8500 + star.phase) * 1.8 : 0;
                 const alpha = star.alpha + (moving ? Math.sin(time / 3700 + star.phase) * .025 : 0) + target.glow * touchFade * .16;
-                return { x: x + star.dx + drift, y: y + star.dy + drift * .5, alpha, glow: target.glow };
+                const waveGlow = glowAt(wave => wave.distances[i]);
+                return { x: x + star.dx + drift, y: y + star.dy + drift * .5, alpha: alpha + waveGlow * .12, glow: target.glow, waveGlow };
             });
             edgeFade = moving ? edgeFade + ((pointer.active ? touchFade : 0) - edgeFade) * .14 : 0;
             visibleEdges = 0;
@@ -133,10 +188,31 @@
                     visibleEdges++;
                 });
             }
+            visibleWaveEdges = 0;
+            if (travelling.length) {
+                ctx.lineWidth = .85;
+                edges.forEach(edge => {
+                    const a = points[edge.a], b = points[edge.b];
+                    const slices = Math.max(1, Math.ceil(edge.distance / 20));
+                    let lit = false;
+                    for (let i = 0; i < slices; i++) {
+                        const from = i / slices, to = (i + 1) / slices, middle = (from + to) / 2;
+                        const glow = glowAt(wave => Math.min(wave.distances[edge.a] + middle * edge.distance,
+                            wave.distances[edge.b] + (1 - middle) * edge.distance));
+                        if (glow < .015) continue;
+                        ctx.globalAlpha = glow * (mode === 'medium' ? .15 : .22);
+                        ctx.beginPath();
+                        ctx.moveTo(a.x + (b.x - a.x) * from, a.y + (b.y - a.y) * from);
+                        ctx.lineTo(a.x + (b.x - a.x) * to, a.y + (b.y - a.y) * to);
+                        ctx.stroke(); lit = true;
+                    }
+                    if (lit) visibleWaveEdges++;
+                });
+            }
             stars.forEach((star, i) => {
                 const point = points[i], px = point.x, py = point.y;
                 ctx.globalAlpha = point.alpha;
-                ctx.beginPath(); ctx.arc(px, py, star.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(px, py, star.radius + point.waveGlow * .3, 0, Math.PI * 2); ctx.fill();
                 if (star.sparkle) {
                     const size = star.radius * 2.2 + point.glow * .5;
                     ctx.globalAlpha = point.alpha * .5;
@@ -170,7 +246,7 @@
             color = win.getComputedStyle(canvas).color;
             mode = reduced.matches || doc.body.classList.contains('animations-off') ? 'off'
                 : doc.body.classList.contains('animations-medium') ? 'medium' : 'full';
-            if (mode === 'off') { pointer.active = false; touchUntil = 0; }
+            if (mode === 'off') { pointer.active = false; touchUntil = 0; waves = []; press = null; }
             resume();
         }
         function resize() {
@@ -180,31 +256,49 @@
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             stars = createStars(width, height);
             edges = createConnections(stars, width, height, coarse.matches ? 90 : 120);
+            waves = []; visibleWaveEdges = 0; press = null;
             canvas.dataset.count = String(stars.length);
             settings();
         }
         doc.addEventListener('pointermove', event => {
+            if (press && event.pointerId === press.id && Math.hypot(event.clientX - press.x, event.clientY - press.y) > 10) press = null;
             if (event.pointerType === 'touch' || mode === 'off') return;
             pointer.x = event.clientX; pointer.y = event.clientY; pointer.active = true;
         }, { passive: true });
         doc.addEventListener('pointerdown', event => {
+            if (mode !== 'off' && wavesEnabled && !doc.body.classList.contains('modal-open') && event.isPrimary !== false && event.button === 0 &&
+                !event.target.closest('a, button, input, textarea, select, label, summary, [role="dialog"], [contenteditable="true"]')) {
+                press = { id: event.pointerId, x: event.clientX, y: event.clientY, start: win.performance.now() };
+            } else press = null;
             if (event.pointerType !== 'touch' || mode === 'off') return;
             pointer.x = event.clientX; pointer.y = event.clientY; pointer.active = true;
             touchUntil = win.performance.now() + 1000;
         }, { passive: true });
+        doc.addEventListener('pointerup', event => {
+            const tap = press; press = null;
+            const now = win.performance.now();
+            if (!tap || tap.id !== event.pointerId || mode === 'off' || !wavesEnabled || waves.length >= 3 || now - tap.start > 700 ||
+                now - lastWave < 240 || Math.hypot(event.clientX - tap.x, event.clientY - tap.y) > 10) return;
+            const plan = createWavePlan(stars, edges, width, height, tap.x, tap.y, coarse.matches ? 140 : 220);
+            if (!plan) return;
+            lastWave = now;
+            waves.push({ ...plan, start: now, speed: coarse.matches ? 400 : 520 });
+        }, { passive: true });
         // A touch pointer leaves the document on finger-up: let its soft pulse finish.
         doc.addEventListener('pointerleave', event => { if (event.pointerType !== 'touch') pointer.active = false; });
-        doc.addEventListener('pointercancel', () => { pointer.active = false; });
-        doc.addEventListener('visibilitychange', resume);
+        doc.addEventListener('pointercancel', () => { pointer.active = false; press = null; });
+        doc.addEventListener('scroll', () => { press = null; }, { passive: true, capture: true });
+        doc.addEventListener('visibilitychange', () => { waves = []; press = null; resume(); });
         win.addEventListener('resize', resize, { passive: true });
         win.addEventListener('almanion-settings-applied', settings);
         // Local settings announce their save before applying body classes.
         win.addEventListener('almanion-settings-changed', () => Promise.resolve().then(settings));
-        win.addEventListener('pagehide', () => { paused = true; stop(); });
+        win.addEventListener('pagehide', () => { paused = true; waves = []; press = null; stop(); });
         win.addEventListener('pageshow', () => { paused = false; settings(); });
         reduced.addEventListener?.('change', settings);
         coarse.addEventListener?.('change', resize);
         resize();
     }
-    return { createStars, createConnections, connectionOpacity, influence, init, getState: () => readState() };
+    return { createStars, createConnections, connectionOpacity, createWavePlan, waveIntensity, influence, init,
+        setWavesEnabled: enabled => configureWaves(enabled), getState: () => readState() };
 });
