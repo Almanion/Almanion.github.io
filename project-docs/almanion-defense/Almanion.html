@@ -4691,36 +4691,50 @@ function createStarVolume(nightSky){
  // One fixed object in the SAME world as the star catalogue. Its final framing
  // is reached by moving the camera, never by scaling a separate screen sprite.
  const pulsar=Object.freeze({wx:0,wy:-1.6,z:8,radius:.032,arrival:{x:1230,y:535,r:97}});
- const bands=[{name:'cloud',min:95,max:180},{name:'far',min:25,max:60},{name:'middle',min:8,max:18},{name:'near',min:3.2,max:6.8}];
+ const bands=[{name:'cloud',min:95,max:180},{name:'far',min:25,max:60},{name:'middle',min:8,max:18},{name:'near',min:3.2,max:6.8},
+  {name:'approach-inner',min:-1.1,max:-.2,referenceZ:-4.8},
+  {name:'approach-outer',min:-3.7,max:-2.8,referenceZ:-4.8},
+  {name:'departure-inner',min:-6.6,max:-5.7,referenceZ:-10.8},
+  {name:'departure-outer',min:-8.6,max:-7.9,referenceZ:-10.8}];
  let seed=410731;const random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
  const stars=nightSky.starCatalog.map((s,i)=>{
   const layer=i>=2900?0:i<1800?1:i<2650?2:3,b=bands[layer],z=b.min+random()*(b.max-b.min);
   return{...s,layer,z,wx:(s.x-CX)*z/F,wy:(s.y-CY)*z/F};
  });
+ // Four finite foreground volumes, not an endlessly recycled overlay. Two
+ // pass the camera on each opening leg; reverse travel reveals the same stars.
+ for(let layer=4;layer<bands.length;layer++)for(let i=0;i<180;i++){
+  const b=bands[layer],z=b.min+random()*(b.max-b.min),referenceDepth=z-b.referenceZ;
+  const angle=random()*Math.PI*2,radial=Math.sqrt(random()),x=Math.cos(angle)*W*.78*radial,y=Math.sin(angle)*H*.9*radial;
+  stars.push({layer,z,referenceDepth,wx:x*referenceDepth/F,wy:y*referenceDepth/F,r:.58+random()*.72,alpha:.40+random()*.46,color:i%11===0?'244,218,186':'183,212,250',halo:i%7===0,foreground:true});
+ }
  const groups=bands.map((_,i)=>stars.filter(s=>s.layer===i));
  // Small cached luminous sprites; no per-star gradient allocation per frame.
  const halos=new Map();
  for(const color of new Set(stars.map(s=>s.color))){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,`rgba(${color},.4)`);g.addColorStop(.25,`rgba(${color},.12)`);g.addColorStop(1,`rgba(${color},0)`);x.fillStyle=g;x.fillRect(0,0,64,64);halos.set(color,c);}
  const shade=document.createElement('canvas');shade.width=W;shade.height=H;const sh=shade.getContext('2d'),gradient=sh.createRadialGradient(320,485,80,340,485,660);gradient.addColorStop(0,'rgba(3,8,18,.8)');gradient.addColorStop(.58,'rgba(3,8,18,.4)');gradient.addColorStop(1,'rgba(3,8,18,0)');sh.fillStyle=gradient;sh.fillRect(0,0,W,H);
- function project(s,c){const depth=Math.max(.2,s.z-c.z);return{x:CX+F*(s.wx-c.x)/depth,y:CY+F*(s.wy-c.y)/depth,size:s.z/depth};}
+ function project(s,c){const depth=Math.max(.2,s.z-c.z);return{x:CX+F*(s.wx-c.x)/depth,y:CY+F*(s.wy-c.y)/depth,size:(s.referenceDepth??s.z)/depth};}
  function render(ctx,camera,previous=camera,shutter=.036,occlusion=[]){
-  const begin=performance.now(),motion=Array.from({length:4},()=>({count:0,distance:0,max:0}));let streaks=0,visible=0;
+  const begin=performance.now(),motion=bands.map(()=>({count:0,visible:0,passed:0,distance:0,max:0}));let streaks=0,visible=0;
   ctx.clearRect(0,0,W,H);ctx.drawImage(nightSky.nebula,-4-camera.x*4,-4-camera.y*4,W+8,H+8);
   // Far-to-near painting preserves the depth hierarchy without depth sorting.
-  for(let layer=0;layer<4;layer++)for(const s of groups[layer]){
-   if(s.z-camera.z<=.25)continue; // Stars passed by the camera leave the volume.
-   const p=project(s,camera),q=project(s,previous),dx=p.x-q.x,dy=p.y-q.y,distance=Math.hypot(dx,dy),stats=motion[layer];
+  for(let layer=0;layer<bands.length;layer++)for(const s of groups[layer]){
+   const stats=motion[layer];
+   if(s.z-camera.z<=.25){stats.passed++;continue;} // No projection of stars behind the camera.
+   const p=project(s,camera),q=project(s,previous),dx=p.x-q.x,dy=p.y-q.y,distance=Math.hypot(dx,dy);
    stats.count++;stats.distance+=distance/shutter;stats.max=Math.max(stats.max,distance/shutter);
    const radius=Math.min(3.4,s.r*Math.pow(p.size,.62));
-   if(p.x< -70||p.x>W+70||p.y< -70||p.y>H+70)continue;
+   // Keep the full exposure tail alive until it clears the viewport edge.
+   const margin=s.foreground?190:70;
+   if(p.x< -margin||p.x>W+margin||p.y< -margin||p.y>H+margin)continue;
    // Opaque presentation windows hide these pixels. The 64px inset keeps
    // luminous edges and shutter trails intact around the rounded frame.
    if(occlusion.some(r=>p.x>r.x+64&&p.x<r.x+r.w-64&&p.y>r.y+64&&p.y<r.y+r.h-64))continue;
-   visible++;
+   visible++;stats.visible++;
    const alpha=Math.min(.94,s.alpha*(1+Math.max(0,p.size-1)*.1));
    // Exposure is sampled from the same camera path, independent of FPS.
    if(distance>.55){
-    const length=Math.min(55,distance),tx=dx/distance*length,ty=dy/distance*length;
+    const length=Math.min(s.foreground?160:55,distance),tx=dx/distance*length,ty=dy/distance*length;
     ctx.strokeStyle=`rgba(${s.color},${alpha*.18})`;ctx.lineWidth=Math.max(.45,radius*.85);ctx.beginPath();ctx.moveTo(p.x-tx,p.y-ty);ctx.lineTo(p.x,p.y);ctx.stroke();
     ctx.strokeStyle=`rgba(${s.color},${alpha*.36})`;ctx.lineWidth=Math.max(.4,radius*.65);ctx.beginPath();ctx.moveTo(p.x-tx*.48,p.y-ty*.48);ctx.lineTo(p.x,p.y);ctx.stroke();streaks++;
    }
@@ -4729,14 +4743,14 @@ function createStarVolume(nightSky){
    if(radius<.45)ctx.fillRect(p.x-radius,p.y-radius,radius*2,radius*2);else{ctx.beginPath();ctx.arc(p.x,p.y,radius,0,Math.PI*2);ctx.fill();}
   }
   ctx.drawImage(shade,0,0);
-  return{streaks,visible,drawMs:performance.now()-begin,layers:motion.map((s,i)=>({name:bands[i].name,count:s.count,meanSpeed:s.count?s.distance/s.count:0,maxSpeed:s.max}))};
+  return{streaks,visible,drawMs:performance.now()-begin,layers:motion.map((s,i)=>({name:bands[i].name,count:s.count,visible:s.visible,passed:s.passed,meanSpeed:s.count?s.distance/s.count:0,maxSpeed:s.max}))};
  }
  function still(ctx,camera){const key=[camera.x,camera.y,camera.z].join(',');let item=cache.get(key);if(!item){const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;const stats=render(canvas.getContext('2d'),camera);item={canvas,stats};cache.set(key,item);if(cache.size>4)cache.delete(cache.keys().next().value);}ctx.clearRect(0,0,W,H);ctx.drawImage(item.canvas,0,0);return{...item.stats,drawMs:0};}
  function at(s){
   if(s===34){const d=F*pulsar.radius/pulsar.arrival.r;return{x:pulsar.wx-(pulsar.arrival.x-CX)*d/F,y:pulsar.wy-(pulsar.arrival.y-CY)*d/F,z:pulsar.z-d};}
-  if(s===33)return{x:-.035,y:.02,z:-1.05};
+  if(s===33)return{x:-.035,y:.02,z:-4.8};
   const points=[
-   [0,0,-2.2],[-.08,.04,.1],[-.42,.23,1.15],[-.46,.22,1.28],[-.40,.12,1.46],[-.49,.15,1.42],[-.41,.20,1.50],[-.40,.20,1.50],[-.40,.20,1.50],[-.41,.20,1.50],
+   [0,0,-10.8],[-.08,.04,.1],[-.42,.23,1.15],[-.46,.22,1.28],[-.40,.12,1.46],[-.49,.15,1.42],[-.41,.20,1.50],[-.40,.20,1.50],[-.40,.20,1.50],[-.41,.20,1.50],
    [-.08,.04,.1],[-.10,.02,.2],[-.10,.02,.2],[-.08,.04,.1],[-.42,.23,1.15],[.08,.12,1.45],[.04,.12,1.40],[.02,.08,1.58],
    [.02,.08,1.58],[.02,.08,1.58],[.02,.08,1.58],[.02,.08,1.58],[.02,.08,1.58],[.02,.08,1.58],[.02,.08,1.58],[.02,.08,1.58],[.02,.08,1.58],[.02,.08,1.58],[-.12,0,1.72],[0,0,0],[-.32,.20,1.67],[-.32,.20,1.67],[-.32,.20,1.67]
   ];const [x,y,z]=points[Math.max(0,Math.min(33,s))];return{x,y,z};
@@ -4765,7 +4779,7 @@ function createStarVolume(nightSky){
  return{render,still,at,path,flightPath,flightProgress,flightSpeed,project,smooth,stars,bands,pulsar,focal:F,get cacheSize(){return cache.size}};
 }
 
-/* Four depth bands, a deterministic perspective camera and shutter trails.
+/* Eight depth bands, a deterministic perspective camera and shutter trails.
    Every checkpoint has a stable pose; reverse travel retraces the same route. */
 window.Cosmos=(()=>{
  const sky=document.getElementById('cosmos'),fx=document.getElementById('cosmos-fx');
@@ -4792,7 +4806,7 @@ window.Cosmos=(()=>{
    const time=clamp((flight.progress-start)/span),from=volume.at(flight.from??(flight.reverse?2:1)),to=volume.at(flight.to??(flight.reverse?1:2));
    speed=jump?volume.flightSpeed(time):16*time*time*(1-time)*(1-time);
    // A longer virtual exposure at cruising speed makes nearby stars stretch.
-   // It contracts before arrival; no blur filter or additional star layer.
+   // It contracts before arrival; every trace follows the actual camera path.
    shutter+=jump?.042*speed*speed:0;
    const prior=clamp((flight.progress-shutter/duration-start)/span),landmark=flight.from===34||flight.to===34?volume.pulsar:null,path=jump?(a,b,t)=>volume.flightPath(a,b,t,landmark):volume.path;
    camera=path(from,to,time);previous=path(from,to,prior);cx=flight.x;cy=flight.y;
@@ -4991,7 +5005,7 @@ const IntroFlight=(()=>{
   if(reduced||!pair(from,target)){await direct(target);return;}
   const reverse=target===0||from===1,first=(from===0||target===0),sourceID=first?0:33,destID=first?33:1;
   const source=$(first?'intro-copy':'intro-description'),dest=first?$('intro-description'):$('site');
-  const sourcePark=parking[sourceID],hit=portal[sourceID],ms=first?2850:3000;
+  const sourcePark=parking[sourceID],hit=portal[sourceID],ms=first?3400:3500;
   // Prepare the real homepage once, at its final layout, before animating only
   // its composited transform. The initial hidden surface never occludes stars.
   if(!first){resetUI(1);mathState(1);await layout(1,false);state(from);}
@@ -5007,7 +5021,7 @@ const IntroFlight=(()=>{
   // makes a plane accelerate naturally as it approaches the camera.
   function paint(raw){
    const p=reverse?1-raw:raw,t=clamp((p-.04)/.90),q=Cosmos.volume.flightProgress(t);
-   const out=1/(1-.94*q),incoming=1/(3.35-2.35*q);
+   const out=1/(1-.975*q),incoming=1/(5.6-4.6*q);
    source.style.transform=`scale(${out})`;
    source.style.opacity=String(1-smooth((q-(first?.30:.12))/(first?.50:.42)));
    dest.style.transform=`scale(${incoming})`;
@@ -5648,10 +5662,20 @@ function createCursorFragments(canvas,img){
  for(let y=0;y<160;y+=8)for(let x=0;x<160;x+=8)split(x,y,8);
  let stats={total:tiles.length},dirty=false;
  function clear(){if(dirty)ctx.clearRect(0,0,1920,1080);dirty=false;stats={total:tiles.length,attached:tiles.length,detached:0,material:tiles.length,stars:0,amount:0};}
- function draw(origin,amount,t,renderer,view){
+ // Sample release positions and velocities once. Each piece inherits the
+ // moving arrow's trajectory; material conversion and capture have separate
+ // clocks, so a fully fragmented arrow still has a long journey ahead.
+ function flightRoute(point,start,duration,end){return{start,duration,end,tiles:tiles.map(p=>{
+  const release=start+p.delay*duration,a=point(release-.001),b=point(release+.001);
+  return{release,origin:point(release),vx:(b.x-a.x)/.002,vy:(b.y-a.y)/.002};
+ })};}
+ function draw(origin,amount,t,renderer,view,motion=null){
   ctx.clearRect(0,0,1920,1080);dirty=true;let attached=0,detached=0,material=0,stars=0;
   for(let i=0;i<tiles.length;i++){
-   const p=tiles[i],local=clamp((amount-p.delay)/(1-p.delay)),q=smooth(local),target=renderer.tracePoint(i*7,t),capture=smooth((local-.24)/.76),escape=Math.sin(Math.PI*q)*(1-capture),x=(origin.x+p.x)*(1-capture)+target.x*capture+Math.cos(p.angle)*p.escape*escape,y=(origin.y+p.y)*(1-capture)+target.y*capture+Math.sin(p.angle)*p.escape*escape;
+   const p=tiles[i],local=clamp((amount-p.delay)/(1-p.delay)),q=smooth(local),target=renderer.tracePoint(i*7,t),route=motion?.route.tiles[i];
+   const age=route?Math.max(0,motion.progress-route.release):0,transport=route?clamp(age/(motion.route.end-route.release)):clamp((local-.24)/.76),capture=smooth(transport);
+   const drift=.22*(1-Math.exp(-age/.22)),base=route&&local>0?{x:route.origin.x+route.vx*drift,y:route.origin.y+route.vy*drift}:origin;
+   const escape=Math.sin(Math.PI*(route?transport:q))*(1-capture),x=(base.x+p.x)*(1-capture)+target.x*capture+Math.cos(p.angle)*p.escape*escape,y=(base.y+p.y)*(1-capture)+target.y*capture+Math.sin(p.angle)*p.escape*escape;
    if(local===0)attached++;else detached++;
    const heat=smooth((local-.12)/.40),scale=1-smooth((local-.22)/.40),radius=p.star*heat;
    // The target belongs to the same 3D magnetic field. Back-side stars are
@@ -5662,17 +5686,17 @@ function createCursorFragments(canvas,img){
    }
    if(scale>0){material++;ctx.save();ctx.translate(x,y);ctx.rotate(p.spin*q);ctx.scale(scale,scale);ctx.drawImage(raster,p.sx,p.sy,p.size,p.size,-p.size/2,-p.size/2,p.size,p.size);ctx.restore();}
   }
-  stats={total:tiles.length,attached,detached,material,stars,amount,sourceOpacity:1};
+  stats={total:tiles.length,attached,detached,material,stars,amount,sourceOpacity:1,transport:motion?clamp((motion.progress-motion.route.start)/(motion.route.end-motion.route.start)):amount};
  }
  // A pixel-level check of the assembled material, independent of animation.
  function reconstructionError(){const c=document.createElement('canvas');c.width=c.height=160;const x=c.getContext('2d');for(const p of tiles)x.drawImage(raster,p.sx,p.sy,p.size,p.size,p.sx,p.sy,p.size,p.size);const actual=x.getImageData(0,0,160,160).data;let error=0;for(let i=0;i<actual.length;i++)error=Math.max(error,Math.abs(actual[i]-rgba[i]));return error;}
- return{draw,clear,reconstructionError,get stats(){return stats},count:tiles.length};
+ return{draw,clear,flightRoute,reconstructionError,get stats(){return stats},count:tiles.length};
 }
 
 /* One world, one camera. The ordinary pulsar has no private position, scale
    tween or clock. Cosmos supplies its camera atomically with each star frame. */
 window.PulsarScene=(()=>{
- const FINAL=34,BEACON_TIME=1.6,END_TIME=8.5,DURATION=6600,BREAK=.46,clamp=x=>Math.max(0,Math.min(1,x)),smooth=x=>{x=clamp(x);return x*x*x*(10+x*(-15+6*x))},mix=(a,b,t)=>a+(b-a)*t;
+ const FINAL=34,BEACON_TIME=1.6,END_TIME=8.5,DURATION=6600,BREAK=.27,SHATTER=.25,CAPTURE=.94,clamp=x=>Math.max(0,Math.min(1,x)),smooth=x=>{x=clamp(x);return x*x*x*(10+x*(-15+6*x))},mix=(a,b,t)=>a+(b-a)*t;
  let renderer,shards,frame=0,epoch=0,clock=END_TIME,lastPaint=0,paused=false,quiet=false,current=0,travel=false,flightFrame=null,spaceKey='',spaceCamera=null;
  const finalView={...Cosmos.volume.pulsar.arrival},layers=['site','panel','opening','caption','final','connector','focus','account-story','account-site-label','math-site-label','intro-cue'];
  function viewAt(camera){const world=Cosmos.volume.pulsar,p=Cosmos.volume.project(world,camera);return{x:p.x,y:p.y,r:Cosmos.volume.focal*world.radius/(world.z-camera.z)};}
@@ -5703,8 +5727,9 @@ window.PulsarScene=(()=>{
   if(reduced){await direct(target);return;}
   const from=step,reverse=from===FINAL,anchor=reverse?target:from,arrivalTime=reverse?clock:END_TIME;
   if(reverse){const previous=reduced;reduced=true;try{await direct(target)}finally{reduced=previous}}
-  const source={...cursor},far=viewFor(anchor),saved=layers.map(id=>{const n=$(id);return{n,opacity:n?.style.opacity,transform:n?.style.transform,alpha:n?Number(getComputedStyle(n).opacity):0};});
-  const breakCamera=Cosmos.volume.flightPath(Cosmos.volume.at(anchor),Cosmos.volume.at(FINAL),clamp((BREAK-.13)/.78),Cosmos.volume.pulsar),breakView=viewAt(breakCamera),breakPoint={x:breakView.x-108,y:breakView.y+100},leadPoint={x:far.x-20,y:far.y+28};
+  const source={...cursor},saved=layers.map(id=>{const n=$(id);return{n,opacity:n?.style.opacity,transform:n?.style.transform,alpha:n?Number(getComputedStyle(n).opacity):0};});
+  const leadCamera=Cosmos.volume.flightPath(Cosmos.volume.at(anchor),Cosmos.volume.at(FINAL),clamp((.62-.13)/.78),Cosmos.volume.pulsar),leadView=viewAt(leadCamera),leadPoint={x:leadView.x-54,y:leadView.y+76};
+  const carrier=p=>OpeningGuidance.path(source,leadPoint,clamp(p/.62),-86),materialRoute=shards.flightRoute(carrier,BREAK,SHATTER,CAPTURE);
   if(reverse)step=from;halt();travel=true;spaceKey='';$('stage').dataset.pulsarFinal='false';$('stage').dataset.pulsarFlight='true';$('pulsar-ending').style.visibility='visible';$('cursor').style.opacity='1';Cosmos.holdFlight(from);
   function frameAt(raw){
    const p=reverse?1-raw:raw,time=mix(BEACON_TIME,arrivalTime,smooth(p));
@@ -5715,10 +5740,10 @@ window.PulsarScene=(()=>{
    for(const item of saved)if(item.n)item.n.style.opacity=String(item.alpha*fade);
    $('site').style.transform=`translate(${-135*smooth(p/.35)}px,${-18*smooth(p/.35)}px) scale(${1-.11*smooth(p/.35)})`;
    $('pulsar-ending').style.opacity=String(smooth((p-.81)/.19));
-   const point=p<.20?OpeningGuidance.path(source,leadPoint,clamp(p/.20),-40):OpeningGuidance.path(leadPoint,breakPoint,clamp((p-.20)/(BREAK-.20)),36);
+   const point=carrier(p);
    Object.assign(cursor,point);paintCursor();renderer.draw(time,v,{full:true});
-   const fracture=clamp((p-BREAK)/.44),replaced=p>=BREAK;$('cursor').style.visibility=replaced?'hidden':'visible';
-   if(replaced)shards.draw(breakPoint,fracture,time,renderer,v);else shards.clear();
+   const fracture=clamp((p-BREAK)/SHATTER),replaced=p>=BREAK;$('cursor').style.visibility=replaced?'hidden':'visible';
+   if(replaced)shards.draw(point,fracture,time,renderer,v,{progress:p,route:materialRoute});else shards.clear();
    flightFrame={progress:p,cursor:{...cursor},fracture,view:v,time,replaced};$('stage').dataset.pulsarProgress=p.toFixed(4);
   }
   try{frameAt(0);await tween(DURATION,frameAt,true);}

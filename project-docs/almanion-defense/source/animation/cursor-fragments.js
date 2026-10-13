@@ -18,10 +18,20 @@ function createCursorFragments(canvas,img){
  for(let y=0;y<160;y+=8)for(let x=0;x<160;x+=8)split(x,y,8);
  let stats={total:tiles.length},dirty=false;
  function clear(){if(dirty)ctx.clearRect(0,0,1920,1080);dirty=false;stats={total:tiles.length,attached:tiles.length,detached:0,material:tiles.length,stars:0,amount:0};}
- function draw(origin,amount,t,renderer,view){
+ // Sample release positions and velocities once. Each piece inherits the
+ // moving arrow's trajectory; material conversion and capture have separate
+ // clocks, so a fully fragmented arrow still has a long journey ahead.
+ function flightRoute(point,start,duration,end){return{start,duration,end,tiles:tiles.map(p=>{
+  const release=start+p.delay*duration,a=point(release-.001),b=point(release+.001);
+  return{release,origin:point(release),vx:(b.x-a.x)/.002,vy:(b.y-a.y)/.002};
+ })};}
+ function draw(origin,amount,t,renderer,view,motion=null){
   ctx.clearRect(0,0,1920,1080);dirty=true;let attached=0,detached=0,material=0,stars=0;
   for(let i=0;i<tiles.length;i++){
-   const p=tiles[i],local=clamp((amount-p.delay)/(1-p.delay)),q=smooth(local),target=renderer.tracePoint(i*7,t),capture=smooth((local-.24)/.76),escape=Math.sin(Math.PI*q)*(1-capture),x=(origin.x+p.x)*(1-capture)+target.x*capture+Math.cos(p.angle)*p.escape*escape,y=(origin.y+p.y)*(1-capture)+target.y*capture+Math.sin(p.angle)*p.escape*escape;
+   const p=tiles[i],local=clamp((amount-p.delay)/(1-p.delay)),q=smooth(local),target=renderer.tracePoint(i*7,t),route=motion?.route.tiles[i];
+   const age=route?Math.max(0,motion.progress-route.release):0,transport=route?clamp(age/(motion.route.end-route.release)):clamp((local-.24)/.76),capture=smooth(transport);
+   const drift=.22*(1-Math.exp(-age/.22)),base=route&&local>0?{x:route.origin.x+route.vx*drift,y:route.origin.y+route.vy*drift}:origin;
+   const escape=Math.sin(Math.PI*(route?transport:q))*(1-capture),x=(base.x+p.x)*(1-capture)+target.x*capture+Math.cos(p.angle)*p.escape*escape,y=(base.y+p.y)*(1-capture)+target.y*capture+Math.sin(p.angle)*p.escape*escape;
    if(local===0)attached++;else detached++;
    const heat=smooth((local-.12)/.40),scale=1-smooth((local-.22)/.40),radius=p.star*heat;
    // The target belongs to the same 3D magnetic field. Back-side stars are
@@ -32,9 +42,9 @@ function createCursorFragments(canvas,img){
    }
    if(scale>0){material++;ctx.save();ctx.translate(x,y);ctx.rotate(p.spin*q);ctx.scale(scale,scale);ctx.drawImage(raster,p.sx,p.sy,p.size,p.size,-p.size/2,-p.size/2,p.size,p.size);ctx.restore();}
   }
-  stats={total:tiles.length,attached,detached,material,stars,amount,sourceOpacity:1};
+  stats={total:tiles.length,attached,detached,material,stars,amount,sourceOpacity:1,transport:motion?clamp((motion.progress-motion.route.start)/(motion.route.end-motion.route.start)):amount};
  }
  // A pixel-level check of the assembled material, independent of animation.
  function reconstructionError(){const c=document.createElement('canvas');c.width=c.height=160;const x=c.getContext('2d');for(const p of tiles)x.drawImage(raster,p.sx,p.sy,p.size,p.size,p.sx,p.sy,p.size,p.size);const actual=x.getImageData(0,0,160,160).data;let error=0;for(let i=0;i<actual.length;i++)error=Math.max(error,Math.abs(actual[i]-rgba[i]));return error;}
- return{draw,clear,reconstructionError,get stats(){return stats},count:tiles.length};
+ return{draw,clear,flightRoute,reconstructionError,get stats(){return stats},count:tiles.length};
 }

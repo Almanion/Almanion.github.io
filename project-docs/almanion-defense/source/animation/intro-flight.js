@@ -25,7 +25,7 @@ const IntroFlight=(()=>{
   if(reduced||!pair(from,target)){await direct(target);return;}
   const reverse=target===0||from===1,first=(from===0||target===0),sourceID=first?0:33,destID=first?33:1;
   const source=$(first?'intro-copy':'intro-description'),dest=first?$('intro-description'):$('site');
-  const sourcePark=parking[sourceID],hit=portal[sourceID],ms=first?2850:3000;
+  const sourcePark=parking[sourceID],hit=portal[sourceID],ms=first?3400:3500;
   // Prepare the real homepage once, at its final layout, before animating only
   // its composited transform. The initial hidden surface never occludes stars.
   if(!first){resetUI(1);mathState(1);await layout(1,false);state(from);}
@@ -41,7 +41,7 @@ const IntroFlight=(()=>{
   // makes a plane accelerate naturally as it approaches the camera.
   function paint(raw){
    const p=reverse?1-raw:raw,t=clamp((p-.04)/.90),q=Cosmos.volume.flightProgress(t);
-   const out=1/(1-.94*q),incoming=1/(3.35-2.35*q);
+   const out=1/(1-.975*q),incoming=1/(5.6-4.6*q);
    source.style.transform=`scale(${out})`;
    source.style.opacity=String(1-smooth((q-(first?.30:.12))/(first?.50:.42)));
    dest.style.transform=`scale(${incoming})`;

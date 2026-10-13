@@ -1,4 +1,4 @@
-/* Four depth bands, a deterministic perspective camera and shutter trails.
+/* Eight depth bands, a deterministic perspective camera and shutter trails.
    Every checkpoint has a stable pose; reverse travel retraces the same route. */
 window.Cosmos=(()=>{
  const sky=document.getElementById('cosmos'),fx=document.getElementById('cosmos-fx');
@@ -25,7 +25,7 @@ window.Cosmos=(()=>{
    const time=clamp((flight.progress-start)/span),from=volume.at(flight.from??(flight.reverse?2:1)),to=volume.at(flight.to??(flight.reverse?1:2));
    speed=jump?volume.flightSpeed(time):16*time*time*(1-time)*(1-time);
    // A longer virtual exposure at cruising speed makes nearby stars stretch.
-   // It contracts before arrival; no blur filter or additional star layer.
+   // It contracts before arrival; every trace follows the actual camera path.
    shutter+=jump?.042*speed*speed:0;
    const prior=clamp((flight.progress-shutter/duration-start)/span),landmark=flight.from===34||flight.to===34?volume.pulsar:null,path=jump?(a,b,t)=>volume.flightPath(a,b,t,landmark):volume.path;
    camera=path(from,to,time);previous=path(from,to,prior);cx=flight.x;cy=flight.y;

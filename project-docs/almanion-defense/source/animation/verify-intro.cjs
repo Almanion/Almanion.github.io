@@ -17,14 +17,16 @@ const out=path.resolve(__dirname,'../..'),ev=path.join(out,'evidence-v2');
    if(width===1920)for(const progress of [.24,.50,.74,.91]){await p.waitForFunction(t=>Number(document.getElementById('stage').dataset.introProgress)>=t,progress);await p.screenshot({path:path.join(ev,`intro-${target}-flight-${Math.round(progress*100)}.png`)});}
    await p.evaluate(()=>introRun);assert.deepEqual(await snap(),expected[target],'canonical arrival '+target);
    const frames=await p.evaluate(()=>introFrames),moving=frames.filter(f=>f.phase),peak=Math.max(...frames.map(f=>f.streaks)),draw=frames.map(f=>f.drawMs).sort((a,b)=>a-b);
-   assert(moving.at(-1).t-moving[0].t>=2700,'sustained flight');assert(peak>120,'visible star motion');
+   assert(moving.at(-1).t-moving[0].t>=3300,'sustained deeper flight');assert(peak>120,'visible star motion');
+   const distance=Math.abs(moving.at(-1).camera.z-moving[0].camera.z);assert(distance>4.8,'each opening leg covers a substantial world-space distance');
+   const crossed=target===33?[6,7]:[4,5];for(const layer of crossed){assert(moving.some(f=>f.layers[layer].visible>15),'foreground stars are visibly present');assert(moving.some(f=>f.layers[layer].meanSpeed>1500),'nearby stars accelerate strongly');assert.equal(moving.at(-1).layers[layer].passed,180,'entire layer passes behind the camera');assert.equal(moving.at(-1).layers[layer].visible,0,'passed stars are no longer rendered');}
    assert(frames.every(f=>Number(f.opacity)===1),'cursor remains visible');
    for(let i=1;i<frames.length;i++){const a=frames[i-1],b=frames[i];if(b.t-a.t<30)assert(Math.hypot(a.cursor.x-b.cursor.x,a.cursor.y-b.cursor.y)<65,'continuous pointer '+JSON.stringify({width,target,a,b}));}
-   const middle=frames.find(f=>f.speed>.98);assert(middle,'cruise phase');assert(middle.layers[3].meanSpeed>middle.layers[2].meanSpeed&&middle.layers[2].meanSpeed>middle.layers[1].meanSpeed,'depth hierarchy');
+   const middle=frames.find(f=>f.speed>.98);assert(middle,'cruise phase');assert(Math.max(...middle.layers.slice(4).map(l=>l.meanSpeed))>middle.layers[1].meanSpeed*2,'foreground sweeps faster than the distant field');
    assert(await p.evaluate(()=>!Cosmos.active&&$('stage').dataset.flight==='false'&&document.getAnimations().every(a=>a.playState!=='running')));
    await p.screenshot({path:path.join(ev,`intro-stop-${target}-${width}.png`)});
    const frozen=await p.screenshot();await p.waitForTimeout(350);assert(frozen.equals(await p.screenshot()),'pixel-identical pause');
-   flights.push({width,target,flightMs:moving.at(-1).t-moving[0].t,peakStreaks:peak,drawP95:draw[Math.floor(draw.length*.95)],samples:frames.length});
+   flights.push({width,target,flightMs:moving.at(-1).t-moving[0].t,worldDistance:distance,crossedForegroundLayers:crossed,peakForegroundSpeed:Math.max(...moving.flatMap(f=>crossed.map(i=>f.layers[i].meanSpeed))),peakStreaks:peak,drawP95:draw[Math.floor(draw.length*.95)],samples:frames.length});
   }
   await go(2);assert.deepEqual(await snap(),expected[2],'continues to physics');await go(1);assert.deepEqual(await snap(),expected[1]);
   for(const s of [33,0]){await go(s);assert.deepEqual(await snap(),expected[s],'reverse '+s);}

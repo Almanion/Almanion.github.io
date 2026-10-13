@@ -19,7 +19,10 @@ HTML SHA-256: $htmlHash
 Полный маршрут и эффекты проверены на этой итоговой HTML-сборке.
 Дополнительно проверены разгон и торможение звёзд во время влёта,
 обратный переход, чистая остановка и панель управления.
-Вступительные влёты — 2850 и 3000 мс (плюс наведение курсора).
+Вступительные влёты — 3400 и 3500 мс (плюс наведение курсора).
+Четыре добавленных ближних слоя проходят за камерой и исчезают из проекции.
+Распад курсора начинается на ходу, примерно через 1,8 с финального подлёта;
+после превращения в звёзды частицы ещё около 3 с летят к пульсару.
 Влёт в физику длится 2500 мс; у других влётов/вылетов — 2350 мс.
 Проверены заметный участок равномерного полёта и сокращение следов
 звёзд при торможении перед неподвижной остановкой.
@@ -105,11 +108,7 @@ $relativeFiles += 'evidence-v2/intro-verification.json'
 $relativeFiles += 'evidence-v2/pulsar-verification.json'
 $relativeFiles += 'evidence-v2/pulsar-final-1920.png'
 $relativeFiles += 'evidence-v2/pulsar-final-1366.png'
-$relativeFiles += 'evidence-v2/pulsar-flight-77.png'
-$relativeFiles += 'evidence-v2/pulsar-forward-opening.png'
-$relativeFiles += 'evidence-v2/fracture-detail-0.22.png'
-$relativeFiles += 'evidence-v2/fracture-detail-0.36.png'
-$relativeFiles += 'evidence-v2/fracture-detail-0.48.png'
+foreach ($phase in @(30,36,43,62,77)) { $relativeFiles += "evidence-v2/pulsar-flight-$phase.png" }
 foreach ($step in @(0,33,1)) { $relativeFiles += "evidence-v2/intro-stop-$step-1920.png" }
 foreach ($step in @(33,1)) { $relativeFiles += "evidence-v2/intro-$step-flight-50.png" }
 foreach ($step in @(15,16,17,18)) { $relativeFiles += "evidence-v2/quick-stop-$step-1920.png" }

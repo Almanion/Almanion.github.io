@@ -1,7 +1,7 @@
 /* One world, one camera. The ordinary pulsar has no private position, scale
    tween or clock. Cosmos supplies its camera atomically with each star frame. */
 window.PulsarScene=(()=>{
- const FINAL=34,BEACON_TIME=1.6,END_TIME=8.5,DURATION=6600,BREAK=.46,clamp=x=>Math.max(0,Math.min(1,x)),smooth=x=>{x=clamp(x);return x*x*x*(10+x*(-15+6*x))},mix=(a,b,t)=>a+(b-a)*t;
+ const FINAL=34,BEACON_TIME=1.6,END_TIME=8.5,DURATION=6600,BREAK=.27,SHATTER=.25,CAPTURE=.94,clamp=x=>Math.max(0,Math.min(1,x)),smooth=x=>{x=clamp(x);return x*x*x*(10+x*(-15+6*x))},mix=(a,b,t)=>a+(b-a)*t;
  let renderer,shards,frame=0,epoch=0,clock=END_TIME,lastPaint=0,paused=false,quiet=false,current=0,travel=false,flightFrame=null,spaceKey='',spaceCamera=null;
  const finalView={...Cosmos.volume.pulsar.arrival},layers=['site','panel','opening','caption','final','connector','focus','account-story','account-site-label','math-site-label','intro-cue'];
  function viewAt(camera){const world=Cosmos.volume.pulsar,p=Cosmos.volume.project(world,camera);return{x:p.x,y:p.y,r:Cosmos.volume.focal*world.radius/(world.z-camera.z)};}
@@ -32,8 +32,9 @@ window.PulsarScene=(()=>{
   if(reduced){await direct(target);return;}
   const from=step,reverse=from===FINAL,anchor=reverse?target:from,arrivalTime=reverse?clock:END_TIME;
   if(reverse){const previous=reduced;reduced=true;try{await direct(target)}finally{reduced=previous}}
-  const source={...cursor},far=viewFor(anchor),saved=layers.map(id=>{const n=$(id);return{n,opacity:n?.style.opacity,transform:n?.style.transform,alpha:n?Number(getComputedStyle(n).opacity):0};});
-  const breakCamera=Cosmos.volume.flightPath(Cosmos.volume.at(anchor),Cosmos.volume.at(FINAL),clamp((BREAK-.13)/.78),Cosmos.volume.pulsar),breakView=viewAt(breakCamera),breakPoint={x:breakView.x-108,y:breakView.y+100},leadPoint={x:far.x-20,y:far.y+28};
+  const source={...cursor},saved=layers.map(id=>{const n=$(id);return{n,opacity:n?.style.opacity,transform:n?.style.transform,alpha:n?Number(getComputedStyle(n).opacity):0};});
+  const leadCamera=Cosmos.volume.flightPath(Cosmos.volume.at(anchor),Cosmos.volume.at(FINAL),clamp((.62-.13)/.78),Cosmos.volume.pulsar),leadView=viewAt(leadCamera),leadPoint={x:leadView.x-54,y:leadView.y+76};
+  const carrier=p=>OpeningGuidance.path(source,leadPoint,clamp(p/.62),-86),materialRoute=shards.flightRoute(carrier,BREAK,SHATTER,CAPTURE);
   if(reverse)step=from;halt();travel=true;spaceKey='';$('stage').dataset.pulsarFinal='false';$('stage').dataset.pulsarFlight='true';$('pulsar-ending').style.visibility='visible';$('cursor').style.opacity='1';Cosmos.holdFlight(from);
   function frameAt(raw){
    const p=reverse?1-raw:raw,time=mix(BEACON_TIME,arrivalTime,smooth(p));
@@ -44,10 +45,10 @@ window.PulsarScene=(()=>{
    for(const item of saved)if(item.n)item.n.style.opacity=String(item.alpha*fade);
    $('site').style.transform=`translate(${-135*smooth(p/.35)}px,${-18*smooth(p/.35)}px) scale(${1-.11*smooth(p/.35)})`;
    $('pulsar-ending').style.opacity=String(smooth((p-.81)/.19));
-   const point=p<.20?OpeningGuidance.path(source,leadPoint,clamp(p/.20),-40):OpeningGuidance.path(leadPoint,breakPoint,clamp((p-.20)/(BREAK-.20)),36);
+   const point=carrier(p);
    Object.assign(cursor,point);paintCursor();renderer.draw(time,v,{full:true});
-   const fracture=clamp((p-BREAK)/.44),replaced=p>=BREAK;$('cursor').style.visibility=replaced?'hidden':'visible';
-   if(replaced)shards.draw(breakPoint,fracture,time,renderer,v);else shards.clear();
+   const fracture=clamp((p-BREAK)/SHATTER),replaced=p>=BREAK;$('cursor').style.visibility=replaced?'hidden':'visible';
+   if(replaced)shards.draw(point,fracture,time,renderer,v,{progress:p,route:materialRoute});else shards.clear();
    flightFrame={progress:p,cursor:{...cursor},fracture,view:v,time,replaced};$('stage').dataset.pulsarProgress=p.toFixed(4);
   }
   try{frameAt(0);await tween(DURATION,frameAt,true);}
