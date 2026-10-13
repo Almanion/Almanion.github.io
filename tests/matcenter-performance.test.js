@@ -25,7 +25,7 @@ async function run() {
     const renderAt = html.indexOf('matcenter/50-render.js?');
     assert.ok(coreAt >= 0 && coreAt < renderAt, 'core LaTeX renderer must load before task cards');
     assert.ok(cacheAt >= 0 && cacheAt < dataAt, 'persistent cache must load before the data module');
-    assert.match(html, /<script defer src="matcenter\/runtime\.js\?v=20261013-print1"><\/script>/);
+    assert.match(html, /<script defer src="matcenter\/runtime\.js\?v=20261013-print2"><\/script>/);
     assert.doesNotMatch(html, /<script[^>]+src="(?:matcenter\/75-print|pdf-download)\.js/);
     assert.doesNotMatch(html, /<link[^>]+href="styles\/(?:print|matcenter-print)\.css/);
     assert.doesNotMatch(html, /<script[^>]+src="matcenter\/70-hints\.js/);

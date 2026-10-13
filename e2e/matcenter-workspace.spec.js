@@ -72,7 +72,7 @@ test('published HTML must not reuse the old cached Matcenter runtime for printin
     await page.route('**/matcenter/runtime.js?v=20261009-4',route=>route.fulfill({contentType:'application/javascript',
         body:'window.MatcenterRuntime={ensure:()=>Promise.reject(new Error("Stale cached runtime"))};'}));
     await page.goto('/matcenter.html?grade=grade-10'); await ready(page);
-    await expect(page.locator('script[src^="matcenter/runtime.js"]')).toHaveAttribute('src','matcenter/runtime.js?v=20261013-print1');
+    await expect(page.locator('script[src^="matcenter/runtime.js"]')).toHaveAttribute('src','matcenter/runtime.js?v=20261013-print2');
     await page.locator('#mcPrintButton').click();
     await expect(page.locator('#mcPrintDialog')).toBeVisible();
     expect(errors).toEqual([]);
@@ -204,7 +204,7 @@ for (const dark of [false,true]) test(`new-year series and independent part prog
     await page.goto('/matcenter.html?grade=grade-10&view=reading');
     await ready(page);
     await expect(page.locator('.mc-series-divider')).toHaveText(['Серия 12','Серия 5']);
-    expect(await page.locator('#mcSeriesSelect option').allTextContents()).toEqual(['Все задачи раздела','Серия 5','Серия 12']);
+    expect(await page.locator('#mcSeriesSelect option').allTextContents()).toEqual(['Все задачи','Серия 12','Серия 5']);
     await expect(page.locator('.mc-task-context, .mc-task-parts-label, .mc-task-parts-count, #personalSolvedPartsCount')).toHaveCount(0);
     await expect(page.locator('#shareSolvedTasksBtn svg circle')).toHaveCount(3);
     const card = page.locator('.task-card').filter({has:page.getByText('Задача 50',{exact:true})});
@@ -438,6 +438,52 @@ test('dropdowns have themed pickers, keyboard selection and fit mobile viewport'
     expect(errors).toEqual([]);
 });
 
+for (const old of [false, true]) test(`series pickers are compact, newest first and keyboard usable, old=${old}`, async ({ page }, info) => {
+    const yearTasks = [2, 12, 10].map(series => ({ number: series * 10, grade: 'grade-10',
+        taskId: 'picker-' + series, seriesId: 'picker-' + series, seriesTitle: 'Серия ' + series,
+        academicYear: '2026/2027', description: 'Исходное условие.' }));
+    const errors = await setup(page, { tasks: [], yearTasks, old, dark: old });
+    for (const width of [1440, 320]) {
+        await page.setViewportSize({ width, height: 850 });
+        await page.goto('/matcenter.html?grade=grade-10'); await ready(page);
+        const select = page.locator('#mcSeriesSelect');
+        expect(await select.locator('option').allTextContents()).toEqual(['Все задачи', 'Серия 12', 'Серия 10', 'Серия 2']);
+        await expect(select.locator('option').nth(1)).toHaveAttribute('data-detail', '№ 120');
+        await select.click();
+        const bounds = await select.evaluate(el => ({
+            options: [...el.options].map(option => { const rect = option.getBoundingClientRect(); return { left: rect.left, right: rect.right }; }),
+            radius: getComputedStyle(el, '::picker(select)').borderRadius,
+            range: getComputedStyle(el.options[1], '::after').content,
+            background: getComputedStyle(el, '::picker(select)').backgroundColor,
+            color: getComputedStyle(el.options[1]).color
+        }));
+        expect(bounds.radius).toBe('14px'); expect(bounds.range).toBe('"№ 120"');
+        const luminance = rgb => {
+            const channels = rgb.match(/\d+/g).slice(0, 3).map(n => Number(n) / 255).map(n => n <= .04045 ? n / 12.92 : ((n + .055) / 1.055) ** 2.4);
+            return channels[0] * .2126 + channels[1] * .7152 + channels[2] * .0722;
+        };
+        const values = [luminance(bounds.background), luminance(bounds.color)].sort((a, b) => a - b);
+        expect((values[1] + .05) / (values[0] + .05)).toBeGreaterThanOrEqual(4.5);
+        bounds.options.forEach(rect => { expect(rect.left).toBeGreaterThanOrEqual(0); expect(rect.right).toBeLessThanOrEqual(width); });
+        await page.screenshot({ path: info.outputPath(`series-picker-${width}-${old}.png`) });
+        await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter');
+        await expect(select).toHaveValue(model.seriesKey({ ...yearTasks[1], _endpointIdx: 3 }));
+        await expect(page.locator('#tasksContainer .task-number-label')).toHaveText('Задача 120');
+        await page.locator('#mcPrintButton').click();
+        const printSelect = page.locator('#mcPrintSeries');
+        await expect(printSelect).toBeVisible();
+        expect(await printSelect.locator('option').allTextContents()).toEqual(['Выберите серию', 'Серия 12', 'Серия 10', 'Серия 2']);
+        await expect(printSelect).toHaveValue(await select.inputValue());
+        await expect(page.locator('#mcPrintDescription')).toContainText('верхней половине A4');
+        await printSelect.click();
+        await page.screenshot({ path: info.outputPath(`series-print-picker-${width}-${old}.png`) });
+        await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
+        await expect(page.locator('#mcPrintDialog')).toBeHidden();
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    }
+    expect(errors).toEqual([]);
+});
+
 test('compact layout, opt-in series, legacy progress, reading and exact archive search', async ({ page }, info) => {
     const errors = await setup(page);
     await page.setViewportSize({ width: 1440, height: 950 });
@@ -578,7 +624,7 @@ for (const dark of [false, true]) test(`camp menu order and proportional three-d
         await page.setViewportSize({width,height:844});
         await page.goto('/matcenter.html?grade=grade-camp-2026');
         await ready(page);
-        await expect(page.locator('link[href*="styles/matcenter-refresh.css"]')).toHaveAttribute('href', 'styles/matcenter-refresh.css?v=20261013-print1');
+        await expect(page.locator('link[href*="styles/matcenter-refresh.css"]')).toHaveAttribute('href', 'styles/matcenter-refresh.css?v=20261013-print2');
         expect(await page.locator('#gradeSwitcher [data-grade]').evaluateAll(els=>els.map(el=>el.dataset.grade))).toEqual(order);
         expect(await page.locator('#mcSidebarGrade option').evaluateAll(els=>els.map(el=>el.value))).toEqual(order);
         const active = page.locator('#gradeSwitcher [data-grade="grade-camp-2026"]');

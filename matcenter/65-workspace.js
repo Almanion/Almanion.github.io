@@ -23,12 +23,17 @@ function syncMatcenterWorkspace() {
     const series = MatcenterWorkspaceModel.seriesList(allTasks, currentGrade);
     document.getElementById('mcSeriesRow').hidden = !series.length;
     document.getElementById('mcPrintButton').disabled = !authToken || !series.length;
-    const options = [{ key: '', label: 'Все задачи раздела' }].concat(series.map(s => ({
-        key: s.key, label: [s.title, s.date ? s.date.split('-').reverse().join('.') : ''].filter(Boolean).join(' · ')
+    const options = [{ key: '', label: 'Все задачи' }].concat(series.map(s => ({
+        key: s.key, label: [s.title, s.date ? s.date.split('-').reverse().join('.') : ''].filter(Boolean).join(' · '),
+        detail: matcenterSeriesRange(s)
     })));
     const signature = JSON.stringify(options);
     if (select.dataset.options !== signature) {
-        select.replaceChildren(...options.map(item => new Option(item.label, item.key)));
+        select.replaceChildren(...options.map(item => {
+            const option = new Option(item.label, item.key);
+            if (item.detail) option.dataset.detail = item.detail;
+            return option;
+        }));
         select.dataset.options = signature;
     }
     select.value = matcenterSelectedSeries;
@@ -36,6 +41,12 @@ function syncMatcenterWorkspace() {
     const summary = document.getElementById('mcSeriesSummary');
     summary.textContent = selected ? `${selected.tasks.length} ${pluralizeTasks(selected.tasks.length)}` : '';
     updateAllTasksTitleForFilter();
+}
+
+function matcenterSeriesRange(series) {
+    const numbers = series.tasks.map(task => task.number).filter(Number.isInteger);
+    const first = Math.min(...numbers), last = Math.max(...numbers);
+    return numbers.length ? '№ ' + first + (first === last ? '' : '–' + last) : '';
 }
 
 function setMatcenterReadingCard(card, open) {

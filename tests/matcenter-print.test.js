@@ -12,7 +12,11 @@ assert.match(print, /if \(token !== revision \|\| !authToken \|\| !isOpen\(\)\) 
 assert.match(print, /URL\.revokeObjectURL/);
 assert.match(read('matcenter/20-auth.js'), /MatcenterSeriesPrint\?\.reset/);
 assert.match(pdf, /generateHandout/);
-assert.match(pdf, /font:16px\/1\.2 AlmanionHandout,serif/);
+assert.match(pdf, /font:13\.333333px\/1\.15 AlmanionHandout,serif/);
+assert.match(pdf, /margins: \[22\.68, 22\.68, 22\.68, 841\.89 \/ 2 \+ 22\.68\]/, 'reserve the lower half of every A4 page');
+assert.match(pdf, /pageMargins: HANDOUT\.margins/);
+assert.match(pdf, /height < HANDOUT\.height/);
+assert.match(print, /A5 на ½ A4/);
 assert.match(pdf, /font: 'CMUSerif'/);
 assert.match(pdf, /numberText \?\? task\.number/);
 assert.match(pdf, /if \(options\.heading\)/);

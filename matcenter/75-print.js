@@ -8,7 +8,7 @@
     const selected = () => available().find(series => series.key === $('mcPrintSeries').value);
 
     function loadStyles() {
-        if (!stylesReady) stylesReady = Promise.all(['styles/print.css?v=20261006-1', 'styles/matcenter-print.css?v=20261013-1'].map(href => new Promise((resolve, reject) => {
+        if (!stylesReady) stylesReady = Promise.all(['styles/print.css?v=20261006-1', 'styles/matcenter-print.css?v=20261013-2'].map(href => new Promise((resolve, reject) => {
             const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = href;
             link.onload = resolve; link.onerror = () => { link.remove(); reject(new Error('Печатное оформление не загрузилось.')); };
             document.head.append(link);
@@ -20,7 +20,7 @@
         if (root.AlmanionPdfDownload?.generateHandout) return Promise.resolve();
         if (!pdfModule) pdfModule = new Promise((resolve, reject) => {
             const script = document.createElement('script');
-            script.src = 'pdf-download.js?v=20261013-1';
+            script.src = 'pdf-download.js?v=20261013-2';
             script.onload = resolve;
             script.onerror = () => { script.remove(); pdfModule = null; reject(new Error('Не удалось загрузить PDF-модуль. Попробуйте снова.')); };
             document.head.append(script);
@@ -96,8 +96,8 @@
         overlay.className = 'print-export-overlay';
         overlay.hidden = true;
         overlay.innerHTML = '<section class="print-export-dialog" role="dialog" aria-modal="true" aria-labelledby="mcPrintTitle" aria-describedby="mcPrintDescription">' +
-            '<header class="print-export-dialog-header"><span class="print-export-dialog-icon">' + $('mcPrintButton').querySelector('svg').outerHTML + '</span><div><p class="print-export-eyebrow">PDF · A4</p><h2 id="mcPrintTitle">Печать серии</h2><p id="mcPrintDescription">Условия подряд, как на исходном листке. Без карточек, подсказок и отметок.</p></div><button class="print-export-close" id="mcPrintClose" type="button" aria-label="Закрыть печать">×</button></header>' +
-            '<div class="print-export-dialog-body"><div class="mc-print-selection"><label for="mcPrintSeries">Серия</label><select id="mcPrintSeries" class="mc-select"></select><p id="mcPrintCount"></p></div></div>' +
+            '<header class="print-export-dialog-header"><span class="print-export-dialog-icon">' + $('mcPrintButton').querySelector('svg').outerHTML + '</span><div><p class="print-export-eyebrow">PDF · A5 на ½ A4</p><h2 id="mcPrintTitle">Печать серии</h2><p id="mcPrintDescription">Горизонтальный листок в верхней половине A4. Печатайте в масштабе 100%: нижняя половина останется свободной.</p></div><button class="print-export-close" id="mcPrintClose" type="button" aria-label="Закрыть печать">×</button></header>' +
+            '<div class="print-export-dialog-body"><div class="mc-print-selection"><label for="mcPrintSeries">Серия</label><select id="mcPrintSeries" class="mc-select mc-series-select"></select><p id="mcPrintCount"></p></div></div>' +
             '<footer class="print-export-dialog-footer"><p id="mcPrintStatus" role="status" aria-live="polite"></p><div><button class="print-export-cancel" data-mc-print-action="preview" type="button">Предпросмотр</button><button class="print-export-cancel" data-mc-print-action="download" type="button">Скачать PDF</button><button class="print-export-download" data-mc-print-action="print" type="button">Печать</button></div></footer>' +
             '<section id="mcPrintPreview" hidden aria-label="Предпросмотр печатного листа"><div id="mcPrintPreviewBar"><button type="button" class="print-export-cancel" id="mcPrintPreviewClose">Назад</button><button type="button" class="print-export-cancel" id="mcPrintOpenPdf">Открыть PDF</button></div><iframe id="mcPrintFrame" title="Предпросмотр серии" src="about:blank"></iframe></section></section>';
         document.body.append(overlay);
@@ -127,7 +127,11 @@
         createDialog();
         lastFocus = document.activeElement === document.body ? $('mcPrintButton') : document.activeElement;
         clearPreview();
-        $('mcPrintSeries').replaceChildren(new Option('Выберите серию', ''), ...available().map(series => new Option(series.title, series.key)));
+        $('mcPrintSeries').replaceChildren(new Option('Выберите серию', ''), ...available().map(series => {
+            const option = new Option(series.title, series.key);
+            option.dataset.detail = matcenterSeriesRange(series);
+            return option;
+        }));
         $('mcPrintSeries').value = getSelectedMatcenterSeries()?.key || '';
         $('mcPrintStatus').textContent = '';
         update();

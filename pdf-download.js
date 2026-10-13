@@ -3,6 +3,10 @@
 (function () {
     'use strict';
     const WIDTH = 595.28 - 2 * 39.69; // A4, 14 mm side margins (points).
+    // A landscape A5 handout on the upper half of portrait A4. Reserving the
+    // lower half also keeps every continuation page within the same footprint.
+    const HANDOUT = { width: 595.28 - 2 * 22.68, height: 841.89 / 2 - 2 * 22.68,
+        margins: [22.68, 22.68, 22.68, 841.89 / 2 + 22.68] };
     const INK = '#17191d';
     const BLOCKS = '.definition-box,.formula-box,.remark-box,.reminder-box,.experiment-box,.derivation-box,.theorem-box,.lemma-box,.example-box,.statement-box,.corollary-box,.proof-box,.exercise-box,.properties-box,.system-box,.english-word-card';
     const LABELS = { definition: 'Определение', formula: 'Формула', remark: 'Замечание', reminder: 'Напоминание', experiment: 'Опыт', derivation: 'Вывод', theorem: 'Теорема', lemma: 'Лемма', example: 'Пример', statement: 'Утверждение', corollary: 'Следствие', proof: 'Доказательство', exercise: 'Задача', properties: 'Свойства', system: 'Система' };
@@ -492,50 +496,60 @@
         document.body.append(host);
         const shadow = host.attachShadow({ mode: 'open' });
         const style = document.createElement('style');
-        style.textContent = ':host{color:#17191d} .paragraph{font:16px/1.2 AlmanionHandout,serif;white-space:pre-line;overflow-wrap:anywhere;text-indent:16px} strong,b{font-weight:700} .handout-item{display:block;padding-left:16px;text-indent:0;margin:8px 0} .pdf-math{display:inline-block;vertical-align:middle;line-height:0;margin-inline:.12em;text-indent:0}.pdf-math.display{display:block;text-align:center;margin:8px 0}.pdf-math svg{max-width:100%;height:auto}';
+        style.textContent = ':host{color:#17191d} .paragraph{font:13.333333px/1.15 AlmanionHandout,serif;white-space:pre-line;overflow-wrap:anywhere;text-indent:16px} strong,b{font-weight:700} .handout-item{display:block;padding-left:16px;text-indent:0;margin:5px 0} .pdf-math{display:inline-block;vertical-align:middle;line-height:0;margin-inline:.12em;text-indent:0}.pdf-math.display{display:block;text-align:center;margin:5px 0}.pdf-math svg{max-width:100%;height:auto}';
         shadow.append(style);
         const measure = document.createElement('div');
         measure.pdfFont = 'CMUSerif';
-        measure.pdfChunkLines = 16;
+        measure.pdfChunkLines = 8;
         shadow.append(measure);
         try {
-            const content = [];
-            // Only a heading supplied with the original handout (e.g. a camp
-            // add-on). Generated "Серия N" labels stay in the dialog/filename.
-            if (options.heading) content.push({ text: options.heading, fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 7] });
-            for (const task of tasks) {
-                const number = document.createElement('strong');
-                number.textContent = String(task.numberText ?? task.number) + '.';
-                const description = String(task.description ?? '');
-                const nodes = [number];
-                const reference = description.match(/^\(ЛЗ[^)]*\)\)?/u);
-                let body = description;
-                if (reference) {
-                    nodes.push(document.createTextNode(' '));
-                    const label = document.createElement('strong'); label.textContent = reference[0]; nodes.push(label);
-                    body = description.slice(reference[0].length);
-                } else nodes.push(document.createTextNode(' '));
-                // Preserve the printed theorem's numbered statements as a list,
-                // not as new task numbers or independently rewritten conditions.
-                const statements = body.match(/^[\s\S]*?(?=1\. )|[1-9]\. [\s\S]*?(?= [1-9]\. |$)/g);
-                if (statements?.length >= 3 && statements.slice(1).every((item, i) => item.startsWith((i + 1) + '. '))) {
-                    nodes.push(document.createTextNode(statements[0]));
-                    for (const statement of statements.slice(1)) {
-                        const line = document.createElement('span'); line.className = 'handout-item'; line.textContent = statement; nodes.push(line);
-                    }
-                } else nodes.push(document.createTextNode(body));
-                const lines = await paragraph(nodes, WIDTH, measure);
-                if (!lines.length) throw new Error('Не удалось оформить условие задачи ' + task.number + '.');
-                lines[lines.length - 1].margin = [0, 0, 0, 0];
-                // Ordinary problems stay whole; exceptionally long conditions
-                // may continue in line groups instead of being clipped.
-                const height = lines.reduce((sum, line) => sum + Number(line.svg.match(/height="([\d.]+)"/)[1]) * .75, 0);
-                content.push(height < 750 ? { stack: lines, unbreakable: true } : { stack: lines });
-                await new Promise(resolve => setTimeout(resolve, 0));
+            let content = [];
+            // Start at 10 pt; only dense handouts need a small, bounded reflow.
+            // Longer future series continue on half-sheets, never tiny type.
+            for (let fontSize = 10; fontSize >= 9; fontSize -= .25) {
+                style.textContent = style.textContent.replace(/font:[\d.]+px\/1\.15/, 'font:' + fontSize * 4 / 3 + 'px/1.15');
+                content = [];
+                // Only a heading supplied with the original handout (e.g. a camp
+                // add-on). Generated "Серия N" labels stay in the dialog/filename.
+                if (options.heading) content.push({ text: options.heading, fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 6] });
+                for (const task of tasks) {
+                    const number = document.createElement('strong');
+                    number.textContent = String(task.numberText ?? task.number) + '.';
+                    const description = String(task.description ?? '');
+                    const nodes = [number];
+                    const reference = description.match(/^\(ЛЗ[^)]*\)\)?/u);
+                    let body = description;
+                    if (reference) {
+                        nodes.push(document.createTextNode(' '));
+                        const label = document.createElement('strong'); label.textContent = reference[0]; nodes.push(label);
+                        body = description.slice(reference[0].length);
+                    } else nodes.push(document.createTextNode(' '));
+                    // Preserve the printed theorem's numbered statements as a list,
+                    // not as new task numbers or independently rewritten conditions.
+                    const statements = body.match(/^[\s\S]*?(?=1\. )|[1-9]\. [\s\S]*?(?= [1-9]\. |$)/g);
+                    if (statements?.length >= 3 && statements.slice(1).every((item, i) => item.startsWith((i + 1) + '. '))) {
+                        nodes.push(document.createTextNode(statements[0]));
+                        for (const statement of statements.slice(1)) {
+                            const line = document.createElement('span'); line.className = 'handout-item'; line.textContent = statement; nodes.push(line);
+                        }
+                    } else nodes.push(document.createTextNode(body));
+                    const lines = await paragraph(nodes, HANDOUT.width, measure);
+                    if (!lines.length) throw new Error('Не удалось оформить условие задачи ' + task.number + '.');
+                    lines[lines.length - 1].margin = [0, 0, 0, 0];
+                    // Ordinary problems stay whole; exceptionally long conditions
+                    // may continue in line groups instead of being clipped.
+                    const height = lines.reduce((sum, line) => sum + Number(line.svg.match(/height="([\d.]+)"/)[1]) * .75, 0);
+                    content.push(height < HANDOUT.height ? { stack: lines, unbreakable: true } : { stack: lines });
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
+                const totalHeight = content.reduce((sum, block) => sum + (block.stack
+                    ? block.stack.reduce((height, line) => height + Number(line.svg.match(/height="([\d.]+)"/)[1]) * .75, 0)
+                    : 21), 0);
+                if (totalHeight <= HANDOUT.height || totalHeight > HANDOUT.height * 1.25) break;
             }
             const definition = { info: { title, subject: 'Серия задач' }, pageSize: 'A4',
-                pageMargins: [39.69, 36.85, 39.69, 36.85],
-                defaultStyle: { font: 'CMUSerif', fontSize: 12, color: INK }, content };
+                pageMargins: HANDOUT.margins,
+                defaultStyle: { font: 'CMUSerif', fontSize: 10, color: INK }, content };
             // Exactly the same PDF is used by preview, download and printing.
             // No site header/footer, invented title, statuses or hints.
             return await new Promise((resolve, reject) => {

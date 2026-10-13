@@ -48,7 +48,9 @@
             if (!items.has(key)) items.set(key, { ...item, key, tasks: [] });
             items.get(key).tasks.push(task);
         });
-        return Array.from(items.values()).sort((a, b) => b.date.localeCompare(a.date) || a.title.localeCompare(b.title, 'ru', { numeric: true }));
+        return Array.from(items.values()).sort((a, b) =>
+            b.year.localeCompare(a.year, 'ru', { numeric: true }) || b.date.localeCompare(a.date)
+            || b.title.localeCompare(a.title, 'ru', { numeric: true }) || b.id.localeCompare(a.id, 'ru', { numeric: true }));
     }
     function initialGrade(saved, home) {
         const allowed = ['grade-9', 'grade-10', 'grade-11', 'grade-summer-9-10', 'grade-summer-10-11', 'grade-camp-2026'];
