@@ -1,5 +1,5 @@
 {
-  "htmlSha256": "8018a5aa11dbc29fedf6dc1d10827d912bd2d7b8699af9bfd91aeed42d5440f7",
+  "htmlSha256": "a0d5a39848ed342f0767b0b97dd3211b3f0a1ac8ca1079145caf77a12e1e1985",
   "viewports": [
     1920,
     1366
@@ -23,12 +23,12 @@
   "metrics": [
     {
       "width": 1920,
-      "flightMs": 6582.299999999999,
-      "fractureBeginsMs": 1812.2999999999993,
-      "allStarsMs": 3103.7000000000007,
-      "freeStarsFlightMs": 3110.7000000000007,
+      "flightMs": 6596.199999999997,
+      "fractureBeginsMs": 1805,
+      "allStarsMs": 3054.699999999997,
+      "freeStarsFlightMs": 3152.600000000002,
       "fragments": 845,
-      "drawP95": 15.100000143051147,
+      "drawP95": 12.5,
       "maxStarTrails": 4221,
       "journey": [
         {
@@ -245,45 +245,45 @@
       "sync": [
         {
           "s": 33,
-          "frames": 250,
+          "frames": 245,
           "maxError": 0
         },
         {
           "s": 1,
-          "frames": 240,
+          "frames": 251,
           "maxError": 0
         },
         {
           "s": 2,
-          "frames": 150,
+          "frames": 212,
           "maxError": 0
         },
         {
           "s": 1,
-          "frames": 135,
+          "frames": 159,
           "maxError": 0
         },
         {
           "s": 20,
-          "frames": 248,
+          "frames": 223,
           "maxError": 0
         },
         {
           "s": 29,
-          "frames": 139,
+          "frames": 157,
           "maxError": 0
         }
       ]
     },
     {
       "width": 1366,
-      "flightMs": 6596.300000000003,
-      "fractureBeginsMs": 1784.5,
-      "allStarsMs": 3075.9000000000015,
-      "freeStarsFlightMs": 3131.5,
+      "flightMs": 6587.912,
+      "fractureBeginsMs": 1817.612000000001,
+      "allStarsMs": 3081.3120000000017,
+      "freeStarsFlightMs": 3131.699999999997,
       "fragments": 845,
-      "drawP95": 9.5,
-      "maxStarTrails": 4221,
+      "drawP95": 13.200000047683716,
+      "maxStarTrails": 4220,
       "journey": [
         {
           "s": 0,
@@ -499,32 +499,32 @@
       "sync": [
         {
           "s": 33,
-          "frames": 218,
+          "frames": 224,
           "maxError": 0
         },
         {
           "s": 1,
-          "frames": 235,
+          "frames": 241,
           "maxError": 0
         },
         {
           "s": 2,
-          "frames": 189,
+          "frames": 209,
           "maxError": 0
         },
         {
           "s": 1,
-          "frames": 115,
+          "frames": 169,
           "maxError": 0
         },
         {
           "s": 20,
-          "frames": 332,
+          "frames": 287,
           "maxError": 0
         },
         {
           "s": 29,
-          "frames": 236,
+          "frames": 182,
           "maxError": 0
         }
       ]
