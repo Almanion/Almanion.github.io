@@ -49,7 +49,9 @@
             } else {
                 const template = document.createElement('template'); template.innerHTML = block.html;
                 const text = template.content.textContent.replace(/\s+/g,' ').trim();
-                favoriteStore.set(key,{...existing,deleted:false,noteOnly:false,page:'/' + data.page,pageTitle:data.title,topicId:topic.id,topicTitle:topic.title,blockKey:block.id,type:block.type,title:template.content.querySelector('strong,b')?.textContent.trim().slice(0,140) || text.slice(0,140),preview:text.slice(0,320),timestamp:existing?.timestamp || Date.now()});
+                const source = template.content.firstElementChild;
+                const regular = source?.matches('.definition-box,.formula-box,.theorem-box,.remark-box,.lemma-box,.example-box,.statement-box,.corollary-box,.properties-box,.experiment-box,.derivation-box,.system-box') && (source.getAttribute('data-note-block') || source.getAttribute('data-kc-id')) === block.id;
+                favoriteStore.set(key,{...existing,deleted:false,noteOnly:false,page:regular ? '/' + data.page : new URL('./',location.href).pathname,pageTitle:data.title,topicId:regular ? topic.id : 'bookmark/' + [data.id,block.id].map(encodeURIComponent).join('/'),topicTitle:topic.title,blockKey:block.id,type:block.type,title:template.content.querySelector('strong,b')?.textContent.trim().slice(0,140) || text.slice(0,140),preview:text.slice(0,320),timestamp:existing?.timestamp || Date.now()});
             }
             render();
         },parent,isFavorite(data.id,block.id) ? 'Убрать из избранного' : 'Добавить в избранное');
@@ -339,6 +341,13 @@
             else if (view === 'grades') grades();
             else if (view === 'favorites') favoritesView();
             else if (view === 'topics') { const data = await subject(id); if (token !== generation) return; topicList(data); }
+            else if (view === 'bookmark') {
+                const data = await subject(id), target = data.topics.find(item => item.ids?.includes(topic));
+                if (token !== generation) return;
+                try { sessionStorage.removeItem('almanion_bookmark_target'); } catch (_) {}
+                if (target) go(readHash(id,target.id,target.ids.indexOf(topic)),true);
+                else { screen('Избранное'); main.append(note('Блок больше недоступен'),link('Разделы','#topics/' + id)); }
+            }
             else if (view === 'read') await reading(id,topic,index,token);
             else if (view === 'settings') settingsView();
             else if (view === 'duty') await dutyView(id, token);

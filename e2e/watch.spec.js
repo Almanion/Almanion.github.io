@@ -99,7 +99,7 @@ test('watch duty uses the public live schedule and does not need an account', as
 });
 test('inline source diagrams remain decodable images with their SVG styles and markers', async ({ page }) => {
     await page.goto('/watch/');
-    const files = fs.readdirSync(path.join(__dirname,'../_site/watch/figures'));
+    const files = fs.readdirSync(path.join(process.env.ALMANION_TEST_SITE || path.join(__dirname,'../_site'),'watch/figures'));
     const results = await page.evaluate(files => Promise.all(files.map(file => new Promise(resolve => {
         const image = new Image(); image.onload = () => resolve({file,ok:image.naturalWidth > 0}); image.onerror = () => resolve({file,ok:false}); image.src = 'figures/' + file;
     }))),files);
@@ -157,6 +157,10 @@ test('watch favorites filter skips unsaved blocks and sections, persists and rec
     await expect(page.locator('.watch-card')).toContainText('Термин b');
     await page.goto('/watch/#read/physics-10/two/1');
     await page.getByRole('button',{name:'Добавить в избранное',exact:true}).tap();
+    const savedLink = await page.evaluate(() => JSON.parse(localStorage.getItem('almanion_bookmarks_guest')).records['physics-10__b__e']);
+    expect(savedLink.page).toBe('/watch/');
+    await page.goto(savedLink.page + '#' + savedLink.topicId);
+    await expect(page.locator('.watch-card')).toContainText('Формула e');
     await page.locator('#watchTools').tap();
     await page.getByRole('button',{name:'Избранные',exact:true}).tap();
     await page.getByRole('link',{name:'Читать',exact:true}).tap();
