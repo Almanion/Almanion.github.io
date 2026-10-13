@@ -4,7 +4,7 @@
     const back = document.getElementById('watchBack'), controls = document.querySelector('.watch-controls');
     const storageKey = 'almanion-watch-v1', requests = new Map();
     const TYPES = { definition:'Определение', theorem:'Теорема', lemma:'Лемма', statement:'Утверждение', formula:'Формула', corollary:'Следствие', properties:'Свойства', proof:'Доказательство', derivation:'Вывод', experiment:'Опыт', remark:'Замечание', example:'Пример', exercise:'Упражнение', reminder:'Напоминание', system:'Система', stress:'Ударение' };
-    let preferences = {}, catalogue, active, media = [], returnTo = '#home', savedScroll = null, generation = 0, mathPromise;
+    let preferences = {}, catalogue, active, media = [], returnTo = '#home', savedScroll = null, generation = 0, mathPromise, reader, swipe;
     try { preferences = JSON.parse(localStorage.getItem(storageKey) || '{}') || {}; } catch (_) {}
     preferences.scale = Math.max(.8, Math.min(1.8, Number(preferences.scale) || 1));
     preferences.grade = [9,10,11].includes(preferences.grade) ? preferences.grade : 10;
@@ -22,12 +22,10 @@
     function favorites() { favoriteStore?.refreshFromStorage(); return favoriteStore?.snapshot() || {}; }
     const favoriteKey = (id, block) => id + '__b__' + encodeURIComponent(block);
     function isFavorite(id, block, records) { const entry = (records || favorites())[favoriteKey(id,block)]; return !!entry && !entry.deleted && !entry.noteOnly; }
-    function favoritePositions(data) {
-        const records = favorites(), seen = new Set(), positions = [];
-        for (const topic of data.topics) for (const [index,id] of (topic.ids || []).entries()) {
-            if (isFavorite(data.id,id,records) && !seen.has(id)) { seen.add(id); positions.push({topic,index}); }
-        }
-        return positions;
+    function visibleIndexes(data,topic) {
+        if (!preferences.favoritesOnly) return Array.from({length:topic.count},(_,index) => index);
+        const records = favorites();
+        return (topic.ids || []).flatMap((id,index) => isFavorite(data.id,id,records) ? [index] : []);
     }
     function filterButtons(parent, changed) {
         const row = element('div', undefined, 'watch-grid watch-filter');
@@ -38,9 +36,9 @@
         function update() { for (const control of row.children) { const selected = control.dataset.only === String(preferences.favoritesOnly); control.classList.toggle('active',selected); control.setAttribute('aria-pressed',String(selected)); } }
         update(); parent.append(row); return row;
     }
-    function favoriteButton(parent) {
-        if (!active) return;
-        const {data,topic,block} = active, key = favoriteKey(data.id,block.id);
+    function favoriteButton(parent, context = active, compact = false) {
+        if (!context?.block) return;
+        const {data,topic,block} = context, key = favoriteKey(data.id,block.id);
         const control = button(isFavorite(data.id,block.id) ? '★ В избранном' : '☆ В избранное', () => {
             if (!favoriteStore) return;
             const existing = favorites()[key];
@@ -53,9 +51,17 @@
                 const regular = source?.matches('.definition-box,.formula-box,.theorem-box,.remark-box,.lemma-box,.example-box,.statement-box,.corollary-box,.properties-box,.experiment-box,.derivation-box,.system-box') && (source.getAttribute('data-note-block') || source.getAttribute('data-kc-id')) === block.id;
                 favoriteStore.set(key,{...existing,deleted:false,noteOnly:false,page:regular ? '/' + data.page : new URL('./',location.href).pathname,pageTitle:data.title,topicId:regular ? topic.id : 'bookmark/' + [data.id,block.id].map(encodeURIComponent).join('/'),topicTitle:topic.title,blockKey:block.id,type:block.type,title:template.content.querySelector('strong,b')?.textContent.trim().slice(0,140) || text.slice(0,140),preview:text.slice(0,320),timestamp:existing?.timestamp || Date.now()});
             }
-            render();
+            if (reader && reader.token === generation && route()[0] === 'read') {
+                if (preferences.favoritesOnly) { rememberScroll(); render(); }
+                else { update(); selectBlock(context.index); }
+            } else render();
         },parent,isFavorite(data.id,block.id) ? 'Убрать из избранного' : 'Добавить в избранное');
-        control.className = 'watch-favorite'; control.setAttribute('aria-pressed',String(isFavorite(data.id,block.id))); control.disabled = !favoriteStore;
+        function update() {
+            const saved = isFavorite(data.id,block.id);
+            control.textContent = compact ? saved ? '★' : '☆' : saved ? '★ В избранном' : '☆ В избранное';
+            control.setAttribute('aria-pressed',String(saved)); control.setAttribute('aria-label',saved ? 'Убрать из избранного' : 'Добавить в избранное');
+        }
+        control.className = 'watch-favorite' + (compact ? ' watch-favorite-icon' : ''); update(); control.disabled = !favoriteStore;
     }
     function element(tag, text, className) { const node = document.createElement(tag); if (text !== undefined) node.textContent = text; if (className) node.className = className; return node; }
     function link(text, href, detail) { const node = element('a', undefined, 'watch-link'); node.href = href; node.append(element('span', text)); if (detail) node.append(element('small', detail)); return node; }
@@ -129,7 +135,10 @@
         }
         throw new Error('Блок не найден');
     }
-    function screen(title, reading) { heading.textContent = title; back.hidden = route()[0] === 'home'; controls.hidden = !reading; document.body.dataset.reading = String(!!reading); main.replaceChildren(); }
+    function screen(title, reading) {
+        reader?.observer?.disconnect(); reader?.loader?.disconnect(); reader = null; swipe = null;
+        heading.textContent = title; back.hidden = route()[0] === 'home'; controls.hidden = !reading; document.body.dataset.reading = String(!!reading); main.replaceChildren();
+    }
     function home() {
         screen('Конспекты');
         const grade = button(preferences.grade + ' класс', () => go('#grades'), main); grade.className = 'watch-grade';
@@ -201,71 +210,131 @@
     }
     function step(direction) {
         if (!active) return;
-        if (preferences.favoritesOnly) {
-            const positions = favoritePositions(active.data), position = positions.findIndex(item => item.topic === active.topic && item.index === active.index), next = positions[position + direction];
-            if (next) go(readHash(active.data.id,next.topic.id,next.index),true); return;
-        }
-        const { data, topic, index } = active, position = data.topics.indexOf(topic), next = index + direction;
-        if (next >= 0 && next < topic.count) go(readHash(data.id, topic.id, next), true);
-        else { const target = data.topics[position + direction]; if (target) go(readHash(data.id, target.id, direction > 0 ? 0 : target.count - 1), true); }
+        const next = neighbor(direction);
+        if (next) { savedScroll = null; go(readHash(active.data.id,next.id,visibleIndexes(active.data,next)[0] || 0),true); }
     }
-    function rememberScroll() { savedScroll = scrollY / Math.max(1,document.documentElement.scrollHeight - innerHeight); }
+    function neighbor(direction) {
+        if (!active) return null;
+        for (let position = active.data.topics.indexOf(active.topic) + direction; position >= 0 && position < active.data.topics.length; position += direction) {
+            const topic = active.data.topics[position]; if (visibleIndexes(active.data,topic).length) return topic;
+        }
+        return null;
+    }
+    function selectBlock(index) {
+        if (!reader || reader.token !== generation) return;
+        const entry = reader.rows.get(index); if (!entry) return;
+        active = {data:reader.data,topic:reader.topic,index,block:entry.block};
+        reader.counter.textContent = (reader.indexes.indexOf(index) + 1) + ' / ' + reader.indexes.length;
+        const last = preferences.last;
+        if (last?.id !== active.data.id || last.topic !== active.topic.id || last.block !== active.block.id || last.index !== index) {
+            preferences.last = {id:active.data.id,topic:active.topic.id,index,block:active.block.id,title:active.topic.title}; save();
+        }
+        if (route()[0] === 'read') history.replaceState(null,'',readHash(active.data.id,active.topic.id,index));
+    }
+    function selectVisible(state) {
+        if (state !== reader || state.token !== generation || !state.ready) return;
+        const anchor = innerHeight * .25;
+        const candidates = [...new Set([...state.visible,active?.index])].map(index => state.rows.get(index)).filter(Boolean).map(entry => {
+            const rect = entry.node.getBoundingClientRect();
+            return {entry,visible:rect.bottom > 0 && rect.top < innerHeight,distance:rect.top <= anchor && rect.bottom > anchor ? 0 : Math.min(Math.abs(rect.top-anchor),Math.abs(rect.bottom-anchor))};
+        }).filter(candidate => candidate.visible).sort((a,b) => a.distance-b.distance);
+        if (candidates[0]) selectBlock(candidates[0].entry.index);
+    }
+    function rememberScroll() {
+        if (!active?.block || !reader) return;
+        const row = reader.rows.get(active.index)?.node;
+        if (row) { const rect = row.getBoundingClientRect(); savedScroll = {block:active.block.id,fraction:-rect.top / Math.max(1,rect.height)}; }
+    }
     function openTools() { returnTo = location.hash; rememberScroll(); go('#settings'); }
-    async function reading(id, topicId, rawIndex, token, asMedia) {
+    async function reading(id, topicId, rawIndex, token) {
         const data = await subject(id); let topic = data.topics.find(item => item.id === topicId) || data.topics[0];
         let index = Math.min(topic.count - 1, Math.max(0, parseInt(rawIndex,10) || 0));
-        if (preferences.favoritesOnly) {
-            const positions = favoritePositions(data);
-            if (!positions.length) {
-                if (token !== generation) return;
-                active = null; media = []; screen('Избранное'); main.append(note('Избранных блоков пока нет'));
-                button('Показывать все', () => { preferences.favoritesOnly = false; save(); render(); },main).className = 'watch-link'; return;
-            }
-            const selected = positions.find(item => item.topic === topic && item.index === index) || positions.find(item => item.topic.ids[item.index] === topic.ids?.[index]) || positions.find(item => item.topic === topic && item.index >= index) || positions.find(item => data.topics.indexOf(item.topic) > data.topics.indexOf(topic)) || positions[0];
-            topic = selected.topic; index = selected.index;
-        }
-        let block = await blockAt(data, topic, index);
-        // A new publication may insert blocks. Restore a canonical block ID
-        // rather than silently pointing at a different card with the same index.
         const last = preferences.last;
-        if (!preferences.favoritesOnly && last?.id === id && last.topic === topic.id && last.index === index && last.block !== block.id) {
-            for (let i = 0; i < topic.count; i++) { const candidate = await blockAt(data, topic, i); if (candidate.id === last.block) { index = i; block = candidate; break; } }
-        }
+        if (last?.id === id && last.topic === topic.id && last.index === index && topic.ids?.includes(last.block)) index = topic.ids.indexOf(last.block);
+        const indexes = visibleIndexes(data,topic);
+        if (indexes.length && !indexes.includes(index)) index = indexes.find(value => value >= index) ?? indexes[0];
         if (token !== generation) return;
-        if (route()[0] === 'read' && (Number(rawIndex) !== index || topic.id !== topicId)) history.replaceState(null,'',readHash(id,topic.id,index));
-        active = { data, topic, index, block };
-        screen(data.title.replace(/\s*[·|]\s*.*/, ''), true);
-        back.hidden = true;
-        main.append(element('h1', topic.title, 'watch-topic-heading'), element('p', (index + 1) + ' / ' + topic.count, 'watch-counter'));
-        if (TYPES[block.type]) { const label = element('p', TYPES[block.type], 'watch-type'); label.dataset.kind = block.type; main.append(label); }
-        const card = cleanContent(block.html, data); card.dataset.kind = block.type; main.append(card);
+        screen(data.title.replace(/\s*[·|]\s*.*/, ''),true); back.hidden = true; media = [];
+        active = {data,topic,index,block:null};
+        const titleRow = element('div',undefined,'watch-reader-heading'), titles = element('div');
+        const counter = element('p','', 'watch-counter'); titles.append(element('h1',topic.title,'watch-topic-heading'),counter); titleRow.append(titles);
+        button('Аа',openTools,titleRow,'Масштаб и навигация').className = 'watch-reader-tools'; main.append(titleRow);
+        filterButtons(main, () => { rememberScroll(); render(); });
+        const feed = element('div',undefined,'watch-feed'), sentinel = note('Загрузка…'); sentinel.classList.add('watch-load'); main.append(feed,sentinel);
+        reader = {token,data,topic,indexes,rows:new Map(),visible:new Set(),counter,feed,sentinel,pending:false,ready:false};
+        const state = reader;
+        state.observer = new IntersectionObserver(entries => {
+            if (state !== reader || token !== generation) return;
+            for (const entry of entries) { const value = Number(entry.target.dataset.index); if (entry.isIntersecting) state.visible.add(value); else state.visible.delete(value); }
+            selectVisible(state);
+        },{threshold:0});
+        state.loader = new IntersectionObserver(entries => { if (state.ready && !sentinel.querySelector('button') && entries.some(entry => entry.isIntersecting)) appendBlocks(state); },{rootMargin:'120px'});
+        document.getElementById('watchPrev').disabled = !neighbor(-1); document.getElementById('watchNext').disabled = !neighbor(1);
+        if (!indexes.length) {
+            sentinel.hidden = true; counter.hidden = true; feed.append(note('Избранных блоков пока нет'));
+            button('Показывать все', () => { preferences.favoritesOnly = false; save(); render(); },feed).className = 'watch-link'; reader.ready = true; window.scrollTo({top:0,behavior:'instant'}); return;
+        }
+        while (state.rows.size <= indexes.indexOf(index)) {
+            const success = await appendBlocks(state); if (token !== generation) return;
+            if (!success) { state.ready = true; if (state.rows.size) selectBlock([...state.rows.keys()].at(-1)); return; }
+        }
+        selectBlock(index);
+        const target = state.rows.get(index).node, restore = savedScroll?.block === active.block.id ? savedScroll : null;
+        savedScroll = null;
+        if (restore || index !== indexes[0]) window.scrollTo({top:scrollY + target.getBoundingClientRect().top + (restore ? restore.fraction * target.offsetHeight : 0),behavior:'instant'});
+        else window.scrollTo({top:0,behavior:'instant'});
+        state.ready = true;
+        state.loader.observe(sentinel);
+        selectVisible(state);
+    }
+    async function appendBlocks(state) {
+        if (state.pending || state !== reader || state.token !== generation) return;
+        const next = state.indexes.filter(index => !state.rows.has(index)).slice(0,8);
+        if (!next.length) { state.sentinel.hidden = true; return true; }
+        state.pending = true; state.sentinel.hidden = false; state.sentinel.replaceChildren(document.createTextNode('Загрузка…'));
+        try {
+            for (const index of next) {
+                const block = await blockAt(state.data,state.topic,index);
+                if (state !== reader || state.token !== generation) return;
+                const node = element('article',undefined,'watch-block'); node.dataset.index = index; node.dataset.blockId = block.id;
+                node.setAttribute('aria-label','Блок ' + (index + 1));
+                const tools = element('div',undefined,'watch-block-heading');
+                if (TYPES[block.type]) { const label = element('p',TYPES[block.type],'watch-type'); label.dataset.kind = block.type; tools.append(label); }
+                favoriteButton(tools,{data:state.data,topic:state.topic,index,block},true); node.append(tools);
+                const card = cleanContent(block.html,state.data); card.dataset.kind = block.type; node.append(card); state.feed.append(node);
+                state.rows.set(index,{node,index,block});
+                await enhanceCard(card,state,index);
+                if (state !== reader || state.token !== generation) return;
+                state.observer?.observe(node);
+            }
+            state.sentinel.hidden = state.rows.size === state.indexes.length;
+        } catch (_) {
+            if (state !== reader || state.token !== generation) return;
+            state.sentinel.replaceChildren(note('Не загрузились следующие блоки'));
+            button('Повторить', () => { state.ready = true; appendBlocks(state).then(() => state.loader.observe(state.sentinel)); },state.sentinel);
+            return false;
+        } finally { state.pending = false; }
+        if (state === reader && state.token === generation && state.ready && !state.sentinel.hidden && !state.sentinel.querySelector('button') && state.sentinel.getBoundingClientRect().top < innerHeight + 120) requestAnimationFrame(() => appendBlocks(state));
+        return true;
+    }
+    async function enhanceCard(card,state,index) {
+        const {block} = state.rows.get(index);
         const primary = card.firstElementChild;
         if (primary?.classList.contains(block.type + '-box')) { primary.classList.remove(block.type + '-box'); primary.removeAttribute('data-watch-type'); }
         if (/\\\(|\\\[|\$\$/.test(card.textContent)) {
-            try { await loadMath(); if (token !== generation) return;
+            try { if (state.mathFailed) throw new Error('Math unavailable'); await loadMath(); if (state !== reader || state.token !== generation) return;
                 window.renderMathInElement(card, { throwOnError:false, trust:false, delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}] });
-            } catch (_) { if (token === generation) { main.append(note('Формулы пока в текстовом виде')); const retry = button('Повторить формулы', () => render(), main); retry.className = 'watch-magnify'; } }
+            } catch (_) { if (state === reader && state.token === generation) { state.mathFailed = true; card.append(note('Формулы пока в текстовом виде')); button('Повторить формулы', () => { rememberScroll(); render(); },card).className = 'watch-magnify'; } }
         }
-        if (token !== generation) return;
-        media = Array.from(card.querySelectorAll('img,svg,table,.katex-display')).filter(node => !node.parentElement.closest('svg,.katex,table'));
-        media.forEach((node, mediaIndex) => {
+        if (state !== reader || state.token !== generation) return;
+        const graphics = Array.from(card.querySelectorAll('img,svg,table,.katex-display')).filter(node => !node.parentElement.closest('svg,.katex,table'));
+        for (const node of graphics) {
+            media.push(node);
             if (node.matches('table,.katex-display')) { const wrap = element('div', undefined, 'watch-scroll'); node.before(wrap); wrap.append(node); }
             const enlarge = element('button', node.matches('img,svg') ? 'Увеличить рисунок' : 'Увеличить'); enlarge.type = 'button'; enlarge.className = 'watch-magnify';
-            enlarge.addEventListener('click', () => { returnTo = readHash(id, topic.id, index); rememberScroll(); go('#media/' + mediaIndex); });
+            enlarge.addEventListener('click', () => { selectBlock(index); returnTo = readHash(state.data.id,state.topic.id,index); rememberScroll(); go('#media/' + media.indexOf(node)); });
             const wrapper = node.closest('.watch-scroll'); if (wrapper) wrapper.after(enlarge); else node.after(enlarge);
-        });
-        preferences.last = { id, topic:topic.id, index, block:block.id, title:topic.title }; save();
-        favoriteButton(main);
-        const position = data.topics.indexOf(topic);
-        document.getElementById('watchPrev').disabled = !index && !position;
-        document.getElementById('watchNext').disabled = index === topic.count - 1 && position === data.topics.length - 1;
-        if (preferences.favoritesOnly) {
-            const positions = favoritePositions(data), current = positions.findIndex(item => item.topic === topic && item.index === index);
-            document.getElementById('watchPrev').disabled = current <= 0;
-            document.getElementById('watchNext').disabled = current === positions.length - 1;
-            main.querySelector('.watch-counter').textContent = (current + 1) + ' / ' + positions.length;
         }
-        if (asMedia) mediaView(asMedia);
     }
     function settingsView() {
         screen('Настройки');
@@ -353,11 +422,7 @@
             else if (view === 'duty') await dutyView(id, token);
             else if (view === 'media') { if (!media.length && preferences.last) { const last = preferences.last; returnTo = readHash(last.id,last.topic,last.index); await reading(last.id,last.topic,last.index,token); } if (token === generation) mediaView(Number(id)); }
             else go('#home',true);
-            if (token === generation) {
-                const restoring = view === 'read' && returnTo === location.hash && savedScroll !== null;
-                window.scrollTo({ top:restoring ? savedScroll * Math.max(0,document.documentElement.scrollHeight - innerHeight) : 0, behavior:'instant' });
-                if (view === 'read') savedScroll = null;
-            }
+            if (token === generation && view !== 'read') window.scrollTo({top:0,behavior:'instant'});
         } catch (_) {
             if (token !== generation) return;
             screen('Не загрузилось'); main.append(note('Проверь соединение и повтори попытку.')); button('Повторить', () => render(), main).className = 'watch-link'; main.append(link('Главная','#home'));
@@ -367,6 +432,40 @@
     document.getElementById('watchPrev').addEventListener('click', () => step(-1));
     document.getElementById('watchNext').addEventListener('click', () => step(1));
     document.getElementById('watchTools').addEventListener('click', openTools);
+    let scrollFrame;
+    window.addEventListener('scroll', () => {
+        if (scrollFrame || !reader?.ready) return;
+        scrollFrame = requestAnimationFrame(() => {
+            scrollFrame = null;
+            if (!reader) return;
+            selectVisible(reader);
+            // Layout changes can keep the sentinel intersecting while a batch is
+            // pending. A real scroll must still be able to request the next batch.
+            if (!reader.sentinel.hidden && !reader.sentinel.querySelector('button') && reader.sentinel.getBoundingClientRect().top < innerHeight + 120) appendBlocks(reader);
+        });
+    },{passive:true});
+    main.addEventListener('touchstart', event => {
+        swipe = null;
+        if (!reader?.ready || reader.token !== generation || route()[0] !== 'read' || event.touches.length !== 1 || !event.target.closest('.watch-feed') || event.target.closest('button,a,input,textarea,select,summary,img,svg,table,.watch-scroll,.katex') || window.getSelection()?.toString()) return;
+        const touch = event.touches[0]; swipe = {id:touch.identifier,x:touch.clientX,y:touch.clientY,time:performance.now(),token:generation,locked:false};
+    },{passive:true});
+    main.addEventListener('touchmove', event => {
+        if (!swipe) return;
+        const touch = event.touches[0];
+        if (event.touches.length !== 1 || touch.identifier !== swipe.id || swipe.token !== generation || performance.now() - swipe.time > 700 || window.getSelection()?.toString()) { swipe = null; return; }
+        const dx = touch.clientX-swipe.x, dy = touch.clientY-swipe.y;
+        if (Math.abs(dy) > 24 || (!swipe.locked && Math.abs(dy) > 12 && Math.abs(dy) >= Math.abs(dx)*.65)) { swipe = null; return; }
+        if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)*2) swipe.locked = true;
+        if (swipe.locked && event.cancelable) event.preventDefault();
+    },{passive:false});
+    main.addEventListener('touchend', event => {
+        const gesture = swipe; swipe = null;
+        const touch = gesture && Array.from(event.changedTouches).find(value => value.identifier === gesture.id);
+        if (!touch || event.touches.length || gesture.token !== generation || !gesture.locked || performance.now()-gesture.time > 700 || window.getSelection()?.toString()) return;
+        const dx = touch.clientX-gesture.x, dy = touch.clientY-gesture.y;
+        if (Math.abs(dx) >= Math.max(36,Math.min(60,innerWidth*.22)) && Math.abs(dx) > Math.abs(dy)*2) step(dx < 0 ? 1 : -1);
+    },{passive:true});
+    main.addEventListener('touchcancel', () => { swipe = null; },{passive:true});
     document.addEventListener('keydown', event => { if (route()[0] !== 'read' || event.target.closest('input,button,a') || event.ctrlKey || event.altKey || event.metaKey) return; if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { event.preventDefault(); step(event.key === 'ArrowRight' ? 1 : -1); } });
     window.addEventListener('hashchange', render);
     window.addEventListener('storage', event => {
