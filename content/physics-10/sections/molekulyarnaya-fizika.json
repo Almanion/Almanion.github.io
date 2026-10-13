@@ -51,8 +51,8 @@
       "children": [
         {
           "id": "polozheniya-mkt",
-          "type": "definition",
-          "title": "",
+          "type": "statement",
+          "title": "Основные положения молекулярно-кинетической теории",
           "content": "",
           "children": [
             {
@@ -254,7 +254,7 @@
           "id": "zakon-kratnyh-otnosheniy",
           "type": "statement",
           "title": "Закон кратных отношений",
-          "content": "При образовании из двух элементов различных веществ массы одного из элементов в разных соединениях находятся в кратных отношениях.",
+          "content": "При образовании из двух элементов различных веществ массы одного из элементов, соединяющиеся с одной и той же массой другого элемента, относятся как небольшие целые числа.",
           "children": []
         },
         {
@@ -367,7 +367,7 @@
           "id": "atomic-mass-unit",
           "type": "definition",
           "title": "",
-          "content": "внесистемная единица массы молекул, атомов, атомных ядер и элементарных частиц; равна \\(\\frac1{12}\\) массы атома углерода (нуклида углерода-12):\n\\[\\begin{aligned}m_{0C}&=1{,}995\\cdot10^{-26}\\,\\text{кг},\\\\[6pt]1\\,\\text{атомная единица массы}&=\\frac1{12}m_{0C}=1{,}66\\cdot10^{-27}\\,\\text{кг}.\\end{aligned}\\]",
+          "content": "внесистемная единица массы молекул, атомов, атомных ядер и элементарных частиц; равна \\(\\frac1{12}\\) массы атома углерода (нуклида углерода-12):\n\\[\\begin{aligned}m_{0C}&=1{,}993\\cdot10^{-26}\\,\\text{кг},\\\\[6pt]1\\,\\text{атомная единица массы}&=\\frac1{12}m_{0C}=1{,}66\\cdot10^{-27}\\,\\text{кг}.\\end{aligned}\\]",
           "children": [],
           "term": "Атомная единица массы",
           "separator": "—"
@@ -376,7 +376,7 @@
           "id": "relative-molecular-mass",
           "type": "definition",
           "title": "",
-          "content": "отношение массы молекулы данного вещества к атомной единице массы. Обозначим атомную единицу массы через \\(m_u=\\frac1{12}m_{0C}\\). Тогда:\n\\[M_r=\\frac{m_0}{m_u}=\\frac{m_0}{\\frac1{12}m_{0C}},\\qquad m_0=M_rm_u.\\]\nЕсли взять \\(N_A=6{,}02\\cdot10^{23}\\) молекул, то их масса равна:\n\\[m=N_Am_0=N_AM_rm_u=M_r\\,\\text{г}.\\]\nПоэтому масса одного моля вещества, выраженная в граммах, численно равна относительной молекулярной массе.",
+          "content": "отношение массы молекулы данного вещества к атомной единице массы. Обозначим атомную единицу массы через \\(m_u=\\frac1{12}m_{0C}\\). Тогда:\n\\[M_r=\\frac{m_0}{m_u}=\\frac{m_0}{\\frac1{12}m_{0C}},\\qquad m_0=M_rm_u.\\]\nЕсли взять \\(N=6{,}02\\cdot10^{23}\\) молекул, то их масса равна:\n\\[m=Nm_0=NM_rm_u=M_r\\,\\text{г}.\\]\nПоэтому масса одного моля вещества, выраженная в граммах, численно равна относительной молекулярной массе.",
           "children": [],
           "term": "Относительная молекулярная масса",
           "separator": "—"
@@ -385,7 +385,7 @@
           "id": "avogadro-number-derivation",
           "type": "derivation",
           "title": "Число Авогадро",
-          "content": "Возьмём \\(12\\,\\text{г}=12\\cdot10^{-3}\\,\\text{кг}\\) нуклида углерода-12. Масса одного атома равна \\(m_{0C}\\approx1{,}995\\cdot10^{-26}\\,\\text{кг}\\). Число атомов равно отношению общей массы образца к массе одного атома:\n\\[\\begin{aligned}N_A&=\\frac{m}{m_{0C}}\\\\[4pt]&=\\frac{12\\cdot10^{-3}\\,\\text{кг}}{1{,}995\\cdot10^{-26}\\,\\text{кг}}\\\\[4pt]&\\approx6{,}02\\cdot10^{23}.\\end{aligned}\\]\nСледовательно, в \\(12\\,\\text{г}\\) углерода-12 содержится примерно \\(6{,}02\\cdot10^{23}\\) атомов.",
+          "content": "Возьмём \\(12\\,\\text{г}=12\\cdot10^{-3}\\,\\text{кг}\\) нуклида углерода-12. Масса одного атома равна \\(m_{0C}\\approx1{,}993\\cdot10^{-26}\\,\\text{кг}\\). Число атомов равно отношению общей массы образца к массе одного атома:\n\\[\\begin{aligned}N_C&=\\frac{m}{m_{0C}}\\\\[4pt]&=\\frac{12\\cdot10^{-3}\\,\\text{кг}}{1{,}993\\cdot10^{-26}\\,\\text{кг}}\\\\[4pt]&\\approx6{,}02\\cdot10^{23}.\\end{aligned}\\]\nСледовательно, в \\(12\\,\\text{г}\\) углерода-12 содержится примерно \\(6{,}02\\cdot10^{23}\\) атомов.",
           "children": []
         },
         {
@@ -532,7 +532,7 @@
               "title": "",
               "content": "",
               "children": [],
-              "src": "images/notes/physics-10/ideal-gas-collision.svg?v=20260907-1",
+              "src": "images/notes/physics-10/ideal-gas-collision.svg?v=20261013-2",
               "alt": "Столкновение молекулы идеального газа со стенкой сосуда",
               "caption": "При упругом столкновении со стенкой меняется знак проекции скорости \\(v_x\\)."
             },
@@ -768,8 +768,8 @@
       "children": [
         {
           "id": "zakon-daltona-definition",
-          "type": "definition",
-          "title": "",
+          "type": "statement",
+          "title": "Закон Дальтона",
           "content": "давление смеси идеальных газов равно сумме парциальных давлений газов, составляющих смесь:\n\\[\\boxed{p=p_1+p_2+\\ldots+p_s}.\\]",
           "children": [],
           "term": "Закон Дальтона",
@@ -1089,7 +1089,7 @@
           "id": "shtern-speed-derivation",
           "type": "derivation",
           "title": "Определение скорости в опыте Штерна",
-          "content": "\\[\\begin{aligned}\n\\Delta t&=\\frac{\\Delta\\varphi}{\\omega}=\\frac{R-r}{v},\\\\[5pt]\n\\Delta t&=\\frac{\\Delta\\varphi}{\\omega},\\\\[5pt]\n\\frac{R-r}{v}&=\\frac{\\Delta\\varphi}{\\omega},\\\\[5pt]\nv&=\\frac{(R-r)\\omega}{\\Delta\\varphi}.\n\\end{aligned}\\]",
+          "content": "\\[\\begin{aligned}\\Delta t&=\\frac{\\Delta\\varphi}{\\omega}=\\frac{R-r}{v},\\\\[5pt]\\Delta t&=\\frac{\\Delta\\varphi}{\\omega},\\\\[5pt]\\frac{R-r}{v}&=\\frac{\\Delta\\varphi}{\\omega},\\\\[5pt]v&=\\frac{(R-r)\\omega}{\\Delta\\varphi}.\\end{aligned}\\]",
           "children": [
             {
               "id": "shtern-rotation-image",
@@ -1143,7 +1143,7 @@
           "id": "probability-density-reminder",
           "type": "reminder",
           "title": "Плотность вероятности",
-          "content": "\\[f(x)=\\frac{dP(x)}{dx}.\\]\n\\[\\begin{aligned}\nP(x_1\\le x\\le x_2)&=\\int_{x_1}^{x_2}f(x)\\,dx,\\\\[5pt]\n\\int_a^b f(x)\\,dx&=1,\\\\[5pt]\n\\langle\\varphi(x)\\rangle&=\\int_a^b\\varphi(x)f(x)\\,dx.\n\\end{aligned}\\]\n\\[P(x_1\\le x\\le x_2,\\ y_1\\le y\\le y_2)=\\int_{x_1}^{x_2}\\int_{y_1}^{y_2}f(x,y)\\,dx\\,dy.\\]\n\\[f(x,y)=f(x)f(y).\\]",
+          "content": "\\[f(x)=\\frac{dP(x)}{dx}.\\]\n\\[\\begin{aligned}P(x_1\\le x\\le x_2)&=\\int_{x_1}^{x_2}f(x)\\,dx,\\\\[5pt]\\int_a^b f(x)\\,dx&=1,\\\\[5pt]\\langle\\varphi(x)\\rangle&=\\int_a^b\\varphi(x)f(x)\\,dx.\\end{aligned}\\]\n\\[\\begin{aligned}&P(x_1\\le x\\le x_2,\\ y_1\\le y\\le y_2)\\\\[5pt]&\\quad=\\int_{x_1}^{x_2}\\int_{y_1}^{y_2}f(x,y)\\,dy\\,dx.\\end{aligned}\\]\nДля независимых величин:\n\\[f(x,y)=f(x)f(y).\\]",
           "children": []
         },
         {
@@ -1179,7 +1179,7 @@
           "id": "maxwell-speed-shell-derivation",
           "type": "derivation",
           "title": "Переход к модулю скорости",
-          "content": "Выделим в пространстве скоростей шаровой слой шириной \\(\\Delta v\\). Его объём равен \\(4\\pi v^2\\Delta v\\).\n\\[\\begin{aligned}\n\\Delta N(v)&=Nf(\\vec v)\\,4\\pi v^2\\Delta v\\\\[5pt]\n&=N\\left(\\frac{m_0}{2\\pi kT}\\right)^{3/2}e^{-\\frac{m_0v^2}{2kT}}\\,4\\pi v^2\\Delta v.\n\\end{aligned}\\]",
+          "content": "Выделим в пространстве скоростей шаровой слой шириной \\(\\Delta v\\). Его объём равен \\(4\\pi v^2\\Delta v\\).\n\\[\\begin{aligned}\\Delta N(v)&=Nf(\\vec v)\\,4\\pi v^2\\Delta v\\\\[5pt]&=N\\left(\\frac{m_0}{2\\pi kT}\\right)^{3/2}e^{-\\frac{m_0v^2}{2kT}}\\,4\\pi v^2\\Delta v.\\end{aligned}\\]",
           "children": []
         },
         {
@@ -1188,6 +1188,13 @@
           "term": "Распределение Максвелла",
           "separator": "—",
           "content": "функция распределения молекул идеального газа по модулям скоростей в тепловом равновесии.\nФизический смысл: функция распределения равна относительному числу молекул, скорости которых лежат в единичном интервале вокруг заданного значения скорости.\n\\[f(v)=\\frac{\\Delta N}{N\\Delta v}=4\\pi\\left(\\frac{m_0}{2\\pi kT}\\right)^{3/2}e^{-\\frac{m_0v^2}{2kT}}v^2.\\]",
+          "children": []
+        },
+        {
+          "id": "maxwell-distribution-probability-product",
+          "type": "remark",
+          "title": "",
+          "content": "Доля молекул получается при умножении плотности распределения на малый объём пространства скоростей или на малый интервал модулей скоростей:\n\\[\\frac{dN}{N}=f(v_x,v_y,v_z)\\,dv_x\\,dv_y\\,dv_z.\\]\n\\[\\frac{dN}{N}=f(v)\\,dv.\\]",
           "children": []
         },
         {
@@ -1225,7 +1232,7 @@
           "id": "maxwell-different-substances",
           "type": "remark",
           "title": "",
-          "content": "Распределения при одной и той же температуре, но для разных веществ, будут разными.",
+          "content": "Распределения при одной и той же температуре, но для разных веществ, будут разными, если массы их молекул различны.",
           "children": []
         }
       ]
@@ -1309,9 +1316,9 @@
     }
   ],
   "order": 1,
-  "revision": 9,
+  "revision": 10,
   "createdAt": 1788739200000,
-  "updatedAt": "2026-10-13T18:36:27.517Z",
+  "updatedAt": "2026-10-13T20:12:56.467Z",
   "updatedBy": "codex",
   "reviewStatus": "published"
 }

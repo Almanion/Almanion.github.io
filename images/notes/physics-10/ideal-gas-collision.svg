@@ -5,13 +5,16 @@
     <marker id="arrow-blue" viewBox="0 0 10 10" refX="8.6" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
       <path d="M0 0 10 5 0 10Z" fill="#173f70"/>
     </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="19" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M0 0 10 5 0 10Z" fill="#0b8f87"/>
+    </marker>
     <marker id="arrow-red" viewBox="0 0 10 10" refX="8.6" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
       <path d="M0 0 10 5 0 10Z" fill="#d4674c"/>
     </marker>
     <style>
       .frame{fill:#fbfdff;stroke:#d6e1ed;stroke-width:2}.vessel{fill:#fff;stroke:#173f70;stroke-width:3}
       .wall{stroke:#173f70;stroke-width:9}.axis{stroke:#9aafc2;stroke-width:2;marker-end:url(#arrow-blue)}
-      .incoming{stroke:#0b8f87;stroke-width:4;marker-end:url(#arrow-blue)}.outgoing{stroke:#d4674c;stroke-width:4;marker-end:url(#arrow-red)}
+      .incoming{stroke:#0b8f87;stroke-width:4;marker-end:url(#arrow-green)}.outgoing{stroke:#d4674c;stroke-width:4;marker-end:url(#arrow-red)}
       .impulse{stroke:#173f70;stroke-width:3;marker-end:url(#arrow-blue)}.particle{fill:#173f70;stroke:#fff;stroke-width:3}
       .heading{font:700 26px system-ui,sans-serif;fill:#173f70}.label{font:20px system-ui,sans-serif;fill:#173f70}
       .small{font:16px system-ui,sans-serif;fill:#526b84}
@@ -23,12 +26,12 @@
   <line class="wall" x1="860" y1="116" x2="860" y2="506"/>
   <line class="axis" x1="707" y1="310" x2="940" y2="310"/>
   <text class="label" x="948" y="318">x</text>
-  <circle class="particle" cx="790" cy="310" r="15"/>
-  <line class="incoming" x1="612" y1="418" x2="784" y2="317"/>
-  <line class="outgoing" x1="798" y1="302" x2="642" y2="196"/>
-  <line class="impulse" x1="784" y1="343" x2="638" y2="343"/>
-  <text class="label" x="580" y="440">v₁</text>
-  <text class="label" x="607" y="188">v₂</text>
+  <line class="incoming" x1="680" y1="430" x2="860" y2="310"/>
+  <line class="outgoing" x1="860" y1="310" x2="680" y2="190"/>
+  <line class="impulse" x1="860" y1="343" x2="500" y2="343"/>
+  <circle class="particle" cx="860" cy="310" r="7"/>
+  <text class="label" x="640" y="453">v₁</text>
+  <text class="label" x="645" y="180">v₂</text>
   <text class="label" x="625" y="372">Δp</text>
   <text class="small" x="705" y="535">|v₂| = |v₁|, v₂x = −v₁x</text>
   <g fill="#b8ccdd">

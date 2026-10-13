@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 430" role="img" aria-labelledby="title desc">
   <title id="title">Доверительный интервал результата измерения</title>
-  <desc id="desc">На числовой оси показаны нижняя и верхняя границы доверительного интервала, среднее значение, истинное значение и абсолютная погрешность.</desc>
+  <desc id="desc">На числовой оси показаны нижняя и верхняя границы доверительного интервала, среднее значение и абсолютная погрешность. Интервал строят с выбранной доверительной вероятностью.</desc>
   <defs>
     <style>
       .frame{fill:#fbfdff;stroke:#d6e1ed;stroke-width:2}.axis{stroke:#173f70;stroke-width:4;fill:none;marker-end:url(#arrow)}
@@ -37,7 +37,6 @@
   <text class="label accent" x="550" y="151" text-anchor="middle">2Δx</text>
 
   <circle class="mean" cx="550" cy="226" r="10"/>
-  <circle class="truth" cx="458" cy="226" r="9"/>
 
   <text class="label" x="275" y="286" text-anchor="middle">x̄ − Δx</text>
   <text class="small" x="275" y="311" text-anchor="middle">нижняя граница</text>
@@ -46,7 +45,6 @@
   <text class="label" x="825" y="286" text-anchor="middle">x̄ + Δx</text>
   <text class="small" x="825" y="311" text-anchor="middle">верхняя граница</text>
 
-  <path d="M458 238V346H350" stroke="#d4674c" stroke-width="2.5" fill="none"/>
-  <text class="label truth-label" x="342" y="343" text-anchor="end">истинное значение x</text>
-  <text class="small" x="550" y="382" text-anchor="middle">Точное положение истинного значения внутри интервала неизвестно.</text>
+  <text class="label" x="550" y="349" text-anchor="middle">Доверительная вероятность — α</text>
+  <text class="small" x="550" y="382" text-anchor="middle">Точное положение истинного значения неизвестно.</text>
 </svg>
