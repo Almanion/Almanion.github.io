@@ -1,0 +1,26 @@
+{
+  "htmlSha256": "3670d0c1f5e367ff6e11a80ceaaddb32b05278544ff3c79b857fda5567b6eb92",
+  "states": 33,
+  "route": [
+    9,
+    30,
+    31,
+    32,
+    10
+  ],
+  "viewports": [
+    1920,
+    1366
+  ],
+  "forward": true,
+  "back": true,
+  "replay": true,
+  "outline": true,
+  "reduced": true,
+  "offline": true,
+  "stationary": true,
+  "nativeRegistration": true,
+  "noRealAccount": true,
+  "errors": [],
+  "requests": []
+}

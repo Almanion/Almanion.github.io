@@ -210,3 +210,13 @@ navigation-flight.js: самостоятельные снимки DOM с тем�
 вход в страницу через карточку, обратный выход на главную, влёт к теме.
 verify-fsrs-navigation.cjs проверяет реальную ветку подтверждений, восемь
 переходов, повтор, уменьшенное движение, два разрешения и работу без сети.
+
+РЕГИСТРАЦИЯ И АККАУНТ (13 октября 2026)
+account.js: ревизия e727813d614d6b4ff3fc63f2683ffa1ab1ceacb3.
+openLoginModal(), doEmail(), updateAuthControls(), updateButton(),
+openAccountMenu(), startKcSync(), startSettingsSync(), onAuthStateChanged().
+Проверены поля регистрации и несовпадение паролей на локальном макете Auth,
+закрытие формы после успеха и настоящее окно вошедшего пользователя.
+home-dashboard.js: homeQuickAccessByUser; настройки связаны с аккаунтом.
+source/reference/account.js — сохранённая копия; SHA в account-example.json.
+Математический пример и FSRS остались на версии f7f708a.

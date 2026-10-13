@@ -1,4 +1,4 @@
-﻿$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $outDir = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
@@ -6,7 +6,7 @@ $zipPath = Join-Path (Split-Path $outDir -Parent) 'Almanion-анимация.zip
 $report = Get-Content -LiteralPath (Join-Path $outDir 'evidence-v2/verification.json') -Raw | ConvertFrom-Json
 $htmlHash = (Get-FileHash -LiteralPath (Join-Path $outDir 'Almanion.html') -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($report.htmlSha256 -ne $htmlHash) { throw 'Verification must match the current HTML build.' }
-foreach ($extraReport in @('reading-verification.json','opening-verification.json','flight-verification.json','cursor-verification.json','search-theme-verification.json','star-volume-verification.json','fsrs-navigation-verification.json','first-five-verification.json')) {
+foreach ($extraReport in @('reading-verification.json','opening-verification.json','flight-verification.json','cursor-verification.json','search-theme-verification.json','star-volume-verification.json','fsrs-navigation-verification.json','first-five-verification.json','account-verification.json')) {
     $extra = Get-Content -LiteralPath (Join-Path $outDir "evidence-v2/$extraReport") -Raw | ConvertFrom-Json
     if ($extra.htmlSha256 -ne $htmlHash) { throw "Verification does not match current HTML: $extraReport" }
 }
@@ -21,11 +21,13 @@ HTML SHA-256: $htmlHash
 обратный переход, чистая остановка и панель управления.
 
 Автоматизированные проверки в Microsoft Edge (Playwright):
-— 30 состояний от 0 до 29, весь маршрут вперёд;
+— 33 состояния от 0 до 32, весь маршрут вперёд;
 — переработанный блок FSRS‑6: формулы, графики, счётчики и отсутствие наложений;
 — реальная sessionTransition(): «Снова» → 2 → 1 → 0, S и D при подтверждениях неизменны;
 — универсальные влёты и вылеты: быстрый доступ, главная, финал и оглавление;
 — восемь маршрутов в обе стороны, направление глубины, разгон и торможение;
+— регистрация: настоящие формы, синтетический профиль и схема синхронизации;
+— маршрут из 33 остановок, включая аккаунт, возврат, повтор и оглавление;
 — первые две сцены: композиция, переход и восстановление;
 — раскрытие светлой страницы физики внутри увеличивающейся карточки;
 — перенос заголовка карточки в заголовок страницы без наложения страниц;
@@ -49,7 +51,7 @@ HTML SHA-256: $htmlHash
 — полноэкранный режим;
 — независимость альтернативных оценок от текущей сцены;
 — четыре перспективных слоя звёзд с разными скоростями;
-— точное восстановление неподвижного неба каждой из 30 остановок;
+— точное восстановление неподвижного неба каждой из 33 остановок;
 — совпадение обратного маршрута, отсутствие зависимости от частоты кадров;
 — PNG RGBA 1024 × 1024 с прозрачными и полупрозрачными пикселями;
 — мягкое сжатие и усиление ореола при нажатии курсора,
@@ -85,6 +87,8 @@ foreach ($sub in @('source/animation','source/reference')) {
 foreach ($num in @('00','08','15','23','28')) { $relativeFiles += "evidence-v2/state-$num.png" }
 $relativeFiles += 'evidence-v2/fsrs-navigation-verification.json'
 $relativeFiles += 'evidence-v2/first-five-verification.json'
+$relativeFiles += 'evidence-v2/account-verification.json'
+foreach ($step in @(30,31,32)) { $relativeFiles += "evidence-v2/account-$step-1920.png" }
 foreach ($step in @(1,2,3,4,5)) { $relativeFiles += "evidence-v2/guided-$step-stop-1920.png" }
 foreach ($num in @('19','20','22','23','24','25','26','27')) { $relativeFiles += "evidence-v2/fsrs-$num-1920.png" }
 $relativeFiles += 'evidence-v2/navigation-13-14.png'

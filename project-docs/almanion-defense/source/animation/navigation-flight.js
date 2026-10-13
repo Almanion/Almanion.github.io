@@ -43,12 +43,13 @@ async function navigationFlight(target){
  Cosmos.holdFlight(from);
  // UI clicks belong to the ordinary route only; outline navigation has no fake click.
  if(target===14&&from===13){await prepareTarget(anchors[14]);await click(anchors[14],null,330)}
- if(target===10&&from===9){await prepareTarget('.sidebar-header a');await click('.sidebar-header a',null,330)}
+ if(target===10&&(from===9||from===32)){await prepareTarget('.sidebar-header a');await click('.sidebar-header a',null,330)}
  let card=entering?navigationCard():null,old=await navigationSurface(),arrival=null,portal=null;
- const hide=['panel','math-site-label','opening','cursor','connector','final'];
+ const hide=['panel','math-site-label','opening','cursor','connector','final','account-story','account-site-label'];
+ const restoreLayers=()=>hide.forEach(id=>$(id).style.visibility=id.startsWith('account-')?(isAccountScene(target)?'visible':'hidden'):'');
  try{
   hide.forEach(id=>$(id).style.visibility='hidden');$('site').style.visibility='hidden';
-  step=target;resetUI(target);mathState(target);await layout(target,false);await endCursor(target);linkScene(target);readingFocus(target);
+  step=target;resetUI(target);mathState(target);await layout(target,false);await endCursor(target);linkScene(target);readingFocus(target);hide.forEach(id=>$(id).style.visibility='hidden');
   if(!entering)card=navigationCard();
   arrival=await navigationSurface();arrival.root.style.zIndex='9';old.root.style.zIndex='10';
   const foreground=entering?arrival:old,background=entering?old:arrival,full=foreground.pose;
@@ -67,10 +68,10 @@ async function navigationFlight(target){
    Cosmos.setFlight(raw,mix(center.x,full.x+full.w/2,g),mix(center.y,full.y+full.h/2,g),!entering,{from,to:target,duration:1.65,start:.08,span:.80});
   },true);
   $('site').style.visibility='';old.release();arrival.release();Cosmos.finishFlight();
-  hide.forEach(id=>$(id).style.visibility='');
+  restoreLayers();
   if(target>=15&&target<=27){await animateMathScene(target);mathState(target);linkScene(target);}
  }finally{
-  old.release();arrival?.release();$('site').style.visibility='';hide.forEach(id=>$(id).style.visibility='');$('stage').dataset.flight='false';Cosmos.finishFlight();
+  old.release();arrival?.release();$('site').style.visibility='';restoreLayers();$('stage').dataset.flight='false';Cosmos.finishFlight();
  }
 }
 // A topic result travels into the reader plane rather than fading vertically.

@@ -1,0 +1,15 @@
+#account-story{position:absolute;left:1090px;top:108px;width:744px;height:800px;z-index:4;color:#d9e8fa;pointer-events:none;visibility:hidden;opacity:0;font-family:Onest,'Segoe UI',sans-serif}
+#account-story .account-eyebrow{font-size:18px;letter-spacing:2px;color:#8fa9c8;margin-bottom:20px}
+#account-story h2{font-size:52px;font-weight:550;line-height:1.12;letter-spacing:-1.5px;margin:0 0 24px;max-width:720px}
+#account-story .account-lead{font-size:29px;line-height:1.5;color:#b7cbe3;margin:0 0 32px}
+.account-route{display:flex;align-items:center;gap:16px;margin:0 0 40px;font-size:20px;color:#768fae}.account-route i{width:24px;height:1px;background:#3f536c}.account-route b{color:#bfe2ff;font-weight:500}
+.account-benefit{border-top:1px solid #33445c;padding:25px 0;display:flex;align-items:center;gap:22px}.account-benefit>span{font-size:20px;color:#7ea4cf;min-width:34px}.account-benefit strong{display:block;font-size:29px;font-weight:500}.account-benefit p{font-size:22px;line-height:1.45;color:#9fb5cf;margin:8px 0 0}
+.account-foot{font-size:19px;line-height:1.5;color:#8197b4;margin-top:28px}
+#account-network{width:740px;height:265px;display:block;margin:6px 0 12px;overflow:visible}
+#account-network text{font-family:Onest,'Segoe UI',sans-serif;fill:#c7d9f0;font-size:19px}
+#account-network .network-line{stroke:#53779d;stroke-width:2;fill:none;stroke-dasharray:4 8}
+#account-network .network-point{fill:#d3edff;filter:drop-shadow(0 0 5px #77b7ff)}
+#account-network .network-surface{fill:#102237;stroke:#567394;stroke-width:1.5}
+#account-story[data-phase="32"] h2{font-size:49px}#account-story[data-phase="32"] .account-route{margin-bottom:25px}#account-story[data-phase="32"] .account-lead{margin-bottom:8px}#account-story[data-phase="32"] .account-benefit{padding:18px 0}
+#account-site-label{position:absolute;left:85px;top:42px;font-size:17px;color:#9db3ce;z-index:5;visibility:hidden;letter-spacing:.4px}
+.account-focus-line{height:2px;background:linear-gradient(90deg,#afd9ff,transparent);margin:22px 0;width:100%}
