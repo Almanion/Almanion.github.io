@@ -1,0 +1,19 @@
+/* The website retains its own real light/dark themes. Space is the stage. */
+html,body{background:#050a15}
+#stage{background:radial-gradient(ellipse at 7% 25%,#17305088,transparent 48%),radial-gradient(ellipse at 94% 79%,#35214c80,transparent 40%),radial-gradient(ellipse at 50% 120%,#13364980,transparent 55%),#060b18;color:#dce9fc}
+#cosmos,#cosmos-fx{position:absolute;inset:0;width:1920px;height:1080px;pointer-events:none}#cosmos{z-index:0}#cosmos-fx{z-index:14}
+#site{border-color:#90bfff45;box-shadow:0 0 0 1px #040b19,0 35px 100px #0009,0 0 calc(25px + 50px * var(--space-pulse,0)) #73aeff26}
+#chrome{background:linear-gradient(110deg,#121f35,#182138 55%,#141c30);border-bottom:1px solid #92beef2b;color:#bfd4ed;font-size:17px}
+#chrome i{background:#789bc3;box-shadow:0 0 8px #92c5ff45}#chrome i:first-child{background:#d0e9ff}#chrome i:nth-child(3){background:#a69bc8}#offline{color:#8eaccc}
+#panel{background:linear-gradient(145deg,#112238f7,#121b2ffb 60%,#191b33f7);border-color:#82b3e242;box-shadow:0 28px 85px #0008,inset 0 1px #b4d5ff12;color:#e0ecff}
+#panel .eyebrow,#context,#coeff,#interval small{color:#9ebbd8}#panel h2{color:#edf5ff}#formula,#interval{color:#d8ebff}
+#params>div,#source-block{background:#1c324c9c;border-color:#8dbff131;color:#a6c2dc}#params strong,#legend b,#alternative b{color:#c2e4ff}#source-block small{color:#8fb5dd}
+#insight{color:#bfdafa;border-color:#82bff4}#code{background:#080f20a6;color:#b8defe;border:1px solid #739ac62e}
+#alternative p{background:#1728408c;border-color:#7ea7d536}#graph text{fill:#a9c5df}#graph line{stroke:#96b8db;stroke-opacity:.25}#graph path[stroke="#567faa"]{stroke:#91c8ff}#graph path[stroke="#bdc7d3"]{stroke:#647d9c}#graph text[style]{fill:#bbdbf8!important}#graph circle{fill:#b8ddff;stroke:#274568}
+#caption,#final{background:linear-gradient(115deg,#101f35f5,#19263ff5);border-color:#7faadc4a;box-shadow:0 12px 35px #0005;color:#dbeaff;backdrop-filter:blur(14px)}#caption small{color:#9db6d2}#final a{color:#a1d4ff}
+#focus{border:2px solid #9bd0fc;box-shadow:0 0 0 5px #89c2ff18,0 0 23px #8fc6ff3a}
+#cursor{width:43px;height:53px;filter:drop-shadow(0 2px 2px #030b1bab) drop-shadow(0 5px 9px #12264266);transform-origin:5px 3px;z-index:15}
+#cursor svg{overflow:visible}#pulse{display:none}#stage[data-space-moving="true"] #cursor{filter:drop-shadow(0 2px 2px #030b1b99) drop-shadow(0 0 9px #8fcfff55)}
+nav{color:#99b2d0}nav button{background:#111d30eb;border-color:#82a9d33b;color:#bbd1eb;box-shadow:inset 0 1px #c6dcff08}nav button:hover{background:#263b57;border-color:#a5d1fb7a}nav #next{background:linear-gradient(140deg,#375e87,#405c87);border-color:#85b9e75c;box-shadow:0 0 20px #7fbeff17}nav button:disabled{opacity:.35}#hint{color:#718bac;font-size:15px;letter-spacing:1.5px;text-transform:uppercase}#progress{background:linear-gradient(90deg,#4d7dab,#aedaff,#bdaceb);box-shadow:0 0 10px #8bc4ff}
+dialog{background:linear-gradient(135deg,#112038,#11192c);color:#dce9fc;border-color:#7299c450;box-shadow:0 30px 100px #000a}dialog::backdrop{background:#030815bf;backdrop-filter:blur(8px)}dialog button{background:#1b2b43;color:#c6d9f0;border-color:#8cafdb39}.toc-grid button.selected{background:#38577b}#detail-body pre{background:#080f20;color:#c0deff}#detail-body td,#detail-body th{border-color:#7799c03b}#loading{background:#070d1c;color:#bedbfa}
+.subject-flight{background:linear-gradient(130deg,#233d5fed,#1b2540ed);color:#d5edff;border:1px solid #a3d5ff80;box-shadow:0 0 45px #8ec6ff3a}

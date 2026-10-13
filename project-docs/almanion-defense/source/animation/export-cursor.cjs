@@ -1,0 +1,5 @@
+// Export the generated transparent master at the requested delivery size.
+const {chromium}=require('playwright'),fs=require('fs'),path=require('path');
+(async()=>{const b=await chromium.launch({channel:'msedge'}),p=await b.newPage();
+const result=await p.evaluate(async src=>{const img=new Image();img.src=src;await img.decode();const c=document.createElement('canvas');c.width=c.height=512;const x=c.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(img,36.55,37.25,448,448);const d=x.getImageData(0,0,512,512).data;let transparent=0,partial=0;for(let i=3;i<d.length;i+=4){if(d[i]===0)transparent++;else if(d[i]<255)partial++;}return{png:c.toDataURL('image/png').split(',')[1],width:512,height:512,transparent,partial,centerAlpha:d[(256*512+256)*4+3]};},'data:image/png;base64,'+fs.readFileSync(path.join(__dirname,'cursor-master.png')).toString('base64'));
+fs.writeFileSync(path.join(__dirname,'../../cursor-codex.png'),Buffer.from(result.png,'base64'));delete result.png;console.log(JSON.stringify(result));await b.close();})();

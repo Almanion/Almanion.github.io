@@ -1,0 +1,4 @@
+/* Tip remains at the fixed demonstration coordinate while the image scales. */
+#cursor{width:160px;height:160px;margin-left:-64px;margin-top:-65px;transform-origin:64px 65px;filter:none!important}
+#cursor img{display:block;width:160px;height:160px;pointer-events:none;user-select:none}
+#stage[data-space-moving="true"] #cursor{filter:none!important}

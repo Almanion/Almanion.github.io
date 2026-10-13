@@ -1,0 +1,226 @@
+{
+  "now": 1791777600000,
+  "state": {
+    "v": 3,
+    "phase": "review",
+    "fsrsState": 2,
+    "stability": 10,
+    "difficulty": 5,
+    "reps": 5,
+    "lapses": 0,
+    "learningSteps": 0,
+    "scheduledDays": 10,
+    "last": 1790913600000,
+    "lastReview": 1790913600000,
+    "due": 1791777600000,
+    "pendingConfirmations": 0
+  },
+  "R": 0.9,
+  "grades": [
+    {
+      "grade": 1,
+      "label": "1 мин",
+      "state": {
+        "v": 3,
+        "fresh": false,
+        "schedulerVersion": "fsrs-6@5.4.2",
+        "step": 0,
+        "phase": "relearning",
+        "fsrsState": 3,
+        "stability": 1.39198697,
+        "difficulty": 8.34176237,
+        "intervalDays": 0.0006944444444444445,
+        "due": 1791777660000,
+        "last": 1791777600000,
+        "lastReview": 1791777600000,
+        "elapsedDays": 10,
+        "scheduledDays": 0,
+        "learningSteps": 0,
+        "reps": 6,
+        "lapses": 1,
+        "learning": true,
+        "lastGrade": 1,
+        "pendingConfirmations": 0,
+        "confirmationDue": 0,
+        "contentHash": "",
+        "contentChangedAt": 0,
+        "revision": 6,
+        "updatedAt": 1791777600000,
+        "reviewEvents": [
+          {
+            "id": "demo-grade-1-0",
+            "cardId": "",
+            "grade": 1,
+            "at": 1791777600000,
+            "mode": "schedule",
+            "scheduler": "fsrs-6@5.4.2"
+          }
+        ]
+      },
+      "dueISO": "2026-10-12T04:01:00.000Z"
+    },
+    {
+      "grade": 2,
+      "label": "23 дн",
+      "state": {
+        "v": 3,
+        "fresh": false,
+        "schedulerVersion": "fsrs-6@5.4.2",
+        "step": 5,
+        "phase": "review",
+        "fsrsState": 2,
+        "stability": 23.24687511,
+        "difficulty": 6.66599536,
+        "intervalDays": 23,
+        "due": 1793764800000,
+        "last": 1791777600000,
+        "lastReview": 1791777600000,
+        "elapsedDays": 10,
+        "scheduledDays": 23,
+        "learningSteps": 0,
+        "reps": 6,
+        "lapses": 0,
+        "learning": false,
+        "lastGrade": 2,
+        "pendingConfirmations": 0,
+        "confirmationDue": 0,
+        "contentHash": "",
+        "contentChangedAt": 0,
+        "revision": 6,
+        "updatedAt": 1791777600000,
+        "reviewEvents": [
+          {
+            "id": "demo-grade-2-0",
+            "cardId": "",
+            "grade": 2,
+            "at": 1791777600000,
+            "mode": "schedule",
+            "scheduler": "fsrs-6@5.4.2"
+          }
+        ]
+      },
+      "dueISO": "2026-11-04T04:00:00.000Z"
+    },
+    {
+      "grade": 3,
+      "label": "1 мес",
+      "state": {
+        "v": 3,
+        "fresh": false,
+        "schedulerVersion": "fsrs-6@5.4.2",
+        "step": 6,
+        "phase": "review",
+        "fsrsState": 2,
+        "stability": 32.02672948,
+        "difficulty": 4.99022837,
+        "intervalDays": 32,
+        "due": 1794542400000,
+        "last": 1791777600000,
+        "lastReview": 1791777600000,
+        "elapsedDays": 10,
+        "scheduledDays": 32,
+        "learningSteps": 0,
+        "reps": 6,
+        "lapses": 0,
+        "learning": false,
+        "lastGrade": 3,
+        "pendingConfirmations": 0,
+        "confirmationDue": 0,
+        "contentHash": "",
+        "contentChangedAt": 0,
+        "revision": 6,
+        "updatedAt": 1791777600000,
+        "reviewEvents": [
+          {
+            "id": "demo-grade-3-0",
+            "cardId": "",
+            "grade": 3,
+            "at": 1791777600000,
+            "mode": "schedule",
+            "scheduler": "fsrs-6@5.4.2"
+          }
+        ]
+      },
+      "dueISO": "2026-11-13T04:00:00.000Z"
+    },
+    {
+      "grade": 4,
+      "label": "2 мес",
+      "state": {
+        "v": 3,
+        "fresh": false,
+        "schedulerVersion": "fsrs-6@5.4.2",
+        "step": 7,
+        "phase": "review",
+        "fsrsState": 2,
+        "stability": 51.25386165,
+        "difficulty": 3.31446137,
+        "intervalDays": 51,
+        "due": 1796184000000,
+        "last": 1791777600000,
+        "lastReview": 1791777600000,
+        "elapsedDays": 10,
+        "scheduledDays": 51,
+        "learningSteps": 0,
+        "reps": 6,
+        "lapses": 0,
+        "learning": false,
+        "lastGrade": 4,
+        "pendingConfirmations": 0,
+        "confirmationDue": 0,
+        "contentHash": "",
+        "contentChangedAt": 0,
+        "revision": 6,
+        "updatedAt": 1791777600000,
+        "reviewEvents": [
+          {
+            "id": "demo-grade-4-0",
+            "cardId": "",
+            "grade": 4,
+            "at": 1791777600000,
+            "mode": "schedule",
+            "scheduler": "fsrs-6@5.4.2"
+          }
+        ]
+      },
+      "dueISO": "2026-12-02T04:00:00.000Z"
+    }
+  ],
+  "points": [
+    {
+      "t": 0,
+      "R": 1
+    },
+    {
+      "t": 5,
+      "R": 0.94034429
+    },
+    {
+      "t": 10,
+      "R": 0.9
+    },
+    {
+      "t": 20,
+      "R": 0.84588465
+    },
+    {
+      "t": 30,
+      "R": 0.8093881
+    }
+  ],
+  "revision": "f7f708a3b7266700b8a9ce2df9070e681e875654",
+  "description": "Синтетический учебный пример; альтернативы из одного исходного состояния",
+  "fixedTime": "2026-10-12T04:00:00.000Z",
+  "fsrsInput": {
+    "due": "2026-10-12T04:00:00.000Z",
+    "stability": 10,
+    "difficulty": 5,
+    "elapsed_days": 0,
+    "scheduled_days": 10,
+    "reps": 5,
+    "lapses": 0,
+    "learning_steps": 0,
+    "state": 2,
+    "last_review": "2026-10-02T04:00:00.000Z"
+  }
+}

@@ -1,0 +1,22 @@
+/* Opening is part of the same spatial site demonstration. */
+#opening{position:absolute;inset:0;pointer-events:none;z-index:6}
+#intro-copy{position:absolute;left:90px;top:275px;width:690px}
+#intro-copy .project-label{font-size:24px;color:#a5c2df;letter-spacing:2px}
+#intro-copy h1{font-size:96px;letter-spacing:-4px;font-weight:600;margin:22px 0 7px;line-height:1.1}
+#intro-copy h2{font-size:42px;font-weight:400;line-height:1.22;margin:0 0 30px;color:#e4effc}
+#intro-copy p{font-size:27px;line-height:1.5;color:#a9bed6;max-width:610px;margin:0}
+#intro-copy .intro-url{display:block;margin-top:43px;font-size:27px;color:#d3e9ff;letter-spacing:.5px}
+#route-copy{position:absolute;left:168px;top:75px;right:168px;display:flex;align-items:center;justify-content:space-between;opacity:0}
+#route-copy h2{font-size:44px;font-weight:500;letter-spacing:-1px;margin:0}
+#route-copy p{display:flex;align-items:center;gap:19px;font-size:25px;color:#adc2da;margin:0}
+#route-copy strong{color:#eef7ff;font-weight:500;border-bottom:2px solid #a8d3fb;padding:12px 0}
+#route-copy span{color:#7295bd;font-size:20px}
+#cursor{width:36px;height:44px;transform-origin:2px 2px;filter:drop-shadow(0 2px 3px #0007)!important}
+#cursor svg{overflow:visible}
+.physics-portal{position:absolute;overflow:hidden;z-index:11;pointer-events:none;background:#fafaff;border:1px solid #a6caff;border-radius:20px;box-shadow:0 0 0 1px #a8d3ff20,0 0 65px #89bfff33,0 32px 100px #0006;transform-origin:center}
+.portal-card{position:absolute;inset:0;z-index:2;overflow:hidden;background:#fafaff}
+.portal-document{position:absolute;inset:0;opacity:0;overflow:hidden;background:#fafaff}
+.portal-chrome{position:absolute;inset:0 0 auto;height:42px;display:flex;align-items:center;justify-content:center;font-size:17px;letter-spacing:.2px;color:#bfd4ed;background:#152137;z-index:3}
+.portal-document iframe{opacity:1!important;transform-origin:0 0;left:0;top:42px}
+#stage[data-step="0"] #caption,#stage[data-step="1"] #caption{display:none!important}
+#stage[data-step="0"] #hint,#stage[data-step="1"] #hint{opacity:0}

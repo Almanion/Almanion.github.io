@@ -1,0 +1,27 @@
+const {chromium}=require('playwright'),fs=require('fs'),path=require('path');
+const out=__dirname,evidence=path.resolve(out,'../../evidence-v2');
+async function clean(page){return page.evaluate(()=>{const clone=document.body.cloneNode(true);clone.querySelectorAll('script,canvas,#nySnowflakes,.snowflake,.toast-container').forEach(e=>e.remove());clone.querySelectorAll('[inert]').forEach(e=>e.removeAttribute('inert'));clone.querySelectorAll('*').forEach(e=>{[...e.attributes].forEach(a=>{if(a.name.startsWith('on'))e.removeAttribute(a.name)})});return {body:clone.innerHTML,classes:document.body.className,styles:[...document.querySelectorAll('link[rel="stylesheet"]')].map(e=>new URL(e.href).pathname.slice(1)),inlineStyles:[...document.querySelectorAll('style')].map(e=>e.textContent)}})}
+(async()=>{const browser=await chromium.launch({channel:'msedge'}),page=await browser.newPage({viewport:{width:1440,height:900}});
+await page.goto('https://almanion.github.io/',{waitUntil:'domcontentloaded'});await page.waitForTimeout(1200);
+await page.evaluate(()=>{window.AlmanionAccount={getUser:()=>({uid:'presentation-demo'}),hasEnglishAccess:()=>Promise.resolve(false)};let value={};window.AlmanionSettings={ready:true,get:()=>value,update:x=>Object.assign(value,x)};window.dispatchEvent(new CustomEvent('almanion-account-ready',{detail:{user:{uid:'presentation-demo'}}}));});
+await page.locator('#homeQuickCustomize').click();await page.waitForTimeout(500);
+await page.screenshot({path:path.join(evidence,'actual-quick.png')});
+const home=await clean(page);fs.writeFileSync(path.join(out,'home.json'),JSON.stringify(home));
+await page.goto('https://almanion.github.io/physics-10.html',{waitUntil:'domcontentloaded'});await page.waitForTimeout(1000);
+await page.locator('a[href="#temperatura-i-uravnenie-sostoyaniya"]').first().click();await page.waitForTimeout(600);
+await page.locator('.settings-button-sidebar').click();await page.waitForTimeout(500);
+await page.screenshot({path:path.join(evidence,'actual-settings-light.png')});
+await page.locator('[data-exp-theme="dark"]').click();await page.waitForTimeout(600);
+await page.screenshot({path:path.join(evidence,'actual-settings-dark.png')});
+await page.locator('#settingsCloseBtn').click();
+await page.locator('#searchInput').fill('погрешности');await page.waitForTimeout(600);const search=await page.locator('.search-results-panel').evaluate(e=>e.outerHTML);await page.keyboard.press('Escape');
+await page.locator('#knowledgeCheckBtn').click();await page.waitForTimeout(700);
+const select=await page.locator('#kcSelectOverlay').evaluate(e=>e.outerHTML);
+await page.locator('#kcSelectAll').click();await page.locator('.kc-deck[data-topic="temperatura-i-uravnenie-sostoyaniya"]').click();
+await page.evaluate(()=>{const now=Date.parse('2026-10-12T04:00:00Z');Date.now=()=>now;const cards=__kcFSRS.extractCards(['temperatura-i-uravnenie-sostoyaniya'],['definition']);cards.forEach(c=>__kcFSRS.persistState(c.id,{v:3,phase:'review',fsrsState:2,stability:10,difficulty:5,reps:5,lapses:0,learningSteps:0,scheduledDays:10,last:now-864000000,lastReview:now-864000000,due:c.sourceId==='thermostat-definition'?now:now+864000000,pendingConfirmations:0}));});
+await page.locator('#kcStart').click();await page.waitForTimeout(350);await page.locator('#kcFront').click();await page.waitForTimeout(250);
+await page.screenshot({path:path.join(evidence,'actual-card.png')});
+const physics=await clean(page);physics.search=search;physics.selection=select;
+physics.card=await page.locator('#kcReviewOverlay').evaluate(e=>e.outerHTML);
+physics.domInfo=await page.evaluate(()=>({scroll:document.scrollingElement.scrollTop,topics:[...document.querySelectorAll('.topic')].slice(0,7).map(x=>({id:x.id,className:x.className,style:x.getAttribute('style'),display:getComputedStyle(x).display})),overflow:[...document.querySelectorAll('main,section,.content-wrapper,.main-content,.experimental-reader')].map(e=>({cls:e.className,overflow:getComputedStyle(e).overflowY,scroll:e.scrollTop}))}));
+fs.writeFileSync(path.join(out,'physics.json'),JSON.stringify(physics));console.log(JSON.stringify({homeStyles:home.styles,physicsStyles:physics.styles,domInfo:physics.domInfo},null,2));await browser.close()})().catch(e=>{console.error(e);process.exit(1)});

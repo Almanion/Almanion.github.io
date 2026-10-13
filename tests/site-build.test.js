@@ -39,6 +39,8 @@ assert.strictEqual(BuildSite.isPublishable('content/physics/manifest.json', conf
 assert.strictEqual(BuildSite.isPublishable('dead souls/text/chapter-1.txt', config), true);
 assert.strictEqual(BuildSite.isPublishable('games/orbital-courier/index.html', config), true);
 assert.strictEqual(BuildSite.isPublishable('games/orbital-courier/LICENSE.txt', config), true);
+assert.strictEqual(BuildSite.isPublishable('presentation/index.html', config), true);
+assert.strictEqual(BuildSite.isPublishable('project-docs/almanion-defense/source/animation/director.js', config), false);
 assert.strictEqual(BuildSite.isPublishable('tests/home-motion.test.js', config), false);
 assert.strictEqual(BuildSite.isPublishable('tools/build-notes.js', config), false);
 assert.strictEqual(BuildSite.isPublishable('firebase/database.rules.json', config), false);

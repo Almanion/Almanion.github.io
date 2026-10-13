@@ -87,6 +87,7 @@
     "games": [".html", ".txt"],
     "images": [".svg", ".png", ".jpg", ".jpeg", ".webp", ".avif", ".gif"],
     "matcenter": [".js", ".json"],
+    "presentation": [".html"],
     "styles": [".css"],
     "vendor": [".js", ".css", ".txt", ".ttf", ".woff", ".woff2"]
   },

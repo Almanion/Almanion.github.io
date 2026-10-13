@@ -1,0 +1,32 @@
+/* Projection surface: quiet chrome, stable footer, no implementation labels. */
+#hint{display:none!important}
+#site{border:1px solid #9bbadc4a;border-radius:23px;box-shadow:0 2px 0 #dbeaff0b inset,0 22px 65px #0008,0 0 0 1px #02071280}
+#chrome{background:linear-gradient(110deg,#101c2e,#152139);color:#a9c1db;border-bottom:1px solid #9db7d12c;font-size:16px;letter-spacing:.25px}
+#chrome i{width:7px;height:7px;box-shadow:none;opacity:.65}
+#offline{font-size:11px;letter-spacing:2px;color:#9bb5d2}
+nav{left:66px;right:66px;bottom:14px;height:64px;padding:10px 14px 10px 22px;border:1px solid #94b6e128;border-radius:17px;background:linear-gradient(100deg,#09121fe8,#101a2cda);box-shadow:0 8px 32px #0007;backdrop-filter:blur(18px);gap:7px;font-size:16px}
+nav #status{min-width:370px;color:#adc6e0;letter-spacing:.1px;font-size:17px;white-space:nowrap}
+nav button{padding:9px 13px;border-radius:9px;background:#17263b80;border-color:#b1cce51d;box-shadow:none;white-space:nowrap}
+nav #next{min-width:108px;background:#385d81;border-color:#a6cdee65;color:#f1f7fe;font-weight:500}
+nav button:disabled{opacity:.26}
+nav button:focus-visible{outline:2px solid #afdcff;outline-offset:3px}
+#progress{height:2px;opacity:.7}
+#caption{border-radius:12px;padding:11px 24px;font-size:26px;background:#101c2eeb;border-color:#afc7e02c;box-shadow:0 7px 23px #0005}
+#stage[data-flight="true"] nav{opacity:.4}
+#stage[data-flight="true"] #caption{opacity:0}
+.physics-portal{border-color:#d9e6f8b3;background:#fff;box-shadow:0 0 0 1px #a8d3ff16,0 20px 65px #0008,0 0 55px #89bfff20;will-change:transform,width,height,left,top}
+.portal-document{background:#fafaff;opacity:0}
+.portal-document iframe{width:1440px;height:810px;left:0;top:42px;transform-origin:0 0}
+.portal-chrome{display:flex;gap:9px;justify-content:initial;padding:0 20px;font-size:16px;letter-spacing:.25px;color:#a9c1db;background:linear-gradient(110deg,#101c2e,#152139);border-bottom:1px solid #9db7d12c}
+.portal-chrome i{width:7px;height:7px;flex-shrink:0;border-radius:50%;background:#789bc3;opacity:.65}
+.portal-chrome i:first-child{background:#d0e9ff}.portal-chrome i:nth-child(3){background:#a69bc8}
+.portal-address{margin:auto}.portal-brand{font-size:11px;letter-spacing:2px;color:#9bb5d2}
+.portal-title{position:absolute;z-index:5;white-space:nowrap;color:#16161f;transform-origin:0 0;line-height:1.2;pointer-events:none}
+.portal-icon{position:absolute;z-index:5;transform-origin:0 0;pointer-events:none}
+.portal-face{position:absolute;inset:0;background:#fff;z-index:1;pointer-events:none}
+.portal-glow{position:absolute;inset:0;z-index:6;border-radius:inherit;pointer-events:none;box-shadow:inset 0 0 0 1px #95cfff70,0 0 55px #83bfff35;opacity:0}
+.navigation-surface,.navigation-portal{position:absolute;overflow:hidden;border:1px solid #9bbadc4a;border-radius:23px;background:#101725;box-shadow:0 22px 65px #0008;pointer-events:none;z-index:11}
+.navigation-chrome{height:42px;display:flex;align-items:center;padding:0 20px;gap:9px;background:linear-gradient(110deg,#101c2e,#152139);color:#a9c1db;font-size:16px;letter-spacing:.25px;border-bottom:1px solid #9db7d12c}
+.navigation-chrome i{width:7px;height:7px;border-radius:50%;background:#789bc3;opacity:.65}.navigation-chrome span:nth-last-child(2){margin:auto}.navigation-chrome span:last-child{font-size:11px;letter-spacing:2px}
+.navigation-viewport{position:absolute;inset:42px 0 0;overflow:hidden}.navigation-portal{border-color:#b5d9f78a;box-shadow:0 22px 65px #0008,0 0 45px #76b3ed24}
+.navigation-face{position:absolute;inset:0;overflow:hidden;background:#181c2c;display:grid;place-items:center;transform-origin:center;z-index:12}.navigation-face>span{font:500 32px Onest;color:#d8eaff}
