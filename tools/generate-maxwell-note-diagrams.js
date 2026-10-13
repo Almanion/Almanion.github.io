@@ -22,49 +22,113 @@ function svg(title,desc,height,body){return `<svg xmlns="http://www.w3.org/2000/
 ${body}
 </svg>\n`;}
 
-function sternApparatus(){let b=label(28,38,'Опыт Штерна','heading');
- // Cutaway: two coaxial cylinders, central wire, and a glass bell.
- b+=pth('M135 549 V179 Q135 86 236 86 H331 V54 H292 M355 54 H374 V86 H484 Q585 86 585 179 V549 Q585 597 531 597 H389 M331 597 H189 Q135 597 135 549','wall');
- b+=rect(193,175,334,336,'#f6f8fb','stroke="#263747" stroke-width="2.3"');
- b+=ellipse(360,175,167,25,'#f6f8fb','stroke="#263747" stroke-width="2.3"');
- b+=line(195,495,525,495,'guide');
- // An open front sector makes the inner cylinder and its narrow axial slit visible.
- b+=rect(224,203,272,279,'#fff');
- b+=line(193,175,193,511)+line(527,175,527,511);
- b+=ellipse(360,245,77,22,'#e5f3fa','stroke="#263747" stroke-width="2.3"');
- b+=pth('M283 245 V434 Q360 477 437 434 V245','wall');
- b+=ellipse(360,434,77,22,'#e5f3fa','stroke="#263747" stroke-width="2.3"');
- b+=line(360,266,360,416,'wall',`stroke="${orange}" stroke-width="4"`);
- b+=rect(425,298,13,83,'#fff')+line(425,298,425,381)+line(438,298,438,381);
- b+=line(362,339,522,339,'beam');
- b+=rect(521,311,6,61,orange);
- b+=rect(345,457,30,141,'#edf2f7','stroke="#263747" stroke-width="2.3"');
- b+=rect(344,597,32,69,'#edf2f7','stroke="#263747" stroke-width="2.3"');
- b+=ellipse(360,637,22,8,'#fff','stroke="#263747" stroke-width="2.3"')+ellipse(360,652,22,8,'#fff','stroke="#263747" stroke-width="2.3"');
- b+=line(339,637,290,637)+line(339,652,290,652);
- b+=rect(325,676,70,46,'#e5ebf2','rx="7" stroke="#263747" stroke-width="2.3"');
- b+=line(360,666,360,676);
- b+=pth(arc(360,512,54,Math.PI*.95,Math.PI*.08),'rotation');
- b+=number('1',633,113,574,170)+number('2',82,218,284,246)+number('3',82,312,194,323)+number('4',82,387,360,347)+number('5',633,385,525,343)+number('6',435,710,396,700)+number('7',225,639,338,637);
- b+=label(360,778,'1 — стеклянный колпак','label','text-anchor="middle"');
- return svg('Опыт Штерна','Схематический разрез установки под стеклянным колпаком: внутри расположены два цилиндра с общей осью. Молекулы проходят через щель и оставляют след. Нумерация сохранена по тетради; заполненная подпись имеется только для номера 1.',812,b);
+function sternStyles() {
+ return `<defs>
+  <marker id="stern-arrow-teal" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0L10 5L0 10Z" fill="${teal}"/></marker>
+  <marker id="stern-arrow-purple" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0L10 5L0 10Z" fill="${purple}"/></marker>
+ </defs><style>
+ .stern-wall{fill:none;stroke:${ink};stroke-width:3;stroke-linejoin:round}.stern-glass{fill:#edf7fc;fill-opacity:.6;stroke:#7fa8bf;stroke-width:3}
+ .stern-leader{fill:none;stroke:${grey};stroke-width:1.5;stroke-linejoin:round}.stern-point{fill:${grey}}
+ .stern-beam{fill:none;stroke:${teal};stroke-width:3;marker-end:url(#stern-arrow-teal)}
+ .stern-dimension{fill:none;stroke:${purple};stroke-width:2;marker-start:url(#arrow);marker-end:url(#arrow)}
+ .stern-turn{fill:none;stroke:${blue};stroke-width:3;marker-end:url(#arrow)}.stern-guide{fill:none;stroke:${grey};stroke-width:1.5;stroke-dasharray:6 6}
+ .stern-caption{font-size:22px;fill:#526a7e}.stern-teal{fill:${teal}}.stern-purple{fill:${purple}}.stern-blue{fill:${blue}}
+ </style>`;
 }
 
-function sternRotation(){let b=label(28,38,'Опыт Штерна: вид сверху','heading');const cx=335,cy=294,R=205,r=92;
- b+=circle(cx,cy,R,'none','stroke="#263747" stroke-width="2.5"')+circle(cx,cy,r,'none','stroke="#263747" stroke-width="2.5"');
- b+=rect(cx+r-10,cy-13,23,26,'#fff')+line(cx+r-3,cy-14,cx+r+5,cy-14)+line(cx+r-3,cy+14,cx+r+5,cy+14);
- b+=circle(cx,cy,5,orange);
- b+=line(cx,cy,cx+R,cy,'guide');
- b+=line(cx,cy,...polar(cx,cy,R,.295),'guide');
- // A trace shifts opposite to rotation in the cylinder's coordinates.
- b+=pth(arc(cx,cy,R,.22,.37),'wall',`style="stroke:${orange};stroke-width:9"`);
- b+=pth(arc(cx,cy,65,0,.295),'wall')+label(cx+81,cy+45,'Δφ','math');
- b+=pth(arc(cx,cy,R+27,Math.PI*.97,Math.PI*.59),'rotation')+label(137,154,'ω','math');
- b+=line(cx,cy,cx-r,cy,'leader','marker-start="url(#arrow)" marker-end="url(#arrow)"')+label(cx-r/2,cy-14,'r','math','text-anchor="middle"');
- b+=line(cx,cy,cx,cy+R,'leader','marker-start="url(#arrow)" marker-end="url(#arrow)"')+label(cx-21,cy+R*.58,'R','math');
- b+=number('2',168,438,251,328)+number('3',563,475,481,438)+number('4',100,290,cx,cy)+number('5',606,352,...polar(cx,cy,R,.295));
- return svg('Угловое смещение следа в опыте Штерна','Вид сверху на два цилиндра радиусов r и R. Угловое смещение следа обозначено дельта фи; время пролёта равно (R-r)/v и дельта фи/омега.',565,b);
+function sternCallout(n,x,y,points) {
+ const end=points[points.length-1];
+ return `<polyline points="${points.map(p=>p.map(fmt).join(',')).join(' ')}" class="stern-leader"/>`
+  +circle(end[0],end[1],3,grey)
+  +circle(x,y,17,'#fff',`stroke="${blue}" stroke-width="1.5"`)
+  +label(x,y+7,n,'number stern-blue','text-anchor="middle"');
 }
+
+function sternApparatus() {
+ let b=sternStyles()+label(28,42,'Установка опыта Штерна','heading')
+  +label(28,78,'Продольный разрез','stern-caption');
+ // The transparent vacuum enclosure surrounds the coaxial cylinder assembly.
+ b+=pth('M140 607V225Q140 135 235 135H485Q580 135 580 225V607Z','stern-glass');
+ b+=pth('M235 135V110H156','stern-wall');
+ b+=label(60,117,'к насосу','stern-caption');
+ b+=label(480,207,'вакуум','stern-caption','text-anchor="middle"');
+ b+=rect(173,607,374,12,'#d8e4ed','rx="3"');
+ // In the axial section, the cylinder walls are vertical strips; their fronts are absent.
+ b+=rect(190,248,8,288,'#dce6ee',`stroke="${ink}" stroke-width="2" id="stern-apparatus-outer-left"`)
+  +rect(522,248,8,288,'#dce6ee',`stroke="${ink}" stroke-width="2" id="stern-apparatus-outer-right"`);
+ b+=line(194,248,350,248,'stern-wall')+line(370,248,526,248,'stern-wall')
+  +line(194,536,350,536,'stern-wall')+line(370,536,526,536,'stern-wall');
+ b+=rect(286,280,8,214,'#dce6ee',`stroke="${ink}" stroke-width="2"`)
+  +rect(426,280,8,51,'#dce6ee',`stroke="${ink}" stroke-width="2"`)
+  +rect(426,405,8,89,'#dce6ee',`stroke="${ink}" stroke-width="2"`);
+ b+=line(290,280,350,280,'stern-wall')+line(370,280,430,280,'stern-wall')
+  +line(290,494,350,494,'stern-wall')+line(370,494,430,494,'stern-wall');
+ b+=rect(419,332,22,72,'#c6e9e5',`opacity=".55" id="stern-apparatus-slit"`);
+ // A heated wire on the common axis supplies the silver vapour.
+ b+=line(360,223,360,298,'stern-wall')
+  +line(360,298,360,472,'stern-wall',`style="stroke:${orange};stroke-width:4" id="stern-apparatus-wire"`)
+  +line(360,472,360,536,'stern-wall');
+ b+=line(365,367,514,367,'stern-beam','id="stern-apparatus-beam"');
+ b+=label(469,353,'v','math stern-teal');
+ b+=rect(514,345,7,49,orange,'rx="2" id="stern-apparatus-deposit"');
+ // A hollow shaft and two electrical contacts are shown without invented motor details.
+ b+=rect(348,536,24,179,'#e5ebf1',`stroke="${ink}" stroke-width="2" id="stern-apparatus-shaft"`)
+  +rect(356,536,8,179,'#fff');
+ b+=rect(342,648,36,13,'#cb997b',`stroke="${ink}" stroke-width="1.5" rx="2"`)
+  +rect(342,676,36,13,'#cb997b',`stroke="${ink}" stroke-width="1.5" rx="2"`);
+ b+=pth('M342 654H307V754M342 682H322V754','stern-wall');
+ b+=label(315,782,'нагрев током','stern-caption','text-anchor="middle"');
+ b+=sternCallout('1',645,157,[[628,157],[596,157],[570,180]])
+  +sternCallout('2',84,294,[[101,294],[228,294],[290,314]])
+  +sternCallout('3',84,414,[[101,414],[194,414]])
+  +sternCallout('4',84,477,[[101,477],[235,477],[360,438]])
+  +sternCallout('5',640,475,[[623,475],[550,475],[518,370]])
+  +sternCallout('6',452,713,[[435,713],[372,705]])
+  +sternCallout('7',84,665,[[101,665],[254,665],[342,655]])
+  +sternCallout('8',640,302,[[623,302],[551,302],[430,365]]);
+ return svg('Установка опыта Штерна: продольный разрез',
+  'Стеклянный колпак 1 окружает внутренний цилиндр 2, внешний цилиндр 3 и нагреваемую платиновую нить с серебром 4. Через щель 8 летит пучок частиц, оставляющий полосу 5. Показаны полая ось 6, контактные кольца 7 и отвод к вакуумному насосу.',815,b);
+}
+
+function sternRotation() {
+ let b=sternStyles()+label(28,42,'Определение скорости · вид сверху','heading')
+  +label(28,78,'В момент попадания частицы на стенку','stern-caption');
+ const cx=320,cy=340,R=200,r=85,phi=.45;
+ const initialSlit=polar(cx,cy,r,0),currentSlit=polar(cx,cy,r,-phi);
+ const A=polar(cx,cy,R,-phi),B=polar(cx,cy,R,0);
+ b+=circle(cx,cy,R,'#fbfdff',`stroke="${ink}" stroke-width="3" id="stern-top-outer-cylinder"`);
+ // The solid cylinder is shown at arrival: its physical slit has rotated counterclockwise.
+ b+=pth(arc(cx,cy,r,-phi+.065,2*Math.PI-phi-.065),'stern-wall','id="stern-top-inner-cylinder"');
+ b+=line(cx,cy,...A,'stern-guide','id="stern-top-reference-ray"')
+  +line(cx,cy,...B,'stern-guide','id="stern-top-flight-ray"');
+ b+=line(initialSlit[0],cy-14,initialSlit[0],cy+14,'stern-guide',
+  `style="stroke-width:4;stroke-dasharray:4 4" id="stern-top-initial-slit"`);
+ b+=circle(currentSlit[0],currentSlit[1],2,blue,'id="stern-top-current-slit"');
+ b+=label(currentSlit[0]-5,currentSlit[1]-21,'S₁','math stern-blue','text-anchor="middle"');
+ b+=label(initialSlit[0]+6,cy+56,'S₀','math','style="fill:#687e90"');
+ b+=circle(cx,cy,5,orange,'id="stern-top-source"')+label(cx-24,cy+29,'O','math');
+ // Only the free flight after crossing the old slit is drawn: it is straight in the lab.
+ b+=line(initialSlit[0]+12,cy,B[0]-12,cy,'stern-beam','id="stern-top-free-flight"')
+  +label(cx+139,cy+31,'v','math stern-teal');
+ b+=circle(A[0],A[1],7,'#fff',`stroke="${blue}" stroke-width="3" id="stern-top-reference-mark"`)
+  +label(A[0]+15,A[1]-13,'A','math stern-blue');
+ b+=pth(arc(cx,cy,R,-.035,.035),'stern-wall',`style="stroke:${orange};stroke-width:9" id="stern-top-trace"`)
+  +circle(B[0],B[1],5,orange,'id="stern-top-impact"')+label(B[0]+31,B[1]+18,'B','math',`style="fill:${orange}"`);
+ b+=pth(arc(cx,cy,117,-phi,0),'stern-wall',`style="stroke:${purple};stroke-width:2" marker-end="url(#stern-arrow-purple)" id="stern-top-angle"`)
+  +label(cx+137,cy-51,'Δφ','math stern-purple');
+ b+=pth(arc(cx,cy,R+23,-phi,0),'stern-dimension','id="stern-top-shift"')
+  +label(cx+252,cy-49,'s','math stern-purple');
+ b+=line(cx,cy,cx-r,cy,'stern-dimension','id="stern-top-radius-r"')
+  +label(cx-r/2,cy-16,'r','math stern-purple','text-anchor="middle"');
+ b+=line(cx,cy,cx,cy+R,'stern-dimension','id="stern-top-radius-R"')
+  +label(cx-26,cy+R*.61,'R','math stern-purple');
+ b+=pth(arc(cx,cy,R+30,2.45,1),'stern-turn','id="stern-top-rotation"')
+  +label(cx+37,cy+R+72,'ω','math stern-blue');
+ b+=label(360,665,'След смещается против вращения','stern-caption','text-anchor="middle"');
+ return svg('Опыт Штерна: прямолинейный пролёт и смещение следа',
+  'Вид сверху в момент попадания частицы. S0 — положение щели при вылете, S1 — положение щели после поворота цилиндров. Частица летит прямо из S0 в B. Точка A, отмеченная при неподвижном приборе, поворачивается вместе с внешним цилиндром. Угол от A до B и дуга s направлены против вращения. Показаны радиусы r и R, скорость v, угловая скорость омега и угол дельта фи.',705,b);
+}
+
 
 function lammert(){let b=label(28,38,'Опыт Ламмерта','heading');
  // The vacuum chamber contains the oven, collimator, two disks and target.
