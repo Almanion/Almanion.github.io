@@ -1201,7 +1201,7 @@
               "type": "image",
               "src": "images/notes/physics-10/maxwell-temperatures.svg?v=20261013-1",
               "alt": "Три кривые распределения Максвелла при температурах T1, T2 и T3",
-              "caption": "(T_1<T_2<T_3). На оси скоростей отмечены наиболее вероятные скорости.",
+              "caption": "T₁ < T₂ < T₃. На оси скоростей отмечены наиболее вероятные скорости.",
               "children": []
             }
           ]
@@ -1309,9 +1309,9 @@
     }
   ],
   "order": 1,
-  "revision": 8,
+  "revision": 9,
   "createdAt": 1788739200000,
-  "updatedAt": 1791914890347,
+  "updatedAt": "2026-10-13T18:36:27.517Z",
   "updatedBy": "codex",
   "reviewStatus": "published"
 }
