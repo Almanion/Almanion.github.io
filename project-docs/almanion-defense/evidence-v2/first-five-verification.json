@@ -1,0 +1,110 @@
+{
+  "htmlSha256": "b7238e062e9fb0e8886b666b273908eb40085c4adfe5ab911a2fef11d682a27c",
+  "viewports": [
+    1920,
+    1366
+  ],
+  "forward": true,
+  "backward": true,
+  "replay": true,
+  "reducedMotion": true,
+  "stationaryPauses": true,
+  "textClearance": true,
+  "searchKeepsEquation": true,
+  "noVisibleTeleport": true,
+  "offline": true,
+  "measurements": [
+    {
+      "width": 1920,
+      "step": 1,
+      "samples": 248,
+      "cursor": {
+        "x": 709.4200000000001,
+        "y": 796.9125
+      }
+    },
+    {
+      "width": 1920,
+      "step": 2,
+      "samples": 227,
+      "cursor": {
+        "x": 899.403125,
+        "y": 217.33599999999998
+      }
+    },
+    {
+      "width": 1920,
+      "step": 3,
+      "samples": 430,
+      "cursor": {
+        "x": 1348.6107142857145,
+        "y": 630.8130357142858
+      }
+    },
+    {
+      "width": 1920,
+      "step": 4,
+      "samples": 409,
+      "cursor": {
+        "x": 1091.1375,
+        "y": 595.9
+      }
+    },
+    {
+      "width": 1920,
+      "step": 5,
+      "samples": 537,
+      "cursor": {
+        "x": 636.7158482142858,
+        "y": 462.5950892857143
+      }
+    },
+    {
+      "width": 1366,
+      "step": 1,
+      "samples": 257,
+      "cursor": {
+        "x": 709.4200000000001,
+        "y": 796.9125
+      }
+    },
+    {
+      "width": 1366,
+      "step": 2,
+      "samples": 241,
+      "cursor": {
+        "x": 899.403125,
+        "y": 217.33599999999998
+      }
+    },
+    {
+      "width": 1366,
+      "step": 3,
+      "samples": 429,
+      "cursor": {
+        "x": 1348.6107142857145,
+        "y": 630.8130357142858
+      }
+    },
+    {
+      "width": 1366,
+      "step": 4,
+      "samples": 418,
+      "cursor": {
+        "x": 1091.1375,
+        "y": 595.9
+      }
+    },
+    {
+      "width": 1366,
+      "step": 5,
+      "samples": 601,
+      "cursor": {
+        "x": 636.7158482142858,
+        "y": 462.5950892857143
+      }
+    }
+  ],
+  "errors": [],
+  "requests": []
+}

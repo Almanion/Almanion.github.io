@@ -4,12 +4,15 @@ function openingState(s){
  route.style.opacity=s===1?'1':'0';route.style.transform='none';
 }
 async function openingToClass(){
- await tween(700,t=>{$('intro-copy').style.opacity=1-t;$('intro-copy').style.transform=`translateX(${-55*t}px)`});
- await movePose({x:168,y:210,w:1584,h:779,z:1.1,tx:0,ty:0,panel:0},850);
- await tween(350,t=>{$('route-copy').style.opacity=t;$('route-copy').style.transform=`translateY(${18*(1-t)}px)`});
- await click('#gradeTab10',()=>grade(10));
+ const next={x:168,y:210,w:1584,h:779,z:1.1,tx:0,ty:0,panel:0};
+ const r=OpeningGuidance.screen(find('#gradeTab10').getBoundingClientRect(),next),tab={x:r.x+r.w*.72,y:r.y+r.h*.64};
+ await Promise.all([
+  movePose(next,950),OpeningGuidance.glide(tab,950,-48),
+  tween(950,t=>{const out=Math.min(1,t*1.7),intro=$('intro-copy'),route=$('route-copy');intro.style.opacity=1-out;intro.style.transform=`translateX(${-55*out}px)`;const q=Math.max(0,(t-.46)/.54);route.style.opacity=q;route.style.transform=`translateY(${14*(1-q)}px)`})
+ ]);
+ await OpeningGuidance.press('#gradeTab10',tab,()=>grade(10),0);
  const cards=[...doc().querySelectorAll('#gradePanel10 .subject-card')];
- await tween(450,t=>cards.forEach((n,i)=>{const delay=Math.min(.3,i*.06),q=Math.max(0,(t-delay)/(1-delay));n.style.opacity=q;n.style.transform=`translateY(${22*(1-q)}px)`}));
+ await tween(340,t=>cards.forEach((n,i)=>{const delay=Math.min(.3,i*.06),q=Math.max(0,(t-delay)/(1-delay));n.style.opacity=q;n.style.transform=`translateY(${18*(1-q)}px)`}));
  cards.forEach(n=>{n.style.opacity='';n.style.transform=''});
 }
 function styledClone(node){
@@ -39,6 +42,7 @@ async function enterPhysics(reverse=false){
  const physics=document.createElement('iframe');physics.setAttribute('sandbox','allow-same-origin');physics.title='Раскрытие конспекта по физике';const ready=new Promise(resolve=>physics.onload=()=>{if(physics.contentDocument?.querySelector('h1'))resolve()});sheet.appendChild(physics);portal.append(sheet,face,label,icon,rim);
  portal.style.visibility='hidden';$('stage').appendChild(portal);physics.srcdoc='<!doctype html>'+frames.physics.contentDocument.documentElement.outerHTML;await ready;await physics.contentDocument.fonts.ready;
  const d=physics.contentDocument,title=d.querySelector('h1'),tr=title.getBoundingClientRect(),ts=d.defaultView.getComputedStyle(title),target={x:final.x+tr.x*final.z,y:final.y+42+tr.y*final.z,size:parseFloat(ts.fontSize)*final.z};
+ const cursorDeparture=OpeningGuidance.point(1,h,{...home,tx:0,ty:0}),cursorArrival=OpeningGuidance.point(2,d,{...final,tx:0,ty:0});
  label.style.fontFamily=sourceStyle.fontFamily;label.style.fontWeight=sourceStyle.fontWeight;label.style.letterSpacing=sourceStyle.letterSpacing;await document.fonts.load(sourceStyle.fontWeight+' '+target.size+'px Onest','Физика');
  // This single label is the card title AND the arriving page title.
  title.style.visibility='hidden';physics.style.transform='scale(1.1)';physics.style.width='1440px';physics.style.height='810px';
@@ -54,20 +58,21 @@ async function enterPhysics(reverse=false){
   // The opaque face clears before the page appears: no ghosted double-page.
   if(p<.56)sheet.style.visibility='hidden';else sheet.style.visibility='visible';
   $('site').style.opacity=1-smooth((p-.12)/.30);$('site').style.transformOrigin=(r.x+r.w/2-home.x)+'px '+(r.y+r.h/2-home.y)+'px';$('site').style.transform='scale('+(1+.09*smooth(p/.42))+')';$('site').style.filter='blur('+(smooth(p/.42)*2.5)+'px)';
-  $('route-copy').style.opacity=1-smooth(p/.23);$('cursor').style.opacity=1-smooth(p/.18);$('focus').style.opacity=0;
+  $('route-copy').style.opacity=1-smooth(p/.23);$('cursor').style.opacity=1-.82*Math.sin(Math.PI*g);$('focus').style.opacity=0;
+  Object.assign(cursor,OpeningGuidance.path(cursorDeparture,cursorArrival,q,-48));paintCursor();
   rim.style.opacity=Math.sin(Math.PI*g)*.6;
   const flightProgress=raw,centerProgress=g;
   Cosmos.setFlight(flightProgress,mix(r.x+r.w/2,960,centerProgress),mix(r.y+r.h/2,510,centerProgress),reverse);
  }
  try{
-  if(!reverse){await prepareTarget(anchors[2]);await click(anchors[2],null,280);}
+  if(!reverse){await prepareTarget(anchors[2]);await OpeningGuidance.press(anchors[2],cursorDeparture,null,280);}
   if(reverse){resetUI(1);await layout(1,false);}
   frameAt(0);source.style.visibility='hidden';$('stage').dataset.flight='true';
   await tween(1850,frameAt,true);
   const targetStep=reverse?1:2;step=targetStep;resetUI(step);mathState(step);await layout(step,false);openingState(step);
   source.style.visibility=previousVisibility;$('site').style.opacity='';$('site').style.transform='';$('site').style.transformOrigin='';$('site').style.filter='';portal.remove();Cosmos.finishFlight();
-  // Move the invisible pointer into its resting position, then restore it.
-  $('cursor').style.opacity=0;await endCursor(step);await tween(160,t=>$('cursor').style.opacity=t);
+  // The cursor arrives with the page; no invisible teleport to another corner.
+  $('cursor').style.opacity='';await endCursor(step);
  }finally{
   source.style.visibility=previousVisibility;portal.remove();$('site').style.opacity='';$('site').style.transform='';$('site').style.transformOrigin='';$('site').style.filter='';$('cursor').style.opacity='';$('stage').dataset.flight='false';Cosmos.finishFlight();
  }

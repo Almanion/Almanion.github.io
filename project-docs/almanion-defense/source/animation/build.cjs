@@ -12,6 +12,7 @@ ${script(read('home-background.js'))}
 ${script(read('night-sky.js'))}
 ${script(read('star-volume.js'))}
 ${script(read('cosmos.js'))}
+${script(read('opening-guidance.js'))}
 ${script(read('opening.js'))}
 ${script(read('reading.js'))}
 const SEARCH_EXAMPLE=${script(read('search-example.json'))};

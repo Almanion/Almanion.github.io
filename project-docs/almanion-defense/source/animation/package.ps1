@@ -6,7 +6,7 @@ $zipPath = Join-Path (Split-Path $outDir -Parent) 'Almanion-анимация.zip
 $report = Get-Content -LiteralPath (Join-Path $outDir 'evidence-v2/verification.json') -Raw | ConvertFrom-Json
 $htmlHash = (Get-FileHash -LiteralPath (Join-Path $outDir 'Almanion.html') -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($report.htmlSha256 -ne $htmlHash) { throw 'Verification must match the current HTML build.' }
-foreach ($extraReport in @('reading-verification.json','opening-verification.json','flight-verification.json','cursor-verification.json','search-theme-verification.json','star-volume-verification.json','fsrs-navigation-verification.json')) {
+foreach ($extraReport in @('reading-verification.json','opening-verification.json','flight-verification.json','cursor-verification.json','search-theme-verification.json','star-volume-verification.json','fsrs-navigation-verification.json','first-five-verification.json')) {
     $extra = Get-Content -LiteralPath (Join-Path $outDir "evidence-v2/$extraReport") -Raw | ConvertFrom-Json
     if ($extra.htmlSha256 -ne $htmlHash) { throw "Verification does not match current HTML: $extraReport" }
 }
@@ -84,6 +84,8 @@ foreach ($sub in @('source/animation','source/reference')) {
 }
 foreach ($num in @('00','08','15','23','28')) { $relativeFiles += "evidence-v2/state-$num.png" }
 $relativeFiles += 'evidence-v2/fsrs-navigation-verification.json'
+$relativeFiles += 'evidence-v2/first-five-verification.json'
+foreach ($step in @(1,2,3,4,5)) { $relativeFiles += "evidence-v2/guided-$step-stop-1920.png" }
 foreach ($num in @('19','20','22','23','24','25','26','27')) { $relativeFiles += "evidence-v2/fsrs-$num-1920.png" }
 $relativeFiles += 'evidence-v2/navigation-13-14.png'
 $relativeFiles += 'evidence-v2/navigation-9-10.png'
