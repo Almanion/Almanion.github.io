@@ -519,7 +519,7 @@
         document.body.append(host);
         const shadow = host.attachShadow({ mode: 'open' });
         const style = document.createElement('style');
-        style.textContent = ':host{color:#17191d} .paragraph{font:13.333333px/1.15 AlmanionHandout,serif;white-space:pre-line;overflow-wrap:anywhere;text-indent:16px;text-align:justify} strong,b{font-weight:700} .handout-item{display:block;padding-left:16px;text-indent:0;margin:5px 0} .pdf-math{display:inline;vertical-align:baseline;margin-inline:.12em;text-indent:0}.pdf-math.display{display:block;text-align:center;margin:5px 0}.pdf-math svg{max-width:100%;height:auto}';
+        style.textContent = ':host{color:#17191d} .paragraph{font:13.333333px/1.15 AlmanionHandout,serif;white-space:pre-line;overflow-wrap:anywhere;text-indent:16px;text-align:justify} strong,b{font-weight:700} .handout-item{display:block;padding-left:16px;text-indent:0;margin:5px 0} .pdf-math{display:inline;vertical-align:baseline;text-indent:0}.pdf-math.display{display:block;text-align:center;margin:5px 0}.pdf-math svg{max-width:100%;height:auto}';
         shadow.append(style);
         const measure = document.createElement('div');
         measure.pdfFont = 'CMUSerif';
