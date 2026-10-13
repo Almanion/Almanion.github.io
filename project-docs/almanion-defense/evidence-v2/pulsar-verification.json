@@ -1,5 +1,5 @@
 {
-  "htmlSha256": "6dd5024f67a74e22a987504bf7ace08ba0b46a27be9e42d6cd77d2c229fb1d76",
+  "htmlSha256": "8018a5aa11dbc29fedf6dc1d10827d912bd2d7b8699af9bfd91aeed42d5440f7",
   "viewports": [
     1920,
     1366
@@ -23,22 +23,25 @@
   "metrics": [
     {
       "width": 1920,
-      "flightMs": 6596.399999999998,
+      "flightMs": 6582.299999999999,
+      "fractureBeginsMs": 1812.2999999999993,
+      "allStarsMs": 3103.7000000000007,
+      "freeStarsFlightMs": 3110.7000000000007,
       "fragments": 845,
-      "drawP95": 13.699999809265137,
-      "maxStarTrails": 4225,
+      "drawP95": 15.100000143051147,
+      "maxStarTrails": 4221,
       "journey": [
         {
           "s": 0,
           "x": 960,
-          "y": 367.45098039215685,
-          "r": 3.4509803921568634
+          "y": 446.3829787234043,
+          "r": 1.872340425531915
         },
         {
           "s": 33,
-          "x": 964.2541436464088,
-          "y": 343.09392265193367,
-          "r": 3.889502762430939
+          "x": 963.0078125,
+          "y": 400.78125,
+          "r": 2.75
         },
         {
           "s": 1,
@@ -242,54 +245,57 @@
       "sync": [
         {
           "s": 33,
-          "frames": 165,
+          "frames": 250,
           "maxError": 0
         },
         {
           "s": 1,
-          "frames": 209,
+          "frames": 240,
           "maxError": 0
         },
         {
           "s": 2,
-          "frames": 139,
+          "frames": 150,
           "maxError": 0
         },
         {
           "s": 1,
-          "frames": 123,
+          "frames": 135,
           "maxError": 0
         },
         {
           "s": 20,
-          "frames": 185,
+          "frames": 248,
           "maxError": 0
         },
         {
           "s": 29,
-          "frames": 129,
+          "frames": 139,
           "maxError": 0
         }
       ]
     },
     {
       "width": 1366,
-      "flightMs": 6589.299999999999,
+      "flightMs": 6596.300000000003,
+      "fractureBeginsMs": 1784.5,
+      "allStarsMs": 3075.9000000000015,
+      "freeStarsFlightMs": 3131.5,
       "fragments": 845,
-      "drawP95": 10.600000143051147,
-      "maxStarTrails": 4219,
+      "drawP95": 9.5,
+      "maxStarTrails": 4221,
       "journey": [
         {
           "s": 0,
           "x": 960,
-          "y": 367.45098039215685,
-          "r": 3.4509803921568634
+          "y": 446.3829787234043,
+          "r": 1.872340425531915
         },
         {
           "s": 33,
-          "x": 964.2541436464088,
-          "y": 343.09392265193367,
-          "r": 3.889502762430939
+          "x": 963.0078125,
+          "y": 400.78125,
+          "r": 2.75
         },
         {
           "s": 1,
@@ -493,32 +499,32 @@
       "sync": [
         {
           "s": 33,
-          "frames": 340,
+          "frames": 218,
           "maxError": 0
         },
         {
           "s": 1,
-          "frames": 315,
+          "frames": 235,
           "maxError": 0
         },
         {
           "s": 2,
-          "frames": 207,
+          "frames": 189,
           "maxError": 0
         },
         {
           "s": 1,
-          "frames": 128,
+          "frames": 115,
           "maxError": 0
         },
         {
           "s": 20,
-          "frames": 322,
+          "frames": 332,
           "maxError": 0
         },
         {
           "s": 29,
-          "frames": 227,
+          "frames": 236,
           "maxError": 0
         }
       ]

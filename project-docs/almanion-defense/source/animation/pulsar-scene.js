@@ -33,8 +33,11 @@ window.PulsarScene=(()=>{
   const from=step,reverse=from===FINAL,anchor=reverse?target:from,arrivalTime=reverse?clock:END_TIME;
   if(reverse){const previous=reduced;reduced=true;try{await direct(target)}finally{reduced=previous}}
   const source={...cursor},saved=layers.map(id=>{const n=$(id);return{n,opacity:n?.style.opacity,transform:n?.style.transform,alpha:n?Number(getComputedStyle(n).opacity):0};});
-  const leadCamera=Cosmos.volume.flightPath(Cosmos.volume.at(anchor),Cosmos.volume.at(FINAL),clamp((.62-.13)/.78),Cosmos.volume.pulsar),leadView=viewAt(leadCamera),leadPoint={x:leadView.x-54,y:leadView.y+76};
-  const carrier=p=>OpeningGuidance.path(source,leadPoint,clamp(p/.62),-86),materialRoute=shards.flightRoute(carrier,BREAK,SHATTER,CAPTURE);
+  const fromCamera=Cosmos.volume.at(anchor),toCamera=Cosmos.volume.at(FINAL);
+  // Steer towards the visible landmark, rather than its future screen position.
+  // The arrow is already approaching it when the first pieces detach.
+  const carrier=p=>{const v=viewAt(Cosmos.volume.flightPath(fromCamera,toCamera,clamp((p-.13)/.78),Cosmos.volume.pulsar));return OpeningGuidance.path(source,{x:v.x-60,y:v.y+55},clamp(p/.62),24);};
+  const materialRoute=shards.flightRoute(carrier,BREAK,SHATTER,CAPTURE);
   if(reverse)step=from;halt();travel=true;spaceKey='';$('stage').dataset.pulsarFinal='false';$('stage').dataset.pulsarFlight='true';$('pulsar-ending').style.visibility='visible';$('cursor').style.opacity='1';Cosmos.holdFlight(from);
   function frameAt(raw){
    const p=reverse?1-raw:raw,time=mix(BEACON_TIME,arrivalTime,smooth(p));
