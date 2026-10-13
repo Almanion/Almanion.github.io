@@ -4,6 +4,7 @@
 
     const loaded = new Map();
     const versions = {
+        experiments: 'experiment-notebook.js?v=20261014-1',
         featureStyles: 'styles/site/features.css?v=20261002-1',
         bookmarksStyles: 'styles/bookmarks.css?v=20260920-2',
         editorStyles: 'styles/note-editor.css?v=20260929-2',
@@ -26,7 +27,7 @@
         analytics: 'firebase-analytics.js?v=20261009-4',
         account: 'account.js?v=20260911-1',
         bookmarks: 'bookmarks.js?v=20261002-2',
-        editor: 'note-editor.js?v=20261002-1'
+        editor: 'note-editor.js?v=20261014-1'
     };
 
     function loadStyle(key) {
@@ -126,6 +127,7 @@
     }
 
     const features = {
+        experiments: function () { return loadScript('experiments'); },
         settings: loadSettings,
         search: loadSearch,
         print: function () { return loadStyle('printStyles').then(function () { return loadScript('print'); }); },
@@ -152,6 +154,8 @@
     }
 
     function start() {
+        if (document.querySelector('.experiment-box')) ensure('experiments').catch(function () {});
+        onIntent('.experiment-box', 'pointerdown', 'experiments');
         // Restore reading filters independently of the PDF dialog.
         loadStyle('filterStyles').then(function () { return loadScript('filter'); }).catch(function () {});
         onIntent('#searchInput, .search-box', 'pointerdown', 'search');

@@ -44,7 +44,7 @@ function build({ root, site }) {
             }
         }
         add('/' + subject.page, subject.page);
-        OPTIONAL.forEach(file => add('/' + file, file));
+        OPTIONAL.concat('experiment-notebook.js').forEach(file => add('/' + file, file));
         ['index.html', 'offline.html', 'content/subjects.json', 'search-index.json', 'definition-index.json', 'selection-definitions.js', 'styles/selection-definitions.css', 'manifest.json'].forEach(file => add('/' + file, file));
         const manifestPath = 'content/' + subject.id + '/manifest.json';
         add('/' + manifestPath, manifestPath);

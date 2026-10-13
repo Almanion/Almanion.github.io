@@ -137,7 +137,7 @@ function build({ root, site }) {
     const catalogue = JSON.stringify({ schemaVersion: 1, subjects, duty:{ path:'data/' + dutyFile, endpoint:new URL('classDuty/grade10_1/entries.json', database).href } });
     fs.writeFileSync(path.join(site, 'watch', 'catalogue.json'), catalogue + '\n');
     const worker = path.join(site, 'watch', 'sw.js');
-    const version = hash(catalogue + ['index.html', 'watch.js', 'watch.css', 'sync.js','qr.js','connect.html','connect.js','connect.css'].map(file => fs.readFileSync(path.join(site, 'watch', file), 'utf8')).join(''));
+    const version = hash(catalogue + fs.readFileSync(path.join(site,'experiment-notebook.js'),'utf8') + ['index.html', 'watch.js', 'watch.css', 'sync.js','qr.js','connect.html','connect.js','connect.css'].map(file => fs.readFileSync(path.join(site, 'watch', file), 'utf8')).join(''));
     const shell = path.join(site, 'watch', 'index.html');
     const versions=/((?:watch\.(?:js|css)|sync\.js|qr\.js|connect\.(?:js|css))\?v=)[^"']+/g;
     fs.writeFileSync(shell, fs.readFileSync(shell, 'utf8').replace(versions, '$1' + version));

@@ -26,7 +26,7 @@
         'class', 'title', 'role', 'dir', 'lang', 'aria-label', 'aria-hidden',
         'aria-expanded', 'aria-controls', 'aria-describedby', 'aria-labelledby',
         'data-note-block', 'data-kc-id', 'data-kc-term', 'data-kc-answer',
-        'data-kc-type', 'data-bookmark-id'
+        'data-kc-type', 'data-bookmark-id', 'data-experiment-notebook'
     ]);
 
     const TAG_ATTRIBUTES = {

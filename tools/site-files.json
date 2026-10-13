@@ -22,6 +22,7 @@
     "english.html",
     "english.js",
     "experimental-reader.js",
+    "experiment-notebook.js",
     "favicon-theme.js",
     "firebase-analytics.js",
     "firebase-config.js",

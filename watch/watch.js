@@ -322,15 +322,29 @@
     async function enhanceCard(card,state,index) {
         const {block} = state.rows.get(index);
         const primary = card.firstElementChild;
-        if (primary?.classList.contains(block.type + '-box')) { primary.classList.remove(block.type + '-box'); primary.removeAttribute('data-watch-type'); }
+        if (primary?.classList.contains(block.type + '-box')) {
+            if (block.type === 'experiment') primary.setAttribute('data-experiment','');
+            primary.classList.remove(block.type + '-box'); primary.removeAttribute('data-watch-type');
+        }
         if (/\\\(|\\\[|\$\$/.test(card.textContent)) {
             try { if (state.mathFailed) throw new Error('Math unavailable'); await loadMath(); if (state !== reader || state.token !== generation) return;
                 window.renderMathInElement(card, { throwOnError:false, trust:false, delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}] });
             } catch (_) { if (state === reader && state.token === generation) { state.mathFailed = true; card.append(note('Формулы пока в текстовом виде')); button('Повторить формулы', () => { rememberScroll(); render(); },card).className = 'watch-magnify'; } }
         }
         if (state !== reader || state.token !== generation) return;
-        const graphics = Array.from(card.querySelectorAll('img,svg,table,.katex-display')).filter(node => !node.parentElement.closest('svg,.katex,table'));
+        enhanceGraphics(card,state,index);
+        for (const experiment of card.querySelectorAll('.experiment-box,[data-experiment]')) {
+            if (notebookModes.has(notebookKey(experiment,state))) window.AlmanionExperiments?.toggle(experiment);
+        }
+    }
+    const enhancedGraphics = new WeakSet(), notebookModes = new Set();
+    function notebookKey(block,state) {
+        return state.data.id + '/' + block.closest('.watch-block').dataset.blockId + '/' + (block.dataset.noteBlock || block.dataset.kcId || 'root');
+    }
+    function enhanceGraphics(card,state,index) {
+        const graphics = Array.from(card.querySelectorAll('img,svg,table,.katex-display')).filter(node => !node.parentElement.closest('svg,.katex,table') && !enhancedGraphics.has(node));
         for (const node of graphics) {
+            enhancedGraphics.add(node);
             media.push(node);
             if (node.matches('table,.katex-display')) { const wrap = element('div', undefined, 'watch-scroll'); node.before(wrap); wrap.append(node); }
             const enlarge = element('button', node.matches('img,svg') ? 'Увеличить рисунок' : 'Увеличить'); enlarge.type = 'button'; enlarge.className = 'watch-magnify';
@@ -338,6 +352,19 @@
             const wrapper = node.closest('.watch-scroll'); if (wrapper) wrapper.after(enlarge); else node.after(enlarge);
         }
     }
+    main.addEventListener('almanion:experiment-changed', async event => {
+        const {block,content,notebook,first} = event.detail;
+        if (!reader) return;
+        const key = notebookKey(block,reader);
+        if (notebook) notebookModes.add(key); else notebookModes.delete(key);
+        if (!notebook || !first) return;
+        const state = reader, row = event.target.closest('.watch-block'), index = Number(row?.dataset.index);
+        if (/\\\(|\\\[/.test(content.textContent)) {
+            try { await loadMath(); } catch (_) { return; }
+        }
+        if (state !== reader || !content.isConnected) return;
+        window.AlmanionExperiments.renderMath(content); enhanceGraphics(content,state,index);
+    });
     function settingsView() {
         screen('Настройки');
         filterButtons(main, () => {});

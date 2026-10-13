@@ -513,7 +513,8 @@
             return textArea('content', label, block.content, '', 'Основной текст блока');
         }
         return '<label class="builder-field"><span>Короткий заголовок — необязательно</span><input data-block-field="title" value="' + escapeHtml(block.title || '') + '"></label>' +
-            textArea('content', 'Содержание', block.content, '', 'Основной текст блока');
+            textArea('content', 'Содержание', block.content, '', 'Основной текст блока') +
+            (block.type === 'experiment' ? textArea('notebook', 'Версия для тетради', block.notebook) : '');
     }
 
     function blockTypeOptions(selectedType) {

@@ -137,6 +137,7 @@
             block.title = '';
         }
         if (type === 'reminder' && !block.title) block.title = 'Напоминание';
+        if (type === 'experiment' && typeof source.notebook === 'string' && source.notebook.trim()) block.notebook = source.notebook;
         if (typeof source.studyEnabled === 'boolean') block.studyEnabled = source.studyEnabled;
         if (source.studyTitle) block.studyTitle = String(source.studyTitle).trim().slice(0, 180);
         if (['auto', 'include', 'exclude'].includes(source.studyFormulas)) block.studyFormulas = source.studyFormulas;
