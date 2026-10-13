@@ -1,6 +1,6 @@
 /* Stable scene IDs keep the verified FSRS scenes intact; route order is explicit.
    Account forms are captured from real account.js. The defense never runs Auth. */
-const SCENE_ORDER=[0,33,1,2,3,4,5,6,7,8,9,30,31,32,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29];
+const SCENE_ORDER=[0,33,1,2,3,4,5,6,7,8,9,30,31,32,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,34];
 const sceneIndex=s=>SCENE_ORDER.indexOf(s),adjacentScene=(s,delta)=>SCENE_ORDER[Math.max(0,Math.min(SCENE_ORDER.length-1,sceneIndex(s)+delta))];
 const isAccountScene=s=>s>=30&&s<=32;
 const AccountScene=(()=>{

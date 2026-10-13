@@ -19,7 +19,7 @@ const out=path.resolve(__dirname,'../..'),ev=path.join(out,'evidence-v2');
    const frames=await p.evaluate(()=>introFrames),moving=frames.filter(f=>f.phase),peak=Math.max(...frames.map(f=>f.streaks)),draw=frames.map(f=>f.drawMs).sort((a,b)=>a-b);
    assert(moving.at(-1).t-moving[0].t>=2700,'sustained flight');assert(peak>120,'visible star motion');
    assert(frames.every(f=>Number(f.opacity)===1),'cursor remains visible');
-   for(let i=1;i<frames.length;i++){const a=frames[i-1],b=frames[i];if(b.t-a.t<30)assert(Math.hypot(a.cursor.x-b.cursor.x,a.cursor.y-b.cursor.y)<65,'continuous pointer');}
+   for(let i=1;i<frames.length;i++){const a=frames[i-1],b=frames[i];if(b.t-a.t<30)assert(Math.hypot(a.cursor.x-b.cursor.x,a.cursor.y-b.cursor.y)<65,'continuous pointer '+JSON.stringify({width,target,a,b}));}
    const middle=frames.find(f=>f.speed>.98);assert(middle,'cruise phase');assert(middle.layers[3].meanSpeed>middle.layers[2].meanSpeed&&middle.layers[2].meanSpeed>middle.layers[1].meanSpeed,'depth hierarchy');
    assert(await p.evaluate(()=>!Cosmos.active&&$('stage').dataset.flight==='false'&&document.getAnimations().every(a=>a.playState!=='running')));
    await p.screenshot({path:path.join(ev,`intro-stop-${target}-${width}.png`)});

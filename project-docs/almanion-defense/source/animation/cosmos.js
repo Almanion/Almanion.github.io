@@ -56,9 +56,9 @@ window.Cosmos=(()=>{
   const newest=bursts.at(-1),ms=newest?now-newest.at:1000;
   pointer.style.scale=String(ms<80?1-.07*Math.sin(ms/80*Math.PI/2):ms<520?1-.07*Math.exp(-(ms-80)/105)*Math.cos((ms-80)/82):1);
  }
- function tick(now){scenery(now);if(themePhase!==null){bg.globalAlpha=Math.sin(Math.PI*themePhase)*.24;bg.globalCompositeOperation='screen';bg.drawImage(sky,0,0);bg.globalAlpha=1;bg.globalCompositeOperation='source-over';}particles(now);if(currentPage==='home'&&!flight){const t=now-started;HomeBackground.tick(t,(cursor.x-pose.x-pose.tx)/pose.z,(cursor.y-pose.y-42-pose.ty)/pose.z,Math.min(1,t/260));}frame=requestAnimationFrame(tick);}
+ function tick(now){scenery(now);window.PulsarScene?.tickTravel(now);if(themePhase!==null){bg.globalAlpha=Math.sin(Math.PI*themePhase)*.24;bg.globalCompositeOperation='screen';bg.drawImage(sky,0,0);bg.globalAlpha=1;bg.globalCompositeOperation='source-over';}particles(now);if(currentPage==='home'&&!flight){const t=now-started;HomeBackground.tick(t,(cursor.x-pose.x-pose.tx)/pose.z,(cursor.y-pose.y-42-pose.ty)/pose.z,Math.min(1,t/260));}frame=requestAnimationFrame(tick);}
  function stop(s=destination){HomeBackground.stop();cancelAnimationFrame(frame);frame=0;destination=s;flight=null;motion=null;route=null;camera=volume.at(s);themePhase=null;bursts=[];fg.clearRect(0,0,1920,1080);pointer.style.scale='1';pointer.style.rotate='0deg';stage.style.setProperty('--space-pulse','0');scenery();stage.dataset.spaceMoving='false';stage.dataset.flight='false';}
- function begin(from,to,reduced){stop(from);destination=to;quiet=reduced;mode=[2,10,14,28,29].includes(to)?'warp':[15,16,19,20,23,26].includes(to)?'orbit':'drift';stage.dataset.spaceMode=mode;if(quiet)return;started=performance.now();
+ function begin(from,to,reduced){stop(from);window.PulsarScene?.begin(from,to,reduced);destination=to;quiet=reduced;mode=[2,10,14,28,29].includes(to)?'warp':[15,16,19,20,23,26].includes(to)?'orbit':'drift';stage.dataset.spaceMode=mode;if(quiet)return;started=performance.now();
   const a=volume.at(from),b=volume.at(to),distance=Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
   if(distance>.00001&&pageForStep(from)===pageForStep(to)&&!([3,6].includes(to)&&to===from+1))route={from:a,to:b,start:started,duration:Math.min(1350,520+distance*580)};
   HomeBackground.begin();stage.dataset.spaceMoving='true';frame=requestAnimationFrame(tick);}

@@ -1,0 +1,11 @@
+#pulsar{position:absolute;inset:0;width:1920px;height:1080px;z-index:1;pointer-events:none}
+#pulsar-ending{position:absolute;left:126px;top:390px;width:630px;z-index:8;opacity:0;visibility:hidden;font-family:Onest,'Segoe UI',sans-serif}
+#pulsar-ending h2{font-size:108px;line-height:1.1;font-weight:450;letter-spacing:-5px;color:#f0f6ff;margin:0 0 30px}
+#pulsar-ending p{font-size:31px;line-height:1.55;letter-spacing:-.4px;color:#b5cbe3;margin:0 0 31px}
+#pulsar-ending a{display:inline-block;font-size:28px;color:#d0e7ff;text-decoration:none;border-bottom:1px solid #9bc3e849;padding-bottom:8px}
+#pulsar-ending .ending-thanks{font-size:20px;letter-spacing:1.3px;color:#92b2d1;margin-top:70px}
+#pulsar-pause{margin:24px 0 0;padding:9px 0;border:0;background:none;color:#7b9abb;font-size:17px;text-align:left}
+#pulsar-pause:hover{color:#c4ddf8}#pulsar-pause:focus-visible,#pulsar-ending a:focus-visible{outline:2px solid #a3cfff;outline-offset:6px}
+#stage[data-pulsar-final="true"] :is(#site,#panel,#opening,#final,#caption,#connector,#focus,#account-story,#account-site-label,#math-site-label,#intro-cue){visibility:hidden!important}
+#stage[data-pulsar-flight="true"] #caption{visibility:hidden!important}
+#stage[data-pulsar-final="true"] #status{color:#8ba7c577}
