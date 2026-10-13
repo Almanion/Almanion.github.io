@@ -12,7 +12,16 @@ test('study and export load on first intent; displayed formulas are study cards'
     await expect(page.locator('#kcSelectOverlay')).toBeVisible();
     const formulas = await page.evaluate(() => window.__kcFSRS.extractCards(Array.from(document.querySelectorAll('article.topic[id]')).map(node => node.id), ['formula']));
     expect(formulas.length).toBeGreaterThan(20);
-    expect(formulas.every(card => !card.backHTML.includes('\\begin{aligned}'))).toBe(true);
+    // Automatic extraction skips multiline derivations. An authored formula
+    // block can intentionally keep related formulas together in one card.
+    const automaticFormulas = formulas.filter(card => card.sourceId.startsWith('math:'));
+    expect(automaticFormulas.length).toBeGreaterThan(0);
+    expect(automaticFormulas.every(card => !card.backHTML.includes('\\begin{aligned}'))).toBe(true);
+    const characteristicSpeeds = formulas.find(card => card.sourceId === 'maxwell-characteristic-speeds');
+    expect(characteristicSpeeds).toBeDefined();
+    for (const speed of ['наиболее вероятная', 'средняя квадратичная', 'средняя арифметическая']) {
+        expect(characteristicSpeeds.backHTML).toContain(speed);
+    }
     expect(new Set(formulas.map(card => card.id)).size).toBe(formulas.length);
     await expect(page.locator('#kcTypeList [data-kind="formula"]')).toBeEnabled();
     await expect(page.locator('#kcTypeList button:disabled')).toHaveCount(0);
