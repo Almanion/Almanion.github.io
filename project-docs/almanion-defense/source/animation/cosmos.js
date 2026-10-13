@@ -4,6 +4,7 @@ window.Cosmos=(()=>{
  const sky=document.getElementById('cosmos'),fx=document.getElementById('cosmos-fx');
  const bg=sky.getContext('2d'),fg=fx.getContext('2d'),stage=document.getElementById('stage'),pointer=document.getElementById('cursor');
  const nightSky=createNightSky(),volume=createStarVolume(nightSky);
+ const flightTiming=Object.freeze({openingMs:2500,navigationMs:2350,start:.08,span:.80});
  let frame=0,started=0,destination=0,mode='drift',bursts=[],quiet=true,flight=null,motion=null,focus={x:960,y:510};
  const clamp=x=>Math.max(0,Math.min(1,x)),smooth=x=>{x=clamp(x);return x*x*(3-2*x)};
  let themePhase=null;
@@ -18,20 +19,26 @@ window.Cosmos=(()=>{
   return windows;
  }
  function scenery(now=performance.now()){
-  let previous=camera,speed=0,cx=960,cy=540;
+  let previous=camera,speed=0,cx=960,cy=540,shutter=.036;
   if(flight){
-   const start=flight.start??.12,span=flight.span??.64,duration=flight.duration??1.85;const time=clamp((flight.progress-start)/span),prior=clamp((flight.progress-.036/duration-start)/span),from=volume.at(flight.from??(flight.reverse?2:1)),to=volume.at(flight.to??(flight.reverse?1:2));
-   camera=volume.path(from,to,time);previous=volume.path(from,to,prior);speed=16*time*time*(1-time)*(1-time);cx=flight.x;cy=flight.y;
+   const jump=flight.jump!==false,span=flight.span??flightTiming.span,start=flight.start??(flight.reverse?1-flightTiming.start-span:flightTiming.start),duration=flight.duration??flightTiming.openingMs/1000;
+   const time=clamp((flight.progress-start)/span),from=volume.at(flight.from??(flight.reverse?2:1)),to=volume.at(flight.to??(flight.reverse?1:2));
+   speed=jump?volume.flightSpeed(time):16*time*time*(1-time)*(1-time);
+   // A longer virtual exposure at cruising speed makes nearby stars stretch.
+   // It contracts before arrival; no blur filter or additional star layer.
+   shutter+=jump?.042*speed*speed:0;
+   const prior=clamp((flight.progress-shutter/duration-start)/span),path=jump?volume.flightPath:volume.path;
+   camera=path(from,to,time);previous=path(from,to,prior);cx=flight.x;cy=flight.y;
   }else if(route){
    const t=clamp((now-route.start)/route.duration),previousT=clamp((now-route.start-36)/route.duration);
    camera=volume.path(route.from,route.to,t);previous=volume.path(route.from,route.to,previousT);speed=16*t*t*(1-t)*(1-t);
   }
   const moving=Math.hypot(camera.x-previous.x,camera.y-previous.y,camera.z-previous.z)>.0000001;
   const key=[camera.x,camera.y,camera.z].join(',');
-  const stats=moving?volume.render(bg,camera,previous,.036,opaqueWindows()):
+  const stats=moving?volume.render(bg,camera,previous,shutter,opaqueWindows()):
    paintedStill===key&&themePhase===null?lastStats:volume.still(bg,camera);
   paintedStill=moving||themePhase!==null?null:key;lastStats=stats;
-  telemetry={speed:moving?speed:0,travel:camera.z,centerX:cx,centerY:cy,...stats,camera:{...camera}};
+  telemetry={speed:moving?speed:0,travel:camera.z,centerX:cx,centerY:cy,shutterMs:shutter*1000,...stats,camera:{...camera}};
  }
  function particles(now){
   fg.clearRect(0,0,1920,1080);bursts=bursts.filter(b=>now-b.at<760);
@@ -64,5 +71,5 @@ window.Cosmos=(()=>{
  function setFlight(progress,x,y,reverse=false,options={}){if(quiet)return;route=null;flight={progress,x,y,reverse,...options};stage.dataset.flight='true';}
  function finishFlight(){flight=null;route=null;camera=volume.at(destination);scenery();stage.dataset.flight='false';}
  function steer(){pointer.style.rotate='0deg';}
- stop(0);return{themeProgress:p=>{themePhase=p},begin,stop,press,settle,steer,cameraMove,holdFlight,setFlight,finishFlight,get active(){return !!frame},get particleCount(){return bursts.reduce((n,b)=>n+b.stars.length,0)},get burstState(){return bursts.map(b=>({x:b.x,y:b.y,age:performance.now()-b.at,count:b.stars.length}))},get mode(){return mode},get telemetry(){return {...telemetry}},volume};
+ stop(0);return{themeProgress:p=>{themePhase=p},begin,stop,press,settle,steer,cameraMove,holdFlight,setFlight,finishFlight,flightTiming,get active(){return !!frame},get particleCount(){return bursts.reduce((n,b)=>n+b.stars.length,0)},get burstState(){return bursts.map(b=>({x:b.x,y:b.y,age:performance.now()-b.at,count:b.stars.length}))},get mode(){return mode},get telemetry(){return {...telemetry}},volume};
 })();

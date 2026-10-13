@@ -58,14 +58,14 @@ async function navigationFlight(target){
   if(card.node){const n=card.copy;Object.assign(n.style,{width:'100%',height:'100%',margin:'0',position:'relative'});n.querySelectorAll('use').forEach(u=>{const symbol=frames.home.contentDocument.querySelector(u.getAttribute('href'));if(symbol){const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.innerHTML=symbol.innerHTML;u.replaceWith(g)}});face.append(n)}else{face.innerHTML='<span>Физика</span>';}
   Object.assign(face.style,{width:card.r.w+'px',height:card.r.h+'px',right:'auto',bottom:'auto',transformOrigin:'0 0',transform:`scale(${full.w/card.r.w},${full.h/card.r.h})`});
   portal.append(face);$('stage').dataset.flight='true';Cosmos.holdFlight(from);
-  await tween(1650,raw=>{
-   const p=entering?raw:1-raw,g=Cosmos.volume.smooth(clamp((p-.08)/.80)),show=soft((p-.40)/.43),r=card.r;
+  await tween(Cosmos.flightTiming.navigationMs,raw=>{
+   const p=entering?raw:1-raw,g=Cosmos.volume.flightProgress(clamp((p-Cosmos.flightTiming.start)/Cosmos.flightTiming.span)),show=soft((p-.40)/.43),r=card.r;
    const x=mix(r.x,full.x,g),y=mix(r.y,full.y,g),w=mix(r.w,full.w,g),h=mix(r.h,full.h,g);
    portal.dataset.progress=raw.toFixed(4);portal.flightBounds={x,y,w,h};Object.assign(portal.style,{transform:`translate(${x}px,${y}px) scale(${w/full.w},${h/full.h})`,borderRadius:`${mix(18,23,g)*full.w/w}px / ${mix(18,23,g)*full.h/h}px`});
    foreground.content.style.visibility=p<.40?'hidden':'visible';
    face.style.opacity=String(1-show);face.firstElementChild.style.opacity=String(1-soft((p-.26)/.20));background.root.style.opacity=String(1-soft((p-.10)/.50));
    const center={x:r.x+r.w/2,y:r.y+r.h/2};background.root.style.transformOrigin=(center.x-background.pose.x)+'px '+(center.y-background.pose.y)+'px';background.root.style.transform=`scale(${1+.12*soft(p/.6)})`;
-   Cosmos.setFlight(raw,mix(center.x,full.x+full.w/2,g),mix(center.y,full.y+full.h/2,g),!entering,{from,to:target,duration:1.65,start:.08,span:.80});
+   Cosmos.setFlight(raw,mix(center.x,full.x+full.w/2,g),mix(center.y,full.y+full.h/2,g),!entering,{from,to:target,duration:Cosmos.flightTiming.navigationMs/1000});
   },true);
   $('site').style.visibility='';old.release();arrival.release();Cosmos.finishFlight();
   restoreLayers();
@@ -79,9 +79,9 @@ async function topicFlight(id){
  const old=find('.exp-reader-current');if(!old)return;
  const from=step,to=id===SEARCH_TOPIC?6:3;Cosmos.holdFlight(from);
  const wrap=old.parentElement;wrap.style.perspective='1300px';
- await tween(220,t=>{old.style.opacity=1-t;old.style.transform=`translateZ(${t*170}px) scale(${1+t*.035})`;Cosmos.setFlight(t*.24,960,500,false,{from,to,duration:.9,start:0,span:1})});
+ await tween(220,t=>{old.style.opacity=1-t;old.style.transform=`translateZ(${t*170}px) scale(${1+t*.035})`;Cosmos.setFlight(t*.24,960,500,false,{from,to,duration:.9,start:0,span:1,jump:false})});
  old.style.opacity='';old.style.transform='';topic(id);doc().defaultView.scrollTo(0,0);const next=find('#'+id);
- await tween(680,t=>{next.style.opacity=softTopic(t);next.style.transform=`translateZ(${-380*(1-t)}px) translateY(${24*(1-t)}px)`;Cosmos.setFlight(.24+t*.76,960,500,false,{from,to,duration:.9,start:0,span:1})});
+ await tween(680,t=>{next.style.opacity=softTopic(t);next.style.transform=`translateZ(${-380*(1-t)}px) translateY(${24*(1-t)}px)`;Cosmos.setFlight(.24+t*.76,960,500,false,{from,to,duration:.9,start:0,span:1,jump:false})});
  next.style.opacity='';next.style.transform='';wrap.style.perspective='';Cosmos.finishFlight();
 }
 function softTopic(t){return Math.min(1,t*2.5)}

@@ -29,7 +29,7 @@ function createStarVolume(nightSky){
    if(occlusion.some(r=>p.x>r.x+64&&p.x<r.x+r.w-64&&p.y>r.y+64&&p.y<r.y+r.h-64))continue;
    visible++;
    const alpha=Math.min(.94,s.alpha*(1+Math.max(0,p.size-1)*.1));
-   // A fixed 36ms shutter is sampled from the same camera path, independent of FPS.
+   // Exposure is sampled from the same camera path, independent of FPS.
    if(distance>.55){
     const length=Math.min(55,distance),tx=dx/distance*length,ty=dy/distance*length;
     ctx.strokeStyle=`rgba(${s.color},${alpha*.18})`;ctx.lineWidth=Math.max(.45,radius*.85);ctx.beginPath();ctx.moveTo(p.x-tx,p.y-ty);ctx.lineTo(p.x,p.y);ctx.stroke();
@@ -52,5 +52,16 @@ function createStarVolume(nightSky){
  }
  const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*t*(10+t*(-15+6*t));};
  function path(from,to,t){const q=smooth(t);return{x:from.x+(to.x-from.x)*q,y:from.y+(to.y-from.y)*q,z:from.z+(to.z-from.z)*q};}
- return{render,still,at,path,project,smooth,stars,bands,focal:F,get cacheSize(){return cache.size}};
+ // Integrate a smooth velocity ramp, a short cruise, and its mirrored brake.
+ // This gives the jump time to read without overshoot or a moving checkpoint.
+ const ramp=.28;
+ function flightSpeed(t){t=Math.max(0,Math.min(1,t));return smooth(Math.min(t,1-t)/ramp);}
+ function flightProgress(t){
+  t=Math.max(0,Math.min(1,t));
+  if(t>1-ramp)return 1-flightProgress(1-t);
+  if(t>=ramp)return(t-ramp/2)/(1-ramp);
+  const u=t/ramp;return ramp*u*u*u*u*(2.5-3*u+u*u)/(1-ramp);
+ }
+ function flightPath(from,to,t){const q=flightProgress(t);return{x:from.x+(to.x-from.x)*q,y:from.y+(to.y-from.y)*q,z:from.z+(to.z-from.z)*q};}
+ return{render,still,at,path,flightPath,flightProgress,flightSpeed,project,smooth,stars,bands,focal:F,get cacheSize(){return cache.size}};
 }

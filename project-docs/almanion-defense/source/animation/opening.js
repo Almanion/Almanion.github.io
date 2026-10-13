@@ -48,7 +48,7 @@ async function enterPhysics(reverse=false){
  title.style.visibility='hidden';physics.style.transform='scale(1.1)';physics.style.width='1440px';physics.style.height='810px';
  let previousVisibility=source.style.visibility;
  function frameAt(raw){
-  const p=reverse?1-raw:raw,q=clamp((p-.12)/.64),g=q*q*q*(10-15*q+6*q*q),reveal=smooth((p-.56)/.30);
+  const p=reverse?1-raw:raw,q=clamp((p-Cosmos.flightTiming.start)/Cosmos.flightTiming.span),g=Cosmos.volume.flightProgress(q),reveal=smooth((p-.56)/.30);
   const x=mix(r.x,final.x,g),y=mix(r.y,final.y,g),w=mix(r.w,final.w,g),height=mix(r.h,final.h,g);
   portal.dataset.progress=p.toFixed(4);portal.dataset.phase=p<.12?'focus':p<.6?'flight':p<.86?'reveal':'arrival';
   Object.assign(portal.style,{left:x+'px',top:y+'px',width:w+'px',height:height+'px',borderRadius:mix(20,23,g)+'px',visibility:'visible'});
@@ -68,7 +68,7 @@ async function enterPhysics(reverse=false){
   if(!reverse){await prepareTarget(anchors[2]);await OpeningGuidance.press(anchors[2],cursorDeparture,null,280);}
   if(reverse){resetUI(1);await layout(1,false);}
   frameAt(0);source.style.visibility='hidden';$('stage').dataset.flight='true';
-  await tween(1850,frameAt,true);
+  await tween(Cosmos.flightTiming.openingMs,frameAt,true);
   const targetStep=reverse?1:2;step=targetStep;resetUI(step);mathState(step);await layout(step,false);openingState(step);
   source.style.visibility=previousVisibility;$('site').style.opacity='';$('site').style.transform='';$('site').style.transformOrigin='';$('site').style.filter='';portal.remove();Cosmos.finishFlight();
   // The cursor arrives with the page; no invisible teleport to another corner.

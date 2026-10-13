@@ -4663,7 +4663,7 @@ function createStarVolume(nightSky){
    if(occlusion.some(r=>p.x>r.x+64&&p.x<r.x+r.w-64&&p.y>r.y+64&&p.y<r.y+r.h-64))continue;
    visible++;
    const alpha=Math.min(.94,s.alpha*(1+Math.max(0,p.size-1)*.1));
-   // A fixed 36ms shutter is sampled from the same camera path, independent of FPS.
+   // Exposure is sampled from the same camera path, independent of FPS.
    if(distance>.55){
     const length=Math.min(55,distance),tx=dx/distance*length,ty=dy/distance*length;
     ctx.strokeStyle=`rgba(${s.color},${alpha*.18})`;ctx.lineWidth=Math.max(.45,radius*.85);ctx.beginPath();ctx.moveTo(p.x-tx,p.y-ty);ctx.lineTo(p.x,p.y);ctx.stroke();
@@ -4686,7 +4686,18 @@ function createStarVolume(nightSky){
  }
  const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*t*(10+t*(-15+6*t));};
  function path(from,to,t){const q=smooth(t);return{x:from.x+(to.x-from.x)*q,y:from.y+(to.y-from.y)*q,z:from.z+(to.z-from.z)*q};}
- return{render,still,at,path,project,smooth,stars,bands,focal:F,get cacheSize(){return cache.size}};
+ // Integrate a smooth velocity ramp, a short cruise, and its mirrored brake.
+ // This gives the jump time to read without overshoot or a moving checkpoint.
+ const ramp=.28;
+ function flightSpeed(t){t=Math.max(0,Math.min(1,t));return smooth(Math.min(t,1-t)/ramp);}
+ function flightProgress(t){
+  t=Math.max(0,Math.min(1,t));
+  if(t>1-ramp)return 1-flightProgress(1-t);
+  if(t>=ramp)return(t-ramp/2)/(1-ramp);
+  const u=t/ramp;return ramp*u*u*u*u*(2.5-3*u+u*u)/(1-ramp);
+ }
+ function flightPath(from,to,t){const q=flightProgress(t);return{x:from.x+(to.x-from.x)*q,y:from.y+(to.y-from.y)*q,z:from.z+(to.z-from.z)*q};}
+ return{render,still,at,path,flightPath,flightProgress,flightSpeed,project,smooth,stars,bands,focal:F,get cacheSize(){return cache.size}};
 }
 
 /* Four depth bands, a deterministic perspective camera and shutter trails.
@@ -4695,6 +4706,7 @@ window.Cosmos=(()=>{
  const sky=document.getElementById('cosmos'),fx=document.getElementById('cosmos-fx');
  const bg=sky.getContext('2d'),fg=fx.getContext('2d'),stage=document.getElementById('stage'),pointer=document.getElementById('cursor');
  const nightSky=createNightSky(),volume=createStarVolume(nightSky);
+ const flightTiming=Object.freeze({openingMs:2500,navigationMs:2350,start:.08,span:.80});
  let frame=0,started=0,destination=0,mode='drift',bursts=[],quiet=true,flight=null,motion=null,focus={x:960,y:510};
  const clamp=x=>Math.max(0,Math.min(1,x)),smooth=x=>{x=clamp(x);return x*x*(3-2*x)};
  let themePhase=null;
@@ -4709,20 +4721,26 @@ window.Cosmos=(()=>{
   return windows;
  }
  function scenery(now=performance.now()){
-  let previous=camera,speed=0,cx=960,cy=540;
+  let previous=camera,speed=0,cx=960,cy=540,shutter=.036;
   if(flight){
-   const start=flight.start??.12,span=flight.span??.64,duration=flight.duration??1.85;const time=clamp((flight.progress-start)/span),prior=clamp((flight.progress-.036/duration-start)/span),from=volume.at(flight.from??(flight.reverse?2:1)),to=volume.at(flight.to??(flight.reverse?1:2));
-   camera=volume.path(from,to,time);previous=volume.path(from,to,prior);speed=16*time*time*(1-time)*(1-time);cx=flight.x;cy=flight.y;
+   const jump=flight.jump!==false,span=flight.span??flightTiming.span,start=flight.start??(flight.reverse?1-flightTiming.start-span:flightTiming.start),duration=flight.duration??flightTiming.openingMs/1000;
+   const time=clamp((flight.progress-start)/span),from=volume.at(flight.from??(flight.reverse?2:1)),to=volume.at(flight.to??(flight.reverse?1:2));
+   speed=jump?volume.flightSpeed(time):16*time*time*(1-time)*(1-time);
+   // A longer virtual exposure at cruising speed makes nearby stars stretch.
+   // It contracts before arrival; no blur filter or additional star layer.
+   shutter+=jump?.042*speed*speed:0;
+   const prior=clamp((flight.progress-shutter/duration-start)/span),path=jump?volume.flightPath:volume.path;
+   camera=path(from,to,time);previous=path(from,to,prior);cx=flight.x;cy=flight.y;
   }else if(route){
    const t=clamp((now-route.start)/route.duration),previousT=clamp((now-route.start-36)/route.duration);
    camera=volume.path(route.from,route.to,t);previous=volume.path(route.from,route.to,previousT);speed=16*t*t*(1-t)*(1-t);
   }
   const moving=Math.hypot(camera.x-previous.x,camera.y-previous.y,camera.z-previous.z)>.0000001;
   const key=[camera.x,camera.y,camera.z].join(',');
-  const stats=moving?volume.render(bg,camera,previous,.036,opaqueWindows()):
+  const stats=moving?volume.render(bg,camera,previous,shutter,opaqueWindows()):
    paintedStill===key&&themePhase===null?lastStats:volume.still(bg,camera);
   paintedStill=moving||themePhase!==null?null:key;lastStats=stats;
-  telemetry={speed:moving?speed:0,travel:camera.z,centerX:cx,centerY:cy,...stats,camera:{...camera}};
+  telemetry={speed:moving?speed:0,travel:camera.z,centerX:cx,centerY:cy,shutterMs:shutter*1000,...stats,camera:{...camera}};
  }
  function particles(now){
   fg.clearRect(0,0,1920,1080);bursts=bursts.filter(b=>now-b.at<760);
@@ -4755,7 +4773,7 @@ window.Cosmos=(()=>{
  function setFlight(progress,x,y,reverse=false,options={}){if(quiet)return;route=null;flight={progress,x,y,reverse,...options};stage.dataset.flight='true';}
  function finishFlight(){flight=null;route=null;camera=volume.at(destination);scenery();stage.dataset.flight='false';}
  function steer(){pointer.style.rotate='0deg';}
- stop(0);return{themeProgress:p=>{themePhase=p},begin,stop,press,settle,steer,cameraMove,holdFlight,setFlight,finishFlight,get active(){return !!frame},get particleCount(){return bursts.reduce((n,b)=>n+b.stars.length,0)},get burstState(){return bursts.map(b=>({x:b.x,y:b.y,age:performance.now()-b.at,count:b.stars.length}))},get mode(){return mode},get telemetry(){return {...telemetry}},volume};
+ stop(0);return{themeProgress:p=>{themePhase=p},begin,stop,press,settle,steer,cameraMove,holdFlight,setFlight,finishFlight,flightTiming,get active(){return !!frame},get particleCount(){return bursts.reduce((n,b)=>n+b.stars.length,0)},get burstState(){return bursts.map(b=>({x:b.x,y:b.y,age:performance.now()-b.at,count:b.stars.length}))},get mode(){return mode},get telemetry(){return {...telemetry}},volume};
 })();
 
 /* First five actions: point to a choice, perform it, then leave the text clear.
@@ -4865,7 +4883,7 @@ async function enterPhysics(reverse=false){
  title.style.visibility='hidden';physics.style.transform='scale(1.1)';physics.style.width='1440px';physics.style.height='810px';
  let previousVisibility=source.style.visibility;
  function frameAt(raw){
-  const p=reverse?1-raw:raw,q=clamp((p-.12)/.64),g=q*q*q*(10-15*q+6*q*q),reveal=smooth((p-.56)/.30);
+  const p=reverse?1-raw:raw,q=clamp((p-Cosmos.flightTiming.start)/Cosmos.flightTiming.span),g=Cosmos.volume.flightProgress(q),reveal=smooth((p-.56)/.30);
   const x=mix(r.x,final.x,g),y=mix(r.y,final.y,g),w=mix(r.w,final.w,g),height=mix(r.h,final.h,g);
   portal.dataset.progress=p.toFixed(4);portal.dataset.phase=p<.12?'focus':p<.6?'flight':p<.86?'reveal':'arrival';
   Object.assign(portal.style,{left:x+'px',top:y+'px',width:w+'px',height:height+'px',borderRadius:mix(20,23,g)+'px',visibility:'visible'});
@@ -4885,7 +4903,7 @@ async function enterPhysics(reverse=false){
   if(!reverse){await prepareTarget(anchors[2]);await OpeningGuidance.press(anchors[2],cursorDeparture,null,280);}
   if(reverse){resetUI(1);await layout(1,false);}
   frameAt(0);source.style.visibility='hidden';$('stage').dataset.flight='true';
-  await tween(1850,frameAt,true);
+  await tween(Cosmos.flightTiming.openingMs,frameAt,true);
   const targetStep=reverse?1:2;step=targetStep;resetUI(step);mathState(step);await layout(step,false);openingState(step);
   source.style.visibility=previousVisibility;$('site').style.opacity='';$('site').style.transform='';$('site').style.transformOrigin='';$('site').style.filter='';portal.remove();Cosmos.finishFlight();
   // The cursor arrives with the page; no invisible teleport to another corner.
@@ -5148,14 +5166,14 @@ async function navigationFlight(target){
   if(card.node){const n=card.copy;Object.assign(n.style,{width:'100%',height:'100%',margin:'0',position:'relative'});n.querySelectorAll('use').forEach(u=>{const symbol=frames.home.contentDocument.querySelector(u.getAttribute('href'));if(symbol){const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.innerHTML=symbol.innerHTML;u.replaceWith(g)}});face.append(n)}else{face.innerHTML='<span>Физика</span>';}
   Object.assign(face.style,{width:card.r.w+'px',height:card.r.h+'px',right:'auto',bottom:'auto',transformOrigin:'0 0',transform:`scale(${full.w/card.r.w},${full.h/card.r.h})`});
   portal.append(face);$('stage').dataset.flight='true';Cosmos.holdFlight(from);
-  await tween(1650,raw=>{
-   const p=entering?raw:1-raw,g=Cosmos.volume.smooth(clamp((p-.08)/.80)),show=soft((p-.40)/.43),r=card.r;
+  await tween(Cosmos.flightTiming.navigationMs,raw=>{
+   const p=entering?raw:1-raw,g=Cosmos.volume.flightProgress(clamp((p-Cosmos.flightTiming.start)/Cosmos.flightTiming.span)),show=soft((p-.40)/.43),r=card.r;
    const x=mix(r.x,full.x,g),y=mix(r.y,full.y,g),w=mix(r.w,full.w,g),h=mix(r.h,full.h,g);
    portal.dataset.progress=raw.toFixed(4);portal.flightBounds={x,y,w,h};Object.assign(portal.style,{transform:`translate(${x}px,${y}px) scale(${w/full.w},${h/full.h})`,borderRadius:`${mix(18,23,g)*full.w/w}px / ${mix(18,23,g)*full.h/h}px`});
    foreground.content.style.visibility=p<.40?'hidden':'visible';
    face.style.opacity=String(1-show);face.firstElementChild.style.opacity=String(1-soft((p-.26)/.20));background.root.style.opacity=String(1-soft((p-.10)/.50));
    const center={x:r.x+r.w/2,y:r.y+r.h/2};background.root.style.transformOrigin=(center.x-background.pose.x)+'px '+(center.y-background.pose.y)+'px';background.root.style.transform=`scale(${1+.12*soft(p/.6)})`;
-   Cosmos.setFlight(raw,mix(center.x,full.x+full.w/2,g),mix(center.y,full.y+full.h/2,g),!entering,{from,to:target,duration:1.65,start:.08,span:.80});
+   Cosmos.setFlight(raw,mix(center.x,full.x+full.w/2,g),mix(center.y,full.y+full.h/2,g),!entering,{from,to:target,duration:Cosmos.flightTiming.navigationMs/1000});
   },true);
   $('site').style.visibility='';old.release();arrival.release();Cosmos.finishFlight();
   restoreLayers();
@@ -5169,9 +5187,9 @@ async function topicFlight(id){
  const old=find('.exp-reader-current');if(!old)return;
  const from=step,to=id===SEARCH_TOPIC?6:3;Cosmos.holdFlight(from);
  const wrap=old.parentElement;wrap.style.perspective='1300px';
- await tween(220,t=>{old.style.opacity=1-t;old.style.transform=`translateZ(${t*170}px) scale(${1+t*.035})`;Cosmos.setFlight(t*.24,960,500,false,{from,to,duration:.9,start:0,span:1})});
+ await tween(220,t=>{old.style.opacity=1-t;old.style.transform=`translateZ(${t*170}px) scale(${1+t*.035})`;Cosmos.setFlight(t*.24,960,500,false,{from,to,duration:.9,start:0,span:1,jump:false})});
  old.style.opacity='';old.style.transform='';topic(id);doc().defaultView.scrollTo(0,0);const next=find('#'+id);
- await tween(680,t=>{next.style.opacity=softTopic(t);next.style.transform=`translateZ(${-380*(1-t)}px) translateY(${24*(1-t)}px)`;Cosmos.setFlight(.24+t*.76,960,500,false,{from,to,duration:.9,start:0,span:1})});
+ await tween(680,t=>{next.style.opacity=softTopic(t);next.style.transform=`translateZ(${-380*(1-t)}px) translateY(${24*(1-t)}px)`;Cosmos.setFlight(.24+t*.76,960,500,false,{from,to,duration:.9,start:0,span:1,jump:false})});
  next.style.opacity='';next.style.transform='';wrap.style.perspective='';Cosmos.finishFlight();
 }
 function softTopic(t){return Math.min(1,t*2.5)}
