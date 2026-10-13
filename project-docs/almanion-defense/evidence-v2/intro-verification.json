@@ -1,5 +1,5 @@
 {
-  "htmlSha256": "189d959a7bc957d13ae1a976fd2617c7167da8571dde555555616c985df08f6b",
+  "htmlSha256": "6dd5024f67a74e22a987504bf7ace08ba0b46a27be9e42d6cd77d2c229fb1d76",
   "route": [
     0,
     33,
@@ -26,34 +26,34 @@
     {
       "width": 1920,
       "target": 33,
-      "flightMs": 2853.7000000000007,
+      "flightMs": 2853.6,
       "peakStreaks": 2141,
-      "drawP95": 22.700000047683716,
-      "samples": 161
+      "drawP95": 13.799999952316284,
+      "samples": 302
     },
     {
       "width": 1920,
       "target": 1,
-      "flightMs": 3006.7000000000007,
-      "peakStreaks": 2153,
-      "drawP95": 24.600000143051147,
-      "samples": 207
+      "flightMs": 3006.3999999999996,
+      "peakStreaks": 2152,
+      "drawP95": 15.200000047683716,
+      "samples": 282
     },
     {
       "width": 1366,
       "target": 33,
-      "flightMs": 2853.6,
+      "flightMs": 2853.7,
       "peakStreaks": 2141,
-      "drawP95": 20.799999952316284,
-      "samples": 226
+      "drawP95": 12.899999856948853,
+      "samples": 305
     },
     {
       "width": 1366,
       "target": 1,
-      "flightMs": 3006.3999999999996,
-      "peakStreaks": 2153,
-      "drawP95": 21.40000009536743,
-      "samples": 233
+      "flightMs": 3006.500000000001,
+      "peakStreaks": 2152,
+      "drawP95": 15.900000095367432,
+      "samples": 302
     }
   ]
 }
