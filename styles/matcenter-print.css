@@ -2,10 +2,21 @@
 body.matcenter-page #mcPrintButton { width:auto; min-height:36px; padding:.5rem .65rem; margin-left:auto; flex:0 0 auto; }
 body.matcenter-page #mcPrintButton svg { width:17px; height:17px; }
 .mc-print-selection { display:grid; gap:.6rem; color:var(--mc-ink); }
-.mc-print-selection select { width:100%; max-width:100%; }
+.mc-print-modes { display:flex; flex-wrap:wrap; gap:.4rem; margin:0; padding:0; border:0; }
+.mc-print-modes label { display:flex; align-items:center; gap:.45rem; padding:.55rem .7rem; border:1px solid var(--mc-line); border-radius:10px; cursor:pointer; font-size:.85rem; }
+.mc-print-modes label:has(:checked) { color:var(--mc-accent); background:color-mix(in srgb,var(--mc-accent) 10%,var(--mc-surface)); border-color:var(--mc-accent); }
+.mc-print-selection input { accent-color:var(--mc-accent); flex:0 0 auto; width:17px; height:17px; margin:0; }
+.mc-print-list-tools { display:flex; gap:.5rem; margin-bottom:.35rem; }
+.mc-print-list-tools button { padding:.35rem .4rem; color:var(--mc-accent); background:none; border:0; font:inherit; font-size:.78rem; cursor:pointer; }
+#mcPrintSeries { max-height:min(290px,36dvh); overflow:auto; border:1px solid var(--mc-line); border-radius:12px; padding:4px; }
+#mcPrintSeries label { display:flex; align-items:center; gap:.65rem; min-height:44px; padding:.4rem .6rem; border-radius:8px; cursor:pointer; }
+#mcPrintSeries label:has(:checked), #mcPrintSeries label:hover { background:color-mix(in srgb,var(--mc-accent) 10%,var(--mc-surface)); }
+#mcPrintSeries label span { flex:1; min-width:0; font-size:.86rem; }
+#mcPrintSeries label small { color:var(--mc-muted); white-space:nowrap; font-variant-numeric:tabular-nums; }
+.mc-print-selection input:focus-visible, .mc-print-list-tools button:focus-visible { outline:2px solid var(--mc-accent); outline-offset:3px; }
 .mc-print-selection p { margin:0; font-size:.8rem; color:var(--mc-muted); }
 #mcPrintStatus { margin:0; min-height:1.2em; font-size:.8rem; color:var(--mc-muted); }
-#mcPrintDialog .print-export-dialog { grid-template-rows:auto auto auto; }
+#mcPrintDialog .print-export-dialog { grid-template-rows:auto minmax(0,1fr) auto; }
 #mcPrintDialog .print-export-dialog-footer { flex-wrap:wrap; }
 #mcPrintDialog .print-export-dialog-footer > div { flex-wrap:wrap; }
 #mcPrintPreview { position:absolute; inset:0; z-index:1; display:grid; grid-template-rows:auto minmax(0,1fr); gap:10px; padding:14px; background:var(--mc-surface); }

@@ -21,8 +21,10 @@ function syncMatcenterWorkspace() {
     const select = document.getElementById('mcSeriesSelect');
     if (!select) return;
     const series = MatcenterWorkspaceModel.seriesList(allTasks, currentGrade);
-    document.getElementById('mcSeriesRow').hidden = !series.length;
-    document.getElementById('mcPrintButton').disabled = !authToken || !series.length;
+    const printable = authToken && getTasksForCurrentGrade().length;
+    document.getElementById('mcSeriesRow').hidden = !series.length && !printable;
+    select.hidden = select.previousElementSibling.hidden = !series.length;
+    document.getElementById('mcPrintButton').disabled = !printable;
     const options = [{ key: '', label: 'Все задачи' }].concat(series.map(s => ({
         key: s.key, label: [s.title, s.date ? s.date.split('-').reverse().join('.') : ''].filter(Boolean).join(' · '),
         detail: matcenterSeriesRange(s)
