@@ -1061,12 +1061,257 @@
         }
       ],
       "navTitle": "1.9 Изопроцессы. Газовые законы"
+    },
+    {
+      "id": "raspredelenie-molekul-po-skorostyam",
+      "type": "subsection",
+      "title": "1.10 Опыты по измерению скоростей молекул. Распределение Максвелла",
+      "navTitle": "1.10 Скорости молекул. Распределение Максвелла",
+      "content": "",
+      "children": [
+        {
+          "id": "shtern-experiment",
+          "type": "experiment",
+          "title": "Опыт Штерна",
+          "content": "Молекула пролетает через щель и оседает. Ожидаем увидеть некоторую полосу молекул. Получено, что молекулы движутся с разными скоростями и распределяются по скоростям.",
+          "children": [
+            {
+              "id": "shtern-apparatus-image",
+              "type": "image",
+              "src": "images/notes/physics-10/shtern-apparatus.svg?v=20261013-1",
+              "alt": "Схема опыта Штерна под стеклянным колпаком",
+              "caption": "1 — стеклянный колпак. Подписи к номерам 2–8 в записи не заполнены.",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "shtern-speed-derivation",
+          "type": "derivation",
+          "title": "Определение скорости в опыте Штерна",
+          "content": "\\[\\begin{aligned}\n\\Delta t&=\\frac{\\Delta\\varphi}{\\omega}=\\frac{R-r}{v},\\\\[5pt]\n\\Delta t&=\\frac{\\Delta\\varphi}{\\omega},\\\\[5pt]\n\\frac{R-r}{v}&=\\frac{\\Delta\\varphi}{\\omega},\\\\[5pt]\nv&=\\frac{(R-r)\\omega}{\\Delta\\varphi}.\n\\end{aligned}\\]",
+          "children": [
+            {
+              "id": "shtern-rotation-image",
+              "type": "image",
+              "src": "images/notes/physics-10/shtern-rotation.svg?v=20261013-1",
+              "alt": "Вид сверху: два цилиндра и угловое смещение следа в опыте Штерна",
+              "caption": "",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "lammert-experiment",
+          "type": "experiment",
+          "title": "Опыт Ламмерта (1929)",
+          "content": "Опыт Ламмерта позволяет узнать, какая часть молекул движется со скоростями в заданном промежутке.",
+          "children": [
+            {
+              "id": "lammert-apparatus-image",
+              "type": "image",
+              "src": "images/notes/physics-10/lammert-apparatus.svg?v=20261013-1",
+              "alt": "Схема опыта Ламмерта с молекулярной печью, двумя дисками и стеклянной мишенью",
+              "caption": "",
+              "children": []
+            },
+            {
+              "id": "lammert-parts",
+              "type": "list",
+              "items": [
+                "1 — толстостенный сосуд.",
+                "2 — «молекулярная печь», в которой испаряется ртуть или другой жидкий металл.",
+                "3 — щель, или диафрагма, ограничивающая молекулярный пучок.",
+                "4 и 5 — два диска с узкими прорезями, повёрнутые друг относительно друга на небольшой угол.",
+                "6 — мотор, вращающий диски.",
+                "7 — ловушка, охлаждаемая жидким азотом.",
+                "8 — стеклянная мишень, на которой осаждаются молекулы, оставляя видимый след.",
+                "9 — насос для поддержания высокого вакуума."
+              ],
+              "children": []
+            },
+            {
+              "id": "lammert-results",
+              "type": "paragraph",
+              "title": "",
+              "content": "Получено распределение молекул по скоростям. Это распределение соответствует распределению Максвелла.",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "probability-density-reminder",
+          "type": "reminder",
+          "title": "Плотность вероятности",
+          "content": "\\[f(x)=\\frac{dP(x)}{dx}.\\]\n\\[\\begin{aligned}\nP(x_1\\le x\\le x_2)&=\\int_{x_1}^{x_2}f(x)\\,dx,\\\\[5pt]\n\\int_a^b f(x)\\,dx&=1,\\\\[5pt]\n\\langle\\varphi(x)\\rangle&=\\int_a^b\\varphi(x)f(x)\\,dx.\n\\end{aligned}\\]\n\\[P(x_1\\le x\\le x_2,\\ y_1\\le y\\le y_2)=\\int_{x_1}^{x_2}\\int_{y_1}^{y_2}f(x,y)\\,dx\\,dy.\\]\n\\[f(x,y)=f(x)f(y).\\]",
+          "children": []
+        },
+        {
+          "id": "maxwell-textbook-reference",
+          "type": "paragraph",
+          "title": "",
+          "content": "Распределение Максвелла — учебник Мякишева.",
+          "children": []
+        },
+        {
+          "id": "velocity-space-derivation",
+          "type": "derivation",
+          "title": "Пространство скоростей",
+          "content": "Выделим пространство скоростей \\((v_x,v_y,v_z)\\), а в нём — объём \\(\\Delta v_x\\Delta v_y\\Delta v_z\\), то есть куб.\n\\[dN=Nf(v_x,v_y,v_z)\\,dv_x\\,dv_y\\,dv_z.\\]\n\\(dN\\) — число молекул, проекции скоростей которых лежат в интервалах от \\(v_x\\) до \\(v_x+dv_x\\), от \\(v_y\\) до \\(v_y+dv_y\\), от \\(v_z\\) до \\(v_z+dv_z\\).\n\\[dW=\\frac{dN}{N}=f(v_x,v_y,v_z)\\,dv_x\\,dv_y\\,dv_z.\\]",
+          "children": []
+        },
+        {
+          "id": "velocity-distribution-definition",
+          "type": "definition",
+          "term": "Функция распределения молекул по скоростям",
+          "separator": "—",
+          "content": "функция \\(f(v_x,v_y,v_z)\\), которая представляет собой плотность вероятности: вероятность, отнесённую к единице объёма пространства скоростей.\n\\[f(v_x,v_y,v_z)=Ae^{-\\frac{m_0v^2}{2kT}}.\\]\nПоказывает, какая доля частиц имеет скорости от \\(v\\) до \\(v+1\\).",
+          "children": []
+        },
+        {
+          "id": "maxwell-normalization-derivation",
+          "type": "derivation",
+          "title": "Условие нормировки",
+          "content": "\\(A\\) находят из условия, что вероятность для скорости молекулы иметь любое значение от нуля до бесконечности должна равняться единице. Это условие называют условием нормировки.\n\\[\\sum_i\\Delta W_i=\\sum_i f(v_{ix},v_{iy},v_{iz})\\,dv_{ix}\\,dv_{iy}\\,dv_{iz}=1.\\]\n\\[dN(\\vec v)=N\\left(\\frac{m_0}{2\\pi kT}\\right)^{3/2}e^{-\\frac{m_0v^2}{2kT}}\\,dv_x\\,dv_y\\,dv_z.\\]",
+          "children": []
+        },
+        {
+          "id": "maxwell-speed-shell-derivation",
+          "type": "derivation",
+          "title": "Переход к модулю скорости",
+          "content": "Выделим в пространстве скоростей шаровой слой шириной \\(\\Delta v\\). Его объём равен \\(4\\pi v^2\\Delta v\\).\n\\[\\begin{aligned}\n\\Delta N(v)&=Nf(\\vec v)\\,4\\pi v^2\\Delta v\\\\[5pt]\n&=N\\left(\\frac{m_0}{2\\pi kT}\\right)^{3/2}e^{-\\frac{m_0v^2}{2kT}}\\,4\\pi v^2\\Delta v.\n\\end{aligned}\\]",
+          "children": []
+        },
+        {
+          "id": "maxwell-distribution-definition",
+          "type": "definition",
+          "term": "Распределение Максвелла",
+          "separator": "—",
+          "content": "функция распределения молекул идеального газа по модулям скоростей в тепловом равновесии.\nФизический смысл: функция распределения равна относительному числу молекул, скорости которых лежат в единичном интервале вокруг заданного значения скорости.\n\\[f(v)=\\frac{\\Delta N}{N\\Delta v}=4\\pi\\left(\\frac{m_0}{2\\pi kT}\\right)^{3/2}e^{-\\frac{m_0v^2}{2kT}}v^2.\\]",
+          "children": []
+        },
+        {
+          "id": "maxwell-temperature-graphs",
+          "type": "properties",
+          "title": "Распределение при разных температурах",
+          "content": "",
+          "children": [
+            {
+              "id": "maxwell-temperature-image",
+              "type": "image",
+              "src": "images/notes/physics-10/maxwell-temperatures.svg?v=20261013-1",
+              "alt": "Три кривые распределения Максвелла при температурах T1, T2 и T3",
+              "caption": "(T_1<T_2<T_3). На оси скоростей отмечены наиболее вероятные скорости.",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "maxwell-characteristic-speeds",
+          "type": "formula",
+          "title": "Характерные скорости",
+          "children": [],
+          "latex": "\\begin{aligned}\nv_{\\text{наиболее вероятная}}&=\\sqrt{\\frac{2kT}{m_0}},\\\\[7pt]\nv_{\\text{средняя квадратичная}}&=\\sqrt{\\overline{v^2}}=\\sqrt{\\frac{3kT}{m_0}},\\\\[7pt]\nv_{\\text{средняя арифметическая}}&=\\sqrt{\\frac{8kT}{\\pi m_0}}.\n\\end{aligned}"
+        },
+        {
+          "id": "maxwell-characteristic-image",
+          "type": "image",
+          "src": "images/notes/physics-10/maxwell-characteristic-speeds.svg?v=20261013-1",
+          "alt": "Положение наиболее вероятной, средней арифметической и средней квадратичной скоростей на кривой Максвелла",
+          "caption": "",
+          "children": []
+        },
+        {
+          "id": "maxwell-different-substances",
+          "type": "remark",
+          "title": "",
+          "content": "Распределения при одной и той же температуре, но для разных веществ, будут разными.",
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "temperaturnye-shkaly-i-termodinamicheskie-protsessy",
+      "type": "subsection",
+      "title": "1.11 Температура. Температурные шкалы и термодинамические процессы",
+      "navTitle": "1.11 Температура и термодинамические процессы",
+      "content": "",
+      "children": [
+        {
+          "id": "thermal-equilibrium-temperature-statement",
+          "type": "statement",
+          "title": "Температура и термодинамическое равновесие",
+          "content": "Если два тела находятся в термодинамическом равновесии, то их температуры равны.",
+          "children": []
+        },
+        {
+          "id": "empirical-temperature-scale-algorithm",
+          "type": "properties",
+          "title": "Алгоритм построения эмпирической шкалы температур",
+          "content": "**1.** Выбирают тело или вещество, одно из свойств которого зависит от температуры. Это тело называют термометрическим телом. Такое свойство термометрического тела называют термодинамическим параметром.\n**2.** Устанавливают зависимость термодинамического параметра от температуры:\n\\[L=L_0(1+\\alpha t),\\qquad V=V_0(1+\\alpha t),\\qquad R=\\sigma T^4.\\]\n**3.** Устанавливают реперные точки и наносят градуировку шкалы.",
+          "children": []
+        },
+        {
+          "id": "reference-points-definition",
+          "type": "definition",
+          "term": "Реперные точки",
+          "separator": "—",
+          "content": "значения термодинамического параметра, которые считают известными точно. Для шкалы Цельсия используют две реперные точки, а для шкалы Кельвина — одну.",
+          "children": []
+        },
+        {
+          "id": "temperature-scale-two-points",
+          "type": "properties",
+          "title": "Построение по двум реперным точкам",
+          "content": "**1.** Выбирают две точки:\n\\[t=0^\\circ\\mathrm C,\\qquad t=100^\\circ\\mathrm C.\\]\n\\(0^\\circ\\mathrm C\\) — температура термодинамического равновесия льда и воды. \\(100^\\circ\\mathrm C\\) — температура кипения воды.\n**2.** Термометрическое тело помещают в условия реперных точек.\n**3.** В соответствии с выбранной зависимостью шкалу делят на 100.",
+          "children": []
+        },
+        {
+          "id": "temperature-scale-one-point",
+          "type": "properties",
+          "title": "Построение по одной реперной точке",
+          "content": "**1.** Используют температуру тройной точки воды:\n\\[t=0{,}01^\\circ\\mathrm C.\\]\nДавление не атмосферное. Температура тройной точки воды — температура, при которой вода может находиться в равновесии между твёрдым, жидким и газообразным состояниями.\n**2.** Аналогично.\n**3.** Термометрическое тело помещают при температуре \\(t_x\\), которая вычисляется из зависимости:\n\\[L=L_0(1+\\alpha t_x).\\]\n\\[273{,}16\\,\\text{К}=0{,}01^\\circ\\mathrm C.\\]",
+          "children": []
+        },
+        {
+          "id": "thermodynamic-process-definition",
+          "type": "definition",
+          "term": "Термодинамический процесс",
+          "separator": "—",
+          "content": "переход из одного термодинамического состояния в другое.",
+          "children": []
+        },
+        {
+          "id": "thermodynamic-state-definition",
+          "type": "definition",
+          "term": "Термодинамическое состояние",
+          "separator": "—",
+          "content": "состояние вещества с определённым набором параметров.",
+          "children": []
+        },
+        {
+          "id": "thermodynamic-process-types",
+          "type": "properties",
+          "title": "Виды термодинамических процессов",
+          "content": "",
+          "children": [
+            {
+              "id": "quasistatic-process-definition",
+              "type": "definition",
+              "term": "Квазистатический процесс",
+              "separator": "—",
+              "content": "медленно происходящий равновесный процесс, состоящий из непрерывно следующих друг за другом состояний термодинамического равновесия.",
+              "children": []
+            }
+          ]
+        }
+      ]
     }
   ],
   "order": 1,
-  "revision": 7,
+  "revision": 8,
   "createdAt": 1788739200000,
-  "updatedAt": 1791913681945,
-  "updatedBy": "2M2ZdLQcJAhluPjUVFNJ6MyQrdH2",
+  "updatedAt": 1791914890347,
+  "updatedBy": "codex",
   "reviewStatus": "published"
 }

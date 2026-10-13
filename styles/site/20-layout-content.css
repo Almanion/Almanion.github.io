@@ -194,7 +194,12 @@ body.dark-theme .search-box input:focus {
     [data-note-block="isobaric-coordinate-graphs-image"],
     [data-note-block="charles-experiment-image"],
     [data-note-block="combined-gas-law-image"],
-    [data-note-block="intermolecular-interaction-image"]
+    [data-note-block="intermolecular-interaction-image"],
+    [data-note-block="shtern-apparatus-image"],
+    [data-note-block="shtern-rotation-image"],
+    [data-note-block="lammert-apparatus-image"],
+    [data-note-block="maxwell-temperature-image"],
+    [data-note-block="maxwell-characteristic-image"]
 ) img {
     width: min(100%, 720px);
     height: auto;
