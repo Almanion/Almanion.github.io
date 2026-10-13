@@ -12,12 +12,13 @@ const out=path.resolve(__dirname,'../..'),ev=path.join(out,'evidence-v2');
   const expected={};for(const s of [0,33,1,2]){if(s)await go(s,{instant:true});expected[s]=await snap();}
   await go(0,{instant:true});
   for(const target of [33,1]){
-   await p.waitForTimeout(270);await p.evaluate(s=>{window.introFrames=[];window.introRun=DEMO.go(s);window.rejected=DEMO.go(s);function sample(t){introFrames.push({t,p:Number($('stage').dataset.introProgress||0),phase:$('stage').dataset.introPhase,cursor:DEMO.cursor,opacity:getComputedStyle($('cursor')).opacity,...Cosmos.telemetry});if(DEMO.busy)requestAnimationFrame(sample)}requestAnimationFrame(sample)},target);
+   await p.waitForTimeout(270);await p.evaluate(s=>{window.introFrames=[];window.introRun=DEMO.go(s);window.rejected=DEMO.go(s);function sample(t){const source=$(s===33?'intro-copy':'intro-description'),dest=$(s===33?'intro-description':'site');introFrames.push({t,p:Number($('stage').dataset.introProgress||0),phase:$('stage').dataset.introPhase,cursor:DEMO.cursor,opacity:getComputedStyle($('cursor')).opacity,sourceOpacity:Number(source.style.opacity||1),destinationOpacity:Number(dest.style.opacity||1),sourceScale:new DOMMatrix(source.style.transform||'none').a,destinationScale:new DOMMatrix(dest.style.transform||'none').a,...Cosmos.telemetry});if(DEMO.busy)requestAnimationFrame(sample)}requestAnimationFrame(sample)},target);
    assert.equal(await p.evaluate(()=>rejected),false,'no queued command during flight');
    if(width===1920)for(const progress of [.24,.50,.74,.91]){await p.waitForFunction(t=>Number(document.getElementById('stage').dataset.introProgress)>=t,progress);await p.screenshot({path:path.join(ev,`intro-${target}-flight-${Math.round(progress*100)}.png`)});}
    await p.evaluate(()=>introRun);assert.deepEqual(await snap(),expected[target],'canonical arrival '+target);
    const frames=await p.evaluate(()=>introFrames),moving=frames.filter(f=>f.phase),peak=Math.max(...frames.map(f=>f.streaks)),draw=frames.map(f=>f.drawMs).sort((a,b)=>a-b);
-   assert(moving.at(-1).t-moving[0].t>=3300,'sustained deeper flight');assert(peak>120,'visible star motion');
+   const flightMs=moving.at(-1).t-moving[0].t;assert(flightMs>=2900&&flightMs<3300,'slightly faster flight with time for the distant approach');assert(peak>120,'visible star motion');
+   const cleared=moving.find(f=>f.sourceOpacity<.01),distant=moving.filter(f=>f.p>.36&&f.p<.55);assert(cleared.p<.36,'foreground lettering is passed in the first third');assert(moving.some(f=>f.sourceScale>3&&f.sourceOpacity>.05),'foreground flies past before it disappears');assert(distant.length>4&&distant.every(f=>f.sourceOpacity<.01&&f.destinationOpacity>.95&&f.destinationScale<.4),'destination stays clearly visible far ahead');
    const distance=Math.abs(moving.at(-1).camera.z-moving[0].camera.z);assert(distance>4.8,'each opening leg covers a substantial world-space distance');
    const crossed=target===33?[6,7]:[4,5];for(const layer of crossed){assert(moving.some(f=>f.layers[layer].visible>15),'foreground stars are visibly present');assert(moving.some(f=>f.layers[layer].meanSpeed>1500),'nearby stars accelerate strongly');assert.equal(moving.at(-1).layers[layer].passed,180,'entire layer passes behind the camera');assert.equal(moving.at(-1).layers[layer].visible,0,'passed stars are no longer rendered');}
    assert(frames.every(f=>Number(f.opacity)===1),'cursor remains visible');
@@ -26,7 +27,7 @@ const out=path.resolve(__dirname,'../..'),ev=path.join(out,'evidence-v2');
    assert(await p.evaluate(()=>!Cosmos.active&&$('stage').dataset.flight==='false'&&document.getAnimations().every(a=>a.playState!=='running')));
    await p.screenshot({path:path.join(ev,`intro-stop-${target}-${width}.png`)});
    const frozen=await p.screenshot();await p.waitForTimeout(350);assert(frozen.equals(await p.screenshot()),'pixel-identical pause');
-   flights.push({width,target,flightMs:moving.at(-1).t-moving[0].t,worldDistance:distance,crossedForegroundLayers:crossed,peakForegroundSpeed:Math.max(...moving.flatMap(f=>crossed.map(i=>f.layers[i].meanSpeed))),peakStreaks:peak,drawP95:draw[Math.floor(draw.length*.95)],samples:frames.length});
+   flights.push({width,target,flightMs,foregroundClearedAtMs:cleared.t-moving[0].t,distantApproach:true,worldDistance:distance,crossedForegroundLayers:crossed,peakForegroundSpeed:Math.max(...moving.flatMap(f=>crossed.map(i=>f.layers[i].meanSpeed))),peakStreaks:peak,drawP95:draw[Math.floor(draw.length*.95)],samples:frames.length});
   }
   await go(2);assert.deepEqual(await snap(),expected[2],'continues to physics');await go(1);assert.deepEqual(await snap(),expected[1]);
   for(const s of [33,0]){await go(s);assert.deepEqual(await snap(),expected[s],'reverse '+s);}

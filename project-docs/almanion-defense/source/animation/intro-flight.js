@@ -25,7 +25,7 @@ const IntroFlight=(()=>{
   if(reduced||!pair(from,target)){await direct(target);return;}
   const reverse=target===0||from===1,first=(from===0||target===0),sourceID=first?0:33,destID=first?33:1;
   const source=$(first?'intro-copy':'intro-description'),dest=first?$('intro-description'):$('site');
-  const sourcePark=parking[sourceID],hit=portal[sourceID],ms=first?3400:3500;
+  const sourcePark=parking[sourceID],hit=portal[sourceID],ms=first?3000:3100;
   // Prepare the real homepage once, at its final layout, before animating only
   // its composited transform. The initial hidden surface never occludes stars.
   if(!first){resetUI(1);mathState(1);await layout(1,false);state(from);}
@@ -37,21 +37,22 @@ const IntroFlight=(()=>{
   source.style.willChange=dest.style.willChange='transform, opacity';
   $('focus').style.opacity=0;$('intro-cue').style.opacity=0;
   const center=first?{x:960,y:501}:{x:960,y:526};
-  // Both text planes have a fixed screen-space centre. Reciprocal projection
-  // makes a plane accelerate naturally as it approaches the camera.
+  // The foreground plane is only 22% of the trip away. Pass it early, then
+  // keep the distant destination visible throughout the remaining approach.
+  // Both scales follow reciprocal depth; reverse retraces the same geometry.
   function paint(raw){
    const p=reverse?1-raw:raw,t=clamp((p-.04)/.90),q=Cosmos.volume.flightProgress(t);
-   const out=1/(1-.975*q),incoming=1/(5.6-4.6*q);
+   const departure=clamp(q/.22),out=1/Math.max(.08,1-departure),incoming=1/(5.6-4.6*q);
    source.style.transform=`scale(${out})`;
-   source.style.opacity=String(1-smooth((q-(first?.30:.12))/(first?.50:.42)));
+   source.style.opacity=String(1-smooth((departure-.38)/.62));
    dest.style.transform=`scale(${incoming})`;
    dest.style.transformOrigin='50% 50%';
-   dest.style.opacity=String(smooth((q-(first?.50:.24))/(first?.40:.48)));
+   dest.style.opacity=String(smooth((q-.035)/.095));
    $('route-copy').style.opacity=first?'0':String(smooth((q-.79)/.21));
    $('intro-cue').style.opacity=first?String(smooth((q-.90)/.10)):String(reverse?smooth((1-q-.9)/.1):0);
    Object.assign(cursor,OpeningGuidance.path(initialPointer,finalPointer,raw,reverse?48:-48));paintCursor();
    $('stage').dataset.introProgress=p.toFixed(4);
-   $('stage').dataset.introPhase=q<.12?'departure':q<.54?'passage':q<.9?'approach':'arrival';
+   $('stage').dataset.introPhase=q<.22?'departure':q<.66?'passage':q<.9?'approach':'arrival';
    Cosmos.setFlight(raw,center.x,center.y,reverse,{from,to:target,duration:ms/1000,start:reverse?.06:.04,span:.90});
   }
   try{

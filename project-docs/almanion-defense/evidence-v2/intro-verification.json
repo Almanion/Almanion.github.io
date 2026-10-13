@@ -1,5 +1,5 @@
 {
-  "htmlSha256": "8018a5aa11dbc29fedf6dc1d10827d912bd2d7b8699af9bfd91aeed42d5440f7",
+  "htmlSha256": "a0d5a39848ed342f0767b0b97dd3211b3f0a1ac8ca1079145caf77a12e1e1985",
   "route": [
     0,
     33,
@@ -26,58 +26,66 @@
     {
       "width": 1920,
       "target": 33,
-      "flightMs": 3402.3,
+      "flightMs": 3006.5,
+      "foregroundClearedAtMs": 944.3000000000002,
+      "distantApproach": true,
       "worldDistance": 6.000000000000001,
       "crossedForegroundLayers": [
         6,
         7
       ],
-      "peakForegroundSpeed": 91320.15997491192,
-      "peakStreaks": 4204,
-      "drawP95": 21.200000047683716,
-      "samples": 278
+      "peakForegroundSpeed": 98099.15457199143,
+      "peakStreaks": 4410,
+      "drawP95": 23.09999990463257,
+      "samples": 258
     },
     {
       "width": 1920,
       "target": 1,
-      "flightMs": 3506.2999999999993,
+      "flightMs": 3103.699999999999,
+      "foregroundClearedAtMs": 958.1999999999989,
+      "distantApproach": true,
       "worldDistance": 4.8999999999999995,
       "crossedForegroundLayers": [
         4,
         5
       ],
-      "peakForegroundSpeed": 61488.12495147935,
-      "peakStreaks": 3561,
-      "drawP95": 18.299999952316284,
-      "samples": 289
+      "peakForegroundSpeed": 70337.94432120444,
+      "peakStreaks": 3787,
+      "drawP95": 13.199999809265137,
+      "samples": 326
     },
     {
       "width": 1366,
       "target": 33,
-      "flightMs": 3402.3,
+      "flightMs": 3006.3999999999996,
+      "foregroundClearedAtMs": 992.7999999999993,
+      "distantApproach": true,
       "worldDistance": 6.000000000000001,
       "crossedForegroundLayers": [
         6,
         7
       ],
-      "peakForegroundSpeed": 88847.96215451867,
-      "peakStreaks": 4204,
-      "drawP95": 19.699999809265137,
-      "samples": 300
+      "peakForegroundSpeed": 94101.49678484388,
+      "peakStreaks": 4409,
+      "drawP95": 37.299999952316284,
+      "samples": 206
     },
     {
       "width": 1366,
       "target": 1,
-      "flightMs": 3500,
+      "flightMs": 3103.9000000000015,
+      "foregroundClearedAtMs": 958.3000000000011,
+      "distantApproach": true,
       "worldDistance": 4.8999999999999995,
       "crossedForegroundLayers": [
         4,
         5
       ],
-      "peakForegroundSpeed": 70108.0680486687,
-      "peakStreaks": 3560,
-      "drawP95": 20.40000009536743,
-      "samples": 291
+      "peakForegroundSpeed": 74958.799882861,
+      "peakStreaks": 3787,
+      "drawP95": 18.299999952316284,
+      "samples": 296
     }
   ]
 }
