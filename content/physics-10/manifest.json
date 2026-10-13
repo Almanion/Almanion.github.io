@@ -3,7 +3,14 @@
   "subject": "physics-10",
   "title": "Физика · 10 класс",
   "sections": [
-    { "id": "molekulyarnaya-fizika" },
-    { "id": "izmereniya-i-pogreshnosti" }
+    {
+      "id": "molekulyarnaya-fizika",
+      "title": "1. Молекулярная физика",
+      "navTitle": "Молекулярная физика",
+      "updatedAt": 1791913681945
+    },
+    {
+      "id": "izmereniya-i-pogreshnosti"
+    }
   ]
 }
