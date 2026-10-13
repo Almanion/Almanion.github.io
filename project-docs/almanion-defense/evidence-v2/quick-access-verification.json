@@ -1,5 +1,5 @@
 {
-  "htmlSha256": "8739afe7bd93315d3a66d60f61298508801c6d64aa1fbf51c12c3ad5558e13c7",
+  "htmlSha256": "189d959a7bc957d13ae1a976fd2617c7167da8571dde555555616c985df08f6b",
   "displayedStops": [
     14,
     15,
@@ -17,12 +17,12 @@
     {
       "width": 1920,
       "maxOverlap": 0,
-      "frames": 181
+      "frames": 58
     },
     {
       "width": 1366,
       "maxOverlap": 0,
-      "frames": 189
+      "frames": 71
     }
   ],
   "sharedPhysicsTitle": true,
