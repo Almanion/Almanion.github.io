@@ -27,7 +27,7 @@ window.Cosmos=(()=>{
    // A longer virtual exposure at cruising speed makes nearby stars stretch.
    // It contracts before arrival; no blur filter or additional star layer.
    shutter+=jump?.042*speed*speed:0;
-   const prior=clamp((flight.progress-shutter/duration-start)/span),path=jump?volume.flightPath:volume.path;
+   const prior=clamp((flight.progress-shutter/duration-start)/span),landmark=flight.from===34||flight.to===34?volume.pulsar:null,path=jump?(a,b,t)=>volume.flightPath(a,b,t,landmark):volume.path;
    camera=path(from,to,time);previous=path(from,to,prior);cx=flight.x;cy=flight.y;
   }else if(route){
    const t=clamp((now-route.start)/route.duration),previousT=clamp((now-route.start-36)/route.duration);
@@ -39,6 +39,7 @@ window.Cosmos=(()=>{
    paintedStill===key&&themePhase===null?lastStats:volume.still(bg,camera);
   paintedStill=moving||themePhase!==null?null:key;lastStats=stats;
   telemetry={speed:moving?speed:0,travel:camera.z,centerX:cx,centerY:cy,shutterMs:shutter*1000,...stats,camera:{...camera}};
+  window.PulsarScene?.paintSpace(camera);
  }
  function particles(now){
   fg.clearRect(0,0,1920,1080);bursts=bursts.filter(b=>now-b.at<760);
@@ -56,7 +57,7 @@ window.Cosmos=(()=>{
   const newest=bursts.at(-1),ms=newest?now-newest.at:1000;
   pointer.style.scale=String(ms<80?1-.07*Math.sin(ms/80*Math.PI/2):ms<520?1-.07*Math.exp(-(ms-80)/105)*Math.cos((ms-80)/82):1);
  }
- function tick(now){scenery(now);window.PulsarScene?.tickTravel(now);if(themePhase!==null){bg.globalAlpha=Math.sin(Math.PI*themePhase)*.24;bg.globalCompositeOperation='screen';bg.drawImage(sky,0,0);bg.globalAlpha=1;bg.globalCompositeOperation='source-over';}particles(now);if(currentPage==='home'&&!flight){const t=now-started;HomeBackground.tick(t,(cursor.x-pose.x-pose.tx)/pose.z,(cursor.y-pose.y-42-pose.ty)/pose.z,Math.min(1,t/260));}frame=requestAnimationFrame(tick);}
+ function tick(now){if(!flight?.external)scenery(now);if(themePhase!==null){bg.globalAlpha=Math.sin(Math.PI*themePhase)*.24;bg.globalCompositeOperation='screen';bg.drawImage(sky,0,0);bg.globalAlpha=1;bg.globalCompositeOperation='source-over';}particles(now);if(currentPage==='home'&&!flight){const t=now-started;HomeBackground.tick(t,(cursor.x-pose.x-pose.tx)/pose.z,(cursor.y-pose.y-42-pose.ty)/pose.z,Math.min(1,t/260));}frame=requestAnimationFrame(tick);}
  function stop(s=destination){HomeBackground.stop();cancelAnimationFrame(frame);frame=0;destination=s;flight=null;motion=null;route=null;camera=volume.at(s);themePhase=null;bursts=[];fg.clearRect(0,0,1920,1080);pointer.style.scale='1';pointer.style.rotate='0deg';stage.style.setProperty('--space-pulse','0');scenery();stage.dataset.spaceMoving='false';stage.dataset.flight='false';}
  function begin(from,to,reduced){stop(from);window.PulsarScene?.begin(from,to,reduced);destination=to;quiet=reduced;mode=[2,10,14,28,29].includes(to)?'warp':[15,16,19,20,23,26].includes(to)?'orbit':'drift';stage.dataset.spaceMode=mode;if(quiet)return;started=performance.now();
   const a=volume.at(from),b=volume.at(to),distance=Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
@@ -71,5 +72,5 @@ window.Cosmos=(()=>{
  function setFlight(progress,x,y,reverse=false,options={}){if(quiet)return;route=null;flight={progress,x,y,reverse,...options};stage.dataset.flight='true';}
  function finishFlight(){flight=null;route=null;camera=volume.at(destination);scenery();stage.dataset.flight='false';}
  function steer(){pointer.style.rotate='0deg';}
- stop(0);return{themeProgress:p=>{themePhase=p},begin,stop,press,settle,steer,cameraMove,holdFlight,setFlight,finishFlight,flightTiming,get active(){return !!frame},get particleCount(){return bursts.reduce((n,b)=>n+b.stars.length,0)},get burstState(){return bursts.map(b=>({x:b.x,y:b.y,age:performance.now()-b.at,count:b.stars.length}))},get mode(){return mode},get telemetry(){return {...telemetry}},volume};
+ stop(0);return{themeProgress:p=>{themePhase=p},begin,stop,press,settle,steer,cameraMove,holdFlight,setFlight,finishFlight,paintFlight:scenery,flightTiming,get active(){return !!frame},get particleCount(){return bursts.reduce((n,b)=>n+b.stars.length,0)},get burstState(){return bursts.map(b=>({x:b.x,y:b.y,age:performance.now()-b.at,count:b.stars.length}))},get mode(){return mode},get telemetry(){return {...telemetry}},volume};
 })();

@@ -1,4 +1,5 @@
 #pulsar{position:absolute;inset:0;width:1920px;height:1080px;z-index:1;pointer-events:none}
+#cursor-fragments{position:absolute;inset:0;width:1920px;height:1080px;z-index:19;pointer-events:none}
 #pulsar-ending{position:absolute;left:126px;top:390px;width:630px;z-index:8;opacity:0;visibility:hidden;font-family:Onest,'Segoe UI',sans-serif}
 #pulsar-ending h2{font-size:108px;line-height:1.1;font-weight:450;letter-spacing:-5px;color:#f0f6ff;margin:0 0 30px}
 #pulsar-ending p{font-size:31px;line-height:1.55;letter-spacing:-.4px;color:#b5cbe3;margin:0 0 31px}

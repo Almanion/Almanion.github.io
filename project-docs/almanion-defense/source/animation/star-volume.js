@@ -3,6 +3,9 @@
    Design/reference notes: Starfield-research.txt. No accumulated frame deltas. */
 function createStarVolume(nightSky){
  const W=1920,H=1080,F=1100,CX=960,CY=540,cache=new Map();
+ // One fixed object in the SAME world as the star catalogue. Its final framing
+ // is reached by moving the camera, never by scaling a separate screen sprite.
+ const pulsar=Object.freeze({wx:0,wy:-1.6,z:8,radius:.032,arrival:{x:1230,y:535,r:97}});
  const bands=[{name:'cloud',min:95,max:180},{name:'far',min:25,max:60},{name:'middle',min:8,max:18},{name:'near',min:3.2,max:6.8}];
  let seed=410731;const random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
  const stars=nightSky.starCatalog.map((s,i)=>{
@@ -20,6 +23,7 @@ function createStarVolume(nightSky){
   ctx.clearRect(0,0,W,H);ctx.drawImage(nightSky.nebula,-4-camera.x*4,-4-camera.y*4,W+8,H+8);
   // Far-to-near painting preserves the depth hierarchy without depth sorting.
   for(let layer=0;layer<4;layer++)for(const s of groups[layer]){
+   if(s.z-camera.z<=.25)continue; // Stars passed by the camera leave the volume.
    const p=project(s,camera),q=project(s,previous),dx=p.x-q.x,dy=p.y-q.y,distance=Math.hypot(dx,dy),stats=motion[layer];
    stats.count++;stats.distance+=distance/shutter;stats.max=Math.max(stats.max,distance/shutter);
    const radius=Math.min(3.4,s.r*Math.pow(p.size,.62));
@@ -40,11 +44,11 @@ function createStarVolume(nightSky){
    if(radius<.45)ctx.fillRect(p.x-radius,p.y-radius,radius*2,radius*2);else{ctx.beginPath();ctx.arc(p.x,p.y,radius,0,Math.PI*2);ctx.fill();}
   }
   ctx.drawImage(shade,0,0);
-  return{streaks,visible,drawMs:performance.now()-begin,layers:motion.map((s,i)=>({name:bands[i].name,count:s.count,meanSpeed:s.distance/s.count,maxSpeed:s.max}))};
+  return{streaks,visible,drawMs:performance.now()-begin,layers:motion.map((s,i)=>({name:bands[i].name,count:s.count,meanSpeed:s.count?s.distance/s.count:0,maxSpeed:s.max}))};
  }
  function still(ctx,camera){const key=[camera.x,camera.y,camera.z].join(',');let item=cache.get(key);if(!item){const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;const stats=render(canvas.getContext('2d'),camera);item={canvas,stats};cache.set(key,item);if(cache.size>4)cache.delete(cache.keys().next().value);}ctx.clearRect(0,0,W,H);ctx.drawImage(item.canvas,0,0);return{...item.stats,drawMs:0};}
  function at(s){
-  if(s===34)return{x:-.05,y:.05,z:2.4};
+  if(s===34){const d=F*pulsar.radius/pulsar.arrival.r;return{x:pulsar.wx-(pulsar.arrival.x-CX)*d/F,y:pulsar.wy-(pulsar.arrival.y-CY)*d/F,z:pulsar.z-d};}
   if(s===33)return{x:-.035,y:.02,z:-1.05};
   const points=[
    [0,0,-2.2],[-.08,.04,.1],[-.42,.23,1.15],[-.46,.22,1.28],[-.40,.12,1.46],[-.49,.15,1.42],[-.41,.20,1.50],[-.40,.20,1.50],[-.40,.20,1.50],[-.41,.20,1.50],
@@ -64,6 +68,14 @@ function createStarVolume(nightSky){
   if(t>=ramp)return(t-ramp/2)/(1-ramp);
   const u=t/ramp;return ramp*u*u*u*u*(2.5-3*u+u*u)/(1-ramp);
  }
- function flightPath(from,to,t){const q=flightProgress(t);return{x:from.x+(to.x-from.x)*q,y:from.y+(to.y-from.y)*q,z:from.z+(to.z-from.z)*q};}
- return{render,still,at,path,flightPath,flightProgress,flightSpeed,project,smooth,stars,bands,focal:F,get cacheSize(){return cache.size}};
+ function flightPath(from,to,t,landmark=null){const q=flightProgress(t);
+  if(landmark){
+   // Logarithmic optical distance makes the long approach legible throughout.
+   // Both the stars and destination use the resulting physical camera pose.
+   const a=project(landmark,from),b=project(landmark,to),d=Math.exp(Math.log(landmark.z-from.z)*(1-q)+Math.log(landmark.z-to.z)*q),u=smooth(q),x=a.x+(b.x-a.x)*u,y=a.y+(b.y-a.y)*u;
+   return{x:landmark.wx-(x-CX)*d/F,y:landmark.wy-(y-CY)*d/F,z:landmark.z-d};
+  }
+  return{x:from.x+(to.x-from.x)*q,y:from.y+(to.y-from.y)*q,z:from.z+(to.z-from.z)*q};
+ }
+ return{render,still,at,path,flightPath,flightProgress,flightSpeed,project,smooth,stars,bands,pulsar,focal:F,get cacheSize(){return cache.size}};
 }

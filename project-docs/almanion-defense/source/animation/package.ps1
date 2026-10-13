@@ -60,8 +60,9 @@ HTML SHA-256: $htmlHash
 — независимость альтернативных оценок от текущей сцены;
 — четыре перспективных слоя звёзд с разными скоростями;
 — точное восстановление неба каждой из 35 остановок;
-— постепенное приближение пульсара в течение всего маршрута;
-— заключительный подлёт 6600 мс, растворение 155 частиц формы курсора;
+— пульсар впереди, покадровое совпадение его камеры с камерой звёзд;
+— заключительный подлёт 6600 мс, распад 845 фрагментов исходного курсора;
+— точная сборка исходных пикселей, отсутствие затухания прозрачности стрелки;
 — вращение поверхности, наклонённых лучей и объёмных магнитных дуг;
 — пауза финала, обратный полёт, повтор, Home / End и уменьшенное движение;
 — совпадение обратного маршрута, отсутствие зависимости от частоты кадров;
@@ -105,6 +106,10 @@ $relativeFiles += 'evidence-v2/pulsar-verification.json'
 $relativeFiles += 'evidence-v2/pulsar-final-1920.png'
 $relativeFiles += 'evidence-v2/pulsar-final-1366.png'
 $relativeFiles += 'evidence-v2/pulsar-flight-77.png'
+$relativeFiles += 'evidence-v2/pulsar-forward-opening.png'
+$relativeFiles += 'evidence-v2/fracture-detail-0.22.png'
+$relativeFiles += 'evidence-v2/fracture-detail-0.36.png'
+$relativeFiles += 'evidence-v2/fracture-detail-0.48.png'
 foreach ($step in @(0,33,1)) { $relativeFiles += "evidence-v2/intro-stop-$step-1920.png" }
 foreach ($step in @(33,1)) { $relativeFiles += "evidence-v2/intro-$step-flight-50.png" }
 foreach ($step in @(15,16,17,18)) { $relativeFiles += "evidence-v2/quick-stop-$step-1920.png" }

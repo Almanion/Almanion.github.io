@@ -9,6 +9,7 @@ function createPulsarRenderer(canvas){
  function fbm(x,y){let n=0,a=.54;for(let i=0;i<4;i++){n+=a*noise(x,y);x=x*2.03+17;y=y*2.03+31;a*=.46;}return n;}
  function sprite(color){const c=document.createElement('canvas');c.width=c.height=128;const d=c.getContext('2d'),g=d.createRadialGradient(64,64,0,64,64,64);g.addColorStop(0,`rgba(${color},.9)`);g.addColorStop(.07,`rgba(${color},.5)`);g.addColorStop(.25,`rgba(${color},.15)`);g.addColorStop(1,`rgba(${color},0)`);d.fillStyle=g;d.fillRect(0,0,128,128);return c;}
  const blue=sprite('85,157,255'),cyan=sprite('134,224,255'),white=sprite('224,244,255'),violet=sprite('133,108,243');
+ const beacon=document.createElement('canvas');beacon.width=beacon.height=480;
  const texW=1024,texH=512,texture=new Float32Array(texW*texH);
  for(let y=0;y<texH;y++)for(let x=0;x<texW;x++){
   // Periodic longitude: use a torus-like noise coordinate to avoid a seam.
@@ -73,7 +74,7 @@ function createPulsarRenderer(canvas){
  }
  function draw(t,v,{full=false}={}){
   const started=performance.now();view=v;orient(t);ctx.clearRect(0,0,1920,1080);
-  if(!full&&v.r<8){const a=project(0,8,0),b=project(0,-8,0);ctx.strokeStyle='rgba(124,201,255,.18)';ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();glow(blue,v.x,v.y,15+v.r*3,.64);glow(white,v.x,v.y,5+v.r,.8);ctx.fillStyle='#c7e6ff';ctx.beginPath();ctx.arc(v.x,v.y,Math.max(.8,v.r),0,TAU);ctx.fill();}
+  if(!full){ctx.drawImage(beacon,v.x-v.r*10,v.y-v.r*10,v.r*20,v.r*20);}
   else{
    ctx.globalCompositeOperation='screen';glow(violet,v.x+v.r*.6,v.y,view.r*5,.38);glow(blue,v.x,v.y,view.r*4.1,.60);glow(cyan,v.x,v.y,view.r*2.1,.48);ctx.globalCompositeOperation='source-over';
    winds(t,false);field(t,false);const frontSign=matrix[1][2]>=0?1:-1;beam(t,-frontSign);surface(t);beam(t,frontSign);field(t,true);winds(t,true);
@@ -81,11 +82,6 @@ function createPulsarRenderer(canvas){
   if(full&&v.r>25){const dim=ctx.createLinearGradient(450,0,800,0);dim.addColorStop(0,'rgba(0,0,0,1)');dim.addColorStop(1,'rgba(0,0,0,0)');ctx.globalCompositeOperation='destination-out';ctx.fillStyle=dim;ctx.fillRect(0,0,800,1080);ctx.globalCompositeOperation='source-over';}
   stats={drawMs:performance.now()-started,fieldLines:lines.length,fieldParticles:motes.length,windParticles:wind.length,beamParticles:300,rotation:phase,radius:view.r,center:{x:view.x,y:view.y},full};
  }
- function fragments(points,origin,amount,t){
-  if(amount<=0)return;ctx.globalCompositeOperation='screen';
-  points.forEach((p,i)=>{const target=tracePoint(i*7,t),a=clamp(amount*1.25-p.delay),q=a*a*(3-2*a),x=origin.x+p.x+(target.x-origin.x-p.x)*q+Math.sin(q*Math.PI)*p.drift,y=origin.y+p.y+(target.y-origin.y-p.y)*q-Math.sin(q*Math.PI)*p.lift,alpha=Math.min(1,amount*6)*(1-clamp((amount-.87)/.13)*.55);
-   ctx.fillStyle=`rgba(189,229,255,${alpha})`;ctx.beginPath();ctx.arc(x,y,p.size*(.6+q*.8),0,TAU);ctx.fill();if(i%5===0)glow(cyan,x,y,6,alpha*.65);
-  });ctx.globalCompositeOperation='source-over';
- }
- return{draw,fragments,tracePoint,get stats(){return stats}};
+ function prepareBeacon(){draw(1.6,{x:960,y:540,r:24},{full:true});beacon.getContext('2d').drawImage(canvas,720,300,480,480,0,0,480,480);}
+ return{draw,prepareBeacon,tracePoint,get stats(){return stats}};
 }
