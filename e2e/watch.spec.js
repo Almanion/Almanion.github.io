@@ -36,7 +36,7 @@ for (const width of [204,216,240,280]) test(`round-screen reading and text zoom 
     await page.reload();
     await expect(page.locator('.watch-block[data-index="1"] .watch-card')).toContainText('Термос');
     expect(await page.evaluate(() => AlmanionWatch.getState().scale)).toBe(1.8);
-    expect(scripts.some(url => /firebase|home-stars|settings\.js|knowledge-check/.test(url))).toBe(false);
+    expect(scripts.some(url => /firebase-(app|auth|database)-compat|home-stars|settings\.js|knowledge-check/.test(url))).toBe(false);
     expect(errors).toEqual([]);
 });
 test('formula rendering and image magnification preserve native scrolling', async ({ page }, info) => {

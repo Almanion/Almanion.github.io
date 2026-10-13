@@ -464,10 +464,39 @@
       }
     },
 
+    "watchPairRequests": {
+      "$code": {
+        ".read": "auth != null && (data.child('deviceUid').val() === auth.uid || (auth.token.firebase.sign_in_provider !== 'anonymous' && !data.child('consumedAt').exists() && data.child('createdAt').val() + 300000 > now))",
+        ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && ((!data.exists() && newData.exists() && newData.child('deviceUid').val() === auth.uid) || (!newData.exists() && data.child('deviceUid').val() === auth.uid))",
+        ".validate": "$code.matches(/^[0-9A-HJKMNP-TV-Z]{16}$/) && newData.hasChildren(['deviceUid', 'createdAt', 'name'])",
+        "deviceUid": { ".validate": "newData.isString() && ((!data.exists() && newData.val() === auth.uid) || newData.val() === data.val())" },
+        "createdAt": { ".validate": "newData.isNumber() && ((!data.exists() && newData.val() === now) || newData.val() === data.val())" },
+        "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60 && (!data.exists() || newData.val() === data.val())" },
+        "consumedAt": {
+          ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && !data.exists() && newData.exists() && data.parent().child('createdAt').val() + 300000 > now && newData.parent().parent().parent().child('watchDevices').child(data.parent().child('deviceUid').val()).child('ownerUid').val() === auth.uid && newData.parent().parent().parent().child('watchDevices').child(data.parent().child('deviceUid').val()).child('requestId').val() === $code",
+          ".validate": "newData.isNumber() && newData.val() === now && auth.token.firebase.sign_in_provider !== 'anonymous' && newData.parent().parent().parent().child('watchDevices').child(data.parent().child('deviceUid').val()).child('ownerUid').val() === auth.uid && newData.parent().parent().parent().child('watchDevices').child(data.parent().child('deviceUid').val()).child('requestId').val() === $code"
+        },
+        "$other": { ".validate": false }
+      }
+    },
+    "watchDevices": {
+      ".indexOn": ["ownerUid"],
+      ".read": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && query.orderByChild === 'ownerUid' && query.equalTo === auth.uid",
+      "$deviceUid": {
+        ".read": "auth != null && (auth.uid === $deviceUid || (auth.token.firebase.sign_in_provider !== 'anonymous' && data.child('ownerUid').val() === auth.uid))",
+        ".write": "auth != null && ((!newData.exists() && (auth.uid === $deviceUid || (auth.token.firebase.sign_in_provider !== 'anonymous' && data.child('ownerUid').val() === auth.uid))) || (!data.exists() && newData.exists() && auth.token.firebase.sign_in_provider !== 'anonymous' && newData.child('ownerUid').val() === auth.uid && root.child('watchPairRequests').child(newData.child('requestId').val()).child('deviceUid').val() === $deviceUid && root.child('watchPairRequests').child(newData.child('requestId').val()).child('createdAt').val() + 300000 > now && !root.child('watchPairRequests').child(newData.child('requestId').val()).child('consumedAt').exists()))",
+        ".validate": "newData.hasChildren(['ownerUid', 'requestId', 'createdAt', 'name']) && newData.parent().parent().child('watchPairRequests').child(newData.child('requestId').val()).child('consumedAt').val() === now",
+        "ownerUid": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "requestId": { ".validate": "newData.isString() && newData.val().matches(/^[0-9A-HJKMNP-TV-Z]{16}$/)" },
+        "createdAt": { ".validate": "newData.isNumber() && newData.val() === now" },
+        "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60" },
+        "$other": { ".validate": false }
+      }
+    },
     "bookmarks": {
       "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+        ".read": "auth != null && (auth.uid === $uid || (auth.token.firebase.sign_in_provider === 'anonymous' && root.child('watchDevices').child(auth.uid).child('ownerUid').val() === $uid))",
+        ".write": "auth != null && (auth.uid === $uid || (auth.token.firebase.sign_in_provider === 'anonymous' && root.child('watchDevices').child(auth.uid).child('ownerUid').val() === $uid))"
       }
     },
 

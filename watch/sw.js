@@ -1,11 +1,11 @@
 'use strict';
 const SHELL = 'almanion-watch-shell-__WATCH_VERSION__', READINGS = 'almanion-watch-readings';
-const assets = ['./', './watch.css?v=20261013-1', './watch.js?v=20261013-1', './catalogue.json', '../safe-html.js', '../data-sync.js'];
+const assets = ['./', './watch.css?v=20261013-1', './watch.js?v=20261013-1', './sync.js?v=20261013-1', './qr.js?v=20261013-1', './catalogue.json', '../safe-html.js', '../data-sync.js', '../firebase-config.js'];
 self.addEventListener('install', event => event.waitUntil(caches.open(SHELL).then(cache => cache.addAll(assets)).then(() => self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('almanion-watch-shell-') && key !== SHELL).map(key => caches.delete(key)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', event => {
     const request = event.request, url = new URL(request.url);
-    if (request.method !== 'GET' || url.origin !== self.location.origin || !/^\/(?:watch\/|vendor\/katex\/|images\/|content\/|safe-html\.js|data-sync\.js)/.test(url.pathname)) return;
+    if (request.method !== 'GET' || url.origin !== self.location.origin || !/^\/(?:watch\/|vendor\/katex\/|images\/|content\/|safe-html\.js|data-sync\.js|firebase-config\.js)/.test(url.pathname)) return;
     event.respondWith((async () => {
         const shell = await caches.open(SHELL), reading = await caches.open(READINGS);
         if (url.pathname.startsWith('/watch/data/')) { const saved = await reading.match(request); if (saved) return saved; }

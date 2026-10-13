@@ -404,7 +404,50 @@ function serverTimestamp() {
         await assertSucceeds(ownerDb.ref('webVitals').remove());
         await assertSucceeds(ownerDb.ref('pollResponses').remove());
 
-        console.log('firebase rules integration: all tests passed');
+        const pairCode='0123456789ABCDEF', expiredCode='0123456789ABCDEG';
+        const pairPath='watchPairRequests/'+pairCode, devicePath='watchDevices/'+anonUid;
+        await assertFails(anonDb.ref(pairPath).set({deviceUid:anonUid,name:'Watch',createdAt:serverTimestamp(),consumedAt:serverTimestamp()}));
+        await assertSucceeds(anonDb.ref(pairPath).set({deviceUid:anonUid,name:'Watch',createdAt:serverTimestamp()}));
+        await assertFails(anonDb.ref(pairPath).update({name:'Changed'}));
+        await assertFails(environment.unauthenticatedContext().database().ref(pairPath).once('value'));
+        await assertFails(environment.authenticatedContext(otherUid,auth(otherUid,'anonymous')).database().ref(pairPath).once('value'));
+        await assertSucceeds(accountDb.ref(pairPath).once('value'));
+        await assertFails(accountDb.ref('watchPairRequests').once('value'));
+        const approval={};
+        approval[devicePath]={ownerUid:accountUid,requestId:pairCode,createdAt:serverTimestamp(),name:'Samsung Watch'};
+        approval[pairPath+'/consumedAt']=serverTimestamp();
+        await assertFails(accountDb.ref(devicePath).set(approval[devicePath]));
+        await assertFails(accountDb.ref(pairPath+'/consumedAt').set(serverTimestamp()));
+        await assertFails(anonDb.ref().update(approval));
+        await assertSucceeds(accountDb.ref().update(approval));
+        await assertSucceeds(anonDb.ref(devicePath).once('value'));
+        await assertFails(ordinaryDb.ref(devicePath).once('value'));
+        await assertFails(ordinaryDb.ref(devicePath).remove());
+        await assertFails(anonDb.ref(devicePath+'/ownerUid').set(ordinaryUid));
+        await assertFails(accountDb.ref('watchDevices').once('value'));
+        await assertSucceeds(accountDb.ref('watchDevices').orderByChild('ownerUid').equalTo(accountUid).once('value'));
+        await assertFails(ordinaryDb.ref('watchDevices').orderByChild('ownerUid').equalTo(accountUid).once('value'));
+        await assertSucceeds(accountDb.ref('bookmarks/'+accountUid+'/watch-test').set({title:'A',updatedAt:Date.now()}));
+        await assertSucceeds(anonDb.ref('bookmarks/'+accountUid).once('value'));
+        await assertSucceeds(anonDb.ref('bookmarks/'+accountUid+'/watch-test').update({deleted:true,updatedAt:Date.now()}));
+        await assertFails(anonDb.ref('bookmarks/'+ordinaryUid).once('value'));
+        await assertFails(anonDb.ref('kc/'+accountUid).once('value'));
+        await assertFails(anonDb.ref('settings/'+accountUid).once('value'));
+        await assertFails(anonDb.ref('adminRoles/'+accountUid).once('value'));
+        await assertFails(anonDb.ref('gameProgress/'+accountUid).once('value'));
+        await assertSucceeds(accountDb.ref(devicePath).remove());
+        await assertFails(anonDb.ref('bookmarks/'+accountUid).once('value'));
+        await assertFails(anonDb.ref('bookmarks/'+accountUid+'/watch-test').set({title:'After revoke'}));
+        await assertFails(accountDb.ref().update(approval));
+        await environment.withSecurityRulesDisabled(async context=>{
+            await context.database().ref('watchPairRequests/'+expiredCode).set({deviceUid:otherUid,name:'Old',createdAt:Date.now()-310000});
+        });
+        const expiredApproval={};
+        expiredApproval['watchDevices/'+otherUid]={ownerUid:accountUid,requestId:expiredCode,createdAt:serverTimestamp(),name:'Old'};
+        expiredApproval['watchPairRequests/'+expiredCode+'/consumedAt']=serverTimestamp();
+        await assertFails(accountDb.ref().update(expiredApproval));
+        await assertFails(accountDb.ref('watchPairRequests/'+expiredCode).once('value'));
+        console.log('firebase rules integration: all tests passed, including scoped watch approval, expiry, atomic consumption, replay and revocation');
     } finally {
         await environment.cleanup();
     }

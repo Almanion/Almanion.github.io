@@ -4,7 +4,7 @@
     const back = document.getElementById('watchBack'), controls = document.querySelector('.watch-controls');
     const storageKey = 'almanion-watch-v1', requests = new Map();
     const TYPES = { definition:'Определение', theorem:'Теорема', lemma:'Лемма', statement:'Утверждение', formula:'Формула', corollary:'Следствие', properties:'Свойства', proof:'Доказательство', derivation:'Вывод', experiment:'Опыт', remark:'Замечание', example:'Пример', exercise:'Упражнение', reminder:'Напоминание', system:'Система', stress:'Ударение' };
-    let preferences = {}, catalogue, active, media = [], returnTo = '#home', savedScroll = null, generation = 0, mathPromise, reader, swipe;
+    let preferences = {}, catalogue, active, media = [], returnTo = '#home', savedScroll = null, generation = 0, mathPromise, qrPromise, reader, swipe, connectionClient, favoriteSignature = '';
     try { preferences = JSON.parse(localStorage.getItem(storageKey) || '{}') || {}; } catch (_) {}
     preferences.scale = Math.max(.8, Math.min(1.8, Number(preferences.scale) || 1));
     preferences.grade = [9,10,11].includes(preferences.grade) ? preferences.grade : 10;
@@ -137,6 +137,7 @@
     }
     function screen(title, reading) {
         reader?.observer?.disconnect(); reader?.loader?.disconnect(); reader = null; swipe = null;
+        document.body.dataset.pairing = 'false';
         heading.textContent = title; back.hidden = route()[0] === 'home'; controls.hidden = !reading; document.body.dataset.reading = String(!!reading); main.replaceChildren();
     }
     function home() {
@@ -150,6 +151,7 @@
         main.append(element('p', 'Дополнительно', 'watch-heading'));
         for (const item of catalogue.subjects.filter(item => item.extra)) main.append(link(item.title, '#topics/' + item.id));
         main.append(link('Дежурство 10-1', '#duty'));
+        main.append(link('Телефон', '#pair'));
         main.append(link('Настройки', '#settings'));
         const full = element('a', 'Обычная версия', 'watch-home-link'); full.href = '../index.html'; main.append(full);
     }
@@ -349,12 +351,62 @@
         for (const [theme, title] of [['dark','Тёмная'],['light','Светлая']]) button(title, () => { preferences.theme = theme; apply(); save(); for (const node of themes.children) node.classList.toggle('active', node.dataset.theme === theme); }, themes).dataset.theme = theme;
         for (const node of themes.children) node.classList.toggle('active', node.dataset.theme === preferences.theme);
         main.append(themes);
+        main.append(link(connectionClient?.status().linked ? 'Подключённый телефон' : 'Подключить телефон','#pair'));
         if (active) {
             main.append(link('Разделы', '#topics/' + active.data.id));
             const full = link('Обычный конспект', '../' + active.data.page + '#' + active.topic.id); main.append(full);
         }
         main.append(link('Главная', '#home'));
         if (returnTo.startsWith('#read/')) main.append(link('Читать', returnTo));
+    }
+    const syncLabels = {local:'Не подключено',checking:'Проверяем подключение…',waiting:'Подтверди на телефоне',synced:'Избранное синхронизировано',pending:'Ожидает синхронизации',offline:'Нет сети — сохранено на часах',revoked:'Телефон отключил эти часы',expired:'Код истёк',unavailable:'Подключение недоступно'};
+    function syncStatus() { return connectionClient ? syncLabels[connectionClient.status().state] || 'Подключено' : 'Подключение недоступно'; }
+    async function pairingView(token) {
+        screen('Телефон');
+        if (!connectionClient) { main.append(note('Подключение не загрузилось'),link('Главная','#home')); return; }
+        const status=connectionClient.status(), label=note(syncStatus()); label.id='watchSyncStatus'; main.append(label);
+        if (status.linked) {
+            main.classList.add('watch-connected');
+            button('Синхронизировать',()=>connectionClient.tick(),main).className='watch-link';
+            button('Отключить',async()=>{
+                try { await connectionClient.unlink(); render(); }
+                catch(error) { label.textContent=window.AlmanionWatchSync.message(error); }
+            },main).className='watch-link';
+            main.append(link('Избранное','#favorites')); return;
+        }
+        main.classList.remove('watch-connected');
+        if (status.code && status.expiresAt && status.state!=='expired' && status.state!=='unavailable') {
+            const box=element('div',undefined,'watch-pair-qr'); box.setAttribute('aria-label','QR-код для подключения телефона');
+            const code=element('div',undefined,'watch-pair-code');
+            for(const group of status.code.match(/.{4}/g)) code.append(element('span',group));
+            main.append(box,code,note('Код действует 5 минут'));
+            document.body.dataset.pairing='true';
+            try {
+                if (!window.qrcode) {
+                    if(!qrPromise) qrPromise=new Promise((resolve,reject)=>{
+                        const script=document.createElement('script'),version=new URL(document.querySelector('script[src^="sync.js"]').src).searchParams.get('v');script.src='qr.js'+(version ? '?v='+encodeURIComponent(version) : '');
+                        const timer=setTimeout(()=>{script.remove();reject(new Error('QR timeout'));},8000);
+                        script.onload=()=>{clearTimeout(timer);if(window.qrcode) resolve();else reject(new Error('QR unavailable'));};
+                        script.onerror=()=>{clearTimeout(timer);script.remove();reject(new Error('QR unavailable'));};document.head.append(script);
+                    }).catch(error=>{qrPromise=null;throw error;});
+                    await qrPromise;
+                }
+                if (generation!==token) return;
+                const qr=window.qrcode(0,'L');qr.addData(new URL('connect.html',location.href).href+'#'+status.code);qr.make();
+                box.innerHTML=qr.createSvgTag({cellSize:3,margin:12,scalable:true});
+                requestAnimationFrame(()=>{
+                    if(generation!==token) return;
+                    const rect=box.getBoundingClientRect();window.scrollTo({top:scrollY+rect.top-(innerHeight-rect.height)/2,behavior:'instant'});
+                });
+            } catch(_) { box.append(note('Введи код на телефоне: almanion.github.io/watch/connect.html')); }
+        }
+        const create=button(status.code ? 'Новый код' : 'Подключить телефон',async()=>{
+            create.disabled=true;
+            try { await connectionClient.begin();if(generation===token) render(); }
+            catch(error) { label.textContent=window.AlmanionWatchSync.message(error); }
+            finally { create.disabled=false; }
+        },main);create.className='watch-link';
+        main.append(link('Главная','#home'));
     }
     function mediaView(index) {
         const source = media[index]; if (!source) { go(returnTo, true); return; }
@@ -419,6 +471,7 @@
             }
             else if (view === 'read') await reading(id,topic,index,token);
             else if (view === 'settings') settingsView();
+            else if (view === 'pair') await pairingView(token);
             else if (view === 'duty') await dutyView(id, token);
             else if (view === 'media') { if (!media.length && preferences.last) { const last = preferences.last; returnTo = readHash(last.id,last.topic,last.index); await reading(last.id,last.topic,last.index,token); } if (token === generation) mediaView(Number(id)); }
             else go('#home',true);
@@ -474,5 +527,26 @@
     });
     if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js', { scope:'./' }).catch(() => {});
     window.AlmanionWatch = { getState:() => ({ scale:preferences.scale, grade:preferences.grade, reading:active && { id:active.data.id, topic:active.topic.id, index:active.index }, last:preferences.last }) };
+    if (window.AlmanionWatchSync && typeof firebaseConfig!=='undefined' && favoriteStore) {
+        try {
+        connectionClient=new window.AlmanionWatchSync.Client({config:firebaseConfig,storage:localStorage,fetch:window.fetch.bind(window),crypto:window.crypto,sync:window.AlmanionDataSync,guestStore:favoriteStore,visible:()=>!document.hidden,
+            onStore:store=>{rememberScroll();favoriteStore=store;if(catalogue) render();},
+            onChange:(records,detail)=>{
+                const signature=JSON.stringify(Object.entries(records).map(([id,value])=>[id,value.deleted,value.noteOnly,value.title,value.type]).sort());
+                const changed=signature!==favoriteSignature;favoriteSignature=signature;
+                if(changed && !['set','delete','ack'].includes(detail.type) && catalogue){rememberScroll();render();}
+            },
+            onStatus:status=>{
+                const label=document.getElementById('watchSyncStatus');if(label) label.textContent=syncLabels[status.state] || 'Подключено';
+                if(route()[0]==='pair' && status.linked && !main.classList.contains('watch-connected')) render();
+            }
+        });
+        connectionClient.start();
+        window.addEventListener('online',()=>connectionClient.schedule(0));
+        document.addEventListener('visibilitychange',()=>{if(!document.hidden) connectionClient.schedule(0);});
+        window.addEventListener('pagehide',()=>connectionClient.stop());
+        window.addEventListener('pageshow',()=>connectionClient.start());
+        } catch (_) { connectionClient=null; /* Local reading still works when browser storage is blocked. */ }
+    }
     render();
 })();

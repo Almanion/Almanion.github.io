@@ -398,6 +398,7 @@
                 '<p class="account-email">' + escapeHtml(email) + '</p>' +
                 '<div class="account-error" id="accError" hidden></div>' +
                 '<div class="account-editor-slot" id="accountEditorSlot"></div>' +
+                '<a class="auth-submit account-editor-link" href="/watch/connect.html">Мои часы</a>' +
                 '<button type="button" class="auth-submit account-signout" id="accSignout">Выйти</button>' +
             '</div>';
         ov.querySelector('#accClose').addEventListener('click', hideOverlay);

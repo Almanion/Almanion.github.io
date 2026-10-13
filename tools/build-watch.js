@@ -75,6 +75,7 @@ function extract(html, page) {
     }).filter(topic => topic.blocks.length);
 }
 function build({ root, site }) {
+    fs.copyFileSync(require.resolve('qrcode-generator'),path.join(site,'watch','qr.js'));
     const directory = path.join(site, 'watch', 'data'); fs.mkdirSync(directory, { recursive: true });
     const figures = path.join(site, 'watch', 'figures'); fs.mkdirSync(figures, { recursive: true });
     function preserveGraphics(block) {
@@ -136,10 +137,13 @@ function build({ root, site }) {
     const catalogue = JSON.stringify({ schemaVersion: 1, subjects, duty:{ path:'data/' + dutyFile, endpoint:new URL('classDuty/grade10_1/entries.json', database).href } });
     fs.writeFileSync(path.join(site, 'watch', 'catalogue.json'), catalogue + '\n');
     const worker = path.join(site, 'watch', 'sw.js');
-    const version = hash(catalogue + ['index.html', 'watch.js', 'watch.css'].map(file => fs.readFileSync(path.join(site, 'watch', file), 'utf8')).join(''));
+    const version = hash(catalogue + ['index.html', 'watch.js', 'watch.css', 'sync.js','qr.js','connect.html','connect.js','connect.css'].map(file => fs.readFileSync(path.join(site, 'watch', file), 'utf8')).join(''));
     const shell = path.join(site, 'watch', 'index.html');
-    fs.writeFileSync(shell, fs.readFileSync(shell, 'utf8').replace(/(watch\.(?:js|css)\?v=)[^"']+/g, '$1' + version));
-    fs.writeFileSync(worker, fs.readFileSync(worker, 'utf8').replace('__WATCH_VERSION__', version).replace(/(watch\.(?:js|css)\?v=)[^"']+/g, '$1' + version));
+    const versions=/((?:watch\.(?:js|css)|sync\.js|qr\.js|connect\.(?:js|css))\?v=)[^"']+/g;
+    fs.writeFileSync(shell, fs.readFileSync(shell, 'utf8').replace(versions, '$1' + version));
+    const connect=path.join(site,'watch','connect.html');
+    fs.writeFileSync(connect,fs.readFileSync(connect,'utf8').replace(versions,'$1'+version));
+    fs.writeFileSync(worker, fs.readFileSync(worker, 'utf8').replace('__WATCH_VERSION__', version).replace(versions, '$1' + version));
     return { subjects: subjects.length, topics: subjects.reduce((sum, subject) => sum + subject.topics, 0) };
 }
 module.exports = { build, extract, tree };

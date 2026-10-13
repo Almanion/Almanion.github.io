@@ -18,7 +18,7 @@ assert.equal(Watch.extract(fixture.replace('Заключение.', 'Друго�
 assert.equal(Watch.extract(fixture.replace('data-note-block="term"','data-kc-id="legacy-term"'),{}).at(0).blocks[0].id,'legacy-term','main-site and watch bookmarks use the same legacy knowledge-card IDs');
 const markup = fs.readFileSync(path.join(__dirname, '../watch/index.html'), 'utf8');
 assert.match(markup, /maximum-scale=5/);
-assert.doesNotMatch(markup, /user-scalable=no|firebase|home-stars|style-new/);
+assert.doesNotMatch(markup, /user-scalable=no|firebase-(app|auth|database)-compat|home-stars|style-new/);
 const worker = fs.readFileSync(path.join(__dirname, '../watch/sw.js'), 'utf8');
 assert.match(worker, /keys.length - 80/);
 assert.match(worker, /4500/);

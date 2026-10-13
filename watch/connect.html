@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <title>Подключённые часы · Almanion</title>
+    <script src="../theme-bootstrap.js"></script>
+    <link rel="icon" href="../favicons/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../styles/site/index.css">
+    <link rel="stylesheet" href="../styles/tokens.css">
+    <link rel="stylesheet" href="../styles/buttons.css">
+    <link rel="stylesheet" href="../style-new.css">
+    <link rel="stylesheet" href="connect.css?v=20261013-1">
+    <script defer src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
+    <script defer src="../firebase-config.js"></script>
+    <script defer src="../data-sync.js"></script>
+    <script defer src="../account.js"></script>
+    <script defer src="sync.js?v=20261013-1"></script>
+    <script defer src="connect.js?v=20261013-1"></script>
+</head>
+<body class="watch-connect-page">
+    <header class="watch-connect-header"><a href="../index.html">Конспекты</a><button id="phoneAccount" type="button">Войти</button></header>
+    <main class="watch-connect-main">
+        <h1>Подключённые часы</h1>
+        <section class="watch-connect-card" aria-labelledby="connectionHeading">
+            <h2 id="connectionHeading">Синхронизация избранного</h2>
+            <p>Добавления и удаления синхронизируются в обе стороны. Часы не получают доступ к другим разделам аккаунта.</p>
+            <form id="watchCodeForm"><label for="watchCode">Код с часов</label><div class="watch-code-row"><input id="watchCode" type="text" autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="XXXX XXXX XXXX XXXX" maxlength="24"><button type="submit">Проверить</button></div></form>
+            <p id="phoneStatus" role="status" aria-live="polite">Войди в аккаунт, чтобы подключить часы.</p>
+            <form id="approveWatch" hidden><label for="watchName">Название устройства</label><input id="watchName" type="text" maxlength="60" value="Часы" required><button type="submit" id="approveWatchButton">Подключить к моему аккаунту</button></form>
+        </section>
+        <section class="watch-connect-card" aria-labelledby="devicesHeading"><h2 id="devicesHeading">Устройства</h2><div id="watchDeviceList"><p>Нет подключённых часов</p></div></section>
+    </main>
+</body>
+</html>

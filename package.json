@@ -21,8 +21,11 @@
     "@firebase/rules-unit-testing": "^5.0.0",
     "@playwright/test": "^1.63.0",
     "firebase": "^12.3.0",
+    "jsqr": "1.4.0",
     "katex": "0.16.47",
     "mathjax": "3.2.2",
-    "pdfmake": "0.2.20"
+    "pdfmake": "0.2.20",
+    "pngjs": "7.0.0",
+    "qrcode-generator": "2.0.4"
   }
 }
