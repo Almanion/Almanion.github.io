@@ -82,8 +82,7 @@ evidence-v2/verification.json. Проверка влёта — flight-verificati
 
 Проверялась готовая локальная HTML-сборка. Физический школьный проектор
 не подключался; перед защитой желательно проверить размер окна и F11.
-Встроенный браузер приложения не разрешил автоматически обновить file://
-вкладку. Если в ней остался прежний вариант, обновите её вручную Ctrl+R.
+Если во вкладке остался прежний вариант, обновите её вручную Ctrl+R.
 "@
 Set-Content -LiteralPath (Join-Path $outDir 'Проверка.txt') -Value $reportText -Encoding UTF8
 $relativeFiles = @('Almanion.html','Заметки-выступающего.html','Запуск-и-управление.txt','Проверенные-источники.txt','Проверка.txt','Числовой-пример.json','manifest.json','cursor-codex-reference.png','cursor-codex-reference.svg','evidence-v2/cursor-reference-comparison.png','evidence-v2/cursor-verification.json','evidence-v2/verification.json')
