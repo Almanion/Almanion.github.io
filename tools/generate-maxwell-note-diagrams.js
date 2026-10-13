@@ -130,39 +130,53 @@ function sternRotation() {
 }
 
 
-function lammert(){let b=label(28,38,'Опыт Ламмерта','heading');
- // The vacuum chamber contains the oven, collimator, two disks and target.
- b+=rect(36,94,584,382,'#fbfdff','rx="16" stroke="#263747" stroke-width="3.2"');
- b+=rect(104,173,86,116,'#f7eee9','rx="8" stroke="#263747" stroke-width="2.5"')+rect(190,221,24,18,'#fff','stroke="#263747" stroke-width="2"');
- b+=rect(248,172,9,48,ink)+rect(248,240,9,51,ink);
- // Disks are perpendicular to the beam and share one rotation shaft.
- for(const dx of [349,434]){
-  b+=ellipse(dx,294,28,97,'#e5ebf2','stroke="#263747" stroke-width="2.3"');
-  b+=rect(dx-3,197,6,85,'#fff')+line(dx-3,197,dx-3,277,'leader')+line(dx+3,197,dx+3,277,'leader');
-  b+=ellipse(dx,294,7,12,'#fff','stroke="#263747" stroke-width="1.5"');
+function lammert(){
+ let b=sternStyles()+label(28,40,'Установка опыта Ламмерта','heading')
+  +label(28,78,'Пучок проходит прорези двух вращающихся дисков','stern-caption');
+ b+=rect(36,135,592,292,'#fbfdff','rx="16" stroke="#263747" stroke-width="3.2" id="lammert-chamber"');
+ b+=label(62,170,'вакуум','stern-caption');
+ // A heated source and a fixed diaphragm create a horizontal molecular beam.
+ b+=rect(104,204,86,110,'#f7eee9','rx="8" stroke="#263747" stroke-width="2.5"')
+  +rect(190,238,25,20,'#fff','stroke="#263747" stroke-width="2"');
+ b+=rect(119,287,55,10,'#8291a2','rx="4"')
+  +pth('M120 274q7-8 14 0t14 0t14 0','wall',`style="stroke:${orange};stroke-width:2"`);
+ b+=rect(248,202,9,36,ink)+rect(248,258,9,57,ink);
+ b+=line(215,248,337,248,'stern-beam','id="lammert-incoming-beam"');
+ // The continuation is a guide, not an atom passing a closed second slot.
+ b+=line(354,248,565,248,'stern-guide','id="lammert-flight-direction"');
+ const cy=305,rx=29,ry=100,alpha=.48;
+ for(const [dx,a]of[[348,0],[439,alpha]]){
+  b+=ellipse(dx,cy,rx,ry,'#e5ebf2',`stroke="${ink}" stroke-width="2.3" id="lammert-disk-${dx===348?4:5}"`);
+  const tip=[dx+rx*Math.sin(a),cy-ry*Math.cos(a)],inner=[dx+rx*.19*Math.sin(a),cy-ry*.19*Math.cos(a)];
+  b+=line(...inner,...tip,'wall',`style="stroke:#fff;stroke-width:7" id="lammert-slot-${dx===348?4:5}"`);
+  b+=ellipse(dx,cy,7,12,'#fff',`stroke="${ink}" stroke-width="1.5"`);
  }
- b+=line(325,294,654,294,'wall','stroke-width="5"');
- b+=rect(613,284,15,20,'#fff','stroke="#263747" stroke-width="2"');
- b+=rect(654,270,46,48,'#e5ebf2','rx="6" stroke="#263747" stroke-width="2.3"');
- b+=line(214,230,570,230,'beam');
- b+=rect(568,191,9,79,'#d6e9f4','stroke="#263747" stroke-width="2"')+rect(567,220,5,20,orange);
- b+=pth('M146 476 V524 H225 V544','wall');
- // A cold trap in the pumping line, outside the molecular beam path.
- b+=rect(178,600,137,60,'#e5f3fa');
- b+=pth('M216 540 V590 Q216 623 248 623 Q280 623 280 590 V543 H301 V608 Q301 644 248 644 Q195 644 195 608 V540','wall');
- b+=pth('M175 559 V663 H318 V559','wall');
- b+=pth('M301 550 H377 V612 H468','wall');
- b+=rect(468,574,113,78,'#e5ebf2','rx="8" stroke="#263747" stroke-width="2.3"');
- b+=circle(510,613,18,'#fff','stroke="#263747" stroke-width="2"');
- b+=number('1',86,76,139,94)+number('2',108,337,147,288)+number('3',234,142,251,174)+number('4',337,151,349,197)+number('5',435,151,434,197)+number('6',672,356,678,318)+number('7',131,598,181,610)+number('8',569,147,572,193)+number('9',609,612,581,612);
- b+=label(28,722,'Прорези дисков 4 и 5','heading');
- const ys=822;for(const dx of [220,489])b+=circle(dx,ys,64,'#e5ebf2','stroke="#263747" stroke-width="2.3"');
- b+=line(220,ys-15,220,ys-65,'wall','style="stroke:#fff;stroke-width:8"')+circle(220,ys,5,ink);
- const a=-Math.PI/2+.24,p=polar(489,ys,65,a);
- b+=line(...polar(489,ys,15,a),...p,'wall','style="stroke:#fff;stroke-width:8"')+circle(489,ys,5,ink);
- b+=line(489,ys,489,ys-76,'guide')+pth(arc(489,ys,40,-Math.PI/2,a),'wall');
- b+=label(520,780,'φ','math')+label(220,919,'4','math','text-anchor="middle"')+label(489,919,'5','math','text-anchor="middle"');
- return svg('Установка опыта Ламмерта','Толстостенный сосуд 1 содержит молекулярную печь 2, диафрагму 3, диски 4 и 5 с узкими прорезями и стеклянную мишень 8. Мотор 6 вращает диски на общем валу. Ловушка 7 находится в охлаждаемой части линии насоса 9. Внизу показан относительный поворот прорезей двух дисков.',952,b);
+ b+=line(329,305,654,305,'wall','style="stroke-width:4" id="lammert-common-shaft"');
+ b+=rect(620,295,16,20,'#fff',`stroke="${ink}" stroke-width="2"`)
+  +rect(654,280,46,50,'#e5ebf2',`rx="6" stroke="${ink}" stroke-width="2.3"`);
+ // The first slot is open to the beam; the second reaches it after rotating by alpha.
+ b+=line(345,248,351,248,'wall',`style="stroke:${teal};stroke-width:3"`);
+ b+=rect(567,217,10,62,'#d6e9f4',`stroke="${ink}" stroke-width="2"`)
+  +rect(566,238,5,20,orange,'rx="2"');
+ // Separation is measured between the disk planes, along the beam.
+ b+=line(348,183,439,183,'stern-dimension','id="lammert-separation"')
+  +line(348,192,348,205,'stern-guide')+line(439,192,439,205,'stern-guide')
+  +label(394,171,'ℓ','math stern-purple','text-anchor="middle"');
+ const x=439;
+ b+=line(x,cy,x,201,'stern-guide');
+ b+=pth(`M${x} ${cy-59} A${rx*.59} ${ry*.59} 0 0 1 ${fmt(x+rx*.59*Math.sin(alpha))} ${fmt(cy-ry*.59*Math.cos(alpha))}`,'wall',`style="stroke:${purple};stroke-width:2" id="lammert-slot-angle"`)
+  +label(468,268,'α','math stern-purple');
+ b+=pth('M465 245Q468 208 443 193','stern-turn')+label(478,216,'ω','math stern-blue');
+ b+=sternCallout('1',86,117,[[103,117],[131,117],[144,135]])
+  +sternCallout('2',108,348,[[125,348],[148,348],[148,313]])
+  +sternCallout('3',252,117,[[252,134],[252,202]])
+  +sternCallout('4',326,117,[[326,134],[339,154],[348,205]])
+  +sternCallout('5',438,117,[[438,134],[462,152],[452,216]])
+  +sternCallout('6',672,366,[[672,349],[677,330]])
+  +sternCallout('8',576,117,[[576,134],[584,171],[572,217]]);
+ b+=label(360,451,'Прорези дисков 4 и 5 смещены на угол α','stern-caption','text-anchor="middle"');
+ return svg('Установка опыта Ламмерта',
+  'В вакуумном сосуде 1 находятся молекулярная печь 2, диафрагма 3, диски 4 и 5 на общем валу и стеклянная мишень 8. Мотор 6 вращает диски. Расстояние между дисками — ℓ, угол смещения их прорезей — α. Молекула проходит диски последовательно: вторая прорезь должна повернуться к пучку за время пролёта. Нижняя линия откачки и отдельные нижние рисунки отсутствуют.',480,b);
 }
 
 // Reduced speed units: m0/(2k) = 1. Each Maxwell curve has unit area.

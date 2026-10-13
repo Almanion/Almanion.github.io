@@ -1,0 +1,60 @@
+#!/usr/bin/env node
+'use strict';
+const fs=require('node:fs'),path=require('node:path');
+function render(){return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 535" role="img" aria-labelledby="title desc">
+<title id="title">Установка опыта Гей-Люссака</title>
+<desc id="desc">Водяная баня 1 нагревает стеклянный баллон с газом 2. Горизонтальная трубка 3 соединена с баллоном и открыта справа. Подвижная капля ртути 4 отделяет газ от наружного воздуха. Два термометра 5 показаны, как на рисунке 3.9. При расширении газа капля перемещается вправо.</desc>
+<defs>
+ <clipPath id="bath-clip"><rect x="87" y="269" width="540" height="173"/></clipPath>
+ <marker id="motion-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="#087f80" stroke-width="1.8"/></marker>
+</defs>
+<style>
+ text{font-family:Arial,Helvetica,sans-serif;fill:#263747}.heading{font-size:26px;font-weight:600}.caption{font-size:22px;fill:#526a7e}.num{font-size:21px;fill:#176da3;text-anchor:middle}
+ .wall{fill:none;stroke:#263747;stroke-width:3;stroke-linejoin:round;stroke-linecap:round}.glass{fill:#fdf6dd;stroke:#68899f;stroke-width:2.6;stroke-linejoin:round}.leader{fill:none;stroke:#8291a2;stroke-width:1.5}.steam{fill:none;stroke:#b4c5d2;stroke-width:2;stroke-linecap:round}
+</style>
+<rect width="720" height="535" rx="12" fill="#fff"/>
+<text x="28" y="40" class="heading">Опыт Гей-Люссака</text>
+<text x="28" y="77" class="caption">Нагрев газа при постоянном давлении</text>
+<!-- Steam outlets reproduce the two openings in the supplied water-bath figure. -->
+<path d="M170 214V194H190V214M508 214V194H528V214" class="wall"/>
+<path d="M166 185C145 179 155 158 165 157C155 145 171 128 182 137C185 118 210 128 208 142C226 139 232 163 219 174C223 187 204 195 193 187M172 151Q185 140 197 151M180 173Q192 163 206 175M183 115Q199 103 215 119" class="steam"/>
+<path d="M504 185C483 179 493 158 503 157C493 145 509 128 520 137C523 118 548 128 546 142C564 139 570 163 557 174C561 187 542 195 531 187M510 151Q523 140 535 151M518 173Q530 163 544 175M521 115Q537 103 553 119" class="steam"/>
+<!-- Water surrounds the glass bulb; the bath wall has an opening for the tube. -->
+<rect x="87" y="269" width="540" height="173" fill="#e3f2fa"/>
+<g clip-path="url(#bath-clip)" fill="none" stroke="#bad8e9" stroke-width="1.5">
+ <path d="M70 297H650M70 323H650M70 349H650M70 403H650M70 429H650"/>
+ <path d="M86 274q16-9 32 0t32 0t32 0t32 0t32 0t32 0t32 0t32 0t32 0t32 0t32 0t32 0t32 0t32 0t32 0t32 0t32 0"/>
+</g>
+<path d="M84 354V214H630V353M630 391V445H84V391" class="wall"/>
+<path d="M84 225H348M370 225H630" class="wall"/>
+<!-- The two liquid thermometers follow the positions in the reference. -->
+<path d="M352 352V139Q352 126 360 126Q368 126 368 139V352A14 14 0 1 1 352 352Z" fill="#fff" stroke="#68899f" stroke-width="2.4"/>
+<path d="M360 140V362" fill="none" stroke="#b85032" stroke-width="4"/>
+<circle cx="360" cy="364" r="8" fill="#b85032"/>
+<path d="M354 164H359M354 190H359M354 216H359M354 242H359M354 268H359M354 294H359M354 320H359" stroke="#8291a2" stroke-width="1.4"/>
+<path d="M38 363H215A12 12 0 1 1 215 383H38Q27 383 27 373Q27 363 38 363Z" fill="#fff" stroke="#68899f" stroke-width="2.4"/>
+<path d="M38 373H221" fill="none" stroke="#b85032" stroke-width="4"/>
+<circle cx="226" cy="373" r="6" fill="#b85032"/>
+<path d="M51 365V370M75 365V370M99 365V370M123 365V370M147 365V370M171 365V370M195 365V370" stroke="#8291a2" stroke-width="1.4"/>
+<!-- The bulb and capillary are one connected gas space, with no wall across the neck. -->
+<path d="M695 361H508A30 30 0 1 0 508 383H695" fill="#fff"/>
+<path id="gay-gas-space" d="M604 361H508A30 30 0 1 0 508 383H604Z" fill="#fdf6dd"/>
+<path id="gay-bulb-and-capillary" d="M695 361H508A30 30 0 1 0 508 383H695" class="glass" style="fill:none"/>
+<rect x="621" y="351" width="18" height="9" rx="2" fill="#526a7e"/>
+<rect x="621" y="384" width="18" height="9" rx="2" fill="#526a7e"/>
+<rect id="gay-mercury-drop" x="604" y="362" width="12" height="20" rx="5" fill="#526a7e"/>
+<path d="M607 365V378" stroke="#dce6ed" stroke-width="2"/>
+<path d="M599 343H638" fill="none" stroke="#087f80" stroke-width="2" marker-end="url(#motion-arrow)"/>
+<text x="484" y="379" font-size="20" text-anchor="middle">газ</text>
+<text x="696" y="414" class="caption" text-anchor="end">открытый конец</text>
+<path d="M687 396L695 383" class="leader"/>
+<!-- Numbered leaders sit away from the gas passage and thermometer scales. -->
+<path d="M103 488H134L157 444" class="leader"/><circle cx="86" cy="488" r="17" fill="#fff" stroke="#176da3" stroke-width="1.5"/><text x="86" y="495" class="num">1</text>
+<path d="M428 488H452L472 402" class="leader"/><circle cx="411" cy="488" r="17" fill="#fff" stroke="#176da3" stroke-width="1.5"/><text x="411" y="495" class="num">2</text>
+<path d="M662 307V332L665 360" class="leader"/><circle cx="662" cy="290" r="17" fill="#fff" stroke="#176da3" stroke-width="1.5"/><text x="662" y="297" class="num">3</text>
+<path d="M643 488H608V383" class="leader"/><circle cx="660" cy="488" r="17" fill="#fff" stroke="#176da3" stroke-width="1.5"/><text x="660" y="495" class="num">4</text>
+<path d="M360 117V126" class="leader"/><circle cx="360" cy="100" r="17" fill="#fff" stroke="#176da3" stroke-width="1.5"/><text x="360" y="107" class="num">5</text>
+<path d="M42 335L80 362" class="leader"/><circle cx="29" cy="322" r="17" fill="#fff" stroke="#176da3" stroke-width="1.5"/><text x="29" y="329" class="num">5</text>
+</svg>\n`;}
+if(require.main===module){fs.writeFileSync(path.join(__dirname,'../images/notes/physics-10/gay-lussac-apparatus.svg'),render());console.log('Generated Gay-Lussac apparatus.');}
+module.exports={render};
