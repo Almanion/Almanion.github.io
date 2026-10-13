@@ -125,5 +125,88 @@ test('installed watch shell, visited text, formulas and images work after going 
         await expect(page.locator('.watch-card .katex')).not.toHaveCount(0);
         await page.getByRole('button',{name:'Увеличить рисунок',exact:true}).tap();
         await expect.poll(() => page.locator('.watch-media img').evaluate(img => img.naturalWidth)).toBeGreaterThan(0);
+        await page.getByRole('link',{name:'Вернуться',exact:true}).tap();
+        await page.getByRole('button',{name:'Добавить в избранное',exact:true}).tap();
+        await page.locator('#watchTools').tap();
+        await page.getByRole('button',{name:'Избранные',exact:true}).tap();
+        await page.getByRole('link',{name:'Читать',exact:true}).tap();
+        await expect(page.locator('.watch-counter')).toHaveText('1 / 1');
+        await page.reload();
+        await expect(page.getByRole('button',{name:'Убрать из избранного',exact:true})).toHaveAttribute('aria-pressed','true');
+        await expect(page.locator('.watch-counter')).toHaveText('1 / 1');
     } finally { await context.close(); }
+});
+
+async function favoritesFixture(page) {
+    await page.route('**/watch/catalogue.json',route => route.fulfill({json:{schemaVersion:1,subjects:[{id:'physics-10',title:'Физика',page:'physics-10.html',path:'data/meta.json',grades:[10]}]}}));
+    await page.route('**/watch/data/meta.json',route => route.fulfill({json:{schemaVersion:1,id:'physics-10',title:'Физика',page:'physics-10.html',topics:[
+        {id:'one',title:'Первый раздел',count:3,ids:['a','b','c'],parts:[{path:'data/one.json',count:3}]},
+        {id:'two',title:'Второй раздел',count:2,ids:['d','e'],parts:[{path:'data/two.json',count:2}]}
+    ]}}));
+    await page.route('**/watch/data/one.json',route => route.fulfill({json:{schemaVersion:1,blocks:['a','b','c'].map(id => ({id,type:'definition',html:'<div class="definition-box"><strong>Термин ' + id + '</strong> — текст.</div>'}))}}));
+    await page.route('**/watch/data/two.json',route => route.fulfill({json:{schemaVersion:1,blocks:['d','e'].map(id => ({id,type:'formula',html:'Формула ' + id}))}}));
+}
+
+test('watch favorites filter skips unsaved blocks and sections, persists and recovers after deleting the last favorite',async ({page},info) => {
+    await page.setViewportSize({width:204,height:204});
+    await favoritesFixture(page);
+    await page.goto('/watch/#read/physics-10/one/0');
+    await page.getByRole('button',{name:'Добавить в избранное',exact:true}).tap();
+    await expect(page.getByRole('button',{name:'Убрать из избранного',exact:true})).toHaveAttribute('aria-pressed','true');
+    await page.locator('#watchNext').tap();
+    await expect(page.locator('.watch-card')).toContainText('Термин b');
+    await page.goto('/watch/#read/physics-10/two/1');
+    await page.getByRole('button',{name:'Добавить в избранное',exact:true}).tap();
+    await page.locator('#watchTools').tap();
+    await page.getByRole('button',{name:'Избранные',exact:true}).tap();
+    await page.getByRole('link',{name:'Читать',exact:true}).tap();
+    await expect(page.locator('.watch-counter')).toHaveText('2 / 2');
+    await expect(page.locator('#watchNext')).toBeDisabled();
+    await page.locator('#watchPrev').tap();
+    await expect(page.locator('.watch-card')).toContainText('Термин a');
+    await expect(page.locator('.watch-counter')).toHaveText('1 / 2');
+    await expect(page.locator('#watchPrev')).toBeDisabled();
+    await page.screenshot({path:info.outputPath('watch-favorites-204.png'),fullPage:true});
+    expect(await page.evaluate(() => document.documentElement.scrollWidth-innerWidth)).toBeLessThan(2);
+    await page.reload();
+    await expect(page.locator('.watch-counter')).toHaveText('1 / 2');
+    await page.getByRole('button',{name:'Убрать из избранного',exact:true}).tap();
+    await expect(page.locator('.watch-card')).toContainText('Формула e');
+    await expect(page.locator('.watch-counter')).toHaveText('1 / 1');
+    await page.getByRole('button',{name:'Убрать из избранного',exact:true}).tap();
+    await expect(page.locator('#watchMain')).toContainText('Избранных блоков пока нет');
+    await expect(page.locator('.watch-controls')).toBeHidden();
+    await page.getByRole('button',{name:'Показывать все',exact:true}).tap();
+    await expect(page.locator('.watch-card')).toContainText('Формула e');
+    const records = await page.evaluate(() => JSON.parse(localStorage.getItem('almanion_bookmarks_guest')).records);
+    expect(records['physics-10__b__a'].deleted).toBe(true);
+    expect(records['physics-10__b__e'].deleted).toBe(true);
+});
+
+test('watch shares guest bookmarks but does not expose account, deleted or note-only records',async ({page}) => {
+    await favoritesFixture(page);
+    await page.addInitScript(() => {
+        localStorage.setItem('almanion_bookmarks_guest',JSON.stringify({schema:1,namespace:'bookmarks',owner:'guest',records:{
+            'physics-10__b__b':{blockKey:'b',page:'/physics-10.html',topicId:'one',noteText:'Личная заметка',updatedAt:1},
+            'physics-10__b__a':{deleted:true,updatedAt:1},
+            'physics-10__b__c':{noteOnly:true,updatedAt:1}
+        }}));
+        localStorage.setItem('almanion_bookmarks_uid_other',JSON.stringify({'physics-10__b__e':{page:'/physics-10.html',updatedAt:1}}));
+    });
+    await page.goto('/watch/#favorites');
+    await expect(page.getByRole('link',{name:'Физика 1',exact:true})).toBeVisible();
+    await page.getByRole('link',{name:'Физика 1',exact:true}).tap();
+    await expect(page.getByRole('button',{name:'Избранные',exact:true})).toHaveAttribute('aria-pressed','true');
+    await expect(page.getByRole('link',{name:'Второй раздел',exact:true})).toHaveCount(0);
+    await page.getByRole('link',{name:'Первый раздел',exact:true}).tap();
+    await expect(page.locator('.watch-card')).toContainText('Термин b');
+    await expect(page.locator('.watch-counter')).toHaveText('1 / 1');
+    await page.getByRole('button',{name:'Убрать из избранного',exact:true}).tap();
+    const record = await page.evaluate(() => JSON.parse(localStorage.getItem('almanion_bookmarks_guest')).records['physics-10__b__b']);
+    expect(record.noteText).toBe('Личная заметка'); expect(record.noteOnly).toBe(true);
+    await page.getByRole('button',{name:'Показывать все',exact:true}).tap();
+    await expect(page.locator('.watch-card')).toContainText('Термин b');
+    await page.locator('#watchTools').tap();
+    await page.getByRole('link',{name:'Разделы',exact:true}).tap();
+    await expect(page.getByRole('link',{name:'Второй раздел',exact:true})).toBeVisible();
 });

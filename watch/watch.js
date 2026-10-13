@@ -9,9 +9,52 @@
     preferences.scale = Math.max(.8, Math.min(1.8, Number(preferences.scale) || 1));
     preferences.grade = [9,10,11].includes(preferences.grade) ? preferences.grade : 10;
     preferences.theme = preferences.theme === 'light' ? 'light' : 'dark';
+    preferences.favoritesOnly = preferences.favoritesOnly === true;
     function save() { try { localStorage.setItem(storageKey, JSON.stringify(preferences)); } catch (_) {} }
     function apply() { document.documentElement.dataset.theme = preferences.theme; document.documentElement.style.setProperty('--size', preferences.scale); document.querySelector('meta[name="theme-color"]').content = preferences.theme === 'light' ? '#fbfbfe' : '#000000'; }
     apply();
+    let favoriteStore;
+    try {
+        const key = 'almanion_bookmarks_guest';
+        if (!localStorage.getItem(key) && localStorage.getItem('almanion_bookmarks')) localStorage.setItem(key, localStorage.getItem('almanion_bookmarks'));
+    } catch (_) {}
+    if (window.AlmanionDataSync) favoriteStore = window.AlmanionDataSync.createCollection({namespace:'bookmarks',owner:'guest',storageKey:'almanion_bookmarks_guest'});
+    function favorites() { favoriteStore?.refreshFromStorage(); return favoriteStore?.snapshot() || {}; }
+    const favoriteKey = (id, block) => id + '__b__' + encodeURIComponent(block);
+    function isFavorite(id, block, records) { const entry = (records || favorites())[favoriteKey(id,block)]; return !!entry && !entry.deleted && !entry.noteOnly; }
+    function favoritePositions(data) {
+        const records = favorites(), seen = new Set(), positions = [];
+        for (const topic of data.topics) for (const [index,id] of (topic.ids || []).entries()) {
+            if (isFavorite(data.id,id,records) && !seen.has(id)) { seen.add(id); positions.push({topic,index}); }
+        }
+        return positions;
+    }
+    function filterButtons(parent, changed) {
+        const row = element('div', undefined, 'watch-grid watch-filter');
+        for (const [only,title] of [[false,'Все'],[true,'Избранные']]) {
+            const control = button(title, () => { preferences.favoritesOnly = only; save(); update(); changed(); },row);
+            control.dataset.only = String(only);
+        }
+        function update() { for (const control of row.children) { const selected = control.dataset.only === String(preferences.favoritesOnly); control.classList.toggle('active',selected); control.setAttribute('aria-pressed',String(selected)); } }
+        update(); parent.append(row); return row;
+    }
+    function favoriteButton(parent) {
+        if (!active) return;
+        const {data,topic,block} = active, key = favoriteKey(data.id,block.id);
+        const control = button(isFavorite(data.id,block.id) ? '★ В избранном' : '☆ В избранное', () => {
+            if (!favoriteStore) return;
+            const existing = favorites()[key];
+            if (isFavorite(data.id,block.id)) {
+                if (existing.noteText) favoriteStore.set(key,{...existing,noteOnly:true}); else favoriteStore.remove(key,existing);
+            } else {
+                const template = document.createElement('template'); template.innerHTML = block.html;
+                const text = template.content.textContent.replace(/\s+/g,' ').trim();
+                favoriteStore.set(key,{...existing,deleted:false,noteOnly:false,page:'/' + data.page,pageTitle:data.title,topicId:topic.id,topicTitle:topic.title,blockKey:block.id,type:block.type,title:template.content.querySelector('strong,b')?.textContent.trim().slice(0,140) || text.slice(0,140),preview:text.slice(0,320),timestamp:existing?.timestamp || Date.now()});
+            }
+            render();
+        },parent,isFavorite(data.id,block.id) ? 'Убрать из избранного' : 'Добавить в избранное');
+        control.className = 'watch-favorite'; control.setAttribute('aria-pressed',String(isFavorite(data.id,block.id))); control.disabled = !favoriteStore;
+    }
     function element(tag, text, className) { const node = document.createElement(tag); if (text !== undefined) node.textContent = text; if (className) node.className = className; return node; }
     function link(text, href, detail) { const node = element('a', undefined, 'watch-link'); node.href = href; node.append(element('span', text)); if (detail) node.append(element('small', detail)); return node; }
     function button(text, action, parent, label) { const node = element('button', text); node.type = 'button'; if (label) node.setAttribute('aria-label', label); node.addEventListener('click', action); parent.append(node); return node; }
@@ -90,6 +133,7 @@
         const grade = button(preferences.grade + ' класс', () => go('#grades'), main); grade.className = 'watch-grade';
         const last = preferences.last;
         if (last && catalogue.subjects.some(item => item.id === last.id)) main.append(link('Продолжить', readHash(last.id, last.topic, last.index), last.title));
+        main.append(link('Избранное','#favorites'));
         const order = ['physics-10','physics','math','geometry','chemistry','russian-ege','chemistry-10','literature-10'];
         for (const item of catalogue.subjects.filter(item => !item.extra && item.grades.includes(preferences.grade)).sort((a,b) => order.indexOf(a.id) - order.indexOf(b.id))) main.append(link(item.title.replace(/\s*[·|]\s*.*/, ''), '#topics/' + item.id));
         main.append(element('p', 'Дополнительно', 'watch-heading'));
@@ -102,20 +146,34 @@
     function topicList(data) {
         screen(data.title.replace(/\s*[·|]\s*.*/, ''));
         const input = element('input', undefined, 'watch-search'); input.type = 'search'; input.placeholder = 'Раздел или термин'; input.setAttribute('aria-label', 'Поиск раздела или термина');
-        const list = element('div'); main.append(input, list);
+        const list = element('div'); main.append(input); filterButtons(main,show); main.append(list);
         function show() {
             const q = input.value.trim().toLocaleLowerCase().replace(/ё/g,'е'); let count = 0, group = '';
+            const records = favorites();
             list.replaceChildren();
             for (const topic of data.topics) {
                 const matches = value => value.toLocaleLowerCase().replace(/ё/g,'е').includes(q);
-                const hit = q && topic.terms?.find(item => matches(item.term));
+                const indexes = (topic.ids || []).flatMap((id,index) => isFavorite(data.id,id,records) ? [index] : []);
+                if (preferences.favoritesOnly && !indexes.length) continue;
+                const hit = q && topic.terms?.find(item => matches(item.term) && (!preferences.favoritesOnly || indexes.includes(item.index)));
                 if (q && !matches(topic.title + ' ' + topic.group) && !hit) continue;
                 if (topic.group && group !== topic.group) { group = topic.group; list.append(element('p', group, 'watch-heading')); }
-                list.append(link(topic.title, readHash(data.id, topic.id, hit ? hit.index : 0), hit ? hit.term : undefined)); count++;
+                list.append(link(topic.title, readHash(data.id, topic.id, hit ? hit.index : preferences.favoritesOnly ? indexes[0] : 0), hit ? hit.term : undefined)); count++;
             }
-            if (!count) list.append(note('Не найдено'));
+            if (!count) list.append(note(q ? 'Не найдено' : preferences.favoritesOnly ? 'Избранных блоков пока нет' : 'Не найдено'));
         }
         input.addEventListener('input', show); show();
+    }
+    function favoritesView() {
+        screen('Избранное');
+        const records = favorites(); let count = 0;
+        for (const item of catalogue.subjects) {
+            const entries = Object.entries(records).filter(([key,entry]) => key.startsWith(item.id + '__b__') && !entry.noteOnly);
+            if (!entries.length) continue;
+            const node = link(item.title,'#topics/' + item.id,String(entries.length));
+            node.addEventListener('click', () => { preferences.favoritesOnly = true; save(); }); main.append(node); count++;
+        }
+        if (!count) { main.append(note('Избранных блоков пока нет')); main.append(link('Открыть конспекты','#home')); }
     }
     function labelTypes(card) {
         for (const [type, label] of Object.entries(TYPES)) for (const node of card.querySelectorAll('.' + type + '-box')) node.dataset.watchType = label;
@@ -141,6 +199,10 @@
     }
     function step(direction) {
         if (!active) return;
+        if (preferences.favoritesOnly) {
+            const positions = favoritePositions(active.data), position = positions.findIndex(item => item.topic === active.topic && item.index === active.index), next = positions[position + direction];
+            if (next) go(readHash(active.data.id,next.topic.id,next.index),true); return;
+        }
         const { data, topic, index } = active, position = data.topics.indexOf(topic), next = index + direction;
         if (next >= 0 && next < topic.count) go(readHash(data.id, topic.id, next), true);
         else { const target = data.topics[position + direction]; if (target) go(readHash(data.id, target.id, direction > 0 ? 0 : target.count - 1), true); }
@@ -148,13 +210,23 @@
     function rememberScroll() { savedScroll = scrollY / Math.max(1,document.documentElement.scrollHeight - innerHeight); }
     function openTools() { returnTo = location.hash; rememberScroll(); go('#settings'); }
     async function reading(id, topicId, rawIndex, token, asMedia) {
-        const data = await subject(id), topic = data.topics.find(item => item.id === topicId) || data.topics[0];
+        const data = await subject(id); let topic = data.topics.find(item => item.id === topicId) || data.topics[0];
         let index = Math.min(topic.count - 1, Math.max(0, parseInt(rawIndex,10) || 0));
+        if (preferences.favoritesOnly) {
+            const positions = favoritePositions(data);
+            if (!positions.length) {
+                if (token !== generation) return;
+                active = null; media = []; screen('Избранное'); main.append(note('Избранных блоков пока нет'));
+                button('Показывать все', () => { preferences.favoritesOnly = false; save(); render(); },main).className = 'watch-link'; return;
+            }
+            const selected = positions.find(item => item.topic === topic && item.index === index) || positions.find(item => item.topic.ids[item.index] === topic.ids?.[index]) || positions.find(item => item.topic === topic && item.index >= index) || positions.find(item => data.topics.indexOf(item.topic) > data.topics.indexOf(topic)) || positions[0];
+            topic = selected.topic; index = selected.index;
+        }
         let block = await blockAt(data, topic, index);
         // A new publication may insert blocks. Restore a canonical block ID
         // rather than silently pointing at a different card with the same index.
         const last = preferences.last;
-        if (last?.id === id && last.topic === topic.id && last.index === index && last.block !== block.id) {
+        if (!preferences.favoritesOnly && last?.id === id && last.topic === topic.id && last.index === index && last.block !== block.id) {
             for (let i = 0; i < topic.count; i++) { const candidate = await blockAt(data, topic, i); if (candidate.id === last.block) { index = i; block = candidate; break; } }
         }
         if (token !== generation) return;
@@ -181,13 +253,22 @@
             const wrapper = node.closest('.watch-scroll'); if (wrapper) wrapper.after(enlarge); else node.after(enlarge);
         });
         preferences.last = { id, topic:topic.id, index, block:block.id, title:topic.title }; save();
+        favoriteButton(main);
         const position = data.topics.indexOf(topic);
         document.getElementById('watchPrev').disabled = !index && !position;
         document.getElementById('watchNext').disabled = index === topic.count - 1 && position === data.topics.length - 1;
+        if (preferences.favoritesOnly) {
+            const positions = favoritePositions(data), current = positions.findIndex(item => item.topic === topic && item.index === index);
+            document.getElementById('watchPrev').disabled = current <= 0;
+            document.getElementById('watchNext').disabled = current === positions.length - 1;
+            main.querySelector('.watch-counter').textContent = (current + 1) + ' / ' + positions.length;
+        }
         if (asMedia) mediaView(asMedia);
     }
     function settingsView() {
         screen('Настройки');
+        filterButtons(main, () => {});
+        favoriteButton(main);
         const value = element('p', Math.round(preferences.scale * 100) + '%', 'watch-status'), row = element('div', undefined, 'watch-grid');
         function scale(change) { preferences.scale = Math.round(Math.max(.8, Math.min(1.8, preferences.scale + change)) * 100) / 100; apply(); save(); value.textContent = Math.round(preferences.scale * 100) + '%'; minus.disabled = preferences.scale <= .8; plus.disabled = preferences.scale >= 1.8; }
         const minus = button('−', () => scale(-.1), row, 'Уменьшить текст'); button('100%', () => { preferences.scale = 1; scale(0); }, row, 'Обычный размер'); const plus = button('+', () => scale(.1), row, 'Увеличить текст');
@@ -256,6 +337,7 @@
             if (token !== generation) return;
             if (view === 'home') home();
             else if (view === 'grades') grades();
+            else if (view === 'favorites') favoritesView();
             else if (view === 'topics') { const data = await subject(id); if (token !== generation) return; topicList(data); }
             else if (view === 'read') await reading(id,topic,index,token);
             else if (view === 'settings') settingsView();
@@ -278,7 +360,10 @@
     document.getElementById('watchTools').addEventListener('click', openTools);
     document.addEventListener('keydown', event => { if (route()[0] !== 'read' || event.target.closest('input,button,a') || event.ctrlKey || event.altKey || event.metaKey) return; if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { event.preventDefault(); step(event.key === 'ArrowRight' ? 1 : -1); } });
     window.addEventListener('hashchange', render);
-    window.addEventListener('storage', event => { if (event.key === storageKey) { try { preferences = JSON.parse(event.newValue) || preferences; apply(); } catch (_) {} } });
+    window.addEventListener('storage', event => {
+        if (event.key === storageKey) { try { preferences = JSON.parse(event.newValue) || preferences; apply(); } catch (_) {} }
+        if (event.key === 'almanion_bookmarks_guest' || event.key?.startsWith('almanion_data_sync_pending_v1:bookmarks|guest|')) render();
+    });
     if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js', { scope:'./' }).catch(() => {});
     window.AlmanionWatch = { getState:() => ({ scale:preferences.scale, grade:preferences.grade, reading:active && { id:active.data.id, topic:active.topic.id, index:active.index }, last:preferences.last }) };
     render();

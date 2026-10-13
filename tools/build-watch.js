@@ -23,7 +23,7 @@ function tree(html) {
         }
         const parent = stack[stack.length - 1];
         const node = { tag, parent, children: [], start: match.index, inner: tags.lastIndex, end: tags.lastIndex,
-            id: attr(raw, 'id'), blockId: attr(raw, 'data-note-block'), classes: new Set(attr(raw, 'class').split(/\s+/)) };
+            id: attr(raw, 'id'), blockId: attr(raw, 'data-note-block') || attr(raw, 'data-kc-id'), classes: new Set(attr(raw, 'class').split(/\s+/)) };
         parent.children.push(node);
         if (tag === 'script' || tag === 'style') {
             const closing = new RegExp('</' + tag + '\\s*>', 'ig'); closing.lastIndex = tags.lastIndex;
@@ -119,7 +119,7 @@ function build({ root, site }) {
                 const term = strong ? readable(strong[1]) : '';
                 return term && term.length <= 120 ? [{ term, index }] : [];
             });
-            summary.push({ id: topic.id, title: topic.title, group: topic.group, count: topic.blocks.length, parts, terms });
+            summary.push({ id: topic.id, title: topic.title, group: topic.group, count: topic.blocks.length, ids:topic.blocks.map(block => block.id), parts, terms });
         }
         const content = JSON.stringify({ schemaVersion: 1, id, page: page.path, title: page.label, topics: summary });
         const file = id + '-' + hash(content) + '.json'; fs.writeFileSync(path.join(directory, file), content + '\n');

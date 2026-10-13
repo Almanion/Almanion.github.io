@@ -15,6 +15,7 @@ assert.equal(topics[0].blocks[0].type, 'definition');
 assert.ok(topics[0].blocks[0].html.includes('formula-box'), 'nested blocks stay in their parent');
 assert.ok(topics[0].blocks[1].html.includes('images/diagram.svg'), 'proof images and content survive extraction');
 assert.equal(Watch.extract(fixture.replace('Заключение.', 'Другое заключение.'), {}).at(0).blocks[0].id, 'term');
+assert.equal(Watch.extract(fixture.replace('data-note-block="term"','data-kc-id="legacy-term"'),{}).at(0).blocks[0].id,'legacy-term','main-site and watch bookmarks use the same legacy knowledge-card IDs');
 const markup = fs.readFileSync(path.join(__dirname, '../watch/index.html'), 'utf8');
 assert.match(markup, /maximum-scale=5/);
 assert.doesNotMatch(markup, /user-scalable=no|firebase|home-stars|style-new/);
@@ -32,6 +33,7 @@ if (site) {
         const data = JSON.parse(fs.readFileSync(path.join(site, 'watch', subject.path)));
         assert.ok(data.topics.length > 0);
         for (const topic of data.topics) {
+            assert.equal(topic.ids.length,topic.count,'favorite filtering resolves stable IDs without loading all block HTML');
             assert.equal(topic.parts.reduce((sum, part) => sum + part.count, 0), topic.count);
             for (const part of topic.parts) {
                 assert.match(part.path, /^data\/[a-f0-9]+\.json$/);
