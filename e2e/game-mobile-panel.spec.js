@@ -33,7 +33,7 @@ for(const [width,height]of [[320,568],[390,844],[844,390]])test('compact cockpit
   await page.locator('.mobile-options').tap();await page.setViewportSize({width:height,height:width});await expect(page.locator('#angleInput')).toBeVisible();expect(await page.locator('#angleInput').count()).toBe(1);
   await page.locator('#angleInput').fill('-18,4');await page.locator('#flightDrawer .sheet-footer button').tap();expect(await page.evaluate(()=>Orbital.App.angle)).toBe(-18.4);
   await page.setViewportSize({width,height});await page.locator('#mobileLaunch').tap();await page.locator('.mobile-options').tap();expect(await page.evaluate(()=>Orbital.App.paused)).toBe(true);
-  await expect(page.locator('#sheetFine')).toBeDisabled();await page.locator('#flightDrawer .sheet-footer button').tap();expect(await page.evaluate(()=>Orbital.App.paused)).toBe(false);
+  await expect(page.locator('#coursePane')).not.toBeVisible();await expect(page.locator('#liveVelocity')).toBeVisible();await expect(page.locator('#fineAimButton')).toBeDisabled();await page.locator('#flightDrawer .sheet-footer button').tap();expect(await page.evaluate(()=>Orbital.App.paused)).toBe(false);
   expect(errors).toEqual([]);
  }finally{await context.close();}
 });

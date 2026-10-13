@@ -78,9 +78,9 @@ with sync_playwright() as pw:
  assert p.locator('#courseSlots').count()==1
  record('Native route/courses sheet traps focus, Escape restores focus, branching is visual-only and controls are not duplicated')
  # Course slots / intentional replay values.
- p.evaluate('Orbital.App.setAim(-15.2,123)');p.locator('#navMore summary').click();p.locator('[data-action=store-course][data-slot="0"]').click();p.evaluate('Orbital.App.setAim(20,140)');p.locator('[data-action=recall-course][data-slot="0"]').click();assert aim(p)=={'angle':-15.2,'speed':123}
+ p.evaluate('Orbital.App.setAim(-15.2,123)');p.locator('#memoryTab').click();p.locator('[data-action=store-course][data-slot="0"]').click();p.evaluate('Orbital.App.setAim(20,140)');p.locator('[data-action=recall-course][data-slot="0"]').click();assert aim(p)=={'angle':-15.2,'speed':123}
  # Full-size button remains fixed when details expand/scroll.
- clickable(p,'#launchButton');p.locator('#navMore summary').click()
+ clickable(p,'#launchButton');p.locator('#courseTab').click()
  record('A/B values round-trip; primary action remains reachable outside expanded panel scroller')
  # Pausing / immediate retry / blur.
  play(p);p.evaluate('Orbital.App.setAim(Orbital.LEVELS[68].solution.angle,Orbital.LEVELS[68].solution.speed)');p.locator('#launchButton').click();p.wait_for_timeout(80);assert p.evaluate("Orbital.App.state.status==='flying'")
@@ -142,7 +142,7 @@ with sync_playwright() as pw:
  record('13 phone/tablet/desktop sizes: map, next step, inputs and launch fit; click targets checked in preparation, flight and replay')
  # Genuine touch dispatch in CDP; mobile input and keyboard-height simulation.
  c,p=load(390,844,touch=True);play(p);assert p.evaluate('document.body.dataset.mapMode')=='aim'
- p.locator('.mobile-options').tap();assert p.locator('#flightDrawer').is_visible();p.locator('#sheetFine').tap();assert p.evaluate('Orbital.App.profile.settings.fineAim')
+ p.locator('.mobile-options').tap();assert p.locator('#flightDrawer').is_visible();p.locator('#fineAimButton').tap();assert p.evaluate('Orbital.App.profile.settings.fineAim')
  v=aim(p)['angle'];p.locator('[data-action=angle-up]').tap();ae(aim(p)['angle'],v+.1)
  p.locator('#angleInput').fill('-18,7');p.locator('#angleInput').press('Enter');assert p.evaluate('Orbital.App.state===null');ae(aim(p)['angle'],-18.7)
  p.locator('#angleInput').focus();p.set_viewport_size({'width':390,'height':510});p.wait_for_timeout(150);assert p.evaluate('document.body.classList.contains("keyboard-editing")');p.locator('#angleInput').scroll_into_view_if_needed();clickable(p,'#angleInput');clickable(p,'#flightDrawer .sheet-footer button')

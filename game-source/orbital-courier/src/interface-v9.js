@@ -33,6 +33,7 @@
     const keyboard = coarse() && editing() && height < lastHeight - 120;
     document.body.classList.toggle('keyboard-editing', keyboard);
     if (A.screen !== 'play') return;
+    $('cockpit').style.setProperty('--map-turn', O.FlightView.portrait() ? '-90deg' : '0deg');
     placeTimeline();
     const main = document.querySelector('main');
     // CSS owns main height; a software keyboard may shorten the visual viewport.
@@ -65,7 +66,7 @@
     closeSheet(false); clearPointers(); stopHold(); lastMode = ''; initializedLive = false;
     placeTimeline();
     $('flightPlan').open = false;
-    $('navMore').open = false;
+    selectCockpitTab('course');
     $('aimFeedback').hidden = true;
     $('flightReview').hidden = true;
     lastFlightKey = '';
@@ -85,10 +86,10 @@
   function initLive() {
     $('liveFlightPanel').innerHTML = `<div class="flight-live-state" id="liveState"></div>
       <div class="flight-fact"><small>СКОРОСТЬ ОТНОСИТЕЛЬНО СТАНЦИИ</small><strong id="liveVelocity">—</strong><span id="liveDock"></span></div>
-      <div class="flight-progress-line"><span>Контейнеры на борту</span><b id="liveCargo">—</b></div>
-      <div class="flight-progress-line"><span>Облёты</span><b id="liveOrbits">—</b></div>
-      <div class="flight-progress-line"><span>Переходы</span><b id="livePortals">—</b></div>
-      <div class="flight-progress-line" id="liveDropRow"><span>Адреса</span><b id="liveDrops">—</b></div>
+      <div class="flight-metrics"><div><span>Груз</span><b id="liveCargo">—</b></div>
+      <div id="liveOrbitRow"><span>Облёты</span><b id="liveOrbits">—</b></div>
+      <div id="livePortalRow"><span>Порталы</span><b id="livePortals">—</b></div>
+      <div id="liveDropRow"><span>Адреса</span><b id="liveDrops">—</b></div></div>
       <p id="liveWarning" class="live-warning"></p>`;
     initializedLive = true;
   }
@@ -106,7 +107,10 @@
     $('saveBadge').hidden=A.storageOK;
     $('modeChip').classList.toggle('pro', A.profile.difficulty === 'pro');
     setText($('navModeLabel'), mode === 'aiming' ? 'Начальный импульс' : mode === 'review' ? 'Полёт завершён' : A.paused ? 'Полёт на паузе' : 'Капсула в полёте');
+    $('cockpit').style.setProperty('--map-turn', O.FlightView.portrait() ? '-90deg' : '0deg');
     setText($('fineAimButton'), A.profile.settings.fineAim ? '✓ Точно' : 'Точно');
+    setText($('fineAimHelp'), A.profile.settings.fineAim ? 'Прицел в 5 раз плавнее' : 'Включить плавный прицел');
+    setText($('memoryCurrent'), `Сейчас: ${A.angle.toFixed(1)}° / ${A.speed} ед./с`);
     for(const b of $$('[data-action="fine-aim"]')){
       b.setAttribute('aria-pressed',String(!!A.profile.settings.fineAim));b.disabled=mode!=='aiming';
     }
@@ -120,10 +124,12 @@
       if (!initializedLive) initLive();
       setText($('liveState'), mode === 'review' ? 'ЗАПИСЬ ВЫПОЛНЕННОГО РЕЙСА' : A.paused ? 'ВРЕМЯ ОСТАНОВЛЕНО' : 'ОДИН ИМПУЛЬС · КУРС НЕ МЕНЯЕТСЯ');
       setText($('liveVelocity'), P.dockVelocity(s, A.level()).speed.toFixed(0) + ' ед./с');
-      setText($('liveDock'), 'Допуск станции: ' + P.captureRadius(A.level(), A.stats()).toFixed(1));
+      setText($('liveDock'), 'Радиус стыковки: ' + P.captureRadius(A.level(), A.stats()).toFixed(1));
       setText($('liveCargo'), O.Routes.collected(A.level(), s) + ' / ' + O.Routes.cargoIds(A.level(), s).length);
       setText($('liveOrbits'), (s.flybyIndex || 0) + ' / ' + (l.flybys?.length || 0));
       setText($('livePortals'), (s.portalIndex || 0) + ' / ' + (l.portalOrder?.length || 0));
+      $('liveOrbitRow').hidden = !l.flybys?.length;
+      $('livePortalRow').hidden = !l.portalOrder?.length;
       $('liveDropRow').hidden = !l.stops?.length;
       setText($('liveDrops'), (s.dropIndex || 0) + ' / ' + (l.stops?.length || 0));
       const lost = s.cargoBodies?.filter(c => c.phase === 'lost').length || 0;
@@ -160,6 +166,20 @@
     $('launchButton').disabled = A.transitioning;
   }
 
+  function selectCockpitTab(tab) {
+    commitFocused(); stopHold();
+    for (const name of ['course','memory']) {
+      const selected = name === tab, button = $(name + 'Tab');
+      button.setAttribute('aria-selected', String(selected)); button.tabIndex = selected ? 0 : -1;
+      $(name + 'Pane').hidden = !selected;
+    }
+  }
+  document.querySelector('.cockpit-tabs').addEventListener('keydown', event => {
+    if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+    event.preventDefault(); event.stopPropagation();
+    const tab = event.key === 'Home' ? 'course' : event.key === 'End' ? 'memory' : event.target.id === 'courseTab' ? 'memory' : 'course';
+    selectCockpitTab(tab); $(tab + 'Tab').focus();
+  });
   // Sheets MOVE existing nodes; there are no duplicate control IDs or mirror forms.
   function placeTimeline(){
     const timeline=$('reviewTimeline');if(!timeline)return;
@@ -169,17 +189,13 @@
   function openSheet(kind, opener) {
     if (A.transitioning) return;
     closeSheet(false); A.closeModal(); commitFocused(); clearPointers(); stopHold();
-    const nodes = kind === 'route' ? [document.querySelector('.plan-body'),document.querySelector('.medal-deck')] : kind === 'review' ? [$('flightReview'),document.querySelector('.medal-deck')] : [document.querySelector('.aim-controls'),$('aimFeedback'),$('liveFlightPanel'),document.querySelector('.nav-advanced')];
+    const nodes = kind === 'route' ? [document.querySelector('.plan-body'),document.querySelector('.medal-deck')] : kind === 'review' ? [$('flightReview'),document.querySelector('.medal-deck')] : [$('cockpit')];
     const entries=nodes.map(node=>{const marker=document.createComment('sheet return point');node.before(marker);return {node,marker};});
     sheetState = {kind, entries, opener:opener || document.activeElement, paused:A.paused, state:A.state};
     if (flying()) A.paused = true;
     setText($('drawerTitle'), kind === 'route' ? 'Маршрут и медали' : kind === 'review' ? 'Разбор рейса' : A.state ? 'Пульт полёта' : 'Точный пульт');
     $('drawerContent').replaceChildren();
-    if (kind === 'memory') {
-      const shortcuts = document.createElement('div'); shortcuts.className = 'sheet-quick';
-      shortcuts.innerHTML = `<button class="button quiet" data-action="fine-aim" id="sheetFine" ${A.state ? 'disabled' : ''} aria-pressed="${!!A.profile.settings.fineAim}">${A.profile.settings.fineAim ? '✓' : '◎'} Точный прицел</button><button class="button quiet" data-action="hint">Подсказка</button><p class="fine-explanation">«Точно» уменьшает движения прицела в 5 раз. Касание не сбивает выбранный курс: веди палец для небольшой поправки. Ниже можно ввести числа или воспользоваться ползунками.</p>`;
-      $('drawerContent').append(shortcuts);
-    }
+    if (kind === 'memory') selectCockpitTab('course');
     $('drawerContent').append(...nodes);
     drawer.showModal(); drawer.scrollTop = 0;
     document.body.classList.add('sheet-open'); sync();
@@ -504,6 +520,7 @@
     hintTimer=setTimeout(()=>$('mapGestureHint').hidden=true,3400);
   }
   const custom={
+    'ui:cockpit-tab':b=>selectCockpitTab(b.dataset.tab),
     'ui:menu':menu,'ui:mode':toggleDifficulty,'ui:save-settings':()=>O.V8.settings('save'),'ui:route':b=>openSheet('route',b),
     'ui:memory':b=>openSheet('memory',b),'ui:readout':b=>openSheet(screenMode()==='review'?'review':'memory',b),'ui:close-sheet':()=>closeSheet(),
     'ui:map-mode':b=>switchMap(b.dataset.mode),'ui:map-aim-close':()=>{A.closeModal();switchMap('aim');},'ui:map-pan-close':()=>{A.closeModal();switchMap('pan');},
@@ -538,9 +555,6 @@
   document.addEventListener('click', event=>{
     const b=event.target.closest('[data-action]');if(!b)return;
     if(['store-course','recall-course'].includes(b.dataset.action)){const act=b.dataset.action,slot=b.dataset.slot;requestAnimationFrame(()=>{const replacement=document.querySelector(`[data-action="${act}"][data-slot="${slot}"]`);if(replacement&&!replacement.disabled)replacement.focus({preventScroll:true});});}
-    if(b.dataset.action==='fine-aim' && drawer.open) {
-      requestAnimationFrame(()=>{if($('sheetFine')){setText($('sheetFine'),(A.profile.settings.fineAim?'✓ ':'◎ ')+'Точный прицел');$('sheetFine').setAttribute('aria-pressed',String(!!A.profile.settings.fineAim));}});
-    }
   });
   document.addEventListener('keydown',event=>{
     if(controlsBlocked()||A.screen!=='play'||event.defaultPrevented)return;

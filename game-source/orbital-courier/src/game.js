@@ -109,11 +109,10 @@
   function courseKey(){return `${app.currentId}:${app.profile.difficulty}`;}
   function renderCourseMemory(){
     const saved=app.profile.courses[courseKey()]||[],disabled=!!app.state;
-    $('courseSlots').innerHTML=[0,1].map(i=>`<div class="course-slot"><b>${i?'B':'A'}</b><button data-action="recall-course" data-slot="${i}" ${disabled||!saved[i]?'disabled':''} aria-label="Применить курс ${i?'B':'A'}">${saved[i]?`${saved[i].angle.toFixed(1)}° <span>/ ${saved[i].speed}</span>`:'Не записан'}</button><button class="store-course" data-action="store-course" data-slot="${i}" ${disabled?'disabled':''} aria-label="Записать текущий курс в ${i?'B':'A'}" title="Записать текущий курс"><span aria-hidden="true">↓</span><small>Записать</small></button></div>`).join('');
+    $('courseSlots').innerHTML=[0,1].map(i=>`<div class="course-slot"><b>КУРС ${i?'B':'A'}</b><button data-action="recall-course" data-slot="${i}" ${disabled||!saved[i]?'disabled':''} aria-label="Применить курс ${i?'B':'A'}">${saved[i]?`${saved[i].angle.toFixed(1)}° / ${saved[i].speed}<span>Применить ↗</span>`:'Пока пусто'}</button><button class="store-course" data-action="store-course" data-slot="${i}" ${disabled?'disabled':''} aria-label="Записать текущий курс в ${i?'B':'A'}">Записать</button></div>`).join('');
     const last=app.attemptHistory?.[courseKey()]?.at(-1);
     $('previousAimButton').disabled=disabled||!last;$('previousAimButton').textContent=last?`↶ Прошлый запуск: ${last.angle.toFixed(1)}° / ${last.speed}`:'↶ Здесь появится прошлый запуск';
     $('compassArrow').setAttribute('transform',`rotate(${-app.angle} 26 26)`);
-    $('navModeLabel').textContent=!app.state?'Настройка курса':isFlying()?(app.paused?'Полёт на паузе':'Курс зафиксирован'):'Готов к новой попытке';
     $('previousLevel').disabled=!G.unlocked(app.profile,C.adjacent(app.currentId,-1));
     $('followingLevel').disabled=!G.unlocked(app.profile,C.adjacent(app.currentId,1));
     $('levelPosition').textContent=`${pad(C.number(app.currentId))} / ${L.length}`;
