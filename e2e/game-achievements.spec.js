@@ -16,6 +16,7 @@ for(const width of [390,1366])test('awards and medal results survive all playbac
   const result=await page.evaluate(()=>{const A=Orbital.App;return{status:A.state.status,t:A.state.t,records:A.profile.records,awards:A.profile.achievements,xp:A.profile.xp,credits:A.profile.credits};});
   expect(result.status).toBe('won');if(expected)expect(result).toEqual(expected);else expected=result;
   await expect(page.locator('#flightReview .award-chip')).toContainText(['Есть контакт']);
+  if(width<700)await page.locator('#mobileReadout').click();
   const next=await page.locator('.review-next').boundingBox(),panel=await page.locator('#flightReview').boundingBox();
   expect(next.y+next.height).toBeLessThanOrEqual(panel.y+panel.height);
   const medals=await page.locator('.medal-card').evaluateAll(es=>es.map(e=>({state:e.dataset.state,text:e.textContent})));
@@ -24,9 +25,12 @@ for(const width of [390,1366])test('awards and medal results survive all playbac
   expect(await page.evaluate(()=>Orbital.App.displayState().status)).toBe('flying');
   expect(await page.locator('.medal-card').evaluateAll(es=>es.map(e=>({state:e.dataset.state,text:e.textContent})))).toEqual(medals);
   expect(await page.evaluate(()=>JSON.stringify(Orbital.App.profile))).toBe(before);
+  if(width<700){await page.locator('#flightDrawer .sheet-footer button').click();await expect(page.locator('#mobileNext')).toBeVisible();}
  }
- await page.locator('#speedButton').click();await expect(page.locator('#speedButton')).toHaveText('×0.5');
- for(const rate of [1,2,4,10]){await page.locator('#speedButton').click();await expect(page.locator('#speedButton')).toHaveText('×'+rate);}
+ await page.evaluate(()=>{Orbital.App.loadLevel(0);Orbital.App.launch();Orbital.App.paused=true;Orbital.UI9.sync();});
+ const speed=page.locator(width<700?'#mobileSpeed':'#speedButton');
+ await speed.click();await expect(speed).toHaveText('×0.5');
+ for(const rate of [1,2,4,10]){await speed.click();await expect(speed).toHaveText('×'+rate);}
  await page.screenshot({path:info.outputPath('medals-after-rewind.png'),fullPage:true});expect(errors).toEqual([]);
 });
 test('module purchase shows simultaneous awards, export refreshes collection and reload keeps XP',async({page})=>{

@@ -9,6 +9,7 @@
   const canvas = $('gameCanvas'), drawer = $('flightDrawer'), modal = $('modal');
   const coarse = () => matchMedia('(pointer:coarse)').matches;
   const narrow = () => !matchMedia('(min-width:520px) and (max-height:480px) and (orientation:landscape)').matches && matchMedia('(max-width:699px), (max-width:999px) and (orientation:portrait)').matches;
+  const mobile = () => matchMedia('(max-width:699px), (max-width:999px) and (orientation:portrait), (max-width:999px) and (max-height:480px)').matches;
   const aiming = () => A.screen === 'play' && !A.state && !A.transitioning;
   const flying = () => A.screen === 'play' && A.state?.status === 'flying';
   const controlsBlocked = () => modal.open || drawer.open || A.transitioning;
@@ -32,6 +33,7 @@
     const keyboard = coarse() && editing() && height < lastHeight - 120;
     document.body.classList.toggle('keyboard-editing', keyboard);
     if (A.screen !== 'play') return;
+    placeTimeline();
     const main = document.querySelector('main');
     // CSS owns main height; a software keyboard may shorten the visual viewport.
     main.style.height = '';
@@ -44,7 +46,8 @@
     if (!pending) { pending = true; requestAnimationFrame(layout); }
   }
   new ResizeObserver(schedule).observe($('mapViewport'));
-  root.addEventListener('resize', schedule);
+  let portraitProjection=O.FlightView.portrait();
+  root.addEventListener('resize',()=>{const next=O.FlightView.portrait();if(next!==portraitProjection){clearPointers();portraitProjection=next;}schedule();});
   root.visualViewport?.addEventListener('resize', schedule);
   root.visualViewport?.addEventListener('scroll', schedule);
 
@@ -60,6 +63,7 @@
   }
   function onLevel() {
     closeSheet(false); clearPointers(); stopHold(); lastMode = ''; initializedLive = false;
+    placeTimeline();
     $('flightPlan').open = false;
     $('navMore').open = false;
     $('aimFeedback').hidden = true;
@@ -90,6 +94,7 @@
   }
   function sync() {
     if (A.screen !== 'play') return;
+    placeTimeline();
     const mode = screenMode(), s = A.displayState(), l = A.displayLevel();
     if (mode !== lastMode) {
       document.body.dataset.flight = mode; lastMode = mode;
@@ -134,7 +139,17 @@
     const flightKey = mode + ':' + (A.state?.reason || '') + ':' + A.paused;
     if (lastFlightKey !== flightKey) { lastFlightKey = flightKey; $('stagePill').setAttribute('aria-live', 'polite'); }
     for(const id of ['angleRange','speedRange']) { const e=$(id); e.style.setProperty('--range-fill', ((+e.value-+e.min)/(+e.max-+e.min)*100)+'%'); }
-    const nextReady = mode === 'review' && A.state?.status === 'won' && !A.lastResult?.training && O.Campaign.adjacent(A.currentId,1)>=0;
+    const delivered = mode === 'review' && A.state?.status === 'won' && !!A.lastResult && !A.lastResult.training;
+    const nextReady = delivered && O.Campaign.adjacent(A.currentId,1)>=0;
+    $('mobileNext').hidden = !delivered;
+    $('mobileNext').disabled = A.transitioning;
+    setText($('mobileNext'), nextReady ? 'Дальше ↗' : 'Маршруты ↗');
+    $('mobileLaunch').classList.toggle('primary', !delivered);
+    $('mobileDock').classList.toggle('delivered', delivered);
+    setText($('mobileReadoutLabel'), mode === 'aiming' ? 'КУРС · НАСТРОИТЬ' : mode === 'running' ? (A.paused ? 'ПАУЗА · ПУЛЬТ' : 'В ПОЛЁТЕ · ПУЛЬТ') : A.lastResult?.training ? 'ТРЕНИРОВКА · БЕЗ НАГРАД' : delivered ? 'ДОСТАВЛЕНО · РАЗБОР' : 'НЕ ДОСТАВЛЕНО · РАЗБОР');
+    setText($('mobileReadoutValue'), mode === 'aiming' ? `${A.angle.toFixed(1)}°  /  ${A.speed} ед./с` : mode === 'running' ? `${s.t.toFixed(1)} с  ·  груз ${O.Routes.collected(A.level(),s)} / ${O.Routes.cargoIds(A.level(),s).length}` : `${A.state.t.toFixed(2)} с  ·  ${A.lastResult?.training ? 'можно повторить' : delivered ? '+' + A.lastResult.totalCredits + ' ◈' : 'найти причину'}`);
+    $('mobileReadout').setAttribute('aria-label', mode === 'review' ? 'Открыть разбор и перемотку рейса' : 'Открыть точный пульт');
+    setText($('mobileSpeed'), '×' + A.timeScale);
     const nextDesktop = $('nextLevelButton');
     if (nextDesktop) {
       nextDesktop.hidden = !nextReady;
@@ -146,16 +161,21 @@
   }
 
   // Sheets MOVE existing nodes; there are no duplicate control IDs or mirror forms.
+  function placeTimeline(){
+    const timeline=$('reviewTimeline');if(!timeline)return;
+    const target=mobile()&&screenMode()==='review'&&!$('flightReview').hidden&&sheetState?.kind!=='review'?$('mobileTimeline'):$('reviewTimelineHome');
+    if(target&&timeline.parentNode!==target)target.append(timeline);
+  }
   function openSheet(kind, opener) {
     if (A.transitioning) return;
     closeSheet(false); A.closeModal(); commitFocused(); clearPointers(); stopHold();
-    const nodes = kind === 'route' ? [document.querySelector('.plan-body')] : [document.querySelector('.aim-controls'),$('aimFeedback'),document.querySelector('.nav-advanced')];
+    const nodes = kind === 'route' ? [document.querySelector('.plan-body'),document.querySelector('.medal-deck')] : kind === 'review' ? [$('flightReview'),document.querySelector('.medal-deck')] : [document.querySelector('.aim-controls'),$('aimFeedback'),$('liveFlightPanel'),document.querySelector('.nav-advanced')];
     const entries=nodes.map(node=>{const marker=document.createComment('sheet return point');node.before(marker);return {node,marker};});
     sheetState = {kind, entries, opener:opener || document.activeElement, paused:A.paused, state:A.state};
     if (flying()) A.paused = true;
-    setText($('drawerTitle'), kind === 'route' ? 'План маршрута' : 'Точный пульт');
+    setText($('drawerTitle'), kind === 'route' ? 'Маршрут и медали' : kind === 'review' ? 'Разбор рейса' : A.state ? 'Пульт полёта' : 'Точный пульт');
     $('drawerContent').replaceChildren();
-    if (kind !== 'route') {
+    if (kind === 'memory') {
       const shortcuts = document.createElement('div'); shortcuts.className = 'sheet-quick';
       shortcuts.innerHTML = `<button class="button quiet" data-action="fine-aim" id="sheetFine" ${A.state ? 'disabled' : ''} aria-pressed="${!!A.profile.settings.fineAim}">${A.profile.settings.fineAim ? '✓' : '◎'} Точный прицел</button><button class="button quiet" data-action="hint">Подсказка</button><p class="fine-explanation">«Точно» уменьшает движения прицела в 5 раз. Касание не сбивает выбранный курс: веди палец для небольшой поправки. Ниже можно ввести числа или воспользоваться ползунками.</p>`;
       $('drawerContent').append(shortcuts);
@@ -221,6 +241,7 @@
     A.openModal(A.level().name, `<div class="ui-menu">
       <button data-action="ui:memory"><span class="menu-symbol">◎</span>Точный пульт</button>
       <button data-action="ui:route"><span class="menu-symbol">⌁</span>План маршрута</button>
+      <button data-action="ui:map-menu"><span class="menu-symbol">✥</span>Настройки карты</button>
       <button data-action="medal-help"><span class="menu-symbol">✧</span>Условия медалей</button>
       <button data-action="contract-info"><span class="menu-symbol">▤</span>Задание</button>
       <button data-action="hint"><span class="menu-symbol">?</span>Подсказка</button>
@@ -246,6 +267,7 @@
       <button data-action="ui:map-aim-close" ${aiming()?'':'disabled'}>↗ Режим «Курс»</button><button data-action="ui:map-pan-close">✥ Режим «Обзор»</button>
       <button data-action="ui:field" aria-pressed="${A.profile.settings.grid}">${A.profile.settings.grid ? '✓' : '○'} Поле тяготения</button>
       <button data-action="ui:ship">Показать капсулу</button>
+      <div class="map-nudges" role="group" aria-label="Сдвинуть обзор без перетаскивания"><button data-action="ui:pan-left" aria-label="Обзор левее">←</button><button data-action="ui:pan-up" aria-label="Обзор выше">↑</button><button data-action="ui:pan-down" aria-label="Обзор ниже">↓</button><button data-action="ui:pan-right" aria-label="Обзор правее">→</button></div>
       <button data-action="ui:zoom-reset-close">Вся карта · сброс масштаба</button>
       <button data-action="ui:fullscreen">Полный экран</button></div>
       <p>Курс — меняет угол и скорость. Обзор — двигает карту, не затрагивая запуск. Масштаб: два пальца, колесо или кнопки + / −.</p>
@@ -364,19 +386,17 @@
   // Unified gesture state: once a pinch starts, remaining fingers cannot become aim.
   const pointers = new Map(); let gesture = null;
   function metrics() {
-    const r = canvas.getBoundingClientRect(), fit = Math.min(r.width / 1200, r.height / 700);
-    return {r, fit:Math.max(.001, fit)};
+    return O.FlightView.metrics(canvas.getBoundingClientRect());
   }
   function worldPoint(x, y) {
-    const {r,fit} = metrics();
-    return {x:A.camera.cx + (x - r.left - r.width / 2) / fit / A.camera.zoom,
-      y:A.camera.cy + (y - r.top - r.height / 2) / fit / A.camera.zoom};
+    return O.FlightView.toWorld(x,y,A.camera,metrics());
   }
+  function worldToScreen(x,y){return O.FlightView.toScreen(x,y,A.camera,metrics());}
   function clampCamera() {
-    const c = A.camera, {r,fit} = metrics();
+    const c = A.camera, {r,fit,rotated} = metrics();
     c.zoom = P.clamp(c.zoom, 1, 4);
-    const hw = Math.min(600, r.width / (2 * fit * c.zoom));
-    const hh = Math.min(350, r.height / (2 * fit * c.zoom));
+    const hw = Math.min(600, (rotated?r.height:r.width) / (2 * fit * c.zoom));
+    const hh = Math.min(350, (rotated?r.width:r.height) / (2 * fit * c.zoom));
     const edge = Math.max(28, 64 / c.zoom);
     c.cx = P.clamp(c.cx, hw - edge, 1200 - hw + edge);
     c.cy = P.clamp(c.cy, hh - edge, 700 - hh + edge);
@@ -388,6 +408,7 @@
     clampCamera(); sync();
   }
   function resetCamera() { A.camera = {zoom:1,cx:600,cy:350}; sync(); }
+  function panBy(dx,dy){const {r}=metrics(),x=r.left+r.width/2,y=r.top+r.height/2,a=worldPoint(x,y),b=worldPoint(x+dx*r.width*.22,y+dy*r.height*.22);A.camera.cx+=b.x-a.x;A.camera.cy+=b.y-a.y;clampCamera();sync();}
   function clearPointers() {
     for (const id of pointers.keys()) { try { if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id); } catch (_) {} }
     pointers.clear(); gesture = null; A.aimPointer = null; A.mapGesture = false; document.body.classList.remove('map-dragging');
@@ -403,12 +424,12 @@
   }
   function touchAim(x,y,g){
     if(!g.fine){pointAim(x,y,true);return;}
-    const {r,fit}=metrics(),start=A.level().start,angle=-P.rad(g.angle);
+    const start=A.level().start,angle=-P.rad(g.angle)-(metrics().rotated?Math.PI/2:0);
     const reach=12+(g.speed-60)/Math.max(1,A.stats().maxSpeed-60)*108;
     let dx=Math.cos(angle)*reach+(x-g.x)*.2,dy=Math.sin(angle)*reach+(y-g.y)*.2;
     const length=Math.hypot(dx,dy);if(length<.01)return;
     if(length<12.01){dx*=12.01/length;dy*=12.01/length;}
-    pointAim(r.left+r.width/2+(start.x-A.camera.cx)*fit*A.camera.zoom+dx,r.top+r.height/2+(start.y-A.camera.cy)*fit*A.camera.zoom+dy,true);
+    const screen=worldToScreen(start.x,start.y);pointAim(screen.x+dx,screen.y+dy,true);
   }
   function midpoint() {
     const [a,b] = [...pointers.values()];
@@ -442,8 +463,9 @@
       const m=midpoint(); A.camera.zoom=P.clamp(g.cam.zoom*m.d/Math.max(g.mid.d,1),1,4);
       const after=worldPoint(m.x,m.y); A.camera.cx+=g.anchor.x-after.x; A.camera.cy+=g.anchor.y-after.y; clampCamera(); sync();
     } else if (g.kind==='pan') {
-      A.camera.cx=g.cam.cx-(event.clientX-g.x)/fit/A.camera.zoom;
-      A.camera.cy=g.cam.cy-(event.clientY-g.y)/fit/A.camera.zoom;
+      const m=metrics(),before=O.FlightView.toWorld(g.x,g.y,g.cam,m),after=O.FlightView.toWorld(event.clientX,event.clientY,g.cam,m);
+      A.camera.cx=g.cam.cx+before.x-after.x;
+      A.camera.cy=g.cam.cy+before.y-after.y;
       clampCamera();sync();
     } else if (g.kind==='aim' && aiming()) {
       const dx=event.clientX-g.x,dy=event.clientY-g.y;
@@ -465,7 +487,7 @@
     else if(gesture?.kind==='pinch') gesture={kind:'locked'};
   }
   canvas.addEventListener('pointerup',releasePointer);
-  canvas.addEventListener('pointercancel',()=>clearPointers());
+  canvas.addEventListener('pointercancel',()=>{if(gesture?.kind==='aim'&&aiming())A.setAim(gesture.angle,gesture.speed);clearPointers();});
   canvas.addEventListener('lostpointercapture',e=>{if(pointers.has(e.pointerId))releasePointer(e);});
   canvas.addEventListener('wheel',event=>{
     if (controlsBlocked() || event.ctrlKey) return; // preserve browser accessibility zoom
@@ -483,9 +505,10 @@
   }
   const custom={
     'ui:menu':menu,'ui:mode':toggleDifficulty,'ui:save-settings':()=>O.V8.settings('save'),'ui:route':b=>openSheet('route',b),
-    'ui:memory':b=>openSheet('memory',b),'ui:close-sheet':()=>closeSheet(),
+    'ui:memory':b=>openSheet('memory',b),'ui:readout':b=>openSheet(screenMode()==='review'?'review':'memory',b),'ui:close-sheet':()=>closeSheet(),
     'ui:map-mode':b=>switchMap(b.dataset.mode),'ui:map-aim-close':()=>{A.closeModal();switchMap('aim');},'ui:map-pan-close':()=>{A.closeModal();switchMap('pan');},
     'ui:zoom-in':()=>zoom(1.25),'ui:zoom-out':()=>zoom(.8),
+    'ui:pan-left':()=>panBy(-1,0),'ui:pan-right':()=>panBy(1,0),'ui:pan-up':()=>panBy(0,-1),'ui:pan-down':()=>panBy(0,1),
     'ui:zoom-reset':resetCamera,'ui:zoom-reset-close':()=>{resetCamera();A.closeModal();},
     'ui:map-menu':mapMenu,'ui:shortcuts':shortcuts,'ui:fullscreen':fullscreen,
     'ui:field':()=>{A.actions['toggle-grid']();mapMenu();},
@@ -493,7 +516,7 @@
     'ui:retry-confirm':retryNow
   };
   Object.assign(A.actions,custom);
-  A.actions.help=()=>A.openModal('Один запуск. Точный маршрут.', '<p>Выбери угол и скорость, затем нажми <b>«Запуск»</b>. Дальше капсулу ведёт притяжение планет.</p><div class="info-box"><b>Три цели над картой</b> — условия медалей. Нажми на них, чтобы прочитать подробности. Строка <b>«Дальше»</b> открывает план облётов, порталов и доставок.</div><p><b>Курс / Обзор</b> переключают действие на карте. Масштаб — кнопками, колесом или двумя пальцами. Угол принимает точку и запятую; кнопки + / − можно удерживать.</p><p>Запиши удачные параметры в <b>A/B</b>. После рейса можно перемотать запись и сравнить с предыдущей попыткой. Повтор бесплатный.</p><div class="modal-actions"><button class="button quiet" data-action="ui:shortcuts">Клавиши и жесты</button><button class="button primary" data-action="close">Понятно</button></div>');
+  A.actions.help=()=>A.openModal('Один запуск. Точный маршрут.', '<p>Выбери угол и скорость, затем нажми <b>«Запуск»</b>. Дальше капсулу ведёт притяжение планет.</p><div class="info-box"><b>Строка маршрута над картой</b> открывает порядок облётов, порталов, доставок и условия медалей. На телефоне числа курса внизу открывают точный пульт; после рейса там же — подробный разбор.</div><p><b>Курс / Обзор</b> переключают действие на карте. Масштаб — кнопками, колесом или двумя пальцами. Угол принимает точку и запятую; кнопки + / − можно удерживать.</p><p>Запиши удачные параметры в <b>A/B</b>. После рейса можно перемотать запись и сравнить с предыдущей попыткой. Повтор бесплатный.</p><div class="modal-actions"><button class="button quiet" data-action="ui:shortcuts">Клавиши и жесты</button><button class="button primary" data-action="close">Понятно</button></div>');
   A.actions.retry=requestRetry;
   const originalLaunch=A.actions.launch;
   let keyboardCommitUntil = 0;
@@ -506,6 +529,7 @@
     if (narrow() && (editing() || keyboardCommitUntil > performance.now())) { keyboardCommitUntil = 0; commitFocused(); return; }
     keyboardCommitUntil = 0;
     if (!commitFocused()) return;
+    if(mobile()&&flying()){A.paused=!A.paused;A.accumulator=0;clearPointers();sync();return;}
     closeSheet(false);clearPointers();stopHold(); originalLaunch();sync();
   };
   // Compatibility commands retain the same camera controller.
@@ -540,7 +564,7 @@
   const oldSettings=O.V8.settings;
   O.V8.settings=function(tab){oldSettings(tab);};
   O.UI9={layout,sync,onPage,onLevel,onResult,beforeModal,afterModal,modalClosed,openSheet,closeSheet,
-    numberValue,commitInput,zoom,resetCamera,clampCamera,clearPointers,switchMap};
+    numberValue,commitInput,zoom,resetCamera,clampCamera,clearPointers,switchMap,worldToScreen,worldPoint};
   // Native button names follow function; details remain available without redundant labels.
   document.querySelector('.hero-meta').lastElementChild.textContent='Офлайн';
   $('flightDrawer').addEventListener('close',()=>{if(!drawer.open&&sheetState)closeSheet();});

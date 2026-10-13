@@ -76,7 +76,15 @@
       <div class="panel-actions"><button class="button primary launch-button" data-action="launch" id="launchButton">Запуск ↗</button><div class="launch-secondary" id="launchSecondary"><button data-action="retry">↺ Заново</button><button data-action="hint">Подсказка</button><button data-action="next" id="nextLevelButton" hidden>Дальше ↗</button></div></div>
     </aside>
   </div>
-  <div class="mobile-dock" aria-label="Управление полётом"><button class="mobile-retry" data-action="retry" aria-label="Начать попытку заново">↺</button><button class="mobile-fine" data-action="fine-aim" id="mobileFine" aria-pressed="false" aria-label="Точный прицел: чувствительность в пять раз ниже">Точно</button><button class="mobile-options" data-action="ui:memory" aria-label="Открыть точный пульт"><span>☷</span><small>Пульт</small></button><button class="primary" data-action="launch" id="mobileLaunch">Запуск ↗</button></div>
+  <div class="mobile-dock" id="mobileDock" aria-label="Управление полётом">
+    <button class="mobile-options" id="mobileReadout" data-action="ui:readout" aria-haspopup="dialog" aria-controls="flightDrawer"><span><small id="mobileReadoutLabel">КУРС · НАСТРОИТЬ</small><strong id="mobileReadoutValue">0.0° / 200 ед./с</strong></span><span class="readout-arrow" aria-hidden="true">⌃</span></button>
+    <div class="mobile-timeline" id="mobileTimeline" aria-label="Перемотка выполненного рейса"></div>
+    <button class="mobile-retry" data-action="retry" aria-label="Начать попытку заново">↺</button>
+    <button class="mobile-fine" data-action="fine-aim" id="mobileFine" aria-pressed="false" aria-label="Точный прицел: чувствительность в пять раз ниже">Точно</button>
+    <button class="mobile-speed" data-action="speed" id="mobileSpeed" aria-label="Скорость показа полёта">×1</button>
+    <button class="primary" data-action="launch" id="mobileLaunch">Запуск ↗</button>
+    <button class="primary" data-action="next" id="mobileNext" hidden>Дальше ↗</button>
+  </div>
 </section>
 </main><div hidden><button id="fieldButton" data-action="toggle-grid"></button><button id="pauseButton" data-action="pause"></button></div>
 <footer class="site-footer"><span>ORBITAL COURIER / 10.1</span><span>Маленькая посылка. Большой космос.</span><button class="text-button" data-action="settings">Сохранение и настройки</button></footer>

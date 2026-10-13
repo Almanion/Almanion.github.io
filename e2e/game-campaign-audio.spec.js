@@ -17,10 +17,10 @@ for(const width of [390,1366])test('five campaign tiers, route order and archive
  await page.evaluate(()=>{const A=Orbital.App,P=Orbital.Physics,l=A.level(),q=l.solution;A.state=P.createState(l,q.angle,q.speed);Orbital.Review.start(A.state);while(A.state.status==='flying'){const prior=A.state;A.state=P.step(prior,l);Orbital.Review.observe(prior,A.state,l);}A.finish();Orbital.Review.selectTime(0);Orbital.UI9.sync();});
  expect(await page.evaluate(()=>Orbital.App.displayState().status)).toBe('flying');await expect(page.locator('.review-next')).toHaveText('Дальше ↗');
  if(width>700)await expect(page.locator('#nextLevelButton')).toBeVisible();
- await page.locator('.review-next').click();await expect.poll(()=>page.evaluate(()=>Orbital.App.currentId)).toBe(18);
+ await page.locator(width<700?'#mobileNext':'.review-next').click();await expect.poll(()=>page.evaluate(()=>Orbital.App.currentId)).toBe(18);
  await page.evaluate(()=>{const A=Orbital.App,l=Orbital.LEVELS[79];A.loadLevel(79);A.state=Orbital.Physics.simulate(A.level(),l.solution.angle,l.solution.speed).state;A.finish();});
  await expect(page.locator('#nextLevelButton')).not.toBeVisible();await expect(page.locator('.review-next')).toHaveText('Все маршруты');
- await page.locator('.review-next').click();await expect(page.locator('#campaign')).toBeVisible();
+ await page.locator(width<700?'#mobileNext':'.review-next').click();await expect(page.locator('#campaign')).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);expect(errors).toEqual([]);
 });
 test('sound instruments render finite distinct bounded signals; mute and pause stop flight audio',async({page})=>{

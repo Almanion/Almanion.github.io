@@ -22,7 +22,7 @@ for(const [width,height]of [[320,568],[390,844],[844,390]])test('compact cockpit
   const cdp=await context.newCDPSession(page),touch=async(type,points)=>{await cdp.send('Input.dispatchTouchEvent',{type,touchPoints:points.map(([id,x,y])=>({id,x,y}))});await page.waitForTimeout(40);};
   const x=box.x+box.width*.6,y=box.y+box.height*.65;
   await touch('touchStart',[[0,x,y]]);expect(await page.evaluate(()=>Orbital.App.angle)).toBe(0);
-  await touch('touchMove',[[0,x,y-60]]);const fine=await page.evaluate(()=>Orbital.App.angle);expect(fine).toBeGreaterThan(8);expect(fine).toBeLessThan(12);
+  await touch('touchMove',[[0,width<height?x-60:x,width<height?y:y-60]]);const fine=await page.evaluate(()=>Orbital.App.angle);expect(fine).toBeGreaterThan(8);expect(fine).toBeLessThan(12);
   await touch('touchEnd',[]);expect(await page.evaluate(()=>Orbital.App.state)).toBeNull();
   // A new contact never jumps to the finger; pinch cancels a fine adjustment.
   const stable=await page.evaluate(()=>({angle:Orbital.App.angle,speed:Orbital.App.speed}));

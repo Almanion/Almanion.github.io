@@ -2,13 +2,25 @@
 (function(root){
   'use strict';const O=root.Orbital=root.Orbital||{},P=O.Physics;
   const TAU=Math.PI*2;
+  // One projection for drawing and touch input. World coordinates never change.
+  const FlightView=O.FlightView={
+    portrait:()=>!!root.matchMedia?.('(max-width:999px) and (orientation:portrait)').matches,
+    metrics(r){const rotated=this.portrait();return {r,rotated,fit:Math.max(.001,Math.min(r.width/(rotated?700:1200),r.height/(rotated?1200:700)))};},
+    toScreen(x,y,camera,m){const dx=(x-camera.cx)*m.fit*camera.zoom,dy=(y-camera.cy)*m.fit*camera.zoom;return {x:m.r.left+m.r.width/2+(m.rotated?dy:dx),y:m.r.top+m.r.height/2+(m.rotated?-dx:dy)};},
+    toWorld(x,y,camera,m){const dx=(x-m.r.left-m.r.width/2)/m.fit/camera.zoom,dy=(y-m.r.top-m.r.height/2)/m.fit/camera.zoom;return {x:camera.cx+(m.rotated?-dy:dx),y:camera.cy+(m.rotated?dx:dy)};}
+  };
   function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
   function circle(ctx,x,y,r,fill,stroke,width=1){
     ctx.beginPath();ctx.arc(x,y,r,0,TAU);if(fill){ctx.fillStyle=fill;ctx.fill();}
     if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke();}
   }
   function text(ctx,value,x,y,size=12,color='#8fa5b5',align='left'){
+    if(ctx.portraitView){ctx.save();ctx.translate(x,y);ctx.rotate(Math.PI/2);x=y=0;}
     ctx.fillStyle=color;ctx.font=`500 ${size}px ui-monospace, Consolas, monospace`;ctx.textAlign=align;ctx.fillText(value,x,y);
+    if(ctx.portraitView)ctx.restore();
+  }
+  function label(ctx,value,x,y,offset,size,color){
+    text(ctx,value,x-(ctx.portraitView?offset:0),y+(ctx.portraitView?0:offset),size,color,'center');
   }
   function path(ctx,points,color,width=2,dash=[]){
     if(points.length<2)return;ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
@@ -78,9 +90,12 @@
       const w=Math.max(1,Math.round(r.width*dpr)),h=Math.max(1,Math.round(r.height*dpr));
       if(this.canvas.width!==w||this.canvas.height!==h){this.canvas.width=w;this.canvas.height=h;}
       this.ctx.setTransform(1,0,0,1,0,0);this.ctx.fillStyle='#07131e';this.ctx.fillRect(0,0,w,h);
-      const fit=Math.min(w/1200,h/700);
-      this.ctx.setTransform(fit,0,0,fit,(w-1200*fit)/2,(h-700*fit)/2);
-      this.uiScale=this.canvas.id==='gameCanvas'?Math.max(1,Math.min(3.2,900/Math.max(1,r.width))):1;
+      const game=this.canvas.id==='gameCanvas',rotated=game&&FlightView.portrait();
+      const fit=Math.min(w/(rotated?700:1200),h/(rotated?1200:700));
+      this.ctx.portraitView=rotated;
+      if(rotated)this.ctx.setTransform(0,-fit,fit,0,(w-700*fit)/2,(h+1200*fit)/2);
+      else this.ctx.setTransform(fit,0,0,fit,(w-1200*fit)/2,(h-700*fit)/2);
+      this.uiScale=game?Math.max(1,Math.min(3.2,.75/(fit/dpr))):1;
     }
     background(t,sector=0){
       const c=this.ctx;const base=c.createLinearGradient(0,0,1200,700);
@@ -183,7 +198,7 @@
       };
       rings(false);c.drawImage(this.planetTexture(p),p.x-p.r,p.y-p.r,p.r*2,p.r*2);rings(true);
       circle(c,p.x,p.y,p.r,null,p.tint+'75',1.1);
-      if(p.name)text(c,p.name.toUpperCase(),p.x,p.y+p.r+18+11*this.uiScale,11*this.uiScale,'#9aaebf','center');
+      if(p.name)label(c,p.name.toUpperCase(),p.x,p.y,p.r+18+11*this.uiScale,11*this.uiScale,'#9aaebf');
     }
     starClusters(t,pointer,w=1200,h=700){
       const c=this.ctx;
@@ -294,7 +309,7 @@
       c.save();c.rotate(t*.13);for(let k=0;k<3;k++){c.beginPath();c.arc(0,0,R+12,k*TAU/3,k*TAU/3+.3);c.strokeStyle='#91ead37a';c.lineWidth=1.8;c.stroke();}c.restore();
       for(const sign of [-1,1]){path(c,[{x:sign*R*.58,y:-2},{x:sign*R*.46,y:0},{x:sign*R*.58,y:2}], '#a2e2cc65',.7);}
       circle(c,0,-R-41*ui,1.3,'#b9f5dc');
-      if(!p.noLabel)text(c,'СТАНЦИЯ',0,R+34*ui+9*(this.uiScale||1),10*(this.uiScale||1),'#91d8c9','center');
+      if(!p.noLabel)label(c,'СТАНЦИЯ',0,0,R+34*ui+9*(this.uiScale||1),10*(this.uiScale||1),'#91d8c9');
       c.restore();
     }
     cargo(p,i,t,collected,banked){
@@ -449,7 +464,7 @@
       }
       circle(c,level.start.x,level.start.y,26,null,color+'55',1.2);
       circle(c,level.start.x,level.start.y,32,null,color+'22',1);
-      text(c,'СТАРТ',level.start.x,level.start.y+32+10*this.uiScale,10*this.uiScale,'#839dab','center');
+      label(c,'СТАРТ',level.start.x,level.start.y,32+10*this.uiScale,10*this.uiScale,'#839dab');
       if(view.trail?.length){
         path(c,view.trail,view.review?'#a4f3ff':color+'4f',view.review?2.6:1.4);
         if(view.state&&!['crash','lost','preview'].includes(view.state.status)){
