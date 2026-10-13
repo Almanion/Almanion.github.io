@@ -1,20 +1,5 @@
-function openingState(s){
- const intro=$('intro-copy'),route=$('route-copy');
- intro.style.opacity=s===0?'1':'0';intro.style.transform=s===0?'none':'translateX(-55px)';
- route.style.opacity=s===1?'1':'0';route.style.transform='none';
-}
-async function openingToClass(){
- const next={x:168,y:210,w:1584,h:779,z:1.1,tx:0,ty:0,panel:0};
- const r=OpeningGuidance.screen(find('#gradeTab10').getBoundingClientRect(),next),tab={x:r.x+r.w*.72,y:r.y+r.h*.64};
- await Promise.all([
-  movePose(next,950),OpeningGuidance.glide(tab,950,-48),
-  tween(950,t=>{const out=Math.min(1,t*1.7),intro=$('intro-copy'),route=$('route-copy');intro.style.opacity=1-out;intro.style.transform=`translateX(${-55*out}px)`;const q=Math.max(0,(t-.46)/.54);route.style.opacity=q;route.style.transform=`translateY(${14*(1-q)}px)`})
- ]);
- await OpeningGuidance.press('#gradeTab10',tab,()=>grade(10),0);
- const cards=[...doc().querySelectorAll('#gradePanel10 .subject-card')];
- await tween(340,t=>cards.forEach((n,i)=>{const delay=Math.min(.3,i*.06),q=Math.max(0,(t-delay)/(1-delay));n.style.opacity=q;n.style.transform=`translateY(${18*(1-q)}px)`}));
- cards.forEach(n=>{n.style.opacity='';n.style.transform=''});
-}
+function openingState(s){IntroFlight.state(s)}
+
 function styledClone(node){
  const copy=node.cloneNode(true),original=[node,...node.querySelectorAll('*')],cloned=[copy,...copy.querySelectorAll('*')];
  // Snapshot only painted/layout properties, not hundreds of custom/vendor

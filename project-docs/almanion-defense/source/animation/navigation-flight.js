@@ -1,6 +1,6 @@
 /* The departure/arrival surfaces use the actual captured DOM, including
    viewport, theme and every scroll offset. No live site/network is involved. */
-const pageForStep=s=>s<=1||s>=10&&s<=13||s===29?'home':'physics';
+const pageForStep=s=>s<=1||s===33||s>=10&&s<=13||s===29?'home':'physics';
 const navigationCache={};
 async function initNavigationCache(){
  // Keep the frame roots attached: reparenting an iframe reloads its document.

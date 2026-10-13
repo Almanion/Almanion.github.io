@@ -1,0 +1,59 @@
+{
+  "htmlSha256": "8739afe7bd93315d3a66d60f61298508801c6d64aa1fbf51c12c3ad5558e13c7",
+  "route": [
+    0,
+    33,
+    1,
+    2
+  ],
+  "viewports": [
+    1920,
+    1366
+  ],
+  "offline": true,
+  "forward": true,
+  "reverse": true,
+  "replay": true,
+  "reduced": true,
+  "stationary": true,
+  "cursorContinuous": true,
+  "controls": true,
+  "repeatGuard": true,
+  "doubleClickGuard": true,
+  "errors": [],
+  "requests": [],
+  "flights": [
+    {
+      "width": 1920,
+      "target": 33,
+      "flightMs": 2853.7999999999997,
+      "peakStreaks": 2141,
+      "drawP95": 9.400000095367432,
+      "samples": 355
+    },
+    {
+      "width": 1920,
+      "target": 1,
+      "flightMs": 3006.5,
+      "peakStreaks": 2153,
+      "drawP95": 9.5,
+      "samples": 363
+    },
+    {
+      "width": 1366,
+      "target": 33,
+      "flightMs": 2853.8,
+      "peakStreaks": 2141,
+      "drawP95": 8.799999952316284,
+      "samples": 361
+    },
+    {
+      "width": 1366,
+      "target": 1,
+      "flightMs": 3006.7000000000007,
+      "peakStreaks": 2153,
+      "drawP95": 11,
+      "samples": 351
+    }
+  ]
+}

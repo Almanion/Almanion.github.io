@@ -15,7 +15,7 @@ window.Cosmos=(()=>{
   const windows=[],portal=document.querySelector('.physics-portal,.navigation-portal');
   if(portal&&portal.style.visibility!=='hidden')windows.push(portal.flightBounds||{x:parseFloat(portal.style.left),y:parseFloat(portal.style.top),w:parseFloat(portal.style.width),h:parseFloat(portal.style.height)});
   const site=document.getElementById('site');
-  if(window.DEMO&&Number(site.style.opacity||1)===1&&!site.style.transform)windows.push({x:pose.x,y:pose.y,w:pose.w,h:pose.h});
+  if(window.DEMO&&site.style.visibility!=='hidden'&&Number(site.style.opacity||1)===1&&!site.style.transform)windows.push({x:pose.x,y:pose.y,w:pose.w,h:pose.h});
   return windows;
  }
  function scenery(now=performance.now()){

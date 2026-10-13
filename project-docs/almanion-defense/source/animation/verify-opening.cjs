@@ -5,7 +5,7 @@ const snapshot=()=>p.evaluate(()=>({step:DEMO.step,pose:DEMO.pose,cursor:DEMO.cu
 const go=async(s,o={})=>{await p.waitForTimeout(270);assert(await p.evaluate(([s,o])=>DEMO.go(s,o),[s,o]));};
 for(const width of [1920,1366]){
  await p.setViewportSize({width,height:width===1920?1080:768});await p.goto('file:///'+path.join(out,'Almanion.html').replace(/\\/g,'/'));await p.waitForFunction(()=>window.DEMO);await p.screenshot({path:path.join(out,'evidence-v2',`opening-1-${width}.png`)});const initial=await snapshot();
- await go(1);const second=await snapshot();await p.screenshot({path:path.join(out,'evidence-v2',`opening-2-${width}.png`)});
+ await go(33);await go(1);const second=await snapshot();await p.screenshot({path:path.join(out,'evidence-v2',`opening-2-${width}.png`)});
  await p.waitForTimeout(270);await p.evaluate(()=>{window.flight=DEMO.go(2)});await p.waitForFunction(()=>Number(document.querySelector('.physics-portal')?.dataset.progress)>.42);
  assert(await p.evaluate(()=>{const d=document.querySelector('.portal-document iframe').contentDocument;return !d.body.classList.contains('exp-dark')&&d.getElementById('kcReviewOverlay').hidden&&d.querySelector('.sidebar')}),'portal contains actual light physics document');
  await p.screenshot({path:path.join(out,'evidence-v2',`opening-flight-${width}.png`)});await p.evaluate(()=>flight);const third=await snapshot();

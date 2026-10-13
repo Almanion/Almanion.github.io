@@ -44,11 +44,12 @@ function createStarVolume(nightSky){
  }
  function still(ctx,camera){const key=[camera.x,camera.y,camera.z].join(',');let item=cache.get(key);if(!item){const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;const stats=render(canvas.getContext('2d'),camera);item={canvas,stats};cache.set(key,item);if(cache.size>4)cache.delete(cache.keys().next().value);}ctx.clearRect(0,0,W,H);ctx.drawImage(item.canvas,0,0);return{...item.stats,drawMs:0};}
  function at(s){
+  if(s===33)return{x:-.035,y:.02,z:-1.05};
   const points=[
-   [0,0,0],[-.08,.04,.1],[-.42,.23,1.15],[-.46,.22,1.28],[-.40,.12,1.46],[-.49,.15,1.42],[-.41,.20,1.50],[-.40,.20,1.50],[-.40,.20,1.50],[-.41,.20,1.50],
+   [0,0,-2.2],[-.08,.04,.1],[-.42,.23,1.15],[-.46,.22,1.28],[-.40,.12,1.46],[-.49,.15,1.42],[-.41,.20,1.50],[-.40,.20,1.50],[-.40,.20,1.50],[-.41,.20,1.50],
    [-.08,.04,.1],[-.10,.02,.2],[-.10,.02,.2],[-.08,.04,.1],[-.42,.23,1.15],[.08,.12,1.45],[.04,.12,1.40],[.02,.08,1.58],
    [.02,.08,1.58],[.02,.08,1.58],[.02,.08,1.58],[.02,.08,1.58],[.02,.08,1.58],[.02,.08,1.58],[.02,.08,1.58],[.02,.08,1.58],[.02,.08,1.58],[.02,.08,1.58],[-.12,0,1.72],[0,0,0],[-.32,.20,1.67],[-.32,.20,1.67],[-.32,.20,1.67]
-  ];const [x,y,z]=points[Math.max(0,Math.min(32,s))];return{x,y,z};
+  ];const [x,y,z]=points[Math.max(0,Math.min(33,s))];return{x,y,z};
  }
  const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*t*(10+t*(-15+6*t));};
  function path(from,to,t){const q=smooth(t);return{x:from.x+(to.x-from.x)*q,y:from.y+(to.y-from.y)*q,z:from.z+(to.z-from.z)*q};}

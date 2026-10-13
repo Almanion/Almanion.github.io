@@ -1,0 +1,27 @@
+/* Typography is the destination; the star volume supplies the scenery. */
+#intro-copy{left:360px;top:361px;width:1200px;height:280px;text-align:center;transform-origin:50% 50%;font-family:Onest,'Segoe UI',sans-serif}
+#intro-copy h1{margin:0;font-size:182px;font-weight:500;line-height:280px;letter-spacing:-9px;color:#eef5ff;text-shadow:0 0 65px #a4c9ff17}
+#intro-description{position:absolute;left:370px;top:260px;width:1180px;height:532px;transform-origin:50% 50%;visibility:hidden;opacity:0;font-family:Onest,'Segoe UI',sans-serif}
+.intro-eyebrow{font-size:20px;font-weight:450;letter-spacing:3.5px;color:#a6bed7;text-transform:uppercase;margin:0 0 27px}
+#intro-description h2{font-size:78px;font-weight:450;line-height:1.13;letter-spacing:-2.8px;margin:0 0 30px;color:#edf5ff}
+.intro-summary{font-size:30px;font-weight:350;line-height:1.5;color:#b2c7df;margin:0}
+.intro-origin{font-size:24px;line-height:1.5;color:#91abc7;margin:27px 0 0}
+.intro-entry{position:absolute;right:120px;bottom:32px;font-size:22px;letter-spacing:.2px;color:#cbdef3;border-bottom:1px solid #91b0d15c;padding-bottom:11px}
+.intro-entry span{display:inline-block;margin-left:17px;color:#a3c7eb}
+#intro-cue{position:absolute;left:760px;bottom:85px;width:400px;text-align:center;color:#9cb4cf91;font:20px Onest,'Segoe UI',sans-serif;letter-spacing:.6px;pointer-events:none;z-index:7}
+#route-copy{top:83px}#route-copy h2{font-size:42px}
+#stage[data-intro="true"] #caption{display:none!important}
+/* Controls stay available without a persistent strip below the composition. */
+#status{position:absolute;left:67px;top:40px;z-index:25;font:17px Onest,'Segoe UI',sans-serif;letter-spacing:.3px;color:#9ab3d185;pointer-events:none}
+#controls-toggle{position:absolute;right:65px;top:27px;z-index:26;height:44px;padding:0 15px;border:1px solid #9bb7d127;border-radius:11px;background:#0d182780;color:#adc4ddc9;font-size:17px;letter-spacing:.2px}
+#controls-toggle:focus-visible{outline:2px solid #a3cfff;outline-offset:4px}
+#controls-toggle:hover{background:#172b42;color:#e0ecfa}
+nav#controls{left:auto;right:65px;top:85px;bottom:auto;width:430px;height:auto;padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:10px;border-radius:16px;background:#0c182bf5;box-shadow:0 15px 65px #0008;visibility:hidden;opacity:0;pointer-events:none}
+nav#controls[data-open="true"]{visibility:visible;opacity:1;pointer-events:auto}
+nav#controls button{font-size:18px;padding:13px 10px;color:#cbdcf0}
+nav#controls #next{grid-column:2;grid-row:1;background:#385d81}
+nav#controls #replay{grid-row:2;grid-column:1 / -1}
+nav#controls #prev{grid-column:1;grid-row:1}
+#progress{display:none}
+#stage[data-flight="true"] #controls-toggle,#stage[data-flight="true"] #status{opacity:.3}
+#stage[data-flight="true"] nav#controls[data-open="true"]{opacity:1}

@@ -6,7 +6,7 @@ $zipPath = Join-Path (Split-Path $outDir -Parent) 'Almanion-анимация.zip
 $report = Get-Content -LiteralPath (Join-Path $outDir 'evidence-v2/verification.json') -Raw | ConvertFrom-Json
 $htmlHash = (Get-FileHash -LiteralPath (Join-Path $outDir 'Almanion.html') -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($report.htmlSha256 -ne $htmlHash) { throw 'Verification must match the current HTML build.' }
-foreach ($extraReport in @('reading-verification.json','opening-verification.json','flight-verification.json','cursor-verification.json','search-theme-verification.json','star-volume-verification.json','fsrs-navigation-verification.json','first-five-verification.json','account-verification.json','quick-access-verification.json')) {
+foreach ($extraReport in @('intro-verification.json','reading-verification.json','opening-verification.json','flight-verification.json','cursor-verification.json','search-theme-verification.json','star-volume-verification.json','fsrs-navigation-verification.json','first-five-verification.json','account-verification.json','quick-access-verification.json')) {
     $extra = Get-Content -LiteralPath (Join-Path $outDir "evidence-v2/$extraReport") -Raw | ConvertFrom-Json
     if ($extra.htmlSha256 -ne $htmlHash) { throw "Verification does not match current HTML: $extraReport" }
 }
@@ -19,21 +19,24 @@ HTML SHA-256: $htmlHash
 Полный маршрут и эффекты проверены на этой итоговой HTML-сборке.
 Дополнительно проверены разгон и торможение звёзд во время влёта,
 обратный переход, чистая остановка и панель управления.
-Первый влёт длится 2500 мс; у других влётов/вылетов — 2350 мс.
+Вступительные влёты — 2850 и 3000 мс (плюс наведение курсора).
+Влёт в физику длится 2500 мс; у других влётов/вылетов — 2350 мс.
 Проверены заметный участок равномерного полёта и сокращение следов
 звёзд при торможении перед неподвижной остановкой.
 
 Автоматизированные проверки в Microsoft Edge (Playwright):
-— 33 состояния от 0 до 32, весь маршрут вперёд;
+— 34 состояния от 0 до 33, весь маршрут вперёд;
 — переработанный блок FSRS‑6: формулы, графики, счётчики и отсутствие наложений;
 — реальная sessionTransition(): «Снова» → 2 → 1 → 0, S и D при подтверждениях неизменны;
 — универсальные влёты и вылеты: быстрый доступ, главная, финал и оглавление;
 — восемь маршрутов в обе стороны, направление глубины, разгон и торможение;
 — регистрация: настоящие формы, синтетический профиль и схема синхронизации;
-— быстрый доступ 13–17: черновик до сохранения, три непересекающиеся траектории;
+— быстрый доступ 14–18: черновик до сохранения, три непересекающиеся траектории;
 — непрерывный заголовок «Физика», движение курсора, свободный низ редактора;
-— маршрут из 33 остановок, включая аккаунт, возврат, повтор и оглавление;
-— первые две сцены: композиция, переход и восстановление;
+— маршрут из 34 остановок, включая аккаунт, возврат, повтор и оглавление;
+— три вступительные плоскости: название, описание, настоящий экран сайта;
+— два влёта, непрерывный видимый курсор, обратные маршруты, повтор;
+— скрытая панель управления, клавиша M, отсутствие нижнего меню;
 — раскрытие светлой страницы физики внутри увеличивающейся карточки;
 — перенос заголовка карточки в заголовок страницы без наложения страниц;
 — разгон и торможение звёзд, связанных с движением камеры;
@@ -56,7 +59,7 @@ HTML SHA-256: $htmlHash
 — полноэкранный режим;
 — независимость альтернативных оценок от текущей сцены;
 — четыре перспективных слоя звёзд с разными скоростями;
-— точное восстановление неподвижного неба каждой из 33 остановок;
+— точное восстановление неподвижного неба каждой из 34 остановок;
 — совпадение обратного маршрута, отсутствие зависимости от частоты кадров;
 — PNG RGBA 1024 × 1024 с прозрачными и полупрозрачными пикселями;
 — мягкое сжатие и усиление ореола при нажатии курсора,
@@ -94,7 +97,10 @@ $relativeFiles += 'evidence-v2/fsrs-navigation-verification.json'
 $relativeFiles += 'evidence-v2/first-five-verification.json'
 $relativeFiles += 'evidence-v2/account-verification.json'
 $relativeFiles += 'evidence-v2/quick-access-verification.json'
-foreach ($step in @(14,15,16,17)) { $relativeFiles += "evidence-v2/quick-stop-$step-1920.png" }
+$relativeFiles += 'evidence-v2/intro-verification.json'
+foreach ($step in @(0,33,1)) { $relativeFiles += "evidence-v2/intro-stop-$step-1920.png" }
+foreach ($step in @(33,1)) { $relativeFiles += "evidence-v2/intro-$step-flight-50.png" }
+foreach ($step in @(15,16,17,18)) { $relativeFiles += "evidence-v2/quick-stop-$step-1920.png" }
 $relativeFiles += 'evidence-v2/quick-save-flight-1920.png'
 $relativeFiles += 'evidence-v2/quick-physics-flight-1920.png'
 foreach ($step in @(30,31,32)) { $relativeFiles += "evidence-v2/account-$step-1920.png" }

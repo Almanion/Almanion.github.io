@@ -16,7 +16,7 @@ const out=path.resolve(__dirname,'../..'),ev=path.join(out,'evidence-v2');
    if(s===4)assert(geometry.c.y>geometry.r.y+geometry.r.h+15);
    if(s===5)assert(geometry.formula.y>geometry.p.y+42&&geometry.formula.y+geometry.formula.h<geometry.p.y+geometry.p.h,'search keeps the equation visible');
   }
-  await go(0,{instant:true});
+  await go(33,{instant:true});
   for(let s=1;s<=5;s++){
    await p.waitForTimeout(270);await p.evaluate(s=>{window.guidedFrames=[];window.guidedRun=DEMO.go(s);function sample(t){guidedFrames.push({t,...DEMO.cursor,opacity:Number($('cursor').style.opacity||1)});if(DEMO.busy)requestAnimationFrame(sample)}requestAnimationFrame(sample)},s);
    await p.waitForTimeout(s===2?1200:700);await p.screenshot({path:path.join(ev,`guided-${s}-mid-${width}.png`)});await p.evaluate(()=>guidedRun);
