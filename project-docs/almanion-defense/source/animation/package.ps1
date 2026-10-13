@@ -6,7 +6,7 @@ $zipPath = Join-Path (Split-Path $outDir -Parent) 'Almanion-анимация.zip
 $report = Get-Content -LiteralPath (Join-Path $outDir 'evidence-v2/verification.json') -Raw | ConvertFrom-Json
 $htmlHash = (Get-FileHash -LiteralPath (Join-Path $outDir 'Almanion.html') -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($report.htmlSha256 -ne $htmlHash) { throw 'Verification must match the current HTML build.' }
-foreach ($extraReport in @('reading-verification.json','opening-verification.json','flight-verification.json','cursor-verification.json','search-theme-verification.json','star-volume-verification.json','fsrs-navigation-verification.json','first-five-verification.json','account-verification.json')) {
+foreach ($extraReport in @('reading-verification.json','opening-verification.json','flight-verification.json','cursor-verification.json','search-theme-verification.json','star-volume-verification.json','fsrs-navigation-verification.json','first-five-verification.json','account-verification.json','quick-access-verification.json')) {
     $extra = Get-Content -LiteralPath (Join-Path $outDir "evidence-v2/$extraReport") -Raw | ConvertFrom-Json
     if ($extra.htmlSha256 -ne $htmlHash) { throw "Verification does not match current HTML: $extraReport" }
 }
@@ -30,6 +30,8 @@ HTML SHA-256: $htmlHash
 — универсальные влёты и вылеты: быстрый доступ, главная, финал и оглавление;
 — восемь маршрутов в обе стороны, направление глубины, разгон и торможение;
 — регистрация: настоящие формы, синтетический профиль и схема синхронизации;
+— быстрый доступ 13–17: черновик до сохранения, три непересекающиеся траектории;
+— непрерывный заголовок «Физика», движение курсора, свободный низ редактора;
 — маршрут из 33 остановок, включая аккаунт, возврат, повтор и оглавление;
 — первые две сцены: композиция, переход и восстановление;
 — раскрытие светлой страницы физики внутри увеличивающейся карточки;
@@ -91,6 +93,10 @@ foreach ($num in @('00','08','15','23','28')) { $relativeFiles += "evidence-v2/s
 $relativeFiles += 'evidence-v2/fsrs-navigation-verification.json'
 $relativeFiles += 'evidence-v2/first-five-verification.json'
 $relativeFiles += 'evidence-v2/account-verification.json'
+$relativeFiles += 'evidence-v2/quick-access-verification.json'
+foreach ($step in @(14,15,16,17)) { $relativeFiles += "evidence-v2/quick-stop-$step-1920.png" }
+$relativeFiles += 'evidence-v2/quick-save-flight-1920.png'
+$relativeFiles += 'evidence-v2/quick-physics-flight-1920.png'
 foreach ($step in @(30,31,32)) { $relativeFiles += "evidence-v2/account-$step-1920.png" }
 foreach ($step in @(1,2,3,4,5)) { $relativeFiles += "evidence-v2/guided-$step-stop-1920.png" }
 foreach ($num in @('19','20','22','23','24','25','26','27')) { $relativeFiles += "evidence-v2/fsrs-$num-1920.png" }

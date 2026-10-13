@@ -1,0 +1,34 @@
+const {chromium}=require('playwright'),fs=require('fs'),path=require('path'),assert=require('assert/strict'),crypto=require('crypto');
+const out=path.resolve(__dirname,'../..'),ev=path.join(out,'evidence-v2');
+(async()=>{const b=await chromium.launch({channel:'msedge'});try{
+ const p=await b.newPage(),errors=[],requests=[],transfers=[];p.on('pageerror',e=>errors.push(e.stack));await p.route(/^https?:/,r=>{requests.push(r.request().url());r.abort()});await p.context().setOffline(true);
+ const go=async(s,o={})=>{await p.waitForTimeout(270);assert(await p.evaluate(([s,o])=>DEMO.go(s,o),[s,o]));};
+ const snap=()=>p.evaluate(()=>{const d=DEMO.frames.home.contentDocument;return{step:DEMO.step,index:DEMO.index,pose:DEMO.pose,cursor:DEMO.cursor,dimensions:[DEMO.frames.home.style.width,DEMO.frames.home.style.height],grid:[...d.querySelectorAll('#homeQuickGrid>a')].map(n=>[n.dataset.quickId,n.textContent.trim(),n.className]),options:[...d.querySelectorAll('.home-quick-option')].map(n=>[n.dataset.quickId,n.getAttribute('aria-pressed'),n.querySelector('.home-quick-option-order').textContent]),modal:d.getElementById('homeQuickDialog').hidden,count:d.getElementById('homeQuickCount').textContent,scroll:[d.defaultView.scrollY,d.querySelector('.home-quick-dialog-body').scrollTop],caption:$('caption').innerHTML,sky:$('cosmos').toDataURL()};});
+ for(const width of [1920,1366]){
+  await p.setViewportSize({width,height:width===1920?1080:768});await p.goto('file:///'+path.join(out,'Almanion.html').replace(/\\/g,'/'));await p.waitForFunction(()=>window.DEMO);const expected={};
+  for(const s of [10,11,12,13,14]){await go(s,{instant:true});expected[s]=await snap();assert.equal(expected[s].index,s+3);}
+  assert.deepEqual(expected[12].grid.map(n=>n[0]),['physics-10','russian-ege','duty-10-1'],'draft must not update the homepage before Save');
+  assert.deepEqual(expected[13].grid.map(n=>n[0]),['physics-10','matcenter','russian-ege']);assert.equal(expected[12].count,'3 из 5');
+  await go(10,{instant:true});
+  for(const s of [11,12,13,14]){
+   await p.waitForTimeout(270);await p.evaluate(s=>{window.quickSamples=[];window.quickRun=DEMO.go(s);function sample(t){const ghosts=[...document.querySelectorAll('.quick-flight-item')].map(n=>{const r=n.getBoundingClientRect();return{id:n.dataset.quickId,p:+n.dataset.progress,alpha:+n.style.opacity,r:{x:r.x,y:r.y,w:r.width,h:r.height},text:n.querySelector('.quick-flight-copy').textContent}});quickSamples.push({t,cursor:{...DEMO.cursor},alpha:+($('cursor').style.opacity||1),ghosts,title:!!document.querySelector('.navigation-flight-title')});if(DEMO.busy)requestAnimationFrame(sample)}requestAnimationFrame(sample)},s);
+   if(s===13){await p.waitForFunction(()=>[...document.querySelectorAll('.quick-flight-item')].some(n=>+n.dataset.progress>.4));await p.screenshot({path:path.join(ev,`quick-save-flight-${width}.png`)});}
+   if(s===14){await p.waitForFunction(()=>+document.querySelector('.navigation-portal')?.dataset.progress>.45);await p.screenshot({path:path.join(ev,`quick-physics-flight-${width}.png`)});}
+   await p.evaluate(()=>quickRun);assert.deepEqual(await snap(),expected[s],`forward ${s}/${width}`);await p.screenshot({path:path.join(ev,`quick-stop-${s+3}-${width}.png`)});
+   const samples=await p.evaluate(()=>quickSamples);
+   if(s===13){let maxOverlap=0;for(const frame of samples){const active=frame.ghosts.filter(g=>g.alpha>.05);for(let i=0;i<active.length;i++)for(let j=i+1;j<active.length;j++){const a=active[i].r,b=active[j].r,w=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x),h=Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y);if(w>0&&h>0)maxOverlap=Math.max(maxOverlap,w*h);}}assert(maxOverlap<1,'travelling items do not overlap');assert(samples.some(f=>f.ghosts.length===3),'three semantic items travel to their slots');transfers.push({width,maxOverlap,frames:samples.filter(f=>f.ghosts.length).length});}
+   if(s===14){assert(samples.some(f=>f.title),'one shared physics title connects card and page');let jump=0;for(let i=1;i<samples.length;i++)if(samples[i].alpha>.4&&samples[i-1].alpha>.4)jump=Math.max(jump,Math.hypot(samples[i].cursor.x-samples[i-1].cursor.x,samples[i].cursor.y-samples[i-1].cursor.y));assert(jump<170,'cursor has no visible teleport');}
+   if(s===11||s===12){const fit=await p.evaluate(()=>{const modal=box('.home-quick-dialog-panel'),save=box('#homeQuickSave'),caption=$('caption').getBoundingClientRect(),site=$('site').getBoundingClientRect();return{fits:modal.y>=pose.y+42&&modal.y+modal.h<pose.y+pose.h,footerAboveCaption:site.top+(save.y+save.h-pose.y)*scale<caption.top};});assert(fit.fits&&fit.footerAboveCaption,'native footer is unobscured');}
+   assert.equal(await p.evaluate(()=>document.querySelectorAll('.quick-flight-item,.navigation-flight-title,.navigation-surface').length),0);
+  }
+  for(const s of [13,12,11,10]){await go(s);assert.deepEqual(await snap(),expected[s],`back ${s}/${width}`);}
+  for(const s of [11,12,13,14]){await go(s,{replay:true});assert.deepEqual(await snap(),expected[s],`replay ${s}/${width}`);}
+  await p.evaluate(()=>DEMO.setReduced(true));for(const s of [10,11,12,13,14]){await go(s);assert.deepEqual(await snap(),expected[s],`reduced ${s}/${width}`);}await p.evaluate(()=>DEMO.setReduced(false));
+  await go(12,{instant:true});await p.waitForTimeout(270);await p.locator('#next').dblclick();await p.waitForFunction(()=>!DEMO.busy);assert.equal(await p.evaluate(()=>DEMO.step),13,'one double click, one save');
+  await p.waitForTimeout(270);await p.locator('#toc-open').click();await p.locator('[data-step="12"]').click();await p.waitForFunction(()=>!DEMO.busy);assert.deepEqual(await snap(),expected[12]);
+  const frozen=await snap();await p.waitForTimeout(400);assert.deepEqual(await snap(),frozen);assert(!await p.evaluate(()=>Cosmos.active||document.getAnimations().some(a=>a.playState==='running')));
+ }
+ const clicks=await p.evaluate(()=>DEMO.actionLog);for(const a of clicks){assert(a.point.x>=a.rect.x&&a.point.x<=a.rect.x+a.rect.w&&a.point.y>=a.rect.y&&a.point.y<=a.rect.y+a.rect.h,'valid click '+a.selector);assert(a.point.x>=a.pose.x&&a.point.x<a.pose.x+a.pose.w&&a.point.y>=a.pose.y+42&&a.point.y<a.pose.y+a.pose.h,'visible click '+a.selector);}
+ assert.deepEqual(errors,[]);assert.deepEqual(requests,[]);
+ const report={htmlSha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(out,'Almanion.html'))).digest('hex'),displayedStops:[13,14,15,16,17],viewports:[1920,1366],nativeDraftAndSave:true,threeDistinctPaths:true,transfers,sharedPhysicsTitle:true,unobscuredFooter:true,forward:true,backward:true,replay:true,reducedMotion:true,outline:true,doubleClickGuard:true,stationaryStops:true,offline:true,errors,requests};fs.writeFileSync(path.join(ev,'quick-access-verification.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
+ }finally{await b.close()}})().catch(e=>{console.error(e);process.exit(1)});

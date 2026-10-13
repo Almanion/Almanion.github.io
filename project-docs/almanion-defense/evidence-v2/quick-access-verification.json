@@ -1,0 +1,40 @@
+{
+  "htmlSha256": "5241d3066a162c2a2d4bfed3ff6e54ee507e5a2014b303b726ced264b64984b6",
+  "displayedStops": [
+    13,
+    14,
+    15,
+    16,
+    17
+  ],
+  "viewports": [
+    1920,
+    1366
+  ],
+  "nativeDraftAndSave": true,
+  "threeDistinctPaths": true,
+  "transfers": [
+    {
+      "width": 1920,
+      "maxOverlap": 0,
+      "frames": 189
+    },
+    {
+      "width": 1366,
+      "maxOverlap": 0,
+      "frames": 197
+    }
+  ],
+  "sharedPhysicsTitle": true,
+  "unobscuredFooter": true,
+  "forward": true,
+  "backward": true,
+  "replay": true,
+  "reducedMotion": true,
+  "outline": true,
+  "doubleClickGuard": true,
+  "stationaryStops": true,
+  "offline": true,
+  "errors": [],
+  "requests": []
+}

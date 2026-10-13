@@ -1,0 +1,9 @@
+/* Temporary, semantic copies connect the actual editor to the actual cards. */
+.quick-flight-item{position:absolute;left:0;top:0;z-index:18;pointer-events:none;overflow:hidden;box-shadow:0 16px 45px #0005;will-change:transform;contain:layout paint;font-family:Onest,'Segoe UI',sans-serif}
+.quick-flight-skin{position:absolute;inset:0;border:1.3px solid;border-radius:inherit}
+.quick-flight-icon,.quick-flight-copy,.quick-flight-order,.quick-flight-arrow{position:absolute;box-sizing:border-box}
+.quick-flight-copy{display:flex;align-items:center;white-space:nowrap;line-height:1.2}
+.quick-flight-icon{padding:7px;border-radius:12px;background:#8ab6df0d}
+.quick-flight-order{display:grid;place-items:center;border-radius:50%;font-size:18px;font-weight:700}
+.quick-flight-arrow{color:#a0a5b8}
+.navigation-flight-title{position:absolute;z-index:14;pointer-events:none;white-space:nowrap;font-family:Onest,'Segoe UI',sans-serif;line-height:1.2}

@@ -31,25 +31,31 @@ async function navigationSurface(){
  const nodes=target.querySelectorAll('*');offsets.forEach(([x,y],i)=>{if(x)nodes[i].scrollLeft=x;if(y)nodes[i].scrollTop=y});copy.contentWindow.scrollTo(original.defaultView.scrollX,original.defaultView.scrollY);
  root.style.visibility='visible';
  const release=()=>{root.querySelector('.navigation-face')?.remove();root.className='navigation-cache';root.style.cssText='position:absolute;visibility:hidden;pointer-events:none';content.style.visibility='';content.style.transform='';};
- return{root,content,pose:saved,release};
+ return{root,content,copy,pose:saved,release};
+}
+function navigationHeading(node,p){
+ const r=node.getBoundingClientRect(),c=node.ownerDocument.defaultView.getComputedStyle(node);
+ return{x:p.x+p.tx+r.x*p.z,y:p.y+42+p.ty+r.y*p.z,size:parseFloat(c.fontSize)*p.z,line:parseFloat(c.lineHeight)*p.z,weight:parseFloat(c.fontWeight),family:c.fontFamily,color:c.color};
 }
 function navigationCard(){
  const candidates=['#homeQuickGrid [data-quick-id="physics-10"]','#gradePanel10 a[href="physics-10.html"]'];
- for(const selector of candidates){const n=find(selector),r=n&&box(n);if(r&&r.x>=pose.x&&r.y>=pose.y+42&&r.y+r.h<pose.y+pose.h)return{r,node:n,copy:styledClone(n)};}
+ for(const selector of candidates){const n=find(selector),r=n&&box(n);if(r&&r.x>=pose.x&&r.y>=pose.y+42&&r.y+r.h<pose.y+pose.h)return{r,node:n,copy:styledClone(n),heading:n.querySelector('h2')?navigationHeading(n.querySelector('h2'),pose):null};}
  return{r:{x:pose.x+pose.w*.48,y:pose.y+pose.h*.45,w:pose.w*.25,h:pose.h*.25},node:null};
 }
 async function navigationFlight(target){
  const from=step,entering=currentPage==='home',clamp=x=>Math.max(0,Math.min(1,x)),soft=x=>{x=clamp(x);return x*x*(3-2*x)},mix=(a,b,t)=>a+(b-a)*t;
+ const guided=(from===13&&target===14)||(from===14&&target===13);
  Cosmos.holdFlight(from);
  // UI clicks belong to the ordinary route only; outline navigation has no fake click.
- if(target===14&&from===13){await prepareTarget(anchors[14]);await click(anchors[14],null,330)}
+ if(target===14&&from===13){await prepareTarget(anchors[14]);await OpeningGuidance.press(anchors[14],OpeningGuidance.hit(anchors[14]),null,360)}
  if(target===10&&(from===9||from===32)){await prepareTarget('.sidebar-header a');await click('.sidebar-header a',null,330)}
- let card=entering?navigationCard():null,old=await navigationSurface(),arrival=null,portal=null;
+ const cursorDeparture={...cursor};
+ let card=entering?navigationCard():null,old=await navigationSurface(),arrival=null,portal=null,sharedTitle=null;
  const hide=['panel','math-site-label','opening','cursor','connector','final','account-story','account-site-label'];
  const restoreLayers=()=>hide.forEach(id=>$(id).style.visibility=id.startsWith('account-')?(isAccountScene(target)?'visible':'hidden'):'');
  try{
   hide.forEach(id=>$(id).style.visibility='hidden');$('site').style.visibility='hidden';
-  step=target;resetUI(target);mathState(target);await layout(target,false);await endCursor(target);linkScene(target);readingFocus(target);hide.forEach(id=>$(id).style.visibility='hidden');
+  step=target;resetUI(target);mathState(target);await layout(target,false);if(guided){Object.assign(cursor,QuickAccess.point(target));paintCursor()}else await endCursor(target);const cursorArrival={...cursor};linkScene(target);readingFocus(target);hide.forEach(id=>$(id).style.visibility='hidden');
   if(!entering)card=navigationCard();
   arrival=await navigationSurface();arrival.root.style.zIndex='9';old.root.style.zIndex='10';
   const foreground=entering?arrival:old,background=entering?old:arrival,full=foreground.pose;
@@ -58,6 +64,12 @@ async function navigationFlight(target){
   if(card.node){const n=card.copy;Object.assign(n.style,{width:'100%',height:'100%',margin:'0',position:'relative'});n.querySelectorAll('use').forEach(u=>{const symbol=frames.home.contentDocument.querySelector(u.getAttribute('href'));if(symbol){const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.innerHTML=symbol.innerHTML;u.replaceWith(g)}});face.append(n)}else{face.innerHTML='<span>Физика</span>';}
   Object.assign(face.style,{width:card.r.w+'px',height:card.r.h+'px',right:'auto',bottom:'auto',transformOrigin:'0 0',transform:`scale(${full.w/card.r.w},${full.h/card.r.h})`});
   portal.append(face);$('stage').dataset.flight='true';Cosmos.holdFlight(from);
+  let headingTarget=null;
+  if(guided&&card.heading){
+   const heading=foreground.copy.contentDocument.querySelector('h1');headingTarget=navigationHeading(heading,foreground.pose);heading.style.visibility='hidden';face.querySelector('h2').style.visibility='hidden';
+   sharedTitle=document.createElement('div');sharedTitle.className='navigation-flight-title';sharedTitle.textContent='Физика';sharedTitle.style.fontFamily=headingTarget.family;sharedTitle.style.color=headingTarget.color;$('stage').append(sharedTitle);
+   $('cursor').style.visibility='';Object.assign(cursor,cursorDeparture);paintCursor();
+  }
   await tween(Cosmos.flightTiming.navigationMs,raw=>{
    const p=entering?raw:1-raw,g=Cosmos.volume.flightProgress(clamp((p-Cosmos.flightTiming.start)/Cosmos.flightTiming.span)),show=soft((p-.40)/.43),r=card.r;
    const x=mix(r.x,full.x,g),y=mix(r.y,full.y,g),w=mix(r.w,full.w,g),h=mix(r.h,full.h,g);
@@ -65,13 +77,14 @@ async function navigationFlight(target){
    foreground.content.style.visibility=p<.40?'hidden':'visible';
    face.style.opacity=String(1-show);face.firstElementChild.style.opacity=String(1-soft((p-.26)/.20));background.root.style.opacity=String(1-soft((p-.10)/.50));
    const center={x:r.x+r.w/2,y:r.y+r.h/2};background.root.style.transformOrigin=(center.x-background.pose.x)+'px '+(center.y-background.pose.y)+'px';background.root.style.transform=`scale(${1+.12*soft(p/.6)})`;
+   if(sharedTitle){const a=card.heading,b=headingTarget;Object.assign(sharedTitle.style,{left:mix(a.x,b.x,g)+'px',top:mix(a.y,b.y,g)+'px',fontSize:mix(a.size,b.size,g)+'px',fontWeight:Math.round(mix(a.weight,b.weight,g)),lineHeight:mix(a.line,b.line,g)+'px'});Object.assign(cursor,OpeningGuidance.path(cursorDeparture,cursorArrival,raw,-58));paintCursor();$('cursor').style.opacity=1-.64*Math.sin(Math.PI*raw);}
    Cosmos.setFlight(raw,mix(center.x,full.x+full.w/2,g),mix(center.y,full.y+full.h/2,g),!entering,{from,to:target,duration:Cosmos.flightTiming.navigationMs/1000});
   },true);
-  $('site').style.visibility='';old.release();arrival.release();Cosmos.finishFlight();
+  $('site').style.visibility='';sharedTitle?.remove();$('cursor').style.opacity='';old.release();arrival.release();Cosmos.finishFlight();
   restoreLayers();
   if(target>=15&&target<=27){await animateMathScene(target);mathState(target);linkScene(target);}
  }finally{
-  old.release();arrival?.release();$('site').style.visibility='';restoreLayers();$('stage').dataset.flight='false';Cosmos.finishFlight();
+  sharedTitle?.remove();$('cursor').style.opacity='';old.release();arrival?.release();$('site').style.visibility='';restoreLayers();$('stage').dataset.flight='false';Cosmos.finishFlight();
  }
 }
 // A topic result travels into the reader plane rather than fading vertically.
