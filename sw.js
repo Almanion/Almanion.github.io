@@ -29,7 +29,7 @@ self.addEventListener('activate', function (event) {
     event.waitUntil((async function () {
         const keep = new Set([APP_SHELL_CACHE, RUNTIME_CACHE]);
         const keys = await caches.keys();
-        await Promise.all(keys.map(function (key) { return keep.has(key) || key === OFFLINE_INDEX || key.startsWith(OFFLINE_PREFIX) ? null : caches.delete(key); }));
+        await Promise.all(keys.map(function (key) { return keep.has(key) || key === OFFLINE_INDEX || key.startsWith(OFFLINE_PREFIX) || key.startsWith('almanion-watch-') ? null : caches.delete(key); }));
         await pruneRuntimeCache();
         await self.clients.claim();
     })());

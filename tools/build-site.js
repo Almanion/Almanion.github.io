@@ -11,6 +11,7 @@ const DefinitionIndex = require('../performance/build-definition-index.js');
 const ServiceWorker = require('../performance/build-service-worker.js');
 const OfflineLibrary = require('./build-offline.js');
 const HomeStyles = require('./build-home-styles.js');
+const Watch = require('./build-watch.js');
 
 const CONFIG_PATH = path.join(__dirname, 'site-files.json');
 
@@ -238,6 +239,7 @@ function build(options) {
     });
     DefinitionIndex.build({ root, site: output });
     OfflineLibrary.build({ root, site: output });
+    Watch.build({ root, site: output });
     const serviceWorker = ServiceWorker.build({ root, site: output, assetPaths: homeStyles });
     fs.writeFileSync(path.join(output, '.nojekyll'), '', 'utf8');
     const metadata = writeMetadata(root, output, notes, search, serviceWorker);

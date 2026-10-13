@@ -3,6 +3,8 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const BuildSite = require('../tools/build-site');
+const publicFiles = BuildSite.readConfig();
 
 const root = path.join(__dirname, '..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
@@ -44,6 +46,9 @@ function inspectInlineSvg(directory) {
         const file = path.join(directory, entry.name);
         if (entry.isDirectory()) return inspectInlineSvg(file);
         if (!/\.(?:html|js)$/.test(entry.name)) return;
+        // Inspect real frontend assets, not regex literals in build tools or
+        // private presentation helpers that are never sent to a browser.
+        if (!BuildSite.isPublishable(path.relative(root,file),publicFiles)) return;
         const source = fs.readFileSync(file, 'utf8');
         for (const match of source.matchAll(/<svg\b[^>]*>/gi)) {
             const tag = match[0];
