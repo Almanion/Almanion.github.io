@@ -38,7 +38,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Almanion">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://*.googleapis.com https://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebaseio.com wss://*.firebasedatabase.app https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://accounts.google.com; img-src 'self' data: https://www.gstatic.com https://lh3.googleusercontent.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' blob: https://script.google.com https://script.googleusercontent.com https://*.googleapis.com https://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebaseio.com wss://*.firebasedatabase.app https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://accounts.google.com; img-src 'self' data: https://www.gstatic.com https://lh3.googleusercontent.com; frame-src blob: https://*.firebaseapp.com https://accounts.google.com https://apis.google.com; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com;">
     <title>Матцентр | Almanion</title>
     <link rel="stylesheet" href="styles/site/index.css?v=20261002-1">
     <link rel="stylesheet" href="styles/site/matcenter.css?v=20260911-2">
@@ -54,7 +54,7 @@
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
-    <link rel="stylesheet" href="styles/matcenter-refresh.css?v=20261010-compact2">
+    <link rel="stylesheet" href="styles/matcenter-refresh.css?v=20261013-print1">
 </head>
 <body class="matcenter-page">
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -185,6 +185,7 @@
             <label for="mcSeriesSelect">Серия</label>
             <select class="mc-select" id="mcSeriesSelect" aria-label="История серий"></select>
             <span id="mcSeriesSummary"></span>
+            <button type="button" id="mcPrintButton" class="print-export-button" aria-haspopup="dialog" aria-controls="mcPrintDialog" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.75h7l3 3V11"/><path d="M14 3.75V7h3"/><path d="M6 14.5h12a2 2 0 0 1 2 2v2.75H4V16.5a2 2 0 0 1 2-2Z"/><path d="M7 19.25v1h10v-1M7.5 11h9"/></svg><span class="print-export-label">Печать</span></button>
         </div>
         <p id="mcResultSummary" class="mc-result-summary" role="status" aria-live="polite" hidden></p>
 
@@ -289,15 +290,15 @@
     <script defer src="matcenter/00-core.js?v=20261010-series1"></script>
     <script defer src="matcenter/05-math.js?v=20261009-repairs1"></script>
     <script defer src="matcenter/10-security.js?v=20260902-2"></script>
-    <script defer src="matcenter/20-auth.js?v=20261002-1"></script>
+    <script defer src="matcenter/20-auth.js?v=20261013-print1"></script>
     <script defer src="matcenter/25-cache.js?v=20260911-1"></script>
     <script defer src="matcenter/35-workspace-model.js?v=20261010-series1"></script>
     <script defer src="matcenter/30-data.js?v=20261010-series1"></script>
     <script defer src="matcenter/40-personal-progress.js?v=20261010-compact2"></script>
     <script defer src="matcenter/50-render.js?v=20261010-compact2"></script>
     <script defer src="matcenter/60-navigation-search.js?v=20261009-repairs1"></script>
-    <script defer src="matcenter/65-workspace.js?v=20261010-compact2"></script>
-    <script defer src="matcenter/runtime.js?v=20260911-2"></script>
+    <script defer src="matcenter/65-workspace.js?v=20261013-print1"></script>
+    <script defer src="matcenter/runtime.js?v=20261013-print1"></script>
     <script defer src="account.js?v=20260908-1"></script>
 </body>
 </html>

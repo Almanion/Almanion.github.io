@@ -7,6 +7,7 @@
     const BLOCKS = '.definition-box,.formula-box,.remark-box,.reminder-box,.experiment-box,.derivation-box,.theorem-box,.lemma-box,.example-box,.statement-box,.corollary-box,.proof-box,.exercise-box,.properties-box,.system-box,.english-word-card';
     const LABELS = { definition: 'Определение', formula: 'Формула', remark: 'Замечание', reminder: 'Напоминание', experiment: 'Опыт', derivation: 'Вывод', theorem: 'Теорема', lemma: 'Лемма', example: 'Пример', statement: 'Утверждение', corollary: 'Следствие', proof: 'Доказательство', exercise: 'Задача', properties: 'Свойства', system: 'Система' };
     let ready;
+    let serifReady;
     const escape = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     const load = src => new Promise((resolve, reject) => {
         const script = document.createElement('script');
@@ -47,6 +48,28 @@
             };
         })().catch(error => { ready = null; throw error; });
         return ready;
+    }
+
+    // Loaded only for problem handouts, not for ordinary note exports.
+    function serifDependencies() {
+        if (!serifReady) serifReady = (async () => {
+            const fonts = {};
+            await Promise.all([
+                ['cmunrm.otf', '400', 'normal'], ['cmunbx.otf', '700', 'normal'],
+                ['cmunti.otf', '400', 'italic'], ['cmunbi.otf', '700', 'italic']
+            ].map(async ([file, weight, style]) => {
+                const response = await fetch('vendor/pdf/' + file);
+                if (!response.ok) throw new Error('Не удалось загрузить печатный шрифт.');
+                const buffer = await response.arrayBuffer(), bytes = new Uint8Array(buffer);
+                let binary = '';
+                for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+                fonts[file] = btoa(binary);
+                document.fonts.add(await new FontFace('AlmanionHandout', buffer, { weight, style }).load());
+            }));
+            pdfMake.addVirtualFileSystem(fonts);
+            pdfMake.fonts.CMUSerif = { normal: 'cmunrm.otf', bold: 'cmunbx.otf', italics: 'cmunti.otf', bolditalics: 'cmunbi.otf' };
+        })().catch(error => { serifReady = null; throw error; });
+        return serifReady;
     }
 
     function restoreMath(root) {
@@ -153,12 +176,13 @@
             row.parts.push(part);
         });
         const result = [];
-        for (let i = 0; i < rows.length; i += 4) {
-            const chunk = rows.slice(i, i + 4), top = chunk[0].top, height = chunk[chunk.length - 1].bottom - top + 3;
+        const chunkLines = measure.pdfChunkLines || 4;
+        for (let i = 0; i < rows.length; i += chunkLines) {
+            const chunk = rows.slice(i, i + chunkLines), top = chunk[0].top, height = chunk[chunk.length - 1].bottom - top + 3;
             const body = chunk.flatMap(row => row.parts).map(part => part.svg
                 ? '<g transform="translate(' + part.x + ',' + (part.y - top) + ')">' + part.svg + '</g>'
-                : '<text x="' + part.x + '" y="' + (part.y - top + part.size * .93) + '" textLength="' + (part.right - part.x) + '" lengthAdjust="spacingAndGlyphs" font-family="NotoSans" font-size="' + part.size + '" font-weight="' + part.weight + '" font-style="' + part.italic + '" xml:space="preserve">' + escape(part.text.trimEnd().replace(/ /g, '\u00a0')) + '</text>').join('');
-            result.push({ svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + width * 4 / 3 + ' ' + height + '" width="' + width * 4 / 3 + '" height="' + height + '" fill="' + INK + '">' + body + '</svg>', width, margin: [0, 0, 0, i + 4 >= rows.length ? 5 : 0] });
+                : '<text x="' + part.x + '" y="' + (part.y - top + part.size * .93) + '" textLength="' + (part.right - part.x) + '" lengthAdjust="spacingAndGlyphs" font-family="' + (measure.pdfFont || 'NotoSans') + '" font-size="' + part.size + '" font-weight="' + part.weight + '" font-style="' + part.italic + '" xml:space="preserve">' + escape(part.text.trimEnd().replace(/ /g, '\u00a0')) + '</text>').join('');
+            result.push({ svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + width * 4 / 3 + ' ' + height + '" width="' + width * 4 / 3 + '" height="' + height + '" fill="' + INK + '">' + body + '</svg>', width, margin: [0, 0, 0, i + chunkLines >= rows.length ? 5 : 0] });
         }
         return result;
     }
@@ -458,5 +482,74 @@
             });
         } finally { host.remove(); }
     }
-    window.AlmanionPdfDownload = Object.freeze({ generate });
+    async function generateHandout(tasks, title, options = {}) {
+        if (!Array.isArray(tasks) || !tasks.length) throw new Error('В серии нет задач для печати.');
+        await dependencies();
+        await serifDependencies();
+        const host = document.createElement('div');
+        host.style.cssText = 'position:fixed;left:-10000px;top:0;pointer-events:none;';
+        host.inert = true;
+        document.body.append(host);
+        const shadow = host.attachShadow({ mode: 'open' });
+        const style = document.createElement('style');
+        style.textContent = ':host{color:#17191d} .paragraph{font:16px/1.2 AlmanionHandout,serif;white-space:pre-line;overflow-wrap:anywhere;text-indent:16px} strong,b{font-weight:700} .handout-item{display:block;padding-left:16px;text-indent:0;margin:8px 0} .pdf-math{display:inline-block;vertical-align:middle;line-height:0;margin-inline:.12em;text-indent:0}.pdf-math.display{display:block;text-align:center;margin:8px 0}.pdf-math svg{max-width:100%;height:auto}';
+        shadow.append(style);
+        const measure = document.createElement('div');
+        measure.pdfFont = 'CMUSerif';
+        measure.pdfChunkLines = 16;
+        shadow.append(measure);
+        try {
+            const content = [];
+            // Only a heading supplied with the original handout (e.g. a camp
+            // add-on). Generated "Серия N" labels stay in the dialog/filename.
+            if (options.heading) content.push({ text: options.heading, fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 7] });
+            for (const task of tasks) {
+                const number = document.createElement('strong');
+                number.textContent = String(task.numberText ?? task.number) + '.';
+                const description = String(task.description ?? '');
+                const nodes = [number];
+                const reference = description.match(/^\(ЛЗ[^)]*\)\)?/u);
+                let body = description;
+                if (reference) {
+                    nodes.push(document.createTextNode(' '));
+                    const label = document.createElement('strong'); label.textContent = reference[0]; nodes.push(label);
+                    body = description.slice(reference[0].length);
+                } else nodes.push(document.createTextNode(' '));
+                // Preserve the printed theorem's numbered statements as a list,
+                // not as new task numbers or independently rewritten conditions.
+                const statements = body.match(/^[\s\S]*?(?=1\. )|[1-9]\. [\s\S]*?(?= [1-9]\. |$)/g);
+                if (statements?.length >= 3 && statements.slice(1).every((item, i) => item.startsWith((i + 1) + '. '))) {
+                    nodes.push(document.createTextNode(statements[0]));
+                    for (const statement of statements.slice(1)) {
+                        const line = document.createElement('span'); line.className = 'handout-item'; line.textContent = statement; nodes.push(line);
+                    }
+                } else nodes.push(document.createTextNode(body));
+                const lines = await paragraph(nodes, WIDTH, measure);
+                if (!lines.length) throw new Error('Не удалось оформить условие задачи ' + task.number + '.');
+                lines[lines.length - 1].margin = [0, 0, 0, 0];
+                // Ordinary problems stay whole; exceptionally long conditions
+                // may continue in line groups instead of being clipped.
+                const height = lines.reduce((sum, line) => sum + Number(line.svg.match(/height="([\d.]+)"/)[1]) * .75, 0);
+                content.push(height < 750 ? { stack: lines, unbreakable: true } : { stack: lines });
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+            const definition = { info: { title, subject: 'Серия задач' }, pageSize: 'A4',
+                pageMargins: [39.69, 36.85, 39.69, 36.85],
+                defaultStyle: { font: 'CMUSerif', fontSize: 12, color: INK }, content };
+            // Exactly the same PDF is used by preview, download and printing.
+            // No site header/footer, invented title, statuses or hints.
+            return await new Promise((resolve, reject) => {
+                let stream;
+                try {
+                    stream = pdfMake.createPdf(definition).getStream({ bufferPages: true, autoPrint: options.autoPrint === true });
+                    const chunks = [];
+                    stream.on('data', chunk => chunks.push(chunk));
+                    stream.on('error', reject);
+                    stream.on('end', () => resolve(new Blob(chunks, { type: 'application/pdf' })));
+                    stream.end();
+                } catch (error) { stream?.destroy(); reject(error); }
+            });
+        } finally { host.remove(); }
+    }
+    window.AlmanionPdfDownload = Object.freeze({ generate, generateHandout });
 })();

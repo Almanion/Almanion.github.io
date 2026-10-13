@@ -22,6 +22,7 @@ function syncMatcenterWorkspace() {
     if (!select) return;
     const series = MatcenterWorkspaceModel.seriesList(allTasks, currentGrade);
     document.getElementById('mcSeriesRow').hidden = !series.length;
+    document.getElementById('mcPrintButton').disabled = !authToken || !series.length;
     const options = [{ key: '', label: 'Все задачи раздела' }].concat(series.map(s => ({
         key: s.key, label: [s.title, s.date ? s.date.split('-').reverse().join('.') : ''].filter(Boolean).join(' · ')
     })));
@@ -174,6 +175,18 @@ function saveMatcenterReadingPlace() {
 
 function initMatcenterWorkspace() {
     matcenterWorkspaceReady = true;
+    function openSeriesPrint() {
+        MatcenterRuntime.ensure('print').then(() => window.MatcenterSeriesPrint.open())
+            .catch(() => showPersonalSolvedNotice('Не удалось открыть печать. Попробуйте снова.'));
+    }
+    document.getElementById('mcPrintButton').addEventListener('click', openSeriesPrint);
+    document.addEventListener('keydown', event => {
+        if ((event.ctrlKey || event.metaKey) && !event.altKey && event.code === 'KeyP'
+            && authToken && !document.getElementById('mcSeriesRow').hidden) {
+            event.preventDefault();
+            if (!window.MatcenterSeriesPrint?.isOpen()) openSeriesPrint();
+        }
+    });
     const filterToggle = document.getElementById('mcFilterToggle');
     filterToggle?.addEventListener('click', () => filterToggle.setAttribute('aria-expanded', String(filterToggle.getAttribute('aria-expanded') !== 'true')));
     document.querySelectorAll('[data-mc-view]').forEach(button => button.addEventListener('click', () => setMatcenterReadingMode(button.dataset.mcView)));

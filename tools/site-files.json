@@ -89,7 +89,7 @@
     "matcenter": [".js", ".json"],
     "presentation": [".html"],
     "styles": [".css"],
-    "vendor": [".js", ".css", ".txt", ".ttf", ".woff", ".woff2"],
+    "vendor": [".js", ".css", ".txt", ".ttf", ".otf", ".woff", ".woff2"],
     "watch": [".html", ".js", ".css", ".json", ".svg"]
   },
   "deniedPaths": [

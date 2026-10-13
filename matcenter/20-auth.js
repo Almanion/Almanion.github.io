@@ -388,6 +388,8 @@ function hideAuthForm() {
 function logout() {
     authToken = null;
     isAdmin = false;
+    window.MatcenterSeriesPrint?.reset();
+    document.getElementById('mcPrintButton').disabled = true;
     
     // Очищаем таймеры
     if (lockoutTimer) {

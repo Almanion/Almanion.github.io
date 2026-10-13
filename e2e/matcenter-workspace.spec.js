@@ -45,7 +45,7 @@ async function setup(page, options = {}) {
             sessionStorage.setItem('mc-test-initialized', '1');
         }
         const user = { uid: 'mc-test', email: 'test@example.com', getIdToken: async () => 'test-token' };
-        const auth = { currentUser: user, onAuthStateChanged(callback) { setTimeout(() => callback(user), 0); return () => {}; } };
+        const auth = { currentUser: user, async signOut() { auth.currentUser = null; }, onAuthStateChanged(callback) { setTimeout(() => callback(user), 0); return () => {}; } };
         let data = JSON.parse(localStorage.getItem('mc-test-remote') || '{"grade-9__12":{"solved":true,"updatedAt":1}}');
         const callbacks = new Set();
         const snapshot = () => ({ val: () => data });
@@ -66,6 +66,121 @@ async function ready(page) {
     await expect(page.locator('#authOverlay')).toBeHidden();
     await expect(page.locator('#tasksContainer .task-card').first()).toBeVisible();
 }
+
+test('series printing keeps every original condition and number, ignores filters and does not alter marks', async ({page}) => {
+    const yearTasks = [25,16,19].map(number => ({number,numberText:String(number),grade:'grade-10',academicYear:'2026/2027',
+        taskId:`print-${number}`,seriesId:'print-series',seriesTitle:'Серия 2',description:`Условие ${number}: $x^2=4$.`,hint:'СЕКРЕТНАЯ ПОДСКАЗКА',status:number===19?'Н':'Р'}));
+    const errors = await setup(page,{tasks:[],yearTasks});
+    await page.goto('/matcenter.html?grade=grade-10'); await ready(page);
+    expect(await page.evaluate(() => !!window.MatcenterSeriesPrint)).toBe(false);
+    await page.locator('#mcSeriesSelect').selectOption({label:'Серия 2'});
+    await page.locator('#searchInput').fill('16');
+    await expect(page.locator('#tasksContainer .task-card')).toHaveCount(1);
+    const marks = await page.evaluate(() => localStorage.getItem('mc-test-remote'));
+    await page.locator('#mcPrintButton').click();
+    await expect(page.locator('#mcPrintDialog')).toBeVisible();
+    await expect(page.locator('#mcPrintCount')).toContainText('3 задачи');
+    await page.evaluate(() => { window.AlmanionPdfDownload = {generateHandout:async(tasks,title,options)=>{
+        window.__printSnapshot={tasks,title,options}; return new Blob(['%PDF-fixture'],{type:'application/pdf'});
+    }}; });
+    await page.locator('[data-mc-print-action="preview"]').click();
+    await expect(page.locator('#mcPrintPreview')).toBeVisible();
+    const snapshot = await page.evaluate(() => window.__printSnapshot);
+    expect(snapshot.tasks).toEqual(yearTasks.slice().sort((a,b)=>a.number-b.number).map(({number,numberText,description})=>({number,numberText,description})));
+    expect(snapshot.options).toEqual({autoPrint:false,heading:''});
+    expect(JSON.stringify(snapshot)).not.toContain('СЕКРЕТНАЯ');
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#mcPrintDialog')).toBeHidden();
+    await expect(page.locator('#mcPrintFrame')).toHaveAttribute('src','about:blank');
+    await expect(page.locator('#tasksContainer .task-card')).toHaveCount(1);
+    expect(await page.evaluate(() => localStorage.getItem('mc-test-remote'))).toBe(marks);
+    await expect(page.locator('#mcPrintButton')).toBeFocused();
+    expect(errors).toEqual([]);
+});
+
+for (const old of [false,true]) test(`series print dialog is usable at 320px, old=${old}`,async({page},info)=>{
+    const errors=await setup(page,{old,dark:true});
+    await page.setViewportSize({width:320,height:760});
+    await page.goto('/matcenter.html?grade=grade-10'); await ready(page);
+    const button=await page.locator('#mcPrintButton').boundingBox();
+    expect(button.x).toBeGreaterThanOrEqual(0); expect(button.x+button.width).toBeLessThanOrEqual(320);
+    await page.keyboard.press('Control+p');
+    await expect(page.locator('#mcPrintSeries')).toBeFocused();
+    await expect(page.locator('[data-mc-print-action="print"]')).toBeDisabled();
+    await page.locator('#mcPrintSeries').selectOption({label:'Серия 1. Геометрия'});
+    await expect(page.locator('[data-mc-print-action="print"]')).toBeEnabled();
+    const bounds=await page.locator('#mcPrintDialog .print-export-dialog').boundingBox();
+    expect(bounds.x).toBeGreaterThanOrEqual(0); expect(bounds.x+bounds.width).toBeLessThanOrEqual(320);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+    await page.screenshot({path:info.outputPath(`print-dialog-320-${old}.png`)});
+    await page.keyboard.press('Escape'); expect(errors).toEqual([]);
+});
+
+test('real series PDF keeps serif Cyrillic and math, no invented heading/footer; print uses PDF action',async({page},info)=>{
+    test.setTimeout(90000);
+    const yearTasks=[16,25].map(number=>({number,grade:'grade-10',taskId:`pdf-${number}`,seriesId:'pdf-series',seriesTitle:'Серия 2',academicYear:'2026/2027',
+        description:number===16?'Даны числа $a,b>0$. Докажите, что $\\frac{a^2+b^2}{2} \\geq ab$.':'Найдите $x \\in \\mathbb{R}$.\n$$\\left[\\begin{aligned}x^2&=4\\\\y&=1.\\end{aligned}\\right.$$\nСохраните условие.'}));
+    const errors=await setup(page,{tasks:[],yearTasks});
+    await page.goto('/matcenter.html?grade=grade-10'); await ready(page);
+    await page.locator('#mcPrintButton').click();
+    await page.locator('#mcPrintSeries').selectOption({label:'Серия 2'});
+    await page.evaluate(()=>{window.print=()=>{throw Error('Do not print cards')};});
+    await page.locator('[data-mc-print-action="print"]').click();
+    await expect(page.locator('#mcPrintPreview')).toBeVisible({timeout:80000});
+    const result=await page.evaluate(async()=>({bytes:Array.from(new Uint8Array(await(await fetch(document.getElementById('mcPrintFrame').src)).arrayBuffer()))}));
+    const bytes=require('node:buffer').Buffer.from(result.bytes), source=bytes.toString('latin1');
+    require('node:fs').writeFileSync(info.outputPath('series-print.pdf'),bytes);
+    expect(source).toMatch(/^%PDF-/); expect(source).toMatch(/CMUSerif/);
+    expect(source).toMatch(/\/S\s+\/Named\s+\/N\s+\/Print/);
+    expect(bytes.length).toBeGreaterThan(10000);
+    await page.evaluate(()=>logout());
+    await expect(page.locator('#mcPrintDialog')).toBeHidden();
+    await expect(page.locator('#mcPrintFrame')).toHaveAttribute('src','about:blank');
+    await expect(page.locator('#mcPrintButton')).toBeDisabled();
+    expect(errors).toEqual([]);
+});
+
+test('exiting during PDF preparation cancels delivery',async({page})=>{
+    const errors=await setup(page);
+    await page.goto('/matcenter.html?grade=grade-10'); await ready(page);
+    await page.locator('#mcPrintButton').click();
+    await page.locator('#mcPrintSeries').selectOption({label:'Серия 1. Геометрия'});
+    await page.evaluate(()=>{window.AlmanionPdfDownload={generateHandout:()=>new Promise(resolve=>{window.__finishPrint=resolve;})};});
+    await page.locator('[data-mc-print-action="preview"]').click();
+    await expect.poll(()=>page.evaluate(()=>typeof window.__finishPrint)).toBe('function');
+    await page.evaluate(()=>{logout();window.__finishPrint(new Blob(['late'],{type:'application/pdf'}));});
+    await expect(page.locator('#mcPrintDialog')).toBeHidden();
+    await expect(page.locator('#mcPrintFrame')).toHaveAttribute('src','about:blank');
+    expect(errors).toEqual([]);
+});
+
+test('handout export handles multiple pages, preserves camp heading and rejects malformed math',async({page},info)=>{
+    test.setTimeout(90000);
+    const errors=await setup(page);
+    await page.goto('/matcenter.html?grade=grade-camp-2026'); await ready(page);
+    await page.locator('#mcSeriesSelect').selectOption({label:'Добавка №1. 8 августа 2026 года. · 08.08.2026'});
+    await page.locator('#mcPrintButton').click();
+    await page.evaluate(()=>{window.AlmanionPdfDownload={generateHandout:async(tasks,title,options)=>{
+        window.__campHeading=options.heading; return new Blob(['test'],{type:'application/pdf'});
+    }};});
+    await page.locator('[data-mc-print-action="preview"]').click();
+    await expect(page.locator('#mcPrintPreview')).toBeVisible();
+    expect(await page.evaluate(()=>window.__campHeading)).toBe('Добавка №1. 8 августа 2026 года.');
+    await page.keyboard.press('Escape');
+    await page.addScriptTag({url:'/pdf-download.js'});
+    const result=await page.evaluate(async()=>{
+        let error='';
+        try{await AlmanionPdfDownload.generateHandout([{number:1,description:'$\\frac{1}$'}],'Опечатка');}catch(e){error=e.message;}
+        const tasks=Array.from({length:80},(_,i)=>({number:16+i,description:'Проверка длинной серии. Исходные номера не меняются. $x^2=4$.'}));
+        const blob=await AlmanionPdfDownload.generateHandout(tasks,'Длинная серия');
+        return {error,bytes:Array.from(new Uint8Array(await blob.arrayBuffer())),leftover:document.querySelectorAll('body > div[style*="-10000px"]').length};
+    });
+    const bytes=Buffer.from(result.bytes),source=bytes.toString('latin1');
+    require('node:fs').writeFileSync(info.outputPath('long-series.pdf'),bytes);
+    expect((source.match(/\/Type\s+\/Page\s/g)||[]).length).toBeGreaterThan(1);
+    expect(result.error).toContain('Не удалось оформить одну из формул');
+    expect(result.leftover).toBe(0); expect(errors).toEqual([]);
+});
 
 for (const dark of [false,true]) test(`new-year series and independent part progress persist, dark=${dark}`, async ({page},info) => {
     const yearTasks = [
@@ -452,7 +567,7 @@ for (const dark of [false, true]) test(`camp menu order and proportional three-d
         await page.setViewportSize({width,height:844});
         await page.goto('/matcenter.html?grade=grade-camp-2026');
         await ready(page);
-        await expect(page.locator('link[href*="styles/matcenter-refresh.css"]')).toHaveAttribute('href', 'styles/matcenter-refresh.css?v=20261010-compact2');
+        await expect(page.locator('link[href*="styles/matcenter-refresh.css"]')).toHaveAttribute('href', 'styles/matcenter-refresh.css?v=20261013-print1');
         expect(await page.locator('#gradeSwitcher [data-grade]').evaluateAll(els=>els.map(el=>el.dataset.grade))).toEqual(order);
         expect(await page.locator('#mcSidebarGrade option').evaluateAll(els=>els.map(el=>el.value))).toEqual(order);
         const active = page.locator('#gradeSwitcher [data-grade="grade-camp-2026"]');
