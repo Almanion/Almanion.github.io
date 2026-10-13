@@ -67,6 +67,17 @@ async function ready(page) {
     await expect(page.locator('#tasksContainer .task-card').first()).toBeVisible();
 }
 
+test('published HTML must not reuse the old cached Matcenter runtime for printing',async({page})=>{
+    const errors=await setup(page);
+    await page.route('**/matcenter/runtime.js?v=20261009-4',route=>route.fulfill({contentType:'application/javascript',
+        body:'window.MatcenterRuntime={ensure:()=>Promise.reject(new Error("Stale cached runtime"))};'}));
+    await page.goto('/matcenter.html?grade=grade-10'); await ready(page);
+    await expect(page.locator('script[src^="matcenter/runtime.js"]')).toHaveAttribute('src','matcenter/runtime.js?v=20261013-print1');
+    await page.locator('#mcPrintButton').click();
+    await expect(page.locator('#mcPrintDialog')).toBeVisible();
+    expect(errors).toEqual([]);
+});
+
 test('series printing keeps every original condition and number, ignores filters and does not alter marks', async ({page}) => {
     const yearTasks = [25,16,19].map(number => ({number,numberText:String(number),grade:'grade-10',academicYear:'2026/2027',
         taskId:`print-${number}`,seriesId:'print-series',seriesTitle:'Серия 2',description:`Условие ${number}: $x^2=4$.`,hint:'СЕКРЕТНАЯ ПОДСКАЗКА',status:number===19?'Н':'Р'}));
