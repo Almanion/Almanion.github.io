@@ -113,6 +113,10 @@ foreach ($name in @('search-other-section','search-destination','theme-light','t
     foreach ($width in @(1920,1366)) { $relativeFiles += "evidence-v2/$name-$width.png" }
 }
 $relativeFiles += 'Starfield-research.txt'
+$relativeFiles += 'README.md'
+$relativeFiles += 'Performance.md'
+$relativeFiles += 'evidence-v2/performance-before.json'
+$relativeFiles += 'evidence-v2/performance-after.json'
 $relativeFiles += 'evidence-v2/star-volume-verification.json'
 foreach ($phase in @(22,44,65,88)) { $relativeFiles += "evidence-v2/depth-flight-$phase.png" }
 $relativeFiles += 'evidence-v2/depth-arrival-1366.png'

@@ -5,10 +5,17 @@ const interval='<math><mi>I</mi><mo>(</mo><mi>r</mi><mo>,</mo><mi>S</mi><mo>)</m
 function graph(t,newer=false,complete=false){
  const s=newer?GOOD.stability:10,x=t=>76+t/40*884,y=r=>267-(r-.75)/.25*207;
  const curve=(ss,end,color,dashed=false)=>{let d='';for(let k=0;k<=400;k++){const time=Math.min(k/10,end);d+=(k?'L':'M')+x(time).toFixed(3)+','+y(R(time,ss)).toFixed(3);if(time>=end)break}return `<path d="${d}" fill="none" stroke="${color}" stroke-width="${dashed?2.5:4}" ${dashed?'stroke-dasharray="5 6"':''}/>`};
- const p=R(t,s),is90=Math.abs(p-.9)<.00001;
- $('graph').setAttribute('aria-label',`Вероятность вспоминания: ${fmt(p*100)}%, прошло ${fmt(t)} дня. Устойчивость ${fmt(s)} дня.`);
- $('graph').innerHTML=`<text x="76" y="23" class="axislabel">Расчётная вероятность вспомнить, %</text>${[75,80,90,100].map(n=>`<line x1="76" x2="960" y1="${y(n/100)}" y2="${y(n/100)}"/><text x="59" y="${y(n/100)+6}" text-anchor="end">${n}</text>`).join('')}<path d="M76 52V267H960" fill="none" stroke="#7595b2"/>${[0,5,10,20,30,40].map(n=>`<text x="${x(n)}" y="294" text-anchor="middle">${n}</text>`).join('')}<text x="518" y="337" text-anchor="middle" class="axislabel">Дни после ${newer?'нового ':''}повторения</text>${newer?curve(10,40,'#647d9c',true):''}${curve(s,40,'#2b425d',true)}${curve(s,complete?40:t,'#91c8ff')}${step>=22?`<path d="M76 ${y(.9)}H${x(s)}V267" stroke="#9fcdf4" stroke-width="1.6" stroke-dasharray="5 5" fill="none"/><text x="${x(s)+9}" y="${y(.9)+31}">${newer?'S′':'t = S'} = ${fmt(s,newer?2:0)}</text>`:''}<circle cx="${x(t)}" cy="${y(p)}" r="6" fill="#c1e4ff" stroke="#274568" stroke-width="3"/><text x="${Math.min(859,x(t)+17)}" y="${y(p)-17}" class="point-label">${is90?'90':fmt(p*100)}%</text>`;
- const clock=$('curve-clock');clock.innerHTML=`<span>t = <b>${fmt(t,t%1?1:0)}</b> дней</span><strong>R = ${fmt(p*100)}%</strong>`;
+ const p=R(t,s),is90=Math.abs(p-.9)<.00001,node=$('graph'),key=step+':'+newer;
+ if(!node.firstChild||node.dataset.curve!==key){node.dataset.curve=key;
+ $('graph').innerHTML=`<text x="76" y="23" class="axislabel">Расчётная вероятность вспомнить, %</text>${[75,80,90,100].map(n=>`<line x1="76" x2="960" y1="${y(n/100)}" y2="${y(n/100)}"/><text x="59" y="${y(n/100)+6}" text-anchor="end">${n}</text>`).join('')}<path d="M76 52V267H960" fill="none" stroke="#7595b2"/>${[0,5,10,20,30,40].map(n=>`<text x="${x(n)}" y="294" text-anchor="middle">${n}</text>`).join('')}<text x="518" y="337" text-anchor="middle" class="axislabel">Дни после ${newer?'нового ':''}повторения</text>${newer?curve(10,40,'#647d9c',true):''}${curve(s,40,'#2b425d',true)}<defs><clipPath id="curve-reveal"><rect x="73" y="0" width="0" height="347"/></clipPath></defs><g clip-path="url(#curve-reveal)">${curve(s,40,'#91c8ff')}</g>${step>=22?`<path d="M76 ${y(.9)}H${x(s)}V267" stroke="#9fcdf4" stroke-width="1.6" stroke-dasharray="5 5" fill="none"/><text x="${x(s)+9}" y="${y(.9)+31}">${newer?'S′':'t = S'} = ${fmt(s,newer?2:0)}</text>`:''}<circle data-point cx="${x(t)}" cy="${y(p)}" r="6" fill="#c1e4ff" stroke="#274568" stroke-width="3"/><text data-label x="${Math.min(859,x(t)+17)}" y="${y(p)-17}" class="point-label">${is90?'90':fmt(p*100)}%</text>`;
+ $('curve-clock').innerHTML='<span>t = <b></b> дней</span><strong></strong>';
+ node._parts={clip:node.querySelector('#curve-reveal rect'),point:node.querySelector('[data-point]'),label:node.querySelector('[data-label]'),time:$('curve-clock').querySelector('b'),recall:$('curve-clock').querySelector('strong')};
+ }
+ const v=node._parts;
+ node.setAttribute('aria-label',`Вероятность вспоминания: ${fmt(p*100)}%, прошло ${fmt(t)} дня. Устойчивость ${fmt(s)} дня.`);
+ v.clip.setAttribute('width',x(complete?40:t)-73);v.point.setAttribute('cx',x(t));v.point.setAttribute('cy',y(p));
+ v.label.setAttribute('x',Math.min(859,x(t)+17));v.label.setAttribute('y',y(p)-17);v.label.textContent=(is90?'90':fmt(p*100))+'%';
+ v.time.textContent=fmt(t,t%1?1:0);v.recall.textContent='R = '+fmt(p*100)+'%';
 }
 function mathState(s){
  const wide=s>=19&&s<=27,panel=$('panel');panel.dataset.phase=s;panel.classList.toggle('model-wide',wide);$('connector').innerHTML='';

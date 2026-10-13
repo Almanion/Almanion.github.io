@@ -14,11 +14,16 @@ async function openingToClass(){
 }
 function styledClone(node){
  const copy=node.cloneNode(true),original=[node,...node.querySelectorAll('*')],cloned=[copy,...copy.querySelectorAll('*')];
- original.forEach((n,i)=>{const style=n.ownerDocument.defaultView.getComputedStyle(n);for(const k of style)cloned[i].style.setProperty(k,style.getPropertyValue(k));cloned[i].removeAttribute('id');});
+ // Snapshot only painted/layout properties, not hundreds of custom/vendor
+ // properties. Read the complete batch before writing the detached clone.
+ const keys='display position box-sizing width height min-width min-height max-width max-height margin padding gap row-gap column-gap flex flex-direction flex-wrap align-items align-content align-self justify-content justify-items justify-self grid-template-columns grid-template-rows grid-column grid-row overflow border border-radius background color opacity box-shadow transform transform-origin font-family font-size font-weight font-style line-height letter-spacing text-align text-decoration white-space vertical-align object-fit fill stroke stroke-width stroke-linecap stroke-linejoin stroke-dasharray visibility'.split(' ');
+ const styles=original.map(n=>{const css=n.ownerDocument.defaultView.getComputedStyle(n);return keys.map(k=>css.getPropertyValue(k))});
+ cloned.forEach((n,i)=>{n.removeAttribute('id');n.style.cssText='';keys.forEach((k,j)=>n.style.setProperty(k,styles[i][j]))});
  return copy;
 }
 
 async function enterPhysics(reverse=false){
+ Cosmos.holdFlight(step);
  const h=frames.home.contentDocument,source=h.querySelector(anchors[2]);
  const clamp=x=>Math.max(0,Math.min(1,x)),smooth=x=>{x=clamp(x);return x*x*(3-2*x)},mix=(a,b,t)=>a+(b-a)*t;
  const home={x:168,y:210,w:1584,h:779,z:1.1},final={x:168,y:57,w:1584,h:932,z:1.1};

@@ -8,10 +8,11 @@ window.Cosmos=(()=>{
  const clamp=x=>Math.max(0,Math.min(1,x)),smooth=x=>{x=clamp(x);return x*x*(3-2*x)};
  let themePhase=null;
  let camera=volume.at(0),route=null,lastStats=null;
+ let paintedStill=null;
  let telemetry={speed:0,travel:0,centerX:960,centerY:540,streaks:0,layers:[]};
  function opaqueWindows(){
   const windows=[],portal=document.querySelector('.physics-portal,.navigation-portal');
-  if(portal&&portal.style.visibility!=='hidden')windows.push({x:parseFloat(portal.style.left),y:parseFloat(portal.style.top),w:parseFloat(portal.style.width),h:parseFloat(portal.style.height)});
+  if(portal&&portal.style.visibility!=='hidden')windows.push(portal.flightBounds||{x:parseFloat(portal.style.left),y:parseFloat(portal.style.top),w:parseFloat(portal.style.width),h:parseFloat(portal.style.height)});
   const site=document.getElementById('site');
   if(window.DEMO&&Number(site.style.opacity||1)===1&&!site.style.transform)windows.push({x:pose.x,y:pose.y,w:pose.w,h:pose.h});
   return windows;
@@ -26,7 +27,10 @@ window.Cosmos=(()=>{
    camera=volume.path(route.from,route.to,t);previous=volume.path(route.from,route.to,previousT);speed=16*t*t*(1-t)*(1-t);
   }
   const moving=Math.hypot(camera.x-previous.x,camera.y-previous.y,camera.z-previous.z)>.0000001;
-  const stats=moving?volume.render(bg,camera,previous,.036,opaqueWindows()):volume.still(bg,camera);lastStats=stats;
+  const key=[camera.x,camera.y,camera.z].join(',');
+  const stats=moving?volume.render(bg,camera,previous,.036,opaqueWindows()):
+   paintedStill===key&&themePhase===null?lastStats:volume.still(bg,camera);
+  paintedStill=moving||themePhase!==null?null:key;lastStats=stats;
   telemetry={speed:moving?speed:0,travel:camera.z,centerX:cx,centerY:cy,...stats,camera:{...camera}};
  }
  function particles(now){
@@ -45,7 +49,7 @@ window.Cosmos=(()=>{
   const newest=bursts.at(-1),ms=newest?now-newest.at:1000;
   pointer.style.scale=String(ms<80?1-.07*Math.sin(ms/80*Math.PI/2):ms<520?1-.07*Math.exp(-(ms-80)/105)*Math.cos((ms-80)/82):1);
  }
- function tick(now){scenery(now);if(themePhase!==null){bg.globalAlpha=Math.sin(Math.PI*themePhase)*.24;bg.globalCompositeOperation='screen';bg.drawImage(sky,0,0);bg.globalAlpha=1;bg.globalCompositeOperation='source-over';}particles(now);if(currentPage==='home'){const t=now-started;HomeBackground.tick(t,(cursor.x-pose.x-pose.tx)/pose.z,(cursor.y-pose.y-42-pose.ty)/pose.z,Math.min(1,t/260));}frame=requestAnimationFrame(tick);}
+ function tick(now){scenery(now);if(themePhase!==null){bg.globalAlpha=Math.sin(Math.PI*themePhase)*.24;bg.globalCompositeOperation='screen';bg.drawImage(sky,0,0);bg.globalAlpha=1;bg.globalCompositeOperation='source-over';}particles(now);if(currentPage==='home'&&!flight){const t=now-started;HomeBackground.tick(t,(cursor.x-pose.x-pose.tx)/pose.z,(cursor.y-pose.y-42-pose.ty)/pose.z,Math.min(1,t/260));}frame=requestAnimationFrame(tick);}
  function stop(s=destination){HomeBackground.stop();cancelAnimationFrame(frame);frame=0;destination=s;flight=null;motion=null;route=null;camera=volume.at(s);themePhase=null;bursts=[];fg.clearRect(0,0,1920,1080);pointer.style.scale='1';pointer.style.rotate='0deg';stage.style.setProperty('--space-pulse','0');scenery();stage.dataset.spaceMoving='false';stage.dataset.flight='false';}
  function begin(from,to,reduced){stop(from);destination=to;quiet=reduced;mode=[2,10,14,28,29].includes(to)?'warp':[15,16,19,20,23,26].includes(to)?'orbit':'drift';stage.dataset.spaceMode=mode;if(quiet)return;started=performance.now();
   const a=volume.at(from),b=volume.at(to),distance=Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);

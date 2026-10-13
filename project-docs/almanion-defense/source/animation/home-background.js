@@ -2,6 +2,7 @@
    presentation clock. The iframe contains no autonomous scripts or timers. */
 const HomeBackground=(()=>{
  let canvas,surface,ctx,win,stars=[],edges=[],color,active=false,lastTime=0,lastDraw=-Infinity;
+ let encoding=false,generation=0,bitmapURL=null,staticColor=null;
  const width=1440,height=810,api=window.DEMO_HOME_STARS;
  function init(frame){
   win=frame.contentWindow;canvas=win.document.createElement('canvas');canvas.width=width;canvas.height=height;ctx=canvas.getContext('2d');
@@ -18,10 +19,24 @@ const HomeBackground=(()=>{
   ctx.lineWidth=.65;let visibleEdges=0;
   for(const e of edges){const a=points[e.a],b=points[e.b],opacity=api.connectionOpacity(a,b,pointer,220)*energy;if(opacity<.003)continue;ctx.globalAlpha=opacity;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();visibleEdges++;}
   stars.forEach((s,i)=>{const p=points[i];ctx.globalAlpha=p.alpha;ctx.beginPath();ctx.arc(p.x,p.y,s.radius,0,Math.PI*2);ctx.fill();if(s.sparkle){const r=s.radius*2.2+p.glow*.5*energy;ctx.globalAlpha=p.alpha*.5;ctx.lineWidth=.65;ctx.beginPath();ctx.moveTo(p.x-r,p.y);ctx.lineTo(p.x+r,p.y);ctx.moveTo(p.x,p.y-r);ctx.lineTo(p.x,p.y+r);ctx.stroke();}});
-  ctx.globalAlpha=1;surface.src=canvas.toDataURL();surface.dataset.edges=visibleEdges;surface.dataset.motion=active?'presentation':'still';lastTime=elapsed;lastDraw=performance.now();
+  ctx.globalAlpha=1;
+  if(active){
+   // Encode off the animation path, with at most one pending bitmap. A token
+   // prevents a late result from overwriting the deterministic stopped frame.
+   const token=generation;encoding=true;
+   canvas.toBlob(blob=>{encoding=false;if(!blob||!active||token!==generation)return;
+    const url=URL.createObjectURL(blob);surface.src=url;
+    if(bitmapURL)URL.revokeObjectURL(bitmapURL);bitmapURL=url;
+   },'image/png');
+  }else{
+   surface.src=canvas.toDataURL();
+   staticColor=color;
+   if(bitmapURL)URL.revokeObjectURL(bitmapURL);bitmapURL=null;
+  }
+  surface.dataset.edges=visibleEdges;surface.dataset.motion=active?'presentation':'still';lastTime=elapsed;lastDraw=performance.now();
  }
  function begin(){active=true;refresh();}
- function tick(elapsed,x,y,energy=1){if(active&&performance.now()-lastDraw>=32)draw(elapsed,{active:true,x,y},energy);}
- function stop(){active=false;refresh();draw();}
+ function tick(elapsed,x,y,energy=1){if(active&&!encoding&&performance.now()-lastDraw>=32)draw(elapsed,{active:true,x,y},energy);}
+ function stop(){generation++;active=false;refresh();if(surface?.dataset.motion==='still'&&staticColor===color){lastTime=0;return;}draw();}
  return{init,begin,tick,stop,refresh,get snapshot(){return surface?.src},get state(){return{count:stars.length,edges:Number(surface?.dataset.edges||0),active,time:lastTime,color}}};
 })();

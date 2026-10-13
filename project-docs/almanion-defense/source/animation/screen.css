@@ -30,3 +30,5 @@ nav button:focus-visible{outline:2px solid #afdcff;outline-offset:3px}
 .navigation-chrome i{width:7px;height:7px;border-radius:50%;background:#789bc3;opacity:.65}.navigation-chrome span:nth-last-child(2){margin:auto}.navigation-chrome span:last-child{font-size:11px;letter-spacing:2px}
 .navigation-viewport{position:absolute;inset:42px 0 0;overflow:hidden}.navigation-portal{border-color:#b5d9f78a;box-shadow:0 22px 65px #0008,0 0 45px #76b3ed24}
 .navigation-face{position:absolute;inset:0;overflow:hidden;background:#181c2c;display:grid;place-items:center;transform-origin:center;z-index:12}.navigation-face>span{font:500 32px Onest;color:#d8eaff}
+
+.navigation-content{position:absolute;left:0;top:0;overflow:hidden;contain:layout paint;transform-origin:0 0}

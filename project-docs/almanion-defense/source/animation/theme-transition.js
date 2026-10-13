@@ -19,6 +19,10 @@ async function animateDemoTheme(dark=true){
   }
  }
  theme(dark);
+ // Read the target palette as one batch before inserting animation proxies or
+ // pseudo-element rules. Interleaving these reads/writes forced a full style
+ // recalculation for almost every visible element.
+ for(const l of layers)l.after=l.read(null);
  // Isolated interpolation targets avoid native !important theme rules winning
  // over Web Animations. The browser still computes all colors and shadows.
  const holder=d.createElement('div');holder.style.cssText='position:fixed;left:-10000px;top:0;visibility:hidden;pointer-events:none';
@@ -27,7 +31,7 @@ async function animateDemoTheme(dark=true){
  const animations=[],restores=[];
  try{
   for(const l of layers){
-   const after=l.read(null),from={},to={};
+   const after=l.after,from={},to={};
    for(const k of keys)if(l.before[k]!==after[k]){from[k]=l.before[k];to[k]=after[k];}
    if(!Object.keys(from).length)continue;
    const proxy=d.createElement('div');shadow.appendChild(proxy);

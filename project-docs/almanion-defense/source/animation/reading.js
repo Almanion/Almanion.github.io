@@ -10,7 +10,7 @@ async function animateReaderCollapse(on){
 }
 function centreContents(){
  const n=find(TOC);let p=n?.parentElement;
- while(p&&p!==doc().body){if(p.scrollHeight>p.clientHeight+10&&/auto|scroll/.test(doc().defaultView.getComputedStyle(p).overflowY)){const r=n.getBoundingClientRect(),pr=p.getBoundingClientRect();p.scrollTop=Math.max(0,Math.min(p.scrollHeight-p.clientHeight,p.scrollTop+r.top-pr.top+r.height/2-p.clientHeight*.52));}p=p.parentElement;}
+ while(p&&p!==doc().body){if(p.scrollHeight>p.clientHeight+10&&/auto|scroll/.test(doc().defaultView.getComputedStyle(p).overflowY)){const r=n.getBoundingClientRect(),pr=p.getBoundingClientRect();scrolled.add(p);p.scrollTop=Math.max(0,Math.min(p.scrollHeight-p.clientHeight,p.scrollTop+r.top-pr.top+r.height/2-p.clientHeight*.52));}p=p.parentElement;}
 }
 async function readingTransition(target,reverse=false){
  $('focus').style.opacity=0;const pointer=$('cursor');
