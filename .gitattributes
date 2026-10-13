@@ -3,3 +3,7 @@
 /game-source/orbital-courier/src/** text eol=lf
 /games/orbital-courier/*.html text eol=lf
 /games/orbital-courier/*.txt text eol=lf
+
+# Deterministic standalone presentation and its published copy.
+presentation/index.html text eol=lf
+project-docs/almanion-defense/Almanion.html text eol=lf
