@@ -72,7 +72,7 @@ test('published HTML must not reuse the old cached Matcenter runtime for printin
     await page.route('**/matcenter/runtime.js?v=20261009-4',route=>route.fulfill({contentType:'application/javascript',
         body:'window.MatcenterRuntime={ensure:()=>Promise.reject(new Error("Stale cached runtime"))};'}));
     await page.goto('/matcenter.html?grade=grade-10'); await ready(page);
-    await expect(page.locator('script[src^="matcenter/runtime.js"]')).toHaveAttribute('src','matcenter/runtime.js?v=20261014-print1');
+    await expect(page.locator('script[src^="matcenter/runtime.js"]')).toHaveAttribute('src','matcenter/runtime.js?v=20261014-print2');
     await page.locator('#mcPrintButton').click();
     await expect(page.locator('#mcPrintDialog')).toBeVisible();
     expect(errors).toEqual([]);
@@ -183,13 +183,28 @@ test('vector handouts share exact text/math baselines and pack two halves per A4
         const three=await AlmanionPdfDownload.generateHandouts([handout,handout,handout],'Три серии');
         const threeDefinition=definition;
         const long=await AlmanionPdfDownload.generateHandout([{number:88,description:'Неизменённая длинная задача. '.repeat(350)}],'Продолжение');
+        const longDefinition=definition;
+        let headingCenters=[];
+        pdfMake.createPdf=d=>{
+            const doc=create(d), getStream=doc.getStream.bind(doc);
+            doc.getStream=options=>{
+                const stream=getStream(options);
+                headingCenters=stream._pdfMakePages.flatMap(p=>p.items.filter(i=>i.type==='line').map(i=>i.item.x+i.item.getWidth()/2));
+                return stream;
+            };
+            return doc;
+        };
+        await AlmanionPdfDownload.generateHandouts([1,2].map(n=>({...handout,heading:'Добавка №'+n+'. 8 августа 2026 года.'})),'Лагерь');
         return {baselineError:Math.max(...math.map(y=>Math.abs(y-baseline))),
+            headingCenters,
             pair:[...new Uint8Array(await pair.arrayBuffer())],three:[...new Uint8Array(await three.arrayBuffer())],long:[...new Uint8Array(await long.arrayBuffer())],
             pairPositions:pairDefinition.content[0].stack.map(node=>node.absolutePosition.y),
             thirdPositions:threeDefinition.content[1].stack.map(node=>node.absolutePosition.y),
-            longBounds:definition.content.flatMap(page=>page.stack.map(node=>({y:node.absolutePosition.y,h:Number(node.svg.match(/height="([\d.]+)"/)[1])*.75})))};
+            longBounds:longDefinition.content.flatMap(page=>page.stack.map(node=>({y:node.absolutePosition.y,h:Number(node.svg.match(/height="([\d.]+)"/)[1])*.75})))};
     });
     expect(result.baselineError).toBeLessThan(.15);
+    expect(result.headingCenters).toHaveLength(2);
+    result.headingCenters.forEach(center=>expect(center).toBeCloseTo(297.64));
     const pages=bytes=>(Buffer.from(bytes).toString('latin1').match(/\/Type\s+\/Page\s/g)||[]).length;
     expect(pages(result.pair)).toBe(1);expect(pages(result.three)).toBe(2);expect(pages(result.long)).toBeGreaterThan(1);
     expect(result.pairPositions[0]).toBeCloseTo(22.68);expect(result.pairPositions[1]).toBeCloseTo(443.625);

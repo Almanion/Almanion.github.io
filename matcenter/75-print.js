@@ -25,7 +25,7 @@
         if (root.AlmanionPdfDownload?.generateHandouts) return Promise.resolve();
         if (!pdfModule) pdfModule = new Promise((resolve, reject) => {
             const script = document.createElement('script');
-            script.src = 'pdf-download.js?v=20261014-1';
+            script.src = 'pdf-download.js?v=20261014-2';
             script.onload = resolve;
             script.onerror = () => { script.remove(); pdfModule = null; reject(new Error('Не удалось загрузить PDF-модуль. Попробуйте снова.')); };
             document.head.append(script);

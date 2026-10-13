@@ -539,7 +539,7 @@
                     content = [];
                     // Only a heading supplied with the original handout (e.g. a camp
                     // add-on). Generated "Серия N" labels stay in the dialog/filename.
-                    if (handout.heading) content.push({ text: handout.heading, width: HANDOUT.width, fontSize: 12, bold: true, alignment: 'center' });
+                    if (handout.heading) content.push({ columns: [{ text: handout.heading, width: HANDOUT.width, fontSize: 12, bold: true, alignment: 'center' }] });
                     for (const task of tasks) {
                         const number = document.createElement('strong');
                         number.textContent = String(task.numberText ?? task.number) + '.';
