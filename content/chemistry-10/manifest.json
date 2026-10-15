@@ -2,5 +2,22 @@
   "schemaVersion": 1,
   "subject": "chemistry-10",
   "title": "Химия · 10 класс",
-  "sections": []
+  "sections": [
+    {
+      "id": "elektronnyy-pasport",
+      "order": 1000
+    },
+    {
+      "id": "himicheskaya-svyaz",
+      "order": 2000
+    },
+    {
+      "id": "organicheskaya-himiya",
+      "order": 3000
+    },
+    {
+      "id": "alkany",
+      "order": 4000
+    }
+  ]
 }
