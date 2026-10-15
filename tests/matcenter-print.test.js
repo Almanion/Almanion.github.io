@@ -13,6 +13,9 @@ assert.match(print, /URL\.revokeObjectURL/);
 assert.match(read('matcenter/20-auth.js'), /MatcenterSeriesPrint\?\.reset/);
 assert.match(pdf, /generateHandout/);
 assert.match(pdf, /font:13\.333333px\/1\.15 AlmanionHandout,serif/);
+assert.match(pdf, /for \(let fontSize = 10; fontSize >= 9; fontSize -= \.25\)/,
+    'preserve the original 10 to 9 pt automatic sizing');
+assert.match(pdf, /measure\.pdfSumLimits = true/);
 assert.match(pdf, /half: 841\.89 \/ 2, inset: 22\.68/);
 assert.match(pdf, /slot \* HANDOUT\.half \+ HANDOUT\.inset \+ item\.y/);
 assert.match(pdf, /halves\.slice\(i, i \+ 2\)/);

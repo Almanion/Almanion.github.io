@@ -87,7 +87,7 @@
         });
     }
 
-    async function replaceMath(root) {
+    async function replaceMath(root, { sumLimits = false } = {}) {
         restoreMath(root);
         const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
         const nodes = [];
@@ -100,7 +100,11 @@
             while ((match = pattern.exec(node.textContent))) {
                 fragment.append(document.createTextNode(node.textContent.slice(cursor, match.index)));
                 const display = match[1] !== undefined || match[2] !== undefined;
-                const math = await MathJax.tex2svgPromise(match[1] ?? match[2] ?? match[3] ?? match[4], { display });
+                const source = match[1] ?? match[2] ?? match[3] ?? match[4];
+                // Handout sums use limits above/below even in inline formulas.
+                // Keep source conditions and explicitly chosen TeX styles intact.
+                const tex = sumLimits ? source.replace(/\\sum(?![A-Za-z])(?!\s*\\(?:no)?limits(?![A-Za-z]))/g, '\\sum\\limits') : source;
+                const math = await MathJax.tex2svgPromise(tex, { display });
                 if (math.querySelector('[data-mml-node="merror"]')) throw new Error('Не удалось оформить одну из формул. Экспорт остановлен, чтобы не потерять её.');
                 const span = document.createElement('span');
                 span.className = display ? 'pdf-math display' : 'pdf-math';
@@ -149,7 +153,7 @@
             if (/^\s/.test(node.textContent) && /\S$/.test(node.previousSibling?.textContent || '')) node.textContent = node.textContent.replace(/^\s+/, '\u00a0');
             if (/\s$/.test(node.textContent) && /^\S/.test(node.nextSibling?.textContent || '')) node.textContent = node.textContent.replace(/\s+$/, '\u00a0');
         }
-        await replaceMath(element);
+        await replaceMath(element, { sumLimits: measure.pdfSumLimits === true });
         const origin = element.getBoundingClientRect();
         const parts = [];
         const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
@@ -524,6 +528,7 @@
         const measure = document.createElement('div');
         measure.pdfFont = 'CMUSerif';
         measure.pdfExactBaseline = true;
+        measure.pdfSumLimits = true;
         measure.pdfChunkLines = 8;
         shadow.append(measure);
         try {

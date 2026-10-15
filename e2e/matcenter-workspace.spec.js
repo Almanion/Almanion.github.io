@@ -69,10 +69,10 @@ async function ready(page) {
 
 test('published HTML must not reuse the old cached Matcenter runtime for printing',async({page})=>{
     const errors=await setup(page);
-    await page.route('**/matcenter/runtime.js?v=20261009-4',route=>route.fulfill({contentType:'application/javascript',
+    await page.route('**/matcenter/runtime.js?v=20261014-print2',route=>route.fulfill({contentType:'application/javascript',
         body:'window.MatcenterRuntime={ensure:()=>Promise.reject(new Error("Stale cached runtime"))};'}));
     await page.goto('/matcenter.html?grade=grade-10'); await ready(page);
-    await expect(page.locator('script[src^="matcenter/runtime.js"]')).toHaveAttribute('src','matcenter/runtime.js?v=20261014-print2');
+    await expect(page.locator('script[src^="matcenter/runtime.js"]')).toHaveAttribute('src','matcenter/runtime.js?v=20261015-sum-limits');
     await page.locator('#mcPrintButton').click();
     await expect(page.locator('#mcPrintDialog')).toBeVisible();
     expect(errors).toEqual([]);
@@ -211,6 +211,52 @@ test('vector handouts share exact text/math baselines and pack two halves per A4
     expect(result.thirdPositions.every(y=>y<420.945)).toBe(true);
     result.longBounds.forEach(({y,h})=>{const slot=y>=420.945?420.945:0;expect(y).toBeGreaterThanOrEqual(slot+22.68-.01);expect(y+h).toBeLessThanOrEqual(slot+420.945-22.68+.01);});
     require('node:fs').writeFileSync(info.outputPath('two-up.pdf'),Buffer.from(result.pair));
+    expect(errors).toEqual([]);
+});
+
+test('handout sums put limits above and below without changing source text or note exports',async({page},info)=>{
+    test.setTimeout(90000);
+    const errors=await setup(page);
+    await page.goto('/matcenter.html?grade=grade-10');await ready(page);
+    await page.addScriptTag({url:'/pdf-download.js'});
+    const result=await page.evaluate(async()=>{
+        const warmup=document.createElement('article');warmup.textContent='Загрузка шрифтов.';
+        await AlmanionPdfDownload.generate([{element:warmup}],'Загрузка');
+        const tasks=[
+            {number:1,description:'Сумма в строке: $\\sum_{i=1}^{n} \\frac{a_i}{2-a_i}$. Индексы над и под знаком.'},
+            {number:2,description:'Только нижний индекс: $\\sum_i a_i$.'},
+            {number:3,description:'Явное расположение: $\\sum\\limits_{k=0}^{m} k^2$.'},
+            {number:4,description:'Явное исключение в исходном TeX: $\\sum\\nolimits_{k=0}^{m} k^2$.'},
+            {number:5,description:'Имя команды не обрезается: $\\newcommand{\\summary}{q}\\summary + \\sum_j a_j$.'}
+        ];
+        const original=JSON.stringify(tasks),texCalls=[];
+        const render=MathJax.tex2svgPromise.bind(MathJax);
+        MathJax.tex2svgPromise=(tex,options)=>{texCalls.push(tex);return render(tex,options)};
+        let definition;const create=pdfMake.createPdf.bind(pdfMake);
+        pdfMake.createPdf=d=>{definition=d;return create(d)};
+        const noteSource='\\sum_{i=1}^{n} a_i';
+        const note=document.createElement('article');note.textContent='Формула в конспекте: $'+noteSource+'$.';
+        await AlmanionPdfDownload.generate([{element:note}],'Конспект');
+        const noteTex=texCalls.pop();
+        const blob=await AlmanionPdfDownload.generateHandout(tasks,'Расположение индексов суммы');
+        const vectors=definition.content.flatMap(p=>p.stack.map(node=>node.svg));
+        const docs=vectors.map(svg=>new DOMParser().parseFromString(svg,'image/svg+xml'));
+        const limits=docs.flatMap(doc=>[...doc.querySelectorAll('path[data-c="2211"]')].map(path=>
+            path.closest('[data-mml-node="munderover"],[data-mml-node="munder"],[data-mml-node="msubsup"],[data-mml-node="msub"]').getAttribute('data-mml-node')));
+        const fontSizes=docs.flatMap(doc=>[...doc.querySelectorAll('text[font-size]')].map(node=>Number(node.getAttribute('font-size'))*.75));
+        return {bytes:[...new Uint8Array(await blob.arrayBuffer())],limits,fontSizes,
+            unchanged:JSON.stringify(tasks)===original,texCalls,noteSource,noteTex};
+    });
+    expect(result.unchanged).toBe(true);
+    expect(result.limits).toEqual(['munderover','munder','munderover','msubsup','munder']);
+    expect(result.fontSizes.length).toBeGreaterThan(10);
+    result.fontSizes.forEach(size=>expect(size).toBeCloseTo(10,4));
+    expect(result.texCalls[0]).toContain('\\sum\\limits_{i=1}');
+    expect(result.texCalls[2]).not.toContain('\\limits\\limits');
+    expect(result.texCalls[3]).toContain('\\sum\\nolimits');
+    expect(result.texCalls[4]).toContain('\\summary + \\sum\\limits_j');
+    expect(result.noteTex).toBe(result.noteSource);
+    require('node:fs').writeFileSync(info.outputPath('sum-limits.pdf'),Buffer.from(result.bytes));
     expect(errors).toEqual([]);
 });
 
