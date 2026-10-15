@@ -1,4 +1,30 @@
 /* Scope the photo transcription layout to the grade 10 chemistry page. */
+body[data-note-subject="chemistry-10"] {
+    --chem-diagram-paper: var(--bg-secondary, #fff);
+    --chem-diagram-ink: var(--text-primary, #182235);
+    --chem-diagram-orbital: color-mix(in srgb, var(--accent-color, #2563eb) 12%, var(--chem-diagram-paper));
+    --chem-diagram-overlap: color-mix(in srgb, var(--accent-color, #2563eb) 28%, var(--chem-diagram-paper));
+}
+/* Override only the notebook drawings; preserve transparent orbital interiors
+   and leave formula glyphs, icons and exported SVG source colors untouched. */
+body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table) svg {
+    background: var(--chem-diagram-paper);
+}
+body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table) svg > rect[fill="#ffffff"] {
+    fill: var(--chem-diagram-paper);
+}
+body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table) svg [fill="#182235"] {
+    fill: var(--chem-diagram-ink);
+}
+body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table) svg [stroke="#26344a"] {
+    stroke: var(--chem-diagram-ink);
+}
+body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table) svg :is([fill="#e8eef9"], [fill="#e2ecfa"]) {
+    fill: var(--chem-diagram-orbital);
+}
+body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table) svg [fill="#bcd4f1"] {
+    fill: var(--chem-diagram-overlap);
+}
 body[data-note-subject="chemistry-10"] .chem-note-figure {
     margin: 1rem 0;
     max-width: 100%;
@@ -6,7 +32,7 @@ body[data-note-subject="chemistry-10"] .chem-note-figure {
     overscroll-behavior-inline: contain;
     border: 1px solid var(--exp-border, #dbe1ea);
     border-radius: 12px;
-    background: #fff;
+    background: var(--chem-diagram-paper);
     break-inside: avoid;
 }
 body[data-note-subject="chemistry-10"] .chem-note-figure svg {
@@ -47,7 +73,7 @@ body[data-note-subject="chemistry-10"] .chem-note-table svg {
     max-width: 100%;
     height: auto;
     border-radius: 8px;
-    background: #fff;
+    background: var(--chem-diagram-paper);
 }
 @media screen and (max-width: 700px) {
     body[data-note-subject="chemistry-10"] .chem-note-table thead {
@@ -89,6 +115,12 @@ body[data-note-subject="chemistry-10"] .chem-note-table svg {
     }
 }
 @media print {
+    body[data-note-subject="chemistry-10"] {
+        --chem-diagram-paper: #fff;
+        --chem-diagram-ink: #182235;
+        --chem-diagram-orbital: #e8eef9;
+        --chem-diagram-overlap: #bcd4f1;
+    }
     body[data-note-subject="chemistry-10"] .chem-note-figure,
     body[data-note-subject="chemistry-10"] .chem-note-table-scroll {
         overflow: visible;
