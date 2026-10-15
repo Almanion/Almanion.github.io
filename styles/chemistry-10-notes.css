@@ -5,6 +5,40 @@ body[data-note-subject="chemistry-10"] {
     --chem-diagram-orbital: color-mix(in srgb, var(--accent-color, #2563eb) 12%, var(--chem-diagram-paper));
     --chem-diagram-overlap: color-mix(in srgb, var(--accent-color, #2563eb) 28%, var(--chem-diagram-paper));
 }
+body[data-note-subject="chemistry-10"] .chem-block-title {
+    display: block;
+    margin-bottom: .65rem;
+    font-size: 1.08em;
+    line-height: 1.4;
+    color: var(--text-primary);
+}
+body[data-note-subject="chemistry-10"] .example-box > strong.chem-block-title:first-child {
+    width: auto;
+    margin: 0 0 .65rem !important;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    color: var(--text-primary) !important;
+    font-size: 1.08em;
+    font-weight: 700;
+    letter-spacing: normal;
+    text-transform: none;
+    line-height: 1.4;
+}
+body[data-note-subject="chemistry-10"] .chem-topic-alias {
+    display: block;
+    height: 0;
+    scroll-margin-top: 5rem;
+}
+/* Nested blocks keep a visible hierarchy without repeating a label above every
+   equation. Their IDs and actions remain available to the reader tools. */
+body[data-note-subject="chemistry-10"] :is(.properties-box, .example-box, .derivation-box) > :is(.properties-box, .example-box, .derivation-box, .formula-box) {
+    margin-block: .75rem !important;
+    padding: .8rem !important;
+}
+body[data-note-subject="chemistry-10"] :is(.properties-box, .example-box, .derivation-box) > :is(.properties-box, .example-box, .derivation-box, .formula-box)::before {
+    display: none;
+}
 /* Override only the notebook drawings; preserve transparent orbital interiors
    and leave formula glyphs, icons and exported SVG source colors untouched. */
 body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table) svg {
