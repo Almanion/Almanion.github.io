@@ -248,7 +248,7 @@
                 '</span>' +
             '</header>' +
             '<div class="note-inline-block-fields">' + blockFields(block) + '</div>' +
-            '<details class="note-inline-study"><summary>Проверка знаний</summary><div class="note-inline-block-fields">' +
+            '<details class="note-inline-study"><summary>Учить</summary><div class="note-inline-block-fields">' +
                 '<label class="note-inline-field"><span>Использовать блок</span><select class="note-inline-input" data-field="studyEnabled" data-block-id="' + escapeHtml(block.id) + '"><option value="true"' + (block.studyEnabled !== false ? ' selected' : '') + '>Включено</option><option value="false"' + (block.studyEnabled === false ? ' selected' : '') + '>Исключить из обучения</option></select></label>' +
                 textInputField('Название карточки', 'studyTitle', block.studyTitle || '', { blockId: block.id, placeholder: 'По содержанию блока' }) +
                 '<label class="note-inline-field"><span>Формулы внутри блока</span><select class="note-inline-input" data-field="studyFormulas" data-block-id="' + escapeHtml(block.id) + '">' + ['auto', 'include', 'exclude'].map((value, i) => '<option value="' + value + '"' + ((block.studyFormulas || 'auto') === value ? ' selected' : '') + '>' + ['Автоматически', 'Включать', 'Исключить промежуточные формулы'][i] + '</option>').join('') + '</select></label>' +

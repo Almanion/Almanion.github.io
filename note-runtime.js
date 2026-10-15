@@ -17,7 +17,7 @@
         settings: 'settings.js?v=20261002-1',
         search: 'search.js?v=20261002-1',
         print: 'print-export.js?v=20261007-1',
-        knowledge: 'knowledge-check.js?v=20261003-1',
+        knowledge: 'knowledge-check.js?v=20261015-1',
         newyear: 'newyear.js?v=20261002-1',
         firebaseApp: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js',
         firebaseDatabase: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js',
@@ -27,7 +27,7 @@
         analytics: 'firebase-analytics.js?v=20261009-4',
         account: 'account.js?v=20260911-1',
         bookmarks: 'bookmarks.js?v=20261002-2',
-        editor: 'note-editor.js?v=20261014-1'
+        editor: 'note-editor.js?v=20261015-1'
     };
 
     function loadStyle(key) {
@@ -189,7 +189,7 @@
             });
             container.appendChild(button);
         }
-        launcher('knowledgeCheckBtn', 'knowledge', 'Проверка знаний', document.querySelector('.sidebar-actions'));
+        launcher('knowledgeCheckBtn', 'knowledge', 'Учить', document.querySelector('.sidebar-actions'));
         document.addEventListener('keydown', event => {
             if (window.AlmanionPrintExport || !(event.ctrlKey || event.metaKey) || event.altKey || event.code !== 'KeyP') return;
             event.preventDefault();

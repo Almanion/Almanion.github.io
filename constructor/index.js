@@ -542,7 +542,7 @@
                 '</div>' +
             '</div>' +
             '<div class="builder-block-fields">' + blockFields(block) + '</div>' +
-            '<details class="builder-study-options"><summary>Проверка знаний</summary><div class="builder-block-fields">' +
+            '<details class="builder-study-options"><summary>Учить</summary><div class="builder-block-fields">' +
                 '<label class="builder-field"><span>Использовать блок</span><select data-block-field="studyEnabled"><option value="true"' + (block.studyEnabled !== false ? ' selected' : '') + '>Включено</option><option value="false"' + (block.studyEnabled === false ? ' selected' : '') + '>Исключить из обучения</option></select></label>' +
                 '<label class="builder-field"><span>Название карточки — необязательно</span><input data-block-field="studyTitle" value="' + escapeHtml(block.studyTitle || '') + '" placeholder="По содержанию блока"></label>' +
                 '<label class="builder-field"><span>Формулы внутри блока</span><select data-block-field="studyFormulas"><option value="auto"' + (!block.studyFormulas || block.studyFormulas === 'auto' ? ' selected' : '') + '>Автоматически</option><option value="include"' + (block.studyFormulas === 'include' ? ' selected' : '') + '>Включать</option><option value="exclude"' + (block.studyFormulas === 'exclude' ? ' selected' : '') + '>Исключить промежуточные формулы</option></select></label>' +

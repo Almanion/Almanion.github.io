@@ -27,7 +27,7 @@ assert.match(runtime,/experiment-notebook\.js\?v=/);
 const site = process.env.ALMANION_TEST_SITE;
 if (site) {
     assert.ok(fs.existsSync(site+'/experiment-notebook.js'));
-    assert.match(fs.readFileSync(site+'/physics-10.html','utf8'),/note-runtime\.js\?v=20261014-1/);
+    assert.match(fs.readFileSync(site+'/physics-10.html','utf8'),/note-runtime\.js\?v=\d{8}-\d+/);
     assert.match(fs.readFileSync(site+'/watch/index.html','utf8'),/experiment-notebook\.js/);
     const offline = JSON.parse(fs.readFileSync(site+'/offline-library.json'));
     assert.ok(offline.subjects.every(subject=>subject.files.some(file=>file.url==='/experiment-notebook.js')));

@@ -1553,7 +1553,7 @@ function initExpBottomNav() {
             '.experiment-box, .example-box'
         );
         if (hasKnowledgeCards || document.getElementById('knowledgeCheckBtn')) {
-            items.push({ label: 'Знания', icon: ICONS.kc, act: function () { clickById('knowledgeCheckBtn'); } });
+            items.push({ label: 'Учить', icon: ICONS.kc, act: function () { clickById('knowledgeCheckBtn'); } });
         }
     }
     items.push({ label: 'Аккаунт', icon: ICONS.acc, act: function () { clickById('accountBtn'); } });

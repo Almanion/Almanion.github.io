@@ -63,7 +63,7 @@ assert.match(css, /\.english-word-list\s*\{[\s\S]*?gap:\s*0\.55rem/);
 assert.match(client, /summary\.textContent = 'Translate'/);
 assert.match(client, /translation\.append\(summary, translatedLine\)/);
 assert.match(ui, /dataset\.uiLanguage !== 'en'/);
-assert.match(ui, /'\u041fроверка знаний': 'Knowledge check'/);
+assert.match(ui, /'Учить': 'Learn'/);
 assert.match(ui, /'\u041dастройки': 'Settings'/);
 assert.match(ui, /CONTENT_EXCLUSIONS = '[^']*\[lang="ru"\]/);
 assert.match(settings, /dataset\.uiLanguage === 'en'[\s\S]*?restore all settings to their defaults/);

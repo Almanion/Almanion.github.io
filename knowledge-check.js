@@ -1167,7 +1167,7 @@
                 btn = document.createElement('button');
                 btn.id = 'knowledgeCheckBtn';
                 btn.className = 'knowledge-check-btn';
-                btn.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg><span>Проверка знаний</span>';
+                btn.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg><span>Учить</span>';
                 container.appendChild(btn);
             }
         }
@@ -1182,7 +1182,7 @@
             '<div class="auth-modal kc-modal" id="kcSelectModal" role="dialog" aria-modal="true" aria-labelledby="kcSelectTitle" tabindex="-1">' +
                 '<button class="kc-close" id="kcSelectClose" aria-label="Закрыть">' + IC.close + '</button>' +
                 '<div class="kc-head"><span class="kc-head-icon">' + IC.brain + '</span>' +
-                    '<div class="kc-head-text"><h2 class="kc-title" id="kcSelectTitle">Проверка знаний</h2>' +
+                    '<div class="kc-head-text"><h2 class="kc-title" id="kcSelectTitle">Учить</h2>' +
                     '<p class="kc-subtitle">' + escapeHtml(profile.subtitle) + '</p></div></div>' +
                 '<div class="kc-select-scroll">' +
                 '<div class="kc-session-resume" id="kcSessionResume" hidden></div>' +
@@ -1218,7 +1218,7 @@
         review.id = 'kcReviewOverlay';
         review.setAttribute('aria-hidden', 'true');
         review.innerHTML =
-            '<div class="auth-modal kc-modal kc-modal-game" id="kcReviewModal" role="dialog" aria-modal="true" aria-label="Сессия проверки знаний" tabindex="-1">' +
+            '<div class="auth-modal kc-modal kc-modal-game" id="kcReviewModal" role="dialog" aria-modal="true" aria-label="Сессия обучения" tabindex="-1">' +
                 '<div class="kc-game-bar">' +
                     '<div class="kc-counts" id="kcCounts"></div>' +
                     '<div class="kc-game-actions">' +
