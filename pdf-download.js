@@ -1,5 +1,6 @@
 /* Client-only A4 exporter. Text and math remain vectors; no screenshots,
- * printer preferences, uploads, or page-theme colours enter the PDF. */
+ * printer preferences or uploads. Only block stripes keep their theme accent;
+ * text stays dark and backgrounds stay white. */
 (function () {
     'use strict';
     const WIDTH = 595.28 - 2 * 39.69; // A4, 14 mm side margins (points).
@@ -24,7 +25,7 @@
     function dependencies() {
         if (!ready) ready = (async () => {
             await load('pdf-pagination.js?v=20261006-1');
-            await load('pdf-block-frames.js?v=20261006-1');
+            await load('pdf-block-frames.js?v=20261016-2');
             await load('vendor/pdf/pdfmake.min.js');
             window.MathJax = { startup: { typeset: false }, svg: { fontCache: 'none' }, tex: { packages: ['base', 'ams', 'newcommand', 'noundefined', 'textmacros'] } };
             await load('vendor/pdf/tex-svg.js');
@@ -358,8 +359,8 @@
                 } else output.push({ text: node.textContent.trim(), fontSize: 13, bold: true, margin: [0, 4, 0, 9] });
             } else if (node.matches(BLOCKS)) {
                 const frames = window.AlmanionPdfBlockFrames;
-                const frame = { id: 'block-' + (++measure.pdfBlockId), width, depth };
                 const kind = Object.keys(LABELS).find(key => node.classList.contains(key + '-box'));
+                const frame = { id: 'block-' + (++measure.pdfBlockId), width, depth, accent: measure.pdfBlockColors.get(node) };
                 const stack = await children(node, width - 2 * frames.style.paddingX, measure, english, depth + 1, ancestors.concat(frame));
                 if (kind) stack.unshift({ text: english ? kind[0].toUpperCase() + kind.slice(1) : LABELS[kind], fontSize: 8, color: '#535963', bold: true, margin: [0, 0, 0, 6] });
                 const firstBody = stack[1];
@@ -429,12 +430,18 @@
         const style = document.createElement('style');
         style.textContent = ':host{color:#17191d} .paragraph{font:14.6667px/1.5 AlmanionPDF,Roboto,sans-serif;white-space:normal;overflow-wrap:anywhere} strong,b{font-weight:700} em,i{font-style:italic} .pdf-math{display:inline-block;vertical-align:middle;line-height:0;margin-inline:.16em}.pdf-math.display{display:block;text-align:center;margin:10px 0}.pdf-math svg{max-width:100%;height:auto}';
         shadow.append(style);
-        const measure = document.createElement('div'); measure.pdfBlockId = 0; measure.pdfLeafCount = 0; measure.pdfHeadings = []; measure.pdfImages = new WeakMap(); shadow.append(measure);
+        const measure = document.createElement('div'); measure.pdfBlockId = 0; measure.pdfLeafCount = 0; measure.pdfHeadings = []; measure.pdfImages = new WeakMap(); measure.pdfBlockColors = new WeakMap(); shadow.append(measure);
         try {
             const content = [];
             let previousGroup = null;
             for (const item of items) {
                 const clone = item.element.cloneNode(true);
+                const originalBlocks = Array.from(item.element.querySelectorAll(BLOCKS));
+                clone.querySelectorAll(BLOCKS).forEach((block, index) => {
+                    const original = originalBlocks[index];
+                    const kind = Object.keys(LABELS).find(key => original.classList.contains(key + '-box')) || 'definition';
+                    measure.pdfBlockColors.set(block, AlmanionPdfBlockFrames.accentFor(original, kind));
+                });
                 const originals = Array.from(item.element.querySelectorAll('img'));
                 clone.querySelectorAll('img').forEach((image, index) => measure.pdfImages.set(image, imageSources(originals[index])));
                 clone.querySelectorAll('.proof-content,.derivation-content,.english-translation-content').forEach(node => {

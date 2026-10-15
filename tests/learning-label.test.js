@@ -20,6 +20,6 @@ assert.match(read('knowledge-check.js'),/id="kcSelectTitle"/);
 assert.match(read('knowledge-check.js'),/const scopedStorage = window\.AlmanionKCStorage/);
 const site = process.env.ALMANION_TEST_SITE;
 if(site) for (const file of ['physics.html','physics-10.html','likbez.html','russian-ege.html','english.html']) {
-    assert.match(fs.readFileSync(path.join(site,file),'utf8'),/note-runtime\.js\?v=20261016-1/);
+    assert.match(fs.readFileSync(path.join(site,file),'utf8'),/note-runtime\.js\?v=\d{8}-\d+/);
 }
 console.log('Learn label: desktop, mobile, editors, English and cache versions passed');

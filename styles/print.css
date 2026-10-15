@@ -1,5 +1,23 @@
 /* PDF selection interface and print-only document layout for subject notes. */
 
+/* Shared with the download exporter. Keep each type's accent, not the page
+ * background or text colour; nested blocks must have their own accent. */
+.definition-box, .english-word-card { --print-block-accent: var(--t-definition, var(--definition-border, #3b82f6)); }
+.formula-box { --print-block-accent: var(--t-formula, var(--formula-border, #2563eb)); }
+.remark-box { --print-block-accent: var(--t-remark, var(--remark-border, #b77900)); }
+.reminder-box { --print-block-accent: var(--t-reminder, var(--reminder-border, #03699e)); }
+.experiment-box { --print-block-accent: var(--t-experiment, var(--experiment-border, #8b5cf6)); }
+.derivation-box { --print-block-accent: var(--t-derivation, var(--derivation-border, #16a34a)); }
+.theorem-box { --print-block-accent: var(--t-theorem, var(--theorem-border, #8b5cf6)); }
+.lemma-box { --print-block-accent: var(--t-lemma, var(--lemma-border, #0f766e)); }
+.example-box { --print-block-accent: var(--t-example, var(--example-border, #f97316)); }
+.statement-box { --print-block-accent: var(--t-statement, var(--statement-border, #6366f1)); }
+.corollary-box { --print-block-accent: var(--t-corollary, var(--corollary-border, #64748b)); }
+.proof-box { --print-block-accent: var(--t-proof, var(--proof-border, #16a34a)); }
+.exercise-box { --print-block-accent: var(--t-exercise, var(--exercise-border, #475569)); }
+.properties-box { --print-block-accent: var(--t-properties, var(--properties-border, #3b82f6)); }
+.system-box { --print-block-accent: var(--t-system, var(--system-border, #475569)); }
+
 .print-export-menu-slot {
     flex: 0 0 auto;
     padding: 0.62rem var(--spacing, 1rem);
@@ -650,7 +668,7 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
         color: var(--print-ink) !important;
         background: var(--print-surface) !important;
         border: 0.25mm solid var(--print-rule) !important;
-        border-left: 0.65mm solid #8c939e !important;
+        border-left: 0.65mm solid var(--print-block-accent, #8c939e) !important;
         border-radius: 1.8mm !important;
         box-shadow: none !important;
         opacity: 1 !important;

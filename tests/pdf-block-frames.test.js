@@ -9,13 +9,13 @@ function mark(index, frame, edge, x, y) {
     const marker = Frames.marker(frame, edge).canvas[0];
     pages[index].items.push({ type: 'vector', item: { ...marker, x1: x, y1: y } });
 }
-const outer = { id: 'outer', width: 515.9, depth: 0 };
+const outer = { id: 'outer', width: 515.9, depth: 0, accent: '#1d56cf' };
 mark(0, outer, 'start', 39.69 + style.paddingX, 80 + style.paddingY);
 mark(0, outer, 'rowEnd', 39.69 + style.paddingX, 300);
 pages[0].items.push({ type: 'svg', item: { y: 300, _height: 50, pdfFrameOwners: ['outer'] } });
 mark(2, outer, 'start', 39.69 + style.paddingX, margins[1] + style.paddingY);
 mark(2, outer, 'end', 39.69 + style.paddingX, 340 - style.paddingY);
-const inner = { id: 'inner', width: 493.2, depth: 1 };
+const inner = { id: 'inner', width: 493.2, depth: 1, accent: '#147538' };
 mark(2, inner, 'start', 39.69 + 2 * style.paddingX, 110 + style.paddingY);
 mark(2, inner, 'end', 39.69 + 2 * style.paddingX, 200 - style.paddingY);
 const frames = Frames.collect(pages, margins);
@@ -25,6 +25,7 @@ assert.equal(frames[0].height, 350 + style.paddingY - 80, 'continuation frames m
 assert.equal(frames[1].y, margins[1]);
 assert.equal(frames[2].height, 340 - margins[1]);
 assert.equal(frames[3].depth, 1);
+assert.deepEqual(frames.map(frame => frame.accent), ['#1d56cf', '#1d56cf', '#1d56cf', '#147538'], 'nested and continued frames retain their own accent');
 const calls = [];
 const pdf = {};
 for (const name of ['switchToPage', 'save', 'fillColor', 'rect', 'path', 'fill', 'lineWidth', 'strokeColor', 'roundedRect', 'stroke', 'lineCap', 'moveTo', 'lineTo', 'restore']) pdf[name] = (...args) => { calls.push([name, ...args]); return pdf; };
@@ -32,10 +33,22 @@ Frames.draw(pdf, frames);
 assert.equal(calls.filter(call => call[0] === 'roundedRect').length, 4);
 assert.equal(calls.filter(call => ['fill', 'fillColor', 'rect', 'path'].includes(call[0])).length, 0, 'block frames must not paint backgrounds');
 assert.equal(calls.filter(call => call[0] === 'lineWidth' && call[1] === style.stripe).length, 4);
+assert.deepEqual(calls.filter(call => call[0] === 'strokeColor' && call[1] !== style.rule).map(call => call[1]), frames.map(frame => frame.accent));
+assert.equal(Frames.colour('#abc'), '#aabbcc');
+assert.equal(Frames.colour('#438bff'), '#438bff');
+assert.equal(Frames.colour('#0008'), '#777777');
+assert.equal(Frames.colour('#fbbe24a2'), '#fcd674');
+assert.equal(Frames.colour('rgb(29, 86, 207)'), '#1d56cf');
+assert.equal(Frames.colour('rgb(0 0 0 / 50%)'), '#808080');
+assert.equal(Frames.colour('rgba(100%, 0%, 0%, .5)'), '#ff8080');
+for (const invalid of ['', 'inherit', 'var(--missing)', 'rgb(999,0,0)', 'rgba(0,0,0,2)']) assert.equal(Frames.colour(invalid), null);
 assert.ok(style.stripe > style.border * 2);
 const css = fs.readFileSync(require('node:path').join(__dirname, '..', 'styles/print.css'), 'utf8');
 assert.match(css, /border-radius: 1\.8mm/);
-assert.match(css, /border-left: 0\.65mm solid #8c939e/);
+assert.match(css, /border-left: 0\.65mm solid var\(--print-block-accent, #8c939e\)/);
+for (const kind of ['definition', 'formula', 'remark', 'reminder', 'experiment', 'derivation', 'theorem', 'lemma', 'example', 'statement', 'corollary', 'proof', 'exercise', 'properties', 'system']) {
+    assert.ok(css.includes('--print-block-accent: var(--t-' + kind + ', var(--' + kind + '-border,'), kind + ' must resolve the same colour for browser print and download');
+}
 assert.match(css, /--print-surface: #fff;/);
 assert.match(css, /--print-surface-nested: #fff;/);
 assert.equal(style.fill, '#ffffff');

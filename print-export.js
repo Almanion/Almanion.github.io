@@ -385,7 +385,7 @@
         if (window.AlmanionPdfDownload) return Promise.resolve();
         if (!pdfModulePromise) pdfModulePromise = new Promise(function (resolve, reject) {
             const script = document.createElement('script');
-            script.src = 'pdf-download.js?v=20261007-1';
+            script.src = 'pdf-download.js?v=20261016-2';
             script.onload = resolve;
             script.onerror = function () { pdfModulePromise = null; script.remove(); reject(new Error('PDF module unavailable')); };
             document.head.appendChild(script);

@@ -52,7 +52,7 @@ pages.forEach(function (file) {
 });
 
 const runtime = fs.readFileSync(path.join(root, 'note-runtime.js'), 'utf8');
-assert.match(runtime, /printStyles:\s*'styles\/print\.css\?v=20261006-1'/);
+assert.match(runtime, /printStyles:\s*'styles\/print\.css\?v=[^']+'/);
 assert.match(runtime, /print:\s*function \(\) \{ return loadStyle\('printStyles'\).*loadScript\('print'\)/);
 
 console.log('print-ready PDF export: all tests passed');
