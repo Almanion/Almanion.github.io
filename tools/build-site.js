@@ -222,7 +222,8 @@ function build(options) {
             .replace(/((?:src|href)=["'](?:styles\/copy-blocks\.css|style-new\.css|styles\/site\/reader\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261010-2$2')
             .replace(/(src=["']firebase-analytics\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261009-4$2')
             .replace(/(src=["'](?:note-runtime\.js|constructor\/(?:index|model|renderer)\.js))(?:\?[^"']*)?(["'])/g, '$1?v=20261014-1$2')
-            .replace(/(src=["'](?:(?:note-runtime|script|knowledge-check|english-ui)\.js|constructor\/index\.js))(?:\?[^"']*)?(["'])/g, '$1?v=20261015-1$2');
+            .replace(/(src=["'](?:(?:note-runtime|script|knowledge-check|english-ui)\.js|constructor\/index\.js))(?:\?[^"']*)?(["'])/g, '$1?v=20261015-1$2')
+            .replace(/((?:src|href)=["'](?:(?:note-runtime|knowledge-check)\.js|styles\/site\/(?:reader|index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261016-1$2');
         if (updated !== html) fs.writeFileSync(absolute, updated);
     }
     // Status follows published materials, including sections added later by the

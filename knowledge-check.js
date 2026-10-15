@@ -411,7 +411,8 @@
         { selector: '.properties-box', kind: 'properties', label: 'Свойства', singular: 'свойства', prompt: 'Воспроизведите свойства' },
         { selector: '.proof-box', kind: 'proof', label: 'Доказательства', singular: 'доказательство', prompt: 'Воспроизведите доказательство' },
         { selector: '.experiment-box', kind: 'experiment', label: 'Эксперименты', singular: 'эксперимент', prompt: 'Опишите эксперимент' },
-        { selector: '.example-box', kind: 'example', label: 'Примеры', singular: 'пример', prompt: 'Воспроизведите пример' }
+        { selector: '.example-box', kind: 'example', label: 'Примеры', singular: 'пример', prompt: 'Воспроизведите пример' },
+        { selector: 'table', kind: 'table', label: 'Таблицы', singular: 'строку', prompt: 'Восстановите строку таблицы' }
     ];
     const GENERIC_TITLES = new Set([
         'определение', 'definition', 'формула', 'formula', 'вывод', 'derivation',
@@ -490,7 +491,7 @@
     }
 
     // ---------- Темы и карточки ----------
-    const CARD_SELECTOR = CARD_TYPES.map(type => type.selector).join(', ');
+    const CARD_SELECTOR = CARD_TYPES.filter(type => type.kind !== 'table').map(type => type.selector).join(', ');
 
     function discoverTopics() {
         const out = [];
@@ -522,7 +523,7 @@
     function isNestedInOtherCard(node, box) {
         let parent = node && node.parentElement;
         while (parent && parent !== box) {
-            if (CARD_TYPES.some(type => parent.matches && parent.matches(type.selector))) return true;
+            if (CARD_TYPES.some(type => type.kind !== 'table' && parent.matches && parent.matches(type.selector))) return true;
             parent = parent.parentElement;
         }
         return false;
@@ -595,7 +596,7 @@
 
         let parent = box.parentElement;
         while (parent && parent !== document.body) {
-            if (CARD_TYPES.some(candidate => parent.matches && parent.matches(candidate.selector))) {
+            if (CARD_TYPES.some(candidate => candidate.kind !== 'table' && parent.matches && parent.matches(candidate.selector))) {
                 const parentStrong = semanticStrong(parent);
                 const parentTitle = readableTerm(parentStrong);
                 if (parentTitle) return { text: parentTitle, html: parentStrong.innerHTML };
@@ -726,6 +727,72 @@
         return formulas.filter((formula, index) => formula.policy === 'include' || (!formula.multiline && (!formula.derivation || !formulas.slice(index + 1).some(next => next.derivation === formula.derivation))));
     }
 
+    // Keep row identity independent of ordering and rendered KaTeX markup.
+    function tableCellHTML(cell) {
+        const clone = cell.cloneNode(true);
+        clone.querySelectorAll('.katex').forEach(math => {
+            const tex = math.querySelector('annotation[encoding="application/x-tex"]')?.textContent;
+            if (!tex) return;
+            const display = math.parentElement?.classList.contains('katex-display');
+            (display ? math.parentElement : math).replaceWith(document.createTextNode((display ? '\\[' : '\\(') + tex + (display ? '\\]' : '\\)')));
+        });
+        // auto-render wraps inline formulas in an otherwise empty span.
+        Array.from(clone.querySelectorAll('span')).reverse().forEach(span => {
+            if (!span.attributes.length) span.replaceWith(...span.childNodes);
+        });
+        clone.querySelectorAll('button, .bookmark-btn, .copy-block-btn, .inline-edit-btn, .personal-note-btn, .personal-note-excerpt').forEach(el => el.remove());
+        clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+        clone.querySelectorAll('[aria-labelledby]').forEach(el => {
+            const title = el.querySelector('title')?.textContent;
+            el.removeAttribute('aria-labelledby');
+            if (title) el.setAttribute('aria-label', title);
+        });
+        return clone.innerHTML;
+    }
+
+    function extractTableRows(topic, topicName) {
+        const result = [];
+        topic.querySelectorAll('table').forEach(table => {
+            if (table.closest('[data-kc-ignore="true"]') || table.querySelector('table')) return;
+            const headerRows = Array.from(table.tHead?.rows || []);
+            if (headerRows.length !== 1) return;
+            const headers = Array.from(headerRows[0].cells);
+            if (headers.length < 2 || headers.some(cell => cell.colSpan !== 1 || cell.rowSpan !== 1)) return;
+            const keyColumn = table.dataset.kcKeyColumn == null ? 0 : Number(table.dataset.kcKeyColumn);
+            if (!Number.isInteger(keyColumn) || keyColumn < 0 || keyColumn >= headers.length) return;
+            const labels = headers.map(cell => normalizeTitle(cell.textContent));
+            if (labels.some(label => !label)) return;
+            const owner = table.closest('[data-kc-id]');
+            const tableTitle = table.dataset.kcTitle || normalizeTitle(table.caption?.textContent) ||
+                readableTerm(owner && semanticStrong(owner)) || topicName;
+            const tableId = sourceIdFor(table) || (sourceIdFor(owner || table) + ':' + hashString(labels.join('|')));
+            // A merged body cannot be split into independent rows reliably.
+            const rows = Array.from(table.tBodies || []).flatMap(body => Array.from(body.rows));
+            if (rows.some(row => Array.from(row.cells).some(cell => cell.colSpan !== 1 || cell.rowSpan !== 1))) return;
+            rows.forEach(row => {
+                if (row.closest('[data-kc-ignore="true"]') || row.cells.length !== headers.length) return;
+                const cells = Array.from(row.cells), html = cells.map(tableCellHTML);
+                const key = normalizeTitle(html[keyColumn]);
+                if (!key || !normalizeTitle(cells[keyColumn].textContent)) return;
+                const sourceId = 'table-row:' + tableId + ':' + (sourceIdFor(row) || hashString(key));
+                row.dataset.kcRowSource = sourceId;
+                const term = normalizeTitle(cells[keyColumn].textContent);
+                const fields = labels.filter((_, i) => i !== keyColumn);
+                const back = '<dl class="kc-table-answer">' + cells.map((cell, i) =>
+                    '<div class="kc-table-field"><dt>' + escapeHtml(labels[i]) + '</dt><dd>' + (html[i].trim() || '—') + '</dd></div>'
+                ).join('') + '</dl>';
+                result.push({
+                    id: stableCardId({ topicId: topic.id, kind: 'table', sourceId: sourceId }),
+                    sourceId: sourceId, topicId: topic.id, topicName: topicName, tableTitle: tableTitle,
+                    kind: 'table', kindLabel: 'Строка таблицы', term: term, termHTML: html[keyColumn],
+                    questionLead: 'Вспомните: ' + fields.join(', ').toLocaleLowerCase('ru-RU'),
+                    backHTML: back, contentHash: hashString(back), legacyIds: []
+                });
+            });
+        });
+        return result;
+    }
+
     function extractTopicCards(tid) {
         if (cardCache.has(tid)) return cardCache.get(tid);
         const cards = [];
@@ -734,6 +801,7 @@
         const tname = topic.querySelector('.topic-title')?.textContent.trim() || '';
 
         CARD_TYPES.forEach(type => {
+            if (type.kind === 'table') return;
             const typeBoxes = Array.from(topic.querySelectorAll(type.selector));
             typeBoxes.forEach((box, i) => {
                 if (box.closest?.('[data-kc-ignore="true"]')) return;
@@ -780,6 +848,7 @@
             });
         });
 
+        cards.push(...extractTableRows(topic, tname));
         const duplicates = new Map();
         cards.forEach(card => {
             if (!duplicates.has(card.id)) duplicates.set(card.id, []);
@@ -1186,6 +1255,11 @@
                     '<p class="kc-subtitle">' + escapeHtml(profile.subtitle) + '</p></div></div>' +
                 '<div class="kc-select-scroll">' +
                 '<div class="kc-session-resume" id="kcSessionResume" hidden></div>' +
+                '<div class="kc-study-sections" id="kcStudySections" role="group" aria-label="Вид заданий" hidden>' +
+                    '<button type="button" class="kc-size-option" data-section="blocks" aria-pressed="true">Блоки</button>' +
+                    '<button type="button" class="kc-size-option" data-section="tables" aria-pressed="false">Таблицы</button>' +
+                '</div>' +
+                '<p class="kc-subtitle kc-table-intro" id="kcTableIntro" hidden>По названию вспомните остальные ячейки строки, затем откройте ответ и оцените себя.</p>' +
                 '<section class="kc-filter-section" aria-labelledby="kcTypesHeading">' +
                     '<div class="kc-filter-heading-row"><h3 class="kc-filter-heading" id="kcTypesHeading">Что повторять</h3>' +
                     '<p class="kc-filter-hint">Можно выбрать несколько типов</p></div>' +
@@ -1252,6 +1326,20 @@
 
         document.getElementById('kcSelectAll').addEventListener('click', toggleSelectAll);
         document.getElementById('kcStart').addEventListener('click', startSession);
+        document.querySelectorAll('#kcStudySections [data-section]').forEach(button => {
+            button.addEventListener('click', () => {
+                if (studySection === button.dataset.section) return;
+                savePreferences();
+                studySection = button.dataset.section;
+                const saved = sectionPreferences[studySection] || {};
+                selected = Array.isArray(saved.topics) ? saved.topics.filter(id => sectionTopics().some(t => t.id === id)) : sectionTopics().map(t => t.id);
+                selectedKinds = studySection === 'tables' ? ['table'] : (Array.isArray(saved.kinds) ? saved.kinds.filter(k => k !== 'table') : studyProfile().defaultKinds.slice());
+                renderStudySection();
+                renderTypeFilters();
+                renderDeckList();
+                savePreferences();
+            });
+        });
         document.querySelectorAll('#kcSizeList .kc-size-option').forEach(button => {
             button.addEventListener('click', () => {
                 sessionLimit = button.dataset.limit === 'all' ? 'all' : Number(button.dataset.limit);
@@ -1353,6 +1441,29 @@
     let selected = [];
     let selectedKinds = [];
     let sessionLimit = 'all';
+    let studySection = 'blocks';
+    let sectionPreferences = {};
+
+    function sectionTopics() {
+        return TOPICS.filter(topic => studySection === 'tables' ? topic.counts.table > 0 :
+            Object.keys(topic.counts).some(kind => kind !== 'table' && topic.counts[kind] > 0));
+    }
+
+    function renderStudySection() {
+        const tables = studySection === 'tables';
+        document.getElementById('kcStudySections').hidden = !TOPICS.some(topic => topic.counts.table > 0);
+        document.querySelectorAll('#kcStudySections [data-section]').forEach(button => {
+            const active = button.dataset.section === studySection;
+            button.setAttribute('aria-pressed', String(active));
+            button.classList.toggle('is-selected', active);
+        });
+        document.getElementById('kcTypesHeading').closest('section').hidden = tables;
+        document.getElementById('kcTableIntro').hidden = !tables;
+        document.getElementById('kcTopicsHeading').textContent = tables ? 'Темы с таблицами' : 'Разделы';
+        document.querySelectorAll('#kcSizeList [data-limit]').forEach(button => {
+            if (button.dataset.limit !== 'all') button.querySelector('.kc-size-meta').textContent = 'до ' + button.dataset.limit + (tables ? ' строк' : ' карточек');
+        });
+    }
 
     function loadPreferences() {
         try {
@@ -1360,13 +1471,16 @@
             return {
                 topics: Array.isArray(value.topics) ? value.topics : [],
                 kinds: Array.isArray(value.kinds) ? value.kinds : [],
+                section: value.section === 'tables' ? 'tables' : 'blocks',
+                sections: value.sections && typeof value.sections === 'object' ? value.sections : {},
                 limit: value.limit === 'all' ? 'all' : ([15, 30].includes(Number(value.limit)) ? Number(value.limit) : 'all')
             };
-        } catch (_) { return { topics: [], kinds: [], limit: 'all' }; }
+        } catch (_) { return { topics: [], kinds: [], limit: 'all', section: 'blocks', sections: {} }; }
     }
 
     function savePreferences() {
-        kcSet(PREFS_KEY, JSON.stringify({ topics: selected, kinds: selectedKinds, limit: sessionLimit }));
+        sectionPreferences[studySection] = { topics: selected.slice(), kinds: selectedKinds.slice() };
+        kcSet(PREFS_KEY, JSON.stringify({ topics: selected, kinds: selectedKinds, limit: sessionLimit, section: studySection, sections: sectionPreferences }));
     }
 
     function allPageCards() {
@@ -1387,17 +1501,21 @@
         TOPICS = discoverTopics();
         if (!session) store = loadStore();
         const prefs = loadPreferences();
+        sectionPreferences = prefs.sections;
+        studySection = prefs.section === 'tables' && TOPICS.some(t => t.counts.table) ? 'tables' : 'blocks';
         if (!selected.length) selected = prefs.topics;
-        selected = selected.filter(id => TOPICS.some(topic => topic.id === id));
-        if (selected.length === 0) selected = TOPICS.map(t => t.id);
+        selected = selected.filter(id => sectionTopics().some(topic => topic.id === id));
+        if (selected.length === 0) selected = sectionTopics().map(t => t.id);
         if (!selectedKinds.length) selectedKinds = prefs.kinds;
         sessionLimit = prefs.limit;
         const kindCounts = availableKinds();
-        selectedKinds = selectedKinds.filter(kind => CARD_TYPES.some(type => type.kind === kind) && kindCounts[kind] > 0);
+        selectedKinds = selectedKinds.filter(kind => kind !== 'table' && CARD_TYPES.some(type => type.kind === kind) && kindCounts[kind] > 0);
+        if (studySection === 'tables') selectedKinds = ['table'];
         if (selectedKinds.length === 0) {
             selectedKinds = studyProfile().defaultKinds.filter(kind => kindCounts[kind] > 0);
-            if (!selectedKinds.length) selectedKinds = CARD_TYPES.filter(type => kindCounts[type.kind] > 0).map(type => type.kind);
+            if (!selectedKinds.length) selectedKinds = CARD_TYPES.filter(type => type.kind !== 'table' && kindCounts[type.kind] > 0).map(type => type.kind);
         }
+        renderStudySection();
         renderTypeFilters();
         renderDeckList();
         renderSessionSize();
@@ -1415,6 +1533,7 @@
         const counts = availableKinds();
         list.innerHTML = '';
         CARD_TYPES.forEach(type => {
+            if (type.kind === 'table') return;
             const count = counts[type.kind] || 0;
             if (!count) return;
             const button = document.createElement('button');
@@ -1459,7 +1578,7 @@
         const remaining = saved.queue.length;
         host.hidden = false;
         host.innerHTML = '<div class="kc-session-resume-copy"><span class="kc-session-resume-title">Незавершённая сессия</span>' +
-            '<span class="kc-session-resume-meta">Осталось ' + remaining + ' ' + plural(remaining, 'карточка', 'карточки', 'карточек') + '</span></div>' +
+            '<span class="kc-session-resume-meta">Осталось ' + remaining + ' ' + (saved.selectedKinds.length === 1 && saved.selectedKinds[0] === 'table' ? plural(remaining, 'строка', 'строки', 'строк') : plural(remaining, 'карточка', 'карточки', 'карточек')) + '</span></div>' +
             '<div class="kc-session-resume-actions"><button type="button" class="kc-btn kc-btn-primary" id="kcResumeSession">Продолжить</button>' +
             '<button type="button" class="kc-btn kc-btn-ghost" id="kcDiscardSession">Сбросить</button></div>';
         document.getElementById('kcResumeSession').addEventListener('click', resumeSavedSession);
@@ -1473,7 +1592,7 @@
         const list = document.getElementById('kcDeckList');
         list.innerHTML = '';
         let totalDue = 0, totalNew = 0;
-        TOPICS.forEach(t => {
+        sectionTopics().forEach(t => {
             const { due, fresh } = topicCounts(t.id, selectedKinds);
             totalDue += due; totalNew += fresh;
             const card = document.createElement('button');
@@ -1514,7 +1633,7 @@
         const recommendation = document.getElementById('kcRecommendation');
         if (recommendation) {
             if (selected.length === 0) {
-                recommendation.innerHTML = '<strong>Выберите темы</strong><span>Алгоритм соберёт все новые и назначенные к повторению карточки.</span>';
+                recommendation.innerHTML = '<strong>Выберите темы</strong><span>Будут включены новые и назначенные к повторению задания.</span>';
             } else if (selectedKinds.length === 0) {
                 recommendation.innerHTML = '<strong>Выберите типы карточек</strong><span>Например, только определения или формулы и выводы.</span>';
             } else if (selectedCards.length === 0) {
@@ -1527,7 +1646,7 @@
                 if (plan.reviewCount) parts.push(plan.reviewCount + ' к повторению');
                 if (plan.newCount) parts.push(plan.newCount + ' ' + plural(plan.newCount, 'новая', 'новые', 'новых'));
                 if (plan.deferred) parts.push(plan.deferred + ' останутся на следующую сессию');
-                recommendation.innerHTML = '<strong>Рекомендовано: ' + count + ' ' + plural(count, 'карточка', 'карточки', 'карточек') + '</strong>' +
+                recommendation.innerHTML = '<strong>Рекомендовано: ' + count + ' ' + (studySection === 'tables' ? plural(count, 'строка', 'строки', 'строк') : plural(count, 'карточка', 'карточки', 'карточек')) + '</strong>' +
                     '<span><span class="kc-visually-hidden">Состав: </span>' + parts.join(' · ') +
                     '</span>';
             }
@@ -1536,11 +1655,11 @@
 
     function updateSelectAllLabel() {
         const b = document.getElementById('kcSelectAll');
-        if (b) b.textContent = (selected.length === TOPICS.length && TOPICS.length) ? 'Снять всё' : 'Выбрать всё';
+        if (b) b.textContent = (selected.length === sectionTopics().length && selected.length) ? 'Снять всё' : 'Выбрать всё';
     }
 
     function toggleSelectAll() {
-        selected = (selected.length === TOPICS.length) ? [] : TOPICS.map(t => t.id);
+        selected = (selected.length === sectionTopics().length) ? [] : sectionTopics().map(t => t.id);
         savePreferences();
         renderTypeFilters();
         renderDeckList();
@@ -1595,6 +1714,8 @@
         session = restored;
         selected = restored.selectedTopicIds.slice();
         selectedKinds = restored.selectedKinds.slice();
+        studySection = selectedKinds.length === 1 && selectedKinds[0] === 'table' ? 'tables' : 'blocks';
+        savePreferences();
         sessionLimit = restored.limit;
         document.getElementById('kcSelectOverlay').classList.add('hidden');
         document.getElementById('kcReviewOverlay').classList.remove('hidden');
@@ -1662,6 +1783,7 @@
                 '<div class="kc-card-context"><div class="kc-topic-label">' + escapeHtml(def.topicName) + '</div>' +
                     (def.kindLabel ? '<span class="kc-kind-label kc-kind-' + escapeHtml(def.kind || 'definition') + '">' + escapeHtml(def.kindLabel) + '</span>' : '') +
                 '</div>' +
+                (def.tableTitle ? '<p class="kc-table-caption">' + escapeHtml(def.tableTitle) + '</p>' : '') +
                 '<button type="button" class="kc-flashcard" id="kcFront">' +
                     (def.questionLead ? '<span class="kc-flashcard-prompt">' + escapeHtml(def.questionLead) + '</span>' : '') +
                     '<span class="kc-flashcard-term">' + (def.termHTML || escapeHtml(def.term)) + '</span>' +
@@ -1677,6 +1799,7 @@
         const guide = document.getElementById('kcGradeGuide');
         if (guide) { guide.hidden = true; guide.open = false; }
         const front = document.getElementById('kcFront');
+        if (def.kind === 'table') document.getElementById('kcGoToSource').lastChild.textContent = 'К строке в конспекте';
         front.addEventListener('click', reveal);
         document.getElementById('kcGoToSource')?.addEventListener('click', () => goToSource(def));
         setTimeout(() => { renderMath(front); }, 30);
@@ -1776,6 +1899,11 @@
 
     function findSourceElement(card) {
         if (!card) return null;
+        if (card.kind === 'table') {
+            const topic = document.getElementById(card.topicId);
+            return Array.from(topic?.querySelectorAll('[data-kc-row-source]') || [])
+                .find(row => row.dataset.kcRowSource === card.sourceId) || topic;
+        }
         if (card.sourceId) {
             const byId = document.getElementById(card.sourceId);
             if (byId) return byId;
@@ -1819,7 +1947,7 @@
             '<div class="kc-final">' +
                 '<div class="kc-final-icon kc-final-icon-ok">' + IC.check + '</div>' +
                 '<h3 class="kc-final-title">Всё повторено</h3>' +
-                '<p class="kc-final-sub">Все выбранные карточки уже усвоены. Расписание подскажет время следующего повторения.</p>' +
+                '<p class="kc-final-sub">Все выбранные задания уже усвоены. Расписание подскажет время следующего повторения.</p>' +
                 '<div class="kc-final-actions"><button class="kc-btn kc-btn-primary" id="kcEmptyDone">Готово</button></div>' +
             '</div>';
         document.getElementById('kcEmptyDone').addEventListener('click', closeReview);
@@ -1845,9 +1973,9 @@
             '<div class="kc-final">' +
                 '<div class="kc-final-icon kc-final-icon-ok">' + IC.trophy + '</div>' +
                 '<h3 class="kc-final-title">Сессия завершена</h3>' +
-                '<p class="kc-final-sub">Все выбранные карточки закреплены. Следующий показ назначен по индивидуальному расписанию.</p>' +
+                '<p class="kc-final-sub">Все выбранные задания закреплены. Следующий показ назначен по индивидуальному расписанию.</p>' +
                 '<div class="kc-final-stats">' +
-                    '<div class="kc-fstat"><span class="kc-fstat-val">' + unique + '</span><span class="kc-fstat-lbl">' + plural(unique, 'карточка', 'карточки', 'карточек') + '</span></div>' +
+                    '<div class="kc-fstat"><span class="kc-fstat-val">' + unique + '</span><span class="kc-fstat-lbl">' + (session?.selectedKinds?.length === 1 && session.selectedKinds[0] === 'table' ? plural(unique, 'строка', 'строки', 'строк') : plural(unique, 'карточка', 'карточки', 'карточек')) + '</span></div>' +
                     '<div class="kc-fstat"><span class="kc-fstat-val">' + reviewed + '</span><span class="kc-fstat-lbl">' + plural(reviewed, 'ответ', 'ответа', 'ответов') + '</span></div>' +
                     '<div class="kc-fstat kc-fstat-ok"><span class="kc-fstat-val">' + acc + '%</span><span class="kc-fstat-lbl">вспомнено</span></div>' +
                     (nextLbl ? '<div class="kc-fstat"><span class="kc-fstat-val">' + nextLbl + '</span><span class="kc-fstat-lbl">до повтора</span></div>' : '') +
@@ -2011,6 +2139,8 @@
         store = loadStore();
         selected = [];
         selectedKinds = [];
+        studySection = 'blocks';
+        sectionPreferences = {};
         sessionLimit = 'all';
         ['kcReviewOverlay', 'kcSelectOverlay'].forEach(function (id) {
             document.getElementById(id)?.classList.add('hidden');

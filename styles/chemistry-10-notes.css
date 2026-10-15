@@ -41,22 +41,22 @@ body[data-note-subject="chemistry-10"] :is(.properties-box, .example-box, .deriv
 }
 /* Override only the notebook drawings; preserve transparent orbital interiors
    and leave formula glyphs, icons and exported SVG source colors untouched. */
-body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table) svg {
+body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table, .kc-table-answer) svg {
     background: var(--chem-diagram-paper);
 }
-body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table) svg > rect[fill="#ffffff"] {
+body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table, .kc-table-answer) svg > rect[fill="#ffffff"] {
     fill: var(--chem-diagram-paper);
 }
-body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table) svg [fill="#182235"] {
+body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table, .kc-table-answer) svg [fill="#182235"] {
     fill: var(--chem-diagram-ink);
 }
-body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table) svg [stroke="#26344a"] {
+body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table, .kc-table-answer) svg [stroke="#26344a"] {
     stroke: var(--chem-diagram-ink);
 }
-body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table) svg :is([fill="#e8eef9"], [fill="#e2ecfa"]) {
+body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table, .kc-table-answer) svg :is([fill="#e8eef9"], [fill="#e2ecfa"]) {
     fill: var(--chem-diagram-orbital);
 }
-body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table) svg [fill="#bcd4f1"] {
+body[data-note-subject="chemistry-10"] :is(.chem-note-figure, .chem-note-table, .kc-table-answer) svg [fill="#bcd4f1"] {
     fill: var(--chem-diagram-overlap);
 }
 body[data-note-subject="chemistry-10"] .chem-note-figure {

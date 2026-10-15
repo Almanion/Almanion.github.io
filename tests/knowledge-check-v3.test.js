@@ -319,7 +319,8 @@ const expectedKinds = [
 ];
 const profileKinds = Array.from(scheduler.studyProfile().types, type => type.kind);
 assert.ok(profileKinds.includes('stress'));
-assert.deepEqual(profileKinds.filter(kind => kind !== 'stress'), expectedKinds);
+assert.ok(profileKinds.includes('table'));
+assert.deepEqual(profileKinds.filter(kind => !['stress', 'table'].includes(kind)), expectedKinds);
 
 // Карточки извлекаются прямо из существующих блоков и могут быть отфильтрованы
 // по типу до построения очереди.
