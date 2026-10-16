@@ -26,9 +26,14 @@ test.beforeEach(async ({ page }) => {
         pdfMake.createPdf = definition => {
             pdfAudit.vectors = [];
             pdfAudit.images = [];
+            pdfAudit.figures = [];
+            pdfAudit.defaultFontSize = definition.defaultStyle.fontSize;
+            pdfAudit.headingSizes = [];
             const visit = node => {
                 if (node.svg) pdfAudit.vectors.push(node.svg);
                 if (node.image) pdfAudit.images.push(node.image);
+                if (node.fit) pdfAudit.figures.push({ fit: node.fit, alignment: node.alignment });
+                if (node.headlineLevel) pdfAudit.headingSizes.push(node.fontSize);
                 for (const child of node.stack || []) visit(child);
                 for (const child of node.columns || []) visit(child);
                 for (const row of node.table?.body || []) for (const cell of row) visit(cell);
@@ -236,4 +241,49 @@ test('short display formulas stay centered with legacy indentation', async ({ pa
     });
     savePdf(testInfo, 'centered-math.pdf', result);
     expect(Math.abs(result.center - result.expected)).toBeLessThan(2);
+});
+
+test('compact notes use 11 pt prose, 11–12 pt headings and smaller raster/SVG figures without shrinking math', async ({ page }, testInfo) => {
+    const result = await page.evaluate(async () => {
+        const fixture = document.createElement('article');
+        fixture.innerHTML = '<h3>Компактная печать</h3><div class="experiment-box"><p>Рисунки сохраняют пропорции, подписи и чёткость.</p><img src="images/normal-acceleration.png"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 90"><path d="M20 65H330M30 75V15" fill="none" stroke="#222"/><text x="50" y="40" font-size="16">Схема опыта</text></svg><div class="formula-box">\\[pV=nRT\\]</div></div>';
+        const blob = await AlmanionPdfDownload.generate([{ element: fixture }], 'Компактная печать');
+        const markup = pdfAudit.vectors.find(svg => svg.includes('Рисунки'));
+        const text = new DOMParser().parseFromString(markup, 'image/svg+xml').querySelector('text');
+        const fontSize = Number(text.getAttribute('font-size')) * .75;
+        return { ...pdfAudit, fontSize, bytes: Array.from(new Uint8Array(await blob.arrayBuffer())) };
+    });
+    savePdf(testInfo, 'compact-notes.pdf', result);
+    expect(result.defaultFontSize).toBe(11);
+    expect(result.fontSize).toBeCloseTo(11, 2);
+    expect(result.headingSizes).toEqual([12]);
+    expect(result.figures).toHaveLength(2);
+    const width = 595.28 - 2 * 39.69 - 2 * 4 * 72 / 25.4;
+    for (const figure of result.figures) {
+        expect(figure.fit[0]).toBeCloseTo(width * .85, 2);
+        expect(figure.fit[1]).toBe(350);
+        expect(figure.alignment).toBe('center');
+    }
+    const math = result.vectors.find(svg => svg.includes('data-mml-node="math"'));
+    expect(math).toBeTruthy();
+    assertBounds(result);
+    await page.evaluate(async () => {
+        await AlmanionNoteRuntime.ensure('print');
+        AlmanionPrintExport.prepare();
+    });
+    await page.emulateMedia({ media: 'print' });
+    const native = await page.evaluate(() => {
+        const block = document.querySelector('.main-content .definition-box');
+        const css = getComputedStyle(block);
+        const figure = getComputedStyle(document.querySelector('.main-content img'));
+        const heading = getComputedStyle(document.querySelector('.main-content .topic-title'));
+        const prose = getComputedStyle(document.querySelector('.main-content p'));
+        return { font: parseFloat(css.fontSize) * .75, line: parseFloat(css.lineHeight) / parseFloat(css.fontSize), prose: parseFloat(prose.fontSize) * .75, heading: parseFloat(heading.fontSize) * .75, image: figure.maxWidth, height: parseFloat(figure.maxHeight) * .75 };
+    });
+    expect(native.font).toBeCloseTo(11, 2);
+    expect(native.prose).toBeCloseTo(11, 2);
+    expect(native.line).toBeCloseTo(1.35, 2);
+    expect(native.heading).toBe(12);
+    expect(native.image).toBe('85%');
+    expect(native.height).toBeCloseTo(350, 0);
 });

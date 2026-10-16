@@ -450,6 +450,7 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
 @media print {
     :root {
         color-scheme: light !important;
+        font-size: 11pt !important;
         --print-ink: #17191d;
         --print-muted: #606773;
         --print-rule: #cfd3da;
@@ -473,8 +474,8 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
         color: var(--print-ink) !important;
         background: #fff !important;
         font-family: "Onest", "Segoe UI", Arial, sans-serif !important;
-        font-size: 10.25pt !important;
-        line-height: 1.5 !important;
+        font-size: 11pt !important;
+        line-height: 1.35 !important;
         letter-spacing: -0.003em !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
@@ -575,7 +576,7 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
         background: transparent !important;
         border: 0 !important;
         border-bottom: 0.25mm solid var(--print-rule) !important;
-        font-size: 17pt !important;
+        font-size: 12pt !important;
         font-weight: 700 !important;
         line-height: 1.15 !important;
         letter-spacing: -0.025em !important;
@@ -624,7 +625,7 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
         color: var(--print-ink) !important;
         background: transparent !important;
         border: 0 !important;
-        font-size: 14.5pt !important;
+        font-size: 12pt !important;
         font-weight: 690 !important;
         line-height: 1.2 !important;
         letter-spacing: -0.02em !important;
@@ -667,6 +668,8 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
         overflow: visible !important;
         color: var(--print-ink) !important;
         background: var(--print-surface) !important;
+        font-size: 11pt !important;
+        line-height: 1.35 !important;
         border: 0.25mm solid var(--print-rule) !important;
         border-left: 0.65mm solid var(--print-block-accent, #8c939e) !important;
         border-radius: 1.8mm !important;
@@ -769,8 +772,12 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
     .katex-display.print-wide { font-size: calc(9.4pt * var(--print-formula-scale, 0.9)) !important; }
 
     .main-content :is(img, svg:not(.katex svg)) {
-        max-width: 100% !important;
+        display: block !important;
+        width: auto !important;
+        max-width: 85% !important;
+        max-height: 123.5mm !important;
         height: auto !important;
+        margin-inline: auto !important;
         break-inside: avoid-page;
         page-break-inside: avoid;
     }
@@ -858,8 +865,8 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
         zoom: 1 !important;
     }
     html body.print-export-active.print-export-active .main-content :is(p, li, dd) {
-        font-size: 10.25pt !important;
-        line-height: 1.5 !important;
+        font-size: 11pt !important;
+        line-height: 1.35 !important;
     }
     html body.print-export-active.print-export-active .main-content .print-splittable {
         break-inside: auto !important;
@@ -879,7 +886,7 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
         font-size: calc(10.25pt * var(--print-formula-scale, 1)) !important;
     }
     html body.print-export-active.print-export-active .main-content :is(img, svg:not(.katex svg)) {
-        max-height: 220mm !important;
+        max-height: 123.5mm !important;
         object-fit: contain;
     }
     html body.print-export-active.print-export-active .main-content svg text { fill: #17191d !important; }

@@ -10,12 +10,12 @@
         text = String(text || '').replace(/\s+/g, ' ').trim();
         const id = 'pdf-heading-' + entries.length;
         entries.push({ id, text, level });
-        return { text, id, fontSize: level === 0 ? 16 : 13, bold: true, margin: [0, 4, 0, 9], headlineLevel: 1, newSection: true, ...options };
+        return { text, id, fontSize: level < 2 ? 12 : 11.5, bold: true, margin: [0, 4, 0, 8], headlineLevel: 1, newSection: true, ...options };
     }
     function contents(entries, locations, english) {
         return {
             stack: [
-                { text: english ? 'Contents' : 'Содержание', fontSize: 18, bold: true, margin: [0, 0, 0, 16] },
+                { text: english ? 'Contents' : 'Содержание', fontSize: 12, bold: true, margin: [0, 0, 0, 12] },
                 { table: { widths: ['*', 36], dontBreakRows: true, body: entries.map(entry => [
                     { text: entry.text, linkToDestination: entry.id, bold: entry.level === 0, margin: [entry.level * 12, entry.level === 0 ? 4 : 0, 6, 0] },
                     { text: String(locations?.[entry.id] ?? 0), linkToDestination: entry.id, alignment: 'right', margin: [0, entry.level === 0 ? 4 : 0, 0, 0] }

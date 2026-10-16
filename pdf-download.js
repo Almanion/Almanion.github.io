@@ -9,6 +9,8 @@
     const HANDOUT = { width: 595.28 - 2 * 22.68, height: 841.89 / 2 - 2 * 22.68,
         half: 841.89 / 2, inset: 22.68 };
     const INK = '#17191d';
+    const NOTE_FONT_SIZE = 11;
+    const figureFit = width => [width * .85, 350];
     const BLOCKS = '.definition-box,.formula-box,.remark-box,.reminder-box,.experiment-box,.derivation-box,.theorem-box,.lemma-box,.example-box,.statement-box,.corollary-box,.proof-box,.exercise-box,.properties-box,.system-box,.english-word-card';
     const LABELS = { definition: 'Определение', formula: 'Формула', remark: 'Замечание', reminder: 'Напоминание', experiment: 'Опыт', derivation: 'Вывод', theorem: 'Теорема', lemma: 'Лемма', example: 'Пример', statement: 'Утверждение', corollary: 'Следствие', proof: 'Доказательство', exercise: 'Задача', properties: 'Свойства', system: 'Система' };
     let ready;
@@ -24,7 +26,7 @@
 
     function dependencies() {
         if (!ready) ready = (async () => {
-            await load('pdf-pagination.js?v=20261006-1');
+            await load('pdf-pagination.js?v=20261016-3');
             await load('pdf-block-frames.js?v=20261016-2');
             await load('vendor/pdf/pdfmake.min.js');
             window.MathJax = { startup: { typeset: false }, svg: { fontCache: 'none' }, tex: { packages: ['base', 'ams', 'newcommand', 'noundefined', 'textmacros'] } };
@@ -242,7 +244,7 @@
             }
             node.replaceWith(fragment);
         }
-        return { svg: new XMLSerializer().serializeToString(copy).replace(/currentColor/g, INK), fit: [width, 410], alignment: 'center', margin: [0, 6, 0, 6] };
+        return { svg: new XMLSerializer().serializeToString(copy).replace(/currentColor/g, INK), fit: figureFit(width), alignment: 'center', margin: [0, 6, 0, 6] };
     }
 
     // Snapshot sources before detaching the reader DOM. currentSrc and baseURI
@@ -301,10 +303,10 @@
             const context = canvas.getContext('2d');
             context.fillStyle = '#ffffff'; context.fillRect(0, 0, canvas.width, canvas.height);
             context.drawImage(bitmap, 0, 0); bitmap.close();
-            return { image: canvas.toDataURL('image/png'), fit: [width, 410], alignment: 'center', margin: [0, 6, 0, 6] };
+            return { image: canvas.toDataURL('image/png'), fit: figureFit(width), alignment: 'center', margin: [0, 6, 0, 6] };
         }
         const data = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob); });
-        return { image: data, fit: [width, 410], alignment: 'center', margin: [0, 6, 0, 6] };
+        return { image: data, fit: figureFit(width), alignment: 'center', margin: [0, 6, 0, 6] };
     }
 
     async function tableContent(table, width, measure, english, depth, ancestors) {
@@ -356,7 +358,7 @@
                 if (depth === 0 && node.textContent.trim()) {
                     const level = node.matches('h1,h2,.part-title') ? 0 : node.matches('h3,.topic-title') ? 1 : 2;
                     output.push(AlmanionPdfPagination.heading(node.textContent, level, measure.pdfHeadings));
-                } else output.push({ text: node.textContent.trim(), fontSize: 13, bold: true, margin: [0, 4, 0, 9] });
+                } else output.push({ text: node.textContent.trim(), fontSize: 12, bold: true, margin: [0, 4, 0, 8] });
             } else if (node.matches(BLOCKS)) {
                 const frames = window.AlmanionPdfBlockFrames;
                 const kind = Object.keys(LABELS).find(key => node.classList.contains(key + '-box'));
@@ -428,7 +430,7 @@
         document.body.append(host);
         const shadow = host.attachShadow({ mode: 'open' });
         const style = document.createElement('style');
-        style.textContent = ':host{color:#17191d} .paragraph{font:14.6667px/1.5 AlmanionPDF,Roboto,sans-serif;white-space:normal;overflow-wrap:anywhere} strong,b{font-weight:700} em,i{font-style:italic} .pdf-math{display:inline-block;vertical-align:middle;line-height:0;margin-inline:.16em}.pdf-math.display{display:block;text-align:center;margin:10px 0}.pdf-math svg{max-width:100%;height:auto}';
+        style.textContent = ':host{color:#17191d} .paragraph{font:' + NOTE_FONT_SIZE * 4 / 3 + 'px/1.35 AlmanionPDF,Roboto,sans-serif;white-space:normal;overflow-wrap:anywhere} strong,b{font-weight:700} em,i{font-style:italic} .pdf-math{display:inline-block;vertical-align:middle;line-height:0;margin-inline:.16em}.pdf-math.display{display:block;text-align:center;margin:10px 0}.pdf-math svg{max-width:100%;height:auto}';
         shadow.append(style);
         const measure = document.createElement('div'); measure.pdfBlockId = 0; measure.pdfLeafCount = 0; measure.pdfHeadings = []; measure.pdfImages = new WeakMap(); measure.pdfBlockColors = new WeakMap(); shadow.append(measure);
         try {
@@ -477,7 +479,7 @@
             function definitionFor(locations) { return {
                 info: { title, author: '@Almanion239', subject: 'Конспект' }, pageSize: 'A4',
                 pageMargins: [39.69, 42.52, 39.69, 51.02], // 14 / 15 / 14 / 18 mm.
-                defaultStyle: { font: 'NotoSans', fontSize: 11, color: INK },
+                defaultStyle: { font: 'NotoSans', fontSize: NOTE_FONT_SIZE, color: INK },
                 content: [pagination.contents(measure.pdfHeadings, locations, document.documentElement.lang === 'en'), ...pagination.copy(content)],
                 footer: pagination.footer,
                 pageBreakBefore: (node, following) => node.headlineLevel === 1 && node.pageBreak !== 'before' && following.length === 0
