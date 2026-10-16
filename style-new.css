@@ -482,7 +482,7 @@ body.experimental .system-box {
     border-left: 1px solid var(--exp-border) !important;
     border-radius: var(--exp-r) !important;
     box-shadow: none !important;
-    padding: 1.05rem 1.25rem !important;
+    padding: 0.89rem 1.25rem 1.05rem !important;
     margin: 1rem 0 !important;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
     box-sizing: border-box;
@@ -561,9 +561,11 @@ body.experimental .reminder-box::before,
 body.experimental .example-box > strong:first-child {
     display: block;
     width: fit-content;
-    margin: 0 0 0.7rem 0 !important;
-    padding: 0.16rem 0.5rem;
-    font-size: 0.66rem;
+    /* A smaller chip and gap reduce the card header by about 15%, while the
+       note text, horizontal padding and bottom spacing keep their size. */
+    margin: 0 0 0.57rem 0 !important;
+    padding: 0.13rem 0.425rem;
+    font-size: 0.6rem;
     font-weight: 800;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -1121,7 +1123,7 @@ body.experimental.exp-animate .definition-box {
     body.experimental .exercise-box,
     body.experimental .properties-box,
     body.experimental .system-box {
-        padding: 0.9rem 1rem !important;
+        padding: 0.765rem 1rem 0.9rem !important;
     }
 
     /* Only legacy corner icons are hidden beside bookmarks. The text label

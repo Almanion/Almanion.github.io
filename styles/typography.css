@@ -261,7 +261,7 @@ body.experimental .main-content :is(
     .properties-box,
     .system-box
 )::before {
-    font-size: 0.675rem;
+    font-size: 0.6rem;
     font-weight: 720;
     line-height: 1;
     letter-spacing: var(--tracking-label);
