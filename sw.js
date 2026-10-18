@@ -1,10 +1,11 @@
 /* The build writes sw-manifest.js with a content-derived version and a small shell. */
-try { importScripts('/sw-manifest.js'); } catch (_) {}
+let manifestImported = false;
+try { importScripts('/sw-manifest.js'); manifestImported = true; } catch (_) {}
 
-const GENERATED_MANIFEST = self.__ALMANION_SW_MANIFEST || {
-    version: 'development',
-    shell: ['/', '/index.html', '/offline.html', '/manifest.json']
-};
+const MANIFEST_READY = manifestImported && validManifest(self.__ALMANION_SW_MANIFEST);
+// A failed manifest download must never replace a complete installed shell
+// with a smaller development fallback. Installation rejects before any writes.
+const GENERATED_MANIFEST = MANIFEST_READY ? self.__ALMANION_SW_MANIFEST : { version: 'unavailable', shell: [] };
 const CACHE_VERSION = 'almanion-pwa-' + GENERATED_MANIFEST.version;
 const APP_SHELL_CACHE = CACHE_VERSION + '-shell';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
@@ -12,6 +13,8 @@ const NETWORK_TIMEOUT_MS = 5000;
 const RUNTIME_MAX_ENTRIES = 80;
 const RUNTIME_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
 const APP_SHELL = GENERATED_MANIFEST.shell;
+// Icons are optional; the pages, scripts and styles must form a usable shell.
+const REQUIRED_SHELL = APP_SHELL.filter(url => !/\.(?:svg|png|ico)(?:[?#]|$)/i.test(url));
 const OFFLINE_INDEX = 'almanion-offline-index-v1';
 const OFFLINE_PREFIX = 'almanion-offline-pack-';
 let offlinePacks = null;
@@ -27,9 +30,12 @@ self.addEventListener('install', function (event) {
 
 self.addEventListener('activate', function (event) {
     event.waitUntil((async function () {
+        if (!MANIFEST_READY || !await shellReady(await caches.open(APP_SHELL_CACHE))) {
+            throw new Error('Offline shell is incomplete; keeping the previous caches');
+        }
         const keep = new Set([APP_SHELL_CACHE, RUNTIME_CACHE]);
         const keys = await caches.keys();
-        await Promise.all(keys.map(function (key) { return keep.has(key) || key === OFFLINE_INDEX || key.startsWith(OFFLINE_PREFIX) || key.startsWith('almanion-watch-') ? null : caches.delete(key); }));
+        await Promise.all(keys.map(function (key) { return !key.startsWith('almanion-pwa-') || keep.has(key) || key === OFFLINE_INDEX || key.startsWith(OFFLINE_PREFIX) || key.startsWith('almanion-watch-') ? null : caches.delete(key); }));
         await pruneRuntimeCache();
         await self.clients.claim();
     })());
@@ -64,16 +70,81 @@ self.addEventListener('fetch', function (event) {
 });
 
 async function precacheAppShell() {
-    const cache = await caches.open(APP_SHELL_CACHE);
-    await Promise.all(APP_SHELL.map(async function (url) {
-        try {
-            const request = new Request(url, { cache: 'reload' });
-            const response = await fetch(request);
-            if (await cacheableResponse(request, response)) await cache.put(url, response);
-        } catch (_) {
-            // One unavailable optional asset must not prevent offline installation.
+    if (!MANIFEST_READY) throw new Error('Generated offline manifest is unavailable or invalid');
+    const existed = await caches.has(APP_SHELL_CACHE);
+    // A code-only worker update can share the same immutable content version.
+    // Reuse a complete shell without overwriting a working offline copy.
+    if (existed && await shellReady(await caches.open(APP_SHELL_CACHE))) return;
+    const stagingName = APP_SHELL_CACHE + '-staging';
+    await caches.delete(stagingName);
+    const staged = await caches.open(stagingName);
+    try {
+        const failed = [];
+        await Promise.all(APP_SHELL.map(async function (url) {
+            try {
+                const request = new Request(url, { cache: 'reload' });
+                const response = await fetchPrecacheResponse(request, NETWORK_TIMEOUT_MS);
+                if (!await cacheableResponse(request, response)
+                    || (REQUIRED_SHELL.includes(url) && !response.ok)) throw new Error('Invalid shell response');
+                await staged.put(url, response);
+            } catch (_) {
+                if (REQUIRED_SHELL.includes(url)) failed.push(url);
+            }
+        }));
+        if (failed.length || !await shellReady(staged)) throw new Error('Required offline resources unavailable');
+        const cache = await caches.open(APP_SHELL_CACHE);
+        for (const request of await staged.keys()) {
+            await cache.put(request, await staged.match(request));
         }
-    }));
+        if (!await shellReady(cache)) throw new Error('Offline shell could not be saved');
+    } catch (error) {
+        if (!existed) await caches.delete(APP_SHELL_CACHE);
+        throw error;
+    } finally {
+        await caches.delete(stagingName);
+    }
+}
+
+function validManifest(manifest) {
+    if (!manifest || typeof manifest.version !== 'string' || !/^[a-z\d._-]+$/i.test(manifest.version)
+        || !Array.isArray(manifest.shell) || !manifest.shell.length) return false;
+    try {
+        return manifest.shell.every(url => typeof url === 'string' && url.startsWith('/')
+            && new URL(url, self.location.origin).origin === self.location.origin);
+    } catch (_) { return false; }
+}
+
+async function fetchPrecacheResponse(request, timeoutMs) {
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    let timer;
+    const deadline = new Promise(function (_, reject) {
+        timer = setTimeout(function () {
+            if (controller) controller.abort();
+            reject(new Error('Offline resource download timed out'));
+        }, timeoutMs);
+    });
+    try {
+        const download = Promise.resolve().then(function () {
+            return fetch(request, controller ? { signal: controller.signal } : undefined);
+        }).then(async function (response) {
+            // Keep the original Response metadata, but finish its body while
+            // the timeout is still armed. Headers alone do not make it safe
+            // to promote a resource into the offline shell.
+            if (response.ok) await response.clone().arrayBuffer();
+            return response;
+        });
+        return await Promise.race([download, deadline]);
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+async function shellReady(cache) {
+    for (const url of REQUIRED_SHELL) {
+        const response = await cache.match(url);
+        if (!response || !response.ok) return false;
+    }
+    return REQUIRED_SHELL.length > 0;
 }
 
 function isStaticAsset(request, url) {
@@ -84,21 +155,23 @@ function isStaticAsset(request, url) {
 async function networkFirst(request, fallbackUrl) {
     try {
         const response = await fetchWithTimeout(request, NETWORK_TIMEOUT_MS);
+        if (response.status >= 500) return await offlineResponse(request, fallbackUrl) || response;
         if (await cacheableResponse(request, response)) await storeRuntimeResponse(request, response.clone());
         return response;
     } catch (_) {
-        const cached = await pinnedResponse(request) || await freshCachedResponse(request);
+        const cached = await offlineResponse(request, fallbackUrl);
         if (cached) return cached;
-        if (fallbackUrl) {
-            const fallback = await caches.match(fallbackUrl);
-            if (fallback) return fallback;
-        }
         return new Response('Offline', {
             status: 503,
             statusText: 'Offline',
             headers: { 'Content-Type': 'text/plain; charset=utf-8' }
         });
     }
+}
+
+async function offlineResponse(request, fallbackUrl) {
+    return await pinnedResponse(request) || await freshCachedResponse(request)
+        || (fallbackUrl ? await caches.match(fallbackUrl) : null);
 }
 
 async function staleWhileRevalidate(request, event) {
@@ -110,7 +183,10 @@ async function staleWhileRevalidate(request, event) {
     // Finish refreshes after returning a cached response. Offline packs are
     // fallbacks, not overrides of newer online resources.
     if (event) event.waitUntil(fetched);
-    return cached || await fetched || await pinnedResponse(request) || new Response('', { status: 504, statusText: 'Offline' });
+    if (cached) return cached;
+    const response = await fetched;
+    if (response && response.status < 500) return response;
+    return await pinnedResponse(request) || response || new Response('', { status: 504, statusText: 'Offline' });
 }
 
 async function pinnedResponse(request) {

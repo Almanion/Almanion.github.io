@@ -64,13 +64,31 @@ test.describe('ordinary notes',()=>{
         await page.screenshot({path:'playwright-report/experiment-desktop.png',fullPage:false});
     });
     test('missing variants are inert; variant HTML is text, and editing restores the original',async ({page})=>{
-        await network(page); await page.goto('/physics-10.html#opytnye-obosnovaniya-mkt');
+        await network(page);
+        let bookmarkRequest;
+        // Reader controls may initialize after the experiment. Keep that real
+        // background update inside this case rather than racing its snapshot.
+        await page.route('**/bookmarks.js?*',route=>{bookmarkRequest=route;});
+        await page.goto('/physics-10.html#opytnye-obosnovaniya-mkt',{waitUntil:'domcontentloaded'});
         await expect.poll(()=>page.evaluate(()=>!!window.AlmanionExperiments)).toBe(true);
         await page.evaluate(html=>{const article=document.querySelector('.topic:has(.experiment-box)');article.innerHTML=html;article.hidden=false;article.style.display='block';},html);
         const root=page.locator('[data-note-block="notebook-test"]');
-        await root.evaluate(node=>{node.removeAttribute('data-experiment-notebook');window.before=node.innerHTML;});
+        await root.evaluate(node=>{node.removeAttribute('data-experiment-notebook');window.before=node.innerHTML;window.inertExperimentChanges=0;node.addEventListener('almanion:experiment-changed',()=>window.inertExperimentChanges++);});
+        await reference(page,root);
+        await expect.poll(()=>!!bookmarkRequest).toBe(true);
+        await bookmarkRequest.fulfill({response:await bookmarkRequest.fetch()});
+        await expect(root.locator(':scope > .bookmark-btn')).toHaveCount(1);
+        await expect(root.locator(':scope > .personal-note-btn')).toHaveCount(1);
         await root.locator('strong').first().click({clickCount:3});
-        expect(await root.evaluate(node=>node.innerHTML===window.before)).toBe(true);
+        await expect(root).not.toHaveAttribute('data-experiment-mode');
+        await expect(root.locator('.experiment-notebook')).toHaveCount(0);
+        expect(await page.evaluate(()=>window.inertExperimentChanges)).toBe(0);
+        expect(await root.evaluate(node=>{
+            const after=node.cloneNode(true),before=document.createElement('div');before.innerHTML=window.before;
+            for(const content of [before,after]) content.querySelectorAll('.copy-block-btn,.bookmark-btn,.personal-note-btn').forEach(control=>control.remove());
+            return after.innerHTML===before.innerHTML;
+        })).toBe(true);
+        await figureUnchanged(page,root);
         await root.evaluate(node=>{node.dataset.experimentNotebook='<img src=x onerror="window.bad=true"><script>window.bad=true</script>'; window.AlmanionExperiments.toggle(node);});
         await expect(root.locator('.experiment-notebook img,.experiment-notebook script')).toHaveCount(0);
         expect(await page.evaluate(()=>window.bad)).toBeUndefined();

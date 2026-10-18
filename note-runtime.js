@@ -3,13 +3,16 @@
     'use strict';
 
     const loaded = new Map();
+    const RESOURCE_TIMEOUT_MS = 12000;
+    let accountAttempt = null;
+    let accountServicesStarted = false;
     const versions = {
         experiments: 'experiment-notebook.js?v=20261014-1',
         featureStyles: 'styles/site/features.css?v=20261002-1',
         bookmarksStyles: 'styles/bookmarks.css?v=20260920-2',
         editorStyles: 'styles/note-editor.css?v=20260929-2',
         readerToolsStyles: 'styles/reader-tools.css?v=20261002-2',
-        personalNotes: 'personal-notes.js?v=20261002-1',
+        personalNotes: 'personal-notes.js?v=20261018-1',
         offline: 'offline-library.js?v=20261002-2',
         printStyles: 'styles/print.css?v=20261016-3',
         filterStyles: 'styles/note-filter.css?v=20261010-2',
@@ -25,80 +28,75 @@
         firebaseConfig: 'firebase-config.js?v=20260903-3',
         dataSync: 'data-sync.js?v=20260908-1',
         analytics: 'firebase-analytics.js?v=20261009-4',
-        account: 'account.js?v=20260911-1',
-        bookmarks: 'bookmarks.js?v=20261002-2',
+        account: 'account.js?v=20261018-1',
+        bookmarks: 'bookmarks.js?v=20261018-1',
         editor: 'note-editor.js?v=20261015-1'
     };
 
-    function loadStyle(key) {
+    function loadResource(key, isStyle) {
         if (loaded.has(key)) return loaded.get(key);
         const source = versions[key];
         const absolute = new URL(source, location.href).href.split('?')[0];
         const promise = new Promise(function (resolve, reject) {
-            const existing = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).find(function (link) {
-                return link.href && link.href.split('?')[0] === absolute;
+            const existing = Array.from(isStyle ? document.querySelectorAll('link[rel="stylesheet"]') : document.scripts).find(function (element) {
+                const url = isStyle ? element.href : element.src;
+                return url && url.split('?')[0] === absolute;
             });
-            if (existing) {
-                if (existing.sheet || existing.dataset.runtimeLoaded === 'true') resolve(existing);
-                else {
-                    existing.addEventListener('load', function () { resolve(existing); }, { once: true });
-                    existing.addEventListener('error', reject, { once: true });
-                }
+            if (existing && (existing.dataset.runtimeLoaded === 'true' || (isStyle ? existing.sheet : !existing.dataset.runtimeFeature))) {
+                resolve(existing);
                 return;
             }
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = source;
-            link.dataset.runtimeFeature = key;
-            link.addEventListener('load', function () {
-                link.dataset.runtimeLoaded = 'true';
-                resolve(link);
-            }, { once: true });
-            link.addEventListener('error', function () {
-                loaded.delete(key);
-                link.remove();
-                reject(new Error('Не удалось загрузить стили ' + key));
-            }, { once: true });
-            document.head.appendChild(link);
+            const element = existing || document.createElement(isStyle ? 'link' : 'script');
+            if (!existing) {
+                element.dataset.runtimeFeature = key;
+                if (isStyle) { element.rel = 'stylesheet'; element.href = source; }
+                else {
+                    element.src = source;
+                    // Dependencies are sequenced by promises below. An ordered
+                    // dynamic-script queue would let a stalled CDN block PDF,
+                    // bookmarks and every later local script in that queue.
+                    element.async = true;
+                }
+                element.addEventListener('load', function () {
+                    element.dataset.runtimeLoaded = 'true';
+                    if (key === 'account' && window.AlmanionAccount) document.getElementById('runtimeAccountButton')?.remove();
+                    // A timed-out request may still succeed later. Resume the
+                    // remaining dependency chain without re-executing the SDK.
+                    if (key.startsWith('firebase') && accountServicesStarted && !accountAttempt && !window.AlmanionAccount) {
+                        ensure('account').then(function () { return loadScript('analytics'); }).catch(function () {});
+                    }
+                }, { once: true });
+                element.addEventListener('error', function () { element.remove(); }, { once: true });
+            }
+            function cleanup() {
+                clearTimeout(timer);
+                element.removeEventListener('load', onLoad);
+                element.removeEventListener('error', onError);
+            }
+            function onLoad() { cleanup(); resolve(element); }
+            function onError() {
+                cleanup();
+                reject(new Error('Не удалось загрузить ' + key));
+            }
+            const timer = setTimeout(function () {
+                cleanup();
+                // Keep a slow request alive: re-inserting the same compat SDK
+                // could execute it twice after a late network response.
+                reject(new Error('Истекло время загрузки ' + key + '. Повторите попытку.'));
+            }, RESOURCE_TIMEOUT_MS);
+            element.addEventListener('load', onLoad, { once: true });
+            element.addEventListener('error', onError, { once: true });
+            if (!existing) document.head.appendChild(element);
+        }).catch(function (error) {
+            if (loaded.get(key) === promise) loaded.delete(key);
+            throw error;
         });
         loaded.set(key, promise);
         return promise;
     }
 
-    function loadScript(key) {
-        if (loaded.has(key)) return loaded.get(key);
-        const source = versions[key];
-        const promise = new Promise(function (resolve, reject) {
-            const existing = Array.from(document.scripts).find(function (script) {
-                return script.src && script.src.split('?')[0] === new URL(source, location.href).href.split('?')[0];
-            });
-            if (existing) {
-                // Dynamic dependencies can still be loading on a second request.
-                if (!existing.dataset.runtimeFeature || existing.dataset.runtimeLoaded === 'true') resolve(existing);
-                else {
-                    existing.addEventListener('load', function () { resolve(existing); }, { once: true });
-                    existing.addEventListener('error', reject, { once: true });
-                }
-                return;
-            }
-            const script = document.createElement('script');
-            script.src = source;
-            script.async = false;
-            script.dataset.runtimeFeature = key;
-            script.addEventListener('load', function () {
-                script.dataset.runtimeLoaded = 'true';
-                resolve(script);
-            }, { once: true });
-            script.addEventListener('error', function () {
-                loaded.delete(key);
-                script.remove();
-                reject(new Error('Не удалось загрузить ' + key));
-            }, { once: true });
-            document.head.appendChild(script);
-        });
-        loaded.set(key, promise);
-        return promise;
-    }
+    function loadStyle(key) { return loadResource(key, true); }
+    function loadScript(key) { return loadResource(key, false); }
 
     function loadSettings() { return Promise.all([loadStyle('featureStyles'), loadScript('settings')]); }
     function loadSearch() {
@@ -107,8 +105,11 @@
         });
     }
     function loadFirebase() {
-        return loadScript('firebaseApp')
-            .then(function () { return Promise.all([loadScript('firebaseDatabase'), loadScript('firebaseAuth')]); })
+        return (window.firebase && typeof window.firebase.initializeApp === 'function' ? Promise.resolve() : loadScript('firebaseApp'))
+            .then(function () { return Promise.all([
+                window.firebase && typeof window.firebase.database === 'function' ? Promise.resolve() : loadScript('firebaseDatabase'),
+                window.firebase && typeof window.firebase.auth === 'function' ? Promise.resolve() : loadScript('firebaseAuth')
+            ]); })
             .then(function () { return loadScript('firebaseConfig'); });
     }
     function loadBookmarks() {
@@ -121,9 +122,26 @@
             .then(function () { return loadScript('personalNotes'); });
     }
     function loadAccount() {
-        return Promise.all([loadSettings(), loadFirebase()])
+        if (accountAttempt) return accountAttempt;
+        const button = document.getElementById('runtimeAccountButton');
+        if (button) {
+            button.disabled = true;
+            button.title = 'Подключаем аккаунт… Локальные функции уже доступны.';
+            button.setAttribute('aria-label', button.title);
+        }
+        accountAttempt = Promise.all([loadSettings(), loadFirebase()])
             .then(function () { return loadScript('dataSync'); })
-            .then(function () { return loadScript('account'); });
+            .then(function () { return loadScript('account'); })
+            .then(function () { if (button) button.remove(); })
+            .catch(function (error) {
+                if (button) {
+                    button.disabled = false;
+                    button.title = 'Аккаунт недоступен. Нажмите, чтобы повторить подключение.';
+                    button.setAttribute('aria-label', button.title);
+                }
+                throw error;
+            }).finally(function () { accountAttempt = null; });
+        return accountAttempt;
     }
 
     const features = {
@@ -153,7 +171,51 @@
         }, { capture: true, passive: eventName !== 'keydown' });
     }
 
+    function startAccountServices() {
+        accountServicesStarted = true;
+        const home = document.body.classList.contains('home-page');
+        const header = document.querySelector('.sidebar-header');
+        const target = home ? document.getElementById('homeControls') : header;
+        if (target && !document.getElementById('accountBtn') && !document.getElementById('runtimeAccountButton')) {
+            const button = document.createElement('button');
+            button.id = 'runtimeAccountButton';
+            button.type = 'button';
+            button.className = 'account-btn' + (home ? ' home-account-btn' : '');
+            button.title = 'Подключаем аккаунт… Локальные функции уже доступны.';
+            button.setAttribute('aria-label', button.title);
+            button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a7 7 0 0 0-14 0v2"/><circle cx="13" cy="7" r="4"/></svg>';
+            button.disabled = true;
+            button.addEventListener('click', function () {
+                ensure('account').then(function () {
+                    document.getElementById('accountBtn')?.click();
+                    return loadScript('analytics');
+                }).catch(function () {
+                    window.AlmanionToast?.show('Не удалось подключить аккаунт. Локальные функции доступны; повторите подключение позже.', { type: 'error' });
+                });
+            });
+            if (home) target.prepend(button);
+            else {
+                let controls = header.querySelector('.sidebar-header-buttons');
+                if (!controls) { controls = document.createElement('div'); controls.className = 'sidebar-header-buttons'; header.appendChild(controls); }
+                controls.prepend(button);
+            }
+        }
+        window.addEventListener('online', function () {
+            ensure('account').then(function () { return loadScript('analytics'); }).catch(function () {});
+        });
+    }
+
     function start() {
+        startAccountServices();
+        const schedule = window.requestIdleCallback
+            ? function (callback, timeout) { requestIdleCallback(callback, { timeout: timeout }); }
+            : function (callback, timeout) { setTimeout(callback, Math.min(timeout, 400)); };
+        if (document.body.classList.contains('home-page')) {
+            schedule(function () {
+                ensure('account').then(function () { return loadScript('analytics'); }).catch(function () {});
+            }, 800);
+            return;
+        }
         if (document.querySelector('.experiment-box')) ensure('experiments').catch(function () {});
         onIntent('.experiment-box', 'pointerdown', 'experiments');
         // Restore reading filters independently of the PDF dialog.
@@ -224,10 +286,6 @@
                 if (await window.AlmanionAccount.hasContentEditorAccess(user)) await loadEditor();
             } catch (error) { console.warn('Almanion editor:', error); }
         });
-
-        const schedule = window.requestIdleCallback
-            ? function (callback, timeout) { requestIdleCallback(callback, { timeout: timeout }); }
-            : function (callback, timeout) { setTimeout(callback, Math.min(timeout, 400)); };
 
         schedule(function () {
             Promise.allSettled([

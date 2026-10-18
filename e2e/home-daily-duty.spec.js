@@ -147,7 +147,7 @@ for (const dark of [false, true]) {
     });
 }
 
-test('the public daily assignment renders while Firebase CDN blocks page loading', async ({ page }) => {
+test('the public daily assignment and page initialize while Firebase CDN is stalled', async ({ page }) => {
     await page.clock.setFixedTime(new Date('2026-10-19T12:00:00+03:00'));
     let release;
     const held = new Promise(resolve => { release = resolve; });
@@ -163,8 +163,9 @@ test('the public daily assignment renders while Firebase CDN blocks page loading
         await page.goto('/', { waitUntil: 'commit' });
         await expect.poll(() => stalled).toBe(true);
         await expectAssignment(page, assignments[0]);
-        expect(domReady, 'the card must not wait for DOMContentLoaded or Firebase').toBe(false);
-        expect(await page.evaluate(() => document.readyState)).toBe('loading');
+        await page.waitForLoadState('domcontentloaded', { timeout: 5000 });
+        expect(domReady, 'a stalled cloud request must not block local page initialization').toBe(true);
+        expect(await page.evaluate(() => !!window.AlmanionAccount)).toBe(false);
     } finally {
         release();
         await page.waitForLoadState('domcontentloaded');

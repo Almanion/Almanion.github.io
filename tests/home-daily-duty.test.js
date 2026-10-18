@@ -53,7 +53,8 @@ assert.doesNotMatch(script[0], /\b(?:async|defer)\b/,
 assert.ok(home.indexOf('id="homeDailyDuty"') < script.index);
 assert.ok(home.indexOf('id="homeExtraDutyDays"') < script.index);
 const firebasePosition = home.indexOf('src="https://www.gstatic.com/firebasejs/');
-assert.ok(firebasePosition > script.index, 'public daily duty must render before external Firebase scripts');
+assert.ok(firebasePosition === -1 || firebasePosition > script.index, 'public daily duty must render before any external Firebase scripts');
+assert.ok(home.indexOf('src="note-runtime.js') > script.index, 'daily duty must render before background account services start');
 
 if (process.env.ALMANION_TEST_SITE) {
     const site = path.resolve(process.env.ALMANION_TEST_SITE);

@@ -7,12 +7,15 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const account = fs.readFileSync(path.join(root, 'account.js'), 'utf8');
+const runtime = fs.readFileSync(path.join(root, 'note-runtime.js'), 'utf8');
 const components = fs.readFileSync(path.join(root, 'styles', 'site', '00-components.css'), 'utf8');
 const shell = JSON.parse(fs.readFileSync(path.join(root, 'performance', 'sw-shell.json'), 'utf8')).assets;
 
 assert.match(page, /id="homePrivilegedActions"[^>]*hidden/, 'privileged action slot must start hidden');
 assert.doesNotMatch(page, /<a[^>]+id="home(?:Constructor|Admin)Link"/, 'privileged links must not exist in initial markup');
-assert.match(page, /account\.js\?v=20261009-1/, 'home page must request the access-aware account script');
+assert.match(page, /<script src="note-runtime\.js\?v=[^"]+"><\/script>/, 'home page must start the background account runtime');
+assert.doesNotMatch(page, /<script[^>]+src="(?:https:\/\/www\.gstatic\.com\/firebasejs\/|account\.js)/, 'cloud account scripts must not block the home parser');
+assert.match(runtime, /account: 'account\.js\?v=[^']+'/, 'the runtime must request the access-aware account script');
 assert.match(account, /document\.getElementById\('homeControls'\) \|\| document\.body/,
     'home account control must be attached to the header, with a fallback for other pages');
 
