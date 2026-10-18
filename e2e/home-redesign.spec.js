@@ -99,10 +99,16 @@ test('five personalized shortcuts can be edited, saved and restored without hidi
     await page.setViewportSize({ width: 320, height: 740 });
     await page.goto('/');
     await page.waitForFunction(() => window.AlmanionHomeDashboard && window.AlmanionSettings?.ready);
-    const signIn = () => page.evaluate(() => {
-        window.AlmanionAccount = { getUser: () => ({ uid: 'home-fixture' }), hasEnglishAccess: async () => true };
-        dispatchEvent(new CustomEvent('almanion-account-ready', { detail: { user: { uid: 'home-fixture' } } }));
-    });
+    const signIn = async () => {
+        // Account initialization is asynchronous; its initial guest callback
+        // must finish before the fixture announces a signed-in user.
+        await expect(page.locator('#accountBtn')).toBeVisible();
+        await expect(page.locator('#accountBtn')).not.toHaveClass(/\bis-loading\b/);
+        await page.evaluate(() => {
+            window.AlmanionAccount = { getUser: () => ({ uid: 'home-fixture' }), hasEnglishAccess: async () => true };
+            dispatchEvent(new CustomEvent('almanion-account-ready', { detail: { user: { uid: 'home-fixture' } } }));
+        });
+    };
     await signIn();
     await expect(page.locator('#homeAdditionalEnglish')).toBeVisible();
     await page.locator('#homeQuickCustomize').click();

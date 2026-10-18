@@ -46,7 +46,7 @@ for (const width of [320, 390, 430, 768, 1024, 1440]) {
             expect(bounds.width).toBeGreaterThan(grid.width - 2);
         } else {
             if (width <= 768) {
-                expect(layout.cardY[0]).toBeLessThan(layout.quickTop);
+                expect(layout.quickTop + layout.quickHeight).toBeLessThanOrEqual(layout.cardY[0]);
                 expect(layout.quickTop).toBeLessThan(layout.extraTop);
                 expect(await page.locator('.home-content-grid > section').first().getAttribute('class')).toContain('subjects-section');
             } else expect(layout.extraTop).toBeLessThan(layout.cardY[0]);
