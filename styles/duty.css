@@ -306,6 +306,65 @@ body:not(.no-hover) .duty-share-button:hover {
     border-color: var(--duty-accent);
 }
 
+.duty-extra-schedule {
+    margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.duty-extra-heading {
+    margin-bottom: 1rem;
+}
+
+.duty-extra-heading h2 {
+    margin: 0 0 0.4rem;
+    font-size: clamp(1.2rem, 2.4vw, 1.5rem);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+}
+
+.duty-extra-heading p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.duty-extra-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+    gap: 0.75rem;
+}
+
+.duty-extra-day {
+    min-width: 0;
+    padding: 1.1rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+}
+
+.duty-extra-day h3 {
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.duty-extra-day time {
+    color: var(--duty-accent-strong);
+    font-size: 0.82rem;
+    font-weight: 650;
+}
+
+.duty-extra-day ul {
+    display: grid;
+    gap: 0.4rem;
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
 .duty-schedule {
     padding: clamp(1.2rem, 3vw, 2rem);
     background: var(--bg-secondary);
