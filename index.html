@@ -158,6 +158,21 @@
             </div>
         </section>
 
+        <section class="home-daily-duty" id="homeDailyDuty" aria-labelledby="homeDailyDutyTitle" hidden>
+            <div class="home-daily-duty-heading">
+                <div>
+                    <p class="home-daily-duty-label">Отдельное дежурство · 10‑1</p>
+                    <h2 id="homeDailyDutyTitle">Сегодня дежурят</h2>
+                </div>
+                <time id="homeDailyDutyDate"></time>
+            </div>
+            <ul id="homeDailyDutyPeople" aria-label="Дежурные"></ul>
+            <p class="home-daily-duty-message" id="homeDailyDutyMessage" hidden>В отдельном графике на этот день дежурные не назначены.</p>
+            <a class="home-daily-duty-link" href="duty-10-1.html#dutyExtraSchedule">График на 19–24 октября <span aria-hidden="true">→</span></a>
+        </section>
+        <template id="homeExtraDutyDays"></template>
+        <script data-home-daily-duty></script>
+
         <div class="home-quick-dialog" id="homeQuickDialog" role="dialog" aria-modal="true" aria-labelledby="homeQuickDialogTitle" tabindex="-1" hidden>
             <section class="home-quick-dialog-panel">
                 <header class="home-quick-dialog-header">

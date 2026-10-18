@@ -232,6 +232,17 @@ function build(options) {
     // editor. Do not advertise an empty subject as active.
     const homePath = path.join(output, 'index.html');
     let home = fs.readFileSync(homePath, 'utf8');
+    // Reuse the published dated assignments. The homepage needs no extra
+    // request or Firebase connection to show today's independent duty.
+    const dutyPage = fs.readFileSync(path.join(output, 'duty-10-1.html'), 'utf8');
+    const extraDuty = dutyPage.match(/<section\b[^>]*\bid="dutyExtraSchedule"[^>]*>[\s\S]*?<\/section>/);
+    const extraDutyTemplate = '<template id="homeExtraDutyDays"></template>';
+    if (!extraDuty || !home.includes(extraDutyTemplate)) throw new Error('Missing shared daily-duty template');
+    home = home.replace(extraDutyTemplate, '<template id="homeExtraDutyDays">' + extraDuty[0] + '</template>');
+    const dailyDutyScript = fs.readFileSync(path.join(root, 'home-daily-duty.js'), 'utf8').replace(/\r\n/g, '\n');
+    const dailyDutyPlaceholder = '<script data-home-daily-duty></script>';
+    if (!home.includes(dailyDutyPlaceholder) || /<\/script/i.test(dailyDutyScript)) throw new Error('Invalid daily-duty bootstrap');
+    home = home.replace(dailyDutyPlaceholder, () => '<script data-home-daily-duty>\n' + dailyDutyScript + '</script>');
     JSON.parse(fs.readFileSync(path.join(root, 'content', 'subjects.json'), 'utf8')).forEach(subject => {
         const manifest = JSON.parse(fs.readFileSync(path.join(root, 'content', subject.id, 'manifest.json'), 'utf8'));
         home = updateSubjectStatus(home, subject, manifest.sections.length > 0);
