@@ -424,19 +424,13 @@
     <!-- Контейнер для пасхалок -->
     <div class="easter-eggs-container" id="easterEggsContainer"></div>
 
-    <!-- Firebase Analytics -->
-    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
-    <script src="firebase-config.js?v=20260903-3"></script>
+    <!-- Local controls start before the optional cloud connection. -->
     <script src="data-sync.js?v=20260908-1"></script>
     <script src="kc-storage.js?v=20260911-1"></script>
-    <script src="firebase-analytics.js?v=20260908-1"></script>
 
     <script src="script.js?v=20260905-2"></script>
     <script src="newyear.js?v=20261002-1"></script>
     <script src="settings.js?v=20261009-1"></script>
-    <script src="account.js?v=20261009-1"></script>
     <script>
         (function () {
             function loadHomeDashboard() {
@@ -453,6 +447,7 @@
             else setTimeout(loadHomeDashboard, 250);
         }());
     </script>
+    <script src="note-runtime.js?v=20261018-1"></script>
 </body>
 </html>
 

@@ -23,7 +23,12 @@ assert.match(runtime, /onIntent\('#searchInput/);
 assert.match(runtime, /loadStyle\('filterStyles'\)\.then\(function \(\) \{ return loadScript\('filter'\); \}\)/, 'reading filters must load independently of PDF intent');
 assert.match(runtime, /firebaseApp:[\s\S]*firebaseDatabase:[\s\S]*firebaseAuth:/);
 assert.match(runtime, /ensure\('account'\)\.then\(function \(\) \{ return loadScript\('analytics'\); \}\)/, 'analytics must wait for the Firebase SDK and its config');
-assert.match(runtime, /script\.remove\(\)/, 'failed dynamic scripts must not masquerade as loaded on retry');
+assert.match(runtime, /element\.remove\(\)/, 'failed dynamic scripts must not masquerade as loaded on retry');
+assert.match(runtime, /element\.async = true/, 'local features must not join a blocked ordered CDN script queue');
+assert.doesNotMatch(runtime, /\.async = false/, 'dependencies must be ordered explicitly, never through the global dynamic-script queue');
+const home = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+assert.doesNotMatch(home, /<script[^>]*src=["']https:\/\/www\.gstatic\.com\/firebasejs/, 'home must not block local initialization on an external SDK');
+assert.ok(home.indexOf('settings.js?v=') < home.indexOf('note-runtime.js?v='), 'home settings must load before the background cloud runtime');
 const analytics = fs.readFileSync(path.join(root, 'firebase-analytics.js'), 'utf8');
 assert.match(analytics, /typeof firebaseConfig === 'undefined'/, 'analytics must safely skip a not-yet-loaded config');
 

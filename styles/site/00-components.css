@@ -976,6 +976,8 @@ body.dark-theme .sidebar-header .account-btn:hover { background: rgba(255,255,25
 .account-or::before, .account-or::after { content: ''; flex: 1; height: 1px; background: var(--border-color); }
 
 #accForm { display: flex; flex-direction: column; gap: 0.6rem; }
+.account-field-label { text-align: left; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: -0.35rem; }
+.account-modal .account-reset-help { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.45; }
 #accForm input {
     width: 100%; padding: 0.7rem 0.9rem; border: 1px solid var(--border-color); border-radius: 10px;
     background: var(--bg-secondary); color: var(--text-primary); font: inherit;
@@ -991,8 +993,9 @@ body.dark-theme .sidebar-header .account-btn:hover { background: rgba(255,255,25
     line-height: 1.35;
     text-align: left;
 }
-.account-link { margin-top: 0.8rem; background: none; border: none; color: var(--accent-color); font: inherit; font-size: 0.85rem; cursor: pointer; }
+.account-link { display: block; margin: 0.8rem auto 0; background: none; border: none; color: var(--accent-color); font: inherit; font-size: 0.85rem; cursor: pointer; }
 .account-link:hover { text-decoration: underline; }
+.account-link:disabled { opacity: 0.62; cursor: wait; text-decoration: none; }
 .account-signout { background: var(--error-color) !important; }
 
 /* ============================================

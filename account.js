@@ -206,37 +206,67 @@
     function openLoginModal(registerMode) {
         const ov = ensureOverlay();
         let mode = registerMode ? 'register' : 'login';
+        let rememberedEmail = '';
+        function changeMode(nextMode) {
+            if (authBusy) return;
+            rememberedEmail = ov.querySelector('#accEmail').value;
+            mode = nextMode;
+            render();
+            ov.querySelector('#accEmail').focus();
+        }
         function render() {
+            const resetMode = mode === 'reset';
+            const submitLabel = resetMode ? 'Отправить письмо' : (mode === 'register' ? 'Зарегистрироваться' : 'Войти');
             ov.innerHTML =
-                '<div class="auth-modal account-modal" role="dialog" aria-modal="true">' +
-                    '<button class="kc-close" id="accClose" aria-label="Закрыть">' + IC_CLOSE + '</button>' +
+                '<div class="auth-modal account-modal" role="dialog" aria-modal="true" aria-labelledby="accTitle">' +
+                    '<button type="button" class="kc-close" id="accClose" aria-label="Закрыть">' + IC_CLOSE + '</button>' +
                     '<div class="auth-icon">' + IC_USER + '</div>' +
-                    '<h2>' + (mode === 'register' ? 'Регистрация' : 'Вход в аккаунт') + '</h2>' +
-                    '<button type="button" class="account-google-btn" id="accGoogle">' + IC_GOOGLE + '<span>Войти через Google</span></button>' +
-                    '<div class="account-or"><span>или</span></div>' +
-                    '<form id="accForm" autocomplete="on">' +
-                        '<input type="email" id="accEmail" placeholder="Почта" autocomplete="email" required>' +
-                        '<input type="password" id="accPass" placeholder="Пароль (не менее 6 символов)" autocomplete="' + (mode === 'register' ? 'new-password' : 'current-password') + '" required minlength="6">' +
-                        (mode === 'register'
-                            ? '<input type="password" id="accPassConfirm" placeholder="Повторите пароль" autocomplete="new-password" required minlength="6">'
+                    '<h2 id="accTitle">' + (resetMode ? 'Восстановление пароля' : (mode === 'register' ? 'Регистрация' : 'Вход в аккаунт')) + '</h2>' +
+                    (resetMode
+                        ? '<p class="account-reset-help" id="accResetHelp">Укажите почту аккаунта. Мы отправим ссылку для выбора нового пароля.</p>'
+                        : '<button type="button" class="account-google-btn" id="accGoogle">' + IC_GOOGLE + '<span>Войти через Google</span></button>' +
+                          '<div class="account-or"><span>или</span></div>') +
+                    '<form id="accForm" autocomplete="on" data-mode="' + mode + '"' + (resetMode ? ' aria-describedby="accResetHelp"' : '') + '>' +
+                        '<label class="account-field-label" for="accEmail">Почта</label>' +
+                        '<input type="email" id="accEmail" placeholder="Почта" autocomplete="email" autocapitalize="none" required>' +
+                        (!resetMode
+                            ? '<label class="account-field-label" for="accPass">Пароль</label>' +
+                              '<input type="password" id="accPass" placeholder="Пароль (не менее 6 символов)" autocomplete="' + (mode === 'register' ? 'new-password' : 'current-password') + '" required minlength="6">'
                             : '') +
-                        '<div class="account-error" id="accError" hidden></div>' +
+                        (mode === 'register'
+                            ? '<label class="account-field-label" for="accPassConfirm">Повторите пароль</label><input type="password" id="accPassConfirm" placeholder="Повторите пароль" autocomplete="new-password" required minlength="6">'
+                            : '') +
+                        '<div class="account-error" id="accError" role="alert" hidden></div>' +
+                        (resetMode ? '<div class="account-notice" id="accResetStatus" role="status" aria-live="polite" hidden></div>' : '') +
                         '<div class="account-notice" id="accStorageNotice" hidden></div>' +
-                        '<button type="submit" class="auth-submit" id="accSubmit">' + (mode === 'register' ? 'Зарегистрироваться' : 'Войти') + '</button>' +
+                        '<button type="submit" class="auth-submit" id="accSubmit" data-label="' + submitLabel + '">' + submitLabel + '</button>' +
                     '</form>' +
+                    (mode === 'login' ? '<button type="button" class="account-link" id="accForgot">Забыли пароль?</button>' : '') +
                     '<button type="button" class="account-link" id="accToggle">' +
-                        (mode === 'register' ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться') +
+                        (resetMode ? 'Вернуться ко входу' : (mode === 'register' ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться')) +
                     '</button>' +
                 '</div>';
+            ov.querySelector('#accEmail').value = rememberedEmail;
             ov.querySelector('#accClose').addEventListener('click', hideOverlay);
-            ov.querySelector('#accGoogle').addEventListener('click', signInGoogle);
+            const google = ov.querySelector('#accGoogle');
+            if (google) google.addEventListener('click', signInGoogle);
+            const forgot = ov.querySelector('#accForgot');
+            if (forgot) forgot.addEventListener('click', function () { changeMode('reset'); });
             ov.querySelector('#accToggle').addEventListener('click', function () {
-                mode = (mode === 'register') ? 'login' : 'register';
-                render();
+                changeMode(mode === 'login' ? 'register' : 'login');
             });
             ov.querySelector('#accForm').addEventListener('submit', function (e) {
                 e.preventDefault();
+                if (authBusy) return;
+                const form = e.currentTarget;
+                const emailInput = ov.querySelector('#accEmail');
+                emailInput.value = emailInput.value.trim();
+                if (!form.reportValidity()) return;
                 const email = ov.querySelector('#accEmail').value.trim();
+                if (mode === 'reset') {
+                    sendPasswordReset(email, form);
+                    return;
+                }
                 const pass = ov.querySelector('#accPass').value;
                 if (mode === 'register') {
                     const confirmationInput = ov.querySelector('#accPassConfirm');
@@ -257,6 +287,43 @@
         ov.setAttribute('aria-hidden', 'false');
         const email = ov.querySelector('#accEmail');
         if (email) setTimeout(function () { try { email.focus(); } catch (_) {} }, 0);
+    }
+
+    const PASSWORD_RESET_COMPLETE = 'Если для этой почты доступно восстановление пароля, письмо со ссылкой будет отправлено. Проверьте входящие и папку «Спам». Если вы входили через Google, используйте кнопку «Войти через Google».';
+
+    function passwordResetMessage(err) {
+        const code = (err && err.code) || '';
+        if (code === 'auth/invalid-email' || code === 'auth/missing-email') return 'Введите корректную почту.';
+        if (code === 'auth/network-request-failed') return 'Не удалось отправить письмо: нет связи с сервером. Проверьте интернет и повторите попытку.';
+        if (code === 'auth/too-many-requests') return 'Слишком много запросов. Подождите несколько минут и попробуйте снова.';
+        return 'Не удалось отправить письмо. Повторите попытку позже.';
+    }
+
+    function sendPasswordReset(email, form) {
+        if (authBusy) return;
+        clearError();
+        const status = form.querySelector('#accResetStatus');
+        status.hidden = false;
+        status.textContent = 'Отправляем письмо…';
+        form.setAttribute('aria-busy', 'true');
+        setAuthBusy(true, 'Отправляем…', 'reset');
+        // Password recovery does not create a session and does not need persistence.
+        // Keep completion generic even on projects without email enumeration protection.
+        return Promise.resolve()
+            .then(function () { return auth.sendPasswordResetEmail(email); })
+            .catch(function (err) {
+                if (err && (err.code === 'auth/user-not-found' || err.code === 'auth/user-disabled')) return;
+                throw err;
+            })
+            .then(function () { status.textContent = PASSWORD_RESET_COMPLETE; })
+            .catch(function (err) {
+                status.hidden = true;
+                if (document.getElementById('accForm') === form) showError(passwordResetMessage(err));
+            })
+            .finally(function () {
+                form.removeAttribute('aria-busy');
+                setAuthBusy(false);
+            });
     }
 
     function doEmail(action) {
@@ -332,6 +399,7 @@
         const submit = document.getElementById('accSubmit');
         const signout = document.getElementById('accSignout');
         const notice = document.getElementById('accStorageNotice');
+        const resetMode = document.getElementById('accForm')?.dataset.mode === 'reset';
         if (google) {
             google.disabled = authBusy || !persistenceReady;
             const googleLabel = google.querySelector('span');
@@ -340,22 +408,25 @@
                 : 'Войти через Google';
         }
         if (submit) {
-            submit.disabled = authBusy || !persistenceReady;
-            if (!authBusy) submit.textContent = submit.closest('.auth-modal')?.querySelector('h2')?.textContent === 'Регистрация'
-                ? 'Зарегистрироваться' : 'Войти';
-            else if (authBusyTarget === 'email' && label) submit.textContent = label;
+            submit.disabled = authBusy || (!resetMode && !persistenceReady);
+            if (!authBusy) submit.textContent = submit.dataset.label || 'Войти';
+            else if ((authBusyTarget === 'email' || authBusyTarget === 'reset') && label) submit.textContent = label;
         }
+        ['accForgot', 'accToggle'].forEach(function (id) {
+            const control = document.getElementById(id);
+            if (control) control.disabled = authBusy;
+        });
         if (signout) {
             signout.disabled = authBusy;
             signout.textContent = authBusyTarget === 'signout' && label ? label : 'Выйти';
         }
         if (notice) {
-            notice.hidden = persistenceMode === 'local' || persistenceFailure;
+            notice.hidden = resetMode || persistenceMode === 'local' || persistenceFailure;
             notice.textContent = persistenceMode === 'session'
                 ? 'В приватном режиме вход сохранится только до закрытия браузера.'
                 : 'Вход сохранится только до обновления этой вкладки.';
         }
-        if (persistenceFailure) showError('Браузер полностью запретил хранилище авторизации. Разрешите данные сайта и обновите страницу.');
+        if (persistenceFailure && !resetMode) showError('Браузер полностью запретил хранилище авторизации. Разрешите данные сайта и обновите страницу.');
     }
 
     function clearError() {
