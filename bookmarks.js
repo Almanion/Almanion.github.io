@@ -293,6 +293,22 @@
         window.dispatchEvent(new CustomEvent('almanion-personal-notes-changed'));
     }
 
+    // The sync layer can keep an in-memory fallback when storage is full.
+    // Confirm the actual browser storage before a caller discards its draft.
+    function noteSavedOnDevice(id, text) {
+        try {
+            const stored = JSON.parse(localStorage.getItem(bookmarkCacheKey));
+            let records = stored;
+            if (stored?.schema && stored.records && typeof stored.records === 'object') {
+                if (stored.namespace !== 'bookmarks' || stored.owner !== (bookmarkOwnerUid || 'guest')) return false;
+                records = stored.records;
+            }
+            const record = records?.[id];
+            const removed = !record || record.deleted === true || record.__sync?.deleted === true;
+            return text ? !removed && record.noteText === text : removed || !record.noteText;
+        } catch (_) { return false; }
+    }
+
     function getBlockKey(box) {
         return normalizeText(box && (box.dataset.noteBlock || box.dataset.kcId));
     }
@@ -1199,6 +1215,7 @@
         blockId: generateBookmarkId,
         metadata: bookmarkMetadata,
         record(id) { return bookmarks[id] && !bookmarks[id].deleted ? Object.assign({}, bookmarks[id]) : null; },
+        noteSavedOnDevice,
         notes() { return Object.entries(bookmarks).filter(pair => pair[1] && !pair[1].deleted && pair[1].noteText).map(pair => Object.assign({ id: pair[0] }, pair[1])).sort((a, b) => b.updatedAt - a.updatedAt); },
         saveNote(id, text, metadata) {
             const existing = bookmarks[id] && !bookmarks[id].deleted ? bookmarks[id] : null;
@@ -1207,6 +1224,7 @@
                 if (existing) { bookmarks[id] = Object.assign({}, existing, { noteText: '' }); removeBookmark(id); }
             } else saveBookmark(id, Object.assign({}, existing || metadata, { noteText: text, noteOnly: !existing || existing.noteOnly === true }));
             refreshAllButtons();
+            return noteSavedOnDevice(id, text);
         }
     });
 })();

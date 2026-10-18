@@ -39,7 +39,7 @@ window.Cosmos=(()=>{
    paintedStill===key&&themePhase===null?lastStats:volume.still(bg,camera);
   paintedStill=moving||themePhase!==null?null:key;lastStats=stats;
   telemetry={speed:moving?speed:0,travel:camera.z,centerX:cx,centerY:cy,shutterMs:shutter*1000,...stats,camera:{...camera}};
-  window.PulsarScene?.paintSpace(camera);
+  window.PulsarScene?.paintSpace(camera);window.NebulaJourney?.paint(camera);
  }
  function particles(now){
   fg.clearRect(0,0,1920,1080);bursts=bursts.filter(b=>now-b.at<760);

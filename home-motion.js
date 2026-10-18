@@ -18,15 +18,15 @@
     var contentGrid = document.querySelector('.home-content-grid');
     var subjectsSection = document.querySelector('.subjects-section');
     var quickSection = document.querySelector('.home-quick-section');
+    var dailySection = document.getElementById('homeDailyDuty');
     function orderHomeSections() {
         if (!contentGrid || !subjectsSection || !quickSection) return;
         var focused = document.activeElement;
         if (contentGrid.firstElementChild !== subjectsSection) contentGrid.prepend(subjectsSection);
-        if (mobileLayout.matches) {
-            if (subjectsSection.nextElementSibling !== quickSection) subjectsSection.after(quickSection);
-        } else if (quickSection.parentElement === contentGrid) {
-            contentGrid.before(quickSection);
-        }
+        // Shortcuts stay above today's duty and the directory at every width.
+        // Keep the DOM order stable too, including when the dated card is hidden.
+        var quickAnchor = dailySection || contentGrid;
+        if (quickSection.nextElementSibling !== quickAnchor) quickAnchor.before(quickSection);
         if (focused && focused !== document.activeElement && focused !== document.body) focused.focus({ preventScroll: true });
     }
     orderHomeSections();

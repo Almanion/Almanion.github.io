@@ -1,18 +1,19 @@
-/* Focused regression and visual-QA evidence for slides 19–31 (steps 15–27).
+/* Focused regression and visual-QA evidence for 21 learning stops (steps 15–27).
    Run after build.cjs. Artifacts stay in .qa; historical evidence is untouched. */
 const {chromium}=require('playwright');
 const fs=require('fs'),path=require('path'),assert=require('assert/strict'),crypto=require('crypto');
 const root=path.resolve(__dirname,'../../../..');
 const out=path.resolve(__dirname,'../..');
 const evidence=path.join(root,'.qa','presentation-explanations');
-const steps=Array.from({length:13},(_,i)=>i+15);
+const steps=require('vm').runInNewContext(fs.readFileSync(path.join(__dirname,'learning-route.js'),'utf8')+';LEARNING_ORDER');
+const geometryOnly=process.argv.includes('--geometry-only');
 const html=fs.readFileSync(path.join(out,'Almanion.html'));
 assert(html.equals(fs.readFileSync(path.join(root,'presentation/index.html'))),'standalone and published HTML are byte-identical');
 assert(html.length<=5*1024*1024,`autonomous HTML exceeds 5 MiB: ${html.length}`);
 const excerpts=require('./fsrs-excerpts.cjs');
 const canonical=v=>v.replace(/\r\n/g,'\n').trim().split('\n').map(l=>l.trim()).join('\n');
 const citations=[];
-for(const key of ['selection','extraction','rating','state','retention','schedule','save','confirmations']){
+for(const key of Object.keys(excerpts)){
  const excerpt=excerpts[key];assert(excerpt,`missing excerpt ${key}`);
  assert(excerpt.code&&excerpt.file&&excerpt.fn&&Number.isInteger(excerpt.startLine)&&Number.isInteger(excerpt.endLine),`complete source attribution ${key}`);
  const file=path.resolve(__dirname,'../reference',excerpt.file);assert(file.startsWith(path.resolve(__dirname,'../reference')+path.sep),`source path stays within pinned reference ${key}`);
@@ -50,17 +51,17 @@ fs.mkdirSync(evidence,{recursive:true});
  });
  for(const width of [1920,1366]){
   await p.setViewportSize({width,height:width===1920?1080:768});await p.goto('file:///'+path.join(out,'Almanion.html').replace(/\\/g,'/'));await p.waitForFunction(()=>window.DEMO);
-  assert.equal(await p.evaluate(()=>DEMO.order.length),35,'managed state count');assert.deepEqual(await p.evaluate(()=>FSRS_EXCERPTS),excerpts,'embedded excerpts match the verified source');
-  const expected={};for(const s of steps){await go(s,{instant:true});expected[s]=await snap();await p.screenshot({path:path.join(evidence,`slide-${s+4}-step-${s}-${width}.png`)});assert.equal(expected[s].index,s+4,`UI slide ${s+4} maps to step ${s}`);const m=await geometry();if(m.bad.length||m.overlap.length)compositionIssues.push({width,step:s,bad:m.bad,overlap:m.overlap});assert(m.headingSize>=44,`clear editorial heading ${s}/${width}`);if(m.codeSize!==null)assert(m.codeSize>=22,`readable source code ${s}/${width}`);assert(m.background==='rgba(0, 0, 0, 0)'&&m.border==='0px'&&m.shadow==='none',`unboxed explanation style ${s}/${width}`);measurements.push({width,...m});fs.writeFileSync(path.join(evidence,'all-geometry.json'),JSON.stringify(measurements,null,2));
+  assert.equal(await p.evaluate(()=>DEMO.order.length),43,'managed state count');assert.deepEqual(await p.evaluate(()=>FSRS_EXCERPTS),excerpts,'embedded excerpts match the verified source');
+  const expected={};for(const s of steps){await go(s,{instant:true});expected[s]=await snap();await p.screenshot({path:path.join(evidence,`slide-${steps.indexOf(s)+19}-step-${s}-${width}.png`)});assert.equal(expected[s].index,steps.indexOf(s)+19,`stable route position ${s}`);const m=await geometry();if(m.bad.length||m.overlap.length)compositionIssues.push({width,step:s,bad:m.bad,overlap:m.overlap});assert(m.headingSize>=44,`clear editorial heading ${s}/${width}`);if(m.codeSize!==null)assert(m.codeSize>=22,`readable source code ${s}/${width}`);assert(m.background==='rgba(0, 0, 0, 0)'&&m.border==='0px'&&m.shadow==='none',`unboxed explanation style ${s}/${width}`);measurements.push({width,...m});fs.writeFileSync(path.join(evidence,'all-geometry.json'),JSON.stringify(measurements,null,2));
    const shown=await p.evaluate(()=>{const n=document.getElementById('code');if(getComputedStyle(n).display==='none')return null;return{key:n.dataset.excerpt||n.dataset.key||null,text:n.querySelector('code')?.textContent,label:n.querySelector('.code-source')?.textContent}});
    if(shown){const keys=shown.key?[shown.key]:Object.keys(excerpts).filter(key=>shown.text.includes(excerpts[key].code));assert(keys.length,`visible real source excerpt ${s}`);for(const key of keys){assert.equal(shown.text,excerpts[key].code,`rendered excerpt exactly matches ${key}`);assert(shown.label.includes(excerpts[key].file)&&shown.label.includes(excerpts[key].fn)&&shown.label.includes(String(excerpts[key].startLine))&&shown.label.includes(String(excerpts[key].endLine)),`visible source attribution ${key}`);displayed.add(key);}}
   }
   console.log('Captured and checked all explanation states',width);
-  await go(14,{instant:true});
+  if(!geometryOnly){await go(14,{instant:true});
   for(const s of steps){await go(s);assert.deepEqual(await snap(),expected[s],`animated forward restores state ${s}/${width}`);}
   for(const s of steps.slice(0,-1).reverse()){await go(s);assert.deepEqual(await snap(),expected[s],`back restores state ${s}/${width}`);}
   for(const s of steps){await go(s,{replay:true});assert.deepEqual(await snap(),expected[s],`replay restores state ${s}/${width}`);}
-  console.log('PASS animated forward, backward and replay',width);
+  console.log('PASS animated forward, backward and replay',width);}
   await p.evaluate(()=>DEMO.setReduced(true));await go(14);
   for(const s of steps){await go(s);assert.deepEqual(await snap(),expected[s],`reduced motion restores state ${s}/${width}`);assert.equal(await p.evaluate(()=>document.getAnimations().filter(a=>a.playState==='running').length),0,`no running motion ${s}/${width}`);}
   for(const s of [15,20,24,27]){await go(s);const before=await p.screenshot();await p.waitForTimeout(350);const after=await p.screenshot();assert(before.equals(after),`stationary presentation pause ${s}/${width}`);}
@@ -71,8 +72,8 @@ fs.mkdirSync(evidence,{recursive:true});
  assert.deepEqual([...displayed].sort(),Object.keys(excerpts).sort(),'every verified source excerpt appears in the presentation');
  assert.deepEqual(errors,[],'no JavaScript errors');assert.deepEqual(requests,[],'no external requests while offline');
  assert(html.equals(fs.readFileSync(path.join(out,'Almanion.html')))&&html.equals(fs.readFileSync(path.join(root,'presentation/index.html'))),'the tested build did not change during verification');
- fs.writeFileSync(path.join(evidence,'verification.json'),JSON.stringify({htmlSha256:crypto.createHash('sha256').update(html).digest('hex'),htmlBytes:html.length,viewports:[1920,1366],citations,forward:true,backward:true,replay:true,reducedMotion:true,stationaryPauses:true,unboxedExplanations:true,offline:true,identicalBuildCopies:true,measurements,compositionIssues,errors,requests},null,2));
+ fs.writeFileSync(path.join(evidence,geometryOnly?'geometry-verification.json':'verification.json'),JSON.stringify({htmlSha256:crypto.createHash('sha256').update(html).digest('hex'),htmlBytes:html.length,viewports:[1920,1366],citations,forward:!geometryOnly,backward:!geometryOnly,replay:!geometryOnly,reducedMotion:true,stationaryPauses:true,unboxedExplanations:true,offline:true,identicalBuildCopies:true,measurements,compositionIssues,errors,requests},null,2));
  assert.deepEqual(compositionIssues,[],'all explanation blocks fit without overlap at both viewports');
- console.log('PASS: slides 19–31, source excerpts, composition, forward/back/replay/reduced motion, offline and final cleanup.');
+ console.log(geometryOnly?'PASS: 21 learning stops, source excerpts, composition, reduced motion, offline and final cleanup.':'PASS: 21 learning stops, source excerpts, composition, nebula navigation, forward/back/replay/reduced motion, offline and final cleanup.');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});

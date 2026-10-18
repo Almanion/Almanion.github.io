@@ -225,7 +225,8 @@ function build(options) {
             .replace(/(src=["'](?:(?:note-runtime|script|knowledge-check|english-ui)\.js|constructor\/index\.js))(?:\?[^"']*)?(["'])/g, '$1?v=20261015-1$2')
             .replace(/((?:src|href)=["'](?:(?:note-runtime|knowledge-check)\.js|styles\/site\/(?:reader|index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261016-1$2')
             .replace(/((?:src|href)=["'](?:(?:note-runtime|print-export)\.js|styles\/print\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261016-3$2')
-            .replace(/(href=["'](?:style-new|styles\/typography)\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261016-4$2');
+            .replace(/(href=["'](?:style-new|styles\/typography)\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261016-4$2')
+            .replace(/((?:src|href)=["'](?:(?:note-runtime|account|bookmarks|personal-notes|home-motion)\.js|styles\/(?:site\/index|home-dashboard)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261018-1$2');
         if (updated !== html) fs.writeFileSync(absolute, updated);
     }
     // Status follows published materials, including sections added later by the

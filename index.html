@@ -47,7 +47,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
     <link rel="stylesheet" href="styles/home-motion.css?v=20260920-2">
-    <link rel="stylesheet" href="styles/home-dashboard.css?v=20261009-2">
+    <link rel="stylesheet" href="styles/home-dashboard.css?v=20261018-1">
 </head>
 <body class="home-page">
     <script>(function(){document.body.classList.add('home-motion-initial');try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};var l=/^(max|medium|off)$/.test(p.animationLevel||'')?p.animationLevel:'max';document.body.classList.add('animations-'+l);if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){document.body.classList.add('animations-max');}})();</script>
@@ -415,7 +415,7 @@
             </p>
         </footer>
     </main>
-    <script src="home-motion.js?v=20261010-2"></script>
+    <script src="home-motion.js?v=20261018-1"></script>
 
 
     <!-- Контейнер для снега -->
@@ -424,19 +424,13 @@
     <!-- Контейнер для пасхалок -->
     <div class="easter-eggs-container" id="easterEggsContainer"></div>
 
-    <!-- Firebase Analytics -->
-    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
-    <script src="firebase-config.js?v=20260903-3"></script>
+    <!-- Local controls start before the optional cloud connection. -->
     <script src="data-sync.js?v=20260908-1"></script>
     <script src="kc-storage.js?v=20260911-1"></script>
-    <script src="firebase-analytics.js?v=20260908-1"></script>
 
     <script src="script.js?v=20260905-2"></script>
     <script src="newyear.js?v=20261002-1"></script>
     <script src="settings.js?v=20261009-1"></script>
-    <script src="account.js?v=20261009-1"></script>
     <script>
         (function () {
             function loadHomeDashboard() {
@@ -453,6 +447,7 @@
             else setTimeout(loadHomeDashboard, 250);
         }());
     </script>
+    <script src="note-runtime.js?v=20261018-1"></script>
 </body>
 </html>
 

@@ -1,6 +1,6 @@
 /* Stable scene IDs keep the verified FSRS scenes intact; route order is explicit.
    Account forms are captured from real account.js. The defense never runs Auth. */
-const SCENE_ORDER=[0,33,1,2,3,4,5,6,7,8,9,30,31,32,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,34];
+const SCENE_ORDER=[0,33,1,2,3,4,5,6,7,8,9,30,31,32,10,11,12,13,14,...LEARNING_ORDER,28,29,34];
 const sceneIndex=s=>SCENE_ORDER.indexOf(s),adjacentScene=(s,delta)=>SCENE_ORDER[Math.max(0,Math.min(SCENE_ORDER.length-1,sceneIndex(s)+delta))];
 const isAccountScene=s=>s>=30&&s<=32;
 const AccountScene=(()=>{
@@ -9,13 +9,13 @@ const AccountScene=(()=>{
  accountPose.tx=accountPose.w/2-width*accountPose.z/2;
  function init(){
   const pane=document.createElement('aside');pane.id='account-story';pane.setAttribute('aria-label','Пояснение регистрации и синхронизации');$('stage').appendChild(pane);
-  const label=document.createElement('div');label.id='account-site-label';label.textContent='Интерфейс Almanion · учебный профиль';$('stage').appendChild(label);
+  const label=document.createElement('div');label.id='account-site-label';label.textContent='';$('stage').appendChild(label);
   for(const f of Object.values(frames)){
    const d=f.contentDocument,b=d.getElementById('accountBtn');initialButtons.set(d,b.outerHTML);
    let ov=d.getElementById('accountOverlay');if(!ov){ov=d.createElement('div');ov.id='accountOverlay';ov.className='auth-overlay hidden';d.body.appendChild(ov)}
   }
  }
- function signed(s){return s===32||(s>=10&&s<=29)}
+ function signed(s){return s===32||(s>=10&&s<=29)||LEARNING_ORDER.includes(s)}
  function reset(s){
   for(const f of Object.values(frames)){
    const d=f.contentDocument,btn=d.getElementById('accountBtn');btn.outerHTML=initialButtons.get(d);
@@ -24,7 +24,7 @@ const AccountScene=(()=>{
    const ov=d.getElementById('accountOverlay');ov.innerHTML='';ov.hidden=true;ov.classList.add('hidden');ov.setAttribute('aria-hidden','true');
   }
   $('account-story').style.visibility=isAccountScene(s)?'visible':'hidden';$('account-story').style.opacity=isAccountScene(s)?'1':'0';$('account-story').style.transform='';
-  $('account-site-label').style.visibility=isAccountScene(s)?'visible':'hidden';
+  $('account-site-label').style.visibility='hidden';
   if(isAccountScene(s)){form(s===30?'login':s===31?'register':'signedIn');if(s===31)fill();story(s)}else $('account-story').replaceChildren();
  }
  function form(mode){const ov=find('#accountOverlay');ov.innerHTML=ACCOUNT_EXAMPLE[mode];ov.hidden=false;ov.classList.remove('hidden');ov.setAttribute('aria-hidden','false');}
@@ -33,7 +33,7 @@ const AccountScene=(()=>{
  function story(s){
   const panel=$('account-story');panel.dataset.phase=s;
   const route='<div class="account-route">'+['Войти','Создать','Продолжить'].map((x,i)=>(i?'<i></i>':'')+(i===s-30?'<b>'+x+'</b>':'<span>'+x+'</span>')).join('')+'</div>';
-  const content=s===30?'<h2>Сайт становится<br>личным</h2><p class="account-lead">Конспекты можно читать сразу.<br>Аккаунт связывает вашу работу<br>на разных устройствах.</p><div class="account-benefit"><span>01</span><div><strong>Через Google</strong><p>Один из способов входа на сайте</p></div></div><div class="account-benefit"><span>02</span><div><strong>Почта и пароль</strong><p>Покажем создание нового аккаунта</p></div></div>':s===31?'<h2>Одна форма.<br>Свой аккаунт.</h2><p class="account-lead">Почта, пароль и его повтор.<br>Форма проверяет, что пароли совпадают.</p><div class="account-focus-line"></div><div class="account-benefit"><span>→</span><div><strong>Следующее действие</strong><p>Нажать «Зарегистрироваться»</p></div></div><p class="account-foot">На экране — вымышленные данные.<br>Это локальная демонстрация интерфейса.</p>':'<h2>Продолжить<br>на другом устройстве</h2><p class="account-lead">Личный аккаунт связывает:</p>'+network()+'<div class="account-benefit"><span>01</span><div><strong>Настройки сайта</strong><p>В том числе оформление и быстрый доступ</p></div></div><div class="account-benefit"><span>02</span><div><strong>Прогресс повторений</strong><p>Состояние карточек и историю ответов</p></div></div>';
+  const content=s===30?'<h2>Сайт становится<br>личным</h2><p class="account-lead">Конспекты можно читать сразу.<br>Аккаунт связывает вашу работу<br>на разных устройствах.</p><div class="account-benefit"><span>01</span><div><strong>Через Google</strong><p>Один из способов входа на сайте</p></div></div><div class="account-benefit"><span>02</span><div><strong>Почта и пароль</strong><p>Покажем создание нового аккаунта</p></div></div>':s===31?'<h2>Одна форма.<br>Свой аккаунт.</h2><p class="account-lead">Почта, пароль и его повтор.<br>Форма проверяет, что пароли совпадают.</p><div class="account-focus-line"></div><div class="account-benefit"><span>→</span><div><strong>Следующее действие</strong><p>Нажать «Зарегистрироваться»</p></div></div>':'<h2>Продолжить<br>на другом устройстве</h2><p class="account-lead">Личный аккаунт связывает:</p>'+network()+'<div class="account-benefit"><span>01</span><div><strong>Настройки сайта</strong><p>В том числе оформление и быстрый доступ</p></div></div><div class="account-benefit"><span>02</span><div><strong>Прогресс повторений</strong><p>Состояние карточек и историю ответов</p></div></div>';
   panel.innerHTML='<div class="account-eyebrow">АККАУНТ · ПОЯСНЕНИЕ ДЛЯ ЗАЩИТЫ</div>'+route+content;
  }
  async function arrange(animate){

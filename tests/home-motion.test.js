@@ -3,6 +3,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+const vm = require('node:vm');
 
 const root = path.join(__dirname, '..');
 const page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
@@ -13,7 +14,7 @@ const mobileStyles = fs.readFileSync(path.join(root, 'styles', 'mobile-overrides
 const shell = JSON.parse(fs.readFileSync(path.join(root, 'performance', 'sw-shell.json'), 'utf8')).assets;
 
 assert.match(page, /styles\/home-motion\.css\?v=20260920-2/, 'home motion stylesheet must be versioned');
-assert.match(page, /home-motion\.js\?v=20261010-2/, 'home motion client must be versioned');
+assert.match(page, /home-motion\.js\?v=20261018-1/, 'homepage order changes must invalidate the previous controller');
 assert.doesNotMatch(page, /card\.style\.animationDelay/, 'cards must not inherit a global inline stagger');
 
 ['9', '10', '11', 'Archive'].forEach(grade => {
@@ -71,5 +72,60 @@ assert.match(mobileStyles, /@media \(max-width: 480px\)[\s\S]*\.main-content > \
 
 assert.ok(shell.includes('/styles/home-motion.css'));
 assert.ok(shell.includes('/home-motion.js'));
+
+// Exercise the real client against a small DOM with native move/focus behavior.
+// CSS order alone cannot keep keyboard and screen-reader traversal aligned.
+function verifySectionOrder(initialMobile) {
+    let document;
+    class Element {
+        constructor(name) { this.name = name; this.children = []; this.parentElement = null; this.dataset = {}; this.style = { setProperty() {} }; this.classList = { add() {}, remove() {}, contains() { return false; } }; }
+        get firstElementChild() { return this.children[0] || null; }
+        get nextElementSibling() { return this.parentElement?.children[this.parentElement.children.indexOf(this) + 1] || null; }
+        get isConnected() { return this === document.body || !!this.parentElement?.isConnected; }
+        contains(node) { return this === node || this.children.some(child => child.contains(node)); }
+        insertBefore(node, anchor) {
+            if (node === anchor) return;
+            if (node.contains(document.activeElement)) document.activeElement = document.body;
+            if (node.parentElement) node.parentElement.children.splice(node.parentElement.children.indexOf(node), 1);
+            const index = anchor ? this.children.indexOf(anchor) : this.children.length;
+            assert.ok(index >= 0, 'an insertion anchor must belong to the target container');
+            this.children.splice(index, 0, node); node.parentElement = this;
+        }
+        appendChild(node) { this.insertBefore(node, null); return node; }
+        append(...nodes) { nodes.forEach(node => this.appendChild(node)); }
+        prepend(node) { this.insertBefore(node, this.firstElementChild); }
+        before(node) { this.parentElement.insertBefore(node, this); }
+        after(node) { this.parentElement.insertBefore(node, this.nextElementSibling); }
+        focus(options) { document.activeElement = this; this.lastFocusOptions = options; }
+        addEventListener() {}
+    }
+    const body = new Element('body'), main = new Element('main'), quick = new Element('quick'), daily = new Element('daily'), grid = new Element('grid'), subjects = new Element('subjects'), secondary = new Element('secondary');
+    const quickLink = new Element('quick-link'), dailyLink = new Element('daily-link'), subjectLink = new Element('subject-link'), secondaryLink = new Element('secondary-link');
+    const selectors = { '.home-container': main, '#homeMain': main, '.home-content-grid': grid, '.subjects-section': subjects, '.home-secondary': secondary, '.home-quick-section': quick, '.extra-section': quick, '#homeDailyDuty': daily, '.home-daily-duty': daily };
+    document = { body, activeElement: body, querySelector: selector => selectors[selector] || null, querySelectorAll: () => [], getElementById: id => selectors['#' + id] || null };
+    body.append(main); main.append(quick, daily, new Element('template'), new Element('inline-script'), new Element('quick-dialog'), grid);
+    grid.append(secondary, subjects); quick.append(quickLink); daily.append(dailyLink); subjects.append(subjectLink); secondary.append(secondaryLink);
+    subjectLink.focus();
+    let breakpointChange;
+    const media = { matches: initialMobile, addEventListener(type, callback) { if (type === 'change') breakpointChange = callback; } };
+    const storage = { getItem: () => null };
+    vm.runInNewContext(client, { document, localStorage: storage, window: { matchMedia: () => media, localStorage: storage, requestAnimationFrame: () => 1, cancelAnimationFrame() {}, setTimeout: () => 1, clearTimeout() {} } }, { filename: 'home-motion.js' });
+    const links = node => [quickLink, dailyLink, subjectLink, secondaryLink].includes(node) ? [node.name] : node.children.flatMap(links);
+    const verify = () => {
+        assert.deepStrictEqual(links(main), ['quick-link', 'daily-link', 'subject-link', 'secondary-link'], 'DOM traversal must remain Quick Access → daily duty → subjects → supporting pages at either breakpoint');
+        assert.strictEqual(grid.firstElementChild, subjects, 'the directory must keep subjects before supporting pages');
+        assert.strictEqual(quick.parentElement, main, 'Quick Access must remain above the directory');
+        assert.strictEqual(daily.parentElement, main, 'daily duty must remain between Quick Access and the directory');
+    };
+    verify();
+    assert.strictEqual(document.activeElement, subjectLink, 'normalizing the initial directory must preserve focus');
+    if (subjectLink.lastFocusOptions) assert.strictEqual(subjectLink.lastFocusOptions.preventScroll, true);
+    for (const mobile of [!initialMobile, initialMobile, !initialMobile]) {
+        quickLink.focus(); media.matches = mobile; breakpointChange?.({ matches: mobile }); verify();
+        assert.strictEqual(document.activeElement, quickLink, 'resizing must not lose focus in Quick Access');
+    }
+}
+verifySectionOrder(false);
+verifySectionOrder(true);
 
 console.log('home page motion: all tests passed');

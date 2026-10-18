@@ -1,0 +1,27 @@
+#caption,#account-site-label,#math-site-label{display:none!important}
+#learning-nebulae,#nebula-veil{position:absolute;inset:0;width:1920px;height:1080px;pointer-events:none}
+#learning-nebulae{z-index:1}#nebula-veil{z-index:12}
+#stage[data-nebula-active="true"] #panel{text-shadow:0 2px 18px #03091590}
+#stage[data-nebula-active="true"] #panel{height:880px}
+#stage[data-nebula-travel="true"] #panel{opacity:var(--nebula-copy,0)!important;transform:translateY(var(--nebula-offset,0px)) scale(var(--nebula-scale,1))!important;transform-origin:50% 48%;clip-path:circle(var(--nebula-reveal,1200px) at 50% 50%)}
+#stage[data-nebula-travel="true"] #site{opacity:var(--nebula-site,1)!important}
+#stage[data-nebula-travel="true"] :is(#connector,#focus){visibility:hidden!important}
+#panel[data-phase="15"] #model-route{display:none}
+#panel[data-phase="15"] #panel-title{margin-top:35px}
+#nebula-map{position:absolute;left:0;top:300px;width:744px;height:420px;font-size:23px;color:#c9dff4}
+#nebula-map span{position:absolute;white-space:nowrap;font-weight:450;letter-spacing:.3px}
+#nebula-map span:nth-child(1){left:70px;top:340px}#nebula-map span:nth-child(2){left:425px;top:410px}#nebula-map span:nth-child(3){left:340px;top:170px}
+.learning-equation{margin:19px 0 0;padding:15px 0;border-top:1px solid #33445c}
+.learning-equation math{font:50px 'Cambria Math',serif;max-width:100%;color:#d6eaff}
+.learning-equation p{font-size:22px;line-height:1.45;color:#9fb5cf;margin:14px 0 0}
+#panel[data-phase="38"] .learning-equation:nth-child(2) math{font-size:38px}
+#panel[data-phase="39"] .learning-equation:nth-child(2) math{font-size:40px}
+#panel[data-phase="42"] .learning-equation math{font-size:39px}
+.numeric-result{font-size:31px;color:#a8c4df;margin:20px 0}.numeric-result strong{font-size:36px;color:#d8ecff;font-weight:500}
+.identity-path>div{padding:23px 0;border-top:1px solid #33445c}.identity-path small{font-size:17px;color:#8fa9c8;letter-spacing:1px}.identity-path strong{font-size:30px;display:block;font-weight:500;margin:10px 0}.identity-path p{font-size:24px;color:#9fb5cf;margin:0}
+.calculation-steps>div{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:23px 0;border-top:1px solid #33445c}.calculation-steps span{font-size:22px;color:#9fb5cf}.calculation-steps strong{font-size:29px;font-weight:500;white-space:nowrap;color:#d4eaff}.calculation-steps sup{font-size:20px}
+.retention-comparison{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin:35px 0}.retention-comparison>div{border-top:1px solid #33445c;padding:26px 0}.retention-comparison span{font-size:34px;display:block;color:#9fb5cf}.retention-comparison small{font-size:22px}.retention-comparison strong{font-size:49px;display:block;font-weight:500;margin:25px 0 20px}.retention-comparison p{font-size:22px;color:#9fb5cf}.retention-comparison .chosen{border-color:#a5d5fb}.retention-comparison .chosen strong,.retention-comparison .chosen span{color:#cce9ff}
+.outcome-table{width:100%;border-collapse:collapse;margin:26px 0 0;font-size:25px;text-align:left}.outcome-table th,.outcome-table td{padding:18px 12px;border-bottom:1px solid #33445c;font-weight:400}.outcome-table thead{font-size:20px;color:#8fa9c8}.outcome-table th:first-child{padding-left:0}.outcome-table .chosen{color:#bfe2ff;background:#15253c55}
+.queue-story>div{display:flex;gap:25px;padding:24px 0;border-top:1px solid #33445c}.queue-story b{font-size:22px;font-weight:400;color:#7ea4cf}.queue-story strong{font-size:28px;font-weight:500}.queue-story p{font-size:23px;line-height:1.45;color:#9fb5cf;margin:10px 0 0}
+.failure-result{padding:22px 0;border-top:1px solid #33445c;margin-top:22px}.failure-result>span{font-size:22px;color:#9fb5cf}.failure-result strong{font-size:47px;font-weight:500;display:block;margin:10px 0}.failure-result p{font-size:24px;line-height:1.45;color:#9fb5cf;margin:8px 0 0}
+#pulsar-ending .ending-credit{font-size:15px;color:#7b9abb;margin:25px 0 0;letter-spacing:0}#pulsar-ending .ending-credit a{font-size:inherit;border:0;padding:0;color:inherit}
