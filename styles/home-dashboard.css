@@ -721,48 +721,69 @@ body.home-quick-dialog-open {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         margin: 0 0 20px;
     }
-    body.home-page .home-privileged-actions .home-editor-link { justify-content: center; padding-inline: 8px; font-size: 0.77rem; }
+    body.home-page .home-privileged-actions .home-editor-link { justify-content: center; min-height: 44px; padding-inline: 8px; font-size: 0.77rem; }
     body.home-page .home-planner-link,
     body.home-page .home-privileged-actions .home-editor-link:only-child { grid-column: 1 / -1; }
     body.home-page .home-section-heading { margin-bottom: 8px; }
-    body.home-page .home-quick-section { margin-bottom: 24px; }
-    body.home-page .home-quick-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    body.home-page .home-quick-customize { min-height: 44px; }
+    body.home-page .home-quick-section { margin-bottom: 20px; }
+    body.home-page .home-quick-grid,
+    body.home-page .home-quick-grid[data-count="4"],
+    body.home-page .home-quick-grid[data-count="5"] { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    body.home-page .home-quick-grid[data-count="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     body.home-page .home-quick-grid > .home-quick-card {
-        min-height: 86px;
-        flex-direction: column;
-        justify-content: center;
+        min-height: 68px;
+        flex-direction: row;
+        justify-content: flex-start;
         gap: 8px;
-        padding: 12px 8px;
+        padding: 8px 10px;
     }
+    body.home-page .home-quick-grid[data-count="5"] > .home-quick-card,
+    body.home-page .home-quick-grid[data-count="5"] > .home-quick-card:nth-last-child(-n + 2) { grid-column: auto; }
+    body.home-page .home-quick-grid[data-count="5"] > .home-quick-card:last-child { grid-column: 1 / -1; min-height: 52px; }
+    body.home-page .home-quick-grid[data-count="1"] > .home-quick-card { min-height: 64px; }
     body.home-page .home-quick-grid .card-header { display: grid; }
-    body.home-page .home-quick-grid .subject-icon { width: 30px; height: 30px; border-radius: 10px; }
-    body.home-page .home-quick-grid .subject-icon svg { width: 21px; height: 21px; }
-    body.home-page .home-quick-grid .card-body { flex: 0; justify-content: center; }
-    body.home-page .home-quick-copy { align-items: center; gap: 4px; }
-    body.home-page .home-quick-grid h2 { font-size: 0.83rem; text-align: center; }
-    body.home-page .home-quick-context { font-size: 0.68rem; text-align: center; }
+    body.home-page .home-quick-grid .subject-icon { width: 28px; height: 28px; border-radius: 9px; }
+    body.home-page .home-quick-grid .subject-icon svg { width: 20px; height: 20px; }
+    body.home-page .home-quick-grid .card-body { flex: 1; justify-content: flex-start; }
+    body.home-page .home-quick-copy { align-items: flex-start; gap: 3px; }
+    body.home-page .home-quick-grid h2 { font-size: 0.85rem; text-align: left; }
+    body.home-page .home-quick-context { font-size: 0.7rem; text-align: left; }
+    body.home-page .home-quick-grid[data-count="3"] > .home-quick-card { min-height: 96px; flex-direction: column; justify-content: center; gap: 6px; padding: 10px 8px; }
+    body.home-page .home-quick-grid[data-count="3"] .card-body { flex: 0; justify-content: center; }
+    body.home-page .home-quick-grid[data-count="3"] .home-quick-copy { align-items: center; }
+    body.home-page .home-quick-grid[data-count="3"] :is(h2, .home-quick-context) { text-align: center; }
+    body.home-page .home-daily-duty { margin-bottom: 24px; padding: 14px 16px; border-radius: 16px; }
+    body.home-page .home-daily-duty-heading { flex-direction: column; gap: 4px; }
+    body.home-page .home-daily-duty-label { margin-bottom: 4px; font-size: .7rem; }
+    body.home-page .home-daily-duty h2 { font-size: 1.05rem; }
+    body.home-page .home-daily-duty time { padding: 0; font-size: .76rem; line-height: 1.4; }
+    body.home-page #homeDailyDutyPeople { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 12px; margin: 10px 0 6px; }
+    body.home-page #homeDailyDutyPeople:empty { display: none; }
+    body.home-page #homeDailyDutyPeople li { padding: 0; border: 0; border-radius: 0; background: transparent; font-size: .82rem; line-height: 1.5; }
+    body.home-page .home-daily-duty-message { margin: 8px 0 2px; font-size: .82rem; }
+    body.home-page .home-daily-duty-link { font-size: .76rem; }
     body.home-page .home-secondary .home-duty-summary { font-size: .68rem; }
     body.home-page .home-quick-arrow { display: none; }
-    body.home-page .home-content-grid { display: flex; flex-direction: column; gap: 28px; }
-    body.home-page .home-content-grid > .home-quick-section { width: 100%; margin: 0; }
+    body.home-page .home-content-grid { display: flex; flex-direction: column; gap: 24px; }
     body.home-page .home-secondary {
         width: 100%;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 18px 12px;
+        gap: 16px 10px;
     }
     body.home-page .home-additional-section { grid-column: 1 / -1; }
     body.home-page .home-secondary .section-title { margin-bottom: 10px; }
     body.home-page .home-additional-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     body.home-page .home-additional-grid > :last-child:nth-child(3) { grid-column: 1 / -1; }
-    body.home-page .home-secondary .subject-card { min-height: 64px; padding: 12px; gap: 10px; }
-    body.home-page .home-secondary .subject-icon { width: 32px; height: 32px; border-radius: 10px; }
-    body.home-page .home-secondary .subject-icon svg { width: 22px; height: 22px; }
-    body.home-page .home-secondary h2:not(.section-title) { font-size: 0.9rem; }
-    body.home-page .home-secondary .home-game-link { align-self: end; min-height: 64px; padding: 12px; gap: 8px; }
+    body.home-page .home-secondary .subject-card { min-height: 58px; padding: 10px; gap: 8px; }
+    body.home-page .home-secondary .subject-icon { width: 28px; height: 28px; border-radius: 9px; }
+    body.home-page .home-secondary .subject-icon svg { width: 20px; height: 20px; }
+    body.home-page .home-secondary h2:not(.section-title) { font-size: 0.86rem; }
+    body.home-page .home-secondary .home-game-link { align-self: end; min-height: 58px; padding: 10px; gap: 8px; }
     body.home-page .home-game-name { display: none; }
     body.home-page .subjects-section { width: 100%; }
-    body.home-page .subjects-toolbar { gap: 12px; margin-bottom: 14px; }
-    body.home-page .subjects-toolbar > .section-title { font-size: 1.3rem; }
+    body.home-page .subjects-toolbar { gap: 10px; margin-bottom: 12px; }
+    body.home-page .subjects-toolbar > .section-title { font-size: 1.25rem; }
     body.home-page .grade-tabs {
         grid-template-columns: repeat(4, minmax(0, 1fr));
         border-radius: 14px;
@@ -770,24 +791,27 @@ body.home-quick-dialog-open {
         gap: 4px;
     }
     body.home-page .grade-tabs::before { display: none; }
-    body.home-page .grade-tab { min-height: 40px; padding: 8px 4px; font-size: 0.77rem; border-radius: 10px; }
+    body.home-page .grade-tab { min-height: 44px; padding: 8px 4px; font-size: 0.77rem; border-radius: 10px; }
     body.home-page .grade-tab.active { background: var(--accent-color); color: #fff; }
     body.experimental.home-page .grade-tab.active { background: var(--exp-accent); color: var(--exp-accent-contrast); }
-    body.home-page .grade-panel > .subjects-grid { gap: 12px; }
-    body.home-page .grade-panel > .subjects-grid > .subject-card { min-height: 128px; padding: 16px; gap: 12px; }
-    body.home-page .grade-panel .subject-icon { width: 40px; height: 40px; border-radius: 12px; }
-    body.home-page .grade-panel .subject-icon svg { width: 25px; height: 25px; }
-    body.home-page .grade-panel .subject-card h2 { font-size: 1.02rem; }
+    body.home-page .grade-panel > .subjects-grid { gap: 10px; }
+    body.home-page .grade-panel > .subjects-grid > .subject-card { min-height: 96px; padding: 12px; gap: 7px; }
+    body.home-page .grade-panel .subject-icon { width: 28px; height: 28px; border-radius: 9px; }
+    body.home-page .grade-panel .subject-icon svg { width: 20px; height: 20px; }
+    body.home-page .grade-panel .subject-card h2 { font-size: 0.94rem; }
     body.home-page .grade-panel .status-badge { font-size: 0.7rem; }
     body.home-page .home-footer { margin-top: 26px; padding-top: 16px; }
+    body.home-page .home-footer p { align-items: center; }
+    body.home-page .home-footer a { display: inline-flex; align-items: center; min-height: 44px; }
     .home-quick-dialog { place-items: end center; padding: 0; }
     .home-quick-dialog-panel { width: 100%; max-height: 92dvh; border-radius: 22px 22px 0 0; }
     .home-quick-dialog-header { padding: 18px 16px; }
+    .home-quick-dialog-close { width: 44px; height: 44px; }
     .home-quick-dialog-body { padding: 16px; }
     .home-quick-options { grid-template-columns: 1fr; }
     .home-quick-dialog-footer { flex-direction: column; align-items: stretch; padding: 14px 16px max(14px, env(safe-area-inset-bottom)); }
     .home-quick-selection-meta span { white-space: normal; }
-    .home-quick-dialog-actions > button { flex: 1; }
+    .home-quick-dialog-actions > button { flex: 1; min-height: 44px; }
 }
 @media (max-width: 350px) {
     body.home-page .home-container { padding-inline: 12px; }
@@ -795,7 +819,6 @@ body.home-quick-dialog-open {
     body.home-page .home-controls { gap: 6px; }
     body.home-page .home-quick-grid { gap: 6px; }
     body.home-page .home-secondary .subject-card { padding: 10px; gap: 7px; }
-    body.home-page .grade-panel > .subjects-grid > .subject-card { padding: 14px; }
 }
 @media (prefers-reduced-motion: reduce) {
     body.home-page .settings-button:hover svg { transform: none !important; transition: none; }

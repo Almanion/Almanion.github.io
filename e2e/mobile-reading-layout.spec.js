@@ -6,18 +6,38 @@ test.beforeEach(async ({ page }) => {
     await page.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());
 });
 
-test('responsive home order prioritizes subjects and preserves desktop quick access', async ({ page }) => {
+test('responsive home order keeps quick access before daily duty and subjects', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-10-19T12:00:00+03:00'));
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
-    await expect(page.locator('.home-content-grid > .subjects-section')).toBeAttached();
-    await expect(page.locator('.subjects-section + .home-quick-section')).toBeAttached();
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await expect(page.locator('main > .home-quick-section')).toBeAttached();
-    const quick = await page.locator('.home-quick-section').boundingBox();
-    const subjects = await page.locator('.subjects-section').boundingBox();
-    expect(quick.y).toBeLessThan(subjects.y);
-    await page.setViewportSize({ width: 320, height: 568 });
-    await expect(page.locator('.subjects-section + .home-quick-section')).toBeAttached();
+    await page.waitForFunction(() => window.AlmanionHomeDashboard && window.AlmanionSettings?.ready);
+    for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 }, { width: 320, height: 568 }]) {
+        await page.setViewportSize(viewport);
+        await expect(page.locator('.home-quick-section')).toHaveCount(1);
+        await expect(page.locator('.home-content-grid > .subjects-section')).toHaveCount(1);
+        await expect(page.locator('#homeDailyDuty')).toBeVisible();
+        await expect(page.locator('.home-quick-section')).toBeInViewport({ ratio: 1 });
+        const order = await page.evaluate(() => {
+            const quick = document.querySelector('.home-quick-section');
+            const daily = document.querySelector('#homeDailyDuty');
+            const subjects = document.querySelector('.subjects-section');
+            return {
+                quickBeforeDaily: !!(quick.compareDocumentPosition(daily) & Node.DOCUMENT_POSITION_FOLLOWING),
+                dailyBeforeSubjects: !!(daily.compareDocumentPosition(subjects) & Node.DOCUMENT_POSITION_FOLLOWING),
+                quickBottom: quick.getBoundingClientRect().bottom,
+                dailyTop: daily.getBoundingClientRect().top,
+                dailyBottom: daily.getBoundingClientRect().bottom,
+                subjectsTop: subjects.getBoundingClientRect().top,
+                overflow: document.documentElement.scrollWidth - innerWidth
+            };
+        });
+        expect(order.quickBeforeDaily).toBe(true);
+        expect(order.dailyBeforeSubjects).toBe(true);
+        expect(order.quickBottom).toBeLessThanOrEqual(order.dailyTop + 1);
+        expect(order.dailyBottom).toBeLessThanOrEqual(order.subjectsTop + 1);
+        expect(order.overflow).toBeLessThanOrEqual(1);
+    }
 });
 
 for (const width of [320, 390, 768]) {
