@@ -1,6 +1,6 @@
 /* Stable scene IDs keep the verified FSRS scenes intact; route order is explicit.
    Account forms are captured from real account.js. The defense never runs Auth. */
-const SCENE_ORDER=[0,33,1,2,3,4,5,6,7,8,9,30,31,32,10,11,12,13,14,...LEARNING_ORDER,28,29,34];
+const SCENE_ORDER=[0,33,1,2,3,4,5,6,7,8,9,30,31,32,10,11,12,13,14,...LEARNING_ORDER,NEBULA_RETURN,28,29,34];
 const sceneIndex=s=>SCENE_ORDER.indexOf(s),adjacentScene=(s,delta)=>SCENE_ORDER[Math.max(0,Math.min(SCENE_ORDER.length-1,sceneIndex(s)+delta))];
 const isAccountScene=s=>s>=30&&s<=32;
 const AccountScene=(()=>{
@@ -15,7 +15,7 @@ const AccountScene=(()=>{
    let ov=d.getElementById('accountOverlay');if(!ov){ov=d.createElement('div');ov.id='accountOverlay';ov.className='auth-overlay hidden';d.body.appendChild(ov)}
   }
  }
- function signed(s){return s===32||(s>=10&&s<=29)||LEARNING_ORDER.includes(s)}
+ function signed(s){return s===32||(s>=10&&s<=29)||LEARNING_ORDER.includes(s)||s===NEBULA_RETURN}
  function reset(s){
   for(const f of Object.values(frames)){
    const d=f.contentDocument,btn=d.getElementById('accountBtn');btn.outerHTML=initialButtons.get(d);

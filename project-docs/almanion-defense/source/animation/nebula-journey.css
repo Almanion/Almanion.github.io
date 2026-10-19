@@ -1,16 +1,30 @@
 #caption,#account-site-label,#math-site-label{display:none!important}
-#learning-nebulae,#nebula-veil{position:absolute;inset:0;width:1920px;height:1080px;pointer-events:none}
-#learning-nebulae{z-index:1}#nebula-veil{z-index:12}
 #stage[data-nebula-active="true"] #panel{text-shadow:0 2px 18px #03091590}
 #stage[data-nebula-active="true"] #panel{height:880px}
-#stage[data-nebula-travel="true"] #panel{opacity:var(--nebula-copy,0)!important;transform:translateY(var(--nebula-offset,0px)) scale(var(--nebula-scale,1))!important;transform-origin:50% 48%;clip-path:circle(var(--nebula-reveal,1200px) at 50% 50%)}
-#stage[data-nebula-travel="true"] #site{opacity:var(--nebula-site,1)!important}
+#stage[data-nebula-travel="true"] :is(#panel,#site){transform:translate3d(var(--nebula-x,0px),var(--nebula-y,0px),0)!important;will-change:transform,opacity}
+#stage[data-nebula-travel="true"] #panel{opacity:calc(var(--nebula-copy,0) * var(--nebula-panel,1))!important}
+#stage[data-nebula-travel="true"] #site{opacity:var(--nebula-copy,0)!important}
 #stage[data-nebula-travel="true"] :is(#connector,#focus){visibility:hidden!important}
+html.nebula-page-turn{view-transition-name:none}
+#stage[data-nebula-kind="page"] #panel{view-transition-name:learning-panel}
+::view-transition-group(learning-panel){animation:none}
+::view-transition-image-pair(learning-panel){isolation:normal}
+::view-transition-old(learning-panel),::view-transition-new(learning-panel){animation-duration:.55s;animation-timing-function:cubic-bezier(.22,.7,.2,1);animation-fill-mode:both;mix-blend-mode:normal;opacity:1}
+::view-transition-old(learning-panel){animation-name:nebula-page-out}
+::view-transition-new(learning-panel){animation-name:nebula-page-in}
+.nebula-page-back::view-transition-old(learning-panel){animation-name:nebula-page-back-out}
+.nebula-page-back::view-transition-new(learning-panel){animation-name:nebula-page-back-in}
+@keyframes nebula-page-out{from{clip-path:inset(0)}to{clip-path:inset(100% 0 0)}}
+@keyframes nebula-page-in{from{clip-path:inset(0 0 100%)}to{clip-path:inset(0)}}
+@keyframes nebula-page-back-out{from{clip-path:inset(0)}to{clip-path:inset(0 0 100%)}}
+@keyframes nebula-page-back-in{from{clip-path:inset(100% 0 0)}to{clip-path:inset(0)}}
 #panel[data-phase="15"] #model-route{display:none}
+#panel[data-phase="15"] #model-owner{display:none}
+#stage[data-nebula-active="true"] #panel[data-phase="15"]{height:940px}
 #panel[data-phase="15"] #panel-title{margin-top:35px}
-#nebula-map{position:absolute;left:0;top:300px;width:744px;height:420px;font-size:23px;color:#c9dff4}
+#nebula-map{position:absolute;left:0;top:300px;width:744px;height:620px;font-size:23px;color:#c9dff4}
 #nebula-map span{position:absolute;white-space:nowrap;font-weight:450;letter-spacing:.3px}
-#nebula-map span:nth-child(1){left:70px;top:340px}#nebula-map span:nth-child(2){left:425px;top:410px}#nebula-map span:nth-child(3){left:340px;top:170px}
+#nebula-map span:nth-child(1){left:35px;top:305px}#nebula-map span:nth-child(2){left:480px;top:305px}#nebula-map span:nth-child(3){left:260px;top:582px}
 .learning-equation{margin:19px 0 0;padding:15px 0;border-top:1px solid #33445c}
 .learning-equation math{font:50px 'Cambria Math',serif;max-width:100%;color:#d6eaff}
 .learning-equation p{font-size:22px;line-height:1.45;color:#9fb5cf;margin:14px 0 0}

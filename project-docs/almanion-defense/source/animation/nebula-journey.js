@@ -1,72 +1,87 @@
-/* Real nebula texture (ESO, CC BY 4.0), projected by the shared star camera.
-   No background timers: every frame belongs to the controlled transition. */
+/* Three permanent objects in the star field also mark the three chapters.
+   Ordinary slides keep a fixed camera; only chapter boundaries move it. */
 window.NebulaJourney=(()=>{
- const canvas=document.getElementById('learning-nebulae'),veil=document.getElementById('nebula-veil'),ctx=canvas.getContext('2d'),fog=veil.getContext('2d'),stage=document.getElementById('stage');
- const entry={x:.08,y:.12,z:1.45},colors=['#7aaed7','#a98bd2','#6caaa9','#ad9bc9','#9c91cd'];
- const homes=[[1250,620],[1630,710],[1520,470],[1740,570],[1190,430]],nodes=LEARNING_ORDER.slice(1).map((s,i)=>{
-  const z=2.55+i*.14,[x,y]=homes[i%homes.length],d=z-entry.z;
-  return{s,wx:entry.x+(x-960)*d/1100,wy:entry.y+(y-540)*d/1100,z,radius:.22,index:i,group:learningGroup(s)};
- });
- const sprites=[];let active=false,travel=false,position=15,progress=0,lastKey='',flight=null,stats={clouds:0,drawMs:0};
- const clamp=x=>Math.max(0,Math.min(1,x)),smooth=x=>{x=clamp(x);return x*x*(3-2*x)},mix=(a,b,t)=>a+(b-a)*t;
- const owns=s=>LEARNING_ORDER.includes(s);
- const nodeAt=s=>nodes.find(n=>n.s===s);
- function cameraAt(s){if(!owns(s))return null;if(s===15)return{...entry};const n=nodeAt(s),d=.75;return{x:n.wx-(1340-960)*d/1100,y:n.wy-(530-540)*d/1100,z:n.z-d};}
- function pointerAt(s){const i=Math.max(0,LEARNING_ORDER.indexOf(s));return{x:1860,y:390+(i%4)*145};}
+ const stage=document.getElementById('stage'),F=1100,insideZ=3.45,slideZ=3.78;
+ const entry={x:.08,y:.12,z:1.45},isOverview=s=>s===15||s===NEBULA_RETURN;
+ const homes=[[1230,520,145,-.32],[1670,520,145,.38],[1450,810,140,-.7]];
+ const clouds=homes.map(([x,y,r,angle],group)=>{const z=4.65,d=z-entry.z;return{group,wx:entry.x+(x-960)*d/F,wy:entry.y+(y-540)*d/F,z,r:r*d/F,angle};});
+ const cameras=clouds.map(n=>{const d=n.z-insideZ;return{x:n.wx-380*d/F,y:n.wy,z:insideZ};});
+ const nodes=LEARNING_ORDER.slice(1).map((s,i)=>({s,index:i,group:learningGroup(s),camera:{...cameras[learningGroup(s)]}}));
+ const textures=[];let active=false,travel=false,position=15,flight=null,stats={clouds:0,drawMs:0};
+ const clamp=x=>Math.max(0,Math.min(1,x)),smooth=x=>{x=clamp(x);return x*x*x*(10+x*(-15+6*x))},mix=(a,b,t)=>a+(b-a)*t;
+ const owns=s=>LEARNING_ORDER.includes(s)||s===NEBULA_RETURN;
+ function cameraAt(s){if(isOverview(s))return{...entry};return LEARNING_ORDER.includes(s)?{...cameras[learningGroup(s)]}:null;}
+ const pointerAt=()=>({x:1856,y:976});
  async function init(){
   const image=new Image();image.src=NEBULA_IMAGE;await image.decode();
-  for(const color of colors){const c=document.createElement('canvas');c.width=c.height=768;const g=c.getContext('2d');g.drawImage(image,0,0,768,768);
-   g.globalCompositeOperation='source-atop';g.globalAlpha=.24;g.fillStyle=color;g.fillRect(0,0,768,768);g.globalAlpha=1;
-   g.globalCompositeOperation='destination-in';const mask=g.createRadialGradient(384,384,40,384,384,370);mask.addColorStop(0,'#fff');mask.addColorStop(.35,'#fff');mask.addColorStop(.7,'#ffffff80');mask.addColorStop(1,'#ffffff00');g.fillStyle=mask;g.fillRect(0,0,768,768);sprites.push(c);
+  for(const hue of [0,32,-28]){
+   const sharp=document.createElement('canvas');sharp.width=960;sharp.height=1152;const g=sharp.getContext('2d');
+   // Enlarge the actual dust lanes and luminous core, preserving fine detail
+   // on the overview. A rectangular edge fade avoids a circular badge rim.
+   g.filter=`saturate(.85) hue-rotate(${hue}deg)`;g.drawImage(image,250,180,800,960,0,0,960,1152);g.filter='none';g.globalCompositeOperation='destination-in';
+   for(const vertical of [false,true]){const end=vertical?1152:960,mask=g.createLinearGradient(0,0,vertical?0:end,vertical?end:0);mask.addColorStop(0,'#ffffff00');mask.addColorStop(.22,'#fff');mask.addColorStop(.78,'#fff');mask.addColorStop(1,'#ffffff00');g.fillStyle=mask;g.fillRect(0,0,960,1152);}
+   const soft=document.createElement('canvas');soft.width=960;soft.height=1152;const h=soft.getContext('2d');h.filter='blur(10px)';h.drawImage(sharp,0,0);textures.push({sharp,soft});
   }
  }
- function cloud(context,n,p,r,alpha){context.save();context.translate(p.x,p.y);context.rotate((n.index%3-1)*.28);context.globalAlpha=alpha;context.globalCompositeOperation='screen';context.drawImage(sprites[n.group],-r,-r*.82,r*2,r*1.64);context.restore();}
- function paint(camera){
-  if(!sprites.length)return;const key=[active,position,travel,progress,...Object.values(camera)].join(':');if(key===lastKey)return;lastKey=key;const began=performance.now();ctx.clearRect(0,0,1920,1080);
-  if(!active){stats={clouds:0,drawMs:performance.now()-began};return;}
-  const index=Math.max(0,LEARNING_ORDER.indexOf(position)-1),map=position===15;let count=0;
-  const range=map?nodes.slice(0,3):nodes.slice(Math.max(0,index-1),index+4);
-  for(const n of range){const d=n.z-camera.z;if(d<.08)continue;const p=Cosmos.volume.project(n,camera),r=Math.min(1450,1100*n.radius/d),current=n.s===position;
-   if(p.x+r<790||p.x-r>1920||p.y+r<80||p.y-r>1030)continue;
-   const alpha=map?.57:travel?.26:current?.10:.025;cloud(ctx,n,p,map?Math.min(205,r):r*2.4,alpha);count++;
+ function visibleClouds(camera){return clouds.filter(n=>{const d=n.z-camera.z;if(d<=.2)return false;const p=Cosmos.volume.project(n,camera),r=F*n.r/d;return p.x+r*1.6>=0&&p.x-r*1.6<=1920&&p.y+r*1.6>=0&&p.y-r*1.6<=1080;});}
+ function paintBackdrop(context,camera){
+  const began=performance.now(),visible=visibleClouds(camera),overview=clamp((insideZ-camera.z)/(insideZ-entry.z));
+  if(textures.length){context.save();context.globalCompositeOperation='screen';
+   for(const n of visible){const d=n.z-camera.z,p=Cosmos.volume.project(n,camera),r=F*n.r/d,t=textures[n.group];context.save();context.translate(p.x,p.y);context.rotate(n.angle);
+    context.globalAlpha=(1-overview)*.32;context.drawImage(t.soft,-r,-r*1.2,r*2,r*2.4);
+    context.globalAlpha=.10+.83*overview;context.drawImage(t.sharp,-r,-r*1.2,r*2,r*2.4);context.restore();
+   }context.restore();
   }
-  stats={clouds:count,drawMs:performance.now()-began,camera:{...camera}};
+  stats={...stats,clouds:visible.length,drawMs:performance.now()-began,amount:visible.length?1:0,camera:{...camera}};
  }
+ function paint(camera){const count=visibleClouds(camera).length;stats={...stats,clouds:count,camera:{...camera},amount:count?1:0};}
  function decorate(s){
-  const panel=$('panel');if(!owns(s))return;
-  const group=learningGroup(s);panel.querySelector('.eyebrow').textContent=`УЧИТЬ · ${String(LEARNING_ORDER.indexOf(s)+1).padStart(2,'0')} / ${LEARNING_ORDER.length}`;
+  if(!owns(s))return;const group=learningGroup(s),ids=LEARNING_CHAPTERS[group];
+  $('panel').querySelector('.eyebrow').textContent=isOverview(s)?'УЧИТЬ · ТРИ РАЗДЕЛА':`УЧИТЬ · РАЗДЕЛ ${group+1} / 3 · ${ids.indexOf(s)+1} / ${ids.length}`;
   $('model-route').innerHTML=LEARNING_GROUPS.map((name,i)=>`<span class="${i===group?'current':i<group?'passed':''}">${name}</span>`).join('');
  }
- function checkpoint(s){if(travel)return;active=owns(s);position=s;progress=0;stage.dataset.nebulaActive=String(active);decorate(s);lastKey='';fog.clearRect(0,0,1920,1080);paint(Cosmos.volume.at(s));}
- function handles(from,to){return owns(from)&&owns(to);}
+ function checkpoint(s){if(travel)return;active=owns(s);position=s;stage.dataset.nebulaActive=String(active);decorate(s);Cosmos.paintFlight();}
+ const handles=(from,to)=>owns(from)&&owns(to);
+ async function turnPage(from,target){
+  // The selection is an actual cursor sequence in the captured Учить menu.
+  // Keep the site visible throughout; only the explanation has a transition.
+  Cosmos.holdFlight(from);
+  if(from===16&&target===17){
+   ensureVisible('.kc-type-chip[data-kind="definition"]');await click('.kc-type-chip[data-kind="definition"]');
+   const topic='.kc-deck[data-topic="'+TOPIC+'"]';ensureVisible(topic);await click(topic,()=>selection(true));await click('#kcStart');
+  }
+  const source={...cursor},end=pointerAt(target),html=document.documentElement;
+  travel=true;position=from;stage.dataset.nebulaKind='page';html.classList.add('nebula-page-turn');html.classList.toggle('nebula-page-back',LEARNING_ORDER.indexOf(target)<LEARNING_ORDER.indexOf(from));
+  const swap=async()=>{await direct(target);position=target;decorate(target);Object.assign(cursor,source);paintCursor();};
+  const record=p=>{Cosmos.setFlight(p,1340,530,false,{from,to:target,start:0,span:1,duration:.55,external:true});Cosmos.paintFlight();flight={from,to:target,kind:'page',progress:p,camera:{...Cosmos.telemetry.camera},cursor:{...cursor},copy:1,offset:{x:0,y:0},scale:1,amount:1,clouds:stats.clouds,scene:position};stage.dataset.nebulaProgress=p.toFixed(4);};
+  try{
+   record(0);
+   if(document.startViewTransition){const view=document.startViewTransition(swap);await view.updateCallbackDone;await view.ready.catch(()=>{});await Promise.all([view.finished.catch(()=>{}),tween(550,record,true)]);}
+   else{await swap();await Promise.all([$('panel').animate([{transform:'translateY(10px)'},{transform:'translateY(0)'}],{duration:400,easing:'cubic-bezier(.22,.7,.2,1)'}).finished,tween(400,record,true)]);}
+   await moveCursor(end,380);
+  }finally{html.classList.remove('nebula-page-turn','nebula-page-back');travel=false;delete stage.dataset.nebulaKind;delete stage.dataset.nebulaProgress;await direct(target);Cosmos.finishFlight();checkpoint(target);}
+ }
  async function transition(target){
   if(reduced){await direct(target);return;}
-  const from=step,reverse=LEARNING_ORDER.indexOf(target)<LEARNING_ORDER.indexOf(from),source={...cursor};let end=pointerAt(target);
-  if(target===15){const motion=reduced;reduced=true;try{await direct(target);end={...cursor};await direct(from);}finally{reduced=motion;}}
+  const from=step,bothInside=!isOverview(from)&&!isOverview(target),kind=bothInside?(learningGroup(from)===learningGroup(target)?'page':'pan'):!isOverview(target)?'enter':'exit';
+  if(kind==='page'){await turnPage(from,target);return;}
+  const a=Cosmos.volume.at(from),b=Cosmos.volume.at(target),source={...cursor};let end=pointerAt(target);Cosmos.holdFlight(from);
+  if(isOverview(target)){const motion=reduced;reduced=true;try{await direct(target);end={...cursor};await direct(from);}finally{reduced=motion;}}
   if(from===15&&target===16){await OpeningGuidance.press('#knowledgeCheckBtn');Object.assign(source,cursor);}
-  travel=true;active=true;position=from;stage.dataset.nebulaActive='true';stage.dataset.nebulaTravel='true';Cosmos.holdFlight(from);
-  const duration=2300,upper=reverse?from:target,targetNode=nodeAt(upper)||nodes[0],lo=reverse?end:source,hi=reverse?source:end;
+  travel=true;active=true;position=from;stage.dataset.nebulaActive='true';stage.dataset.nebulaTravel='true';stage.dataset.nebulaKind=kind;
+  const duration=kind==='pan'?2400:2800,dx=b.x-a.x,dy=b.y-a.y;
   function frameAt(p){
-   progress=p;Cosmos.setFlight(p,1340,530,reverse,{from,to:target,start:0,span:1,duration:duration/1000,external:true});Cosmos.paintFlight();
-   const camera=Cosmos.telemetry.camera,projected=Cosmos.volume.project(targetNode,camera),portal={x:Math.max(1040,Math.min(1740,projected.x)),y:Math.max(350,Math.min(800,projected.y))};
-   const q=reverse?1-p:p,arc=Math.sin(Math.PI*q),base=OpeningGuidance.path(lo,hi,q,-230);
-   const capture=smooth((q-.12)/.27)*(1-smooth((q-.73)/.23));Object.assign(cursor,{x:mix(base.x,portal.x,capture),y:mix(base.y,portal.y,capture)});paintCursor();
-   const incoming=smooth((p-.66)/.31),outgoing=1-smooth(p/.25),copy=p<.5?outgoing:incoming;
-   if(p>.66){if(target===21)graph(5*incoming);if(target===22)graph(5+5*incoming);if(target===26)graph(GOOD.stability*incoming,true);if(target===25){$('sv').textContent=fmt(10+(GOOD.stability-10)*incoming);$('dv').textContent=fmt(5+(GOOD.difficulty-5)*incoming);}}
-   stage.style.setProperty('--nebula-copy',copy);stage.style.setProperty('--nebula-scale',String(p<.5?1+.06*(1-outgoing):.91+.09*incoming));stage.style.setProperty('--nebula-offset',(p<.5?-15*(1-outgoing):24*(1-incoming))+'px');stage.style.setProperty('--nebula-reveal',(p<.5?1200:incoming*1400)+'px');stage.style.setProperty('--nebula-site',String(1-.38*arc));
-   fog.clearRect(0,0,1920,1080);const wash=Math.pow(Math.sin(Math.PI*p),3);
-   if(wash>.001){const shade=fog.createRadialGradient(1340,540,100,1340,540,1400);shade.addColorStop(0,`rgba(10,20,42,${wash*.96})`);shade.addColorStop(.7,`rgba(10,20,42,${wash*.8})`);shade.addColorStop(1,'rgba(5,10,24,0)');fog.fillStyle=shade;fog.fillRect(0,0,1920,1080);cloud(fog,targetNode,portal,320+wash*1050,wash*.78);}
-   flight={from,to:target,progress:p,reverse,camera:{...camera},cursor:{...cursor},copy,clouds:stats.clouds};stage.dataset.nebulaProgress=p.toFixed(4);
+   const q=Cosmos.volume.flightProgress(p),incoming=p>=.5;
+   Cosmos.setFlight(p,1340,530,false,{from,to:target,start:0,span:1,duration:duration/1000,external:true});Cosmos.paintFlight();const camera=Cosmos.telemetry.camera,anchor=incoming?b:a;
+   const copy=kind==='pan'?(incoming?smooth((q-.63)/.22):1-smooth((q-.15)/.22)):(incoming?smooth((p-.66)/.34):1-smooth(p/.30));
+   const x=kind==='pan'?F*(anchor.x-camera.x)/(slideZ-camera.z):0,y=kind==='pan'?F*(anchor.y-camera.y)/(slideZ-camera.z):0;
+   stage.style.setProperty('--nebula-copy',copy);stage.style.setProperty('--nebula-x',x+'px');stage.style.setProperty('--nebula-y',y+'px');stage.style.setProperty('--nebula-panel','1');
+   const arc=Math.sin(Math.PI*p);Object.assign(cursor,{x:Math.max(40,Math.min(1868,mix(source.x,end.x,smooth(p))+Math.sign(dx)*75*arc)),y:Math.max(45,Math.min(1000,mix(source.y,end.y,smooth(p))+Math.sign(dy)*95*arc))});paintCursor();
+   if(incoming&&copy>0){const t=smooth((p-.5)/.5);if(target===21)graph(5*t);if(target===22)graph(5+5*t);if(target===26)graph(GOOD.stability*t,true);if(target===25){$('sv').textContent=fmt(10+(GOOD.stability-10)*t);$('dv').textContent=fmt(5+(GOOD.difficulty-5)*t);}}
+   flight={from,to:target,kind,progress:p,camera:{...camera},cursor:{...cursor},copy,offset:{x,y},scale:1,amount:1,clouds:stats.clouds,scene:position};stage.dataset.nebulaProgress=p.toFixed(4);
   }
-  try{
-   frameAt(0);await tween(duration*.5,t=>frameAt(t*.5),true);
-   await direct(target);position=target;decorate(target);
-   await tween(duration*.5,t=>frameAt(.5+t*.5),true);
-  }finally{
-   travel=false;stage.dataset.nebulaTravel='false';delete stage.dataset.nebulaProgress;
-   for(const key of ['copy','scale','offset','reveal','site'])stage.style.removeProperty('--nebula-'+key);
-   fog.clearRect(0,0,1920,1080);await direct(target);Cosmos.finishFlight();checkpoint(target);
-  }
+  try{frameAt(0);await tween(duration*.5,t=>frameAt(t*.5),true);await direct(target);position=target;decorate(target);frameAt(.5);await tween(duration*.5,t=>frameAt(.5+t*.5),true);}
+  finally{travel=false;stage.dataset.nebulaTravel='false';delete stage.dataset.nebulaProgress;delete stage.dataset.nebulaKind;for(const key of ['copy','x','y','panel'])stage.style.removeProperty('--nebula-'+key);await direct(target);Cosmos.finishFlight();checkpoint(target);}
  }
- return{init,owns,handles,cameraAt,pointerAt,checkpoint,paint,transition,get travelling(){return travel},get stats(){return{...stats,flight}},get nodes(){return nodes.map(n=>({...n}))}};
+ return{init,owns,handles,cameraAt,pointerAt,checkpoint,paint,paintBackdrop,transition,backdropKey:'world',get travelling(){return travel},get stats(){return{...stats,flight}},get nodes(){return nodes.map(n=>({...n,camera:{...n.camera}}))}};
 })();

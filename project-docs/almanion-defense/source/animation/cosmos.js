@@ -12,6 +12,7 @@ window.Cosmos=(()=>{
  let paintedStill=null;
  let telemetry={speed:0,travel:0,centerX:960,centerY:540,streaks:0,layers:[]};
  function opaqueWindows(){
+  if(window.NebulaJourney?.travelling)return[];
   const windows=[],portal=document.querySelector('.physics-portal,.navigation-portal');
   if(portal&&portal.style.visibility!=='hidden')windows.push(portal.flightBounds||{x:parseFloat(portal.style.left),y:parseFloat(portal.style.top),w:parseFloat(portal.style.width),h:parseFloat(portal.style.height)});
   const site=document.getElementById('site');
@@ -34,7 +35,7 @@ window.Cosmos=(()=>{
    camera=volume.path(route.from,route.to,t);previous=volume.path(route.from,route.to,previousT);speed=16*t*t*(1-t)*(1-t);
   }
   const moving=Math.hypot(camera.x-previous.x,camera.y-previous.y,camera.z-previous.z)>.0000001;
-  const key=[camera.x,camera.y,camera.z].join(',');
+  const key=[camera.x,camera.y,camera.z,window.NebulaJourney?.backdropKey??'0'].join(',');
   const stats=moving?volume.render(bg,camera,previous,shutter,opaqueWindows()):
    paintedStill===key&&themePhase===null?lastStats:volume.still(bg,camera);
   paintedStill=moving||themePhase!==null?null:key;lastStats=stats;
