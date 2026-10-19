@@ -206,3 +206,12 @@ body[data-page=play][data-flight=review][data-result-view=analysis] .review-comp
  .completion-hero{grid-template-columns:minmax(0,1fr) 160px;padding-bottom:6px}
  .completion-docking{width:90px}
 }
+/* Keep space for platform font metrics on the shortest narrow phones. */
+@media(max-width:360px) and (max-height:650px) and (orientation:portrait){
+ .completion-scroll{padding-top:8px}
+ .completion-hero{padding-bottom:6px}
+ .completion-facts{padding:5px 0}
+ .completion-grid{gap:6px}
+ .completion-receipt{padding:8px}
+ .completion-section-title{margin-bottom:4px}
+}
