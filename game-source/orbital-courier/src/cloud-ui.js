@@ -44,7 +44,7 @@
     const status=!A.storageOK?'local-error':connecting?'connecting':connectionError?'error':sync?.status||'off';
     for(const button of document.querySelectorAll('[data-action="cloud"],[data-action="cloud-header"],[data-action="cloud-result"]')){
       const label=labels[status]||'На устройстве',text=button.querySelector('.cloud-label');
-      if(text)text.textContent=label;else button.textContent=label;
+      if(text){if(text.textContent!==label)text.textContent=label;}else if(button.textContent!==label)button.textContent=label;
       button.dataset.status=status;button.title='Прогресс и аккаунт · '+label;button.setAttribute('aria-label','Прогресс и аккаунт: '+label);
     }
   }

@@ -68,8 +68,9 @@ test('native links load new documents and preserve profile, course context and b
 test('Control and middle clicks keep the current page while opening real destinations',async({page,context})=>{
  await page.goto(base);
  for(const options of [{modifiers:['Control']},{button:'middle'}]){
+  await page.bringToFront();
   const [other]=await Promise.all([context.waitForEvent('page'),page.locator('.topbar nav a[data-page=campaign]').click(options)]);
-  await other.waitForLoadState();await expect(other).toHaveURL(new RegExp('/contracts/$'));
+  await page.keyboard.up('Control');await other.bringToFront();await other.waitForURL(new RegExp('/contracts/$'));
   await expect(other.locator('body')).toHaveAttribute('data-page','campaign');
   await expect(page).toHaveURL(new RegExp('/games/orbital-courier/$'));await expect(page.locator('#home')).toBeVisible();
   await other.close();

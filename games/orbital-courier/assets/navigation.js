@@ -187,7 +187,7 @@
         link=doc.createElement('a');for(const attribute of node.attributes)if(attribute.name!=='type')link.setAttribute(attribute.name,attribute.value);
         while(node.firstChild)link.append(node.firstChild);node.replaceWith(link);
       }
-      if(link.tagName==='A'){link.setAttribute('href',href);link.removeAttribute('aria-disabled');if(link.tabIndex===-1)link.removeAttribute('tabindex');}
+      if(link.tagName==='A'){if(link.getAttribute('href')!==href)link.setAttribute('href',href);link.removeAttribute('aria-disabled');if(link.tabIndex===-1)link.removeAttribute('tabindex');}
     }
     for(const node of doc.querySelectorAll('.topbar [data-page],.mobile-nav [data-page]')){
       if(node.dataset.page===entry)node.setAttribute('aria-current','page');else node.removeAttribute('aria-current');
