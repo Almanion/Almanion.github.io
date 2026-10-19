@@ -16,10 +16,13 @@ window.NebulaJourney=(()=>{
   const image=new Image();image.src=NEBULA_IMAGE;await image.decode();
   for(const hue of [0,32,-28]){
    const sharp=document.createElement('canvas');sharp.width=960;sharp.height=1152;const g=sharp.getContext('2d');
-   // Enlarge the actual dust lanes and luminous core, preserving fine detail
-   // on the overview. A rectangular edge fade avoids a circular badge rim.
+   // Preserve the photographic dust lanes while dissolving the image into
+   // the star field along a broad ellipse, with no straight edges or rim.
    g.filter=`saturate(.85) hue-rotate(${hue}deg)`;g.drawImage(image,250,180,800,960,0,0,960,1152);g.filter='none';g.globalCompositeOperation='destination-in';
-   for(const vertical of [false,true]){const end=vertical?1152:960,mask=g.createLinearGradient(0,0,vertical?0:end,vertical?end:0);mask.addColorStop(0,'#ffffff00');mask.addColorStop(.22,'#fff');mask.addColorStop(.78,'#fff');mask.addColorStop(1,'#ffffff00');g.fillStyle=mask;g.fillRect(0,0,960,1152);}
+   g.save();g.translate(480,576);g.scale(480,576);
+   const mask=g.createRadialGradient(0,-.04,.08,0,0,.98);
+   for(const [stop,alpha] of [[0,1],[.24,1],[.48,.86],[.68,.43],[.84,.09],[1,0]])mask.addColorStop(stop,`rgba(255,255,255,${alpha})`);
+   g.fillStyle=mask;g.fillRect(-1,-1,2,2);g.restore();
    const soft=document.createElement('canvas');soft.width=960;soft.height=1152;const h=soft.getContext('2d');h.filter='blur(10px)';h.drawImage(sharp,0,0);textures.push({sharp,soft});
   }
  }
