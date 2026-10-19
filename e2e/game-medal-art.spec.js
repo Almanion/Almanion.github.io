@@ -24,7 +24,9 @@ test('all 80 contracts use the matching medal artwork without changing rewards',
   return {contracts:O.LEVELS.length,mismatches,unchanged,expected:O.Medals.rules(l).map(r=>r.type),actual:[...document.querySelectorAll('.completion-medal-icon svg')].map(s=>s.dataset.medalArt),status:A.state.status};
  });
  expect(result).toMatchObject({contracts:80,mismatches:[],unchanged:true,status:'won'});expect(result.actual).toEqual(result.expected);
- await expect(page.locator('.completion-medal-icon')).toHaveCount(3);expect(errors).toEqual([]);
+ await expect(page.locator('.completion-medal-icon')).toHaveCount(3);
+ for(const icon of await page.locator('.completion-medal-icon').all())await expect(icon).toHaveCSS('background-color','rgba(0, 0, 0, 0)');
+ expect(errors).toEqual([]);
 });
 
 test('medal vectors remain distinct, bounded and reusable at small and large sizes',async({page},info)=>{
