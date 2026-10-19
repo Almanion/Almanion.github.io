@@ -32,6 +32,7 @@ function createStarVolume(nightSky){
  function render(ctx,camera,previous=camera,shutter=.036,occlusion=[]){
   const begin=performance.now(),motion=bands.map(()=>({count:0,visible:0,passed:0,distance:0,max:0}));let streaks=0,visible=0;
   ctx.clearRect(0,0,W,H);ctx.drawImage(nightSky.nebula,-4-camera.x*4,-4-camera.y*4,W+8,H+8);
+  window.NebulaJourney?.paintBackdrop(ctx,camera);
   // Far-to-near painting preserves the depth hierarchy without depth sorting.
   for(let layer=0;layer<bands.length;layer++)for(const s of groups[layer]){
    const stats=motion[layer];
@@ -60,8 +61,8 @@ function createStarVolume(nightSky){
   ctx.drawImage(shade,0,0);
   return{streaks,visible,drawMs:performance.now()-begin,layers:motion.map((s,i)=>({name:bands[i].name,count:s.count,visible:s.visible,passed:s.passed,meanSpeed:s.count?s.distance/s.count:0,maxSpeed:s.max}))};
  }
- function still(ctx,camera){const key=[camera.x,camera.y,camera.z].join(',');let item=cache.get(key);if(!item){const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;const stats=render(canvas.getContext('2d'),camera);item={canvas,stats};cache.set(key,item);if(cache.size>4)cache.delete(cache.keys().next().value);}ctx.clearRect(0,0,W,H);ctx.drawImage(item.canvas,0,0);return{...item.stats,drawMs:0};}
- function at(s){
+ function still(ctx,camera){const key=[camera.x,camera.y,camera.z,window.NebulaJourney?.backdropKey??'0'].join(',');let item=cache.get(key);if(!item){const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;const stats=render(canvas.getContext('2d'),camera);item={canvas,stats};cache.set(key,item);if(cache.size>4)cache.delete(cache.keys().next().value);}ctx.clearRect(0,0,W,H);ctx.drawImage(item.canvas,0,0);return{...item.stats,drawMs:0};}
+ function at(s){const learning=window.NebulaJourney?.cameraAt(s);if(learning)return learning;
   if(s===34){const d=F*pulsar.radius/pulsar.arrival.r;return{x:pulsar.wx-(pulsar.arrival.x-CX)*d/F,y:pulsar.wy-(pulsar.arrival.y-CY)*d/F,z:pulsar.z-d};}
   if(s===33)return{x:-.035,y:.02,z:-4.8};
   const points=[
