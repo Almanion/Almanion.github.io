@@ -64,6 +64,9 @@
   }
   function onLevel() {
     closeSheet(false); clearPointers(); stopHold(); lastMode = ''; initializedLive = false;
+    delete document.body.dataset.resultView;
+    $('resultScreen').hidden = true;
+    $('resultAnalysisBar').hidden = true;
     placeTimeline();
     $('flightPlan').open = false;
     selectCockpitTab('course');
@@ -183,7 +186,7 @@
   // Sheets MOVE existing nodes; there are no duplicate control IDs or mirror forms.
   function placeTimeline(){
     const timeline=$('reviewTimeline');if(!timeline)return;
-    const target=mobile()&&screenMode()==='review'&&!$('flightReview').hidden&&sheetState?.kind!=='review'?$('mobileTimeline'):$('reviewTimelineHome');
+    const target=$('reviewTimelineHome');
     if(target&&timeline.parentNode!==target)target.append(timeline);
   }
   function openSheet(kind, opener) {
@@ -561,6 +564,7 @@
     if(event.target.matches('input,textarea,select,[contenteditable=true]'))return;
     const k=event.key.toLowerCase();
     if(event.target.closest('button,summary') && (k===' '||k==='enter'))return;
+    if(document.body.dataset.resultView==='summary'&&[' ','arrowleft','arrowright','arrowup','arrowdown'].includes(k))return;
     if(![' ','r','к','g','п','escape','arrowleft','arrowright','arrowup','arrowdown'].includes(k))return;
     event.preventDefault();
     if(event.repeat&&[' ','r','к','escape'].includes(k))return;

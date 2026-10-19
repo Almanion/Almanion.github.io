@@ -930,6 +930,173 @@ body[data-page=home] .rank-badge{display:none}
 .reduce-motion #home .hero-copy>*,.reduce-motion #home .button{animation:none;transition:none}
 @media(prefers-reduced-motion:reduce){#home .hero-copy>*,#home .button{animation:none;transition:none}}
 
+</style><style>
+/* Completed flights have a receipt first, with the recorded map one action away. */
+.completion{--result-accent:#85f2ce;--result-line:#284940;display:flex;flex-direction:column;flex:1;min-height:0;width:100%;max-width:1200px;margin:0 auto;color:#e7f1f3}
+.completion[data-outcome=failed]{--result-accent:#ffbb92;--result-line:#5b443b}
+.completion[data-outcome=training]{--result-accent:#b8b2ff;--result-line:#454165}
+body[data-page=play][data-flight=review] #play.active{display:flex;flex-direction:column;gap:0}
+body[data-page=play][data-flight=review] #play>.medal-deck,
+body[data-page=play][data-flight=review] #play>.training-badge,
+body[data-page=play][data-flight=review] #play>.mobile-dock{display:none}
+body[data-page=play][data-flight=review][data-result-view=summary] #play>.flight-heading,
+body[data-page=play][data-flight=review][data-result-view=summary] #play>.flight-layout{display:none}
+body[data-page=play][data-flight=review][data-result-view=analysis] #resultScreen{display:none}
+.completion-scroll{overflow:auto;overscroll-behavior:contain;min-height:0;flex:1;padding:16px 24px 12px;scrollbar-width:thin;scrollbar-color:#32554e transparent}
+.completion-hero{display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:24px;align-items:center;padding:0 0 14px;border-bottom:1px solid #263b44}
+.completion-copy{min-width:0}
+.completion-kicker{display:flex;gap:9px;align-items:center;flex-wrap:wrap;font:10px var(--mono);letter-spacing:.1em;color:var(--result-accent)}
+.completion-signal{width:6px;height:6px;border-radius:50%;background:var(--result-accent);box-shadow:0 0 14px #85f2ce55}
+.completion-mode{color:#96adba;margin-left:8px;font-size:9px;letter-spacing:.04em}
+#play .completion h2{font-size:clamp(28px,3vw,38px);line-height:1.13;font-weight:650;letter-spacing:-.035em;margin:10px 0 8px;color:#edf8f6;white-space:normal}
+#resultTitle:focus{outline:none}
+.completion-copy>p{font-size:14px;line-height:1.5;color:#abc0cb;max-width:580px;margin:0}
+.completion-route{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;margin-top:12px}
+.completion-route>span{font:10px var(--mono);letter-spacing:.08em;color:#8fa9b8}
+.completion-route>strong{font-size:13px;color:#d6e8eb;font-weight:550}
+.completion-seal{position:relative;isolation:isolate;width:112px;height:112px;border:1px solid var(--result-line);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;background:radial-gradient(circle,#16382f88,transparent 71%);color:var(--result-accent)}
+.completion-seal:before,.completion-seal:after{content:"";position:absolute;inset:10px;border:1px dashed var(--result-line);border-radius:50%;z-index:-1}
+.completion-seal:after{inset:25px;border-style:solid;opacity:.4}
+.completion-seal-orbit{position:absolute;inset:0;border:1px solid var(--result-accent);border-radius:50%;transform:rotate(-24deg) scaleX(1.23) scaleY(.58);opacity:.35;z-index:-1}
+.completion-seal>span{font:7px var(--mono);letter-spacing:.06em;margin-top:4px}
+.completion-seal>strong{font:500 50px/1.03 system-ui;letter-spacing:-.06em}
+.completion-seal>b{font:15px var(--mono);font-weight:500}.completion-seal small{font-size:11px;color:#96b9ae}
+.completion-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;padding:14px 0 18px}
+.completion-facts>div{border-left:1px solid #29404a;padding-left:16px;min-width:0}
+.completion-facts>div:first-child{border:0;padding-left:0}
+.completion-facts span{display:block;font-size:11px;color:#9eb6c3;margin-bottom:7px}
+.completion-facts strong{font:20px var(--mono);font-weight:500;white-space:nowrap;color:#dbedef}
+.completion-facts small{font:10px var(--mono);color:#8faab8}
+.completion-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:28px;align-items:start}
+.completion-main{min-width:0}
+.completion-section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px}
+.completion-section-title h3{font-size:14px;line-height:1.4;margin:0;font-weight:600;color:#e4eff0}
+.completion-section-title>span{font:10px var(--mono);color:#94aebc;white-space:nowrap}
+.completion-medals{display:flex;flex-direction:column;border-top:1px solid #253b45}
+.completion-medal{display:grid;grid-template-columns:42px minmax(0,1fr);gap:14px;padding:10px 0;border-bottom:1px solid #253b45}
+.completion-medal-icon{display:grid;place-items:center;align-self:center;width:40px;height:44px;border:1px solid #324b57;border-radius:11px;font:26px var(--mono);color:#718b99;background:#101f29}
+.completion-medal[data-state=won] .completion-medal-icon{border-color:#736744;color:#f4d08a;background:#29291e}
+.completion-medal:nth-child(2)[data-state=won] .completion-medal-icon{color:#8ee3df;border-color:#3d676c;background:#132c32}
+.completion-medal:nth-child(3)[data-state=won] .completion-medal-icon{color:#c9b5ff;border-color:#605379;background:#252139}
+.completion-medal-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.completion-medal h4{font-size:13px;margin:0;line-height:1.4;font-weight:600;color:#dcebed}
+.completion-medal-heading>span{font-size:12px;color:#9eb7c3}
+.completion-medal[data-state=won] .completion-medal-heading>span{color:#87dbb6}
+.completion-medal p{font-size:12px;line-height:1.4;color:#a8bfcb;margin:3px 0}
+.completion-medal small{display:block;font:11px/1.25 var(--mono);color:#bdced7}
+.completion-receipt{padding:22px;border:1px solid var(--result-line);border-radius:17px;background:linear-gradient(140deg,#142a2b,#0d1d28 65%)}
+.completion-receipt .completion-section-title>span{color:var(--result-accent);font-size:18px}
+.completion-credits{padding:13px 0 19px}
+.completion-credits>span{display:block;font:9px var(--mono);letter-spacing:.13em;color:#9fbdb7;margin-bottom:5px}
+.completion-credits>strong{font:500 45px/1.15 var(--mono);letter-spacing:-.045em;color:#a0f3d0}
+.completion-credits small{font-size:24px;color:#70b698}
+.completion-resources{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #28423f;border-bottom:1px solid #28423f;padding:14px 0;gap:16px}
+.completion-resources span{font-size:11px;color:#a1b7c2;display:block;margin-bottom:5px}
+.completion-resources strong{font:21px var(--mono);color:#d9e5f1}.completion-resources small{font-size:11px;color:#b4a1ec}
+.completion-payment{font-size:13px;line-height:1.5;color:#adc5ca;margin:14px 0 0}
+.completion-ledger{display:grid;gap:8px}.completion-ledger>span{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#839eac}.completion-ledger b{font:10px var(--mono);font-weight:500;color:#c3d6dd;white-space:nowrap}
+.completion-career{border-top:1px dashed #36504e;margin-top:22px;padding-top:18px}
+.completion-career>span{display:block;font:8px var(--mono);letter-spacing:.12em;color:#8ca7b1;margin-bottom:6px}
+.completion-career>strong{font-size:13px;font-weight:550}.completion-career>small{display:block;font-size:10px;line-height:1.6;color:#9fb7bf}
+.completion-rank-track{height:3px;background:#203b41;margin:10px 0 8px;overflow:hidden;border-radius:3px}.completion-rank-track i{display:block;height:100%;background:#92cfd1}
+.completion-hangar{display:flex;justify-content:space-between;width:100%;min-height:44px;padding:12px 0 0;margin-top:8px;color:#c3e2de;font-size:11px;border:0;background:none}
+.completion-awards{margin-top:8px}.completion-awards summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;font-size:13px;cursor:pointer;list-style:none;color:#d3e8ec}.completion-awards summary>span:last-child{font:12px var(--mono);color:#c6b1f6}.completion-awards summary b{color:var(--mint);margin-left:5px}.completion-awards summary i{font-style:normal;margin-left:10px}.completion-awards .award-chip{display:flex;align-items:center;gap:10px;padding:11px 0;margin:0;border:0;border-bottom:1px solid #263c43;border-radius:0;background:none;font-size:13px}
+.completion-awards .award-chip>span{font-size:19px}.completion-awards .award-chip>strong{font-weight:500;flex:1}.completion-awards .award-chip>b{font:10px var(--mono);color:#c6b1f6;white-space:nowrap}
+.completion-breakdown{border-bottom:1px solid #263c43;margin-top:0}
+.completion-breakdown summary{min-height:44px;display:flex;justify-content:space-between;align-items:center;gap:14px;color:#b8d0d9;font-size:13px;cursor:pointer;list-style:none}
+.completion-detail-body{padding:0 0 16px;font-size:13px;line-height:1.6;color:#b8cdd5}.completion-detail-body h4{font-size:14px;margin:18px 0 12px}.completion-detail-body small{font-size:12px}.completion-detail-body p{margin:10px 0}.completion-detail-facts{display:grid;gap:8px;margin:16px 0}.completion-detail-facts>span{display:flex;justify-content:space-between;gap:12px}.completion-detail-facts b{font:13px var(--mono)}
+.completion-breakdown[open] summary>span{transform:rotate(45deg)}
+.completion-quality{padding:8px 0 18px;display:grid;gap:12px}.completion-quality>div{display:grid;grid-template-columns:125px 1fr 38px;gap:10px;align-items:center;font-size:12px;color:#a4bdc8}.completion-quality b{font:12px var(--mono);text-align:right}
+.completion-quality meter{width:100%;height:6px;border:0;background:#193340;border-radius:4px;overflow:hidden;appearance:none}
+.completion-quality meter::-webkit-meter-bar{border:0;background:#193340;border-radius:4px;height:6px}.completion-quality meter::-webkit-meter-optimum-value{background:#76bfae}.completion-quality meter::-moz-meter-bar{background:#76bfae}
+.completion-next-note{display:flex;align-items:baseline;gap:15px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid #253b45}
+.completion-next-note>span{font:10px var(--mono);letter-spacing:.04em;color:#9db8c5}.completion-next-note strong{font-size:13px;color:#c7e1e5;font-weight:500}
+.completion-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;padding:12px 24px calc(12px + env(safe-area-inset-bottom));border-top:1px solid #29404a;background:#0a1821;z-index:2}
+.completion-actions-main{display:flex;gap:10px;min-width:0}.completion-actions .button{padding:12px 20px;min-height:48px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:20px;white-space:normal;line-height:1.4}
+.completion-actions .quiet,.completion-analysis-bar .quiet{border:1px solid #314c59;background:#10232e;color:#c3dbe3}
+#resultNext{min-width:220px;font-weight:650}.completion-actions #resultReview,.completion-actions #resultContracts{border-color:transparent;background:transparent;color:#a9c3ce;padding-left:0}.completion-actions-main{margin-left:auto}
+.completion-no-loss strong{display:block;font-size:24px;color:var(--result-accent);font-weight:500;margin:20px 0 10px}.completion-no-loss p,.completion-advice p{font-size:12px;line-height:1.7;color:#a9bdc8;margin:0}
+.completion-advice{padding:20px;border:1px solid #3f3c35;border-radius:13px;margin-top:22px;background:#27231a33}.completion-advice>span{font:9px var(--mono);color:#d6b493;letter-spacing:.08em}.completion-advice p{margin:9px 0}.completion-advice button{font-size:11px;color:#ecc3a3;justify-content:flex-start;padding:0;border:0;background:none}
+.completion-analysis-bar{display:flex;align-items:center;gap:18px;flex:none;min-height:48px}
+.completion-analysis-bar>div{flex:1;min-width:0}.completion-analysis-bar strong{display:block;font-size:14px;font-weight:550}.completion-analysis-bar span{display:block;font-size:10px;color:#97b4bf;margin-top:3px}.completion-analysis-bar button{font-size:11px;min-height:44px}
+body[data-page=play][data-flight=review][data-result-view=analysis] #play>.flight-heading{display:none}
+body[data-page=play][data-flight=review][data-result-view=analysis] #play .flight-layout{display:flex;min-height:0;flex:1}
+body[data-page=play][data-flight=review][data-result-view=analysis] #play .flight-left{display:flex;flex:1;min-height:0;height:100%;padding:0;gap:7px}
+body[data-page=play][data-flight=review][data-result-view=analysis] #play .flight-panel,
+body[data-page=play][data-flight=review][data-result-view=analysis] #play .flight-plan,
+body[data-page=play][data-flight=review][data-result-view=analysis] #play .telemetry{display:none}
+body[data-page=play][data-flight=review][data-result-view=analysis] #play .map-controls{display:flex;order:0;justify-content:flex-end;min-height:44px;flex:0 0 44px;position:static;inset:auto}
+body[data-page=play][data-flight=review][data-result-view=analysis] #play .map-mode{display:none}
+body[data-page=play][data-flight=review][data-result-view=analysis] #play .map-tools{display:flex}
+body[data-page=play][data-flight=review][data-result-view=analysis] #play .map-viewport{display:flex;flex:1;min-height:80px;order:1;position:relative;inset:auto;height:auto;margin:0}
+body[data-page=play][data-flight=review][data-result-view=analysis] #play .flight-review{display:block;flex:0 0 auto;order:2;max-height:none;overflow:visible;padding:12px 16px;border-color:#2d4c50;background:#0e222b}
+body[data-page=play][data-flight=review][data-result-view=analysis] .review-controls{display:flex;gap:12px;flex-wrap:wrap}
+body[data-page=play][data-flight=review][data-result-view=analysis] .review-controls button{min-height:44px;font-size:11px}
+body[data-page=play][data-flight=review][data-result-view=analysis] .review-summary{display:block;font-size:11px;margin:6px 0 10px;line-height:1.5}
+body[data-page=play][data-flight=review][data-result-view=analysis] .review-comparison{display:block;font-size:10px;line-height:1.5;margin-top:8px}
+#play #reviewRange{height:44px;min-width:70px;touch-action:pan-y}
+@media(min-width:1000px) and (min-height:900px){.completion-scroll{padding-top:28px}.completion-hero{padding-bottom:24px}.completion-grid{gap:32px}.completion-medal{padding-top:14px;padding-bottom:14px}}
+@media(max-width:699px),(max-width:999px) and (orientation:portrait),(max-width:999px) and (max-height:480px){
+ body[data-page=play][data-flight=review] main{height:var(--vv-height);padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left)}
+}
+@media(max-width:699px),(max-width:999px) and (orientation:portrait){
+ body[data-page=play][data-flight=review] #play{gap:0;padding:0}
+ .completion-scroll{padding:16px 16px 12px}
+ .completion-hero{grid-template-columns:minmax(0,1fr) 60px;gap:8px 12px;align-items:start;padding:0 0 12px}
+ .completion-copy{display:contents}
+ .completion-kicker{grid-area:1/1/2/3}
+ .completion-kicker{font-size:10px;letter-spacing:.03em;gap:6px}.completion-mode{display:none}
+ #play .completion h2{grid-area:2/1/3/2;align-self:center;font-size:28px;margin:0;padding-right:0;max-width:none}
+ .completion-copy>p{display:none}
+ .completion-seal{grid-area:2/2/3/3;align-self:center;width:60px;height:60px;margin:0}.completion-seal:before{inset:5px}.completion-seal:after{inset:13px}
+ .completion-seal>span{display:none}.completion-seal>strong{font-size:30px}.completion-seal>b{font-size:11px}.completion-seal small{font-size:9px}
+ .completion[data-outcome=failed] .completion-seal>b{font-size:8px}
+ .completion-route{grid-area:3/1/4/3;margin:0;gap:6px 12px}.completion-route>span{font-size:10px}.completion-route strong{font-size:12px}
+ .completion-facts{grid-template-columns:1fr 1fr;gap:12px;padding:12px 0}.completion-facts>div{display:flex;align-items:baseline;gap:8px;padding-left:0;border:0}.completion-facts>div:nth-child(n+3){display:none}.completion-facts span{font-size:11px;margin:0}.completion-facts strong{font-size:18px}.completion-facts small{font-size:10px}
+ .completion-grid{grid-template-columns:1fr;gap:12px}.completion-receipt{display:grid;grid-template-columns:1.1fr .8fr 1fr;align-items:start;gap:10px;padding:14px;grid-row:1;border-radius:12px}
+ .completion-receipt>.completion-section-title{display:none}.completion-credits{padding:0}.completion-credits>span{font:11px system-ui;letter-spacing:0;margin-bottom:5px;color:#b5ccca}.completion-credits>strong{font-size:26px}.completion-credits small{font-size:14px}
+ .completion-resources{display:contents}.completion-resources span{font-size:11px;margin-bottom:5px}.completion-resources strong{font-size:22px}.completion-resources small{font-size:10px}
+ .completion-receipt .completion-payment{display:none}.completion-receipt:has(.completion-no-loss){display:block}.completion-no-loss strong{font-size:20px;margin:0 0 4px}.completion-no-loss p{font-size:12px}
+ .completion-section-title{margin-bottom:8px}.completion-section-title h3{font-size:14px}.completion-section-title>span{font-size:11px}
+ .completion-medal{grid-template-columns:32px 1fr;gap:10px;padding:8px 0;min-height:44px}.completion-medal-icon{width:30px;height:32px;font-size:21px;border-radius:8px}.completion-medal h4{font-size:13px}.completion-medal p{display:none}.completion-medal small{font-size:11px;margin-top:3px}.completion-medal-heading{flex-wrap:nowrap}.completion-medal-heading>span{font-size:11px;white-space:nowrap}
+ .completion-career{padding-top:14px;margin-top:16px}.completion-ledger{gap:7px}
+ .completion-actions{padding:8px 16px calc(8px + env(safe-area-inset-bottom));flex-direction:row;flex-wrap:wrap;gap:4px}.completion-actions-main{width:100%;gap:8px;order:-1}
+ .completion-actions .button{flex:1;padding:10px 12px;min-height:44px;font-size:14px;gap:10px}.completion-actions #resultReview,.completion-actions #resultContracts{flex:1;min-height:44px;padding:8px;font-size:12px}
+ #resultNext{min-width:0;flex:1.4}.completion-next-note{gap:6px;margin-top:10px;padding-top:10px}.completion-next-note>span{font-size:10px}.completion-next-note strong{font-size:12px}
+ .completion-quality>div{grid-template-columns:112px 1fr 32px;gap:6px}
+ .completion-analysis-bar{width:100%;padding:6px 10px;gap:10px;min-height:56px}.completion-analysis-bar>div{display:none}.completion-analysis-bar button{font-size:10px;padding:8px 12px}.completion-analysis-bar>button:last-child{margin-left:auto}
+ body[data-page=play][data-flight=review][data-result-view=analysis] #play .flight-left{padding:0 10px 10px;gap:5px}
+ body[data-page=play][data-flight=review][data-result-view=analysis] #play .flight-review{padding:10px 12px}
+ body[data-page=play][data-flight=review][data-result-view=analysis] .review-controls{gap:5px 8px;display:grid;grid-template-columns:1fr 1fr}
+ body[data-page=play][data-flight=review][data-result-view=analysis] #reviewTimelineHome{grid-column:1/-1}
+ body[data-page=play][data-flight=review][data-result-view=analysis] .review-controls button{font-size:10px;padding:6px 8px}
+ body[data-page=play][data-flight=review][data-result-view=analysis] .review-title{font-size:11px}
+ body[data-page=play][data-flight=review][data-result-view=analysis] .review-summary{display:none}
+ body[data-page=play][data-flight=review][data-result-view=analysis] .review-comparison{font-size:9px}
+}
+@media(max-width:999px) and (max-height:650px) and (orientation:portrait){
+ .completion-scroll{padding:10px 16px 8px}.completion-kicker{display:none}.completion-hero{padding-bottom:8px;gap:6px 10px}#play .completion h2{font-size:25px;grid-row:1}.completion-seal{grid-row:1}.completion-route{grid-row:2}.completion-facts{padding:9px 0}.completion-facts span{font-size:11px}.completion-facts strong{font-size:17px}.completion-grid{gap:8px}.completion-receipt{padding:12px}.completion-medal{padding:6px 0;min-height:36px}.completion-medal small{display:none}.completion-medal h4{font-size:12px}.completion-medal-icon{width:28px;height:28px}.completion-next-note{display:none}.completion-awards{margin-top:0}
+ .completion-seal{width:50px;height:50px}.completion-seal>strong{font-size:26px}.completion-seal>b{font-size:10px}.completion-medal{padding:4px 0}.completion-medal-icon{width:26px;height:26px}
+}
+@media(max-height:480px) and (orientation:landscape){
+ .completion-copy{grid-area:1/1}.completion-seal{grid-area:1/2}.completion-main{grid-area:1/1}.completion-receipt{grid-area:1/2}.completion-actions .button{white-space:nowrap}
+ .completion-scroll{padding:8px 14px}.completion-hero{grid-template-columns:1fr 60px;gap:12px;padding-bottom:8px}.completion-copy{display:block}.completion-kicker,.completion-copy>p{display:none}.completion-seal{width:60px;height:60px}.completion-seal>strong{font-size:30px}.completion-seal>span{display:none}.completion-seal>b{font-size:11px}.completion-seal small{font-size:9px}
+ #play .completion h2{font-size:25px;margin:0;max-width:none}.completion-route{margin-top:6px;gap:10px}.completion-route>span{font-size:10px}.completion-route strong{font-size:12px}.completion-grid{gap:14px;grid-template-columns:1fr 200px;margin-top:8px}.completion-facts,.completion-next-note{display:none}.completion-actions{flex-wrap:nowrap;padding:8px 14px;gap:8px}.completion-actions .button{min-height:44px;padding:8px 10px;font-size:12px}.completion-actions #resultReview,.completion-actions #resultContracts{font-size:12px;flex:none}.completion-actions-main{width:auto;order:0;gap:8px}#resultNext{min-width:90px}
+ .completion-main{display:grid;grid-template-columns:1fr 1fr;column-gap:12px}.completion-goals{grid-column:1/-1}.completion-section-title{margin-bottom:4px}.completion-section-title h3{font-size:13px}.completion-section-title>span{font-size:11px}.completion-medal{grid-template-columns:26px 1fr;gap:8px;padding:4px 0;min-height:32px}.completion-medal-icon{width:24px;height:24px;font-size:18px;border-radius:6px}.completion-medal h4{font-size:12px}.completion-medal p,.completion-medal small{display:none}.completion-medal-heading{flex-wrap:nowrap;gap:6px}.completion-medal-heading>span{font-size:11px;white-space:nowrap}.completion-awards{margin-top:0}.completion-awards summary,.completion-breakdown summary{font-size:11px;line-height:1.4;gap:5px}.completion-awards summary>span:last-child{font-size:10px}.completion-awards summary i{margin-left:0}.completion-breakdown[open],.completion-awards[open]{grid-column:1/-1}.completion-receipt{display:block;padding:14px}.completion-receipt .completion-section-title{display:none}.completion-credits{padding:0 0 12px}.completion-credits>strong{font-size:30px}.completion-resources{display:grid;padding:10px 0 0;border-bottom:0;gap:8px}.completion-resources strong{font-size:20px}.completion-receipt .completion-payment{display:none}
+ .completion-analysis-bar{min-height:44px}.completion-analysis-bar>div{display:none}.completion-analysis-bar>button:last-child{margin-left:auto}
+ .completion-actions{padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+ body[data-page=play][data-flight=review][data-result-view=analysis] #play .flight-left{display:grid;grid-template-columns:minmax(0,1fr) 255px;grid-template-rows:44px minmax(0,1fr);gap:6px}
+ body[data-page=play][data-flight=review][data-result-view=analysis] #play .map-controls{grid-area:1/1;min-height:44px}
+ body[data-page=play][data-flight=review][data-result-view=analysis] #play .map-viewport{grid-area:2/1;min-height:50px}
+ body[data-page=play][data-flight=review][data-result-view=analysis] #play .flight-review{grid-area:1/2/3/3;overflow:auto;min-height:0;padding:10px}
+ body[data-page=play][data-flight=review][data-result-view=analysis] .review-controls{display:flex;flex-direction:column;align-items:stretch;gap:4px}
+ body[data-page=play][data-flight=review][data-result-view=analysis] #reviewTimelineHome{flex:0 0 auto}.review-timeline{flex-wrap:nowrap}
+ body[data-page=play][data-flight=review][data-result-view=analysis] .review-title{font-size:11px;flex-wrap:wrap}
+ body[data-page=play][data-flight=review][data-result-view=analysis] .review-summary{display:none}
+}
+.high-contrast .completion{--result-accent:#b1ffdd;color:#fff}.high-contrast .completion p,.high-contrast .completion small{color:#c6dce4}
+@media(prefers-reduced-motion:reduce){.completion *{scroll-behavior:auto}}
+
 </style></head>
 <body class="ui9">
 <noscript>Для игры нужно включить JavaScript. Интернет и установка библиотек не нужны.</noscript>
@@ -970,6 +1137,8 @@ body[data-page=home] .rank-badge{display:none}
     <button class="icon-button flight-menu" data-action="ui:menu" aria-label="Меню полёта" title="Меню полёта">•••</button></div>
   </div>
   <div class="training-badge" hidden id="trainingBadge">Тренировка · без наград</div>
+  <section id="resultScreen" class="completion" hidden aria-labelledby="resultTitle"></section>
+  <div id="resultAnalysisBar" class="completion-analysis-bar" hidden><button class="button quiet" id="resultBack" data-action="v8:summary">← К итогам</button><div><strong>Разбор полёта</strong><span>Запись выполненного рейса · награды сохранены</span></div><button class="button quiet" data-action="retry">Изменить курс ↗</button></div>
   <section class="medal-deck" aria-label="Медали контракта"><div class="medal-deck-heading"><span id="medalLegend"></span></div><div class="medal-cards" id="objectivesList"></div></section>
   <div class="flight-layout">
     <div class="flight-left">
@@ -3042,7 +3211,54 @@ const st=l.stops?.[s?.dropIndex||0],ready=st&&index>=(st.afterFlybys||0)&&pi>=(s
 $('activeStep').textContent=next;$('planCounter').textContent=legs.length?index+'/'+legs.length:'';$('routeStatus').textContent=index+' / '+legs.length+' облётов';for(let el of $('routeSteps').children){let i=+el.dataset.leg;el.classList.toggle('done',i<index);el.classList.toggle('active',i===index);el.querySelector('.route-value').textContent=i<index?'✓ Пройден':i===index?`${Math.min(legs[i].degrees,Math.floor(P.deg(s?.flybyAngle||0)))}° / ${legs[i].degrees}°`:legs[i].degrees+'°';}
 $('portalProgress').hidden=!ps.length;$('portalProgress').innerHTML=ps.map((id,i)=>`<span class="${i<pi?'done':''}">${i<pi?'✓':'◎'} ${id}</span>`).join('')+'<button class="text-button" data-action="portal-help">Правила переходов</button>';$('stopProgress').innerHTML=(l.stops||[]).map((d,i)=>`<span class="stop-chip ${i<(s?.dropIndex||0)?'done':''}">${i<(s?.dropIndex||0)?'✓':'▣'} ${d.id} · ${esc(d.name)}</span>`).join('');}
 function medalHelp(){let l=A.level();A.openModal('Три цели контракта',O.Medals.describe(l,A.state,A.speed,G.viewRecord(A.profile,l.id),A.assisted,A.stats()).map(d=>`<div class="info-box"><strong>${d.title}</strong><p>${d.condition}</p><small>${d.detail}. ${d.archive?'Архивная медаль сохранена, новое условие ещё не подтверждено.':d.earned?'Актуальная медаль получена.':'Новая цель.'}</small></div>`).join('')+'<p>Медаль исследователя накапливает прохождения обеих ветвей. Остальные цели проверяются в одном успешном рейсе. Тренировки не дают наград.</p><div class="modal-actions"><button class="button primary" data-action="close">Понятно</button></div>');}
-function showResult(result){const s=A.state;collapse();$('flightPlan').open=false;$('flightReview').hidden=false;const won=s.status==='won';$('flightReview').innerHTML=`<div class="review-title"><strong>${won?(result?.training?'Тренировка без наград':`Доставка · ${result.quality.grade} / ${result.quality.score}`):'Разбор попытки'}</strong><span>${s.launchAngle.toFixed(1)}° / ${s.launchSpeed}</span></div><p class="review-summary">${esc(O.Review.diagnosis(A.level(),s))}</p><div class="review-controls"><div id="reviewTimelineHome"><div class="review-timeline" id="reviewTimeline"><span class="review-stamp" id="reviewStamp">${s.t.toFixed(2)} с</span><input id="reviewRange" type="range" min="0" max="${s.t}" step=".05" value="${s.t}" aria-label="Время уже выполненного рейса"></div></div><button data-action="v8:compare" ${O.Review.prior()?'':'disabled'}>Сравнить</button><button data-action="v8:report">${won?'Награды':'Детали'}</button>${won&&!result?.training?`<button class="review-next" data-action="next">${O.Campaign.adjacent(A.currentId,1)<0?'Все маршруты':'Дальше ↗'}</button>`:''}</div><p id="reviewComparison" class="review-comparison">${won&&!result?.training?`Доплата +${result.totalCredits} ◈ · данные +${result.data} · опыт +${result.totalXP}.`:'Запись прошлого полёта, не прогноз. Нажми «Ещё раз», чтобы скорректировать курс.'}</p>${result?.awards.length?`<details class="review-awards"><summary>Достижения: +${result.awards.length} · +${result.awards.reduce((n,a)=>n+a.xp,0)} XP</summary>${(result?.awards||[]).map(a=>`<div class="award-chip">${a.icon} ${esc(a.name)} · +${a.xp} XP</div>`).join('')}</details>`:''}`;$('reviewRange').addEventListener('input',e=>{O.Review.selectTime(+e.target.value);$('reviewStamp').textContent=O.Review.renderModel().state.t.toFixed(2)+' с';});sync();schedule();O.UI9?.onResult();}
+function resultView(view){
+  if(!A.state||A.state.status==='flying')return;
+  const wasAnalysis=document.body.dataset.resultView==='analysis';
+  document.body.dataset.resultView=view;
+  $('resultAnalysisBar').hidden=view!=='analysis';
+  sync();schedule();
+  (view==='analysis'?$('resultBack'):wasAnalysis?$('resultReview'):$('resultTitle')).focus({preventScroll:true});
+}
+function showResult(result){
+  const s=A.state,l=A.level(),won=s.status==='won',training=!!result?.training,delivered=won&&!training;
+  const q=result?.quality,rank=G.rank(A.profile),next=O.Campaign.adjacent(A.currentId,1);
+  const medals=O.Medals.describe(l,s,s.launchSpeed,G.viewRecord(A.profile,l.id),training,A.stats());
+  const diagnosis=O.Review.diagnosis(l,s),cargo=`${R.collected(l,s)} / ${R.cargoIds(l,s).length}`;
+  const title=training?'Тренировка завершена':won?'Посылка на месте.':'Попробуем другой курс.';
+  const subtitle=training?'Повтори маршрут самостоятельно, чтобы получить награды.':won?'Доставка подтверждена. Результат и награды сохранены.':diagnosis;
+  const medalCount=medals.filter(m=>m.state==='won').length;
+  const payment=delivered?(result.first?'Первая доставка по этому контракту.':result.totalCredits?'Доплата за улучшение результата.':'Результат уже оплачен. Новая доплата — за улучшение рекорда.'):(training?'Тренировка не начисляет награды.':'Попытки бесплатны. Прогресс сохранён.');
+  const lossDescription=training?'':diagnosis.split('. ')[0]+'. ';
+  const career=`<div class="completion-career"><span>ТВОЙ РАНГ</span><strong>${esc(rank.name)}</strong><div class="completion-rank-track"><i style="width:${rank.next?P.clamp((A.profile.xp-rank.xp)/(rank.next.xp-rank.xp)*100,0,100):100}%"></i></div><small>${rank.next?`${money(Math.max(0,rank.next.xp-A.profile.xp))} XP до ранга «${esc(rank.next.name)}»`:'Достигнут высший ранг'}</small></div>`;
+  collapse();$('flightPlan').open=false;$('flightReview').hidden=false;
+  $('resultScreen').hidden=false;$('resultScreen').dataset.outcome=training?'training':won?'won':'failed';
+  $('resultScreen').innerHTML=`<div class="completion-scroll">
+    <header class="completion-hero">
+      <div class="completion-copy"><div class="completion-kicker"><span class="completion-signal" aria-hidden="true"></span>${training?'УЧЕБНЫЙ РЕЙС':won?'ДОСТАВКА ПОДТВЕРЖДЕНА':'СВЯЗЬ С КАПСУЛОЙ ПРЕРВАНА'}<span class="completion-mode">${s.mode==='pro'?'PRO ×1,7':'ОБЫЧНЫЙ РЕЙС'}</span></div>
+      <h2 id="resultTitle" tabindex="-1">${title}</h2><p>${esc(subtitle)}</p>
+      <div class="completion-route"><span>КОНТРАКТ ${String(O.Campaign.number(l.id)).padStart(2,'0')}</span><strong>${esc(l.name)}</strong></div></div>
+      <div class="completion-seal" aria-label="${won?`Оценка ${q.grade}, ${q.score} из 100`:'Попытка без потерь'}"><div class="completion-seal-orbit" aria-hidden="true"></div><span>${won?'КАЧЕСТВО РЕЙСА':'НОВАЯ ПОПЫТКА'}</span><strong>${won?q.grade:'↗'}</strong><b>${won?`${q.score}<small> / 100</small>`:'Без потерь'}</b></div>
+    </header>
+    <div class="completion-facts" aria-label="Параметры завершённого рейса"><div><span>Время</span><strong>${s.t.toFixed(2)} <small>с</small></strong></div><div><span>Груз</span><strong>${cargo} <small>конт.</small></strong></div><div><span>Стартовый угол</span><strong>${s.launchAngle.toFixed(1)}<small>°</small></strong></div><div><span>Стартовая скорость</span><strong>${s.launchSpeed} <small>ед./с</small></strong></div></div>
+    <div class="completion-grid"><div class="completion-main">
+      <section class="completion-goals" aria-labelledby="resultGoalsTitle"><div class="completion-section-title"><h3 id="resultGoalsTitle">${training?'Цели маршрута':'Медали рейса'}</h3><span>${training?'Без зачёта':`${medalCount} из ${medals.length}`}</span></div>
+      <div class="completion-medals">${medals.map((m,i)=>`<article class="completion-medal" data-state="${m.state}"><span class="completion-medal-icon" aria-hidden="true">${['◇','ϟ','⬡'][i]}</span><div><div class="completion-medal-heading"><h4>${esc(m.title)}</h4><span>${training?'Без зачёта':m.state==='won'?(result.newMask&m.bit?'Новая':'✓ Выполнено'):m.earned?'Есть ранее':'Не получена'}</span></div><p>${esc(m.condition)}</p><small>${esc(m.detail)}</small></div></article>`).join('')}</div></section>
+      ${result?.awards.length?`<details class="completion-awards"><summary id="resultAwardsTitle"><span>Новые достижения <b>+${result.awards.length}</b></span><span>+${result.awards.reduce((n,a)=>n+a.xp,0)} XP <i aria-hidden="true">⌄</i></span></summary>${result.awards.map(a=>`<div class="award-chip"><span aria-hidden="true">${a.icon}</span><strong>${esc(a.name)}</strong><b>+${a.xp} XP</b></div>`).join('')}</details>`:''}
+      <details class="completion-breakdown"><summary>Подробности рейса <span aria-hidden="true">＋</span></summary>
+      <div class="completion-detail-body"><p>${esc(subtitle)}</p><div class="completion-detail-facts"><span>Стартовый угол <b>${s.launchAngle.toFixed(1)}°</b></span><span>Стартовая скорость <b>${s.launchSpeed} ед./с</b></span></div>
+      ${won?`<h4>Оценка ${q.score} / 100</h4><div class="completion-quality">${Object.entries(q.parts).map(([key,value])=>`<div><span>${{cargo:'Груз · 50%',precision:'Стыковка · 20%',fuel:'Импульс · 15%',pace:'Темп · 15%'}[key]}</span><meter min="0" max="100" value="${Math.round(value*100)}" aria-label="${{cargo:'Груз',precision:'Стыковка',fuel:'Импульс',pace:'Темп'}[key]}"></meter><b>${Math.round(value*100)}%</b></div>`).join('')}</div>`:`<div class="completion-advice"><p>Меняй один параметр за попытку — так легче найти нужную траекторию.</p><button class="text-button" data-action="hint">Помощь с маршрутом →</button></div>`}
+      <h4>Условия медалей</h4>${medals.map(m=>`<p><b>${esc(m.title)}</b><br>${esc(m.condition)}<br><small>${esc(m.detail)} · ${esc(m.status)}</small></p>`).join('')}
+      ${delivered?`<h4>Расчёт наград</h4><p>${esc(payment)}</p><div class="completion-ledger"><span>Стоимость результата <b>${q.potential} ◈</b></span><span>Выплачено по контракту <b>${result.paid} ◈</b></span></div>`:''}${career}<button class="completion-hangar text-button" data-action="nav" data-page="hangar">В ангар <span>↗</span></button></div></details>
+    </div><aside class="completion-receipt" aria-labelledby="resultRewardTitle"><div class="completion-section-title"><h3 id="resultRewardTitle">${delivered?'Начислено за рейс':'Можно пробовать снова'}</h3><span aria-hidden="true">${delivered?'↗':'↺'}</span></div>
+      ${delivered?`<div class="completion-credits"><span>Кредиты</span><strong>+${money(result.totalCredits)} <small>◈</small></strong></div><div class="completion-resources"><div><span>Данные</span><strong>+${result.data} <small>⬡</small></strong></div><div><span>Опыт</span><strong>+${result.totalXP} <small>XP</small></strong></div></div><p class="completion-payment">${esc(payment)}</p>`:`<div class="completion-no-loss"><strong>${training?'Без наград':'Ничего не потеряно'}</strong><p>${esc(lossDescription+payment)}</p></div>`}
+    </aside></div>
+    ${delivered?`<div class="completion-next-note"><span>${next<0?'ЭКСПЕДИЦИЯ ПРОДОЛЖАЕТСЯ':'СЛЕДУЮЩИЙ КОНТРАКТ'}</span><strong>${next<0?'Все маршруты открыты для новых рекордов':esc(L[next].name)}</strong></div>`:''}
+    </div><footer class="completion-actions"><button class="button quiet" id="resultReview" data-action="v8:analysis">Разбор полёта <span>↗</span></button>${next>=0||!delivered?`<button class="button quiet" id="resultContracts" data-action="nav" data-page="campaign">К контрактам</button>`:''}<div class="completion-actions-main"><button class="button ${delivered?'quiet':'primary'}" id="resultRetry" data-action="retry">${delivered?'Ещё раз ↺':training?'Без подсказки ↗':'Изменить курс ↗'}</button>${delivered?`<button class="button primary" id="resultNext" data-action="next" aria-label="${next<0?'Все маршруты':'Следующий контракт: '+esc(L[next].name)}">${next<0?'Все маршруты':'Дальше'} <span>→</span></button>`:''}</div></footer>`;
+  $('flightReview').innerHTML=`<div class="review-title"><strong>Запись рейса</strong><span>${s.launchAngle.toFixed(1)}° / ${s.launchSpeed} ед./с</span></div><p class="review-summary">${esc(diagnosis)}</p><div class="review-controls"><div id="reviewTimelineHome"><div class="review-timeline" id="reviewTimeline"><span class="review-stamp" id="reviewStamp">${s.t.toFixed(2)} с</span><input id="reviewRange" type="range" min="0" max="${s.t}" step=".05" value="${s.t}" aria-label="Время уже выполненного рейса"></div></div><button data-action="v8:compare" aria-pressed="false" ${O.Review.prior()?'':'disabled'}>Сравнить попытки</button><button data-action="v8:report">${won?'Подробности наград':'Причина неудачи'}</button></div><p id="reviewComparison" class="review-comparison">${O.Review.prior()?'Сравни траекторию с предыдущей попыткой.':'После следующего запуска здесь можно сравнить две попытки.'}</p>`;
+  $('reviewRange').addEventListener('input',e=>{O.Review.selectTime(+e.target.value);$('reviewStamp').textContent=O.Review.renderModel().state.t.toFixed(2)+' с';});
+  $('resultAnalysisBar').querySelector('div span').textContent=training?'Тренировка · награды не начисляются':delivered?'Доставка подтверждена · награды сохранены':'Неудачная попытка · ничего не потеряно';
+  resultView('summary');O.UI9?.onResult();
+}
 function renderAwards(){const p=A.profile,defs=G.achievements,earned=new Set(p.achievements),progress=new Map(defs.map(a=>[a.id,earned.has(a.id)?a.target:a.progress(p)]));$('awardTotal').innerHTML=`${p.achievements.length} / ${defs.length}<span>достижений · ${money(p.xp)} XP</span>`;$('achievementCategories').innerHTML=[['all','Все разделы','∞'],...O.Achievements.CATEGORIES].map(([id,n,icon])=>{let ds=id==='all'?defs:defs.filter(d=>d.category===id);return `<button class="${category===id?'active':''}" data-action="v8:award-category" data-category="${id}">${icon} ${n}<small>${ds.filter(a=>earned.has(a.id)).length}/${ds.length}</small></button>`;}).join('');for(let b of $$('.award-filters button'))b.classList.toggle('active',b.dataset.filter===filter);
 let near=defs.filter(a=>!earned.has(a.id)).sort((a,b)=>progress.get(b.id)/b.target-progress.get(a.id)/a.target)[0];$('achievementFocus').innerHTML=`<div><strong>${near?'Ближе всего: '+near.name:'Коллекция завершена'}</strong><p>${near?near.text:'Все 93 знака отличия получены.'}</p></div><b>${near?progress.get(near.id)+' / '+near.target:'✓'}</b>`;
 let list=defs.filter(a=>{let done=earned.has(a.id);return(category==='all'||a.category===category)&&(!query||(a.name+' '+a.text).toLowerCase().includes(query))&&(filter==='all'||filter==='earned'&&done||filter==='locked'&&!done||filter==='near'&&!done&&progress.get(a.id)/a.target>=.5);});$('achievementGrid').innerHTML=list.map(a=>{let done=earned.has(a.id),n=progress.get(a.id);return `<article data-achievement="${a.id}" class="achievement-card ${done?'earned':''}"><div class="achievement-icon">${a.icon}</div><div><span class="achievement-section">${O.Achievements.CATEGORIES.find(c=>c[0]===a.category)[1]}</span><h3>${a.name}</h3><p>${a.text}</p><div class="award-progress"><i style="width:${Math.min(100,n/a.target*100)}%"></i></div><small>${done?'✓ Получено':n+' / '+a.target+' · +'+a.xp+' XP'}</small></div></article>`;}).join('')||'<p>По этому запросу достижений нет.</p>';}
@@ -3056,7 +3272,7 @@ A.openModal('Настройки',`<div class="settings-tabs" role="tablist">${[[
 function resetConfirm(){A.openModal('Удалить прогресс?','<p>Экспортированные копии останутся целыми. Для подтверждения введи <b>СБРОС</b>.</p><input id="resetWord" class="reset-word" autocomplete="off"><div class="modal-actions"><button class="button quiet" data-action="close">Отмена</button><button class="button danger" id="resetFinal" data-action="reset" disabled>Удалить профиль</button></div>');$('resetWord').addEventListener('input',e=>$('resetFinal').disabled=e.target.value.trim()!=='СБРОС');}
 function economy(){A.openModal('Экономика 80 контрактов','<p>Каждый контракт хранит один денежный рекорд: обе ветви и ПРО делят максимум. Повтор приносит только рост стоимости результата. Ошибки бесплатны.</p><p>Пять ступеней требуют 2 / 8 / 20 / 40 / 64 завершённых контракта и 0 / 2 / 5 / 9 / 14 данных.</p><p>Цена — округлённое вверх до 5 значение B × t<sup>1,88</sup> × (1 + 0,025N) × (1 − скидка). Исследования дают до 8% скидки. Покупки и возвраты записываются по фактическим чекам.</p><p>Высшие ступени предполагают специализацию, а не выкуп всех модулей. За достижения — только опыт.</p><div class="modal-actions"><button class="button primary" data-action="close">Понятно</button></div>');}
 function zoom(f){const c=A.camera;c.zoom=P.clamp(c.zoom*f,1,4);const edge=Math.max(28,64/c.zoom);c.cx=P.clamp(c.cx,600/c.zoom-edge,1200-600/c.zoom+edge);c.cy=P.clamp(c.cy,350/c.zoom-edge,700-350/c.zoom+edge);}
-const actions={'v8:panel':()=>document.querySelector('.flight-panel').classList.toggle('nav-expanded'),'v8:branch':b=>{if(A.state)return A.toast('Ветвь определяется фактическим полётом.');A.branchView=b.dataset.branch;cache='';A.updateObjectives();updateRoute();},'v8:award-category':b=>{category=b.dataset.category;renderAwards();},'v8:award-filter':b=>{filter=b.dataset.filter;renderAwards();},'v8:settings-tab':b=>settings(b.dataset.tab),'v8:reset-confirm':resetConfirm,'v8:zoom-in':()=>zoom(1.25),'v8:zoom-out':()=>zoom(.8),'v8:zoom-reset':()=>{A.camera={zoom:1,cx:600,cy:350};},'v8:fullscreen':async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();schedule();}catch{A.toast('Браузер не разрешил полноэкранный режим.');}},'v8:report':()=>{if(A.lastResult)A.showWin(A.lastResult);else A.openModal('Разбор рейса',`<p>${esc(O.Review.diagnosis(A.level(),A.state))}</p><p>Просмотри место ошибки. Не меняй сразу оба параметра: сравнивай результат одной корректировки.</p><div class="modal-actions"><button class="button quiet" data-action="close">К записи</button><button class="button primary" data-action="retry">Ещё раз ↺</button></div>`);},'v8:compare':()=>{O.Review.setCompare();const prev=O.Review.prior(),now=O.Review.active.data;$('reviewComparison').textContent=O.Review.active.compare?`Пунктир — предыдущий (${prev.angle}° / ${prev.speed}), голубая линия — текущий (${now.angle}° / ${now.speed}). Δ угла ${(now.angle-prev.angle).toFixed(1)}°, Δ скорости ${now.speed-prev.speed}.`:'Сравнение скрыто.';}};
+const actions={'v8:analysis':()=>resultView('analysis'),'v8:summary':()=>resultView('summary'),'v8:panel':()=>document.querySelector('.flight-panel').classList.toggle('nav-expanded'),'v8:branch':b=>{if(A.state)return A.toast('Ветвь определяется фактическим полётом.');A.branchView=b.dataset.branch;cache='';A.updateObjectives();updateRoute();},'v8:award-category':b=>{category=b.dataset.category;renderAwards();},'v8:award-filter':b=>{filter=b.dataset.filter;renderAwards();},'v8:settings-tab':b=>settings(b.dataset.tab),'v8:reset-confirm':resetConfirm,'v8:zoom-in':()=>zoom(1.25),'v8:zoom-out':()=>zoom(.8),'v8:zoom-reset':()=>{A.camera={zoom:1,cx:600,cy:350};},'v8:fullscreen':async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();schedule();}catch{A.toast('Браузер не разрешил полноэкранный режим.');}},'v8:report':()=>{if(A.lastResult)A.showWin(A.lastResult);else A.openModal('Разбор рейса',`<p>${esc(O.Review.diagnosis(A.level(),A.state))}</p><p>Просмотри место ошибки. Не меняй сразу оба параметра: сравнивай результат одной корректировки.</p><div class="modal-actions"><button class="button quiet" data-action="close">К записи</button><button class="button primary" data-action="retry">Ещё раз ↺</button></div>`);},'v8:compare':b=>{if(!O.Review.prior())return;O.Review.setCompare();b.setAttribute('aria-pressed',String(O.Review.active.compare));const prev=O.Review.prior(),now=O.Review.active.data;$('reviewComparison').textContent=O.Review.active.compare?`Пунктир — предыдущий (${prev.angle}° / ${prev.speed}), голубая линия — текущий (${now.angle}° / ${now.speed}). Δ угла ${(now.angle-prev.angle).toFixed(1)}°, Δ скорости ${now.speed-prev.speed}.`:'Сравнение скрыто.';}};
 document.addEventListener('click',e=>{let b=e.target.closest('[data-action]');if(b&&!b.disabled)actions[b.dataset.action]?.(b);});$('objectivesList').addEventListener('click',medalHelp);$('objectivesList').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();medalHelp();}});$('awardSearch').addEventListener('input',e=>{query=e.target.value.trim().toLowerCase();renderAwards();});document.addEventListener('change',e=>{if(e.target.id==='shopLevelSelect'){A.shopLevel=+e.target.value;A.renderHangar();}if(e.target.id==='shopModeSelect'){A.shopMode=e.target.value;A.renderHangar();}});
 O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderShop,settings,resetConfirm,economy,layout};schedule();
 })(typeof globalThis!=='undefined'?globalThis:window);
@@ -3128,6 +3344,9 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   }
   function onLevel() {
     closeSheet(false); clearPointers(); stopHold(); lastMode = ''; initializedLive = false;
+    delete document.body.dataset.resultView;
+    $('resultScreen').hidden = true;
+    $('resultAnalysisBar').hidden = true;
     placeTimeline();
     $('flightPlan').open = false;
     selectCockpitTab('course');
@@ -3247,7 +3466,7 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   // Sheets MOVE existing nodes; there are no duplicate control IDs or mirror forms.
   function placeTimeline(){
     const timeline=$('reviewTimeline');if(!timeline)return;
-    const target=mobile()&&screenMode()==='review'&&!$('flightReview').hidden&&sheetState?.kind!=='review'?$('mobileTimeline'):$('reviewTimelineHome');
+    const target=$('reviewTimelineHome');
     if(target&&timeline.parentNode!==target)target.append(timeline);
   }
   function openSheet(kind, opener) {
@@ -3625,6 +3844,7 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
     if(event.target.matches('input,textarea,select,[contenteditable=true]'))return;
     const k=event.key.toLowerCase();
     if(event.target.closest('button,summary') && (k===' '||k==='enter'))return;
+    if(document.body.dataset.resultView==='summary'&&[' ','arrowleft','arrowright','arrowup','arrowdown'].includes(k))return;
     if(![' ','r','к','g','п','escape','arrowleft','arrowright','arrowup','arrowdown'].includes(k))return;
     event.preventDefault();
     if(event.repeat&&[' ','r','к','escape'].includes(k))return;
