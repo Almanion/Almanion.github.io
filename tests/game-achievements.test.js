@@ -42,6 +42,6 @@ for(const l of O.LEVELS)for(const mode of ['normal','pro']){
   runs++;
  }
 }
-const training=G.fresh(),l=O.LEVELS[0],s=P.simulate(l,l.solution.angle,l.solution.speed).state,before=JSON.stringify(training);
+const training=G.fresh(),l=O.LEVELS[C.order[0]],s=P.simulate(l,l.solution.angle,l.solution.speed).state,before=JSON.stringify(training);
 G.complete(training,l,{...s,assisted:true});assert.equal(JSON.stringify(training),before);assert.throws(()=>G.complete(training,l,{...s,status:'failed'}));assert.equal(JSON.stringify(training),before);
 console.log(`achievements: all 93 attainable once; campaign thresholds, upgrades/refunds, training and ${runs} engine flights passed`);

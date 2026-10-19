@@ -3,27 +3,27 @@ const {test,expect}=require('@playwright/test');
 
 test.beforeEach(async({page})=>{
  await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
- await page.goto('/games/orbital-courier/');
+ await page.goto('/games/orbital-courier/offline.html');
 });
 
-test('all 80 contracts use the matching medal artwork without changing rewards',async({page})=>{
+test('all active contracts use the matching medal artwork without changing rewards',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  const result=await page.evaluate(()=>{
   const O=Orbital,A=O.App;A.profile=O.Progress.fresh();A.profile.campaignAccess=O.Campaign.order.slice();A.profile.settings.sound=false;A.profile.settings.reducedMotion=true;
   const resources=()=>JSON.stringify([A.profile.credits,A.profile.data,A.profile.xp,A.profile.achievements,A.profile.upgrades]);
   const before=resources(),mismatches=[];
-  for(const l of O.LEVELS){
+  for(const l of O.Campaign.order.map(id=>O.LEVELS[id])){
    A.loadLevel(l.id);
    const expected=O.Medals.rules(A.level()).map(r=>r.type);
    const actual=[...document.querySelectorAll('#objectivesList svg')].map(s=>s.dataset.medalArt);
    if(JSON.stringify(expected)!==JSON.stringify(actual))mismatches.push({id:l.id,expected,actual});
   }
-  A.loadLevel(0);const l=A.level(),q=l.solution;A.setAim(q.angle,q.speed);A.launch();
+  A.loadLevel(Orbital.Campaign.order[0]);const l=A.level(),q=l.solution;A.setAim(q.angle,q.speed);A.launch();
   while(A.state.status==='flying'){const s=A.state;A.state=O.Physics.step(s,l);O.Review.observe(s,A.state,l);}
   const unchanged=resources()===before;A.finish();
-  return {contracts:O.LEVELS.length,mismatches,unchanged,expected:O.Medals.rules(l).map(r=>r.type),actual:[...document.querySelectorAll('.completion-medal-icon svg')].map(s=>s.dataset.medalArt),status:A.state.status};
+  return {contracts:O.Campaign.order.length,mismatches,unchanged,expected:O.Medals.rules(l).map(r=>r.type),actual:[...document.querySelectorAll('.completion-medal-icon svg')].map(s=>s.dataset.medalArt),status:A.state.status};
  });
- expect(result).toMatchObject({contracts:80,mismatches:[],unchanged:true,status:'won'});expect(result.actual).toEqual(result.expected);
+ expect(result).toMatchObject({contracts:76,mismatches:[],unchanged:true,status:'won'});expect(result.actual).toEqual(result.expected);
  await expect(page.locator('.completion-medal-icon')).toHaveCount(3);
  for(const icon of await page.locator('.completion-medal-icon').all())await expect(icon).toHaveCSS('background-color','rgba(0, 0, 0, 0)');
  expect(errors).toEqual([]);

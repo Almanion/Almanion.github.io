@@ -5,13 +5,14 @@
   const $=id=>document.getElementById(id), $$=selector=>[...document.querySelectorAll(selector)];
   const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const pad=n=>String(n).padStart(2,'0');
+  const plural=(n,one,few,many)=>n%100>=11&&n%100<=14?many:n%10===1?one:n%10>=2&&n%10<=4?few:many;
   const money=n=>Math.round(n).toLocaleString('ru-RU');
   const starHTML=mask=>`<span class="stars">${[1,2,4].map(bit=>`<span class="${mask&bit?'on':''}">★</span>`).join('')}</span>`;
   let storage=null;try{storage=root.localStorage;}catch{/* Some file:// and private modes deny storage. */}
   const loaded=G.read(storage);
-  const app={heroTime:0,heroPointer:{x:0,y:0},heroTarget:{x:0,y:0},profile:loaded.profile,screen:'home',currentId:0,angle:0,speed:200,
+  const app={heroTime:0,heroPointer:{x:0,y:0},heroTarget:{x:0,y:0},profile:loaded.profile,screen:'home',currentId:C.order[0],angle:0,speed:200,
     activeLevel:null,assisted:false,state:null,paused:false,accumulator:0,timeScale:1,trail:[],ghosts:{},aims:{},preview:null,
-    cosmeticTab:'skins',campaignSector:null,campaignQuery:'',campaignFilter:'all',contractPreviews:[],attemptHistory:{},transitioning:false,transitionToken:0,previewDirty:true,particles:[],lastResult:null,storageOK:loaded.available,modalPause:false,frameTime:0};
+    cosmeticTab:'skins',campaignSector:-1,campaignQuery:'',campaignFilter:'open',contractPreviews:[],attemptHistory:{},transitioning:false,transitionToken:0,previewDirty:true,particles:[],lastResult:null,storageOK:loaded.available,modalPause:false,frameTime:0};
   app.camera={zoom:1,cx:600,cy:350};app.branchView='A';O.App=app;
   const sound=new O.Sound(),gameRenderer=new O.Renderer($('gameCanvas')),heroRenderer=new O.Renderer($('heroCanvas'));
   const homeMotionPreference=root.matchMedia('(prefers-reduced-motion: reduce)');
@@ -39,14 +40,15 @@
     if(app.screen==='awards')renderAwards();
   }
   function updateProfileUI(){
-    const p=app.profile,r=G.rank(p),done=C.count(p),medals=G.totalMedals(p);
+    const p=app.profile,r=G.rank(p),done=C.count(p),medals=campaignMedals(p),available=C.order.filter(id=>G.unlocked(p,id)&&!C.current(p,id)).length;
     $('creditValue').textContent=money(p.credits);$('dataValue').textContent=p.data;$('rankBadge').textContent=r.name;
-    $('homeCompleted').innerHTML=`${pad(done)} <small>/ ${L.length}</small>`;
-    $('homeMedals').innerHTML=`${pad(medals)} <small>/ ${L.length*3}</small>`;$('homeRank').textContent=r.name;
+    $('homeCompleted').innerHTML=`${pad(done)} <small>/ ${C.order.length}</small>`;
+    $('homeMedals').innerHTML=`${pad(medals)} <small>/ ${C.order.length*3}</small>`;$('homeRank').textContent=r.name;
     const part=r.next?(p.xp-r.xp)/(r.next.xp-r.xp):1;
     $('homeXPBar').style.width=`${P.clamp(part,0,1)*100}%`;
     $('homeXPLabel').textContent=r.next?`${money(p.xp)} XP · ещё ${money(r.next.xp-p.xp)} до ранга «${r.next.name}»`:`${money(p.xp)} XP · высший ранг`;
-    $('continueButton').innerHTML=done===0&&G.record(p,0).attempts===0?'Первое отправление <span>↗</span>':done===L.length?'Переиграть маршруты <span>↗</span>':'Продолжить экспедицию <span>↗</span>';
+    $('continueButton').innerHTML=done===0&&G.record(p,C.order[0]).attempts===0?'Начать полёт <span>↗</span>':done===C.order.length?'Переиграть маршруты <span>↗</span>':'Продолжить экспедицию <span>↗</span>';
+    $('homeAvailable').textContent=available?`${available} ${plural(available,'контракт доступен','контракта доступны','контрактов доступно')}`:'Все маршруты освоены';
     document.body.classList.toggle('high-contrast',!!p.settings.highContrast);sound.enabled=p.settings.sound;sound.setVolume(p.settings.volume);document.body.classList.toggle('reduce-motion',p.settings.reducedMotion);
     $('saveWarning').hidden=app.storageOK;
     const motion=$('homeMotionToggle'),limited=p.settings.reducedMotion||homeMotionPreference.matches;
@@ -60,13 +62,15 @@
       return;
     }
     if(app.transitioning&&page!=='play')cancelTravel();
+    if(O.Navigation?.beforeGo(page))return;
     closeModal();if(page!=='play'){app.state=null;app.paused=false;app.accumulator=0;}
     app.screen=page;document.body.dataset.page=page;for(const el of $$('.screen')){el.hidden=el.id!==page;el.classList.toggle('active',el.id===page);}
-    for(const b of $$('.topbar nav button,.mobile-nav button'))b.classList.toggle('active',b.dataset.page===page||(page==='play'&&b.dataset.page==='campaign'));
+    for(const b of $$('.topbar nav [data-page],.mobile-nav [data-page]'))b.classList.toggle('active',b.dataset.page===page||(page==='play'&&b.dataset.page==='campaign'));
     if(page==='campaign')renderCampaign();if(page==='hangar')renderHangar();if(page==='awards')renderAwards();
     O.UI9?.onPage(page);O.V8?.onPage(page);updateProfileUI();root.scrollTo({top:0,behavior:'instant'});
   }
-  function lockReason(l){const previous=C.adjacent(l.id,-1);return previous<0?'Первый контракт':`После №${pad(C.number(previous))} «${L[previous].name}»`;}
+  function campaignMedals(p){return C.order.reduce((n,id)=>n+G.medalCount(L[id].routeRevision>8?G.viewRecord(p,id).currentMedals:G.record(p,id).medals),0);}
+  function lockReason(l){return G.lockReason(app.profile,l.id);}
   function sectorDescription(i){
     const list=['Первые запуски. Научись читать траекторию и собирать груз.','Гравитационные повороты у крупных миров.','Дальние маршруты и точный выбор начальной скорости.','Ледяные планеты и спокойная точная навигация.','Контейнеры среди камней и красных миров.','Дальше от дома — ближе к пределу своего курса.','Сложная геометрия дальних доставок.','Восьмёрки между двумя планетами и возвращение к первой.','Три–четыре облёта двух центров притяжения.','Три планеты. Три отдельные петли. Один запуск.','Строгая приёмка: груз, кольца и время прибытия.','Первый маршрут среди движущихся планет.','Последовательные петли вокруг трёх движущихся миров.','Заверши облёты и встреться со станцией.','От трёх встреч до шести последовательных облётов движущихся миров.','Парные переходы между облётами. Вектор скорости сохраняется.'];
     return O.SECTORS[i]?.description||list[i]||'';
@@ -74,13 +78,15 @@
   function renderCampaign(){
     const p=app.profile;if(app.campaignSector===null)app.campaignSector=L[G.nextLevel(p)]?.sector||0;
     const selected=app.campaignSector,query=(app.campaignQuery||'').trim().toLowerCase(),filter=app.campaignFilter||'all';
-    $('campaignTotal').innerHTML=`${C.count(p)} <small>/ ${L.length}</small><span>${G.totalMedals(p)} медалей · ${O.SECTORS.length} секторов</span>`;
+    const available=C.order.filter(id=>G.unlocked(p,id)&&!C.current(p,id)).length;
+    $('campaignTotal').innerHTML=`${C.count(p)} <small>/ ${C.order.length}</small><span>${campaignMedals(p)} медалей · ${C.sectors.length} секторов</span>`;
+    $('campaignAccess').innerHTML=`<div><strong>${available?`На выбор — ${available} ${plural(available,'новый контракт','новых контракта','новых контрактов')}`:'Все контракты доставлены'}</strong><p>Выбирай доступные маршруты в любом порядке. Новые открываются за число доставок или после связанного задания.</p></div><button class="button quiet" data-action="available-contracts">Показать доступные ↗</button>`;
     $('difficultyTabs').innerHTML=C.tiers.map((t,i)=>`<button data-action="campaign-tier" data-tier="${i}" aria-pressed="${t.sectors.includes(selected)}" style="--tier:${t.color}"><small>${i+1} / 5</small>${t.name}</button>`).join('');
     $('sectorSelect').innerHTML=C.sectors.map(i=>{const s=O.SECTORS[i];return `<option value="${i}" ${i===selected?'selected':''}>${pad(C.sectors.indexOf(i)+1)} · ${escape(s.name)}</option>`;}).join('')+`<option value="-1" ${selected===-1?'selected':''}>Все секторы</option>`;
     $('sectorTabs').innerHTML=C.sectors.filter(i=>selected<0||C.tiers.some(t=>t.sectors.includes(selected)&&t.sectors.includes(i))).map(i=>{const s=O.SECTORS[i];
-      const ls=L.filter(l=>l.sector===i),done=ls.filter(l=>C.current(p,l.id)).length;
+      const ls=C.order.map(id=>L[id]).filter(l=>l.sector===i),done=ls.filter(l=>C.current(p,l.id)).length;
       return `<button data-action="sector" data-sector="${i}" class="sector-choice ${selected===i?'active':''}" style="--sector:${s.color}" aria-pressed="${selected===i}"><span class="sector-index">${pad(C.sectors.indexOf(i)+1)}</span><span class="sector-name">${escape(s.name)}<i class="sector-track"><i style="width:${done/ls.length*100}%"></i></i></span><small>${done}/${ls.length}</small>${i===19?'<span class="sector-new-dot" title="Новый блок"></span>':''}</button>`;
-    }).join('')+`<button class="sector-choice ${selected===-1?'active':''}" data-action="sector" data-sector="-1"><span class="sector-index">∞</span><span class="sector-name">Все маршруты</span><small>${L.length}</small></button>`;
+    }).join('')+`<button class="sector-choice ${selected===-1?'active':''}" data-action="sector" data-sector="-1"><span class="sector-index">∞</span><span class="sector-name">Все маршруты</span><small>${C.order.length}</small></button>`;
     for(const b of $$('[data-action=contract-filter]')){const active=b.dataset.filter===filter;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));}
     const visible=C.order.map(id=>L[id]).filter(l=>{
       const r=G.record(p,l.id),open=G.unlocked(p,l.id),done=C.current(p,l.id);
@@ -91,7 +97,7 @@
       if(filter==='new'&&l.newIn!==11)return false;
       return true;
     });
-    const isSingle=selected>=0&&!query,sector=isSingle?O.SECTORS[selected]:null,secLevels=isSingle?L.filter(l=>l.sector===selected):visible;
+    const isSingle=selected>=0&&!query,sector=isSingle?O.SECTORS[selected]:null,secLevels=isSingle?C.order.map(id=>L[id]).filter(l=>l.sector===selected):visible;
     const done=secLevels.filter(l=>C.current(p,l.id)).length;
     $('sectorOverview').innerHTML=`<div class="sector-overview" style="--sector:${sector?.color||'#6af4cd'}"><div class="sector-orbit-mark" aria-hidden="true"><i></i><i></i><b>${isSingle?pad(C.sectors.indexOf(selected)+1):'∞'}</b></div><div class="sector-overview-copy"><span class="eyebrow">${query?'РЕЗУЛЬТАТЫ ПОИСКА':isSingle?'СЕКТОР / '+pad(C.sectors.indexOf(selected)+1):'НАВИГАЦИОННЫЙ КАТАЛОГ'}</span><h3>${query?escape(query):sector?escape(sector.name):filter==='new'?'Новые горизонты':'Вся сеть маршрутов'}</h3><p>${isSingle?sectorDescription(selected):'Выбери контракт. Освоенные маршруты и награды остаются с тобой.'}</p></div><div class="sector-progress"><strong>${done}<small> / ${secLevels.length}</small></strong><span>доставлено</span></div></div>`;
     let previousSector=-1;
@@ -101,7 +107,7 @@
       const tags=l.branches?[`${l.branches.length} маршрута`,`${l.branches[0].flybys.length} облёта на ветвь`]:l.stops?[`${l.stops.length+1} адреса`,`${l.flybys.length} облёта`]:[l.flybys?.length?`${l.flybys.length} облёта`:`${l.planets.length} планет`,l.portals?.length?`${l.portals.length} ${l.portals.length===1?'переход':'перехода'}`:l.target.motion?'Перехват':l.dynamic?'Живые орбиты':l.expert?'Эксперт':'Навигация'];
       return `${group}<button class="mission-card contract-card ${open?'':'locked'} ${next?'current':''} ${done?'completed':''}" style="--sector:${s.color};--card-delay:${index%4*45}ms" data-action="mission" data-id="${l.id}" ${open?'':'disabled'} aria-label="Контракт ${C.number(l.id)}: ${escape(l.name)}. ${open?'Открыть':'Закрыт: '+lockReason(l)}"><div class="contract-preview"><canvas data-mini="${l.id}" width="480" height="280" aria-hidden="true"></canvas><span class="mission-number">${pad(C.number(l.id))}</span><span class="contract-state">${!open?'○ ЗАКРЫТ':done?'✓ ДОСТАВЛЕН':next?'↗ СЛЕДУЮЩИЙ':l.newIn===11?'НОВЫЙ':'ГОТОВ К СТАРТУ'}</span><span class="preview-launch" aria-hidden="true">↗</span></div><div class="mission-content"><div class="contract-tags">${[C.tier(l.id).name,...tags].map(t=>`<span>${t}</span>`).join('')}</div><h4>${escape(l.name)}</h4><div class="mission-meta">${starHTML(l.routeRevision>8&&!done?0:r.medals)}<span>${done?`${r.bestScore}/100${r.proWon?' · PRO ✓':''}`:`до ${E.capReward(l)} ◈`}</span></div><span class="mission-status">${!open?lockReason(l):done?'Улучшить рекорд':l.routeRevision>8&&(r.medals&1)?'Новый маршрут · прежний рекорд сохранён':l.portals?.length?'Два пространства — один импульс':l.maneuver?'Собери груз на разных ветвях':'Выбрать курс и отправить капсулу'}</span></div></button>`;
     }).join(''):`<div class="contract-empty"><strong>Маршрутов не найдено</strong><p>Попробуй другой сектор, номер или фильтр.</p><button class="button quiet" data-action="clear-contracts">Сбросить поиск</button></div>`;
-    $('contractResultCount').textContent=`Показано ${visible.length} из ${L.length} контрактов`;
+    $('contractResultCount').textContent=`Показано ${visible.length} из ${C.order.length} контрактов`;
     app.contractPreviews=[];
     requestAnimationFrame(()=>{if(app.screen!=='campaign')return;for(const canvas of $$('canvas[data-mini]')){const l=L[+canvas.dataset.mini],renderer=new O.Renderer(canvas);renderer.draw(l,{hideShip:false,angle:l.initialAngle,speed:140,time:0});app.contractPreviews.push({canvas,renderer,level:l});}});
   }
@@ -115,7 +121,7 @@
     $('compassArrow').setAttribute('transform',`rotate(${-app.angle} 26 26)`);
     $('previousLevel').disabled=!G.unlocked(app.profile,C.adjacent(app.currentId,-1));
     $('followingLevel').disabled=!G.unlocked(app.profile,C.adjacent(app.currentId,1));
-    $('levelPosition').textContent=`${pad(C.number(app.currentId))} / ${L.length}`;
+    $('levelPosition').textContent=`${pad(C.number(app.currentId))} / ${C.order.length}`;
     $('angleRange').style.setProperty('--range',((app.angle+180)/360*100)+'%');
     $('speedRange').style.setProperty('--range',((app.speed-60)/(stats().maxSpeed-60)*100)+'%');
   }
@@ -126,6 +132,7 @@
     if(app.transitioning||!Number.isInteger(id)||id<0||id>=L.length)return;
     if(!G.unlocked(app.profile,id)){toast(lockReason(L[id]),true);return;}
     if(isFlying()&&!confirmed){openModal('Перейти к другому контракту?',`<p>Текущая попытка будет остановлена. Полученные награды сохраняются.</p><div class="modal-actions"><button class="button quiet" data-action="close">Остаться</button><button class="button primary" data-action="confirm-travel" data-id="${id}">Перейти</button></div>`);return;}
+    if(O.Navigation?.beforeTravel(id))return;
     closeModal();if(app.profile.settings.reducedMotion||root.matchMedia('(prefers-reduced-motion: reduce)').matches||app.screen==='play'&&id===app.currentId){loadLevel(id);return;}
     const token=++app.transitionToken;app.transitioning=true;app.paused=true;
     $('jumpFrom').textContent=app.screen==='play'?pad(C.number(app.currentId)):'OC';$('jumpTo').textContent=pad(C.number(id));
@@ -276,7 +283,8 @@
     openModal('Медали — три отдельные цели',`<div class="medal-help-grid"><p><strong>Доставка.</strong> Выполни обязательные облёты, кольца, порталы и требования станции, затем пристыкуйся.</p><p><strong>Экономный старт.</strong> Успешно доставь капсулу со стартовой скоростью не выше <b>${l.parSpeed} ед./с</b>. Скорость в середине полёта на эту медаль не влияет.</p><p><strong>Полный груз.</strong> Привези все ${l.cargo.length} контейнера <b>в одном рейсе</b>. Притягиваемый груз ещё не находится на борту.</p></div><div class="info-box">Полоса показывает текущую попытку. Метка «В коллекции» относится к прошлым доставкам и не означает, что цель выполнена сейчас. На неудачном рейсе и в тренировке новые медали не выдаются. Рейтинг и денежный рекорд рассчитываются отдельно.</div><div class="modal-actions"><button class="button primary" data-action="close">К маршруту</button></div>`,'ЦЕЛИ РЕЙСА');
   }
   function loadLevel(id){
-    if(!Number.isInteger(id)||id<0||id>=L.length||!G.unlocked(app.profile,id)){toast('Сначала заверши предыдущий контракт.',true);return;}
+    if(!Number.isInteger(id)||id<0||id>=L.length||!G.unlocked(app.profile,id)){toast(L[id]?lockReason(L[id]):'Контракт недоступен.',true);return;}
+    if(O.Navigation?.beforeLevel(id))return;
     closeModal();app.currentId=id;app.activeLevel=P.prepareLevel(L[id],app.profile.difficulty);app.assisted=false;app.profile.lastLevel=id;app.state=null;app.paused=false;app.accumulator=0;app.trail=[];app.particles=[];app.lastResult=null;app.camera={zoom:1,cx:600,cy:350};app.branchView='A';
     const l=level(),aim=app.aims[id];app.angle=aim?aim.angle:l.initialAngle;app.speed=P.clamp(aim?aim.speed:l.initialSpeed,60,stats().maxSpeed);
     app.previewDirty=true;go('play',true);
@@ -285,7 +293,7 @@
     document.querySelector('.stage-corner').textContent=`OC / FLIGHT ${pad(C.number(id))}`;
     $('flightDetails').open=false;$('flightPlan').open=!root.matchMedia('(max-width:900px)').matches;
     setStage(l.dynamic?(l.motionKind==='station'?'ПЕРЕХВАТ · ГОТОВНОСТЬ':'ОРБИТЫ · ГОТОВНОСТЬ'):'КАПСУЛА ГОТОВА','');
-    syncControls();renderRoute();updateObjectives();updateTelemetry();save();O.V8?.onLevel();O.UI9?.onLevel();
+    syncControls();renderRoute();updateObjectives();updateTelemetry();save();O.V8?.onLevel();O.UI9?.onLevel();O.Navigation?.onLevel(id);
   }
   function setStage(label,caption){$('stagePill').innerHTML=`<i class="live-dot"></i> ${label}`;$('stageBottom').textContent='';$('stageBottom').hidden=true;}
   function launch(){
@@ -405,6 +413,7 @@
     openModal('Начать заново?',`<p>Кредиты, опыт, медали и улучшения будут удалены из этого браузера. Экспортированная копия останется целой.</p><div class="modal-actions"><button class="button quiet" data-action="close">Отмена</button><button class="button danger" data-action="reset">Да, сбросить</button></div>`,'СБРОС ПРОГРЕССА');
   }
   const actions={
+    'available-contracts':()=>{app.campaignQuery='';$('contractSearch').value='';app.campaignFilter='open';app.campaignSector=-1;renderCampaign();},
     'new-routes':()=>{app.campaignSector=-1;app.campaignFilter='new';app.campaignQuery='';$('contractSearch').value='';go('campaign');},
     'portal-help':()=>openModal('Парные переходы',`<p><strong>Тёмный центр — вход. Светлое кольцо — выход.</strong> Капсула мгновенно перемещается к выходу с теми же скоростью и направлением. Импульс не добавляется, игровое время не пропускается.</p><p>Собранные контейнеры летят с капсулой. Груз, который ещё тянется полем, остаётся на прежней стороне. Переход не засчитывает кольца и облёты между отверстиями; незавершённая дуга сбрасывается.</p><p>Порталы односторонние. На картах с двумя парами порядок A → B, с тремя — A → B → C. У входа и соответствующего выхода одинаковая буква и цвет.</p><div class="info-box">Это игровая модель червоточины, а не реалистичная чёрная дыра. У самого портала нет дополнительного гравитационного поля.</div><div class="modal-actions"><button class="button primary" data-action="close">Понятно</button></div>`,'РАЗЛОМ ПРОСТРАНСТВА'),
     'previous-level':()=>travelToLevel(C.adjacent(app.currentId,-1)),'following-level':()=>travelToLevel(C.adjacent(app.currentId,1)),
@@ -419,7 +428,7 @@
     'medal-help':medalHelp,'cosmetic-tab':b=>{app.cosmeticTab=b.dataset.tab==='trails'?'trails':'skins';renderCosmetics();},
     trail:b=>{const t=O.Cosmetics.TRAILS.find(t=>t.id===b.dataset.key);if(t&&O.Cosmetics.unlocked(app.profile,t)){app.profile.trail=t.id;save();renderCosmetics();sound.play('click');}},
     'route-help':routeHelp,maneuvers:()=>{app.campaignSector=7;go('campaign');},nav:b=>go(b.dataset.page), 'force-nav':b=>go(b.dataset.page,true),close:closeModal,
-    continue:()=>C.count(app.profile)===L.length?go('campaign'):travelToLevel(G.nextLevel(app.profile)),
+    continue:()=>C.count(app.profile)===C.order.length?go('campaign'):travelToLevel(G.nextLevel(app.profile)),
     mission:b=>travelToLevel(+b.dataset.id), 'return-flight':()=>loadLevel(G.unlocked(app.profile,app.profile.lastLevel)?app.profile.lastLevel:G.nextLevel(app.profile)),
     launch,retry,pause,help:showHelp,settings:showSettings,hint:()=>showHint(false),'exact-hint':()=>showHint(true),'apply-solution':applySolution,
     'angle-down':()=>setAim(app.angle-(app.profile.settings.fineAim?0.1:0.5),app.speed),'angle-up':()=>setAim(app.angle+(app.profile.settings.fineAim?0.1:0.5),app.speed),
@@ -454,6 +463,7 @@
     reset:()=>{app.profile=G.fresh();app.state=null;app.aims={};app.ghosts={};save();go('home',true);toast('Начата новая экспедиция.');}
   };
   document.addEventListener('click',event=>{
+    if(O.Navigation?.handleLink(event))return;
     const b=event.target.closest('[data-action]');if(!b||b.disabled)return;
     if(app.transitioning)return;
     sound.unlock();const action=actions[b.dataset.action];if(action)action(b);
@@ -513,7 +523,7 @@
     }else if(app.screen==='hangar'){
       if(O.Hangar)O.Hangar.preview(now);else O.Cosmetics.preview($('trailPreview'),app.profile.trail,skin().color,now/1000,app.profile.settings.reducedMotion);
     }else if(app.screen==='campaign'&&!app.profile.settings.reducedMotion&&now-lastTelemetry>70){
-      for(const item of app.contractPreviews||[]){if(!item.canvas.isConnected)continue;const card=item.canvas.closest('button');if(card.matches(':hover,:focus-visible')&&!card.disabled){item.renderer.draw(item.level,{hideShip:true,time:now/1000,state:{t:(now/1000)%12,x:item.level.start.x,y:item.level.start.y,status:'preview',cargo:[]}});}}
+      for(const item of app.contractPreviews||[]){if(!item.canvas.isConnected)continue;const card=item.canvas.closest('.mission-card');if(card?.matches(':hover,:focus-visible')&&!card.disabled){item.renderer.draw(item.level,{hideShip:true,time:now/1000,state:{t:(now/1000)%12,x:item.level.start.x,y:item.level.start.y,status:'preview',cargo:[]}});}}
       lastTelemetry=now;
     }else if(app.screen==='home'){
       const reduced=app.profile.settings.reducedMotion||homeMotionPreference.matches,still=reduced||heroPaused;
@@ -545,7 +555,7 @@
   // Expose semantic commands for the included browser smoke test, not a server API.
   Object.assign(app,{travelToLevel,renderCampaign,storeCourse,recallCourse,loadLevel,setAim,launch,retry,go,save,updateProfileUI,exportSave,applySolution,finish,level,displayLevel,displayState,stats,openModal,closeModal,toast,showWin,showFail,syncControls,updateObjectives,renderHangar,renderAwards,actions});
   if(!Object.keys(app.profile.records).length&&root.matchMedia('(prefers-reduced-motion: reduce)').matches)app.profile.settings.reducedMotion=true;
-  document.body.dataset.page='home';updateProfileUI();requestAnimationFrame(frame);
+  document.body.dataset.page=O.Navigation?.initialPage||'home';updateProfileUI();requestAnimationFrame(frame);
   if(loaded.migrated){save();openModal('Прогресс перенесён в версию 8',`<p>Пройденные уровни и купленные модули сохранены. Новые контракты продолжают прежнюю кампанию.</p><div class="info-box">Старый баланс: ${money(app.profile.migration.oldCredits)} ◈. Новый баланс: ${money(app.profile.credits)} ◈. Награды пересчитаны по новой экономике, расходы на сохранённые улучшения учтены. Долгов нет. Исходное сохранение не удалено. Унаследованные модули не имеют денежного возврата при пересборке.</div><div class="modal-actions"><button class="button primary" data-action="close">Продолжить</button></div>`);}
   if(loaded.upgraded){save();toast('Версия 8: прогресс сохранён. Старые медали — в архиве; новые цели отмечены отдельно.');}
   if(loaded.error)toast('Автосохранение недоступно или повреждено. Используй экспорт или импорт резервной копии.',true);

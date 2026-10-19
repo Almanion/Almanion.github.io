@@ -163,3 +163,43 @@ body[data-page=play][data-flight=review][data-result-view=analysis] .review-comp
 }
 .high-contrast .completion{--result-accent:#b1ffdd;color:#fff}.high-contrast .completion p,.high-contrast .completion small{color:#c6dce4}
 @media(prefers-reduced-motion:reduce){.completion *{scroll-behavior:auto}}
+
+/* The miniature uses the frozen flight renderer; it never advances the replay. */
+.completion-hero{grid-template-columns:minmax(0,1fr) 322px}
+.completion-visual{display:flex;align-items:center;justify-content:flex-end;gap:20px;min-width:0}
+.completion-docking{width:190px;min-width:0;margin:0}
+.completion-docking-button{position:relative;display:block;padding:0;width:100%;overflow:hidden;border:1px solid #36535c;border-radius:11px;background:#07131e;line-height:1}
+.completion-docking-button canvas{display:block;width:100%;aspect-ratio:12/7;background:#07131e}
+.completion-docking-expand{position:absolute;right:5px;bottom:5px;display:grid;place-items:center;width:22px;height:22px;border:1px solid #456368;border-radius:5px;background:#0b1c27dd;color:#cff6ea;font-size:17px}
+.completion-docking figcaption{display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;margin-top:6px;font-size:10px;line-height:1.35;color:#a7bfcb}
+.completion-docking figcaption strong{font-size:10px;font-weight:500;color:#d1e8df}
+.docking-enlarged canvas{display:block;width:100%;aspect-ratio:12/7;border:1px solid #35515a;border-radius:10px;background:#07131e}
+#modal .docking-enlarged p{font-size:12px;line-height:1.5;color:#acc5ce;margin:10px 0 0}
+#modal .docking-enlarged .docking-measurement{font:13px var(--mono);color:#d4f3df}
+@media(max-width:699px),(max-width:999px) and (orientation:portrait){
+ .completion-hero{grid-template-columns:minmax(0,1fr) 112px;gap:8px 12px}
+ .completion-visual{grid-area:2/2/4/3;position:relative;display:block;align-self:center}
+ .completion-docking{width:112px}.completion-docking-button{border-radius:8px}
+ .completion-docking figcaption{display:block;font-size:10px;line-height:1.3;margin-top:4px}.completion-docking figcaption strong{display:none}
+ .completion-visual .completion-seal{position:absolute;top:-9px;right:-5px;width:32px;height:32px;background:#0b1c23ee;border-color:#53786b;pointer-events:none}
+ .completion-visual .completion-seal:before,.completion-visual .completion-seal:after,.completion-visual .completion-seal-orbit,.completion-visual .completion-seal>span{display:none}
+ .completion-visual .completion-seal>strong{font-size:18px;line-height:1}.completion-visual .completion-seal>b{font-size:8px;line-height:1.1}.completion-visual .completion-seal small{display:none}
+ .completion[data-outcome=failed] .completion-visual .completion-seal>b{display:none}
+ .completion-route{grid-area:3/1/4/2;gap:3px 8px}.completion-route>span{font-size:9px}
+}
+@media(max-width:999px) and (max-height:650px) and (orientation:portrait){
+ .completion-visual{grid-area:1/2/3/3}.completion-route{grid-area:2/1/3/2}
+ .completion-docking{width:106px}.completion-hero{grid-template-columns:minmax(0,1fr) 106px}
+ .completion-docking figcaption{font-size:9px}
+}
+@media(max-height:480px) and (orientation:landscape){
+ .completion-hero{grid-template-columns:minmax(0,1fr) 176px;gap:10px}
+ .completion-visual{grid-area:1/2;display:flex;gap:10px;align-items:center;position:static}
+ .completion-docking{width:106px}.completion-docking figcaption{display:block;font-size:9px;margin-top:3px;white-space:nowrap}.completion-docking figcaption strong{display:none}
+ .completion-visual .completion-seal{position:relative;inset:auto;width:50px;height:50px;flex:none}.completion-visual .completion-seal>strong{font-size:25px}.completion-visual .completion-seal>b{font-size:10px}.completion-visual .completion-seal small{font-size:8px}
+ .completion-route{grid-area:auto;margin-top:6px}
+}
+@media(max-height:340px) and (orientation:landscape){
+ .completion-hero{grid-template-columns:minmax(0,1fr) 160px;padding-bottom:6px}
+ .completion-docking{width:90px}
+}

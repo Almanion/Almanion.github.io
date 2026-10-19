@@ -34,7 +34,7 @@
     {id:'twin',name:'Двойная звезда',color:'#98b9ff',xp:10000,gate:'both4',requirement:'Обе ветви четырёх карт'},
     {id:'amber',name:'Янтарный резонанс',color:'#ffdd9b',xp:14000,gate:'sector18',requirement:'Все карты «Развилок приливов»'},
     {id:'rose',name:'Лента горизонта',color:'#ff9ec6',xp:18000,gate:'multi4',requirement:'Все карты «Предела навигации»'},
-    {id:'atlas',name:'Полный атлас',color:'#dffaff',xp:22000,gate:'all80',requirement:'Все 80 контрактов'}];
+    {id:'atlas',name:'Полный атлас',color:'#dffaff',xp:22000,gate:'all80',requirement:'Все '+Campaign.order.length+' контрактов кампании'}];
   const medalCount=m=>(m&1?1:0)+(m&2?1:0)+(m&4?1:0);
   const blankRecord=()=>({medals:0,cargo:[],attempts:0,bestTime:null,paid:0,dataPaid:0,bestScore:0,proScore:0,proWon:false,routeVersion:0,currentMedals:0,legacyMedals:0,routes:[],bestLoops:0,bestPortals:0,bestDrops:0,bestPrecision:0,tractorProof:false});
   const int=(x,min,max,fallback=0)=>Number.isFinite(x)?Math.max(min,Math.min(max,Math.floor(x))):fallback;
@@ -51,7 +51,7 @@
     ['perfect','Безупречная доставка','Три медали в одном контракте.','★',30,p=>Object.values(p.records).some(r=>r.medals===7)],
     ['ring','Связь установлена','Закрыть первые четыре контракта.','◉',40,p=>firstN(p,4)],
     ['titan','За кольцами Титана','Закрыть первые восемь контрактов.','◌',50,p=>firstN(p,8)],
-    ['final','Первые маяки','Завершить исходные 12 контрактов.','✧',100,p=>firstN(p,12)],
+    ['final','Первые маяки','Завершить первые 12 контрактов кампании.','✧',100,p=>firstN(p,12)],
     ['collector','Ничего не потеряно','Доставить 12 разных контейнеров.','◇',40,p=>cargoCount(p)>=12],
     ['allcargo','Первая полная опись','Доставить 36 разных контейнеров.','◈',70,p=>cargoCount(p)>=36],
     ['engineer','Главный инженер','Улучшить любой модуль до уровня III.','⚙',40,p=>Object.values(p.upgrades).some(v=>v>=3)],
@@ -99,7 +99,7 @@
   const achievements=A.create(legacyAchievements);
   function fresh(){return {game:'orbital-courier',version:8,credits:E.START_CREDITS,data:0,xp:0,
     upgrades:{scanner:0,magnet:0,docking:0,engine:0},records:{},flags:{},achievements:[],receipts:[],
-    campaignRevision:11,campaignAccess:[],settings:{sound:true,volume:.6,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false},courses:{},skin:'mint',trail:'vector',lastLevel:0,wishlist:null,difficulty:'normal'};}
+    campaignRevision:Campaign.revision,campaignAccess:[],settings:{sound:true,volume:.6,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false},courses:{},skin:'mint',trail:'vector',lastLevel:Campaign.order[0],wishlist:null,difficulty:'normal'};}
   function legacyUnlocked(p,id){
     if(!Number.isInteger(id)||id<0||id>=count())return false;
     if(id===0)return true;
@@ -114,12 +114,33 @@
     if(id===32)return levels().slice(0,32).filter(l=>record(p,l.id).medals&1).length>=12;
     return !!(record(p,id-1).medals&1);
   }
-  function unlocked(p,id){
-    if(!Number.isInteger(id)||id<0||id>=count())return false;
-    const i=Campaign.position(id),r=record(p,id);
-    return i===0||!!(r.medals&1)||r.attempts>0||p.campaignAccess?.includes(id)||Campaign.current(p,Campaign.order[i-1]);
+  function unlockRequirement(p,id){
+    const rule=Campaign.requirement(id),active=Campaign.isActive(id),done=completed(p);
+    const prerequisites=(rule?.prerequisites||[]).map(previous=>({id:previous,name:levels()[previous].name,done:Campaign.current(p,previous)}));
+    const required=rule?.completed??null,remaining=required===null?null:Math.max(0,required-done),r=record(p,id);
+    const inherited=active&&(!!(r.medals&1)||r.attempts>0||!!p.campaignAccess?.includes(id));
+    const byCount=required!==null&&done>=required,byPrevious=prerequisites.some(previous=>previous.done);
+    const granted=rule?.kind==='free'||rule?.kind==='count'&&byCount||rule?.kind==='after'&&byPrevious||rule?.kind==='either'&&(byCount||byPrevious);
+    return {active,kind:rule?.kind||'retired',unlocked:active&&(inherited||!!granted),required,completed:done,remaining,prerequisites,inherited};
   }
-  function nextLevel(p){for(const id of Campaign.order)if(unlocked(p,id)&&!Campaign.current(p,id))return id;return p.lastLevel;}
+  const unlocked=(p,id)=>unlockRequirement(p,id).unlocked;
+  function lockReason(p,id){
+    const r=unlockRequirement(p,id);if(!r.active)return 'Контракт выведен из кампании; прежний прогресс сохранён.';
+    if(r.unlocked)return 'Контракт доступен';
+    const previous=r.prerequisites.map(q=>`№${Campaign.number(q.id)} «${q.name}»`).join(' или ');
+    if(r.kind==='after')return 'После контракта '+previous;
+    const n=r.remaining,last=n%10,word=n%100>=11&&n%100<=14?'доставок':last===1?'доставка':last>=2&&last<=4?'доставки':'доставок';
+    const countText=`Ещё ${n} ${word} (${r.completed}/${r.required})`;
+    return r.kind==='either'?countText+' или после контракта '+previous:countText;
+  }
+  function nextLevel(p){for(const id of Campaign.order)if(unlocked(p,id)&&!Campaign.current(p,id))return id;return Campaign.isActive(p.lastLevel)?p.lastLevel:Campaign.order[0];}
+  // Revision 11 used a single displayed chain, plus inherited and attempted
+  // contracts. Capture that access before changing its catalogue or rules.
+  function revision11Unlocked(p,id){
+    const index=Campaign.legacyOrder.indexOf(id),r=record(p,id),previous=levels()[Campaign.legacyOrder[index-1]],prior=previous&&record(p,previous.id);
+    const previousDone=!!(prior?.medals&1)&&(!(previous.routeRevision>8)||(prior.routeVersion===previous.routeRevision&&!!(prior.currentMedals&1)));
+    return index===0||!!(r.medals&1)||r.attempts>0||p.campaignAccess?.includes(id)||previousDone;
+  }
   function rank(p){let i=0;for(let j=1;j<RANKS.length;j++)if(p.xp>=RANKS[j].xp)i=j;return {...RANKS[i],index:i,next:RANKS[i+1]||null};}
   function research(p){return Object.values(p.records).reduce((n,r)=>n+(r.dataPaid||0),0);}
   function installed(p){return Object.values(p.upgrades).reduce((a,b)=>a+b,0);}
@@ -232,8 +253,13 @@
       p.courses[key] = value.slice(0,2).map(v => v && Number.isFinite(v.angle) && Number.isFinite(v.speed) && v.angle >= -180 && v.angle <= 180 && v.speed >= 60 && v.speed <= 1000 ? {angle:Math.round(v.angle*10)/10,speed:Math.round(v.speed)} : null);
     }
     p.settings.volume=Number.isFinite(raw.settings?.volume)?Math.max(0,Math.min(1,raw.settings.volume)):.6;
-    p.campaignAccess=raw.campaignRevision===11&&Array.isArray(raw.campaignAccess)?[...new Set(raw.campaignAccess.filter(id=>Number.isInteger(id)&&id>=0&&id<count()))]:Campaign.order.filter(id=>legacyUnlocked(p,id));
-    p.lastLevel=int(raw.lastLevel,0,Math.max(0,count()-1));if(!unlocked(p,p.lastLevel))p.lastLevel=nextLevel(p);
+    const inheritedAccess=Array.isArray(raw.campaignAccess)?raw.campaignAccess.filter(id=>Number.isInteger(id)&&id>=0&&id<count()):[];
+    p.campaignAccess=[...new Set(inheritedAccess)];
+    if(raw.campaignRevision!==Campaign.revision){
+      const priorPolicy=raw.campaignRevision===11?revision11Unlocked:legacyUnlocked;
+      p.campaignAccess=[...new Set([...inheritedAccess,...Campaign.legacyOrder.filter(id=>priorPolicy(p,id))])];
+    }
+    p.lastLevel=int(raw.lastLevel,0,Math.max(0,count()-1),Campaign.order[0]);if(!unlocked(p,p.lastLevel))p.lastLevel=nextLevel(p);
     if(legacy){
       const equivalent=Object.entries(p.upgrades).reduce((n,[key,lv])=>n+Array.from({length:lv},(_,i)=>E.price(key,i+1,0,0)).reduce((a,b)=>a+b,0),0);
       p.credits=Math.max(0,earnedBudget(p)-equivalent);p.data=research(p);
@@ -258,7 +284,7 @@
   }
   function write(storage,p){try{storage.setItem(SAVE_KEY,JSON.stringify(p));return true;}catch{return false;}}
   O.Progress={SAVE_KEY,LEGACY_KEY,UPGRADE_DEFS,RANKS,SKINS,achievements,fresh,record,completed,totalMedals,cargoCount,
-    viewRecord,unlocked,nextLevel,rank,stats,medalCount,launch,complete,buy,quote,invested,dataInvested,respec,research,installed,
+    viewRecord,unlocked,unlockRequirement,lockReason,nextLevel,rank,stats,medalCount,launch,complete,buy,quote,invested,dataInvested,respec,research,installed,
     earnedBudget,remainingRewards,sanitize,read,write,awardAchievements};
   if(typeof module!=='undefined'&&module.exports)module.exports=O.Progress;
 })(typeof globalThis!=='undefined'?globalThis:window);

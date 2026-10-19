@@ -16,7 +16,7 @@ const ids=[...source.matchAll(/\bid="([^\"]+)"/g)].map(m=>m[1]);check(new Set(id
 check(source.includes('src/interface-v9.js')&&source.includes('src/interface-v9.css'),'v9 controller and styles connected');
 check(source.includes('id="flightDrawer"')&&source.includes('aria-labelledby="drawerTitle"'),'named native flight dialog');
 check(source.includes('id="mapAim"')&&source.includes('id="mapPan"'),'explicit aim vs pan actions');
-check(JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version==='10.1.0','application version 10.1');
+check(JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version==='10.2.0','application version 10.2');
 check(fs.readFileSync(path.join(root,'src/progression.js'),'utf8').includes("SAVE_KEY='orbital-courier-save-v8'"),'save schema intentionally unchanged');
 const report={status:'passed',assertions:count,hashes,notes:['Campaign redesign authorized; numerical physics and pricing unchanged','Save schema 8 retained with stable contract IDs']};
 fs.writeFileSync(path.join(root,'docs/static-results-v9.json'),JSON.stringify(report,null,2));console.log(`UI9 static checks passed: ${count}`);

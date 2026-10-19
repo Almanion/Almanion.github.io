@@ -1,6 +1,6 @@
 {
   "name": "orbital-courier",
-  "version": "10.1.0",
+  "version": "10.2.0",
   "private": true,
   "description": "Offline orbital game with five campaign tiers, detailed procedural artwork and synthesized sound",
   "scripts": {

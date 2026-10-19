@@ -56,7 +56,7 @@
     closeSheet(false); stopHold(); clearPointers();
     document.body.classList.remove('keyboard-editing');
     if (page !== 'play') { document.body.removeAttribute('data-flight'); lastMode = ''; }
-    for (const b of $$('.topbar nav button,.mobile-nav button')) {
+    for (const b of $$('.topbar nav [data-page],.mobile-nav [data-page]')) {
       const selected = b.dataset.page === page || page === 'play' && b.dataset.page === 'campaign';
       if (selected) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     }

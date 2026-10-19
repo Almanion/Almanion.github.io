@@ -1,0 +1,20 @@
+/* One semantic palette for the same medal in preparation, route details and results. */
+.medal-art[data-medal-art=delivery]{color:#f3d08d}
+.medal-art[data-medal-art=economy]{color:#88e3d2}
+.medal-art[data-medal-art=cargo]{color:#c8b2f4}
+.medal-art[data-medal-art=precision]{color:#8ed9f7}
+.medal-art[data-medal-art=time]{color:#f4b78a}
+.medal-art[data-medal-art=branches]{color:#a5c1ff}
+.medal-art{display:block;width:100%;height:100%;overflow:visible;flex:none;shape-rendering:geometricPrecision}
+.medal-symbol svg.medal-art{height:100%;stroke:currentColor;fill:none;filter:none}
+.medal-card:has(.medal-art[data-medal-art=delivery]){--medal:#f3d08d}
+.medal-card:has(.medal-art[data-medal-art=economy]){--medal:#88e3d2}
+.medal-card:has(.medal-art[data-medal-art=cargo]){--medal:#c8b2f4}
+.medal-card:has(.medal-art[data-medal-art=precision]){--medal:#8ed9f7}
+.medal-card:has(.medal-art[data-medal-art=time]){--medal:#f4b78a}
+.medal-card:has(.medal-art[data-medal-art=branches]){--medal:#a5c1ff}
+.medal-card[data-state=training] .medal-art,.medal-card[data-state=failed] .medal-art,.medal-card[data-state=missed] .medal-art{color:#869eac}
+.completion .completion-medal[data-state] .completion-medal-icon{background:none;border:0;border-radius:0;color:inherit;overflow:visible;align-self:center}
+.completion .completion-medal .completion-medal-icon .medal-art{width:100%;height:100%;max-width:none}
+.completion-medal[data-state=training] .medal-art,.completion-medal[data-state=failed] .medal-art,.completion-medal[data-state=missed] .medal-art{color:#869eac}
+.high-contrast .medal-art{filter:brightness(1.16)}

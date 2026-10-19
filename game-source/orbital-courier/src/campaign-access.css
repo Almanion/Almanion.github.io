@@ -1,0 +1,9 @@
+/* Campaign access is explained before the catalogue and on each locked card. */
+.campaign-access{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 22px;margin:0 0 20px;border:1px solid #2b5b58;border-radius:16px;background:linear-gradient(120deg,#12332f,#10252f);color:#d7f4e9}
+.campaign-access strong{font-size:17px;line-height:1.4}
+.campaign-access p{margin:6px 0 0;max-width:75ch;color:#b0c9d0;font-size:14px;line-height:1.6}
+.campaign-access .button{flex:none;min-height:44px}
+.contract-card.locked .mission-status{color:#c4cfd7;font-size:13px;line-height:1.5;white-space:normal}
+.contract-card .mission-status{line-height:1.5;min-height:3em}
+.contract-access-kind{display:block;margin-top:8px;color:#8fcbbb;font-size:12px;line-height:1.5}
+@media(max-width:650px){.campaign-access{align-items:flex-start;flex-direction:column;gap:12px;padding:16px;margin-bottom:16px}.campaign-access strong{font-size:16px}.campaign-access p{font-size:13px}.campaign-access .button{width:100%}}

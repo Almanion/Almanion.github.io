@@ -11,7 +11,8 @@
 ## Разработка
 
 - Канонические исходники: `orbital-courier/index.html`, `orbital-courier/src/`.
-- `games/orbital-courier/index.html` — собранная автономная версия для сайта.
+- `games/orbital-courier/index.html` — главная страница игры; `contracts/`, `hangar/`, `awards/`, `flight/` — отдельные HTML-документы.
+- `games/orbital-courier/assets/` — общие ресурсы из канонических `src/`; `offline.html` — автономная версия с встроенными ресурсами.
 - Из корня сайта: `npm run game:build` собирает исходники и обновляет публичную игру.
 - `npm run game:test` собирает игру и запускает поставляемые проверки физики, экономики и UI.
 - `npm run ci` проверяет сайт и соответствие опубликованного HTML исходникам.
