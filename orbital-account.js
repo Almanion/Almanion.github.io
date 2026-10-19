@@ -53,7 +53,10 @@
                     let active=true;
                     const request=ref(uid).transaction(record=>{
                         if(!active||!valid()||!current(uid))return;
-                        if((record?.revision||0)!==revision)return;
+                        // Firebase can first supply null from an empty local cache.
+                        // Let its server-side compare-and-swap fetch the actual value;
+                        // the retried callback still rejects a different revision.
+                        if(record!=null&&record.revision!==revision)return;
                         return {version:1,revision:revision+1,save,updatedAt:firebase.database.ServerValue.TIMESTAMP};
                     },undefined,false);
                     try{

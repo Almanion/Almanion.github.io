@@ -400,6 +400,19 @@ function serverTimestamp() {
         // Exercise the game's real synchronization state machine against the
         // Firebase emulator and these rules, including server transactions.
         const { CloudSync, encode } = require('../game-source/orbital-courier/src/cloud-core.js');
+        const emulatedAuth = {
+            currentUser: { uid: accountUid, isAnonymous: false },
+            useDeviceLanguage() {}, async setPersistence() {},
+            onAuthStateChanged(callback) { callback(this.currentUser); return () => {}; }
+        };
+        const gameFirebase = { apps: [{}], auth: () => emulatedAuth, database: () => accountDb };
+        gameFirebase.auth.Auth = { Persistence: { LOCAL: 'local', SESSION: 'session', NONE: 'none' } };
+        gameFirebase.database.ServerValue = { TIMESTAMP: serverTimestamp() };
+        const gameContext = { firebase: gameFirebase, firebaseConfig: {}, setTimeout, clearTimeout, Promise, Error };
+        gameContext.window = gameContext;
+        require('node:vm').runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'orbital-account.js'), 'utf8'), gameContext);
+        let gameTransport;
+        const stopGameAccount = await gameContext.AlmanionOrbitalAccount.connect((_user, transport) => { gameTransport = transport; });
         function gameClient() {
             let profile = { game: 'orbital-courier', version: 8, credits: 25, xp: 0, records: {} };
             const values = new Map();
@@ -408,16 +421,7 @@ function serverTimestamp() {
                 getSave: () => encode(profile), isFresh: () => profile.credits === 25,
                 canApply: () => true, applySave: text => { profile = JSON.parse(text); },
                 validateSave: text => { assert.equal(JSON.parse(text).game, 'orbital-courier'); },
-                transport: {
-                    read: async () => (await accountDb.ref(gamePath).once('value')).val(),
-                    write: async (_uid, revision, save, valid) => {
-                        const result = await accountDb.ref(gamePath).transaction(current => {
-                            if (!valid() || (current?.revision || 0) !== revision) return;
-                            return { version: 1, revision: revision + 1, save, updatedAt: serverTimestamp() };
-                        }, undefined, false);
-                        return { committed: result.committed, record: result.snapshot.val() };
-                    }
-                }
+                transport: gameTransport
             });
             return { sync, get profile() { return profile; }, values };
         }
@@ -437,6 +441,7 @@ function serverTimestamp() {
         assert.equal(gameB.sync.status, 'synced'); assert.deepEqual(gameB.profile, gameA.profile);
         assert.ok(gameB.values.has('orbital-cloud-backups'));
         await assertFails(ordinaryDb.ref(gamePath).once('value'));
+        stopGameAccount();
 
         await assertSucceeds(ownerDb.ref('presence').remove());
         await assertSucceeds(ownerDb.ref('visitors').remove());

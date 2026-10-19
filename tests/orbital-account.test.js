@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
 const source=fs.readFileSync(require('node:path').join(__dirname,'../orbital-account.js'),'utf8');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 function harness(){
-    const records=new Map(),listeners=new Set(),timers=new Map(),calls=[];let timerId=0,online=true,read,transaction;
+    const records=new Map(),listeners=new Set(),timers=new Map(),calls=[];let timerId=0,online=true,read,transaction,coldCache=false;
     const snapshot=value=>({val:()=>value});
     const auth={currentUser:{uid:'pilot',isAnonymous:false},useDeviceLanguage(){},async setPersistence(mode){calls.push(['persistence',mode]);},
         onAuthStateChanged(callback){callback(auth.currentUser);return ()=>{};},
@@ -13,7 +13,8 @@ function harness(){
     const db={ref(path){if(path==='.info/connected')return info;return {
         once:()=>read?read():Promise.resolve(snapshot(records.get(path)||null)),
         transaction:update=>transaction?transaction(update):Promise.resolve().then(()=>{
-            const value=update(records.get(path)||null);if(value)records.set(path,value);
+            const old=records.get(path)||null,initial=update(coldCache?null:old);
+            const value=coldCache&&old&&initial!==undefined?update(old):initial;if(value)records.set(path,value);
             return {committed:!!value,snapshot:snapshot(records.get(path)||null)};
         })};}};
     const firebase={apps:[{}],auth:()=>auth,database:()=>db};
@@ -25,6 +26,7 @@ function harness(){
     return {adapter:context.AlmanionOrbitalAccount,records,auth,calls,timers,listeners,
         online(value){online=value;for(const cb of [...listeners])cb(snapshot(value));},
         stallRead(){read=()=>new Promise(()=>{});},stallWrite(){transaction=update=>{this.lastUpdate=update;return new Promise(()=>{});};},
+        cold(){coldCache=true;},
         expire(ms){for(const [id,timer]of [...timers])if(timer.ms<=ms){timers.delete(id);timer.callback();}}};
 }
 (async()=>{
@@ -52,5 +54,12 @@ function harness(){
     const fallback=harness();fallback.auth.setPersistence=async mode=>{fallback.calls.push(['persistence',mode]);if(mode==='LOCAL')throw Error('blocked');};
     await fallback.adapter.connect(()=>{});assert.equal(fallback.adapter.persistence,'session');
     assert.deepEqual(fallback.calls,[['persistence','LOCAL'],['persistence','SESSION']]);
+    const cold=harness();let coldTransport;await cold.adapter.connect((user,next)=>{coldTransport=next;});
+    await coldTransport.write('pilot',0,'initial',()=>true);cold.cold();
+    const repeated=await coldTransport.write('pilot',1,'completed contract',()=>true);
+    assert.equal(repeated.committed,true,'an uncached Firebase transaction must reach the server instead of falsely conflicting');
+    assert.equal(repeated.record.revision,2);assert.equal(repeated.record.save,'completed contract');
+    const stale=await coldTransport.write('pilot',1,'stale device',()=>true);
+    assert.equal(stale.committed,false,'a cold cache must not bypass the actual server revision');assert.equal(stale.record.save,'completed contract');
     console.log('orbital account: auth persistence, sign-in methods, CAS writes, account isolation, offline/stalled requests and timeout cancellation passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});
