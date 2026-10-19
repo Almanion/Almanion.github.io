@@ -1,8 +1,21 @@
 'use strict';
 const {test,expect}=require('@playwright/test');
+async function expectReadablePrimary(link){
+ await expect(link).toHaveAttribute('href',/\S/);
+ const contrast=await link.evaluate(el=>{
+  const css=getComputedStyle(el),luminance=color=>{
+   const [r,g,b]=color.match(/[\d.]+/g).slice(0,3).map(value=>{const channel=+value/255;return channel<=.04045?channel/12.92:((channel+.055)/1.055)**2.4;});
+   return .2126*r+.7152*g+.0722*b;
+  };
+  const foreground=luminance(css.color),background=luminance(css.backgroundColor);
+  return (Math.max(foreground,background)+.05)/(Math.min(foreground,background)+.05);
+ });
+ expect(contrast,'primary link text must contrast with its actual background').toBeGreaterThanOrEqual(4.5);
+}
 for(const width of [390,1366])test('online completion keeps its final frame and rewards across the next document '+width,async({page})=>{
  await page.setViewportSize({width,height:844});
  await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
+ await page.goto('/games/orbital-courier/');await expectReadablePrimary(page.locator('#continueButton'));
  await page.goto('/games/orbital-courier/flight/?contract=4');
  await expect(page.locator('body')).toHaveAttribute('data-page','play');
  const expected=await page.evaluate(()=>{
@@ -21,6 +34,7 @@ for(const width of [390,1366])test('online completion keeps its final frame and 
  await page.locator('.completion-docking-button').click();await expect(page.locator('#dockingDetailCanvas')).toHaveAttribute('data-ready','true');
  await page.locator('#modal .modal-actions [data-action=close]').click();
  await expect(page.locator('#resultNext')).toHaveAttribute('href','/games/orbital-courier/flight/?contract=5');
+ await expectReadablePrimary(page.locator('#resultNext'));
  await page.locator('#resultNext').click();await expect(page).toHaveURL(/flight\/\?contract=5$/);
  const restored=await page.evaluate(()=>{const p=Orbital.Progress.sanitize(Orbital.App.profile);delete p.lastLevel;return p;});
  expect(restored).toEqual(expected);
