@@ -3,6 +3,8 @@
 /game-source/orbital-courier/src/** text eol=lf
 /games/orbital-courier/*.html text eol=lf
 /games/orbital-courier/*.txt text eol=lf
+/games/orbital-courier/**/*.html text eol=lf
+/games/orbital-courier/assets/** text eol=lf
 
 # Deterministic standalone presentation and its published copy.
 presentation/index.html text eol=lf

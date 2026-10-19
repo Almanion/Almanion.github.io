@@ -2,7 +2,7 @@
 
 const { test, expect } = require('@playwright/test');
 const savedProfile = require('../game-source/orbital-courier/docs/completed-v8-profile.json');
-const gameURL = '/games/orbital-courier/';
+const gameURL = '/games/orbital-courier/offline.html';
 const saveKey = 'orbital-courier-save-v8';
 
 test.use({ serviceWorkers: 'block' });

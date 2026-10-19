@@ -7,8 +7,8 @@ for(const [width,height] of [[320,568],[390,844],[844,390],[1366,768]]){
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   try{
    await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
-   await page.goto('/games/orbital-courier/');
-   await page.evaluate(()=>{Orbital.App.profile.settings.reducedMotion=true;Orbital.App.loadLevel(0);});
+   await page.goto('/games/orbital-courier/offline.html');
+   await page.evaluate(()=>{Orbital.App.profile.settings.reducedMotion=true;Orbital.App.loadLevel(Orbital.Campaign.order[0]);});
    if(phone)await page.locator('#mobileReadout').click();
    await expect(page.locator('#courseTab')).toHaveAttribute('aria-selected','true');
    await expect(page.locator('#memoryPane')).not.toBeVisible();
@@ -24,7 +24,7 @@ for(const [width,height] of [[320,568],[390,844],[844,390],[1366,768]]){
    await expect(page.locator('#memoryCurrent')).toContainText('23.7°');
    await expect(page.locator('[data-action=recall-course][data-slot="0"]')).toBeDisabled();
    await page.locator('[data-action=store-course][data-slot="0"]').click();
-   const stored=await page.evaluate(()=>({...Orbital.App.profile.courses['0:normal'][0]}));
+   const stored=await page.evaluate(()=>({...Orbital.App.profile.courses[Orbital.Campaign.order[0]+':normal'][0]}));
    await page.locator('#courseTab').click();await page.locator('#angleInput').fill('-11.2');await page.locator('#angleInput').press('Enter');
    await page.locator('#speedInput').fill('150');await page.locator('#speedInput').press('Enter');
    await page.locator('#memoryTab').click();await page.locator('[data-action=store-course][data-slot="1"]').click();
@@ -61,15 +61,15 @@ for(const [width,height] of [[320,568],[390,844],[844,390],[1366,768]]){
 
 test('cockpit validates numbers and retains separate saved courses after reload',async({page})=>{
  await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
- await page.goto('/games/orbital-courier/');await page.evaluate(()=>{Orbital.App.profile.settings.reducedMotion=true;Orbital.App.loadLevel(0);});
+ await page.goto('/games/orbital-courier/offline.html');await page.evaluate(()=>{Orbital.App.profile.settings.reducedMotion=true;Orbital.App.loadLevel(Orbital.Campaign.order[0]);});
  await page.locator('#angleInput').fill('-37,6');await page.locator('#angleInput').press('Enter');
  await page.locator('#speedInput').fill('9999');await page.locator('#speedInput').press('Enter');
  expect(await page.evaluate(()=>Orbital.App.speed===Orbital.App.stats().maxSpeed)).toBe(true);
  await page.locator('#angleInput').fill('broken');await page.locator('#angleInput').press('Enter');expect(await page.evaluate(()=>Orbital.App.angle)).toBe(-37.6);
  await expect(page.locator('#aimFeedback')).toContainText('Введи число');
  await page.locator('#memoryTab').click();await page.locator('[data-action=store-course][data-slot="0"]').click();
- const stored=await page.evaluate(()=>Orbital.App.profile.courses['0:normal'][0]);
- await page.reload();await page.evaluate(()=>{Orbital.App.loadLevel(0);});await page.locator('#memoryTab').click();
+ const stored=await page.evaluate(()=>Orbital.App.profile.courses[Orbital.Campaign.order[0]+':normal'][0]);
+ await page.reload();await page.evaluate(()=>{Orbital.App.loadLevel(Orbital.Campaign.order[0]);});await page.locator('#memoryTab').click();
  await page.locator('[data-action=recall-course][data-slot="0"]').click();expect(await page.evaluate(()=>({angle:Orbital.App.angle,speed:Orbital.App.speed}))).toEqual(stored);
  await page.locator('#modeChip').click();await page.locator('#memoryTab').click();
  await expect(page.locator('[data-action=recall-course][data-slot="0"]')).toBeDisabled();

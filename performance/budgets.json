@@ -12,9 +12,11 @@
     "constructor/index.js": 126000,
     "content/physics/sections/mechanics.json": 300000,
     "content/physics-10/sections/molekulyarnaya-fizika.json": 150000,
-    "games/orbital-courier/index.html": 740000,
     "vendor/pdf/pdfmake.min.js": 1410000,
-    "vendor/pdf/tex-svg.js": 2120000
+    "vendor/pdf/tex-svg.js": 2120000,
+    "games/orbital-courier/offline.html": 800000,
+    "games/orbital-courier/assets/levels.js": 210000,
+    "games/orbital-courier/assets/legacy.css": 125000
   },
   "maxPrecacheEntries": 30,
   "maxSearchSourceBytes": 1100000,

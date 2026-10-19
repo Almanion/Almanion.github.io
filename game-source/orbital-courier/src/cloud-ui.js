@@ -47,7 +47,7 @@
       if(id!==connectionId)return;
       const stop=await root.AlmanionOrbitalAccount.connect((next,transport)=>{
         if(id!==connectionId)return;
-        user=next;if(!sync)sync=make(transport);sync.setUser(next?.uid||null);
+        user=next;if(!sync)sync=make(transport);O.Navigation?.onCloudReady();sync.setUser(next?.uid||null);
       });
       if(id!==connectionId)stop();else unsubscribe=stop;
     }catch(e){if(id===connectionId){A.toast(e.message,true);if(sync){sync.error=e;sync.notify('error');}}}
@@ -55,7 +55,7 @@
   }
   function summary(text,title){
     if(!text)return `<div class="cloud-copy"><h3>${title}</h3><p>Копии пока нет</p></div>`;
-    try{const p=validSave(text);return `<div class="cloud-copy"><h3>${title}</h3><strong>${O.Campaign.count(p)} / 80 текущих контрактов</strong><p>${p.credits.toLocaleString('ru-RU')} ◈ · ${p.data} ⬡ · ${p.xp.toLocaleString('ru-RU')} XP</p><small>${G.installed(p)} ступеней оборудования</small></div>`;}catch{return `<p>${title}: копия не читается</p>`;}
+    try{const p=validSave(text);return `<div class="cloud-copy"><h3>${title}</h3><strong>${O.Campaign.count(p)} / ${O.Campaign.order.length} текущих контрактов</strong><p>${p.credits.toLocaleString('ru-RU')} ◈ · ${p.data} ⬡ · ${p.xp.toLocaleString('ru-RU')} XP</p><small>${G.installed(p)} ступеней оборудования</small></div>`;}catch{return `<p>${title}: копия не читается</p>`;}
   }
   function render(){
     const status=sync?.status||'off',compare=['conflict','account-change','waiting'].includes(status);

@@ -5,11 +5,11 @@ async function open(browser,width,height){
  const context=await browser.newContext({viewport:{width,height},hasTouch:width<1000,isMobile:width<1000,serviceWorkers:'block'}),page=await context.newPage();
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
- await page.goto('http://127.0.0.1:4173/games/orbital-courier/');
- await page.evaluate(()=>{Orbital.App.profile=Orbital.Progress.fresh();Orbital.App.profile.settings.reducedMotion=true;Orbital.App.profile.settings.sound=false;Orbital.App.loadLevel(0);});
+ await page.goto('http://127.0.0.1:4173/games/orbital-courier/offline.html');
+ await page.evaluate(()=>{Orbital.App.profile=Orbital.Progress.fresh();Orbital.App.profile.settings.reducedMotion=true;Orbital.App.profile.settings.sound=false;Orbital.App.loadLevel(Orbital.Campaign.order[0]);});
  return {context,page,errors};
 }
-async function finish(page,{id=0,training=false,failed=false}={}){
+async function finish(page,{id=4,training=false,failed=false}={}){
  await expect.poll(()=>page.evaluate(()=>Orbital.App.transitioning)).toBe(false);
  await page.evaluate(({id,training,failed})=>{
   const O=Orbital,A=O.App,P=O.Physics;A.profile.upgrades.engine=3;A.loadLevel(id);A.assisted=training;
@@ -128,7 +128,7 @@ for(const [width,height]of [[1366,768],[320,568],[390,844],[568,320]])test(`resu
   await page.locator('#modal .modal-close').click();
   expect(await page.evaluate(()=>JSON.stringify(Orbital.App.profile))).toBe(repeated);
   await page.locator('#resultBack').click();await page.locator('#resultNext').click();
-  await expect.poll(()=>page.evaluate(()=>Orbital.App.currentId)).toBe(1);await aiming(page);
+  await expect.poll(()=>page.evaluate(()=>Orbital.App.currentId)).toBe(5);await aiming(page);
 
   const resources=await page.evaluate(()=>{const p=Orbital.App.profile;return [p.credits,p.data,p.xp,p.achievements];});
   await finish(page,{failed:true});expect(await page.evaluate(()=>Orbital.App.state.status)).toBe('lost');
@@ -148,7 +148,7 @@ for(const [width,height]of [[1366,768],[320,568],[390,844],[568,320]])test(`resu
   await expect(page.locator('#resultNext')).toContainText('Все маршруты');
   await page.locator('#resultNext').click();await expect(page.locator('#campaign')).toBeVisible();
   await expect(page.locator('#resultScreen')).not.toBeVisible();
-  await page.evaluate(()=>{Orbital.App.actions.reset();Orbital.App.loadLevel(0);});await aiming(page);
+  await page.evaluate(()=>{Orbital.App.actions.reset();Orbital.App.loadLevel(Orbital.Campaign.order[0]);});await aiming(page);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   expect(errors).toEqual([]);
  }finally{await context.close();}

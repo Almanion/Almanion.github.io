@@ -14,9 +14,9 @@
     {id:'fork',name:'Два вектора',xp:10000,gate:'both4',requirement:'Обе ветви четырёх карт',color:'#97bfff',description:'Расходящиеся потоки с острыми развилками.',length:172},
     {id:'tidal',name:'Резонанс',xp:14000,gate:'sector18',requirement:'Все карты «Развилок приливов»',color:'#ffe0a7',description:'Золотые волновые фронты вдоль орбиты.',length:180},
     {id:'postal',name:'Лента горизонта',xp:18000,gate:'multi4',requirement:'Все карты «Предела навигации»',color:'#ffa6cb',description:'Тканая лента с золотыми почтовыми печатями.',length:186},
-    {id:'cartographer',name:'Картограф',xp:22000,gate:'all80',requirement:'Все 80 контрактов',color:'#dcf7ff',description:'Четырёхлучевые звёзды полного атласа.',length:198}
+    {id:'cartographer',name:'Картограф',xp:22000,gate:'all80',requirement:'Все контракты кампании',color:'#dcf7ff',description:'Четырёхлучевые звёзды полного атласа.',length:198}
   ]);
-  function unlocked(p,item){if((p.xp||0)<item.xp)return false;const done=i=>!!(p.records?.[i]?.medals&1);switch(item.gate){case'both4':return Object.values(p.records||{}).filter(r=>r.routes?.length>=2).length>=4;case'sector18':return [68,69,70,71].every(done);case'multi4':return [76,77,78,79].every(done);case'all80':return Array.from({length:80},(_,i)=>i).every(done);default:return true;}}
+  function unlocked(p,item){if((p.xp||0)<item.xp)return false;const done=i=>!!(p.records?.[i]?.medals&1);switch(item.gate){case'both4':return Object.values(p.records||{}).filter(r=>r.routes?.length>=2).length>=4;case'sector18':return [68,69,70,71].every(done);case'multi4':return [76,77,78,79].every(done);case'all80':return !!O.Campaign?.order.length&&O.Campaign.order.every(done);default:return true;}}
 
   const find=id=>TRAILS.find(t=>t.id===id)||TRAILS[0];
   function recent(points,maxLength=140){

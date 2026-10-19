@@ -2,7 +2,7 @@
 const {test,expect}=require('@playwright/test');
 test('detailed craft models retain colour, open docking aperture and bounded texture caches',async({page},info)=>{
  await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
- await page.setViewportSize({width:1200,height:800});await page.goto('/games/orbital-courier/');
+ await page.setViewportSize({width:1200,height:800});await page.goto('/games/orbital-courier/offline.html');
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  const result=await page.evaluate(()=>{
   const O=Orbital,c=document.createElement('canvas');c.id='craftBoard';c.width=1200;c.height=800;c.style.cssText='position:fixed;inset:0;z-index:9999;width:1200px;height:800px';document.body.append(c);

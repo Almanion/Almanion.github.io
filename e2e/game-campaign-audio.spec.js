@@ -1,18 +1,18 @@
 'use strict';
 const {test,expect}=require('@playwright/test');
 const historical=require('../game-source/orbital-courier/docs/completed-v8-profile.json');
-test.beforeEach(async({page})=>{await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());await page.goto('/games/orbital-courier/');});
+test.beforeEach(async({page})=>{await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());await page.goto('/games/orbital-courier/offline.html');});
 for(const width of [390,1366])test('five campaign tiers, route order and archived final '+width,async({page},info)=>{
  await page.setViewportSize({width,height:844});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.evaluate(profile=>{const A=Orbital.App;A.profile=Orbital.Progress.sanitize(profile);A.profile.settings.reducedMotion=true;A.go('campaign');},historical);
- await expect(page.locator('#difficultyTabs button')).toHaveCount(5);await expect(page.locator('#campaignTotal')).toContainText('76');
+ await expect(page.locator('#difficultyTabs button')).toHaveCount(5);await expect(page.locator('#campaignTotal')).toContainText('72');
  await page.locator('[data-action=campaign-tier][data-tier="4"]').click();
  if(width<700)await page.locator('#sectorSelect').selectOption('19');else await page.locator('#sectorTabs [data-sector="19"]').click();
  await expect(page.locator('.mission-card')).toHaveCount(4);await expect(page.locator('#sectorOverview')).toContainText('Предел навигации');
  await expect(page.locator('.mission-card.completed')).toHaveCount(0);await expect(page.locator('.mission-card').first()).toContainText('прежний рекорд сохранён');
  await page.screenshot({path:info.outputPath('difficulty-tiers.png'),fullPage:true});
  await page.evaluate(()=>{Orbital.App.loadLevel(15);Orbital.App.actions['following-level']();});
- await expect.poll(()=>page.evaluate(()=>Orbital.App.currentId)).toBe(18);await expect(page.locator('#flightSector')).toContainText('17');
+ await expect.poll(()=>page.evaluate(()=>Orbital.App.currentId)).toBe(18);await expect(page.locator('#flightSector')).toContainText('13');
  await page.evaluate(()=>Orbital.App.actions['previous-level']());await expect.poll(()=>page.evaluate(()=>Orbital.App.currentId)).toBe(15);
  await page.evaluate(()=>{const A=Orbital.App,P=Orbital.Physics,l=A.level(),q=l.solution;A.state=P.createState(l,q.angle,q.speed);Orbital.Review.start(A.state);while(A.state.status==='flying'){const prior=A.state;A.state=P.step(prior,l);Orbital.Review.observe(prior,A.state,l);}A.finish();Orbital.Review.selectTime(0);Orbital.UI9.sync();});
  expect(await page.evaluate(()=>Orbital.App.displayState().status)).toBe('flying');

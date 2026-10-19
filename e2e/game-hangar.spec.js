@@ -7,7 +7,7 @@ test.beforeEach(async({page})=>{
 });
 test('star clusters follow the pointer and reduced motion freezes the scene',async({page},testInfo)=>{
     await page.setViewportSize({width:1366,height:768});
-    await page.goto('/games/orbital-courier/');
+    await page.goto('/games/orbital-courier/offline.html');
     const canvas=page.locator('#heroCanvas'),box=await canvas.boundingBox();
     await page.mouse.move(box.x+box.width*.75,box.y+box.height*.3);
     await expect.poll(()=>page.evaluate(()=>Orbital.App.heroPointer.strength)).toBeGreaterThan(.8);
@@ -28,7 +28,7 @@ for(const [width,height]of [[320,568],[390,844],[844,390],[1366,768]]){
     test(`hangar and circular hero at ${width}x${height}`,async({page},testInfo)=>{
         const errors=[];page.on('pageerror',e=>errors.push(e.message));
         await page.setViewportSize({width,height});
-        await page.goto('/games/orbital-courier/');
+        await page.goto('/games/orbital-courier/offline.html');
         await expect(page.locator('#heroCanvas')).toBeVisible();
         const transform=await page.locator('#heroCanvas').evaluate(c=>{const m=c.getContext('2d').getTransform();return {x:m.a,y:m.d};});
         expect(transform.x).toBeCloseTo(transform.y,6);
@@ -47,7 +47,7 @@ for(const [width,height]of [[320,568],[390,844],[844,390],[1366,768]]){
     });
 }
 test('shop quotes, changed quote confirmation, purchase and refund',async({page})=>{
-    await page.goto('/games/orbital-courier/');
+    await page.goto('/games/orbital-courier/offline.html');
     await page.evaluate(p=>{Orbital.App.profile=Orbital.Progress.sanitize(p);Orbital.App.go('hangar',true);},profile);
     const before=await page.evaluate(()=>({credits:Orbital.App.profile.credits,data:Orbital.App.profile.data}));
     await page.locator('[data-action=upgrade][data-key=engine]').click();
@@ -84,7 +84,7 @@ test('cloud restores a second device, rejects divergent copies and isolates acco
                 window.testAccount(uid);return ()=>{};
             }};
         },{uid,seed});
-        await page.goto('http://127.0.0.1:4173/games/orbital-courier/');
+        await page.goto('http://127.0.0.1:4173/games/orbital-courier/offline.html');
         await page.locator('[data-action=cloud]').click();await page.locator('[data-action=cloud-connect]').click();
         await expect.poll(()=>page.evaluate(()=>Orbital.Cloud.sync?.status)).toBe('synced');
         await page.locator('#modal .modal-close').click();return {context,page};

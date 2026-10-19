@@ -6,8 +6,8 @@ for(const [width,height]of [[320,568],[390,844],[844,390]]){
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   try{
    await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
-   await page.goto('http://127.0.0.1:4173/games/orbital-courier/');
-   await page.evaluate(()=>{Orbital.App.profile.settings.reducedMotion=true;Orbital.App.loadLevel(0);});
+   await page.goto('http://127.0.0.1:4173/games/orbital-courier/offline.html');
+   await page.evaluate(()=>{Orbital.App.profile.settings.reducedMotion=true;Orbital.App.loadLevel(Orbital.Campaign.order[0]);});
    await expect(page.locator('body')).toHaveAttribute('data-map-mode','aim');
    const cdp=await context.newCDPSession(page);
    const touch=async(type,points)=>{await cdp.send('Input.dispatchTouchEvent',{type,touchPoints:points.map(([id,x,y])=>({id,x,y}))});await page.waitForTimeout(35);};

@@ -4,7 +4,7 @@ for(const [width,height]of [[320,568],[390,844],[844,390]])test('compact cockpit
  const context=await browser.newContext({viewport:{width,height},isMobile:true,hasTouch:true,serviceWorkers:'block'}),page=await context.newPage();
  try{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
-  await page.goto('http://127.0.0.1:4173/games/orbital-courier/');await page.evaluate(()=>{Orbital.App.profile.settings.reducedMotion=true;Orbital.App.loadLevel(0);});
+  await page.goto('http://127.0.0.1:4173/games/orbital-courier/offline.html');await page.evaluate(()=>{Orbital.App.profile.settings.reducedMotion=true;Orbital.App.loadLevel(Orbital.Campaign.order[0]);});
   await expect(page.locator('#angleInput')).not.toBeVisible();await expect(page.locator('#mobileFine')).toBeVisible();
   const box=await page.locator('#gameCanvas').boundingBox();expect(box.height).toBeGreaterThan(height<480?180:height*.5);
   await expect(page.locator('#mobileLaunch')).toBeInViewport();expect((await page.locator('#mobileLaunch').boundingBox()).width).toBeGreaterThan(100);
@@ -39,7 +39,7 @@ for(const [width,height]of [[320,568],[390,844],[844,390]])test('compact cockpit
 });
 
 test('new planet surfaces and cargo retain deterministic artwork',async({page},info)=>{
- await page.goto('/games/orbital-courier/');
+ await page.goto('/games/orbital-courier/offline.html');
  const samples=await page.evaluate(()=>{
   const c=document.createElement('canvas');c.id='artGallery';c.width=1100;c.height=420;c.style.cssText='position:fixed;inset:0;z-index:1000;width:1100px;height:420px;background:#07131e';document.body.append(c);
   const r=new Orbital.Renderer(c),ctx=r.ctx;ctx.fillStyle='#07131e';ctx.fillRect(0,0,1100,420);r.uiScale=1;
