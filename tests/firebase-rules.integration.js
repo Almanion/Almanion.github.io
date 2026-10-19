@@ -397,6 +397,47 @@ function serverTimestamp() {
         await assertFails(accountDb.ref(gamePath + '/save').set('{}'));
         await assertFails(accountDb.ref(gamePath).remove());
 
+        // Exercise the game's real synchronization state machine against the
+        // Firebase emulator and these rules, including server transactions.
+        const { CloudSync, encode } = require('../game-source/orbital-courier/src/cloud-core.js');
+        function gameClient() {
+            let profile = { game: 'orbital-courier', version: 8, credits: 25, xp: 0, records: {} };
+            const values = new Map();
+            const sync = new CloudSync({
+                storage: { getItem: key => values.get(key) || null, setItem: (key, value) => values.set(key, value) },
+                getSave: () => encode(profile), isFresh: () => profile.credits === 25,
+                canApply: () => true, applySave: text => { profile = JSON.parse(text); },
+                validateSave: text => { assert.equal(JSON.parse(text).game, 'orbital-courier'); },
+                transport: {
+                    read: async () => (await accountDb.ref(gamePath).once('value')).val(),
+                    write: async (_uid, revision, save, valid) => {
+                        const result = await accountDb.ref(gamePath).transaction(current => {
+                            if (!valid() || (current?.revision || 0) !== revision) return;
+                            return { version: 1, revision: revision + 1, save, updatedAt: serverTimestamp() };
+                        }, undefined, false);
+                        return { committed: result.committed, record: result.snapshot.val() };
+                    }
+                }
+            });
+            return { sync, get profile() { return profile; }, values };
+        }
+        const gameA = gameClient(), gameB = gameClient();
+        await gameA.sync.setUser(accountUid);
+        assert.equal(gameA.sync.status, 'synced');
+        gameA.profile.credits = 106; gameA.profile.xp = 356;
+        gameA.profile.records = { 4: { medals: 7, bestScore: 92 } };
+        await gameA.sync.sync(); assert.equal(gameA.sync.status, 'synced');
+        await gameB.sync.setUser(accountUid);
+        assert.equal(gameB.sync.status, 'synced');
+        assert.deepEqual(gameB.profile, gameA.profile, 'a second device restores a complete awarded result');
+        gameA.profile.credits += 10; gameB.profile.credits -= 20;
+        await gameA.sync.sync(); await gameB.sync.sync();
+        assert.equal(gameB.sync.status, 'conflict', 'diverging whole saves cannot overwrite each other');
+        await gameB.sync.resolve('cloud');
+        assert.equal(gameB.sync.status, 'synced'); assert.deepEqual(gameB.profile, gameA.profile);
+        assert.ok(gameB.values.has('orbital-cloud-backups'));
+        await assertFails(ordinaryDb.ref(gamePath).once('value'));
+
         await assertSucceeds(ownerDb.ref('presence').remove());
         await assertSucceeds(ownerDb.ref('visitors').remove());
         await assertSucceeds(ownerDb.ref('dailyStats').remove());

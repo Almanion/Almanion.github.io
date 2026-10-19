@@ -49,5 +49,18 @@ function client(transport){
     const slow=server(),baseWrite=slow.write;let releaseWrite;
     slow.write=async(...args)=>{await new Promise(r=>releaseWrite=r);return baseWrite(...args);};
     const d=client(slow),started=d.sync.setUser('pilot');await tick();d.change({credits:77,xp:7});slow.write=baseWrite;releaseWrite();await started;await tick();await tick();assert.equal(JSON.parse(slow.records.get('pilot').save).credits,77);
+    // Selecting a contract on two devices is not a competing economic result.
+    const preferences=server(),e=client(preferences),f=client(preferences);
+    const sameSave=(a,b)=>{a=JSON.parse(a);b=JSON.parse(b);delete a.lastLevel;delete b.lastLevel;return encode(a)===encode(b);};
+    e.sync.o.sameSave=f.sync.o.sameSave=sameSave;
+    await e.sync.setUser('pilot');await f.sync.setUser('pilot');const preferenceWrites=preferences.writes;
+    e.change({...e.p,lastLevel:4});f.change({...f.p,lastLevel:8});await e.sync.sync();await f.sync.sync();
+    assert.equal(preferences.writes,preferenceWrites);assert.equal(f.sync.status,'synced');assert.equal(f.p.lastLevel,8);
+    e.change({...e.p,credits:90,xp:10});await e.sync.sync();await f.sync.sync();
+    assert.equal(f.sync.status,'synced');assert.equal(f.p.credits,90);
+    // Metadata after an acknowledgement can fail; the following read safely recovers.
+    const quota=client(server()),setItem=quota.storage.setItem;let failMeta=true;
+    quota.storage.setItem=(key,value)=>{if(failMeta&&key.startsWith('orbital-cloud-meta:'))throw Error('quota');setItem(key,value);};
+    await quota.sync.setUser('pilot');assert.equal(quota.sync.status,'error');failMeta=false;await quota.sync.sync(true);assert.equal(quota.sync.status,'synced');
     console.log('orbital cloud: account isolation, conflicts, atomic writes, backups, offline errors and in-flight races passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

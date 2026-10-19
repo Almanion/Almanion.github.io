@@ -26,9 +26,10 @@
   function stats(){const st=G.stats(app.profile);if(app.profile.difficulty==='pro')st.preview*=.6;return st;}
   function isFlying(){return app.screen==='play'&&app.state?.status==='flying';}
   function isAiming(){return app.screen==='play'&&!app.state;}
-  function save(){
+  function save(reason='progress'){
     app.storageOK=G.write(storage,app.profile);$('saveWarning').hidden=app.storageOK;
-    if(app.storageOK)root.dispatchEvent(new CustomEvent('orbital-save'));
+    root.dispatchEvent(new CustomEvent(app.storageOK?'orbital-save':'orbital-save-error',{detail:{reason}}));
+    return app.storageOK;
   }
   function toast(message,error=false){
     const el=document.createElement('div');el.className='toast'+(error?' error':'');el.textContent=message;
@@ -323,9 +324,9 @@
     app.accumulator=0;syncControls();updateTelemetry();
     if(s.status==='won'){
       const before=G.rank(app.profile),result=G.complete(app.profile,level(),s);
-      app.lastResult=result;save();updateProfileUI();updateObjectives();sound.play('win');burst(s.x,s.y,skin().color,45);
+      app.lastResult=result;save('contract');updateProfileUI();updateObjectives();sound.play('win');burst(s.x,s.y,skin().color,45);
       setStage(result.training?'ТРЕНИРОВКА ЗАВЕРШЕНА':'ДОСТАВЛЕНО',result.training?'Демонстрация без наград. Для зачёта выбери самостоятельный рейс.':'Оценка рейса определяет оплату. Повторные выплаты — только за улучшение.');
-      if(G.rank(app.profile).index>before.index)toast(`Новый ранг: ${G.rank(app.profile).name}!`);
+      if(app.storageOK&&G.rank(app.profile).index>before.index)toast(`Новый ранг: ${G.rank(app.profile).name}!`);
       if(O.Review){O.Review.finish(s,app.trail,level());O.V8.showResult(result);}else showWin(result);
     }else{
       sound.play('fail');burst(s.x,s.y,'#ff9f86',32);setStage('МАРШРУТ НЕ ЗАВЕРШЁН','Ничего не потеряно. Измени направление или скорость и попробуй снова.');if(O.Review){O.Review.finish(s,app.trail,level());O.V8.showResult(null);}else showFail();

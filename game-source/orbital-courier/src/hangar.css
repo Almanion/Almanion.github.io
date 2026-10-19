@@ -1,6 +1,15 @@
 /* Store and account presentation, scoped to avoid changing the flight layout. */
 .cloud-entry{font:12px var(--mono);color:#b9e9dd;background:#16302d;border:1px solid #37665b;border-radius:9px;padding:9px 12px;min-height:36px;cursor:pointer}
 .cloud-entry[data-status=conflict],.cloud-entry[data-status=account-change],.cloud-entry[data-status=error]{color:#ffe0ac;border-color:#9b7745}
+.cloud-header{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:7px 10px;border:1px solid #3d6266;border-radius:9px;background:#10252d;color:#c5e4dd;font-size:12px;white-space:nowrap}
+.cloud-header svg{width:20px;height:20px;flex:none}.cloud-header[data-status=synced]{color:#91f2cf;border-color:#457a67}.cloud-header[data-status=error],.cloud-header[data-status=conflict],.cloud-header[data-status=account-change]{color:#ffcf96;border-color:#997247}
+.cloud-local-status{display:grid;gap:5px;padding:13px 15px;background:#14352e;border:1px solid #3f7563;border-radius:11px;font-size:13px}.cloud-local-status span{color:#b6d4cd;font-size:12px}.cloud-local-status.bad{background:#3c2725;border-color:#a57662}
+.cloud-last-save{font-size:12px;color:#abcac5}.cloud-auth{border-block:1px solid #34505a;padding:16px 0;margin:18px 0}.cloud-auth h3{margin:0 0 8px;font-size:19px}.cloud-auth>p{font-size:13px;color:#b5cbd3}.cloud-google{width:100%;min-height:44px}.cloud-auth-divider{margin:12px 0;text-align:center;font-size:12px;color:#9ab6c0}
+#cloudAuthForm{display:grid;gap:8px}#cloudAuthForm label{font-size:13px;color:#c2d8df}#cloudAuthForm input{margin-bottom:6px}#cloudAuthForm .button{margin-top:5px;min-height:46px}#cloudAuthForm p{margin:4px 0;font-size:13px;line-height:1.6}#cloudAuthForm .cloud-auth-error{color:#ffb69f}.cloud-auth-links{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-top:9px}.cloud-auth-links .text-button{min-height:42px;font-size:13px}#cloudPanel>.text-button{display:block;min-height:42px;max-width:100%;white-space:normal;text-align:left}
+.cloud-auth h3{padding-right:40px}.cloud-tools>summary{padding:10px 0;min-height:44px;cursor:pointer;font-size:13px;color:#bdd9de}.cloud-tools .text-button{min-height:44px;text-align:left;white-space:normal}
+.cloud-header[data-status=local-error],.cloud-entry[data-status=local-error]{color:#ffcf96;border-color:#997247}
+@media(max-width:1100px){.cloud-header{width:38px;min-width:38px;padding:7px}.cloud-header .cloud-label{display:none}}
+@media(max-width:420px){.topbar .account{gap:6px}.cloud-header{width:34px;min-width:34px;min-height:34px;padding:5px}.cloud-auth-links{display:grid}#cloudPanel .settings-grid>*{white-space:normal}}
 #hangar{max-width:1240px;margin:auto}
 #hangar .page-heading h2{font-size:clamp(30px,4vw,46px);letter-spacing:-1px}
 #hangar .page-heading p{color:#adc1ca;max-width:560px;line-height:1.6}

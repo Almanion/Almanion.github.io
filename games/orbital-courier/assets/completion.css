@@ -10,6 +10,7 @@ body[data-page=play][data-flight=review][data-result-view=summary] #play>.flight
 body[data-page=play][data-flight=review][data-result-view=summary] #play>.flight-layout{display:none}
 body[data-page=play][data-flight=review][data-result-view=analysis] #resultScreen{display:none}
 .completion-scroll{overflow:auto;overscroll-behavior:contain;min-height:0;flex:1;padding:16px 24px 12px;scrollbar-width:thin;scrollbar-color:#32554e transparent}
+#resultScreen #saveWarning{position:static;inset:auto;transform:none;width:100%;max-width:none;margin:0 0 12px;padding:12px;font-size:13px;line-height:1.5;text-align:left;border-radius:10px}
 .completion-hero{display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:24px;align-items:center;padding:0 0 14px;border-bottom:1px solid #263b44}
 .completion-copy{min-width:0}
 .completion-kicker{display:flex;gap:9px;align-items:center;flex-wrap:wrap;font:10px var(--mono);letter-spacing:.1em;color:var(--result-accent)}
@@ -80,6 +81,8 @@ body[data-page=play][data-flight=review][data-result-view=analysis] #resultScree
 .completion-next-note>span{font:10px var(--mono);letter-spacing:.04em;color:#9db8c5}.completion-next-note strong{font-size:13px;color:#c7e1e5;font-weight:500}
 .completion-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;padding:12px 24px calc(12px + env(safe-area-inset-bottom));border-top:1px solid #29404a;background:#0a1821;z-index:2}
 .completion-actions-main{display:flex;gap:10px;min-width:0}.completion-actions .button{padding:12px 20px;min-height:48px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:20px;white-space:normal;line-height:1.4}
+.completion-actions .result-cloud{display:none;flex:none;width:40px;min-width:40px;min-height:40px;padding:6px;font-size:22px}.result-cloud .cloud-label{display:none}
+@media(max-width:999px){.completion-actions .result-cloud{display:inline-flex}}
 .completion-actions .quiet,.completion-analysis-bar .quiet{border:1px solid #314c59;background:#10232e;color:#c3dbe3}
 #resultNext{min-width:220px;font-weight:650}.completion-actions #resultReview,.completion-actions #resultContracts{border-color:transparent;background:transparent;color:#a9c3ce;padding-left:0}.completion-actions-main{margin-left:auto}
 .completion-no-loss strong{display:block;font-size:24px;color:var(--result-accent);font-weight:500;margin:20px 0 10px}.completion-no-loss p,.completion-advice p{font-size:12px;line-height:1.7;color:#a9bdc8;margin:0}

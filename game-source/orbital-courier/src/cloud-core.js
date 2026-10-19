@@ -11,6 +11,7 @@
   class CloudSync {
     constructor(options){this.o=options;this.uid=null;this.epoch=0;this.status='off';this.remote=null;this.base=null;this.revision=0;this.busy=false;this.again=false;}
     notify(status){this.status=status;this.o.changed?.(this);}
+    same(a,b){return a===b||(a!==null&&b!==null&&!!this.o.sameSave?.(a,b));}
     readMeta(){try{return JSON.parse(this.o.storage.getItem('orbital-cloud-meta:'+this.uid)||'null');}catch{return null;}}
     owner(){try{return this.o.storage.getItem('orbital-cloud-owner');}catch{return null;}}
     remember(record){
@@ -44,8 +45,8 @@
         this.remote=remote;
         if(!this.attached){this.notify('account-change');return;}
         const local=this.o.getSave();
-        if(remote?.save===local){this.remember(remote);this.notify('synced');return;}
-        if(remote && (local===this.base || (!this.base&&this.o.isFresh()))){
+        if(remote&&this.same(remote.save,local)){this.remember(remote);this.notify('synced');return;}
+        if(remote && (this.same(local,this.base) || (!this.base&&this.o.isFresh()))){
           if(!this.o.canApply()){this.notify('waiting');return;}
           this.backup(remote);this.o.applySave(remote.save);this.remember(remote);this.notify('synced');return;
         }
@@ -70,7 +71,7 @@
         this.remote=result.record;this.notify('conflict');return;
       }
       this.remember(result.record);
-      if(this.o.getSave()!==local){this.again=true;this.notify('pending');}else this.notify('synced');
+      if(!this.same(this.o.getSave(),local)){this.again=true;this.notify('pending');}else this.notify('synced');
     }
     async resolve(choice){
       if(this.busy||!this.uid||!['conflict','account-change','waiting'].includes(this.status))return;

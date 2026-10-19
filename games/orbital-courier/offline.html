@@ -687,7 +687,7 @@ body.high-contrast{--muted:#d4e4ed;--line:#617987;--ink:#fff}body.high-contrast 
 #modal .check-row input[type=checkbox]:checked{background:#245747;border-color:#78ccab}
 #modal .check-row input[type=checkbox]:checked::before{transform:translateX(18px);background:#a9fddd}
 .save-badge{min-width:36px;min-height:38px;background:#604226;color:#fff0c8;border:1px solid #be915a;border-radius:10px;font-size:17px;font-weight:700}
-body[data-page=play] #saveWarning{display:none}
+body[data-page=play] #saveWarning:not([hidden]){display:block;width:min(520px,calc(100vw - 24px))}
 .dispatch-heading>div:first-child{min-width:0;flex:1}.dispatch-heading .section-total{flex:0 0 auto;max-width:145px;min-width:0}.dispatch-heading .section-total span{white-space:normal;line-height:1.5}
 @media (max-width:699px), (max-width:999px) and (orientation:portrait){
  .dispatch-heading .section-total{max-width:115px;font-size:20px}.dispatch-heading .section-total span{font-size:10px}
@@ -811,6 +811,15 @@ body[data-page=play] #saveWarning{display:none}
 /* Store and account presentation, scoped to avoid changing the flight layout. */
 .cloud-entry{font:12px var(--mono);color:#b9e9dd;background:#16302d;border:1px solid #37665b;border-radius:9px;padding:9px 12px;min-height:36px;cursor:pointer}
 .cloud-entry[data-status=conflict],.cloud-entry[data-status=account-change],.cloud-entry[data-status=error]{color:#ffe0ac;border-color:#9b7745}
+.cloud-header{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:7px 10px;border:1px solid #3d6266;border-radius:9px;background:#10252d;color:#c5e4dd;font-size:12px;white-space:nowrap}
+.cloud-header svg{width:20px;height:20px;flex:none}.cloud-header[data-status=synced]{color:#91f2cf;border-color:#457a67}.cloud-header[data-status=error],.cloud-header[data-status=conflict],.cloud-header[data-status=account-change]{color:#ffcf96;border-color:#997247}
+.cloud-local-status{display:grid;gap:5px;padding:13px 15px;background:#14352e;border:1px solid #3f7563;border-radius:11px;font-size:13px}.cloud-local-status span{color:#b6d4cd;font-size:12px}.cloud-local-status.bad{background:#3c2725;border-color:#a57662}
+.cloud-last-save{font-size:12px;color:#abcac5}.cloud-auth{border-block:1px solid #34505a;padding:16px 0;margin:18px 0}.cloud-auth h3{margin:0 0 8px;font-size:19px}.cloud-auth>p{font-size:13px;color:#b5cbd3}.cloud-google{width:100%;min-height:44px}.cloud-auth-divider{margin:12px 0;text-align:center;font-size:12px;color:#9ab6c0}
+#cloudAuthForm{display:grid;gap:8px}#cloudAuthForm label{font-size:13px;color:#c2d8df}#cloudAuthForm input{margin-bottom:6px}#cloudAuthForm .button{margin-top:5px;min-height:46px}#cloudAuthForm p{margin:4px 0;font-size:13px;line-height:1.6}#cloudAuthForm .cloud-auth-error{color:#ffb69f}.cloud-auth-links{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-top:9px}.cloud-auth-links .text-button{min-height:42px;font-size:13px}#cloudPanel>.text-button{display:block;min-height:42px;max-width:100%;white-space:normal;text-align:left}
+.cloud-auth h3{padding-right:40px}.cloud-tools>summary{padding:10px 0;min-height:44px;cursor:pointer;font-size:13px;color:#bdd9de}.cloud-tools .text-button{min-height:44px;text-align:left;white-space:normal}
+.cloud-header[data-status=local-error],.cloud-entry[data-status=local-error]{color:#ffcf96;border-color:#997247}
+@media(max-width:1100px){.cloud-header{width:38px;min-width:38px;padding:7px}.cloud-header .cloud-label{display:none}}
+@media(max-width:420px){.topbar .account{gap:6px}.cloud-header{width:34px;min-width:34px;min-height:34px;padding:5px}.cloud-auth-links{display:grid}#cloudPanel .settings-grid>*{white-space:normal}}
 #hangar{max-width:1240px;margin:auto}
 #hangar .page-heading h2{font-size:clamp(30px,4vw,46px);letter-spacing:-1px}
 #hangar .page-heading p{color:#adc1ca;max-width:560px;line-height:1.6}
@@ -943,6 +952,7 @@ body[data-page=play][data-flight=review][data-result-view=summary] #play>.flight
 body[data-page=play][data-flight=review][data-result-view=summary] #play>.flight-layout{display:none}
 body[data-page=play][data-flight=review][data-result-view=analysis] #resultScreen{display:none}
 .completion-scroll{overflow:auto;overscroll-behavior:contain;min-height:0;flex:1;padding:16px 24px 12px;scrollbar-width:thin;scrollbar-color:#32554e transparent}
+#resultScreen #saveWarning{position:static;inset:auto;transform:none;width:100%;max-width:none;margin:0 0 12px;padding:12px;font-size:13px;line-height:1.5;text-align:left;border-radius:10px}
 .completion-hero{display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:24px;align-items:center;padding:0 0 14px;border-bottom:1px solid #263b44}
 .completion-copy{min-width:0}
 .completion-kicker{display:flex;gap:9px;align-items:center;flex-wrap:wrap;font:10px var(--mono);letter-spacing:.1em;color:var(--result-accent)}
@@ -1013,6 +1023,8 @@ body[data-page=play][data-flight=review][data-result-view=analysis] #resultScree
 .completion-next-note>span{font:10px var(--mono);letter-spacing:.04em;color:#9db8c5}.completion-next-note strong{font-size:13px;color:#c7e1e5;font-weight:500}
 .completion-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;padding:12px 24px calc(12px + env(safe-area-inset-bottom));border-top:1px solid #29404a;background:#0a1821;z-index:2}
 .completion-actions-main{display:flex;gap:10px;min-width:0}.completion-actions .button{padding:12px 20px;min-height:48px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:20px;white-space:normal;line-height:1.4}
+.completion-actions .result-cloud{display:none;flex:none;width:40px;min-width:40px;min-height:40px;padding:6px;font-size:22px}.result-cloud .cloud-label{display:none}
+@media(max-width:999px){.completion-actions .result-cloud{display:inline-flex}}
 .completion-actions .quiet,.completion-analysis-bar .quiet{border:1px solid #314c59;background:#10232e;color:#c3dbe3}
 #resultNext{min-width:220px;font-weight:650}.completion-actions #resultReview,.completion-actions #resultContracts{border-color:transparent;background:transparent;color:#a9c3ce;padding-left:0}.completion-actions-main{margin-left:auto}
 .completion-no-loss strong{display:block;font-size:24px;color:var(--result-accent);font-weight:500;margin:20px 0 10px}.completion-no-loss p,.completion-advice p{font-size:12px;line-height:1.7;color:#a9bdc8;margin:0}
@@ -1193,9 +1205,9 @@ body[data-game-navigation=pages][data-page=play] .topbar nav a{min-height:40px;p
 <header class="topbar">
 <button aria-label="На главную" class="brand" data-action="nav" data-page="home"><span aria-hidden="true" class="brand-mark"><svg fill="none" viewbox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><lineargradient gradientunits="userSpaceOnUse" id="oc-brand-g" x1="9" x2="56" y1="54" y2="10"><stop stop-color="#5be1bc"></stop><stop offset="1" stop-color="#defff6"></stop></lineargradient></defs><rect fill="#0d202b" height="62" rx="20" stroke="#3c706d" width="62" x="1" y="1"></rect><circle cx="31" cy="33" fill="#163b43" r="12" stroke="#77d8c2" stroke-width="1.6"></circle><path d="M22 26c7 2 10 10 8 19M21 36c6-4 14-3 21 2" stroke="#427578" stroke-width="1.1"></path><path d="M45 14C35 9 14 24 11 40c-3 14 9 13 20 7" stroke="url(#oc-brand-g)" stroke-linecap="round" stroke-width="2.4"></path><path d="m51 13-6 18-3-8-8-3Z" fill="#d4fff0" stroke="#6af4cd" stroke-linejoin="round" stroke-width="1.2"></path><path d="m41 26-4 6m1-9-4 4" stroke="#6af4cd" stroke-linecap="round" stroke-width="1.5"></path><circle cx="19" cy="49" fill="#ffd292" r="2"></circle><path d="m48 44 4 2v5l-4 2-4-2v-5Z" fill="#344239" stroke="#e6c696"></path><path d="m44 46 4 2 4-2m-4 2v5" stroke="#e6c696" stroke-width=".8"></path></svg></span><span>ОРБИТАЛЬНЫЙ<br/><strong>КУРЬЕР</strong></span></button>
 <nav aria-label="Главная навигация"><button data-action="nav" data-page="campaign">Контракты</button><button data-action="nav" data-page="hangar">Ангар</button><button data-action="nav" data-page="awards">Награды</button></nav>
-<div class="account"><span class="rank-badge" id="rankBadge">Стажёр</span><span aria-label="Кредиты" class="wallet" title="Кредиты"><span>◈</span> <b id="creditValue">25</b></span><span aria-label="Исследовательские данные" class="wallet data-wallet" title="Исследовательские данные"><span>⬡</span><b id="dataValue">0</b></span><button aria-label="Как играть" class="icon-button" data-action="help">?</button><button aria-label="Настройки" class="icon-button" data-action="settings">⚙</button></div>
+<div class="account"><span class="rank-badge" id="rankBadge">Стажёр</span><span aria-label="Кредиты" class="wallet" title="Кредиты"><span>◈</span> <b id="creditValue">25</b></span><span aria-label="Исследовательские данные" class="wallet data-wallet" title="Исследовательские данные"><span>⬡</span><b id="dataValue">0</b></span><button aria-label="Прогресс и аккаунт: На устройстве" class="cloud-header" data-action="cloud-header" title="Прогресс и аккаунт"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 18H6a4 4 0 0 1-.5-8A6.5 6.5 0 0 1 18 8.5a4.8 4.8 0 0 1 0 9.5h-1"/><path d="m9 16 3-3 3 3m-3-3v8"/></svg><span class="cloud-label">На устройстве</span></button><button aria-label="Как играть" class="icon-button" data-action="help">?</button><button aria-label="Настройки" class="icon-button" data-action="settings">⚙</button></div>
 </header>
-<div class="save-warning" hidden="" id="saveWarning">Автосохранение недоступно. Сохраняй прогресс вручную через «Настройки → Экспорт».</div>
+<div class="save-warning" hidden="" id="saveWarning" role="alert">Запись на устройстве не удалась. Скачай копию прогресса через «Настройки → Прогресс → Экспорт».</div>
 <main>
 <section class="screen active" id="home">
 <div class="home-universe" aria-hidden="true"><canvas height="700" id="heroCanvas" width="1200"></canvas><div class="home-shade"></div></div>
@@ -3213,9 +3225,10 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   function stats(){const st=G.stats(app.profile);if(app.profile.difficulty==='pro')st.preview*=.6;return st;}
   function isFlying(){return app.screen==='play'&&app.state?.status==='flying';}
   function isAiming(){return app.screen==='play'&&!app.state;}
-  function save(){
+  function save(reason='progress'){
     app.storageOK=G.write(storage,app.profile);$('saveWarning').hidden=app.storageOK;
-    if(app.storageOK)root.dispatchEvent(new CustomEvent('orbital-save'));
+    root.dispatchEvent(new CustomEvent(app.storageOK?'orbital-save':'orbital-save-error',{detail:{reason}}));
+    return app.storageOK;
   }
   function toast(message,error=false){
     const el=document.createElement('div');el.className='toast'+(error?' error':'');el.textContent=message;
@@ -3510,9 +3523,9 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     app.accumulator=0;syncControls();updateTelemetry();
     if(s.status==='won'){
       const before=G.rank(app.profile),result=G.complete(app.profile,level(),s);
-      app.lastResult=result;save();updateProfileUI();updateObjectives();sound.play('win');burst(s.x,s.y,skin().color,45);
+      app.lastResult=result;save('contract');updateProfileUI();updateObjectives();sound.play('win');burst(s.x,s.y,skin().color,45);
       setStage(result.training?'ТРЕНИРОВКА ЗАВЕРШЕНА':'ДОСТАВЛЕНО',result.training?'Демонстрация без наград. Для зачёта выбери самостоятельный рейс.':'Оценка рейса определяет оплату. Повторные выплаты — только за улучшение.');
-      if(G.rank(app.profile).index>before.index)toast(`Новый ранг: ${G.rank(app.profile).name}!`);
+      if(app.storageOK&&G.rank(app.profile).index>before.index)toast(`Новый ранг: ${G.rank(app.profile).name}!`);
       if(O.Review){O.Review.finish(s,app.trail,level());O.V8.showResult(result);}else showWin(result);
     }else{
       sound.play('fail');burst(s.x,s.y,'#ff9f86',32);setStage('МАРШРУТ НЕ ЗАВЕРШЁН','Ничего не потеряно. Измени направление или скорость и попробуй снова.');if(O.Review){O.Review.finish(s,app.trail,level());O.V8.showResult(null);}else showFail();
@@ -3767,7 +3780,8 @@ O.Review={start,observe,finish,prior,clearView,selectTime,setCompare,renderModel
 (function(root){'use strict';const O=root.Orbital,A=O.App,G=O.Progress,P=O.Physics,R=O.Routes,E=O.Economy,L=O.LEVELS,$=id=>document.getElementById(id),$$=q=>[...document.querySelectorAll(q)],money=n=>Math.round(n).toLocaleString('ru-RU'),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let category='all',filter='all',query='',tab='display',cache='',pending=false;
 function layout(){pending=false;if(O.UI9)return O.UI9.layout();if(A.screen!=='play')return;let main=document.querySelector('main'),height=Math.max(180,(root.visualViewport?.height||innerHeight)-Math.max(0,main.getBoundingClientRect().top));if(Math.abs(main.getBoundingClientRect().height-height)>1)main.style.height=height+'px';const box=$('mapViewport'),stage=box.querySelector('.stage');stage.style.width=Math.max(1,box.clientWidth-2)+'px';stage.style.height=Math.max(1,box.clientHeight-2)+'px';}
 function schedule(){if(!pending){pending=true;requestAnimationFrame(layout);}}new ResizeObserver(schedule).observe($('mapViewport'));root.addEventListener('resize',schedule);root.visualViewport?.addEventListener('resize',schedule);
-function collapse(){document.querySelector('.flight-panel').classList.remove('nav-expanded');}function onPage(page){if(page!=='play'){document.querySelector('main').style.height='';document.body.removeAttribute('data-flight');collapse();}else schedule();}function onLevel(){O.Review.clearView();$('flightReview').hidden=true;cache='';collapse();$('flightPlan').open=false;sync();updateRoute();schedule();}
+function restoreSaveWarning(){const warning=$('saveWarning');if(warning?.closest('#resultScreen'))document.querySelector('main').before(warning);}
+function collapse(){document.querySelector('.flight-panel').classList.remove('nav-expanded');}function onPage(page){if(page!=='play'){restoreSaveWarning();document.querySelector('main').style.height='';document.body.removeAttribute('data-flight');collapse();}else schedule();}function onLevel(){restoreSaveWarning();O.Review.clearView();$('flightReview').hidden=true;cache='';collapse();$('flightPlan').open=false;sync();updateRoute();schedule();}
 function sync(){if(O.UI9)return O.UI9.sync();if(A.screen!=='play')return;let m=!A.state?'aiming':A.state.status==='flying'?'running':'review';if(document.body.dataset.flight!==m){document.body.dataset.flight=m;schedule();}const s=A.displayState(),l=A.level();$('liveFlightPanel').hidden=m==='aiming';if(m!=='aiming')$('liveFlightPanel').innerHTML=`<div class="flight-fact"><small>ОТНОСИТЕЛЬНАЯ СКОРОСТЬ</small><strong>${P.dockVelocity(s,l).speed.toFixed(0)} ед./с</strong>Допуск ${P.captureRadius(l,A.stats()).toFixed(1)} ед.</div><div class="flight-fact">${s?.branchId?'Ветвь '+s.branchId:'Один запуск'}<strong>${l.stops?.length?`${s.dropIndex} / ${l.stops.length} адреса`:`${R.collected(l,s)} / ${R.cargoIds(l,s).length} на борту`}</strong></div>`;}
 function updateRoute(force=false){const raw=A.level(),s=A.displayState(),l=R.view(raw,s,A.branchView),legs=l.flybys||[],index=s?.flybyIndex||0,ps=l.portalOrder||[],pi=s?.portalIndex||0,key=l.id+':'+l.activeBranch+':'+A.profile.difficulty;
 if(force||cache!==key){cache=key;$('routePanel').hidden=!legs.length;$('routeSteps').innerHTML=legs.map((f,i)=>`<li data-leg="${i}"><span class="route-number">${i+1}</span><div><b>${esc(l.planets[f.planet].name)} ${f.direction>0?'↻':'↺'}</b><small class="route-value">${f.degrees}°</small></div></li>`).join('');let proof=G.record(A.profile,l.id).routes||[];$('branchPicker').innerHTML=raw.branches?.length?raw.branches.map(b=>`<button class="branch-card ${b.id===l.activeBranch?'active':''}" data-action="v8:branch" data-branch="${b.id}"><strong>${b.id} · ${b.name} ${proof.includes(b.id)?'✓':''}</strong><small>${b.flybys.map(f=>`${l.planets[f.planet].name} ${f.direction>0?'↻':'↺'}`).join(' → ')}</small><small>${b.portalOrder.join(' → ')} · три контейнера</small></button>`).join('')+'<p class="branch-guide">Одна общая карта. Карточка меняет только подсветку, не физику. Ветвь фиксируется первым фактическим переходом. Слоты A/B в пульте — память чисел, а не выбор ветви.</p>':'';}
@@ -3779,6 +3793,7 @@ function resultView(view){
   if(!A.state||A.state.status==='flying')return;
   const wasAnalysis=document.body.dataset.resultView==='analysis';
   document.body.dataset.resultView=view;
+  if(view==='analysis')restoreSaveWarning();else $('resultScreen').querySelector('.completion-scroll')?.prepend($('saveWarning'));
   $('resultAnalysisBar').hidden=view!=='analysis';
   sync();schedule();
   (view==='analysis'?$('resultBack'):wasAnalysis?$('resultReview'):$('resultTitle')).focus({preventScroll:true});
@@ -3789,12 +3804,12 @@ function showResult(result){
   const medals=O.Medals.describe(l,s,s.launchSpeed,G.viewRecord(A.profile,l.id),training,A.stats());
   const diagnosis=O.Review.diagnosis(l,s),cargo=`${R.collected(l,s)} / ${R.cargoIds(l,s).length}`;
   const title=training?'Тренировка завершена':won?'Посылка на месте.':'Попробуем другой курс.';
-  const subtitle=training?'Повтори маршрут самостоятельно, чтобы получить награды.':won?'Доставка подтверждена. Результат и награды сохранены.':diagnosis;
+  const subtitle=training?'Повтори маршрут самостоятельно, чтобы получить награды.':won?(A.storageOK?'Доставка подтверждена. Результат и награды сохранены.':'Доставка подтверждена. Запись не удалась — скачай копию прогресса.') :diagnosis;
   const medalCount=medals.filter(m=>m.state==='won').length;
-  const payment=delivered?(result.first?'Первая доставка по этому контракту.':result.totalCredits?'Доплата за улучшение результата.':'Результат уже оплачен. Новая доплата — за улучшение рекорда.'):(training?'Тренировка не начисляет награды.':'Попытки бесплатны. Прогресс сохранён.');
+  const payment=delivered?(result.first?'Первая доставка по этому контракту.':result.totalCredits?'Доплата за улучшение результата.':'Результат уже оплачен. Новая доплата — за улучшение рекорда.'):(training?'Тренировка не начисляет награды.':A.storageOK?'Попытки бесплатны. Прогресс сохранён.':'Попытки бесплатны. Скачай копию прогресса: запись на устройстве недоступна.');
   const lossDescription=training?'':diagnosis.split('. ')[0]+'. ';
   const career=`<div class="completion-career"><span>ТВОЙ РАНГ</span><strong>${esc(rank.name)}</strong><div class="completion-rank-track"><i style="width:${rank.next?P.clamp((A.profile.xp-rank.xp)/(rank.next.xp-rank.xp)*100,0,100):100}%"></i></div><small>${rank.next?`${money(Math.max(0,rank.next.xp-A.profile.xp))} XP до ранга «${esc(rank.next.name)}»`:'Достигнут высший ранг'}</small></div>`;
-  collapse();$('flightPlan').open=false;$('flightReview').hidden=false;
+  collapse();restoreSaveWarning();$('flightPlan').open=false;$('flightReview').hidden=false;
   $('resultScreen').hidden=false;$('resultScreen').dataset.outcome=training?'training':won?'won':'failed';
   $('resultScreen').innerHTML=`<div class="completion-scroll">
     <header class="completion-hero">
@@ -3817,11 +3832,11 @@ function showResult(result){
       ${delivered?`<div class="completion-credits"><span>Кредиты</span><strong>+${money(result.totalCredits)} <small>◈</small></strong></div><div class="completion-resources"><div><span>Данные</span><strong>+${result.data} <small>⬡</small></strong></div><div><span>Опыт</span><strong>+${result.totalXP} <small>XP</small></strong></div></div><p class="completion-payment">${esc(payment)}</p>`:`<div class="completion-no-loss"><strong>${training?'Без наград':'Ничего не потеряно'}</strong><p>${esc(lossDescription+payment)}</p></div>`}
     </aside></div>
     ${delivered?`<div class="completion-next-note"><span>${next<0?'ЭКСПЕДИЦИЯ ПРОДОЛЖАЕТСЯ':'СЛЕДУЮЩИЙ КОНТРАКТ'}</span><strong>${next<0?'Выбери маршрут или улучши прежний рекорд':esc(L[next].name)}</strong></div>`:''}
-    </div><footer class="completion-actions"><button class="button quiet" id="resultReview" data-action="v8:analysis">Разбор полёта <span>↗</span></button>${next>=0||!delivered?`<button class="button quiet" id="resultContracts" data-action="nav" data-page="campaign">К контрактам</button>`:''}<div class="completion-actions-main"><button class="button ${delivered?'quiet':'primary'}" id="resultRetry" data-action="retry">${delivered?'Ещё раз ↺':training?'Без подсказки ↗':'Изменить курс ↗'}</button>${delivered?`<button class="button primary" id="resultNext" data-action="next" aria-label="${next<0?'Все маршруты':'Следующий контракт: '+esc(L[next].name)}">${next<0?'Все маршруты':'Дальше'} <span>→</span></button>`:''}</div></footer>`;
+    </div><footer class="completion-actions"><button class="button quiet" id="resultReview" data-action="v8:analysis">Разбор полёта <span>↗</span></button>${next>=0||!delivered?`<button class="button quiet" id="resultContracts" data-action="nav" data-page="campaign">К контрактам</button>`:''}<button class="cloud-header result-cloud" data-action="cloud-result" aria-label="Прогресс и аккаунт"><span aria-hidden="true">☁</span><span class="cloud-label">На устройстве</span></button><div class="completion-actions-main"><button class="button ${delivered?'quiet':'primary'}" id="resultRetry" data-action="retry">${delivered?'Ещё раз ↺':training?'Без подсказки ↗':'Изменить курс ↗'}</button>${delivered?`<button class="button primary" id="resultNext" data-action="next" aria-label="${next<0?'Все маршруты':'Следующий контракт: '+esc(L[next].name)}">${next<0?'Все маршруты':'Дальше'} <span>→</span></button>`:''}</div></footer>`;
   $('flightReview').innerHTML=`<div class="review-title"><strong>Запись рейса</strong><span>${s.launchAngle.toFixed(1)}° / ${s.launchSpeed} ед./с</span></div><p class="review-summary">${esc(diagnosis)}</p><div class="review-controls"><div id="reviewTimelineHome"><div class="review-timeline" id="reviewTimeline"><span class="review-stamp" id="reviewStamp">${s.t.toFixed(2)} с</span><input id="reviewRange" type="range" min="0" max="${s.t}" step=".05" value="${s.t}" aria-label="Время уже выполненного рейса"></div></div><button data-action="v8:compare" aria-pressed="false" ${O.Review.prior()?'':'disabled'}>Сравнить попытки</button><button data-action="v8:report">${won?'Подробности наград':'Причина неудачи'}</button></div><p id="reviewComparison" class="review-comparison">${O.Review.prior()?'Сравни траекторию с предыдущей попыткой.':'После следующего запуска здесь можно сравнить две попытки.'}</p>`;
   $('reviewRange').addEventListener('input',e=>{O.Review.selectTime(+e.target.value);$('reviewStamp').textContent=O.Review.renderModel().state.t.toFixed(2)+' с';});
-  $('resultAnalysisBar').querySelector('div span').textContent=training?'Тренировка · награды не начисляются':delivered?'Доставка подтверждена · награды сохранены':'Неудачная попытка · ничего не потеряно';
-  resultView('summary');O.UI9?.onResult();
+  $('resultAnalysisBar').querySelector('div span').textContent=training?'Тренировка · награды не начисляются':delivered?(A.storageOK?'Доставка подтверждена · награды сохранены':'Доставка подтверждена · скачай копию прогресса'):'Неудачная попытка · ничего не потеряно';
+  resultView('summary');O.UI9?.onResult();O.Cloud?.refresh();
   O.DockingPreview.mount($('resultScreen'),{level:l,state:s,trail:O.Review.active?.data.points||A.trail,stats:A.stats(),color:G.SKINS.find(skin=>skin.id===A.profile.skin)?.color,trailStyle:A.profile.trail});
 }
 function renderAwards(){const p=A.profile,defs=G.achievements,earned=new Set(p.achievements),progress=new Map(defs.map(a=>[a.id,earned.has(a.id)?a.target:a.progress(p)]));$('awardTotal').innerHTML=`${p.achievements.length} / ${defs.length}<span>достижений · ${money(p.xp)} XP</span>`;$('achievementCategories').innerHTML=[['all','Все разделы','∞'],...O.Achievements.CATEGORIES].map(([id,n,icon])=>{let ds=id==='all'?defs:defs.filter(d=>d.category===id);return `<button class="${category===id?'active':''}" data-action="v8:award-category" data-category="${id}">${icon} ${n}<small>${ds.filter(a=>earned.has(a.id)).length}/${ds.length}</small></button>`;}).join('');for(let b of $$('.award-filters button'))b.classList.toggle('active',b.dataset.filter===filter);
@@ -4512,6 +4527,7 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   class CloudSync {
     constructor(options){this.o=options;this.uid=null;this.epoch=0;this.status='off';this.remote=null;this.base=null;this.revision=0;this.busy=false;this.again=false;}
     notify(status){this.status=status;this.o.changed?.(this);}
+    same(a,b){return a===b||(a!==null&&b!==null&&!!this.o.sameSave?.(a,b));}
     readMeta(){try{return JSON.parse(this.o.storage.getItem('orbital-cloud-meta:'+this.uid)||'null');}catch{return null;}}
     owner(){try{return this.o.storage.getItem('orbital-cloud-owner');}catch{return null;}}
     remember(record){
@@ -4545,8 +4561,8 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
         this.remote=remote;
         if(!this.attached){this.notify('account-change');return;}
         const local=this.o.getSave();
-        if(remote?.save===local){this.remember(remote);this.notify('synced');return;}
-        if(remote && (local===this.base || (!this.base&&this.o.isFresh()))){
+        if(remote&&this.same(remote.save,local)){this.remember(remote);this.notify('synced');return;}
+        if(remote && (this.same(local,this.base) || (!this.base&&this.o.isFresh()))){
           if(!this.o.canApply()){this.notify('waiting');return;}
           this.backup(remote);this.o.applySave(remote.save);this.remember(remote);this.notify('synced');return;
         }
@@ -4571,7 +4587,7 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
         this.remote=result.record;this.notify('conflict');return;
       }
       this.remember(result.record);
-      if(this.o.getSave()!==local){this.again=true;this.notify('pending');}else this.notify('synced');
+      if(!this.same(this.o.getSave(),local)){this.again=true;this.notify('pending');}else this.notify('synced');
     }
     async resolve(choice){
       if(this.busy||!this.uid||!['conflict','account-change','waiting'].includes(this.status))return;
@@ -4601,7 +4617,8 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const supported=/^https?:$/.test(location.protocol)&&location.pathname.startsWith('/games/orbital-courier/');
   let sync=null,user=null,unsubscribe=null,timer=null,connecting=false,loadPromise=null,dialog=false,connectionId=0;
-  const labels={off:'На устройстве','signed-out':'Войти в аккаунт',connecting:'Подключение…',syncing:'Сохранение…',synced:'В облаке',pending:'Ожидает отправки',waiting:'Копия из облака',conflict:'Выбрать прогресс','account-change':'Другой аккаунт',error:'Сохранено здесь'};
+  let retryTimer=null,retryDelay=5000,connectionError='',authMode='login',authBusy=false,authError='',authNotice='',authEpoch=0;
+  const labels={off:'На устройстве','signed-out':'Войти в аккаунт',connecting:'Подключение…',syncing:'Сохранение…',synced:'В облаке',pending:'Ожидает отправки',waiting:'Копия из облака',conflict:'Выбрать прогресс','account-change':'Другой аккаунт',error:'Сохранено на устройстве','local-error':'Ошибка записи'};
   function storage(){try{return root.localStorage;}catch{return null;}}
   function enabled(){try{return storage()?.getItem('orbital-cloud-enabled')==='1';}catch{return false;}}
   function validSave(text){
@@ -4610,8 +4627,22 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
     if(!Number.isFinite(p.credits)||!Number.isFinite(p.xp)||!p.records||!p.upgrades)throw Error('Облачная копия повреждена.');
     return G.sanitize(p);
   }
+  function sameSave(a,b){
+    // The last opened contract is a device preference, never a competing result.
+    try{a=JSON.parse(a);b=JSON.parse(b);delete a.lastLevel;delete b.lastLevel;return C.encode(a)===C.encode(b);}catch{return false;}
+  }
+  function retryLater(){
+    if(retryTimer||!sync?.uid||navigator.onLine===false)return;
+    retryTimer=setTimeout(()=>{retryTimer=null;if(sync?.status==='error')sync.sync(true);},retryDelay);
+    retryDelay=Math.min(retryDelay*2,60000);
+  }
+  function changed(){
+    if(sync?.status==='error')retryLater();
+    if(['synced','signed-out'].includes(sync?.status)){clearTimeout(retryTimer);retryTimer=null;retryDelay=5000;}
+    update();if(dialog&&$('modal').open&&$('cloudPanel'))render();
+  }
   function make(transport){return new C.CloudSync({storage:storage(),transport,
-    getSave:()=>C.encode(A.profile),validateSave:validSave,
+    getSave:()=>C.encode(A.profile),validateSave:validSave,sameSave,
     isFresh:()=>G.completed(A.profile)===0&&Object.keys(A.profile.records).length===0&&A.profile.credits===25&&A.profile.xp===0&&A.profile.data===0&&G.installed(A.profile)===0&&Object.keys(A.profile.courses).length===0,
     canApply:()=>!A.state&&!A.transitioning&&!$('flightDrawer').open&&(!$('modal').open||!!$('cloudPanel')),
     applySave:text=>{
@@ -4620,61 +4651,118 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
       const reopen=$('modal').open&&!!$('cloudPanel');
       A.profile=profile;A.state=null;A.aims={};A.ghosts={};O.Review.clearView();A.go('home',true);A.updateProfileUI();
       if(reopen)open();
-    },changed:()=>{update();if(dialog&&$('modal').open&&$('cloudPanel'))render();}
+    },changed
   });}
   function update(){
-    const status=sync?.status||'off';
-    for(const button of document.querySelectorAll('[data-action="cloud"]')){
-      button.textContent=labels[status]||'На устройстве';button.dataset.status=status;
+    const status=!A.storageOK?'local-error':connecting?'connecting':connectionError?'error':sync?.status||'off';
+    for(const button of document.querySelectorAll('[data-action="cloud"],[data-action="cloud-header"],[data-action="cloud-result"]')){
+      const label=labels[status]||'На устройстве',text=button.querySelector('.cloud-label');
+      if(text)text.textContent=label;else button.textContent=label;
+      button.dataset.status=status;button.title='Прогресс и аккаунт · '+label;button.setAttribute('aria-label','Прогресс и аккаунт: '+label);
     }
   }
   async function connect(){
-    if(connecting||unsubscribe)return;connecting=true;const id=++connectionId;
+    if(connecting||unsubscribe)return;connecting=true;connectionError='';const id=++connectionId;update();if($('cloudPanel'))render();
     try{
       if(!supported)throw Error('Облачный прогресс доступен в игре на сайте Almanion.');
       if(!A.storageOK||!storage())throw Error('Разреши сохранение данных в браузере.');
       storage().setItem('orbital-cloud-enabled','1');
       if(!root.AlmanionOrbitalAccount){
         if(!loadPromise)loadPromise=new Promise((resolve,reject)=>{
-          const s=document.createElement('script');s.src='/orbital-account.js?v=20260925-1';s.onload=resolve;
-          s.onerror=()=>{s.remove();loadPromise=null;reject(Error('Нет связи с Almanion. Игра продолжает сохраняться здесь.'));};document.head.appendChild(s);
+          const s=document.createElement('script');let timeout;
+          const fail=()=>{clearTimeout(timeout);s.remove();loadPromise=null;reject(Error('Нет связи с Almanion. Прогресс остаётся на устройстве.'));};
+          s.src='/orbital-account.js?v=20261019-2';s.onload=()=>{clearTimeout(timeout);resolve();};s.onerror=fail;timeout=setTimeout(fail,15000);document.head.appendChild(s);
         });
         await loadPromise;
       }
       if(id!==connectionId)return;
-      const stop=await root.AlmanionOrbitalAccount.connect((next,transport)=>{
+      const stop=await root.AlmanionOrbitalAccount.connect((next,transport,error)=>{
         if(id!==connectionId)return;
+        if(error){connectionError='Не удалось восстановить вход. Повтори подключение.';update();if($('cloudPanel'))render();return;}
         user=next;if(!sync)sync=make(transport);O.Navigation?.onCloudReady();sync.setUser(next?.uid||null);
       });
       if(id!==connectionId)stop();else unsubscribe=stop;
-    }catch(e){if(id===connectionId){A.toast(e.message,true);if(sync){sync.error=e;sync.notify('error');}}}
+    }catch(e){if(id===connectionId){connectionError=e.message;A.toast(e.message,true);}}
     finally{if(id===connectionId){connecting=false;update();if(dialog&&$('cloudPanel'))render();}}
   }
   function summary(text,title){
     if(!text)return `<div class="cloud-copy"><h3>${title}</h3><p>Копии пока нет</p></div>`;
     try{const p=validSave(text);return `<div class="cloud-copy"><h3>${title}</h3><strong>${O.Campaign.count(p)} / ${O.Campaign.order.length} текущих контрактов</strong><p>${p.credits.toLocaleString('ru-RU')} ◈ · ${p.data} ⬡ · ${p.xp.toLocaleString('ru-RU')} XP</p><small>${G.installed(p)} ступеней оборудования</small></div>`;}catch{return `<p>${title}: копия не читается</p>`;}
   }
+  function authMessage(error){
+    const messages={'auth/invalid-credential':'Неверная почта или пароль.','auth/wrong-password':'Неверная почта или пароль.','auth/user-not-found':'Неверная почта или пароль.',
+      'auth/invalid-email':'Проверь адрес почты.','auth/email-already-in-use':'Эта почта уже зарегистрирована. Выбери «Войти».','auth/weak-password':'Придумай пароль не короче 6 символов.',
+      'auth/network-request-failed':'Нет связи с сервером входа. Проверь интернет и повтори.','auth/too-many-requests':'Слишком много попыток. Подожди немного и повтори.',
+      'auth/popup-blocked':'Браузер заблокировал окно Google. Разреши всплывающие окна или войди по почте.','auth/popup-closed-by-user':'Окно Google закрыто. Можно повторить вход или использовать почту.',
+      'auth/cancelled-popup-request':'Предыдущее окно входа закрыто. Повтори вход.',
+      'auth/timeout':'Вход не завершился. Проверь окно Google и повтори попытку или войди по почте.',
+      'auth/unauthorized-domain':'Вход с этого адреса недоступен. Открой игру на almanion.github.io.',
+      'auth/operation-not-allowed':'Этот способ входа пока недоступен. Попробуй другой.',
+      'auth/user-disabled':'Вход в этот аккаунт отключён.','auth/web-storage-unsupported':'Браузер запретил сохранение входа. Разреши данные сайта и повтори.'};
+    return messages[error?.code]||'Не удалось завершить вход. Повтори попытку.';
+  }
+  function authForm(){
+    const register=authMode==='register',reset=authMode==='reset';
+    return `<section class="cloud-auth"><h3>${reset?'Восстановить пароль':register?'Создать аккаунт Almanion':'Войти в Almanion'}</h3><p>Один аккаунт для игры и сайта. Прогресс останется здесь во время входа.</p>
+      ${!reset?'<button type="button" class="button quiet cloud-google" data-action="cloud-google">Войти через Google ↗</button><div class="cloud-auth-divider">или по почте</div>':''}
+      <form id="cloudAuthForm"><label for="cloudEmail">Почта</label><input id="cloudEmail" name="email" type="email" autocomplete="email" inputmode="email" required maxlength="254">
+      ${!reset?`<label for="cloudPassword">Пароль</label><input id="cloudPassword" name="password" type="password" autocomplete="${register?'new-password':'current-password'}" required ${register?'minlength="6"':''}>`:''}
+      ${register?'<label for="cloudPasswordConfirm">Повтори пароль</label><input id="cloudPasswordConfirm" name="confirm" type="password" autocomplete="new-password" required minlength="6">':''}
+      <p id="cloudAuthError" role="alert" class="cloud-auth-error" hidden></p><p id="cloudAuthNotice" role="status" hidden></p>
+      <button class="button primary" type="submit">${reset?'Отправить ссылку':register?'Создать аккаунт':'Войти и сохранить прогресс'}</button></form>
+      <div class="cloud-auth-links">${!reset?'<button class="text-button" data-action="cloud-auth-mode" data-mode="reset">Забыли пароль?</button>':''}<button class="text-button" data-action="cloud-auth-mode" data-mode="${authMode==='login'?'register':'login'}">${authMode==='login'?'Создать аккаунт':'Уже есть аккаунт — войти'}</button></div></section>`;
+  }
+  function authControls(){
+    const signout=$('cloudPanel')?.querySelector('[data-action="cloud-signout"]');if(signout){signout.disabled=authBusy;signout.textContent=authBusy?'Выходим…':'Выйти из аккаунта';}
+    const form=$('cloudAuthForm');if(!form)return;
+    form.setAttribute('aria-busy',String(authBusy));
+    for(const control of $('cloudPanel').querySelectorAll('.cloud-auth button,.cloud-auth input'))control.disabled=authBusy;
+    const error=$('cloudAuthError'),notice=$('cloudAuthNotice');error.textContent=authError;error.hidden=!authError;notice.textContent=authNotice;notice.hidden=!authNotice;
+  }
+  function authenticate(action){
+    if(authBusy)return;authBusy=true;authError='';authNotice='';const id=++authEpoch,mode=authMode;authControls();
+    let request,timeout;try{request=action();}catch(error){request=Promise.reject(error);}
+    Promise.race([Promise.resolve(request),new Promise((_,reject)=>{timeout=setTimeout(()=>reject({code:'auth/timeout'}),45000);})]).then(()=>{
+      if(id===authEpoch&&mode==='reset')authNotice='Если аккаунт с этой почтой существует, письмо со ссылкой отправлено. Проверь также папку «Спам».';
+    }).catch(error=>{if(id===authEpoch){authError=authMessage(error);if(!$('cloudAuthForm'))A.toast(authError,true);}}).finally(()=>{clearTimeout(timeout);if(id===authEpoch){authBusy=false;authControls();}});
+  }
   function render(){
-    const status=sync?.status||'off',compare=['conflict','account-change','waiting'].includes(status);
+    const status=connecting?'connecting':connectionError?'error':sync?.status||'off',compare=['conflict','account-change','waiting'].includes(status);
     const messages={off:'Прогресс сохраняется в этом браузере. Подключи аккаунт Almanion, чтобы продолжать на другом устройстве.',
-      'signed-out':'Войди в свой аккаунт на главной странице Almanion и вернись сюда. Оба устройства должны использовать один аккаунт.',
+      'signed-out':'Войди здесь, чтобы продолжать с того же места на другом устройстве. Каждый пройденный контракт сохраняется автоматически.',
       connecting:'Проверяем аккаунт.',syncing:'Проверяем и сохраняем копию.',synced:'Прогресс этого аккаунта сохранён. На другом устройстве войди в тот же аккаунт и подключи облако.',
       pending:'Локальная копия обновлена. Отправим её при восстановлении связи.',waiting:'В облаке есть другая копия. Вернись к подготовке через «Ещё раз», чтобы загрузить её.',
       conflict:'На устройстве и в аккаунте разные версии. Выбери одну целиком: деньги и покупки не складываются. Перед заменой обе копии сохранятся в резерве.',
       'account-change':'Аккаунт изменился. Прогресс этого браузера не будет отправлен в другой аккаунт без твоего выбора.',
-      error:'Облачное сохранение недоступно. Локальный прогресс сохранён. Проверь соединение и доступ к базе, затем повтори.'};
+      error:'Облако пока недоступно. После восстановления связи автоматически повторим отправку прогресса. До этого он остаётся в этом браузере.'};
     const busy=sync?.busy||connecting,canApply=!A.state&&!A.transitioning;
-    $('cloudPanel').innerHTML=`<p class="cloud-status" role="status">${esc(user?.email||user?.displayName||'Аккаунт Almanion')} · ${labels[status]}</p><p>${messages[status]}</p>
+    const login=!user&&unsubscribe&&root.AlmanionOrbitalAccount?.signIn&&!connectionError;
+    $('cloudPanel').innerHTML=`<div class="cloud-local-status ${A.storageOK?'':'bad'}"><strong>${A.storageOK?'Автосохранение на устройстве включено':'Не удалось сохранить на устройстве'}</strong>${!login||!A.storageOK?`<span>${A.storageOK?'Результаты, награды и покупки сохраняются сразу.':'Разреши данные сайта или скачай прогресс через экспорт.'}</span>`:''}</div>${!login?`<p class="cloud-status" role="status">${esc(user?.email||user?.displayName||'Аккаунт Almanion')} · ${labels[status]}</p><p>${connectionError?esc(connectionError):messages[status]}</p>`:''}
+      ${sync?.status==='synced'&&sync.remote?.updatedAt?`<p class="cloud-last-save">Облако обновлено в ${esc(new Date(sync.remote.updatedAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'}))}. Следующий результат отправится автоматически.</p>`:''}
+      ${root.AlmanionOrbitalAccount?.persistence&&root.AlmanionOrbitalAccount.persistence!=='local'?'<p>Браузер ограничил хранение входа. После закрытия вкладки или браузера может понадобиться войти снова.</p>':''}
+      ${login?authForm():''}
       ${compare?`<div class="cloud-copies">${summary(C.encode(A.profile),'На устройстве')}${summary(sync.remote?.save,'В аккаунте')}</div><div class="settings-grid"><button class="button primary" data-action="cloud-local" ${busy||!canApply?'disabled':''}>Использовать местную</button><button class="button quiet" data-action="cloud-remote" ${busy||!canApply||!sync.remote?'disabled':''}>Загрузить из аккаунта</button></div>${!canApply?'<p>Сначала заверши рейс и нажми «Ещё раз». Копия не заменяется во время полёта или его разбора.</p>':''}`:''}
-      <div class="settings-grid">${!unsubscribe?`<button class="button primary" data-action="cloud-connect" ${connecting||!supported?'disabled':''}>Подключить аккаунт</button>`:''}${!user&&supported?'<a class="button quiet" href="/" target="_blank" rel="noopener">Войти на сайте ↗</a>':''}${user&&!compare?`<button class="button quiet" data-action="cloud-retry" ${busy?'disabled':''}>Проверить сейчас</button>`:''}<button class="button quiet" data-action="export">Экспорт прогресса</button><button class="button quiet" data-action="cloud-backup">Резервные копии ↓</button></div>
-      ${enabled()?'<button class="text-button" data-action="cloud-disconnect">Отключить облако на этом устройстве</button>':''}${!supported?'<p>Переносимый файл работает офлайн. Для аккаунта открой игру на almanion.github.io.</p>':''}`;
+      ${login?'<details class="cloud-tools"><summary>Сохранения и резервные копии</summary>':''}<div class="settings-grid">${!unsubscribe||connectionError?`<button class="button primary" data-action="${connectionError?'cloud-reconnect':'cloud-connect'}" ${connecting||!supported?'disabled':''}>${connectionError?'Повторить подключение':'Войти и включить облако'}</button>`:''}${user&&!compare?`<button class="button quiet" data-action="cloud-retry" ${busy?'disabled':''}>Проверить сейчас</button>`:''}<button class="button quiet" data-action="export">Экспорт прогресса</button><button class="button quiet" data-action="cloud-backup">Резервные копии ↓</button></div>
+      ${user&&root.AlmanionOrbitalAccount?.signOut?'<button class="text-button" data-action="cloud-signout">Выйти из аккаунта</button>':''}${enabled()?'<button class="text-button" data-action="cloud-disconnect">Отключить облако на этом устройстве</button>':''}${login?'</details>':''}${!supported?'<p>Переносимый файл работает офлайн. Для аккаунта открой игру на almanion.github.io.</p>':''}`;
+    authControls();
   }
   function open(){dialog=true;A.openModal('Прогресс и аккаунт','<div id="cloudPanel"></div><div class="modal-actions"><button class="button primary" data-action="close">Готово</button></div>');render();}
-  function schedule(){clearTimeout(timer);if(sync?.uid)timer=setTimeout(()=>sync.sync(),1000);}
+  function schedule(event){
+    clearTimeout(timer);update();if(!sync?.uid)return;
+    if(sync.status==='error'){retryLater();return;}
+    if(['conflict','account-change','waiting'].includes(sync.status))return;
+    if(sync.same(C.encode(A.profile),sync.base))return;
+    if(!sync.busy)sync.notify('pending');
+    if(event?.detail?.reason==='contract')sync.sync();else timer=setTimeout(()=>sync.sync(),500);
+  }
   Object.assign(A.actions,{
-    cloud:open,'cloud-connect':connect,'cloud-retry':()=>sync?.sync(true),
+    cloud:open,'cloud-header':open,'cloud-result':open,'cloud-connect':connect,'cloud-retry':()=>sync?.sync(true),
+    'cloud-reconnect':()=>{A.actions['cloud-disconnect']();connect();},
+    'cloud-auth-mode':button=>{if(authBusy)return;const email=$('cloudEmail')?.value||'';authMode=button.dataset.mode;authError='';authNotice='';render();$('cloudEmail').value=email;$('cloudEmail').focus();},
+    'cloud-google':()=>authenticate(()=>root.AlmanionOrbitalAccount.signInGoogle()),
+    'cloud-signout':()=>authenticate(()=>root.AlmanionOrbitalAccount.signOut()),
     'cloud-local':()=>sync?.resolve('local'),'cloud-remote':()=>sync?.resolve('cloud'),
-    'cloud-disconnect':()=>{connectionId++;connecting=false;unsubscribe?.();unsubscribe=null;sync?.setUser(null);sync=null;user=null;storage()?.removeItem('orbital-cloud-enabled');update();render();},
+    'cloud-disconnect':()=>{connectionId++;authEpoch++;authBusy=false;connecting=false;connectionError='';clearTimeout(timer);clearTimeout(retryTimer);retryTimer=null;retryDelay=5000;unsubscribe?.();unsubscribe=null;sync?.setUser(null);sync=null;user=null;storage()?.removeItem('orbital-cloud-enabled');update();render();},
     'cloud-backup':()=>{
       const data=storage()?.getItem('orbital-cloud-backups');if(!data)return A.toast('Резервных копий после синхронизации пока нет.');
       const copies=JSON.parse(data);
@@ -4686,11 +4774,18 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
       const url=URL.createObjectURL(new Blob([data],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download=`orbital-backup-${copy.at}-${button.dataset.copy}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     }
   });
+  document.addEventListener('submit',event=>{
+    if(event.target.id!=='cloudAuthForm')return;event.preventDefault();if(authBusy)return;
+    const email=$('cloudEmail').value.trim(),password=$('cloudPassword')?.value,account=root.AlmanionOrbitalAccount;
+    if(authMode==='register'&&password!==$('cloudPasswordConfirm').value){authError='Пароли не совпадают.';authControls();$('cloudPasswordConfirm').focus();return;}
+    authenticate(()=>authMode==='reset'?account.resetPassword(email):authMode==='register'?account.register(email,password):account.signIn(email,password));
+  });
   root.addEventListener('orbital-save',schedule);
-  root.addEventListener('online',()=>sync?.sync(true));root.addEventListener('focus',()=>sync?.sync());
+  root.addEventListener('orbital-save-error',update);
+  root.addEventListener('online',()=>{clearTimeout(retryTimer);retryTimer=null;sync?.sync(true);});root.addEventListener('focus',()=>{if(sync?.status==='error')retryLater();else sync?.sync();});
   // While open on two devices, check for new revisions without writing unchanged saves.
   setInterval(()=>{if(!document.hidden)sync?.sync();},30000);
-  O.Cloud={open,connect,get sync(){return sync;}};
+  O.Cloud={open,connect,refresh:update,get sync(){return sync;}};
   update();if(enabled()&&supported)connect();
 })(window);
 

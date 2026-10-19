@@ -326,7 +326,7 @@ body.high-contrast{--muted:#d4e4ed;--line:#617987;--ink:#fff}body.high-contrast 
 #modal .check-row input[type=checkbox]:checked{background:#245747;border-color:#78ccab}
 #modal .check-row input[type=checkbox]:checked::before{transform:translateX(18px);background:#a9fddd}
 .save-badge{min-width:36px;min-height:38px;background:#604226;color:#fff0c8;border:1px solid #be915a;border-radius:10px;font-size:17px;font-weight:700}
-body[data-page=play] #saveWarning{display:none}
+body[data-page=play] #saveWarning:not([hidden]){display:block;width:min(520px,calc(100vw - 24px))}
 .dispatch-heading>div:first-child{min-width:0;flex:1}.dispatch-heading .section-total{flex:0 0 auto;max-width:145px;min-width:0}.dispatch-heading .section-total span{white-space:normal;line-height:1.5}
 @media (max-width:699px), (max-width:999px) and (orientation:portrait){
  .dispatch-heading .section-total{max-width:115px;font-size:20px}.dispatch-heading .section-total span{font-size:10px}
