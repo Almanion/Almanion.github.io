@@ -1,5 +1,6 @@
 /* Online navigation uses native links, with the established control geometry. */
 [data-game-navigation=pages] a[data-action]{text-decoration:none;color:inherit;cursor:pointer;touch-action:manipulation}
+[data-game-navigation=pages] a.button.primary{color:#062b26}
 [data-game-navigation=pages] .hero-copy a{pointer-events:auto}
 [data-game-navigation=pages] .topbar nav a{display:inline-flex;align-items:center;min-height:44px;padding:10px 18px;border:0;border-radius:10px;background:none;color:var(--muted);font-size:14px}
 [data-game-navigation=pages] .topbar nav a.active{background:#6af4cd10;color:var(--mint)}
