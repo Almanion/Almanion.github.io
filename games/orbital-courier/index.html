@@ -1097,6 +1097,28 @@ body[data-page=play][data-flight=review][data-result-view=analysis] .review-comp
 .high-contrast .completion{--result-accent:#b1ffdd;color:#fff}.high-contrast .completion p,.high-contrast .completion small{color:#c6dce4}
 @media(prefers-reduced-motion:reduce){.completion *{scroll-behavior:auto}}
 
+</style><style>
+/* One semantic palette for the same medal in preparation, route details and results. */
+.medal-art[data-medal-art=delivery]{color:#f3d08d}
+.medal-art[data-medal-art=economy]{color:#88e3d2}
+.medal-art[data-medal-art=cargo]{color:#c8b2f4}
+.medal-art[data-medal-art=precision]{color:#8ed9f7}
+.medal-art[data-medal-art=time]{color:#f4b78a}
+.medal-art[data-medal-art=branches]{color:#a5c1ff}
+.medal-art{display:block;width:100%;height:100%;overflow:visible;flex:none;shape-rendering:geometricPrecision}
+.medal-symbol svg.medal-art{height:100%;stroke:currentColor;fill:none;filter:none}
+.medal-card:has(.medal-art[data-medal-art=delivery]){--medal:#f3d08d}
+.medal-card:has(.medal-art[data-medal-art=economy]){--medal:#88e3d2}
+.medal-card:has(.medal-art[data-medal-art=cargo]){--medal:#c8b2f4}
+.medal-card:has(.medal-art[data-medal-art=precision]){--medal:#8ed9f7}
+.medal-card:has(.medal-art[data-medal-art=time]){--medal:#f4b78a}
+.medal-card:has(.medal-art[data-medal-art=branches]){--medal:#a5c1ff}
+.medal-card[data-state=training] .medal-art,.medal-card[data-state=failed] .medal-art,.medal-card[data-state=missed] .medal-art{color:#869eac}
+.completion .completion-medal .completion-medal-icon{background:none;border:0;border-radius:0;color:inherit;overflow:visible;align-self:center}
+.completion .completion-medal .completion-medal-icon .medal-art{width:100%;height:100%;max-width:none}
+.completion-medal[data-state=training] .medal-art,.completion-medal[data-state=failed] .medal-art,.completion-medal[data-state=missed] .medal-art{color:#869eac}
+.high-contrast .medal-art{filter:brightness(1.16)}
+
 </style></head>
 <body class="ui9">
 <noscript>Для игры нужно включить JavaScript. Интернет и установка библиотек не нужны.</noscript>
@@ -2628,6 +2650,87 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
 
 </script>
 <script>
+/* Contract medals: original, decorative vector artwork with no shared SVG IDs.
+   Set color on .medal-art (or its parent) for the semantic metal/accent colour.
+   --medal-art-plate changes the dark enamel; default: #0b1c28.
+   --medal-art-line / --medal-art-fine change the two stroke weights; defaults: 2 / 1.
+   Stable parts: .medal-art-ribbons, -frame, -engraving, -symbol, -highlight.
+   The individual illustrations are deliberately legible without the engraving. */
+(function (root) {
+  'use strict';
+  const types = Object.freeze(['delivery', 'economy', 'cargo', 'precision', 'time', 'branches']);
+  const symbols = {
+    delivery: `<path d="M19 18h25v19H19z" fill="currentColor" fill-opacity=".1" stroke="none"/>
+      <path d="M21 18h20a3 3 0 0 1 3 3v13a3 3 0 0 1-3 3H21a3 3 0 0 1-3-3V21a3 3 0 0 1 3-3Z"/>
+      <path d="m19 20 12 9 12-9m-24 15 8-7m8 0 8 7"/>
+      <path class="medal-art-highlight" d="M21 20h20" stroke-width="var(--medal-art-fine, 1)" opacity=".45"/>
+      <circle cx="43" cy="37" r="7" fill="var(--medal-art-plate, #0b1c28)"/>
+      <circle cx="43" cy="37" r="5.1" fill="currentColor" fill-opacity=".17" stroke="none"/>
+      <path d="m39.6 37 2.3 2.3 4.6-4.7"/>
+      <path d="M14 23h-2m2 5h-3m3 5h-2" stroke-width="var(--medal-art-fine, 1)" opacity=".65"/>`,
+    economy: `<path d="m35 11-15 20h11l-3 15 17-23H33Z" fill="currentColor" fill-opacity=".19"/>
+      <path class="medal-art-highlight" d="m32.6 17-7.4 10h8.6" stroke-width="var(--medal-art-fine, 1)" opacity=".68"/>
+      <path d="M17 30a16 16 0 0 0 9 13m12-29a16 16 0 0 1 10 12" stroke-width="var(--medal-art-fine, 1)" opacity=".56"/>
+      <path d="m17 35 .3-5.2 4 2.7m22.2-8.8 4.7 2.3.4-5.1" stroke-width="var(--medal-art-fine, 1)" opacity=".7"/>`,
+    cargo: `<path d="m32 12 15 8.5v17L32 46l-15-8.5v-17Z" fill="currentColor" fill-opacity=".1"/>
+      <path d="m17 20.5 15 8.6 15-8.6L32 12Z" fill="currentColor" fill-opacity=".17" stroke="none"/>
+      <path d="M32 29.1 47 20.5v17L32 46Z" fill="currentColor" fill-opacity=".1" stroke="none"/>
+      <path d="m17 20.5 15 8.6 15-8.6M32 29.1V46"/>
+      <path d="m24.5 16.2 15 8.6v7.1l-4.2 2.4v-7.1l-15-8.6" fill="var(--medal-art-plate, #0b1c28)" stroke-width="var(--medal-art-fine, 1)"/>
+      <path class="medal-art-highlight" d="m20.4 23.8 8.3 4.8m6.6 12 8.3-4.8" stroke-width="var(--medal-art-fine, 1)" opacity=".6"/>
+      <path d="m21 32 4 2.3m-4 1.1 4 2.3" stroke-width="var(--medal-art-fine, 1)" opacity=".75"/>`,
+    precision: `<circle cx="32" cy="28" r="14.4" fill="currentColor" fill-opacity=".045" stroke-width="var(--medal-art-fine, 1)" opacity=".65"/>
+      <circle cx="32" cy="28" r="9.6" fill="currentColor" fill-opacity=".08"/>
+      <path d="M32 10v10m0 16v10M14 28h10m16 0h10"/>
+      <path d="m32 24.8 3.2 3.2-3.2 3.2-3.2-3.2Z" fill="currentColor" stroke="none"/>
+      <path class="medal-art-highlight" d="M20.7 16.7 23 19m18-2.3L39 19M20.7 39.3 23 37m18 2.3L39 37" stroke-width="var(--medal-art-fine, 1)" opacity=".58"/>`,
+    time: `<path d="M28 10h8m-4 0v5m10.3 2.7 2-2m-1.5-1.4 2.9 2.8"/>
+      <circle cx="32" cy="29" r="13.4" fill="currentColor" fill-opacity=".085"/>
+      <path d="M32 20v10l7 4"/>
+      <circle cx="32" cy="29" r="2" fill="currentColor" stroke="none"/>
+      <path d="M32 18.5v1.3m10.5 9.2h-1.3M32 39.5v-1.3M21.5 29h1.3" stroke-width="var(--medal-art-fine, 1)" opacity=".8"/>
+      <path class="medal-art-highlight" d="M23.4 22.4a10.8 10.8 0 0 1 5-3.5" stroke-width="var(--medal-art-fine, 1)" opacity=".65"/>
+      <path d="M16 23h-3m2 6h-3m4 6h-3" stroke-width="var(--medal-art-fine, 1)" opacity=".6"/>`,
+    branches: `<path d="M32 41V30c0-4-3-6-6-9l-7-7m13 16c0-4 3-6 6-9l7-7"/>
+      <path d="M19 23v-9h9m8 0h9v9"/>
+      <circle cx="32" cy="41" r="4.4" fill="var(--medal-art-plate, #0b1c28)"/>
+      <circle cx="32" cy="41" r="1.7" fill="currentColor" stroke="none"/>
+      <path class="medal-art-highlight" d="m21.5 18.8 6.8 6.8m14.2-6.8-6.8 6.8" stroke-width="var(--medal-art-fine, 1)" opacity=".55"/>
+      <path d="M17 29v7h7m23-7v7h-7" stroke-width="var(--medal-art-fine, 1)" opacity=".48"/>`
+  };
+
+  function svg(type) {
+    const key = typeof type === 'string' && Object.hasOwn(symbols, type) ? type : 'delivery';
+    return `<svg xmlns="http://www.w3.org/2000/svg" class="medal-art medal-art--${key}" data-medal-art="${key}" viewBox="0 0 64 72" width="64" height="72" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <g class="medal-art-ribbons" stroke-width="var(--medal-art-fine, 1)">
+        <path d="m15 44-6 23 12-5 7 7 5-22m16-3 6 23-12-5-7 7-5-22" fill="var(--medal-art-plate, #0b1c28)"/>
+        <path d="m15 44-6 23 12-5 7 7 5-22m16-3 6 23-12-5-7 7-5-22" fill="currentColor" fill-opacity=".13"/>
+        <path d="m18 50-2.5 10 6-2.2 4.5 4.6 2.5-11.5m17.5-.9 2.5 10-6-2.2-4.5 4.6-2.5-11.5" opacity=".45"/>
+        <path d="m12.5 62.7 8.5-3.2 5 5.1m25.5-1.9L43 59.5l-5 5.1" opacity=".3"/>
+      </g>
+      <g class="medal-art-frame">
+        <circle cx="32" cy="30" r="26" fill="var(--medal-art-plate, #0b1c28)" stroke="none"/>
+        <circle cx="32" cy="28" r="26" fill="var(--medal-art-plate, #0b1c28)" stroke-width="var(--medal-art-line, 2)"/>
+        <circle cx="32" cy="28" r="23.1" fill="currentColor" fill-opacity=".085" stroke-opacity=".32" stroke-width="var(--medal-art-fine, 1)"/>
+        <circle cx="32" cy="28" r="19.5" stroke-opacity=".19" stroke-width="var(--medal-art-fine, 1)"/>
+        <path class="medal-art-highlight" d="M10.7 20.1A22.8 22.8 0 0 1 40 6.7m11.3 28.4A22.8 22.8 0 0 1 24 49.3" stroke-width="var(--medal-art-fine, 1)" opacity=".65"/>
+      </g>
+      <g class="medal-art-engraving" stroke-width="var(--medal-art-fine, 1)" opacity=".65">
+        <path d="M32 5v2.4M9 28h2.4M52.6 28H55M32 48.6V51m-16-39 1.7 1.7M46.3 42.3 48 44m0-32-1.7 1.7M17.7 42.3 16 44"/>
+        <path d="m24 6.5.7 1.9m14.6 39.2.7 1.9m13.5-29.5-1.9.7m-39.2 14.6-1.9.7" opacity=".55"/>
+      </g>
+      <g class="medal-art-symbol" stroke-width="var(--medal-art-line, 2)">${symbols[key]}</g>
+    </svg>`;
+  }
+
+  const art = Object.freeze({types, svg});
+  const O = root.Orbital = root.Orbital || {};
+  O.MedalArt = art;
+  if (typeof module !== 'undefined' && module.exports) module.exports = art;
+})(typeof globalThis !== 'undefined' ? globalThis : window);
+
+</script>
+<script>
 /* Application state machine and accessible DOM UI. Physics lives in physics.js. */
 (function (root) {
   'use strict';
@@ -2871,10 +2974,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   function routeHelp(){
     openModal('Гравитационный маршрут',`<p>Нужно облететь указанные планеты <strong>по порядку и в направлении стрелок</strong>. Каждый манёвр — больше половины оборота вокруг отдельной планеты, а не просто касание кольца.</p><p>Пунктирная окружность у активной планеты — зона манёвра. Дуга растёт, пока капсула остаётся внутри. Выход сбрасывает только текущую дугу; уже завершённые сохраняются.</p><p>Кольца задают ветви маршрута. После всех облётов и колец доставь три контейнера на станцию. Прямой перелёт и большой круг вокруг всей системы не заменяют отдельные манёвры.</p><div class="info-box">Грузы находятся на разных ветвях. Сначала добейся правильной формы траектории, затем уточняй угол шагом 0,1° и скорость шагом 1. Мышью или пальцем можно грубо задать направление.</div><div class="modal-actions"><button class="button primary" data-action="close">К маршруту</button></div>`,'ПЛАН ПОЛЁТА');
   }
-  function medalIcon(key){
-    const paths={precision:'<circle cx="24" cy="25" r="9"/><path d="M24 12v9m0 8v9M11 25h9m8 0h9"/>',time:'<circle cx="24" cy="25" r="12"/><path d="M24 17v9l6 3"/>',branches:'<path d="M24 37V25m0 0-10-10m10 10 10-10M11 20v-8h8m10 0h8v8"/>',delivery:'<path d="M12 25h17"/><path d="M24 18l8 7-8 7"/><rect x="13.5" y="16" width="9" height="18" rx="2.5" fill="currentColor" fill-opacity=".11"/><path d="M18 19v12"/><circle cx="18" cy="21" r="1.2" fill="currentColor" stroke="none"/>',economy:'<path d="M29 11 17 27h8l-2 12 12-16h-8Z" fill="currentColor" fill-opacity=".16"/><path d="M27 14 20 24h6l-2 10 8-11h-5Z"/><path d="M14 37c3 2 6 3 10 3 5 0 9-1 13-4" opacity=".85"/>',cargo:'<path d="m24 14 12 7v14l-12 7-12-7V21Zm-12 7 12 7 12-7m-12 7v14"/><path d="M18 19.5h5v5h-5zM25 26h5v5h-5z" fill="currentColor" fill-opacity=".14" stroke="none"/><path d="M19 20.5h3m-1.5-1.5v3m5 5h3m-1.5-1.5v3"/>'};
-    return `<svg viewBox="0 0 48 58" aria-hidden="true"><path class="medal-ribbon" d="m11 37-3 17 10-4 6 6 3-16m10-3 3 17-10-4-6 6-3-16"/><circle class="medal-rim" cx="24" cy="25" r="21"/><circle class="medal-inner" cx="24" cy="25" r="17"/>${paths[key]||paths.delivery}</svg>`;
-  }
+  function medalIcon(key){return O.MedalArt.svg(key);}
   function updateMedalStates(){
     // Scrubbing the recording must not make the awarded medals disappear.
     const l=O.Routes.view(level(),app.state,app.branchView),r=G.viewRecord(app.profile,l.id),ds=O.Medals.describe(l,app.state,app.speed,r,app.assisted,stats());
@@ -3242,7 +3342,7 @@ function showResult(result){
     <div class="completion-facts" aria-label="Параметры завершённого рейса"><div><span>Время</span><strong>${s.t.toFixed(2)} <small>с</small></strong></div><div><span>Груз</span><strong>${cargo} <small>конт.</small></strong></div><div><span>Стартовый угол</span><strong>${s.launchAngle.toFixed(1)}<small>°</small></strong></div><div><span>Стартовая скорость</span><strong>${s.launchSpeed} <small>ед./с</small></strong></div></div>
     <div class="completion-grid"><div class="completion-main">
       <section class="completion-goals" aria-labelledby="resultGoalsTitle"><div class="completion-section-title"><h3 id="resultGoalsTitle">${training?'Цели маршрута':'Медали рейса'}</h3><span>${training?'Без зачёта':`${medalCount} из ${medals.length}`}</span></div>
-      <div class="completion-medals">${medals.map((m,i)=>`<article class="completion-medal" data-state="${m.state}"><span class="completion-medal-icon" aria-hidden="true">${['◇','ϟ','⬡'][i]}</span><div><div class="completion-medal-heading"><h4>${esc(m.title)}</h4><span>${training?'Без зачёта':m.state==='won'?(result.newMask&m.bit?'Новая':'✓ Выполнено'):m.earned?'Есть ранее':'Не получена'}</span></div><p>${esc(m.condition)}</p><small>${esc(m.detail)}</small></div></article>`).join('')}</div></section>
+      <div class="completion-medals">${medals.map((m,i)=>`<article class="completion-medal" data-state="${m.state}"><span class="completion-medal-icon" aria-hidden="true">${O.MedalArt.svg(O.Medals.rules(l)[i].type)}</span><div><div class="completion-medal-heading"><h4>${esc(m.title)}</h4><span>${training?'Без зачёта':m.state==='won'?(result.newMask&m.bit?'Новая':'✓ Выполнено'):m.earned?'Есть ранее':'Не получена'}</span></div><p>${esc(m.condition)}</p><small>${esc(m.detail)}</small></div></article>`).join('')}</div></section>
       ${result?.awards.length?`<details class="completion-awards"><summary id="resultAwardsTitle"><span>Новые достижения <b>+${result.awards.length}</b></span><span>+${result.awards.reduce((n,a)=>n+a.xp,0)} XP <i aria-hidden="true">⌄</i></span></summary>${result.awards.map(a=>`<div class="award-chip"><span aria-hidden="true">${a.icon}</span><strong>${esc(a.name)}</strong><b>+${a.xp} XP</b></div>`).join('')}</details>`:''}
       <details class="completion-breakdown"><summary>Подробности рейса <span aria-hidden="true">＋</span></summary>
       <div class="completion-detail-body"><p>${esc(subtitle)}</p><div class="completion-detail-facts"><span>Стартовый угол <b>${s.launchAngle.toFixed(1)}°</b></span><span>Стартовая скорость <b>${s.launchSpeed} ед./с</b></span></div>
