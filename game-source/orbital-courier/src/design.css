@@ -137,33 +137,6 @@ body[data-page=home] .topbar{padding-inline:var(--home-pad);border:0}
 .contract-access-kind{color:#b5b9c0}
 .contract-empty{background:var(--surface-soft);border-color:var(--stroke);color:var(--muted)}
 
-/* Hangar: a quiet product shelf; capability is more prominent than decoration. */
-#hangar .shop-summary{border-color:var(--stroke);border-radius:16px;background:#202123}
-#hangar .chassis-preview{border-color:var(--stroke);background:radial-gradient(ellipse,#c2c6ce11,transparent 70%)}
-#hangar .hangar-funds strong{font-family:var(--sans);font-size:34px;font-weight:500;letter-spacing:-.035em;color:#e2e7f0}
-#hangar .hangar-license span{color:#bcc0c8;border-color:#ffffff14;background:transparent;border-radius:5px}
-#hangar .hangar-price-note,#hangar .purchase-reason{color:#acb0b7;font-size:12px;line-height:1.65}
-#hangar .shop-context{border-color:var(--stroke)}
-#hangar .shop-context>strong{font-size:15px;font-weight:550}
-#hangar .shop-context select{background:var(--surface);border-color:var(--line);color:var(--text);font-family:var(--sans)}
-#hangar .module-card{background:#1c1d1f;border-color:var(--stroke);border-radius:15px;padding:24px;box-shadow:none}
-#hangar .module-card[data-available=yes]{border-color:#b2b6bd40}
-#hangar .module-card.wishlisted{box-shadow:inset 0 0 0 1px #cdd1d966}
-#hangar .module-identity h3{font-size:24px;font-weight:500;letter-spacing:-.035em}
-#hangar .module-code{color:#a5a8af;font-family:var(--sans);font-size:10px}
-#hangar .module-art{opacity:.75;filter:saturate(.6)}
-.module-status,[data-available=yes] .module-status{background:#ffffff07;color:#c5c9d1;font:10px var(--sans);border:1px solid #ffffff0c}
-#hangar .module-description{color:var(--muted);font-size:13px}
-#hangar .module-spec{border-color:var(--stroke)}
-#hangar .module-spec strong{font-family:var(--sans);font-weight:500;color:#e2e7f0;font-size:30px}
-#hangar .module-effect{background:#bfc3cb09;color:#c0c4cc;border:1px solid #bbbfc714;border-radius:8px;font-size:12px}
-#hangar .module-price strong{font-family:var(--sans);font-weight:500;color:#dee3ec;font-size:28px}
-#hangar .module-bookmark{background:transparent;border-color:var(--line);color:#bec2ca}
-#hangar .upgrade-plan,.price-table>div{border-color:var(--stroke)}
-#hangar .upgrade-plan summary{color:#bec2ca}
-.skin-card,.trail-card,.cosmetic-preview{background:#1c1d1f;border-color:var(--stroke);border-radius:12px}
-.skin-card.selected,.trail-card.selected{border-color:#b2b6bd80;box-shadow:none;background:#27292c}
-
 /* Awards: an index of accomplishments, with thin dividers and measured type. */
 .award-search input{background:var(--surface-soft);border-color:var(--line);font-size:14px}
 .award-filters{gap:5px}
@@ -361,10 +334,6 @@ dialog::backdrop{background:#080909bd;backdrop-filter:blur(7px)}
  .achievement-card{padding:18px}
  .achievement-card h3{font-size:16px}
  .achievement-focus{padding:16px}
- #hangar .module-card{padding:20px}
- #hangar .module-identity h3{font-size:22px}
- #hangar .hangar-ledger{padding:20px}
- #hangar .module-art{width:56px;min-width:56px;height:56px}
  #home .hero-copy{width:100%;padding-top:38px}
  #home h1{font-size:clamp(46px,10.8vw,72px);line-height:1.09;letter-spacing:-.055em;margin:22px 0}
  #home .hero-copy>.eyebrow{font-size:9px;letter-spacing:.13em}

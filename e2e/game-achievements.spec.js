@@ -49,7 +49,7 @@ for(const width of [390,1366])test('awards and medal results survive all playbac
 test('module purchase shows simultaneous awards, export refreshes collection and reload keeps XP',async({page})=>{
  await page.goto('/games/orbital-courier/offline.html');
  await page.evaluate(profile=>{const A=Orbital.App,G=Orbital.Progress;A.profile=G.sanitize(profile);A.profile.upgrades={scanner:1,magnet:0,docking:1,engine:1};A.profile.receipts=[];A.profile.achievements=[];A.profile.flags={};G.awardAchievements(A.profile);A.go('hangar');},historical);
- await page.locator('[data-action=upgrade][data-key=magnet]').click();await page.locator('[data-action=confirm-upgrade]').click();
+ await page.locator('#hangar-tab-magnet').click();await page.locator('[data-action=upgrade][data-key=magnet]').click();await page.locator('[data-action=confirm-upgrade]').click();
  await expect(page.locator('#toastArea')).toContainText('Модуль улучшен');await expect(page.locator('#toastArea')).toContainText('Четыре системы');await expect(page.locator('#toastArea')).toContainText('Своя гравитация');
  await page.evaluate(()=>{const A=Orbital.App;A.go('awards');Orbital.V8.settings('save');});
  const download=page.waitForEvent('download');await page.locator('[data-action=export]').click();await download;await page.evaluate(()=>Orbital.App.closeModal());

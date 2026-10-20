@@ -39,6 +39,7 @@ for(const [width,height]of [[320,568],[390,844],[844,390],[1366,768]]){
         expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
         await page.locator('.upgrade-plan summary').first().click();
         await expect(page.locator('.price-table').first()).toBeVisible();
+        await page.locator('#hangarRouteContext summary').click();
         await page.locator('#shopModeSelect').selectOption('pro');
         await expect(page.locator('[data-module=scanner] .module-effect')).toContainText('0.9');
         await expect(page.locator('[data-module=scanner] .module-spec strong').first()).toContainText('0.9');
@@ -50,6 +51,7 @@ test('shop quotes, changed quote confirmation, purchase and refund',async({page}
     await page.goto('/games/orbital-courier/offline.html');
     await page.evaluate(p=>{Orbital.App.profile=Orbital.Progress.sanitize(p);Orbital.App.go('hangar',true);},profile);
     const before=await page.evaluate(()=>({credits:Orbital.App.profile.credits,data:Orbital.App.profile.data}));
+    await page.locator('#hangar-tab-engine').click();
     await page.locator('[data-action=upgrade][data-key=engine]').click();
     await page.locator('#modal .modal-close').click();
     expect(await page.evaluate(()=>Orbital.App.profile.credits)).toBe(before.credits);
@@ -63,6 +65,7 @@ test('shop quotes, changed quote confirmation, purchase and refund',async({page}
     const quote=await page.evaluate(()=>Orbital.Progress.quote(Orbital.App.profile,'engine'));
     await page.locator('[data-action=confirm-upgrade]').click();
     expect(await page.evaluate(()=>Orbital.App.profile.credits)).toBe(afterOther-quote.cost);
+    await page.locator('#hangarService summary').click();
     await page.locator('[data-action=respec-info]').click();await page.locator('[data-action=respec-confirm]').click();
     expect(await page.evaluate(()=>Orbital.App.profile.credits)).toBe(before.credits);
     expect(await page.evaluate(()=>Orbital.App.profile.data)).toBe(before.data);
