@@ -25,6 +25,17 @@ test('detailed craft models retain colour, open docking aperture and bounded tex
  expect(result).toEqual({hits:true,colours:3,center:0,cache:12,transform:1});expect(errors).toEqual([]);
  await page.locator('#craftBoard').screenshot({path:info.outputPath('courier-and-station.png')});
 });
+test('palettes repaint the complete hull and all finish and livery combinations remain distinct',async({page},info)=>{
+ await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());await page.goto('/games/orbital-courier/offline.html');
+ const result=await page.evaluate(()=>{
+  const O=Orbital,before=JSON.stringify(O.App.profile),c=document.createElement('canvas');c.width=1200;c.height=1050;c.id='paintGallery';c.style.cssText='position:fixed;inset:0;z-index:99999;width:1200px;height:1050px';document.body.append(c);const g=c.getContext('2d');g.fillStyle='#12151c';g.fillRect(0,0,1200,1050);g.fillStyle='#e3ebf8';g.font='24px sans-serif';g.fillText('ПАЛИТРЫ / КОРПУС, ПАНЕЛИ, СТЕКЛО',35,45);
+  const paints=O.Progress.SKINS.map((s,i)=>{const x=125+i%5*238,y=145+Math.floor(i/5)*180,style={skin:s.id,finish:'satin',livery:'panels'};O.drawShip(g,x,y,-.12,s.color,3,false,0,'courier',style);g.fillStyle='#b8c9e1';g.font='13px sans-serif';g.fillText(s.name,x-90,y+75);return O.drawShip.texture(s.color,'courier',style).toDataURL();});
+  g.font='24px sans-serif';g.fillStyle='#e3ebf8';g.fillText('ПОКРЫТИЕ / РИСУНОК',35,490);const styles=[];
+  for(const [i,f]of O.Fleet.FINISHES.entries())for(const [j,l]of O.Fleet.LIVERIES.entries()){const style={skin:'mint',finish:f.id,livery:l.id},x=145+j*295,y=600+i*145;O.drawShip(g,x,y,-.12,'#91a6c2',2.7,false,0,'courier',style);g.font='13px sans-serif';g.fillStyle='#b8c9e1';g.fillText(f.name+' / '+l.name,x-80,y+60);styles.push(O.drawShip.texture('#91a6c2','courier',style).toDataURL());}
+  return {palettes:new Set(paints).size,styles:new Set(styles).size,untouched:before===JSON.stringify(O.App.profile)};
+ });
+ expect(result).toEqual({palettes:10,styles:12,untouched:true});await page.locator('#paintGallery').screenshot({path:info.outputPath('palettes-and-materials.png')});
+});
 test('nine cohesive hulls and eleven trails have distinct artwork with no portal bridge',async({page},info)=>{
  await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
  await page.goto('/games/orbital-courier/offline.html');

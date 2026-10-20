@@ -65,3 +65,15 @@ for(const width of [390,1366])test('models preview independently, apply together
  await page.keyboard.press('End');await expect(page.locator('#trailTab')).toBeFocused();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
 });
+for(const width of [390,1366])test('finish and livery can be tried, reset and saved without spending resources '+width,async({page})=>{
+ await page.setViewportSize({width,height:844});await page.goto(base);await page.evaluate(()=>{Orbital.App.profile.settings.reducedMotion=true;});await page.locator('#hangarStyleTab').click();await page.locator('#skinTab').click();await page.locator('#paintOptions summary').click();
+ const before=await page.evaluate(()=>({profile:JSON.stringify(Orbital.App.profile),save:localStorage.getItem('orbital-courier-save-v8')}));
+ const canvas=page.locator('#hangarShip'),image=await canvas.evaluate(c=>c.toDataURL());
+ await page.locator('[data-kind=finish][data-key=matte]').click();await page.locator('[data-kind=livery][data-key=split]').click();
+ await expect.poll(()=>canvas.evaluate(c=>c.toDataURL())).not.toBe(image);expect(await page.evaluate(()=>({profile:JSON.stringify(Orbital.App.profile),save:localStorage.getItem('orbital-courier-save-v8')}))).toEqual(before);
+ await page.locator('[data-action="hangar:reset"]').click();await expect(page.locator('[data-kind=finish][data-key=satin]')).toHaveAttribute('aria-pressed','true');await expect(page.locator('[data-action="hangar:apply"]')).toBeDisabled();
+ await page.locator('[data-kind=finish][data-key=metal]').click();await page.locator('[data-kind=livery][data-key=stripe]').click();await page.locator('[data-action="hangar:apply"]').click();
+ await page.goto('/games/orbital-courier/flight/?contract=4');await page.reload();
+ expect(await page.evaluate(()=>{const p=Orbital.App.profile;return[p.finish,p.livery,p.credits,p.data,p.xp];})).toEqual(['metal','stripe',25,0,0]);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+});

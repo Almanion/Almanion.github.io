@@ -1058,6 +1058,32 @@ body[data-page=hangar]:not([data-page=home]):not([data-page=play]) main{max-widt
 #hangar .fitting-footer strong{font:500 12px/1.5 var(--sans);color:#c2d2e9}
 #hangar .fitting-footer p{font:11px/1.6 var(--sans);color:#8e9eb5;margin:4px 0 12px}
 #hangar .fitting-footer>.button{width:100%;min-height:46px;font-size:12px}
+#hangar .fitting-actions{display:flex;gap:8px}
+#hangar .fitting-actions .button{min-height:46px;min-width:0;font-size:12px}
+#hangar .fitting-actions .primary{flex:1}
+#hangar .fitting-actions .quiet{padding-inline:13px}
+#hangar .paint-options{margin:0 0 14px;border:1px solid #a5bdd522;border-radius:8px;background:#0f141b44}
+#hangar .paint-options>summary{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;min-height:46px;padding:10px 12px;font:12px/1.5 var(--sans);color:#c9d7eb;cursor:pointer;list-style:none}
+#hangar .paint-options>summary small{font-size:10px;color:#849ab9}
+#hangar .paint-options>summary:after{content:'⌄';display:block;font-size:14px;color:#9fb5d1;line-height:1;transition:transform .15s}
+#hangar .paint-options[open]>summary:after{transform:rotate(180deg)}
+#hangar .paint-options fieldset{min-width:0;border:0;padding:0 10px 10px;margin:0}
+#hangar .paint-options legend{font:11px/1.5 var(--sans);color:#8fabc9;margin-bottom:6px;padding:0}
+#hangar .paint-options-grid{display:flex;gap:4px}
+#hangar .paint-options-grid button{display:flex;flex:1;flex-direction:column;align-items:center;gap:5px;min-width:0;min-height:52px;padding:7px 2px;border:1px solid #ffffff12;border-radius:5px;background:none;font:10px/1.3 var(--sans);color:#9baec6;cursor:pointer}
+#hangar .paint-options-grid button[aria-pressed=true]{border-color:#b5c8e38c;background:#aec4e412;color:#dfebfc}
+#hangar .paint-option-art{display:block;width:28px;height:10px;border:1px solid #b8cae144;border-radius:3px;background:#a3b3c7}
+#hangar .finish-satin{background:linear-gradient(160deg,#d4dce8,#8493a8)}
+#hangar .finish-matte{background:#8495ab}
+#hangar .finish-metal{background:linear-gradient(160deg,#e9efff,#4f627e 43%,#c5d8f3 52%,#44516a)}
+#hangar .livery-clean{background:#a4b5cb}
+#hangar .livery-panels{background:linear-gradient(150deg,#a4b5cb 30%,#536a8c 30% 70%,#a4b5cb 70%)}
+#hangar .livery-stripe{background:linear-gradient(0deg,#a4b5cb 38%,#4c6385 38% 62%,#a4b5cb 62%)}
+#hangar .livery-split{background:linear-gradient(0deg,#a4b5cb 50%,#536a8c 50%)}
+#hangar .paint-palette-label{font:10px/1.6 var(--sans);color:#90a5c0;margin:0 0 10px}
+#hangar .palette-swatches{display:flex;gap:4px;height:7px;margin:1px 0}
+#hangar .palette-swatches i{display:block;width:18px;height:7px;border:1px solid #ffffff26;border-radius:2px}
+#hangar .skin-card .fitting-art{height:52px}
 #hangar .hangar-service{margin-top:20px;border:1px solid #ffffff0d;border-radius:10px;background:#171a1e}
 #hangar .hangar-service>summary{display:flex;align-items:center;gap:16px;padding:10px 18px;min-height:48px;list-style:none;cursor:pointer;color:#99a8bc;font:12px var(--sans)}
 #hangar .hangar-service>summary small{font-size:10px;color:#6e7e95}
@@ -1928,7 +1954,7 @@ body.high-contrast .mission-status,body.high-contrast .achievement-card p,body.h
   </section>
   <section id="hangarStyling" class="cosmetics-section hangar-styling" role="tabpanel" aria-labelledby="hangarStyleTab" hidden>
    <div class="cosmetics-heading"><div><div class="eyebrow">СКИНЫ КОРАБЛЯ</div><h3 id="cosmeticsTitle">Твой силуэт. Твой стиль.</h3></div><div aria-label="Внешний вид капсулы" class="cosmetic-tabs" role="tablist"><button aria-controls="modelPanel" aria-selected="true" data-action="hangar:collection" data-tab="models" id="modelTab" role="tab">Модели</button><button aria-controls="skinPanel" aria-selected="false" data-action="hangar:collection" data-tab="skins" id="skinTab" role="tab">Окраска</button><button aria-controls="trailPanel" aria-selected="false" data-action="hangar:collection" data-tab="trails" id="trailTab" role="tab">След</button></div></div>
-   <div class="fitting-collection"><div aria-labelledby="modelTab" id="modelPanel" role="tabpanel"><div class="model-grid" id="modelGrid"></div></div><div aria-labelledby="skinTab" hidden id="skinPanel" role="tabpanel"><div class="skin-grid" id="skinGrid"></div></div><div aria-labelledby="trailTab" hidden="" id="trailPanel" role="tabpanel"><div class="trail-grid" id="trailGrid"></div></div><p class="cosmetic-xp" id="cosmeticXP"></p></div>
+   <div class="fitting-collection"><div aria-labelledby="modelTab" id="modelPanel" role="tabpanel"><div class="model-grid" id="modelGrid"></div></div><div aria-labelledby="skinTab" hidden id="skinPanel" role="tabpanel"><details class="paint-options" id="paintOptions"><summary><span>Рисунок и покрытие</span><small id="paintOptionsValue"></small></summary><fieldset><legend>Покрытие</legend><div id="paintFinishes" class="paint-options-grid" role="group" aria-label="Покрытие корпуса"></div></fieldset><fieldset><legend>Рисунок</legend><div id="paintLiveries" class="paint-options-grid" role="group" aria-label="Рисунок окраски"></div></fieldset></details><p class="paint-palette-label">Палитра · корпус, панели и акценты</p><div class="skin-grid" id="skinGrid"></div></div><div aria-labelledby="trailTab" hidden="" id="trailPanel" role="tabpanel"><div class="trail-grid" id="trailGrid"></div></div><p class="cosmetic-xp" id="cosmeticXP"></p></div>
    <div class="fitting-footer" id="fittingFooter"></div>
    <div hidden><canvas id="trailPreview" width="840" height="230" aria-label="Предпросмотр следа"></canvas><strong id="trailPreviewName"></strong><p id="trailPreviewDescription"></p></div>
   </section>
@@ -2536,39 +2562,49 @@ O.Achievements={CATEGORIES,create};if(typeof module!=='undefined'&&module.export
     const at=(p,draw)=>{c.save();c.translate(p.x,p.y);c.rotate(Math.atan2(-p.nx,p.ny));c.globalAlpha*=Math.pow(p.f,.65)*.8;c.scale(k,k);draw();c.restore();};
     const star=r=>{c.beginPath();for(let j=0;j<8;j++){const a=j*Math.PI/4,q=j%2?r*.19:r;j?c.lineTo(Math.cos(a)*q,Math.sin(a)*q):c.moveTo(q,0);}c.closePath();c.fill();};
     const haze=(r,col,stretch=1)=>{c.save();c.scale(stretch,1);const g=c.createRadialGradient(0,0,0,0,0,r);g.addColorStop(0,col+'45');g.addColorStop(.32,col+'18');g.addColorStop(1,col+'00');c.fillStyle=g;c.beginPath();c.arc(0,0,r,0,Math.PI*2);c.fill();c.restore();};
+    const point=f=>{const n=Math.max(0,Math.min(1,f))*(pts.length-1),i=Math.min(pts.length-2,Math.floor(n)),u=n-i,a=pts[i],b=pts[i+1];return{x:a.x+(b.x-a.x)*u,y:a.y+(b.y-a.y)*u,nx:a.nx+(b.nx-a.nx)*u,ny:a.ny+(b.ny-a.ny)*u,f};};
+    const beam=(col,width,offset=()=>0)=>{stroke(c,pts,grad(col,.16),width*4*k,offset);stroke(c,pts,grad(col,.45),width*1.8*k,offset);stroke(c,pts,grad(col,.85,'#f2f5ff'),width*k,offset);};
+    c.globalCompositeOperation='lighter';
     const core=(col=base,width=.7)=>{ribbon(grad(col,.22),3);stroke(c,pts,grad(col,.8,'#f6f8ff'),width*k);};
     switch(def.id){
       case 'vector':
-        ribbon(grad(base,.35),3.2);core(base,.9);
-        for(const i of [19,32,44])at(pts[i],()=>{c.strokeStyle=base;c.lineWidth=.65;c.beginPath();c.moveTo(-3,-2);c.lineTo(0,0);c.lineTo(-3,2);c.stroke();});break;
+        ribbon(grad(base,.13),4);beam(base,.55);
+        for(let i=0;i<4;i++){const f=1-((i/4+t*.11)%1);at(point(f),()=>{c.strokeStyle=base;c.lineWidth=.65;c.beginPath();c.moveTo(-4,-2.2);c.lineTo(0,0);c.lineTo(-4,2.2);c.stroke();});}break;
       case 'comet':
-        ribbon(grad('#c96d32',.3,'#ffd59b'),10);ribbon(grad('#ffc16d',.55,'#fff2d9'),4);core('#ffe3ab',1);
-        for(let i=5;i<48;i+=4)at(pts[i],()=>{const age=1-pts[i].f,spread=Math.sin(i*2.399+t*.7)*age*14;c.strokeStyle=i%3?'#f8bd70':'#fff0cf';c.lineWidth=.55+pts[i].f*.5;c.beginPath();c.moveTo(-3-age*3,spread);c.lineTo(0,spread);c.stroke();});break;
+        ribbon(grad('#bf5c34',.18,'#ffe5ba'),8);ribbon(grad('#ffbb68',.38,'#fff0cb'),3);beam('#ffe5b5',.8);
+        for(let i=0;i<28;i++){const f=1-((i/28+t*.19)%1),seed=Math.sin(i*127.1)*.5+.5;at(point(f),()=>{const y=Math.sin(i*2.399)*(1-f)*(4+seed*10),r=.3+f*.9;c.translate(-seed*3,y);haze(r*3,'#ffb56c',1.6);c.fillStyle=i%4?'#ffd49a':'#fff5dc';c.beginPath();c.ellipse(0,0,r*(1.4+seed),r*.55,0,0,Math.PI*2);c.fill();});}break;
       case 'ion':
-        for(const side of [-1,1]){const o=p=>side*(1-p.f)*6*k;ribbon(grad('#6ba8ef',.18),3,o);stroke(c,pts,grad('#91d4ff',.75,'#e5f5ff'),.8*k,o);}
-        for(const i of [16,28,40])at(pts[i],()=>{const r=1+(1-pts[i].f)*6;c.strokeStyle='#a3deff66';c.lineWidth=.55;c.beginPath();c.ellipse(0,0,r*.28,r,0,0,Math.PI*2);c.stroke();});break;
+        for(const side of [-1,1]){const o=p=>side*(1.2+(1-p.f)*3)*k;beam('#67b8ff',.6,o);}
+        for(let i=0;i<7;i++){const f=1-((i/7+t*.13)%1);at(point(f),()=>{const r=2+(1-f)*3;c.strokeStyle='#81ccff55';c.lineWidth=.55;c.beginPath();c.ellipse(0,0,r*.25,r,0,0,Math.PI*2);c.stroke();c.strokeStyle='#d2efff';c.beginPath();c.ellipse(0,0,r*.25,r,0,-.6,.8);c.stroke();});}break;
       case 'photon':
-        stroke(c,pts,grad('#c5dfff',.18),.5*k);
-        for(let i=5;i<51;i+=4)at(pts[i],()=>{const r=1+pts[i].f*1.8;c.globalAlpha*=.8+.2*Math.sin(i+t*2);haze(r*2.5,'#b9d9ff',1.6);c.fillStyle='#e9f3ff';c.beginPath();c.moveTo(r*2,0);c.lineTo(0,r);c.lineTo(-r*2,0);c.lineTo(0,-r);c.closePath();c.fill();c.fillStyle='#fff';c.fillRect(-.45,-.45,.9,.9);});break;
-      case 'plasma':
-        ribbon(grad('#e05f92',.3,'#ffd4e5'),7);for(const phase of [0,Math.PI]){const o=p=>wave(p,phase)*5;ribbon(grad(phase?'#a384ff':'#ff8dbb',.55),2,o);stroke(c,pts,grad('#ffc6e3',.8,'#fff0f8'),.65*k,o);}break;
+        for(let i=0;i<14;i++){const f=1-((i/14+t*.12)%1);at(point(f),()=>{const r=.6+f*1.3;c.translate(0,Math.sin(i*2.4)*(1-f)*4);haze(r*4,'#bfdbff',1.5);c.fillStyle='#cfebff';c.beginPath();c.moveTo(r*2.1,0);c.lineTo(0,r);c.lineTo(-r*2.1,0);c.lineTo(0,-r);c.closePath();c.fill();c.strokeStyle='#ecf7ff55';c.lineWidth=.4;c.beginPath();c.ellipse(0,0,r*3.2,r*2,0,-.7,.7);c.stroke();});}break;
+      case 'plasma':{
+        ribbon(grad('#b83283',.17,'#f9b8db'),7);
+        for(const side of [-1,1]){const o=p=>side*(2.2+wave(p,side)*2)*k*(1-p.f*.5);beam(side===1?'#eb72b5':'#aa89ff',.75,o);}
+        for(let i=0;i<4;i++){const center=.22+i*.2,arc=pts.filter(p=>Math.abs(p.f-center)<.095);stroke(c,arc,'#f7c8f28c',.55*k,(p,j)=>Math.sin(j*2.4+t*3+i)*(1-p.f)*4*k);}
+        break;}
       case 'aurora':
-        for(const [col,width,phase]of [['#8391ef',8,0],['#b6b6ff',5,1.8],['#8edee5',3,3.4]]){const o=p=>wave(p,phase)*8;ribbon(grad(col,.28),width,o);stroke(c,pts,grad(col,.45,'#e6eeff'),.45*k,p=>o(p)+width*taper(p)*k);}break;
+        for(let i=0;i<7;i++){const phase=i*.62,col=['#8f91ed','#ba9bfa','#7baedc','#86d5dc'][i%4],o=p=>wave(p,phase)*8+(i-3)*1.2*(1-p.f)*k;ribbon(grad(col,.1,'#e2dfff'),2.5,o);stroke(c,pts,grad(col,.3),.3*k,p=>o(p)+taper(p)*2.5*k);}
+        for(let i=9;i<49;i+=4)at(pts[i],()=>{const r=(1-pts[i].f)*8;c.strokeStyle='#c6caff28';c.lineWidth=.4;c.beginPath();c.moveTo(-2,-r);c.quadraticCurveTo(2,0,-2,r);c.stroke();});break;
       case 'rift':
-        core('#a894f2',.45);
-        for(let i=8;i<50;i+=7)at(pts[i],()=>{const r=2+(1-pts[i].f)*10;c.strokeStyle='#a69aef2a';c.lineWidth=3;c.beginPath();c.ellipse(0,0,r*.28,r,0,0,Math.PI*2);c.stroke();c.lineWidth=.7;c.strokeStyle='#c5b9ff';c.stroke();c.strokeStyle='#f0e5ff';c.beginPath();c.ellipse(0,0,r*.28,r,0,-.9,.2);c.stroke();});break;
+        for(const side of [-1,1])beam('#a591e8',.35,p=>side*(1-p.f)*3*k);
+        for(let i=0;i<7;i++){const f=1-((i/7+t*.075)%1);at(point(f),()=>{const r=2+(1-f)*9;haze(r*1.5,'#8e6ede',.7);c.strokeStyle='#c9b5ff';c.lineWidth=.85;c.beginPath();c.ellipse(0,0,r*.32,r,0,-1.15,1.15);c.stroke();c.strokeStyle='#8670c37c';c.lineWidth=.5;c.beginPath();c.ellipse(-1.2,0,r*.32,r*1.2,0,1.7,4.6);c.stroke();c.fillStyle='#d1c0ff9c';c.beginPath();c.moveTo(-r*.5,r*.7);c.lineTo(-r*.3,r*1.2);c.lineTo(r*.1,r*.85);c.closePath();c.fill();});}break;
       case 'fork':
-        for(const side of [-1,1]){const o=p=>side*Math.pow(1-p.f,.85)*12*k;ribbon(grad('#78a5f5',.28),2.5,o);stroke(c,pts,grad('#b7ccff',.8,'#f0f4ff'),.8*k,o);}
-        for(const i of [23,40])at(pts[i],()=>{c.strokeStyle='#a8c6ff60';c.lineWidth=.6;const r=(1-pts[i].f)*12;c.beginPath();c.moveTo(-4,-r);c.lineTo(1,0);c.lineTo(-4,r);c.stroke();});break;
+        for(const side of [-1,1]){const o=p=>side*Math.pow(1-p.f,.75)*11*k;beam(side===1?'#7b9fee':'#b1c9ff',.65,o);for(let i=0;i<4;i++){const f=1-((i/4+t*.1)%1),p=point(f);at(p,()=>{const y=side*Math.pow(1-f,.75)*11;c.translate(0,y);c.fillStyle='#e0eaff';c.beginPath();c.moveTo(3,0);c.lineTo(-2,-1.5);c.lineTo(-1,0);c.lineTo(-2,1.5);c.closePath();c.fill();});}}break;
       case 'tidal':
-        core('#ffe0ac',.6);
-        for(let i=8;i<50;i+=6)at(pts[i],()=>{const r=3+8*(1-pts[i].f);c.strokeStyle='#f6ba751c';c.lineWidth=3;c.beginPath();c.ellipse(-2,0,r*.55,r,0,-1.15,1.15);c.stroke();c.strokeStyle='#ffe4b1';c.lineWidth=.8;c.stroke();});break;
-      case 'postal':
-        for(const side of [-1,1]){const o=p=>wave(p,side)*4+side*3*taper(p)*k;ribbon(grad(side===1?'#db78ab':'#eab782',.4),2.5,o);stroke(c,pts,grad('#ffe1c4',.6),.45*k,o);}
-        for(const i of [24,42])at(pts[i],()=>{c.strokeStyle='#ffe1bd';c.lineWidth=.6;c.beginPath();c.roundRect(-3,-2,6,4,.5);c.moveTo(-3,-2);c.lineTo(0,.4);c.lineTo(3,-2);c.stroke();});break;
-      case 'cartographer':
-        stroke(c,pts,grad('#9cbbdc',.35),.55*k);
-        for(let i=10;i<51;i+=7)at(pts[i],()=>{const r=i%2?2:3.5;haze(r*3,'#b6d4ff');c.fillStyle='#eff7ff';star(r);c.strokeStyle='#bfdcff60';c.lineWidth=.45;c.beginPath();c.arc(0,0,r+2,-.5,2.1);c.stroke();});break;
+        beam('#ffd799',.4);
+        for(let i=0;i<9;i++){const f=1-((i/9+t*.095)%1);at(point(f),()=>{const r=3+(1-f)*11;c.strokeStyle='#efb57220';c.lineWidth=3;c.beginPath();c.ellipse(-2,0,r*.55,r,0,-1,1);c.stroke();c.strokeStyle='#ffe2af';c.lineWidth=.65;c.stroke();c.strokeStyle='#fff1ce55';c.lineWidth=.4;c.beginPath();c.ellipse(-4,0,r*.7,r*1.35,0,-.75,.75);c.stroke();});}break;
+      case 'postal':{
+        const bend=p=>wave(p,.5)*4;ribbon(grad('#ce6f9b',.3,'#ffe4cf'),4,bend);
+        for(const side of [-1,1])beam('#efc58e',.35,p=>bend(p)+side*3.5*taper(p)*k);
+        for(let i=6;i<49;i+=2){const p=pts[i],r=3.2*taper(p);at(p,()=>{c.translate(0,bend(p)/k);c.strokeStyle=i%4?'#ffd49c55':'#ffe8bd88';c.lineWidth=.35;c.beginPath();c.moveTo(-1.5,-r);c.lineTo(1.5,r);c.stroke();});}
+        for(const f of [.4,.76])at(point(f),()=>{c.translate(0,bend(point(f))/k);c.strokeStyle='#ffe2aa';c.lineWidth=.65;c.beginPath();c.moveTo(0,-2.5);c.lineTo(2.8,0);c.lineTo(0,2.5);c.lineTo(-2.8,0);c.closePath();c.stroke();});break;}
+      case 'cartographer':{
+        const constellation=[];
+        for(let i=0;i<10;i++){const f=.07+i*.092,p=point(f),o=Math.sin(i*2.4)*(1-f)*12*k;constellation.push({...p,x:p.x+p.nx*o,y:p.y+p.ny*o});}
+        stroke(c,constellation,grad('#9ebfe7',.5),.45*k);
+        for(const [i,p]of constellation.entries())at(p,()=>{const r=i%3===0?3:1.3;haze(r*4,'#aacdff');c.fillStyle='#eef8ff';star(r);if(i%3===0){c.strokeStyle='#a9cafa55';c.lineWidth=.45;c.beginPath();c.arc(0,0,r+3,-.5,1.7);c.stroke();}});
+        for(let i=0;i<16;i++){const f=1-((i/16+t*.04)%1);at(point(f),()=>{const y=Math.sin(i*4.17)*(1-f)*16;c.fillStyle='#b8d8ff80';c.beginPath();c.arc(0,y,.35,0,Math.PI*2);c.fill();});}break;}
     }
     c.restore();
   }
@@ -2594,6 +2630,10 @@ O.Achievements={CATEGORIES,create};if(typeof module!=='undefined'&&module.export
 (function(root){
  'use strict';
  const O=root.Orbital=root.Orbital||{},cache=new Map();
+ const FINISHES=Object.freeze([{id:'satin',name:'Сатин'},{id:'matte',name:'Матовый'},{id:'metal',name:'Металлик'}]);
+ const LIVERIES=Object.freeze([{id:'clean',name:'Чистый'},{id:'panels',name:'Панели'},{id:'stripe',name:'Полоса'},{id:'split',name:'Два тона'}]);
+ const appearance=p=>({skin:p.skin,finish:p.finish||'satin',livery:p.livery||'panels'});
+ const mix=(a,b,t)=>{const x=parseInt(a.slice(1),16),y=parseInt(b.slice(1),16);return '#'+[16,8,0].map(n=>Math.round(((x>>n)&255)*(1-t)+((y>>n)&255)*t).toString(16).padStart(2,'0')).join('');};
  const MODELS=Object.freeze([
   {id:'courier',name:'Курьер',xp:0,code:'OC—01',description:'Мягкий силуэт. Цельный керамический корпус.',engines:[[-17,-5],[-17,5]],cabin:[5,14,3.7],hardpoints:{scanner:[9,-6],magnet:[-3,8],docking:[23,0],engine:[-18,-5]}},
   {id:'swift',name:'Стриж',xp:600,code:'OC—02',description:'Стреловидное крыло и вытянутый фонарь.',engines:[[-18,-7],[-18,7]],cabin:[4,17,2.8],hardpoints:{scanner:[10,-4],magnet:[-7,10],docking:[25,0],engine:[-19,-7]}},
@@ -2621,26 +2661,32 @@ O.Achievements={CATEGORIES,create};if(typeof module!=='undefined'&&module.export
   }
   c.closePath();
  }
- function texture(color='#91a6c2',model='courier'){
-  const m=find(model),paint=/^#[0-9a-f]{6}$/i.test(color)?color:'#b5c8e3',key=m.id+paint;
+ function texture(color='#91a6c2',model='courier',style={}){
+  const m=find(model),paint=/^#[0-9a-f]{6}$/i.test(color)?color:'#b5c8e3',scheme=O.Progress?.SKINS.find(s=>style.skin?s.id===style.skin:s.color===paint);
+  const finish=FINISHES.some(f=>f.id===style.finish)?style.finish:'satin',livery=LIVERIES.some(f=>f.id===style.livery)?style.livery:'panels';
+  const body=m.dark&&(!scheme||scheme.id==='mint')?mix(scheme?.body||'#b8c3d3','#14213a',.73):scheme?.body||'#c4cedc',panel=scheme?.panel||paint,accent=scheme?.color||paint;
+  const key=[m.id,scheme?.id||paint,finish,livery].join(':');
   if(cache.has(key))return cache.get(key);
   const canvas=document.createElement('canvas');canvas.width=560;canvas.height=400;
   const c=canvas.getContext('2d');c.translate(280,200);c.scale(10,10);c.lineJoin='round';c.lineCap='round';
   // The complete outer shape is a single shell, including the engine shoulders.
   outline(c,m.id);const metal=c.createLinearGradient(0,-15,0,16);
-  for(const [at,col]of m.dark?[[0,'#6c7c93'],[.35,'#39485e'],[.5,'#202d42'],[.51,'#42516a'],[1,'#101c2e']]:[[0,'#fafbff'],[.3,'#e6eaf1'],[.49,'#bcc6d4'],[.53,'#d8e0ea'],[.83,'#7d8b9e'],[1,'#465268']])metal.addColorStop(at,col);
-  c.fillStyle=metal;c.fill('evenodd');c.strokeStyle=m.dark?'#8f9db5':'#d6dfed';c.lineWidth=.4;c.stroke();
+  const stops=finish==='matte'?[[0,.2],[.4,.04],[.65,-.08],[1,-.32]]:finish==='metal'?[[0,.8],[.22,.24],[.47,-.36],[.52,.48],[.8,-.08],[1,-.52]]:[[0,.48],[.32,.12],[.5,-.06],[.57,.12],[1,-.4]];
+  for(const [at,t]of stops)metal.addColorStop(at,mix(body,t>0?'#ffffff':'#111a2b',Math.abs(t)));
+  c.fillStyle=metal;c.fill('evenodd');c.strokeStyle=mix(body,'#e5efff',.55);c.lineWidth=.4;c.stroke();
   c.save();outline(c,m.id);c.clip('evenodd');
   const light=c.createLinearGradient(-20,-12,18,10);light.addColorStop(0,'#ffffff36');light.addColorStop(.45,'#ffffff00');light.addColorStop(1,'#19243b30');c.fillStyle=light;c.fillRect(-28,-20,56,40);
   // Paint sits flush within the shell. Broad shapes remain readable at 1×.
-  c.fillStyle=paint;
-  if(m.faceted){
-   for(const side of [-1,1]){c.globalAlpha=side===-1?.8:.45;c.beginPath();c.moveTo(-22,side*13);c.lineTo(-6,side*12);c.lineTo(8,side*5);c.lineTo(-15,side*7);c.closePath();c.fill();}
-   c.globalAlpha=1;c.fillStyle=m.dark?'#c2d5ee22':'#ffffff5c';c.beginPath();c.moveTo(-17,0);c.lineTo(-3,-4);c.lineTo(17,0);c.lineTo(-3,4);c.closePath();c.fill();
-   c.strokeStyle=m.dark?'#c9d8ed44':'#53647c55';c.lineWidth=.3;for(const side of [-1,1]){c.beginPath();c.moveTo(-16,side*11);c.lineTo(-4,side*9);c.lineTo(3,side*5);c.stroke();}
-  }else{
-   c.globalAlpha=.87;c.beginPath();c.moveTo(-25,-11);c.bezierCurveTo(-10,-10,4,-7,19,0);c.bezierCurveTo(4,-4,-10,-6,-25,-5);c.closePath();c.fill();c.globalAlpha=.45;c.beginPath();c.moveTo(-25,10);c.bezierCurveTo(-9,8,6,5,19,0);c.bezierCurveTo(4,7,-10,12,-25,14);c.closePath();c.fill();c.globalAlpha=1;
+  c.fillStyle=panel;
+  if(livery==='panels')for(const side of [-1,1]){
+   c.globalAlpha=side===-1?.9:.65;c.beginPath();c.moveTo(-24,side*14);
+   if(m.faceted){c.lineTo(-6,side*12);c.lineTo(8,side*5);c.lineTo(-15,side*7);}else{c.bezierCurveTo(-8,side*13,6,side*5,17,0);c.bezierCurveTo(2,side*5,-9,side*6,-24,side*7);}c.closePath();c.fill();
+   c.globalAlpha=.8;c.strokeStyle=accent;c.lineWidth=.45;c.beginPath();c.moveTo(-22,side*12);m.faceted?c.lineTo(3,side*6):c.quadraticCurveTo(-7,side*12,8,side*4);c.stroke();
   }
+  if(livery==='stripe'){c.beginPath();c.moveTo(-26,-2.8);c.lineTo(23,0);c.lineTo(-26,2.8);c.closePath();c.fill();c.strokeStyle=accent;c.lineWidth=.8;c.beginPath();c.moveTo(-26,0);c.lineTo(22,0);c.stroke();}
+  if(livery==='split'){c.fillRect(-28,-20,56,20);c.strokeStyle=accent;c.lineWidth=.5;c.beginPath();c.moveTo(-28,0);c.lineTo(28,0);c.stroke();}
+  c.globalAlpha=1;
+  if(m.faceted){c.fillStyle='#e2ecff16';c.beginPath();c.moveTo(-17,0);c.lineTo(-3,-4);c.lineTo(17,0);c.lineTo(-3,4);c.closePath();c.fill();}
   if(m.id==='atlas'||m.id==='pilgrim'){
    c.fillStyle='#8190a72a';c.beginPath();c.roundRect(-13,-6,14,12,2);c.fill();c.strokeStyle='#56657d55';c.lineWidth=.35;c.stroke();
    c.beginPath();c.moveTo(-6,-5);c.lineTo(-6,5);c.stroke();
@@ -2649,24 +2695,24 @@ O.Achievements={CATEGORIES,create};if(typeof module!=='undefined'&&module.export
   }
   c.restore();
   // Flush, dark glass with a single soft highlight instead of separate parts.
-  const [back,front,half]=m.cabin,glass=c.createLinearGradient(0,-half,0,half);glass.addColorStop(0,'#6c91b1');glass.addColorStop(.3,'#283f5b');glass.addColorStop(.65,'#101c30');glass.addColorStop(1,'#20324c');
+  const [back,front,half]=m.cabin,glass=c.createLinearGradient(0,-half,0,half),glassColor=scheme?.glass||'#273c56';glass.addColorStop(0,mix(glassColor,accent,.5));glass.addColorStop(.3,glassColor);glass.addColorStop(.7,'#0c1524');glass.addColorStop(1,mix(glassColor,'#0c1524',.35));
   c.beginPath();c.moveTo(front,0);if(m.faceted){c.lineTo(front-4,-half);c.lineTo(back,-half*.8);c.lineTo(back-1,0);c.lineTo(back,half*.8);c.lineTo(front-4,half);}else{c.bezierCurveTo(front-3,-half,back+3,-half-1,back,-half*.75);c.quadraticCurveTo(back-2,0,back,half*.75);c.bezierCurveTo(back+3,half+1,front-3,half,front,0);}c.closePath();c.fillStyle=glass;c.fill();c.strokeStyle='#e7f0ff88';c.lineWidth=.35;c.stroke();
   c.strokeStyle='#ddecff9c';c.lineWidth=.35;c.beginPath();c.moveTo(back+1,-half*.64);c.quadraticCurveTo(back+5,-half*.7,front-4,-half*.25);c.stroke();
   // Recessed exhaust ports share the hull's rear edge.
-  for(const [x,y]of m.engines){c.fillStyle='#1a2232';c.beginPath();c.roundRect(x-1,y-1.5,4,3,1);c.fill();c.fillStyle=paint;c.globalAlpha=.9;c.beginPath();c.roundRect(x-.5,y-.85,.7,1.7,.3);c.fill();c.globalAlpha=1;}
+  for(const [x,y]of m.engines){c.fillStyle='#1a2232';c.beginPath();c.roundRect(x-1,y-1.5,4,3,1);c.fill();c.fillStyle=accent;c.globalAlpha=.9;c.beginPath();c.roundRect(x-.5,y-.85,.7,1.7,.3);c.fill();c.globalAlpha=1;}
   c.fillStyle='#f1f6ff';c.beginPath();c.ellipse(17,0,.7,.3,0,0,Math.PI*2);c.fill();
   if(cache.size>=32)cache.delete(cache.keys().next().value);cache.set(key,canvas);return canvas;
  }
- function draw(c,x,y,angle,color,scale=1,thrust=false,time=0,model='courier'){
+ function draw(c,x,y,angle,color,scale=1,thrust=false,time=0,model='courier',style={}){
   const m=find(model);c.save();c.translate(x,y);c.rotate(angle);c.scale(scale,scale);
   if(thrust)for(const [ex,ey]of m.engines){
    const length=12+Math.sin(time*5)*1.2,g=c.createLinearGradient(ex,ey,ex-length,ey);g.addColorStop(0,'#f0f6ff');g.addColorStop(.22,color);g.addColorStop(1,color+'00');
    c.fillStyle=g;c.beginPath();c.moveTo(ex,ey-1);c.quadraticCurveTo(ex-length*.5,ey-1.7,ex-length,ey);c.quadraticCurveTo(ex-length*.5,ey+1.7,ex,ey+1);c.closePath();c.fill();
   }
-  c.drawImage(texture(color,m.id),-28,-20,56,40);c.restore();
+  c.drawImage(texture(color,m.id,style),-28,-20,56,40);c.restore();
  }
  draw.texture=texture;
- O.Fleet={MODELS,find,draw};
+ O.Fleet={MODELS,FINISHES,LIVERIES,appearance,find,draw};
  if(typeof module!=='undefined'&&module.exports)module.exports=O.Fleet;
 })(typeof globalThis!=='undefined'?globalThis:window);
 
@@ -2714,13 +2760,16 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   const RANKS=[{xp:0,name:'Стажёр'},{xp:180,name:'Курьер'},{xp:600,name:'Навигатор'},
     {xp:1300,name:'Пилот дальних трасс'},{xp:2300,name:'Капитан'},{xp:3600,name:'Звёздный почтальон'},
     {xp:5200,name:'Исследователь границ'},{xp:7000,name:'Хранитель маяков'},{xp:8000,name:'Легенда маршрутов'},{xp:12000,name:'Мастер развилок'},{xp:18000,name:'Архитектор путей'},{xp:23000,name:'Хранитель горизонтов'},{xp:27000,name:'Голос созвездий'},{xp:29000,name:'За пределами карты'}];
-  const SKINS=[{id:'mint',name:'Титан',color:'#91a6c2',xp:0},{id:'ice',name:'Полярис',color:'#8acfff',xp:600},
-    {id:'gold',name:'Солнечный ветер',color:'#ffc37c',xp:2300},{id:'nova',name:'Сверхновая',color:'#c4a3ff',xp:3600},
-    {id:'coral',name:'Коралловая заря',color:'#ff958a',xp:7000},{id:'pearl',name:'Белый карлик',color:'#f2f1d7',xp:8000},
-    {id:'twin',name:'Двойная звезда',color:'#98b9ff',xp:10000,gate:'both4',requirement:'Обе ветви четырёх карт'},
-    {id:'amber',name:'Янтарный резонанс',color:'#ffdd9b',xp:14000,gate:'sector18',requirement:'Все карты «Развилок приливов»'},
-    {id:'rose',name:'Лента горизонта',color:'#ff9ec6',xp:18000,gate:'multi4',requirement:'Все карты «Предела навигации»'},
-    {id:'atlas',name:'Полный атлас',color:'#dffaff',xp:22000,gate:'all80',requirement:'Все '+Campaign.order.length+' контрактов кампании'}];
+  const SKINS=[{id:'mint',name:'Титан',body:'#b8c3d3',panel:'#576b86',color:'#91a6c2',glass:'#273c56',xp:0},
+    {id:'ice',name:'Полярис',body:'#e2edf5',panel:'#456d93',color:'#8acfff',glass:'#163b58',xp:600},
+    {id:'gold',name:'Солнечный ветер',body:'#e8e4db',panel:'#635146',color:'#ffc37c',glass:'#4c3d34',xp:2300},
+    {id:'nova',name:'Сверхновая',body:'#383049',panel:'#847098',color:'#c4a3ff',glass:'#362d56',xp:3600},
+    {id:'coral',name:'Коралловая заря',body:'#e8e7e9',panel:'#a95759',color:'#ff958a',glass:'#4d303c',xp:7000},
+    {id:'pearl',name:'Белый карлик',body:'#efefeb',panel:'#a69c83',color:'#f2f1d7',glass:'#37434c',xp:8000},
+    {id:'twin',name:'Двойная звезда',body:'#26334c',panel:'#687fa7',color:'#98b9ff',glass:'#20365a',xp:10000,gate:'both4',requirement:'Обе ветви четырёх карт'},
+    {id:'amber',name:'Янтарный резонанс',body:'#35343a',panel:'#8b6c4c',color:'#ffdd9b',glass:'#4d3b2c',xp:14000,gate:'sector18',requirement:'Все карты «Развилок приливов»'},
+    {id:'rose',name:'Лента горизонта',body:'#dfd4de',panel:'#8b5a7a',color:'#ff9ec6',glass:'#4e2f4d',xp:18000,gate:'multi4',requirement:'Все карты «Предела навигации»'},
+    {id:'atlas',name:'Полный атлас',body:'#dbe5ed',panel:'#56717e',color:'#dffaff',glass:'#234452',xp:22000,gate:'all80',requirement:'Все '+Campaign.order.length+' контрактов кампании'}];
   const medalCount=m=>(m&1?1:0)+(m&2?1:0)+(m&4?1:0);
   const blankRecord=()=>({medals:0,cargo:[],attempts:0,bestTime:null,paid:0,dataPaid:0,bestScore:0,proScore:0,proWon:false,routeVersion:0,currentMedals:0,legacyMedals:0,routes:[],bestLoops:0,bestPortals:0,bestDrops:0,bestPrecision:0,tractorProof:false});
   const int=(x,min,max,fallback=0)=>Number.isFinite(x)?Math.max(min,Math.min(max,Math.floor(x))):fallback;
@@ -2785,7 +2834,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   const achievements=A.create(legacyAchievements);
   function fresh(){return {game:'orbital-courier',version:8,credits:E.START_CREDITS,data:0,xp:0,
     upgrades:{scanner:0,magnet:0,docking:0,engine:0},records:{},flags:{},achievements:[],receipts:[],
-    campaignRevision:Campaign.revision,campaignAccess:[],settings:{sound:true,volume:.6,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false},courses:{},model:'courier',skin:'mint',trail:'vector',lastLevel:Campaign.order[0],wishlist:null,difficulty:'normal'};}
+    campaignRevision:Campaign.revision,campaignAccess:[],settings:{sound:true,volume:.6,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false},courses:{},model:'courier',skin:'mint',finish:'satin',livery:'panels',trail:'vector',lastLevel:Campaign.order[0],wishlist:null,difficulty:'normal'};}
   function legacyUnlocked(p,id){
     if(!Number.isInteger(id)||id<0||id>=count())return false;
     if(id===0)return true;
@@ -2931,6 +2980,8 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     for(const k of Object.keys(p.settings))if(typeof raw.settings?.[k]==='boolean')p.settings[k]=raw.settings[k];
     p.skin=SKINS.some(s=>s.id===raw.skin)?raw.skin:'mint';p.wishlist=Object.hasOwn(UPGRADE_DEFS,raw.wishlist)?raw.wishlist:null;
     p.model=Fleet.MODELS.some(m=>m.id===raw.model&&C.unlocked(p,m))?raw.model:'courier';
+    p.finish=Fleet.FINISHES.some(f=>f.id===raw.finish)?raw.finish:'satin';
+    p.livery=Fleet.LIVERIES.some(f=>f.id===raw.livery)?raw.livery:'panels';
     p.trail=C.TRAILS.some(t=>t.id===raw.trail&&C.unlocked(p,t))?raw.trail:'vector';
     p.difficulty=raw.difficulty==='pro'?'pro':'normal';
     // Two finite, local aiming presets per level and difficulty. No scripts,
@@ -3457,13 +3508,13 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       }
       if(view.state){
         const s=view.state;
-        if(!['crash','lost','preview'].includes(s.status))ship(c,s.x,s.y,Math.atan2(s.vy,s.vx),color,Math.min(1.65,this.uiScale),false,t,view.model);
+        if(!['crash','lost','preview'].includes(s.status))ship(c,s.x,s.y,Math.atan2(s.vy,s.vx),color,Math.min(1.65,this.uiScale),s.status==='flying',t,view.model,view.appearance);
       }else if(!view.hideShip){
         const angle=-P.rad(view.angle||0);const len=view.aimPointer?Math.hypot(view.aimPointer.x-level.start.x,view.aimPointer.y-level.start.y):40+(view.speed||200)*0.35;
         c.save();c.translate(level.start.x,level.start.y);c.rotate(angle);
         c.strokeStyle=color+'80';c.lineWidth=1.3;c.beginPath();c.moveTo(33,0);c.lineTo(len,0);c.lineTo(len-7,-4);c.moveTo(len,0);c.lineTo(len-7,4);c.stroke();c.restore();
         if(view.aimPointer){const p=view.aimPointer;circle(c,p.x,p.y,9*this.uiScale,null,color+'90',1.5);text(c,Math.round(view.speed)+' ед./с',p.x,p.y-18*this.uiScale,11*this.uiScale,'#e0fff5','center');}
-        ship(c,level.start.x,level.start.y,angle,color,Math.min(1.75,1.1*this.uiScale),false,t,view.model);
+        ship(c,level.start.x,level.start.y,angle,color,Math.min(1.75,1.1*this.uiScale),false,t,view.model,view.appearance);
       }
       for(const p of view.particles||[]){
         c.globalAlpha=Math.max(0,p.life/p.maxLife);circle(c,p.x,p.y,p.r,p.color);c.globalAlpha=1;
@@ -3473,7 +3524,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       }
       c.restore();
     }
-    hero(t,color='#6af4cd',pointer={x:0,y:0},model='courier',trailStyle='vector',reduced=false){
+    hero(t,color='#6af4cd',pointer={x:0,y:0},model='courier',trailStyle='vector',reduced=false,appearance={}){
       // The scene uses viewport pixels; spheres retain their shape at every ratio.
       const c=this.ctx,w=this.canvas.clientWidth,h=this.canvas.clientHeight;
       if(!w||!h)return;
@@ -3503,7 +3554,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       const courier=()=>{const trail=[];for(let i=0;i<65;i++){const p=orbit(theta-.7+i*.7/64);trail.push(p);}
         O.Cosmetics.drawTrail(c,trail,trailStyle,t,color,reduced,mobile?.8:1.1);
         glow(q.x,q.y,24,'149,242,212',.14);
-        ship(c,q.x,q.y,Math.atan2(tangent.y-q.y,tangent.x-q.x),color,mobile?.85:1.1,true,t,model);
+        ship(c,q.x,q.y,Math.atan2(tangent.y-q.y,tangent.x-q.x),color,mobile?.85:1.1,true,t,model,appearance);
       };
       const drawMoon=()=>this.planet({x:moon.x,y:moon.y,r:radius*.13,tint:'#b8b7d1',surface:'crater',name:''});
       if(moon.z<0)drawMoon();if(q.z<0)courier();
@@ -3532,7 +3583,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   function markup(){
     return '<figure class="completion-docking"><button type="button" class="completion-docking-button" aria-label="Развернуть финальный кадр рейса"><canvas id="resultDockingCanvas" role="img" aria-label="Финальный кадр рейса"></canvas><span class="completion-docking-expand" aria-hidden="true">⤢</span></button><figcaption><span>Финальный кадр</span><strong id="resultDockingOffset"></strong></figcaption></figure>';
   }
-  function snapshot({level,state,trail=[],stats={},color='#6af4cd',trailStyle='vector',shipModel='courier'}){
+  function snapshot({level,state,trail=[],stats={},color='#6af4cd',trailStyle='vector',shipModel='courier',appearance={}}){
     const l=structuredClone(O.Routes.view(level,state)),s=structuredClone(state);
     const target=P.bodyAt(l.target,s.t),velocity=P.dockVelocity(s,l),radius=P.captureRadius(l,stats);
     const distance=Math.hypot(s.x-target.x,s.y-target.y);
@@ -3546,12 +3597,12 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     const extent=radius+53,bounds=[{x:target.x-extent,y:target.y-extent},{x:target.x+extent,y:target.y+extent},{x:s.x-28,y:s.y-28},{x:s.x+28,y:s.y+28},...points];
     const left=Math.min(...bounds.map(p=>p.x)),right=Math.max(...bounds.map(p=>p.x)),top=Math.min(...bounds.map(p=>p.y)),bottom=Math.max(...bounds.map(p=>p.y));
     const camera={cx:(left+right)/2,cy:(top+bottom)/2,zoom:Math.min(1200/(right-left+18),700/(bottom-top+18))};
-    return {level:l,state:s,trail:points,stats:{...stats},color,trailStyle,shipModel,target,velocity,radius,distance,offset,camera};
+    return {level:l,state:s,trail:points,stats:{...stats},color,trailStyle,shipModel,appearance:{...appearance},target,velocity,radius,distance,offset,camera};
   }
   function draw(canvas,model){
     const renderer=new O.Renderer(canvas);
-    const {level,state,trail,stats,color,trailStyle,shipModel,target,velocity,camera,radius}=model;
-    renderer.draw(level,{state,trail,stats,color,model:shipModel,camera,review:true,time:state.t,reducedMotion:true,trailStyle});
+    const {level,state,trail,stats,color,trailStyle,shipModel,appearance,target,velocity,camera,radius}=model;
+    renderer.draw(level,{state,trail,stats,color,model:shipModel,appearance,camera,review:true,time:state.t,reducedMotion:true,trailStyle});
     const c=renderer.ctx;
     c.save();c.translate(600,350);c.scale(camera.zoom,camera.zoom);c.translate(-camera.cx,-camera.cy);
     // The dashed line is the measured relative direction at the last instant,
@@ -3570,7 +3621,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       const r=Math.max(5,4/camera.zoom);c.strokeStyle='#ffb49b';c.lineWidth=Math.max(1.4,1.5/camera.zoom);c.beginPath();c.moveTo(state.x-r,state.y-r);c.lineTo(state.x+r,state.y+r);c.moveTo(state.x-r,state.y+r);c.lineTo(state.x+r,state.y-r);c.stroke();
     }
     c.restore();
-    Object.assign(canvas.dataset,{ready:'true',shipModel,finalTime:String(state.t),targetX:String(target.x),targetY:String(target.y),shipX:String(state.x),shipY:String(state.y),offset:String(model.offset)});
+    Object.assign(canvas.dataset,{ready:'true',shipModel,finish:appearance.finish||'satin',livery:appearance.livery||'panels',finalTime:String(state.t),targetX:String(target.x),targetY:String(target.y),shipX:String(state.x),shipY:String(state.y),offset:String(model.offset)});
   }
   function mount(container,input){
     dispose();
@@ -4463,7 +4514,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       for(const p of app.particles){p.x+=p.vx*elapsed;p.y+=p.vy*elapsed;p.life-=elapsed;}
       app.particles=app.particles.filter(p=>p.life>0);
       const t=app.profile.settings.reducedMotion?0:now/1000;
-      const review=O.Review?.renderModel();gameRenderer.draw(displayLevel(),{camera:app.camera,review:!!review,time:t,angle:app.angle,speed:app.speed,color:skin().color,model:app.profile.model,stats:stats(),state:displayState(),
+      const review=O.Review?.renderModel();gameRenderer.draw(displayLevel(),{camera:app.camera,review:!!review,time:t,angle:app.angle,speed:app.speed,color:skin().color,model:app.profile.model,appearance:O.Fleet.appearance(app.profile),stats:stats(),state:displayState(),
         preview:app.state?null:app.preview,trail:review?.trail||app.trail,trailStyle:app.profile.trail,ghost:review?.ghost||(app.profile.settings.ghost?app.ghosts[app.currentId]:null),
         aimPointer:app.aimPointer,grid:app.profile.settings.grid,reducedMotion:app.profile.settings.reducedMotion,particles:app.particles,banked:G.viewRecord(app.profile,app.currentId).cargo});
       if(now-lastTelemetry>85){updateTelemetry();lastTelemetry=now;}
@@ -4477,9 +4528,9 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       if(!document.hidden&&!still)app.heroTime+=elapsed;
       const blend=1-Math.exp(-elapsed*5);
       for(const key of ['x','y','strength'])app.heroPointer[key]=(app.heroPointer[key]||0)+((app.heroTarget[key]||0)-(app.heroPointer[key]||0))*blend;
-      const key=[innerWidth,innerHeight,root.devicePixelRatio,skin().color,app.profile.model,app.profile.trail,reduced,heroPaused].join(':');
+      const key=[innerWidth,innerHeight,root.devicePixelRatio,skin().color,app.profile.model,app.profile.trail,app.profile.finish,app.profile.livery,reduced,heroPaused].join(':');
       if(!document.hidden&&(still?key!==heroStillKey:now-heroLastDraw>=32)){
-        heroRenderer.hero(reduced?2:app.heroTime,skin().color,still?{x:0,y:0}:app.heroPointer,app.profile.model,app.profile.trail,reduced);
+        heroRenderer.hero(reduced?2:app.heroTime,skin().color,still?{x:0,y:0}:app.heroPointer,app.profile.model,app.profile.trail,reduced,O.Fleet.appearance(app.profile));
         heroLastDraw=now;heroStillKey=still?key:'';
       }
     }
@@ -4584,7 +4635,7 @@ function showResult(result){
   $('reviewRange').addEventListener('input',e=>{O.Review.selectTime(+e.target.value);$('reviewStamp').textContent=O.Review.renderModel().state.t.toFixed(2)+' с';});
   $('resultAnalysisBar').querySelector('div span').textContent=training?'Тренировка · награды не начисляются':delivered?(A.storageOK?'Доставка подтверждена · награды сохранены':'Доставка подтверждена · скачай копию прогресса'):'Неудачная попытка · ничего не потеряно';
   resultView('summary');O.UI9?.onResult();O.Cloud?.refresh();
-  O.DockingPreview.mount($('resultScreen'),{level:l,state:s,trail:O.Review.active?.data.points||A.trail,stats:A.stats(),color:G.SKINS.find(skin=>skin.id===A.profile.skin)?.color,trailStyle:A.profile.trail,shipModel:A.profile.model});
+  O.DockingPreview.mount($('resultScreen'),{level:l,state:s,trail:O.Review.active?.data.points||A.trail,stats:A.stats(),color:G.SKINS.find(skin=>skin.id===A.profile.skin)?.color,trailStyle:A.profile.trail,shipModel:A.profile.model,appearance:O.Fleet.appearance(A.profile)});
 }
 function renderAwards(){const p=A.profile,defs=G.achievements,earned=new Set(p.achievements),progress=new Map(defs.map(a=>[a.id,earned.has(a.id)?a.target:a.progress(p)]));$('awardTotal').innerHTML=`${p.achievements.length} / ${defs.length}<span>достижений · ${money(p.xp)} XP</span>`;$('achievementCategories').innerHTML=[['all','Все разделы','∞'],...O.Achievements.CATEGORIES].map(([id,n,icon])=>{let ds=id==='all'?defs:defs.filter(d=>d.category===id);return `<button class="${category===id?'active':''}" data-action="v8:award-category" data-category="${id}">${icon} ${n}<small>${ds.filter(a=>earned.has(a.id)).length}/${ds.length}</small></button>`;}).join('');for(let b of $$('.award-filters button'))b.classList.toggle('active',b.dataset.filter===filter);
 let near=defs.filter(a=>!earned.has(a.id)).sort((a,b)=>progress.get(b.id)/b.target-progress.get(a.id)/a.target)[0];$('achievementFocus').innerHTML=`<div><strong>${near?'Ближе всего: '+near.name:'Коллекция завершена'}</strong><p>${near?near.text:'Все 93 знака отличия получены.'}</p></div><b>${near?progress.get(near.id)+' / '+near.target:'✓'}</b>`;
@@ -5204,17 +5255,17 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
  const O=root.Orbital,A=O.App,G=O.Progress,E=O.Economy,P=O.Physics,$=id=>document.getElementById(id);
  const keys=['scanner','magnet','docking','engine'],short={scanner:'Сканер',magnet:'Захват',docking:'Стыковка',engine:'Двигатель'};
  const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=n=>n.toLocaleString('ru-RU');
- const view={tab:'modules',module:'scanner',scene:'dock',model:null,skin:null,trail:null,lastModel:null,lastSkin:null,lastTrail:null};
+ const view={tab:'modules',module:'scanner',scene:'dock',model:null,skin:null,trail:null,finish:null,livery:null,last:{}};
  const skin=id=>G.SKINS.find(s=>s.id===id)||G.SKINS[0],trail=id=>O.Cosmetics.TRAILS.find(t=>t.id===id)||O.Cosmetics.TRAILS[0];
  const previewModel=()=>O.Fleet.find(view.model||A.profile.model),previewSkin=()=>skin(view.skin||A.profile.skin),previewTrail=()=>trail(view.trail||A.profile.trail);
+ const appearance=()=>({skin:previewSkin().id,finish:view.finish||A.profile.finish||'satin',livery:view.livery||A.profile.livery||'panels'});
+ const selection=()=>({model:previewModel().id,trail:previewTrail().id,...appearance()});
+ const changed=()=>Object.entries(selection()).some(([k,v])=>A.profile[k]!==v);
  const applied=(item,type)=>A.profile[type]===item.id,available=(item,type)=>applied(item,type)||O.Cosmetics.unlocked(A.profile,item);
  let background=null;
  function enhance(){
   const p=A.profile,installed=G.installed(p),ledger=$('shopSummary').querySelector('.hangar-ledger');
-  if(view.model===null||view.model===view.lastModel)view.model=p.model;
-  if(view.skin===null||view.skin===view.lastSkin)view.skin=p.skin;
-  if(view.trail===null||view.trail===view.lastTrail)view.trail=p.trail;
-  view.lastModel=p.model;view.lastSkin=p.skin;view.lastTrail=p.trail;
+  for(const key of ['model','skin','trail','finish','livery']){if(view[key]===null||view[key]===view.last[key])view[key]=p[key];view.last[key]=p[key];}
   if(ledger){
    const funds=ledger.querySelector('.hangar-funds');$('hangarFunds').innerHTML=funds.innerHTML;funds.remove();
    const note=document.createElement('p');note.className='hangar-price-note';note.textContent=`Монтаж: +${(installed*2.5).toFixed(1)}% к базовой цене. Скидка за исследования: ${(Math.min(.08,G.research(p)*.002)*100).toFixed(1)}%. Возврат — по фактическим чекам.`;
@@ -5253,18 +5304,21 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   $('hangar').dataset.workshopView=view.tab;
   for(const b of $('hangar').querySelectorAll('[data-action="hangar:view"]')){const on=b.dataset.view===view.tab;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;}
   $('hangarEquipment').hidden=view.tab!=='modules';$('hangarStyling').hidden=view.tab!=='style';
+  $('cosmeticsTitle').textContent=({models:'Модель корабля',skins:'Окраска корпуса',trails:'След в полёте'})[A.cosmeticTab||'models'];
   for(const b of $('hangar').querySelectorAll('[data-action="hangar:collection"]')){const on=b.dataset.tab===(A.cosmeticTab||'models');b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;$(b.getAttribute('aria-controls')).hidden=!on;}
   for(const b of $('hangarModuleTabs').querySelectorAll('button')){const on=b.dataset.key===view.module;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;}
   for(const card of $('upgradeGrid').children)card.hidden=card.dataset.module!==view.module;
   for(const b of $('shopSummary').querySelectorAll('[data-action="hangar:scene"]'))b.setAttribute('aria-pressed',String(b.dataset.scene===view.scene));
-  const m=previewModel(),s=previewSkin(),t=previewTrail(),changed=m.id!==A.profile.model||s.id!==A.profile.skin||t.id!==A.profile.trail;
-  $('dockShipName').textContent=m.name;$('dockFittingState').textContent=changed?'Примерка · ещё не применено':s.name+' · корабль готов';
+  const m=previewModel(),s=previewSkin(),t=previewTrail(),style=appearance();
+  $('dockShipName').textContent=m.name;$('dockFittingState').textContent=changed()?'Примерка · ещё не применено':s.name+' · корабль готов';
   $('dockSystemLabel').textContent=view.tab==='modules'?'ВЫБРАННАЯ СИСТЕМА':view.scene==='trail'?'ПРЕДПРОСМОТР СЛЕДА':A.cosmeticTab==='models'?'МОДЕЛЬ КОРПУСА':'ОКРАСКА КОРПУСА';
-  $('dockSystemValue').textContent=view.tab==='modules'?short[view.module]+' · '+A.profile.upgrades[view.module]+' / 5':view.scene==='trail'?t.name:A.cosmeticTab==='models'?m.name:s.name;
+  $('dockSystemValue').textContent=view.tab==='modules'?short[view.module]+' · '+A.profile.upgrades[view.module]+' / 5':view.scene==='trail'?t.name:A.cosmeticTab==='models'?m.name:s.name+' · '+O.Fleet.FINISHES.find(f=>f.id===style.finish).name;
  }
  function requirement(item){return `${money(item.xp)} XP${item.requirement?' · '+item.requirement:''}${item.xp>A.profile.xp?' · ещё '+money(item.xp-A.profile.xp)+' XP':''}`;}
  function decorateFitting(){
-  const p=A.profile,m=previewModel(),s=previewSkin(),t=previewTrail();
+  const p=A.profile,m=previewModel(),s=previewSkin(),t=previewTrail(),style=appearance();
+  for(const [type,id,defs]of [['finish','paintFinishes',O.Fleet.FINISHES],['livery','paintLiveries',O.Fleet.LIVERIES]]){const group=$(id);if(!group.children.length)group.innerHTML=defs.map(d=>`<button data-action="hangar:paint" data-kind="${type}" data-key="${d.id}"><i class="paint-option-art ${type}-${d.id}" aria-hidden="true"></i>${d.name}</button>`).join('');for(const b of group.children)b.setAttribute('aria-pressed',String(style[type]===b.dataset.key));}
+  $('paintOptionsValue').textContent=O.Fleet.FINISHES.find(f=>f.id===style.finish).name+' · '+O.Fleet.LIVERIES.find(f=>f.id===style.livery).name;
   for(const [type,grid,defs,chosen]of [['model','modelGrid',O.Fleet.MODELS,m],['skin','skinGrid',G.SKINS,s],['trail','trailGrid',O.Cosmetics.TRAILS,t]])for(const b of $(grid).children){
    const item=defs.find(x=>x.id===b.dataset.key);if(!item)continue;const open=available(item,type),on=item.id===chosen.id;
    b.disabled=false;b.dataset.action='hangar:try-'+type;b.classList.toggle('selected',on);b.classList.toggle('locked',!open);b.setAttribute('aria-pressed',String(on));
@@ -5272,13 +5326,15 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
    let canvas=b.querySelector('canvas');
    if(!canvas){canvas=document.createElement('canvas');canvas.className='fitting-art';canvas.width=300;canvas.height=132;canvas.setAttribute('aria-hidden','true');if(type==='skin')b.querySelector('.skin-shape').replaceChildren(canvas);else{b.querySelector('svg')?.remove();b.prepend(canvas);}}
    const c=canvas.getContext('2d');c.clearRect(0,0,300,132);
-   if(type==='trail'){const points=Array.from({length:70},(_,i)=>({x:12+i*3.8,y:80-Math.sin(i/69*Math.PI*.7)*42}));O.Cosmetics.drawTrail(c,points,item.id,0,s.color,true,1.9);const end=points.at(-1),last=points.at(-2);O.drawShip(c,end.x,end.y,Math.atan2(end.y-last.y,end.x-last.x),s.color,.8,false,0,m.id);}
-   else O.drawShip(c,150,66,-.12,type==='skin'?item.color:s.color,3.1,false,0,type==='model'?item.id:m.id);
+   if(type==='trail'){const points=Array.from({length:70},(_,i)=>({x:12+i*3.8,y:80-Math.sin(i/69*Math.PI*.7)*42}));O.Cosmetics.drawTrail(c,points,item.id,0,s.color,true,1.9);const end=points.at(-1),last=points.at(-2);O.drawShip(c,end.x,end.y,Math.atan2(end.y-last.y,end.x-last.x),s.color,.8,false,0,m.id,style);}
+   else O.drawShip(c,150,66,-.12,type==='skin'?item.color:s.color,3.1,false,0,type==='model'?item.id:m.id,type==='skin'?{...style,skin:item.id}:style);
+   if(type==='skin'&&!b.querySelector('.palette-swatches')){const swatches=document.createElement('span');swatches.className='palette-swatches';swatches.setAttribute('aria-hidden','true');swatches.innerHTML=[item.body,item.panel,item.color].map(color=>`<i style="background:${color}"></i>`).join('');b.querySelector('strong').after(swatches);}
    const status=type==='skin'?b.querySelector('small'):b.querySelector('.'+type+'-card-status');status.textContent=applied(item,type)?'Установлено':open?on?'Примерка':'Доступно':requirement(item);
   }
-  const locks=[[m,'model'],[s,'skin'],[t,'trail']].filter(([item,type])=>!available(item,type)),changed=m.id!==p.model||s.id!==p.skin||t.id!==p.trail;
-  $('cosmeticXP').textContent=`${money(p.xp)} XP · модели ${O.Fleet.MODELS.filter(m=>available(m,'model')).length} / ${O.Fleet.MODELS.length} · следы ${O.Cosmetics.TRAILS.filter(t=>available(t,'trail')).length} / ${O.Cosmetics.TRAILS.length}`;
-  $('fittingFooter').innerHTML=`<div><strong>${locks.length?'Можно примерить. Доступ откроется позже.':changed?'Новый облик готов к применению.':'Твой текущий облик.'}</strong><p>${locks.length?locks.map(([item])=>esc(item.name)+': '+esc(requirement(item))).join('<br>'):'Модель, окраска и след — только внешний вид. Опыт не расходуется.'}</p></div><button class="button primary" data-action="hangar:apply" ${locks.length||!changed?'disabled':''}>${locks.length?'Пока недоступно':changed?'Применить оформление':'Установлено ✓'}</button>`;
+  const locks=[[m,'model'],[s,'skin'],[t,'trail']].filter(([item,type])=>!available(item,type)),dirty=changed();
+  const catalog=A.cosmeticTab==='skins'?[G.SKINS,'skin','Палитры']:A.cosmeticTab==='trails'?[O.Cosmetics.TRAILS,'trail','Следы']:[O.Fleet.MODELS,'model','Модели'];
+  $('cosmeticXP').textContent=`${money(p.xp)} XP · ${catalog[2]}: ${catalog[0].filter(item=>available(item,catalog[1])).length} / ${catalog[0].length}`;
+  $('fittingFooter').innerHTML=`<div><strong>${locks.length?'Можно примерить. Доступ откроется позже.':dirty?'Новый облик готов к применению.':'Твой текущий облик.'}</strong><p>${locks.length?locks.map(([item])=>esc(item.name)+': '+esc(requirement(item))).join('<br>'):'Оформление меняет только внешний вид. Опыт не расходуется.'}</p></div><div class="fitting-actions">${dirty?'<button class="button quiet" data-action="hangar:reset" aria-label="Сбросить примерку и вернуть текущее оформление">Сбросить</button>':''}<button class="button primary" data-action="hangar:apply" ${locks.length||!dirty?'disabled':''}>${locks.length?'Пока недоступно':dirty?'Применить':'Установлено ✓'}</button></div>`;
  }
  function collection(tab){A.cosmeticTab=['models','skins','trails'].includes(tab)?tab:'models';view.scene=A.cosmeticTab==='trails'?'trail':'dock';A.renderHangar();$('hangarStyling').querySelector('.fitting-collection').scrollTop=0;$({models:'modelTab',skins:'skinTab',trails:'trailTab'}[A.cosmeticTab]).focus({preventScroll:true});}
  Object.assign(A.actions,{
@@ -5289,7 +5345,9 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   'hangar:try-model':b=>{view.model=O.Fleet.find(b.dataset.key).id;view.scene='dock';decorateFitting();sync();},
   'hangar:try-skin':b=>{view.skin=skin(b.dataset.key).id;view.scene='dock';decorateFitting();sync();},
   'hangar:try-trail':b=>{view.trail=trail(b.dataset.key).id;view.scene='trail';decorateFitting();sync();},
-  'hangar:apply':()=>{const m=previewModel(),s=previewSkin(),t=previewTrail();if(!available(m,'model')||!available(s,'skin')||!available(t,'trail'))return;A.profile.model=m.id;A.profile.skin=s.id;A.profile.trail=t.id;A.save();A.renderHangar();A.toast('Оформление применено. Хорошего полёта.');}
+  'hangar:paint':b=>{const defs=b.dataset.kind==='finish'?O.Fleet.FINISHES:b.dataset.kind==='livery'?O.Fleet.LIVERIES:[];if(defs.some(d=>d.id===b.dataset.key)){view[b.dataset.kind]=b.dataset.key;view.scene='dock';decorateFitting();sync();}},
+  'hangar:reset':()=>{for(const key of ['model','skin','trail','finish','livery'])view[key]=A.profile[key];decorateFitting();sync();},
+  'hangar:apply':()=>{const m=previewModel(),s=previewSkin(),t=previewTrail();if(!available(m,'model')||!available(s,'skin')||!available(t,'trail'))return;Object.assign(A.profile,selection());A.save();A.renderHangar();A.toast('Оформление применено. Хорошего полёта.');}
  });
  $('hangar').addEventListener('keydown',event=>{const b=event.target.closest('[role=tab]');if(!b||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;const buttons=[...b.closest('[role=tablist]').querySelectorAll('[role=tab]')],i=buttons.indexOf(b),next=event.key==='Home'?0:event.key==='End'?buttons.length-1:(i+(event.key==='ArrowLeft'?-1:1)+buttons.length)%buttons.length;event.preventDefault();buttons[next].click();$(buttons[next].id)?.focus({preventScroll:true});});
  function context(canvas){
@@ -5317,14 +5375,14 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   c.save();c.translate(450,502);c.scale(1,.65);c.font='500 25px ui-monospace,Consolas,monospace';c.textAlign='center';c.fillStyle='#9cb7da22';c.fillText('07  /  ORBITAL',0,0);c.restore();return background;
  }
  function preview(now){
-  const canvas=$('hangarShip');if(!canvas)return;const c=context(canvas);if(!c)return;const reduced=A.profile.settings.reducedMotion,t=reduced?1.4:now/1000,color=previewSkin().color,model=previewModel();
+  const canvas=$('hangarShip');if(!canvas)return;const c=context(canvas);if(!c)return;const reduced=A.profile.settings.reducedMotion,t=reduced?1.4:now/1000,color=previewSkin().color,model=previewModel(),style=appearance();
   if(view.scene==='trail'){
    const sky=c.createRadialGradient(500,240,0,500,240,600);sky.addColorStop(0,'#1b2a3b');sky.addColorStop(1,'#0b1018');c.fillStyle=sky;c.fillRect(0,0,900,540);
    for(let i=0;i<48;i++)ellipse(c,40+(i*151.3)%820,25+(i*73.7)%480,.7,.7,'#b4c8e240');c.save();c.translate(450,280);c.rotate(-.2);ellipse(c,0,0,310,105,null,'#9fb7da1c');c.restore();
-   c.save();c.translate(450,270);c.rotate(-.16);c.scale(2,2);const points=Array.from({length:130},(_,i)=>{const u=i/129;return{x:-200+u*300,y:24-Math.sin(u*Math.PI*.75)*30};});O.Cosmetics.drawTrail(c,points,previewTrail().id,t,color,reduced,2);const end=points.at(-1),last=points.at(-2);O.drawShip(c,end.x,end.y,Math.atan2(end.y-last.y,end.x-last.x),color,1.7,true,t,model.id);c.restore();
+   c.save();c.translate(450,270);c.rotate(-.16);c.scale(2,2);const points=Array.from({length:130},(_,i)=>{const u=i/129;return{x:-200+u*300,y:24-Math.sin(u*Math.PI*.75)*30};});O.Cosmetics.drawTrail(c,points,previewTrail().id,t,color,reduced,2);const end=points.at(-1),last=points.at(-2);O.drawShip(c,end.x,end.y,Math.atan2(end.y-last.y,end.x-last.x),color,1.7,true,t,model.id,style);c.restore();
   }else{
    c.drawImage(bay(),0,0,900,540);const y=264+Math.sin(t*.75)*2,angle=-.14,size=9;
-   c.save();c.beginPath();c.rect(100,355,700,180);c.clip();c.translate(0,587);c.scale(1,-.58);c.globalAlpha=.11;O.drawShip(c,450,y,angle,color,size,false,t,model.id);c.restore();ellipse(c,450,387,170,20,'#05080dc0');O.drawShip(c,450,y,angle,color,size,false,t,model.id);
+   c.save();c.beginPath();c.rect(100,355,700,180);c.clip();c.translate(0,587);c.scale(1,-.58);c.globalAlpha=.11;O.drawShip(c,450,y,angle,color,size,false,t,model.id,style);c.restore();ellipse(c,450,387,170,20,'#05080dc0');O.drawShip(c,450,y,angle,color,size,false,t,model.id,style);
    if(view.tab==='modules'){
     const [lx,ly]=model.hardpoints[view.module],x=450+(lx*Math.cos(angle)-ly*Math.sin(angle))*size,sy=y+(lx*Math.sin(angle)+ly*Math.cos(angle))*size,left=x<450,tx=left?190:710,ty=view.module==='magnet'?409:110;
     line(c,[[x,sy],[x+(left?-28:28),ty],[tx,ty]],'#b3cceb77');ellipse(c,x,sy,7,7,'#afc9ed18','#c8dcf4aa');ellipse(c,x,sy,2,2,'#e3efff');c.font='11px ui-monospace,Consolas,monospace';c.textAlign=left?'left':'right';c.fillStyle='#afc4df';c.fillText(({scanner:'SCAN / 01',magnet:'FIELD / 02',docking:'DOCK / 03',engine:'DRIVE / 04'})[view.module],tx,ty-10);

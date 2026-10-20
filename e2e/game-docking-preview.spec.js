@@ -25,20 +25,22 @@ for(const [width,height]of [[1366,768],[320,568],[390,844],[568,320]])test(`actu
  await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
  try{
   await page.goto('/games/orbital-courier/offline.html');
-  await page.evaluate(()=>{Orbital.App.profile=Orbital.Progress.fresh();Orbital.App.profile.xp=600;Orbital.App.profile.model='swift';Orbital.App.profile.settings.reducedMotion=true;Orbital.App.profile.settings.sound=false;});
+  await page.evaluate(()=>{Orbital.App.profile=Orbital.Progress.fresh();Orbital.App.profile.xp=600;Orbital.App.profile.model='swift';Orbital.App.profile.finish='matte';Orbital.App.profile.livery='split';Orbital.App.profile.settings.reducedMotion=true;Orbital.App.profile.settings.sound=false;});
   const final=await finish(page);expect(final.status).toBe('won');
   const canvas=page.locator('#resultDockingCanvas');await expect(canvas).toHaveAttribute('data-ready','true');
   await expect(canvas).toHaveAttribute('data-ship-model','swift');
+  await expect(canvas).toHaveAttribute('data-finish','matte');await expect(canvas).toHaveAttribute('data-livery','split');
   await expect(canvas).toBeInViewport();await expect(page.locator('#resultTitle')).toBeInViewport();await expect(page.locator('#resultNext')).toBeInViewport();
   for(const medal of await page.locator('.completion-medal').all())await expect(medal).toBeInViewport();
   expect(await canvas.getAttribute('data-final-time')).toBe(String(final.time));
   expect(await canvas.getAttribute('data-target-x')).toBe(String(final.targetX));expect(await canvas.getAttribute('data-target-y')).toBe(String(final.targetY));
   expect(await canvas.getAttribute('data-ship-x')).toBe(String(final.x));expect(await canvas.getAttribute('data-ship-y')).toBe(String(final.y));
-  const pixels=await canvas.evaluate(el=>el.toDataURL());await page.evaluate(()=>{Orbital.App.profile.model='courier';});const profile=await page.evaluate(()=>JSON.stringify(Orbital.App.profile));
+  const pixels=await canvas.evaluate(el=>el.toDataURL());await page.evaluate(()=>{Orbital.App.profile.model='courier';Orbital.App.profile.finish='metal';Orbital.App.profile.livery='stripe';});const profile=await page.evaluate(()=>JSON.stringify(Orbital.App.profile));
   await page.screenshot({path:info.outputPath('final-frame.png')});
   await page.locator('.completion-docking-button').click();await expect(page.locator('#dockingDetailCanvas')).toHaveAttribute('data-ready','true');
   expect(await page.locator('#dockingDetailCanvas').getAttribute('data-final-time')).toBe(String(final.time));
   await expect(page.locator('#dockingDetailCanvas')).toHaveAttribute('data-ship-model','swift');
+  await expect(page.locator('#dockingDetailCanvas')).toHaveAttribute('data-finish','matte');await expect(page.locator('#dockingDetailCanvas')).toHaveAttribute('data-livery','split');
   await page.locator('#modal .modal-actions [data-action="close"]').click();
   await page.locator('#resultReview').click();await page.locator('#reviewRange').fill('0');await page.locator('#resultBack').click();
   expect(await canvas.evaluate(el=>el.toDataURL())).toBe(pixels);expect(await page.evaluate(()=>JSON.stringify(Orbital.App.profile))).toBe(profile);

@@ -29,13 +29,16 @@
   const RANKS=[{xp:0,name:'Стажёр'},{xp:180,name:'Курьер'},{xp:600,name:'Навигатор'},
     {xp:1300,name:'Пилот дальних трасс'},{xp:2300,name:'Капитан'},{xp:3600,name:'Звёздный почтальон'},
     {xp:5200,name:'Исследователь границ'},{xp:7000,name:'Хранитель маяков'},{xp:8000,name:'Легенда маршрутов'},{xp:12000,name:'Мастер развилок'},{xp:18000,name:'Архитектор путей'},{xp:23000,name:'Хранитель горизонтов'},{xp:27000,name:'Голос созвездий'},{xp:29000,name:'За пределами карты'}];
-  const SKINS=[{id:'mint',name:'Титан',color:'#91a6c2',xp:0},{id:'ice',name:'Полярис',color:'#8acfff',xp:600},
-    {id:'gold',name:'Солнечный ветер',color:'#ffc37c',xp:2300},{id:'nova',name:'Сверхновая',color:'#c4a3ff',xp:3600},
-    {id:'coral',name:'Коралловая заря',color:'#ff958a',xp:7000},{id:'pearl',name:'Белый карлик',color:'#f2f1d7',xp:8000},
-    {id:'twin',name:'Двойная звезда',color:'#98b9ff',xp:10000,gate:'both4',requirement:'Обе ветви четырёх карт'},
-    {id:'amber',name:'Янтарный резонанс',color:'#ffdd9b',xp:14000,gate:'sector18',requirement:'Все карты «Развилок приливов»'},
-    {id:'rose',name:'Лента горизонта',color:'#ff9ec6',xp:18000,gate:'multi4',requirement:'Все карты «Предела навигации»'},
-    {id:'atlas',name:'Полный атлас',color:'#dffaff',xp:22000,gate:'all80',requirement:'Все '+Campaign.order.length+' контрактов кампании'}];
+  const SKINS=[{id:'mint',name:'Титан',body:'#b8c3d3',panel:'#576b86',color:'#91a6c2',glass:'#273c56',xp:0},
+    {id:'ice',name:'Полярис',body:'#e2edf5',panel:'#456d93',color:'#8acfff',glass:'#163b58',xp:600},
+    {id:'gold',name:'Солнечный ветер',body:'#e8e4db',panel:'#635146',color:'#ffc37c',glass:'#4c3d34',xp:2300},
+    {id:'nova',name:'Сверхновая',body:'#383049',panel:'#847098',color:'#c4a3ff',glass:'#362d56',xp:3600},
+    {id:'coral',name:'Коралловая заря',body:'#e8e7e9',panel:'#a95759',color:'#ff958a',glass:'#4d303c',xp:7000},
+    {id:'pearl',name:'Белый карлик',body:'#efefeb',panel:'#a69c83',color:'#f2f1d7',glass:'#37434c',xp:8000},
+    {id:'twin',name:'Двойная звезда',body:'#26334c',panel:'#687fa7',color:'#98b9ff',glass:'#20365a',xp:10000,gate:'both4',requirement:'Обе ветви четырёх карт'},
+    {id:'amber',name:'Янтарный резонанс',body:'#35343a',panel:'#8b6c4c',color:'#ffdd9b',glass:'#4d3b2c',xp:14000,gate:'sector18',requirement:'Все карты «Развилок приливов»'},
+    {id:'rose',name:'Лента горизонта',body:'#dfd4de',panel:'#8b5a7a',color:'#ff9ec6',glass:'#4e2f4d',xp:18000,gate:'multi4',requirement:'Все карты «Предела навигации»'},
+    {id:'atlas',name:'Полный атлас',body:'#dbe5ed',panel:'#56717e',color:'#dffaff',glass:'#234452',xp:22000,gate:'all80',requirement:'Все '+Campaign.order.length+' контрактов кампании'}];
   const medalCount=m=>(m&1?1:0)+(m&2?1:0)+(m&4?1:0);
   const blankRecord=()=>({medals:0,cargo:[],attempts:0,bestTime:null,paid:0,dataPaid:0,bestScore:0,proScore:0,proWon:false,routeVersion:0,currentMedals:0,legacyMedals:0,routes:[],bestLoops:0,bestPortals:0,bestDrops:0,bestPrecision:0,tractorProof:false});
   const int=(x,min,max,fallback=0)=>Number.isFinite(x)?Math.max(min,Math.min(max,Math.floor(x))):fallback;
@@ -100,7 +103,7 @@
   const achievements=A.create(legacyAchievements);
   function fresh(){return {game:'orbital-courier',version:8,credits:E.START_CREDITS,data:0,xp:0,
     upgrades:{scanner:0,magnet:0,docking:0,engine:0},records:{},flags:{},achievements:[],receipts:[],
-    campaignRevision:Campaign.revision,campaignAccess:[],settings:{sound:true,volume:.6,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false},courses:{},model:'courier',skin:'mint',trail:'vector',lastLevel:Campaign.order[0],wishlist:null,difficulty:'normal'};}
+    campaignRevision:Campaign.revision,campaignAccess:[],settings:{sound:true,volume:.6,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false},courses:{},model:'courier',skin:'mint',finish:'satin',livery:'panels',trail:'vector',lastLevel:Campaign.order[0],wishlist:null,difficulty:'normal'};}
   function legacyUnlocked(p,id){
     if(!Number.isInteger(id)||id<0||id>=count())return false;
     if(id===0)return true;
@@ -246,6 +249,8 @@
     for(const k of Object.keys(p.settings))if(typeof raw.settings?.[k]==='boolean')p.settings[k]=raw.settings[k];
     p.skin=SKINS.some(s=>s.id===raw.skin)?raw.skin:'mint';p.wishlist=Object.hasOwn(UPGRADE_DEFS,raw.wishlist)?raw.wishlist:null;
     p.model=Fleet.MODELS.some(m=>m.id===raw.model&&C.unlocked(p,m))?raw.model:'courier';
+    p.finish=Fleet.FINISHES.some(f=>f.id===raw.finish)?raw.finish:'satin';
+    p.livery=Fleet.LIVERIES.some(f=>f.id===raw.livery)?raw.livery:'panels';
     p.trail=C.TRAILS.some(t=>t.id===raw.trail&&C.unlocked(p,t))?raw.trail:'vector';
     p.difficulty=raw.difficulty==='pro'?'pro':'normal';
     // Two finite, local aiming presets per level and difficulty. No scripts,

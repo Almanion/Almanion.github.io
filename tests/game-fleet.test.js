@@ -5,6 +5,9 @@ const G=require('../game-source/orbital-courier/src/progression'),O=globalThis.O
 const old=structuredClone(require('../game-source/orbital-courier/docs/completed-v8-profile.json'));
 assert.equal(G.fresh().model,'courier');
 const migrated=G.sanitize(old);assert.equal(migrated.model,'courier');assert.deepEqual(G.sanitize(migrated),migrated);
+assert.equal(migrated.finish,'satin');assert.equal(migrated.livery,'panels');
+assert.equal(G.sanitize({...old,finish:'unknown',livery:'unknown'}).finish,'satin');
+assert.equal(G.sanitize({...old,finish:'unknown',livery:'unknown'}).livery,'panels');
 assert.equal(G.sanitize({...G.fresh(),model:'manta'}).model,'courier');
 assert.equal(G.sanitize({...old,model:'unknown'}).model,'courier');
 assert.equal(new Set(F.MODELS.map(m=>m.id)).size,9);
@@ -14,5 +17,9 @@ for(const model of F.MODELS){
  assert.deepEqual(G.stats(profile),stats,'hull cannot alter flight stats');
  assert.deepEqual([profile.credits,profile.data,profile.xp],funds);
  assert.deepEqual(G.sanitize(profile),profile,'hull survives import/cloud normalization');
+}
+for(const finish of F.FINISHES)for(const livery of F.LIVERIES){
+ const profile=G.sanitize({...base,finish:finish.id,livery:livery.id});assert.equal(profile.finish,finish.id);assert.equal(profile.livery,livery.id);
+ assert.deepEqual(G.stats(profile),stats);assert.deepEqual([profile.credits,profile.data,profile.xp],funds);assert.deepEqual(G.sanitize(profile),profile);
 }
 console.log('Fleet save compatibility, access gates and unchanged flight stats verified.');

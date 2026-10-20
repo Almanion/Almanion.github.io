@@ -423,13 +423,13 @@
       }
       if(view.state){
         const s=view.state;
-        if(!['crash','lost','preview'].includes(s.status))ship(c,s.x,s.y,Math.atan2(s.vy,s.vx),color,Math.min(1.65,this.uiScale),false,t,view.model);
+        if(!['crash','lost','preview'].includes(s.status))ship(c,s.x,s.y,Math.atan2(s.vy,s.vx),color,Math.min(1.65,this.uiScale),s.status==='flying',t,view.model,view.appearance);
       }else if(!view.hideShip){
         const angle=-P.rad(view.angle||0);const len=view.aimPointer?Math.hypot(view.aimPointer.x-level.start.x,view.aimPointer.y-level.start.y):40+(view.speed||200)*0.35;
         c.save();c.translate(level.start.x,level.start.y);c.rotate(angle);
         c.strokeStyle=color+'80';c.lineWidth=1.3;c.beginPath();c.moveTo(33,0);c.lineTo(len,0);c.lineTo(len-7,-4);c.moveTo(len,0);c.lineTo(len-7,4);c.stroke();c.restore();
         if(view.aimPointer){const p=view.aimPointer;circle(c,p.x,p.y,9*this.uiScale,null,color+'90',1.5);text(c,Math.round(view.speed)+' ед./с',p.x,p.y-18*this.uiScale,11*this.uiScale,'#e0fff5','center');}
-        ship(c,level.start.x,level.start.y,angle,color,Math.min(1.75,1.1*this.uiScale),false,t,view.model);
+        ship(c,level.start.x,level.start.y,angle,color,Math.min(1.75,1.1*this.uiScale),false,t,view.model,view.appearance);
       }
       for(const p of view.particles||[]){
         c.globalAlpha=Math.max(0,p.life/p.maxLife);circle(c,p.x,p.y,p.r,p.color);c.globalAlpha=1;
@@ -439,7 +439,7 @@
       }
       c.restore();
     }
-    hero(t,color='#6af4cd',pointer={x:0,y:0},model='courier',trailStyle='vector',reduced=false){
+    hero(t,color='#6af4cd',pointer={x:0,y:0},model='courier',trailStyle='vector',reduced=false,appearance={}){
       // The scene uses viewport pixels; spheres retain their shape at every ratio.
       const c=this.ctx,w=this.canvas.clientWidth,h=this.canvas.clientHeight;
       if(!w||!h)return;
@@ -469,7 +469,7 @@
       const courier=()=>{const trail=[];for(let i=0;i<65;i++){const p=orbit(theta-.7+i*.7/64);trail.push(p);}
         O.Cosmetics.drawTrail(c,trail,trailStyle,t,color,reduced,mobile?.8:1.1);
         glow(q.x,q.y,24,'149,242,212',.14);
-        ship(c,q.x,q.y,Math.atan2(tangent.y-q.y,tangent.x-q.x),color,mobile?.85:1.1,true,t,model);
+        ship(c,q.x,q.y,Math.atan2(tangent.y-q.y,tangent.x-q.x),color,mobile?.85:1.1,true,t,model,appearance);
       };
       const drawMoon=()=>this.planet({x:moon.x,y:moon.y,r:radius*.13,tint:'#b8b7d1',surface:'crater',name:''});
       if(moon.z<0)drawMoon();if(q.z<0)courier();

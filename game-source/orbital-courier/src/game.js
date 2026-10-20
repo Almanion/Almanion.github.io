@@ -518,7 +518,7 @@
       for(const p of app.particles){p.x+=p.vx*elapsed;p.y+=p.vy*elapsed;p.life-=elapsed;}
       app.particles=app.particles.filter(p=>p.life>0);
       const t=app.profile.settings.reducedMotion?0:now/1000;
-      const review=O.Review?.renderModel();gameRenderer.draw(displayLevel(),{camera:app.camera,review:!!review,time:t,angle:app.angle,speed:app.speed,color:skin().color,model:app.profile.model,stats:stats(),state:displayState(),
+      const review=O.Review?.renderModel();gameRenderer.draw(displayLevel(),{camera:app.camera,review:!!review,time:t,angle:app.angle,speed:app.speed,color:skin().color,model:app.profile.model,appearance:O.Fleet.appearance(app.profile),stats:stats(),state:displayState(),
         preview:app.state?null:app.preview,trail:review?.trail||app.trail,trailStyle:app.profile.trail,ghost:review?.ghost||(app.profile.settings.ghost?app.ghosts[app.currentId]:null),
         aimPointer:app.aimPointer,grid:app.profile.settings.grid,reducedMotion:app.profile.settings.reducedMotion,particles:app.particles,banked:G.viewRecord(app.profile,app.currentId).cargo});
       if(now-lastTelemetry>85){updateTelemetry();lastTelemetry=now;}
@@ -532,9 +532,9 @@
       if(!document.hidden&&!still)app.heroTime+=elapsed;
       const blend=1-Math.exp(-elapsed*5);
       for(const key of ['x','y','strength'])app.heroPointer[key]=(app.heroPointer[key]||0)+((app.heroTarget[key]||0)-(app.heroPointer[key]||0))*blend;
-      const key=[innerWidth,innerHeight,root.devicePixelRatio,skin().color,app.profile.model,app.profile.trail,reduced,heroPaused].join(':');
+      const key=[innerWidth,innerHeight,root.devicePixelRatio,skin().color,app.profile.model,app.profile.trail,app.profile.finish,app.profile.livery,reduced,heroPaused].join(':');
       if(!document.hidden&&(still?key!==heroStillKey:now-heroLastDraw>=32)){
-        heroRenderer.hero(reduced?2:app.heroTime,skin().color,still?{x:0,y:0}:app.heroPointer,app.profile.model,app.profile.trail,reduced);
+        heroRenderer.hero(reduced?2:app.heroTime,skin().color,still?{x:0,y:0}:app.heroPointer,app.profile.model,app.profile.trail,reduced,O.Fleet.appearance(app.profile));
         heroLastDraw=now;heroStillKey=still?key:'';
       }
     }
