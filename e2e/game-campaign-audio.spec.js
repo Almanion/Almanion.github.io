@@ -21,7 +21,7 @@ for(const width of [390,1366])test('five campaign tiers, route order and archive
  await page.locator('#resultNext').click();await expect.poll(()=>page.evaluate(()=>Orbital.App.currentId)).toBe(18);
  await expect(page.locator('body')).toHaveAttribute('data-flight','aiming');
  await expect(page.locator('#resultScreen')).not.toBeVisible();
- await page.evaluate(()=>{const A=Orbital.App,l=Orbital.LEVELS[79];A.loadLevel(79);A.state=Orbital.Physics.simulate(A.level(),l.solution.angle,l.solution.speed).state;A.finish();});
+ await page.evaluate(()=>{const A=Orbital.App,id=Orbital.Campaign.order.at(-1),l=Orbital.LEVELS[id];A.profile.campaignAccess.push(id);A.loadLevel(id);if(l.solution.layout)A.setLayout(l.solution.layout);A.state=Orbital.Physics.simulate(A.level(),l.solution.angle,l.solution.speed).state;A.finish();});
  await expect(page.locator('#resultNext')).toContainText('Все маршруты');
  await page.locator('#resultNext').click();await expect(page.locator('#campaign')).toBeVisible();
  await expect(page.locator('#resultScreen')).not.toBeVisible();

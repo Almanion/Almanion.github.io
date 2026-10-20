@@ -20,7 +20,7 @@ test('home game button opens the new self-contained release', async ({ page }) =
     await expect(page).toHaveURL(/\/games\/orbital-courier\/$/);
     await expect(page).toHaveTitle(/Орбитальный курьер 10/);
     await expect(page.locator('#continueButton')).toBeVisible();
-    expect(await page.evaluate(() => Orbital.LEVELS.length)).toBe(80);
+    expect(await page.evaluate(() => Orbital.LEVELS.length)).toBe(88);
 });
 
 for (const [width, height] of [[1366, 768], [320, 568], [390, 844], [844, 390]]) {

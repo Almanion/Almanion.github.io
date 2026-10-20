@@ -3,12 +3,12 @@ const assert=require('node:assert/strict');
 require('../game-source/orbital-courier/src/levels');
 const O=globalThis.Orbital,G=require('../game-source/orbital-courier/src/progression'),C=O.Campaign,Cosmetics=O.Cosmetics;
 const historical=require('../game-source/orbital-courier/docs/completed-v8-profile.json');
-const proof=id=>({...structuredClone(historical.records[id]),medals:7,currentMedals:7,routeVersion:O.LEVELS[id].routeRevision||0});
+const proof=id=>({...structuredClone(historical.records[id]),proWon:true,medals:7,currentMedals:7,routeVersion:O.LEVELS[id].routeRevision||0});
 const measured=ids=>{const p=G.fresh();for(const id of ids)p.records[id]=proof(id);return p;};
 
 assert.deepEqual(C.order.filter(id=>G.unlocked(G.fresh(),id)),[4,8]);
 assert.equal(C.number(4),1);assert.equal(C.number(8),5);
-for(const id of [...C.retired,-1,80,NaN,null,'4']){
+for(const id of [...C.retired,-1,88,NaN,null,'4']){
  assert.equal(C.isActive(id),false);assert.equal(G.unlocked(G.fresh(),id),false);assert.equal(C.current(historical,id),false);
  assert.equal(C.adjacent(id,1),-1);
 }
@@ -49,7 +49,7 @@ while(C.count(explorer)<C.order.length){
  const options=C.order.filter(id=>G.unlocked(explorer,id)&&!C.current(explorer,id));assert.ok(options.length,'no campaign dead end');
  const id=options.at(-1);explorer.records[id]=proof(id);assert.ok(++explored<=C.order.length);
 }
-assert.equal(explored,76);
+assert.equal(explored,84);
 
 function oldCurrent(p,id){const l=O.LEVELS[id],r=p.records[id];return !!(r?.medals&1)&&(!(l.routeRevision>8)||(r.routeVersion===l.routeRevision&&!!(r.currentMedals&1)));}
 function oldAccess(p,id){const i=C.legacyOrder.indexOf(id),r=p.records[id];return i===0||!!(r?.medals&1)||r?.attempts>0||p.campaignAccess.includes(id)||i>0&&oldCurrent(p,C.legacyOrder[i-1]);}

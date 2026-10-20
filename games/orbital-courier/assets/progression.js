@@ -38,7 +38,7 @@
     {id:'twin',name:'Двойная звезда',body:'#26334c',panel:'#687fa7',color:'#98b9ff',glass:'#20365a',xp:10000,gate:'both4',requirement:'Обе ветви четырёх карт'},
     {id:'amber',name:'Янтарный резонанс',body:'#35343a',panel:'#8b6c4c',color:'#ffdd9b',glass:'#4d3b2c',xp:14000,gate:'sector18',requirement:'Все карты «Развилок приливов»'},
     {id:'rose',name:'Лента горизонта',body:'#dfd4de',panel:'#8b5a7a',color:'#ff9ec6',glass:'#4e2f4d',xp:18000,gate:'multi4',requirement:'Все карты «Предела навигации»'},
-    {id:'atlas',name:'Полный атлас',body:'#dbe5ed',panel:'#56717e',color:'#dffaff',glass:'#234452',xp:22000,gate:'all80',requirement:'Все '+Campaign.order.length+' контрактов кампании'}];
+    {id:'atlas',name:'Полный атлас',body:'#dbe5ed',panel:'#56717e',color:'#dffaff',glass:'#234452',xp:22000,gate:'all80',requirement:'Все 76 основных контрактов'}];
   const medalCount=m=>(m&1?1:0)+(m&2?1:0)+(m&4?1:0);
   const blankRecord=()=>({medals:0,cargo:[],attempts:0,bestTime:null,paid:0,dataPaid:0,bestScore:0,proScore:0,proWon:false,routeVersion:0,currentMedals:0,legacyMedals:0,routes:[],bestLoops:0,bestPortals:0,bestDrops:0,bestPrecision:0,tractorProof:false});
   const int=(x,min,max,fallback=0)=>Number.isFinite(x)?Math.max(min,Math.min(max,Math.floor(x))):fallback;
@@ -103,7 +103,7 @@
   const achievements=A.create(legacyAchievements);
   function fresh(){return {game:'orbital-courier',version:8,credits:E.START_CREDITS,data:0,xp:0,
     upgrades:{scanner:0,magnet:0,docking:0,engine:0},records:{},flags:{},achievements:[],receipts:[],
-    campaignRevision:Campaign.revision,campaignAccess:[],settings:{sound:true,volume:.6,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false},courses:{},model:'courier',skin:'mint',finish:'satin',livery:'panels',trail:'vector',lastLevel:Campaign.order[0],wishlist:null,difficulty:'normal'};}
+      campaignRevision:Campaign.revision,campaignAccess:[],settings:{sound:true,volume:.6,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false},courses:{},layouts:{},model:'courier',skin:'mint',finish:'satin',livery:'panels',trail:'vector',lastLevel:Campaign.order[0],wishlist:null,difficulty:'normal'};}
   function legacyUnlocked(p,id){
     if(!Number.isInteger(id)||id<0||id>=count())return false;
     if(id===0)return true;
@@ -213,6 +213,8 @@
   }
   function earnedBudget(p){return E.START_CREDITS+Object.values(p.records).reduce((n,r)=>n+(r.paid||0),0);}
   function remainingRewards(p){return levels().reduce((n,l)=>n+Math.max(0,E.capReward(l)-(record(p,l.id).paid||0)),0);}
+  const layoutPhysics=()=>O.Physics||(typeof require==='function'?require('./physics.js'):null);
+  const cleanLayout=(level,layout)=>layoutPhysics().planetLayout(level,layout.slice(0,4));
   function sanitize(raw){
     if(!raw||typeof raw!=='object'||raw.game!=='orbital-courier'||![1,2,3,4,5,6,7,8].includes(raw.version))throw Error('Нужен JSON игры версии 1–8.');
     const p=fresh(),legacy=raw.version<3;
@@ -222,7 +224,7 @@
       const src=raw.records?.[String(l.id)];if(!src||typeof src!=='object')continue;
       const r=blankRecord(),mask=int(src.medals,0,7);r.medals=mask&1?mask:0;
       r.cargo=r.medals&1&&Array.isArray(src.cargo)?[...new Set(src.cargo.filter(x=>Number.isInteger(x)&&x>=0&&x<l.cargo.length))].sort((a,b)=>a-b):[];
-      r.routeVersion=int(src.routeVersion,0,11);
+      r.routeVersion=int(src.routeVersion,0,13);
       r.attempts=int(src.attempts,0,1000000);r.bestTime=Number.isFinite(src.bestTime)&&src.bestTime>0?Math.min(src.bestTime,10000):null;
       if(legacy&&(r.medals&1)){
         // Old saves have no precision rating: grant conservative legacy credit,
@@ -257,8 +259,10 @@
     // filenames or unbounded user data can be imported through this field.
     if (raw.courses && typeof raw.courses === 'object') for (const [key, value] of Object.entries(raw.courses)) {
       if (!/^(0|[1-9]\d*):(normal|pro)$/.test(key) || +key.split(':')[0] >= count() || !Array.isArray(value)) continue;
-      p.courses[key] = value.slice(0,2).map(v => v && Number.isFinite(v.angle) && Number.isFinite(v.speed) && v.angle >= -180 && v.angle <= 180 && v.speed >= 60 && v.speed <= 1000 ? {angle:Math.round(v.angle*10)/10,speed:Math.round(v.speed)} : null);
+      const l=levels()[+key.split(':')[0]];
+      p.courses[key] = value.slice(0,2).map(v => v && Number.isFinite(v.angle) && Number.isFinite(v.speed) && v.angle >= -180 && v.angle <= 180 && v.speed >= 60 && v.speed <= 1000 ? {angle:Math.round(v.angle*10)/10,speed:Math.round(v.speed),...(l.placement&&Array.isArray(v.layout)?{layout:cleanLayout(l,v.layout)}:{})} : null);
     }
+    for(const l of levels().filter(l=>l.placement))for(const mode of ['normal','pro']){const key=l.id+':'+mode;if(Array.isArray(raw.layouts?.[key])){const q=cleanLayout(l,raw.layouts[key]);if(!layoutPhysics().layoutProblem(l,q))p.layouts[key]=q;}}
     p.settings.volume=Number.isFinite(raw.settings?.volume)?Math.max(0,Math.min(1,raw.settings.volume)):.6;
     const inheritedAccess=Array.isArray(raw.campaignAccess)?raw.campaignAccess.filter(id=>Number.isInteger(id)&&id>=0&&id<count()):[];
     p.campaignAccess=[...new Set(inheritedAccess)];

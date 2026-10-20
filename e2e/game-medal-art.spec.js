@@ -23,7 +23,7 @@ test('all active contracts use the matching medal artwork without changing rewar
   const unchanged=resources()===before;A.finish();
   return {contracts:O.Campaign.order.length,mismatches,unchanged,expected:O.Medals.rules(l).map(r=>r.type),actual:[...document.querySelectorAll('.completion-medal-icon svg')].map(s=>s.dataset.medalArt),status:A.state.status};
  });
- expect(result).toMatchObject({contracts:76,mismatches:[],unchanged:true,status:'won'});expect(result.actual).toEqual(result.expected);
+ expect(result).toMatchObject({contracts:84,mismatches:[],unchanged:true,status:'won'});expect(result.actual).toEqual(result.expected);
  await expect(page.locator('.completion-medal-icon')).toHaveCount(3);
  for(const icon of await page.locator('.completion-medal-icon').all())await expect(icon).toHaveCSS('background-color','rgba(0, 0, 0, 0)');
  expect(errors).toEqual([]);

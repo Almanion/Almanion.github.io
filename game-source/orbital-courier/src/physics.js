@@ -73,7 +73,28 @@
   }
 
   // Only contract rules change between difficulties; the integrator never does.
-  function prepareLevel(level, mode = 'normal') {
+  // Coordinates are the only player-authored part of a contract. Never accept
+  // imported radii, masses, rules or bodies, and never mutate the catalogue.
+  function planetLayout(level, coordinates) {
+    const zones = level.placement?.zones || [];
+    return zones.map(z => {
+      const q = coordinates?.find?.(p => p?.planet === z.planet), p = level.planets[z.planet];
+      return { planet:z.planet, x:Math.round(clamp(Number.isFinite(q?.x)?q.x:p.x,z.x,z.x+z.w)),
+        y:Math.round(clamp(Number.isFinite(q?.y)?q.y:p.y,z.y,z.y+z.h)) };
+    });
+  }
+  function layoutProblem(level, coordinates) {
+    if (!level.placement) return '';
+    const layout = planetLayout(level, coordinates), planets = level.planets.map((p,i)=>({...p,...layout.find(q=>q.planet===i)}));
+    for (const q of layout) {
+      const p=planets[q.planet], margin=p.r+24;
+      if ([level.start,level.target,...(level.cargo||[]),...(level.gates||[])].some(b=>Math.hypot(p.x-b.x,p.y-b.y)<margin+(b.r||10))) return p.name+': оставь место для маршрута и груза.';
+      if ((level.rocks||[]).some(b=>Math.hypot(p.x-(b.motion?.cx??b.x),p.y-(b.motion?.cy??b.y))<p.r+b.r+12+Math.max(b.motion?.rx||0,b.motion?.ry||0))) return p.name+': слишком близко к преграде.';
+      if (planets.some((b,i)=>i!==q.planet&&Math.hypot(p.x-b.x,p.y-b.y)<p.r+b.r+36)) return 'Разведи планеты: их поверхности слишком близко.';
+    }
+    return '';
+  }
+  function prepareLevel(level, mode = 'normal', coordinates) {
     const r = { ...(level.rules || {}) };
     if (mode === 'pro') {
       r.captureCap = Math.min(r.captureCap || 25, r.proCaptureCap || (level.expert ? 9 : 12));
@@ -84,7 +105,9 @@
         r.window = [mid - half, mid + half];
       }
     }
+    const layout = level.placement ? planetLayout(level,coordinates) : null;
     return { ...level, mode, rules: r,
+      ...(layout?{layout,planets:level.planets.map((p,i)=>({...p,...layout.find(q=>q.planet===i)}))}:{}),
       branches: level.branches?.map(b=>({...b,gates:(b.gates||[]).map(g=>({...g,r:g.r*(mode==='pro'?(level.rules?.proGateScale||.92):1)}))})),
       gates: (level.gates || []).map(g => ({ ...g, r: g.r * (mode === 'pro' ? (level.rules?.proGateScale || 0.82) : 1) })) };
   }
@@ -124,7 +147,7 @@
     const events = [];
     for (const p of [...level.planets, ...(level.rocks || [])]) {
       const u = movingCircle(a, b, p, p.r + SHIP_RADIUS);
-      if (u !== null) events.push({ u, type: 'crash', reason: p.mu ? 'planet' : 'asteroid' });
+      if (u !== null) events.push({ u, type: 'crash', reason: p.mu ? 'planet' : p.kind==='wreck'?'wreck':p.kind==='ice'?'ice-debris':'asteroid' });
     }
     const u = movingCircle(a, b, level.target, captureRadius(level, stats));
     if (u !== null) events.push({ u, type: 'won', reason: 'delivered' });
@@ -345,6 +368,6 @@
     return (s.vx * s.vx + s.vy * s.vy) / 2 + potential;
   }
   O.Physics = { WORLD, DT, SHIP_RADIUS, clamp, rad, deg, acceleration, integrate,
-    bodyAt, movingCircle, obstacleHit, obstructed, dockVelocity, terminalEvents, segmentCircle, createState, step, simulate, energy, prepareLevel, captureRadius, advanceCargo, advanceFlybys, dockingReason, teleport };
+    bodyAt, movingCircle, obstacleHit, obstructed, dockVelocity, terminalEvents, segmentCircle, createState, step, simulate, energy, prepareLevel, planetLayout, layoutProblem, captureRadius, advanceCargo, advanceFlybys, dockingReason, teleport };
   if (typeof module !== 'undefined' && module.exports) module.exports = O.Physics;
 })(typeof globalThis !== 'undefined' ? globalThis : window);

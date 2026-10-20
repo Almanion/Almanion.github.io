@@ -20,7 +20,7 @@
   app.sound=sound;const modal=$('modal');
 
   function skin(){return G.SKINS.find(s=>s.id===app.profile.skin)||G.SKINS[0];}
-  function level(){return app.activeLevel||P.prepareLevel(L[app.currentId],app.profile.difficulty);}
+  function level(){return app.activeLevel||P.prepareLevel(L[app.currentId],app.profile.difficulty,app.profile.layouts?.[courseKey()]);}
   function displayState(){return O.Review?.renderModel()?.state||app.state;}
   function displayLevel(){return O.Routes.view(level(),displayState(),app.branchView);}
   function stats(){const st=G.stats(app.profile);if(app.profile.difficulty==='pro')st.preview*=.6;return st;}
@@ -86,7 +86,7 @@
     $('sectorSelect').innerHTML=C.sectors.map(i=>{const s=O.SECTORS[i];return `<option value="${i}" ${i===selected?'selected':''}>${pad(C.sectors.indexOf(i)+1)} · ${escape(s.name)}</option>`;}).join('')+`<option value="-1" ${selected===-1?'selected':''}>Все секторы</option>`;
     $('sectorTabs').innerHTML=C.sectors.filter(i=>selected<0||C.tiers.some(t=>t.sectors.includes(selected)&&t.sectors.includes(i))).map(i=>{const s=O.SECTORS[i];
       const ls=C.order.map(id=>L[id]).filter(l=>l.sector===i),done=ls.filter(l=>C.current(p,l.id)).length;
-      return `<button data-action="sector" data-sector="${i}" class="sector-choice ${selected===i?'active':''}" style="--sector:${s.color}" aria-pressed="${selected===i}"><span class="sector-index">${pad(C.sectors.indexOf(i)+1)}</span><span class="sector-name">${escape(s.name)}<i class="sector-track"><i style="width:${done/ls.length*100}%"></i></i></span><small>${done}/${ls.length}</small>${i===19?'<span class="sector-new-dot" title="Новый блок"></span>':''}</button>`;
+      return `<button data-action="sector" data-sector="${i}" class="sector-choice ${selected===i?'active':''}" style="--sector:${s.color}" aria-pressed="${selected===i}"><span class="sector-index">${pad(C.sectors.indexOf(i)+1)}</span><span class="sector-name">${escape(s.name)}<i class="sector-track"><i style="width:${done/ls.length*100}%"></i></i></span><small>${done}/${ls.length}</small>${i>=20?'<span class="sector-new-dot" title="Новый блок"></span>':''}</button>`;
     }).join('')+`<button class="sector-choice ${selected===-1?'active':''}" data-action="sector" data-sector="-1"><span class="sector-index">∞</span><span class="sector-name">Все маршруты</span><small>${C.order.length}</small></button>`;
     for(const b of $$('[data-action=contract-filter]')){const active=b.dataset.filter===filter;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));}
     const visible=C.order.map(id=>L[id]).filter(l=>{
@@ -95,7 +95,7 @@
       else if(selected!==-1&&l.sector!==selected)return false;
       if(filter==='open'&&!open)return false;
       if(filter==='unfinished'&&done)return false;
-      if(filter==='new'&&l.newIn!==11)return false;
+      if(filter==='new'&&l.newIn!==13)return false;
       return true;
     });
     const isSingle=selected>=0&&!query,sector=isSingle?O.SECTORS[selected]:null,secLevels=isSingle?C.order.map(id=>L[id]).filter(l=>l.sector===selected):visible;
@@ -105,8 +105,8 @@
     $('missionGrid').innerHTML=visible.length?visible.map((l,index)=>{
       const r=G.record(p,l.id),open=G.unlocked(p,l.id),done=C.current(p,l.id),next=G.nextLevel(p)===l.id,s=O.SECTORS[l.sector];
       const group=(!isSingle&&previousSector!==l.sector)?`<h3 class="contract-group-heading">${pad(C.sectors.indexOf(l.sector)+1)} / ${escape(s.name)}</h3>`:'';previousSector=l.sector;
-      const tags=l.branches?[`${l.branches.length} маршрута`,`${l.branches[0].flybys.length} облёта на ветвь`]:l.stops?[`${l.stops.length+1} адреса`,`${l.flybys.length} облёта`]:[l.flybys?.length?`${l.flybys.length} облёта`:`${l.planets.length} планет`,l.portals?.length?`${l.portals.length} ${l.portals.length===1?'переход':'перехода'}`:l.target.motion?'Перехват':l.dynamic?'Живые орбиты':l.expert?'Эксперт':'Навигация'];
-      return `${group}<button class="mission-card contract-card ${open?'':'locked'} ${next?'current':''} ${done?'completed':''}" style="--sector:${s.color};--card-delay:${index%4*45}ms" data-action="mission" data-id="${l.id}" ${open?'':'disabled'} aria-label="Контракт ${C.number(l.id)}: ${escape(l.name)}. ${open?'Открыть':'Закрыт: '+lockReason(l)}"><div class="contract-preview"><canvas data-mini="${l.id}" width="480" height="280" aria-hidden="true"></canvas><span class="mission-number">${pad(C.number(l.id))}</span><span class="contract-state">${!open?'○ ЗАКРЫТ':done?'✓ ДОСТАВЛЕН':next?'↗ СЛЕДУЮЩИЙ':l.newIn===11?'НОВЫЙ':'ГОТОВ К СТАРТУ'}</span><span class="preview-launch" aria-hidden="true">↗</span></div><div class="mission-content"><div class="contract-tags">${[C.tier(l.id).name,...tags].map(t=>`<span>${t}</span>`).join('')}</div><h4>${escape(l.name)}</h4><div class="mission-meta">${starHTML(l.routeRevision>8&&!done?0:r.medals)}<span>${done?`${r.bestScore}/100${r.proWon?' · PRO ✓':''}`:`до ${E.capReward(l)} ◈`}</span></div><span class="mission-status">${!open?lockReason(l):done?'Улучшить рекорд':l.routeRevision>8&&(r.medals&1)?'Новый маршрут · прежний рекорд сохранён':l.portals?.length?'Два пространства — один импульс':l.maneuver?'Собери груз на разных ветвях':'Выбрать курс и отправить капсулу'}</span></div></button>`;
+      const tags=l.placement?[`${l.placement.zones.length} подвижных мира`,'Преграды']:l.branches?[`${l.branches.length} маршрута`,`${l.branches[0].flybys.length} облёта на ветвь`]:l.stops?[`${l.stops.length+1} адреса`,`${l.flybys.length} облёта`]:[l.flybys?.length?`${l.flybys.length} облёта`:`${l.planets.length} планет`,l.portals?.length?`${l.portals.length} ${l.portals.length===1?'переход':'перехода'}`:l.target.motion?'Перехват':l.dynamic?'Живые орбиты':l.expert?'Эксперт':'Навигация'];
+      return `${group}<button class="mission-card contract-card ${open?'':'locked'} ${next?'current':''} ${done?'completed':''}" style="--sector:${s.color};--card-delay:${index%4*45}ms" data-action="mission" data-id="${l.id}" ${open?'':'disabled'} aria-label="Контракт ${C.number(l.id)}: ${escape(l.name)}. ${open?'Открыть':'Закрыт: '+lockReason(l)}"><div class="contract-preview"><canvas data-mini="${l.id}" width="480" height="280" aria-hidden="true"></canvas><span class="mission-number">${pad(C.number(l.id))}</span><span class="contract-state">${!open?'○ ЗАКРЫТ':done?'✓ ДОСТАВЛЕН':next?'↗ СЛЕДУЮЩИЙ':l.newIn===13?'НОВЫЙ':'ГОТОВ К СТАРТУ'}</span><span class="preview-launch" aria-hidden="true">↗</span></div><div class="mission-content"><div class="contract-tags">${[C.tier(l.id).name,...tags].map(t=>`<span>${t}</span>`).join('')}</div><h4>${escape(l.name)}</h4><div class="mission-meta">${starHTML(l.routeRevision>8&&!done?0:r.medals)}<span>${done?`${r.bestScore}/100${r.proWon?' · PRO ✓':''}`:`до ${E.capReward(l)} ◈`}</span></div><span class="mission-status">${!open?lockReason(l):done?'Улучшить рекорд':l.routeRevision>8&&(r.medals&1)?'Новый маршрут · прежний рекорд сохранён':l.portals?.length?'Два пространства — один импульс':l.placement?'Расставь планеты и построй трассу':l.maneuver?'Собери груз на разных ветвях':'Выбрать курс и отправить капсулу'}</span></div></button>`;
     }).join(''):`<div class="contract-empty"><strong>Маршрутов не найдено</strong><p>Попробуй другой сектор, номер или фильтр.</p><button class="button quiet" data-action="clear-contracts">Сбросить поиск</button></div>`;
     $('contractResultCount').textContent=`Показано ${visible.length} из ${C.order.length} контрактов`;
     app.contractPreviews=[];
@@ -126,8 +126,15 @@
     $('angleRange').style.setProperty('--range',((app.angle+180)/360*100)+'%');
     $('speedRange').style.setProperty('--range',((app.speed-60)/(stats().maxSpeed-60)*100)+'%');
   }
-  function storeCourse(slot){if(!isAiming())return;const key=courseKey();app.profile.courses[key]??=[null,null];app.profile.courses[key][slot]={angle:app.angle,speed:app.speed};save();renderCourseMemory();toast(`Курс ${slot?'B':'A'} записан`);}
-  function recallCourse(slot){const q=app.profile.courses[courseKey()]?.[slot];if(isAiming()&&q)setAim(q.angle,q.speed);}
+  function storeCourse(slot){if(!isAiming())return;if(P.layoutProblem(level(),level().layout))return toast('Сначала размести планеты без пересечений.',true);const key=courseKey();app.profile.courses[key]??=[null,null];app.profile.courses[key][slot]={angle:app.angle,speed:app.speed,...(level().layout?{layout:structuredClone(level().layout)}:{})};save();renderCourseMemory();toast(`Курс ${slot?'B':'A'}${level().layout?' и планеты':''} записан`);}
+  function recallCourse(slot){const q=app.profile.courses[courseKey()]?.[slot];if(isAiming()&&q){if(q.layout)setLayout(q.layout);setAim(q.angle,q.speed);}}
+  function setLayout(coordinates,persist=true){
+    if(!isAiming()||!L[app.currentId].placement)return false;
+    const base=L[app.currentId],layout=P.planetLayout(base,coordinates),problem=P.layoutProblem(base,layout);
+    app.activeLevel=P.prepareLevel(base,app.profile.difficulty,layout);app.previewDirty=true;app.ghosts[app.currentId]=[];
+    if(persist&&!problem&&!app.assisted){app.profile.layouts??={};app.profile.layouts[courseKey()]=layout;save();}
+    O.UI9?.sync();return !problem;
+  }
   function cancelTravel(){app.transitionToken++;app.transitioning=false;$('routeTransition').hidden=true;$('routeTransition').classList.remove('running');}
   function travelToLevel(id,confirmed=false){
     if(app.transitioning||!Number.isInteger(id)||id<0||id>=L.length)return;
@@ -286,7 +293,7 @@
   function loadLevel(id){
     if(!Number.isInteger(id)||id<0||id>=L.length||!G.unlocked(app.profile,id)){toast(L[id]?lockReason(L[id]):'Контракт недоступен.',true);return;}
     if(O.Navigation?.beforeLevel(id))return;
-    closeModal();app.currentId=id;app.activeLevel=P.prepareLevel(L[id],app.profile.difficulty);app.assisted=false;app.profile.lastLevel=id;app.state=null;app.paused=false;app.accumulator=0;app.trail=[];app.particles=[];app.lastResult=null;app.camera={zoom:1,cx:600,cy:350};app.branchView='A';
+    closeModal();app.currentId=id;app.activeLevel=P.prepareLevel(L[id],app.profile.difficulty,app.profile.layouts?.[courseKey()]);app.assisted=false;app.profile.lastLevel=id;app.state=null;app.paused=false;app.accumulator=0;app.trail=[];app.particles=[];app.lastResult=null;app.camera={zoom:1,cx:600,cy:350};app.branchView='A';
     const l=level(),aim=app.aims[id];app.angle=aim?aim.angle:l.initialAngle;app.speed=P.clamp(aim?aim.speed:l.initialSpeed,60,stats().maxSpeed);
     app.previewDirty=true;go('play',true);
     $('flightSector').textContent=`КОНТРАКТ ${pad(C.number(id))} / ${O.SECTORS[l.sector].name.toUpperCase()}`;
@@ -294,16 +301,17 @@
     document.querySelector('.stage-corner').textContent=`OC / FLIGHT ${pad(C.number(id))}`;
     $('flightDetails').open=false;$('flightPlan').open=!root.matchMedia('(max-width:900px)').matches;
     setStage(l.dynamic?(l.motionKind==='station'?'ПЕРЕХВАТ · ГОТОВНОСТЬ':'ОРБИТЫ · ГОТОВНОСТЬ'):'КАПСУЛА ГОТОВА','');
-    syncControls();renderRoute();updateObjectives();updateTelemetry();save();O.V8?.onLevel();O.UI9?.onLevel();O.Navigation?.onLevel(id);
+    syncControls();renderRoute();updateObjectives();updateTelemetry();save();O.V8?.onLevel();O.UI9?.onLevel();O.PlanetWorkshop?.onLevel();O.Navigation?.onLevel(id);
   }
   function setStage(label,caption){$('stagePill').innerHTML=`<i class="live-dot"></i> ${label}`;$('stageBottom').textContent='';$('stageBottom').hidden=true;}
   function launch(){
     if(app.screen!=='play'||app.transitioning)return;
     if(isFlying()){pause();return;}
     if(app.state){retry();return;}
+    const placementProblem=P.layoutProblem(level(),level().layout);if(placementProblem){toast(placementProblem,true);return;}
     closeModal();app.state=P.createState(level(),app.angle,app.speed,stats());app.state.assisted=app.assisted;O.Review?.start(app.state);
     app.accumulator=0;app.trail=[{x:app.state.x,y:app.state.y}];app.preview=null;app.paused=false;app.lastResult=null;
-    const key=courseKey();app.attemptHistory[key]=[...(app.attemptHistory[key]||[]).slice(-4),{angle:app.angle,speed:app.speed}];
+    const key=courseKey();app.attemptHistory[key]=[...(app.attemptHistory[key]||[]).slice(-4),{angle:app.angle,speed:app.speed,...(level().layout?{layout:structuredClone(level().layout)}:{})}];
     G.launch(app.profile,app.currentId);save();sound.play('launch');syncControls();
     setStage(app.assisted?'ТРЕНИРОВКА · БЕЗ НАГРАД':app.profile.difficulty==='pro'?'ПРО · КАПСУЛА В ПОЛЁТЕ':'КАПСУЛА В ПОЛЁТЕ',level().expert?'Пройди контрольные кольца и выполни условия шлюза.':'Груз притягивается только после установки гравитационного захвата.');
   }
@@ -359,6 +367,7 @@
     $('flightStatus').textContent=items.join(' · ');$('flightStatus').hidden=items.length===0;
   }
   function openModal(title,body,eyebrow='БОРТОВОЙ КОМПЬЮТЕР'){
+    modal.classList.remove('preferences-modal');
     O.UI9?.beforeModal();
     if(!modal.open){app.modalPause=app.paused;if(isFlying())app.paused=true;}
     $('modalContent').innerHTML=`<div class="modal-inner"><button class="modal-close" data-action="close" aria-label="Закрыть">×</button><div class="eyebrow">${eyebrow}</div><h2 id="modalTitle">${title}</h2>${body}</div>`;
@@ -383,7 +392,7 @@
   }
   function applySolution(){
     const chosenBranch=app.branchView;retry();app.branchView=chosenBranch;const l=level(),course=l.solutions?.find(c=>c.branch===chosenBranch)||(app.profile.difficulty==='pro'?(l.proSolution||l.solution):l.solution);
-    app.assisted=true;setAim(course.angle,course.speed);syncControls();
+    app.assisted=true;if(course.layout)setLayout(course.layout,false);setAim(course.angle,course.speed);syncControls();
     setStage('ТРЕНИРОВКА · БЕЗ НАГРАД',`Пример${course.branch?' ветви '+course.branch:''}: ${course.angle}° / ${course.speed} ед./с. Для зачётного рейса нажми «Заново».`);
     toast('Точный курс установлен. Этот запуск — без наград.');
   }
@@ -425,7 +434,7 @@
     'sector-prev':()=>chooseSector(C.sectors[Math.max(0,C.sectors.indexOf(app.campaignSector)-1)]),
     'sector-next':()=>chooseSector(C.sectors[Math.min(C.sectors.length-1,C.sectors.indexOf(app.campaignSector)+1)]),
     'store-course':b=>storeCourse(+b.dataset.slot),'recall-course':b=>recallCourse(+b.dataset.slot),
-    'previous-aim':()=>{const last=app.attemptHistory[courseKey()]?.at(-1);if(isAiming()&&last)setAim(last.angle,last.speed);},
+    'previous-aim':()=>{const last=app.attemptHistory[courseKey()]?.at(-1);if(isAiming()&&last){if(last.layout)setLayout(last.layout);setAim(last.angle,last.speed);}},
     'medal-help':medalHelp,'cosmetic-tab':b=>{app.cosmeticTab=b.dataset.tab==='trails'?'trails':'skins';renderCosmetics();},
     trail:b=>{const t=O.Cosmetics.TRAILS.find(t=>t.id===b.dataset.key);if(t&&O.Cosmetics.unlocked(app.profile,t)){app.profile.trail=t.id;save();renderCosmetics();sound.play('click');}},
     'route-help':routeHelp,maneuvers:()=>{app.campaignSector=7;go('campaign');},nav:b=>go(b.dataset.page), 'force-nav':b=>go(b.dataset.page,true),close:closeModal,
@@ -502,7 +511,7 @@
     sound.flight(isFlying()&&!app.paused&&!document.hidden&&!app.transitioning&&!O.Review?.active?.playing,Math.hypot(app.state?.vx||0,app.state?.vy||0));
     const elapsed=Math.min(0.1,Math.max(0,(now-(app.frameTime||now))/1000));app.frameTime=now;
     if(app.screen==='play'){
-      if(isAiming()&&app.previewDirty){app.preview=P.simulate(level(),app.angle,app.speed,stats(),stats().preview,7);app.previewDirty=false;}
+      if(isAiming()&&app.previewDirty){app.preview=P.simulate(level(),app.angle,app.speed,stats(),Math.max(stats().preview,level().placement?.preview||0),7);app.previewDirty=false;}
       if(isFlying()&&!app.paused&&!app.transitioning){
         app.accumulator+=elapsed*app.timeScale;
         while(app.accumulator>=P.DT&&app.state.status==='flying'){
@@ -555,7 +564,7 @@
   root.addEventListener('blur',releaseStars);
   homeMotionPreference.addEventListener('change',()=>{heroStillKey='';updateProfileUI();});
   // Expose semantic commands for the included browser smoke test, not a server API.
-  Object.assign(app,{travelToLevel,renderCampaign,storeCourse,recallCourse,loadLevel,setAim,launch,retry,go,save,updateProfileUI,exportSave,applySolution,finish,level,displayLevel,displayState,stats,openModal,closeModal,toast,showWin,showFail,syncControls,updateObjectives,renderHangar,renderAwards,actions});
+  Object.assign(app,{travelToLevel,renderCampaign,storeCourse,recallCourse,setLayout,loadLevel,setAim,launch,retry,go,save,updateProfileUI,exportSave,applySolution,finish,level,displayLevel,displayState,stats,openModal,closeModal,toast,showWin,showFail,syncControls,updateObjectives,renderHangar,renderAwards,actions});
   if(!Object.keys(app.profile.records).length&&root.matchMedia('(prefers-reduced-motion: reduce)').matches)app.profile.settings.reducedMotion=true;
   document.body.dataset.page=O.Navigation?.initialPage||'home';updateProfileUI();requestAnimationFrame(frame);
   if(loaded.migrated){save();openModal('Прогресс перенесён в версию 8',`<p>Пройденные уровни и купленные модули сохранены. Новые контракты продолжают прежнюю кампанию.</p><div class="info-box">Старый баланс: ${money(app.profile.migration.oldCredits)} ◈. Новый баланс: ${money(app.profile.credits)} ◈. Награды пересчитаны по новой экономике, расходы на сохранённые улучшения учтены. Долгов нет. Исходное сохранение не удалено. Унаследованные модули не имеют денежного возврата при пересборке.</div><div class="modal-actions"><button class="button primary" data-action="close">Продолжить</button></div>`);}

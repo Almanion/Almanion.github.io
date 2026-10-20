@@ -143,6 +143,10 @@
     $('mapAim').disabled = mode !== 'aiming';
     $('mapAim').setAttribute('aria-pressed', String(effectiveMode === 'aim'));
     $('mapPan').setAttribute('aria-pressed', String(effectiveMode === 'pan'));
+    $('mapPlanets').hidden=!l.placement;
+    $('mapPlanets').disabled=mode!=='aiming';
+    $('mapPlanets').setAttribute('aria-pressed',String(effectiveMode==='planets'));
+    O.PlanetWorkshop?.sync();
     setText($('mapFit'), A.camera.zoom <= 1.01 ? 'Вся карта' : Math.round(A.camera.zoom * 100) + '%');
     // Selected game status, not high-frequency counters, is announced to assistive tech.
     const flightKey = mode + ':' + (A.state?.reason || '') + ':' + A.paused;
@@ -167,6 +171,7 @@
     }
     $('mobileLaunch').disabled = A.transitioning;
     $('launchButton').disabled = A.transitioning;
+    if(!A.state&&P.layoutProblem(A.level(),A.level().layout))$('mobileLaunch').disabled=$('launchButton').disabled=true;
   }
 
   function selectCockpitTab(tab) {
@@ -462,12 +467,14 @@
     try { canvas.setPointerCapture(event.pointerId); } catch (_) {}
     if (pointers.size === 1) {
       const pan = !aiming() || mapMode === 'pan' || event.altKey || event.button === 1;
-      gesture = {kind:pan ? 'pan' : 'aim',x:p.x,y:p.y,cam:{...A.camera},angle:A.angle,speed:A.speed,type:event.pointerType,moved:false,fine:!!A.profile.settings.fineAim};
+      const planet=!pan&&mapMode==='planets'?O.PlanetWorkshop?.pick(worldPoint(p.x,p.y)):null;
+      gesture = {kind:pan ? 'pan' : mapMode==='planets'?(planet===null?'locked':'planet'):'aim',planet,layout:A.level().layout?structuredClone(A.level().layout):null,x:p.x,y:p.y,cam:{...A.camera},angle:A.angle,speed:A.speed,type:event.pointerType,moved:false,fine:!!A.profile.settings.fineAim};
       document.body.classList.toggle('map-dragging',pan);
-      if(!pan&&event.pointerType==='touch'&&!gesture.fine)pointAim(p.x,p.y,true);
+      if(gesture.kind==='aim'&&event.pointerType==='touch'&&!gesture.fine)pointAim(p.x,p.y,true);
     } else if (pointers.size === 2) {
       const m = midpoint();
       if (gesture?.kind === 'aim' && aiming()) A.setAim(gesture.angle,gesture.speed);
+      if(gesture?.kind==='planet')A.setLayout(gesture.layout);
       A.aimPointer=null;
       gesture = {kind:'pinch',mid:m,cam:{...A.camera},anchor:worldPoint(m.x,m.y)};
       A.mapGesture = true;
@@ -486,6 +493,9 @@
       A.camera.cx=g.cam.cx+before.x-after.x;
       A.camera.cy=g.cam.cy+before.y-after.y;
       clampCamera();sync();
+    } else if(g.kind==='planet'&&aiming()){
+      const q=worldPoint(event.clientX,event.clientY),before=O.FlightView.toWorld(g.x,g.y,g.cam,metrics()),origin=g.layout.find(p=>p.planet===g.planet);
+      O.PlanetWorkshop.move(g.planet,origin.x+q.x-before.x,origin.y+q.y-before.y,false);
     } else if (g.kind==='aim' && aiming()) {
       const dx=event.clientX-g.x,dy=event.clientY-g.y;
       if (!g.moved && Math.hypot(dx,dy)<5) return; g.moved=true;
@@ -500,13 +510,14 @@
   function releasePointer(event) {
     if (!pointers.has(event.pointerId)) return;
     if(event.type==='pointerup'&&gesture?.kind==='aim'&&gesture.type==='touch'&&aiming()&&!controlsBlocked())touchAim(event.clientX,event.clientY,gesture);
+    if(event.type==='pointerup'&&gesture?.kind==='planet'&&aiming())A.setLayout(A.level().layout);
     pointers.delete(event.pointerId);
     try { if(canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId); } catch(_){}
     if (!pointers.size) clearPointers();
     else if(gesture?.kind==='pinch') gesture={kind:'locked'};
   }
   canvas.addEventListener('pointerup',releasePointer);
-  canvas.addEventListener('pointercancel',()=>{if(gesture?.kind==='aim'&&aiming())A.setAim(gesture.angle,gesture.speed);clearPointers();});
+  canvas.addEventListener('pointercancel',()=>{if(gesture?.kind==='aim'&&aiming())A.setAim(gesture.angle,gesture.speed);if(gesture?.kind==='planet'&&aiming())A.setLayout(gesture.layout);clearPointers();});
   canvas.addEventListener('lostpointercapture',e=>{if(pointers.has(e.pointerId))releasePointer(e);});
   canvas.addEventListener('wheel',event=>{
     if (controlsBlocked() || event.ctrlKey) return; // preserve browser accessibility zoom
@@ -516,9 +527,10 @@
 
   function switchMap(mode) {
     if (!aiming() && mode==='aim') return;
+    if(mode==='planets'&&(!aiming()||!A.level().placement))return;
     clearPointers(); mapMode=mode;sync();
     clearTimeout(hintTimer);
-    const message=mode==='pan'?'Обзор не меняет курс. Масштаб — + / − или два пальца.':'Укажи направление от курьера. Дальше палец — сильнее запуск. Два пальца — обзор. Для полёта нажми «Запуск».';
+    const message=mode==='planets'?'Перетаскивай планеты внутри отмеченных зон. Прогноз сразу покажет новую трассу.':mode==='pan'?'Обзор не меняет курс. Масштаб — + / − или два пальца.':'Укажи направление от курьера. Дальше палец — сильнее запуск. Два пальца — обзор. Для полёта нажми «Запуск».';
     setText($('mapGestureHint'),message);$('mapGestureHint').hidden=false;
     hintTimer=setTimeout(()=>$('mapGestureHint').hidden=true,3400);
   }
@@ -573,6 +585,7 @@
     if(k==='g'||k==='п')return A.actions['toggle-grid']();
     if(k==='escape')return A.actions.pause();
     if(!aiming())return;
+    if(mapMode==='planets'&&k.startsWith('arrow')){O.PlanetWorkshop.nudge(k,event.shiftKey?10:2);return;}
     const fine=event.shiftKey||A.profile.settings.fineAim,da=fine?.1:.5,ds=fine?1:2;
     if(k==='arrowleft')A.setAim(A.angle-da,A.speed);if(k==='arrowright')A.setAim(A.angle+da,A.speed);
     if(k==='arrowup')A.setAim(A.angle,A.speed+ds);if(k==='arrowdown')A.setAim(A.angle,A.speed-ds);

@@ -1,0 +1,12 @@
+/* Compact preflight editor: map gestures on every viewport, exact values in the
+   same cockpit that moves into the mobile sheet. */
+.planet-workshop{margin:0 0 15px;border:1px solid #818ea94d;border-radius:10px;background:#b2c9ed06}
+.planet-workshop summary{display:flex;justify-content:space-between;align-items:center;min-height:44px;padding:10px 12px;font-size:12px;font-weight:600;cursor:pointer;color:#e0e8f4}
+.planet-workshop summary span{font-size:10px;font-weight:400;color:#afb9c9}
+.planet-workshop summary span:after{content:'⌄';margin-left:10px;color:#dce7f8}.planet-workshop[open] summary span:after{content:'⌃'}
+.planet-workshop-body{padding:0 12px 12px}.planet-workshop label{display:block;font-size:11px;color:#b7c0ce}
+.planet-workshop select,.planet-workshop input{display:block;width:100%;height:42px;margin-top:5px;padding:8px 10px;color:#e5ecf6;background:#16191f;border:1px solid #536078;border-radius:7px;font:500 14px var(--sans)}
+.planet-coordinates{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.planet-workshop p{font-size:11px;line-height:1.5;color:#b6c9e3;margin:10px 0}.planet-workshop p.invalid{color:#f3a8b5}
+.planet-workshop .text-button{min-height:38px;font-size:11px;text-align:left;padding:4px 0}.planet-workshop small{display:block;font-size:11px;line-height:1.6;color:#9fa9b9;margin-top:6px}
+body[data-map-mode=planets] #gameCanvas{cursor:grab}body[data-map-mode=planets].map-dragging #gameCanvas{cursor:grabbing}
+@media(max-width:699px),(max-width:999px) and (orientation:portrait){body.has-placement .map-mode{gap:0}body.has-placement .map-mode button{padding:0 8px;font-size:11px}body.has-placement #mapFit{display:none}.planet-workshop summary{font-size:14px}.planet-workshop label,.planet-workshop p,.planet-workshop small{font-size:12px}.planet-workshop select,.planet-workshop input{font-size:16px;height:44px}}

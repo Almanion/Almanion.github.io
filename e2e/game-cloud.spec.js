@@ -52,10 +52,12 @@ test('older cloud saves gain the default hull without conflict and new hulls rea
   const funds=await a.page.evaluate(raw=>{const A=Orbital.App;A.profile=Orbital.Progress.sanitize(raw);A.save();return[A.profile.credits,A.profile.data,A.profile.xp];},old);
   await connect(a.page);await ready(a.page);expect(remote.writes).toHaveLength(0);
   expect(await a.page.evaluate(()=>Orbital.App.profile.model)).toBe('courier');
-  await a.page.evaluate(()=>{Orbital.App.profile.model='swift';Orbital.App.profile.finish='metal';Orbital.App.profile.livery='stripe';Orbital.App.save();});
+  await a.page.evaluate(()=>{const A=Orbital.App,q=Orbital.LEVELS[80].solution;A.profile.model='swift';A.profile.finish='metal';A.profile.livery='stripe';A.profile.layouts={'80:normal':q.layout};A.profile.courses['80:normal']=[q,null];A.save();});
   await expect.poll(()=>JSON.parse(remote.records.get('pilot').save).model).toBe('swift');
   b=await remote.device(browser,{uid:'pilot'});await connect(b.page);await ready(b.page);
   expect(await b.page.evaluate(()=>{const p=Orbital.App.profile;return[p.model,p.finish,p.livery,p.credits,p.data,p.xp];})).toEqual(['swift','metal','stripe',...funds]);
+  expect(await b.page.evaluate(()=>Orbital.App.profile.layouts['80:normal'])).toEqual(await a.page.evaluate(()=>Orbital.App.profile.layouts['80:normal']));
+  expect(await b.page.evaluate(()=>Orbital.App.profile.courses['80:normal'][0].layout)).toEqual(await a.page.evaluate(()=>Orbital.App.profile.layouts['80:normal']));
  }finally{await a.context.close();await b?.context.close();}
 });
 for(const width of [390,1366])test('each completed contract survives immediate Next, reload and a second device '+width,async({browser},testInfo)=>{

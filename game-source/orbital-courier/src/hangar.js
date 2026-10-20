@@ -129,7 +129,14 @@
   if(view.scene==='trail'){
    const sky=c.createRadialGradient(500,240,0,500,240,600);sky.addColorStop(0,'#1b2a3b');sky.addColorStop(1,'#0b1018');c.fillStyle=sky;c.fillRect(0,0,900,540);
    for(let i=0;i<48;i++)ellipse(c,40+(i*151.3)%820,25+(i*73.7)%480,.7,.7,'#b4c8e240');c.save();c.translate(450,280);c.rotate(-.2);ellipse(c,0,0,310,105,null,'#9fb7da1c');c.restore();
-   c.save();c.translate(450,270);c.rotate(-.16);c.scale(2,2);const points=Array.from({length:130},(_,i)=>{const u=i/129;return{x:-200+u*300,y:24-Math.sin(u*Math.PI*.75)*30};});O.Cosmetics.drawTrail(c,points,previewTrail().id,t,color,reduced,2);const end=points.at(-1),last=points.at(-2);O.drawShip(c,end.x,end.y,Math.atan2(end.y-last.y,end.x-last.x),color,1.7,true,t,model.id,style);c.restore();
+   // Arc history follows the moving ship. The camera and stars stay still, so
+   // both the trajectory and the selected exhaust remain easy to compare.
+   const flightPoint=a=>({x:450+300*Math.cos(a),y:270+142*Math.sin(a)+28*Math.sin(2*a)}),phase=t*.42;
+   const points=Array.from({length:180},(_,i)=>flightPoint(phase-(179-i)*.012));
+   O.Cosmetics.drawTrail(c,points,previewTrail().id,t,color,reduced,2.15);
+   const end=points.at(-1),last=points.at(-2);
+   O.drawShip(c,end.x,end.y,Math.atan2(end.y-last.y,end.x-last.x),color,3.4,true,t,model.id,style);
+   canvas.dataset.flightX=end.x.toFixed(2);canvas.dataset.flightY=end.y.toFixed(2);
   }else{
    c.drawImage(bay(),0,0,900,540);const y=264+Math.sin(t*.75)*2,angle=-.14,size=9;
    c.save();c.beginPath();c.rect(100,355,700,180);c.clip();c.translate(0,587);c.scale(1,-.58);c.globalAlpha=.11;O.drawShip(c,450,y,angle,color,size,false,t,model.id,style);c.restore();ellipse(c,450,387,170,20,'#05080dc0');O.drawShip(c,450,y,angle,color,size,false,t,model.id,style);

@@ -13,7 +13,7 @@ async function finish(page,{id=4,training=false,failed=false}={}){
  await expect.poll(()=>page.evaluate(()=>Orbital.App.transitioning)).toBe(false);
  await page.evaluate(({id,training,failed})=>{
   const O=Orbital,A=O.App,P=O.Physics;A.profile.upgrades.engine=3;A.loadLevel(id);A.assisted=training;
-  const l=A.level(),q=failed?{angle:180,speed:60}:l.solution;A.setAim(q.angle,q.speed);A.launch();
+  const q=failed?{angle:180,speed:60}:A.level().solution;if(q.layout)A.setLayout(q.layout);const l=A.level();A.setAim(q.angle,q.speed);A.launch();
   let ticks=0;
   while(A.state.status==='flying'){
    const before=A.state;A.state=P.step(before,l);O.Review.observe(before,A.state,l);
@@ -143,8 +143,8 @@ for(const [width,height]of [[1366,768],[320,568],[390,844],[568,320]])test(`resu
   await page.locator('#resultBack').click();await summary(page,{training:true,touch});
 
   // Access is granted only to this synthetic, isolated browser profile.
-  await page.evaluate(()=>{Orbital.App.profile.campaignAccess=[79];});
-  await finish(page,{id:79});await summary(page,{touch});
+  const final=await page.evaluate(()=>{const id=Orbital.Campaign.order.at(-1);Orbital.App.profile.campaignAccess=[id];return id;});
+  await finish(page,{id:final});await summary(page,{touch});
   await expect(page.locator('#resultNext')).toContainText('Все маршруты');
   await page.locator('#resultNext').click();await expect(page.locator('#campaign')).toBeVisible();
   await expect(page.locator('#resultScreen')).not.toBeVisible();

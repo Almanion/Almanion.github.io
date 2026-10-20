@@ -27,13 +27,13 @@ for(const key of Object.keys(G.fresh().upgrades)){
 }
 // Every definition has attainable, bounded progress; every reward is issued once.
 const full=G.sanitize(historical);full.achievements=[];full.upgrades={scanner:5,magnet:5,docking:5,engine:5};full.flags={export:true,respec:true};
-for(const l of O.LEVELS.slice(76)){const s=P.simulate(P.prepareLevel(l),l.solution.angle,l.solution.speed).state;G.complete(full,l,s);}
+for(const l of O.LEVELS.slice(76)){const s=P.simulate(P.prepareLevel(l,'normal',l.solution.layout),l.solution.angle,l.solution.speed).state;G.complete(full,l,s);}
 for(const a of G.achievements){assert.ok(Number.isFinite(a.progress(full))&&a.progress(full)>=0&&a.progress(full)<=a.target,a.id);if(a.id!=='skim')assert.equal(a.test(full),true,a.id);}
-G.awardAchievements(full,{status:'won',nearMiss:true});assert.equal(new Set(full.achievements).size,93);const xp=full.xp;assert.equal(G.awardAchievements(full,{status:'won',nearMiss:true}).length,0);assert.equal(full.xp,xp);
+G.awardAchievements(full,{status:'won',nearMiss:true});assert.equal(new Set(full.achievements).size,98);const xp=full.xp;assert.equal(G.awardAchievements(full,{status:'won',nearMiss:true}).length,0);assert.equal(full.xp,xp);
 // Engine I–V changes fuel accounting, not the actual route or its timing.
 let runs=0;
 for(const l of O.LEVELS)for(const mode of ['normal','pro']){
- const course=(mode==='pro'?l.proSolution:null)||l.solution,prepared=P.prepareLevel(l,mode),base=P.simulate(prepared,course.angle,course.speed,G.stats(G.fresh())).state;
+ const course=(mode==='pro'?l.proSolution:null)||l.solution,prepared=P.prepareLevel(l,mode,course.layout),base=P.simulate(prepared,course.angle,course.speed,G.stats(G.fresh())).state;
  assert.equal(base.status,'won',l.id+' '+mode);
  for(let tier=1;tier<=5;tier++){
   const p=G.fresh();p.upgrades.engine=tier;const s=P.simulate(prepared,course.angle,course.speed,G.stats(p)).state;
@@ -44,4 +44,4 @@ for(const l of O.LEVELS)for(const mode of ['normal','pro']){
 }
 const training=G.fresh(),l=O.LEVELS[C.order[0]],s=P.simulate(l,l.solution.angle,l.solution.speed).state,before=JSON.stringify(training);
 G.complete(training,l,{...s,assisted:true});assert.equal(JSON.stringify(training),before);assert.throws(()=>G.complete(training,l,{...s,status:'failed'}));assert.equal(JSON.stringify(training),before);
-console.log(`achievements: all 93 attainable once; campaign thresholds, upgrades/refunds, training and ${runs} engine flights passed`);
+console.log(`achievements: all 98 attainable once; campaign thresholds, upgrades/refunds, training and ${runs} engine flights passed`);

@@ -199,7 +199,20 @@
       if(this.rockCache.size>=48)this.rockCache.delete(this.rockCache.keys().next().value);this.rockCache.set(key,canvas);return canvas;
     }
     rock(p,index){
-      const c=this.ctx;c.drawImage(this.rockTexture(p,index),p.x-p.r*112/98,p.y-p.r*112/98,p.r*224/98,p.r*224/98);
+      const c=this.ctx;
+      if(p.kind==='wreck'){
+        c.save();c.translate(p.x,p.y);c.rotate(index*.71);const r=p.r;
+        circle(c,0,0,r,'#151b25','#8898ad80',1);
+        c.strokeStyle='#8e9daf';c.lineWidth=3;c.beginPath();c.arc(0,0,r*.76,.25,Math.PI*1.72);c.stroke();
+        c.strokeStyle='#d6dfec88';c.lineWidth=.8;c.beginPath();c.arc(0,0,r*.9,.7,Math.PI*1.45);c.stroke();
+        for(let j=0;j<5;j++){c.save();c.rotate(j*1.17);c.fillStyle=j%2?'#384559':'#263747';c.fillRect(r*.35,-3,r*.49,6);c.strokeStyle='#a6b6ce66';c.strokeRect(r*.35,-3,r*.49,6);c.restore();}
+        c.fillStyle='#52617a';c.fillRect(-r*.35,-r*.29,r*.62,r*.58);c.fillStyle='#152a42';c.fillRect(-r*.29,-r*.22,r*.5,r*.23);
+        circle(c,r*.3,-r*.3,2,'#e9af8c');c.restore();
+      }else if(p.kind==='ice'){
+        c.save();c.translate(p.x,p.y);c.rotate(index*.83);const r=p.r,g=c.createLinearGradient(-r,-r,r,r);g.addColorStop(0,'#b1d2e8');g.addColorStop(.38,'#5c7c9d');g.addColorStop(1,'#293e58');
+        c.beginPath();for(let j=0;j<8;j++){const a=j*TAU/8,rr=r*(j%3===0?.78:1);j?c.lineTo(Math.cos(a)*rr,Math.sin(a)*rr):c.moveTo(Math.cos(a)*rr,Math.sin(a)*rr);}c.closePath();c.fillStyle=g;c.fill();c.strokeStyle='#b2d3eeaa';c.lineWidth=.8;c.stroke();
+        path(c,[{x:-r*.7,y:-r*.3},{x:0,y:r*.1},{x:r*.6,y:-r*.5}],'#d7ecff88',1);path(c,[{x:0,y:r*.1},{x:r*.2,y:r*.75}],'#d7ecff66',.7);c.restore();
+      }else c.drawImage(this.rockTexture(p,index),p.x-p.r*112/98,p.y-p.r*112/98,p.r*224/98,p.r*224/98);
       // Exact collision envelope: the broken silhouette never conceals its boundary.
       circle(c,p.x,p.y,p.r,null,'#a6b7c433',.65);
     }
@@ -333,7 +346,7 @@
     }
     orbitTracks(level,simTime,preview=null){
       const c=this.ctx;
-      for(const body of [...level.planets,level.target]){
+      for(const body of [...level.planets,...(level.rocks||[]),level.target]){
         if(!body.motion)continue;
         const color=body===level.target?'#ffd29a':'#9ebaff',m=body.motion,points=[];
         for(let i=0;i<=96;i++)points.push(P.bodyAt(body,m.period*i/96));
@@ -385,6 +398,7 @@
       const world={...level,planets:level.planets.map(p=>P.bodyAt(p,simTime)),target:P.bodyAt(level.target,simTime)};
       this.background(t,level.sector);c.save();if(view.camera){const cam=view.camera;c.translate(600,350);c.scale(cam.zoom,cam.zoom);c.translate(-cam.cx,-cam.cy);}this.orbitTracks(level,simTime,view.preview);
       if(view.grid)this.field(level,simTime);
+      O.PlanetWorkshop?.draw(c,level,view,Math.min(1.6,this.uiScale));
       if(view.ghost?.length)path(c,view.ghost,view.review?'#ffd49dcc':'#a0abc344',view.review?2.8:1.5,[7,6]);
       if(view.preview){
         path(c,view.preview.points,color+'a0',2,[4,8]);
@@ -397,7 +411,7 @@
         }
       }
       for(const p of world.planets)this.planet(p);
-      (level.rocks||[]).forEach((p,i)=>this.rock(p,i));
+      (level.rocks||[]).forEach((p,i)=>this.rock(P.bodyAt(p,simTime),i));
       this.gates(level,view.state);this.flybys(level,view.state);this.portals(level,view);
       this.gravity(view.state,view.stats||{},t,view.reducedMotion);
       (level.cargo||[]).forEach((p,i)=>{

@@ -9,12 +9,12 @@ test.beforeEach(async({page})=>{
 for(const width of [390,1366])test('catalogue explains count and predecessor access with two starting choices '+width,async({page},info)=>{
  await page.setViewportSize({width,height:844});
  await page.goto(base+'contracts/');
- await expect(page.locator('#campaignTotal')).toContainText('/ 76');
+ await expect(page.locator('#campaignTotal')).toContainText('/ 84');
  const initial=await page.locator('a[data-action=mission]').evaluateAll(nodes=>nodes.map(n=>+n.dataset.id));
  expect(initial).toEqual([4,8]);
  await expect(page.locator('#campaignAccess')).toContainText('2 новых контракта');
  await page.locator('[data-action=contract-filter][data-filter=all]').click();
- await expect(page.locator('[data-action=mission]')).toHaveCount(76);
+ await expect(page.locator('[data-action=mission]')).toHaveCount(84);
  for(const id of [0,1,2,3])await expect(page.locator('[data-action=mission][data-id="'+id+'"]')).toHaveCount(0);
  await expect(page.locator('[data-action=mission][data-id="5"]')).toBeDisabled();
  await expect(page.locator('[data-action=mission][data-id="5"] .mission-status')).toContainText('После');

@@ -1,6 +1,6 @@
 {
   "name": "orbital-courier",
-  "version": "10.2.0",
+  "version": "10.3.0",
   "private": true,
   "description": "Offline orbital game with five campaign tiers, detailed procedural artwork and synthesized sound",
   "scripts": {
@@ -11,7 +11,8 @@
     "author:v8": "node tools/author_v8.cjs 0,3 && node tools/author_v8.cjs 1 && node tools/author_v8.cjs 2 && node tools/assemble_v8.cjs",
     "assemble": "node tools/assemble_v8.cjs",
     "audit:campaign": "node tools/audit_campaign.cjs",
-    "author:finale": "node tools/author_v11.cjs && node tools/assemble_v11.cjs && node tools/audit_campaign.cjs"
+    "author:finale": "node tools/author_v11.cjs && node tools/assemble_v11.cjs && node tools/audit_campaign.cjs",
+    "author:lab": "node tools/author_lab.cjs"
   },
   "engines": {
     "node": ">=18"
