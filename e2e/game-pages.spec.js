@@ -45,14 +45,17 @@ test('native links load new documents and preserve profile, course context and b
  await expect(card).toHaveAttribute('href',base+'flight/?contract='+first);await card.click();
  await expect(page).toHaveURL(new RegExp('/flight/\\?contract='+first+'$'));
  await page.evaluate(()=>{const A=Orbital.App;A.setAim(15.5,200);A.storeCourse(0);});
+ for(const rate of [2,4,10,50]){await page.locator('#speedButton').click();await expect(page.locator('#speedButton')).toHaveText('×'+rate);}
  const before=await page.evaluate(resources);
  await page.locator('.topbar nav a[data-page=hangar]').click();
  await expect(page).toHaveURL(new RegExp('/hangar/$'));expect(await page.evaluate(resources)).toBe(before);
  await page.locator('a[data-action=return-flight]').click();
  await expect(page).toHaveURL(new RegExp('/flight/\\?contract='+first+'$'));
  expect(await page.evaluate(()=>[Orbital.App.angle,Orbital.App.speed])).toEqual([15.5,200]);
+ await expect(page.locator('#speedButton')).toHaveText('×50');
  await page.reload();await expect(page.locator('body')).toHaveAttribute('data-page','play');
  expect(await page.evaluate(()=>[Orbital.App.angle,Orbital.App.speed])).toEqual([15.5,200]);
+ await expect(page.locator('#speedButton')).toHaveText('×50');
  expect(await page.evaluate(resources)).toBe(before);
  await page.goBack();await expect(page).toHaveURL(new RegExp('/hangar/$'));
  // Only this synthetic test profile is changed. Back must not revive an older JS heap and overwrite it.

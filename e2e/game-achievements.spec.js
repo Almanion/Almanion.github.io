@@ -5,7 +5,7 @@ test.beforeEach(async({page})=>{await page.route('**/*',r=>new URL(r.request().u
 for(const width of [390,1366])test('awards and medal results survive all playback speeds and scrubbing '+width,async({page},info)=>{
  test.setTimeout(90000);await page.setViewportSize({width,height:844});await page.clock.install();await page.goto('/games/orbital-courier/offline.html');
  const errors=[];page.on('pageerror',e=>errors.push(e.message));let expected;
- for(const rate of [.5,1,2,4,10]){
+ for(const rate of [.5,1,2,4,10,50]){
   const duration=await page.evaluate(rate=>{
    const O=Orbital,A=O.App,l=O.LEVELS[O.Campaign.order[0]];A.profile=O.Progress.fresh();A.profile.settings.sound=false;A.profile.settings.reducedMotion=true;A.profile.upgrades.engine=3;
    A.loadLevel(Orbital.Campaign.order[0]);A.setAim(l.solution.angle,l.solution.speed);A.timeScale=rate;A.launch();
@@ -42,7 +42,8 @@ for(const width of [390,1366])test('awards and medal results survive all playbac
  await page.evaluate(()=>{Orbital.App.loadLevel(Orbital.Campaign.order[0]);Orbital.App.launch();Orbital.App.paused=true;Orbital.UI9.sync();});
  const speed=page.locator(width<700?'#mobileSpeed':'#speedButton');
  await speed.click();await expect(speed).toHaveText('×0.5');
- for(const rate of [1,2,4,10]){await speed.click();await expect(speed).toHaveText('×'+rate);}
+ for(const rate of [1,2,4,10,50]){await speed.click();await expect(speed).toHaveText('×'+rate);}
+ await speed.click();await expect(speed).toHaveText('×0.5');
  expect(errors).toEqual([]);
 });
 test('module purchase shows simultaneous awards, export refreshes collection and reload keeps XP',async({page})=>{

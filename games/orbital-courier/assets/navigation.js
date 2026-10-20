@@ -35,7 +35,7 @@
       if(/^\d+$/.test(key)&&validId(+key)&&value&&Number.isFinite(value.angle)&&Number.isFinite(value.speed))A.aims[key]={angle:O.Physics.clamp(value.angle,-180,180),speed:Math.round(O.Physics.clamp(value.speed,60,O.Progress.stats(A.profile).maxSpeed))};
     }
     A.currentId=available(saved.currentId)?saved.currentId:available(A.profile.lastLevel)?A.profile.lastLevel:O.Progress.nextLevel(A.profile);
-    if([.5,1,2,4,10].includes(saved.timeScale))A.timeScale=saved.timeScale;
+    if([.5,1,2,4,10,50].includes(saved.timeScale))A.timeScale=saved.timeScale;
     if(Number.isInteger(saved.campaignSector)&&saved.campaignSector>=-1&&saved.campaignSector<O.SECTORS.length)A.campaignSector=saved.campaignSector;
     if(typeof saved.campaignQuery==='string')A.campaignQuery=saved.campaignQuery.slice(0,120);
     if(['all','open','unfinished','new'].includes(saved.campaignFilter))A.campaignFilter=saved.campaignFilter;

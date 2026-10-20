@@ -435,7 +435,7 @@
     'angle-down':()=>setAim(app.angle-(app.profile.settings.fineAim?0.1:0.5),app.speed),'angle-up':()=>setAim(app.angle+(app.profile.settings.fineAim?0.1:0.5),app.speed),
     'speed-down':()=>setAim(app.angle,app.speed-(app.profile.settings.fineAim?1:2)),'speed-up':()=>setAim(app.angle,app.speed+(app.profile.settings.fineAim?1:2)),
     'toggle-grid':()=>{app.profile.settings.grid=!app.profile.settings.grid;save();syncControls();},
-    speed:()=>{const rates=[.5,1,2,4,10];app.timeScale=rates[(rates.indexOf(app.timeScale)+1)%rates.length];updateTelemetry();},
+    speed:()=>{const rates=[.5,1,2,4,10,50];app.timeScale=rates[(rates.indexOf(app.timeScale)+1)%rates.length];updateTelemetry();},
     'home-motion':()=>{heroPaused=!heroPaused;updateProfileUI();},
     next:()=>G.unlocked(app.profile,C.adjacent(app.currentId,1))?travelToLevel(C.adjacent(app.currentId,1)):go('campaign'),
     sector:b=>chooseSector(Number(b.dataset.sector)),
