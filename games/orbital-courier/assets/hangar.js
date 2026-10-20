@@ -48,7 +48,7 @@
   }
   $('hangarModuleTabs').innerHTML=tabs.join('');$('hangarRouteLabel').textContent=`${O.LEVELS[id].name} · ${mode==='pro'?'ПРО':'Обычный'}`;
   $('shopContext').querySelector('strong').textContent='Сравнить эффект на маршруте';
-  $('modelGrid').innerHTML=O.Fleet.MODELS.map(m=>`<button class="model-card" data-key="${m.id}"><canvas class="fitting-art" width="300" height="132" aria-hidden="true"></canvas><span class="model-card-title"><strong>${m.name}</strong><small>${m.code}</small></span><span class="model-card-description">${m.description}</span><span class="model-card-status"></span></button>`).join('');decorateFitting();sync();
+  $('modelGrid').innerHTML=O.Fleet.MODELS.map(m=>`<button class="model-card" data-key="${m.id}"><canvas class="fitting-art" width="300" height="132" aria-hidden="true"></canvas><span class="model-card-title"><strong>${m.name}</strong></span><span class="model-card-description">${m.description}</span><span class="model-card-status"></span></button>`).join('');decorateFitting();sync();
  }
  function sync(){
   $('hangar').dataset.workshopView=view.tab;
@@ -59,7 +59,7 @@
   for(const card of $('upgradeGrid').children)card.hidden=card.dataset.module!==view.module;
   for(const b of $('shopSummary').querySelectorAll('[data-action="hangar:scene"]'))b.setAttribute('aria-pressed',String(b.dataset.scene===view.scene));
   const m=previewModel(),s=previewSkin(),t=previewTrail(),changed=m.id!==A.profile.model||s.id!==A.profile.skin||t.id!==A.profile.trail;
-  $('dockShipName').textContent=m.name;$('dockFittingState').textContent=changed?'Примерка · ещё не применено':m.code+' · '+s.name+' · корабль готов';
+  $('dockShipName').textContent=m.name;$('dockFittingState').textContent=changed?'Примерка · ещё не применено':s.name+' · корабль готов';
   $('dockSystemLabel').textContent=view.tab==='modules'?'ВЫБРАННАЯ СИСТЕМА':view.scene==='trail'?'ПРЕДПРОСМОТР СЛЕДА':A.cosmeticTab==='models'?'МОДЕЛЬ КОРПУСА':'ОКРАСКА КОРПУСА';
   $('dockSystemValue').textContent=view.tab==='modules'?short[view.module]+' · '+A.profile.upgrades[view.module]+' / 5':view.scene==='trail'?t.name:A.cosmeticTab==='models'?m.name:s.name;
  }

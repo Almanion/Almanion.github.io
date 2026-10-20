@@ -7,7 +7,7 @@ assert.equal(G.fresh().model,'courier');
 const migrated=G.sanitize(old);assert.equal(migrated.model,'courier');assert.deepEqual(G.sanitize(migrated),migrated);
 assert.equal(G.sanitize({...G.fresh(),model:'manta'}).model,'courier');
 assert.equal(G.sanitize({...old,model:'unknown'}).model,'courier');
-assert.equal(new Set(F.MODELS.map(m=>m.id)).size,5);
+assert.equal(new Set(F.MODELS.map(m=>m.id)).size,9);
 const base=G.sanitize({...old,xp:25000}),stats=G.stats(base),funds=[base.credits,base.data,base.xp];
 for(const model of F.MODELS){
  const profile=G.sanitize({...base,model:model.id});assert.equal(profile.model,model.id);

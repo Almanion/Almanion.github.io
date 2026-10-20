@@ -49,7 +49,7 @@ for(const width of [390,1366])test('applying earned paint and a trail keeps reso
 });
 for(const width of [390,1366])test('models preview independently, apply together and persist across pages '+width,async({page})=>{
  await page.setViewportSize({width,height:844});await page.goto(base);await page.locator('#hangarStyleTab').click();
- await expect(page.locator('#modelTab')).toHaveAttribute('aria-selected','true');await expect(page.locator('#modelGrid .model-card')).toHaveCount(5);
+ await expect(page.locator('#modelTab')).toHaveAttribute('aria-selected','true');await expect(page.locator('#modelGrid .model-card')).toHaveCount(9);
  const before=await page.evaluate(()=>JSON.stringify(Orbital.App.profile));
  await page.locator('#modelGrid [data-key=manta]').click();await expect(page.locator('#dockShipName')).toHaveText('Скат');
  await expect(page.locator('[data-action="hangar:apply"]')).toBeDisabled();expect(await page.evaluate(()=>JSON.stringify(Orbital.App.profile))).toBe(before);

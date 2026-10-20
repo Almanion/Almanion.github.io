@@ -49,8 +49,22 @@ jobs:
       - name: Test, build, and validate
         run: npm run ci
 
+      - name: Verify native tab navigation
+        run: npx playwright test e2e/game-pages.spec.js --grep "Control and middle" --workers 1
+
       - name: Check desktop and mobile interfaces
         run: npm run test:e2e
+
+      - name: Preserve failed interface diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: interface-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Preserve verified site for rollback
         uses: actions/upload-artifact@v7

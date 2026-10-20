@@ -5,7 +5,9 @@ const resources=()=>{
  const p=Orbital.App.profile;
  return JSON.stringify({credits:p.credits,data:p.data,xp:p.xp,upgrades:p.upgrades,receipts:p.receipts,records:p.records,courses:p.courses,achievements:p.achievements,skin:p.skin,trail:p.trail});
 };
-test.use({serviceWorkers:'block',viewport:{width:1366,height:768}});
+// Native tab controls use the full browser, matching desktop QA rather than
+// the separate headless shell's background target lifecycle.
+test.use({channel:'chromium',serviceWorkers:'block',viewport:{width:1366,height:768}});
 test.beforeEach(async({page})=>{
  await page.route('**/*',route=>new URL(route.request().url()).hostname==='127.0.0.1'?route.continue():route.abort());
 });
