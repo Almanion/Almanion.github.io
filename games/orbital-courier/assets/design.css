@@ -1,0 +1,447 @@
+/* Shared presentation layer. Geometry, flight controls and save data keep their
+   established owners; this layer supplies the material, type and visual rhythm. */
+:root{
+ --sans:Manrope,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --bg:#131315;--panel:#1c1d1f;--panel2:#232426;
+ --text:#ebf0fa;--ink:#ebf0fa;--muted:#aeb2b9;--dim:#898c92;
+ --line:#37393d;--mint:#b5c8e3;--gold:#e8ca97;--pink:#efa998;--purple:#c3bbda;
+ --surface:#1c1d1f;--surface-soft:#18181a;--stroke:#ffffff14;
+ --action:#e4e9f2;--action-ink:#222325;--radius:16px;--ui-radius:12px;
+ color-scheme:dark;
+}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font-family:var(--sans)}
+h1,h2,h3,h4{font-family:var(--sans);font-weight:600;letter-spacing:-.035em}
+button,a,input,select{transition:background-color .18s,border-color .18s,color .18s,box-shadow .18s}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
+::selection{background:#ccd0d838;color:#fff}
+.eyebrow{color:var(--muted);letter-spacing:.16em;font-size:10px;line-height:1.5}
+.button{font-weight:600;border-radius:11px;letter-spacing:-.015em}
+.button.primary,.primary,[data-game-navigation=pages] a.button.primary{background:var(--action);border-color:var(--action);color:var(--action-ink);box-shadow:0 2px 4px #00000018}
+.button.primary:hover,.primary:hover{background:#eff4fe;border-color:#eff4fe;filter:none}
+.button.quiet{background:#ffffff04;border-color:var(--stroke);color:#d6dae3}
+.button.quiet:hover{background:#ffffff0b;border-color:#ffffff28}
+.icon-button{background:#ffffff04;color:#c2c6ce;border-color:var(--stroke);border-radius:11px}
+.icon-button:hover{background:#ffffff0c;border-color:#ffffff26}
+.text-button{color:var(--muted);font-weight:500}
+input:not([type=range]),select{background:var(--surface-soft);border-color:var(--line);color:var(--text);border-radius:10px}
+input::placeholder{color:#898c92;opacity:1}
+input:not([type=range]):focus,select:focus{border-color:#a6a9b0;box-shadow:none}
+progress,.progress{background:#383a3e}.progress i{background:var(--mint)}
+small{font-weight:400}
+
+/* A quiet, consistent navigation rail across all real pages. */
+.topbar,body[data-page=home] .topbar{height:72px;background:transparent;border-bottom:1px solid var(--stroke);padding:0 32px;gap:20px}
+.brand{gap:11px;letter-spacing:.14em;font-size:8px;color:#c9cdd5}
+.brand strong{font-size:13px;font-weight:650;letter-spacing:.22em;color:var(--text)}
+.brand-mark,body[data-page=home] .brand-mark{width:36px;height:36px;filter:saturate(.15)}
+.topbar nav,.topbar nav button{font-family:var(--sans)}
+.topbar nav button,[data-game-navigation=pages] .topbar nav a{position:relative;min-height:44px;padding:10px 17px;border-radius:0;background:transparent;font-size:13px;font-weight:500;color:var(--muted)}
+.topbar nav button.active,[data-game-navigation=pages] .topbar nav a.active{color:var(--text);background:transparent}
+.topbar nav .active:after{content:"";position:absolute;left:17px;right:17px;bottom:2px;height:2px;background:var(--mint);border-radius:2px}
+.wallet{font-size:12px;color:#e0e5ee}.wallet span{color:var(--gold)}
+.account .rank-badge{color:var(--muted);font-size:10px}
+.cloud-header,.cloud-entry{background:transparent;border-color:var(--stroke);color:#c3c7cf;font-family:var(--sans);font-size:12px;border-radius:10px}
+.cloud-header[data-status=synced]{border-color:#77797e55;color:var(--mint)}
+.mobile-nav,body[data-page=home] .mobile-nav{background:#18181af5;border-color:var(--stroke);backdrop-filter:blur(16px)}
+.mobile-nav button.active,[data-game-navigation=pages] .mobile-nav a.active{background:#dadee70b;color:#e4e9f2;border-radius:10px}
+.mobile-nav button,[data-game-navigation=pages] .mobile-nav a{color:#9b9ea4}
+.mobile-nav span,[data-game-navigation=pages] .mobile-nav a span{font:500 11px var(--sans)}
+.site-footer{border-color:var(--stroke);color:#898c92;font-family:var(--sans)}
+body:not([data-page=play]):not([data-page=home]) main{max-width:1400px;padding:42px 32px 72px}
+body:not([data-page=play]):not([data-page=home]) .screen{padding-top:0}
+.page-heading,.dispatch-heading{margin:0 0 28px;align-items:flex-end}
+.page-heading h2,.dispatch-heading h2,#hangar .page-heading h2{font-size:40px;font-weight:500;letter-spacing:-.045em;margin:8px 0 0;line-height:1.15}
+.page-heading p,#hangar .page-heading p{color:var(--muted);font-size:14px;line-height:1.6;margin-top:10px}
+.section-total{color:#d6dae3;font-family:var(--sans);font-weight:500;font-size:28px;letter-spacing:-.04em}
+.section-total small{color:var(--dim);font-size:16px}.section-total>span{font-family:var(--sans);font-size:11px;letter-spacing:0;color:var(--muted)}
+
+/* The home is a cover, with one strong typographic gesture and a subdued sky. */
+body[data-page=home]{--home-pad:clamp(24px,5vw,88px);background:#131315}
+body[data-page=home] .topbar{padding-inline:var(--home-pad);border:0}
+#home{min-height:calc(100svh - 72px)}
+#home .home-shade{background:linear-gradient(90deg,#131315ad,transparent 76%),linear-gradient(0deg,#131315e6,transparent 42%)}
+#home .hero-copy{width:66%;padding-top:34px}
+#home .hero-copy>.eyebrow{font:500 10px var(--sans);letter-spacing:.2em;color:#b8bcc4}
+#home h1{font:500 clamp(58px,5.8vw,88px)/1.08 var(--sans);letter-spacing:-.06em;margin:24px 0 22px;color:#f2f1e7}
+#home h1 em{color:#bfc3cb}
+#home .hero-text{font-size:15px;line-height:1.8;color:#bbbfc7;max-width:420px;margin-bottom:28px}
+#home .hero-actions{gap:10px}
+#home .hero-actions .button{min-height:52px;padding:14px 22px;border-radius:12px;font:600 13px var(--sans);box-shadow:none;transform:none}
+#home .hero-actions .primary{background:var(--action);color:var(--action-ink);border:1px solid var(--action)}
+#home .hero-actions .quiet{background:#13131550;border-color:#ffffff26;color:#d6dae3}
+#home .hero-actions .button:hover{transform:none;box-shadow:none;background:#eef3fd;color:var(--action-ink)}
+#home .hero-meta{font:11px var(--sans);color:#9da0a6;gap:16px}
+#home .hero-meta span+span:before{margin-right:16px;color:#6a6c70}
+#home .home-bottom{gap:48px;border-top-color:#ffffff1c;padding-top:26px}
+#home .home-stat .eyebrow{font:500 10px var(--sans);letter-spacing:.13em;color:#9b9ea4}
+#home .home-stat strong{font:500 32px/1.4 var(--sans);color:#dfe4ed;letter-spacing:-.04em}
+#home .home-stat strong small{font-size:13px;color:#909399}
+#home .home-stat>span:last-child{font-size:12px;color:#abaeb5}
+#home .rank-card .progress{background:#ffffff14;max-width:290px}
+#home .rank-card .progress i{background:#b4b8bf}
+#home .home-cloud{font-family:var(--sans);font-size:11px;color:#9b9ea4}
+#home .home-cloud a,#home .home-motion{color:#aeb2b9;font-size:11px}
+#home .cloud-entry{background:transparent;color:#c9cdd5;border-color:#ffffff1c;font-size:11px}
+
+/* Dispatch: navigation acts as an index, the actual routes get the imagery. */
+.campaign-access{background:#212224;border:1px solid #b8bcc422;border-radius:14px;padding:18px 22px;margin-bottom:22px;color:var(--text)}
+.campaign-access strong{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.campaign-access p{font-size:13px;color:#b5b9c0;max-width:76ch;line-height:1.65;margin-top:5px}
+.campaign-access .button{font-size:12px}
+.campaign-toolbar{margin-bottom:14px;gap:20px}
+.contract-search{background:transparent;border-color:var(--line);border-radius:10px;color:var(--mint)}
+.contract-search input{font-size:14px;min-height:46px;color:var(--text);background:transparent}
+.contract-filters button,.achievement-categories button,.award-filters button,.cosmetic-tabs button{font-family:var(--sans);color:var(--muted);background:transparent;border-color:transparent;border-radius:8px;font-weight:500}
+.contract-filters button.active,.contract-filters button[aria-pressed=true],.achievement-categories button.active,.award-filters button.active,.cosmetic-tabs button.active{background:#dce0e90c;border-color:#caced633;color:#e3e8f1}
+.difficulty-tabs{gap:0;border-bottom:1px solid var(--stroke);margin:12px 0 24px}
+.difficulty-tabs button{background:none;border:0;border-radius:0;padding:10px 16px 13px;gap:4px;position:relative;color:#aaadb4;font-size:13px}
+.difficulty-tabs button small{color:#94979d;font-size:9px;letter-spacing:.06em}
+.difficulty-tabs button[aria-pressed=true]{background:transparent;border:0;box-shadow:inset 0 -2px #c1c5cd;color:#ebf0fa}
+.sector-rail{background:transparent;border:0;border-right:1px solid var(--stroke);border-radius:0;padding-right:16px}
+.sector-rail-heading{border-color:var(--stroke)}
+.sector-choice{color:#a1a4ab;border-radius:8px;font-family:var(--sans)}
+.sector-choice.active{background:#dce0e90b;border-color:transparent;color:#e5eaf3}
+.sector-choice .sector-index{color:#bec2ca;font-size:10px}
+.sector-choice .sector-name{font-size:12px;font-weight:500}
+.sector-choice small{color:#8d9096;font-size:10px}
+.sector-track{background:#ffffff0e}.sector-track>i{background:#b4b8bf}
+.sector-overview{background:#1c1d1f;border:1px solid var(--stroke);padding:20px 24px;border-radius:14px;box-shadow:none}
+.sector-overview:after{opacity:.25}
+.sector-overview h3{font-size:24px;font-weight:500;letter-spacing:-.035em;color:var(--text)}
+.sector-overview p{font-size:12px;color:var(--muted);line-height:1.65}
+.sector-orbit-mark{color:#bec2ca;opacity:.65}
+.sector-progress strong{color:#ccd0d8;font-family:var(--sans);font-size:28px;font-weight:500}
+.sector-progress span{color:var(--muted)}
+.sector-mobile-select button{background:var(--surface);border-color:var(--line);color:#b7c5d8;border-radius:10px}
+#missionGrid{gap:20px}
+.contract-card,.mission-card{background:#1c1d1f;border:1px solid var(--stroke);border-radius:14px;box-shadow:none;transition:border-color .2s,background-color .2s;transform:none}
+.contract-card.current{border-color:#acb0b766;box-shadow:none}
+.contract-card:hover,.mission-card:hover{transform:none;border-color:#c6cad280;background:#232426;box-shadow:none}
+.contract-card.locked{opacity:1;background:#18181a;border-color:#ffffff0b}
+.contract-card.locked .contract-preview{filter:saturate(.35);opacity:.65}
+.contract-card .contract-preview canvas{filter:saturate(.85)}
+.mission-number{background:#141416df;border:1px solid #ffffff20;color:#e5eaf3;font:11px var(--mono);border-radius:6px}
+.contract-state{color:#d2d6df;background:#1a1b1ddd;font:500 9px var(--sans);letter-spacing:.04em;border-radius:5px}
+.locked .contract-state{color:#b2b6bd;background:#191a1cd9}
+.preview-launch{background:#e1e6ef;color:#222325;box-shadow:none}
+.mission-content{border-top:1px solid var(--stroke);padding:18px 20px}
+.contract-tags{gap:7px}
+.contract-tags>span{background:none;border:0;padding:0;color:#acb0b7;font:10px var(--sans)}
+.contract-tags>span+span:before{content:"·";margin-right:7px;color:#6f7176}
+.mission-content h4{font-size:19px;line-height:1.4;font-weight:550;color:var(--text);letter-spacing:-.025em;margin-top:10px}
+.mission-meta{font-size:12px;color:#c3c7cf}
+.contract-card .mission-status,.contract-card.locked .mission-status{font:12px/1.6 var(--sans);color:#afb3ba;min-height:3.2em}
+.contract-group-heading{color:#b5b9c0;font:500 11px var(--sans);letter-spacing:.04em}
+.contract-access-kind{color:#b5b9c0}
+.contract-empty{background:var(--surface-soft);border-color:var(--stroke);color:var(--muted)}
+
+/* Hangar: a quiet product shelf; capability is more prominent than decoration. */
+#hangar .shop-summary{border-color:var(--stroke);border-radius:16px;background:#202123}
+#hangar .chassis-preview{border-color:var(--stroke);background:radial-gradient(ellipse,#c2c6ce11,transparent 70%)}
+#hangar .hangar-funds strong{font-family:var(--sans);font-size:34px;font-weight:500;letter-spacing:-.035em;color:#e2e7f0}
+#hangar .hangar-license span{color:#bcc0c8;border-color:#ffffff14;background:transparent;border-radius:5px}
+#hangar .hangar-price-note,#hangar .purchase-reason{color:#acb0b7;font-size:12px;line-height:1.65}
+#hangar .shop-context{border-color:var(--stroke)}
+#hangar .shop-context>strong{font-size:15px;font-weight:550}
+#hangar .shop-context select{background:var(--surface);border-color:var(--line);color:var(--text);font-family:var(--sans)}
+#hangar .module-card{background:#1c1d1f;border-color:var(--stroke);border-radius:15px;padding:24px;box-shadow:none}
+#hangar .module-card[data-available=yes]{border-color:#b2b6bd40}
+#hangar .module-card.wishlisted{box-shadow:inset 0 0 0 1px #cdd1d966}
+#hangar .module-identity h3{font-size:24px;font-weight:500;letter-spacing:-.035em}
+#hangar .module-code{color:#a5a8af;font-family:var(--sans);font-size:10px}
+#hangar .module-art{opacity:.75;filter:saturate(.6)}
+.module-status,[data-available=yes] .module-status{background:#ffffff07;color:#c5c9d1;font:10px var(--sans);border:1px solid #ffffff0c}
+#hangar .module-description{color:var(--muted);font-size:13px}
+#hangar .module-spec{border-color:var(--stroke)}
+#hangar .module-spec strong{font-family:var(--sans);font-weight:500;color:#e2e7f0;font-size:30px}
+#hangar .module-effect{background:#bfc3cb09;color:#c0c4cc;border:1px solid #bbbfc714;border-radius:8px;font-size:12px}
+#hangar .module-price strong{font-family:var(--sans);font-weight:500;color:#dee3ec;font-size:28px}
+#hangar .module-bookmark{background:transparent;border-color:var(--line);color:#bec2ca}
+#hangar .upgrade-plan,.price-table>div{border-color:var(--stroke)}
+#hangar .upgrade-plan summary{color:#bec2ca}
+.skin-card,.trail-card,.cosmetic-preview{background:#1c1d1f;border-color:var(--stroke);border-radius:12px}
+.skin-card.selected,.trail-card.selected{border-color:#b2b6bd80;box-shadow:none;background:#27292c}
+
+/* Awards: an index of accomplishments, with thin dividers and measured type. */
+.award-search input{background:var(--surface-soft);border-color:var(--line);font-size:14px}
+.award-filters{gap:5px}
+.achievement-categories{gap:4px;border-bottom:1px solid var(--stroke);padding-bottom:12px}
+.achievement-categories button{padding:8px 12px;font-size:12px}
+.achievement-categories small{color:#9da0a6}
+.achievement-focus{background:#232426;border-color:#b1b5bc26;border-radius:12px;padding:18px 22px}
+.achievement-focus strong{font-weight:600;color:#dee3ec;font-size:14px}
+.achievement-focus p{color:#b5b9c0;font-size:13px}
+.achievement-focus>b{font-family:var(--sans);font-weight:500;color:#dee3ec}
+.achievement-grid{gap:14px}
+.achievement-card,.achievement-card.earned{background:#1c1d1f;border:1px solid var(--stroke);border-radius:13px;padding:22px;gap:16px;box-shadow:none}
+.achievement-card.earned{background:#242528;border-color:#b9bdc529}
+.achievement-card h3{font-size:16px;font-weight:550;color:#e1e6ef;letter-spacing:-.02em}
+.achievement-card p{color:#afb3ba;font-size:12px;line-height:1.7}
+.achievement-card .achievement-section{font:10px var(--sans);color:#999ca2;letter-spacing:.01em}
+.achievement-icon{color:#afb3ba;font-weight:400;font-size:26px;opacity:.65}
+.achievement-card.earned .achievement-icon{color:#d5d9e2;opacity:1}
+.achievement-card small{color:#b3b7be}
+.achievement-card .progress,.achievement-card .award-progress{background:#383a3e;height:2px}
+.achievement-card .progress i,.achievement-card .award-progress i{background:#b5c8e3}
+
+/* Flight: the map is the image, the cockpit is a precise instrument. */
+body[data-page=play]{background:#141416}
+body[data-page=play] .topbar{background:#141416;border-color:var(--stroke)}
+body[data-page=play] .topbar nav button,body[data-game-navigation=pages][data-page=play] .topbar nav a{font-size:12px}
+body[data-page=play] main{padding:10px 18px 12px;max-width:1920px}
+#play .flight-heading h2{font:550 21px/1.2 var(--sans);letter-spacing:-.03em}
+#play .flight-heading .eyebrow{color:#a1a4ab;font:500 9px var(--sans);letter-spacing:.09em}
+#play .flight-back{background:#ffffff07;border:1px solid var(--stroke);color:#c8ccd4}
+#play .flight-menu{background:transparent;border-color:var(--stroke);color:#caced6}
+#play .contract-pager{background:transparent;border-color:var(--stroke);border-radius:9px}
+#play #levelPosition{color:#c9cdd5;font:11px var(--mono)}
+.mode-chip{background:#c4c8d00a;border-color:#b9bdc530;color:#c5c9d1;border-radius:9px;font-family:var(--sans)}
+.mode-chip.pro{background:#c7bfdb0d;border-color:#b5a7cf30;color:#d0c8df}
+#play .medal-card{background:#1d1e20;border-color:var(--stroke);border-radius:10px;box-shadow:none}
+#play .medal-card[data-state=won]{background:#2b2d30;border-color:#b3b7be55}
+#play .medal-name h3{font:600 12px/1.3 var(--sans);letter-spacing:-.01em;color:#dfe4ed}
+#play .medal-condition{color:#a8abb2;font:11px/1.4 var(--sans)}
+#play .medal-archive{color:#afb3ba;font:10px var(--sans)}
+#play .medal-detail{font-size:10px;color:#c8ccd4}
+#play .medal-track{opacity:.55}
+#play .flight-plan{background:#1f2022;border-color:var(--stroke);border-radius:10px}
+#play .flight-plan summary strong{color:#d9dde6;font:500 12px/1.4 var(--sans)}
+#play .flight-plan summary small{color:#95989e;font-family:var(--sans)}
+.plan-marker,.plan-chevron{color:#b5b9c0}
+#play .map-mode{background:transparent;border-color:var(--stroke);border-radius:9px}
+#play .map-mode button{color:#b1b5bc;font-family:var(--sans)}
+#play .map-mode button[aria-pressed=true]{background:#cbcfd712;color:#dbdfe8}
+#play .map-icon,#play .map-fit{background:#1f2022;border-color:var(--stroke);border-radius:9px;color:#caced6}
+#play .map-viewport{border-color:#898c9228;border-radius:14px;background:#111113}
+#play .stage-pill{background:#18191bdf;border-color:#aaadb433;color:#b5b9c0;box-shadow:none;border-radius:6px;font-size:8px}
+#play .telemetry span{color:#9a9da3;font:9px var(--sans);letter-spacing:.02em}
+#play .telemetry b{color:#d9dde6;font:12px var(--mono)}
+#play .telemetry #flightCargo{color:#e0c38c}
+#play .speed-button{background:#26272a;border-color:#b9bdc533;color:#d8dce5;border-radius:9px}
+#play .flight-panel{background:#202123;border-color:#b5b9c022;border-radius:14px}
+.panel-scroll{padding:18px}
+#cockpit{gap:14px}
+#cockpit .panel-tag{font:500 10px var(--sans);letter-spacing:.12em;color:#9b9ea4}
+#cockpit .nav-panel-heading strong{font:550 18px/1.25 var(--sans);color:#e2e7f0;letter-spacing:-.025em}
+#cockpit .nav-panel-heading small{font:11px var(--sans);color:#a6a9b0;margin-top:6px}
+#cockpit .heading-compass{width:44px;height:44px;background:none;opacity:.7}
+#cockpit #compassArrow{fill:#b5c8e31a;stroke:#b5c8e3}
+.cockpit-tabs{background:transparent;border:0;border-bottom:1px solid #ffffff14;border-radius:0;padding:0;gap:18px}
+.cockpit-tabs button{background:transparent;font:500 12px var(--sans);border-radius:0;color:#9fa2a8}
+.cockpit-tabs button[aria-selected=true]{background:transparent;color:#e3e8f1;box-shadow:inset 0 -2px #cbcfd7}
+#cockpit .aim-controls{gap:0}
+#cockpit .control{background:transparent;border:0;border-bottom:1px solid #ffffff0e;border-radius:0;padding:14px 0 4px}
+#cockpit .control:focus-within{box-shadow:none;border-color:#b1b5bc66}
+#cockpit .number-wrap{height:60px;min-height:60px}
+#cockpit .number-wrap button{width:44px;min-width:44px;height:44px;min-height:44px;flex-basis:44px;background:#ffffff04;border-color:#ffffff14;border-radius:50%;color:#cfd3db;font:24px var(--sans)}
+#cockpit .number-wrap button:hover{background:#ffffff0a;border-color:#bec2ca50}
+#cockpit .number-wrap button:active{background:#bdc1c922;border-color:#c2c6ce}
+#cockpit .control label{color:#a9acb3;font:11px/1.4 var(--sans);letter-spacing:0;margin-bottom:3px}
+#cockpit .number-wrap input{font:500 30px/1.2 var(--sans);font-variant-numeric:tabular-nums;letter-spacing:-.035em;color:#eaeff9}
+#cockpit input[type=range]::-webkit-slider-runnable-track{height:3px;background:linear-gradient(90deg,#c8ccd4 var(--range-fill,50%),#474a4f var(--range-fill,50%))}
+#cockpit input[type=range]::-webkit-slider-thumb{width:18px;height:18px;margin-top:-7px;background:#e4e9f2;border:4px solid #c7cbd3;box-shadow:none}
+#cockpit input[type=range]::-moz-range-track{height:3px;background:#474a4f}
+#cockpit input[type=range]::-moz-range-progress{height:3px;background:#c8ccd4}
+#cockpit input[type=range]::-moz-range-thumb{background:#e4e9f2;border-color:#c7cbd3}
+#cockpit .precision-button{background:transparent;color:#bfc3cb;border-color:#b1b5bc30;border-radius:9px;font:12px var(--sans)}
+#cockpit .precision-button[aria-pressed=true]{background:#c0c4cc12;border-color:#b8bcc480;color:#dde2eb}
+#fineAimCaption{color:#c7cbd3;font-size:10px}#fineAimHelp{color:#96999f;font:10px var(--sans)}
+.keyboard-tip{color:#9da0a6;font:10px var(--sans)}.keyboard-tip button{color:#c2c6ce;font:10px var(--sans)}
+kbd{background:#292b2e;border-color:#494c51;color:#c1c5cd}
+.panel-actions{background:#202123;border-color:var(--stroke);padding:14px 18px;gap:8px}
+#play .launch-button{background:var(--action);border-color:var(--action);color:var(--action-ink);font:650 14px var(--sans);border-radius:10px}
+.launch-secondary button{background:transparent;border-color:#ffffff12;color:#b2b6bd;font:11px var(--sans);border-radius:8px}
+#cockpit .course-slot{background:#1c1d1f;border-color:var(--stroke);border-radius:10px}
+#cockpit .course-slot>b{color:#caced6}
+#cockpit .course-slot button{background:#2c2e31;color:#dfe4ed}
+#cockpit .course-slot .store-course{background:#babec60a;border-color:#b9bdc533;color:#d1d5de;font-family:var(--sans)}
+#cockpit .previous-aim{background:#27292c;border-color:#b9bdc522;color:#c5c9d1}
+.flight-fact{background:#1c1d1f;border-color:#b3b7be26;color:#dbdfe8;border-radius:12px}
+.flight-fact strong{font-family:var(--sans);color:#dee3ec;letter-spacing:-.04em}.flight-fact small,.flight-fact span{color:#a6a9b0}
+.flight-metrics>div{background:#27292c;border-color:var(--stroke);color:#b1b5bc}
+.flight-metrics b{color:#d8dce5;font-family:var(--sans)}
+.map-gesture-hint,#play .map-gesture-hint{border-color:#9b9ea444;background:#1d1e20f2;color:#d8dce5}
+
+/* Completion: an editorial receipt, with the actual docking image retained. */
+.completion{--result-accent:#ced2da;--result-line:#b1b5bc33;color:var(--text)}
+.completion[data-outcome=failed]{--result-accent:#eec4a3;--result-line:#bd8b663b}
+.completion[data-outcome=training]{--result-accent:#c5c0df;--result-line:#b7a7d33b}
+.completion-kicker{font-family:var(--sans);font-size:10px;letter-spacing:.1em}
+.completion-mode,.completion-route>span{color:#9c9fa5;font-family:var(--sans)}
+#play .completion h2{font-family:var(--sans);font-weight:500;letter-spacing:-.045em;color:#e9eef8}
+.completion-copy>p{color:#acafb6;font-family:var(--sans)}
+.completion-hero,.completion-medals,.completion-medal,.completion-breakdown,.completion-next-note{border-color:var(--stroke)}
+.completion-seal{background:none;border-color:#b7bbc233;box-shadow:none}
+.completion-seal:before,.completion-seal:after{border-color:#afb3ba33}
+.completion-seal>strong{font-family:var(--sans);font-weight:500}
+.completion-seal small{color:#abaeb5}
+.completion-visual .completion-seal{border-color:#a9b4c24d;background:#15191de6}
+.completion-facts>div{border-color:var(--stroke)}
+.completion-facts span{color:#a6a9b0;font-family:var(--sans)}
+.completion-facts strong{font-family:var(--sans);font-weight:500;color:#dfe4ed;letter-spacing:-.025em}
+.completion-facts small{color:#a1a4ab}
+.completion-route>strong,.completion-section-title h3,.completion-medal h4{color:#dfe4ed;font-family:var(--sans);font-weight:550;letter-spacing:-.01em}
+.completion-section-title>span,.completion-medal-heading>span,.completion-medal p,.completion-medal small{color:#aeb2b9}
+.completion-medal[data-state=won] .completion-medal-heading>span{color:#ccd0d8}
+.completion-receipt{background:#232426;border-color:#bec2ca33;border-radius:14px}
+.completion-credits>span{color:#acafb6;font-family:var(--sans);font-size:10px;letter-spacing:.08em}
+.completion-credits>strong{font-family:var(--sans);font-weight:500;color:#dadee7;letter-spacing:-.045em}
+.completion-credits small{color:#abaeb5}
+.completion-resources,.completion-career{border-color:var(--stroke)}
+.completion-resources span{color:#a6a9b0}
+.completion-resources strong{color:#dce0e9;font-family:var(--sans);font-weight:500}
+.completion-payment,.completion-career>small{color:#b5b9c0;font-family:var(--sans)}
+.completion-awards summary,.completion-breakdown summary,.completion-next-note strong{color:#c3c7cf;font-family:var(--sans)}
+.completion-actions{background:#1a1b1d;border-color:var(--stroke);border-radius:0 0 12px 12px}
+.completion-actions .button{font-family:var(--sans);font-weight:550;font-size:13px;border-radius:10px}
+.completion-actions .quiet,.completion-analysis-bar .quiet{background:transparent;border-color:#ffffff1c;color:#ced2da}
+.completion-actions #resultReview,.completion-actions #resultContracts{color:#b0b4bb}
+.completion-actions .primary{background:var(--action);border-color:var(--action);color:var(--action-ink)}
+.completion-docking-button,.docking-enlarged canvas{border-color:#acafb640}
+.completion-docking figcaption,.completion-docking figcaption strong{color:#b5b9c0;font-family:var(--sans)}
+.completion-docking-expand{background:#1c1d1fe6;border-color:#9a9da366;color:#d5d9e2}
+
+/* All sheets and account surfaces use the same material as the cockpit. */
+dialog{background:#222325;border-color:#bbbfc733;border-radius:18px;box-shadow:0 24px 100px #0009;color:var(--text)}
+dialog::backdrop{background:#080909bd;backdrop-filter:blur(7px)}
+.modal-inner h2{font-weight:500;letter-spacing:-.04em}
+.modal-inner p,.modal-inner label{color:#b8bcc4}
+.modal-close{background:#ffffff08;border-color:var(--stroke);color:#cbcfd7}
+.info-box,.settings-grid,.cloud-copy{background:#1b1c1e;border-color:#a5a8af33;border-radius:10px;color:#ced2da}
+.cloud-local-status{background:#2a2c2f;border-color:#acafb644}
+.cloud-local-status span,.cloud-last-save,.cloud-status,.cloud-auth>p,.cloud-tools>summary{color:#babec6}
+.cloud-auth,.cloud-tools{border-color:#b9bdc533}
+.ui-menu button{background:#ffffff04;border-color:var(--stroke);color:#d3d7e0;border-radius:9px}
+.ui-menu button .menu-symbol{color:#b5c8e3}
+.flight-drawer{background:#212224;border-color:#acafb633;border-radius:20px 20px 0 0}
+.drawer-heading,.sheet-heading{border-color:var(--stroke);color:#dde2eb}
+.flight-drawer .drawer-title,.flight-drawer h2{color:#e0e5ee}
+.toast{background:#2e3033f5;color:#e3e8f1;border-color:#a9acb344;box-shadow:0 6px 24px #0004;font-family:var(--sans)}
+.toast.error{background:#3b2d21f5;border-color:#d3a07855;color:#f2d6b7}
+
+@media(min-width:1200px){
+ #play .flight-layout{grid-template-columns:minmax(0,1fr) 324px;gap:18px}
+ #play .medal-deck{flex-basis:56px}
+ #play .medal-cards{gap:12px}
+ #play .medal-card{padding:8px 14px}
+ .achievement-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(min-width:1600px){
+ #play .flight-layout{grid-template-columns:minmax(0,1fr) 350px}
+ #play .flight-heading{flex-basis:52px;height:52px}
+ #play .flight-heading h2{font-size:24px}
+}
+@media(max-width:1199px){
+ .topbar,body[data-page=home] .topbar{padding-inline:24px;gap:12px}
+ .achievement-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:999px) and (orientation:portrait), (max-width:699px), (max-width:999px) and (max-height:480px){
+ body:not([data-page=play]):not([data-page=home]) main{padding:26px 20px 96px}
+ .topbar,body[data-page=home] .topbar{padding-inline:20px;gap:10px}
+ .page-heading,.dispatch-heading{margin-bottom:22px}
+ .page-heading h2,.dispatch-heading h2,#hangar .page-heading h2{font-size:32px}
+ .page-heading p{font-size:13px}
+ .section-total{font-size:25px}
+ .section-total>span{font-size:10px}
+ .campaign-access{padding:16px;border-radius:12px;margin-bottom:20px;gap:12px}
+ .campaign-access strong{font-size:15px}
+ .campaign-access p{font-size:13px}
+ .campaign-access .button{font-size:12px}
+ .difficulty-tabs{margin-bottom:18px}
+ .difficulty-tabs button{min-width:106px;font-size:12px;padding:9px 12px 12px}
+ .sector-overview{padding:18px;border-radius:12px}
+ .sector-overview h3{font-size:21px}
+ .sector-overview p{font-size:12px}
+ .mission-content{padding:16px 18px}
+ .mission-content h4{font-size:20px;line-height:1.4}
+ .contract-card .mission-status{font-size:12px}
+ .achievement-grid{grid-template-columns:1fr}
+ .achievement-card{padding:18px}
+ .achievement-card h3{font-size:16px}
+ .achievement-focus{padding:16px}
+ #hangar .module-card{padding:20px}
+ #hangar .module-identity h3{font-size:22px}
+ #hangar .hangar-ledger{padding:20px}
+ #hangar .module-art{width:56px;min-width:56px;height:56px}
+ #home .hero-copy{width:100%;padding-top:38px}
+ #home h1{font-size:clamp(46px,10.8vw,72px);line-height:1.09;letter-spacing:-.055em;margin:22px 0}
+ #home .hero-copy>.eyebrow{font-size:9px;letter-spacing:.13em}
+ #home .hero-text{font-size:13px;line-height:1.8;max-width:315px}
+ #home .hero-actions .button{font-size:12px;min-height:48px;padding:12px 17px}
+ #home .hero-meta{font-size:10px;gap:12px}
+ #home .hero-meta span+span:before{margin-right:12px}
+ #home .home-bottom{gap:22px 16px}
+ #home .home-stat .eyebrow{font-size:9px;letter-spacing:.06em}
+ #home .home-stat strong{font-size:28px}
+ #home .home-stat>span:last-child{font-size:11px}
+ #home .home-cloud a,#home .home-motion{font-size:10px}
+ body[data-page=play] main{padding:calc(env(safe-area-inset-top) + 4px) max(8px,env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 6px) max(8px,env(safe-area-inset-left))}
+ #play .flight-heading h2{font-size:15px;line-height:1.2;font-weight:600}
+ #play .flight-heading .eyebrow{font-size:8px;letter-spacing:.04em}
+ #play .flight-back,#play .flight-menu{background:#212224;border-radius:12px;border-color:#ffffff10}
+ #play .flight-plan{background:#232426;border:0;border-radius:11px}
+ #play .flight-plan summary strong{font-size:11px}
+ #play .map-viewport{border-radius:14px;border-color:#b7bbc233}
+ #play .map-mode,#play .map-icon,#play .map-fit{background:#232426;border-color:transparent;border-radius:10px}
+ #play .map-mode button{font-size:11px}
+ #play .map-mode button[aria-pressed=true]{background:#c7cbd31a;color:#dde1ea}
+ #play .mobile-dock button{background:#27282b;border-color:#b1b5bc26;color:#ced2da;border-radius:12px;font-family:var(--sans)}
+ #play .mobile-dock .primary{background:var(--action);border-color:var(--action);color:var(--action-ink);font-size:14px;font-weight:650}
+ #play .mobile-dock .mobile-options{background:#222325}
+ #play .mobile-options small{color:#a4a7ae;font:9px var(--sans);letter-spacing:.05em}
+ #play .mobile-options strong{color:#e1e6ef;font:500 14px var(--sans);font-variant-numeric:tabular-nums}
+ #play .readout-arrow{color:#c3c7cf}
+ #play .mobile-dock #mobileFine[aria-pressed=true]{background:#b5b9c022;border-color:#b2b6bd66;color:#e0e5ee}
+ .flight-drawer #cockpit .number-wrap{height:54px;min-height:54px}
+ .flight-drawer #cockpit .number-wrap input{font-size:28px}
+ .completion-actions{border-radius:0}
+ .completion-actions .button{font-size:13px}
+}
+@media(max-width:360px){
+ body:not([data-page=play]):not([data-page=home]) main{padding-inline:16px}
+ .topbar,body[data-page=home] .topbar{padding-inline:16px}
+ #home h1{font-size:42px}
+ #home .hero-copy{padding-top:24px}
+ #home .hero-actions .button{font-size:11px;padding-inline:14px}
+ #play .flight-heading h2{font-size:14px}
+ #play .completion h2{font-size:24px}
+ .completion-medal h4{font-size:12px}
+ .completion-medal-heading>span{font-size:10px}
+}
+/* The catalogue starts with routes sooner on phones; per-card access reasons
+   stay visible, while the longer introduction remains on larger screens. */
+@media(max-width:699px) and (orientation:portrait){
+ #campaign .campaign-access{flex-direction:row;align-items:center;padding:14px 16px;gap:12px;margin-bottom:16px}
+ #campaign .campaign-access>div{flex:1;min-width:0}
+ #campaign .campaign-access strong{font-size:13px;line-height:1.5}
+ #campaign .campaign-access p{display:none}
+ #campaign .campaign-access .button{flex:0 0 154px;width:auto;max-width:154px;min-height:44px;padding:8px 9px;font-size:11px;line-height:1.5;white-space:nowrap}
+ #campaign .campaign-toolbar{gap:10px;margin-bottom:12px}
+ #campaign .difficulty-tabs{margin:8px 0 16px}
+ #campaign .difficulty-tabs button{min-height:44px;min-width:104px;justify-content:center;padding:8px 12px 12px}
+ #campaign .difficulty-tabs button small{display:none}
+ #campaign .sector-overview{padding:14px 16px;margin-bottom:16px}
+ #campaign .sector-overview p{display:none}
+ #campaign .sector-overview h3{font-size:20px;margin-top:5px}
+ #campaign .contract-group-heading{margin:6px 0}
+}
+@media(max-height:700px) and (min-width:1000px){
+ #cockpit{gap:10px}
+ #cockpit .nav-panel-heading{min-height:48px}
+ #cockpit .control{padding-top:9px}
+ #cockpit .number-wrap{height:52px;min-height:52px}
+ .panel-scroll{padding:14px 16px}
+ .panel-actions{padding:10px 16px}
+}
+@media(max-height:480px) and (orientation:landscape){
+ #play .flight-heading h2{font-size:15px}
+ #play .completion h2{font-size:25px}
+ .completion-actions .button{font-size:12px}
+ #home h1{font-size:50px}
+}
+body.high-contrast{--text:#fff;--ink:#fff;--muted:#d5d9e2;--line:#83868b;--stroke:#d1d5de55}
+body.high-contrast .medal-condition,body.high-contrast .medal-detail,body.high-contrast .telemetry span{color:#e6ebf4}
+body.high-contrast .mission-status,body.high-contrast .achievement-card p,body.high-contrast .completion-copy>p{color:#e4e9f2}
+@media(prefers-reduced-motion:reduce){button,a,input,select{transition:none}}

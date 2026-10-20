@@ -89,7 +89,7 @@
       const dpr=Math.min(root.devicePixelRatio||1,2),r=this.canvas.getBoundingClientRect();
       const w=Math.max(1,Math.round(r.width*dpr)),h=Math.max(1,Math.round(r.height*dpr));
       if(this.canvas.width!==w||this.canvas.height!==h){this.canvas.width=w;this.canvas.height=h;}
-      this.ctx.setTransform(1,0,0,1,0,0);this.ctx.fillStyle='#07131e';this.ctx.fillRect(0,0,w,h);
+      this.ctx.setTransform(1,0,0,1,0,0);this.ctx.fillStyle='#0c0e12';this.ctx.fillRect(0,0,w,h);
       const game=this.canvas.id==='gameCanvas',rotated=game&&FlightView.portrait();
       const fit=Math.min(w/(rotated?700:1200),h/(rotated?1200:700));
       this.ctx.portraitView=rotated;
@@ -99,16 +99,16 @@
     }
     background(t,sector=0){
       const c=this.ctx;const base=c.createLinearGradient(0,0,1200,700);
-      base.addColorStop(0,'#081522');base.addColorStop(0.5,'#09121f');base.addColorStop(1,'#08111a');
+      base.addColorStop(0,'#101318');base.addColorStop(0.5,'#0e1116');base.addColorStop(1,'#111419');
       c.fillStyle=base;c.fillRect(0,0,1200,700);
       const fog=c.createRadialGradient(840,280,0,840,280,680);
       fog.addColorStop(0,['#17464044','#593d2440','#3c2e694d','#235c7040','#6e393240','#243d6345','#472c6445','#244c3e45','#59402344','#552c4844','#662a3444','#283f7145','#41306845','#6a4d2940'][sector%14]);fog.addColorStop(1,'transparent');
       c.fillStyle=fog;c.fillRect(0,0,1200,700);
       for(const s of this.stars){circle(c,s.x,s.y,s.r,`rgba(203,225,238,${s.a*(0.83+0.17*Math.sin(t*0.6+s.p))})`);}
-      c.strokeStyle='#8eb9c00b';c.lineWidth=1;
+      c.strokeStyle='#c8d1e008';c.lineWidth=1;
       for(let x=0;x<=1200;x+=100){c.beginPath();c.moveTo(x,0);c.lineTo(x,700);c.stroke();}
       for(let y=0;y<=700;y+=100){c.beginPath();c.moveTo(0,y);c.lineTo(1200,y);c.stroke();}
-      c.strokeStyle='#5b829838';c.strokeRect(14,14,1172,672);
+      c.strokeStyle='#a0afc020';c.strokeRect(14,14,1172,672);
       text(c,'NAV / 1200 × 700',32,42,10,'#567080');
     }
     planetTexture(p){
@@ -201,7 +201,7 @@
       if(p.name)label(c,p.name.toUpperCase(),p.x,p.y,p.r+18+11*this.uiScale,11*this.uiScale,'#9aaebf');
     }
     starClusters(t,pointer,w=1200,h=700){
-      const c=this.ctx;
+      const c=this.ctx,opacity=c.globalAlpha;
       if(!this.clusterStars){
         const random=rng(23991);
         this.clusterStars=Array.from({length:820},(_,i)=>({group:i%3,a:random()*TAU,r:Math.pow(random(),.65),z:random(),size:.35+random()**4*2.1,phase:random()*TAU}));
@@ -215,7 +215,7 @@
       c.save();c.globalCompositeOperation='screen';
       for(let j=0;j<groups.length;j++){
         const [x,y,r,flatten,tilt]=groups[j];c.save();c.translate(x+pointer.x*12,y+pointer.y*8);c.rotate(tilt);c.scale(1,flatten);
-        c.globalAlpha=.3;c.drawImage(this.starGlows[j],-r,-r,r*2,r*2);c.restore();
+        c.globalAlpha=.3*opacity;c.drawImage(this.starGlows[j],-r,-r,r*2,r*2);c.restore();
       }
       const count=this.canvas.clientWidth<600?440:this.clusterStars.length;
       for(let i=0;i<count;i++){
@@ -226,10 +226,10 @@
         // Smooth attraction with a tangential component: a small stellar vortex.
         x+=(vx*.55-vy*.20)*pull;y+=(vy*.55+vx*.20)*pull;
         const light=(.38+.3*s.z+.16*Math.sin(t*.55+s.phase))*(1+pull*.6);
-        c.globalAlpha=Math.min(1,light);
+        c.globalAlpha=Math.min(1,light)*opacity;
         if(s.size>1.1){const radius=s.size*(5+pull*5);c.drawImage(this.starGlows[s.group],x-radius,y-radius,radius*2,radius*2);}
         circle(c,x,y,s.size*(.8+pull*.5),s.group===2?'#ffe1b1':s.group===1?'#ddd3ff':'#c8eeff');
-        if(s.size>2.2){c.globalAlpha=light*.3;c.strokeStyle='#edfaff';c.lineWidth=.6;c.beginPath();c.moveTo(x-5,y);c.lineTo(x+5,y);c.moveTo(x,y-5);c.lineTo(x,y+5);c.stroke();}
+        if(s.size>2.2){c.globalAlpha=light*.3*opacity;c.strokeStyle='#edfaff';c.lineWidth=.6;c.beginPath();c.moveTo(x-5,y);c.lineTo(x+5,y);c.moveTo(x,y-5);c.lineTo(x,y+5);c.stroke();}
       }
       c.restore();
     }
@@ -498,20 +498,20 @@
       const bw=Math.round(w*dpr),bh=Math.round(h*dpr);
       if(this.canvas.width!==bw||this.canvas.height!==bh){this.canvas.width=bw;this.canvas.height=bh;}
       c.setTransform(dpr,0,0,dpr,0,0);this.uiScale=1;
-      c.fillStyle='#060d15';c.fillRect(0,0,w,h);
+      c.fillStyle='#121416';c.fillRect(0,0,w,h);
       const mobile=w<700,px=pointer.x||0,py=pointer.y||0;
       const cx=w*(mobile?.87:.77)+px*9,cy=h*(mobile?.57:.48)+py*7;
       const radius=mobile?Math.min(w*.35,190):Math.min(h*.25,w*.18,270);
       const glow=(x,y,r,rgb,alpha)=>{const g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,'rgba('+rgb+','+alpha+')');g.addColorStop(1,'rgba('+rgb+',0)');circle(c,x,y,r,g);};
-      glow(cx,cy,radius*3.5,'43,108,120',.20);
-      glow(w*.55+Math.sin(t*.035)*w*.07,h*.15,w*.55,'64,62,113',.13);
-      glow(w*.18,h*.9,w*.42,'37,91,100',.12);
+      glow(cx,cy,radius*3.5,'94,112,138',.12);
+      glow(w*.55+Math.sin(t*.035)*w*.07,h*.15,w*.55,'103,107,118',.06);
+      glow(w*.18,h*.9,w*.42,'72,86,108',.05);
       for(const [i,star] of this.stars.entries()){
         const depth=.3+i%4*.24,x=(star.x/1200*w+t*depth*.9)%w-px*depth*9,y=star.y/700*h-py*depth*7;
         circle(c,x,y,star.r*(i%7===0?1:.65),'rgba(205,227,239,'+(star.a*(.5+.12*Math.sin(t*.55+star.p)))+')');
       }
       // Star fields fill the whole window, independent from the planet composition.
-      c.save();c.globalAlpha=.65;this.starClusters(t,pointer,w,h);c.restore();
+      c.save();c.globalAlpha=.2;this.starClusters(t,pointer,w,h);c.restore();
       const tilt=-.32,orbit=(a,rx=radius*1.85,ry=radius*.64)=>({x:cx+Math.cos(a)*rx*Math.cos(tilt)-Math.sin(a)*ry*Math.sin(tilt),y:cy+Math.cos(a)*rx*Math.sin(tilt)+Math.sin(a)*ry*Math.cos(tilt),z:Math.sin(a)});
       for(const scale of [1,1.28,1.62]){c.beginPath();c.ellipse(cx,cy,radius*1.85*scale,radius*.64*scale,tilt,0,TAU);c.strokeStyle=scale===1?'#a3cfcb25':'#a3cfcb10';c.lineWidth=.7;c.stroke();}
       // Tiny markers drift along an outer orbit; there are no abrupt resets.
@@ -524,7 +524,7 @@
       };
       const drawMoon=()=>this.planet({x:moon.x,y:moon.y,r:radius*.13,tint:'#b8b7d1',surface:'crater',name:''});
       if(moon.z<0)drawMoon();if(q.z<0)courier();
-      this.planet({x:cx,y:cy,r:radius,tint:'#76baa9',surface:'gas',name:'',ring:false});
+      this.planet({x:cx,y:cy,r:radius,tint:'#9aacc2',surface:'gas',name:'',ring:false});
       c.save();c.beginPath();c.arc(cx,cy,radius,0,TAU);c.clip();
       for(let i=0;i<9;i++){c.beginPath();c.ellipse(cx+Math.sin(t*.065+i)*radius*.07,cy-radius*.8+i*radius*.2,radius*1.2,radius*.03,-.15,0,TAU);c.lineWidth=radius*.025;c.strokeStyle=i%2?'#b6f7e416':'#052c3d24';c.stroke();}
       const shadow=c.createLinearGradient(cx-radius,cy-radius,cx+radius,cy+radius*.2);shadow.addColorStop(0,'#06101a00');shadow.addColorStop(.46,'#06101a08');shadow.addColorStop(.77,'#06101a95');shadow.addColorStop(1,'#06101aed');c.fillStyle=shadow;c.fillRect(cx-radius,cy-radius,radius*2,radius*2);c.restore();
