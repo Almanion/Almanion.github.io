@@ -5,6 +5,7 @@
   const O=root.Orbital=root.Orbital||{};
   const E=O.Economy||(typeof require==='function'?require('./economy.js'):null);
   const C=O.Cosmetics||(typeof require==='function'?require('./cosmetics.js'):null);
+  const Fleet=O.Fleet||(typeof require==='function'?require('./fleet.js'):null);
   const A=O.Achievements||(typeof require==='function'?require('./achievements.js'):null);
   const M=O.Medals||(typeof require==='function'?require('./medals.js'):null);
   const Campaign=O.Campaign||(typeof require==='function'?require('./campaign.js'):null);
@@ -28,7 +29,7 @@
   const RANKS=[{xp:0,name:'Стажёр'},{xp:180,name:'Курьер'},{xp:600,name:'Навигатор'},
     {xp:1300,name:'Пилот дальних трасс'},{xp:2300,name:'Капитан'},{xp:3600,name:'Звёздный почтальон'},
     {xp:5200,name:'Исследователь границ'},{xp:7000,name:'Хранитель маяков'},{xp:8000,name:'Легенда маршрутов'},{xp:12000,name:'Мастер развилок'},{xp:18000,name:'Архитектор путей'},{xp:23000,name:'Хранитель горизонтов'},{xp:27000,name:'Голос созвездий'},{xp:29000,name:'За пределами карты'}];
-  const SKINS=[{id:'mint',name:'Мята',color:'#6af4cd',xp:0},{id:'ice',name:'Полярис',color:'#8acfff',xp:600},
+  const SKINS=[{id:'mint',name:'Титан',color:'#91a6c2',xp:0},{id:'ice',name:'Полярис',color:'#8acfff',xp:600},
     {id:'gold',name:'Солнечный ветер',color:'#ffc37c',xp:2300},{id:'nova',name:'Сверхновая',color:'#c4a3ff',xp:3600},
     {id:'coral',name:'Коралловая заря',color:'#ff958a',xp:7000},{id:'pearl',name:'Белый карлик',color:'#f2f1d7',xp:8000},
     {id:'twin',name:'Двойная звезда',color:'#98b9ff',xp:10000,gate:'both4',requirement:'Обе ветви четырёх карт'},
@@ -99,7 +100,7 @@
   const achievements=A.create(legacyAchievements);
   function fresh(){return {game:'orbital-courier',version:8,credits:E.START_CREDITS,data:0,xp:0,
     upgrades:{scanner:0,magnet:0,docking:0,engine:0},records:{},flags:{},achievements:[],receipts:[],
-    campaignRevision:Campaign.revision,campaignAccess:[],settings:{sound:true,volume:.6,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false},courses:{},skin:'mint',trail:'vector',lastLevel:Campaign.order[0],wishlist:null,difficulty:'normal'};}
+    campaignRevision:Campaign.revision,campaignAccess:[],settings:{sound:true,volume:.6,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false},courses:{},model:'courier',skin:'mint',trail:'vector',lastLevel:Campaign.order[0],wishlist:null,difficulty:'normal'};}
   function legacyUnlocked(p,id){
     if(!Number.isInteger(id)||id<0||id>=count())return false;
     if(id===0)return true;
@@ -244,6 +245,7 @@
     p.achievements=Array.isArray(raw.achievements)?[...new Set(raw.achievements.filter(x=>achievements.some(a=>a.id===x)))]:[];
     for(const k of Object.keys(p.settings))if(typeof raw.settings?.[k]==='boolean')p.settings[k]=raw.settings[k];
     p.skin=SKINS.some(s=>s.id===raw.skin)?raw.skin:'mint';p.wishlist=Object.hasOwn(UPGRADE_DEFS,raw.wishlist)?raw.wishlist:null;
+    p.model=Fleet.MODELS.some(m=>m.id===raw.model&&C.unlocked(p,m))?raw.model:'courier';
     p.trail=C.TRAILS.some(t=>t.id===raw.trail&&C.unlocked(p,t))?raw.trail:'vector';
     p.difficulty=raw.difficulty==='pro'?'pro':'normal';
     // Two finite, local aiming presets per level and difficulty. No scripts,

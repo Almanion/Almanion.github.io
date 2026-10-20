@@ -25,3 +25,23 @@ test('detailed craft models retain colour, open docking aperture and bounded tex
  expect(result).toEqual({hits:true,colours:3,center:0,cache:12,transform:1});expect(errors).toEqual([]);
  await page.locator('#craftBoard').screenshot({path:info.outputPath('courier-and-station.png')});
 });
+test('five cohesive hulls and eleven trails have distinct artwork with no portal bridge',async({page},info)=>{
+ await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
+ await page.goto('/games/orbital-courier/offline.html');
+ const result=await page.evaluate(()=>{
+  const O=Orbital,c=document.createElement('canvas');c.width=1200;c.height=1150;c.id='fleetGallery';c.style.cssText='position:fixed;inset:0;z-index:99999;width:1200px;height:1150px';document.body.append(c);
+  const g=c.getContext('2d');g.fillStyle='#12151c';g.fillRect(0,0,c.width,c.height);g.font='24px sans-serif';g.fillStyle='#e5edf9';g.fillText('ФЛОТ / МОДЕЛИ И СЛЕДЫ',40,45);
+  const models=O.Fleet.MODELS.map((m,i)=>{const x=120+i*235;O.drawShip(g,x,160,-.14,'#91a6c2',4,false,0,m.id);g.fillStyle='#b8c9e1';g.font='16px sans-serif';g.fillText(m.name,x-40,255);return O.drawShip.texture('#91a6c2',m.id).toDataURL();});
+  const images=[],reduced=[],points=Array.from({length:90},(_,i)=>({x:8+i*3,y:65-Math.sin(i/89*1.6)*30})),before=JSON.stringify(points);
+  for(const [i,t]of O.Cosmetics.TRAILS.entries()){
+   const tile=document.createElement('canvas');tile.width=300;tile.height=120;const ctx=tile.getContext('2d');
+   O.Cosmetics.drawTrail(ctx,points,t.id,2,'#91a6c2',true,2);const first=tile.toDataURL();images.push(first);ctx.clearRect(0,0,300,120);O.Cosmetics.drawTrail(ctx,points,t.id,900,'#91a6c2',true,2);reduced.push(first===tile.toDataURL());
+   const x=30+i%3*390,y=315+Math.floor(i/3)*200;g.drawImage(tile,x,y,360,144);g.fillStyle='#b8c9e1';g.font='16px sans-serif';g.fillText(t.name,x+12,y+165);
+  }
+  const tile=document.createElement('canvas');tile.width=300;tile.height=100;const ctx=tile.getContext('2d'),portal=[{x:0,y:50},{x:60,y:50},{x:240,y:50,break:true},{x:280,y:50}];
+  O.Cosmetics.drawTrail(ctx,portal,'comet',1,'#91a6c2',true,1);const bridge=ctx.getImageData(80,0,120,100).data.some((n,i)=>i%4===3&&n>0);
+  return {models:new Set(models).size,trails:new Set(images).size,reduced:reduced.every(Boolean),unchanged:before===JSON.stringify(points),bridge,transform:ctx.getTransform().a};
+ });
+ expect(result).toEqual({models:5,trails:11,reduced:true,unchanged:true,bridge:false,transform:1});
+ await page.locator('#fleetGallery').screenshot({path:info.outputPath('fleet-and-trails.png')});
+});

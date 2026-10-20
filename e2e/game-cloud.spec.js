@@ -44,6 +44,20 @@ async function deliver(page){
         return {credits:A.profile.credits,data:A.profile.data,xp:A.profile.xp,records:A.profile.records,upgrades:A.profile.upgrades};
     });
 }
+test('older cloud saves gain the default hull without conflict and new hulls reach another device',async({browser})=>{
+ const remote=cloud(),old=structuredClone(require('../game-source/orbital-courier/docs/completed-v8-profile.json'));
+ delete old.model;remote.records.set('pilot',{version:1,revision:1,save:JSON.stringify(old),updatedAt:1});
+ const a=await remote.device(browser,{uid:'pilot'});let b;
+ try{
+  const funds=await a.page.evaluate(raw=>{const A=Orbital.App;A.profile=Orbital.Progress.sanitize(raw);A.save();return[A.profile.credits,A.profile.data,A.profile.xp];},old);
+  await connect(a.page);await ready(a.page);expect(remote.writes).toHaveLength(0);
+  expect(await a.page.evaluate(()=>Orbital.App.profile.model)).toBe('courier');
+  await a.page.evaluate(()=>{Orbital.App.profile.model='swift';Orbital.App.save();});
+  await expect.poll(()=>JSON.parse(remote.records.get('pilot').save).model).toBe('swift');
+  b=await remote.device(browser,{uid:'pilot'});await connect(b.page);await ready(b.page);
+  expect(await b.page.evaluate(()=>{const p=Orbital.App.profile;return[p.model,p.credits,p.data,p.xp];})).toEqual(['swift',...funds]);
+ }finally{await a.context.close();await b?.context.close();}
+});
 for(const width of [390,1366])test('each completed contract survives immediate Next, reload and a second device '+width,async({browser},testInfo)=>{
     const remote=cloud(),a=await remote.device(browser,{uid:'pilot',width,height:844});
     let b;

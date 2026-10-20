@@ -42,7 +42,7 @@
 </section>
 <section class="screen" hidden="" id="hangar">
  <header class="hangar-heading"><div><div class="eyebrow">ОРБИТАЛЬНАЯ ВЕРФЬ / ДОК 07</div><h2>Твой ангар<span>.</span></h2></div><div id="hangarFunds" class="hangar-wallet" aria-label="Ресурсы"></div><button class="button quiet" data-action="return-flight">К контракту ↗</button></header>
- <div class="hangar-view-tabs" role="tablist" aria-label="Раздел ангара"><button id="hangarModulesTab" role="tab" aria-selected="true" aria-controls="hangarEquipment" data-action="hangar:view" data-view="modules">Оснащение</button><button id="hangarStyleTab" role="tab" aria-selected="false" aria-controls="hangarStyling" tabindex="-1" data-action="hangar:view" data-view="style">Оформление</button><span>Подготовься к следующему рейсу.</span></div>
+ <div class="hangar-view-tabs" role="tablist" aria-label="Раздел ангара"><button id="hangarModulesTab" role="tab" aria-selected="true" aria-controls="hangarEquipment" data-action="hangar:view" data-view="modules">Оснащение</button><button id="hangarStyleTab" role="tab" aria-selected="false" aria-controls="hangarStyling" tabindex="-1" data-action="hangar:view" data-view="style">Скины и следы</button><span>Подготовься к следующему рейсу.</span></div>
  <div class="hangar-workspace">
   <div class="shop-summary dock-scene" id="shopSummary"></div>
   <section id="hangarEquipment" class="hangar-equipment" role="tabpanel" aria-labelledby="hangarModulesTab">
@@ -51,8 +51,8 @@
    <div class="upgrade-grid" id="upgradeGrid"></div>
   </section>
   <section id="hangarStyling" class="cosmetics-section hangar-styling" role="tabpanel" aria-labelledby="hangarStyleTab" hidden>
-   <div class="cosmetics-heading"><div><div class="eyebrow">ПРИМЕРОЧНАЯ</div><h3 id="cosmeticsTitle">Твоя подпись в космосе</h3></div><div aria-label="Внешний вид капсулы" class="cosmetic-tabs" role="tablist"><button aria-controls="skinPanel" aria-selected="true" data-action="hangar:collection" data-tab="skins" id="skinTab" role="tab">Окраска</button><button aria-controls="trailPanel" aria-selected="false" data-action="hangar:collection" data-tab="trails" id="trailTab" role="tab">След</button></div></div>
-   <div class="fitting-collection"><div aria-labelledby="skinTab" id="skinPanel" role="tabpanel"><div class="skin-grid" id="skinGrid"></div></div><div aria-labelledby="trailTab" hidden="" id="trailPanel" role="tabpanel"><div class="trail-grid" id="trailGrid"></div></div><p class="cosmetic-xp" id="cosmeticXP"></p></div>
+   <div class="cosmetics-heading"><div><div class="eyebrow">СКИНЫ КОРАБЛЯ</div><h3 id="cosmeticsTitle">Твой силуэт. Твой стиль.</h3></div><div aria-label="Внешний вид капсулы" class="cosmetic-tabs" role="tablist"><button aria-controls="modelPanel" aria-selected="true" data-action="hangar:collection" data-tab="models" id="modelTab" role="tab">Модели</button><button aria-controls="skinPanel" aria-selected="false" data-action="hangar:collection" data-tab="skins" id="skinTab" role="tab">Окраска</button><button aria-controls="trailPanel" aria-selected="false" data-action="hangar:collection" data-tab="trails" id="trailTab" role="tab">След</button></div></div>
+   <div class="fitting-collection"><div aria-labelledby="modelTab" id="modelPanel" role="tabpanel"><div class="model-grid" id="modelGrid"></div></div><div aria-labelledby="skinTab" hidden id="skinPanel" role="tabpanel"><div class="skin-grid" id="skinGrid"></div></div><div aria-labelledby="trailTab" hidden="" id="trailPanel" role="tabpanel"><div class="trail-grid" id="trailGrid"></div></div><p class="cosmetic-xp" id="cosmeticXP"></p></div>
    <div class="fitting-footer" id="fittingFooter"></div>
    <div hidden><canvas id="trailPreview" width="840" height="230" aria-label="Предпросмотр следа"></canvas><strong id="trailPreviewName"></strong><p id="trailPreviewDescription"></p></div>
   </section>
@@ -127,7 +127,7 @@
 <script src="src/routes.js"></script><script src="src/achievements.js"></script><script src="src/physics.js"></script>
 <script src="src/levels.js"></script>
 <script src="src/campaign.js"></script>
-<script src="src/cosmetics.js"></script><script src="src/medals.js"></script><script src="src/progression.js"></script>
+<script src="src/cosmetics.js"></script><script src="src/fleet.js"></script><script src="src/medals.js"></script><script src="src/progression.js"></script>
 <script src="src/audio.js"></script>
 <script src="src/renderer.js"></script>
 <script src="src/docking-preview.js"></script>

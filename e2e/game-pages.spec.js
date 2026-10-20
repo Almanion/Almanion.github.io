@@ -69,12 +69,16 @@ test('native links load new documents and preserve profile, course context and b
 });
 
 test('Control and middle clicks keep the current page while opening real destinations',async({page,context})=>{
- await context.route('**/*',route=>new URL(route.request().url()).hostname==='127.0.0.1'?route.continue():route.abort());
+ // Leave native popup navigation outside request interception. Chromium can
+ // otherwise pause a background tab's first document before it is attached.
+ await page.unrouteAll({behavior:'wait'});
+ await context.route(/^https?:\/\/(?!127\.0\.0\.1(?::|\/))/,route=>route.abort());
  await page.goto(base);
  for(const options of [{modifiers:['Control']},{button:'middle'}]){
   await page.bringToFront();
   const [other]=await Promise.all([context.waitForEvent('page'),page.locator('.topbar nav a[data-page=campaign]').click(options)]);
-  await page.keyboard.up('Control');await other.bringToFront();await other.keyboard.up('Control');await other.waitForURL(new RegExp('/contracts/$'),{waitUntil:'domcontentloaded'});
+  await page.keyboard.up('Control');await other.bringToFront();
+  await expect(other,JSON.stringify(options)+' opened '+other.url()).toHaveURL(new RegExp('/contracts/$'));
   await expect(other.locator('body')).toHaveAttribute('data-page','campaign');
   await expect.poll(()=>other.evaluate(()=>window.Orbital?.App?.screen)).toBe('campaign');
   await expect(page).toHaveURL(new RegExp('/games/orbital-courier/$'));await expect(page.locator('#home')).toBeVisible();

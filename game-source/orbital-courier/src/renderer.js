@@ -27,58 +27,7 @@
     for(let i=1;i<points.length;i++){if(points[i].break)ctx.moveTo(points[i].x,points[i].y);else ctx.lineTo(points[i].x,points[i].y);}
     ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);ctx.stroke();ctx.setLineDash([]);
   }
-  const shipTextures=new Map();
-  function shipTexture(color){
-    if(shipTextures.has(color))return shipTextures.get(color);
-    const canvas=document.createElement('canvas');canvas.width=480;canvas.height=360;
-    const c=canvas.getContext('2d');c.translate(240,180);c.scale(10,10);c.lineJoin='round';c.lineCap='round';
-    const metal=(y1,y2)=>{const g=c.createLinearGradient(0,y1,0,y2);g.addColorStop(0,'#f0f7ee');g.addColorStop(.27,'#a6bdc0');g.addColorStop(.52,'#ecf5e9');g.addColorStop(.8,'#6d8998');g.addColorStop(1,'#243d50');return g;};
-    const panel=(pts,fill,edge='#7895a2',width=.45)=>{c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.fillStyle=fill;c.fill();c.strokeStyle=edge;c.lineWidth=width;c.stroke();};
-    // Swept cargo skids and twin nacelles give a readable silhouette at flight scale.
-    for(const side of [-1,1]){
-      panel([[-12,side*4],[2,side*5],[-7,side*14],[-16,side*13],[-13,side*9]],metal(-14,14));
-      panel([[-10,side*8],[-3,side*7],[-8,side*12],[-13,side*12]],'#233f51');
-      path(c,[{x:-13,y:side*12},{x:-8,y:side*12},{x:-4,y:side*8}],color,.7);
-      c.save();c.translate(-8,side*8);c.fillStyle='#101e2b';c.fillRect(-9,-2.6,12,5.2);
-      c.fillStyle=metal(-3,3);c.beginPath();c.roundRect(-7,-2.6,14,5.2,2);c.fill();c.strokeStyle='#acc3c9';c.lineWidth=.4;c.stroke();
-      c.fillStyle='#1d3346';c.fillRect(-7,-2,3,4);c.fillStyle=color;c.fillRect(-7.6,-1.7,.8,3.4);
-      c.strokeStyle='#567581';c.lineWidth=.3;for(let x=-1;x<5;x+=1.2){c.beginPath();c.moveTo(x,-1.4);c.lineTo(x,1.4);c.stroke();}
-      c.strokeStyle='#f6f3df';c.beginPath();c.moveTo(-3,-2);c.lineTo(4,-2);c.stroke();c.restore();
-    }
-    const hull=()=>{c.beginPath();c.moveTo(21,0);c.bezierCurveTo(14,-5.5,8,-7,0,-6.8);c.lineTo(-11,-5.3);c.quadraticCurveTo(-14,0,-11,5.3);c.lineTo(0,6.8);c.bezierCurveTo(8,7,14,5.5,21,0);c.closePath();};
-    hull();c.fillStyle=metal(-7,7);c.fill();c.strokeStyle='#e2eee4';c.lineWidth=.5;c.stroke();
-    c.save();hull();c.clip();const random=rng(9239);
-    for(let i=0;i<240;i++){const x=-13+random()*35,y=-7+random()*14;c.strokeStyle=i%2?'#09243612':'#ffffff16';c.lineWidth=.07;c.beginPath();c.moveTo(x,y);c.lineTo(x+random()*3+.2,y);c.stroke();}
-    panel([[-11,-4.8],[0,-6.2],[6,-5.2],[2,-2.8],[-10,-2.8]],'#edf2df','#879da2',.25);
-    panel([[-11,4.8],[0,6.2],[6,5.2],[2,2.8],[-10,2.8]],'#819daa','#56727f',.25);
-    path(c,[{x:-10,y:-5},{x:0,y:-6},{x:5,y:-5.2}],color,1.1);
-    path(c,[{x:-10,y:5},{x:0,y:6},{x:5,y:5.2}],color,.65);
-    for(let x=-9;x<=1;x+=3){path(c,[{x,y:-5.2},{x:x+.8,y:-3}], '#647e8d88',.22);path(c,[{x,y:5.2},{x:x+.8,y:3}], '#35556588',.22);}
-    c.restore();
-    // Recessed amber freight bay, locks, service seams and a polished cockpit.
-    c.fillStyle='#1c3443';c.beginPath();c.roundRect(-9,-2.6,10,5.2,.8);c.fill();c.strokeStyle='#77969c';c.lineWidth=.4;c.stroke();
-    const cargo=c.createLinearGradient(-7,-2,-2,2);cargo.addColorStop(0,'#f4d69b');cargo.addColorStop(.5,'#ac824b');cargo.addColorStop(1,'#69533b');
-    c.fillStyle=cargo;c.fillRect(-7.7,-1.8,6.7,3.6);c.strokeStyle='#f9e6b6';c.lineWidth=.25;c.strokeRect(-7.7,-1.8,6.7,3.6);
-    for(const x of [-6.5,-2.7]){c.fillStyle='#283b43';c.fillRect(x,-2,.65,4);c.fillStyle='#cfded6';c.fillRect(x-.1,-.55,.85,1.1);}
-    const glass=c.createLinearGradient(5,-4,11,4);glass.addColorStop(0,'#d9fff3');glass.addColorStop(.2,color);glass.addColorStop(.4,'#28617b');glass.addColorStop(.75,'#102c42');glass.addColorStop(1,'#071420');
-    c.beginPath();c.moveTo(14.5,0);c.quadraticCurveTo(10,-4.1,5,-3.8);c.quadraticCurveTo(2.3,0,5,3.8);c.quadraticCurveTo(10,4.1,14.5,0);c.fillStyle=glass;c.fill();c.strokeStyle='#193346';c.lineWidth=.7;c.stroke();
-    path(c,[{x:5.3,y:-2.9},{x:8.7,y:-2.4},{x:10.8,y:-1.5}], '#e4fff2bc',.45);
-    path(c,[{x:8,y:-3.4},{x:7.7,y:3.4}], '#183749b0',.4);
-    path(c,[{x:16.4,y:-1.2},{x:19,y:0},{x:16.4,y:1.2}], '#546e80',.3);
-    for(const side of [-1,1])for(const x of [-9,-3,2])circle(c,x,side*4.5,.24,'#f8fff4','#536e7e',.12);
-    c.fillStyle='#435e69';c.font='bold 1.65px ui-monospace,Consolas,monospace';c.textAlign='center';c.fillText('239',-2,-4.1);
-    circle(c,-10,-6,.55,'#dbfff2');circle(c,-10,6,.55,color);
-    if(shipTextures.size>=16)shipTextures.delete(shipTextures.keys().next().value);shipTextures.set(color,canvas);return canvas;
-  }
-  function ship(ctx,x,y,angle,color,scale=1,thrust=false,t=0){
-    ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.scale(scale,scale);
-    if(thrust)for(const side of [-1,1]){
-      const length=18+Math.sin(t*11+side)*2,g=ctx.createLinearGradient(-14,0,-14-length,0);g.addColorStop(0,'#dffff1');g.addColorStop(.18,color);g.addColorStop(.65,color+'50');g.addColorStop(1,color+'00');
-      ctx.beginPath();ctx.moveTo(-15,side*8-1.7);ctx.quadraticCurveTo(-22,side*8-2.6,-15-length,side*8);ctx.quadraticCurveTo(-22,side*8+2.6,-15,side*8+1.7);ctx.closePath();ctx.fillStyle=g;ctx.fill();
-    }
-    ctx.drawImage(shipTexture(color),-24,-18,48,36);ctx.restore();
-  }
-  ship.texture=shipTexture;
+  const ship=O.Fleet.draw;
   class Renderer {
     constructor(canvas){
       this.canvas=canvas;this.ctx=canvas.getContext('2d');
@@ -474,13 +423,13 @@
       }
       if(view.state){
         const s=view.state;
-        if(!['crash','lost','preview'].includes(s.status))ship(c,s.x,s.y,Math.atan2(s.vy,s.vx),color,Math.min(1.65,this.uiScale),false,t);
+        if(!['crash','lost','preview'].includes(s.status))ship(c,s.x,s.y,Math.atan2(s.vy,s.vx),color,Math.min(1.65,this.uiScale),false,t,view.model);
       }else if(!view.hideShip){
         const angle=-P.rad(view.angle||0);const len=view.aimPointer?Math.hypot(view.aimPointer.x-level.start.x,view.aimPointer.y-level.start.y):40+(view.speed||200)*0.35;
         c.save();c.translate(level.start.x,level.start.y);c.rotate(angle);
         c.strokeStyle=color+'80';c.lineWidth=1.3;c.beginPath();c.moveTo(33,0);c.lineTo(len,0);c.lineTo(len-7,-4);c.moveTo(len,0);c.lineTo(len-7,4);c.stroke();c.restore();
         if(view.aimPointer){const p=view.aimPointer;circle(c,p.x,p.y,9*this.uiScale,null,color+'90',1.5);text(c,Math.round(view.speed)+' ед./с',p.x,p.y-18*this.uiScale,11*this.uiScale,'#e0fff5','center');}
-        ship(c,level.start.x,level.start.y,angle,color,Math.min(1.75,1.1*this.uiScale));
+        ship(c,level.start.x,level.start.y,angle,color,Math.min(1.75,1.1*this.uiScale),false,t,view.model);
       }
       for(const p of view.particles||[]){
         c.globalAlpha=Math.max(0,p.life/p.maxLife);circle(c,p.x,p.y,p.r,p.color);c.globalAlpha=1;
@@ -490,7 +439,7 @@
       }
       c.restore();
     }
-    hero(t,color='#6af4cd',pointer={x:0,y:0}){
+    hero(t,color='#6af4cd',pointer={x:0,y:0},model='courier',trailStyle='vector',reduced=false){
       // The scene uses viewport pixels; spheres retain their shape at every ratio.
       const c=this.ctx,w=this.canvas.clientWidth,h=this.canvas.clientHeight;
       if(!w||!h)return;
@@ -518,9 +467,9 @@
       for(let i=0;i<8;i++){const p=orbit(i*TAU/8+t*.012,radius*3,radius*1.04);circle(c,p.x,p.y,1.5,'#a7d5cd65');}
       const theta=t*.16-.65,q=orbit(theta),tangent=orbit(theta+.002),moon=orbit(t*.065+2.6,radius*2.3,radius*.8);
       const courier=()=>{const trail=[];for(let i=0;i<65;i++){const p=orbit(theta-.7+i*.7/64);trail.push(p);}
-        path(c,trail,color+'10',9);path(c,trail,color+'35',3);path(c,trail.slice(40),color+'a0',1.5);
+        O.Cosmetics.drawTrail(c,trail,trailStyle,t,color,reduced,mobile?.8:1.1);
         glow(q.x,q.y,24,'149,242,212',.14);
-        ship(c,q.x,q.y,Math.atan2(tangent.y-q.y,tangent.x-q.x),color,mobile?.85:1.1,true,t);
+        ship(c,q.x,q.y,Math.atan2(tangent.y-q.y,tangent.x-q.x),color,mobile?.85:1.1,true,t,model);
       };
       const drawMoon=()=>this.planet({x:moon.x,y:moon.y,r:radius*.13,tint:'#b8b7d1',surface:'crater',name:''});
       if(moon.z<0)drawMoon();if(q.z<0)courier();

@@ -1022,7 +1022,7 @@ body[data-page=hangar]:not([data-page=home]):not([data-page=play]) main{max-widt
 #hangar .cosmetics-heading{display:block;padding:20px 22px 0;margin:0}
 #hangar .cosmetics-heading .eyebrow{font:9px var(--sans);letter-spacing:.12em;color:#8193ab}
 #hangar .cosmetics-heading h3{font:500 21px/1.3 var(--sans);letter-spacing:-.035em;margin:6px 0 16px;color:#dee8f6}
-#hangar .cosmetic-tabs{display:flex;gap:20px;border-bottom:1px solid #ffffff10;margin:0}
+#hangar .cosmetic-tabs{display:flex;gap:20px;border:0;border-bottom:1px solid #ffffff10;border-radius:0;margin:0;padding:0;background:none}
 #hangar .cosmetic-tabs button{flex:1;min-height:44px;padding:8px 0 12px;border:0;border-radius:0;font:12px var(--sans);color:#7f91aa;background:none}
 #hangar .cosmetic-tabs button[aria-selected=true]{box-shadow:inset 0 -2px #b5c8e3;color:#d7e5f8;background:none}
 #hangar .fitting-collection{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:16px 22px}
@@ -1037,6 +1037,22 @@ body[data-page=hangar]:not([data-page=home]):not([data-page=play]) main{max-widt
 #hangar .skin-card small,#hangar .trail-card-status{font:9px/1.5 var(--sans);color:#8c9fb8;margin:0;white-space:normal}
 #hangar .trail-card-description{display:none}
 #hangar .trail-card>svg{width:76px;height:36px;align-self:flex-start;margin:0}
+#hangar .model-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+#hangar .model-card{display:flex;flex-direction:column;align-items:stretch;gap:7px;min-width:0;padding:12px;border:1px solid #ffffff12;border-radius:10px;background:#11182066;color:#aab8cb;text-align:left;cursor:pointer}
+#hangar .model-card:hover{background:#b6cae40a;border-color:#acc8eb44}
+#hangar .model-card.selected{border-color:#b5c8e38c;background:#a6bddf0c}
+#hangar .model-card.locked{border-style:dashed}
+#hangar .model-card-title{display:flex;align-items:baseline;justify-content:space-between;gap:5px}
+#hangar .model-card-title strong{font:500 13px/1.4 var(--sans);color:#d3deee}
+#hangar .model-card-title small{font:9px var(--mono);color:#8195b0}
+#hangar .model-card-description{display:none}
+#hangar .model-card-status{font:10px/1.5 var(--sans);color:#a4b7d1}
+#hangar .fitting-art{display:block;width:100%;height:auto;aspect-ratio:300/132;object-fit:contain;margin:0}
+#hangar .model-card .fitting-art{height:64px}
+#hangar .skin-shape{width:100%;height:auto}
+#hangar .skin-card,#hangar .trail-card{gap:7px}
+#hangar .skin-card small,#hangar .trail-card-status{font-size:10px}
+#hangar .upgrade-plan>summary>span{display:none}
 #hangar .cosmetic-xp{font:10px/1.6 var(--sans);color:#8498b3;margin:14px 0 0}
 #hangar .fitting-footer{padding:14px 22px 18px;border-top:1px solid #ffffff14;background:#20242b;flex:none}
 #hangar .fitting-footer strong{font:500 12px/1.5 var(--sans);color:#c2d2e9}
@@ -1902,7 +1918,7 @@ body.high-contrast .mission-status,body.high-contrast .achievement-card p,body.h
 </section>
 <section class="screen" hidden="" id="hangar">
  <header class="hangar-heading"><div><div class="eyebrow">ОРБИТАЛЬНАЯ ВЕРФЬ / ДОК 07</div><h2>Твой ангар<span>.</span></h2></div><div id="hangarFunds" class="hangar-wallet" aria-label="Ресурсы"></div><button class="button quiet" data-action="return-flight">К контракту ↗</button></header>
- <div class="hangar-view-tabs" role="tablist" aria-label="Раздел ангара"><button id="hangarModulesTab" role="tab" aria-selected="true" aria-controls="hangarEquipment" data-action="hangar:view" data-view="modules">Оснащение</button><button id="hangarStyleTab" role="tab" aria-selected="false" aria-controls="hangarStyling" tabindex="-1" data-action="hangar:view" data-view="style">Оформление</button><span>Подготовься к следующему рейсу.</span></div>
+ <div class="hangar-view-tabs" role="tablist" aria-label="Раздел ангара"><button id="hangarModulesTab" role="tab" aria-selected="true" aria-controls="hangarEquipment" data-action="hangar:view" data-view="modules">Оснащение</button><button id="hangarStyleTab" role="tab" aria-selected="false" aria-controls="hangarStyling" tabindex="-1" data-action="hangar:view" data-view="style">Скины и следы</button><span>Подготовься к следующему рейсу.</span></div>
  <div class="hangar-workspace">
   <div class="shop-summary dock-scene" id="shopSummary"></div>
   <section id="hangarEquipment" class="hangar-equipment" role="tabpanel" aria-labelledby="hangarModulesTab">
@@ -1911,8 +1927,8 @@ body.high-contrast .mission-status,body.high-contrast .achievement-card p,body.h
    <div class="upgrade-grid" id="upgradeGrid"></div>
   </section>
   <section id="hangarStyling" class="cosmetics-section hangar-styling" role="tabpanel" aria-labelledby="hangarStyleTab" hidden>
-   <div class="cosmetics-heading"><div><div class="eyebrow">ПРИМЕРОЧНАЯ</div><h3 id="cosmeticsTitle">Твоя подпись в космосе</h3></div><div aria-label="Внешний вид капсулы" class="cosmetic-tabs" role="tablist"><button aria-controls="skinPanel" aria-selected="true" data-action="hangar:collection" data-tab="skins" id="skinTab" role="tab">Окраска</button><button aria-controls="trailPanel" aria-selected="false" data-action="hangar:collection" data-tab="trails" id="trailTab" role="tab">След</button></div></div>
-   <div class="fitting-collection"><div aria-labelledby="skinTab" id="skinPanel" role="tabpanel"><div class="skin-grid" id="skinGrid"></div></div><div aria-labelledby="trailTab" hidden="" id="trailPanel" role="tabpanel"><div class="trail-grid" id="trailGrid"></div></div><p class="cosmetic-xp" id="cosmeticXP"></p></div>
+   <div class="cosmetics-heading"><div><div class="eyebrow">СКИНЫ КОРАБЛЯ</div><h3 id="cosmeticsTitle">Твой силуэт. Твой стиль.</h3></div><div aria-label="Внешний вид капсулы" class="cosmetic-tabs" role="tablist"><button aria-controls="modelPanel" aria-selected="true" data-action="hangar:collection" data-tab="models" id="modelTab" role="tab">Модели</button><button aria-controls="skinPanel" aria-selected="false" data-action="hangar:collection" data-tab="skins" id="skinTab" role="tab">Окраска</button><button aria-controls="trailPanel" aria-selected="false" data-action="hangar:collection" data-tab="trails" id="trailTab" role="tab">След</button></div></div>
+   <div class="fitting-collection"><div aria-labelledby="modelTab" id="modelPanel" role="tabpanel"><div class="model-grid" id="modelGrid"></div></div><div aria-labelledby="skinTab" hidden id="skinPanel" role="tabpanel"><div class="skin-grid" id="skinGrid"></div></div><div aria-labelledby="trailTab" hidden="" id="trailPanel" role="tabpanel"><div class="trail-grid" id="trailGrid"></div></div><p class="cosmetic-xp" id="cosmeticXP"></p></div>
    <div class="fitting-footer" id="fittingFooter"></div>
    <div hidden><canvas id="trailPreview" width="840" height="230" aria-label="Предпросмотр следа"></canvas><strong id="trailPreviewName"></strong><p id="trailPreviewDescription"></p></div>
   </section>
@@ -2459,12 +2475,12 @@ O.Achievements={CATEGORIES,create};if(typeof module!=='undefined'&&module.export
   'use strict';
   const O=root.Orbital=root.Orbital||{};
   const TRAILS=Object.freeze([
-    {id:'vector',name:'Вектор',xp:0,color:'#6af4cd',description:'Мятное лезвие со световыми шевронами.',length:92},
+    {id:'vector',name:'Вектор',xp:0,color:'#6af4cd',description:'Тонкая световая нить в цвет корпуса.',length:92},
     {id:'comet',name:'Комета',xp:400,color:'#ffd396',description:'Золотое пламя и россыпь быстрых искр.',length:156},
     {id:'ion',name:'Ионный след',xp:1000,color:'#8fdcff',description:'Две ледяные струи с магнитными перемычками.',length:132},
     {id:'photon',name:'Фотоны',xp:2100,color:'#eff6ff',description:'Отдельные ромбы света с мерцающими ядрами.',length:150},
-    {id:'plasma',name:'Плазма',xp:3600,color:'#ff9fba',description:'Розовые разряды внутри горячей плазменной ленты.',length:144},
-    {id:'aurora',name:'Полярное сияние',xp:5200,color:'#95e6dd',description:'Переплетение бирюзовой и сиреневой лент.',length:180},
+    {id:'plasma',name:'Плазма',xp:3600,color:'#ff9fba',description:'Две плавные спирали горячей розовой плазмы.',length:144},
+    {id:'aurora',name:'Полярное сияние',xp:5200,color:'#95e6dd',description:'Прозрачные вуали ледяного и сиреневого света.',length:180},
     {id:'rift',name:'Эхо разлома',xp:8000,color:'#bda4ff',description:'Цепочка раскрывающихся фиолетовых разломов.',length:172},
     {id:'fork',name:'Два вектора',xp:10000,gate:'both4',requirement:'Обе ветви четырёх карт',color:'#97bfff',description:'Расходящиеся потоки с острыми развилками.',length:172},
     {id:'tidal',name:'Резонанс',xp:14000,gate:'sector18',requirement:'Все карты «Развилок приливов»',color:'#ffe0a7',description:'Золотые волновые фронты вдоль орбиты.',length:180},
@@ -2498,57 +2514,66 @@ O.Achievements={CATEGORIES,create};if(typeof module!=='undefined'&&module.export
     }
     return out;
   }
+  function trace(c,pts,move=true){
+    c[move?'moveTo':'lineTo'](pts[0].x,pts[0].y);
+    for(let i=1;i<pts.length-1;i++)c.quadraticCurveTo(pts[i].x,pts[i].y,(pts[i].x+pts[i+1].x)/2,(pts[i].y+pts[i+1].y)/2);
+    c.lineTo(pts.at(-1).x,pts.at(-1).y);
+  }
   function stroke(c,pts,color,width,offset=()=>0){
-    if(pts.length<2)return;c.beginPath();
-    pts.forEach((p,i)=>{const o=offset(p,i);const x=p.x+p.nx*o,y=p.y+p.ny*o;i?c.lineTo(x,y):c.moveTo(x,y);});
-    c.strokeStyle=color;c.lineWidth=width;c.stroke();
+    const row=pts.map((p,i)=>{const o=offset(p,i);return{x:p.x+p.nx*o,y:p.y+p.ny*o};});
+    c.beginPath();trace(c,row);c.strokeStyle=color;c.lineWidth=width;c.stroke();
   }
   function drawTrail(c,points,id='vector',time=0,color='#6af4cd',reduced=false,scale=1){
-    const def=find(id),pts=samples(recent(points,def.length),44);if(pts.length<2)return;
+    const def=find(id),pts=samples(recent(points,def.length),54);if(pts.length<2)return;
     const t=reduced?0:time,base=def.id==='vector'?color:def.color,k=scale;
     c.save();c.lineCap='round';c.lineJoin='round';c.setLineDash([]);
-    const grad=(a,b=base)=>{const g=c.createLinearGradient(pts[0].x,pts[0].y,pts.at(-1).x,pts.at(-1).y);g.addColorStop(0,a+'00');g.addColorStop(.4,a+'60');g.addColorStop(1,b);return g;};
-    const glow=grad(base),thin=grad(base,'#f0fffc'),wave=p=>Math.sin(p.f*15-t*2)*(1-p.f)*7*k;
-    const ribbon=(col,width,offset=()=>0)=>{c.beginPath();for(const side of [-1,1]){const row=side===1?pts:[...pts].reverse();row.forEach((p,i)=>{const o=offset(p)+side*width*Math.sin(Math.PI*p.f)*k,x=p.x+p.nx*o,y=p.y+p.ny*o;if(side===1&&i===0)c.moveTo(x,y);else c.lineTo(x,y);});}c.closePath();c.fillStyle=col;c.fill();};
-    const at=(p,draw)=>{c.save();c.translate(p.x,p.y);c.rotate(Math.atan2(-p.nx,p.ny));c.globalAlpha=p.f*.85;c.scale(k,k);draw();c.restore();};
-    const star=(r)=>{c.beginPath();for(let j=0;j<8;j++){const a=j*Math.PI/4,q=j%2?r*.23:r;j?c.lineTo(Math.cos(a)*q,Math.sin(a)*q):c.moveTo(q,0);}c.closePath();c.fill();};
+    const grad=(col,opacity=1,tip=col)=>{const g=c.createLinearGradient(pts[0].x,pts[0].y,pts.at(-1).x,pts.at(-1).y);g.addColorStop(0,col+'00');g.addColorStop(.25,col+Math.round(opacity*45).toString(16).padStart(2,'0'));g.addColorStop(.75,col+Math.round(opacity*180).toString(16).padStart(2,'0'));g.addColorStop(1,tip);return g;};
+    const taper=p=>Math.pow(p.f,.7)*Math.sin(Math.PI*(.04+p.f*.84)),wave=(p,phase=0)=>Math.sin(p.f*11-t*1.4+phase)*(1-p.f)*k;
+    const ribbon=(col,width,offset=()=>0)=>{
+      const edge=side=>pts.map(p=>{const o=offset(p)+side*width*taper(p)*k;return{x:p.x+p.nx*o,y:p.y+p.ny*o};});
+      c.beginPath();trace(c,edge(1));trace(c,edge(-1).reverse(),false);c.closePath();c.fillStyle=col;c.fill();
+    };
+    const at=(p,draw)=>{c.save();c.translate(p.x,p.y);c.rotate(Math.atan2(-p.nx,p.ny));c.globalAlpha*=Math.pow(p.f,.65)*.8;c.scale(k,k);draw();c.restore();};
+    const star=r=>{c.beginPath();for(let j=0;j<8;j++){const a=j*Math.PI/4,q=j%2?r*.19:r;j?c.lineTo(Math.cos(a)*q,Math.sin(a)*q):c.moveTo(q,0);}c.closePath();c.fill();};
+    const haze=(r,col,stretch=1)=>{c.save();c.scale(stretch,1);const g=c.createRadialGradient(0,0,0,0,0,r);g.addColorStop(0,col+'45');g.addColorStop(.32,col+'18');g.addColorStop(1,col+'00');c.fillStyle=g;c.beginPath();c.arc(0,0,r,0,Math.PI*2);c.fill();c.restore();};
+    const core=(col=base,width=.7)=>{ribbon(grad(col,.22),3);stroke(c,pts,grad(col,.8,'#f6f8ff'),width*k);};
     switch(def.id){
       case 'vector':
-        ribbon(glow,2);stroke(c,pts,thin,.9*k);
-        for(const i of [14,25,36])at(pts[i],()=>{c.strokeStyle=base;c.lineWidth=.9;c.beginPath();c.moveTo(-4,-3);c.lineTo(0,0);c.lineTo(-4,3);c.stroke();});break;
+        ribbon(grad(base,.35),3.2);core(base,.9);
+        for(const i of [19,32,44])at(pts[i],()=>{c.strokeStyle=base;c.lineWidth=.65;c.beginPath();c.moveTo(-3,-2);c.lineTo(0,0);c.lineTo(-3,2);c.stroke();});break;
       case 'comet':
-        ribbon(grad('#dd7938','#ffeac2'),9);ribbon(glow,3.5);stroke(c,pts,thin,1.3*k);
-        for(let i=3;i<40;i+=4){const p=pts[i];at(p,()=>{const y=Math.sin(i*3+t*2)*11*(1-p.f);c.strokeStyle=i%3?'#ffd081':'#fff1d0';c.lineWidth=.9;c.beginPath();c.moveTo(-5,y);c.lineTo(1,y*.9);c.stroke();});}break;
+        ribbon(grad('#c96d32',.3,'#ffd59b'),10);ribbon(grad('#ffc16d',.55,'#fff2d9'),4);core('#ffe3ab',1);
+        for(let i=5;i<48;i+=4)at(pts[i],()=>{const age=1-pts[i].f,spread=Math.sin(i*2.399+t*.7)*age*14;c.strokeStyle=i%3?'#f8bd70':'#fff0cf';c.lineWidth=.55+pts[i].f*.5;c.beginPath();c.moveTo(-3-age*3,spread);c.lineTo(0,spread);c.stroke();});break;
       case 'ion':
-        for(const side of [-1,1]){const o=p=>side*5*k*Math.sin(p.f*Math.PI*.9);stroke(c,pts,glow,4*k,o);stroke(c,pts,'#c5efffc0',1*k,o);}
-        for(let i=8;i<40;i+=5)at(pts[i],()=>{c.strokeStyle='#8fdcff';c.lineWidth=.7;c.strokeRect(-2,-5,4,10);});break;
+        for(const side of [-1,1]){const o=p=>side*(1-p.f)*6*k;ribbon(grad('#6ba8ef',.18),3,o);stroke(c,pts,grad('#91d4ff',.75,'#e5f5ff'),.8*k,o);}
+        for(const i of [16,28,40])at(pts[i],()=>{const r=1+(1-pts[i].f)*6;c.strokeStyle='#a3deff66';c.lineWidth=.55;c.beginPath();c.ellipse(0,0,r*.28,r,0,0,Math.PI*2);c.stroke();});break;
       case 'photon':
-        for(let i=2;i<43;i+=3){const p=pts[i];at(p,()=>{const r=1.3+2.2*p.f,b=.65+.35*Math.sin(i+t*4);c.globalAlpha*=b;c.fillStyle='#a8dfff';c.beginPath();c.moveTo(r*2,0);c.lineTo(0,r);c.lineTo(-r*2,0);c.lineTo(0,-r);c.fill();c.fillStyle='#fff';c.fillRect(-.7,-.7,1.4,1.4);});}break;
+        stroke(c,pts,grad('#c5dfff',.18),.5*k);
+        for(let i=5;i<51;i+=4)at(pts[i],()=>{const r=1+pts[i].f*1.8;c.globalAlpha*=.8+.2*Math.sin(i+t*2);haze(r*2.5,'#b9d9ff',1.6);c.fillStyle='#e9f3ff';c.beginPath();c.moveTo(r*2,0);c.lineTo(0,r);c.lineTo(-r*2,0);c.lineTo(0,-r);c.closePath();c.fill();c.fillStyle='#fff';c.fillRect(-.45,-.45,.9,.9);});break;
       case 'plasma':
-        ribbon(grad('#ed5387','#ffd8e8'),6,wave);stroke(c,pts,thin,1.5*k,wave);
-        for(const side of [-1,1])stroke(c,pts,glow,1.1*k,(p,i)=>wave(p)+side*(1-p.f)*k*(4+Math.sin(i*2+t*4)*4));break;
+        ribbon(grad('#e05f92',.3,'#ffd4e5'),7);for(const phase of [0,Math.PI]){const o=p=>wave(p,phase)*5;ribbon(grad(phase?'#a384ff':'#ff8dbb',.55),2,o);stroke(c,pts,grad('#ffc6e3',.8,'#fff0f8'),.65*k,o);}break;
       case 'aurora':
-        ribbon(grad('#907cf5','#97fff0'),6,p=>wave(p)*1.4);ribbon(grad('#75e5ce','#d5bdff'),3.5,p=>-wave(p));
-        stroke(c,pts,'#c1fff178',.8*k,p=>wave(p)*1.4+Math.sin(p.f*Math.PI)*6*k);break;
+        for(const [col,width,phase]of [['#8391ef',8,0],['#b6b6ff',5,1.8],['#8edee5',3,3.4]]){const o=p=>wave(p,phase)*8;ribbon(grad(col,.28),width,o);stroke(c,pts,grad(col,.45,'#e6eeff'),.45*k,p=>o(p)+width*taper(p)*k);}break;
       case 'rift':
-        stroke(c,pts,glow,2*k);
-        for(let i=5;i<42;i+=6)at(pts[i],()=>{const r=3+(1-pts[i].f)*9;c.strokeStyle='#b19cff';c.lineWidth=1.3;c.beginPath();c.ellipse(0,0,r*.3,r,0,.2,Math.PI*1.85);c.stroke();c.strokeStyle='#efdbff';c.beginPath();c.ellipse(0,0,r*.3,r,0,-.6,.2);c.stroke();});break;
+        core('#a894f2',.45);
+        for(let i=8;i<50;i+=7)at(pts[i],()=>{const r=2+(1-pts[i].f)*10;c.strokeStyle='#a69aef2a';c.lineWidth=3;c.beginPath();c.ellipse(0,0,r*.28,r,0,0,Math.PI*2);c.stroke();c.lineWidth=.7;c.strokeStyle='#c5b9ff';c.stroke();c.strokeStyle='#f0e5ff';c.beginPath();c.ellipse(0,0,r*.28,r,0,-.9,.2);c.stroke();});break;
       case 'fork':
-        for(const side of [-1,1]){const o=p=>side*(1-p.f)*12*k;stroke(c,pts,glow,3*k,o);stroke(c,pts,thin,.8*k,o);}
-        for(let i=10;i<40;i+=9)at(pts[i],()=>{c.fillStyle='#d8e5ff';const q=(1-pts[i].f)*12;c.beginPath();c.moveTo(3,0);c.lineTo(-4,-q);c.lineTo(-1,0);c.lineTo(-4,q);c.closePath();c.fill();});break;
+        for(const side of [-1,1]){const o=p=>side*Math.pow(1-p.f,.85)*12*k;ribbon(grad('#78a5f5',.28),2.5,o);stroke(c,pts,grad('#b7ccff',.8,'#f0f4ff'),.8*k,o);}
+        for(const i of [23,40])at(pts[i],()=>{c.strokeStyle='#a8c6ff60';c.lineWidth=.6;const r=(1-pts[i].f)*12;c.beginPath();c.moveTo(-4,-r);c.lineTo(1,0);c.lineTo(-4,r);c.stroke();});break;
       case 'tidal':
-        stroke(c,pts,grad('#ff9a5c','#fff3cf'),1.3*k);
-        for(let i=5;i<42;i+=5)at(pts[i],()=>{const r=4+7*(1-pts[i].f);c.strokeStyle=i%2?'#ffe5a2':'#ffb982';c.lineWidth=1.5;c.beginPath();c.arc(-r*.6,0,r,-1.1,1.1);c.stroke();});break;
+        core('#ffe0ac',.6);
+        for(let i=8;i<50;i+=6)at(pts[i],()=>{const r=3+8*(1-pts[i].f);c.strokeStyle='#f6ba751c';c.lineWidth=3;c.beginPath();c.ellipse(-2,0,r*.55,r,0,-1.15,1.15);c.stroke();c.strokeStyle='#ffe4b1';c.lineWidth=.8;c.stroke();});break;
       case 'postal':
-        ribbon(grad('#db68a4','#ffe0be'),5,p=>wave(p)*.65);stroke(c,pts,'#ffeed990',.9*k,p=>wave(p)*.65+4*k*Math.sin(Math.PI*p.f));
-        for(const i of [14,27,38])at(pts[i],()=>{c.fillStyle='#ffdbb8';c.strokeStyle='#ba507c';c.lineWidth=.7;c.fillRect(-4,-2.8,8,5.6);c.beginPath();c.moveTo(-4,-2.8);c.lineTo(0,.5);c.lineTo(4,-2.8);c.stroke();});break;
+        for(const side of [-1,1]){const o=p=>wave(p,side)*4+side*3*taper(p)*k;ribbon(grad(side===1?'#db78ab':'#eab782',.4),2.5,o);stroke(c,pts,grad('#ffe1c4',.6),.45*k,o);}
+        for(const i of [24,42])at(pts[i],()=>{c.strokeStyle='#ffe1bd';c.lineWidth=.6;c.beginPath();c.roundRect(-3,-2,6,4,.5);c.moveTo(-3,-2);c.lineTo(0,.4);c.lineTo(3,-2);c.stroke();});break;
       case 'cartographer':
-        c.setLineDash([2*k,5*k]);stroke(c,pts,glow,.8*k);c.setLineDash([]);
-        for(let i=5;i<43;i+=6)at(pts[i],()=>{c.fillStyle='#dbf7ff';star(i%2?4:5.5);c.strokeStyle='#84bccc';c.lineWidth=.6;c.beginPath();c.arc(0,0,7,0,Math.PI*1.45);c.stroke();});break;
+        stroke(c,pts,grad('#9cbbdc',.35),.55*k);
+        for(let i=10;i<51;i+=7)at(pts[i],()=>{const r=i%2?2:3.5;haze(r*3,'#b6d4ff');c.fillStyle='#eff7ff';star(r);c.strokeStyle='#bfdcff60';c.lineWidth=.45;c.beginPath();c.arc(0,0,r+2,-.5,2.1);c.stroke();});break;
     }
     c.restore();
   }
-  function preview(canvas,id,color,time=0,reduced=false){
+
+  function preview(canvas,id,color,time=0,reduced=false,model='courier'){
     const r=canvas.getBoundingClientRect(),dpr=Math.min(root.devicePixelRatio||1,2),w=Math.max(1,Math.round(r.width*dpr)),h=Math.max(1,Math.round(r.height*dpr));
     if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
     const c=canvas.getContext('2d');c.setTransform(w/560,0,0,h/155,0,0);c.clearRect(0,0,560,155);
@@ -2557,11 +2582,78 @@ O.Achievements={CATEGORIES,create};if(typeof module!=='undefined'&&module.export
     // A closed gallery orbit, sampled back from the ship. Not a simulation.
     for(let i=0;i<=95;i++){const a=t*.42-(95-i)*.022;pts.push({x:280+205*Math.cos(a),y:77+39*Math.sin(a)});}
     drawTrail(c,pts,id,t,color,reduced,1.7);
-    const p=pts.at(-1),q=pts.at(-2);c.save();c.translate(p.x,p.y);c.rotate(Math.atan2(p.y-q.y,p.x-q.x));
-    c.beginPath();c.moveTo(12,0);c.lineTo(-8,-7);c.lineTo(-4,0);c.lineTo(-8,7);c.closePath();c.fillStyle='#ebfff8';c.fill();c.strokeStyle=color;c.lineWidth=1.8;c.stroke();c.restore();
+    const p=pts.at(-1),q=pts.at(-2);O.drawShip?.(c,p.x,p.y,Math.atan2(p.y-q.y,p.x-q.x),color,.8,true,t,model);
   }
   O.Cosmetics={unlocked,TRAILS,find,recent,samples,drawTrail,preview};
   if(typeof module!=='undefined'&&module.exports)module.exports=O.Cosmetics;
+})(typeof globalThis!=='undefined'?globalThis:window);
+
+</script><script>
+/* One cosmetic hull renderer for the dock, flight and frozen flight recording.
+   Hull choice never enters the simulation or upgrade calculations. */
+(function(root){
+ 'use strict';
+ const O=root.Orbital=root.Orbital||{},cache=new Map();
+ const MODELS=Object.freeze([
+  {id:'courier',name:'Курьер',xp:0,code:'OC—01',description:'Мягкий силуэт. Цельный керамический корпус.',engines:[[-17,-5],[-17,5]],cabin:[5,14,3.7],hardpoints:{scanner:[9,-6],magnet:[-3,8],docking:[23,0],engine:[-18,-5]}},
+  {id:'swift',name:'Стриж',xp:600,code:'OC—02',description:'Стреловидное крыло и вытянутый фонарь.',engines:[[-18,-7],[-18,7]],cabin:[4,17,2.8],hardpoints:{scanner:[10,-4],magnet:[-7,10],docking:[25,0],engine:[-19,-7]}},
+  {id:'atlas',name:'Атлас',xp:2200,code:'OC—03',description:'Широкий грузовой корпус с мягкими гранями.',engines:[[-19,-7],[-19,7]],cabin:[7,17,5],hardpoints:{scanner:[11,-9],magnet:[-5,11],docking:[22,0],engine:[-20,-7]}},
+  {id:'manta',name:'Скат',xp:6000,code:'OC—04',description:'Плавное летающее крыло. Почти без швов.',engines:[[-15,-7],[-15,7]],cabin:[4,13,4.3],hardpoints:{scanner:[10,-7],magnet:[-7,12],docking:[21,0],engine:[-17,-7]}},
+  {id:'spectre',name:'Спектр',xp:12000,code:'OC—05',description:'Тонкий монокорпус с тёмным остеклением.',engines:[[-21,-3.5],[-21,3.5]],cabin:[0,17,2.7],hardpoints:{scanner:[10,-4],magnet:[-8,7],docking:[25,0],engine:[-22,-3.5]}}
+ ].map(m=>Object.freeze(m)));
+ const find=id=>MODELS.find(m=>m.id===id)||MODELS[0];
+ function outline(c,id){
+  c.beginPath();
+  switch(id){
+   case 'swift':c.moveTo(25,0);c.bezierCurveTo(14,-4,6,-5,0,-6);c.lineTo(-16,-14);c.quadraticCurveTo(-20,-14,-20,-10);c.lineTo(-17,-3);c.quadraticCurveTo(-18,0,-17,3);c.lineTo(-20,10);c.quadraticCurveTo(-20,14,-16,14);c.lineTo(0,6);c.bezierCurveTo(6,5,14,4,25,0);break;
+   case 'atlas':c.moveTo(22,0);c.bezierCurveTo(22,-6,15,-11,7,-12);c.lineTo(-13,-12);c.quadraticCurveTo(-20,-12,-20,-6);c.lineTo(-20,6);c.quadraticCurveTo(-20,12,-13,12);c.lineTo(7,12);c.bezierCurveTo(15,11,22,6,22,0);break;
+   case 'manta':c.moveTo(21,0);c.bezierCurveTo(13,-5,5,-7,-9,-14);c.quadraticCurveTo(-18,-18,-21,-12);c.quadraticCurveTo(-22,-10,-17,-7);c.bezierCurveTo(-12,-4,-12,-2,-14,0);c.bezierCurveTo(-12,2,-12,4,-17,7);c.quadraticCurveTo(-22,10,-21,12);c.quadraticCurveTo(-18,18,-9,14);c.bezierCurveTo(5,7,13,5,21,0);break;
+   case 'spectre':c.moveTo(26,0);c.bezierCurveTo(14,-4,2,-5,-6,-6);c.lineTo(-17,-9);c.quadraticCurveTo(-22,-10,-22,-5);c.lineTo(-22,5);c.quadraticCurveTo(-22,10,-17,9);c.lineTo(-6,6);c.bezierCurveTo(2,5,14,4,26,0);break;
+   default:c.moveTo(23,0);c.bezierCurveTo(18,-6,10,-9,1,-9);c.quadraticCurveTo(-6,-9,-12,-11);c.quadraticCurveTo(-18,-12,-18,-6);c.lineTo(-18,6);c.quadraticCurveTo(-18,12,-12,11);c.quadraticCurveTo(-6,9,1,9);c.bezierCurveTo(10,9,18,6,23,0);
+  }
+  c.closePath();
+ }
+ function texture(color='#6af4cd',model='courier'){
+  const m=find(model),paint=/^#[0-9a-f]{6}$/i.test(color)?color:'#b5c8e3',key=m.id+paint;
+  if(cache.has(key))return cache.get(key);
+  const canvas=document.createElement('canvas');canvas.width=560;canvas.height=400;
+  const c=canvas.getContext('2d');c.translate(280,200);c.scale(10,10);c.lineJoin='round';c.lineCap='round';
+  // The complete outer shape is a single shell, including the engine shoulders.
+  outline(c,m.id);const metal=c.createLinearGradient(0,-15,0,16);
+  for(const [at,col]of [[0,'#fafbff'],[.3,'#e6eaf1'],[.49,'#bcc6d4'],[.53,'#d8e0ea'],[.83,'#7d8b9e'],[1,'#465268']])metal.addColorStop(at,col);
+  c.fillStyle=metal;c.fill();c.strokeStyle='#d6dfed';c.lineWidth=.4;c.stroke();
+  c.save();outline(c,m.id);c.clip();
+  const light=c.createLinearGradient(-20,-12,18,10);light.addColorStop(0,'#ffffff36');light.addColorStop(.45,'#ffffff00');light.addColorStop(1,'#19243b30');c.fillStyle=light;c.fillRect(-28,-20,56,40);
+  // Paint sits flush within the shell. Broad shapes remain readable at 1×.
+  c.fillStyle=paint;c.globalAlpha=.87;c.beginPath();c.moveTo(-25,-11);c.bezierCurveTo(-10,-10,4,-7,19,0);c.bezierCurveTo(4,-4,-10,-6,-25,-5);c.closePath();c.fill();c.globalAlpha=.45;c.beginPath();c.moveTo(-25,10);c.bezierCurveTo(-9,8,6,5,19,0);c.bezierCurveTo(4,7,-10,12,-25,14);c.closePath();c.fill();c.globalAlpha=1;
+  if(m.id==='atlas'){
+   c.fillStyle='#8190a72a';c.beginPath();c.roundRect(-13,-6,14,12,2);c.fill();c.strokeStyle='#56657d55';c.lineWidth=.35;c.stroke();
+   c.beginPath();c.moveTo(-6,-5);c.lineTo(-6,5);c.stroke();
+  }else{
+   c.strokeStyle='#44526b38';c.lineWidth=.3;c.beginPath();c.moveTo(-12,-4);c.quadraticCurveTo(-3,-3,1,-2);c.moveTo(-12,4);c.quadraticCurveTo(-3,3,1,2);c.stroke();
+  }
+  c.restore();
+  // Flush, dark glass with a single soft highlight instead of separate parts.
+  const [back,front,half]=m.cabin,glass=c.createLinearGradient(0,-half,0,half);glass.addColorStop(0,'#6c91b1');glass.addColorStop(.3,'#283f5b');glass.addColorStop(.65,'#101c30');glass.addColorStop(1,'#20324c');
+  c.beginPath();c.moveTo(front,0);c.bezierCurveTo(front-3,-half,back+3,-half-1,back,-half*.75);c.quadraticCurveTo(back-2,0,back,half*.75);c.bezierCurveTo(back+3,half+1,front-3,half,front,0);c.closePath();c.fillStyle=glass;c.fill();c.strokeStyle='#e7f0ff88';c.lineWidth=.35;c.stroke();
+  c.strokeStyle='#ddecff9c';c.lineWidth=.35;c.beginPath();c.moveTo(back+1,-half*.64);c.quadraticCurveTo(back+5,-half*.7,front-4,-half*.25);c.stroke();
+  // Recessed exhaust ports share the hull's rear edge.
+  for(const [x,y]of m.engines){c.fillStyle='#1a2232';c.beginPath();c.roundRect(x-1,y-1.5,4,3,1);c.fill();c.fillStyle=paint;c.globalAlpha=.9;c.beginPath();c.roundRect(x-.5,y-.85,.7,1.7,.3);c.fill();c.globalAlpha=1;}
+  c.fillStyle='#26354d9c';c.font='500 1.6px ui-monospace,Consolas,monospace';c.textAlign='center';c.fillText(m.code.slice(-2),-6,-1);
+  c.fillStyle='#f1f6ff';c.beginPath();c.ellipse(17,0,.7,.3,0,0,Math.PI*2);c.fill();
+  if(cache.size>=32)cache.delete(cache.keys().next().value);cache.set(key,canvas);return canvas;
+ }
+ function draw(c,x,y,angle,color,scale=1,thrust=false,time=0,model='courier'){
+  const m=find(model);c.save();c.translate(x,y);c.rotate(angle);c.scale(scale,scale);
+  if(thrust)for(const [ex,ey]of m.engines){
+   const length=12+Math.sin(time*5)*1.2,g=c.createLinearGradient(ex,ey,ex-length,ey);g.addColorStop(0,'#f0f6ff');g.addColorStop(.22,color);g.addColorStop(1,color+'00');
+   c.fillStyle=g;c.beginPath();c.moveTo(ex,ey-1);c.quadraticCurveTo(ex-length*.5,ey-1.7,ex-length,ey);c.quadraticCurveTo(ex-length*.5,ey+1.7,ex,ey+1);c.closePath();c.fill();
+  }
+  c.drawImage(texture(color,m.id),-28,-20,56,40);c.restore();
+ }
+ draw.texture=texture;
+ O.Fleet={MODELS,find,draw};
+ if(typeof module!=='undefined'&&module.exports)module.exports=O.Fleet;
 })(typeof globalThis!=='undefined'?globalThis:window);
 
 </script><script>
@@ -2584,6 +2676,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   const O=root.Orbital=root.Orbital||{};
   const E=O.Economy||(typeof require==='function'?require('./economy.js'):null);
   const C=O.Cosmetics||(typeof require==='function'?require('./cosmetics.js'):null);
+  const Fleet=O.Fleet||(typeof require==='function'?require('./fleet.js'):null);
   const A=O.Achievements||(typeof require==='function'?require('./achievements.js'):null);
   const M=O.Medals||(typeof require==='function'?require('./medals.js'):null);
   const Campaign=O.Campaign||(typeof require==='function'?require('./campaign.js'):null);
@@ -2607,7 +2700,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   const RANKS=[{xp:0,name:'Стажёр'},{xp:180,name:'Курьер'},{xp:600,name:'Навигатор'},
     {xp:1300,name:'Пилот дальних трасс'},{xp:2300,name:'Капитан'},{xp:3600,name:'Звёздный почтальон'},
     {xp:5200,name:'Исследователь границ'},{xp:7000,name:'Хранитель маяков'},{xp:8000,name:'Легенда маршрутов'},{xp:12000,name:'Мастер развилок'},{xp:18000,name:'Архитектор путей'},{xp:23000,name:'Хранитель горизонтов'},{xp:27000,name:'Голос созвездий'},{xp:29000,name:'За пределами карты'}];
-  const SKINS=[{id:'mint',name:'Мята',color:'#6af4cd',xp:0},{id:'ice',name:'Полярис',color:'#8acfff',xp:600},
+  const SKINS=[{id:'mint',name:'Титан',color:'#91a6c2',xp:0},{id:'ice',name:'Полярис',color:'#8acfff',xp:600},
     {id:'gold',name:'Солнечный ветер',color:'#ffc37c',xp:2300},{id:'nova',name:'Сверхновая',color:'#c4a3ff',xp:3600},
     {id:'coral',name:'Коралловая заря',color:'#ff958a',xp:7000},{id:'pearl',name:'Белый карлик',color:'#f2f1d7',xp:8000},
     {id:'twin',name:'Двойная звезда',color:'#98b9ff',xp:10000,gate:'both4',requirement:'Обе ветви четырёх карт'},
@@ -2678,7 +2771,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   const achievements=A.create(legacyAchievements);
   function fresh(){return {game:'orbital-courier',version:8,credits:E.START_CREDITS,data:0,xp:0,
     upgrades:{scanner:0,magnet:0,docking:0,engine:0},records:{},flags:{},achievements:[],receipts:[],
-    campaignRevision:Campaign.revision,campaignAccess:[],settings:{sound:true,volume:.6,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false},courses:{},skin:'mint',trail:'vector',lastLevel:Campaign.order[0],wishlist:null,difficulty:'normal'};}
+    campaignRevision:Campaign.revision,campaignAccess:[],settings:{sound:true,volume:.6,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false},courses:{},model:'courier',skin:'mint',trail:'vector',lastLevel:Campaign.order[0],wishlist:null,difficulty:'normal'};}
   function legacyUnlocked(p,id){
     if(!Number.isInteger(id)||id<0||id>=count())return false;
     if(id===0)return true;
@@ -2823,6 +2916,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     p.achievements=Array.isArray(raw.achievements)?[...new Set(raw.achievements.filter(x=>achievements.some(a=>a.id===x)))]:[];
     for(const k of Object.keys(p.settings))if(typeof raw.settings?.[k]==='boolean')p.settings[k]=raw.settings[k];
     p.skin=SKINS.some(s=>s.id===raw.skin)?raw.skin:'mint';p.wishlist=Object.hasOwn(UPGRADE_DEFS,raw.wishlist)?raw.wishlist:null;
+    p.model=Fleet.MODELS.some(m=>m.id===raw.model&&C.unlocked(p,m))?raw.model:'courier';
     p.trail=C.TRAILS.some(t=>t.id===raw.trail&&C.unlocked(p,t))?raw.trail:'vector';
     p.difficulty=raw.difficulty==='pro'?'pro':'normal';
     // Two finite, local aiming presets per level and difficulty. No scripts,
@@ -2953,58 +3047,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     for(let i=1;i<points.length;i++){if(points[i].break)ctx.moveTo(points[i].x,points[i].y);else ctx.lineTo(points[i].x,points[i].y);}
     ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);ctx.stroke();ctx.setLineDash([]);
   }
-  const shipTextures=new Map();
-  function shipTexture(color){
-    if(shipTextures.has(color))return shipTextures.get(color);
-    const canvas=document.createElement('canvas');canvas.width=480;canvas.height=360;
-    const c=canvas.getContext('2d');c.translate(240,180);c.scale(10,10);c.lineJoin='round';c.lineCap='round';
-    const metal=(y1,y2)=>{const g=c.createLinearGradient(0,y1,0,y2);g.addColorStop(0,'#f0f7ee');g.addColorStop(.27,'#a6bdc0');g.addColorStop(.52,'#ecf5e9');g.addColorStop(.8,'#6d8998');g.addColorStop(1,'#243d50');return g;};
-    const panel=(pts,fill,edge='#7895a2',width=.45)=>{c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.fillStyle=fill;c.fill();c.strokeStyle=edge;c.lineWidth=width;c.stroke();};
-    // Swept cargo skids and twin nacelles give a readable silhouette at flight scale.
-    for(const side of [-1,1]){
-      panel([[-12,side*4],[2,side*5],[-7,side*14],[-16,side*13],[-13,side*9]],metal(-14,14));
-      panel([[-10,side*8],[-3,side*7],[-8,side*12],[-13,side*12]],'#233f51');
-      path(c,[{x:-13,y:side*12},{x:-8,y:side*12},{x:-4,y:side*8}],color,.7);
-      c.save();c.translate(-8,side*8);c.fillStyle='#101e2b';c.fillRect(-9,-2.6,12,5.2);
-      c.fillStyle=metal(-3,3);c.beginPath();c.roundRect(-7,-2.6,14,5.2,2);c.fill();c.strokeStyle='#acc3c9';c.lineWidth=.4;c.stroke();
-      c.fillStyle='#1d3346';c.fillRect(-7,-2,3,4);c.fillStyle=color;c.fillRect(-7.6,-1.7,.8,3.4);
-      c.strokeStyle='#567581';c.lineWidth=.3;for(let x=-1;x<5;x+=1.2){c.beginPath();c.moveTo(x,-1.4);c.lineTo(x,1.4);c.stroke();}
-      c.strokeStyle='#f6f3df';c.beginPath();c.moveTo(-3,-2);c.lineTo(4,-2);c.stroke();c.restore();
-    }
-    const hull=()=>{c.beginPath();c.moveTo(21,0);c.bezierCurveTo(14,-5.5,8,-7,0,-6.8);c.lineTo(-11,-5.3);c.quadraticCurveTo(-14,0,-11,5.3);c.lineTo(0,6.8);c.bezierCurveTo(8,7,14,5.5,21,0);c.closePath();};
-    hull();c.fillStyle=metal(-7,7);c.fill();c.strokeStyle='#e2eee4';c.lineWidth=.5;c.stroke();
-    c.save();hull();c.clip();const random=rng(9239);
-    for(let i=0;i<240;i++){const x=-13+random()*35,y=-7+random()*14;c.strokeStyle=i%2?'#09243612':'#ffffff16';c.lineWidth=.07;c.beginPath();c.moveTo(x,y);c.lineTo(x+random()*3+.2,y);c.stroke();}
-    panel([[-11,-4.8],[0,-6.2],[6,-5.2],[2,-2.8],[-10,-2.8]],'#edf2df','#879da2',.25);
-    panel([[-11,4.8],[0,6.2],[6,5.2],[2,2.8],[-10,2.8]],'#819daa','#56727f',.25);
-    path(c,[{x:-10,y:-5},{x:0,y:-6},{x:5,y:-5.2}],color,1.1);
-    path(c,[{x:-10,y:5},{x:0,y:6},{x:5,y:5.2}],color,.65);
-    for(let x=-9;x<=1;x+=3){path(c,[{x,y:-5.2},{x:x+.8,y:-3}], '#647e8d88',.22);path(c,[{x,y:5.2},{x:x+.8,y:3}], '#35556588',.22);}
-    c.restore();
-    // Recessed amber freight bay, locks, service seams and a polished cockpit.
-    c.fillStyle='#1c3443';c.beginPath();c.roundRect(-9,-2.6,10,5.2,.8);c.fill();c.strokeStyle='#77969c';c.lineWidth=.4;c.stroke();
-    const cargo=c.createLinearGradient(-7,-2,-2,2);cargo.addColorStop(0,'#f4d69b');cargo.addColorStop(.5,'#ac824b');cargo.addColorStop(1,'#69533b');
-    c.fillStyle=cargo;c.fillRect(-7.7,-1.8,6.7,3.6);c.strokeStyle='#f9e6b6';c.lineWidth=.25;c.strokeRect(-7.7,-1.8,6.7,3.6);
-    for(const x of [-6.5,-2.7]){c.fillStyle='#283b43';c.fillRect(x,-2,.65,4);c.fillStyle='#cfded6';c.fillRect(x-.1,-.55,.85,1.1);}
-    const glass=c.createLinearGradient(5,-4,11,4);glass.addColorStop(0,'#d9fff3');glass.addColorStop(.2,color);glass.addColorStop(.4,'#28617b');glass.addColorStop(.75,'#102c42');glass.addColorStop(1,'#071420');
-    c.beginPath();c.moveTo(14.5,0);c.quadraticCurveTo(10,-4.1,5,-3.8);c.quadraticCurveTo(2.3,0,5,3.8);c.quadraticCurveTo(10,4.1,14.5,0);c.fillStyle=glass;c.fill();c.strokeStyle='#193346';c.lineWidth=.7;c.stroke();
-    path(c,[{x:5.3,y:-2.9},{x:8.7,y:-2.4},{x:10.8,y:-1.5}], '#e4fff2bc',.45);
-    path(c,[{x:8,y:-3.4},{x:7.7,y:3.4}], '#183749b0',.4);
-    path(c,[{x:16.4,y:-1.2},{x:19,y:0},{x:16.4,y:1.2}], '#546e80',.3);
-    for(const side of [-1,1])for(const x of [-9,-3,2])circle(c,x,side*4.5,.24,'#f8fff4','#536e7e',.12);
-    c.fillStyle='#435e69';c.font='bold 1.65px ui-monospace,Consolas,monospace';c.textAlign='center';c.fillText('239',-2,-4.1);
-    circle(c,-10,-6,.55,'#dbfff2');circle(c,-10,6,.55,color);
-    if(shipTextures.size>=16)shipTextures.delete(shipTextures.keys().next().value);shipTextures.set(color,canvas);return canvas;
-  }
-  function ship(ctx,x,y,angle,color,scale=1,thrust=false,t=0){
-    ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.scale(scale,scale);
-    if(thrust)for(const side of [-1,1]){
-      const length=18+Math.sin(t*11+side)*2,g=ctx.createLinearGradient(-14,0,-14-length,0);g.addColorStop(0,'#dffff1');g.addColorStop(.18,color);g.addColorStop(.65,color+'50');g.addColorStop(1,color+'00');
-      ctx.beginPath();ctx.moveTo(-15,side*8-1.7);ctx.quadraticCurveTo(-22,side*8-2.6,-15-length,side*8);ctx.quadraticCurveTo(-22,side*8+2.6,-15,side*8+1.7);ctx.closePath();ctx.fillStyle=g;ctx.fill();
-    }
-    ctx.drawImage(shipTexture(color),-24,-18,48,36);ctx.restore();
-  }
-  ship.texture=shipTexture;
+  const ship=O.Fleet.draw;
   class Renderer {
     constructor(canvas){
       this.canvas=canvas;this.ctx=canvas.getContext('2d');
@@ -3400,13 +3443,13 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       }
       if(view.state){
         const s=view.state;
-        if(!['crash','lost','preview'].includes(s.status))ship(c,s.x,s.y,Math.atan2(s.vy,s.vx),color,Math.min(1.65,this.uiScale),false,t);
+        if(!['crash','lost','preview'].includes(s.status))ship(c,s.x,s.y,Math.atan2(s.vy,s.vx),color,Math.min(1.65,this.uiScale),false,t,view.model);
       }else if(!view.hideShip){
         const angle=-P.rad(view.angle||0);const len=view.aimPointer?Math.hypot(view.aimPointer.x-level.start.x,view.aimPointer.y-level.start.y):40+(view.speed||200)*0.35;
         c.save();c.translate(level.start.x,level.start.y);c.rotate(angle);
         c.strokeStyle=color+'80';c.lineWidth=1.3;c.beginPath();c.moveTo(33,0);c.lineTo(len,0);c.lineTo(len-7,-4);c.moveTo(len,0);c.lineTo(len-7,4);c.stroke();c.restore();
         if(view.aimPointer){const p=view.aimPointer;circle(c,p.x,p.y,9*this.uiScale,null,color+'90',1.5);text(c,Math.round(view.speed)+' ед./с',p.x,p.y-18*this.uiScale,11*this.uiScale,'#e0fff5','center');}
-        ship(c,level.start.x,level.start.y,angle,color,Math.min(1.75,1.1*this.uiScale));
+        ship(c,level.start.x,level.start.y,angle,color,Math.min(1.75,1.1*this.uiScale),false,t,view.model);
       }
       for(const p of view.particles||[]){
         c.globalAlpha=Math.max(0,p.life/p.maxLife);circle(c,p.x,p.y,p.r,p.color);c.globalAlpha=1;
@@ -3416,7 +3459,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       }
       c.restore();
     }
-    hero(t,color='#6af4cd',pointer={x:0,y:0}){
+    hero(t,color='#6af4cd',pointer={x:0,y:0},model='courier',trailStyle='vector',reduced=false){
       // The scene uses viewport pixels; spheres retain their shape at every ratio.
       const c=this.ctx,w=this.canvas.clientWidth,h=this.canvas.clientHeight;
       if(!w||!h)return;
@@ -3444,9 +3487,9 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       for(let i=0;i<8;i++){const p=orbit(i*TAU/8+t*.012,radius*3,radius*1.04);circle(c,p.x,p.y,1.5,'#a7d5cd65');}
       const theta=t*.16-.65,q=orbit(theta),tangent=orbit(theta+.002),moon=orbit(t*.065+2.6,radius*2.3,radius*.8);
       const courier=()=>{const trail=[];for(let i=0;i<65;i++){const p=orbit(theta-.7+i*.7/64);trail.push(p);}
-        path(c,trail,color+'10',9);path(c,trail,color+'35',3);path(c,trail.slice(40),color+'a0',1.5);
+        O.Cosmetics.drawTrail(c,trail,trailStyle,t,color,reduced,mobile?.8:1.1);
         glow(q.x,q.y,24,'149,242,212',.14);
-        ship(c,q.x,q.y,Math.atan2(tangent.y-q.y,tangent.x-q.x),color,mobile?.85:1.1,true,t);
+        ship(c,q.x,q.y,Math.atan2(tangent.y-q.y,tangent.x-q.x),color,mobile?.85:1.1,true,t,model);
       };
       const drawMoon=()=>this.planet({x:moon.x,y:moon.y,r:radius*.13,tint:'#b8b7d1',surface:'crater',name:''});
       if(moon.z<0)drawMoon();if(q.z<0)courier();
@@ -3475,7 +3518,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   function markup(){
     return '<figure class="completion-docking"><button type="button" class="completion-docking-button" aria-label="Развернуть финальный кадр рейса"><canvas id="resultDockingCanvas" role="img" aria-label="Финальный кадр рейса"></canvas><span class="completion-docking-expand" aria-hidden="true">⤢</span></button><figcaption><span>Финальный кадр</span><strong id="resultDockingOffset"></strong></figcaption></figure>';
   }
-  function snapshot({level,state,trail=[],stats={},color='#6af4cd',trailStyle='vector'}){
+  function snapshot({level,state,trail=[],stats={},color='#6af4cd',trailStyle='vector',shipModel='courier'}){
     const l=structuredClone(O.Routes.view(level,state)),s=structuredClone(state);
     const target=P.bodyAt(l.target,s.t),velocity=P.dockVelocity(s,l),radius=P.captureRadius(l,stats);
     const distance=Math.hypot(s.x-target.x,s.y-target.y);
@@ -3489,12 +3532,12 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     const extent=radius+53,bounds=[{x:target.x-extent,y:target.y-extent},{x:target.x+extent,y:target.y+extent},{x:s.x-28,y:s.y-28},{x:s.x+28,y:s.y+28},...points];
     const left=Math.min(...bounds.map(p=>p.x)),right=Math.max(...bounds.map(p=>p.x)),top=Math.min(...bounds.map(p=>p.y)),bottom=Math.max(...bounds.map(p=>p.y));
     const camera={cx:(left+right)/2,cy:(top+bottom)/2,zoom:Math.min(1200/(right-left+18),700/(bottom-top+18))};
-    return {level:l,state:s,trail:points,stats:{...stats},color,trailStyle,target,velocity,radius,distance,offset,camera};
+    return {level:l,state:s,trail:points,stats:{...stats},color,trailStyle,shipModel,target,velocity,radius,distance,offset,camera};
   }
   function draw(canvas,model){
     const renderer=new O.Renderer(canvas);
-    const {level,state,trail,stats,color,trailStyle,target,velocity,camera,radius}=model;
-    renderer.draw(level,{state,trail,stats,color,camera,review:true,time:state.t,reducedMotion:true,trailStyle});
+    const {level,state,trail,stats,color,trailStyle,shipModel,target,velocity,camera,radius}=model;
+    renderer.draw(level,{state,trail,stats,color,model:shipModel,camera,review:true,time:state.t,reducedMotion:true,trailStyle});
     const c=renderer.ctx;
     c.save();c.translate(600,350);c.scale(camera.zoom,camera.zoom);c.translate(-camera.cx,-camera.cy);
     // The dashed line is the measured relative direction at the last instant,
@@ -3513,7 +3556,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       const r=Math.max(5,4/camera.zoom);c.strokeStyle='#ffb49b';c.lineWidth=Math.max(1.4,1.5/camera.zoom);c.beginPath();c.moveTo(state.x-r,state.y-r);c.lineTo(state.x+r,state.y+r);c.moveTo(state.x-r,state.y+r);c.lineTo(state.x+r,state.y-r);c.stroke();
     }
     c.restore();
-    Object.assign(canvas.dataset,{ready:'true',finalTime:String(state.t),targetX:String(target.x),targetY:String(target.y),shipX:String(state.x),shipY:String(state.y),offset:String(model.offset)});
+    Object.assign(canvas.dataset,{ready:'true',shipModel,finalTime:String(state.t),targetX:String(target.x),targetY:String(target.y),shipX:String(state.x),shipY:String(state.y),offset:String(model.offset)});
   }
   function mount(container,input){
     dispose();
@@ -3900,7 +3943,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   const loaded=G.read(storage);
   const app={heroTime:0,heroPointer:{x:0,y:0},heroTarget:{x:0,y:0},profile:loaded.profile,screen:'home',currentId:C.order[0],angle:0,speed:200,
     activeLevel:null,assisted:false,state:null,paused:false,accumulator:0,timeScale:1,trail:[],ghosts:{},aims:{},preview:null,
-    cosmeticTab:'skins',campaignSector:-1,campaignQuery:'',campaignFilter:'open',contractPreviews:[],attemptHistory:{},transitioning:false,transitionToken:0,previewDirty:true,particles:[],lastResult:null,storageOK:loaded.available,modalPause:false,frameTime:0};
+    cosmeticTab:'models',campaignSector:-1,campaignQuery:'',campaignFilter:'open',contractPreviews:[],attemptHistory:{},transitioning:false,transitionToken:0,previewDirty:true,particles:[],lastResult:null,storageOK:loaded.available,modalPause:false,frameTime:0};
   app.camera={zoom:1,cx:600,cy:350};app.branchView='A';O.App=app;
   const sound=new O.Sound(),gameRenderer=new O.Renderer($('gameCanvas')),heroRenderer=new O.Renderer($('heroCanvas'));
   const homeMotionPreference=root.matchMedia('(prefers-reduced-motion: reduce)');
@@ -4062,8 +4105,8 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     return `<svg viewBox="0 0 128 62" aria-hidden="true"><g fill="none" stroke="${t.color}" stroke-width="2" stroke-linecap="round">${paths[t.id]||paths[{fork:'ion',tidal:'photon',postal:'aurora',cartographer:'rift'}[t.id]]||paths.vector}</g><path d="m117 22-14-6 3 6-3 6Z" fill="#e6fff4"/></svg>`;
   }
   function renderCosmetics(){
-    const p=app.profile,tab=app.cosmeticTab||'skins',selected=O.Cosmetics.find(p.trail);
-    $('skinPanel').hidden=tab!=='skins';$('trailPanel').hidden=tab!=='trails';
+    const p=app.profile,tab=app.cosmeticTab||'models',selected=O.Cosmetics.find(p.trail);
+    $('modelPanel').hidden=tab!=='models';$('skinPanel').hidden=tab!=='skins';$('trailPanel').hidden=tab!=='trails';
     for(const b of $$('[data-action=cosmetic-tab]')){const chosen=b.dataset.tab===tab;b.setAttribute('aria-selected',String(chosen));b.tabIndex=chosen?0:-1;}
     $('trailGrid').innerHTML=O.Cosmetics.TRAILS.map(t=>{const open=O.Cosmetics.unlocked(p,t),chosen=p.trail===t.id;
       return `<button class="trail-card ${chosen?'selected':''} ${open?'':'locked'}" data-action="trail" data-key="${t.id}" aria-pressed="${chosen}" ${open?'':'disabled'} style="--trail:${t.color}">${trailThumbnail(t)}<span class="trail-card-name">${t.name}</span><span class="trail-card-description">${t.description}</span><span class="trail-card-status">${chosen?'✓ Выбран':open?'Выбрать хвост':`${money(t.xp)} XP${t.requirement?' · '+t.requirement:''}${t.xp>p.xp?' · ещё '+money(t.xp-p.xp):''}`}</span></button>`;
@@ -4358,6 +4401,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     sound.unlock();const action=actions[b.dataset.action];if(action)action(b);
   });
   document.querySelector('.cosmetic-tabs').addEventListener('keydown',event=>{
+    if(event.target.closest('[data-action="hangar:collection"]'))return;
     if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
     event.preventDefault();app.cosmeticTab=event.key==='Home'?'skins':event.key==='End'?'trails':app.cosmeticTab==='skins'?'trails':'skins';renderCosmetics();$(app.cosmeticTab==='skins'?'skinTab':'trailTab').focus();
   });
@@ -4405,7 +4449,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       for(const p of app.particles){p.x+=p.vx*elapsed;p.y+=p.vy*elapsed;p.life-=elapsed;}
       app.particles=app.particles.filter(p=>p.life>0);
       const t=app.profile.settings.reducedMotion?0:now/1000;
-      const review=O.Review?.renderModel();gameRenderer.draw(displayLevel(),{camera:app.camera,review:!!review,time:t,angle:app.angle,speed:app.speed,color:skin().color,stats:stats(),state:displayState(),
+      const review=O.Review?.renderModel();gameRenderer.draw(displayLevel(),{camera:app.camera,review:!!review,time:t,angle:app.angle,speed:app.speed,color:skin().color,model:app.profile.model,stats:stats(),state:displayState(),
         preview:app.state?null:app.preview,trail:review?.trail||app.trail,trailStyle:app.profile.trail,ghost:review?.ghost||(app.profile.settings.ghost?app.ghosts[app.currentId]:null),
         aimPointer:app.aimPointer,grid:app.profile.settings.grid,reducedMotion:app.profile.settings.reducedMotion,particles:app.particles,banked:G.viewRecord(app.profile,app.currentId).cargo});
       if(now-lastTelemetry>85){updateTelemetry();lastTelemetry=now;}
@@ -4419,9 +4463,9 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       if(!document.hidden&&!still)app.heroTime+=elapsed;
       const blend=1-Math.exp(-elapsed*5);
       for(const key of ['x','y','strength'])app.heroPointer[key]=(app.heroPointer[key]||0)+((app.heroTarget[key]||0)-(app.heroPointer[key]||0))*blend;
-      const key=[innerWidth,innerHeight,root.devicePixelRatio,skin().color,reduced,heroPaused].join(':');
+      const key=[innerWidth,innerHeight,root.devicePixelRatio,skin().color,app.profile.model,app.profile.trail,reduced,heroPaused].join(':');
       if(!document.hidden&&(still?key!==heroStillKey:now-heroLastDraw>=32)){
-        heroRenderer.hero(reduced?2:app.heroTime,skin().color,still?{x:0,y:0}:app.heroPointer);
+        heroRenderer.hero(reduced?2:app.heroTime,skin().color,still?{x:0,y:0}:app.heroPointer,app.profile.model,app.profile.trail,reduced);
         heroLastDraw=now;heroStillKey=still?key:'';
       }
     }
@@ -4526,7 +4570,7 @@ function showResult(result){
   $('reviewRange').addEventListener('input',e=>{O.Review.selectTime(+e.target.value);$('reviewStamp').textContent=O.Review.renderModel().state.t.toFixed(2)+' с';});
   $('resultAnalysisBar').querySelector('div span').textContent=training?'Тренировка · награды не начисляются':delivered?(A.storageOK?'Доставка подтверждена · награды сохранены':'Доставка подтверждена · скачай копию прогресса'):'Неудачная попытка · ничего не потеряно';
   resultView('summary');O.UI9?.onResult();O.Cloud?.refresh();
-  O.DockingPreview.mount($('resultScreen'),{level:l,state:s,trail:O.Review.active?.data.points||A.trail,stats:A.stats(),color:G.SKINS.find(skin=>skin.id===A.profile.skin)?.color,trailStyle:A.profile.trail});
+  O.DockingPreview.mount($('resultScreen'),{level:l,state:s,trail:O.Review.active?.data.points||A.trail,stats:A.stats(),color:G.SKINS.find(skin=>skin.id===A.profile.skin)?.color,trailStyle:A.profile.trail,shipModel:A.profile.model});
 }
 function renderAwards(){const p=A.profile,defs=G.achievements,earned=new Set(p.achievements),progress=new Map(defs.map(a=>[a.id,earned.has(a.id)?a.target:a.progress(p)]));$('awardTotal').innerHTML=`${p.achievements.length} / ${defs.length}<span>достижений · ${money(p.xp)} XP</span>`;$('achievementCategories').innerHTML=[['all','Все разделы','∞'],...O.Achievements.CATEGORIES].map(([id,n,icon])=>{let ds=id==='all'?defs:defs.filter(d=>d.category===id);return `<button class="${category===id?'active':''}" data-action="v8:award-category" data-category="${id}">${icon} ${n}<small>${ds.filter(a=>earned.has(a.id)).length}/${ds.length}</small></button>`;}).join('');for(let b of $$('.award-filters button'))b.classList.toggle('active',b.dataset.filter===filter);
 let near=defs.filter(a=>!earned.has(a.id)).sort((a,b)=>progress.get(b.id)/b.target-progress.get(a.id)/a.target)[0];$('achievementFocus').innerHTML=`<div><strong>${near?'Ближе всего: '+near.name:'Коллекция завершена'}</strong><p>${near?near.text:'Все 93 знака отличия получены.'}</p></div><b>${near?progress.get(near.id)+' / '+near.target:'✓'}</b>`;
@@ -5146,16 +5190,17 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
  const O=root.Orbital,A=O.App,G=O.Progress,E=O.Economy,P=O.Physics,$=id=>document.getElementById(id);
  const keys=['scanner','magnet','docking','engine'],short={scanner:'Сканер',magnet:'Захват',docking:'Стыковка',engine:'Двигатель'};
  const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=n=>n.toLocaleString('ru-RU');
- const view={tab:'modules',module:'scanner',scene:'dock',skin:null,trail:null,lastSkin:null,lastTrail:null};
+ const view={tab:'modules',module:'scanner',scene:'dock',model:null,skin:null,trail:null,lastModel:null,lastSkin:null,lastTrail:null};
  const skin=id=>G.SKINS.find(s=>s.id===id)||G.SKINS[0],trail=id=>O.Cosmetics.TRAILS.find(t=>t.id===id)||O.Cosmetics.TRAILS[0];
- const previewSkin=()=>skin(view.skin||A.profile.skin),previewTrail=()=>trail(view.trail||A.profile.trail);
+ const previewModel=()=>O.Fleet.find(view.model||A.profile.model),previewSkin=()=>skin(view.skin||A.profile.skin),previewTrail=()=>trail(view.trail||A.profile.trail);
  const applied=(item,type)=>A.profile[type]===item.id,available=(item,type)=>applied(item,type)||O.Cosmetics.unlocked(A.profile,item);
  let background=null;
  function enhance(){
   const p=A.profile,installed=G.installed(p),ledger=$('shopSummary').querySelector('.hangar-ledger');
+  if(view.model===null||view.model===view.lastModel)view.model=p.model;
   if(view.skin===null||view.skin===view.lastSkin)view.skin=p.skin;
   if(view.trail===null||view.trail===view.lastTrail)view.trail=p.trail;
-  view.lastSkin=p.skin;view.lastTrail=p.trail;
+  view.lastModel=p.model;view.lastSkin=p.skin;view.lastTrail=p.trail;
   if(ledger){
    const funds=ledger.querySelector('.hangar-funds');$('hangarFunds').innerHTML=funds.innerHTML;funds.remove();
    const note=document.createElement('p');note.className='hangar-price-note';note.textContent=`Монтаж: +${(installed*2.5).toFixed(1)}% к базовой цене. Скидка за исследования: ${(Math.min(.08,G.research(p)*.002)*100).toFixed(1)}%. Возврат — по фактическим чекам.`;
@@ -5187,43 +5232,50 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
    tabs.push(`<button id="hangar-tab-${key}" data-action="hangar:module" data-key="${key}" role="tab" aria-controls="hangar-module-${key}"><span class="system-icon">${art}</span><strong>${short[key]}</strong><small>${q.lv} / 5${q.canBuy?' · +':''}</small></button>`);
   }
   $('hangarModuleTabs').innerHTML=tabs.join('');$('hangarRouteLabel').textContent=`${O.LEVELS[id].name} · ${mode==='pro'?'ПРО':'Обычный'}`;
-  $('shopContext').querySelector('strong').textContent='Сравнить эффект на маршруте';decorateFitting();sync();
+  $('shopContext').querySelector('strong').textContent='Сравнить эффект на маршруте';
+  $('modelGrid').innerHTML=O.Fleet.MODELS.map(m=>`<button class="model-card" data-key="${m.id}"><canvas class="fitting-art" width="300" height="132" aria-hidden="true"></canvas><span class="model-card-title"><strong>${m.name}</strong><small>${m.code}</small></span><span class="model-card-description">${m.description}</span><span class="model-card-status"></span></button>`).join('');decorateFitting();sync();
  }
  function sync(){
   $('hangar').dataset.workshopView=view.tab;
   for(const b of $('hangar').querySelectorAll('[data-action="hangar:view"]')){const on=b.dataset.view===view.tab;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;}
   $('hangarEquipment').hidden=view.tab!=='modules';$('hangarStyling').hidden=view.tab!=='style';
-  for(const b of $('hangar').querySelectorAll('[data-action="hangar:collection"]')){const on=b.dataset.tab===(A.cosmeticTab||'skins');b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;}
+  for(const b of $('hangar').querySelectorAll('[data-action="hangar:collection"]')){const on=b.dataset.tab===(A.cosmeticTab||'models');b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;$(b.getAttribute('aria-controls')).hidden=!on;}
   for(const b of $('hangarModuleTabs').querySelectorAll('button')){const on=b.dataset.key===view.module;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;}
   for(const card of $('upgradeGrid').children)card.hidden=card.dataset.module!==view.module;
   for(const b of $('shopSummary').querySelectorAll('[data-action="hangar:scene"]'))b.setAttribute('aria-pressed',String(b.dataset.scene===view.scene));
-  const s=previewSkin(),t=previewTrail(),changed=s.id!==A.profile.skin||t.id!==A.profile.trail;
-  $('dockShipName').textContent=s.name;$('dockFittingState').textContent=changed?'Примерка · ещё не применено':G.rank(A.profile).name+' · корабль готов';
-  $('dockSystemLabel').textContent=view.tab==='modules'?'ВЫБРАННАЯ СИСТЕМА':view.scene==='trail'?'ПРЕДПРОСМОТР СЛЕДА':'ОФОРМЛЕНИЕ КОРПУСА';
-  $('dockSystemValue').textContent=view.tab==='modules'?short[view.module]+' · '+A.profile.upgrades[view.module]+' / 5':view.scene==='trail'?t.name:s.name;
+  const m=previewModel(),s=previewSkin(),t=previewTrail(),changed=m.id!==A.profile.model||s.id!==A.profile.skin||t.id!==A.profile.trail;
+  $('dockShipName').textContent=m.name;$('dockFittingState').textContent=changed?'Примерка · ещё не применено':m.code+' · '+s.name+' · корабль готов';
+  $('dockSystemLabel').textContent=view.tab==='modules'?'ВЫБРАННАЯ СИСТЕМА':view.scene==='trail'?'ПРЕДПРОСМОТР СЛЕДА':A.cosmeticTab==='models'?'МОДЕЛЬ КОРПУСА':'ОКРАСКА КОРПУСА';
+  $('dockSystemValue').textContent=view.tab==='modules'?short[view.module]+' · '+A.profile.upgrades[view.module]+' / 5':view.scene==='trail'?t.name:A.cosmeticTab==='models'?m.name:s.name;
  }
  function requirement(item){return `${money(item.xp)} XP${item.requirement?' · '+item.requirement:''}${item.xp>A.profile.xp?' · ещё '+money(item.xp-A.profile.xp)+' XP':''}`;}
  function decorateFitting(){
-  const p=A.profile,s=previewSkin(),t=previewTrail();
-  for(const [type,grid,defs,chosen]of [['skin','skinGrid',G.SKINS,s],['trail','trailGrid',O.Cosmetics.TRAILS,t]])for(const b of $(grid).children){
+  const p=A.profile,m=previewModel(),s=previewSkin(),t=previewTrail();
+  for(const [type,grid,defs,chosen]of [['model','modelGrid',O.Fleet.MODELS,m],['skin','skinGrid',G.SKINS,s],['trail','trailGrid',O.Cosmetics.TRAILS,t]])for(const b of $(grid).children){
    const item=defs.find(x=>x.id===b.dataset.key);if(!item)continue;const open=available(item,type),on=item.id===chosen.id;
    b.disabled=false;b.dataset.action='hangar:try-'+type;b.classList.toggle('selected',on);b.classList.toggle('locked',!open);b.setAttribute('aria-pressed',String(on));
-   b.setAttribute('aria-label',`Примерить: ${item.name}. ${applied(item,type)?'Установлено':open?'Доступно':requirement(item)}`);
-   if(type==='skin')b.querySelector('.skin-shape').innerHTML=`<svg viewBox="0 0 56 26" aria-hidden="true"><path d="m7 7 12 3 20-5 12 8-12 8-20-5-12 3 4-6Z" fill="#adbac5" stroke="#dce4ed"/><path d="m25 10 13-2 7 5-7 5-13-2Z" fill="${item.color}"/><path d="M6 11h8m-8 4h8" stroke="${item.color}" stroke-width="2"/></svg>`;
-   const status=type==='skin'?b.querySelector('small'):b.querySelector('.trail-card-status');status.textContent=applied(item,type)?'Установлено':open?on?'Примерка':'Доступно':requirement(item);
+   b.setAttribute('aria-label',`Примерить: ${item.name}. ${type==='model'?item.description+' ':''}${applied(item,type)?'Установлено':open?'Доступно':requirement(item)}`);
+   let canvas=b.querySelector('canvas');
+   if(!canvas){canvas=document.createElement('canvas');canvas.className='fitting-art';canvas.width=300;canvas.height=132;canvas.setAttribute('aria-hidden','true');if(type==='skin')b.querySelector('.skin-shape').replaceChildren(canvas);else{b.querySelector('svg')?.remove();b.prepend(canvas);}}
+   const c=canvas.getContext('2d');c.clearRect(0,0,300,132);
+   if(type==='trail'){const points=Array.from({length:70},(_,i)=>({x:12+i*3.8,y:80-Math.sin(i/69*Math.PI*.7)*42}));O.Cosmetics.drawTrail(c,points,item.id,0,s.color,true,1.9);const end=points.at(-1),last=points.at(-2);O.drawShip(c,end.x,end.y,Math.atan2(end.y-last.y,end.x-last.x),s.color,.8,false,0,m.id);}
+   else O.drawShip(c,150,66,-.12,type==='skin'?item.color:s.color,3.1,false,0,type==='model'?item.id:m.id);
+   const status=type==='skin'?b.querySelector('small'):b.querySelector('.'+type+'-card-status');status.textContent=applied(item,type)?'Установлено':open?on?'Примерка':'Доступно':requirement(item);
   }
-  const locks=[[s,'skin'],[t,'trail']].filter(([item,type])=>!available(item,type)),changed=s.id!==p.skin||t.id!==p.trail;
-  $('fittingFooter').innerHTML=`<div><strong>${locks.length?'Можно примерить. Доступ откроется позже.':changed?'Новый облик готов к применению.':'Твой текущий облик.'}</strong><p>${locks.length?locks.map(([item])=>esc(item.name)+': '+esc(requirement(item))).join('<br>'):'Окраска и след меняют только внешний вид. Опыт не расходуется.'}</p></div><button class="button primary" data-action="hangar:apply" ${locks.length||!changed?'disabled':''}>${locks.length?'Пока недоступно':changed?'Применить оформление':'Установлено ✓'}</button>`;
+  const locks=[[m,'model'],[s,'skin'],[t,'trail']].filter(([item,type])=>!available(item,type)),changed=m.id!==p.model||s.id!==p.skin||t.id!==p.trail;
+  $('cosmeticXP').textContent=`${money(p.xp)} XP · модели ${O.Fleet.MODELS.filter(m=>available(m,'model')).length} / ${O.Fleet.MODELS.length} · следы ${O.Cosmetics.TRAILS.filter(t=>available(t,'trail')).length} / ${O.Cosmetics.TRAILS.length}`;
+  $('fittingFooter').innerHTML=`<div><strong>${locks.length?'Можно примерить. Доступ откроется позже.':changed?'Новый облик готов к применению.':'Твой текущий облик.'}</strong><p>${locks.length?locks.map(([item])=>esc(item.name)+': '+esc(requirement(item))).join('<br>'):'Модель, окраска и след — только внешний вид. Опыт не расходуется.'}</p></div><button class="button primary" data-action="hangar:apply" ${locks.length||!changed?'disabled':''}>${locks.length?'Пока недоступно':changed?'Применить оформление':'Установлено ✓'}</button>`;
  }
- function collection(tab){A.cosmeticTab=tab==='trails'?'trails':'skins';view.scene=A.cosmeticTab==='trails'?'trail':'dock';A.renderHangar();$(A.cosmeticTab==='trails'?'trailTab':'skinTab').focus({preventScroll:true});}
+ function collection(tab){A.cosmeticTab=['models','skins','trails'].includes(tab)?tab:'models';view.scene=A.cosmeticTab==='trails'?'trail':'dock';A.renderHangar();$('hangarStyling').querySelector('.fitting-collection').scrollTop=0;$({models:'modelTab',skins:'skinTab',trails:'trailTab'}[A.cosmeticTab]).focus({preventScroll:true});}
  Object.assign(A.actions,{
   'hangar:view':b=>{view.tab=b.dataset.view==='style'?'style':'modules';if(view.tab==='style')view.scene=A.cosmeticTab==='trails'?'trail':'dock';sync();},
   'hangar:module':b=>{if(keys.includes(b.dataset.key)){view.module=b.dataset.key;view.scene='dock';sync();}},
   'hangar:scene':b=>{view.scene=b.dataset.scene==='trail'?'trail':'dock';sync();},
   'hangar:collection':b=>collection(b.dataset.tab),
+  'hangar:try-model':b=>{view.model=O.Fleet.find(b.dataset.key).id;view.scene='dock';decorateFitting();sync();},
   'hangar:try-skin':b=>{view.skin=skin(b.dataset.key).id;view.scene='dock';decorateFitting();sync();},
   'hangar:try-trail':b=>{view.trail=trail(b.dataset.key).id;view.scene='trail';decorateFitting();sync();},
-  'hangar:apply':()=>{const s=previewSkin(),t=previewTrail();if(!available(s,'skin')||!available(t,'trail'))return;A.profile.skin=s.id;A.profile.trail=t.id;A.save();A.renderHangar();A.toast('Оформление применено. Хорошего полёта.');}
+  'hangar:apply':()=>{const m=previewModel(),s=previewSkin(),t=previewTrail();if(!available(m,'model')||!available(s,'skin')||!available(t,'trail'))return;A.profile.model=m.id;A.profile.skin=s.id;A.profile.trail=t.id;A.save();A.renderHangar();A.toast('Оформление применено. Хорошего полёта.');}
  });
  $('hangar').addEventListener('keydown',event=>{const b=event.target.closest('[role=tab]');if(!b||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;const buttons=[...b.closest('[role=tablist]').querySelectorAll('[role=tab]')],i=buttons.indexOf(b),next=event.key==='Home'?0:event.key==='End'?buttons.length-1:(i+(event.key==='ArrowLeft'?-1:1)+buttons.length)%buttons.length;event.preventDefault();buttons[next].click();$(buttons[next].id)?.focus({preventScroll:true});});
  function context(canvas){
@@ -5251,16 +5303,16 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   c.save();c.translate(450,502);c.scale(1,.65);c.font='500 25px ui-monospace,Consolas,monospace';c.textAlign='center';c.fillStyle='#9cb7da22';c.fillText('07  /  ORBITAL',0,0);c.restore();return background;
  }
  function preview(now){
-  const canvas=$('hangarShip');if(!canvas)return;const c=context(canvas);if(!c)return;const reduced=A.profile.settings.reducedMotion,t=reduced?1.4:now/1000,color=previewSkin().color;
+  const canvas=$('hangarShip');if(!canvas)return;const c=context(canvas);if(!c)return;const reduced=A.profile.settings.reducedMotion,t=reduced?1.4:now/1000,color=previewSkin().color,model=previewModel();
   if(view.scene==='trail'){
    const sky=c.createRadialGradient(500,240,0,500,240,600);sky.addColorStop(0,'#1b2a3b');sky.addColorStop(1,'#0b1018');c.fillStyle=sky;c.fillRect(0,0,900,540);
    for(let i=0;i<48;i++)ellipse(c,40+(i*151.3)%820,25+(i*73.7)%480,.7,.7,'#b4c8e240');c.save();c.translate(450,280);c.rotate(-.2);ellipse(c,0,0,310,105,null,'#9fb7da1c');c.restore();
-   const points=[];for(let i=0;i<130;i++){const a=t*.35-(129-i)*.021;points.push({x:450+300*Math.cos(a),y:280+90*Math.sin(a)});}O.Cosmetics.drawTrail(c,points,previewTrail().id,t,color,reduced,2.6);const end=points.at(-1),last=points.at(-2);O.drawShip(c,end.x,end.y,Math.atan2(end.y-last.y,end.x-last.x),color,2.1,false,t);
+   c.save();c.translate(450,270);c.rotate(-.16);c.scale(2,2);const points=Array.from({length:130},(_,i)=>{const u=i/129;return{x:-200+u*300,y:24-Math.sin(u*Math.PI*.75)*30};});O.Cosmetics.drawTrail(c,points,previewTrail().id,t,color,reduced,2);const end=points.at(-1),last=points.at(-2);O.drawShip(c,end.x,end.y,Math.atan2(end.y-last.y,end.x-last.x),color,1.7,true,t,model.id);c.restore();
   }else{
    c.drawImage(bay(),0,0,900,540);const y=264+Math.sin(t*.75)*2,angle=-.14,size=9;
-   c.save();c.beginPath();c.rect(100,355,700,180);c.clip();c.translate(0,587);c.scale(1,-.58);c.globalAlpha=.11;O.drawShip(c,450,y,angle,color,size,false,t);c.restore();ellipse(c,450,387,170,20,'#05080dc0');O.drawShip(c,450,y,angle,color,size,false,t);
+   c.save();c.beginPath();c.rect(100,355,700,180);c.clip();c.translate(0,587);c.scale(1,-.58);c.globalAlpha=.11;O.drawShip(c,450,y,angle,color,size,false,t,model.id);c.restore();ellipse(c,450,387,170,20,'#05080dc0');O.drawShip(c,450,y,angle,color,size,false,t,model.id);
    if(view.tab==='modules'){
-    const [lx,ly]=({scanner:[12,-5],magnet:[-3,6],docking:[25,0],engine:[-17,-1]})[view.module],x=450+(lx*Math.cos(angle)-ly*Math.sin(angle))*size,sy=y+(lx*Math.sin(angle)+ly*Math.cos(angle))*size,left=x<450,tx=left?190:710,ty=view.module==='magnet'?409:110;
+    const [lx,ly]=model.hardpoints[view.module],x=450+(lx*Math.cos(angle)-ly*Math.sin(angle))*size,sy=y+(lx*Math.sin(angle)+ly*Math.cos(angle))*size,left=x<450,tx=left?190:710,ty=view.module==='magnet'?409:110;
     line(c,[[x,sy],[x+(left?-28:28),ty],[tx,ty]],'#b3cceb77');ellipse(c,x,sy,7,7,'#afc9ed18','#c8dcf4aa');ellipse(c,x,sy,2,2,'#e3efff');c.font='11px ui-monospace,Consolas,monospace';c.textAlign=left?'left':'right';c.fillStyle='#afc4df';c.fillText(({scanner:'SCAN / 01',magnet:'FIELD / 02',docking:'DOCK / 03',engine:'DRIVE / 04'})[view.module],tx,ty-10);
    }
    if(!reduced)for(let i=0;i<12;i++)ellipse(c,120+(i*157.3)%660,60+(i*61.7+t*5)%350,.7,.7,'#b3c9e324');
@@ -5385,7 +5437,7 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   }
   function sameSave(a,b){
     // The last opened contract is a device preference, never a competing result.
-    try{a=JSON.parse(a);b=JSON.parse(b);delete a.lastLevel;delete b.lastLevel;return C.encode(a)===C.encode(b);}catch{return false;}
+    try{a=validSave(a);b=validSave(b);delete a.lastLevel;delete b.lastLevel;return C.encode(a)===C.encode(b);}catch{return false;}
   }
   function retryLater(){
     if(retryTimer||!sync?.uid||navigator.onLine===false)return;

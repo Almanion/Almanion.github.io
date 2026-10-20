@@ -7,7 +7,7 @@
   function markup(){
     return '<figure class="completion-docking"><button type="button" class="completion-docking-button" aria-label="Развернуть финальный кадр рейса"><canvas id="resultDockingCanvas" role="img" aria-label="Финальный кадр рейса"></canvas><span class="completion-docking-expand" aria-hidden="true">⤢</span></button><figcaption><span>Финальный кадр</span><strong id="resultDockingOffset"></strong></figcaption></figure>';
   }
-  function snapshot({level,state,trail=[],stats={},color='#6af4cd',trailStyle='vector'}){
+  function snapshot({level,state,trail=[],stats={},color='#6af4cd',trailStyle='vector',shipModel='courier'}){
     const l=structuredClone(O.Routes.view(level,state)),s=structuredClone(state);
     const target=P.bodyAt(l.target,s.t),velocity=P.dockVelocity(s,l),radius=P.captureRadius(l,stats);
     const distance=Math.hypot(s.x-target.x,s.y-target.y);
@@ -21,12 +21,12 @@
     const extent=radius+53,bounds=[{x:target.x-extent,y:target.y-extent},{x:target.x+extent,y:target.y+extent},{x:s.x-28,y:s.y-28},{x:s.x+28,y:s.y+28},...points];
     const left=Math.min(...bounds.map(p=>p.x)),right=Math.max(...bounds.map(p=>p.x)),top=Math.min(...bounds.map(p=>p.y)),bottom=Math.max(...bounds.map(p=>p.y));
     const camera={cx:(left+right)/2,cy:(top+bottom)/2,zoom:Math.min(1200/(right-left+18),700/(bottom-top+18))};
-    return {level:l,state:s,trail:points,stats:{...stats},color,trailStyle,target,velocity,radius,distance,offset,camera};
+    return {level:l,state:s,trail:points,stats:{...stats},color,trailStyle,shipModel,target,velocity,radius,distance,offset,camera};
   }
   function draw(canvas,model){
     const renderer=new O.Renderer(canvas);
-    const {level,state,trail,stats,color,trailStyle,target,velocity,camera,radius}=model;
-    renderer.draw(level,{state,trail,stats,color,camera,review:true,time:state.t,reducedMotion:true,trailStyle});
+    const {level,state,trail,stats,color,trailStyle,shipModel,target,velocity,camera,radius}=model;
+    renderer.draw(level,{state,trail,stats,color,model:shipModel,camera,review:true,time:state.t,reducedMotion:true,trailStyle});
     const c=renderer.ctx;
     c.save();c.translate(600,350);c.scale(camera.zoom,camera.zoom);c.translate(-camera.cx,-camera.cy);
     // The dashed line is the measured relative direction at the last instant,
@@ -45,7 +45,7 @@
       const r=Math.max(5,4/camera.zoom);c.strokeStyle='#ffb49b';c.lineWidth=Math.max(1.4,1.5/camera.zoom);c.beginPath();c.moveTo(state.x-r,state.y-r);c.lineTo(state.x+r,state.y+r);c.moveTo(state.x-r,state.y+r);c.lineTo(state.x+r,state.y-r);c.stroke();
     }
     c.restore();
-    Object.assign(canvas.dataset,{ready:'true',finalTime:String(state.t),targetX:String(target.x),targetY:String(target.y),shipX:String(state.x),shipY:String(state.y),offset:String(model.offset)});
+    Object.assign(canvas.dataset,{ready:'true',shipModel,finalTime:String(state.t),targetX:String(target.x),targetY:String(target.y),shipX:String(state.x),shipY:String(state.y),offset:String(model.offset)});
   }
   function mount(container,input){
     dispose();

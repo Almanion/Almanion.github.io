@@ -16,7 +16,7 @@
   }
   function sameSave(a,b){
     // The last opened contract is a device preference, never a competing result.
-    try{a=JSON.parse(a);b=JSON.parse(b);delete a.lastLevel;delete b.lastLevel;return C.encode(a)===C.encode(b);}catch{return false;}
+    try{a=validSave(a);b=validSave(b);delete a.lastLevel;delete b.lastLevel;return C.encode(a)===C.encode(b);}catch{return false;}
   }
   function retryLater(){
     if(retryTimer||!sync?.uid||navigator.onLine===false)return;

@@ -12,7 +12,7 @@
   const loaded=G.read(storage);
   const app={heroTime:0,heroPointer:{x:0,y:0},heroTarget:{x:0,y:0},profile:loaded.profile,screen:'home',currentId:C.order[0],angle:0,speed:200,
     activeLevel:null,assisted:false,state:null,paused:false,accumulator:0,timeScale:1,trail:[],ghosts:{},aims:{},preview:null,
-    cosmeticTab:'skins',campaignSector:-1,campaignQuery:'',campaignFilter:'open',contractPreviews:[],attemptHistory:{},transitioning:false,transitionToken:0,previewDirty:true,particles:[],lastResult:null,storageOK:loaded.available,modalPause:false,frameTime:0};
+    cosmeticTab:'models',campaignSector:-1,campaignQuery:'',campaignFilter:'open',contractPreviews:[],attemptHistory:{},transitioning:false,transitionToken:0,previewDirty:true,particles:[],lastResult:null,storageOK:loaded.available,modalPause:false,frameTime:0};
   app.camera={zoom:1,cx:600,cy:350};app.branchView='A';O.App=app;
   const sound=new O.Sound(),gameRenderer=new O.Renderer($('gameCanvas')),heroRenderer=new O.Renderer($('heroCanvas'));
   const homeMotionPreference=root.matchMedia('(prefers-reduced-motion: reduce)');
@@ -174,8 +174,8 @@
     return `<svg viewBox="0 0 128 62" aria-hidden="true"><g fill="none" stroke="${t.color}" stroke-width="2" stroke-linecap="round">${paths[t.id]||paths[{fork:'ion',tidal:'photon',postal:'aurora',cartographer:'rift'}[t.id]]||paths.vector}</g><path d="m117 22-14-6 3 6-3 6Z" fill="#e6fff4"/></svg>`;
   }
   function renderCosmetics(){
-    const p=app.profile,tab=app.cosmeticTab||'skins',selected=O.Cosmetics.find(p.trail);
-    $('skinPanel').hidden=tab!=='skins';$('trailPanel').hidden=tab!=='trails';
+    const p=app.profile,tab=app.cosmeticTab||'models',selected=O.Cosmetics.find(p.trail);
+    $('modelPanel').hidden=tab!=='models';$('skinPanel').hidden=tab!=='skins';$('trailPanel').hidden=tab!=='trails';
     for(const b of $$('[data-action=cosmetic-tab]')){const chosen=b.dataset.tab===tab;b.setAttribute('aria-selected',String(chosen));b.tabIndex=chosen?0:-1;}
     $('trailGrid').innerHTML=O.Cosmetics.TRAILS.map(t=>{const open=O.Cosmetics.unlocked(p,t),chosen=p.trail===t.id;
       return `<button class="trail-card ${chosen?'selected':''} ${open?'':'locked'}" data-action="trail" data-key="${t.id}" aria-pressed="${chosen}" ${open?'':'disabled'} style="--trail:${t.color}">${trailThumbnail(t)}<span class="trail-card-name">${t.name}</span><span class="trail-card-description">${t.description}</span><span class="trail-card-status">${chosen?'✓ Выбран':open?'Выбрать хвост':`${money(t.xp)} XP${t.requirement?' · '+t.requirement:''}${t.xp>p.xp?' · ещё '+money(t.xp-p.xp):''}`}</span></button>`;
@@ -470,6 +470,7 @@
     sound.unlock();const action=actions[b.dataset.action];if(action)action(b);
   });
   document.querySelector('.cosmetic-tabs').addEventListener('keydown',event=>{
+    if(event.target.closest('[data-action="hangar:collection"]'))return;
     if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
     event.preventDefault();app.cosmeticTab=event.key==='Home'?'skins':event.key==='End'?'trails':app.cosmeticTab==='skins'?'trails':'skins';renderCosmetics();$(app.cosmeticTab==='skins'?'skinTab':'trailTab').focus();
   });
@@ -517,7 +518,7 @@
       for(const p of app.particles){p.x+=p.vx*elapsed;p.y+=p.vy*elapsed;p.life-=elapsed;}
       app.particles=app.particles.filter(p=>p.life>0);
       const t=app.profile.settings.reducedMotion?0:now/1000;
-      const review=O.Review?.renderModel();gameRenderer.draw(displayLevel(),{camera:app.camera,review:!!review,time:t,angle:app.angle,speed:app.speed,color:skin().color,stats:stats(),state:displayState(),
+      const review=O.Review?.renderModel();gameRenderer.draw(displayLevel(),{camera:app.camera,review:!!review,time:t,angle:app.angle,speed:app.speed,color:skin().color,model:app.profile.model,stats:stats(),state:displayState(),
         preview:app.state?null:app.preview,trail:review?.trail||app.trail,trailStyle:app.profile.trail,ghost:review?.ghost||(app.profile.settings.ghost?app.ghosts[app.currentId]:null),
         aimPointer:app.aimPointer,grid:app.profile.settings.grid,reducedMotion:app.profile.settings.reducedMotion,particles:app.particles,banked:G.viewRecord(app.profile,app.currentId).cargo});
       if(now-lastTelemetry>85){updateTelemetry();lastTelemetry=now;}
@@ -531,9 +532,9 @@
       if(!document.hidden&&!still)app.heroTime+=elapsed;
       const blend=1-Math.exp(-elapsed*5);
       for(const key of ['x','y','strength'])app.heroPointer[key]=(app.heroPointer[key]||0)+((app.heroTarget[key]||0)-(app.heroPointer[key]||0))*blend;
-      const key=[innerWidth,innerHeight,root.devicePixelRatio,skin().color,reduced,heroPaused].join(':');
+      const key=[innerWidth,innerHeight,root.devicePixelRatio,skin().color,app.profile.model,app.profile.trail,reduced,heroPaused].join(':');
       if(!document.hidden&&(still?key!==heroStillKey:now-heroLastDraw>=32)){
-        heroRenderer.hero(reduced?2:app.heroTime,skin().color,still?{x:0,y:0}:app.heroPointer);
+        heroRenderer.hero(reduced?2:app.heroTime,skin().color,still?{x:0,y:0}:app.heroPointer,app.profile.model,app.profile.trail,reduced);
         heroLastDraw=now;heroStillKey=still?key:'';
       }
     }

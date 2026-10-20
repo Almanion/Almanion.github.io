@@ -16,6 +16,9 @@ for(const [width,height] of [[320,568],[390,844],[844,390],[1366,768],[1920,1080
 test('system reduced motion stays still and primary action is keyboard accessible',async({page})=>{
  await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/games/orbital-courier/offline.html');await page.waitForTimeout(120);
  const canvas=page.locator('#heroCanvas'),before=await canvas.evaluate(c=>c.toDataURL());await page.mouse.move(700,300);await page.waitForTimeout(150);expect(await canvas.evaluate(c=>c.toDataURL())).toBe(before);
+ await page.evaluate(()=>{Orbital.App.profile.xp=1000;Orbital.App.profile.model='swift';});await expect.poll(()=>canvas.evaluate(c=>c.toDataURL())).not.toBe(before);
+ const hull=await canvas.evaluate(c=>c.toDataURL());await page.evaluate(()=>{Orbital.App.profile.trail='ion';});await expect.poll(()=>canvas.evaluate(c=>c.toDataURL())).not.toBe(hull);
+ const styled=await canvas.evaluate(c=>c.toDataURL());await page.waitForTimeout(150);expect(await canvas.evaluate(c=>c.toDataURL())).toBe(styled);
  await expect(page.locator('#homeMotionToggle')).toBeDisabled();await page.locator('#continueButton').focus();await page.keyboard.press('Enter');await expect(page.locator('#play')).toBeVisible();
 });
 test('touch reacts without trapping the page and releases after lifting the finger',async({page})=>{
