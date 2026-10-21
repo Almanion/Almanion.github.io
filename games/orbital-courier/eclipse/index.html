@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101116">
+  <meta name="description" content="Затмение — пробная боевая операция. Планируй манёвры, управляй гравитацией и открой союзному флоту путь к захваченному миру.">
+  <title>Затмение — пробная операция</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23101116'/%3E%3Ccircle cx='32' cy='32' r='21' fill='none' stroke='%23d4b587' stroke-width='3'/%3E%3Ccircle cx='40' cy='24' r='20' fill='%23101116'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="../assets/typography.css?v=daf09678fa799888">
+  <link rel="stylesheet" href="../assets/eclipse.css?v=eb0d1d59ae256496">
+  <script defer src="../assets/fleet.js?v=d0fcc0118f3ab108"></script>
+  <script defer src="../assets/audio.js?v=60fe76ba0d6568a6"></script>
+  <script defer src="../assets/eclipse-engine.js?v=3db332eb9bc24ab7"></script>
+  <script defer src="../assets/eclipse-renderer.js?v=66e0cec2e6e654b6"></script>
+  <script defer src="../assets/eclipse-app.js?v=94db3c9d7a8a4a8f"></script>
+</head>
+<body>
+  <noscript><p>Для тактической операции нужен JavaScript. <a href="../contracts/">Вернуться к контрактам</a></p></noscript>
+  <header class="topline">
+    <a class="back" href="../contracts/" aria-label="Вернуться к контрактам"><span aria-hidden="true">←</span> <span>К игре</span></a>
+    <a class="wordmark" href="../">ОРБИТАЛЬНЫЙ КУРЬЕР <span>/ ЭКСПЕРИМЕНТ</span></a>
+    <div class="top-tools"><button id="help" aria-label="Брифинг и управление">Брифинг</button><button id="settings" aria-label="Настройки операции">⚙</button></div>
+  </header>
+  <main class="operation">
+    <div class="title-row"><div><p class="eyebrow">ПОХИТИТЕЛИ МИРОВ · ПРОБНАЯ ОПЕРАЦИЯ</p><h1>ЗАТМЕНИЕ<span class="eclipse-mark" aria-hidden="true"></span></h1></div><p class="mission-caption">Один корабль.<br>Решающий манёвр.</p></div>
+    <ol class="steps" aria-label="Этапы операции"><li id="step0" aria-current="step"><span>01</span> Захватить узел</li><li id="step1"><span>02</span> Открыть крепость</li><li id="step2"><span>03</span> Выйти из боя</li></ol>
+    <div class="battle-layout">
+      <section class="battle" aria-label="Тактическая карта">
+        <div class="map-top"><span id="stateBadge" class="state-badge">ПЛАНИРОВАНИЕ</span><span class="map-sector">ЛУНА ИЛЬ / ОРБИТА 07</span><span id="mobileVitals">Флот 6/6</span><span id="timer">00.00 с</span></div>
+        <canvas id="battlefield" width="1100" height="660" tabindex="0" aria-label="Карта операции. Нажми на карту для направления курса. На втором этапе можно перемещать гравитационный якорь. Направление и положение доступны также в полях под картой.">Карту можно настроить с помощью полей направления, импульса и положения якоря.</canvas>
+        <div class="map-bottom"><span id="mapHint">Нажми на карту, чтобы задать направление</span><button id="forecastToggle" aria-pressed="true" title="Показать или скрыть прогноз">Прогноз <span>вкл.</span></button></div>
+        <div class="transmission" id="transmission" role="status" aria-live="polite"><span>НАВИГАТОР / ЛИРА</span><p id="radioText">Луна прикроет заход. Найди курс к светящемуся узлу над её краем.</p></div>
+      </section>
+      <aside class="command" aria-label="Задача и тактика">
+        <div class="objective"><p class="eyebrow" id="phaseLabel">МАНЁВР 01 / 03</p><h2 id="objectiveTitle">За тенью луны</h2><p id="objectiveText">Пройди над луной и захвати узел. Его поле позволит атаковать крепость.</p></div>
+        <div id="tactics" class="tactics" role="group" aria-label="Способ атаки" hidden>
+          <button data-tactic="breach" aria-pressed="true"><span class="tactic-symbol" aria-hidden="true">↗</span><span><strong>Удар с тыла</strong><small>Зайти за щит и открыть огонь</small></span></button>
+          <button data-tactic="rebound" aria-pressed="false"><span class="tactic-symbol" aria-hidden="true">⤶</span><span><strong>Вернуть залп</strong><small>Развернуть снаряд гравитацией</small></span></button>
+          <button data-tactic="escort" aria-pressed="false"><span class="tactic-symbol" aria-hidden="true">◇</span><span><strong>Прикрыть звено</strong><small>Провести бомбардировщик</small></span></button>
+        </div>
+        <div class="condition-grid"><div><span>СОЮЗНЫЙ ФЛОТ</span><strong id="fleetValue">6 / 6</strong><div class="meter"><i id="fleetMeter"></i></div></div><div><span id="hullLabel">ТВОЙ КОРПУС</span><strong id="hullValue">3 / 3</strong><div class="meter"><i id="hullMeter"></i></div></div></div>
+        <div class="forecast-status" id="forecastStatus" role="status"><span class="forecast-dot"></span><div><strong id="forecastTitle">Расчёт курса</strong><p id="forecastDetail">Настрой направление и импульс.</p></div></div>
+        <div class="intel"><span class="eyebrow">ТАКТИЧЕСКАЯ СВОДКА</span><p id="intelText">Крепость стреляет каждые 5 с. Тень луны закрывает корабль от огня; каждый залп ослабляет союзный флот.</p><button id="hintButton">Совет навигатора <span>↗</span></button></div>
+      </aside>
+    </div>
+    <section class="controls" aria-label="Управление манёвром">
+      <p id="courseStatus" class="mobile-course-status" role="status">Настрой направление и импульс.</p>
+      <div class="flight-inputs" id="flightInputs">
+        <div class="input-group"><label for="angle">Направление <span>°</span></label><div class="range-row"><input id="angleRange" type="range" min="-180" max="180" step="0.5" value="-54" aria-label="Направление полёта"><input id="angle" type="number" min="-180" max="180" step="0.5" value="-54" inputmode="decimal"></div></div>
+        <div class="input-group"><label for="speed">Импульс <span>м/с</span></label><div class="range-row"><input id="speedRange" type="range" min="55" max="170" step="1" value="85" aria-label="Сила импульса"><input id="speed" type="number" min="55" max="170" step="1" value="85" inputmode="numeric"></div></div>
+      </div>
+      <div class="anchor-controls" id="anchorControls" hidden><button id="anchorTool" aria-pressed="false">✧ Поставить якорь</button><label>X <input id="anchorX" aria-label="Положение якоря X" type="number" min="540" max="1000" step="5"></label><label>Y <input id="anchorY" aria-label="Положение якоря Y" type="number" min="65" max="570" step="5"></label></div>
+      <div class="action-row"><button id="launch" class="primary">Выполнить манёвр <span>↗</span></button><button id="pause" hidden>Пауза</button><button id="shield" hidden>Щит · E</button><button id="retry" title="Вернуться к планированию этого этапа">↺ <span>Заново</span></button><button id="rate" aria-label="Скорость воспроизведения: 1×">1×</button></div>
+    </section>
+    <footer class="operation-footer"><span id="saveStatus">Отдельная операция · прогресс на этом устройстве</span><span class="keyboard-hint">Пробел — запуск / пауза <b>·</b> E — щит <b>·</b> R — повтор</span><button id="restartOperation">Начать операцию заново</button></footer>
+  </main>
+  <dialog id="briefing" aria-labelledby="briefingTitle"><div class="briefing-art" aria-hidden="true"><i></i><span>ЗАТМЕНИЕ / ОПЕРАЦИЯ 01</span></div><div class="dialog-body"><p class="eyebrow">ПЕРЕДАЧА С ФЛАГМАНА «ЗАРЯ»</p><h2 id="briefingTitle">Открой нам путь.</h2><p class="lead">Крепость Собирателей держит захваченный мир. Наш флот под огнём. Твой корабль может перехватить её гравитационный узел.</p><ol class="briefing-objectives"><li><b>01</b><span><strong>Пройди в тени луны</strong>Настрой курс по прогнозу. Нажатие на карту меняет направление.</span></li><li><b>02</b><span><strong>Выбери способ атаки</strong>Обойди щит, верни вражеский залп или прикрой союзника. Перемещай якорь и наблюдай, как меняется траектория.</span></li><li><b>03</b><span><strong>Уйди через обломки</strong>После каждого этапа — контрольная точка. Неудачный манёвр можно переиграть.</span></li></ol><p class="subtle">Планируй без спешки. Во время полёта доступны пауза и один защитный импульс. Улучшения из основной игры здесь не нужны.</p><button id="begin" class="primary">Принять командование <span>↗</span></button></div></dialog>
+  <dialog id="outcome" aria-labelledby="outcomeTitle"><div class="dialog-body"><p class="eyebrow" id="outcomeEyebrow">РАЗБОР МАНЁВРА</p><h2 id="outcomeTitle">Узел захвачен</h2><p id="outcomeText" class="lead"></p><div id="outcomeStats" class="outcome-stats"></div><p id="outcomeAdvice" class="subtle"></p><div class="dialog-actions"><button id="outcomePrimary" class="primary">Следующий манёвр <span>↗</span></button><button id="reviewPath">Посмотреть траекторию</button></div></div></dialog>
+  <dialog id="preferences" aria-labelledby="preferencesTitle"><div class="dialog-body"><p class="eyebrow">ОПЕРАЦИЯ «ЗАТМЕНИЕ»</p><h2 id="preferencesTitle">Настройки</h2><label class="setting-row"><span><strong>Звуки боя</strong><small>Сигналы, двигатель и попадания</small></span><input id="soundEnabled" type="checkbox" role="switch"></label><label class="setting-row"><span><strong>Меньше движения</strong><small>Без декоративного мерцания и вспышек</small></span><input id="reducedMotion" type="checkbox" role="switch"></label><label class="setting-row"><span><strong>Полный прогноз</strong><small>Видеть рассчитанный маршрут до запуска</small></span><input id="showForecast" type="checkbox" role="switch" checked></label><p class="subtle">Пробел — запустить / приостановить. E — щит на 2 секунды. R — повторить текущий манёвр. На карте: нажатие задаёт направление, якорь можно перетаскивать.</p><button id="closeSettings" class="primary">Вернуться в операцию</button></div></dialog>
+  <dialog id="navigator" aria-labelledby="navigatorTitle"><div class="dialog-body"><p class="eyebrow">НАВИГАТОР / ЛИРА</p><h2 id="navigatorTitle">Опорный курс</h2><p id="navigatorText" class="lead"></p><p class="subtle">Можно взять рассчитанный курс за основу и изменить его. Использование подсказки отметится в итогах операции.</p><div class="dialog-actions"><button id="applyHint" class="primary">Взять курс за основу</button><button id="closeHint">Продолжить самостоятельно</button></div></div></dialog>
+  <dialog id="confirmRestart" aria-labelledby="restartTitle"><div class="dialog-body"><h2 id="restartTitle">Снова к луне?</h2><p class="lead">Начнётся новая попытка с первого этапа. Лучшие результаты сохранятся.</p><div class="dialog-actions"><button id="confirmNew" class="primary">Начать сначала</button><button id="cancelNew">Продолжить операцию</button></div></div></dialog>
+</body>
+</html>

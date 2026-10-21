@@ -1,0 +1,194 @@
+(function (root) {
+  'use strict';
+  const E = root.EclipseEngine, $ = id => document.getElementById(id), KEY = 'orbital-eclipse-operation-v1';
+  const NAMES = { breach: 'Удар с тыла', rebound: 'Вернуть залп', escort: 'Прикрыть звено' };
+  const PHASES = [
+    { title: 'За тенью луны', objective: 'Пройди над луной и захвати узел. Его поле позволит атаковать крепость.', radio: 'Луна прикроет заход. Найди курс к светящемуся узлу над её краем.', intel: 'Крепость стреляет каждые 5 с. Тень луны закрывает корабль от огня; каждый залп ослабляет союзный флот.' },
+    { title: 'Открыть крепость', objective: '', radio: 'Узел наш. Выбери способ атаки и настрой гравитационный якорь.', intel: '' },
+    { title: 'Живым из огня', objective: 'Дойди до синего коридора слева вверху. Луна притягивает корабль, обломки движутся.', radio: 'Щит погас. «Заря» начинает атаку. Твой коридор выхода — слева вверху.', intel: 'Следы обломков показывают их движение. Прогноз учитывает момент встречи: иногда достаточно изменить скорость.' }
+  ];
+  const TACTIC_INFO = {
+    breach: { objective: 'Обойди крепость справа. Удержись в подсвеченном секторе 0,8 с — корабль автоматически расстреляет генератор.', intel: 'Стрелять можно с тыла на расстоянии до 205 м. Якорь притягивает корабль: используй его, чтобы загнуть курс за щит.' },
+    rebound: { objective: 'Ты управляешь захваченным залпом. Якорь должен развернуть снаряд и вернуть его в крепость.', intel: 'Уведи залп за пунктирную линию разворота, затем верни к реактору. Снаряд должен лететь обратно вправо. В этом режиме поле якоря мощнее.' },
+    escort: { objective: 'Прикрой бомбардировщик хотя бы во время одного из двух залпов: на 4,5 и 7,5 с. Его курс отмечен золотом.', intel: 'Союзник защищён в радиусе 145 м от тебя. Он выдержит одно попадание; на 9-й секунде уничтожит генератор. Прикрыть оба залпа — лучший результат.' }
+  };
+  const REFERENCES = { approach: { angle: -51, speed: 85, ax: 760, ay: 410 }, breach: { angle: 10, speed: 145, ax: 805, ay: 195 }, rebound: { angle: 165, speed: 65, ax: 735, ay: 335 }, escort: { angle: 45, speed: 65, ax: 560, ay: 90 } };
+  let saved; try { saved = JSON.parse(localStorage.getItem(KEY)); } catch {}
+  if (!saved || saved.version !== 1) saved = {};
+  let campaign = {}; try { campaign = JSON.parse(localStorage.getItem('orbital-courier-save-v8'))?.settings || {}; } catch {}
+  const settings = { sound: typeof saved.settings?.sound === 'boolean' ? saved.settings.sound : campaign.sound === true,
+    reduced: typeof saved.settings?.reduced === 'boolean' ? saved.settings.reduced : matchMedia('(prefers-reduced-motion:reduce)').matches || campaign.reducedMotion === true, forecast: saved.settings?.forecast !== false };
+  const finite = (n, fallback, lo, hi) => Number.isFinite(n) ? E.clamp(n, lo, hi) : fallback;
+  const cleanCarry = v => ({ x: finite(v?.x, 960, 15, E.W - 15), y: finite(v?.y, 210, 20, E.H - 20), fleet: Math.round(finite(v?.fleet, 6, 1, 6)) });
+  let phase = [0, 1, 2].includes(saved.phase) ? saved.phase : 0, tactic = E.TACTICS.includes(saved.tactic) ? saved.tactic : 'breach';
+  let carry = phase ? cleanCarry(saved.carry) : { fleet: 6 };
+  let completed = Array.isArray(saved.completed) ? saved.completed.slice(0, 3).filter(x => x && [0, 1, 2].includes(x.phase)).map(x => ({ phase: x.phase, time: finite(x.time, 0, 0, 24), hull: finite(x.hull, 3, 0, 3), fleet: finite(x.fleet, 6, 0, 6), ally: finite(x.ally, 2, 0, 2) })) : [];
+  let attempts = Math.round(finite(saved.attempts, 0, 0, 99999)), hints = Math.round(finite(saved.hints, 0, 0, 99999)), plans = {}, best = {};
+  for (const t of E.TACTICS) {
+    if (saved.best?.[t] && Number.isFinite(saved.best[t].time)) best[t] = { time: finite(saved.best[t].time, 72, 0, 72), fleet: finite(saved.best[t].fleet, 1, 1, 6) };
+    for (const p of [0, 1, 2]) { const key = `${p}:${t}`; if (saved.plans?.[key]) plans[key] = E.cleanPlan(saved.plans[key], p, t); }
+  }
+  let plan, state, prediction, previous = null, mode = 'plan', editing = false, speed = 1, accumulator = 0, last = 0, eventIndex = 0, renderTime = 0;
+  let hintPlan = null, pendingNext = null, dirty = false, finished = saved.finished === true && completed.length === 3;
+  const renderer = new root.EclipseRenderer($('battlefield')), sound = new root.Orbital.Sound(); sound.enabled = settings.sound; sound.setVolume(.35);
+  const dialogs = [...document.querySelectorAll('dialog')], isDialogOpen = () => dialogs.some(d => d.open);
+  function snapshot(override = {}) { return { version: 1, phase, tactic, carry, completed, attempts, hints, plans, best, settings, finished, ...override }; }
+  function save(override) {
+    try { localStorage.setItem(KEY, JSON.stringify(snapshot(override))); $('saveStatus').textContent = 'Операция сохранена на этом устройстве'; }
+    catch { $('saveStatus').textContent = 'Хранилище недоступно · попытка остаётся в этой вкладке'; }
+  }
+  function openDialog(id) { accumulator = 0; sound.silence(); if (!$(id).open) $(id).showModal(); }
+  function closeDialog(id) { $(id).close(); last = performance.now(); accumulator = 0; }
+  function setRadio(text) { if ($('radioText').textContent !== text) $('radioText').textContent = text; }
+  function setup(initial = false) {
+    plan = plans[`${phase}:${tactic}`] || { ...E.defaults(phase, tactic) };
+    if (!plans[`${phase}:${tactic}`] && phase === 0) plan = { ...REFERENCES.approach, angle: -54 };
+    if (!plans[`${phase}:${tactic}`] && phase === 1) plan = { ...REFERENCES[tactic], angle: REFERENCES[tactic].angle + (tactic === 'rebound' ? 8 : 10) };
+    state = E.create(phase, tactic, plan, carry); mode = 'plan'; accumulator = 0; eventIndex = 0; editing = false; pendingNext = null;
+    if (!initial) previous = null;
+    const meta = PHASES[phase], info = phase === 1 ? TACTIC_INFO[tactic] : meta;
+    $('phaseLabel').textContent = `МАНЁВР 0${phase + 1} / 03`; $('objectiveTitle').textContent = meta.title; $('objectiveText').textContent = info.objective; $('intelText').textContent = info.intel; setRadio(meta.radio);
+    $('tactics').hidden = phase !== 1; $('anchorControls').hidden = phase !== 1;
+    $('hullLabel').textContent = phase === 1 && tactic === 'rebound' ? 'КОРАБЛЬ В УКРЫТИИ' : 'ТВОЙ КОРПУС';
+    $('mapHint').textContent = phase === 1 ? 'Перетащи якорь или задай направление на карте' : 'Нажми на карту, чтобы задать направление';
+    for (let i = 0; i < 3; i++) { $('step' + i).classList.toggle('done', i < phase); if (i === phase) $('step' + i).setAttribute('aria-current', 'step'); else $('step' + i).removeAttribute('aria-current'); }
+    document.querySelectorAll('[data-tactic]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tactic === tactic)));
+    writeInputs(); forecast(); sync();
+  }
+  function writeInputs(keepFocused = true) {
+    for (const name of ['angle', 'speed']) { if (!keepFocused || document.activeElement !== $(name)) $(name).value = String(plan[name]); $(name + 'Range').value = String(plan[name]); }
+    for (const [id, key] of [['anchorX', 'ax'], ['anchorY', 'ay']]) if (!keepFocused || document.activeElement !== $(id)) $(id).value = String(plan[key]);
+  }
+  function forecast() {
+    prediction = E.simulate(phase, tactic, plan, carry); dirty = false;
+    const good = prediction.status === 'won'; $('forecastStatus').dataset.good = String(good);
+    $('forecastTitle').textContent = !settings.forecast ? 'Прогноз скрыт' : good ? 'Манёвр достижим' : 'Курс требует внимания';
+    $('forecastDetail').textContent = !settings.forecast ? 'Включи прогноз, чтобы проверить курс.' : good ? `${prediction.t.toFixed(1)} с · флот ${prediction.fleet}/6${phase === 1 && tactic === 'escort' ? ' · прикрыто залпов: ' + prediction.coverCount + '/2' : ''}` : prediction.reason;
+    $('courseStatus').textContent = !settings.forecast ? 'Прогноз скрыт' : good ? 'Курс рассчитан · ' + prediction.t.toFixed(1) + ' с' : prediction.reason;
+    $('courseStatus').dataset.good = String(good);
+  }
+  function updatePlan(change) {
+    if (mode !== 'plan') return; plan = E.cleanPlan({ ...plan, ...change }, phase, tactic); plans[`${phase}:${tactic}`] = { ...plan };
+    state = E.create(phase, tactic, plan, carry); writeInputs(); dirty = true; save();
+  }
+  function sync() {
+    const running = mode === 'running' || mode === 'paused', locked = mode !== 'plan';
+    $('stateBadge').textContent = mode === 'running' ? 'МАНЁВР ВЫПОЛНЯЕТСЯ' : mode === 'paused' ? 'ТАКТИЧЕСКАЯ ПАУЗА' : mode === 'review' ? state.status === 'won' ? 'МАНЁВР ЗАВЕРШЁН' : 'РАЗБОР ПОЛЁТА' : 'ПЛАНИРОВАНИЕ';
+    $('stateBadge').classList.toggle('live', mode === 'running'); $('timer').textContent = state.t.toFixed(2).padStart(5, '0') + ' с';
+    $('fleetValue').textContent = `${state.fleet} / 6`; $('fleetMeter').style.width = state.fleet / 6 * 100 + '%'; $('hullValue').textContent = `${state.hull} / 3`; $('hullMeter').style.width = state.hull / 3 * 100 + '%';
+    $('mobileVitals').textContent = `Флот ${state.fleet}/6 · Корпус ${state.hull}/3`;
+    for (const id of ['angle', 'angleRange', 'speed', 'speedRange', 'anchorX', 'anchorY', 'anchorTool']) $(id).disabled = locked;
+    document.querySelectorAll('[data-tactic]').forEach(b => b.disabled = locked);
+    $('launch').hidden = running; $('pause').hidden = !running; $('shield').hidden = !running || phase === 1 && tactic === 'rebound';
+    $('launch').textContent = mode === 'review' ? state.status === 'won' ? phase === 2 ? 'Итоги операции ↗' : 'Следующий манёвр ↗' : 'Изменить курс ↗' : 'Выполнить манёвр ↗';
+    $('pause').textContent = mode === 'paused' ? 'Продолжить ▶' : 'Пауза Ⅱ'; $('shield').disabled = state.shieldUsed; $('shield').textContent = state.shieldUsed ? 'Щит использован' : 'Щит · E'; $('anchorTool').setAttribute('aria-pressed', String(editing));
+    $('soundEnabled').checked = settings.sound; $('reducedMotion').checked = settings.reduced; $('showForecast').checked = settings.forecast;
+    $('forecastToggle').setAttribute('aria-pressed', String(settings.forecast)); $('forecastToggle').lastElementChild.textContent = settings.forecast ? 'вкл.' : 'выкл.';
+    document.body.dataset.reduced = String(settings.reduced); document.body.dataset.phase = String(phase); document.body.dataset.mode = mode;
+  }
+  function launch() {
+    if (mode === 'review') { if (state.status === 'won') phase === 2 ? outcome() : next(); else retry(); return; }
+    if (mode !== 'plan' || isDialogOpen()) return;
+    forecast(); plans[`${phase}:${tactic}`] = { ...plan }; state = E.create(phase, tactic, plan, carry); mode = 'running'; editing = false; attempts++; accumulator = 0; eventIndex = 0; save();
+    sound.unlock(); sound.play('launch'); setRadio(phase === 1 && tactic === 'rebound' ? 'Залп под нашим контролем. Поле должно вернуть его к реактору.' : 'Импульс дан. Наблюдаю за курсом.'); sync();
+  }
+  function pause() { if (!['running', 'paused'].includes(mode)) return; mode = mode === 'running' ? 'paused' : 'running'; accumulator = 0; sound.silence(); sync(); }
+  function retry() {
+    dialogs.forEach(d => { if (d.open) d.close(); }); previous = state.t > 0 ? state : previous; completed = completed.filter(x => x.phase < phase); finished = false;
+    state = E.create(phase, tactic, plan, carry); mode = 'plan'; accumulator = 0; eventIndex = 0; pendingNext = null; sound.silence(); forecast(); sync(); save(); setRadio('Курс можно изменить. Предыдущая траектория осталась на карте.');
+  }
+  function endManeuver() {
+    mode = 'review'; accumulator = 0; sound.silence();
+    if (state.status === 'won') {
+      sound.play('win'); completed = completed.filter(x => x.phase < phase).concat({ phase, time: state.t, hull: state.hull, fleet: state.fleet, ally: state.allyHull });
+      pendingNext = { phase: Math.min(2, phase + 1), carry: { fleet: state.fleet, x: phase === 0 || tactic === 'rebound' && phase === 1 ? E.NODE.x : state.x, y: phase === 0 || tactic === 'rebound' && phase === 1 ? E.NODE.y : state.y } };
+      if (phase === 2) { finished = true; const time = completed.reduce((sum, r) => sum + r.time, 0); if (!best[tactic] || time < best[tactic].time) best[tactic] = { time, fleet: state.fleet }; save({ final: { x: state.x, y: state.y, t: state.t } }); }
+      else save(pendingNext);
+    } else { sound.play('fail'); save(); }
+    setRadio(state.reason); sync(); outcome();
+  }
+  function outcome() {
+    const won = state.status === 'won', final = won && phase === 2;
+    $('outcomeEyebrow').textContent = final ? 'ОПЕРАЦИЯ ЗАВЕРШЕНА / ' + NAMES[tactic].toUpperCase() : `МАНЁВР 0${phase + 1} / ${won ? 'ВЫПОЛНЕН' : 'ПОВТОР ДОСТУПЕН'}`;
+    $('outcomeTitle').textContent = final ? 'Коридор открыт.' : won ? phase === 0 ? 'Узел наш.' : 'Крепость открыта.' : 'Скорректируем курс.';
+    $('outcomeText').textContent = final ? '«Заря» прошла за щит. Союзный флот освобождает захваченный мир. Ты вернулся из боя.' : state.reason;
+    const time = final ? completed.reduce((sum, r) => sum + r.time, 0) : state.t;
+    const stats = final ? [['ВРЕМЯ МАНЁВРОВ', time.toFixed(1) + ' с'], ['ФЛОТ СОХРАНЁН', state.fleet + ' / 6'], ['ЗАПУСКОВ', attempts]] : [['ВРЕМЯ', time.toFixed(1) + ' с'], ['ФЛОТ', state.fleet + ' / 6'], ['КОРПУС', state.hull + ' / 3']];
+    $('outcomeStats').replaceChildren(...stats.map(([name, value]) => { const div = document.createElement('div'), label = document.createElement('span'), strong = document.createElement('strong'); label.textContent = name; strong.textContent = value; div.append(label, strong); return div; }));
+    $('outcomeAdvice').textContent = final ? `Пройдено способов: ${Object.keys(best).length} / 3. ${hints ? 'Использовано подсказок: ' + hints + '.' : 'Самостоятельный расчёт, без подсказок.'} Попробуй другой способ атаки: он меняет задачу второго этапа.` : won ? phase === 0 ? 'Контрольная точка сохранена. Теперь можно выбрать одну из трёх тактик и перемещать гравитационный якорь.' : 'Контрольная точка сохранена. Впереди движущиеся обломки и выход из зоны боя.' : 'Вернись к планированию: прежний маршрут останется на карте, а прогноз поможет проверить изменения. Флот и корпус восстановятся до начала этапа.';
+    $('outcomePrimary').textContent = final ? 'Пройти другим способом ↗' : won ? 'Следующий манёвр ↗' : 'Изменить курс ↗'; openDialog('outcome');
+  }
+  function next() { if (!pendingNext) return; phase = pendingNext.phase; carry = pendingNext.carry; setup(); save(); $('battlefield').focus({ preventScroll: true }); }
+  function newOperation() {
+    phase = 0; carry = { fleet: 6 }; completed = []; attempts = 0; hints = 0; finished = false; plans = {}; previous = null; setup(); save(); window.scrollTo({ top: 0, behavior: settings.reduced ? 'instant' : 'smooth' });
+  }
+  function findHint() {
+    if (phase === 0) return { ...REFERENCES.approach }; if (phase === 1) return { ...REFERENCES[tactic] };
+    let result = null, score = Infinity;
+    for (let angle = -180; angle <= -80; angle += 2) for (let speed = 65; speed <= 170; speed += 5) {
+      const candidate = { ...plan, angle, speed }, simulation = E.simulate(2, tactic, candidate, carry);
+      if (simulation.status === 'won' && simulation.t < score) { score = simulation.t; result = candidate; }
+    }
+    return result;
+  }
+  function requestHint() {
+    if (mode !== 'plan') return; hintPlan = findHint();
+    $('navigatorText').textContent = !hintPlan ? 'Прогноз поможет найти окно между обломками. Сначала подними курс, затем подбери импульс.' : phase === 0 ? 'Обойди верхний край луны. Её поле загнёт траекторию к узлу; слишком сильный импульс унесёт корабль вверх.' : phase === 2 ? 'Этот курс рассчитан из твоего текущего положения с учётом движущихся обломков. Изменение скорости меняет момент встречи с ними.' : tactic === 'breach' ? 'Поставь якорь над крепостью и проведи корабль мимо её верхнего края. С тыла генератор открыт для автоматического огня.' : tactic === 'rebound' ? 'Поставь якорь слева от крепости, чуть ниже линии выстрела. Небольшой импульс позволит полю развернуть залп по петле.' : 'Иди вниз вдоль золотого курса. Нужно оказаться рядом с бомбардировщиком во время отмеченных залпов, а затем дождаться его атаки.';
+    $('applyHint').disabled = !hintPlan; openDialog('navigator');
+  }
+  $('begin').addEventListener('click', () => { closeDialog('briefing'); sound.unlock(); if (finished) outcome(); });
+  $('help').addEventListener('click', () => { $('begin').textContent = 'Вернуться к операции ↗'; openDialog('briefing'); });
+  $('settings').addEventListener('click', () => openDialog('preferences')); $('closeSettings').addEventListener('click', () => closeDialog('preferences'));
+  $('launch').addEventListener('click', launch); $('pause').addEventListener('click', pause); $('retry').addEventListener('click', retry);
+  $('shield').addEventListener('click', () => { if (['running', 'paused'].includes(mode)) { E.shield(state); sync(); } });
+  $('rate').addEventListener('click', () => { speed = speed === 1 ? 2 : speed === 2 ? 4 : 1; $('rate').textContent = speed + '×'; $('rate').setAttribute('aria-label', 'Скорость воспроизведения: ' + speed + '×'); });
+  for (const key of ['angle', 'speed']) for (const suffix of ['', 'Range']) $(key + suffix).addEventListener('input', event => { const v = event.target.valueAsNumber; if (Number.isFinite(v)) updatePlan({ [key]: v }); });
+  for (const [id, key] of [['anchorX', 'ax'], ['anchorY', 'ay']]) $(id).addEventListener('input', event => { const v = event.target.valueAsNumber; if (Number.isFinite(v)) updatePlan({ [key]: v }); });
+  for (const id of ['angle', 'speed', 'anchorX', 'anchorY']) $(id).addEventListener('change', () => writeInputs(false));
+  $('anchorTool').addEventListener('click', () => { editing = !editing; $('mapHint').textContent = editing ? 'Нажми на карту, чтобы поставить якорь' : 'Нажми на карту, чтобы задать направление'; sync(); });
+  document.querySelectorAll('[data-tactic]').forEach(button => button.addEventListener('click', () => { if (phase !== 1 || mode !== 'plan') return; plans[`${phase}:${tactic}`] = { ...plan }; tactic = button.dataset.tactic; setup(); save(); }));
+  $('outcomePrimary').addEventListener('click', () => { closeDialog('outcome'); if (state.status !== 'won') retry(); else if (phase === 2) { tactic = E.TACTICS[(E.TACTICS.indexOf(tactic) + 1) % 3]; newOperation(); } else next(); });
+  $('reviewPath').addEventListener('click', () => closeDialog('outcome')); $('hintButton').addEventListener('click', requestHint); $('closeHint').addEventListener('click', () => closeDialog('navigator'));
+  $('applyHint').addEventListener('click', () => { closeDialog('navigator'); if (hintPlan) { hints++; updatePlan(hintPlan); forecast(); setRadio('Опорный курс введён. Можешь использовать его или попробовать улучшить.'); } });
+  $('restartOperation').addEventListener('click', () => openDialog('confirmRestart')); $('cancelNew').addEventListener('click', () => closeDialog('confirmRestart')); $('confirmNew').addEventListener('click', () => { closeDialog('confirmRestart'); newOperation(); });
+  function preference(key, value) { settings[key] = value; sound.enabled = settings.sound; if (settings.sound) sound.unlock(); forecast(); sync(); save(pendingNext && phase < 2 ? pendingNext : undefined); }
+  $('soundEnabled').addEventListener('change', e => preference('sound', e.target.checked)); $('reducedMotion').addEventListener('change', e => preference('reduced', e.target.checked)); $('showForecast').addEventListener('change', e => preference('forecast', e.target.checked)); $('forecastToggle').addEventListener('click', () => preference('forecast', !settings.forecast));
+  let dragging = false, pressPoint = null;
+  $('battlefield').addEventListener('pointerdown', event => {
+    if (mode !== 'plan') return; const p = renderer.point(event.clientX, event.clientY); pressPoint = { x: event.clientX, y: event.clientY };
+    if (phase === 1 && (editing || E.distance(p, { x: plan.ax, y: plan.ay }) < 28 / renderer.scale)) { dragging = true; editing = true; $('battlefield').setPointerCapture(event.pointerId); updatePlan({ ax: Math.round(p.x), ay: Math.round(p.y) }); sync(); }
+  });
+  $('battlefield').addEventListener('pointermove', event => { if (dragging && mode === 'plan') { const p = renderer.point(event.clientX, event.clientY); updatePlan({ ax: Math.round(p.x), ay: Math.round(p.y) }); } });
+  $('battlefield').addEventListener('pointerup', event => {
+    if (!dragging && pressPoint && mode === 'plan' && Math.hypot(event.clientX - pressPoint.x, event.clientY - pressPoint.y) < 9) { const p = renderer.point(event.clientX, event.clientY); updatePlan({ angle: Math.round(Math.atan2(p.y - state.y, p.x - state.x) * 180 / Math.PI * 2) / 2 }); }
+    dragging = false; pressPoint = null;
+  });
+  for (const name of ['pointercancel', 'lostpointercapture']) $('battlefield').addEventListener(name, () => { dragging = false; pressPoint = null; });
+  document.addEventListener('keydown', event => {
+    if (event.repeat || isDialogOpen() || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '') || event.ctrlKey || event.metaKey || event.altKey) return;
+    if (event.code === 'Space' && /^(BUTTON|A)$/.test(document.activeElement?.tagName || '')) return;
+    if (event.code === 'Space') { event.preventDefault(); ['running', 'paused'].includes(mode) ? pause() : launch(); }
+    if (event.code === 'KeyR') { event.preventDefault(); retry(); }
+    if (event.code === 'KeyE' && ['running', 'paused'].includes(mode)) { event.preventDefault(); E.shield(state); sync(); }
+  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && mode === 'running') pause(); last = performance.now(); accumulator = 0; });
+  function frame(now) {
+    const dt = Math.min(.1, Math.max(0, (now - (last || now)) / 1000)); last = now; if (!settings.reduced) renderTime += dt;
+    if (dirty) forecast();
+    if (mode === 'running' && !isDialogOpen() && !document.hidden) {
+      accumulator += dt * speed;
+      while (accumulator >= E.DT && mode === 'running') {
+        E.step(state); accumulator -= E.DT;
+        while (eventIndex < state.events.length) { const ev = state.events[eventIndex++]; if (['hit', 'ally-hit', 'protect', 'blocked'].includes(ev.type)) { setRadio(ev.text); sound.play(ev.type === 'protect' ? 'gate' : 'cargo'); } }
+        if (state.status !== 'running') endManeuver();
+      }
+      sync();
+    }
+    renderer.draw({ state, prediction, phase, tactic, plan, mode, reduced: settings.reduced, showForecast: settings.forecast, editing, previous }, renderTime); requestAnimationFrame(frame);
+  }
+  setup(true);
+  if (finished) { state.status = 'won'; state.reason = 'Операция завершена'; state.x = finite(saved.final?.x, E.EXIT.x, 0, E.W); state.y = finite(saved.final?.y, E.EXIT.y, 0, E.H); state.t = completed[2]?.time || 0; state.fleet = completed[2]?.fleet || 1; state.hull = completed[2]?.hull || 3; mode = 'review'; sync(); outcome(); }
+  else { $('begin').textContent = phase > 0 ? 'Продолжить с контрольной точки ↗' : 'Принять командование ↗'; openDialog('briefing'); }
+  requestAnimationFrame(frame);
+  root.EclipseApp = { get state() { return state; }, get phase() { return phase; }, get tactic() { return tactic; }, get mode() { return mode; }, get prediction() { return prediction; }, get plan() { return { ...plan }; }, get saved() { return snapshot(); } };
+})(window);

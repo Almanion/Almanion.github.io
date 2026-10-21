@@ -52,6 +52,10 @@ function onlinePage(page) {
         return !pages[destination] ? '<button' + attributes + '>' + content + '</button>' :
             '<a' + attributes + ' href="' + prefix + pages[destination].directory + '">' + content + '</a>';
     });
+    const eclipseLink = '<a class="eclipse-entry" href="' + prefix + 'eclipse/"><span class="eclipse-icon" aria-hidden="true"></span><span><strong>Затмение</strong><em>ПРОБНЫЙ РЕЖИМ</em><small>Боевая операция · гравитация · три способа атаки</small></span><span>Играть ↗</span></a>';
+    html = html.replace('</head>', '<link rel="stylesheet" href="' + prefix + 'assets/eclipse-entry.css?v=' + assetVersion('eclipse/entry.css') + '"></head>')
+        .replace('<div class="hero-meta">', eclipseLink + '<div class="hero-meta">')
+        .replace('<section class="campaign-access"', eclipseLink + '<section class="campaign-access"');
     return html.replace(/(<a href="(?:\.\/)?(?:\.\.\/)+index\.html">Almanion ↗<\/a>)/,
         '$1<a class="home-download" href="' + prefix + 'offline.html" download="Orbital Courier.html">Скачать игру ↓</a>');
 }
@@ -62,6 +66,13 @@ function onlineFiles() {
     for (const match of sourceHTML().matchAll(/\b(?:href|src)="(src\/[^"]+\.(?:css|js))"/g)) {
         files['assets/' + match[1].slice(4)] = fs.readFileSync(path.join(source, match[1]), 'utf8');
     }
+    const eclipseAssets = { 'eclipse-engine.js': 'engine.js', 'eclipse-renderer.js': 'renderer.js', 'eclipse-app.js': 'app.js', 'eclipse.css': 'eclipse.css', 'eclipse-entry.css': 'entry.css' };
+    for (const [name, file] of Object.entries(eclipseAssets)) files['assets/' + name] = fs.readFileSync(path.join(source, 'eclipse', file), 'utf8');
+    files['eclipse/index.html'] = fs.readFileSync(path.join(source, 'eclipse', 'index.html'), 'utf8').replace(/@@([a-z.-]+)@@/g, (_, name) => {
+        const content = files['assets/' + name];
+        if (!content) throw new Error('Missing Eclipse asset: ' + name);
+        return '../assets/' + name + '?v=' + crypto.createHash('sha256').update(content).digest('hex').slice(0, 16);
+    });
     return files;
 }
 
@@ -75,7 +86,7 @@ function build() {
         fs.mkdirSync(path.dirname(destination), { recursive: true });
         fs.writeFileSync(destination, content, 'utf8');
     }
-    console.log('Prepared five online game pages, shared assets and portable offline.html');
+    console.log('Prepared five campaign pages, the Eclipse operation, shared assets and portable offline.html');
 }
 
 if (require.main === module) build();
