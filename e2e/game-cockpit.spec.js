@@ -73,6 +73,6 @@ test('cockpit validates numbers and retains separate saved courses after reload'
  await page.locator('[data-action=recall-course][data-slot="0"]').click();expect(await page.evaluate(()=>({angle:Orbital.App.angle,speed:Orbital.App.speed}))).toEqual(stored);
  await page.locator('#modeChip').click();await page.locator('#memoryTab').click();
  await expect(page.locator('[data-action=recall-course][data-slot="0"]')).toBeDisabled();
- await page.locator('#modeChip').click();await page.locator('#memoryTab').click();
+ await page.locator('#normalMode').click();await page.locator('#memoryTab').click();
  await expect(page.locator('[data-action=recall-course][data-slot="0"]')).toBeEnabled();
 });

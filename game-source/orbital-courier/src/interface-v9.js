@@ -105,10 +105,9 @@
       if (mode !== 'aiming') clearPointers();
       schedule();
     }
-    setText($('modeChip'), A.profile.difficulty === 'pro' ? 'PRO ×1,7' : 'Обычный');
-    $('modeChip').title = A.state ? 'Режим меняется до запуска' : (A.profile.difficulty === 'pro' ? 'Нажми, чтобы включить обычный режим' : 'Нажми, чтобы включить PRO');
+    $('modeChip').title=A.state?'Режим зафиксирован до следующего запуска':'ПРО: награда ×1,7 и более строгие условия приёма';
     $('saveBadge').hidden=A.storageOK;
-    $('modeChip').classList.toggle('pro', A.profile.difficulty === 'pro');
+    O.FlightSettings?.sync();
     setText($('navModeLabel'), mode === 'aiming' ? 'Начальный импульс' : mode === 'review' ? 'Полёт завершён' : A.paused ? 'Полёт на паузе' : 'Капсула в полёте');
     $('cockpit').style.setProperty('--map-turn', O.FlightView.portrait() ? '-90deg' : '0deg');
     setText($('fineAimButton'), A.profile.settings.fineAim ? '✓ Точно' : 'Точно');
@@ -121,7 +120,7 @@
     const text = !A.state ? 'Запуск ↗' : flying() ? (A.paused ? 'Продолжить' : 'Пауза') : 'Ещё раз ↺';
     setText($('launchButton'), text);
     setText($('mobileLaunch'), narrow() && editing() ? 'Готово ✓' : text);
-    setText($('stagePill'), A.assisted ? 'ТРЕНИРОВКА · БЕЗ НАГРАД' : !A.state ? 'ГОТОВНОСТЬ' : flying() ? A.paused ? 'ПАУЗА' : 'ПОЛЁТ' : 'ЗАПИСЬ РЕЙСА');
+    setText($('stagePill'), (A.profile.difficulty==='pro'?'ПРО · ':'')+(A.assisted ? 'ТРЕНИРОВКА · БЕЗ НАГРАД' : !A.state ? 'ГОТОВНОСТЬ' : flying() ? A.paused ? 'ПАУЗА' : 'ПОЛЁТ' : 'ЗАПИСЬ РЕЙСА'));
     $('liveFlightPanel').hidden = mode === 'aiming';
     if (mode !== 'aiming' && s) {
       if (!initializedLive) initLive();
@@ -276,7 +275,7 @@
       <button data-action="ui:mode"><span class="menu-symbol">◉</span>${A.profile.difficulty === 'pro' ? 'Выключить PRO' : 'Включить PRO'}</button>
       <button data-action="ui:shortcuts"><span class="menu-symbol">⌨</span>Управление</button>
       <button data-action="nav" data-page="campaign" class="wide">← Все контракты</button>
-    </div><div class="modal-actions"><button class="button primary" data-action="close">К полёту</button></div>`, `КОНТРАКТ ${O.Campaign.number(A.currentId)} / 80`);
+    </div><div class="modal-actions"><button class="button primary" data-action="close">К полёту</button></div>`, `КОНТРАКТ ${O.Campaign.number(A.currentId)} / ${O.Campaign.order.length}`);
   }
   function toggleDifficulty() {
     if (A.state) { A.toast('Режим можно переключать только до запуска.', true); return; }

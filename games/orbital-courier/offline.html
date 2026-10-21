@@ -1945,6 +1945,29 @@ body.high-contrast .mission-status,body.high-contrast .achievement-card p,body.h
 body[data-map-mode=planets] #gameCanvas{cursor:grab}body[data-map-mode=planets].map-dragging #gameCanvas{cursor:grabbing}
 @media(max-width:699px),(max-width:999px) and (orientation:portrait){body.has-placement .map-mode{gap:0}body.has-placement .map-mode button{padding:0 8px;font-size:11px}body.has-placement #mapFit{display:none}.planet-workshop summary{font-size:14px}.planet-workshop label,.planet-workshop p,.planet-workshop small{font-size:12px}.planet-workshop select,.planet-workshop input{font-size:16px;height:44px}}
 
+</style><style>
+/* Flight modes stay visible before, during and after the launch. */
+.flight-mode-switch{display:flex;align-items:center;gap:5px;flex:none}.flight-mode-choice{display:flex;border:1px solid #8190a44a;border-radius:10px;padding:3px;background:#17191e;gap:3px}
+.flight-mode-choice button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:38px;border:1px solid transparent;border-radius:7px;padding:0 13px;background:none;font:500 12px var(--sans);color:#aab3c3;white-space:nowrap}.flight-mode-choice button[aria-pressed=true]{background:#e4eaf3;color:#232936;border-color:#e4eaf3}.flight-mode-choice #modeChip{color:#d2bdf8;border-color:#a98ad65c;background:#b18be90a}.flight-mode-choice #modeChip[aria-pressed=true]{color:#f0e5ff;border-color:#b99ae9;background:#635083;box-shadow:inset 0 0 0 1px #c4a8f640}.flight-mode-choice svg{width:17px;height:17px}.flight-mode-choice small{font-size:10px;font-weight:500}.flight-mode-choice button:disabled{opacity:.75;cursor:default}.flight-mode-choice button[aria-pressed=true]:disabled{opacity:1}.mode-info{width:36px;min-height:44px;border:0;border-radius:8px;background:none;color:#a8b4c9;font:500 15px var(--sans)}
+#play .flight-settings{display:grid;place-items:center;width:42px;min-width:42px;height:42px;border-color:#8794ab44;background:#b8ccee08}#play .flight-settings svg{width:22px;height:22px}body[data-page=play] .account>[data-action=settings]{display:none}
+body[data-page=play][data-difficulty=pro] #mapViewport{border-color:#a48abd66}body[data-page=play][data-difficulty=pro] #stagePill{color:#e0c9ff;border-color:#a185c67d;background:#342a47e8}body[data-page=play][data-difficulty=pro] .launch-button,body[data-page=play][data-difficulty=pro] #mobileLaunch{background:#d6c5f1;color:#30233f;border-color:#e0d0fa}
+.mode-comparison{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mode-option{display:block;text-align:left;padding:15px;border:1px solid #78869e4d;border-radius:11px;background:#151922;color:#c8d4e8;min-width:0}.mode-option[aria-pressed=true]{border-color:#c5d4ec;background:#b7cef00a;box-shadow:inset 0 0 0 1px #b7cef02b}.mode-option.pro-option{color:#d4c0f1}.mode-option.pro-option[aria-pressed=true]{border-color:#bfa0ec;background:#b38bdf13;box-shadow:inset 0 0 0 1px #bba0de38}.mode-option-title{display:flex;align-items:center;gap:5px}.mode-option-title strong{font:600 13px var(--sans)}.mode-option-title svg{height:18px;width:18px}.mode-option-title small{font:400 9px var(--sans);margin-left:auto;color:#aab7cd}.mode-payout{display:block;margin:15px 0 18px;font:500 27px/1.1 var(--sans);letter-spacing:-.04em}.mode-payout small{display:block;font:400 9px var(--sans);letter-spacing:0;margin-top:5px;color:#99a9c0}.mode-facts{display:block;border-top:1px solid #a2b3cb28;padding-top:6px}.mode-facts>span{display:flex;flex-direction:column;gap:2px;margin-top:8px;font-size:9px;line-height:1.5;color:#9eacc3}.mode-facts b{font-size:12px;color:#d5dfef;font-weight:500}.mode-explanation{font-size:11px!important;line-height:1.6;color:#9dabc2!important;margin:12px 0 19px}.mode-option:disabled{opacity:.85;cursor:default}.mode-option:disabled[aria-pressed=false]{opacity:.55}
+#modal.mode-modal{width:min(590px,calc(100vw - 24px))}.mode-modal .mode-facts>span{flex-direction:row;justify-content:space-between;gap:10px}.mode-modal .mode-payout{margin-top:20px}
+.playback-choices{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}.playback-choices button{min-height:44px;padding:5px 0;border:1px solid #8a9aba44;border-radius:7px;background:#151922;color:#a9b9d0;font:500 12px var(--sans)}.playback-choices button[aria-pressed=true]{border-color:#c2d5ee;background:#c4d5ef;color:#253248}.flight-precision{margin-top:20px}.sound-preview{min-height:44px;padding:9px 16px;background:#b6ccea0b;color:#d6e5fa;border:1px solid #9fb5d54d;border-radius:8px;font-size:12px}
+#modal.preferences-modal .preferences-layout .settings-tabs{gap:4px}#modal.preferences-modal .preferences-layout .settings-section{min-height:420px}.preferences-footer{position:sticky;bottom:-28px;background:#1b1d22;padding-bottom:6px}
+@media(max-width:999px) and (orientation:portrait),(max-width:699px){
+ #play .flight-heading{display:grid;grid-template-columns:44px minmax(0,1fr) auto;grid-template-rows:44px 44px;height:94px;flex:0 0 94px;gap:6px 8px}#play .flight-back{grid-area:1/1}#play .flight-title-group{grid-area:1/2;min-width:0}#play .flight-actions{grid-area:1/3;gap:5px}#play .flight-mode-switch{grid-area:2/1/3/-1;min-width:0;gap:3px}#play .flight-mode-choice{flex:1;padding:2px;border-radius:10px}.flight-mode-choice button{flex:1;min-height:38px;font-size:12px;padding:0 10px}.flight-mode-choice small{font-size:11px}.mode-info{width:36px;min-width:36px;min-height:44px}#play .flight-settings{width:44px;min-width:44px;height:44px;border-radius:12px}
+ body[data-result-view=summary] #play .flight-heading{height:44px;flex-basis:44px;grid-template-rows:44px}body[data-result-view=summary] #flightModeSwitch{display:none}body[data-result-view=summary][data-difficulty=pro] #flightTitle:before{content:'ПРО · ';color:#cdb1f1}
+ #modal.preferences-modal .preferences-layout .settings-tabs{grid-template-columns:repeat(4,minmax(0,1fr))}#modal.preferences-modal .preferences-layout .settings-tabs button{display:flex;flex-direction:column;gap:3px;font-size:11px;padding:7px 2px}#modal.preferences-modal .preferences-layout .settings-tabs button>span{font-size:16px;height:20px}.mode-option{padding:12px 10px}.mode-option-title{flex-wrap:wrap}.mode-option-title small{font-size:8px}.mode-facts>span{font-size:10px}.mode-facts b{font-size:12px}.mode-payout{font-size:25px}.mode-payout small{font-size:9px;line-height:1.5}.mode-explanation{font-size:11px!important}.playback-choices{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}#modal.preferences-modal .preferences-layout .settings-section{min-height:0}.preferences-footer{bottom:-22px;padding-bottom:8px}.mode-modal .mode-facts>span{flex-direction:column}
+}
+@media(min-width:520px) and (max-width:999px) and (max-height:480px) and (orientation:landscape){#play .flight-title-group{flex:1!important}#play .flight-heading{display:flex;flex-wrap:nowrap;height:44px}.flight-mode-choice button{padding:0 9px;font-size:11px}.flight-mode-choice small{font-size:10px}.mode-info{width:30px;min-width:30px}.flight-mode-switch{gap:0}#play .flight-settings{width:40px;min-width:40px}#play .flight-plan{position:relative;inset:auto;width:100%;background:#1c1e22;flex:0 0 38px;height:38px;min-height:38px}#play .flight-plan>summary{height:38px;min-height:38px}#play .flight-plan .plan-marker{display:block}#play .flight-actions{margin-left:0}}
+.mode-comparison.compact .mode-facts{display:none}.mode-comparison.compact .mode-payout{margin:12px 0 1px}.mode-comparison.compact .mode-payout small{font-size:10px}.mode-facts>span{flex-direction:row;justify-content:space-between;align-items:center;gap:8px;font-size:11px}.mode-info{min-width:44px;width:44px;background:#b3c5e907;border:1px solid #8292ad33}.preferences-footer{bottom:0;padding:14px 0 8px;background:#1b1d22}.flight-mode-choice{padding:2px}.flight-mode-choice button{min-height:40px}
+body[data-page=play][data-difficulty=pro] #play .launch-button{background:#d6c5f1;color:#30233f;border-color:#e0d0fa}
+@media(max-width:999px) and (orientation:portrait),(max-width:699px){#play .flight-heading{grid-template-rows:44px 46px;height:96px;flex-basis:96px}.flight-mode-choice{padding:0}.flight-mode-choice button{min-height:44px}.preferences-footer{bottom:0}.mode-facts>span{font-size:10px}.mode-modal .mode-facts>span{flex-direction:row}.mode-info{width:44px;min-width:44px}}
+@media(min-width:520px) and (max-width:999px) and (max-height:480px) and (orientation:landscape){#play .flight-heading{height:44px;flex-basis:44px}.flight-mode-choice button{min-height:40px}.flight-mode-choice{padding:0}.mode-info{width:30px;min-width:30px}}
+@media(min-width:520px) and (max-width:999px) and (max-height:480px) and (orientation:landscape){#play .flight-mode-choice button{min-height:44px}.mode-info{width:44px;min-width:44px}#play .flight-settings{width:44px;min-width:44px;height:44px}#play .flight-plan,#play .flight-plan>summary{height:44px;min-height:44px;flex-basis:44px}}
+@media(max-width:699px) and (max-height:660px) and (orientation:portrait){#play .flight-left{position:relative}#play .flight-plan{position:absolute;top:8px;right:8px;left:auto;bottom:auto;width:46px;height:46px;min-height:46px;z-index:3;border:1px solid #8b9bb74d;background:#23262cee}#play .flight-plan>summary{width:44px;min-width:44px;min-height:44px;justify-content:center;padding:0}#play .flight-plan summary>div,#play .flight-plan .plan-chevron,#play #planCounter{display:none}#play .flight-plan .plan-marker{display:block;font-size:20px}}
+
 </style></head>
 <body class="ui9">
 <noscript>Для игры нужно включить JavaScript. Интернет и установка библиотек не нужны.</noscript>
@@ -2003,8 +2026,8 @@ body[data-map-mode=planets] #gameCanvas{cursor:grab}body[data-map-mode=planets].
   <div class="flight-heading">
     <button class="icon-button flight-back" data-action="nav" data-page="campaign" aria-label="К контрактам" title="К контрактам">‹</button>
     <div class="flight-title-group"><div class="eyebrow" id="flightSector">КОНТРАКТ 01</div><h2 id="flightTitle">Первое отправление</h2></div>
-    <div class="flight-actions"><div class="contract-pager"><button aria-label="Предыдущий контракт" data-action="previous-level" id="previousLevel">‹</button><span id="levelPosition">01 / 76</span><button aria-label="Следующий контракт" data-action="following-level" id="followingLevel">›</button></div>
-    <button class="save-badge" id="saveBadge" data-action="ui:save-settings" hidden aria-label="Автосохранение недоступно. Экспортировать прогресс" title="Автосохранение недоступно">!</button><button class="mode-chip" data-action="ui:mode" id="modeChip" title="Сложность рейса">Обычный</button>
+    <div class="flight-mode-switch" id="flightModeSwitch"><div class="flight-mode-choice" role="group" aria-label="Режим полёта"><button id="normalMode" data-action="ui:set-mode" data-mode="normal" aria-pressed="true">Обычный</button><button id="modeChip" data-action="ui:set-mode" data-mode="pro" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><path d="m10 2 7 8-7 8-7-8Z"/><path d="m6 10 4-5 4 5-4 5Z"/></svg><span>ПРО</span><small>×1,7</small></button></div><button class="mode-info" data-action="ui:mode-details" aria-label="Условия обычного режима и ПРО" title="Чем отличаются режимы">i</button></div><div class="flight-actions"><div class="contract-pager"><button aria-label="Предыдущий контракт" data-action="previous-level" id="previousLevel">‹</button><span id="levelPosition">01 / 76</span><button aria-label="Следующий контракт" data-action="following-level" id="followingLevel">›</button></div>
+    <button class="save-badge" id="saveBadge" data-action="ui:save-settings" hidden aria-label="Автосохранение недоступно. Экспортировать прогресс" title="Автосохранение недоступно">!</button><button class="icon-button flight-settings" data-action="ui:flight-settings" aria-label="Настройки полёта" title="Настройки полёта"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m9 3-.6 2.1-2 .9-2-.5L2.5 9l1.5 1.6v2.8L2.5 15l1.9 3.5 2-.5 2 .9L9 21h4l.6-2.1 2-.9 2 .5 1.9-3.5-1.5-1.6v-2.8L19.5 9l-1.9-3.5-2 .5-2-.9L13 3Z"/><circle cx="11" cy="12" r="3"/></svg></button>
     <button class="icon-button flight-menu" data-action="ui:menu" aria-label="Меню полёта" title="Меню полёта">•••</button></div>
   </div>
   <div class="training-badge" hidden id="trainingBadge">Тренировка · без наград</div>
@@ -2013,7 +2036,7 @@ body[data-map-mode=planets] #gameCanvas{cursor:grab}body[data-map-mode=planets].
   <section class="medal-deck" aria-label="Медали контракта"><div class="medal-deck-heading"><span id="medalLegend"></span></div><div class="medal-cards" id="objectivesList"></div></section>
   <div class="flight-layout">
     <div class="flight-left">
-      <details class="flight-plan" id="flightPlan"><summary aria-haspopup="dialog" aria-controls="flightDrawer"><span class="plan-marker" aria-hidden="true">⌁</span><div><small>ДАЛЬШЕ</small><strong id="activeStep">Доставка на станцию</strong></div><span id="planCounter"></span><span class="plan-chevron">⌄</span></summary><div class="plan-body"><div class="branch-picker" id="branchPicker"></div><section aria-label="Порядок облётов" class="route-panel" hidden="" id="routePanel"><div class="route-heading"><span>ПЛАН ПОЛЁТА</span><b id="routeStatus">0 / 3</b><button aria-label="Правила гравитационных манёвров" class="text-button" data-action="route-help">Как пройти?</button></div><ol class="route-steps" id="routeSteps"></ol></section><div aria-live="polite" class="portal-progress" hidden="" id="portalProgress"></div><div class="contract-rules" id="strictRules"></div><div class="stop-progress" id="stopProgress"></div></div></details>
+      <details class="flight-plan" id="flightPlan"><summary aria-haspopup="dialog" aria-controls="flightDrawer" aria-label="План и цели рейса"><span class="plan-marker" aria-hidden="true">⌁</span><div><small>ДАЛЬШЕ</small><strong id="activeStep">Доставка на станцию</strong></div><span id="planCounter"></span><span class="plan-chevron">⌄</span></summary><div class="plan-body"><div class="branch-picker" id="branchPicker"></div><section aria-label="Порядок облётов" class="route-panel" hidden="" id="routePanel"><div class="route-heading"><span>ПЛАН ПОЛЁТА</span><b id="routeStatus">0 / 3</b><button aria-label="Правила гравитационных манёвров" class="text-button" data-action="route-help">Как пройти?</button></div><ol class="route-steps" id="routeSteps"></ol></section><div aria-live="polite" class="portal-progress" hidden="" id="portalProgress"></div><div class="contract-rules" id="strictRules"></div><div class="stop-progress" id="stopProgress"></div></div></details>
       <div class="map-controls" aria-label="Управление картой">
         <div class="map-mode" role="group" aria-label="Режим карты"><button data-action="ui:map-mode" data-mode="aim" id="mapAim" aria-pressed="true">↗ Курс</button><button data-action="ui:map-mode" data-mode="planets" id="mapPlanets" aria-pressed="false" hidden>◎ Планеты</button><button data-action="ui:map-mode" data-mode="pan" id="mapPan" aria-pressed="false">✥ Обзор</button></div>
         <div class="map-tools"><button class="map-icon" data-action="ui:zoom-out" aria-label="Уменьшить карту" title="Уменьшить карту">−</button><button class="map-fit" id="mapFit" data-action="ui:zoom-reset" aria-label="Показать всю карту" title="Показать всю карту">Вся карта</button><button class="map-icon" data-action="ui:zoom-in" aria-label="Увеличить карту" title="Увеличить карту">+</button><button class="map-icon map-extra" data-action="ui:map-menu" aria-label="Настройки карты" title="Настройки карты">⋮</button></div>
@@ -2808,6 +2831,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   const M=O.Medals||(typeof require==='function'?require('./medals.js'):null);
   const Campaign=O.Campaign||(typeof require==='function'?require('./campaign.js'):null);
   const SAVE_KEY='orbital-courier-save-v8',LEGACY_KEY='orbital-courier-save-v2';
+  const PLAYBACK_RATES=Object.freeze([.5,1,2,4,10,50]);
   const levels=()=>O.LEVELS||[],count=()=>levels().length;
   const UPGRADE_DEFS={
     scanner:{name:'Навигационный сканер',icon:'⌁',tag:'ПЛАНИРОВАНИЕ',
@@ -2901,7 +2925,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   const achievements=A.create(legacyAchievements);
   function fresh(){return {game:'orbital-courier',version:8,credits:E.START_CREDITS,data:0,xp:0,
     upgrades:{scanner:0,magnet:0,docking:0,engine:0},records:{},flags:{},achievements:[],receipts:[],
-      campaignRevision:Campaign.revision,campaignAccess:[],settings:{sound:true,volume:.6,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false},courses:{},layouts:{},model:'courier',skin:'mint',finish:'satin',livery:'panels',trail:'vector',lastLevel:Campaign.order[0],wishlist:null,difficulty:'normal'};}
+      campaignRevision:Campaign.revision,campaignAccess:[],settings:{sound:true,volume:.6,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false,playbackSpeed:1},courses:{},layouts:{},model:'courier',skin:'mint',finish:'satin',livery:'panels',trail:'vector',lastLevel:Campaign.order[0],wishlist:null,difficulty:'normal'};}
   function legacyUnlocked(p,id){
     if(!Number.isInteger(id)||id<0||id>=count())return false;
     if(id===0)return true;
@@ -3062,6 +3086,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     }
     for(const l of levels().filter(l=>l.placement))for(const mode of ['normal','pro']){const key=l.id+':'+mode;if(Array.isArray(raw.layouts?.[key])){const q=cleanLayout(l,raw.layouts[key]);if(!layoutPhysics().layoutProblem(l,q))p.layouts[key]=q;}}
     p.settings.volume=Number.isFinite(raw.settings?.volume)?Math.max(0,Math.min(1,raw.settings.volume)):.6;
+    p.settings.playbackSpeed=PLAYBACK_RATES.includes(raw.settings?.playbackSpeed)?raw.settings.playbackSpeed:1;
     const inheritedAccess=Array.isArray(raw.campaignAccess)?raw.campaignAccess.filter(id=>Number.isInteger(id)&&id>=0&&id<count()):[];
     p.campaignAccess=[...new Set(inheritedAccess)];
     if(raw.campaignRevision!==Campaign.revision){
@@ -3092,7 +3117,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     }catch(error){return {profile:fresh(),available:false,error:error.message,migrated:false};}
   }
   function write(storage,p){try{storage.setItem(SAVE_KEY,JSON.stringify(p));return true;}catch{return false;}}
-  O.Progress={SAVE_KEY,LEGACY_KEY,UPGRADE_DEFS,RANKS,SKINS,achievements,fresh,record,completed,totalMedals,cargoCount,
+  O.Progress={SAVE_KEY,LEGACY_KEY,PLAYBACK_RATES,UPGRADE_DEFS,RANKS,SKINS,achievements,fresh,record,completed,totalMedals,cargoCount,
     viewRecord,unlocked,unlockRequirement,lockReason,nextLevel,rank,stats,medalCount,launch,complete,buy,quote,invested,dataInvested,respec,research,installed,
     earnedBudget,remainingRewards,sanitize,read,write,awardAchievements};
   if(typeof module!=='undefined'&&module.exports)module.exports=O.Progress;
@@ -4092,9 +4117,9 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   let storage=null;try{storage=root.localStorage;}catch{/* Some file:// and private modes deny storage. */}
   const loaded=G.read(storage);
   const app={heroTime:0,heroPointer:{x:0,y:0},heroTarget:{x:0,y:0},profile:loaded.profile,screen:'home',currentId:C.order[0],angle:0,speed:200,
-    activeLevel:null,assisted:false,state:null,paused:false,accumulator:0,timeScale:1,trail:[],ghosts:{},aims:{},preview:null,
+    activeLevel:null,assisted:false,state:null,paused:false,accumulator:0,timeScale:loaded.profile.settings.playbackSpeed,trail:[],ghosts:{},aims:{},preview:null,
     cosmeticTab:'models',campaignSector:-1,campaignQuery:'',campaignFilter:'open',contractPreviews:[],attemptHistory:{},transitioning:false,transitionToken:0,previewDirty:true,particles:[],lastResult:null,storageOK:loaded.available,modalPause:false,frameTime:0};
-  app.camera={zoom:1,cx:600,cy:350};app.branchView='A';O.App=app;
+  app.camera={zoom:1,cx:600,cy:350};app.branchView='A';O.App=app;let lastPlaybackPreference=app.profile.settings.playbackSpeed;
   const sound=new O.Sound(),gameRenderer=new O.Renderer($('gameCanvas')),heroRenderer=new O.Renderer($('heroCanvas'));
   const homeMotionPreference=root.matchMedia('(prefers-reduced-motion: reduce)');
   let heroPaused=false,heroLastDraw=-Infinity,heroStillKey='';
@@ -4122,6 +4147,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     if(app.screen==='awards')renderAwards();
   }
   function updateProfileUI(){
+    if(app.profile.settings.playbackSpeed!==lastPlaybackPreference){lastPlaybackPreference=app.profile.settings.playbackSpeed;app.timeScale=lastPlaybackPreference;}
     const p=app.profile,r=G.rank(p),done=C.count(p),medals=campaignMedals(p),available=C.order.filter(id=>G.unlocked(p,id)&&!C.current(p,id)).length;
     $('creditValue').textContent=money(p.credits);$('dataValue').textContent=p.data;$('rankBadge').textContent=r.name;
     $('homeCompleted').innerHTML=`${pad(done)} <small>/ ${C.order.length}</small>`;
@@ -4292,7 +4318,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   function setAim(angle,speed){
     if(app.state)return;
     if(!Number.isFinite(angle)||!Number.isFinite(speed))return;
-    app.angle=Math.round(P.clamp(angle,-180,180)*10)/10;
+    app.angle=Math.round(P.clamp(angle,-180,180)*10)/10||0;
     app.speed=Math.round(P.clamp(speed,60,stats().maxSpeed));
     app.aims[app.currentId]={angle:app.angle,speed:app.speed};app.previewDirty=true;syncControls();updateMedalStates();
   }
@@ -4447,8 +4473,9 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     if(s&&level().target.motion)items.push(`Относительная скорость: ${P.dockVelocity(s,level()).speed.toFixed(0)}`);
     $('flightStatus').textContent=items.join(' · ');$('flightStatus').hidden=items.length===0;
   }
+  function setPlaybackSpeed(rate){if(!G.PLAYBACK_RATES.includes(rate))return;app.timeScale=rate;app.profile.settings.playbackSpeed=rate;lastPlaybackPreference=rate;save();updateTelemetry();O.FlightSettings?.sync();}
   function openModal(title,body,eyebrow='БОРТОВОЙ КОМПЬЮТЕР'){
-    modal.classList.remove('preferences-modal');
+    modal.classList.remove('preferences-modal','mode-modal');
     O.UI9?.beforeModal();
     if(!modal.open){app.modalPause=app.paused;if(isFlying())app.paused=true;}
     $('modalContent').innerHTML=`<div class="modal-inner"><button class="modal-close" data-action="close" aria-label="Закрыть">×</button><div class="eyebrow">${eyebrow}</div><h2 id="modalTitle">${title}</h2>${body}</div>`;
@@ -4525,7 +4552,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     'angle-down':()=>setAim(app.angle-(app.profile.settings.fineAim?0.1:0.5),app.speed),'angle-up':()=>setAim(app.angle+(app.profile.settings.fineAim?0.1:0.5),app.speed),
     'speed-down':()=>setAim(app.angle,app.speed-(app.profile.settings.fineAim?1:2)),'speed-up':()=>setAim(app.angle,app.speed+(app.profile.settings.fineAim?1:2)),
     'toggle-grid':()=>{app.profile.settings.grid=!app.profile.settings.grid;save();syncControls();},
-    speed:()=>{const rates=[.5,1,2,4,10,50];app.timeScale=rates[(rates.indexOf(app.timeScale)+1)%rates.length];updateTelemetry();},
+    speed:()=>setPlaybackSpeed(G.PLAYBACK_RATES[(G.PLAYBACK_RATES.indexOf(app.timeScale)+1)%G.PLAYBACK_RATES.length]),
     'home-motion':()=>{heroPaused=!heroPaused;updateProfileUI();},
     next:()=>G.unlocked(app.profile,C.adjacent(app.currentId,1))?travelToLevel(C.adjacent(app.currentId,1)):go('campaign'),
     sector:b=>chooseSector(Number(b.dataset.sector)),
@@ -4645,7 +4672,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
   root.addEventListener('blur',releaseStars);
   homeMotionPreference.addEventListener('change',()=>{heroStillKey='';updateProfileUI();});
   // Expose semantic commands for the included browser smoke test, not a server API.
-  Object.assign(app,{travelToLevel,renderCampaign,storeCourse,recallCourse,setLayout,loadLevel,setAim,launch,retry,go,save,updateProfileUI,exportSave,applySolution,finish,level,displayLevel,displayState,stats,openModal,closeModal,toast,showWin,showFail,syncControls,updateObjectives,renderHangar,renderAwards,actions});
+  Object.assign(app,{travelToLevel,renderCampaign,storeCourse,recallCourse,setLayout,setPlaybackSpeed,loadLevel,setAim,launch,retry,go,save,updateProfileUI,exportSave,applySolution,finish,level,displayLevel,displayState,stats,openModal,closeModal,toast,showWin,showFail,syncControls,updateObjectives,renderHangar,renderAwards,actions});
   if(!Object.keys(app.profile.records).length&&root.matchMedia('(prefers-reduced-motion: reduce)').matches)app.profile.settings.reducedMotion=true;
   document.body.dataset.page=O.Navigation?.initialPage||'home';updateProfileUI();requestAnimationFrame(frame);
   if(loaded.migrated){save();openModal('Прогресс перенесён в версию 8',`<p>Пройденные уровни и купленные модули сохранены. Новые контракты продолжают прежнюю кампанию.</p><div class="info-box">Старый баланс: ${money(app.profile.migration.oldCredits)} ◈. Новый баланс: ${money(app.profile.credits)} ◈. Награды пересчитаны по новой экономике, расходы на сохранённые улучшения учтены. Долгов нет. Исходное сохранение не удалено. Унаследованные модули не имеют денежного возврата при пересборке.</div><div class="modal-actions"><button class="button primary" data-action="close">Продолжить</button></div>`);}
@@ -4669,7 +4696,7 @@ O.Review={start,observe,finish,prior,clearView,selectTime,setCompare,renderModel
 
 </script><script>
 /* Responsive presentation, briefing and history. No equations of motion here. */
-(function(root){'use strict';const O=root.Orbital,A=O.App,G=O.Progress,P=O.Physics,R=O.Routes,E=O.Economy,L=O.LEVELS,$=id=>document.getElementById(id),$$=q=>[...document.querySelectorAll(q)],money=n=>Math.round(n).toLocaleString('ru-RU'),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let category='all',filter='all',query='',tab='display',cache='',pending=false;
+(function(root){'use strict';const O=root.Orbital,A=O.App,G=O.Progress,P=O.Physics,R=O.Routes,E=O.Economy,L=O.LEVELS,$=id=>document.getElementById(id),$$=q=>[...document.querySelectorAll(q)],money=n=>Math.round(n).toLocaleString('ru-RU'),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let category='all',filter='all',query='',tab='flight',cache='',pending=false;
 function layout(){pending=false;if(O.UI9)return O.UI9.layout();if(A.screen!=='play')return;let main=document.querySelector('main'),height=Math.max(180,(root.visualViewport?.height||innerHeight)-Math.max(0,main.getBoundingClientRect().top));if(Math.abs(main.getBoundingClientRect().height-height)>1)main.style.height=height+'px';const box=$('mapViewport'),stage=box.querySelector('.stage');stage.style.width=Math.max(1,box.clientWidth-2)+'px';stage.style.height=Math.max(1,box.clientHeight-2)+'px';}
 function schedule(){if(!pending){pending=true;requestAnimationFrame(layout);}}new ResizeObserver(schedule).observe($('mapViewport'));root.addEventListener('resize',schedule);root.visualViewport?.addEventListener('resize',schedule);
 function restoreSaveWarning(){const warning=$('saveWarning');if(warning?.closest('#resultScreen'))document.querySelector('main').before(warning);}
@@ -4751,14 +4778,15 @@ function renderAwards(){
 function renderShop(){let id=A.shopLevel??A.currentId,mode=A.shopMode||A.profile.difficulty,l=P.prepareLevel(L[id],mode),st=A.stats();$('shopContext').innerHTML=`<strong>Эффект на выбранном контракте</strong><p><select id="shopLevelSelect" aria-label="Контракт для расчёта">${O.Campaign.order.map(id=>L[id]).map(q=>`<option value="${q.id}" ${q.id===id?'selected':''}>${O.Campaign.number(q.id)}. ${q.name}</option>`).join('')}</select> <select id="shopModeSelect" aria-label="Режим расчёта"><option value="normal" ${mode==='normal'?'selected':''}>Обычный</option><option value="pro" ${mode==='pro'?'selected':''}>ПРО</option></select></p><small>Покупка не отменяет обязательный маршрут, приём посылок и ограничения скорости.</small>`;
 for(const key of ['docking','engine']){const lv=A.profile.upgrades[key],next=Math.min(5,lv+1),card=document.querySelector(`.upgrade-card[data-module="${key}"]`)||document.querySelector(`[data-action=upgrade][data-key="${key}"]`)?.closest('article');if(!card)continue;let text;if(key==='docking'){const p=structuredClone(A.profile);p.upgrades.docking=next;text=`Допуск здесь: ${P.captureRadius(l,G.stats(A.profile)).toFixed(1)} → ${P.captureRadius(l,G.stats(p)).toFixed(1)} ед.`;}else text=`Расчётный расход: ${Math.round((1-.03*lv)*100)}% → ${Math.round((1-.03*next)*100)}%`;let node=document.createElement('div');node.className='module-effect';node.innerHTML=`<b>${text}</b>${key==='docking'?'Бонус действует и на строгих станциях.':'Физическая скорость не меняется. Экономия улучшает топливную оценку при обычном запуске.'}`;card.querySelector('.module-spec')?.after(node);}}
 function settings(t=tab){
- tab=['display','control','save'].includes(t)?t:'display';t=tab;const p=A.profile,s=p.settings;
+ tab=['flight','display','control','save'].includes(t)?t:'flight';t=tab;const p=A.profile,s=p.settings;
  const toggle=(key,name,description)=>`<label class="preference-row"><span><strong>${name}</strong><small>${description}</small></span><input type="checkbox" role="switch" data-setting="${key}" ${s[key]?'checked':''}/><i aria-hidden="true"></i></label>`;
  let body='';
+ if(t==='flight')body=O.FlightSettings.content(toggle)+`<details class="control-guide"><summary>Клавиши и жесты</summary><div><p><kbd>Пробел</kbd><span>Запуск / пауза</span></p><p><kbd>R</kbd><span>Повторить рейс</span></p><p><kbd>G</kbd><span>Гравитационное поле</span></p><p><kbd>← → / ↑ ↓</kbd><span>Угол / скорость</span></p><p>«Курс» — прицел. «Обзор» — перемещение карты. Два пальца или колесо — масштаб. Alt + перетаскивание — обзор.</p><p>В режиме «Планеты» стрелки перемещают выбранный мир, Shift увеличивает шаг.</p></div></details>`;
  if(t==='display')body=`<header class="preference-heading"><h3>Комфортный полёт</h3><p>Оставь на экране то, что помогает ориентироваться.</p></header><div class="preference-group">${toggle('grid','Гравитационное поле','Стрелки показывают направление притяжения.')}${toggle('ghost','Прошлая траектория','Сравнивай курс с предыдущей попыткой.')}</div><div class="preference-label">ВОСПРИЯТИЕ</div><div class="preference-group">${toggle('highContrast','Высокий контраст','Более заметные подписи и границы.')}${toggle('reducedMotion','Спокойные эффекты','Статичные предпросмотры и меньше декоративного движения.')}</div><p class="preference-note">Орбиты и скорость симуляции сохраняют свои правила при любых настройках.</p>`;
- if(t==='control')body=`<header class="preference-heading"><h3>Чувство управления</h3><p>Точный курс, удобные жесты и подходящий звук.</p></header><div class="preference-group">${toggle('fineAim','Точное прицеливание','Шаг 0,1° и 1 единица скорости. Плавнее при наведении пальцем.')}${toggle('sound','Звуки полёта','Сигналы маршрута, стыковки и тихий гул двигателя.')}</div><label class="preference-volume" for="soundVolume"><span>Громкость <output id="soundVolumeValue">${Math.round(s.volume*100)}%</output></span><input id="soundVolume" type="range" min="0" max="100" value="${Math.round(s.volume*100)}"/></label><details class="control-guide"><summary>Клавиши и жесты</summary><div><p><kbd>Пробел</kbd><span>Запуск / пауза</span></p><p><kbd>R</kbd><span>Повторить рейс</span></p><p><kbd>G</kbd><span>Гравитационное поле</span></p><p><kbd>← → / ↑ ↓</kbd><span>Угол / скорость</span></p><p>«Курс» — прицел. «Обзор» — перемещение карты. Два пальца или колесо — масштаб. Alt + перетаскивание — обзор.</p><p>В режиме «Планеты» стрелки перемещают выбранный мир, Shift увеличивает шаг.</p></div></details>`;
+ if(t==='control')body=`<header class="preference-heading"><h3>Звуки и сигналы</h3><p>Настрой громкость навигационных сигналов и двигателя.</p></header><div class="preference-group">${toggle('sound','Звуки полёта','Сигналы маршрута, стыковки и тихий гул двигателя.')}</div><label class="preference-volume" for="soundVolume"><span>Громкость <output id="soundVolumeValue">${Math.round(s.volume*100)}%</output></span><input id="soundVolume" type="range" min="0" max="100" value="${Math.round(s.volume*100)}"/></label><button id="soundPreview" class="sound-preview" data-action="flight:sound-preview">▷ Проверить звук</button><p class="preference-note">Выбор громкости сохраняется. Можно настроить её заранее, даже когда звук выключен.</p>`;
  if(t==='save')body=`<header class="preference-heading"><h3>Прогресс и резервные копии</h3><p>Прогресс записывается после каждой доставки.</p></header><div class="storage-status ${A.storageOK?'':'bad'}"><span class="storage-dot"></span><div><strong>${A.storageOK?'На этом устройстве':'Сохранение недоступно'}</strong><p>${A.storageOK?'Автосохранение работает. Можно продолжить после закрытия игры.':'Скачай копию прогресса, чтобы сохранить результаты.'}</p><small>${G.completed(p)} доставок · ${G.totalMedals(p)} медалей</small></div></div><button class="account-setting" data-action="cloud"><span class="account-setting-icon">☁</span><span><strong>Аккаунт и облако</strong><small>Продолжай экспедицию на другом устройстве</small></span><b>↗</b></button><div class="preference-label">РЕЗЕРВНАЯ КОПИЯ</div><div class="backup-actions"><button data-action="export"><span>↓</span><strong>Скачать копию</strong><small>Файл прогресса JSON</small></button><button data-action="import"><span>↑</span><strong>Восстановить</strong><small>Из сохранённого файла</small></button></div><p class="preference-note">В копию входят ресурсы, награды, оснащение, курсы A/B и положения планет. Импорт заменит профиль после подтверждения.</p><details class="settings-danger"><summary>Удаление прогресса</summary><p>Сброс удалит профиль на этом устройстве. Сначала можно скачать резервную копию.</p><button class="button danger" data-action="v8:reset-confirm">Сбросить профиль…</button></details>`;
- A.openModal('Настройки',`<div class="preferences-layout"><nav class="settings-tabs" role="tablist" aria-label="Раздел настроек">${[['display','Экран','◈'],['control','Управление','⌁'],['save','Прогресс','◷']].map(([k,n,icon])=>`<button id="settings-${k}" role="tab" aria-controls="settingsPanel" aria-selected="${k===t}" tabindex="${k===t?'0':'-1'}" class="${k===t?'active':''}" data-action="v8:settings-tab" data-tab="${k}"><span aria-hidden="true">${icon}</span>${n}</button>`).join('')}</nav><section id="settingsPanel" class="settings-section" role="tabpanel" aria-labelledby="settings-${t}">${body}</section></div><footer class="preferences-footer"><span>Изменения сохраняются сразу</span><button class="button primary" data-action="close">Готово</button></footer>`,'БОРТОВОЙ КОМПЬЮТЕР');
- $('modal').classList.add('preferences-modal');
+ A.openModal('Настройки',`<div class="preferences-layout"><nav class="settings-tabs" role="tablist" aria-label="Раздел настроек">${[['flight','Полёт','↗'],['display','Экран','◈'],['control','Звук','♫'],['save','Прогресс','◷']].map(([k,n,icon])=>`<button id="settings-${k}" role="tab" aria-controls="settingsPanel" aria-selected="${k===t}" tabindex="${k===t?'0':'-1'}" class="${k===t?'active':''}" data-action="v8:settings-tab" data-tab="${k}"><span aria-hidden="true">${icon}</span>${n}</button>`).join('')}</nav><section id="settingsPanel" class="settings-section" role="tabpanel" aria-labelledby="settings-${t}">${body}</section></div><footer class="preferences-footer"><span>Изменения сохраняются сразу</span><button class="button primary" data-action="close">Готово</button></footer>`,'БОРТОВОЙ КОМПЬЮТЕР');
+ $('modal').classList.add('preferences-modal');O.FlightSettings.sync();
 }
 
 function resetConfirm(){A.openModal('Удалить прогресс?','<p>Экспортированные копии останутся целыми. Для подтверждения введи <b>СБРОС</b>.</p><input id="resetWord" class="reset-word" autocomplete="off"><div class="modal-actions"><button class="button quiet" data-action="close">Отмена</button><button class="button danger" id="resetFinal" data-action="reset" disabled>Удалить профиль</button></div>');$('resetWord').addEventListener('input',e=>$('resetFinal').disabled=e.target.value.trim()!=='СБРОС');}
@@ -4767,7 +4795,7 @@ function zoom(f){const c=A.camera;c.zoom=P.clamp(c.zoom*f,1,4);const edge=Math.m
 const actions={'v8:analysis':()=>resultView('analysis'),'v8:summary':()=>resultView('summary'),'v8:panel':()=>document.querySelector('.flight-panel').classList.toggle('nav-expanded'),'v8:branch':b=>{if(A.state)return A.toast('Ветвь определяется фактическим полётом.');A.branchView=b.dataset.branch;cache='';A.updateObjectives();updateRoute();},'v8:award-category':b=>{category=b.dataset.category;renderAwards();},'v8:award-filter':b=>{filter=b.dataset.filter;renderAwards();},'v8:settings-tab':b=>settings(b.dataset.tab),'v8:reset-confirm':resetConfirm,'v8:zoom-in':()=>zoom(1.25),'v8:zoom-out':()=>zoom(.8),'v8:zoom-reset':()=>{A.camera={zoom:1,cx:600,cy:350};},'v8:fullscreen':async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();schedule();}catch{A.toast('Браузер не разрешил полноэкранный режим.');}},'v8:report':()=>{if(A.lastResult)A.showWin(A.lastResult);else A.openModal('Разбор рейса',`<p>${esc(O.Review.diagnosis(A.level(),A.state))}</p><p>Просмотри место ошибки. Не меняй сразу оба параметра: сравнивай результат одной корректировки.</p><div class="modal-actions"><button class="button quiet" data-action="close">К записи</button><button class="button primary" data-action="retry">Ещё раз ↺</button></div>`);},'v8:compare':b=>{if(!O.Review.prior())return;O.Review.setCompare();b.setAttribute('aria-pressed',String(O.Review.active.compare));const prev=O.Review.prior(),now=O.Review.active.data;$('reviewComparison').textContent=O.Review.active.compare?`Пунктир — предыдущий (${prev.angle}° / ${prev.speed}), голубая линия — текущий (${now.angle}° / ${now.speed}). Δ угла ${(now.angle-prev.angle).toFixed(1)}°, Δ скорости ${now.speed-prev.speed}.${JSON.stringify(prev.level?.layout)!==JSON.stringify(now.level?.layout)?' Планеты в предыдущей попытке стояли иначе.':''}`:'Сравнение скрыто.';}};
 document.addEventListener('click',e=>{let b=e.target.closest('[data-action]');if(b&&!b.disabled)actions[b.dataset.action]?.(b);});$('objectivesList').addEventListener('click',medalHelp);$('objectivesList').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();medalHelp();}});$('awardSearch').addEventListener('input',e=>{query=e.target.value.trim().toLowerCase();renderAwards();});document.addEventListener('change',e=>{if(e.target.id==='shopLevelSelect'){A.shopLevel=+e.target.value;A.renderHangar();}if(e.target.id==='shopModeSelect'){A.shopMode=e.target.value;A.renderHangar();}});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(b?.dataset.action==='personal:clear'){query='';filter='all';category='all';$('awardSearch').value='';renderAwards();$('awardSearch').focus();}if(b?.matches('.settings-tabs button,.achievement-categories button')){const selector=b.dataset.tab?'#settings-'+b.dataset.tab:'[data-action="v8:award-category"][data-category="'+b.dataset.category+'"]';requestAnimationFrame(()=>document.querySelector(selector)?.focus({preventScroll:true}));}});
-document.addEventListener('keydown',e=>{if(!e.target.matches('.settings-tabs [role=tab]')||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();e.stopPropagation();const keys=['display','control','save'],i=keys.indexOf(e.target.dataset.tab),n=e.key==='Home'?0:e.key==='End'?2:(i+(['ArrowLeft','ArrowUp'].includes(e.key)?2:1))%3;settings(keys[n]);$('settings-'+keys[n]).focus();});
+document.addEventListener('keydown',e=>{if(!e.target.matches('.settings-tabs [role=tab]')||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();e.stopPropagation();const keys=['flight','display','control','save'],i=keys.indexOf(e.target.dataset.tab),n=e.key==='Home'?0:e.key==='End'?3:(i+(['ArrowLeft','ArrowUp'].includes(e.key)?3:1))%4;settings(keys[n]);$('settings-'+keys[n]).focus();});
 O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderShop,settings,resetConfirm,economy,layout};schedule();
 })(typeof globalThis!=='undefined'?globalThis:window);
 
@@ -4879,10 +4907,9 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
       if (mode !== 'aiming') clearPointers();
       schedule();
     }
-    setText($('modeChip'), A.profile.difficulty === 'pro' ? 'PRO ×1,7' : 'Обычный');
-    $('modeChip').title = A.state ? 'Режим меняется до запуска' : (A.profile.difficulty === 'pro' ? 'Нажми, чтобы включить обычный режим' : 'Нажми, чтобы включить PRO');
+    $('modeChip').title=A.state?'Режим зафиксирован до следующего запуска':'ПРО: награда ×1,7 и более строгие условия приёма';
     $('saveBadge').hidden=A.storageOK;
-    $('modeChip').classList.toggle('pro', A.profile.difficulty === 'pro');
+    O.FlightSettings?.sync();
     setText($('navModeLabel'), mode === 'aiming' ? 'Начальный импульс' : mode === 'review' ? 'Полёт завершён' : A.paused ? 'Полёт на паузе' : 'Капсула в полёте');
     $('cockpit').style.setProperty('--map-turn', O.FlightView.portrait() ? '-90deg' : '0deg');
     setText($('fineAimButton'), A.profile.settings.fineAim ? '✓ Точно' : 'Точно');
@@ -4895,7 +4922,7 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
     const text = !A.state ? 'Запуск ↗' : flying() ? (A.paused ? 'Продолжить' : 'Пауза') : 'Ещё раз ↺';
     setText($('launchButton'), text);
     setText($('mobileLaunch'), narrow() && editing() ? 'Готово ✓' : text);
-    setText($('stagePill'), A.assisted ? 'ТРЕНИРОВКА · БЕЗ НАГРАД' : !A.state ? 'ГОТОВНОСТЬ' : flying() ? A.paused ? 'ПАУЗА' : 'ПОЛЁТ' : 'ЗАПИСЬ РЕЙСА');
+    setText($('stagePill'), (A.profile.difficulty==='pro'?'ПРО · ':'')+(A.assisted ? 'ТРЕНИРОВКА · БЕЗ НАГРАД' : !A.state ? 'ГОТОВНОСТЬ' : flying() ? A.paused ? 'ПАУЗА' : 'ПОЛЁТ' : 'ЗАПИСЬ РЕЙСА'));
     $('liveFlightPanel').hidden = mode === 'aiming';
     if (mode !== 'aiming' && s) {
       if (!initializedLive) initLive();
@@ -5050,7 +5077,7 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
       <button data-action="ui:mode"><span class="menu-symbol">◉</span>${A.profile.difficulty === 'pro' ? 'Выключить PRO' : 'Включить PRO'}</button>
       <button data-action="ui:shortcuts"><span class="menu-symbol">⌨</span>Управление</button>
       <button data-action="nav" data-page="campaign" class="wide">← Все контракты</button>
-    </div><div class="modal-actions"><button class="button primary" data-action="close">К полёту</button></div>`, `КОНТРАКТ ${O.Campaign.number(A.currentId)} / 80`);
+    </div><div class="modal-actions"><button class="button primary" data-action="close">К полёту</button></div>`, `КОНТРАКТ ${O.Campaign.number(A.currentId)} / ${O.Campaign.order.length}`);
   }
   function toggleDifficulty() {
     if (A.state) { A.toast('Режим можно переключать только до запуска.', true); return; }
@@ -5573,6 +5600,37 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   }c.restore();
  }
  O.PlanetWorkshop={onLevel,sync,move,pick,nudge,draw};
+})(window);
+
+</script><script>
+/* Flight preferences describe the actual prepared contract. No new physics. */
+(function(root){
+ 'use strict';const O=root.Orbital,A=O.App,G=O.Progress,P=O.Physics,$=id=>document.getElementById(id);
+ const proMark='<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><path d="m10 2 7 8-7 8-7-8Z"/><path d="m6 10 4-5 4 5-4 5Z"/></svg>';
+ function modes(compact=false){
+  const raw=O.LEVELS[A.screen==='play'?A.currentId:A.profile.lastLevel]||O.LEVELS[O.Campaign.order[0]],st=G.stats(A.profile),locked=A.screen==='play'&&!!A.state;
+  const current=P.prepareLevel(raw,A.profile.difficulty),forecast=Math.max(raw.placement?.preview||0,st.preview*(A.profile.difficulty==='pro'?0.6:1));
+  return `<div class="mode-comparison ${compact?'compact':''}" role="group" aria-label="Сложность рейса">${['normal','pro'].map(mode=>{const l=P.prepareLevel(raw,mode),pro=mode==='pro',selected=A.profile.difficulty===mode;return `<button class="mode-option ${pro?'pro-option':''}" data-action="ui:set-mode" data-mode="${mode}" aria-pressed="${selected}" ${locked?'disabled':''}><span class="mode-option-title">${pro?proMark:''}<strong>${pro?'ПРО':'Обычный'}</strong><small>${selected?'Выбран':'Выбрать'}</small></span><span class="mode-payout">×${pro?'1,7':'1'} <small>к награде за результат</small></span><span class="mode-facts"><span>Стыковка <b>${P.captureRadius(l,st).toFixed(1)} ед.</b></span><span>Груз <b>${l.rules.minCargo?l.rules.minCargo+' из '+l.cargo.length:'Без минимума'}</b></span><span>Прогноз <b>${Math.max(raw.placement?.preview||0,st.preview*(pro?0.6:1)).toFixed(1)} с</b></span></span></button>`;}).join('')}</div><p class="mode-explanation">${locked?'Режим зафиксирован до следующего запуска.':compact?'Стыковка: '+P.captureRadius(current,st).toFixed(1)+' ед. · груз: '+(current.rules.minCargo||0)+'/'+current.cargo.length+' · прогноз: '+forecast.toFixed(1)+' с.':(raw.placement?'В лабораторных контрактах прогноз 12 с доступен в обоих режимах. ':'В ПРО строже условия приёма и короче прогноз сканера. ')+'Выплата зависит от качества рейса; повтор приносит только улучшение рекорда.'}</p>`;
+ }
+ function content(toggle){return `<header class="preference-heading"><h3>Твой режим полёта</h3><p>Выбери условия перед запуском.</p></header>${modes(true)}<div class="preference-label">СКОРОСТЬ ПОКАЗА</div><div class="playback-choices" role="group" aria-label="Скорость показа полёта">${G.PLAYBACK_RATES.map(rate=>`<button data-action="flight:rate" data-rate="${rate}" aria-pressed="${A.timeScale===rate}">×${String(rate).replace('.',',')}</button>`).join('')}</div><p class="preference-note">Ускоряет показ полёта и сохраняется между запусками. Точность расчёта и награды не меняются.</p><div class="preference-group flight-precision">${toggle('fineAim','Точное прицеливание','Шаг 0,1° и 1 единица скорости. Плавнее при наведении пальцем.')}</div>`;}
+ function select(mode){
+  if(!['normal','pro'].includes(mode)||mode===A.profile.difficulty)return;
+  if(A.screen==='play'&&A.state)return;
+  const settings=$('modal').open&&$('modal').classList.contains('preferences-modal'),details=$('modal').open&&!settings;
+  A.profile.difficulty=mode;A.save();if(A.screen==='play')A.loadLevel(A.currentId);else A.updateProfileUI();
+  if(settings){O.V8.settings('flight');document.querySelector('#settingsPanel [data-mode="'+mode+'"]')?.focus();}else if(details)openModes();
+  sync();
+ }
+ function openModes(){A.openModal('Обычный или ПРО',modes()+'<div class="modal-actions"><button class="button primary" data-action="close">К полёту</button></div>','УСЛОВИЯ РЕЙСА');$('modal').classList.add('mode-modal');}
+ function sync(){
+  const pro=A.profile.difficulty==='pro',locked=A.screen==='play'&&!!A.state;document.body.dataset.difficulty=pro?'pro':'normal';
+  for(const b of document.querySelectorAll('[data-action="ui:set-mode"]')){const selected=b.dataset.mode===A.profile.difficulty;b.setAttribute('aria-pressed',String(selected));b.disabled=locked;const s=b.querySelector('.mode-option-title small');if(s)s.textContent=selected?'Выбран':'Выбрать';}
+  for(const b of document.querySelectorAll('[data-action="flight:rate"]'))b.setAttribute('aria-pressed',String(+b.dataset.rate===A.timeScale));
+  const preview=$('soundPreview');if(preview)preview.disabled=!A.profile.settings.sound;
+ }
+ Object.assign(A.actions,{'ui:set-mode':b=>select(b.dataset.mode),'ui:mode-details':openModes,'ui:flight-settings':()=>O.V8.settings('flight'),'flight:rate':b=>A.setPlaybackSpeed(+b.dataset.rate),'flight:sound-preview':()=>{if(A.profile.settings.sound)A.sound.unlock().then(()=>A.sound.play('cargo'));}});
+ document.addEventListener('change',e=>{if(e.target.dataset.setting==='sound')sync();});
+ O.FlightSettings={content,modes,select,sync};sync();
 })(window);
 
 </script><script>

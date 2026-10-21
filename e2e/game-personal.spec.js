@@ -5,7 +5,8 @@ test.beforeEach(async({page})=>{await page.route('**/*',r=>new URL(r.request().u
 for(const [width,height]of [[1366,768],[390,844],[320,568]])test('settings save immediately and awards stay readable '+width,async({page},info)=>{
  await page.setViewportSize({width,height});await page.evaluate(()=>Orbital.V8.settings('display'));
  await page.locator('[data-setting=grid]').check();await expect(page.locator('[data-setting=grid]')).toBeChecked();
- await page.locator('#settings-control').click();await expect(page.locator('#settings-control')).toBeFocused();await page.locator('[data-setting=fineAim]').check();await page.locator('#soundVolume').fill('23');
+ await page.locator('#settings-flight').click();await page.locator('[data-setting=fineAim]').check();
+ await page.locator('#settings-control').click();await expect(page.locator('#settings-control')).toBeFocused();await page.locator('#soundVolume').fill('23');
  await page.locator('#settings-control').press('ArrowRight');await expect(page.locator('#settings-save')).toBeFocused();await expect(page.locator('.storage-status')).toContainText('На этом устройстве');
  const download=page.waitForEvent('download');await page.locator('[data-action=export]').click();const file=await download;const saved=JSON.parse(require('node:fs').readFileSync(await file.path(),'utf8'));expect(saved.settings).toMatchObject({grid:true,fineAim:true,volume:.23});expect(saved.layouts).toEqual({});
  await page.screenshot({path:info.outputPath('settings-progress.png')});await page.keyboard.press('Escape');await page.reload();expect(await page.evaluate(()=>Orbital.App.profile.settings)).toMatchObject({grid:true,fineAim:true,volume:.23});

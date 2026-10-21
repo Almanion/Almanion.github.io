@@ -11,9 +11,9 @@
   let storage=null;try{storage=root.localStorage;}catch{/* Some file:// and private modes deny storage. */}
   const loaded=G.read(storage);
   const app={heroTime:0,heroPointer:{x:0,y:0},heroTarget:{x:0,y:0},profile:loaded.profile,screen:'home',currentId:C.order[0],angle:0,speed:200,
-    activeLevel:null,assisted:false,state:null,paused:false,accumulator:0,timeScale:1,trail:[],ghosts:{},aims:{},preview:null,
+    activeLevel:null,assisted:false,state:null,paused:false,accumulator:0,timeScale:loaded.profile.settings.playbackSpeed,trail:[],ghosts:{},aims:{},preview:null,
     cosmeticTab:'models',campaignSector:-1,campaignQuery:'',campaignFilter:'open',contractPreviews:[],attemptHistory:{},transitioning:false,transitionToken:0,previewDirty:true,particles:[],lastResult:null,storageOK:loaded.available,modalPause:false,frameTime:0};
-  app.camera={zoom:1,cx:600,cy:350};app.branchView='A';O.App=app;
+  app.camera={zoom:1,cx:600,cy:350};app.branchView='A';O.App=app;let lastPlaybackPreference=app.profile.settings.playbackSpeed;
   const sound=new O.Sound(),gameRenderer=new O.Renderer($('gameCanvas')),heroRenderer=new O.Renderer($('heroCanvas'));
   const homeMotionPreference=root.matchMedia('(prefers-reduced-motion: reduce)');
   let heroPaused=false,heroLastDraw=-Infinity,heroStillKey='';
@@ -41,6 +41,7 @@
     if(app.screen==='awards')renderAwards();
   }
   function updateProfileUI(){
+    if(app.profile.settings.playbackSpeed!==lastPlaybackPreference){lastPlaybackPreference=app.profile.settings.playbackSpeed;app.timeScale=lastPlaybackPreference;}
     const p=app.profile,r=G.rank(p),done=C.count(p),medals=campaignMedals(p),available=C.order.filter(id=>G.unlocked(p,id)&&!C.current(p,id)).length;
     $('creditValue').textContent=money(p.credits);$('dataValue').textContent=p.data;$('rankBadge').textContent=r.name;
     $('homeCompleted').innerHTML=`${pad(done)} <small>/ ${C.order.length}</small>`;
@@ -211,7 +212,7 @@
   function setAim(angle,speed){
     if(app.state)return;
     if(!Number.isFinite(angle)||!Number.isFinite(speed))return;
-    app.angle=Math.round(P.clamp(angle,-180,180)*10)/10;
+    app.angle=Math.round(P.clamp(angle,-180,180)*10)/10||0;
     app.speed=Math.round(P.clamp(speed,60,stats().maxSpeed));
     app.aims[app.currentId]={angle:app.angle,speed:app.speed};app.previewDirty=true;syncControls();updateMedalStates();
   }
@@ -366,8 +367,9 @@
     if(s&&level().target.motion)items.push(`Относительная скорость: ${P.dockVelocity(s,level()).speed.toFixed(0)}`);
     $('flightStatus').textContent=items.join(' · ');$('flightStatus').hidden=items.length===0;
   }
+  function setPlaybackSpeed(rate){if(!G.PLAYBACK_RATES.includes(rate))return;app.timeScale=rate;app.profile.settings.playbackSpeed=rate;lastPlaybackPreference=rate;save();updateTelemetry();O.FlightSettings?.sync();}
   function openModal(title,body,eyebrow='БОРТОВОЙ КОМПЬЮТЕР'){
-    modal.classList.remove('preferences-modal');
+    modal.classList.remove('preferences-modal','mode-modal');
     O.UI9?.beforeModal();
     if(!modal.open){app.modalPause=app.paused;if(isFlying())app.paused=true;}
     $('modalContent').innerHTML=`<div class="modal-inner"><button class="modal-close" data-action="close" aria-label="Закрыть">×</button><div class="eyebrow">${eyebrow}</div><h2 id="modalTitle">${title}</h2>${body}</div>`;
@@ -444,7 +446,7 @@
     'angle-down':()=>setAim(app.angle-(app.profile.settings.fineAim?0.1:0.5),app.speed),'angle-up':()=>setAim(app.angle+(app.profile.settings.fineAim?0.1:0.5),app.speed),
     'speed-down':()=>setAim(app.angle,app.speed-(app.profile.settings.fineAim?1:2)),'speed-up':()=>setAim(app.angle,app.speed+(app.profile.settings.fineAim?1:2)),
     'toggle-grid':()=>{app.profile.settings.grid=!app.profile.settings.grid;save();syncControls();},
-    speed:()=>{const rates=[.5,1,2,4,10,50];app.timeScale=rates[(rates.indexOf(app.timeScale)+1)%rates.length];updateTelemetry();},
+    speed:()=>setPlaybackSpeed(G.PLAYBACK_RATES[(G.PLAYBACK_RATES.indexOf(app.timeScale)+1)%G.PLAYBACK_RATES.length]),
     'home-motion':()=>{heroPaused=!heroPaused;updateProfileUI();},
     next:()=>G.unlocked(app.profile,C.adjacent(app.currentId,1))?travelToLevel(C.adjacent(app.currentId,1)):go('campaign'),
     sector:b=>chooseSector(Number(b.dataset.sector)),
@@ -564,7 +566,7 @@
   root.addEventListener('blur',releaseStars);
   homeMotionPreference.addEventListener('change',()=>{heroStillKey='';updateProfileUI();});
   // Expose semantic commands for the included browser smoke test, not a server API.
-  Object.assign(app,{travelToLevel,renderCampaign,storeCourse,recallCourse,setLayout,loadLevel,setAim,launch,retry,go,save,updateProfileUI,exportSave,applySolution,finish,level,displayLevel,displayState,stats,openModal,closeModal,toast,showWin,showFail,syncControls,updateObjectives,renderHangar,renderAwards,actions});
+  Object.assign(app,{travelToLevel,renderCampaign,storeCourse,recallCourse,setLayout,setPlaybackSpeed,loadLevel,setAim,launch,retry,go,save,updateProfileUI,exportSave,applySolution,finish,level,displayLevel,displayState,stats,openModal,closeModal,toast,showWin,showFail,syncControls,updateObjectives,renderHangar,renderAwards,actions});
   if(!Object.keys(app.profile.records).length&&root.matchMedia('(prefers-reduced-motion: reduce)').matches)app.profile.settings.reducedMotion=true;
   document.body.dataset.page=O.Navigation?.initialPage||'home';updateProfileUI();requestAnimationFrame(frame);
   if(loaded.migrated){save();openModal('Прогресс перенесён в версию 8',`<p>Пройденные уровни и купленные модули сохранены. Новые контракты продолжают прежнюю кампанию.</p><div class="info-box">Старый баланс: ${money(app.profile.migration.oldCredits)} ◈. Новый баланс: ${money(app.profile.credits)} ◈. Награды пересчитаны по новой экономике, расходы на сохранённые улучшения учтены. Долгов нет. Исходное сохранение не удалено. Унаследованные модули не имеют денежного возврата при пересборке.</div><div class="modal-actions"><button class="button primary" data-action="close">Продолжить</button></div>`);}

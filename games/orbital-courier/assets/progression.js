@@ -10,6 +10,7 @@
   const M=O.Medals||(typeof require==='function'?require('./medals.js'):null);
   const Campaign=O.Campaign||(typeof require==='function'?require('./campaign.js'):null);
   const SAVE_KEY='orbital-courier-save-v8',LEGACY_KEY='orbital-courier-save-v2';
+  const PLAYBACK_RATES=Object.freeze([.5,1,2,4,10,50]);
   const levels=()=>O.LEVELS||[],count=()=>levels().length;
   const UPGRADE_DEFS={
     scanner:{name:'Навигационный сканер',icon:'⌁',tag:'ПЛАНИРОВАНИЕ',
@@ -103,7 +104,7 @@
   const achievements=A.create(legacyAchievements);
   function fresh(){return {game:'orbital-courier',version:8,credits:E.START_CREDITS,data:0,xp:0,
     upgrades:{scanner:0,magnet:0,docking:0,engine:0},records:{},flags:{},achievements:[],receipts:[],
-      campaignRevision:Campaign.revision,campaignAccess:[],settings:{sound:true,volume:.6,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false},courses:{},layouts:{},model:'courier',skin:'mint',finish:'satin',livery:'panels',trail:'vector',lastLevel:Campaign.order[0],wishlist:null,difficulty:'normal'};}
+      campaignRevision:Campaign.revision,campaignAccess:[],settings:{sound:true,volume:.6,grid:false,ghost:true,highContrast:false,reducedMotion:false,fineAim:false,playbackSpeed:1},courses:{},layouts:{},model:'courier',skin:'mint',finish:'satin',livery:'panels',trail:'vector',lastLevel:Campaign.order[0],wishlist:null,difficulty:'normal'};}
   function legacyUnlocked(p,id){
     if(!Number.isInteger(id)||id<0||id>=count())return false;
     if(id===0)return true;
@@ -264,6 +265,7 @@
     }
     for(const l of levels().filter(l=>l.placement))for(const mode of ['normal','pro']){const key=l.id+':'+mode;if(Array.isArray(raw.layouts?.[key])){const q=cleanLayout(l,raw.layouts[key]);if(!layoutPhysics().layoutProblem(l,q))p.layouts[key]=q;}}
     p.settings.volume=Number.isFinite(raw.settings?.volume)?Math.max(0,Math.min(1,raw.settings.volume)):.6;
+    p.settings.playbackSpeed=PLAYBACK_RATES.includes(raw.settings?.playbackSpeed)?raw.settings.playbackSpeed:1;
     const inheritedAccess=Array.isArray(raw.campaignAccess)?raw.campaignAccess.filter(id=>Number.isInteger(id)&&id>=0&&id<count()):[];
     p.campaignAccess=[...new Set(inheritedAccess)];
     if(raw.campaignRevision!==Campaign.revision){
@@ -294,7 +296,7 @@
     }catch(error){return {profile:fresh(),available:false,error:error.message,migrated:false};}
   }
   function write(storage,p){try{storage.setItem(SAVE_KEY,JSON.stringify(p));return true;}catch{return false;}}
-  O.Progress={SAVE_KEY,LEGACY_KEY,UPGRADE_DEFS,RANKS,SKINS,achievements,fresh,record,completed,totalMedals,cargoCount,
+  O.Progress={SAVE_KEY,LEGACY_KEY,PLAYBACK_RATES,UPGRADE_DEFS,RANKS,SKINS,achievements,fresh,record,completed,totalMedals,cargoCount,
     viewRecord,unlocked,unlockRequirement,lockReason,nextLevel,rank,stats,medalCount,launch,complete,buy,quote,invested,dataInvested,respec,research,installed,
     earnedBudget,remainingRewards,sanitize,read,write,awardAchievements};
   if(typeof module!=='undefined'&&module.exports)module.exports=O.Progress;
