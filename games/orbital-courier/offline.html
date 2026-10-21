@@ -2719,7 +2719,7 @@ O.Achievements={CATEGORIES,create};if(typeof module!=='undefined'&&module.export
    Hull choice never enters the simulation or upgrade calculations. */
 (function(root){
  'use strict';
- const O=root.Orbital=root.Orbital||{},cache=new Map();
+ const O=root.Orbital=root.Orbital||{},cache=new Map(),HULL_SCALE=.65;
  const FINISHES=Object.freeze([{id:'satin',name:'Сатин'},{id:'matte',name:'Матовый'},{id:'metal',name:'Металлик'}]);
  const LIVERIES=Object.freeze([{id:'clean',name:'Чистый'},{id:'panels',name:'Панели'},{id:'stripe',name:'Полоса'},{id:'split',name:'Два тона'}]);
  const appearance=p=>({skin:p.skin,finish:p.finish||'satin',livery:p.livery||'panels'});
@@ -2794,15 +2794,15 @@ O.Achievements={CATEGORIES,create};if(typeof module!=='undefined'&&module.export
   if(cache.size>=32)cache.delete(cache.keys().next().value);cache.set(key,canvas);return canvas;
  }
  function draw(c,x,y,angle,color,scale=1,thrust=false,time=0,model='courier',style={}){
-  const m=find(model);c.save();c.translate(x,y);c.rotate(angle);c.scale(scale,scale);
+  const m=find(model);c.save();c.translate(x,y);c.rotate(angle);c.scale(scale*HULL_SCALE,scale*HULL_SCALE);
   if(thrust)for(const [ex,ey]of m.engines){
-   const length=12+Math.sin(time*5)*1.2,g=c.createLinearGradient(ex,ey,ex-length,ey);g.addColorStop(0,'#f0f6ff');g.addColorStop(.22,color);g.addColorStop(1,color+'00');
+   const length=(12+Math.sin(time*5)*1.2)/HULL_SCALE,g=c.createLinearGradient(ex,ey,ex-length,ey);g.addColorStop(0,'#f0f6ff');g.addColorStop(.22,color);g.addColorStop(1,color+'00');
    c.fillStyle=g;c.beginPath();c.moveTo(ex,ey-1);c.quadraticCurveTo(ex-length*.5,ey-1.7,ex-length,ey);c.quadraticCurveTo(ex-length*.5,ey+1.7,ex,ey+1);c.closePath();c.fill();
   }
   c.drawImage(texture(color,m.id,style),-28,-20,56,40);c.restore();
  }
  draw.texture=texture;
- O.Fleet={MODELS,FINISHES,LIVERIES,appearance,find,draw};
+ O.Fleet={MODELS,FINISHES,LIVERIES,HULL_SCALE,appearance,find,draw};
  if(typeof module!=='undefined'&&module.exports)module.exports=O.Fleet;
 })(typeof globalThis!=='undefined'?globalThis:window);
 
@@ -5547,7 +5547,7 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
    c.drawImage(bay(),0,0,900,540);const y=264+Math.sin(t*.75)*2,angle=-.14,size=9;
    c.save();c.beginPath();c.rect(100,355,700,180);c.clip();c.translate(0,587);c.scale(1,-.58);c.globalAlpha=.11;O.drawShip(c,450,y,angle,color,size,false,t,model.id,style);c.restore();ellipse(c,450,387,170,20,'#05080dc0');O.drawShip(c,450,y,angle,color,size,false,t,model.id,style);
    if(view.tab==='modules'){
-    const [lx,ly]=model.hardpoints[view.module],x=450+(lx*Math.cos(angle)-ly*Math.sin(angle))*size,sy=y+(lx*Math.sin(angle)+ly*Math.cos(angle))*size,left=x<450,tx=left?190:710,ty=view.module==='magnet'?409:110;
+    const [lx,ly]=model.hardpoints[view.module],hullSize=size*O.Fleet.HULL_SCALE,x=450+(lx*Math.cos(angle)-ly*Math.sin(angle))*hullSize,sy=y+(lx*Math.sin(angle)+ly*Math.cos(angle))*hullSize,left=x<450,tx=left?190:710,ty=view.module==='magnet'?409:110;
     line(c,[[x,sy],[x+(left?-28:28),ty],[tx,ty]],'#b3cceb77');ellipse(c,x,sy,7,7,'#afc9ed18','#c8dcf4aa');ellipse(c,x,sy,2,2,'#e3efff');c.font='11px ui-monospace,Consolas,monospace';c.textAlign=left?'left':'right';c.fillStyle='#afc4df';c.fillText(({scanner:'SCAN / 01',magnet:'FIELD / 02',docking:'DOCK / 03',engine:'DRIVE / 04'})[view.module],tx,ty-10);
    }
    if(!reduced)for(let i=0;i<12;i++)ellipse(c,120+(i*157.3)%660,60+(i*61.7+t*5)%350,.7,.7,'#b3c9e324');

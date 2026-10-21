@@ -2,7 +2,7 @@
    Hull choice never enters the simulation or upgrade calculations. */
 (function(root){
  'use strict';
- const O=root.Orbital=root.Orbital||{},cache=new Map();
+ const O=root.Orbital=root.Orbital||{},cache=new Map(),HULL_SCALE=.65;
  const FINISHES=Object.freeze([{id:'satin',name:'Сатин'},{id:'matte',name:'Матовый'},{id:'metal',name:'Металлик'}]);
  const LIVERIES=Object.freeze([{id:'clean',name:'Чистый'},{id:'panels',name:'Панели'},{id:'stripe',name:'Полоса'},{id:'split',name:'Два тона'}]);
  const appearance=p=>({skin:p.skin,finish:p.finish||'satin',livery:p.livery||'panels'});
@@ -77,14 +77,14 @@
   if(cache.size>=32)cache.delete(cache.keys().next().value);cache.set(key,canvas);return canvas;
  }
  function draw(c,x,y,angle,color,scale=1,thrust=false,time=0,model='courier',style={}){
-  const m=find(model);c.save();c.translate(x,y);c.rotate(angle);c.scale(scale,scale);
+  const m=find(model);c.save();c.translate(x,y);c.rotate(angle);c.scale(scale*HULL_SCALE,scale*HULL_SCALE);
   if(thrust)for(const [ex,ey]of m.engines){
-   const length=12+Math.sin(time*5)*1.2,g=c.createLinearGradient(ex,ey,ex-length,ey);g.addColorStop(0,'#f0f6ff');g.addColorStop(.22,color);g.addColorStop(1,color+'00');
+   const length=(12+Math.sin(time*5)*1.2)/HULL_SCALE,g=c.createLinearGradient(ex,ey,ex-length,ey);g.addColorStop(0,'#f0f6ff');g.addColorStop(.22,color);g.addColorStop(1,color+'00');
    c.fillStyle=g;c.beginPath();c.moveTo(ex,ey-1);c.quadraticCurveTo(ex-length*.5,ey-1.7,ex-length,ey);c.quadraticCurveTo(ex-length*.5,ey+1.7,ex,ey+1);c.closePath();c.fill();
   }
   c.drawImage(texture(color,m.id,style),-28,-20,56,40);c.restore();
  }
  draw.texture=texture;
- O.Fleet={MODELS,FINISHES,LIVERIES,appearance,find,draw};
+ O.Fleet={MODELS,FINISHES,LIVERIES,HULL_SCALE,appearance,find,draw};
  if(typeof module!=='undefined'&&module.exports)module.exports=O.Fleet;
 })(typeof globalThis!=='undefined'?globalThis:window);

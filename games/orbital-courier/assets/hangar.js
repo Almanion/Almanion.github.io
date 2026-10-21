@@ -141,7 +141,7 @@
    c.drawImage(bay(),0,0,900,540);const y=264+Math.sin(t*.75)*2,angle=-.14,size=9;
    c.save();c.beginPath();c.rect(100,355,700,180);c.clip();c.translate(0,587);c.scale(1,-.58);c.globalAlpha=.11;O.drawShip(c,450,y,angle,color,size,false,t,model.id,style);c.restore();ellipse(c,450,387,170,20,'#05080dc0');O.drawShip(c,450,y,angle,color,size,false,t,model.id,style);
    if(view.tab==='modules'){
-    const [lx,ly]=model.hardpoints[view.module],x=450+(lx*Math.cos(angle)-ly*Math.sin(angle))*size,sy=y+(lx*Math.sin(angle)+ly*Math.cos(angle))*size,left=x<450,tx=left?190:710,ty=view.module==='magnet'?409:110;
+    const [lx,ly]=model.hardpoints[view.module],hullSize=size*O.Fleet.HULL_SCALE,x=450+(lx*Math.cos(angle)-ly*Math.sin(angle))*hullSize,sy=y+(lx*Math.sin(angle)+ly*Math.cos(angle))*hullSize,left=x<450,tx=left?190:710,ty=view.module==='magnet'?409:110;
     line(c,[[x,sy],[x+(left?-28:28),ty],[tx,ty]],'#b3cceb77');ellipse(c,x,sy,7,7,'#afc9ed18','#c8dcf4aa');ellipse(c,x,sy,2,2,'#e3efff');c.font='11px ui-monospace,Consolas,monospace';c.textAlign=left?'left':'right';c.fillStyle='#afc4df';c.fillText(({scanner:'SCAN / 01',magnet:'FIELD / 02',docking:'DOCK / 03',engine:'DRIVE / 04'})[view.module],tx,ty-10);
    }
    if(!reduced)for(let i=0;i<12;i++)ellipse(c,120+(i*157.3)%660,60+(i*61.7+t*5)%350,.7,.7,'#b3c9e324');
