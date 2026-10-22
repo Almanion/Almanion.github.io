@@ -73,42 +73,50 @@ test('cached homepage clears the private link and checks the current account whe
     await expect(card).not.toHaveAttribute('href');
 });
 
-for (const width of [1366, 390, 320]) for (const dark of [false, true]) {
-    test(`standalone geography map, groups and self-check at ${width}px, dark=${dark}`, async ({ page }, info) => {
-        await page.setViewportSize({ width, height: 900 });
-        await page.emulateMedia({ colorScheme: dark ? 'dark' : 'light' });
-        const errors = [];
-        const external = [];
-        page.on('pageerror', error => errors.push(error.message));
-        page.on('request', request => { if (/^https?:/.test(request.url()) && new URL(request.url()).hostname !== '127.0.0.1') external.push(request.url()); });
-        await page.goto('/geography/');
-        const map = page.frameLocator('#codex-visualization');
-        await expect(map.locator('#study-country-key button')).toHaveCount(20);
-        expect(await map.locator('#study-main-map path[data-iso]').count()).toBeGreaterThan(150);
-        await map.locator('#study-main-map g[data-capital="JPN"] circle[fill="transparent"]').first().click();
-        await expect(map.locator('#study-selection')).toContainText('Япония — Токио');
-        for (const [group, count] of [['1', 3], ['2', 5], ['3', 5], ['4', 5], ['5', 5], ['0', 20]]) {
-            await map.locator('#study-group').selectOption(group);
-            await expect(map.locator('#study-country-key button')).toHaveCount(count);
-        }
-        await map.locator('#study-country-key button[data-iso="FRA"]').click();
-        await expect(map.locator('#study-main-map [data-map-label="FRA"]')).toContainText('Париж');
-        await map.locator('#study-hide').check();
-        await expect(map.locator('#study-selection')).toContainText('Франция — ?');
-        await expect(map.locator('#study-main-map [data-map-label="FRA"]')).not.toContainText('Париж');
-        await map.locator('#study-reveal').click();
-        await expect(map.locator('#study-selection')).toContainText('Франция — Париж');
-        await expect(map.locator('#study-main-map [data-map-label="FRA"]')).toContainText('Париж');
-        expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
-        expect(await map.locator('html').evaluate(element => element.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
-        expect(errors).toEqual([]);
-        expect(external).toEqual([]);
-        await page.screenshot({ path: info.outputPath(`geography-${width}-${dark ? 'dark' : 'light'}.png`), fullPage: true });
-        await map.locator('#study-country-key button[data-iso="AUT"]').scrollIntoViewIfNeeded();
-        await expect(map.locator('#study-country-key button[data-iso="AUT"]')).toBeInViewport();
-        await page.screenshot({ path: info.outputPath(`geography-bottom-${width}-${dark ? 'dark' : 'light'}.png`) });
-        await page.reload();
-        await expect(map.locator('#study-country-key button')).toHaveCount(20);
-        await expect(page.getByRole('link', { name: '← На главную' })).toHaveAttribute('href', '../');
-    });
-}
+
+test.describe("standalone geography", () => {
+    // The map never registers a worker. Playwright's worker-blocking hook reads
+    // navigator.serviceWorker in every frame, which throws for this opaque
+    // sandbox in the CI browser. Keep the sandbox and avoid that unrelated hook.
+    test.use({ serviceWorkers: "allow" });
+    for (const width of [1366, 390, 320]) for (const dark of [false, true]) {
+        test(`standalone geography map, groups and self-check at ${width}px, dark=${dark}`, async ({ page }, info) => {
+            await page.setViewportSize({ width, height: 900 });
+            await page.emulateMedia({ colorScheme: dark ? 'dark' : 'light' });
+            const errors = [];
+            const external = [];
+            page.on('pageerror', error => errors.push(error.message));
+            page.on('request', request => { if (/^https?:/.test(request.url()) && new URL(request.url()).hostname !== '127.0.0.1') external.push(request.url()); });
+            await page.goto('/geography/');
+            await expect(page.locator('#codex-visualization')).toHaveAttribute('sandbox', 'allow-scripts');
+            const map = page.frameLocator('#codex-visualization');
+            await expect(map.locator('#study-country-key button')).toHaveCount(20);
+            expect(await map.locator('#study-main-map path[data-iso]').count()).toBeGreaterThan(150);
+            await map.locator('#study-main-map g[data-capital="JPN"] circle[fill="transparent"]').first().click();
+            await expect(map.locator('#study-selection')).toContainText('Япония — Токио');
+            for (const [group, count] of [['1', 3], ['2', 5], ['3', 5], ['4', 5], ['5', 5], ['0', 20]]) {
+                await map.locator('#study-group').selectOption(group);
+                await expect(map.locator('#study-country-key button')).toHaveCount(count);
+            }
+            await map.locator('#study-country-key button[data-iso="FRA"]').click();
+            await expect(map.locator('#study-main-map [data-map-label="FRA"]')).toContainText('Париж');
+            await map.locator('#study-hide').check();
+            await expect(map.locator('#study-selection')).toContainText('Франция — ?');
+            await expect(map.locator('#study-main-map [data-map-label="FRA"]')).not.toContainText('Париж');
+            await map.locator('#study-reveal').click();
+            await expect(map.locator('#study-selection')).toContainText('Франция — Париж');
+            await expect(map.locator('#study-main-map [data-map-label="FRA"]')).toContainText('Париж');
+            expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+            expect(await map.locator('html').evaluate(element => element.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+            expect(errors).toEqual([]);
+            expect(external).toEqual([]);
+            await page.screenshot({ path: info.outputPath(`geography-${width}-${dark ? 'dark' : 'light'}.png`), fullPage: true });
+            await map.locator('#study-country-key button[data-iso="AUT"]').scrollIntoViewIfNeeded();
+            await expect(map.locator('#study-country-key button[data-iso="AUT"]')).toBeInViewport();
+            await page.screenshot({ path: info.outputPath(`geography-bottom-${width}-${dark ? 'dark' : 'light'}.png`) });
+            await page.reload();
+            await expect(map.locator('#study-country-key button')).toHaveCount(20);
+            await expect(page.getByRole('link', { name: '← На главную' })).toHaveAttribute('href', '../');
+        });
+    }
+});
