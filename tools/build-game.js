@@ -66,7 +66,7 @@ function onlineFiles() {
     for (const match of sourceHTML().matchAll(/\b(?:href|src)="(src\/[^"]+\.(?:css|js))"/g)) {
         files['assets/' + match[1].slice(4)] = fs.readFileSync(path.join(source, match[1]), 'utf8');
     }
-    const eclipseAssets = { 'eclipse-engine.js': 'engine.js', 'eclipse-renderer.js': 'renderer.js', 'eclipse-app.js': 'app.js', 'eclipse.css': 'eclipse.css', 'eclipse-entry.css': 'entry.css' };
+    const eclipseAssets = { 'eclipse-engine.js': 'engine.js', 'eclipse-battle.js': 'battle.js', 'eclipse-renderer.js': 'renderer.js', 'eclipse-app.js': 'app.js', 'eclipse.css': 'eclipse.css', 'eclipse-entry.css': 'entry.css' };
     for (const [name, file] of Object.entries(eclipseAssets)) files['assets/' + name] = fs.readFileSync(path.join(source, 'eclipse', file), 'utf8');
     files['eclipse/index.html'] = fs.readFileSync(path.join(source, 'eclipse', 'index.html'), 'utf8').replace(/@@([a-z.-]+)@@/g, (_, name) => {
         const content = files['assets/' + name];

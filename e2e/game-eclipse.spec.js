@@ -3,7 +3,7 @@ const {test,expect}=require('@playwright/test');
 const url='/games/orbital-courier/eclipse/';
 async function start(page,viewport={width:1366,height:768}){await page.setViewportSize(viewport);await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());await page.clock.install();await page.goto(url);await page.locator('#begin').click();}
 async function hint(page){await page.locator('#hintButton').click();await expect(page.locator('#applyHint')).toBeEnabled();await page.locator('#applyHint').click();await page.clock.runFor(50);await expect(page.locator('#forecastTitle')).toHaveText('Манёвр достижим');}
-async function fly(page){await page.locator('#launch').click();await page.clock.runFor(12500);await expect(page.locator('#outcome')).toBeVisible();expect(await page.evaluate(()=>EclipseApp.state.status)).toBe('won');}
+async function fly(page){const duration=await page.evaluate(()=>EclipseApp.prediction.t*1000/parseFloat(document.getElementById('rate').textContent)+(EclipseApp.phase===1?(EclipseApp.saved.settings.reduced?1100:4200):0)+300);await page.locator('#launch').click();await page.clock.runFor(duration);await expect(page.locator('#outcome')).toBeVisible();expect(await page.evaluate(()=>EclipseApp.state.status)).toBe('won');}
 for(const tactic of ['breach','rebound','escort'])test('Eclipse completes all three phases with '+tactic,async({page},info)=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));await start(page,tactic==='escort'?{width:390,height:844}:undefined);
  await page.evaluate(()=>localStorage.setItem('orbital-courier-save-v8','campaign-must-stay-byte-identical'));
@@ -35,4 +35,26 @@ test('Eclipse numeric typing and anchor dragging edit the actual forecast',async
  await hint(page);await fly(page);await page.locator('#outcomePrimary').click();await page.locator('[data-tactic=rebound]').click();await hint(page);
  const box=await page.locator('#battlefield').boundingBox(),scale=Math.min(box.width/1100,box.height/660),point={x:box.x+(box.width-1100*scale)/2+735*scale,y:box.y+(box.height-660*scale)/2+335*scale};
  await page.mouse.move(point.x,point.y);await page.mouse.down();await page.mouse.move(point.x-55*scale,point.y+65*scale,{steps:4});await page.mouse.up();await page.clock.runFor(100);const p=await page.evaluate(()=>EclipseApp.plan);expect(p.ax).toBeCloseTo(680,0);expect(p.ay).toBeCloseTo(400,0);await expect(page.locator('#anchorX')).toHaveValue('680');
+});
+
+test('Eclipse breakthrough saves immediately, pauses its presentation and can be skipped',async({page},info)=>{
+ await page.emulateMedia({reducedMotion:'no-preference'});await start(page);await hint(page);await fly(page);await page.locator('#outcomePrimary').click();await hint(page);
+ await page.locator('#rate').click();await page.locator('#rate').click();const duration=await page.evaluate(()=>EclipseApp.prediction.t);
+ await page.locator('#launch').click();await page.clock.runFor(duration*250+550);
+ expect(await page.evaluate(()=>EclipseApp.mode)).toBe('cinematic');await expect(page.locator('#outcome')).not.toBeVisible();await expect(page.locator('#skipBattle')).toBeVisible();
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('orbital-eclipse-operation-v1')).phase)).toBe(2);
+ const result=await page.evaluate(()=>({x:EclipseApp.state.x,y:EclipseApp.state.y,t:EclipseApp.state.t,fleet:EclipseApp.state.fleet}));
+ await page.locator('#pause').click();const frozen=await page.evaluate(()=>EclipseApp.battle);await page.clock.runFor(3000);expect(await page.evaluate(()=>EclipseApp.battle)).toEqual(frozen);
+ await page.locator('#pause').click();await page.clock.runFor(1300);await page.screenshot({path:info.outputPath('fleet-breakthrough.png'),fullPage:true});
+ await page.locator('#settings').click();const settingsPause=await page.evaluate(()=>EclipseApp.battle);await page.clock.runFor(3000);expect(await page.evaluate(()=>EclipseApp.battle)).toEqual(settingsPause);await page.locator('#closeSettings').click();
+ expect(await page.evaluate(()=>({x:EclipseApp.state.x,y:EclipseApp.state.y,t:EclipseApp.state.t,fleet:EclipseApp.state.fleet}))).toEqual(result);
+ await page.locator('#skipBattle').click();await expect(page.locator('#outcomeTitle')).toHaveText('Крепость открыта.');await page.reload();await page.locator('#begin').click();expect(await page.evaluate(()=>EclipseApp.phase)).toBe(2);
+});
+
+test('Eclipse reduced motion shortens the battle scene and fits a narrow phone',async({page})=>{
+ await page.emulateMedia({reducedMotion:'reduce'});await start(page,{width:320,height:568});await hint(page);await fly(page);await page.locator('#outcomePrimary').click();await hint(page);
+ await page.locator('#rate').click();await page.locator('#rate').click();const duration=await page.evaluate(()=>EclipseApp.prediction.t);
+ await page.locator('#launch').click();await page.clock.runFor(duration*250+250);expect(await page.evaluate(()=>EclipseApp.mode)).toBe('cinematic');
+ const skip=await page.locator('#skipBattle').boundingBox();expect(skip.x).toBeGreaterThanOrEqual(0);expect(skip.x+skip.width).toBeLessThanOrEqual(320);expect(skip.y).toBeGreaterThanOrEqual(0);expect(skip.y+skip.height).toBeLessThanOrEqual(568);
+ await page.clock.runFor(1300);await expect(page.locator('#outcomeTitle')).toHaveText('Крепость открыта.');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });

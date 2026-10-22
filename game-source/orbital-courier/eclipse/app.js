@@ -1,6 +1,6 @@
 (function (root) {
   'use strict';
-  const E = root.EclipseEngine, $ = id => document.getElementById(id), KEY = 'orbital-eclipse-operation-v1';
+  const E = root.EclipseEngine, B = root.EclipseBattle, $ = id => document.getElementById(id), KEY = 'orbital-eclipse-operation-v1';
   const NAMES = { breach: 'Удар с тыла', rebound: 'Вернуть залп', escort: 'Прикрыть звено' };
   const PHASES = [
     { title: 'За тенью луны', objective: 'Пройди над луной и захвати узел. Его поле позволит атаковать крепость.', radio: 'Луна прикроет заход. Найди курс к светящемуся узлу над её краем.', intel: 'Крепость стреляет каждые 5 с. Тень луны закрывает корабль от огня; каждый залп ослабляет союзный флот.' },
@@ -28,8 +28,9 @@
     if (saved.best?.[t] && Number.isFinite(saved.best[t].time)) best[t] = { time: finite(saved.best[t].time, 72, 0, 72), fleet: finite(saved.best[t].fleet, 1, 1, 6) };
     for (const p of [0, 1, 2]) { const key = `${p}:${t}`; if (saved.plans?.[key]) plans[key] = E.cleanPlan(saved.plans[key], p, t); }
   }
-  let plan, state, prediction, previous = null, mode = 'plan', editing = false, speed = 1, accumulator = 0, last = 0, eventIndex = 0, renderTime = 0;
-  let hintPlan = null, pendingNext = null, dirty = false, finished = saved.finished === true && completed.length === 3;
+  let plan, state, prediction, previous = null, mode = 'plan', editing = false, speed = 1, accumulator = 0, last = 0, eventIndex = 0, renderTime = 0, lastViewKey = '';
+  let hintPlan = null, pendingNext = null, dirty = false, resumeMode = 'running', finished = saved.finished === true && completed.length === 3;
+  const battle = new B.Timeline();
   const renderer = new root.EclipseRenderer($('battlefield')), sound = new root.Orbital.Sound(); sound.enabled = settings.sound; sound.setVolume(.35);
   const dialogs = [...document.querySelectorAll('dialog')], isDialogOpen = () => dialogs.some(d => d.open);
   function snapshot(override = {}) { return { version: 1, phase, tactic, carry, completed, attempts, hints, plans, best, settings, finished, ...override }; }
@@ -44,7 +45,7 @@
     plan = plans[`${phase}:${tactic}`] || { ...E.defaults(phase, tactic) };
     if (!plans[`${phase}:${tactic}`] && phase === 0) plan = { ...REFERENCES.approach, angle: -54 };
     if (!plans[`${phase}:${tactic}`] && phase === 1) plan = { ...REFERENCES[tactic], angle: REFERENCES[tactic].angle + (tactic === 'rebound' ? 8 : 10) };
-    state = E.create(phase, tactic, plan, carry); mode = 'plan'; accumulator = 0; eventIndex = 0; editing = false; pendingNext = null;
+    state = E.create(phase, tactic, plan, carry); mode = 'plan'; accumulator = 0; eventIndex = 0; editing = false; pendingNext = null; battle.reset();
     if (!initial) previous = null;
     const meta = PHASES[phase], info = phase === 1 ? TACTIC_INFO[tactic] : meta;
     $('phaseLabel').textContent = `МАНЁВР 0${phase + 1} / 03`; $('objectiveTitle').textContent = meta.title; $('objectiveText').textContent = info.objective; $('intelText').textContent = info.intel; setRadio(meta.radio);
@@ -72,14 +73,16 @@
     state = E.create(phase, tactic, plan, carry); writeInputs(); dirty = true; save();
   }
   function sync() {
-    const running = mode === 'running' || mode === 'paused', locked = mode !== 'plan';
-    $('stateBadge').textContent = mode === 'running' ? 'МАНЁВР ВЫПОЛНЯЕТСЯ' : mode === 'paused' ? 'ТАКТИЧЕСКАЯ ПАУЗА' : mode === 'review' ? state.status === 'won' ? 'МАНЁВР ЗАВЕРШЁН' : 'РАЗБОР ПОЛЁТА' : 'ПЛАНИРОВАНИЕ';
+    const cinematic = mode === 'cinematic' || mode === 'paused' && resumeMode === 'cinematic';
+    const running = mode === 'running' || mode === 'paused' || cinematic, locked = mode !== 'plan';
+    $('stateBadge').textContent = mode === 'running' ? 'МАНЁВР ВЫПОЛНЯЕТСЯ' : mode === 'paused' ? 'ТАКТИЧЕСКАЯ ПАУЗА' : cinematic ? 'ПРОРЫВ ФЛОТА' : mode === 'review' ? state.status === 'won' ? 'МАНЁВР ЗАВЕРШЁН' : 'РАЗБОР ПОЛЁТА' : 'ПЛАНИРОВАНИЕ';
     $('stateBadge').classList.toggle('live', mode === 'running'); $('timer').textContent = state.t.toFixed(2).padStart(5, '0') + ' с';
     $('fleetValue').textContent = `${state.fleet} / 6`; $('fleetMeter').style.width = state.fleet / 6 * 100 + '%'; $('hullValue').textContent = `${state.hull} / 3`; $('hullMeter').style.width = state.hull / 3 * 100 + '%';
     $('mobileVitals').textContent = `Флот ${state.fleet}/6 · Корпус ${state.hull}/3`;
     for (const id of ['angle', 'angleRange', 'speed', 'speedRange', 'anchorX', 'anchorY', 'anchorTool']) $(id).disabled = locked;
     document.querySelectorAll('[data-tactic]').forEach(b => b.disabled = locked);
-    $('launch').hidden = running; $('pause').hidden = !running; $('shield').hidden = !running || phase === 1 && tactic === 'rebound';
+    $('launch').hidden = running; $('pause').hidden = !running; $('shield').hidden = !running || cinematic || phase === 1 && tactic === 'rebound';
+    $('rate').disabled = cinematic; $('battleMoment').hidden = !cinematic;
     $('launch').textContent = mode === 'review' ? state.status === 'won' ? phase === 2 ? 'Итоги операции ↗' : 'Следующий манёвр ↗' : 'Изменить курс ↗' : 'Выполнить манёвр ↗';
     $('pause').textContent = mode === 'paused' ? 'Продолжить ▶' : 'Пауза Ⅱ'; $('shield').disabled = state.shieldUsed; $('shield').textContent = state.shieldUsed ? 'Щит использован' : 'Щит · E'; $('anchorTool').setAttribute('aria-pressed', String(editing));
     $('soundEnabled').checked = settings.sound; $('reducedMotion').checked = settings.reduced; $('showForecast').checked = settings.forecast;
@@ -89,23 +92,36 @@
   function launch() {
     if (mode === 'review') { if (state.status === 'won') phase === 2 ? outcome() : next(); else retry(); return; }
     if (mode !== 'plan' || isDialogOpen()) return;
-    forecast(); plans[`${phase}:${tactic}`] = { ...plan }; state = E.create(phase, tactic, plan, carry); mode = 'running'; editing = false; attempts++; accumulator = 0; eventIndex = 0; save();
+    forecast(); plans[`${phase}:${tactic}`] = { ...plan }; state = E.create(phase, tactic, plan, carry); mode = 'running'; editing = false; attempts++; accumulator = 0; eventIndex = 0; battle.reset(); save();
     sound.unlock(); sound.play('launch'); setRadio(phase === 1 && tactic === 'rebound' ? 'Залп под нашим контролем. Поле должно вернуть его к реактору.' : 'Импульс дан. Наблюдаю за курсом.'); sync();
   }
-  function pause() { if (!['running', 'paused'].includes(mode)) return; mode = mode === 'running' ? 'paused' : 'running'; accumulator = 0; sound.silence(); sync(); }
+  function pause() { if (!['running', 'paused', 'cinematic'].includes(mode)) return; if (mode === 'paused') mode = resumeMode; else { resumeMode = mode; mode = 'paused'; } accumulator = 0; sound.silence(); sync(); }
   function retry() {
     dialogs.forEach(d => { if (d.open) d.close(); }); previous = state.t > 0 ? state : previous; completed = completed.filter(x => x.phase < phase); finished = false;
-    state = E.create(phase, tactic, plan, carry); mode = 'plan'; accumulator = 0; eventIndex = 0; pendingNext = null; sound.silence(); forecast(); sync(); save(); setRadio('Курс можно изменить. Предыдущая траектория осталась на карте.');
+    state = E.create(phase, tactic, plan, carry); mode = 'plan'; accumulator = 0; eventIndex = 0; pendingNext = null; battle.reset(); sound.silence(); forecast(); sync(); save(); setRadio('Курс можно изменить. Предыдущая траектория осталась на карте.');
   }
   function endManeuver() {
     mode = 'review'; accumulator = 0; sound.silence();
     if (state.status === 'won') {
-      sound.play('win'); completed = completed.filter(x => x.phase < phase).concat({ phase, time: state.t, hull: state.hull, fleet: state.fleet, ally: state.allyHull });
+      completed = completed.filter(x => x.phase < phase).concat({ phase, time: state.t, hull: state.hull, fleet: state.fleet, ally: state.allyHull });
       pendingNext = { phase: Math.min(2, phase + 1), carry: { fleet: state.fleet, x: phase === 0 || tactic === 'rebound' && phase === 1 ? E.NODE.x : state.x, y: phase === 0 || tactic === 'rebound' && phase === 1 ? E.NODE.y : state.y } };
       if (phase === 2) { finished = true; const time = completed.reduce((sum, r) => sum + r.time, 0); if (!best[tactic] || time < best[tactic].time) best[tactic] = { time, fleet: state.fleet }; save({ final: { x: state.x, y: state.y, t: state.t } }); }
       else save(pendingNext);
-    } else { sound.play('fail'); save(); }
-    setRadio(state.reason); sync(); outcome();
+    } else { save(); }
+    if (state.status === 'won' && phase === 1) {
+      // Save the checkpoint before presentation; skipping/reloading never loses a victory.
+      mode = 'cinematic'; battle.beginBreak(state); setRadio('Лира: генератор поражён. Всем кораблям — приготовиться к прорыву.'); sync();
+      $('battlefield').scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    } else { setRadio(state.reason); sync(); outcome(); sound.play(state.status === 'won' ? 'win' : 'fail'); }
+  }
+  function finishBattle() { if (battle.breakAge === null || mode === 'review') return; battle.time = Math.max(battle.time, battle.breakAt + B.DURATION); mode = 'review'; accumulator = 0; setRadio('«Заря»: коридор открыт. Все батареи ведут огонь. Лира, выводи корабль!'); sync(); outcome(); }
+  function battleCaption() {
+    const age = battle.breakAge; if (age === null) return;
+    const step = age < .4 ? 0 : age < 1.35 ? 1 : 2;
+    const lines = [['ГЕНЕРАТОР ПОРАЖЁН', 'Щит теряет питание'], ['КОРИДОР ОТКРЫТ', 'Защита крепости разрушена'], ['ФЛАГМАН «ЗАРЯ»', 'Всем батареям — огонь']];
+    if ($('momentLabel').textContent !== lines[step][0]) { $('momentLabel').textContent = lines[step][0]; $('momentTitle').textContent = lines[step][1]; }
+    if (step === 1) setRadio('Лира: щит разрушен. Коридор чист!');
+    if (step === 2) setRadio('«Заря»: начинаем прорыв. Звеньям — за флагманом.');
   }
   function outcome() {
     const won = state.status === 'won', final = won && phase === 2;
@@ -140,6 +156,7 @@
   $('help').addEventListener('click', () => { $('begin').textContent = 'Вернуться к операции ↗'; openDialog('briefing'); });
   $('settings').addEventListener('click', () => openDialog('preferences')); $('closeSettings').addEventListener('click', () => closeDialog('preferences'));
   $('launch').addEventListener('click', launch); $('pause').addEventListener('click', pause); $('retry').addEventListener('click', retry);
+  $('skipBattle').addEventListener('click', finishBattle);
   $('shield').addEventListener('click', () => { if (['running', 'paused'].includes(mode)) { E.shield(state); sync(); } });
   $('rate').addEventListener('click', () => { speed = speed === 1 ? 2 : speed === 2 ? 4 : 1; $('rate').textContent = speed + '×'; $('rate').setAttribute('aria-label', 'Скорость воспроизведения: ' + speed + '×'); });
   for (const key of ['angle', 'speed']) for (const suffix of ['', 'Range']) $(key + suffix).addEventListener('input', event => { const v = event.target.valueAsNumber; if (Number.isFinite(v)) updatePlan({ [key]: v }); });
@@ -167,28 +184,37 @@
   document.addEventListener('keydown', event => {
     if (event.repeat || isDialogOpen() || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '') || event.ctrlKey || event.metaKey || event.altKey) return;
     if (event.code === 'Space' && /^(BUTTON|A)$/.test(document.activeElement?.tagName || '')) return;
-    if (event.code === 'Space') { event.preventDefault(); ['running', 'paused'].includes(mode) ? pause() : launch(); }
+    if (event.code === 'Space') { event.preventDefault(); ['running', 'paused', 'cinematic'].includes(mode) ? pause() : launch(); }
     if (event.code === 'KeyR') { event.preventDefault(); retry(); }
     if (event.code === 'KeyE' && ['running', 'paused'].includes(mode)) { event.preventDefault(); E.shield(state); sync(); }
   });
-  document.addEventListener('visibilitychange', () => { if (document.hidden && mode === 'running') pause(); last = performance.now(); accumulator = 0; });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && ['running', 'cinematic'].includes(mode)) pause(); last = performance.now(); accumulator = 0; });
   function frame(now) {
-    const dt = Math.min(.1, Math.max(0, (now - (last || now)) / 1000)); last = now; if (!settings.reduced) renderTime += dt;
+    const dt = Math.min(.1, Math.max(0, (now - (last || now)) / 1000)); last = now;
+    const stopped = isDialogOpen() || document.hidden || mode === 'paused' || mode === 'review';
+    if (!stopped && !settings.reduced) renderTime += dt;
+    battle.advance(dt, { paused: stopped, phase, running: mode === 'running', fleet: state.fleet, flightTime: state.t });
     if (dirty) forecast();
     if (mode === 'running' && !isDialogOpen() && !document.hidden) {
       accumulator += dt * speed;
       while (accumulator >= E.DT && mode === 'running') {
         E.step(state); accumulator -= E.DT;
-        while (eventIndex < state.events.length) { const ev = state.events[eventIndex++]; if (['hit', 'ally-hit', 'protect', 'blocked'].includes(ev.type)) { setRadio(ev.text); sound.play(ev.type === 'protect' ? 'gate' : 'cargo'); } }
+        while (eventIndex < state.events.length) { const ev = state.events[eventIndex++]; battle.receive(ev, state); if (['hit', 'ally-hit', 'protect', 'blocked'].includes(ev.type)) setRadio(ev.text); }
         if (state.status !== 'running') endManeuver();
       }
       sync();
     }
-    renderer.draw({ state, prediction, phase, tactic, plan, mode, reduced: settings.reduced, showForecast: settings.forecast, editing, previous }, renderTime); requestAnimationFrame(frame);
+    if (mode === 'cinematic') { battleCaption(); if (battle.breakAge >= (settings.reduced ? 1.1 : B.DURATION)) finishBattle(); }
+    for (const cue of battle.takeCues()) if (!isDialogOpen() && !document.hidden) B.playCue(sound, cue, settings.reduced);
+    const viewKey = [mode, isDialogOpen(), settings.reduced, settings.forecast, phase, state.t].join(':');
+    if (!stopped || renderer.needsDraw || viewKey !== lastViewKey) {
+      renderer.draw({ state, prediction, phase, tactic, plan, mode, battle, reduced: settings.reduced, showForecast: settings.forecast, editing, previous }, renderTime); renderer.needsDraw = false; lastViewKey = viewKey;
+    }
+    requestAnimationFrame(frame);
   }
   setup(true);
   if (finished) { state.status = 'won'; state.reason = 'Операция завершена'; state.x = finite(saved.final?.x, E.EXIT.x, 0, E.W); state.y = finite(saved.final?.y, E.EXIT.y, 0, E.H); state.t = completed[2]?.time || 0; state.fleet = completed[2]?.fleet || 1; state.hull = completed[2]?.hull || 3; mode = 'review'; sync(); outcome(); }
   else { $('begin').textContent = phase > 0 ? 'Продолжить с контрольной точки ↗' : 'Принять командование ↗'; openDialog('briefing'); }
   requestAnimationFrame(frame);
-  root.EclipseApp = { get state() { return state; }, get phase() { return phase; }, get tactic() { return tactic; }, get mode() { return mode; }, get prediction() { return prediction; }, get plan() { return { ...plan }; }, get saved() { return snapshot(); } };
+  root.EclipseApp = { get state() { return state; }, get phase() { return phase; }, get tactic() { return tactic; }, get mode() { return mode; }, get prediction() { return prediction; }, get plan() { return { ...plan }; }, get saved() { return snapshot(); }, get battle() { return { time: battle.time, breakAge: battle.breakAge, effects: battle.effects.length, waves: battle.wave }; } };
 })(window);

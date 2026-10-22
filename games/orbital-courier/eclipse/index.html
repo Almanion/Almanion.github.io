@@ -8,12 +8,13 @@
   <title>Затмение — пробная операция</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23101116'/%3E%3Ccircle cx='32' cy='32' r='21' fill='none' stroke='%23d4b587' stroke-width='3'/%3E%3Ccircle cx='40' cy='24' r='20' fill='%23101116'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="../assets/typography.css?v=daf09678fa799888">
-  <link rel="stylesheet" href="../assets/eclipse.css?v=03cc6d85aef21345">
+  <link rel="stylesheet" href="../assets/eclipse.css?v=0b32a5d48b95d25a">
   <script defer src="../assets/fleet.js?v=d0fcc0118f3ab108"></script>
   <script defer src="../assets/audio.js?v=60fe76ba0d6568a6"></script>
   <script defer src="../assets/eclipse-engine.js?v=3db332eb9bc24ab7"></script>
-  <script defer src="../assets/eclipse-renderer.js?v=66e0cec2e6e654b6"></script>
-  <script defer src="../assets/eclipse-app.js?v=94db3c9d7a8a4a8f"></script>
+  <script defer src="../assets/eclipse-battle.js?v=523b6a62bb10e3cd"></script>
+  <script defer src="../assets/eclipse-renderer.js?v=21e4d1e5c6b14009"></script>
+  <script defer src="../assets/eclipse-app.js?v=b87add1ea8fe377a"></script>
 </head>
 <body>
   <noscript><p>Для тактической операции нужен JavaScript. <a href="../contracts/">Вернуться к контрактам</a></p></noscript>
@@ -29,6 +30,7 @@
       <section class="battle" aria-label="Тактическая карта">
         <div class="map-top"><span id="stateBadge" class="state-badge">ПЛАНИРОВАНИЕ</span><span class="map-sector">ЛУНА ИЛЬ / ОРБИТА 07</span><span id="mobileVitals">Флот 6/6</span><span id="timer">00.00 с</span></div>
         <canvas id="battlefield" width="1100" height="660" tabindex="0" aria-label="Карта операции. Нажми на карту для направления курса. На втором этапе можно перемещать гравитационный якорь. Направление и положение доступны также в полях под картой.">Карту можно настроить с помощью полей направления, импульса и положения якоря.</canvas>
+        <div id="battleMoment" class="battle-moment" hidden><div role="status"><span id="momentLabel">ГЕНЕРАТОР ПОРАЖЁН</span><strong id="momentTitle">Щит теряет питание</strong></div><button id="skipBattle">К итогам ↗</button></div>
         <div class="map-bottom"><span id="mapHint">Нажми на карту, чтобы задать направление</span><button id="forecastToggle" aria-pressed="true" title="Показать или скрыть прогноз">Прогноз <span>вкл.</span></button></div>
         <div class="transmission" id="transmission" role="status" aria-live="polite"><span>НАВИГАТОР / ЛИРА</span><p id="radioText">Луна прикроет заход. Найди курс к светящемуся узлу над её краем.</p></div>
       </section>
