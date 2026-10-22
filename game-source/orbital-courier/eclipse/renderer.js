@@ -25,6 +25,28 @@
     point(clientX, clientY) {
       const r = this.canvas.getBoundingClientRect(); return { x: (clientX - r.left - this.ox) / this.scale, y: (clientY - r.top - this.oy) / this.scale };
     }
+    camera(view) {
+      const base = Math.min(this.width / E.W, this.height / E.H);
+      const close = view.camera === 'follow' && view.battle.breakAge === null;
+      this.scale = close ? Math.max(base, Math.min(1.1, base * 2.15)) : base;
+      let x = E.W / 2, y = E.H / 2;
+      if (close) {
+        const lead = view.mode === 'running' ? .45 : 0, halfX = this.width / this.scale / 2, halfY = this.height / this.scale / 2;
+        x = halfX < E.W / 2 ? E.clamp(view.state.x + view.state.vx * lead, halfX, E.W - halfX) : E.W / 2;
+        y = halfY < E.H / 2 ? E.clamp(view.state.y + view.state.vy * lead, halfY, E.H - halfY) : E.H / 2;
+      }
+      this.ox = this.width / 2 - x * this.scale; this.oy = this.height / 2 - y * this.scale; this.closeCamera = close;
+    }
+    overview(view) {
+      this.minimap = null; if (!this.closeCamera) return;
+      const c = this.c, w = Math.min(118, this.width * .29), h = w * E.H / E.W, x = 10, y = this.height - h - 10, k = w / E.W;
+      this.minimap = { x, y, w, h };
+      c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); c.fillStyle = '#0a1020e8'; c.fillRect(x - 1, y - 1, w + 2, h + 2); c.strokeStyle = '#b5c8e844'; c.lineWidth = 1; c.strokeRect(x, y, w, h);
+      c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip(); c.translate(x, y); c.scale(k, k);
+      c.fillStyle = '#45516d'; c.beginPath(); c.arc(E.MOON.x, E.MOON.y, E.MOON.r, 0, TAU); c.fill();
+      for (const [p, color, r] of [[E.FORT, '#cfb89e', 35], [view.phase === 2 ? E.EXIT : E.NODE, '#9cbeff', 25], [view.state, '#ffffff', 20]]) { c.fillStyle = color; c.beginPath(); c.arc(p.x, p.y, r, 0, TAU); c.fill(); }
+      c.strokeStyle = '#cadcff88'; c.lineWidth = 1 / k; c.strokeRect(-this.ox / this.scale, -this.oy / this.scale, this.width / this.scale, this.height / this.scale); c.restore();
+    }
     moonTexture() {
       const tile = document.createElement('canvas'); tile.width = tile.height = 512;
       const c = tile.getContext('2d'), random = seeded(84);
@@ -137,9 +159,10 @@
     ordnance(view) {
       const { state: s, battle, reduced, mode } = view, c = this.c;
       if (s.phase < 2 && s.status === 'running' && mode !== 'plan') {
-        const next = Math.floor((s.t + 1e-7) / 5) + 1, timeToHit = next * 5 - s.t, startFleet = s.fleet + s.shots;
-        if (timeToHit < 1.12) {
-          const target = B.fleetAt(Math.max(0, startFleet - next)), charge = B.clamp((1.12 - timeToHit) / .42, 0, 1);
+        const next = Math.floor((s.t + 1e-7) / 5) + 1, timeToHit = next * 5 - s.t;
+        if (timeToHit < 1.12 && !s.jam) {
+          const target = B.fleetAt(Math.max(0, s.fleet - 1)), charge = B.clamp((1.12 - timeToHit) / .42, 0, 1);
+          if (timeToHit > .72) { this.ring(target, 24 + timeToHit * 6, '#ed9b9c66', 1); this.line([B.batteryAt(1), target], '#ed9b9c25', .7, true); }
           for (let i = 0; i < 3; i++) {
             const from = B.batteryAt(i); this.glow(from.x, from.y, 17 + charge * 20, 'red', reduced ? .25 : charge * .75);
             const bend = -Math.max(65, 150 - (target.y - 383) * .3) - (i - 1) * 12;
@@ -149,22 +172,30 @@
           if (ownHit && !reduced) this.bolt(B.batteryAt(0), ownHit, 1 - timeToHit / .65, 'red', 1.3);
         }
         if (s.phase === 1 && s.tactic === 'escort') for (const at of [4.5, 7.5]) {
-          const progress = (s.t - (at - .65)) / .65;
+          const progress = (s.flightT - (at - .65)) / .65;
           if (progress >= 0 && progress <= 1 && !reduced) this.bolt(B.batteryAt(2), E.allyAt(at), progress, 'red', 2, -17);
         }
       }
       for (const fx of battle.effects) {
         const age = battle.time - fx.at;
         if (fx.type === 'fire') {
-          if (!reduced) { this.bolt(fx, E.FORT, age / .2, 'ice', 1); this.glow(fx.x, fx.y, 18, 'ice', Math.max(0, 1 - age / .12)); }
+          if (!reduced) {
+            const angle = Math.atan2(E.FORT.y - fx.y, E.FORT.x - fx.x);
+            for (const side of [-1, 1]) { const muzzle = { x: fx.x - Math.sin(angle) * side * 5, y: fx.y + Math.cos(angle) * side * 5 }; this.bolt(muzzle, { x: E.FORT.x + side * 9, y: E.FORT.y }, age / .2, 'ice', 1); }
+            this.glow(fx.x, fx.y, 22, 'ice', Math.max(0, 1 - age / .12));
+          }
           this.explosion(E.FORT, age - .2, fx.seed, .28, 'ice', reduced);
+        } else if (fx.type === 'torpedo') {
+          if (!reduced) { this.bolt(fx, E.FORT, age / .65, 'gold', 2.5, -40); this.glow(fx.x, fx.y, 28, 'gold', Math.max(0, 1 - age / .2)); }
+          this.explosion(E.FORT, age - .65, fx.seed, .6, 'gold', reduced);
         } else if (fx.type === 'fleet-fire') {
           const p = (age - fx.delay) / .63;
           if (!reduced) {
             this.bolt(fx, fx.target, p, fx.index === 0 ? 'gold' : 'ice', fx.index === 0 ? 2.4 : 1.1, Math.max(0, 175 - Math.max(0, fx.x - 200) * .55) + fx.index * 8);
+            if (fx.index === 0) for (const side of [-1, 1]) this.bolt({ x: fx.x - 12, y: fx.y + side * 12 }, { x: fx.target.x + side * 10, y: fx.target.y + side * 8 }, p - .035, 'gold', 1.3, Math.max(0, 175 - Math.max(0, fx.x - 200) * .55));
             this.glow(fx.x, fx.y, fx.index === 0 ? 44 : 20, fx.index === 0 ? 'gold' : 'ice', Math.max(0, 1 - (age - fx.delay) / .24));
           }
-        } else if (fx.type === 'fort-impact') this.explosion(fx, age, fx.seed, fx.heavy ? 1.12 : .55, fx.heavy ? 'gold' : 'ice', reduced);
+        } else if (fx.type === 'fort-impact') this.explosion(fx, age, fx.seed, fx.heavy ? 1.4 : .55, fx.heavy ? 'gold' : 'ice', reduced);
         else if (fx.type === 'wreck') {
           this.explosion(fx, age, fx.seed, 1.15, 'gold', reduced);
           if (age > .35 && age < 7) {
@@ -173,7 +204,12 @@
               const a = i * 2.4, d = reduced ? 10 : age * (6 + i * 2); c.save(); c.translate(fx.x + Math.cos(a) * d, fx.y + Math.sin(a) * d); c.rotate(a + (reduced ? 0 : age * .45)); c.fillStyle = i % 2 ? '#605969' : '#b89277'; c.fillRect(-3, -1.5, 4 + i % 3, 3); c.restore();
             } c.restore();
           }
-        } else if (['hit', 'ally-hit'].includes(fx.type)) this.explosion(fx, age, fx.seed, .65, 'gold', reduced);
+        } else if (['hit', 'ally-hit', 'storm-hit'].includes(fx.type)) this.explosion(fx, age, fx.seed, .65, fx.type === 'storm-hit' ? 'ice' : 'gold', reduced);
+        else if (['signal', 'jammed'].includes(fx.type) && age < 1.8) {
+          const radius = reduced ? 36 : 18 + age * (fx.type === 'jammed' ? 120 : 65);
+          c.save(); c.globalAlpha = Math.max(0, 1 - age / 1.8); this.ring(fx, radius, '#d8bce6', 1.5); this.ring(fx, radius * .8, '#c4d9ff66', .7); this.glow(fx.x, fx.y, 75, 'ice', .35);
+          if (fx.type === 'jammed') for (let i = 0; i < 6; i++) { const a = i / 6 * TAU; this.line([{x:fx.x+Math.cos(a)*75,y:fx.y+Math.sin(a)*75},{x:fx.x+Math.cos(a+.1)*95,y:fx.y+Math.sin(a+.1)*95},{x:fx.x+Math.cos(a)*115,y:fx.y+Math.sin(a)*115}], '#dec6e9aa', 1); } c.restore();
+        }
         else if (['blocked', 'protect', 'shield'].includes(fx.type) && age < 1.2) {
           c.save(); c.globalAlpha = (1 - age / 1.2) * .85;
           if (fx.type === 'protect' && !reduced) this.bolt(fx.from, fx, Math.min(1, age / .14), 'ice', 1.5);
@@ -196,9 +232,37 @@
       c.strokeStyle = '#a6bddb09'; c.lineWidth = 1 / this.scale; c.beginPath(); for (let x = 50; x < E.W; x += 100) { c.moveTo(x, 10); c.lineTo(x, E.H - 10); } for (let y = 50; y < E.H; y += 100) { c.moveTo(10, y); c.lineTo(E.W - 10, y); } c.stroke();
       c.strokeStyle = '#b2b9d213'; c.beginPath(); c.ellipse(E.MOON.x, E.MOON.y, 230, 190, -.25, 0, TAU); c.stroke(); c.beginPath(); c.ellipse(E.FORT.x, E.FORT.y, 202, 193, 0, 0, TAU); c.stroke();
     }
+    environment(view, t) {
+      const { state: s, reduced, mode } = view, c = this.c;
+      for (const [i, rock] of E.wreckageAt(s).entries()) {
+        if (mode === 'plan') this.line([rock, E.wreckageAt(s, s.t + 3)[i]], '#d1b4a65a', 1, true);
+        c.save(); c.translate(rock.x, rock.y); c.rotate(i * .9 + s.t * .08); c.beginPath();
+        for (let j = 0; j < 8; j++) { const a = j * TAU / 8, r = rock.r * (j % 2 ? .82 : 1); j ? c.lineTo(Math.cos(a) * r, Math.sin(a) * r) : c.moveTo(r, 0); }
+        c.closePath(); const metal = c.createLinearGradient(-rock.r, -rock.r, rock.r, rock.r); metal.addColorStop(0, '#657187'); metal.addColorStop(.4, '#343e51'); metal.addColorStop(1, '#111b2c'); c.fillStyle = metal; c.strokeStyle = '#acb7c48a'; c.lineWidth = 1 / this.scale; c.fill(); c.stroke();
+        this.line([{x:-rock.r*.7,y:-5},{x:rock.r*.65,y:-5}], '#c2c6cd70', .8); this.line([{x:-rock.r*.7,y:5},{x:rock.r*.65,y:5}], '#171c2a', 2);
+        c.fillStyle = '#d0ad87'; c.fillRect(-rock.r*.45,-rock.r*.5,6,3); c.restore(); this.ring(rock, rock.r, '#dfa7aa29', .7);
+      }
+      const storm = E.stormAt(s);
+      if (storm) {
+        const color = storm.active ? '#d7b5f6' : '#98b2df', power = storm.active ? 1 : storm.warning ? .45 : .12;
+        c.fillStyle = storm.active ? '#c3a2ed17' : '#a5beef07'; c.fillRect(storm.x-storm.r, storm.top, storm.r*2, storm.bottom-storm.top);
+        for (const side of [-1, 1]) this.line([{x:storm.x+side*storm.r,y:storm.top},{x:storm.x+side*storm.r,y:storm.bottom}], storm.active ? '#d5b3f95c' : '#9ebee933', .6, !storm.active);
+        for (let strand = 0; strand < 3; strand++) {
+          const points = Array.from({length:30}, (_,i) => ({x:storm.x+(reduced ? Math.sin(i*3+strand)*4 : Math.sin(i*2.7+t*8+strand*2)*Math.sin(i*.7+t*5)*storm.r*.8),y:storm.top+i/29*(storm.bottom-storm.top)}));
+          c.save(); c.globalAlpha = power * (strand ? .32 : .8); this.line(points, color, strand ? .8 : 1.5); c.restore();
+        }
+        for (const y of [storm.top, storm.bottom]) { this.glow(storm.x,y,38,'ice',power*.6); this.ring({x:storm.x,y},8,color,1); }
+      }
+      if (s.phase === 0) {
+        const p = E.operation(s.operation).signal; c.save(); c.globalAlpha = s.signal ? .3 : 1;
+        this.glow(p.x,p.y,44,'gold',.25); this.ring(p,p.r,'#dfbd8970',1);
+        c.translate(p.x,p.y); c.rotate(Math.PI/4); c.fillStyle = '#34364a'; c.strokeStyle = '#e3c797'; c.lineWidth = 1.2/this.scale; c.fillRect(-6,-6,12,12); c.strokeRect(-6,-6,12,12); c.restore();
+        if (!s.signal) this.label('БОНУС',p.x,p.y-p.r-12,palette.gold,'center',8);
+      }
+    }
     fortress(state, t, reduced, battle) {
       const c = this.c, p = E.FORT, age = battle.breakAge, open = state.phase === 2 || age !== null && age > .32 || state.phase === 1 && state.status === 'won' && age === null;
-      const charging = !open && state.status === 'running' ? B.clamp((state.t % 5 - 3.85) / .7, 0, 1) : 0;
+      const charging = !open && !state.jam && state.status === 'running' ? B.clamp((state.t % 5 - 3.85) / .7, 0, 1) : 0;
       c.save(); c.translate(p.x, p.y);
       const halo = c.createRadialGradient(0, 0, 35, 0, 0, 120); halo.addColorStop(0, '#b6abc82a'); halo.addColorStop(1, '#b6abc800'); c.fillStyle = halo; c.fillRect(-120, -120, 240, 240);
       for (let i = 0; i < 12; i++) {
@@ -223,11 +287,12 @@
         for (let i = 0; i < 5; i++) { const a = i * 2.7; this.glow(Math.cos(a) * 52, Math.sin(a) * 52, 20 + i * 3, i % 2 ? 'gold' : 'smoke', .32); }
       }
       c.restore(); this.label(open ? 'ЩИТ ОТКЛЮЧЁН' : 'КРЕПОСТЬ', p.x, p.y + 141, open ? palette.ice : '#c7bda9', 'center', 9);
-      if (state.phase < 2 && state.status !== 'won') this.label('ЗАЛП ' + (5 - state.t % 5).toFixed(1) + ' с', p.x, p.y - 136, palette.red, 'center', 9);
+      if (state.phase < 2 && state.status !== 'won') this.label(state.jam ? 'ЗАЛП БУДЕТ ЗАГЛУШЁН' : 'ЗАЛП ' + (5 - state.t % 5).toFixed(1) + ' с', p.x, p.y - 136, state.jam ? palette.ice : palette.red, 'center', 9);
+      if (state.charge > 0 && !open) { c.strokeStyle = '#d6e8ff'; c.lineWidth = 3 / this.scale; c.beginPath(); c.arc(p.x,p.y,42,-Math.PI/2,-Math.PI/2+TAU*state.charge/.8); c.stroke(); }
     }
     draw(view, clock) {
       const { state: s, prediction, phase, tactic, plan, reduced, showForecast, editing, previous, battle } = view;
-      if (!s) return; const c = this.c, t = reduced ? 0 : clock, scale = this.scale;
+      if (!s) return; this.camera(view); const c = this.c, t = reduced ? 0 : clock, scale = this.scale;
       c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); c.clearRect(0, 0, this.width, this.height); c.translate(this.ox, this.oy); c.scale(scale, scale);
       if (!reduced && battle.breakAge !== null) {
         const a = battle.breakAge - .32, shake = a > 0 && a < .65 ? 1.7 * (1 - a / .65) : 0;
@@ -246,7 +311,7 @@
         const field = c.createRadialGradient(anchor.x, anchor.y, 4, anchor.x, anchor.y, 160); field.addColorStop(0, '#99b9ed29'); field.addColorStop(1, '#99b9ed00'); c.fillStyle = field; c.fillRect(anchor.x - 160, anchor.y - 160, 320, 320);
         for (const r of [40, 78, 120]) this.ring(anchor, r, '#9fbef229', .6);
         c.save(); c.translate(anchor.x, anchor.y); c.rotate(Math.PI / 4); c.fillStyle = '#17233c'; c.strokeStyle = good ? palette.ice : palette.red; c.lineWidth = 1.5 / scale; const r = Math.max(10, 8 / scale); c.fillRect(-r, -r, r * 2, r * 2); c.strokeRect(-r, -r, r * 2, r * 2); c.restore(); this.ring(anchor, Math.max(23, 16 / scale), '#bed6ff55');
-        this.label(editing ? 'ПЕРЕМЕСТИ ЯКОРЬ' : 'ЯКОРЬ', anchor.x, anchor.y - Math.max(32, 23 / scale), good ? palette.ice : palette.red, 'center', 9);
+        this.label(editing ? 'ПЕРЕМЕСТИ ЯКОРЬ' : 'ЯКОРЬ', anchor.x, Math.max(16 / scale, anchor.y - Math.max(32, 23 / scale)), good ? palette.ice : palette.red, 'center', 9);
       }
       const moonGlow = c.createRadialGradient(E.MOON.x, E.MOON.y, 80, E.MOON.x, E.MOON.y, 118); moonGlow.addColorStop(0, '#b3c1db19'); moonGlow.addColorStop(1, '#b3c1db00'); c.fillStyle = moonGlow; c.fillRect(E.MOON.x - 120, E.MOON.y - 120, 240, 240);
       c.drawImage(this.moon, E.MOON.x - E.MOON.r, E.MOON.y - E.MOON.r, E.MOON.r * 2, E.MOON.r * 2); this.ring(E.MOON, E.MOON.r, '#bbc4d62b', .7);
@@ -262,6 +327,7 @@
         }
         this.ring(E.EXIT, E.EXIT.r, '#c0d9ff88', 1); this.ring(E.EXIT, E.EXIT.r + 8, '#b8d6ff22', 1); this.label('ВЫХОД', E.EXIT.x, E.EXIT.y - 65, palette.ice);
       }
+      this.environment(view, t);
       this.fortress(s, t, reduced, battle);
       this.fleet(s, battle, t, reduced);
       if (phase === 1 && tactic === 'breach' && s.status !== 'won') {
@@ -273,7 +339,7 @@
         const points = Array.from({ length: 46 }, (_, i) => E.allyAt(i / 5)); this.line(points, '#dbc29b88', 1, true);
         for (const at of [4.5, 7.5]) { const p = E.allyAt(at); this.ring(p, 17, '#e7c69a88'); this.label(at.toFixed(1) + ' с', p.x - 25, p.y + 24, palette.gold, 'center', 9); }
         }
-        const ally = E.allyAt(s.t), next = E.allyAt(s.t + .1); this.ship({ ...ally, angle: Math.atan2(next.y - ally.y, next.x - ally.x) }, palette.gold, 1.25, 'atlas', t, s.status === 'running');
+        const ally = E.allyAt(s.flightT), next = E.allyAt(s.flightT + .1); this.ship({ ...ally, angle: Math.atan2(next.y - ally.y, next.x - ally.x) }, palette.gold, 1.25, 'atlas', t, s.flightT > 0 && s.status === 'running');
         if (s.status !== 'won') { this.ring(s, 145, '#abcaff44', .8); this.label('ЗВЕНО ' + s.allyHull + '/2', ally.x, ally.y - 28, palette.gold, 'center', 9); }
       }
       if (previous && view.mode === 'plan') this.line(previous.path, '#d3899930', 1, true);
@@ -290,9 +356,14 @@
         }
         this.ship({ ...E.NODE, angle: -.2 }, palette.ice, 1, 'raven', t, false);
       }
-      else this.ship(s, palette.ice, 1.12, 'raven', t, view.mode === 'running');
+      else {
+        const firing = !reduced && battle.effects.some(fx => fx.type === 'fire' && battle.time - fx.at < .07), a = Math.atan2(E.FORT.y-s.y,E.FORT.x-s.x);
+        this.ship(firing ? {...s,x:s.x-Math.cos(a)*2.5,y:s.y-Math.sin(a)*2.5} : s, palette.ice, 1.12, 'raven', t, view.mode === 'running' && s.flightT > 0);
+        if (this.width < 600) { this.ring(s, Math.max(15, 7/scale), '#d9e7ff55', .8); }
+      }
       if (s.shield > 0) this.ring(s, 32, '#bad8ffbb', 2);
       this.ordnance(view);
+      this.overview(view);
       c.setTransform(1, 0, 0, 1, 0, 0);
     }
   }

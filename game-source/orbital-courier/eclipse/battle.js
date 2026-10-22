@@ -30,7 +30,7 @@
     }
     receive(ev, state) {
       if (ev.type === 'salvo') this.emit('wreck', fleetAt(state.fleet), { index: state.fleet });
-      else if (['fire', 'hit', 'ally-hit', 'protect', 'blocked', 'shield'].includes(ev.type)) {
+      else if (['fire', 'hit', 'ally-hit', 'protect', 'blocked', 'shield', 'signal', 'jammed', 'storm-hit', 'torpedo'].includes(ev.type)) {
         this.emit(ev.type, ev, { from: { x: state.x, y: state.y } });
       }
     }
@@ -45,10 +45,10 @@
         this.emit('fleet-fire', { x: from.x + (i === 0 ? 52 : 13), y: from.y }, { index: i, delay: i * .045, target: { x: 870 + Math.cos(a) * (34 + i * 5), y: 325 + Math.sin(a) * (35 + i * 4) } });
       }
     }
-    advance(dt, { paused = false, phase = 0, running = false, fleet = 6, flightTime = 0 } = {}) {
+    advance(dt, { paused = false, phase = 0, running = false, fleet = 6, flightTime = 0, jammed = false } = {}) {
       if (paused) return;
       const oldAge = this.breakAge; this.time += Math.max(0, Math.min(.1, dt));
-      if (phase < 2 && running) {
+      if (phase < 2 && running && !jammed) {
         const round = Math.floor(flightTime / 5) + 1, position = flightTime % 5;
         if (position >= 3.85 && round > this.charged) { this.charged = round; this.cues.push({ type: 'enemy-charge', pan: .6 }); }
         if (position >= 4.28 && round > this.fired) { this.fired = round; this.cues.push({ type: 'enemy-fire', pan: .6 }); }
@@ -76,10 +76,12 @@
     if (cue.type === 'enemy-charge') { v({ frequency: 70, end: 270, duration: .35, volume: .09, type: 'triangle' }); }
     else if (cue.type === 'enemy-fire') { v({ frequency: 190, end: 36, duration: .45, volume: .16, type: 'triangle' }); v({ noise: true, filter: 1100, duration: .2, volume: .12 }); }
     else if (cue.type === 'fire') { v({ frequency: 840, end: 170, duration: .15, volume: .045, type: 'triangle' }); }
+    else if (cue.type === 'torpedo') { v({ noise: true, filter: 800, duration: .34, volume: .065 }); v({ frequency: 180, end: 65, duration: .4, volume: .065, type: 'triangle' }); }
+    else if (['signal', 'jammed'].includes(cue.type)) { v({ frequency: 480, end: 960, duration: .28, volume: .06, type: 'sine' }); v({ frequency: 720, end: 1440, duration: .45, volume: .045, type: 'triangle' }); }
     else if (cue.type === 'fleet-fire') {
       v({ frequency: 130, end: 42, duration: .28, volume: .05, type: 'triangle' });
       v({ noise: true, filter: 1300, duration: .12, volume: .035 });
-    } else if (['hit', 'ally-hit', 'wreck', 'fort-impact'].includes(cue.type)) {
+    } else if (['hit', 'ally-hit', 'wreck', 'fort-impact', 'storm-hit'].includes(cue.type)) {
       v({ frequency: 76, end: 25, duration: .55, volume: .11 });
       v({ noise: true, filter: cue.type === 'wreck' ? 280 : 700, duration: .43, volume: .12 });
     } else if (['protect', 'blocked', 'shield'].includes(cue.type)) {

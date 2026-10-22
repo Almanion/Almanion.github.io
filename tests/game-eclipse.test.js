@@ -35,3 +35,30 @@ timeline.reset();for(let i=0;i<1000;i++)timeline.emit('hit',{x:100,y:100});asser
 for(let i=0;i<6;i++)for(let advance=0;advance<=550;advance+=10){const p=B.fleetAt(i,advance);assert.ok(E.distance(p,E.MOON)>E.MOON.r+20,'fleet flies beneath the moon');assert.ok(p.x>=0&&p.x<=E.W&&p.y>=0&&p.y<=E.H);}
 for(const type of ['enemy-charge','enemy-fire','fire','fleet-fire','hit','ally-hit','wreck','fort-impact','protect','blocked','shield','overload','fracture']){const voices=[];B.playCue({voice:v=>voices.push(v)},{type,pan:.5});assert.ok(voices.length>0&&voices.length<=3);assert.ok(voices.every(v=>Number.isFinite(v.duration)&&v.duration>0&&v.volume<=.25));}
 console.log('Eclipse battle: synchronized waves, pause, immutable outcomes, bounded effects, clear fleet courses and audio envelopes passed');
+
+// Every operation is physically solvable through each tactic, including the exit.
+const approaches={eclipse:{angle:-51,speed:85},rift:{angle:-54,speed:77.5},pulsar:{angle:-50.5,speed:90}};
+const bonuses={eclipse:{angle:-56.5,speed:70},rift:{angle:-55,speed:75},pulsar:{angle:-58.5,speed:65,delay:1}};
+const exits={eclipse:{breach:{angle:-166,speed:85},rebound:{angle:-174,speed:170},escort:{angle:-144,speed:120}},rift:{breach:{angle:-162,speed:65},rebound:{angle:-174,speed:170},escort:{angle:-144,speed:120}},pulsar:{breach:{angle:-166,speed:95,delay:.5},rebound:{angle:-162,speed:65,delay:1},escort:{angle:-144,speed:120}}};
+for(const operation of E.OPERATIONS){
+ const id=operation.id,entry=E.simulate(0,'breach',approaches[id],{},id);assert.equal(entry.status,'won',id+' approach');
+ const bonus=E.simulate(0,'breach',bonuses[id],{},id);assert.equal(bonus.status,'won',id+' optional route');assert.equal(bonus.signal,true);assert.equal(bonus.jam,1,'unspent bonus carries into the attack');
+ for(const tactic of E.TACTICS){
+  const plan={...reference[tactic],delay:id==='pulsar'?(tactic==='escort'?.5:2):0},attack=E.simulate(1,tactic,plan,{fleet:entry.fleet},id);assert.equal(attack.status,'won',id+' '+tactic);
+  const live=E.create(1,tactic,plan,{fleet:entry.fleet},id);while(live.status==='running')E.step(live);assert.deepEqual(live,attack,'forecast includes the same obstacles and timing');
+  const refined=E.create(1,tactic,plan,{fleet:entry.fleet},id);while(refined.status==='running')E.step(refined,E.DT/2);assert.equal(refined.status,'won');assert.ok(Math.abs(refined.t-attack.t)<.03);
+  const carry={x:tactic==='rebound'?650:attack.x,y:tactic==='rebound'?185:attack.y,fleet:attack.fleet};assert.equal(E.simulate(2,tactic,exits[id][tactic],carry,id).status,'won',id+' '+tactic+' extraction');
+  let alternatives=0;for(const da of [-1,0,1])for(const dv of [-1,0,1])if(E.simulate(1,tactic,{...plan,angle:plan.angle+da,speed:plan.speed+dv},{fleet:entry.fleet},id).status==='won')alternatives++;
+  assert.ok(alternatives>=3,id+' '+tactic+' permits several nearby solutions');
+ }
+ const jammed=E.simulate(1,'escort',{...reference.escort,delay:id==='pulsar'?.5:0},{fleet:bonus.fleet,jam:bonus.jam},id);assert.equal(jammed.status,'won');assert.equal(jammed.fleet,bonus.fleet);assert.equal(jammed.events.filter(e=>e.type==='jammed').length,1);
+ assert.equal(jammed.events.filter(e=>e.type==='torpedo').length,3,'three timed torpedo launches');
+}
+const blockedStorm=E.simulate(1,'breach',reference.breach,{fleet:5},'pulsar');assert.equal(blockedStorm.status,'lost');assert.ok(blockedStorm.reason.includes('разряд'));
+assert.equal(E.simulate(1,'breach',{...reference.breach,delay:2},{fleet:5},'pulsar').status,'won','launch window changes the result');
+const protectedStorm=E.create(1,'breach',reference.breach,{fleet:5},'pulsar');while(protectedStorm.status==='running'){if(protectedStorm.x>710&&!protectedStorm.shieldUsed)E.shield(protectedStorm);E.step(protectedStorm);}assert.equal(protectedStorm.status,'won');assert.ok(protectedStorm.events.some(e=>e.type==='blocked'),'a timed shield is an alternative to waiting');
+const waiting=E.create(1,'escort',{...reference.escort,delay:2},{fleet:5},'pulsar');for(let i=0;i<120;i++)E.step(waiting);assert.equal(waiting.x,waiting.start.x);assert.equal(waiting.y,waiting.start.y);assert.equal(waiting.flightT,0);assert.equal(waiting.events.length,0);
+assert.notDeepEqual(E.wreckageAt(E.create(0,'breach',{}, {},'rift'),0),E.wreckageAt(E.create(0,'breach',{}, {},'rift'),2),'ring debris moves during launch delay');assert.equal(E.create(0,'breach',{}, {},'bad').operation,'eclipse');
+const silentCharge=new B.Timeline();silentCharge.advance(.1,{phase:0,running:true,flightTime:4.6,jammed:true});assert.equal(silentCharge.takeCues().length,0,'jammed batteries do not fire or charge');
+for(const type of ['torpedo','signal','jammed','storm-hit']){const voices=[];B.playCue({voice:v=>voices.push(v)},{type,pan:0});assert.ok(voices.length>0&&voices.length<=3);}
+console.log('Eclipse operations: nine complete routes, bonus capture, jammer, moving hazards, timing, shield alternatives, convergence and nearby solutions passed');
