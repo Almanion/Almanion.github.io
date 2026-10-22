@@ -100,6 +100,11 @@
             <rect x="3.75" y="5.25" width="16.5" height="15" rx="2.25"/>
             <path d="M7.75 3.25v4M16.25 3.25v4M3.75 9.5h16.5m-11.1 5.15 2.05 2.05 3.85-4.25"/>
         </symbol>
+        <symbol id="academic-geography" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="8.5"/>
+            <ellipse cx="12" cy="12" rx="3.8" ry="8.5"/>
+            <path d="M3.5 12h17M5.3 6.8h13.4M5.3 17.2h13.4"/>
+        </symbol>
         <symbol id="academic-tour" viewBox="0 0 24 24">
             <path d="M3.5 19.25 11.8 6l8.7 13.25H3.5Z"/>
             <path d="m11.8 6 0 13.25M8.1 19.25l3.7-5.35 3.8 5.35M16.4 8.1V3.5l3 1.2-3 1.25"/>
@@ -217,6 +222,10 @@
                 <a class="subject-card home-quick-card" data-subject="english" id="homeAdditionalEnglish" hidden>
                     <div class="card-header"><div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-english"/></svg></div></div>
                     <div class="card-body"><h2>Английский</h2></div>
+                </a>
+                <a class="subject-card home-quick-card" data-subject="geography" id="homeAdditionalGeography" hidden>
+                    <div class="card-header"><div class="subject-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#academic-geography"/></svg></div></div>
+                    <div class="card-body"><div class="home-quick-copy"><h2>География</h2><span class="home-quick-context">Страны и столицы</span></div></div>
                 </a>
             </div>
         </section>
@@ -436,7 +445,7 @@
             function loadHomeDashboard() {
                 if (document.querySelector('script[data-home-dashboard]')) return;
                 var script = document.createElement('script');
-                script.src = 'home-dashboard.js?v=20261009-2';
+                script.src = 'home-dashboard.js?v=20261023-1';
                 script.dataset.homeDashboard = 'true';
                 document.head.appendChild(script);
                 var stars = document.createElement('script');
