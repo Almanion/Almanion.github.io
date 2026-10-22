@@ -349,6 +349,13 @@
         const p = prediction.finish; if (p) { this.ring(p, 7 / scale, prediction.status === 'won' ? '#c4dcff' : '#df99a9', 1); if (prediction.status !== 'won') this.line([{ x: p.x - 4 / scale, y: p.y - 4 / scale }, { x: p.x + 4 / scale, y: p.y + 4 / scale }], palette.red); }
       }
       const history = s.path.slice(-100); this.line(history, tactic === 'rebound' && phase === 1 ? '#e6bd8733' : '#aec9ff22', 5); this.line(history, tactic === 'rebound' && phase === 1 ? '#f0ce9bbb' : '#c6dbffaa', 1.5);
+      if (view.mode === 'plan' && !editing) {
+        const a = plan.angle * Math.PI / 180, length = Math.max(70, 64 / scale), tip = { x: s.x + Math.cos(a) * length, y: s.y + Math.sin(a) * length };
+        this.line([s, tip], view.aiming ? '#dceaffdd' : '#c5d9f56b', view.aiming ? 1.8 : 1);
+        for (const side of [-1, 1]) this.line([tip, { x: tip.x - Math.cos(a + side * .55) * 11 / scale, y: tip.y - Math.sin(a + side * .55) * 11 / scale }], '#d9e8ffbb', 1.5);
+        this.ring(tip, 8 / scale, view.aiming ? '#d9e8ff99' : '#c1d5f133', 1);
+        if (view.aiming) this.label(plan.angle.toFixed(1) + '°', tip.x, tip.y - 16 / scale, palette.ice, 'center', 11);
+      }
       if (tactic === 'rebound' && phase === 1) {
         if (battle.breakAge === null) {
           this.glow(s.x, s.y, 28, 'gold', reduced ? .4 : .9); c.fillStyle = '#fff1d4'; c.beginPath(); c.arc(s.x, s.y, 4, 0, TAU); c.fill();

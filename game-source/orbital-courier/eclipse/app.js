@@ -35,6 +35,8 @@
   }
   let plan, state, prediction, previous = null, mode = 'plan', editing = false, speed = 1, accumulator = 0, last = 0, eventIndex = 0, renderTime = 0, lastViewKey = '';
   let hintPlan = null, pendingNext = null, dirty = false, resumeMode = 'running', finished = saved.finished === true && completed.length === 3;
+  let undo = [], redo = [], editStart = null, gesture = null, holdTimer = 0, heldButton = null, pointerButton = null;
+  const pointers = new Set();
   const battle = new B.Timeline();
   const renderer = new root.EclipseRenderer($('battlefield')), sound = new root.Orbital.Sound(); sound.enabled = settings.sound; sound.setVolume(.35);
   const dialogs = [...document.querySelectorAll('dialog')], isDialogOpen = () => dialogs.some(d => d.open);
@@ -46,7 +48,7 @@
     catch { $('saveStatus').textContent = 'Хранилище недоступно · попытка остаётся в этой вкладке'; }
     $('deviceSaveStatus').textContent = $('saveStatus').textContent;
   }
-  function openDialog(id) { accumulator = 0; sound.silence(); if (!$(id).open) $(id).showModal(); }
+  function openDialog(id) { stopInput(); accumulator = 0; sound.silence(); if (!$(id).open) $(id).showModal(); }
   function closeDialog(id) { $(id).close(); last = performance.now(); accumulator = 0; }
   function setRadio(text) { if ($('radioText').textContent !== text) $('radioText').textContent = text; }
   function reference() {
@@ -54,6 +56,7 @@
     return { ...REFERENCES[tactic], delay: operationId === 'pulsar' ? tactic === 'escort' ? .5 : 2 : 0 };
   }
   function setup(initial = false) {
+    stopInput(); undo = []; redo = []; editStart = null;
     plan = plans[`${phase}:${tactic}`] || { ...E.defaults(phase, tactic) };
     if (!plans[`${phase}:${tactic}`] && phase < 2) plan = { ...reference(), angle: reference().angle + (phase === 0 ? -3 : tactic === 'rebound' ? 8 : 10), delay: 0 };
     plan = E.cleanPlan(plan, phase, tactic);
@@ -67,7 +70,7 @@
     $('mobileObjective').textContent = info.objective;
     $('tactics').hidden = phase !== 1; $('anchorControls').hidden = phase !== 1;
     $('hullLabel').textContent = phase === 1 && tactic === 'rebound' ? 'КОРАБЛЬ В УКРЫТИИ' : 'ТВОЙ КОРПУС';
-    $('mapHint').textContent = phase === 1 ? 'Перетащи якорь или задай направление на карте' : 'Нажми на карту, чтобы задать направление';
+    $('mapHint').textContent = 'Потяни по карте, чтобы задать курс';
     for (let i = 0; i < 3; i++) { $('step' + i).classList.toggle('done', i < phase); if (i === phase) $('step' + i).setAttribute('aria-current', 'step'); else $('step' + i).removeAttribute('aria-current'); }
     document.querySelectorAll('[data-tactic]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tactic === tactic)));
     writeInputs(); forecast(); sync();
@@ -76,6 +79,7 @@
     for (const name of ['angle', 'speed']) { if (!keepFocused || document.activeElement !== $(name)) $(name).value = String(plan[name]); $(name + 'Range').value = String(plan[name]); }
     for (const [id, key] of [['anchorX', 'ax'], ['anchorY', 'ay']]) if (!keepFocused || document.activeElement !== $(id)) $(id).value = String(plan[key]);
     $('delay').value = String(plan.delay); $('delayValue').textContent = plan.delay ? plan.delay.toFixed(2).replace(/0$/, '') + ' с' : 'Сразу';
+    $('delayToggle').textContent = plan.delay ? 'Старт +' + plan.delay.toFixed(2).replace(/0$/, '') + ' с' : 'Старт сразу';
   }
   function forecast() {
     prediction = E.simulate(phase, tactic, plan, carry, operationId); dirty = false;
@@ -84,10 +88,47 @@
     $('forecastDetail').textContent = !settings.forecast ? 'Включи прогноз, чтобы проверить курс.' : good ? `${prediction.t.toFixed(1)} с · флот ${prediction.fleet}/6${prediction.signal ? ' · ретранслятор захвачен' : ''}${phase === 1 && tactic === 'escort' ? ' · прикрыто залпов: ' + prediction.coverCount + '/2' : ''}` : prediction.reason;
     $('courseStatus').textContent = !settings.forecast ? 'Прогноз скрыт' : good ? 'Курс рассчитан · ' + prediction.t.toFixed(1) + ' с' : prediction.reason;
     $('courseStatus').dataset.good = String(good);
+    $('windowForecast').textContent = $('forecastTitle').textContent + ' · ' + $('forecastDetail').textContent;
+    $('windowForecast').dataset.good = String(good);
   }
-  function updatePlan(change) {
-    if (mode !== 'plan') return; plan = E.cleanPlan({ ...plan, ...change }, phase, tactic); plans[`${phase}:${tactic}`] = { ...plan };
-    state = E.create(phase, tactic, plan, carry, operationId); writeInputs(); dirty = true; save(); renderer.needsDraw = true;
+  function samePlan(a, b) { return a && b && ['angle', 'speed', 'ax', 'ay', 'delay'].every(k => a[k] === b[k]); }
+  function beginEdit() { if (mode === 'plan' && !editStart) editStart = { ...plan }; }
+  function remember(old) { undo.push({ ...old }); if (undo.length > 40) undo.shift(); redo = []; }
+  function finishEdit(cancel = false) {
+    const before = editStart; editStart = null;
+    if (before && !samePlan(before, plan)) {
+      if (cancel) updatePlan(before, false); else { remember(before); save(); }
+    }
+    syncEditor();
+  }
+  function syncEditor() {
+    const locked = mode !== 'plan';
+    $('undoPlan').disabled = locked || !undo.length; $('redoPlan').disabled = locked || !redo.length;
+    $('courseTool').disabled = locked; $('delayToggle').disabled = locked;
+    $('courseTool').setAttribute('aria-pressed', String(!editing)); $('anchorTool').setAttribute('aria-pressed', String(editing));
+    $('anchorTool').hidden = phase !== 1;
+    $('mapHint').textContent = editing ? 'Перетащи якорь · стрелки перемещают его' : 'Потяни по карте · ← → курс, ↑ ↓ импульс';
+    document.body.dataset.tool = editing ? 'anchor' : 'course';
+  }
+  function updatePlan(change, record = true) {
+    if (mode !== 'plan') return; const nextPlan = E.cleanPlan({ ...plan, ...change }, phase, tactic);
+    if (samePlan(plan, nextPlan)) return;
+    if (record && !editStart) remember(plan);
+    plan = nextPlan; plans[`${phase}:${tactic}`] = { ...plan };
+    state = E.create(phase, tactic, plan, carry, operationId); writeInputs(); dirty = true;
+    if (!editStart) save(); syncEditor(); renderer.needsDraw = true;
+  }
+  function travelHistory(forward = false) {
+    if (mode !== 'plan') return; stopInput(); const source = forward ? redo : undo, destination = forward ? undo : redo;
+    if (!source.length) return; destination.push({ ...plan }); updatePlan(source.pop(), false); writeInputs(false); forecast();
+  }
+  function setTool(anchor) {
+    if (mode !== 'plan') return; stopInput(); editing = anchor && phase === 1;
+    if (editing) camera = 'overview'; renderer.needsDraw = true; sync();
+  }
+  function stopHold() { clearTimeout(holdTimer); holdTimer = 0; heldButton = null; }
+  function stopInput(cancel = false) {
+    stopHold(); gesture = null; pointers.clear(); if (editStart) finishEdit(cancel);
   }
   function sync() {
     const cinematic = mode === 'cinematic' || mode === 'paused' && resumeMode === 'cinematic';
@@ -102,7 +143,9 @@
     $('launch').hidden = running; $('pause').hidden = !running; $('shield').hidden = !running || cinematic || phase === 1 && tactic === 'rebound';
     $('rate').disabled = cinematic; $('battleMoment').hidden = !cinematic;
     $('launch').textContent = mode === 'review' ? state.status === 'won' ? phase === 2 ? 'Итоги операции ↗' : 'Следующий манёвр ↗' : 'Изменить курс ↗' : 'Выполнить манёвр ↗';
-    $('pause').textContent = mode === 'paused' ? 'Продолжить ▶' : 'Пауза Ⅱ'; $('shield').disabled = state.shieldUsed; $('shield').textContent = state.shieldUsed ? 'Щит использован' : 'Щит · E'; $('anchorTool').setAttribute('aria-pressed', String(editing));
+    $('pause').textContent = mode === 'paused' ? 'Продолжить ▶' : 'Пауза Ⅱ'; $('shield').disabled = state.shieldUsed;
+    $('shield').textContent = state.shield > 0 ? 'Щит · ' + state.shield.toFixed(1) + ' с' : state.shieldUsed ? 'Щит использован' : compact.matches ? 'Щит' : 'Щит · E';
+    $('shield').dataset.active = String(state.shield > 0); $('anchorTool').setAttribute('aria-pressed', String(editing));
     $('soundEnabled').checked = settings.sound; $('reducedMotion').checked = settings.reduced; $('showForecast').checked = settings.forecast;
     $('forecastToggle').setAttribute('aria-pressed', String(settings.forecast)); $('forecastToggle').lastElementChild.textContent = settings.forecast ? 'вкл.' : 'выкл.';
     $('cameraToggle').setAttribute('aria-pressed', String(camera === 'follow')); $('cameraToggle').textContent = camera === 'follow' ? 'Вся карта' : 'Крупнее ⊕';
@@ -114,15 +157,18 @@
     $('combatStatus').hidden = cinematic || mode === 'review' || phase === 2 && !storm;
     $('combatStatus').dataset.warning = String(!!storm?.active);
     document.body.dataset.reduced = String(settings.reduced); document.body.dataset.phase = String(phase); document.body.dataset.mode = mode; document.body.dataset.camera = camera;
+    syncEditor();
   }
   function launch() {
     if (mode === 'review') { if (state.status === 'won') phase === 2 ? outcome() : next(); else retry(); return; }
     if (mode !== 'plan' || isDialogOpen()) return;
+    stopInput();
     forecast(); plans[`${phase}:${tactic}`] = { ...plan }; state = E.create(phase, tactic, plan, carry, operationId); mode = 'running'; editing = false; attempts++; accumulator = 0; eventIndex = 0; battle.reset(); save();
     sound.unlock(); sound.play('launch'); setRadio(phase === 1 && tactic === 'rebound' ? 'Залп под нашим контролем. Поле должно вернуть его к реактору.' : 'Импульс дан. Наблюдаю за курсом.'); sync();
   }
   function pause() { if (!['running', 'paused', 'cinematic'].includes(mode)) return; if (mode === 'paused') mode = resumeMode; else { resumeMode = mode; mode = 'paused'; } accumulator = 0; sound.silence(); sync(); }
   function retry() {
+    stopInput();
     dialogs.forEach(d => { if (d.open) d.close(); }); previous = state.t > 0 ? state : previous; completed = completed.filter(x => x.phase < phase); finished = false;
     state = E.create(phase, tactic, plan, carry, operationId); mode = 'plan'; accumulator = 0; eventIndex = 0; pendingNext = null; battle.reset(); sound.silence(); forecast(); sync(); save(); setRadio('Курс можно изменить. Предыдущая траектория осталась на карте.');
   }
@@ -231,19 +277,39 @@
   }
   compact.addEventListener('change', arrangePanels); arrangePanels();
   $('tacticalButton').addEventListener('click', () => openDialog('tacticalSheet')); $('closeTactics').addEventListener('click', () => closeDialog('tacticalSheet'));
-  $('cameraToggle').addEventListener('click', () => { camera = camera === 'overview' ? 'follow' : 'overview'; renderer.needsDraw = true; sync(); });
-  $('delay').addEventListener('input', e => updatePlan({ delay: e.target.valueAsNumber }));
-  document.querySelectorAll('[data-adjust]').forEach(button => button.addEventListener('click', () => {
-    const key = button.dataset.adjust; updatePlan({ [key]: plan[key] + Number(button.dataset.step) });
-  }));
+  function toggleCamera() { stopInput(); camera = camera === 'overview' ? 'follow' : 'overview'; renderer.needsDraw = true; sync(); }
+  $('cameraToggle').addEventListener('click', toggleCamera);
+  $('courseTool').addEventListener('click', () => setTool(false)); $('undoPlan').addEventListener('click', () => travelHistory()); $('redoPlan').addEventListener('click', () => travelHistory(true));
+  $('delayToggle').addEventListener('click', () => { if (mode === 'plan') openDialog('launchWindow'); }); $('closeWindow').addEventListener('click', () => closeDialog('launchWindow'));
+  $('delay').addEventListener('input', e => { beginEdit(); updatePlan({ delay: e.target.valueAsNumber }); });
+  for (const button of document.querySelectorAll('[data-delay]')) button.addEventListener('click', () => updatePlan({ delay: Number(button.dataset.delay) }));
+  function adjust(button, multiplier = 1) { const key = button.dataset.adjust; updatePlan({ [key]: Math.round((plan[key] + Number(button.dataset.step) * multiplier) * 100) / 100 }); }
+  document.querySelectorAll('[data-adjust]').forEach(button => {
+    button.addEventListener('pointerdown', event => {
+      if (event.button !== 0 || !event.isPrimary || mode !== 'plan') return;
+      event.preventDefault(); button.focus({ preventScroll: true }); stopInput(); beginEdit(); heldButton = button; pointerButton = button; button.setPointerCapture(event.pointerId); adjust(button);
+      let count = 0; const repeat = () => { if (heldButton !== button || mode !== 'plan' || document.hidden) return; adjust(button, count++ >= 8 ? 4 : 1); holdTimer = setTimeout(repeat, 85); };
+      holdTimer = setTimeout(repeat, 360);
+    });
+    const release = () => { if (heldButton === button) { stopHold(); finishEdit(); } };
+    for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) button.addEventListener(type, release);
+    button.addEventListener('pointermove', event => { const r = button.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) release(); });
+    button.addEventListener('click', event => { if (event.detail > 0 && pointerButton === button) { pointerButton = null; return; } adjust(button); });
+    button.addEventListener('contextmenu', e => e.preventDefault());
+  });
   $('launch').addEventListener('click', launch); $('pause').addEventListener('click', pause); $('retry').addEventListener('click', retry);
   $('skipBattle').addEventListener('click', finishBattle);
   $('shield').addEventListener('click', () => { if (['running', 'paused'].includes(mode)) { E.shield(state); sync(); } });
   $('rate').addEventListener('click', () => { speed = speed === 1 ? 2 : speed === 2 ? 4 : 1; $('rate').textContent = speed + '×'; $('rate').setAttribute('aria-label', 'Скорость воспроизведения: ' + speed + '×'); });
-  for (const key of ['angle', 'speed']) for (const suffix of ['', 'Range']) $(key + suffix).addEventListener('input', event => { const v = event.target.valueAsNumber; if (Number.isFinite(v)) updatePlan({ [key]: v }); });
-  for (const [id, key] of [['anchorX', 'ax'], ['anchorY', 'ay']]) $(id).addEventListener('input', event => { const v = event.target.valueAsNumber; if (Number.isFinite(v)) updatePlan({ [key]: v }); });
+  for (const key of ['angle', 'speed']) for (const suffix of ['', 'Range']) $(key + suffix).addEventListener('input', event => { const v = event.target.valueAsNumber; if (Number.isFinite(v)) { beginEdit(); updatePlan({ [key]: v }); } });
+  for (const [id, key] of [['anchorX', 'ax'], ['anchorY', 'ay']]) $(id).addEventListener('input', event => { const v = event.target.valueAsNumber; if (Number.isFinite(v)) { beginEdit(); updatePlan({ [key]: v }); } });
   for (const id of ['angle', 'speed', 'anchorX', 'anchorY']) $(id).addEventListener('change', () => writeInputs(false));
-  $('anchorTool').addEventListener('click', () => { editing = !editing; camera = 'overview'; renderer.needsDraw = true; $('mapHint').textContent = editing ? 'Нажми на карту, чтобы поставить якорь' : 'Нажми на карту, чтобы задать направление'; sync(); });
+  for (const id of ['angle', 'speed', 'anchorX', 'anchorY', 'angleRange', 'speedRange', 'delay']) {
+    $(id).addEventListener('focus', beginEdit); $(id).addEventListener('blur', () => { finishEdit(); writeInputs(false); });
+    $(id).addEventListener('pointerdown', beginEdit); if ($(id).type === 'range') $(id).addEventListener('pointerup', () => finishEdit());
+    $(id).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $(id).blur(); $('battlefield').focus({ preventScroll: true }); } });
+  }
+  $('anchorTool').addEventListener('click', () => setTool(true));
   document.querySelectorAll('[data-tactic]').forEach(button => button.addEventListener('click', () => { if (phase !== 1 || mode !== 'plan') return; plans[`${phase}:${tactic}`] = { ...plan }; tactic = button.dataset.tactic; setup(); save(); }));
   $('outcomePrimary').addEventListener('click', () => { closeDialog('outcome'); if (state.status !== 'won') retry(); else if (phase === 2) { tactic = E.TACTICS[(E.TACTICS.indexOf(tactic) + 1) % 3]; newOperation(); } else next(); });
   $('reviewPath').addEventListener('click', () => closeDialog('outcome')); $('hintButton').addEventListener('click', requestHint); $('closeHint').addEventListener('click', () => closeDialog('navigator'));
@@ -251,27 +317,56 @@
   $('restartOperation').addEventListener('click', () => openDialog('confirmRestart')); $('cancelNew').addEventListener('click', () => closeDialog('confirmRestart')); $('confirmNew').addEventListener('click', () => { closeDialog('confirmRestart'); newOperation(); });
   function preference(key, value) { settings[key] = value; sound.enabled = settings.sound; if (settings.sound) sound.unlock(); forecast(); sync(); save(pendingNext && phase < 2 ? pendingNext : undefined); }
   $('soundEnabled').addEventListener('change', e => preference('sound', e.target.checked)); $('reducedMotion').addEventListener('change', e => preference('reduced', e.target.checked)); $('showForecast').addEventListener('change', e => preference('forecast', e.target.checked)); $('forecastToggle').addEventListener('click', () => preference('forecast', !settings.forecast));
-  let dragging = false, pressPoint = null;
   $('battlefield').addEventListener('pointerdown', event => {
+    if (event.button !== 0) return;
+    pointers.add(event.pointerId);
+    if (pointers.size !== 1) { gesture = null; finishEdit(true); return; }
     const mini = renderer.minimap, box = $('battlefield').getBoundingClientRect(), x = event.clientX - box.left, y = event.clientY - box.top;
-    if (mini && x >= mini.x && x <= mini.x + mini.w && y >= mini.y && y <= mini.y + mini.h) { camera = 'overview'; pressPoint = null; renderer.needsDraw = true; sync(); return; }
-    if (mode !== 'plan') return; const p = renderer.point(event.clientX, event.clientY); pressPoint = { x: event.clientX, y: event.clientY };
-    if (phase === 1 && (editing || E.distance(p, { x: plan.ax, y: plan.ay }) < 28 / renderer.scale)) { dragging = true; editing = true; $('battlefield').setPointerCapture(event.pointerId); updatePlan({ ax: Math.round(p.x), ay: Math.round(p.y) }); sync(); }
+    if (mini && x >= mini.x && x <= mini.x + mini.w && y >= mini.y && y <= mini.y + mini.h) { camera = 'overview'; renderer.needsDraw = true; sync(); return; }
+    if (mode !== 'plan') return;
+    event.preventDefault(); $('battlefield').focus({ preventScroll: true }); finishEdit(); beginEdit();
+    const p = renderer.point(event.clientX, event.clientY), grab = phase === 1 && !editing && E.distance(p, { x: plan.ax, y: plan.ay }) < (event.pointerType === 'touch' ? 26 : 18) / renderer.scale;
+    gesture = { id: event.pointerId, anchor: phase === 1 && (editing || grab), dx: grab ? plan.ax - p.x : 0, dy: grab ? plan.ay - p.y : 0 };
+    if (gesture.anchor) editing = true;
+    $('battlefield').setPointerCapture(event.pointerId); movePointer(event); syncEditor();
   });
-  $('battlefield').addEventListener('pointermove', event => { if (dragging && mode === 'plan') { const p = renderer.point(event.clientX, event.clientY); updatePlan({ ax: Math.round(p.x), ay: Math.round(p.y) }); } });
+  function movePointer(event) {
+    if (!gesture || event.pointerId !== gesture.id || pointers.size !== 1 || mode !== 'plan') return;
+    const p = renderer.point(event.clientX, event.clientY);
+    if (gesture.anchor) updatePlan({ ax: Math.round(p.x + gesture.dx), ay: Math.round(p.y + gesture.dy) });
+    else if (E.distance(p, state) * renderer.scale > 12) updatePlan({ angle: Math.round(Math.atan2(p.y - state.y, p.x - state.x) * 180 / Math.PI * 2) / 2 });
+  }
+  $('battlefield').addEventListener('pointermove', movePointer);
   $('battlefield').addEventListener('pointerup', event => {
-    if (!dragging && pressPoint && mode === 'plan' && Math.hypot(event.clientX - pressPoint.x, event.clientY - pressPoint.y) < 9) { const p = renderer.point(event.clientX, event.clientY); updatePlan({ angle: Math.round(Math.atan2(p.y - state.y, p.x - state.x) * 180 / Math.PI * 2) / 2 }); }
-    dragging = false; pressPoint = null;
+    if (event.button !== 0) return;
+    movePointer(event); pointers.delete(event.pointerId);
+    if (gesture?.id === event.pointerId) { gesture = null; finishEdit(); }
   });
-  for (const name of ['pointercancel', 'lostpointercapture']) $('battlefield').addEventListener(name, () => { dragging = false; pressPoint = null; });
+  for (const name of ['pointercancel', 'lostpointercapture']) $('battlefield').addEventListener(name, event => { pointers.delete(event.pointerId); if (gesture?.id === event.pointerId) { gesture = null; finishEdit(true); } });
   document.addEventListener('keydown', event => {
-    if (event.repeat || isDialogOpen() || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '') || event.ctrlKey || event.metaKey || event.altKey) return;
+    if (isDialogOpen() || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '') || document.activeElement?.isContentEditable || event.altKey) return;
+    if (event.ctrlKey || event.metaKey) { if (event.code === 'KeyZ' && mode === 'plan') { event.preventDefault(); travelHistory(event.shiftKey); } return; }
+    if (mode === 'plan' && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.code)) {
+      event.preventDefault(); beginEdit(); const horizontal = ['ArrowLeft', 'ArrowRight'].includes(event.code), sign = ['ArrowLeft', 'ArrowUp'].includes(event.code) ? -1 : 1, amount = event.shiftKey ? 5 : 1;
+      if (editing && phase === 1) { const key = horizontal ? 'ax' : 'ay'; updatePlan({ [key]: plan[key] + sign * 5 * amount }); }
+      else { const key = horizontal ? 'angle' : 'speed'; updatePlan({ [key]: plan[key] + sign * (horizontal ? .5 : -.5) * amount }); }
+      return;
+    }
+    if (event.repeat) return;
+    if (event.code === 'Escape') { event.preventDefault(); if (gesture || editStart) stopInput(true); else if (editing) setTool(false); else if (['running', 'cinematic'].includes(mode)) pause(); }
+    if (event.code === 'KeyC') setTool(false);
+    if (event.code === 'KeyA' && phase === 1) setTool(true);
+    if (event.code === 'KeyZ') toggleCamera();
+    if (event.code === 'KeyH' && mode === 'plan') requestHint();
     if (event.code === 'Space' && /^(BUTTON|A)$/.test(document.activeElement?.tagName || '')) return;
     if (event.code === 'Space') { event.preventDefault(); ['running', 'paused', 'cinematic'].includes(mode) ? pause() : launch(); }
     if (event.code === 'KeyR') { event.preventDefault(); retry(); }
     if (event.code === 'KeyE' && ['running', 'paused'].includes(mode)) { event.preventDefault(); E.shield(state); sync(); }
   });
-  document.addEventListener('visibilitychange', () => { if (document.hidden && ['running', 'cinematic'].includes(mode)) pause(); last = performance.now(); accumulator = 0; });
+  document.addEventListener('keyup', event => { if (event.code.startsWith('Arrow') && editStart && !gesture && !heldButton && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) finishEdit(); });
+  window.addEventListener('blur', () => stopInput()); window.addEventListener('resize', () => stopInput());
+  window.addEventListener('pagehide', () => stopInput());
+  document.addEventListener('visibilitychange', () => { stopInput(); if (document.hidden && ['running', 'cinematic'].includes(mode)) pause(); last = performance.now(); accumulator = 0; });
   function frame(now) {
     const dt = Math.min(.1, Math.max(0, (now - (last || now)) / 1000)); last = now;
     const stopped = isDialogOpen() || document.hidden || mode === 'paused' || mode === 'review';
@@ -291,7 +386,7 @@
     for (const cue of battle.takeCues()) if (!isDialogOpen() && !document.hidden) B.playCue(sound, cue, settings.reduced);
     const viewKey = [mode, isDialogOpen(), settings.reduced, settings.forecast, phase, state.t].join(':');
     if (!stopped || renderer.needsDraw || viewKey !== lastViewKey) {
-      renderer.draw({ state, prediction, phase, tactic, plan, mode, battle, reduced: settings.reduced, showForecast: settings.forecast, editing, previous, camera }, renderTime); renderer.needsDraw = false; lastViewKey = viewKey;
+      renderer.draw({ state, prediction, phase, tactic, plan, mode, battle, reduced: settings.reduced, showForecast: settings.forecast, editing, previous, camera, aiming: !!gesture && !gesture.anchor }, renderTime); renderer.needsDraw = false; lastViewKey = viewKey;
     }
     requestAnimationFrame(frame);
   }
