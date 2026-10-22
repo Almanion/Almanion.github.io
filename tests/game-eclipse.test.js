@@ -40,7 +40,7 @@ console.log('Eclipse battle: synchronized waves, pause, immutable outcomes, boun
 const approaches=Object.fromEntries(Object.entries(E.REFERENCES).map(([id,ref])=>[id,ref.approach]));
 const bonuses=Object.fromEntries(Object.entries(E.REFERENCES).map(([id,ref])=>[id,ref.bonus]));
 const exits=Object.fromEntries(Object.entries(E.REFERENCES).map(([id,ref])=>[id,ref.exit]));
-for(const operation of E.OPERATIONS){
+for(const operation of E.OPERATIONS.filter(o=>!E.isExpedition(o.id))){
  const id=operation.id,entry=E.simulate(0,'breach',approaches[id],{},id);assert.equal(entry.status,'won',id+' approach');
  const bonus=E.simulate(0,'breach',bonuses[id],{},id);assert.equal(bonus.status,'won',id+' optional route');assert.equal(bonus.signal,true);assert.equal(bonus.jam,1,'unspent bonus carries into the attack');
  for(const tactic of E.TACTICS){

@@ -32,9 +32,9 @@
   class MotionTrack {
     constructor() { this.reset(); }
     reset() { this.angle = null; this.rate = 0; this.bank = 0; this.time = null; this.samples = []; this.lastHeading = null; }
-    update(p, time, { heading, power = 0, size = 1, snap = false, maxRate = 2.5 } = {}) {
+    update(p, time, { heading, power = 0, size = 1, snap = false, jump = false, maxRate = 2.5 } = {}) {
       if (![p.x, p.y, time].every(Number.isFinite)) return this;
-      if (this.time !== null && time < this.time) this.reset();
+      if (jump || this.time !== null && time < this.time) this.reset();
       const target = Number.isFinite(heading) ? heading : Math.atan2(p.vy || 0, p.vx || 1), dt = this.time === null ? 0 : clamp(time - this.time, 0, .1);
       if (this.angle === null || snap) { this.angle = target; this.rate = 0; this.bank = 0; }
       else if (dt > 0) {
@@ -70,6 +70,10 @@
     }
     receive(ev, state) {
       this.scene = sceneFor(state);
+      if (root.EclipseEngine?.isExpedition?.(state)) {
+        if (['portal', 'objective', 'grapple', 'release', 'tether-warning', 'tether-break', 'download', 'scan', 'alert', 'quiet', 'won', 'lost', 'boost', 'brake', 'shield'].includes(ev.type)) this.emit(ev.type, ev, { ...ev, from: { x: state.x, y: state.y } });
+        return;
+      }
       if (ev.type === 'salvo') this.emit('wreck', fleetAt(state.fleet, fleetAdvance(state, this.breakAge), this.scene), { index: state.fleet });
       else if (['fire', 'hit', 'ally-hit', 'protect', 'blocked', 'shield', 'signal', 'jammed', 'storm-hit', 'torpedo', 'boost', 'brake', 'objective'].includes(ev.type)) {
         this.emit(ev.type, ev, { from: { x: state.x, y: state.y } });
@@ -91,7 +95,8 @@
       if (paused) return;
       if (scene) this.scene = scene; else if (state) this.scene = sceneFor(state);
       const oldAge = this.breakAge; this.time += Math.max(0, Math.min(.1, dt));
-      if (phase < 2 && running && !jammed) {
+      const expedition = root.EclipseEngine?.isExpedition?.(state);
+      if (!expedition && phase < 2 && running && !jammed) {
         const round = Math.floor(flightTime / 5) + 1, position = flightTime % 5;
         if (position >= 3.85 && round > this.charged) { this.charged = round; this.cues.push({ type: 'enemy-charge', pan: .6 }); }
         if (position >= 4.28 && round > this.fired) { this.fired = round; this.cues.push({ type: 'enemy-fire', pan: .6 }); }
@@ -102,7 +107,7 @@
         while (this.wave < 3 && age >= 1.12 + this.wave * .85) {
           this.volley(this.breakState.fleet, 112 * smooth((age - .7) / 3.5), this.wave++);
         }
-      } else if (phase === 2 && running) {
+      } else if (!expedition && phase === 2 && running) {
         const round = Math.floor(flightTime / 1.9) + 1;
         if (round > this.assaultRound) { this.assaultRound = round; this.volley(fleet, 112 + Math.min(flightTime, 14) * 27, round); }
       }
@@ -120,7 +125,11 @@
     else if (cue.type === 'enemy-fire') { v({ frequency: 190, end: 36, duration: .45, volume: .16, type: 'triangle' }); v({ noise: true, filter: 1100, duration: .2, volume: .12 }); }
     else if (cue.type === 'fire') { v({ frequency: 840, end: 170, duration: .15, volume: .045, type: 'triangle' }); }
     else if (cue.type === 'torpedo') { v({ noise: true, filter: 800, duration: .34, volume: .065 }); v({ frequency: 180, end: 65, duration: .4, volume: .065, type: 'triangle' }); }
-    else if (['signal', 'jammed', 'objective'].includes(cue.type)) { v({ frequency: 480, end: 960, duration: .28, volume: .06, type: 'sine' }); v({ frequency: 720, end: 1440, duration: .45, volume: .045, type: 'triangle' }); }
+    else if (['signal', 'jammed', 'objective', 'download', 'won'].includes(cue.type)) { v({ frequency: 480, end: 960, duration: .28, volume: .06, type: 'sine' }); v({ frequency: 720, end: 1440, duration: .45, volume: .045, type: 'triangle' }); }
+    else if (cue.type === 'portal') { v({ frequency: 90, end: 740, duration: .52, volume: .07, type: 'sine' }); v({ noise: true, filter: 1850, duration: .26, volume: .045 }); }
+    else if (['grapple', 'release'].includes(cue.type)) { v({ frequency: cue.type === 'grapple' ? 220 : 410, end: cue.type === 'grapple' ? 95 : 170, duration: .25, volume: .07, type: 'triangle' }); v({ noise: true, filter: 650, duration: .1, volume: .04 }); }
+    else if (['tether-warning', 'tether-break', 'scan', 'alert', 'lost'].includes(cue.type)) { v({ frequency: cue.type === 'scan' ? 720 : 290, end: cue.type === 'scan' ? 380 : 180, duration: .22, volume: .055, type: 'triangle' }); }
+    else if (cue.type === 'quiet') { v({ frequency: 360, end: 90, duration: .35, volume: .045, type: 'sine' }); }
     else if (['boost', 'brake'].includes(cue.type)) { v({ noise: true, filter: cue.type === 'boost' ? 950 : 1600, duration: .36, volume: .055 }); v({ frequency: cue.type === 'boost' ? 70 : 180, end: cue.type === 'boost' ? 160 : 60, duration: .3, volume: .045, type: 'triangle' }); }
     else if (cue.type === 'fleet-fire') {
       v({ frequency: 130, end: 42, duration: .28, volume: .05, type: 'triangle' });

@@ -2,6 +2,7 @@
 (function (root) {
   'use strict';
   const DT = 1 / 120, W = 1100, H = 660;
+  const X = root.EclipseExpeditions || (typeof module !== 'undefined' && module.exports ? require('./expeditions.js') : null);
   const MOON = Object.freeze({ x: 410, y: 350, r: 94, mu: 350000 });
   const FORT = Object.freeze({ x: 870, y: 325, r: 60 });
   const NODE = Object.freeze({ x: 650, y: 185, r: 35 });
@@ -12,7 +13,8 @@
     { id: 'rift', name: 'Разлом', tag: 'ОБЛОМКИ КОЛЬЦА', description: 'Узкие проходы между секциями разрушенного кольца. Точность курса важнее мощности.', detail: 'Обломки кольца опасны на всех этапах. На заходе и при отходе секции движутся: задержка старта меняет момент встречи.', signal: { x: 470, y: 175, r: 21 }, titles: ['Мёртвое кольцо', 'Трещина в броне', 'Между обломками'] },
     { id: 'pulsar', name: 'Пульсар', tag: 'ОКНА В ШТОРМЕ', description: 'Ионный фронт перекрывает курс. Выбери окно старта или пройди разряд под щитом.', detail: 'Разряд длится 2,25 с, затем безопасное окно — 3,55 с. Задержка старта сдвигает момент пересечения; щит выдерживает один разряд.', signal: { x: 470, y: 170, r: 24 }, titles: ['В ритме бури', 'Сердце шторма', 'Последний просвет'] },
     { id:'binary', name:'Близнецы', tag:'ДВОЙНАЯ ГРАВИТАЦИЯ', description:'Два спутника меняют траекторию. Проведи корабль через навигационный коридор и ударь с нижней орбиты.', detail:'Перед захватом узла пройди навигационную метку. Второй спутник притягивает корабль на всех этапах: привычный импульс здесь не подходит.', signal:{x:470,y:490,r:24}, titles:['Между двух миров','Нижняя орбита','Обратный прилив'] },
-    { id:'ark', name:'Ковчег', tag:'ЭВАКУАЦИЯ ВЕРФИ', description:'Забери эвакуационную капсулу у запертой верфи, открой выход и выведи её сквозь движущиеся створки.', detail:'На заходе сначала перехвати эвакуационную капсулу. Створки верфи перемещаются: выбери курс через открытый проём и момент старта.', signal:{x:460,y:160,r:22}, titles:['Забрать последних','Снять блокаду','Вывести Ковчег'] }
+    { id:'ark', name:'Ковчег', tag:'ЭВАКУАЦИЯ ВЕРФИ', description:'Забери эвакуационную капсулу у запертой верфи, открой выход и выведи её сквозь движущиеся створки.', detail:'На заходе сначала перехвати эвакуационную капсулу. Створки верфи перемещаются: выбери курс через открытый проём и момент старта.', signal:{x:460,y:160,r:22}, titles:['Забрать последних','Снять блокаду','Вывести Ковчег'] },
+    ...(X ? X.OPERATIONS : [])
   ]);
   const SCENES = Object.freeze({
     eclipse: { moon: MOON, fort: FORT, node: NODE, exit: EXIT, start: {x:120,y:505}, reboundStart:{x:795,y:325}, theme:'eclipse' },
@@ -54,6 +56,7 @@
   const number = (n, fallback, a, b) => Number.isFinite(n) ? clamp(n, a, b) : fallback;
   const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   function defaults(phase, tactic = 'breach', scenario = 'eclipse') {
+    if(X&&X.is(scenario))return X.defaults(scenario);
     if (scenario === 'binary' || scenario === 'ark') return {...defaults(phase,tactic),...hint(phase,tactic,scenario)};
     if (phase === 0) return { angle: -42, speed: 105, ax: 760, ay: 410 };
     if (phase === 2) return { angle: -165, speed: 120, ax: 760, ay: 410 };
@@ -62,6 +65,7 @@
         { angle: -8, speed: 100, ax: 820, ay: 430 };
   }
   function cleanPlan(raw, phase, tactic, scenario = 'eclipse') {
+    if(X&&X.is(scenario))return X.cleanPlan(raw,scenario);
     const d = defaults(phase, tactic, scenario); raw = raw || {};
     return { angle: number(raw.angle, d.angle, -180, 180), speed: number(raw.speed, d.speed, 55, 170),
       ax: number(raw.ax, d.ax, 540, 1000), ay: number(raw.ay, d.ay, 65, 570), delay: number(raw.delay, 0, 0, 4) };
@@ -83,6 +87,7 @@
       { x: 290 + t * 9, y: 165 + Math.sin(t * .5) * 32, r: 20 }];
   }
   function create(phase = 0, tactic = 'breach', raw, carry = {}, scenario = 'eclipse') {
+    if(X&&X.is(scenario))return X.create(scenario,raw);
     phase = Number.isInteger(phase) ? clamp(phase, 0, 2) : 0;
     tactic = TACTICS.includes(tactic) ? tactic : 'breach';
     const plan = cleanPlan(raw, phase, tactic, scenario), layout=scene(scenario);
@@ -114,13 +119,15 @@
     event(s, status, reason);
   }
   function shield(s) {
+    if(X&&X.is(s))return X.shield(s);
     if (s.status !== 'running' || s.shieldUsed || s.tactic === 'rebound' && s.phase === 1) return false;
     s.shieldUsed = true; s.shield = 2; event(s, 'shield', 'Защитное поле включено'); return true;
   }
-  function canManeuver(s,kind) { return (kind==='boost'||kind==='brake')&&s.status==='running'&&s.t>s.plan.delay+1e-8&&!(s.phase===1&&s.tactic==='rebound')&&!s[kind+'Used']; }
-  function maneuver(s,kind) { if(!canManeuver(s,kind))return false;const factor=kind==='boost'?1.18:.75;s.vx*=factor;s.vy*=factor;s[kind+'Used']=true;event(s,kind,kind==='boost'?'Маневровый разгон':'Тормозной импульс');return true; }
+  function canManeuver(s,kind) { if(X&&X.is(s))return X.canManeuver(s,kind);return (kind==='boost'||kind==='brake')&&s.status==='running'&&s.t>s.plan.delay+1e-8&&!(s.phase===1&&s.tactic==='rebound')&&!s[kind+'Used']; }
+  function maneuver(s,kind) { if(X&&X.is(s))return X.maneuver(s,kind);if(!canManeuver(s,kind))return false;const factor=kind==='boost'?1.18:.75;s.vx*=factor;s.vy*=factor;s[kind+'Used']=true;event(s,kind,kind==='boost'?'Маневровый разгон':'Тормозной импульс');return true; }
   function segmentRect(a,b,rect) { let enter=0,leave=1;for(const axis of ['x','y']) {const half=axis==='x'?rect.halfWidth:rect.halfHeight,d=b[axis]-a[axis],low=rect[axis]-half-6,high=rect[axis]+half+6;if(Math.abs(d)<1e-10){if(a[axis]<low||a[axis]>high)return false;}else{let t0=(low-a[axis])/d,t1=(high-a[axis])/d;if(t0>t1)[t0,t1]=[t1,t0];enter=Math.max(enter,t0);leave=Math.min(leave,t1);if(enter>leave)return false;}}return leave>=0&&enter<=1; }
   function step(s, dt = DT) {
+    if(X&&X.is(s))return X.step(s,dt);
     if (s.status !== 'running') return s;
     const {moon,fort,node,exit,companion}=scene(s);
     if (s.phase === 1 && !validAnchor(s.plan,s)) { end(s, 'lost', 'Якорь слишком близко к луне или крепости. Перемести его за красную границу.'); return s; }
@@ -214,11 +221,16 @@
     ark:{approach:{angle:-55,speed:85},bonus:{angle:-60,speed:70},attack:{breach:{angle:5,speed:165,ax:795,ay:180},rebound:{angle:160,speed:80,ax:755,ay:290},escort:{angle:35,speed:75,ax:580,ay:165}},exit:{breach:{angle:-169,speed:135},rebound:{angle:-173,speed:170},escort:{angle:-145,speed:170}}}
   });
   function hint(phase,tactic='breach',scenario='eclipse') {
+    if(X&&X.is(scenario))return X.hint(scenario);
     const refs=REFERENCES[operation(scenario).id], key=TACTICS.includes(tactic)?tactic:'breach';
     return {...(phase===0?refs.approach:phase===2?refs.exit[key]:refs.attack[key])};
   }
   function validAnchor(p,value) { const a={x:p.ax,y:p.ay},{moon,fort,companion}=scene(value);return distance(a,fort)>=118&&distance(a,moon)>=moon.r+45&&(!companion||distance(a,companion)>=companion.r+35); }
-  const api = { DT, W, H, MOON, FORT, NODE, EXIT, TACTICS, OPERATIONS, REFERENCES, operation, scene, checkpoints, hazardsAt, canManeuver, maneuver, project, hint, wreckageAt, stormAt, clamp, distance, defaults, cleanPlan, create, step, simulate, shield, covered, allyAt, debrisAt, segmentDistance, validAnchor };
+  const isExpedition=value=>!!X&&X.is(value),phaseCount=value=>isExpedition(value)?1:3;
+  const missionInfo=s=>isExpedition(s)?X.missionInfo(s):null,missionObjects=(s,t)=>isExpedition(s)?X.missionObjects(s,t):[];
+  const canInteract=s=>isExpedition(s)&&X.canInteract(s),interact=s=>isExpedition(s)&&X.interact(s);
+  const missionSnapshot=s=>isExpedition(s)?X.missionSnapshot(s):null,restoreFinal=(s,record)=>isExpedition(s)?X.restoreFinal(s,record):s;
+  const api = { DT, W, H, MOON, FORT, NODE, EXIT, TACTICS, OPERATIONS, REFERENCES, operation, scene, checkpoints, hazardsAt, canManeuver, maneuver, project, hint, wreckageAt, stormAt, clamp, distance, defaults, cleanPlan, create, step, simulate, shield, covered, allyAt, debrisAt, segmentDistance, validAnchor,isExpedition,phaseCount,missionInfo,missionObjects,canInteract,interact,missionSnapshot,restoreFinal };
   root.EclipseEngine = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : window);

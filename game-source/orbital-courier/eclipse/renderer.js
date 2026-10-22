@@ -44,10 +44,23 @@
       this.minimap = { x, y, w, h };
       c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); c.fillStyle = '#0a1020e8'; c.fillRect(x - 1, y - 1, w + 2, h + 2); c.strokeStyle = '#b5c8e844'; c.lineWidth = 1; c.strokeRect(x, y, w, h);
       c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip(); c.translate(x, y); c.scale(k, k);
-      c.fillStyle = '#45516d'; c.beginPath(); c.arc(this.scene.moon.x, this.scene.moon.y, this.scene.moon.r, 0, TAU); c.fill();
-      if (this.scene.companion) { const p = this.scene.companion; c.fillStyle = '#7086a5'; c.beginPath(); c.arc(p.x, p.y, p.r, 0, TAU); c.fill(); }
-      for (const p of E.hazardsAt ? E.hazardsAt(view.state) : []) { c.fillStyle = '#c3a881'; c.fillRect(p.x - p.halfWidth, p.y - p.halfHeight, p.halfWidth * 2, p.halfHeight * 2); }
-      for (const [p, color, r] of [[this.scene.fort, '#cfb89e', 35], [view.phase === 2 ? this.scene.exit : this.scene.node, '#9cbeff', 25], [view.state, '#ffffff', 20]]) { c.fillStyle = color; c.beginPath(); c.arc(p.x, p.y, r, 0, TAU); c.fill(); }
+      if (E.isExpedition?.(view.state)) {
+        for (const p of E.missionObjects(view.state)) {
+          if (p.kind === 'tether') continue;
+          const color = ['sensor','target'].includes(p.kind) ? '#eaa6a91e' : p.kind === 'dust' ? '#9e87c51b' : p.kind === 'asteroid' ? '#c4af96' : p.kind === 'colony' ? '#ceb57e' : p.kind === 'rift' ? '#b6a1f4' : p.kind === 'patrol' ? '#e5a2a9' : p.done ? '#718299' : '#b8d6ff';
+          c.fillStyle = color; c.beginPath();
+          if (p.line) { c.fillRect(p.x-2,20,4,E.H-40); continue; }
+          if (p.kind === 'sensor') { c.moveTo(p.x,p.y); c.arc(p.x,p.y,p.r,p.angle-p.spread/2,p.angle+p.spread/2); c.closePath(); }
+          else c.arc(p.x,p.y,Math.max(p.kind === 'dust' ? 0 : 12,p.r || 12),0,TAU);
+          c.fill();
+        }
+        c.fillStyle = '#ffffff'; c.beginPath(); c.arc(view.state.x,view.state.y,16,0,TAU); c.fill();
+      } else {
+        c.fillStyle = '#45516d'; c.beginPath(); c.arc(this.scene.moon.x, this.scene.moon.y, this.scene.moon.r, 0, TAU); c.fill();
+        if (this.scene.companion) { const p = this.scene.companion; c.fillStyle = '#7086a5'; c.beginPath(); c.arc(p.x, p.y, p.r, 0, TAU); c.fill(); }
+        for (const p of E.hazardsAt ? E.hazardsAt(view.state) : []) { c.fillStyle = '#c3a881'; c.fillRect(p.x - p.halfWidth, p.y - p.halfHeight, p.halfWidth * 2, p.halfHeight * 2); }
+        for (const [p, color, r] of [[this.scene.fort, '#cfb89e', 35], [view.phase === 2 ? this.scene.exit : this.scene.node, '#9cbeff', 25], [view.state, '#ffffff', 20]]) { c.fillStyle = color; c.beginPath(); c.arc(p.x, p.y, r, 0, TAU); c.fill(); }
+      }
       c.strokeStyle = '#cadcff88'; c.lineWidth = 1 / k; c.strokeRect(-this.ox / this.scale, -this.oy / this.scale, this.width / this.scale, this.height / this.scale); c.restore();
     }
     moonTexture() {
@@ -66,10 +79,16 @@
       return tile;
     }
     line(points, color, width = 1, dashed = false) {
-      if (points.length < 2) return; const c = this.c; c.save(); c.strokeStyle = color; c.lineWidth = width / this.scale; c.setLineDash(dashed ? [5 / this.scale, 5 / this.scale] : []); c.beginPath(); points.forEach((p, i) => i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y)); c.stroke(); c.restore();
+      if (points.length < 2) return; const c = this.c; c.save(); c.strokeStyle = color; c.lineWidth = width / this.scale; c.setLineDash(dashed ? [5 / this.scale, 5 / this.scale] : []); c.beginPath(); points.forEach((p, i) => i && !p.jump ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y)); c.stroke(); c.restore();
     }
     label(text, x, y, color = '#94a2bb', align = 'center', size = 10) {
-      const c = this.c; c.save(); c.font = `500 ${Math.max(12, size / this.scale)}px Manrope, sans-serif`; c.textAlign = align; c.fillStyle = '#0b1123c9'; const w = c.measureText(text).width; c.fillRect(x - (align === 'center' ? w / 2 : align === 'right' ? w : 0) - 4, y - Math.max(12, size / this.scale), w + 8, Math.max(16, (size + 4) / this.scale)); c.fillStyle = color; c.fillText(text, x, y); c.restore();
+      const c = this.c; c.save(); c.font = `500 ${Math.max(12, size / this.scale)}px Manrope, sans-serif`; c.textAlign = align; c.fillStyle = '#0b1123c9'; const w = c.measureText(text).width, offset = align === 'center' ? w / 2 : align === 'right' ? w : 0;
+      if (this.expedition) {
+        const left = (6 - this.ox) / this.scale, right = (this.width - 6 - this.ox) / this.scale;
+        if (this.closeCamera && (x < left || x > right)) { c.restore(); return; }
+        x = E.clamp(x, left + offset, right - w + offset);
+      }
+      c.fillRect(x - offset - 4, y - Math.max(12, size / this.scale), w + 8, Math.max(16, (size + 4) / this.scale)); c.fillStyle = color; c.fillText(text, x, y); c.restore();
     }
     ring(p, r, color, width = 1) {
       const c = this.c; c.beginPath(); c.arc(p.x, p.y, r, 0, TAU); c.strokeStyle = color; c.lineWidth = width / this.scale; c.stroke();
@@ -377,15 +396,181 @@
       if (state.phase < 2 && state.status !== 'won') this.label(state.jam ? 'ЗАЛП БУДЕТ ЗАГЛУШЁН' : 'ЗАЛП ' + (5 - state.t % 5).toFixed(1) + ' с', p.x, p.y - 136, state.jam ? palette.ice : palette.red, 'center', 9);
       if (state.charge > 0 && !open) { c.strokeStyle = '#d6e8ff'; c.lineWidth = 3 / this.scale; c.beginPath(); c.arc(p.x,p.y,42,-Math.PI/2,-Math.PI/2+TAU*state.charge/.8); c.stroke(); }
     }
+    expeditionBackground(view, t) {
+      const c = this.c, theme = view.state.operation;
+      c.fillStyle = theme === 'archive' ? '#080b15' : theme === 'sisyphus' ? '#11131b' : '#0b1020'; c.fillRect(-2000,-2000,5000,5000);
+      const light = c.createRadialGradient(theme === 'sisyphus' ? 1160 : 650, theme === 'archive' ? 420 : 260, 0, 700, 330, 850);
+      light.addColorStop(0, theme === 'sisyphus' ? '#ad835b29' : theme === 'archive' ? '#65527324' : '#5643883e'); light.addColorStop(1,'#17233d00'); c.fillStyle = light; c.fillRect(-500,-500,2200,1600);
+      for (const star of this.stars) { c.globalAlpha = star.a * (theme === 'archive' ? .35 : .8); c.fillStyle = star.r > 1 ? '#e9e2db' : '#9eaecb'; c.beginPath(); c.arc(star.x,star.y,star.r,0,TAU); c.fill(); } c.globalAlpha = 1;
+      if (theme === 'seam') {
+        // An interrupted observatory, far behind the playable beacons. Its two
+        // pieces never masquerade as a solid obstacle or a collision boundary.
+        c.save(); c.translate(615,340); c.rotate(-.32); c.strokeStyle = '#a8a5c321'; c.lineWidth = 13;
+        for (const [from,to] of [[-.95,.9],[1.25,3.9],[4.25,5.05]]) { c.beginPath(); c.ellipse(0,0,350,245,0,from,to); c.stroke(); }
+        c.strokeStyle = '#c0c6de21'; c.lineWidth = 1.2;
+        for (let i = 0; i < 28; i++) { const a = i/28*TAU; if (i%7 === 0) continue; const x = Math.cos(a), y = Math.sin(a); this.line([{x:x*336,y:y*231},{x:x*362,y:y*258}],'#b0b6cf23',.8); }
+        c.restore(); this.label('РАСКОЛОТАЯ ОБСЕРВАТОРИЯ',615,630,'#7e839e','center',8);
+      } else if (theme === 'sisyphus') {
+        const sun = c.createRadialGradient(1260,90,5,1260,90,300); sun.addColorStop(0,'#ffe9bd7a'); sun.addColorStop(.12,'#edc18d2b'); sun.addColorStop(1,'#d89b6000'); c.fillStyle = sun; c.fillRect(900,-200,700,700);
+        c.save(); c.strokeStyle = '#bfb3a51b'; c.lineWidth = 1/this.scale; c.setLineDash([2/this.scale,13/this.scale]);
+        c.beginPath(); c.ellipse(650,970,760,680,-.2,3.4,5.4); c.stroke(); c.restore();
+      }
+      c.strokeStyle = '#a6bddb08'; c.lineWidth = 1/this.scale; c.beginPath();
+      for (let x = 50; x < E.W; x += 100) { c.moveTo(x,10); c.lineTo(x,E.H-10); } for (let y = 50; y < E.H; y += 100) { c.moveTo(10,y); c.lineTo(E.W-10,y); } c.stroke();
+    }
+    rift(p, t, reduced) {
+      const c = this.c, r = p.r || 30, pulse = reduced ? 1 : .94+.06*Math.sin(t*2.6+p.x), color = p.active === false ? '#7b83a5' : '#c0b0f2';
+      this.glow(p.x,p.y,r*3,'ice',p.active === false ? .08 : .2);
+      c.save(); c.translate(p.x,p.y); c.rotate(p.angle || 0);
+      const lens = c.createRadialGradient(0,0,1,0,0,r*1.3); lens.addColorStop(0,'#030815'); lens.addColorStop(.6,'#32306499'); lens.addColorStop(.78,'#a0bfffff'); lens.addColorStop(.86,'#a39bdd77'); lens.addColorStop(1,'#8d87d800');
+      c.fillStyle = lens; c.beginPath(); c.ellipse(0,0,r*.48*pulse,r*1.25,0,0,TAU); c.fill();
+      for (const side of [-1,1]) { c.beginPath(); c.moveTo(side*r*.2,-r*1.2); c.bezierCurveTo(side*r*.65,-r*.55,side*r*.62,r*.65,side*r*.14,r*1.2); c.strokeStyle = color; c.lineWidth = (side<0 ? 1.6 : .8)/this.scale; c.stroke(); }
+      c.strokeStyle = '#b5b7e351'; c.lineWidth = .8/this.scale;
+      for (const side of [-1,1]) { c.beginPath(); c.moveTo(0,side*r*1.2); c.lineTo(-r*.15,side*r*1.65); c.lineTo(r*.18,side*r*2.05); c.lineTo(-r*.04,side*r*2.5); c.stroke(); }
+      c.restore(); this.ring(p,r,'#b6b6e951',.7);
+      const label = this.width<600 ? (p.exit ? '↗ ' : '')+(p.label || '').replace(/^(Разлом|Выход)\s+/,'') : p.label || 'РАЗЛОМ';
+      this.label(label,p.x+r+9/this.scale,p.y+4/this.scale,color,'left',9);
+      if (p.exit && p.active !== false) {
+        const a=p.angle || 0, tip={x:p.x+Math.cos(a)*(r+40),y:p.y+Math.sin(a)*(r+40)};
+        this.line([{x:p.x+Math.cos(a)*r,y:p.y+Math.sin(a)*r},tip],'#ccbdf386',.8);
+        for (const side of [-1,1]) this.line([tip,{x:tip.x-Math.cos(a+side*.5)*10,y:tip.y-Math.sin(a+side*.5)*10}],'#ccbdf3a6',.8);
+      }
+    }
+    relay(p) {
+      const c = this.c, r = p.r || 28, active = p.active !== false && !p.done, color = p.done ? '#8c9cb7' : active ? '#cbe2ff' : '#8886a4';
+      this.ring(p,r,p.done ? '#a5bed641' : active ? '#cadbff8a' : '#9b96b543',active ? 1.4 : .8);
+      this.glow(p.x,p.y,r*1.5,'ice',p.done ? .16 : active ? .25 : .06);
+      c.save(); c.translate(p.x,p.y); c.rotate(Math.PI/4); c.fillStyle = '#1d2941'; c.strokeStyle = color; c.lineWidth = 1/this.scale; c.fillRect(-10,-10,20,20); c.strokeRect(-10,-10,20,20); c.fillStyle = color; c.fillRect(-3,-3,6,6); c.restore();
+      for (const side of [-1,1]) this.line([{x:p.x+side*13,y:p.y},{x:p.x+side*23,y:p.y}],color,.8);
+      this.label((p.done ? '✓ ' : '')+(p.label || 'МАЯК'),p.x,p.y+r+20,color,'center',9);
+    }
+    asteroid(p, state, future) {
+      const c = this.c, r = p.r || 38, random = seeded(361);
+      if (future) this.line([p,future],p.safe ? '#b5d5ff75' : '#e6ac9c66',1,true);
+      c.save(); c.translate(p.x,p.y); c.rotate(this.reduced ? 0 : state.t*.025); c.beginPath();
+      for (let i = 0; i < 14; i++) { const a = i/14*TAU, radius = r*(.9+random()*.1); i ? c.lineTo(Math.cos(a)*radius,Math.sin(a)*radius) : c.moveTo(radius,0); } c.closePath();
+      const rock = c.createLinearGradient(r,-r,-r,r); rock.addColorStop(0,'#c0ac91'); rock.addColorStop(.3,'#8a8179'); rock.addColorStop(.65,'#414651'); rock.addColorStop(1,'#202b3e'); c.fillStyle = rock; c.strokeStyle = '#e4cdae7a'; c.lineWidth = 1/this.scale; c.fill(); c.stroke(); c.clip();
+      for (let i = 0; i < 24; i++) { const a = random()*TAU, d = Math.sqrt(random())*r, cr = 1+random()*r*.17, x = Math.cos(a)*d, y = Math.sin(a)*d; c.beginPath(); c.ellipse(x,y,cr,cr*.65,a,0,TAU); c.fillStyle = '#111b2c4d'; c.fill(); c.strokeStyle = '#eddbc330'; c.lineWidth = .7; c.stroke(); }
+      c.restore(); this.ring(p,r+4,p.safe ? '#c7dbff55' : '#edb39455',.8);
+      this.label(p.label || 'АСТЕРОИД',p.x,p.y-r-17,p.safe ? palette.ice : palette.gold,'center',9);
+    }
+    colony(p) {
+      const c = this.c, r = p.r || 60;
+      this.glow(p.x,p.y,r*2.2,'gold',.17); c.save(); c.translate(p.x,p.y);
+      const glass = c.createRadialGradient(r*.4,-r*.5,0,0,0,r); glass.addColorStop(0,'#7a8ea5'); glass.addColorStop(.4,'#263952'); glass.addColorStop(1,'#111c2c');
+      c.fillStyle = glass; c.beginPath(); c.arc(0,0,r,0,TAU); c.fill(); c.save(); c.clip();
+      for (let row = -3; row <= 3; row++) for (let col = -4; col <= 4; col++) { const x = col*r*.19, y = row*r*.22, tall = ((col*3+row*7+39)%5+2)*r*.055; c.fillStyle = '#10182b'; c.fillRect(x-4,y-tall,8,tall+8); c.fillStyle = '#f2d3a5b0'; for (let k = 0; k < 3; k++) c.fillRect(x-2,y-tall+4+k*4,1.4,1.2); }
+      c.strokeStyle = '#a0b9da4a'; c.lineWidth = .8; for (const width of [.4,.75]) { c.beginPath(); c.ellipse(0,0,r*width,r,0,0,TAU); c.stroke(); } c.restore();
+      c.strokeStyle = '#e7d8be99'; c.lineWidth = 1.4/this.scale; c.beginPath(); c.arc(0,0,r,-1.4,1.5); c.stroke(); c.strokeStyle = '#8ba4c33d'; c.beginPath(); c.ellipse(0,0,r*1.23,r*.34,-.28,0,TAU); c.stroke(); c.restore();
+      this.label(p.label || 'КОЛОНИЯ',p.x,p.y+r+22,palette.gold,'center',9);
+    }
+    archiveStation(p) {
+      const c = this.c, zone = p.r || 105, r = Math.min(38,zone*.36);
+      c.save(); c.translate(p.x,p.y); c.rotate(-.2); this.glow(0,0,r*2,'ice',p.done ? .25 : .08);
+      for (const side of [-1,1]) { c.beginPath(); c.moveTo(-r*.15,-r*.2); c.lineTo(side*r*1.15,-r*.9); c.lineTo(side*r*.7,r*.65); c.lineTo(0,r*.25); c.closePath(); c.fillStyle = '#25273a'; c.strokeStyle = '#8a86a75e'; c.lineWidth = 1/this.scale; c.fill(); c.stroke(); this.line([{x:side*r*.7,y:-r*.55},{x:side*r*.45,y:r*.35}],'#b9acd480',.8); }
+      c.fillStyle = '#0a1120'; c.strokeStyle = '#b8c6e6'; c.lineWidth = 1/this.scale; c.beginPath(); c.moveTo(0,-r); c.lineTo(r*.34,0); c.lineTo(0,r*.8); c.lineTo(-r*.34,0); c.closePath(); c.fill(); c.stroke(); c.fillStyle = p.done ? '#dbeaff' : '#b9acd4'; c.fillRect(-2,-r*.35,4,r*.65); c.restore();
+      this.ring(p,zone,'#b4b3d375',.9);
+      if (p.progress>0) { c.beginPath(); c.arc(p.x,p.y,zone,-Math.PI/2,-Math.PI/2+TAU*Math.min(1,p.progress)); c.strokeStyle = '#d2e5ff'; c.lineWidth = 2/this.scale; c.stroke(); }
+      this.label(p.label || 'АРХИВ',p.x,p.y-zone-20,palette.ice,'center',9);
+      this.label(p.done ? 'ДАННЫЕ ПОЛУЧЕНЫ' : 'ЗОНА ЗАГРУЗКИ',p.x,p.y+zone+17,'#aaa5c3','center',8);
+    }
+    sensor(p, state) {
+      const c = this.c, spread = p.spread || .6, angle = p.angle || 0, danger = state.detection > 45;
+      c.save(); c.beginPath(); c.moveTo(p.x,p.y); c.arc(p.x,p.y,p.r,angle-spread/2,angle+spread/2); c.closePath();
+      const cone = c.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r); cone.addColorStop(0,danger ? '#fa8b9b24' : '#c9a3dc22'); cone.addColorStop(1,danger ? '#fa8b9b0d' : '#b8a4d90b'); c.fillStyle = cone; c.fill(); c.strokeStyle = danger ? '#efa0ab83' : '#c8aed86b'; c.lineWidth = .8/this.scale; c.stroke();
+      c.setLineDash([2/this.scale,7/this.scale]); c.strokeStyle = '#ccbbdb2e'; c.beginPath(); c.arc(p.x,p.y,p.r*.55,angle-spread/2,angle+spread/2); c.stroke(); c.restore();
+    }
+    dust(p) {
+      const c = this.c, r = p.r || 90;
+      const cloud = c.createRadialGradient(p.x-r*.22,p.y-r*.3,0,p.x,p.y,r); cloud.addColorStop(0,'#65557e4d'); cloud.addColorStop(.6,'#3936504a'); cloud.addColorStop(.9,'#29283d2f'); cloud.addColorStop(1,'#161b2a05'); c.fillStyle = cloud; c.beginPath(); c.arc(p.x,p.y,r,0,TAU); c.fill();
+      c.save(); c.setLineDash([2/this.scale,10/this.scale]); this.ring(p,r,'#b1a3cd4b',.7); c.restore();
+      const rand = seeded(Math.round(p.x*17+p.y)); c.fillStyle = '#b1a5ba42'; for (let i = 0; i < 35; i++) { const a = rand()*TAU, d = Math.sqrt(rand())*r*.95; c.beginPath(); c.arc(p.x+Math.cos(a)*d,p.y+Math.sin(a)*d,.3+rand(),0,TAU); c.fill(); }
+      this.label(p.label || 'ПЫЛЕВОЕ УКРЫТИЕ',p.x,p.y+r+15,'#9e93b3','center',8);
+    }
+    tether(p, reduced) {
+      const c = this.c, tension = B.clamp((p.tension || 0)/(p.maxTension || 1),0,1), color = tension > .72 ? '#f1a2a7' : '#d4dbe8';
+      c.save(); const dx = p.toX-p.x, dy = p.toY-p.y, length = Math.hypot(dx,dy)||1, sag = (1-tension)*Math.min(16,length*.055), offset = reduced ? 0 : Math.sin(this.motionTime*13)*Math.min(2,tension*2);
+      const mid = {x:(p.x+p.toX)/2-dy/length*(sag+offset),y:(p.y+p.toY)/2+dx/length*(sag+offset)};
+      for (const [width,ink] of [[4,'#0c1429a6'],[1.1,color]]) { c.strokeStyle = ink; c.lineWidth = width/this.scale; c.beginPath(); c.moveTo(p.x,p.y); c.quadraticCurveTo(mid.x,mid.y,p.toX,p.toY); c.stroke(); }
+      for (const point of [p,{x:p.toX,y:p.toY}]) this.ring(point,5/this.scale,color,.9); c.restore();
+      this.label('ТРОС · '+Math.round(tension*100)+'%',mid.x,mid.y-14/this.scale,color,'center',8);
+    }
+    expeditionEffects(view) {
+      const c = this.c, {battle,reduced} = view;
+      for (const fx of battle.effects) {
+        const age = battle.time-fx.at, life = Math.max(0,1-age/1.6); if (!life) continue;
+        if (['portal','objective','download','won','quiet'].includes(fx.type)) {
+          const portal = fx.type === 'portal', color = portal ? '#ccbcff' : fx.type === 'quiet' ? '#a7adcf' : '#c3ddff', radius = reduced ? 28 : 12+age*(portal ? 80 : 55);
+          c.save(); c.globalAlpha = life; this.ring(fx,radius,color,1.3); this.ring(fx,radius*.7,color+'55',.6); this.glow(fx.x,fx.y,65,'ice',life*.28);
+          if (portal && Number.isFinite(fx.toX) && Number.isFinite(fx.toY)) { this.ring({x:fx.toX,y:fx.toY},radius,color,.9); this.glow(fx.toX,fx.toY,60,'ice',life*.3); }
+          if (!reduced) for (let i = 0; i < 10; i++) { const a = i/10*TAU+fx.seed, d = 12+age*(24+i*3); c.fillStyle = color; c.beginPath(); c.arc(fx.x+Math.cos(a)*d,fx.y+Math.sin(a)*d,.7/this.scale,0,TAU); c.fill(); } c.restore();
+        } else if (['grapple','release','tether-warning','tether-break','scan','alert'].includes(fx.type)) {
+          c.save(); c.globalAlpha = life*.7; const color = ['alert','tether-warning','tether-break'].includes(fx.type) ? '#efabb5' : '#c6d9f5'; this.ring(fx,reduced ? 25 : 13+age*45,color,1); this.glow(fx.x,fx.y,35,fx.type === 'alert' ? 'red' : 'ice',life*.3); c.restore();
+        } else if (fx.type === 'lost') this.explosion(fx,age,fx.seed,.7,'gold',reduced);
+        else if (fx.type === 'shield' && age < 1.2) { c.save(); c.globalAlpha = life; this.ring(fx,32,'#d1e4ff',1.5); c.restore(); }
+      }
+    }
+    drawExpedition(view, t) {
+      const {state:s,prediction,previous,showForecast,plan,reduced,battle} = view, c = this.c, scale = this.scale, objects = E.missionObjects(s);
+      this.expeditionBackground(view,t);
+      for (const p of objects) if (p.kind === 'dust') this.dust(p);
+      for (const p of objects) if (p.kind === 'sensor' && p.active !== false) this.sensor(p,s);
+      const future = E.missionObjects(s,s.t+.08);
+      for (const p of objects) {
+        if (p.kind === 'rift') { this.rift(p,t,reduced); if (view.mode === 'plan' && Number.isFinite(p.pairedX) && Number.isFinite(p.pairedY)) this.line([p,{x:p.pairedX,y:p.pairedY}],'#a49adf25',.7,true); }
+        else if (p.kind === 'relay') this.relay(p);
+        else if (p.kind === 'asteroid') {
+          let time=24; for (const [position,velocity,edge] of [[p.x,p.vx,E.W],[p.y,p.vy,E.H]]) if (Math.abs(velocity)>.01) time=Math.min(time,((velocity>0?edge:0)-position)/velocity);
+          this.asteroid(p,s,view.mode === 'plan' || s.tether?.attached ? {x:p.x+p.vx*time,y:p.y+p.vy*time} : null);
+        }
+        else if (p.kind === 'colony') this.colony(p);
+        else if (p.kind === 'terminal') this.archiveStation(p);
+        else if (p.kind === 'patrol') { const next=future.find(other=>other.id===p.id), angle=next ? Math.atan2(next.y-p.y,next.x-p.x) : p.angle; this.ship({...p,angle},'#bdadc7',.95,'pilgrim',t,view.mode === 'running' ? .12 : 0,'patrol-'+p.id); this.ring(p,p.r || 14,'#e2b5c357',.7); this.line([p,{x:p.x+Math.cos(p.angle)*29,y:p.y+Math.sin(p.angle)*29}],'#d8badba1',1); }
+        else if (p.kind === 'wreck') {
+          c.save(); c.translate(p.x,p.y); c.rotate(p.angle || .45); c.fillStyle = '#394153'; c.strokeStyle = '#aaa1b66b'; c.lineWidth = .8/scale; c.beginPath();
+          for (let i=0;i<9;i++) { const angle=i/9*TAU, radius=p.r*(i%3 === 0 ? .86 : 1); i ? c.lineTo(Math.cos(angle)*radius,Math.sin(angle)*radius) : c.moveTo(radius,0); } c.closePath(); c.fill(); c.stroke();
+          this.line([{x:-p.r*.6,y:-p.r*.25},{x:p.r*.65,y:-p.r*.25}],'#c3bdd578',.8); this.line([{x:-p.r*.4,y:p.r*.25},{x:p.r*.7,y:p.r*.25}],'#141b2c',2); c.restore(); this.ring(p,p.r,'#c2a4b74a',.7);
+        }
+        else if (p.kind === 'target') { c.save(); c.setLineDash([3/scale,6/scale]); this.ring(p,p.r,p.active === false ? '#a9bfd12c' : '#e5a3a366',.8); c.restore(); this.label(p.label || 'ОПАСНЫЙ КОРИДОР',p.x,p.y-p.r-14,p.active === false ? '#8d9bae' : '#d9a3a6','center',8); }
+        else if (p.kind === 'exit' && p.line) { this.line([{x:p.x,y:25},{x:p.x,y:E.H-25}],p.active === false ? '#a4b3c733' : '#c7dcff75',.8,true); this.label(p.label || 'КОНТРОЛЬНЫЙ РУБЕЖ',p.x,45,p.active === false ? '#8e99ad' : palette.ice,'center',8); }
+        else if (p.kind === 'exit') { this.ring(p,p.r,p.active === false ? '#a4b3c743' : '#d2e3ff9a',1.2); this.ring(p,p.r+7,'#c0d6f72b',.6); if (p.active !== false) this.glow(p.x,p.y,p.r*1.7,'ice',.1); this.label(p.label || 'ВЫХОД',p.x,p.y-p.r-13,p.active === false ? '#8e99ad' : palette.ice,'center',9); }
+      }
+      if (previous && view.mode === 'plan') this.line(previous.path,'#d3899930',1,true);
+      if (showForecast && prediction && ['plan','paused'].includes(view.mode)) {
+        const path = view.mode === 'plan' ? prediction.path : [s,...prediction.path.filter(p=>p.t>s.t)]; this.line(path,prediction.status === 'won' ? '#c8ddff99' : '#a3b2c66b',1.2,true);
+        const finish = prediction.finish; if (finish) this.ring(finish,6/scale,prediction.status === 'won' ? '#cce1ff' : '#d69aa9',1);
+      }
+      this.line(s.path.slice(-180),'#aec9ff2b',.7);
+      for (const p of objects) if (p.kind === 'tether') this.tether(p,reduced);
+      if (view.mode === 'plan') {
+        const a = plan.angle*Math.PI/180, length = Math.max(70,64/scale), tip = {x:s.x+Math.cos(a)*length,y:s.y+Math.sin(a)*length};
+        this.line([s,tip],view.aiming ? '#e1ecffdc' : '#c2d6f36b',view.aiming ? 1.8 : 1); this.ring(tip,8/scale,'#d9e8ff66',.8);
+        for (const side of [-1,1]) this.line([tip,{x:tip.x-Math.cos(a+side*.55)*11/scale,y:tip.y-Math.sin(a+side*.55)*11/scale}],'#d9e8ffbb',1.2);
+        if (view.aiming) this.label(plan.angle.toFixed(1)+'°',tip.x,tip.y-16/scale,palette.ice,'center',11);
+      }
+      const portals = s.events.filter(ev=>ev.type === 'portal').length;
+      if (this.playerPortalCount !== portals) { this.motion.delete('player'); this.playerPortalCount = portals; }
+      const burst = battle.effects.filter(fx=>fx.type === 'boost' && battle.time-fx.at<.65).reduce((v,fx)=>Math.max(v,1-(battle.time-fx.at)/.65),0);
+      const power = view.mode === 'running' && s.flightT>0 ? Math.max(Math.max(0,1-s.flightT/.72),burst) : 0;
+      this.ship(s,palette.ice,1.12,'raven',t,power,'player');
+      const brake = battle.effects.filter(fx=>fx.type === 'brake' && battle.time-fx.at<.48).reduce((v,fx)=>Math.max(v,1-(battle.time-fx.at)/.48),0);
+      if (brake>0) { const angle = this.motion.get('player').angle; this.plume({x:s.x+Math.cos(angle)*9,y:s.y+Math.sin(angle)*9},{angle:angle+Math.PI},brake,.6,'ice',reduced); }
+      if (s.quiet) { this.ring(s,23,'#ada5d980',.8); this.label('ТИХИЙ ХОД',s.x,s.y-31/scale,'#bdb4d9','center',8); }
+      if (s.shield>0) this.ring(s,32,'#bad8ffbb',2);
+      if (this.width<600) this.ring(s,Math.max(15,7/scale),'#d9e7ff55',.8);
+      this.expeditionEffects(view); this.overview(view); c.setTransform(1,0,0,1,0,0);
+    }
     draw(view, clock) {
       const { state: s, prediction, phase, tactic, plan, reduced, showForecast, editing, previous, battle } = view;
       if (!s) return;
+      this.expedition = !!E.isExpedition?.(s);
       this.scene = E.scene ? E.scene(s) : this.scene;
       const key = [s.operation, phase, tactic].join(':');
-      if (this.motionKey !== key || s.t < this.motionStateTime || battle.time < this.motionTime) { this.motion.clear(); this.motionKey = key; }
+      if (this.motionKey !== key || s.t < this.motionStateTime || battle.time < this.motionTime) { this.motion.clear(); this.motionKey = key; this.playerPortalCount = 0; }
       this.motionStateTime = s.t; this.motionTime = battle.time; this.motionSnap = view.mode === 'plan'; this.reduced = reduced;
       this.camera(view); const c = this.c, t = reduced ? 0 : clock, scale = this.scale;
       c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); c.clearRect(0, 0, this.width, this.height); c.translate(this.ox, this.oy); c.scale(scale, scale);
+      if (E.isExpedition?.(s)) { this.drawExpedition(view,t); return; }
       if (!reduced && battle.breakAge !== null) {
         const a = battle.breakAge - .32, shake = a > 0 && a < .65 ? 1.7 * (1 - a / .65) : 0;
         c.translate(Math.sin(a * 53) * shake / scale, Math.cos(a * 43) * shake * .65 / scale);

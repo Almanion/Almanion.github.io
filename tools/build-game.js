@@ -52,7 +52,7 @@ function onlinePage(page) {
         return !pages[destination] ? '<button' + attributes + '>' + content + '</button>' :
             '<a' + attributes + ' href="' + prefix + pages[destination].directory + '">' + content + '</a>';
     });
-    const eclipseLink = '<a class="eclipse-entry" href="' + prefix + 'eclipse/"><span class="eclipse-icon" aria-hidden="true"></span><span><strong>Затмение</strong><em>БОЕВЫЕ ОПЕРАЦИИ</em><small>Пять локаций · тактика · управление импульсом</small></span><span>Играть ↗</span></a>';
+    const eclipseLink = '<a class="eclipse-entry" href="' + prefix + 'eclipse/"><span class="eclipse-icon" aria-hidden="true"></span><span><strong>Затмение</strong><em>ОПЕРАЦИИ И ЭКСПЕДИЦИИ</em><small>Разломы пространства · буксировка · скрытность</small></span><span>Играть ↗</span></a>';
     html = html.replace('</head>', '<link rel="stylesheet" href="' + prefix + 'assets/eclipse-entry.css?v=' + assetVersion('eclipse/entry.css') + '"></head>')
         .replace('<div class="hero-meta">', eclipseLink + '<div class="hero-meta">')
         .replace('<section class="campaign-access"', eclipseLink + '<section class="campaign-access"');
@@ -66,7 +66,7 @@ function onlineFiles() {
     for (const match of sourceHTML().matchAll(/\b(?:href|src)="(src\/[^"]+\.(?:css|js))"/g)) {
         files['assets/' + match[1].slice(4)] = fs.readFileSync(path.join(source, match[1]), 'utf8');
     }
-    const eclipseAssets = { 'eclipse-engine.js': 'engine.js', 'eclipse-battle.js': 'battle.js', 'eclipse-renderer.js': 'renderer.js', 'eclipse-app.js': 'app.js', 'eclipse.css': 'eclipse.css', 'eclipse-entry.css': 'entry.css' };
+    const eclipseAssets = { 'eclipse-expeditions.js': 'expeditions.js', 'eclipse-engine.js': 'engine.js', 'eclipse-battle.js': 'battle.js', 'eclipse-renderer.js': 'renderer.js', 'eclipse-app.js': 'app.js', 'eclipse.css': 'eclipse.css', 'eclipse-entry.css': 'entry.css' };
     for (const [name, file] of Object.entries(eclipseAssets)) files['assets/' + name] = fs.readFileSync(path.join(source, 'eclipse', file), 'utf8');
     files['eclipse/index.html'] = fs.readFileSync(path.join(source, 'eclipse', 'index.html'), 'utf8').replace(/@@([a-z.-]+)@@/g, (_, name) => {
         const content = files['assets/' + name];
