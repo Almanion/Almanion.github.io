@@ -7,7 +7,8 @@
     constructor(canvas) {
       this.canvas = canvas; this.c = canvas.getContext('2d'); this.scale = 1; this.ox = 0; this.oy = 0;
       const rand = seeded(179); this.stars = Array.from({ length: 340 }, () => ({ x: rand() * 2100 - 500, y: rand() * E.H, r: .3 + rand(), a: .12 + rand() * .55 }));
-      this.fragments = B.shieldPieces(); this.glows = {};
+      this.fragments = B.shieldPieces(); this.glows = {}; this.motion = new Map(); this.motionKey = ''; this.motionStateTime = 0;
+      this.scene = { moon: E.MOON, fort: E.FORT, node: E.NODE, exit: E.EXIT };
       for (const [key, color] of Object.entries({ ice: '153,195,255', gold: '255,193,116', red: '255,123,117', smoke: '65,69,87' })) {
         const tile = document.createElement('canvas'); tile.width = tile.height = 128; const ctx = tile.getContext('2d'), g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
         g.addColorStop(0, `rgba(${color},.8)`); g.addColorStop(.16, `rgba(${color},.35)`); g.addColorStop(.5, `rgba(${color},.09)`); g.addColorStop(1, `rgba(${color},0)`);
@@ -43,8 +44,10 @@
       this.minimap = { x, y, w, h };
       c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); c.fillStyle = '#0a1020e8'; c.fillRect(x - 1, y - 1, w + 2, h + 2); c.strokeStyle = '#b5c8e844'; c.lineWidth = 1; c.strokeRect(x, y, w, h);
       c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip(); c.translate(x, y); c.scale(k, k);
-      c.fillStyle = '#45516d'; c.beginPath(); c.arc(E.MOON.x, E.MOON.y, E.MOON.r, 0, TAU); c.fill();
-      for (const [p, color, r] of [[E.FORT, '#cfb89e', 35], [view.phase === 2 ? E.EXIT : E.NODE, '#9cbeff', 25], [view.state, '#ffffff', 20]]) { c.fillStyle = color; c.beginPath(); c.arc(p.x, p.y, r, 0, TAU); c.fill(); }
+      c.fillStyle = '#45516d'; c.beginPath(); c.arc(this.scene.moon.x, this.scene.moon.y, this.scene.moon.r, 0, TAU); c.fill();
+      if (this.scene.companion) { const p = this.scene.companion; c.fillStyle = '#7086a5'; c.beginPath(); c.arc(p.x, p.y, p.r, 0, TAU); c.fill(); }
+      for (const p of E.hazardsAt ? E.hazardsAt(view.state) : []) { c.fillStyle = '#c3a881'; c.fillRect(p.x - p.halfWidth, p.y - p.halfHeight, p.halfWidth * 2, p.halfHeight * 2); }
+      for (const [p, color, r] of [[this.scene.fort, '#cfb89e', 35], [view.phase === 2 ? this.scene.exit : this.scene.node, '#9cbeff', 25], [view.state, '#ffffff', 20]]) { c.fillStyle = color; c.beginPath(); c.arc(p.x, p.y, r, 0, TAU); c.fill(); }
       c.strokeStyle = '#cadcff88'; c.lineWidth = 1 / k; c.strokeRect(-this.ox / this.scale, -this.oy / this.scale, this.width / this.scale, this.height / this.scale); c.restore();
     }
     moonTexture() {
@@ -66,18 +69,63 @@
       if (points.length < 2) return; const c = this.c; c.save(); c.strokeStyle = color; c.lineWidth = width / this.scale; c.setLineDash(dashed ? [5 / this.scale, 5 / this.scale] : []); c.beginPath(); points.forEach((p, i) => i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y)); c.stroke(); c.restore();
     }
     label(text, x, y, color = '#94a2bb', align = 'center', size = 10) {
-      const c = this.c; c.save(); c.font = `500 ${Math.max(12, size / this.scale)}px Manrope, sans-serif`; c.textAlign = align; c.fillStyle = '#0b1123c9'; const w = c.measureText(text).width; c.fillRect(x - (align === 'center' ? w / 2 : 0) - 4, y - Math.max(12, size / this.scale), w + 8, Math.max(16, (size + 4) / this.scale)); c.fillStyle = color; c.fillText(text, x, y); c.restore();
+      const c = this.c; c.save(); c.font = `500 ${Math.max(12, size / this.scale)}px Manrope, sans-serif`; c.textAlign = align; c.fillStyle = '#0b1123c9'; const w = c.measureText(text).width; c.fillRect(x - (align === 'center' ? w / 2 : align === 'right' ? w : 0) - 4, y - Math.max(12, size / this.scale), w + 8, Math.max(16, (size + 4) / this.scale)); c.fillStyle = color; c.fillText(text, x, y); c.restore();
     }
     ring(p, r, color, width = 1) {
       const c = this.c; c.beginPath(); c.arc(p.x, p.y, r, 0, TAU); c.strokeStyle = color; c.lineWidth = width / this.scale; c.stroke();
     }
-    ship(p, color, scale, model, t, thrust = true) {
-      root.Orbital.Fleet.draw(this.c, p.x, p.y, p.angle ?? Math.atan2(p.vy || 0, p.vx || 1), color, scale, thrust, t, model, { finish: 'satin', livery: 'panels' });
+    motionFor(key, p, { heading, power = 0, size = 1, snap = false, maxRate } = {}) {
+      if (!this.motion.has(key)) this.motion.set(key, new B.MotionTrack());
+      return this.motion.get(key).update(p, this.motionTime, { heading, power, size, snap, maxRate });
     }
-    flagship(p, thrust) {
-      const c = this.c; c.save(); c.translate(p.x, p.y); c.rotate(p.angle);
+    wake(track, color = 'ice', reduced = false) {
+      if (reduced || track.samples.length < 2) return;
+      const c = this.c, samples = track.samples;
+      // Exhaust is emitted at historical world positions. A turn never swings the
+      // entire wake around the hull, and old gas expands while its light decays.
+      c.save(); c.globalCompositeOperation = 'lighter';
+      const rgb = color === 'gold' ? '239,190,121' : '143,191,255';
+      for (let i = 1; i < samples.length; i++) {
+        const p = samples[i], q = samples[i - 1], age = this.motionTime - p.at, fade = Math.max(0, 1 - age / 1.45), spread = age * age * 3;
+        const offset = a => Math.sin(a.at * 19 + i * 1.3) * spread;
+        const a = { x: q.x - Math.sin(q.angle) * offset(q), y: q.y + Math.cos(q.angle) * offset(q) }, b = { x: p.x - Math.sin(p.angle) * offset(p), y: p.y + Math.cos(p.angle) * offset(p) };
+        const strength = Math.min(p.power, q.power) * fade * fade;
+        this.line([a, b], `rgba(${rgb},${strength * .12})`, (2.3 + age * 4) * p.size);
+        this.line([a, b], `rgba(${rgb},${strength * .44})`, Math.max(.4, p.size * .7 * fade));
+        if (i % 4 === 0) { c.globalAlpha = strength * .33; c.fillStyle = '#d8eaff'; c.beginPath(); c.arc(b.x, b.y, Math.max(.45, (1 + age) * p.size * .6), 0, TAU); c.fill(); }
+        c.globalAlpha = 1;
+      }
+      c.restore();
+    }
+    plume(p, track, power, size, color, reduced) {
+      if (power < .015 || reduced) return;
+      const c = this.c, a = track.angle, pulse = .83 + .12 * Math.sin(this.motionTime * 47 + p.x) + .05 * Math.sin(this.motionTime * 83 + p.y), length = (8 + power * 22) * size * pulse;
+      c.save(); c.translate(p.x, p.y); c.rotate(a); c.translate(-12 * size, 0);
+      const g = c.createLinearGradient(0, 0, -length, 0); g.addColorStop(0, '#f0f7ff'); g.addColorStop(.16, color === 'gold' ? '#ffd7a3d9' : '#a8d4ffdf'); g.addColorStop(.48, color === 'gold' ? '#e9b57880' : '#86b9ff75'); g.addColorStop(1, '#9bbfff00');
+      c.fillStyle = g; c.beginPath(); c.moveTo(1, -2.3 * size); c.bezierCurveTo(-length * .3, -3.5 * size * pulse, -length * .6, -size, -length, Math.sin(this.motionTime * 26) * size); c.bezierCurveTo(-length * .55, size, -length * .25, 3.1 * size * pulse, 1, 2.3 * size); c.closePath(); c.fill(); c.restore();
+      this.glow(p.x - Math.cos(a) * 13 * size, p.y - Math.sin(a) * 13 * size, (11 + power * 8) * size, color, .24 + power * .18);
+    }
+    ship(p, color, scale, model, t, power = 0, key = model) {
+      const heading = p.angle ?? Math.atan2(p.vy || 0, p.vx || 1), track = this.motionFor(key, p, { heading, power: Number(power), size: scale, snap: this.motionSnap }), c = this.c;
+      this.wake(track, color === palette.gold ? 'gold' : 'ice', this.reduced);
+      this.plume(p, track, Number(power), scale, color === palette.gold ? 'gold' : 'ice', this.reduced);
+      c.save(); c.translate(p.x, p.y); c.rotate(track.angle); c.scale(1, 1 - Math.min(.18, Math.abs(track.bank)));
+      root.Orbital.Fleet.draw(c, 0, 0, 0, color, scale, false, t, model, { finish: 'satin', livery: 'panels' });
+      if (!this.reduced && Math.abs(track.rate) > .12) {
+        const side = -Math.sign(track.rate), pulse = .65 + .35 * Math.sin(this.motionTime * 31) ** 2;
+        c.fillStyle = `rgba(204,229,255,${pulse * .7})`; c.beginPath(); c.moveTo(9 * scale, side * 5 * scale); c.lineTo(6 * scale, side * (8 + Math.min(6, Math.abs(track.rate) * 6)) * scale); c.lineTo(5 * scale, side * 5 * scale); c.closePath(); c.fill();
+        c.beginPath(); c.moveTo(-9 * scale, -side * 5 * scale); c.lineTo(-7 * scale, -side * 10 * scale); c.lineTo(-5 * scale, -side * 5 * scale); c.closePath(); c.fill();
+      }
+      c.restore();
+    }
+    flagship(p, thrust, track) {
+      const c = this.c; c.save(); c.translate(p.x, p.y); c.rotate(p.angle); c.scale(1, 1 - Math.abs(track?.bank || 0) * .4);
       for (const y of [-13, 0, 13]) {
-        if (thrust) { this.line([{ x: -115, y }, { x: -54, y }], '#b8d4ff15', 6); this.line([{ x: -88, y }, { x: -54, y }], '#cee4ffc9', 1.4); this.glow(-58, y, 20, 'ice', .65); }
+        if (thrust && !this.reduced) {
+          const length = 10 + thrust * 31 * (.8 + .2 * Math.sin(this.motionTime * 36 + y));
+          const gradient = c.createLinearGradient(-54, y, -54 - length, y); gradient.addColorStop(0, '#e8f3ff'); gradient.addColorStop(.25, '#a9d3ff9c'); gradient.addColorStop(1, '#9abfff00'); c.fillStyle = gradient;
+          c.beginPath(); c.moveTo(-54, y - 2); c.quadraticCurveTo(-72, y - 4, -54 - length, y + Math.sin(this.motionTime * 29 + y)); c.quadraticCurveTo(-72, y + 4, -54, y + 2); c.closePath(); c.fill(); this.glow(-58, y, 16, 'ice', .35 * thrust);
+        }
         c.fillStyle = '#b6d6fa'; c.fillRect(-58, y - 2.5, 5, 5);
       }
       const hull = c.createLinearGradient(0, -25, 0, 25); hull.addColorStop(0, '#8996ac'); hull.addColorStop(.34, '#58667e'); hull.addColorStop(.5, '#b3b8bf'); hull.addColorStop(.53, '#68758b'); hull.addColorStop(1, '#273143');
@@ -126,7 +174,7 @@
       c.restore();
     }
     shieldBreak(age, reduced) {
-      const c = this.c, p = E.FORT; if (age === null || age < .25 || age > 4.1) return;
+      const c = this.c, p = this.scene.fort; if (age === null || age < .25 || age > 4.1) return;
       if (reduced) { this.ring(p, 113, '#acc9f044'); return; }
       const t = age - .25;
       this.glow(p.x, p.y, 160 + t * 70, 'ice', Math.max(0, .7 - t * .6));
@@ -142,16 +190,22 @@
       }
     }
     fleet(state, battle, t, reduced) {
-      const age = battle.breakAge, advance = state.phase === 2 ? 112 + Math.min(state.t, 14) * 27 : age === null ? 0 : 112 * B.smooth((age - .7) / 3.5);
+      const age = battle.breakAge, advance = B.fleetAdvance(state, age);
       for (let i = state.fleet - 1; i >= 0; i--) {
-        const p = B.fleetAt(i, advance), capital = i === 0, attacking = state.phase === 2 || age !== null && age > .7;
-        this.line([{ x: p.x - (attacking ? 96 : 38), y: p.y + 4 }, { x: p.x - 8, y: p.y }], attacking ? '#a8c7fa40' : '#b7b9d21c', capital ? 2.5 : 1);
-        if (attacking) this.glow(p.x - (capital ? 29 : 16), p.y, capital ? 32 : 20, 'ice', .4);
-        if (capital) this.flagship(p, attacking);
-        else this.ship(p, '#9aabbf', i === 1 ? 1.6 : .92, i === 1 ? 'zenith' : 'pilgrim', t, attacking);
+        const p = B.fleetAt(i, advance, this.scene), capital = i === 0;
+        const burn = state.phase === 2 ? Math.max(0, 1 - state.t / .9) * .72 : age === null ? 0 : Math.sin(B.clamp((age - .7) / 3.5, 0, 1) * Math.PI) * .85;
+        const correction = advance > 15 ? Math.min(.13, Math.abs(p.angle) * .2) : 0, power = Math.max(burn, correction);
+        if (capital) {
+          const track = this.motionFor('capital', p, { heading: p.angle, power, size: 4.4, snap: this.motionSnap, maxRate: .7 });
+          this.wake(track, 'ice', reduced); this.flagship({ ...p, angle: track.angle }, power, track);
+        }
+        else this.ship(p, '#9aabbf', i === 1 ? 1.6 : .92, i === 1 ? 'zenith' : 'pilgrim', t, power, 'fleet-' + i);
         // Small escorts establish scale around the flagship, without extra health units.
         if (capital) {
-          for (const side of [-1, 1]) this.ship({ x: p.x - 28, y: p.y + side * 29, angle: p.angle }, '#9eafc7', .42, 'raven', t, attacking);
+          for (const side of [-1, 1]) {
+            const x = -28, y = side * 29, angle = p.angle;
+            this.ship({ x: p.x + Math.cos(angle) * x - Math.sin(angle) * y, y: p.y + Math.sin(angle) * x + Math.cos(angle) * y, angle }, '#9eafc7', .42, 'raven', t, power, 'wing-' + side);
+          }
           if (state.phase !== 2 && age === null) this.label('ЗАРЯ', p.x, p.y - 44, '#b1bdcf', 'center', 8);
         }
       }
@@ -161,33 +215,33 @@
       if (s.phase < 2 && s.status === 'running' && mode !== 'plan') {
         const next = Math.floor((s.t + 1e-7) / 5) + 1, timeToHit = next * 5 - s.t;
         if (timeToHit < 1.12 && !s.jam) {
-          const target = B.fleetAt(Math.max(0, s.fleet - 1)), charge = B.clamp((1.12 - timeToHit) / .42, 0, 1);
-          if (timeToHit > .72) { this.ring(target, 24 + timeToHit * 6, '#ed9b9c66', 1); this.line([B.batteryAt(1), target], '#ed9b9c25', .7, true); }
+          const target = B.fleetAt(Math.max(0, s.fleet - 1), B.fleetAdvance(s, battle.breakAge), this.scene), charge = B.clamp((1.12 - timeToHit) / .42, 0, 1);
+          if (timeToHit > .72) { this.ring(target, 24 + timeToHit * 6, '#ed9b9c66', 1); this.line([B.batteryAt(1, this.scene), target], '#ed9b9c25', .7, true); }
           for (let i = 0; i < 3; i++) {
-            const from = B.batteryAt(i); this.glow(from.x, from.y, 17 + charge * 20, 'red', reduced ? .25 : charge * .75);
+            const from = B.batteryAt(i, this.scene); this.glow(from.x, from.y, 17 + charge * 20, 'red', reduced ? .25 : charge * .75);
             const bend = -Math.max(65, 150 - (target.y - 383) * .3) - (i - 1) * 12;
             if (!reduced) this.bolt(from, { x: target.x + (i - 1) * 9, y: target.y + (i - 1) * 5 }, (1 - timeToHit / .72) - i * .018, 'red', 1.7, bend);
           }
           const ownHit = view.prediction?.events.find(ev => ev.type === 'hit' && Math.abs(ev.t - next * 5) < .02);
-          if (ownHit && !reduced) this.bolt(B.batteryAt(0), ownHit, 1 - timeToHit / .65, 'red', 1.3);
+          if (ownHit && !reduced) this.bolt(B.batteryAt(0, this.scene), ownHit, 1 - timeToHit / .65, 'red', 1.3);
         }
         if (s.phase === 1 && s.tactic === 'escort') for (const at of [4.5, 7.5]) {
           const progress = (s.flightT - (at - .65)) / .65;
-          if (progress >= 0 && progress <= 1 && !reduced) this.bolt(B.batteryAt(2), E.allyAt(at), progress, 'red', 2, -17);
+          if (progress >= 0 && progress <= 1 && !reduced) this.bolt(B.batteryAt(2, this.scene), E.allyAt(at, s), progress, 'red', 2, -17);
         }
       }
       for (const fx of battle.effects) {
         const age = battle.time - fx.at;
         if (fx.type === 'fire') {
           if (!reduced) {
-            const angle = Math.atan2(E.FORT.y - fx.y, E.FORT.x - fx.x);
-            for (const side of [-1, 1]) { const muzzle = { x: fx.x - Math.sin(angle) * side * 5, y: fx.y + Math.cos(angle) * side * 5 }; this.bolt(muzzle, { x: E.FORT.x + side * 9, y: E.FORT.y }, age / .2, 'ice', 1); }
+            const angle = Math.atan2(this.scene.fort.y - fx.y, this.scene.fort.x - fx.x);
+            for (const side of [-1, 1]) { const muzzle = { x: fx.x - Math.sin(angle) * side * 5, y: fx.y + Math.cos(angle) * side * 5 }; this.bolt(muzzle, { x: this.scene.fort.x + side * 9, y: this.scene.fort.y }, age / .2, 'ice', 1); }
             this.glow(fx.x, fx.y, 22, 'ice', Math.max(0, 1 - age / .12));
           }
-          this.explosion(E.FORT, age - .2, fx.seed, .28, 'ice', reduced);
+          this.explosion(this.scene.fort, age - .2, fx.seed, .28, 'ice', reduced);
         } else if (fx.type === 'torpedo') {
-          if (!reduced) { this.bolt(fx, E.FORT, age / .65, 'gold', 2.5, -40); this.glow(fx.x, fx.y, 28, 'gold', Math.max(0, 1 - age / .2)); }
-          this.explosion(E.FORT, age - .65, fx.seed, .6, 'gold', reduced);
+          if (!reduced) { this.bolt(fx, this.scene.fort, age / .65, 'gold', 2.5, -40); this.glow(fx.x, fx.y, 28, 'gold', Math.max(0, 1 - age / .2)); }
+          this.explosion(this.scene.fort, age - .65, fx.seed, .6, 'gold', reduced);
         } else if (fx.type === 'fleet-fire') {
           const p = (age - fx.delay) / .63;
           if (!reduced) {
@@ -205,7 +259,7 @@
             } c.restore();
           }
         } else if (['hit', 'ally-hit', 'storm-hit'].includes(fx.type)) this.explosion(fx, age, fx.seed, .65, fx.type === 'storm-hit' ? 'ice' : 'gold', reduced);
-        else if (['signal', 'jammed'].includes(fx.type) && age < 1.8) {
+        else if (['signal', 'jammed', 'objective'].includes(fx.type) && age < 1.8) {
           const radius = reduced ? 36 : 18 + age * (fx.type === 'jammed' ? 120 : 65);
           c.save(); c.globalAlpha = Math.max(0, 1 - age / 1.8); this.ring(fx, radius, '#d8bce6', 1.5); this.ring(fx, radius * .8, '#c4d9ff66', .7); this.glow(fx.x, fx.y, 75, 'ice', .35);
           if (fx.type === 'jammed') for (let i = 0; i < 6; i++) { const a = i / 6 * TAU; this.line([{x:fx.x+Math.cos(a)*75,y:fx.y+Math.sin(a)*75},{x:fx.x+Math.cos(a+.1)*95,y:fx.y+Math.sin(a+.1)*95},{x:fx.x+Math.cos(a)*115,y:fx.y+Math.sin(a)*115}], '#dec6e9aa', 1); } c.restore();
@@ -217,9 +271,9 @@
           c.strokeStyle = '#bbddff'; c.lineWidth = 1.6 / this.scale; c.beginPath(); c.arc(fx.x, fx.y, 27 + (reduced ? 0 : age * 8), -Math.PI * .85, Math.PI * .85); c.stroke();
           if (!reduced) for (let i = 0; i < 6; i++) { const a = i / 6 * TAU; this.line([{ x: fx.x + Math.cos(a) * 20, y: fx.y + Math.sin(a) * 20 }, { x: fx.x + Math.cos(a) * (26 + age * 30), y: fx.y + Math.sin(a) * (26 + age * 30) }], '#abd0ff88', .7); } c.restore();
         } else if (fx.type === 'overload') {
-          if (fx.tactic === 'escort' && !reduced) this.bolt(E.allyAt(9), E.FORT, age / .27, 'gold', 3.2, -10);
+          if (fx.tactic === 'escort' && !reduced) this.bolt(E.allyAt(9, s), this.scene.fort, age / .27, 'gold', 3.2, -10);
           if (fx.tactic === 'rebound') this.explosion(fx.from, age, fx.seed, .9, 'gold', reduced);
-          this.explosion(E.FORT, age - .28, fx.seed, 1.5, 'ice', reduced);
+          this.explosion(this.scene.fort, age - .28, fx.seed, 1.5, 'ice', reduced);
         }
       }
       this.shieldBreak(battle.breakAge, reduced);
@@ -230,10 +284,43 @@
       const world = c.createRadialGradient(1080, 980, 110, 960, 950, 430); world.addColorStop(0, '#0e192d'); world.addColorStop(.86, '#23334c'); world.addColorStop(.97, '#4b5e7c'); world.addColorStop(1, '#b4c3d000'); c.fillStyle = world; c.beginPath(); c.arc(960, 950, 430, 0, TAU); c.fill();
       for (const s of this.stars) { c.globalAlpha = s.a * (reduced ? 1 : .86 + .14 * Math.sin(t * .6 + s.x)); c.fillStyle = s.r > 1 ? '#e0dbda' : '#9aa9c9'; c.beginPath(); c.arc(s.x, s.y, s.r, 0, TAU); c.fill(); } c.globalAlpha = 1;
       c.strokeStyle = '#a6bddb09'; c.lineWidth = 1 / this.scale; c.beginPath(); for (let x = 50; x < E.W; x += 100) { c.moveTo(x, 10); c.lineTo(x, E.H - 10); } for (let y = 50; y < E.H; y += 100) { c.moveTo(10, y); c.lineTo(E.W - 10, y); } c.stroke();
-      c.strokeStyle = '#b2b9d213'; c.beginPath(); c.ellipse(E.MOON.x, E.MOON.y, 230, 190, -.25, 0, TAU); c.stroke(); c.beginPath(); c.ellipse(E.FORT.x, E.FORT.y, 202, 193, 0, 0, TAU); c.stroke();
+      c.strokeStyle = '#b2b9d213'; c.beginPath(); c.ellipse(this.scene.moon.x, this.scene.moon.y, 230, 190, -.25, 0, TAU); c.stroke(); c.beginPath(); c.ellipse(this.scene.fort.x, this.scene.fort.y, 202, 193, 0, 0, TAU); c.stroke();
+      if (this.scene.theme === 'binary') {
+        const p = this.scene.companion;
+        const light = c.createRadialGradient(p.x, p.y, p.r, p.x, p.y, 220); light.addColorStop(0, '#6685d825'); light.addColorStop(1, '#4465ad00'); c.fillStyle = light; c.fillRect(p.x - 220, p.y - 220, 440, 440);
+        c.save(); c.strokeStyle = '#b8c9eb18'; c.lineWidth = .8 / this.scale; c.setLineDash([2 / this.scale, 12 / this.scale]); c.beginPath(); c.ellipse(500, 270, 310, 210, -.5, 0, TAU); c.stroke(); c.restore();
+      } else if (this.scene.theme === 'ark') {
+        // Distant structures are subdued; the solid, lit shutters are the actual obstacles.
+        c.save(); c.globalAlpha = .44; c.fillStyle = '#1d2739'; c.strokeStyle = '#62728c44'; c.lineWidth = 2 / this.scale;
+        for (const side of [-1, 1]) {
+          const x = side < 0 ? 1010 : 1060; c.fillRect(x, 90, 15, 500); c.strokeRect(x, 90, 15, 500);
+          for (let y = 105; y < 590; y += 65) { c.beginPath(); c.moveTo(x, y); c.lineTo(x - 85, y + 30); c.lineTo(x, y + 60); c.stroke(); }
+        }
+        c.restore(); this.label('ОРБИТАЛЬНАЯ ВЕРФЬ', 1035, 55, '#7e8ba6', 'center', 8);
+      }
+    }
+    body(p, companion = false) {
+      const c = this.c, glow = c.createRadialGradient(p.x, p.y, p.r * .8, p.x, p.y, p.r * 1.3); glow.addColorStop(0, companion ? '#8eb9ff22' : '#b3c1db19'); glow.addColorStop(1, '#b3c1db00'); c.fillStyle = glow; c.fillRect(p.x - p.r * 1.35, p.y - p.r * 1.35, p.r * 2.7, p.r * 2.7);
+      c.save(); c.translate(p.x, p.y); if (companion) c.rotate(.7); c.drawImage(this.moon, -p.r, -p.r, p.r * 2, p.r * 2); c.restore(); this.ring(p, p.r, companion ? '#bedbff66' : '#bbc4d62b', .7);
     }
     environment(view, t) {
       const { state: s, reduced, mode } = view, c = this.c;
+      for (const p of E.checkpoints ? E.checkpoints(s) : []) {
+        c.save(); c.globalAlpha = p.done ? .35 : 1; this.ring(p, p.r, p.done ? '#b6ceec44' : '#f0c79599', 1.2); this.glow(p.x, p.y, p.r, 'gold', p.done ? .08 : .22);
+        if (p.id === 'capsule') {
+          c.fillStyle = '#a9b9cb'; c.strokeStyle = '#f0d1a4'; c.lineWidth = .9 / this.scale; c.beginPath(); c.roundRect(p.x - 10, p.y - 5, 20, 10, 4); c.fill(); c.stroke(); c.fillStyle = '#daeaff'; c.fillRect(p.x - 3, p.y - 3, 5, 6);
+        } else { c.strokeStyle = '#f0d1a4'; c.lineWidth = 1.4 / this.scale; c.beginPath(); c.moveTo(p.x - 10, p.y + 7); c.lineTo(p.x, p.y - 8); c.lineTo(p.x + 10, p.y + 7); c.stroke(); }
+        this.label(p.done ? 'ПРИНЯТО' : p.id === 'capsule' ? 'ЗАБРАТЬ КАПСУЛУ' : 'ПРОЙТИ МЕТКУ', p.x - p.r - 8 / this.scale, p.y - p.r - 14, p.done ? '#a9bad3' : palette.gold, 'right', 9); c.restore();
+      }
+      const gates = E.hazardsAt ? E.hazardsAt(s) : [];
+      for (const p of gates) {
+        const x = p.x - p.halfWidth, y = p.y - p.halfHeight, w = p.halfWidth * 2, h = p.halfHeight * 2;
+        c.save(); const metal = c.createLinearGradient(x, 0, x + w, 0); metal.addColorStop(0, '#333c4b'); metal.addColorStop(.45, '#88909e'); metal.addColorStop(.5, '#566274'); metal.addColorStop(1, '#242d3e'); c.fillStyle = metal; c.fillRect(x, y, w, h); c.strokeStyle = '#bdb7ad'; c.lineWidth = 1 / this.scale; c.strokeRect(x, y, w, h);
+        c.beginPath(); c.rect(x, y, w, h); c.clip(); c.strokeStyle = '#202535aa'; c.lineWidth = 5; for (let sy = y - 20; sy < y + h + 20; sy += 20) { c.beginPath(); c.moveTo(x, sy); c.lineTo(x + w, sy + 15); c.stroke(); } c.restore();
+        for (const end of [-1, 1]) { const sy = p.y + end * p.halfHeight; this.line([{x:x-4,y:sy},{x:x+w+4,y:sy}], '#f1c18ce0', 2); this.glow(p.x, sy, 19, 'gold', .32); }
+        if (mode === 'plan') { const future = E.hazardsAt(s, s.t + 2)[gates.indexOf(p)]; if (future) this.line([p, future], '#e1c4a169', .8, true); }
+      }
+      if (gates.length === 2) this.label('ДВИЖУЩИЙСЯ ПРОЁМ', gates[0].x + 5, (gates[0].y + gates[0].halfHeight + gates[1].y - gates[1].halfHeight) / 2, palette.gold, 'center', 8);
       for (const [i, rock] of E.wreckageAt(s).entries()) {
         if (mode === 'plan') this.line([rock, E.wreckageAt(s, s.t + 3)[i]], '#d1b4a65a', 1, true);
         c.save(); c.translate(rock.x, rock.y); c.rotate(i * .9 + s.t * .08); c.beginPath();
@@ -253,7 +340,7 @@
         }
         for (const y of [storm.top, storm.bottom]) { this.glow(storm.x,y,38,'ice',power*.6); this.ring({x:storm.x,y},8,color,1); }
       }
-      if (s.phase === 0) {
+      if (s.phase === 0 && !(E.checkpoints && E.checkpoints(s).some(p => E.distance(p, E.operation(s.operation).signal) < p.r))) {
         const p = E.operation(s.operation).signal; c.save(); c.globalAlpha = s.signal ? .3 : 1;
         this.glow(p.x,p.y,44,'gold',.25); this.ring(p,p.r,'#dfbd8970',1);
         c.translate(p.x,p.y); c.rotate(Math.PI/4); c.fillStyle = '#34364a'; c.strokeStyle = '#e3c797'; c.lineWidth = 1.2/this.scale; c.fillRect(-6,-6,12,12); c.strokeRect(-6,-6,12,12); c.restore();
@@ -261,7 +348,7 @@
       }
     }
     fortress(state, t, reduced, battle) {
-      const c = this.c, p = E.FORT, age = battle.breakAge, open = state.phase === 2 || age !== null && age > .32 || state.phase === 1 && state.status === 'won' && age === null;
+      const c = this.c, p = this.scene.fort, age = battle.breakAge, open = state.phase === 2 || age !== null && age > .32 || state.phase === 1 && state.status === 'won' && age === null;
       const charging = !open && !state.jam && state.status === 'running' ? B.clamp((state.t % 5 - 3.85) / .7, 0, 1) : 0;
       c.save(); c.translate(p.x, p.y);
       const halo = c.createRadialGradient(0, 0, 35, 0, 0, 120); halo.addColorStop(0, '#b6abc82a'); halo.addColorStop(1, '#b6abc800'); c.fillStyle = halo; c.fillRect(-120, -120, 240, 240);
@@ -281,7 +368,7 @@
           c.beginPath(); c.arc(0, 0, 104, a, a + .095); c.lineTo(Math.cos(a + .095) * 116, Math.sin(a + .095) * 116); c.arc(0, 0, 116, a + .095, a, true); c.closePath(); c.strokeStyle = overload ? '#c8e5ffc9' : '#e4cfab38'; c.lineWidth = .6 / this.scale; c.stroke();
         }
         this.glow(-77, 0, 45 + charge * 55, overload ? 'ice' : 'red', reduced ? charge * .2 : charge);
-        for (let i = 0; i < 3; i++) { const port = B.batteryAt(i); c.fillStyle = '#222535'; c.fillRect(port.x - p.x - 8, port.y - p.y - 4, 17, 8); c.fillStyle = charging > .1 ? '#f8b2a0' : '#b49e97'; c.fillRect(port.x - p.x - 9, port.y - p.y - 2, 4, 4); }
+        for (let i = 0; i < 3; i++) { const port = B.batteryAt(i, this.scene); c.fillStyle = '#222535'; c.fillRect(port.x - p.x - 8, port.y - p.y - 4, 17, 8); c.fillStyle = charging > .1 ? '#f8b2a0' : '#b49e97'; c.fillRect(port.x - p.x - 9, port.y - p.y - 2, 4, 4); }
       } else {
         c.strokeStyle = '#495777'; c.lineWidth = 2; c.beginPath(); c.arc(0, 0, 102, 1.95, 2.35); c.stroke(); c.beginPath(); c.arc(0, 0, 102, 4.2, 4.45); c.stroke();
         for (let i = 0; i < 5; i++) { const a = i * 2.7; this.glow(Math.cos(a) * 52, Math.sin(a) * 52, 20 + i * 3, i % 2 ? 'gold' : 'smoke', .32); }
@@ -292,7 +379,12 @@
     }
     draw(view, clock) {
       const { state: s, prediction, phase, tactic, plan, reduced, showForecast, editing, previous, battle } = view;
-      if (!s) return; this.camera(view); const c = this.c, t = reduced ? 0 : clock, scale = this.scale;
+      if (!s) return;
+      this.scene = E.scene ? E.scene(s) : this.scene;
+      const key = [s.operation, phase, tactic].join(':');
+      if (this.motionKey !== key || s.t < this.motionStateTime || battle.time < this.motionTime) { this.motion.clear(); this.motionKey = key; }
+      this.motionStateTime = s.t; this.motionTime = battle.time; this.motionSnap = view.mode === 'plan'; this.reduced = reduced;
+      this.camera(view); const c = this.c, t = reduced ? 0 : clock, scale = this.scale;
       c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); c.clearRect(0, 0, this.width, this.height); c.translate(this.ox, this.oy); c.scale(scale, scale);
       if (!reduced && battle.breakAge !== null) {
         const a = battle.breakAge - .32, shake = a > 0 && a < .65 ? 1.7 * (1 - a / .65) : 0;
@@ -301,54 +393,59 @@
       this.background(t, reduced);
       // The moon's geometric shadow is the same occlusion used by the simulation.
       if (phase === 0) {
-        const angle = Math.atan2(E.MOON.y - E.FORT.y, E.MOON.x - E.FORT.x), da = Math.asin(E.MOON.r / E.distance(E.MOON, E.FORT));
-        c.beginPath(); c.moveTo(E.FORT.x, E.FORT.y); c.lineTo(E.FORT.x + Math.cos(angle - da) * 1400, E.FORT.y + Math.sin(angle - da) * 1400); c.lineTo(E.FORT.x + Math.cos(angle + da) * 1400, E.FORT.y + Math.sin(angle + da) * 1400); c.closePath(); c.fillStyle = '#04091480'; c.fill(); this.label('ТЕНЬ', 205, 365, '#9da8bb', 'center', 9);
+        const angle = Math.atan2(this.scene.moon.y - this.scene.fort.y, this.scene.moon.x - this.scene.fort.x), da = Math.asin(this.scene.moon.r / E.distance(this.scene.moon, this.scene.fort));
+        c.beginPath(); c.moveTo(this.scene.fort.x, this.scene.fort.y); c.lineTo(this.scene.fort.x + Math.cos(angle - da) * 1400, this.scene.fort.y + Math.sin(angle - da) * 1400); c.lineTo(this.scene.fort.x + Math.cos(angle + da) * 1400, this.scene.fort.y + Math.sin(angle + da) * 1400); c.closePath(); c.fillStyle = '#04091480'; c.fill(); this.label('ТЕНЬ', this.scene.moon.x + Math.cos(angle) * (this.scene.moon.r + 80), this.scene.moon.y + Math.sin(angle) * (this.scene.moon.r + 80), '#9da8bb', 'center', 9);
       }
       if (phase === 1 && s.status !== 'won') {
         c.save(); c.strokeStyle = '#dcc39a22'; c.setLineDash([3 / scale, 6 / scale]); c.lineWidth = 1 / scale; c.strokeRect(540, 65, 460, 505); c.restore();
-        if (editing) { this.ring(E.FORT, 118, '#ed8f9d44'); this.ring(E.MOON, E.MOON.r + 45, '#ed8f9d44'); }
-        const anchor = { x: plan.ax, y: plan.ay }, good = E.validAnchor(plan);
+        if (editing) { this.ring(this.scene.fort, 118, '#ed8f9d44'); this.ring(this.scene.moon, this.scene.moon.r + 45, '#ed8f9d44'); if (this.scene.companion) this.ring(this.scene.companion, this.scene.companion.r + 35, '#ed8f9d44'); }
+        const anchor = { x: plan.ax, y: plan.ay }, good = E.validAnchor(plan, s);
         const field = c.createRadialGradient(anchor.x, anchor.y, 4, anchor.x, anchor.y, 160); field.addColorStop(0, '#99b9ed29'); field.addColorStop(1, '#99b9ed00'); c.fillStyle = field; c.fillRect(anchor.x - 160, anchor.y - 160, 320, 320);
         for (const r of [40, 78, 120]) this.ring(anchor, r, '#9fbef229', .6);
         c.save(); c.translate(anchor.x, anchor.y); c.rotate(Math.PI / 4); c.fillStyle = '#17233c'; c.strokeStyle = good ? palette.ice : palette.red; c.lineWidth = 1.5 / scale; const r = Math.max(10, 8 / scale); c.fillRect(-r, -r, r * 2, r * 2); c.strokeRect(-r, -r, r * 2, r * 2); c.restore(); this.ring(anchor, Math.max(23, 16 / scale), '#bed6ff55');
         this.label(editing ? 'ПЕРЕМЕСТИ ЯКОРЬ' : 'ЯКОРЬ', anchor.x, Math.max(16 / scale, anchor.y - Math.max(32, 23 / scale)), good ? palette.ice : palette.red, 'center', 9);
       }
-      const moonGlow = c.createRadialGradient(E.MOON.x, E.MOON.y, 80, E.MOON.x, E.MOON.y, 118); moonGlow.addColorStop(0, '#b3c1db19'); moonGlow.addColorStop(1, '#b3c1db00'); c.fillStyle = moonGlow; c.fillRect(E.MOON.x - 120, E.MOON.y - 120, 240, 240);
-      c.drawImage(this.moon, E.MOON.x - E.MOON.r, E.MOON.y - E.MOON.r, E.MOON.r * 2, E.MOON.r * 2); this.ring(E.MOON, E.MOON.r, '#bbc4d62b', .7);
+      this.body(this.scene.moon); if (this.scene.companion) this.body(this.scene.companion, true);
       if (phase !== 2) {
-        this.ring(E.NODE, E.NODE.r, phase === 0 ? '#b9d4ff77' : '#c1d5ff33'); this.ring(E.NODE, 9, palette.ice);
-        c.strokeStyle = palette.ice; c.lineWidth = 1 / scale; c.beginPath(); for (const a of [0, Math.PI / 2, Math.PI, Math.PI * 1.5]) { c.moveTo(E.NODE.x + Math.cos(a) * 16, E.NODE.y + Math.sin(a) * 16); c.lineTo(E.NODE.x + Math.cos(a) * 24, E.NODE.y + Math.sin(a) * 24); } c.stroke();
-        if (phase === 0) this.label('ЗАХВАТИТЬ', E.NODE.x, E.NODE.y - 47, palette.ice);
+        this.ring(this.scene.node, this.scene.node.r, phase === 0 ? '#b9d4ff77' : '#c1d5ff33'); this.ring(this.scene.node, 9, palette.ice);
+        c.strokeStyle = palette.ice; c.lineWidth = 1 / scale; c.beginPath(); for (const a of [0, Math.PI / 2, Math.PI, Math.PI * 1.5]) { c.moveTo(this.scene.node.x + Math.cos(a) * 16, this.scene.node.y + Math.sin(a) * 16); c.lineTo(this.scene.node.x + Math.cos(a) * 24, this.scene.node.y + Math.sin(a) * 24); } c.stroke();
+        if (phase === 0) this.label('ЗАХВАТИТЬ', this.scene.node.x, this.scene.node.y - 47, palette.ice);
       }
       if (phase === 2) {
-        for (const [i, rock] of E.debrisAt(s.t).entries()) {
+        for (const [i, rock] of E.debrisAt(s.t, s).entries()) {
           c.save(); c.translate(rock.x, rock.y); c.rotate(i + s.t * .1); c.beginPath(); for (let j = 0; j < 8; j++) { const a = j / 8 * TAU, r = rock.r * (.8 + Math.sin(j * 7 + i) * .2); if (j === 0) c.moveTo(Math.cos(a) * r, Math.sin(a) * r); else c.lineTo(Math.cos(a) * r, Math.sin(a) * r); } c.closePath(); c.fillStyle = '#343c50'; c.strokeStyle = '#8f9aae88'; c.lineWidth = 1; c.fill(); c.stroke(); c.restore();
-          if (view.mode === 'plan') this.line([rock, E.debrisAt(3)[i]], '#ad98a455', .8, true);
+          if (view.mode === 'plan') this.line([rock, E.debrisAt(s.t + 3, s)[i]], '#ad98a455', .8, true);
         }
-        this.ring(E.EXIT, E.EXIT.r, '#c0d9ff88', 1); this.ring(E.EXIT, E.EXIT.r + 8, '#b8d6ff22', 1); this.label('ВЫХОД', E.EXIT.x, E.EXIT.y - 65, palette.ice);
+        this.ring(this.scene.exit, this.scene.exit.r, '#c0d9ff88', 1); this.ring(this.scene.exit, this.scene.exit.r + 8, '#b8d6ff22', 1); this.label('ВЫХОД', this.scene.exit.x, this.scene.exit.y - 65, palette.ice);
       }
       this.environment(view, t);
       this.fortress(s, t, reduced, battle);
       this.fleet(s, battle, t, reduced);
       if (phase === 1 && tactic === 'breach' && s.status !== 'won') {
-        const a = Math.acos(55 / 205); c.beginPath(); c.arc(E.FORT.x, E.FORT.y, 205, -a, a); c.closePath(); c.fillStyle = '#b9d1ff0c'; c.fill(); c.strokeStyle = '#c5dafe36'; c.lineWidth = 1; c.stroke(); this.label('СЕКТОР ОГНЯ', 1005, 490, palette.ice, 'center', 9);
+        const a = Math.acos(55 / 205); c.beginPath(); c.arc(this.scene.fort.x, this.scene.fort.y, 205, -a, a); c.closePath(); c.fillStyle = '#b9d1ff0c'; c.fill(); c.strokeStyle = '#c5dafe36'; c.lineWidth = 1; c.stroke(); this.label('СЕКТОР ОГНЯ', this.scene.fort.x + 135, this.scene.fort.y + 165, palette.ice, 'center', 9);
       }
-      if (phase === 1 && tactic === 'rebound' && s.status !== 'won') { this.line([{x:680,y:255},{x:680,y:450}], '#e9c89a55', .8, true); this.label('РАЗВОРОТ', 615, 245, palette.gold, 'center', 9); }
+      if (phase === 1 && tactic === 'rebound' && s.status !== 'won') { const x = this.scene.fort.x - 190, y = this.scene.fort.y; this.line([{x,y:y-70},{x,y:y+125}], '#e9c89a55', .8, true); this.label('РАЗВОРОТ', x - 65, y - 80, palette.gold, 'center', 9); }
       if (phase === 1 && tactic === 'escort') {
         if (s.status !== 'won') {
-        const points = Array.from({ length: 46 }, (_, i) => E.allyAt(i / 5)); this.line(points, '#dbc29b88', 1, true);
-        for (const at of [4.5, 7.5]) { const p = E.allyAt(at); this.ring(p, 17, '#e7c69a88'); this.label(at.toFixed(1) + ' с', p.x - 25, p.y + 24, palette.gold, 'center', 9); }
+        const points = Array.from({ length: 46 }, (_, i) => E.allyAt(i / 5, s)); this.line(points, '#dbc29b88', 1, true);
+        for (const at of [4.5, 7.5]) { const p = E.allyAt(at, s); this.ring(p, 17, '#e7c69a88'); this.label(at.toFixed(1) + ' с', p.x - 25, p.y + 24, palette.gold, 'center', 9); }
         }
-        const ally = E.allyAt(s.flightT), next = E.allyAt(s.flightT + .1); this.ship({ ...ally, angle: Math.atan2(next.y - ally.y, next.x - ally.x) }, palette.gold, 1.25, 'atlas', t, s.flightT > 0 && s.status === 'running');
+        const ally = E.allyAt(s.flightT, s), before = E.allyAt(Math.max(0, Math.min(8.92, s.flightT - .08)), s), next = E.allyAt(Math.min(9, s.flightT + .08), s);
+        if (s.status === 'won' && battle.breakAge !== null) { const end = E.allyAt(9, s), tangent = E.allyAt(8.9, s); ally.x += (end.x - tangent.x) * battle.breakAge * 10; ally.y += (end.y - tangent.y) * battle.breakAge * 10; }
+        const allyPower = s.flightT > 0 && s.status === 'running' ? Math.max(0, 1 - s.flightT / .9) * .8 + Math.max(0, 1 - Math.abs(s.flightT - 4.5) / .65) * .23 : 0;
+        this.ship({ ...ally, angle: Math.atan2(next.y - before.y, next.x - before.x) }, palette.gold, 1.25, 'atlas', t, allyPower, 'bomber');
         if (s.status !== 'won') { this.ring(s, 145, '#abcaff44', .8); this.label('ЗВЕНО ' + s.allyHull + '/2', ally.x, ally.y - 28, palette.gold, 'center', 9); }
       }
       if (previous && view.mode === 'plan') this.line(previous.path, '#d3899930', 1, true);
-      if (showForecast && prediction && view.mode === 'plan') {
-        this.line(prediction.path, prediction.status === 'won' ? '#b4d2fb99' : '#bcc5d46b', 1.2, true);
-        for (const p of prediction.path.filter((_, i) => i > 0 && i % 40 === 0)) { c.fillStyle = '#d8e5ff'; c.beginPath(); c.arc(p.x, p.y, 2 / scale, 0, TAU); c.fill(); }
+      if (showForecast && prediction && (view.mode === 'plan' || view.mode === 'paused' && s.status === 'running')) {
+        const route = view.mode === 'plan' ? prediction.path : [{ x: s.x, y: s.y, t: s.t }, ...prediction.path.filter(p => p.t > s.t)];
+        this.line(route, prediction.status === 'won' ? '#b4d2fb99' : '#bcc5d46b', 1.2, true);
+        for (const p of route.filter((_, i) => i > 0 && i % 40 === 0)) { c.fillStyle = '#d8e5ff'; c.beginPath(); c.arc(p.x, p.y, 2 / scale, 0, TAU); c.fill(); }
         const p = prediction.finish; if (p) { this.ring(p, 7 / scale, prediction.status === 'won' ? '#c4dcff' : '#df99a9', 1); if (prediction.status !== 'won') this.line([{ x: p.x - 4 / scale, y: p.y - 4 / scale }, { x: p.x + 4 / scale, y: p.y + 4 / scale }], palette.red); }
       }
-      const history = s.path.slice(-100); this.line(history, tactic === 'rebound' && phase === 1 ? '#e6bd8733' : '#aec9ff22', 5); this.line(history, tactic === 'rebound' && phase === 1 ? '#f0ce9bbb' : '#c6dbffaa', 1.5);
+      const history = s.path.slice(-100);
+      // Flight telemetry is a quiet map reference, distinct from luminous exhaust.
+      if (history.length > 1) this.line(history, tactic === 'rebound' && phase === 1 ? '#ddbd8755' : '#aec9ff2b', .7);
       if (view.mode === 'plan' && !editing) {
         const a = plan.angle * Math.PI / 180, length = Math.max(70, 64 / scale), tip = { x: s.x + Math.cos(a) * length, y: s.y + Math.sin(a) * length };
         this.line([s, tip], view.aiming ? '#dceaffdd' : '#c5d9f56b', view.aiming ? 1.8 : 1);
@@ -361,11 +458,14 @@
           this.glow(s.x, s.y, 28, 'gold', reduced ? .4 : .9); c.fillStyle = '#fff1d4'; c.beginPath(); c.arc(s.x, s.y, 4, 0, TAU); c.fill();
           const tail = history.slice(-10); this.line(tail, '#eabe802e', 9); this.line(tail, '#f5d8a9c9', 2);
         }
-        this.ship({ ...E.NODE, angle: -.2 }, palette.ice, 1, 'raven', t, false);
+        this.ship({ ...this.scene.node, angle: -.2 }, palette.ice, 1, 'raven', t, false);
       }
       else {
-        const firing = !reduced && battle.effects.some(fx => fx.type === 'fire' && battle.time - fx.at < .07), a = Math.atan2(E.FORT.y-s.y,E.FORT.x-s.x);
-        this.ship(firing ? {...s,x:s.x-Math.cos(a)*2.5,y:s.y-Math.sin(a)*2.5} : s, palette.ice, 1.12, 'raven', t, view.mode === 'running' && s.flightT > 0);
+        const burst = battle.effects.filter(fx => fx.type === 'boost' && battle.time - fx.at < .65).reduce((max, fx) => Math.max(max, 1 - (battle.time - fx.at) / .65), 0);
+        const power = view.mode === 'running' && s.flightT > 0 ? Math.max(Math.max(0, 1 - s.flightT / .72), burst) : 0;
+        this.ship(s, palette.ice, 1.12, 'raven', t, power, 'player');
+        const brake = battle.effects.filter(fx => fx.type === 'brake' && battle.time - fx.at < .48).reduce((max, fx) => Math.max(max, 1 - (battle.time - fx.at) / .48), 0);
+        if (brake > 0) { const angle = this.motion.get('player').angle, nose = { x: s.x + Math.cos(angle) * 9, y: s.y + Math.sin(angle) * 9 }; this.plume(nose, { angle: angle + Math.PI }, brake, .6, 'ice', reduced); }
         if (this.width < 600) { this.ring(s, Math.max(15, 7/scale), '#d9e7ff55', .8); }
       }
       if (s.shield > 0) this.ring(s, 32, '#bad8ffbb', 2);

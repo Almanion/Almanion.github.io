@@ -52,7 +52,7 @@ function onlinePage(page) {
         return !pages[destination] ? '<button' + attributes + '>' + content + '</button>' :
             '<a' + attributes + ' href="' + prefix + pages[destination].directory + '">' + content + '</a>';
     });
-    const eclipseLink = '<a class="eclipse-entry" href="' + prefix + 'eclipse/"><span class="eclipse-icon" aria-hidden="true"></span><span><strong>Затмение</strong><em>ПРОБНЫЙ РЕЖИМ</em><small>Боевая операция · гравитация · три способа атаки</small></span><span>Играть ↗</span></a>';
+    const eclipseLink = '<a class="eclipse-entry" href="' + prefix + 'eclipse/"><span class="eclipse-icon" aria-hidden="true"></span><span><strong>Затмение</strong><em>БОЕВЫЕ ОПЕРАЦИИ</em><small>Пять локаций · тактика · управление импульсом</small></span><span>Играть ↗</span></a>';
     html = html.replace('</head>', '<link rel="stylesheet" href="' + prefix + 'assets/eclipse-entry.css?v=' + assetVersion('eclipse/entry.css') + '"></head>')
         .replace('<div class="hero-meta">', eclipseLink + '<div class="hero-meta">')
         .replace('<section class="campaign-access"', eclipseLink + '<section class="campaign-access"');
