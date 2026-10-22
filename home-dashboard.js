@@ -198,6 +198,15 @@
             return card;
         }
 
+        function renderGeographyLink(account) {
+            const card = doc.getElementById('homeAdditionalGeography');
+            if (!card) return;
+            const allowed = !!(account && account.uid && String(account.email || '').trim().toLowerCase() === 'dmb23930@gmail.com');
+            card.hidden = !allowed;
+            if (allowed) card.href = 'geography/';
+            else card.removeAttribute('href');
+        }
+
         function render() {
             const byId = new Map(availableItems(englishAllowed).map(function (item) { return [item.id, item]; }));
             const ids = selected().filter(function (id) { return byId.has(id); });
@@ -210,6 +219,7 @@
             }
             grid.dataset.count = String(grid.childElementCount);
             renderDuty();
+            renderGeographyLink(user);
             const englishCard = doc.getElementById('homeAdditionalEnglish');
             if (englishCard) {
                 englishCard.hidden = !englishAllowed;
@@ -275,6 +285,7 @@
         win.addEventListener('almanion-account-ready', function (event) { setAccount(event && event.detail && event.detail.user); });
         win.addEventListener('almanion-settings-changed', render);
         win.addEventListener('almanion-settings-applied', render);
+        win.addEventListener('pagehide', function () { renderGeographyLink(null); });
         win.addEventListener('pageshow', function (event) {
             if (!event.persisted) return;
             const api = win.AlmanionAccount;

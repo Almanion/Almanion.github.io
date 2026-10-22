@@ -13,7 +13,7 @@ const editor = read('home-quick-editor.js');
 const shell = JSON.parse(read(path.join('performance', 'sw-shell.json'))).assets;
 
 assert.match(page, /styles\/home-dashboard\.css\?v=20261018-1/, 'dashboard layout changes must invalidate the previous stylesheet');
-assert.match(page, /home-dashboard\.js\?v=20261009-2/, 'personal dashboard controller must be versioned');
+assert.match(page, /home-dashboard\.js\?v=20261023-1/, 'personal dashboard controller must be versioned');
 assert.doesNotMatch(page, /<script[^>]+src="home-dashboard\.js/, 'personalization must load during idle time, not block first paint');
 assert.match(page, /class="extra-section home-quick-section"[^>]*aria-labelledby="homeQuickTitle"/);
 assert.match(page, /id="homeQuickTitle">Быстрый доступ</);

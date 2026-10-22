@@ -79,6 +79,13 @@ assert.deepStrictEqual(references.map(item => item.value), [
     'images/example@2x.png'
 ]);
 
+const embeddedReferences = ValidateSite.htmlReferences('geography/index.html', `
+    <iframe title="Map > preview" data-srcdoc="&lt;a href=&quot;https://example.test/&quot;&gt;Map&lt;/a&gt; action=document.createElement(&quot;div&quot;)" src="frame.html"></iframe>
+    <a href="../">Home</a><img alt="text src='fake.png'" src="real.png">
+`);
+assert.deepStrictEqual(embeddedReferences.map(item => item.value), ['frame.html', '../', 'real.png'],
+    'embedded documents and quoted text must not create fake references or hide real outer links');
+
 function writeFixtureMetadata(site) {
     const metadata = {
         schemaVersion: 1,

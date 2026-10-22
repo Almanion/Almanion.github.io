@@ -40,23 +40,24 @@ function htmlReferences(relative, content) {
     const markup = String(content || '')
         .replace(/(<script\b[^>]*>)[\s\S]*?(<\/script\s*>)/gi, '$1$2')
         .replace(/(<style\b[^>]*>)[\s\S]*?(<\/style\s*>)/gi, '$1$2');
-    const attributes = /\s(href|src|poster|action)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi;
+    // Consume every attribute value, including embedded srcdoc documents, so
+    // attribute-like text inside a quoted value is never treated as a URL.
+    const attributes = /\s([^\s"'<>\/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/gi;
     let match;
-    const tags = markup.match(/<[a-z][^>]*>/gi) || [];
+    const tags = markup.match(/<[a-z](?:"[^"]*"|'[^']*'|[^'">])*>/gi) || [];
+    const srcsets = [];
     for (const tag of tags) {
         while ((match = attributes.exec(tag))) {
-            addReference(references, relative, match[1].toLowerCase(), match[2] ?? match[3] ?? match[4]);
+            const kind = match[1].toLowerCase();
+            const value = match[2] ?? match[3] ?? match[4];
+            if (['href', 'src', 'poster', 'action'].includes(kind)) addReference(references, relative, kind, value);
+            else if (kind === 'srcset' && value) srcsets.push(value);
         }
         attributes.lastIndex = 0;
     }
 
-    const srcsets = /\bsrcset\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi;
-    for (const tag of tags) {
-        while ((match = srcsets.exec(tag))) {
-            const value = match[1] ?? match[2] ?? match[3] ?? '';
-            for (const candidate of value.split(',')) addReference(references, relative, 'srcset', candidate.trim().split(/\s+/)[0]);
-        }
-        srcsets.lastIndex = 0;
+    for (const value of srcsets) {
+        for (const candidate of value.split(',')) addReference(references, relative, 'srcset', candidate.trim().split(/\s+/)[0]);
     }
     return references;
 }
