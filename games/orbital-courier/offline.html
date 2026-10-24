@@ -1968,6 +1968,26 @@ body[data-page=play][data-difficulty=pro] #play .launch-button{background:#d6c5f
 @media(min-width:520px) and (max-width:999px) and (max-height:480px) and (orientation:landscape){#play .flight-mode-choice button{min-height:44px}.mode-info{width:44px;min-width:44px}#play .flight-settings{width:44px;min-width:44px;height:44px}#play .flight-plan,#play .flight-plan>summary{height:44px;min-height:44px;flex-basis:44px}}
 @media(max-width:699px) and (max-height:660px) and (orientation:portrait){#play .flight-left{position:relative}#play .flight-plan{position:absolute;top:8px;right:8px;left:auto;bottom:auto;width:46px;height:46px;min-height:46px;z-index:3;border:1px solid #8b9bb74d;background:#23262cee}#play .flight-plan>summary{width:44px;min-width:44px;min-height:44px;justify-content:center;padding:0}#play .flight-plan summary>div,#play .flight-plan .plan-chevron,#play #planCounter{display:none}#play .flight-plan .plan-marker{display:block;font-size:20px}}
 
+/* Keep the campaign flight focused on the map and launch controls. */
+#play>.medal-deck{display:none}
+#play .flight-plan summary small,#play .flight-mode-choice small,#play .map-extra{display:none}
+#play .mobile-options small{display:none}
+body[data-page=play][data-flight=aiming] #play .telemetry{display:none}
+#play .launch-secondary #speedButton{display:flex;align-items:center;justify-content:center;width:100%;min-width:44px;min-height:44px;height:44px;margin:0;padding:7px 8px;font:500 12px var(--sans);border:1px solid #ffffff20;border-radius:8px;background:none;color:#c2cad7}
+#play .launch-secondary button{min-height:44px}
+#play .flight-live-state,#play .flight-metrics>div:first-child{display:none}
+#play .memory-intro{margin-top:0}
+#play .memory-intro strong{margin-top:0}
+#play .flight-plan .plan-chevron{font-size:12px}
+@media(min-width:1000px){
+ #play .flight-title-group .eyebrow,#play .flight-plan .plan-marker{display:none}
+ #play .flight-heading h2{font-size:19px}
+ #play .flight-plan>summary{padding-inline:12px}
+ #play .cockpit{gap:10px}
+ #play .panel-actions{padding-top:12px}
+ #play .precision-row{margin-top:6px}
+}
+
 </style></head>
 <body class="ui9">
 <noscript>Для игры нужно включить JavaScript. Интернет и установка библиотек не нужны.</noscript>
@@ -2038,18 +2058,18 @@ body[data-page=play][data-difficulty=pro] #play .launch-button{background:#d6c5f
     <div class="flight-left">
       <details class="flight-plan" id="flightPlan"><summary aria-haspopup="dialog" aria-controls="flightDrawer" aria-label="План и цели рейса"><span class="plan-marker" aria-hidden="true">⌁</span><div><small>ДАЛЬШЕ</small><strong id="activeStep">Доставка на станцию</strong></div><span id="planCounter"></span><span class="plan-chevron">⌄</span></summary><div class="plan-body"><div class="branch-picker" id="branchPicker"></div><section aria-label="Порядок облётов" class="route-panel" hidden="" id="routePanel"><div class="route-heading"><span>ПЛАН ПОЛЁТА</span><b id="routeStatus">0 / 3</b><button aria-label="Правила гравитационных манёвров" class="text-button" data-action="route-help">Как пройти?</button></div><ol class="route-steps" id="routeSteps"></ol></section><div aria-live="polite" class="portal-progress" hidden="" id="portalProgress"></div><div class="contract-rules" id="strictRules"></div><div class="stop-progress" id="stopProgress"></div></div></details>
       <div class="map-controls" aria-label="Управление картой">
-        <div class="map-mode" role="group" aria-label="Режим карты"><button data-action="ui:map-mode" data-mode="aim" id="mapAim" aria-pressed="true">↗ Курс</button><button data-action="ui:map-mode" data-mode="planets" id="mapPlanets" aria-pressed="false" hidden>◎ Планеты</button><button data-action="ui:map-mode" data-mode="pan" id="mapPan" aria-pressed="false">✥ Обзор</button></div>
+        <div class="map-mode" role="group" aria-label="Режим карты"><button data-action="ui:map-mode" data-mode="aim" id="mapAim" aria-pressed="true">Курс</button><button data-action="ui:map-mode" data-mode="planets" id="mapPlanets" aria-pressed="false" hidden>Планеты</button><button data-action="ui:map-mode" data-mode="pan" id="mapPan" aria-pressed="false">Обзор</button></div>
         <div class="map-tools"><button class="map-icon" data-action="ui:zoom-out" aria-label="Уменьшить карту" title="Уменьшить карту">−</button><button class="map-fit" id="mapFit" data-action="ui:zoom-reset" aria-label="Показать всю карту" title="Показать всю карту">Вся карта</button><button class="map-icon" data-action="ui:zoom-in" aria-label="Увеличить карту" title="Увеличить карту">+</button><button class="map-icon map-extra" data-action="ui:map-menu" aria-label="Настройки карты" title="Настройки карты">⋮</button></div>
       </div>
-      <div class="map-viewport" id="mapViewport"><div class="stage"><canvas aria-label="Карта полёта. Выбери Курс для прицеливания или Обзор для перемещения карты." height="700" id="gameCanvas" tabindex="0" width="1200"></canvas><div class="stage-pill" id="stagePill"><i class="live-dot"></i>ГОТОВНОСТЬ</div><div class="stage-bottom" id="stageBottom" hidden></div><div class="stage-corner">OC / FLIGHT 01</div></div><div id="mapGestureHint" class="map-gesture-hint" hidden></div></div>
-      <div class="telemetry"><div><span>ВРЕМЯ</span><b id="flightTime">0.00 <small>с</small></b></div><div><span>СКОРОСТЬ</span><b id="flightVelocity">—</b></div><div><span>ГРУЗ</span><b id="flightCargo">0 / 3</b></div><button class="speed-button" data-action="speed" id="speedButton" aria-label="Скорость показа полёта" title="Скорость показа, не физики">×1</button></div>
+      <div class="map-viewport" id="mapViewport"><div class="stage"><canvas aria-label="Карта полёта. Выбери Курс для прицеливания или Обзор для перемещения карты." height="700" id="gameCanvas" tabindex="0" width="1200"></canvas><div class="stage-pill" id="stagePill"><i class="live-dot"></i>ГОТОВНОСТЬ</div><div class="stage-bottom" id="stageBottom" hidden></div></div><div id="mapGestureHint" class="map-gesture-hint" hidden></div></div>
+      <div class="telemetry"><div><span>ВРЕМЯ</span><b id="flightTime">0.00 <small>с</small></b></div><div><span>СКОРОСТЬ</span><b id="flightVelocity">—</b></div><div><span>ГРУЗ</span><b id="flightCargo">0 / 3</b></div></div>
       <p class="flight-status" id="flightStatus" hidden></p><details class="mission-notes" id="flightDetails" hidden><summary>Условия</summary><p id="flightBrief"></p></details>
       <section class="flight-review" id="flightReview" hidden aria-label="Разбор полёта"></section>
     </div>
     <aside class="flight-panel" aria-label="Пульт управления">
       <div class="panel-scroll">
         <div class="cockpit" id="cockpit">
-          <div class="nav-panel-heading"><div><div class="panel-tag">НАВИГАЦИЯ</div><strong id="navModeLabel">Начальный импульс</strong><small>Стартовый курс на карте</small></div><div class="heading-compass" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="23"/><circle cx="26" cy="26" r="16" stroke-dasharray="1 5"/><path d="M26 1v6M26 45v6M1 26h6M45 26h6"/><g id="compassArrow"><path d="M43 26 15 17 20 26 15 35Z"/></g><circle cx="26" cy="26" r="2"/></svg></div></div>
+          <div class="nav-panel-heading" hidden><div><div class="panel-tag">НАВИГАЦИЯ</div><strong id="navModeLabel">Начальный импульс</strong><small>Стартовый курс на карте</small></div><div class="heading-compass" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="23"/><circle cx="26" cy="26" r="16" stroke-dasharray="1 5"/><path d="M26 1v6M26 45v6M1 26h6M45 26h6"/><g id="compassArrow"><path d="M43 26 15 17 20 26 15 35Z"/></g><circle cx="26" cy="26" r="2"/></svg></div></div>
           <details id="planetWorkshop" class="planet-workshop" hidden><summary>Расстановка планет <span id="planetCount"></span></summary><div class="planet-workshop-body"><label>Выбранная планета<select id="planetSelect"></select></label><div class="planet-coordinates"><label>X<input id="planetX" type="number" step="1" inputmode="numeric" aria-label="Положение планеты X"/></label><label>Y<input id="planetY" type="number" step="1" inputmode="numeric" aria-label="Положение планеты Y"/></label></div><p id="planetProblem" role="status"></p><button data-action="planets:reset" class="text-button">Вернуть исходное положение ↺</button><small>Перетаскивай миры в режиме «Планеты». Стрелки на карте — сдвиг на 2 ед., Shift — на 10. Расчёт трассы — 12 с.</small></div></details><div class="cockpit-tabs" role="tablist" aria-label="Настройки пульта"><button id="courseTab" role="tab" aria-selected="true" aria-controls="coursePane" data-action="ui:cockpit-tab" data-tab="course">Курс</button><button id="memoryTab" role="tab" aria-selected="false" aria-controls="memoryPane" tabindex="-1" data-action="ui:cockpit-tab" data-tab="memory">Память A / B</button></div>
           <div id="coursePane" role="tabpanel" aria-labelledby="courseTab">
             <div class="aim-controls">
@@ -2057,14 +2077,14 @@ body[data-page=play][data-difficulty=pro] #play .launch-button{background:#d6c5f
               <div class="control" data-control="speed"><div class="number-wrap"><button aria-label="Уменьшить скорость" data-action="speed-down">−</button><div class="control-value"><label for="speedInput">Скорость · ед./с</label><input id="speedInput" type="text" inputmode="numeric" enterkeyhint="done" autocomplete="off" spellcheck="false" aria-label="Скорость запуска" value="200"/></div><button aria-label="Увеличить скорость" data-action="speed-up">+</button></div><input type="range" id="speedRange" min="60" max="250" step="1" value="200" aria-label="Скорость запуска, ползунок"/></div>
             </div>
             <div class="aim-feedback" id="aimFeedback" role="status" hidden></div>
-            <div class="precision-row"><button class="precision-button" data-action="fine-aim" id="fineAimButton" aria-pressed="false" aria-describedby="fineAimHelp">Точно</button><div><span id="fineAimCaption">Шаг 0,5° / 2 ед.</span><small id="fineAimHelp">Прицел в 5 раз плавнее</small></div></div>
+            <div class="precision-row"><button class="precision-button" data-action="fine-aim" id="fineAimButton" aria-pressed="false" aria-describedby="fineAimHelp">Точно</button><div><span id="fineAimCaption">Шаг 0,5° / 2 ед.</span><small id="fineAimHelp" hidden>Прицел в 5 раз плавнее</small></div></div>
           </div>
-          <div id="memoryPane" role="tabpanel" aria-labelledby="memoryTab" hidden><p class="memory-intro">Два варианта курса для этого контракта. Запиши текущий — вернись к нему в одно касание.<strong id="memoryCurrent"></strong></p><div class="course-slots" id="courseSlots"></div><button class="previous-aim" data-action="previous-aim" id="previousAimButton" disabled>Прошлый запуск</button><div class="scanner-note"><strong id="scannerValue">Прогноз: 1,5 с</strong><small id="gravityCaption">Захват не установлен</small></div><div class="nav-reward"><span>Улучшение рекорда</span><strong id="contractReward">до 70 ◈</strong></div></div>
+          <div id="memoryPane" role="tabpanel" aria-labelledby="memoryTab" hidden><p class="memory-intro"><strong id="memoryCurrent"></strong></p><div class="course-slots" id="courseSlots"></div><button class="previous-aim" data-action="previous-aim" id="previousAimButton" disabled>Прошлый запуск</button><div class="scanner-note"><strong id="scannerValue">Прогноз: 1,5 с</strong><small id="gravityCaption">Захват не установлен</small></div><div class="nav-reward"><span>Улучшение рекорда</span><strong id="contractReward">до 70 ◈</strong></div></div>
           <div class="live-flight-panel" id="liveFlightPanel" hidden></div>
         </div>
-        <div class="keyboard-tip"><kbd>Пробел</kbd> запуск / пауза <button data-action="ui:shortcuts">Все клавиши</button></div>
+
       </div>
-      <div class="panel-actions"><button class="button primary launch-button" data-action="launch" id="launchButton">Запуск ↗</button><div class="launch-secondary" id="launchSecondary"><button data-action="retry">↺ Заново</button><button data-action="hint">Подсказка</button><button data-action="next" id="nextLevelButton" hidden>Дальше ↗</button></div></div>
+      <div class="panel-actions"><button class="button primary launch-button" data-action="launch" id="launchButton">Запуск ↗</button><div class="launch-secondary" id="launchSecondary"><button data-action="retry">↺ Заново</button><button class="speed-button" data-action="speed" id="speedButton" aria-label="Скорость показа полёта" title="Скорость показа, не физики">×1</button><button data-action="next" id="nextLevelButton" hidden>Дальше ↗</button></div></div>
     </aside>
   </div>
   <div class="mobile-dock" id="mobileDock" aria-label="Управление полётом">
@@ -2078,7 +2098,7 @@ body[data-page=play][data-difficulty=pro] #play .launch-button{background:#d6c5f
   </div>
 </section>
 </main><div hidden><button id="fieldButton" data-action="toggle-grid"></button><button id="pauseButton" data-action="pause"></button></div>
-<footer class="site-footer"><span>ORBITAL COURIER / 10.3</span><span>Маленькая посылка. Большой космос.</span><button class="text-button" data-action="settings">Сохранение и настройки</button></footer>
+<footer class="site-footer"><span>ORBITAL COURIER / 10.3</span><button class="text-button" data-action="settings">Сохранение и настройки</button></footer>
 <dialog aria-labelledby="modalTitle" id="modal"><div id="modalContent"></div></dialog>
 <dialog id="flightDrawer" class="flight-drawer" aria-labelledby="drawerTitle"><div class="sheet-header"><h2 id="drawerTitle">Пульт</h2><button class="icon-button" data-action="ui:close-sheet" aria-label="Закрыть панель">×</button></div><div id="drawerContent" class="sheet-content"></div><div class="sheet-footer"><button class="button primary" data-action="ui:close-sheet">К полёту</button></div></dialog>
 <div aria-label="Переход к контракту" aria-live="polite" class="route-transition" hidden="" id="routeTransition"><div aria-hidden="true" class="jump-tunnel"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i><i style="--i:8"></i><i style="--i:9"></i><i style="--i:10"></i><i style="--i:11"></i><i style="--i:12"></i><i style="--i:13"></i></div><div class="jump-card"><div class="eyebrow">ПЕРЕСТРОЕНИЕ МАРШРУТА</div><div class="jump-coordinates"><span id="jumpFrom">00</span><svg aria-hidden="true" viewbox="0 0 170 32"><path d="M0 16H150l-12-9M150 16l-12 9"></path></svg><strong id="jumpTo">01</strong></div><h2 id="jumpTitle"></h2><p id="jumpSector"></p><div class="jump-load"><i></i></div></div></div>
@@ -4405,7 +4425,6 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     app.previewDirty=true;go('play',true);
     $('flightSector').textContent=`КОНТРАКТ ${pad(C.number(id))} / ${O.SECTORS[l.sector].name.toUpperCase()}`;
     $('flightTitle').textContent=l.name;$('flightBrief').textContent=l.brief;
-    document.querySelector('.stage-corner').textContent=`OC / FLIGHT ${pad(C.number(id))}`;
     $('flightDetails').open=false;$('flightPlan').open=!root.matchMedia('(max-width:900px)').matches;
     setStage(l.dynamic?(l.motionKind==='station'?'ПЕРЕХВАТ · ГОТОВНОСТЬ':'ОРБИТЫ · ГОТОВНОСТЬ'):'КАПСУЛА ГОТОВА','');
     syncControls();renderRoute();updateObjectives();updateTelemetry();save();O.V8?.onLevel();O.UI9?.onLevel();O.PlanetWorkshop?.onLevel();O.Navigation?.onLevel(id);
@@ -4818,7 +4837,7 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   const editing = () => ['angleInput', 'speedInput'].includes(document.activeElement?.id);
   let mapMode = 'aim', lastMode = '', pending = false, inputMessageTimer;
   let lastHeight = innerHeight, lastWidth = innerWidth, sheetState = null, modalFocus = null, lastInput = null;
-  let lastLevel = null, hintTimer, lastFlightKey = '', initializedLive = false;
+  let lastLevel = null, hintTimer, lastFlightKey = '', initializedLive = false, touchHintSeen = false;
   const screenMode = () => !A.state ? 'aiming' : A.state.status === 'flying' ? 'running' : 'review';
 
   function setText(node, text) {
@@ -4878,8 +4897,9 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
     if (lastLevel !== A.currentId) mapMode = 'aim';
     lastLevel = A.currentId;
     sync(); schedule();
-    if(coarse()&&mapMode==='aim'){
-      setText($('mapGestureHint'),'Укажи, куда лететь. Дальше палец — сильнее старт. Два пальца — обзор.');
+    if(coarse()&&mapMode==='aim'&&!touchHintSeen){
+      touchHintSeen = true;
+      setText($('mapGestureHint'),'Касание — курс и скорость. Два пальца — обзор.');
       $('mapGestureHint').hidden=false;clearTimeout(hintTimer);hintTimer=setTimeout(()=>$('mapGestureHint').hidden=true,6000);
     }
   }
@@ -4890,7 +4910,7 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   }
   function initLive() {
     $('liveFlightPanel').innerHTML = `<div class="flight-live-state" id="liveState"></div>
-      <div class="flight-fact"><small>СКОРОСТЬ ОТНОСИТЕЛЬНО СТАНЦИИ</small><strong id="liveVelocity">—</strong><span id="liveDock"></span></div>
+      <div class="flight-fact"><small>Относительно станции</small><strong id="liveVelocity">—</strong><span id="liveDock"></span></div>
       <div class="flight-metrics"><div><span>Груз</span><b id="liveCargo">—</b></div>
       <div id="liveOrbitRow"><span>Облёты</span><b id="liveOrbits">—</b></div>
       <div id="livePortalRow"><span>Порталы</span><b id="livePortals">—</b></div>
@@ -4910,6 +4930,7 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
     $('modeChip').title=A.state?'Режим зафиксирован до следующего запуска':'ПРО: награда ×1,7 и более строгие условия приёма';
     $('saveBadge').hidden=A.storageOK;
     O.FlightSettings?.sync();
+    setText($('flightSector'), 'Контракт ' + O.Campaign.number(A.currentId));
     setText($('navModeLabel'), mode === 'aiming' ? 'Начальный импульс' : mode === 'review' ? 'Полёт завершён' : A.paused ? 'Полёт на паузе' : 'Капсула в полёте');
     $('cockpit').style.setProperty('--map-turn', O.FlightView.portrait() ? '-90deg' : '0deg');
     setText($('fineAimButton'), A.profile.settings.fineAim ? '✓ Точно' : 'Точно');
@@ -4919,14 +4940,15 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
       b.setAttribute('aria-pressed',String(!!A.profile.settings.fineAim));b.disabled=mode!=='aiming';
     }
     if($('mobileFine'))setText($('mobileFine'),A.profile.settings.fineAim?'✓ Точно':'Точно');
-    const text = !A.state ? 'Запуск ↗' : flying() ? (A.paused ? 'Продолжить' : 'Пауза') : 'Ещё раз ↺';
+    const text = !A.state ? 'Старт' : flying() ? (A.paused ? 'Продолжить' : 'Пауза') : 'Повторить';
     setText($('launchButton'), text);
     setText($('mobileLaunch'), narrow() && editing() ? 'Готово ✓' : text);
     setText($('stagePill'), (A.profile.difficulty==='pro'?'ПРО · ':'')+(A.assisted ? 'ТРЕНИРОВКА · БЕЗ НАГРАД' : !A.state ? 'ГОТОВНОСТЬ' : flying() ? A.paused ? 'ПАУЗА' : 'ПОЛЁТ' : 'ЗАПИСЬ РЕЙСА'));
+    $('stagePill').hidden = !A.assisted && (mode === 'aiming' || flying() && !A.paused);
     $('liveFlightPanel').hidden = mode === 'aiming';
     if (mode !== 'aiming' && s) {
       if (!initializedLive) initLive();
-      setText($('liveState'), mode === 'review' ? 'ЗАПИСЬ ВЫПОЛНЕННОГО РЕЙСА' : A.paused ? 'ВРЕМЯ ОСТАНОВЛЕНО' : 'ОДИН ИМПУЛЬС · КУРС НЕ МЕНЯЕТСЯ');
+      setText($('liveState'), mode === 'review' ? 'Запись' : A.paused ? 'Пауза' : 'Полёт');
       setText($('liveVelocity'), P.dockVelocity(s, A.level()).speed.toFixed(0) + ' ед./с');
       setText($('liveDock'), 'Радиус стыковки: ' + P.captureRadius(A.level(), A.stats()).toFixed(1));
       setText($('liveCargo'), O.Routes.collected(A.level(), s) + ' / ' + O.Routes.cargoIds(A.level(), s).length);
@@ -4960,7 +4982,7 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
     setText($('mobileNext'), nextReady ? 'Дальше ↗' : 'Маршруты ↗');
     $('mobileLaunch').classList.toggle('primary', !delivered);
     $('mobileDock').classList.toggle('delivered', delivered);
-    setText($('mobileReadoutLabel'), mode === 'aiming' ? 'КУРС · НАСТРОИТЬ' : mode === 'running' ? (A.paused ? 'ПАУЗА · ПУЛЬТ' : 'В ПОЛЁТЕ · ПУЛЬТ') : A.lastResult?.training ? 'ТРЕНИРОВКА · БЕЗ НАГРАД' : delivered ? 'ДОСТАВЛЕНО · РАЗБОР' : 'НЕ ДОСТАВЛЕНО · РАЗБОР');
+    setText($('mobileReadoutLabel'), mode === 'aiming' ? 'Курс' : mode === 'running' ? (A.paused ? 'Пауза' : 'Полёт') : A.lastResult?.training ? 'Тренировка' : delivered ? 'Доставлено' : 'Разбор');
     setText($('mobileReadoutValue'), mode === 'aiming' ? `${A.angle.toFixed(1)}°  /  ${A.speed} ед./с` : mode === 'running' ? `${s.t.toFixed(1)} с  ·  груз ${O.Routes.collected(A.level(),s)} / ${O.Routes.cargoIds(A.level(),s).length}` : `${A.state.t.toFixed(2)} с  ·  ${A.lastResult?.training ? 'можно повторить' : delivered ? '+' + A.lastResult.totalCredits + ' ◈' : 'найти причину'}`);
     $('mobileReadout').setAttribute('aria-label', mode === 'review' ? 'Открыть разбор и перемотку рейса' : 'Открыть точный пульт');
     setText($('mobileSpeed'), '×' + A.timeScale);
@@ -5271,7 +5293,10 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
       const planet=!pan&&mapMode==='planets'?O.PlanetWorkshop?.pick(worldPoint(p.x,p.y)):null;
       gesture = {kind:pan ? 'pan' : mapMode==='planets'?(planet===null?'locked':'planet'):'aim',planet,layout:A.level().layout?structuredClone(A.level().layout):null,x:p.x,y:p.y,cam:{...A.camera},angle:A.angle,speed:A.speed,type:event.pointerType,moved:false,fine:!!A.profile.settings.fineAim};
       document.body.classList.toggle('map-dragging',pan);
-      if(gesture.kind==='aim'&&event.pointerType==='touch'&&!gesture.fine)pointAim(p.x,p.y,true);
+      if(gesture.kind==='aim'){
+        if(event.pointerType==='touch'){if(!gesture.fine)pointAim(p.x,p.y,true);}
+        else pointAim(p.x,p.y);
+      }
     } else if (pointers.size === 2) {
       const m = midpoint();
       if (gesture?.kind === 'aim' && aiming()) A.setAim(gesture.angle,gesture.speed);
@@ -5310,7 +5335,10 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   });
   function releasePointer(event) {
     if (!pointers.has(event.pointerId)) return;
-    if(event.type==='pointerup'&&gesture?.kind==='aim'&&gesture.type==='touch'&&aiming()&&!controlsBlocked())touchAim(event.clientX,event.clientY,gesture);
+    if(event.type==='pointerup'&&gesture?.kind==='aim'&&aiming()&&!controlsBlocked()){
+      if(gesture.type==='touch')touchAim(event.clientX,event.clientY,gesture);
+      else pointAim(event.clientX,event.clientY);
+    }
     if(event.type==='pointerup'&&gesture?.kind==='planet'&&aiming())A.setLayout(A.level().layout);
     pointers.delete(event.pointerId);
     try { if(canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId); } catch(_){}

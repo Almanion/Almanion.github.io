@@ -1,6 +1,15 @@
 'use strict';
 const {test,expect}=require('@playwright/test');
 
+test('a mouse click selects campaign direction and speed without requiring a drag',async({page})=>{
+ await page.setViewportSize({width:1366,height:768});await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
+ await page.goto('/games/orbital-courier/offline.html');await page.evaluate(()=>{Orbital.App.profile.settings.reducedMotion=true;Orbital.App.loadLevel(Orbital.Campaign.order[0]);});
+ const target=()=>page.evaluate(()=>{const s=Orbital.App.level().start;return Orbital.UI9.worldToScreen(s.x+120,s.y-70);});
+ let point=await target();await page.mouse.click(point.x,point.y);const first=await page.evaluate(()=>({angle:Orbital.App.angle,speed:Orbital.App.speed}));expect(first.angle).toBeCloseTo(Math.atan2(70,120)*180/Math.PI,1);expect(first.speed).toBe(Math.round(Math.hypot(120,70)));expect(await page.evaluate(()=>Orbital.App.state)).toBeNull();
+ await page.evaluate(()=>{Orbital.App.setAim(-10,200);Orbital.UI9.zoom(1.5);});point=await target();await page.mouse.click(point.x,point.y);expect(await page.evaluate(()=>({angle:Orbital.App.angle,speed:Orbital.App.speed}))).toEqual(first);
+ await page.locator('#mapPan').click();const before=await page.evaluate(()=>({angle:Orbital.App.angle,speed:Orbital.App.speed}));await page.mouse.click(point.x+20,point.y+20);expect(await page.evaluate(()=>({angle:Orbital.App.angle,speed:Orbital.App.speed}))).toEqual(before);
+});
+
 for(const [width,height] of [[320,568],[390,844],[844,390],[1366,768]]){
  test(`cockpit course, memory and live instruments ${width}x${height}`,async({browser},info)=>{
   const phone=width<1000,context=await browser.newContext({viewport:{width,height},isMobile:phone,hasTouch:phone,serviceWorkers:'block'}),page=await context.newPage();

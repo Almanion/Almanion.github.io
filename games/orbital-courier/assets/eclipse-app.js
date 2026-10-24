@@ -102,7 +102,6 @@
     $('briefingExitTitle').textContent = custom ? currentStory.exitTitle : operation.titles[2]; $('briefingExitText').textContent = currentStory.exit;
     $('briefingSystemsText').textContent = custom ? 'Разгон +18%, торможение −25%. D — действие миссии.' : 'Разгон +18%, торможение −25%. Щит защищает на 2 с.';
     $('briefingSystemsLabel').textContent = custom ? 'ПО ОДНОМУ ЗАРЯДУ НА МИССИЮ' : 'ПО ОДНОМУ ЗАРЯДУ НА ЭТАП';
-    $('windowLead').textContent = custom ? 'Задержка старта меняет время встречи. Прогноз не включает будущие нажатия D, разгона и торможения.' : 'Задержка старта меняет положение препятствий и состояние ионного фронта.';
     $('briefingSource').textContent = custom ? 'ЭКСПЕДИЦИЯ' : 'БОЕВАЯ ОПЕРАЦИЯ';
     $('briefingMiddleTitle').textContent = custom ? currentStory.middleTitle : 'Атака';
     $('briefingMiddleText').textContent = custom ? currentStory.middle : 'Выбери тактику и перемести якорь для расчёта траектории.';
@@ -120,8 +119,7 @@
   function writeInputs(keepFocused = true) {
     for (const name of ['angle', 'speed']) { if (!keepFocused || document.activeElement !== $(name)) $(name).value = String(plan[name]); $(name + 'Range').value = String(plan[name]); }
     for (const [id, key] of [['anchorX', 'ax'], ['anchorY', 'ay']]) if (!keepFocused || document.activeElement !== $(id)) $(id).value = String(plan[key]);
-    $('delay').value = String(plan.delay); $('delayValue').textContent = plan.delay ? plan.delay.toFixed(2).replace(/0$/, '') + ' с' : 'Сразу';
-    $('delayToggle').textContent = plan.delay ? 'Старт +' + plan.delay.toFixed(2).replace(/0$/, '') + ' с' : 'Старт сразу';
+    $('delay').value = String(plan.delay); $('delayValue').textContent = plan.delay ? plan.delay.toFixed(2).replace(/0$/, '').replace('.', ',') + ' с' : '0 с';
   }
   function forecast() {
     prediction = mode === 'plan' ? E.simulate(phase, tactic, plan, carry, operationId) : E.project(state); dirty = false;
@@ -132,8 +130,6 @@
     $('forecastDetail').textContent = !settings.forecast ? 'Включи прогноз, чтобы проверить курс.' : good ? expedition() ? `${prediction.t.toFixed(1)} с · задачи ${predictedMission?.steps?.filter(x => x.done).length || 0}/3 · корпус ${prediction.hull}/3` : `${prediction.t.toFixed(1)} с · флот ${prediction.fleet}/6${prediction.signal ? ' · ретранслятор захвачен' : ''}${objectives.length ? ' · цели ' + objectives.filter(x => x.done).length + '/' + objectives.length : ''}${phase === 1 && tactic === 'escort' ? ' · прикрыто залпов: ' + prediction.coverCount + '/2' : ''}` : prediction.reason;
     $('courseStatus').textContent = !settings.forecast ? 'Прогноз скрыт' : good ? 'Курс рассчитан · ' + prediction.t.toFixed(1) + ' с' : prediction.reason;
     $('courseStatus').dataset.good = String(good);
-    $('windowForecast').textContent = $('forecastTitle').textContent + ' · ' + $('forecastDetail').textContent;
-    $('windowForecast').dataset.good = String(good);
   }
   function samePlan(a, b) { return a && b && ['angle', 'speed', 'ax', 'ay', 'delay'].every(k => a[k] === b[k]); }
   function beginEdit() { if (mode === 'plan' && !editStart) editStart = { ...plan }; }
@@ -148,12 +144,12 @@
   function syncEditor() {
     const locked = mode !== 'plan';
     $('undoPlan').disabled = locked || !undo.length; $('redoPlan').disabled = locked || !redo.length;
-    $('courseTool').disabled = locked; $('delayToggle').disabled = locked;
+    $('courseTool').disabled = locked;
     $('courseTool').setAttribute('aria-pressed', String(!editing)); $('anchorTool').setAttribute('aria-pressed', String(editing));
     $('anchorTool').hidden = expedition() || phase !== 1;
     $('planTools').hidden = expedition() || phase !== 1;
     $('undoPlan').closest('.history-tools').hidden = locked || !undo.length && !redo.length;
-    $('delayToggle').hidden = locked;
+    $('startTime').hidden = locked;
     $('mapHint').textContent = editing ? 'Перетащи якорь · стрелки перемещают его' : 'Потяни по карте · ← → курс, ↑ ↓ импульс';
     document.body.dataset.tool = editing ? 'anchor' : 'course';
   }
@@ -175,7 +171,9 @@
   }
   function stopHold() { clearTimeout(holdTimer); holdTimer = 0; heldButton = null; }
   function stopInput(cancel = false) {
-    stopHold(); gesture = null; pointers.clear(); if (editStart) finishEdit(cancel);
+    stopHold(); gesture = null; const captured = [...pointers]; pointers.clear();
+    for (const id of captured) { try { if ($('battlefield').hasPointerCapture(id)) $('battlefield').releasePointerCapture(id); } catch (_) {} }
+    if (editStart) finishEdit(cancel);
   }
   function act(kind) {
     if (!['running', 'paused'].includes(mode) || isDialogOpen() || kind === 'shield' && expedition()) return;
@@ -190,7 +188,6 @@
       $('forecastDetail').textContent = !settings.forecast ? 'Включи прогноз, чтобы проверить оставшийся маршрут.' : good ? `Оставшийся маршрут достижим · финиш ${prediction.t.toFixed(1)} с${expedition() ? ' · корпус ' + prediction.hull + '/3' : ' · флот ' + prediction.fleet + '/6'}` : prediction.reason;
       $('courseStatus').textContent = !settings.forecast ? 'Прогноз скрыт' : good ? 'Курс пересчитан · финиш ' + prediction.t.toFixed(1) + ' с' : prediction.reason;
       $('courseStatus').dataset.good = String(good);
-      $('windowForecast').textContent = $('forecastTitle').textContent + ' · ' + $('forecastDetail').textContent; $('windowForecast').dataset.good = String(good);
     }
     setRadio(actionNotice + '. ' + (mode === 'paused' ? 'Пауза сохраняется: продолжи, когда будешь готов.' : 'Оставшийся маршрут пересчитан.'));
     renderer.needsDraw = true; sync();
@@ -392,9 +389,7 @@
   function toggleCamera() { stopInput(); camera = camera === 'overview' ? 'follow' : 'overview'; renderer.needsDraw = true; sync(); }
   $('cameraToggle').addEventListener('click', () => { toggleCamera(); closeDialog('toolsMenu'); $('battlefield').focus({ preventScroll: true }); });
   $('courseTool').addEventListener('click', () => setTool(false)); $('undoPlan').addEventListener('click', () => { travelHistory(); closeDialog('toolsMenu'); }); $('redoPlan').addEventListener('click', () => { travelHistory(true); closeDialog('toolsMenu'); });
-  $('delayToggle').addEventListener('click', () => { if (mode === 'plan') openDialog('launchWindow'); }); $('closeWindow').addEventListener('click', () => closeDialog('launchWindow'));
   $('delay').addEventListener('input', e => { beginEdit(); updatePlan({ delay: e.target.valueAsNumber }); });
-  for (const button of document.querySelectorAll('[data-delay]')) button.addEventListener('click', () => updatePlan({ delay: Number(button.dataset.delay) }));
   function adjust(button, multiplier = 1) { const key = button.dataset.adjust; updatePlan({ [key]: Math.round((plan[key] + Number(button.dataset.step) * multiplier) * 100) / 100 }); }
   document.querySelectorAll('[data-adjust]').forEach(button => {
     button.addEventListener('pointerdown', event => {
@@ -431,29 +426,38 @@
   function preference(key, value) { settings[key] = value; sound.enabled = settings.sound; if (settings.sound) sound.unlock(); forecast(); sync(); save(pendingNext && !finalPhase() ? pendingNext : undefined); }
   $('soundEnabled').addEventListener('change', e => preference('sound', e.target.checked)); $('reducedMotion').addEventListener('change', e => preference('reduced', e.target.checked)); $('showForecast').addEventListener('change', e => preference('forecast', e.target.checked)); $('forecastToggle').addEventListener('click', () => { preference('forecast', !settings.forecast); closeDialog('toolsMenu'); });
   $('battlefield').addEventListener('pointerdown', event => {
-    if (event.button !== 0) return;
-    pointers.add(event.pointerId);
-    if (pointers.size !== 1) { gesture = null; finishEdit(true); return; }
+    if (event.button !== 0 || isDialogOpen()) return;
     const mini = renderer.minimap, box = $('battlefield').getBoundingClientRect(), x = event.clientX - box.left, y = event.clientY - box.top;
     if (mini && x >= mini.x && x <= mini.x + mini.w && y >= mini.y && y <= mini.y + mini.h) { camera = 'overview'; renderer.needsDraw = true; sync(); return; }
     if (mode !== 'plan') return;
+    if (event.pointerType !== 'touch' && pointers.size) return;
+    pointers.add(event.pointerId);
+    try { $('battlefield').setPointerCapture(event.pointerId); } catch (_) {}
+    if (pointers.size !== 1) { gesture = null; finishEdit(true); event.preventDefault(); return; }
     event.preventDefault(); $('battlefield').focus({ preventScroll: true }); finishEdit(); beginEdit();
     const p = renderer.point(event.clientX, event.clientY), grab = !expedition() && phase === 1 && !editing && E.distance(p, { x: plan.ax, y: plan.ay }) < (event.pointerType === 'touch' ? 26 : 18) / renderer.scale;
-    gesture = { id: event.pointerId, anchor: !expedition() && phase === 1 && (editing || grab), dx: grab ? plan.ax - p.x : 0, dy: grab ? plan.ay - p.y : 0 };
+    gesture = { id: event.pointerId, type: event.pointerType, x: event.clientX, y: event.clientY, moved: false, anchor: !expedition() && phase === 1 && (editing || grab), dx: grab ? plan.ax - p.x : 0, dy: grab ? plan.ay - p.y : 0 };
     if (gesture.anchor) editing = true;
-    $('battlefield').setPointerCapture(event.pointerId); movePointer(event); syncEditor();
+    movePointer(event); syncEditor();
   });
   function movePointer(event) {
     if (!gesture || event.pointerId !== gesture.id || pointers.size !== 1 || mode !== 'plan') return;
+    if (event.type === 'pointermove' && !gesture.moved) { if (Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) < 5) return; gesture.moved = true; }
     const p = renderer.point(event.clientX, event.clientY);
     if (gesture.anchor) updatePlan({ ax: Math.round(p.x + gesture.dx), ay: Math.round(p.y + gesture.dy) });
-    else if (E.distance(p, state) * renderer.scale > 12) updatePlan({ angle: Math.round(Math.atan2(p.y - state.y, p.x - state.x) * 180 / Math.PI * 2) / 2 });
+    else {
+      const origin = state.start || state, distance = E.distance(p, origin), pixels = distance * renderer.scale, touch = gesture.type === 'touch';
+      if (touch ? pixels < 12 : distance <= 15) return;
+      const speed = touch ? 55 + E.clamp((pixels - 12) / 108, 0, 1) * 115 : distance;
+      updatePlan({ angle: Math.round(Math.atan2(p.y - origin.y, p.x - origin.x) * 180 / Math.PI * 2) / 2, speed: Math.round(speed * 2) / 2 });
+    }
   }
   $('battlefield').addEventListener('pointermove', movePointer);
   $('battlefield').addEventListener('pointerup', event => {
     if (event.button !== 0) return;
     movePointer(event); pointers.delete(event.pointerId);
     if (gesture?.id === event.pointerId) { gesture = null; finishEdit(); }
+    try { if ($('battlefield').hasPointerCapture(event.pointerId)) $('battlefield').releasePointerCapture(event.pointerId); } catch (_) {}
   });
   for (const name of ['pointercancel', 'lostpointercapture']) $('battlefield').addEventListener(name, event => { pointers.delete(event.pointerId); if (gesture?.id === event.pointerId) { gesture = null; finishEdit(true); } });
   document.addEventListener('keydown', event => {

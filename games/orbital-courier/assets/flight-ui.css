@@ -19,3 +19,23 @@ body[data-page=play][data-difficulty=pro] #play .launch-button{background:#d6c5f
 @media(min-width:520px) and (max-width:999px) and (max-height:480px) and (orientation:landscape){#play .flight-heading{height:44px;flex-basis:44px}.flight-mode-choice button{min-height:40px}.flight-mode-choice{padding:0}.mode-info{width:30px;min-width:30px}}
 @media(min-width:520px) and (max-width:999px) and (max-height:480px) and (orientation:landscape){#play .flight-mode-choice button{min-height:44px}.mode-info{width:44px;min-width:44px}#play .flight-settings{width:44px;min-width:44px;height:44px}#play .flight-plan,#play .flight-plan>summary{height:44px;min-height:44px;flex-basis:44px}}
 @media(max-width:699px) and (max-height:660px) and (orientation:portrait){#play .flight-left{position:relative}#play .flight-plan{position:absolute;top:8px;right:8px;left:auto;bottom:auto;width:46px;height:46px;min-height:46px;z-index:3;border:1px solid #8b9bb74d;background:#23262cee}#play .flight-plan>summary{width:44px;min-width:44px;min-height:44px;justify-content:center;padding:0}#play .flight-plan summary>div,#play .flight-plan .plan-chevron,#play #planCounter{display:none}#play .flight-plan .plan-marker{display:block;font-size:20px}}
+
+/* Keep the campaign flight focused on the map and launch controls. */
+#play>.medal-deck{display:none}
+#play .flight-plan summary small,#play .flight-mode-choice small,#play .map-extra{display:none}
+#play .mobile-options small{display:none}
+body[data-page=play][data-flight=aiming] #play .telemetry{display:none}
+#play .launch-secondary #speedButton{display:flex;align-items:center;justify-content:center;width:100%;min-width:44px;min-height:44px;height:44px;margin:0;padding:7px 8px;font:500 12px var(--sans);border:1px solid #ffffff20;border-radius:8px;background:none;color:#c2cad7}
+#play .launch-secondary button{min-height:44px}
+#play .flight-live-state,#play .flight-metrics>div:first-child{display:none}
+#play .memory-intro{margin-top:0}
+#play .memory-intro strong{margin-top:0}
+#play .flight-plan .plan-chevron{font-size:12px}
+@media(min-width:1000px){
+ #play .flight-title-group .eyebrow,#play .flight-plan .plan-marker{display:none}
+ #play .flight-heading h2{font-size:19px}
+ #play .flight-plan>summary{padding-inline:12px}
+ #play .cockpit{gap:10px}
+ #play .panel-actions{padding-top:12px}
+ #play .precision-row{margin-top:6px}
+}

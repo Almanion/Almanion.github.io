@@ -299,7 +299,6 @@
     app.previewDirty=true;go('play',true);
     $('flightSector').textContent=`КОНТРАКТ ${pad(C.number(id))} / ${O.SECTORS[l.sector].name.toUpperCase()}`;
     $('flightTitle').textContent=l.name;$('flightBrief').textContent=l.brief;
-    document.querySelector('.stage-corner').textContent=`OC / FLIGHT ${pad(C.number(id))}`;
     $('flightDetails').open=false;$('flightPlan').open=!root.matchMedia('(max-width:900px)').matches;
     setStage(l.dynamic?(l.motionKind==='station'?'ПЕРЕХВАТ · ГОТОВНОСТЬ':'ОРБИТЫ · ГОТОВНОСТЬ'):'КАПСУЛА ГОТОВА','');
     syncControls();renderRoute();updateObjectives();updateTelemetry();save();O.V8?.onLevel();O.UI9?.onLevel();O.PlanetWorkshop?.onLevel();O.Navigation?.onLevel(id);

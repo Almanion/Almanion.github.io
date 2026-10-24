@@ -16,7 +16,7 @@
   const editing = () => ['angleInput', 'speedInput'].includes(document.activeElement?.id);
   let mapMode = 'aim', lastMode = '', pending = false, inputMessageTimer;
   let lastHeight = innerHeight, lastWidth = innerWidth, sheetState = null, modalFocus = null, lastInput = null;
-  let lastLevel = null, hintTimer, lastFlightKey = '', initializedLive = false;
+  let lastLevel = null, hintTimer, lastFlightKey = '', initializedLive = false, touchHintSeen = false;
   const screenMode = () => !A.state ? 'aiming' : A.state.status === 'flying' ? 'running' : 'review';
 
   function setText(node, text) {
@@ -76,8 +76,9 @@
     if (lastLevel !== A.currentId) mapMode = 'aim';
     lastLevel = A.currentId;
     sync(); schedule();
-    if(coarse()&&mapMode==='aim'){
-      setText($('mapGestureHint'),'Укажи, куда лететь. Дальше палец — сильнее старт. Два пальца — обзор.');
+    if(coarse()&&mapMode==='aim'&&!touchHintSeen){
+      touchHintSeen = true;
+      setText($('mapGestureHint'),'Касание — курс и скорость. Два пальца — обзор.');
       $('mapGestureHint').hidden=false;clearTimeout(hintTimer);hintTimer=setTimeout(()=>$('mapGestureHint').hidden=true,6000);
     }
   }
@@ -88,7 +89,7 @@
   }
   function initLive() {
     $('liveFlightPanel').innerHTML = `<div class="flight-live-state" id="liveState"></div>
-      <div class="flight-fact"><small>СКОРОСТЬ ОТНОСИТЕЛЬНО СТАНЦИИ</small><strong id="liveVelocity">—</strong><span id="liveDock"></span></div>
+      <div class="flight-fact"><small>Относительно станции</small><strong id="liveVelocity">—</strong><span id="liveDock"></span></div>
       <div class="flight-metrics"><div><span>Груз</span><b id="liveCargo">—</b></div>
       <div id="liveOrbitRow"><span>Облёты</span><b id="liveOrbits">—</b></div>
       <div id="livePortalRow"><span>Порталы</span><b id="livePortals">—</b></div>
@@ -108,6 +109,7 @@
     $('modeChip').title=A.state?'Режим зафиксирован до следующего запуска':'ПРО: награда ×1,7 и более строгие условия приёма';
     $('saveBadge').hidden=A.storageOK;
     O.FlightSettings?.sync();
+    setText($('flightSector'), 'Контракт ' + O.Campaign.number(A.currentId));
     setText($('navModeLabel'), mode === 'aiming' ? 'Начальный импульс' : mode === 'review' ? 'Полёт завершён' : A.paused ? 'Полёт на паузе' : 'Капсула в полёте');
     $('cockpit').style.setProperty('--map-turn', O.FlightView.portrait() ? '-90deg' : '0deg');
     setText($('fineAimButton'), A.profile.settings.fineAim ? '✓ Точно' : 'Точно');
@@ -117,14 +119,15 @@
       b.setAttribute('aria-pressed',String(!!A.profile.settings.fineAim));b.disabled=mode!=='aiming';
     }
     if($('mobileFine'))setText($('mobileFine'),A.profile.settings.fineAim?'✓ Точно':'Точно');
-    const text = !A.state ? 'Запуск ↗' : flying() ? (A.paused ? 'Продолжить' : 'Пауза') : 'Ещё раз ↺';
+    const text = !A.state ? 'Старт' : flying() ? (A.paused ? 'Продолжить' : 'Пауза') : 'Повторить';
     setText($('launchButton'), text);
     setText($('mobileLaunch'), narrow() && editing() ? 'Готово ✓' : text);
     setText($('stagePill'), (A.profile.difficulty==='pro'?'ПРО · ':'')+(A.assisted ? 'ТРЕНИРОВКА · БЕЗ НАГРАД' : !A.state ? 'ГОТОВНОСТЬ' : flying() ? A.paused ? 'ПАУЗА' : 'ПОЛЁТ' : 'ЗАПИСЬ РЕЙСА'));
+    $('stagePill').hidden = !A.assisted && (mode === 'aiming' || flying() && !A.paused);
     $('liveFlightPanel').hidden = mode === 'aiming';
     if (mode !== 'aiming' && s) {
       if (!initializedLive) initLive();
-      setText($('liveState'), mode === 'review' ? 'ЗАПИСЬ ВЫПОЛНЕННОГО РЕЙСА' : A.paused ? 'ВРЕМЯ ОСТАНОВЛЕНО' : 'ОДИН ИМПУЛЬС · КУРС НЕ МЕНЯЕТСЯ');
+      setText($('liveState'), mode === 'review' ? 'Запись' : A.paused ? 'Пауза' : 'Полёт');
       setText($('liveVelocity'), P.dockVelocity(s, A.level()).speed.toFixed(0) + ' ед./с');
       setText($('liveDock'), 'Радиус стыковки: ' + P.captureRadius(A.level(), A.stats()).toFixed(1));
       setText($('liveCargo'), O.Routes.collected(A.level(), s) + ' / ' + O.Routes.cargoIds(A.level(), s).length);
@@ -158,7 +161,7 @@
     setText($('mobileNext'), nextReady ? 'Дальше ↗' : 'Маршруты ↗');
     $('mobileLaunch').classList.toggle('primary', !delivered);
     $('mobileDock').classList.toggle('delivered', delivered);
-    setText($('mobileReadoutLabel'), mode === 'aiming' ? 'КУРС · НАСТРОИТЬ' : mode === 'running' ? (A.paused ? 'ПАУЗА · ПУЛЬТ' : 'В ПОЛЁТЕ · ПУЛЬТ') : A.lastResult?.training ? 'ТРЕНИРОВКА · БЕЗ НАГРАД' : delivered ? 'ДОСТАВЛЕНО · РАЗБОР' : 'НЕ ДОСТАВЛЕНО · РАЗБОР');
+    setText($('mobileReadoutLabel'), mode === 'aiming' ? 'Курс' : mode === 'running' ? (A.paused ? 'Пауза' : 'Полёт') : A.lastResult?.training ? 'Тренировка' : delivered ? 'Доставлено' : 'Разбор');
     setText($('mobileReadoutValue'), mode === 'aiming' ? `${A.angle.toFixed(1)}°  /  ${A.speed} ед./с` : mode === 'running' ? `${s.t.toFixed(1)} с  ·  груз ${O.Routes.collected(A.level(),s)} / ${O.Routes.cargoIds(A.level(),s).length}` : `${A.state.t.toFixed(2)} с  ·  ${A.lastResult?.training ? 'можно повторить' : delivered ? '+' + A.lastResult.totalCredits + ' ◈' : 'найти причину'}`);
     $('mobileReadout').setAttribute('aria-label', mode === 'review' ? 'Открыть разбор и перемотку рейса' : 'Открыть точный пульт');
     setText($('mobileSpeed'), '×' + A.timeScale);
@@ -469,7 +472,10 @@
       const planet=!pan&&mapMode==='planets'?O.PlanetWorkshop?.pick(worldPoint(p.x,p.y)):null;
       gesture = {kind:pan ? 'pan' : mapMode==='planets'?(planet===null?'locked':'planet'):'aim',planet,layout:A.level().layout?structuredClone(A.level().layout):null,x:p.x,y:p.y,cam:{...A.camera},angle:A.angle,speed:A.speed,type:event.pointerType,moved:false,fine:!!A.profile.settings.fineAim};
       document.body.classList.toggle('map-dragging',pan);
-      if(gesture.kind==='aim'&&event.pointerType==='touch'&&!gesture.fine)pointAim(p.x,p.y,true);
+      if(gesture.kind==='aim'){
+        if(event.pointerType==='touch'){if(!gesture.fine)pointAim(p.x,p.y,true);}
+        else pointAim(p.x,p.y);
+      }
     } else if (pointers.size === 2) {
       const m = midpoint();
       if (gesture?.kind === 'aim' && aiming()) A.setAim(gesture.angle,gesture.speed);
@@ -508,7 +514,10 @@
   });
   function releasePointer(event) {
     if (!pointers.has(event.pointerId)) return;
-    if(event.type==='pointerup'&&gesture?.kind==='aim'&&gesture.type==='touch'&&aiming()&&!controlsBlocked())touchAim(event.clientX,event.clientY,gesture);
+    if(event.type==='pointerup'&&gesture?.kind==='aim'&&aiming()&&!controlsBlocked()){
+      if(gesture.type==='touch')touchAim(event.clientX,event.clientY,gesture);
+      else pointAim(event.clientX,event.clientY);
+    }
     if(event.type==='pointerup'&&gesture?.kind==='planet'&&aiming())A.setLayout(A.level().layout);
     pointers.delete(event.pointerId);
     try { if(canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId); } catch(_){}

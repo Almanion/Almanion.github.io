@@ -38,5 +38,6 @@ for(const width of [390,1366])test('catalogue explains count and predecessor acc
  expect(choices).not.toContain(6);
  await page.locator('a[data-action=mission][data-id="12"]').click();
  await expect(page).toHaveURL(/flight\/\?contract=12$/);
+ await page.waitForFunction(()=>globalThis.Orbital?.App?.currentId===12);
  expect(await page.evaluate(()=>Orbital.App.currentId)).toBe(12);
 });

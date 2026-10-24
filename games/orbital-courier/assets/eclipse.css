@@ -13,3 +13,11 @@ dialog{color:var(--text);background:#1a1c25;border:1px solid #ffffff20;border-ra
 body[data-mode=running] .state-badge{visibility:hidden}
 
 body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+
+/* Launch timing is edited beside the course, without leaving the map. */
+.controls .control-tools{order:0}.controls .flight-inputs{order:1}.controls .anchor-controls{order:2}.controls .action-row{order:3}.controls .mission-action-row{order:6}.controls .combat-actions{order:7}
+.start-time{display:flex;align-items:center;gap:12px;flex:1 1 400px;min-width:0;min-height:44px;order:4}.start-time label{font-size:11px;color:#a2aabc;white-space:nowrap}.start-time input{height:44px;min-width:80px;flex:1;margin:0;accent-color:var(--ice);cursor:pointer}.start-time output{min-width:54px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:#c2d0e6;white-space:nowrap}.controls .course-status{order:4;flex:1 1 280px;width:auto;padding-left:8px}.start-time input:disabled{opacity:.4}
+@media(max-width:900px){.start-time{order:3;flex:1 0 100%;width:100%;gap:10px}.controls .control-tools,.controls .anchor-controls{order:0}.controls .course-status{order:4;flex:1 0 100%;width:100%;padding-left:0}.controls .action-row{order:5}.start-time label{font-size:10px}.start-time output{font-size:11px;min-width:52px}}
+@media(max-height:500px) and (orientation:landscape){.controls .control-tools,.controls .anchor-controls{order:0;flex:1}.start-time{order:3;flex:1 0 100%;gap:8px}.start-time input{min-width:65px}.start-time label{font-size:10px}.controls .course-status{order:4;flex:1 0 100%;padding:0}.controls .action-row{order:5}}
+
+@media(max-height:360px) and (orientation:landscape){.controls{gap:4px}.input-group>label{margin-bottom:2px}}
