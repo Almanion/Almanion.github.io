@@ -225,7 +225,6 @@
             const x = -28, y = side * 29, angle = p.angle;
             this.ship({ x: p.x + Math.cos(angle) * x - Math.sin(angle) * y, y: p.y + Math.sin(angle) * x + Math.cos(angle) * y, angle }, '#9eafc7', .42, 'raven', t, power, 'wing-' + side);
           }
-          if (state.phase !== 2 && age === null) this.label('ЗАРЯ', p.x, p.y - 44, '#b1bdcf', 'center', 8);
         }
       }
     }
@@ -315,7 +314,7 @@
           const x = side < 0 ? 1010 : 1060; c.fillRect(x, 90, 15, 500); c.strokeRect(x, 90, 15, 500);
           for (let y = 105; y < 590; y += 65) { c.beginPath(); c.moveTo(x, y); c.lineTo(x - 85, y + 30); c.lineTo(x, y + 60); c.stroke(); }
         }
-        c.restore(); this.label('ОРБИТАЛЬНАЯ ВЕРФЬ', 1035, 55, '#7e8ba6', 'center', 8);
+        c.restore();
       }
     }
     body(p, companion = false) {
@@ -363,7 +362,6 @@
         const p = E.operation(s.operation).signal; c.save(); c.globalAlpha = s.signal ? .3 : 1;
         this.glow(p.x,p.y,44,'gold',.25); this.ring(p,p.r,'#dfbd8970',1);
         c.translate(p.x,p.y); c.rotate(Math.PI/4); c.fillStyle = '#34364a'; c.strokeStyle = '#e3c797'; c.lineWidth = 1.2/this.scale; c.fillRect(-6,-6,12,12); c.strokeRect(-6,-6,12,12); c.restore();
-        if (!s.signal) this.label('БОНУС',p.x,p.y-p.r-12,palette.gold,'center',8);
       }
     }
     fortress(state, t, reduced, battle) {
@@ -409,7 +407,7 @@
         for (const [from,to] of [[-.95,.9],[1.25,3.9],[4.25,5.05]]) { c.beginPath(); c.ellipse(0,0,350,245,0,from,to); c.stroke(); }
         c.strokeStyle = '#c0c6de21'; c.lineWidth = 1.2;
         for (let i = 0; i < 28; i++) { const a = i/28*TAU; if (i%7 === 0) continue; const x = Math.cos(a), y = Math.sin(a); this.line([{x:x*336,y:y*231},{x:x*362,y:y*258}],'#b0b6cf23',.8); }
-        c.restore(); this.label('РАСКОЛОТАЯ ОБСЕРВАТОРИЯ',615,630,'#7e839e','center',8);
+        c.restore();
       } else if (theme === 'sisyphus') {
         const sun = c.createRadialGradient(1260,90,5,1260,90,300); sun.addColorStop(0,'#ffe9bd7a'); sun.addColorStop(.12,'#edc18d2b'); sun.addColorStop(1,'#d89b6000'); c.fillStyle = sun; c.fillRect(900,-200,700,700);
         c.save(); c.strokeStyle = '#bfb3a51b'; c.lineWidth = 1/this.scale; c.setLineDash([2/this.scale,13/this.scale]);

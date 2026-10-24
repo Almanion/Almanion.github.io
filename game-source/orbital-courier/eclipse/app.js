@@ -3,27 +3,27 @@
   const E = root.EclipseEngine, B = root.EclipseBattle, $ = id => document.getElementById(id), KEY = 'orbital-eclipse-operation-v1';
   const NAMES = { breach: 'Удар с тыла', rebound: 'Вернуть залп', escort: 'Прикрыть звено' };
   const PHASES = [
-    { title: 'За тенью луны', objective: 'Пройди над луной и захвати узел. Его поле позволит атаковать крепость.', radio: 'Луна прикроет заход. Найди курс к светящемуся узлу над её краем.', intel: 'Крепость стреляет каждые 5 с. Тень луны закрывает корабль от огня; каждый залп ослабляет союзный флот.' },
-    { title: 'Открыть крепость', objective: '', radio: 'Узел наш. Выбери способ атаки и настрой гравитационный якорь.', intel: '' },
-    { title: 'Живым из огня', objective: 'Дойди до синего коридора слева вверху. Луна притягивает корабль, обломки движутся.', radio: 'Щит погас. «Заря» начинает атаку. Твой коридор выхода — слева вверху.', intel: 'Следы обломков показывают их движение. Прогноз учитывает момент встречи: иногда достаточно изменить скорость.' }
+    { title: 'Захват узла', objective: 'Захвати узел над луной.', radio: 'Цель — узел над луной.', intel: 'Залпы каждые 5 с. Тень луны защищает от огня.' },
+    { title: 'Атака крепости', objective: '', radio: 'Выбери тактику и положение якоря.', intel: '' },
+    { title: 'Выход', objective: 'Достигни синего коридора слева вверху.', radio: 'Щит разрушен. Следуй к синему коридору.', intel: 'Избегай движущихся обломков. Их следы показывают направление.' }
   ];
   const TACTIC_INFO = {
-    breach: { objective: 'Обойди крепость справа. Удержись в подсвеченном секторе 0,8 с — корабль автоматически расстреляет генератор.', intel: 'Стрелять можно с тыла на расстоянии до 205 м. Якорь притягивает корабль: используй его, чтобы загнуть курс за щит.' },
-    rebound: { objective: 'Ты управляешь захваченным залпом. Якорь должен развернуть снаряд и вернуть его в крепость.', intel: 'Уведи залп за пунктирную линию разворота, затем верни к реактору. Снаряд должен лететь обратно вправо. В этом режиме поле якоря мощнее.' },
-    escort: { objective: 'Прикрой бомбардировщик хотя бы во время одного из двух залпов: на 4,5 и 7,5 с. Его курс отмечен золотом.', intel: 'Союзник защищён в радиусе 145 м от тебя. Он выдержит одно попадание; на 9-й секунде уничтожит генератор. Прикрыть оба залпа — лучший результат.' }
+    breach: { objective: 'Удержись в секторе за крепостью 0,8 с для автоматической атаки.', intel: 'Дальность огня — 205 м. Якорь изгибает курс к тылу крепости.' },
+    rebound: { objective: 'Верни захваченный снаряд в реактор с помощью якоря.', intel: 'Пересеки пунктирную линию, затем направь снаряд обратно вправо.' },
+    escort: { objective: 'Прикрой бомбардировщик на 4,5 или 7,5 с.', intel: 'Держись в радиусе 145 м. Союзник выдержит одно попадание и атакует на 9-й секунде.' }
   };
   const REFERENCES = { approach: { angle: -51, speed: 85, ax: 760, ay: 410 }, breach: { angle: 10, speed: 145, ax: 805, ay: 195 }, rebound: { angle: 165, speed: 65, ax: 735, ay: 335 }, escort: { angle: 45, speed: 65, ax: 560, ay: 90 } };
   const STORIES = {
-    eclipse: { sector: 'ЛУНА ИЛЬ / ОРБИТА 07', mark: '◐', title: 'Открой нам путь.', lead: 'Крепость Собирателей держит захваченный мир. Наш флот под огнём. Перехвати гравитационный узел, открой крепость и вернись из боя.', approach: 'Пройди над луной и захвати узел. Его поле позволит атаковать крепость.', arrival: 'Луна прикроет заход. Найди курс к светящемуся узлу над её краем.', approachIntel: 'Тень луны закрывает корабль от огня. Золотой ретранслятор заглушит один залп и сохранит союзный корабль.', exit: 'Дойди до синего коридора выхода. Луна притягивает корабль, а обломки пересекают маршрут.', hazard: 'Следы обломков показывают их движение. Измени момент старта или скорость, чтобы разойтись с ними.' },
-    rift: { sector: 'РАЗРУШЕННОЕ КОЛЬЦО / РАЗЛОМ 03', mark: '◌', title: 'Найди проход.', lead: 'Расколотое орбитальное кольцо окружает крепость. Секции дрейфуют поперёк маршрута. Проведи корабль через разлом и открой союзному флоту коридор.', approach: 'Пройди между секциями кольца и захвати гравитационный узел. Обломки движутся: учитывай время встречи.', arrival: 'Лира: секции кольца дрейфуют. Ищем проход к узлу, затем открываем крепость.', approachIntel: 'Не проходи вплотную к обломкам. Задержка старта меняет положение движущихся секций, а торможение помогает пропустить их вперёд.', exit: 'Выйди к синему коридору через движущиеся секции кольца. Оставь запас для торможения.', hazard: 'Дрейфующие секции могут закрыть вчерашний проход. Сверяй прогноз, момент старта и относительную скорость.' },
-    pulsar: { sector: 'ИОННАЯ ДУГА / ПУЛЬСАР 09', mark: 'ϟ', title: 'Поймай тишину.', lead: 'Ионный фронт пульсирует между кораблём и крепостью. В коротком затишье можно прорваться без повреждений; щит оставь для самого опасного пересечения.', approach: 'Захвати узел за ионным фронтом. Выбери безопасное окно старта или включи щит перед разрядом.', arrival: 'Лира: фронт набирает заряд. Сверь время старта с безопасным окном.', approachIntel: 'Фронт чередует разряд и затишье. Ускорение и торможение меняют время пересечения, щит выдерживает один разряд.', exit: 'Пройди ионный фронт и выйди к синему коридору. Следи за следующим безопасным окном.', hazard: 'Пауза позволяет спокойно выбрать момент для щита, разгона или торможения. Использованные системы восстановятся на следующем этапе.' },
-    binary: { sector: 'ДВОЙНАЯ СИСТЕМА / РУБЕЖ 12', mark: '◑', title: 'Удержись между мирами.', lead: 'Две луны тянут корабль в разные стороны. Крепость спрятана в их гравитационном узле. Используй оба поля, чтобы выйти к цели, а затем выберись из двойного притяжения.', approach: 'Пройди через двойное гравитационное поле и захвати узел. Следи за обязательными точками маршрута.', arrival: 'Лира: здесь два центра притяжения. Сначала пройди отмеченную точку маршрута, затем забирай узел.', approachIntel: 'Поле второй луны меняет кривизну курса. Разгон помогает выйти из притяжения; торможение даёт полю больше времени развернуть корабль.', exit: 'Выбери курс к синему коридору между двумя гравитационными полями. Избегай поверхностей обеих лун.', hazard: 'Слабый импульс сильнее изгибает маршрут. Разгон и торможение доступны по одному разу: проверяй направление скорости перед включением.' },
-    ark: { sector: 'КОВЧЕГ / ОРБИТАЛЬНАЯ ВЕРФЬ', mark: '⬡', title: 'Забери тех, кто остался.', lead: 'Собиратели захватили орбитальную верфь вместе с её экипажем. Подбери эвакуационную капсулу, захвати узел и проведи флот через защиту верфи.', approach: 'Сначала подбери эвакуационную капсулу, затем захвати гравитационный узел. Не задень движущиеся заслоны верфи.', arrival: 'Лира: капсула подаёт сигнал. Сначала забираем людей, затем идём к узлу.', approachIntel: 'Эвакуационная капсула — обязательная цель. Заслоны движутся: выбери окно старта, а во время полёта пропусти опасную секцию торможением.', exit: 'Проведи корабль к синему коридору за пределами верфи. Учитывай движение заслонов и сохрани место для коррекции скорости.', hazard: 'Прогноз учитывает движущиеся заслоны. Подбирай время прохода; корпус не выдержит столкновения с секцией верфи.' }
+    eclipse: { sector: 'ЛУНА ИЛЬ', mark: '◐', title: 'Затмение', lead: 'Захвати узел, уничтожь генератор щита и достигни коридора выхода.', approach: 'Захвати узел над луной.', arrival: 'Цель — узел над луной.', approachIntel: 'Тень луны защищает от огня. Ретранслятор заглушит один залп.', exit: 'Достигни синего коридора, избегая обломков.', hazard: 'Следы обломков показывают движение. Скорость и задержка старта меняют момент встречи.' },
+    rift: { sector: 'ОРБИТАЛЬНОЕ КОЛЬЦО', mark: '◌', title: 'Разлом', lead: 'Пройди движущиеся секции кольца, захвати узел и атакуй крепость.', approach: 'Захвати узел между секциями кольца.', arrival: 'Цель — узел за движущимися секциями.', approachIntel: 'Задержка старта меняет положение обломков. Торможение позволяет пропустить их.', exit: 'Достигни синего коридора через секции кольца.', hazard: 'Проверяй время встречи с движущимися секциями.' },
+    pulsar: { sector: 'ИОННАЯ ДУГА', mark: 'ϟ', title: 'Пульсар', lead: 'Пересеки ионный фронт в затишье, захвати узел и атакуй крепость.', approach: 'Захвати узел за ионным фронтом.', arrival: 'Выбери безопасное время пересечения фронта.', approachIntel: 'Фронт чередует разряд и затишье. Щит выдерживает один разряд.', exit: 'Пересеки фронт и достигни синего коридора.', hazard: 'Выбирай действие на паузе. Заряды восстановятся на следующем этапе.' },
+    binary: { sector: 'ДВОЙНАЯ СИСТЕМА', mark: '◑', title: 'Двойное притяжение', lead: 'Пройди обязательный рубеж и захвати узел в гравитационном поле двух лун.', approach: 'Пройди отмеченный рубеж, затем захвати узел.', arrival: 'Сначала рубеж, затем узел.', approachIntel: 'Обе луны притягивают корабль. На малой скорости курс изгибается сильнее.', exit: 'Достигни синего коридора, избегая обеих лун.', hazard: 'Проверяй направление скорости перед разгоном или торможением.' },
+    ark: { sector: 'ОРБИТАЛЬНАЯ ВЕРФЬ', mark: '⬡', title: 'Ковчег', lead: 'Подбери капсулу, захвати узел и атакуй верфь.', approach: 'Подбери эвакуационную капсулу, затем захвати узел.', arrival: 'Сначала капсула, затем узел.', approachIntel: 'Капсула обязательна. Выбери время прохода между движущимися заслонами.', exit: 'Достигни синего коридора за пределами верфи.', hazard: 'Избегай движущихся заслонов. Столкновение с секцией разрушит корабль.' }
   };
   Object.assign(STORIES, {
-    seam: { sector: 'РАЗОРВАННЫЙ РУКАВ / ШОВ 31', mark: '⫶', title: 'Собери путь из разрывов.', lead: 'После пространственного сдвига три навигационных маяка оказались по разные стороны разрыва. Прямого пути больше нет. Пройди через парные врата и восстанови сеть: каждый новый маяк находится в другой складке пространства.', approach: 'Активируй маяк I перед первым разломом, затем войди в парное кольцо. Корабль выйдет из другой точки с повёрнутым вектором скорости.', approachIntel: 'Каждая пара сохраняет скорость, но поворачивает импульс. Прогноз проходит через все врата: не пытайся соединить маяки прямой линией.', arrival: 'Лира: маяки погасли. Смотри на пары колец: вход здесь, выход — в другой части разрыва.', middleTitle: 'Найди верхнюю складку', middle: 'После перехода восстанови маяк II. Белые риски показывают выходной импульс. Кнопка D меняет ориентацию следующей пары: 0°, +6°, −6°.', exitTitle: 'Замкни пространственную сеть', exit: 'Пройди вторую пару врат и восстанови маяк III в нижней складке. Он завершит сеть. Это один непрерывный полёт: импульс и использованные системы сохраняются.', hazard: 'Разгон и торможение доступны по одному разу на весь полёт. Пауза остановит время и даст проверить новый выход.', resultTitle: 'Сеть снова видит звёзды.', result: 'Три навигационных маяка восстановлены. Спасательные корабли получили безопасную карту пространственного разрыва.', hint: 'Белые риски у портала показывают выходной вектор. Опорный курс проходит цепочку врат без переключения: сначала посмотри весь прогноз. D поворачивает следующую пару и даёт альтернативную траекторию; повторное переключение позволяет вернуть расчёт.' },
-    sisyphus: { sector: 'ПОЯС ГЕЛИЯ / КОЛОНИЯ «ДОМ»', mark: '◈', title: 'Сдвинь неизбежное.', lead: 'Крупный астероид идёт к жилой колонии. Оружие расколет его на сотни опасных обломков. Сравняй скорость, захвати камень буксиром и тяни его в сторону от людей — масса груза изменит движение корабля.', approach: 'Сблизься с астероидом на малой относительной скорости. Автосцепка поймает груз; D позволяет зацепить его вручную чуть дальше.', approachIntel: 'Смотри на скорость относительно астероида. После захвата трос передаёт тягу: резкий рывок может растянуть связь. Это тяжёлый груз, не неподвижная точка.', arrival: 'Диспетчер: колония на линии столкновения. Нужен буксир, не удар. Сначала сравняй скорость с камнем.', middleTitle: 'Измени траекторию камня', middle: 'После захвата буксируй астероид к отмеченному безопасному проходу. Торможение меняет натяжение; D отцепляет трос, когда камень уже направлен мимо колонии.', exitTitle: 'Подтверди безопасный пролёт', exit: 'Проведи астероид за контрольный рубеж по безопасной траектории. Людей спасает движение груза: уйти самому недостаточно. Синий коридор для корабля здесь не нужен.', hazard: 'Учитывай массу астероида и его инерцию. Разгон — один на весь полёт; проверь, куда направлен общий импульс до его включения.', resultTitle: '«Дом» останется дома.', result: 'Астероид выведен с линии столкновения и прошёл контрольный рубеж. Колонии больше не грозит удар.', hint: 'Опорный курс выводит корабль на сближение с малой относительной скоростью: автосцепка сработает сама. После захвата следи за тросом и прогнозом астероида. Кнопка D нужна для ручного захвата или отцепки; сначала добейся безопасной траектории груза.' },
-    archive: { sector: 'МЁРТВАЯ ТУМАННОСТЬ / АРХИВ 00', mark: '⌁', title: 'Верни то, что скрыли.', lead: 'В заброшенном архиве хранится карта исчезнувших колоний. Охрана всё ещё патрулирует станцию. Пройди через пыль, замедлись у терминала, скачай данные и уйди до того, как тревога замкнёт выход.', approach: 'Проберись к терминалу между конусами патрулей. Пылевые облака скрывают корабль от сканеров.', approachIntel: 'Конусы охраны движутся. Вне укрытия растёт обнаружение. D включает глушитель на 3 секунды и снижает заметность на 92%. Доступно одно включение на весь полёт.', arrival: 'Лира: связь только шёпотом. Карта внутри архива. Пыль нас скроет; свет патруля — выдаст.', middleTitle: 'Скачай карту колоний', middle: 'Останься у терминала на малой скорости. Скачивание идёт автоматически, пока корабль в зоне связи. Торможение помогает задержаться в зоне связи. Если патруль поворачивает к тебе, выбери короткое окно для глушителя D.', exitTitle: 'Унеси карту из тумана', exit: 'Когда загрузка завершена, дойди с данными до теневого шлюза. Работа манёвровых двигателей повышает заметность: лишний импульс может выдать корабль на выходе.', hazard: 'Достигнутая точка ещё не означает успех. Следи за процентом загрузки и обнаружением; пауза даёт время включить глушитель до пересечения конуса.', resultTitle: 'Архив больше не молчит.', result: 'Карта исчезнувших колоний скопирована и доставлена за пределы патрульной зоны. Теперь у поисковой группы есть координаты.', hint: 'Опорный курс проходит через пылевое укрытие и область терминала. Скачивание требует 2,2 секунды в круге терминала при скорости до 90 м/с: слабый импульс или торможение помогут остаться в зоне. Глушитель D скрывает корабль на 3 секунды и доступен один раз. После загрузки нужен теневой шлюз. Прогноз учитывает движение охраны и обнаружение.' }
+    seam: { sector: 'ПРОСТРАНСТВЕННЫЙ РАЗЛОМ', mark: '⫶', title: 'Шов', lead: 'Восстанови три маяка по порядку через две пары разломов.', approach: 'Активируй маяк I и войди в первую пару врат.', approachIntel: 'Врата сохраняют скорость и поворачивают импульс.', arrival: 'Первый маяк — перед разломом.', middleTitle: 'Маяк II', middle: 'После перехода активируй маяк II. D поворачивает следующий выход: 0°, +6°, −6°. Белые риски показывают направление.', exitTitle: 'Маяк III', exit: 'Пройди вторую пару врат и активируй маяк III. Все три задачи выполняются в одном полёте.', hazard: 'Разгон и торможение доступны по одному разу на миссию.', resultTitle: 'Миссия выполнена', result: 'Восстановлены все три маяка.', hint: 'Готовый курс проходит обе пары врат без переключения. D меняет направление следующего выхода: 0°, +6°, −6°. Проверь всю траекторию перед стартом.' },
+    sisyphus: { sector: 'ПОЯС ГЕЛИЯ', mark: '◈', title: 'Сизиф', lead: 'Зацепи астероид и отклони его от колонии.', approach: 'Сблизься с астероидом сбоку. Автозахват: до 88 м, относительная скорость до 90 м/с.', approachIntel: 'D — ручной захват до 112 м при относительной скорости до 110 м/с.', arrival: 'Перехвати астероид до контрольного рубежа.', middleTitle: 'Отклонение', middle: 'Трос передаёт импульс астероиду. Рывок может порвать его; следи за натяжением. D отцепляет трос.', exitTitle: 'Безопасный пролёт', exit: 'Выведи астероид за контрольный рубеж по курсу мимо колонии. Уход корабля без груза не засчитывается.', hazard: 'После отцепки астероид сохраняет импульс. Повторный захват — кнопкой D.', resultTitle: 'Миссия выполнена', result: 'Астероид отклонён. Колония спасена.', hint: 'Готовый курс сближает скорости для автозахвата. Следи за тросом и прогнозом астероида. D — ручной захват или отцепка; отцепляй после безопасного отклонения.' },
+    archive: { sector: 'МЁРТВАЯ ТУМАННОСТЬ', mark: '⌁', title: 'Чёрный архив', lead: 'Скачай данные у терминала и достигни теневого шлюза до обнаружения.', approach: 'Пройди к терминалу между патрульными конусами. Пыль снижает обнаружение.', approachIntel: 'D — один глушитель на 3 с. Манёвры повышают заметность.', arrival: 'Цель — терминал в пылевом укрытии.', middleTitle: 'Загрузка', middle: 'Набери 2,2 с в круге терминала на скорости до 90 м/с. Загрузка идёт автоматически.', exitTitle: 'Выход', exit: 'После загрузки достигни теневого шлюза. Обнаружение 100% завершает попытку.', hazard: 'Глушитель снижает заметность на 92% в течение 3 с.', resultTitle: 'Миссия выполнена', result: 'Данные доставлены без тревоги.', hint: 'Готовый курс проходит пыль и терминал. Для загрузки нужны 2,2 с на скорости до 90 м/с. D — глушитель на 3 с, доступен один раз. После загрузки достигни шлюза.' }
   });
   const story = () => STORIES[operationId] || STORIES.eclipse;
   const expedition = () => E.isExpedition ? E.isExpedition(operationId) : E.operation(operationId).kind === 'expedition';
@@ -64,11 +64,12 @@
   function snapshot(override = {}) { return { version: 2, operation: operationId, phase, tactic, carry, completed, attempts, hints, plans, best, settings, finished, final: finished ? finalRecord() : undefined, ...override }; }
   function save(override) {
     const current = snapshot(override); operations[operationId] = current;
-    try { localStorage.setItem(KEY, JSON.stringify({ ...current, operations })); $('saveStatus').textContent = 'Операция сохранена на этом устройстве'; }
-    catch { $('saveStatus').textContent = 'Хранилище недоступно · попытка остаётся в этой вкладке'; }
+    try { localStorage.setItem(KEY, JSON.stringify({ ...current, operations })); $('saveStatus').textContent = 'Сохранено на устройстве'; }
+    catch { $('saveStatus').textContent = 'Сохранение недоступно'; }
     $('deviceSaveStatus').textContent = $('saveStatus').textContent;
   }
   function openDialog(id) {
+    if (id !== 'toolsMenu' && $('toolsMenu').open) closeDialog('toolsMenu');
     stopInput(); accumulator = 0; sound.silence(); const dialog = $(id); if (!dialog.open) dialog.showModal();
     if (id === 'briefing') { $('briefingTitle').focus({ preventScroll: true }); dialog.scrollTop = 0; }
   }
@@ -86,12 +87,11 @@
     plan = E.cleanPlan(plan, phase, tactic, operationId);
     state = E.create(phase, tactic, plan, carry, operationId); mode = 'plan'; accumulator = 0; eventIndex = 0; editing = false; pendingNext = null; actionNotice = ''; battle.reset();
     if (!initial) previous = null;
-    const meta = PHASES[phase], currentStory = story(), advanced = ['binary', 'ark'].includes(operationId), info = phase === 1 ? advanced && tactic === 'escort' ? { objective: 'Прикрой бомбардировщик во время обоих залпов: на 4,5 и 7,5 с. Его курс отмечен золотом.', intel: 'В этой операции нужно прикрыть оба залпа. Держись в радиусе 145 м от союзника: разгон и торможение помогают выровнять время сближения. На 9-й секунде он атакует генератор.' } : TACTIC_INFO[tactic] : { objective: phase === 0 ? currentStory.approach : currentStory.exit, intel: phase === 0 ? currentStory.approachIntel : currentStory.hazard };
+    const meta = PHASES[phase], currentStory = story(), advanced = ['binary', 'ark'].includes(operationId), info = phase === 1 ? advanced && tactic === 'escort' ? { objective: 'Прикрой оба залпа: на 4,5 и 7,5 с.', intel: 'Держись в радиусе 145 м от бомбардировщика. На 9-й секунде он атакует генератор.' } : TACTIC_INFO[tactic] : { objective: phase === 0 ? currentStory.approach : currentStory.exit, intel: phase === 0 ? currentStory.approachIntel : currentStory.hazard };
     const operation = E.operation(operationId);
     const custom = expedition(), missionInfo = mission();
     document.title = operation.name + (custom ? ' — самостоятельная экспедиция' : ' — боевая операция');
-    $('operationName').textContent = operation.name.toUpperCase(); $('operationTag').textContent = operation.tag; $('operationDetail').textContent = operation.detail;
-    $('mapSector').textContent = currentStory.sector;
+    $('operationName').textContent = operation.name; $('operationTag').textContent = operation.tag; $('operationDetail').textContent = operation.detail;
     $('phaseLabel').textContent = custom ? 'ЭКСПЕДИЦИЯ / НЕПРЕРЫВНЫЙ ПОЛЁТ' : `МАНЁВР 0${phase + 1} / 03`; $('objectiveTitle').textContent = operation.titles[phase]; $('objectiveText').textContent = info.objective; $('intelText').textContent = info.intel + (phase === 1 && ['binary', 'ark'].includes(operationId) ? ' ' + currentStory.hazard : ''); setRadio(phase === 0 ? currentStory.arrival : phase === 2 ? '«Заря» начинает атаку. Следуй к синему коридору выхода; системы манёвра восстановлены.' : meta.radio);
     $('mobileObjective').textContent = info.objective;
     $('step0Text').textContent = operationId === 'ark' ? 'Спасти капсулу' : operationId === 'binary' ? 'Пройти рубеж' : 'Захватить узел';
@@ -100,18 +100,17 @@
     $('briefingArtLabel').textContent = operation.name.toUpperCase() + ' / ' + currentStory.sector;
     $('briefingApproachTitle').textContent = operation.titles[0]; $('briefingApproachText').textContent = currentStory.approach;
     $('briefingExitTitle').textContent = custom ? currentStory.exitTitle : operation.titles[2]; $('briefingExitText').textContent = currentStory.exit;
-    $('briefingSystemsText').textContent = custom ? 'Разгон +18% помогает изменить момент встречи или передать грузу импульс. Торможение −25% снижает скорость: полезно у терминала и при сближении. У каждой экспедиции своя система D — она описана в задачах выше.' : 'Разгон +18% помогает выйти из притяжения. Торможение −25% меняет момент встречи с препятствием. Щит на 2 с защищает от огня и ионного разряда.';
-    $('briefingSystemsLabel').textContent = custom ? 'В ПОЛЁТЕ · ПО ОДНОМУ ЗАРЯДУ НА ВСЮ МИССИЮ' : 'В ПОЛЁТЕ · ПО ОДНОМУ ЗАРЯДУ НА ЭТАП';
-    $('windowLead').textContent = custom ? 'Время старта меняет момент встречи с движущимися объектами. Прогноз показывает путь с текущим курсом и режимом системы миссии; ручные действия D, разгон и торможение в него заранее не включены.' : 'Пока корабль ждёт, препятствия движутся, а ионный фронт меняет состояние. Прогноз сразу покажет результат нового окна. Разгон и торможение станут доступны после фактического старта.';
-    $('briefingSource').textContent = custom ? 'ЭКСПЕДИЦИОННАЯ СЛУЖБА / ЛИРА' : 'ПЕРЕДАЧА С ФЛАГМАНА «ЗАРЯ»';
-    $('briefingMiddleTitle').textContent = custom ? currentStory.middleTitle : 'Выбери способ атаки';
-    $('briefingMiddleText').textContent = custom ? currentStory.middle : 'Обойди щит, верни вражеский залп или прикрой союзника. Перемещай якорь и следи за траекторией.';
-    $('briefingControlHelp').textContent = custom ? 'Один непрерывный полёт, три задачи. Пробел — старт / пауза, D — система миссии, Q — разгон, F — торможение; на телефоне — кнопки под картой. Действие можно выбрать на паузе: прогноз пересчитается сразу. Восстановления зарядов между подцелями нет.' : 'Планируй без спешки. Можно выбрать действие на паузе: прогноз сразу пересчитается. Q — разгон, F — торможение, E — щит; на телефоне — кнопки под картой. Для захваченного снаряда на втором этапе эти системы недоступны.';
+    $('briefingSystemsText').textContent = custom ? 'Разгон +18%, торможение −25%. D — действие миссии.' : 'Разгон +18%, торможение −25%. Щит защищает на 2 с.';
+    $('briefingSystemsLabel').textContent = custom ? 'ПО ОДНОМУ ЗАРЯДУ НА МИССИЮ' : 'ПО ОДНОМУ ЗАРЯДУ НА ЭТАП';
+    $('windowLead').textContent = custom ? 'Задержка старта меняет время встречи. Прогноз не включает будущие нажатия D, разгона и торможения.' : 'Задержка старта меняет положение препятствий и состояние ионного фронта.';
+    $('briefingSource').textContent = custom ? 'ЭКСПЕДИЦИЯ' : 'БОЕВАЯ ОПЕРАЦИЯ';
+    $('briefingMiddleTitle').textContent = custom ? currentStory.middleTitle : 'Атака';
+    $('briefingMiddleText').textContent = custom ? currentStory.middle : 'Выбери тактику и перемести якорь для расчёта траектории.';
+    $('briefingControlHelp').textContent = custom ? 'Пробел — старт / пауза. Q — разгон, F — торможение, D — действие миссии. Действия доступны на паузе; прогноз пересчитывается сразу.' : 'Пробел — старт / пауза. Q — разгон, F — торможение, E — щит. Действия доступны на паузе; для захваченного снаряда они недоступны.';
     $('briefingApproachTitle').textContent = custom ? (missionInfo?.steps?.[0]?.title || 'Найди подход') : operation.titles[0];
-    $('chooseBriefingOperation').textContent = 'Выбрать поле боя · ' + E.OPERATIONS.length + ' операций';
-    document.querySelector('[data-tactic="escort"] small').textContent = advanced ? 'Прикрыть оба залпа' : 'Провести бомбардировщик';
+    $('chooseBriefingOperation').textContent = 'Миссии';
     $('tactics').hidden = custom || phase !== 1; $('anchorControls').hidden = custom || phase !== 1;
-    $('hullLabel').textContent = phase === 1 && tactic === 'rebound' ? 'КОРАБЛЬ В УКРЫТИИ' : 'ТВОЙ КОРПУС';
+    $('hullLabel').textContent = phase === 1 && tactic === 'rebound' ? 'Корабль в укрытии' : 'Корпус';
     $('mapHint').textContent = 'Потяни по карте, чтобы задать курс';
     for (let i = 0; i < 3; i++) { $('step' + i).classList.toggle('done', i < phase); if (i === phase) $('step' + i).setAttribute('aria-current', 'step'); else $('step' + i).removeAttribute('aria-current'); }
     document.querySelectorAll('[data-tactic]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tactic === tactic)));
@@ -152,6 +151,9 @@
     $('courseTool').disabled = locked; $('delayToggle').disabled = locked;
     $('courseTool').setAttribute('aria-pressed', String(!editing)); $('anchorTool').setAttribute('aria-pressed', String(editing));
     $('anchorTool').hidden = expedition() || phase !== 1;
+    $('planTools').hidden = expedition() || phase !== 1;
+    $('undoPlan').closest('.history-tools').hidden = locked || !undo.length && !redo.length;
+    $('delayToggle').hidden = locked;
     $('mapHint').textContent = editing ? 'Перетащи якорь · стрелки перемещают его' : 'Потяни по карте · ← → курс, ↑ ↓ импульс';
     document.body.dataset.tool = editing ? 'anchor' : 'course';
   }
@@ -196,7 +198,7 @@
   function syncManeuvers(cinematic) {
     const flying = ['running', 'paused'].includes(mode) && !cinematic, projectile = !expedition() && phase === 1 && tactic === 'rebound';
     const details = mission(); $('missionActionRow').hidden = !details || !flying;
-    if (details) { $('missionActionLabel').textContent = details.actionLabel || 'Система миссии'; $('missionActionHint').textContent = details.actionHint || 'Специальное действие'; $('missionAction').disabled = !flying || !E.canInteract?.(state); $('missionAction').setAttribute('aria-label', $('missionActionLabel').textContent + '. ' + $('missionActionHint').textContent); }
+    if (details) { $('missionActionLabel').textContent = (details.actionLabel || 'Действие').replace('Повернуть выход ', 'Поворот ').replace('Включить глушитель', 'Глушитель').replace('Глушитель исчерпан', 'Глушитель ✓'); $('missionActionHint').textContent = details.actionHint || ''; $('missionAction').disabled = !flying || !E.canInteract?.(state); $('missionAction').setAttribute('aria-label', (details.actionLabel || 'Действие миссии') + '. ' + $('missionActionHint').textContent); $('missionAction').title = $('missionAction').getAttribute('aria-label'); }
     $('combatActions').hidden = !flying || projectile;
     for (const kind of ['boost', 'brake']) {
       const used = !!state[kind + 'Used'], available = flying && E.canManeuver?.(state, kind);
@@ -211,26 +213,27 @@
     const cinematic = mode === 'cinematic' || mode === 'paused' && resumeMode === 'cinematic';
     const running = mode === 'running' || mode === 'paused' || cinematic, locked = mode !== 'plan', custom = expedition(), details = mission();
     document.body.dataset.kind = custom ? 'expedition' : 'battle';
-    $('stateBadge').textContent = mode === 'running' ? 'МАНЁВР ВЫПОЛНЯЕТСЯ' : mode === 'paused' ? 'ТАКТИЧЕСКАЯ ПАУЗА' : cinematic ? 'ПРОРЫВ ФЛОТА' : mode === 'review' ? state.status === 'won' ? 'МАНЁВР ЗАВЕРШЁН' : 'РАЗБОР ПОЛЁТА' : 'ПЛАНИРОВАНИЕ';
+    $('stateBadge').textContent = mode === 'paused' ? 'Пауза' : cinematic ? 'Атака флота' : mode === 'running' ? 'Полёт' : mode === 'review' ? 'Результат' : 'Курс';
     $('stateBadge').classList.toggle('live', mode === 'running'); $('timer').textContent = state.t.toFixed(2).padStart(5, '0') + ' с';
     $('fleetValue').textContent = `${state.fleet} / 6`; $('fleetMeter').style.width = state.fleet / 6 * 100 + '%'; $('hullValue').textContent = `${state.hull} / 3`; $('hullMeter').style.width = state.hull / 3 * 100 + '%';
-    $('fleetLabel').textContent = custom ? details?.metricLabel || 'ЦЕЛЬ МИССИИ' : 'СОЮЗНЫЙ ФЛОТ';
+    $('fleetLabel').textContent = custom ? details?.metricLabel || 'Цель миссии' : 'Флот';
     if (custom) { $('fleetValue').textContent = details?.metricValue || '0 / 3'; $('fleetMeter').style.width = Math.round(E.clamp(details?.metricRatio || 0, 0, 1) * 100) + '%'; }
-    $('mobileVitals').textContent = custom ? `${details?.metricValue || 'Задачи 0/3'} · Корпус ${state.hull}/3` : `Флот ${state.fleet}/6 · Корпус ${state.hull}/3`;
+    $('mobileVitals').textContent = custom ? `Корпус ${state.hull}/3` : `Флот ${state.fleet}/6 · Корпус ${state.hull}/3`;
+    $('mobileVitals').hidden = state.hull === 3 && (custom || state.fleet === 6);
     for (const id of ['angle', 'angleRange', 'speed', 'speedRange', 'anchorX', 'anchorY', 'anchorTool', 'delay']) $(id).disabled = locked;
     document.querySelectorAll('[data-adjust]').forEach(b => b.disabled = locked);
     document.querySelectorAll('[data-tactic]').forEach(b => b.disabled = locked);
     $('launch').hidden = running; $('pause').hidden = !running; $('shield').hidden = custom || !running || cinematic || phase === 1 && tactic === 'rebound';
     $('rate').disabled = cinematic; $('battleMoment').hidden = !cinematic;
-    $('launch').textContent = mode === 'review' ? state.status === 'won' ? finalPhase() ? 'Итоги операции ↗' : 'Следующий манёвр ↗' : 'Изменить курс ↗' : 'Выполнить манёвр ↗';
-    $('pause').textContent = mode === 'paused' ? 'Продолжить ▶' : 'Пауза Ⅱ'; $('shield').disabled = state.shieldUsed;
+    $('launch').textContent = mode === 'review' ? state.status === 'won' ? finalPhase() ? 'Итоги' : 'Дальше' : 'Повторить' : 'Старт';
+    $('pause').textContent = mode === 'paused' ? 'Продолжить' : 'Пауза'; $('shield').disabled = state.shieldUsed;
     $('shieldLabel').textContent = 'Щит'; $('shieldStatus').textContent = state.shield > 0 ? state.shield.toFixed(1) + ' с' : state.shieldUsed ? 'использован' : 'защита на 2 с';
     $('shield').setAttribute('aria-label', state.shield > 0 ? 'Щит активен ещё ' + state.shield.toFixed(1) + ' секунды' : state.shieldUsed ? custom ? 'Щит использован. Восстановится в новой попытке.' : 'Щит использован. Восстановится на следующем этапе.' : 'Включить защитный щит на 2 секунды полёта');
     $('shield').dataset.active = String(state.shield > 0); $('anchorTool').setAttribute('aria-pressed', String(editing));
     $('soundEnabled').checked = settings.sound; $('reducedMotion').checked = settings.reduced; $('showForecast').checked = settings.forecast;
     $('forecastToggle').setAttribute('aria-pressed', String(settings.forecast)); $('forecastToggle').lastElementChild.textContent = settings.forecast ? 'вкл.' : 'выкл.';
-    $('cameraToggle').setAttribute('aria-pressed', String(camera === 'follow')); $('cameraToggle').textContent = camera === 'follow' ? 'Вся карта' : 'Крупнее ⊕';
-    $('tacticalButton').textContent = custom ? 'Задачи экспедиции' : phase === 1 ? NAMES[tactic] + ' · тактика' : 'Задача и курс';
+    $('cameraToggle').setAttribute('aria-pressed', String(camera === 'follow')); $('cameraToggle').textContent = camera === 'follow' ? 'Вся карта' : 'Приблизить';
+    $('tacticalButton').textContent = 'Задача';
     $('signalStatus').textContent = state.signal || completed.some(x => x.signal) ? state.jam ? 'Ретранслятор готов · заглушит залп' : 'Ретранслятор захвачен' : 'Бонус: захватить золотой ретранслятор';
     $('signalStatus').hidden = custom || phase !== 0 && !state.jam;
     const storm = E.stormAt(state), charge = phase === 1 && tactic === 'breach' ? state.charge / .8 : 0;
@@ -245,6 +248,11 @@
       $('objectiveTitle').textContent = details.title || E.operation(operationId).name; $('objectiveText').textContent = details.objective; $('mobileObjective').textContent = details.objective; $('intelText').textContent = details.intel || story().approachIntel;
       for (let i = 0; i < 3; i++) { const item = details.steps?.[i]; $('step' + i + 'Text').textContent = item?.title || 'Задача ' + (i + 1); $('step' + i).classList.toggle('done', !!item?.done); if (item?.active && !item.done) $('step' + i).setAttribute('aria-current', 'step'); else $('step' + i).removeAttribute('aria-current'); }
     }
+    const activeStep = custom ? details?.steps?.find(item => item.active && !item.done) : null;
+    $('mobileObjective').textContent = custom ? activeStep?.title || (state.status === 'won' ? 'Задачи выполнены' : details?.objective || E.operation(operationId).name) : pending ? pending.label : $('step' + phase + 'Text').textContent;
+    $('goalCounter').textContent = custom ? (details?.steps?.filter(item => item.done).length || 0) + ' / 3' : (phase + 1) + ' / 3';
+    $('goalCounter').hidden = custom && mode !== 'plan';
+    $('combatStatus').hidden = $('combatStatus').hidden || mode === 'plan';
     document.body.dataset.reduced = String(settings.reduced); document.body.dataset.phase = String(phase); document.body.dataset.mode = mode; document.body.dataset.camera = camera;
     syncManeuvers(cinematic); syncEditor();
   }
@@ -287,22 +295,22 @@
   }
   function outcome() {
     const won = state.status === 'won', final = won && finalPhase(), custom = expedition(), details = mission();
-    $('outcomeEyebrow').textContent = final ? 'ОПЕРАЦИЯ ЗАВЕРШЕНА / ' + (custom ? E.operation(operationId).name.toUpperCase() : NAMES[tactic].toUpperCase()) : `МАНЁВР 0${phase + 1} / ${won ? 'ВЫПОЛНЕН' : 'ПОВТОР ДОСТУПЕН'}`;
-    $('outcomeTitle').textContent = final ? 'Коридор открыт.' : won ? phase === 0 ? 'Узел наш.' : 'Крепость открыта.' : 'Скорректируем курс.';
-    $('outcomeText').textContent = final ? `Операция «${E.operation(operationId).name}» завершена. «Заря» прошла за щит, ты вернулся из боя.${operationId === 'ark' ? ' Экипаж эвакуационной капсулы спасён.' : operationId === 'binary' ? ' Рубеж между двумя лунами пройден.' : ''}${completed.some(x => x.signal) ? ' Ретранслятор перехвачен — дополнительная цель выполнена.' : ''}` : state.reason;
+    $('outcomeEyebrow').textContent = E.operation(operationId).name;
+    $('outcomeTitle').textContent = final ? 'Миссия выполнена' : won ? 'Этап выполнен' : 'Попытка не завершена';
+    $('outcomeText').textContent = final ? 'Генератор уничтожен. Корабль достиг выхода.' + (operationId === 'ark' ? ' Капсула спасена.' : '') + (completed.some(x => x.signal) ? ' Ретранслятор захвачен.' : '') : state.reason;
     const time = final ? completed.reduce((sum, r) => sum + r.time, 0) : state.t;
-    const stats = final ? [['ВРЕМЯ МАНЁВРОВ', time.toFixed(1) + ' с'], ['ФЛОТ СОХРАНЁН', state.fleet + ' / 6'], ['ЗАПУСКОВ', attempts]] : [['ВРЕМЯ', time.toFixed(1) + ' с'], ['ФЛОТ', state.fleet + ' / 6'], ['КОРПУС', state.hull + ' / 3']];
+    const stats = final ? [['ВРЕМЯ', time.toFixed(1) + ' с'], ['ФЛОТ', state.fleet + ' / 6'], ['ПОПЫТКИ', attempts]] : [['ВРЕМЯ', time.toFixed(1) + ' с'], ['ФЛОТ', state.fleet + ' / 6'], ['КОРПУС', state.hull + ' / 3']];
     $('outcomeStats').replaceChildren(...stats.map(([name, value]) => { const div = document.createElement('div'), label = document.createElement('span'), strong = document.createElement('strong'); label.textContent = name; strong.textContent = value; div.append(label, strong); return div; }));
     const maneuvers = completed.reduce((sum, result) => sum + Number(!!result.boost) + Number(!!result.brake), 0);
-    $('outcomeAdvice').textContent = final ? `Пройдено способов: ${Object.keys(best).length} / 3. ${hints ? 'Использовано подсказок: ' + hints + '.' : 'Самостоятельный расчёт, без подсказок.'} Коррекций скорости: ${maneuvers}. Попробуй другое поле боя или способ атаки.` : won ? phase === 0 ? 'Контрольная точка сохранена. Теперь выбери тактику и настрой гравитационный якорь. Разгон, торможение и щит восстановлены.' : 'Контрольная точка сохранена. ' + story().hazard : 'Прежний маршрут останется на карте. Измени курс или окно старта; в полёте разгон помогает выйти из притяжения, а торможение — пропустить препятствие. Флот, корпус и системы восстановятся до начала этапа.';
+    $('outcomeAdvice').textContent = final ? `Тактики: ${Object.keys(best).length} / 3 · подсказки: ${hints} · коррекции: ${maneuvers}` : won ? phase === 0 ? 'Выбери тактику и положение якоря. Заряды восстановлены.' : story().hazard : 'Измени курс или время старта. Предыдущая траектория останется на карте.';
     if (custom) {
-      $('outcomeEyebrow').textContent = won ? 'ЭКСПЕДИЦИЯ ЗАВЕРШЕНА' : 'ЭКСПЕДИЦИЯ / РАЗБОР ПОЛЁТА';
-      $('outcomeTitle').textContent = won ? story().resultTitle : 'Есть другой путь.'; $('outcomeText').textContent = won ? story().result : state.reason;
+      $('outcomeEyebrow').textContent = E.operation(operationId).name;
+      $('outcomeTitle').textContent = won ? story().resultTitle : 'Попытка не завершена'; $('outcomeText').textContent = won ? story().result : state.reason;
       const customStats = [['ВРЕМЯ', time.toFixed(1) + ' с'], ['ЗАДАЧИ', (details?.steps?.filter(x => x.done).length || 0) + ' / 3'], ['КОРПУС', state.hull + ' / 3']];
       $('outcomeStats').replaceChildren(...customStats.map(([name, value]) => { const div = document.createElement('div'), label = document.createElement('span'), strong = document.createElement('strong'); label.textContent = name; strong.textContent = value; div.append(label, strong); return div; }));
-      $('outcomeAdvice').textContent = won ? (hints ? 'Опорных курсов использовано: ' + hints + '. ' : 'Самостоятельный расчёт, без подсказок. ') + 'Лучшее время: ' + (best.mission?.time || time).toFixed(1) + ' с. Попробуй улучшить маршрут или выбери следующую экспедицию.' : story().hint + ' Предыдущая траектория останется на карте; новая попытка восстановит все системы.';
+      $('outcomeAdvice').textContent = won ? 'Лучшее время: ' + (best.mission?.time || time).toFixed(1) + ' с · подсказки: ' + hints : 'Измени курс или время старта. Заряды восстановятся в новой попытке.';
     }
-    $('outcomePrimary').textContent = final ? custom ? 'Улучшить маршрут ↗' : 'Пройти другим способом ↗' : won ? 'Следующий манёвр ↗' : 'Изменить курс ↗'; openDialog('outcome');
+    $('outcomePrimary').textContent = final ? custom ? 'Ещё раз' : 'Другая тактика' : won ? 'Далее' : 'Повторить'; openDialog('outcome');
   }
   function next() { if (!pendingNext) return; phase = pendingNext.phase; carry = pendingNext.carry; setup(); save(); $('battlefield').focus({ preventScroll: true }); }
   function newOperation() {
@@ -311,16 +319,15 @@
   function showOperations() {
     save(pendingNext && !finalPhase() ? pendingNext : undefined);
     dialogs.forEach(d => { if (d.open) d.close(); });
-    const items = [], groups = [['Экспедиции · новые механики', E.OPERATIONS.filter(o => o.kind === 'expedition')], ['Боевые операции', E.OPERATIONS.filter(o => o.kind !== 'expedition')]];
+    const items = [], groups = [['Экспедиции', E.OPERATIONS.filter(o => o.kind === 'expedition')], ['Боевые операции', E.OPERATIONS.filter(o => o.kind !== 'expedition')]];
     for (const [label, list] of groups) {
       if (!list.length) continue; const heading = document.createElement('h3'); heading.className = 'operation-group-title'; heading.textContent = label; items.push(heading);
       for (const o of list) {
-        const button = document.createElement('button'), art = document.createElement('span'), title = document.createElement('strong'), tag = document.createElement('small'), detail = document.createElement('p'), progress = document.createElement('span');
+        const button = document.createElement('button'), title = document.createElement('strong'), tag = document.createElement('small'), progress = document.createElement('span');
         button.className = 'operation-card'; button.dataset.operation = o.id; button.setAttribute('aria-pressed', String(operationId === o.id));
-        art.className = 'operation-art art-' + o.id; art.setAttribute('aria-hidden', 'true'); art.textContent = (STORIES[o.id] || STORIES.eclipse).mark;
-        tag.textContent = (o.kind === 'expedition' ? 'ЭКСПЕДИЦИЯ / ' : 'ОПЕРАЦИЯ / ') + o.tag; title.textContent = o.name; detail.textContent = o.description;
-        const run = operations[o.id]; progress.className = 'operation-progress'; progress.textContent = run?.finished ? o.kind === 'expedition' ? 'Выполнена · ' + finite(run.best?.mission?.time || run.completed?.[0]?.time, 0, 0, 120).toFixed(1) + ' с' : 'Пройдена · способов ' + Object.keys(run.best || {}).length + '/3' : run?.phase ? 'Продолжить · этап ' + (run.phase + 1) + '/3' : operationId === o.id ? 'Текущая операция' : 'Начать полёт ↗';
-        button.append(art, tag, title, detail, progress); button.addEventListener('click', () => selectOperation(o.id)); items.push(button);
+        tag.textContent = o.tag; title.textContent = o.name;
+        const run = operations[o.id]; progress.className = 'operation-progress'; progress.textContent = run?.finished ? o.kind === 'expedition' ? finite(run.best?.mission?.time || run.completed?.[0]?.time, 0, 0, 120).toFixed(1) + ' с' : 'Пройдено ' + Object.keys(run.best || {}).length + '/3' : run?.phase ? 'Этап ' + (run.phase + 1) + '/3' : operationId === o.id ? 'Выбрана' : '';
+        button.append(tag, title, progress); button.addEventListener('click', () => selectOperation(o.id)); items.push(button);
       }
     }
     $('operationList').replaceChildren(...items);
@@ -365,9 +372,9 @@
   }
   function requestHint() {
     if (mode !== 'plan') return; hintPlan = findHint();
-    $('navigatorText').textContent = !hintPlan ? 'Проверь отмеченные цели и препятствия. Попробуй изменить момент старта, затем направление и импульс.' : phase === 0 ? story().approach + ' Опорный курс учитывает обязательные точки и движение препятствий.' : phase === 2 ? 'Этот курс рассчитан из твоего текущего положения с учётом гравитации и движущихся препятствий. Изменение скорости меняет момент встречи с ними.' : tactic === 'breach' ? 'Проведи корабль вокруг крепости к подсвеченному сектору за щитом. Якорь загнёт курс, а с тыла генератор открыт для автоматического огня.' : tactic === 'rebound' ? 'Перемести якорь так, чтобы поле развернуло залп за пунктирной линией. Небольшой импульс позволит снаряду сделать петлю. Разгон и торможение для захваченного снаряда недоступны.' : 'Следуй вдоль золотого курса. Нужно оказаться рядом с бомбардировщиком во время отмеченных залпов. Торможение и разгон помогают удержаться рядом с ним.';
+    $('navigatorText').textContent = !hintPlan ? 'Измени время старта, направление или скорость.' : phase === 0 ? story().approach : phase === 2 ? 'Курс рассчитан от текущей позиции с учётом движущихся препятствий.' : tactic === 'breach' ? 'Якорь направляет корабль к сектору за щитом. Удержись в нём 0,8 с.' : tactic === 'rebound' ? 'Якорь разворачивает снаряд за пунктирной линией к реактору. Разгон и торможение недоступны.' : 'Следуй рядом с золотой траекторией бомбардировщика во время залпов.';
     if (expedition()) $('navigatorText').textContent = story().hint;
-    if (operationId === 'pulsar') $('navigatorText').textContent += ` Задержка старта ${hintPlan?.delay || 0} с позволяет пересечь фронт в безопасном окне.`;
+    if (operationId === 'pulsar') $('navigatorText').textContent += ` Безопасная задержка старта: ${hintPlan?.delay || 0} с.`;
     if ($('tacticalSheet').open) closeDialog('tacticalSheet');
     $('applyHint').disabled = !hintPlan; openDialog('navigator');
   }
@@ -378,18 +385,13 @@
   $('restartFromSettings').addEventListener('click', () => { closeDialog('preferences'); openDialog('confirmRestart'); });
   $('operationsButton').addEventListener('click', showOperations); $('chooseBriefingOperation').addEventListener('click', showOperations); $('chooseNextOperation').addEventListener('click', showOperations);
   $('closeOperations').addEventListener('click', () => closeDialog('operationsDialog'));
-  const command = document.querySelector('.command'), commandHome = document.createComment('Desktop tactical panel'), compact = matchMedia('(max-width: 900px), (max-height: 500px)');
-  command.before(commandHome);
-  function arrangePanels() {
-    if (compact.matches) $('tacticalContent').append(command);
-    else { if ($('tacticalSheet').open) closeDialog('tacticalSheet'); commandHome.after(command); }
-    renderer.needsDraw = true;
-  }
-  compact.addEventListener('change', arrangePanels); arrangePanels();
+  $('toolsButton').addEventListener('click', () => openDialog('toolsMenu'));
+  $('closeTools').addEventListener('click', () => closeDialog('toolsMenu'));
+  for (const dialog of dialogs) dialog.addEventListener('click', event => { const box = dialog.getBoundingClientRect(); if (event.target === dialog && (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom)) closeDialog(dialog.id); });
   $('tacticalButton').addEventListener('click', () => openDialog('tacticalSheet')); $('closeTactics').addEventListener('click', () => closeDialog('tacticalSheet'));
   function toggleCamera() { stopInput(); camera = camera === 'overview' ? 'follow' : 'overview'; renderer.needsDraw = true; sync(); }
-  $('cameraToggle').addEventListener('click', toggleCamera);
-  $('courseTool').addEventListener('click', () => setTool(false)); $('undoPlan').addEventListener('click', () => travelHistory()); $('redoPlan').addEventListener('click', () => travelHistory(true));
+  $('cameraToggle').addEventListener('click', () => { toggleCamera(); closeDialog('toolsMenu'); $('battlefield').focus({ preventScroll: true }); });
+  $('courseTool').addEventListener('click', () => setTool(false)); $('undoPlan').addEventListener('click', () => { travelHistory(); closeDialog('toolsMenu'); }); $('redoPlan').addEventListener('click', () => { travelHistory(true); closeDialog('toolsMenu'); });
   $('delayToggle').addEventListener('click', () => { if (mode === 'plan') openDialog('launchWindow'); }); $('closeWindow').addEventListener('click', () => closeDialog('launchWindow'));
   $('delay').addEventListener('input', e => { beginEdit(); updatePlan({ delay: e.target.valueAsNumber }); });
   for (const button of document.querySelectorAll('[data-delay]')) button.addEventListener('click', () => updatePlan({ delay: Number(button.dataset.delay) }));
@@ -427,7 +429,7 @@
   $('applyHint').addEventListener('click', () => { closeDialog('navigator'); if (hintPlan) { hints++; updatePlan(hintPlan); forecast(); setRadio('Опорный курс введён. Можешь использовать его или попробовать улучшить.'); } });
   $('restartOperation').addEventListener('click', () => openDialog('confirmRestart')); $('cancelNew').addEventListener('click', () => closeDialog('confirmRestart')); $('confirmNew').addEventListener('click', () => { closeDialog('confirmRestart'); newOperation(); });
   function preference(key, value) { settings[key] = value; sound.enabled = settings.sound; if (settings.sound) sound.unlock(); forecast(); sync(); save(pendingNext && !finalPhase() ? pendingNext : undefined); }
-  $('soundEnabled').addEventListener('change', e => preference('sound', e.target.checked)); $('reducedMotion').addEventListener('change', e => preference('reduced', e.target.checked)); $('showForecast').addEventListener('change', e => preference('forecast', e.target.checked)); $('forecastToggle').addEventListener('click', () => preference('forecast', !settings.forecast));
+  $('soundEnabled').addEventListener('change', e => preference('sound', e.target.checked)); $('reducedMotion').addEventListener('change', e => preference('reduced', e.target.checked)); $('showForecast').addEventListener('change', e => preference('forecast', e.target.checked)); $('forecastToggle').addEventListener('click', () => { preference('forecast', !settings.forecast); closeDialog('toolsMenu'); });
   $('battlefield').addEventListener('pointerdown', event => {
     if (event.button !== 0) return;
     pointers.add(event.pointerId);
