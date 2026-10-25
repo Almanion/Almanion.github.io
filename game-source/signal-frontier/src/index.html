@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#10191c" />
+    <meta
+      name="description"
+      content="Предел сигнала — тактическая операция на заброшенном кольце."
+    />
+    <title>Предел сигнала · Альманион</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="engine.js" defer></script>
+    <script src="view.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body data-mode="menu">
+    <canvas
+      id="field"
+      aria-label="Поле боя. Управление клавиатурой и мышью либо сенсорными джойстиками."
+    ></canvas>
+    <div class="vignette" aria-hidden="true"></div>
+    <main id="home" class="home">
+      <a class="back" href="/">← Альманион</a>
+      <div class="home-content">
+        <p class="eyebrow">Операция 01 · Пепельный узел</p>
+        <h1>Предел<br />сигнала<span>.</span></h1>
+        <p class="intro">
+          Восстановить связь.<br />Провести отряд через оборону кольца.
+        </p>
+        <div class="home-actions">
+          <button id="start" class="primary">
+            Начать операцию <span aria-hidden="true">↗</span></button
+          ><button id="continue" class="primary" hidden>
+            Продолжить <span aria-hidden="true">↗</span></button
+          ><button id="new-game" class="text-button" hidden>
+            Новая операция
+          </button>
+        </div>
+        <div class="home-links">
+          <button data-open="help">Управление</button
+          ><button data-open="settings">Настройки</button>
+        </div>
+      </div>
+      <p class="edition">Первая операция <span>0.1</span></p>
+    </main>
+    <div id="hud" hidden>
+      <header class="topbar">
+        <div class="objective">
+          <span class="phase" id="phase">01 / 04</span>
+          <div>
+            <span id="objective-text">Уничтожить глушитель</span
+            ><small id="objective-sub">Восточный фланг</small>
+          </div>
+        </div>
+        <button id="menu-button" class="icon-button" aria-label="Открыть меню">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 8h14M5 16h14" />
+          </svg>
+        </button>
+      </header>
+      <div id="notice" class="notice" role="status" aria-live="polite"></div>
+      <div id="interact-panel" class="interact-panel" hidden>
+        <button id="interact">
+          Восстановить узел <kbd>E</kbd
+          ><span class="interact-progress" id="interact-progress"></span>
+        </button>
+      </div>
+      <div class="bottom-hud">
+        <div class="vitals">
+          <div class="health-line">
+            <span class="health-symbol" aria-hidden="true">✚</span>
+            <div class="health-track"><span id="health-fill"></span></div>
+            <span id="health-value">150</span>
+          </div>
+          <div class="ammo-line">
+            <span id="ammo">12</span><span class="muted">/ 12</span
+            ><span id="reload-status">Импульсная винтовка</span>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="reload" class="action-button" aria-label="Перезарядить">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 8a7 7 0 1 0 1 7M18 3v5h-5" /></svg
+            ><kbd>R</kbd></button
+          ><button id="dash" class="action-button" aria-label="Рывок">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m5 6 6 6-6 6m7-12 6 6-6 6" /></svg
+            ><kbd>Shift</kbd
+            ><span class="cooldown" id="dash-cooldown"></span></button
+          ><button id="tactical" class="tactical-button" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M4 4h6v6H4zm10 10h6v6h-6zM14 4h6v6h-6zM4 14h6v6H4z"
+              /></svg
+            ><span>Приказы</span><kbd>Tab</kbd>
+          </button>
+        </div>
+      </div>
+      <div id="tactical-panel" class="tactical-panel" hidden>
+        <div class="tactical-heading">
+          Тактическая пауза <small>Выберите группу и укажите позицию</small>
+        </div>
+        <div class="groups">
+          <button id="group-one" class="group selected" aria-pressed="true">
+            <kbd>1</kbd
+            ><span
+              >Огневая группа<small id="rifle-count">3 бойца</small></span
+            ></button
+          ><button id="group-two" class="group" aria-pressed="false" disabled>
+            <kbd>2</kbd
+            ><span
+              >Артиллерия<small id="artillery-status">Нужна связь</small></span
+            >
+          </button>
+        </div>
+      </div>
+      <div class="touch-controls" id="touch-controls">
+        <div class="stick" id="move-stick" aria-label="Движение">
+          <span></span><small>ХОД</small>
+        </div>
+        <div class="stick" id="aim-stick" aria-label="Направление огня">
+          <span></span><small>ОГОНЬ</small>
+        </div>
+      </div>
+    </div>
+    <dialog id="dialog">
+      <div class="dialog-inner">
+        <button
+          class="close icon-button"
+          id="close-dialog"
+          aria-label="Закрыть"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m6 6 12 12M18 6 6 18" />
+          </svg>
+        </button>
+        <section id="pause-content" hidden>
+          <p class="eyebrow">Пепельный узел</p>
+          <h2>Пауза</h2>
+          <button id="resume" class="primary">Вернуться в бой</button>
+          <div class="menu-list">
+            <button data-open="help">Управление <span>↗</span></button
+            ><button data-open="settings">Настройки <span>↗</span></button
+            ><button id="restart">Начать заново <span>↻</span></button
+            ><button id="to-home">Главный экран <span>←</span></button>
+          </div>
+        </section>
+        <section id="help-content" hidden>
+          <p class="eyebrow">Управление</p>
+          <h2>Разведчик и отряд</h2>
+          <p>
+            Разведчик снимает глушитель на востоке. После этого удерживайте
+            действие у узла связи: защитите его во время запуска. Когда канал
+            откроется, прибудет артиллерия, а щит цитадели отключится.
+          </p>
+          <div class="help-desktop">
+            <dl>
+              <dt><kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd></dt>
+              <dd>Движение</dd>
+              <dt>Мышь · левая кнопка</dt>
+              <dd>Прицел и огонь</dd>
+              <dt><kbd>Shift</kbd> / <kbd>R</kbd></dt>
+              <dd>Рывок / перезарядка</dd>
+              <dt><kbd>E</kbd>, удерживать</dt>
+              <dd>Восстановить узел</dd>
+              <dt><kbd>Tab</kbd> · <kbd>1</kbd> <kbd>2</kbd></dt>
+              <dd>Пауза и выбор группы</dd>
+            </dl>
+          </div>
+          <div class="help-touch">
+            <p>
+              Левый круг — движение. Правый — направление стрельбы. Чем дальше
+              от центра, тем быстрее движение; огонь начинается за внутренним
+              кольцом.
+            </p>
+            <p>
+              «Приказы» останавливают бой. Выберите группу и коснитесь места на
+              карте, затем продолжите.
+            </p>
+          </div>
+          <p class="help-note">
+            Отряд стреляет сам. Красная линия предупреждает о выстреле. Рывок
+            позволяет уйти из-под огня. Потеря разведчика или посадочного модуля
+            завершает операцию.
+          </p>
+          <button class="primary" id="help-back">Понятно</button>
+        </section>
+        <section id="settings-content" hidden>
+          <p class="eyebrow">Настройки</p>
+          <h2>Звук и движение</h2>
+          <label class="setting"
+            >Громкость <output id="volume-value">40%</output
+            ><input
+              id="volume"
+              type="range"
+              min="0"
+              max="100"
+              value="40" /></label
+          ><label class="check-setting"
+            ><input id="motion" type="checkbox" />Уменьшить движение и
+            вспышки</label
+          >
+          <p class="help-note">
+            Прогресс операции сохраняется на этом устройстве.
+          </p>
+          <button class="primary" id="settings-back">Готово</button>
+        </section>
+        <section id="result-content" hidden>
+          <p class="eyebrow">Пепельный узел</p>
+          <h2 id="result-title">Связь восстановлена</h2>
+          <p id="result-description"></p>
+          <div class="result-stats">
+            <div><small>Время</small><strong id="result-time"></strong></div>
+            <div><small>Отряд</small><strong id="result-squad"></strong></div>
+          </div>
+          <button id="retry" class="primary">
+            Пройти ещё раз <span>↻</span></button
+          ><button id="result-home" class="text-button">
+            На главный экран
+          </button>
+        </section>
+      </div>
+    </dialog>
+    <noscript><div class="no-script">Для игры нужен JavaScript.</div></noscript>
+  </body>
+</html>

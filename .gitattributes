@@ -9,3 +9,7 @@
 # Deterministic standalone presentation and its published copy.
 presentation/index.html text eol=lf
 project-docs/almanion-defense/Almanion.html text eol=lf
+
+# Signal Frontier source and public copy use the same bytes.
+/game-source/signal-frontier/** text eol=lf
+/games/signal-frontier/** text eol=lf
