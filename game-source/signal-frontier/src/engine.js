@@ -20,8 +20,30 @@
     turret: { hp: 200, r: 25, speed: 0, range: 400, damage: 19, rate: 2.1 },
     jammer: { hp: 340, r: 32, speed: 0, range: 0, damage: 0, rate: 0 },
     citadel: { hp: 900, r: 48, speed: 0, range: 520, damage: 21, rate: 2.5 },
+    outpost: { hp: 280, r: 27, speed: 0, range: 0, damage: 0, rate: 0 },
     base: { hp: 700, r: 42, speed: 0, range: 0, damage: 0, rate: 0 },
   };
+  const COSTS = Object.freeze({
+    outpost: 50,
+    artillery: 90,
+    hack: 60,
+    rifle: 20,
+    salvage: 25,
+  });
+  const PADS = Object.freeze(
+    [
+      { id: "west", x: 450, y: 690 },
+      { id: "relay", x: 790, y: 570 },
+      { id: "flank", x: 1170, y: 300 },
+    ].map(Object.freeze),
+  );
+  const CACHES = Object.freeze(
+    [
+      { id: "west", x: 430, y: 520 },
+      { id: "north", x: 780, y: 160 },
+      { id: "south", x: 1010, y: 850 },
+    ].map(Object.freeze),
+  );
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   function free(x, y, r = 14) {
@@ -95,6 +117,7 @@
       cool: 0.25 + rand(s) * 0.8,
       wind: 0,
       hit: 0,
+      repair: 0,
       flash: 0,
       group,
       path: [],
@@ -107,7 +130,7 @@
   }
   function make() {
     const s = {
-      version: 1,
+      version: 2,
       t: 0,
       seed: 81731,
       seq: 0,
@@ -157,10 +180,250 @@
       ["runner", 1150, 575],
     ])
       unit(s, kind, 1, x, y);
+    strategyDefaults(s, false);
+    unit(s, "sentinel", 1, 1250, 260);
+    unit(s, "runner", 1, 1320, 120);
     return s;
   }
   const hero = (s) => s.units.find((u) => u.id === s.heroId);
   const living = (s, kind) => s.units.find((u) => u.kind === kind && u.hp > 0);
+  function strategyDefaults(s, legacy) {
+    s.economy = {
+      alloy: 120,
+      spent: 0,
+      recovered: 0,
+      kit: false,
+      legacySupport: legacy && s.phase < 3,
+    };
+    s.caches = CACHES.map((c) => ({ ...c, taken: false, charge: 0 }));
+    s.terminal = {
+      x: 1280,
+      y: 200,
+      charge: 0,
+      window: 0,
+      alarm: false,
+      channeling: false,
+    };
+    s.approach = "siege";
+    if (legacy) for (const u of s.units) u.repair = 0;
+  }
+  const shielded = (s) => !s.relay.online && s.terminal.window <= 0;
+  const postAt = (s, id) =>
+    s.units.find((u) => u.kind === "outpost" && u.site === id && u.hp > 0);
+  const readyPosts = (s) =>
+    s.units.filter((u) => u.kind === "outpost" && u.hp > 0 && u.build === 0);
+  function spawnPoint(s, anchor, kind) {
+    for (const [dx, dy] of [
+      [55, 35],
+      [-55, 35],
+      [55, -35],
+      [-55, -35],
+      [0, 70],
+      [70, 0],
+      [0, -70],
+      [-70, 0],
+    ]) {
+      const p = { x: anchor.x + dx, y: anchor.y + dy };
+      if (
+        free(p.x, p.y, C[kind].r) &&
+        !s.units.some(
+          (u) => u.hp > 0 && dist(u, p) < C[kind].r + C[u.kind].r + 3,
+        )
+      )
+        return p;
+    }
+    return null;
+  }
+  function supplyStatus(s, action, site) {
+    const cost = COSTS[action];
+    const fail = (reason) => ({ allowed: false, reason, cost: cost ?? 0 });
+    if (s.status !== "playing") return fail("ended");
+    if (!["outpost", "artillery", "hack", "rifle", "salvage"].includes(action))
+      return fail("unknown");
+    if (
+      s.units.length >= 80 &&
+      ["outpost", "artillery", "rifle"].includes(action)
+    )
+      return fail("limit");
+    let anchor, spawn;
+    if (action === "outpost") {
+      anchor = PADS.find((p) => p.id === site);
+      if (!anchor) return fail("site");
+      if (postAt(s, site)) return fail("occupied");
+      if (s.units.filter((u) => u.kind === "outpost" && u.hp > 0).length >= 2)
+        return fail("post-limit");
+      if (dist(hero(s), anchor) > 210) return fail("distance");
+      if (
+        s.units.some((u) => u.team === 1 && u.hp > 0 && dist(u, anchor) < 110)
+      )
+        return fail("hostiles");
+    }
+    if (action === "salvage") {
+      const post = postAt(s, site);
+      return post
+        ? { allowed: true, reason: null, cost: -COSTS.salvage, unitId: post.id }
+        : fail("site");
+    }
+    if (action === "hack" && s.economy.kit) return fail("installed");
+    if (action === "artillery") {
+      if (living(s, "artillery")) return fail("artillery-limit");
+      if (!s.relay.online) return fail("relay");
+      anchor = readyPosts(s).sort(
+        (a, b) => dist(a, s.relay) - dist(b, s.relay),
+      )[0];
+      if (!anchor) return fail("post");
+    }
+    if (action === "rifle") {
+      if (s.units.filter((u) => u.kind === "rifle" && u.hp > 0).length >= 3)
+        return fail("squad-full");
+      anchor =
+        readyPosts(s).sort((a, b) => dist(a, hero(s)) - dist(b, hero(s)))[0] ||
+        living(s, "base");
+    }
+    if (["artillery", "rifle"].includes(action)) {
+      spawn = spawnPoint(s, anchor, action);
+      if (!spawn) return fail("blocked");
+    }
+    if (s.economy.alloy < cost) return fail("funds");
+    return { allowed: true, reason: null, cost, anchor, spawn };
+  }
+  function purchase(s, action, site) {
+    const offer = supplyStatus(s, action, site);
+    if (!offer.allowed) return offer;
+    const eco = s.economy;
+    if (action === "salvage") {
+      const u = s.units.find((u) => u.id === offer.unitId);
+      u.hp = 0;
+      u.salvaged = true;
+      eco.alloy += COSTS.salvage;
+      eco.recovered += COSTS.salvage;
+      emit(s, "salvage", u.x, u.y);
+    } else {
+      eco.alloy -= offer.cost;
+      eco.spent += offer.cost;
+      if (action === "outpost") {
+        const u = unit(s, "outpost", 0, offer.anchor.x, offer.anchor.y);
+        u.site = site;
+        u.build = 6;
+        u.salvaged = false;
+        emit(s, "build", u.x, u.y);
+      } else if (action === "hack") {
+        eco.kit = true;
+        s.approach = "infiltration";
+        emit(s, "upgrade", hero(s).x, hero(s).y);
+      } else {
+        const u = unit(
+          s,
+          action,
+          0,
+          offer.spawn.x,
+          offer.spawn.y,
+          action === "rifle" ? 1 : 2,
+        );
+        emit(s, "reinforce", u.x, u.y);
+      }
+    }
+    return { allowed: true, reason: null, cost: offer.cost };
+  }
+  function interaction(s) {
+    const h = hero(s);
+    if (!h || h.hp <= 0) return null;
+    const options = [];
+    for (const cache of s.caches)
+      if (!cache.taken && dist(h, cache) < 65)
+        options.push({
+          type: "cache",
+          target: cache,
+          allowed: true,
+          progress: cache.charge,
+        });
+    if (s.phase === 1 && dist(h, s.relay) < 75)
+      options.push({
+        type: "relay",
+        target: s.relay,
+        allowed: true,
+        progress: s.relay.charge,
+      });
+    if (dist(h, s.terminal) < 75)
+      options.push({
+        type: "terminal",
+        target: s.terminal,
+        allowed: s.economy.kit,
+        progress: s.terminal.charge,
+      });
+    return (
+      options.sort((a, b) => dist(h, a.target) - dist(h, b.target))[0] || null
+    );
+  }
+  function objective(s) {
+    if (!shielded(s))
+      return { id: "citadel", target: living(s, "citadel"), radius: 66 };
+    if (s.approach === "infiltration" && s.economy.kit)
+      return { id: "terminal", target: s.terminal, radius: 38 };
+    if (s.phase === 2) return { id: "defend", target: s.relay, radius: 50 };
+    if (s.phase === 1) return { id: "relay", target: s.relay, radius: 50 };
+    return { id: "jammer", target: living(s, "jammer"), radius: 50 };
+  }
+  function strategyStep(s, input, dt) {
+    const h = hero(s),
+      act = interaction(s),
+      held = input.interact && s.dashT === 0 && act?.allowed;
+    s.terminal.channeling = !!(held && act.type === "terminal");
+    s.terminal.window = Math.max(0, s.terminal.window - dt);
+    for (const cache of s.caches) {
+      if (cache.taken) continue;
+      if (held && act.type === "cache" && act.target === cache) {
+        cache.charge = Math.min(1, cache.charge + dt / 1.2);
+        if (cache.charge === 1) {
+          cache.taken = true;
+          s.economy.alloy += 40;
+          emit(s, "collect", cache.x, cache.y, { amount: 40 });
+        }
+      } else cache.charge = Math.max(0, cache.charge - dt * 0.6);
+    }
+    if (s.terminal.channeling) {
+      s.approach = "infiltration";
+      s.terminal.charge = Math.min(1, s.terminal.charge + dt / 2.2);
+      if (s.terminal.charge === 1) {
+        s.terminal.window = 7;
+        if (!s.terminal.alarm) {
+          s.terminal.alarm = true;
+          for (const [kind, x, y] of [
+            ["runner", 1370, 350],
+            ["runner", 1360, 100],
+            ["sentinel", 1370, 310],
+            ["sentinel", 1200, 80],
+          ]) {
+            const u = unit(s, kind, 1, x, y);
+            u.path = pathTo(u, s.terminal, C[kind].r);
+          }
+          emit(s, "breach", s.terminal.x, s.terminal.y);
+        }
+      }
+    } else s.terminal.charge = Math.max(0, s.terminal.charge - dt * 0.45);
+    for (const post of s.units.filter(
+      (u) => u.kind === "outpost" && u.hp > 0,
+    )) {
+      if (post.build > 0) {
+        if (h.hp > 0 && dist(h, post) <= 210) {
+          post.build = Math.max(0, post.build - dt);
+          if (post.build === 0) emit(s, "post-ready", post.x, post.y);
+        }
+        continue;
+      }
+      for (const u of s.units)
+        if (
+          u.team === 0 &&
+          u.hp > 0 &&
+          u.kind !== "outpost" &&
+          u.kind !== "base" &&
+          u.repair === 0 &&
+          dist(u, post) < 145 &&
+          clear(u, post)
+        )
+          u.hp = Math.min(C[u.kind].hp, u.hp + dt * 7);
+    }
+  }
   function pathTo(from, to, r = 14) {
     const cell = 40,
       cols = W / cell,
@@ -288,13 +551,15 @@
   }
   function hurt(s, u, damage, attacker) {
     if (u.hp <= 0) return;
-    if (u.kind === "citadel" && !s.relay.online) {
+    if (u.kind === "citadel" && shielded(s)) {
       emit(s, "shield", u.x, u.y);
       return;
     }
-    if (u.kind === "citadel" && attacker.kind !== "shell") damage *= 0.28;
+    if (u.kind === "citadel" && attacker.kind !== "shell")
+      damage *= s.terminal.window > 0 ? 0.65 : 0.28;
     u.hp -= damage;
     u.hit = 0.14;
+    u.repair = 3;
     if (u.kind === "hero") {
       s.damageTaken += damage;
       emit(s, "hurt", u.x, u.y);
@@ -317,6 +582,8 @@
     s.events = [];
     s.t += dt;
     const h = hero(s);
+    const channel =
+      input.interact && interaction(s)?.type === "terminal" && s.economy.kit;
     s.dash = Math.max(0, s.dash - dt);
     s.dashT = Math.max(0, s.dashT - dt);
     s.reload = Math.max(0, s.reload - dt);
@@ -354,9 +621,16 @@
       if (u.hp <= 0) continue;
       u.cool = Math.max(0, u.cool - dt);
       u.hit = Math.max(0, u.hit - dt);
+      u.repair = Math.max(0, u.repair - dt);
       u.flash = Math.max(0, u.flash - dt);
       if (u.kind === "hero") {
-        if (input.fire && u.cool === 0 && s.reload === 0 && s.ammo > 0) {
+        if (
+          input.fire &&
+          !channel &&
+          u.cool === 0 &&
+          s.reload === 0 &&
+          s.ammo > 0
+        ) {
           shoot(s, u, {
             x: u.x + Math.cos(u.angle) * 600,
             y: u.y + Math.sin(u.angle) * 600,
@@ -367,12 +641,16 @@
         }
         continue;
       }
+      if (u.kind === "citadel" && s.terminal.window > 0) {
+        u.wind = 0;
+        continue;
+      }
       if (!C[u.kind].range) continue;
       const opponents = s.units.filter(
         (v) =>
           v.team !== u.team &&
           v.hp > 0 &&
-          !(v.kind === "citadel" && !s.relay.online),
+          !(v.kind === "citadel" && shielded(s)),
       );
       let target = opponents
         .filter((v) => dist(u, v) < C[u.kind].range && clear(u, v))
@@ -464,12 +742,14 @@
       }
     }
     s.bullets = s.bullets.filter((b) => b.life > 0).slice(-160);
+    strategyStep(s, input, dt);
     if (!living(s, "jammer") && s.phase === 0) {
       s.phase = 1;
       s.checkpoint = 1;
       emit(s, "objective", s.relay.x, s.relay.y);
     }
     if (h.hp > 0 && s.phase === 1 && dist(h, s.relay) < 75 && input.interact) {
+      s.approach = "siege";
       s.relay.charge = Math.min(1, s.relay.charge + dt / 2.8);
       if (s.relay.charge === 1) {
         s.phase = 2;
@@ -512,7 +792,10 @@
       if (s.relay.stability === 1) {
         s.phase = 3;
         s.relay.online = true;
-        unit(s, "artillery", 0, 780, 530, 2);
+        if (s.economy.legacySupport) {
+          unit(s, "artillery", 0, 780, 530, 2);
+          s.economy.legacySupport = false;
+        }
         emit(s, "online", s.relay.x, s.relay.y);
       }
     }
@@ -522,6 +805,7 @@
       emit(s, "end", h.x, h.y);
     } else if (!living(s, "citadel")) {
       s.status = "won";
+      s.approach = s.terminal.window > 0 ? "infiltration" : "siege";
       emit(s, "end", 1250, 485);
     }
     return s;
@@ -536,7 +820,7 @@
       const s = JSON.parse(JSON.stringify(value));
       if (
         !s ||
-        s.version !== 1 ||
+        ![1, 2].includes(s.version) ||
         !["playing", "won", "lost"].includes(s.status) ||
         !Number.isFinite(s.t) ||
         s.t < 0 ||
@@ -567,7 +851,7 @@
         return null;
       for (const u of s.units) {
         if (
-          !C[u.kind] ||
+          !Object.hasOwn(C, u.kind) ||
           ![0, 1].includes(u.team) ||
           !Number.isInteger(u.id) ||
           ids.has(u.id) ||
@@ -593,7 +877,9 @@
           u.id < 1 ||
           u.id > s.seq ||
           u.team !==
-            (["hero", "rifle", "artillery", "base"].includes(u.kind) ? 0 : 1) ||
+            (["hero", "rifle", "artillery", "base", "outpost"].includes(u.kind)
+              ? 0
+              : 1) ||
           u.cool < 0 ||
           u.cool > 5 ||
           u.wind < 0 ||
@@ -676,6 +962,100 @@
         (s.status === "won" && living(s, "citadel"))
       )
         return null;
+      if (s.version === 1) {
+        strategyDefaults(s, true);
+        s.version = 2;
+      }
+      const eco = s.economy,
+        terminal = s.terminal;
+      if (
+        s.units.some(
+          (u) => !Number.isFinite(u.repair) || u.repair < 0 || u.repair > 3,
+        )
+      )
+        return null;
+      if (
+        !eco ||
+        !["alloy", "spent", "recovered"].every(
+          (k) => Number.isInteger(eco[k]) && eco[k] >= 0 && eco[k] <= 2000,
+        ) ||
+        typeof eco.kit !== "boolean" ||
+        typeof eco.legacySupport !== "boolean"
+      )
+        return null;
+      if (
+        !["siege", "infiltration"].includes(s.approach) ||
+        !Array.isArray(s.caches) ||
+        s.caches.length !== CACHES.length
+      )
+        return null;
+      for (let i = 0; i < CACHES.length; i++) {
+        const c = s.caches[i],
+          d = CACHES[i];
+        if (
+          !c ||
+          c.id !== d.id ||
+          c.x !== d.x ||
+          c.y !== d.y ||
+          typeof c.taken !== "boolean" ||
+          !Number.isFinite(c.charge) ||
+          c.charge < 0 ||
+          c.charge > 1 ||
+          (c.taken && c.charge !== 1)
+        )
+          return null;
+      }
+      if (
+        eco.alloy !==
+        120 +
+          s.caches.filter((c) => c.taken).length * 40 +
+          eco.recovered -
+          eco.spent
+      )
+        return null;
+      if (
+        !terminal ||
+        terminal.x !== 1280 ||
+        terminal.y !== 200 ||
+        !Number.isFinite(terminal.charge) ||
+        terminal.charge < 0 ||
+        terminal.charge > 1 ||
+        !Number.isFinite(terminal.window) ||
+        terminal.window < 0 ||
+        terminal.window > 7 ||
+        typeof terminal.alarm !== "boolean" ||
+        typeof terminal.channeling !== "boolean" ||
+        (terminal.window > 0 && !eco.kit)
+      )
+        return null;
+      const sites = new Set();
+      let reclaimed = 0;
+      for (const u of s.units.filter((u) => u.kind === "outpost")) {
+        const pad = PADS.find((p) => p.id === u.site);
+        if (
+          !pad ||
+          u.x !== pad.x ||
+          u.y !== pad.y ||
+          !Number.isFinite(u.build) ||
+          u.build < 0 ||
+          u.build > 6 ||
+          typeof u.salvaged !== "boolean" ||
+          (u.salvaged && u.hp !== 0)
+        )
+          return null;
+        if (u.salvaged) reclaimed += COSTS.salvage;
+        if (u.hp > 0) {
+          if (sites.has(u.site)) return null;
+          sites.add(u.site);
+        }
+      }
+      if (
+        sites.size > 2 ||
+        eco.recovered !== reclaimed ||
+        s.units.filter((u) => u.kind === "artillery" && u.hp > 0).length > 1 ||
+        s.units.filter((u) => u.kind === "rifle" && u.hp > 0).length > 3
+      )
+        return null;
       s.events = [];
       return s;
     } catch (_) {
@@ -688,6 +1068,14 @@
     DT,
     C,
     walls,
+    PADS,
+    CACHES,
+    COSTS,
+    shielded,
+    purchase,
+    supplyStatus,
+    interaction,
+    objective,
     make,
     step,
     hero,

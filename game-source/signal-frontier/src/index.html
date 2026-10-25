@@ -29,7 +29,7 @@
         <p class="eyebrow">Операция 01 · Пепельный узел</p>
         <h1>Предел<br />сигнала<span>.</span></h1>
         <p class="intro">
-          Восстановить связь.<br />Провести отряд через оборону кольца.
+          Подавить цитадель.<br />Провести отряд через оборону кольца.
         </p>
         <div class="home-actions">
           <button id="start" class="primary">
@@ -45,15 +45,15 @@
           ><button data-open="settings">Настройки</button>
         </div>
       </div>
-      <p class="edition">Первая операция <span>0.1</span></p>
+      <p class="edition">Первая операция <span>0.2</span></p>
     </main>
     <div id="hud" hidden>
       <header class="topbar">
         <div class="objective">
-          <span class="phase" id="phase">01 / 04</span>
+          <span class="phase" id="phase" aria-hidden="true">◇</span>
           <div>
-            <span id="objective-text">Уничтожить глушитель</span
-            ><small id="objective-sub">Восточный фланг</small>
+            <span id="objective-text">Отключить защиту</span
+            ><small id="objective-sub">Глушитель или обход через терминал</small>
           </div>
         </div>
         <button id="menu-button" class="icon-button" aria-label="Открыть меню">
@@ -65,7 +65,7 @@
       <div id="notice" class="notice" role="status" aria-live="polite"></div>
       <div id="interact-panel" class="interact-panel" hidden>
         <button id="interact">
-          Восстановить узел <kbd>E</kbd
+          <span id="interact-label">Восстановить узел</span> <kbd>E</kbd
           ><span class="interact-progress" id="interact-progress"></span>
         </button>
       </div>
@@ -102,7 +102,13 @@
       </div>
       <div id="tactical-panel" class="tactical-panel" hidden>
         <div class="tactical-heading">
-          Тактическая пауза <small>Выберите группу и укажите позицию</small>
+          <div class="tactical-title">
+            <span>Тактическая пауза</span
+            ><button id="supply-open" class="supply-button">
+              Снабжение <span id="alloy">120</span>
+            </button>
+          </div>
+          <small>Выберите группу и укажите позицию</small>
         </div>
         <div class="groups">
           <button id="group-one" class="group selected" aria-pressed="true">
@@ -113,7 +119,9 @@
           ><button id="group-two" class="group" aria-pressed="false" disabled>
             <kbd>2</kbd
             ><span
-              >Артиллерия<small id="artillery-status">Нужна связь</small></span
+              >Артиллерия<small id="artillery-status"
+                >Заказать в снабжении</small
+              ></span
             >
           </button>
         </div>
@@ -152,10 +160,23 @@
         <section id="help-content" hidden>
           <p class="eyebrow">Управление</p>
           <h2>Разведчик и отряд</h2>
+          <div class="route-help">
+            <p>
+              <strong>Осада.</strong> Снимите глушитель, запустите узел и
+              защитите его. Постройте опорный пункт и закажите артиллерию.
+            </p>
+            <p>
+              <strong>Обход.</strong> Купите модуль взлома и проведите отряд к
+              северному терминалу. Разведчик удерживает действие, отключая щит и
+              орудие цитадели, а бойцы атакуют. После отпускания защита вернётся
+              через 7 секунд.
+            </p>
+          </div>
           <p>
-            Разведчик снимает глушитель на востоке. После этого удерживайте
-            действие у узла связи: защитите его во время запуска. Когда канал
-            откроется, прибудет артиллерия, а щит цитадели отключится.
+            Сплав конечен: 120 при высадке и три склада по 40 на карте.
+            Собирайте его действием рядом со складом. Опорный пункт строится
+            рядом с разведчиком; он ремонтирует бойцов вне огня и принимает
+            подкрепления. Снабжение открывается в тактической паузе.
           </p>
           <div class="help-desktop">
             <dl>
@@ -166,7 +187,7 @@
               <dt><kbd>Shift</kbd> / <kbd>R</kbd></dt>
               <dd>Рывок / перезарядка</dd>
               <dt><kbd>E</kbd>, удерживать</dt>
-              <dd>Восстановить узел</dd>
+              <dd>Взаимодействовать</dd>
               <dt><kbd>Tab</kbd> · <kbd>1</kbd> <kbd>2</kbd></dt>
               <dd>Пауза и выбор группы</dd>
             </dl>
@@ -209,13 +230,89 @@
           </p>
           <button class="primary" id="settings-back">Готово</button>
         </section>
+        <section id="supply-content" hidden>
+          <p class="eyebrow">Тактическая пауза</p>
+          <div class="supply-heading">
+            <h2>Снабжение</h2>
+            <div class="wallet">
+              <span id="supply-alloy">120</span><small>сплава</small>
+            </div>
+          </div>
+          <p class="supply-intro">
+            Осада — узел и артиллерия. Обход — модуль взлома и отряд у
+            терминала.
+          </p>
+          <div class="purchase-list">
+            <button
+              id="buy-artillery"
+              data-purchase="artillery"
+              class="purchase"
+            >
+              <span
+                ><strong>Артиллерия</strong
+                ><small id="artillery-reason"
+                  >Связь и опорный пункт</small
+                ></span
+              ><span class="price" id="artillery-price">90</span>
+            </button>
+            <button id="buy-hack" data-purchase="hack" class="purchase">
+              <span
+                ><strong>Модуль взлома</strong
+                ><small id="hack-reason"
+                  >Отключить защиту через терминал</small
+                ></span
+              ><span class="price" id="hack-price">60</span>
+            </button>
+            <button id="buy-rifle" data-purchase="rifle" class="purchase">
+              <span
+                ><strong>Боец</strong
+                ><small id="rifle-reason">Пополнить огневую группу</small></span
+              ><span class="price" id="rifle-price">20</span>
+            </button>
+          </div>
+          <div class="construction-heading">
+            <h3>Опорный пункт <span>50</span></h3>
+            <p>
+              Ремонт и подкрепления. Стройка длится 6 секунд рядом с
+              разведчиком. Не более двух пунктов.
+            </p>
+          </div>
+          <div id="sites" class="sites">
+            <div class="site">
+              <div>
+                <strong>1 · Западный проход</strong
+                ><small id="site-west-status"></small>
+              </div>
+              <button id="site-west" data-site="west">Построить</button>
+            </div>
+            <div class="site">
+              <div>
+                <strong>2 · Передовой узел</strong
+                ><small id="site-relay-status"></small>
+              </div>
+              <button id="site-relay" data-site="relay">Построить</button>
+            </div>
+            <div class="site">
+              <div>
+                <strong>3 · Северный фланг</strong
+                ><small id="site-flank-status"></small>
+              </div>
+              <button id="site-flank" data-site="flank">Построить</button>
+            </div>
+          </div>
+          <p id="supply-feedback" role="status" class="supply-feedback"></p>
+          <button id="supply-back" class="primary">К карте</button>
+        </section>
         <section id="result-content" hidden>
           <p class="eyebrow">Пепельный узел</p>
-          <h2 id="result-title">Связь восстановлена</h2>
+          <h2 id="result-title">Цитадель подавлена</h2>
           <p id="result-description"></p>
           <div class="result-stats">
             <div><small>Время</small><strong id="result-time"></strong></div>
-            <div><small>Отряд</small><strong id="result-squad"></strong></div>
+            <div><small>В строю</small><strong id="result-squad"></strong></div>
+            <div>
+              <small>Расход сплава</small><strong id="result-spent"></strong>
+            </div>
           </div>
           <button id="retry" class="primary">
             Пройти ещё раз <span>↻</span></button

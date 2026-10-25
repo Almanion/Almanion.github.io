@@ -130,7 +130,7 @@ test("relay requires jammer removal, proximity and uninterrupted action", () => 
   assert.equal(s.relay.online, false);
   assert.equal(E.living(s, "artillery"), undefined);
 });
-test("enemy presence interrupts activation; two waves precede artillery", () => {
+test("enemy presence interrupts activation; two waves unlock the supply route", () => {
   const s = phaseTwo();
   assert.equal(s.phase, 2);
   const j = s.units.find((u) => u.kind === "jammer");
@@ -147,7 +147,7 @@ test("enemy presence interrupts activation; two waves precede artillery", () => 
   assert.equal(s.wave, 2);
   assert.equal(s.phase, 3);
   assert.equal(s.relay.online, true);
-  assert.ok(E.living(s, "artillery"));
+  assert.equal(E.living(s, "artillery"), undefined);
 });
 test("victory and each defeat cause are terminal", () => {
   for (const cause of ["hero", "base", "citadel"]) {
@@ -194,59 +194,282 @@ test("corrupt saves are rejected safely", () => {
   assert.equal(E.restore(null), null);
   assert.equal(E.restore("bad"), null);
 });
-test("complete operation is winnable through movement, firing and squad orders", () => {
+
+function quiet() {
   const s = E.make();
-  E.order(s, 1, 500, 650);
-  let route = [],
-    goal = -1;
-  const phases = new Set();
-  for (let i = 0; i < 12000 && s.status === "playing"; i++) {
-    const h = E.hero(s),
-      target = s.units
-        .filter(
-          (u) =>
-            u.team &&
-            u.hp > 0 &&
-            !(u.kind === "citadel" && !s.relay.online) &&
-            E.dist(u, h) < 590 &&
-            E.clear(u, h),
-        )
-        .sort((a, b) => E.dist(a, h) - E.dist(b, h))[0];
-    const dest =
-      s.phase === 0
-        ? { x: 950, y: 210 }
-        : s.phase <= 2
-          ? { x: 830, y: 480 }
-          : { x: 1010, y: 490 };
-    if (s.phase !== goal || (!route.length && E.dist(h, dest) > 35)) {
-      goal = s.phase;
-      route = E.pathTo(h, dest);
-      if (s.phase === 2) E.order(s, 1, 850, 600);
-      if (s.phase === 3) {
-        E.order(s, 1, 1080, 485);
-        E.order(s, 2, 1040, 540);
-      }
-    }
-    while (route.length && E.dist(h, route[0]) < 10) route.shift();
-    const p = route[0],
-      d = p ? E.dist(h, p) : 0;
-    E.step(s, {
-      x: p ? (p.x - h.x) / d : 0,
-      y: p ? (p.y - h.y) / d : 0,
-      aim: target,
-      fire: !!target,
-      dash: s.bullets.some((b) => b.team === 1 && E.dist(b, h) < 100),
-      interact: s.phase === 1 && E.dist(h, s.relay) < 75,
-    });
-    phases.add(s.phase);
-  }
-  assert.equal(s.status, "won");
-  assert.equal(phases.size, 4);
-  assert.equal(s.wave, 2);
-  assert.ok(s.t > 35 && s.t < 180);
-  assert.ok(E.hero(s).hp > 0);
+  removeEnemies(s);
+  E.living(s, "citadel").cool = 5;
+  return s;
+}
+function collect(s, index = 0) {
+  const h = E.hero(s),
+    cache = s.caches[index];
+  h.x = cache.x;
+  h.y = cache.y;
+  frames(s, 75, { interact: true });
+}
+function post(s, site = "west") {
+  const pad = E.PADS.find((p) => p.id === site),
+    h = E.hero(s);
+  h.x = pad.x - 50;
+  h.y = pad.y;
+  assert.equal(E.purchase(s, "outpost", site).allowed, true);
+  frames(s, 361);
+  return s.units.find(
+    (u) => u.kind === "outpost" && u.site === site && u.hp > 0,
+  );
+}
+
+test("finite salvage is collected once and only while holding nearby", () => {
+  const s = quiet(),
+    h = E.hero(s);
+  frames(s, 100, { interact: true });
+  assert.equal(s.economy.alloy, 120);
+  const c = s.caches[0];
+  h.x = c.x;
+  h.y = c.y;
+  frames(s, 30, { interact: true });
+  assert.ok(c.charge > 0 && c.charge < 1);
+  frames(s, 90);
+  assert.equal(c.charge, 0);
+  collect(s);
+  assert.equal(s.economy.alloy, 160);
+  frames(s, 150, { interact: true });
+  assert.equal(s.economy.alloy, 160);
+  assert.ok(c.taken);
   assert.ok(E.restore(E.snapshot(s)));
 });
+test("prices are atomic, double orders cannot spend twice, and insufficient funds are unchanged", () => {
+  const s = quiet();
+  assert.equal(E.purchase(s, "hack").allowed, true);
+  assert.equal(s.economy.alloy, 60);
+  const before = E.snapshot(s);
+  assert.equal(E.purchase(s, "hack").reason, "installed");
+  assert.deepEqual(E.snapshot(s), before);
+  assert.equal(E.purchase(s, "bad").allowed, false);
+  post(s);
+  assert.equal(s.economy.alloy, 10);
+  s.units.find((u) => u.kind === "rifle").hp = 0;
+  const copy = E.snapshot(s);
+  assert.equal(E.purchase(s, "rifle").reason, "funds");
+  assert.deepEqual(E.snapshot(s), copy);
+});
+test("construction requires a clear nearby site, progresses only in simulation, and waits for the scout", () => {
+  const s = E.make();
+  assert.equal(E.purchase(s, "outpost", "flank").reason, "distance");
+  const h = E.hero(s);
+  h.x = 1170;
+  h.y = 300;
+  assert.equal(E.purchase(s, "outpost", "flank").reason, "hostiles");
+  removeEnemies(s);
+  assert.equal(E.purchase(s, "outpost", "flank").allowed, true);
+  const u = E.living(s, "outpost"),
+    money = s.economy.alloy;
+  assert.equal(u.build, 6);
+  assert.equal(E.purchase(s, "outpost", "flank").reason, "occupied");
+  assert.equal(s.economy.alloy, money);
+  h.x = 500;
+  frames(s, 50);
+  assert.equal(u.build, 6);
+  h.x = 1170;
+  frames(s, 60);
+  assert.ok(u.build < 5.01 && u.build > 4.9);
+  const resumed = E.restore(E.snapshot(s));
+  assert.ok(resumed);
+  assert.equal(E.living(resumed, "outpost").build, u.build);
+});
+test("dismantling refunds exactly once, including unfinished work; destroyed sites can be rebuilt", () => {
+  const s = quiet(),
+    h = E.hero(s);
+  h.x = 450;
+  h.y = 690;
+  E.purchase(s, "outpost", "west");
+  assert.equal(E.purchase(s, "salvage", "west").allowed, true);
+  assert.equal(s.economy.alloy, 95);
+  const copy = E.snapshot(s);
+  assert.equal(E.purchase(s, "salvage", "west").allowed, false);
+  assert.deepEqual(E.snapshot(s), copy);
+  E.purchase(s, "outpost", "west");
+  E.living(s, "outpost").hp = 0;
+  collect(s);
+  h.x = 450;
+  h.y = 690;
+  assert.equal(E.purchase(s, "outpost", "west").allowed, true);
+  assert.ok(E.restore(E.snapshot(s)));
+});
+test("repair needs a complete post, time outside fire and line of sight; dead units stay dead", () => {
+  const s = quiet(),
+    u = post(s),
+    rifle = s.units.find((u) => u.kind === "rifle");
+  rifle.x = u.x + 55;
+  rifle.y = u.y;
+  rifle.hp = 50;
+  rifle.repair = 3;
+  frames(s, 120);
+  assert.equal(rifle.hp, 50);
+  frames(s, 120);
+  assert.ok(rifle.hp > 56 && rifle.hp < 58);
+  rifle.hp = 0;
+  frames(s, 120);
+  assert.equal(rifle.hp, 0);
+  const q = quiet(),
+    pad = post(q, "flank"),
+    covered = q.units.find((u) => u.kind === "rifle");
+  covered.x = 1203;
+  covered.y = 170;
+  covered.hp = 50;
+  assert.ok(E.free(covered.x, covered.y, 12));
+  assert.equal(E.clear(pad, covered), false);
+  frames(q, 120);
+  assert.equal(covered.hp, 50);
+});
+test("reinforcement fills losses at a valid position and artillery needs relay plus infrastructure", () => {
+  const s = quiet();
+  assert.equal(E.purchase(s, "artillery").reason, "relay");
+  assert.equal(E.purchase(s, "rifle").reason, "squad-full");
+  s.phase = 3;
+  s.relay.online = true;
+  s.relay.charge = s.relay.stability = 1;
+  assert.equal(E.purchase(s, "artillery").reason, "post");
+  const p = post(s);
+  collect(s);
+  assert.equal(E.purchase(s, "artillery").allowed, true);
+  const arty = E.living(s, "artillery");
+  assert.ok(E.free(arty.x, arty.y, E.C.artillery.r));
+  assert.ok(E.dist(arty, p) > 50);
+  assert.equal(E.purchase(s, "artillery").reason, "artillery-limit");
+  const lost = s.units.find((u) => u.kind === "rifle");
+  lost.hp = 0;
+  assert.equal(E.purchase(s, "rifle").allowed, true);
+  assert.equal(s.units.filter((u) => u.kind === "rifle" && u.hp > 0).length, 3);
+  assert.equal(s.economy.alloy, 0);
+});
+test("two outposts are the limit and dismantling creates room for another location", () => {
+  const s = quiet();
+  post(s);
+  collect(s);
+  post(s, "relay");
+  const h = E.hero(s);
+  h.x = 1170;
+  h.y = 300;
+  assert.equal(E.purchase(s, "outpost", "flank").reason, "post-limit");
+  assert.equal(E.purchase(s, "salvage", "west").allowed, true);
+  assert.equal(E.purchase(s, "outpost", "flank").allowed, true);
+  assert.ok(E.restore(E.snapshot(s)));
+});
+test("terminal needs the module; channeling prevents shooting, opens the shield and calls guards only once", () => {
+  const s = quiet(),
+    h = E.hero(s);
+  h.x = 1280;
+  h.y = 200;
+  frames(s, 145, { interact: true });
+  assert.equal(s.terminal.window, 0);
+  assert.equal(E.interaction(s).allowed, false);
+  E.purchase(s, "hack");
+  const shots = s.shots;
+  frames(s, 140, { interact: true, fire: true });
+  assert.equal(s.shots, shots);
+  assert.equal(E.shielded(s), false);
+  assert.equal(s.terminal.alarm, true);
+  const count = s.units.length;
+  removeEnemies(s);
+  frames(s, 100, { interact: true });
+  assert.equal(s.units.length, count);
+  assert.ok(s.terminal.window > 6.9);
+  frames(s, 425);
+  assert.equal(s.terminal.window, 0);
+  assert.equal(E.shielded(s), true);
+  assert.equal(E.objective(s).id, "terminal");
+});
+test("terminal snapshot resumes with the same countdown and does not repeat the alarm", () => {
+  const s = quiet(),
+    h = E.hero(s);
+  h.x = 1280;
+  h.y = 200;
+  E.purchase(s, "hack");
+  frames(s, 140, { interact: true });
+  const copy = E.restore(E.snapshot(s));
+  assert.ok(copy);
+  frames(s, 60);
+  frames(copy, 60);
+  assert.deepEqual(E.snapshot(copy), E.snapshot(s));
+});
+test("version-one saves retain positions, damage, orders and the promised support", () => {
+  const old = JSON.parse(
+      fs.readFileSync(
+        path.join(__dirname, "fixtures/signal-frontier-v1.json"),
+        "utf8",
+      ),
+    ),
+    s = E.restore(old);
+  assert.ok(s);
+  assert.equal(s.version, 2);
+  assert.equal(s.t, old.t);
+  assert.equal(s.ammo, old.ammo);
+  assert.equal(s.dash, old.dash);
+  assert.equal(E.hero(s).hp, 112);
+  assert.deepEqual(s.relay, old.relay);
+  assert.equal(s.economy.legacySupport, true);
+  for (let i = 0; i < 1800 && s.phase < 3; i++) {
+    removeEnemies(s);
+    E.step(s);
+  }
+  assert.ok(E.living(s, "artillery"));
+  assert.equal(s.economy.legacySupport, false);
+  assert.equal(s.economy.alloy, 120);
+  assert.ok(E.restore(E.snapshot(s)));
+});
+test("economy and strategy corruption cannot create money, malformed buildings or an unearned breach", () => {
+  for (const change of [
+    (s) => s.economy.alloy++,
+    (s) => (s.economy.spent = -1),
+    (s) => (s.economy.kit = "yes"),
+    (s) => (s.terminal.window = 9),
+    (s) => (s.terminal.window = 3),
+    (s) => (s.caches[0].taken = true),
+    (s) => (s.caches[0].x = 0),
+    (s) => (s.approach = "other"),
+    (s) => (s.units[5].kind = "__proto__"),
+    (s) => (s.units[0].repair = Infinity),
+  ]) {
+    const s = E.make();
+    change(s);
+    assert.equal(E.restore(s), null);
+  }
+});
+const { play } = require("./helpers/signal-pilot.cjs");
+for (const route of ["siege", "infiltration"])
+  test(
+    route +
+      " completes the whole operation with legal commands and distinct tradeoffs",
+    () => {
+      const { state: s } = play(route);
+      assert.equal(s.status, "won");
+      assert.equal(s.approach, route);
+      assert.ok(E.restore(E.snapshot(s)));
+      assert.ok(s.units.some((u) => u.kind === "outpost" && u.hp > 0));
+      assert.ok(E.hero(s).hp > 0);
+      assert.ok(s.t < 180);
+      if (route === "siege") {
+        assert.equal(s.relay.online, true);
+        assert.equal(s.wave, 2);
+        assert.ok(s.units.some((u) => u.kind === "artillery"));
+        assert.equal(s.economy.kit, false);
+        assert.equal(s.economy.spent, 140);
+        assert.ok(s.caches.some((c) => c.taken));
+      } else {
+        assert.equal(s.relay.online, false);
+        assert.equal(s.wave, 0);
+        assert.equal(s.terminal.alarm, true);
+        assert.equal(s.economy.kit, true);
+        assert.equal(s.economy.spent, 110);
+        assert.equal(
+          s.units.some((u) => u.kind === "artillery"),
+          false,
+        );
+      }
+    },
+  );
 test("published files exactly match canonical sources and stay self-contained", () => {
   const root = path.resolve(__dirname, "..");
   for (const f of ["index.html", "style.css", "engine.js", "view.js", "app.js"])

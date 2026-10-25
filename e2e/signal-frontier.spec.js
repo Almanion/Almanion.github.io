@@ -7,14 +7,17 @@ async function start(page) {
   await page.locator("#start").click();
   await expect(page.locator("#tactical-panel")).toBeVisible();
 }
-async function fixture(page, state) {
+async function fixture(page, state, once = false) {
   await page.addInitScript(
-    ({ state }) =>
+    ({ state, once }) => {
+      if (once && sessionStorage.getItem("signal-fixture")) return;
       localStorage.setItem(
         "signal-frontier-v1",
         JSON.stringify({ save: state, settings: { volume: 0, reduced: true } }),
-      ),
-    { state },
+      );
+      if (once) sessionStorage.setItem("signal-fixture", "1");
+    },
+    { state, once },
   );
   await page.goto(route);
   await page.locator("#continue").click();
@@ -81,12 +84,13 @@ test("victory, defeat, restart and menu have working exits", async ({
   citadel.hp = 1;
   await fixture(page, s);
   await page.waitForTimeout(600);
+  await expect(page.locator("#artillery-status")).toHaveText("Готова к заказу");
   const p = await page.evaluate(() => SignalGame.screen(1250, 485));
   await page.mouse.move(p.x, p.y);
   await page.mouse.down();
   await expect(page.locator("#result-content")).toBeVisible();
   await page.mouse.up();
-  await expect(page.locator("#result-title")).toHaveText("Узел удержан");
+  await expect(page.locator("#result-title")).toHaveText("Цитадель подавлена");
   await page.locator("#retry").click();
   await expect(page.locator("#tactical-panel")).toBeVisible();
   expect(await page.evaluate(() => SignalGame.snapshot().phase)).toBe(0);
@@ -168,6 +172,52 @@ for (const browserType of [chromium, webkit])
       try {
         await page.goto("http://127.0.0.1:4173" + route);
         await page.locator("#start").tap();
+        await page.waitForTimeout(700);
+        const mapTargets = await page.evaluate(() => {
+          const state = SignalGame.snapshot();
+          return [
+            ...SignalEngine.PADS,
+            ...state.caches,
+            state.terminal,
+            state.relay,
+          ].map((target) => {
+            const p = SignalGame.screen(target.x, target.y);
+            return {
+              id: target.id || String(target.x),
+              x: p.x,
+              y: p.y,
+              hit: document.elementFromPoint(p.x, p.y)?.id,
+            };
+          });
+        });
+        for (const p of mapTargets) {
+          expect(p.x, p.id).toBeGreaterThan(0);
+          expect(p.y, p.id).toBeGreaterThan(0);
+          expect(p.x, p.id).toBeLessThan(size[0]);
+          expect(p.y, p.id).toBeLessThan(size[1]);
+          expect(p.hit, p.id).toBe("field");
+        }
+        await page.screenshot({
+          path: `test-results/signal-map-${browserType.name()}-${size.join("x")}.png`,
+        });
+        await page.locator("#supply-open").tap();
+        await expect(page.locator("#buy-artillery")).toBeDisabled();
+        await expect(page.locator("#buy-rifle")).toBeDisabled();
+        await page.locator("#buy-hack").tap();
+        await expect(page.locator("#supply-alloy")).toHaveText("60");
+        await expect(page.locator("#buy-hack")).toBeDisabled();
+        await page.locator("#site-flank").scrollIntoViewIfNeeded();
+        await expect(page.locator("#site-flank")).toBeVisible();
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth - innerWidth,
+          ),
+        ).toBe(0);
+        expect(await page.evaluate(() => SignalGame.snapshot().t)).toBe(0);
+        await page.screenshot({
+          path: `test-results/signal-supply-${browserType.name()}-${size.join("x")}.png`,
+        });
+        await page.locator("#supply-back").tap();
         await page.locator("#tactical").tap();
         await page.waitForTimeout(300);
         const geometry = await page.evaluate(() => {
@@ -290,113 +340,125 @@ test("two real emulated touch pointers move and fire together; cancellation rele
   }
 });
 
-test("full operation through keyboard, aiming and tactical orders", async ({
-  page,
-}) => {
-  test.setTimeout(240000);
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.clock.install();
-  await start(page);
-  await page.clock.runFor(800);
-  async function order(group, x, y) {
-    const mode = await page.evaluate(() => SignalGame.mode());
-    if (mode !== "tactical") await page.keyboard.press("Tab");
-    await page.clock.runFor(700);
-    await page.locator(group === 1 ? "#group-one" : "#group-two").click();
-    const p = await page.evaluate(([x, y]) => SignalGame.screen(x, y), [x, y]);
-    await page.mouse.click(p.x, p.y);
-    await page.keyboard.press("Tab");
-    await page.clock.runFor(700);
-  }
-  await order(1, 500, 650);
-  let goal = -1,
-    routePoints = [],
-    pressed = new Set(),
-    firing = false,
-    final;
-  const visited = new Set();
-  for (let i = 0; i < 1200; i++) {
-    const s = await page.evaluate(() => SignalGame.snapshot());
-    final = s;
-    if (s.status !== "playing") break;
-    visited.add(s.phase);
-    const h = E.hero(s),
-      dest =
-        s.phase === 0
-          ? { x: 950, y: 210 }
-          : s.phase <= 2
-            ? { x: 830, y: 480 }
-            : { x: 1010, y: 490 };
-    if (goal !== s.phase) {
-      goal = s.phase;
-      routePoints = E.pathTo(h, dest);
-      for (const key of pressed) await page.keyboard.up(key);
-      pressed.clear();
-      await page.mouse.up();
-      firing = false;
-      if (s.phase === 2) await order(1, 850, 600);
-      if (s.phase === 3) {
-        const alive = s.units.some((u) => u.group === 1 && u.hp > 0);
-        if (alive) await order(1, 1080, 485);
-        await order(2, 1040, 540);
+const { Pilot } = require("../tests/helpers/signal-pilot.cjs");
+for (const routeName of ["siege", "infiltration"])
+  test(
+    "full " +
+      routeName +
+      " operation through controls, construction and supply",
+    async ({ page }) => {
+      test.setTimeout(240000);
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.clock.install();
+      await start(page);
+      await page.clock.runFor(700);
+      await page.keyboard.press("Tab");
+      const pilot = new Pilot(routeName, 22);
+      let pressed = new Set(),
+        firing = false,
+        final;
+      let previous = "";
+      async function release() {
+        for (const key of pressed) await page.keyboard.up(key);
+        pressed.clear();
+        if (firing) await page.mouse.up();
+        firing = false;
       }
-      console.log("Operation phase", s.phase, "time", Math.round(s.t));
-    }
-    while (routePoints.length && E.dist(h, routePoints[0]) < 22)
-      routePoints.shift();
-    const p = routePoints[0];
-    const wanted = new Set();
-    if (p) {
-      if (p.x - h.x > 8) wanted.add("KeyD");
-      if (p.x - h.x < -8) wanted.add("KeyA");
-      if (p.y - h.y > 8) wanted.add("KeyS");
-      if (p.y - h.y < -8) wanted.add("KeyW");
-    }
-    if (s.phase === 1 && E.dist(h, s.relay) < 75) wanted.add("KeyE");
-    for (const key of pressed)
-      if (!wanted.has(key)) await page.keyboard.up(key);
-    for (const key of wanted)
-      if (!pressed.has(key)) await page.keyboard.down(key);
-    pressed = wanted;
-    const target = s.units
-      .filter(
-        (u) =>
-          u.team &&
-          u.hp > 0 &&
-          !(u.kind === "citadel" && !s.relay.online) &&
-          E.dist(u, h) < 590 &&
-          E.clear(u, h),
-      )
-      .sort((a, b) => E.dist(a, h) - E.dist(b, h))[0];
-    let visible = false;
-    if (target) {
-      const point = await page.evaluate(
-        (p) => SignalGame.screen(p.x, p.y),
-        target,
-      );
-      visible =
-        point.x > 20 && point.x < 1420 && point.y > 100 && point.y < 740;
-      if (visible) await page.mouse.move(point.x, point.y);
-    }
-    if (visible && !firing) {
-      await page.mouse.down();
-      firing = true;
-    } else if (!visible && firing) {
-      await page.mouse.up();
-      firing = false;
-    }
-    if (s.dash === 0 && s.bullets.some((b) => b.team && E.dist(b, h) < 100))
-      await page.keyboard.press("Shift");
-    await page.clock.fastForward(100);
-  }
-  await page.mouse.up();
-  for (const key of pressed) await page.keyboard.up(key);
-  expect(final.status).toBe("won");
-  expect([...visited]).toEqual([0, 1, 2, 3]);
-  expect(final.wave).toBe(2);
-  await expect(page.locator("#result-content")).toBeVisible();
-  await page.screenshot({ path: "test-results/signal-complete-operation.png" });
-});
+      async function issue(commands) {
+        await release();
+        if ((await page.evaluate(() => SignalGame.mode())) !== "tactical")
+          await page.keyboard.press("Tab");
+        await page.clock.runFor(600);
+        for (const command of commands) {
+          if (command.kind === "order") {
+            const button = page.locator(
+              command.group === 1 ? "#group-one" : "#group-two",
+            );
+            expect(await button.isEnabled()).toBe(true);
+            await button.click();
+            const p = await page.evaluate(
+              ([x, y]) => SignalGame.screen(x, y),
+              [command.x, command.y],
+            );
+            await page.mouse.click(p.x, p.y);
+          } else {
+            await page.locator("#supply-open").click();
+            await page
+              .locator(
+                command.action === "outpost"
+                  ? "#site-" + command.site
+                  : "#buy-" + command.action,
+              )
+              .click();
+            await page.locator("#supply-back").click();
+          }
+        }
+        await page.keyboard.press("Tab");
+      }
+      for (let i = 0; i < 1500; i++) {
+        const s = await page.evaluate(() => SignalGame.snapshot());
+        final = s;
+        if (s.status !== "playing") break;
+        const d = pilot.decide(s);
+        if (d.commands.length) {
+          await issue(d.commands);
+          continue;
+        }
+        const marker = E.objective(s).id;
+        if (marker !== previous) {
+          console.log(routeName, marker, Math.round(s.t), s.economy.alloy);
+          previous = marker;
+        }
+        const wanted = new Set();
+        if (d.input.x > 0.2) wanted.add("KeyD");
+        if (d.input.x < -0.2) wanted.add("KeyA");
+        if (d.input.y > 0.2) wanted.add("KeyS");
+        if (d.input.y < -0.2) wanted.add("KeyW");
+        if (d.input.interact) wanted.add("KeyE");
+        for (const key of pressed)
+          if (!wanted.has(key)) await page.keyboard.up(key);
+        for (const key of wanted)
+          if (!pressed.has(key)) await page.keyboard.down(key);
+        pressed = wanted;
+        let visible = false;
+        if (d.input.aim) {
+          const p = await page.evaluate(
+            (p) => SignalGame.screen(p.x, p.y),
+            d.input.aim,
+          );
+          visible = p.x > 20 && p.x < 1420 && p.y > 100 && p.y < 740;
+          if (visible) await page.mouse.move(p.x, p.y);
+        }
+        if (visible && !firing) {
+          await page.mouse.down();
+          firing = true;
+        } else if (!visible && firing) {
+          await page.mouse.up();
+          firing = false;
+        }
+        if (d.input.dash && s.dash === 0) await page.keyboard.press("Shift");
+        await page.clock.fastForward(100);
+      }
+      await release();
+      expect(
+        final.status,
+        JSON.stringify({
+          phase: final.phase,
+          hp: E.hero(final).hp,
+          t: final.t,
+          pos: [E.hero(final).x, E.hero(final).y],
+          goal: pilot.goal,
+        }),
+      ).toBe("won");
+      expect(final.approach).toBe(routeName);
+      expect(final.economy.spent).toBe(routeName === "siege" ? 140 : 110);
+      expect(final.relay.online).toBe(routeName === "siege");
+      await expect(page.locator("#result-content")).toBeVisible();
+      await page.screenshot({
+        path: "test-results/signal2-" + routeName + "-complete.png",
+      });
+    },
+  );
 
 test("audio resumes after rapid pause transitions and volume is remembered", async ({
   page,
@@ -425,4 +487,106 @@ test("audio resumes after rapid pause transitions and volume is remembered", asy
   await page.locator('#home [data-open="settings"]').click();
   await expect(page.locator("#volume")).toHaveValue("0");
   await expect(page.locator("#motion")).toBeChecked();
+});
+
+test("supply: double-tap, refund, paused construction and reload preserve the real balance", async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date("2026-10-25T12:00:00Z") });
+  await page.clock.pauseAt(new Date("2026-10-25T12:00:01Z"));
+  const s = E.make();
+  const h = E.hero(s);
+  h.x = 350;
+  h.y = 650;
+  for (const u of s.units) if (u.team && u.kind !== "citadel") u.hp = 0;
+  await fixture(page, s, true);
+  await page.keyboard.press("Tab");
+  await page.locator("#supply-open").click();
+  await expect(page.locator("#site-west")).toBeEnabled();
+  await page.locator("#site-west").dblclick({ delay: 30 });
+  await expect(page.locator("#supply-alloy")).toHaveText("70");
+  let snap = await page.evaluate(() => SignalGame.snapshot());
+  expect(
+    snap.units.filter((u) => u.kind === "outpost" && u.hp > 0),
+  ).toHaveLength(1);
+  const before = snap.t;
+  await page.clock.runFor(800);
+  expect(await page.evaluate(() => SignalGame.snapshot().t)).toBe(before);
+  expect(
+    await page.evaluate(
+      () => SignalGame.snapshot().units.find((u) => u.kind === "outpost").build,
+    ),
+  ).toBe(6);
+  await page.locator("#site-west").dblclick({ delay: 30 });
+  await expect(page.locator("#supply-alloy")).toHaveText("95");
+  expect(
+    await page.evaluate(() => SignalGame.snapshot().economy.recovered),
+  ).toBe(25);
+  await page.clock.runFor(800);
+  await page.locator("#site-west").click();
+  await expect(page.locator("#supply-alloy")).toHaveText("45");
+  await expect(page.locator("#buy-hack")).toBeDisabled();
+  await page.locator("#supply-back").click();
+  await page.keyboard.press("Tab");
+  await page.clock.runFor(2200);
+  await page.keyboard.press("Tab");
+  snap = await page.evaluate(() => SignalGame.snapshot());
+  const post = snap.units.find((u) => u.kind === "outpost" && u.hp > 0);
+  expect(post.build).toBeGreaterThan(3);
+  expect(post.build).toBeLessThan(4.5);
+  await page.reload();
+  await page.locator("#continue").click();
+  await page.keyboard.press("Tab");
+  const restored = await page.evaluate(() => SignalGame.snapshot());
+  expect(restored.economy).toEqual(snap.economy);
+  expect(restored.units.find((u) => u.id === post.id).build).toBeCloseTo(
+    post.build,
+    0,
+  );
+  await page.keyboard.press("Tab");
+  await page.clock.runFor(5000);
+  await page.keyboard.press("Tab");
+  await page.locator("#supply-open").click();
+  await expect(page.locator("#site-west-status")).toContainText("Работает");
+  await expect(page.locator("#supply-alloy")).toHaveText("45");
+  expect(
+    await page.evaluate(
+      () =>
+        SignalGame.snapshot().units.find(
+          (u) => u.kind === "outpost" && u.hp > 0,
+        ).build,
+    ),
+  ).toBe(0);
+});
+
+test("version one save migrates in the browser without replacing the operation", async ({
+  page,
+}) => {
+  const legacy = require("../tests/fixtures/signal-frontier-v1.json");
+  await page.clock.install({ time: new Date("2026-10-25T12:00:00Z") });
+  await page.clock.pauseAt(new Date("2026-10-25T12:00:01Z"));
+  await fixture(page, legacy);
+  await page.keyboard.press("Tab");
+  const restored = await page.evaluate(() => SignalGame.snapshot());
+  expect(restored.version).toBe(2);
+  expect(restored.t - legacy.t).toBeLessThan(0.2);
+  expect(restored.economy).toEqual({
+    alloy: 120,
+    spent: 0,
+    recovered: 0,
+    kit: false,
+    legacySupport: true,
+  });
+  expect(restored.units.map((u) => [u.id, u.kind, u.hp, u.x, u.y])).toEqual(
+    legacy.units.map((u) => [u.id, u.kind, u.hp, u.x, u.y]),
+  );
+  expect(restored.ammo).toBe(legacy.ammo);
+  expect(restored.phase).toBe(legacy.phase);
+  await page.locator("#supply-open").click();
+  await expect(page.locator("#supply-alloy")).toHaveText("120");
+  const saved = await page.evaluate(
+    () => JSON.parse(localStorage.getItem("signal-frontier-v1")).save,
+  );
+  expect(saved.version).toBe(2);
+  expect(saved.economy.legacySupport).toBe(true);
 });

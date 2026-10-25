@@ -24,7 +24,8 @@
     acc = 0,
     phase = -1,
     resultShown = false;
-  const keys = new Set(),
+  const siteLocks = {},
+    keys = new Set(),
     input = { fire: false, dash: false, reload: false, interact: false },
     moveStick = { x: 0, y: 0, id: null },
     aimStick = { x: 1, y: 0, id: null, active: false };
@@ -77,6 +78,11 @@
         reload: [640, 0.06, 0.025, "sine"],
         online: [530, 0.5, 0.07, "sine"],
         order: [720, 0.055, 0.03, "sine"],
+        collect: [820, 0.12, 0.05, "sine"],
+        upgrade: [440, 0.22, 0.05, "sine"],
+        build: [180, 0.18, 0.04, "triangle"],
+        "post-ready": [600, 0.25, 0.05, "sine"],
+        breach: [360, 0.3, 0.06, "sine"],
         end: [state.status === "won" ? 420 : 95, 0.6, 0.1, "sine"],
       };
       const a = configs[type];
@@ -220,6 +226,7 @@
       section.hidden = section.id !== which + "-content";
     if (!dialog.open) dialog.showModal();
     $("close-dialog").hidden = which === "result";
+    if (which === "supply") updateSupply();
     if (which === "settings") {
       $("volume").value = settings.volume;
       $("volume-value").textContent = settings.volume + "%";
@@ -246,10 +253,12 @@
     save();
     openDialog("result");
     $("result-title").textContent =
-      state.status === "won" ? "Узел удержан" : "Операция потеряна";
+      state.status === "won" ? "Цитадель подавлена" : "Операция потеряна";
     $("result-description").textContent =
       state.status === "won"
-        ? "Цитадель подавлена. Канал связи открыт для следующей высадки."
+        ? state.approach === "infiltration"
+          ? "Обход через терминал. Отряд прошёл оборону под прикрытием взлома."
+          : "Осада через узел связи. Коридор для следующей высадки открыт."
         : E.hero(state).hp <= 0
           ? "Связь с разведчиком потеряна. Используйте укрытия и рывок; огневая группа может прикрыть проход."
           : "Посадочный модуль уничтожен. Оставьте прикрытие на западном фланге.";
@@ -258,7 +267,11 @@
       (u) => u.team === 0 && u.group && u.hp > 0,
     );
     $("result-squad").textContent =
-      allies.length + " / " + (state.phase === 3 ? 4 : 3);
+      allies.length +
+      " / " +
+      state.units.filter((u) => u.team === 0 && u.group).length;
+    $("result-spent").textContent =
+      state.economy.spent - state.economy.recovered;
   }
   function formatTime(t) {
     return (
@@ -268,28 +281,40 @@
   function updateUI() {
     const h = E.hero(state),
       n = state.phase;
+    const task = E.objective(state);
+    const titles = {
+      jammer: "Отключить защиту",
+      relay: "Запустить узел",
+      defend: "Удержать узел",
+      terminal: "Взломать терминал",
+      citadel: "Подавить цитадель",
+    };
+    const hints = {
+      jammer: "Глушитель или обход через терминал",
+      relay: "Удерживайте действие рядом с узлом",
+      defend:
+        "Запуск канала · " + Math.floor(state.relay.stability * 100) + "%",
+      terminal: "Удерживайте взлом; отряд прикрывает",
+      citadel:
+        state.terminal.window > 0
+          ? state.terminal.channeling
+            ? "Удерживайте взлом; отряд атакует"
+            : "Защита вернётся через " + Math.ceil(state.terminal.window) + " с"
+          : state.units.some((u) => u.kind === "artillery" && u.hp > 0)
+            ? "Прикажите артиллерии выдвинуться"
+            : "Артиллерия доступна в снабжении",
+    };
+    $("objective-text").textContent = titles[task.id];
+    $("objective-sub").textContent = hints[task.id];
     if (n !== phase) {
       phase = n;
-      $("phase").textContent = "0" + (n + 1) + " / 04";
-      $("objective-text").textContent = [
-        "Уничтожить глушитель",
-        "Восстановить узел",
-        "Защитить узел",
-        "Подавить цитадель",
-      ][n];
-      $("objective-sub").textContent = [
-        "Обход через северный проход",
-        "Удерживайте действие рядом с узлом",
-        "Не подпускайте противника к узлу",
-        "Артиллерия готова к приказам",
-      ][n];
-      if (n === 1) notice("Глушитель снят. Узел связи доступен");
-      if (n === 2) notice("Идёт запуск узла. Противник идёт с юга");
-      if (n === 3) notice("Канал открыт. Артиллерия на позиции");
+      if (state.approach === "siege") {
+        if (n === 1) notice("Глушитель снят. Узел связи доступен");
+        if (n === 2) notice("Идёт запуск узла. Противник идёт с юга");
+        if (n === 3) notice("Канал открыт. Доступна артиллерия");
+      }
     }
-    if (n === 2)
-      $("objective-sub").textContent =
-        "Запуск канала · " + Math.floor(state.relay.stability * 100) + "%";
+    $("alloy").textContent = state.economy.alloy;
     $("health-fill").style.width =
       Math.max(0, (h.hp / E.C.hero.hp) * 100) + "%";
     $("health-fill").parentElement.classList.toggle("danger", h.hp < 50);
@@ -300,10 +325,22 @@
     $("dash-cooldown").style.width = (state.dash / 3.2) * 100 + "%";
     $("dash").disabled = state.dash > 0;
     $("reload").disabled = state.reload > 0 || state.ammo === 12;
-    const near =
-      state.phase === 1 && E.dist(h, state.relay) < 75 && mode === "playing";
-    $("interact-panel").hidden = !near;
-    $("interact-progress").style.width = state.relay.charge * 100 + "%";
+    const act = E.interaction(state);
+    $("interact-panel").hidden = !act || mode !== "playing";
+    $("interact").disabled = !!act && !act.allowed;
+    if (act) {
+      $("interact-label").textContent =
+        act.type === "cache"
+          ? "Забрать сплав · +40"
+          : act.type === "terminal"
+            ? act.allowed
+              ? state.terminal.window > 0
+                ? "Удерживать взлом"
+                : "Взломать терминал"
+              : "Нужен модуль взлома"
+            : "Запустить узел";
+      $("interact-progress").style.width = act.progress * 100 + "%";
+    }
     const rifles = state.units.filter((u) => u.group === 1 && u.hp > 0).length,
       art = state.units.some((u) => u.group === 2 && u.hp > 0);
     $("rifle-count").textContent = rifles + " / 3";
@@ -311,12 +348,109 @@
     $("group-two").disabled = !art;
     $("artillery-status").textContent = art
       ? "На позиции"
-      : state.phase === 3
+      : state.units.some((u) => u.kind === "artillery")
         ? "Потеряна"
-        : "Нужна связь";
+        : state.relay.online
+          ? "Готова к заказу"
+          : "Нужен узел связи";
+    if ($("dialog").open && !$("supply-content").hidden) updateSupply();
     if (performance.now() > noticeUntil)
       $("notice").classList.remove("visible");
   }
+  const reasons = {
+    ended: "Операция завершена",
+    funds: "Недостаточно сплава",
+    distance: "Подведите разведчика к площадке",
+    hostiles: "Сначала очистите площадку",
+    occupied: "Площадка занята",
+    relay: "Сначала запустите узел связи",
+    post: "Нужен готовый опорный пункт",
+    installed: "Модуль установлен",
+    "squad-full": "Все три бойца в строю",
+    "artillery-limit": "Орудие уже в строю",
+    "post-limit": "Уже построены два пункта",
+    blocked: "Освободите место для высадки",
+    limit: "Лимит подкреплений",
+  };
+  function updateSupply() {
+    $("supply-alloy").textContent = state.economy.alloy;
+    const descriptions = {
+      artillery: "Тяжёлый огонь против брони цитадели",
+      hack: "Взлом терминала отключает щит и орудие",
+      rifle: "Один боец в огневую группу",
+    };
+    for (const action of ["artillery", "hack", "rifle"]) {
+      const offer = E.supplyStatus(state, action);
+      $("buy-" + action).disabled = !offer.allowed;
+      $(action + "-reason").textContent = offer.allowed
+        ? descriptions[action]
+        : reasons[offer.reason] || "Недоступно";
+      $(action + "-price").textContent =
+        offer.reason === "installed" ? "✓" : E.COSTS[action];
+    }
+    for (const pad of E.PADS) {
+      const post = state.units.find(
+          (u) => u.kind === "outpost" && u.site === pad.id && u.hp > 0,
+        ),
+        button = $("site-" + pad.id);
+      const offer = E.supplyStatus(state, post ? "salvage" : "outpost", pad.id);
+      button.disabled =
+        !offer.allowed || performance.now() < (siteLocks[pad.id] || 0);
+      button.textContent = post
+        ? post.build > 0
+          ? "Отменить · +25"
+          : "Разобрать · +25"
+        : "Построить · 50";
+      $("site-" + pad.id + "-status").textContent = post
+        ? post.build > 0
+          ? E.dist(E.hero(state), post) > 210
+            ? "Стройка ждёт разведчика"
+            : "Строительство · " + Math.floor((1 - post.build / 6) * 100) + "%"
+          : "Работает · " + Math.ceil(post.hp) + " / " + E.C.outpost.hp
+        : offer.allowed
+          ? "Площадка доступна"
+          : reasons[offer.reason] || "Недоступно";
+    }
+  }
+  function buy(action, site) {
+    if (site && performance.now() < (siteLocks[site] || 0)) return;
+    state.events = [];
+    const result = E.purchase(state, action, site);
+    $("supply-feedback").textContent = result.allowed
+      ? action === "salvage"
+        ? "Возвращено 25 сплава"
+        : action === "outpost"
+          ? "Стройка начнётся после выхода из паузы"
+          : action === "hack"
+            ? "Модуль готов. Терминал отмечен на карте"
+            : "Подкрепление на позиции"
+      : reasons[result.reason] || "Недоступно";
+    if (result.allowed) {
+      if (site) siteLocks[site] = performance.now() + 450;
+      sound.start();
+      for (const event of state.events) sound.play(event);
+      view.add(state.events, settings.reduced);
+      state.events = [];
+      save();
+    }
+    updateSupply();
+    updateUI();
+  }
+  $("supply-open").onclick = () => {
+    $("supply-feedback").textContent = "";
+    openDialog("supply");
+  };
+  $("supply-back").onclick = closeDialog;
+  for (const button of document.querySelectorAll("[data-purchase]"))
+    button.onclick = () => buy(button.dataset.purchase);
+  for (const button of document.querySelectorAll("[data-site]"))
+    button.onclick = () => {
+      const post = state.units.some(
+        (u) =>
+          u.kind === "outpost" && u.site === button.dataset.site && u.hp > 0,
+      );
+      buy(post ? "salvage" : "outpost", button.dataset.site);
+    };
   $("start").onclick = () => begin();
   $("continue").onclick = () => begin(true);
   $("new-game").onclick = () => begin();
@@ -524,7 +658,13 @@
           interact: input.interact || keys.has("KeyE"),
         });
         input.dash = input.reload = false;
-        for (const e of state.events) sound.play(e);
+        for (const e of state.events) {
+          sound.play(e);
+          if (e.type === "collect") notice("Сплав +40");
+          if (e.type === "post-ready") notice("Опорный пункт готов");
+          if (e.type === "breach")
+            notice("Защита отключена. Прикройте разведчика");
+        }
         view.add(state.events, settings.reduced);
         acc -= E.DT;
       }
@@ -541,7 +681,7 @@
     view.render(
       state,
       {
-        mode,
+        mode: mode === "paused" && lastMode === "tactical" ? "tactical" : mode,
         group,
         aim,
         reduced: settings.reduced,

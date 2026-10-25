@@ -240,6 +240,7 @@
     resize() {
       this.width = innerWidth;
       this.height = innerHeight;
+      this.origin = { x: this.width / 2, y: this.height * 0.49 };
       this.dpr = Math.min(devicePixelRatio || 1, 2);
       this.canvas.width = Math.round(this.width * this.dpr);
       this.canvas.height = Math.round(this.height * this.dpr);
@@ -247,15 +248,15 @@
     world(x, y) {
       const a = this.camera;
       return {
-        x: (x - this.width / 2) / a.scale + a.x,
-        y: (y - this.height * 0.49) / (a.scale * Y) + a.y,
+        x: (x - this.origin.x) / a.scale + a.x,
+        y: (y - this.origin.y) / (a.scale * Y) + a.y,
       };
     }
     screen(x, y) {
       const a = this.camera;
       return {
-        x: (x - a.x) * a.scale + this.width / 2,
-        y: (y - a.y) * a.scale * Y + this.height * 0.49,
+        x: (x - a.x) * a.scale + this.origin.x,
+        y: (y - a.y) * a.scale * Y + this.origin.y,
       };
     }
     add(events, reduced) {
@@ -303,14 +304,25 @@
         mobile = w < 700,
         overview = ui.mode === "tactical",
         menu = ui.mode === "menu";
+      const landscape = overview && w > h && h <= 500;
+      this.origin = {
+        x: landscape ? (w - 230) / 2 : w / 2,
+        y: landscape
+          ? (h + 45) / 2
+          : overview && mobile
+            ? h * 0.49 - 14
+            : h * 0.49,
+      };
       let scale = overview
-        ? Math.min((w - 30) / E.W, (h - (mobile ? 255 : 230)) / (E.H * Y))
+        ? landscape
+          ? Math.min((w - 240) / E.W, (h - 120) / (E.H * Y))
+          : Math.min((w - 30) / E.W, (h - (mobile ? 295 : 230)) / (E.H * Y))
         : menu
           ? Math.max(w / 1800, h / 1000)
           : Math.min(1.32, Math.max(0.95, h / 660));
-      scale = Math.max(0.22, scale);
+      scale = Math.max(overview ? 0.1 : 0.22, scale);
       let tx = overview ? 720 : menu ? 770 : hero.x,
-        ty = overview ? 470 : menu ? 480 : hero.y;
+        ty = overview ? 500 : menu ? 480 : hero.y;
       if (!overview && !menu) {
         const ax = ui.aim ? E.clamp(ui.aim.x - hero.x, -240, 240) : 0,
           ay = ui.aim ? E.clamp(ui.aim.y - hero.y, -180, 180) : 0;
@@ -361,7 +373,7 @@
       }
       const cam = this.camera;
       c.save();
-      c.translate(w / 2, h * 0.49);
+      c.translate(this.origin.x, this.origin.y);
       if (this.shake && !ui.reduced)
         c.translate(
           Math.sin(this.time * 87) * this.shake,
@@ -396,6 +408,7 @@
         c.restore();
         ring(c, 850, 490, 140, "#9edcc615", 1);
       }
+      this.strategy(c, s, ui);
       this.relay(c, s, ui);
       if (overview) {
         for (const u of s.units.filter(
@@ -529,14 +542,10 @@
         c.restore();
       }
       this.fx = this.fx.filter((f) => f.life < f.max);
-      const objective =
-        s.phase === 0
-          ? E.living(s, "jammer")
-          : s.phase <= 2
-            ? s.relay
-            : E.living(s, "citadel");
+      const task = E.objective(s),
+        objective = task.target;
       if (objective && s.status === "playing") {
-        const radius = s.phase <= 2 ? 50 : E.C[objective.kind].r + 18;
+        const radius = task.radius;
         const pulse = ui.reduced ? 0 : Math.sin(this.time * 2) * 3;
         ring(c, objective.x, objective.y, radius + pulse, "#d5dab078", 1.4);
         const yy = objective.y - radius - 25;
@@ -574,11 +583,27 @@
         }
       }
       if (overview) {
+        c.font = "9px Segoe UI";
+        c.textAlign = "center";
+        c.textBaseline = "middle";
+        for (const [i, pad] of E.PADS.entries()) {
+          const p = this.screen(pad.x, pad.y);
+          ellipse(c, p.x, p.y + 12, 7, 7, "#112522", "#b8d4bc88");
+          c.fillStyle = "#c9e0ca";
+          c.fillText(String(i + 1), p.x, p.y + 12);
+        }
+        for (const cache of s.caches.filter((c) => !c.taken)) {
+          const p = this.screen(cache.x, cache.y);
+          c.fillStyle = "#dfd3a7";
+          c.fillText("40", p.x + 13, p.y + 6);
+        }
+        c.textBaseline = "alphabetic";
         for (const [x, y, label] of [
           [1015, 215, "ГЛУШИТЕЛЬ"],
           [850, 490, "УЗЕЛ СВЯЗИ"],
           [1250, 485, "ЦИТАДЕЛЬ"],
           [135, 820, "ПОСАДОЧНЫЙ МОДУЛЬ"],
+          [1280, 200, "ТЕРМИНАЛ"],
         ]) {
           const p = this.screen(x, y);
           c.font = "9px Segoe UI, sans-serif";
@@ -648,6 +673,179 @@
       );
       c.restore();
     }
+    strategy(c, s, ui) {
+      const overview = ui.mode === "tactical";
+      for (const [i, p] of E.PADS.entries()) {
+        const post = s.units.find(
+          (u) => u.kind === "outpost" && u.site === p.id && u.hp > 0,
+        );
+        if (!post) {
+          c.save();
+          c.setLineDash([5, 6]);
+          ring(c, p.x, p.y, 32, "#abcbb64a");
+          c.restore();
+          line(
+            c,
+            [
+              [p.x - 9, p.y],
+              [p.x + 9, p.y],
+            ],
+            "#abcbb66a",
+          );
+          line(
+            c,
+            [
+              [p.x, p.y - 9],
+              [p.x, p.y + 9],
+            ],
+            "#abcbb66a",
+          );
+        }
+        if (overview) {
+          if (post?.build === 0) ring(c, p.x, p.y, 145, "#a9d9bb24");
+        }
+        if (post?.build === 0)
+          for (const u of s.units)
+            if (
+              u.team === 0 &&
+              u.hp > 0 &&
+              u.hp < E.C[u.kind].hp &&
+              u.repair === 0 &&
+              E.dist(u, post) < 145 &&
+              E.clear(u, post)
+            )
+              line(
+                c,
+                [
+                  [post.x, post.y - 23],
+                  [u.x, u.y - 8],
+                ],
+                "#a7e7c34a",
+                1,
+              );
+      }
+      for (const cache of s.caches) {
+        if (cache.taken) {
+          line(
+            c,
+            [
+              [cache.x - 11, cache.y],
+              [cache.x + 11, cache.y],
+            ],
+            "#81948330",
+            2,
+          );
+          continue;
+        }
+        const { x, y } = cache;
+        ellipse(c, x + 3, y + 4, 16, 10, "#0a1e1c66");
+        box(c, x - 13, y - 9, 26, 18, 8, "#9b9e7c", "#546654");
+        for (const dx of [-8, 6])
+          line(
+            c,
+            [
+              [x + dx, y - 14],
+              [x + dx, y + 1],
+            ],
+            "#e1d3a0",
+            2,
+          );
+        poly(
+          c,
+          [
+            [x, y - 14],
+            [x + 3, y - 10],
+            [x, y - 6],
+            [x - 3, y - 10],
+          ],
+          "#e8dcac",
+        );
+
+        if (cache.charge > 0) {
+          c.beginPath();
+          c.arc(x, y, 22, -Math.PI / 2, -Math.PI / 2 + cache.charge * TAU);
+          c.strokeStyle = "#e0d8b2";
+          c.lineWidth = 2;
+          c.stroke();
+        }
+      }
+      const t = s.terminal,
+        x = t.x,
+        y = t.y;
+      line(
+        c,
+        [
+          [1015, 215],
+          [1015, 280],
+          [1280, 280],
+          [1280, 200],
+        ],
+        "#afba9125",
+        2,
+      );
+      ellipse(c, x, y, 28, 20, "#081c1b66");
+      box(c, x - 24, y - 16, 48, 32, 10, "#677965", "#344f40");
+      for (const dx of [-19, 11])
+        box(c, x + dx, y - 12, 8, 24, 26, "#9eae91", "#526b53");
+      poly(
+        c,
+        [
+          [x - 10, y - 14],
+          [x + 10, y - 14],
+          [x + 10, y - 34],
+          [x - 10, y - 34],
+        ],
+        "#203f35",
+        "#899f7e",
+      );
+      line(
+        c,
+        [
+          [x - 6, y - 27],
+          [x + 6, y - 27],
+        ],
+        t.window > 0 ? "#b7f3d3" : "#dcac81",
+        3,
+      );
+      line(
+        c,
+        [
+          [x - 6, y - 21],
+          [x + 3, y - 21],
+        ],
+        "#92baa1",
+        1,
+      );
+      if (t.window > 0) {
+        c.save();
+        c.setLineDash([7, 8]);
+        c.lineDashOffset = ui.reduced ? 0 : -this.time * 20;
+        line(
+          c,
+          [
+            [x, y],
+            [1320, 320],
+            [1250, 485],
+          ],
+          "#bce4bb66",
+          2,
+        );
+        c.restore();
+      }
+      if (t.charge || t.window) {
+        c.beginPath();
+        c.arc(
+          x,
+          y,
+          36,
+          -Math.PI / 2,
+          -Math.PI / 2 + (t.channeling ? t.charge : t.window / 7) * TAU,
+        );
+        c.strokeStyle = "#bce4bb";
+        c.lineWidth = 2;
+        c.stroke();
+      }
+    }
     relay(c, s, ui) {
       const { x, y, online, charge } = s.relay;
       ellipse(c, x, y, 47, 35, "#071b1d66");
@@ -714,7 +912,42 @@
         c.restore();
         return;
       }
-      if (u.kind === "base") {
+      if (u.kind === "outpost") {
+        const ready = u.build === 0;
+        if (!ready) c.globalAlpha = 0.4;
+        box(c, -28, -23, 56, 46, 8, "#667f72", "#2a4940");
+        for (const x of [-22, 12])
+          box(c, x, -17, 10, 34, 15, "#a0b6a0", "#496557");
+        box(c, -12, -15, 24, 30, 25, "#b4c6ad", "#4c7160");
+        line(
+          c,
+          [
+            [-7, -25],
+            [7, -25],
+          ],
+          ready ? "#baf3d4" : "#b5c4ad",
+          4,
+        );
+        line(
+          c,
+          [
+            [0, -25],
+            [0, -42],
+          ],
+          "#93b5a2",
+          2,
+        );
+        ellipse(c, 0, -42, 3, 2, ready ? "#c5f9dd" : "#899e91");
+        c.globalAlpha = 1;
+        if (!ready) {
+          ring(c, 0, 0, 37, "#9bb9a34a");
+          c.beginPath();
+          c.arc(0, 0, 37, -Math.PI / 2, -Math.PI / 2 + (1 - u.build / 6) * TAU);
+          c.strokeStyle = "#b5e6cb";
+          c.lineWidth = 2;
+          c.stroke();
+        }
+      } else if (u.kind === "base") {
         box(c, -43, -30, 86, 60, 16, "#586d65", "#293f3c");
         box(c, -28, -25, 56, 50, 29, "#a0ae9d", "#596c60");
         poly(
@@ -761,7 +994,7 @@
           4,
         );
       } else if (u.kind === "citadel") {
-        const shield = !s.relay.online;
+        const shield = E.shielded(s);
         if (shield) ring(c, 0, 0, 65, "#bd927854", 2);
         for (let i = 0; i < 4; i++) {
           const a = (i * Math.PI) / 2 + Math.PI / 4;
