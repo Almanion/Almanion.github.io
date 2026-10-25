@@ -472,7 +472,14 @@ for (const route of ["siege", "infiltration"])
   );
 test("published files exactly match canonical sources and stay self-contained", () => {
   const root = path.resolve(__dirname, "..");
-  for (const f of ["index.html", "style.css", "engine.js", "view.js", "app.js"])
+  for (const f of [
+    "index.html",
+    "style.css",
+    "engine.js",
+    "view.js",
+    "audio.js",
+    "app.js",
+  ])
     assert.deepEqual(
       fs.readFileSync(path.join(root, "game-source/signal-frontier/src", f)),
       fs.readFileSync(path.join(root, "games/signal-frontier", f)),

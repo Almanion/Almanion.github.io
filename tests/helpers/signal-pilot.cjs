@@ -85,7 +85,13 @@ class Pilot {
       this.path = E.pathTo(h, dest);
       this.stuck = 0;
     }
-    while (this.path.length && E.dist(h, this.path[0]) < this.waypointRadius)
+    // Keyboard input is quantized: do not cut a corner merely because its waypoint is nearby.
+    // Keep aligning with the corner until the scout's full footprint can reach the next point.
+    while (
+      this.path.length &&
+      E.dist(h, this.path[0]) < this.waypointRadius &&
+      (this.path.length === 1 || E.clear(h, this.path[1], E.C.hero.r))
+    )
       this.path.shift();
     if (E.dist(h, this.last) < 0.1 && E.dist(h, dest) > 30) this.stuck++;
     else this.stuck = 0;

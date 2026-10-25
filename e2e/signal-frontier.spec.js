@@ -210,24 +210,50 @@ for (const browserType of [chromium, webkit])
       try {
         await page.goto("http://127.0.0.1:4173" + route);
         await page.locator("#start").tap();
-        await page.waitForTimeout(700);
-        const mapTargets = await page.evaluate(() => {
-          const state = SignalGame.snapshot();
-          return [
-            ...SignalEngine.PADS,
-            ...state.caches,
-            state.terminal,
-            state.relay,
-          ].map((target) => {
-            const p = SignalGame.screen(target.x, target.y);
-            return {
-              id: target.id || String(target.x),
-              x: p.x,
-              y: p.y,
-              hit: document.elementFromPoint(p.x, p.y)?.id,
-            };
+        const readTargets = () =>
+          page.evaluate(() => {
+            const state = SignalGame.snapshot();
+            return [
+              ...SignalEngine.PADS,
+              ...state.caches,
+              state.terminal,
+              state.relay,
+            ].map((target) => {
+              const p = SignalGame.screen(target.x, target.y);
+              return {
+                id: target.id || String(target.x),
+                x: p.x,
+                y: p.y,
+                hit: document.elementFromPoint(p.x, p.y)?.id,
+              };
+            });
           });
-        });
+        let previous = null;
+        await expect
+          .poll(
+            async () => {
+              const points = await readTargets();
+              const visible = points.every(
+                (p) =>
+                  p.x > 0 &&
+                  p.x < size[0] &&
+                  p.y > 0 &&
+                  p.y < size[1] &&
+                  p.hit === "field",
+              );
+              const settled =
+                previous &&
+                points.every(
+                  (p, i) =>
+                    Math.hypot(p.x - previous[i].x, p.y - previous[i].y) < 0.5,
+                );
+              previous = points;
+              return Boolean(visible && settled);
+            },
+            { intervals: [100, 200] },
+          )
+          .toBe(true);
+        const mapTargets = await readTargets();
         for (const p of mapTargets) {
           expect(p.x, p.id).toBeGreaterThan(0);
           expect(p.y, p.id).toBeGreaterThan(0);

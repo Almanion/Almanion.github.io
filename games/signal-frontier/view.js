@@ -73,6 +73,196 @@
       "#899a8c25",
     );
   }
+  const MAT = {
+    ceramic: {
+      top: "#c9d7ce",
+      front: "#829b91",
+      side: "#3e5c58",
+      edge: "#e1eee4",
+    },
+    ally: {
+      top: "#819e94",
+      front: "#4a6d65",
+      side: "#263f40",
+      edge: "#bad0bd",
+    },
+    graphite: {
+      top: "#263d43",
+      front: "#182a32",
+      side: "#101e26",
+      edge: "#58716e",
+    },
+    enemy: {
+      top: "#716c62",
+      front: "#4b4540",
+      side: "#282f33",
+      edge: "#a69a83",
+    },
+    copper: {
+      top: "#ac8b73",
+      front: "#6e5146",
+      side: "#403b36",
+      edge: "#d4b49a",
+    },
+    dark: {
+      top: "#34474b",
+      front: "#203138",
+      side: "#14252c",
+      edge: "#657a74",
+    },
+    deck: {
+      top: "#4b6060",
+      front: "#2b4046",
+      side: "#1a2d35",
+      edge: "#6a807a",
+    },
+  };
+  const rectangle = (x, y, w, h) => [
+    [x - w / 2, y - h / 2],
+    [x + w / 2, y - h / 2],
+    [x + w / 2, y + h / 2],
+    [x - w / 2, y + h / 2],
+  ];
+  function point(x, y, z, a = 0) {
+    const co = Math.cos(a),
+      si = Math.sin(a);
+    return [x * co - y * si, x * si + y * co - z];
+  }
+  function plate(c, shape, z, depth, a, mat) {
+    const base = shape.map((p) => point(p[0], p[1], z, a)),
+      top = shape.map((p) => point(p[0], p[1], z + depth, a));
+    const faces = base
+      .map((p, i) => ({ i, y: (p[1] + base[(i + 1) % base.length][1]) / 2 }))
+      .sort((a, b) => a.y - b.y);
+    c.lineWidth = 0.6;
+    for (const { i } of faces) {
+      const j = (i + 1) % base.length;
+      poly(
+        c,
+        [base[i], base[j], top[j], top[i]],
+        base[j][0] < base[i][0] ? mat.front : mat.side,
+      );
+    }
+    poly(c, top, mat.top, mat.edge + "80");
+    line(c, [top[0], top[1]], mat.edge + "aa", 0.7);
+  }
+  function slab(c, x, y, w, h, z, depth, a, mat) {
+    plate(c, rectangle(x, y, w, h), z, depth, a, mat);
+  }
+  function lamp(c, x, y, z, a, r, color) {
+    const p = point(x, y, z, a);
+    ellipse(c, p[0], p[1], r + 1, r * 0.65 + 1, "#09171c");
+    ellipse(c, p[0], p[1], r, r * 0.65, color);
+  }
+  function seam(c, coords, z, a, color, width = 1) {
+    line(
+      c,
+      coords.map((p) => point(p[0], p[1], z, a)),
+      color,
+      width,
+    );
+  }
+  function arc(c, x, y, r, start, end, color, width = 1) {
+    c.beginPath();
+    c.arc(x, y, r, start, end);
+    c.strokeStyle = color;
+    c.lineWidth = width;
+    c.stroke();
+  }
+  function sky(w, h) {
+    const a = document.createElement("canvas");
+    a.width = w;
+    a.height = h;
+    const c = a.getContext("2d");
+    const g = c.createLinearGradient(0, 0, w, h);
+    g.addColorStop(0, "#07121c");
+    g.addColorStop(0.55, "#16303b");
+    g.addColorStop(1, "#08151f");
+    c.fillStyle = g;
+    c.fillRect(0, 0, w, h);
+    for (let i = 0; i < 170; i++) {
+      const x = (i * 719.27) % w,
+        y = (i * 311.37) % h;
+      c.fillStyle = i % 9 === 0 ? "#c0d9ce65" : "#a0c2c52c";
+      c.fillRect(x, y, i % 17 === 0 ? 2 : 1, 1);
+    }
+    const x = w * 0.83,
+      y = h * 0.06,
+      r = Math.min(w * 0.38, h * 0.48);
+    const halo = c.createRadialGradient(x, y, r * 0.8, x, y, r * 1.12);
+    halo.addColorStop(0, "#719cab00");
+    halo.addColorStop(0.78, "#7099a61e");
+    halo.addColorStop(1, "#7099a600");
+    c.fillStyle = halo;
+    c.fillRect(x - r * 1.2, y - r * 1.2, r * 2.4, r * 2.4);
+    c.save();
+    c.beginPath();
+    c.arc(x, y, r, 0, TAU);
+    c.clip();
+    const planet = c.createRadialGradient(
+      x - r * 0.6,
+      y - r * 0.6,
+      0,
+      x,
+      y,
+      r * 1.2,
+    );
+    planet.addColorStop(0, "#66817e");
+    planet.addColorStop(0.5, "#2c4a54");
+    planet.addColorStop(0.85, "#142b38");
+    planet.addColorStop(1, "#0a1825");
+    c.fillStyle = planet;
+    c.fillRect(x - r, y - r, r * 2, r * 2);
+    c.translate(x, y);
+    c.rotate(-0.28);
+    for (let i = 0; i < 65; i++) {
+      const yy = -r + (i * r) / 32,
+        span = Math.sqrt(Math.max(0, r * r - yy * yy));
+      c.beginPath();
+      c.moveTo(-span, yy);
+      for (let j = 0; j <= 12; j++) {
+        const xx = -span + (j * span) / 6;
+        c.lineTo(xx, yy + Math.sin(j * 0.87 + i * 2.7) * r * 0.014);
+      }
+      c.strokeStyle = i % 3 ? "#afc1ae08" : "#0a24381a";
+      c.lineWidth = 1 + (i % 5) * 0.65;
+      c.stroke();
+    }
+    c.restore();
+    arc(c, x, y, r, 0.08, Math.PI * 0.92, "#a8c8bd3a", 1.5);
+    c.save();
+    c.translate(w * 0.63, h * 0.12);
+    c.rotate(-0.28);
+    c.scale(1, 0.26);
+    for (let i = 0; i < 3; i++) {
+      const rr = w * (0.47 + i * 0.13);
+      arc(
+        c,
+        0,
+        0,
+        rr,
+        0.08,
+        Math.PI * 1.72,
+        i === 1 ? "#59717631" : "#82958d32",
+        i === 1 ? 22 : 3,
+      );
+      arc(c, 0, 0, rr + 12, 0.08, Math.PI * 1.72, "#071721a0", 4);
+      for (let j = 0; j < 36; j++) {
+        const t = j * 0.17;
+        line(
+          c,
+          [
+            [Math.cos(t) * (rr - 9), Math.sin(t) * (rr - 9)],
+            [Math.cos(t) * (rr + 9), Math.sin(t) * (rr + 9)],
+          ],
+          "#9bb7a82d",
+          1.6,
+        );
+      }
+    }
+    c.restore();
+    return a;
+  }
   function terrain() {
     const a = document.createElement("canvas");
     a.width = E.W;
@@ -83,47 +273,53 @@
       seed = (seed * 1664525 + 1013904223) >>> 0;
       return seed / 4294967296;
     };
-    const g = c.createLinearGradient(0, 0, 1440, 1000);
-    g.addColorStop(0, "#263737");
-    g.addColorStop(0.5, "#34433f");
-    g.addColorStop(1, "#27393a");
+    const outline = [
+      [24, 36],
+      [36, 24],
+      [1404, 24],
+      [1416, 36],
+      [1416, 964],
+      [1404, 976],
+      [36, 976],
+      [24, 964],
+    ];
     poly(
       c,
-      [
-        [30, 100],
-        [240, 30],
-        [1260, 30],
-        [1410, 140],
-        [1410, 850],
-        [1240, 970],
-        [120, 970],
-        [30, 870],
-      ],
-      g,
-      "#8b9b8026",
+      outline.map(([x, y]) => [x + 4, y + 20]),
+      "#10262e",
+      "#4d737341",
     );
-    for (let y = 60; y < 980; y += 80)
-      for (let x = 40; x < 1420; x += 100) {
-        c.fillStyle = `rgba(150,161,137,${rnd() * 0.025})`;
-        c.fillRect(x + 1, y + 1, 98, 78);
-        c.strokeStyle = "#0d1b1e30";
+    const g = c.createLinearGradient(30, 30, 1400, 1000);
+    g.addColorStop(0, "#354b50");
+    g.addColorStop(0.5, "#3d5251");
+    g.addColorStop(1, "#253d44");
+    poly(c, outline, g, "#8caaa060");
+    c.save();
+    c.beginPath();
+    outline.forEach((p, i) => (i ? c.lineTo(...p) : c.moveTo(...p)));
+    c.closePath();
+    c.clip();
+    for (let y = 24; y < 980; y += 80)
+      for (let x = 24; x < 1420; x += 100) {
+        c.fillStyle = rnd() > 0.5 ? "#a4baac09" : "#071d280d";
+        c.fillRect(x + 2, y + 2, 97, 77);
+        c.strokeStyle = "#102c3680";
         c.lineWidth = 0.7;
         c.strokeRect(x, y, 100, 80);
-        if (rnd() > 0.78) {
-          line(
-            c,
-            [
-              [x + 15, y + 65],
-              [x + 32, y + 65],
-              [x + 32, y + 57],
-            ],
-            "#acb5a01c",
-          );
+        line(
+          c,
+          [
+            [x + 3, y + 2],
+            [x + 97, y + 2],
+          ],
+          "#a2b4a51a",
+        );
+        for (const dx of [6, 94]) {
+          c.fillStyle = "#112c3366";
+          c.fillRect(x + dx, y + 6, 2, 2);
         }
       }
-    // Pale service lanes and cable trenches make the three objectives spatially legible.
-    line(
-      c,
+    for (const lane of [
       [
         [135, 820],
         [265, 820],
@@ -132,66 +328,52 @@
         [520, 180],
         [1015, 180],
       ],
-      "#172b2b",
-      20,
-    );
-    line(
-      c,
-      [
-        [135, 820],
-        [265, 820],
-        [265, 650],
-        [520, 650],
-        [520, 180],
-        [1015, 180],
-      ],
-      "#70897d26",
-      2,
-    );
-    line(
-      c,
       [
         [520, 650],
         [790, 650],
         [790, 490],
         [1250, 490],
       ],
-      "#192d2c",
-      18,
-    );
-    line(
-      c,
       [
-        [520, 650],
-        [790, 650],
-        [790, 490],
-        [1250, 490],
+        [1015, 215],
+        [1015, 280],
+        [1280, 280],
+        [1280, 200],
       ],
-      "#84988428",
-      2,
-    );
-    for (let i = 0; i < 1500; i++) {
-      let x = rnd() * 1400 + 20,
-        y = rnd() * 940 + 30;
-      c.fillStyle = rnd() > 0.5 ? "#d5cfab0b" : "#101f2219";
-      c.fillRect(x, y, 1 + rnd() * 3, 1 + rnd() * 3);
+    ]) {
+      line(c, lane, "#142f38", 22);
+      line(c, lane, "#5c77705c", 1);
+      c.save();
+      c.setLineDash([15, 12]);
+      line(c, lane, "#c1c2a016", 3);
+      c.restore();
     }
-    for (let i = 0; i < 100; i++) {
-      const x = rnd() * 1360 + 40,
-        y = rnd() * 900 + 50;
-      if (!E.free(x, y, 45)) continue;
-      const r = 1 + rnd() * 5;
-      poly(
-        c,
-        [
-          [x - r, y],
-          [x, y - r],
-          [x + r, y - 1],
-          [x + r * 0.5, y + r],
-        ],
-        "#5d6c601f",
-        "#a6ae8b12",
-      );
+    for (let i = 0; i < 1300; i++) {
+      const x = rnd() * 1390 + 25,
+        y = rnd() * 950 + 25;
+      c.fillStyle = i % 3 ? "#ced6bd09" : "#051c2720";
+      c.fillRect(x, y, 1 + rnd() * 3, 1 + rnd() * 2);
+    }
+    for (const [x, y, rx, ry] of [
+      [380, 560, 62, 23],
+      [940, 750, 80, 36],
+      [1100, 395, 48, 23],
+      [690, 210, 35, 16],
+    ]) {
+      ellipse(c, x, y, rx, ry, "#0d252e36");
+      ellipse(c, x + 8, y - 3, rx * 0.62, ry * 0.7, "#0a202b2b");
+      for (let i = 0; i < 9; i++) {
+        const t = i * 2.4;
+        line(
+          c,
+          [
+            [x + Math.cos(t) * rx * 0.7, y + Math.sin(t) * ry * 0.7],
+            [x + Math.cos(t) * rx * 1.3, y + Math.sin(t) * ry * 1.3],
+          ],
+          "#0e2c352a",
+          2,
+        );
+      }
     }
     for (const [x, y, w, h] of [
       [80, 730, 180, 180],
@@ -199,37 +381,77 @@
       [1155, 360, 190, 230],
       [935, 135, 160, 160],
     ]) {
-      c.strokeStyle = "#c3c5a82b";
-      c.lineWidth = 2;
+      c.strokeStyle = "#adbd9c25";
+      c.lineWidth = 1;
       c.strokeRect(x, y, w, h);
-      for (let j = 0; j < 4; j++) {
-        c.fillStyle = "#b8ba985c";
-        c.fillRect(x + j * (w / 4) + 4, y + h - 7, 13, 2);
+      for (const [xx, yy, sx, sy] of [
+        [x, y, 1, 1],
+        [x + w, y, -1, 1],
+        [x, y + h, 1, -1],
+        [x + w, y + h, -1, -1],
+      ])
+        line(
+          c,
+          [
+            [xx, yy + sy * 20],
+            [xx, yy],
+            [xx + sx * 20, yy],
+          ],
+          "#b7c2a54a",
+          2,
+        );
+    }
+    for (const [x, y] of [
+      [90, 365],
+      [550, 905],
+      [950, 80],
+      [1330, 770],
+    ]) {
+      c.fillStyle = "#1e353d";
+      c.fillRect(x, y, 70, 28);
+      for (let i = 0; i < 9; i++) {
+        line(
+          c,
+          [
+            [x + 5 + i * 7, y + 4],
+            [x + 5 + i * 7, y + 24],
+          ],
+          "#75908a38",
+          2,
+        );
       }
       line(
         c,
         [
-          [x + 12, y + 28],
-          [x + 12, y + 12],
-          [x + 28, y + 12],
+          [x, y],
+          [x + 70, y],
         ],
-        "#d4d6b768",
-        3,
+        "#b0bfa638",
       );
     }
-    // Broken perimeter beams sit outside the navigable deck.
-    for (let x = 80; x < 1300; x += 160) {
-      box(c, x, 32, 110, 12, 8, "#5f7065", "#273b36");
-      box(c, x, 950, 90, 13, 10, "#4a5d54", "#1b302e");
+    c.restore();
+    for (let x = 60; x < 1400; x += 112) {
+      slab(c, x, 14, 80, 10, 0, 7, 0, MAT.deck);
+      slab(c, x, 988, 80, 10, 0, 9, 0, MAT.deck);
+      lamp(c, x + 28, 14, 8, 0, 1.8, "#9dbbad");
+      lamp(c, x - 28, 988, 10, 0, 1.8, "#9dbbad");
+    }
+    for (let y = 85; y < 950; y += 112) {
+      slab(c, 14, y, 10, 70, 0, 6, 0, MAT.deck);
+      slab(c, 1427, y, 10, 70, 0, 6, 0, MAT.deck);
     }
     return a;
   }
+
   class View {
     constructor(canvas) {
       this.canvas = canvas;
       this.c = canvas.getContext("2d", { alpha: false });
       this.ground = terrain();
       this.fx = [];
+      this.poses = new Map();
+      this.scars = [];
+      this.effectSerial = 0;
       this.camera = { x: 720, y: 500, scale: 1 };
       this.time = 0;
       this.width = 1;
@@ -244,6 +466,7 @@
       this.dpr = Math.min(devicePixelRatio || 1, 2);
       this.canvas.width = Math.round(this.width * this.dpr);
       this.canvas.height = Math.round(this.height * this.dpr);
+      this.sky = sky(this.width, this.height);
     }
     world(x, y) {
       const a = this.camera;
@@ -261,10 +484,17 @@
     }
     add(events, reduced) {
       for (const e of events) {
+        const seed = this.effectSerial++ * 1.618;
+        if (["destroy", "blast"].includes(e.type))
+          this.scars.push({
+            x: e.x,
+            y: e.y,
+            r: e.type === "blast" ? 36 : (E.C[e.kind]?.r || 16) * 0.9,
+            seed,
+          });
         if (
+          !reduced &&
           [
-            "shot",
-            "mortar",
             "hit",
             "spark",
             "destroy",
@@ -273,30 +503,41 @@
             "online",
             "order",
             "shield",
+            "collect",
+            "build",
+            "post-ready",
+            "salvage",
+            "breach",
           ].includes(e.type)
         ) {
           this.fx.push({
             ...e,
+            seed,
             life: 0,
-            max:
-              e.type === "destroy"
-                ? 1
-                : e.type === "online"
-                  ? 1.8
-                  : e.type === "order"
-                    ? 1.2
-                    : e.type === "dash"
-                      ? 0.3
-                      : 0.35,
+            max: ["destroy", "blast"].includes(e.type)
+              ? 1.1
+              : e.type === "order"
+                ? 0.8
+                : ["hit", "spark", "dash"].includes(e.type)
+                  ? 0.28
+                  : 0.65,
           });
-          if (!reduced && (e.type === "blast" || e.type === "destroy"))
-            this.shake = Math.min(4, this.shake + 2);
+          if (["blast", "destroy"].includes(e.type))
+            this.shake = Math.min(2, this.shake + 0.8);
         }
       }
-      this.fx = this.fx.slice(-120);
+      this.scars = this.scars.slice(-40);
+      this.fx = this.fx.slice(-96);
     }
     render(s, ui, dt) {
-      this.time += dt;
+      this.frameDt = dt;
+      if (ui.reduced) {
+        this.fx = [];
+        this.shake = 0;
+      }
+      const active = ui.mode === "playing" && s.status === "playing";
+      if (!ui.reduced && (active || ui.mode === "menu")) this.time += dt;
+
       const c = this.c,
         w = this.width,
         h = this.height,
@@ -340,41 +581,19 @@
       c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
       c.fillStyle = "#0b171d";
       c.fillRect(0, 0, w, h);
-      const glow = c.createRadialGradient(
-        w * 0.73,
-        h * 0.36,
-        20,
-        w * 0.6,
-        h * 0.5,
-        w * 0.8,
-      );
-      glow.addColorStop(0, "#26403c");
-      glow.addColorStop(1, "#0b151d");
-      c.fillStyle = glow;
-      c.fillRect(0, 0, w, h);
-      // Distant concentric fragments of the orbital structure.
-      c.save();
-      c.translate(w * 0.73, h * 0.1);
-      c.rotate(-0.26);
-      c.scale(1, 0.27);
-      for (let i = 0; i < 5; i++) {
-        c.beginPath();
-        c.arc(0, 0, w * (0.36 + i * 0.11), 0, TAU);
-        c.strokeStyle = i % 2 ? "#8caa8c08" : "#829a8620";
-        c.lineWidth = i % 2 ? 12 : 1;
-        c.stroke();
-      }
-      c.restore();
-      for (let i = 0; i < 70; i++) {
-        const x = (i * 719.27) % w,
-          y = (i * 311.37) % h;
-        c.fillStyle = `rgba(188,208,192,${0.08 + (i % 5) * 0.025})`;
-        c.fillRect(x, y, i % 7 === 0 ? 2 : 1, 1);
+      c.drawImage(this.sky, 0, 0);
+      if (!ui.reduced) {
+        for (let i = 0; i < 8; i++) {
+          const x = (i * 277.1 + this.time * 2) % w,
+            y = (i * 173.7 + this.time * 0.4) % h;
+          c.fillStyle = "#b9d7c321";
+          c.fillRect(x, y, 1.2, 1.2);
+        }
       }
       const cam = this.camera;
       c.save();
       c.translate(this.origin.x, this.origin.y);
-      if (this.shake && !ui.reduced)
+      if (this.shake && active && !ui.touch && !ui.reduced)
         c.translate(
           Math.sin(this.time * 87) * this.shake,
           Math.cos(this.time * 71) * this.shake,
@@ -388,6 +607,7 @@
       c.drawImage(this.ground, 0, 0);
       c.restore();
       c.drawImage(this.ground, 0, 0);
+      this.debris(c);
       if (s.relay.online) {
         c.save();
         c.setLineDash([12, 8]);
@@ -437,8 +657,12 @@
           line(
             c,
             [
-              [u.x, u.y],
-              [u.target.x, u.target.y],
+              [
+                u.x,
+                u.y -
+                  (u.kind === "citadel" ? 64 : u.kind === "turret" ? 24 : 19),
+              ],
+              [u.target.x, u.target.y - 10],
             ],
             "#f4ae89",
             1.4,
@@ -454,94 +678,69 @@
       for (const o of objects)
         if (o.wall) this.wall(c, o);
         else this.unit(c, o, s, ui);
+      // Height belongs to presentation; projectile positions and collision tests stay in the simulation.
       for (const b of s.bullets) {
+        const owner = s.units.find((u) => u.id === b.owner),
+          mount =
+            owner?.kind === "citadel"
+              ? 64
+              : owner?.kind === "turret"
+                ? 24
+                : owner?.kind === "artillery"
+                  ? 23
+                  : 16;
+        const speed = Math.hypot(b.vx, b.vy),
+          start = { x: b.x - b.vx * b.age, y: b.y - b.vy * b.age };
+        const duration = Math.max(
+            0.01,
+            Math.hypot(b.tx - start.x, b.ty - start.y) / speed,
+          ),
+          progress = Math.min(1, b.age / duration),
+          z = mount * (1 - progress) + 10 * progress;
         if (b.kind === "shell") {
-          const total =
-              Math.hypot(
-                b.tx - (b.x - b.vx * b.age),
-                b.ty - (b.y - b.vy * b.age),
-              ) / 360,
-            arc =
-              Math.sin(Math.min(1, b.age / Math.max(0.1, total)) * Math.PI) *
-              55;
-          ellipse(c, b.x, b.y, 6, 4, "#0005");
-          ellipse(c, b.x, b.y - arc, 4, 4, "#e1f4c9");
-          ring(c, b.tx, b.ty, 30, "#c5dbab50");
+          const arcHeight = Math.sin(progress * Math.PI) * 55 + z;
+          ellipse(c, b.x, b.y, 5, 3, "#0004");
+          line(
+            c,
+            [
+              [b.x - b.vx * 0.025, b.y - arcHeight - b.vy * 0.025],
+              [b.x, b.y - arcHeight],
+            ],
+            "#d4e4bd9c",
+            2.5,
+          );
+          ellipse(c, b.x, b.y - arcHeight, 3, 3, "#e5efd0");
+          ring(c, b.tx, b.ty, 30, "#c5dbab3a");
         } else {
           const len = b.team ? 11 : 18,
-            color = b.team ? "#ffb491" : "#cef6e3";
+            color = b.team ? "#f1b596" : "#c7efdc";
           line(
             c,
             [
-              [b.x - (b.vx / 800) * len, b.y - (b.vy / 800) * len],
-              [b.x, b.y],
+              [b.x - (b.vx / 800) * len, b.y - z - (b.vy / 800) * len],
+              [b.x, b.y - z],
             ],
             color,
-            b.team ? 3 : 2,
+            b.team ? 2.2 : 1.7,
           );
         }
       }
-      for (const f of this.fx) {
-        f.life += dt;
-        const t = f.life / f.max;
-        if (t > 1) continue;
-        c.save();
-        c.globalAlpha = (1 - t) * 0.9;
-        const color = f.team ? "#eea381" : "#ade6ce";
-        if (f.type === "destroy" || f.type === "blast") {
-          ring(
-            c,
-            f.x,
-            f.y,
-            8 + t * (f.type === "blast" ? 75 : 48),
-            "#e6cda2",
-            2,
-          );
-          for (let i = 0; i < 9; i++) {
-            const a = i * 2.4;
-            line(
-              c,
-              [
-                [f.x + Math.cos(a) * t * 18, f.y + Math.sin(a) * t * 18],
-                [f.x + Math.cos(a) * t * 68, f.y + Math.sin(a) * t * 68],
-              ],
-              i % 2 ? "#a3b0a0" : "#e8b88e",
-              2,
-            );
-          }
-        } else if (f.type === "online") {
-          ring(c, f.x, f.y, 30 + t * 160, "#a9e1ce", 2);
-        } else if (f.type === "order") {
-          ring(c, f.x, f.y, 15 + t * 30, "#d1eee0", 2);
-          line(
-            c,
-            [
-              [f.x - 8, f.y],
-              [f.x + 8, f.y],
-            ],
-            "#d1eee0",
-          );
-        } else if (f.type === "dash") {
-          ellipse(c, f.x, f.y, 17, 13, "#abdfcc66");
-        } else if (f.type === "shield") {
-          ring(c, f.x, f.y, 66, "#d1a181", 2);
-        } else if (f.type === "hit" || f.type === "spark") {
-          for (let i = 0; i < 4; i++) {
-            const a = i * 1.7;
-            line(
-              c,
-              [
-                [f.x, f.y - 8],
-                [f.x + Math.cos(a) * t * 20, f.y - 8 + Math.sin(a) * t * 20],
-              ],
-              color,
-              1.5,
-            );
-          }
-        }
-        c.restore();
+      // A small outline keeps the scout locatable when a tall cover piece hides the body.
+      if (
+        !overview &&
+        !menu &&
+        E.walls.some(
+          (b) =>
+            hero.x > b.x - 12 &&
+            hero.x < b.x + b.w + 12 &&
+            hero.y > b.y - 55 &&
+            hero.y < b.y + 12,
+        )
+      ) {
+        arc(c, hero.x, hero.y, 18, 0, Math.PI * 2, "#c4e8dbad", 1.4);
+        ellipse(c, hero.x, hero.y - 17, 2, 2, "#d3f1e4");
       }
-      this.fx = this.fx.filter((f) => f.life < f.max);
+      this.effects(c, dt, ui, active);
       const task = E.objective(s),
         objective = task.target;
       if (objective && s.status === "playing") {
@@ -637,189 +836,224 @@
           );
       }
     }
-    wall(c, b) {
-      c.save();
-      ellipse(
-        c,
-        b.x + b.w * 0.55,
-        b.y + b.h * 0.65,
-        b.w * 0.7,
-        b.h * 0.62,
-        "#07161655",
-      );
-      box(c, b.x, b.y, b.w, b.h, 38, "#56645b", "#273834");
-      box(c, b.x + 9, b.y + 9, b.w - 18, b.h - 18, 48, "#677365", "#435247");
-      for (let i = 0; i < Math.floor(b.h / 55); i++) {
-        line(
-          c,
-          [
-            [b.x + 9, b.y + i * 55 - 29],
-            [b.x + b.w - 9, b.y + i * 55 - 29],
-          ],
-          "#263b344f",
-          2,
-        );
-        c.fillStyle = "#c1c2a754";
-        c.fillRect(b.x + b.w - 13, b.y + i * 55 - 22, 2, 12);
-      }
-      poly(
-        c,
-        [
-          [b.x + 10, b.y - 39],
-          [b.x + 30, b.y - 39],
-          [b.x + 10, b.y - 19],
-        ],
-        "#91977d",
-      );
-      c.restore();
-    }
     strategy(c, s, ui) {
-      const overview = ui.mode === "tactical";
-      for (const [i, p] of E.PADS.entries()) {
+      const overview = ui.mode === "tactical",
+        t = ui.reduced ? 0 : s.t;
+      for (const p of E.PADS) {
         const post = s.units.find(
           (u) => u.kind === "outpost" && u.site === p.id && u.hp > 0,
         );
         if (!post) {
-          c.save();
-          c.setLineDash([5, 6]);
-          ring(c, p.x, p.y, 32, "#abcbb64a");
-          c.restore();
+          for (let i = 0; i < 4; i++)
+            arc(
+              c,
+              p.x,
+              p.y,
+              32,
+              (i * Math.PI) / 2 + 0.15,
+              ((i + 1) * Math.PI) / 2 - 0.15,
+              "#abcbb64a",
+            );
           line(
             c,
             [
-              [p.x - 9, p.y],
-              [p.x + 9, p.y],
+              [p.x - 7, p.y],
+              [p.x + 7, p.y],
             ],
-            "#abcbb66a",
+            "#abcbb65a",
           );
           line(
             c,
             [
-              [p.x, p.y - 9],
-              [p.x, p.y + 9],
+              [p.x, p.y - 7],
+              [p.x, p.y + 7],
             ],
-            "#abcbb66a",
+            "#abcbb65a",
           );
         }
-        if (overview) {
-          if (post?.build === 0) ring(c, p.x, p.y, 145, "#a9d9bb24");
-        }
-        if (post?.build === 0)
+        if (post?.build === 0) {
+          if (overview) ring(c, p.x, p.y, 145, "#a9d9bb20");
           for (const u of s.units)
             if (
               u.team === 0 &&
               u.hp > 0 &&
               u.hp < E.C[u.kind].hp &&
+              !["outpost", "base"].includes(u.kind) &&
               u.repair === 0 &&
               E.dist(u, post) < 145 &&
               E.clear(u, post)
-            )
-              line(
+            ) {
+              const start = [post.x, post.y - 35],
+                end = [u.x, u.y - 15],
+                middle = [
+                  (start[0] + end[0]) / 2,
+                  (start[1] + end[1]) / 2 - 14,
+                ];
+              c.beginPath();
+              c.moveTo(...start);
+              c.quadraticCurveTo(...middle, ...end);
+              c.strokeStyle = "#9adcc650";
+              c.lineWidth = 1;
+              c.stroke();
+              const a = ui.reduced ? 0.5 : (t * 1.1 + u.id * 0.17) % 1,
+                b = 1 - a;
+              ellipse(
                 c,
-                [
-                  [post.x, post.y - 23],
-                  [u.x, u.y - 8],
-                ],
-                "#a7e7c34a",
-                1,
+                b * b * start[0] + 2 * b * a * middle[0] + a * a * end[0],
+                b * b * start[1] + 2 * b * a * middle[1] + a * a * end[1],
+                1.5,
+                1.2,
+                "#b1edcf",
               );
+            }
+        }
       }
       for (const cache of s.caches) {
-        if (cache.taken) {
-          line(
+        c.save();
+        c.translate(cache.x, cache.y);
+        ellipse(c, 3, 4, 16, 11, "#0b202970");
+        slab(c, 0, 0, 28, 20, 0, 3, 0, MAT.graphite);
+        const gold = {
+            top: "#b4ae88",
+            front: "#7b8167",
+            side: "#455e55",
+            edge: "#d4d0a5",
+          },
+          open = cache.taken ? 1 : cache.charge;
+        for (const side of [-1, 1]) {
+          slab(
+            c,
+            side * (7 + open * 5),
+            0,
+            12,
+            19,
+            3 + open * 2,
+            cache.taken ? 2 : 7,
+            side * open * 0.15,
+            gold,
+          );
+          seam(
             c,
             [
-              [cache.x - 11, cache.y],
-              [cache.x + 11, cache.y],
+              [side * (7 + open * 5), -6],
+              [side * (7 + open * 5), 6],
             ],
-            "#81948330",
-            2,
+            11 + open * 2,
+            0,
+            "#e4d8ae",
+            1.4,
           );
-          continue;
         }
-        const { x, y } = cache;
-        ellipse(c, x + 3, y + 4, 16, 10, "#0a1e1c66");
-        box(c, x - 13, y - 9, 26, 18, 8, "#9b9e7c", "#546654");
-        for (const dx of [-8, 6])
-          line(
-            c,
-            [
-              [x + dx, y - 14],
-              [x + dx, y + 1],
-            ],
-            "#e1d3a0",
-            2,
-          );
-        poly(
+        if (!cache.taken) {
+          for (let i = 0; i < 3; i++)
+            slab(c, -5 + i * 5, 0, 3, 12, 3, 3, 0, gold);
+          lamp(c, 0, -1, 11, 0, 2, "#e0dcb6");
+          if (cache.charge > 0)
+            arc(
+              c,
+              0,
+              0,
+              22,
+              -Math.PI / 2,
+              -Math.PI / 2 + cache.charge * TAU,
+              "#e3dcba",
+              2,
+            );
+        }
+        c.restore();
+      }
+      const terminal = s.terminal,
+        { x, y } = terminal;
+      c.save();
+      c.translate(x, y);
+      ellipse(c, 3, 5, 27, 18, "#071d2670");
+      slab(c, 0, 0, 48, 32, 0, 5, 0, MAT.dark);
+      slab(c, 0, 0, 31, 24, 5, 10, 0, MAT.enemy);
+      for (const side of [-1, 1]) {
+        slab(c, side * 21, 0, 7, 28, 5, 19, 0, MAT.copper);
+        seam(
           c,
           [
-            [x, y - 14],
-            [x + 3, y - 10],
-            [x, y - 6],
-            [x - 3, y - 10],
+            [side * 21, -8],
+            [side * 21, 8],
           ],
-          "#e8dcac",
+          25,
+          0,
+          "#3e4b47",
+          2,
         );
-
-        if (cache.charge > 0) {
-          c.beginPath();
-          c.arc(x, y, 22, -Math.PI / 2, -Math.PI / 2 + cache.charge * TAU);
-          c.strokeStyle = "#e0d8b2";
-          c.lineWidth = 2;
-          c.stroke();
-        }
       }
-      const t = s.terminal,
-        x = t.x,
-        y = t.y;
-      line(
+      plate(
         c,
         [
-          [1015, 215],
-          [1015, 280],
-          [1280, 280],
-          [1280, 200],
+          [-13, -12],
+          [13, -12],
+          [16, 7],
+          [-16, 7],
         ],
-        "#afba9125",
-        2,
+        15,
+        5,
+        0,
+        MAT.graphite,
       );
-      ellipse(c, x, y, 28, 20, "#081c1b66");
-      box(c, x - 24, y - 16, 48, 32, 10, "#677965", "#344f40");
-      for (const dx of [-19, 11])
-        box(c, x + dx, y - 12, 8, 24, 26, "#9eae91", "#526b53");
-      poly(
+      const color = terminal.window > 0 ? "#b6ebd2" : "#c6ab88";
+      seam(
         c,
         [
-          [x - 10, y - 14],
-          [x + 10, y - 14],
-          [x + 10, y - 34],
-          [x - 10, y - 34],
+          [-10, -8],
+          [10, -8],
+          [12, 3],
+          [-12, 3],
+          [-10, -8],
         ],
-        "#203f35",
-        "#899f7e",
+        21,
+        0,
+        "#6f999084",
       );
-      line(
-        c,
-        [
-          [x - 6, y - 27],
-          [x + 6, y - 27],
-        ],
-        t.window > 0 ? "#b7f3d3" : "#dcac81",
-        3,
-      );
-      line(
-        c,
-        [
-          [x - 6, y - 21],
-          [x + 3, y - 21],
-        ],
-        "#92baa1",
-        1,
-      );
-      if (t.window > 0) {
+      for (let i = 0; i < 3; i++)
+        seam(
+          c,
+          [
+            [-7, -5 + i * 3],
+            [5 - i * 2, -5 + i * 3],
+          ],
+          21,
+          0,
+          i === 0 ? color : "#6c9587",
+          1,
+        );
+      if (terminal.channeling) {
+        const scan = -7 + ((t * 12) % 10);
+        seam(
+          c,
+          [
+            [-10, scan],
+            [10, scan],
+          ],
+          22,
+          0,
+          "#bef2d4",
+          1.4,
+        );
+      }
+      lamp(c, 0, 10, 16, 0, 1.8, color);
+      if (terminal.charge || terminal.window)
+        arc(
+          c,
+          0,
+          0,
+          36,
+          -Math.PI / 2,
+          -Math.PI / 2 +
+            (terminal.channeling ? terminal.charge : terminal.window / 7) * TAU,
+          "#bce4bb",
+          2,
+        );
+      c.restore();
+      if (terminal.window > 0) {
         c.save();
-        c.setLineDash([7, 8]);
-        c.lineDashOffset = ui.reduced ? 0 : -this.time * 20;
+        c.setLineDash([5, 13]);
+        c.lineDashOffset = ui.reduced ? 0 : -t * 18;
         line(
           c,
           [
@@ -827,547 +1061,1124 @@
             [1320, 320],
             [1250, 485],
           ],
-          "#bce4bb66",
-          2,
+          "#a9d8c057",
+          1.2,
         );
         c.restore();
       }
-      if (t.charge || t.window) {
-        c.beginPath();
-        c.arc(
-          x,
-          y,
-          36,
-          -Math.PI / 2,
-          -Math.PI / 2 + (t.channeling ? t.charge : t.window / 7) * TAU,
-        );
-        c.strokeStyle = "#bce4bb";
-        c.lineWidth = 2;
-        c.stroke();
-      }
     }
     relay(c, s, ui) {
-      const { x, y, online, charge } = s.relay;
-      ellipse(c, x, y, 47, 35, "#071b1d66");
-      ring(c, x, y, 43, online ? "#a3d9c955" : "#869a8a33", 2);
+      const { x, y, online, charge } = s.relay,
+        progress = online ? 1 : s.phase === 2 ? s.relay.stability : charge;
+      c.save();
+      c.translate(x, y);
+      ellipse(c, 4, 6, 43, 30, "#061d2770");
+      ring(c, 0, 0, 43, online ? "#a3d9c947" : "#869a8a29");
       for (let i = 0; i < 3; i++) {
         const a = (i * TAU) / 3;
-        box(
+        slab(c, 24, 0, 26, 13, 0, 5, a, MAT.dark);
+        slab(
           c,
-          x + Math.cos(a) * 26 - 8,
-          y + Math.sin(a) * 26 - 8,
-          16,
-          16,
-          12,
-          "#6b8174",
-          "#2a4540",
+          19 + progress * 5,
+          0,
+          15,
+          11,
+          5,
+          11 + progress * 3,
+          a,
+          MAT.ally,
+        );
+        plate(
+          c,
+          [
+            [11, -5],
+            [29 + progress * 5, -9],
+            [33 + progress * 5, 0],
+            [29 + progress * 5, 9],
+            [11, 5],
+          ],
+          18,
+          4,
+          a,
+          MAT.ceramic,
+        );
+        seam(
+          c,
+          [
+            [18, 0],
+            [28 + progress * 5, 0],
+          ],
+          23,
+          a,
+          online ? "#b2edd2" : "#5b7d74",
+          2,
         );
       }
-      box(c, x - 13, y - 12, 26, 24, 30, "#8b9c87", "#455f55");
-      ellipse(c, x, y - 28, 7, 5, online ? "#b6f0d7" : "#d7b78d");
-      if (charge) {
-        c.beginPath();
-        c.arc(
-          x,
-          y,
+      slab(c, 0, 0, 21, 21, 5, 23 + progress * 8, 0, MAT.ally);
+      slab(c, 0, 0, 11, 11, 28 + progress * 8, 8, 0, MAT.graphite);
+      ellipse(c, 0, -37 - progress * 8, 7, 4, "#192f36", "#a8bdb384");
+      ellipse(
+        c,
+        0,
+        -38 - progress * 8,
+        3.5,
+        2.5,
+        online ? "#b9efda" : "#c6ad88",
+      );
+      if (charge)
+        arc(
+          c,
+          0,
+          0,
           51,
           -Math.PI / 2,
-          -Math.PI / 2 + (s.phase === 2 ? s.relay.stability : charge) * TAU,
+          -Math.PI / 2 + progress * TAU,
+          "#b6f0d7",
+          2,
         );
-        c.strokeStyle = "#b6f0d7";
-        c.lineWidth = 3;
-        c.stroke();
+      c.restore();
+    }
+    effects(c, dt, ui, active) {
+      for (const f of this.fx) {
+        f.life += f.type === "order" ? dt : active ? dt : 0;
+        const t = f.life / f.max;
+        if (t > 1) continue;
+        const color = f.team ? "#e7aa87" : "#afe1cc";
+        c.save();
+        if (f.type === "destroy" || f.type === "blast") {
+          const heavy =
+              f.type === "blast" ||
+              ["citadel", "base", "jammer"].includes(f.kind),
+            r = heavy ? 65 : 34;
+          c.globalAlpha = (1 - t) * 0.32;
+          ellipse(
+            c,
+            f.x + 7 * t,
+            f.y - 9 - 22 * t,
+            r * (0.2 + t * 0.65),
+            r * (0.12 + t * 0.3),
+            "#182c33",
+          );
+          c.globalAlpha = (1 - t) ** 2 * 0.65;
+          ring(c, f.x, f.y, 7 + t * r, "#c5ac87", 1.2);
+          if (t < 0.17) {
+            c.globalAlpha = (0.17 - t) * 3;
+            ellipse(c, f.x, f.y - 8, 8 + t * 55, 5 + t * 32, "#f0d7aa");
+          }
+          for (let i = 0; i < 7; i++) {
+            const a = i * 2.4 + f.seed,
+              d = (14 + (i % 3) * 12) * t,
+              xx = f.x + Math.cos(a) * d,
+              yy = f.y + Math.sin(a) * d - Math.sin(t * Math.PI) * 18;
+            c.globalAlpha = (1 - t) * 0.7;
+            line(
+              c,
+              [
+                [xx, yy],
+                [
+                  xx + Math.cos(a) * 5 * (1 - t),
+                  yy + Math.sin(a) * 5 * (1 - t),
+                ],
+              ],
+              i % 2 ? "#bac0a9" : "#e8b994",
+              1.2,
+            );
+          }
+        } else if (f.type === "hit" || f.type === "spark") {
+          c.globalAlpha = (1 - t) * 0.8;
+          for (let i = 0; i < 4; i++) {
+            const a = i * 2.1 + f.seed;
+            line(
+              c,
+              [
+                [f.x + Math.cos(a) * t * 4, f.y - 12 + Math.sin(a) * t * 4],
+                [f.x + Math.cos(a) * t * 19, f.y - 12 + Math.sin(a) * t * 19],
+              ],
+              color,
+              i === 0 ? 1.8 : 1,
+            );
+          }
+        } else if (f.type === "dash") {
+          c.translate(f.x, f.y - 10);
+          c.rotate(f.angle || 0);
+          c.globalAlpha = (1 - t) * 0.22;
+          poly(
+            c,
+            [
+              [-8, -7],
+              [-16 - t * 40, -3],
+              [-16 - t * 40, 3],
+              [-8, 7],
+            ],
+            "#b3e7d6",
+          );
+        } else if (f.type === "collect" || f.type === "salvage") {
+          c.globalAlpha = (1 - t) * 0.8;
+          for (let i = 0; i < 3; i++)
+            poly(
+              c,
+              [
+                [f.x - 7 + i * 7, f.y - 12 - t * 24],
+                [f.x - 4 + i * 7, f.y - 15 - t * 24],
+                [f.x - 1 + i * 7, f.y - 12 - t * 24],
+                [f.x - 4 + i * 7, f.y - 9 - t * 24],
+              ],
+              "#ddd5ad",
+            );
+        } else if (f.type === "shield") {
+          c.globalAlpha = (1 - t) * 0.55;
+          arc(c, f.x, f.y, 65, f.seed, f.seed + Math.PI * 0.7, "#e7bc95", 2);
+        } else {
+          c.globalAlpha = (1 - t) * 0.65;
+          const r =
+            f.type === "order"
+              ? 14 + t * 22
+              : f.type === "breach"
+                ? 24 + t * 50
+                : 20 + t * 70;
+          for (let i = 0; i < 3; i++)
+            arc(
+              c,
+              f.x,
+              f.y,
+              r,
+              (i * TAU) / 3 + 0.1,
+              (i * TAU) / 3 + 1.8,
+              color,
+              1.4,
+            );
+          if (f.type === "order")
+            line(
+              c,
+              [
+                [f.x - 6, f.y],
+                [f.x + 6, f.y],
+              ],
+              "#d1eee0",
+              1.5,
+            );
+        }
+        c.restore();
       }
+      this.fx = this.fx.filter((f) => f.life < f.max);
+    }
+    debris(c) {
+      for (const scar of this.scars) {
+        ellipse(c, scar.x, scar.y, scar.r, scar.r * 0.5, "#071b2524");
+        for (let i = 0; i < 3; i++) {
+          const a = scar.seed + i * 2.4,
+            r = scar.r * (0.3 + i * 0.15);
+          line(
+            c,
+            [
+              [scar.x + Math.cos(a) * r, scar.y + Math.sin(a) * r * 0.6],
+              [
+                scar.x + Math.cos(a) * (r + 4),
+                scar.y + Math.sin(a) * (r + 4) * 0.6,
+              ],
+            ],
+            "#71837c40",
+            1.5,
+          );
+        }
+      }
+    }
+    reset() {
+      this.fx = [];
+      this.poses.clear();
+      this.scars = [];
+      this.effectSerial = 0;
+      this.shake = 0;
+    }
+    pose(u, s, ui) {
+      let p = this.poses.get(u.id);
+      if (!p) {
+        p = { x: u.x, y: u.y, phase: 0, move: 0, angle: u.angle };
+        this.poses.set(u.id, p);
+      }
+      const dx = u.x - p.x,
+        dy = u.y - p.y,
+        d = Math.hypot(dx, dy);
+      if (d > 0.01 && d < 100) {
+        p.phase += d * 0.13;
+        p.angle = Math.atan2(dy, dx);
+        p.move = Math.min(1, d / (E.C[u.kind].speed * this.frameDt || 1));
+      } else p.move = 0;
+      p.x = u.x;
+      p.y = u.y;
+      return {
+        phase: ui.reduced ? 0 : p.phase,
+        move: ui.reduced ? 0 : p.move,
+        angle: p.angle,
+      };
+    }
+    wall(c, b) {
+      c.save();
+      c.translate(b.x + b.w / 2, b.y + b.h / 2);
+      const tall = b.h > b.w;
+      ellipse(c, 13, 20, b.w * 0.63, b.h * 0.55, "#06192270");
+      slab(c, 0, 0, b.w, b.h, 0, 13, 0, MAT.graphite);
+      slab(c, 0, 0, b.w - 6, b.h - 6, 13, 28, 0, MAT.deck);
+      slab(c, 0, 0, b.w - 20, b.h - 18, 41, 7, 0, {
+        ...MAT.deck,
+        top: "#627771",
+      });
+      if (tall) {
+        for (let y = -b.h / 2 + 24; y < b.h / 2 - 14; y += 25) {
+          slab(c, 0, y, b.w - 34, 11, 48, 5, 0, MAT.dark);
+          seam(
+            c,
+            [
+              [-b.w / 2 + 19, y - 4],
+              [b.w / 2 - 19, y - 4],
+            ],
+            54,
+            0,
+            "#8a9c8748",
+          );
+        }
+        for (const x of [-b.w / 2 + 7, b.w / 2 - 7])
+          slab(c, x, 0, 6, b.h - 12, 20, 32, 0, MAT.ally);
+      } else {
+        for (const x of [-b.w * 0.26, b.w * 0.26]) {
+          slab(c, x, 0, b.w * 0.34, b.h - 36, 48, 5, 0, MAT.graphite);
+          for (let y = -b.h / 2 + 23; y < b.h / 2 - 20; y += 8)
+            seam(
+              c,
+              [
+                [x - b.w * 0.14, y],
+                [x + b.w * 0.14, y],
+              ],
+              54,
+              0,
+              "#74877d70",
+            );
+        }
+      }
+      for (const x of [-b.w / 2 + 14, b.w / 2 - 14]) {
+        slab(c, x, b.h / 2 - 3, 9, 6, 8, 19, 0, MAT.dark);
+        lamp(c, x, b.h / 2 + 1, 22, 0, 1.5, "#b9b99a");
+      }
+      seam(
+        c,
+        [
+          [-b.w / 2 + 10, -b.h / 2 + 8],
+          [-b.w / 2 + 34, -b.h / 2 + 8],
+        ],
+        49,
+        0,
+        "#cfcca067",
+        2,
+      );
+      c.restore();
     }
     unit(c, u, s, ui) {
       const def = E.C[u.kind],
         r = def.r,
-        dead = u.hp <= 0;
+        dead = u.hp <= 0,
+        p = this.pose(u, s, ui),
+        t = ui.reduced ? 0 : ui.mode === "menu" ? this.time : s.t;
+      const aim =
+        u.kind === "hero" && ui.aim
+          ? Math.atan2(ui.aim.y - u.y, ui.aim.x - u.x)
+          : u.wind > 0 && u.target
+            ? Math.atan2(u.target.y - u.y, u.target.x - u.x)
+            : u.angle;
+      const accent = u.team ? "#efae8c" : "#a4edd9",
+        recoil = ui.reduced
+          ? 0
+          : Math.sin(Math.min(1, u.flash / 0.1) * Math.PI) * 4;
       c.save();
       c.translate(u.x, u.y);
-      ellipse(c, 6, 9, r * 1.18, r * 0.8, dead ? "#08181966" : "#06161688");
+      ellipse(c, 4, 7, r * 1.25, r * 0.85, "#07192270");
+      ellipse(c, 1, 3, r * 0.86, r * 0.63, "#06141c70");
       if (dead) {
+        c.save();
         c.rotate(u.angle);
-        poly(
+        const m = {
+          top: "#3f4c4b",
+          front: "#273638",
+          side: "#152930",
+          edge: "#596860",
+        };
+        plate(
           c,
           [
-            [-r, 4],
-            [-r * 0.5, -r * 0.6],
-            [r * 0.8, -r * 0.3],
-            [r, r * 0.4],
-            [0, r * 0.7],
+            [-r, 0],
+            [-r * 0.45, -r * 0.58],
+            [r * 0.72, -r * 0.36],
+            [r, r * 0.38],
+            [0, r * 0.68],
           ],
-          "#263434",
-          "#526252",
+          0,
+          5,
+          0,
+          m,
         );
-        line(
+        for (let i = 0; i < 3; i++) {
+          const a = i * 2.5 + u.id;
+          slab(
+            c,
+            Math.cos(a) * r * 0.8,
+            Math.sin(a) * r * 0.6,
+            r * 0.3,
+            5,
+            0,
+            2,
+            a,
+            MAT.graphite,
+          );
+        }
+        seam(
           c,
           [
-            [-r * 0.7, 2],
-            [r * 0.5, 0],
+            [-r * 0.6, -r * 0.2],
+            [0, r * 0.2],
+            [r * 0.45, -r * 0.22],
           ],
-          "#121f21",
-          3,
+          6,
+          0,
+          "#13242c",
+          2,
         );
+        c.restore();
         c.restore();
         return;
       }
-      if (u.kind === "outpost") {
-        const ready = u.build === 0;
-        if (!ready) c.globalAlpha = 0.4;
-        box(c, -28, -23, 56, 46, 8, "#667f72", "#2a4940");
-        for (const x of [-22, 12])
-          box(c, x, -17, 10, 34, 15, "#a0b6a0", "#496557");
-        box(c, -12, -15, 24, 30, 25, "#b4c6ad", "#4c7160");
-        line(
-          c,
-          [
-            [-7, -25],
-            [7, -25],
-          ],
-          ready ? "#baf3d4" : "#b5c4ad",
-          4,
-        );
-        line(
-          c,
-          [
-            [0, -25],
-            [0, -42],
-          ],
-          "#93b5a2",
-          2,
-        );
-        ellipse(c, 0, -42, 3, 2, ready ? "#c5f9dd" : "#899e91");
-        c.globalAlpha = 1;
-        if (!ready) {
-          ring(c, 0, 0, 37, "#9bb9a34a");
-          c.beginPath();
-          c.arc(0, 0, 37, -Math.PI / 2, -Math.PI / 2 + (1 - u.build / 6) * TAU);
-          c.strokeStyle = "#b5e6cb";
-          c.lineWidth = 2;
-          c.stroke();
-        }
-      } else if (u.kind === "base") {
-        box(c, -43, -30, 86, 60, 16, "#586d65", "#293f3c");
-        box(c, -28, -25, 56, 50, 29, "#a0ae9d", "#596c60");
-        poly(
-          c,
-          [
-            [-22, -53],
-            [16, -53],
-            [28, -28],
-            [18, -4],
-            [-22, -4],
-            [-32, -28],
-          ],
-          "#bbc4ae",
-          "#3f5b52",
-        );
-        line(
-          c,
-          [
-            [-13, -49],
-            [-13, -8],
-          ],
-          "#6b8072",
-          2,
-        );
-        box(c, 30, -12, 20, 24, 18, "#758c7e");
-        line(
-          c,
-          [
-            [-35, -24],
-            [-35, -55],
-            [-28, -61],
-          ],
-          "#a4c4b2",
-          2,
-        );
-        ellipse(c, -28, -61, 2, 2, "#bff2db");
-        line(
-          c,
-          [
-            [-12, -28],
-            [12, -28],
-          ],
-          "#b3e7ce",
-          4,
-        );
-      } else if (u.kind === "citadel") {
-        const shield = E.shielded(s);
-        if (shield) ring(c, 0, 0, 65, "#bd927854", 2);
-        for (let i = 0; i < 4; i++) {
-          const a = (i * Math.PI) / 2 + Math.PI / 4;
-          box(
-            c,
-            Math.cos(a) * 39 - 10,
-            Math.sin(a) * 39 - 10,
-            20,
-            20,
-            22,
-            "#5c635a",
-            "#273b35",
-          );
-        }
-        poly(
-          c,
-          [
-            [-38, -16],
-            [0, -38],
-            [38, -16],
-            [38, 15],
-            [0, 38],
-            [-38, 15],
-          ],
-          "#34463e",
-          "#7d8870",
-        );
-        poly(
-          c,
-          [
-            [-34, -16],
-            [0, -36],
-            [34, -16],
-            [34, -48],
-            [0, -70],
-            [-34, -48],
-          ],
-          "#60705c",
-          "#91a087",
-        );
-        poly(
-          c,
-          [
-            [0, -70],
-            [34, -48],
-            [0, -27],
-            [-34, -48],
-          ],
-          "#9ea48a",
-        );
-        poly(
-          c,
-          [
-            [0, -27],
-            [34, -48],
-            [34, -16],
-            [0, 8],
-          ],
-          "#4c6050",
-        );
-        poly(
-          c,
-          [
-            [0, -27],
-            [-34, -48],
-            [-34, -16],
-            [0, 8],
-          ],
-          "#75826a",
-        );
-        line(
-          c,
-          [
-            [0, -20],
-            [0, 2],
-          ],
-          "#edac87",
-          4,
-        );
-        for (let i = 0; i < 3; i++)
-          line(
+      if (u.kind === "hero" || u.kind === "rifle") {
+        const hero = u.kind === "hero",
+          body = hero ? MAT.ceramic : MAT.ally,
+          gait = Math.sin(p.phase) * 3 * p.move,
+          bob = Math.abs(Math.sin(p.phase)) * 0.8 * p.move;
+        for (const side of [-1, 1]) {
+          const x = side * gait;
+          slab(c, x - 2, side * 6, 13, 6, 0, 3, p.angle, MAT.graphite);
+          slab(c, x - 4, side * 6, 7, 5, 3, 5, p.angle, body);
+          seam(
             c,
             [
-              [-26, -27 + i * 6],
-              [-11, -19 + i * 6],
+              [x - 4, side * 6],
+              [0, side * 5],
             ],
-            "#1e3831",
+            9,
+            p.angle,
+            "#405b5e",
+            3,
+          );
+        }
+        plate(
+          c,
+          [
+            [-10, -7],
+            [0, -10],
+            [9, -6],
+            [11, 0],
+            [8, 7],
+            [-4, 9],
+            [-12, 5],
+          ],
+          10 + bob,
+          6,
+          aim,
+          body,
+        );
+        slab(c, -9, -1, 7, 14, 13 + bob, 5, aim, MAT.graphite);
+        slab(c, -10, -2, 3, 10, 18 + bob, 1, aim, body);
+        for (const side of [-1, 1]) {
+          slab(c, 1, side * 9, 9, 6, 13 + bob, 4, aim, body);
+          slab(
+            c,
+            9 - recoil * 0.3,
+            side * 7,
+            10,
+            4,
+            10 + bob,
+            3,
+            aim,
+            MAT.dark,
+          );
+        }
+        plate(
+          c,
+          [
+            [-2, -5],
+            [5, -5],
+            [9, -2],
+            [9, 3],
+            [4, 5],
+            [-2, 4],
+          ],
+          17 + bob,
+          6,
+          aim,
+          hero ? MAT.ceramic : MAT.graphite,
+        );
+        seam(
+          c,
+          [
+            [6, -3],
+            [8, 0],
+            [6, 3],
+          ],
+          24 + bob,
+          aim,
+          accent,
+          2,
+        );
+        slab(c, 15 - recoil, 6, 20, 4, 12 + bob, 3, aim, MAT.graphite);
+        slab(c, 14 - recoil, 6, 9, 3, 15 + bob, 1, aim, body);
+        slab(c, 24 - recoil, 6, 4, 6, 12 + bob, 3, aim, MAT.dark);
+        lamp(c, -10, -3, 20 + bob, aim, 1.3, accent);
+        if (hero) {
+          seam(
+            c,
+            [
+              [-3, -8],
+              [1, -8],
+            ],
+            17 + bob,
+            aim,
+            "#eaf2df",
+            1.2,
+          );
+          seam(
+            c,
+            [
+              [-12, -6],
+              [-12, 6],
+            ],
+            19 + bob,
+            aim,
+            "#78cdb8",
+            1.2,
+          );
+        }
+        if (u.flash > 0 && !ui.reduced)
+          this.muzzle(c, 26 - recoil, 6, 14 + bob, aim, accent, u.flash);
+        if (hero && s.dashT > 0 && !ui.reduced) {
+          seam(
+            c,
+            [
+              [-18, -7],
+              [-44, -7],
+            ],
+            11,
+            aim,
+            "#a2e7d469",
             2,
           );
-        c.save();
-        c.translate(0, -49);
-        c.rotate(u.angle);
-        box(c, 0, -5, 45, 10, 0, "#c4c2a0", "#526759");
-        c.fillStyle = "#bd7459";
-        c.fillRect(40, -4, 5, 8);
-        c.restore();
-        if (shield) {
-          c.globalAlpha = 0.2;
-          ellipse(c, 0, -27, 66, 75, null, "#e9b091");
-          c.globalAlpha = 1;
+          seam(
+            c,
+            [
+              [-18, 6],
+              [-38, 6],
+            ],
+            11,
+            aim,
+            "#a2e7d44f",
+            1.5,
+          );
+        }
+      } else if (u.kind === "artillery") {
+        const a = p.angle;
+        for (const side of [-1, 1]) {
+          slab(c, -3, side * 16, 44, 10, 0, 7, a, MAT.graphite);
+          slab(c, -3, side * 16, 39, 8, 7, 4, a, MAT.ally);
+          for (let i = 0; i < 6; i++)
+            seam(
+              c,
+              [
+                [-21 + i * 7 + (p.phase % 7), side * 16 - 4],
+                [-21 + i * 7 + (p.phase % 7), side * 16 + 4],
+              ],
+              11,
+              a,
+              "#263e43",
+              1.5,
+            );
+        }
+        plate(
+          c,
+          [
+            [-24, -10],
+            [10, -13],
+            [24, -7],
+            [26, 6],
+            [10, 13],
+            [-24, 10],
+          ],
+          6,
+          8,
+          a,
+          MAT.ally,
+        );
+        for (const side of [-1, 1])
+          slab(c, -17, side * 9, 10, 4, 14, 3, a, MAT.ceramic);
+        ellipse(c, 0, -16, 12, 12, "#142c33", "#9eada26b");
+        plate(
+          c,
+          [
+            [-13, -10],
+            [6, -11],
+            [15, -6],
+            [15, 6],
+            [6, 11],
+            [-13, 10],
+          ],
+          16,
+          8,
+          aim,
+          MAT.ceramic,
+        );
+        slab(c, 19 - recoil * 1.6, 0, 33, 8, 19, 5, aim, MAT.graphite);
+        slab(c, 31 - recoil * 1.6, 0, 7, 12, 20, 5, aim, MAT.ally);
+        for (const side of [-1, 1])
+          seam(
+            c,
+            [
+              [5, side * 6],
+              [27 - recoil, side * 6],
+            ],
+            25,
+            aim,
+            "#a9d9c5",
+            1.5,
+          );
+        lamp(c, -8, 0, 25, aim, 2, "#a8e7ce");
+        if (u.flash > 0 && !ui.reduced)
+          this.muzzle(
+            c,
+            37 - recoil * 1.6,
+            0,
+            23,
+            aim,
+            "#e1ebc6",
+            u.flash,
+            1.6,
+          );
+      } else if (u.kind === "runner") {
+        const a = p.move ? p.angle : aim;
+        for (const side of [-1, 1])
+          for (const front of [-1, 1]) {
+            const step =
+              Math.sin(p.phase + (side === front ? Math.PI : 0)) * 3 * p.move;
+            seam(
+              c,
+              [
+                [front * 5, side * 4],
+                [front * 12 - step, side * 12],
+                [front * 17 + step, side * 16],
+              ],
+              3,
+              a,
+              "#1a2b32",
+              4.5,
+            );
+            seam(
+              c,
+              [
+                [front * 5, side * 4],
+                [front * 12 - step, side * 12],
+                [front * 17 + step, side * 16],
+              ],
+              6,
+              a,
+              "#aa9280",
+              2.5,
+            );
+            lamp(c, front * 12 - step, side * 12, 7, a, 1, "#c1aa8d");
+          }
+        plate(
+          c,
+          [
+            [-13, 0],
+            [-5, -9],
+            [7, -7],
+            [15, 0],
+            [7, 7],
+            [-5, 9],
+          ],
+          6,
+          7,
+          a,
+          MAT.enemy,
+        );
+        plate(
+          c,
+          [
+            [-8, 0],
+            [-3, -5],
+            [7, 0],
+            [-3, 5],
+          ],
+          13,
+          3,
+          a,
+          MAT.graphite,
+        );
+        for (const side of [-1, 1])
+          seam(
+            c,
+            [
+              [8, side * 4],
+              [18 + (u.wind > 0 ? 3 : 0), side * 7],
+              [21, side * 3],
+            ],
+            9,
+            a,
+            "#c5a18a",
+            2,
+          );
+        lamp(c, 11, 0, 14, a, 2.3, accent);
+        seam(
+          c,
+          [
+            [-6, 0],
+            [3, 0],
+          ],
+          17,
+          a,
+          "#b88a73",
+          1,
+        );
+      } else if (u.kind === "sentinel") {
+        const gait = Math.sin(p.phase) * 2 * p.move;
+        for (const side of [-1, 1]) {
+          slab(
+            c,
+            -2 + gait * side,
+            side * 10,
+            13,
+            5,
+            0,
+            3,
+            p.angle,
+            MAT.graphite,
+          );
+          seam(
+            c,
+            [
+              [0, side * 5],
+              [-4, side * 9],
+              [-2 + gait * side, side * 10],
+            ],
+            8,
+            p.angle,
+            "#9a8d78",
+            3,
+          );
+        }
+        plate(
+          c,
+          [
+            [-12, -8],
+            [0, -12],
+            [13, -5],
+            [13, 5],
+            [0, 12],
+            [-12, 8],
+          ],
+          10,
+          10,
+          aim,
+          MAT.enemy,
+        );
+        slab(c, -8, 0, 7, 13, 20, 3, aim, MAT.graphite);
+        for (const side of [-1, 1])
+          slab(c, -1, side * 10, 12, 5, 18, 4, aim, MAT.copper);
+        plate(
+          c,
+          [
+            [1, -6],
+            [9, -5],
+            [13, 0],
+            [9, 5],
+            [1, 6],
+          ],
+          20,
+          5,
+          aim,
+          MAT.graphite,
+        );
+        lamp(c, 10, 0, 25, aim, 3, accent);
+        slab(c, 20 - recoil, 0, 18, 5, 13, 5, aim, MAT.dark);
+        seam(
+          c,
+          [
+            [12, -2],
+            [24 - recoil, -2],
+          ],
+          19,
+          aim,
+          "#b7a18a",
+          1,
+        );
+        if (u.wind > 0) lamp(c, 17, 0, 19, aim, 2, "#ffe0b4");
+        if (u.flash > 0 && !ui.reduced)
+          this.muzzle(c, 29 - recoil, 0, 17, aim, accent, u.flash);
+      } else if (u.kind === "turret") {
+        for (let i = 0; i < 3; i++) {
+          const a = (i * TAU) / 3;
+          slab(c, 17, 0, 24, 10, 0, 5, a, MAT.graphite);
+          slab(c, 18, 0, 18, 7, 5, 4, a, MAT.enemy);
+        }
+        plate(
+          c,
+          [
+            [-16, -10],
+            [0, -18],
+            [16, -10],
+            [16, 10],
+            [0, 18],
+            [-16, 10],
+          ],
+          6,
+          8,
+          0,
+          MAT.enemy,
+        );
+        slab(c, 0, 0, 28, 25, 14, 10, aim, MAT.copper);
+        slab(c, -5, 0, 19, 19, 24, 4, aim, MAT.enemy);
+        for (const side of [-1, 1]) {
+          slab(c, 20 - recoil, side * 7, 33, 5, 20, 5, aim, MAT.graphite);
+          slab(c, 29 - recoil, side * 7, 6, 7, 20, 5, aim, MAT.copper);
+        }
+        lamp(c, 7, 0, 29, aim, 3, u.wind > 0 ? "#ffe2b5" : accent);
+        if (u.flash > 0 && !ui.reduced)
+          this.muzzle(c, 38 - recoil, 0, 24, aim, accent, u.flash, 1.3);
+      } else if (u.kind === "base") {
+        for (const side of [-1, 1])
+          for (const front of [-1, 1]) {
+            slab(c, front * 31, side * 25, 21, 12, 0, 4, 0, MAT.graphite);
+            slab(c, front * 25, side * 20, 12, 12, 4, 9, 0, MAT.ally);
+          }
+        plate(
+          c,
+          [
+            [-37, -18],
+            [-23, -33],
+            [23, -33],
+            [38, -18],
+            [38, 19],
+            [23, 31],
+            [-23, 31],
+            [-37, 18],
+          ],
+          5,
+          13,
+          0,
+          MAT.ally,
+        );
+        plate(
+          c,
+          [
+            [-25, -22],
+            [-15, -29],
+            [17, -29],
+            [28, -15],
+            [25, 22],
+            [-24, 22],
+          ],
+          18,
+          17,
+          0,
+          MAT.ceramic,
+        );
+        plate(
+          c,
+          [
+            [-17, -20],
+            [15, -20],
+            [21, -10],
+            [16, 4],
+            [-16, 4],
+            [-21, -10],
+          ],
+          35,
+          3,
+          0,
+          MAT.graphite,
+        );
+        seam(
+          c,
+          [
+            [-12, -17],
+            [12, -17],
+            [15, -10],
+          ],
+          39,
+          0,
+          "#a6ded1",
+          2,
+        );
+        for (const side of [-1, 1]) {
+          slab(c, side * 32, 1, 12, 30, 15, 8, 0, MAT.graphite);
+          for (let i = 0; i < 4; i++)
+            seam(
+              c,
+              [
+                [side * 32 - 4, -9 + i * 6],
+                [side * 32 + 4, -9 + i * 6],
+              ],
+              24,
+              0,
+              "#8ba99c",
+              1.4,
+            );
+          lamp(c, side * 32, 15, 24, 0, 2, "#93d8c2");
+        }
+        slab(c, 0, 20, 30, 11, 12, 10, 0, MAT.ally);
+        slab(c, 0, 27, 20, 15, 2, 3, 0, MAT.dark);
+        seam(
+          c,
+          [
+            [-12, 15],
+            [12, 15],
+          ],
+          36,
+          0,
+          "#6c9488",
+          2,
+        );
+        seam(
+          c,
+          [
+            [-23, -20],
+            [-23, -20],
+          ],
+          50,
+          0,
+          "#bfd0c4",
+          1,
+        );
+        line(
+          c,
+          [
+            [-23, -53],
+            [-23, -77],
+            [-16, -83],
+          ],
+          "#93b2a8",
+          1.5,
+        );
+        ellipse(c, -16, -83, 2, 1.5, "#b4e6d0");
+      } else if (u.kind === "outpost") {
+        const progress = 1 - u.build / 6,
+          height = 10 + progress * 20;
+        for (let i = 0; i < 4; i++) {
+          const a = (i * Math.PI) / 2;
+          slab(c, 22, 0, 23, 10, 0, 4, a, MAT.graphite);
+          slab(c, 19, 0, 15, 8, 4, 5, a, MAT.ally);
+        }
+        slab(c, 0, 0, 36, 31, 4, 8, 0, MAT.ally);
+        if (progress > 0.2) {
+          slab(c, 0, 0, 24, 23, 12, height - 8, 0, MAT.ceramic);
+          slab(c, 0, -1, 15, 16, height + 4, 4, 0, MAT.graphite);
+        }
+        for (const side of [-1, 1]) {
+          slab(c, side * 20, 0, 7, 28, 7, progress * 17, 0, MAT.ally);
+          lamp(
+            c,
+            side * 20,
+            11,
+            10 + progress * 17,
+            0,
+            1.8,
+            progress === 1 ? "#a7ead3" : "#a2a68d",
+          );
+        }
+        line(
+          c,
+          [
+            [0, -height - 5],
+            [0, -height - 18 - progress * 8],
+          ],
+          "#91b3a4",
+          2,
+        );
+        ellipse(
+          c,
+          0,
+          -height - 19 - progress * 8,
+          4,
+          2,
+          progress === 1 ? "#aeead0" : "#76978d",
+        );
+        if (progress < 1) {
+          arc(
+            c,
+            0,
+            0,
+            37,
+            -Math.PI / 2,
+            -Math.PI / 2 + progress * TAU,
+            "#acd9c5",
+            2,
+          );
+          for (const side of [-1, 1])
+            line(
+              c,
+              [
+                [side * 26, -15],
+                [side * 26, -height - 10],
+                [side * 8, -height - 10],
+              ],
+              "#a0cbb66a",
+              1.3,
+            );
         }
       } else if (u.kind === "jammer") {
         for (let i = 0; i < 3; i++) {
           const a = (i * TAU) / 3;
-          box(
-            c,
-            Math.cos(a) * 23 - 10,
-            Math.sin(a) * 23 - 10,
-            20,
-            20,
-            15,
-            "#718174",
-            "#334c43",
-          );
+          slab(c, 23, 0, 25, 14, 0, 7, a, MAT.dark);
+          slab(c, 17, 0, 16, 12, 7, 12, a, MAT.enemy);
         }
-        box(c, -15, -15, 30, 30, 24, "#8e9d87", "#4c6255");
-        line(
-          c,
-          [
-            [0, -20],
-            [0, -68],
-          ],
-          "#bdc5a9",
-          5,
-        );
-        poly(
-          c,
-          [
-            [-27, -63],
-            [0, -80],
-            [27, -63],
-            [0, -46],
-          ],
-          "#627b68",
-          "#c2c6a0",
-        );
-        poly(
-          c,
-          [
-            [-18, -62],
-            [0, -74],
-            [18, -62],
-            [0, -52],
-          ],
-          "#263d34",
-          "#bc9272",
-        );
-        ellipse(c, 0, -62, 5, 5, "#edaa85");
-        if (!ui.reduced)
-          ring(c, 0, -62, 14 + Math.sin(this.time * 3) * 4, "#dd9b7744");
-      } else if (u.kind === "turret") {
-        box(c, -25, -21, 50, 42, 10, "#687966", "#293f35");
-        c.translate(0, -14);
-        c.rotate(u.angle);
-        poly(
-          c,
-          [
-            [-18, -17],
-            [13, -17],
-            [22, 0],
-            [13, 17],
-            [-18, 17],
-          ],
-          "#9eaa8d",
-          "#2e4b3d",
-        );
-        c.fillStyle = "#263c35";
-        c.fillRect(2, -9, 32, 6);
-        c.fillRect(2, 3, 32, 6);
-        c.fillStyle = "#e3a37f";
-        c.fillRect(-8, -6, 9, 12);
-      } else {
-        const ally = u.team === 0,
-          primary =
-            u.kind === "hero" ? "#d0d8c7" : ally ? "#8fa99e" : "#a19f83",
-          secondary = ally ? "#43655b" : "#52634e",
-          accent = ally ? "#b3f0d5" : "#f0aa82";
-        c.translate(0, -8);
-        c.rotate(u.angle);
-        if (u.kind === "artillery") {
-          poly(
+        slab(c, 0, 0, 25, 25, 10, 24, 0, MAT.enemy);
+        slab(c, 0, 0, 11, 11, 34, 31, 0, MAT.graphite);
+        const turn = t * 0.3;
+        for (let i = 0; i < 3; i++) {
+          const a = (i * TAU) / 3 + turn;
+          plate(
             c,
             [
-              [-24, -20],
-              [13, -20],
-              [27, -12],
-              [27, 12],
-              [13, 20],
-              [-24, 20],
+              [5, -4],
+              [23, -13],
+              [32, -8],
+              [25, 10],
+              [8, 5],
             ],
-            "#334d44",
-            "#94b4a1",
+            58,
+            4,
+            a,
+            MAT.copper,
           );
-          for (const y of [-19, 10]) {
-            c.fillStyle = "#789585";
-            c.fillRect(-24, y, 44, 9);
-            for (let i = 0; i < 5; i++) {
-              line(
-                c,
-                [
-                  [-20 + i * 8, y],
-                  [-20 + i * 8, y + 9],
-                ],
-                "#1f3a31",
-                2,
-              );
-            }
-          }
-          poly(
+          seam(
             c,
             [
-              [-15, -11],
-              [12, -11],
-              [19, 0],
-              [12, 11],
-              [-15, 11],
-            ],
-            "#afbeaa",
-            "#496952",
-          );
-          c.fillStyle = "#2f4a3c";
-          c.fillRect(4, -4, 36, 8);
-          c.fillStyle = "#bddebd";
-          c.fillRect(33, -4, 7, 8);
-          c.fillStyle = "#b0e8cd";
-          c.fillRect(-13, -4, 7, 8);
-        } else if (u.kind === "runner") {
-          for (const y of [-1, 1]) {
-            line(
-              c,
-              [
-                [-9, y * 4],
-                [-17, y * 14],
-                [-6, y * 20],
-              ],
-              "#68795e",
-              4,
-            );
-            line(
-              c,
-              [
-                [5, y * 4],
-                [15, y * 15],
-                [25, y * 9],
-              ],
-              "#a2a37d",
-              3,
-            );
-          }
-          poly(
-            c,
-            [
-              [-14, 0],
-              [-2, -10],
-              [15, 0],
-              [-2, 10],
-            ],
-            "#b6ae85",
-            "#45614c",
-          );
-          line(
-            c,
-            [
-              [1, -3],
-              [8, 0],
-              [1, 3],
-            ],
-            accent,
-            2,
-          );
-        } else {
-          const gait =
-            u.path.length || u.kind === "hero"
-              ? Math.sin(this.time * 11) * 2
-              : 0;
-          for (const sign of [-1, 1]) {
-            c.fillStyle = secondary;
-            c.fillRect(-11 + sign * gait, sign * 8 - 4, 15, 8);
-            c.fillStyle = primary;
-            c.fillRect(-9 + sign * gait, sign * 9 - 3, 7, 6);
-          }
-          poly(
-            c,
-            [
-              [-11, -8],
-              [3, -12],
-              [12, -6],
-              [12, 6],
-              [3, 12],
-              [-11, 8],
-            ],
-            primary,
-            "#263e37",
-          );
-          poly(
-            c,
-            [
-              [-8, -6],
-              [3, -7],
-              [7, 0],
-              [3, 7],
-              [-8, 6],
-            ],
-            secondary,
-          );
-          poly(
-            c,
-            [
-              [0, -5],
-              [10, -3],
-              [12, 0],
-              [10, 3],
-              [0, 5],
-            ],
-            primary,
-          );
-          line(
-            c,
-            [
-              [7, -3],
               [10, 0],
-              [7, 3],
+              [25, 0],
             ],
-            accent,
+            63,
+            a,
+            "#283f42",
             2,
           );
-          c.fillStyle = "#253e38";
-          c.fillRect(4, 6, 21, 4);
-          c.fillStyle = primary;
-          c.fillRect(10, 5, 12, 2);
-          if (u.kind === "hero") {
-            poly(
+        }
+        ellipse(c, 0, -66, 7, 5, "#132a31", "#b1997f");
+        ellipse(c, 0, -67, 3, 2, "#e7b18c");
+        if (!ui.reduced)
+          arc(c, 0, -63, 17, turn, turn + Math.PI * 1.4, "#d9a48060", 1);
+      } else if (u.kind === "citadel") {
+        for (let i = 0; i < 4; i++) {
+          const a = (i * Math.PI) / 2 + Math.PI / 4;
+          slab(c, 40, 0, 27, 20, 0, 10, a, MAT.graphite);
+          slab(c, 34, 0, 18, 17, 10, 20, a, MAT.enemy);
+          lamp(c, 35, 0, 31, a, 2, accent);
+        }
+        plate(
+          c,
+          [
+            [-38, -18],
+            [-20, -36],
+            [22, -36],
+            [38, -18],
+            [38, 18],
+            [20, 36],
+            [-20, 36],
+            [-38, 18],
+          ],
+          7,
+          19,
+          0,
+          MAT.dark,
+        );
+        plate(
+          c,
+          [
+            [-30, -17],
+            [-15, -30],
+            [16, -30],
+            [30, -17],
+            [30, 17],
+            [16, 29],
+            [-16, 29],
+            [-30, 17],
+          ],
+          26,
+          23,
+          0,
+          MAT.enemy,
+        );
+        slab(c, 0, 0, 28, 24, 49, 11, 0, MAT.graphite);
+        for (const side of [-1, 1]) {
+          slab(c, side * 24, 0, 11, 34, 49, 8, 0, MAT.copper);
+          for (let i = 0; i < 3; i++)
+            seam(
               c,
               [
-                [-12, -7],
-                [-24, -12],
-                [-23, 7],
-                [-12, 8],
+                [side * 24 - 3, -10 + i * 8],
+                [side * 24 + 3, -10 + i * 8],
               ],
-              "#66877b",
-              "#a6beaa",
+              58,
+              0,
+              "#2d3437",
+              2,
             );
-            c.fillStyle = accent;
-            c.fillRect(-10, -6, 2, 12);
+        }
+        lamp(c, 0, 10, 61, 0, 4, s.terminal.window > 0 ? "#9ce0cd" : accent);
+        slab(c, 30 - recoil, 0, 56, 10, 59, 7, aim, MAT.graphite);
+        slab(c, 53 - recoil, 0, 9, 15, 59, 7, aim, MAT.copper);
+        if (u.flash > 0 && !ui.reduced)
+          this.muzzle(c, 60 - recoil, 0, 64, aim, accent, u.flash, 1.6);
+        if (E.shielded(s)) {
+          for (let i = 0; i < 4; i++) {
+            const a = (i * Math.PI) / 2 + 0.12;
+            arc(c, 0, 0, 65, a, a + 1.32, "#d8ab8270", 1.5);
           }
+          ellipse(c, 0, -27, 65, 69, null, "#b499792d");
+          arc(c, 0, -27, 65, -Math.PI * 0.9, -Math.PI * 0.12, "#e1b68d36");
         }
-        if (u.flash > 0 && !ui.reduced) {
-          poly(
-            c,
-            [
-              [r + 8, -4],
-              [r + 20, 0],
-              [r + 8, 4],
-            ],
-            accent,
-          );
-        }
-        if (u.hit > 0 && !ui.reduced) {
-          c.globalAlpha = 0.25;
-          c.fillStyle = "#e9e8ce";
-          c.fillRect(-r, -r, r * 2, r * 2);
-        }
+      }
+      if (u.hit > 0 && !ui.reduced) {
+        ring(c, 0, 0, r + 3, u.team ? "#f0c9a780" : "#c1f2d980", 1.5);
       }
       c.restore();
       if (u.hp < def.hp || ui.mode === "tactical") {
-        /* Draw in world space with a fixed-height plate. */ c.save();
+        c.save();
         c.translate(u.x, u.y + r + 11);
-        c.fillStyle = "#102523";
+        c.fillStyle = "#102832";
         c.fillRect(-r, 0, r * 2, 3);
-        c.fillStyle = u.team ? "#d39a7d" : "#a2d9c3";
+        c.fillStyle = u.team ? "#d29c83" : "#9cd8c7";
         c.fillRect(-r, 0, (r * 2 * u.hp) / def.hp, 3);
         c.restore();
       }
+    }
+    muzzle(c, x, y, z, a, color, flash, size = 1) {
+      const p = point(x, y, z, a);
+      c.save();
+      c.translate(...p);
+      c.rotate(a);
+      const k = (0.4 + flash * 6) * size;
+      poly(
+        c,
+        [
+          [0, -3 * k],
+          [14 * k, 0],
+          [0, 3 * k],
+          [4 * k, 0],
+        ],
+        color,
+      );
+      line(
+        c,
+        [
+          [0, 0],
+          [19 * k, 0],
+        ],
+        "#eef2d9",
+        1,
+      );
+      c.restore();
     }
   }
   root.SignalView = View;

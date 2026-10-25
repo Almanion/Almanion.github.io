@@ -44,87 +44,7 @@
   } catch (_) {
     saveAvailable = false;
   }
-  class AudioBus {
-    constructor() {
-      this.ctx = null;
-      this.last = {};
-    }
-    start() {
-      try {
-        if (!this.ctx)
-          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        if (this.ctx.state !== "closed") this.ctx.resume().catch(() => {});
-      } catch (_) {}
-    }
-    stop() {
-      if (this.ctx && this.ctx.state !== "closed")
-        this.ctx.suspend().catch(() => {});
-    }
-    play(e) {
-      const ctx = this.ctx;
-      if (!ctx || ctx.state !== "running" || !settings.volume) return;
-      const type = e.type,
-        now = ctx.currentTime;
-      if (now - (this.last[type] ?? -100) < (type === "shot" ? 0.065 : 0.1))
-        return;
-      const configs = {
-        shot: [e.team ? 150 : 260, 0.065, 0.025, "triangle"],
-        mortar: [65, 0.23, 0.12, "sine"],
-        hit: [390, 0.035, 0.025, "triangle"],
-        hurt: [90, 0.18, 0.1, "sine"],
-        destroy: [48, 0.32, 0.12, "triangle"],
-        blast: [42, 0.4, 0.1, "triangle"],
-        dash: [240, 0.1, 0.04, "sine"],
-        reload: [640, 0.06, 0.025, "sine"],
-        online: [530, 0.5, 0.07, "sine"],
-        order: [720, 0.055, 0.03, "sine"],
-        collect: [820, 0.12, 0.05, "sine"],
-        upgrade: [440, 0.22, 0.05, "sine"],
-        build: [180, 0.18, 0.04, "triangle"],
-        "post-ready": [600, 0.25, 0.05, "sine"],
-        breach: [360, 0.3, 0.06, "sine"],
-        end: [state.status === "won" ? 420 : 95, 0.6, 0.1, "sine"],
-      };
-      const a = configs[type];
-      if (!a) return;
-      this.last[type] = now;
-      const osc = ctx.createOscillator(),
-        gain = ctx.createGain();
-      osc.type = a[3];
-      osc.frequency.setValueAtTime(a[0], now);
-      osc.frequency.exponentialRampToValueAtTime(
-        type === "online" ? 1060 : Math.max(25, a[0] * 0.4),
-        now + a[1],
-      );
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(
-        (a[2] * settings.volume) / 100 + 0.0001,
-        now + 0.008,
-      );
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + a[1]);
-      osc.connect(gain);
-      if (ctx.createStereoPanner) {
-        const pan = ctx.createStereoPanner();
-        pan.pan.value = E.clamp((e.x - E.hero(state).x) / 700, -0.7, 0.7);
-        gain.connect(pan);
-        pan.connect(ctx.destination);
-        osc.onended = () => {
-          osc.disconnect();
-          gain.disconnect();
-          pan.disconnect();
-        };
-      } else {
-        gain.connect(ctx.destination);
-        osc.onended = () => {
-          osc.disconnect();
-          gain.disconnect();
-        };
-      }
-      osc.start(now);
-      osc.stop(now + a[1] + 0.02);
-    }
-  }
-  const sound = new AudioBus();
+  const sound = new SignalAudio({ volume: () => settings.volume });
   function persist() {
     try {
       localStorage.setItem(KEY, JSON.stringify({ settings, save: saved }));
@@ -170,6 +90,7 @@
       mode === "tactical" ? "В бой" : "Приказы";
     canvas.style.cursor =
       mode === "playing" && !coarse.matches ? "none" : "default";
+    sound.update(state, mode, settings.volume);
     if (mode === "playing") sound.start();
     else if (mode !== "tactical") sound.stop();
     acc = 0;
@@ -188,7 +109,7 @@
     resultShown = false;
     aim = { x: E.hero(state).x + 280, y: E.hero(state).y - 80 };
     mousePoint = null;
-    view.fx = [];
+    view.reset();
     view.camera.x = 720;
     view.camera.y = 500;
     view.camera.scale = 0.7;
@@ -251,6 +172,7 @@
   function reportEnd() {
     resultShown = true;
     save();
+    sound.update(state, mode, settings.volume);
     openDialog("result");
     $("result-title").textContent =
       state.status === "won" ? "Цитадель подавлена" : "Операция потеряна";
@@ -272,6 +194,15 @@
       state.units.filter((u) => u.team === 0 && u.group).length;
     $("result-spent").textContent =
       state.economy.spent - state.economy.recovered;
+    const endedState = state;
+    sound.start().then(() => {
+      if (state !== endedState || !resultShown) return;
+      sound.play({ type: "end", x: E.hero(state).x, y: E.hero(state).y });
+      setTimeout(() => {
+        if (state === endedState && resultShown && mode === "paused")
+          sound.stop();
+      }, 1500);
+    });
   }
   function formatTime(t) {
     return (
@@ -475,11 +406,11 @@
   $("volume").oninput = (e) => {
     settings.volume = +e.target.value;
     $("volume-value").textContent = settings.volume + "%";
+    sound.update(state, mode, settings.volume);
     persist();
   };
   $("volume").onchange = () => {
-    sound.start();
-    sound.play({ type: "order", x: E.hero(state).x });
+    sound.start().then(() => sound.play({ type: "order", x: E.hero(state).x }));
   };
   $("motion").onchange = (e) => {
     settings.reduced = e.target.checked;
@@ -659,7 +590,7 @@
         });
         input.dash = input.reload = false;
         for (const e of state.events) {
-          sound.play(e);
+          if (e.type !== "end") sound.play(e);
           if (e.type === "collect") notice("Сплав +40");
           if (e.type === "post-ready") notice("Опорный пункт готов");
           if (e.type === "breach")
@@ -674,6 +605,7 @@
         lastSaved = now;
       }
     }
+    sound.update(state, mode, settings.volume);
     if (now - lastUI > 80) {
       updateUI();
       lastUI = now;
@@ -701,5 +633,6 @@
     screen: (x, y) => view.screen(x, y),
     storageKey: KEY,
     audioState: () => sound.ctx?.state || "uninitialized",
+    audio: () => sound.diagnostics(),
   });
 })();

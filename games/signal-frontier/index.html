@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="style.css" />
     <script src="engine.js" defer></script>
     <script src="view.js" defer></script>
+    <script src="audio.js" defer></script>
     <script src="app.js" defer></script>
   </head>
   <body data-mode="menu">
@@ -45,7 +46,7 @@
           ><button data-open="settings">Настройки</button>
         </div>
       </div>
-      <p class="edition">Первая операция <span>0.2</span></p>
+      <p class="edition">Первая операция <span>0.3</span></p>
     </main>
     <div id="hud" hidden>
       <header class="topbar">
@@ -53,7 +54,9 @@
           <span class="phase" id="phase" aria-hidden="true">◇</span>
           <div>
             <span id="objective-text">Отключить защиту</span
-            ><small id="objective-sub">Глушитель или обход через терминал</small>
+            ><small id="objective-sub"
+              >Глушитель или обход через терминал</small
+            >
           </div>
         </div>
         <button id="menu-button" class="icon-button" aria-label="Открыть меню">
