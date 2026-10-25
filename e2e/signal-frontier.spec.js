@@ -1,6 +1,7 @@
 "use strict";
 const { test, expect, chromium, webkit } = require("@playwright/test");
 const E = require("../game-source/signal-frontier/src/engine");
+const { PNG } = require("pngjs");
 const route = "/games/signal-frontier/";
 async function start(page) {
   await page.goto(route);
@@ -102,6 +103,43 @@ test("victory, defeat, restart and menu have working exits", async ({
   await page.locator("#restart").click();
   expect(await page.evaluate(() => SignalGame.snapshot().t)).toBe(0);
 });
+test("result label is painted before hover while fire opens the dialog", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const s = E.make();
+  for (const u of s.units) if (u.team && u.kind !== "citadel") u.hp = 0;
+  E.hero(s).x = 1010;
+  E.hero(s).y = 485;
+  E.living(s, "citadel").hp = 1;
+  E.purchase(s, "hack");
+  s.terminal.window = 7;
+  s.terminal.alarm = true;
+  await fixture(page, s);
+  await page.waitForTimeout(300);
+  const p = await page.evaluate(() => SignalGame.screen(1250, 485));
+  await page.mouse.move(p.x, p.y);
+  await page.mouse.down();
+  await expect(page.locator("#result-content")).toBeVisible();
+  await page.mouse.up();
+  // Check actual text paint, not only the DOM: native button paint could cover the label until hover.
+  const frame = PNG.sync.read(await page.locator("#retry").screenshot());
+  let ink = 0;
+  for (let y = 12; y < frame.height - 12; y++)
+    for (let x = 14; x < frame.width - 14; x++) {
+      const i = (y * frame.width + x) * 4;
+      if (
+        frame.data[i] < 90 &&
+        frame.data[i + 1] < 110 &&
+        frame.data[i + 2] < 110
+      )
+        ink++;
+    }
+  expect(ink).toBeGreaterThan(100);
+  await page.locator("#retry").click();
+  await expect(page.locator("#tactical-panel")).toBeVisible();
+});
+
 test("defeat is shown after a real enemy hit, and restart resets inputs", async ({
   page,
 }) => {

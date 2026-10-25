@@ -141,6 +141,7 @@ h1 span {
   margin: 0 0 34px;
 }
 .primary {
+  appearance: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
