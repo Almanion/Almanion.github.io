@@ -11,6 +11,7 @@
     "salvage",
     "reload",
     "end",
+    "raid",
   ]);
   class SignalAudio {
     constructor(options = {}) {
@@ -342,6 +343,9 @@
         for (const [i, f] of [262, 393, 524].entries())
           tone(f, f * 0.99, 0.32, 0.035, i * 0.09);
         noise(800, 150, 0.35, 0.045);
+      } else if (type === "raid") {
+        tone(210, 150, 0.32, 0.09, 0, "triangle");
+        tone(315, 210, 0.26, 0.07, 0.16, "sine");
       } else if (type === "breach") {
         noise(2200, 180, 0.48, 0.11, 0, "bandpass");
         tone(420, 110, 0.65, 0.09);

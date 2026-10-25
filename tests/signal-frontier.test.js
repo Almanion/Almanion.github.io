@@ -16,7 +16,7 @@ function removeEnemies(s) {
   for (const u of s.units) if (u.team && u.kind !== "citadel") u.hp = 0;
 }
 function phaseTwo() {
-  const s = E.make();
+  const s = E.make("classic");
   removeEnemies(s);
   const h = E.hero(s);
   h.x = 830;
@@ -26,8 +26,8 @@ function phaseTwo() {
 }
 
 test("fixed-step simulation is deterministic across render batching", () => {
-  const a = E.make(),
-    b = E.make();
+  const a = E.make("classic"),
+    b = E.make("classic");
   for (let i = 0; i < 600; i++)
     E.step(a, { x: i < 250 ? 1 : 0, aim: { x: 800, y: 500 }, fire: true });
   for (let frame = 0; frame < 150; frame++)
@@ -39,7 +39,7 @@ test("fixed-step simulation is deterministic across render batching", () => {
   assert.throws(() => E.step(a, {}, 1 / 30));
 });
 test("movement, dash and route planning respect solid obstacles", () => {
-  const s = E.make(),
+  const s = E.make("classic"),
     h = E.hero(s);
   removeEnemies(s);
   h.x = 570;
@@ -52,7 +52,7 @@ test("movement, dash and route planning respect solid obstacles", () => {
   assert.equal(E.order(s, 1, NaN, 10), false);
 });
 test("orders freeze until time advances and route around walls", () => {
-  const s = E.make();
+  const s = E.make("classic");
   removeEnemies(s);
   const u = s.units.find((u) => u.group === 1);
   u.x = 550;
@@ -66,7 +66,7 @@ test("orders freeze until time advances and route around walls", () => {
   assert.ok(E.free(u.x, u.y, E.C.rifle.r));
 });
 test("bullets hit cover rather than targets behind it", () => {
-  const s = E.make();
+  const s = E.make("classic");
   removeEnemies(s);
   const h = E.hero(s),
     j = s.units.find((u) => u.kind === "jammer");
@@ -80,7 +80,7 @@ test("bullets hit cover rather than targets behind it", () => {
   assert.ok(s.shots > 0);
 });
 test("swept bullets hit a narrow target and reload completes", () => {
-  const s = E.make();
+  const s = E.make("classic");
   removeEnemies(s);
   const h = E.hero(s),
     j = s.units.find((u) => u.kind === "jammer");
@@ -98,7 +98,7 @@ test("swept bullets hit a narrow target and reload completes", () => {
   assert.equal(s.reload, 0);
 });
 test("citadel cannot be damaged while its shield is active", () => {
-  const s = E.make();
+  const s = E.make("classic");
   removeEnemies(s);
   const h = E.hero(s),
     c = E.living(s, "citadel");
@@ -108,7 +108,7 @@ test("citadel cannot be damaged while its shield is active", () => {
   assert.equal(c.hp, E.C.citadel.hp);
 });
 test("relay requires jammer removal, proximity and uninterrupted action", () => {
-  const s = E.make(),
+  const s = E.make("classic"),
     h = E.hero(s);
   h.x = 830;
   h.y = 480;
@@ -151,7 +151,7 @@ test("enemy presence interrupts activation; two waves unlock the supply route", 
 });
 test("victory and each defeat cause are terminal", () => {
   for (const cause of ["hero", "base", "citadel"]) {
-    const s = E.make();
+    const s = E.make("classic");
     s.units.find((u) => u.kind === cause).hp = 0;
     E.step(s);
     assert.equal(s.status, cause === "citadel" ? "won" : "lost");
@@ -161,7 +161,7 @@ test("victory and each defeat cause are terminal", () => {
   }
 });
 test("snapshot restores all combat state without sharing references", () => {
-  const s = E.make();
+  const s = E.make("classic");
   E.order(s, 1, 800, 550);
   frames(s, 100, { fire: true, aim: { x: 510, y: 540 }, x: 1 });
   const saved = E.snapshot(s),
@@ -187,7 +187,7 @@ test("corrupt saves are rejected safely", () => {
     (s) => (s.units[0].cool = -4),
     (s) => (s.units[0].path = [null]),
   ]) {
-    const s = E.snapshot(E.make());
+    const s = E.snapshot(E.make("classic"));
     change(s);
     assert.equal(E.restore(s), null);
   }
@@ -196,7 +196,7 @@ test("corrupt saves are rejected safely", () => {
 });
 
 function quiet() {
-  const s = E.make();
+  const s = E.make("classic");
   removeEnemies(s);
   E.living(s, "citadel").cool = 5;
   return s;
@@ -255,7 +255,7 @@ test("prices are atomic, double orders cannot spend twice, and insufficient fund
   assert.deepEqual(E.snapshot(s), copy);
 });
 test("construction requires a clear nearby site, progresses only in simulation, and waits for the scout", () => {
-  const s = E.make();
+  const s = E.make("classic");
   assert.equal(E.purchase(s, "outpost", "flank").reason, "distance");
   const h = E.hero(s);
   h.x = 1170;
@@ -432,7 +432,7 @@ test("economy and strategy corruption cannot create money, malformed buildings o
     (s) => (s.units[5].kind = "__proto__"),
     (s) => (s.units[0].repair = Infinity),
   ]) {
-    const s = E.make();
+    const s = E.make("classic");
     change(s);
     assert.equal(E.restore(s), null);
   }
@@ -475,9 +475,11 @@ test("published files exactly match canonical sources and stay self-contained", 
   for (const f of [
     "index.html",
     "style.css",
+    "campaign.js",
     "engine.js",
     "view.js",
     "audio.js",
+    "development-ui.js",
     "app.js",
   ])
     assert.deepEqual(

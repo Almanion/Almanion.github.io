@@ -34,6 +34,7 @@ test("desktop: tactical orders, movement, pause, resume and isolated save", asyn
     localStorage.setItem("orbital-courier-save-v8", "untouched"),
   );
   await start(page);
+  await page.locator("#map-overview").click();
   await page.waitForTimeout(400);
   const before = await page.evaluate(() => SignalGame.snapshot());
   const p = await page.evaluate(() => SignalGame.screen(500, 650));
@@ -72,7 +73,7 @@ test("desktop: tactical orders, movement, pause, resume and isolated save", asyn
 test("victory, defeat, restart and menu have working exits", async ({
   page,
 }) => {
-  const s = E.make();
+  const s = E.make("classic");
   for (const u of s.units) if (u.team && u.kind !== "citadel") u.hp = 0;
   s.phase = 3;
   s.relay.online = true;
@@ -107,7 +108,7 @@ test("result label is painted before hover while fire opens the dialog", async (
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  const s = E.make();
+  const s = E.make("classic");
   for (const u of s.units) if (u.team && u.kind !== "citadel") u.hp = 0;
   E.hero(s).x = 1010;
   E.hero(s).y = 485;
@@ -143,7 +144,7 @@ test("result label is painted before hover while fire opens the dialog", async (
 test("defeat is shown after a real enemy hit, and restart resets inputs", async ({
   page,
 }) => {
-  const s = E.make(),
+  const s = E.make("classic"),
     h = E.hero(s);
   h.hp = 1;
   s.bullets.push({
@@ -210,11 +211,12 @@ for (const browserType of [chromium, webkit])
       try {
         await page.goto("http://127.0.0.1:4173" + route);
         await page.locator("#start").tap();
+        await page.locator("#map-overview").tap();
         const readTargets = () =>
           page.evaluate(() => {
             const state = SignalGame.snapshot();
             return [
-              ...SignalEngine.PADS,
+              ...SignalEngine.pads(state),
               ...state.caches,
               state.terminal,
               state.relay,
@@ -265,13 +267,14 @@ for (const browserType of [chromium, webkit])
           path: `test-results/signal-map-${browserType.name()}-${size.join("x")}.png`,
         });
         await page.locator("#supply-open").tap();
-        await expect(page.locator("#buy-artillery")).toBeDisabled();
-        await expect(page.locator("#buy-rifle")).toBeDisabled();
-        await page.locator("#buy-hack").tap();
-        await expect(page.locator("#supply-alloy")).toHaveText("60");
-        await expect(page.locator("#buy-hack")).toBeDisabled();
-        await page.locator("#site-flank").scrollIntoViewIfNeeded();
-        await expect(page.locator("#site-flank")).toBeVisible();
+        await expect(page.locator("#develop-foundry")).toBeDisabled();
+        await page.locator("#develop-barracks").tap();
+        await expect(page.locator("#development-alloy")).toHaveText("100");
+        await page.locator("#develop-tab-research").tap();
+        await expect(page.locator("#develop-hack")).toBeDisabled();
+        await page.locator("#develop-tab-economy").tap();
+        await page.locator("#develop-outpost-flank").scrollIntoViewIfNeeded();
+        await expect(page.locator("#develop-outpost-flank")).toBeVisible();
         expect(
           await page.evaluate(
             () => document.documentElement.scrollWidth - innerWidth,
@@ -281,7 +284,7 @@ for (const browserType of [chromium, webkit])
         await page.screenshot({
           path: `test-results/signal-supply-${browserType.name()}-${size.join("x")}.png`,
         });
-        await page.locator("#supply-back").tap();
+        await page.locator("#development-back").tap();
         await page.locator("#tactical").tap();
         await page.waitForTimeout(300);
         const geometry = await page.evaluate(() => {
@@ -414,7 +417,8 @@ for (const routeName of ["siege", "infiltration"])
       test.setTimeout(240000);
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.clock.install();
-      await start(page);
+      await fixture(page, E.make("classic"));
+      await page.keyboard.press("Tab");
       await page.clock.runFor(700);
       await page.keyboard.press("Tab");
       const pilot = new Pilot(routeName, 22);
@@ -558,7 +562,7 @@ test("supply: double-tap, refund, paused construction and reload preserve the re
 }) => {
   await page.clock.install({ time: new Date("2026-10-25T12:00:00Z") });
   await page.clock.pauseAt(new Date("2026-10-25T12:00:01Z"));
-  const s = E.make();
+  const s = E.make("classic");
   const h = E.hero(s);
   h.x = 350;
   h.y = 650;

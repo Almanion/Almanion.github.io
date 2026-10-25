@@ -12,11 +12,13 @@
       content="Предел сигнала — тактическая операция на заброшенном кольце."
     />
     <title>Предел сигнала · Альманион</title>
-    <link rel="stylesheet" href="style.css" />
-    <script src="engine.js" defer></script>
-    <script src="view.js" defer></script>
-    <script src="audio.js" defer></script>
-    <script src="app.js" defer></script>
+    <link rel="stylesheet" href="style.css?v=0.4.0" />
+    <script src="campaign.js?v=0.4.0" defer></script>
+    <script src="engine.js?v=0.4.0" defer></script>
+    <script src="view.js?v=0.4.0" defer></script>
+    <script src="audio.js?v=0.4.0" defer></script>
+    <script src="development-ui.js?v=0.4.0" defer></script>
+    <script src="app.js?v=0.4.0" defer></script>
   </head>
   <body data-mode="menu">
     <canvas
@@ -46,7 +48,7 @@
           ><button data-open="settings">Настройки</button>
         </div>
       </div>
-      <p class="edition">Первая операция <span>0.3</span></p>
+      <p class="edition">Первая операция <span>0.4</span></p>
     </main>
     <div id="hud" hidden>
       <header class="topbar">
@@ -103,12 +105,31 @@
           </button>
         </div>
       </div>
+      <div id="map-tools" class="map-tools" hidden>
+        <button
+          id="map-overview"
+          aria-label="Показать всю карту"
+          title="Обзор карты"
+          aria-pressed="false"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2Zm6-2v16M15 5v16" />
+          </svg>
+        </button>
+        <button id="map-center" aria-label="К разведчику" title="К разведчику">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="6" />
+            <path d="M12 2v5m0 10v5M2 12h5m10 0h5" />
+          </svg>
+        </button>
+      </div>
       <div id="tactical-panel" class="tactical-panel" hidden>
         <div class="tactical-heading">
           <div class="tactical-title">
             <span>Тактическая пауза</span
             ><button id="supply-open" class="supply-button">
-              Снабжение <span id="alloy">120</span>
+              <span id="supply-title">Снабжение</span>
+              <span id="alloy">120</span>
             </button>
           </div>
           <small>Выберите группу и укажите позицию</small>
@@ -175,7 +196,7 @@
               через 7 секунд.
             </p>
           </div>
-          <p>
+          <p id="economy-help">
             Сплав конечен: 120 при высадке и три склада по 40 на карте.
             Собирайте его действием рядом со складом. Опорный пункт строится
             рядом с разведчиком; он ремонтирует бойцов вне огня и принимает
@@ -193,6 +214,8 @@
               <dd>Взаимодействовать</dd>
               <dt><kbd>Tab</kbd> · <kbd>1</kbd> <kbd>2</kbd></dt>
               <dd>Пауза и выбор группы</dd>
+              <dt>Края экрана · колесо · перетаскивание</dt>
+              <dd>Перемещение и масштаб карты в паузе</dd>
             </dl>
           </div>
           <div class="help-touch">
@@ -203,7 +226,8 @@
             </p>
             <p>
               «Приказы» останавливают бой. Выберите группу и коснитесь места на
-              карте, затем продолжите.
+              карте, затем продолжите. Перетаскивание перемещает карту;
+              удержание у края прокручивает её. Два пальца меняют масштаб.
             </p>
           </div>
           <p class="help-note">
@@ -232,6 +256,17 @@
             Прогресс операции сохраняется на этом устройстве.
           </p>
           <button class="primary" id="settings-back">Готово</button>
+        </section>
+        <section id="development-content" hidden>
+          <p class="eyebrow">Тактическая пауза</p>
+          <h2>Развитие</h2>
+          <div id="development-panel"></div>
+          <p
+            id="development-feedback"
+            class="supply-feedback"
+            role="status"
+          ></p>
+          <button id="development-back" class="primary">К карте</button>
         </section>
         <section id="supply-content" hidden>
           <p class="eyebrow">Тактическая пауза</p>

@@ -22,6 +22,9 @@
     citadel: { hp: 900, r: 48, speed: 0, range: 520, damage: 21, rate: 2.5 },
     outpost: { hp: 280, r: 27, speed: 0, range: 0, damage: 0, rate: 0 },
     base: { hp: 700, r: 42, speed: 0, range: 0, damage: 0, rate: 0 },
+    drone: { hp: 45, r: 8, speed: 85, range: 0, damage: 0, rate: 0 },
+    barracks: { hp: 420, r: 30, speed: 0, range: 0, damage: 0, rate: 0 },
+    foundry: { hp: 500, r: 34, speed: 0, range: 0, damage: 0, rate: 0 },
   };
   const COSTS = Object.freeze({
     outpost: 50,
@@ -44,15 +47,34 @@
       { id: "south", x: 1010, y: 850 },
     ].map(Object.freeze),
   );
+  const classicMap = { id: "classic", W, H, walls };
+  const frontierMap = {
+    id: "frontier",
+    W: 1920,
+    H: 1280,
+    walls: [
+      ...walls,
+      { x: 1480, y: 520, w: 120, h: 280 },
+      { x: 1640, y: 160, w: 130, h: 140 },
+      { x: 840, y: 1080, w: 320, h: 100 },
+      { x: 1460, y: 1020, w: 180, h: 100 },
+    ],
+  };
+  const mapFor = (s) =>
+    s === "frontier" || s?.campaign || s?.map === "frontier"
+      ? frontierMap
+      : classicMap;
+  let campaign;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-  function free(x, y, r = 14) {
+  function free(x, y, r = 14, map = "classic") {
+    const world = mapFor(map);
     return (
       x >= r + 24 &&
-      x <= W - r - 24 &&
+      x <= world.W - r - 24 &&
       y >= r + 24 &&
-      y <= H - r - 24 &&
-      !walls.some(
+      y <= world.H - r - 24 &&
+      !world.walls.some(
         (b) =>
           x + r > b.x && x - r < b.x + b.w && y + r > b.y && y - r < b.y + b.h,
       )
@@ -81,7 +103,9 @@
     return lo;
   }
   function clear(a, b, r = 0) {
-    return !walls.some((w) => segmentRect(a.x, a.y, b.x, b.y, w, r) !== null);
+    return !mapFor(a.map || b.map).walls.some(
+      (w) => segmentRect(a.x, a.y, b.x, b.y, w, r) !== null,
+    );
   }
   function segmentCircle(a, b, u, r) {
     const dx = b.x - a.x,
@@ -125,10 +149,11 @@
       target: null,
       think: 0,
     };
+    if (s.campaign) u.map = "frontier";
     s.units.push(u);
     return u;
   }
-  function make() {
+  function makeClassic() {
     const s = {
       version: 2,
       t: 0,
@@ -185,6 +210,9 @@
     unit(s, "runner", 1, 1320, 120);
     return s;
   }
+  function make(mode = "frontier") {
+    return mode === "classic" ? makeClassic() : campaign.make();
+  }
   const hero = (s) => s.units.find((u) => u.id === s.heroId);
   const living = (s, kind) => s.units.find((u) => u.kind === kind && u.hp > 0);
   function strategyDefaults(s, legacy) {
@@ -225,7 +253,7 @@
     ]) {
       const p = { x: anchor.x + dx, y: anchor.y + dy };
       if (
-        free(p.x, p.y, C[kind].r) &&
+        free(p.x, p.y, C[kind].r, anchor.map) &&
         !s.units.some(
           (u) => u.hp > 0 && dist(u, p) < C[kind].r + C[u.kind].r + 3,
         )
@@ -235,6 +263,7 @@
     return null;
   }
   function supplyStatus(s, action, site) {
+    if (s.campaign) return campaign.offer(s, action, site);
     const cost = COSTS[action];
     const fail = (reason) => ({ allowed: false, reason, cost: cost ?? 0 });
     if (s.status !== "playing") return fail("ended");
@@ -288,6 +317,7 @@
     return { allowed: true, reason: null, cost, anchor, spawn };
   }
   function purchase(s, action, site) {
+    if (s.campaign) return campaign.purchase(s, action, site);
     const offer = supplyStatus(s, action, site);
     if (!offer.allowed) return offer;
     const eco = s.economy;
@@ -326,6 +356,7 @@
     return { allowed: true, reason: null, cost: offer.cost };
   }
   function interaction(s) {
+    if (s.campaign) return campaign.interaction(s);
     const h = hero(s);
     if (!h || h.hp <= 0) return null;
     const options = [];
@@ -356,6 +387,7 @@
     );
   }
   function objective(s) {
+    if (s.campaign) return campaign.objective(s);
     if (!shielded(s))
       return { id: "citadel", target: living(s, "citadel"), radius: 66 };
     if (s.approach === "infiltration" && s.economy.kit)
@@ -365,6 +397,7 @@
     return { id: "jammer", target: living(s, "jammer"), radius: 50 };
   }
   function strategyStep(s, input, dt) {
+    if (s.campaign) return campaign.strategy(s, input, dt);
     const h = hero(s),
       act = interaction(s),
       held = input.interact && s.dashT === 0 && act?.allowed;
@@ -425,13 +458,14 @@
     }
   }
   function pathTo(from, to, r = 14) {
-    const cell = 40,
-      cols = W / cell,
-      rows = H / cell,
+    const world = mapFor(from.map || to.map),
+      cell = 40,
+      cols = world.W / cell,
+      rows = world.H / cell,
       start = Math.floor(from.y / cell) * cols + Math.floor(from.x / cell),
       end =
-        Math.floor(clamp(to.y, 25, H - 25) / cell) * cols +
-        Math.floor(clamp(to.x, 25, W - 25) / cell);
+        Math.floor(clamp(to.y, 25, world.H - 25) / cell) * cols +
+        Math.floor(clamp(to.x, 25, world.W - 25) / cell);
     const queue = [start],
       prev = new Int32Array(cols * rows).fill(-2);
     prev[start] = -1;
@@ -462,7 +496,7 @@
           yy < 0 ||
           yy >= rows ||
           prev[k] !== -2 ||
-          !free(xx * cell + 20, yy * cell + 20, r)
+          !free(xx * cell + 20, yy * cell + 20, r, world.id)
         )
           continue;
         prev[k] = n;
@@ -476,7 +510,8 @@
         y: Math.floor(n / cols) * cell + 20,
       });
     route.reverse();
-    if (free(to.x, to.y, r) && best === end) route.push({ x: to.x, y: to.y });
+    if (free(to.x, to.y, r, world.id) && best === end)
+      route.push({ x: to.x, y: to.y });
     return route;
   }
   function order(s, group, x, y) {
@@ -487,26 +522,37 @@
       !Number.isFinite(y)
     )
       return false;
+    const world = mapFor(s);
     const members = s.units.filter(
       (u) => u.team === 0 && u.group === group && u.hp > 0,
     );
     members.forEach((u, i) => {
       const target = {
-        x: clamp(x + (i % 2) * 30 - 15, 30, W - 30),
-        y: clamp(y + Math.floor(i / 2) * 30 - 15, 30, H - 30),
+        x: clamp(x + (i % 2) * 30 - 15, 30, world.W - 30),
+        y: clamp(y + Math.floor(i / 2) * 30 - 15, 30, world.H - 30),
       };
       u.order = target;
       u.path = pathTo(u, target, C[u.kind].r);
     });
+    const producers = s.campaign
+      ? s.units.filter(
+          (u) => u.hp > 0 && u.kind === (group === 1 ? "barracks" : "foundry"),
+        )
+      : [];
+    for (const u of producers)
+      u.rally = {
+        x: clamp(x, 30, world.W - 30),
+        y: clamp(y, 30, world.H - 30),
+      };
     emit(s, "order", x, y);
-    return members.length > 0;
+    return members.length > 0 || producers.length > 0;
   }
   function move(u, dx, dy) {
     const r = C[u.kind].r,
       steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 8));
     for (let i = 0; i < steps; i++) {
-      if (free(u.x + dx / steps, u.y, r)) u.x += dx / steps;
-      if (free(u.x, u.y + dy / steps, r)) u.y += dy / steps;
+      if (free(u.x + dx / steps, u.y, r, u.map)) u.x += dx / steps;
+      if (free(u.x, u.y + dy / steps, r, u.map)) u.y += dy / steps;
     }
   }
   function follow(u, dt) {
@@ -529,12 +575,13 @@
       kind: u.kind,
     });
     if (u.kind === "runner") {
-      hurt(s, target, def.damage, u);
+      hurt(s, target, def.damage * (s.campaign ? 1.2 : 1), u);
       return;
     }
     const r = def.r + 9,
       speed = u.kind === "artillery" ? 360 : u.team ? 390 : 800;
     s.bullets.push({
+      ...(s.campaign ? { map: "frontier" } : {}),
       x: u.x + Math.cos(a) * r,
       y: u.y + Math.sin(a) * r,
       vx: Math.cos(a) * speed,
@@ -542,7 +589,9 @@
       life: def.range / speed,
       team: u.team,
       owner: u.id,
-      damage: def.damage,
+      damage:
+        def.damage *
+        (s.campaign ? (u.team ? 1.2 : s.campaign.weapons ? 1.2 : 1) : 1),
       kind: u.kind === "artillery" ? "shell" : "bolt",
       tx: target.x,
       ty: target.y,
@@ -556,7 +605,17 @@
       return;
     }
     if (u.kind === "citadel" && attacker.kind !== "shell")
-      damage *= s.terminal.window > 0 ? 0.65 : 0.28;
+      damage *= s.terminal.window > 0 ? 0.65 : s.campaign ? 0.03 : 0.28;
+    if (s.campaign && u.team && attacker.kind !== "shell") {
+      if (u.kind === "sentinel") damage *= 0.65;
+      if (["turret", "jammer"].includes(u.kind)) damage *= 0.8;
+    }
+    if (
+      s.campaign?.armor &&
+      !u.team &&
+      ["hero", "rifle", "artillery"].includes(u.kind)
+    )
+      damage *= 0.85;
     u.hp -= damage;
     u.hit = 0.14;
     u.repair = 3;
@@ -566,6 +625,7 @@
     } else emit(s, "hit", u.x, u.y, { team: u.team });
     if (u.hp <= 0) {
       u.hp = 0;
+      if (s.campaign) campaign.onDeath(s, u);
       s.kills += u.team === 1 ? 1 : 0;
       emit(s, "destroy", u.x, u.y, { kind: u.kind, team: u.team });
     }
@@ -658,6 +718,8 @@
       if (u.team === 0) {
         if (u.path.length) follow(u, dt);
         if (target && u.cool === 0) shoot(s, u, target);
+      } else if (s.campaign) {
+        campaign.enemy(s, u, dt, opponents);
       } else {
         u.think -= dt;
         if (!target && C[u.kind].speed && u.think <= 0) {
@@ -717,7 +779,7 @@
       }
       let hit = null,
         first = 1;
-      for (const wall of walls) {
+      for (const wall of mapFor(s).walls) {
         const t = segmentRect(b.x, b.y, next.x, next.y, wall, 2);
         if (t !== null && t <= first) {
           first = t;
@@ -743,70 +805,78 @@
     }
     s.bullets = s.bullets.filter((b) => b.life > 0).slice(-160);
     strategyStep(s, input, dt);
-    if (!living(s, "jammer") && s.phase === 0) {
-      s.phase = 1;
-      s.checkpoint = 1;
-      emit(s, "objective", s.relay.x, s.relay.y);
-    }
-    if (h.hp > 0 && s.phase === 1 && dist(h, s.relay) < 75 && input.interact) {
-      s.approach = "siege";
-      s.relay.charge = Math.min(1, s.relay.charge + dt / 2.8);
-      if (s.relay.charge === 1) {
-        s.phase = 2;
-        s.checkpoint = 2;
-        s.relay.started = s.t;
-        h.hp = Math.min(C.hero.hp, h.hp + 55);
-        emit(s, "online", s.relay.x, s.relay.y);
+    if (s.campaign) campaign.operation(s, input, dt);
+    else {
+      if (!living(s, "jammer") && s.phase === 0) {
+        s.phase = 1;
+        s.checkpoint = 1;
+        emit(s, "objective", s.relay.x, s.relay.y);
       }
-    } else if (s.phase === 1)
-      s.relay.charge = Math.max(0, s.relay.charge - dt * 0.2);
-    // Repair is a positional benefit; combat and damage remain meaningful away from the network.
-    if (
-      h.hp > 0 &&
-      s.relay.online &&
-      dist(h, s.relay) < 140 &&
-      !s.units.some((u) => u.team === 1 && u.hp > 0 && dist(h, u) < 300)
-    )
-      h.hp = Math.min(C.hero.hp, h.hp + dt * 5);
-    if (s.phase === 2) {
-      const contested = s.units.some(
-        (u) => u.team === 1 && u.hp > 0 && dist(u, s.relay) < 160,
-      );
-      s.relay.stability = clamp(
-        s.relay.stability + (contested ? -dt * 0.05 : dt / 22),
-        0,
-        1,
-      );
-      if (s.wave < 2 && s.t - s.relay.started > 1 + s.wave * 10) {
-        s.wave++;
-        for (const [kind, x, y] of [
-          ["runner", 1030, 840],
-          ["runner", 1070, 880],
-          ["sentinel", 1020, 910],
-        ]) {
-          const u = unit(s, kind, 1, x, y);
-          u.path = pathTo(u, s.relay, C[kind].r);
+      if (
+        h.hp > 0 &&
+        s.phase === 1 &&
+        dist(h, s.relay) < 75 &&
+        input.interact
+      ) {
+        s.approach = "siege";
+        s.relay.charge = Math.min(1, s.relay.charge + dt / 2.8);
+        if (s.relay.charge === 1) {
+          s.phase = 2;
+          s.checkpoint = 2;
+          s.relay.started = s.t;
+          h.hp = Math.min(C.hero.hp, h.hp + 55);
+          emit(s, "online", s.relay.x, s.relay.y);
         }
-        emit(s, "reinforce", 1030, 840);
-      }
-      if (s.relay.stability === 1) {
-        s.phase = 3;
-        s.relay.online = true;
-        if (s.economy.legacySupport) {
-          unit(s, "artillery", 0, 780, 530, 2);
-          s.economy.legacySupport = false;
+      } else if (s.phase === 1)
+        s.relay.charge = Math.max(0, s.relay.charge - dt * 0.2);
+      // Repair is a positional benefit; combat and damage remain meaningful away from the network.
+      if (
+        h.hp > 0 &&
+        s.relay.online &&
+        dist(h, s.relay) < 140 &&
+        !s.units.some((u) => u.team === 1 && u.hp > 0 && dist(h, u) < 300)
+      )
+        h.hp = Math.min(C.hero.hp, h.hp + dt * 5);
+      if (s.phase === 2) {
+        const contested = s.units.some(
+          (u) => u.team === 1 && u.hp > 0 && dist(u, s.relay) < 160,
+        );
+        s.relay.stability = clamp(
+          s.relay.stability + (contested ? -dt * 0.05 : dt / 22),
+          0,
+          1,
+        );
+        if (s.wave < 2 && s.t - s.relay.started > 1 + s.wave * 10) {
+          s.wave++;
+          for (const [kind, x, y] of [
+            ["runner", 1030, 840],
+            ["runner", 1070, 880],
+            ["sentinel", 1020, 910],
+          ]) {
+            const u = unit(s, kind, 1, x, y);
+            u.path = pathTo(u, s.relay, C[kind].r);
+          }
+          emit(s, "reinforce", 1030, 840);
         }
-        emit(s, "online", s.relay.x, s.relay.y);
+        if (s.relay.stability === 1) {
+          s.phase = 3;
+          s.relay.online = true;
+          if (s.economy.legacySupport) {
+            unit(s, "artillery", 0, 780, 530, 2);
+            s.economy.legacySupport = false;
+          }
+          emit(s, "online", s.relay.x, s.relay.y);
+        }
       }
     }
-
     if (h.hp <= 0 || !living(s, "base")) {
       s.status = "lost";
       emit(s, "end", h.x, h.y);
     } else if (!living(s, "citadel")) {
       s.status = "won";
       s.approach = s.terminal.window > 0 ? "infiltration" : "siege";
-      emit(s, "end", 1250, 485);
+      const endPoint = s.units.find((u) => u.kind === "citadel");
+      emit(s, "end", endPoint.x, endPoint.y);
     }
     return s;
   }
@@ -816,6 +886,7 @@
     return out;
   }
   function restore(value) {
+    if (value?.version === 3) return campaign.restore(value);
     try {
       const s = JSON.parse(JSON.stringify(value));
       if (
@@ -1089,6 +1160,24 @@
     snapshot,
     restore,
   };
+  const Campaign =
+    typeof module !== "undefined" && module.exports
+      ? require("./campaign.js")
+      : root.SignalCampaign;
+  campaign = Campaign.create({
+    ...API,
+    makeClassic,
+    unit,
+    move,
+    follow,
+    shoot,
+    hurt,
+    emit,
+    spawnPoint,
+  });
+  API.map = mapFor;
+  API.pads = (s) => (s.campaign ? Campaign.PADS : PADS);
+  API.development = campaign;
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   else root.SignalEngine = API;
 })(typeof globalThis !== "undefined" ? globalThis : window);

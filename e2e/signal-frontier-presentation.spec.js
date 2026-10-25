@@ -123,6 +123,7 @@ test("rendered sound has distinct layers, direction, headroom, a silent tail and
         "build",
         "post-ready",
         "breach",
+        "raid",
         "end",
         "step",
         "charge",

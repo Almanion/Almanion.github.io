@@ -127,7 +127,7 @@ class Pilot {
   }
 }
 function play(route, maxFrames = 18000) {
-  const s = E.make(),
+  const s = E.make("classic"),
     pilot = new Pilot(route),
     trace = [];
   let lastPhase = -1;

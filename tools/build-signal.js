@@ -7,9 +7,11 @@ const destination = path.join(root, "games/signal-frontier");
 const files = [
   "index.html",
   "style.css",
+  "campaign.js",
   "engine.js",
   "view.js",
   "audio.js",
+  "development-ui.js",
   "app.js",
 ];
 fs.mkdirSync(destination, { recursive: true });

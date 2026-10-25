@@ -263,10 +263,10 @@
     c.restore();
     return a;
   }
-  function terrain() {
+  function terrain(world = E.map(null)) {
     const a = document.createElement("canvas");
-    a.width = E.W;
-    a.height = E.H;
+    a.width = world.W;
+    a.height = world.H;
     const c = a.getContext("2d");
     let seed = 71;
     const rnd = () => {
@@ -276,12 +276,12 @@
     const outline = [
       [24, 36],
       [36, 24],
-      [1404, 24],
-      [1416, 36],
-      [1416, 964],
-      [1404, 976],
-      [36, 976],
-      [24, 964],
+      [world.W - 36, 24],
+      [world.W - 24, 36],
+      [world.W - 24, world.H - 36],
+      [world.W - 36, world.H - 24],
+      [36, world.H - 24],
+      [24, world.H - 36],
     ];
     poly(
       c,
@@ -289,7 +289,7 @@
       "#10262e",
       "#4d737341",
     );
-    const g = c.createLinearGradient(30, 30, 1400, 1000);
+    const g = c.createLinearGradient(30, 30, world.W, world.H);
     g.addColorStop(0, "#354b50");
     g.addColorStop(0.5, "#3d5251");
     g.addColorStop(1, "#253d44");
@@ -299,8 +299,8 @@
     outline.forEach((p, i) => (i ? c.lineTo(...p) : c.moveTo(...p)));
     c.closePath();
     c.clip();
-    for (let y = 24; y < 980; y += 80)
-      for (let x = 24; x < 1420; x += 100) {
+    for (let y = 24; y < world.H - 20; y += 80)
+      for (let x = 24; x < world.W - 20; x += 100) {
         c.fillStyle = rnd() > 0.5 ? "#a4baac09" : "#071d280d";
         c.fillRect(x + 2, y + 2, 97, 77);
         c.strokeStyle = "#102c3680";
@@ -319,28 +319,52 @@
           c.fillRect(x + dx, y + 6, 2, 2);
         }
       }
-    for (const lane of [
-      [
-        [135, 820],
-        [265, 820],
-        [265, 650],
-        [520, 650],
-        [520, 180],
-        [1015, 180],
-      ],
-      [
-        [520, 650],
-        [790, 650],
-        [790, 490],
-        [1250, 490],
-      ],
-      [
-        [1015, 215],
-        [1015, 280],
-        [1280, 280],
-        [1280, 200],
-      ],
-    ]) {
+    for (const lane of world.id === "frontier"
+      ? [
+          [
+            [135, 1140],
+            [535, 1140],
+            [535, 650],
+            [1020, 650],
+            [1020, 290],
+            [1470, 290],
+          ],
+          [
+            [535, 1140],
+            [780, 1140],
+            [780, 1010],
+            [1340, 1010],
+            [1340, 810],
+            [1770, 810],
+          ],
+          [
+            [1340, 810],
+            [1340, 390],
+            [1780, 390],
+          ],
+        ]
+      : [
+          [
+            [135, 820],
+            [265, 820],
+            [265, 650],
+            [520, 650],
+            [520, 180],
+            [1015, 180],
+          ],
+          [
+            [520, 650],
+            [790, 650],
+            [790, 490],
+            [1250, 490],
+          ],
+          [
+            [1015, 215],
+            [1015, 280],
+            [1280, 280],
+            [1280, 200],
+          ],
+        ]) {
       line(c, lane, "#142f38", 22);
       line(c, lane, "#5c77705c", 1);
       c.save();
@@ -349,8 +373,8 @@
       c.restore();
     }
     for (let i = 0; i < 1300; i++) {
-      const x = rnd() * 1390 + 25,
-        y = rnd() * 950 + 25;
+      const x = rnd() * (world.W - 50) + 25,
+        y = rnd() * (world.H - 50) + 25;
       c.fillStyle = i % 3 ? "#ced6bd09" : "#051c2720";
       c.fillRect(x, y, 1 + rnd() * 3, 1 + rnd() * 2);
     }
@@ -430,15 +454,15 @@
       );
     }
     c.restore();
-    for (let x = 60; x < 1400; x += 112) {
+    for (let x = 60; x < world.W - 40; x += 112) {
       slab(c, x, 14, 80, 10, 0, 7, 0, MAT.deck);
-      slab(c, x, 988, 80, 10, 0, 9, 0, MAT.deck);
+      slab(c, x, world.H - 12, 80, 10, 0, 9, 0, MAT.deck);
       lamp(c, x + 28, 14, 8, 0, 1.8, "#9dbbad");
-      lamp(c, x - 28, 988, 10, 0, 1.8, "#9dbbad");
+      lamp(c, x - 28, world.H - 12, 10, 0, 1.8, "#9dbbad");
     }
-    for (let y = 85; y < 950; y += 112) {
+    for (let y = 85; y < world.H - 50; y += 112) {
       slab(c, 14, y, 10, 70, 0, 6, 0, MAT.deck);
-      slab(c, 1427, y, 10, 70, 0, 6, 0, MAT.deck);
+      slab(c, world.W - 13, y, 10, 70, 0, 6, 0, MAT.deck);
     }
     return a;
   }
@@ -448,6 +472,8 @@
       this.canvas = canvas;
       this.c = canvas.getContext("2d", { alpha: false });
       this.ground = terrain();
+      this.mapId = "classic";
+      this.tactical = { overview: true, x: 720, y: 500, zoom: 0.95 };
       this.fx = [];
       this.poses = new Map();
       this.scars = [];
@@ -530,6 +556,11 @@
       this.fx = this.fx.slice(-96);
     }
     render(s, ui, dt) {
+      const world = E.map(s);
+      if (this.mapId !== world.id) {
+        this.ground = terrain(world);
+        this.mapId = world.id;
+      }
       this.frameDt = dt;
       if (ui.reduced) {
         this.fx = [];
@@ -546,6 +577,12 @@
         overview = ui.mode === "tactical",
         menu = ui.mode === "menu";
       const landscape = overview && w > h && h <= 500;
+      const areaW = landscape ? w - 240 : w - 30,
+        areaH = h - (landscape ? 120 : mobile ? 295 : 230);
+      this.fitScale = Math.max(
+        0.1,
+        Math.min(areaW / world.W, areaH / (world.H * Y)),
+      );
       this.origin = {
         x: landscape ? (w - 230) / 2 : w / 2,
         y: landscape
@@ -555,24 +592,53 @@
             : h * 0.49,
       };
       let scale = overview
-        ? landscape
-          ? Math.min((w - 240) / E.W, (h - 120) / (E.H * Y))
-          : Math.min((w - 30) / E.W, (h - (mobile ? 295 : 230)) / (E.H * Y))
+        ? this.tactical.overview
+          ? this.fitScale
+          : this.tactical.zoom
         : menu
-          ? Math.max(w / 1800, h / 1000)
+          ? Math.max(w / (world.W * 1.25), h / world.H)
           : Math.min(1.32, Math.max(0.95, h / 660));
       scale = Math.max(overview ? 0.1 : 0.22, scale);
-      let tx = overview ? 720 : menu ? 770 : hero.x,
-        ty = overview ? 500 : menu ? 480 : hero.y;
-      if (!overview && !menu) {
-        const ax = ui.aim ? E.clamp(ui.aim.x - hero.x, -240, 240) : 0,
-          ay = ui.aim ? E.clamp(ui.aim.y - hero.y, -180, 180) : 0;
-        tx += ax * 0.22;
-        ty += ay * 0.18;
+      let tx = overview
+        ? this.tactical.overview
+          ? world.W / 2
+          : this.tactical.x
+        : menu
+          ? world.W * 0.54
+          : hero.x;
+      let ty = overview
+        ? this.tactical.overview
+          ? world.H / 2
+          : this.tactical.y
+        : menu
+          ? world.H * 0.48
+          : hero.y;
+      if (overview && !this.tactical.overview) {
+        const half = areaW / (2 * scale),
+          halfY = areaH / (2 * scale * Y);
+        tx =
+          half > world.W / 2
+            ? world.W / 2
+            : E.clamp(tx, half - 25, world.W - half + 25);
+        ty =
+          halfY > world.H / 2
+            ? world.H / 2
+            : E.clamp(ty, halfY - 25, world.H - halfY + 25);
+        this.tactical.x = tx;
+        this.tactical.y = ty;
+      } else if (!overview && !menu) {
+        tx += (ui.aim ? E.clamp(ui.aim.x - hero.x, -240, 240) : 0) * 0.22;
+        ty += (ui.aim ? E.clamp(ui.aim.y - hero.y, -180, 180) : 0) * 0.18;
         const half = w / (2 * scale),
           halfY = (h - 70) / (2 * scale * Y);
-        tx = half > E.W / 2 ? 720 : E.clamp(tx, half - 55, E.W - half + 55);
-        ty = halfY > E.H / 2 ? 500 : E.clamp(ty, halfY - 65, E.H - halfY + 65);
+        tx =
+          half > world.W / 2
+            ? world.W / 2
+            : E.clamp(tx, half - 55, world.W - half + 55);
+        ty =
+          halfY > world.H / 2
+            ? world.H / 2
+            : E.clamp(ty, halfY - 65, world.H - halfY + 65);
       }
       const blend = ui.reduced ? 1 : 1 - Math.exp(-dt * 8);
       this.camera.x += (tx - this.camera.x) * blend;
@@ -614,20 +680,29 @@
         c.lineDashOffset = ui.reduced ? 0 : -this.time * 15;
         line(
           c,
-          [
-            [135, 820],
-            [265, 820],
-            [265, 650],
-            [790, 650],
-            [790, 490],
-            [850, 490],
-          ],
+          s.campaign
+            ? [
+                [135, 1140],
+                [535, 1140],
+                [780, 1010],
+                [1340, 1010],
+                [s.relay.x, s.relay.y],
+              ]
+            : [
+                [135, 820],
+                [265, 820],
+                [265, 650],
+                [790, 650],
+                [790, 490],
+                [850, 490],
+              ],
           "#9edcc655",
           2,
         );
         c.restore();
-        ring(c, 850, 490, 140, "#9edcc615", 1);
+        ring(c, s.relay.x, s.relay.y, 140, "#9edcc615", 1);
       }
+      this.industry(c, s, ui);
       this.strategy(c, s, ui);
       this.relay(c, s, ui);
       if (overview) {
@@ -672,7 +747,7 @@
         }
       }
       const objects = [
-        ...E.walls.map((b) => ({ ...b, wall: true, sort: b.y + b.h })),
+        ...world.walls.map((b) => ({ ...b, wall: true, sort: b.y + b.h })),
         ...s.units.map((u) => ({ ...u, sort: u.y })),
       ].sort((a, b) => a.sort - b.sort);
       for (const o of objects)
@@ -729,7 +804,7 @@
       if (
         !overview &&
         !menu &&
-        E.walls.some(
+        world.walls.some(
           (b) =>
             hero.x > b.x - 12 &&
             hero.x < b.x + b.w + 12 &&
@@ -785,7 +860,7 @@
         c.font = "9px Segoe UI";
         c.textAlign = "center";
         c.textBaseline = "middle";
-        for (const [i, pad] of E.PADS.entries()) {
+        for (const [i, pad] of E.pads(s).entries()) {
           const p = this.screen(pad.x, pad.y);
           ellipse(c, p.x, p.y + 12, 7, 7, "#112522", "#b8d4bc88");
           c.fillStyle = "#c9e0ca";
@@ -797,14 +872,17 @@
           c.fillText("40", p.x + 13, p.y + 6);
         }
         c.textBaseline = "alphabetic";
-        for (const [x, y, label] of [
-          [1015, 215, "ГЛУШИТЕЛЬ"],
-          [850, 490, "УЗЕЛ СВЯЗИ"],
-          [1250, 485, "ЦИТАДЕЛЬ"],
-          [135, 820, "ПОСАДОЧНЫЙ МОДУЛЬ"],
-          [1280, 200, "ТЕРМИНАЛ"],
-        ]) {
+        const labels = [
+          [s.units.find((u) => u.kind === "jammer"), "ГЛУШИТЕЛЬ"],
+          [s.relay, "УЗЕЛ СВЯЗИ"],
+          [s.units.find((u) => u.kind === "citadel"), "ЦИТАДЕЛЬ"],
+          [s.units.find((u) => u.kind === "base"), "ПОСАДОЧНЫЙ УЗЕЛ"],
+          [s.terminal, "ТЕРМИНАЛ"],
+        ];
+        for (const [object, label] of labels) {
+          const { x, y } = object;
           const p = this.screen(x, y);
+          if (p.x < 20 || p.x > w - 20 || p.y < 85 || p.y > h - 120) continue;
           c.font = "9px Segoe UI, sans-serif";
           c.textAlign = "center";
           c.fillStyle = "#bacac0";
@@ -836,10 +914,94 @@
           );
       }
     }
+    industry(c, s, ui) {
+      if (!s.campaign) return;
+      for (const m of s.campaign.mines) {
+        ellipse(c, m.x, m.y + 5, 34, 21, "#071b2866");
+        const left = m.remaining / m.stock;
+        for (let i = 0; i < 7; i++) {
+          const a = i * 2.4,
+            x = m.x + Math.cos(a) * 22,
+            y = m.y + Math.sin(a) * 13;
+          c.save();
+          c.translate(x, y);
+          plate(
+            c,
+            [
+              [-8, -5],
+              [1, -8],
+              [9, -2],
+              [6, 6],
+              [-6, 7],
+            ],
+            0,
+            3 + left * (7 + (i % 3) * 5),
+            a,
+            {
+              top: left ? "#b0b8a0" : "#526964",
+              side: "#718b7d",
+              front: "#526e67",
+              edge: "#cfdbbd50",
+            },
+          );
+          c.restore();
+        }
+        if (ui.mode === "tactical") {
+          c.font = "10px Segoe UI";
+          c.textAlign = "center";
+          c.fillStyle = "#b1c8b8";
+          c.fillText(String(m.remaining), m.x, m.y + 34);
+        }
+      }
+      for (const u of s.units) {
+        if (
+          u.hp <= 0 ||
+          !u.rally ||
+          ui.mode !== "tactical" ||
+          u.kind !== (ui.group === 1 ? "barracks" : "foundry")
+        )
+          continue;
+        c.save();
+        c.setLineDash([5, 8]);
+        line(
+          c,
+          [
+            [u.x, u.y],
+            [u.rally.x, u.rally.y],
+          ],
+          "#b2d6bf65",
+          1,
+        );
+        c.restore();
+        ring(c, u.rally.x, u.rally.y, 14, "#b2d6bf", 1.5);
+      }
+      for (const camp of s.campaign.camps) {
+        const source = s.units.find((u) => u.id === camp.source);
+        if (!source || source.hp <= 0) continue;
+        if (camp.warning > 0) {
+          const pulse = ui.reduced ? 0 : Math.sin(s.t * 5) * 4;
+          ring(c, source.x, source.y, 65 + pulse, "#e4a57a99", 2);
+        }
+        if (
+          ui.mode === "tactical" &&
+          this.camera.scale > 0.5 &&
+          camp.reserve > 0
+        ) {
+          c.font = "10px Segoe UI";
+          c.textAlign = "center";
+          c.fillStyle = "#cca58c";
+          c.fillText(
+            "Резерв " + camp.reserve,
+            source.x,
+            source.y + E.C[source.kind].r + 33,
+          );
+        }
+      }
+    }
     strategy(c, s, ui) {
       const overview = ui.mode === "tactical",
         t = ui.reduced ? 0 : s.t;
-      for (const p of E.PADS) {
+      for (const p of E.pads(s)) {
         const post = s.units.find(
           (u) => u.kind === "outpost" && u.site === p.id && u.hp > 0,
         );
@@ -878,7 +1040,7 @@
               u.team === 0 &&
               u.hp > 0 &&
               u.hp < E.C[u.kind].hp &&
-              !["outpost", "base"].includes(u.kind) &&
+              !["outpost", "base", "barracks", "foundry"].includes(u.kind) &&
               u.repair === 0 &&
               E.dist(u, post) < 145 &&
               E.clear(u, post)
@@ -1058,8 +1220,11 @@
           c,
           [
             [x, y],
-            [1320, 320],
-            [1250, 485],
+            s.campaign ? [1820, 520] : [1320, 320],
+            [
+              s.units.find((u) => u.kind === "citadel").x,
+              s.units.find((u) => u.kind === "citadel").y,
+            ],
           ],
           "#a9d8c057",
           1.2,
@@ -1283,12 +1448,40 @@
         }
       }
     }
-    reset() {
+    reset(s) {
       this.fx = [];
       this.poses.clear();
       this.scars = [];
       this.effectSerial = 0;
       this.shake = 0;
+      if (s) {
+        const h = E.hero(s);
+        this.tactical = { overview: !s.campaign, x: h.x, y: h.y, zoom: 0.95 };
+      }
+    }
+    focus(x, y) {
+      this.tactical.overview = false;
+      this.tactical.x = x;
+      this.tactical.y = y;
+    }
+    pan(x, y) {
+      if (this.tactical.overview) {
+        this.tactical.overview = false;
+        this.tactical.x = this.camera.x;
+        this.tactical.y = this.camera.y;
+      }
+      this.tactical.x += x;
+      this.tactical.y += y;
+      this.camera.x += x;
+      this.camera.y += y;
+    }
+    zoomAt(factor, x, y) {
+      const anchor = this.world(x, y),
+        next = E.clamp(this.camera.scale * factor, this.fitScale || 0.1, 1.7);
+      this.tactical.overview = false;
+      this.tactical.zoom = next;
+      this.tactical.x = anchor.x - (x - this.origin.x) / next;
+      this.tactical.y = anchor.y - (y - this.origin.y) / (next * Y);
     }
     pose(u, s, ui) {
       let p = this.poses.get(u.id);
@@ -1846,6 +2039,93 @@
         lamp(c, 7, 0, 29, aim, 3, u.wind > 0 ? "#ffe2b5" : accent);
         if (u.flash > 0 && !ui.reduced)
           this.muzzle(c, 38 - recoil, 0, 24, aim, accent, u.flash, 1.3);
+      } else if (u.kind === "drone") {
+        const a = p.move ? p.angle : aim,
+          bob = ui.reduced ? 0 : Math.sin(t * 5 + u.id) * 0.8;
+        for (const side of [-1, 1]) {
+          slab(c, 0, side * 7, 14, 3, 2, 3, a, MAT.graphite);
+          lamp(c, -5, side * 7, 6, a, 1, accent);
+        }
+        slab(c, 0, 0, 15, 11, 5 + bob, 6, a, MAT.ally);
+        slab(c, 3, 0, 7, 8, 11 + bob, 2, a, MAT.ceramic);
+        lamp(c, 8, 0, 9 + bob, a, 1.5, accent);
+        if (u.cargo) {
+          slab(c, -5, 0, 8, 8, 12 + bob, 5, a, {
+            ...MAT.ally,
+            top: "#c2bc91",
+            front: "#8f986d",
+          });
+        }
+      } else if (["barracks", "foundry"].includes(u.kind)) {
+        const heavy = u.kind === "foundry",
+          wide = heavy ? 68 : 58,
+          deep = heavy ? 48 : 40;
+        if (u.build > 0)
+          c.globalAlpha =
+            0.35 + 0.65 * (1 - u.build / E.development.ITEMS[u.kind].time);
+        slab(c, 0, 0, wide + 12, deep + 12, 0, 5, 0, MAT.graphite);
+        slab(c, 0, 0, wide, deep, 5, 18, 0, MAT.ally);
+        slab(c, 0, -8, wide - 8, deep * 0.65, 23, 8, 0, MAT.ceramic);
+        slab(c, 0, deep / 2, wide * 0.65, 4, 5, 18, 0, MAT.dark);
+        for (let i = 0; i < 4; i++)
+          seam(
+            c,
+            [
+              [-wide * 0.3, deep / 2 + 1],
+              [wide * 0.3, deep / 2 + 1],
+            ],
+            8 + i * 4,
+            0,
+            "#69847b",
+            1.5,
+          );
+        for (const side of [-1, 1]) {
+          slab(
+            c,
+            side * (wide / 2 - 5),
+            0,
+            7,
+            deep - 6,
+            25,
+            8,
+            0,
+            MAT.graphite,
+          );
+          lamp(c, side * (wide / 2 - 5), deep / 2 - 3, 27, 0, 2, accent);
+        }
+        if (heavy) {
+          slab(c, -9, -7, 7, 30, 32, 13, 0, MAT.ally);
+          slab(c, 9, -7, 7, 30, 32, 13, 0, MAT.ally);
+          slab(c, 0, -14, 27, 8, 45, 5, 0, MAT.ceramic);
+          if (u.jobs?.length) lamp(c, 0, 0, 34, 0, 3, "#e0bd8a");
+        } else
+          for (let i = 0; i < 3; i++) {
+            slab(c, -15 + i * 15, -9, 9, 13, 31, 3, 0, MAT.dark);
+            seam(
+              c,
+              [
+                [-18 + i * 15, -12],
+                [-12 + i * 15, -12],
+              ],
+              35,
+              0,
+              "#829c8b",
+            );
+          }
+        if (u.jobs?.length) {
+          const job = u.jobs[0],
+            progress = 1 - job.remaining / job.duration;
+          line(
+            c,
+            [
+              [-wide / 2, deep / 2 + 10],
+              [-wide / 2 + wide * progress, deep / 2 + 10],
+            ],
+            "#b5e2c9",
+            2,
+          );
+        }
+        c.globalAlpha = 1;
       } else if (u.kind === "base") {
         for (const side of [-1, 1])
           for (const front of [-1, 1]) {
@@ -1963,7 +2243,7 @@
         );
         ellipse(c, -16, -83, 2, 1.5, "#b4e6d0");
       } else if (u.kind === "outpost") {
-        const progress = 1 - u.build / 6,
+        const progress = 1 - u.build / (s.campaign ? 24 : 6),
           height = 10 + progress * 20;
         for (let i = 0; i < 4; i++) {
           const a = (i * Math.PI) / 2;
