@@ -24,7 +24,7 @@ function fund(s, amount) {
 test("new expedition extends both sides of the landing area and all objectives are reachable", () => {
   const s = E.make(),
     h = E.hero(s);
-  assert.equal(s.version, 5);
+  assert.equal(s.version, 6);
   assert.equal(E.map(s).H, 2560);
   assert.equal(D.pads(s).length, 5);
   assert.ok(D.pads(s).some((p) => p.y < h.y - 1000));
@@ -42,11 +42,12 @@ test("new expedition extends both sides of the landing area and all objectives a
   assert.ok(E.restore(s));
   for (const u of s.units) assert.ok(E.free(u.x, u.y, E.C[u.kind].r, u.map));
 });
-test("versions 2, 3 and 4 retain geometry, prices, reserves and round trips", () => {
+test("versions 2, 3, 4 and 5 retain geometry, prices, reserves and round trips", () => {
   for (const [profile, version, width, cost] of [
     ["classic", 2, 1440, 20],
     ["frontier-1", 3, 1920, 35],
     ["frontier-2", 4, 1920, 65],
+    ["frontier-3", 5, 2240, 65],
   ]) {
     const s = E.make(profile);
     assert.equal(s.version, version);
@@ -55,6 +56,58 @@ test("versions 2, 3 and 4 retain geometry, prices, reserves and round trips", ()
     assert.deepEqual(E.restore(E.snapshot(s)), s);
   }
 });
+test("new pacing preserves the map, enemy forces, mining and raid pressure of 0.6", () => {
+  const old = E.make("frontier-3"),
+    current = E.make("frontier-4");
+  for (const key of ["units", "caches", "relay", "terminal"])
+    assert.deepEqual(current[key], old[key]);
+  assert.deepEqual(E.map(current), E.map(old));
+  assert.deepEqual(current.campaign.mines, old.campaign.mines);
+  assert.deepEqual(current.campaign.camps, old.campaign.camps);
+  assert.equal(D.rules(current).gather, D.rules(old).gather);
+});
+test("old and new late research retain their own paid price, queue and cancellation after reload", () => {
+  for (const [profile, cost, duration] of [
+    ["frontier-3", 700, 150],
+    ["frontier-4", 520, 120],
+  ]) {
+    const s = E.make(profile);
+    for (const u of s.units) if (u.team && u.kind !== "citadel") u.hp = 0;
+    fund(s, 5000);
+    assert.ok(E.purchase(s, "barracks").allowed);
+    advance(s, 31);
+    for (const id of ["west", "relay"]) {
+      const p = D.pads(s).find((p) => p.id === id);
+      Object.assign(E.hero(s), { x: p.x, y: p.y });
+      assert.ok(E.purchase(s, "outpost", id).allowed);
+      advance(s, 46);
+    }
+    assert.ok(E.purchase(s, "network").allowed);
+    advance(s, 101);
+    const before = s.economy.alloy;
+    assert.ok(E.purchase(s, "command").allowed);
+    assert.equal(s.economy.alloy, before - cost);
+    advance(s, 10);
+    const restored = E.restore(s);
+    assert.ok(restored);
+    const base = E.living(restored, "base"),
+      job = base.jobs.find((j) => j.action === "command");
+    assert.equal(job.cost, cost);
+    assert.equal(job.duration, duration);
+    assert.ok(job.remaining > duration - 11 && job.remaining < duration - 9);
+    const mixed = E.snapshot(restored);
+    mixed.campaign.id = profile === "frontier-3" ? "frontier-4" : "frontier-3";
+    mixed.version = profile === "frontier-3" ? 6 : 5;
+    assert.equal(E.restore(mixed), null);
+    const savedMoney = restored.economy.alloy,
+      id = base.id + ":" + job.id;
+    assert.ok(E.purchase(restored, "cancel", id).allowed);
+    assert.equal(restored.economy.alloy, savedMoney + Math.floor(cost * 0.75));
+    assert.equal(E.purchase(restored, "cancel", id).allowed, false);
+    assert.ok(E.restore(restored));
+  }
+});
+
 test("barracks rally affects future recruits without moving the current squad", () => {
   const s = E.make();
   assert.ok(E.purchase(s, "barracks").allowed);
@@ -146,7 +199,7 @@ for (const route of ["siege", "infiltration"])
         JSON.stringify({ t: s.t, stage: pilot.stage, money: s.economy.alloy }),
       );
       assert.equal(s.approach, route);
-      assert.ok(s.t >= 1200 && s.t <= 2100, s.t);
+      assert.ok(s.t >= 1080 && s.t <= 1680, s.t);
       assert.ok(E.restore(s));
       assert.ok(s.units.some((u) => u.kind === "bastion" && u.hp === 0));
       assert.ok(s.units.some((u) => u.kind === "bastion" && u.hp > 0));

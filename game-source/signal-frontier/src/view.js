@@ -722,7 +722,7 @@
       c.drawImage(this.ground, 0, 0);
       this.debris(c);
       if (s.relay.online) {
-        const offset = s.campaign?.id === "frontier-3" ? 560 : 0;
+        const offset = E.development.expedition(s) ? 560 : 0;
         c.save();
         c.setLineDash([12, 8]);
         c.lineDashOffset = ui.reduced ? 0 : -this.time * 15;
@@ -1292,7 +1292,7 @@
           [
             [x, y],
             s.campaign
-              ? [1820, s.campaign.id === "frontier-3" ? 1080 : 520]
+              ? [1820, E.development.expedition(s) ? 1080 : 520]
               : [1320, 320],
             [
               s.units.find((u) => u.kind === "citadel").x,

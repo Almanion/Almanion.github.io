@@ -82,7 +82,7 @@
     s === "expedition" ||
     s?.id === "expedition" ||
     s?.map === "expedition" ||
-    s?.campaign?.id === "frontier-3"
+    ["frontier-3", "frontier-4"].includes(s?.campaign?.id)
       ? expeditionMap
       : s === "frontier" ||
           s?.id === "frontier" ||
@@ -240,7 +240,11 @@
     return mode === "classic"
       ? makeClassic()
       : campaign.make(
-          ["frontier-1", "frontier-2"].includes(mode) ? mode : "frontier-3",
+          ["frontier-1", "frontier-2", "frontier-3", "frontier-4"].includes(
+            mode,
+          )
+            ? mode
+            : "frontier-4",
         );
   }
   const hero = (s) => s.units.find((u) => u.id === s.heroId);
@@ -949,7 +953,7 @@
     return out;
   }
   function restore(value) {
-    if ([3, 4, 5].includes(value?.version)) return campaign.restore(value);
+    if ([3, 4, 5, 6].includes(value?.version)) return campaign.restore(value);
     try {
       const s = JSON.parse(JSON.stringify(value));
       if (

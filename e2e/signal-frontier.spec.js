@@ -419,6 +419,8 @@ for (const routeName of ["siege", "infiltration"])
       await page.clock.install();
       await fixture(page, E.make("classic"));
       await page.keyboard.press("Tab");
+      // Runner latency must not move the scout while the next command is being prepared.
+      await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
       await page.clock.runFor(700);
       await page.keyboard.press("Tab");
       const pilot = new Pilot(routeName, 22);

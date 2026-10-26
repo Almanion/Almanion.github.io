@@ -4,9 +4,6 @@ const { test, expect } = require("@playwright/test");
 test.describe.configure({ mode: "parallel" });
 const E = require("../game-source/signal-frontier/src/engine");
 const {
-  LongOperationPilot,
-} = require("../tests/helpers/signal-frontier-long-pilot.cjs");
-const {
   ExpeditionPilot,
 } = require("../tests/helpers/signal-frontier-expedition-pilot.cjs");
 const route = "/games/signal-frontier/";
@@ -184,7 +181,7 @@ test("touch camera: corner hold, pinch, cancellation and rotation preserve order
   }
 });
 
-for (const [name, profile] of ["frontier-2", "frontier-3"].flatMap((p) =>
+for (const [name, profile] of ["frontier-3", "frontier-4"].flatMap((p) =>
   ["siege", "infiltration"].map((n) => [n, p]),
 ))
   test(
@@ -217,9 +214,7 @@ for (const [name, profile] of ["frontier-2", "frontier-3"].flatMap((p) =>
       await page.locator("#tactical").click();
       await new Promise((resolve) => setTimeout(resolve, 400));
       expect(await page.evaluate(() => SignalGame.snapshot().t)).toBe(0);
-      const pilot = new (
-        profile === "frontier-3" ? ExpeditionPilot : LongOperationPilot
-      )(name, 22);
+      const pilot = new ExpeditionPilot(name, 22);
       let pressed = new Set(),
         firing = false,
         final,
@@ -310,7 +305,7 @@ for (const [name, profile] of ["frontier-2", "frontier-3"].flatMap((p) =>
             pilot.stage,
           );
         }
-        if (profile === "frontier-3" && !reloaded && s.t >= 800) {
+        if (E.development.expedition(s) && !reloaded && s.t >= 800) {
           await release();
           await page.locator("#menu-button").click();
           const saved = await page.evaluate(() => SignalGame.snapshot());
@@ -383,7 +378,8 @@ for (const [name, profile] of ["frontier-2", "frontier-3"].flatMap((p) =>
       expect(final.approach).toBe(name);
       expect(E.restore(final)).not.toBeNull();
       expect(errors).toEqual([]);
-      if (profile === "frontier-3") expect(reloaded).toBe(true);
+      expect(reloaded).toBe(true);
+      if (profile === "frontier-4") expect(final.t).toBeLessThanOrEqual(1500);
       const diagnostics = await page.evaluate(() => SignalGame.diagnostics());
       expect(diagnostics.units).toBeLessThanOrEqual(
         E.development.rules(final).unitLimit,

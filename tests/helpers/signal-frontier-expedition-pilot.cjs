@@ -298,8 +298,8 @@ class ExpeditionPilot {
     };
   }
 }
-function play(route, maxFrames = 144000) {
-  const s = E.make("frontier-3"),
+function play(route, maxFrames = 144000, profile = "frontier-4") {
+  const s = E.make(profile),
     pilot = new ExpeditionPilot(route),
     trace = [];
   for (let i = 0; i < maxFrames && s.status === "playing"; i++) {

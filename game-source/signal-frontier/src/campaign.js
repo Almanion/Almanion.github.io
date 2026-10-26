@@ -115,30 +115,41 @@
     hack: { ...EXTENDED_ITEMS.hack, cost: 480, time: 150 },
     artillery: { ...EXTENDED_ITEMS.artillery, cost: 350, time: 60 },
   };
+  const EXPEDITION_RULES = Object.freeze({
+    version: 5,
+    items: EXPEDITION_ITEMS,
+    mines: [
+      { id: "home", x: 200, y: 1560, stock: 1440 },
+      ...EXPEDITION_PADS.map((p) => ({
+        id: p.id,
+        x: p.oreX,
+        y: p.oreY,
+        stock: 2160,
+      })),
+    ],
+    cache: 120,
+    gather: 5.6,
+    reserve: 54,
+    firstRaid: 210,
+    stagger: 65,
+    raidInterval: 140,
+    waveMax: 4,
+    waveStep: 300,
+    hold: 100,
+    unitLimit: 448,
+    ledgerLimit: 60000,
+  });
   const PROFILES = Object.freeze({
-    "frontier-3": Object.freeze({
-      version: 5,
-      items: EXPEDITION_ITEMS,
-      mines: [
-        { id: "home", x: 200, y: 1560, stock: 1440 },
-        ...EXPEDITION_PADS.map((p) => ({
-          id: p.id,
-          x: p.oreX,
-          y: p.oreY,
-          stock: 2160,
-        })),
-      ],
-      cache: 120,
-      gather: 5.6,
-      reserve: 54,
-      firstRaid: 210,
-      stagger: 65,
-      raidInterval: 140,
-      waveMax: 4,
-      waveStep: 300,
-      hold: 100,
-      unitLimit: 448,
-      ledgerLimit: 60000,
+    "frontier-3": EXPEDITION_RULES,
+    "frontier-4": Object.freeze({
+      ...EXPEDITION_RULES,
+      version: 6,
+      items: Object.freeze({
+        ...EXPEDITION_ITEMS,
+        command: { ...EXPEDITION_ITEMS.command, cost: 520, time: 120 },
+        hack: { ...EXPEDITION_ITEMS.hack, cost: 360, time: 90 },
+        artillery: { ...EXPEDITION_ITEMS.artillery, cost: 300 },
+      }),
     }),
     "frontier-1": Object.freeze({
       version: 3,
@@ -175,8 +186,10 @@
   });
   const rules = (s) => PROFILES[s.campaign?.id] || PROFILES["frontier-1"];
   const items = (s) => rules(s).items;
-  const expedition = (s) => s.campaign?.id === "frontier-3";
-  const extended = (s) => ["frontier-2", "frontier-3"].includes(s.campaign?.id);
+  const expedition = (s) =>
+    ["frontier-3", "frontier-4"].includes(s.campaign?.id);
+  const extended = (s) =>
+    ["frontier-2", "frontier-3", "frontier-4"].includes(s.campaign?.id);
   const pads = (s) => (expedition(s) ? EXPEDITION_PADS : PADS);
   const buildings = (s) => (expedition(s) ? EXPEDITION_BUILDINGS : BUILDINGS);
   const caches = (s) => (expedition(s) ? EXPEDITION_CACHES : CACHES);
@@ -224,7 +237,7 @@
       u.fright = 0;
       return u;
     }
-    function make(profile = "frontier-3") {
+    function make(profile = "frontier-4") {
       const config = PROFILES[profile];
       const s = E.makeClassic();
       s.version = config.version;
