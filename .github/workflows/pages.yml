@@ -8,13 +8,41 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      full_campaign:
+        description: Replay all four full Signal Frontier operations through browser controls
+        type: boolean
+        default: false
 
 concurrency:
   group: github-pages-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
+  scope:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      signal_only: ${{ steps.scope.outputs.signal_only }}
+      campaign: ${{ steps.scope.outputs.campaign }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Select checks from changed files
+        id: scope
+        env:
+          SCOPE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          SCOPE_FORCE_CAMPAIGN: ${{ inputs.full_campaign }}
+        run: node tools/signal-ci-scope.js
+
   build:
+    needs: scope
     runs-on: ubuntu-latest
     timeout-minutes: 35
     permissions:
@@ -52,9 +80,15 @@ jobs:
       - name: Verify native tab navigation
         run: npx playwright test e2e/game-pages.spec.js --grep "Control and middle" --workers 1
 
-      - name: Check desktop and mobile interfaces
+      - name: Check Signal desktop and mobile interfaces
+        if: needs.scope.outputs.signal_only == 'true'
         run: >-
-          npm run test:e2e -- --grep-invert "long (siege|infiltration): full operation"
+          npx playwright test signal-frontier game-pages --grep-invert "long (siege|infiltration): full operation"
+
+      - name: Check all desktop and mobile interfaces
+        if: needs.scope.outputs.signal_only != 'true'
+        run: >-
+          npx playwright test --grep-invert "long (siege|infiltration): full operation"
 
       - name: Preserve failed interface diagnostics
         if: failure()
@@ -83,6 +117,8 @@ jobs:
           include-hidden-files: true
 
   campaign:
+    needs: scope
+    if: needs.scope.outputs.campaign == 'true'
     name: Complete new and legacy Signal Frontier operations
     runs-on: ubuntu-latest
     timeout-minutes: 50
@@ -125,8 +161,12 @@ jobs:
           retention-days: 7
 
   deploy:
-    if: github.event_name != 'pull_request'
-    needs: [build, campaign]
+    if: >-
+      always() && !cancelled() && github.event_name != 'pull_request' &&
+      needs.scope.result == 'success' && needs.build.result == 'success' &&
+      (needs.campaign.result == 'success' ||
+       (needs.scope.outputs.campaign == 'false' && needs.campaign.result == 'skipped'))
+    needs: [scope, build, campaign]
     runs-on: ubuntu-latest
     timeout-minutes: 35
     permissions:

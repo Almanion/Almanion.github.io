@@ -77,6 +77,12 @@ for (const browserName of ["chromium", "webkit"])
             "development",
           );
           await expect(page.locator(".building-selected")).toBeVisible();
+          if (
+            (await page
+              .locator("#development-size")
+              .getAttribute("aria-expanded")) == "false"
+          )
+            await page.locator("#development-size").click();
           await expect(page.locator("#develop-rifle")).toBeVisible();
           await expect(page.locator("#develop-artillery")).toHaveCount(0);
           const before = s.economy.alloy;
@@ -89,6 +95,7 @@ for (const browserName of ["chromium", "webkit"])
           expect((await page.evaluate(() => SignalGame.snapshot())).t).toBe(
             s.t,
           );
+          await page.locator(".job-select").first().click();
           await page.getByRole("button", { name: /Отменить: Боец/ }).click();
           await expect(page.locator("#development-alloy")).toHaveText(
             String(before - 17),
@@ -117,7 +124,14 @@ for (const browserName of ["chromium", "webkit"])
             return SignalGame.screen(u.x, u.y);
           });
           await page.mouse.click(fp.x, fp.y - 8);
+          if (
+            (await page
+              .locator("#development-size")
+              .getAttribute("aria-expanded")) == "false"
+          )
+            await page.locator("#development-size").click();
           await expect(page.locator("#develop-artillery")).toBeVisible();
+          await page.locator("#building-tab-tech").click();
           await expect(page.locator("#develop-armor")).toBeVisible();
           expect(
             await page
@@ -171,6 +185,12 @@ test("touch selects a building, while dragging and cancellation do not open it",
       return SignalGame.screen(u.x, u.y);
     });
     await page.touchscreen.tap(q.x, q.y - 8);
+    if (
+      (await page.locator("#development-size").isVisible()) &&
+      (await page.locator("#development-size").getAttribute("aria-expanded")) ==
+        "false"
+    )
+      await page.locator("#development-size").click();
     await expect(page.locator("#develop-rifle")).toBeVisible();
   } finally {
     await context.close();

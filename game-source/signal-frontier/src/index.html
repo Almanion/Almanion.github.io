@@ -12,16 +12,16 @@
       content="Предел сигнала — тактическая операция на заброшенном кольце."
     />
     <title>Предел сигнала · Альманион</title>
-    <link rel="stylesheet" href="style.css?v=0.7.1" />
-    <script src="campaign.js?v=0.7.1" defer></script>
-    <script src="engine.js?v=0.7.1" defer></script>
-    <script src="view.js?v=0.7.1" defer></script>
-    <script src="audio.js?v=0.7.1" defer></script>
-    <script src="development-ui.js?v=0.7.1" defer></script>
-    <script src="cloud-core.js?v=0.7.1" defer></script>
-    <script src="persistence.js?v=0.7.1" defer></script>
-    <script src="account-ui.js?v=0.7.1" defer></script>
-    <script src="app.js?v=0.7.1" defer></script>
+    <link rel="stylesheet" href="style.css?v=0.8.0" />
+    <script src="campaign.js?v=0.8.0" defer></script>
+    <script src="engine.js?v=0.8.0" defer></script>
+    <script src="view.js?v=0.8.0" defer></script>
+    <script src="audio.js?v=0.8.0" defer></script>
+    <script src="development-ui.js?v=0.8.0" defer></script>
+    <script src="cloud-core.js?v=0.8.0" defer></script>
+    <script src="persistence.js?v=0.8.0" defer></script>
+    <script src="account-ui.js?v=0.8.0" defer></script>
+    <script src="app.js?v=0.8.0" defer></script>
   </head>
   <body data-mode="menu">
     <canvas
@@ -53,10 +53,22 @@
           ><button data-open="account">Аккаунт</button>
         </div>
       </div>
-      <p class="edition">Первая операция <span>0.7.1</span></p>
+      <p class="edition">Первая операция <span>0.8.0</span></p>
     </main>
     <div id="hud" hidden>
       <header class="topbar">
+        <div class="field-economy" aria-label="Ресурсы и вместимость">
+          <span><small>Сплав</small><strong id="field-alloy">180</strong></span>
+          <span
+            ><small>Отряд</small
+            ><strong id="field-capacity">3 / 6</strong></span
+          >
+        </div>
+        <button id="tactical" class="tactical-button" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 4h6v6H4zm10 10h6v6h-6zM14 4h6v6h-6zM4 14h6v6H4z" /></svg
+          ><span>Приказы</span><kbd>Tab</kbd>
+        </button>
         <div class="objective">
           <span class="phase" id="phase" aria-hidden="true">◇</span>
           <div>
@@ -99,14 +111,7 @@
           ><button id="dash" class="action-button" aria-label="Рывок">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="m5 6 6 6-6 6m7-12 6 6-6 6" /></svg
-            ><kbd>Shift</kbd
-            ><span class="cooldown" id="dash-cooldown"></span></button
-          ><button id="tactical" class="tactical-button" aria-pressed="false">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M4 4h6v6H4zm10 10h6v6h-6zM14 4h6v6h-6zM4 14h6v6H4z"
-              /></svg
-            ><span>Приказы</span><kbd>Tab</kbd>
+            ><kbd>Shift</kbd><span class="cooldown" id="dash-cooldown"></span>
           </button>
         </div>
       </div>
@@ -269,7 +274,9 @@
               одним пальцем. Нажмите «Идти», затем укажите точку или врага. Два
               пальца двигают и масштабируют карту; удержание у края прокручивает
               её. «Отмена» оставляет прежний приказ. Касание здания открывает
-              очередь, а «Сбор» направляет только будущие подкрепления.
+              очередь; «Каталог» раскрывает покупки. «Сбор» направляет только
+              будущие подкрепления. Закрытие панели оставляет паузу: для
+              продолжения нажмите «В бой».
             </p>
           </div>
           <p class="help-note">
@@ -300,8 +307,19 @@
           <button class="primary" id="settings-back">Готово</button>
         </section>
         <section id="development-content" hidden>
-          <p class="eyebrow">Тактическая пауза</p>
-          <h2>Развитие</h2>
+          <div class="drawer-heading">
+            <div>
+              <p class="eyebrow">Тактическая пауза</p>
+              <h2>Развитие</h2>
+            </div>
+            <button
+              id="development-size"
+              aria-expanded="true"
+              aria-controls="development-panel"
+            >
+              Свернуть
+            </button>
+          </div>
           <div id="development-panel"></div>
           <p
             id="development-feedback"

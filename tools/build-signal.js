@@ -1,7 +1,8 @@
 "use strict";
 const fs = require("node:fs"),
   path = require("node:path"),
-  { minify_sync } = require("terser");
+  { minify_sync } = require("terser"),
+  CleanCSS = require("clean-css");
 const files = [
   "index.html",
   "style.css",
@@ -32,14 +33,15 @@ function render(root = path.resolve(__dirname, "..")) {
           mangle: false,
           format: { comments: false },
         }).code + "\n";
-    else if (file === "style.css")
-      text =
-        text
-          .split("\n")
-          .map((line) => line.trim())
-          .filter(Boolean)
-          .join("\n") + "\n";
-    else if (file === "index.html")
+    else if (file === "style.css") {
+      // Level 1 removes redundant syntax without reordering the cascade.
+      const result = new CleanCSS({
+        level: { 1: { optimizeBackground: false } },
+        rebase: false,
+      }).minify(text);
+      if (result.errors.length) throw new Error(result.errors.join("; "));
+      text = result.styles + "\n";
+    } else if (file === "index.html")
       text = text.replace(
         /^\s*<script src="(?:cloud-core|persistence|account-ui)\.js[^\"]*" defer><\/script>\n/gm,
         "",

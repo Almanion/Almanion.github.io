@@ -29,6 +29,7 @@ test("development: real queued cost, cancellation, pause and reload", async ({
   let s = await page.evaluate(() => SignalGame.snapshot());
   expect(s.t).toBe(0);
   expect(E.living(s, "base").jobs[0].remaining).toBe(18);
+  await page.locator(".job-select").first().click();
   await page.getByRole("button", { name: /Отменить: Дрон/ }).click();
   await expect(page.locator("#development-alloy")).toHaveText("167");
   await page.clock.runFor(500);
@@ -74,9 +75,9 @@ test("tactical camera: hover edges, drag, zoom, limits and no accidental orders"
   const after = await page.evaluate(() => SignalGame.camera());
   expect(after.x).toBeGreaterThan(before.x + 80);
   await page.mouse.move(800, 400);
-  await page.mouse.down({button:"middle"});
+  await page.mouse.down({ button: "middle" });
   await page.mouse.move(550, 400, { steps: 8 });
-  await page.mouse.up({button:"middle"});
+  await page.mouse.up({ button: "middle" });
   await page.waitForTimeout(150);
   expect((await page.evaluate(() => SignalGame.camera())).x).toBeGreaterThan(
     after.x + 100,
@@ -100,7 +101,7 @@ test("tactical camera: hover edges, drag, zoom, limits and no accidental orders"
   expect((await page.evaluate(() => SignalGame.camera())).overview).toBe(true);
   const target = await page.evaluate(() => SignalGame.screen(1760, 840));
   await page.locator("#group-one").click();
-  await page.mouse.click(target.x, target.y, {button:"right"});
+  await page.mouse.click(target.x, target.y, { button: "right" });
   expect(
     await page.evaluate(
       () => SignalGame.snapshot().units.find((u) => u.group === 1).order.x,

@@ -151,10 +151,16 @@
   }
   function measureMapArea() {
     if (mode !== "tactical") return;
-    const panel = $("tactical-panel").getBoundingClientRect(),
+    const drawer =
+      $("dialog").open && $("dialog").dataset.panel === "development";
+    const panel = (
+        drawer ? $("dialog") : $("tactical-panel")
+      ).getBoundingClientRect(),
       tools = $("map-tools").getBoundingClientRect(),
-      objective = document.querySelector(".objective").getBoundingClientRect(),
-      landscape = innerWidth > innerHeight && innerHeight <= 500;
+      objective = document.querySelector(".topbar").getBoundingClientRect(),
+      landscape = drawer
+        ? innerWidth >= 760 || (innerWidth > innerHeight && innerHeight <= 500)
+        : innerWidth > innerHeight && innerHeight <= 500;
     mapArea = {
       x: 14,
       y: Math.max(tools.bottom, objective.bottom) + 12,
@@ -162,13 +168,19 @@
       bottom: landscape ? innerHeight - 14 : panel.top - 12,
     };
   }
-  const mapLayout = new ResizeObserver(measureMapArea);
+  let mapMeasureFrame = 0;
+  const mapLayout = new ResizeObserver(() => {
+    // Read geometry after the browser finishes this layout notification batch.
+    cancelAnimationFrame(mapMeasureFrame);
+    mapMeasureFrame = requestAnimationFrame(measureMapArea);
+  });
   for (const el of [
     $("tactical-panel"),
     $("map-tools"),
     document.querySelector(".objective"),
   ])
     mapLayout.observe(el);
+  mapLayout.observe($("dialog"));
   function updateHome() {
     $("continue").hidden = !saved || saved.status !== "playing";
     $("new-game").hidden = !saved || saved.status !== "playing";
@@ -195,6 +207,10 @@
     save();
   }
   function toggleTactical() {
+    if ($("dialog").open && $("dialog").dataset.panel === "development") {
+      $("dialog").close();
+      document.body.classList.remove("development-open");
+    }
     if (!["playing", "tactical"].includes(mode)) return;
     setMode(mode === "playing" ? "tactical" : "playing");
     save();
@@ -429,22 +445,30 @@
   function openDialog(which) {
     const dialog = $("dialog");
     if (storageConflict && which !== "storage") which = "storage";
+    const drawer = which === "development" && !storageConflict;
+    if (dialog.open && (dialog.dataset.panel === "development") !== drawer)
+      dialog.close();
     if (!dialog.open) {
       dialogOrigin = mode;
       lastMode =
         mode === "tactical" ? "tactical" : mode === "menu" ? "menu" : "playing";
       if (mode !== "menu") save();
-      setMode(mode === "menu" ? "menu" : "paused");
+      if (drawer) lastMode = "tactical";
+      setMode(drawer ? "tactical" : mode === "menu" ? "menu" : "paused");
       account?.changed();
     }
     dialog.dataset.panel = which;
     for (const section of dialog.querySelectorAll("section"))
       section.hidden = section.id !== which + "-content";
-    if (!dialog.open) dialog.showModal();
+    if (!dialog.open) drawer ? dialog.show() : dialog.showModal();
+    document.body.classList.toggle("development-open", drawer);
     $("close-dialog").hidden = which === "result";
     if (which === "account") account.render();
     if (which === "supply") updateSupply();
-    if (which === "development") development.render();
+    if (which === "development") {
+      development.render();
+      measureMapArea();
+    }
     if (which === "help")
       $("economy-help").textContent = E.development.expedition(state)
         ? "Разверните добычу и казармы. Второй узел и подавление северного бастиона или южного арсенала откроют оперативный контур. Вражеские базы собирают отряды; их уничтожение прекращает подкрепления. Выберите осаду с артиллерией или проникновение через терминал. Нажмите на своё здание, чтобы открыть очередь. Очереди работают только вне паузы."
@@ -463,6 +487,7 @@
     if (storageConflict) return;
     if (state.status !== "playing" && mode !== "menu") return;
     $("dialog").close();
+    document.body.classList.remove("development-open");
     setMode(lastMode);
     account?.changed();
   }
@@ -583,6 +608,11 @@
       }
     }
     $("alloy").textContent = state.economy.alloy;
+    $("field-alloy").textContent = state.economy.alloy;
+    const economy = state.campaign ? E.development.summary(state) : null;
+    $("field-capacity").textContent = economy
+      ? `${economy.population} / ${economy.capacity}`
+      : selectedUnits().length;
     $("supply-title").textContent = state.campaign ? "Развитие" : "Снабжение";
     $("map-overview").setAttribute(
       "aria-pressed",
@@ -669,6 +699,15 @@
   const development = new SignalDevelopmentPanel($("development-panel"), {
     state: () => state,
     buy,
+    layout: measureMapArea,
+    select: (id) => {
+      selectedBuilding = id;
+      if (id !== null) {
+        selected = [];
+        selectionVisible = true;
+      }
+      refreshSelection();
+    },
     reason: (code) =>
       code === "squad-full"
         ? "Лимит огневой группы"
@@ -799,10 +838,20 @@
     development.select();
     $("supply-feedback").textContent = "";
     $("development-feedback").textContent = "";
+    development.expand(true);
     openDialog(state.campaign ? "development" : "supply");
   };
   $("supply-back").onclick = closeDialog;
   $("development-back").onclick = closeDialog;
+  $("development-size").onclick = () =>
+    development.expand(!development.expanded);
+  $("dialog").addEventListener("close", () => {
+    document.body.classList.toggle(
+      "development-open",
+      $("dialog").open && $("dialog").dataset.panel === "development",
+    );
+    measureMapArea();
+  });
   $("map-overview").onclick = () => {
     if (view.tactical.overview) view.focus(E.hero(state).x, E.hero(state).y);
     else view.tactical.overview = true;
@@ -931,6 +980,7 @@
     selectionVisible = true;
     refreshSelection();
     development.select(u.id);
+    development.expand(!(coarse.matches || innerWidth < 700));
     openDialog("development");
   }
   function edgeAt(e) {
@@ -1268,11 +1318,26 @@
       e.preventDefault();
       return;
     }
+    // In the drawer Tab navigates controls; resuming remains an explicit action.
+    if ($("dialog").open && e.code === "Tab") return;
     if (e.repeat && ["Tab", "Escape"].includes(e.code)) {
       e.preventDefault();
       return;
     }
-    if ($("dialog").open || mode === "menu") return;
+    if (
+      $("dialog").open &&
+      $("dialog").dataset.panel === "development" &&
+      e.code === "Escape"
+    ) {
+      e.preventDefault();
+      closeDialog();
+      return;
+    }
+    if (
+      ($("dialog").open && $("dialog").dataset.panel !== "development") ||
+      mode === "menu"
+    )
+      return;
     if (e.code === "Escape") {
       e.preventDefault();
       if (mode === "tactical" && (selectedBuilding || selectedUnits().length)) {

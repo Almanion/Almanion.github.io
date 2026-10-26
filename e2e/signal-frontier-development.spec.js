@@ -256,7 +256,9 @@ test("shop keeps purpose, exact cost, duration and prerequisites visible at narr
   await page.locator("#start").click();
   await page.locator("#supply-open").click();
   const barracks = page.locator("#develop-barracks"),
-    foundry = page.locator("#develop-foundry").locator("..");
+    foundry = page
+      .locator(".dev-card")
+      .filter({ has: page.locator("#develop-foundry") });
   await expect(barracks).toContainText("120");
   await expect(barracks).toContainText("сплав");
   await expect(barracks).toContainText("30 с");
@@ -274,6 +276,7 @@ test("shop keeps purpose, exact cost, duration and prerequisites visible at narr
     page.locator("#" + (await drone.getAttribute("aria-describedby"))),
   ).toHaveText("Не хватает 40 сплава");
   await expect(page.locator(".production-queue")).toContainText("18 с");
+  await page.locator(".job-select").first().click();
   await page.getByRole("button", { name: /Отменить: Дрон/ }).click();
   await expect(page.locator("#development-alloy")).toHaveText("47");
   await expect(
