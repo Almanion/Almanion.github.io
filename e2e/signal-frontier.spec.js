@@ -38,7 +38,7 @@ test("desktop: tactical orders, movement, pause, resume and isolated save", asyn
   await page.waitForTimeout(400);
   const before = await page.evaluate(() => SignalGame.snapshot());
   const p = await page.evaluate(() => SignalGame.screen(500, 650));
-  await page.mouse.click(p.x, p.y);
+  await page.mouse.click(p.x, p.y, {button:"right"});
   await page.waitForTimeout(150);
   let s = await page.evaluate(() => SignalGame.snapshot());
   expect(s.t).toBe(0);
@@ -462,7 +462,7 @@ for (const routeName of ["siege", "infiltration"])
               ([x, y]) => SignalGame.screen(x, y),
               [command.x, command.y],
             );
-            await page.mouse.click(p.x, p.y);
+            await page.mouse.click(p.x, p.y, {button:"right"});
           } else {
             await page.locator("#supply-open").click();
             await page

@@ -34,7 +34,7 @@ async function boot(page, state = scenario()) {
   await page.clock.runFor(100);
   expect(await page.evaluate(() => SignalGame.mode())).toBe("playing");
 }
-async function box(page, ids, down = true) {
+async function box(page, ids, down = true, button = "right") {
   const points = await page.evaluate((ids) => {
     const s = SignalGame.snapshot();
     return ids.map((id) => {
@@ -49,7 +49,7 @@ async function box(page, ids, down = true) {
     bottom: Math.max(...points.map((p) => p.y)) + 24,
   };
   await page.mouse.move(rect.x, rect.y);
-  if (down) await page.mouse.down({ button: "right" });
+  if (down) await page.mouse.down({ button });
   await page.mouse.move(rect.right, rect.bottom, { steps: 8 });
   return rect;
 }
@@ -125,8 +125,8 @@ test("selection cancellation, empty frames and tactical dragging never issue an 
   await page.keyboard.press("Tab");
   await page.clock.runFor(100);
   const paused = await page.evaluate(() => SignalGame.snapshot().t);
-  await box(page, [ids[0]]);
-  await page.mouse.up({ button: "right" });
+  await box(page, [ids[0]], true, "left");
+  await page.mouse.up({ button: "left" });
   await page.clock.runFor(300);
   expect((await page.evaluate(() => SignalGame.selection())).ids).toEqual([
     ids[0],
@@ -135,10 +135,10 @@ test("selection cancellation, empty frames and tactical dragging never issue an 
   const orders = await page.evaluate(() =>
     SignalGame.snapshot().units.map((u) => u.order),
   );
-  await box(page, [ids[1]]);
+  await box(page, [ids[1]], true, "left");
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.clock.runFor(100);
-  await page.mouse.up({ button: "right" });
+  await page.mouse.up({ button: "left" });
   await expect(page.locator("#selection-box")).toBeHidden();
   expect(
     await page.evaluate(() => SignalGame.snapshot().units.map((u) => u.order)),

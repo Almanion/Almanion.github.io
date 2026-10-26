@@ -677,6 +677,7 @@
         x: clamp(x + (i % 2) * 30 - 15, 30, world.W - 30),
         y: clamp(y + Math.floor(i / 2) * 30 - 15, 30, world.H - 30),
       };
+      u.target = null;
       u.order = target;
       u.path = pathTo(u, target, C[u.kind].r);
     });
@@ -723,7 +724,8 @@
         (Math.floor(i / width) - (Math.ceil(members.length / width) - 1) / 2) *
           spacing,
     }));
-    const waiting = [...members];
+    const waiting = [...members],
+      plans = [];
     for (const slot of slots) {
       waiting.sort((a, b) => dist(a, slot) - dist(b, slot) || a.id - b.id);
       const u = waiting.shift(),
@@ -732,11 +734,33 @@
         x: clamp(slot.x, margin, world.W - margin),
         y: clamp(slot.y, margin, world.H - margin),
       };
+      const path = pathTo(u, target, C[u.kind].r);
+      if (!path.length && dist(u, target) > 2) return false;
+      plans.push({
+        u,
+        path,
+        target: path.length ? { ...path[path.length - 1] } : { x: u.x, y: u.y },
+      });
+    }
+    // Plan every path before changing any order.
+    for (const { u, path, target } of plans) {
+      u.target = null;
       u.order = target;
-      u.path = pathTo(u, target, C[u.kind].r);
+      u.path = path;
     }
     // A temporary selection never changes a production building's rally point.
     emit(s, "order", x, y);
+    return true;
+  }
+  function attackUnits(s, ids, targetId) {
+    const target = s.units.find((u) => u.id === targetId && u.team && u.hp > 0);
+    if (!target || !orderUnits(s, ids, target.x, target.y)) return false;
+    const chosen = new Set(ids);
+    for (const u of s.units)
+      if (chosen.has(u.id) && !u.team && u.hp > 0 && [1, 2].includes(u.group)) {
+        u.target = { x: target.x, y: target.y, id: target.id };
+        u.think = 0;
+      }
     return true;
   }
   function setRally(s, id, x, y) {
@@ -952,6 +976,22 @@
         .filter((v) => dist(u, v) < def.range && clear(u, v))
         .sort((a, b) => dist(u, a) - dist(u, b))[0];
       if (u.team === 0) {
+        if (u.target && [1, 2].includes(u.group)) {
+          const preferred = opponents.find((v) => v.id === u.target.id);
+          u.think = Math.max(0, u.think - dt);
+          const visible =
+            preferred && dist(u, preferred) < 620 && clear(u, preferred);
+          if (visible) {
+            u.target.x = preferred.x;
+            u.target.y = preferred.y;
+            if (dist(u, preferred) < def.range * 0.92) u.path = [];
+            else if (u.think === 0) {
+              u.path = pathTo(u, u.target, def.r);
+              u.think = 0.5;
+            }
+            if (dist(u, preferred) < def.range) target = preferred;
+          } else if (!preferred || !u.path.length) u.target = null;
+        }
         if (u.path.length) follow(u, dt);
         if (target && u.cool === 0) shoot(s, u, target);
       } else if (s.campaign) {
@@ -1390,6 +1430,7 @@
     living,
     order,
     orderUnits,
+    attackUnits,
     setRally,
     pathTo,
     free,

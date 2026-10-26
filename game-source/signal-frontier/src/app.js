@@ -13,6 +13,9 @@
     selected = null,
     selectionVisible = false,
     orderDrag = null,
+    orderMode = false,
+    selectedBuilding = null,
+    mapArea = null,
     aim = { x: 700, y: 650 },
     mousePoint = null,
     saved = null,
@@ -100,6 +103,7 @@
     group = 1;
     resetInput();
     selected = null;
+    selectedBuilding = null;
     selectionVisible = false;
     view.reset(state);
     persist();
@@ -116,6 +120,7 @@
     cancelSelection();
     input.tapFire = false;
     buildingPress = rallyBuilding = null;
+    orderMode = false;
     for (const id of mapPointers.keys())
       if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id);
     mapPointers.clear();
@@ -142,7 +147,28 @@
     else if (mode !== "tactical") sound.stop();
     acc = 0;
     updateUI();
+    measureMapArea();
   }
+  function measureMapArea() {
+    if (mode !== "tactical") return;
+    const panel = $("tactical-panel").getBoundingClientRect(),
+      tools = $("map-tools").getBoundingClientRect(),
+      objective = document.querySelector(".objective").getBoundingClientRect(),
+      landscape = innerWidth > innerHeight && innerHeight <= 500;
+    mapArea = {
+      x: 14,
+      y: Math.max(tools.bottom, objective.bottom) + 12,
+      right: landscape ? panel.left - 14 : innerWidth - 14,
+      bottom: landscape ? innerHeight - 14 : panel.top - 12,
+    };
+  }
+  const mapLayout = new ResizeObserver(measureMapArea);
+  for (const el of [
+    $("tactical-panel"),
+    $("map-tools"),
+    document.querySelector(".objective"),
+  ])
+    mapLayout.observe(el);
   function updateHome() {
     $("continue").hidden = !saved || saved.status !== "playing";
     $("new-game").hidden = !saved || saved.status !== "playing";
@@ -153,6 +179,7 @@
     if (!state) state = E.make();
     group = 1;
     selected = null;
+    selectedBuilding = null;
     selectionVisible = false;
     phase = -1;
     resultShown = false;
@@ -180,7 +207,10 @@
       )
     )
       return;
+    cancelMapGesture();
     group = n;
+    selectedBuilding = rallyBuilding = null;
+    orderMode = false;
     selected = null;
     selectionVisible = true;
     refreshSelection();
@@ -196,6 +226,46 @@
         String(selected === null && g === group),
       );
     }
+    const members = selectedUnits(),
+      building = state.units.find((u) => u.id === selectedBuilding && u.hp > 0);
+    if (!building) selectedBuilding = null;
+    const producer =
+      building && ["barracks", "foundry"].includes(building.kind);
+    const selectionText = building
+      ? {
+          barracks: "Казармы",
+          foundry: "Тяжёлый цех",
+          base: "База",
+          outpost: "Узел",
+        }[building.kind]
+      : members.length
+        ? "Выбрано: " + members.length
+        : "Нет выбранных войск";
+    if ($("selection-count").textContent !== selectionText)
+      $("selection-count").textContent = selectionText;
+    $("order-move").disabled = !members.length && !producer;
+    $("order-move").textContent = producer ? "Сбор" : "Идти";
+    $("order-move").setAttribute(
+      "aria-pressed",
+      String(orderMode || !!rallyBuilding),
+    );
+    $("order-cancel").hidden =
+      !orderMode && !rallyBuilding && !building && !members.length;
+    $("order-cancel").textContent =
+      orderMode || rallyBuilding ? "Отмена" : "Снять";
+    const touch = coarse.matches || innerWidth < 700;
+    $("tactical-hint").textContent =
+      orderMode || rallyBuilding
+        ? "Укажите точку на карте · Отмена"
+        : touch
+          ? "Касание / рамка — выбор · два пальца — карта"
+          : "ЛКМ — выбор · ПКМ — приказ · Shift — добавить";
+    canvas.style.cursor =
+      mode === "playing" && !coarse.matches
+        ? "none"
+        : orderMode || rallyBuilding
+          ? "crosshair"
+          : "default";
   }
   function selectedUnits() {
     return state.units.filter(
@@ -206,11 +276,11 @@
         (selected === null ? u.group === group : selected.includes(u.id)),
     );
   }
-  function cancelSelection() {
+  function cancelSelection(release = true) {
     const drag = orderDrag;
     orderDrag = null;
     $("selection-box").hidden = true;
-    if (drag && canvas.hasPointerCapture(drag.id))
+    if (release && drag && canvas.hasPointerCapture(drag.id))
       canvas.releasePointerCapture(drag.id);
   }
   function paintSelection() {
@@ -223,7 +293,44 @@
     box.style.width = Math.abs(d.x - d.startX) + "px";
     box.style.height = Math.abs(d.y - d.startY) + "px";
   }
-  function issueOrder(point) {
+  function cancelMapGesture() {
+    cancelSelection();
+    const ids = [...mapPointers.keys()];
+    mapPointers.clear();
+    edge = pinch = null;
+    for (const id of ids)
+      if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id);
+  }
+  function clearSelection() {
+    cancelMapGesture();
+    selected = [];
+    selectedBuilding = rallyBuilding = null;
+    selectionVisible = true;
+    orderMode = false;
+    refreshSelection();
+  }
+  function troopAt(e, enemy = false) {
+    const pad = e.pointerType === "touch" ? 24 : 14;
+    return state.units
+      .filter(
+        (u) =>
+          u.hp > 0 && (enemy ? u.team : !u.team && [1, 2].includes(u.group)),
+      )
+      .map((u) => {
+        const p = view.screen(u.x, u.y);
+        return {
+          u,
+          d: Math.hypot(
+            e.clientX - p.x,
+            (e.clientY - p.y + 8 * view.camera.scale) / 0.85,
+          ),
+          r: Math.max(pad, E.C[u.kind].r * view.camera.scale),
+        };
+      })
+      .filter((v) => v.d <= v.r)
+      .sort((a, b) => a.d - b.d)[0]?.u;
+  }
+  function issueOrder(point, enemy = null) {
     const map = E.map(state);
     if (
       point.x < 24 ||
@@ -232,20 +339,47 @@
       point.y > map.H - 24
     )
       return false;
-    const success = rallyBuilding
-      ? E.setRally(state, rallyBuilding, point.x, point.y)
-      : selected === null
-        ? E.order(state, group, point.x, point.y)
-        : E.orderUnits(state, selected, point.x, point.y);
+    const producer = rallyBuilding || selectedBuilding;
+    if (!producer && !selectedUnits().length) return false;
+    const success = producer
+      ? E.setRally(state, producer, point.x, point.y)
+      : enemy
+        ? E.attackUnits(
+            state,
+            selectedUnits().map((u) => u.id),
+            enemy.id,
+          )
+        : E.orderUnits(
+            state,
+            selectedUnits().map((u) => u.id),
+            point.x,
+            point.y,
+          );
     if (success) {
       rallyBuilding = null;
+      orderMode = false;
       view.add(state.events, settings.reduced);
       sound.start();
       sound.play({ type: "order", ...point });
       state.events = [];
       save();
-    }
+    } else
+      notice(
+        producer ? "Здесь нельзя поставить точку сбора" : "Нет доступного пути",
+      );
+    refreshSelection();
     return success;
+  }
+  function selectHits(hits, add, toggle = false) {
+    const before = add ? selectedUnits().map((u) => u.id) : [];
+    selected =
+      toggle && hits.length === 1 && before.includes(hits[0])
+        ? before.filter((id) => id !== hits[0])
+        : [...new Set([...before, ...hits])];
+    selectedBuilding = rallyBuilding = null;
+    selectionVisible = true;
+    orderMode = false;
+    refreshSelection();
   }
   function finishSelection(d, e) {
     if (d.moved) {
@@ -266,20 +400,27 @@
           );
         })
         .map((u) => u.id);
-      selected = [...new Set([...(d.add ? selected || [] : []), ...hits])];
-      selectionVisible = true;
-      rallyBuilding = null;
-      refreshSelection();
-      if (selected.length)
-        notice("Выбрано: " + selected.length + " · ПКМ — приказ");
-    } else if (
-      e.clientX >= 0 &&
-      e.clientX <= innerWidth &&
-      e.clientY >= 0 &&
-      e.clientY <= innerHeight
-    ) {
-      issueOrder(view.world(e.clientX, e.clientY));
+      selectHits(hits, d.add);
+    } else if (onField(e)) {
+      if (mode === "playing")
+        issueOrder(view.world(e.clientX, e.clientY), troopAt(e, true));
+      else {
+        const unit = troopAt(e),
+          building = !unit && buildingAt(e);
+        if (unit) selectHits([unit.id], d.add, true);
+        else if (building && !d.add) openBuilding(building);
+        else if (!d.add) clearSelection();
+      }
     }
+  }
+  function onField(e) {
+    return (
+      e.clientX >= 0 &&
+      e.clientX < innerWidth &&
+      e.clientY >= 0 &&
+      e.clientY < innerHeight &&
+      document.elementFromPoint(e.clientX, e.clientY) === canvas
+    );
   }
   function openDialog(which) {
     const dialog = $("dialog");
@@ -533,8 +674,9 @@
     rally: (id) => {
       lastMode = "tactical";
       closeDialog();
-      rallyBuilding = id;
-      notice("Укажите точку сбора на карте · Esc отменяет");
+      selectedBuilding = rallyBuilding = id;
+      selected = [];
+      refreshSelection();
     },
     focus: (x, y) => {
       lastMode = "tactical";
@@ -682,6 +824,20 @@
   $("continue").onclick = () => begin(true);
   $("new-game").onclick = () => begin();
   $("tactical").onclick = toggleTactical;
+  $("order-move").onclick = () => {
+    cancelMapGesture();
+    orderMode = !orderMode;
+    rallyBuilding = null;
+    refreshSelection();
+  };
+  $("order-cancel").onclick = () => {
+    cancelMapGesture();
+    if (orderMode || rallyBuilding) {
+      orderMode = false;
+      rallyBuilding = null;
+      refreshSelection();
+    } else clearSelection();
+  };
   $("group-one").onclick = () => chooseGroup(1);
   $("group-two").onclick = () => chooseGroup(2);
   $("menu-button").onclick = () => openDialog("pause");
@@ -766,6 +922,10 @@
   }
   function openBuilding(u) {
     if (mode === "playing") setMode("tactical");
+    selectedBuilding = u.id;
+    selected = [];
+    selectionVisible = true;
+    refreshSelection();
     development.select(u.id);
     openDialog("development");
   }
@@ -777,6 +937,39 @@
     };
   }
   canvas.addEventListener("pointermove", (e) => {
+    if (
+      buildingPress?.id === e.pointerId &&
+      Math.hypot(e.clientX - buildingPress.x, e.clientY - buildingPress.y) > 9
+    )
+      buildingPress.moved = true;
+    const p = mapPointers.get(e.pointerId);
+    if (mode === "tactical" && p) {
+      const dx = e.clientX - p.x,
+        dy = e.clientY - p.y;
+      p.x = e.clientX;
+      p.y = e.clientY;
+      if (Math.hypot(p.x - p.startX, p.y - p.startY) > 9) p.moved = true;
+      if (mapPointers.size > 1) {
+        const [a, b] = [...mapPointers.values()],
+          d = Math.hypot(a.x - b.x, a.y - b.y),
+          mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        if (pinch) {
+          view.zoomAt(d / Math.max(1, pinch.d), mid.x, mid.y);
+          view.pan(
+            (pinch.x - mid.x) / view.camera.scale,
+            (pinch.y - mid.y) / (view.camera.scale * 0.73),
+          );
+        }
+        pinch = { d, ...mid };
+        edge = null;
+      } else if (p.kind === "select") paintSelection();
+      else if (p.kind === "pan" && p.moved) {
+        view.pan(-dx / view.camera.scale, -dy / (view.camera.scale * 0.73));
+        edge = null;
+      } else if (p.kind === "edge") edge = edgeAt(e);
+      e.preventDefault();
+      return;
+    }
     if (orderDrag?.id === e.pointerId) {
       orderDrag.x = E.clamp(e.clientX, 0, innerWidth);
       orderDrag.y = E.clamp(e.clientY, 0, innerHeight);
@@ -791,39 +984,9 @@
       e.preventDefault();
       return;
     }
-    if (
-      buildingPress &&
-      Math.hypot(e.clientX - buildingPress.x, e.clientY - buildingPress.y) > 9
-    )
-      buildingPress.moved = true;
-    if (mode === "tactical") {
-      const p = mapPointers.get(e.pointerId);
-      if (p) {
-        const dx = e.clientX - p.x,
-          dy = e.clientY - p.y;
-        p.x = e.clientX;
-        p.y = e.clientY;
-        if (Math.hypot(p.x - p.startX, p.y - p.startY) > 9) p.moved = true;
-        if (mapPointers.size === 2) {
-          const [a, b] = [...mapPointers.values()],
-            d = Math.hypot(a.x - b.x, a.y - b.y),
-            mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-          if (pinch) {
-            view.zoomAt(d / Math.max(1, pinch.d), mid.x, mid.y);
-            view.pan(
-              (pinch.x - mid.x) / view.camera.scale,
-              (pinch.y - mid.y) / (view.camera.scale * 0.73),
-            );
-          }
-          pinch = { d, ...mid };
-          a.moved = b.moved = true;
-          edge = null;
-        } else if (p.moved && !p.edge) {
-          view.pan(-dx / view.camera.scale, -dy / (view.camera.scale * 0.73));
-          edge = null;
-        } else edge = edgeAt(e);
-      } else if (e.pointerType !== "touch") edge = edgeAt(e);
-    } else if (e.pointerType !== "touch") {
+    if (mode === "tactical" && e.pointerType !== "touch" && !mapPointers.size)
+      edge = edgeAt(e);
+    else if (mode === "playing" && e.pointerType !== "touch") {
       mousePoint = { x: e.clientX, y: e.clientY };
       aim = view.world(e.clientX, e.clientY);
     }
@@ -832,42 +995,39 @@
     if (!mapPointers.size) edge = null;
   });
   canvas.addEventListener("pointerdown", (e) => {
-    if (
-      ["playing", "tactical"].includes(mode) &&
-      e.button === 2 &&
-      e.pointerType !== "touch"
-    ) {
-      orderDrag = {
+    if (mode === "tactical" && [0, 1, 2].includes(e.button)) {
+      const touch = e.pointerType === "touch",
+        boundary = edgeAt(e);
+      const kind =
+        e.button === 1
+          ? "pan"
+          : e.button === 2 || orderMode || rallyBuilding
+            ? "order"
+            : touch &&
+                (boundary.x || boundary.y) &&
+                !troopAt(e) &&
+                !buildingAt(e)
+              ? "edge"
+              : "select";
+      const p = {
         id: e.pointerId,
-        startX: e.clientX,
-        startY: e.clientY,
         x: e.clientX,
         y: e.clientY,
+        startX: e.clientX,
+        startY: e.clientY,
         moved: false,
-        add: e.ctrlKey || e.metaKey,
+        kind,
+        button: e.button,
+        add: e.shiftKey || e.ctrlKey || e.metaKey,
       };
-      edge = null;
-      input.fire = false;
-      canvas.setPointerCapture(e.pointerId);
-      e.preventDefault();
-      return;
-    }
-    if (mode === "tactical" && [0, 1].includes(e.button)) {
-      const boundary = edgeAt(e),
-        atEdge = !!(boundary.x || boundary.y);
-      mapPointers.set(e.pointerId, {
-        x: e.clientX,
-        y: e.clientY,
-        startX: e.clientX,
-        startY: e.clientY,
-        moved: e.button === 1,
-        edge: atEdge,
-      });
-      edge = boundary;
-      canvas.setPointerCapture(e.pointerId);
-      e.preventDefault();
+      mapPointers.set(e.pointerId, p);
+      edge = kind === "edge" ? boundary : null;
       if (mapPointers.size > 1) {
-        for (const p of mapPointers.values()) p.moved = true;
+        cancelSelection(false);
+        for (const v of mapPointers.values()) {
+          v.kind = "pan";
+          v.moved = true;
+        }
         const [a, b] = [...mapPointers.values()];
         pinch = {
           d: Math.hypot(a.x - b.x, a.y - b.y),
@@ -875,8 +1035,29 @@
           y: (a.y + b.y) / 2,
         };
         edge = null;
-      }
-    } else if (mode === "playing" && e.button === 0 && buildingAt(e)) {
+      } else if (kind === "select") orderDrag = p;
+      canvas.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      return;
+    }
+    if (mode === "playing" && e.button === 2 && e.pointerType !== "touch") {
+      cancelSelection();
+      orderDrag = {
+        id: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        x: e.clientX,
+        y: e.clientY,
+        moved: false,
+        add: e.ctrlKey || e.metaKey || e.shiftKey,
+      };
+      edge = null;
+      input.fire = false;
+      canvas.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      return;
+    }
+    if (mode === "playing" && e.button === 0 && buildingAt(e)) {
       buildingPress = {
         id: e.pointerId,
         unit: buildingAt(e),
@@ -899,14 +1080,26 @@
   });
   for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
     canvas.addEventListener(type, (e) => {
+      const p = mapPointers.get(e.pointerId);
+      if (p) {
+        mapPointers.delete(e.pointerId);
+        if (orderDrag === p) cancelSelection(false);
+        pinch = null;
+        edge = null;
+        if (canvas.hasPointerCapture(e.pointerId))
+          canvas.releasePointerCapture(e.pointerId);
+        if (type === "pointerup" && mode === "tactical" && onField(e)) {
+          if (p.kind === "select") finishSelection(p, e);
+          else if (p.kind === "order" && !p.moved)
+            issueOrder(view.world(e.clientX, e.clientY), troopAt(e, true));
+        }
+        e.preventDefault();
+        return;
+      }
       if (orderDrag?.id === e.pointerId) {
         const d = orderDrag;
         cancelSelection();
-        if (
-          type === "pointerup" &&
-          e.button === 2 &&
-          ["playing", "tactical"].includes(mode)
-        )
+        if (type === "pointerup" && e.button === 2 && mode === "playing")
           finishSelection(d, e);
         e.preventDefault();
         return;
@@ -915,37 +1108,13 @@
       const press = buildingPress;
       if (press?.id === e.pointerId) {
         buildingPress = null;
-        if (type === "pointerup" && !press.moved && mode === "playing") {
-          openBuilding(press.unit);
-          return;
-        }
-      }
-      const p = mapPointers.get(e.pointerId);
-      mapPointers.delete(e.pointerId);
-      pinch = null;
-      edge = null;
-      if (
-        p &&
-        type === "pointerup" &&
-        !p.moved &&
-        !p.edge &&
-        mode === "tactical"
-      ) {
-        const point = view.world(e.clientX, e.clientY),
-          map = E.map(state);
         if (
-          point.x < 24 ||
-          point.y < 24 ||
-          point.x > map.W - 24 ||
-          point.y > map.H - 24
+          type === "pointerup" &&
+          !press.moved &&
+          mode === "playing" &&
+          onField(e)
         )
-          return;
-        const building = !rallyBuilding && buildingAt(e);
-        if (building) {
-          openBuilding(building);
-          return;
-        }
-        issueOrder(point);
+          openBuilding(press.unit);
       }
     });
   canvas.addEventListener(
@@ -953,6 +1122,10 @@
     (e) => {
       if (mode !== "tactical") return;
       e.preventDefault();
+      if (mapPointers.size || orderDrag) {
+        cancelMapGesture();
+        return;
+      }
       view.zoomAt(Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY);
       edge = null;
     },
@@ -1079,14 +1252,15 @@
       });
   }
   addEventListener("keydown", (e) => {
-    if (e.code === "Escape" && orderDrag) {
-      cancelSelection();
+    if (e.code === "Escape" && (orderDrag || mapPointers.size)) {
+      cancelMapGesture();
       e.preventDefault();
       return;
     }
-    if (e.code === "Escape" && rallyBuilding) {
+    if (e.code === "Escape" && (rallyBuilding || orderMode)) {
       rallyBuilding = null;
-      notice("Точка сбора не изменена");
+      orderMode = false;
+      refreshSelection();
       e.preventDefault();
       return;
     }
@@ -1097,6 +1271,10 @@
     if ($("dialog").open || mode === "menu") return;
     if (e.code === "Escape") {
       e.preventDefault();
+      if (mode === "tactical" && (selectedBuilding || selectedUnits().length)) {
+        clearSelection();
+        return;
+      }
       openDialog("pause");
       return;
     }
@@ -1165,6 +1343,7 @@
   addEventListener("resize", () => {
     view.resize();
     resetInput();
+    measureMapArea();
   });
   function tick(now) {
     const elapsed = Math.min(0.1, (now - lastFrame) / 1000);
@@ -1181,7 +1360,7 @@
         dy += edge.y;
       }
       const d = Math.hypot(dx, dy);
-      if (d) {
+      if (d && !orderDrag) {
         view.pan(
           ((dx / d) * 520 * elapsed) / view.camera.scale,
           ((dy / d) * 520 * elapsed) / (view.camera.scale * 0.73),
@@ -1261,6 +1440,8 @@
       {
         mode: mode === "paused" && lastMode === "tactical" ? "tactical" : mode,
         group: selected === null ? group : 0,
+        selectedBuilding,
+        mapArea,
         selectionIds: selectionVisible
           ? selectedUnits().map((u) => u.id)
           : null,
@@ -1284,6 +1465,8 @@
       ids: selectedUnits().map((u) => u.id),
       custom: selected !== null,
       dragging: !!orderDrag,
+      command: orderMode || !!rallyBuilding,
+      building: selectedBuilding,
     }),
     screen: (x, y) => view.screen(x, y),
     camera: () => ({ ...view.camera, overview: view.tactical.overview }),

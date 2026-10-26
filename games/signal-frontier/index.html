@@ -12,13 +12,13 @@
       content="Предел сигнала — тактическая операция на заброшенном кольце."
     />
     <title>Предел сигнала · Альманион</title>
-    <link rel="stylesheet" href="style.css?v=0.6.2" />
-    <script src="campaign.js?v=0.6.2" defer></script>
-    <script src="engine.js?v=0.6.2" defer></script>
-    <script src="view.js?v=0.6.2" defer></script>
-    <script src="audio.js?v=0.6.2" defer></script>
-    <script src="development-ui.js?v=0.6.2" defer></script>
-    <script src="app.js?v=0.6.2" defer></script>
+    <link rel="stylesheet" href="style.css?v=0.7.0" />
+    <script src="campaign.js?v=0.7.0" defer></script>
+    <script src="engine.js?v=0.7.0" defer></script>
+    <script src="view.js?v=0.7.0" defer></script>
+    <script src="audio.js?v=0.7.0" defer></script>
+    <script src="development-ui.js?v=0.7.0" defer></script>
+    <script src="app.js?v=0.7.0" defer></script>
   </head>
   <body data-mode="menu">
     <canvas
@@ -50,7 +50,7 @@
           ><button data-open="account">Аккаунт</button>
         </div>
       </div>
-      <p class="edition">Первая операция <span>0.6.2</span></p>
+      <p class="edition">Первая операция <span>0.7.0</span></p>
     </main>
     <div id="hud" hidden>
       <header class="topbar">
@@ -134,7 +134,7 @@
               <span id="alloy">120</span>
             </button>
           </div>
-          <small>Выберите группу и укажите позицию</small>
+          <small id="tactical-hint">ЛКМ — выбор · ПКМ — приказ</small>
         </div>
         <div class="groups">
           <button id="group-one" class="group selected" aria-pressed="true">
@@ -150,6 +150,11 @@
               ></span
             >
           </button>
+        </div>
+        <div class="selection-actions">
+          <span id="selection-count" role="status" aria-live="polite"></span>
+          <button id="order-move" aria-pressed="false">Идти</button>
+          <button id="order-cancel">Снять</button>
         </div>
       </div>
       <div class="touch-controls" id="touch-controls">
@@ -234,13 +239,19 @@
               <dd>Взаимодействовать</dd>
               <dt><kbd>Tab</kbd> · <kbd>1</kbd> <kbd>2</kbd></dt>
               <dd>Пауза · выбор всей пехоты или артиллерии</dd>
-              <dt>ПКМ: протянуть рамку / короткое нажатие</dt>
-              <dd>Выбрать бойцов / отдать приказ · Ctrl добавляет к выбору</dd>
-              <dt>Края экрана · колесо · перетаскивание</dt>
+              <dt>В паузе: ЛКМ / ПКМ</dt>
               <dd>
-                Перемещение и масштаб карты в паузе · правая кнопка задаёт
-                приказ
+                Выбор и рамка / приказ выбранным · Shift добавляет или убирает
+                бойца
               </dd>
+              <dt>Во время боя: ПКМ</dt>
+              <dd>Рамка выбирает бойцов, короткое нажатие отдаёт приказ</dd>
+              <dt>Камера в паузе</dt>
+              <dd>
+                WASD, края экрана или средняя кнопка · колесо меняет масштаб
+              </dd>
+              <dt>Esc</dt>
+              <dd>Отмена жеста или приказа, затем снятие выбора и меню</dd>
             </dl>
           </div>
           <div class="help-touch">
@@ -251,10 +262,11 @@
               Вернуть палец в центр — отменить огонь.
             </p>
             <p>
-              «Приказы» останавливают бой. Выберите группу и коснитесь места на
-              карте, затем продолжите. Перетаскивание перемещает карту;
-              удержание у края прокручивает её. Два пальца меняют масштаб.
-              Касание своего здания открывает очередь и точку сбора.
+              «Приказы» останавливают бой. Коснитесь бойца или обведите отряд
+              одним пальцем. Нажмите «Идти», затем укажите точку или врага. Два
+              пальца двигают и масштабируют карту; удержание у края прокручивает
+              её. «Отмена» оставляет прежний приказ. Касание здания открывает
+              очередь, а «Сбор» направляет только будущие подкрепления.
             </p>
           </div>
           <p class="help-note">

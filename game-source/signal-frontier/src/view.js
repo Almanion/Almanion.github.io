@@ -624,10 +624,17 @@
         overview = ui.mode === "tactical",
         menu = ui.mode === "menu";
       const landscape = overview && w > h && h <= 500;
-      const areaW = landscape ? w - 240 : w - 30,
-        areaH = h - (landscape ? 120 : mobile ? 295 : 230);
+      const bounds = overview && ui.mapArea;
+      const areaW = bounds
+          ? Math.max(80, bounds.right - bounds.x)
+          : landscape
+            ? w - 240
+            : w - 30,
+        areaH = bounds
+          ? Math.max(80, bounds.bottom - bounds.y)
+          : h - (landscape ? 120 : mobile ? 295 : 230);
       this.fitScale = Math.max(
-        0.1,
+        0.04,
         Math.min(areaW / world.W, areaH / (world.H * Y)),
       );
       this.origin = {
@@ -638,6 +645,10 @@
             ? h * 0.49 - 14
             : h * 0.49,
       };
+      if (bounds) {
+        this.origin.x = (bounds.x + bounds.right) / 2;
+        this.origin.y = (bounds.y + bounds.bottom) / 2;
+      }
       let scale = overview
         ? this.tactical.overview
           ? this.fitScale
@@ -645,7 +656,10 @@
         : menu
           ? Math.max(w / (world.W * 1.25), h / world.H)
           : Math.min(1.32, Math.max(0.95, h / 660));
-      scale = Math.max(overview ? 0.1 : 0.22, scale);
+      scale = Math.max(
+        overview && this.tactical.overview ? 0.04 : overview ? 0.1 : 0.22,
+        scale,
+      );
       let tx = overview
         ? this.tactical.overview
           ? world.W / 2
@@ -1039,7 +1053,7 @@
           u.hp <= 0 ||
           !u.rally ||
           ui.mode !== "tactical" ||
-          u.kind !== (ui.group === 1 ? "barracks" : "foundry")
+          u.id !== ui.selectedBuilding
         )
           continue;
         c.save();
@@ -1056,6 +1070,18 @@
         c.restore();
         ring(c, u.rally.x, u.rally.y, 14, "#b2d6bf", 1.5);
       }
+      const selectedBuilding = s.units.find(
+        (u) => u.id === ui.selectedBuilding && u.hp > 0,
+      );
+      if (selectedBuilding && ui.mode === "tactical")
+        ring(
+          c,
+          selectedBuilding.x,
+          selectedBuilding.y,
+          E.C[selectedBuilding.kind].r + 10,
+          "#c8edda",
+          2,
+        );
       for (const camp of s.campaign.camps) {
         const source = s.units.find((u) => u.id === camp.source);
         if (!source || source.hp <= 0) continue;
