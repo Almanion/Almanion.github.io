@@ -972,7 +972,28 @@
       .filter((v) => v.d <= v.r)
       .sort((a, b) => a.d - b.d)[0]?.u;
   }
+  let openingClick = false;
+  addEventListener(
+    "pointerdown",
+    () => {
+      openingClick = false;
+    },
+    true,
+  );
+  addEventListener(
+    "click",
+    (e) => {
+      // A panel opened on pointerup can appear under that same finger. Consume
+      // its compatibility click; a new pointerdown immediately allows a new tap.
+      if (!openingClick || e.detail === 0) return;
+      openingClick = false;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    },
+    true,
+  );
   function openBuilding(u) {
+    openingClick = true;
     if (mode === "playing") setMode("tactical");
     selectedBuilding = u.id;
     selected = [];

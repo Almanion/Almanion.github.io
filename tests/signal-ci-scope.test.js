@@ -25,7 +25,7 @@ for (const file of [
   ]) {
     assert.deepEqual(
       classify([...ui, root + file]),
-      { signalOnly: false, campaign: true },
+      { signalOnly: file !== "new-mechanic.js", campaign: true },
       file,
     );
   }

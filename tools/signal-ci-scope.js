@@ -30,8 +30,23 @@ function classifyPresentation(files) {
     return !!asset && presentation.has(asset[1]);
   });
 }
+// Engine changes still need full campaigns, but their UI regression surface is
+// the game and its catalogue, just like presentation changes in the same game.
+const simulation = new Set([
+  "engine.js",
+  "campaign.js",
+  "persistence.js",
+  "cloud-core.js",
+]);
+function signalFile(file) {
+  if (classifyPresentation([file])) return true;
+  const asset = file.match(
+    /^(?:game-source\/signal-frontier\/src|games\/signal-frontier)\/([^/]+)$/,
+  );
+  return !!asset && simulation.has(asset[1]);
+}
 function classify(files, { known = true, forceCampaign = false } = {}) {
-  const signalOnly = known && files.length > 0 && classifyPresentation(files);
+  const signalOnly = known && files.length > 0 && files.every(signalFile);
   // Shared build/dependency changes still run the entire site's browser suite.
   // The engine simulations and generated-file checks remain unconditional.
   const sharedBuild = new Set([

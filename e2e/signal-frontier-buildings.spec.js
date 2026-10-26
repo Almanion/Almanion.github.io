@@ -228,9 +228,16 @@ for (const width of [320, 390])
         await boot(page, s);
         await page.locator("#supply-open").tap();
         await page.getByRole("button", { name: "Показать: Казармы" }).tap();
+        await expect(page.locator("#dialog")).not.toBeVisible();
         await page.clock.runFor(400);
         await page.clock.resume(); // Native scroll gestures use the real clock; the game remains paused.
         const p = await page.evaluate((b) => SignalGame.screen(b.x, b.y), b);
+        expect(
+          await page.evaluate(
+            (p) => document.elementFromPoint(p.x, p.y - 8)?.id,
+            p,
+          ),
+        ).toBe("field");
         await page.touchscreen.tap(p.x, p.y - 8);
         await expect(page.locator("#development-size")).toHaveAttribute(
           "aria-expanded",
