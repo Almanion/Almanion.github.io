@@ -94,6 +94,11 @@ class ExpeditionPilot {
           ? D.items(s).defense.cost
           : 0;
     const rifleCount = alive("rifle").length + D.queued(s, "rifle").length;
+    const rifleTarget =
+      this.route === "infiltration" &&
+      !alive("bastion").some((u) => u.sector === "south")
+        ? 3
+        : 6;
     if (!alive("barracks").length) buy("barracks");
     if (base && !threatened(base) && ore(base) && D.usedSlots(s, base) < 4)
       buy("drone");
@@ -108,7 +113,7 @@ class ExpeditionPilot {
     ))
       if (u.hp < E.C[u.kind].hp * 0.7) buy("repair", u.id);
     if (s.campaign.tier >= 2 || D.queued(s, "network").length) {
-      if (rifleCount < 6) buy("rifle");
+      if (rifleCount < rifleTarget) buy("rifle");
       buy("weapons");
       if (base && !base.defense) buy("defense", base.id);
       if (west && !west.defense) buy("defense", west.id);
@@ -265,6 +270,22 @@ class ExpeditionPilot {
         interact = E.dist(h, s.terminal) < 75;
       }
     }
+    // Recover the containers encountered on the infiltration route before waiting
+    // for more ore; this pays for losses without inventing resources.
+    if (
+      this.route === "infiltration" &&
+      this.stage >= 1 &&
+      this.stage <= 4 &&
+      h.hp > 80
+    ) {
+      const cache = s.caches
+        .filter((c) => !c.taken && E.dist(h, c) < 300)
+        .sort((a, b) => E.dist(h, a) - E.dist(h, b))[0];
+      if (cache) {
+        dest = { x: cache.x, y: cache.y };
+        interact = E.dist(h, cache) < 65;
+      }
+    }
     // Respond to a visible attack on the economy instead of waiting at the objective
     // while an outranging enemy destroys every worker. The forward squad holds its orders.
     if (
@@ -278,6 +299,30 @@ class ExpeditionPilot {
       if (!threatened(base) && !threatened(west)) this.defendHome = false;
       else {
         dest = { x: 320, y: 1550 };
+        if (this.route === "infiltration") {
+          const attacker = s.units
+            .filter(
+              (u) =>
+                u.team &&
+                u.hp > 0 &&
+                E.C[u.kind].range > 0 &&
+                [base, west].some(
+                  (node) => node && E.dist(u, node) < 480 && E.clear(u, node),
+                ),
+            )
+            .sort(
+              (a, b) =>
+                E.C[b.kind].range - E.C[a.kind].range ||
+                E.dist(h, a) - E.dist(h, b),
+            )[0];
+          if (attacker && E.dist(h, attacker) > 360) {
+            const d = E.dist(h, attacker);
+            dest = {
+              x: attacker.x + ((h.x - attacker.x) / d) * 330,
+              y: attacker.y + ((h.y - attacker.y) / d) * 330,
+            };
+          }
+        }
         interact = false;
       }
     }
