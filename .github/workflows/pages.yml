@@ -76,6 +76,12 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-all-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('node_modules/playwright-core/package.json') }}
 
+      - name: Use upstream Ubuntu packages
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
+
       - name: Install browser for interface checks
         timeout-minutes: 8
         run: npx playwright install --with-deps chromium webkit
@@ -153,6 +159,12 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('node_modules/playwright-core/package.json') }}
+
+      - name: Use upstream Ubuntu packages
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
 
       - name: Install browser for complete operations
         timeout-minutes: 8
