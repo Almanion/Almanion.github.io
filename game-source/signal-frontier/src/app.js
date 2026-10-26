@@ -164,9 +164,11 @@
     if (which === "supply") updateSupply();
     if (which === "development") development.render();
     if (which === "help")
-      $("economy-help").textContent = state.campaign
-        ? "Дроны доставляют сплав из конечных месторождений. Постройте казармы и добывающий узел, затем исследуйте сеть управления. Выберите тяжёлый цех для осады или модуль проникновения. Очереди работают только в бою. Приказ группе задаёт точку сбора подкреплений."
-        : "Сплав находится в контейнерах. Опорные пункты восстанавливают отряд; снабжение позволяет выбрать артиллерию или модуль взлома.";
+      $("economy-help").textContent = E.development.extended(state)
+        ? "Дроны доставляют сплав в узлы. Развивайте добычу и казармы, исследуйте сеть управления. Второй добывающий узел и уничтоженный глушитель либо южная батарея откроют оперативный контур — артиллерию и проникновение. В разделе добычи доступны защита узлов и ремонт. Очереди работают только вне паузы."
+        : state.campaign
+          ? "Дроны доставляют сплав из конечных месторождений. Постройте казармы и добывающий узел, затем исследуйте сеть управления. Выберите тяжёлый цех для осады или модуль проникновения. Очереди работают только в бою. Приказ группе задаёт точку сбора подкреплений."
+          : "Сплав находится в контейнерах. Опорные пункты восстанавливают отряд; снабжение позволяет выбрать артиллерию или модуль взлома.";
     if (which === "settings") {
       $("volume").value = settings.volume;
       $("volume-value").textContent = settings.volume + "%";
@@ -235,6 +237,10 @@
     const titles = {
       develop: "Развернуть казармы",
       expand: "Расширить добычу",
+      network: "Связать узлы",
+      "expand-network": "Закрепиться во втором секторе",
+      secure: "Подавить вражеский опорный пункт",
+      command: "Подготовить наступление",
       jammer: "Отключить защиту",
       relay: "Запустить узел",
       defend: "Удержать узел",
@@ -244,6 +250,10 @@
     const hints = {
       develop: "Развитие · производство",
       expand: "Разведчик строит узел у месторождения",
+      network: "Развитие · исследуйте сеть управления",
+      "expand-network": "Постройте второй добывающий узел",
+      secure: "Южная батарея или северный глушитель",
+      command: "Развитие · исследуйте оперативный контур",
       jammer: "Глушитель или обход через терминал",
       relay: "Удерживайте действие рядом с узлом",
       defend:
@@ -304,7 +314,8 @@
     if (act) {
       $("interact-label").textContent =
         act.type === "cache"
-          ? "Забрать сплав · +40"
+          ? "Забрать сплав · +" +
+            (state.campaign ? E.development.rules(state).cache : 40)
           : act.type === "terminal"
             ? act.allowed
               ? state.terminal.window > 0
@@ -334,6 +345,10 @@
   }
   const reasons = {
     network: "Исследуйте сеть управления",
+    command: "Исследуйте оперативный контур",
+    "second-node": "Нужны два готовых добывающих узла",
+    secure: "Уничтожьте южную батарею или глушитель",
+    intact: "Корпус не повреждён",
     barracks: "Нужны готовые казармы",
     foundry: "Нужен готовый тяжёлый цех",
     expansion: "Постройте добывающий узел",
@@ -413,7 +428,8 @@
     }
   }
   function buy(action, site) {
-    if (site && performance.now() < (siteLocks[site] || 0)) return;
+    if (!state.campaign && site && performance.now() < (siteLocks[site] || 0))
+      return;
     state.events = [];
     const result = E.purchase(state, action, site);
     $(state.campaign ? "development-feedback" : "supply-feedback").textContent =
@@ -433,7 +449,7 @@
                 : "Подкрепление на позиции"
           : reasons[result.reason] || "Недоступно";
     if (result.allowed) {
-      if (site) siteLocks[site] = performance.now() + 450;
+      if (!state.campaign && site) siteLocks[site] = performance.now() + 450;
       sound.start();
       for (const event of state.events) sound.play(event);
       view.add(state.events, settings.reduced);
@@ -795,12 +811,23 @@
         input.dash = input.reload = false;
         for (const e of state.events) {
           if (e.type !== "end") sound.play(e);
-          if (e.type === "collect") notice("Сплав +40");
+          if (e.type === "collect") notice("Сплав +" + e.amount);
           if (e.type === "raid")
             notice(
               "Обнаружено подкрепление · " +
                 ({ north: "север", south: "юг", east: "восток" }[e.sector] ||
                   "у цитадели"),
+            );
+          if (
+            e.type === "upgrade" &&
+            ["network", "command", "hack"].includes(e.action)
+          )
+            notice(
+              {
+                network: "Сеть управления готова",
+                command: "Оперативный контур готов",
+                hack: "Модуль проникновения готов",
+              }[e.action],
             );
           if (e.type === "post-ready") notice("Опорный пункт готов");
           if (e.type === "breach")

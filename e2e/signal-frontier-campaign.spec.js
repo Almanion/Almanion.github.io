@@ -4,8 +4,8 @@ const { test, expect } = require("@playwright/test");
 test.describe.configure({ mode: "parallel" });
 const E = require("../game-source/signal-frontier/src/engine");
 const {
-  CampaignPilot,
-} = require("../tests/helpers/signal-frontier-campaign-pilot.cjs");
+  LongOperationPilot,
+} = require("../tests/helpers/signal-frontier-long-pilot.cjs");
 const route = "/games/signal-frontier/";
 async function start(page) {
   await page.goto(route);
@@ -23,24 +23,24 @@ test("development: real queued cost, cancellation, pause and reload", async ({
     () => SignalEngine.living(SignalGame.snapshot(), "base").id,
   );
   await page.locator("#develop-drone-" + base).click();
-  await expect(page.locator("#development-alloy")).toHaveText("145");
+  await expect(page.locator("#development-alloy")).toHaveText("130");
   await page.clock.runFor(3000);
   let s = await page.evaluate(() => SignalGame.snapshot());
   expect(s.t).toBe(0);
-  expect(E.living(s, "base").jobs[0].remaining).toBe(12);
+  expect(E.living(s, "base").jobs[0].remaining).toBe(18);
   await page.getByRole("button", { name: /Отменить: Дрон/ }).click();
-  await expect(page.locator("#development-alloy")).toHaveText("171");
+  await expect(page.locator("#development-alloy")).toHaveText("167");
   await page.clock.runFor(500);
   await page.locator("#develop-drone-" + base).click();
-  await expect(page.locator("#development-alloy")).toHaveText("136");
+  await expect(page.locator("#development-alloy")).toHaveText("117");
   await page.locator("#development-back").click();
   await page.locator("#tactical").click();
   await page.clock.runFor(5000);
   await page.locator("#menu-button").click();
   s = await page.evaluate(() => SignalGame.snapshot());
   const remaining = E.living(s, "base").jobs[0].remaining;
-  expect(remaining).toBeGreaterThan(6);
-  expect(remaining).toBeLessThan(8);
+  expect(remaining).toBeGreaterThan(12);
+  expect(remaining).toBeLessThan(14);
   await page.reload();
   await page.locator("#continue").click();
   await page.keyboard.press("Tab");
@@ -51,11 +51,11 @@ test("development: real queued cost, cancellation, pause and reload", async ({
   );
   expect(E.restore(restored)).not.toBeNull();
   await page.keyboard.press("Tab");
-  await page.clock.runFor(8000);
+  await page.clock.runFor(14000);
   restored = await page.evaluate(() => SignalGame.snapshot());
   expect(restored.units.filter((u) => u.kind === "drone")).toHaveLength(3);
-  expect(restored.economy.spent).toBe(70);
-  expect(restored.economy.recovered).toBe(26);
+  expect(restored.economy.spent).toBe(100);
+  expect(restored.economy.recovered).toBe(37);
 });
 
 test("tactical camera: hover edges, drag, zoom, limits and no accidental orders", async ({
@@ -183,9 +183,9 @@ test("touch camera: corner hold, pinch, cancellation and rotation preserve order
 
 for (const name of ["siege", "infiltration"])
   test(
-    "extended " + name + ": full operation through real controls",
+    "long " + name + ": full operation through real controls",
     async ({ page }) => {
-      test.setTimeout(420000);
+      test.setTimeout(900000);
       await page.setViewportSize({ width: 1600, height: 1000 });
       await page.clock.install();
       await page.addInitScript(() =>
@@ -203,7 +203,7 @@ for (const name of ["siege", "infiltration"])
       });
       await start(page);
       await page.locator("#tactical").click();
-      const pilot = new CampaignPilot(name, 22);
+      const pilot = new LongOperationPilot(name, 22);
       let pressed = new Set(),
         firing = false,
         final,
@@ -238,11 +238,21 @@ for (const name of ["siege", "infiltration"])
             await page.mouse.click(p.x, p.y);
           } else {
             await page.locator("#supply-open").click();
-            const tab = ["drone", "outpost"].includes(c.action)
-              ? "economy"
-              : ["network", "hack", "weapons", "armor"].includes(c.action)
-                ? "research"
-                : "production";
+            const producer = c.site
+              ? (await page.evaluate(() => SignalGame.snapshot())).units.find(
+                  (u) => String(u.id) === String(c.site),
+                )
+              : null;
+            const tab =
+              ["drone", "outpost", "defense"].includes(c.action) ||
+              (c.action === "repair" &&
+                ["base", "outpost"].includes(producer?.kind))
+                ? "economy"
+                : ["network", "command", "hack", "weapons", "armor"].includes(
+                      c.action,
+                    )
+                  ? "research"
+                  : "production";
             await page.locator("#develop-tab-" + tab).click();
             const site =
               c.action === "drone"
@@ -261,7 +271,7 @@ for (const name of ["siege", "infiltration"])
         }
         await page.keyboard.press("Tab");
       }
-      for (let i = 0; i < 5500; i++) {
+      for (let i = 0; i < 16000; i++) {
         const s = await page.evaluate(() => SignalGame.snapshot());
         final = s;
         if (s.status !== "playing") break;
@@ -325,7 +335,7 @@ for (const name of ["siege", "infiltration"])
       expect(errors).toEqual([]);
       await expect(page.locator("#result-content")).toBeVisible();
       await page.screenshot({
-        path: "test-results/signal4-" + name + "-complete.png",
+        path: "test-results/signal5-" + name + "-complete.png",
       });
     },
   );

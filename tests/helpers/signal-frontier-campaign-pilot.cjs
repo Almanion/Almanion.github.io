@@ -202,7 +202,7 @@ class CampaignPilot {
   }
 }
 function play(route, maxFrames = 72000) {
-  const s = E.make(),
+  const s = E.make("frontier-1"),
     pilot = new CampaignPilot(route),
     trace = [];
   for (let i = 0; i < maxFrames && s.status === "playing"; i++) {

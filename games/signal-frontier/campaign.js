@@ -58,6 +58,67 @@
     weapons: { cost: 90, time: 30, pop: 0, label: "Импульсные усилители" },
     armor: { cost: 90, time: 30, pop: 0, label: "Композитная броня" },
   });
+  // A saved operation owns its rules. New balancing never rewrites an older deployment.
+  const EXTENDED_ITEMS = Object.freeze({
+    drone: { cost: 50, time: 18, pop: 0, label: "Дрон" },
+    barracks: { cost: 120, time: 30, pop: 0, label: "Казармы" },
+    outpost: { cost: 160, time: 45, pop: 0, label: "Добывающий узел" },
+    network: { cost: 260, time: 90, pop: 0, label: "Сеть управления" },
+    command: { cost: 520, time: 120, pop: 0, label: "Оперативный контур" },
+    foundry: { cost: 180, time: 45, pop: 0, label: "Тяжёлый цех" },
+    rifle: { cost: 65, time: 24, pop: 1, label: "Боец" },
+    artillery: { cost: 280, time: 50, pop: 3, label: "Артиллерия" },
+    hack: { cost: 360, time: 120, pop: 0, label: "Модуль проникновения" },
+    weapons: { cost: 160, time: 60, pop: 0, label: "Импульсные усилители" },
+    armor: { cost: 160, time: 60, pop: 0, label: "Композитная броня" },
+    defense: { cost: 120, time: 40, pop: 0, label: "Защитный модуль" },
+    repair: { cost: 50, time: 20, pop: 0, label: "Ремонт корпуса" },
+  });
+  const EXTENDED_MINES = Object.freeze(
+    MINES.map((m) =>
+      Object.freeze({
+        ...m,
+        stock: m.id === "home" ? 1080 : 1800,
+      }),
+    ),
+  );
+  const PROFILES = Object.freeze({
+    "frontier-1": Object.freeze({
+      version: 3,
+      items: ITEMS,
+      mines: MINES,
+      cache: 40,
+      gather: 3.2,
+      reserve: 24,
+      firstRaid: 90,
+      stagger: 35,
+      raidInterval: 65,
+      waveMax: 2,
+      waveStep: 150,
+      hold: 45,
+      unitLimit: 256,
+      ledgerLimit: 20000,
+    }),
+    "frontier-2": Object.freeze({
+      version: 4,
+      items: EXTENDED_ITEMS,
+      mines: EXTENDED_MINES,
+      cache: 100,
+      gather: 5.6,
+      reserve: 48,
+      firstRaid: 140,
+      stagger: 45,
+      raidInterval: 100,
+      waveMax: 3,
+      waveStep: 240,
+      hold: 90,
+      unitLimit: 384,
+      ledgerLimit: 40000,
+    }),
+  });
+  const rules = (s) => PROFILES[s.campaign?.id] || PROFILES["frontier-1"];
+  const items = (s) => rules(s).items;
+  const extended = (s) => s.campaign?.id === "frontier-2";
   function create(E) {
     const alive = (s, kind) =>
       s.units.filter((u) => u.hp > 0 && (!kind || u.kind === kind));
@@ -74,8 +135,8 @@
         .flatMap((u) => u.jobs || [])
         .filter((j) => !kind || j.action === kind);
     const population = (s) =>
-      alive(s).reduce((n, u) => n + (ITEMS[u.kind]?.pop || 0), 0) +
-      queued(s).reduce((n, j) => n + ITEMS[j.action].pop, 0);
+      alive(s).reduce((n, u) => n + (items(s)[u.kind]?.pop || 0), 0) +
+      queued(s).reduce((n, j) => n + items(s)[j.action].pop, 0);
     const capacity = (s) => 6 + ready(s, "outpost").length * 3;
     const count = (s, kind) => alive(s, kind).length + queued(s, kind).length;
     const workers = (s, node) =>
@@ -101,9 +162,10 @@
       u.fright = 0;
       return u;
     }
-    function make() {
+    function make(profile = "frontier-2") {
+      const config = PROFILES[profile];
       const s = E.makeClassic();
-      s.version = 3;
+      s.version = config.version;
       s.economy = {
         alloy: 180,
         spent: 0,
@@ -112,7 +174,7 @@
         legacySupport: false,
       };
       s.campaign = {
-        id: "frontier-1",
+        id: profile,
         tier: 1,
         weapons: false,
         armor: false,
@@ -121,7 +183,7 @@
         refunded: 0,
         jobSeq: 0,
         squadSeq: 0,
-        mines: MINES.map((m) => ({ ...m, remaining: m.stock })),
+        mines: config.mines.map((m) => ({ ...m, remaining: m.stock })),
         intel: [],
         camps: [],
       };
@@ -211,8 +273,8 @@
         const source = E.living(s, kind);
         s.campaign.camps.push({
           source: source.id,
-          reserve: 24,
-          cooldown: 90 + i * 35,
+          reserve: config.reserve,
+          cooldown: config.firstRaid + i * config.stagger,
           warning: 0,
           waves: 0,
           target: null,
@@ -222,7 +284,8 @@
       return s;
     }
     function offer(s, action, site) {
-      const item = ITEMS[action],
+      const ITEMS = items(s);
+      const item = Object.hasOwn(ITEMS, action) ? ITEMS[action] : null,
         fail = (reason) => ({ allowed: false, reason, cost: item?.cost || 0 });
       if (s.status !== "playing") return fail("ended");
       if (action === "cancel") {
@@ -235,7 +298,7 @@
       }
       if (!item) return fail("unknown");
       if (
-        s.units.length >= 250 &&
+        s.units.length >= rules(s).unitLimit - 6 &&
         [
           "rifle",
           "artillery",
@@ -260,7 +323,24 @@
         if (s.units.some((u) => u.team && u.hp > 0 && E.dist(u, anchor) < 140))
           return fail("hostiles");
       } else {
-        if (action === "drone") {
+        if (["defense", "repair"].includes(action)) {
+          producer = ready(s).find(
+            (u) =>
+              !u.team &&
+              String(u.id) === String(site) &&
+              (action === "defense"
+                ? ["base", "outpost"]
+                : ["base", "outpost", "barracks", "foundry"]
+              ).includes(u.kind),
+          );
+          if (!producer) return fail("post");
+          if (action === "defense" && producer.defense)
+            return fail("installed");
+          if (action === "repair" && producer.hp >= E.C[producer.kind].hp)
+            return fail("intact");
+          if (producer.jobs.some((j) => j.action === action))
+            return fail("researching");
+        } else if (action === "drone") {
           producer =
             nodes(s).find((u) => String(u.id) === String(site)) ||
             (!site ? E.living(s, "base") : null);
@@ -278,7 +358,7 @@
             ["rifle", "weapons"].includes(action) ? "barracks" : "foundry",
           );
         if (action === "network") {
-          if (s.campaign.tier === 2) return fail("installed");
+          if (s.campaign.tier >= 2) return fail("installed");
           if (!ready(s, "barracks").length) return fail("barracks");
           if (!ready(s, "outpost").length) return fail("expansion");
         }
@@ -287,6 +367,19 @@
           s.campaign.tier < 2
         )
           return fail("network");
+        if (action === "command") {
+          if (s.campaign.tier === 3) return fail("installed");
+          if (s.campaign.tier < 2) return fail("network");
+          if (ready(s, "outpost").length < 2) return fail("second-node");
+          if (E.living(s, "jammer") && E.living(s, "turret"))
+            return fail("secure");
+        }
+        if (
+          extended(s) &&
+          ["hack", "artillery"].includes(action) &&
+          s.campaign.tier < 3
+        )
+          return fail("command");
         if (action === "artillery" && !s.relay.online) return fail("relay");
         if (
           (action === "hack" && s.economy.kit) ||
@@ -294,7 +387,7 @@
         )
           return fail("installed");
         if (
-          ["network", "hack", "weapons", "armor"].includes(action) &&
+          ["network", "command", "hack", "weapons", "armor"].includes(action) &&
           queued(s, action).length
         )
           return fail("researching");
@@ -321,7 +414,7 @@
         E.emit(s, "salvage", o.producer.x, o.producer.y, { amount: refund });
         return { allowed: true, cost: o.cost };
       }
-      const item = ITEMS[action];
+      const item = items(s)[action];
       s.economy.alloy -= item.cost;
       s.economy.spent += item.cost;
       if (o.anchor) {
@@ -345,6 +438,7 @@
       return { allowed: true, cost: item.cost };
     }
     function production(s, dt) {
+      const ITEMS = items(s);
       for (const u of alive(s).filter((u) => !u.team && u.kind !== "drone")) {
         if (u.build > 0) {
           // Outposts require a scout on site; construction at home is automated.
@@ -368,6 +462,10 @@
         if (job.remaining > 0) continue;
         u.jobs.shift();
         if (job.action === "network") s.campaign.tier = 2;
+        else if (job.action === "command") s.campaign.tier = 3;
+        else if (job.action === "defense") u.defense = true;
+        else if (job.action === "repair")
+          u.hp = Math.min(E.C[u.kind].hp, u.hp + E.C[u.kind].hp * 0.55);
         else if (job.action === "hack") {
           s.economy.kit = true;
           s.approach = "infiltration";
@@ -384,7 +482,15 @@
         }
         E.emit(
           s,
-          ["network", "hack", "armor", "weapons"].includes(job.action)
+          [
+            "network",
+            "command",
+            "hack",
+            "armor",
+            "weapons",
+            "defense",
+            "repair",
+          ].includes(job.action)
             ? "upgrade"
             : "reinforce",
           u.x,
@@ -460,7 +566,7 @@
           } else if (mine.remaining && !standby) {
             u.work = "gather";
             u.workTime += dt;
-            if (u.workTime >= 3.2) {
+            if (u.workTime >= rules(s).gather) {
               u.cargo = Math.min(4, mine.remaining);
               mine.remaining -= u.cargo;
               u.workTime = 0;
@@ -501,6 +607,33 @@
       );
     }
     function objective(s) {
+      if (extended(s) && s.campaign.tier < 3) {
+        const base = E.living(s, "base");
+        if (!alive(s, "barracks").length)
+          return { id: "develop", target: base, radius: 60 };
+        if (!alive(s, "outpost").length)
+          return { id: "expand", target: PADS[0], radius: 45 };
+        if (s.campaign.tier === 1 && !queued(s, "network").length)
+          return { id: "network", target: base, radius: 60 };
+        if (alive(s, "outpost").length < 2)
+          return {
+            id: "expand-network",
+            target: PADS.filter(
+              (p) => !alive(s, "outpost").some((u) => u.site === p.id),
+            ).sort((a, b) => E.dist(E.hero(s), a) - E.dist(E.hero(s), b))[0],
+            radius: 45,
+          };
+        if (E.living(s, "jammer") && E.living(s, "turret"))
+          return {
+            id: "secure",
+            target: [E.living(s, "turret"), E.living(s, "jammer")].sort(
+              (a, b) => E.dist(E.hero(s), a) - E.dist(E.hero(s), b),
+            )[0],
+            radius: 50,
+          };
+        if (!queued(s, "command").length)
+          return { id: "command", target: base, radius: 60 };
+      }
       if (!s.economy.kit && s.campaign.tier === 1) {
         if (!alive(s, "barracks").length)
           return { id: "develop", target: E.living(s, "base"), radius: 60 };
@@ -529,8 +662,8 @@
           cache.charge = Math.min(1, cache.charge + dt / 1.2);
           if (cache.charge === 1) {
             cache.taken = true;
-            s.economy.alloy += 40;
-            E.emit(s, "collect", cache.x, cache.y, { amount: 40 });
+            s.economy.alloy += rules(s).cache;
+            E.emit(s, "collect", cache.x, cache.y, { amount: rules(s).cache });
           }
         } else cache.charge = Math.max(0, cache.charge - dt * 0.6);
       }
@@ -824,10 +957,11 @@
             dispatch(
               s,
               camp,
-              4 + Math.min(2, Math.floor(s.t / 150)),
+              4 +
+                Math.min(rules(s).waveMax, Math.floor(s.t / rules(s).waveStep)),
               camp.target,
             );
-            camp.cooldown = 65;
+            camp.cooldown = rules(s).raidInterval;
           }
         } else {
           camp.cooldown = Math.max(0, camp.cooldown - dt);
@@ -885,7 +1019,7 @@
           (u) => u.team && u.hp > 0 && E.dist(u, s.relay) < 170,
         );
         s.relay.stability = E.clamp(
-          s.relay.stability + (contested ? -dt * 0.025 : dt / 45),
+          s.relay.stability + (contested ? -dt * 0.025 : dt / rules(s).hold),
           0,
           1,
         );
@@ -900,6 +1034,10 @@
       try {
         const s = JSON.parse(JSON.stringify(value)),
           c = s?.campaign;
+        const config = PROFILES[c?.id];
+        if (!config || s.version !== config.version) return null;
+        const ITEMS = config.items,
+          MINES = config.mines;
         const num = (v, min, max) => Number.isFinite(v) && v >= min && v <= max,
           int = (v, min, max) => Number.isInteger(v) && num(v, min, max);
         const point = (p) => p && num(p.x, 0, 1920) && num(p.y, 0, 1280);
@@ -915,14 +1053,12 @@
         ];
         if (
           !s ||
-          s.version !== 3 ||
-          c?.id !== "frontier-1" ||
           !["playing", "won", "lost"].includes(s.status) ||
           !num(s.t, 0, 86400) ||
           !int(s.seq, 1, 10000) ||
           !int(s.seed, 0, 4294967295) ||
           !Array.isArray(s.units) ||
-          s.units.length > 256 ||
+          s.units.length > config.unitLimit ||
           !Array.isArray(s.bullets) ||
           s.bullets.length > 160 ||
           ![0, 1, 2, 3].includes(s.phase)
@@ -974,6 +1110,13 @@
             (!["rifle", "artillery"].includes(u.kind) && u.group !== 0)
           )
             return null;
+          if (
+            u.defense !== undefined &&
+            (!extended(s) ||
+              typeof u.defense !== "boolean" ||
+              !["base", "outpost"].includes(u.kind))
+          )
+            return null;
           if (u.rally !== undefined && !point(u.rally)) return null;
           if (
             u.workTarget !== undefined &&
@@ -1002,14 +1145,39 @@
             (u.x !== BUILDINGS[u.kind].x || u.y !== BUILDINGS[u.kind].y)
           )
             return null;
+          const localJobs = new Set();
           for (const job of u.jobs) {
+            if (["defense", "repair"].includes(job.action)) {
+              if (
+                localJobs.has(job.action) ||
+                (job.action === "defense" && u.defense)
+              )
+                return null;
+              localJobs.add(job.action);
+            }
             const spec = ITEMS[job.action],
               allowed =
                 {
-                  base: ["drone", "network", "hack"],
-                  outpost: ["drone"],
-                  barracks: ["rifle", "weapons"],
-                  foundry: ["artillery", "armor"],
+                  base: [
+                    "drone",
+                    "network",
+                    "hack",
+                    ...(extended(s) ? ["command", "defense", "repair"] : []),
+                  ],
+                  outpost: [
+                    "drone",
+                    ...(extended(s) ? ["defense", "repair"] : []),
+                  ],
+                  barracks: [
+                    "rifle",
+                    "weapons",
+                    ...(extended(s) ? ["repair"] : []),
+                  ],
+                  foundry: [
+                    "artillery",
+                    "armor",
+                    ...(extended(s) ? ["repair"] : []),
+                  ],
                 }[u.kind] || [];
             if (
               !spec ||
@@ -1023,7 +1191,11 @@
             )
               return null;
             jobIds.add(job.id);
-            if (["network", "hack", "weapons", "armor"].includes(job.action)) {
+            if (
+              ["network", "command", "hack", "weapons", "armor"].includes(
+                job.action,
+              )
+            ) {
               if (research.has(job.action)) return null;
               research.add(job.action);
             }
@@ -1035,7 +1207,7 @@
               !["out", "return", "gather", "idle", "shelter"].includes(
                 u.work,
               ) ||
-              !num(u.workTime, 0, 3.21) ||
+              !num(u.workTime, 0, config.gather + 0.01) ||
               !num(u.fright, 0, 5) ||
               (u.hp === 0 && u.cargo !== 0)
             )
@@ -1086,16 +1258,17 @@
         )
           return null;
         if (
-          ![1, 2].includes(c.tier) ||
+          !(extended(s) ? [1, 2, 3] : [1, 2]).includes(c.tier) ||
           typeof c.weapons !== "boolean" ||
           typeof c.armor !== "boolean" ||
           !["deposited", "lostCargo", "refunded", "jobSeq", "squadSeq"].every(
-            (k) => int(c[k], 0, 20000),
+            (k) => int(c[k], 0, config.ledgerLimit),
           )
         )
           return null;
         if (
-          (research.has("network") && c.tier === 2) ||
+          (research.has("network") && c.tier >= 2) ||
+          (research.has("command") && c.tier !== 2) ||
           (research.has("hack") && s.economy?.kit) ||
           (research.has("weapons") && c.weapons) ||
           (research.has("armor") && c.armor)
@@ -1123,7 +1296,7 @@
         if (
           !eco ||
           !["alloy", "spent", "recovered"].every((k) =>
-            int(eco[k], 0, 20000),
+            int(eco[k], 0, config.ledgerLimit),
           ) ||
           typeof eco.kit !== "boolean" ||
           eco.legacySupport !== false ||
@@ -1137,7 +1310,16 @@
             eco.kit ||
             ["hack", "weapons", "armor"].some((k) => research.has(k)) ||
             s.units.some((u) => ["foundry", "artillery"].includes(u.kind))) &&
-          c.tier !== 2
+          c.tier < 2
+        )
+          return null;
+        if (
+          extended(s) &&
+          c.tier < 3 &&
+          (eco.kit ||
+            research.has("hack") ||
+            s.units.some((u) => u.kind === "artillery") ||
+            queued(s, "artillery").length)
         )
           return null;
         if (
@@ -1163,7 +1345,7 @@
         if (
           eco.alloy !==
           180 +
-            s.caches.filter((v) => v.taken).length * 40 +
+            s.caches.filter((v) => v.taken).length * config.cache +
             c.deposited +
             eco.recovered -
             eco.spent
@@ -1242,10 +1424,14 @@
             camp.source !==
               s.units.find((u) => u.kind === ["jammer", "turret", "citadel"][i])
                 .id ||
-            !int(camp.reserve, 0, 24) ||
-            !num(camp.cooldown, 0, 200) ||
+            !int(camp.reserve, 0, config.reserve) ||
+            !num(
+              camp.cooldown,
+              0,
+              Math.max(200, config.firstRaid + 2 * config.stagger),
+            ) ||
             !num(camp.warning, 0, 9) ||
-            !int(camp.waves, 0, 24) ||
+            !int(camp.waves, 0, config.reserve) ||
             (camp.target !== null && !point(camp.target))
           )
             return null;
@@ -1293,6 +1479,9 @@
       mineFor,
       usedSlots,
       ITEMS,
+      items,
+      rules,
+      extended,
       PADS,
       MINES,
       CACHES,

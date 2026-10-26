@@ -211,7 +211,9 @@
     return s;
   }
   function make(mode = "frontier") {
-    return mode === "classic" ? makeClassic() : campaign.make();
+    return mode === "classic"
+      ? makeClassic()
+      : campaign.make(mode === "frontier-1" ? mode : "frontier-2");
   }
   const hero = (s) => s.units.find((u) => u.id === s.heroId);
   const living = (s, kind) => s.units.find((u) => u.kind === kind && u.hp > 0);
@@ -564,8 +566,13 @@
     move(u, Math.cos(a) * speed * dt, Math.sin(a) * speed * dt);
     u.angle = a;
   }
+  function stats(s, u) {
+    return s.version === 4 && u.defense && ["base", "outpost"].includes(u.kind)
+      ? { ...C[u.kind], range: 340, damage: 20, rate: 0.9 }
+      : C[u.kind];
+  }
   function shoot(s, u, target) {
-    const def = C[u.kind],
+    const def = stats(s, u),
       a = Math.atan2(target.y - u.y, target.x - u.x);
     u.angle = a;
     u.cool = def.rate;
@@ -578,7 +585,11 @@
       hurt(s, target, def.damage * (s.campaign ? 1.2 : 1), u);
       return;
     }
-    const r = def.r + 9,
+    // A melee attacker can stand inside a node's footprint; the muzzle must not skip it.
+    const r =
+        s.version === 4 && u.defense
+          ? Math.min(def.r + 9, dist(u, target) / 2)
+          : def.r + 9,
       speed = u.kind === "artillery" ? 360 : u.team ? 390 : 800;
     s.bullets.push({
       ...(s.campaign ? { map: "frontier" } : {}),
@@ -616,6 +627,7 @@
       ["hero", "rifle", "artillery"].includes(u.kind)
     )
       damage *= 0.85;
+    if (s.version === 4 && u.defense) damage *= 0.35;
     u.hp -= damage;
     u.hit = 0.14;
     u.repair = 3;
@@ -705,7 +717,8 @@
         u.wind = 0;
         continue;
       }
-      if (!C[u.kind].range) continue;
+      const def = stats(s, u);
+      if (!def.range || u.build) continue;
       const opponents = s.units.filter(
         (v) =>
           v.team !== u.team &&
@@ -713,7 +726,7 @@
           !(v.kind === "citadel" && shielded(s)),
       );
       let target = opponents
-        .filter((v) => dist(u, v) < C[u.kind].range && clear(u, v))
+        .filter((v) => dist(u, v) < def.range && clear(u, v))
         .sort((a, b) => dist(u, a) - dist(u, b))[0];
       if (u.team === 0) {
         if (u.path.length) follow(u, dt);
@@ -886,7 +899,7 @@
     return out;
   }
   function restore(value) {
-    if (value?.version === 3) return campaign.restore(value);
+    if ([3, 4].includes(value?.version)) return campaign.restore(value);
     try {
       const s = JSON.parse(JSON.stringify(value));
       if (

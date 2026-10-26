@@ -34,14 +34,14 @@ function build(s, kind, site) {
 }
 // A quiet test field retains the objective and silences its production, without altering unit economics.
 function field() {
-  const s = E.make();
+  const s = E.make("frontier-1");
   for (const u of s.units) if (u.team && u.kind !== "citadel") u.hp = 0;
   s.campaign.camps.forEach((c) => (c.reserve = 0));
   return s;
 }
 
-test("new deployments use the larger map; legacy operations keep their original map and rules", () => {
-  const s = E.make(),
+test("0.4 deployments use the larger map; legacy operations keep their original map and rules", () => {
+  const s = E.make("frontier-1"),
     old = E.make("classic");
   assert.equal(s.version, 3);
   assert.equal(E.map(s).W, 1920);
@@ -72,7 +72,7 @@ test("drones carry finite ore; credit is given only after the return trip", () =
   assert.ok(E.restore(s));
 });
 test("queue costs are atomic, worker slots are reserved and cancellation returns exactly 75 percent", () => {
-  const s = E.make(),
+  const s = E.make("frontier-1"),
     base = E.living(s, "base");
   assert.ok(E.purchase(s, "drone").allowed);
   assert.ok(E.purchase(s, "drone").allowed);
@@ -204,7 +204,7 @@ test("rally orders cover the eastern sector and are inherited by newly trained u
   assert.ok(E.restore(s));
 });
 test("new snapshots preserve queues, cargo, research and combat deterministically", () => {
-  const a = E.make();
+  const a = E.make("frontier-1");
   E.purchase(a, "barracks");
   E.purchase(a, "drone");
   frames(a, 900);
@@ -217,7 +217,7 @@ test("new snapshots preserve queues, cargo, research and combat deterministicall
   assert.deepEqual(E.snapshot(a), E.snapshot(b));
 });
 test("malformed ore, queues, capacity, coordinates and research are rejected", () => {
-  const good = E.make();
+  const good = E.make("frontier-1");
   E.purchase(good, "drone");
   for (const corrupt of [
     (s) => s.economy.alloy++,
@@ -237,7 +237,7 @@ test("malformed ore, queues, capacity, coordinates and research are rejected", (
   }
 });
 test("guards patrol without crossing solid geometry and do not see the scout through cover", () => {
-  const s = E.make(),
+  const s = E.make("frontier-1"),
     guard = s.units.find((u) => u.kind === "sentinel");
   guard.x = 570;
   guard.y = 450;
@@ -257,7 +257,7 @@ test("guards patrol without crossing solid geometry and do not see the scout thr
   assert.ok(moved);
 });
 test("warning locks the shot before firing, allowing a change of direction to evade it", () => {
-  const s = E.make(),
+  const s = E.make("frontier-1"),
     u = s.units.find((u) => u.kind === "sentinel"),
     h = E.hero(s);
   u.x = 500;
@@ -276,7 +276,7 @@ test("warning locks the shot before firing, allowing a change of direction to ev
   assert.ok(E.dist(h, lock) > 20);
 });
 test("enemy reserves are finite and a destroyed source cannot dispatch more units", () => {
-  const s = E.make(),
+  const s = E.make("frontier-1"),
     camp = s.campaign.camps[0];
   camp.cooldown = 0;
   D.operation(s, {}, E.DT);
@@ -313,7 +313,7 @@ test("finite extraction stops at zero", () => {
   assert.ok(E.restore(s));
 });
 test("enemy production spends its finite reserves and warns before each dispatch", () => {
-  const s = E.make(),
+  const s = E.make("frontier-1"),
     camp = s.campaign.camps[0];
   let before = s.units.length;
   for (let i = 0; i < 7; i++) {
@@ -340,7 +340,7 @@ test("a destroyed base ends cleanly even when drones need to return", () => {
 const { play } = require("./helpers/signal-frontier-campaign-pilot.cjs");
 for (const route of ["siege", "infiltration"])
   test(
-    "complete extended " + route + " operation using only legal commands",
+    "complete 0.4 " + route + " operation using only legal commands",
     () => {
       const { state: s } = play(route);
       assert.equal(s.status, "won");
@@ -371,7 +371,7 @@ for (const route of ["siege", "infiltration"])
     },
   );
 test("ignoring development and enemy attacks eventually loses the operation", () => {
-  const s = E.make();
+  const s = E.make("frontier-1");
   frames(s, 36000);
   assert.equal(s.status, "lost");
   assert.ok(s.t > 90 && s.t < 600);

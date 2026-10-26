@@ -27,7 +27,9 @@
         s = this.options.state();
       if (!s.campaign) return;
       const D = E.development,
-        summary = D.summary(s);
+        summary = D.summary(s),
+        ITEMS = D.items(s),
+        long = D.extended(s);
       const key = JSON.stringify([
         this.tab,
         s.economy,
@@ -35,7 +37,7 @@
         s.campaign.weapons,
         s.campaign.armor,
         s.campaign.mines.map((m) => m.remaining),
-        s.units.map((u) => [u.id, u.hp, u.build, u.node, u.jobs]),
+        s.units.map((u) => [u.id, u.hp, u.build, u.node, u.defense, u.jobs]),
       ]);
       if (key === this.key) return;
       this.key = key;
@@ -47,16 +49,37 @@
             "develop-" +
             action +
             (site ? "-" + String(site).replace(":", "-") : "");
-        return `<button id="${id}" class="develop-action" data-action="${action}" ${site !== undefined ? `data-site="${site}"` : ""} ${o.allowed ? "" : "disabled"}><span>${label || D.ITEMS[action]?.label || "Отменить"}</span><span>${o.reason === "installed" ? "✓" : Math.abs(o.cost)}</span></button>`;
+        return `<button id="${id}" class="develop-action" data-action="${action}" ${site !== undefined ? `data-site="${site}"` : ""} ${o.allowed ? "" : "disabled"}><span>${label || ITEMS[action]?.label || "Отменить"}</span><span>${o.reason === "installed" ? "✓" : Math.abs(o.cost)}</span></button>`;
       };
       const focus = (p, label) =>
         `<button class="map-link" data-focus="${p.x},${p.y}" aria-label="Показать: ${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6M8 12h8m-4-4v8"/></svg></button>`;
       const queue = (u) =>
         !u?.jobs?.length
           ? ""
-          : `<ol class="production-queue">${u.jobs.map((j, i) => `<li><div><span>${D.ITEMS[j.action].label}</span><small>${i === 0 ? (D.ITEMS[j.action].pop && summary.population > summary.capacity ? "Нет вместимости" : Math.ceil(j.remaining) + " с") : "В очереди"}</small><i style="--progress:${(1 - j.remaining / j.duration) * 100}%"></i></div><button data-action="cancel" data-site="${u.id}:${j.id}" aria-label="Отменить: ${D.ITEMS[j.action].label}; возврат ${Math.floor(j.cost * 0.75)}">×</button></li>`).join("")}</ol>`;
+          : `<ol class="production-queue">${u.jobs.map((j, i) => `<li><div><span>${ITEMS[j.action].label}</span><small>${i === 0 ? (ITEMS[j.action].pop && summary.population > summary.capacity ? "Нет вместимости" : Math.ceil(j.remaining) + " с") : "В очереди"}</small><i style="--progress:${(1 - j.remaining / j.duration) * 100}%"></i></div><button data-action="cancel" data-site="${u.id}:${j.id}" aria-label="Отменить: ${ITEMS[j.action].label}; возврат ${Math.floor(j.cost * 0.75)}">×</button></li>`).join("")}</ol>`;
       const card = (title, detail, content, top = "") =>
         `<article class="development-card"><header><div><strong>${title}</strong><small>${detail}</small></div>${top}</header>${content}</article>`;
+      const maintenance = (u) => {
+        if (!long) return "";
+        let html = "";
+        if (["base", "outpost"].includes(u.kind) && !u.defense) {
+          const o = E.supplyStatus(s, "defense", u.id);
+          html +=
+            button("defense", u.id) +
+            '<p class="development-note">Автоогонь · урон по узлу −65%' +
+            (!o.allowed ? " · " + reason(o) : "") +
+            "</p>";
+        }
+        if (u.hp < E.C[u.kind].hp) {
+          const o = E.supplyStatus(s, "repair", u.id);
+          html +=
+            button("repair", u.id) +
+            '<p class="development-note">Восстановит 55% корпуса' +
+            (!o.allowed ? " · " + reason(o) : "") +
+            "</p>";
+        }
+        return html;
+      };
       let content = "";
       if (this.tab === "economy") {
         const nodeList = [
@@ -98,6 +121,7 @@
                 (!o.allowed
                   ? `<p class="development-note">${reason(o)}</p>`
                   : "") +
+                maintenance(u) +
                 queue(u),
               focus(u, p.name),
             );
@@ -106,14 +130,14 @@
       } else if (this.tab === "production") {
         for (const kind of ["barracks", "foundry"]) {
           const u = s.units.find((u) => u.kind === kind && u.hp > 0),
-            label = D.ITEMS[kind].label,
+            label = ITEMS[kind].label,
             p = D.BUILDINGS[kind];
           if (!u) {
             const o = E.supplyStatus(s, kind);
             content += card(
               label,
               o.allowed
-                ? `${D.ITEMS[kind].time} с · ${kind === "barracks" ? "Обучение огневой группы" : "Тяжёлая поддержка"}`
+                ? `${ITEMS[kind].time} с · ${kind === "barracks" ? "Обучение огневой группы" : "Тяжёлая поддержка"}`
                 : reason(o),
               button(kind, undefined, "Построить"),
               focus(p, label),
@@ -130,13 +154,14 @@
               o = E.supplyStatus(s, action);
             content += card(
               label,
-              `${D.ITEMS[action].time} с · ${D.ITEMS[action].pop} вместимости`,
+              `${ITEMS[action].time} с · ${ITEMS[action].pop} вместимости`,
               button(
                 action,
                 undefined,
                 "Заказать " + (action === "rifle" ? "бойца" : "орудие"),
               ) +
                 `<p class="development-note">${o.allowed ? "Приказ группе задаёт точку сбора" : reason(o)}</p>` +
+                maintenance(u) +
                 queue(u),
               focus(u, label),
             );
@@ -144,15 +169,23 @@
         }
       } else {
         for (const [action, detail] of [
-          ["network", "Открывает цех и модуль проникновения"],
+          [
+            "network",
+            long
+              ? "Ступень II · цех и улучшения армии"
+              : "Открывает цех и модуль проникновения",
+          ],
+          ...(long
+            ? [["command", "Ступень III · артиллерия и проникновение"]]
+            : []),
           ["hack", "Разведчик отключает защиту через терминал"],
-          ["weapons", "Урон разведчика и армии +20%"],
+          ["weapons", "Урон союзников +20%"],
           ["armor", "Урон по разведчику и армии −15%"],
         ]) {
           const o = E.supplyStatus(s, action),
             job = D.queued(s, action)[0];
           content += card(
-            D.ITEMS[action].label,
+            ITEMS[action].label,
             job
               ? `Исследование · ${Math.ceil(job.remaining)} с`
               : o.reason === "installed"
@@ -174,7 +207,7 @@
         ))
           content += queue(u);
       }
-      this.el.innerHTML = `<div class="development-summary"><span>Сплав <strong id="development-alloy">${s.economy.alloy}</strong></span><span>Отряд <strong>${summary.population} / ${summary.capacity}</strong></span></div><div class="development-tabs" role="tablist" aria-label="Развитие базы">${[
+      this.el.innerHTML = `<div class="development-summary"><span>Сплав <strong id="development-alloy">${s.economy.alloy}</strong></span>${long ? `<span>Развитие <strong>${["", "I", "II", "III"][summary.tier]}</strong></span>` : ""}<span>Отряд <strong>${summary.population} / ${summary.capacity}</strong></span></div><div class="development-tabs" role="tablist" aria-label="Развитие базы">${[
         ["economy", "Добыча"],
         ["production", "Производство"],
         ["research", "Технологии"],

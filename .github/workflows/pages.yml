@@ -16,7 +16,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # Includes two complete 15–20 minute operation scenarios through browser controls.
+    timeout-minutes: 35
     permissions:
       contents: read
     steps:

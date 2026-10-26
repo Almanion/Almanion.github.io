@@ -869,7 +869,11 @@
         for (const cache of s.caches.filter((c) => !c.taken)) {
           const p = this.screen(cache.x, cache.y);
           c.fillStyle = "#dfd3a7";
-          c.fillText("40", p.x + 13, p.y + 6);
+          c.fillText(
+            String(s.campaign ? E.development.rules(s).cache : 40),
+            p.x + 13,
+            p.y + 6,
+          );
         }
         c.textBaseline = "alphabetic";
         const labels = [
@@ -2062,7 +2066,7 @@
           deep = heavy ? 48 : 40;
         if (u.build > 0)
           c.globalAlpha =
-            0.35 + 0.65 * (1 - u.build / E.development.ITEMS[u.kind].time);
+            0.35 + 0.65 * (1 - u.build / E.development.items(s)[u.kind].time);
         slab(c, 0, 0, wide + 12, deep + 12, 0, 5, 0, MAT.graphite);
         slab(c, 0, 0, wide, deep, 5, 18, 0, MAT.ally);
         slab(c, 0, -8, wide - 8, deep * 0.65, 23, 8, 0, MAT.ceramic);
@@ -2243,7 +2247,9 @@
         );
         ellipse(c, -16, -83, 2, 1.5, "#b4e6d0");
       } else if (u.kind === "outpost") {
-        const progress = 1 - u.build / (s.campaign ? 24 : 6),
+        const progress =
+            1 -
+            u.build / (s.campaign ? E.development.items(s).outpost.time : 6),
           height = 10 + progress * 20;
         for (let i = 0; i < 4; i++) {
           const a = (i * Math.PI) / 2;
@@ -2418,6 +2424,27 @@
           ellipse(c, 0, -27, 65, 69, null, "#b499792d");
           arc(c, 0, -27, 65, -Math.PI * 0.9, -Math.PI * 0.12, "#e1b68d36");
         }
+      }
+      if (u.defense) {
+        const z = u.kind === "base" ? 40 : 35;
+        slab(c, 0, 0, 24, 22, z, 5, 0, MAT.graphite);
+        slab(c, 0, 0, 18, 17, z + 5, 7, aim, MAT.ally);
+        for (const side of [-1, 1]) {
+          slab(c, 19 - recoil, side * 6, 30, 4, z + 9, 4, aim, MAT.graphite);
+          slab(c, 31 - recoil, side * 6, 6, 6, z + 9, 4, aim, MAT.ceramic);
+          if (u.flash > 0 && !ui.reduced)
+            this.muzzle(
+              c,
+              35 - recoil,
+              side * 6,
+              z + 11,
+              aim,
+              accent,
+              u.flash,
+              0.8,
+            );
+        }
+        lamp(c, -6, 0, z + 13, aim, 1.8, accent);
       }
       if (u.hit > 0 && !ui.reduced) {
         ring(c, 0, 0, r + 3, u.team ? "#f0c9a780" : "#c1f2d980", 1.5);

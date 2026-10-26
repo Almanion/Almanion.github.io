@@ -1214,18 +1214,20 @@ body[data-mode="tactical"] #dash {
 }
 /* Development stays inside the tactical dialog. */
 .development-summary {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
   margin: 18px 0 22px;
   color: var(--muted);
   font-size: 12px;
 }
 .development-summary strong {
+  display: block;
   font-weight: 500;
   font-size: 21px;
   color: var(--ink);
-  margin-left: 8px;
+  margin-left: 0;
   font-variant-numeric: tabular-nums;
 }
 .development-tabs {
@@ -1283,6 +1285,12 @@ body[data-mode="tactical"] #dash {
   padding: 10px 13px;
   color: var(--accent);
   font-size: 12px;
+}
+.develop-action + .develop-action {
+  margin-top: 8px;
+}
+.development-note + .develop-action {
+  margin-top: 12px;
 }
 .develop-action:disabled {
   color: var(--muted);
