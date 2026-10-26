@@ -134,9 +134,14 @@ jobs:
   campaign:
     needs: scope
     if: needs.scope.outputs.campaign == 'true'
-    name: Complete new and legacy Signal Frontier operations
+    name: Complete ${{ matrix.route }} (${{ matrix.profile }})
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [frontier-3, frontier-4]
+        route: [siege, infiltration]
     permissions:
       contents: read
     steps:
@@ -175,13 +180,13 @@ jobs:
 
       - name: Complete siege and infiltration through real controls
         run: >-
-          npx playwright test e2e/signal-frontier-campaign.spec.js --grep "long (siege|infiltration): full operation" --workers 2
+          npx playwright test e2e/signal-frontier-campaign.spec.js --grep "long ${{ matrix.route }}: full operation ${{ matrix.profile }} through real controls" --workers 1
 
       - name: Preserve failed campaign diagnostics
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: campaign-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          name: campaign-diagnostics-${{ matrix.profile }}-${{ matrix.route }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             test-results/
             playwright-report/

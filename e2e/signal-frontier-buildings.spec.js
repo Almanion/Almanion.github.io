@@ -86,7 +86,7 @@ for (const browserType of [chromium, webkit])
           const b = await openBuilding(page, s);
           expect(await page.evaluate(() => SignalGame.mode())).toBe("tactical");
           await expect(page.locator("#develop-rifle")).toBeVisible();
-          await expect(page.locator(".building-selected")).toContainText(
+          await expect(page.locator(".producer")).toContainText(
             "Домашняя база",
           );
           await page.locator("#develop-rifle").click();
@@ -133,10 +133,20 @@ for (const browserType of [chromium, webkit])
             };
           });
           expect(geometry.modal).toBe(false);
+          expect(geometry.y).toBeGreaterThan(height * 0.2);
           expect(geometry.x).toBeGreaterThanOrEqual(0);
           expect(geometry.right).toBeLessThanOrEqual(width);
           expect(geometry.bottom).toBeLessThanOrEqual(height);
           expect(geometry.overflow).toBeLessThanOrEqual(1);
+          const queueBox = await page
+            .locator(".production-queue")
+            .boundingBox();
+          const bodyBox = await page
+            .locator("#development-panel")
+            .boundingBox();
+          expect(queueBox.y + queueBox.height).toBeLessThanOrEqual(
+            bodyBox.y + bodyBox.height + 1,
+          );
           // Verify production CSS compression preserves the rendered controls.
           const differences = await page.evaluate((raw) => {
             const nodes = [...document.querySelectorAll("#hud *, #dialog *")];
@@ -216,6 +226,9 @@ for (const width of [320, 390])
         E.purchase(s, "rifle");
         E.purchase(s, "weapons");
         await boot(page, s);
+        await page.locator("#supply-open").tap();
+        await page.getByRole("button", { name: "Показать: Казармы" }).tap();
+        await page.clock.runFor(400);
         await page.clock.resume(); // Native scroll gestures use the real clock; the game remains paused.
         const p = await page.evaluate((b) => SignalGame.screen(b.x, b.y), b);
         await page.touchscreen.tap(p.x, p.y - 8);
@@ -223,7 +236,7 @@ for (const width of [320, 390])
           "aria-expanded",
           "false",
         );
-        await expect(page.locator("#develop-rifle")).not.toBeVisible();
+        await expect(page.locator("#develop-rifle")).toBeVisible();
         const queue = await page.locator(".production-queue").boundingBox(),
           panel = await page.locator("#development-panel").boundingBox();
         expect(queue.y).toBeGreaterThanOrEqual(panel.y);
@@ -238,6 +251,8 @@ for (const width of [320, 390])
         expect(
           (await page.locator("#dialog").boundingBox()).height,
         ).toBeGreaterThan(compact.height);
+        await page.locator("[data-all-buildings]").tap();
+        await page.locator("#develop-tab-economy").tap();
         const r = await page.locator("#development-panel").boundingBox();
         const beforeScroll = await page.evaluate(() => SignalGame.snapshot());
         const camera = await page.evaluate(() => SignalGame.camera());
@@ -270,6 +285,8 @@ for (const width of [320, 390])
         expect(await page.evaluate(() => SignalGame.snapshot())).toEqual(
           beforeScroll,
         );
+        await page.locator("#develop-tab-production").tap();
+        await page.locator(`[data-select="${b.id}"]`).tap();
         await page.locator("#development-size").tap();
         await expect(page.locator("#development-size")).toHaveAttribute(
           "aria-expanded",
@@ -321,6 +338,8 @@ test("a stale producer cannot charge or redirect a purchase to a different build
     const dialog = document.createElement("dialog"),
       el = document.createElement("div");
     el.id = "building-harness";
+    dialog.dataset.panel = "development";
+    dialog.classList.add("dock");
     dialog.append(el);
     document.body.append(dialog);
     dialog.showModal();
@@ -348,7 +367,7 @@ test("a stale producer cannot charge or redirect a purchase to a different build
     const s = __buildingHarness.state,
       b = SignalEngine.living(s, "barracks");
     b.hp = 0;
-    s.units.push({ ...b, hp: 420, id: s.nextId++, jobs: [] });
+    s.units.push({ ...b, hp: 420, id: ++s.seq, jobs: [] });
   });
   await panel.locator("#develop-rifle").click();
   await expect(panel).toContainText("Здание уничтожено");
@@ -357,3 +376,48 @@ test("a stale producer cannot charge or redirect a purchase to a different build
     balance,
   );
 });
+
+for (const [width, height] of [
+  [320, 568],
+  [390, 844],
+  [844, 390],
+  [1440, 900],
+])
+  for (const selected of [false, true])
+    test(`fixed purchase point accepts three orders ${width} selected=${selected}`, async ({
+      browser,
+    }) => {
+      const context = await browser.newContext({
+        viewport: { width, height },
+        hasTouch: width < 900,
+        isMobile: width < 900,
+      });
+      const page = await context.newPage();
+      try {
+        const s = fixture();
+        await boot(page, s);
+        await page.locator("#supply-open").click();
+        if (selected)
+          await page
+            .locator(`[data-select="${E.living(s, "barracks").id}"]`)
+            .click();
+        const buy = page.locator("#develop-rifle");
+        await buy.scrollIntoViewIfNeeded();
+        const box = await buy.boundingBox();
+        const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+        for (let i = 0; i < 3; i++) {
+          if (width < 900) await page.touchscreen.tap(point.x, point.y);
+          else await page.mouse.click(point.x, point.y);
+          const now = await buy.boundingBox();
+          expect(Math.abs(now.x - box.x)).toBeLessThan(0.5);
+          expect(Math.abs(now.y - box.y)).toBeLessThan(0.5);
+          const state = await page.evaluate(() => SignalGame.snapshot());
+          expect(E.living(state, "barracks").jobs.length).toBe(i + 1);
+          expect(state.economy.alloy).toBe(s.economy.alloy - 65 * (i + 1));
+        }
+        const queue = await page.locator(".production-queue").boundingBox();
+        expect(queue.y).toBeGreaterThanOrEqual(box.y + box.height);
+      } finally {
+        await context.close();
+      }
+    });

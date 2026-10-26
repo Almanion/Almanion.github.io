@@ -233,7 +233,7 @@
           !compact && (blocked || pending)
             ? `<${canLink ? "button" : "p"} id="${id}-reason" class="dev-note requirement-link" ${canLink ? `data-next="${o.reason}" data-focus-target="${o.reason === "researching" && !["repair", "defense"].includes(action) ? action : actualSite || ""}"` : ""}>${reason(o)}${canLink ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>' : ""}</${canLink ? "button" : "p"}>`
             : "";
-        return `<div class="offer"><button id="${id}" class="develop-action" data-state="${actionState(o)}" data-action="${action}" ${actualSite !== undefined ? `data-site="${actualSite}"` : ""} ${producer ? `data-producer="${producer.id}"` : ""} ${o.allowed ? "" : "disabled"} ${!compact && (blocked || pending) ? `aria-describedby="${id}-reason"` : ""}><span class="develop-action-label">${done ? "Исследовано" : label || item.label}<small>${done ? "Действует всю операцию" : pending ? "В очереди · после паузы" : compact && blocked ? reason(o) : time}</small></span><span class="develop-price">${done ? "✓" : pending ? "…" : `${icon("alloy")}<span>${o.cost}<small>сплав</small></span>`}</span></button>${detail ? `<p class="dev-note">${detail}</p>` : ""}${requirement}</div>`;
+        return `<div class="offer"><button id="${id}" class="purchase" data-state="${actionState(o)}" data-action="${action}" ${actualSite !== undefined ? `data-site="${actualSite}"` : ""} ${producer ? `data-producer="${producer.id}"` : ""} ${o.allowed ? "" : "disabled"} ${!compact && (blocked || pending) ? `aria-describedby="${id}-reason"` : ""}><span class="purchase-label">${done ? "Исследовано" : label || item.label}<small>${done ? "Действует всю операцию" : pending ? "В очереди · после паузы" : compact && blocked ? reason(o) : time}</small></span><span class="price">${done ? "✓" : pending ? "…" : `${icon("alloy")}<span>${o.cost}<small>сплав</small></span>`}</span></button>${detail ? `<p class="dev-note">${detail}</p>` : ""}${requirement}</div>`;
       };
       const focus = (p, label) =>
         `<button class="map-link" data-focus="${p.x},${p.y}" aria-label="Показать: ${label}" title="Показать на карте"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6M8 12h8m-4-4v8"/></svg></button>`;
@@ -274,7 +274,7 @@
         top = "",
         unit = null,
       ) =>
-        `<article class="dev-card" data-state="${state}"><header><span class="development-icon">${icon(name)}</span><div><strong>${unit ? `<button class="building-title" data-select="${unit.id}">${title}<span aria-hidden="true"> ›</span></button>` : title}</strong><small>${detail}</small></div>${top}</header>${content}</article>`;
+        `<article class="card" data-state="${state}"><header>${this.selected !== null ? '<button class="building-back" data-all-buildings aria-label="Все здания" title="Все здания">←</button>' : ""}${this.selected === null ? `<span class="dev-icon">${icon(name)}</span>` : ""}<div><strong>${unit ? `<button class="building-title" data-select="${unit.id}">${title}<span aria-hidden="true"> ›</span></button>` : title}</strong><small>${detail}</small></div>${top}</header>${content}</article>`;
       const maintenance = (u) => {
         if (!long) return "";
         let html = "";
@@ -334,7 +334,16 @@
                     : long
                       ? ["defense"]
                       : [];
-            controls = `<div class="building-queue">${queue(u)}</div><div class="building-catalog"><div class="building-tabs" role="tablist" aria-label="Производство здания"><button id="building-tab-troops" role="tab" data-section="troops" aria-selected="${this.section === "troops"}">Войска</button>${tech.length ? `<button id="building-tab-tech" role="tab" data-section="tech" aria-selected="${this.section === "tech"}">Улучшения</button>` : ""}</div><div class="building-offers">${(this.section === "tech" && tech.length ? tech : troops).map((a) => `<div class="building-offer">${button(a, u.id, ITEMS[a].label, descriptions[a])}${stats(a)}</div>`).join("")}</div></div>`;
+            controls = `<div class="catalog"><div class="building-tabs" role="tablist" aria-label="Производство здания"><button id="building-tab-troops" role="tab" data-section="troops" aria-selected="${this.section === "troops"}">Войска</button>${tech.length ? `<button id="building-tab-tech" role="tab" data-section="tech" aria-selected="${this.section === "tech"}">Улучшения</button>` : ""}</div><div class="unit-offers">${(this.section === "tech" && tech.length ? tech : troops).map((a) => `<div class="unit-offer">${button(a, u.id, ITEMS[a].label, "", true)}</div>`).join("")}</div></div><div class="building-queue">${queue(u)}</div><div class="building-context">${(this
+              .section === "tech" && tech.length
+              ? tech
+              : troops
+            )
+              .map((a) => {
+                const o = E.supplyStatus(s, a, u.id);
+                return `<p class="dev-note">${descriptions[a]}</p>${stats(a)}${!o.allowed && o.reason !== "installed" ? `<button id="develop-${a}-reason" class="requirement-link dev-note" data-next="${o.reason}" data-focus-target="${o.reason === "researching" ? a : u.id}">${reason(o)} <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button>` : ""}`;
+              })
+              .join("")}</div>`;
             controls += `<div class="building-service">${["barracks", "foundry"].includes(u.kind) ? `<button class="rally-button" data-rally="${u.id}">Точка сбора <span>↗</span></button>` : ""}${long ? button("repair", u.id, "Ремонт", "", true) : ""}</div>`;
           }
           content = card(
@@ -388,8 +397,8 @@
               `${Math.min(4, count)} / 4 дрона${count > 4 ? ` · ${count - 4} в резерве` : ""}${u.defense ? " · защита установлена" : ""}`,
               ore +
                 button("drone", u.id, "Обучить дрона") +
-                maintenance(u) +
-                queue(u),
+                queue(u) +
+                maintenance(u),
               "node",
               "ready",
               focus(u, p.name),
@@ -435,9 +444,9 @@
                 undefined,
                 action === "rifle" ? "Обучить бойца" : "Собрать орудие",
               ) +
+                queue(u) +
                 '<p class="dev-note">Очередь и точка сбора — в панели здания</p>' +
-                maintenance(u) +
-                queue(u),
+                maintenance(u),
               kind,
               "ready",
               focus(u, label),
@@ -473,7 +482,7 @@
           );
         }
       }
-      this.el.innerHTML = `<div class="dev-summary"><span>Сплав <strong id="development-alloy">${s.economy.alloy}</strong></span>${long ? `<span>Ступень <strong>${["", "I", "II", "III"][summary.tier]}</strong></span>` : ""}<span>Отряд <strong>${summary.population} / ${summary.capacity}</strong></span></div><div class="dev-tabs" role="tablist" aria-label="Развитие базы">${[
+      this.el.innerHTML = `<div class="dev-tabs" role="tablist" aria-label="Развитие базы">${[
         ["economy", "Добыча"],
         ["production", "Производство"],
         ["research", "Технологии"],
@@ -486,10 +495,9 @@
           "",
         )}</div><div id="development-body" role="tabpanel" aria-labelledby="develop-tab-${this.tab}">${content}</div>`;
       if (this.selected !== null) {
-        this.el.querySelector(".dev-tabs").outerHTML =
-          '<div class="building-nav"><button data-all-buildings>← Все здания</button></div>';
+        this.el.querySelector(".dev-tabs").outerHTML = "";
         const body = this.el.querySelector("#development-body");
-        body.classList.add("building-selected");
+        body.classList.add("producer");
         body.removeAttribute("role");
         body.removeAttribute("aria-labelledby");
       }

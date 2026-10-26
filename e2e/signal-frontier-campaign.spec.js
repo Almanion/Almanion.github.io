@@ -24,17 +24,17 @@ test("development: real queued cost, cancellation, pause and reload", async ({
     () => SignalEngine.living(SignalGame.snapshot(), "base").id,
   );
   await page.locator("#develop-drone-" + base).click();
-  await expect(page.locator("#development-alloy")).toHaveText("130");
+  await expect(page.locator("#field-alloy")).toHaveText("130");
   await page.clock.runFor(3000);
   let s = await page.evaluate(() => SignalGame.snapshot());
   expect(s.t).toBe(0);
   expect(E.living(s, "base").jobs[0].remaining).toBe(18);
   await page.locator(".job-select").first().click();
   await page.getByRole("button", { name: /Отменить: Дрон/ }).click();
-  await expect(page.locator("#development-alloy")).toHaveText("167");
+  await expect(page.locator("#field-alloy")).toHaveText("167");
   await page.clock.runFor(500);
   await page.locator("#develop-drone-" + base).click();
-  await expect(page.locator("#development-alloy")).toHaveText("117");
+  await expect(page.locator("#field-alloy")).toHaveText("117");
   await page.locator("#development-back").click();
   await page.locator("#tactical").click();
   await page.clock.runFor(5000);
@@ -217,9 +217,21 @@ for (const [name, profile] of ["frontier-3", "frontier-4"].flatMap((p) =>
       await page.locator("#tactical").click();
       await new Promise((resolve) => setTimeout(resolve, 400));
       expect(await page.evaluate(() => SignalGame.snapshot().t)).toBe(0);
+      expect(
+        await page.evaluate(() => {
+          const origin = SignalGame.screen(0, 0),
+            unit = SignalGame.screen(1, 1),
+            exact = SignalGame.screen(1377, 921);
+          return Math.hypot(
+            exact.x - origin.x - 1377 * (unit.x - origin.x),
+            exact.y - origin.y - 921 * (unit.y - origin.y),
+          );
+        }),
+      ).toBeLessThan(1e-6);
       const pilot = new ExpeditionPilot(name, 22);
       let pressed = new Set(),
         firing = false,
+        aimPoint = null,
         final,
         lastLog = -1,
         reloaded = false;
@@ -230,6 +242,7 @@ for (const [name, profile] of ["frontier-3", "frontier-4"].flatMap((p) =>
         pressed.clear();
         if (firing) await page.mouse.up();
         firing = false;
+        aimPoint = null;
       }
       async function issue(commands) {
         await release();
@@ -289,7 +302,14 @@ for (const [name, profile] of ["frontier-3", "frontier-4"].flatMap((p) =>
       let idleCommands = 0,
         previousTime = -1;
       for (let i = 0; i < 24000; i++) {
-        const s = await page.evaluate(() => SignalGame.snapshot());
+        // Read the snapshot and its affine screen projection in one round trip.
+        // Inputs still go through trusted browser mouse and keyboard controls.
+        const frame = await page.evaluate(() => ({
+          state: SignalGame.snapshot(),
+          origin: SignalGame.screen(0, 0),
+          unit: SignalGame.screen(1, 1),
+        }));
+        const s = frame.state;
         final = s;
         idleCommands = s.t === previousTime ? idleCommands + 1 : 0;
         previousTime = s.t;
@@ -335,18 +355,29 @@ for (const [name, profile] of ["frontier-3", "frontier-4"].flatMap((p) =>
         if (steering.y > 0) wanted.add("KeyS");
         if (steering.y < 0) wanted.add("KeyW");
         if (d.input.interact) wanted.add("KeyE");
-        for (const k of pressed) if (!wanted.has(k)) await page.keyboard.up(k);
+        const keys = [];
+        for (const k of pressed)
+          if (!wanted.has(k)) keys.push(page.keyboard.up(k));
         for (const k of wanted)
-          if (!pressed.has(k)) await page.keyboard.down(k);
+          if (!pressed.has(k)) keys.push(page.keyboard.down(k));
+        await Promise.all(keys);
         pressed = wanted;
         let visible = false;
         if (d.input.aim) {
-          const p = await page.evaluate(
-            (p) => SignalGame.screen(p.x, p.y),
-            d.input.aim,
-          );
+          const p = {
+            x: frame.origin.x + d.input.aim.x * (frame.unit.x - frame.origin.x),
+            y: frame.origin.y + d.input.aim.y * (frame.unit.y - frame.origin.y),
+          };
           visible = p.x > 20 && p.x < 1580 && p.y > 100 && p.y < 840;
-          if (visible) await page.mouse.move(p.x, p.y);
+          if (
+            visible &&
+            (!aimPoint ||
+              Math.abs(p.x - aimPoint.x) > 1e-6 ||
+              Math.abs(p.y - aimPoint.y) > 1e-6)
+          ) {
+            await page.mouse.move(p.x, p.y);
+            aimPoint = p;
+          }
         }
         if (visible && !firing) {
           await page.mouse.down();

@@ -76,7 +76,7 @@ for (const browserName of ["chromium", "webkit"])
             "data-panel",
             "development",
           );
-          await expect(page.locator(".building-selected")).toBeVisible();
+          await expect(page.locator(".producer")).toBeVisible();
           if (
             (await page
               .locator("#development-size")
@@ -87,7 +87,7 @@ for (const browserName of ["chromium", "webkit"])
           await expect(page.locator("#develop-artillery")).toHaveCount(0);
           const before = s.economy.alloy;
           await page.locator("#develop-rifle").click();
-          await expect(page.locator("#development-alloy")).toHaveText(
+          await expect(page.locator("#field-alloy")).toHaveText(
             String(before - 65),
           );
           await expect(page.locator(".production-queue li")).toHaveCount(1);
@@ -97,7 +97,7 @@ for (const browserName of ["chromium", "webkit"])
           );
           await page.locator(".job-select").first().click();
           await page.getByRole("button", { name: /Отменить: Боец/ }).click();
-          await expect(page.locator("#development-alloy")).toHaveText(
+          await expect(page.locator("#field-alloy")).toHaveText(
             String(before - 17),
           );
           await page.locator("[data-rally]").click();

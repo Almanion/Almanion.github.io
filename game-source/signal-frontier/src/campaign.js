@@ -899,7 +899,7 @@
         if (
           free(p, E.C[u.kind].r, u.map) &&
           E.clear(u, p, E.C[u.kind].r) &&
-          E.clear(p, { ...target, map: u.map })
+          E.fireClear({ ...p, map: u.map, kind: u.kind }, target)
         )
           return p;
       }
@@ -933,7 +933,7 @@
           if (
             prey &&
             prey.hp > 0 &&
-            E.clear(u, locked) &&
+            E.fireClear(u, locked) &&
             (u.kind !== "runner" ||
               (E.dist(u, prey) < 65 && !(prey.kind === "hero" && s.dashT > 0)))
           )
@@ -953,13 +953,17 @@
           )
             s.campaign.intel.push({ id: v.id, x: v.x, y: v.y, seenAt: s.t });
         if (def.speed) {
-          let destination = null;
+          let destination = null,
+            firingRoute = null;
           if (target) {
             const d = E.dist(u, target),
               side = u.id % 2 ? 1 : -1;
             if (u.hp < def.hp * 0.3 && u.kind !== "runner")
               destination = position(u, target, Math.max(290, d + 85), side);
-            else if (u.kind === "runner" && d > 80)
+            else if (!E.fireClear(u, target) || d >= def.range) {
+              firingRoute = E.firingPath(u, target);
+              destination = firingRoute.at(-1) || null;
+            } else if (u.kind === "runner" && d > 80)
               destination = position(u, target, 55, side);
             else if (u.kind !== "runner" && d < def.range * 0.55)
               destination = position(u, target, def.range * 0.78, side);
@@ -970,9 +974,12 @@
             ai.seen &&
             s.t - ai.seenAt < 8 &&
             (!defend || E.dist(ai.seen, ai.home) < 470)
-          )
-            destination = ai.seen;
-          else if (ai.raid) {
+          ) {
+            if (!E.fireClear(u, ai.seen)) {
+              firingRoute = E.firingPath(u, ai.seen);
+              destination = firingRoute.at(-1) || null;
+            } else destination = ai.seen;
+          } else if (ai.raid) {
             while (ai.waypoints?.length && E.dist(u, ai.waypoints[0]) < 60)
               ai.waypoints.shift();
             destination = ai.waypoints?.[0] || ai.goal;
@@ -1026,11 +1033,19 @@
             };
           }
           if (destination && free(destination, def.r, u.map))
-            u.path = E.pathTo(u, destination, def.r);
+            u.path =
+              firingRoute && destination === firingRoute.at(-1)
+                ? firingRoute
+                : E.pathTo(u, destination, def.r);
           else u.path = [];
         }
       }
-      if (target && E.dist(u, target) < def.range && u.cool === 0) {
+      if (
+        target &&
+        E.dist(u, target) < def.range &&
+        E.fireClear(u, target) &&
+        u.cool === 0
+      ) {
         const lead =
           u.kind === "runner"
             ? 0
@@ -1041,7 +1056,7 @@
           y: E.clamp(target.y + (ai.vy || 0) * lead, 24, E.map(s).H - 24),
           id: target.id,
         };
-        if (!E.clear(u, lock)) {
+        if (!E.fireClear(u, lock)) {
           lock.x = target.x;
           lock.y = target.y;
         }

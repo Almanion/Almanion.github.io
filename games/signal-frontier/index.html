@@ -12,13 +12,13 @@
       content="Предел сигнала — тактическая операция на заброшенном кольце."
     />
     <title>Предел сигнала · Альманион</title>
-    <link rel="stylesheet" href="style.css?v=0.8.0" />
-    <script src="campaign.js?v=0.8.0" defer></script>
-    <script src="engine.js?v=0.8.0" defer></script>
-    <script src="view.js?v=0.8.0" defer></script>
-    <script src="audio.js?v=0.8.0" defer></script>
-    <script src="development-ui.js?v=0.8.0" defer></script>
-    <script src="app.js?v=0.8.0" defer></script>
+    <link rel="stylesheet" href="style.css?v=0.8.1" />
+    <script src="campaign.js?v=0.8.1" defer></script>
+    <script src="engine.js?v=0.8.1" defer></script>
+    <script src="view.js?v=0.8.1" defer></script>
+    <script src="audio.js?v=0.8.1" defer></script>
+    <script src="development-ui.js?v=0.8.1" defer></script>
+    <script src="app.js?v=0.8.1" defer></script>
   </head>
   <body data-mode="menu">
     <canvas
@@ -50,7 +50,7 @@
           ><button data-open="account">Аккаунт</button>
         </div>
       </div>
-      <p class="edition">Первая операция <span>0.8.0</span></p>
+      <p class="edition">Первая операция <span>0.8.1</span></p>
     </main>
     <div id="hud" hidden>
       <header class="topbar">
@@ -316,6 +316,7 @@
             >
               Свернуть
             </button>
+            <button id="development-back" class="text-button">К карте</button>
           </div>
           <div id="development-panel"></div>
           <p
@@ -323,7 +324,6 @@
             class="supply-feedback"
             role="status"
           ></p>
-          <button id="development-back" class="primary">К карте</button>
         </section>
         <section id="supply-content" hidden>
           <p class="eyebrow">Тактическая пауза</p>

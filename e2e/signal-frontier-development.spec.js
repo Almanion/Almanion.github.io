@@ -66,7 +66,7 @@ test("two rapid drone orders are accepted and reserve both worker slots", async 
   await button.click();
   await button.click();
   await expect(button).toBeDisabled();
-  await expect(page.locator("#development-alloy")).toHaveText("80");
+  await expect(page.locator("#field-alloy")).toHaveText("80");
   const s = await page.evaluate(() => SignalGame.snapshot());
   expect(E.living(s, "base").jobs.map((j) => j.action)).toEqual([
     "drone",
@@ -93,12 +93,12 @@ for (const width of [320, 390, 1440])
       await expect(page.locator("#develop-command")).toBeEnabled();
       await expect(page.locator("#develop-hack")).toBeDisabled();
       await page.locator("#develop-command").click();
-      await expect(page.locator("#development-alloy")).toHaveText(
+      await expect(page.locator("#field-alloy")).toHaveText(
         String(fixture.economy.alloy - 520),
       );
       await page.locator("#develop-tab-economy").click();
       await page.locator("#develop-repair-" + b.id).click();
-      await expect(page.locator("#development-alloy")).toHaveText(
+      await expect(page.locator("#field-alloy")).toHaveText(
         String(fixture.economy.alloy - 570),
       );
       await page.clock.runFor(2000);
@@ -147,7 +147,7 @@ test("0.4 save retains old prices and two technology tiers in the new interface"
   await page.locator("#supply-open").click();
   await page.locator("#develop-tab-economy").click();
   await page.locator("#develop-drone-" + E.living(old, "base").id).click();
-  await expect(page.locator("#development-alloy")).toHaveText("145");
+  await expect(page.locator("#field-alloy")).toHaveText("145");
   await expect(page.locator('[data-action="defense"]')).toHaveCount(0);
   await page.locator("#develop-tab-research").click();
   await expect(page.locator("#develop-command")).toHaveCount(0);
@@ -257,7 +257,7 @@ test("shop keeps purpose, exact cost, duration and prerequisites visible at narr
   await page.locator("#supply-open").click();
   const barracks = page.locator("#develop-barracks"),
     foundry = page
-      .locator(".dev-card")
+      .locator(".card")
       .filter({ has: page.locator("#develop-foundry") });
   await expect(barracks).toContainText("120");
   await expect(barracks).toContainText("сплав");
@@ -278,7 +278,7 @@ test("shop keeps purpose, exact cost, duration and prerequisites visible at narr
   await expect(page.locator(".production-queue")).toContainText("18 с");
   await page.locator(".job-select").first().click();
   await page.getByRole("button", { name: /Отменить: Дрон/ }).click();
-  await expect(page.locator("#development-alloy")).toHaveText("47");
+  await expect(page.locator("#field-alloy")).toHaveText("47");
   await expect(
     page.locator("#" + (await drone.getAttribute("aria-describedby"))),
   ).toHaveText("Не хватает 3 сплава");

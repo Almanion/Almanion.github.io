@@ -660,6 +660,140 @@
     if (reached) route.push({ x: to.x, y: to.y });
     return smoothRoute(from, route, r, world.id);
   }
+  // A bolt collides with two pixels of cover padding. Use the same corridor
+  // for AI aiming; visibility alone may see a point while a bolt clips a corner.
+  function fireClear(from, target) {
+    return clear(
+      from,
+      target,
+      from.kind === "artillery" || from.kind === "runner" ? 0 : 2,
+    );
+  }
+  const attackGrids = new Map();
+  function attackGrid(map, radius) {
+    const key = map.id + ":" + radius;
+    if (attackGrids.has(key)) return attackGrids.get(key);
+    const cols = map.W / 40,
+      rows = map.H / 40,
+      points = [],
+      edges = [];
+    for (let y = 0; y < rows; y++)
+      for (let x = 0; x < cols; x++) {
+        const p = { x: x * 40 + 20, y: y * 40 + 20 };
+        points.push(free(p.x, p.y, radius + 3, map.id) ? p : null);
+      }
+    for (let k = 0; k < points.length; k++) {
+      edges[k] = [];
+      if (!points[k]) continue;
+      const x = k % cols,
+        y = Math.floor(k / cols);
+      for (const [dx, dy] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+        [1, 1],
+        [1, -1],
+        [-1, 1],
+        [-1, -1],
+      ]) {
+        const xx = x + dx,
+          yy = y + dy,
+          n = yy * cols + xx;
+        if (
+          xx >= 0 &&
+          xx < cols &&
+          yy >= 0 &&
+          yy < rows &&
+          points[n] &&
+          travelClear(points[k], points[n], radius, map.id)
+        )
+          edges[k].push([n, Math.hypot(dx, dy) * 40]);
+      }
+    }
+    const grid = { cols, rows, points, edges };
+    attackGrids.set(key, grid);
+    return grid;
+  }
+  function firingPath(from, target) {
+    const def = C[from.kind],
+      world = mapFor(from.map || target.map),
+      range = def.range * 0.9;
+    const goal = (p) =>
+      dist(p, target) <= range &&
+      fireClear({ ...p, map: world.id, kind: from.kind }, target);
+    if (goal(from)) return [];
+    const d = dist(from, target),
+      direct = {
+        x: target.x + ((from.x - target.x) * range) / Math.max(1, d),
+        y: target.y + ((from.y - target.y) * range) / Math.max(1, d),
+      };
+    if (goal(direct) && travelClear(from, direct, def.r, world.id))
+      return [direct];
+    const { cols, rows, points, edges } = attackGrid(world, def.r);
+    const costs = new Float64Array(points.length).fill(Infinity),
+      prev = new Int32Array(points.length).fill(-2),
+      heap = [];
+    const push = (k, cost) => {
+      const item = {
+        k,
+        cost,
+        score: cost + Math.max(0, dist(points[k], target) - range),
+      };
+      let n = heap.length;
+      heap.push(item);
+      while (n > 0) {
+        const p = (n - 1) >> 1;
+        if (heap[p].score <= item.score) break;
+        heap[n] = heap[p];
+        n = p;
+      }
+      heap[n] = item;
+    };
+    const pop = () => {
+      const first = heap[0],
+        last = heap.pop();
+      if (heap.length) {
+        let n = 0;
+        while (n * 2 + 1 < heap.length) {
+          let c = n * 2 + 1;
+          if (c + 1 < heap.length && heap[c + 1].score < heap[c].score) c++;
+          if (last.score <= heap[c].score) break;
+          heap[n] = heap[c];
+          n = c;
+        }
+        heap[n] = last;
+      }
+      return first;
+    };
+    const sx = Math.floor(from.x / 40),
+      sy = Math.floor(from.y / 40);
+    for (let y = Math.max(0, sy - 2); y <= Math.min(rows - 1, sy + 2); y++)
+      for (let x = Math.max(0, sx - 2); x <= Math.min(cols - 1, sx + 2); x++) {
+        const k = y * cols + x;
+        if (points[k] && travelClear(from, points[k], def.r, world.id)) {
+          costs[k] = dist(from, points[k]);
+          prev[k] = -1;
+          push(k, costs[k]);
+        }
+      }
+    while (heap.length) {
+      const { k, cost } = pop();
+      if (cost > costs[k] + 1e-7) continue;
+      if (goal(points[k])) {
+        const route = [];
+        for (let n = k; n >= 0; n = prev[n]) route.push({ ...points[n] });
+        return smoothRoute(from, route.reverse(), def.r, world.id);
+      }
+      for (const [n, step] of edges[k])
+        if (cost + step < costs[n] - 1e-7) {
+          costs[n] = cost + step;
+          prev[n] = k;
+          push(n, costs[n]);
+        }
+    }
+    return [];
+  }
   function order(s, group, x, y) {
     if (
       s.status !== "playing" ||
@@ -976,6 +1110,14 @@
         .filter((v) => dist(u, v) < def.range && clear(u, v))
         .sort((a, b) => dist(u, a) - dist(u, b))[0];
       if (u.team === 0) {
+        if (
+          !u.target &&
+          target &&
+          def.speed &&
+          !u.path.length &&
+          !fireClear(u, target)
+        )
+          u.target = { x: target.x, y: target.y, id: target.id };
         if (u.target && [1, 2].includes(u.group)) {
           const preferred = opponents.find((v) => v.id === u.target.id);
           u.think = Math.max(0, u.think - dt);
@@ -984,16 +1126,37 @@
           if (visible) {
             u.target.x = preferred.x;
             u.target.y = preferred.y;
-            if (dist(u, preferred) < def.range * 0.92) u.path = [];
-            else if (u.think === 0) {
-              u.path = pathTo(u, u.target, def.r);
-              u.think = 0.5;
-            }
-            if (dist(u, preferred) < def.range) target = preferred;
-          } else if (!preferred || !u.path.length) u.target = null;
+          }
+          if (!preferred) u.target = null;
+          else if (
+            visible &&
+            dist(u, preferred) < def.range * 0.92 &&
+            fireClear(u, preferred)
+          )
+            u.path = [];
+          else if (!visible && dist(u, u.target) < 620 && clear(u, u.target)) {
+            u.target = null;
+            u.path = [];
+          } else if (u.think === 0) {
+            u.path = firingPath(u, u.target);
+            u.think = 0.5;
+          }
+          if (
+            visible &&
+            dist(u, preferred) < def.range &&
+            fireClear(u, preferred)
+          )
+            target = preferred;
         }
         if (u.path.length) follow(u, dt);
-        if (target && u.cool === 0) shoot(s, u, target);
+        // Movement can change both the angle and the cover corridor this frame.
+        if (
+          target &&
+          dist(u, target) < def.range &&
+          fireClear(u, target) &&
+          u.cool === 0
+        )
+          shoot(s, u, target);
       } else if (s.campaign) {
         campaign.enemy(s, u, dt, opponents);
       } else {
@@ -1003,10 +1166,9 @@
           const prey = opponents
             .filter((v) => v.kind !== "base" || dist(u, v) < 400)
             .sort((a, b) => dist(u, a) - dist(u, b))[0];
-          if (prey && dist(u, prey) < 450)
-            u.path = pathTo(u, prey, C[u.kind].r);
+          if (prey && dist(u, prey) < 450) u.path = firingPath(u, prey);
         }
-        if (target) {
+        if (target && fireClear(u, target)) {
           u.path = [];
           u.angle = Math.atan2(target.y - u.y, target.x - u.x);
           if (u.cool === 0) {
@@ -1023,7 +1185,7 @@
               if (
                 aim &&
                 aim.hp !== 0 &&
-                clear(u, aim) &&
+                fireClear(u, aim) &&
                 (u.kind !== "runner" || dist(u, aim) < 70)
               )
                 shoot(s, u, aim);
@@ -1433,6 +1595,8 @@
     attackUnits,
     setRally,
     pathTo,
+    firingPath,
+    fireClear,
     free,
     clear,
     dist,

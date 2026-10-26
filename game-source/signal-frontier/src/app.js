@@ -158,9 +158,7 @@
       ).getBoundingClientRect(),
       tools = $("map-tools").getBoundingClientRect(),
       objective = document.querySelector(".topbar").getBoundingClientRect(),
-      landscape = drawer
-        ? innerWidth >= 760 || (innerWidth > innerHeight && innerHeight <= 500)
-        : innerWidth > innerHeight && innerHeight <= 500;
+      landscape = !drawer && innerWidth > innerHeight && innerHeight <= 500;
     mapArea = {
       x: 14,
       y: Math.max(tools.bottom, objective.bottom) + 12,
@@ -458,6 +456,7 @@
       account?.changed();
     }
     dialog.dataset.panel = which;
+    dialog.classList.toggle("dock", drawer);
     for (const section of dialog.querySelectorAll("section"))
       section.hidden = section.id !== which + "-content";
     if (!dialog.open) drawer ? dialog.show() : dialog.showModal();

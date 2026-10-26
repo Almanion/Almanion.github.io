@@ -269,7 +269,7 @@ for (const browserType of [chromium, webkit])
         await page.locator("#supply-open").tap();
         await expect(page.locator("#develop-foundry")).toBeDisabled();
         await page.locator("#develop-barracks").tap();
-        await expect(page.locator("#development-alloy")).toHaveText("60");
+        await expect(page.locator("#field-alloy")).toHaveText("60");
         await page.locator("#develop-tab-research").tap();
         await expect(page.locator("#develop-hack")).toBeDisabled();
         await page.locator("#develop-tab-economy").tap();
