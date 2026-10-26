@@ -31,7 +31,7 @@ async function position(page, id) {
   return page.evaluate((id) => {
     const u = SignalGame.snapshot().units.find((u) => u.id === id);
     const p = SignalGame.screen(u.x, u.y);
-    return { ...p, y: p.y - 5 };
+    return { ...p, y: p.y - 8 * SignalGame.camera().scale };
   }, id);
 }
 async function frame(page, ids) {
@@ -193,11 +193,31 @@ for (const browserType of [chromium, webkit])
           expect(
             after.units.filter((u) => ids.includes(u.id)).every((u) => u.order),
           ).toBe(true);
+          expect(
+            after.units
+              .filter((u) => ids.includes(u.id))
+              .every((u) => u.target === null),
+          ).toBe(true);
           expect(after.t).toBe(0);
           await expect(page.locator("#order-move")).toHaveAttribute(
             "aria-pressed",
             "false",
           );
+          const enemyId = after.units.find(
+            (u) => u.kind === "sentinel" && u.hp > 0,
+          ).id;
+          const enemyPoint = await position(page, enemyId);
+          await page.locator("#order-move").tap();
+          await page.touchscreen.tap(enemyPoint.x, enemyPoint.y);
+          expect(
+            await page.evaluate(
+              (ids) =>
+                SignalGame.snapshot()
+                  .units.filter((u) => ids.includes(u.id))
+                  .map((u) => u.target?.id),
+              ids,
+            ),
+          ).toEqual(ids.map(() => enemyId));
           for (const id of [
             "order-move",
             "order-cancel",

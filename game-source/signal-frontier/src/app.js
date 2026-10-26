@@ -311,6 +311,10 @@
   }
   function troopAt(e, enemy = false) {
     const pad = e.pointerType === "touch" ? 24 : 14;
+    // An overview must not turn a distant enemy into a large invisible target.
+    const hitPad = enemy
+      ? Math.max(4, Math.min(pad, 30 * view.camera.scale))
+      : pad;
     return state.units
       .filter(
         (u) =>
@@ -324,7 +328,7 @@
             e.clientX - p.x,
             (e.clientY - p.y + 8 * view.camera.scale) / 0.85,
           ),
-          r: Math.max(pad, E.C[u.kind].r * view.camera.scale),
+          r: Math.max(hitPad, E.C[u.kind].r * view.camera.scale),
         };
       })
       .filter((v) => v.d <= v.r)
