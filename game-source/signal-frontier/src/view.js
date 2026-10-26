@@ -701,7 +701,7 @@
             ? world.H / 2
             : E.clamp(ty, halfY - 65, world.H - halfY + 65);
       }
-      if (ui.selecting && !overview && !menu) {
+      if (ui.selecting && !menu) {
         tx = this.camera.x;
         ty = this.camera.y;
         scale = this.camera.scale;

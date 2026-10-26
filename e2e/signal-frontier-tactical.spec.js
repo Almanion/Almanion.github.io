@@ -11,15 +11,15 @@ function scenario() {
   );
   return s;
 }
-async function boot(page, s = scenario()) {
+async function boot(page, s = scenario(), reduced = true) {
   await page.clock.install();
   await page.addInitScript(
-    (s) =>
+    ({ s, reduced }) =>
       localStorage.setItem(
         "signal-frontier-v1",
-        JSON.stringify({ save: s, settings: { volume: 0, reduced: true } }),
+        JSON.stringify({ save: s, settings: { volume: 0, reduced } }),
       ),
-    s,
+    { s, reduced },
   );
   await page.goto("/games/signal-frontier/");
   await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
@@ -447,4 +447,25 @@ test("touch: one tap selects one unit and one-finger frame selects a subset with
   } finally {
     await context.close();
   }
+});
+
+test("pause: smooth camera motion stops for the whole selection gesture", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const s = scenario(),
+    ids = s.units.filter((u) => u.group === 1).map((u) => u.id);
+  await boot(page, s, false);
+  await page.clock.runFor(800);
+  await page.keyboard.down("KeyD");
+  await page.clock.runFor(200);
+  await page.keyboard.up("KeyD");
+  await frame(page, ids.slice(0, 2));
+  const camera = await page.evaluate(() => SignalGame.camera());
+  await page.clock.runFor(300);
+  expect(await page.evaluate(() => SignalGame.camera())).toEqual(camera);
+  await page.mouse.up();
+  expect(await page.evaluate(() => SignalGame.selection().ids)).toEqual(
+    ids.slice(0, 2),
+  );
 });
