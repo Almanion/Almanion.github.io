@@ -13,12 +13,29 @@ class ExpeditionPilot {
     this.last = {};
     this.retreat = false;
     this.log = [];
+    this.steering = { x: 0, y: 0 };
+  }
+  keyboard(input) {
+    // Short key pulses preserve small corrections without turning every vector
+    // with a nonzero component into a full diagonal or getting stuck at a wall.
+    const result = { ...input };
+    for (const axis of ["x", "y"]) {
+      if (!input[axis]) this.steering[axis] = 0;
+      this.steering[axis] += input[axis];
+      result[axis] =
+        Math.abs(this.steering[axis]) >= 0.5
+          ? Math.sign(this.steering[axis])
+          : 0;
+      this.steering[axis] -= result[axis];
+    }
+    return result;
   }
   decide(s) {
     const elapsed = Math.max(E.DT, s.t - this.lastTime);
     this.lastTime = s.t;
     let budget = s.economy.alloy,
-      planned = null;
+      planned = null,
+      reserve = 0;
     const h = E.hero(s),
       commands = [],
       nextOrders = {},
@@ -26,7 +43,17 @@ class ExpeditionPilot {
       post = (id) => alive("outpost").find((u) => u.site === id),
       buy = (action, site) => {
         const o = E.supplyStatus(planned || s, action, site);
-        if (o.allowed && o.cost <= budget) {
+        if (
+          o.allowed &&
+          o.cost <=
+            budget -
+              (action === "drone"
+                ? alive("drone").length
+                  ? reserve
+                  : 0
+                : (this.stage ? D.items(s).drone.cost : 0) +
+                  (action === "outpost" || action === "defense" ? 0 : reserve))
+        ) {
           planned ||= E.snapshot(s);
           if (!E.purchase(planned, action, site).allowed)
             throw Error("Invalid planned purchase");
@@ -42,12 +69,38 @@ class ExpeditionPilot {
     const base = E.living(s, "base"),
       west = post("west"),
       relay = post(this.route === "siege" ? "flank" : "relay");
+    const threatened = (node) =>
+      !!node &&
+      s.units.some(
+        (u) =>
+          u.team &&
+          u.hp > 0 &&
+          E.C[u.kind].range > 0 &&
+          E.dist(u, node) < 480 &&
+          E.clear(u, node),
+      );
+    const ore = (node) =>
+      s.campaign.mines.find(
+        (m) => m.id === (node.kind === "base" ? "home" : node.site),
+      )?.remaining;
+    // A destroyed forward node must be rebuilt before spending its price on replacements.
+    reserve =
+      this.stage >= 4 && !relay
+        ? D.items(s).outpost.cost
+        : this.route === "siege" &&
+            relay &&
+            !relay.defense &&
+            !relay.jobs.some((j) => j.action === "defense")
+          ? D.items(s).defense.cost
+          : 0;
     const rifleCount = alive("rifle").length + D.queued(s, "rifle").length;
     if (!alive("barracks").length) buy("barracks");
-    if (base && D.usedSlots(s, base) < 4) buy("drone");
+    if (base && !threatened(base) && ore(base) && D.usedSlots(s, base) < 4)
+      buy("drone");
     if (!west) buy("outpost", "west");
     if (west && !west.build) {
-      if (D.usedSlots(s, west) < 4) buy("drone", west.id);
+      if (!threatened(west) && ore(west) && D.usedSlots(s, west) < 4)
+        buy("drone", west.id);
       buy("network");
     }
     for (const u of alive().filter((u) =>
@@ -61,14 +114,16 @@ class ExpeditionPilot {
       if (west && !west.defense) buy("defense", west.id);
     }
     if (relay && !relay.build) {
-      if (D.usedSlots(s, relay) < 4) buy("drone", relay.id);
       if (!relay.defense) buy("defense", relay.id);
+      if (!threatened(relay) && ore(relay) && D.usedSlots(s, relay) < 4)
+        buy("drone", relay.id);
       buy("command");
       if (this.route === "siege") buy("foundry");
     }
     const extra = post("north");
     if (extra && !extra.build) {
-      if (D.usedSlots(s, extra) < 4) buy("drone", extra.id);
+      if (!threatened(extra) && ore(extra) && D.usedSlots(s, extra) < 4)
+        buy("drone", extra.id);
       if (!extra.defense) buy("defense", extra.id);
     }
     if (s.campaign.tier === 3) {
@@ -130,6 +185,7 @@ class ExpeditionPilot {
       if (
         relay &&
         !relay.build &&
+        (this.route !== "siege" || relay.defense) &&
         fort &&
         s.campaign.weapons &&
         alive("rifle").length >= 3
@@ -207,6 +263,22 @@ class ExpeditionPilot {
         dest = { x: 2080, y: 1530 };
         order(1, { x: 2000, y: 1430 });
         interact = E.dist(h, s.terminal) < 75;
+      }
+    }
+    // Respond to a visible attack on the economy instead of waiting at the objective
+    // while an outranging enemy destroys every worker. The forward squad holds its orders.
+    if (
+      this.stage >= 1 &&
+      base &&
+      ((base.hp < E.C.base.hp * 0.82 && threatened(base)) ||
+        (west && west.hp < E.C.outpost.hp * 0.7 && threatened(west)))
+    )
+      this.defendHome = true;
+    if (this.defendHome && base) {
+      if (!threatened(base) && !threatened(west)) this.defendHome = false;
+      else {
+        dest = { x: 320, y: 1550 };
+        interact = false;
       }
     }
     // Heal at a completed nearby node instead of trading the scout for a static objective.

@@ -10,6 +10,9 @@
   let state = E.make(),
     mode = "menu",
     group = 1,
+    selected = null,
+    selectionVisible = false,
+    orderDrag = null,
     aim = { x: 700, y: 650 },
     mousePoint = null,
     saved = null,
@@ -94,7 +97,10 @@
     state = E.restore(next);
     resultShown = false;
     phase = -1;
+    group = 1;
     resetInput();
+    selected = null;
+    selectionVisible = false;
     view.reset(state);
     persist();
     updateHome();
@@ -107,22 +113,16 @@
   }
   function resetInput() {
     keys.clear();
+    cancelSelection();
+    input.tapFire = false;
     buildingPress = rallyBuilding = null;
     for (const id of mapPointers.keys())
       if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id);
     mapPointers.clear();
     edge = pinch = null;
     input.fire = input.dash = input.reload = input.interact = false;
-    for (const s of [moveStick, aimStick]) {
-      s.id = null;
-      s.x = 0;
-      s.y = 0;
-      s.active = false;
-    }
-    for (const el of [$("move-stick"), $("aim-stick")]) {
-      el.querySelector("span").style.transform = "";
-      el.classList.remove("active");
-    }
+    clearStick(moveStick, $("move-stick"));
+    clearStick(aimStick, $("aim-stick"));
   }
   function setMode(next) {
     resetInput();
@@ -152,6 +152,8 @@
     state = resume && saved ? E.restore(saved) : E.make();
     if (!state) state = E.make();
     group = 1;
+    selected = null;
+    selectionVisible = false;
     phase = -1;
     resultShown = false;
     aim = { x: E.hero(state).x + 280, y: E.hero(state).y - 80 };
@@ -179,12 +181,104 @@
     )
       return;
     group = n;
+    selected = null;
+    selectionVisible = true;
+    refreshSelection();
+  }
+  function refreshSelection() {
     for (const [id, g] of [
       ["group-one", 1],
       ["group-two", 2],
     ]) {
-      $(id).classList.toggle("selected", g === group);
-      $(id).setAttribute("aria-pressed", String(g === group));
+      $(id).classList.toggle("selected", selected === null && g === group);
+      $(id).setAttribute(
+        "aria-pressed",
+        String(selected === null && g === group),
+      );
+    }
+  }
+  function selectedUnits() {
+    return state.units.filter(
+      (u) =>
+        !u.team &&
+        u.hp > 0 &&
+        [1, 2].includes(u.group) &&
+        (selected === null ? u.group === group : selected.includes(u.id)),
+    );
+  }
+  function cancelSelection() {
+    const drag = orderDrag;
+    orderDrag = null;
+    $("selection-box").hidden = true;
+    if (drag && canvas.hasPointerCapture(drag.id))
+      canvas.releasePointerCapture(drag.id);
+  }
+  function paintSelection() {
+    const box = $("selection-box"),
+      d = orderDrag;
+    box.hidden = !d?.moved;
+    if (!d) return;
+    box.style.left = Math.min(d.startX, d.x) + "px";
+    box.style.top = Math.min(d.startY, d.y) + "px";
+    box.style.width = Math.abs(d.x - d.startX) + "px";
+    box.style.height = Math.abs(d.y - d.startY) + "px";
+  }
+  function issueOrder(point) {
+    const map = E.map(state);
+    if (
+      point.x < 24 ||
+      point.y < 24 ||
+      point.x > map.W - 24 ||
+      point.y > map.H - 24
+    )
+      return false;
+    const success = rallyBuilding
+      ? E.setRally(state, rallyBuilding, point.x, point.y)
+      : selected === null
+        ? E.order(state, group, point.x, point.y)
+        : E.orderUnits(state, selected, point.x, point.y);
+    if (success) {
+      rallyBuilding = null;
+      view.add(state.events, settings.reduced);
+      sound.start();
+      sound.play({ type: "order", ...point });
+      state.events = [];
+      save();
+    }
+    return success;
+  }
+  function finishSelection(d, e) {
+    if (d.moved) {
+      const left = Math.min(d.startX, d.x),
+        right = Math.max(d.startX, d.x),
+        top = Math.min(d.startY, d.y),
+        bottom = Math.max(d.startY, d.y);
+      const hits = state.units
+        .filter((u) => {
+          if (u.team || u.hp <= 0 || ![1, 2].includes(u.group)) return false;
+          const p = view.screen(u.x, u.y),
+            r = E.C[u.kind].r * view.camera.scale;
+          return (
+            p.x + r >= left &&
+            p.x - r <= right &&
+            p.y + r * 0.73 >= top &&
+            p.y - r * 0.73 <= bottom
+          );
+        })
+        .map((u) => u.id);
+      selected = [...new Set([...(d.add ? selected || [] : []), ...hits])];
+      selectionVisible = true;
+      rallyBuilding = null;
+      refreshSelection();
+      if (selected.length)
+        notice("Выбрано: " + selected.length + " · ПКМ — приказ");
+    } else if (
+      e.clientX >= 0 &&
+      e.clientX <= innerWidth &&
+      e.clientY >= 0 &&
+      e.clientY <= innerHeight
+    ) {
+      issueOrder(view.world(e.clientX, e.clientY));
     }
   }
   function openDialog(which) {
@@ -278,6 +372,8 @@
     );
   }
   function updateUI() {
+    if (selected) selected = selectedUnits().map((u) => u.id);
+    refreshSelection();
     const h = E.hero(state),
       n = state.phase;
     const task = E.objective(state);
@@ -681,6 +777,20 @@
     };
   }
   canvas.addEventListener("pointermove", (e) => {
+    if (orderDrag?.id === e.pointerId) {
+      orderDrag.x = E.clamp(e.clientX, 0, innerWidth);
+      orderDrag.y = E.clamp(e.clientY, 0, innerHeight);
+      if (
+        Math.hypot(
+          orderDrag.x - orderDrag.startX,
+          orderDrag.y - orderDrag.startY,
+        ) > 8
+      )
+        orderDrag.moved = true;
+      paintSelection();
+      e.preventDefault();
+      return;
+    }
     if (
       buildingPress &&
       Math.hypot(e.clientX - buildingPress.x, e.clientY - buildingPress.y) > 9
@@ -722,7 +832,27 @@
     if (!mapPointers.size) edge = null;
   });
   canvas.addEventListener("pointerdown", (e) => {
-    if (mode === "tactical" && [0, 1, 2].includes(e.button)) {
+    if (
+      ["playing", "tactical"].includes(mode) &&
+      e.button === 2 &&
+      e.pointerType !== "touch"
+    ) {
+      orderDrag = {
+        id: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        x: e.clientX,
+        y: e.clientY,
+        moved: false,
+        add: e.ctrlKey || e.metaKey,
+      };
+      edge = null;
+      input.fire = false;
+      canvas.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      return;
+    }
+    if (mode === "tactical" && [0, 1].includes(e.button)) {
       const boundary = edgeAt(e),
         atEdge = !!(boundary.x || boundary.y);
       mapPointers.set(e.pointerId, {
@@ -731,7 +861,6 @@
         startX: e.clientX,
         startY: e.clientY,
         moved: e.button === 1,
-        orderOnly: e.button === 2,
         edge: atEdge,
       });
       edge = boundary;
@@ -770,6 +899,18 @@
   });
   for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
     canvas.addEventListener(type, (e) => {
+      if (orderDrag?.id === e.pointerId) {
+        const d = orderDrag;
+        cancelSelection();
+        if (
+          type === "pointerup" &&
+          e.button === 2 &&
+          ["playing", "tactical"].includes(mode)
+        )
+          finishSelection(d, e);
+        e.preventDefault();
+        return;
+      }
       input.fire = false;
       const press = buildingPress;
       if (press?.id === e.pointerId) {
@@ -799,22 +940,12 @@
           point.y > map.H - 24
         )
           return;
-        const building = !p.orderOnly && !rallyBuilding && buildingAt(e);
+        const building = !rallyBuilding && buildingAt(e);
         if (building) {
           openBuilding(building);
           return;
         }
-        const success = rallyBuilding
-          ? E.setRally(state, rallyBuilding, point.x, point.y)
-          : E.order(state, group, point.x, point.y);
-        if (success) rallyBuilding = null;
-        view.add(state.events, settings.reduced);
-        if (success) {
-          sound.start();
-          sound.play({ type: "order", ...point });
-        }
-        state.events = [];
-        save();
+        issueOrder(point);
       }
     });
   canvas.addEventListener(
@@ -827,46 +958,132 @@
     },
     { passive: false },
   );
+  function clearStick(stick, el) {
+    const pointer = stick.id;
+    stick.id = null;
+    stick.x = stick.y = 0;
+    stick.active = false;
+    el.classList.remove("active", "engaged");
+    for (const key of ["--base-x", "--base-y", "--stick-x", "--stick-y"])
+      el.style.removeProperty(key);
+    if (pointer !== null && el.hasPointerCapture(pointer))
+      el.releasePointerCapture(pointer);
+  }
+  function quickFire() {
+    const h = E.hero(state);
+    const target = state.units
+      .filter(
+        (u) =>
+          u.team &&
+          u.hp > 0 &&
+          E.dist(h, u) < E.C.hero.range &&
+          !(u.kind === "citadel" && E.shielded(state)) &&
+          E.clear(h, u),
+      )
+      .sort((a, b) => E.dist(h, a) - E.dist(h, b) || a.id - b.id)[0];
+    aim = target
+      ? { x: target.x, y: target.y }
+      : { x: h.x + Math.cos(h.angle) * 600, y: h.y + Math.sin(h.angle) * 600 };
+    mousePoint = null;
+    input.tapFire = true;
+  }
   for (const [id, stick, isAim] of [
     ["move-stick", moveStick, false],
     ["aim-stick", aimStick, true],
   ]) {
     const el = $(id);
+    function paint() {
+      const r = el.getBoundingClientRect();
+      el.style.setProperty("--base-x", stick.cx - r.x - r.width / 2 + "px");
+      el.style.setProperty("--base-y", stick.cy - r.y - r.height / 2 + "px");
+      el.style.setProperty("--stick-x", stick.visualX + "px");
+      el.style.setProperty("--stick-y", stick.visualY + "px");
+      el.classList.toggle("active", stick.active);
+    }
     function move(e) {
       if (e.pointerId !== stick.id) return;
-      const r = el.getBoundingClientRect(),
-        dx = e.clientX - r.x - r.width / 2,
-        dy = e.clientY - r.y - r.height / 2,
-        len = Math.hypot(dx, dy),
-        max = r.width * 0.34,
-        ratio = Math.min(1, len / max);
-      stick.x = len ? (dx / len) * ratio : 0;
-      stick.y = len ? (dy / len) * ratio : 0;
-      stick.active = len > max * 0.24;
-      el.querySelector("span").style.transform =
-        `translate(${stick.x * max}px,${stick.y * max}px)`;
-      el.classList.toggle("active", stick.active);
+      let dx = e.clientX - stick.cx,
+        dy = e.clientY - stick.cy,
+        len = Math.hypot(dx, dy);
+      // The base follows a long drag, so reversing direction needs only a small thumb motion.
+      if (len > stick.radius) {
+        stick.cx += (dx / len) * (len - stick.radius);
+        stick.cy += (dy / len) * (len - stick.radius);
+        stick.cx = E.clamp(
+          stick.cx,
+          Math.min(stick.originX, isAim ? innerWidth / 2 + 32 : 48),
+          Math.max(
+            stick.originX,
+            isAim ? innerWidth - 48 : innerWidth / 2 - 32,
+          ),
+        );
+        stick.cy = E.clamp(
+          stick.cy,
+          Math.min(stick.originY, stick.bounds.top + 40),
+          Math.max(stick.originY, stick.bounds.bottom - 40),
+        );
+        dx = e.clientX - stick.cx;
+        dy = e.clientY - stick.cy;
+        len = Math.hypot(dx, dy);
+      }
+      const dead = 5,
+        strength = E.clamp((len - dead) / (stick.radius - dead), 0, 1);
+      stick.x = len ? (dx / len) * strength : 0;
+      stick.y = len ? (dy / len) * strength : 0;
+      stick.active = strength > 0;
+      stick.used ||= stick.active;
+      const visual = Math.min(stick.radius, len);
+      stick.visualX = len ? (dx / len) * visual : 0;
+      stick.visualY = len ? (dy / len) * visual : 0;
+      paint();
       e.preventDefault();
     }
     el.addEventListener("pointerdown", (e) => {
-      if (mode !== "playing" || stick.id !== null) return;
-      stick.id = e.pointerId;
+      if (mode !== "playing" || stick.id !== null || e.button !== 0) return;
+      const r = el.getBoundingClientRect();
+      Object.assign(stick, {
+        id: e.pointerId,
+        cx: e.clientX,
+        cy: e.clientY,
+        originX: e.clientX,
+        originY: e.clientY,
+        bounds: r,
+        radius: Math.min(42, r.width * 0.29),
+        started: performance.now(),
+        used: false,
+        visualX: 0,
+        visualY: 0,
+        x: 0,
+        y: 0,
+        active: false,
+      });
+      mousePoint = null;
+      el.classList.add("engaged");
       el.setPointerCapture(e.pointerId);
-      move(e);
+      paint();
+      e.preventDefault();
     });
     el.addEventListener("pointermove", move);
     for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
       el.addEventListener(type, (e) => {
-        if (stick.id === e.pointerId) {
-          stick.id = null;
-          stick.x = stick.y = 0;
-          stick.active = false;
-          el.querySelector("span").style.transform = "";
-          el.classList.remove("active");
-        }
+        if (stick.id !== e.pointerId) return;
+        const tap =
+          isAim &&
+          type === "pointerup" &&
+          !stick.used &&
+          performance.now() - stick.started < 250 &&
+          mode === "playing";
+        clearStick(stick, el);
+        if (tap) quickFire();
+        e.preventDefault();
       });
   }
   addEventListener("keydown", (e) => {
+    if (e.code === "Escape" && orderDrag) {
+      cancelSelection();
+      e.preventDefault();
+      return;
+    }
     if (e.code === "Escape" && rallyBuilding) {
       rallyBuilding = null;
       notice("Точка сбора не изменена");
@@ -888,9 +1105,11 @@
       toggleTactical();
       return;
     }
-    if (mode === "tactical") {
+    if (["playing", "tactical"].includes(mode)) {
       if (e.code === "Digit1") chooseGroup(1);
       if (e.code === "Digit2") chooseGroup(2);
+    }
+    if (mode === "tactical") {
       if (
         [
           "KeyW",
@@ -957,7 +1176,7 @@
         dy =
           (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0) -
           (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0);
-      if (edge && !view.tactical.overview) {
+      if (edge && !orderDrag && !view.tactical.overview) {
         dx += edge.x;
         dy += edge.y;
       }
@@ -987,16 +1206,18 @@
             x: h.x + aimStick.x * 600,
             y: h.y + (aimStick.y * 600) / 0.73,
           };
+        const strength = Math.hypot(moveStick.x, moveStick.y),
+          projected = Math.hypot(moveStick.x, moveStick.y / 0.73) || 1;
         E.step(state, {
-          x: mx + moveStick.x,
-          y: my + moveStick.y / 0.73,
+          x: mx + (moveStick.x / projected) * strength,
+          y: my + (moveStick.y / 0.73 / projected) * strength,
           aim,
-          fire: input.fire || aimStick.active,
+          fire: input.fire || aimStick.active || input.tapFire,
           dash: input.dash,
           reload: input.reload,
           interact: input.interact || keys.has("KeyE"),
         });
-        input.dash = input.reload = false;
+        input.dash = input.reload = input.tapFire = false;
         for (const e of state.events) {
           if (e.type !== "end") sound.play(e);
           if (e.type === "collect") notice("Сплав +" + e.amount);
@@ -1039,7 +1260,11 @@
       state,
       {
         mode: mode === "paused" && lastMode === "tactical" ? "tactical" : mode,
-        group,
+        group: selected === null ? group : 0,
+        selectionIds: selectionVisible
+          ? selectedUnits().map((u) => u.id)
+          : null,
+        selecting: !!orderDrag,
         aim,
         reduced: settings.reduced,
         touch: coarse.matches || innerWidth < 700,
@@ -1055,6 +1280,11 @@
   window.SignalGame = Object.freeze({
     snapshot: () => E.snapshot(state),
     mode: () => mode,
+    selection: () => ({
+      ids: selectedUnits().map((u) => u.id),
+      custom: selected !== null,
+      dragging: !!orderDrag,
+    }),
     screen: (x, y) => view.screen(x, y),
     camera: () => ({ ...view.camera, overview: view.tactical.overview }),
     storageKey: KEY,

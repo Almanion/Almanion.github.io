@@ -12,19 +12,20 @@
       content="Предел сигнала — тактическая операция на заброшенном кольце."
     />
     <title>Предел сигнала · Альманион</title>
-    <link rel="stylesheet" href="style.css?v=0.6.1" />
-    <script src="campaign.js?v=0.6.1" defer></script>
-    <script src="engine.js?v=0.6.1" defer></script>
-    <script src="view.js?v=0.6.1" defer></script>
-    <script src="audio.js?v=0.6.1" defer></script>
-    <script src="development-ui.js?v=0.6.1" defer></script>
-    <script src="app.js?v=0.6.1" defer></script>
+    <link rel="stylesheet" href="style.css?v=0.6.2" />
+    <script src="campaign.js?v=0.6.2" defer></script>
+    <script src="engine.js?v=0.6.2" defer></script>
+    <script src="view.js?v=0.6.2" defer></script>
+    <script src="audio.js?v=0.6.2" defer></script>
+    <script src="development-ui.js?v=0.6.2" defer></script>
+    <script src="app.js?v=0.6.2" defer></script>
   </head>
   <body data-mode="menu">
     <canvas
       id="field"
       aria-label="Поле боя. Управление клавиатурой и мышью либо сенсорными джойстиками."
     ></canvas>
+    <div id="selection-box" hidden aria-hidden="true"></div>
     <div class="vignette" aria-hidden="true"></div>
     <main id="home" class="home">
       <a class="back" href="/games/">← Игры Альманиона</a>
@@ -49,7 +50,7 @@
           ><button data-open="account">Аккаунт</button>
         </div>
       </div>
-      <p class="edition">Первая операция <span>0.6.1</span></p>
+      <p class="edition">Первая операция <span>0.6.2</span></p>
     </main>
     <div id="hud" hidden>
       <header class="topbar">
@@ -232,7 +233,9 @@
               <dt><kbd>E</kbd>, удерживать</dt>
               <dd>Взаимодействовать</dd>
               <dt><kbd>Tab</kbd> · <kbd>1</kbd> <kbd>2</kbd></dt>
-              <dd>Пауза и выбор группы</dd>
+              <dd>Пауза · выбор всей пехоты или артиллерии</dd>
+              <dt>ПКМ: протянуть рамку / короткое нажатие</dt>
+              <dd>Выбрать бойцов / отдать приказ · Ctrl добавляет к выбору</dd>
               <dt>Края экрана · колесо · перетаскивание</dt>
               <dd>
                 Перемещение и масштаб карты в паузе · правая кнопка задаёт
@@ -242,9 +245,10 @@
           </div>
           <div class="help-touch">
             <p>
-              Левый круг — движение. Правый — направление стрельбы. Чем дальше
-              от центра, тем быстрее движение; огонь начинается за внутренним
-              кольцом.
+              Левый круг появляется под пальцем: небольшое отклонение — точный
+              шаг, полное — бег. Правый: тянуть и удерживать для прицеливания и
+              огня; коротко коснуться для выстрела по ближайшему видимому врагу.
+              Вернуть палец в центр — отменить огонь.
             </p>
             <p>
               «Приказы» останавливают бой. Выберите группу и коснитесь места на

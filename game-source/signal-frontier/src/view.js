@@ -687,6 +687,11 @@
             ? world.H / 2
             : E.clamp(ty, halfY - 65, world.H - halfY + 65);
       }
+      if (ui.selecting && !overview && !menu) {
+        tx = this.camera.x;
+        ty = this.camera.y;
+        scale = this.camera.scale;
+      }
       const blend = ui.reduced ? 1 : 1 - Math.exp(-dt * 8);
       this.camera.x += (tx - this.camera.x) * blend;
       this.camera.y += (ty - this.camera.y) * blend;
@@ -706,7 +711,7 @@
       const cam = this.camera;
       c.save();
       c.translate(this.origin.x, this.origin.y);
-      if (this.shake && active && !ui.touch && !ui.reduced)
+      if (this.shake && active && !ui.touch && !ui.reduced && !ui.selecting)
         c.translate(
           Math.sin(this.time * 87) * this.shake,
           Math.cos(this.time * 71) * this.shake,
@@ -753,12 +758,17 @@
       this.industry(c, s, ui);
       this.strategy(c, s, ui);
       this.relay(c, s, ui);
-      if (overview) {
+      if (overview || (ui.mode === "playing" && ui.selectionIds != null)) {
         for (const u of s.units.filter(
-          (u) => u.team === 0 && u.group === ui.group && u.hp > 0,
+          (u) =>
+            u.team === 0 &&
+            u.hp > 0 &&
+            (ui.selectionIds != null
+              ? ui.selectionIds.includes(u.id)
+              : u.group === ui.group),
         )) {
           ring(c, u.x, u.y, E.C[u.kind].r + 10, "#c8edda", 2);
-          if (u.path.length) {
+          if (overview && u.path.length) {
             c.save();
             c.setLineDash([5, 7]);
             line(

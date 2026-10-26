@@ -322,10 +322,14 @@ for (const browserType of [chromium, webkit])
         const x0 = await page.evaluate(() => SignalGame.snapshot().units[0].x);
         const move = await page.locator("#move-stick").boundingBox();
         await page.mouse.move(
-          move.x + move.width * 0.8,
+          move.x + move.width / 2,
           move.y + move.height / 2,
         );
         await page.mouse.down();
+        await page.mouse.move(
+          move.x + move.width * 0.8,
+          move.y + move.height / 2,
+        );
         await page.waitForTimeout(300);
         const x1 = await page.evaluate(() => SignalGame.snapshot().units[0].x);
         expect(x1).toBeGreaterThan(x0 + 20);
@@ -338,8 +342,9 @@ for (const browserType of [chromium, webkit])
           await page.evaluate(() => SignalGame.snapshot().units[0].x),
         ).toBeCloseTo(stopped, 1);
         const aim = await page.locator("#aim-stick").boundingBox();
-        await page.mouse.move(aim.x + aim.width * 0.8, aim.y + aim.height / 2);
+        await page.mouse.move(aim.x + aim.width / 2, aim.y + aim.height / 2);
         await page.mouse.down();
+        await page.mouse.move(aim.x + aim.width * 0.8, aim.y + aim.height / 2);
         await page.waitForTimeout(500);
         expect(
           await page.evaluate(() => SignalGame.snapshot().shots),
@@ -384,6 +389,13 @@ test("two real emulated touch pointers move and fire together; cancellation rele
     const x = await page.evaluate(() => SignalGame.snapshot().units[0].x);
     await session.send("Input.dispatchTouchEvent", {
       type: "touchStart",
+      touchPoints: [
+        { id: 1, x: m.x + m.width / 2, y: m.y + m.height / 2 },
+        { id: 2, x: a.x + a.width / 2, y: a.y + a.height / 2 },
+      ],
+    });
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
       touchPoints: [
         { id: 1, x: m.x + m.width * 0.8, y: m.y + m.height / 2 },
         { id: 2, x: a.x + a.width * 0.8, y: a.y + a.height / 2 },
@@ -480,10 +492,10 @@ for (const routeName of ["siege", "infiltration"])
           previous = marker;
         }
         const wanted = new Set();
-        if (d.input.x > 0.2) wanted.add("KeyD");
-        if (d.input.x < -0.2) wanted.add("KeyA");
-        if (d.input.y > 0.2) wanted.add("KeyS");
-        if (d.input.y < -0.2) wanted.add("KeyW");
+        if (d.input.x > 0.01) wanted.add("KeyD");
+        if (d.input.x < -0.01) wanted.add("KeyA");
+        if (d.input.y > 0.01) wanted.add("KeyS");
+        if (d.input.y < -0.01) wanted.add("KeyW");
         if (d.input.interact) wanted.add("KeyE");
         for (const key of pressed)
           if (!wanted.has(key)) await page.keyboard.up(key);

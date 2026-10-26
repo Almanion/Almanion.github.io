@@ -699,60 +699,94 @@ body[data-mode="tactical"] #dash {
     display: flex;
     justify-content: space-between;
     position: absolute;
-    left: 24px;
-    right: 24px;
-    bottom: max(90px, calc(env(safe-area-inset-bottom) + 75px));
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
+    bottom: max(82px, calc(env(safe-area-inset-bottom) + 74px));
     pointer-events: none;
   }
   .stick {
-    width: 108px;
-    height: 108px;
-    border-radius: 50%;
-    background: rgba(12, 27, 29, 0.25);
-    border: 1px solid rgba(172, 217, 201, 0.27);
+    width: min(148px, calc(50vw - 16px));
+    height: 148px;
     position: relative;
     touch-action: none;
     user-select: none;
+    -webkit-user-select: none;
+    --base-x: 0px;
+    --base-y: 0px;
+    --stick-x: 0px;
+    --stick-y: 0px;
   }
-  .stick:before {
+  .stick::before,
+  .stick::after {
     content: "";
     position: absolute;
-    inset: 34px;
-    border: 1px solid #b3d6c91c;
+    left: 50%;
+    top: 50%;
     border-radius: 50%;
+    pointer-events: none;
+    transform: translate(
+      calc(-50% + var(--base-x)),
+      calc(-50% + var(--base-y))
+    );
+  }
+  .stick::before {
+    width: 98px;
+    height: 98px;
+    background: radial-gradient(circle, #83b3a015 0 48%, #0c1b1d55 70%);
+    border: 1px solid #acd9c947;
+    box-shadow: inset 0 0 18px #07121255;
+  }
+  .stick::after {
+    width: 10px;
+    height: 10px;
+    border: 1px solid #b3d6c933;
   }
   .stick span {
     display: block;
     position: absolute;
-    left: 37px;
-    top: 37px;
-    width: 32px;
-    height: 32px;
-    border: 1px solid #a3cec266;
-    background: #47665e55;
+    left: 50%;
+    top: 50%;
+    width: 38px;
+    height: 38px;
+    border: 1px solid #a3cec288;
+    background: #47665e99;
     border-radius: 50%;
     pointer-events: none;
+    transform: translate(
+      calc(-50% + var(--base-x) + var(--stick-x)),
+      calc(-50% + var(--base-y) + var(--stick-y))
+    );
+    box-shadow: 0 3px 12px #07121260;
   }
   .stick small {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 10px;
+    bottom: 8px;
     text-align: center;
     font-size: 8px;
     letter-spacing: 0.13em;
-    color: #9db6ae80;
+    color: #9db6ae99;
     pointer-events: none;
   }
-  #aim-stick.active {
-    border-color: #eab09688;
+  .stick.engaged small {
+    opacity: 0;
+  }
+  .stick.active::before {
+    border-color: #b3e4cd99;
+  }
+  .stick.active span {
+    background: #6c9b8bd9;
+  }
+  #aim-stick.active::before {
+    border-color: #eab09699;
   }
   #aim-stick.active span {
-    background: #ab745955;
-    border-color: #e8ac89aa;
+    background: #ab7459cc;
+    border-color: #e8ac89cc;
   }
   .interact-panel {
-    bottom: 220px;
+    bottom: 240px;
   }
   #interact {
     min-width: 180px;
@@ -858,15 +892,8 @@ body[data-mode="tactical"] #dash {
     right: 18px;
   }
   .stick {
-    width: 86px;
-    height: 86px;
-  }
-  .stick span {
-    left: 26px;
-    top: 26px;
-  }
-  .stick:before {
-    inset: 25px;
+    width: 132px;
+    height: 132px;
   }
   .stick small {
     bottom: 7px;
@@ -1649,4 +1676,13 @@ dialog[data-panel="development"] .dialog-inner {
 }
 .text-button {
   min-height: 44px;
+}
+
+#selection-box {
+  position: fixed;
+  pointer-events: none;
+  z-index: 2;
+  border: 1px solid #b3ecd3;
+  background: #9edcc61a;
+  box-shadow: inset 0 0 0 1px #071b1a66;
 }

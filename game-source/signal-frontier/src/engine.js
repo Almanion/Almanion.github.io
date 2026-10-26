@@ -491,6 +491,72 @@
           u.hp = Math.min(C[u.kind].hp, u.hp + dt * 7);
     }
   }
+  // Expanded-wall visibility keeps smoothing safe for each unit's footprint.
+  function travelClear(a, b, r, map) {
+    return (
+      free(a.x, a.y, r, map) &&
+      free(b.x, b.y, r, map) &&
+      clear({ ...a, map }, b, Math.max(0, r - 1e-7))
+    );
+  }
+  function smoothRoute(from, route, r, map) {
+    if (!route.length) return route;
+    const points = [{ x: from.x, y: from.y }];
+    for (let i = 0; i < route.length; ) {
+      let next = i;
+      for (let j = route.length - 1; j > i; j--) {
+        if (travelClear(points.at(-1), route[j], r, map)) {
+          next = j;
+          break;
+        }
+      }
+      points.push(route[next]);
+      i = next + 1;
+    }
+    const result = [];
+    for (let i = 1; i < points.length - 1; i++) {
+      const a = points[i - 1],
+        b = points[i],
+        c = points[i + 1];
+      const incoming = dist(a, b),
+        outgoing = dist(b, c);
+      let curve = null;
+      for (
+        let bend = Math.min(42, incoming * 0.32, outgoing * 0.32);
+        bend >= 2;
+        bend /= 2
+      ) {
+        const entry = {
+          x: b.x + ((a.x - b.x) * bend) / incoming,
+          y: b.y + ((a.y - b.y) * bend) / incoming,
+        };
+        const exit = {
+          x: b.x + ((c.x - b.x) * bend) / outgoing,
+          y: b.y + ((c.y - b.y) * bend) / outgoing,
+        };
+        const sample = [entry];
+        for (let n = 1; n <= 8; n++) {
+          const t = n / 8,
+            v = 1 - t;
+          sample.push({
+            x: v * v * entry.x + 2 * v * t * b.x + t * t * exit.x,
+            y: v * v * entry.y + 2 * v * t * b.y + t * t * exit.y,
+          });
+        }
+        if (
+          sample.every((p, n) =>
+            travelClear(n ? sample[n - 1] : result.at(-1) || from, p, r, map),
+          )
+        ) {
+          curve = sample;
+          break;
+        }
+      }
+      result.push(...(curve || [b]));
+    }
+    result.push(points.at(-1));
+    return result;
+  }
   function pathTo(from, to, r = 14) {
     const world = mapFor(from.map || to.map),
       cell = 40,
@@ -500,9 +566,45 @@
       end =
         Math.floor(clamp(to.y, 25, world.H - 25) / cell) * cols +
         Math.floor(clamp(to.x, 25, world.W - 25) / cell);
+    if (travelClear(from, to, r, world.id)) return [{ x: to.x, y: to.y }];
+    const exits = new Set();
+    if (free(to.x, to.y, r, world.id)) {
+      const ex = Math.floor(to.x / cell),
+        ey = Math.floor(to.y / cell);
+      for (let y = Math.max(0, ey - 2); y <= Math.min(rows - 1, ey + 2); y++)
+        for (
+          let x = Math.max(0, ex - 2);
+          x <= Math.min(cols - 1, ex + 2);
+          x++
+        ) {
+          const p = { x: x * cell + 20, y: y * cell + 20 };
+          if (
+            free(p.x, p.y, r + 3, world.id) &&
+            travelClear(p, to, r, world.id)
+          )
+            exits.add(y * cols + x);
+        }
+    }
+    let reached = false;
     const queue = [start],
       prev = new Int32Array(cols * rows).fill(-2);
     prev[start] = -1;
+    // A valid world position may lie in a cell whose centre is inside cover.
+    // Connect it to nearby visible centres rather than trapping it in that cell.
+    const sx = Math.floor(from.x / cell),
+      sy = Math.floor(from.y / cell);
+    for (let y = Math.max(0, sy - 2); y <= Math.min(rows - 1, sy + 2); y++)
+      for (let x = Math.max(0, sx - 2); x <= Math.min(cols - 1, sx + 2); x++) {
+        const k = y * cols + x;
+        if (
+          k !== start &&
+          free(x * cell + 20, y * cell + 20, r + 3, world.id) &&
+          travelClear(from, { x: x * cell + 20, y: y * cell + 20 }, r, world.id)
+        ) {
+          prev[k] = start;
+          queue.push(k);
+        }
+      }
     let best = start,
       bestD = Infinity;
     for (let i = 0; i < queue.length; i++) {
@@ -514,7 +616,11 @@
         best = n;
         bestD = d;
       }
-      if (n === end) break;
+      if (n !== start && exits.has(n)) {
+        best = n;
+        reached = true;
+        break;
+      }
       for (const [dx, dy] of [
         [1, 0],
         [-1, 0],
@@ -530,7 +636,14 @@
           yy < 0 ||
           yy >= rows ||
           prev[k] !== -2 ||
-          !free(xx * cell + 20, yy * cell + 20, r, world.id)
+          !free(xx * cell + 20, yy * cell + 20, r + 3, world.id) ||
+          (n === start &&
+            !travelClear(
+              from,
+              { x: xx * cell + 20, y: yy * cell + 20 },
+              r,
+              world.id,
+            ))
         )
           continue;
         prev[k] = n;
@@ -544,9 +657,8 @@
         y: Math.floor(n / cols) * cell + 20,
       });
     route.reverse();
-    if (free(to.x, to.y, r, world.id) && best === end)
-      route.push({ x: to.x, y: to.y });
-    return route;
+    if (reached) route.push({ x: to.x, y: to.y });
+    return smoothRoute(from, route, r, world.id);
   }
   function order(s, group, x, y) {
     if (
@@ -581,6 +693,52 @@
     emit(s, "order", x, y);
     return members.length > 0 || producers.length > 0;
   }
+  function orderUnits(s, ids, x, y) {
+    if (
+      s.status !== "playing" ||
+      !Array.isArray(ids) ||
+      !Number.isFinite(x) ||
+      !Number.isFinite(y)
+    )
+      return false;
+    const selected = new Set(ids);
+    const members = s.units.filter(
+      (u) =>
+        selected.has(u.id) && !u.team && u.hp > 0 && [1, 2].includes(u.group),
+    );
+    if (!members.length) return false;
+    const world = mapFor(s),
+      width = Math.ceil(Math.sqrt(members.length)),
+      spacing = Math.max(36, ...members.map((u) => C[u.kind].r * 2 + 8));
+    const slots = members.map((u, i) => ({
+      x:
+        x +
+        ((i % width) -
+          (Math.min(width, members.length - Math.floor(i / width) * width) -
+            1) /
+            2) *
+          spacing,
+      y:
+        y +
+        (Math.floor(i / width) - (Math.ceil(members.length / width) - 1) / 2) *
+          spacing,
+    }));
+    const waiting = [...members];
+    for (const slot of slots) {
+      waiting.sort((a, b) => dist(a, slot) - dist(b, slot) || a.id - b.id);
+      const u = waiting.shift(),
+        margin = C[u.kind].r + 25;
+      const target = {
+        x: clamp(slot.x, margin, world.W - margin),
+        y: clamp(slot.y, margin, world.H - margin),
+      };
+      u.order = target;
+      u.path = pathTo(u, target, C[u.kind].r);
+    }
+    // A temporary selection never changes a production building's rally point.
+    emit(s, "order", x, y);
+    return true;
+  }
   function setRally(s, id, x, y) {
     const u = s.units.find(
       (u) =>
@@ -610,13 +768,24 @@
     }
   }
   function follow(u, dt) {
-    while (u.path.length && dist(u, u.path[0]) < 9) u.path.shift();
-    if (!u.path.length) return;
-    const p = u.path[0],
-      a = Math.atan2(p.y - u.y, p.x - u.x),
-      speed = C[u.kind].speed;
-    move(u, Math.cos(a) * speed * dt, Math.sin(a) * speed * dt);
-    u.angle = a;
+    let distance = C[u.kind].speed * dt;
+    // Consume the exact travel budget, including small arc segments: no corner
+    // skipping, overshoot or frame-rate-dependent speed near the destination.
+    while (u.path.length && distance > 1e-8) {
+      const p = u.path[0],
+        d = dist(u, p);
+      if (d < 1e-7) {
+        u.path.shift();
+        continue;
+      }
+      const step = Math.min(distance, d),
+        a = Math.atan2(p.y - u.y, p.x - u.x);
+      move(u, Math.cos(a) * step, Math.sin(a) * step);
+      u.angle = a;
+      distance -= step;
+      if (dist(u, p) < 1e-6) u.path.shift();
+      else break;
+    }
   }
   function stats(s, u) {
     return s.version >= 4 && u.defense && ["base", "outpost"].includes(u.kind)
@@ -1220,6 +1389,7 @@
     hero,
     living,
     order,
+    orderUnits,
     setRally,
     pathTo,
     free,

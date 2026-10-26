@@ -15,6 +15,7 @@ async function start(page) {
 test("development: real queued cost, cancellation, pause and reload", async ({
   page,
 }) => {
+  test.setTimeout(60000); // This scenario renders over 22 seconds of virtual time.
   await page.clock.install();
   await start(page);
   await page.locator("#supply-open").click();
@@ -294,7 +295,8 @@ for (const [name, profile] of ["frontier-3", "frontier-4"].flatMap((p) =>
           idleCommands,
           "Pilot must advance the simulation between decisions",
         ).toBeLessThan(120);
-        if (s.status !== "playing") break;
+        if (s.status !== "playing" || (profile === "frontier-4" && s.t > 1500))
+          break;
         if (Math.floor(s.t / 60) !== lastLog) {
           lastLog = Math.floor(s.t / 60);
           console.log(
@@ -324,11 +326,12 @@ for (const [name, profile] of ["frontier-3", "frontier-4"].flatMap((p) =>
           await issue(d.commands);
           continue;
         }
-        const wanted = new Set();
-        if (d.input.x > 0.2) wanted.add("KeyD");
-        if (d.input.x < -0.2) wanted.add("KeyA");
-        if (d.input.y > 0.2) wanted.add("KeyS");
-        if (d.input.y < -0.2) wanted.add("KeyW");
+        const wanted = new Set(),
+          steering = pilot.keyboard(d.input);
+        if (steering.x > 0) wanted.add("KeyD");
+        if (steering.x < 0) wanted.add("KeyA");
+        if (steering.y > 0) wanted.add("KeyS");
+        if (steering.y < 0) wanted.add("KeyW");
         if (d.input.interact) wanted.add("KeyE");
         for (const k of pressed) if (!wanted.has(k)) await page.keyboard.up(k);
         for (const k of wanted)
@@ -366,6 +369,15 @@ for (const [name, profile] of ["frontier-3", "frontier-4"].flatMap((p) =>
           phase: final.phase,
         }),
       );
+      if (final.status !== "won")
+        await test.info().attach("unfinished-operation", {
+          body: JSON.stringify({
+            state: final,
+            stage: pilot.stage,
+            goal: pilot.goal,
+          }),
+          contentType: "application/json",
+        });
       expect(
         final.status,
         JSON.stringify({
