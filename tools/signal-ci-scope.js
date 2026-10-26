@@ -47,10 +47,34 @@ function classify(files, { known = true, forceCampaign = false } = {}) {
     );
   return { signalOnly, campaign: forceCampaign || replay };
 }
-function run() {
+async function publishedBase(env, fetcher = fetch) {
+  if (env.SCOPE_BASE) return env.SCOPE_BASE;
+  if (!env.GITHUB_REPOSITORY || !env.GITHUB_TOKEN) return "";
+  const response = await fetcher(
+    `https://api.github.com/repos/${env.GITHUB_REPOSITORY}/actions/workflows/pages.yml/runs?branch=main&event=push&status=success&per_page=1`,
+    {
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+      },
+      signal: AbortSignal.timeout(15000),
+    },
+  );
+  if (!response.ok)
+    throw new Error(`Cannot read the published baseline (${response.status})`);
+  return (await response.json()).workflow_runs?.[0]?.head_sha || "";
+}
+async function run() {
   let files = [],
     known = false;
-  const base = process.env.SCOPE_BASE || "";
+  let base = "";
+  try {
+    base = await publishedBase(process.env);
+  } catch (error) {
+    console.warn(error.message);
+  }
+  // Compare all unpublished changes, including commits from cancelled/failed runs.
+  // An unknown baseline always requires every check.
   if (/^[0-9a-f]{40}$/i.test(base) && !/^0+$/.test(base)) {
     try {
       try {
@@ -88,5 +112,9 @@ function run() {
     );
   return scope;
 }
-if (require.main === module) run();
-module.exports = { classify };
+if (require.main === module)
+  run().catch((error) => {
+    console.error(error.message);
+    process.exitCode = 1;
+  });
+module.exports = { classify, publishedBase };

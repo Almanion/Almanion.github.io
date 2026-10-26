@@ -74,3 +74,47 @@ assert.match(workflow, /needs\.campaign\.result == 'success'/);
 console.log(
   "PASS UI-only scope, engine and persistence changes, unknown diff, manual full run, deployment gates",
 );
+
+(async () => {
+  const { publishedBase } = require("../tools/signal-ci-scope");
+  const sha = "a".repeat(40),
+    env = { GITHUB_REPOSITORY: "owner/repo", GITHUB_TOKEN: "test-token" };
+  const fake = async (url) => {
+    assert.match(url, /event=push&status=success/);
+    return {
+      ok: true,
+      json: async () => ({ workflow_runs: [{ head_sha: sha }] }),
+    };
+  };
+  assert.equal(
+    await publishedBase(env, fake),
+    sha,
+    "A cancelled previous push must not become the baseline",
+  );
+  assert.equal(
+    await publishedBase({ ...env, SCOPE_BASE: "b".repeat(40) }, () => {
+      throw Error("PR must use its explicit base");
+    }),
+    "b".repeat(40),
+  );
+  assert.equal(
+    await publishedBase(env, async () => ({
+      ok: true,
+      json: async () => ({ workflow_runs: [] }),
+    })),
+    "",
+  );
+  await assert.rejects(
+    publishedBase(env, async () => ({ ok: false, status: 403 })),
+    /baseline/,
+  );
+  assert.equal(await publishedBase({}), "");
+  assert.doesNotMatch(workflow, /github\.event\.before/);
+  assert.match(workflow, /actions: read/);
+  console.log(
+    "PASS last published baseline, cancelled pushes, explicit PR base and unavailable history",
+  );
+})().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

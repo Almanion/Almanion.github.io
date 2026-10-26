@@ -24,6 +24,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
+      actions: read
     outputs:
       signal_only: ${{ steps.scope.outputs.signal_only }}
       campaign: ${{ steps.scope.outputs.campaign }}
@@ -37,7 +38,8 @@ jobs:
       - name: Select checks from changed files
         id: scope
         env:
-          SCOPE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          SCOPE_BASE: ${{ github.event.pull_request.base.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
           SCOPE_FORCE_CAMPAIGN: ${{ inputs.full_campaign }}
         run: node tools/signal-ci-scope.js
 
@@ -68,7 +70,14 @@ jobs:
       - name: Install build tooling
         run: npm ci --ignore-scripts
 
+      - name: Reuse interface browsers
+        uses: actions/cache@v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-all-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('node_modules/playwright-core/package.json') }}
+
       - name: Install browser for interface checks
+        timeout-minutes: 8
         run: npx playwright install --with-deps chromium webkit
 
       - name: Verify Firebase access rules
@@ -139,7 +148,14 @@ jobs:
       - name: Install build tooling
         run: npm ci --ignore-scripts
 
+      - name: Reuse campaign browser
+        uses: actions/cache@v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('node_modules/playwright-core/package.json') }}
+
       - name: Install browser for complete operations
+        timeout-minutes: 8
         run: npx playwright install --with-deps chromium
 
       - name: Build the same revision for campaign checks
