@@ -157,6 +157,7 @@
       if (mode !== "menu") save();
       setMode(mode === "menu" ? "menu" : "paused");
     }
+    dialog.dataset.panel = which;
     for (const section of dialog.querySelectorAll("section"))
       section.hidden = section.id !== which + "-content";
     if (!dialog.open) dialog.showModal();
@@ -717,7 +718,18 @@
     if (mode === "tactical") {
       if (e.code === "Digit1") chooseGroup(1);
       if (e.code === "Digit2") chooseGroup(2);
-      if (e.code.startsWith("Arrow")) {
+      if (
+        [
+          "KeyW",
+          "KeyA",
+          "KeyS",
+          "KeyD",
+          "ArrowUp",
+          "ArrowDown",
+          "ArrowLeft",
+          "ArrowRight",
+        ].includes(e.code)
+      ) {
         e.preventDefault();
         keys.add(e.code);
       }
@@ -767,8 +779,11 @@
     lastFrame = now;
     if (mode === "tactical") {
       let dx =
-          (keys.has("ArrowRight") ? 1 : 0) - (keys.has("ArrowLeft") ? 1 : 0),
-        dy = (keys.has("ArrowDown") ? 1 : 0) - (keys.has("ArrowUp") ? 1 : 0);
+          (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) -
+          (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0),
+        dy =
+          (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0) -
+          (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0);
       if (edge && !view.tactical.overview) {
         dx += edge.x;
         dy += edge.y;

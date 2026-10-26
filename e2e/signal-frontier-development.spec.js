@@ -177,3 +177,111 @@ test("new cache amount agrees in action, notification, wallet and save", async (
   expect(result.caches[0].taken).toBe(true);
   expect(E.restore(result)).not.toBeNull();
 });
+
+test("tactical WASD pans the map without advancing the operation or issuing orders", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.clock.install();
+  const s = E.make();
+  Object.assign(E.hero(s), { x: 960, y: 640 });
+  await resume(page, s);
+  await page.mouse.move(720, 450);
+  await page.clock.runFor(500);
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 100));
+  const initial = await page.evaluate(() => SignalGame.snapshot());
+  async function hold(keys, ms = 220) {
+    for (const k of keys) await page.keyboard.down(k);
+    await page.clock.runFor(ms);
+    for (const k of keys) await page.keyboard.up(k);
+    await page.clock.runFor(400);
+    return page.evaluate(() => SignalGame.camera());
+  }
+  let before = await page.evaluate(() => SignalGame.camera());
+  for (const [key, axis, direction] of [
+    ["KeyD", "x", 1],
+    ["KeyA", "x", -1],
+    ["KeyW", "y", -1],
+    ["KeyS", "y", 1],
+  ]) {
+    const after = await hold([key]);
+    expect((after[axis] - before[axis]) * direction).toBeGreaterThan(45);
+    expect(
+      Math.abs(
+        after[axis === "x" ? "y" : "x"] - before[axis === "x" ? "y" : "x"],
+      ),
+    ).toBeLessThan(2);
+    before = after;
+  }
+  const diagonal = await hold(["KeyD", "KeyW"]);
+  expect(diagonal.x).toBeGreaterThan(before.x + 35);
+  expect(diagonal.y).toBeLessThan(before.y - 35);
+  // Key release must stop motion; opening the shop must also clear held movement.
+  await page.clock.runFor(500);
+  expect((await page.evaluate(() => SignalGame.camera())).x).toBeCloseTo(
+    diagonal.x,
+    0,
+  );
+  await page.keyboard.down("KeyD");
+  await page.locator("#supply-open").click();
+  const paused = await page.evaluate(() => SignalGame.camera());
+  await page.keyboard.press("KeyW");
+  await page.clock.runFor(500);
+  expect((await page.evaluate(() => SignalGame.camera())).x).toBeCloseTo(
+    paused.x,
+    0,
+  );
+  await page.keyboard.up("KeyD");
+  await page.locator("#development-back").click();
+  await page.clock.runFor(500);
+  expect((await page.evaluate(() => SignalGame.camera())).x).toBeCloseTo(
+    paused.x,
+    0,
+  );
+  expect(await page.evaluate(() => SignalGame.snapshot())).toEqual(initial);
+  // The same key resumes its original movement role outside tactical pause.
+  await page.keyboard.press("Tab");
+  await hold(["KeyD"], 300);
+  expect(
+    E.hero(await page.evaluate(() => SignalGame.snapshot())).x,
+  ).toBeGreaterThan(E.hero(initial).x + 20);
+});
+
+test("shop keeps purpose, exact cost, duration and prerequisites visible at narrow width", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.clock.install();
+  await page.goto(route);
+  await page.locator("#start").click();
+  await page.locator("#supply-open").click();
+  const barracks = page.locator("#develop-barracks"),
+    foundry = page.locator("#develop-foundry").locator("..");
+  await expect(barracks).toContainText("120");
+  await expect(barracks).toContainText("сплав");
+  await expect(barracks).toContainText("30 с");
+  await expect(foundry).toContainText("Артиллерия и защита армии");
+  await expect(foundry).toContainText("Исследуйте сеть управления");
+  await barracks.click();
+  await page.locator("#develop-tab-economy").click();
+  const base = await page.evaluate(
+    () => SignalEngine.living(SignalGame.snapshot(), "base").id,
+  );
+  await page.locator("#develop-drone-" + base).click();
+  const drone = page.locator("#develop-drone-" + base);
+  await expect(drone).toBeDisabled();
+  await expect(
+    page.locator("#" + (await drone.getAttribute("aria-describedby"))),
+  ).toHaveText("Не хватает 40 сплава");
+  await expect(page.locator(".production-queue")).toContainText("18 с");
+  await page.getByRole("button", { name: /Отменить: Дрон/ }).click();
+  await expect(page.locator("#development-alloy")).toHaveText("47");
+  await expect(
+    page.locator("#" + (await drone.getAttribute("aria-describedby"))),
+  ).toHaveText("Не хватает 3 сплава");
+  expect(
+    await page
+      .locator("#dialog")
+      .evaluate((e) => e.scrollWidth - e.clientWidth),
+  ).toBeLessThanOrEqual(1);
+});
