@@ -202,7 +202,11 @@ for (const name of ["siege", "infiltration"])
         window.cancelAnimationFrame = clearTimeout;
       });
       await start(page);
+      // Only explicit clock steps advance combat; runner latency must not drive the pilot.
+      await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
       await page.locator("#tactical").click();
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      expect(await page.evaluate(() => SignalGame.snapshot().t)).toBe(0);
       const pilot = new LongOperationPilot(name, 22);
       let pressed = new Set(),
         firing = false,
@@ -321,6 +325,17 @@ for (const name of ["siege", "infiltration"])
         else await page.clock.fastForward(100);
       }
       await release();
+      console.log(
+        name,
+        "finished",
+        JSON.stringify({
+          status: final.status,
+          time: final.t,
+          stage: pilot.stage,
+          hero: E.hero(final),
+          phase: final.phase,
+        }),
+      );
       expect(
         final.status,
         JSON.stringify({

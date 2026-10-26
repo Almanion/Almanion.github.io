@@ -16,7 +16,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Includes two complete 15–20 minute operation scenarios through browser controls.
     timeout-minutes: 35
     permissions:
       contents: read
@@ -54,7 +53,8 @@ jobs:
         run: npx playwright test e2e/game-pages.spec.js --grep "Control and middle" --workers 1
 
       - name: Check desktop and mobile interfaces
-        run: npm run test:e2e
+        run: >-
+          npm run test:e2e -- --grep-invert "long (siege|infiltration): full operation"
 
       - name: Preserve failed interface diagnostics
         if: failure()
@@ -82,9 +82,51 @@ jobs:
           path: _site
           include-hidden-files: true
 
+  campaign:
+    name: Complete both Signal Frontier operations
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install build tooling
+        run: npm ci --ignore-scripts
+
+      - name: Install browser for complete operations
+        run: npx playwright install --with-deps chromium
+
+      - name: Build the same revision for campaign checks
+        run: npm run site:build
+
+      - name: Complete siege and infiltration through real controls
+        run: >-
+          npx playwright test e2e/signal-frontier-campaign.spec.js --grep "long (siege|infiltration): full operation" --workers 2
+
+      - name: Preserve failed campaign diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: campaign-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
+
   deploy:
     if: github.event_name != 'pull_request'
-    needs: build
+    needs: [build, campaign]
     runs-on: ubuntu-latest
     timeout-minutes: 35
     permissions:
