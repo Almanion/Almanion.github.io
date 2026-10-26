@@ -254,7 +254,7 @@ class LongOperationPilot {
   }
 }
 function play(route, maxFrames = 108000) {
-  const s = E.make(),
+  const s = E.make("frontier-2"),
     pilot = new LongOperationPilot(route),
     trace = [];
   for (let i = 0; i < maxFrames && s.status === "playing"; i++) {

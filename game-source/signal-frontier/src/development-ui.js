@@ -21,11 +21,18 @@
       this.el = element;
       this.options = options;
       this.tab = "production";
+      this.selected = null;
       this.key = "";
       element.addEventListener("click", (e) => {
         const button = e.target.closest("button");
         if (!button) return;
-        if (button.dataset.tab) {
+        if (button.hasAttribute("data-all-buildings")) {
+          this.selected = null;
+          this.key = "";
+          this.render();
+        } else if (button.dataset.rally) {
+          options.rally(Number(button.dataset.rally));
+        } else if (button.dataset.tab) {
           this.tab = button.dataset.tab;
           this.key = "";
           this.render();
@@ -37,6 +44,10 @@
         }
       });
     }
+    select(id = null) {
+      this.selected = id;
+      this.key = "";
+    }
     render() {
       const E = root.SignalEngine,
         s = this.options.state();
@@ -47,6 +58,7 @@
         long = D.extended(s);
       const key = JSON.stringify([
         this.tab,
+        this.selected,
         s.economy,
         s.campaign.tier,
         s.campaign.weapons,
@@ -122,10 +134,54 @@
       const construction = (u) =>
         `<div class="development-build"><span>Строительство</span><strong>${Math.ceil(u.build)} с</strong><i style="--progress:${(1 - u.build / ITEMS[u.kind].time) * 100}%"></i></div>`;
       let content = "";
-      if (this.tab === "economy") {
+      const selected = s.units.find(
+        (u) => u.id === this.selected && !u.team && u.hp > 0,
+      );
+      if (this.selected !== null) {
+        if (!selected)
+          content = '<p class="development-note">Здание уничтожено.</p>';
+        else {
+          const u = selected,
+            title = ITEMS[u.kind]?.label || "Посадочный узел";
+          let controls = "";
+          if (u.build > 0) controls = construction(u);
+          else {
+            const actions =
+              u.kind === "barracks"
+                ? ["rifle", "weapons"]
+                : u.kind === "foundry"
+                  ? ["artillery", "armor"]
+                  : u.kind === "base"
+                    ? ["drone", "network", ...(long ? ["command"] : []), "hack"]
+                    : ["drone"];
+            controls =
+              queue(u) ||
+              '<p class="development-note">Очередь свободна · 3 места</p>';
+            controls += actions
+              .map((a) =>
+                button(a, a === "drone" ? u.id : undefined, ITEMS[a].label),
+              )
+              .join("");
+            if (["barracks", "foundry"].includes(u.kind))
+              controls +=
+                '<button class="rally-button" data-rally="' +
+                u.id +
+                '">Точка сбора <span>↗</span></button>';
+            controls += maintenance(u);
+          }
+          content = card(
+            title,
+            `Корпус ${Math.ceil((u.hp / E.C[u.kind].hp) * 100)}%`,
+            controls,
+            u.kind,
+            "ready",
+            focus(u, title),
+          );
+        }
+      } else if (this.tab === "economy") {
         const nodes = [
-          { id: "home", name: "Посадочный узел", x: 135, y: 1140 },
-          ...D.PADS,
+          { ...E.living(s, "base"), id: "home", name: "Посадочный узел" },
+          ...D.pads(s),
         ];
         content = nodes
           .map((p, i) => {
@@ -187,7 +243,7 @@
               button(kind, undefined, "Построить"),
               kind,
               actionState(E.supplyStatus(s, kind)),
-              focus(D.BUILDINGS[kind], label),
+              focus(D.buildings(s)[kind], label),
             );
           else if (u.build > 0)
             content += card(
@@ -258,6 +314,14 @@
         .join(
           "",
         )}</div><div id="development-body" role="tabpanel" aria-labelledby="develop-tab-${this.tab}">${content}</div>`;
+      if (this.selected !== null) {
+        this.el.querySelector(".development-tabs").outerHTML =
+          '<div class="building-navigation"><button data-all-buildings>← Все здания</button></div>';
+        const body = this.el.querySelector("#development-body");
+        body.classList.add("building-selected");
+        body.removeAttribute("role");
+        body.removeAttribute("aria-labelledby");
+      }
       if (focused && document.getElementById(focused))
         document.getElementById(focused).focus({ preventScroll: true });
     }

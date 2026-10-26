@@ -26,15 +26,21 @@
     resultShown = false;
   const mapPointers = new Map();
   let edge = null,
-    pinch = null;
+    pinch = null,
+    buildingPress = null,
+    rallyBuilding = null;
   const siteLocks = {},
     keys = new Set(),
     input = { fire: false, dash: false, reload: false, interact: false },
     moveStick = { x: 0, y: 0, id: null },
     aimStick = { x: 1, y: 0, id: null, active: false };
+  let localStore = null,
+    storageConflict = false,
+    account = null;
   try {
-    const raw = localStorage.getItem(KEY);
-    if (raw && raw.length < 400000) {
+    localStore = new SignalLocalStore(localStorage, KEY);
+    const raw = localStore.baseline;
+    if (raw && raw.length <= 2000000) {
       const data = JSON.parse(raw);
       saved = E.restore(data.save);
       if (data.settings) {
@@ -50,7 +56,14 @@
   const sound = new SignalAudio({ volume: () => settings.volume });
   function persist() {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ settings, save: saved }));
+      if (!localStore) localStore = new SignalLocalStore(localStorage, KEY);
+      if (!localStore.write({ settings, save: saved })) {
+        if (!storageConflict) {
+          storageConflict = true;
+          queueMicrotask(showStorageConflict);
+        }
+        return;
+      }
       saveAvailable = true;
     } catch (_) {
       if (saveAvailable)
@@ -61,6 +74,31 @@
   function save() {
     if (mode !== "menu") saved = E.snapshot(state);
     persist();
+    if (saveAvailable && !storageConflict) {
+      account?.localChanged();
+      if (mode !== "playing") account?.changed();
+    }
+  }
+  function showStorageConflict() {
+    storageConflict = true;
+    if (mode !== "menu") setMode("tactical");
+    openDialog("storage");
+  }
+  addEventListener("storage", (e) => {
+    if (e.key === KEY && localStore?.stale()) showStorageConflict();
+  });
+  function loadOperation(text) {
+    const next = E.restore(JSON.parse(text));
+    if (!next) throw Error("Не удалось прочитать сохранение.");
+    saved = next;
+    state = E.restore(next);
+    resultShown = false;
+    phase = -1;
+    resetInput();
+    view.reset(state);
+    persist();
+    updateHome();
+    updateUI();
   }
   function notice(text) {
     $("notice").textContent = text;
@@ -69,6 +107,7 @@
   }
   function resetInput() {
     keys.clear();
+    buildingPress = rallyBuilding = null;
     for (const id of mapPointers.keys())
       if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id);
     mapPointers.clear();
@@ -150,26 +189,31 @@
   }
   function openDialog(which) {
     const dialog = $("dialog");
+    if (storageConflict && which !== "storage") which = "storage";
     if (!dialog.open) {
       dialogOrigin = mode;
       lastMode =
         mode === "tactical" ? "tactical" : mode === "menu" ? "menu" : "playing";
       if (mode !== "menu") save();
       setMode(mode === "menu" ? "menu" : "paused");
+      account?.changed();
     }
     dialog.dataset.panel = which;
     for (const section of dialog.querySelectorAll("section"))
       section.hidden = section.id !== which + "-content";
     if (!dialog.open) dialog.showModal();
     $("close-dialog").hidden = which === "result";
+    if (which === "account") account.render();
     if (which === "supply") updateSupply();
     if (which === "development") development.render();
     if (which === "help")
-      $("economy-help").textContent = E.development.extended(state)
-        ? "Дроны доставляют сплав в узлы. Развивайте добычу и казармы, исследуйте сеть управления. Второй добывающий узел и уничтоженный глушитель либо южная батарея откроют оперативный контур — артиллерию и проникновение. В разделе добычи доступны защита узлов и ремонт. Очереди работают только вне паузы."
-        : state.campaign
-          ? "Дроны доставляют сплав из конечных месторождений. Постройте казармы и добывающий узел, затем исследуйте сеть управления. Выберите тяжёлый цех для осады или модуль проникновения. Очереди работают только в бою. Приказ группе задаёт точку сбора подкреплений."
-          : "Сплав находится в контейнерах. Опорные пункты восстанавливают отряд; снабжение позволяет выбрать артиллерию или модуль взлома.";
+      $("economy-help").textContent = E.development.expedition(state)
+        ? "Разверните добычу и казармы. Второй узел и подавление северного бастиона или южного арсенала откроют оперативный контур. Вражеские базы собирают отряды; их уничтожение прекращает подкрепления. Выберите осаду с артиллерией или проникновение через терминал. Нажмите на своё здание, чтобы открыть очередь. Очереди работают только вне паузы."
+        : E.development.extended(state)
+          ? "Дроны доставляют сплав в узлы. Развивайте добычу и казармы, исследуйте сеть управления. Второй добывающий узел и уничтоженный глушитель либо южная батарея откроют оперативный контур — артиллерию и проникновение. В разделе добычи доступны защита узлов и ремонт. Очереди работают только вне паузы."
+          : state.campaign
+            ? "Дроны доставляют сплав из конечных месторождений. Постройте казармы и добывающий узел, затем исследуйте сеть управления. Выберите тяжёлый цех для осады или модуль проникновения. Очереди работают только в бою. Приказ группе задаёт точку сбора подкреплений."
+            : "Сплав находится в контейнерах. Опорные пункты восстанавливают отряд; снабжение позволяет выбрать артиллерию или модуль взлома.";
     if (which === "settings") {
       $("volume").value = settings.volume;
       $("volume-value").textContent = settings.volume + "%";
@@ -177,9 +221,11 @@
     }
   }
   function closeDialog() {
+    if (storageConflict) return;
     if (state.status !== "playing" && mode !== "menu") return;
     $("dialog").close();
     setMode(lastMode);
+    account?.changed();
   }
   function backFromDetail() {
     if (dialogOrigin === "menu") closeDialog();
@@ -241,6 +287,7 @@
       network: "Связать узлы",
       "expand-network": "Закрепиться во втором секторе",
       secure: "Подавить вражеский опорный пункт",
+      fortress: "Подавить вражескую базу",
       command: "Подготовить наступление",
       jammer: "Отключить защиту",
       relay: "Запустить узел",
@@ -254,6 +301,7 @@
       network: "Развитие · исследуйте сеть управления",
       "expand-network": "Постройте второй добывающий узел",
       secure: "Южная батарея или северный глушитель",
+      fortress: "Северный бастион или южный арсенал",
       command: "Развитие · исследуйте оперативный контур",
       jammer: "Глушитель или обход через терминал",
       relay: "Удерживайте действие рядом с узлом",
@@ -328,7 +376,10 @@
     }
     const rifles = state.units.filter((u) => u.group === 1 && u.hp > 0).length,
       art = state.units.some((u) => u.group === 2 && u.hp > 0);
-    $("rifle-count").textContent = rifles + (state.campaign ? " / 9" : " / 3");
+    $("rifle-count").textContent =
+      rifles +
+      " / " +
+      (state.campaign ? (E.development.expedition(state) ? 12 : 9) : 3);
     $("group-one").disabled = !rifles && !E.living(state, "barracks");
     $("group-two").disabled = !art && !E.living(state, "foundry");
     $("artillery-status").textContent = art
@@ -371,6 +422,7 @@
     "artillery-limit": "Орудие уже в строю",
     "post-limit": "Уже построены два пункта",
     blocked: "Освободите место для высадки",
+    fortress: "Подавите северный бастион или южный арсенал",
     limit: "Лимит подкреплений",
   };
   const development = new SignalDevelopmentPanel($("development-panel"), {
@@ -382,6 +434,12 @@
         : code === "artillery-limit"
           ? "Лимит тяжёлой группы"
           : reasons[code] || "Недоступно",
+    rally: (id) => {
+      lastMode = "tactical";
+      closeDialog();
+      rallyBuilding = id;
+      notice("Укажите точку сбора на карте · Esc отменяет");
+    },
     focus: (x, y) => {
       lastMode = "tactical";
       closeDialog();
@@ -460,7 +518,43 @@
     if (!state.campaign) updateSupply();
     updateUI();
   }
+  account = new SignalAccountPanel($("account-content"), {
+    getSave: () => SignalCloudCore.encode(saved || E.snapshot(state)),
+    isFresh: () => !saved,
+    canApply: () => ["menu", "paused", "tactical"].includes(mode),
+    localConflict: () => storageConflict || !!localStore?.stale(),
+    applySave: loadOperation,
+    back: backFromDetail,
+  });
+  $("storage-load").onclick = () => {
+    try {
+      const raw = localStorage.getItem(KEY),
+        data = JSON.parse(raw);
+      if (!E.restore(data.save))
+        throw Error(
+          "Новая копия повреждена. Можно сохранить текущую операцию.",
+        );
+      localStore.replace({ settings, save: saved }); // Back up both versions before choosing.
+      storageConflict = false;
+      loadOperation(JSON.stringify(data.save));
+      lastMode = "tactical";
+      closeDialog();
+    } catch (e) {
+      $("storage-message").textContent = e.message;
+    }
+  };
+  $("storage-keep").onclick = () => {
+    try {
+      localStore.replace({ settings, save: saved });
+      storageConflict = false;
+      closeDialog();
+    } catch (e) {
+      $("storage-message").textContent =
+        "Не удалось записать резервную копию. Освободите место на устройстве.";
+    }
+  };
   $("supply-open").onclick = () => {
+    development.select();
     $("supply-feedback").textContent = "";
     $("development-feedback").textContent = "";
     openDialog(state.campaign ? "development" : "supply");
@@ -538,6 +632,47 @@
   for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
     $("interact").addEventListener(type, () => (input.interact = false));
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+  function buildingAt(e) {
+    if (!state.campaign) return null;
+    if (
+      mode === "playing" &&
+      state.units.some((u) => {
+        if (!u.team || u.hp <= 0) return false;
+        const p = view.screen(u.x, u.y);
+        return (
+          Math.hypot(e.clientX - p.x, e.clientY - p.y) <
+          Math.max(16, E.C[u.kind].r * view.camera.scale)
+        );
+      })
+    )
+      return null;
+    const pad = e.pointerType === "touch" ? 22 : 14;
+    return state.units
+      .filter(
+        (u) =>
+          !u.team &&
+          u.hp > 0 &&
+          ["base", "outpost", "barracks", "foundry"].includes(u.kind),
+      )
+      .map((u) => {
+        const p = view.screen(u.x, u.y);
+        return {
+          u,
+          d: Math.hypot(
+            e.clientX - p.x,
+            (e.clientY - p.y + 10 * view.camera.scale) / 0.85,
+          ),
+          r: Math.max(pad, E.C[u.kind].r * view.camera.scale),
+        };
+      })
+      .filter((v) => v.d <= v.r)
+      .sort((a, b) => a.d - b.d)[0]?.u;
+  }
+  function openBuilding(u) {
+    if (mode === "playing") setMode("tactical");
+    development.select(u.id);
+    openDialog("development");
+  }
   function edgeAt(e) {
     const margin = e.pointerType === "touch" ? 30 : 24;
     return {
@@ -546,6 +681,11 @@
     };
   }
   canvas.addEventListener("pointermove", (e) => {
+    if (
+      buildingPress &&
+      Math.hypot(e.clientX - buildingPress.x, e.clientY - buildingPress.y) > 9
+    )
+      buildingPress.moved = true;
     if (mode === "tactical") {
       const p = mapPointers.get(e.pointerId);
       if (p) {
@@ -582,7 +722,7 @@
     if (!mapPointers.size) edge = null;
   });
   canvas.addEventListener("pointerdown", (e) => {
-    if (mode === "tactical" && (e.button === 0 || e.button === 1)) {
+    if (mode === "tactical" && [0, 1, 2].includes(e.button)) {
       const boundary = edgeAt(e),
         atEdge = !!(boundary.x || boundary.y);
       mapPointers.set(e.pointerId, {
@@ -591,6 +731,7 @@
         startX: e.clientX,
         startY: e.clientY,
         moved: e.button === 1,
+        orderOnly: e.button === 2,
         edge: atEdge,
       });
       edge = boundary;
@@ -606,6 +747,16 @@
         };
         edge = null;
       }
+    } else if (mode === "playing" && e.button === 0 && buildingAt(e)) {
+      buildingPress = {
+        id: e.pointerId,
+        unit: buildingAt(e),
+        x: e.clientX,
+        y: e.clientY,
+        moved: false,
+      };
+      canvas.setPointerCapture(e.pointerId);
+      e.preventDefault();
     } else if (
       mode === "playing" &&
       e.button === 0 &&
@@ -620,6 +771,14 @@
   for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
     canvas.addEventListener(type, (e) => {
       input.fire = false;
+      const press = buildingPress;
+      if (press?.id === e.pointerId) {
+        buildingPress = null;
+        if (type === "pointerup" && !press.moved && mode === "playing") {
+          openBuilding(press.unit);
+          return;
+        }
+      }
       const p = mapPointers.get(e.pointerId);
       mapPointers.delete(e.pointerId);
       pinch = null;
@@ -640,7 +799,15 @@
           point.y > map.H - 24
         )
           return;
-        const success = E.order(state, group, point.x, point.y);
+        const building = !p.orderOnly && !rallyBuilding && buildingAt(e);
+        if (building) {
+          openBuilding(building);
+          return;
+        }
+        const success = rallyBuilding
+          ? E.setRally(state, rallyBuilding, point.x, point.y)
+          : E.order(state, group, point.x, point.y);
+        if (success) rallyBuilding = null;
         view.add(state.events, settings.reduced);
         if (success) {
           sound.start();
@@ -700,6 +867,12 @@
       });
   }
   addEventListener("keydown", (e) => {
+    if (e.code === "Escape" && rallyBuilding) {
+      rallyBuilding = null;
+      notice("Точка сбора не изменена");
+      e.preventDefault();
+      return;
+    }
     if (e.repeat && ["Tab", "Escape"].includes(e.code)) {
       e.preventDefault();
       return;
@@ -887,5 +1060,13 @@
     storageKey: KEY,
     audioState: () => sound.ctx?.state || "uninitialized",
     audio: () => sound.diagnostics(),
+    diagnostics: () => ({
+      units: state.units.length,
+      bullets: state.bullets.length,
+      events: state.events.length,
+      effects: view.fx.length,
+      scars: view.scars.length,
+      poses: view.poses.size,
+    }),
   });
 })();

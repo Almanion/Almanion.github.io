@@ -17,6 +17,8 @@
     artillery: { hp: 220, r: 20, speed: 78, range: 540, damage: 98, rate: 2.6 },
     sentinel: { hp: 90, r: 13, speed: 82, range: 310, damage: 10, rate: 1.35 },
     runner: { hp: 55, r: 11, speed: 145, range: 48, damage: 13, rate: 0.85 },
+    warden: { hp: 180, r: 16, speed: 92, range: 365, damage: 17, rate: 1.55 },
+    bastion: { hp: 1400, r: 44, speed: 0, range: 470, damage: 28, rate: 1.8 },
     turret: { hp: 200, r: 25, speed: 0, range: 400, damage: 19, rate: 2.1 },
     jammer: { hp: 340, r: 32, speed: 0, range: 0, damage: 0, rate: 0 },
     citadel: { hp: 900, r: 48, speed: 0, range: 520, damage: 21, rate: 2.5 },
@@ -60,10 +62,34 @@
       { x: 1460, y: 1020, w: 180, h: 100 },
     ],
   };
+  const expeditionMap = {
+    id: "expedition",
+    W: 2240,
+    H: 2560,
+    walls: [
+      ...frontierMap.walls.map((w) => ({ ...w, y: w.y + 560 })),
+      { x: 720, y: 150, w: 120, h: 300 },
+      { x: 1180, y: 400, w: 260, h: 100 },
+      { x: 1540, y: 80, w: 120, h: 180 },
+      { x: 1820, y: 560, w: 260, h: 100 },
+      { x: 900, y: 1990, w: 120, h: 300 },
+      { x: 1220, y: 2110, w: 220, h: 100 },
+      { x: 1900, y: 2030, w: 120, h: 230 },
+      { x: 1530, y: 2410, w: 350, h: 80 },
+    ],
+  };
   const mapFor = (s) =>
-    s === "frontier" || s?.campaign || s?.map === "frontier"
-      ? frontierMap
-      : classicMap;
+    s === "expedition" ||
+    s?.id === "expedition" ||
+    s?.map === "expedition" ||
+    s?.campaign?.id === "frontier-3"
+      ? expeditionMap
+      : s === "frontier" ||
+          s?.id === "frontier" ||
+          s?.campaign ||
+          s?.map === "frontier"
+        ? frontierMap
+        : classicMap;
   let campaign;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -149,7 +175,7 @@
       target: null,
       think: 0,
     };
-    if (s.campaign) u.map = "frontier";
+    if (s.campaign) u.map = mapFor(s).id;
     s.units.push(u);
     return u;
   }
@@ -213,7 +239,9 @@
   function make(mode = "frontier") {
     return mode === "classic"
       ? makeClassic()
-      : campaign.make(mode === "frontier-1" ? mode : "frontier-2");
+      : campaign.make(
+          ["frontier-1", "frontier-2"].includes(mode) ? mode : "frontier-3",
+        );
   }
   const hero = (s) => s.units.find((u) => u.id === s.heroId);
   const living = (s, kind) => s.units.find((u) => u.kind === kind && u.hp > 0);
@@ -549,6 +577,26 @@
     emit(s, "order", x, y);
     return members.length > 0 || producers.length > 0;
   }
+  function setRally(s, id, x, y) {
+    const u = s.units.find(
+      (u) =>
+        u.id === id &&
+        !u.team &&
+        u.hp > 0 &&
+        ["barracks", "foundry"].includes(u.kind),
+    );
+    if (
+      s.status !== "playing" ||
+      !u ||
+      !Number.isFinite(x) ||
+      !Number.isFinite(y) ||
+      !free(x, y, 20, mapFor(s))
+    )
+      return false;
+    u.rally = { x, y };
+    emit(s, "order", x, y);
+    return true;
+  }
   function move(u, dx, dy) {
     const r = C[u.kind].r,
       steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 8));
@@ -567,7 +615,7 @@
     u.angle = a;
   }
   function stats(s, u) {
-    return s.version === 4 && u.defense && ["base", "outpost"].includes(u.kind)
+    return s.version >= 4 && u.defense && ["base", "outpost"].includes(u.kind)
       ? { ...C[u.kind], range: 340, damage: 20, rate: 0.9 }
       : C[u.kind];
   }
@@ -587,12 +635,12 @@
     }
     // A melee attacker can stand inside a node's footprint; the muzzle must not skip it.
     const r =
-        s.version === 4 && u.defense
+        s.version >= 4 && u.defense
           ? Math.min(def.r + 9, dist(u, target) / 2)
           : def.r + 9,
       speed = u.kind === "artillery" ? 360 : u.team ? 390 : 800;
     s.bullets.push({
-      ...(s.campaign ? { map: "frontier" } : {}),
+      ...(s.campaign ? { map: mapFor(s).id } : {}),
       x: u.x + Math.cos(a) * r,
       y: u.y + Math.sin(a) * r,
       vx: Math.cos(a) * speed,
@@ -619,6 +667,8 @@
       damage *= s.terminal.window > 0 ? 0.65 : s.campaign ? 0.03 : 0.28;
     if (s.campaign && u.team && attacker.kind !== "shell") {
       if (u.kind === "sentinel") damage *= 0.65;
+      if (u.kind === "warden") damage *= 0.7;
+      if (u.kind === "bastion") damage *= 0.6;
       if (["turret", "jammer"].includes(u.kind)) damage *= 0.8;
     }
     if (
@@ -627,7 +677,7 @@
       ["hero", "rifle", "artillery"].includes(u.kind)
     )
       damage *= 0.85;
-    if (s.version === 4 && u.defense) damage *= 0.35;
+    if (s.version >= 4 && u.defense) damage *= 0.35;
     u.hp -= damage;
     u.hit = 0.14;
     u.repair = 3;
@@ -899,7 +949,7 @@
     return out;
   }
   function restore(value) {
-    if ([3, 4].includes(value?.version)) return campaign.restore(value);
+    if ([3, 4, 5].includes(value?.version)) return campaign.restore(value);
     try {
       const s = JSON.parse(JSON.stringify(value));
       if (
@@ -936,6 +986,7 @@
       for (const u of s.units) {
         if (
           !Object.hasOwn(C, u.kind) ||
+          ["warden", "bastion"].includes(u.kind) ||
           ![0, 1].includes(u.team) ||
           !Number.isInteger(u.id) ||
           ids.has(u.id) ||
@@ -1165,6 +1216,7 @@
     hero,
     living,
     order,
+    setRally,
     pathTo,
     free,
     clear,
@@ -1180,6 +1232,7 @@
   campaign = Campaign.create({
     ...API,
     makeClassic,
+    map: mapFor,
     unit,
     move,
     follow,
@@ -1189,7 +1242,7 @@
     spawnPoint,
   });
   API.map = mapFor;
-  API.pads = (s) => (s.campaign ? Campaign.PADS : PADS);
+  API.pads = (s) => (s.campaign ? campaign.pads(s) : PADS);
   API.development = campaign;
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   else root.SignalEngine = API;

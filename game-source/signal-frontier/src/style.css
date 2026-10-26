@@ -1580,3 +1580,73 @@ dialog[data-panel="development"] .dialog-inner {
     transform: translateX(-50%);
   }
 }
+
+.building-navigation button,
+.rally-button {
+  min-height: 46px;
+  border: 1px solid #61777555;
+  border-radius: 8px;
+  background: #a7c6b00b;
+  color: var(--ink);
+  padding: 10px 14px;
+  cursor: pointer;
+}
+.building-navigation {
+  margin: 12px 0;
+}
+.rally-button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+#development-body.building-selected {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#account-content input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 46px;
+  margin: 8px 0 18px;
+  padding: 10px 12px;
+  color: var(--ink);
+  background: #09171b;
+  border: 1px solid #546b6d;
+  border-radius: 8px;
+  font: inherit;
+}
+#account-status {
+  color: #b7cdbb;
+  min-height: 24px;
+}
+#account-user {
+  overflow-wrap: anywhere;
+}
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.account-actions button {
+  min-height: 44px;
+  padding: 8px 10px;
+  background: transparent;
+  border: 0;
+  color: #c9d3c6;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+#account-copies {
+  padding: 14px 0;
+  line-height: 1.7;
+  font-size: 13px;
+}
+#storage-content p {
+  line-height: 1.65;
+}
+.text-button {
+  min-height: 44px;
+}

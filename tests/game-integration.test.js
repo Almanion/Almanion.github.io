@@ -12,7 +12,7 @@ const game = fs.readFileSync(gamePath);
 const GameBuild = require('../tools/build-game.js');
 const portable = fs.readFileSync(path.join(root, 'games', 'orbital-courier', 'offline.html'), 'utf8');
 
-assert.match(home, /href="games\/orbital-courier\/"[^>]*class="home-editor-link home-game-link"/,
+assert.match(home, /href="games\/"[^>]*class="home-editor-link home-game-link"/,
     'the home page must expose the game button');
 assert.strictEqual(portable, GameBuild.bundle(),
     'the downloadable standalone game must match its canonical sources exactly');

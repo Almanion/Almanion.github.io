@@ -12,13 +12,16 @@
       content="Предел сигнала — тактическая операция на заброшенном кольце."
     />
     <title>Предел сигнала · Альманион</title>
-    <link rel="stylesheet" href="style.css?v=0.5.0" />
-    <script src="campaign.js?v=0.5.0" defer></script>
-    <script src="engine.js?v=0.5.0" defer></script>
-    <script src="view.js?v=0.5.0" defer></script>
-    <script src="audio.js?v=0.5.0" defer></script>
-    <script src="development-ui.js?v=0.5.0" defer></script>
-    <script src="app.js?v=0.5.0" defer></script>
+    <link rel="stylesheet" href="style.css?v=0.6.0" />
+    <script src="campaign.js?v=0.6.0" defer></script>
+    <script src="engine.js?v=0.6.0" defer></script>
+    <script src="view.js?v=0.6.0" defer></script>
+    <script src="audio.js?v=0.6.0" defer></script>
+    <script src="development-ui.js?v=0.6.0" defer></script>
+    <script src="cloud-core.js?v=0.6.0" defer></script>
+    <script src="persistence.js?v=0.6.0" defer></script>
+    <script src="account-ui.js?v=0.6.0" defer></script>
+    <script src="app.js?v=0.6.0" defer></script>
   </head>
   <body data-mode="menu">
     <canvas
@@ -27,7 +30,7 @@
     ></canvas>
     <div class="vignette" aria-hidden="true"></div>
     <main id="home" class="home">
-      <a class="back" href="/">← Альманион</a>
+      <a class="back" href="/games/">← Игры Альманиона</a>
       <div class="home-content">
         <p class="eyebrow">Операция 01 · Пепельный узел</p>
         <h1>Предел<br />сигнала<span>.</span></h1>
@@ -45,10 +48,11 @@
         </div>
         <div class="home-links">
           <button data-open="help">Управление</button
-          ><button data-open="settings">Настройки</button>
+          ><button data-open="settings">Настройки</button
+          ><button data-open="account">Аккаунт</button>
         </div>
       </div>
-      <p class="edition">Первая операция <span>0.5</span></p>
+      <p class="edition">Первая операция <span>0.6</span></p>
     </main>
     <div id="hud" hidden>
       <header class="topbar">
@@ -170,6 +174,23 @@
             <path d="m6 6 12 12M18 6 6 18" />
           </svg>
         </button>
+        <section id="account-content" hidden></section>
+        <section id="storage-content" hidden>
+          <p class="eyebrow">Другая вкладка</p>
+          <h2>Операция изменена</h2>
+          <p>
+            В другой вкладке появился новый прогресс. Бой приостановлен, чтобы
+            не перезаписать его.
+          </p>
+          <button id="storage-load" class="primary">
+            Продолжить новую копию</button
+          ><button id="storage-keep" class="text-button">
+            Сохранить эту операцию
+          </button>
+          <p id="storage-message" class="help-note">
+            Перед выбором обе копии сохраняются на устройстве.
+          </p>
+        </section>
         <section id="pause-content" hidden>
           <p class="eyebrow">Пепельный узел</p>
           <h2>Пауза</h2>
@@ -177,6 +198,7 @@
           <div class="menu-list">
             <button data-open="help">Управление <span>↗</span></button
             ><button data-open="settings">Настройки <span>↗</span></button
+            ><button data-open="account">Аккаунт <span>↗</span></button
             ><button id="restart">Начать заново <span>↻</span></button
             ><button id="to-home">Главный экран <span>←</span></button>
           </div>
@@ -191,9 +213,9 @@
             </p>
             <p>
               <strong>Обход.</strong> Купите модуль взлома и проведите отряд к
-              северному терминалу. Разведчик удерживает действие, отключая щит и
-              орудие цитадели, а бойцы атакуют. После отпускания защита вернётся
-              через 7 секунд.
+              терминалу. Разведчик удерживает действие, отключая щит и орудие
+              цитадели, а бойцы атакуют. После отпускания защита вернётся через
+              7 секунд.
             </p>
           </div>
           <p id="economy-help">
@@ -207,7 +229,7 @@
               <dt><kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd></dt>
               <dd>Движение · в паузе — перемещение камеры</dd>
               <dt>Мышь · левая кнопка</dt>
-              <dd>Прицел и огонь</dd>
+              <dd>Прицел и огонь · здание открывает очередь</dd>
               <dt><kbd>Shift</kbd> / <kbd>R</kbd></dt>
               <dd>Рывок / перезарядка</dd>
               <dt><kbd>E</kbd>, удерживать</dt>
@@ -215,7 +237,10 @@
               <dt><kbd>Tab</kbd> · <kbd>1</kbd> <kbd>2</kbd></dt>
               <dd>Пауза и выбор группы</dd>
               <dt>Края экрана · колесо · перетаскивание</dt>
-              <dd>Перемещение и масштаб карты в паузе</dd>
+              <dd>
+                Перемещение и масштаб карты в паузе · правая кнопка задаёт
+                приказ
+              </dd>
             </dl>
           </div>
           <div class="help-touch">
@@ -228,6 +253,7 @@
               «Приказы» останавливают бой. Выберите группу и коснитесь места на
               карте, затем продолжите. Перетаскивание перемещает карту;
               удержание у края прокручивает её. Два пальца меняют масштаб.
+              Касание своего здания открывает очередь и точку сбора.
             </p>
           </div>
           <p class="help-note">

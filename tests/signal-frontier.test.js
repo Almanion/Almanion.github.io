@@ -472,20 +472,9 @@ for (const route of ["siege", "infiltration"])
   );
 test("published files exactly match canonical sources and stay self-contained", () => {
   const root = path.resolve(__dirname, "..");
-  for (const f of [
-    "index.html",
-    "style.css",
-    "campaign.js",
-    "engine.js",
-    "view.js",
-    "audio.js",
-    "development-ui.js",
-    "app.js",
-  ])
-    assert.deepEqual(
-      fs.readFileSync(path.join(root, "game-source/signal-frontier/src", f)),
-      fs.readFileSync(path.join(root, "games/signal-frontier", f)),
-    );
+  const publicFiles = require('../tools/build-signal').render(root);
+  for(const [file, content] of Object.entries(publicFiles))
+    assert.equal(fs.readFileSync(path.join(root,'games/signal-frontier',file),'utf8'),content);
   const html = fs.readFileSync(
     path.join(root, "games/signal-frontier/index.html"),
     "utf8",

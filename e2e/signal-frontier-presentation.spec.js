@@ -8,7 +8,7 @@ test("presentation is read-only; poses follow travel and paused/reduced frames s
   await page.goto(route);
   const result = await page.evaluate(() => {
     const E = SignalEngine,
-      s = E.make(),
+      s = E.make("frontier-2"),
       v = new SignalView(document.createElement("canvas"));
     const ui = { mode: "tactical", reduced: false, group: 1, touch: true };
     const original = JSON.stringify(s);
@@ -240,4 +240,83 @@ for (const browserType of [chromium, webkit])
       await context.close();
       await browser.close();
     }
+  });
+for (const [width, height] of [
+  [390, 844],
+  [1440, 900],
+])
+  test(`camera culling keeps identical pixels and travel poses at ${width}x${height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto(route);
+    const result = await page.evaluate(() => {
+      const s = SignalEngine.make(),
+        before = JSON.stringify(s),
+        clipped = new SignalView(document.createElement("canvas")),
+        reference = new SignalView(document.createElement("canvas")),
+        ui = { mode: "tactical", reduced: true, touch: true, group: 1 };
+      reference.inView = () => true;
+      let drawn = 0,
+        full = 0;
+      const draw = clipped.unit.bind(clipped),
+        all = reference.unit.bind(reference);
+      clipped.unit = (...args) => {
+        drawn++;
+        return draw(...args);
+      };
+      reference.unit = (...args) => {
+        full++;
+        return all(...args);
+      };
+      const equal = [];
+      // Centre, both forts, home, map corners and two zoom levels: includes tall walls and shadows.
+      for (const [x, y, zoom] of [
+        [1100, 1280, 0.45],
+        [1100, 1280, 1.3],
+        [1810, 330, 1.3],
+        [1750, 2270, 1.3],
+        [200, 1700, 1.3],
+        [0, 0, 1],
+        [2240, 0, 1],
+        [0, 2560, 1],
+        [2240, 2560, 1],
+      ]) {
+        for (const v of [clipped, reference]) {
+          v.tactical = { overview: false, x, y, zoom };
+          v.render(s, ui, 1 / 60);
+        }
+        const a = new Uint32Array(
+            clipped.c.getImageData(
+              0,
+              0,
+              clipped.canvas.width,
+              clipped.canvas.height,
+            ).data.buffer,
+          ),
+          b = new Uint32Array(
+            reference.c.getImageData(
+              0,
+              0,
+              reference.canvas.width,
+              reference.canvas.height,
+            ).data.buffer,
+          );
+        equal.push(a.every((pixel, i) => pixel === b[i]));
+      }
+      return {
+        equal,
+        untouched: JSON.stringify(s) === before,
+        drawn,
+        full,
+        poses: [...clipped.poses].every(
+          ([id, p]) =>
+            JSON.stringify(p) === JSON.stringify(reference.poses.get(id)),
+        ),
+      };
+    });
+    expect(result.equal).toEqual(Array(9).fill(true));
+    expect(result.untouched).toBe(true);
+    expect(result.poses).toBe(true);
+    expect(result.drawn).toBeLessThan(result.full / 2);
   });

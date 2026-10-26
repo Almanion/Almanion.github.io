@@ -20,7 +20,7 @@ async function resume(page, state) {
   await page.keyboard.press("Tab");
 }
 function prepared() {
-  const s = E.make();
+  const s = E.make("frontier-2");
   for (const u of s.units) if (u.team && u.kind !== "citadel") u.hp = 0;
   s.campaign.camps.forEach((c) => (c.reserve = 0));
   let left = 3000;
@@ -161,7 +161,7 @@ test("new cache amount agrees in action, notification, wallet and save", async (
   page,
 }) => {
   await page.clock.install();
-  const s = E.make();
+  const s = E.make("frontier-2");
   Object.assign(E.hero(s), { x: 400, y: 850 });
   await resume(page, s);
   await expect(page.locator("#interact-label")).toHaveText(
@@ -183,7 +183,7 @@ test("tactical WASD pans the map without advancing the operation or issuing orde
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.clock.install();
-  const s = E.make();
+  const s = E.make("frontier-2");
   Object.assign(E.hero(s), { x: 960, y: 640 });
   await resume(page, s);
   await page.mouse.move(720, 450);

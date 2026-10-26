@@ -6,7 +6,7 @@
   "scripts": {
     "test": "node tools/run-tests.js",
     "signal:build": "node tools/build-signal.js",
-    "signal:test": "node tests/signal-frontier.test.js && node tests/signal-frontier-campaign.test.js && node tests/signal-frontier-long-operation.test.js",
+    "signal:test": "node tests/signal-frontier.test.js && node tests/signal-frontier-campaign.test.js && node tests/signal-frontier-long-operation.test.js && node tests/signal-frontier-expedition.test.js && node tests/signal-frontier-cloud.test.js",
     "game:build": "node tools/build-game.js",
     "game:test": "npm run game:build && npm --prefix game-source/orbital-courier test",
     "test:rules": "npx --yes firebase-tools@14.22.0 emulators:exec --project almanion-rules-test --only database \"node tests/firebase-rules.integration.js\"",
@@ -28,6 +28,7 @@
     "mathjax": "3.2.2",
     "pdfmake": "0.2.20",
     "pngjs": "7.0.0",
-    "qrcode-generator": "2.0.4"
+    "qrcode-generator": "2.0.4",
+    "terser": "5.51.2"
   }
 }

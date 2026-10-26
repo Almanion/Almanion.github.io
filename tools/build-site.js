@@ -12,6 +12,7 @@ const ServiceWorker = require('../performance/build-service-worker.js');
 const OfflineLibrary = require('./build-offline.js');
 const HomeStyles = require('./build-home-styles.js');
 const Watch = require('./build-watch.js');
+const SignalBuild = require('./build-signal.js');
 
 const CONFIG_PATH = path.join(__dirname, 'site-files.json');
 
@@ -194,6 +195,7 @@ function build(options) {
     const root = path.resolve(options.root);
     const output = path.resolve(options.output);
     const config = readConfig(options.config || CONFIG_PATH);
+    SignalBuild.build(root);
     resetOutput(root, output);
     const copied = copyPublicFiles(root, output, config);
     const notes = NotesBuilder.build({ root, output });

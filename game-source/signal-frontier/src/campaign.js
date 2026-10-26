@@ -82,7 +82,64 @@
       }),
     ),
   );
+  const EXPEDITION_PADS = Object.freeze([
+    ...PADS.map((p) => ({ ...p, y: p.y + 560, oreY: p.oreY + 560 })),
+    {
+      id: "north",
+      name: "Северная жила",
+      x: 520,
+      y: 350,
+      oreX: 440,
+      oreY: 240,
+    },
+    { id: "south", name: "Южная жила", x: 700, y: 2240, oreX: 590, oreY: 2360 },
+  ]);
+  const EXPEDITION_BUILDINGS = Object.fromEntries(
+    Object.entries(BUILDINGS).map(([k, p]) => [k, { x: p.x, y: p.y + 560 }]),
+  );
+  const EXPEDITION_CACHES = [
+    ...CACHES.map((p) => ({ ...p, y: p.y + 560 })),
+    { id: "bastion", x: 1300, y: 240 },
+    { id: "arsenal", x: 1520, y: 2300 },
+  ];
+  const FORTS = [
+    { sector: "north", name: "Северный бастион", x: 1810, y: 330 },
+    { sector: "south", name: "Южный арсенал", x: 1750, y: 2270 },
+  ];
+  const EXPEDITION_ITEMS = {
+    ...EXTENDED_ITEMS,
+    network: { ...EXTENDED_ITEMS.network, cost: 320, time: 100 },
+    command: { ...EXTENDED_ITEMS.command, cost: 700, time: 150 },
+    weapons: { ...EXTENDED_ITEMS.weapons, cost: 220, time: 75 },
+    armor: { ...EXTENDED_ITEMS.armor, cost: 220, time: 75 },
+    hack: { ...EXTENDED_ITEMS.hack, cost: 480, time: 150 },
+    artillery: { ...EXTENDED_ITEMS.artillery, cost: 350, time: 60 },
+  };
   const PROFILES = Object.freeze({
+    "frontier-3": Object.freeze({
+      version: 5,
+      items: EXPEDITION_ITEMS,
+      mines: [
+        { id: "home", x: 200, y: 1560, stock: 1440 },
+        ...EXPEDITION_PADS.map((p) => ({
+          id: p.id,
+          x: p.oreX,
+          y: p.oreY,
+          stock: 2160,
+        })),
+      ],
+      cache: 120,
+      gather: 5.6,
+      reserve: 54,
+      firstRaid: 210,
+      stagger: 65,
+      raidInterval: 140,
+      waveMax: 4,
+      waveStep: 300,
+      hold: 100,
+      unitLimit: 448,
+      ledgerLimit: 60000,
+    }),
     "frontier-1": Object.freeze({
       version: 3,
       items: ITEMS,
@@ -118,7 +175,11 @@
   });
   const rules = (s) => PROFILES[s.campaign?.id] || PROFILES["frontier-1"];
   const items = (s) => rules(s).items;
-  const extended = (s) => s.campaign?.id === "frontier-2";
+  const expedition = (s) => s.campaign?.id === "frontier-3";
+  const extended = (s) => ["frontier-2", "frontier-3"].includes(s.campaign?.id);
+  const pads = (s) => (expedition(s) ? EXPEDITION_PADS : PADS);
+  const buildings = (s) => (expedition(s) ? EXPEDITION_BUILDINGS : BUILDINGS);
+  const caches = (s) => (expedition(s) ? EXPEDITION_CACHES : CACHES);
   function create(E) {
     const alive = (s, kind) =>
       s.units.filter((u) => u.hp > 0 && (!kind || u.kind === kind));
@@ -144,9 +205,10 @@
     const usedSlots = (s, node) =>
       workers(s, node).length +
       (node.jobs || []).filter((j) => j.action === "drone").length;
-    const free = (p, r = 14) => E.free(p.x, p.y, r, "frontier");
+    const free = (p, r = 14, map = p.map || "frontier") =>
+      E.free(p.x, p.y, r, map);
     function initUnit(u) {
-      u.map = "frontier";
+      u.map = u.map || "frontier";
       u.jobs = [];
       u.build = u.build || 0;
       return u;
@@ -162,7 +224,7 @@
       u.fright = 0;
       return u;
     }
-    function make(profile = "frontier-2") {
+    function make(profile = "frontier-3") {
       const config = PROFILES[profile];
       const s = E.makeClassic();
       s.version = config.version;
@@ -266,11 +328,59 @@
           patrol: 0,
         };
       }
+      if (expedition(s)) {
+        for (const u of s.units) {
+          u.y += 560;
+          u.map = "expedition";
+          if (u.ai) u.ai.home.y += 560;
+        }
+        s.caches = caches(s).map((c) => ({ ...c, taken: false, charge: 0 }));
+        s.relay.y += 560;
+        s.terminal = { ...s.terminal, x: 2120, y: 1530 };
+        const core = E.living(s, "citadel");
+        core.x = 2020;
+        core.y = 1250;
+        core.ai.home = { x: core.x, y: core.y };
+        for (const f of FORTS) {
+          const fort = initUnit(E.unit(s, "bastion", 1, f.x, f.y));
+          fort.sector = f.sector;
+          fort.ai = {
+            home: { x: f.x, y: f.y },
+            goal: null,
+            seen: null,
+            seenAt: 0,
+            route: 0,
+            role: "line",
+            raid: false,
+            patrol: 0,
+          };
+          for (const [dx, dy, kind] of [
+            [-220, -20, "warden"],
+            [-230, 100, "sentinel"],
+            [120, 70, "warden"],
+            [-140, 110, "runner"],
+          ]) {
+            const u = initUnit(E.unit(s, kind, 1, f.x + dx, f.y + dy));
+            u.ai = {
+              home: { x: u.x, y: u.y },
+              goal: null,
+              seen: null,
+              seenAt: 0,
+              route: 0,
+              role: kind === "runner" ? "flank" : "line",
+              raid: false,
+              patrol: 0,
+            };
+          }
+        }
+      }
       const base = E.living(s, "base");
       worker(s, base);
       worker(s, base);
-      for (const [i, kind] of ["jammer", "turret", "citadel"].entries()) {
-        const source = E.living(s, kind);
+      const sources = expedition(s)
+        ? [...alive(s, "bastion"), E.living(s, "citadel")]
+        : ["jammer", "turret", "citadel"].map((k) => E.living(s, k));
+      for (const [i, source] of sources.entries()) {
         s.campaign.camps.push({
           source: source.id,
           reserve: config.reserve,
@@ -313,9 +423,9 @@
       if (["barracks", "foundry"].includes(action)) {
         if (alive(s, action).length) return fail("occupied");
         if (action === "foundry" && s.campaign.tier < 2) return fail("network");
-        anchor = BUILDINGS[action];
+        anchor = buildings(s)[action];
       } else if (action === "outpost") {
-        anchor = PADS.find((p) => p.id === site);
+        anchor = pads(s).find((p) => p.id === site);
         if (!anchor) return fail("site");
         if (alive(s, "outpost").some((u) => u.site === site))
           return fail("occupied");
@@ -345,7 +455,10 @@
             nodes(s).find((u) => String(u.id) === String(site)) ||
             (!site ? E.living(s, "base") : null);
           if (!producer) return fail("post");
-          if (usedSlots(s, producer) >= 4 || count(s, "drone") >= 16)
+          if (
+            usedSlots(s, producer) >= 4 ||
+            count(s, "drone") >= (expedition(s) ? 24 : 16)
+          )
             return fail("worker-limit");
           if (!mineFor(s, producer)?.remaining) return fail("exhausted");
         } else if (["rifle", "weapons"].includes(action))
@@ -371,7 +484,9 @@
           if (s.campaign.tier === 3) return fail("installed");
           if (s.campaign.tier < 2) return fail("network");
           if (ready(s, "outpost").length < 2) return fail("second-node");
-          if (E.living(s, "jammer") && E.living(s, "turret"))
+          if (expedition(s) && alive(s, "bastion").length === 2)
+            return fail("fortress");
+          if (!expedition(s) && E.living(s, "jammer") && E.living(s, "turret"))
             return fail("secure");
         }
         if (
@@ -391,9 +506,12 @@
           queued(s, action).length
         )
           return fail("researching");
-        if (action === "rifle" && count(s, "rifle") >= 9)
+        if (action === "rifle" && count(s, "rifle") >= (expedition(s) ? 12 : 9))
           return fail("squad-full");
-        if (action === "artillery" && count(s, "artillery") >= 2)
+        if (
+          action === "artillery" &&
+          count(s, "artillery") >= (expedition(s) ? 3 : 2)
+        )
           return fail("artillery-limit");
         if (item.pop && population(s) + item.pop > capacity(s))
           return fail("capacity");
@@ -477,8 +595,10 @@
           const recruit = initUnit(
             E.unit(s, job.action, 0, p.x, p.y, job.action === "rifle" ? 1 : 2),
           );
-          if (u.rally)
+          if (u.rally) {
+            recruit.order = { ...u.rally };
             recruit.path = E.pathTo(recruit, u.rally, E.C[recruit.kind].r);
+          }
         }
         E.emit(
           s,
@@ -612,18 +732,26 @@
         if (!alive(s, "barracks").length)
           return { id: "develop", target: base, radius: 60 };
         if (!alive(s, "outpost").length)
-          return { id: "expand", target: PADS[0], radius: 45 };
+          return { id: "expand", target: pads(s)[0], radius: 45 };
         if (s.campaign.tier === 1 && !queued(s, "network").length)
           return { id: "network", target: base, radius: 60 };
         if (alive(s, "outpost").length < 2)
           return {
             id: "expand-network",
-            target: PADS.filter(
-              (p) => !alive(s, "outpost").some((u) => u.site === p.id),
-            ).sort((a, b) => E.dist(E.hero(s), a) - E.dist(E.hero(s), b))[0],
+            target: pads(s)
+              .filter((p) => !alive(s, "outpost").some((u) => u.site === p.id))
+              .sort((a, b) => E.dist(E.hero(s), a) - E.dist(E.hero(s), b))[0],
             radius: 45,
           };
-        if (E.living(s, "jammer") && E.living(s, "turret"))
+        if (expedition(s) && alive(s, "bastion").length === 2)
+          return {
+            id: "fortress",
+            target: alive(s, "bastion").sort(
+              (a, b) => E.dist(E.hero(s), a) - E.dist(E.hero(s), b),
+            )[0],
+            radius: 55,
+          };
+        if (!expedition(s) && E.living(s, "jammer") && E.living(s, "turret"))
           return {
             id: "secure",
             target: [E.living(s, "turret"), E.living(s, "jammer")].sort(
@@ -638,7 +766,7 @@
         if (!alive(s, "barracks").length)
           return { id: "develop", target: E.living(s, "base"), radius: 60 };
         if (!alive(s, "outpost").length)
-          return { id: "expand", target: PADS[0], radius: 45 };
+          return { id: "expand", target: pads(s)[0], radius: 45 };
       }
       if (!E.shielded(s))
         return { id: "citadel", target: E.living(s, "citadel"), radius: 66 };
@@ -756,9 +884,9 @@
           y: target.y + Math.sin(a + turn) * distance,
         };
         if (
-          free(p, E.C[u.kind].r) &&
+          free(p, E.C[u.kind].r, u.map) &&
           E.clear(u, p, E.C[u.kind].r) &&
-          E.clear(p, { ...target, map: "frontier" })
+          E.clear(p, { ...target, map: u.map })
         )
           return p;
       }
@@ -841,8 +969,38 @@
               x: ai.home.x + Math.cos(angle) * 65,
               y: ai.home.y + Math.sin(angle) * 65,
             };
-            destination = free(patrol, def.r) ? patrol : ai.home;
+            destination = free(patrol, def.r, u.map) ? patrol : ai.home;
             if (E.dist(u, destination) < 22) ai.patrol++;
+          }
+          if (expedition(s) && ai.raid && ai.squad) {
+            const squad = alive(s).filter(
+              (v) => v.team && v.ai?.squad === ai.squad,
+            );
+            const nearby = squad.filter((v) => E.dist(u, v) < 300),
+              threat = visible.reduce(
+                (n, v) => n + (E.C[v.kind].damage ? v.hp : 0),
+                0,
+              ),
+              strength = nearby.reduce((n, v) => n + v.hp, 0);
+            if (s.t < ai.assembleUntil) destination = ai.rally;
+            else if (
+              target &&
+              threat > strength * 2.3 &&
+              ai.regroupUntil < s.t - 18
+            )
+              ai.regroupUntil = s.t + 10;
+            if (ai.regroupUntil > s.t) destination = ai.rally;
+            else if (!target && squad.length > 1) {
+              const leader = squad.reduce((a, b) => (a.id < b.id ? a : b));
+              if (leader !== u && E.dist(u, leader) > 160)
+                destination = { x: leader.x, y: leader.y };
+              if (
+                leader === u &&
+                s.t < ai.assembleUntil + 30 &&
+                nearby.length < Math.ceil(squad.length * 0.6)
+              )
+                destination = { x: u.x, y: u.y };
+            }
           }
           if (defend && destination && E.dist(destination, ai.home) > 380) {
             const a = Math.atan2(
@@ -854,7 +1012,7 @@
               y: ai.home.y + Math.sin(a) * 330,
             };
           }
-          if (destination && free(destination, def.r))
+          if (destination && free(destination, def.r, u.map))
             u.path = E.pathTo(u, destination, def.r);
           else u.path = [];
         }
@@ -866,8 +1024,8 @@
             : Math.min(1.1, 0.5 + E.dist(u, target) / 390);
         // Position is locked before firing. Changing direction after the warning remains effective.
         const lock = {
-          x: E.clamp(target.x + (ai.vx || 0) * lead, 24, 1896),
-          y: E.clamp(target.y + (ai.vy || 0) * lead, 24, 1256),
+          x: E.clamp(target.x + (ai.vx || 0) * lead, 24, E.map(s).W - 24),
+          y: E.clamp(target.y + (ai.vy || 0) * lead, 24, E.map(s).H - 24),
           id: target.id,
         };
         if (!E.clear(u, lock)) {
@@ -905,10 +1063,18 @@
       if (!source || source.hp <= 0) return;
       let spawned = 0;
       for (let i = 0; i < n && camp.reserve > 0; i++) {
-        const kind = i % 3 === 0 ? "runner" : "sentinel",
+        const kind =
+            expedition(s) && s.t > 360 && i % 4 === 1
+              ? "warden"
+              : i % 3 === 0
+                ? "runner"
+                : "sentinel",
           p = E.spawnPoint(s, source, kind);
         if (!p) break;
         const u = initUnit(E.unit(s, kind, 1, p.x, p.y));
+        if (expedition(s)) {
+          u.ai = null;
+        }
         camp.reserve--;
         spawned++;
         const south =
@@ -939,6 +1105,29 @@
               : [],
         };
       }
+      if (expedition(s) && spawned) {
+        const members = s.units.slice(-spawned),
+          rally = { x: source.x - 150, y: source.y };
+        for (const u of members) {
+          u.ai.squad = s.campaign.squadSeq + 1;
+          u.ai.assembleUntil = s.t + 8;
+          u.ai.regroupUntil = 0;
+          u.ai.rally = free(rally, 20, u.map)
+            ? rally
+            : { x: source.x, y: source.y };
+          u.ai.waypoints =
+            E.dist(source, goal) > 900
+              ? [
+                  {
+                    x: source.sector === "south" ? 1160 : 1000,
+                    y: source.sector === "south" ? 2380 : 300,
+                  },
+                  { x: 520, y: source.sector === "south" ? 1990 : 1180 },
+                ]
+              : [];
+        }
+        s.campaign.squadSeq++;
+      }
       if (spawned) {
         camp.waves++;
         E.emit(s, "reinforce", source.x, source.y);
@@ -951,6 +1140,11 @@
           camp.warning = 0;
           continue;
         }
+        if (
+          expedition(s) &&
+          alive(s).filter((u) => u.team && u.ai?.raid).length >= 42
+        )
+          continue;
         if (camp.warning > 0) {
           camp.warning = Math.max(0, camp.warning - dt);
           if (camp.warning === 0) {
@@ -974,15 +1168,25 @@
             );
             camp.target = candidates[
               (camp.waves + source.id) % Math.min(2, candidates.length)
-            ] || { x: 135, y: 1140 };
+            ] || { x: 135, y: expedition(s) ? 1700 : 1140 };
+            if (expedition(s) && candidates.length) {
+              // Infrastructure enters this list only after visual contact. Age increases uncertainty.
+              camp.target = [...candidates].sort((a, b) => {
+                const score = (p) =>
+                  E.dist(source, p) +
+                  Math.min(600, (s.t - p.seenAt) * 0.7) +
+                  (p.id === E.living(s, "base")?.id ? 500 : 0);
+                return score(a) - score(b);
+              })[camp.waves % Math.min(2, candidates.length)];
+            }
             camp.target = { x: camp.target.x, y: camp.target.y };
             camp.warning = 9;
             E.emit(s, "raid", source.x, source.y, {
               target: camp.target,
               sector:
-                source.kind === "jammer"
+                source.kind === "jammer" || source.sector === "north"
                   ? "north"
-                  : source.kind === "turret"
+                  : source.kind === "turret" || source.sector === "south"
                     ? "south"
                     : "east",
             });
@@ -1037,10 +1241,14 @@
         const config = PROFILES[c?.id];
         if (!config || s.version !== config.version) return null;
         const ITEMS = config.items,
-          MINES = config.mines;
+          MINES = config.mines,
+          PADS = pads(s),
+          BUILDINGS = buildings(s),
+          CACHES = caches(s),
+          world = E.map(s);
         const num = (v, min, max) => Number.isFinite(v) && v >= min && v <= max,
           int = (v, min, max) => Number.isInteger(v) && num(v, min, max);
-        const point = (p) => p && num(p.x, 0, 1920) && num(p.y, 0, 1280);
+        const point = (p) => p && num(p.x, 0, world.W) && num(p.y, 0, world.H);
         const ally = [
           "hero",
           "base",
@@ -1066,6 +1274,19 @@
           return null;
         for (const k of ["hero", "base", "jammer", "citadel", "turret"])
           if (s.units.filter((u) => u.kind === k).length !== 1) return null;
+        if (expedition(s))
+          for (const f of FORTS) {
+            const forts = s.units.filter(
+              (u) => u.kind === "bastion" && u.sector === f.sector,
+            );
+            if (forts.length !== 1 || forts[0].x !== f.x || forts[0].y !== f.y)
+              return null;
+          }
+        if (
+          s.units.filter((u) => u.kind === "bastion").length !==
+          (expedition(s) ? 2 : 0)
+        )
+          return null;
         const ids = new Set(),
           sites = new Set(),
           jobIds = new Set(),
@@ -1074,11 +1295,12 @@
         for (const u of s.units) {
           if (
             !Object.hasOwn(E.C, u.kind) ||
+            (!expedition(s) && ["bastion", "warden"].includes(u.kind)) ||
             !int(u.id, 1, s.seq) ||
             ids.has(u.id) ||
-            u.map !== "frontier" ||
+            u.map !== world.id ||
             !point(u) ||
-            (u.hp > 0 && !E.free(u.x, u.y, E.C[u.kind].r, "frontier")) ||
+            (u.hp > 0 && !E.free(u.x, u.y, E.C[u.kind].r, world.id)) ||
             !num(u.hp, 0, E.C[u.kind].hp) ||
             u.team !== (ally.includes(u.kind) ? 0 : 1) ||
             !Array.isArray(u.path) ||
@@ -1217,6 +1439,15 @@
           if (u.team) {
             const ai = u.ai;
             if (
+              ai?.squad !== undefined &&
+              (!expedition(s) ||
+                !int(ai.squad, 1, c.squadSeq) ||
+                !num(ai.assembleUntil, 0, s.t + 8.01) ||
+                !num(ai.regroupUntil, 0, s.t + 10.01) ||
+                !point(ai.rally))
+            )
+              return null;
+            if (
               !ai ||
               !point(ai.home) ||
               (ai.goal !== null && !point(ai.goal)) ||
@@ -1252,9 +1483,9 @@
           return null;
         if (
           ["barracks", "foundry"].some((k) => alive(s, k).length > 1) ||
-          count(s, "rifle") > 9 ||
-          count(s, "artillery") > 2 ||
-          count(s, "drone") > 16
+          count(s, "rifle") > (expedition(s) ? 12 : 9) ||
+          count(s, "artillery") > (expedition(s) ? 3 : 2) ||
+          count(s, "drone") > (expedition(s) ? 24 : 16)
         )
           return null;
         if (
@@ -1356,14 +1587,14 @@
         if (
           !r ||
           r.x !== 1320 ||
-          r.y !== 810 ||
+          r.y !== (expedition(s) ? 1370 : 810) ||
           !num(r.charge, 0, 1) ||
           r.online !== (s.phase === 3) ||
           !num(r.stability, 0, 1) ||
           !num(r.started, 0, s.t) ||
           !t ||
-          t.x !== 1780 ||
-          t.y !== 390 ||
+          t.x !== (expedition(s) ? 2120 : 1780) ||
+          t.y !== (expedition(s) ? 1530 : 390) ||
           !num(t.charge, 0, 1) ||
           !num(t.window, 0, 7) ||
           typeof t.alarm !== "boolean" ||
@@ -1404,7 +1635,7 @@
               ].every((k) => Number.isFinite(b[k])) ||
               !["shell", "bolt"].includes(b.kind) ||
               ![0, 1].includes(b.team) ||
-              b.map !== "frontier" ||
+              b.map !== world.id ||
               !int(b.owner, 1, s.seq) ||
               !num(b.damage, 0, 200) ||
               !num(b.age, 0, 10) ||
@@ -1422,8 +1653,16 @@
         for (const [i, camp] of c.camps.entries())
           if (
             camp.source !==
-              s.units.find((u) => u.kind === ["jammer", "turret", "citadel"][i])
-                .id ||
+              (expedition(s)
+                ? s.units.find((u) =>
+                    i < 2
+                      ? u.kind === "bastion" && u.sector === FORTS[i].sector
+                      : u.kind === "citadel",
+                  )
+                : s.units.find(
+                    (u) => u.kind === ["jammer", "turret", "citadel"][i],
+                  )
+              ).id ||
             !int(camp.reserve, 0, config.reserve) ||
             !num(
               camp.cooldown,
@@ -1482,6 +1721,11 @@
       items,
       rules,
       extended,
+      expedition,
+      pads,
+      buildings,
+      caches,
+      FORTS,
       PADS,
       MINES,
       CACHES,

@@ -443,6 +443,43 @@ function serverTimestamp() {
         await assertFails(ordinaryDb.ref(gamePath).once('value'));
         stopGameAccount();
 
+        const signalPath = 'gameProgress/' + accountUid + '/signalFrontier';
+        const Engine = require('../game-source/signal-frontier/src/engine');
+        const SignalCore = require('../game-source/signal-frontier/src/cloud-core');
+        const signalRecord = revision => ({version:1,revision,save:SignalCore.encode(Engine.make()),updatedAt:serverTimestamp()});
+        await assertFails(environment.unauthenticatedContext().database().ref(signalPath).once('value'));
+        await assertFails(anonDb.ref('gameProgress/'+anonUid+'/signalFrontier').set(signalRecord(1)));
+        await assertFails(ordinaryDb.ref(signalPath).set(signalRecord(1)));
+        await assertSucceeds(accountDb.ref(signalPath).set(signalRecord(1)));
+        await assertFails(ordinaryDb.ref(signalPath).once('value'));
+        await assertFails(accountDb.ref(signalPath).set(signalRecord(1)));
+        await assertFails(accountDb.ref(signalPath).set(signalRecord(3)));
+        await assertFails(accountDb.ref(signalPath).set({...signalRecord(2),extra:true}));
+        await assertFails(accountDb.ref(signalPath).set({...signalRecord(2),updatedAt:1}));
+        await assertFails(accountDb.ref(signalPath).set({...signalRecord(2),save:'x'.repeat(2000001)}));
+        await assertFails(accountDb.ref(signalPath+'/save').set('{}'));
+        await assertFails(accountDb.ref(signalPath).remove());
+        let signalTransport;
+        const stopSignal = await gameContext.AlmanionOrbitalAccount.connect((_u,t)=>{signalTransport=t},'signalFrontier');
+        function signalClient(){
+          let save=Engine.make();const values=new Map();
+          const sync=new SignalCore.CloudSync({storage:{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)},transport:signalTransport,
+            getSave:()=>SignalCore.encode(save),validateSave:text=>assert.ok(Engine.restore(JSON.parse(text))),isFresh:()=>save.t===0&&save.economy.spent===0,
+            canApply:()=>true,applySave:text=>{save=JSON.parse(text)}});
+          return {sync,get save(){return save},values};
+        }
+        const signalA=signalClient(),signalB=signalClient();
+        await signalA.sync.setUser(accountUid);
+        Engine.purchase(signalA.save,'barracks');await signalA.sync.sync();
+        await signalB.sync.setUser(accountUid);assert.deepEqual(signalB.save,signalA.save);
+        Engine.step(signalA.save);Engine.step(signalB.save);Engine.step(signalB.save);
+        await signalA.sync.sync();await signalB.sync.sync();assert.equal(signalB.sync.status,'conflict');
+        await signalB.sync.resolve('cloud');assert.deepEqual(signalB.save,signalA.save);
+        assert.ok(signalB.values.has('signal-cloud-backups'));
+        assert.notEqual((await accountDb.ref(signalPath).once('value')).val().save,(await accountDb.ref(gamePath).once('value')).val().save);
+        stopSignal();
+
+
         await assertSucceeds(ownerDb.ref('presence').remove());
         await assertSucceeds(ownerDb.ref('visitors').remove());
         await assertSucceeds(ownerDb.ref('dailyStats').remove());

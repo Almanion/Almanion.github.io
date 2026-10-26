@@ -30,11 +30,13 @@
         return ready;
     }
     root.AlmanionOrbitalAccount={
+        games:Object.freeze(['orbitalCourier','signalFrontier']),
         get persistence(){return persistence;},
-        async connect(onUser){
+        async connect(onUser,game='orbitalCourier'){
+            if(!['orbitalCourier','signalFrontier'].includes(game))throw Error('Unknown game');
             const {auth,db}=await initialize(),connected=db.ref('.info/connected');let online=false;
             const connection=s=>{online=s.val()===true;};connected.on('value',connection);
-            const ref=uid=>db.ref('gameProgress/'+uid+'/orbitalCourier');
+            const ref=uid=>db.ref('gameProgress/'+uid+'/'+game);
             const current=uid=>auth.currentUser?.uid===uid&&!auth.currentUser.isAnonymous;
             const transport={
                 async read(uid){

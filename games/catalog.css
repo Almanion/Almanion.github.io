@@ -1,0 +1,149 @@
+:root {
+  color-scheme: dark;
+  font-family:
+    Inter,
+    Segoe UI,
+    system-ui,
+    sans-serif;
+  background: #10191c;
+  color: #e1e7dc;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: radial-gradient(ellipse at 75% 0%, #35474540, transparent 60%);
+}
+main {
+  max-width: 1160px;
+  margin: auto;
+  padding: 42px 32px 72px;
+}
+.back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: #a6b4ad;
+  text-decoration: none;
+  font-size: 14px;
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #92a79c;
+}
+header {
+  margin: 58px 0 38px;
+}
+h1 {
+  font-size: clamp(44px, 7vw, 78px);
+  font-weight: 500;
+  letter-spacing: -0.055em;
+  margin: 12px 0;
+}
+h1 span {
+  color: #a8ba9a;
+}
+.games {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.game {
+  color: inherit;
+  text-decoration: none;
+  border: 1px solid #73877630;
+  border-radius: 18px;
+  background: #1a282b60;
+  overflow: hidden;
+  transition:
+    transform 0.3s,
+    border-color 0.3s;
+}
+.game:hover {
+  transform: translateY(-4px);
+  border-color: #9caf9770;
+}
+.game:focus-visible,
+.back:focus-visible {
+  outline: 2px solid #d3c09c;
+  outline-offset: 5px;
+}
+.art {
+  aspect-ratio: 600/340;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 55% 45%, #344b472e, transparent 70%);
+}
+.art svg {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.8s;
+}
+.game:hover svg {
+  transform: scale(1.035);
+}
+.orbital .art {
+  background: #14202c80;
+}
+.copy {
+  padding: 26px 28px 30px;
+}
+.genre,
+.platform {
+  font-size: 12px;
+  color: #a5b7ac;
+}
+.platform {
+  display: block;
+  margin-top: 25px;
+  color: #82998e;
+}
+h2 {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 12px 0;
+  font-size: clamp(21px, 2.3vw, 28px);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+h2 span {
+  color: #a8ba9a;
+}
+p {
+  font-size: 15px;
+  line-height: 1.65;
+  max-width: 29em;
+  color: #acbbb2;
+  margin: 0;
+}
+@media (max-width: 680px) {
+  main {
+    padding: 20px 18px 40px;
+  }
+  header {
+    margin: 30px 0;
+  }
+  .games {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .copy {
+    padding: 22px;
+  }
+  .art {
+    max-height: 245px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game,
+  .art svg {
+    transition: none;
+  }
+  .game:hover,
+  .game:hover svg {
+    transform: none;
+  }
+}

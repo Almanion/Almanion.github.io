@@ -6,6 +6,9 @@ const E = require("../game-source/signal-frontier/src/engine");
 const {
   LongOperationPilot,
 } = require("../tests/helpers/signal-frontier-long-pilot.cjs");
+const {
+  ExpeditionPilot,
+} = require("../tests/helpers/signal-frontier-expedition-pilot.cjs");
 const route = "/games/signal-frontier/";
 async function start(page) {
   await page.goto(route);
@@ -88,7 +91,7 @@ test("tactical camera: hover edges, drag, zoom, limits and no accidental orders"
   await page.mouse.move(1437, 450);
   await page.waitForTimeout(1000);
   const edge = await page.evaluate(() => SignalGame.camera());
-  expect(edge.x).toBeLessThan(1920);
+  expect(edge.x).toBeLessThan(2240);
   await page.mouse.move(800, 400);
   expect(
     await page.evaluate(() => SignalGame.snapshot().units.map((u) => u.order)),
@@ -181,19 +184,23 @@ test("touch camera: corner hold, pinch, cancellation and rotation preserve order
   }
 });
 
-for (const name of ["siege", "infiltration"])
+for (const [name, profile] of ["frontier-2", "frontier-3"].flatMap((p) =>
+  ["siege", "infiltration"].map((n) => [n, p]),
+))
   test(
-    "long " + name + ": full operation through real controls",
+    "long " + name + ": full operation " + profile + " through real controls",
     async ({ page }) => {
-      test.setTimeout(900000);
+      test.setTimeout(1500000);
       await page.setViewportSize({ width: 1600, height: 1000 });
       await page.clock.install();
-      await page.addInitScript(() =>
+      await page.addInitScript((save) => {
+        if (sessionStorage.getItem("signal-long-started")) return;
+        sessionStorage.setItem("signal-long-started", "1");
         localStorage.setItem(
           "signal-frontier-v1",
-          JSON.stringify({ settings: { volume: 0, reduced: true } }),
-        ),
-      );
+          JSON.stringify({ settings: { volume: 0, reduced: true }, save }),
+        );
+      }, E.make(profile));
       // Exercise the same fixed-step operation under a constrained 10 Hz renderer.
       // Fewer idle renders keep the full campaign affordable in CI; no game state is patched.
       await page.addInitScript(() => {
@@ -201,17 +208,23 @@ for (const name of ["siege", "infiltration"])
           setTimeout(() => callback(performance.now()), 100);
         window.cancelAnimationFrame = clearTimeout;
       });
-      await start(page);
+      await page.goto(route);
+      await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
+      await page.locator("#continue").click();
+      await page.keyboard.press("Tab");
       // Only explicit clock steps advance combat; runner latency must not drive the pilot.
       await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
       await page.locator("#tactical").click();
       await new Promise((resolve) => setTimeout(resolve, 400));
       expect(await page.evaluate(() => SignalGame.snapshot().t)).toBe(0);
-      const pilot = new LongOperationPilot(name, 22);
+      const pilot = new (
+        profile === "frontier-3" ? ExpeditionPilot : LongOperationPilot
+      )(name, 22);
       let pressed = new Set(),
         firing = false,
         final,
-        lastLog = -1;
+        lastLog = -1,
+        reloaded = false;
       const errors = [];
       page.on("pageerror", (e) => errors.push(e.message));
       async function release() {
@@ -239,7 +252,7 @@ for (const name of ["siege", "infiltration"])
               (p) => SignalGame.screen(p.x, p.y),
               c,
             );
-            await page.mouse.click(p.x, p.y);
+            await page.mouse.click(p.x, p.y, { button: "right" });
           } else {
             await page.locator("#supply-open").click();
             const producer = c.site
@@ -275,9 +288,17 @@ for (const name of ["siege", "infiltration"])
         }
         await page.keyboard.press("Tab");
       }
-      for (let i = 0; i < 16000; i++) {
+      let idleCommands = 0,
+        previousTime = -1;
+      for (let i = 0; i < 24000; i++) {
         const s = await page.evaluate(() => SignalGame.snapshot());
         final = s;
+        idleCommands = s.t === previousTime ? idleCommands + 1 : 0;
+        previousTime = s.t;
+        expect(
+          idleCommands,
+          "Pilot must advance the simulation between decisions",
+        ).toBeLessThan(120);
         if (s.status !== "playing") break;
         if (Math.floor(s.t / 60) !== lastLog) {
           lastLog = Math.floor(s.t / 60);
@@ -288,6 +309,20 @@ for (const name of ["siege", "infiltration"])
             s.economy.alloy,
             pilot.stage,
           );
+        }
+        if (profile === "frontier-3" && !reloaded && s.t >= 800) {
+          await release();
+          await page.locator("#menu-button").click();
+          const saved = await page.evaluate(() => SignalGame.snapshot());
+          await page.reload();
+          await page.locator("#continue").click();
+          const restored = await page.evaluate(() => SignalGame.snapshot());
+          expect(restored.t).toBe(saved.t);
+          expect(restored.economy).toEqual(saved.economy);
+          expect(restored.units).toEqual(saved.units);
+          reloaded = true;
+          pilot.path = [];
+          continue;
         }
         const d = pilot.decide(s);
         if (d.commands.length) {
@@ -348,9 +383,17 @@ for (const name of ["siege", "infiltration"])
       expect(final.approach).toBe(name);
       expect(E.restore(final)).not.toBeNull();
       expect(errors).toEqual([]);
+      if (profile === "frontier-3") expect(reloaded).toBe(true);
+      const diagnostics = await page.evaluate(() => SignalGame.diagnostics());
+      expect(diagnostics.units).toBeLessThanOrEqual(
+        E.development.rules(final).unitLimit,
+      );
+      expect(diagnostics.effects).toBeLessThanOrEqual(96);
+      expect(diagnostics.scars).toBeLessThanOrEqual(40);
+      expect(JSON.stringify(final).length).toBeLessThan(2000000);
       await expect(page.locator("#result-content")).toBeVisible();
       await page.screenshot({
-        path: "test-results/signal5-" + name + "-complete.png",
+        path: "test-results/signal6-" + profile + "-" + name + "-complete.png",
       });
     },
   );

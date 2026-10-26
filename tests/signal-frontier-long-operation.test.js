@@ -12,7 +12,7 @@ function advance(s, seconds) {
   for (let i = 0; i < Math.ceil(seconds * 60); i++) E.step(s);
 }
 function field() {
-  const s = E.make();
+  const s = E.make("frontier-2");
   for (const u of s.units) if (u.team && u.kind !== "citadel") u.hp = 0;
   s.campaign.camps.forEach((c) => (c.reserve = 0));
   return s;
@@ -50,7 +50,7 @@ function tierTwo() {
 }
 
 test("new operation uses its own profile; versions two and three retain exact costs and saves", () => {
-  const s = E.make(),
+  const s = E.make("frontier-2"),
     old = E.make("frontier-1"),
     classic = E.make("classic");
   assert.equal(s.version, 4);
@@ -70,7 +70,7 @@ test("new operation uses its own profile; versions two and three retain exact co
   assert.equal(s.campaign.mines[0].stock, 1080);
 });
 test("prices reserve real funds and rapid worker orders reserve separate slots", () => {
-  const s = E.make(),
+  const s = E.make("frontier-2"),
     b = E.living(s, "base");
   for (const action of ["missing", "__proto__", "constructor"]) {
     const before = E.snapshot(s);
@@ -283,7 +283,7 @@ test("profile, prices, local upgrades and premature specialisation cannot be for
   assert.ok(E.restore(s));
 });
 test("late enemy waves use finite reserves and a destroyed source cannot continue", () => {
-  const s = E.make(),
+  const s = E.make("frontier-2"),
     camp = s.campaign.camps[0];
   s.t = 1000;
   camp.cooldown = 0;

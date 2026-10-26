@@ -319,52 +319,88 @@
           c.fillRect(x + dx, y + 6, 2, 2);
         }
       }
-    for (const lane of world.id === "frontier"
+    for (const lane of world.id === "expedition"
       ? [
           [
-            [135, 1140],
-            [535, 1140],
+            [135, 1700],
+            [535, 1700],
+            [535, 1210],
+            [1020, 1210],
+            [1020, 850],
+            [1470, 850],
+          ],
+          [
+            [535, 1210],
             [535, 650],
-            [1020, 650],
-            [1020, 290],
-            [1470, 290],
+            [1000, 650],
+            [1000, 300],
+            [1810, 300],
           ],
           [
-            [535, 1140],
-            [780, 1140],
-            [780, 1010],
-            [1340, 1010],
-            [1340, 810],
-            [1770, 810],
+            [535, 1700],
+            [535, 1990],
+            [1160, 1990],
+            [1160, 2300],
+            [1750, 2300],
           ],
           [
-            [1340, 810],
-            [1340, 390],
-            [1780, 390],
+            [1340, 1370],
+            [1770, 1370],
+            [1770, 1250],
+            [2020, 1250],
+          ],
+          [
+            [2020, 1250],
+            [2120, 1250],
+            [2120, 1530],
           ],
         ]
-      : [
-          [
-            [135, 820],
-            [265, 820],
-            [265, 650],
-            [520, 650],
-            [520, 180],
-            [1015, 180],
-          ],
-          [
-            [520, 650],
-            [790, 650],
-            [790, 490],
-            [1250, 490],
-          ],
-          [
-            [1015, 215],
-            [1015, 280],
-            [1280, 280],
-            [1280, 200],
-          ],
-        ]) {
+      : world.id === "frontier"
+        ? [
+            [
+              [135, 1140],
+              [535, 1140],
+              [535, 650],
+              [1020, 650],
+              [1020, 290],
+              [1470, 290],
+            ],
+            [
+              [535, 1140],
+              [780, 1140],
+              [780, 1010],
+              [1340, 1010],
+              [1340, 810],
+              [1770, 810],
+            ],
+            [
+              [1340, 810],
+              [1340, 390],
+              [1780, 390],
+            ],
+          ]
+        : [
+            [
+              [135, 820],
+              [265, 820],
+              [265, 650],
+              [520, 650],
+              [520, 180],
+              [1015, 180],
+            ],
+            [
+              [520, 650],
+              [790, 650],
+              [790, 490],
+              [1250, 490],
+            ],
+            [
+              [1015, 215],
+              [1015, 280],
+              [1280, 280],
+              [1280, 200],
+            ],
+          ]) {
       line(c, lane, "#142f38", 22);
       line(c, lane, "#5c77705c", 1);
       c.save();
@@ -507,6 +543,17 @@
         x: (x - a.x) * a.scale + this.origin.x,
         y: (y - a.y) * a.scale * Y + this.origin.y,
       };
+    }
+    // Include model height, shadows and weapon tips beyond the unit's ground position.
+    inView(x, y, rx = 160, ry = rx) {
+      const p = this.screen(x, y),
+        a = this.camera;
+      return (
+        p.x + rx * a.scale >= 0 &&
+        p.x - rx * a.scale <= this.width &&
+        p.y + ry * a.scale * Y >= 0 &&
+        p.y - ry * a.scale * Y <= this.height
+      );
     }
     add(events, reduced) {
       for (const e of events) {
@@ -675,6 +722,7 @@
       c.drawImage(this.ground, 0, 0);
       this.debris(c);
       if (s.relay.online) {
+        const offset = s.campaign?.id === "frontier-3" ? 560 : 0;
         c.save();
         c.setLineDash([12, 8]);
         c.lineDashOffset = ui.reduced ? 0 : -this.time * 15;
@@ -682,10 +730,10 @@
           c,
           s.campaign
             ? [
-                [135, 1140],
-                [535, 1140],
-                [780, 1010],
-                [1340, 1010],
+                [135, 1140 + offset],
+                [535, 1140 + offset],
+                [780, 1010 + offset],
+                [1340, 1010 + offset],
                 [s.relay.x, s.relay.y],
               ]
             : [
@@ -746,10 +794,22 @@
           c.restore();
         }
       }
-      const objects = [
-        ...world.walls.map((b) => ({ ...b, wall: true, sort: b.y + b.h })),
-        ...s.units.map((u) => ({ ...u, sort: u.y })),
-      ].sort((a, b) => a.sort - b.sort);
+      const objects = [];
+      for (const b of world.walls)
+        if (
+          this.inView(
+            b.x + b.w / 2,
+            b.y + b.h / 2,
+            b.w * 0.65 + 80,
+            b.h * 0.65 + 100,
+          )
+        )
+          objects.push({ ...b, wall: true, sort: b.y + b.h });
+      for (const u of s.units) {
+        if (this.inView(u.x, u.y)) objects.push({ ...u, sort: u.y });
+        else this.pose(u, s, ui); // Keep travel animation continuous when the camera returns.
+      }
+      objects.sort((a, b) => a.sort - b.sort);
       for (const o of objects)
         if (o.wall) this.wall(c, o);
         else this.unit(c, o, s, ui);
@@ -882,6 +942,13 @@
           [s.units.find((u) => u.kind === "citadel"), "ЦИТАДЕЛЬ"],
           [s.units.find((u) => u.kind === "base"), "ПОСАДОЧНЫЙ УЗЕЛ"],
           [s.terminal, "ТЕРМИНАЛ"],
+          ...s.units
+            .filter((u) => u.kind === "bastion")
+            .map((u) => [
+              u,
+              (u.sector === "north" ? "БАСТИОН" : "АРСЕНАЛ") +
+                (u.hp <= 0 ? " · ПОДАВЛЕН" : ""),
+            ]),
         ];
         for (const [object, label] of labels) {
           const { x, y } = object;
@@ -1224,7 +1291,9 @@
           c,
           [
             [x, y],
-            s.campaign ? [1820, 520] : [1320, 320],
+            s.campaign
+              ? [1820, s.campaign.id === "frontier-3" ? 1080 : 520]
+              : [1320, 320],
             [
               s.units.find((u) => u.kind === "citadel").x,
               s.units.find((u) => u.kind === "citadel").y,
@@ -1938,7 +2007,11 @@
           "#b88a73",
           1,
         );
-      } else if (u.kind === "sentinel") {
+      } else if (["sentinel", "warden"].includes(u.kind)) {
+        if (u.kind === "warden") {
+          slab(c, 0, 0, 34, 27, 0, 8, aim, MAT.copper);
+          lamp(c, -9, 0, 30, aim, 3, accent);
+        }
         const gait = Math.sin(p.phase) * 2 * p.move;
         for (const side of [-1, 1]) {
           slab(
@@ -2354,6 +2427,67 @@
         ellipse(c, 0, -67, 3, 2, "#e7b18c");
         if (!ui.reduced)
           arc(c, 0, -63, 17, turn, turn + Math.PI * 1.4, "#d9a48060", 1);
+      } else if (u.kind === "bastion") {
+        slab(c, 0, 0, 86, 64, 0, 9, 0, MAT.graphite);
+        for (const side of [-1, 1]) {
+          slab(c, side * 31, 0, 22, 62, 9, 19, 0, MAT.enemy);
+          slab(c, side * 31, -4, 16, 43, 28, 7, 0, MAT.copper);
+          for (let i = 0; i < 4; i++)
+            seam(
+              c,
+              [
+                [side * 31 - 5, -16 + i * 9],
+                [side * 31 + 5, -16 + i * 9],
+              ],
+              36,
+              0,
+              "#24383d",
+              2,
+            );
+        }
+        plate(
+          c,
+          [
+            [-25, -23],
+            [16, -23],
+            [29, -8],
+            [29, 21],
+            [-25, 21],
+          ],
+          12,
+          23,
+          0,
+          MAT.dark,
+        );
+        slab(c, 0, -1, 27, 29, 35, 10, aim, MAT.enemy);
+        for (const side of [-1, 1]) {
+          slab(c, 27 - recoil, side * 8, 42, 6, 41, 5, aim, MAT.graphite);
+          slab(c, 47 - recoil, side * 8, 8, 8, 41, 5, aim, MAT.copper);
+          if (u.flash > 0 && !ui.reduced)
+            this.muzzle(
+              c,
+              52 - recoil,
+              side * 8,
+              44,
+              aim,
+              accent,
+              u.flash,
+              1.1,
+            );
+        }
+        seam(
+          c,
+          [
+            [-18, 16],
+            [-18, -6],
+          ],
+          35,
+          0,
+          "#899589",
+          2,
+        );
+        lamp(c, -18, 16, 59, 0, 2, accent);
+        for (const side of [-1, 1]) lamp(c, side * 32, 25, 29, 0, 2, accent);
       } else if (u.kind === "citadel") {
         for (let i = 0; i < 4; i++) {
           const a = (i * Math.PI) / 2 + Math.PI / 4;
@@ -2416,7 +2550,7 @@
         slab(c, 53 - recoil, 0, 9, 15, 59, 7, aim, MAT.copper);
         if (u.flash > 0 && !ui.reduced)
           this.muzzle(c, 60 - recoil, 0, 64, aim, accent, u.flash, 1.6);
-        if (E.shielded(s)) {
+        if (u.kind === "citadel" && E.shielded(s)) {
           for (let i = 0; i < 4; i++) {
             const a = (i * Math.PI) / 2 + 0.12;
             arc(c, 0, 0, 65, a, a + 1.32, "#d8ab8270", 1.5);
