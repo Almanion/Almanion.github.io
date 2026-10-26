@@ -14,9 +14,16 @@ test.beforeEach(async ({ page }) => {
     });
 });
 
-test('home game button opens the new self-contained release', async ({ page }) => {
+test('home game button opens the catalogue and both games remain reachable', async ({ page }) => {
     await page.goto('/');
     await page.locator('.home-game-link').click();
+    await expect(page).toHaveURL(/\/games\/$/);
+    await page.locator('a[href="signal-frontier/"]').click();
+    await expect(page).toHaveURL(/\/games\/signal-frontier\/$/);
+    await expect(page.locator('#start')).toBeVisible();
+    expect(await page.evaluate(() => SignalGame.snapshot().version)).toBe(5);
+    await page.goBack();
+    await page.locator('a[href="orbital-courier/"]').click();
     await expect(page).toHaveURL(/\/games\/orbital-courier\/$/);
     await expect(page).toHaveTitle(/Орбитальный курьер 10/);
     await expect(page.locator('#continueButton')).toBeVisible();
