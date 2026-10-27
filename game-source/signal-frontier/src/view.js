@@ -1115,7 +1115,7 @@
             ? w < h
               ? Math.min(0.72, Math.max(0.52, w / 600))
               : h < 500
-                ? 0.65
+                ? Math.min(0.65, (h - 145) / (540 * Y))
                 : Math.min(1.05, Math.max(0.86, h / 1000))
             : Math.min(1.32, Math.max(0.95, h / 660));
       scale = Math.max(
@@ -1179,6 +1179,24 @@
           halfY > world.H / 2
             ? world.H / 2
             : E.clamp(ty, halfY - 65, world.H - halfY + 65);
+        if (high) {
+          // The projected scout takes priority over rectangular world bounds:
+          // high ledges and edge paths must not put it behind phone controls.
+          const side = short ? 154 : 24,
+            top = short ? 75 : portrait ? 126 : 96,
+            bottom = h - (portrait ? 220 : short ? 70 : 100),
+            groundY = hero.y - this.z(hero.x, hero.y);
+          tx = E.clamp(
+            tx,
+            hero.x - (w - side - this.origin.x) / scale,
+            hero.x - (side - this.origin.x) / scale,
+          );
+          ty = E.clamp(
+            ty,
+            groundY - (bottom - this.origin.y) / (scale * Y),
+            groundY - (top - this.origin.y) / (scale * Y),
+          );
+        }
       }
       if (ui.selecting && !menu) {
         tx = this.camera.x;

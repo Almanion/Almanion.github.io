@@ -456,3 +456,65 @@ for (const [width, height] of [
       await context.close();
     }
   });
+
+for (const [width, height] of [
+  [320, 568],
+  [390, 844],
+  [844, 390],
+  [1440, 900],
+])
+  test(`terrain combat edges keep the scout clear of controls ${width}x${height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto(route);
+    const points = await page.evaluate(() => {
+      const E = SignalEngine,
+        s = E.make(),
+        v = new SignalView(document.createElement("canvas")),
+        hero = E.hero(s),
+        result = [];
+      for (const [x, y] of [
+        [3000, 136],
+        [500, 3740],
+        [140, 2415],
+        [3500, 700],
+      ]) {
+        if (!E.free(x, y, E.C.hero.r, "highlands"))
+          throw Error("edge fixture is not walkable");
+        Object.assign(hero, { x, y });
+        E.refreshRecon(s);
+        for (const aim of [
+          null,
+          { x: x + 600, y: y - 600 },
+          { x: x - 600, y: y + 600 },
+        ]) {
+          v.render(
+            s,
+            {
+              mode: "playing",
+              reduced: true,
+              touch: innerWidth < 900,
+              aim,
+              group: 1,
+            },
+            1,
+          );
+          result.push(v.screen(x, y));
+        }
+      }
+      return result;
+    });
+    const portrait = width < height,
+      short = width > height && height < 500;
+    for (const p of points) {
+      expect(p.x).toBeGreaterThanOrEqual((short ? 154 : 24) - 0.1);
+      expect(p.x).toBeLessThanOrEqual(width - (short ? 154 : 24) + 0.1);
+      expect(p.y).toBeGreaterThanOrEqual(
+        (short ? 75 : portrait ? 126 : 96) - 0.1,
+      );
+      expect(p.y).toBeLessThanOrEqual(
+        height - (portrait ? 220 : short ? 70 : 100) + 0.1,
+      );
+    }
+  });
