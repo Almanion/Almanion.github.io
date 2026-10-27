@@ -58,7 +58,11 @@ class ExpeditionPilot {
           o.cost <=
             budget -
               (action === "drone"
-                ? alive("drone").length
+                ? (
+                    highlands
+                      ? alive("drone").some((u) => u.node === o.producer?.id)
+                      : alive("drone").length
+                  )
                   ? reserve
                   : 0
                 : (this.stage ? D.items(s).drone.cost : 0) +
@@ -124,6 +128,10 @@ class ExpeditionPilot {
             !relay.jobs.some((j) => j.action === "defense")
           ? D.items(s).defense.cost
           : 0;
+    // Keep a new mine affordable if either forward economy is lost. Its first
+    // worker has priority over this reserve, including workers at other nodes.
+    if (highlands && this.stage >= 1 && s.campaign.tier < 3)
+      reserve = Math.max(reserve, D.items(s).outpost.cost);
     const rifleCount = alive("rifle").length + D.queued(s, "rifle").length;
     const savingForCommand =
       E.fogged(s) &&
