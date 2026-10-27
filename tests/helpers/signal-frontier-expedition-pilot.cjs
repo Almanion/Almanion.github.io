@@ -60,7 +60,7 @@ class ExpeditionPilot {
               (action === "drone"
                 ? (
                     highlands
-                      ? alive("drone").some((u) => u.node === o.producer?.id)
+                      ? D.usedSlots(planned || s, o.producer) > 0
                       : alive("drone").length
                   )
                   ? reserve
@@ -178,7 +178,8 @@ class ExpeditionPilot {
       if (!threatened(relay) && ore(relay) && D.usedSlots(s, relay) < 4)
         buy("drone", relay.id);
       buy("command");
-      if (this.route === "siege") buy("foundry");
+      if (this.route === "siege" && (!highlands || s.campaign.tier === 3))
+        buy("foundry");
     }
     const extra = post("north");
     if (extra && !extra.build) {
@@ -338,7 +339,7 @@ class ExpeditionPilot {
     // Recover the containers encountered on the infiltration route before waiting
     // for more ore; this pays for losses without inventing resources.
     if (
-      this.route === "infiltration" &&
+      (this.route === "infiltration" || highlands) &&
       this.stage >= 1 &&
       this.stage <= 4 &&
       h.hp > 80

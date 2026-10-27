@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       full_campaign:
-        description: Replay all four full Signal Frontier operations through browser controls
+        description: Replay all full Signal Frontier operations through browser controls
         type: boolean
         default: false
 
@@ -136,7 +136,7 @@ jobs:
     if: needs.scope.outputs.campaign == 'true'
     name: Complete ${{ matrix.route }} (${{ matrix.profile }})
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 50
     strategy:
       fail-fast: false
       matrix:

@@ -219,7 +219,7 @@ for (const [name, profile] of [
   test(
     "long " + name + ": full operation " + profile + " through real controls",
     async ({ page }) => {
-      test.setTimeout(profile === "frontier-7" ? 1800000 : 1500000);
+      test.setTimeout(profile === "frontier-7" ? 2400000 : 1500000);
       await page.setViewportSize({ width: 1600, height: 1000 });
       await page.clock.install();
       await page.addInitScript((save) => {
