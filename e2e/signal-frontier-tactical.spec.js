@@ -12,6 +12,8 @@ function scenario() {
   return s;
 }
 async function boot(page, s = scenario(), reduced = true) {
+  E.refreshRecon(s);
+  expect(E.restore(s)).not.toBeNull();
   await page.clock.install();
   await page.addInitScript(
     ({ s, reduced }) =>
@@ -170,7 +172,12 @@ for (const browserType of [chromium, webkit])
           errors = [];
         page.on("pageerror", (e) => errors.push(e.message));
         try {
-          await boot(page);
+          const state = scenario(),
+            visible = state.units.find((u) => u.kind === "sentinel");
+          Object.assign(visible, { x: 650, y: 1700 });
+          visible.ai.home = { x: visible.x, y: visible.y };
+          await boot(page, state);
+          expect(E.visible(state, 0, visible)).toBe(true);
           await page.locator("#map-overview").tap();
           await page.clock.runFor(100);
           const before = await orders(page),
@@ -218,6 +225,19 @@ for (const browserType of [chromium, webkit])
               ids,
             ),
           ).toEqual(ids.map(() => enemyId));
+          const hidden = after.units.find(
+            (u) => u.team && u.hp > 0 && !E.visible(after, 0, u),
+          );
+          expect(hidden).toBeTruthy();
+          await page.locator("#order-move").tap();
+          const hiddenPoint = await position(page, hidden.id);
+          await page.touchscreen.tap(hiddenPoint.x, hiddenPoint.y);
+          const blind = await page.evaluate(() => SignalGame.snapshot());
+          expect(
+            blind.units
+              .filter((u) => ids.includes(u.id))
+              .every((u) => u.target === null && u.order),
+          ).toBe(true);
           for (const id of [
             "order-move",
             "order-cancel",
