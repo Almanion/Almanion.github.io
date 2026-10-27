@@ -101,19 +101,6 @@ class ExpeditionPilot {
         : D.combat(s) && this.stage
           ? Math.min(9, D.capacity(s) - 1)
           : 6;
-    if (D.combat(s) && this.route === "siege" && this.stage >= 5) {
-      this.defenders = (this.defenders || []).filter((id) =>
-        alive("rifle").some((u) => u.id === id),
-      );
-      const available = alive("rifle")
-        .filter((u) => !this.defenders.includes(u.id))
-        .sort((a, b) => E.dist(a, base) - E.dist(b, base));
-      while (
-        this.defenders.length < 2 &&
-        alive("rifle").length > this.defenders.length + 3
-      )
-        this.defenders.push(available.shift().id);
-    }
     if (!alive("barracks").length) buy("barracks");
     if (base && !threatened(base) && ore(base) && D.usedSlots(s, base) < 4)
       buy("drone");
@@ -468,9 +455,7 @@ class ExpeditionPilot {
       }
     }
     if (D.combat(s) && this.stage >= 1) {
-      const squad = alive("rifle").filter(
-          (u) => !this.defenders?.includes(u.id),
-        ),
+      const squad = alive("rifle"),
         targets = alive()
           .filter(
             (u) =>
@@ -489,9 +474,7 @@ class ExpeditionPilot {
         order(1, { x: targets[0].x, y: targets[0].y, targetId: targets[0].id });
     }
     if (D.combat(s)) {
-      const army = alive("rifle").filter(
-          (u) => !this.defenders?.includes(u.id),
-        ),
+      const army = alive("rifle"),
         hazards = s.units
           .filter((u) => u.team && u.hp > 0)
           .map((u) => ({ area: E.dangerArea(s, u), origin: u }))
@@ -530,47 +513,14 @@ class ExpeditionPilot {
     }
     for (const [g, p] of Object.entries(nextOrders)) {
       if (D.combat(s) && !alive().some((u) => u.group === Number(g))) continue;
-      const ids =
-        D.combat(s) && Number(g) === 1 && this.defenders?.length
-          ? alive("rifle")
-              .filter((u) => !this.defenders.includes(u.id))
-              .map((u) => u.id)
-          : null;
-      if (ids && !ids.length) continue;
-      const key =
-        (p.targetId ? "attack:" + p.targetId : p.x + "," + p.y) +
-        (ids ? ":" + ids.join(",") : "");
+      const key = p.targetId ? "attack:" + p.targetId : p.x + "," + p.y;
       if (this.orders[g] !== key) {
         commands.push({
           kind: "order",
           group: Number(g),
-          ...(ids ? { ids } : {}),
           ...p,
         });
         this.orders[g] = key;
-      }
-    }
-    if (D.combat(s) && this.defenders?.length) {
-      const defenders = alive("rifle").filter((u) =>
-          this.defenders.includes(u.id),
-        ),
-        visible = alive()
-          .filter(
-            (u) =>
-              u.team &&
-              E.C[u.kind].damage &&
-              [base, west].some((n) => n && E.dist(u, n) < 650) &&
-              defenders.some((d) => E.dist(d, u) < 620 && E.clear(d, u)),
-          )
-          .sort((a, b) => E.dist(a, base) - E.dist(b, base)),
-        target = visible[0],
-        p = target
-          ? { x: target.x, y: target.y, targetId: target.id }
-          : { x: 350, y: 1580 },
-        key = [p.targetId || `${p.x},${p.y}`, ...this.defenders].join(":");
-      if (this.orders.home !== key) {
-        commands.push({ kind: "order", group: 1, ids: this.defenders, ...p });
-        this.orders.home = key;
       }
     }
     return {
@@ -605,15 +555,12 @@ function play(route, maxFrames = 144000, profile = "frontier-4") {
         : c.targetId
           ? E.attackUnits(
               s,
-              c.ids ||
-                s.units
-                  .filter((u) => u.hp > 0 && u.group === c.group)
-                  .map((u) => u.id),
+              s.units
+                .filter((u) => u.hp > 0 && u.group === c.group)
+                .map((u) => u.id),
               c.targetId,
             )
-          : c.ids
-            ? E.orderUnits(s, c.ids, c.x, c.y)
-            : E.order(s, c.group, c.x, c.y);
+          : E.order(s, c.group, c.x, c.y);
     E.step(s, d.input);
     if (i % 3600 === 0)
       trace.push({

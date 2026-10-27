@@ -95,6 +95,24 @@ test("right drag selects only part of the army during live combat, then orders o
   );
   await page.screenshot({ path: "test-results/signal-controls-selection.png" });
 });
+test("whole group selection includes overlapping troops", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const state = scenario(),
+    troops = state.units.filter((u) => u.group === 1),
+    ids = troops.map((u) => u.id);
+  for (const u of troops) Object.assign(u, { x: 400, y: 1500 });
+  await boot(page, state);
+  await page.locator("#tactical").click();
+  await page.locator("#group-one").click();
+  expect((await page.evaluate(() => SignalGame.selection())).ids).toEqual(ids);
+  const p = await page.evaluate(() => SignalGame.screen(620, 1500));
+  await page.mouse.click(p.x, p.y, { button: "right" });
+  const after = await page.evaluate(() => SignalGame.snapshot());
+  expect(
+    after.units.filter((u) => u.group === 1 && u.order).map((u) => u.id),
+  ).toEqual(ids);
+});
+
 test("selection cancellation, empty frames and tactical dragging never issue an accidental order", async ({
   page,
 }) => {

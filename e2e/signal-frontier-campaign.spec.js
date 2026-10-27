@@ -184,6 +184,28 @@ test("touch camera: corner hold, pinch, cancellation and rotation preserve order
   }
 });
 
+// Full snapshot traces grow to gigabytes. Preserve the actual failed state
+// and screenshot instead; inputs and every simulation step remain unchanged.
+test.use({ trace: "off" });
+test.afterEach(async ({ page }, info) => {
+  if (info.status === info.expectedStatus) return;
+  const state = await page
+    .evaluate(() =>
+      window.SignalGame
+        ? {
+            state: SignalGame.snapshot(),
+            selection: SignalGame.selection(),
+            camera: SignalGame.camera(),
+            mode: SignalGame.mode(),
+          }
+        : null,
+    )
+    .catch(() => null);
+  await info.attach("operation-state.json", {
+    body: JSON.stringify(state),
+    contentType: "application/json",
+  });
+});
 for (const [name, profile] of [
   "frontier-3",
   "frontier-4",
@@ -258,28 +280,9 @@ for (const [name, profile] of [
         await page.clock.runFor(600);
         for (const c of commands) {
           if (c.kind === "order") {
-            if (c.ids) {
-              const points = await page.evaluate((ids) => {
-                const s = SignalGame.snapshot();
-                return ids
-                  .map((id) => s.units.find((u) => u.id === id))
-                  .filter((u) => u && u.hp > 0)
-                  .map((u) => SignalGame.screen(u.x, u.y));
-              }, c.ids);
-              for (let i = 0; i < points.length; i++) {
-                if (i) await page.keyboard.down("Shift");
-                await page.mouse.click(points[i].x, points[i].y);
-                if (i) await page.keyboard.up("Shift");
-              }
-              expect(
-                (await page.evaluate(() => SignalGame.selection())).ids.sort(
-                  (a, b) => a - b,
-                ),
-              ).toEqual([...c.ids].sort((a, b) => a - b));
-            } else
-              await page
-                .locator(c.group === 1 ? "#group-one" : "#group-two")
-                .click();
+            await page
+              .locator(c.group === 1 ? "#group-one" : "#group-two")
+              .click();
             const p = await page.evaluate(
               (p) => SignalGame.screen(p.x, p.y),
               c,
