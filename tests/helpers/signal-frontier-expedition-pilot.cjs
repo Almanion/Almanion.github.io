@@ -372,6 +372,19 @@ class ExpeditionPilot {
         order(1, point(500, 1580));
       }
     }
+    // Construction needs the scout nearby. Returning only for visible danger can
+    // leave a rebuilt west node unfinished forever, blocking the third tier.
+    if (
+      highlands &&
+      this.stage >= 1 &&
+      s.campaign.tier < 3 &&
+      (!west || west.build)
+    ) {
+      const site = D.pads(s).find((p) => p.id === "west");
+      dest = { x: site.x, y: site.y - 65 };
+      order(1, point(500, 1580));
+      interact = false;
+    }
     // Respond to a visible attack on the economy instead of waiting at the objective
     // while an outranging enemy destroys every worker. The forward squad holds its orders.
     if (

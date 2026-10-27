@@ -152,4 +152,36 @@ test("a heavy ally follows complete ramp routes without sticking, falling or cut
   }
 });
 
+test("terrain pilot returns to an unfinished economy node before waiting for research", () => {
+  const {
+      ExpeditionPilot,
+    } = require("./helpers/signal-frontier-expedition-pilot.cjs"),
+    s = E.make(),
+    h = E.hero(s),
+    pilot = new ExpeditionPilot("siege", 22);
+  Object.assign(h, { x: 795, y: 2320 });
+  E.refreshRecon(s);
+  assert(E.purchase(s, "outpost", "west").allowed);
+  const node = s.units.find((u) => u.kind === "outpost" && u.site === "west");
+  Object.assign(h, { x: 2130, y: 1410 });
+  E.refreshRecon(s);
+  assert(E.restore(s));
+  pilot.stage = 4;
+  const before = JSON.stringify(s),
+    decision = pilot.decide(s);
+  assert.equal(JSON.stringify(s), before);
+  assert(pilot.path.length && E.dist(pilot.path.at(-1), node) < 210);
+  assert(decision.input.x || decision.input.y);
+  Object.assign(h, pilot.path.at(-1));
+  for (let i = 0; i < 180; i++) E.step(s);
+  assert(node.build > 0 && node.build < 44);
+  pilot.decide(s);
+  assert(
+    E.dist(h, {
+      x: Number(pilot.goal.split(",")[0]),
+      y: Number(pilot.goal.split(",")[1]),
+    }) < 210,
+  );
+});
+
 console.log(checks + " terrain checks passed");
