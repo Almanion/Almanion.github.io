@@ -119,7 +119,7 @@
           !(this.charges.get(u.id) > 0) &&
           u.kind !== "runner"
         )
-          this.play({ type: "charge", id: u.id, x: u.x, y: u.y });
+          this.play({ type: "charge", id: u.id, kind: u.kind, x: u.x, y: u.y });
         this.charges.set(u.id, u.wind);
       }
       const distance =
@@ -269,6 +269,15 @@
       if (type === "step") {
         noise(900, 300, 0.045, 0.032, 0, "bandpass");
         tone(105, 65, 0.05, 0.018);
+      } else if (type === "rocket") {
+        noise(1800, 260, 0.65, 0.18, 0, "bandpass");
+        tone(110, 42, 0.3, 0.12);
+      } else if (type === "flame") {
+        noise(600, 1300, 1.2, 0.2, 0, "bandpass");
+        tone(78, 51, 0.8, 0.07);
+      } else if (type === "charge" && e.kind === "bomber") {
+        for (let i = 0; i < 3; i++)
+          tone(540 + i * 180, 500 + i * 180, 0.07, 0.04, i * 0.22, "triangle");
       } else if (type === "charge") {
         tone(220, 380, 0.38, 0.028);
         noise(1100, 1800, 0.22, 0.025, 0, "bandpass");

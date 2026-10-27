@@ -18,6 +18,11 @@
     sentinel: { hp: 90, r: 13, speed: 82, range: 310, damage: 10, rate: 1.35 },
     runner: { hp: 55, r: 11, speed: 145, range: 48, damage: 13, rate: 0.85 },
     warden: { hp: 180, r: 16, speed: 92, range: 365, damage: 17, rate: 1.55 },
+    rocket: { hp: 105, r: 14, speed: 76, range: 430, damage: 32, rate: 3.6 },
+    flamer: { hp: 175, r: 16, speed: 90, range: 178, damage: 30, rate: 3.2 },
+    bomber: { hp: 65, r: 12, speed: 154, range: 56, damage: 74, rate: 1 },
+    tank: { hp: 420, r: 24, speed: 58, range: 440, damage: 42, rate: 3.6 },
+    mortar: { hp: 250, r: 22, speed: 48, range: 610, damage: 54, rate: 6.4 },
     bastion: { hp: 1400, r: 44, speed: 0, range: 470, damage: 28, rate: 1.8 },
     turret: { hp: 200, r: 25, speed: 0, range: 400, damage: 19, rate: 2.1 },
     jammer: { hp: 340, r: 32, speed: 0, range: 0, damage: 0, rate: 0 },
@@ -82,7 +87,7 @@
     s === "expedition" ||
     s?.id === "expedition" ||
     s?.map === "expedition" ||
-    ["frontier-3", "frontier-4"].includes(s?.campaign?.id)
+    ["frontier-3", "frontier-4", "frontier-5"].includes(s?.campaign?.id)
       ? expeditionMap
       : s === "frontier" ||
           s?.id === "frontier" ||
@@ -240,11 +245,15 @@
     return mode === "classic"
       ? makeClassic()
       : campaign.make(
-          ["frontier-1", "frontier-2", "frontier-3", "frontier-4"].includes(
-            mode,
-          )
+          [
+            "frontier-1",
+            "frontier-2",
+            "frontier-3",
+            "frontier-4",
+            "frontier-5",
+          ].includes(mode)
             ? mode
-            : "frontier-4",
+            : "frontier-5",
         );
   }
   const hero = (s) => s.units.find((u) => u.id === s.heroId);
@@ -275,7 +284,7 @@
   const readyPosts = (s) =>
     s.units.filter((u) => u.kind === "outpost" && u.hp > 0 && u.build === 0);
   function spawnPoint(s, anchor, kind) {
-    for (const [dx, dy] of [
+    const offsets = [
       [55, 35],
       [-55, 35],
       [55, -35],
@@ -284,7 +293,21 @@
       [70, 0],
       [0, -70],
       [-70, 0],
-    ]) {
+    ];
+    if (s.campaign?.id === "frontier-5") {
+      const separation = C[anchor.kind].r + C[kind].r + 6;
+      for (const offset of offsets) {
+        const scale = Math.max(1, separation / Math.hypot(...offset));
+        offset[0] *= scale;
+        offset[1] *= scale;
+      }
+      for (let i = 0; i < 16; i++)
+        offsets.push([
+          Math.cos((i * Math.PI) / 8) * (separation + 48),
+          Math.sin((i * Math.PI) / 8) * (separation + 48),
+        ]);
+    }
+    for (const [dx, dy] of offsets) {
       const p = { x: anchor.x + dx, y: anchor.y + dy };
       if (
         free(p.x, p.y, C[kind].r, anchor.map) &&
@@ -666,7 +689,9 @@
     return clear(
       from,
       target,
-      from.kind === "artillery" || from.kind === "runner" ? 0 : 2,
+      ["artillery", "runner", "flamer", "bomber", "mortar"].includes(from.kind)
+        ? 0
+        : 2,
     );
   }
   const attackGrids = new Map();
@@ -718,8 +743,10 @@
   function firingPath(from, target) {
     const def = C[from.kind],
       world = mapFor(from.map || target.map),
-      range = def.range * 0.9;
+      range = def.range * 0.9,
+      minimum = from.kind === "mortar" ? 240 : 0;
     const goal = (p) =>
+      dist(p, target) >= minimum &&
       dist(p, target) <= range &&
       fireClear({ ...p, map: world.id, kind: from.kind }, target);
     if (goal(from)) return [];
@@ -945,7 +972,15 @@
       else break;
     }
   }
-  function stats(s, u) {
+  function stats(s, u, target = null) {
+    if (
+      s.campaign?.id === "frontier-5" &&
+      (u.kind === "citadel" ||
+        (u.kind === "bastion" &&
+          (target || s.units.find((v) => v.id === u.target?.id))?.kind ===
+            "artillery"))
+    )
+      return { ...C[u.kind], range: 610, damage: 54, rate: 6.4 };
     return s.version >= 4 && u.defense && ["base", "outpost"].includes(u.kind)
       ? { ...C[u.kind], range: 340, damage: 20, rate: 0.9 }
       : C[u.kind];
@@ -956,10 +991,24 @@
     u.angle = a;
     u.cool = def.rate;
     u.flash = 0.1;
-    emit(s, u.kind === "artillery" ? "mortar" : "shot", u.x, u.y, {
-      team: u.team,
-      kind: u.kind,
-    });
+    const siege =
+      s.campaign?.id === "frontier-5" &&
+      (["mortar", "citadel"].includes(u.kind) ||
+        (u.kind === "bastion" && def.range > 500));
+    emit(
+      s,
+      u.kind === "artillery" || siege
+        ? "mortar"
+        : u.kind === "rocket"
+          ? "rocket"
+          : "shot",
+      u.x,
+      u.y,
+      {
+        team: u.team,
+        kind: u.kind,
+      },
+    );
     if (u.kind === "runner") {
       hurt(s, target, def.damage * (s.campaign ? 1.2 : 1), u);
       return;
@@ -969,20 +1018,54 @@
         s.version >= 4 && u.defense
           ? Math.min(def.r + 9, dist(u, target) / 2)
           : def.r + 9,
-      speed = u.kind === "artillery" ? 360 : u.team ? 390 : 800;
+      speed =
+        u.kind === "rocket"
+          ? 260
+          : u.kind === "artillery" || siege
+            ? 360
+            : u.team && s.campaign?.id === "frontier-5"
+              ? 520
+              : u.team
+                ? 390
+                : 800;
     s.bullets.push({
       ...(s.campaign ? { map: mapFor(s).id } : {}),
       x: u.x + Math.cos(a) * r,
       y: u.y + Math.sin(a) * r,
       vx: Math.cos(a) * speed,
       vy: Math.sin(a) * speed,
-      life: def.range / speed,
+      life:
+        u.kind === "rocket"
+          ? 3
+          : siege
+            ? dist(u, target) / speed
+            : def.range / speed,
       team: u.team,
       owner: u.id,
       damage:
         def.damage *
-        (s.campaign ? (u.team ? 1.2 : s.campaign.weapons ? 1.2 : 1) : 1),
-      kind: u.kind === "artillery" ? "shell" : "bolt",
+        (s.campaign
+          ? u.team
+            ? s.campaign.id === "frontier-5"
+              ? ["sentinel", "warden"].includes(u.kind)
+                ? 0.65
+                : 1
+              : 1.2
+            : s.campaign.weapons
+              ? 1.2
+              : 1
+          : 1),
+      kind:
+        u.kind === "rocket"
+          ? "missile"
+          : u.kind === "artillery" || siege
+            ? "shell"
+            : "bolt",
+      ...(u.kind === "rocket"
+        ? { lockId: target.id, guided: true }
+        : siege
+          ? { radius: 78 }
+          : {}),
       tx: target.x,
       ty: target.y,
       age: 0,
@@ -996,6 +1079,17 @@
     }
     if (u.kind === "citadel" && attacker.kind !== "shell")
       damage *= s.terminal.window > 0 ? 0.65 : s.campaign ? 0.03 : 0.28;
+    if (
+      s.campaign?.id === "frontier-5" &&
+      u.kind === "tank" &&
+      attacker.kind !== "shell"
+    ) {
+      const sourceAngle = Number.isFinite(attacker.vx)
+        ? Math.atan2(-attacker.vy, -attacker.vx)
+        : Math.atan2(attacker.y - u.y, attacker.x - u.x);
+      if (Math.cos(sourceAngle - u.combat.angle) > Math.cos(Math.PI * 0.36))
+        damage *= 0.38;
+    }
     if (s.campaign && u.team && attacker.kind !== "shell") {
       if (u.kind === "sentinel") damage *= 0.65;
       if (u.kind === "warden") damage *= 0.7;
@@ -1024,10 +1118,125 @@
     }
   }
   function blast(s, b) {
-    emit(s, "blast", b.x, b.y);
+    const radius = b.radius || 70,
+      area = b.radius ? impactArea(s, b, radius) : null;
+    emit(s, "blast", b.x, b.y, { radius });
     for (const u of s.units)
-      if (u.hp > 0 && u.team !== b.team && dist(u, b) < 70 && clear(b, u))
-        hurt(s, u, b.damage * (1 - dist(u, b) / 100), b);
+      if (
+        u.hp > 0 &&
+        u.team !== b.team &&
+        (area ? insideArea(area, u) : dist(u, b) < radius) &&
+        clear(b, u)
+      )
+        hurt(
+          s,
+          u,
+          b.damage * (1 - dist(u, b) / (b.radius ? radius * 2 : 100)),
+          b,
+        );
+  }
+  function turnAngle(current, target, limit) {
+    const delta = Math.atan2(
+      Math.sin(target - current),
+      Math.cos(target - current),
+    );
+    const angle = current + clamp(delta, -limit, limit);
+    return Math.atan2(Math.sin(angle), Math.cos(angle));
+  }
+  function areaArc(s, origin, radius, start, end, steps) {
+    const angles = [],
+      centre = (start + end) / 2;
+    for (let i = 0; i <= steps; i++)
+      angles.push(start + ((end - start) * i) / steps);
+    // Rays on both sides of a cover corner preserve its sharp shadow boundary.
+    for (const w of mapFor(s).walls)
+      for (const x of [w.x, w.x + w.w])
+        for (const y of [w.y, w.y + w.h]) {
+          if (dist(origin, { x, y }) > radius) continue;
+          const raw = Math.atan2(y - origin.y, x - origin.x),
+            a =
+              centre +
+              Math.atan2(Math.sin(raw - centre), Math.cos(raw - centre));
+          for (const offset of [-1e-6, 0, 1e-6])
+            if (a + offset > start && a + offset < end) angles.push(a + offset);
+        }
+    return angles
+      .sort((a, b) => a - b)
+      .map((a) => {
+        const end = {
+          x: origin.x + Math.cos(a) * radius,
+          y: origin.y + Math.sin(a) * radius,
+        };
+        let t = 1;
+        for (const wall of mapFor(s).walls) {
+          const hit = segmentRect(origin.x, origin.y, end.x, end.y, wall);
+          if (hit !== null) t = Math.min(t, hit);
+        }
+        return {
+          x: origin.x + (end.x - origin.x) * t,
+          y: origin.y + (end.y - origin.y) * t,
+        };
+      });
+  }
+  const impactAreas = new Map();
+  function impactArea(s, point, radius) {
+    const key = `${mapFor(s).id}:${point.x}:${point.y}:${radius}`;
+    if (impactAreas.has(key)) return impactAreas.get(key);
+    const points = areaArc(s, point, radius, 0, Math.PI * 2, 64);
+    const area = Object.freeze({
+      kind: "circle",
+      x: point.x,
+      y: point.y,
+      radius,
+      points: Object.freeze(points.map(Object.freeze)),
+    });
+    if (impactAreas.size >= 128)
+      impactAreas.delete(impactAreas.keys().next().value);
+    impactAreas.set(key, area);
+    return area;
+  }
+  // The renderer and damage use the same cover-clipped ground polygon.
+  function dangerArea(s, u) {
+    if (!u.combat || u.hp <= 0 || u.combat.mode === "idle") return null;
+    if (u.kind === "flamer") {
+      const half = (Math.PI * 65) / 360,
+        points = [
+          { x: u.x, y: u.y },
+          ...areaArc(
+            s,
+            u,
+            C.flamer.range,
+            u.combat.angle - half,
+            u.combat.angle + half,
+            24,
+          ),
+        ];
+      return { kind: "sector", points, active: u.combat.mode === "fire" };
+    }
+    if (u.kind === "bomber") return impactArea(s, u, 92);
+    if (
+      (["mortar", "citadel"].includes(u.kind) ||
+        (u.kind === "bastion" && stats(s, u).range > 500)) &&
+      u.target
+    )
+      return impactArea(s, u.target, 78);
+    return null;
+  }
+  function insideArea(area, p) {
+    if (area.kind === "circle" && !area.points)
+      return dist(area, p) < area.radius;
+    let inside = false;
+    const points = area.points;
+    for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+      const a = points[i],
+        b = points[j];
+      if (
+        a.y > p.y !== b.y > p.y &&
+        p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x
+      )
+        inside = !inside;
+    }
+    return inside;
   }
   function step(s, input = {}, dt = DT) {
     if (s.status !== "playing") return s;
@@ -1096,6 +1305,14 @@
       }
       if (u.kind === "citadel" && s.terminal.window > 0) {
         u.wind = 0;
+        if (u.combat)
+          Object.assign(u.combat, {
+            mode: "idle",
+            time: 0,
+            total: 0,
+            burst: 0,
+            gap: 0,
+          });
         continue;
       }
       const def = stats(s, u);
@@ -1108,7 +1325,27 @@
       );
       let target = opponents
         .filter((v) => dist(u, v) < def.range && clear(u, v))
-        .sort((a, b) => dist(u, a) - dist(u, b))[0];
+        .sort((a, b) => {
+          const score = (v) => {
+            let value = dist(u, v);
+            if (s.campaign?.id !== "frontier-5" || u.team) return value;
+            if (u.kind === "artillery")
+              value -= ["tank", "mortar", "bastion"].includes(v.kind) ? 150 : 0;
+            else {
+              if (v.kind === "bomber" && dist(u, v) < 180) value -= 340;
+              if (v.kind === "flamer" && dist(u, v) < 230) value -= 180;
+              if (["rocket", "mortar"].includes(v.kind)) value -= 75;
+              if (
+                v.kind === "tank" &&
+                Math.cos(Math.atan2(u.y - v.y, u.x - v.x) - v.combat.angle) >
+                  0.42
+              )
+                value += 120;
+            }
+            return value;
+          };
+          return score(a) - score(b);
+        })[0];
       if (u.team === 0) {
         if (
           !u.target &&
@@ -1202,6 +1439,22 @@
     for (const b of s.bullets) {
       b.age += dt;
       b.life -= dt;
+      if (b.kind === "missile" && b.guided) {
+        const target = s.units.find(
+          (u) => u.id === b.lockId && u.hp > 0 && u.team !== b.team,
+        );
+        if (!target || dist(b, target) > 650 || !clear(b, target, 2))
+          b.guided = false;
+        else {
+          const angle = turnAngle(
+            Math.atan2(b.vy, b.vx),
+            Math.atan2(target.y - b.y, target.x - b.x),
+            (Math.PI / 3) * dt,
+          );
+          b.vx = Math.cos(angle) * 260;
+          b.vy = Math.sin(angle) * 260;
+        }
+      }
       const next = { x: b.x + b.vx * dt, y: b.y + b.vy * dt };
       if (b.kind === "shell") {
         if (dist(next, { x: b.tx, y: b.ty }) < 16 || b.life <= 0) {
@@ -1324,7 +1577,8 @@
     return out;
   }
   function restore(value) {
-    if ([3, 4, 5, 6].includes(value?.version)) return campaign.restore(value);
+    if ([3, 4, 5, 6, 7].includes(value?.version))
+      return campaign.restore(value);
     try {
       const s = JSON.parse(JSON.stringify(value));
       if (
@@ -1361,7 +1615,16 @@
       for (const u of s.units) {
         if (
           !Object.hasOwn(C, u.kind) ||
-          ["warden", "bastion"].includes(u.kind) ||
+          [
+            "warden",
+            "bastion",
+            "rocket",
+            "flamer",
+            "bomber",
+            "tank",
+            "mortar",
+          ].includes(u.kind) ||
+          u.combat !== undefined ||
           ![0, 1].includes(u.team) ||
           !Number.isInteger(u.id) ||
           ids.has(u.id) ||
@@ -1597,6 +1860,11 @@
     pathTo,
     firingPath,
     fireClear,
+    stats,
+    turnAngle,
+    dangerArea,
+    impactArea,
+    insideArea,
     free,
     clear,
     dist,
@@ -1617,6 +1885,7 @@
     follow,
     shoot,
     hurt,
+    blast,
     emit,
     spawnPoint,
   });

@@ -12,13 +12,13 @@
       content="Предел сигнала — тактическая операция на заброшенном кольце."
     />
     <title>Предел сигнала · Альманион</title>
-    <link rel="stylesheet" href="style.css?v=0.8.1" />
-    <script src="campaign.js?v=0.8.1" defer></script>
-    <script src="engine.js?v=0.8.1" defer></script>
-    <script src="view.js?v=0.8.1" defer></script>
-    <script src="audio.js?v=0.8.1" defer></script>
-    <script src="development-ui.js?v=0.8.1" defer></script>
-    <script src="app.js?v=0.8.1" defer></script>
+    <link rel="stylesheet" href="style.css?v=0.9.0" />
+    <script src="campaign.js?v=0.9.0" defer></script>
+    <script src="engine.js?v=0.9.0" defer></script>
+    <script src="view.js?v=0.9.0" defer></script>
+    <script src="audio.js?v=0.9.0" defer></script>
+    <script src="development-ui.js?v=0.9.0" defer></script>
+    <script src="app.js?v=0.9.0" defer></script>
   </head>
   <body data-mode="menu">
     <canvas
@@ -50,7 +50,7 @@
           ><button data-open="account">Аккаунт</button>
         </div>
       </div>
-      <p class="edition">Первая операция <span>0.8.1</span></p>
+      <p class="edition">Первая операция <span>0.9.0</span></p>
     </main>
     <div id="hud" hidden>
       <header class="topbar">
@@ -277,9 +277,11 @@
             </p>
           </div>
           <p class="help-note">
-            Отряд стреляет сам. Красная линия предупреждает о выстреле. Рывок
-            позволяет уйти из-под огня. Потеря разведчика или посадочного модуля
-            завершает операцию.
+            Отряд стреляет сам. Линия предупреждает о выстреле, сектор — об
+            огне, круг — о взрыве. Укрытие срывает захват ракеты. Подрывника
+            можно уничтожить до конца запала; танк уязвим с фланга, осадная
+            машина — вблизи. Рывок помогает выйти из опасной зоны. Потеря
+            разведчика или посадочного модуля завершает операцию.
           </p>
           <button class="primary" id="help-back">Понятно</button>
         </section>

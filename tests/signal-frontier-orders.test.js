@@ -96,6 +96,7 @@ test("restored focused pursuit continues deterministically in every supported pr
     "frontier-2",
     "frontier-3",
     "frontier-4",
+    "frontier-5",
   ]) {
     const s = E.make(profile),
       u = s.units.find((u) => u.group === 1),

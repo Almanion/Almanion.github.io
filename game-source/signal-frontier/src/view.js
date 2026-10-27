@@ -4,6 +4,15 @@
   const E = root.SignalEngine,
     Y = 0.73,
     TAU = Math.PI * 2;
+  const MOUNTS = {
+    citadel: 64,
+    turret: 24,
+    artillery: 23,
+    bastion: 44,
+    tank: 27,
+    mortar: 39,
+    rocket: 24,
+  };
   function poly(c, p, fill, stroke) {
     c.beginPath();
     p.forEach((v, i) => (i ? c.lineTo(v[0], v[1]) : c.moveTo(v[0], v[1])));
@@ -798,23 +807,50 @@
         }
       }
       for (const u of s.units) {
-        if (u.hp > 0 && u.wind > 0 && u.target && u.kind !== "runner") {
+        const area = E.dangerArea(s, u);
+        if (area)
+          this.danger(
+            c,
+            area,
+            u.combat.time / Math.max(0.01, u.combat.total),
+            ui.reduced,
+            s.t,
+          );
+        if (
+          u.hp > 0 &&
+          u.wind > 0 &&
+          u.target &&
+          !["runner", "flamer", "bomber", "mortar"].includes(u.kind) &&
+          !(u.kind === "bastion" && area)
+        ) {
           c.save();
-          c.globalAlpha = 0.25 + (0.65 - u.wind) * 0.7;
+          c.globalAlpha =
+            0.3 +
+            0.4 *
+              (u.combat
+                ? 1 - u.combat.time / u.combat.total
+                : Math.max(0, 0.65 - u.wind));
           line(
             c,
             [
-              [
-                u.x,
-                u.y -
-                  (u.kind === "citadel" ? 64 : u.kind === "turret" ? 24 : 19),
-              ],
+              [u.x, u.y - (MOUNTS[u.kind] || 19)],
               [u.target.x, u.target.y - 10],
             ],
             "#f4ae89",
             1.4,
           );
-          ring(c, u.target.x, u.target.y, 13, "#f4ae89", 1);
+          ring(
+            c,
+            u.target.x,
+            u.target.y,
+            u.kind === "rocket" ? 20 : 13,
+            "#f4ae89",
+            u.kind === "rocket" ? 2 : 1,
+          );
+          if (u.kind === "rocket") {
+            c.setLineDash([3, 5]);
+            ring(c, u.target.x, u.target.y, 27, "#f4ae89", 1);
+          }
           c.restore();
         }
       }
@@ -840,14 +876,7 @@
       // Height belongs to presentation; projectile positions and collision tests stay in the simulation.
       for (const b of s.bullets) {
         const owner = s.units.find((u) => u.id === b.owner),
-          mount =
-            owner?.kind === "citadel"
-              ? 64
-              : owner?.kind === "turret"
-                ? 24
-                : owner?.kind === "artillery"
-                  ? 23
-                  : 16;
+          mount = MOUNTS[owner?.kind] || 16;
         const speed = Math.hypot(b.vx, b.vy),
           start = { x: b.x - b.vx * b.age, y: b.y - b.vy * b.age };
         const duration = Math.max(
@@ -856,7 +885,46 @@
           ),
           progress = Math.min(1, b.age / duration),
           z = mount * (1 - progress) + 10 * progress;
-        if (b.kind === "shell") {
+        if (b.kind === "missile") {
+          const a = Math.atan2(b.vy, b.vx);
+          c.save();
+          c.translate(b.x, b.y - z);
+          c.rotate(a);
+          line(
+            c,
+            [
+              [-28, 0],
+              [-6, 0],
+            ],
+            "#efae8c35",
+            5,
+          );
+          line(
+            c,
+            [
+              [-17, 0],
+              [-5, 0],
+            ],
+            "#f1d4a8b0",
+            2,
+          );
+          poly(
+            c,
+            [
+              [8, 0],
+              [0, -3],
+              [-7, -3],
+              [-9, -6],
+              [-8, 0],
+              [-9, 6],
+              [-7, 3],
+              [0, 3],
+            ],
+            "#d4bca2",
+            "#7c6658",
+          );
+          c.restore();
+        } else if (b.kind === "shell") {
           const arcHeight = Math.sin(progress * Math.PI) * 55 + z;
           ellipse(c, b.x, b.y, 5, 3, "#0004");
           line(
@@ -869,7 +937,15 @@
             2.5,
           );
           ellipse(c, b.x, b.y - arcHeight, 3, 3, "#e5efd0");
-          ring(c, b.tx, b.ty, 30, "#c5dbab3a");
+          if (b.team && b.radius)
+            this.danger(
+              c,
+              E.impactArea(s, { x: b.tx, y: b.ty }, b.radius),
+              0,
+              ui.reduced,
+              s.t,
+            );
+          else ring(c, b.tx, b.ty, 30, "#c5dbab3a");
         } else {
           const len = b.team ? 11 : 18,
             color = b.team ? "#f1b596" : "#c7efdc";
@@ -1674,6 +1750,89 @@
       );
       c.restore();
     }
+    danger(c, area, remaining, reduced, time) {
+      c.save();
+      const active = area.active,
+        color = active ? "#f5bd85" : "#efa686";
+      c.lineWidth = 1.8;
+      c.strokeStyle = color;
+      c.fillStyle = active ? "#efa15d38" : "#eea08216";
+      if (area.kind === "sector") {
+        poly(
+          c,
+          area.points.map((p) => [p.x, p.y]),
+          c.fillStyle,
+          color,
+        );
+        if (active) {
+          c.globalAlpha = 0.4;
+          for (let i = 2; i < area.points.length - 1; i += 3) {
+            const o = area.points[0],
+              p = area.points[i],
+              phase = reduced ? 0.7 : (time * 2 + i / 24) % 1;
+            line(
+              c,
+              [
+                [
+                  o.x + (p.x - o.x) * phase * 0.4,
+                  o.y + (p.y - o.y) * phase * 0.4,
+                ],
+                [o.x + (p.x - o.x) * phase, o.y + (p.y - o.y) * phase],
+              ],
+              "#f6cf93",
+              3,
+            );
+          }
+        }
+      } else {
+        if (area.points)
+          poly(
+            c,
+            area.points.map((p) => [p.x, p.y]),
+            c.fillStyle,
+            color,
+          );
+        else
+          ellipse(
+            c,
+            area.x,
+            area.y,
+            area.radius,
+            area.radius,
+            c.fillStyle,
+            color,
+          );
+        c.setLineDash([5, 6]);
+        ring(
+          c,
+          area.x,
+          area.y,
+          Math.max(5, area.radius * (1 - remaining)),
+          "#f4c09c",
+          1,
+        );
+        c.setLineDash([]);
+        for (let i = 0; i < 4; i++) {
+          const a = (i * Math.PI) / 2;
+          line(
+            c,
+            [
+              [
+                area.x + Math.cos(a) * (area.radius - 9),
+                area.y + Math.sin(a) * (area.radius - 9),
+              ],
+              [
+                area.x + Math.cos(a) * (area.radius + 4),
+                area.y + Math.sin(a) * (area.radius + 4),
+              ],
+            ],
+            color,
+            2,
+          );
+        }
+      }
+      c.restore();
+    }
     unit(c, u, s, ui) {
       const def = E.C[u.kind],
         r = def.r,
@@ -1683,9 +1842,11 @@
       const aim =
         u.kind === "hero" && ui.aim
           ? Math.atan2(ui.aim.y - u.y, ui.aim.x - u.x)
-          : u.wind > 0 && u.target
-            ? Math.atan2(u.target.y - u.y, u.target.x - u.x)
-            : u.angle;
+          : u.combat
+            ? u.combat.angle
+            : u.wind > 0 && u.target
+              ? Math.atan2(u.target.y - u.y, u.target.x - u.x)
+              : u.angle;
       const accent = u.team ? "#efae8c" : "#a4edd9",
         recoil = ui.reduced
           ? 0
@@ -1957,6 +2118,245 @@
             "#e1ebc6",
             u.flash,
             1.6,
+          );
+      } else if (
+        ["rocket", "flamer", "bomber", "tank", "mortar"].includes(u.kind)
+      ) {
+        const heavy = ["tank", "mortar"].includes(u.kind),
+          a = heavy ? aim : p.move ? p.angle : aim;
+        if (heavy) {
+          for (const side of [-1, 1]) {
+            slab(c, 0, side * 19, 54, 12, 0, 10, a, MAT.graphite);
+            slab(c, 0, side * 19, 46, 9, 10, 3, a, MAT.enemy);
+            for (let i = -2; i <= 2; i++)
+              seam(
+                c,
+                [
+                  [i * 9, side * 15],
+                  [i * 9 - 2, side * 23],
+                ],
+                14,
+                a,
+                "#8d857466",
+                1.4,
+              );
+          }
+          plate(
+            c,
+            [
+              [-25, -13],
+              [14, -15],
+              [28, -8],
+              [28, 8],
+              [14, 15],
+              [-25, 13],
+            ],
+            8,
+            10,
+            a,
+            MAT.enemy,
+          );
+          slab(c, -10, 0, 14, 22, 18, 4, a, MAT.graphite);
+          for (const side of [-1, 1])
+            lamp(c, 22, side * 12, 16, a, 1.8, accent);
+          if (u.kind === "tank") {
+            plate(
+              c,
+              [
+                [-13, -12],
+                [10, -12],
+                [19, -7],
+                [19, 7],
+                [10, 12],
+                [-13, 12],
+              ],
+              20,
+              10,
+              aim,
+              MAT.copper,
+            );
+            slab(c, 27 - recoil, 0, 32, 7, 23, 6, aim, MAT.graphite);
+            slab(c, 40 - recoil, 0, 7, 11, 24, 5, aim, MAT.enemy);
+            for (const side of [-1, 1])
+              seam(
+                c,
+                [
+                  [11, side * 10],
+                  [18, side * 6],
+                ],
+                31,
+                aim,
+                "#d4b49a",
+                2,
+              );
+            lamp(c, -4, 0, 32, aim, 2, accent);
+          } else {
+            for (const side of [-1, 1])
+              for (const front of [-1, 1]) {
+                const spread = u.wind > 0 ? 36 : 24;
+                seam(
+                  c,
+                  [
+                    [front * 13, side * 11],
+                    [front * spread, side * 27],
+                  ],
+                  5,
+                  a,
+                  "#8e8a79",
+                  4,
+                );
+                slab(
+                  c,
+                  front * spread,
+                  side * 27,
+                  10,
+                  10,
+                  0,
+                  3,
+                  a,
+                  MAT.graphite,
+                );
+              }
+            slab(c, 0, 0, 26, 23, 18, 8, aim, MAT.copper);
+            slab(c, 8 - recoil, 0, 30, 13, 27, 12, aim, MAT.graphite);
+            slab(c, 18 - recoil, 0, 7, 16, 38, 3, aim, MAT.enemy);
+            lamp(c, -11, 0, 30, aim, 2.5, accent);
+          }
+        } else if (u.kind === "bomber") {
+          for (let i = 0; i < 6; i++) {
+            const leg = a + (i * Math.PI) / 3,
+              stride = Math.sin(p.phase + i * Math.PI) * 2 * p.move;
+            seam(
+              c,
+              [
+                [4, 0],
+                [13, 3],
+                [19 + stride, 6],
+              ],
+              4,
+              leg,
+              "#927d6c",
+              3,
+            );
+          }
+          plate(
+            c,
+            [
+              [-12, -6],
+              [-7, -12],
+              [7, -12],
+              [14, 0],
+              [7, 12],
+              [-7, 12],
+              [-12, 6],
+            ],
+            6,
+            9,
+            aim,
+            MAT.graphite,
+          );
+          ellipse(c, 0, -17, 10, 7, "#ac8b73", "#d4b49a");
+          ellipse(c, 0, -18, 5, 4, u.wind ? "#f6d7a4" : "#c98e72");
+          for (const side of [-1, 1])
+            slab(c, -7, side * 7, 10, 6, 16, 4, aim, MAT.enemy);
+        } else {
+          for (const side of [-1, 1]) {
+            slab(
+              c,
+              Math.sin(p.phase) * side * 2 * p.move,
+              side * 10,
+              16,
+              6,
+              0,
+              4,
+              a,
+              MAT.graphite,
+            );
+            seam(
+              c,
+              [
+                [-2, side * 5],
+                [-6, side * 10],
+              ],
+              8,
+              a,
+              "#968673",
+              4,
+            );
+          }
+          plate(
+            c,
+            [
+              [-13, -9],
+              [3, -13],
+              [14, -5],
+              [14, 5],
+              [3, 13],
+              [-13, 9],
+            ],
+            8,
+            12,
+            aim,
+            MAT.enemy,
+          );
+          if (u.kind === "rocket") {
+            for (const side of [-1, 1]) {
+              slab(c, 0, side * 11, 26, 9, 20, 8, aim, MAT.graphite);
+              for (let i = -1; i <= 1; i++)
+                lamp(c, 13, side * 11 + i * 2.2, 24, aim, 1.2, "#d6b392");
+              seam(
+                c,
+                [
+                  [-10, side * 13],
+                  [8, side * 13],
+                ],
+                29,
+                aim,
+                "#9b8270",
+                1.5,
+              );
+            }
+            slab(c, 0, 0, 11, 9, 22, 5, aim, MAT.copper);
+            lamp(c, 7, 0, 28, aim, 2, accent);
+          } else {
+            for (const side of [-1, 1]) {
+              slab(c, -10, side * 8, 12, 10, 15, 15, aim, MAT.copper);
+              for (const x of [-13, -8])
+                seam(
+                  c,
+                  [
+                    [x, side * 8 - 4],
+                    [x, side * 8 + 4],
+                  ],
+                  31,
+                  aim,
+                  "#dfbd944f",
+                  1,
+                );
+            }
+            slab(c, 14 - recoil, 0, 23, 8, 15, 6, aim, MAT.graphite);
+            slab(c, 25 - recoil, 0, 7, 12, 15, 7, aim, MAT.copper);
+            lamp(
+              c,
+              26,
+              0,
+              23,
+              aim,
+              2.7,
+              u.combat?.mode === "fire" ? "#ffe0a3" : accent,
+            );
+          }
+        }
+        if (u.flash > 0 && !ui.reduced && u.kind !== "bomber")
+          this.muzzle(
+            c,
+            heavy ? 42 : 27,
+            0,
+            heavy ? 27 : 21,
+            aim,
+            accent,
+            u.flash,
+            heavy ? 1.4 : 1,
           );
       } else if (u.kind === "runner") {
         const a = p.move ? p.angle : aim;

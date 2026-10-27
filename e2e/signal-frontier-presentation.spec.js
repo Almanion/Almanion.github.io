@@ -111,6 +111,8 @@ test("rendered sound has distinct layers, direction, headroom, a silent tail and
       })),
       ...[
         "mortar",
+        "rocket",
+        "flame",
         "blast",
         "destroy",
         "hit",

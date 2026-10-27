@@ -32,7 +32,6 @@ for (const file of [
 }
 for (const file of [
   "playwright.config.js",
-  "tests/helpers/signal-frontier-expedition-pilot.cjs",
   "style-new.css",
   "e2e/global-setup.js",
 ]) {
@@ -42,6 +41,10 @@ for (const file of [
     file,
   );
 }
+assert.deepEqual(
+  classify([...ui, "tests/helpers/signal-frontier-expedition-pilot.cjs"]),
+  { signalOnly: true, campaign: true },
+);
 assert.deepEqual(classify(ui, { known: false }), {
   signalOnly: false,
   campaign: true,

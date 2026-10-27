@@ -98,7 +98,22 @@ class ExpeditionPilot {
       this.route === "infiltration" &&
       !alive("bastion").some((u) => u.sector === "south")
         ? 3
-        : 6;
+        : D.combat(s) && this.stage
+          ? Math.min(9, D.capacity(s) - 1)
+          : 6;
+    if (D.combat(s) && this.route === "siege" && this.stage >= 5) {
+      this.defenders = (this.defenders || []).filter((id) =>
+        alive("rifle").some((u) => u.id === id),
+      );
+      const available = alive("rifle")
+        .filter((u) => !this.defenders.includes(u.id))
+        .sort((a, b) => E.dist(a, base) - E.dist(b, base));
+      while (
+        this.defenders.length < 2 &&
+        alive("rifle").length > this.defenders.length + 3
+      )
+        this.defenders.push(available.shift().id);
+    }
     if (!alive("barracks").length) buy("barracks");
     if (base && !threatened(base) && ore(base) && D.usedSlots(s, base) < 4)
       buy("drone");
@@ -299,7 +314,7 @@ class ExpeditionPilot {
       if (!threatened(base) && !threatened(west)) this.defendHome = false;
       else {
         dest = { x: 320, y: 1550 };
-        if (this.route === "infiltration") {
+        if (this.route === "infiltration" || D.combat(s)) {
           const attacker = s.units
             .filter(
               (u) =>
@@ -344,7 +359,20 @@ class ExpeditionPilot {
           E.dist(u, h) < 600 &&
           E.clear(h, u),
       )
-      .sort((a, b) => E.dist(a, h) - E.dist(b, h));
+      .sort((a, b) => {
+        const priority = (u) =>
+          D.combat(s)
+            ? E.dist(u, h) -
+              ({
+                bomber: 200,
+                flamer: 170,
+                rocket: 130,
+                mortar: 100,
+                tank: -90,
+              }[u.kind] || 0)
+            : E.dist(u, h);
+        return priority(a) - priority(b);
+      });
     const target = enemies[0];
     let aim = target;
     if (target) {
@@ -395,11 +423,154 @@ class ExpeditionPilot {
         y = dx / len;
       }
     }
+    if (D.combat(s) && !interact) {
+      const area = s.units
+        .filter((u) => u.team && u.hp > 0)
+        .map((u) => ({ u, area: E.dangerArea(s, u) }))
+        .find((v) => v.area && E.insideArea(v.area, h));
+      if (area) {
+        const origin = area.area.kind === "circle" ? area.area : area.u,
+          d = E.dist(h, origin),
+          dx = (h.x - origin.x) / Math.max(1, d),
+          dy = (h.y - origin.y) / Math.max(1, d);
+        const escape = [
+          { x: dx, y: dy },
+          { x: -dy, y: dx },
+          { x: dy, y: -dx },
+        ].find((v) => E.free(h.x + v.x * 35, h.y + v.y * 35, 14, h.map));
+        if (escape) {
+          x = escape.x;
+          y = escape.y;
+        }
+      }
+    }
+    if (D.combat(s) && !interact) {
+      const incoming = s.bullets.find(
+        (b) =>
+          b.team &&
+          b.kind !== "shell" &&
+          E.dist(b, h) < 190 &&
+          (h.x - b.x) * b.vx + (h.y - b.y) * b.vy > 0,
+      );
+      if (incoming) {
+        const speed = Math.hypot(incoming.vx, incoming.vy),
+          lateral = { x: -incoming.vy / speed, y: incoming.vx / speed };
+        const choices = [lateral, { x: -lateral.x, y: -lateral.y }].filter(
+          (v) => E.free(h.x + v.x * 45, h.y + v.y * 45, 14, h.map),
+        );
+        if (choices.length) {
+          const p = choices.sort(
+            (a, b) => b.x * x + b.y * y - (a.x * x + a.y * y),
+          )[0];
+          x = p.x;
+          y = p.y;
+        }
+      }
+    }
+    if (D.combat(s) && this.stage >= 1) {
+      const squad = alive("rifle").filter(
+          (u) => !this.defenders?.includes(u.id),
+        ),
+        targets = alive()
+          .filter(
+            (u) =>
+              u.team &&
+              E.C[u.kind].range > 300 &&
+              !(u.kind === "citadel" && E.shielded(s)) &&
+              squad.some((v) => E.dist(v, u) < 560 && E.clear(v, u)),
+          )
+          .sort((a, b) => {
+            const score = (u) =>
+              Math.min(...squad.map((v) => E.dist(v, u))) -
+              (["rocket", "mortar"].includes(u.kind) ? 150 : 0);
+            return score(a) - score(b);
+          });
+      if (targets[0])
+        order(1, { x: targets[0].x, y: targets[0].y, targetId: targets[0].id });
+    }
+    if (D.combat(s)) {
+      const army = alive("rifle").filter(
+          (u) => !this.defenders?.includes(u.id),
+        ),
+        hazards = s.units
+          .filter((u) => u.team && u.hp > 0)
+          .map((u) => ({ area: E.dangerArea(s, u), origin: u }))
+          .filter((v) => v.area);
+      for (const b of s.bullets)
+        if (b.team && b.kind === "shell" && b.radius)
+          hazards.push({
+            area: E.impactArea(s, { x: b.tx, y: b.ty }, b.radius),
+            origin: { x: b.tx, y: b.ty },
+          });
+      const danger = hazards.find((v) =>
+        army.some((u) => E.insideArea(v.area, u)),
+      );
+      if (danger && !(this.microUntil > s.t)) {
+        const centre = army.reduce(
+            (p, u) => ({
+              x: p.x + u.x / army.length,
+              y: p.y + u.y / army.length,
+            }),
+            { x: 0, y: 0 },
+          ),
+          origin = danger.area.kind === "circle" ? danger.area : danger.origin,
+          angle = Math.atan2(centre.y - origin.y, centre.x - origin.x),
+          radius =
+            danger.area.kind === "sector" ? 255 : danger.area.radius + 100;
+        const p = {
+          x: origin.x + Math.cos(angle) * radius,
+          y: origin.y + Math.sin(angle) * radius,
+        };
+        if (E.free(p.x, p.y, 20, h.map)) {
+          this.micro = p;
+          this.microUntil = s.t + 1.2;
+        }
+      }
+      if (this.microUntil > s.t) order(1, this.micro);
+    }
     for (const [g, p] of Object.entries(nextOrders)) {
-      const key = p.x + "," + p.y;
+      if (D.combat(s) && !alive().some((u) => u.group === Number(g))) continue;
+      const ids =
+        D.combat(s) && Number(g) === 1 && this.defenders?.length
+          ? alive("rifle")
+              .filter((u) => !this.defenders.includes(u.id))
+              .map((u) => u.id)
+          : null;
+      if (ids && !ids.length) continue;
+      const key =
+        (p.targetId ? "attack:" + p.targetId : p.x + "," + p.y) +
+        (ids ? ":" + ids.join(",") : "");
       if (this.orders[g] !== key) {
-        commands.push({ kind: "order", group: Number(g), ...p });
+        commands.push({
+          kind: "order",
+          group: Number(g),
+          ...(ids ? { ids } : {}),
+          ...p,
+        });
         this.orders[g] = key;
+      }
+    }
+    if (D.combat(s) && this.defenders?.length) {
+      const defenders = alive("rifle").filter((u) =>
+          this.defenders.includes(u.id),
+        ),
+        visible = alive()
+          .filter(
+            (u) =>
+              u.team &&
+              E.C[u.kind].damage &&
+              [base, west].some((n) => n && E.dist(u, n) < 650) &&
+              defenders.some((d) => E.dist(d, u) < 620 && E.clear(d, u)),
+          )
+          .sort((a, b) => E.dist(a, base) - E.dist(b, base)),
+        target = visible[0],
+        p = target
+          ? { x: target.x, y: target.y, targetId: target.id }
+          : { x: 350, y: 1580 },
+        key = [p.targetId || `${p.x},${p.y}`, ...this.defenders].join(":");
+      if (this.orders.home !== key) {
+        commands.push({ kind: "order", group: 1, ids: this.defenders, ...p });
+        this.orders.home = key;
       }
     }
     return {
@@ -431,7 +602,18 @@ function play(route, maxFrames = 144000, profile = "frontier-4") {
               );
             return result;
           })()
-        : E.order(s, c.group, c.x, c.y);
+        : c.targetId
+          ? E.attackUnits(
+              s,
+              c.ids ||
+                s.units
+                  .filter((u) => u.hp > 0 && u.group === c.group)
+                  .map((u) => u.id),
+              c.targetId,
+            )
+          : c.ids
+            ? E.orderUnits(s, c.ids, c.x, c.y)
+            : E.order(s, c.group, c.x, c.y);
     E.step(s, d.input);
     if (i % 3600 === 0)
       trace.push({

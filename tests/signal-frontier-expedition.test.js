@@ -22,7 +22,7 @@ function fund(s, amount) {
   assert.equal(amount, 0);
 }
 test("new expedition extends both sides of the landing area and all objectives are reachable", () => {
-  const s = E.make(),
+  const s = E.make("frontier-4"),
     h = E.hero(s);
   assert.equal(s.version, 6);
   assert.equal(E.map(s).H, 2560);
@@ -109,7 +109,7 @@ test("old and new late research retain their own paid price, queue and cancellat
 });
 
 test("barracks rally affects future recruits without moving the current squad", () => {
-  const s = E.make();
+  const s = E.make("frontier-4");
   assert.ok(E.purchase(s, "barracks").allowed);
   advance(s, 31);
   const b = E.living(s, "barracks"),
@@ -132,7 +132,7 @@ test("barracks rally affects future recruits without moving the current squad", 
   assert.equal(E.setRally(s, b.id, 440, 1700), false);
 });
 test("three enemy bases assemble mixed squads and a destroyed base stops its own reinforcements", () => {
-  const s = E.make();
+  const s = E.make("frontier-4");
   s.t = 500;
   const camp = s.campaign.camps[0];
   camp.cooldown = 0;
@@ -151,7 +151,7 @@ test("three enemy bases assemble mixed squads and a destroyed base stops its own
   assert.ok(E.restore(s));
 });
 test("unseen expansions are not available to enemy target selection", () => {
-  const s = E.make();
+  const s = E.make("frontier-4");
   fund(s, 300);
   const p = D.pads(s).find((p) => p.id === "north");
   Object.assign(E.hero(s), { x: p.x + 50, y: p.y });
@@ -163,7 +163,7 @@ test("unseen expansions are not available to enemy target selection", () => {
   assert.deepEqual(s.campaign.camps[0].target, { x: b.x, y: b.y });
 });
 test("new sector, map, squad and mine corruption is rejected", () => {
-  const s = E.make();
+  const s = E.make("frontier-4");
   for (const corrupt of [
     (v) => (v.units.find((u) => u.kind === "bastion").sector = "fake"),
     (v) => (v.units[0].map = "frontier"),

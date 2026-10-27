@@ -151,6 +151,22 @@
         artillery: { ...EXPEDITION_ITEMS.artillery, cost: 300 },
       }),
     }),
+    "frontier-5": Object.freeze({
+      ...EXPEDITION_RULES,
+      version: 7,
+      items: Object.freeze({
+        ...EXPEDITION_ITEMS,
+        command: { ...EXPEDITION_ITEMS.command, cost: 520, time: 120 },
+        hack: { ...EXPEDITION_ITEMS.hack, cost: 360, time: 90 },
+        artillery: { ...EXPEDITION_ITEMS.artillery, cost: 300 },
+      }),
+      firstRaid: 75,
+      stagger: 50,
+      raidInterval: 165,
+      scoutRest: 220,
+      reserve: 36,
+      waveMax: 4,
+    }),
     "frontier-1": Object.freeze({
       version: 3,
       items: ITEMS,
@@ -187,12 +203,16 @@
   const rules = (s) => PROFILES[s.campaign?.id] || PROFILES["frontier-1"];
   const items = (s) => rules(s).items;
   const expedition = (s) =>
-    ["frontier-3", "frontier-4"].includes(s.campaign?.id);
+    ["frontier-3", "frontier-4", "frontier-5"].includes(s.campaign?.id);
   const extended = (s) =>
-    ["frontier-2", "frontier-3", "frontier-4"].includes(s.campaign?.id);
+    ["frontier-2", "frontier-3", "frontier-4", "frontier-5"].includes(
+      s.campaign?.id,
+    );
   const pads = (s) => (expedition(s) ? EXPEDITION_PADS : PADS);
   const buildings = (s) => (expedition(s) ? EXPEDITION_BUILDINGS : BUILDINGS);
   const caches = (s) => (expedition(s) ? EXPEDITION_CACHES : CACHES);
+  const combat = (s) => s.campaign?.id === "frontier-5";
+  const SPECIAL = ["rocket", "flamer", "bomber", "tank", "mortar"];
   function create(E) {
     const alive = (s, kind) =>
       s.units.filter((u) => u.hp > 0 && (!kind || u.kind === kind));
@@ -237,7 +257,18 @@
       u.fright = 0;
       return u;
     }
-    function make(profile = "frontier-4") {
+    function arm(u) {
+      u.combat = {
+        mode: "idle",
+        time: 0,
+        total: 0,
+        angle: u.angle,
+        burst: 0,
+        gap: 0,
+      };
+      return u;
+    }
+    function make(profile = "frontier-5") {
       const config = PROFILES[profile];
       const s = E.makeClassic();
       s.version = config.version;
@@ -373,19 +404,45 @@
             [120, 70, "warden"],
             [-140, 110, "runner"],
           ]) {
-            const u = initUnit(E.unit(s, kind, 1, f.x + dx, f.y + dy));
+            const role = combat(s)
+              ? {
+                  warden: dx < 0 ? "tank" : "rocket",
+                  sentinel: "flamer",
+                  runner: "bomber",
+                }[kind]
+              : kind;
+            const u = initUnit(E.unit(s, role, 1, f.x + dx, f.y + dy));
             u.ai = {
               home: { x: u.x, y: u.y },
               goal: null,
               seen: null,
               seenAt: 0,
               route: 0,
-              role: kind === "runner" ? "flank" : "line",
+              role: ["runner", "bomber"].includes(kind) ? "flank" : "line",
               raid: false,
               patrol: 0,
             };
           }
         }
+      }
+      if (combat(s)) {
+        for (const [x, y] of [
+          [2120, 1060],
+          [2110, 1450],
+        ]) {
+          const u = initUnit(E.unit(s, "mortar", 1, x, y));
+          u.ai = {
+            home: { x: u.x, y: u.y },
+            goal: null,
+            seen: null,
+            seenAt: 0,
+            route: 0,
+            role: "line",
+            raid: false,
+            patrol: 0,
+          };
+        }
+        for (const u of s.units) if (u.team) arm(u);
       }
       const base = E.living(s, "base");
       worker(s, base);
@@ -905,9 +962,149 @@
       }
       return null;
     }
+    function aimTime(s, u) {
+      if (u.kind === "bastion" && E.stats(s, u).range <= 500) return 0.7;
+      return (
+        {
+          rocket: 0.8,
+          flamer: 0.6,
+          bomber: 0.8,
+          tank: 0.75,
+          mortar: 1.4,
+          bastion: 1.4,
+          citadel: 1.4,
+          runner: 0.24,
+        }[u.kind] || 0.36
+      );
+    }
+    function resetAttack(u, cooldown = 0) {
+      Object.assign(u.combat, {
+        mode: "idle",
+        time: 0,
+        total: 0,
+        burst: 0,
+        gap: 0,
+      });
+      u.wind = 0;
+      u.cool = Math.max(u.cool, cooldown);
+    }
+    function battle(s, u, dt, visible) {
+      const a = u.combat,
+        def = E.stats(s, u),
+        locked = u.target,
+        prey = locked && visible.find((v) => v.id === locked.id);
+      if (a.mode === "idle") return false;
+      if (a.mode === "aim") {
+        // Only rockets track during lock-on, and only while the same target is visible.
+        if (u.kind === "rocket") {
+          if (!prey || !E.fireClear(u, prey) || E.dist(u, prey) > def.range) {
+            resetAttack(u, 1.1);
+            return true;
+          }
+          Object.assign(locked, { x: prey.x, y: prey.y });
+          a.angle = Math.atan2(prey.y - u.y, prey.x - u.x);
+        }
+        a.time = Math.max(0, a.time - dt);
+        u.wind = a.time;
+        if (a.time > 0) return true;
+        if (u.kind === "bomber") {
+          E.blast(s, {
+            x: u.x,
+            y: u.y,
+            map: u.map,
+            team: u.team,
+            damage: def.damage,
+            radius: 92,
+            kind: "shell",
+          });
+          E.hurt(s, u, def.hp * 10, { kind: "shell", x: u.x, y: u.y });
+          resetAttack(u);
+        } else if (u.kind === "flamer") {
+          a.mode = "fire";
+          a.time = a.total = 1.2;
+          E.emit(s, "flame", u.x, u.y, { kind: u.kind });
+        } else if (["sentinel", "warden"].includes(u.kind)) {
+          a.mode = "fire";
+          a.burst = 3;
+          a.gap = 0;
+        } else {
+          const siege =
+            ["mortar", "citadel"].includes(u.kind) ||
+            (u.kind === "bastion" && def.range > 500);
+          if (
+            locked &&
+            (siege || E.fireClear(u, locked)) &&
+            (u.kind !== "runner" ||
+              (prey &&
+                E.dist(u, prey) < 65 &&
+                !(prey.kind === "hero" && s.dashT > 0)))
+          ) {
+            E.shoot(s, u, u.kind === "runner" ? prey : locked);
+            // Firing must not snap a heavy chassis or erase its slow turn.
+            if (u.kind === "tank") u.angle = a.angle;
+          }
+          resetAttack(u, def.rate);
+        }
+        return true;
+      }
+      if (u.kind === "flamer") {
+        if (prey)
+          a.angle = E.turnAngle(
+            a.angle,
+            Math.atan2(prey.y - u.y, prey.x - u.x),
+            ((Math.PI * 35) / 180) * dt,
+          );
+        const area = E.dangerArea(s, u);
+        for (const v of s.units)
+          if (
+            v.hp > 0 &&
+            v.team !== u.team &&
+            E.insideArea(area, v) &&
+            E.clear(u, v)
+          )
+            E.hurt(s, v, def.damage * dt, u);
+        a.time = Math.max(0, a.time - dt);
+        if (!a.time) resetAttack(u, def.rate);
+      } else {
+        a.gap = Math.max(0, a.gap - dt);
+        if (!a.gap) {
+          if (locked && E.fireClear(u, locked)) E.shoot(s, u, locked);
+          a.burst--;
+          a.gap = 0.16;
+          if (!a.burst) resetAttack(u, 1.7 + (u.id % 3) * 0.17);
+        }
+      }
+      return true;
+    }
+    function beginAttack(s, u, target) {
+      const a = u.combat;
+      if (u.kind === "mortar" && E.dist(u, target) < 240) return false;
+      const facing = Math.atan2(target.y - u.y, target.x - u.x);
+      if (u.kind === "tank" && Math.cos(facing - a.angle) < Math.cos(0.17))
+        return false;
+      const lead = ["runner", "rocket", "flamer", "bomber", "tank"].includes(
+        u.kind,
+      )
+        ? 0
+        : Math.min(0.55, E.dist(u, target) / 520);
+      const lock = {
+        x: E.clamp(target.x + (u.ai.vx || 0) * lead, 24, E.map(s).W - 24),
+        y: E.clamp(target.y + (u.ai.vy || 0) * lead, 24, E.map(s).H - 24),
+        id: target.id,
+      };
+      if (!E.fireClear(u, lock))
+        Object.assign(lock, { x: target.x, y: target.y });
+      u.target = lock;
+      if (u.kind !== "tank") a.angle = Math.atan2(lock.y - u.y, lock.x - u.x);
+      a.mode = "aim";
+      a.time = a.total = aimTime(s, u);
+      u.wind = a.time;
+      u.path = [];
+      return true;
+    }
     function enemy(s, u, dt, opponents) {
-      const ai = u.ai,
-        def = E.C[u.kind];
+      const ai = u.ai;
+      let def = E.stats(s, u);
       if (!ai) return;
       u.think -= dt;
       const visible = opponents.filter(
@@ -925,6 +1122,25 @@
           (v.kind === "outpost" && u.kind !== "runner" ? 45 : 0);
         return score(a) - score(b);
       })[0];
+      if (combat(s)) {
+        def = E.stats(s, u, target);
+        const a = u.combat;
+        if (u.kind === "tank") {
+          const heading =
+            a.mode === "aim"
+              ? u.target
+              : u.path.length &&
+                  (!target || u.cool > 0 || E.dist(u, target) >= def.range)
+                ? u.path[0]
+                : target;
+          a.angle = E.turnAngle(
+            a.angle,
+            heading ? Math.atan2(heading.y - u.y, heading.x - u.x) : u.angle,
+            (Math.PI / 3) * dt,
+          );
+        }
+        if (battle(s, u, dt, visible)) return;
+      }
       if (u.wind > 0) {
         u.wind = Math.max(0, u.wind - dt);
         if (u.wind === 0) {
@@ -958,16 +1174,40 @@
           if (target) {
             const d = E.dist(u, target),
               side = u.id % 2 ? 1 : -1;
-            if (u.hp < def.hp * 0.3 && u.kind !== "runner")
+            if (u.kind === "mortar" && d < 260)
+              destination = position(u, target, 350, side);
+            else if (
+              u.hp < def.hp * 0.3 &&
+              !["runner", "bomber", "tank"].includes(u.kind)
+            )
               destination = position(u, target, Math.max(290, d + 85), side);
-            else if (!E.fireClear(u, target) || d >= def.range) {
+            else if (
+              combat(s) &&
+              ["runner", "bomber"].includes(u.kind) &&
+              d > def.range &&
+              d < 240 &&
+              E.fireClear(u, target)
+            ) {
+              destination = position(u, target, def.range * 0.85, side);
+              if (!destination) {
+                firingRoute = E.firingPath(u, target);
+                destination = firingRoute.at(-1) || null;
+              }
+            } else if (!E.fireClear(u, target) || d >= def.range) {
               firingRoute = E.firingPath(u, target);
               destination = firingRoute.at(-1) || null;
             } else if (u.kind === "runner" && d > 80)
               destination = position(u, target, 55, side);
-            else if (u.kind !== "runner" && d < def.range * 0.55)
+            else if (
+              !["runner", "bomber", "tank"].includes(u.kind) &&
+              d < def.range * 0.55
+            )
               destination = position(u, target, def.range * 0.78, side);
-            else if (u.kind !== "runner" && d < def.range && u.cool > 0.3)
+            else if (
+              !["runner", "bomber", "tank"].includes(u.kind) &&
+              d < def.range &&
+              u.cool > 0.3
+            )
               destination = position(u, target, def.range * 0.78, side);
             else if (d >= def.range) destination = { x: target.x, y: target.y };
           } else if (
@@ -1046,27 +1286,39 @@
         E.fireClear(u, target) &&
         u.cool === 0
       ) {
-        const lead =
-          u.kind === "runner"
-            ? 0
-            : Math.min(1.1, 0.5 + E.dist(u, target) / 390);
-        // Position is locked before firing. Changing direction after the warning remains effective.
-        const lock = {
-          x: E.clamp(target.x + (ai.vx || 0) * lead, 24, E.map(s).W - 24),
-          y: E.clamp(target.y + (ai.vy || 0) * lead, 24, E.map(s).H - 24),
-          id: target.id,
-        };
-        if (!E.fireClear(u, lock)) {
-          lock.x = target.x;
-          lock.y = target.y;
+        if (combat(s)) {
+          if (beginAttack(s, u, target)) return;
+        } else {
+          const lead =
+            u.kind === "runner"
+              ? 0
+              : Math.min(1.1, 0.5 + E.dist(u, target) / 390);
+          // Position is locked before firing. Changing direction after the warning remains effective.
+          const lock = {
+            x: E.clamp(target.x + (ai.vx || 0) * lead, 24, E.map(s).W - 24),
+            y: E.clamp(target.y + (ai.vy || 0) * lead, 24, E.map(s).H - 24),
+            id: target.id,
+          };
+          if (!E.fireClear(u, lock)) {
+            lock.x = target.x;
+            lock.y = target.y;
+          }
+          u.target = lock;
+          u.wind =
+            u.kind === "runner" ? 0.24 : u.kind === "citadel" ? 0.7 : 0.5;
+          u.angle = Math.atan2(lock.y - u.y, lock.x - u.x);
+          return;
         }
-        u.target = lock;
-        u.wind = u.kind === "runner" ? 0.24 : u.kind === "citadel" ? 0.7 : 0.5;
-        u.angle = Math.atan2(lock.y - u.y, lock.x - u.x);
-        return;
       }
       if (def.speed) {
-        E.follow(u, dt);
+        const heading =
+          u.path[0] && Math.atan2(u.path[0].y - u.y, u.path[0].x - u.x);
+        if (
+          u.kind !== "tank" ||
+          heading === undefined ||
+          Math.cos(heading - u.combat.angle) > Math.cos(0.24)
+        )
+          E.follow(u, dt);
         // Keep a small separation so a whole squad cannot occupy one point or eat one projectile.
         for (const other of s.units)
           if (
@@ -1091,8 +1343,32 @@
       if (!source || source.hp <= 0) return;
       let spawned = 0;
       for (let i = 0; i < n && camp.reserve > 0; i++) {
-        const kind =
-            expedition(s) && s.t > 360 && i % 4 === 1
+        const mixed =
+          s.t < 180
+            ? ["runner", "sentinel"]
+            : s.t < 360
+              ? ["sentinel", "rocket", "runner", "flamer", "sentinel", "bomber"]
+              : s.t < 660
+                ? ["warden", "rocket", "flamer", "sentinel", "bomber", "tank"]
+                : [
+                    "tank",
+                    "rocket",
+                    "flamer",
+                    "warden",
+                    "bomber",
+                    "mortar",
+                    "sentinel",
+                    "rocket",
+                  ];
+        const kind = combat(s)
+            ? mixed[
+                (i +
+                  (i < 3
+                    ? 0
+                    : camp.waves + (source.sector === "south" ? 2 : 0))) %
+                  mixed.length
+              ]
+            : expedition(s) && s.t > 360 && i % 4 === 1
               ? "warden"
               : i % 3 === 0
                 ? "runner"
@@ -1103,6 +1379,7 @@
         if (expedition(s)) {
           u.ai = null;
         }
+        if (combat(s)) arm(u);
         camp.reserve--;
         spawned++;
         const south =
@@ -1116,7 +1393,7 @@
           vx: 0,
           vy: 0,
           route: camp.waves,
-          role: kind === "runner" ? "flank" : "line",
+          role: ["runner", "bomber"].includes(kind) ? "flank" : "line",
           raid: true,
           patrol: 0,
           waypoints:
@@ -1179,11 +1456,19 @@
             dispatch(
               s,
               camp,
-              4 +
-                Math.min(rules(s).waveMax, Math.floor(s.t / rules(s).waveStep)),
+              combat(s) && camp.waves === 0
+                ? 2
+                : 4 +
+                    Math.min(
+                      rules(s).waveMax,
+                      Math.floor(s.t / rules(s).waveStep),
+                    ),
               camp.target,
             );
-            camp.cooldown = rules(s).raidInterval;
+            camp.cooldown =
+              combat(s) && camp.waves === 1
+                ? rules(s).scoutRest
+                : rules(s).raidInterval;
           }
         } else {
           camp.cooldown = Math.max(0, camp.cooldown - dt);
@@ -1323,6 +1608,9 @@
         for (const u of s.units) {
           if (
             !Object.hasOwn(E.C, u.kind) ||
+            (!combat(s) &&
+              (SPECIAL.includes(u.kind) || u.combat !== undefined)) ||
+            (!u.team && u.combat !== undefined) ||
             (!expedition(s) && ["bastion", "warden"].includes(u.kind)) ||
             !int(u.id, 1, s.seq) ||
             ids.has(u.id) ||
@@ -1345,7 +1633,9 @@
                       ? 10
                       : k === "repair"
                         ? 3
-                        : 5,
+                        : k === "cool" && combat(s)
+                          ? Math.max(5, E.stats(s, u).rate)
+                          : 5,
                 ),
             ) ||
             ![0, 1, 2].includes(u.group) ||
@@ -1465,6 +1755,39 @@
             cargo += u.cargo;
           }
           if (u.team) {
+            if (combat(s)) {
+              const a = u.combat;
+              if (
+                !a ||
+                !["idle", "aim", "fire"].includes(a.mode) ||
+                !num(a.time, 0, 1.5) ||
+                !num(a.total, 0, 1.5) ||
+                a.time > a.total ||
+                !num(a.angle, -100, 100) ||
+                !int(a.burst, 0, 3) ||
+                !num(a.gap, 0, 0.16) ||
+                (a.mode === "idle" &&
+                  (a.time || a.total || a.burst || a.gap || u.wind)) ||
+                (a.mode !== "idle" && !u.target) ||
+                (a.mode === "aim" &&
+                  (a.time <= 0 ||
+                    a.time !== u.wind ||
+                    a.total !== aimTime(s, u))) ||
+                (a.mode === "fire" &&
+                  !["flamer", "sentinel", "warden"].includes(u.kind)) ||
+                (a.mode === "fire" &&
+                  (u.wind !== 0 ||
+                    (u.kind === "flamer"
+                      ? a.time <= 0 ||
+                        a.total !== 1.2 ||
+                        a.burst !== 0 ||
+                        a.gap !== 0
+                      : a.time !== 0 ||
+                        a.total !== aimTime(s, u) ||
+                        a.burst < 1)))
+              )
+                return null;
+            }
             const ai = u.ai;
             if (
               ai?.squad !== undefined &&
@@ -1661,7 +1984,27 @@
                 "tx",
                 "ty",
               ].every((k) => Number.isFinite(b[k])) ||
-              !["shell", "bolt"].includes(b.kind) ||
+              !(
+                combat(s) ? ["shell", "bolt", "missile"] : ["shell", "bolt"]
+              ).includes(b.kind) ||
+              (b.kind === "missile" &&
+                (!int(b.lockId, 1, s.seq) ||
+                  typeof b.guided !== "boolean" ||
+                  b.radius !== undefined ||
+                  b.team !== 1 ||
+                  !s.units.some(
+                    (u) => u.id === b.owner && u.kind === "rocket",
+                  ))) ||
+              (b.radius !== undefined &&
+                (!combat(s) ||
+                  b.radius !== 78 ||
+                  b.kind !== "shell" ||
+                  b.team !== 1 ||
+                  !s.units.some(
+                    (u) =>
+                      u.id === b.owner &&
+                      ["mortar", "bastion", "citadel"].includes(u.kind),
+                  ))) ||
               ![0, 1].includes(b.team) ||
               b.map !== world.id ||
               !int(b.owner, 1, s.seq) ||
@@ -1695,7 +2038,11 @@
             !num(
               camp.cooldown,
               0,
-              Math.max(200, config.firstRaid + 2 * config.stagger),
+              Math.max(
+                200,
+                config.firstRaid + 2 * config.stagger,
+                config.scoutRest || 0,
+              ),
             ) ||
             !num(camp.warning, 0, 9) ||
             !int(camp.waves, 0, config.reserve) ||
@@ -1750,6 +2097,7 @@
       rules,
       extended,
       expedition,
+      combat,
       pads,
       buildings,
       caches,

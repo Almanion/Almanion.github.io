@@ -39,6 +39,8 @@ const simulation = new Set([
   "cloud-core.js",
 ]);
 function signalFile(file) {
+  if (file === "tests/helpers/signal-frontier-expedition-pilot.cjs")
+    return true;
   if (classifyPresentation([file])) return true;
   const asset = file.match(
     /^(?:game-source\/signal-frontier\/src|games\/signal-frontier)\/([^/]+)$/,
