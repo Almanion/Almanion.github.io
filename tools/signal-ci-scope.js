@@ -33,6 +33,7 @@ function classifyPresentation(files) {
 // Engine changes still need full campaigns, but their UI regression surface is
 // the game and its catalogue, just like presentation changes in the same game.
 const simulation = new Set([
+  "terrain.js",
   "engine.js",
   "recon.js",
   "campaign.js",

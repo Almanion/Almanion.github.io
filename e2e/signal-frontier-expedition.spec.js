@@ -4,7 +4,7 @@ const { test, expect } = require("@playwright/test"),
   D = E.development;
 const route = "/games/signal-frontier/";
 function prepared() {
-  const s = E.make();
+  const s = E.make("frontier-6");
   for (const u of s.units) if (u.team && u.kind !== "citadel") u.hp = 0;
   s.campaign.camps.forEach((c) => (c.reserve = 0));
   let amount = 6000;
@@ -199,7 +199,7 @@ test("touch selects a building, while dragging and cancellation do not open it",
 test("account connects only on request and restores a complete paused operation", async ({
   page,
 }) => {
-  const remote = E.make();
+  const remote = E.make("frontier-6");
   E.purchase(remote, "barracks");
   await page.addInitScript((save) => {
     window.__accountWrites = [];
@@ -338,7 +338,7 @@ test("unsent progress is labelled pending and opening pause saves it immediately
         return () => {};
       },
     };
-  }, E.make());
+  }, E.make("frontier-6"));
   await page.goto(route);
   await page.locator('#home [data-open="account"]').click();
   await page.locator("#account-connect").click();

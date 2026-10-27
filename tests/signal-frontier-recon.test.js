@@ -10,7 +10,7 @@ function test(name, fn) {
 }
 const copy = (x) => JSON.parse(JSON.stringify(x));
 function quiet() {
-  const s = E.make();
+  const s = E.make("frontier-6");
   for (const c of s.campaign.camps) c.reserve = 0;
   return s;
 }
@@ -39,7 +39,7 @@ function frames(s, n) {
 }
 
 test("vision geometry matches the combat cover polygon while skipping unreachable walls", () => {
-  const s = E.make();
+  const s = E.make("frontier-6");
   for (const p of [
     { x: 180, y: 1610 },
     { x: 900, y: 1850 },
@@ -54,8 +54,8 @@ test("vision geometry matches the combat cover polygon while skipping unreachabl
         E.impactArea(s, p, radius).points,
       );
 });
-test("new operations use fog without changing former deployments, prices, mining or maps", () => {
-  const s = E.make(),
+test("released recon operations retain fog, prices, mining and maps", () => {
+  const s = E.make("frontier-6"),
     old = E.make("frontier-5");
   assert.equal(s.version, 8);
   assert(E.fogged(s));

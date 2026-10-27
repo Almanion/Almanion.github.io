@@ -1,6 +1,11 @@
 /* Economy and operation rules for new deployments. The original operation remains resumable. */
 (function (root) {
   "use strict";
+  const T =
+    typeof module !== "undefined" && module.exports
+      ? require("./terrain.js")
+      : root.SignalTerrain;
+  const highlands = (s) => s?.campaign?.id === "frontier-7";
   const PADS = Object.freeze(
     [
       {
@@ -184,6 +189,24 @@
       reserve: 36,
       waveMax: 4,
     }),
+    "frontier-7": Object.freeze({
+      ...EXPEDITION_RULES,
+      version: 9,
+      mines: EXPEDITION_RULES.mines.map(T.point),
+      items: Object.freeze({
+        ...EXPEDITION_ITEMS,
+        scout: { cost: 50, time: 18, pop: 1, label: "Дозорный" },
+        command: { ...EXPEDITION_ITEMS.command, cost: 520, time: 120 },
+        hack: { ...EXPEDITION_ITEMS.hack, cost: 360, time: 90 },
+        artillery: { ...EXPEDITION_ITEMS.artillery, cost: 300 },
+      }),
+      firstRaid: 75,
+      stagger: 50,
+      raidInterval: 165,
+      scoutRest: 220,
+      reserve: 36,
+      waveMax: 4,
+    }),
     "frontier-1": Object.freeze({
       version: 3,
       items: ITEMS,
@@ -220,9 +243,13 @@
   const rules = (s) => PROFILES[s.campaign?.id] || PROFILES["frontier-1"];
   const items = (s) => rules(s).items;
   const expedition = (s) =>
-    ["frontier-3", "frontier-4", "frontier-5", "frontier-6"].includes(
-      s.campaign?.id,
-    );
+    [
+      "frontier-3",
+      "frontier-4",
+      "frontier-5",
+      "frontier-6",
+      "frontier-7",
+    ].includes(s.campaign?.id);
   const extended = (s) =>
     [
       "frontier-2",
@@ -230,11 +257,32 @@
       "frontier-4",
       "frontier-5",
       "frontier-6",
+      "frontier-7",
     ].includes(s.campaign?.id);
-  const pads = (s) => (expedition(s) ? EXPEDITION_PADS : PADS);
-  const buildings = (s) => (expedition(s) ? EXPEDITION_BUILDINGS : BUILDINGS);
-  const caches = (s) => (expedition(s) ? EXPEDITION_CACHES : CACHES);
-  const combat = (s) => ["frontier-5", "frontier-6"].includes(s.campaign?.id);
+  const HIGHLAND_PADS = EXPEDITION_PADS.map((p) => ({
+      ...T.point(p),
+      oreX: p.oreX * 1.5 + 120,
+      oreY: p.oreY * 1.5,
+    })),
+    HIGHLAND_BUILDINGS = Object.fromEntries(
+      Object.entries(EXPEDITION_BUILDINGS).map(([k, p]) => [k, T.point(p)]),
+    ),
+    HIGHLAND_CACHES = EXPEDITION_CACHES.map((p) =>
+      p.id === "south" ? { ...p, x: 2160, y: 2580 } : T.point(p),
+    ),
+    HIGHLAND_FORTS = FORTS.map(T.point);
+  const pads = (s) =>
+    highlands(s) ? HIGHLAND_PADS : expedition(s) ? EXPEDITION_PADS : PADS;
+  const buildings = (s) =>
+    highlands(s)
+      ? HIGHLAND_BUILDINGS
+      : expedition(s)
+        ? EXPEDITION_BUILDINGS
+        : BUILDINGS;
+  const caches = (s) =>
+    highlands(s) ? HIGHLAND_CACHES : expedition(s) ? EXPEDITION_CACHES : CACHES;
+  const combat = (s) =>
+    ["frontier-5", "frontier-6", "frontier-7"].includes(s.campaign?.id);
   const SPECIAL = ["rocket", "flamer", "bomber", "tank", "mortar"];
   function create(E) {
     const alive = (s, kind) =>
@@ -291,7 +339,7 @@
       };
       return u;
     }
-    function make(profile = "frontier-6") {
+    function make(profile = "frontier-7") {
       const config = PROFILES[profile];
       const s = E.makeClassic();
       s.version = config.version;
@@ -401,7 +449,11 @@
           u.map = "expedition";
           if (u.ai) u.ai.home.y += 560;
         }
-        s.caches = caches(s).map((c) => ({ ...c, taken: false, charge: 0 }));
+        s.caches = EXPEDITION_CACHES.map((c) => ({
+          ...c,
+          taken: false,
+          charge: 0,
+        }));
         s.relay.y += 560;
         s.terminal = { ...s.terminal, x: 2120, y: 1530 };
         const core = E.living(s, "citadel");
@@ -482,6 +534,29 @@
           waves: 0,
           target: null,
         });
+      }
+      if (highlands(s)) {
+        for (const u of s.units) {
+          Object.assign(u, T.point(u), { map: "highlands" });
+          if (u.ai) u.ai.home = T.point(u.ai.home);
+          if (u.rally) u.rally = T.point(u.rally);
+          // Reroute a spawn that formerly occupied a now impassable cut in the terrain.
+          if (!E.free(u.x, u.y, E.C[u.kind].r, "highlands")) {
+            const p = E.spawnPoint(s, u, u.kind);
+            if (p) {
+              u.x = p.x;
+              u.y = p.y;
+              if (u.ai) u.ai.home = { ...p };
+            }
+          }
+        }
+        s.caches = HIGHLAND_CACHES.map((c) => ({
+          ...c,
+          taken: false,
+          charge: 0,
+        }));
+        s.relay = T.point(s.relay);
+        s.terminal = T.point(s.terminal);
       }
       s.campaign.intel = [{ id: base.id, x: base.x, y: base.y, seenAt: 0 }];
       E.initializeRecon(s);
@@ -1529,9 +1604,13 @@
             const candidates = known.sort(
               (a, b) => E.dist(source, a) - E.dist(source, b),
             );
-            camp.target = candidates[
-              (camp.waves + source.id) % Math.min(2, candidates.length)
-            ] || { x: 135, y: expedition(s) ? 1700 : 1140 };
+            camp.target =
+              candidates[
+                (camp.waves + source.id) % Math.min(2, candidates.length)
+              ] ||
+              (highlands(s)
+                ? T.point({ x: 135, y: 1700 })
+                : { x: 135, y: expedition(s) ? 1700 : 1140 });
             if (expedition(s) && candidates.length) {
               // Infrastructure enters this list only after visual contact. Age increases uncertainty.
               camp.target = [...candidates].sort((a, b) => {
@@ -1639,7 +1718,7 @@
         for (const k of ["hero", "base", "jammer", "citadel", "turret"])
           if (s.units.filter((u) => u.kind === k).length !== 1) return null;
         if (expedition(s))
-          for (const f of FORTS) {
+          for (const f of highlands(s) ? HIGHLAND_FORTS : FORTS) {
             const forts = s.units.filter(
               (u) => u.kind === "bastion" && u.sector === f.sector,
             );
@@ -1991,15 +2070,15 @@
           t = s.terminal;
         if (
           !r ||
-          r.x !== 1320 ||
-          r.y !== (expedition(s) ? 1370 : 810) ||
+          r.x !== (highlands(s) ? 2100 : 1320) ||
+          r.y !== (highlands(s) ? 2055 : expedition(s) ? 1370 : 810) ||
           !num(r.charge, 0, 1) ||
           r.online !== (s.phase === 3) ||
           !num(r.stability, 0, 1) ||
           !num(r.started, 0, s.t) ||
           !t ||
-          t.x !== (expedition(s) ? 2120 : 1780) ||
-          t.y !== (expedition(s) ? 1530 : 390) ||
+          t.x !== (highlands(s) ? 3300 : expedition(s) ? 2120 : 1780) ||
+          t.y !== (highlands(s) ? 2295 : expedition(s) ? 1530 : 390) ||
           !num(t.charge, 0, 1) ||
           !num(t.window, 0, 7) ||
           typeof t.alarm !== "boolean" ||
@@ -2059,6 +2138,15 @@
                       u.id === b.owner &&
                       ["mortar", "bastion", "citadel"].includes(u.kind),
                   ))) ||
+              (!highlands(s) &&
+                ["z0", "z1", "duration"].some((k) => b[k] !== undefined)) ||
+              (highlands(s) &&
+                (!["z0", "z1", "duration"].every((k) =>
+                  Number.isFinite(b[k]),
+                ) ||
+                  !num(b.z0, -48, 240) ||
+                  !num(b.z1, -48, 200) ||
+                  !num(b.duration, 0.01, 10))) ||
               ![0, 1].includes(b.team) ||
               b.map !== world.id ||
               !int(b.owner, 1, s.seq) ||

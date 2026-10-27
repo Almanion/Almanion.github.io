@@ -214,6 +214,7 @@ for (const [name, profile] of [
   "frontier-4",
   "frontier-5",
   "frontier-6",
+  "frontier-7",
 ].flatMap((p) => ["siege", "infiltration"].map((n) => [n, p])))
   test(
     "long " + name + ": full operation " + profile + " through real controls",
@@ -245,17 +246,18 @@ for (const [name, profile] of [
       await page.locator("#tactical").click();
       await new Promise((resolve) => setTimeout(resolve, 400));
       expect(await page.evaluate(() => SignalGame.snapshot().t)).toBe(0);
-      expect(
-        await page.evaluate(() => {
-          const origin = SignalGame.screen(0, 0),
-            unit = SignalGame.screen(1, 1),
-            exact = SignalGame.screen(1377, 921);
-          return Math.hypot(
-            exact.x - origin.x - 1377 * (unit.x - origin.x),
-            exact.y - origin.y - 921 * (unit.y - origin.y),
-          );
-        }),
-      ).toBeLessThan(1e-6);
+      if (profile !== "frontier-7")
+        expect(
+          await page.evaluate(() => {
+            const origin = SignalGame.screen(0, 0),
+              unit = SignalGame.screen(1, 1),
+              exact = SignalGame.screen(1377, 921);
+            return Math.hypot(
+              exact.x - origin.x - 1377 * (unit.x - origin.x),
+              exact.y - origin.y - 921 * (unit.y - origin.y),
+            );
+          }),
+        ).toBeLessThan(1e-6);
       const pilot = new ExpeditionPilot(name, 22);
       let pressed = new Set(),
         firing = false,
@@ -287,6 +289,32 @@ for (const [name, profile] of [
             await page
               .locator(c.group === 1 ? "#group-one" : "#group-two")
               .click();
+            const current=await page.evaluate(()=>SignalGame.selection().ids);
+            if (c.ids && JSON.stringify([...current].sort((a,b)=>a-b))!==JSON.stringify([...c.ids].sort((a,b)=>a-b))) {
+              await page.locator("#order-cancel").click();
+              const points = await page.evaluate((ids) => {
+                const s = SignalGame.snapshot();
+                return ids
+                  .map((id) => s.units.find((u) => u.id === id))
+                  .filter(Boolean)
+                  .map((u) => {
+                    const p = SignalGame.screen(u.x, u.y);
+                    p.y -= 8 * SignalGame.camera().scale;
+                    return p;
+                  });
+              }, c.ids);
+              for(let i=0;i<points.length;i++) {
+                if(i) await page.keyboard.down("Shift");
+                await page.mouse.click(points[i].x,points[i].y);
+                if(i) await page.keyboard.up("Shift");
+              }
+            }
+            if (c.ids)
+              expect(
+                (await page.evaluate(() => SignalGame.selection().ids)).sort(
+                  (a, b) => a - b,
+                ),
+              ).toEqual([...c.ids].sort((a, b) => a - b));
             const p = await page.evaluate(
               (p) => SignalGame.screen(p.x, p.y),
               c,
@@ -392,10 +420,20 @@ for (const [name, profile] of [
         pressed = wanted;
         let visible = false;
         if (d.input.aim) {
-          const p = {
-            x: frame.origin.x + d.input.aim.x * (frame.unit.x - frame.origin.x),
-            y: frame.origin.y + d.input.aim.y * (frame.unit.y - frame.origin.y),
-          };
+          const p =
+            profile === "frontier-7"
+              ? await page.evaluate(
+                  (p) => SignalGame.screen(p.x, p.y),
+                  d.input.aim,
+                )
+              : {
+                  x:
+                    frame.origin.x +
+                    d.input.aim.x * (frame.unit.x - frame.origin.x),
+                  y:
+                    frame.origin.y +
+                    d.input.aim.y * (frame.unit.y - frame.origin.y),
+                };
           visible = p.x > 20 && p.x < 1580 && p.y > 100 && p.y < 840;
           if (
             visible &&

@@ -1,0 +1,246 @@
+/* One ground surface per coordinate: bridges never conceal a second walkable floor. */
+(function (root) {
+  "use strict";
+  const CELL = 40,
+    STEP = 72,
+    W = 3600,
+    H = 3840;
+  // Districts are connected by explicit links, never by a coincident cliff edge.
+  const regions = [
+    { id: "landing", level: 1, x: 120, y: 1760, w: 1280, h: 1280 },
+    { id: "industry", level: 1, x: 120, y: 120, w: 2200, h: 1480 },
+    { id: "crossing", level: 1, x: 1520, y: 1600, w: 1000, h: 1040 },
+    { id: "relay", level: 1, x: 1440, y: 1080, w: 1680, h: 680 },
+    { id: "north", level: 2, x: 2320, y: 120, w: 1200, h: 960 },
+    { id: "citadel", level: 2, x: 2560, y: 1440, w: 960, h: 1200 },
+    { id: "quarry", level: 0, x: 120, y: 3120, w: 1640, h: 640 },
+    { id: "arsenal", level: 1, x: 2000, y: 3120, w: 1360, h: 640 },
+  ];
+  const links = [
+    { id: "west-bridge", x: 720, y: 1480, w: 280, h: 400, from: 1, to: 1 },
+    { id: "footbridge", x: 1280, y: 1520, w: 40, h: 320, from: 1, to: 1 },
+    { id: "crossing-bridge", x: 1320, y: 1920, w: 280, h: 280, from: 1, to: 1 },
+    { id: "lower-bridge", x: 1320, y: 2440, w: 280, h: 160, from: 1, to: 1 },
+    {
+      id: "north-ramp",
+      x: 2120,
+      y: 360,
+      w: 400,
+      h: 280,
+      axis: "x",
+      from: 1,
+      to: 2,
+    },
+    {
+      id: "ridge-ramp",
+      x: 2720,
+      y: 920,
+      w: 280,
+      h: 480,
+      axis: "y",
+      from: 2,
+      to: 1,
+    },
+    {
+      id: "citadel-ramp",
+      x: 2280,
+      y: 1760,
+      w: 440,
+      h: 280,
+      axis: "x",
+      from: 1,
+      to: 2,
+    },
+    {
+      id: "citadel-flank",
+      x: 2280,
+      y: 2320,
+      w: 440,
+      h: 280,
+      axis: "x",
+      from: 1,
+      to: 2,
+    },
+    { id: "arsenal-bridge", x: 2040, y: 2520, w: 240, h: 720, from: 1, to: 1 },
+    {
+      id: "quarry-ramp",
+      x: 560,
+      y: 2880,
+      w: 440,
+      h: 440,
+      axis: "y",
+      from: 1,
+      to: 0,
+    },
+    {
+      id: "arsenal-ramp",
+      x: 1560,
+      y: 3360,
+      w: 640,
+      h: 320,
+      axis: "x",
+      from: 0,
+      to: 1,
+    },
+  ];
+  const inside = (p, x, y) =>
+    x >= p.x && y >= p.y && x < p.x + p.w && y < p.y + p.h;
+  const cells = new Int8Array(((W / CELL) * H) / CELL).fill(-1);
+  for (let y = 0; y < H / CELL; y++)
+    for (let x = 0; x < W / CELL; x++) {
+      const px = x * CELL + 20,
+        py = y * CELL + 20;
+      for (const r of regions)
+        if (inside(r, px, py)) cells[y * (W / CELL) + x] = r.level;
+    }
+  // Cut corners and fissures give districts a readable silhouette at overview scale.
+  for (const [x, y, w, h] of [
+    [120, 120, 240, 160],
+    [120, 1440, 200, 160],
+    [3320, 120, 200, 160],
+    [3320, 2520, 200, 120],
+    [120, 3600, 200, 160],
+    [3160, 3600, 200, 160],
+    [1120, 760, 200, 240],
+  ])
+    for (let yy = y; yy < y + h; yy += CELL)
+      for (let xx = x; xx < x + w; xx += CELL)
+        cells[(yy / CELL) * (W / CELL) + xx / CELL] = -1;
+  function level(x, y) {
+    if (x < 0 || y < 0 || x >= W || y >= H) return -1;
+    for (const p of links)
+      if (inside(p, x, y)) {
+        const t =
+          p.axis === "x"
+            ? (x - p.x) / p.w
+            : p.axis === "y"
+              ? (y - p.y) / p.h
+              : 0;
+        return p.from + (p.to - p.from) * t;
+      }
+    return cells[Math.floor(y / CELL) * (W / CELL) + Math.floor(x / CELL)];
+  }
+  const height = (x, y) => {
+    const z = level(x, y);
+    return z < 0 ? -48 : z * STEP;
+  };
+  const point = (p) => ({ ...p, x: p.x * 1.5 + 120, y: p.y * 1.5 });
+  function free(x, y, r) {
+    const z = height(x, y);
+    if (level(x, y) < 0) return false;
+    for (let i = 0; i < 12; i++) {
+      const a = (i * Math.PI) / 6,
+        xx = x + Math.cos(a) * r,
+        yy = y + Math.sin(a) * r;
+      if (level(xx, yy) < 0 || Math.abs(height(xx, yy) - z) > r * 0.45 + 2)
+        return false;
+    }
+    return true;
+  }
+  function travel(a, b, r) {
+    const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 10));
+    let previous = height(a.x, a.y);
+    for (let i = 0; i <= n; i++) {
+      const x = a.x + ((b.x - a.x) * i) / n,
+        y = a.y + ((b.y - a.y) * i) / n,
+        z = height(x, y);
+      if (!free(x, y, r) || Math.abs(z - previous) > 5) return false;
+      previous = z;
+    }
+    return true;
+  }
+  // Sight cannot reveal the top of a higher ledge. Projectiles use their own 3D ray.
+  function sight(a, b) {
+    const eye = height(a.x, a.y) + 24;
+    if (height(b.x, b.y) > eye) return false;
+    return ray(a, b, eye, eye, 0);
+  }
+  function ray(a, b, za, zb, arc = 0) {
+    const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 16));
+    for (let i = 1; i <= n; i++) {
+      const t = i / n,
+        x = a.x + (b.x - a.x) * t,
+        y = a.y + (b.y - a.y) * t;
+      if (height(x, y) > za + (zb - za) * t + Math.sin(Math.PI * t) * arc - 1)
+        return false;
+    }
+    return true;
+  }
+  const barriers = new Map();
+  function visionWalls(z) {
+    const threshold = Math.floor((z / STEP) * 16),
+      cached = barriers.get(threshold);
+    if (cached) return cached;
+    const result = [];
+    for (let y = 0; y < H / CELL; y++)
+      for (let x = 0; x < W / CELL; ) {
+        if (height(x * CELL + 20, y * CELL + 20) <= z) {
+          x++;
+          continue;
+        }
+        const start = x;
+        while (x < W / CELL && height(x * CELL + 20, y * CELL + 20) > z) x++;
+        const prev = result.findLast(
+          (r) =>
+            r.x === start * CELL &&
+            r.w === (x - start) * CELL &&
+            r.y + r.h === y * CELL,
+        );
+        if (prev) prev.h += CELL;
+        else
+          result.push({
+            x: start * CELL,
+            y: y * CELL,
+            w: (x - start) * CELL,
+            h: CELL,
+          });
+      }
+    if (barriers.size > 48) barriers.clear();
+    barriers.set(threshold, result);
+    return result;
+  }
+  const map = {
+    id: "highlands",
+    W,
+    H,
+    regions: regions.filter((r) => r.id !== "relay"),
+    links,
+    posts: [
+      { id: "north", x: 2530, y: 700 },
+      { id: "crossing", x: 1710, y: 2030 },
+      { id: "south", x: 1530, y: 3360 },
+    ],
+    walls: [],
+  };
+  function build(walls) {
+    map.walls = walls
+      .map((w) => ({ ...point(w), w: w.w * 1.5, h: w.h * 1.5 }))
+      .filter((w) => {
+        const z = height(w.x + w.w / 2, w.y + w.h / 2);
+        return [
+          [w.x, w.y],
+          [w.x + w.w - 1, w.y],
+          [w.x, w.y + w.h - 1],
+          [w.x + w.w - 1, w.y + w.h - 1],
+        ].every(([x, y]) => level(x, y) >= 0 && Math.abs(height(x, y) - z) < 1);
+      });
+    return map;
+  }
+  const API = {
+    CELL,
+    STEP,
+    map,
+    links,
+    level,
+    height,
+    point,
+    free,
+    travel,
+    sight,
+    ray,
+    visionWalls,
+    build,
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = API;
+  else root.SignalTerrain = API;
+})(typeof globalThis !== "undefined" ? globalThis : window);

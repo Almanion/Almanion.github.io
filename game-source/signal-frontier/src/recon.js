@@ -7,7 +7,7 @@
       Object.freeze({ id: "crossing", x: 900, y: 1210 }),
       Object.freeze({ id: "south", x: 1160, y: 1920 }),
     ]);
-  const enabled = (s) => s?.campaign?.id === "frontier-6";
+  const enabled = (s) => ["frontier-6", "frontier-7"].includes(s?.campaign?.id);
   function create(E) {
     const caches = new WeakMap();
     const size = (s) => {
@@ -52,7 +52,7 @@
       return u.build > 0 ? 120 : u.team ? 610 : VISION[u.kind] || 0;
     }
     function posts(s) {
-      return POSTS.map((p) => {
+      return (E.map(s).posts || POSTS).map((p) => {
         const owners = [0, 1].map((team) =>
           s.units.some(
             (u) =>

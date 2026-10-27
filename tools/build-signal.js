@@ -6,6 +6,7 @@ const fs = require("node:fs"),
 const files = [
   "index.html",
   "style.css",
+  "terrain.js",
   "campaign.js",
   "recon.js",
   "engine.js",
@@ -25,6 +26,7 @@ function render(root = path.resolve(__dirname, "..")) {
     out = {};
   for (const file of files) {
     let text = read(file);
+    if (file === "campaign.js") text = read("terrain.js") + "\n;\n" + text;
     if (file === "engine.js") text = read("recon.js") + "\n;\n" + text;
     if (file === "app.js")
       text = embedded.map(read).join("\n;\n") + "\n;\n" + text;
@@ -45,7 +47,7 @@ function render(root = path.resolve(__dirname, "..")) {
       text = result.styles + "\n";
     } else if (file === "index.html")
       text = text.replace(
-        /^\s*<script src="(?:recon|cloud-core|persistence|account-ui)\.js[^\"]*" defer><\/script>\n/gm,
+        /^\s*<script src="(?:terrain|recon|cloud-core|persistence|account-ui)\.js[^\"]*" defer><\/script>\n/gm,
         "",
       );
     out[file] = text;

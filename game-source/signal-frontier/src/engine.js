@@ -1,6 +1,10 @@
 /* Simulation is independent of rendering, audio and frame rate. Coordinates are world pixels. */
 (function (root) {
   "use strict";
+  const Terrain =
+    typeof module !== "undefined" && module.exports
+      ? require("./terrain.js")
+      : root.SignalTerrain;
   const W = 1440,
     H = 1000,
     DT = 1 / 60;
@@ -34,6 +38,17 @@
     barracks: { hp: 420, r: 30, speed: 0, range: 0, damage: 0, rate: 0 },
     foundry: { hp: 500, r: 34, speed: 0, range: 0, damage: 0, rate: 0 },
   };
+  const MOUNTS = Object.freeze({
+    citadel: 64,
+    turret: 24,
+    artillery: 23,
+    bastion: 44,
+    tank: 27,
+    mortar: 39,
+    rocket: 24,
+    base: 51,
+    outpost: 46,
+  });
   const COSTS = Object.freeze({
     outpost: 50,
     artillery: 90,
@@ -84,20 +99,26 @@
       { x: 1530, y: 2410, w: 350, h: 80 },
     ],
   };
+  const highlandsMap = Terrain.build(expeditionMap.walls);
   const mapFor = (s) =>
-    s === "expedition" ||
-    s?.id === "expedition" ||
-    s?.map === "expedition" ||
-    ["frontier-3", "frontier-4", "frontier-5", "frontier-6"].includes(
-      s?.campaign?.id,
-    )
-      ? expeditionMap
-      : s === "frontier" ||
-          s?.id === "frontier" ||
-          s?.campaign ||
-          s?.map === "frontier"
-        ? frontierMap
-        : classicMap;
+    s === "highlands" ||
+    s?.id === "highlands" ||
+    s?.map === "highlands" ||
+    s?.campaign?.id === "frontier-7"
+      ? highlandsMap
+      : s === "expedition" ||
+          s?.id === "expedition" ||
+          s?.map === "expedition" ||
+          ["frontier-3", "frontier-4", "frontier-5", "frontier-6"].includes(
+            s?.campaign?.id,
+          )
+        ? expeditionMap
+        : s === "frontier" ||
+            s?.id === "frontier" ||
+            s?.campaign ||
+            s?.map === "frontier"
+          ? frontierMap
+          : classicMap;
   let campaign, recon;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -108,6 +129,7 @@
       x <= world.W - r - 24 &&
       y >= r + 24 &&
       y <= world.H - r - 24 &&
+      (world.id !== "highlands" || Terrain.free(x, y, r)) &&
       !world.walls.some(
         (b) =>
           x + r > b.x && x - r < b.x + b.w && y + r > b.y && y - r < b.y + b.h,
@@ -136,11 +158,34 @@
     }
     return lo;
   }
-  function clear(a, b, r = 0) {
+  function wallClear(a, b, r = 0) {
     return !mapFor(a.map || b.map).walls.some(
       (w) => segmentRect(a.x, a.y, b.x, b.y, w, r) !== null,
     );
   }
+  function clear(a, b, r = 0) {
+    const world = mapFor(a.map || b.map);
+    if (world.id !== "highlands") return wallClear(a, b, r);
+    const eye = Terrain.height(a.x, a.y) + 24;
+    return (
+      Terrain.sight(a, b) &&
+      !world.walls.some(
+        (w) =>
+          segmentRect(a.x, a.y, b.x, b.y, w, r) !== null &&
+          Terrain.height(w.x + w.w / 2, w.y + w.h / 2) + 54 >= eye,
+      )
+    );
+  }
+  const elevation = (x, y, map) =>
+    mapFor(map).id === "highlands" ? Terrain.height(x, y) : 0;
+  const projectileHeight = (b, age = b.age) =>
+    b.z0 === undefined
+      ? null
+      : b.z0 +
+        (b.z1 - b.z0) * Math.min(1, age / b.duration) +
+        (b.kind === "shell"
+          ? Math.sin(Math.PI * Math.min(1, age / b.duration)) * 110
+          : 0);
   function segmentCircle(a, b, u, r) {
     const dx = b.x - a.x,
       dy = b.y - a.y,
@@ -255,9 +300,10 @@
             "frontier-4",
             "frontier-5",
             "frontier-6",
+            "frontier-7",
           ].includes(mode)
             ? mode
-            : "frontier-6",
+            : "frontier-7",
         );
   }
   const hero = (s) => s.units.find((u) => u.id === s.heroId);
@@ -527,7 +573,8 @@
     return (
       free(a.x, a.y, r, map) &&
       free(b.x, b.y, r, map) &&
-      clear({ ...a, map }, b, Math.max(0, r - 1e-7))
+      wallClear({ ...a, map }, b, Math.max(0, r - 1e-7)) &&
+      (mapFor(map).id !== "highlands" || Terrain.travel(a, b, r))
     );
   }
   function smoothRoute(from, route, r, map) {
@@ -668,9 +715,9 @@
           yy >= rows ||
           prev[k] !== -2 ||
           !free(xx * cell + 20, yy * cell + 20, r + 3, world.id) ||
-          (n === start &&
+          ((n === start || world.id === "highlands") &&
             !travelClear(
-              from,
+              n === start ? from : { x: x * cell + 20, y: y * cell + 20 },
               { x: xx * cell + 20, y: yy * cell + 20 },
               r,
               world.id,
@@ -694,6 +741,24 @@
   // A bolt collides with two pixels of cover padding. Use the same corridor
   // for AI aiming; visibility alone may see a point while a bolt clips a corner.
   function fireClear(from, target) {
+    if (mapFor(from.map || target.map).id === "highlands") {
+      const arc =
+          ["artillery", "mortar", "citadel"].includes(from.kind) ||
+          (from.kind === "bastion" && target.kind === "artillery")
+            ? 110
+            : 0,
+        za = Terrain.height(from.x, from.y) + (MOUNTS[from.kind] || 16),
+        zb = Terrain.height(target.x, target.y) + 10;
+      if (!Terrain.ray(from, target, za, zb, arc)) return false;
+      return !highlandsMap.walls.some((w) => {
+        const t = segmentRect(from.x, from.y, target.x, target.y, w, 2);
+        return (
+          t !== null &&
+          za + (zb - za) * t + Math.sin(t * Math.PI) * arc <
+            Terrain.height(w.x + w.w / 2, w.y + w.h / 2) + 54
+        );
+      });
+    }
     return clear(
       from,
       target,
@@ -961,8 +1026,10 @@
     const r = C[u.kind].r,
       steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 8));
     for (let i = 0; i < steps; i++) {
-      if (free(u.x + dx / steps, u.y, r, u.map)) u.x += dx / steps;
-      if (free(u.x, u.y + dy / steps, r, u.map)) u.y += dy / steps;
+      if (travelClear(u, { x: u.x + dx / steps, y: u.y }, r, u.map))
+        u.x += dx / steps;
+      if (travelClear(u, { x: u.x, y: u.y + dy / steps }, r, u.map))
+        u.y += dy / steps;
     }
   }
   function follow(u, dt) {
@@ -1082,6 +1149,13 @@
       tx: target.x,
       ty: target.y,
       age: 0,
+      ...(mapFor(s).id === "highlands"
+        ? {
+            z0: Terrain.height(u.x, u.y) + (MOUNTS[u.kind] || 16),
+            z1: Terrain.height(target.x, target.y) + 10,
+            duration: Math.max(0.01, Math.max(0, dist(u, target) - r) / speed),
+          }
+        : {}),
     });
   }
   function hurt(s, u, damage, attacker) {
@@ -1159,7 +1233,12 @@
     start,
     end,
     steps,
-    walls = mapFor(s).walls,
+    walls = [
+      ...mapFor(s).walls,
+      ...(mapFor(s).id === "highlands"
+        ? Terrain.visionWalls(Terrain.height(origin.x, origin.y) + 6)
+        : []),
+    ],
   ) {
     const angles = [],
       centre = (start + end) / 2;
@@ -1196,7 +1275,17 @@
       });
   }
   function visionArea(s, point, radius) {
-    const walls = mapFor(s).walls.filter(
+    const walls = [
+      ...mapFor(s).walls.filter(
+        (w) =>
+          mapFor(s).id !== "highlands" ||
+          Terrain.height(w.x + w.w / 2, w.y + w.h / 2) + 54 >=
+            Terrain.height(point.x, point.y) + 24,
+      ),
+      ...(mapFor(s).id === "highlands"
+        ? Terrain.visionWalls(Terrain.height(point.x, point.y) + 24)
+        : []),
+    ].filter(
       (w) =>
         Math.hypot(
           point.x - clamp(point.x, w.x, w.x + w.w),
@@ -1517,6 +1606,20 @@
         }
       }
       const next = { x: b.x + b.vx * dt, y: b.y + b.vy * dt };
+      if (
+        b.z0 !== undefined &&
+        !Terrain.ray(
+          b,
+          next,
+          projectileHeight(b, b.age - dt),
+          projectileHeight(b),
+          0,
+        )
+      ) {
+        emit(s, "spark", b.x, b.y);
+        b.life = -1;
+        continue;
+      }
       if (b.kind === "shell") {
         if (dist(next, { x: b.tx, y: b.ty }) < 16 || b.life <= 0) {
           b.x = b.tx;
@@ -1533,7 +1636,13 @@
         first = 1;
       for (const wall of mapFor(s).walls) {
         const t = segmentRect(b.x, b.y, next.x, next.y, wall, 2);
-        if (t !== null && t <= first) {
+        if (
+          t !== null &&
+          t <= first &&
+          (b.z0 === undefined ||
+            projectileHeight(b) <
+              Terrain.height(wall.x + wall.w / 2, wall.y + wall.h / 2) + 54)
+        ) {
           first = t;
           hit = "wall";
         }
@@ -1542,7 +1651,12 @@
         if (u.hp <= 0 || u.team === b.team) continue;
         if (u.kind === "hero" && s.dashT > 0) continue;
         const t = segmentCircle(b, next, u, C[u.kind].r + 2);
-        if (t !== null && t < first) {
+        if (
+          t !== null &&
+          t < first &&
+          (b.z0 === undefined ||
+            Math.abs(projectileHeight(b) - Terrain.height(u.x, u.y) - 18) < 28)
+        ) {
           first = t;
           hit = u;
         }
@@ -1640,7 +1754,7 @@
   }
   function restore(value) {
     if (value?.fog !== undefined) return null;
-    if ([3, 4, 5, 6, 7, 8].includes(value?.version)) {
+    if ([3, 4, 5, 6, 7, 8, 9].includes(value?.version)) {
       const state = campaign.restore(value);
       return state && recon.validate(state) ? state : null;
     }
@@ -1788,6 +1902,7 @@
       if (
         s.bullets.some(
           (b) =>
+            ["z0", "z1", "duration"].some((k) => b[k] !== undefined) ||
             !["x", "y", "vx", "vy", "life", "damage", "age", "tx", "ty"].every(
               (k) => Number.isFinite(b[k]),
             ) ||
@@ -1906,6 +2021,10 @@
   const visible = (s, team, p) => recon.visible(s, team, p);
   const explored = (s, team, p) => recon.explored(s, team, p);
   const API = {
+    terrain: Terrain,
+    elevation,
+    projectileHeight,
+    travelClear,
     fogged,
     visible,
     explored,
@@ -1916,6 +2035,7 @@
     H,
     DT,
     C,
+    MOUNTS,
     walls,
     PADS,
     CACHES,

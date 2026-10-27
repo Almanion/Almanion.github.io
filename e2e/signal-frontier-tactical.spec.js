@@ -2,7 +2,7 @@
 const { test, expect, chromium, webkit } = require("@playwright/test");
 const E = require("../game-source/signal-frontier/src/engine");
 function scenario() {
-  const s = E.make(),
+  const s = E.make("frontier-6"),
     h = E.hero(s);
   Object.assign(h, { x: 400, y: 1600 });
   const troops = s.units.filter((u) => u.group === 1);

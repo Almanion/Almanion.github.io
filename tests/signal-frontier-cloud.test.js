@@ -81,8 +81,10 @@ const memory = () => {
     b = client();
   await a.sync.setUser("one");
   assert.equal(a.sync.status, "synced");
-  a.visit({ x: 1740, y: 330 });
-  a.visit({ x: 180, y: 1610 });
+  const landing = { x: E.hero(a.state).x, y: E.hero(a.state).y },
+    fort = E.living(a.state, "bastion");
+  a.visit({ x: fort.x - 80, y: fort.y + 80 });
+  a.visit(landing);
   assert(a.state.recon.memory[0].some((p) => p.kind === "bastion"));
   a.buy();
   await a.sync.sync();

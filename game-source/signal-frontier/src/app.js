@@ -130,6 +130,18 @@
     clearStick(aimStick, $("aim-stick"));
   }
   function setMode(next) {
+    if (
+      mode === "playing" &&
+      next === "tactical" &&
+      E.map(state).id === "highlands"
+    ) {
+      view.tactical = {
+        overview: false,
+        x: view.camera.x,
+        y: view.camera.y,
+        zoom: view.camera.scale,
+      };
+    }
     resetInput();
     mode = next;
     document.body.dataset.mode = mode;
@@ -197,7 +209,9 @@
     mousePoint = null;
     view.reset(state);
     view.camera.x = E.hero(state).x;
-    view.camera.y = E.hero(state).y;
+    view.camera.y =
+      E.hero(state).y -
+      E.elevation(E.hero(state).x, E.hero(state).y, E.map(state));
     view.camera.scale = 0.7;
     if ($("dialog").open) $("dialog").close();
     sound.start();

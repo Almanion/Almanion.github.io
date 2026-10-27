@@ -140,7 +140,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [frontier-3, frontier-4, frontier-5, frontier-6]
+        profile: [frontier-3, frontier-4, frontier-5, frontier-6, frontier-7]
         route: [siege, infiltration]
     permissions:
       contents: read

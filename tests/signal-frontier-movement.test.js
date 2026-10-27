@@ -99,7 +99,7 @@ test("unreachable orders stop outside cover instead of cutting through it", () =
   }
 });
 test("subset orders preserve other troops, rallies, time and resources", () => {
-  const s = E.make(),
+  const s = E.make("frontier-6"),
     rifles = s.units.filter((u) => u.group === 1),
     h = E.hero(s);
   const other = JSON.stringify(rifles[2]),
@@ -150,7 +150,7 @@ test("movement stays at the speed cap, arrives exactly and resumes the same curv
   assert.ok(E.dist(u, { x: 800, y: 450 }) < 1e-6);
 });
 test("mixed selections leave room for heavy units without changing group orders", () => {
-  const s = E.make(),
+  const s = E.make("frontier-6"),
     rifle = s.units.find((u) => u.group === 1);
   const heavies = [0, 1].map((i) => ({
     ...rifle,

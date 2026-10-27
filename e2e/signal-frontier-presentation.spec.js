@@ -85,7 +85,7 @@ test("rendered sound has distinct layers, direction, headroom, a silent tail and
       const ctx = new OfflineAudioContext(2, 44100, 22050),
         audio = new SignalAudio({ context: ctx, volume: () => volume });
       audio.setup();
-      if (active) audio.update(SignalEngine.make(), "playing", volume);
+      if (active) audio.update(SignalEngine.make("frontier-6"), "playing", volume);
       for (const e of events) audio.play({ x: 0, y: 0, ...e });
       const during = audio.voices.size,
         buffer = await ctx.startRendering();
@@ -253,7 +253,7 @@ for (const [width, height] of [
     await page.setViewportSize({ width, height });
     await page.goto(route);
     const result = await page.evaluate(() => {
-      const s = SignalEngine.make(),
+      const s = SignalEngine.make("frontier-6"),
         before = JSON.stringify(s),
         clipped = new SignalView(document.createElement("canvas")),
         reference = new SignalView(document.createElement("canvas")),

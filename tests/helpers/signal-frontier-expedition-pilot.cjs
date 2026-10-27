@@ -31,6 +31,16 @@ class ExpeditionPilot {
     return result;
   }
   decide(s) {
+    const highlands = s.campaign.id === "frontier-7",
+      opening = highlands && this.stage <= 4 ? "siege" : this.route;
+    const point = (x, y) =>
+      highlands
+        ? x === 500 && y === 1580
+          ? { x: 600, y: 2500 }
+          : x === 1510 && y === 320
+            ? { x: 2670, y: 980 }
+            : E.terrain.point({ x, y })
+        : { x, y };
     const elapsed = Math.max(E.DT, s.t - this.lastTime);
     this.lastTime = s.t;
     let budget = s.economy.alloy,
@@ -64,11 +74,31 @@ class ExpeditionPilot {
       order = (g, p) => {
         nextOrders[g] = p;
       };
-    let dest = { x: 420, y: 1580 },
+    if (highlands) {
+      this.garrison = (this.garrison || []).filter((id) =>
+        s.units.some((u) => u.id === id && u.hp > 0),
+      );
+      if (this.stage >= 1 && alive("rifle").length >= 6)
+        for (const u of alive("rifle")
+          .filter((u) => !this.garrison.includes(u.id))
+          .sort(
+            (a, b) =>
+              E.dist(a, E.living(s, "base")) - E.dist(b, E.living(s, "base")),
+          )) {
+          if (this.garrison.length >= 3) break;
+          this.garrison.push(u.id);
+        }
+    }
+    const reserveIds = highlands ? this.garrison || [] : [],
+      activeRifles = () =>
+        alive("rifle").filter((u) => !reserveIds.includes(u.id));
+    let dest = point(420, 1580),
       interact = false;
     const base = E.living(s, "base"),
       west = post("west"),
-      relay = post(this.route === "siege" ? "flank" : "relay");
+      relay = post(
+        highlands ? "north" : this.route === "siege" ? "flank" : "relay",
+      );
     const threatened = (node) =>
       !!node &&
       s.units.some(
@@ -88,7 +118,7 @@ class ExpeditionPilot {
     reserve =
       this.stage >= 4 && !relay
         ? D.items(s).outpost.cost
-        : this.route === "siege" &&
+        : opening === "siege" &&
             relay &&
             !relay.defense &&
             !relay.jobs.some((j) => j.action === "defense")
@@ -101,7 +131,9 @@ class ExpeditionPilot {
       s.campaign.tier === 2 &&
       E.objective(s).id === "command";
     const rifleTarget = savingForCommand
-      ? 3
+      ? highlands
+        ? 6
+        : 3
       : this.route === "infiltration" &&
           !alive("bastion").some((u) => u.sector === "south")
         ? 3
@@ -124,6 +156,10 @@ class ExpeditionPilot {
     ))
       if (u.hp < E.C[u.kind].hp * 0.7) buy("repair", u.id);
     if (s.campaign.tier >= 2 || D.queued(s, "network").length) {
+      if (highlands) {
+        if (base && !base.defense) buy("defense", base.id);
+        if (west && !west.defense) buy("defense", west.id);
+      }
       if (rifleCount < rifleTarget) buy("rifle");
       buy("weapons");
       if (base && !base.defense) buy("defense", base.id);
@@ -152,9 +188,9 @@ class ExpeditionPilot {
     }
     if (this.stage === 0) {
       const cache = s.caches[0];
-      dest = cache.taken ? { x: 420, y: 1580 } : { x: cache.x, y: cache.y };
+      dest = cache.taken ? point(420, 1580) : { x: cache.x, y: cache.y };
       interact = !cache.taken && E.dist(h, cache) < 65;
-      order(1, { x: 500, y: 1580 });
+      order(1, point(500, 1580));
       if (
         s.campaign.weapons &&
         alive("rifle").length >= 6 &&
@@ -166,65 +202,60 @@ class ExpeditionPilot {
       }
     } else if (this.stage <= 3) {
       dest = (
-        this.route === "siege"
-          ? [
-              { x: 530, y: 1210 },
-              { x: 980, y: 1160 },
-              { x: 1320, y: 940 },
-            ]
-          : [
-              { x: 530, y: 1210 },
-              { x: 980, y: 1200 },
-              { x: 1110, y: 1450 },
-            ]
+        opening === "siege"
+          ? [point(530, 1210), point(980, 1160), point(1320, 940)]
+          : [point(530, 1210), point(980, 1200), point(1110, 1450)]
       )[this.stage - 1];
       order(1, dest);
       if (
         E.dist(h, dest) < 30 &&
         alive("rifle").filter((u) => E.dist(u, dest) < 190).length >=
-          Math.min(3, alive("rifle").length)
+          Math.min(3, highlands ? activeRifles().length : alive("rifle").length)
       ) {
         this.log.push(["waypoint" + this.stage, s.t]);
         this.stage++;
       }
     } else if (this.stage === 4) {
-      dest =
-        this.route === "siege" ? { x: 1340, y: 940 } : { x: 1140, y: 1440 };
-      order(
-        1,
-        this.route === "siege" ? { x: 1380, y: 920 } : { x: 1190, y: 1440 },
+      dest = opening === "siege" ? point(1340, 940) : point(1140, 1440);
+      order(1, opening === "siege" ? point(1380, 920) : point(1190, 1440));
+      buy(
+        "outpost",
+        highlands ? "north" : opening === "siege" ? "flank" : "relay",
       );
-      buy("outpost", this.route === "siege" ? "flank" : "relay");
       const fort = alive("bastion").find(
-        (u) => u.sector === (this.route === "siege" ? "north" : "south"),
+        (u) => u.sector === (opening === "siege" ? "north" : "south"),
       );
       if (
         relay &&
         !relay.build &&
-        (this.route !== "siege" || relay.defense) &&
+        (opening !== "siege" || relay.defense) &&
         fort &&
         s.campaign.weapons &&
-        ((E.fogged(s) && this.route === "infiltration") ||
+        ((E.fogged(s) && opening === "infiltration") ||
           alive("rifle").length >= 3)
       ) {
         const way =
-          this.route === "siege"
+          opening === "siege" && highlands
             ? [
-                { x: 1020, y: 940 },
-                { x: 560, y: 350 },
-                { x: 1000, y: 300 },
-                { x: 1310, y: 300 },
-                { x: 1510, y: 320 },
+                point(1020, 940),
+                point(560, 350),
+                { x: 2040, y: 1400 },
+                { x: 2840, y: 1420 },
+                { x: 2840, y: 1000 },
               ]
-            : [
-                { x: 1320, y: 1850 },
-                { x: 1160, y: 2360 },
-                { x: 1450, y: 2300 },
-              ];
+            : opening === "siege"
+              ? [
+                  point(1020, 940),
+                  point(560, 350),
+                  point(1000, 300),
+                  point(1310, 300),
+                  point(1510, 320),
+                ]
+              : [point(1320, 1850), point(1160, 2360), point(1450, 2300)];
         this.fortStage ||= 0;
         dest = way[Math.min(this.fortStage, way.length - 1)];
         order(1, dest);
-        if (this.route === "siege" && this.fortStage === 1) {
+        if (opening === "siege" && this.fortStage === 1) {
           buy("outpost", "north");
           if (extra && !extra.build) this.fortStage++;
         } else if (E.dist(h, dest) < 40 && this.fortStage < way.length - 1)
@@ -233,7 +264,7 @@ class ExpeditionPilot {
       if (
         relay &&
         !relay.build &&
-        !E.living(s, this.route === "siege" ? "jammer" : "turret") &&
+        !E.living(s, opening === "siege" ? "jammer" : "turret") &&
         (this.route === "siege"
           ? s.campaign.tier === 3 && !!alive("foundry").find((u) => !u.build)
           : s.economy.kit)
@@ -244,53 +275,54 @@ class ExpeditionPilot {
     } else {
       const steps =
         this.route === "siege"
-          ? [
-              { x: 1320, y: 940 },
-              { x: 1440, y: 910 },
-            ]
+          ? [point(1320, 940), point(1440, 910)]
           : [
-              { x: 1340, y: 1460 },
-              { x: 1660, y: 1490 },
-              { x: 1830, y: 1490 },
-              { x: 2080, y: 1530 },
+              point(1340, 1460),
+              point(1660, 1490),
+              point(1830, 1490),
+              point(2080, 1530),
             ];
       if (this.stage < 5 + steps.length) {
         dest = steps[this.stage - 5];
         order(1, dest);
         if (
           E.dist(h, dest) < 30 &&
-          alive("rifle").filter((u) => E.dist(u, dest) < 190).length >=
-            Math.min(3, alive("rifle").length)
+          ((highlands && this.route === "infiltration") ||
+            alive("rifle").filter((u) => E.dist(u, dest) < 190).length >=
+              Math.min(
+                3,
+                highlands ? activeRifles().length : alive("rifle").length,
+              ))
         ) {
           this.log.push(["waypoint" + this.stage, s.t]);
           this.stage++;
         }
       } else if (this.route === "siege") {
-        if (E.living(s, "jammer")) dest = { x: 1440, y: 910 };
+        if (E.living(s, "jammer")) dest = point(1440, 910);
         else if (s.phase < 3) {
-          dest = { x: 1320, y: 1390 };
-          order(1, { x: 1320, y: 1410 });
+          dest = point(1320, 1390);
+          order(1, point(1320, 1410));
           interact = E.dist(h, s.relay) < 75;
         } else {
-          dest = { x: 1800, y: 1450 };
-          order(1, { x: 1840, y: 1440 });
-          order(2, { x: 1850, y: 1460 });
+          dest = point(1800, 1450);
+          order(1, point(1840, 1440));
+          order(2, point(1850, 1460));
         }
       } else {
-        dest = { x: 2080, y: 1530 };
-        order(1, { x: 2000, y: 1430 });
+        dest = point(2080, 1530);
+        order(1, point(2000, 1430));
         interact = E.dist(h, s.terminal) < 75;
       }
     }
     // A fog expedition must scout its third mine before the first two run dry.
     if (
       E.fogged(s) &&
-      this.route === "siege" &&
+      (this.route === "siege" || highlands) &&
       this.stage === 4 &&
       s.t >= 600 &&
       (!extra || extra.build)
     ) {
-      dest = { x: 560, y: 350 };
+      dest = point(560, 350);
       order(1, dest);
       interact = false;
       buy("outpost", "north");
@@ -311,10 +343,30 @@ class ExpeditionPilot {
         interact = E.dist(h, cache) < 65;
       }
     }
+    if (highlands && this.stage === 0 && west && !this.rushCleared) {
+      const fort = s.units.find(
+        (u) => u.kind === "bastion" && u.sector === "north",
+      );
+      if (fort.hp <= 0 && E.visible(s, 0, fort)) this.rushCleared = true;
+      else {
+        const route = [
+          { x: 1650, y: 1410 },
+          { x: 2040, y: 1400 },
+          { x: 2840, y: 1420 },
+          { x: 2840, y: 1000 },
+        ];
+        this.rushStage ||= 0;
+        dest = route[this.rushStage];
+        interact = false;
+        if (E.dist(h, dest) < 35 && this.rushStage < route.length - 1)
+          this.rushStage++;
+        order(1, point(500, 1580));
+      }
+    }
     // Respond to a visible attack on the economy instead of waiting at the objective
     // while an outranging enemy destroys every worker. The forward squad holds its orders.
     if (
-      this.stage >= 1 &&
+      (this.stage >= 1 || highlands) &&
       base &&
       ((base.hp < E.C.base.hp * 0.82 &&
         (threatened(base) || (E.fogged(s) && base.repair > 0))) ||
@@ -334,7 +386,7 @@ class ExpeditionPilot {
       )
         this.defendHome = false;
       else {
-        dest = { x: 320, y: 1550 };
+        dest = point(320, 1550);
         if (this.route === "infiltration" || D.combat(s)) {
           const attacker = s.units
             .filter(
@@ -378,7 +430,7 @@ class ExpeditionPilot {
           E.visible(s, 0, u) &&
           u.hp > 0 &&
           !(u.kind === "citadel" && E.shielded(s)) &&
-          !(this.route === "infiltration" && u.kind === "jammer") &&
+          !(opening === "infiltration" && u.kind === "jammer") &&
           E.dist(u, h) < 600 &&
           E.clear(h, u),
       )
@@ -422,7 +474,10 @@ class ExpeditionPilot {
     while (
       this.path.length &&
       E.dist(h, this.path[0]) < this.waypointRadius &&
-      (this.path.length === 1 || E.clear(h, this.path[1], E.C.hero.r))
+      (this.path.length === 1 ||
+        (highlands
+          ? E.travelClear(h, this.path[1], E.C.hero.r, h.map)
+          : E.clear(h, this.path[1], E.C.hero.r)))
     )
       this.path.shift();
     const p = interact ? null : this.path[0],
@@ -447,6 +502,22 @@ class ExpeditionPilot {
       if (E.free(h.x - (dy / len) * 35, h.y + (dx / len) * 35, 14, h.map)) {
         x = -dy / len;
         y = dx / len;
+      }
+    }
+    if (
+      s.campaign.id === "frontier-7" &&
+      target &&
+      !interact &&
+      E.C[target.kind].range > 300 &&
+      E.dist(h, target) < 490
+    ) {
+      const d = E.dist(h, target),
+        a = { x: (h.x - target.x) / d, y: (h.y - target.y) / d };
+      if (
+        E.travelClear(h, { x: h.x + a.x * 40, y: h.y + a.y * 40 }, 14, h.map)
+      ) {
+        x = a.x;
+        y = a.y;
       }
     }
     if (D.combat(s) && !interact) {
@@ -494,11 +565,15 @@ class ExpeditionPilot {
         }
       }
     }
-    if (E.fogged(s) && this.stage >= 4 && alive("rifle").length < 3)
-      order(1, { x: 420, y: 1580 });
-    if (D.combat(s) && this.stage >= 1) {
+    if (
+      E.fogged(s) &&
+      this.stage >= 4 &&
+      (highlands ? activeRifles().length : alive("rifle").length) < 3
+    )
+      order(1, point(420, 1580));
+    if (D.combat(s) && (this.stage >= 1 || highlands)) {
       const squad = E.fogged(s)
-          ? alive().filter((u) => u.group === 1)
+          ? alive().filter((u) => u.group === 1 && !reserveIds.includes(u.id))
           : alive("rifle"),
         targets = alive()
           .filter(
@@ -524,7 +599,7 @@ class ExpeditionPilot {
         order(1, { x: targets[0].x, y: targets[0].y, targetId: targets[0].id });
     }
     if (D.combat(s)) {
-      const army = alive("rifle"),
+      const army = highlands ? activeRifles() : alive("rifle"),
         hazards = s.units
           .filter((u) => u.team && E.visible(s, 0, u) && u.hp > 0)
           .map((u) => ({ area: E.dangerArea(s, u), origin: u }))
@@ -563,14 +638,54 @@ class ExpeditionPilot {
     }
     for (const [g, p] of Object.entries(nextOrders)) {
       if (D.combat(s) && !alive().some((u) => u.group === Number(g))) continue;
-      const key = p.targetId ? "attack:" + p.targetId : p.x + "," + p.y;
+      const ids = highlands
+        ? alive()
+            .filter((u) => u.group === Number(g) && !reserveIds.includes(u.id))
+            .map((u) => u.id)
+        : undefined;
+      if (ids && !ids.length) continue;
+      const key =
+        (ids ? ids.join("/") + ":" : "") +
+        (p.targetId ? "attack:" + p.targetId : p.x + "," + p.y);
       if (this.orders[g] !== key) {
         commands.push({
           kind: "order",
           group: Number(g),
+          ...(ids ? { ids } : {}),
           ...p,
         });
         this.orders[g] = key;
+      }
+    }
+    if (highlands && reserveIds.length) {
+      for (const [i, ids] of [
+        [reserveIds[0]],
+        [...reserveIds.slice(1)],
+      ].entries()) {
+        if (!ids.length) continue;
+        const point = i ? { x: 850, y: 2450 } : { x: 450, y: 2550 },
+          threat = alive()
+            .filter(
+              (u) =>
+                u.team &&
+                E.visible(s, 0, u) &&
+                E.C[u.kind].range > 0 &&
+                E.dist(u, point) < 540,
+            )
+            .sort((a, b) => E.dist(a, point) - E.dist(b, point))[0],
+          key = ids.join("/") + ":" + (threat?.id || "hold");
+        this.homeOrders ||= {};
+        if (this.homeOrders[i] !== key) {
+          commands.push({
+            kind: "order",
+            group: 1,
+            ids,
+            ...(threat
+              ? { x: threat.x, y: threat.y, targetId: threat.id }
+              : point),
+          });
+          this.homeOrders[i] = key;
+        }
       }
     }
     return {
@@ -610,17 +725,19 @@ function play(
         : c.targetId
           ? E.attackUnits(
               s,
-              s.units
-                .filter((u) => u.hp > 0 && u.group === c.group)
-                .map((u) => u.id),
+              c.ids ||
+                s.units
+                  .filter((u) => u.hp > 0 && u.group === c.group)
+                  .map((u) => u.id),
               c.targetId,
             )
           : E.fogged(s)
             ? E.orderUnits(
                 s,
-                s.units
-                  .filter((u) => !u.team && u.hp > 0 && u.group === c.group)
-                  .map((u) => u.id),
+                c.ids ||
+                  s.units
+                    .filter((u) => !u.team && u.hp > 0 && u.group === c.group)
+                    .map((u) => u.id),
                 c.x,
                 c.y,
               )

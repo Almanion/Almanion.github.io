@@ -4,7 +4,7 @@ const { test, expect, chromium, webkit } = require("@playwright/test"),
   path = require("node:path");
 const route = "/games/signal-frontier/";
 function shop() {
-  const s = E.make();
+  const s = E.make("frontier-6");
   for (const u of s.units) if (u.team && u.kind !== "citadel") u.hp = 0;
   s.campaign.camps.forEach((c) => (c.reserve = 0));
   E.refreshRecon(s);
@@ -53,7 +53,7 @@ for (const type of [chromium, webkit]) {
         await page.goto("http://127.0.0.1:4173" + route);
         const result = await page.evaluate(() => {
           const E = SignalEngine,
-            s = E.make(),
+            s = E.make("frontier-6"),
             v = new SignalView(document.createElement("canvas")),
             b = E.living(s, "bastion"),
             ui = { mode: "tactical", reduced: true, touch: true, group: 1 };
@@ -245,7 +245,7 @@ test("perception closes hidden spatial sound and never schedules unseen attacks"
   await page.goto(route);
   const report = await page.evaluate(() => {
     const E = SignalEngine,
-      s = E.make(),
+      s = E.make("frontier-6"),
       h = E.hero(s),
       u = E.living(s, "sentinel");
     Object.assign(h, { x: 900, y: 1850 });
@@ -272,7 +272,7 @@ test("perception closes hidden spatial sound and never schedules unseen attacks"
 test("hidden enemy orders use a ground point, and pause/reload retains exploration", async ({
   page,
 }) => {
-  const s = E.make();
+  const s = E.make("frontier-6");
   await page.setViewportSize({ width: 1440, height: 900 });
   await boot(page, s);
   await page.locator("#map-overview").click();
@@ -302,7 +302,7 @@ test("hidden enemy orders use a ground point, and pause/reload retains explorati
 test("fatal hit outside other allies sight opens defeat and allows a fresh operation", async ({
   page,
 }) => {
-  const s = E.make(),
+  const s = E.make("frontier-6"),
     h = E.hero(s),
     r = E.living(s, "rocket");
   Object.assign(h, { x: 900, y: 1850, hp: 1 });
@@ -346,7 +346,7 @@ test("fatal hit outside other allies sight opens defeat and allows a fresh opera
   );
   await page.locator("#retry").click();
   expect((await page.evaluate(() => SignalGame.snapshot())).campaign.id).toBe(
-    "frontier-6",
+    "frontier-7",
   );
   expect(errors).toEqual([]);
 });

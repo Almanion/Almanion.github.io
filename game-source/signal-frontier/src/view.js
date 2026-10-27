@@ -4,15 +4,7 @@
   const E = root.SignalEngine,
     Y = 0.73,
     TAU = Math.PI * 2;
-  const MOUNTS = {
-    citadel: 64,
-    turret: 24,
-    artillery: 23,
-    bastion: 44,
-    tank: 27,
-    mortar: 39,
-    rocket: 24,
-  };
+  const MOUNTS = E.MOUNTS;
   function poly(c, p, fill, stroke) {
     c.beginPath();
     p.forEach((v, i) => (i ? c.lineTo(v[0], v[1]) : c.moveTo(v[0], v[1])));
@@ -272,7 +264,208 @@
     c.restore();
     return a;
   }
+  function highlandGround(world) {
+    // Half resolution bounds the terrain texture to 13.7 MiB on phones.
+    const a = document.createElement("canvas");
+    a.width = world.W / 2;
+    a.height = (world.H + 160) / 2;
+    a.offsetY = -160;
+    a.worldW = world.W;
+    a.worldH = world.H + 160;
+    const c = a.getContext("2d");
+    c.scale(0.5, 0.5);
+    c.translate(0, 160);
+    const T = E.terrain;
+    const faces = [];
+    for (let y = 0; y < world.H; y += 40)
+      for (let x = 0; x < world.W; x += 40) {
+        if (T.level(x + 20, y + 20) < 0) continue;
+        const z = T.height(x + 20, y + 20),
+          south = T.height(x + 20, y + 40.01);
+        if (z > south + 4)
+          faces.push({
+            x,
+            y: y + 40,
+            z,
+            low: Math.max(-36, south),
+            sort: y + 40,
+          });
+      }
+    // Back-to-front top surfaces and south-facing escarpments share one light direction.
+    for (let y = 0; y < world.H; y += 40) {
+      for (let x = 0; x < world.W; x += 40) {
+        const l = T.level(x + 20, y + 20);
+        if (l < 0) continue;
+        const z = T.height(x + 20, y + 20),
+          ramp = world.links.some(
+            (r) =>
+              r.axis &&
+              x + 20 >= r.x &&
+              x + 20 < r.x + r.w &&
+              y + 20 >= r.y &&
+              y + 20 < r.y + r.h,
+          ),
+          tone = Math.floor(l),
+          color =
+            "rgb(" +
+            [
+              [41, 61, 67],
+              [59, 81, 81],
+              [88, 103, 99],
+            ][tone]
+              .map((v, i) =>
+                Math.round(
+                  v +
+                    ([
+                      [41, 61, 67],
+                      [59, 81, 81],
+                      [88, 103, 99],
+                    ][Math.min(2, tone + 1)][i] -
+                      v) *
+                      (l - tone),
+                ),
+              )
+              .join(",") +
+            ")",
+          p = [
+            [x, y - T.height(x + 0.01, y + 0.01)],
+            [x + 40, y - T.height(x + 39.99, y + 0.01)],
+            [x + 40, y + 40 - T.height(x + 39.99, y + 39.99)],
+            [x, y + 40 - T.height(x + 0.01, y + 39.99)],
+          ];
+        poly(c, p, color, "#b6c9b11a", 0.7);
+        if ((x / 40 + y / 40) % 3 === 0)
+          line(
+            c,
+            [
+              [x + 7, y + 7 - z],
+              [x + 29, y + 7 - z],
+            ],
+            "#b7c2ac14",
+            1,
+          );
+        if (!ramp && (x * 7 + y * 3) % 160 === 0) {
+          c.fillStyle = "#152f3519";
+          c.fillRect(x + 13, y + 19 - z, 12, 2);
+        }
+        if (
+          T.level(x - 0.01, y + 20) < 0 ||
+          T.height(x - 0.01, y + 20) < z - 30
+        )
+          line(
+            c,
+            [
+              [x, y - z],
+              [x, y + 40 - z],
+            ],
+            "#bac7b070",
+            2,
+          );
+        if (
+          T.level(x + 20, y - 0.01) < 0 ||
+          T.height(x + 20, y - 0.01) < z - 30
+        )
+          line(
+            c,
+            [
+              [x, y - z],
+              [x + 40, y - z],
+            ],
+            "#c1c9ad85",
+            2,
+          );
+      }
+      for (const f of faces) if (f.y === y + 40) cliffFace(c, f);
+    }
+    for (const r of world.links) {
+      const alongY = r.h > r.w,
+        cx = r.x + r.w / 2,
+        cy = r.y + r.h / 2;
+      // Restrained metal rails distinguish bridges; ramp chevrons indicate the climb.
+      if (!r.axis) {
+        for (const side of [-1, 1]) {
+          const p = alongY
+            ? [
+                [cx + side * (r.w / 2 - 7), r.y],
+                [cx + side * (r.w / 2 - 7), r.y + r.h],
+              ]
+            : [
+                [r.x, cy + side * (r.h / 2 - 7)],
+                [r.x + r.w, cy + side * (r.h / 2 - 7)],
+              ];
+          line(
+            c,
+            p.map(([x, y]) => [x, y - T.height(x, y)]),
+            "#91a69a",
+            3,
+          );
+        }
+      } else {
+        for (let i = 1; i < 5; i++) {
+          const t = i / 5,
+            x = r.axis === "x" ? r.x + r.w * t : cx,
+            y = r.axis === "y" ? r.y + r.h * t : cy,
+            z = T.height(x, y),
+            dx = r.axis === "x" ? 0 : 18,
+            dy = r.axis === "x" ? 18 : 0;
+          line(
+            c,
+            [
+              [x - dx, y - dy - z],
+              [x + dx, y + dy - z],
+            ],
+            "#c3c9ac65",
+            2,
+          );
+        }
+      }
+    }
+    a.faces = faces;
+    return a;
+  }
+  function cliffFace(c, f) {
+    poly(
+      c,
+      [
+        [f.x, f.y - f.z],
+        [f.x + 40, f.y - f.z],
+        [f.x + 40, f.y - f.low],
+        [f.x, f.y - f.low],
+      ],
+      "#1c3037",
+      "#0d242c70",
+      0.8,
+    );
+    line(
+      c,
+      [
+        [f.x + 2, f.y - f.z],
+        [f.x + 38, f.y - f.z],
+      ],
+      "#b6c3a58c",
+      2,
+    );
+    line(
+      c,
+      [
+        [f.x + 8, f.y - f.z + 7],
+        [f.x + 11, f.y - f.low - 5],
+      ],
+      "#81938128",
+      2,
+    );
+    line(
+      c,
+      [
+        [f.x, f.y - (f.z + f.low) / 2],
+        [f.x + 40, f.y - (f.z + f.low) / 2],
+      ],
+      "#081e2638",
+      2,
+    );
+  }
   function terrain(world = E.map(null)) {
+    if (world.id === "highlands") return highlandGround(world);
     const a = document.createElement("canvas");
     a.width = world.W;
     a.height = world.H;
@@ -532,6 +725,235 @@
       this.shake = 0;
       this.resize();
     }
+    z(x, y) {
+      return E.elevation(x, y, this.mapId);
+    }
+    p(x, y, z = 0) {
+      return [x, y - this.z(x, y) - z];
+    }
+    floor(c) {
+      const a = this.ground;
+      c.drawImage(
+        a,
+        0,
+        a.offsetY || 0,
+        a.worldW || a.width,
+        a.worldH || a.height,
+      );
+    }
+    groundPoints(points) {
+      if (this.mapId !== "highlands") return points;
+      const out = [];
+      for (let i = 0; i < points.length; i++) {
+        const a = points[Math.max(0, i - 1)],
+          b = points[i],
+          n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 16));
+        for (let k = i ? 1 : 0; k <= n; k++)
+          out.push(
+            this.p(
+              a[0] + ((b[0] - a[0]) * k) / n,
+              a[1] + ((b[1] - a[1]) * k) / n,
+            ),
+          );
+      }
+      return out;
+    }
+    groundLine(c, points, ...style) {
+      line(c, this.groundPoints(points), ...style);
+    }
+    groundRing(c, x, y, r, color, width = 1) {
+      if (this.mapId !== "highlands") return ring(c, x, y, r, color, width);
+      const p = [];
+      for (let i = 0; i <= 48; i++) {
+        const a = (i * TAU) / 48;
+        p.push([x + Math.cos(a) * r, y + Math.sin(a) * r]);
+      }
+      this.groundLine(c, p, color, width);
+    }
+    shadow(c, x, y, shape, height, angle = 0) {
+      if (this.mapId !== "highlands") return;
+      const T = E.terrain,
+        base = T.height(x, y),
+        co = Math.cos(angle),
+        si = Math.sin(angle),
+        footprint = shape.map(([a, b]) => [
+          x + a * co - b * si,
+          y + a * si + b * co,
+        ]),
+        bounds = footprint.reduce(
+          (b, p) => [
+            Math.min(b[0], p[0]),
+            Math.min(b[1], p[1]),
+            Math.max(b[2], p[0]),
+            Math.max(b[3], p[1]),
+          ],
+          [x, y, x, y],
+        ),
+        reach = height + Math.max(0, base);
+      c.save();
+      for (
+        let yy = Math.floor(bounds[1] / 40) * 40;
+        yy < bounds[3] + reach * 0.5;
+        yy += 40
+      )
+        for (
+          let xx = Math.floor(bounds[0] / 40) * 40;
+          xx < bounds[2] + reach * 0.7;
+          xx += 40
+        ) {
+          if (T.level(xx + 20, yy + 20) < 0) continue;
+          const z = T.height(xx + 20, yy + 20),
+            drop = base + height - z;
+          if (drop < 0) continue;
+          c.save();
+          c.beginPath();
+          c.moveTo(...this.p(xx + 0.01, yy + 0.01));
+          c.lineTo(...this.p(xx + 39.99, yy + 0.01));
+          c.lineTo(...this.p(xx + 39.99, yy + 39.99));
+          c.lineTo(...this.p(xx + 0.01, yy + 39.99));
+          c.closePath();
+          c.clip();
+          const p = footprint.map(([a, b]) => [
+            a + drop * 0.7,
+            b + drop * 0.45 - z,
+          ]);
+          // The extrusion connects the silhouette to its contact footprint.
+          poly(c, p, "#06141b4d");
+          poly(
+            c,
+            footprint.map(([a, b]) => [a, b - z]),
+            "#06141b28",
+          );
+          for (let i = 0; i < p.length; i++) {
+            const j = (i + 1) % p.length;
+            poly(
+              c,
+              [
+                [footprint[i][0], footprint[i][1] - z],
+                [footprint[j][0], footprint[j][1] - z],
+                p[j],
+                p[i],
+              ],
+              "#06141b24",
+            );
+          }
+          c.restore();
+        }
+      c.restore();
+    }
+    surface(x, y, pad = 0.3) {
+      return [
+        [x - pad, y - this.z(x + 0.01, y + 0.01) - pad],
+        [x + 40 + pad, y - this.z(x + 39.99, y + 0.01) - pad],
+        [x + 40 + pad, y + 40 - this.z(x + 39.99, y + 39.99) + pad],
+        [x - pad, y + 40 - this.z(x + 0.01, y + 39.99) + pad],
+      ];
+    }
+    occlude(c, x, y, z, r = 90) {
+      if (this.mapId !== "highlands") return;
+      const T = E.terrain;
+      for (let yy = Math.ceil(y / 40) * 40; yy < y + 200; yy += 40)
+        for (let xx = Math.floor((x - r) / 40) * 40; xx < x + r; xx += 40) {
+          if (T.height(xx + 20, yy + 20) <= z + 24) continue;
+          const cut = new Path2D();
+          cut.rect(-500, -500, T.map.W + 1000, T.map.H + 1000);
+          const p = this.surface(xx, yy);
+          cut.moveTo(...p[0]);
+          for (let i = 1; i < 4; i++) cut.lineTo(...p[i]);
+          cut.closePath();
+          c.clip(cut, "evenodd");
+        }
+    }
+    covered(u) {
+      if (this.mapId !== "highlands") return false;
+      const p = this.screen(u.x, u.y),
+        q = this.world(p.x, p.y - 30 * this.camera.scale * Y);
+      return q.y > u.y + 1 && this.z(q.x, q.y) > this.z(u.x, u.y) + 30;
+    }
+    objectShadow(c, u) {
+      c.save();
+      this.occlude(c, u.x, u.y, this.z(u.x, u.y), E.C[u.kind].r + 100);
+      const r = E.C[u.kind].r,
+        mobile = E.C[u.kind].speed > 0,
+        infantry = [
+          "hero",
+          "rifle",
+          "sentinel",
+          "runner",
+          "warden",
+          "scout",
+          "bomber",
+          "flamer",
+          "rocket",
+        ].includes(u.kind),
+        a = u.angle || 0;
+      if (infantry) {
+        this.shadow(
+          c,
+          u.x,
+          u.y,
+          [
+            [-5, -7],
+            [6, -7],
+            [8, 3],
+            [3, 7],
+            [-7, 5],
+          ],
+          u.hp > 0 ? 24 : 5,
+          a,
+        );
+        if (u.hp > 0)
+          this.shadow(
+            c,
+            u.x,
+            u.y,
+            [
+              [1, -5],
+              [24, -5],
+              [24, -1],
+              [1, -1],
+            ],
+            18,
+            a,
+          );
+      } else {
+        this.shadow(
+          c,
+          u.x,
+          u.y,
+          [
+            [-r, -r * 0.7],
+            [r * 0.65, -r * 0.7],
+            [r, r * 0.1],
+            [r * 0.7, r * 0.7],
+            [-r, r * 0.7],
+          ],
+          u.hp <= 0 || u.build > 0
+            ? 5
+            : mobile
+              ? 25
+              : u.kind === "citadel"
+                ? 84
+                : 52,
+          a,
+        );
+        if (mobile)
+          this.shadow(
+            c,
+            u.x,
+            u.y,
+            [
+              [0, -3],
+              [r + 24, -3],
+              [r + 24, 3],
+              [0, 3],
+            ],
+            30,
+            a,
+          );
+      }
+      c.restore();
+    }
     resize() {
       this.width = innerWidth;
       this.height = innerHeight;
@@ -543,16 +965,30 @@
     }
     world(x, y) {
       const a = this.camera;
-      return {
-        x: (x - this.origin.x) / a.scale + a.x,
-        y: (y - this.origin.y) / (a.scale * Y) + a.y,
-      };
+      const wx = (x - this.origin.x) / a.scale + a.x,
+        flat = (y - this.origin.y) / (a.scale * Y) + a.y;
+      if (this.mapId !== "highlands") return { x: wx, y: flat };
+      let best = null,
+        error = Infinity;
+      for (let yy = flat - 48; yy <= flat + 144; yy += 2) {
+        if (E.terrain.level(wx, yy) < 0) continue;
+        const d = Math.abs(yy - this.z(wx, yy) - flat);
+        if (d < error || (d === error && yy > best)) {
+          best = yy;
+          error = d;
+        }
+      }
+      if (best !== null && error < 3) {
+        for (let i = 0; i < 4; i++) best = flat + this.z(wx, best);
+        return { x: wx, y: best };
+      }
+      return { x: wx, y: flat };
     }
     screen(x, y) {
       const a = this.camera;
       return {
         x: (x - a.x) * a.scale + this.origin.x,
-        y: (y - a.y) * a.scale * Y + this.origin.y,
+        y: (y - this.z(x, y) - a.y) * a.scale * Y + this.origin.y,
       };
     }
     // Include model height, shadows and weapon tips beyond the unit's ground position.
@@ -624,6 +1060,7 @@
       if (this.mapId !== world.id) {
         this.ground = terrain(world);
         this.mapId = world.id;
+        this.networkRoute = null;
       }
       this.frameDt = dt;
       if (ui.reduced) {
@@ -690,7 +1127,7 @@
           : this.tactical.y
         : menu
           ? world.H * 0.48
-          : hero.y;
+          : hero.y - this.z(hero.x, hero.y);
       if (overview && !this.tactical.overview) {
         const half = areaW / (2 * scale),
           halfY = areaH / (2 * scale * Y);
@@ -753,14 +1190,14 @@
       if (s.fog) {
         this.memory(c, s, ui);
         c.save();
-        c.clip(this.fogPath(s.fog, "visible"));
+        this.fogClip(c, s.fog, "visible");
       }
       c.save();
       c.translate(8, 30);
       c.globalAlpha = 0.45;
-      c.drawImage(this.ground, 0, 0);
+      this.floor(c);
       c.restore();
-      c.drawImage(this.ground, 0, 0);
+      this.floor(c);
       this.debris(c);
       if (s.relay.online) {
         const offset = E.development.expedition(s) ? 560 : 0;
@@ -769,32 +1206,56 @@
         c.lineDashOffset = ui.reduced ? 0 : -this.time * 15;
         line(
           c,
-          s.campaign
-            ? [
-                [135, 1140 + offset],
-                [535, 1140 + offset],
-                [780, 1010 + offset],
-                [1340, 1010 + offset],
-                [s.relay.x, s.relay.y],
-              ]
-            : [
-                [135, 820],
-                [265, 820],
-                [265, 650],
-                [790, 650],
-                [790, 490],
-                [850, 490],
-              ],
+          this.mapId === "highlands"
+            ? (this.networkRoute ||= E.pathTo(
+                s.units.find((u) => u.kind === "base"),
+                { ...s.relay, map: this.mapId },
+                8,
+              ).map((p) => this.p(p.x, p.y)))
+            : s.campaign
+              ? [
+                  [135, 1140 + offset],
+                  [535, 1140 + offset],
+                  [780, 1010 + offset],
+                  [1340, 1010 + offset],
+                  [s.relay.x, s.relay.y],
+                ]
+              : [
+                  [135, 820],
+                  [265, 820],
+                  [265, 650],
+                  [790, 650],
+                  [790, 490],
+                  [850, 490],
+                ],
           "#9edcc655",
           2,
         );
         c.restore();
-        ring(c, s.relay.x, s.relay.y, 140, "#9edcc615", 1);
+        this.groundRing(c, s.relay.x, s.relay.y, 140, "#9edcc615", 1);
       }
       this.industry(c, s, ui);
       this.strategy(c, s, ui);
       this.relay(c, s, ui);
       this.watch(c, s, ui);
+      if (this.mapId === "highlands") {
+        for (const b of world.walls)
+          if (this.inView(b.x + b.w / 2, b.y + b.h / 2, b.w + 120, b.h + 120))
+            this.shadow(
+              c,
+              b.x + b.w / 2,
+              b.y + b.h / 2,
+              [
+                [-b.w / 2, -b.h / 2],
+                [b.w / 2, -b.h / 2],
+                [b.w / 2, b.h / 2],
+                [-b.w / 2, b.h / 2],
+              ],
+              54,
+            );
+        for (const u of s.units)
+          if (this.inView(u.x, u.y)) this.objectShadow(c, u);
+      }
       if (overview || (ui.mode === "playing" && ui.selectionIds != null)) {
         for (const u of s.units.filter(
           (u) =>
@@ -804,11 +1265,11 @@
               ? ui.selectionIds.includes(u.id)
               : u.group === ui.group),
         )) {
-          ring(c, u.x, u.y, E.C[u.kind].r + 10, "#c8edda", 2);
+          this.groundRing(c, u.x, u.y, E.C[u.kind].r + 10, "#c8edda", 2);
           if (overview && u.path.length) {
             c.save();
             c.setLineDash([5, 7]);
-            line(
+            this.groundLine(
               c,
               [[u.x, u.y], ...u.path.map((p) => [p.x, p.y])],
               "#b6e6d17a",
@@ -816,7 +1277,7 @@
             );
             c.restore();
             const p = u.path[u.path.length - 1];
-            ring(c, p.x, p.y, 12, "#c8edda", 2);
+            this.groundRing(c, p.x, p.y, 12, "#c8edda", 2);
           }
         }
       }
@@ -847,8 +1308,8 @@
           line(
             c,
             [
-              [u.x, u.y - (MOUNTS[u.kind] || 19)],
-              [u.target.x, u.target.y - 10],
+              this.p(u.x, u.y, MOUNTS[u.kind] || 19),
+              this.p(u.target.x, u.target.y, 10),
             ],
             "#f4ae89",
             1.4,
@@ -863,7 +1324,7 @@
           );
           if (u.kind === "rocket") {
             c.setLineDash([3, 5]);
-            ring(c, u.target.x, u.target.y, 27, "#f4ae89", 1);
+            this.groundRing(c, u.target.x, u.target.y, 27, "#f4ae89", 1);
           }
           c.restore();
         }
@@ -883,11 +1344,14 @@
         if (this.inView(u.x, u.y)) objects.push({ ...u, sort: u.y });
         else this.pose(u, s, ui); // Keep travel animation continuous when the camera returns.
       }
+      for (const f of this.ground.faces || [])
+        if (this.inView(f.x, f.y, 80, 200)) objects.push({ ...f, cliff: true });
       objects.sort((a, b) => a.sort - b.sort);
       for (const o of objects)
-        if (o.wall) this.wall(c, o);
+        if (o.cliff) cliffFace(c, o);
+        else if (o.wall) this.wall(c, o);
         else this.unit(c, o, s, ui);
-      // Height belongs to presentation; projectile positions and collision tests stay in the simulation.
+      // Elevated flights share their height with collision tests; legacy flights keep their visual arc.
       for (const b of s.bullets) {
         const owner = s.units.find((u) => u.id === b.owner),
           mount = MOUNTS[owner?.kind] || 16;
@@ -898,7 +1362,7 @@
             Math.hypot(b.tx - start.x, b.ty - start.y) / speed,
           ),
           progress = Math.min(1, b.age / duration),
-          z = mount * (1 - progress) + 10 * progress;
+          z = E.projectileHeight(b) ?? mount * (1 - progress) + 10 * progress;
         if (b.kind === "missile") {
           const a = Math.atan2(b.vy, b.vx);
           c.save();
@@ -939,8 +1403,9 @@
           );
           c.restore();
         } else if (b.kind === "shell") {
-          const arcHeight = Math.sin(progress * Math.PI) * 55 + z;
-          ellipse(c, b.x, b.y, 5, 3, "#0004");
+          const arcHeight =
+            (b.z0 === undefined ? Math.sin(progress * Math.PI) * 55 : 0) + z;
+          if (this.mapId !== "highlands") ellipse(c, b.x, b.y, 5, 3, "#0004");
           line(
             c,
             [
@@ -959,7 +1424,7 @@
               ui.reduced,
               s.t,
             );
-          else ring(c, b.tx, b.ty, 30, "#c5dbab3a");
+          else this.groundRing(c, b.tx, b.ty, 30, "#c5dbab3a");
         } else {
           const len = b.team ? 11 : 18,
             color = b.team ? "#f1b596" : "#c7efdc";
@@ -978,16 +1443,20 @@
       if (
         !overview &&
         !menu &&
-        world.walls.some(
-          (b) =>
-            hero.x > b.x - 12 &&
-            hero.x < b.x + b.w + 12 &&
-            hero.y > b.y - 55 &&
-            hero.y < b.y + 12,
-        )
+        (this.covered(hero) ||
+          world.walls.some(
+            (b) =>
+              hero.x > b.x - 12 &&
+              hero.x < b.x + b.w + 12 &&
+              hero.y > b.y - 55 &&
+              hero.y < b.y + 12,
+          ))
       ) {
+        c.save();
+        c.translate(0, -this.z(hero.x, hero.y));
         arc(c, hero.x, hero.y, 18, 0, Math.PI * 2, "#c4e8dbad", 1.4);
         ellipse(c, hero.x, hero.y - 17, 2, 2, "#d3f1e4");
+        c.restore();
       }
       this.effects(c, dt, ui, active);
       const task = s.observationTask || E.objective(s),
@@ -995,8 +1464,15 @@
       if (objective && s.status === "playing") {
         const radius = task.radius;
         const pulse = ui.reduced ? 0 : Math.sin(this.time * 2) * 3;
-        ring(c, objective.x, objective.y, radius + pulse, "#d5dab078", 1.4);
-        const yy = objective.y - radius - 25;
+        this.groundRing(
+          c,
+          objective.x,
+          objective.y,
+          radius + pulse,
+          "#d5dab078",
+          1.4,
+        );
+        const yy = objective.y - this.z(objective.x, objective.y) - radius - 25;
         poly(
           c,
           [
@@ -1014,7 +1490,14 @@
           if (f.type === "order" && f.life <= f.max) {
             c.save();
             c.globalAlpha = (1 - f.life / f.max) * 0.65;
-            ring(c, f.x, f.y, 14 + (f.life / f.max) * 22, "#afe1cc", 1.3);
+            ring(
+              c,
+              f.x,
+              f.y - this.z(f.x, f.y),
+              14 + (f.life / f.max) * 22,
+              "#afe1cc",
+              1.3,
+            );
             c.restore();
           }
       }
@@ -1111,12 +1594,67 @@
           );
       }
     }
+    fogClip(c, fog, kind) {
+      c.clip(this.fogPath(fog, kind));
+      for (const cut of this.fogPaths[kind].blockers || [])
+        c.clip(cut, "evenodd");
+    }
     fogPath(fog, kind) {
-      const code = fog[kind + "Code"],
+      const code = this.mapId + ":" + fog[kind + "Code"],
         cached = this.fogPaths[kind];
       if (cached?.code === code) return cached.path;
       const path = new Path2D(),
         mask = fog[kind];
+      if (this.mapId === "highlands") {
+        for (let y = 0; y < fog.rows; y++)
+          for (let x = 0; x < fog.cols; x++)
+            if (mask[y * fog.cols + x]) {
+              const xx = x * fog.cell,
+                yy = y * fog.cell,
+                z = this.z(xx + 20, yy + 20),
+                low = this.z(xx + 20, yy + 40.01),
+                p = this.surface(xx, yy);
+              path.moveTo(...p[0]);
+              for (let i = 1; i < 4; i++) path.lineTo(...p[i]);
+              path.closePath();
+              if (z > low + 4) path.rect(xx, yy + 40 - z, 40, z - low);
+            }
+        const blockers = [];
+        for (let y = 1; y < fog.rows; y++)
+          for (let x = 0; x < fog.cols; x++) {
+            if (mask[y * fog.cols + x]) continue;
+            const xx = x * fog.cell,
+              yy = y * fog.cell,
+              z = this.z(xx + 20, yy + 20);
+            if (z < 0) continue;
+            let overlaps = false;
+            for (let d = 1; d <= Math.min(5, y); d++)
+              if (
+                mask[(y - d) * fog.cols + x] &&
+                z >
+                  this.z(xx + 20, yy - d * 40 + 20) +
+                    Math.max(1, (d - 1) * 40 - 8)
+              ) {
+                overlaps = true;
+                break;
+              }
+            if (!overlaps) continue;
+            const cut = new Path2D(),
+              p = this.surface(xx, yy);
+            cut.rect(
+              -500,
+              -500,
+              E.terrain.map.W + 1000,
+              E.terrain.map.H + 1000,
+            );
+            cut.moveTo(...p[0]);
+            for (let i = 1; i < 4; i++) cut.lineTo(...p[i]);
+            cut.closePath();
+            blockers.push(cut);
+          }
+        this.fogPaths[kind] = { code, path, blockers };
+        return path;
+      }
       for (let y = 0; y < fog.rows; y++)
         for (let x = 0; x < fog.cols; ) {
           if (!mask[y * fog.cols + x]) {
@@ -1161,8 +1699,8 @@
       m.fillStyle = "#000";
       m.fillRect(-100, -140, world.W + 200, world.H + 280);
       m.save();
-      m.clip(this.fogPath(s.fog, "explored"));
-      m.drawImage(this.ground, 0, 0);
+      this.fogClip(m, s.fog, "explored");
+      this.floor(m);
       this.industry(m, known, still);
       this.strategy(m, known, still);
       this.relay(m, known, still);
@@ -1183,7 +1721,26 @@
           .map((u) => ({ ...u, sort: u.y })),
       ].sort((a, b) => a.sort - b.sort);
       for (const o of objects)
-        if (o.wall) this.wall(m, o);
+        if (o.wall)
+          this.shadow(
+            m,
+            o.x + o.w / 2,
+            o.y + o.h / 2,
+            [
+              [-o.w / 2, -o.h / 2],
+              [o.w / 2, -o.h / 2],
+              [o.w / 2, o.h / 2],
+              [-o.w / 2, o.h / 2],
+            ],
+            54,
+          );
+        else this.objectShadow(m, o);
+      for (const f of this.ground.faces || [])
+        if (this.inView(f.x, f.y, 80, 200)) objects.push({ ...f, cliff: true });
+      objects.sort((a, b) => a.sort - b.sort);
+      for (const o of objects)
+        if (o.cliff) cliffFace(m, o);
+        else if (o.wall) this.wall(m, o);
         else this.unit(m, o, known, still);
       m.restore();
       // Blend modes work on mobile WebKit too, where canvas filters may be absent.
@@ -1212,8 +1769,20 @@
                 ? "#e0c393"
                 : "#7c918b";
         c.save();
-        c.translate(p.x, p.y);
-        ellipse(c, 3, 6, 25, 16, "#06192280");
+        this.shadow(
+          c,
+          p.x,
+          p.y,
+          [
+            [-15, -9],
+            [15, -9],
+            [15, 9],
+            [-15, 9],
+          ],
+          37,
+        );
+        c.translate(p.x, p.y - this.z(p.x, p.y));
+        if (this.mapId !== "highlands") ellipse(c, 3, 6, 25, 16, "#06192280");
         for (let i = 0; i < 3; i++)
           slab(c, 12, 0, 22, 10, 0, 5, (i * TAU) / 3, MAT.graphite);
         slab(c, 0, 0, 13, 13, 5, 15, 0, MAT.dark);
@@ -1251,14 +1820,43 @@
     industry(c, s, ui) {
       if (!s.campaign) return;
       for (const m of s.campaign.mines) {
-        ellipse(c, m.x, m.y + 5, 34, 21, "#071b2866");
+        if (this.mapId !== "highlands")
+          ellipse(c, m.x, m.y + 5, 34, 21, "#071b2866");
+        else
+          this.shadow(
+            c,
+            m.x,
+            m.y,
+            [
+              [-24, -16],
+              [24, -16],
+              [30, 10],
+              [0, 22],
+              [-24, 14],
+            ],
+            14,
+          );
         const left = m.remaining / m.stock;
         for (let i = 0; i < 7; i++) {
           const a = i * 2.4,
             x = m.x + Math.cos(a) * 22,
             y = m.y + Math.sin(a) * 13;
           c.save();
-          c.translate(x, y);
+          this.shadow(
+            c,
+            x,
+            y,
+            [
+              [-8, -5],
+              [1, -8],
+              [9, -2],
+              [6, 6],
+              [-6, 7],
+            ],
+            3 + left * (7 + (i % 3) * 5),
+            a,
+          );
+          c.translate(x, y - this.z(x, y));
           plate(
             c,
             [
@@ -1284,7 +1882,7 @@
           c.font = "10px Segoe UI";
           c.textAlign = "center";
           c.fillStyle = "#b1c8b8";
-          c.fillText(String(m.remaining), m.x, m.y + 34);
+          c.fillText(String(m.remaining), m.x, m.y - this.z(m.x, m.y) + 34);
         }
       }
       for (const u of s.units) {
@@ -1297,7 +1895,7 @@
           continue;
         c.save();
         c.setLineDash([5, 8]);
-        line(
+        this.groundLine(
           c,
           [
             [u.x, u.y],
@@ -1307,13 +1905,13 @@
           1,
         );
         c.restore();
-        ring(c, u.rally.x, u.rally.y, 14, "#b2d6bf", 1.5);
+        this.groundRing(c, u.rally.x, u.rally.y, 14, "#b2d6bf", 1.5);
       }
       const selectedBuilding = s.units.find(
         (u) => u.id === ui.selectedBuilding && u.hp > 0,
       );
       if (selectedBuilding && ui.mode === "tactical")
-        ring(
+        this.groundRing(
           c,
           selectedBuilding.x,
           selectedBuilding.y,
@@ -1348,6 +1946,8 @@
       const overview = ui.mode === "tactical",
         t = ui.reduced ? 0 : s.t;
       for (const p of E.pads(s)) {
+        c.save();
+        c.translate(0, -this.z(p.x, p.y));
         const post = s.units.find(
           (u) => u.kind === "outpost" && u.site === p.id && u.hp > 0,
         );
@@ -1392,7 +1992,7 @@
               E.clear(u, post)
             ) {
               const start = [post.x, post.y - 35],
-                end = [u.x, u.y - 15],
+                end = [u.x, u.y - 15 - this.z(u.x, u.y) + this.z(p.x, p.y)],
                 middle = [
                   (start[0] + end[0]) / 2,
                   (start[1] + end[1]) / 2 - 14,
@@ -1415,11 +2015,24 @@
               );
             }
         }
+        c.restore();
       }
       for (const cache of s.caches) {
         c.save();
-        c.translate(cache.x, cache.y);
-        ellipse(c, 3, 4, 16, 11, "#0b202970");
+        this.shadow(
+          c,
+          cache.x,
+          cache.y,
+          [
+            [-14, -10],
+            [14, -10],
+            [14, 10],
+            [-14, 10],
+          ],
+          12,
+        );
+        c.translate(cache.x, cache.y - this.z(cache.x, cache.y));
+        if (this.mapId !== "highlands") ellipse(c, 3, 4, 16, 11, "#0b202970");
         slab(c, 0, 0, 28, 20, 0, 3, 0, MAT.graphite);
         const gold = {
             top: "#b4ae88",
@@ -1474,8 +2087,20 @@
       const terminal = s.terminal,
         { x, y } = terminal;
       c.save();
-      c.translate(x, y);
-      ellipse(c, 3, 5, 27, 18, "#071d2670");
+      this.shadow(
+        c,
+        x,
+        y,
+        [
+          [-24, -18],
+          [24, -18],
+          [24, 18],
+          [-24, 18],
+        ],
+        36,
+      );
+      c.translate(x, y - this.z(x, y));
+      if (this.mapId !== "highlands") ellipse(c, 3, 5, 27, 18, "#071d2670");
       slab(c, 0, 0, 48, 32, 0, 5, 0, MAT.dark);
       slab(c, 0, 0, 31, 24, 5, 10, 0, MAT.enemy);
       for (const side of [-1, 1]) {
@@ -1565,16 +2190,24 @@
         c.lineDashOffset = ui.reduced ? 0 : -t * 18;
         line(
           c,
-          [
-            [x, y],
-            s.campaign
-              ? [1820, E.development.expedition(s) ? 1080 : 520]
-              : [1320, 320],
-            [
-              s.units.find((u) => u.kind === "citadel").x,
-              s.units.find((u) => u.kind === "citadel").y,
-            ],
-          ],
+          this.mapId === "highlands"
+            ? [
+                this.p(x, y),
+                this.p(
+                  s.units.find((u) => u.kind === "citadel").x,
+                  s.units.find((u) => u.kind === "citadel").y,
+                ),
+              ]
+            : [
+                [x, y],
+                s.campaign
+                  ? [1820, E.development.expedition(s) ? 1080 : 520]
+                  : [1320, 320],
+                [
+                  s.units.find((u) => u.kind === "citadel").x,
+                  s.units.find((u) => u.kind === "citadel").y,
+                ],
+              ],
           "#a9d8c057",
           1.2,
         );
@@ -1588,8 +2221,20 @@
           s.relay.progress ??
           (online ? 1 : s.phase === 2 ? s.relay.stability : charge);
       c.save();
-      c.translate(x, y);
-      ellipse(c, 4, 6, 43, 30, "#061d2770");
+      this.shadow(
+        c,
+        x,
+        y,
+        [
+          [-24, -18],
+          [24, -18],
+          [24, 18],
+          [-24, 18],
+        ],
+        36,
+      );
+      c.translate(x, y - this.z(x, y));
+      if (this.mapId !== "highlands") ellipse(c, 4, 6, 43, 30, "#061d2770");
       ring(c, 0, 0, 43, online ? "#a3d9c947" : "#869a8a29");
       for (let i = 0; i < 3; i++) {
         const a = (i * TAU) / 3;
@@ -1662,6 +2307,7 @@
         if (t > 1) continue;
         const color = f.team ? "#e7aa87" : "#afe1cc";
         c.save();
+        c.translate(0, -this.z(f.x, f.y));
         if (f.type === "destroy" || f.type === "blast") {
           const heavy =
               f.type === "blast" ||
@@ -1781,6 +2427,8 @@
     }
     debris(c) {
       for (const scar of this.scars) {
+        c.save();
+        c.translate(0, -this.z(scar.x, scar.y));
         ellipse(c, scar.x, scar.y, scar.r, scar.r * 0.5, "#071b2524");
         for (let i = 0; i < 3; i++) {
           const a = scar.seed + i * 2.4,
@@ -1798,6 +2446,7 @@
             1.5,
           );
         }
+        c.restore();
       }
     }
     reset(s) {
@@ -1808,13 +2457,20 @@
       this.shake = 0;
       if (s) {
         const h = E.hero(s);
-        this.tactical = { overview: !s.campaign, x: h.x, y: h.y, zoom: 0.95 };
+        this.camera.x = h.x;
+        this.camera.y = h.y - E.elevation(h.x, h.y, E.map(s));
+        this.tactical = {
+          overview: !s.campaign,
+          x: h.x,
+          y: h.y - E.elevation(h.x, h.y, E.map(s)),
+          zoom: 0.95,
+        };
       }
     }
     focus(x, y) {
       this.tactical.overview = false;
       this.tactical.x = x;
-      this.tactical.y = y;
+      this.tactical.y = y - this.z(x, y);
     }
     pan(x, y) {
       if (this.tactical.overview) {
@@ -1833,7 +2489,10 @@
       this.tactical.overview = false;
       this.tactical.zoom = next;
       this.tactical.x = anchor.x - (x - this.origin.x) / next;
-      this.tactical.y = anchor.y - (y - this.origin.y) / (next * Y);
+      this.tactical.y =
+        anchor.y -
+        this.z(anchor.x, anchor.y) -
+        (y - this.origin.y) / (next * Y);
     }
     pose(u, s, ui) {
       let p = this.poses.get(u.id);
@@ -1859,9 +2518,20 @@
     }
     wall(c, b) {
       c.save();
-      c.translate(b.x + b.w / 2, b.y + b.h / 2);
+      this.occlude(
+        c,
+        b.x + b.w / 2,
+        b.y + b.h / 2,
+        this.z(b.x + b.w / 2, b.y + b.h / 2),
+        b.w / 2 + 80,
+      );
+      c.translate(
+        b.x + b.w / 2,
+        b.y + b.h / 2 - this.z(b.x + b.w / 2, b.y + b.h / 2),
+      );
       const tall = b.h > b.w;
-      ellipse(c, 13, 20, b.w * 0.63, b.h * 0.55, "#06192270");
+      if (this.mapId !== "highlands")
+        ellipse(c, 13, 20, b.w * 0.63, b.h * 0.55, "#06192270");
       slab(c, 0, 0, b.w, b.h, 0, 13, 0, MAT.graphite);
       slab(c, 0, 0, b.w - 6, b.h - 6, 13, 28, 0, MAT.deck);
       slab(c, 0, 0, b.w - 20, b.h - 18, 41, 7, 0, {
@@ -1927,7 +2597,7 @@
       if (area.kind === "sector") {
         poly(
           c,
-          area.points.map((p) => [p.x, p.y]),
+          this.groundPoints(area.points.map((p) => [p.x, p.y])),
           c.fillStyle,
           color,
         );
@@ -1940,11 +2610,11 @@
             line(
               c,
               [
-                [
+                this.p(
                   o.x + (p.x - o.x) * phase * 0.4,
                   o.y + (p.y - o.y) * phase * 0.4,
-                ],
-                [o.x + (p.x - o.x) * phase, o.y + (p.y - o.y) * phase],
+                ),
+                this.p(o.x + (p.x - o.x) * phase, o.y + (p.y - o.y) * phase),
               ],
               "#f6cf93",
               3,
@@ -1955,7 +2625,7 @@
         if (area.points)
           poly(
             c,
-            area.points.map((p) => [p.x, p.y]),
+            this.groundPoints(area.points.map((p) => [p.x, p.y])),
             c.fillStyle,
             color,
           );
@@ -1969,6 +2639,7 @@
             c.fillStyle,
             color,
           );
+        c.translate(0, -this.z(area.x, area.y));
         c.setLineDash([5, 6]);
         ring(
           c,
@@ -2001,6 +2672,15 @@
       c.restore();
     }
     unit(c, u, s, ui) {
+      c.save();
+      try {
+        this.occlude(c, u.x, u.y, this.z(u.x, u.y), E.C[u.kind].r + 70);
+        this.unitModel(c, u, s, ui);
+      } finally {
+        c.restore();
+      }
+    }
+    unitModel(c, u, s, ui) {
       const def = E.C[u.kind],
         r = def.r,
         dead = u.hp <= 0,
@@ -2021,9 +2701,11 @@
           ? 0
           : Math.sin(Math.min(1, u.flash / 0.1) * Math.PI) * 4;
       c.save();
-      c.translate(u.x, u.y);
-      ellipse(c, 4, 7, r * 1.25, r * 0.85, "#07192270");
-      ellipse(c, 1, 3, r * 0.86, r * 0.63, "#06141c70");
+      c.translate(u.x, u.y - this.z(u.x, u.y));
+      if (this.mapId !== "highlands") {
+        ellipse(c, 4, 7, r * 1.25, r * 0.85, "#07192270");
+        ellipse(c, 1, 3, r * 0.86, r * 0.63, "#06141c70");
+      }
       if (dead) {
         c.save();
         c.rotate(u.angle);
@@ -3249,7 +3931,7 @@
       c.restore();
       if (u.hp < def.hp || ui.mode === "tactical") {
         c.save();
-        c.translate(u.x, u.y + r + 11);
+        c.translate(u.x, u.y - this.z(u.x, u.y) + r + 11);
         c.fillStyle = "#102832";
         c.fillRect(-r, 0, r * 2, 3);
         c.fillStyle = u.team ? "#d29c83" : "#9cd8c7";

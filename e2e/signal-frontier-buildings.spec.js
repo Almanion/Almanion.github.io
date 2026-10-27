@@ -197,7 +197,7 @@ test("requirements navigate to the next step without buying anything", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await boot(page, E.make());
+  await boot(page, E.make("frontier-6"));
   await page.locator("#supply-open").click();
   const before = await page.evaluate(() => SignalGame.snapshot());
   await page.locator("#develop-foundry-reason").click();
