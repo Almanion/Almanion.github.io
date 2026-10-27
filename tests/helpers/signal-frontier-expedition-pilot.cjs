@@ -309,7 +309,7 @@ class ExpeditionPilot {
       } else if (this.route === "siege") {
         if (E.living(s, "jammer")) dest = point(1440, 910);
         else if (s.phase < 3) {
-          dest = point(1320, 1390);
+          dest = highlands ? { x: s.relay.x, y: s.relay.y } : point(1320, 1390);
           order(1, point(1320, 1410));
           interact = E.dist(h, s.relay) < 75;
         } else {
@@ -318,7 +318,9 @@ class ExpeditionPilot {
           order(2, point(1850, 1460));
         }
       } else {
-        dest = point(2080, 1530);
+        dest = highlands
+          ? { x: s.terminal.x, y: s.terminal.y }
+          : point(2080, 1530);
         order(1, point(2000, 1430));
         interact = E.dist(h, s.terminal) < 75;
       }

@@ -343,22 +343,31 @@ for (const [name, profile] of [
               JSON.stringify([...current].sort((a, b) => a - b)) !==
                 JSON.stringify([...c.ids].sort((a, b) => a - b))
             ) {
-              await page.locator("#order-cancel").click();
-              const points = await page.evaluate((ids) => {
-                const s = SignalGame.snapshot();
-                return ids
-                  .map((id) => s.units.find((u) => u.id === id))
-                  .filter(Boolean)
-                  .map((u) => {
-                    const p = SignalGame.screen(u.x, u.y);
-                    p.y -= 8 * SignalGame.camera().scale;
-                    return p;
-                  });
-              }, c.ids);
+              // Group selection includes co-located troops. Remove the smaller
+              // rear guard instead of trying to click each overlapping front unit.
+              const extra = current.filter((id) => !c.ids.includes(id)),
+                subtract =
+                  c.ids.every((id) => current.includes(id)) &&
+                  extra.length < c.ids.length;
+              if (!subtract) await page.locator("#order-cancel").click();
+              const points = await page.evaluate(
+                (ids) => {
+                  const s = SignalGame.snapshot();
+                  return ids
+                    .map((id) => s.units.find((u) => u.id === id))
+                    .filter(Boolean)
+                    .map((u) => {
+                      const p = SignalGame.screen(u.x, u.y);
+                      p.y -= 8 * SignalGame.camera().scale;
+                      return p;
+                    });
+                },
+                subtract ? extra : c.ids,
+              );
               for (let i = 0; i < points.length; i++) {
-                if (i) await page.keyboard.down("Shift");
+                if (subtract || i) await page.keyboard.down("Shift");
                 await page.mouse.click(points[i].x, points[i].y);
-                if (i) await page.keyboard.up("Shift");
+                if (subtract || i) await page.keyboard.up("Shift");
               }
             }
             if (c.ids)
