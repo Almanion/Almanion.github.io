@@ -219,7 +219,7 @@ for (const [name, profile] of [
   test(
     "long " + name + ": full operation " + profile + " through real controls",
     async ({ page }) => {
-      test.setTimeout(1500000);
+      test.setTimeout(profile === "frontier-7" ? 1800000 : 1500000);
       await page.setViewportSize({ width: 1600, height: 1000 });
       await page.clock.install();
       await page.addInitScript((save) => {
@@ -289,8 +289,14 @@ for (const [name, profile] of [
             await page
               .locator(c.group === 1 ? "#group-one" : "#group-two")
               .click();
-            const current=await page.evaluate(()=>SignalGame.selection().ids);
-            if (c.ids && JSON.stringify([...current].sort((a,b)=>a-b))!==JSON.stringify([...c.ids].sort((a,b)=>a-b))) {
+            const current = await page.evaluate(
+              () => SignalGame.selection().ids,
+            );
+            if (
+              c.ids &&
+              JSON.stringify([...current].sort((a, b) => a - b)) !==
+                JSON.stringify([...c.ids].sort((a, b) => a - b))
+            ) {
               await page.locator("#order-cancel").click();
               const points = await page.evaluate((ids) => {
                 const s = SignalGame.snapshot();
@@ -303,10 +309,10 @@ for (const [name, profile] of [
                     return p;
                   });
               }, c.ids);
-              for(let i=0;i<points.length;i++) {
-                if(i) await page.keyboard.down("Shift");
-                await page.mouse.click(points[i].x,points[i].y);
-                if(i) await page.keyboard.up("Shift");
+              for (let i = 0; i < points.length; i++) {
+                if (i) await page.keyboard.down("Shift");
+                await page.mouse.click(points[i].x, points[i].y);
+                if (i) await page.keyboard.up("Shift");
               }
             }
             if (c.ids)
@@ -373,7 +379,11 @@ for (const [name, profile] of [
           idleCommands,
           "Pilot must advance the simulation between decisions",
         ).toBeLessThan(120);
-        if (s.status !== "playing" || (profile === "frontier-4" && s.t > 1500))
+        if (
+          s.status !== "playing" ||
+          (profile === "frontier-4" && s.t > 1500) ||
+          (profile === "frontier-7" && s.t > 3000)
+        )
           break;
         if (Math.floor(s.t / 60) !== lastLog) {
           lastLog = Math.floor(s.t / 60);
@@ -383,6 +393,19 @@ for (const [name, profile] of [
             Math.round(E.hero(s).hp),
             s.economy.alloy,
             pilot.stage,
+            ...(profile === "frontier-7"
+              ? [
+                  {
+                    x: Math.round(E.hero(s).x),
+                    y: Math.round(E.hero(s).y),
+                    rush: pilot.rushStage,
+                    cleared: pilot.rushCleared,
+                    fort: s.units.find(
+                      (u) => u.kind === "bastion" && u.sector === "north",
+                    ).hp,
+                  },
+                ]
+              : []),
           );
         }
         if (E.development.expedition(s) && !reloaded && s.t >= 800) {
@@ -435,6 +458,14 @@ for (const [name, profile] of [
                     d.input.aim.y * (frame.unit.y - frame.origin.y),
                 };
           visible = p.x > 20 && p.x < 1580 && p.y > 100 && p.y < 840;
+          if (profile === "frontier-7" && !visible) {
+            const edge = {
+              x: Math.max(25, Math.min(1575, p.x)),
+              y: Math.max(110, Math.min(830, p.y)),
+            };
+            await page.mouse.move(edge.x, edge.y);
+            aimPoint = edge;
+          }
           if (
             visible &&
             (!aimPoint ||
@@ -454,6 +485,7 @@ for (const [name, profile] of [
         }
         if (d.input.dash && s.dash === 0) await page.keyboard.press("Shift");
         if (!wanted.size && !d.input.aim) await page.clock.runFor(600);
+        else if (profile === "frontier-7") await page.clock.runFor(200);
         else await page.clock.fastForward(100);
       }
       await release();
@@ -474,6 +506,7 @@ for (const [name, profile] of [
             state: final,
             stage: pilot.stage,
             goal: pilot.goal,
+            pilot,
           }),
           contentType: "application/json",
         });

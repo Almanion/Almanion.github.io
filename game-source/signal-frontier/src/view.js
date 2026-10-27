@@ -1099,6 +1099,8 @@
             ? h * 0.49 - 14
             : h * 0.49,
       };
+      if (world.id === "highlands" && !overview && !menu && w > h && h < 500)
+        this.origin.y = h * 0.52;
       if (bounds) {
         this.origin.x = (bounds.x + bounds.right) / 2;
         this.origin.y = (bounds.y + bounds.bottom) / 2;
@@ -1109,7 +1111,13 @@
           : this.tactical.zoom
         : menu
           ? Math.max(w / (world.W * 1.25), h / world.H)
-          : Math.min(1.32, Math.max(0.95, h / 660));
+          : world.id === "highlands"
+            ? w < h
+              ? Math.min(0.72, Math.max(0.52, w / 600))
+              : h < 500
+                ? 0.65
+                : Math.min(1.05, Math.max(0.86, h / 1000))
+            : Math.min(1.32, Math.max(0.95, h / 660));
       scale = Math.max(
         overview && this.tactical.overview ? 0.04 : overview ? 0.1 : 0.22,
         scale,
@@ -1142,8 +1150,25 @@
         this.tactical.x = tx;
         this.tactical.y = ty;
       } else if (!overview && !menu) {
-        tx += (ui.aim ? E.clamp(ui.aim.x - hero.x, -240, 240) : 0) * 0.22;
-        ty += (ui.aim ? E.clamp(ui.aim.y - hero.y, -180, 180) : 0) * 0.18;
+        const high = world.id === "highlands",
+          portrait = w < h,
+          short = w > h && h < 500;
+        tx +=
+          (ui.aim
+            ? E.clamp(
+                ui.aim.x - hero.x,
+                high ? -(portrait ? 300 : 400) : -240,
+                high ? (portrait ? 300 : 400) : 240,
+              )
+            : 0) * (high ? (portrait ? 0.9 : 0.3) : 0.22);
+        ty +=
+          (ui.aim
+            ? E.clamp(
+                ui.aim.y - hero.y,
+                high ? -(short ? 500 : 420) : -180,
+                high ? (short ? 500 : 420) : 180,
+              )
+            : 0) * (high ? (short ? 0.65 : portrait ? 0.55 : 0.35) : 0.18);
         const half = w / (2 * scale),
           halfY = (h - 70) / (2 * scale * Y);
         tx =

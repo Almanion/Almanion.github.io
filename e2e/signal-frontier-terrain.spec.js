@@ -367,3 +367,92 @@ test("dead models and building foundations preserve clipping between paused fram
   });
   expect(result).toEqual({ dead: true, foundation: true });
 });
+
+for (const [width, height] of [
+  [1600, 1000],
+  [390, 844],
+  [844, 390],
+])
+  test(`combat camera and actual uphill fire ${width}x${height}`, async ({
+    browser,
+  }) => {
+    test.setTimeout(60000);
+    const context = await browser.newContext({
+        viewport: { width, height },
+        hasTouch: width < 900,
+        isMobile: width < 900,
+      }),
+      page = await context.newPage();
+    try {
+      await page.setViewportSize({ width, height });
+      await page.clock.install();
+      const s = E.make(),
+        fort = s.units.find(
+          (u) => u.kind === "bastion" && u.sector === "north",
+        );
+      for (const u of s.units)
+        if (u.team && u.id !== fort.id && u.kind !== "citadel") u.hp = 0;
+      s.campaign.camps.forEach((c) => (c.reserve = 0));
+      Object.assign(E.hero(s), { x: 2840, y: 1000 });
+      E.refreshRecon(s);
+      expect(E.restore(s)).not.toBeNull();
+      await page.addInitScript(
+        (s) =>
+          localStorage.setItem(
+            "signal-frontier-v1",
+            JSON.stringify({ save: s, settings: { volume: 0, reduced: true } }),
+          ),
+        s,
+      );
+      await page.goto(route);
+      await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
+      await page.locator("#continue").click();
+      await page.clock.runFor(200);
+      if (width < 900) {
+        const cdp = await context.newCDPSession(page),
+          r = await page.locator("#aim-stick").boundingBox(),
+          x = r.x + r.width / 2,
+          y = r.y + r.height / 2;
+        await cdp.send("Input.dispatchTouchEvent", {
+          type: "touchStart",
+          touchPoints: [{ id: 1, x, y }],
+        });
+        await cdp.send("Input.dispatchTouchEvent", {
+          type: "touchMove",
+          touchPoints: [{ id: 1, x, y: y - 60 }],
+        });
+        await page.clock.runFor(6000);
+        await cdp.send("Input.dispatchTouchEvent", {
+          type: "touchEnd",
+          touchPoints: [],
+        });
+      } else {
+        await page.mouse.move(width / 2, 110);
+        await page.clock.runFor(400);
+        const p = await page.evaluate((id) => {
+          const u = SignalGame.snapshot().units.find((u) => u.id === id);
+          return SignalGame.screen(u.x, u.y);
+        }, fort.id);
+        expect(p.y).toBeGreaterThan(105);
+        await page.mouse.move(p.x, p.y);
+        await page.mouse.down();
+        await page.clock.runFor(6000);
+        await page.mouse.up();
+      }
+      const current = await page.evaluate((id) => {
+        const s = SignalGame.snapshot(),
+          u = s.units.find((u) => u.id === id);
+        return {
+          hp: u.hp,
+          p: SignalGame.screen(u.x, u.y),
+          hero: SignalEngine.hero(s).hp,
+        };
+      }, fort.id);
+      expect(current.hp).toBeLessThan(1200);
+      expect(current.p.y).toBeGreaterThan(height < 500 ? 75 : 105);
+      expect(current.p.y).toBeLessThan(height - 100);
+      expect(current.hero).toBeGreaterThan(0);
+    } finally {
+      await context.close();
+    }
+  });
