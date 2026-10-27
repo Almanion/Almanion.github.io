@@ -34,6 +34,7 @@ function classifyPresentation(files) {
 // the game and its catalogue, just like presentation changes in the same game.
 const simulation = new Set([
   "engine.js",
+  "recon.js",
   "campaign.js",
   "persistence.js",
   "cloud-core.js",

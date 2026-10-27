@@ -159,8 +159,13 @@
         s.campaign.tier,
         s.campaign.weapons,
         s.campaign.armor,
-        s.campaign.mines.map((m) => m.remaining),
-        s.units.map((u) => [u.id, u.hp, u.build, u.node, u.defense, u.jobs]),
+        s.campaign.mines
+          .filter((m) => E.explored(s, 0, m))
+          .map((m) => m.remaining),
+        s.recon?.explored[0],
+        s.units
+          .filter((u) => !u.team)
+          .map((u) => [u.id, u.hp, u.build, u.node, u.defense, u.jobs]),
       ]);
       if (key === this.key) return;
       this.key = key;
@@ -191,6 +196,7 @@
               s,
               {
                 rifle: "barracks",
+                scout: "barracks",
                 weapons: "barracks",
                 artillery: "foundry",
                 armor: "foundry",
@@ -248,6 +254,7 @@
       };
       const descriptions = {
         rifle: "Универсальная пехота · прикрытие и наступление",
+        scout: "Без оружия · широкий обзор и быстрая разведка",
         artillery: "Дальний огонь · осада укреплений",
         drone: "Добыча и доставка сплава",
         weapons: "Урон союзников +20%",
@@ -259,7 +266,7 @@
       };
       const stats = (action) =>
         E.C[action]
-          ? `<details class="unit-details" data-unit="${action}" ${expandedStats.includes(action) ? "open" : ""}><summary>Характеристики</summary><span>Корпус ${E.C[action].hp} · скорость ${E.C[action].speed}${E.C[action].damage ? ` · базовый урон ${E.C[action].damage} · дальность ${E.C[action].range}` : ""}</span></details>`
+          ? `<details class="unit-details" data-unit="${action}" ${expandedStats.includes(action) ? "open" : ""}><summary>Характеристики</summary><span>Корпус ${E.C[action].hp} · скорость ${E.C[action].speed}${E.C[action].damage ? ` · базовый урон ${E.C[action].damage} · дальность ${E.C[action].range}` : action === "scout" ? " · обзор 720" : ""}</span></details>`
           : "";
       const location = (u) =>
         u.kind === "outpost"
@@ -315,7 +322,7 @@
           else {
             const troops =
               u.kind === "barracks"
-                ? ["rifle"]
+                ? ["rifle", ...(E.fogged(s) ? ["scout"] : [])]
                 : u.kind === "foundry"
                   ? ["artillery"]
                   : ["drone"];
@@ -358,7 +365,7 @@
       } else if (this.tab === "economy") {
         const nodes = [
           { ...E.living(s, "base"), id: "home", name: "Посадочный узел" },
-          ...D.pads(s),
+          ...E.pads(s),
         ];
         content = nodes
           .map((p, i) => {
@@ -444,6 +451,14 @@
                 undefined,
                 action === "rifle" ? "Обучить бойца" : "Собрать орудие",
               ) +
+                (kind === "barracks" && E.fogged(s)
+                  ? button(
+                      "scout",
+                      undefined,
+                      "Обучить дозорного",
+                      descriptions.scout,
+                    )
+                  : "") +
                 queue(u) +
                 '<p class="dev-note">Очередь и точка сбора — в панели здания</p>' +
                 maintenance(u),

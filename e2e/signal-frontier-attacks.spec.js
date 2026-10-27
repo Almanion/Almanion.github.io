@@ -4,7 +4,7 @@ const { test, expect, chromium, webkit } = require("@playwright/test"),
   path = require("node:path");
 const route = "/games/signal-frontier/";
 function fixture(kind = "flamer") {
-  const s = E.make(),
+  const s = E.make("frontier-5"),
     u = s.units.find((u) => u.kind === kind),
     h = E.hero(s);
   for (const v of s.units)
@@ -176,7 +176,7 @@ test("all enemy silhouettes and new projectiles render without modifying combat 
   await page.goto(route);
   const result = await page.evaluate(() => {
     const E = SignalEngine,
-      s = E.make(),
+      s = E.make("frontier-5"),
       v = new SignalView(document.createElement("canvas"));
     v.canvas.width = 1200;
     v.canvas.height = 600;

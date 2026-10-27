@@ -273,8 +273,9 @@ for (const browserType of [chromium, webkit])
         await page.locator("#develop-tab-research").tap();
         await expect(page.locator("#develop-hack")).toBeDisabled();
         await page.locator("#develop-tab-economy").tap();
-        await page.locator("#develop-outpost-flank").scrollIntoViewIfNeeded();
-        await expect(page.locator("#develop-outpost-flank")).toBeVisible();
+        await expect(page.locator("#develop-outpost-flank")).toHaveCount(0);
+        await page.locator("#develop-outpost-west").scrollIntoViewIfNeeded();
+        await expect(page.locator("#develop-outpost-west")).toBeVisible();
         expect(
           await page.evaluate(
             () => document.documentElement.scrollWidth - innerWidth,

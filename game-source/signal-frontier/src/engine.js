@@ -18,6 +18,7 @@
     sentinel: { hp: 90, r: 13, speed: 82, range: 310, damage: 10, rate: 1.35 },
     runner: { hp: 55, r: 11, speed: 145, range: 48, damage: 13, rate: 0.85 },
     warden: { hp: 180, r: 16, speed: 92, range: 365, damage: 17, rate: 1.55 },
+    scout: { hp: 70, r: 10, speed: 180, range: 0, damage: 0, rate: 0 },
     rocket: { hp: 105, r: 14, speed: 76, range: 430, damage: 32, rate: 3.6 },
     flamer: { hp: 175, r: 16, speed: 90, range: 178, damage: 30, rate: 3.2 },
     bomber: { hp: 65, r: 12, speed: 154, range: 56, damage: 74, rate: 1 },
@@ -87,7 +88,9 @@
     s === "expedition" ||
     s?.id === "expedition" ||
     s?.map === "expedition" ||
-    ["frontier-3", "frontier-4", "frontier-5"].includes(s?.campaign?.id)
+    ["frontier-3", "frontier-4", "frontier-5", "frontier-6"].includes(
+      s?.campaign?.id,
+    )
       ? expeditionMap
       : s === "frontier" ||
           s?.id === "frontier" ||
@@ -95,7 +98,7 @@
           s?.map === "frontier"
         ? frontierMap
         : classicMap;
-  let campaign;
+  let campaign, recon;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   function free(x, y, r = 14, map = "classic") {
@@ -251,9 +254,10 @@
             "frontier-3",
             "frontier-4",
             "frontier-5",
+            "frontier-6",
           ].includes(mode)
             ? mode
-            : "frontier-5",
+            : "frontier-6",
         );
   }
   const hero = (s) => s.units.find((u) => u.id === s.heroId);
@@ -294,7 +298,7 @@
       [0, -70],
       [-70, 0],
     ];
-    if (s.campaign?.id === "frontier-5") {
+    if (campaign.combat(s)) {
       const separation = C[anchor.kind].r + C[kind].r + 6;
       for (const offset of offsets) {
         const scale = Math.max(1, separation / Math.hypot(...offset));
@@ -374,7 +378,11 @@
     return { allowed: true, reason: null, cost, anchor, spawn };
   }
   function purchase(s, action, site) {
-    if (s.campaign) return campaign.purchase(s, action, site);
+    if (s.campaign) {
+      const result = campaign.purchase(s, action, site);
+      if (result.allowed && fogged(s)) recon.update(s, true);
+      return result;
+    }
     const offer = supplyStatus(s, action, site);
     if (!offer.allowed) return offer;
     const eco = s.economy;
@@ -743,7 +751,7 @@
   function firingPath(from, target) {
     const def = C[from.kind],
       world = mapFor(from.map || target.map),
-      range = def.range * 0.9,
+      range = from.kind === "scout" ? 650 : def.range * 0.9,
       minimum = from.kind === "mortar" ? 240 : 0;
     const goal = (p) =>
       dist(p, target) >= minimum &&
@@ -915,7 +923,12 @@
   }
   function attackUnits(s, ids, targetId) {
     const target = s.units.find((u) => u.id === targetId && u.team && u.hp > 0);
-    if (!target || !orderUnits(s, ids, target.x, target.y)) return false;
+    if (
+      !target ||
+      !visible(s, 0, target) ||
+      !orderUnits(s, ids, target.x, target.y)
+    )
+      return false;
     const chosen = new Set(ids);
     for (const u of s.units)
       if (chosen.has(u.id) && !u.team && u.hp > 0 && [1, 2].includes(u.group)) {
@@ -974,7 +987,7 @@
   }
   function stats(s, u, target = null) {
     if (
-      s.campaign?.id === "frontier-5" &&
+      campaign.combat(s) &&
       (u.kind === "citadel" ||
         (u.kind === "bastion" &&
           (target || s.units.find((v) => v.id === u.target?.id))?.kind ===
@@ -992,7 +1005,7 @@
     u.cool = def.rate;
     u.flash = 0.1;
     const siege =
-      s.campaign?.id === "frontier-5" &&
+      campaign.combat(s) &&
       (["mortar", "citadel"].includes(u.kind) ||
         (u.kind === "bastion" && def.range > 500));
     emit(
@@ -1023,7 +1036,7 @@
           ? 260
           : u.kind === "artillery" || siege
             ? 360
-            : u.team && s.campaign?.id === "frontier-5"
+            : u.team && campaign.combat(s)
               ? 520
               : u.team
                 ? 390
@@ -1046,7 +1059,7 @@
         def.damage *
         (s.campaign
           ? u.team
-            ? s.campaign.id === "frontier-5"
+            ? campaign.combat(s)
               ? ["sentinel", "warden"].includes(u.kind)
                 ? 0.65
                 : 1
@@ -1079,11 +1092,7 @@
     }
     if (u.kind === "citadel" && attacker.kind !== "shell")
       damage *= s.terminal.window > 0 ? 0.65 : s.campaign ? 0.03 : 0.28;
-    if (
-      s.campaign?.id === "frontier-5" &&
-      u.kind === "tank" &&
-      attacker.kind !== "shell"
-    ) {
+    if (campaign.combat(s) && u.kind === "tank" && attacker.kind !== "shell") {
       const sourceAngle = Number.isFinite(attacker.vx)
         ? Math.atan2(-attacker.vy, -attacker.vx)
         : Math.atan2(attacker.y - u.y, attacker.x - u.x);
@@ -1143,13 +1152,21 @@
     const angle = current + clamp(delta, -limit, limit);
     return Math.atan2(Math.sin(angle), Math.cos(angle));
   }
-  function areaArc(s, origin, radius, start, end, steps) {
+  function areaArc(
+    s,
+    origin,
+    radius,
+    start,
+    end,
+    steps,
+    walls = mapFor(s).walls,
+  ) {
     const angles = [],
       centre = (start + end) / 2;
     for (let i = 0; i <= steps; i++)
       angles.push(start + ((end - start) * i) / steps);
     // Rays on both sides of a cover corner preserve its sharp shadow boundary.
-    for (const w of mapFor(s).walls)
+    for (const w of walls)
       for (const x of [w.x, w.x + w.w])
         for (const y of [w.y, w.y + w.h]) {
           if (dist(origin, { x, y }) > radius) continue;
@@ -1168,7 +1185,7 @@
           y: origin.y + Math.sin(a) * radius,
         };
         let t = 1;
-        for (const wall of mapFor(s).walls) {
+        for (const wall of walls) {
           const hit = segmentRect(origin.x, origin.y, end.x, end.y, wall);
           if (hit !== null) t = Math.min(t, hit);
         }
@@ -1177,6 +1194,16 @@
           y: origin.y + (end.y - origin.y) * t,
         };
       });
+  }
+  function visionArea(s, point, radius) {
+    const walls = mapFor(s).walls.filter(
+      (w) =>
+        Math.hypot(
+          point.x - clamp(point.x, w.x, w.x + w.w),
+          point.y - clamp(point.y, w.y, w.y + w.h),
+        ) <= radius,
+    );
+    return { points: areaArc(s, point, radius, 0, Math.PI * 2, 64, walls) };
   }
   const impactAreas = new Map();
   function impactArea(s, point, radius) {
@@ -1315,6 +1342,23 @@
           });
         continue;
       }
+      if (u.kind === "scout") {
+        if (u.target) {
+          const target = s.units.find((v) => v.id === u.target.id),
+            seen = target && visible(s, 0, target);
+          if (seen && target.hp > 0)
+            Object.assign(u.target, { x: target.x, y: target.y });
+          if ((seen && target.hp <= 0) || (!seen && visible(s, 0, u.target))) {
+            u.target = null;
+            u.path = [];
+          } else if ((u.think -= dt) <= 0) {
+            u.path = firingPath(u, u.target);
+            u.think = 0.5;
+          }
+        }
+        follow(u, dt);
+        continue;
+      }
       const def = stats(s, u);
       if (!def.range || u.build) continue;
       const opponents = s.units.filter(
@@ -1324,11 +1368,13 @@
           !(v.kind === "citadel" && shielded(s)),
       );
       let target = opponents
-        .filter((v) => dist(u, v) < def.range && clear(u, v))
+        .filter(
+          (v) => dist(u, v) < def.range && clear(u, v) && visible(s, u.team, v),
+        )
         .sort((a, b) => {
           const score = (v) => {
             let value = dist(u, v);
-            if (s.campaign?.id !== "frontier-5" || u.team) return value;
+            if (!campaign.combat(s) || u.team) return value;
             if (u.kind === "artillery")
               value -= ["tank", "mortar", "bastion"].includes(v.kind) ? 150 : 0;
             else {
@@ -1359,19 +1405,28 @@
           const preferred = opponents.find((v) => v.id === u.target.id);
           u.think = Math.max(0, u.think - dt);
           const visible =
-            preferred && dist(u, preferred) < 620 && clear(u, preferred);
+            preferred &&
+            dist(u, preferred) < 620 &&
+            clear(u, preferred) &&
+            recon.visible(s, 0, preferred);
           if (visible) {
             u.target.x = preferred.x;
             u.target.y = preferred.y;
           }
-          if (!preferred) u.target = null;
+          if (!preferred && (!fogged(s) || recon.visible(s, 0, u.target)))
+            u.target = null;
           else if (
             visible &&
             dist(u, preferred) < def.range * 0.92 &&
             fireClear(u, preferred)
           )
             u.path = [];
-          else if (!visible && dist(u, u.target) < 620 && clear(u, u.target)) {
+          else if (
+            !visible &&
+            dist(u, u.target) < 620 &&
+            clear(u, u.target) &&
+            (!fogged(s) || recon.visible(s, 0, u.target))
+          ) {
             u.target = null;
             u.path = [];
           } else if (u.think === 0) {
@@ -1391,6 +1446,7 @@
           target &&
           dist(u, target) < def.range &&
           fireClear(u, target) &&
+          visible(s, 0, target) &&
           u.cool === 0
         )
           shoot(s, u, target);
@@ -1443,7 +1499,12 @@
         const target = s.units.find(
           (u) => u.id === b.lockId && u.hp > 0 && u.team !== b.team,
         );
-        if (!target || dist(b, target) > 650 || !clear(b, target, 2))
+        if (
+          !target ||
+          dist(b, target) > 650 ||
+          !clear(b, target, 2) ||
+          !visible(s, b.team, target)
+        )
           b.guided = false;
         else {
           const angle = turnAngle(
@@ -1569,6 +1630,7 @@
       const endPoint = s.units.find((u) => u.kind === "citadel");
       emit(s, "end", endPoint.x, endPoint.y);
     }
+    if (fogged(s)) recon.update(s);
     return s;
   }
   function snapshot(s) {
@@ -1577,12 +1639,16 @@
     return out;
   }
   function restore(value) {
-    if ([3, 4, 5, 6, 7].includes(value?.version))
-      return campaign.restore(value);
+    if (value?.fog !== undefined) return null;
+    if ([3, 4, 5, 6, 7, 8].includes(value?.version)) {
+      const state = campaign.restore(value);
+      return state && recon.validate(state) ? state : null;
+    }
     try {
       const s = JSON.parse(JSON.stringify(value));
       if (
         !s ||
+        s.recon !== undefined ||
         ![1, 2].includes(s.version) ||
         !["playing", "won", "lost"].includes(s.status) ||
         !Number.isFinite(s.t) ||
@@ -1616,6 +1682,7 @@
         if (
           !Object.hasOwn(C, u.kind) ||
           [
+            "scout",
             "warden",
             "bastion",
             "rocket",
@@ -1835,7 +1902,16 @@
       return null;
     }
   }
+  const fogged = (s) => recon.enabled(s);
+  const visible = (s, team, p) => recon.visible(s, team, p);
+  const explored = (s, team, p) => recon.explored(s, team, p);
   const API = {
+    fogged,
+    visible,
+    explored,
+    observe: (s, team = 0) => recon.observe(s, team),
+    knownEvents: (s, list = s.events) => recon.events(s, 0, list),
+    refreshRecon: (s) => recon.update(s, true),
     W,
     H,
     DT,
@@ -1864,6 +1940,7 @@
     turnAngle,
     dangerArea,
     impactArea,
+    visionArea,
     insideArea,
     free,
     clear,
@@ -1872,6 +1949,15 @@
     snapshot,
     restore,
   };
+  const Recon =
+    typeof module !== "undefined" && module.exports
+      ? require("./recon.js")
+      : root.SignalRecon;
+  recon = Recon.create({
+    ...API,
+    map: mapFor,
+    pads: (s) => (s.campaign ? campaign.pads(s) : PADS),
+  });
   const Campaign =
     typeof module !== "undefined" && module.exports
       ? require("./campaign.js")
@@ -1879,6 +1965,7 @@
   campaign = Campaign.create({
     ...API,
     makeClassic,
+    initializeRecon: (s) => recon.init(s),
     map: mapFor,
     unit,
     move,
@@ -1890,7 +1977,10 @@
     spawnPoint,
   });
   API.map = mapFor;
-  API.pads = (s) => (s.campaign ? campaign.pads(s) : PADS);
+  API.pads = (s) =>
+    (s.campaign ? campaign.pads(s) : PADS).filter(
+      (p) => !fogged(s) || explored(s, 0, p),
+    );
   API.development = campaign;
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   else root.SignalEngine = API;

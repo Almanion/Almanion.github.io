@@ -167,6 +167,23 @@
       reserve: 36,
       waveMax: 4,
     }),
+    "frontier-6": Object.freeze({
+      ...EXPEDITION_RULES,
+      version: 8,
+      items: Object.freeze({
+        ...EXPEDITION_ITEMS,
+        scout: { cost: 50, time: 18, pop: 1, label: "Дозорный" },
+        command: { ...EXPEDITION_ITEMS.command, cost: 520, time: 120 },
+        hack: { ...EXPEDITION_ITEMS.hack, cost: 360, time: 90 },
+        artillery: { ...EXPEDITION_ITEMS.artillery, cost: 300 },
+      }),
+      firstRaid: 75,
+      stagger: 50,
+      raidInterval: 165,
+      scoutRest: 220,
+      reserve: 36,
+      waveMax: 4,
+    }),
     "frontier-1": Object.freeze({
       version: 3,
       items: ITEMS,
@@ -203,15 +220,21 @@
   const rules = (s) => PROFILES[s.campaign?.id] || PROFILES["frontier-1"];
   const items = (s) => rules(s).items;
   const expedition = (s) =>
-    ["frontier-3", "frontier-4", "frontier-5"].includes(s.campaign?.id);
-  const extended = (s) =>
-    ["frontier-2", "frontier-3", "frontier-4", "frontier-5"].includes(
+    ["frontier-3", "frontier-4", "frontier-5", "frontier-6"].includes(
       s.campaign?.id,
     );
+  const extended = (s) =>
+    [
+      "frontier-2",
+      "frontier-3",
+      "frontier-4",
+      "frontier-5",
+      "frontier-6",
+    ].includes(s.campaign?.id);
   const pads = (s) => (expedition(s) ? EXPEDITION_PADS : PADS);
   const buildings = (s) => (expedition(s) ? EXPEDITION_BUILDINGS : BUILDINGS);
   const caches = (s) => (expedition(s) ? EXPEDITION_CACHES : CACHES);
-  const combat = (s) => s.campaign?.id === "frontier-5";
+  const combat = (s) => ["frontier-5", "frontier-6"].includes(s.campaign?.id);
   const SPECIAL = ["rocket", "flamer", "bomber", "tank", "mortar"];
   function create(E) {
     const alive = (s, kind) =>
@@ -268,7 +291,7 @@
       };
       return u;
     }
-    function make(profile = "frontier-5") {
+    function make(profile = "frontier-6") {
       const config = PROFILES[profile];
       const s = E.makeClassic();
       s.version = config.version;
@@ -461,6 +484,7 @@
         });
       }
       s.campaign.intel = [{ id: base.id, x: base.x, y: base.y, seenAt: 0 }];
+      E.initializeRecon(s);
       return s;
     }
     function offer(s, action, site) {
@@ -481,6 +505,7 @@
         s.units.length >= rules(s).unitLimit - 6 &&
         [
           "rifle",
+          "scout",
           "artillery",
           "drone",
           "outpost",
@@ -497,10 +522,19 @@
       } else if (action === "outpost") {
         anchor = pads(s).find((p) => p.id === site);
         if (!anchor) return fail("site");
+        if (!E.explored(s, 0, anchor)) return fail("unexplored");
         if (alive(s, "outpost").some((u) => u.site === site))
           return fail("occupied");
         if (E.dist(E.hero(s), anchor) > 210) return fail("distance");
-        if (s.units.some((u) => u.team && u.hp > 0 && E.dist(u, anchor) < 140))
+        if (
+          s.units.some(
+            (u) =>
+              u.team &&
+              u.hp > 0 &&
+              E.dist(u, anchor) < 140 &&
+              E.visible(s, 0, u),
+          )
+        )
           return fail("hostiles");
       } else {
         if (["defense", "repair"].includes(action)) {
@@ -531,14 +565,16 @@
           )
             return fail("worker-limit");
           if (!mineFor(s, producer)?.remaining) return fail("exhausted");
-        } else if (["rifle", "weapons"].includes(action))
+        } else if (["rifle", "scout", "weapons"].includes(action))
           producer = ready(s, "barracks")[0];
         else if (["artillery", "armor"].includes(action))
           producer = ready(s, "foundry")[0];
         else producer = E.living(s, "base");
         if (!producer)
           return fail(
-            ["rifle", "weapons"].includes(action) ? "barracks" : "foundry",
+            ["rifle", "scout", "weapons"].includes(action)
+              ? "barracks"
+              : "foundry",
           );
         if (action === "network") {
           if (s.campaign.tier >= 2) return fail("installed");
@@ -576,6 +612,8 @@
           queued(s, action).length
         )
           return fail("researching");
+        if (action === "scout" && count(s, "scout") >= 4)
+          return fail("scout-limit");
         if (action === "rifle" && count(s, "rifle") >= (expedition(s) ? 12 : 9))
           return fail("squad-full");
         if (
@@ -642,7 +680,7 @@
         if (!job) continue;
         if (ITEMS[job.action].pop && population(s) > capacity(s)) continue;
         if (
-          ["rifle", "artillery", "drone"].includes(job.action) &&
+          ["rifle", "scout", "artillery", "drone"].includes(job.action) &&
           !E.spawnPoint(s, u, job.action)
         )
           continue;
@@ -663,7 +701,14 @@
         else {
           const p = E.spawnPoint(s, u, job.action);
           const recruit = initUnit(
-            E.unit(s, job.action, 0, p.x, p.y, job.action === "rifle" ? 1 : 2),
+            E.unit(
+              s,
+              job.action,
+              0,
+              p.x,
+              p.y,
+              ["rifle", "scout"].includes(job.action) ? 1 : 2,
+            ),
           );
           if (u.rally) {
             recruit.order = { ...u.rally };
@@ -792,8 +837,9 @@
           progress: s.terminal.charge,
         });
       return (
-        options.sort((a, b) => E.dist(h, a.target) - E.dist(h, b.target))[0] ||
-        null
+        options
+          .filter((o) => E.visible(s, 0, o.target))
+          .sort((a, b) => E.dist(h, a.target) - E.dist(h, b.target))[0] || null
       );
     }
     function objective(s) {
@@ -1108,7 +1154,7 @@
       if (!ai) return;
       u.think -= dt;
       const visible = opponents.filter(
-        (v) => E.dist(u, v) < 610 && E.clear(u, v),
+        (v) => E.dist(u, v) < 610 && E.clear(u, v) && E.visible(s, 1, v),
       );
       // Guards defend their sector; raiding squads can pursue across the map.
       const defend = !ai.raid && def.speed;
@@ -1151,7 +1197,9 @@
             prey.hp > 0 &&
             E.fireClear(u, locked) &&
             (u.kind !== "runner" ||
-              (E.dist(u, prey) < 65 && !(prey.kind === "hero" && s.dashT > 0)))
+              (E.dist(u, prey) < 65 &&
+                E.visible(s, 1, prey) &&
+                !(prey.kind === "hero" && s.dashT > 0)))
           )
             E.shoot(s, u, u.kind === "runner" ? prey : locked);
           else u.cool = 0.35;
@@ -1162,7 +1210,9 @@
         u.think = 0.55 + (u.id % 3) * 0.11;
         if (target) record(s, u, target);
         // Nearby visible scouts share observed stationary infrastructure, not hidden unit positions.
-        for (const v of visible)
+        for (const v of E.fogged(s)
+          ? opponents.filter((v) => E.visible(s, 1, v))
+          : visible)
           if (
             ["base", "outpost", "barracks", "foundry"].includes(v.kind) &&
             !s.campaign.intel.some((k) => k.id === v.id)
@@ -1564,6 +1614,7 @@
         const point = (p) => p && num(p.x, 0, world.W) && num(p.y, 0, world.H);
         const ally = [
           "hero",
+          "scout",
           "base",
           "outpost",
           "rifle",
@@ -1608,6 +1659,7 @@
         for (const u of s.units) {
           if (
             !Object.hasOwn(E.C, u.kind) ||
+            (u.kind === "scout" && !E.fogged(s)) ||
             (!combat(s) &&
               (SPECIAL.includes(u.kind) || u.combat !== undefined)) ||
             (!u.team && u.combat !== undefined) ||
@@ -1645,9 +1697,9 @@
           )
             return null;
           if (
-            (u.kind === "rifle" && u.group !== 1) ||
+            (["rifle", "scout"].includes(u.kind) && u.group !== 1) ||
             (u.kind === "artillery" && u.group !== 2) ||
-            (!["rifle", "artillery"].includes(u.kind) && u.group !== 0)
+            (!["rifle", "scout", "artillery"].includes(u.kind) && u.group !== 0)
           )
             return null;
           if (
@@ -1710,6 +1762,7 @@
                   ],
                   barracks: [
                     "rifle",
+                    "scout",
                     "weapons",
                     ...(extended(s) ? ["repair"] : []),
                   ],
@@ -1835,6 +1888,7 @@
         if (
           ["barracks", "foundry"].some((k) => alive(s, k).length > 1) ||
           count(s, "rifle") > (expedition(s) ? 12 : 9) ||
+          count(s, "scout") > 4 ||
           count(s, "artillery") > (expedition(s) ? 3 : 2) ||
           count(s, "drone") > (expedition(s) ? 24 : 16)
         )

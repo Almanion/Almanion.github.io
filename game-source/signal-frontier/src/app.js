@@ -142,7 +142,7 @@
       mode === "tactical" ? "В бой" : "Приказы";
     canvas.style.cursor =
       mode === "playing" && !coarse.matches ? "none" : "default";
-    sound.update(state, mode, settings.volume);
+    sound.update(E.observe(state), mode, settings.volume);
     if (mode === "playing") sound.start();
     else if (mode !== "tactical") sound.stop();
     acc = 0;
@@ -330,6 +330,7 @@
       ? Math.max(4, Math.min(pad, 30 * view.camera.scale))
       : pad;
     return state.units
+      .filter((u) => !enemy || E.visible(state, 0, u))
       .filter(
         (u) =>
           u.hp > 0 && (enemy ? u.team : !u.team && [1, 2].includes(u.group)),
@@ -376,7 +377,7 @@
     if (success) {
       rallyBuilding = null;
       orderMode = false;
-      view.add(state.events, settings.reduced);
+      view.add(E.knownEvents(state), settings.reduced);
       sound.start();
       sound.play({ type: "order", ...point });
       state.events = [];
@@ -503,7 +504,7 @@
   function reportEnd() {
     resultShown = true;
     save();
-    sound.update(state, mode, settings.volume);
+    sound.update(E.observe(state), mode, settings.volume);
     openDialog("result");
     $("result-title").textContent =
       state.status === "won" ? "Цитадель подавлена" : "Операция потеряна";
@@ -646,10 +647,16 @@
     }
     const rifles = state.units.filter((u) => u.group === 1 && u.hp > 0).length,
       art = state.units.some((u) => u.group === 2 && u.hp > 0);
-    $("rifle-count").textContent =
-      rifles +
-      " / " +
-      (state.campaign ? (E.development.expedition(state) ? 12 : 9) : 3);
+    $("recon-help").hidden = !E.fogged(state);
+    $("group-one").setAttribute(
+      "aria-label",
+      E.fogged(state) ? "Выбрать пехоту и дозорных" : "Выбрать огневую группу",
+    );
+    $("rifle-count").textContent = E.fogged(state)
+      ? rifles + " в строю"
+      : rifles +
+        " / " +
+        (state.campaign ? (E.development.expedition(state) ? 12 : 9) : 3);
     $("group-one").disabled = !rifles && !E.living(state, "barracks");
     $("group-two").disabled = !art && !E.living(state, "foundry");
     $("artillery-status").textContent = art
@@ -666,6 +673,8 @@
       $("notice").classList.remove("visible");
   }
   const reasons = {
+    unexplored: "Сначала разведайте площадку",
+    "scout-limit": "В отряде уже четыре дозорных",
     network: "Исследуйте сеть управления",
     command: "Исследуйте оперативный контур",
     "second-node": "Нужны два готовых добывающих узла",
@@ -723,7 +732,8 @@
     focus: (x, y) => {
       lastMode = "tactical";
       closeDialog();
-      view.focus(x, y);
+      if (E.explored(state, 0, { x, y })) view.focus(x, y);
+      else notice("Сначала разведайте район");
     },
   });
   function updateSupply() {
@@ -790,8 +800,8 @@
     if (result.allowed) {
       if (!state.campaign && site) siteLocks[site] = performance.now() + 450;
       sound.start();
-      for (const event of state.events) sound.play(event);
-      view.add(state.events, settings.reduced);
+      for (const event of E.knownEvents(state)) sound.play(event);
+      view.add(E.knownEvents(state), settings.reduced);
       state.events = [];
       save();
     }
@@ -910,7 +920,7 @@
   $("volume").oninput = (e) => {
     settings.volume = +e.target.value;
     $("volume-value").textContent = settings.volume + "%";
-    sound.update(state, mode, settings.volume);
+    sound.update(E.observe(state), mode, settings.volume);
     persist();
   };
   $("volume").onchange = () => {
@@ -941,7 +951,7 @@
     if (
       mode === "playing" &&
       state.units.some((u) => {
-        if (!u.team || u.hp <= 0) return false;
+        if (!u.team || u.hp <= 0 || !E.visible(state, 0, u)) return false;
         const p = view.screen(u.x, u.y);
         return (
           Math.hypot(e.clientX - p.x, e.clientY - p.y) <
@@ -1225,7 +1235,8 @@
           u.hp > 0 &&
           E.dist(h, u) < E.C.hero.range &&
           !(u.kind === "citadel" && E.shielded(state)) &&
-          E.clear(h, u),
+          E.clear(h, u) &&
+          E.visible(state, 0, u),
       )
       .sort((a, b) => E.dist(h, a) - E.dist(h, b) || a.id - b.id)[0];
     aim = target
@@ -1486,7 +1497,7 @@
           interact: input.interact || keys.has("KeyE"),
         });
         input.dash = input.reload = input.tapFire = false;
-        for (const e of state.events) {
+        for (const e of E.knownEvents(state)) {
           if (e.type !== "end") sound.play(e);
           if (e.type === "collect") notice("Сплав +" + e.amount);
           if (e.type === "raid")
@@ -1510,7 +1521,7 @@
           if (e.type === "breach")
             notice("Защита отключена. Прикройте разведчика");
         }
-        view.add(state.events, settings.reduced);
+        view.add(E.knownEvents(state), settings.reduced);
         acc -= E.DT;
       }
       if (state.status !== "playing" && !resultShown) reportEnd();
@@ -1519,7 +1530,7 @@
         lastSaved = now;
       }
     }
-    sound.update(state, mode, settings.volume);
+    sound.update(E.observe(state), mode, settings.volume);
     if (now - lastUI > 80) {
       updateUI();
       lastUI = now;
@@ -1549,6 +1560,20 @@
   // Read-only telemetry supports diagnostics without changing the operation.
   window.SignalGame = Object.freeze({
     snapshot: () => E.snapshot(state),
+    observation: () => {
+      const p = E.observe(state);
+      return JSON.parse(
+        JSON.stringify({
+          units: p.units,
+          caches: p.caches,
+          watch: p.watch,
+          relay: p.relay,
+          terminal: p.terminal,
+          events: p.events,
+          objective: p.observationTask,
+        }),
+      );
+    },
     mode: () => mode,
     selection: () => ({
       ids: selectedUnits().map((u) => u.id),

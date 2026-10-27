@@ -9,7 +9,7 @@ function test(name, fn) {
   console.log("PASS " + name);
 }
 function scene(kind, distance = 200) {
-  const s = E.make(),
+  const s = E.make("frontier-5"),
     u = s.units.find((u) => u.kind === kind),
     h = E.hero(s);
   for (const v of s.units)
@@ -55,7 +55,7 @@ function until(s, fn, limit = 300) {
   assert(fn());
 }
 test("new battle profile preserves map, prices and mining; all old deployments keep their own rules", () => {
-  const s = E.make(),
+  const s = E.make("frontier-5"),
     old = E.make("frontier-4");
   assert.equal(s.version, 7);
   assert.equal(s.campaign.id, "frontier-5");
@@ -325,7 +325,7 @@ test("strict restore rejects corrupt attack phases, missile locks and cross-prof
   assert.equal(E.restore(missile), null);
 });
 test("raids persist after two minutes, grow in composition and stop at a suppressed source", () => {
-  const s = E.make(),
+  const s = E.make("frontier-5"),
     camp = s.campaign.camps[0];
   s.t = 75;
   camp.cooldown = 0;
@@ -413,7 +413,7 @@ test("old saves reject every new archetype, and allies cannot carry hostile atta
       u.hp = E.C[kind].hp;
       assert.equal(E.restore(s), null);
     }
-  const s = E.make();
+  const s = E.make("frontier-5");
   s.units.find((u) => u.kind === "rifle").combat = {
     ...s.units.find((u) => u.kind === "rocket").combat,
   };
@@ -443,7 +443,7 @@ test("a missile damages one target without hurting adjacent infantry", () => {
   assert.equal(rifle.hp, 115);
 });
 test("forts keep normal fire against infantry and select marked counterbattery fire against artillery", () => {
-  const s = E.make(),
+  const s = E.make("frontier-5"),
     fort = s.units.find((u) => u.kind === "bastion"),
     h = E.hero(s);
   assert.equal(E.stats(s, fort, h).range, 470);

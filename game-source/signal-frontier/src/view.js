@@ -521,6 +521,8 @@
       this.tactical = { overview: true, x: 720, y: 500, zoom: 0.95 };
       this.fx = [];
       this.poses = new Map();
+      this.memoryCanvas = document.createElement("canvas");
+      this.fogPaths = {};
       this.scars = [];
       this.effectSerial = 0;
       this.camera = { x: 720, y: 500, scale: 1 };
@@ -612,6 +614,12 @@
       this.fx = this.fx.slice(-96);
     }
     render(s, ui, dt) {
+      if (E.fogged(s)) {
+        if (ui.mode === "menu") {
+          this.preview ||= E.make("frontier-5");
+          s = this.preview;
+        } else s = E.observe(s);
+      }
       const world = E.map(s);
       if (this.mapId !== world.id) {
         this.ground = terrain(world);
@@ -742,6 +750,11 @@
       this.shake = Math.max(0, this.shake - dt * 15);
       c.scale(cam.scale, cam.scale * Y);
       c.translate(-cam.x, -cam.y);
+      if (s.fog) {
+        this.memory(c, s, ui);
+        c.save();
+        c.clip(this.fogPath(s.fog, "visible"));
+      }
       c.save();
       c.translate(8, 30);
       c.globalAlpha = 0.45;
@@ -781,6 +794,7 @@
       this.industry(c, s, ui);
       this.strategy(c, s, ui);
       this.relay(c, s, ui);
+      this.watch(c, s, ui);
       if (overview || (ui.mode === "playing" && ui.selectionIds != null)) {
         for (const u of s.units.filter(
           (u) =>
@@ -976,7 +990,7 @@
         ellipse(c, hero.x, hero.y - 17, 2, 2, "#d3f1e4");
       }
       this.effects(c, dt, ui, active);
-      const task = E.objective(s),
+      const task = s.observationTask || E.objective(s),
         objective = task.target;
       if (objective && s.status === "playing") {
         const radius = task.radius;
@@ -992,6 +1006,17 @@
           ],
           "#e2dfb1",
         );
+      }
+      if (s.fog) {
+        c.restore();
+        // Acknowledgement of the player's own requested point reveals no route or terrain.
+        for (const f of this.fx)
+          if (f.type === "order" && f.life <= f.max) {
+            c.save();
+            c.globalAlpha = (1 - f.life / f.max) * 0.65;
+            ring(c, f.x, f.y, 14 + (f.life / f.max) * 22, "#afe1cc", 1.3);
+            c.restore();
+          }
       }
       c.restore();
       if (!menu && s.status === "playing" && objective) {
@@ -1051,6 +1076,7 @@
             ]),
         ];
         for (const [object, label] of labels) {
+          if (!object || object.unknown || !E.explored(s, 0, object)) continue;
           const { x, y } = object;
           const p = this.screen(x, y);
           if (p.x < 20 || p.x > w - 20 || p.y < 85 || p.y > h - 120) continue;
@@ -1083,6 +1109,143 @@
             ],
             "#d0e4d1aa",
           );
+      }
+    }
+    fogPath(fog, kind) {
+      const code = fog[kind + "Code"],
+        cached = this.fogPaths[kind];
+      if (cached?.code === code) return cached.path;
+      const path = new Path2D(),
+        mask = fog[kind];
+      for (let y = 0; y < fog.rows; y++)
+        for (let x = 0; x < fog.cols; ) {
+          if (!mask[y * fog.cols + x]) {
+            x++;
+            continue;
+          }
+          const start = x;
+          while (x < fog.cols && mask[y * fog.cols + x]) x++;
+          path.rect(
+            start * fog.cell,
+            y * fog.cell,
+            (x - start) * fog.cell,
+            fog.cell,
+          );
+        }
+      this.fogPaths[kind] = { code, path };
+      return path;
+    }
+    memory(c, s, ui) {
+      const canvas = this.memoryCanvas;
+      if (
+        canvas.width !== this.canvas.width ||
+        canvas.height !== this.canvas.height
+      ) {
+        canvas.width = this.canvas.width;
+        canvas.height = this.canvas.height;
+      }
+      const m = canvas.getContext("2d"),
+        world = E.map(s),
+        known = s.fog.memory,
+        still = {
+          ...ui,
+          mode: "paused",
+          reduced: true,
+          memory: true,
+          selectedBuilding: null,
+          selectionIds: [],
+        };
+      m.setTransform(1, 0, 0, 1, 0, 0);
+      m.clearRect(0, 0, canvas.width, canvas.height);
+      m.setTransform(c.getTransform());
+      m.fillStyle = "#000";
+      m.fillRect(-100, -140, world.W + 200, world.H + 280);
+      m.save();
+      m.clip(this.fogPath(s.fog, "explored"));
+      m.drawImage(this.ground, 0, 0);
+      this.industry(m, known, still);
+      this.strategy(m, known, still);
+      this.relay(m, known, still);
+      this.watch(m, known, still);
+      const objects = [
+        ...world.walls
+          .filter((w) =>
+            this.inView(
+              w.x + w.w / 2,
+              w.y + w.h / 2,
+              w.w * 0.65 + 80,
+              w.h * 0.65 + 100,
+            ),
+          )
+          .map((w) => ({ ...w, wall: true, sort: w.y + w.h })),
+        ...known.units
+          .filter((u) => this.inView(u.x, u.y))
+          .map((u) => ({ ...u, sort: u.y })),
+      ].sort((a, b) => a.sort - b.sort);
+      for (const o of objects)
+        if (o.wall) this.wall(m, o);
+        else this.unit(m, o, known, still);
+      m.restore();
+      // Blend modes work on mobile WebKit too, where canvas filters may be absent.
+      m.save();
+      m.globalCompositeOperation = "saturation";
+      m.fillStyle = "#000";
+      m.fillRect(-100, -140, world.W + 200, world.H + 280);
+      m.globalCompositeOperation = "source-atop";
+      m.fillStyle = "rgba(0,0,0,.52)";
+      m.fillRect(-100, -140, world.W + 200, world.H + 280);
+      m.restore();
+      c.save();
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.drawImage(canvas, 0, 0);
+      c.restore();
+    }
+    watch(c, s, ui) {
+      for (const p of s.watch || []) {
+        if (!this.inView(p.x, p.y)) continue;
+        const color =
+          p.side === 0
+            ? "#a4edd9"
+            : p.side === 1
+              ? "#efae8c"
+              : p.side === 2
+                ? "#e0c393"
+                : "#7c918b";
+        c.save();
+        c.translate(p.x, p.y);
+        ellipse(c, 3, 6, 25, 16, "#06192280");
+        for (let i = 0; i < 3; i++)
+          slab(c, 12, 0, 22, 10, 0, 5, (i * TAU) / 3, MAT.graphite);
+        slab(c, 0, 0, 13, 13, 5, 15, 0, MAT.dark);
+        slab(c, 0, 0, 5, 5, 20, 13, 0, MAT.ally);
+        plate(
+          c,
+          [
+            [-13, -5],
+            [0, -11],
+            [13, -5],
+            [10, 6],
+            [-10, 6],
+          ],
+          31,
+          4,
+          0,
+          MAT.ceramic,
+        );
+        for (const side of [-1, 1]) lamp(c, side * 8, 0, 37, 0, 2, color);
+        seam(
+          c,
+          [
+            [-6, 0],
+            [6, 0],
+          ],
+          37,
+          0,
+          color,
+          1.5,
+        );
+        if (p.side !== -1) ring(c, 0, 0, 28, color + "65", 1.2);
+        c.restore();
       }
     }
     industry(c, s, ui) {
@@ -1307,6 +1470,7 @@
         }
         c.restore();
       }
+      if (s.terminal.unknown) return;
       const terminal = s.terminal,
         { x, y } = terminal;
       c.save();
@@ -1395,7 +1559,7 @@
           2,
         );
       c.restore();
-      if (terminal.window > 0) {
+      if (terminal.window > 0 && s.units.some((u) => u.kind === "citadel")) {
         c.save();
         c.setLineDash([5, 13]);
         c.lineDashOffset = ui.reduced ? 0 : -t * 18;
@@ -1418,8 +1582,11 @@
       }
     }
     relay(c, s, ui) {
+      if (s.relay.unknown) return;
       const { x, y, online, charge } = s.relay,
-        progress = online ? 1 : s.phase === 2 ? s.relay.stability : charge;
+        progress =
+          s.relay.progress ??
+          (online ? 1 : s.phase === 2 ? s.relay.stability : charge);
       c.save();
       c.translate(x, y);
       ellipse(c, 4, 6, 43, 30, "#061d2770");
@@ -1837,7 +2004,9 @@
       const def = E.C[u.kind],
         r = def.r,
         dead = u.hp <= 0,
-        p = this.pose(u, s, ui),
+        p = ui.memory
+          ? { phase: 0, move: 0, angle: u.angle }
+          : this.pose(u, s, ui),
         t = ui.reduced ? 0 : ui.mode === "menu" ? this.time : s.t;
       const aim =
         u.kind === "hero" && ui.aim
@@ -2358,6 +2527,56 @@
             u.flash,
             heavy ? 1.4 : 1,
           );
+      } else if (u.kind === "scout") {
+        const a = p.move ? p.angle : aim;
+        for (const side of [-1, 1]) {
+          slab(c, 0, side * 10, 24, 6, 0, 5, a, MAT.graphite);
+          for (const x of [-7, 7]) lamp(c, x, side * 10, 6, a, 1.1, "#849c91");
+        }
+        plate(
+          c,
+          [
+            [-14, -6],
+            [-2, -11],
+            [12, -6],
+            [16, 0],
+            [12, 6],
+            [-2, 11],
+            [-14, 6],
+          ],
+          5,
+          8,
+          a,
+          MAT.ally,
+        );
+        slab(c, -4, 0, 10, 10, 13, 5, a, MAT.ceramic);
+        slab(c, -4, 0, 4, 4, 18, 9, a, MAT.graphite);
+        plate(
+          c,
+          [
+            [-11, -5],
+            [4, -7],
+            [12, 0],
+            [4, 7],
+            [-11, 5],
+          ],
+          27,
+          4,
+          aim,
+          MAT.ceramic,
+        );
+        lamp(c, 8, 0, 32, aim, 3, "#a4edd9");
+        seam(
+          c,
+          [
+            [-8, -3],
+            [2, -4],
+          ],
+          32,
+          aim,
+          "#344d4a",
+          1.5,
+        );
       } else if (u.kind === "runner") {
         const a = p.move ? p.angle : aim;
         for (const side of [-1, 1])
@@ -2981,12 +3200,20 @@
               2,
             );
         }
-        lamp(c, 0, 10, 61, 0, 4, s.terminal.window > 0 ? "#9ce0cd" : accent);
+        lamp(
+          c,
+          0,
+          10,
+          61,
+          0,
+          4,
+          (s.fog ? !u.shielded : s.terminal.window > 0) ? "#9ce0cd" : accent,
+        );
         slab(c, 30 - recoil, 0, 56, 10, 59, 7, aim, MAT.graphite);
         slab(c, 53 - recoil, 0, 9, 15, 59, 7, aim, MAT.copper);
         if (u.flash > 0 && !ui.reduced)
           this.muzzle(c, 60 - recoil, 0, 64, aim, accent, u.flash, 1.6);
-        if (u.kind === "citadel" && E.shielded(s)) {
+        if (u.kind === "citadel" && (s.fog ? u.shielded : E.shielded(s))) {
           for (let i = 0; i < 4; i++) {
             const a = (i * Math.PI) / 2 + 0.12;
             arc(c, 0, 0, 65, a, a + 1.32, "#d8ab8270", 1.5);

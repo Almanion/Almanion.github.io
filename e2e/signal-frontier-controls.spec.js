@@ -19,6 +19,8 @@ function scenario() {
   return s;
 }
 async function boot(page, state = scenario()) {
+  E.refreshRecon(state);
+  expect(E.restore(state)).not.toBeNull();
   await page.clock.install();
   await page.addInitScript(
     (s) =>

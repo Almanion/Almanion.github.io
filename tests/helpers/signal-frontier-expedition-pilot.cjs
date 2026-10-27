@@ -74,6 +74,7 @@ class ExpeditionPilot {
       s.units.some(
         (u) =>
           u.team &&
+          E.visible(s, 0, u) &&
           u.hp > 0 &&
           E.C[u.kind].range > 0 &&
           E.dist(u, node) < 480 &&
@@ -94,14 +95,22 @@ class ExpeditionPilot {
           ? D.items(s).defense.cost
           : 0;
     const rifleCount = alive("rifle").length + D.queued(s, "rifle").length;
-    const rifleTarget =
-      this.route === "infiltration" &&
-      !alive("bastion").some((u) => u.sector === "south")
+    const savingForCommand =
+      E.fogged(s) &&
+      this.stage >= 4 &&
+      s.campaign.tier === 2 &&
+      E.objective(s).id === "command";
+    const rifleTarget = savingForCommand
+      ? 3
+      : this.route === "infiltration" &&
+          !alive("bastion").some((u) => u.sector === "south")
         ? 3
         : D.combat(s) && this.stage
           ? Math.min(9, D.capacity(s) - 1)
           : 6;
     if (!alive("barracks").length) buy("barracks");
+    if (E.fogged(s) && !alive("scout").length && !D.queued(s, "scout").length)
+      buy("scout");
     if (base && !threatened(base) && ore(base) && D.usedSlots(s, base) < 4)
       buy("drone");
     if (!west) buy("outpost", "west");
@@ -195,7 +204,8 @@ class ExpeditionPilot {
         (this.route !== "siege" || relay.defense) &&
         fort &&
         s.campaign.weapons &&
-        alive("rifle").length >= 3
+        ((E.fogged(s) && this.route === "infiltration") ||
+          alive("rifle").length >= 3)
       ) {
         const way =
           this.route === "siege"
@@ -272,6 +282,19 @@ class ExpeditionPilot {
         interact = E.dist(h, s.terminal) < 75;
       }
     }
+    // A fog expedition must scout its third mine before the first two run dry.
+    if (
+      E.fogged(s) &&
+      this.route === "siege" &&
+      this.stage === 4 &&
+      s.t >= 600 &&
+      (!extra || extra.build)
+    ) {
+      dest = { x: 560, y: 350 };
+      order(1, dest);
+      interact = false;
+      buy("outpost", "north");
+    }
     // Recover the containers encountered on the infiltration route before waiting
     // for more ore; this pays for losses without inventing resources.
     if (
@@ -293,12 +316,23 @@ class ExpeditionPilot {
     if (
       this.stage >= 1 &&
       base &&
-      ((base.hp < E.C.base.hp * 0.82 && threatened(base)) ||
-        (west && west.hp < E.C.outpost.hp * 0.7 && threatened(west)))
-    )
+      ((base.hp < E.C.base.hp * 0.82 &&
+        (threatened(base) || (E.fogged(s) && base.repair > 0))) ||
+        (west &&
+          west.hp < E.C.outpost.hp * 0.7 &&
+          (threatened(west) || (E.fogged(s) && west.repair > 0))))
+    ) {
       this.defendHome = true;
+      if (E.fogged(s) && s.t >= 600) this.defendUntil = s.t + 20;
+    }
     if (this.defendHome && base) {
-      if (!threatened(base) && !threatened(west)) this.defendHome = false;
+      if (
+        !(E.fogged(s) && s.t < this.defendUntil) &&
+        !threatened(base) &&
+        !threatened(west) &&
+        !(E.fogged(s) && (base.repair > 0 || west?.repair > 0))
+      )
+        this.defendHome = false;
       else {
         dest = { x: 320, y: 1550 };
         if (this.route === "infiltration" || D.combat(s)) {
@@ -306,6 +340,7 @@ class ExpeditionPilot {
             .filter(
               (u) =>
                 u.team &&
+                E.visible(s, 0, u) &&
                 u.hp > 0 &&
                 E.C[u.kind].range > 0 &&
                 [base, west].some(
@@ -340,6 +375,7 @@ class ExpeditionPilot {
       .filter(
         (u) =>
           u.team &&
+          E.visible(s, 0, u) &&
           u.hp > 0 &&
           !(u.kind === "citadel" && E.shielded(s)) &&
           !(this.route === "infiltration" && u.kind === "jammer") &&
@@ -374,7 +410,9 @@ class ExpeditionPilot {
       aim = { x: target.x + v.x * lead, y: target.y + v.y * lead };
     }
     this.last = Object.fromEntries(
-      s.units.map((u) => [u.id, { x: u.x, y: u.y }]),
+      s.units
+        .filter((u) => !u.team || E.visible(s, 0, u))
+        .map((u) => [u.id, { x: u.x, y: u.y }]),
     );
     const key = dest.x + "," + dest.y;
     if (key !== this.goal || (!this.path.length && E.dist(h, dest) > 22)) {
@@ -395,6 +433,7 @@ class ExpeditionPilot {
     const danger = s.units.find(
       (u) =>
         u.team &&
+        E.visible(s, 0, u) &&
         u.hp > 0 &&
         u.wind > 0 &&
         u.target &&
@@ -412,7 +451,7 @@ class ExpeditionPilot {
     }
     if (D.combat(s) && !interact) {
       const area = s.units
-        .filter((u) => u.team && u.hp > 0)
+        .filter((u) => u.team && E.visible(s, 0, u) && u.hp > 0)
         .map((u) => ({ u, area: E.dangerArea(s, u) }))
         .find((v) => v.area && E.insideArea(v.area, h));
       if (area) {
@@ -435,6 +474,7 @@ class ExpeditionPilot {
       const incoming = s.bullets.find(
         (b) =>
           b.team &&
+          E.visible(s, 0, b) &&
           b.kind !== "shell" &&
           E.dist(b, h) < 190 &&
           (h.x - b.x) * b.vx + (h.y - b.y) * b.vy > 0,
@@ -454,15 +494,25 @@ class ExpeditionPilot {
         }
       }
     }
+    if (E.fogged(s) && this.stage >= 4 && alive("rifle").length < 3)
+      order(1, { x: 420, y: 1580 });
     if (D.combat(s) && this.stage >= 1) {
-      const squad = alive("rifle"),
+      const squad = E.fogged(s)
+          ? alive().filter((u) => u.group === 1)
+          : alive("rifle"),
         targets = alive()
           .filter(
             (u) =>
               u.team &&
+              E.visible(s, 0, u) &&
               E.C[u.kind].range > 300 &&
               !(u.kind === "citadel" && E.shielded(s)) &&
-              squad.some((v) => E.dist(v, u) < 560 && E.clear(v, u)),
+              squad.some(
+                (v) =>
+                  E.dist(v, u) <
+                    (E.fogged(s) && v.kind === "scout" ? 720 : 560) &&
+                  E.clear(v, u),
+              ),
           )
           .sort((a, b) => {
             const score = (u) =>
@@ -476,11 +526,11 @@ class ExpeditionPilot {
     if (D.combat(s)) {
       const army = alive("rifle"),
         hazards = s.units
-          .filter((u) => u.team && u.hp > 0)
+          .filter((u) => u.team && E.visible(s, 0, u) && u.hp > 0)
           .map((u) => ({ area: E.dangerArea(s, u), origin: u }))
           .filter((v) => v.area);
       for (const b of s.bullets)
-        if (b.team && b.kind === "shell" && b.radius)
+        if (b.team && E.visible(s, 0, b) && b.kind === "shell" && b.radius)
           hazards.push({
             area: E.impactArea(s, { x: b.tx, y: b.ty }, b.radius),
             origin: { x: b.tx, y: b.ty },
@@ -536,7 +586,12 @@ class ExpeditionPilot {
     };
   }
 }
-function play(route, maxFrames = 144000, profile = "frontier-4") {
+function play(
+  route,
+  maxFrames = 144000,
+  profile = "frontier-4",
+  checkpoint = null,
+) {
   const s = E.make(profile),
     pilot = new ExpeditionPilot(route),
     trace = [];
@@ -560,9 +615,18 @@ function play(route, maxFrames = 144000, profile = "frontier-4") {
                 .map((u) => u.id),
               c.targetId,
             )
-          : E.order(s, c.group, c.x, c.y);
+          : E.fogged(s)
+            ? E.orderUnits(
+                s,
+                s.units
+                  .filter((u) => !u.team && u.hp > 0 && u.group === c.group)
+                  .map((u) => u.id),
+                c.x,
+                c.y,
+              )
+            : E.order(s, c.group, c.x, c.y);
     E.step(s, d.input);
-    if (i % 3600 === 0)
+    if (i % 3600 === 0) {
       trace.push({
         t: Math.round(s.t),
         hp: Math.round(E.hero(s).hp),
@@ -571,6 +635,8 @@ function play(route, maxFrames = 144000, profile = "frontier-4") {
         stage: pilot.stage,
         kills: s.kills,
       });
+      checkpoint?.(s, pilot);
+    }
   }
   return { state: s, pilot, trace };
 }

@@ -112,6 +112,17 @@
         this.volumeValue = level;
       }
       const active = mode === "playing" && s.status === "playing";
+      if (s.fog) {
+        for (const voice of [...this.voices])
+          if (
+            voice.spatial &&
+            !root.SignalEngine.visible(s, s.fog.team, voice.point)
+          )
+            voice.close();
+        const ids = new Set(s.units.map((u) => u.id));
+        for (const id of this.charges.keys())
+          if (!ids.has(id)) this.charges.delete(id);
+      }
       for (const u of s.units.filter((u) => u.team && u.hp > 0)) {
         if (
           active &&
@@ -178,7 +189,7 @@
             : 0.035;
       if (now - (this.last[key] ?? -100) < interval || this.voices.size >= 24)
         return false;
-      const spatial = !quiet.has(type);
+      const spatial = !quiet.has(type) && !e.radio;
       const distance = spatial
         ? Math.hypot((e.x || 0) - this.listener.x, (e.y || 0) - this.listener.y)
         : 0;
@@ -198,6 +209,8 @@
       let pending = 0,
         closed = false;
       const voice = {
+        spatial,
+        point: { x: e.x || 0, y: e.y || 0 },
         close: () => {
           if (closed) return;
           closed = true;

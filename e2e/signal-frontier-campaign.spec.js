@@ -16,6 +16,8 @@ test("development: real queued cost, cancellation, pause and reload", async ({
   page,
 }) => {
   test.setTimeout(60000); // This scenario renders over 22 seconds of virtual time.
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
   await page.clock.install();
   await start(page);
   await page.locator("#supply-open").click();
@@ -58,6 +60,7 @@ test("development: real queued cost, cancellation, pause and reload", async ({
   expect(restored.units.filter((u) => u.kind === "drone")).toHaveLength(3);
   expect(restored.economy.spent).toBe(100);
   expect(restored.economy.recovered).toBe(37);
+  expect(errors).toEqual([]);
 });
 
 test("tactical camera: hover edges, drag, zoom, limits and no accidental orders", async ({
@@ -210,6 +213,7 @@ for (const [name, profile] of [
   "frontier-3",
   "frontier-4",
   "frontier-5",
+  "frontier-6",
 ].flatMap((p) => ["siege", "infiltration"].map((n) => [n, p])))
   test(
     "long " + name + ": full operation " + profile + " through real controls",

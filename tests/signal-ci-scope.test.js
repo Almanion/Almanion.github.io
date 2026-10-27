@@ -14,6 +14,7 @@ assert.deepEqual(classify(ui, { forceCampaign: true }), {
 });
 for (const file of [
   "engine.js",
+  "recon.js",
   "campaign.js",
   "persistence.js",
   "cloud-core.js",

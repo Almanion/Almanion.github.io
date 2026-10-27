@@ -7,6 +7,7 @@ const files = [
   "index.html",
   "style.css",
   "campaign.js",
+  "recon.js",
   "engine.js",
   "view.js",
   "audio.js",
@@ -24,6 +25,7 @@ function render(root = path.resolve(__dirname, "..")) {
     out = {};
   for (const file of files) {
     let text = read(file);
+    if (file === "engine.js") text = read("recon.js") + "\n;\n" + text;
     if (file === "app.js")
       text = embedded.map(read).join("\n;\n") + "\n;\n" + text;
     if (file.endsWith(".js"))
@@ -43,7 +45,7 @@ function render(root = path.resolve(__dirname, "..")) {
       text = result.styles + "\n";
     } else if (file === "index.html")
       text = text.replace(
-        /^\s*<script src="(?:cloud-core|persistence|account-ui)\.js[^\"]*" defer><\/script>\n/gm,
+        /^\s*<script src="(?:recon|cloud-core|persistence|account-ui)\.js[^\"]*" defer><\/script>\n/gm,
         "",
       );
     out[file] = text;
