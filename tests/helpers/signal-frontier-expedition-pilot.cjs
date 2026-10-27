@@ -372,18 +372,60 @@ class ExpeditionPilot {
         order(1, point(500, 1580));
       }
     }
-    // Construction needs the scout nearby. Returning only for visible danger can
-    // leave a rebuilt west node unfinished forever, blocking the third tier.
+    // Finish an existing foundation before reserving money for another one.
+    // A half-built north node can restore income while west is unaffordable.
+    const unfinished = highlands
+      ? alive("outpost")
+          .filter((u) => !u.team && u.build > 0)
+          .sort((a, b) => E.dist(a, h) - E.dist(b, h))[0]
+      : null;
     if (
       highlands &&
       this.stage >= 1 &&
       s.campaign.tier < 3 &&
-      (!west || west.build)
+      (unfinished || !west)
     ) {
-      const site = D.pads(s).find((p) => p.id === "west");
+      const site = unfinished || D.pads(s).find((p) => p.id === "west");
       dest = { x: site.x, y: site.y - 65 };
       order(1, point(500, 1580));
       interact = false;
+    }
+    if (
+      highlands &&
+      this.stage >= 1 &&
+      s.campaign.tier < 3 &&
+      !unfinished &&
+      budget < D.items(s).outpost.cost + D.items(s).drone.cost
+    ) {
+      const future = planned || s,
+        income = D.nodes(future).some(
+          (node) => ore(node) > 0 && D.usedSlots(future, node) > 0,
+        );
+      if (!income) {
+        // Use only last-seen containers. If none are known, scout accessible
+        // sectors rather than waiting forever at a site we cannot afford.
+        const found = s.recon.memory[0]
+          .filter((p) => p.type === "cache" && !p.taken)
+          .sort((a, b) => E.dist(a, h) - E.dist(b, h))[0];
+        const survey = [
+          { x: 2040, y: 500 },
+          { x: 2040, y: 2500 },
+          { x: 2300, y: 3450 },
+          { x: 1000, y: 3450 },
+        ];
+        this.surveyIndex ||= 0;
+        if (!found && E.dist(h, survey[this.surveyIndex % survey.length]) < 80)
+          this.surveyIndex++;
+        dest = found
+          ? { x: found.x, y: found.y }
+          : survey[this.surveyIndex % survey.length];
+        const action = E.interaction(s);
+        interact =
+          !!found &&
+          E.dist(h, found) < 65 &&
+          action?.type === "cache" &&
+          action.allowed;
+      }
     }
     // Respond to a visible attack on the economy instead of waiting at the objective
     // while an outranging enemy destroys every worker. The forward squad holds its orders.

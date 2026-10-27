@@ -184,4 +184,48 @@ test("terrain pilot returns to an unfinished economy node before waiting for res
   );
 });
 
+test("terrain pilot completes north foundation before an unaffordable west replacement", () => {
+  const {
+      ExpeditionPilot,
+    } = require("./helpers/signal-frontier-expedition-pilot.cjs"),
+    s = E.make(),
+    h = E.hero(s),
+    pilot = new ExpeditionPilot("siege", 22);
+  Object.assign(h, { x: 900, y: 460 });
+  E.refreshRecon(s);
+  assert(E.purchase(s, "outpost", "north").allowed);
+  const node = s.units.find((u) => u.kind === "outpost" && u.site === "north");
+  Object.assign(h, { x: 2130, y: 1410 });
+  E.refreshRecon(s);
+  assert(E.restore(s));
+  pilot.stage = 4;
+  pilot.decide(s);
+  assert(pilot.path.length && E.dist(pilot.path.at(-1), node) < 210);
+});
+test("terrain pilot recovers last-seen salvage when all workers are lost", () => {
+  const {
+      ExpeditionPilot,
+    } = require("./helpers/signal-frontier-expedition-pilot.cjs"),
+    s = E.make(),
+    pilot = new ExpeditionPilot("infiltration", 22),
+    base = E.living(s, "base");
+  assert(E.purchase(s, "barracks").allowed);
+  assert(E.purchase(s, "drone", base.id).allowed);
+  const job = base.jobs.find((j) => j.action === "drone");
+  assert(E.purchase(s, "cancel", base.id + ":" + job.id).allowed);
+  for (const u of s.units) if (!u.team && u.kind === "drone") u.hp = 0;
+  E.refreshRecon(s);
+  assert(E.restore(s));
+  assert(s.economy.alloy < 50);
+  const known = s.recon.memory[0].filter((p) => p.type === "cache" && !p.taken);
+  assert(known.length);
+  pilot.stage = 4;
+  const before = JSON.stringify(s);
+  pilot.decide(s);
+  assert.equal(JSON.stringify(s), before);
+  assert(
+    pilot.path.length && known.some((p) => E.dist(pilot.path.at(-1), p) < 1),
+  );
+});
+
 console.log(checks + " terrain checks passed");

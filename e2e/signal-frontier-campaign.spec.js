@@ -191,6 +191,15 @@ test("touch camera: corner hold, pinch, cancellation and rotation preserve order
 // and screenshot instead; inputs and every simulation step remain unchanged.
 test.use({ trace: "off" });
 test.afterEach(async ({ page }, info) => {
+  const deferred = await page
+    .evaluate(() => window.__signalQaPaint === false)
+    .catch(() => false);
+  if (deferred) {
+    await page.evaluate(() => {
+      window.__signalQaPaint = true;
+    });
+    await page.clock.runFor(200).catch(() => {});
+  }
   if (info.status === info.expectedStatus) return;
   const state = await page
     .evaluate(() =>
@@ -221,7 +230,44 @@ for (const [name, profile] of [
     async ({ page }) => {
       test.setTimeout(profile === "frontier-7" ? 2400000 : 1500000);
       await page.setViewportSize({ width: 1600, height: 1000 });
-      await page.clock.install();
+      if (profile === "frontier-7") {
+        const epoch = new Date("2026-01-01T00:00:00Z");
+        await page.clock.install({ time: epoch });
+        await page.clock.pauseAt(epoch);
+      } else await page.clock.install();
+      if (profile === "frontier-7")
+        await page.addInitScript(() => {
+          // Run every view/camera update and every fixed combat step. Rasterizing the
+          // huge battlefield is covered by the real-render UI suite, not every idle
+          // frame of this control replay. Offscreen terrain textures remain real.
+          window.__signalQaPaint = false;
+          window.__signalQaSkippedPaint = 0;
+          window.__signalQaRealPaint = 0;
+          const proto = CanvasRenderingContext2D.prototype;
+          for (const name of [
+            "clearRect",
+            "drawImage",
+            "fill",
+            "stroke",
+            "fillRect",
+            "strokeRect",
+            "fillText",
+            "strokeText",
+            "clip",
+          ]) {
+            const original = proto[name];
+            proto[name] = function (...args) {
+              if (this.canvas.id === "field") {
+                if (!window.__signalQaPaint) {
+                  window.__signalQaSkippedPaint++;
+                  return;
+                }
+                window.__signalQaRealPaint++;
+              }
+              return original.apply(this, args);
+            };
+          }
+        });
       await page.addInitScript((save) => {
         if (sessionStorage.getItem("signal-long-started")) return;
         sessionStorage.setItem("signal-long-started", "1");
@@ -362,7 +408,9 @@ for (const [name, profile] of [
         await page.keyboard.press("Tab");
       }
       let idleCommands = 0,
-        previousTime = -1;
+        previousTime = -1,
+        progressKey = "",
+        lastProgress = 0;
       for (let i = 0; i < 24000; i++) {
         // Read the snapshot and its affine screen projection in one round trip.
         // Inputs still go through trusted browser mouse and keyboard controls.
@@ -385,6 +433,28 @@ for (const [name, profile] of [
           (profile === "frontier-7" && s.t > 3000)
         )
           break;
+        if (profile === "frontier-7") {
+          const h = E.hero(s),
+            key = JSON.stringify([
+              s.economy,
+              s.campaign.tier,
+              s.phase,
+              s.relay,
+              s.terminal,
+              s.caches,
+              Math.round(h.x / 50),
+              Math.round(h.y / 50),
+              s.units.map((u) => [u.id, u.hp, u.build, u.jobs]),
+            ]);
+          if (key !== progressKey) {
+            progressKey = key;
+            lastProgress = s.t;
+          }
+          expect(
+            s.t - lastProgress,
+            "Controller stopped making progress; preserve the state instead of waiting for a wall-clock timeout",
+          ).toBeLessThan(120);
+        }
         if (Math.floor(s.t / 60) !== lastLog) {
           lastLog = Math.floor(s.t / 60);
           console.log(
@@ -531,6 +601,18 @@ for (const [name, profile] of [
       expect(diagnostics.effects).toBeLessThanOrEqual(96);
       expect(diagnostics.scars).toBeLessThanOrEqual(40);
       expect(JSON.stringify(final).length).toBeLessThan(2000000);
+      if (profile === "frontier-7") {
+        await page.evaluate(() => {
+          window.__signalQaPaint = true;
+        });
+        await page.clock.runFor(200);
+        const painting = await page.evaluate(() => ({
+          skipped: window.__signalQaSkippedPaint,
+          real: window.__signalQaRealPaint,
+        }));
+        expect(painting.skipped).toBeGreaterThan(0);
+        expect(painting.real).toBeGreaterThan(0);
+      }
       await expect(page.locator("#result-content")).toBeVisible();
       await page.screenshot({
         path: "test-results/signal6-" + profile + "-" + name + "-complete.png",

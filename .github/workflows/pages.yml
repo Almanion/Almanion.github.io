@@ -180,7 +180,7 @@ jobs:
 
       - name: Complete siege and infiltration through real controls
         run: >-
-          npx playwright test e2e/signal-frontier-campaign.spec.js --grep "long ${{ matrix.route }}: full operation ${{ matrix.profile }} through real controls" --workers 1
+          npx playwright test e2e/signal-frontier-campaign.spec.js --grep "long ${{ matrix.route }}: full operation ${{ matrix.profile }} through real controls" --workers 1 --retries 0
 
       - name: Preserve failed campaign diagnostics
         if: failure()
