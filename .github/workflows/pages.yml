@@ -136,11 +136,12 @@ jobs:
     if: needs.scope.outputs.campaign == 'true'
     name: Complete ${{ matrix.route }} (${{ matrix.profile }})
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    # frontier-8 also verifies the complete finite-resource simulation before UI replay.
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        profile: [frontier-3, frontier-4, frontier-5, frontier-6, frontier-7]
+        profile: [frontier-3, frontier-4, frontier-5, frontier-6, frontier-7, frontier-8]
         route: [siege, infiltration]
     permissions:
       contents: read
@@ -177,6 +178,12 @@ jobs:
 
       - name: Build the same revision for campaign checks
         run: npm run site:build
+
+      - name: Complete free-construction simulation
+        if: matrix.profile == 'frontier-8'
+        env:
+          SIGNAL_QA_ROUTE: ${{ matrix.route }}
+        run: node tests/signal-frontier-construction-operation.integration.js
 
       - name: Complete siege and infiltration through real controls
         run: >-

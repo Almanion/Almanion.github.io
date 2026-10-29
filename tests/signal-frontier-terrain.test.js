@@ -10,7 +10,7 @@ function test(name, fn) {
 }
 const p = (x, y) => ({ x, y, map: "highlands" });
 test("new operation has three heights and seven connected districts; old profiles remain flat", () => {
-  const s = E.make();
+  const s = E.make("frontier-7");
   assert.equal(s.version, 9);
   assert.equal(s.campaign.id, "frontier-7");
   assert.equal(E.map(s).W, 3600);
@@ -28,7 +28,7 @@ test("new operation has three heights and seven connected districts; old profile
   }
 });
 test("every required objective, resource and production pad is reachable by the largest chassis", () => {
-  const s = E.make(),
+  const s = E.make("frontier-7"),
     h = E.hero(s),
     goals = [
       ...s.units.filter((u) =>
@@ -65,7 +65,7 @@ test("cliffs reject a direct order and dash; routes use continuous ramps and a s
   const route = E.pathTo(a, b, 14);
   assert(route.length > 1);
   assert.deepEqual(route.at(-1), { x: b.x, y: b.y });
-  const s = E.make();
+  const s = E.make("frontier-7");
   Object.assign(E.hero(s), a);
   E.refreshRecon(s);
   for (let i = 0; i < 15; i++) E.step(s, { x: 1, dash: true });
@@ -89,7 +89,7 @@ test("higher ledges block sight from below and direct fire; artillery clears the
   assert(E.clear(b, a));
   assert(!E.fireClear({ ...a, kind: "rifle" }, b));
   assert(E.fireClear({ ...a, kind: "artillery" }, b));
-  const s = E.make();
+  const s = E.make("frontier-7");
   for (const u of s.units) if (!u.team && u.kind !== "hero") u.hp = 0;
   Object.assign(E.hero(s), a);
   E.refreshRecon(s);
@@ -99,7 +99,7 @@ test("higher ledges block sight from below and direct fire; artillery clears the
   assert(E.visible(s, 0, b));
 });
 test("economy, valid saves, cloud payloads and height-aware projectile data round trip", () => {
-  const s = E.make(),
+  const s = E.make("frontier-7"),
     old = E.make("frontier-6");
   assert.deepEqual(E.development.items(s), E.development.items(old));
   assert.deepEqual(
@@ -118,7 +118,7 @@ test("economy, valid saves, cloud payloads and height-aware projectile data roun
 });
 
 for (const kind of ["flamer", "bomber", "mortar"]) {
-  const s = E.make(),
+  const s = E.make("frontier-7"),
     u = s.units.find((u) => u.kind === kind);
   Object.assign(u.combat, {
     mode: kind === "flamer" ? "flame" : "aim",
@@ -130,7 +130,7 @@ for (const kind of ["flamer", "bomber", "mortar"]) {
 }
 
 test("a heavy ally follows complete ramp routes without sticking, falling or cutting a cliff", () => {
-  const s = E.make();
+  const s = E.make("frontier-7");
   for (const u of s.units) if (u.team && u.kind !== "citadel") u.hp = 0;
   s.campaign.camps.forEach((c) => (c.reserve = 0));
   const u = s.units.find((u) => u.kind === "rifle");
@@ -156,7 +156,7 @@ test("terrain pilot returns to an unfinished economy node before waiting for res
   const {
       ExpeditionPilot,
     } = require("./helpers/signal-frontier-expedition-pilot.cjs"),
-    s = E.make(),
+    s = E.make("frontier-7"),
     h = E.hero(s),
     pilot = new ExpeditionPilot("siege", 22);
   Object.assign(h, { x: 795, y: 2320 });
@@ -188,7 +188,7 @@ test("terrain pilot completes north foundation before an unaffordable west repla
   const {
       ExpeditionPilot,
     } = require("./helpers/signal-frontier-expedition-pilot.cjs"),
-    s = E.make(),
+    s = E.make("frontier-7"),
     h = E.hero(s),
     pilot = new ExpeditionPilot("siege", 22);
   Object.assign(h, { x: 900, y: 460 });
@@ -206,7 +206,7 @@ test("terrain pilot recovers last-seen salvage when all workers are lost", () =>
   const {
       ExpeditionPilot,
     } = require("./helpers/signal-frontier-expedition-pilot.cjs"),
-    s = E.make(),
+    s = E.make("frontier-7"),
     pilot = new ExpeditionPilot("infiltration", 22),
     base = E.living(s, "base");
   assert(E.purchase(s, "barracks").allowed);
@@ -226,6 +226,18 @@ test("terrain pilot recovers last-seen salvage when all workers are lost", () =>
   assert(
     pilot.path.length && known.some((p) => E.dist(pilot.path.at(-1), p) < 1),
   );
+});
+
+test("legacy highlands workers retain their original seeded landing positions", () => {
+  const s = E.make("frontier-7");
+  assert.deepEqual(
+    s.units.filter((u) => u.kind === "drone").map((u) => ({ x: u.x, y: u.y })),
+    [
+      { x: 405, y: 2602.5 },
+      { x: 240, y: 2602.5 },
+    ],
+  );
+  assert(E.restore(s));
 });
 
 console.log(checks + " terrain checks passed");

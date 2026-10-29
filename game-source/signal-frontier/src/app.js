@@ -15,6 +15,7 @@
     orderDrag = null,
     orderMode = false,
     selectedBuilding = null,
+    placement = null,
     mapArea = null,
     aim = { x: 700, y: 650 },
     mousePoint = null,
@@ -27,10 +28,15 @@
     lastSaved = 0,
     lastUI = 0,
     lastFrame = performance.now(),
+    lastDraw = lastFrame,
+    nextDraw = lastFrame,
+    renderDirty = true,
+    noticeTimer = 0,
     acc = 0,
     phase = -1,
     resultShown = false;
   const mapPointers = new Map();
+  const actionPointers = new Map();
   let edge = null,
     pinch = null,
     buildingPress = null,
@@ -96,6 +102,7 @@
   function loadOperation(text) {
     const next = E.restore(JSON.parse(text));
     if (!next) throw Error("Не удалось прочитать сохранение.");
+    if (placement) cancelPlacement();
     saved = next;
     state = E.restore(next);
     resultShown = false;
@@ -114,6 +121,11 @@
     $("notice").textContent = text;
     $("notice").classList.add("visible");
     noticeUntil = performance.now() + 4200;
+    clearTimeout(noticeTimer);
+    noticeTimer = setTimeout(
+      () => $("notice").classList.remove("visible"),
+      4200,
+    );
   }
   function resetInput() {
     keys.clear();
@@ -128,8 +140,15 @@
     input.fire = input.dash = input.reload = input.interact = false;
     clearStick(moveStick, $("move-stick"));
     clearStick(aimStick, $("aim-stick"));
+    for (const [pointer, button] of actionPointers) {
+      button.classList.remove("pressed");
+      if (button.hasPointerCapture(pointer))
+        button.releasePointerCapture(pointer);
+    }
+    actionPointers.clear();
   }
   function setMode(next) {
+    if (placement && next !== "tactical") cancelPlacement();
     if (
       mode === "playing" &&
       next === "tactical" &&
@@ -147,7 +166,7 @@
     document.body.dataset.mode = mode;
     $("home").hidden = mode !== "menu";
     $("hud").hidden = mode === "menu";
-    $("tactical-panel").hidden = mode !== "tactical";
+    $("tactical-panel").hidden = mode !== "tactical" || !!placement;
     $("map-tools").hidden = mode !== "tactical";
     $("tactical").setAttribute("aria-pressed", String(mode === "tactical"));
     $("tactical").querySelector("span").textContent =
@@ -166,17 +185,24 @@
     const drawer =
       $("dialog").open && $("dialog").dataset.panel === "development";
     const panel = (
-        drawer ? $("dialog") : $("tactical-panel")
+        placement
+          ? $("placement-panel")
+          : drawer
+            ? $("dialog")
+            : $("tactical-panel")
       ).getBoundingClientRect(),
       tools = $("map-tools").getBoundingClientRect(),
       objective = document.querySelector(".topbar").getBoundingClientRect(),
-      landscape = !drawer && innerWidth > innerHeight && innerHeight <= 500;
-    mapArea = {
+      landscape =
+        !placement && !drawer && innerWidth > innerHeight && innerHeight <= 500;
+    const next = {
       x: 14,
       y: Math.max(tools.bottom, objective.bottom) + 12,
       right: landscape ? panel.left - 14 : innerWidth - 14,
       bottom: landscape ? innerHeight - 14 : panel.top - 12,
     };
+    if (JSON.stringify(next) !== JSON.stringify(mapArea)) renderDirty = true;
+    mapArea = next;
   }
   let mapMeasureFrame = 0;
   const mapLayout = new ResizeObserver(() => {
@@ -191,6 +217,7 @@
   ])
     mapLayout.observe(el);
   mapLayout.observe($("dialog"));
+  mapLayout.observe($("placement-panel"));
   function updateHome() {
     $("continue").hidden = !saved || saved.status !== "playing";
     $("new-game").hidden = !saved || saved.status !== "playing";
@@ -484,13 +511,15 @@
       measureMapArea();
     }
     if (which === "help")
-      $("economy-help").textContent = E.development.expedition(state)
-        ? "Разверните добычу и казармы. Второй узел и подавление северного бастиона или южного арсенала откроют оперативный контур. Вражеские базы собирают отряды; их уничтожение прекращает подкрепления. Выберите осаду с артиллерией или проникновение через терминал. Нажмите на своё здание, чтобы открыть очередь. Очереди работают только вне паузы."
-        : E.development.extended(state)
-          ? "Дроны доставляют сплав в узлы. Развивайте добычу и казармы, исследуйте сеть управления. Второй добывающий узел и уничтоженный глушитель либо южная батарея откроют оперативный контур — артиллерию и проникновение. В разделе добычи доступны защита узлов и ремонт. Очереди работают только вне паузы."
-          : state.campaign
-            ? "Дроны доставляют сплав из конечных месторождений. Постройте казармы и добывающий узел, затем исследуйте сеть управления. Выберите тяжёлый цех для осады или модуль проникновения. Очереди работают только в бою. Приказ группе задаёт точку сбора подкреплений."
-            : "Сплав находится в контейнерах. Опорные пункты восстанавливают отряд; снабжение позволяет выбрать артиллерию или модуль взлома.";
+      $("economy-help").textContent = E.construction.enabled(state)
+        ? "В разделе «Стройка» выберите здание и свободную видимую площадку. Один дрон прекратит добычу и отправится строить. Сетка видна только при размещении; стрелка показывает выход. На телефоне подтвердите место кнопкой; на компьютере — щелчком. R поворачивает, Esc отменяет. Погибшего строителя можно заменить в карточке здания. Каждое производство имеет собственную очередь и точку сбора. Общий заказ выбирает кратчайшую очередь, получатель подсвечен. Арсенал после II ступени исследует усилители, броню и проникновение. Для III ступени нужны второй узел и подавленная внешняя база. Стройка и очереди продолжаются после выхода из паузы."
+        : E.development.expedition(state)
+          ? "Разверните добычу и казармы. Второй узел и подавление северного бастиона или южного арсенала откроют оперативный контур. Вражеские базы собирают отряды; их уничтожение прекращает подкрепления. Выберите осаду с артиллерией или проникновение через терминал. Нажмите на своё здание, чтобы открыть очередь. Очереди работают только вне паузы."
+          : E.development.extended(state)
+            ? "Дроны доставляют сплав в узлы. Развивайте добычу и казармы, исследуйте сеть управления. Второй добывающий узел и уничтоженный глушитель либо южная батарея откроют оперативный контур — артиллерию и проникновение. В разделе добычи доступны защита узлов и ремонт. Очереди работают только вне паузы."
+            : state.campaign
+              ? "Дроны доставляют сплав из конечных месторождений. Постройте казармы и добывающий узел, затем исследуйте сеть управления. Выберите тяжёлый цех для осады или модуль проникновения. Очереди работают только в бою. Приказ группе задаёт точку сбора подкреплений."
+              : "Сплав находится в контейнерах. Опорные пункты восстанавливают отряд; снабжение позволяет выбрать артиллерию или модуль взлома.";
     if (which === "settings") {
       $("volume").value = settings.volume;
       $("volume-value").textContent = settings.volume + "%";
@@ -556,6 +585,7 @@
     );
   }
   function updateUI() {
+    renderDirty = true;
     if (selected) selected = selectedUnits().map((u) => u.id);
     refreshSelection();
     const h = E.hero(state),
@@ -606,6 +636,11 @@
       hints.citadel = E.living(state, "foundry")
         ? "Развитие · закажите артиллерию"
         : "Развитие · постройте тяжёлый цех";
+    if (E.construction.enabled(state)) {
+      hints.develop = "Развитие → Стройка · выберите площадку";
+      hints.expand = "Дрон строит узел рядом с месторождением";
+      hints["expand-network"] = "Разместите узел у второй свободной жилы";
+    }
     $("objective-text").textContent = titles[task.id];
     $("objective-sub").textContent = hints[task.id];
     if (n !== phase) {
@@ -640,6 +675,11 @@
     $("reload-status").textContent =
       state.reload > 0 ? "Перезарядка…" : "Импульсная винтовка";
     $("dash-cooldown").style.width = (state.dash / 3.2) * 100 + "%";
+    $("dash").style.setProperty("--cooldown", (state.dash / 3.2) * 100 + "%");
+    $("reload").style.setProperty(
+      "--cooldown",
+      (state.reload / 1.1) * 100 + "%",
+    );
     $("dash").disabled = state.dash > 0;
     $("reload").disabled = state.reload > 0 || state.ammo === 12;
     const act = E.interaction(state);
@@ -707,7 +747,6 @@
     funds: "Недостаточно сплава",
     distance: "Подведите разведчика к площадке",
     hostiles: "Сначала очистите площадку",
-    occupied: "Площадка занята",
     relay: "Сначала запустите узел связи",
     post: "Нужен готовый опорный пункт",
     installed: "Модуль установлен",
@@ -717,10 +756,24 @@
     blocked: "Освободите место для высадки",
     fortress: "Подавите северный бастион или южный арсенал",
     limit: "Лимит подкреплений",
+    arsenal: "Нужен готовый арсенал",
+    builder: "Нужен свободный дрон",
+    "builder-route": "Дрон не может добраться до стройки",
+    "no-vision": "Площадка должна быть видна сейчас",
+    support: "Нужна ровная площадка вдали от обрыва и перехода",
+    occupied: "Площадка занята · оставьте свободное место вокруг",
+    "objective-space": "Оставьте доступ к руде и объектам операции",
+    "ore-distance": "Разместите узел не дальше 320 от месторождения",
+    "occupied-mine": "Это месторождение уже обслуживает узел",
+    exit: "Освободите выход здания",
+    passage: "Постройка перекроет проход",
+    placement: "Выберите место на карте",
+    construction: "Стройка уже завершена или уничтожена",
   };
   const development = new SignalDevelopmentPanel($("development-panel"), {
     state: () => state,
     buy,
+    place: beginPlacement,
     layout: measureMapArea,
     select: (id) => {
       selectedBuilding = id;
@@ -790,6 +843,100 @@
           : reasons[offer.reason] || "Недоступно";
     }
   }
+  function cancelPlacement() {
+    placement = null;
+    document.body.classList.remove("placing");
+    $("placement-panel").hidden = true;
+    $("tactical-panel").hidden = mode !== "tactical";
+    resetInput();
+    measureMapArea();
+    renderDirty = true;
+  }
+  function previewPlacement(point) {
+    if (!placement) return;
+    const p = E.construction.snap(
+      placement.kind,
+      point.x,
+      point.y,
+      placement.turn,
+    );
+    if (!p) return;
+    const key = [p.x, p.y, placement.turn, state.economy.alloy, state.t].join(
+      ":",
+    );
+    if (key === placement.key) return;
+    placement.key = key;
+    placement.point = { x: p.x, y: p.y, turn: placement.turn };
+    placement.result = E.construction.check(
+      state,
+      placement.kind,
+      placement.point,
+    );
+    const o = placement.result;
+    $("placement-status").textContent = o.allowed
+      ? "Место подходит · дрон назначается при подтверждении"
+      : reasons[o.reason] || "Здесь нельзя построить";
+    $("placement-panel").dataset.valid = String(o.allowed);
+    $("placement-confirm").disabled = !o.allowed;
+    renderDirty = true;
+  }
+  function beginPlacement(kind, near) {
+    const o = E.construction.availability(state, kind);
+    if (!o.allowed) {
+      notice(reasons[o.reason] || "Недоступно");
+      return;
+    }
+    $("dialog").close();
+    document.body.classList.remove("development-open");
+    setMode("tactical");
+    clearSelection();
+    placement = { kind, turn: 0, key: null, point: null, result: null };
+    document.body.classList.add("placing");
+    $("placement-panel").hidden = false;
+    $("tactical-panel").hidden = true;
+    $("placement-title").textContent = E.development.items(state)[kind].label;
+    $("placement-cost").textContent = o.cost + " сплава";
+    $("placement-help").textContent =
+      coarse.matches || innerWidth < 700
+        ? "Касание — место · два пальца — камера · подтвердите кнопкой"
+        : "ЛКМ — построить · R — поворот · ПКМ / Esc — отмена";
+    measureMapArea();
+    const target =
+      state.campaign.mines.find((m) => m.id === near) || E.hero(state);
+    view.focus(target.x, target.y);
+    previewPlacement({ x: target.x + 120, y: target.y - 120 });
+    updateUI();
+  }
+  function confirmPlacement() {
+    if (!placement || mode !== "tactical" || storageConflict) return;
+    const result = E.purchase(state, placement.kind, placement.point);
+    if (!result.allowed) {
+      placement.key = null;
+      previewPlacement(placement.point);
+      notice(reasons[result.reason] || "Площадка больше недоступна");
+      return;
+    }
+    const built = state.units.find((u) => u.id === result.buildingId);
+    cancelPlacement();
+    E.refreshRecon(state);
+    save();
+    updateUI();
+    view.add(E.knownEvents(state), settings.reduced);
+    state.events = [];
+    notice("Дрон назначен · стройка начнётся после выхода из паузы");
+    selectedBuilding = built.id;
+    selected = [];
+    selectionVisible = true;
+    refreshSelection();
+  }
+  $("placement-cancel").onclick = cancelPlacement;
+  $("placement-confirm").onclick = confirmPlacement;
+  $("placement-rotate").onclick = () => {
+    if (placement) {
+      placement.turn = 1 - placement.turn;
+      previewPlacement(placement.point);
+    }
+  };
   function buy(action, site) {
     if (!state.campaign && site && performance.now() < (siteLocks[site] || 0))
       return;
@@ -812,7 +959,18 @@
                 : "Подкрепление на позиции"
           : reasons[result.reason] || "Недоступно";
     if (result.allowed) {
-      if (!state.campaign && site) siteLocks[site] = performance.now() + 450;
+      if (!state.campaign && site) {
+        const operation = state,
+          until = performance.now() + 450;
+        siteLocks[site] = until;
+        // Paused UI no longer polls every frame. Expire the double-tap guard
+        // explicitly so an otherwise idle supply panel becomes usable again.
+        setTimeout(() => {
+          if (state !== operation || siteLocks[site] !== until) return;
+          delete siteLocks[site];
+          updateUI();
+        }, 451);
+      }
       sound.start();
       for (const event of E.knownEvents(state)) sound.play(event);
       view.add(E.knownEvents(state), settings.reduced);
@@ -944,12 +1102,34 @@
     settings.reduced = e.target.checked;
     persist();
   };
-  $("dash").onclick = () => {
-    if (mode === "playing") input.dash = true;
-  };
-  $("reload").onclick = () => {
-    if (mode === "playing") input.reload = true;
-  };
+  for (const action of ["dash", "reload"]) {
+    const button = $(action);
+    let lastTouch = -Infinity;
+    button.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "mouse" || mode !== "playing" || button.disabled)
+        return;
+      // Secondary fingers do not reliably produce a compatibility click.
+      // Each action owns its pointer independently of both sticks.
+      lastTouch = performance.now();
+      input[action] = true;
+      actionPointers.set(e.pointerId, button);
+      button.setPointerCapture(e.pointerId);
+      button.classList.add("pressed");
+      e.preventDefault();
+    });
+    button.addEventListener("click", (e) => {
+      if (e.detail !== 0 && performance.now() - lastTouch < 700) return;
+      if (mode === "playing" && !button.disabled) input[action] = true;
+    });
+    for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
+      button.addEventListener(type, (e) => {
+        if (actionPointers.get(e.pointerId) !== button) return;
+        actionPointers.delete(e.pointerId);
+        button.classList.remove("pressed");
+        if (button.hasPointerCapture(e.pointerId))
+          button.releasePointerCapture(e.pointerId);
+      });
+  }
   $("interact").addEventListener("pointerdown", (e) => {
     if (mode === "playing") {
       input.interact = true;
@@ -980,16 +1160,27 @@
         (u) =>
           !u.team &&
           u.hp > 0 &&
-          ["base", "outpost", "barracks", "foundry"].includes(u.kind),
+          ["base", "outpost", "barracks", "foundry", "arsenal"].includes(
+            u.kind,
+          ),
       )
       .map((u) => {
         const p = view.screen(u.x, u.y);
+        const worldPoint = view.world(e.clientX, e.clientY),
+          box = u.construction && E.construction.rect(u);
         return {
           u,
-          d: Math.hypot(
-            e.clientX - p.x,
-            (e.clientY - p.y + 10 * view.camera.scale) / 0.85,
-          ),
+          d:
+            box &&
+            worldPoint.x >= box.x &&
+            worldPoint.x <= box.x + box.w &&
+            worldPoint.y >= box.y &&
+            worldPoint.y <= box.y + box.h
+              ? 0
+              : Math.hypot(
+                  e.clientX - p.x,
+                  (e.clientY - p.y + 10 * view.camera.scale) / 0.85,
+                ),
           r: Math.max(pad, E.C[u.kind].r * view.camera.scale),
         };
       })
@@ -1060,7 +1251,9 @@
         }
         pinch = { d, ...mid };
         edge = null;
-      } else if (p.kind === "select") paintSelection();
+      } else if (p.kind === "placement")
+        previewPlacement(view.world(e.clientX, e.clientY));
+      else if (p.kind === "select") paintSelection();
       else if (p.kind === "pan" && p.moved) {
         view.pan(-dx / view.camera.scale, -dy / (view.camera.scale * 0.73));
         edge = null;
@@ -1082,6 +1275,8 @@
       e.preventDefault();
       return;
     }
+    if (placement && e.pointerType !== "touch" && !mapPointers.size)
+      previewPlacement(view.world(e.clientX, e.clientY));
     if (mode === "tactical" && e.pointerType !== "touch" && !mapPointers.size)
       edge = edgeAt(e);
     else if (mode === "playing" && e.pointerType !== "touch") {
@@ -1094,19 +1289,26 @@
   });
   canvas.addEventListener("pointerdown", (e) => {
     if (mode === "tactical" && [0, 1, 2].includes(e.button)) {
+      if (placement && e.button === 2) {
+        cancelPlacement();
+        e.preventDefault();
+        return;
+      }
       const touch = e.pointerType === "touch",
         boundary = edgeAt(e);
       const kind =
         e.button === 1
           ? "pan"
-          : e.button === 2 || orderMode || rallyBuilding
-            ? "order"
-            : touch &&
-                (boundary.x || boundary.y) &&
-                !troopAt(e) &&
-                !buildingAt(e)
-              ? "edge"
-              : "select";
+          : placement
+            ? "placement"
+            : e.button === 2 || orderMode || rallyBuilding
+              ? "order"
+              : touch &&
+                  (boundary.x || boundary.y) &&
+                  !troopAt(e) &&
+                  !buildingAt(e)
+                ? "edge"
+                : "select";
       const p = {
         id: e.pointerId,
         x: e.clientX,
@@ -1133,7 +1335,9 @@
           y: (a.y + b.y) / 2,
         };
         edge = null;
-      } else if (kind === "select") orderDrag = p;
+      } else if (kind === "placement")
+        previewPlacement(view.world(e.clientX, e.clientY));
+      else if (kind === "select") orderDrag = p;
       canvas.setPointerCapture(e.pointerId);
       e.preventDefault();
       return;
@@ -1187,7 +1391,10 @@
         if (canvas.hasPointerCapture(e.pointerId))
           canvas.releasePointerCapture(e.pointerId);
         if (type === "pointerup" && mode === "tactical" && onField(e)) {
-          if (p.kind === "select") finishSelection(p, e);
+          if (p.kind === "placement") {
+            previewPlacement(view.world(e.clientX, e.clientY));
+            if (e.pointerType !== "touch" && !p.moved) confirmPlacement();
+          } else if (p.kind === "select") finishSelection(p, e);
           else if (p.kind === "order" && !p.moved)
             issueOrder(view.world(e.clientX, e.clientY), troopAt(e, true));
         }
@@ -1265,39 +1472,17 @@
   ]) {
     const el = $(id);
     function paint() {
-      const r = el.getBoundingClientRect();
-      el.style.setProperty("--base-x", stick.cx - r.x - r.width / 2 + "px");
-      el.style.setProperty("--base-y", stick.cy - r.y - r.height / 2 + "px");
       el.style.setProperty("--stick-x", stick.visualX + "px");
       el.style.setProperty("--stick-y", stick.visualY + "px");
       el.classList.toggle("active", stick.active);
     }
     function move(e) {
       if (e.pointerId !== stick.id) return;
-      let dx = e.clientX - stick.cx,
+      const dx = e.clientX - stick.cx,
         dy = e.clientY - stick.cy,
         len = Math.hypot(dx, dy);
-      // The base follows a long drag, so reversing direction needs only a small thumb motion.
-      if (len > stick.radius) {
-        stick.cx += (dx / len) * (len - stick.radius);
-        stick.cy += (dy / len) * (len - stick.radius);
-        stick.cx = E.clamp(
-          stick.cx,
-          Math.min(stick.originX, isAim ? innerWidth / 2 + 32 : 48),
-          Math.max(
-            stick.originX,
-            isAim ? innerWidth - 48 : innerWidth / 2 - 32,
-          ),
-        );
-        stick.cy = E.clamp(
-          stick.cy,
-          Math.min(stick.originY, stick.bounds.top + 40),
-          Math.max(stick.originY, stick.bounds.bottom - 40),
-        );
-        dx = e.clientX - stick.cx;
-        dy = e.clientY - stick.cy;
-        len = Math.hypot(dx, dy);
-      }
+      // The origin belongs to this touch, even after crossing the screen centre.
+      // Only the knob and input vector move; the base stays at pointerdown.
       const dead = 5,
         strength = E.clamp((len - dead) / (stick.radius - dead), 0, 1);
       stick.x = len ? (dx / len) * strength : 0;
@@ -1317,10 +1502,8 @@
         id: e.pointerId,
         cx: e.clientX,
         cy: e.clientY,
-        originX: e.clientX,
-        originY: e.clientY,
-        bounds: r,
         radius: Math.min(42, r.width * 0.29),
+        building: buildingAt(e),
         started: performance.now(),
         used: false,
         visualX: 0,
@@ -1330,6 +1513,8 @@
         active: false,
       });
       mousePoint = null;
+      el.style.setProperty("--base-x", stick.cx - r.x + "px");
+      el.style.setProperty("--base-y", stick.cy - r.y + "px");
       el.classList.add("engaged");
       el.setPointerCapture(e.pointerId);
       paint();
@@ -1340,17 +1525,29 @@
       el.addEventListener(type, (e) => {
         if (stick.id !== e.pointerId) return;
         const tap =
-          isAim &&
           type === "pointerup" &&
           !stick.used &&
           performance.now() - stick.started < 250 &&
           mode === "playing";
+        const building =
+          tap && stick.building && buildingAt(e)?.id === stick.building.id
+            ? stick.building
+            : null;
         clearStick(stick, el);
-        if (tap) quickFire();
+        if (building) openBuilding(building);
+        else if (tap && isAim) quickFire();
         e.preventDefault();
       });
   }
   addEventListener("keydown", (e) => {
+    if (placement && ["Escape", "KeyR"].includes(e.code)) {
+      e.preventDefault();
+      if (!e.repeat) {
+        if (e.code === "Escape") cancelPlacement();
+        else $("placement-rotate").click();
+      }
+      return;
+    }
     if (e.code === "Escape" && (orderDrag || mapPointers.size)) {
       cancelMapGesture();
       e.preventDefault();
@@ -1458,10 +1655,34 @@
     view.resize();
     resetInput();
     measureMapArea();
+    renderDirty = true;
   });
+  // A paused map needs a new frame only after interaction, a UI change,
+  // camera easing, or an order acknowledgement. Keep input listeners alive.
+  for (const type of [
+    "pointerdown",
+    "pointermove",
+    "pointerup",
+    "pointercancel",
+    "wheel",
+    "keydown",
+    "keyup",
+    "click",
+    "input",
+    "change",
+  ])
+    addEventListener(
+      type,
+      () => {
+        renderDirty = true;
+      },
+      { capture: true, passive: true },
+    );
   function tick(now) {
+    requestAnimationFrame(tick);
     const elapsed = Math.min(0.1, (now - lastFrame) / 1000);
     lastFrame = now;
+    if (document.hidden) return;
     if (mode === "tactical") {
       let dx =
           (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) -
@@ -1475,6 +1696,7 @@
       }
       const d = Math.hypot(dx, dy);
       if (d && !orderDrag) {
+        renderDirty = true;
         view.pan(
           ((dx / d) * 520 * elapsed) / view.camera.scale,
           ((dy / d) * 520 * elapsed) / (view.camera.scale * 0.73),
@@ -1511,7 +1733,8 @@
           interact: input.interact || keys.has("KeyE"),
         });
         input.dash = input.reload = input.tapFire = false;
-        for (const e of E.knownEvents(state)) {
+        const events = E.knownEvents(state);
+        for (const e of events) {
           if (e.type !== "end") sound.play(e);
           if (e.type === "collect") notice("Сплав +" + e.amount);
           if (e.type === "raid")
@@ -1535,7 +1758,7 @@
           if (e.type === "breach")
             notice("Защита отключена. Прикройте разведчика");
         }
-        view.add(E.knownEvents(state), settings.reduced);
+        view.add(events, settings.reduced);
         acc -= E.DT;
       }
       if (state.status !== "playing" && !resultShown) reportEnd();
@@ -1544,17 +1767,32 @@
         lastSaved = now;
       }
     }
-    sound.update(E.observe(state), mode, settings.volume);
-    if (now - lastUI > 80) {
+    const animated =
+      mode === "playing" || (mode === "menu" && !settings.reduced);
+    if (
+      !animated &&
+      !renderDirty &&
+      view.cameraSettled &&
+      !view.fx.some((f) => f.type === "order")
+    )
+      return;
+    if (now + 0.5 < nextDraw) return;
+    const frameTime = 1000 / 60;
+    nextDraw +=
+      Math.max(1, Math.floor((now - nextDraw) / frameTime) + 1) * frameTime;
+    if (now - lastUI > 80 && (mode === "playing" || renderDirty)) {
       updateUI();
       lastUI = now;
     }
+    const scene = mode === "menu" ? state : E.observe(state);
+    if (mode === "playing") sound.update(scene, mode, settings.volume);
     view.render(
-      state,
+      scene,
       {
         mode: mode === "paused" && lastMode === "tactical" ? "tactical" : mode,
         group: selected === null ? group : 0,
         selectedBuilding,
+        placement,
         mapArea,
         selectionIds: selectionVisible
           ? selectedUnits().map((u) => u.id)
@@ -1564,9 +1802,10 @@
         reduced: settings.reduced,
         touch: coarse.matches || innerWidth < 700,
       },
-      elapsed,
+      Math.min(0.1, (now - lastDraw) / 1000),
     );
-    requestAnimationFrame(tick);
+    lastDraw = now;
+    renderDirty = false;
   }
   updateHome();
   setMode("menu");

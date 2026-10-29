@@ -29,7 +29,14 @@
       element.addEventListener("click", (e) => {
         const button = e.target.closest("button");
         if (!button || !element.contains(button)) return;
-        if (button.hasAttribute("data-all-buildings")) {
+        if (button.dataset.construct) {
+          options.place(button.dataset.construct, button.dataset.near);
+        } else if (button.dataset.productionGroup) {
+          this.select();
+          this.groupKind = button.dataset.productionGroup;
+          this.tab = "production";
+          this.render();
+        } else if (button.hasAttribute("data-all-buildings")) {
           this.select();
           this.expand(true);
         } else if (button.dataset.select) {
@@ -76,6 +83,7 @@
     }
     select(id = null) {
       this.selected = id;
+      this.groupKind = null;
       this.job = null;
       this.section = "troops";
       this.el.scrollTop = 0;
@@ -142,6 +150,8 @@
       const E = root.SignalEngine,
         s = this.options.state();
       if (!s.campaign) return;
+      if (E.construction.enabled(s)) return this.renderConstruction(s);
+      this.el.classList.remove("free-development");
       this.el.closest("dialog").dataset.building = String(
         this.selected !== null,
       );
@@ -520,6 +530,210 @@
       this.options.layout?.();
       if (focused && document.getElementById(focused))
         document.getElementById(focused).focus({ preventScroll: true });
+    }
+    renderConstruction(s) {
+      const E = root.SignalEngine,
+        D = E.development,
+        C = E.construction,
+        items = D.items(s);
+      if (!this.freeInitialized) {
+        this.freeInitialized = true;
+        this.tab = "build";
+      }
+      const alive = s.units.filter((u) => u.hp > 0 && !u.team),
+        name = (u) =>
+          (items[u.kind]?.label || "Посадочный узел") +
+          (u.construction
+            ? " " +
+              s.units.filter((p) => p.kind === u.kind && p.id <= u.id).length
+            : "");
+      const key = JSON.stringify([
+        this.tab,
+        this.selected,
+        this.groupKind,
+        this.expanded,
+        this.job,
+        s.economy,
+        s.campaign.tier,
+        s.campaign.weapons,
+        s.campaign.armor,
+        s.recon.explored[0],
+        alive.map((u) => [
+          u.id,
+          u.hp,
+          u.build,
+          u.buildingId,
+          u.construction?.builderId,
+          u.x,
+          u.y,
+          u.jobs,
+        ]),
+        s.campaign.mines.map((m) => m.remaining),
+      ]);
+      if (key === this.key) return;
+      this.key = key;
+      const focus = document.activeElement?.id,
+        scroll = this.el.scrollTop;
+      const reason = (o) =>
+        o.reason === "funds"
+          ? `Не хватает ${Math.max(0, o.cost - s.economy.alloy)} сплава`
+          : this.options.reason(o.reason);
+      const title = (label, detail = "", back = false) =>
+        `<header>${back ? '<button class="building-back" data-all-buildings aria-label="Все здания">←</button>' : ""}<div><strong>${label}</strong><small>${detail}</small></div></header>`;
+      const actions = {
+        rifle: "Обучить бойца",
+        scout: "Обучить дозорного",
+        artillery: "Собрать орудие",
+        drone: "Обучить дрона",
+        repair: "Ремонт корпуса",
+        defense: "Защита узла",
+      };
+      const purchase = (action, ids) => {
+        const site = Array.isArray(ids) ? ids.join(",") : ids,
+          o = E.supplyStatus(s, action, site),
+          item = items[action],
+          done = o.reason === "installed",
+          recipient =
+            o.producer &&
+            [
+              "rifle",
+              "scout",
+              "artillery",
+              "drone",
+              "weapons",
+              "armor",
+              "hack",
+              "network",
+              "command",
+            ].includes(action)
+              ? o.producer
+              : null;
+        return `<div class="offer free-offer"><button id="develop-${action}${["drone", "repair", "defense"].includes(action) && site ? "-" + site : ""}" class="purchase" data-action="${action}" ${site !== undefined ? `data-site="${site}"` : ""} ${o.producer ? `data-producer="${o.producer.id}"` : ""} ${o.allowed ? "" : "disabled"} data-state="${done ? "complete" : o.allowed ? "available" : "locked"}"><span class="purchase-label">${done ? "Исследовано" : actions[action] || item.label}<small>${item.time} с${item.pop ? ` · ${item.pop} мест` : ""}</small></span><span class="price">${done ? "✓" : item.cost}<small>сплав</small></span></button><p class="free-reason" role="status">${o.allowed ? (recipient ? `Заказ → ${name(recipient)} · в очереди ${Math.ceil(recipient.jobs.reduce((n, j) => n + j.remaining, 0))} с` : "") : done ? "Действует всю операцию" : reason(o)}</p></div>`;
+      };
+      const queue = (u) =>
+        `<div class="free-queue" aria-label="Очередь: ${name(u)}">${[0, 1, 2]
+          .map((i) => {
+            const j = u.jobs[i];
+            return j
+              ? `<button class="job-select" data-job="${u.id}:${j.id}" aria-pressed="${this.job === `${u.id}:${j.id}`}"><span>${items[j.action].label}</span><small>${i ? "Ожидает" : j.remaining ? Math.ceil(j.remaining) + " с" : "Готов · ждёт выхода"}</small><i style="--progress:${(1 - j.remaining / j.duration) * 100}%"></i></button>`
+              : '<div class="free-queue-empty">Свободно</div>';
+          })
+          .join("")}</div>${u.jobs
+          .filter((j) => this.job === `${u.id}:${j.id}`)
+          .map(
+            (j) =>
+              `<button class="free-cancel" data-action="cancel" data-site="${u.id}:${j.id}" data-producer="${u.id}">Отменить: ${items[j.action].label} · +${Math.floor(j.cost * 0.75)} сплава</button>`,
+          )
+          .join("")}`;
+      const focusButton = (u) =>
+        `<button class="map-link" data-focus="${u.x},${u.y}" aria-label="Показать: ${name(u)}">↗</button>`;
+      const construction = (u) => {
+        const worker = alive.find((w) => w.id === u.construction.builderId),
+          replacement = C.replacement(s, u.id);
+        return `<div class="dev-build"><span>${worker ? (E.dist(worker, u.construction.work) > 12 ? "Строитель в пути" : "Строительство") : "Ожидает строителя"}</span><strong>${Math.ceil((1 - u.build / items[u.kind].time) * 100)}%</strong><i style="--progress:${(1 - u.build / items[u.kind].time) * 100}%"></i></div><p class="dev-note">${worker ? "Дрон продолжит работу после выхода из паузы" : "Назначьте свободного дрона, чтобы продолжить"}</p><div class="free-site-actions">${!worker ? `<button data-action="assign-builder" data-site="${u.id}" ${replacement.allowed ? "" : "disabled"}>Назначить дрона</button>` : ""}<button data-action="cancel-build" data-site="${u.id}">Отменить · +${Math.floor(u.construction.paid * 0.75)}</button></div>${!worker && !replacement.allowed ? `<p class="dev-note">${reason(replacement)}</p>` : ""}`;
+      };
+      const selected = alive.find((u) => u.id === this.selected);
+      let content = "";
+      if (this.selected !== null) {
+        if (!selected)
+          content =
+            '<div class="building-missing"><strong>Здание уничтожено</strong><p>Очередь потеряна.</p><button data-all-buildings>Все здания</button></div>';
+        else {
+          const u = selected,
+            troop =
+              {
+                base: ["drone"],
+                outpost: ["drone"],
+                barracks: ["rifle", "scout"],
+                foundry: ["artillery"],
+                arsenal: [],
+              }[u.kind] || [],
+            tech =
+              {
+                base: ["network", "command", "defense"],
+                outpost: ["defense"],
+                barracks: [],
+                foundry: [],
+                arsenal: ["weapons", "armor", "hack"],
+              }[u.kind] || [];
+          const buttons =
+            !troop.length || this.section === "tech" ? tech : troop;
+          content = `<article class="card free-producer">${title(name(u), `Корпус ${Math.ceil(u.hp)} / ${E.C[u.kind].hp}`, true)}${
+            u.build > 0
+              ? construction(u)
+              : `${troop.length && tech.length ? `<div class="building-tabs"><button data-section="troops" aria-pressed="${this.section !== "tech"}">Производство</button><button data-section="tech" aria-pressed="${this.section === "tech"}">Улучшения</button></div>` : ""}<div class="unit-offers">${buttons.map((a) => purchase(a, u.id)).join("")}</div>${queue(u)}<div class="building-service">${["barracks", "foundry"].includes(u.kind) ? `<button class="rally-button" data-rally="${u.id}">Точка сбора ↗</button>` : ""}${focusButton(u)}</div>${purchase("repair", u.id)}`
+          }</article>`;
+        }
+      } else if (this.tab === "build") {
+        for (const kind of ["barracks", "outpost", "foundry", "arsenal"]) {
+          const o = C.availability(s, kind),
+            shape = C.shapes[kind],
+            detail = {
+              barracks: "Пехота и дозорные",
+              outpost: "Добыча рядом с рудой · +3 места",
+              foundry: "Тяжёлая артиллерия",
+              arsenal: "Улучшения армии и проникновение",
+            }[kind];
+          content += `<article class="card">${title(items[kind].label, `${detail} · ${shape.join(" × ")}`)}<button id="develop-${kind}" class="purchase" data-construct="${kind}" ${o.allowed ? "" : "disabled"}><span class="purchase-label">Выбрать место<small>Дрон · ${items[kind].time} с</small></span><span class="price">${o.cost}<small>сплав</small></span></button><p class="free-reason">${o.allowed ? "Оплата после подтверждения места" : reason(o)}</p></article>`;
+        }
+      } else if (this.tab === "production") {
+        for (const kind of this.groupKind
+          ? [this.groupKind]
+          : ["barracks", "foundry", "arsenal"]) {
+          const buildings = alive.filter((u) => u.kind === kind),
+            ready = buildings.filter((u) => !u.build),
+            ids = ready.map((u) => u.id),
+            list =
+              kind === "barracks"
+                ? ["rifle", "scout"]
+                : kind === "foundry"
+                  ? ["artillery"]
+                  : ["weapons", "armor", "hack"];
+          content += `<article class="card">${title(items[kind].label, `${buildings.length} зданий · ${ready.length} готово`, !!this.groupKind)}${ready.length ? `<div class="unit-offers">${list.map((a) => purchase(a, ids)).join("")}</div>` : `<p class="dev-note">${buildings.length ? "Строительство продолжается после паузы" : "Постройте здание в разделе «Стройка»"}</p>`}<div class="free-building-list">${buildings.map((u) => `<div class="free-building-row" data-recipient="${list.some((action) => E.supplyStatus(s, action, ids.join(",")).producer?.id === u.id)}"><button data-select="${u.id}"><strong>${name(u)}</strong><small>${u.build ? `Стройка · ${Math.ceil((1 - u.build / items[kind].time) * 100)}%` : `Очередь ${u.jobs.length} / 3`}</small></button>${focusButton(u)}</div>`).join("")}</div>${buildings.length > 1 ? `<button class="free-group" data-production-group="${kind}">Выбрать все · один заказ в кратчайшую очередь</button>` : ""}</article>`;
+        }
+      } else if (this.tab === "economy") {
+        for (const mine of s.campaign.mines.filter((m) =>
+          E.explored(s, 0, m),
+        )) {
+          const node = alive.find((u) =>
+              mine.id === "home"
+                ? u.kind === "base"
+                : u.kind === "outpost" && u.site === mine.id,
+            ),
+            label =
+              mine.id === "home"
+                ? "Посадочный узел"
+                : D.pads(s).find((p) => p.id === mine.id)?.name ||
+                  "Месторождение";
+          content += `<article class="card">${title(label, `Сплав в жиле: ${mine.remaining}`)}${node ? `<div class="free-building-row"><button data-select="${node.id}">${name(node)} · ${D.workers(s, node).filter((w) => !w.buildingId).length} дрона на добыче</button>${focusButton(node)}</div>${node.build ? construction(node) : purchase("drone", node.id) + queue(node)}` : `<button class="purchase" data-construct="outpost" data-near="${mine.id}" ${C.availability(s, "outpost").allowed ? "" : "disabled"}>Разместить узел · ${items.outpost.cost} сплава</button>`}</article>`;
+        }
+      } else {
+        for (const action of ["network", "command", "weapons", "armor", "hack"])
+          content += `<article class="card">${title(items[action].label, action === "network" || action === "command" ? "Посадочный узел" : "Арсенал · исследование для всей армии")}${purchase(action)}</article>`;
+      }
+      this.el.closest("dialog").dataset.building = String(
+        this.selected !== null,
+      );
+      this.el.classList.add("free-development");
+      this.el.innerHTML = `${
+        this.selected === null
+          ? `<div class="dev-tabs" role="tablist" aria-label="Развитие базы">${[
+              ["build", "Стройка"],
+              ["economy", "Добыча"],
+              ["production", "Армия"],
+              ["research", "Технологии"],
+            ]
+              .map(
+                ([id, label]) =>
+                  `<button id="develop-tab-${id}" role="tab" data-tab="${id}" aria-selected="${this.tab === id}">${label}</button>`,
+              )
+              .join("")}</div>`
+          : ""
+      }<div id="development-body" class="${this.selected !== null ? "producer" : ""}">${content}</div>`;
+      this.el.scrollTop = scroll;
+      this.options.layout?.();
+      if (focus && document.getElementById(focus))
+        document.getElementById(focus).focus({ preventScroll: true });
     }
   }
   root.SignalDevelopmentPanel = DevelopmentPanel;

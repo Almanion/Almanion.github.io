@@ -42,7 +42,9 @@ for (const type of [chromium, webkit]) {
     type.name() +
       " fog pixels: black unknown, static gray memory, rescout, zoom and read-only rendering",
     async () => {
-      const browser = await type.launch(),
+      const browser = await type.launch({
+          args: type === chromium ? ["--disable-gpu"] : [],
+        }),
         context = await browser.newContext({
           viewport: { width: 1000, height: 760 },
         }),
@@ -52,11 +54,15 @@ for (const type of [chromium, webkit]) {
       try {
         await page.goto("http://127.0.0.1:4173" + route);
         const result = await page.evaluate(() => {
+          // Pixel comparisons must not trigger a mid-test GPU-to-CPU canvas switch.
+          const canvas = document.createElement("canvas");
+          canvas.getContext("2d", { alpha: false, willReadFrequently: true });
           const E = SignalEngine,
             s = E.make("frontier-6"),
-            v = new SignalView(document.createElement("canvas")),
+            v = new SignalView(canvas),
             b = E.living(s, "bastion"),
             ui = { mode: "tactical", reduced: true, touch: true, group: 1 };
+          v.memoryCanvas.getContext("2d", { willReadFrequently: true });
           const visit = (p) => {
               Object.assign(E.hero(s), p);
               E.refreshRecon(s);
@@ -346,7 +352,7 @@ test("fatal hit outside other allies sight opens defeat and allows a fresh opera
   );
   await page.locator("#retry").click();
   expect((await page.evaluate(() => SignalGame.snapshot())).campaign.id).toBe(
-    "frontier-7",
+    "frontier-8",
   );
   expect(errors).toEqual([]);
 });

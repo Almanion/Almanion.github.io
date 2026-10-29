@@ -31,7 +31,7 @@ class ExpeditionPilot {
     return result;
   }
   decide(s) {
-    const highlands = s.campaign.id === "frontier-7",
+    const highlands = ["frontier-7", "frontier-8"].includes(s.campaign.id),
       opening = highlands && this.stage <= 4 ? "siege" : this.route;
     const point = (x, y) =>
       highlands
@@ -47,11 +47,41 @@ class ExpeditionPilot {
       planned = null,
       reserve = 0;
     const h = E.hero(s),
+      walkMap = E.construction.enabled(s) ? E.navigation(s) : h.map,
       commands = [],
       nextOrders = {},
       alive = (k) => s.units.filter((u) => (!k || u.kind === k) && u.hp > 0),
       post = (id) => alive("outpost").find((u) => u.site === id),
       buy = (action, site) => {
+        const restartingMine =
+          E.construction.enabled(s) &&
+          action === "outpost" &&
+          alive("drone").some((u) => !u.buildingId) &&
+          D.nodes(s).every((node) => !ore(node) || !D.usedSlots(s, node));
+
+        if (E.construction.enabled(s) && E.construction.shapes[action]) {
+          if (
+            alive(action).some((u) => action !== "outpost" || u.site === site)
+          )
+            return;
+          const available = E.construction.availability(planned || s, action);
+          if (!available.allowed) return;
+          const heldForWorker =
+              this.stage && !restartingMine ? D.items(s).drone.cost : 0,
+            heldForOther = action === "outpost" ? 0 : reserve;
+          if (available.cost > budget - heldForWorker - heldForOther) return;
+          const near =
+            action === "outpost"
+              ? s.campaign.mines.find((m) => m.id === site)
+              : D.buildings(s)[action] || D.buildings(s).barracks;
+          if (!E.explored(s, 0, near)) return;
+          site = require("./signal-frontier-construction.cjs").findSite(
+            planned || s,
+            action,
+            near,
+          );
+          if (!site) return;
+        }
         const o = E.supplyStatus(planned || s, action, site);
         if (
           o.allowed &&
@@ -65,7 +95,7 @@ class ExpeditionPilot {
                   )
                   ? reserve
                   : 0
-                : (this.stage ? D.items(s).drone.cost : 0) +
+                : (this.stage && !restartingMine ? D.items(s).drone.cost : 0) +
                   (action === "outpost" || action === "defense" ? 0 : reserve))
         ) {
           planned ||= E.snapshot(s);
@@ -148,6 +178,14 @@ class ExpeditionPilot {
         : D.combat(s) && this.stage
           ? Math.min(9, D.capacity(s) - 1)
           : 6;
+    if (
+      E.construction.enabled(s) &&
+      base &&
+      !threatened(base) &&
+      !alive("drone").length &&
+      !D.queued(s, "drone").length
+    )
+      buy("drone", base.id);
     if (!alive("barracks").length) buy("barracks");
     if (E.fogged(s) && !alive("scout").length && !D.queued(s, "scout").length)
       buy("scout");
@@ -164,6 +202,7 @@ class ExpeditionPilot {
     ))
       if (u.hp < E.C[u.kind].hp * 0.7) buy("repair", u.id);
     if (s.campaign.tier >= 2 || D.queued(s, "network").length) {
+      if (E.construction.enabled(s) && s.campaign.tier >= 2) buy("arsenal");
       if (highlands) {
         if (base && !base.defense) buy("defense", base.id);
         if (west && !west.defense) buy("defense", west.id);
@@ -532,17 +571,26 @@ class ExpeditionPilot {
         .filter((u) => !u.team || E.visible(s, 0, u))
         .map((u) => [u.id, { x: u.x, y: u.y }]),
     );
-    const key = dest.x + "," + dest.y;
-    if (key !== this.goal || (!this.path.length && E.dist(h, dest) > 22)) {
+    const key = dest.x + "," + dest.y,
+      navigationKey = walkMap?.key ?? walkMap;
+    if (
+      key !== this.goal ||
+      navigationKey !== this.navigationKey ||
+      (!this.path.length && E.dist(h, dest) > 22)
+    ) {
       this.goal = key;
-      this.path = E.pathTo(h, dest);
+      this.navigationKey = navigationKey;
+      this.path = E.pathTo(
+        E.construction.enabled(s) ? { ...h, map: walkMap } : h,
+        dest,
+      );
     }
     while (
       this.path.length &&
       E.dist(h, this.path[0]) < this.waypointRadius &&
       (this.path.length === 1 ||
         (highlands
-          ? E.travelClear(h, this.path[1], E.C.hero.r, h.map)
+          ? E.travelClear(h, this.path[1], E.C.hero.r, walkMap)
           : E.clear(h, this.path[1], E.C.hero.r)))
     )
       this.path.shift();
@@ -565,13 +613,13 @@ class ExpeditionPilot {
       const dx = h.x - danger.x,
         dy = h.y - danger.y,
         len = Math.hypot(dx, dy);
-      if (E.free(h.x - (dy / len) * 35, h.y + (dx / len) * 35, 14, h.map)) {
+      if (E.free(h.x - (dy / len) * 35, h.y + (dx / len) * 35, 14, walkMap)) {
         x = -dy / len;
         y = dx / len;
       }
     }
     if (
-      s.campaign.id === "frontier-7" &&
+      ["frontier-7", "frontier-8"].includes(s.campaign.id) &&
       target &&
       !interact &&
       E.C[target.kind].range > 300 &&
@@ -580,7 +628,7 @@ class ExpeditionPilot {
       const d = E.dist(h, target),
         a = { x: (h.x - target.x) / d, y: (h.y - target.y) / d };
       if (
-        E.travelClear(h, { x: h.x + a.x * 40, y: h.y + a.y * 40 }, 14, h.map)
+        E.travelClear(h, { x: h.x + a.x * 40, y: h.y + a.y * 40 }, 14, walkMap)
       ) {
         x = a.x;
         y = a.y;
@@ -600,7 +648,7 @@ class ExpeditionPilot {
           { x: dx, y: dy },
           { x: -dy, y: dx },
           { x: dy, y: -dx },
-        ].find((v) => E.free(h.x + v.x * 35, h.y + v.y * 35, 14, h.map));
+        ].find((v) => E.free(h.x + v.x * 35, h.y + v.y * 35, 14, walkMap));
         if (escape) {
           x = escape.x;
           y = escape.y;
@@ -620,7 +668,7 @@ class ExpeditionPilot {
         const speed = Math.hypot(incoming.vx, incoming.vy),
           lateral = { x: -incoming.vy / speed, y: incoming.vx / speed };
         const choices = [lateral, { x: -lateral.x, y: -lateral.y }].filter(
-          (v) => E.free(h.x + v.x * 45, h.y + v.y * 45, 14, h.map),
+          (v) => E.free(h.x + v.x * 45, h.y + v.y * 45, 14, walkMap),
         );
         if (choices.length) {
           const p = choices.sort(
@@ -695,7 +743,7 @@ class ExpeditionPilot {
           x: origin.x + Math.cos(angle) * radius,
           y: origin.y + Math.sin(angle) * radius,
         };
-        if (E.free(p.x, p.y, 20, h.map)) {
+        if (E.free(p.x, p.y, 20, walkMap)) {
           this.micro = p;
           this.microUntil = s.t + 1.2;
         }

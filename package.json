@@ -6,6 +6,7 @@
   "scripts": {
     "test": "node tools/run-tests.js",
     "signal:build": "node tools/build-signal.js",
+    "signal:construction:test": "node tests/signal-frontier-construction.test.js && node tests/signal-frontier-construction-operation.integration.js",
     "signal:test": "node tests/signal-frontier.test.js && node tests/signal-frontier-campaign.test.js && node tests/signal-frontier-long-operation.test.js && node tests/signal-frontier-expedition.test.js && node tests/signal-frontier-cloud.test.js",
     "game:build": "node tools/build-game.js",
     "game:test": "npm run game:build && npm --prefix game-source/orbital-courier test",

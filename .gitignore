@@ -9,3 +9,6 @@ playwright-report/
 game-source/orbital-courier/Orbital Courier.html
 *-debug.log
 **/Мёртвые души/
+
+# Local game QA evidence and recoverable snapshots
+.local-qa/

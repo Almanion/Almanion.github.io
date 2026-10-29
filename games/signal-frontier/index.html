@@ -12,13 +12,13 @@
       content="Предел сигнала — тактическая операция на заброшенном кольце."
     />
     <title>Предел сигнала · Альманион</title>
-    <link rel="stylesheet" href="style.css?v=0.11.0" />
-    <script src="campaign.js?v=0.11.0" defer></script>
-    <script src="engine.js?v=0.11.0" defer></script>
-    <script src="view.js?v=0.11.0" defer></script>
-    <script src="audio.js?v=0.11.0" defer></script>
-    <script src="development-ui.js?v=0.11.0" defer></script>
-    <script src="app.js?v=0.11.0" defer></script>
+    <link rel="stylesheet" href="style.css?v=0.12.0" />
+    <script src="campaign.js?v=0.12.0" defer></script>
+    <script src="engine.js?v=0.12.0" defer></script>
+    <script src="view.js?v=0.12.0" defer></script>
+    <script src="audio.js?v=0.12.0" defer></script>
+    <script src="development-ui.js?v=0.12.0" defer></script>
+    <script src="app.js?v=0.12.0" defer></script>
   </head>
   <body data-mode="menu">
     <canvas
@@ -50,7 +50,7 @@
           ><button data-open="account">Аккаунт</button>
         </div>
       </div>
-      <p class="edition">Первая операция <span>0.11.0</span></p>
+      <p class="edition">Первая операция <span>0.12.0</span></p>
     </main>
     <div id="hud" hidden>
       <header class="topbar">
@@ -104,11 +104,12 @@
           <button id="reload" class="action-button" aria-label="Перезарядить">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M18 8a7 7 0 1 0 1 7M18 3v5h-5" /></svg
-            ><kbd>R</kbd></button
+            ><kbd>R</kbd><span class="action-caption">Заряд</span></button
           ><button id="dash" class="action-button" aria-label="Рывок">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="m5 6 6 6-6 6m7-12 6 6-6 6" /></svg
-            ><kbd>Shift</kbd><span class="cooldown" id="dash-cooldown"></span>
+            ><kbd>Shift</kbd><span class="action-caption">Рывок</span
+            ><span class="cooldown" id="dash-cooldown"></span>
           </button>
         </div>
       </div>
@@ -170,6 +171,29 @@
           <span></span><small>ОГОНЬ</small>
         </div>
       </div>
+      <section
+        id="placement-panel"
+        class="placement-panel"
+        aria-label="Размещение здания"
+        hidden
+      >
+        <div class="placement-heading">
+          <strong id="placement-title"></strong
+          ><span id="placement-cost"></span>
+        </div>
+        <p id="placement-status" role="status" aria-live="polite"></p>
+        <div class="placement-actions">
+          <button id="placement-cancel">Отмена</button>
+          <button
+            id="placement-rotate"
+            aria-label="Повернуть здание на 90 градусов"
+          >
+            Поворот ↻
+          </button>
+          <button id="placement-confirm" class="primary">Построить</button>
+        </div>
+        <small id="placement-help"></small>
+      </section>
     </div>
     <dialog id="dialog">
       <div class="dialog-inner">
@@ -261,10 +285,13 @@
           </div>
           <div class="help-touch">
             <p>
-              Левый круг появляется под пальцем: небольшое отклонение — точный
-              шаг, полное — бег. Правый: тянуть и удерживать для прицеливания и
-              огня; коротко коснуться для выстрела по ближайшему видимому врагу.
-              Вернуть палец в центр — отменить огонь.
+              Коснитесь левой половины поля для движения, правой — для огня.
+              Центр круга остаётся в точке касания до отпускания пальца.
+              Небольшое отклонение — точный шаг, полное — бег. Справа тяните для
+              прицеливания и стрельбы; короткое касание — выстрел по ближайшему
+              видимому врагу. Возврат в центр прекращает огонь. Круглые кнопки
+              «Рывок» и «Заряд» работают одновременно с движением и
+              прицеливанием, отдельным пальцем.
             </p>
             <p>
               «Приказы» останавливают бой. Коснитесь бойца или обведите отряд

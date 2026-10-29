@@ -33,7 +33,7 @@ for (const type of [chromium, webkit])
           await page.locator("#start").click();
           await page.clock.runFor(300);
           expect(await page.evaluate(() => SignalGame.snapshot().version)).toBe(
-            9,
+            10,
           );
           expect(
             await page.evaluate(
@@ -68,7 +68,7 @@ for (const type of [chromium, webkit])
           ).toEqual(ordered.units);
           const checked = await page.evaluate(() => {
             const E = SignalEngine,
-              s = E.make(),
+              s = E.make("frontier-7"),
               v = new SignalView(document.createElement("canvas"));
             const ui = {
               mode: "tactical",
@@ -136,7 +136,7 @@ test("terrain gallery: connected plateaus, ramps and directional silhouettes", a
   await page.goto(route);
   const result = await page.evaluate(() => {
     const E = SignalEngine,
-      s = E.make(),
+      s = E.make("frontier-7"),
       v = new SignalView(document.createElement("canvas"));
     s.id = "highlands";
     s.campaign.id = "frontier-5";
@@ -178,7 +178,7 @@ test("trusted phone joystick climbs a ramp continuously and stops on release", a
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.clock.install();
-  const s = E.make();
+  const s = E.make("frontier-7");
   for (const u of s.units) if (u.team && u.kind !== "citadel") u.hp = 0;
   s.campaign.camps.forEach((c) => (c.reserve = 0));
   Object.assign(E.hero(s), { x: 2140, y: 500 });
@@ -248,7 +248,7 @@ test("upper ground occludes a lower unit and its silhouette shadow", async ({
   await page.goto(route);
   const result = await page.evaluate(() => {
     const E = SignalEngine,
-      s = E.make(),
+      s = E.make("frontier-7"),
       u = s.units.find((u) => u.kind === "rifle"),
       v = new SignalView(document.createElement("canvas"));
     s.id = "highlands";
@@ -297,7 +297,7 @@ test("fog has no ramp seams and never reveals a higher unknown foreground", asyn
   await page.goto(route);
   const result = await page.evaluate(() => {
     const E = SignalEngine,
-      s = E.make(),
+      s = E.make("frontier-7"),
       h = E.hero(s),
       v = new SignalView(document.createElement("canvas")),
       ui = { mode: "tactical", reduced: true, selectionIds: [] };
@@ -346,7 +346,7 @@ test("dead models and building foundations preserve clipping between paused fram
   await page.goto(route);
   const result = await page.evaluate(() => {
     const E = SignalEngine,
-      s = E.make(),
+      s = E.make("frontier-7"),
       v = new SignalView(document.createElement("canvas")),
       ui = { mode: "tactical", reduced: true, selectionIds: [] };
     for (const u of s.units) if (u.team) u.hp = 0;
@@ -357,7 +357,7 @@ test("dead models and building foundations preserve clipping between paused fram
     const a = v.canvas.toDataURL();
     v.render(s, ui, 1);
     const dead = a === v.canvas.toDataURL();
-    const fresh = E.make();
+    const fresh = E.make("frontier-7");
     E.purchase(fresh, "barracks");
     v.reset(fresh);
     v.render(fresh, ui, 1);
@@ -386,7 +386,7 @@ for (const [width, height] of [
     try {
       await page.setViewportSize({ width, height });
       await page.clock.install();
-      const s = E.make(),
+      const s = E.make("frontier-7"),
         fort = s.units.find(
           (u) => u.kind === "bastion" && u.sector === "north",
         );
@@ -470,7 +470,7 @@ for (const [width, height] of [
     await page.goto(route);
     const points = await page.evaluate(() => {
       const E = SignalEngine,
-        s = E.make(),
+        s = E.make("frontier-7"),
         v = new SignalView(document.createElement("canvas")),
         hero = E.hero(s),
         result = [];

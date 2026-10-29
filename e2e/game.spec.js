@@ -21,7 +21,8 @@ test('home game button opens the catalogue and both games remain reachable', asy
     await page.locator('a[href="signal-frontier/"]').click();
     await expect(page).toHaveURL(/\/games\/signal-frontier\/$/);
     await expect(page.locator('#start')).toBeVisible();
-    expect(await page.evaluate(() => SignalGame.snapshot().version)).toBe(9);
+    expect(await page.evaluate(() => SignalGame.snapshot().version)).toBe(10);
+    expect(await page.evaluate(() => SignalGame.snapshot().campaign.id)).toBe('frontier-8');
     await page.goBack();
     await page.locator('a[href="orbital-courier/"]').click();
     await expect(page).toHaveURL(/\/games\/orbital-courier\/$/);

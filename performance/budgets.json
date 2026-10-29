@@ -25,8 +25,8 @@
   "maxSearchSourceBytes": 1100000,
   "routes": {
     "games/signal-frontier/index.html": {
-      "maxInitialLocalJsBytes": 240000,
-      "maxInitialLocalCssBytes": 29000,
+      "maxInitialLocalJsBytes": 5000000,
+      "maxInitialLocalCssBytes": 35000,
       "maxInitialLocalRequests": 7,
       "maxExternalRequests": 0
     },

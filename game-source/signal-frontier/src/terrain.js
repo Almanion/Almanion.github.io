@@ -106,19 +106,37 @@
     for (let yy = y; yy < y + h; yy += CELL)
       for (let xx = x; xx < x + w; xx += CELL)
         cells[(yy / CELL) * (W / CELL) + xx / CELL] = -1;
+  // Geometry is immutable. Index links by cell once, retaining their original
+  // order and exact bounds/interpolation, including partially covered cells.
+  const cellLinks = new Array(cells.length);
+  for (const p of links)
+    for (
+      let y = Math.max(0, Math.floor(p.y / CELL));
+      y < Math.min(H / CELL, Math.ceil((p.y + p.h) / CELL));
+      y++
+    )
+      for (
+        let x = Math.max(0, Math.floor(p.x / CELL));
+        x < Math.min(W / CELL, Math.ceil((p.x + p.w) / CELL));
+        x++
+      )
+        (cellLinks[y * (W / CELL) + x] ||= []).push(p);
   function level(x, y) {
     if (x < 0 || y < 0 || x >= W || y >= H) return -1;
-    for (const p of links)
-      if (inside(p, x, y)) {
-        const t =
-          p.axis === "x"
-            ? (x - p.x) / p.w
-            : p.axis === "y"
-              ? (y - p.y) / p.h
-              : 0;
-        return p.from + (p.to - p.from) * t;
-      }
-    return cells[Math.floor(y / CELL) * (W / CELL) + Math.floor(x / CELL)];
+    const index = Math.floor(y / CELL) * (W / CELL) + Math.floor(x / CELL),
+      local = cellLinks[index];
+    if (local)
+      for (const p of local)
+        if (inside(p, x, y)) {
+          const t =
+            p.axis === "x"
+              ? (x - p.x) / p.w
+              : p.axis === "y"
+                ? (y - p.y) / p.h
+                : 0;
+          return p.from + (p.to - p.from) * t;
+        }
+    return cells[index];
   }
   const height = (x, y) => {
     const z = level(x, y);

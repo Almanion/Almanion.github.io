@@ -213,8 +213,13 @@ test.afterEach(async ({ page }, info) => {
         : null,
     )
     .catch(() => null);
+  const statePath = info.outputPath("operation-state.json");
+  require("node:fs").mkdirSync(require("node:path").dirname(statePath), {
+    recursive: true,
+  });
+  require("node:fs").writeFileSync(statePath, JSON.stringify(state, null, 2));
   await info.attach("operation-state.json", {
-    body: JSON.stringify(state),
+    path: statePath,
     contentType: "application/json",
   });
 });
@@ -224,18 +229,21 @@ for (const [name, profile] of [
   "frontier-5",
   "frontier-6",
   "frontier-7",
+  "frontier-8",
 ].flatMap((p) => ["siege", "infiltration"].map((n) => [n, p])))
   test(
     "long " + name + ": full operation " + profile + " through real controls",
     async ({ page }) => {
-      test.setTimeout(profile === "frontier-7" ? 2400000 : 1500000);
+      const highlands = ["frontier-7", "frontier-8"].includes(profile);
+      const freeBuild = profile === "frontier-8";
+      test.setTimeout(highlands ? 2400000 : 1500000);
       await page.setViewportSize({ width: 1600, height: 1000 });
-      if (profile === "frontier-7") {
+      if (highlands) {
         const epoch = new Date("2026-01-01T00:00:00Z");
         await page.clock.install({ time: epoch });
         await page.clock.pauseAt(epoch);
       } else await page.clock.install();
-      if (profile === "frontier-7")
+      if (highlands)
         await page.addInitScript(() => {
           // Run every view/camera update and every fixed combat step. Rasterizing the
           // huge battlefield is covered by the real-render UI suite, not every idle
@@ -292,7 +300,7 @@ for (const [name, profile] of [
       await page.locator("#tactical").click();
       await new Promise((resolve) => setTimeout(resolve, 400));
       expect(await page.evaluate(() => SignalGame.snapshot().t)).toBe(0);
-      if (profile !== "frontier-7")
+      if (!highlands)
         expect(
           await page.evaluate(() => {
             const origin = SignalGame.screen(0, 0),
@@ -383,6 +391,47 @@ for (const [name, profile] of [
             await page.mouse.click(p.x, p.y, { button: "right" });
           } else {
             await page.locator("#supply-open").click();
+            if (
+              freeBuild &&
+              (await page.locator("[data-all-buildings]").count())
+            )
+              await page.locator("[data-all-buildings]").first().click();
+            if (freeBuild && E.construction.shapes[c.action]) {
+              const before = await page.evaluate(() => SignalGame.snapshot());
+              expect(c.site && typeof c.site === "object").toBe(true);
+              await page.locator("#develop-tab-build").click();
+              await page.locator("#develop-" + c.action).click();
+              await expect(page.locator("#placement-panel")).toBeVisible();
+              if (
+                (await page
+                  .locator("#map-overview")
+                  .getAttribute("aria-pressed")) === "false"
+              )
+                await page.locator("#map-overview").click();
+              await page.clock.runFor(200);
+              const point = await page.evaluate(
+                (p) => SignalGame.screen(p.x, p.y),
+                c.site,
+              );
+              await page.mouse.move(point.x, point.y);
+              await page.clock.runFor(80);
+              await expect(page.locator("#placement-confirm")).toBeEnabled();
+              await page.locator("#placement-confirm").click();
+              await expect(page.locator("#placement-panel")).toBeHidden();
+              const after = await page.evaluate(() => SignalGame.snapshot());
+              const cost = E.development.items(before)[c.action].cost;
+              expect(after.economy.spent - before.economy.spent).toBe(cost);
+              expect(before.economy.alloy - after.economy.alloy).toBe(cost);
+              expect(
+                after.units.filter((u) => u.kind === c.action && u.construction)
+                  .length,
+              ).toBe(
+                before.units.filter(
+                  (u) => u.kind === c.action && u.construction,
+                ).length + 1,
+              );
+              continue;
+            }
             const producer = c.site
               ? (await page.evaluate(() => SignalGame.snapshot())).units.find(
                   (u) => String(u.id) === String(c.site),
@@ -399,6 +448,12 @@ for (const [name, profile] of [
                   ? "research"
                   : "production";
             await page.locator("#develop-tab-" + tab).click();
+            if (freeBuild && ["repair", "defense"].includes(c.action)) {
+              expect(producer).toBeTruthy();
+              await page.locator('[data-select="' + producer.id + '"]').click();
+              if (c.action === "defense")
+                await page.locator('[data-section="tech"]').click();
+            }
             const site =
               c.action === "drone"
                 ? c.site ||
@@ -439,10 +494,10 @@ for (const [name, profile] of [
         if (
           s.status !== "playing" ||
           (profile === "frontier-4" && s.t > 1500) ||
-          (profile === "frontier-7" && s.t > 3000)
+          (highlands && s.t > 3000)
         )
           break;
-        if (profile === "frontier-7") {
+        if (highlands) {
           const h = E.hero(s),
             key = JSON.stringify([
               s.economy,
@@ -472,7 +527,7 @@ for (const [name, profile] of [
             Math.round(E.hero(s).hp),
             s.economy.alloy,
             pilot.stage,
-            ...(profile === "frontier-7"
+            ...(highlands
               ? [
                   {
                     x: Math.round(E.hero(s).x),
@@ -522,22 +577,21 @@ for (const [name, profile] of [
         pressed = wanted;
         let visible = false;
         if (d.input.aim) {
-          const p =
-            profile === "frontier-7"
-              ? await page.evaluate(
-                  (p) => SignalGame.screen(p.x, p.y),
-                  d.input.aim,
-                )
-              : {
-                  x:
-                    frame.origin.x +
-                    d.input.aim.x * (frame.unit.x - frame.origin.x),
-                  y:
-                    frame.origin.y +
-                    d.input.aim.y * (frame.unit.y - frame.origin.y),
-                };
+          const p = highlands
+            ? await page.evaluate(
+                (p) => SignalGame.screen(p.x, p.y),
+                d.input.aim,
+              )
+            : {
+                x:
+                  frame.origin.x +
+                  d.input.aim.x * (frame.unit.x - frame.origin.x),
+                y:
+                  frame.origin.y +
+                  d.input.aim.y * (frame.unit.y - frame.origin.y),
+              };
           visible = p.x > 20 && p.x < 1580 && p.y > 100 && p.y < 840;
-          if (profile === "frontier-7" && !visible) {
+          if (highlands && !visible) {
             const edge = {
               x: Math.max(25, Math.min(1575, p.x)),
               y: Math.max(110, Math.min(830, p.y)),
@@ -564,7 +618,7 @@ for (const [name, profile] of [
         }
         if (d.input.dash && s.dash === 0) await page.keyboard.press("Shift");
         if (!wanted.size && !d.input.aim) await page.clock.runFor(600);
-        else if (profile === "frontier-7") await page.clock.runFor(200);
+        else if (highlands) await page.clock.runFor(200);
         else await page.clock.fastForward(100);
       }
       await release();
@@ -602,6 +656,15 @@ for (const [name, profile] of [
       expect(E.restore(final)).not.toBeNull();
       expect(errors).toEqual([]);
       expect(reloaded).toBe(true);
+      if (freeBuild) {
+        expect(
+          final.units.some((u) => u.kind === "arsenal" && u.construction),
+        ).toBe(true);
+        expect(
+          final.units.filter((u) => u.kind === "outpost" && u.construction)
+            .length,
+        ).toBeGreaterThanOrEqual(2);
+      }
       if (profile === "frontier-4") expect(final.t).toBeLessThanOrEqual(1500);
       const diagnostics = await page.evaluate(() => SignalGame.diagnostics());
       expect(diagnostics.units).toBeLessThanOrEqual(
@@ -610,7 +673,7 @@ for (const [name, profile] of [
       expect(diagnostics.effects).toBeLessThanOrEqual(96);
       expect(diagnostics.scars).toBeLessThanOrEqual(40);
       expect(JSON.stringify(final).length).toBeLessThan(2000000);
-      if (profile === "frontier-7") {
+      if (highlands) {
         await page.evaluate(() => {
           window.__signalQaPaint = true;
         });

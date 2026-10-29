@@ -10,6 +10,7 @@ const files = [
   "campaign.js",
   "recon.js",
   "engine.js",
+  "construction.js",
   "view.js",
   "audio.js",
   "development-ui.js",
@@ -27,7 +28,9 @@ function render(root = path.resolve(__dirname, "..")) {
   for (const file of files) {
     let text = read(file);
     if (file === "campaign.js") text = read("terrain.js") + "\n;\n" + text;
-    if (file === "engine.js") text = read("recon.js") + "\n;\n" + text;
+    if (file === "engine.js")
+      text =
+        read("recon.js") + "\n;\n" + read("construction.js") + "\n;\n" + text;
     if (file === "app.js")
       text = embedded.map(read).join("\n;\n") + "\n;\n" + text;
     if (file.endsWith(".js"))
@@ -47,7 +50,7 @@ function render(root = path.resolve(__dirname, "..")) {
       text = result.styles + "\n";
     } else if (file === "index.html")
       text = text.replace(
-        /^\s*<script src="(?:terrain|recon|cloud-core|persistence|account-ui)\.js[^\"]*" defer><\/script>\n/gm,
+        /^\s*<script src="(?:terrain|recon|construction|cloud-core|persistence|account-ui)\.js[^\"]*" defer><\/script>\n/gm,
         "",
       );
     out[file] = text;

@@ -2,78 +2,85 @@
 const { test, expect, chromium, webkit } = require("@playwright/test");
 const route = "/games/signal-frontier/";
 
-test("presentation is read-only; poses follow travel and paused/reduced frames stay still", async ({
-  page,
-}) => {
-  await page.goto(route);
-  const result = await page.evaluate(() => {
-    const E = SignalEngine,
-      s = E.make("frontier-2"),
-      v = new SignalView(document.createElement("canvas"));
-    const ui = { mode: "tactical", reduced: false, group: 1, touch: true };
-    const original = JSON.stringify(s);
-    for (let i = 0; i < 180; i++) v.render(s, ui, 1 / 60);
-    const idlePhase = v.poses.get(s.heroId).phase;
-    for (let i = 0; i < 30; i++) v.render(s, ui, 1 / 60);
-    const idleStill = v.poses.get(s.heroId).phase === idlePhase;
-    const pure = original === JSON.stringify(s);
-    const a = v.canvas.toDataURL();
-    for (let i = 0; i < 30; i++) v.render(s, ui, 1 / 60);
-    const pausedStill = a === v.canvas.toDataURL();
-    E.hero(s).x += 12;
-    s.t += 1 / 60;
-    v.render(s, ui, 1 / 60);
-    const moved = v.poses.get(s.heroId).phase > idlePhase;
-    // Render every archetype, dead/constructing states and the projectile arc.
-    for (const [i, kind] of Object.keys(E.C).entries())
-      for (const dead of [false, true]) {
-        const u = {
-          ...s.units[0],
-          id: 100 + i,
-          kind,
-          hp: dead ? 0 : E.C[kind].hp,
-          build: kind === "outpost" ? 3 : 0,
-          flash: 0.05,
-          wind: 0.3,
-          target: { x: 1000, y: 500 },
-        };
-        v.unit(v.c, u, s, ui);
-      }
-    for (let i = 0; i < 160; i++)
-      v.add(
-        [
-          { type: "blast", x: 400, y: 500 },
-          { type: "destroy", x: 430, y: 500, kind: "rifle" },
-        ],
-        false,
-      );
-    const bounded = v.fx.length <= 96 && v.scars.length <= 40;
-    ui.reduced = true;
-    v.render(s, ui, 1 / 60);
-    const reduced = v.canvas.toDataURL();
-    for (let i = 0; i < 30; i++) v.render(s, ui, 1 / 60);
-    const reducedStill =
-      reduced === v.canvas.toDataURL() && v.fx.length === 0 && v.shake === 0;
-    v.reset();
-    return {
-      pure,
-      idleStill,
-      moved,
-      pausedStill,
-      reducedStill,
-      bounded,
-      reset: v.poses.size === 0 && v.scars.length === 0 && v.fx.length === 0,
-    };
-  });
-  expect(result).toEqual({
-    pure: true,
-    idleStill: true,
-    moved: true,
-    pausedStill: true,
-    reducedStill: true,
-    bounded: true,
-    reset: true,
-  });
+test("presentation is read-only; poses follow travel and paused/reduced frames stay still", async () => {
+  const browser = await chromium.launch({ args: ["--disable-gpu"] });
+  const page = await browser.newPage();
+  try {
+    await page.goto(route);
+    const result = await page.evaluate(() => {
+      const canvas = document.createElement("canvas");
+      // Exact repeat-frame comparison must stay on one raster backend.
+      canvas.getContext("2d", { alpha: false, willReadFrequently: true });
+      const E = SignalEngine,
+        s = E.make("frontier-2"),
+        v = new SignalView(canvas);
+      const ui = { mode: "tactical", reduced: false, group: 1, touch: true };
+      const original = JSON.stringify(s);
+      for (let i = 0; i < 180; i++) v.render(s, ui, 1 / 60);
+      const idlePhase = v.poses.get(s.heroId).phase;
+      for (let i = 0; i < 30; i++) v.render(s, ui, 1 / 60);
+      const idleStill = v.poses.get(s.heroId).phase === idlePhase;
+      const pure = original === JSON.stringify(s);
+      const a = v.canvas.toDataURL();
+      for (let i = 0; i < 30; i++) v.render(s, ui, 1 / 60);
+      const pausedStill = a === v.canvas.toDataURL();
+      E.hero(s).x += 12;
+      s.t += 1 / 60;
+      v.render(s, ui, 1 / 60);
+      const moved = v.poses.get(s.heroId).phase > idlePhase;
+      // Render every archetype, dead/constructing states and the projectile arc.
+      for (const [i, kind] of Object.keys(E.C).entries())
+        for (const dead of [false, true]) {
+          const u = {
+            ...s.units[0],
+            id: 100 + i,
+            kind,
+            hp: dead ? 0 : E.C[kind].hp,
+            build: kind === "outpost" ? 3 : 0,
+            flash: 0.05,
+            wind: 0.3,
+            target: { x: 1000, y: 500 },
+          };
+          v.unit(v.c, u, s, ui);
+        }
+      for (let i = 0; i < 160; i++)
+        v.add(
+          [
+            { type: "blast", x: 400, y: 500 },
+            { type: "destroy", x: 430, y: 500, kind: "rifle" },
+          ],
+          false,
+        );
+      const bounded = v.fx.length <= 96 && v.scars.length <= 40;
+      ui.reduced = true;
+      v.render(s, ui, 1 / 60);
+      const reduced = v.canvas.toDataURL();
+      for (let i = 0; i < 30; i++) v.render(s, ui, 1 / 60);
+      const reducedStill =
+        reduced === v.canvas.toDataURL() && v.fx.length === 0 && v.shake === 0;
+      v.reset();
+      return {
+        pure,
+        idleStill,
+        moved,
+        pausedStill,
+        reducedStill,
+        bounded,
+        reset: v.poses.size === 0 && v.scars.length === 0 && v.fx.length === 0,
+      };
+    });
+    expect(result).toEqual({
+      pure: true,
+      idleStill: true,
+      moved: true,
+      pausedStill: true,
+      reducedStill: true,
+      bounded: true,
+      reset: true,
+    });
+  } finally {
+    await browser.close();
+  }
 });
 
 test("rendered sound has distinct layers, direction, headroom, a silent tail and bounded voices", async ({
@@ -85,7 +92,8 @@ test("rendered sound has distinct layers, direction, headroom, a silent tail and
       const ctx = new OfflineAudioContext(2, 44100, 22050),
         audio = new SignalAudio({ context: ctx, volume: () => volume });
       audio.setup();
-      if (active) audio.update(SignalEngine.make("frontier-6"), "playing", volume);
+      if (active)
+        audio.update(SignalEngine.make("frontier-6"), "playing", volume);
       for (const e of events) audio.play({ x: 0, y: 0, ...e });
       const during = audio.voices.size,
         buffer = await ctx.startRendering();

@@ -297,14 +297,6 @@
         const l = T.level(x + 20, y + 20);
         if (l < 0) continue;
         const z = T.height(x + 20, y + 20),
-          ramp = world.links.some(
-            (r) =>
-              r.axis &&
-              x + 20 >= r.x &&
-              x + 20 < r.x + r.w &&
-              y + 20 >= r.y &&
-              y + 20 < r.y + r.h,
-          ),
           tone = Math.floor(l),
           color =
             "rgb(" +
@@ -333,21 +325,7 @@
             [x + 40, y + 40 - T.height(x + 39.99, y + 39.99)],
             [x, y + 40 - T.height(x + 0.01, y + 39.99)],
           ];
-        poly(c, p, color, "#b6c9b11a", 0.7);
-        if ((x / 40 + y / 40) % 3 === 0)
-          line(
-            c,
-            [
-              [x + 7, y + 7 - z],
-              [x + 29, y + 7 - z],
-            ],
-            "#b7c2ac14",
-            1,
-          );
-        if (!ramp && (x * 7 + y * 3) % 160 === 0) {
-          c.fillStyle = "#152f3519";
-          c.fillRect(x + 13, y + 19 - z, 12, 2);
-        }
+        poly(c, p, color);
         if (
           T.level(x - 0.01, y + 20) < 0 ||
           T.height(x - 0.01, y + 20) < z - 30
@@ -501,26 +479,9 @@
     outline.forEach((p, i) => (i ? c.lineTo(...p) : c.moveTo(...p)));
     c.closePath();
     c.clip();
+    // Keep the seeded decoration stream stable without a permanent floor grid.
     for (let y = 24; y < world.H - 20; y += 80)
-      for (let x = 24; x < world.W - 20; x += 100) {
-        c.fillStyle = rnd() > 0.5 ? "#a4baac09" : "#071d280d";
-        c.fillRect(x + 2, y + 2, 97, 77);
-        c.strokeStyle = "#102c3680";
-        c.lineWidth = 0.7;
-        c.strokeRect(x, y, 100, 80);
-        line(
-          c,
-          [
-            [x + 3, y + 2],
-            [x + 97, y + 2],
-          ],
-          "#a2b4a51a",
-        );
-        for (const dx of [6, 94]) {
-          c.fillStyle = "#112c3366";
-          c.fillRect(x + dx, y + 6, 2, 2);
-        }
-      }
+      for (let x = 24; x < world.W - 20; x += 100) rnd();
     for (const lane of world.id === "expedition"
       ? [
           [
@@ -705,6 +666,242 @@
     return a;
   }
 
+  // Clip in map coordinates before projecting onto a single ground plane.
+  function clipPolygon(points, rect) {
+    for (const [axis, limit, sign] of [
+      [0, rect.x, 1],
+      [0, rect.x + rect.w, -1],
+      [1, rect.y, 1],
+      [1, rect.y + rect.h, -1],
+    ]) {
+      const output = [];
+      for (let i = 0; i < points.length; i++) {
+        const a = points[i],
+          b = points[(i + 1) % points.length],
+          insideA = (a[axis] - limit) * sign >= 0,
+          insideB = (b[axis] - limit) * sign >= 0;
+        if (insideA) output.push(a);
+        if (insideA !== insideB) {
+          const t = (limit - a[axis]) / (b[axis] - a[axis]);
+          output.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+        }
+      }
+      points = output;
+      if (!points.length) break;
+    }
+    return points;
+  }
+  function fogContours(fog) {
+    const edges = new Map(),
+      stride = fog.cols + 1,
+      known = (x, y) =>
+        x >= 0 &&
+        y >= 0 &&
+        x < fog.cols &&
+        y < fog.rows &&
+        fog.explored[y * fog.cols + x],
+      add = (x, y, direction) => {
+        const key = y * stride + x;
+        if (!edges.has(key)) edges.set(key, []);
+        edges.get(key).push(direction);
+      };
+    for (let y = 0; y < fog.rows; y++)
+      for (let x = 0; x < fog.cols; x++)
+        if (known(x, y)) {
+          if (!known(x, y - 1)) add(x, y, 0);
+          if (!known(x + 1, y)) add(x + 1, y, 1);
+          if (!known(x, y + 1)) add(x + 1, y + 1, 2);
+          if (!known(x - 1, y)) add(x, y + 1, 3);
+        }
+    // Preserve holes, interior knowledge and narrow passages. Boundary cells
+    // of a wide region may be trimmed: keeping every stair-step centre would
+    // force the display to retain the square sampling grid.
+    const cutsCenter = (points) => {
+      const xs = points.map((p) => p[0]),
+        ys = points.map((p) => p[1]);
+      for (
+        let y =
+          Math.floor(Math.min(...ys) / fog.cell) * fog.cell + fog.cell / 2;
+        y <= Math.max(...ys);
+        y += fog.cell
+      )
+        for (
+          let x =
+            Math.floor(Math.min(...xs) / fog.cell) * fog.cell + fog.cell / 2;
+          x <= Math.max(...xs);
+          x += fog.cell
+        ) {
+          const xx = Math.floor(x / fog.cell),
+            yy = Math.floor(y / fog.cell),
+            interior =
+              known(xx - 1, yy) &&
+              known(xx + 1, yy) &&
+              known(xx, yy - 1) &&
+              known(xx, yy + 1),
+            wide = [-1, 1].some((dx) =>
+              [-1, 1].some(
+                (dy) =>
+                  known(xx + dx, yy) &&
+                  known(xx, yy + dy) &&
+                  known(xx + dx, yy + dy),
+              ),
+            );
+          if (known(xx, yy) && wide && !interior) continue;
+          let inside = false;
+          for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+            const a = points[j],
+              b = points[i],
+              dx = b[0] - a[0],
+              dy = b[1] - a[1],
+              t = E.clamp(
+                ((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy || 1),
+                0,
+                1,
+              );
+            if (Math.hypot(x - a[0] - t * dx, y - a[1] - t * dy) < 0.01)
+              return true;
+            if (a[1] > y !== b[1] > y && x < a[0] + ((y - a[1]) * dx) / dy)
+              inside = !inside;
+          }
+          if (inside) return true;
+        }
+      return false;
+    };
+    const loops = [],
+      steps = [1, stride, -1, -stride];
+    while (edges.size) {
+      const start = edges.keys().next().value,
+        loop = [];
+      let key = start,
+        direction = edges.get(start)[0];
+      do {
+        loop.push([
+          (key % stride) * fog.cell,
+          Math.floor(key / stride) * fog.cell,
+        ]);
+        const choices = edges.get(key);
+        // Turn right at diagonal contacts, keeping islands and holes separate.
+        direction = [1, 0, 3, 2]
+          .map((d) => (direction + d) % 4)
+          .find((d) => choices.includes(d));
+        choices.splice(choices.indexOf(direction), 1);
+        if (!choices.length) edges.delete(key);
+        key += steps[direction];
+      } while (key !== start);
+      const corners = loop
+          .filter((p, i) => {
+            const a = loop[(i + loop.length - 1) % loop.length],
+              b = loop[(i + 1) % loop.length];
+            return (
+              (p[0] - a[0]) * (b[1] - p[1]) !== (p[1] - a[1]) * (b[0] - p[0])
+            );
+          })
+          .map((p, i, list) => {
+            const a = list[(i + list.length - 1) % list.length],
+              b = list[(i + 1) % list.length],
+              da = Math.hypot(p[0] - a[0], p[1] - a[1]),
+              db = Math.hypot(b[0] - p[0], b[1] - p[1]),
+              inset = fog.cell * 0.22;
+            // A small inset gives diagonal chords and concave curves room inside
+            // explored cells; one-cell corridors and isolated islands remain open.
+            return [
+              p[0] - inset * ((p[1] - a[1]) / da + (b[1] - p[1]) / db),
+              p[1] + inset * ((p[0] - a[0]) / da + (b[0] - p[0]) / db),
+            ];
+          }),
+        smooth = [];
+      // Replace a run of cell steps with a conservative chord. Check every
+      // crossed cell interval, not sparse samples: even a tiny unknown corner
+      // must remain black. The inset also lets concave stair steps straighten.
+      const chord = (start, end) => {
+        if (corners.length <= 6) return false;
+        const a = corners[start],
+          b = corners[end % corners.length],
+          dx = b[0] - a[0],
+          dy = b[1] - a[1],
+          length = Math.hypot(dx, dy);
+        if (!length) return false;
+        for (let i = start; i < end; i++) {
+          const p = corners[i % corners.length],
+            t = E.clamp(
+              ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (length * length),
+              0,
+              1,
+            );
+          if (
+            Math.hypot(p[0] - a[0] - dx * t, p[1] - a[1] - dy * t) >
+            fog.cell * 0.8
+          )
+            return false;
+        }
+        const cuts = [0, 1];
+        for (const axis of [0, 1]) {
+          const delta = b[axis] - a[axis];
+          if (!delta) continue;
+          for (
+            let edge =
+              (Math.floor(Math.min(a[axis], b[axis]) / fog.cell) + 1) *
+              fog.cell;
+            edge < Math.max(a[axis], b[axis]);
+            edge += fog.cell
+          )
+            cuts.push((edge - a[axis]) / delta);
+        }
+        cuts.sort((a, b) => a - b);
+        for (let i = 1; i < cuts.length; i++) {
+          if (cuts[i] - cuts[i - 1] < 1e-8) continue;
+          const t = (cuts[i] + cuts[i - 1]) / 2,
+            x = a[0] + dx * t - (dy / length) * 0.001,
+            y = a[1] + dy * t + (dx / length) * 0.001;
+          if (!known(Math.floor(x / fog.cell), Math.floor(y / fog.cell)))
+            return false;
+        }
+        if (
+          cutsCenter(
+            Array.from(
+              { length: end - start + 1 },
+              (_, i) => corners[(start + i) % corners.length],
+            ),
+          )
+        )
+          return false;
+        return true;
+      };
+      for (let i = 0; i < corners.length; ) {
+        smooth.push(corners[i]);
+        let next = i + 1;
+        for (let j = i + 2; j <= Math.min(corners.length, i + 24); j++)
+          if (chord(i, j)) next = j;
+        i = next;
+      }
+      const rounded = [];
+      for (let i = 0; i < smooth.length; i++) {
+        const p = smooth[i],
+          a = smooth[(i + smooth.length - 1) % smooth.length],
+          b = smooth[(i + 1) % smooth.length];
+        const r = fog.cell / 2,
+          da = Math.hypot(a[0] - p[0], a[1] - p[1]),
+          db = Math.hypot(b[0] - p[0], b[1] - p[1]),
+          from = p.map((n, k) => n + (a[k] - n) * Math.min(0.5, r / da)),
+          to = p.map((n, k) => n + (b[k] - n) * Math.min(0.5, r / db));
+        const curve = [];
+        for (let j = 0; j <= 8; j++) {
+          const t = j / 8;
+          curve.push(
+            p.map(
+              (n, k) =>
+                (1 - t) ** 2 * from[k] + 2 * (1 - t) * t * n + t * t * to[k],
+            ),
+          );
+        }
+        if (cutsCenter([from, p, to, ...curve.slice().reverse()]))
+          rounded.push(p);
+        else rounded.push(...curve);
+      }
+      loops.push(rounded);
+    }
+    return loops;
+  }
   class View {
     constructor(canvas) {
       this.canvas = canvas;
@@ -715,6 +912,9 @@
       this.fx = [];
       this.poses = new Map();
       this.memoryCanvas = document.createElement("canvas");
+      this.groundCanvas = document.createElement("canvas");
+      this.unitSprites = new Map();
+      this.spritePixels = 0;
       this.fogPaths = {};
       this.scars = [];
       this.effectSerial = 0;
@@ -789,57 +989,79 @@
           ],
           [x, y, x, y],
         ),
-        reach = height + Math.max(0, base);
-      c.save();
-      for (
-        let yy = Math.floor(bounds[1] / 40) * 40;
-        yy < bounds[3] + reach * 0.5;
-        yy += 40
-      )
-        for (
-          let xx = Math.floor(bounds[0] / 40) * 40;
-          xx < bounds[2] + reach * 0.7;
-          xx += 40
-        ) {
-          if (T.level(xx + 20, yy + 20) < 0) continue;
-          const z = T.height(xx + 20, yy + 20),
-            drop = base + height - z;
-          if (drop < 0) continue;
-          c.save();
-          c.beginPath();
-          c.moveTo(...this.p(xx + 0.01, yy + 0.01));
-          c.lineTo(...this.p(xx + 39.99, yy + 0.01));
-          c.lineTo(...this.p(xx + 39.99, yy + 39.99));
-          c.lineTo(...this.p(xx + 0.01, yy + 39.99));
-          c.closePath();
-          c.clip();
-          const p = footprint.map(([a, b]) => [
-            a + drop * 0.7,
-            b + drop * 0.45 - z,
-          ]);
-          // The extrusion connects the silhouette to its contact footprint.
-          poly(c, p, "#06141b4d");
+        reach = height + Math.max(0, base),
+        x0 = Math.floor(bounds[0] / 40) * 40,
+        y0 = Math.floor(bounds[1] / 40) * 40,
+        x1 = Math.ceil((bounds[2] + reach * 0.7) / 40) * 40,
+        y1 = Math.ceil((bounds[3] + reach * 0.5) / 40) * 40,
+        key = [x0, y0, x1, y1].join(":"),
+        cache = (this.shadowCells ||= new Map());
+      let groups = cache.get(key);
+      if (!groups) {
+        groups = new Map();
+        groups.complete = true;
+        // Equal-height cells receive exactly the same silhouette. One compound
+        // clip preserves the tiny cell seams without redrawing it in every cell.
+        for (let yy = y0; yy < y1; yy += 40)
+          for (let xx = x0; xx < x1; xx += 40) {
+            if (T.level(xx + 20, yy + 20) < 0) {
+              groups.complete = false;
+              continue;
+            }
+            const z = T.height(xx + 20, yy + 20);
+            if (
+              [
+                T.height(xx + 0.01, yy + 0.01),
+                T.height(xx + 39.99, yy + 0.01),
+                T.height(xx + 39.99, yy + 39.99),
+                T.height(xx + 0.01, yy + 39.99),
+              ].some((height) => height !== z)
+            )
+              groups.complete = false;
+            if (!groups.has(z)) groups.set(z, new Path2D());
+            const cells = groups.get(z);
+            cells.moveTo(...this.p(xx + 0.01, yy + 0.01));
+            cells.lineTo(...this.p(xx + 39.99, yy + 0.01));
+            cells.lineTo(...this.p(xx + 39.99, yy + 39.99));
+            cells.lineTo(...this.p(xx + 0.01, yy + 39.99));
+            cells.closePath();
+          }
+        if (cache.size >= 512) cache.delete(cache.keys().next().value);
+        cache.set(key, groups);
+      }
+      for (const [z, cells] of groups) {
+        const drop = base + height - z;
+        if (drop < 0) continue;
+        c.save();
+        // On uninterrupted flat ground the whole shadow already fits this
+        // plane. Avoid a separate GPU clip for every soldier and weapon.
+        if (!groups.complete || groups.size !== 1) c.clip(cells);
+        const p = footprint.map(([a, b]) => [
+          a + drop * 0.7,
+          b + drop * 0.45 - z,
+        ]);
+        // The extrusion connects the silhouette to its contact footprint.
+        poly(c, p, "#06141b4d");
+        poly(
+          c,
+          footprint.map(([a, b]) => [a, b - z]),
+          "#06141b28",
+        );
+        for (let i = 0; i < p.length; i++) {
+          const j = (i + 1) % p.length;
           poly(
             c,
-            footprint.map(([a, b]) => [a, b - z]),
-            "#06141b28",
+            [
+              [footprint[i][0], footprint[i][1] - z],
+              [footprint[j][0], footprint[j][1] - z],
+              p[j],
+              p[i],
+            ],
+            "#06141b24",
           );
-          for (let i = 0; i < p.length; i++) {
-            const j = (i + 1) % p.length;
-            poly(
-              c,
-              [
-                [footprint[i][0], footprint[i][1] - z],
-                [footprint[j][0], footprint[j][1] - z],
-                p[j],
-                p[i],
-              ],
-              "#06141b24",
-            );
-          }
-          c.restore();
         }
-      c.restore();
+        c.restore();
+      }
     }
     surface(x, y, pad = 0.3) {
       return [
@@ -871,6 +1093,24 @@
       return q.y > u.y + 1 && this.z(q.x, q.y) > this.z(u.x, u.y) + 30;
     }
     objectShadow(c, u) {
+      if (u.construction) {
+        const b = E.construction.rect(u),
+          w = b.w * 0.43,
+          h = b.h * 0.4;
+        this.shadow(
+          c,
+          u.x,
+          u.y,
+          [
+            [-w, -h],
+            [w, -h],
+            [w, h],
+            [-w, h],
+          ],
+          u.hp <= 0 ? 5 : u.build > 0 ? 18 : 42,
+        );
+        return;
+      }
       c.save();
       this.occlude(c, u.x, u.y, this.z(u.x, u.y), E.C[u.kind].r + 100);
       const r = E.C[u.kind].r,
@@ -1054,7 +1294,7 @@
         if (ui.mode === "menu") {
           this.preview ||= E.make("frontier-5");
           s = this.preview;
-        } else s = E.observe(s);
+        } else if (!s.fog) s = E.observe(s);
       }
       const world = E.map(s);
       if (this.mapId !== world.id) {
@@ -1070,8 +1310,8 @@
       const active = ui.mode === "playing" && s.status === "playing";
       if (!ui.reduced && (active || ui.mode === "menu")) this.time += dt;
 
-      const c = this.c,
-        w = this.width,
+      let c = this.c;
+      const w = this.width,
         h = this.height,
         hero = E.hero(s),
         mobile = w < 700,
@@ -1203,10 +1443,27 @@
         ty = this.camera.y;
         scale = this.camera.scale;
       }
-      const blend = ui.reduced ? 1 : 1 - Math.exp(-dt * 8);
-      this.camera.x += (tx - this.camera.x) * blend;
-      this.camera.y += (ty - this.camera.y) * blend;
-      this.camera.scale += (scale - this.camera.scale) * blend;
+      const blend = 1 - Math.exp(-dt * 8);
+      // Direct assignment avoids subpixel cancellation on the first still frame.
+      this.camera.x = ui.reduced
+        ? tx
+        : this.camera.x + (tx - this.camera.x) * blend;
+      this.camera.y = ui.reduced
+        ? ty
+        : this.camera.y + (ty - this.camera.y) * blend;
+      this.camera.scale = ui.reduced
+        ? scale
+        : this.camera.scale + (scale - this.camera.scale) * blend;
+      this.cameraSettled = true;
+      for (const [key, target] of [
+        ["x", tx],
+        ["y", ty],
+        ["scale", scale],
+      ]) {
+        if (Math.abs(this.camera[key] - target) < 1e-7)
+          this.camera[key] = target;
+        else this.cameraSettled = false;
+      }
       c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
       c.fillStyle = "#0b171d";
       c.fillRect(0, 0, w, h);
@@ -1231,9 +1488,14 @@
       c.scale(cam.scale, cam.scale * Y);
       c.translate(-cam.x, -cam.y);
       if (s.fog) {
+        // Prepare each mask once. All ground passes and cliff batches in this
+        // frame share it, including the separately observed memory layer.
+        this.fogPath(s.fog, "visible");
+        this.fogPath(s.fog, "explored");
+        this.frameFog = s.fog;
+        this.frameWalls = { visible: new Map(), explored: new Map() };
         this.memory(c, s, ui);
-        c.save();
-        this.fogClip(c, s.fog, "visible");
+        c = this.beginLayer(this.groundCanvas, c);
       }
       c.save();
       c.translate(8, 30);
@@ -1283,7 +1545,10 @@
       this.watch(c, s, ui);
       if (this.mapId === "highlands") {
         for (const b of world.walls)
-          if (this.inView(b.x + b.w / 2, b.y + b.h / 2, b.w + 120, b.h + 120))
+          if (
+            this.inView(b.x + b.w / 2, b.y + b.h / 2, b.w + 120, b.h + 120) &&
+            this.wallKnown(b, s.fog, "visible")
+          )
             this.shadow(
               c,
               b.x + b.w / 2,
@@ -1375,6 +1640,7 @@
       const objects = [];
       for (const b of world.walls)
         if (
+          this.wallKnown(b, s.fog, "visible") &&
           this.inView(
             b.x + b.w / 2,
             b.y + b.h / 2,
@@ -1384,16 +1650,31 @@
         )
           objects.push({ ...b, wall: true, sort: b.y + b.h });
       for (const u of s.units) {
-        if (this.inView(u.x, u.y)) objects.push({ ...u, sort: u.y });
+        if (this.inView(u.x, u.y))
+          objects.push({
+            ...u,
+            sort: u.y + (u.construction ? E.construction.rect(u).h / 2 : 0),
+          });
         else this.pose(u, s, ui); // Keep travel animation continuous when the camera returns.
       }
       for (const f of this.ground.faces || [])
         if (this.inView(f.x, f.y, 80, 200)) objects.push({ ...f, cliff: true });
       objects.sort((a, b) => a.sort - b.sort);
-      for (const o of objects)
-        if (o.cliff) cliffFace(c, o);
-        else if (o.wall) this.wall(c, o);
-        else this.unit(c, o, s, ui);
+      // Knowledge selects whole models; the ground mask must not cut off roofs.
+      if (s.fog) {
+        c.restore();
+        c = this.c;
+        c.save();
+        this.fogClip(c, s.fog, "visible");
+        this.drawLayer(c, this.groundCanvas);
+        c.restore();
+      }
+      this.drawObjects(c, objects, s, ui, "visible");
+      if (overview && ui.placement) this.placementOverlay(c, s, ui.placement);
+      if (s.fog) {
+        c.save();
+        this.fogClip(c, s.fog, "visible");
+      }
       // Elevated flights share their height with collision tests; legacy flights keep their visual arc.
       for (const b of s.bullets) {
         const owner = s.units.find((u) => u.id === b.owner),
@@ -1571,7 +1852,10 @@
         c.font = "9px Segoe UI";
         c.textAlign = "center";
         c.textBaseline = "middle";
-        for (const [i, pad] of E.pads(s).entries()) {
+        for (const [i, pad] of (E.construction.enabled(s)
+          ? []
+          : E.pads(s)
+        ).entries()) {
           const p = this.screen(pad.x, pad.y);
           ellipse(c, p.x, p.y + 12, 7, 7, "#112522", "#b8d4bc88");
           c.fillStyle = "#c9e0ca";
@@ -1638,29 +1922,243 @@
       }
     }
     fogClip(c, fog, kind) {
-      c.clip(this.fogPath(fog, kind));
+      const prepared =
+        this.frameFog === fog || this.frameFog?.memory?.fog === fog;
+      c.clip(prepared ? this.fogPaths[kind].path : this.fogPath(fog, kind));
       for (const cut of this.fogPaths[kind].blockers || [])
         c.clip(cut, "evenodd");
     }
+    beginLayer(canvas, target) {
+      if (
+        canvas.width !== this.canvas.width ||
+        canvas.height !== this.canvas.height
+      ) {
+        canvas.width = this.canvas.width;
+        canvas.height = this.canvas.height;
+      }
+      const c = canvas.getContext("2d");
+      c.clearRect(0, 0, canvas.width, canvas.height);
+      c.save();
+      c.setTransform(target.getTransform());
+      return c;
+    }
+    drawLayer(c, canvas) {
+      c.save();
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.drawImage(canvas, 0, 0);
+      c.restore();
+    }
+    fogPlanes() {
+      if (this.planes?.map === this.mapId) return this.planes.list;
+      const world = E.map(this.mapId),
+        list = [];
+      if (this.mapId !== "highlands")
+        list.push({ x: 0, y: 0, w: world.W, h: world.H, a: 0, b: 0, z: 0 });
+      else
+        for (let y = 0; y < world.H; y += 40) {
+          const row = [];
+          for (let x = 0; x < world.W; x += 40) {
+            const link = world.links.find(
+                (p) =>
+                  x + 20 >= p.x &&
+                  x + 20 < p.x + p.w &&
+                  y + 20 >= p.y &&
+                  y + 20 < p.y + p.h,
+              ),
+              a =
+                link?.axis === "x" ? ((link.to - link.from) * 72) / link.w : 0,
+              b =
+                link?.axis === "y" ? ((link.to - link.from) * 72) / link.h : 0,
+              z = link
+                ? link.from * 72 - a * link.x - b * link.y
+                : this.z(x + 20, y + 20),
+              previous = row[row.length - 1];
+            if (
+              previous &&
+              previous.a === a &&
+              previous.b === b &&
+              previous.z === z
+            )
+              previous.w += 40;
+            else row.push({ x, y, w: 40, h: 40, a, b, z });
+          }
+          for (const p of row) {
+            const previous = list.findLast(
+              (q) =>
+                q.y + q.h === y &&
+                q.x === p.x &&
+                q.w === p.w &&
+                q.a === p.a &&
+                q.b === p.b &&
+                q.z === p.z,
+            );
+            if (previous) previous.h += 40;
+            else list.push(p);
+          }
+        }
+      this.planes = { map: this.mapId, list };
+      return list;
+    }
+    projectFog(polygons) {
+      const path = new Path2D();
+      for (const polygon of polygons) {
+        const bounds = polygon.reduce(
+          (b, [x, y]) => [
+            Math.min(b[0], x),
+            Math.min(b[1], y),
+            Math.max(b[2], x),
+            Math.max(b[3], y),
+          ],
+          [Infinity, Infinity, -Infinity, -Infinity],
+        );
+        for (const plane of this.fogPlanes()) {
+          if (
+            plane.x > bounds[2] ||
+            plane.x + plane.w < bounds[0] ||
+            plane.y > bounds[3] ||
+            plane.y + plane.h < bounds[1]
+          )
+            continue;
+          const points = clipPolygon(polygon, plane);
+          points.forEach(([x, y], i) => {
+            const yy = y - plane.a * x - plane.b * y - plane.z;
+            if (i) path.lineTo(x, yy);
+            else path.moveTo(x, yy);
+          });
+          if (points.length) path.closePath();
+        }
+      }
+      return path;
+    }
+    wallKnown(w, fog, kind) {
+      if (!fog) return true;
+      const cached =
+        this.frameFog === fog || this.frameFog?.memory?.fog === fog
+          ? this.frameWalls?.[kind]
+          : null;
+      if (cached?.has(w)) return cached.get(w);
+      const observers =
+        kind === "visible"
+          ? fog.observers.filter(
+              (u) =>
+                Math.hypot(
+                  u.x - E.clamp(u.x, w.x - 1, w.x + w.w + 1),
+                  u.y - E.clamp(u.y, w.y - 1, w.y + w.h + 1),
+                ) <= u.radius,
+            )
+          : [];
+      if (kind === "visible" && !observers.length) {
+        cached?.set(w, false);
+        return false;
+      }
+      for (let side = 0; side < 4; side++) {
+        const horizontal = side % 2 === 0,
+          length = horizontal ? w.w : w.h,
+          count = Math.ceil(length / 20);
+        for (let i = 0; i <= count; i++) {
+          const p = {
+            map: this.mapId,
+            x: horizontal
+              ? w.x + (length * i) / count
+              : w.x + (side === 1 ? w.w + 1 : -1),
+            y: horizontal
+              ? w.y + (side === 0 ? -1 : w.h + 1)
+              : w.y + (length * i) / count,
+          };
+          if (
+            kind === "visible"
+              ? observers.some((u) => E.dist(u, p) <= u.radius && E.clear(u, p))
+              : fog.explored[
+                  Math.floor(p.y / fog.cell) * fog.cols +
+                    Math.floor(p.x / fog.cell)
+                ]
+          ) {
+            cached?.set(w, true);
+            return true;
+          }
+        }
+      }
+      cached?.set(w, false);
+      return false;
+    }
+    fogObject(c, object, s, ui, kind) {
+      if (object.cliff) {
+        c.save();
+        if (s.fog) this.fogClip(c, s.fog, kind);
+        cliffFace(c, object);
+        c.restore();
+      } else if (object.wall) this.wall(c, object, s.fog, kind);
+      else this.unit(c, object, s, ui);
+    }
+    drawObjects(c, objects, s, ui, kind) {
+      let cliffs = false;
+      for (const object of objects) {
+        if (object.cliff) {
+          if (!cliffs) {
+            c.save();
+            if (s.fog) this.fogClip(c, s.fog, kind);
+            cliffs = true;
+          }
+          cliffFace(c, object);
+        } else {
+          if (cliffs) c.restore();
+          cliffs = false;
+          this.fogObject(c, object, s, ui, kind);
+        }
+      }
+      if (cliffs) c.restore();
+    }
     fogPath(fog, kind) {
-      const code = this.mapId + ":" + fog[kind + "Code"],
+      const sources = fog.observers.map((u) =>
+          [u.id, u.x, u.y, u.radius].join(":"),
+        ),
+        maskCode = this.mapId + ":" + fog[kind + "Code"],
+        code = maskCode + (kind === "visible" ? ":" + sources.join(",") : ""),
         cached = this.fogPaths[kind];
       if (cached?.code === code) return cached.path;
-      const path = new Path2D(),
-        mask = fog[kind];
+      let path;
+      if (kind === "visible") {
+        const old = this.sightPaths || new Map();
+        this.sightPaths = new Map();
+        path = new Path2D();
+        fog.observers.forEach((u, i) => {
+          const key = this.mapId + ":" + sources[i],
+            projected =
+              old.get(key) ||
+              this.projectFog([
+                E.visionArea(this.mapId, u, u.radius).points.map((p) => [
+                  p.x,
+                  p.y,
+                ]),
+              ]);
+          this.sightPaths.set(key, projected);
+          path.addPath(projected);
+        });
+      } else path = this.projectFog(fogContours(fog));
+      const mask = fog[kind];
       if (this.mapId === "highlands") {
+        if (cached?.maskCode === maskCode) {
+          path.addPath(cached.faces);
+          this.fogPaths[kind] = { ...cached, code, path };
+          return path;
+        }
+        const faces = new Path2D();
+        this.fogHeights ||= Float64Array.from(
+          { length: fog.rows * fog.cols },
+          (_, i) =>
+            this.z(
+              (i % fog.cols) * fog.cell + 20,
+              Math.floor(i / fog.cols) * fog.cell + 20,
+            ),
+        );
         for (let y = 0; y < fog.rows; y++)
           for (let x = 0; x < fog.cols; x++)
             if (mask[y * fog.cols + x]) {
               const xx = x * fog.cell,
                 yy = y * fog.cell,
-                z = this.z(xx + 20, yy + 20),
-                low = this.z(xx + 20, yy + 40.01),
-                p = this.surface(xx, yy);
-              path.moveTo(...p[0]);
-              for (let i = 1; i < 4; i++) path.lineTo(...p[i]);
-              path.closePath();
-              if (z > low + 4) path.rect(xx, yy + 40 - z, 40, z - low);
+                z = this.fogHeights[y * fog.cols + x],
+                low = this.z(xx + 20, yy + 40.01);
+              if (z > low + 4) faces.rect(xx, yy + 40 - z, 40, z - low);
             }
         const blockers = [];
         for (let y = 1; y < fog.rows; y++)
@@ -1668,14 +2166,14 @@
             if (mask[y * fog.cols + x]) continue;
             const xx = x * fog.cell,
               yy = y * fog.cell,
-              z = this.z(xx + 20, yy + 20);
+              z = this.fogHeights[y * fog.cols + x];
             if (z < 0) continue;
             let overlaps = false;
             for (let d = 1; d <= Math.min(5, y); d++)
               if (
                 mask[(y - d) * fog.cols + x] &&
                 z >
-                  this.z(xx + 20, yy - d * 40 + 20) +
+                  this.fogHeights[(y - d) * fog.cols + x] +
                     Math.max(1, (d - 1) * 40 - 8)
               ) {
                 overlaps = true;
@@ -1695,24 +2193,10 @@
             cut.closePath();
             blockers.push(cut);
           }
-        this.fogPaths[kind] = { code, path, blockers };
+        path.addPath(faces);
+        this.fogPaths[kind] = { code, path, blockers, faces, maskCode };
         return path;
       }
-      for (let y = 0; y < fog.rows; y++)
-        for (let x = 0; x < fog.cols; ) {
-          if (!mask[y * fog.cols + x]) {
-            x++;
-            continue;
-          }
-          const start = x;
-          while (x < fog.cols && mask[y * fog.cols + x]) x++;
-          path.rect(
-            start * fog.cell,
-            y * fog.cell,
-            (x - start) * fog.cell,
-            fog.cell,
-          );
-        }
       this.fogPaths[kind] = { code, path };
       return path;
     }
@@ -1725,9 +2209,39 @@
         canvas.width = this.canvas.width;
         canvas.height = this.canvas.height;
       }
+      const known = s.fog.memory,
+        transform = c.getTransform(),
+        key = JSON.stringify(
+          [
+            this.mapId,
+            canvas.width,
+            canvas.height,
+            transform.a,
+            transform.b,
+            transform.c,
+            transform.d,
+            transform.e,
+            transform.f,
+            s.fog.exploredCode,
+            known.units,
+            known.caches,
+            known.watch,
+            known.relay,
+            known.terminal,
+            known.campaign?.mines,
+            known.campaign?.id,
+            known.phase,
+            E.pads(known),
+          ],
+          (name, value) => (name === "seenAt" ? undefined : value),
+        );
+      if (this.memoryKey === key) {
+        this.drawLayer(c, canvas);
+        return;
+      }
+      this.memoryKey = key;
       const m = canvas.getContext("2d"),
         world = E.map(s),
-        known = s.fog.memory,
         still = {
           ...ui,
           mode: "paused",
@@ -1750,18 +2264,23 @@
       this.watch(m, known, still);
       const objects = [
         ...world.walls
-          .filter((w) =>
-            this.inView(
-              w.x + w.w / 2,
-              w.y + w.h / 2,
-              w.w * 0.65 + 80,
-              w.h * 0.65 + 100,
-            ),
+          .filter(
+            (w) =>
+              this.wallKnown(w, s.fog, "explored") &&
+              this.inView(
+                w.x + w.w / 2,
+                w.y + w.h / 2,
+                w.w * 0.65 + 80,
+                w.h * 0.65 + 100,
+              ),
           )
           .map((w) => ({ ...w, wall: true, sort: w.y + w.h })),
         ...known.units
           .filter((u) => this.inView(u.x, u.y))
-          .map((u) => ({ ...u, sort: u.y })),
+          .map((u) => ({
+            ...u,
+            sort: u.y + (u.construction ? E.construction.rect(u).h / 2 : 0),
+          })),
       ].sort((a, b) => a.sort - b.sort);
       for (const o of objects)
         if (o.wall)
@@ -1781,11 +2300,8 @@
       for (const f of this.ground.faces || [])
         if (this.inView(f.x, f.y, 80, 200)) objects.push({ ...f, cliff: true });
       objects.sort((a, b) => a.sort - b.sort);
-      for (const o of objects)
-        if (o.cliff) cliffFace(m, o);
-        else if (o.wall) this.wall(m, o);
-        else this.unit(m, o, known, still);
       m.restore();
+      this.drawObjects(m, objects, known, still, "explored");
       // Blend modes work on mobile WebKit too, where canvas filters may be absent.
       m.save();
       m.globalCompositeOperation = "saturation";
@@ -1953,7 +2469,21 @@
       const selectedBuilding = s.units.find(
         (u) => u.id === ui.selectedBuilding && u.hp > 0,
       );
-      if (selectedBuilding && ui.mode === "tactical")
+      if (selectedBuilding?.construction && ui.mode === "tactical") {
+        const b = E.construction.rect(selectedBuilding);
+        this.groundLine(
+          c,
+          [
+            [b.x, b.y],
+            [b.x + b.w, b.y],
+            [b.x + b.w, b.y + b.h],
+            [b.x, b.y + b.h],
+            [b.x, b.y],
+          ],
+          "#c8edda",
+          2,
+        );
+      } else if (selectedBuilding && ui.mode === "tactical")
         this.groundRing(
           c,
           selectedBuilding.x,
@@ -1988,7 +2518,12 @@
     strategy(c, s, ui) {
       const overview = ui.mode === "tactical",
         t = ui.reduced ? 0 : s.t;
-      for (const p of E.pads(s)) {
+      const posts = E.construction.enabled(s)
+        ? s.units
+            .filter((u) => u.kind === "outpost" && u.hp > 0)
+            .map((u) => ({ x: u.x, y: u.y, id: u.site }))
+        : E.pads(s);
+      for (const p of posts) {
         c.save();
         c.translate(0, -this.z(p.x, p.y));
         const post = s.units.find(
@@ -2029,7 +2564,9 @@
               u.team === 0 &&
               u.hp > 0 &&
               u.hp < E.C[u.kind].hp &&
-              !["outpost", "base", "barracks", "foundry"].includes(u.kind) &&
+              !["outpost", "base", "barracks", "foundry", "arsenal"].includes(
+                u.kind,
+              ) &&
               u.repair === 0 &&
               E.dist(u, post) < 145 &&
               E.clear(u, post)
@@ -2495,6 +3032,8 @@
     reset(s) {
       this.fx = [];
       this.poses.clear();
+      this.unitSprites.clear();
+      this.spritePixels = 0;
       this.scars = [];
       this.effectSerial = 0;
       this.shake = 0;
@@ -2559,7 +3098,7 @@
         angle: p.angle,
       };
     }
-    wall(c, b) {
+    wall(c, b, fog, kind) {
       c.save();
       this.occlude(
         c,
@@ -2568,13 +3107,24 @@
         this.z(b.x + b.w / 2, b.y + b.h / 2),
         b.w / 2 + 80,
       );
+      if (this.mapId !== "highlands") {
+        c.save();
+        if (fog) this.fogClip(c, fog, kind);
+        ellipse(
+          c,
+          b.x + b.w / 2 + 13,
+          b.y + b.h / 2 + 20,
+          b.w * 0.63,
+          b.h * 0.55,
+          "#06192270",
+        );
+        c.restore();
+      }
       c.translate(
         b.x + b.w / 2,
         b.y + b.h / 2 - this.z(b.x + b.w / 2, b.y + b.h / 2),
       );
       const tall = b.h > b.w;
-      if (this.mapId !== "highlands")
-        ellipse(c, 13, 20, b.w * 0.63, b.h * 0.55, "#06192270");
       slab(c, 0, 0, b.w, b.h, 0, 13, 0, MAT.graphite);
       slab(c, 0, 0, b.w - 6, b.h - 6, 13, 28, 0, MAT.deck);
       slab(c, 0, 0, b.w - 20, b.h - 18, 41, 7, 0, {
@@ -2714,22 +3264,376 @@
       }
       c.restore();
     }
+    placementOverlay(c, s, placement) {
+      const preview = placement.result?.preview;
+      if (!preview) return;
+      const b = E.construction.rect(preview),
+        good = placement.result.allowed,
+        color = good ? "#b8edce" : "#f2ac88",
+        fill = good ? "#84cdb32a" : "#e38b6535";
+      c.save();
+      if (s.fog) this.fogClip(c, s.fog, "visible");
+      const world = E.map(s),
+        corners = [
+          [0, 0],
+          [innerWidth, 0],
+          [0, innerHeight],
+          [innerWidth, innerHeight],
+        ].map(([x, y]) => this.world(x, y)),
+        minX = Math.max(
+          0,
+          Math.floor(Math.min(...corners.map((p) => p.x)) / 40) * 40 - 80,
+        ),
+        maxX = Math.min(world.W, Math.max(...corners.map((p) => p.x)) + 80),
+        minY = Math.max(
+          0,
+          Math.floor(Math.min(...corners.map((p) => p.y)) / 40) * 40 - 200,
+        ),
+        maxY = Math.min(world.H, Math.max(...corners.map((p) => p.y)) + 200);
+      c.beginPath();
+      for (let y = minY; y < maxY; y += 40)
+        for (let x = minX; x < maxX; x += 40) {
+          const z = this.z(x + 20, y + 20);
+          if (
+            E.terrain.level(x + 20, y + 20) < 0 ||
+            [
+              [1, 1],
+              [39, 1],
+              [39, 39],
+              [1, 39],
+            ].some(([dx, dy]) => this.z(x + dx, y + dy) !== z)
+          )
+            continue;
+          c.rect(x, y - z, 40, 40);
+        }
+      c.strokeStyle = "#bad5c32c";
+      c.lineWidth = 1 / Math.max(0.6, this.camera.scale);
+      c.stroke();
+      for (let y = b.y; y < b.y + b.h; y += 40)
+        for (let x = b.x; x < b.x + b.w; x += 40) {
+          const z = this.z(x + 20, y + 20);
+          c.fillStyle = fill;
+          c.fillRect(x + 1, y - z + 1, 38, 38);
+        }
+      this.groundLine(
+        c,
+        [
+          [b.x, b.y],
+          [b.x + b.w, b.y],
+          [b.x + b.w, b.y + b.h],
+          [b.x, b.y + b.h],
+          [b.x, b.y],
+        ],
+        color,
+        2.5,
+      );
+      const e = E.construction.exit(preview),
+        dir = preview.construction.turn ? { x: 1, y: 0 } : { x: 0, y: 1 },
+        tip = { x: e.x + dir.x * 25, y: e.y + dir.y * 25 };
+      this.groundLine(
+        c,
+        [
+          [e.x - dir.x * 20, e.y - dir.y * 20],
+          [tip.x, tip.y],
+          [tip.x - dir.x * 12 - dir.y * 9, tip.y - dir.y * 12 + dir.x * 9],
+        ],
+        color,
+        2,
+      );
+      this.groundLine(
+        c,
+        [
+          [tip.x, tip.y],
+          [tip.x - dir.x * 12 + dir.y * 9, tip.y - dir.y * 12 - dir.x * 9],
+        ],
+        color,
+        2,
+      );
+      if (good) {
+        const worker = placement.result.builder,
+          route = placement.result.route;
+        c.setLineDash([5, 7]);
+        this.groundLine(
+          c,
+          [[worker.x, worker.y], ...route.map((p) => [p.x, p.y])],
+          "#b8edce90",
+          1.5,
+        );
+      }
+      c.restore();
+    }
+    constructionModel(c, u, s, ui) {
+      const shape = E.construction.shapes[u.kind],
+        w = shape[0] * 40,
+        h = shape[1] * 40,
+        a = (u.construction.turn * Math.PI) / 2,
+        progress =
+          u.hp <= 0 ? 0 : 1 - u.build / E.development.items(s)[u.kind].time,
+        box = E.construction.rect(u),
+        accent = progress === 1 ? "#abebd0" : "#deb18d";
+      c.save();
+      c.translate(u.x, u.y - this.z(u.x, u.y));
+      slab(c, 0, 0, w - 8, h - 8, 0, 3, a, MAT.graphite);
+      // Foundation seams and the clear service apron also show the true footprint.
+      for (let x = -w / 2 + 20; x < w / 2; x += 40)
+        seam(
+          c,
+          [
+            [x, -h / 2 + 7],
+            [x, h / 2 - 7],
+          ],
+          3,
+          a,
+          "#91b8a62e",
+          1,
+        );
+      seam(
+        c,
+        [
+          [-w / 2 + 7, h / 2 - 18],
+          [w / 2 - 7, h / 2 - 18],
+        ],
+        4,
+        a,
+        accent,
+        2,
+      );
+      if (u.hp <= 0) {
+        for (let i = 0; i < 4; i++)
+          slab(
+            c,
+            (i % 2 ? 1 : -1) * w * 0.2,
+            (i < 2 ? -1 : 1) * h * 0.2,
+            25,
+            15,
+            3,
+            5 + i * 2,
+            a,
+            MAT.graphite,
+          );
+        c.restore();
+        return;
+      }
+      const height = 12 + Math.min(1, progress * 1.4) * 26;
+      if (progress > 0.12) {
+        if (u.kind === "barracks") {
+          for (const side of [-1, 1]) {
+            slab(c, side * 27, -8, 38, 67, 3, height, a, MAT.ally);
+            slab(c, side * 27, -10, 31, 57, height + 3, 4, a, MAT.ceramic);
+            for (let y = -27; y < 20; y += 15)
+              seam(
+                c,
+                [
+                  [side * 27 - 12, y],
+                  [side * 27 + 12, y],
+                ],
+                height + 8,
+                a,
+                "#59776f",
+                2,
+              );
+          }
+          slab(c, 0, 14, 16, 21, 3, 9, a, MAT.graphite);
+        } else if (u.kind === "foundry") {
+          slab(c, -10, -9, 104, 69, 3, height, a, MAT.ally);
+          slab(c, -12, -10, 96, 61, height + 3, 5, a, MAT.graphite);
+          for (const x of [-40, -12, 16]) {
+            slab(c, x, -17, 18, 25, height + 8, 8, a, MAT.ceramic);
+            seam(
+              c,
+              [
+                [x - 5, -22],
+                [x + 5, -22],
+              ],
+              height + 17,
+              a,
+              "#a7c7b3",
+              2,
+            );
+          }
+          slab(c, 54, -13, 17, 53, 3, height + 17, a, MAT.graphite);
+          lamp(c, 54, -13, height + 22, a, 3, "#e3b68c");
+          slab(c, -10, 32, 57, 12, 3, 5, a, MAT.ceramic);
+        } else if (u.kind === "arsenal") {
+          slab(c, 0, -6, 95, 42, 3, height, a, MAT.ally);
+          slab(c, 0, -8, 86, 35, height + 3, 5, a, MAT.ceramic);
+          for (const x of [-30, 0, 30])
+            slab(c, x, -9, 17, 23, height + 8, 4, a, MAT.graphite);
+          seam(
+            c,
+            [
+              [-7, -9],
+              [7, -9],
+            ],
+            height + 13,
+            a,
+            accent,
+            3,
+          );
+          seam(
+            c,
+            [
+              [0, -16],
+              [0, -2],
+            ],
+            height + 13,
+            a,
+            accent,
+            3,
+          );
+        } else {
+          slab(c, 0, -7, 58, 58, 3, height, a, MAT.ally);
+          slab(c, 0, -10, 42, 41, height + 3, 6, a, MAT.ceramic);
+          for (const x of [-43, 43]) {
+            slab(c, x, -9, 17, 56, 3, 16, a, MAT.graphite);
+            lamp(c, x, 9, 20, a, 2.5, accent);
+          }
+          slab(c, 0, -12, 9, 9, height + 9, 24, a, MAT.graphite);
+          lamp(c, 0, -12, height + 34, a, 3, accent);
+          if (u.defense) {
+            slab(c, 0, 0, 23, 23, height + 8, 7, u.angle, MAT.ally);
+            slab(c, 20, 0, 33, 6, height + 12, 5, u.angle, MAT.graphite);
+          }
+        }
+      }
+      if (progress < 1) {
+        for (const x of [-w / 2 + 12, w / 2 - 12])
+          for (const y of [-h / 2 + 12, h / 2 - 28])
+            slab(c, x, y, 4, 4, 3, 42, a, MAT.ceramic);
+        seam(
+          c,
+          [
+            [-w / 2 + 12, -h / 2 + 12],
+            [w / 2 - 12, -h / 2 + 12],
+          ],
+          45,
+          a,
+          "#c9ba96a0",
+          2,
+        );
+      }
+      for (const x of [-w / 2 + 13, w / 2 - 13])
+        lamp(c, x, h / 2 - 14, 5, a, 2, accent);
+      c.restore();
+      if (u.hp < E.C[u.kind].hp || ui.mode === "tactical") {
+        const x = u.x - 27,
+          y = box.y + box.h - this.z(u.x, u.y) + 9;
+        c.fillStyle = "#132e32";
+        c.fillRect(x, y, 54, 4);
+        c.fillStyle = u.build > 0 ? "#dbb190" : "#a9d9bf";
+        c.fillRect(
+          x,
+          y,
+          54 * (u.build > 0 ? progress : u.hp / E.C[u.kind].hp),
+          4,
+        );
+      }
+    }
     unit(c, u, s, ui) {
       c.save();
       try {
         this.occlude(c, u.x, u.y, this.z(u.x, u.y), E.C[u.kind].r + 70);
-        this.unitModel(c, u, s, ui);
+        const pose = ui.memory
+          ? { phase: 0, move: 0, angle: u.angle }
+          : this.pose(u, s, ui);
+        if (
+          this.mapId === "highlands" &&
+          E.C[u.kind].speed > 0 &&
+          u.hp > 0 &&
+          u.kind !== "drone"
+        )
+          this.unitSprite(c, u, s, ui, pose);
+        else this.unitModel(c, u, s, ui, pose);
       } finally {
         c.restore();
       }
     }
-    unitModel(c, u, s, ui) {
+    unitSprite(c, u, s, ui, pose) {
+      const m = c.getTransform(),
+        x = u.x * m.a + m.e,
+        y = (u.y - this.z(u.x, u.y)) * m.d + m.f,
+        left = Math.floor(x - 100 * m.a),
+        top = Math.floor(y - 128 * m.d),
+        width = Math.ceil(x + 100 * m.a) - left,
+        height = Math.ceil(y + 64 * m.d) - top,
+        key = JSON.stringify([
+          u.kind,
+          u.team,
+          u.angle,
+          pose,
+          u.hp,
+          u.defense,
+          ui.reduced ? 0 : u.flash,
+          !ui.reduced && u.hit > 0,
+          u.wind > 0,
+          u.wind > 0 && u.target
+            ? Math.atan2(u.target.y - u.y, u.target.x - u.x)
+            : null,
+          u.combat?.angle,
+          u.combat?.mode,
+          ui.mode === "tactical",
+          ui.reduced,
+          u.kind === "hero"
+            ? [
+                ui.aim && Math.atan2(ui.aim.y - u.y, ui.aim.x - u.x),
+                s.dashT > 0,
+              ]
+            : null,
+          m.a,
+          m.d,
+          x - left,
+          y - top,
+          width,
+          height,
+        ]);
+      let sprite = this.unitSprites.get(u.id);
+      if (!sprite) {
+        sprite = { canvas: document.createElement("canvas"), pixels: 0 };
+        this.unitSprites.set(u.id, sprite);
+      }
+      if (sprite.key !== key) {
+        const canvas = sprite.canvas;
+        if (canvas.width !== width || canvas.height !== height) {
+          this.spritePixels -= sprite.pixels;
+          canvas.width = width;
+          canvas.height = height;
+          sprite.pixels = width * height;
+          this.spritePixels += sprite.pixels;
+        }
+        const b = canvas.getContext("2d");
+        b.setTransform(1, 0, 0, 1, 0, 0);
+        b.clearRect(0, 0, width, height);
+        b.setTransform(m.a, 0, 0, m.d, m.e - left, m.f - top);
+        this.unitModel(b, u, s, ui, pose);
+        sprite.key = key;
+      }
+      // Rasterize at the current physical pixel scale and fractional position;
+      // the final integer blit does not rescale or blur the original artwork.
+      c.save();
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.drawImage(sprite.canvas, left, top);
+      c.restore();
+      this.unitSprites.delete(u.id);
+      this.unitSprites.set(u.id, sprite);
+      while (
+        this.spritePixels > 8 * 1024 * 1024 ||
+        this.unitSprites.size > 128
+      ) {
+        const id = this.unitSprites.keys().next().value;
+        this.spritePixels -= this.unitSprites.get(id).pixels;
+        this.unitSprites.delete(id);
+      }
+    }
+    unitModel(c, u, s, ui, pose) {
+      if (u.construction) return this.constructionModel(c, u, s, ui);
       const def = E.C[u.kind],
         r = def.r,
         dead = u.hp <= 0,
-        p = ui.memory
-          ? { phase: 0, move: 0, angle: u.angle }
-          : this.pose(u, s, ui),
+        p =
+          pose ||
+          (ui.memory
+            ? { phase: 0, move: 0, angle: u.angle }
+            : this.pose(u, s, ui)),
         t = ui.reduced ? 0 : ui.mode === "menu" ? this.time : s.t;
       const aim =
         u.kind === "hero" && ui.aim
@@ -2744,11 +3648,14 @@
           ? 0
           : Math.sin(Math.min(1, u.flash / 0.1) * Math.PI) * 4;
       c.save();
-      c.translate(u.x, u.y - this.z(u.x, u.y));
       if (this.mapId !== "highlands") {
-        ellipse(c, 4, 7, r * 1.25, r * 0.85, "#07192270");
-        ellipse(c, 1, 3, r * 0.86, r * 0.63, "#06141c70");
+        c.save();
+        if (s.fog) this.fogClip(c, s.fog, ui.memory ? "explored" : "visible");
+        ellipse(c, u.x + 4, u.y + 7, r * 1.25, r * 0.85, "#07192270");
+        ellipse(c, u.x + 1, u.y + 3, r * 0.86, r * 0.63, "#06141c70");
+        c.restore();
       }
+      c.translate(u.x, u.y - this.z(u.x, u.y));
       if (dead) {
         c.save();
         c.rotate(u.angle);

@@ -7,7 +7,8 @@
       Object.freeze({ id: "crossing", x: 900, y: 1210 }),
       Object.freeze({ id: "south", x: 1160, y: 1920 }),
     ]);
-  const enabled = (s) => ["frontier-6", "frontier-7"].includes(s?.campaign?.id);
+  const enabled = (s) =>
+    ["frontier-6", "frontier-7", "frontier-8"].includes(s?.campaign?.id);
   function create(E) {
     const caches = new WeakMap();
     const size = (s) => {
@@ -47,6 +48,7 @@
       outpost: 380,
       barracks: 280,
       foundry: 280,
+      arsenal: 280,
     });
     function radius(u) {
       return u.build > 0 ? 120 : u.team ? 610 : VISION[u.kind] || 0;
@@ -235,6 +237,9 @@
           hp: u.hp,
           angle: u.angle,
           build: u.build || 0,
+          ...(u.construction
+            ? { construction: { turn: u.construction.turn } }
+            : {}),
           defense: !!u.defense,
           sector: u.sector || null,
           shielded: u.kind === "citadel" && E.shielded(s),
@@ -479,7 +484,7 @@
           ) ||
           f.sources[t] !== signature(observers(s, t)) ||
           !Array.isArray(f.memory[t]) ||
-          f.memory[t].length > 128
+          f.memory[t].length > (s.campaign.id === "frontier-8" ? 512 : 128)
         )
           return false;
         const v = decode(f.visible[t]),
@@ -497,6 +502,15 @@
             return false;
           keys.add(p.key);
           if (p.type === "unit") {
+            if (
+              p.construction &&
+              (s.campaign.id !== "frontier-8" ||
+                !["barracks", "foundry", "arsenal", "outpost"].includes(
+                  p.kind,
+                ) ||
+                ![0, 1].includes(p.construction.turn))
+            )
+              return false;
             const def = E.C[p.kind];
             if (
               !def ||

@@ -1,0 +1,603 @@
+/* Free construction owns placement, builders and navigation footprints. */
+(function (root) {
+  "use strict";
+  const CELL = 40;
+  const SHAPES = Object.freeze({
+    barracks: [3, 3],
+    foundry: [4, 3],
+    arsenal: [3, 2],
+    outpost: [3, 3],
+  });
+  const enabled = (s) => s?.campaign?.id === "frontier-8";
+  function rect(u) {
+    const size = Object.hasOwn(SHAPES, u.kind) ? SHAPES[u.kind] : null;
+    if (!size || !u.construction) return null;
+    const [cols, rows] = u.construction.turn ? [size[1], size[0]] : size;
+    return {
+      x: u.x - (cols * CELL) / 2,
+      y: u.y - (rows * CELL) / 2,
+      w: cols * CELL,
+      h: rows * CELL,
+      id: u.id,
+    };
+  }
+  const intersects = (a, b, pad = 0) =>
+    a.x < b.x + b.w + pad &&
+    a.x + a.w > b.x - pad &&
+    a.y < b.y + b.h + pad &&
+    a.y + a.h > b.y - pad;
+  const contains = (b, p, radius = 0) =>
+    p.x + radius > b.x &&
+    p.x - radius < b.x + b.w &&
+    p.y + radius > b.y &&
+    p.y - radius < b.y + b.h;
+  function create(E) {
+    const worlds = new WeakMap(),
+      graphs = new Map();
+    function world(s) {
+      if (!enabled(s)) return E.map(s);
+      if (worlds.has(s)) return worlds.get(s);
+      const solid = s.units.filter((u) => u.hp > 0 && u.construction),
+        key = solid
+          .map((u) => [u.id, u.x, u.y, u.construction.turn].join(":"))
+          .join(",");
+      const value = {
+        ...E.map(s),
+        navigation: true,
+        state: s,
+        key,
+        walls: [...E.map(s).walls, ...solid.map(rect)],
+        connectivity: new Map(),
+      };
+      worlds.set(s, value);
+      return value;
+    }
+    function snap(kind, x, y, turn = 0) {
+      if (
+        !Object.hasOwn(SHAPES, kind) ||
+        !Number.isFinite(x) ||
+        !Number.isFinite(y) ||
+        ![0, 1].includes(turn)
+      )
+        return null;
+      const size = SHAPES[kind],
+        [cols, rows] = turn ? [size[1], size[0]] : size;
+      return {
+        kind,
+        x: Math.round(x / CELL - cols / 2) * CELL + (cols * CELL) / 2,
+        y: Math.round(y / CELL - rows / 2) * CELL + (rows * CELL) / 2,
+        construction: { turn },
+      };
+    }
+    function exit(u, radius = 20) {
+      const b = rect(u),
+        turn = u.construction.turn;
+      return turn
+        ? { x: b.x + b.w + radius + 16, y: u.y }
+        : { x: u.x, y: b.y + b.h + radius + 16 };
+    }
+    function support(s, b) {
+      const map = E.map(s),
+        z = E.terrain.level(b.x + 1, b.y + 1);
+      if (z < 0 || !Number.isInteger(z)) return false;
+      if (map.links.some((p) => intersects(b, p, 12))) return false;
+      for (let y = b.y - 12; y <= b.y + b.h + 12; y += 8)
+        for (let x = b.x - 12; x <= b.x + b.w + 12; x += 8)
+          if (E.terrain.level(x, y) !== z) return false;
+      return !map.walls.some((w) => intersects(b, w, 12));
+    }
+    // Two static clearance graphs cover infantry passages and heavy vehicles.
+    // Preview checks only remove footprint cells; they do not rebuild terrain.
+    function graph(s, radius) {
+      const map = E.map(s),
+        key = map.id + ":" + radius;
+      if (graphs.has(key)) return graphs.get(key);
+      const cols = map.W / CELL,
+        rows = map.H / CELL,
+        points = new Array(cols * rows),
+        edges = new Array(cols * rows);
+      for (let y = 0; y < rows; y++)
+        for (let x = 0; x < cols; x++) {
+          const p = { x: x * CELL + 20, y: y * CELL + 20 };
+          if (E.free(p.x, p.y, radius + 3, map)) points[y * cols + x] = p;
+        }
+      for (let i = 0; i < points.length; i++)
+        if (points[i]) {
+          const x = i % cols,
+            y = Math.floor(i / cols);
+          edges[i] = [];
+          for (const [dx, dy] of [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+          ]) {
+            const k = (y + dy) * cols + x + dx;
+            if (
+              x + dx >= 0 &&
+              x + dx < cols &&
+              y + dy >= 0 &&
+              y + dy < rows &&
+              points[k] &&
+              E.travelClear(points[i], points[k], radius, map)
+            )
+              edges[i].push(k);
+          }
+        }
+      const g = { points, edges, radius };
+      graphs.set(key, g);
+      return g;
+    }
+    function labels(g, boxes) {
+      const result = new Int32Array(g.points.length),
+        queue = new Int32Array(g.points.length);
+      let group = 0;
+      for (let i = 0; i < g.points.length; i++)
+        if (
+          !g.points[i] ||
+          boxes.some((b) => contains(b, g.points[i], g.radius + 3))
+        )
+          result[i] = -1;
+      for (let i = 0; i < result.length; i++)
+        if (result[i] === 0) {
+          group++;
+          let head = 0,
+            tail = 1;
+          queue[0] = i;
+          result[i] = group;
+          while (head < tail)
+            for (const k of g.edges[queue[head++]])
+              if (result[k] === 0) {
+                result[k] = group;
+                queue[tail++] = k;
+              }
+        }
+      return result;
+    }
+    function preserves(g, before, boxes) {
+      const after = labels(g, boxes),
+        assigned = new Map();
+      for (let i = 0; i < after.length; i++)
+        if (after[i] > 0 && before[i] > 0) {
+          const found = assigned.get(before[i]);
+          if (found !== undefined && found !== after[i]) return false;
+          assigned.set(before[i], after[i]);
+        }
+      return true;
+    }
+    function connected(s, candidate) {
+      const nav = world(s),
+        boxes = s.units.filter((u) => u.hp > 0 && u.construction).map(rect);
+      for (const radius of [8, 24]) {
+        const g = graph(s, radius);
+        if (!nav.connectivity.has(radius))
+          nav.connectivity.set(radius, labels(g, boxes));
+        if (!preserves(g, nav.connectivity.get(radius), [...boxes, candidate]))
+          return false;
+      }
+      return true;
+    }
+    function availability(s, kind) {
+      const item = E.development.items(s)[kind],
+        fail = (reason) => ({ allowed: false, reason, cost: item?.cost || 0 });
+      if (!enabled(s) || !Object.hasOwn(SHAPES, kind) || !item)
+        return fail("unknown");
+      if (s.status !== "playing") return fail("ended");
+      if (["foundry", "arsenal"].includes(kind) && s.campaign.tier < 2)
+        return fail("network");
+      if (s.units.length >= E.development.rules(s).unitLimit - 6)
+        return fail("limit");
+      if (
+        !s.units.some(
+          (u) => u.kind === "drone" && !u.team && u.hp > 0 && !u.buildingId,
+        )
+      )
+        return fail("builder");
+      if (s.economy.alloy < item.cost) return fail("funds");
+      return { allowed: true, reason: null, cost: item.cost, placement: true };
+    }
+    function protectedPoints(s) {
+      return [
+        ...s.campaign.mines.map((p) => ({ ...p, r: 32 })),
+        ...s.caches.filter((p) => !p.taken).map((p) => ({ ...p, r: 18 })),
+        { ...s.relay, r: 75 },
+        { ...s.terminal, r: 75 },
+        ...(E.map(s).posts || []).map((p) => ({ ...p, r: 40 })),
+      ];
+    }
+    function check(s, kind, point) {
+      const available = availability(s, kind),
+        preview = snap(kind, point?.x, point?.y, point?.turn ?? 0),
+        fail = (reason) => ({ ...available, allowed: false, reason, preview });
+      if (!preview) return fail("site");
+      if (!available.allowed) return { ...available, preview };
+      const b = rect(preview),
+        map = E.map(s);
+      if (
+        b.x < 24 ||
+        b.y < 24 ||
+        b.x + b.w > map.W - 24 ||
+        b.y + b.h > map.H - 24
+      )
+        return fail("support");
+      for (let dy = 0; dy <= b.h; dy += 10)
+        for (let dx = 0; dx <= b.w; dx += 10) {
+          const x = b.x + Math.max(1, Math.min(b.w - 1, dx)),
+            y = b.y + Math.max(1, Math.min(b.h - 1, dy));
+          const p = { x, y, map: map.id };
+          if (!E.explored(s, 0, p)) return fail("unexplored");
+          if (!E.visible(s, 0, p)) return fail("no-vision");
+        }
+      if (!support(s, b)) return fail("support");
+      if (
+        s.units.some(
+          (u) =>
+            u.hp > 0 &&
+            (u.construction
+              ? intersects(b, rect(u), 16)
+              : contains(b, u, E.C[u.kind].r + 12)),
+        )
+      )
+        return fail("occupied");
+      if (protectedPoints(s).some((p) => contains(b, p, p.r)))
+        return fail("objective-space");
+      if (kind === "outpost") {
+        const mine = s.campaign.mines
+          .filter(
+            (m) =>
+              m.id !== "home" && m.remaining > 0 && E.dist(preview, m) <= 320,
+          )
+          .sort(
+            (a, b) =>
+              E.dist(preview, a) - E.dist(preview, b) ||
+              a.id.localeCompare(b.id),
+          )[0];
+        if (!mine) return fail("ore-distance");
+        if (
+          s.units.some(
+            (u) => u.kind === "outpost" && u.hp > 0 && u.site === mine.id,
+          )
+        )
+          return fail("occupied-mine");
+        preview.site = mine.id;
+      }
+      const work = exit(preview),
+        proposed = { ...world(s), walls: [...world(s).walls, b] },
+        beyond = {
+          x: work.x + (preview.construction.turn ? 80 : 0),
+          y: work.y + (preview.construction.turn ? 0 : 80),
+        };
+      if (!E.travelClear(work, beyond, 20, proposed)) return fail("exit");
+      for (const existing of s.units.filter(
+        (u) => u.hp > 0 && u.construction,
+      )) {
+        const p = exit(existing),
+          end = {
+            x: p.x + (existing.construction.turn ? 80 : 0),
+            y: p.y + (existing.construction.turn ? 0 : 80),
+          };
+        if (!E.travelClear(p, end, 20, proposed)) return fail("exit");
+      }
+      if (!connected(s, b)) return fail("passage");
+      const workers = s.units
+        .filter(
+          (u) =>
+            u.kind === "drone" &&
+            u.hp > 0 &&
+            !u.team &&
+            !u.buildingId &&
+            (!point.builderId || u.id === point.builderId),
+        )
+        .sort((a, b) => E.dist(a, work) - E.dist(b, work) || a.id - b.id);
+      for (const worker of workers) {
+        const route = E.pathTo({ ...worker, map: proposed }, work, E.C.drone.r);
+        if (
+          E.dist(worker, work) <= 12 ||
+          (route.length && E.dist(route.at(-1), work) < 1)
+        )
+          return {
+            ...available,
+            allowed: true,
+            reason: null,
+            preview,
+            work,
+            builder: worker,
+            route,
+          };
+      }
+      return fail(workers.length ? "builder-route" : "builder");
+    }
+    function replan(s) {
+      worlds.delete(s);
+      for (const u of s.units)
+        if (u.hp > 0 && E.C[u.kind].speed && u.path.length) {
+          const goal = u.path.at(-1);
+          u.path = E.pathTo(u, goal, E.C[u.kind].r);
+        }
+    }
+    function release(s, u) {
+      const worker = s.units.find((p) => p.id === u.construction?.builderId);
+      if (worker?.buildingId === u.id) {
+        worker.buildingId = null;
+        worker.path = [];
+        worker.work = worker.cargo ? "return" : "out";
+        worker.workTime = 0;
+        delete worker.workTarget;
+      }
+      if (u.construction) u.construction.builderId = null;
+    }
+    function place(s, kind, point) {
+      const o = check(s, kind, point);
+      if (!o.allowed) return o;
+      const item = E.development.items(s)[kind],
+        u = E.unit(s, kind, 0, o.preview.x, o.preview.y);
+      u.jobs = [];
+      u.build = item.time;
+      u.hp = E.C[kind].hp * 0.25;
+      u.angle = (o.preview.construction.turn * Math.PI) / 2;
+      u.construction = {
+        turn: o.preview.construction.turn,
+        paid: item.cost,
+        builderId: o.builder.id,
+        work: o.work,
+        cancelled: false,
+      };
+      if (["barracks", "foundry"].includes(kind))
+        u.rally = {
+          x: o.work.x + (u.construction.turn ? 70 : 0),
+          y: o.work.y + (u.construction.turn ? 0 : 70),
+        };
+      if (kind === "outpost") {
+        u.site = o.preview.site;
+        u.salvaged = false;
+      }
+      s.economy.alloy -= item.cost;
+      s.economy.spent += item.cost;
+      o.builder.buildingId = u.id;
+      o.builder.work = "build";
+      o.builder.workTime = 0;
+      o.builder.path = o.route;
+      replan(s);
+      E.emit(s, "build", u.x, u.y);
+      return { allowed: true, cost: item.cost, buildingId: u.id };
+    }
+    function replacement(s, id, workerId = null) {
+      const u = s.units.find(
+        (u) => u.id === Number(id) && u.hp > 0 && u.build > 0 && u.construction,
+      );
+      if (!u) return { allowed: false, reason: "construction" };
+      const candidates = s.units
+        .filter(
+          (w) =>
+            w.kind === "drone" &&
+            w.hp > 0 &&
+            !w.buildingId &&
+            (!workerId || w.id === workerId),
+        )
+        .sort(
+          (a, b) =>
+            E.dist(a, u.construction.work) - E.dist(b, u.construction.work) ||
+            a.id - b.id,
+        );
+      for (const worker of candidates) {
+        const route = E.pathTo(worker, u.construction.work, E.C.drone.r);
+        if (
+          E.dist(worker, u.construction.work) <= 12 ||
+          (route.length && E.dist(route.at(-1), u.construction.work) < 1)
+        )
+          return { allowed: true, u, worker, route };
+      }
+      return {
+        allowed: false,
+        reason: candidates.length ? "builder-route" : "builder",
+      };
+    }
+    function assign(s, id, workerId = null) {
+      if (s.status !== "playing") return { allowed: false, reason: "ended" };
+      const o = replacement(s, id, workerId);
+      if (!o.allowed) return o;
+      release(s, o.u);
+      o.u.construction.builderId = o.worker.id;
+      o.worker.buildingId = o.u.id;
+      o.worker.work = "build";
+      o.worker.workTime = 0;
+      o.worker.path = o.route;
+      return { allowed: true, cost: 0 };
+    }
+    function cancel(s, id) {
+      const u = s.units.find(
+        (u) => u.id === Number(id) && u.hp > 0 && u.build > 0 && u.construction,
+      );
+      if (!u || s.status !== "playing")
+        return { allowed: false, reason: "construction" };
+      const amount = Math.floor(u.construction.paid * 0.75);
+      release(s, u);
+      u.hp = 0;
+      u.build = 0;
+      u.jobs = [];
+      u.construction.cancelled = true;
+      s.economy.alloy += amount;
+      s.economy.recovered += amount;
+      s.campaign.refunded += amount;
+      replan(s);
+      E.emit(s, "salvage", u.x, u.y, { amount });
+      return { allowed: true, cost: -amount };
+    }
+    function tick(s, u, dt) {
+      const job = u.construction,
+        worker = s.units.find(
+          (p) =>
+            p.id === job.builderId &&
+            p.hp > 0 &&
+            p.kind === "drone" &&
+            p.buildingId === u.id,
+        );
+      if (!worker) {
+        job.builderId = null;
+        return;
+      }
+      worker.work = "build";
+      worker.workTime = 0;
+      if (E.dist(worker, job.work) > 12) {
+        if (!worker.path.length)
+          worker.path = E.pathTo(worker, job.work, E.C.drone.r);
+        E.follow(worker, dt);
+        return;
+      }
+      worker.path = [];
+      const spent = Math.min(dt, u.build);
+      u.build = Math.max(0, u.build - dt);
+      u.hp = Math.min(
+        E.C[u.kind].hp,
+        u.hp +
+          (E.C[u.kind].hp * 0.75 * spent) / E.development.items(s)[u.kind].time,
+      );
+      if (!u.build) {
+        release(s, u);
+        E.emit(s, "post-ready", u.x, u.y);
+      }
+    }
+    function onDeath(s, u) {
+      if (!enabled(s)) return;
+      if (u.construction) {
+        release(s, u);
+        replan(s);
+      }
+      if (u.buildingId) {
+        const site = s.units.find((p) => p.id === u.buildingId);
+        if (site?.construction?.builderId === u.id)
+          site.construction.builderId = null;
+        u.buildingId = null;
+      }
+    }
+    function validate(s) {
+      if (!enabled(s))
+        return !s.units.some(
+          (u) => u.construction || u.buildingId || u.kind === "arsenal",
+        );
+      const assigned = new Set(),
+        boxes = [],
+        map = E.map(s);
+      let paid = 0;
+      for (const u of s.units) {
+        if (Object.hasOwn(SHAPES, u.kind)) {
+          const c = u.construction,
+            b = rect(u),
+            price = E.development.items(s)[u.kind].cost;
+          if (
+            !c ||
+            ![0, 1].includes(c.turn) ||
+            c.paid !== price ||
+            typeof c.cancelled !== "boolean" ||
+            !b ||
+            b.x % 40 ||
+            b.y % 40 ||
+            !support(s, b) ||
+            b.x < 24 ||
+            b.y < 24 ||
+            b.x + b.w > map.W - 24 ||
+            b.y + b.h > map.H - 24 ||
+            !c.work ||
+            !Number.isFinite(c.work.x) ||
+            !Number.isFinite(c.work.y) ||
+            E.dist(c.work, exit(u)) > 0.001 ||
+            (c.cancelled && (u.hp > 0 || u.build > 0)) ||
+            (c.builderId !== null &&
+              (!Number.isInteger(c.builderId) || u.hp <= 0 || u.build <= 0))
+          )
+            return false;
+          if (c.builderId !== null) {
+            const w = s.units.find(
+              (w) =>
+                w.id === c.builderId &&
+                w.kind === "drone" &&
+                w.hp > 0 &&
+                w.buildingId === u.id,
+            );
+            if (!w || w.work !== "build" || assigned.has(w.id)) return false;
+            assigned.add(w.id);
+          }
+          if (u.hp > 0) {
+            if (
+              boxes.some((other) => intersects(b, other, 16)) ||
+              protectedPoints(s).some((p) => contains(b, p, p.r)) ||
+              s.units.some(
+                (p) =>
+                  p.hp > 0 &&
+                  !p.construction &&
+                  !E.C[p.kind].speed &&
+                  contains(b, p, E.C[p.kind].r + 12),
+              )
+            )
+              return false;
+            boxes.push(b);
+          }
+          if (
+            u.kind === "outpost" &&
+            !s.campaign.mines.some(
+              (m) => m.id === u.site && m.id !== "home" && E.dist(u, m) <= 320,
+            )
+          )
+            return false;
+          paid += price;
+        } else if (u.construction) return false;
+        if (u.buildingId !== undefined && u.buildingId !== null) {
+          if (
+            u.kind !== "drone" ||
+            u.hp <= 0 ||
+            !Number.isInteger(u.buildingId) ||
+            !s.units.some(
+              (b) =>
+                b.id === u.buildingId &&
+                b.hp > 0 &&
+                b.build > 0 &&
+                b.construction?.builderId === u.id,
+            )
+          )
+            return false;
+        }
+      }
+      if (paid > s.economy.spent) return false;
+      for (const u of s.units.filter((u) => u.hp > 0 && u.construction)) {
+        const p = exit(u),
+          end = {
+            x: p.x + (u.construction.turn ? 80 : 0),
+            y: p.y + (u.construction.turn ? 0 : 80),
+          };
+        if (!E.travelClear(p, end, 20, world(s))) return false;
+      }
+      for (const radius of [8, 24]) {
+        const g = graph(s, radius);
+        if (!preserves(g, labels(g, []), boxes)) return false;
+      }
+      return s.units.every(
+        (u) =>
+          u.hp <= 0 ||
+          u.construction ||
+          !E.C[u.kind].speed ||
+          E.free(u.x, u.y, E.C[u.kind].r, world(s)),
+      );
+    }
+    return {
+      enabled,
+      shapes: SHAPES,
+      rect,
+      snap,
+      exit,
+      world,
+      check,
+      availability,
+      place,
+      assign,
+      replacement,
+      cancel,
+      tick,
+      onDeath,
+      validate,
+      replan,
+    };
+  }
+  const api = { create };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  else root.SignalConstruction = api;
+})(typeof globalThis !== "undefined" ? globalThis : window);

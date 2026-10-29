@@ -254,12 +254,41 @@ test("a stale tab pauses and cannot replace the operation from another tab", asy
   });
   try {
     const a = await context.newPage();
+    await a.clock.install();
     await a.goto(route);
+    await a.clock.pauseAt(await a.evaluate(() => Date.now() + 1000));
     await a.locator("#start").click();
     const b = await context.newPage();
     await b.goto(route);
     await a.locator("#supply-open").click();
     await a.locator("#develop-barracks").click();
+    await a.clock.runFor(100);
+    await expect(a.locator("#placement-panel")).toBeVisible();
+    await expect(b.locator("#storage-content")).toBeHidden();
+    expect(
+      (
+        await a.evaluate(
+          () => JSON.parse(localStorage.getItem("signal-frontier-v1")).save,
+        )
+      ).economy.spent,
+    ).toBe(0);
+    const site =
+      require("../tests/helpers/signal-frontier-construction.cjs").findSite(
+        await a.evaluate(() => SignalGame.snapshot()),
+        "barracks",
+      );
+    expect(site).not.toBeNull();
+    const point = await a.evaluate((p) => SignalGame.screen(p.x, p.y), site);
+    await a.mouse.move(point.x, point.y);
+    await a.clock.runFor(100);
+    await expect(a.locator("#placement-confirm")).toBeEnabled();
+    await a.locator("#placement-confirm").click();
+    await expect(b.locator("#storage-content")).toBeVisible();
+    expect(await b.evaluate(() => SignalGame.mode())).not.toBe("playing");
+    expect((await b.evaluate(() => SignalGame.snapshot())).economy.spent).toBe(
+      0,
+    );
+    await b.keyboard.press("Escape");
     await expect(b.locator("#storage-content")).toBeVisible();
     const latest = await a.evaluate(
       () => JSON.parse(localStorage.getItem("signal-frontier-v1")).save,

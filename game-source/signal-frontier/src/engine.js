@@ -37,6 +37,7 @@
     drone: { hp: 45, r: 8, speed: 85, range: 0, damage: 0, rate: 0 },
     barracks: { hp: 420, r: 30, speed: 0, range: 0, damage: 0, rate: 0 },
     foundry: { hp: 500, r: 34, speed: 0, range: 0, damage: 0, rate: 0 },
+    arsenal: { hp: 440, r: 30, speed: 0, range: 0, damage: 0, rate: 0 },
   };
   const MOUNTS = Object.freeze({
     citadel: 64,
@@ -101,29 +102,49 @@
   };
   const highlandsMap = Terrain.build(expeditionMap.walls);
   const mapFor = (s) =>
-    s === "highlands" ||
-    s?.id === "highlands" ||
-    s?.map === "highlands" ||
-    s?.campaign?.id === "frontier-7"
-      ? highlandsMap
-      : s === "expedition" ||
-          s?.id === "expedition" ||
-          s?.map === "expedition" ||
-          ["frontier-3", "frontier-4", "frontier-5", "frontier-6"].includes(
-            s?.campaign?.id,
-          )
-        ? expeditionMap
-        : s === "frontier" ||
-            s?.id === "frontier" ||
-            s?.campaign ||
-            s?.map === "frontier"
-          ? frontierMap
-          : classicMap;
-  let campaign, recon;
+    s?.navigation
+      ? s
+      : s === "highlands" ||
+          s?.id === "highlands" ||
+          s?.map === "highlands" ||
+          ["frontier-7", "frontier-8"].includes(s?.campaign?.id)
+        ? highlandsMap
+        : s === "expedition" ||
+            s?.id === "expedition" ||
+            s?.map === "expedition" ||
+            ["frontier-3", "frontier-4", "frontier-5", "frontier-6"].includes(
+              s?.campaign?.id,
+            )
+          ? expeditionMap
+          : s === "frontier" ||
+              s?.id === "frontier" ||
+              s?.campaign ||
+              s?.map === "frontier"
+            ? frontierMap
+            : classicMap;
+  let campaign, recon, construction;
+  const owners = new WeakMap();
+  function navigation(value) {
+    if (value?.navigation) return value;
+    if (value?.map?.navigation) return value.map;
+    const state = value?.campaign ? value : owners.get(value);
+    return construction?.enabled(state)
+      ? construction.world(state)
+      : mapFor(value);
+  }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  function targetEdge(from, target) {
+    if (!target.construction) return target;
+    const b = construction.rect(target);
+    return {
+      x: clamp(from.x, b.x, b.x + b.w),
+      y: clamp(from.y, b.y, b.y + b.h),
+    };
+  }
+  const rangeDistance = (from, target) => dist(from, targetEdge(from, target));
   function free(x, y, r = 14, map = "classic") {
-    const world = mapFor(map);
+    const world = map?.campaign ? navigation(map) : mapFor(map);
     return (
       x >= r + 24 &&
       x <= world.W - r - 24 &&
@@ -163,18 +184,27 @@
       (w) => segmentRect(a.x, a.y, b.x, b.y, w, r) !== null,
     );
   }
+  const sightCache = new Map();
   function clear(a, b, r = 0) {
     const world = mapFor(a.map || b.map);
     if (world.id !== "highlands") return wallClear(a, b, r);
-    const eye = Terrain.height(a.x, a.y) + 24;
-    return (
-      Terrain.sight(a, b) &&
-      !world.walls.some(
-        (w) =>
-          segmentRect(a.x, a.y, b.x, b.y, w, r) !== null &&
-          Terrain.height(w.x + w.w / 2, w.y + w.h / 2) + 54 >= eye,
-      )
-    );
+    // Terrain and neutral cover are immutable. Repeated perception/targeting
+    // queries may reuse an exact directed ray; moving endpoints get a new key.
+    const key = [a.x, a.y, b.x, b.y, r].join(":"),
+      known = sightCache.get(key);
+    if (known !== undefined) return known;
+    const eye = Terrain.height(a.x, a.y) + 24,
+      result =
+        Terrain.sight(a, b) &&
+        !world.walls.some(
+          (w) =>
+            segmentRect(a.x, a.y, b.x, b.y, w, r) !== null &&
+            Terrain.height(w.x + w.w / 2, w.y + w.h / 2) + 54 >= eye,
+        );
+    if (sightCache.size >= 8192)
+      sightCache.delete(sightCache.keys().next().value);
+    sightCache.set(key, result);
+    return result;
   }
   const elevation = (x, y, map) =>
     mapFor(map).id === "highlands" ? Terrain.height(x, y) : 0;
@@ -229,6 +259,7 @@
       think: 0,
     };
     if (s.campaign) u.map = mapFor(s).id;
+    owners.set(u, s);
     s.units.push(u);
     return u;
   }
@@ -301,9 +332,10 @@
             "frontier-5",
             "frontier-6",
             "frontier-7",
+            "frontier-8",
           ].includes(mode)
             ? mode
-            : "frontier-7",
+            : "frontier-8",
         );
   }
   const hero = (s) => s.units.find((u) => u.id === s.heroId);
@@ -334,6 +366,26 @@
   const readyPosts = (s) =>
     s.units.filter((u) => u.kind === "outpost" && u.hp > 0 && u.build === 0);
   function spawnPoint(s, anchor, kind) {
+    if (anchor.construction) {
+      const origin = construction.exit(anchor, C[kind].r),
+        turn = anchor.construction.turn,
+        world = navigation(s);
+      for (const ahead of [0, 35, 70])
+        for (const side of [0, -35, 35]) {
+          const p = {
+            x: origin.x + (turn ? ahead : side),
+            y: origin.y + (turn ? side : ahead),
+          };
+          if (
+            travelClear(origin, p, C[kind].r, world) &&
+            !s.units.some(
+              (u) => u.hp > 0 && dist(u, p) < C[u.kind].r + C[kind].r + 4,
+            )
+          )
+            return p;
+        }
+      return null;
+    }
     const offsets = [
       [55, 35],
       [-55, 35],
@@ -360,7 +412,13 @@
     for (const [dx, dy] of offsets) {
       const p = { x: anchor.x + dx, y: anchor.y + dy };
       if (
-        free(p.x, p.y, C[kind].r, anchor.map) &&
+        // Legacy seeds choose offsets before the highlands coordinate transform.
+        free(
+          p.x,
+          p.y,
+          C[kind].r,
+          construction.enabled(s) ? navigation(s) : anchor.map,
+        ) &&
         !s.units.some(
           (u) => u.hp > 0 && dist(u, p) < C[kind].r + C[u.kind].r + 3,
         )
@@ -636,7 +694,9 @@
     return result;
   }
   function pathTo(from, to, r = 14) {
-    const world = mapFor(from.map || to.map),
+    const world = navigation(
+        from.map || owners.has(from) ? from : { ...from, map: to.map },
+      ),
       cell = 40,
       cols = world.W / cell,
       rows = world.H / cell,
@@ -644,9 +704,9 @@
       end =
         Math.floor(clamp(to.y, 25, world.H - 25) / cell) * cols +
         Math.floor(clamp(to.x, 25, world.W - 25) / cell);
-    if (travelClear(from, to, r, world.id)) return [{ x: to.x, y: to.y }];
+    if (travelClear(from, to, r, world)) return [{ x: to.x, y: to.y }];
     const exits = new Set();
-    if (free(to.x, to.y, r, world.id)) {
+    if (free(to.x, to.y, r, world)) {
       const ex = Math.floor(to.x / cell),
         ey = Math.floor(to.y / cell);
       for (let y = Math.max(0, ey - 2); y <= Math.min(rows - 1, ey + 2); y++)
@@ -656,10 +716,7 @@
           x++
         ) {
           const p = { x: x * cell + 20, y: y * cell + 20 };
-          if (
-            free(p.x, p.y, r + 3, world.id) &&
-            travelClear(p, to, r, world.id)
-          )
+          if (free(p.x, p.y, r + 3, world) && travelClear(p, to, r, world))
             exits.add(y * cols + x);
         }
     }
@@ -676,8 +733,8 @@
         const k = y * cols + x;
         if (
           k !== start &&
-          free(x * cell + 20, y * cell + 20, r + 3, world.id) &&
-          travelClear(from, { x: x * cell + 20, y: y * cell + 20 }, r, world.id)
+          free(x * cell + 20, y * cell + 20, r + 3, world) &&
+          travelClear(from, { x: x * cell + 20, y: y * cell + 20 }, r, world)
         ) {
           prev[k] = start;
           queue.push(k);
@@ -714,13 +771,13 @@
           yy < 0 ||
           yy >= rows ||
           prev[k] !== -2 ||
-          !free(xx * cell + 20, yy * cell + 20, r + 3, world.id) ||
+          !free(xx * cell + 20, yy * cell + 20, r + 3, world) ||
           ((n === start || world.id === "highlands") &&
             !travelClear(
               n === start ? from : { x: x * cell + 20, y: y * cell + 20 },
               { x: xx * cell + 20, y: yy * cell + 20 },
               r,
-              world.id,
+              world,
             ))
         )
           continue;
@@ -736,7 +793,7 @@
       });
     route.reverse();
     if (reached) route.push({ x: to.x, y: to.y });
-    return smoothRoute(from, route, r, world.id);
+    return smoothRoute(from, route, r, world);
   }
   // A bolt collides with two pixels of cover padding. Use the same corridor
   // for AI aiming; visibility alone may see a point while a bolt clips a corner.
@@ -767,10 +824,11 @@
         : 2,
     );
   }
-  const attackGrids = new Map();
+  const attackGrids = new WeakMap();
   function attackGrid(map, radius) {
-    const key = map.id + ":" + radius;
-    if (attackGrids.has(key)) return attackGrids.get(key);
+    let cache = attackGrids.get(map);
+    if (!cache) attackGrids.set(map, (cache = new Map()));
+    if (cache.has(radius)) return cache.get(radius);
     const cols = map.W / 40,
       rows = map.H / 40,
       points = [],
@@ -778,7 +836,7 @@
     for (let y = 0; y < rows; y++)
       for (let x = 0; x < cols; x++) {
         const p = { x: x * 40 + 20, y: y * 40 + 20 };
-        points.push(free(p.x, p.y, radius + 3, map.id) ? p : null);
+        points.push(free(p.x, p.y, radius + 3, map) ? p : null);
       }
     for (let k = 0; k < points.length; k++) {
       edges[k] = [];
@@ -804,31 +862,32 @@
           yy >= 0 &&
           yy < rows &&
           points[n] &&
-          travelClear(points[k], points[n], radius, map.id)
+          travelClear(points[k], points[n], radius, map)
         )
           edges[k].push([n, Math.hypot(dx, dy) * 40]);
       }
     }
     const grid = { cols, rows, points, edges };
-    attackGrids.set(key, grid);
+    cache.set(radius, grid);
     return grid;
   }
   function firingPath(from, target) {
     const def = C[from.kind],
-      world = mapFor(from.map || target.map),
+      world = navigation(from),
       range = from.kind === "scout" ? 650 : def.range * 0.9,
       minimum = from.kind === "mortar" ? 240 : 0;
     const goal = (p) =>
       dist(p, target) >= minimum &&
-      dist(p, target) <= range &&
+      rangeDistance(p, target) <= range &&
       fireClear({ ...p, map: world.id, kind: from.kind }, target);
     if (goal(from)) return [];
-    const d = dist(from, target),
+    const edge = targetEdge(from, target),
+      d = dist(from, edge),
       direct = {
-        x: target.x + ((from.x - target.x) * range) / Math.max(1, d),
-        y: target.y + ((from.y - target.y) * range) / Math.max(1, d),
+        x: edge.x + ((from.x - edge.x) * range) / Math.max(1, d),
+        y: edge.y + ((from.y - edge.y) * range) / Math.max(1, d),
       };
-    if (goal(direct) && travelClear(from, direct, def.r, world.id))
+    if (goal(direct) && travelClear(from, direct, def.r, world))
       return [direct];
     const { cols, rows, points, edges } = attackGrid(world, def.r);
     const costs = new Float64Array(points.length).fill(Infinity),
@@ -838,7 +897,7 @@
       const item = {
         k,
         cost,
-        score: cost + Math.max(0, dist(points[k], target) - range),
+        score: cost + Math.max(0, rangeDistance(points[k], target) - range),
       };
       let n = heap.length;
       heap.push(item);
@@ -871,7 +930,7 @@
     for (let y = Math.max(0, sy - 2); y <= Math.min(rows - 1, sy + 2); y++)
       for (let x = Math.max(0, sx - 2); x <= Math.min(cols - 1, sx + 2); x++) {
         const k = y * cols + x;
-        if (points[k] && travelClear(from, points[k], def.r, world.id)) {
+        if (points[k] && travelClear(from, points[k], def.r, world)) {
           costs[k] = dist(from, points[k]);
           prev[k] = -1;
           push(k, costs[k]);
@@ -883,7 +942,7 @@
       if (goal(points[k])) {
         const route = [];
         for (let n = k; n >= 0; n = prev[n]) route.push({ ...points[n] });
-        return smoothRoute(from, route.reverse(), def.r, world.id);
+        return smoothRoute(from, route.reverse(), def.r, world);
       }
       for (const [n, step] of edges[k])
         if (cost + step < costs[n] - 1e-7) {
@@ -1015,7 +1074,7 @@
       !u ||
       !Number.isFinite(x) ||
       !Number.isFinite(y) ||
-      !free(x, y, 20, mapFor(s))
+      !free(x, y, 20, navigation(s))
     )
       return false;
     u.rally = { x, y };
@@ -1024,11 +1083,12 @@
   }
   function move(u, dx, dy) {
     const r = C[u.kind].r,
+      map = navigation(u),
       steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 8));
     for (let i = 0; i < steps; i++) {
-      if (travelClear(u, { x: u.x + dx / steps, y: u.y }, r, u.map))
+      if (travelClear(u, { x: u.x + dx / steps, y: u.y }, r, map))
         u.x += dx / steps;
-      if (travelClear(u, { x: u.x, y: u.y + dy / steps }, r, u.map))
+      if (travelClear(u, { x: u.x, y: u.y + dy / steps }, r, map))
         u.y += dy / steps;
     }
   }
@@ -1208,13 +1268,13 @@
       if (
         u.hp > 0 &&
         u.team !== b.team &&
-        (area ? insideArea(area, u) : dist(u, b) < radius) &&
+        (area ? insideArea(area, u) : rangeDistance(b, u) < radius) &&
         clear(b, u)
       )
         hurt(
           s,
           u,
-          b.damage * (1 - dist(u, b) / (b.radius ? radius * 2 : 100)),
+          b.damage * (1 - rangeDistance(b, u) / (b.radius ? radius * 2 : 100)),
           b,
         );
   }
@@ -1339,6 +1399,23 @@
     return null;
   }
   function insideArea(area, p) {
+    if (p.construction) {
+      const b = construction.rect(p);
+      if (!area.points) return rangeDistance(area, p) < area.radius;
+      if (
+        [
+          [b.x, b.y],
+          [b.x + b.w, b.y],
+          [b.x + b.w, b.y + b.h],
+          [b.x, b.y + b.h],
+        ].some(([x, y]) => insideArea(area, { x, y }))
+      )
+        return true;
+      return area.points.some((a, i) => {
+        const z = area.points[(i + 1) % area.points.length];
+        return segmentRect(a.x, a.y, z.x, z.y, b) !== null;
+      });
+    }
     if (area.kind === "circle" && !area.points)
       return dist(area, p) < area.radius;
     let inside = false;
@@ -1456,6 +1533,12 @@
           v.hp > 0 &&
           !(v.kind === "citadel" && shielded(s)),
       );
+      // Campaign enemies choose targets in their own AI. The generic scan
+      // below is used only by allies and legacy enemies.
+      if (u.team !== 0 && s.campaign) {
+        campaign.enemy(s, u, dt, opponents);
+        continue;
+      }
       let target = opponents
         .filter(
           (v) => dist(u, v) < def.range && clear(u, v) && visible(s, u.team, v),
@@ -1539,8 +1622,6 @@
           u.cool === 0
         )
           shoot(s, u, target);
-      } else if (s.campaign) {
-        campaign.enemy(s, u, dt, opponents);
       } else {
         u.think -= dt;
         if (!target && C[u.kind].speed && u.think <= 0) {
@@ -1650,7 +1731,9 @@
       for (const u of s.units) {
         if (u.hp <= 0 || u.team === b.team) continue;
         if (u.kind === "hero" && s.dashT > 0) continue;
-        const t = segmentCircle(b, next, u, C[u.kind].r + 2);
+        const t = u.construction
+          ? segmentRect(b.x, b.y, next.x, next.y, construction.rect(u), 2)
+          : segmentCircle(b, next, u, C[u.kind].r + 2);
         if (
           t !== null &&
           t < first &&
@@ -1754,9 +1837,12 @@
   }
   function restore(value) {
     if (value?.fog !== undefined) return null;
-    if ([3, 4, 5, 6, 7, 8, 9].includes(value?.version)) {
+    if ([3, 4, 5, 6, 7, 8, 9, 10].includes(value?.version)) {
       const state = campaign.restore(value);
-      return state && recon.validate(state) ? state : null;
+      if (!state || !recon.validate(state) || !construction.validate(state))
+        return null;
+      for (const u of state.units) owners.set(u, state);
+      return state;
     }
     try {
       const s = JSON.parse(JSON.stringify(value));
@@ -2021,6 +2107,7 @@
   const visible = (s, team, p) => recon.visible(s, team, p);
   const explored = (s, team, p) => recon.explored(s, team, p);
   const API = {
+    navigation,
     terrain: Terrain,
     elevation,
     projectileHeight,
@@ -2065,6 +2152,7 @@
     free,
     clear,
     dist,
+    rangeDistance,
     clamp,
     snapshot,
     restore,
@@ -2082,6 +2170,21 @@
     typeof module !== "undefined" && module.exports
       ? require("./campaign.js")
       : root.SignalCampaign;
+  const Construction =
+    typeof module !== "undefined" && module.exports
+      ? require("./construction.js")
+      : root.SignalConstruction;
+  construction = Construction.create({
+    ...API,
+    map: mapFor,
+    unit,
+    emit,
+    follow,
+    get development() {
+      return campaign;
+    },
+  });
+  API.construction = construction;
   campaign = Campaign.create({
     ...API,
     makeClassic,

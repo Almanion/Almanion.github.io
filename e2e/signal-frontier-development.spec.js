@@ -247,13 +247,12 @@ test("tactical WASD pans the map without advancing the operation or issuing orde
   ).toBeGreaterThan(E.hero(initial).x + 20);
 });
 
-test("shop keeps purpose, exact cost, duration and prerequisites visible at narrow width", async ({
+test("legacy shop keeps purpose, exact cost, duration and prerequisites visible at narrow width", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await page.clock.install();
-  await page.goto(route);
-  await page.locator("#start").click();
+  await resume(page, E.make("frontier-7"));
   await page.locator("#supply-open").click();
   const barracks = page.locator("#develop-barracks"),
     foundry = page
