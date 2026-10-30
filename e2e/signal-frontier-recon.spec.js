@@ -1,4 +1,5 @@
 "use strict";
+const { selectGroup } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect, chromium, webkit } = require("@playwright/test"),
   E = require("../game-source/signal-frontier/src/engine"),
   path = require("node:path");
@@ -191,7 +192,8 @@ for (const type of [chromium, webkit]) {
         try {
           const s = shop();
           await boot(page, s);
-          await page.locator("#supply-open").click();
+          await page.locator("#dock-shop").click();
+          await page.locator("#develop-tab-production").click();
           const b = E.living(s, "barracks");
           await page.locator(`[data-select="${b.id}"]`).click();
           const button = page.locator("#develop-scout");
@@ -226,7 +228,7 @@ for (const type of [chromium, webkit]) {
           state = await page.evaluate(() => SignalGame.snapshot());
           expect(E.living(state, "barracks").jobs).toHaveLength(1);
           expect(state.economy.alloy).toBe(s.economy.alloy - 63);
-          await page.locator("#development-back").click();
+          await page.locator("#dock-selection").click();
           await page.locator("#menu-button").click();
           const saved = await page.evaluate(() => SignalGame.snapshot());
           await page.reload();
@@ -280,7 +282,7 @@ test("hidden enemy orders use a ground point, and pause/reload retains explorati
   await boot(page, s);
   await page.locator("#map-overview").click();
   await page.clock.runFor(400);
-  await page.locator("#group-one").click();
+  await selectGroup(page, 1);
   const target = E.living(s, "bastion"),
     p = await page.evaluate((p) => SignalGame.screen(p.x, p.y), target);
   await page.mouse.click(p.x, p.y, { button: "right" });

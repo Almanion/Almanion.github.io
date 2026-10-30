@@ -76,7 +76,7 @@ for (const [width, height] of [[1440, 900], [390, 844], [320, 568]])
     const ready = E.restore(legacy);
     frames(ready, 1800);
     await boot(page, ready);
-    await page.locator("#supply-open").click();
+    await page.locator("#dock-shop").click();
     await page.locator("#develop-tab-production").click();
     await page.locator('[data-production-group="barracks"]').click();
     await expect(page.locator("#develop-rifle")).toContainText("11 клеток");

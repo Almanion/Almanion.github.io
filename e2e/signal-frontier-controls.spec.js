@@ -1,4 +1,5 @@
 "use strict";
+const { selectGroup } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect, chromium, webkit } = require("@playwright/test");
 const E = require("../game-source/signal-frontier/src/engine");
 const route = "/games/signal-frontier/";
@@ -91,10 +92,8 @@ test("right drag selects only part of the army during live combat, then orders o
   await page.mouse.up({ button: "right" });
   await page.keyboard.up("Control");
   expect((await page.evaluate(() => SignalGame.selection())).ids).toEqual(ids);
-  await page.keyboard.press("Digit1");
-  expect((await page.evaluate(() => SignalGame.selection())).custom).toBe(
-    false,
-  );
+  await page.locator("#select-army").click();
+  expect((await page.evaluate(() => SignalGame.selection())).ids).toEqual(ids);
   await page.screenshot({ path: "test-results/signal-controls-selection.png" });
 });
 test("whole group selection includes overlapping troops", async ({ page }) => {
@@ -105,7 +104,7 @@ test("whole group selection includes overlapping troops", async ({ page }) => {
   for (const u of troops) Object.assign(u, { x: 400, y: 1500 });
   await boot(page, state);
   await page.locator("#tactical").click();
-  await page.locator("#group-one").click();
+  await selectGroup(page, 1);
   expect((await page.evaluate(() => SignalGame.selection())).ids).toEqual(ids);
   const p = await page.evaluate(() => SignalGame.screen(620, 1500));
   await page.mouse.click(p.x, p.y, { button: "right" });
@@ -120,7 +119,7 @@ test("selection cancellation, empty frames and tactical dragging never issue an 
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await boot(page);
-  const ids = await page.evaluate(() => SignalGame.selection().ids),
+  const ids = await page.evaluate(() => SignalGame.snapshot().units.filter((u) => u.group === 1).map((u) => u.id)),
     before = await page.evaluate(() => SignalGame.snapshot());
   await box(page, [ids[0]]);
   await page.keyboard.press("Escape");
@@ -180,6 +179,14 @@ for (const type of [chromium, webkit])
         errors = [];
       page.on("pageerror", (e) => errors.push(e.message));
       try {
+        // Portable touch drag with a real active pointer; mouse behaviour has
+        // separate coverage in signal-frontier-cursor.spec.js.
+        await page.addInitScript(() => {
+          for (const type of ["pointerdown", "pointermove", "pointerup", "pointercancel"])
+            addEventListener(type, (e) => {
+              if (e.pointerType === "mouse") Object.defineProperty(e, "pointerType", { value: "touch" });
+            }, true);
+        });
         const state = scenario(),
           h = E.hero(state),
           enemy = state.units.find((u) => u.kind === "sentinel");
@@ -187,7 +194,7 @@ for (const type of [chromium, webkit])
         for (const u of state.units) if (u.group) u.hp = 0;
         await boot(page, state);
         const m = await page.locator("#move-stick").boundingBox();
-        const start = { x: m.x + m.width / 2 - 20, y: m.y + m.height / 2 + 15 };
+        const start = { x: m.x + m.width / 2 - 20, y: 220 };
         const read = () =>
           page.evaluate(() => {
             const s = SignalGame.snapshot();
@@ -215,7 +222,7 @@ for (const type of [chromium, webkit])
         await page.clock.runFor(200);
         expect((await read()).h.x).toBeCloseTo(stopped.h.x, 6);
 
-        const edge = { x: m.x + 10, y: m.y + 10 },
+        const edge = { x: m.x + 25, y: 180 },
           edgeBefore = await read();
         await page.mouse.move(edge.x, edge.y);
         await page.mouse.down();
@@ -225,7 +232,7 @@ for (const type of [chromium, webkit])
         expect((await read()).h.y).toBeCloseTo(edgeBefore.h.y, 6);
         await page.mouse.up();
         const a = await page.locator("#aim-stick").boundingBox(),
-          center = { x: a.x + a.width / 2, y: a.y + a.height / 2 };
+          center = { x: a.x + a.width / 2, y: 220 };
         const shots = (await read()).shots;
         await page.mouse.click(center.x, center.y);
         await page.clock.runFor(100);

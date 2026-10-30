@@ -1,4 +1,5 @@
 "use strict";
+const { selectGroup } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect } = require("@playwright/test");
 // Every scenario owns its browser context; long operations can use separate CI workers.
 test.describe.configure({ mode: "parallel" });
@@ -21,7 +22,7 @@ test("development: real queued cost, cancellation, pause and reload", async ({
   await page.clock.install({ time: new Date("2026-10-29T12:00:00Z") });
   await page.clock.pauseAt(new Date("2026-10-29T12:00:01Z"));
   await start(page);
-  await page.locator("#supply-open").click();
+  await page.locator("#dock-shop").click();
   await page.locator("#develop-tab-economy").click();
   await page
     .locator("[data-select]")
@@ -41,7 +42,7 @@ test("development: real queued cost, cancellation, pause and reload", async ({
   await page.clock.runFor(500);
   await page.locator("#develop-drone-" + base).click();
   await expect(page.locator("#field-alloy")).toHaveText("117");
-  await page.locator("#development-back").click();
+  await page.locator("#dock-selection").click();
   await page.locator("#tactical").click();
   await page.clock.runFor(5000);
   await page.locator("#menu-button").click();
@@ -104,7 +105,7 @@ test("tactical camera: hover edges, drag, zoom, limits and no accidental orders"
   ).toEqual(orders);
   expect(await page.evaluate(() => SignalGame.snapshot().t)).toBe(0);
   await page.locator("#map-overview").click();
-  await page.locator("#group-one").click();
+  await selectGroup(page, 1);
   await expect
     .poll(() => page.evaluate(() => SignalGame.cameraSettled()), {
       timeout: 15000,
@@ -353,9 +354,7 @@ for (const [name, profile] of [
         await page.clock.runFor(600);
         for (const c of commands) {
           if (c.kind === "order") {
-            await page
-              .locator(c.group === 1 ? "#group-one" : "#group-two")
-              .click();
+            await selectGroup(page, c.group);
             const current = await page.evaluate(
               () => SignalGame.selection().ids,
             );
@@ -403,7 +402,7 @@ for (const [name, profile] of [
             );
             await page.mouse.click(p.x, p.y, { button: "right" });
           } else {
-            await page.locator("#supply-open").click();
+            await page.locator("#dock-shop").click();
             if (
               freeBuild &&
               (await page.locator("[data-all-buildings]").count())
@@ -479,7 +478,7 @@ for (const [name, profile] of [
             );
             await expect(button).toBeEnabled();
             await button.click();
-            await page.locator("#development-back").click();
+            await page.locator("#dock-selection").click();
           }
         }
         await page.keyboard.press("Tab");

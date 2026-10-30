@@ -142,7 +142,7 @@ for (const width of [320, 390])
         await boot(p, fixture());
         const rect = await p.locator("#move-stick").boundingBox(),
           x = rect.x + rect.width / 2,
-          y = rect.y + rect.height / 2,
+          y = 220,
           cdp = await mobile.newCDPSession(p);
         await cdp.send("Input.dispatchTouchEvent", {
           type: "touchStart",

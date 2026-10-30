@@ -48,7 +48,7 @@ for (const [width, height, touch] of [
       fund(s, 500);
       const p = findSite(s, "barracks");
       await boot(page, s);
-      await page.locator("#supply-open").click();
+      await page.locator("#dock-shop").click();
       await page.locator("#develop-tab-build").click();
       await expect(page.locator("#develop-barracks")).toBeEnabled();
       await page.locator("#develop-barracks").click();
@@ -129,7 +129,7 @@ for (const [width, height, touch] of [
       expect(current.units.find((v) => v.id === u.id).construction).toEqual(
         u.construction,
       );
-      await page.locator("#supply-open").click();
+      await page.locator("#dock-shop").click();
       await page.locator("#develop-tab-build").click();
       await page.locator("#develop-outpost").click();
       await page.clock.runFor(80);
@@ -193,7 +193,7 @@ test("group order chooses one producer, stays in place and survives a reload", a
   const a = build(s, "barracks"),
     b = build(s, "barracks");
   await boot(page, s);
-  await page.locator("#supply-open").click();
+  await page.locator("#dock-shop").click();
   await page.locator("#develop-tab-production").click();
   await page.locator('[data-production-group="barracks"]').click();
   const button = page.locator("#develop-rifle"),
@@ -223,7 +223,7 @@ test("current shop exposes roles, placement cost, locked technology and exact dr
   await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
   await page.locator("#start").click();
   await expect(page.locator("body")).toHaveAttribute("data-mode", "tactical");
-  await page.locator("#supply-open").click();
+  await page.locator("#dock-shop").click();
   await page.locator("#develop-tab-build").click();
   const barracks = page.locator("#develop-barracks");
   const foundry = page.locator("#develop-foundry");
@@ -259,7 +259,7 @@ test("current shop exposes roles, placement cost, locked technology and exact dr
   expect((await page.evaluate(() => SignalGame.snapshot())).economy.spent).toBe(
     120,
   );
-  await page.locator("#supply-open").click();
+  await page.locator("#dock-shop").click();
   await page.locator("#develop-tab-economy").click();
   await page
     .locator("[data-select]")
@@ -301,7 +301,7 @@ test("selected production services repair a building and protect the base throug
   barracks.hp -= 50;
   E.refreshRecon(s);
   await boot(page, s);
-  await page.locator("#supply-open").click();
+  await page.locator("#dock-shop").click();
   await page.locator("#develop-tab-production").click();
   await page.locator('[data-production-group="barracks"]').click();
   await page.locator('[data-select="' + barracks.id + '"]').click();
@@ -345,7 +345,7 @@ test("placement keeps the overview button in sync with the focused camera", asyn
   await overview.click();
   await expect(overview).toHaveAttribute("aria-pressed", "true");
   expect((await page.evaluate(() => SignalGame.camera())).overview).toBe(true);
-  await page.locator("#supply-open").click();
+  await page.locator("#dock-shop").click();
   await page.locator("#develop-tab-build").click();
   await page.locator("#develop-barracks").click();
   await expect(page.locator("#placement-panel")).toBeVisible();
@@ -397,7 +397,7 @@ test("webkit touch placement cancels without payment and confirms one constructi
     const site = findSite(before, "barracks");
     expect(site).not.toBeNull();
     for (const confirm of [false, true]) {
-      await page.locator("#supply-open").tap();
+      await page.locator("#dock-shop").tap();
       await page.locator("#develop-tab-build").tap();
       await page.locator("#develop-barracks").tap();
       await page.clock.runFor(100);
@@ -447,7 +447,7 @@ test("an exhausted home still offers a paid builder and preserves its queue afte
   await boot(page, s);
   const base = E.living(s, "base");
   const before = await page.evaluate(() => SignalGame.snapshot());
-  await page.locator("#supply-open").click();
+  await page.locator("#dock-shop").click();
   await page.locator("#develop-tab-economy").click();
   await page.locator('[data-select="' + base.id + '"]').click();
   const button = page.locator("#develop-drone-" + base.id);
@@ -477,7 +477,7 @@ test("an exhausted home still offers a paid builder and preserves its queue afte
   expect(errors).toEqual([]);
   await page.keyboard.press("Tab");
   await expect(page.locator("body")).toHaveAttribute("data-mode", "tactical");
-  await page.locator("#supply-open").click();
+  await page.locator("#dock-shop").click();
   await page.locator("#develop-tab-economy").click();
   await page.screenshot({
     path: info.outputPath("exhausted-home-builder.png"),

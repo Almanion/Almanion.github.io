@@ -45,7 +45,7 @@ for (const [width, height, touch, engine] of [
         await page.screenshot({ path: info.outputPath("district-home.png") });
         const site = findSite(E.restore(initial), "barracks");
         expect(site).not.toBeNull();
-        await page.locator("#supply-open").click();
+        await page.locator("#dock-shop").click();
         await page.locator("#develop-tab-build").click();
         await page.locator("#develop-barracks").click();
         await page.clock.runFor(100);

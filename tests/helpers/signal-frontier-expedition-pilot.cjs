@@ -133,7 +133,7 @@ class ExpeditionPilot {
                   ? reserve
                   : 0
                 : (this.stage && !restartingMine ? D.items(s).drone.cost : 0) +
-                  (action === "outpost" || action === "defense" ? 0 : reserve))
+                  (["outpost", "defense", "hack"].includes(action) ? 0 : reserve))
         ) {
           planned ||= E.snapshot(s);
           if (!E.purchase(planned, action, site).allowed)
@@ -207,6 +207,12 @@ class ExpeditionPilot {
     // worker has priority over this reserve, including workers at other nodes.
     if (highlands && this.stage >= 1 && s.campaign.tier < 3)
       reserve = Math.max(reserve, D.items(s).outpost.cost);
+    // The fog-route objective requires the infiltration module. Reserve its
+    // real cost before replenishing infantry, rather than spending all finite
+    // income on replacements while waiting for a module we never purchase.
+    if (!highlands && E.fogged(s) && this.route === "infiltration" &&
+        s.campaign.tier === 3 && !s.economy.kit)
+      reserve = Math.max(reserve, D.items(s).hack.cost);
     const rifleCount = alive("rifle").length + D.queued(s, "rifle").length;
     const savingForCommand =
       E.fogged(s) &&

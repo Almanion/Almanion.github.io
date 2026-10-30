@@ -55,7 +55,7 @@ async function boot(page, s) {
   await page.clock.runFor(100);
 }
 async function openBuilding(page, s) {
-  await page.locator("#supply-open").click();
+  await page.locator("#dock-shop").click();
   const b = E.living(s, "barracks");
   await page.locator(`[data-select="${b.id}"]`).click();
   return b;
@@ -174,7 +174,7 @@ for (const browserType of [chromium, webkit])
           await page.screenshot({
             path: `test-results/building-${browserType.name()}-${width}.png`,
           });
-          await page.locator("#development-back").click();
+          await page.locator("#dock-selection").click();
           expect(await page.evaluate(() => SignalGame.mode())).toBe("tactical");
           await page.reload();
           await page.locator("#continue").click();
@@ -196,7 +196,7 @@ test("requirements navigate to the next step without buying anything", async ({
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await boot(page, E.make("frontier-6"));
-  await page.locator("#supply-open").click();
+  await page.locator("#dock-shop").click();
   const before = await page.evaluate(() => SignalGame.snapshot());
   await page.locator("#develop-foundry-reason").click();
   await expect(page.locator("#develop-tab-research")).toHaveAttribute(
@@ -224,7 +224,7 @@ for (const width of [320, 390])
         E.purchase(s, "rifle");
         E.purchase(s, "weapons");
         await boot(page, s);
-        await page.locator("#supply-open").tap();
+        await page.locator("#dock-shop").tap();
         await page.getByRole("button", { name: "Показать: Казармы" }).tap();
         await expect(page.locator("#dialog")).not.toBeVisible();
         await page.clock.runFor(400);
@@ -401,7 +401,7 @@ for (const [width, height] of [
       try {
         const s = fixture();
         await boot(page, s);
-        await page.locator("#supply-open").click();
+        await page.locator("#dock-shop").click();
         if (selected)
           await page
             .locator(`[data-select="${E.living(s, "barracks").id}"]`)

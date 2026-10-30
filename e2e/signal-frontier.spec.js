@@ -1,4 +1,5 @@
 "use strict";
+const { selectGroup } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect, chromium, webkit } = require("@playwright/test");
 const E = require("../game-source/signal-frontier/src/engine");
 const { PNG } = require("pngjs");
@@ -6,7 +7,8 @@ const route = "/games/signal-frontier/";
 async function start(page) {
   await page.goto(route);
   await page.locator("#start").click();
-  await expect(page.locator("#tactical-panel")).toBeVisible();
+  await expect(page.locator("#command-dock")).toBeVisible();
+  await selectGroup(page, 1);
 }
 async function fixture(page, state, once = false) {
   await page.addInitScript(
@@ -94,7 +96,7 @@ test("victory, defeat, restart and menu have working exits", async ({
   await page.mouse.up();
   await expect(page.locator("#result-title")).toHaveText("Цитадель подавлена");
   await page.locator("#retry").click();
-  await expect(page.locator("#tactical-panel")).toBeVisible();
+  await expect(page.locator("#command-dock")).toBeVisible();
   expect(await page.evaluate(() => SignalGame.snapshot().phase)).toBe(0);
   await page.locator("#menu-button").click();
   await page.locator("#to-home").click();
@@ -138,7 +140,7 @@ test("result label is painted before hover while fire opens the dialog", async (
     }
   expect(ink).toBeGreaterThan(100);
   await page.locator("#retry").click();
-  await expect(page.locator("#tactical-panel")).toBeVisible();
+  await expect(page.locator("#command-dock")).toBeVisible();
 });
 
 test("defeat is shown after a real enemy hit, and restart resets inputs", async ({
@@ -267,7 +269,7 @@ for (const browserType of [chromium, webkit])
         await page.screenshot({
           path: `test-results/signal-map-${browserType.name()}-${size.join("x")}.png`,
         });
-        await page.locator("#supply-open").tap();
+        await page.locator("#dock-shop").tap();
         await expect(page.locator("#develop-foundry")).toBeDisabled();
         await page.locator("#develop-barracks").tap();
         await expect(page.locator("#field-alloy")).toHaveText("60");
@@ -286,7 +288,7 @@ for (const browserType of [chromium, webkit])
         await page.screenshot({
           path: `test-results/signal-supply-${browserType.name()}-${size.join("x")}.png`,
         });
-        await page.locator("#development-back").tap();
+        await page.locator("#dock-selection").tap();
         await page.locator("#tactical").tap();
         await page.waitForTimeout(300);
         const geometry = await page.evaluate(() => {
@@ -455,18 +457,14 @@ for (const routeName of ["siege", "infiltration"])
         await page.clock.runFor(600);
         for (const command of commands) {
           if (command.kind === "order") {
-            const button = page.locator(
-              command.group === 1 ? "#group-one" : "#group-two",
-            );
-            expect(await button.isEnabled()).toBe(true);
-            await button.click();
+            await selectGroup(page, command.group);
             const p = await page.evaluate(
               ([x, y]) => SignalGame.screen(x, y),
               [command.x, command.y],
             );
             await page.mouse.click(p.x, p.y, {button:"right"});
           } else {
-            await page.locator("#supply-open").click();
+            await page.locator("#dock-shop").click();
             await page
               .locator(
                 command.action === "outpost"
@@ -585,7 +583,7 @@ test("supply: double-tap, refund, paused construction and reload preserve the re
   for (const u of s.units) if (u.team && u.kind !== "citadel") u.hp = 0;
   await fixture(page, s, true);
   await page.keyboard.press("Tab");
-  await page.locator("#supply-open").click();
+  await page.locator("#dock-shop").click();
   await expect(page.locator("#site-west")).toBeEnabled();
   await page.locator("#site-west").dblclick({ delay: 30 });
   await expect(page.locator("#supply-alloy")).toHaveText("70");
@@ -630,7 +628,7 @@ test("supply: double-tap, refund, paused construction and reload preserve the re
   await page.keyboard.press("Tab");
   await page.clock.runFor(5000);
   await page.keyboard.press("Tab");
-  await page.locator("#supply-open").click();
+  await page.locator("#dock-shop").click();
   await expect(page.locator("#site-west-status")).toContainText("Работает");
   await expect(page.locator("#supply-alloy")).toHaveText("45");
   expect(
@@ -666,7 +664,7 @@ test("version one save migrates in the browser without replacing the operation",
   );
   expect(restored.ammo).toBe(legacy.ammo);
   expect(restored.phase).toBe(legacy.phase);
-  await page.locator("#supply-open").click();
+  await page.locator("#dock-shop").click();
   await expect(page.locator("#supply-alloy")).toHaveText("120");
   const saved = await page.evaluate(
     () => JSON.parse(localStorage.getItem("signal-frontier-v1")).save,

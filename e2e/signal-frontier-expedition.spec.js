@@ -112,7 +112,7 @@ for (const browserName of ["chromium", "webkit"])
           expect(
             s.units.filter((u) => u.group).every((u) => u.order === null),
           ).toBe(true);
-          await page.locator("#supply-open").click();
+          await page.locator("#dock-shop").click();
           await page.locator("#develop-tab-production").click();
           await page
             .getByRole("button", { name: "Показать: Тяжёлый цех" })
@@ -259,7 +259,7 @@ test("a stale tab pauses and cannot replace the operation from another tab", asy
     await a.locator("#start").click();
     const b = await context.newPage();
     await b.goto(route);
-    await a.locator("#supply-open").click();
+    await a.locator("#dock-shop").click();
     await a.locator("#develop-barracks").click();
     await a.clock.runFor(100);
     await expect(a.locator("#placement-panel")).toBeVisible();

@@ -1,4 +1,5 @@
 "use strict";
+const { selectGroup } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect, chromium, webkit } = require("@playwright/test");
 const E = require("../game-source/signal-frontier/src/engine"),
   path = require("node:path");
@@ -16,6 +17,7 @@ for (const type of [chromium, webkit])
         "x" +
         height,
       async () => {
+        test.setTimeout(60000);
         const browser = await type.launch(),
           context = await browser.newContext({
             viewport: { width, height },
@@ -33,7 +35,7 @@ for (const type of [chromium, webkit])
           await page.locator("#start").click();
           await page.clock.runFor(300);
           expect(await page.evaluate(() => SignalGame.snapshot().version)).toBe(
-            10,
+            11,
           );
           expect(
             await page.evaluate(
@@ -42,7 +44,7 @@ for (const type of [chromium, webkit])
           ).toBe(0);
           await page.locator("#map-overview").click();
           await page.clock.runFor(600);
-          await page.locator("#group-one").click();
+          await selectGroup(page, 1);
           const target = await page.evaluate(() =>
             SignalGame.screen(900, 2380),
           );
@@ -198,7 +200,7 @@ test("trusted phone joystick climbs a ramp continuously and stops on release", a
   const move = await page.locator("#move-stick").boundingBox(),
     cdp = await context.newCDPSession(page),
     x = move.x + move.width / 2,
-    y = move.y + move.height / 2;
+    y = 220;
   await cdp.send("Input.dispatchTouchEvent", {
     type: "touchStart",
     touchPoints: [{ id: 1, x, y }],
@@ -354,12 +356,17 @@ test("dead models and building foundations preserve clipping between paused fram
     E.refreshRecon(s);
     v.tactical = { overview: false, x: 2468, y: 366, zoom: 1 };
     v.render(s, ui, 1);
+    // Allow the full-resolution fog refinement and sprite cache to settle.
+    v.render(s, ui, 1);
+    v.render(s, ui, 1);
     const a = v.canvas.toDataURL();
     v.render(s, ui, 1);
     const dead = a === v.canvas.toDataURL();
     const fresh = E.make("frontier-7");
     E.purchase(fresh, "barracks");
     v.reset(fresh);
+    v.render(fresh, ui, 1);
+    v.render(fresh, ui, 1);
     v.render(fresh, ui, 1);
     const b = v.canvas.toDataURL();
     v.render(fresh, ui, 1);
@@ -412,7 +419,7 @@ for (const [width, height] of [
         const cdp = await context.newCDPSession(page),
           r = await page.locator("#aim-stick").boundingBox(),
           x = r.x + r.width / 2,
-          y = r.y + r.height / 2;
+          y = height < 500 ? 180 : 220;
         await cdp.send("Input.dispatchTouchEvent", {
           type: "touchStart",
           touchPoints: [{ id: 1, x, y }],

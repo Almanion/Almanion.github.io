@@ -80,7 +80,7 @@ for (const type of [chromium, webkit])
       try {
         const s = fixture();
         await boot(page, s);
-        await page.locator("#supply-open").click();
+        await page.locator("#dock-shop").click();
         await page.locator("#develop-tab-build").click();
         if (!(await page.locator("#develop-foundry").count()))
           await page.locator('[data-deck-page="1"]').click();
@@ -125,7 +125,7 @@ for (const type of [chromium, webkit])
           before,
         );
         await page.locator("#placement-cancel").click();
-        await page.locator("#supply-open").click();
+        await page.locator("#dock-shop").click();
         await page.locator("#develop-tab-economy").click();
         await expect(page.locator('[data-construct="outpost"]')).toHaveCount(1);
         await expect(page.locator("#develop-outpost")).toContainText(

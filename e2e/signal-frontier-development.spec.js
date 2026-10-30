@@ -57,7 +57,7 @@ test("two rapid drone orders are accepted and reserve both worker slots", async 
   await page.clock.install();
   await page.goto(route);
   await page.locator("#start").click();
-  await page.locator("#supply-open").click();
+  await page.locator("#dock-shop").click();
   await page.locator("#develop-tab-economy").click();
   const b = await page.evaluate(
       () => SignalEngine.living(SignalGame.snapshot(), "base").id,
@@ -88,7 +88,7 @@ for (const width of [320, 390, 1440])
       const fixture = prepared(),
         b = E.living(fixture, "base");
       await resume(page, fixture);
-      await page.locator("#supply-open").click();
+      await page.locator("#dock-shop").click();
       await page.locator("#develop-tab-research").click();
       await expect(page.locator("#develop-command")).toBeEnabled();
       await expect(page.locator("#develop-hack")).toBeDisabled();
@@ -144,7 +144,7 @@ test("0.4 save retains old prices and two technology tiers in the new interface"
   await page.clock.install();
   const old = E.make("frontier-1");
   await resume(page, old);
-  await page.locator("#supply-open").click();
+  await page.locator("#dock-shop").click();
   await page.locator("#develop-tab-economy").click();
   await page.locator("#develop-drone-" + E.living(old, "base").id).click();
   await expect(page.locator("#field-alloy")).toHaveText("145");
@@ -223,7 +223,7 @@ test("tactical WASD pans the map without advancing the operation or issuing orde
     0,
   );
   await page.keyboard.down("KeyD");
-  await page.locator("#supply-open").click();
+  await page.locator("#dock-shop").click();
   const paused = await page.evaluate(() => SignalGame.camera());
   await page.keyboard.press("KeyW");
   await page.clock.runFor(500);
@@ -232,7 +232,7 @@ test("tactical WASD pans the map without advancing the operation or issuing orde
     0,
   );
   await page.keyboard.up("KeyD");
-  await page.locator("#development-back").click();
+  await page.locator("#dock-selection").click();
   await page.clock.runFor(500);
   expect((await page.evaluate(() => SignalGame.camera())).x).toBeCloseTo(
     paused.x,
@@ -253,7 +253,7 @@ test("legacy shop keeps purpose, exact cost, duration and prerequisites visible 
   await page.setViewportSize({ width: 320, height: 568 });
   await page.clock.install();
   await resume(page, E.make("frontier-7"));
-  await page.locator("#supply-open").click();
+  await page.locator("#dock-shop").click();
   const barracks = page.locator("#develop-barracks"),
     foundry = page
       .locator(".card")

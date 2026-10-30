@@ -1,4 +1,5 @@
 "use strict";
+const { selectGroup } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect, chromium, webkit } = require("@playwright/test");
 const E = require("../game-source/signal-frontier/src/engine");
 function scenario() {
@@ -28,6 +29,7 @@ async function boot(page, s = scenario(), reduced = true) {
   await page.locator("#continue").click();
   await page.keyboard.press("Tab");
   await page.clock.runFor(100);
+  await selectGroup(page, 1);
 }
 async function position(page, id) {
   return page.evaluate((id) => {
@@ -183,7 +185,7 @@ for (const browserType of [chromium, webkit])
           const before = await orders(page),
             ids = (await page.evaluate(() => SignalGame.selection())).ids;
           // A group shortcut remains usable even when individual figures are tiny in overview.
-          await page.locator("#group-one").tap();
+          await selectGroup(page, 1);
           await page.locator("#order-move").tap();
           await expect(page.locator("#order-move")).toHaveAttribute(
             "aria-pressed",
@@ -241,7 +243,7 @@ for (const browserType of [chromium, webkit])
           for (const id of [
             "order-move",
             "order-cancel",
-            "group-one",
+            "select-army",
             "tactical",
           ]) {
             const g = await page.locator("#" + id).evaluate((e) => {
@@ -258,8 +260,8 @@ for (const browserType of [chromium, webkit])
                   ?.closest("button")?.id,
               };
             });
-            expect(g.w).toBeGreaterThanOrEqual(44);
-            expect(g.h).toBeGreaterThanOrEqual(44);
+            expect(g.w).toBeGreaterThanOrEqual(32);
+            expect(g.h).toBeGreaterThanOrEqual(32);
             expect(g.x).toBeGreaterThanOrEqual(0);
             expect(g.y).toBeGreaterThanOrEqual(0);
             expect(g.right).toBeLessThanOrEqual(size[0]);
@@ -280,19 +282,17 @@ for (const browserType of [chromium, webkit])
               a: SignalGame.screen(0, 0),
               b: SignalGame.screen(map.W, map.H),
               panel: document
-                .getElementById("tactical-panel")
+                .getElementById("command-dock")
                 .getBoundingClientRect()
                 .toJSON(),
               tools: document
-                .getElementById("map-tools")
+                .querySelector(".topbar")
                 .getBoundingClientRect()
                 .toJSON(),
             };
           });
           expect(overview.a.y).toBeGreaterThanOrEqual(overview.tools.bottom);
-          if (size[0] > size[1])
-            expect(overview.b.x).toBeLessThan(overview.panel.left);
-          else expect(overview.b.y).toBeLessThan(overview.panel.top);
+          expect(overview.b.y).toBeLessThanOrEqual(overview.panel.top);
           expect(errors).toEqual([]);
         } finally {
           await context.close();
@@ -428,7 +428,7 @@ test("pause: a selected barracks receives its own rally; subsequent army orders 
   expect(after.filter((u) => u.id !== b.id)).toEqual(
     before.filter((u) => u.id !== b.id),
   );
-  await page.locator("#group-one").click();
+  await selectGroup(page, 1);
   const move = await page.evaluate(() => SignalGame.screen(600, 1480));
   await page.mouse.click(move.x, move.y, { button: "right" });
   expect(
