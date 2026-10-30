@@ -28,8 +28,8 @@ for (const [width, height] of [
       await page.locator("#tactical").tap();
       await page.clock.runFor(300);
       const cdp = await context.newCDPSession(page);
-      const move = { id: 1, x: 15, y: height < 500 ? 120 : 180 },
-        aim = { id: 2, x: width * 0.78, y: height < 500 ? 120 : 180 };
+      const move = { id: 1, x: 15, y: 120 },
+        aim = { id: 2, x: width * 0.78, y: 120 };
       expect(await page.evaluate((p) => document.elementFromPoint(p.x,p.y)?.closest(".stick")?.id,move)).toBe("move-stick");
       expect(await page.evaluate((p) => document.elementFromPoint(p.x,p.y)?.closest(".stick")?.id,aim)).toBe("aim-stick");
       const send = (type, points) =>

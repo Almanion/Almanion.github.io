@@ -10,7 +10,22 @@ async function selectGroup(page, group) {
     return SignalGame.selection().ids.filter((id) => units.get(id)?.group !== group);
   }, group);
   for (const id of extra)
-    await page.locator(`[data-member="${id}"]`).click({ modifiers: ["Shift"] });
+    await (await memberCard(page, id)).click({ modifiers: ["Shift"] });
+}
+
+async function memberCard(page, id) {
+  const card = page.locator(`[data-member="${id}"]`);
+  for (let i = 0; i < 20; i++) {
+    if (await card.count()) return card;
+    const next = page.locator('[data-roster-page="1"]');
+    if (await next.count() && await next.isEnabled()) await next.click();
+    else {
+      const previous = page.locator('[data-roster-page="-1"]');
+      while (await previous.count() && await previous.isEnabled()) await previous.click();
+      if (!await next.count()) break;
+    }
+  }
+  throw Error("Member not found in selection: " + id);
 }
 
 async function selectArmy(page) {
@@ -36,12 +51,14 @@ async function revealPoint(page, world) {
     const p = await page.evaluate((world) => {
       const p = SignalGame.screen(world.x, world.y),
         bottom = document.getElementById("placement-panel").getBoundingClientRect().top;
-      const hit = document.elementFromPoint(p.x, p.y);
-      if (p.x > 24 && p.x < innerWidth - 24 && p.y > 100 && p.y < bottom - 20 && hit?.id === "field") return { ...p, ready: true };
+      // Mobile browsers may retarget a touch to a nearby button. Keep a real
+      // finger-sized gap from the HUD instead of testing only the pixel centre.
+      const clear = (x, y) => [-20, 0, 20].every(dx => [-20, 0, 20].every(dy => document.elementFromPoint(x + dx, y + dy)?.id === "field"));
+      if (p.x > 24 && p.x < innerWidth - 24 && p.y > 100 && p.y < bottom - 20 && clear(p.x, p.y)) return { ...p, ready: true };
       const candidates = [];
       for (let y = 120; y < bottom - 24; y += 40)
         for (let x = 40; x < innerWidth - 24; x += 40)
-          if (document.elementFromPoint(x, y)?.id === "field") candidates.push({ x, y });
+          if (clear(x, y)) candidates.push({ x, y });
       const target = candidates.sort((a, b) => Math.hypot(a.x - innerWidth / 2, a.y - bottom / 2) - Math.hypot(b.x - innerWidth / 2, b.y - bottom / 2))[0];
       if (!target) throw Error("No reachable field area for placement");
       return { ...p, dx: p.x - target.x, dy: p.y - target.y };
@@ -54,11 +71,19 @@ async function revealPoint(page, world) {
     await page.clock.runFor(80);
     for (const key of keys) await page.keyboard.up(key);
     await page.clock.runFor(180);
+    for (let j = 0; j < 20 && !await page.evaluate(() => SignalGame.cameraSettled()); j++)
+      await page.clock.runFor(100);
   }
   throw Error("Could not reveal placement through camera controls");
 }
 
 async function inspectPoint(page, world) {
+  await page.clock.runFor(100);
+  if (await page.locator("body").evaluate(el => el.classList.contains("placing"))) return;
+  if (await page.locator("#minimap-panel").getAttribute("data-folded") === "true") {
+    await page.locator("#map-center").click();
+    await page.clock.runFor(400);
+  }
   const p = await page.evaluate((world) => {
     const r = document.getElementById("minimap-canvas").getBoundingClientRect(),
       g = SignalGame.diagnostics().minimap.geometry;
@@ -71,4 +96,4 @@ async function inspectPoint(page, world) {
       await page.clock.runFor(100);
 }
 
-module.exports = { selectGroup, selectArmy, deckCard, revealPoint, inspectPoint };
+module.exports = { selectGroup, selectArmy, memberCard, deckCard, revealPoint, inspectPoint };

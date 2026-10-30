@@ -250,7 +250,7 @@ test("current shop exposes roles, placement cost, locked technology and exact dr
     "barracks",
   );
   expect(site).not.toBeNull();
-  const p = await page.evaluate((p) => SignalGame.screen(p.x, p.y), site);
+  const p = await revealPoint(page, site);
   await page.mouse.move(p.x, p.y);
   await page.clock.runFor(80);
   await expect(page.locator("#placement-confirm")).toBeEnabled();

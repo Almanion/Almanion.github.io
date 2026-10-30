@@ -1,4 +1,5 @@
 "use strict";
+const { inspectPoint, revealPoint } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect } = require("@playwright/test"),
   E = require("../game-source/signal-frontier/src/engine"),
   D = E.development;
@@ -70,6 +71,7 @@ for (const browserName of ["chromium", "webkit"])
           page.on("pageerror", (e) => errors.push(e.message));
           let s = await page.evaluate(() => SignalGame.snapshot());
           const b = E.living(s, "barracks");
+          await inspectPoint(page, b);
           const p = await page.evaluate((u) => SignalGame.screen(u.x, u.y), b);
           await page.mouse.click(p.x, p.y - 8);
           await expect(page.locator("#command-dock")).toHaveAttribute("data-view", "shop");
@@ -245,6 +247,7 @@ test("a stale tab pauses and cannot replace the operation from another tab", asy
     const b = await context.newPage();
     await b.goto(route);
     await a.locator("#dock-shop").click();
+    await a.locator("#develop-tab-build").click();
     await a.locator("#develop-barracks").click();
     await a.clock.runFor(100);
     await expect(a.locator("#placement-panel")).toBeVisible();
@@ -262,7 +265,7 @@ test("a stale tab pauses and cannot replace the operation from another tab", asy
         "barracks",
       );
     expect(site).not.toBeNull();
-    const point = await a.evaluate((p) => SignalGame.screen(p.x, p.y), site);
+    const point = await revealPoint(a, site);
     await a.mouse.move(point.x, point.y);
     await a.clock.runFor(100);
     await expect(a.locator("#placement-confirm")).toBeEnabled();

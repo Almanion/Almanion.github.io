@@ -1,5 +1,5 @@
 "use strict";
-const { selectGroup } = require("./helpers/signal-frontier-selection.cjs");
+const { selectGroup, memberCard } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect } = require("@playwright/test");
 // Every scenario owns its browser context; long operations can use separate CI workers.
 test.describe.configure({ mode: "parallel" });
@@ -363,32 +363,11 @@ for (const [name, profile] of [
               JSON.stringify([...current].sort((a, b) => a - b)) !==
                 JSON.stringify([...c.ids].sort((a, b) => a - b))
             ) {
-              // Group selection includes co-located troops. Remove the smaller
-              // rear guard instead of trying to click each overlapping front unit.
-              const extra = current.filter((id) => !c.ids.includes(id)),
-                subtract =
-                  c.ids.every((id) => current.includes(id)) &&
-                  extra.length < c.ids.length;
-              if (!subtract) await page.locator("#order-cancel").click();
-              const points = await page.evaluate(
-                (ids) => {
-                  const s = SignalGame.snapshot();
-                  return ids
-                    .map((id) => s.units.find((u) => u.id === id))
-                    .filter(Boolean)
-                    .map((u) => {
-                      const p = SignalGame.screen(u.x, u.y);
-                      p.y -= 8 * SignalGame.camera().scale;
-                      return p;
-                    });
-                },
-                subtract ? extra : c.ids,
-              );
-              for (let i = 0; i < points.length; i++) {
-                if (subtract || i) await page.keyboard.down("Shift");
-                await page.mouse.click(points[i].x, points[i].y);
-                if (subtract || i) await page.keyboard.up("Shift");
-              }
+              // Remove rear guards through roster cards. World clicks can hit
+              // co-located units or invoke the new double-click type selection.
+              expect(c.ids.every((id) => current.includes(id))).toBe(true);
+              for (const id of current.filter((id) => !c.ids.includes(id)))
+                await (await memberCard(page, id)).click({ modifiers: ["Shift"] });
             }
             if (c.ids)
               expect(
@@ -600,13 +579,19 @@ for (const [name, profile] of [
             const field = document.elementFromPoint(p.x, p.y)?.id === "field",
               r = document.getElementById("minimap-canvas").getBoundingClientRect(),
               g = SignalGame.diagnostics().minimap.geometry;
-            return { p, field, mini: {x:r.x+g.x+target.x*g.scale,y:r.y+g.y+target.y*g.scale} };
+            return { p, field, mini: g && r.width && r.height ? {x:r.x+g.x+target.x*g.scale,y:r.y+g.y+target.y*g.scale} : null };
           }, d.input.aim);
           let target = await project();
           if (!target.field) {
             // Cursor-edge camera motion was removed. Inspect a known target
             // through the real mini-map instead of holding fire over the HUD.
             if (firing) { await page.mouse.up(); firing = false; }
+            if (!target.mini) {
+              await page.locator("#map-center").click();
+              await page.clock.runFor(100);
+              target = await project();
+            }
+            expect(target.mini, "Mini-map must be expanded for target inspection").not.toBeNull();
             await page.mouse.click(target.mini.x, target.mini.y);
             await page.clock.runFor(100);
             target = await project();

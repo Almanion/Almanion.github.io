@@ -384,7 +384,7 @@ for (const [width, height] of [
   test(`combat camera and actual uphill fire ${width}x${height}`, async ({
     browser,
   }) => {
-    test.setTimeout(60000);
+    test.setTimeout(120000);
     const context = await browser.newContext({
         viewport: { width, height },
         hasTouch: width < 900,

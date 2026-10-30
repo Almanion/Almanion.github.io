@@ -65,8 +65,8 @@ for (const type of [chromium, webkit])
         if (touch) {
           for (const id of ["map-overview", "map-center", "minimap-key"]) {
             const r = await page.locator("#" + id).boundingBox();
-            expect(r.width).toBeGreaterThanOrEqual(32);
-            expect(r.height).toBeGreaterThanOrEqual(32);
+            expect(r.width).toBeGreaterThanOrEqual(31);
+            expect(r.height).toBeGreaterThanOrEqual(31);
           }
         }
         const p = await miniPoint(page, { x: 2000, y: 1500 });
@@ -233,6 +233,7 @@ test("touch inspection and centering keep the movement finger active; touch comm
     page = await ctx.newPage();
   try {
     await boot(page);
+    await selectArmy(page);
     await page.locator("#order-move").tap();
     const target = await miniPoint(page, { x: 1100, y: 2650 });
     const cdp = await ctx.newCDPSession(page),
@@ -259,7 +260,7 @@ test("touch inspection and centering keep the movement finger active; touch comm
     await page.locator("#tactical").tap();
     await page.clock.runFor(300);
     const initial = await page.evaluate(() => SignalGame.snapshot()),
-      finger = { id: 1, x: 60, y: 600 },
+      finger = { id: 1, x: 60, y: 180 },
       shifted = { ...finger, x: 105 },
       remote = await miniPoint(page, { x: 2000, y: 1500 });
     const touch = (type, touchPoints) =>

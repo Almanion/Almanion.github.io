@@ -2492,7 +2492,7 @@ body:not([data-mode="playing"]) .combat-vitals, body:not([data-mode="playing"]) 
   .production-card > strong { font-size:11px; }
   .production-cost { font-size:11px; }
   .production-lock { font-size:9px; line-height:1.2; }
-  .production-queue { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; flex-shrink:0; }
+  #combat-production .production-queue { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; flex-shrink:0; }
   .production-queue .roster-job, .production-queue .roster-slot { height:44px; }
   .production-queue .roster-job { grid-template-columns:22px 1fr; grid-template-rows:1fr; gap:5px; }
   .production-queue .roster-job > svg { width:22px; height:22px; grid-row:auto; }

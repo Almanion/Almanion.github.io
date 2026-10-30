@@ -266,6 +266,8 @@ test("a stale producer cannot charge or redirect a purchase to a different build
     el.style.overflow = "auto";
     dialog.dataset.panel = "development";
     dialog.classList.add("dock");
+    dialog.style.cssText = "position:fixed;inset:5vh 5vw;margin:0;width:90vw;max-width:none;height:90vh;max-height:none;padding:0";
+    el.style.cssText = "position:relative;inset:auto;width:100%;height:80vh;overflow:auto";
     dialog.append(el);
     document.body.append(dialog);
     dialog.showModal();
