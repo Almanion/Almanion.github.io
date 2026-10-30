@@ -92,7 +92,7 @@ test("pause shop offers hero healing and returns to the same building", async ({
   expect(await page.evaluate(() => SignalGame.mode())).toBe("tactical");
 });
 
-test("healed troops wait inside and can be released through both infirmary panels", async ({ page }) => {
+test("healed troops leave automatically; pause freezes healing and both infirmary panels release their slots", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   const { army } = await boot(page, (s) => {
     const b = E.living(s, "outpost"), patients = s.units.filter((u) => u.kind === "rifle").slice(0, 3);
@@ -102,28 +102,59 @@ test("healed troops wait inside and can be released through both infirmary panel
       Object.assign(u, { x: b.x, y: b.y, path: [] }); u.care.inside = true;
     }
   });
-  await page.clock.runFor(2000);
+  await page.keyboard.press("7"); await page.locator("[data-care-view]").click();
+  await expect(page.locator('[data-care="exit"]')).toHaveCount(3);
+  await page.locator("#tactical").click();
+  const paused = await snapshot(page); await page.clock.runFor(600);
+  expect(await snapshot(page)).toEqual(paused);
+  await page.locator("#tactical").click(); await page.clock.runFor(700);
   const s = await snapshot(page);
   for (const u of army.slice(0, 3)) {
     const patient = s.units.find((v) => v.id === u.id);
     expect(patient.hp).toBe(E.C[patient.kind].hp);
-    expect(patient.care.inside).toBe(true); expect(patient.care.exit).toBe(false);
+    expect(patient.care).toBeUndefined();
   }
-  await page.keyboard.press("7"); await page.locator("[data-care-view]").click();
-  const slots = page.locator('[data-care="exit"]');
-  await expect(slots).toHaveCount(3);
-  await expect(slots.first()).toHaveAttribute("title", /Вылечен · ждёт приказа/);
-  await expect(slots.first().locator(".roster-badge")).toHaveText("✓");
-  await slots.first().click();
-  expect((await snapshot(page)).units.filter((u) => u.care).length).toBe(2);
+  await expect(page.locator('[data-care="exit"]')).toHaveCount(0);
+  expect(E.restore(s)).not.toBeNull();
   await page.locator("[data-care-view]").click(); await page.locator("[data-inspect]").click();
   await page.locator('[data-section="care"]').click();
-  await expect(page.locator('[id^="develop-patient-"]').first()).toContainText("Ждёт приказа");
-  await page.locator("#develop-exit-all").click();
+  await expect(page.locator('[id^="develop-patient-"]')).toHaveCount(0);
+  await expect(page.locator("#develop-heal-hero")).toContainText("Автоматический выход");
   expect((await snapshot(page)).units.some((u) => u.care)).toBe(false);
 });
+test("medical strip renders healing, arrivals and blocked departures at normal and distant zoom", async ({ page }, info) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await boot(page, (s) => {
+    const b = E.living(s, "outpost"), patients = s.units.filter((u) => u.kind === "rifle").slice(0, 3);
+    patients.forEach((u, i) => {
+      u.hp = [28, 62, 90][i]; E.support.admit(s, [u.id], b.id);
+      Object.assign(u, { x: b.x, y: b.y, path: [] }); u.care.inside = true;
+    });
+  });
+  await page.screenshot({ path: info.outputPath("healing-in-game.png") });
+  const result = await page.evaluate(() => {
+    const panel = document.createElement("canvas"); panel.id = "medical-preview";
+    panel.width = 420; panel.height = 260;
+    Object.assign(panel.style, { position: "fixed", left: "20px", top: "120px", width: "420px", height: "260px", zIndex: 100 });
+    document.body.append(panel);
+    const c = panel.getContext("2d"), C = SignalEngine.C,
+      patient = (hp, inside, exit = false) => ({ kind: "rifle", hp, care: { inside, exit } }),
+      cases = [[patient(28, true), patient(65, true), patient(92, true)], [patient(28, false), patient(65, false)],
+        [patient(C.rifle.hp, true, true), patient(65, true)], [patient(C.rifle.hp, true, true), patient(28, false), patient(65, true)]];
+    c.fillStyle = "#15282a"; c.fillRect(0, 0, 420, 260);
+    const labels = ["Лечение трёх бойцов", "Бойцы в пути", "Ожидание свободного выхода", "Дальний масштаб"];
+    cases.forEach((patients, i) => {
+      c.fillStyle = "#cadcd4"; c.font = "12px Segoe UI"; c.fillText(labels[i], 18, 26 + i * 60);
+      SignalView.prototype.infirmaryBar(c, patients, 300, 10 + i * 60, i === 3 ? 42 : 156);
+    });
+    return { width: panel.width, nonempty: c.getImageData(0, 0, 420, 260).data.some((v, i) => i % 4 === 3 && v) };
+  });
+  expect(result.nonempty).toBe(true);
+  await page.locator("#medical-preview").screenshot({ path: info.outputPath("healing-states.png") });
+});
+
 for (const browserType of [chromium, webkit]) for (const width of [320, 390]) test(`${browserType.name()} ${width}px: touch double tap and infirmary controls fit`, async () => {
-  const browser = await browserType.launch(), context = await browser.newContext({ viewport: { width, height: 844 }, isMobile: true, hasTouch: true }), page = await context.newPage();
+  const browser = await browserType.launch(), context = await browser.newContext({ viewport: { width, height: 844 }, isMobile: true, hasTouch: true, baseURL: test.info().project.use.baseURL }), page = await context.newPage();
   const errors = []; page.on("pageerror", (e) => errors.push(e.message));
   try {
     const { army, b, drones, s } = await boot(page); const p = await screen(page, army[1]), before = await snapshot(page);
@@ -137,7 +168,7 @@ for (const browserType of [chromium, webkit]) for (const width of [320, 390]) te
     await page.locator('[data-control-group="1"]').tap(); await page.locator("#order-move").tap();
     const entrance = await screen(page, b); await page.touchscreen.tap(entrance.x, entrance.y);
     expect((await snapshot(page)).units.filter((u) => u.care).length).toBe(3);
-    await page.locator('[data-control-group="7"]').tap(); await page.locator("[data-care-view]").tap(); await fit(page);
+    await page.locator('[data-control-group="7"]').tap(); await page.locator("#dock-selection").tap(); await page.locator("[data-care-view]").tap(); await fit(page);
     await page.locator('[data-care="admit"]').tap(); expect(E.hero(await snapshot(page)).care).toBeTruthy();
     await fit(page); await page.screenshot({ path: test.info().outputPath("infirmary.png") });
     await page.locator('[data-care="evacuate"]').tap(); expect(E.hero(await snapshot(page)).care).toBeUndefined();

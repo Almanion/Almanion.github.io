@@ -221,6 +221,7 @@
         ...EXPEDITION_ITEMS,
         outpost: { ...EXPEDITION_ITEMS.outpost, label: "Экстрактор" },
         arsenal: { cost: 180, time: 45, pop: 0, label: "Арсенал" },
+        bunker: { cost: 180, time: 36, pop: 0, label: "Бункер" },
         scout: { cost: 50, time: 18, pop: 1, label: "Дозорный" },
         command: { ...EXPEDITION_ITEMS.command, cost: 520, time: 120 },
         hack: { ...EXPEDITION_ITEMS.hack, cost: 360, time: 90 },
@@ -241,6 +242,7 @@
         ...EXPEDITION_ITEMS,
         outpost: { ...EXPEDITION_ITEMS.outpost, label: "Экстрактор" },
         arsenal: { cost: 180, time: 45, pop: 0, label: "Арсенал" },
+        bunker: { cost: 180, time: 36, pop: 0, label: "Бункер" },
         scout: { cost: 50, time: 18, pop: 1, label: "Дозорный" },
         command: { ...EXPEDITION_ITEMS.command, cost: 520, time: 120 },
         hack: { ...EXPEDITION_ITEMS.hack, cost: 360, time: 90 },
@@ -286,7 +288,12 @@
       ledgerLimit: 40000,
     }),
   });
-  const rules = (s) => PROFILES[s.campaign?.id] || PROFILES["frontier-1"];
+  const logistics = (s) => mapped(s) && s.campaign.logistics === 1;
+  const LOGISTICS_RULES = Object.freeze({ ...PROFILES["frontier-9"], unitLimit: 2048,
+    items: Object.freeze({ ...PROFILES["frontier-9"].items,
+      artillery: Object.freeze({ ...PROFILES["frontier-9"].items.artillery, pop: 4 }),
+      logistics: Object.freeze({ cost: 90, time: 24, pop: 0, label: "Узел снабжения" }) }) });
+  const rules = (s) => logistics(s) ? LOGISTICS_RULES : PROFILES[s.campaign?.id] || PROFILES["frontier-1"];
   const items = (s) => rules(s).items;
   const expedition = (s) =>
     [
@@ -386,13 +393,19 @@
     const population = (s) =>
       alive(s).reduce((n, u) => n + (items(s)[u.kind]?.pop || 0), 0) +
       queued(s).reduce((n, j) => n + items(s)[j.action].pop, 0);
-    const capacity = (s) => 6 + ready(s, "outpost").length * 3;
+    const capacity = (s) => logistics(s) ? Math.min(120, 24 + ready(s, "logistics").length * 12) : 6 + ready(s, "outpost").length * 3;
+    const workerCapacity = (s) => logistics(s) ? Math.min(48, 16 + ready(s, "logistics").length * 4) : expedition(s) ? 24 : 16;
+    const miningCapacity = (s) => logistics(s) ? 6 : 4;
+    const activeCount = (s) => logistics(s) ? alive(s).length + queued(s).filter((j) => ["rifle", "scout", "artillery", "drone"].includes(j.action)).length : s.units.length;
+    const objectLimit = (s) => logistics(s) ? 512 : rules(s).unitLimit;
+    const mineWorkers = (s, mine) => alive(s, "drone").filter((u) => !u.buildingId && !u.workerTask &&
+      (u.mineId || mineFor(s, s.units.find((n) => n.id === u.node))?.id) === mine.id);
     const count = (s, kind) => alive(s, kind).length + queued(s, kind).length;
     const workers = (s, node) =>
       alive(s, "drone").filter((u) => u.node === node.id);
     const usedSlots = (s, node) =>
-      workers(s, node).length +
-      (node.jobs || []).filter((j) => j.action === "drone").length;
+      logistics(s) ? workers(s, node).filter((u) => !u.buildingId && !u.workerTask).length :
+      workers(s, node).length + (node.jobs || []).filter((j) => j.action === "drone").length;
     const free = (p, r = 14, map = p.map || "frontier") =>
       E.free(p.x, p.y, r, map);
     function initUnit(u) {
@@ -653,6 +666,8 @@
         c = s.campaign;
       c.id = "frontier-9";
       c.balance = 1;
+      c.logistics = 1;
+      c.retired = { allies: 0, enemies: 0 };
       s.version = 11;
       c.mines = Districts.mines.map((m) => ({ ...m, remaining: m.stock }));
       s.units = s.units.filter((u) => !u.team);
@@ -768,7 +783,7 @@
       }
       if (!item) return fail("unknown");
       if (
-        s.units.length >= rules(s).unitLimit - 6 &&
+        activeCount(s) >= objectLimit(s) - 6 &&
         [
           "rifle",
           "scout",
@@ -810,7 +825,7 @@
               String(u.id) === String(site) &&
               (action === "defense"
                 ? ["base", "outpost"]
-                : ["base", "outpost", "barracks", "foundry", "arsenal"]
+                : ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"]
               ).includes(u.kind),
           );
           if (!producer) return fail("post");
@@ -826,8 +841,8 @@
             (!site ? E.living(s, "base") : null);
           if (!producer) return fail("post");
           if (
-            usedSlots(s, producer) >= 4 ||
-            count(s, "drone") >= (expedition(s) ? 24 : 16)
+            (!logistics(s) && usedSlots(s, producer) >= 4) ||
+            count(s, "drone") >= workerCapacity(s)
           )
             return fail("worker-limit");
           // Free-construction workers must remain trainable to rebuild lost mining nodes.
@@ -909,12 +924,12 @@
           queued(s, action).length
         )
           return fail("researching");
-        if (action === "scout" && count(s, "scout") >= 4)
+        if (!logistics(s) && action === "scout" && count(s, "scout") >= 4)
           return fail("scout-limit");
-        if (action === "rifle" && count(s, "rifle") >= (expedition(s) ? 12 : 9))
+        if (!logistics(s) && action === "rifle" && count(s, "rifle") >= (expedition(s) ? 12 : 9))
           return fail("squad-full");
         if (
-          action === "artillery" &&
+          !logistics(s) && action === "artillery" &&
           count(s, "artillery") >= (expedition(s) ? 3 : 2)
         )
           return fail("artillery-limit");
@@ -976,6 +991,10 @@
       }
       return { allowed: true, cost: item.cost };
     }
+    function supplyBlocked(s, job) {
+      return !!(items(s)[job.action]?.pop && population(s) > capacity(s)) ||
+        (logistics(s) && job.action === "drone" && count(s, "drone") > workerCapacity(s));
+    }
     function production(s, dt) {
       const ITEMS = items(s);
       for (const u of alive(s).filter((u) => !u.team && u.kind !== "drone")) {
@@ -995,7 +1014,7 @@
         }
         const job = u.jobs?.[0];
         if (!job) continue;
-        if (ITEMS[job.action].pop && population(s) > capacity(s)) continue;
+        if (supplyBlocked(s, job)) continue;
         if (
           !u.construction &&
           ["rifle", "scout", "artillery", "drone"].includes(job.action) &&
@@ -1063,7 +1082,92 @@
         );
       }
     }
+    function miningNetwork(s, dt) {
+      const depots = nodes(s), byId = new Map(depots.map((u) => [u.id, u])),
+        mines = new Map(s.campaign.mines.map((m) => [m.id, m])),
+        crews = new Map(s.campaign.mines.map((m) => [m.id, []])),
+        probes = alive(s, "drone").filter((u) => !u.buildingId && !u.workerTask),
+        assignments = new Map();
+      for (const u of probes) {
+        const node = byId.get(u.node), mine = mines.get(u.mineId) || mineFor(s, node);
+        assignments.set(u.id, { node, mine });
+        if (node && mine) crews.get(mine.id).push(u);
+      }
+      const pairs = depots.map((node) => ({ node, mine: mineFor(s, node) })).filter((p) => p.mine?.remaining);
+      for (const u of probes) {
+        let { node, mine } = assignments.get(u.id);
+        const row = mine && crews.get(mine.id), slot = row?.indexOf(u) ?? -1;
+        if (!node || (!u.cargo && (!mine?.remaining || slot >= 6 || slot < 0))) {
+          const available = pairs.filter((p) => crews.get(p.mine.id).length < 6)
+            .sort((a, b) => E.dist(u, a.mine) - E.dist(u, b.mine) || a.node.id - b.node.id);
+          const next = available[0];
+          if (next) {
+            if (slot >= 0) row.splice(slot, 1);
+            node = next.node; mine = next.mine;
+            u.node = node.id; u.mineId = mine.id;
+            crews.get(mine.id).push(u);
+            u.path = []; delete u.workTarget;
+          } else if (!node) {
+            node = depots.slice().sort((a, b) => E.dist(u, a) - E.dist(u, b) || a.id - b.id)[0];
+            if (!node) { u.path = []; continue; }
+            u.node = node.id; delete u.mineId;
+            mine = mineFor(s, node);
+          }
+        }
+        const index = mine ? crews.get(mine.id).indexOf(u) : -1,
+          standby = !mine?.remaining || index < 0 || index >= 6;
+        const threat = E.nearby(s, 1, u, 170).some((v) => E.dist(v, u) < 170 && E.clear(u, v));
+        u.fright = threat ? 5 : Math.max(0, u.fright - dt);
+        const offset = ((index < 0 ? u.id % 6 : index) - 2.5) * 18,
+          deposit = node.construction ? E.construction.exit(node, E.C.drone.r) : { x: node.x, y: node.y - 44 };
+        let destination = node.construction ? E.construction.advance(node, deposit, 0, offset) : { x: deposit.x + offset, y: deposit.y };
+        if (!E.free(destination.x, destination.y, E.C.drone.r, E.navigation(s))) destination = deposit;
+        if (!u.fright && !u.cargo && !standby) {
+          const a = Math.atan2(deposit.y - mine.y, deposit.x - mine.x) + (index - 2.5) * .3,
+            p = { x: mine.x + Math.cos(a) * 70, y: mine.y + Math.sin(a) * 70 };
+          destination = E.free(p.x, p.y, E.C.drone.r, E.navigation(s)) ? p : { x: mine.x + offset, y: mine.y };
+        }
+        const key = destination.x + "," + destination.y;
+        if (u.workTarget !== key) { u.path = []; u.workTarget = key; u.miningRetry = 0; }
+        if (E.dist(u, destination) > 18) {
+          u.miningRetry = Math.max(0, (u.miningRetry || 0) - dt);
+          if (!u.path.length && !u.miningRetry) { u.path = E.pathTo(u, destination, E.C.drone.r); u.miningRetry = .8; }
+          E.follow(u, dt);
+          u.work = u.fright ? "shelter" : u.cargo ? "return" : "out";
+          u.workTime = 0;
+        } else {
+          u.path = [];
+          if (u.fright) { u.work = "shelter"; u.workTime = 0; }
+          else if (u.cargo) {
+            s.economy.alloy += u.cargo; s.campaign.deposited += u.cargo;
+            u.cargo = 0; u.work = "out"; u.workTime = 0;
+          } else if (!standby) {
+            u.work = "gather"; u.workTime += dt;
+            if (u.workTime >= rules(s).gather) {
+              u.cargo = Math.min(4, mine.remaining); mine.remaining -= u.cargo;
+              u.workTime = 0; u.work = "return";
+            }
+          } else { u.work = "idle"; u.workTime = 0; }
+        }
+      }
+    }
+    function compact(s) {
+      if (!logistics(s) || Math.round(s.t / E.DT) % 60) return;
+      const owners = new Set(s.bullets.map((b) => b.owner));
+      for (const u of s.units) {
+        if (u.order?.followId !== undefined) owners.add(u.order.followId);
+        if (u.rally?.followId !== undefined) owners.add(u.rally.followId);
+      }
+      s.units = s.units.filter((u) => {
+        if (u.hp > 0 || !E.C[u.kind].speed || u.kind === "hero" ||
+          u.deadAt === undefined || s.t - u.deadAt < 15 || owners.has(u.id)) return true;
+        if (u.team) s.campaign.retired.enemies++;
+        else if (u.group) s.campaign.retired.allies++;
+        return false;
+      });
+    }
     function mining(s, dt) {
+      if (logistics(s)) return miningNetwork(s, dt);
       for (const u of alive(s, "drone")) {
         if (u.buildingId || u.workerTask) continue;
         let node = nodes(s).find((n) => n.id === u.node);
@@ -1284,7 +1388,7 @@
         for (const u of alive(s))
           if (
             !u.team &&
-            !["base", "outpost", "barracks", "foundry", "arsenal"].includes(
+            !["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(
               u.kind,
             ) &&
             u.repair === 0 &&
@@ -1317,6 +1421,9 @@
         population: population(s),
         capacity: capacity(s),
         workers: alive(s, "drone").length,
+        workerCapacity: workerCapacity(s),
+        workerReserved: queued(s, "drone").length,
+        armyReserved: queued(s).reduce((n, j) => n + items(s)[j.action].pop, 0),
         working: alive(s, "drone").filter(
           (u) =>
             !u.fright &&
@@ -1346,7 +1453,7 @@
       ai.seen = { x: target.x, y: target.y, id: target.id };
       ai.seenAt = s.t;
       if (
-        ["base", "outpost", "barracks", "foundry", "arsenal"].includes(
+        ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(
           target.kind,
         )
       ) {
@@ -1770,10 +1877,10 @@
         for (const v of frame?.intelShared
           ? []
           : E.fogged(s)
-            ? opponents.filter((v) => E.visible(s, 1, v))
+            ? s.units.filter((v) => !v.team && v.hp > 0 && !E.C[v.kind].speed && E.visible(s, 1, v))
             : visible)
           if (
-            ["base", "outpost", "barracks", "foundry", "arsenal"].includes(
+            ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(
               v.kind,
             ) &&
             !s.campaign.intel.some((k) => k.id === v.id)
@@ -1980,6 +2087,7 @@
     function dispatch(s, camp, n, goal) {
       const source = s.units.find((u) => u.id === camp.source);
       if (!source || source.hp <= 0) return;
+      if (logistics(s)) n = Math.min(n, Math.max(0, objectLimit(s) - activeCount(s)));
       if (mapped(s)) {
         const active = s.units.filter((u) => u.team && u.hp > 0 && u.ai?.raid);
         if (new Set(active.map((u) => u.ai.squad)).size >= 2) return;
@@ -2229,9 +2337,11 @@
       try {
         const s = JSON.parse(JSON.stringify(value)),
           c = s?.campaign;
-        const config = PROFILES[c?.id];
+        const config = PROFILES[c?.id] && rules(s);
         if (!config || s.version !== config.version) return null;
         if (c.balance !== undefined && (!E.balance.eligible(s) || c.balance !== 1)) return null;
+        if (c.logistics !== undefined && (!mapped(s) || c.logistics !== 1)) return null;
+        if (logistics(s) && (!c.retired || ![c.retired.allies, c.retired.enemies].every((n) => Number.isSafeInteger(n) && n >= 0 && n <= s.seq))) return null;
         const ITEMS = config.items,
           MINES = config.mines,
           PADS = pads(s),
@@ -2252,6 +2362,8 @@
           "barracks",
           "foundry",
           "arsenal",
+          "bunker",
+          "logistics",
         ];
         if (
           !s ||
@@ -2261,8 +2373,9 @@
           !int(s.seed, 0, 4294967295) ||
           !Array.isArray(s.units) ||
           s.units.length > config.unitLimit ||
+          (logistics(s) && activeCount(s) > objectLimit(s)) ||
           !Array.isArray(s.bullets) ||
-          s.bullets.length > 160 ||
+          s.bullets.length > (logistics(s) ? 4096 : 160) ||
           ![0, 1, 2, 3].includes(s.phase)
         )
           return null;
@@ -2348,6 +2461,8 @@
           )
             return null;
           if (u.rally !== undefined && !point(u.rally)) return null;
+          if (u.deadAt !== undefined && (!logistics(s) || u.hp !== 0 || !num(u.deadAt, 0, s.t))) return null;
+          if (u.kind === "logistics" && !logistics(s)) return null;
           if (
             u.workTarget !== undefined &&
             (typeof u.workTarget !== "string" || u.workTarget.length > 80)
@@ -2410,6 +2525,8 @@
                     ...(!E.construction.enabled(s) ? ["weapons"] : []),
                     ...(extended(s) ? ["repair"] : []),
                   ],
+                  bunker: ["repair"],
+                  logistics: ["repair"],
                   arsenal: E.construction.enabled(s)
                     ? ["weapons", "armor", "hack", "repair"]
                     : [],
@@ -2542,10 +2659,9 @@
         if (
           (!E.construction.enabled(s) &&
             ["barracks", "foundry"].some((k) => alive(s, k).length > 1)) ||
-          count(s, "rifle") > (expedition(s) ? 12 : 9) ||
-          count(s, "scout") > 4 ||
-          count(s, "artillery") > (expedition(s) ? 3 : 2) ||
-          count(s, "drone") > (expedition(s) ? 24 : 16)
+          (logistics(s) ? population(s) > 120 || count(s, "drone") > 48 || alive(s, "logistics").length > 8 :
+            count(s, "rifle") > (expedition(s) ? 12 : 9) || count(s, "scout") > 4 ||
+            count(s, "artillery") > (expedition(s) ? 3 : 2) || count(s, "drone") > (expedition(s) ? 24 : 16))
         )
           return null;
         if (
@@ -2796,7 +2912,7 @@
             !s.units.some(
               (u) =>
                 u.id === known.id &&
-                ["base", "outpost", "barracks", "foundry", "arsenal"].includes(
+                ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(
                   u.kind,
                 ),
             ) ||
@@ -2829,6 +2945,7 @@
       summary,
       population,
       capacity,
+      logistics, workerCapacity, miningCapacity, mineWorkers, activeCount, objectLimit, compact, supplyBlocked,
       workers,
       queued,
       nodes,

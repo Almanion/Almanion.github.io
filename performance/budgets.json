@@ -11,6 +11,7 @@
     ".json": 120000
   },
   "maxBytesByPath": {
+    "games/signal-frontier/view.js": 160000,
     "presentation/index.html": 5000000,
     "geography/index.html": 600000,
     "constructor/index.js": 126000,
@@ -29,7 +30,7 @@
   "routes": {
     "games/signal-frontier/index.html": {
       "maxInitialLocalJsBytes": 5000000,
-      "maxInitialLocalCssBytes": 48000,
+        "maxInitialLocalCssBytes": 56000,
       "maxInitialLocalRequests": 7,
       "maxExternalRequests": 0
     },

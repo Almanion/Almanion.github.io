@@ -5,6 +5,8 @@
     Y = 0.73,
     TAU = Math.PI * 2;
   const MOUNTS = E.MOUNTS;
+  const ORE_ROCK = [[-8,-5],[1,-8],[9,-2],[6,6],[-6,7]],
+    LARGE_ORE_ROCK = ORE_ROCK.map(([x,y]) => [x * 1.8, y * 1.8]);
   function poly(c, p, fill, stroke) {
     c.beginPath();
     p.forEach((v, i) => (i ? c.lineTo(v[0], v[1]) : c.moveTo(v[0], v[1])));
@@ -1029,6 +1031,8 @@
       this.modelDeliveries = new Map();
       this.workerActivity = new Map();
       this.buildingActivity = new Map();
+      this.garrisonActivity = new Map();
+      this.infirmaryActivity = new Map();
       this.memoryCanvas = document.createElement("canvas");
       this.memoryNeedsRefine = false;
       // Retain the composite path as an independent visual reference for QA.
@@ -1447,6 +1451,12 @@
       this.fx = this.fx.slice(-96);
     }
     render(s, ui, dt) {
+      this.spriteFrame = (this.spriteFrame || 0) + 1;
+      for (const [id, sprite] of this.unitSprites)
+        if ((sprite.lastUsed || 0) < this.spriteFrame - 120) {
+          this.spritePixels -= sprite.pixels;
+          this.unitSprites.delete(id);
+        }
       if (E.fogged(s)) {
         if (ui.mode === "menu") {
           this.preview ||= E.make("frontier-5");
@@ -1483,7 +1493,7 @@
         menu = ui.mode === "menu";
       const landscape = overview && w > h && h <= 500;
       const inspecting = !overview && !menu && ui.combatFocus;
-      const bounds = overview && ui.mapArea;
+      const bounds = !menu && ui.mapArea;
       const areaW = bounds
           ? Math.max(80, bounds.right - bounds.x)
           : landscape
@@ -1552,16 +1562,12 @@
             ? inspecting.y - this.z(inspecting.x, inspecting.y)
             : hero.y - this.z(hero.x, hero.y);
       if (overview && !this.tactical.overview) {
-        const half = areaW / (2 * scale),
-          halfY = areaH / (2 * scale * Y);
-        tx =
-          half > world.W / 2
-            ? world.W / 2
-            : E.clamp(tx, half - 25, world.W - half + 25);
-        ty =
-          halfY > world.H / 2
-            ? world.H / 2
-            : E.clamp(ty, halfY - 25, world.H - halfY + 25);
+        // Let every edge reach the usable viewport centre, plus a small margin.
+        // Keep the limit bounded so panning cannot lose the map in empty space.
+        const padX = Math.min(320, areaW * .15 / scale),
+          padY = Math.min(320, areaH * .15 / (scale * Y));
+        tx = E.clamp(tx, -padX, world.W + padX);
+        ty = E.clamp(ty, -padY - 144, world.H + padY);
         this.tactical.x = tx;
         this.tactical.y = ty;
       } else if (!overview && !menu) {
@@ -1570,22 +1576,14 @@
           short = w > h && h < 500;
         // Aim changes the weapon, not the camera. Follow the hero while keeping
         // tactical pan/zoom and the safe area around mobile controls independent.
-        const half = w / (2 * scale),
-          halfY = (h - 70) / (2 * scale * Y);
-        tx =
-          half > world.W / 2
-            ? world.W / 2
-            : E.clamp(tx, half - 55, world.W - half + 55);
-        ty =
-          halfY > world.H / 2
-            ? world.H / 2
-            : E.clamp(ty, halfY - 65, world.H - halfY + 65);
+        tx = E.clamp(tx, 0, world.W);
+        ty = E.clamp(ty, -144, world.H);
         if (high && !inspecting) {
           // The projected scout takes priority over rectangular world bounds:
           // high ledges and edge paths must not put it behind phone controls.
           const side = short ? 154 : 24,
-            top = short ? 75 : portrait ? 126 : 96,
-            bottom = h - (portrait ? 220 : short ? 70 : 100),
+            top = bounds ? bounds.y : short ? 75 : portrait ? 126 : 96,
+            bottom = bounds ? bounds.bottom : h - (portrait ? 220 : short ? 70 : 100),
             groundY = hero.y - this.z(hero.x, hero.y);
           tx = E.clamp(
             tx,
@@ -2096,32 +2094,6 @@
             p.y - 38 * cam.scale - 12,
           );
         }
-      }
-      if (!menu && !overview && ui.aim && !ui.touch) {
-        const p = Number.isFinite(ui.aim.z)
-          ? {
-              x: (ui.aim.x - this.camera.x) * this.camera.scale + this.origin.x,
-              y:
-                (ui.aim.y - ui.aim.z - this.camera.y) * this.camera.scale * Y +
-                this.origin.y,
-            }
-          : this.screen(ui.aim.x, ui.aim.y, E.MOUNTS.hero);
-        c.strokeStyle = "#d0e4d1aa";
-        c.lineWidth = 1;
-        for (const [dx, dy] of [
-          [-1, 0],
-          [1, 0],
-          [0, -1],
-          [0, 1],
-        ])
-          line(
-            c,
-            [
-              [p.x + dx * 7, p.y + dy * 7],
-              [p.x + dx * 12, p.y + dy * 12],
-            ],
-            "#d0e4d1aa",
-          );
       }
     }
     fogClip(c, fog, kind) {
@@ -2670,6 +2642,8 @@
     }
     industry(c, s, ui) {
       if (!s.campaign) return;
+      const large = E.construction.enabled(s), scale = large ? 1.8 : 1,
+        rock = large ? LARGE_ORE_ROCK : ORE_ROCK;
       for (const m of s.campaign.mines) {
         if (!["highlands", "districts"].includes(this.mapId))
           ellipse(c, m.x, m.y + 5, 34, 21, "#071b2866");
@@ -2679,46 +2653,35 @@
             m.x,
             m.y,
             [
-              [-24, -16],
-              [24, -16],
-              [30, 10],
-              [0, 22],
-              [-24, 14],
+              [-24 * scale, -16 * scale],
+              [24 * scale, -16 * scale],
+              [30 * scale, 10 * scale],
+              [0, 22 * scale],
+              [-24 * scale, 14 * scale],
             ],
-            14,
+            14 * scale,
           );
         const left = m.remaining / m.stock;
         for (let i = 0; i < 7; i++) {
           const a = i * 2.4,
-            x = m.x + Math.cos(a) * 22,
-            y = m.y + Math.sin(a) * 13;
+            x = m.x + Math.cos(a) * 22 * scale,
+            y = m.y + Math.sin(a) * 13 * scale,
+            height = (3 + left * (7 + (i % 3) * 5)) * (large ? 1.4 : 1);
           c.save();
           this.shadow(
             c,
             x,
             y,
-            [
-              [-8, -5],
-              [1, -8],
-              [9, -2],
-              [6, 6],
-              [-6, 7],
-            ],
-            3 + left * (7 + (i % 3) * 5),
+            rock,
+            height,
             a,
           );
           c.translate(x, y - this.z(x, y));
           plate(
             c,
-            [
-              [-8, -5],
-              [1, -8],
-              [9, -2],
-              [6, 6],
-              [-6, 7],
-            ],
+            rock,
             0,
-            3 + left * (7 + (i % 3) * 5),
+            height,
             a,
             {
               top: left ? "#b0b8a0" : "#526964",
@@ -2733,7 +2696,8 @@
           c.font = "10px Segoe UI";
           c.textAlign = "center";
           c.fillStyle = "#b1c8b8";
-          c.fillText(String(m.remaining), m.x, m.y - this.z(m.x, m.y) + 34);
+          const crew = E.development.logistics(s) ? E.development.mineWorkers(s, m).length : null;
+          c.fillText(String(m.remaining) + (crew !== null ? " · " + Math.min(6, crew) + "/6" : ""), m.x, m.y - this.z(m.x, m.y) + (large ? 54 : 34));
         }
       }
       for (const u of s.units) {
@@ -2856,7 +2820,7 @@
               u.team === 0 &&
               u.hp > 0 &&
               u.hp < E.C[u.kind].hp &&
-              !["outpost", "base", "barracks", "foundry", "arsenal"].includes(
+              !["outpost", "base", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(
                 u.kind,
               ) &&
               u.repair === 0 &&
@@ -3646,7 +3610,11 @@
             1.5,
           );
           c.setLineDash([]);
-          this.groundRing(c, mine.x, mine.y, 46, "#e6c77d", 2);
+          this.groundRing(c, mine.x, mine.y, E.construction.ore.radius + 5, "#e6c77d", 2);
+          c.setLineDash([5, 6]);
+          this.groundRing(c, mine.x, mine.y, E.construction.ore.setback,
+            placement.result.reason === "ore-clearance" ? "#ef9b84" : "#e6c77d88", 1.5);
+          c.setLineDash([]);
         }
       }
       this.groundLine(
@@ -3712,7 +3680,7 @@
         frame,
         this.doorOpening(u, s),
         this.deliveryOpening(u, s),
-        { activity: this.workerActivity.get(u.id), crew: this.buildingActivity.get(u.id) || [] },
+        { activity: this.workerActivity.get(u.id), crew: this.buildingActivity.get(u.id) || [], garrison: this.garrisonActivity.get(u.id) || [] },
       );
       if (u.hit > 0 && !ui.reduced && !ui.memory && u.hp > 0)
         seam(
@@ -3825,14 +3793,29 @@
         sprite = { canvas: null, pixels: 0 };
         this.unitSprites.set(u.id, sprite);
       }
+      sprite.lastUsed = this.spriteFrame;
       if (sprite.key !== key && sprite.pending !== key) {
         // A walking/turning model normally changes every frame. Rasterizing it
         // into a new image only to copy it once adds work and GPU synchronisation.
         // Admit exact poses after a repeat; draw changing poses as the same vectors.
         sprite.pending = key;
+        // Retain the previous exact pose for a quick camera return. Its raster
+        // is expendable under memory pressure, unlike a stable visible model.
         this.unitModel(c, u, s, ui, pose);
       } else {
         if (sprite.key !== key) {
+          if (this.spritePixels + width * height - sprite.pixels > 8 * 1024 * 1024)
+            for (const [id, old] of this.unitSprites) {
+              if (old === sprite || (!old.pixels) ||
+                  (old.lastUsed >= (this.spriteFrame || 0) - 1 && old.key === old.pending)) continue;
+              this.spritePixels -= old.pixels;
+              this.unitSprites.delete(id);
+              if (this.spritePixels + width * height - sprite.pixels <= 8 * 1024 * 1024) break;
+            }
+          if (this.spritePixels + width * height - sprite.pixels > 8 * 1024 * 1024) {
+            this.unitModel(c, u, s, ui, pose);
+            return;
+          }
           const canvas = (sprite.canvas ||= document.createElement("canvas"));
           if (canvas.width !== width || canvas.height !== height) {
             this.spritePixels -= sprite.pixels;
@@ -3859,7 +3842,7 @@
       this.unitSprites.set(u.id, sprite);
       while (
         this.spritePixels > 8 * 1024 * 1024 ||
-        this.unitSprites.size > 128
+        this.unitSprites.size > 1024
       ) {
         const id = this.unitSprites.keys().next().value;
         this.spritePixels -= this.unitSprites.get(id).pixels;
@@ -3907,7 +3890,7 @@
         null,
         this.doorOpening(u, s),
         this.deliveryOpening(u, s),
-        { activity: this.workerActivity.get(u.id), crew: this.buildingActivity.get(u.id) || [] },
+        { activity: this.workerActivity.get(u.id), crew: this.buildingActivity.get(u.id) || [], garrison: this.garrisonActivity.get(u.id) || [] },
       );
       if (u.hp > 0 && u.hit > 0 && !ui.reduced && !ui.memory)
         ring(c, 0, 0, r + 3, u.team ? "#f0c9a780" : "#c1f2d980", 1.5);
@@ -3933,7 +3916,7 @@
         if (
           u.team ||
           u.hp <= 0 ||
-          !["base", "outpost", "barracks", "foundry", "arsenal"].includes(
+          !["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(
             u.kind,
           ) ||
           !this.inView(u.x, u.y)
@@ -3985,17 +3968,13 @@
           label = "Добыча · " + n + " дрона";
           progress = n ? 1 : 0;
         } else if (u.kind === "arsenal") label = "Нет исследований";
-        const patients = u.kind === "outpost" ? E.support.occupants(s, u.id) : [];
-        if (patients.length) {
-          const inside = patients.filter((v) => v.care.inside).length;
-          const health = patients.reduce((sum, v) => sum + v.hp / E.C[v.kind].hp, 0) / patients.length;
-          c.fillStyle = "#102a25f0";
-          c.fillRect(p.x - width / 2 - 3, y - 24, width + 6, 17);
-          c.fillStyle = "#72c9ab";
-          c.fillRect(p.x - width / 2, y - 10, width * health, 2);
-          c.fillStyle = "#c1efdd";
-          c.fillText(width >= 90 ? "+ Лечение " + inside + "/" + patients.length : "+ " + inside + "/" + patients.length, p.x, y - 13);
+        else if (u.kind === "logistics") { label = "+12 · +4"; progress = 1; }
+        else if (u.kind === "bunker") {
+          const crew = this.garrisonActivity.get(u.id) || [], inside = crew.filter((v) => v.care.inside).length;
+          progress = inside / 4;
+          label = "Гарнизон " + inside + "/4" + (crew.length > inside ? " · в пути " + (crew.length - inside) : "");
         }
+        const patients = this.infirmaryActivity.get(u.id);
         c.fillStyle = "#07171ee8";
         c.fillRect(p.x - width / 2 - 3, y - 3, width + 6, width >= 66 ? 23 : 9);
         c.fillStyle = "#334b4b";
@@ -4013,15 +3992,63 @@
           c.fillStyle = "#d0e2d6";
           c.fillText(label, p.x, y + 16);
         }
+        if (patients?.length) this.infirmaryBar(c, patients, p.x, y + (width >= 66 ? 24 : 10), width + 6);
+      }
+      c.restore();
+    }
+    infirmaryBar(c, patients, x, y, width) {
+      // Screen-space artwork stays crisp at any zoom. No blur, gradients or per-patient DOM.
+      const detailed = width >= 104, height = detailed ? 28 : 18, left = x - width / 2,
+        inside = patients.filter((u) => u.care.inside).length,
+        waiting = patients.some((u) => u.care.inside && u.care.exit),
+        color = waiting ? "#e5c28b" : "#9ce0c1";
+      c.save();
+      const rect = (x, y, w, h, r, fill, stroke) => {
+        c.beginPath(); c.roundRect(x, y, w, h, r);
+        if (fill) { c.fillStyle = fill; c.fill(); }
+        if (stroke) { c.strokeStyle = stroke; c.lineWidth = 1; c.stroke(); }
+      };
+      rect(left + .5, y + .5, width - 1, height - 1, 5, "#0d2425f2", "#638d7966");
+      // A small medical cross; four separate tracks avoid an average dropping as patients leave.
+      const cx = left + 9, cy = y + 9;
+      c.fillStyle = color; c.fillRect(cx - 1, cy - 4, 2, 8); c.fillRect(cx - 4, cy - 1, 8, 2);
+      if (detailed) {
+        c.font = "9px Segoe UI, sans-serif"; c.textAlign = "left";
+        const label = waiting ? "Выход занят" : inside ? "Лечение" : "В пути";
+        c.fillText(label, left + 17, y + 12);
+        c.textAlign = "right"; c.fillStyle = "#bdd2c9";
+        c.fillText(inside + "/4", left + width - 6, y + 12);
+      }
+      const start = left + (detailed ? 6 : 17), gap = 3,
+        slotWidth = (left + width - 6 - start - gap * 3) / 4, top = y + (detailed ? 18 : 6);
+      for (let i = 0; i < 4; i++) {
+        const u = patients[i], px = start + i * (slotWidth + gap);
+        rect(px, top, slotWidth, 4, 2, "#344b48", null);
+        if (!u) continue;
+        if (u.care.inside) {
+          const health = Math.max(0, Math.min(1, u.hp / E.C[u.kind].hp));
+          if (health) rect(px, top, Math.max(1, slotWidth * health), 4, Math.min(2, slotWidth * health / 2),
+            u.care.exit ? "#e5c28b" : "#8fdaba", null);
+        } else {
+          // An outlined slot is reserved by a soldier still approaching the door.
+          rect(px, top, slotWidth, 4, 2, null, "#91b6b1");
+        }
       }
       c.restore();
     }
     serviceActivity(s) {
       this.workerActivity.clear();
       this.buildingActivity.clear();
+      this.garrisonActivity.clear();
+      this.infirmaryActivity.clear();
       if (!s.campaign) return;
       let lookup;
       for (const worker of s.units) {
+        if (worker.hp > 0 && worker.care) {
+          const activity = worker.care.garrison ? this.garrisonActivity : this.infirmaryActivity,
+            occupants = activity.get(worker.care.facility) || [];
+          occupants.push(worker); activity.set(worker.care.facility, occupants);
+        }
         if (!worker.buildingId && worker.workerTask?.kind !== "repair") continue;
         const activity = E.construction.activity(s, worker,
           lookup ||= new Map(s.units.map((u) => [u.id, u])));

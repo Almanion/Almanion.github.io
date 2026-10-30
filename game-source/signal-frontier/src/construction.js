@@ -2,11 +2,14 @@
 (function (root) {
   "use strict";
   const CELL = 40;
+  const ORE = Object.freeze({ radius: 56, gap: 72, setback: 128, range: 320 });
   const SHAPES = Object.freeze({
     barracks: [3, 3],
     foundry: [4, 3],
     arsenal: [3, 2],
+    bunker: [3, 3],
     outpost: [4, 4],
+    logistics: [2, 2],
   });
   const enabled = (s) => ["frontier-8", "frontier-9"].includes(s?.campaign?.id);
   // Existing saves retain their reserved 3x3 area; new extractors reserve 4x4.
@@ -52,9 +55,15 @@
     p.y + radius > b.y &&
     p.y - radius < b.y + b.h;
   const SERVICE = Object.freeze({ rate: 12, material: 8, crew: 4 });
+  const oreDistance = (b, p) => Math.hypot(
+    Math.max(b.x - p.x, 0, p.x - b.x - b.w),
+    Math.max(b.y - p.y, 0, p.y - b.y - b.h),
+  );
+  const blockedOre = (s, b, kind) => s.campaign.mines.find((m) =>
+    oreDistance(b, m) < (kind === "outpost" ? ORE.setback : ORE.radius + 16));
   const repairable = (u) =>
     u && !u.team && u.hp > 0 && !u.build &&
-    ["base", "outpost", "barracks", "foundry", "arsenal"].includes(u.kind);
+    ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(u.kind);
   function create(E) {
     const worlds = new WeakMap(),
       graphs = new Map();
@@ -343,7 +352,7 @@
         kind,
         x: Math.round(x / CELL - cols / 2) * CELL + (cols * CELL) / 2,
         y: Math.round(y / CELL - rows / 2) * CELL + (rows * CELL) / 2,
-        construction: { turn, ...(kind === "outpost" ? { footprint: 4 } : {}) },
+        construction: { turn, resourceSpacing: 1, ...(kind === "outpost" ? { footprint: 4 } : {}) },
       };
     }
     function exit(u, radius = 20) {
@@ -460,7 +469,9 @@
       if (s.status !== "playing") return fail("ended");
       if (["foundry", "arsenal"].includes(kind) && s.campaign.tier < 2)
         return fail("network");
-      if (s.units.length >= E.development.rules(s).unitLimit - 6)
+      if (kind === "logistics" && s.units.filter((u) => u.hp > 0 && u.kind === kind).length >= 8)
+        return fail("supply-maximum");
+      if (E.development.activeCount(s) >= E.development.objectLimit(s) - 6)
         return fail("limit");
       if (
         !s.units.some(
@@ -514,6 +525,11 @@
         )
       )
         return fail("occupied");
+      const ore = blockedOre(s, b, kind);
+      if (ore) {
+        if (kind === "outpost") preview.site = ore.id;
+        return fail(kind === "outpost" ? "ore-clearance" : "objective-space");
+      }
       if (protectedPoints(s).some((p) => contains(b, p, p.r)))
         return fail("objective-space");
       if (kind === "outpost") {
@@ -522,7 +538,7 @@
             (m) =>
               m.id !== "home" &&
               m.remaining > 0 &&
-              E.dist(preview, m) <= 320 &&
+              E.dist(preview, m) <= ORE.range &&
               E.explored(s, 0, m),
           )
           .sort(
@@ -621,6 +637,7 @@
       u.angle = (o.preview.construction.turn * Math.PI) / 2;
       u.construction = {
         turn: o.preview.construction.turn,
+        resourceSpacing: 1,
         ...(kind === "outpost" ? { footprint: 4 } : {}),
         paid: item.cost,
         builderId: o.builder.id,
@@ -765,7 +782,7 @@
       if (!validateWorkers(s)) return false;
       if (!enabled(s))
         return !s.units.some(
-          (u) => u.construction || u.buildingId || u.kind === "arsenal",
+          (u) => u.construction || u.buildingId || ["arsenal", "bunker", "logistics"].includes(u.kind),
         );
       const assigned = new Set(),
         boxes = [],
@@ -779,6 +796,7 @@
           if (
             !c ||
             ![0, 1, 2, 3].includes(c.turn) ||
+            (c.resourceSpacing !== undefined && c.resourceSpacing !== 1) ||
             (c.footprint !== undefined &&
               (u.kind !== "outpost" || c.footprint !== 4)) ||
             c.paid !== price ||
@@ -814,6 +832,7 @@
           if (u.hp > 0) {
             if (
               boxes.some((other) => intersects(b, other, 16)) ||
+              (c.resourceSpacing === 1 && blockedOre(s, b, u.kind)) ||
               protectedPoints(s).some((p) => contains(b, p, p.r)) ||
               s.units.some(
                 (p) =>
@@ -873,6 +892,8 @@
     return {
       enabled,
       shapes: SHAPES,
+      ore: ORE,
+      oreDistance,
       shape,
       direction,
       advance,

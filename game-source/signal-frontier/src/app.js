@@ -42,7 +42,7 @@
     miniRect = null;
   const mapPointers = new Map();
   const controlGroups = new Map();
-  let dockTab = "shop", selectionPanel;
+  let dockTab = "shop", selectionPanel, mobileDockView = "selection", productionContext = null;
   const actionPointers = new Map();
   let edge = null,
     pinch = null,
@@ -200,8 +200,6 @@
     $("tactical").setAttribute("aria-pressed", String(mode === "tactical"));
     $("tactical").querySelector("span").textContent =
       mode === "tactical" ? "В бой" : "Приказы";
-    canvas.style.cursor =
-      mode === "playing" && !coarse.matches ? "none" : "default";
     sound.update(E.observe(state), mode, settings.volume);
     if (mode === "playing") sound.start();
     else if (mode !== "tactical") sound.stop();
@@ -211,14 +209,19 @@
   }
   function measureMapArea() {
     layoutMiniMap();
-    if (mode !== "tactical") return;
+    if (!["playing", "tactical"].includes(mode)) return;
     const panel = (placement ? $("placement-panel") : $("command-dock")).getBoundingClientRect(),
       topbar = document.querySelector(".topbar").getBoundingClientRect(),
       objective = document.querySelector(".objective").getBoundingClientRect();
+    const obstructions = [panel.top];
+    if (!placement) {
+      if (!$("control-groups").hidden) obstructions.push($("control-groups").getBoundingClientRect().top);
+      if (mode === "playing") obstructions.push($("combat-vitals").getBoundingClientRect().top);
+    }
     const next = {
       x: 14, y: Math.max(topbar.bottom, objective.bottom) + 12,
       right: innerWidth - 14,
-      bottom: panel.top - ($("control-groups").hidden || placement ? 12 : 52),
+      bottom: Math.min(...obstructions) - 12,
     };
     if (JSON.stringify(next) !== JSON.stringify(mapArea)) renderDirty = true;
     mapArea = next;
@@ -231,6 +234,8 @@
   });
   for (const el of [
     $("command-dock"),
+    $("control-groups"),
+    $("combat-vitals"),
     $("map-tools"),
     document.querySelector(".objective"),
   ])
@@ -287,7 +292,7 @@
   function selectable(u) {
     return !u.team && u.hp > 0 &&
       ([1, 2].includes(u.group) || u.kind === "drone" ||
-        ["base", "outpost", "barracks", "foundry", "arsenal"].includes(u.kind));
+        ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(u.kind));
   }
   function refreshControlGroups(members) {
     const live = new Map(state.units.filter(selectable).map((u) => [u.id, u])),
@@ -375,6 +380,8 @@
           base: "База",
           outpost: E.construction.enabled(state) ? "Экстрактор" : "Узел",
           arsenal: "Арсенал",
+          bunker: "Бункер",
+          logistics: "Узел снабжения",
         }[building.kind]
       : onlyWorkers
         ? (workers.length === 1 ? "Зонд" : "Зонды: " + workers.length) +
@@ -385,7 +392,7 @@
     if ($("selection-count").textContent !== selectionText)
       $("selection-count").textContent = selectionText;
     $("order-move").disabled = !members.length && !producer;
-    $("order-move").textContent =
+    $("order-move").querySelector("span").textContent =
       onlyWorkers ? "Приказ" : members.length && members.every((u) => !E.C[u.kind].speed)
         ? "Сбор"
         : "Идти";
@@ -397,12 +404,12 @@
     );
     $("order-cancel").hidden =
       !orderMode && !rallyBuilding && !building && !members.length;
-    $("order-cancel").textContent =
+    $("order-cancel").querySelector("span").textContent =
       orderMode || rallyBuilding ? "Отмена" : workers.some((u) => u.workerTask || u.buildingId)
         ? "К добыче" : "Снять";
     const touch = coarse.matches || innerWidth < 700;
     $("tactical-hint").textContent =
-      onlyWorkers
+      !members.length ? touch ? "Два пальца — карта · здание — управление" : "WASD — движение · ЛКМ — огонь" : onlyWorkers
         ? orderMode
           ? "Ресурс — добывать · постройка — ремонт · земля — перейти"
           : touch ? "Касание ресурса — добыча · «Приказ» → здание — ремонт"
@@ -419,8 +426,6 @@
             ? "Касание / рамка — выбор · два пальца — карта"
             : "ПКМ: идти / следовать / атака · экстрактор — лечиться";
     document.body.classList.toggle("issuing-order", mode === "playing" && (orderMode || !!rallyBuilding));
-    canvas.style.cursor = orderMode || rallyBuilding ? "crosshair"
-      : mode === "playing" && !coarse.matches ? "none" : "default";
   }
   function refreshDock(members = selectedUnits()) {
     const active = ["playing", "tactical"].includes(mode) && !placement,
@@ -431,13 +436,22 @@
     if (panel.dataset.view !== next) panel.dataset.view = next;
     if ($("development-content").hidden !== !shop) $("development-content").hidden = !shop;
     if ($("selection-content").hidden !== shop) $("selection-content").hidden = shop;
-    if ($("dock-shop").hidden !== (mode !== "tactical")) $("dock-shop").hidden = mode !== "tactical";
+    $("dock-shop").hidden = false;
     if ($("dock-shop").getAttribute("aria-pressed") !== String(shop)) $("dock-shop").setAttribute("aria-pressed", String(shop));
-    if ($("dock-selection").getAttribute("aria-pressed") !== String(!shop)) $("dock-selection").setAttribute("aria-pressed", String(!shop));
     if ($("dock-count").textContent !== String(members.length)) $("dock-count").textContent = members.length;
-    const label = mode === "tactical" ? "ПАУЗА" : "В БОЮ";
+    $("dock-count").hidden = !members.length;
+    panel.dataset.empty = String(!members.length);
+    const label = mode === "tactical" ? "Пауза" : "Бой";
     if ($("dock-mode").textContent !== label) $("dock-mode").textContent = label;
     if (active && !shop) selectionPanel?.render();
+    else if (selectionPanel) selectionPanel.renderProduction(state, null);
+    const narrow = matchMedia("(max-width: 759px) and (orientation: portrait)").matches,
+      production = narrow && document.body.classList.contains("has-production") && !shop;
+    $("dock-production").hidden = !production;
+    const showingProduction = production && mobileDockView === "production";
+    panel.dataset.mobileView = showingProduction ? "production" : "selection";
+    $("dock-production").setAttribute("aria-pressed", String(showingProduction));
+    $("dock-selection").setAttribute("aria-pressed", String(!shop && !showingProduction));
     if (changed) measureMapArea();
   }
   function selectedUnits() {
@@ -516,7 +530,7 @@
     return state.campaign.mines.filter((m) => E.explored(state, 0, m)).map((m) => {
       const p = view.screen(m.x, m.y);
       return { ...m, kind: "resource", distance: Math.hypot(e.clientX - p.x, e.clientY - p.y + 8 * view.camera.scale) };
-    }).filter((m) => m.distance <= Math.max(e.pointerType === "touch" ? 24 : 16, 25 * view.camera.scale))
+    }).filter((m) => m.distance <= Math.max(e.pointerType === "touch" ? 28 : 18, 48 * view.camera.scale))
       .sort((a, b) => a.distance - b.distance)[0] || null;
   }
   function orderTargetAt(e) {
@@ -564,6 +578,8 @@
       state.events = [];
       save();
       if (mining) notice(`Добыча назначена · зондов ${mining.count} из ${mining.requested}`);
+      else if (target?.kind === "bunker" && state.units.some((u) => ids.includes(u.id) && u.care?.facility === target.id))
+        notice("Ко входу бункера · дальность и обзор внутри +25%");
       else if (target?.kind === "outpost" && state.units.some((u) => ids.includes(u.id) && u.care?.facility === target.id))
         notice("Ко входу экстрактора · лечение внутри · 8 прочности/с");
       else if (target && state.units.some((u) => ids.includes(u.id) && u.workerTask?.targetId === target.id))
@@ -579,6 +595,7 @@
     } else
       notice(
         mining ? (mining.reason === "empty-resource" ? "Месторождение истощено" : "Нет доступного экстрактора: проверьте места для зондов и путь")
+        : target?.kind === "bunker" && selectedUnits().some(E.support.patient) ? "Нужны готовый бункер, свободное место из четырёх и путь ко входу"
         : target?.kind === "outpost" && selectedUnits().some(E.support.patient) ? "Нужны раненые бойцы, свободное место лечения и путь ко входу"
         : producer
           ? "Здесь нельзя поставить точку сбора"
@@ -633,14 +650,15 @@
   }
   function careAction(action, id, ids = [state.heroId]) {
     let success = false, message;
+    const bunker = state.units.some((u) => u.id === id && u.kind === "bunker");
     if (action === "admit") {
       const result = E.support.admit(state, ids, id); success = result.allowed;
-      message = result.reason === "infirmary-full" ? "Все четыре места лечения заняты" : "Боец здоров или нет пути ко входу";
+      message = bunker ? result.reason === "bunker-full" ? "Все четыре места бункера заняты" : "Бункер недоступен или нет пути ко входу" : result.reason === "infirmary-full" ? "Все четыре места лечения заняты" : "Боец здоров или нет пути ко входу";
     } else if (action === "exit") {
       const u = state.units.find((u) => u.id === id);
       if (u?.care) { u.care.exit = true; E.support.leave(state, u); success = true; }
     } else success = E.support.evacuate(state, id);
-    notice(success ? action === "admit" ? "Лечение внутри экстрактора · 8 прочности/с" : "Приказ на выход · освободите вход, если он занят" : message || "Нет бойцов внутри");
+    notice(success ? action === "admit" ? bunker ? "Занять бункер · дальность и обзор внутри +25%" : "Лечение внутри экстрактора · 8 прочности/с" : "Приказ на выход · освободите вход, если он занят" : message || "Нет бойцов внутри");
     if (success) {
       E.refreshRecon(state); view.add(E.knownEvents(state), settings.reduced); state.events = [];
       save(); renderDirty = true; updateUI();
@@ -659,7 +677,7 @@
             u.team ||
             u.hp <= 0 || u.care?.inside ||
             (![1, 2].includes(u.group) && u.kind !== "drone" &&
-              !["base", "outpost", "barracks", "foundry", "arsenal"].includes(
+              !["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(
                 u.kind,
               ))
           )
@@ -686,12 +704,14 @@
     }
   }
   function onField(e) {
+    const hit = document.elementFromPoint(e.clientX, e.clientY);
     return (
       e.clientX >= 0 &&
       e.clientX < innerWidth &&
       e.clientY >= 0 &&
       e.clientY < innerHeight &&
-      document.elementFromPoint(e.clientX, e.clientY) === canvas
+      (hit === canvas || (mode === "playing" && e.pointerType !== "touch" &&
+        !!hit?.closest("#touch-controls .stick")))
     );
   }
   function openDialog(which) {
@@ -733,7 +753,7 @@
     }
     if (which === "help")
       $("economy-help").textContent = E.construction.enabled(state)
-        ? "В «Стройке» или «Добыче» выберите «Экстрактор» размером 4×4 и поставьте у свободного разведанного месторождения. Золотая линия показывает путь дронов: поверните выход к источнику, чтобы сократить доставку. R или кнопка поворота перебирает четыре стороны. Один дрон отправится строить; погибшего строителя можно заменить в карточке здания. Для добычи закажите зондов или выделите существующих и нажмите на ресурс: они выберут ближайший доступный экстрактор. У каждого узла четыре рабочих места. Выбранных бойцов можно направить ПКМ в экстрактор, на телефоне — кнопкой «Идти» и касанием здания. Внутри четыре места лечения, стрелять нельзя; после восстановления бойцы остаются внутри до приказа на выход. Вкладка «Лечение» позволяет отправить разведчика или вывести пациентов досрочно. Двойное нажатие выбирает все объекты этого типа на видимой части экрана. На телефоне подтвердите место кнопкой; на компьютере — щелчком. Shift + ЛКМ размещает несколько зданий, Esc отменяет. У каждого производства своя очередь и точка сбора. Арсенал после II ступени открывает улучшения. Для III ступени нужны два экстрактора и подавленная внешняя база. Зондов можно выделить и отправить чинить своё повреждённое здание: ПКМ, а на телефоне — «Приказ» и касание здания. Ремонт расходует 1 сплава на 8 прочности; завершив его, зонд вернётся к добыче. «К добыче» отзывает работника. Стройка, ремонт и очереди продолжаются после выхода из паузы."
+        ? "В «Стройке» или «Добыче» выберите «Экстрактор» размером 4×4 и поставьте у свободного разведанного месторождения. Золотая линия показывает путь дронов: поверните выход к источнику, чтобы сократить доставку. R или кнопка поворота перебирает четыре стороны. Один дрон отправится строить; погибшего строителя можно заменить в карточке здания. Для добычи закажите зондов или выделите существующих и нажмите на ресурс: они выберут ближайший доступный экстрактор. " + (E.development.logistics(state) ? "На одном источнике работают до шести зондов; лишние ищут свободное месторождение с экстрактором. Узел снабжения стоит 90 сплава, строится 24 секунды и добавляет 12 снабжения армии и 4 места для зондов. Стартовые лимиты — 24 и 16, максимальные — 120 и 48 при восьми узлах. Боец и дозорный занимают 1 снабжения, артиллерия — 4. Очереди резервируют места заранее. Потеря узла сохраняет войска, но при превышении лимита приостанавливает производство." : "У каждого узла четыре рабочих места.") + " Выбранных бойцов можно направить ПКМ в экстрактор, на телефоне — кнопкой «Идти» и касанием здания. Внутри четыре места лечения, стрелять нельзя; после полного восстановления бойцы автоматически выходят, а если выход занят — ждут свободного места. Вкладка «Лечение» позволяет отправить разведчика или вывести пациентов досрочно. В разделе «Стройка» есть бункер на четыре бойца: отправьте их ПКМ или кнопкой приказа. Внутри дальность и обзор повышаются на 25%; огонь ведётся с крыши, лечения нет. Выберите бункер: нажатие на портрет выводит бойца, «Вывести всех» освобождает гарнизон. Разведчик стреляет вручную и выходит при движении. Двойное нажатие выбирает все объекты этого типа на видимой части экрана. На телефоне подтвердите место кнопкой; на компьютере — щелчком. Shift + ЛКМ размещает несколько зданий, Esc отменяет. У каждого производства своя очередь и точка сбора. Арсенал после II ступени открывает улучшения. Для III ступени нужны два экстрактора и подавленная внешняя база. Зондов можно выделить и отправить чинить своё повреждённое здание: ПКМ, а на телефоне — «Приказ» и касание здания. Ремонт расходует 1 сплава на 8 прочности; завершив его, зонд вернётся к добыче. «К добыче» отзывает работника. Стройка, ремонт и очереди продолжаются после выхода из паузы."
         : E.development.expedition(state)
           ? "Разверните добычу и казармы. Второй узел и подавление северного бастиона или южного арсенала откроют оперативный контур. Вражеские базы собирают отряды; их уничтожение прекращает подкрепления. Выберите осаду с артиллерией или проникновение через терминал. Нажмите на своё здание, чтобы открыть очередь. Очереди работают только вне паузы."
           : E.development.extended(state)
@@ -787,7 +807,7 @@
     $("result-squad").textContent =
       allies.length +
       " / " +
-      state.units.filter((u) => u.team === 0 && u.group).length;
+      (state.units.filter((u) => u.team === 0 && u.group).length + (state.campaign?.retired?.allies || 0));
     $("result-spent").textContent =
       state.economy.spent - state.economy.recovered;
     const endedState = state;
@@ -880,19 +900,35 @@
     $("field-alloy").textContent = state.economy.alloy;
     const economy = state.campaign ? E.development.summary(state) : null;
     $("field-capacity").textContent = economy
-      ? `${economy.population} / ${economy.capacity}`
+      ? `${economy.population - economy.armyReserved} / ${economy.capacity}`
       : selectedUnits().length;
+    $("worker-capacity-counter").hidden = !economy;
+    if (economy) {
+      $("field-workers").textContent = `${economy.workers} / ${economy.workerCapacity}`;
+      for (const [id, reserved, used, capacity] of [
+        ["army", economy.armyReserved, economy.population, economy.capacity],
+        ["worker", economy.workerReserved, economy.workers + economy.workerReserved, economy.workerCapacity],
+      ]) {
+        $(id + "-reserved").hidden = !reserved;
+        $(id + "-reserved").textContent = "+" + reserved + " в очереди";
+        $(id + "-capacity-counter").classList.toggle("capacity-full", used >= capacity);
+        $(id + "-capacity-counter").title = `${used} занято с очередью из ${capacity}` +
+          (E.development.logistics(state) ? ` · максимум ${id === "army" ? 120 : 48}` : "");
+      }
+    }
     $("map-overview").setAttribute(
       "aria-pressed",
       String(mode === "tactical" && view.tactical.overview),
     );
-    $("health-fill").style.width =
-      Math.max(0, (h.hp / E.C.hero.hp) * 100) + "%";
-    $("health-fill").parentElement.classList.toggle("danger", h.hp < 50);
-    $("health-value").textContent = Math.ceil(h.hp);
-    $("ammo").textContent = state.ammo;
-    $("reload-status").textContent =
-      state.reload > 0 ? "Перезарядка…" : "Импульсная винтовка";
+    $("health-fill").style.transform = `scaleX(${E.clamp(h.hp / E.C.hero.hp, 0, 1)})`;
+    $("health-meter").classList.toggle("danger", h.hp < E.C.hero.hp / 3);
+    $("health-meter").setAttribute("aria-valuenow", Math.max(0, Math.ceil(h.hp)));
+    $("health-meter").setAttribute("aria-valuemax", E.C.hero.hp);
+    $("ammo-fill").style.transform = `scaleX(${state.ammo / 12})`;
+    $("ammo-meter").setAttribute("aria-valuenow", state.ammo);
+    $("ammo-meter").setAttribute("aria-valuetext", state.reload > 0
+      ? `${state.ammo} из 12 · перезарядка` : `${state.ammo} из 12`);
+    $("reload-fill").style.transform = `scaleX(${state.reload > 0 ? E.clamp(1 - state.reload / 1.1, 0, 1) : 0})`;
     $("dash-cooldown").style.width = (state.dash / 3.2) * 100 + "%";
     $("dash").style.setProperty("--cooldown", (state.dash / 3.2) * 100 + "%");
     $("reload").style.setProperty(
@@ -917,7 +953,19 @@
               : "Нужен модуль взлома"
             : "Запустить узел";
       $("interact-progress").style.width = act.progress * 100 + "%";
+      const label = $("interact-label").textContent + (act.allowed ? " · удерживайте E или кнопку" : "");
+      $("interact").title = label;
+      $("interact").setAttribute("aria-label", label);
+      if ($("interact").dataset.type !== act.type) {
+        $("interact").dataset.type = act.type;
+        $("interact-icon").setAttribute("d", ({
+          cache: "m4 9 8-4 8 4v10l-8 3-8-3Zm0 0 8 4 8-4m-8 4v9M12 1v7m-3-3 3 3 3-3",
+          relay: "M12 10v10m-4 1h8M8 5a6 6 0 0 0 0 8m8-8a6 6 0 0 1 0 8M5 2a10 10 0 0 0 0 14m14-14a10 10 0 0 1 0 14M12 7v4m-2-2h4",
+          terminal: "M8 4H4v16h4m8-16h4v16h-4M9 9l-3 3 3 3m6-6 3 3-3 3m-2-7-2 10",
+        })[act.type]);
+      }
     }
+    $("interact").classList.toggle("pressed", !!act?.allowed && (input.interact || keys.has("KeyE")));
     $("recon-help").hidden = !E.fogged(state);
     if ($("dialog").open && !$("supply-content").hidden) updateSupply();
     if (mode === "tactical" && !$("development-content").hidden) development.render();
@@ -935,8 +983,13 @@
     barracks: "Нужны готовые казармы",
     foundry: "Нужен готовый тяжёлый цех",
     expansion: "Постройте добывающий узел",
-    "worker-limit": "Все места для дронов заняты",
-    capacity: "Расширьте вместимость: постройте узел",
+    get "worker-limit"() { return E.development.logistics(state)
+      ? E.development.workerCapacity(state) === 48 ? "Достигнут предел: 48 зондов" : "Достигнут лимит зондов: постройте узел снабжения"
+      : "Нет свободных мест для зондов на этом узле"; },
+    get capacity() { return E.development.logistics(state)
+      ? E.development.capacity(state) === 120 ? "Достигнут предел: 120 снабжения" : "Не хватает снабжения: постройте узел снабжения"
+      : "Не хватает мест в отряде: постройте добывающий узел"; },
+    "supply-maximum": "Максимум: 8 узлов, 120 снабжения и 48 зондов",
     queue: "Очередь заполнена",
     exhausted: "Месторождение исчерпано",
     researching: "Уже в очереди",
@@ -966,6 +1019,7 @@
     "ore-distance":
       "Экстрактору нужно разведанное месторождение в пределах 320",
     "occupied-mine": "У этого месторождения уже есть экстрактор",
+    "ore-clearance": "Отодвиньте экстрактор: нужен проход между зданием и месторождением",
     "ore-route": "Дроны не смогут добраться от выхода до месторождения",
     exit: "Освободите выход здания",
     passage: "Постройка перекроет проход",
@@ -1003,6 +1057,12 @@
   });
   selectionPanel = new SignalSelectionPanel($("selection-content"), {
     state: () => state, members: selectedUnits, buy, care: careAction, selectType,
+    production: $("combat-production"), combat: () => mode === "playing", reason: (code) => reasons[code],
+    productionState: (active) => {
+      // Selection normalization may reorder IDs on the next tick; keep the user's tab.
+      const key = active ? selectedUnits().map((u) => u.id).join(",") : null;
+      if (key !== productionContext) { productionContext = key; mobileDockView = active ? "production" : "selection"; }
+    },
     select: (ids) => selectHits(ids, false),
     inspect: (id) => {
       development.select(id);
@@ -1226,6 +1286,7 @@
     }
     if (!state.campaign) updateSupply();
     updateUI();
+    return result;
   }
   account = new SignalAccountPanel($("account-content"), {
     getSave: () => SignalCloudCore.encode(saved || E.snapshot(state)),
@@ -1265,13 +1326,15 @@
   $("supply-back").onclick = closeDialog;
   $("dock-shop").onclick = () => {
     if (!state.campaign) { openDialog("supply"); return; }
+    if (mode === "playing") { setMode("tactical"); save(); }
     dockTab = "shop";
     development.select();
     $("development-feedback").textContent = "";
     refreshDock(selectedUnits());
     development.render();
   };
-  $("dock-selection").onclick = () => { dockTab = "selection"; refreshDock(selectedUnits()); };
+  $("dock-selection").onclick = () => { dockTab = "selection"; mobileDockView = "selection"; refreshDock(selectedUnits()); };
+  $("dock-production").onclick = () => { dockTab = "selection"; mobileDockView = "production"; refreshDock(selectedUnits()); };
   $("select-army").onclick = () => selectHits(state.units.filter((u) => selectable(u) && [1, 2].includes(u.group)).map((u) => u.id));
   $("dialog").addEventListener("close", () => {
     document.body.classList.toggle(
@@ -1319,12 +1382,21 @@
     }
     const el = $("minimap-panel"),
       world = E.map(state),
-      width = el.getBoundingClientRect().width,
+      bounds = el.getBoundingClientRect(),
+      dock = $("command-dock"), panel = dock.getBoundingClientRect(),
+      alongside = !placement && !dock.hidden && panel.left >= bounds.right,
+      width = bounds.width,
       drawer = $("dialog").open,
       folded =
         !!settings.minimapFold ||
-        (mode === "tactical" && view.tactical.overview),
-      wanted = Math.round(((width - 2) * world.H) / world.W) + "px";
+        (mode === "tactical" && view.tactical.overview);
+    if (el.dataset.dockAligned !== String(alongside)) el.dataset.dockAligned = String(alongside);
+    const bottom = alongside ? Math.max(0, innerHeight - panel.bottom) + "px" : "";
+    if (el.style.bottom !== bottom) el.style.bottom = bottom;
+    // The canvas fits its map proportionally; resizing the frame never stretches geography.
+    const wanted = (alongside
+      ? Math.max(40, panel.height - $("map-tools").getBoundingClientRect().height - 2)
+      : Math.round(((width - 2) * world.H) / world.W)) + "px";
     el.dataset.folded = String(folded);
     if (miniCanvas.style.height !== wanted) {
       miniCanvas.style.height = wanted;
@@ -1618,15 +1690,38 @@
       });
   }
   $("interact").addEventListener("pointerdown", (e) => {
-    if (mode === "playing") {
+    if (mode === "playing" && e.button === 0 && !e.currentTarget.disabled) {
       input.interact = true;
+      actionPointers.set(e.pointerId, e.currentTarget);
       e.currentTarget.setPointerCapture(e.pointerId);
       e.preventDefault();
     }
   });
   for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
-    $("interact").addEventListener(type, () => (input.interact = false));
-  canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+    $("interact").addEventListener(type, (e) => {
+      actionPointers.delete(e.pointerId);
+      input.interact = false;
+    });
+  $("interact").addEventListener("keydown", (e) => {
+    if (["Enter", "Space"].includes(e.code)) {
+      e.preventDefault(); e.stopPropagation();
+      if (mode === "playing" && !e.currentTarget.disabled) input.interact = true;
+    }
+  });
+  $("interact").addEventListener("keyup", (e) => {
+    if (["Enter", "Space"].includes(e.code)) { e.preventDefault(); input.interact = false; }
+  });
+  $("interact").addEventListener("blur", () => { input.interact = false; });
+  function fieldEvent(type, handler) {
+    canvas.addEventListener(type, handler);
+    // Touch zones cover the field on small/hybrid screens. A connected mouse
+    // still uses the field controls; it must not become a virtual joystick.
+    for (const id of ["move-stick", "aim-stick"])
+      $(id).addEventListener(type, (e) => {
+        if (e.pointerType !== "touch" || type === "contextmenu") handler(e);
+      });
+  }
+  fieldEvent("contextmenu", (e) => e.preventDefault());
   function buildingAt(e) {
     if (!state.campaign) return null;
     if (
@@ -1647,7 +1742,7 @@
         (u) =>
           !u.team &&
           u.hp > 0 &&
-          ["base", "outpost", "barracks", "foundry", "arsenal"].includes(
+          ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(
             u.kind,
           ),
       )
@@ -1711,7 +1806,7 @@
       y: e.clientY < margin ? -1 : e.clientY > innerHeight - margin ? 1 : 0,
     };
   }
-  canvas.addEventListener("pointermove", (e) => {
+  fieldEvent("pointermove", (e) => {
     if (
       buildingPress?.id === e.pointerId &&
       Math.hypot(e.clientX - buildingPress.x, e.clientY - buildingPress.y) > 9
@@ -1768,13 +1863,15 @@
     if (mode === "tactical" && e.pointerType !== "touch" && !mapPointers.size)
       edge = edgeAt(e);
     else if (mode === "playing" && e.pointerType !== "touch") {
+      // Only retain the latest position. The browser draws the native reticle;
+      // terrain projection and the scout's turn belong to the simulation frame.
       mousePoint = { x: e.clientX, y: e.clientY };
     }
   });
   canvas.addEventListener("pointerleave", () => {
     if (!mapPointers.size) edge = null;
   });
-  canvas.addEventListener("pointerdown", (e) => {
+  fieldEvent("pointerdown", (e) => {
     if ((mode === "tactical" || (mode === "playing" && (orderMode || rallyBuilding) && e.button === 0)) && [0, 1, 2].includes(e.button)) {
       if (placement && e.button === 2) {
         cancelPlacement();
@@ -1870,7 +1967,7 @@
     }
   });
   for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
-    canvas.addEventListener(type, (e) => {
+    fieldEvent(type, (e) => {
       const p = mapPointers.get(e.pointerId);
       if (p) {
         mapPointers.delete(e.pointerId);
@@ -1986,7 +2083,7 @@
       e.preventDefault();
     }
     el.addEventListener("pointerdown", (e) => {
-      if (mode !== "playing" || stick.id !== null || e.button !== 0) return;
+      if (mode !== "playing" || e.pointerType !== "touch" || stick.id !== null || e.button !== 0) return;
       if (!isAim) {
         combatFocus = null;
         miniControls();
@@ -2246,7 +2343,7 @@
     }
     if (mode === "playing") {
       acc += elapsed;
-      if (mousePoint && !coarse.matches)
+      if (mousePoint && !aimStick.active)
         aim = view.aim(mousePoint.x, mousePoint.y, E.hero(state));
       while (acc >= E.DT && state.status === "playing") {
         const h = E.hero(state),
@@ -2354,7 +2451,7 @@
           selectionIds: selectionVisible
             ? selectedUnits().map((u) => u.id)
             : [],
-          area: mode === "tactical" ? mapArea : null,
+          area: mapArea,
           active: mode === "playing",
           ack: view.fx.findLast((f) => f.type === "order"),
         },

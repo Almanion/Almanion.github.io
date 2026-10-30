@@ -56,7 +56,7 @@ for (const mobile of [false, true]) test(`dock orders target the battlefield wit
 });
 async function fits(page, selector) {
   const result = await page.locator(selector).evaluate((el) => {
-    const r = el.getBoundingClientRect();
+    const r = (el.querySelector("#development-panel") || el).getBoundingClientRect();
     const clipped = [...el.querySelectorAll("button")].filter((b) => b.getClientRects().length).filter((b) => {
       const x = b.getBoundingClientRect();
       return x.top < r.top - 1 || x.bottom > r.bottom + 1 || x.left < r.left - 1 || x.right > r.right + 1;
@@ -149,7 +149,8 @@ test("portrait renderer pages 100 members without losing any or rebuilding focus
   await page.evaluate(() => { rosterFixture.forEach((u) => u.hp--); rosterTest.render(); });
   await expect(page.locator(".roster-unit").first()).toBeFocused();
   await page.locator(".roster-unit").last().click();
-  await expect(page.locator(".roster-unit")).toHaveCount(1);
+  await expect(page.locator(".roster-detail-head strong")).toHaveText("Боец");
+  expect(await page.evaluate(() => rosterFixture.length)).toBe(1);
 });
 for (const type of [chromium, webkit]) for (const [width, height] of [[1440, 900], [800, 600], [390, 844], [320, 568], [844, 390]])
   test(`${type.name()} shop, building queue and roster fit ${width}x${height}`, async ({}, info) => {

@@ -144,7 +144,7 @@
         k >= 0 &&
         cache(s).visible[team][k] &&
         witness.team === team &&
-        witness.hp > 0 && !witness.care?.inside &&
+        witness.hp > 0 && radius(witness, s) > 0 &&
         s.units.includes(witness) &&
         E.dist(witness, p) <= radius(witness, s) &&
         E.clear(witness, p)
@@ -156,7 +156,7 @@
         (s.units.some(
           (u) =>
             u.team === team &&
-            u.hp > 0 && !u.care?.inside &&
+            u.hp > 0 && radius(u, s) > 0 &&
             E.dist(u, p) <= radius(u, s) &&
             E.clear(u, p),
         ) ||
@@ -177,10 +177,10 @@
     const teamKey = (u) => u.id + ":" + u.radius;
     function raster(s, list) {
       const { cols, rows, count } = size(s),
-        mask = new Uint8Array(count);
+        mask = new Uint8Array(count), cached = cache(s);
       for (const u of list) {
         const key = teamKey(u),
-          stored = cache(s).paths.get(key);
+          stored = cached.paths.get(key);
         if (
           stored &&
           stored.x === u.x &&
@@ -195,15 +195,21 @@
         const polygon = E.visionArea(s, u, u.radius).points;
         const first = Math.max(0, Math.floor((u.y - u.radius) / CELL)),
           last = Math.min(rows - 1, Math.floor((u.y + u.radius) / CELL));
-        for (let y = first; y <= last; y++) {
-          const yy = y * CELL + CELL / 2,
-            edges = [];
-          for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-            const a = polygon[i],
-              b = polygon[j];
+        // Visit only rows crossed by an edge. This is the same scan conversion
+        // and arithmetic as the reference, without rows × all polygon edges.
+        const crossings = Array.from({ length: last - first + 1 }, () => []);
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+          const a = polygon[i], b = polygon[j];
+          const lo = Math.max(first, Math.ceil((Math.min(a.y, b.y) - CELL / 2) / CELL)),
+            hi = Math.min(last, Math.ceil((Math.max(a.y, b.y) - CELL / 2) / CELL) - 1);
+          for (let y = lo; y <= hi; y++) {
+            const yy = y * CELL + CELL / 2;
             if (a.y > yy !== b.y > yy)
-              edges.push(a.x + ((yy - a.y) * (b.x - a.x)) / (b.y - a.y));
+              crossings[y - first].push(a.x + ((yy - a.y) * (b.x - a.x)) / (b.y - a.y));
           }
+        }
+        for (let y = first; y <= last; y++) {
+          const edges = crossings[y - first];
           edges.sort((a, b) => a - b);
           for (let i = 0; i + 1 < edges.length; i += 2) {
             const left = Math.max(0, Math.ceil((edges[i] - CELL / 2) / CELL)),
@@ -216,7 +222,7 @@
         }
         const k = index(s, u);
         if (k >= 0) runs.push(k, k + 1);
-        cache(s).paths.set(key, {
+        cached.paths.set(key, {
           x: u.x,
           y: u.y,
           radius: u.radius,
@@ -311,19 +317,18 @@
     }
     function update(s, force = false) {
       if (!enabled(s)) return;
-      const active = new Set(
-        [0, 1].flatMap((t) => observers(s, t)).map(teamKey),
-      );
-      for (const key of cache(s).paths.keys())
-        if (!active.has(key)) cache(s).paths.delete(key);
+      const lists = [observers(s, 0), observers(s, 1)],
+        active = new Set(lists.flat().map(teamKey)), cached = cache(s);
+      for (const key of cached.paths.keys())
+        if (!active.has(key)) cached.paths.delete(key);
       const current = records(s),
         frame = Math.round(s.t / E.DT);
       for (let team = 0; team < 2; team++) {
-        const list = observers(s, team),
+        const list = lists[team],
           key = signature(list);
         if (force || frame % 3 === 0 || s.recon.sources[team] !== key) {
           const mask = raster(s, list),
-            known = cache(s).explored[team];
+            known = cached.explored[team];
           let changed = false;
           for (let i = 0; i < mask.length; i++)
             if (mask[i] && !known[i]) {
@@ -331,10 +336,13 @@
               changed = true;
             }
           s.recon.visible[team] = encode(mask);
+          cached.codes["visible" + team] = s.recon.visible[team];
+          cached.visible[team] = mask;
           s.recon.sources[team] = key;
           if (changed) s.recon.explored[team] = encode(known);
+          cached.codes["explored" + team] = s.recon.explored[team];
         }
-        const mask = cache(s).visible[team],
+        const mask = cached.visible[team],
           known = new Map(s.recon.memory[team].map((p) => [p.key, p])),
           present = new Set(current.map((p) => p.key));
         const can = (p) => mask[index(s, p)] && sees(list, p);
@@ -526,7 +534,7 @@
             if (
               p.construction &&
               (!["frontier-8", "frontier-9"].includes(s.campaign.id) ||
-                !["barracks", "foundry", "arsenal", "outpost"].includes(
+                !["barracks", "foundry", "arsenal", "outpost", "bunker", "logistics"].includes(
                   p.kind,
                 ) ||
                 ![0, 1, 2, 3].includes(p.construction.turn) ||

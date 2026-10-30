@@ -16,7 +16,8 @@ test("new layout has all planned districts, garrisons and finite resources", () 
   assert.equal(s.version, 11);
   assert.equal(m.regions.length, 13);
   assert.equal(m.links.length, 11);
-  assert.equal(s.units.filter((u) => u.team && E.C[u.kind].speed).length, 48);
+  assert.equal(s.units.filter((u) => u.team && E.C[u.kind].speed).length, 78);
+  assert.deepEqual(["S08", "S11", "S09"].map((id) => M.guards.filter((u) => u.sector === id).length), [16, 16, 20]);
   assert.equal(s.units.filter((u) => u.kind === "turret").length, 8);
   assert.equal(s.campaign.mines.length, 8);
   assert.equal(
@@ -32,7 +33,9 @@ test("new layout has all planned districts, garrisons and finite resources", () 
   assert(E.restore(s));
   assert.deepEqual(
     E.development.items(s),
-    E.development.items(E.make("frontier-8")),
+    { ...E.development.items(E.make("frontier-8")),
+      artillery: { ...E.development.items(E.make("frontier-8")).artillery, pop: 4 },
+      logistics: { cost: 90, time: 24, pop: 0, label: "Узел снабжения" } },
   );
 });
 test("all actors and objectives occupy real walkable ground", () => {
@@ -129,6 +132,8 @@ test("both infiltration approaches are usable and preserve the selected terminal
 });
 test("the second terminal cannot be buried under a player building", () => {
   const s = E.make("frontier-9");
+  // Clear the stronger local garrison to isolate the terminal's reserved space.
+  for (const u of s.units) if (u.team && E.C[u.kind].speed) u.hp = 0;
   Object.assign(E.hero(s), { x: 2700, y: 2540 });
   E.refreshRecon(s);
   const o = E.construction.check(s, "barracks", { x: 2800, y: 2480, turn: 0 });

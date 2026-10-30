@@ -2,7 +2,9 @@
 (function (root) {
   "use strict";
   const paths = {
+    logistics: "<path d=\"M3 21V9h7v12Zm11 0V9h7v12ZM3 14h7m4 0h7M12 3v13M8 4h8M6 18h1m10 0h1\"/><circle cx=\"12\" cy=\"2\" r=\"1\"/>",
     node: '<path d="m12 3 8 5v8l-8 5-8-5V8Zm0 0v6m-8-1 8 5 8-5m-8 5v8"/>',
+    bunker: '<path d="M2 21V12l4-6h12l4 6v9ZM2 12h20M10 21v-5h4v5M5 10h3m8 0h3M5 15h2m10 0h2M6 6V4h12v2"/>',
     barracks: '<path d="M4 20V9l8-5 8 5v11ZM9 20v-7h6v7M8 9h8M12 4V1"/>',
     foundry: '<path d="M3 20V10l6 3V7l5 3V4h5l2 16ZM7 17h1m4 0h1m4 0h1"/>',
     network:
@@ -15,8 +17,9 @@
     repair: '<path d="m14 4 3 3 4-1a6 6 0 0 1-7 7L6 21l-3-3 8-8a6 6 0 0 1 3-7Zm-9 13 2 2"/>',
     alloy: '<path d="m12 3 8 9-8 9-8-9Zm-8 9h16M12 3v18"/>',
   };
-  const icon = (name) =>
-    `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.node}</svg>`;
+  const icon = (name) => ["rifle", "scout", "artillery", "drone"].includes(name) && root.SignalSelectionPanel
+    ? root.SignalSelectionPanel.icon(name)
+    : `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.node}</svg>`;
   class DevelopmentPanel {
     constructor(element, options) {
       this.el = element;
@@ -568,6 +571,8 @@
           (items[u.kind]?.label || "Посадочный узел") +
           (u.construction ? " №" + u.id : ""),
         roles = {
+          logistics: "+12 снабжения · +4 зонда · 2×2",
+          bunker: "4 места · дальность и обзор +25%",
           barracks: "Бойцы и дозорные",
           outpost: "4×4 · рядом со свободным месторождением",
           foundry: "Тяжёлая артиллерия",
@@ -643,7 +648,7 @@
               ? roles[action] || "Нажмите для заказа"
               : reason(o),
           `data-action="${action}" ${site !== undefined ? `data-site="${site}"` : ""} ${o.producer ? `data-producer="${o.producer.id}"` : ""} ${o.allowed ? "" : "disabled"}`,
-          paths[action] ? action : "command",
+          paths[action] || ["rifle", "scout", "artillery", "drone"].includes(action) ? action : "command",
         );
       };
       const queue = (u, cycle = false) => {
@@ -659,12 +664,12 @@
           .map((i) => {
             const j = u.jobs[i];
             return j
-              ? `<button class="job-select" data-job="${u.id}:${j.id}" aria-label="Отменить: ${items[j.action].label} · вернуть ${Math.floor(j.cost * 0.75)} сплава"><span>${items[j.action].label}</span><small>${i ? "Ожидает" : j.remaining ? Math.ceil(j.remaining) + " с" : "Выход занят"}</small><i style="--progress:${(1 - j.remaining / j.duration) * 100}%"></i></button>`
+              ? `<button class="job-select" data-job="${u.id}:${j.id}" aria-label="Отменить: ${items[j.action].label} · вернуть ${Math.floor(j.cost * 0.75)} сплава"><span>${items[j.action].label}</span><small>${i ? "Ожидает" : D.supplyBlocked(s, j) ? "Нет снабжения" : j.remaining ? Math.ceil(j.remaining) + " с" : "Выход занят"}</small><i style="--progress:${(1 - j.remaining / j.duration) * 100}%"></i></button>`
               : '<div class="free-queue-empty">Свободно</div>';
           })
           .join("")}</div>`;
       };
-      const pages = (cards) => {
+      const pages = (cards, garrison = false) => {
         const width =
             this.el.clientWidth ||
             (innerWidth < 760
@@ -672,7 +677,7 @@
               : Math.min(960, innerWidth - 246)),
           compact = width < 600,
           home = this.deckView === "home" && this.selected === null,
-          size = extra ? (compact && width < 280 ? 1 : 2) : 4;
+          size = extra ? (compact && width < 280 && !garrison ? 1 : 2) : compact && width < 400 && !home ? 2 : 4;
         this.el.closest(".command-dock").dataset.compact = String(compact);
         this.el.closest(".command-dock").dataset.deckHome = String(home);
         const count = Math.max(1, Math.ceil(cards.length / size));
@@ -752,22 +757,35 @@
               }[selected.kind] || [],
             section =
               this.section === "troops" && !troops.length
-                ? "tech"
+                ? selected.kind === "bunker" ? "care" : selected.kind === "logistics" ? "service" : "tech"
                 : this.section;
-          sections = `<div class="building-tabs">${troops.length ? `<button data-section="troops" aria-pressed="${section === "troops"}">Выпуск</button>` : ""}${tech.length ? `<button data-section="tech" aria-pressed="${section === "tech"}">Технологии</button>` : ""}${selected.kind === "outpost" ? `<button data-section="care" aria-pressed="${section === "care"}">Лечение</button>` : ""}<button data-section="service" aria-pressed="${section === "service"}">Здание</button></div>`;
-          if (section === "care" && selected.kind === "outpost") {
-            const patients = E.support.occupants(s, selected.id), h = E.hero(s);
-            cards = [tile("develop-heal-hero", "Лечить разведчика", "Внутри · 8 прочности/с", "Останется внутри до приказа",
-              `data-care="admit" data-care-id="${selected.id}" ${h.hp >= E.C.hero.hp || h.care || patients.length >= 4 ? "disabled" : ""}`, "repair"),
+          sections = `<div class="building-tabs">${troops.length ? `<button data-section="troops" aria-pressed="${section === "troops"}">Выпуск</button>` : ""}${tech.length ? `<button data-section="tech" aria-pressed="${section === "tech"}">Технологии</button>` : ""}${E.support.facility(selected) ? `<button data-section="care" aria-pressed="${section === "care"}">${selected.kind === "bunker" ? "Гарнизон" : "Лечение"}</button>` : ""}<button data-section="service" aria-pressed="${section === "service"}">Здание</button></div>`;
+          if (section === "care" && E.support.facility(selected)) {
+            const patients = E.support.occupants(s, selected.id), h = E.hero(s), bunker = selected.kind === "bunker";
+            cards = [tile("develop-heal-hero", bunker ? "Занять героем" : "Лечить разведчика", bunker ? "Дальность, обзор +25%" : "Внутри · 8 прочности/с", bunker ? h.care?.facility === selected.id ? "Уже в гарнизоне" : h.care ? "Сначала выйти из укрытия" : patients.length >= 4 ? "Все места заняты" : "Стрельба под вашим управлением" : "Автоматический выход после лечения",
+              `data-care="admit" data-care-id="${selected.id}" ${(!bunker && h.hp >= E.C.hero.hp) || h.care || patients.length >= 4 ? "disabled" : ""}`, bunker ? "bunker" : "repair"),
               tile("develop-exit-all", "Вывести всех", `Занято ${patients.length} из 4 мест`, "Выход всех бойцов по вашему приказу",
                 `data-care="evacuate" data-care-id="${selected.id}" ${patients.length ? "" : "disabled"}`, "command"),
               ...patients.map((u) => tile("develop-patient-" + u.id, ({ hero: "Разведчик", rifle: "Боец", scout: "Дозорный", artillery: "Артиллерия" })[u.kind],
-                Math.ceil(u.hp) + " / " + E.C[u.kind].hp + (u.care.inside ? u.care.exit ? " · выход занят" : u.hp >= E.C[u.kind].hp ? " · вылечен" : " · лечится" : " · в пути"), u.care.inside && !u.care.exit && u.hp >= E.C[u.kind].hp ? "Ждёт приказа · нажать — выйти" : "Нажать — выйти",
-                `data-care="exit" data-care-id="${u.id}"`, "repair"))];
+                Math.ceil(u.hp) + " / " + E.C[u.kind].hp + (u.care.inside ? u.care.exit ? " · выход занят" : bunker ? " · в гарнизоне" : u.hp >= E.C[u.kind].hp ? " · вылечен" : " · лечится" : " · в пути"), !bunker && u.care.inside && !u.care.exit && u.hp >= E.C[u.kind].hp ? "Выходит автоматически" : "Нажать — выйти",
+                `data-care="exit" data-care-id="${u.id}"`, bunker ? "bunker" : "repair"))];
+            if (bunker) {
+              cards = cards.slice(0, 2);
+              extra = '<div class="deck-queue-heading"><span>Гарнизон · ' + patients.length + '/4</span><small>Нажатие на бойца — выход</small></div>' +
+                '<div class="free-queue bunker-slots">' + [0, 1, 2, 3].map((slot) => {
+                  const u = patients.find((v) => v.care.slot === slot),
+                    title = u ? (items[u.kind]?.label || 'Разведчик') + ' · ' + Math.ceil(u.hp) + '/' + E.C[u.kind].hp +
+                      (u.care.exit ? ' · выход занят' : u.care.inside ? ' · в гарнизоне' : ' · в пути') + ' · нажать для выхода' : 'Свободное место ' + (slot + 1);
+                  return u ? '<button class="roster-unit" data-care="exit" data-care-id="' + u.id + '" aria-label="Вывести: ' + title + '" title="' + title + '">' +
+                    root.SignalSelectionPanel.icon(u.kind) + '<small class="roster-badge">' + (u.care.inside ? '◆' : '↗') + '</small></button>' :
+                    '<span class="free-queue-empty" title="' + title + '">·</span>';
+                }).join('') + '</div>';
+            }
           } else if (section === "service") {
             const offer = C.repairOffer(s, selected.id),
               crew = alive.filter((w) => w.workerTask?.kind === "repair" && w.workerTask.targetId === selected.id);
             extra = `<div class="deck-build-status"><strong>Прочность ${Math.ceil(selected.hp)} / ${E.C[selected.kind].hp}${crew.length ? ` · Зонды: ${crew.length}` : ""}</strong><progress max="${E.C[selected.kind].hp}" value="${selected.hp}"></progress></div>`;
+            if (selected.kind === "logistics") extra += `<p class="deck-empty">+12 снабжения армии · +4 зонда<br>Армия: ${D.capacity(s)} / 120 · Зонды: ${D.workerCapacity(s)} / 48</p>`;
             cards = [
               tile("develop-repair-drone", crew.length ? "Добавить зонда" : "Ремонт зондом",
                 "12 прочности/с · 1 сплава за 8",
@@ -818,7 +836,7 @@
           tile(
             "develop-tab-economy",
             "Добыча",
-            "Дроны и месторождения",
+            "Зонды и месторождения",
             "Экстракторы и дроны",
             'data-tab="economy"',
             "alloy",
@@ -861,7 +879,7 @@
         extra = queue(ready[index], ready.length > 1);
       } else if (this.tab === "build") {
         heading = "Стройка";
-        cards = ["barracks", "outpost", "foundry", "arsenal"].map(construct);
+        cards = ["barracks", "outpost", ...(D.logistics(s) ? ["logistics"] : []), "bunker", "foundry", "arsenal"].map(construct);
       } else if (this.tab === "production") {
         heading = "Армия и производство";
         cards = ["barracks", "foundry", "arsenal"].map((kind) => {
@@ -892,7 +910,7 @@
                   ? "Строится · " +
                       Math.floor((1 - u.build / items[u.kind].time) * 100) +
                       "%"
-                  : `Дроны: ${workers} / 4`,
+                  : `Зонды: ${workers} / ${D.miningCapacity(s)}`,
                 "Открыть выпуск и очередь",
                 `data-select="${u.id}"`,
                 "alloy",
@@ -905,7 +923,7 @@
           purchase(a),
         );
       }
-      const page = pages(cards);
+      const page = pages(cards, selected?.kind === "bunker" && this.section !== "service");
       this.el.classList.add("free-development", "command-deck");
       this.el.closest(".command-dock").dataset.deckDetail = String(
         this.selected !== null || this.deckView === "group",

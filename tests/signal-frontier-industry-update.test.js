@@ -71,6 +71,10 @@ test("each extractor orientation completes, spawns a real drone outside its foot
       assert.equal(u.site, mine.id);
       assert.equal(u.construction.turn, turn);
       assert.equal(u.construction.footprint, 4);
+      assert.equal(u.hp, 520);
+      assert.equal(u.construction.resourceSpacing, 1);
+      assert(C.oreDistance(b, mine) >= C.ore.setback);
+      assert(E.dist(C.exit(u, E.C.drone.r), mine) >= 100);
       assert.deepEqual([b.w, b.h], [160, 160]);
       const ids = new Set(s.units.map((v) => v.id)),
         stock = mine.remaining;

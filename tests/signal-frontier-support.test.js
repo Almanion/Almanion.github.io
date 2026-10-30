@@ -3,7 +3,7 @@ const assert = require("node:assert/strict"),
   { E, fund, build, frames } = require("./helpers/signal-frontier-construction.cjs");
 let checks = 0, cached;
 function test(name, fn) { fn(); checks++; console.log("PASS " + name); }
-function ready() {
+function ready(legacy = false) {
   if (!cached) {
     const s = E.make("frontier-9");
     s.units.filter((u) => u.team && u.kind !== "citadel").forEach((u) => u.hp = 0);
@@ -14,7 +14,9 @@ function ready() {
     build(s, "outpost", mine);
     E.refreshRecon(s); cached = E.snapshot(s);
   }
-  const s = E.restore(cached); assert(s, "Valid fixture"); return s;
+  const s = E.restore(cached); assert(s, "Valid fixture");
+  if (legacy) { delete s.campaign.logistics; delete s.campaign.retired; for (const u of s.units) delete u.deadAt; }
+  return s;
 }
 function valid(s) {
   E.refreshRecon(s); const snap = E.snapshot(s), copy = E.restore(snap);
@@ -39,8 +41,8 @@ test("resource click replaces a manual order, chooses a ready extractor, preserv
   valid(s); frames(s, 2400);
   assert(s.campaign.deposited > before); assert(mine.remaining < remaining); valid(s);
 });
-test("extractor capacity includes queued probes; full and unreachable orders preserve existing assignments", () => {
-  const s = ready(), b = E.living(s, "outpost"), d = s.units.find((u) => u.kind === "drone");
+test("legacy extractor capacity includes queued probes; full and unreachable orders preserve existing assignments", () => {
+  const s = ready(true), b = E.living(s, "outpost"), d = s.units.find((u) => u.kind === "drone");
   for (const u of s.units.filter((u) => u.kind === "drone")) u.node = b.id;
   for (let i = 0; i < 2; i++) assert(E.purchase(s, "drone", b.id).allowed);
   const extra = { ...structuredClone(d), id: ++s.seq, node: E.living(s, "base").id };
@@ -51,8 +53,8 @@ test("extractor capacity includes queued probes; full and unreachable orders pre
   assert(E.support.assignResource(s, [d.id], "west").allowed, "Own slot may be reused");
   assert.equal(E.support.assignResource(s, [d.id], "missing").allowed, false);
 });
-test("resource routing skips a full nearby extractor for the next reachable one", () => {
-  const s = ready(), nearest = E.living(s, "outpost"), mine = s.campaign.mines.find((m) => m.id === "south");
+test("legacy resource routing skips a full nearby extractor for the next reachable one", () => {
+  const s = ready(true), nearest = E.living(s, "outpost"), mine = s.campaign.mines.find((m) => m.id === "south");
   Object.assign(E.hero(s), { x: mine.x, y: mine.y }); E.refreshRecon(s);
   const second = build(s, "outpost", mine), drones = s.units.filter((u) => u.kind === "drone");
   while (drones.length < 5) {
@@ -64,7 +66,7 @@ test("resource routing skips a full nearby extractor for the next reachable one"
   assert(E.support.assignResource(s, [worker.id], "west").allowed);
   assert.equal(worker.node, second.id); assert.equal(worker.mineId, "west"); valid(s);
 });
-test("patients heal inside and remain sheltered at full health, including after save and restore", () => {
+test("patients heal inside and automatically leave at full health, including after save and restore", () => {
   const s = ready(), u = s.units.find((u) => u.kind === "rifle"), b = E.living(s, "outpost");
   u.hp = 30; assert(E.commandSelection(s, [u.id], b, b.id));
   E.step(s); assert.equal(u.hp, 30, "No healing outside"); assert(!u.care.inside);
@@ -74,20 +76,66 @@ test("patients heal inside and remain sheltered at full health, including after 
   const copy = valid(s);
   for (let i = 0; i < 900; i++) { E.step(s); E.step(copy); }
   assert.deepEqual(E.snapshot(s), E.snapshot(copy));
-  assert.equal(u.hp, E.C.rifle.hp); assert(u.care.inside); assert.equal(u.care.exit, false);
-  assert.equal(u.x, b.x); assert.equal(u.y, b.y);
-  assert.equal(E.sightRange(s, u), 0); assert(!E.visible(s, 1, u));
-  assert.equal(E.support.occupants(s, b.id).length, 1);
+  assert.equal(u.hp, E.C.rifle.hp); assert(!u.care);
+  assert(E.dist(u, b) > E.C.rifle.r);
+  assert(E.sightRange(s, u) > 0);
+  assert.equal(E.support.occupants(s, b.id).length, 0);
   const healed = valid(s); frames(healed, 600);
   const restored = healed.units.find((v) => v.id === u.id);
-  assert.equal(restored.hp, E.C.rifle.hp); assert(restored.care.inside); assert(!restored.care.exit);
-  assert(E.support.leave(healed, restored)); assert(!restored.care);
+  assert.equal(restored.hp, E.C.rifle.hp); assert(!restored.care);
   assert(E.free(restored.x, restored.y, E.C.rifle.r, E.navigation(healed))); valid(healed);
 });
+test("every patient type leaves in the exact healing tick, and legacy healed saves also discharge", () => {
+  for (const kind of ["rifle", "scout", "artillery", "hero"]) {
+    const s = ready(), b = E.living(s, "outpost"), u = kind === "hero" ? E.hero(s) : s.units.find((u) => u.kind === "rifle");
+    s.campaign.tier = 3;
+    Object.assign(u, { kind, group: kind === "artillery" ? 2 : kind === "hero" ? 0 : 1, hp: E.C[kind].hp - .05 });
+    assert(E.support.admit(s, [u.id], b.id).allowed);
+    Object.assign(u, { x: b.x, y: b.y, path: [] }); u.care.inside = true;
+    const legacy = valid(s), old = legacy.units.find((v) => v.id === u.id);
+    old.hp = E.C[kind].hp;
+    const loaded = valid(legacy);
+    E.support.tick(s, {}, E.DT);
+    assert.equal(u.hp, E.C[kind].hp); assert(!u.care, kind + " leaves without an extra tick");
+    assert(E.free(u.x, u.y, E.C[kind].r, E.navigation(s))); valid(s);
+    E.step(loaded); assert(!loaded.units.find((v) => v.id === u.id).care, "Legacy full patient leaves on resume"); valid(loaded);
+  }
+});
+
+test("automatic discharge waits at a blocked exit, survives loading and retries without a new order", () => {
+  const s = ready(), b = E.living(s, "outpost"), u = s.units.find((u) => u.kind === "rifle"); enter(s, u, b);
+  u.hp = E.C.rifle.hp - .05;
+  let checks = 0, blocked = true;
+  const support = require("../game-source/signal-frontier/src/support").create({ ...E,
+    free: (...args) => { checks++; return !blocked && E.free(...args); }, emit: () => {} });
+  for (let i = 0; i < 180; i++) support.tick(s, {}, E.DT);
+  assert.equal(u.hp, E.C.rifle.hp); assert(u.care.inside && u.care.exit);
+  assert.equal(E.support.occupants(s, b.id).length, 1);
+  assert(checks > 0 && checks <= 81 * 5, "A blocked auto-exit never searches every frame");
+  const loaded = valid(s); frames(loaded, 50);
+  assert(!loaded.units.find((v) => v.id === u.id).care, "A pending automatic exit survives saving");
+  blocked = false; for (let i = 0; i < 50; i++) support.tick(s, {}, E.DT);
+  assert(!u.care); assert.equal(E.support.occupants(s, b.id).length, 0); valid(s);
+});
+
+test("four simultaneous discharges use distinct walkable positions and release every slot", () => {
+  const s = ready(), b = E.living(s, "outpost"), patients = s.units.filter((u) => ["hero", "rifle"].includes(u.kind));
+  for (const u of patients) {
+    u.hp = E.C[u.kind].hp - .05; assert(E.support.admit(s, [u.id], b.id).allowed);
+    Object.assign(u, { x: b.x, y: b.y, path: [] }); u.care.inside = true;
+  }
+  E.support.tick(s, {}, E.DT);
+  for (const u of patients) {
+    assert(!u.care); assert(E.free(u.x, u.y, E.C[u.kind].r, E.navigation(s)));
+    for (const v of patients) if (u !== v) assert(E.dist(u, v) >= E.C[u.kind].r + E.C[v.kind].r + 4);
+  }
+  assert.equal(E.support.occupants(s, b.id).length, 0); valid(s);
+});
+
 test("manual movement releases sheltered troops, and a blocked order is atomic", () => {
   const s = ready(), u = s.units.find((u) => u.kind === "rifle"), b = E.living(s, "outpost");
   enter(s, u, b);
-  frames(s, 900); assert.equal(u.hp, E.C.rifle.hp); assert(u.care.inside);
+  frames(s, 60); assert(u.hp < E.C.rifle.hp); assert(u.care.inside);
   assert(!E.orderUnits(s, [u.id], NaN, 0)); assert(u.care.inside);
   const p = E.construction.exit(b, E.C.rifle.r);
   assert(E.orderUnits(s, [u.id], p.x + 100, p.y + 100)); assert(!u.care);
@@ -107,8 +155,8 @@ test("four reservations cap the infirmary; repeat clicks never consume extra slo
 test("the hero cannot fire inside and moving manually cancels treatment", () => {
   const s = ready(), h = E.hero(s), b = E.living(s, "outpost");
   enter(s, h, b); const shots = s.shots, ammo = s.ammo;
-  for (let i = 0; i < 1020; i++) E.step(s, { fire: true, interact: true, aim: { x: h.x + 200, y: h.y } });
-  assert.equal(h.hp, E.C.hero.hp);
+  for (let i = 0; i < 600; i++) E.step(s, { fire: true, interact: true, aim: { x: h.x + 200, y: h.y } });
+  assert(h.hp < E.C.hero.hp);
   assert.equal(s.shots, shots); assert.equal(s.ammo, ammo); assert(h.care.inside);
   E.step(s, { x: 1 }); assert(!h.care); valid(s);
 });

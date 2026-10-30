@@ -246,8 +246,9 @@ test("wide buildings can be reached and damaged by melee attackers at their foot
     enemy = s.units.find((u) => u.kind === "runner");
   Object.assign(enemy, {
     hp: E.C.runner.hp,
-    x: b.x + 220,
-    y: b.y,
+    // Approach from the side away from the base, so this exercises the foundry.
+    x: b.x,
+    y: b.y - 220,
     cool: 0,
     wind: 0,
     path: [],

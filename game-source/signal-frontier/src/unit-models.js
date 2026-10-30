@@ -20,6 +20,8 @@
     "barracks",
     "foundry",
     "arsenal",
+    "bunker",
+    "logistics",
     "bastion",
     "turret",
     "jammer",
@@ -1461,6 +1463,25 @@
               "#78988b",
               1.6,
             );
+        } else if (kind === "logistics") {
+          // Two sealed supply racks and a raised signal spine. Construction
+          // shares the real scaffold/progress and repair effects of other buildings.
+          for (const side of [-1, 1]) {
+            cap(c, side * w * .23, 0, w * .3, h * .57, 3, height * .8, a, alloy);
+            if (roof) slab(c, side * w * .23, -h * .04 * (1 - roof), w * .3 * roof,
+              h * .58, height * .8 + 3, 3, a, ceramic);
+            for (let y = -14; y <= 14; y += 14)
+              seam(c, [[side * w * .23 - 8, y], [side * w * .23 + 8, y]], height * .8 + 7, a, "#71938a", 1.3);
+            lightStrip(c, [[side * w * .23 - 7, h * .24], [side * w * .23 + 7, h * .24]],
+              13, a, assembling ? "#b7a17e" : accent, 2);
+          }
+          slab(c, 0, -h * .22, 9, 10, 3, height + 8, a, dark);
+          if (progress > .55) {
+            const mast = 38 * clamp((progress - .55) / .4);
+            bone(c, [0, -h * .22, 20], [0, -h * .22, 20 + mast], 2.3, a, alloy);
+            slab(c, 0, -h * .22, 23, 5, 20 + mast, 4, a, ceramic);
+            lamp(c, 0, -h * .22, 26 + mast, a, 1.6, assembling ? "#d9ba85" : accent);
+          }
         } else if (kind === "foundry") {
           for (const side of [-1, 1]) {
             slab(
@@ -1654,6 +1675,86 @@
         }
       }
       if (u.defense && !assembling) defense(c, d, E.MOUNTS.outpost);
+    }
+    function bunker(c, d, frame) {
+      const { u, s, ui, accent } = d, a = frame?.a || 0,
+        w = frame?.w || 120, h = frame?.h || 120,
+        progress = frame?.progress ?? 1, assembling = progress < 1,
+        concrete = { top: "#a3b4ad", front: "#71867c", side: "#495c56", edge: "#ccd5c8" },
+        height = 4 + 22 * clamp((progress - .12) / .5),
+        crew = d.garrison;
+      if (assembling) constructionRig(c, d, w, h, a, progress);
+      cap(c, 0, 0, w - 8, h - 8, 0, 4, a, dark);
+      // A low, chamfered concrete shell with four reinforced corner buttresses.
+      if (progress > .12) {
+        cap(c, 0, -2, w - 20, h - 28, 4, height, a, concrete);
+        for (const side of [-1, 1]) {
+          slab(c, side * (w / 2 - 15), -2, 9, h - 44, 4, height - 1, a, alloy);
+          for (const y of [-h * .3, h * .3])
+            cap(c, side * (w / 2 - 19), y, 19, 19, 3, height + 3, a, concrete);
+        }
+        // Recessed blast door: split leaves slide into the jambs on entry/exit.
+        slab(c, 0, h / 2 - 17, 30, 4, 4, Math.min(20, height), a, dark);
+        if (height > 15) for (const side of [-1, 1]) {
+          slab(c, side * (7 + d.gate * 11), h / 2 - 14, 13, 3, 4, 18, a, alloy);
+          lightStrip(c, [[side * 2, h / 2 - 12], [side * 2, h / 2 - 12]], 14, a, accent, 2);
+        }
+        slab(c, 0, h / 2 - 7, 34, 14, 1, 3, a, alloy);
+        for (let i = -2; i <= 2; i++)
+          lightStrip(c, [[i * 6 - 2, h / 2 - 11], [i * 6 + 2, h / 2 - 5]], 4.2, a, "#d7bd80", 1.8);
+        if (height > 20) {
+          for (const side of [-1, 1]) {
+            slab(c, side * 31, h / 2 - 15, 18, 2, 17, 4, a, dark);
+            slab(c, side * 31, h / 2 - 14, 20, 3, 21, 2, a, alloy);
+          }
+          slab(c, 0, h / 2 - 15, 34, 6, 23, 4, a, concrete);
+        }
+        // The armored roof is fitted as three separate growing panels.
+        for (let i = 0; i < 3; i++) {
+          const fitted = clamp((progress - .48 - i * .12) / .12);
+          if (fitted) slab(c, (i - 1) * 26, -3 - (1 - fitted) * 33,
+            25, 66 * fitted, height + 4, 4, a, concrete);
+        }
+      }
+      if (progress > .75) {
+        // Fixed numbered sockets keep occupancy legible even with the guns aimed away.
+        for (let i = 0; i < 4; i++) {
+          if (progress < .76 + i * .05) continue;
+          const member = crew.find((v) => v.care.slot === i), inside = member?.care.inside,
+            port = E.support.port(u, i), x = port.x - u.x, y = port.y - u.y,
+            lampColor = inside ? accent : member ? "#e3bf79" : "#536c63";
+          c.save(); c.translate(x, y);
+          cap(c, 0, 0, 24, 24, 30, 3, a, dark);
+          if (inside) {
+            const aim = member.angle || 0;
+            canister(c, 0, 0, 9, 33, 5, aim, alloy);
+            cap(c, -2, 0, 13, 14, 38, 3, aim, ceramic);
+            if (member.kind === "scout") {
+              bone(c, [0, 0, 40], [0, 0, 50], 1.8, aim, dark);
+              cap(c, 0, 0, 10, 4, 49, 2, aim, ceramic);
+            } else {
+              const recoil = ui.reduced ? 0 : Math.sin(clamp(member.flash / .1) * Math.PI) * 2;
+              barrel(c, aim, 42, 14, member.kind === "artillery" ? 5 : 3, 0, alloy, recoil);
+              flash(c, { ...d, u: member }, 14 - recoil, 0, 42, aim, member.kind === "artillery" ? 1.1 : .65);
+            }
+          } else {
+            cap(c, 0, 0, 20, 20, 33, 2, a, alloy);
+            lightStrip(c, [[-6, -6], [6, 6]], 35.2, a, "#8ba398", 1);
+          }
+          lamp(c, 0, 11, 35, a, inside ? 2.4 : 1.7, lampColor);
+          c.restore();
+        }
+        // A second bank on the entrance remains readable at normal play zoom.
+        for (let i = 0; i < 4; i++) {
+          const member = crew.find((v) => v.care.slot === i);
+          lightStrip(c, [[-17 + i * 10, 42], [-11 + i * 10, 42]], 27, a,
+            member?.care.inside ? accent : member ? "#e3bf79" : "#3a5049", 3);
+        }
+      }
+      if (assembling) {
+        constructionRig(c, d, w, h, a, progress, "carriage");
+        constructionRig(c, d, w, h, a, progress, true);
+      }
     }
     function defense(c, d, z) {
       const { aim, recoil, accent } = d;
@@ -2005,6 +2106,14 @@
           for (const side of [-1, 1])
             slab(c, side * w * 0.3, 0, w * 0.17, h * 0.65, 2, 6, a, wreck);
           bone(c, [-w * 0.3, -5, 8], [w * 0.24, 9, 4], 3, a, dark);
+        } else if (u.kind === "bunker") {
+          slab(c, 0, h * .42, 34, 12, 1, 2, a, alloy);
+          slab(c, -w * .32, 0, 10, h * .65, 3, 14, a, wreck);
+          slab(c, w * .3, -h * .24, 12, h * .3, 3, 10, a, wreck);
+          cap(c, 5, -4, w * .48, h * .36, 6, 3, a + .23, wreck);
+          slab(c, -9, h * .3, 12, 4, 2, 9, a + .3, dark);
+          bone(c, [8, 3, 9], [26, 11, 3], 3, a, dark);
+          lightStrip(c, [[-12, h * .4], [3, h * .46]], 3, a, "#847a58", 1.6);
         } else if (u.kind === "arsenal") {
           for (let i = 0; i < 3; i++)
             slab(
@@ -2042,6 +2151,8 @@
       barracks: building,
       foundry: building,
       arsenal: building,
+      bunker,
+      logistics: building,
       outpost: building,
       turret,
       jammer,
@@ -2097,6 +2208,7 @@
           gate: ui.memory ? 0 : gate,
           delivery: ui.memory || ui.reduced ? 0 : delivery,
           activity: ui.memory ? null : service ? service.activity : E.construction.activity(s, u),
+          garrison: ui.memory ? [] : service?.garrison || (u.kind === "bunker" ? E.support.occupants(s, u.id) : []),
           crew: ui.memory ? [] : service?.crew || s.units
             .filter((w) => w.kind === "drone" && (w.buildingId === u.id || w.workerTask?.targetId === u.id))
             .map((w) => E.construction.activity(s, w)).filter(Boolean),
@@ -2105,7 +2217,7 @@
         destroyed(c, d, frame);
         return;
       }
-      if (frame) building(c, d, frame);
+      if (frame) (u.kind === "bunker" ? bunker : building)(c, d, frame);
       else painters[u.kind](c, d);
       if (!u.build && d.crew.length) maintenance(c, d, frame);
       damage(c, d, frame);

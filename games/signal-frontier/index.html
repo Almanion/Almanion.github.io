@@ -12,13 +12,13 @@
       content="Предел сигнала — тактическая операция на заброшенном кольце."
     />
     <title>Предел сигнала · Альманион</title>
-    <link rel="stylesheet" href="style.css?v=0.20.1" />
-    <script src="campaign.js?v=0.20.1" defer></script>
-    <script src="engine.js?v=0.20.1" defer></script>
-    <script src="view.js?v=0.20.1" defer></script>
-    <script src="audio.js?v=0.20.1" defer></script>
-    <script src="development-ui.js?v=0.20.1" defer></script>
-    <script src="app.js?v=0.20.1" defer></script>
+    <link rel="stylesheet" href="style.css?v=0.26.2" />
+    <script src="campaign.js?v=0.26.2" defer></script>
+    <script src="engine.js?v=0.26.2" defer></script>
+    <script src="view.js?v=0.26.2" defer></script>
+    <script src="audio.js?v=0.26.2" defer></script>
+    <script src="development-ui.js?v=0.26.2" defer></script>
+    <script src="app.js?v=0.26.2" defer></script>
   </head>
   <body data-mode="menu">
     <canvas
@@ -50,40 +50,23 @@
           ><button data-open="account">Аккаунт</button>
         </div>
       </div>
-      <p class="edition">Первая операция <span>0.20.1</span></p>
+      <p class="edition">Первая операция <span>0.26.2</span></p>
     </main>
     <div id="hud" hidden>
       <header class="topbar">
         <div class="field-economy" aria-label="Ресурсы и вместимость">
-          <svg class="resource-crystal" viewBox="0 0 48 48" aria-hidden="true">
-            <defs>
-              <linearGradient id="alloy-facet" x2="1" y2="1">
-                <stop stop-color="#ddfff0" />
-                <stop offset="1" stop-color="#65bca0" />
-              </linearGradient>
-            </defs>
-            <path
-              d="m8 32 5-17 10-9 12 8 6 18-17 10Z"
-              fill="#143b39"
-              stroke="#81bdab"
-            />
-            <path d="m13 15 10-9 5 18-14 9Z" fill="url(#alloy-facet)" />
-            <path d="m23 6 12 8-7 10Z" fill="#a8e6c9" />
-            <path d="m28 24 13 8-17 10Z" fill="#397b70" />
-            <path d="m14 33 14-9-4 18Z" fill="#80c8ad" />
-            <path d="m8 32 6 1 10 9-15-4Z" fill="#d5ba7a" />
-            <path d="m35 14 6 18-13-8Z" fill="#539e8b" />
-            <path
-              d="m4 39 9 3m23-36 3 3m-3 0 3-3"
-              stroke="#e2d5a0"
-              stroke-linecap="round"
-            />
+          <svg class="resource-crystal" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m12 2 9 5v10l-9 5-9-5V7Z" fill="#173d38" stroke="#93cbb3" stroke-width="1.2" />
+            <path d="m12 3 8 4.5-8 4.5-8-4.5Z" fill="#b8e5ca" />
+            <path d="M4 9v7.5l7 4V13Z" fill="#6eaf96" />
+            <path d="m13 13 7-4v7.5l-7 4Z" fill="#3c7969" />
           </svg>
           <span><small>Сплав</small><strong id="field-alloy">180</strong></span>
           <span
-            ><small>Отряд</small
-            ><strong id="field-capacity">3 / 6</strong></span
+             id="army-capacity-counter"><small>Армия</small
+            ><strong id="field-capacity">3 / 24</strong><em id="army-reserved" hidden></em></span
           >
+          <span id="worker-capacity-counter"><small>Зонды</small><strong id="field-workers">2 / 16</strong><em id="worker-reserved" hidden></em></span>
         </div>
         <button id="tactical" class="tactical-button" aria-pressed="false">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -106,37 +89,6 @@
         </button>
       </header>
       <div id="notice" class="notice" role="status" aria-live="polite"></div>
-      <div id="interact-panel" class="interact-panel" hidden>
-        <button id="interact">
-          <span id="interact-label">Восстановить узел</span> <kbd>E</kbd
-          ><span class="interact-progress" id="interact-progress"></span>
-        </button>
-      </div>
-      <div class="bottom-hud">
-        <div class="vitals">
-          <div class="health-line">
-            <span class="health-symbol" aria-hidden="true">✚</span>
-            <div class="health-track"><span id="health-fill"></span></div>
-            <span id="health-value">150</span>
-          </div>
-          <div class="ammo-line">
-            <span id="ammo">12</span><span class="muted">/ 12</span
-            ><span id="reload-status">Импульсная винтовка</span>
-          </div>
-        </div>
-        <div class="actions">
-          <button id="reload" class="action-button" aria-label="Перезарядить">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M18 8a7 7 0 1 0 1 7M18 3v5h-5" /></svg
-            ><kbd>R</kbd><span class="action-caption">Заряд</span></button
-          ><button id="dash" class="action-button" aria-label="Рывок">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m5 6 6 6-6 6m7-12 6 6-6 6" /></svg
-            ><kbd>Shift</kbd><span class="action-caption">Рывок</span
-            ><span class="cooldown" id="dash-cooldown"></span>
-          </button>
-        </div>
-      </div>
       <section
         id="minimap-panel"
         class="minimap"
@@ -209,13 +161,43 @@
         </aside>
       </section>
       <section id="command-dock" class="command-dock" aria-label="Командная панель" hidden>
+        <div id="combat-vitals" class="combat-vitals" aria-label="Состояние разведчика">
+          <div id="health-meter" class="vital-meter" role="progressbar" aria-label="Здоровье" aria-valuemin="0" aria-valuemax="150" aria-valuenow="150">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 3h6v4h4v6h-4v4H7v-4H3V7h4Z" /></svg>
+            <span class="vital-track health-track"><span id="health-fill"></span></span>
+          </div>
+          <div id="ammo-meter" class="vital-meter" role="progressbar" aria-label="Патроны" aria-valuemin="0" aria-valuemax="12" aria-valuenow="12">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 3-2 3v10h4V6Zm10 0-2 3v10h4V6ZM3 12h4m6 0h4M3 17h4m6 0h4" /></svg>
+            <span class="vital-track ammo-track"><span id="ammo-fill"></span><i id="reload-fill"></i></span>
+          </div>
+        </div>
         <nav id="control-groups" class="control-groups" aria-label="Группы войск и зданий · Ctrl + 1–0 — назначить, цифра — выбрать" hidden></nav>
         <header class="dock-header">
           <div class="dock-tabs" aria-label="Содержимое командной панели">
-            <button id="dock-shop" aria-pressed="true">Магазин</button>
             <button id="dock-selection" aria-pressed="false">Выделение <span id="dock-count">0</span></button>
+            <button id="dock-production" aria-pressed="false" hidden>Выпуск</button>
+            <button id="dock-shop" aria-pressed="true" title="Магазин · тактическая пауза">Магазин</button>
           </div>
           <span id="selection-count" role="status" aria-live="polite"></span>
+        <div class="actions">
+          <button id="reload" class="action-button" aria-label="Перезарядить">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 8a7 7 0 1 0 1 7M18 3v5h-5" /></svg
+            ><kbd>R</kbd><span class="action-caption">Заряд</span></button
+          ><button id="dash" class="action-button" aria-label="Рывок">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m5 6 6 6-6 6m7-12 6 6-6 6" /></svg
+            ><kbd>Shift</kbd><span class="action-caption">Рывок</span
+            ><span class="cooldown" id="dash-cooldown"></span>
+          </button>
+          <div id="interact-panel" class="interact-panel" hidden>
+            <button id="interact" class="action-button" aria-label="Взаимодействовать · удерживайте E">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path id="interact-icon" d="M12 5v14M5 12h14"/></svg>
+              <kbd>E</kbd><span id="interact-label" class="interact-label">Взаимодействовать</span>
+              <span class="interact-progress" id="interact-progress"></span>
+            </button>
+          </div>
+        </div>
           <span class="dock-mode" id="dock-mode">ПАУЗА</span>
         </header>
         <div class="dock-workspace">
@@ -227,9 +209,12 @@
             <section id="selection-content" aria-label="Выделенные войска и здания" hidden></section>
           </div>
           <aside class="dock-orders" aria-label="Приказы выделению">
-            <button id="order-move" aria-pressed="false" title="Указать точку, цель или ведущего">Идти</button>
-            <button id="order-cancel">Снять</button>
-            <button id="select-army" title="Выделить всех бойцов, дозорных и артиллерию">Вся армия</button>
+            <section id="combat-production" aria-label="Производство выбранного здания" hidden></section>
+            <div class="dock-order-actions">
+            <button id="order-move" aria-pressed="false" title="Указать точку, цель или ведущего"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 18 13-13M8 5h10v10"/></svg><span>Идти</span></button>
+            <button id="order-cancel" title="Снять выделение или отменить подготовку приказа"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg><span>Снять</span></button>
+            <button id="select-army" title="Выделить всех бойцов, дозорных и артиллерию"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="3"/><path d="M7 21v-5a5 5 0 0 1 10 0v5M4 8a3 3 0 0 0 0 6v5m16-11a3 3 0 0 1 0 6v5"/></svg><span>Вся армия</span></button>
+            </div>
             <small id="tactical-hint"></small>
           </aside>
         </div>
@@ -362,7 +347,7 @@
               <dt>Зонды → ресурс</dt>
               <dd>Выделите зондов и нажмите на месторождение: они присоединятся к ближайшему доступному экстрактору. У каждого узла четыре места с учётом заказанных зондов.</dd>
               <dt>Войска → экстрактор</dt>
-              <dd>ПКМ, на телефоне — «Идти» и касание здания. Четыре места, лечение внутри — 8 прочности/с; стрелять нельзя. Полностью вылеченные бойцы остаются внутри до приказа. Во вкладке «Лечение» можно отправить разведчика или прервать лечение.</dd>
+              <dd>ПКМ, на телефоне — «Идти» и касание здания. Четыре места, лечение внутри — 8 прочности/с; стрелять нельзя. Полностью вылеченные бойцы выходят автоматически. Если выход занят, они ждут внутри до освобождения места. Во вкладке «Лечение» можно отправить разведчика или прервать лечение.</dd>
               <dt>Shift + ЛКМ при стройке</dt>
               <dd>
                 Поставить здание и продолжить размещать такие же. Esc или ПКМ

@@ -30,18 +30,22 @@ test("changing models avoid disposable images and stable poses reuse a bounded c
     const first = v.unitSprites.get(u.id).canvas;
     v.unitSprite(c, u, s, ui, pose);
     const reused = first !== null && v.unitSprites.get(u.id).canvas === first;
-    for (let i = 0; i < 180; i++)
-      v.unitSprite(c, { ...u, id: 1000 + i }, s, ui, pose);
+    for (let frame = 0; frame < 3; frame++)
+      for (let i = 0; i < 180; i++)
+        v.unitSprite(c, { ...u, id: 1000 + i }, s, ui, pose);
+    const stable = [...v.unitSprites.values()].filter((entry) => entry.canvas).length;
     return {
       changing,
       reused,
       entries: v.unitSprites.size,
       pixels: v.spritePixels,
+      stable,
     };
   });
   expect(result.changing).toBe(true);
   expect(result.reused).toBe(true);
-  expect(result.entries).toBeLessThanOrEqual(128);
+  expect(result.entries).toBeLessThanOrEqual(1024);
+  expect(result.stable).toBeGreaterThan(128);
   expect(result.pixels).toBeLessThanOrEqual(8 * 1024 * 1024);
 });
 

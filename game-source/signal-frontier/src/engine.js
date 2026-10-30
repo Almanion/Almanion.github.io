@@ -32,11 +32,13 @@
     turret: { hp: 200, r: 25, speed: 0, range: 400, damage: 19, rate: 2.1 },
     jammer: { hp: 340, r: 32, speed: 0, range: 0, damage: 0, rate: 0 },
     citadel: { hp: 900, r: 48, speed: 0, range: 520, damage: 21, rate: 2.5 },
-    outpost: { hp: 280, r: 27, speed: 0, range: 0, damage: 0, rate: 0 },
+    outpost: { hp: 520, r: 27, speed: 0, range: 0, damage: 0, rate: 0 },
     base: { hp: 700, r: 42, speed: 0, range: 0, damage: 0, rate: 0 },
     drone: { hp: 45, r: 8, speed: 85, range: 0, damage: 0, rate: 0 },
     barracks: { hp: 420, r: 30, speed: 0, range: 0, damage: 0, rate: 0 },
     foundry: { hp: 500, r: 34, speed: 0, range: 0, damage: 0, rate: 0 },
+    bunker: { hp: 800, r: 50, speed: 0, range: 0, damage: 0, rate: 0 },
+    logistics: { hp: 360, r: 22, speed: 0, range: 0, damage: 0, rate: 0 },
     arsenal: { hp: 440, r: 30, speed: 0, range: 0, damage: 0, rate: 0 },
   };
   // World units: one construction cell is 40. Older operations retain C above.
@@ -47,7 +49,7 @@
     ["tank", 640, 840], ["mortar", 840, 940],
     ["scout", 0, 980], ["drone", 0, 240],
     ["base", 0, 800], ["outpost", 0, 840], ["barracks", 0, 360],
-    ["foundry", 0, 400], ["arsenal", 0, 400], ["jammer", 0, 720],
+    ["bunker", 0, 360], ["logistics", 0, 240], ["foundry", 0, 400], ["arsenal", 0, 400], ["jammer", 0, 720],
     ["turret", 540, 800], ["bastion", 620, 940], ["citadel", 840, 980],
   ].map(([kind, range, sight]) => [kind, Object.freeze({ range, sight })])));
   const balanceEligible = (s) => s?.campaign?.id === "frontier-9",
@@ -55,10 +57,15 @@
     rangedStats = Object.freeze(Object.fromEntries(Object.entries(ENGAGEMENT)
       .map(([kind, values]) => [kind, Object.freeze({ ...C[kind], range: values.range })]))),
     legacySight = Object.freeze({ hero: 600, scout: 720, rifle: 440, artillery: 480,
-      drone: 180, base: 380, outpost: 380, barracks: 280, foundry: 280, arsenal: 280 });
+      bunker: 280, drone: 180, base: 380, outpost: 380, barracks: 280, foundry: 280, arsenal: 280 });
+  const sheltered = (u) => u.care?.inside && u.care.garrison === true,
+    garrisonStats = [C, rangedStats].map((table) => Object.freeze(Object.fromEntries(
+      Object.entries(table).map(([kind, def]) => [kind, Object.freeze({ ...def, range: def.range * 1.25 })]))));
   function sightRange(s, u) {
-    return u.care?.inside ? 0 : u.build > 0 ? 120 : balanced(s) ? ENGAGEMENT[u.kind]?.sight || 0 :
+    if (u.care?.inside && !sheltered(u)) return 0;
+    const radius = u.build > 0 ? 120 : balanced(s) ? ENGAGEMENT[u.kind]?.sight || 0 :
       u.team ? 610 : legacySight[u.kind] || 0;
+    return radius * (sheltered(u) ? 1.25 : 1);
   }
   function detectionRange(s, u) {
     return balanced(s) ? Math.max(stats(s, u).range, sightRange(s, u)) : u.team ? 610 : 620;
@@ -172,6 +179,34 @@
   }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  // Ephemeral broad phase: authoritative order and exact narrow-phase tests
+  // are preserved. Outside a simulation step callers always see current data.
+  let activeSpatial = null;
+  function spatial(s) {
+    const cells = new Map(), order = new Map(), teams = [[], []];
+    for (let i = 0; i < s.units.length; i++) {
+      const u = s.units[i];
+      if (u.hp <= 0) continue;
+      const key = Math.floor(u.x / 384) + 65536 * Math.floor(u.y / 384);
+      if (!cells.has(key)) cells.set(key, []);
+      cells.get(key).push(u); order.set(u.id, i); teams[u.team].push(u);
+    }
+    return { state: s, cells, order, teams };
+  }
+  function nearby(s, team, p, radius) {
+    if (activeSpatial?.state !== s)
+      return s.units.filter((u) => u.hp > 0 && (team == null || u.team === team));
+    const out = [], r = radius + 144, { cells, order, teams } = activeSpatial,
+      left = Math.floor((p.x - r) / 384), right = Math.floor((p.x + r) / 384),
+      top = Math.floor((p.y - r) / 384), bottom = Math.floor((p.y + r) / 384);
+    if (team != null && (right - left + 1) * (bottom - top + 1) > teams[team].length)
+      return teams[team].filter((u) => u.hp > 0);
+    for (let y = top; y <= bottom; y++)
+      for (let x = left; x <= right; x++)
+        for (const u of cells.get(x + 65536 * y) || [])
+          if (u.hp > 0 && (team == null || u.team === team)) out.push(u);
+    return out.sort((a, b) => order.get(a.id) - order.get(b.id));
+  }
   function targetEdge(from, target) {
     if (!target.construction) return target;
     const b = construction.rect(target);
@@ -201,12 +236,10 @@
       hi = 1;
     const dx = bx - ax,
       dy = by - ay;
-    for (const [p, q] of [
-      [-dx, ax - b.x + pad],
-      [dx, b.x + b.w + pad - ax],
-      [-dy, ay - b.y + pad],
-      [dy, b.y + b.h + pad - ay],
-    ]) {
+    for (let side = 0; side < 4; side++) {
+      const p = side === 0 ? -dx : side === 1 ? dx : side === 2 ? -dy : dy,
+        q = side === 0 ? ax - b.x + pad : side === 1 ? b.x + b.w + pad - ax :
+          side === 2 ? ay - b.y + pad : b.y + b.h + pad - ay;
       if (Math.abs(p) < 1e-9) {
         if (q < 0) return null;
       } else {
@@ -729,7 +762,7 @@
         if (
           sample.every((p, n) =>
             travelClear(n ? sample[n - 1] : result.at(-1) || from, p, r, map),
-          )
+          ) && travelClear(sample.at(-1), c, r, map)
         ) {
           curve = sample;
           break;
@@ -789,8 +822,45 @@
       }
     let best = start,
       bestD = Infinity;
-    for (let i = 0; i < queue.length; i++) {
-      const n = queue[i],
+    // A* visits the corridor toward the destination, rather than flooding the
+    // whole map for each member of a large order. Keep legacy routes unchanged.
+    const directed = world.id === "districts", heap = [],
+      costs = directed ? new Float64Array(cols * rows).fill(Infinity) : null;
+    let serial = 0;
+    const push = (n, cost) => {
+      if (!directed) { queue.push(n); return; }
+      costs[n] = cost;
+      const priority = cost + Math.max(0, Math.abs(n % cols - end % cols) +
+        Math.abs(Math.floor(n / cols) - Math.floor(end / cols)) - 4);
+      const item = { n, cost, priority, serial: serial++ };
+      let i = heap.length; heap.push(item);
+      while (i) {
+        const p = (i - 1) >> 1;
+        if (heap[p].priority < priority || (heap[p].priority === priority && heap[p].serial < item.serial)) break;
+        heap[i] = heap[p]; i = p;
+      }
+      heap[i] = item;
+    };
+    const pop = () => {
+      const first = heap[0], last = heap.pop();
+      if (heap.length) {
+        let i = 0;
+        while (i * 2 + 1 < heap.length) {
+          let child = i * 2 + 1;
+          const less = (a, b) => a.priority < b.priority || (a.priority === b.priority && a.serial < b.serial);
+          if (child + 1 < heap.length && less(heap[child + 1], heap[child])) child++;
+          if (!less(heap[child], last)) break;
+          heap[i] = heap[child]; i = child;
+        }
+        heap[i] = last;
+      }
+      return first;
+    };
+    if (directed) for (const n of queue) push(n, n === start ? 0 : 1);
+    for (let i = 0; directed ? heap.length : i < queue.length; i++) {
+      const item = directed ? pop() : null;
+      if (directed && item.cost !== costs[item.n]) continue;
+      const n = directed ? item.n : queue[i],
         x = n % cols,
         y = Math.floor(n / cols),
         d = Math.hypot(x - (end % cols), y - Math.floor(end / cols));
@@ -813,7 +883,7 @@
           xx >= cols ||
           yy < 0 ||
           yy >= rows ||
-          prev[k] !== -2 ||
+          (directed ? costs[k] <= costs[n] + 1 : prev[k] !== -2) ||
           !grid.point(k) ||
           ((n === start || ["highlands", "districts"].includes(world.id)) &&
             !(n === start
@@ -822,7 +892,7 @@
         )
           continue;
         prev[k] = n;
-        queue.push(k);
+        push(k, directed ? costs[n] + 1 : 0);
       }
     }
     const route = [];
@@ -846,7 +916,7 @@
           (from.kind === "bastion" && target.kind === "artillery")
             ? 110
             : 0,
-        za = Terrain.height(from.x, from.y) + (MOUNTS[from.kind] || 16),
+        za = Terrain.height(from.x, from.y) + (from.mountHeight ?? MOUNTS[from.kind] ?? 16),
         zb = Terrain.height(target.x, target.y) + 10;
       if (!Terrain.ray(from, target, za, zb, arc)) return false;
       return !mapFor(from.map || target.map).walls.some((w) => {
@@ -1089,20 +1159,62 @@
           spacing,
     }));
     const waiting = [...members],
-      plans = [], departures = [];
+      plans = [], departures = [], corridors = new Map(), reserved = [];
+    if (members.length >= 8 && campaign.logistics(s)) {
+      const centre = members.reduce((p, u) => ({ x: p.x + u.x / members.length, y: p.y + u.y / members.length }), { x: 0, y: 0 });
+      for (const radius of new Set(members.map((u) => C[u.kind].r))) {
+        const leader = members.filter((u) => C[u.kind].r === radius && !u.care?.inside)
+          .sort((a, b) => dist(a, centre) - dist(b, centre) || a.id - b.id)[0];
+        if (!leader) continue;
+        const spine = pathTo(leader, { x, y }, radius);
+        if (spine.length) corridors.set(radius, [{ x: leader.x, y: leader.y }, ...spine]);
+      }
+    }
+    const groupRoute = (u, target) => {
+      const r = C[u.kind].r, world = navigation(s), spine = corridors.get(r);
+      if ((!spine || spine.length < 3) && travelClear(u, target, r, world)) return [{ ...target }];
+      if (spine && free(target.x, target.y, r, world)) {
+        const starts = spine.map((p, i) => ({ i, d: dist(u, p) }))
+          .sort((a, b) => a.d - b.d || a.i - b.i).slice(0, 6);
+        const first = starts.find(({ i }) => travelClear(u, spine[i], r, world))?.i;
+        if (first !== undefined) {
+          for (let last = spine.length - 1; last >= Math.max(first, spine.length - 6); last--)
+            if (travelClear(spine[last], target, r, world))
+              return [...spine.slice(first, last + 1).map((p) => ({ ...p })), { ...target }];
+          const tail = pathTo({ ...spine.at(-1), map: world }, target, r);
+          if (tail.length) return [...spine.slice(first).map((p) => ({ ...p })), ...tail];
+        }
+      }
+      return pathTo(u, target, r);
+    };
     for (const slot of slots) {
       waiting.sort((a, b) => dist(a, slot) - dist(b, slot) || a.id - b.id);
       const u = waiting.shift(),
         margin = C[u.kind].r + 25;
-      const target = {
+      let target = {
         x: clamp(slot.x, margin, world.W - margin),
         y: clamp(slot.y, margin, world.H - margin),
       };
+      if (corridors.size) {
+        const valid = (p) => free(p.x, p.y, C[u.kind].r, navigation(s)) &&
+          !reserved.some((q) => dist(p, q) < C[u.kind].r + q.r + 4);
+        if (!valid(target)) {
+          const wanted = target; target = null;
+          for (let ring = 1; ring <= 8 && !target; ring++)
+            for (let i = 0; i < 16; i++) {
+              const p = { x: clamp(wanted.x + Math.cos(i * Math.PI / 8) * ring * spacing, margin, world.W - margin),
+                y: clamp(wanted.y + Math.sin(i * Math.PI / 8) * ring * spacing, margin, world.H - margin) };
+              if (valid(p)) { target = p; break; }
+            }
+          if (!target) return false;
+        }
+        reserved.push({ ...target, r: C[u.kind].r });
+      }
       const origin = support.departure(s, u, departures);
       if (!origin) return false;
       departures.push({ ...origin, r: C[u.kind].r });
-      const path = pathTo(u.care?.inside ? { ...u, ...origin, map: navigation(s) } : u,
-        target, C[u.kind].r);
+      const from = u.care?.inside ? { ...u, ...origin, map: navigation(s) } : u,
+        path = corridors.size ? groupRoute(from, target) : pathTo(from, target, C[u.kind].r);
       if (!path.length && dist(u, target) > 2) return false;
       plans.push({
         u,
@@ -1353,7 +1465,7 @@
   const commandableBuilding = (u) =>
     u &&
     u.team === 0 &&
-    ["base", "outpost", "barracks", "foundry", "arsenal"].includes(u.kind);
+    ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(u.kind);
   function commandSelection(s, ids, point, targetId = null) {
     if (
       s.status !== "playing" ||
@@ -1467,9 +1579,9 @@
       map = navigation(u),
       steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 8));
     for (let i = 0; i < steps; i++) {
-      if (travelClear(u, { x: u.x + dx / steps, y: u.y }, r, map))
+      if (dx && travelClear(u, { x: u.x + dx / steps, y: u.y }, r, map))
         u.x += dx / steps;
-      if (travelClear(u, { x: u.x, y: u.y + dy / steps }, r, map))
+      if (dy && travelClear(u, { x: u.x, y: u.y + dy / steps }, r, map))
         u.y += dy / steps;
     }
   }
@@ -1494,6 +1606,7 @@
     }
   }
   function stats(s, u, target = null) {
+    if (sheltered(u)) return garrisonStats[balanced(s) ? 1 : 0][u.kind];
     if (
       campaign.combat(s) &&
       (u.kind === "citadel" ||
@@ -1514,9 +1627,9 @@
     );
   }
   function shoot(s, u, target) {
-    if (u.care?.inside || target.care?.inside) return;
-    const def = stats(s, u),
-      a = aimAngle(u, target);
+    if ((u.care?.inside && !sheltered(u)) || target.care?.inside) return;
+    const def = stats(s, u), from = sheltered(u) ? support.origin(s, u) : u,
+      a = sheltered(u) ? Math.atan2(target.y - from.y, target.x - from.x) : aimAngle(from, target);
     u.angle = a;
     u.cool = def.rate;
     u.flash = 0.1;
@@ -1531,8 +1644,8 @@
         : u.kind === "rocket"
           ? "rocket"
           : "shot",
-      u.x,
-      u.y,
+      from.x,
+      from.y,
       {
         team: u.team,
         kind: u.kind,
@@ -1544,10 +1657,10 @@
     }
     // A melee attacker can stand inside a node's footprint; the muzzle must not skip it.
     const r =
-        s.version >= 4 && u.defense
-          ? Math.min(def.r + 9, dist(u, target) / 2)
+        sheltered(u) ? Math.min(14, dist(from, target) / 2) : s.version >= 4 && u.defense
+          ? Math.min(def.r + 9, dist(from, target) / 2)
           : u.kind === "hero"
-            ? Math.min(31, dist(u, target) / 2)
+            ? Math.min(31, dist(from, target) / 2)
             : def.r + 9,
       speed =
         u.kind === "rocket"
@@ -1562,22 +1675,22 @@
     s.bullets.push({
       ...(s.campaign ? { map: mapFor(s).id } : {}),
       x:
-        u.x +
+        from.x +
         Math.cos(a) * r -
         Math.sin(a) *
-          (u.kind === "hero" ? Math.min(5, dist(u, target) * 0.25) : 0),
+          (u.kind === "hero" && !sheltered(u) ? Math.min(5, dist(from, target) * 0.25) : 0),
       y:
-        u.y +
+        from.y +
         Math.sin(a) * r +
         Math.cos(a) *
-          (u.kind === "hero" ? Math.min(5, dist(u, target) * 0.25) : 0),
+          (u.kind === "hero" && !sheltered(u) ? Math.min(5, dist(from, target) * 0.25) : 0),
       vx: Math.cos(a) * speed,
       vy: Math.sin(a) * speed,
       life:
         u.kind === "rocket"
           ? 3
           : siege
-            ? dist(u, target) / speed
+            ? dist(from, target) / speed
             : def.range / speed,
       team: u.team,
       owner: u.id,
@@ -1610,14 +1723,14 @@
       age: 0,
       ...(["highlands", "districts"].includes(mapFor(s).id)
         ? {
-            z0: Terrain.height(u.x, u.y) + (MOUNTS[u.kind] || 16),
+            z0: Terrain.height(from.x, from.y) + (from.mountHeight ?? MOUNTS[u.kind] ?? 16),
             z1: Number.isFinite(target.z)
               ? target.z
               : (Terrain.level(target.x, target.y) < 0
                   ? Terrain.height(u.x, u.y)
                   : Terrain.height(target.x, target.y)) +
                 (u.kind === "hero" ? MOUNTS.hero : 10),
-            duration: Math.max(0.01, Math.max(0, dist(u, target) - r) / speed),
+            duration: Math.max(0.01, Math.max(0, dist(from, target) - r) / speed),
           }
         : {}),
     });
@@ -1659,29 +1772,31 @@
     } else emit(s, "hit", u.x, u.y, { team: u.team });
     if (u.hp <= 0) {
       u.hp = 0;
+      if (campaign.logistics(s)) u.deadAt = s.t;
       if (s.campaign) campaign.onDeath(s, u);
       support.onDeath(s, u);
+      if (activeSpatial?.state === s && ["bunker", "outpost"].includes(u.kind))
+        activeSpatial = spatial(s);
       s.kills += u.team === 1 ? 1 : 0;
       emit(s, "destroy", u.x, u.y, { kind: u.kind, team: u.team });
     }
   }
   function blast(s, b) {
     const radius = b.radius || 70,
-      area = b.radius ? impactArea(s, b, radius) : null;
+      area = b.radius ? impactArea(s, b, radius) : null,
+      hits = [];
     emit(s, "blast", b.x, b.y, { radius });
+    // Resolve exposure before damage can destroy a shelter and evacuate its
+    // occupants. A single explosion must not hit them twice depending on ID order.
     for (const u of s.units)
       if (
-        u.hp > 0 &&
+        u.hp > 0 && !u.care?.inside &&
         u.team !== b.team &&
         (area ? insideArea(area, u) : rangeDistance(b, u) < radius) &&
         clear(b, u)
       )
-        hurt(
-          s,
-          u,
-          b.damage * (1 - rangeDistance(b, u) / (b.radius ? radius * 2 : 100)),
-          b,
-        );
+        hits.push([u, b.damage * (1 - rangeDistance(b, u) / (b.radius ? radius * 2 : 100))]);
+    for (const [u, damage] of hits) hurt(s, u, damage, b);
   }
   function turnAngle(current, target, limit) {
     const delta = Math.atan2(
@@ -1739,7 +1854,13 @@
         };
       });
   }
+  const visionAreas = new Map();
   function visionArea(s, point, radius) {
+    // Exact positions only: rendering and exploration share the same outline.
+    // No rounding of the smooth fog boundary and no reduction in ray count.
+    const key = mapFor(s).id + ":" + point.id + ":" + radius,
+      previous = visionAreas.get(key);
+    if (previous?.x === point.x && previous?.y === point.y) return previous.area;
     const walls = [
       ...mapFor(s).walls.filter(
         (w) =>
@@ -1757,7 +1878,10 @@
           point.y - clamp(point.y, w.y, w.y + w.h),
         ) <= radius,
     );
-    return { points: areaArc(s, point, radius, 0, Math.PI * 2, 64, walls) };
+    const area = { points: areaArc(s, point, radius, 0, Math.PI * 2, 64, walls) };
+    if (!visionAreas.has(key) && visionAreas.size >= 512) visionAreas.delete(visionAreas.keys().next().value);
+    visionAreas.set(key, { x: point.x, y: point.y, area });
+    return area;
   }
   const impactAreas = new Map();
   function impactArea(s, point, radius) {
@@ -1836,6 +1960,30 @@
     }
     return inside;
   }
+  // A garrison never runs mobile pursuit/pathfinding. Reuse its target between
+  // bounded scans and verify the actual roof-to-target corridor before firing.
+  function garrisonFire(s, u, opponents, dt) {
+    const def = stats(s, u);
+    if (!def.range) return;
+    const from = support.origin(s, u), eligible = (v) => v && v.team !== u.team &&
+      v.hp > 0 && !v.care?.inside && !(v.kind === "citadel" && shielded(s)) &&
+      rangeDistance(from, v) <= def.range && visible(s, u.team, v, u) && fireClear(from, v);
+    let target = u.target && opponents.find((v) => v.id === u.target.id);
+    if (!eligible(target)) { target = null; u.target = null; }
+    u.think = Math.max(0, u.think - dt);
+    if (!target && !u.think) {
+      let nearest = Infinity;
+      for (const v of opponents) {
+        const distance = dist(from, v);
+        if (distance < nearest && eligible(v)) { target = v; nearest = distance; }
+      }
+      u.think = .2;
+    }
+    if (!target) return;
+    u.target = { id: target.id, x: target.x, y: target.y };
+    u.angle = Math.atan2(target.y - from.y, target.x - from.x);
+    if (!u.cool) shoot(s, u, target);
+  }
   function step(s, input = {}, dt = DT) {
     if (s.status !== "playing") return s;
     if (dt !== DT) throw Error("Simulation requires the fixed step");
@@ -1843,7 +1991,7 @@
     s.t += dt;
     support.tick(s, input, dt);
     const h = hero(s);
-    if (h.care) input = {};
+    if (h.care && (!sheltered(h) || h.care.exit)) input = {};
     const channel =
       input.interact && interaction(s)?.type === "terminal" && s.economy.kit;
     s.dash = Math.max(0, s.dash - dt);
@@ -1857,8 +2005,10 @@
       input.aim &&
       Number.isFinite(input.aim.x) &&
       Number.isFinite(input.aim.y)
-    )
-      h.angle = aimAngle(h, input.aim);
+    ) {
+      const from = sheltered(h) ? support.origin(s, h) : h;
+      h.angle = sheltered(h) ? Math.atan2(input.aim.y - from.y, input.aim.x - from.x) : aimAngle(h, input.aim);
+    }
     if (input.dash && s.dash === 0) {
       const a = len ? Math.atan2(my, mx) : h.angle;
       s.dashX = Math.cos(a);
@@ -1880,11 +2030,15 @@
       emit(s, "reload", h.x, h.y);
     }
     const combatTeams = campaign.combat(s) ? [[], []] : null;
+    activeSpatial = campaign.logistics(s) ? spatial(s) : null;
     let followLeaders;
     if (combatTeams)
       for (const u of s.units) if (u.hp > 0 && !u.care?.inside) combatTeams[u.team].push(u);
     for (const u of s.units) {
-      if (u.hp <= 0) continue;
+      if (u.hp <= 0) {
+        if (campaign.logistics(s) && u.deadAt === undefined) u.deadAt = s.t;
+        continue;
+      }
       if (u.rally?.followId !== undefined) {
         const leader = (followLeaders ||= new Map(
           s.units.map((v) => [v.id, v]),
@@ -1897,7 +2051,13 @@
       u.hit = Math.max(0, u.hit - dt);
       u.repair = Math.max(0, u.repair - dt);
       u.flash = Math.max(0, u.flash - dt);
-      if (u.care) continue;
+      if (u.care) {
+        if (!sheltered(u) || u.care.exit) continue;
+        if (u.kind !== "hero") {
+          garrisonFire(s, u, combatTeams ? combatTeams[1 - u.team] : s.units, dt);
+          continue;
+        }
+      }
       if (u.kind === "hero") {
         if (
           input.fire &&
@@ -1961,13 +2121,19 @@
       const def = stats(s, u);
       if (!def.range || u.build) continue;
       const opponents = (
-        combatTeams ? combatTeams[1 - u.team] : s.units
+        combatTeams ? nearby(s, 1 - u.team, u, Math.max(def.range, detectionRange(s, u))) : s.units
       ).filter(
         (v) =>
           v.team !== u.team &&
           !v.care?.inside && v.hp > 0 &&
           !(v.kind === "citadel" && shielded(s)),
       );
+      // An explicit attack may be on a distant enemy revealed by another ally.
+      // Keep that order even when its target is outside the local broad phase.
+      if (!u.team && u.target?.id && !opponents.some((v) => v.id === u.target.id)) {
+        const commanded = s.units.find((v) => v.id === u.target.id && v.team && v.hp > 0 && !v.care?.inside);
+        if (commanded && !(commanded.kind === "citadel" && shielded(s))) opponents.push(commanded);
+      }
       // Campaign enemies choose targets in their own AI. The generic scan
       // below is used only by allies and legacy enemies.
       if (u.team !== 0 && s.campaign) {
@@ -2105,6 +2271,7 @@
         }
       }
     }
+    if (activeSpatial) activeSpatial = spatial(s);
     for (const b of s.bullets) {
       b.age += dt;
       b.life -= dt;
@@ -2171,7 +2338,7 @@
           hit = "wall";
         }
       }
-      for (const u of s.units) {
+      for (const u of nearby(s, 1 - b.team, b, dist(b, next))) {
         if (u.hp <= 0 || u.care?.inside || u.team === b.team) continue;
         if (u.kind === "hero" && s.dashT > 0) continue;
         const t = u.construction
@@ -2195,7 +2362,8 @@
         b.life = -1;
       }
     }
-    s.bullets = s.bullets.filter((b) => b.life > 0).slice(-160);
+    s.bullets = s.bullets.filter((b) => b.life > 0);
+    if (!campaign.logistics(s)) s.bullets = s.bullets.slice(-160);
     strategyStep(s, input, dt);
     if (s.campaign) campaign.operation(s, input, dt);
     else {
@@ -2270,7 +2438,9 @@
       const endPoint = s.units.find((u) => u.kind === "citadel");
       emit(s, "end", endPoint.x, endPoint.y);
     }
+    campaign.compact(s);
     if (fogged(s)) recon.update(s);
+    activeSpatial = null;
     return s;
   }
   function snapshot(s) {
@@ -2563,6 +2733,7 @@
   const visible = (s, team, p, witness) => recon.visible(s, team, p, witness);
   const explored = (s, team, p) => recon.explored(s, team, p);
   const API = {
+    nearby,
     terminalSites,
     navigation,
     terrain: Terrain,

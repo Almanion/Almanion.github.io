@@ -1,9 +1,9 @@
-/* Explicit mining assignments and extractor infirmaries. All work uses simulation time. */
+/* Explicit mining assignments, extractor infirmaries and bunker garrisons. All work uses simulation time. */
 (function (root) {
   "use strict";
   function create(E) {
     const capacity = 4, rate = 8, enabled = (s) => E.construction.enabled(s),
-      facility = (u) => u && !u.team && u.hp > 0 && !u.build && u.kind === "outpost",
+      facility = (u) => u && !u.team && u.hp > 0 && !u.build && ["outpost", "bunker"].includes(u.kind),
       patient = (u) => u && !u.team && u.hp > 0 && ["hero", "rifle", "scout", "artillery"].includes(u.kind),
       occupants = (s, id) => s.units.filter((u) => u.hp > 0 && u.care?.facility === id),
       fail = (reason) => ({ allowed: false, reason });
@@ -24,10 +24,12 @@
         nodes = E.development.nodes(s).filter((n) => n.kind === "outpost" || mine.id === "home")
           .sort((a, b) => E.dist(a, mine) - E.dist(b, mine) || a.id - b.id),
         slots = new Map(nodes.map((n) => [n.id, E.development.usedSlots(s, n)]));
-      let count = 0;
+      let count = 0, assigned = E.development.logistics(s)
+        ? E.development.mineWorkers(s, mine).filter((u) => !chosen.has(u.id)).length : 0;
       for (const u of workers) {
+        if (E.development.logistics(s) && assigned >= E.development.miningCapacity(s)) break;
         for (const node of nodes) {
-          if (slots.get(node.id) - (u.node === node.id ? 1 : 0) >= capacity) continue;
+          if (!E.development.logistics(s) && slots.get(node.id) - (u.node === node.id ? 1 : 0) >= capacity) continue;
           const entry = node.construction ? E.construction.exit(node, E.C.drone.r) : { x: node.x, y: node.y - 44 },
             outward = route(s, { ...u, ...entry }, mine), path = route(s, u, u.cargo ? entry : mine);
           if (!outward || !path) continue;
@@ -35,7 +37,7 @@
           slots.set(node.id, slots.get(node.id) + 1);
           E.construction.resumeWorker(s, u);
           u.node = node.id; u.mineId = mine.id; u.path = path; u.fright = 0;
-          count++; break;
+          count++; assigned++; break;
         }
       }
       if (!count) return fail(workers.length ? "extractor-unavailable" : "select-probes");
@@ -46,24 +48,41 @@
       if (!enabled(s) || s.status !== "playing" || !Array.isArray(ids)) return fail("ended");
       const b = s.units.find((u) => u.id === id);
       if (!facility(b)) return fail("extractor-unavailable");
+      const garrison = b.kind === "bunker", slots = new Set(occupants(s, id).map((u) => u.care.slot));
       const chosen = new Set(ids), members = s.units.filter((u) => chosen.has(u.id) && patient(u)),
         existing = occupants(s, id);
       let count = 0, reserved = existing.length;
       for (const u of members) {
         if (u.care?.facility === id) { count++; continue; }
-        if (reserved >= capacity || u.hp >= E.C[u.kind].hp) continue;
+        if (reserved >= capacity || (!garrison && u.hp >= E.C[u.kind].hp)) continue;
         // Changing infirmaries is an explicit exit first; never teleport a patient.
         if (u.care?.inside) continue;
         const entry = E.construction.exit(b, E.C[u.kind].r), path = route(s, u, entry);
         if (!path) continue;
-        u.care = { facility: id, entry, retry: 0, inside: false, exit: false };
+        const slot = garrison ? [0, 1, 2, 3].find((i) => !slots.has(i)) : undefined;
+        u.care = { facility: id, entry, retry: 0, inside: false, exit: false,
+          ...(garrison ? { garrison: true, slot } : {}) };
+        if (garrison) slots.add(slot);
         u.path = path; u.target = u.order = null; u.wind = 0;
         if (u.kind === "hero") s.dashT = 0;
         reserved++; count++;
       }
-      if (!count) return fail(reserved >= capacity ? "infirmary-full" : "healthy-or-no-route");
-      E.emit(s, "order", b.x, b.y, { intent: "heal" });
+      if (!count) return fail(reserved >= capacity ? garrison ? "bunker-full" : "infirmary-full" : garrison ? "bunker-no-route" : "healthy-or-no-route");
+      E.emit(s, "order", b.x, b.y, { intent: garrison ? "garrison" : "heal" });
       return { allowed: true, count, requested: members.length };
+    }
+    // Four fixed roof sockets, shared by ballistics and artwork. Slot identity
+    // survives partial unloading and saves, so guns never slide between ports.
+    function port(b, slot) {
+      const x = slot % 2 ? 24 : -24, y = slot < 2 ? -24 : 24,
+        a = -(b.construction?.turn || 0) * Math.PI / 2;
+      return { x: b.x + x * Math.cos(a) - y * Math.sin(a),
+        y: b.y + x * Math.sin(a) + y * Math.cos(a), mountHeight: 42 };
+    }
+    function origin(s, u) {
+      const b = s.units.find((v) => v.id === u.care?.facility);
+      return b && u.care?.garrison && u.care.inside
+        ? { ...port(b, u.care.slot), kind: u.kind, map: E.map(s).id } : u;
     }
     function departure(s, u, reserved = []) {
       if (!u.care?.inside) return { x: u.x, y: u.y };
@@ -114,11 +133,18 @@
         c.retry = Math.max(0, c.retry - dt);
         if (c.exit) { if (!c.retry) { leave(s, u); if (u.care) c.retry = .8; } continue; }
         if (c.inside) {
-          u.hp = Math.min(E.C[u.kind].hp, u.hp + rate * dt);
-          // Recovery does not issue an exit order or release the reserved slot.
+          if (!c.garrison) {
+            u.hp = Math.min(E.C[u.kind].hp, u.hp + rate * dt);
+            // Discharge in the healing tick, including fully healed legacy saves.
+            // A blocked patient keeps the reservation and retries at the normal cadence.
+            if (u.hp >= E.C[u.kind].hp) {
+              c.exit = true;
+              if (!leave(s, u)) c.retry = .8;
+            }
+          }
         } else if (E.dist(u, c.entry) <= 5) {
           E.emit(s, "care-door", b.x, b.y);
-          c.inside = true; u.x = b.x; u.y = b.y; u.path = []; u.wind = u.flash = 0;
+          c.inside = true; u.x = b.x; u.y = b.y; u.path = []; u.wind = u.flash = 0; u.think = 0;
         } else {
           if (!u.path.length && !c.retry) { u.path = route(s, u, c.entry) || []; c.retry = .8; }
           E.follow(u, dt);
@@ -127,10 +153,10 @@
     }
     function onDeath(s, u) {
       delete u.care;
-      if (u.kind === "outpost") evacuate(s, u.id);
+      if (["outpost", "bunker"].includes(u.kind)) evacuate(s, u.id);
     }
     function validate(s) {
-      const counts = new Map();
+      const counts = new Map(), slots = new Set();
       for (const u of s.units) {
         if (u.mineId !== undefined && (!enabled(s) || u.kind !== "drone" || u.team ||
           !s.campaign.mines.some((m) => m.id === u.mineId))) return false;
@@ -141,17 +167,23 @@
           typeof c.inside !== "boolean" || typeof c.exit !== "boolean" ||
           !Number.isFinite(c.retry) || c.retry < 0 || c.retry > .81) return false;
         const b = s.units.find((v) => v.id === c.facility);
-        if (!b || b.team || b.kind !== "outpost" || b.build || (!b.hp && !c.exit) ||
+        if (!b || b.team || !["outpost", "bunker"].includes(b.kind) || b.build || (!b.hp && !c.exit) ||
           !Number.isFinite(c.entry?.x) || !Number.isFinite(c.entry?.y) ||
           E.dist(c.entry, E.construction.exit(b, E.C[u.kind].r)) > .001 ||
-          u.order || u.target || (c.inside && (E.dist(u, b) > .001 || u.path.length))) return false;
+          (b.kind === "bunker" ? c.garrison !== true || !Number.isInteger(c.slot) || c.slot < 0 || c.slot >= capacity : c.garrison !== undefined || c.slot !== undefined) ||
+          u.order || (u.target && !(c.garrison && c.inside)) || (c.inside && (E.dist(u, b) > .001 || u.path.length))) return false;
+        if (c.garrison) {
+          const key = b.id + ":" + c.slot;
+          if (slots.has(key)) return false;
+          slots.add(key);
+        }
         counts.set(b.id, (counts.get(b.id) || 0) + 1);
         if (counts.get(b.id) > capacity) return false;
       }
       return true;
     }
     return { enabled, capacity, rate, facility, patient, occupants, assignResource, admit,
-      departure, leave, evacuate, tick, onDeath, validate };
+      port, origin, departure, leave, evacuate, tick, onDeath, validate };
   }
   const api = { create };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
