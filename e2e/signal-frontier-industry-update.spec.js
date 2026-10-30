@@ -1,4 +1,5 @@
 "use strict";
+const { deckCard, revealPoint } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect, chromium, webkit } = require("@playwright/test"),
   {
     E,
@@ -45,8 +46,7 @@ async function focusMini(page, p, touch) {
   await page.clock.runFor(80);
 }
 async function pointAt(page, p, touch) {
-  await focusMini(page, p, touch);
-  const q = await page.evaluate((p) => SignalGame.screen(p.x, p.y), p);
+  const q = await revealPoint(page, p);
   if (touch) await page.touchscreen.tap(q.x, q.y);
   else await page.mouse.move(q.x, q.y);
   await page.clock.runFor(80);
@@ -82,8 +82,7 @@ for (const type of [chromium, webkit])
         await boot(page, s);
         await page.locator("#dock-shop").click();
         await page.locator("#develop-tab-build").click();
-        if (!(await page.locator("#develop-foundry").count()))
-          await page.locator('[data-deck-page="1"]').click();
+        await deckCard(page, "develop-foundry");
         await page.locator("#develop-foundry").click();
         const place = findSite(s, "foundry", E.hero(s));
         expect(place).toBeTruthy();

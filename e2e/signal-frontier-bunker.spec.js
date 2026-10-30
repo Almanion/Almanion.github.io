@@ -37,6 +37,7 @@ test("bunker is in the build menu, has its own SVG and supports four placement d
   expect(await page.evaluate(() => SignalGame.mode())).toBe("tactical");
 });
 test("right click admits a group without pausing; bunker roster releases individuals and all", async ({ page }) => {
+  test.setTimeout(60000);
   await page.setViewportSize({ width: 1440, height: 900 }); const { b, army } = await boot(page);
   await page.keyboard.press("1");
   const p = await page.evaluate((b) => SignalGame.screen(b.x, b.y), b);

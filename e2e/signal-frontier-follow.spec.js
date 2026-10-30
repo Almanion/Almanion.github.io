@@ -1,4 +1,5 @@
 "use strict";
+const { selectArmy } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect } = require("@playwright/test");
 
 async function settle(page) {
@@ -17,7 +18,7 @@ async function start(page) {
   await page.goto("/games/signal-frontier/");
   await expect(page.locator(".edition")).toContainText("0.26.2");
   await page.locator("#start").click();
-  await page.locator("#select-army").click();
+  await selectArmy(page);
   await settle(page);
 }
 async function atUnit(page, id) {
@@ -65,7 +66,7 @@ test("right-click on the scout hero assigns follow in pause and persists through
   await page.locator("#continue").click();
   await page.keyboard.press("Tab");
   expect(await page.evaluate(() => SignalGame.snapshot())).toEqual(ordered);
-  await page.locator("#select-army").click();
+  await selectArmy(page);
   await settle(page);
   await expect(page.locator("#tactical-hint")).toContainText(
     "Следуют за разведчиком",

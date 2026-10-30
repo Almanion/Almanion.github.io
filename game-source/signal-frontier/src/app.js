@@ -624,6 +624,7 @@
     rallyBuilding = null;
     selectionVisible = true;
     orderMode = false;
+    if (mode === "tactical" && selected.length) dockTab = "selection";
     refreshSelection();
   }
   let lastEntityTap = null;

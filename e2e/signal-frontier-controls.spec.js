@@ -1,4 +1,5 @@
 "use strict";
+const { selectArmy } = require("./helpers/signal-frontier-selection.cjs");
 const { selectGroup } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect, chromium, webkit } = require("@playwright/test");
 const E = require("../game-source/signal-frontier/src/engine");
@@ -92,7 +93,7 @@ test("right drag selects only part of the army during live combat, then orders o
   await page.mouse.up({ button: "right" });
   await page.keyboard.up("Control");
   expect((await page.evaluate(() => SignalGame.selection())).ids).toEqual(ids);
-  await page.locator("#select-army").click();
+  await selectArmy(page);
   expect((await page.evaluate(() => SignalGame.selection())).ids).toEqual(ids);
   await page.screenshot({ path: "test-results/signal-controls-selection.png" });
 });

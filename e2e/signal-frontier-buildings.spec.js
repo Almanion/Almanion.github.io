@@ -119,7 +119,7 @@ for (const browserType of [chromium, webkit])
           expect((await page.evaluate(() => SignalGame.snapshot())).t).toBe(
             s.t,
           );
-          const geometry = await page.locator("#dialog").evaluate((el) => {
+          const geometry = await page.locator("#command-dock").evaluate((el) => {
             const r = el.getBoundingClientRect();
             return {
               x: r.x,
@@ -136,15 +136,14 @@ for (const browserType of [chromium, webkit])
           expect(geometry.right).toBeLessThanOrEqual(width);
           expect(geometry.bottom).toBeLessThanOrEqual(height);
           expect(geometry.overflow).toBeLessThanOrEqual(1);
-          const queueBox = await page
-            .locator(".production-queue")
-            .boundingBox();
-          const bodyBox = await page
-            .locator("#development-panel")
-            .boundingBox();
-          expect(queueBox.y + queueBox.height).toBeLessThanOrEqual(
-            bodyBox.y + bodyBox.height + 1,
-          );
+          // Legacy saves retain a scrollable production card. Every queued
+          // item must remain reachable inside the dock at each viewport size.
+          for (const job of await page.locator(".job-select").all()) {
+            await job.scrollIntoViewIfNeeded();
+            const r = await job.boundingBox(), bounds = await page.locator("#development-panel").boundingBox();
+            expect(r.y).toBeGreaterThanOrEqual(bounds.y - 1);
+            expect(r.y + r.height).toBeLessThanOrEqual(bounds.y + bounds.height + 1);
+          }
           // Verify production CSS compression preserves the rendered controls.
           const differences = await page.evaluate((raw) => {
             const nodes = [...document.querySelectorAll("#hud *, #dialog *")];
@@ -197,6 +196,7 @@ test("requirements navigate to the next step without buying anything", async ({
   await page.setViewportSize({ width: 390, height: 844 });
   await boot(page, E.make("frontier-6"));
   await page.locator("#dock-shop").click();
+  await page.locator("#develop-tab-production").click();
   const before = await page.evaluate(() => SignalGame.snapshot());
   await page.locator("#develop-foundry-reason").click();
   await expect(page.locator("#develop-tab-research")).toHaveAttribute(
@@ -209,129 +209,47 @@ test("requirements navigate to the next step without buying anything", async ({
 });
 
 for (const width of [320, 390])
-  test(
-    "touch compact queue and isolated scrolling " + width,
-    async ({ browser }) => {
-      const context = await browser.newContext({
-        viewport: { width, height: width === 320 ? 568 : 844 },
-        hasTouch: true,
-        isMobile: true,
-      });
-      const page = await context.newPage();
-      try {
-        const s = fixture(),
-          b = E.living(s, "barracks");
-        E.purchase(s, "rifle");
-        E.purchase(s, "weapons");
-        await boot(page, s);
-        await page.locator("#dock-shop").tap();
-        await page.getByRole("button", { name: "Показать: Казармы" }).tap();
-        await expect(page.locator("#dialog")).not.toBeVisible();
-        await page.clock.runFor(400);
-        await page.clock.resume(); // Native scroll gestures use the real clock; the game remains paused.
-        const p = await page.evaluate((b) => SignalGame.screen(b.x, b.y), b);
-        expect(
-          await page.evaluate(
-            (p) => document.elementFromPoint(p.x, p.y - 8)?.id,
-            p,
-          ),
-        ).toBe("field");
-        await page.touchscreen.tap(p.x, p.y - 8);
-        await expect(page.locator("#development-size")).toHaveAttribute(
-          "aria-expanded",
-          "false",
-        );
-        await expect(page.locator("#develop-rifle")).toBeVisible();
-        const queue = await page.locator(".production-queue").boundingBox(),
-          panel = await page.locator("#development-panel").boundingBox();
-        expect(queue.y).toBeGreaterThanOrEqual(panel.y);
-        expect(queue.y + queue.height).toBeLessThanOrEqual(
-          panel.y + panel.height,
-        );
-        const compact = await page.locator("#dialog").boundingBox();
-        await page.screenshot({
-          path: `test-results/building-compact-${width}.png`,
-        });
-        await page.locator("#development-size").tap();
-        expect(
-          (await page.locator("#dialog").boundingBox()).height,
-        ).toBeGreaterThan(compact.height);
-        await page.locator("[data-all-buildings]").tap();
-        await page.locator("#develop-tab-economy").tap();
-        const r = await page.locator("#development-panel").boundingBox();
-        const beforeScroll = await page.evaluate(() => SignalGame.snapshot());
-        const camera = await page.evaluate(() => SignalGame.camera());
-        const cdp = await context.newCDPSession(page);
-        await cdp.send("Input.dispatchTouchEvent", {
-          type: "touchStart",
-          touchPoints: [{ id: 1, x: r.x + 80, y: r.y + r.height - 20 }],
-        });
-        for (let i = 1; i <= 8; i++) {
-          await new Promise((resolve) => setTimeout(resolve, 40));
-          await cdp.send("Input.dispatchTouchEvent", {
-            type: "touchMove",
-            touchPoints: [
-              { id: 1, x: r.x + 80, y: r.y + r.height - 20 - i * 15 },
-            ],
-          });
-        }
-        // Hold still before release so this is a scroll, not a high-velocity fling.
-        await new Promise((resolve) => setTimeout(resolve, 200));
-        await cdp.send("Input.dispatchTouchEvent", {
-          type: "touchEnd",
-          touchPoints: [],
-        });
-        await expect
-          .poll(() =>
-            page.locator("#development-panel").evaluate((el) => el.scrollTop),
-          )
-          .toBeGreaterThan(0);
-        expect(await page.evaluate(() => SignalGame.camera())).toEqual(camera);
-        expect(await page.evaluate(() => SignalGame.snapshot())).toEqual(
-          beforeScroll,
-        );
-        await page.locator("#develop-tab-production").tap();
-        await page.locator(`[data-select="${b.id}"]`).tap();
-        await page.locator("#development-size").tap();
-        await expect(page.locator("#development-size")).toHaveAttribute(
-          "aria-expanded",
-          "false",
-        );
-        await page.locator("#close-dialog").tap();
-        expect(await page.evaluate(() => SignalGame.mode())).toBe("tactical");
-      } finally {
-        await context.close();
-      }
-    },
-  );
-test("building pauses combat, keyboard navigation is safe, only resume advances production", async ({
-  page,
-}) => {
-  const s = fixture(),
-    b = E.living(s, "barracks");
-  await boot(page, s);
-  await page.locator("#tactical").click();
-  const p = await page.evaluate((b) => SignalGame.screen(b.x, b.y), b);
-  await page.mouse.click(p.x, p.y - 8);
-  expect(await page.evaluate(() => SignalGame.mode())).toBe("tactical");
-  await page.locator("#develop-rifle").click();
-  await page.locator("#develop-rifle").focus();
+  test("legacy queue stays accessible in the command dock " + width, async ({ browser }) => {
+    const context = await browser.newContext({viewport:{width,height:844},hasTouch:true,isMobile:true});
+    const page=await context.newPage();
+    try {
+      const s=fixture(), b=E.living(s,"barracks");
+      E.purchase(s,"rifle"); E.purchase(s,"weapons");
+      await boot(page,s); await openBuilding(page,s);
+      await expect(page.locator(".job-select")).toHaveCount(2);
+      const camera=await page.evaluate(()=>SignalGame.camera());
+      await page.locator(".job-select").first().tap();
+      const after=await page.evaluate(()=>SignalGame.snapshot());
+      expect(E.living(after,"barracks").jobs.map(j=>j.action)).toEqual(["weapons"]);
+      expect(after.t).toBe(s.t);
+      await page.locator("[data-all-buildings]").tap();
+      await page.locator("#develop-tab-economy").tap();
+      await page.locator("#develop-tab-production").tap();
+      await page.locator('[data-select="'+b.id+'"]').tap();
+      await expect(page.locator(".job-select")).toHaveCount(1);
+      expect(await page.evaluate(()=>SignalGame.camera())).toEqual(camera);
+      expect(await page.evaluate(()=>SignalGame.snapshot())).toEqual(after);
+    } finally {await context.close()}
+  });
+
+test("legacy production runs in combat and pauses only on a tactical command", async ({page})=>{
+  test.setTimeout(60000);
+  const s=fixture(), b=E.living(s,"barracks");
+  await boot(page,s); await page.locator("#tactical").click();
+  const p=await page.evaluate(b=>SignalGame.screen(b.x,b.y),b);
+  await page.mouse.click(p.x,p.y-8);
+  expect(await page.evaluate(()=>SignalGame.mode())).toBe("playing");
+  await page.locator('#combat-production [data-train="rifle"]').click();
+  await page.clock.runFor(300);
+  const live=await page.evaluate(()=>SignalGame.snapshot());
+  expect(live.t).toBeGreaterThan(s.t);
+  expect(E.living(live,"barracks").jobs[0].remaining).toBeLessThan(24);
   await page.keyboard.press("Tab");
-  expect(await page.evaluate(() => SignalGame.mode())).toBe("tactical");
-  expect(
-    await page
-      .locator("#develop-rifle")
-      .evaluate((el) => document.activeElement === el),
-  ).toBe(false);
-  await page.keyboard.press("Escape");
-  await page.clock.runFor(2000);
-  expect((await page.evaluate(() => SignalGame.snapshot())).t).toBe(s.t);
-  await page.locator("#tactical").click();
-  await page.clock.runFor(1000);
-  expect(
-    E.living(await page.evaluate(() => SignalGame.snapshot()), "barracks")
-      .jobs[0].remaining,
-  ).toBeLessThan(24);
+  const frozen=await page.evaluate(()=>SignalGame.snapshot());
+  await page.clock.runFor(800);
+  expect(await page.evaluate(()=>SignalGame.snapshot())).toEqual(frozen);
+  await page.keyboard.press("Tab"); await page.clock.runFor(300);
+  expect(E.living(await page.evaluate(()=>SignalGame.snapshot()),"barracks").jobs[0].remaining).toBeLessThan(E.living(frozen,"barracks").jobs[0].remaining);
 });
 
 test("a stale producer cannot charge or redirect a purchase to a different building", async ({
@@ -343,6 +261,9 @@ test("a stale producer cannot charge or redirect a purchase to a different build
     const dialog = document.createElement("dialog"),
       el = document.createElement("div");
     el.id = "building-harness";
+    el.className = "command-dock";
+    el.style.height = "80vh";
+    el.style.overflow = "auto";
     dialog.dataset.panel = "development";
     dialog.classList.add("dock");
     dialog.append(el);

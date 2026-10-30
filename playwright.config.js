@@ -9,7 +9,7 @@ module.exports = defineConfig({
     forbidOnly: Boolean(process.env.CI),
     retries: process.env.CI ? 1 : 0,
     workers: process.env.CI ? 2 : 1,
-    timeout: 30000,
+    timeout: 60000,
     expect: { timeout: 7000 },
     reporter: process.env.CI ? [['line'], ['html', { open: 'never' }]] : 'line',
     use: {

@@ -55,8 +55,7 @@ test("two rapid drone orders are accepted and reserve both worker slots", async 
   page,
 }) => {
   await page.clock.install();
-  await page.goto(route);
-  await page.locator("#start").click();
+  await resume(page, E.make("frontier-2"));
   await page.locator("#dock-shop").click();
   await page.locator("#develop-tab-economy").click();
   const b = await page.evaluate(
@@ -223,7 +222,7 @@ test("tactical WASD pans the map without advancing the operation or issuing orde
     0,
   );
   await page.keyboard.down("KeyD");
-  await page.locator("#dock-shop").click();
+  await page.locator("#menu-button").click();
   const paused = await page.evaluate(() => SignalGame.camera());
   await page.keyboard.press("KeyW");
   await page.clock.runFor(500);
@@ -232,7 +231,7 @@ test("tactical WASD pans the map without advancing the operation or issuing orde
     0,
   );
   await page.keyboard.up("KeyD");
-  await page.locator("#dock-selection").click();
+  await page.locator("#close-dialog").click();
   await page.clock.runFor(500);
   expect((await page.evaluate(() => SignalGame.camera())).x).toBeCloseTo(
     paused.x,

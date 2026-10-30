@@ -448,7 +448,9 @@ for (const [name, profile] of [
               ? (await page.evaluate(() => SignalGame.snapshot())).units.find(
                   (u) => String(u.id) === String(c.site),
                 )
-              : null;
+              : c.action === "drone"
+                ? await page.evaluate(() => SignalEngine.living(SignalGame.snapshot(), "base"))
+                : null;
             const tab =
               ["drone", "outpost", "defense"].includes(c.action) ||
               (c.action === "repair" &&
@@ -460,12 +462,14 @@ for (const [name, profile] of [
                   ? "research"
                   : "production";
             await page.locator("#develop-tab-" + tab).click();
-            if (freeBuild && ["repair", "defense"].includes(c.action)) {
+            if (freeBuild && ["drone", "repair", "defense"].includes(c.action)) {
               expect(producer).toBeTruthy();
               await page.locator('[data-select="' + producer.id + '"]').click();
               if (c.action === "defense")
                 await page.locator('[data-section="tech"]').click();
             }
+            if (freeBuild && ["rifle", "scout", "artillery"].includes(c.action))
+              await page.locator('[data-production-group="' + (c.action === "artillery" ? "foundry" : "barracks") + '"]').click();
             const site =
               c.action === "drone"
                 ? c.site ||
@@ -494,6 +498,7 @@ for (const [name, profile] of [
           state: SignalGame.snapshot(),
           origin: SignalGame.screen(0, 0),
           unit: SignalGame.screen(1, 1),
+          scale: SignalGame.camera().scale,
         }));
         const s = frame.state;
         final = s;
@@ -589,36 +594,27 @@ for (const [name, profile] of [
         pressed = wanted;
         let visible = false;
         if (d.input.aim) {
-          const p = highlands
-            ? await page.evaluate(
-                (p) => SignalGame.screen(p.x, p.y),
-                d.input.aim,
-              )
-            : {
-                x:
-                  frame.origin.x +
-                  d.input.aim.x * (frame.unit.x - frame.origin.x),
-                y:
-                  frame.origin.y +
-                  d.input.aim.y * (frame.unit.y - frame.origin.y),
-              };
-          visible = p.x > 20 && p.x < 1580 && p.y > 100 && p.y < 840;
-          if (highlands && !visible) {
-            const edge = {
-              x: Math.max(25, Math.min(1575, p.x)),
-              y: Math.max(110, Math.min(830, p.y)),
-            };
-            await page.mouse.move(edge.x, edge.y);
-            aimPoint = edge;
+          const project = () => page.evaluate((target) => {
+            const p = SignalGame.screen(target.x, target.y);
+            p.y -= SignalEngine.MOUNTS.hero * SignalGame.camera().scale * 0.73;
+            const field = document.elementFromPoint(p.x, p.y)?.id === "field",
+              r = document.getElementById("minimap-canvas").getBoundingClientRect(),
+              g = SignalGame.diagnostics().minimap.geometry;
+            return { p, field, mini: {x:r.x+g.x+target.x*g.scale,y:r.y+g.y+target.y*g.scale} };
+          }, d.input.aim);
+          let target = await project();
+          if (!target.field) {
+            // Cursor-edge camera motion was removed. Inspect a known target
+            // through the real mini-map instead of holding fire over the HUD.
+            if (firing) { await page.mouse.up(); firing = false; }
+            await page.mouse.click(target.mini.x, target.mini.y);
+            await page.clock.runFor(100);
+            target = await project();
           }
-          if (
-            visible &&
-            (!aimPoint ||
-              Math.abs(p.x - aimPoint.x) > 1e-6 ||
-              Math.abs(p.y - aimPoint.y) > 1e-6)
-          ) {
-            await page.mouse.move(p.x, p.y);
-            aimPoint = p;
+          visible = target.field;
+          if (visible && (!aimPoint || Math.hypot(target.p.x-aimPoint.x,target.p.y-aimPoint.y)>1e-6)) {
+            await page.mouse.move(target.p.x, target.p.y);
+            aimPoint = target.p;
           }
         }
         if (visible && !firing) {

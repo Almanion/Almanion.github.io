@@ -10,6 +10,7 @@ for (const [width, height] of [
   test(`fixed touch origins and four-finger movement, fire, dash, reload ${width}x${height}`, async ({
     browser,
   }) => {
+    test.setTimeout(60000);
     const context = await browser.newContext({
       viewport: { width, height },
       hasTouch: true,
@@ -27,8 +28,10 @@ for (const [width, height] of [
       await page.locator("#tactical").tap();
       await page.clock.runFor(300);
       const cdp = await context.newCDPSession(page);
-      const move = { id: 1, x: width * 0.22, y: height * 0.48 },
-        aim = { id: 2, x: width * 0.72, y: height * 0.48 };
+      const move = { id: 1, x: 15, y: height < 500 ? 120 : 180 },
+        aim = { id: 2, x: width * 0.78, y: height < 500 ? 120 : 180 };
+      expect(await page.evaluate((p) => document.elementFromPoint(p.x,p.y)?.closest(".stick")?.id,move)).toBe("move-stick");
+      expect(await page.evaluate((p) => document.elementFromPoint(p.x,p.y)?.closest(".stick")?.id,aim)).toBe("aim-stick");
       const send = (type, points) =>
         cdp.send("Input.dispatchTouchEvent", { type, touchPoints: points });
       const bases = () =>

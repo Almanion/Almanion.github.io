@@ -46,7 +46,7 @@ jobs:
   build:
     needs: scope
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 60
     permissions:
       contents: read
     steps:

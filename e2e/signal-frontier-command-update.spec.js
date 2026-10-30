@@ -1,4 +1,5 @@
 "use strict";
+const { selectArmy } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect } = require("@playwright/test"),
   {
     E,
@@ -350,7 +351,7 @@ test("Shift repeats buildings and a saved mixed group gives a shared follow orde
   );
   expect(state.economy.alloy).toBe(initial.economy.alloy - 240);
   await page.clock.runFor(100);
-  await page.locator("#select-army").click();
+  await selectArmy(page);
   const b = state.units.find((u) => u.kind === "barracks" && !u.build),
     p = await point(page, b);
   await page.keyboard.down("Shift");
@@ -384,13 +385,14 @@ test("visible attack clicks show red feedback and production status is drawn for
   page,
 }) => {
   const state = fixture(),
-    enemy = state.units.find((u) => u.kind === "sentinel");
+    enemy = { ...structuredClone(E.make("frontier-9").units.find((u) => u.kind === "sentinel")), id: ++state.seq };
+  state.units.push(enemy);
   Object.assign(enemy, { x: 1250, y: 2450, hp: E.C.sentinel.hp });
   E.refreshRecon(state);
   assertSave(state);
   await page.setViewportSize({ width: 1440, height: 900 });
   await boot(page, state);
-  await page.locator("#select-army").click();
+  await selectArmy(page);
   const p = await point(page, enemy);
   await page.mouse.click(p.x, p.y, { button: "right" });
   const result = await page.evaluate(() => {

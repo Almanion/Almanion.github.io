@@ -72,17 +72,8 @@ for (const browserName of ["chromium", "webkit"])
           const b = E.living(s, "barracks");
           const p = await page.evaluate((u) => SignalGame.screen(u.x, u.y), b);
           await page.mouse.click(p.x, p.y - 8);
-          await expect(page.locator("#dialog")).toHaveAttribute(
-            "data-panel",
-            "development",
-          );
+          await expect(page.locator("#command-dock")).toHaveAttribute("data-view", "shop");
           await expect(page.locator(".producer")).toBeVisible();
-          if (
-            (await page
-              .locator("#development-size")
-              .getAttribute("aria-expanded")) == "false"
-          )
-            await page.locator("#development-size").click();
           await expect(page.locator("#develop-rifle")).toBeVisible();
           await expect(page.locator("#develop-artillery")).toHaveCount(0);
           const before = s.economy.alloy;
@@ -123,12 +114,6 @@ for (const browserName of ["chromium", "webkit"])
             return SignalGame.screen(u.x, u.y);
           });
           await page.mouse.click(fp.x, fp.y - 8);
-          if (
-            (await page
-              .locator("#development-size")
-              .getAttribute("aria-expanded")) == "false"
-          )
-            await page.locator("#development-size").click();
           await expect(page.locator("#develop-artillery")).toBeVisible();
           await page.locator("#building-tab-tech").click();
           await expect(page.locator("#develop-armor")).toBeVisible();

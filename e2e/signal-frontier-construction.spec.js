@@ -1,4 +1,5 @@
 "use strict";
+const { deckCard, revealPoint } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect } = require("@playwright/test");
 const {
   E,
@@ -57,10 +58,7 @@ for (const [width, height, touch] of [
       expect(
         (await page.evaluate(() => SignalGame.snapshot())).economy.spent,
       ).toBe(0);
-      const position = await page.evaluate(
-        (p) => SignalGame.screen(p.x, p.y),
-        p,
-      );
+      const position = await revealPoint(page, p);
       if (touch) await page.touchscreen.tap(position.x, position.y);
       else await page.mouse.move(position.x, position.y);
       await page.clock.runFor(80);
@@ -231,15 +229,17 @@ test("current shop exposes roles, placement cost, locked technology and exact dr
   await expect(barracks).toContainText("120");
   await expect(barracks).toContainText("сплав");
   await expect(barracks).toContainText("30 с");
-  await page.locator('[data-deck-page="1"]').click();
+  await deckCard(page, "develop-foundry");
   await expect(foundry).toContainText("180");
   await expect(foundry).toContainText("45 с");
   await expect(foundry).toContainText("Исследуйте сеть управления");
+  await expect(foundry).toBeDisabled();
+  await deckCard(page, "develop-arsenal");
   await expect(arsenal).toContainText("180");
   await expect(arsenal).toContainText("45 с");
-  await expect(page.locator("#develop-foundry")).toBeDisabled();
-  await expect(page.locator("#develop-arsenal")).toBeDisabled();
-  await page.locator('[data-deck-page="-1"]').click();
+    await expect(page.locator("#develop-arsenal")).toBeDisabled();
+  await page.locator("#dock-shop").click();
+  await page.locator("#develop-tab-build").click();
   await barracks.click();
   await expect(page.locator("#placement-panel")).toBeVisible();
   expect((await page.evaluate(() => SignalGame.snapshot())).economy.spent).toBe(
@@ -323,6 +323,7 @@ test("selected production services repair a building and protect the base throug
   await page.locator('[data-select="' + base.id + '"]').click();
   const beforeDefense = await page.evaluate(() => SignalGame.snapshot());
   await page.locator('[data-section="tech"]').click();
+  await deckCard(page, "develop-defense-" + base.id);
   await expect(page.locator("#develop-defense-" + base.id)).toBeEnabled();
   await page.locator("#develop-defense-" + base.id).click();
   const protectedBase = await page.evaluate(() => SignalGame.snapshot());

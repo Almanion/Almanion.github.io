@@ -382,7 +382,7 @@ test("reused model geometry matches direct vectors for every model, direction an
     contentType: "application/json",
   });
   expect(result.errors).toEqual([]);
-  expect(result.comparisons).toBe(880);
+  expect(result.comparisons).toBe(960);
   expect(result.cache.hits).toBeGreaterThan(1000);
   expect(result.cache.entries).toBeLessThanOrEqual(512);
 });

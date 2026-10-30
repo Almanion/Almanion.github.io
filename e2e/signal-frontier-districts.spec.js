@@ -1,4 +1,5 @@
 "use strict";
+const { deckCard, revealPoint } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect } = require("@playwright/test"),
   {
     E,
@@ -52,10 +53,7 @@ for (const [width, height, touch, engine] of [
         expect(
           (await page.evaluate(() => SignalGame.snapshot())).economy.spent,
         ).toBe(0);
-        const at = await page.evaluate(
-          (p) => SignalGame.screen(p.x, p.y),
-          site,
-        );
+        const at = await revealPoint(page, site);
         if (touch) await page.touchscreen.tap(at.x, at.y);
         else await page.mouse.move(at.x, at.y);
         await page.clock.runFor(100);

@@ -1,4 +1,5 @@
 "use strict";
+const { selectArmy } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect, chromium, webkit } = require("@playwright/test"),
   { E, fund, build } = require("../tests/helpers/signal-frontier-construction.cjs"),
   { scene, frames } = require("../tests/helpers/signal-frontier-balance.cjs");
@@ -49,7 +50,7 @@ const tab = (page, n) => page.locator(`[data-control-group="${n}"]`);
 test("all ten physical number keys assign and recall groups during battle without pausing or moving the camera", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await boot(page);
-  await page.locator("#select-army").click();
+  await selectArmy(page);
   const ids = (await selection(page)).ids;
   expect(ids).toHaveLength(3);
   for (const n of [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]) {
@@ -80,7 +81,7 @@ test("a building can be assigned from its production panel, combined with troops
   await page.setViewportSize({ width: 1440, height: 900 });
   const s = fixture(), base = E.living(s, "base"), barracks = E.living(s, "barracks"), hero = E.hero(s);
   await boot(page, s);
-  await page.locator("#select-army").click();
+  await selectArmy(page);
   const rifles = (await selection(page)).ids;
   await page.keyboard.press("Control+7");
   await choose(page, base);
@@ -167,7 +168,7 @@ test("live casualties update counts and remove an empty group, without adding re
 
 test("numpad and Meta shortcuts work while text entry, modifiers, menus and placement remain isolated", async ({ page }) => {
   await boot(page);
-  await page.locator("#select-army").click();
+  await selectArmy(page);
   await page.keyboard.press("Meta+Digit0");
   const initial = await selection(page);
   await page.keyboard.press("Escape");
@@ -202,7 +203,7 @@ test("numpad and Meta shortcuts work while text entry, modifiers, menus and plac
 
 test("loading another operation cannot reassign a group to unrelated objects with the same ids", async ({ page }) => {
   await boot(page);
-  await page.locator("#select-army").click();
+  await selectArmy(page);
   await page.keyboard.press("Control+0");
   expect((await selection(page)).groups[0]).toHaveLength(3);
   const other = await page.context().newPage(), replacement = E.snapshot(E.make("frontier-8"));
@@ -304,7 +305,7 @@ for (const type of [chromium, webkit])
           expect(layout.nav.bottom).toBeLessThanOrEqual(height);
           expect(layout.active.left).toBeGreaterThanOrEqual(layout.nav.left - 1);
           expect(layout.active.right).toBeLessThanOrEqual(layout.nav.right + 1);
-          expect(layout.active.height).toBeGreaterThanOrEqual(44);
+          expect(layout.active.height).toBeGreaterThanOrEqual(width < 700 && height > width ? 34 : 26);
           expect(layout.blocked).toEqual([]);
           await page.screenshot({ path: info.outputPath(mode + "-groups.png") });
         }

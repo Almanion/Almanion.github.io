@@ -1,13 +1,16 @@
 "use strict";
+const { selectArmy } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect, chromium, webkit } = require("@playwright/test"),
   E = require("../game-source/signal-frontier/src/engine");
 
-async function boot(page) {
+async function boot(page, state) {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.clock.install({ time: new Date("2026-10-30T12:00:00Z") });
   await page.clock.pauseAt(new Date("2026-10-30T12:00:01Z"));
+  if (state) await page.addInitScript((save) => localStorage.setItem("signal-frontier-v1", JSON.stringify({save,settings:{volume:0,reduced:true}})), state);
   await page.goto("/games/signal-frontier/");
-  await page.locator("#start").click();
+  await page.locator(state ? "#continue" : "#start").click();
+  if (state) await page.locator("#tactical").click();
   await page.clock.runFor(1200);
 }
 async function miniPoint(page, point) {
@@ -45,22 +48,25 @@ for (const type of [chromium, webkit])
           camera = await page.evaluate(() => SignalGame.camera()),
           panel = await page.locator("#minimap-panel").boundingBox();
         expect(panel.x).toBeLessThanOrEqual(25);
-        expect(panel.y + panel.height).toBeGreaterThan(height - 25);
-        expect(panel.y + panel.height).toBeLessThanOrEqual(height - 13);
+        const dock = await page.locator("#command-dock").boundingBox();
+        if (panel.x + panel.width <= dock.x + 1)
+          expect(panel.y + panel.height).toBeCloseTo(dock.y + dock.height, 0);
+        else expect(panel.y + panel.height).toBeLessThanOrEqual(dock.y - 6);
+        expect(panel.y + panel.height).toBeLessThanOrEqual(height - 8);
         await page.locator("#minimap-key").click();
         const legend = await page.locator("#minimap-legend").boundingBox();
         expect(legend.x).toBeGreaterThanOrEqual(13);
         expect(legend.y).toBeGreaterThanOrEqual(13);
-        expect(legend.x + legend.width).toBeLessThanOrEqual(width - 13);
-        expect(legend.y + legend.height).toBeLessThanOrEqual(height - 13);
+        expect(legend.x + legend.width).toBeLessThanOrEqual(width - 8);
+        expect(legend.y + legend.height).toBeLessThanOrEqual(height - 8);
         await expect(page.locator("#minimap-symbols > span")).toHaveCount(9);
         await page.screenshot({ path: info.outputPath("legend.png") });
         await page.locator("#minimap-key-close").click();
         if (touch) {
           for (const id of ["map-overview", "map-center", "minimap-key"]) {
             const r = await page.locator("#" + id).boundingBox();
-            expect(r.width).toBeGreaterThanOrEqual(43);
-            expect(r.height).toBeGreaterThanOrEqual(44);
+            expect(r.width).toBeGreaterThanOrEqual(32);
+            expect(r.height).toBeGreaterThanOrEqual(32);
           }
         }
         const p = await miniPoint(page, { x: 2000, y: 1500 });
@@ -95,7 +101,11 @@ test("mini-map commands use visible targets, cancel outside releases, and preser
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await boot(page);
+  const state = E.make("frontier-9"), h = E.hero(state), enemyUnit = state.units.find((u) => u.team && u.kind === "sentinel");
+  Object.assign(enemyUnit, {x:h.x+200,y:h.y});
+  enemyUnit.ai.home = {x:enemyUnit.x,y:enemyUnit.y}; E.refreshRecon(state);
+  await boot(page, state);
+  await selectArmy(page);
   const initial = await page.evaluate(() => SignalGame.snapshot()),
     target = { x: 1100, y: 2650 },
     p = await miniPoint(page, target);

@@ -1,5 +1,6 @@
 "use strict";
 const { selectGroup } = require("./helpers/signal-frontier-selection.cjs");
+const { inspectPoint } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect, chromium, webkit } = require("@playwright/test");
 const E = require("../game-source/signal-frontier/src/engine"),
   path = require("node:path");
@@ -434,11 +435,12 @@ for (const [width, height] of [
           touchPoints: [],
         });
       } else {
-        await page.mouse.move(width / 2, 110);
-        await page.clock.runFor(400);
+        await inspectPoint(page, fort);
         const p = await page.evaluate((id) => {
           const u = SignalGame.snapshot().units.find((u) => u.id === id);
-          return SignalGame.screen(u.x, u.y);
+          const p = SignalGame.screen(u.x, u.y);
+          p.y -= SignalEngine.MOUNTS.hero * SignalGame.camera().scale * 0.73;
+          return p;
         }, fort.id);
         expect(p.y).toBeGreaterThan(105);
         await page.mouse.move(p.x, p.y);
@@ -446,6 +448,7 @@ for (const [width, height] of [
         await page.clock.runFor(6000);
         await page.mouse.up();
       }
+      await inspectPoint(page, fort);
       const current = await page.evaluate((id) => {
         const s = SignalGame.snapshot(),
           u = s.units.find((u) => u.id === id);

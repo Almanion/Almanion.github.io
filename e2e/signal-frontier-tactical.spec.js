@@ -411,8 +411,8 @@ test("pause: a selected barracks receives its own rally; subsequent army orders 
   const before = await orders(page),
     at = await position(page, b.id);
   await page.mouse.click(at.x, at.y);
-  await expect(page.locator("#dialog")).toBeVisible();
-  await page.keyboard.press("Escape");
+  await expect(page.locator("#command-dock")).toBeVisible();
+  await page.locator("#dock-selection").click();
   expect((await page.evaluate(() => SignalGame.selection())).building).toBe(
     b.id,
   );

@@ -1,4 +1,5 @@
 "use strict";
+const { selectArmy } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect, chromium, webkit } = require("@playwright/test"),
   { E, fund, build } = require("../tests/helpers/signal-frontier-construction.cjs");
 let cached;
@@ -155,7 +156,7 @@ test("idle console explains the hero and shop opens a paused menu without losing
   await expect(page.locator(".roster-detail-head strong")).toHaveText("Разведчик");
   await expect(page.locator(".roster-task")).toHaveText("Личное управление");
   await expect(page.locator("#order-move")).toBeHidden();
-  await page.locator("#select-army").click();
+  await selectArmy(page);
   const ids = await page.evaluate(() => SignalGame.selection().ids), before = await snapshot(page);
   expect(ids.length).toBeGreaterThan(1);
   await page.locator("#dock-shop").click();
