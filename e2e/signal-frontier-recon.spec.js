@@ -138,6 +138,11 @@ for (const type of [chromium, webkit]) {
           v.tactical = { overview: true, x: 1100, y: 1280, zoom: 0.4 };
           v.render(s, ui, 1);
           for (let i = 0; i < 20 && (!v.cameraSettled || v.memoryNeedsRefine); i++) v.render(s, ui, 1);
+          // The unchanged projection is admitted to the floor cache on its
+          // second use. Warm that raster before comparing stationary frames;
+          // WebKit may round its edge pixels differently from direct drawing.
+          v.render(s, ui, 1);
+          v.render(s, ui, 1);
           const map = v.canvas.toDataURL();
           for (let i = 0; i < 5; i++) v.render(s, ui, 1);
           return {

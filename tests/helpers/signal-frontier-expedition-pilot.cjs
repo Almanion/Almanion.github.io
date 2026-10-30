@@ -658,9 +658,12 @@ class ExpeditionPilot {
       }
     }
     // Heal at a completed nearby node instead of trading the scout for a static objective.
-    if (h.hp < (mapped ? 90 : 55)) this.retreat = true;
+    if (h.hp < (E.construction.enabled(s) ? 110 : mapped ? 90 : 55)) this.retreat = true;
     if (this.retreat) {
-      const node = D.nodes(s).sort((a, b) => E.dist(a, h) - E.dist(b, h))[0];
+      // Free-construction extractors heal admitted occupants, not nearby units.
+      // The home repair area remains available to the manually controlled scout.
+      const node = E.construction.enabled(s) ? base
+        : D.nodes(s).sort((a, b) => E.dist(a, h) - E.dist(b, h))[0];
       dest = { x: node.x + 30, y: node.y - 40 };
       interact = false;
       if (h.hp > 135) this.retreat = false;

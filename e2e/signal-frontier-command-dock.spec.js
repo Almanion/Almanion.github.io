@@ -1,4 +1,5 @@
 "use strict";
+const { selectGroup } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect, chromium, webkit } = require("@playwright/test"),
   { E, fund, build } = require("../tests/helpers/signal-frontier-construction.cjs");
 let cached;
@@ -132,6 +133,10 @@ test("portraits isolate, remove with Shift and filter the selected type with Ctr
   await page.locator(".roster-unit").last().click();
   expect(await selected(page)).toEqual(army.slice(-1));
   await expect(page.locator(".roster-detail-head strong")).toHaveText("Боец");
+  await selectGroup(page, 2);
+  expect(await selected(page)).toEqual([]);
+  await selectGroup(page, 1);
+  expect(await selected(page)).toEqual(army);
 });
 test("portrait renderer pages 100 members without losing any or rebuilding focused controls", async ({ page }) => {
   await boot(page);

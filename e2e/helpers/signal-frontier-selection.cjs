@@ -5,10 +5,16 @@
 async function selectGroup(page, group) {
   await page.locator("#dock-selection").click();
   await selectArmy(page);
-  const extra = await page.evaluate((group) => {
+  const { extra, wanted } = await page.evaluate((group) => {
     const units = new Map(SignalGame.snapshot().units.map((u) => [u.id, u]));
-    return SignalGame.selection().ids.filter((id) => units.get(id)?.group !== group);
+    const current = SignalGame.selection().ids;
+    return { extra: current.filter((id) => units.get(id)?.group !== group),
+      wanted: current.some((id) => units.get(id)?.group === group) };
   }, group);
+  if (!wanted) {
+    if (extra.length) await page.locator("#order-cancel").click();
+    return;
+  }
   for (const id of extra)
     await (await memberCard(page, id)).click({ modifiers: ["Shift"] });
 }
