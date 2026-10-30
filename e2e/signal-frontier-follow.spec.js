@@ -15,7 +15,7 @@ async function start(page) {
   await page.clock.install({ time: new Date("2026-10-29T12:00:00Z") });
   await page.clock.pauseAt(new Date("2026-10-29T12:00:01Z"));
   await page.goto("/games/signal-frontier/");
-  await expect(page.locator(".edition")).toContainText("0.20.0");
+  await expect(page.locator(".edition")).toContainText("0.20.1");
   await page.locator("#start").click();
   await page.locator("#select-army").click();
   await settle(page);

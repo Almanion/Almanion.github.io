@@ -115,7 +115,7 @@
         if (c.exit) { if (!c.retry) { leave(s, u); if (u.care) c.retry = .8; } continue; }
         if (c.inside) {
           u.hp = Math.min(E.C[u.kind].hp, u.hp + rate * dt);
-          if (u.hp >= E.C[u.kind].hp) { c.exit = true; leave(s, u); }
+          // Recovery does not issue an exit order or release the reserved slot.
         } else if (E.dist(u, c.entry) <= 5) {
           E.emit(s, "care-door", b.x, b.y);
           c.inside = true; u.x = b.x; u.y = b.y; u.path = []; u.wind = u.flash = 0;

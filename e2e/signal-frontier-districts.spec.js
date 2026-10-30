@@ -35,7 +35,7 @@ for (const [width, height, touch, engine] of [
         await page.clock.install({ time: new Date("2030-01-01T00:00:00Z") });
         await page.clock.pauseAt(new Date("2030-01-01T00:00:30Z"));
         await page.goto("/games/signal-frontier/");
-        await expect(page.locator(".edition")).toContainText("0.20.0");
+        await expect(page.locator(".edition")).toContainText("0.20.1");
         await page.locator("#start").click();
         const initial = await page.evaluate(() => SignalGame.snapshot());
         expect(initial.campaign.id).toBe("frontier-9");

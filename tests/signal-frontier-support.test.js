@@ -64,7 +64,7 @@ test("resource routing skips a full nearby extractor for the next reachable one"
   assert(E.support.assignResource(s, [worker.id], "west").allowed);
   assert.equal(worker.node, second.id); assert.equal(worker.mineId, "west"); valid(s);
 });
-test("patients walk in before healing, do not shoot or grant vision inside, and automatically leave when healed", () => {
+test("patients heal inside and remain sheltered at full health, including after save and restore", () => {
   const s = ready(), u = s.units.find((u) => u.kind === "rifle"), b = E.living(s, "outpost");
   u.hp = 30; assert(E.commandSelection(s, [u.id], b, b.id));
   E.step(s); assert.equal(u.hp, 30, "No healing outside"); assert(!u.care.inside);
@@ -74,12 +74,20 @@ test("patients walk in before healing, do not shoot or grant vision inside, and 
   const copy = valid(s);
   for (let i = 0; i < 900; i++) { E.step(s); E.step(copy); }
   assert.deepEqual(E.snapshot(s), E.snapshot(copy));
-  assert.equal(u.hp, E.C.rifle.hp); assert(!u.care);
-  assert(E.free(u.x, u.y, E.C.rifle.r, E.navigation(s))); valid(s);
+  assert.equal(u.hp, E.C.rifle.hp); assert(u.care.inside); assert.equal(u.care.exit, false);
+  assert.equal(u.x, b.x); assert.equal(u.y, b.y);
+  assert.equal(E.sightRange(s, u), 0); assert(!E.visible(s, 1, u));
+  assert.equal(E.support.occupants(s, b.id).length, 1);
+  const healed = valid(s); frames(healed, 600);
+  const restored = healed.units.find((v) => v.id === u.id);
+  assert.equal(restored.hp, E.C.rifle.hp); assert(restored.care.inside); assert(!restored.care.exit);
+  assert(E.support.leave(healed, restored)); assert(!restored.care);
+  assert(E.free(restored.x, restored.y, E.C.rifle.r, E.navigation(healed))); valid(healed);
 });
 test("manual movement releases sheltered troops, and a blocked order is atomic", () => {
   const s = ready(), u = s.units.find((u) => u.kind === "rifle"), b = E.living(s, "outpost");
   enter(s, u, b);
+  frames(s, 900); assert.equal(u.hp, E.C.rifle.hp); assert(u.care.inside);
   assert(!E.orderUnits(s, [u.id], NaN, 0)); assert(u.care.inside);
   const p = E.construction.exit(b, E.C.rifle.r);
   assert(E.orderUnits(s, [u.id], p.x + 100, p.y + 100)); assert(!u.care);
@@ -99,7 +107,8 @@ test("four reservations cap the infirmary; repeat clicks never consume extra slo
 test("the hero cannot fire inside and moving manually cancels treatment", () => {
   const s = ready(), h = E.hero(s), b = E.living(s, "outpost");
   enter(s, h, b); const shots = s.shots, ammo = s.ammo;
-  for (let i = 0; i < 120; i++) E.step(s, { fire: true, interact: true, aim: { x: h.x + 200, y: h.y } });
+  for (let i = 0; i < 1020; i++) E.step(s, { fire: true, interact: true, aim: { x: h.x + 200, y: h.y } });
+  assert.equal(h.hp, E.C.hero.hp);
   assert.equal(s.shots, shots); assert.equal(s.ammo, ammo); assert(h.care.inside);
   E.step(s, { x: 1 }); assert(!h.care); valid(s);
 });

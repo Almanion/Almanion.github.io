@@ -91,6 +91,37 @@ test("pause shop offers hero healing and returns to the same building", async ({
   await page.locator("#develop-exit-all").click(); expect(E.hero(await snapshot(page)).care).toBeUndefined();
   expect(await page.evaluate(() => SignalGame.mode())).toBe("tactical");
 });
+
+test("healed troops wait inside and can be released through both infirmary panels", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const { army } = await boot(page, (s) => {
+    const b = E.living(s, "outpost"), patients = s.units.filter((u) => u.kind === "rifle").slice(0, 3);
+    for (const u of patients) {
+      u.hp = E.C[u.kind].hp - 4;
+      if (!E.support.admit(s, [u.id], b.id).allowed) throw Error("Patient cannot enter");
+      Object.assign(u, { x: b.x, y: b.y, path: [] }); u.care.inside = true;
+    }
+  });
+  await page.clock.runFor(2000);
+  const s = await snapshot(page);
+  for (const u of army.slice(0, 3)) {
+    const patient = s.units.find((v) => v.id === u.id);
+    expect(patient.hp).toBe(E.C[patient.kind].hp);
+    expect(patient.care.inside).toBe(true); expect(patient.care.exit).toBe(false);
+  }
+  await page.keyboard.press("7"); await page.locator("[data-care-view]").click();
+  const slots = page.locator('[data-care="exit"]');
+  await expect(slots).toHaveCount(3);
+  await expect(slots.first()).toHaveAttribute("title", /Вылечен · ждёт приказа/);
+  await expect(slots.first().locator(".roster-badge")).toHaveText("✓");
+  await slots.first().click();
+  expect((await snapshot(page)).units.filter((u) => u.care).length).toBe(2);
+  await page.locator("[data-care-view]").click(); await page.locator("[data-inspect]").click();
+  await page.locator('[data-section="care"]').click();
+  await expect(page.locator('[id^="develop-patient-"]').first()).toContainText("Ждёт приказа");
+  await page.locator("#develop-exit-all").click();
+  expect((await snapshot(page)).units.some((u) => u.care)).toBe(false);
+});
 for (const browserType of [chromium, webkit]) for (const width of [320, 390]) test(`${browserType.name()} ${width}px: touch double tap and infirmary controls fit`, async () => {
   const browser = await browserType.launch(), context = await browser.newContext({ viewport: { width, height: 844 }, isMobile: true, hasTouch: true }), page = await context.newPage();
   const errors = []; page.on("pageerror", (e) => errors.push(e.message));

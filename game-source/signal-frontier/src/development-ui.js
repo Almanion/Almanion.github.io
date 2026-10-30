@@ -757,12 +757,12 @@
           sections = `<div class="building-tabs">${troops.length ? `<button data-section="troops" aria-pressed="${section === "troops"}">Выпуск</button>` : ""}${tech.length ? `<button data-section="tech" aria-pressed="${section === "tech"}">Технологии</button>` : ""}${selected.kind === "outpost" ? `<button data-section="care" aria-pressed="${section === "care"}">Лечение</button>` : ""}<button data-section="service" aria-pressed="${section === "service"}">Здание</button></div>`;
           if (section === "care" && selected.kind === "outpost") {
             const patients = E.support.occupants(s, selected.id), h = E.hero(s);
-            cards = [tile("develop-heal-hero", "Лечить разведчика", "Внутри · 8 прочности/с", "После лечения выйдет автоматически",
+            cards = [tile("develop-heal-hero", "Лечить разведчика", "Внутри · 8 прочности/с", "Останется внутри до приказа",
               `data-care="admit" data-care-id="${selected.id}" ${h.hp >= E.C.hero.hp || h.care || patients.length >= 4 ? "disabled" : ""}`, "repair"),
-              tile("develop-exit-all", "Вывести всех", `Занято ${patients.length} из 4 мест`, "Нажмите, чтобы прервать лечение",
+              tile("develop-exit-all", "Вывести всех", `Занято ${patients.length} из 4 мест`, "Выход всех бойцов по вашему приказу",
                 `data-care="evacuate" data-care-id="${selected.id}" ${patients.length ? "" : "disabled"}`, "command"),
               ...patients.map((u) => tile("develop-patient-" + u.id, ({ hero: "Разведчик", rifle: "Боец", scout: "Дозорный", artillery: "Артиллерия" })[u.kind],
-                Math.ceil(u.hp) + " / " + E.C[u.kind].hp + (u.care.inside ? " · внутри" : " · в пути"), "Нажать — выйти",
+                Math.ceil(u.hp) + " / " + E.C[u.kind].hp + (u.care.inside ? u.care.exit ? " · выход занят" : u.hp >= E.C[u.kind].hp ? " · вылечен" : " · лечится" : " · в пути"), u.care.inside && !u.care.exit && u.hp >= E.C[u.kind].hp ? "Ждёт приказа · нажать — выйти" : "Нажать — выйти",
                 `data-care="exit" data-care-id="${u.id}"`, "repair"))];
           } else if (section === "service") {
             const offer = C.repairOffer(s, selected.id),
