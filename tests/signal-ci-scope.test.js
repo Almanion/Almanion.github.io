@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const { classify } = require("../tools/signal-ci-scope");
 const ui = [
   "game-source/signal-frontier/src/app.js",
+  "game-source/signal-frontier/src/minimap.js",
   "games/signal-frontier/development-ui.js",
   "e2e/signal-frontier-buildings.spec.js",
   ".github/workflows/pages.yml",

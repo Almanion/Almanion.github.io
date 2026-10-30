@@ -176,7 +176,7 @@ test("save validator rejects forged footprint, duplicate builder, invalid work p
   restored(s);
   for (const change of [
     (u) => (u.x += 1),
-    (u) => (u.construction.turn = 2),
+    (u) => (u.construction.turn = 4),
     (u) => (u.construction.paid = 1),
     (u) => (u.construction.work.x += 30),
     (u) => (u.construction.builderId = 999),
@@ -261,7 +261,7 @@ test("wide buildings can be reached and damaged by melee attackers at their foot
   E.refreshRecon(s);
   const path = E.firingPath(enemy, b);
   assert(path.length);
-  assert(E.rangeDistance(path.at(-1), b) < E.C.runner.range);
+  assert(E.rangeDistance(path.at(-1), b) < E.stats(s, enemy, b).range);
   const before = b.hp;
   frames(s, 600);
   assert(b.hp < before, JSON.stringify({ enemy, b }));

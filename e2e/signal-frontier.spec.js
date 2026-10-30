@@ -209,8 +209,9 @@ for (const browserType of [chromium, webkit])
       const errors = [];
       page.on("pageerror", (e) => errors.push(e.message));
       try {
-        await page.goto("http://127.0.0.1:4173" + route);
-        await page.locator("#start").tap();
+        await fixture(page, E.make("frontier-7"));
+        await page.locator("#tactical").tap();
+        const pausedAt = await page.evaluate(() => SignalGame.snapshot().t);
         await page.locator("#map-overview").tap();
         const readTargets = () =>
           page.evaluate(() => {
@@ -281,7 +282,7 @@ for (const browserType of [chromium, webkit])
             () => document.documentElement.scrollWidth - innerWidth,
           ),
         ).toBe(0);
-        expect(await page.evaluate(() => SignalGame.snapshot().t)).toBe(0);
+        expect(await page.evaluate(() => SignalGame.snapshot().t)).toBe(pausedAt);
         await page.screenshot({
           path: `test-results/signal-supply-${browserType.name()}-${size.join("x")}.png`,
         });

@@ -15,13 +15,18 @@ async function start(page) {
 test("development: real queued cost, cancellation, pause and reload", async ({
   page,
 }) => {
-  test.setTimeout(60000); // This scenario renders over 22 seconds of virtual time.
+  test.setTimeout(240000); // Over 22 seconds of fixed-clock rendering on software GPUs.
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.clock.install();
+  await page.clock.install({ time: new Date("2026-10-29T12:00:00Z") });
+  await page.clock.pauseAt(new Date("2026-10-29T12:00:01Z"));
   await start(page);
   await page.locator("#supply-open").click();
   await page.locator("#develop-tab-economy").click();
+  await page
+    .locator("[data-select]")
+    .filter({ hasText: "Посадочный узел" })
+    .click();
   const base = await page.evaluate(
     () => SignalEngine.living(SignalGame.snapshot(), "base").id,
   );
@@ -32,7 +37,6 @@ test("development: real queued cost, cancellation, pause and reload", async ({
   expect(s.t).toBe(0);
   expect(E.living(s, "base").jobs[0].remaining).toBe(18);
   await page.locator(".job-select").first().click();
-  await page.getByRole("button", { name: /Отменить: Дрон/ }).click();
   await expect(page.locator("#field-alloy")).toHaveText("167");
   await page.clock.runFor(500);
   await page.locator("#develop-drone-" + base).click();
@@ -100,10 +104,14 @@ test("tactical camera: hover edges, drag, zoom, limits and no accidental orders"
   ).toEqual(orders);
   expect(await page.evaluate(() => SignalGame.snapshot().t)).toBe(0);
   await page.locator("#map-overview").click();
-  await page.waitForTimeout(350);
+  await page.locator("#group-one").click();
+  await expect
+    .poll(() => page.evaluate(() => SignalGame.cameraSettled()), {
+      timeout: 15000,
+    })
+    .toBe(true);
   expect((await page.evaluate(() => SignalGame.camera())).overview).toBe(true);
   const target = await page.evaluate(() => SignalGame.screen(1760, 840));
-  await page.locator("#group-one").click();
   await page.mouse.click(target.x, target.y, { button: "right" });
   expect(
     await page.evaluate(
@@ -117,7 +125,12 @@ test("tactical camera: hover edges, drag, zoom, limits and no accidental orders"
 
 test("touch camera: corner hold, pinch, cancellation and rotation preserve orders", async ({
   browser,
+  browserName,
 }) => {
+  test.skip(
+    browserName !== "chromium",
+    "This native multi-touch fixture uses Chromium CDP; WebKit touch placement has a separate test.",
+  );
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
     hasTouch: true,

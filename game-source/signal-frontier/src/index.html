@@ -12,19 +12,24 @@
       content="Предел сигнала — тактическая операция на заброшенном кольце."
     />
     <title>Предел сигнала · Альманион</title>
-    <link rel="stylesheet" href="style.css?v=0.12.0" />
-    <script src="terrain.js?v=0.12.0" defer></script>
-    <script src="campaign.js?v=0.12.0" defer></script>
-    <script src="recon.js?v=0.12.0" defer></script>
-    <script src="construction.js?v=0.12.0" defer></script>
-    <script src="engine.js?v=0.12.0" defer></script>
-    <script src="view.js?v=0.12.0" defer></script>
-    <script src="audio.js?v=0.12.0" defer></script>
-    <script src="development-ui.js?v=0.12.0" defer></script>
-    <script src="cloud-core.js?v=0.12.0" defer></script>
-    <script src="persistence.js?v=0.12.0" defer></script>
-    <script src="account-ui.js?v=0.12.0" defer></script>
-    <script src="app.js?v=0.12.0" defer></script>
+    <link rel="stylesheet" href="style.css?v=0.20.0" />
+    <script src="terrain.js?v=0.20.0" defer></script>
+    <script src="districts.js?v=0.20.0" defer></script>
+    <script src="campaign.js?v=0.20.0" defer></script>
+    <script src="recon.js?v=0.20.0" defer></script>
+    <script src="construction.js?v=0.20.0" defer></script>
+    <script src="support.js?v=0.20.0" defer></script>
+    <script src="engine.js?v=0.20.0" defer></script>
+    <script src="unit-models.js?v=0.20.0" defer></script>
+    <script src="minimap.js?v=0.20.0" defer></script>
+    <script src="view.js?v=0.20.0" defer></script>
+    <script src="audio.js?v=0.20.0" defer></script>
+    <script src="development-ui.js?v=0.20.0" defer></script>
+    <script src="cloud-core.js?v=0.20.0" defer></script>
+    <script src="persistence.js?v=0.20.0" defer></script>
+    <script src="account-ui.js?v=0.20.0" defer></script>
+    <script src="selection-ui.js?v=0.20.0" defer></script>
+    <script src="app.js?v=0.20.0" defer></script>
   </head>
   <body data-mode="menu">
     <canvas
@@ -56,11 +61,35 @@
           ><button data-open="account">Аккаунт</button>
         </div>
       </div>
-      <p class="edition">Первая операция <span>0.12.0</span></p>
+      <p class="edition">Первая операция <span>0.20.0</span></p>
     </main>
     <div id="hud" hidden>
       <header class="topbar">
         <div class="field-economy" aria-label="Ресурсы и вместимость">
+          <svg class="resource-crystal" viewBox="0 0 48 48" aria-hidden="true">
+            <defs>
+              <linearGradient id="alloy-facet" x2="1" y2="1">
+                <stop stop-color="#ddfff0" />
+                <stop offset="1" stop-color="#65bca0" />
+              </linearGradient>
+            </defs>
+            <path
+              d="m8 32 5-17 10-9 12 8 6 18-17 10Z"
+              fill="#143b39"
+              stroke="#81bdab"
+            />
+            <path d="m13 15 10-9 5 18-14 9Z" fill="url(#alloy-facet)" />
+            <path d="m23 6 12 8-7 10Z" fill="#a8e6c9" />
+            <path d="m28 24 13 8-17 10Z" fill="#397b70" />
+            <path d="m14 33 14-9-4 18Z" fill="#80c8ad" />
+            <path d="m8 32 6 1 10 9-15-4Z" fill="#d5ba7a" />
+            <path d="m35 14 6 18-13-8Z" fill="#539e8b" />
+            <path
+              d="m4 39 9 3m23-36 3 3m-3 0 3-3"
+              stroke="#e2d5a0"
+              stroke-linecap="round"
+            />
+          </svg>
           <span><small>Сплав</small><strong id="field-alloy">180</strong></span>
           <span
             ><small>Отряд</small
@@ -119,56 +148,103 @@
           </button>
         </div>
       </div>
-      <div id="map-tools" class="map-tools" hidden>
-        <button
-          id="map-overview"
-          aria-label="Показать всю карту"
-          title="Обзор карты"
-          aria-pressed="false"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2Zm6-2v16M15 5v16" />
-          </svg>
-        </button>
-        <button id="map-center" aria-label="К разведчику" title="К разведчику">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="6" />
-            <path d="M12 2v5m0 10v5M2 12h5m10 0h5" />
-          </svg>
-        </button>
-      </div>
-      <div id="tactical-panel" class="tactical-panel" hidden>
-        <div class="tactical-heading">
-          <div class="tactical-title">
-            <span>Тактическая пауза</span
-            ><button id="supply-open" class="supply-button">
-              <span id="supply-title">Снабжение</span>
-              <span id="alloy">120</span>
-            </button>
-          </div>
-          <small id="tactical-hint">ЛКМ — выбор · ПКМ — приказ</small>
-        </div>
-        <div class="groups">
-          <button id="group-one" class="group selected" aria-pressed="true">
-            <kbd>1</kbd
-            ><span
-              >Огневая группа<small id="rifle-count">3 бойца</small></span
-            ></button
-          ><button id="group-two" class="group" aria-pressed="false" disabled>
-            <kbd>2</kbd
-            ><span
-              >Артиллерия<small id="artillery-status"
-                >Заказать в снабжении</small
-              ></span
-            >
+      <section
+        id="minimap-panel"
+        class="minimap"
+        aria-label="Навигация по карте"
+        hidden
+      >
+        <div id="map-tools" class="map-tools">
+          <button
+            id="map-overview"
+            aria-label="Показать всю карту"
+            title="Обзор карты"
+            aria-pressed="false"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2Zm6-2v16M15 5v16" />
+            </svg>
+          </button>
+          <button
+            id="map-center"
+            aria-label="К разведчику"
+            title="К разведчику"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="6" />
+              <path d="M12 2v5m0 10v5M2 12h5m10 0h5" />
+            </svg>
+          </button>
+          <button
+            id="minimap-key"
+            aria-label="Обозначения мини-карты"
+            title="Обозначения · M — свернуть карту"
+            aria-expanded="false"
+            aria-controls="minimap-legend"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="8" />
+              <path d="M12 11v6m0-10v1" />
+            </svg>
           </button>
         </div>
-        <div class="selection-actions">
+        <canvas
+          id="minimap-canvas"
+          tabindex="0"
+          role="img"
+          aria-label="Мини-карта. Стрелки — обзор, Home — к разведчику, Enter — полная карта."
+          aria-describedby="minimap-hint"
+        ></canvas>
+        <aside
+          id="minimap-legend"
+          class="minimap-legend"
+          aria-label="Обозначения мини-карты"
+          hidden
+        >
+          <header>
+            <strong>Условные обозначения</strong
+            ><button id="minimap-key-close" aria-label="Закрыть обозначения">
+              ×
+            </button>
+          </header>
+          <div id="minimap-symbols" class="minimap-symbols"></div>
+          <p>
+            Тёмное — неизвестная область. Серое — разведанная территория вне
+            текущего обзора.
+          </p>
+          <p id="minimap-hint">
+            Касание или перетаскивание — обзор без паузы. ПКМ — приказ группе. В
+            режиме «Идти» касание отдаёт приказ.
+          </p>
+          <button id="minimap-fold">Свернуть мини-карту <kbd>M</kbd></button>
+        </aside>
+      </section>
+      <section id="command-dock" class="command-dock" aria-label="Командная панель" hidden>
+        <nav id="control-groups" class="control-groups" aria-label="Группы войск и зданий · Ctrl + 1–0 — назначить, цифра — выбрать" hidden></nav>
+        <header class="dock-header">
+          <div class="dock-tabs" aria-label="Содержимое командной панели">
+            <button id="dock-shop" aria-pressed="true">Магазин</button>
+            <button id="dock-selection" aria-pressed="false">Выделение <span id="dock-count">0</span></button>
+          </div>
           <span id="selection-count" role="status" aria-live="polite"></span>
-          <button id="order-move" aria-pressed="false">Идти</button>
-          <button id="order-cancel">Снять</button>
+          <span class="dock-mode" id="dock-mode">ПАУЗА</span>
+        </header>
+        <div class="dock-workspace">
+          <div class="dock-main">
+            <section id="development-content" aria-label="Магазин">
+              <div id="development-panel"></div>
+              <p id="development-feedback" class="supply-feedback" role="status"></p>
+            </section>
+            <section id="selection-content" aria-label="Выделенные войска и здания" hidden></section>
+          </div>
+          <aside class="dock-orders" aria-label="Приказы выделению">
+            <button id="order-move" aria-pressed="false" title="Указать точку, цель или ведущего">Идти</button>
+            <button id="order-cancel">Снять</button>
+            <button id="select-army" title="Выделить всех бойцов, дозорных и артиллерию">Вся армия</button>
+            <small id="tactical-hint"></small>
+          </aside>
         </div>
-      </div>
+      </section>
       <div class="touch-controls" id="touch-controls">
         <div class="stick" id="move-stick" aria-label="Движение">
           <span></span><small>ХОД</small>
@@ -194,7 +270,7 @@
             id="placement-rotate"
             aria-label="Повернуть здание на 90 градусов"
           >
-            Поворот ↻
+            Поворот ↺
           </button>
           <button id="placement-confirm" class="primary">Построить</button>
         </div>
@@ -267,13 +343,13 @@
               <dt><kbd>W A S D</kbd> / <kbd>↑ ↓ ← →</kbd></dt>
               <dd>Движение · в паузе — перемещение камеры</dd>
               <dt>Мышь · левая кнопка</dt>
-              <dd>Прицел и огонь · здание открывает очередь</dd>
+              <dd>Прицел и огонь · союзник — выбор · здание — очередь</dd>
               <dt><kbd>Shift</kbd> / <kbd>R</kbd></dt>
               <dd>Рывок / перезарядка</dd>
               <dt><kbd>E</kbd>, удерживать</dt>
               <dd>Взаимодействовать</dd>
-              <dt><kbd>Tab</kbd> · <kbd>1</kbd> <kbd>2</kbd></dt>
-              <dd>Пауза · выбор всей пехоты или артиллерии</dd>
+              <dt><kbd>Tab</kbd></dt>
+              <dd>Тактическая пауза / продолжить бой</dd>
               <dt>В паузе: ЛКМ / ПКМ</dt>
               <dd>
                 Выбор и рамка / приказ выбранным · Shift добавляет или убирает
@@ -281,6 +357,33 @@
               </dd>
               <dt>Во время боя: ПКМ</dt>
               <dd>Рамка выбирает бойцов, короткое нажатие отдаёт приказ</dd>
+              <dt><kbd>Ctrl + 1–0</kbd> / <kbd>1–0</kbd></dt>
+              <dd>
+                Назначить выбранные войска и здания / выбрать группу.
+                Закладки внизу показывают номер и число живых участников.
+                Shift + цифра добавляет группу к выделению;
+                Ctrl + Shift + цифра дополняет сохранённую группу.
+                Ctrl + цифра при пустом выделении очищает её.
+                «Вся армия» выбирает бойцов, дозорных и артиллерию.
+                Нажатие на портрет оставляет один объект; Shift убирает его,
+                Ctrl выбирает все объекты этого типа внутри выделения.
+              </dd>
+              <dt>Двойное нажатие по бойцу или зданию</dt>
+              <dd>Выбрать все объекты этого типа на видимой части экрана. Shift добавляет их к выделению.</dd>
+              <dt>Зонды → ресурс</dt>
+              <dd>Выделите зондов и нажмите на месторождение: они присоединятся к ближайшему доступному экстрактору. У каждого узла четыре места с учётом заказанных зондов.</dd>
+              <dt>Войска → экстрактор</dt>
+              <dd>ПКМ, на телефоне — «Идти» и касание здания. Четыре места, лечение внутри — 8 прочности/с; стрелять нельзя. Полностью вылеченные бойцы выходят автоматически. Во вкладке «Лечение» можно отправить разведчика или прервать лечение.</dd>
+              <dt>Shift + ЛКМ при стройке</dt>
+              <dd>
+                Поставить здание и продолжить размещать такие же. Esc или ПКМ
+                заканчивает размещение.
+              </dd>
+              <dt>ПКМ по своему бойцу или разведчику</dt>
+              <dd>
+                Выбранная группа следует за ним. ПКМ по земле заменяет
+                следование перемещением, по врагу — атакой.
+              </dd>
               <dt>Камера в паузе</dt>
               <dd>
                 WASD, края экрана или средняя кнопка · колесо меняет масштаб
@@ -301,12 +404,13 @@
             </p>
             <p>
               «Приказы» останавливают бой. Коснитесь бойца или обведите отряд
-              одним пальцем. Нажмите «Идти», затем укажите точку или врага. Два
-              пальца двигают и масштабируют карту; удержание у края прокручивает
-              её. «Отмена» оставляет прежний приказ. Касание здания открывает
-              очередь; «Каталог» раскрывает покупки. «Сбор» направляет только
-              будущие подкрепления. Закрытие панели оставляет паузу: для
-              продолжения нажмите «В бой».
+              одним пальцем. Нажмите «Идти», затем укажите точку, врага или
+              своего бойца / разведчика для следования. Два пальца двигают и
+              масштабируют карту; удержание у края прокручивает её. «Отмена»
+              оставляет прежний приказ. Касание здания открывает очередь;
+              «Каталог» раскрывает покупки. «Сбор» направляет только будущие
+              подкрепления. Закрытие панели оставляет паузу: для продолжения
+              нажмите «В бой».
             </p>
           </div>
           <p id="recon-help" class="help-note" hidden>
@@ -342,28 +446,6 @@
             Прогресс операции сохраняется на этом устройстве.
           </p>
           <button class="primary" id="settings-back">Готово</button>
-        </section>
-        <section id="development-content" hidden>
-          <div class="drawer-heading">
-            <div>
-              <p class="eyebrow">Тактическая пауза</p>
-              <h2>Развитие</h2>
-            </div>
-            <button
-              id="development-size"
-              aria-expanded="true"
-              aria-controls="development-panel"
-            >
-              Свернуть
-            </button>
-            <button id="development-back" class="text-button">К карте</button>
-          </div>
-          <div id="development-panel"></div>
-          <p
-            id="development-feedback"
-            class="supply-feedback"
-            role="status"
-          ></p>
         </section>
         <section id="supply-content" hidden>
           <p class="eyebrow">Тактическая пауза</p>

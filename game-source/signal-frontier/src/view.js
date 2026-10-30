@@ -398,6 +398,35 @@
         }
       }
     }
+    if (world.roads) {
+      c.save();
+      c.lineCap = "round";
+      c.lineJoin = "round";
+      for (const route of world.roads) {
+        line(
+          c,
+          route.map(([x, y]) => [x, y - T.height(x, y)]),
+          "#bfd1b51c",
+          44,
+        );
+        line(
+          c,
+          route.map(([x, y]) => [x, y - T.height(x, y)]),
+          "#202f321f",
+          4,
+        );
+      }
+      for (const r of world.districts) {
+        const x = r.x + r.w / 2,
+          y = r.y + r.h / 2;
+        if (T.level(x, y) < 0) continue;
+        c.font = "bold 34px sans-serif";
+        c.fillStyle = "#d3d8b615";
+        c.textAlign = "center";
+        c.fillText(r.id, x, y - T.height(x, y));
+      }
+      c.restore();
+    }
     a.faces = faces;
     return a;
   }
@@ -443,7 +472,8 @@
     );
   }
   function terrain(world = E.map(null)) {
-    if (world.id === "highlands") return highlandGround(world);
+    if (["highlands", "districts"].includes(world.id))
+      return highlandGround(world);
     const a = document.createElement("canvas");
     a.width = world.W;
     a.height = world.H;
@@ -801,7 +831,7 @@
               b = list[(i + 1) % list.length],
               da = Math.hypot(p[0] - a[0], p[1] - a[1]),
               db = Math.hypot(b[0] - p[0], b[1] - p[1]),
-              inset = fog.cell * 0.22;
+              inset = fog.cell * (list.length > 6 ? 0.35 : 0.22);
             // A small inset gives diagonal chords and concave curves room inside
             // explored cells; one-cell corridors and isolated islands remain open.
             return [
@@ -874,36 +904,118 @@
           if (chord(i, j)) next = j;
         i = next;
       }
+      // Join the simplified boundary with continuous tangents rather than tiny
+      // corner fillets: long circular arcs must not retain horizontal cell steps.
+      // Every added strip is checked against entire unknown cells, not samples.
+      const crossesUnknown = (points) => {
+        const xs = points.map((p) => p[0]),
+          ys = points.map((p) => p[1]);
+        for (
+          let y = Math.floor(Math.min(...ys) / fog.cell);
+          y <= Math.floor(Math.max(...ys) / fog.cell);
+          y++
+        )
+          for (
+            let x = Math.floor(Math.min(...xs) / fog.cell);
+            x <= Math.floor(Math.max(...xs) / fog.cell);
+            x++
+          ) {
+            if (known(x, y)) continue;
+            const cut = clipPolygon(points, {
+              x: x * fog.cell,
+              y: y * fog.cell,
+              w: fog.cell,
+              h: fog.cell,
+            });
+            let area = 0;
+            for (let i = 0, j = cut.length - 1; i < cut.length; j = i++)
+              area += cut[j][0] * cut[i][1] - cut[i][0] * cut[j][1];
+            if (Math.abs(area) > 1e-6) return true;
+          }
+        return false;
+      };
       const rounded = [];
       for (let i = 0; i < smooth.length; i++) {
         const p = smooth[i],
           a = smooth[(i + smooth.length - 1) % smooth.length],
-          b = smooth[(i + 1) % smooth.length];
-        const r = fog.cell / 2,
+          b = smooth[(i + 1) % smooth.length],
           da = Math.hypot(a[0] - p[0], a[1] - p[1]),
-          db = Math.hypot(b[0] - p[0], b[1] - p[1]),
-          from = p.map((n, k) => n + (a[k] - n) * Math.min(0.5, r / da)),
-          to = p.map((n, k) => n + (b[k] - n) * Math.min(0.5, r / db));
-        const curve = [];
-        for (let j = 0; j <= 8; j++) {
-          const t = j / 8;
-          curve.push(
-            p.map(
-              (n, k) =>
-                (1 - t) ** 2 * from[k] + 2 * (1 - t) * t * n + t * t * to[k],
+          db = Math.hypot(b[0] - p[0], b[1] - p[1]);
+        let chosen = [p];
+        for (const radius of [
+          Math.max(da, db) / 2,
+          Math.min(da, db) / 2,
+          fog.cell,
+          fog.cell / 2,
+          fog.cell / 4,
+        ]) {
+          const from = p.map(
+              (n, k) => n + (a[k] - n) * Math.min(0.5, radius / da),
             ),
-          );
+            to = p.map((n, k) => n + (b[k] - n) * Math.min(0.5, radius / db)),
+            curve = [];
+          for (let j = 0; j <= 12; j++) {
+            const t = j / 12;
+            curve.push(
+              p.map(
+                (n, k) =>
+                  (1 - t) ** 2 * from[k] + 2 * (1 - t) * t * n + t * t * to[k],
+              ),
+            );
+          }
+          const strip = [from, p, to, ...curve.slice().reverse()];
+          if (!crossesUnknown(strip) && !cutsCenter(strip)) {
+            chosen = curve;
+            break;
+          }
         }
-        if (cutsCenter([from, p, to, ...curve.slice().reverse()]))
-          rounded.push(p);
-        else rounded.push(...curve);
+        rounded.push(...chosen);
       }
       loops.push(rounded);
     }
     return loops;
   }
+  function fogIntervals(polygons, y) {
+    const cuts = [];
+    for (const polygon of polygons)
+      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const a = polygon[j],
+          b = polygon[i];
+        if (a[1] > y !== b[1] > y)
+          cuts.push({
+            x: a[0] + ((y - a[1]) * (b[0] - a[0])) / (b[1] - a[1]),
+            sign: b[1] > a[1] ? 1 : -1,
+          });
+      }
+    cuts.sort((a, b) => a.x - b.x);
+    const ranges = [];
+    let winding = 0,
+      start = 0;
+    for (let i = 0; i < cuts.length; ) {
+      const x = cuts[i].x,
+        before = winding;
+      do {
+        winding += cuts[i++].sign;
+      } while (i < cuts.length && Math.abs(cuts[i].x - x) < 1e-7);
+      if (!before && winding) start = x;
+      else if (before && !winding && x > start) ranges.push([start, x]);
+    }
+    return ranges;
+  }
+  const unitModels = root.SignalUnitModels.create(E, {
+    slab,
+    plate,
+    seam,
+    lamp,
+    point,
+    ellipse,
+    poly,
+    line,
+    arc,
+    MAT,
+  });
   class View {
-    constructor(canvas) {
+    constructor(canvas, options = {}) {
       this.canvas = canvas;
       this.c = canvas.getContext("2d", { alpha: false });
       this.ground = terrain();
@@ -911,8 +1023,21 @@
       this.tactical = { overview: true, x: 720, y: 500, zoom: 0.95 };
       this.fx = [];
       this.poses = new Map();
+      this.modelDeaths = new Map();
+      this.modelExits = new Map();
+      this.modelCargo = new Map();
+      this.modelDeliveries = new Map();
+      this.workerActivity = new Map();
+      this.buildingActivity = new Map();
       this.memoryCanvas = document.createElement("canvas");
-      this.groundCanvas = document.createElement("canvas");
+      this.memoryNeedsRefine = false;
+      // Retain the composite path as an independent visual reference for QA.
+      this.groundCanvas = options.compositeGround
+        ? document.createElement("canvas")
+        : null;
+      this.cacheFloor = options.cacheFloor !== false;
+      this.floorImages = new Map();
+      this.floorPixels = 0;
       this.unitSprites = new Map();
       this.spritePixels = 0;
       this.fogPaths = {};
@@ -932,6 +1057,61 @@
       return [x, y - this.z(x, y) - z];
     }
     floor(c) {
+      const limit = 4 * 1024 * 1024,
+        pixels = c.canvas.width * c.canvas.height;
+      // Cache only the two presented passes (surface and offset shadow).
+      // Memory painting and very large viewports use the direct path, avoiding
+      // eviction/rebuild thrashing when both images cannot fit in the budget.
+      if (!this.cacheFloor || c !== this.c || pixels * 2 > limit)
+        return this.paintFloor(c);
+      const m = c.getTransform(),
+        key = [
+          this.mapId,
+          c.canvas.width,
+          c.canvas.height,
+          m.a,
+          m.b,
+          m.c,
+          m.d,
+          m.e,
+          m.f,
+        ].join(":");
+      let entry = this.floorImages.get(key);
+      const evict = () => {
+        const oldest = this.floorImages.keys().next().value,
+          image = this.floorImages.get(oldest);
+        this.floorPixels -= image.pixels;
+        if (image.canvas) image.canvas.width = image.canvas.height = 0;
+        this.floorImages.delete(oldest);
+      };
+      if (!entry) {
+        this.floorImages.set(key, { pixels: 0 });
+        while (this.floorImages.size > 3) evict();
+        // A moving camera uses the original texture directly. Only repeated
+        // exact projections justify a viewport-sized raster image.
+        return this.paintFloor(c);
+      }
+      this.floorImages.delete(key);
+      this.floorImages.set(key, entry);
+      if (!entry.canvas) {
+        while (this.floorPixels + pixels > limit) evict();
+        const canvas = document.createElement("canvas");
+        canvas.width = c.canvas.width;
+        canvas.height = c.canvas.height;
+        const b = canvas.getContext("2d");
+        b.setTransform(m);
+        this.paintFloor(b);
+        entry.canvas = canvas;
+        entry.pixels = pixels;
+        this.floorPixels += pixels;
+      }
+      // Preserve the destination clip, opacity and exact physical pixel phase.
+      c.save();
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.drawImage(entry.canvas, 0, 0);
+      c.restore();
+    }
+    paintFloor(c) {
       const a = this.ground;
       c.drawImage(
         a,
@@ -942,7 +1122,7 @@
       );
     }
     groundPoints(points) {
-      if (this.mapId !== "highlands") return points;
+      if (!["highlands", "districts"].includes(this.mapId)) return points;
       const out = [];
       for (let i = 0; i < points.length; i++) {
         const a = points[Math.max(0, i - 1)],
@@ -962,7 +1142,8 @@
       line(c, this.groundPoints(points), ...style);
     }
     groundRing(c, x, y, r, color, width = 1) {
-      if (this.mapId !== "highlands") return ring(c, x, y, r, color, width);
+      if (!["highlands", "districts"].includes(this.mapId))
+        return ring(c, x, y, r, color, width);
       const p = [];
       for (let i = 0; i <= 48; i++) {
         const a = (i * TAU) / 48;
@@ -971,7 +1152,7 @@
       this.groundLine(c, p, color, width);
     }
     shadow(c, x, y, shape, height, angle = 0) {
-      if (this.mapId !== "highlands") return;
+      if (!["highlands", "districts"].includes(this.mapId)) return;
       const T = E.terrain,
         base = T.height(x, y),
         co = Math.cos(angle),
@@ -1072,7 +1253,7 @@
       ];
     }
     occlude(c, x, y, z, r = 90) {
-      if (this.mapId !== "highlands") return;
+      if (!["highlands", "districts"].includes(this.mapId)) return;
       const T = E.terrain;
       for (let yy = Math.ceil(y / 40) * 40; yy < y + 200; yy += 40)
         for (let xx = Math.floor((x - r) / 40) * 40; xx < x + r; xx += 40) {
@@ -1087,12 +1268,25 @@
         }
     }
     covered(u) {
-      if (this.mapId !== "highlands") return false;
+      if (!["highlands", "districts"].includes(this.mapId)) return false;
       const p = this.screen(u.x, u.y),
         q = this.world(p.x, p.y - 30 * this.camera.scale * Y);
       return q.y > u.y + 1 && this.z(q.x, q.y) > this.z(u.x, u.y) + 30;
     }
-    objectShadow(c, u) {
+    wreckOpacity(u, s) {
+      if (u.hp > 0 || !E.C[u.kind].speed || u.kind === "hero") return 1;
+      if (!this.modelDeaths.has(u.id)) this.modelDeaths.set(u.id, s.t);
+      return Math.max(
+        0,
+        Math.min(1, (12 - (s.t - this.modelDeaths.get(u.id))) / 3),
+      );
+    }
+    objectShadow(c, u, s) {
+      const opacity = s ? this.wreckOpacity(u, s) : 1;
+      if (!opacity) return;
+      c.save();
+      c.globalAlpha *= opacity;
+      this.occlude(c, u.x, u.y, this.z(u.x, u.y), E.C[u.kind].r + 100);
       if (u.construction) {
         const b = E.construction.rect(u),
           w = b.w * 0.43,
@@ -1107,90 +1301,14 @@
             [w, h],
             [-w, h],
           ],
-          u.hp <= 0 ? 5 : u.build > 0 ? 18 : 42,
+          u.hp <= 0 ? 5 : u.build > 0 ? 18 : 34,
         );
-        return;
-      }
-      c.save();
-      this.occlude(c, u.x, u.y, this.z(u.x, u.y), E.C[u.kind].r + 100);
-      const r = E.C[u.kind].r,
-        mobile = E.C[u.kind].speed > 0,
-        infantry = [
-          "hero",
-          "rifle",
-          "sentinel",
-          "runner",
-          "warden",
-          "scout",
-          "bomber",
-          "flamer",
-          "rocket",
-        ].includes(u.kind),
-        a = u.angle || 0;
-      if (infantry) {
-        this.shadow(
-          c,
-          u.x,
-          u.y,
-          [
-            [-5, -7],
-            [6, -7],
-            [8, 3],
-            [3, 7],
-            [-7, 5],
-          ],
-          u.hp > 0 ? 24 : 5,
-          a,
-        );
-        if (u.hp > 0)
-          this.shadow(
-            c,
-            u.x,
-            u.y,
-            [
-              [1, -5],
-              [24, -5],
-              [24, -1],
-              [1, -1],
-            ],
-            18,
-            a,
-          );
       } else {
-        this.shadow(
-          c,
-          u.x,
-          u.y,
-          [
-            [-r, -r * 0.7],
-            [r * 0.65, -r * 0.7],
-            [r, r * 0.1],
-            [r * 0.7, r * 0.7],
-            [-r, r * 0.7],
-          ],
-          u.hp <= 0 || u.build > 0
-            ? 5
-            : mobile
-              ? 25
-              : u.kind === "citadel"
-                ? 84
-                : 52,
-          a,
-        );
-        if (mobile)
-          this.shadow(
-            c,
-            u.x,
-            u.y,
-            [
-              [0, -3],
-              [r + 24, -3],
-              [r + 24, 3],
-              [0, 3],
-            ],
-            30,
-            a,
-          );
+        const pose = s
+          ? this.pose(u, s, { reduced: false })
+          : this.poses.get(u.id) || { angle: u.angle || 0 };
+        for (const part of unitModels.shadows(u, pose))
+          this.shadow(c, u.x, u.y, part.shape, part.height, part.angle);
       }
       c.restore();
     }
@@ -1207,7 +1325,8 @@
       const a = this.camera;
       const wx = (x - this.origin.x) / a.scale + a.x,
         flat = (y - this.origin.y) / (a.scale * Y) + a.y;
-      if (this.mapId !== "highlands") return { x: wx, y: flat };
+      if (!["highlands", "districts"].includes(this.mapId))
+        return { x: wx, y: flat };
       let best = null,
         error = Infinity;
       for (let yy = flat - 48; yy <= flat + 144; yy += 2) {
@@ -1224,15 +1343,44 @@
       }
       return { x: wx, y: flat };
     }
-    screen(x, y) {
+    aim(x, y, hero) {
+      const height = E.MOUNTS.hero,
+        p = this.world(x, y + height * this.camera.scale * Y),
+        z =
+          E.terrain.level(p.x, p.y) < 0
+            ? this.z(hero.x, hero.y)
+            : this.z(p.x, p.y);
+      // In a void use the hero's firing plane; do not tilt a flat shot into
+      // the platform just because its cursor is outside walkable terrain.
+      if (E.terrain.level(p.x, p.y) < 0)
+        p.y =
+          (y - this.origin.y) / (this.camera.scale * Y) +
+          this.camera.y +
+          z +
+          height;
+      return { ...p, z: z + height };
+    }
+    screen(x, y, height = 0) {
       const a = this.camera;
       return {
         x: (x - a.x) * a.scale + this.origin.x,
-        y: (y - this.z(x, y) - a.y) * a.scale * Y + this.origin.y,
+        y: (y - this.z(x, y) - height - a.y) * a.scale * Y + this.origin.y,
       };
     }
     // Include model height, shadows and weapon tips beyond the unit's ground position.
     inView(x, y, rx = 160, ry = rx) {
+      // Memory is drawn into an oversized world-aligned window. Include its
+      // margin too, otherwise newly exposed edges would contain missing objects.
+      if (this.memoryBounds) {
+        const b = this.memoryBounds,
+          yy = y - this.z(x, y);
+        return (
+          x + rx >= b.left &&
+          x - rx <= b.right &&
+          yy + ry >= b.top &&
+          yy - ry <= b.bottom
+        );
+      }
       const p = this.screen(x, y),
         a = this.camera;
       return (
@@ -1244,6 +1392,14 @@
     }
     add(events, reduced) {
       for (const e of events) {
+        if (
+          e.type === "care-door" || (e.type === "reinforce" &&
+          ["rifle", "scout", "artillery", "drone"].includes(e.action))
+        ) {
+          this.modelExits.set(e.x + ":" + e.y, this.modelClock || 0);
+          if (this.modelExits.size > 128)
+            this.modelExits.delete(this.modelExits.keys().next().value);
+        }
         const seed = this.effectSerial++ * 1.618;
         if (["destroy", "blast"].includes(e.type))
           this.scars.push({
@@ -1253,7 +1409,7 @@
             seed,
           });
         if (
-          !reduced &&
+          (!reduced || e.type === "order") &&
           [
             "hit",
             "spark",
@@ -1266,6 +1422,7 @@
             "collect",
             "build",
             "post-ready",
+            "repair-ready",
             "salvage",
             "breach",
           ].includes(e.type)
@@ -1296,7 +1453,14 @@
           s = this.preview;
         } else if (!s.fog) s = E.observe(s);
       }
+      if (!s.fog) {
+        this.memoryNeedsRefine = false;
+        this.memoryTransform = null;
+      }
       const world = E.map(s);
+      this.modelClock = s.t;
+      this.deliveryActivity(s);
+      this.serviceActivity(s);
       if (this.mapId !== world.id) {
         this.ground = terrain(world);
         this.mapId = world.id;
@@ -1304,7 +1468,7 @@
       }
       this.frameDt = dt;
       if (ui.reduced) {
-        this.fx = [];
+        this.fx = this.fx.filter((f) => f.type === "order");
         this.shake = 0;
       }
       const active = ui.mode === "playing" && s.status === "playing";
@@ -1318,6 +1482,7 @@
         overview = ui.mode === "tactical",
         menu = ui.mode === "menu";
       const landscape = overview && w > h && h <= 500;
+      const inspecting = !overview && !menu && ui.combatFocus;
       const bounds = overview && ui.mapArea;
       const areaW = bounds
           ? Math.max(80, bounds.right - bounds.x)
@@ -1339,7 +1504,13 @@
             ? h * 0.49 - 14
             : h * 0.49,
       };
-      if (world.id === "highlands" && !overview && !menu && w > h && h < 500)
+      if (
+        ["highlands", "districts"].includes(world.id) &&
+        !overview &&
+        !menu &&
+        w > h &&
+        h < 500
+      )
         this.origin.y = h * 0.52;
       if (bounds) {
         this.origin.x = (bounds.x + bounds.right) / 2;
@@ -1351,7 +1522,7 @@
           : this.tactical.zoom
         : menu
           ? Math.max(w / (world.W * 1.25), h / world.H)
-          : world.id === "highlands"
+          : ["highlands", "districts"].includes(world.id)
             ? w < h
               ? Math.min(0.72, Math.max(0.52, w / 600))
               : h < 500
@@ -1368,14 +1539,18 @@
           : this.tactical.x
         : menu
           ? world.W * 0.54
-          : hero.x;
+          : inspecting
+            ? inspecting.x
+            : hero.x;
       let ty = overview
         ? this.tactical.overview
           ? world.H / 2
           : this.tactical.y
         : menu
           ? world.H * 0.48
-          : hero.y - this.z(hero.x, hero.y);
+          : inspecting
+            ? inspecting.y - this.z(inspecting.x, inspecting.y)
+            : hero.y - this.z(hero.x, hero.y);
       if (overview && !this.tactical.overview) {
         const half = areaW / (2 * scale),
           halfY = areaH / (2 * scale * Y);
@@ -1390,25 +1565,11 @@
         this.tactical.x = tx;
         this.tactical.y = ty;
       } else if (!overview && !menu) {
-        const high = world.id === "highlands",
+        const high = ["highlands", "districts"].includes(world.id),
           portrait = w < h,
           short = w > h && h < 500;
-        tx +=
-          (ui.aim
-            ? E.clamp(
-                ui.aim.x - hero.x,
-                high ? -(portrait ? 300 : 400) : -240,
-                high ? (portrait ? 300 : 400) : 240,
-              )
-            : 0) * (high ? (portrait ? 0.9 : 0.3) : 0.22);
-        ty +=
-          (ui.aim
-            ? E.clamp(
-                ui.aim.y - hero.y,
-                high ? -(short ? 500 : 420) : -180,
-                high ? (short ? 500 : 420) : 180,
-              )
-            : 0) * (high ? (short ? 0.65 : portrait ? 0.55 : 0.35) : 0.18);
+        // Aim changes the weapon, not the camera. Follow the hero while keeping
+        // tactical pan/zoom and the safe area around mobile controls independent.
         const half = w / (2 * scale),
           halfY = (h - 70) / (2 * scale * Y);
         tx =
@@ -1419,7 +1580,7 @@
           halfY > world.H / 2
             ? world.H / 2
             : E.clamp(ty, halfY - 65, world.H - halfY + 65);
-        if (high) {
+        if (high && !inspecting) {
           // The projected scout takes priority over rectangular world bounds:
           // high ledges and edge paths must not put it behind phone controls.
           const side = short ? 154 : 24,
@@ -1436,14 +1597,27 @@
             groundY - (bottom - this.origin.y) / (scale * Y),
             groundY - (top - this.origin.y) / (scale * Y),
           );
+          const mini = ui.minimapRect,
+            sx = (hero.x - tx) * scale + this.origin.x,
+            sy = (groundY - ty) * scale * Y + this.origin.y;
+          if (
+            mini &&
+            sx > mini.left - 18 &&
+            sx < mini.right + 18 &&
+            sy > mini.top - 18 &&
+            sy < mini.bottom + 18 &&
+            mini.right + 18 < w - side
+          )
+            tx = hero.x - (mini.right + 18 - this.origin.x) / scale;
         }
       }
-      if (ui.selecting && !menu) {
+      if (ui.selecting && !menu && ui.mode !== "playing") {
         tx = this.camera.x;
         ty = this.camera.y;
         scale = this.camera.scale;
       }
-      const blend = 1 - Math.exp(-dt * 8);
+      // Placement coordinates must stay under the pointer while confirming a footprint.
+      const blend = ui.placement ? 1 : 1 - Math.exp(-dt * 8);
       // Direct assignment avoids subpixel cancellation on the first still frame.
       this.camera.x = ui.reduced
         ? tx
@@ -1460,7 +1634,13 @@
         ["y", ty],
         ["scale", scale],
       ]) {
-        if (Math.abs(this.camera[key] - target) < 1e-7)
+        // Stop easing once its remaining screen displacement is under 1/64
+        // physical pixel, rather than repainting seconds of invisible motion.
+        const epsilon =
+          key === "scale"
+            ? 1 / (64 * this.dpr * Math.max(world.W, world.H))
+            : 1 / (64 * this.dpr * scale * (key === "y" ? Y : 1));
+        if (Math.abs(this.camera[key] - target) < epsilon)
           this.camera[key] = target;
         else this.cameraSettled = false;
       }
@@ -1495,7 +1675,13 @@
         this.frameFog = s.fog;
         this.frameWalls = { visible: new Map(), explored: new Map() };
         this.memory(c, s, ui);
-        c = this.beginLayer(this.groundCanvas, c);
+        if (this.groundCanvas) c = this.beginLayer(this.groundCanvas, c);
+        else {
+          // Clip once on the destination. Copying a freshly painted full-screen
+          // canvas forced a raster flush/transfer on every frame, even at rest.
+          c.save();
+          this.fogClip(c, s.fog, "visible");
+        }
       }
       c.save();
       c.translate(8, 30);
@@ -1511,7 +1697,7 @@
         c.lineDashOffset = ui.reduced ? 0 : -this.time * 15;
         line(
           c,
-          this.mapId === "highlands"
+          ["highlands", "districts"].includes(this.mapId)
             ? (this.networkRoute ||= E.pathTo(
                 s.units.find((u) => u.kind === "base"),
                 { ...s.relay, map: this.mapId },
@@ -1543,7 +1729,7 @@
       this.strategy(c, s, ui);
       this.relay(c, s, ui);
       this.watch(c, s, ui);
-      if (this.mapId === "highlands") {
+      if (["highlands", "districts"].includes(this.mapId)) {
         for (const b of world.walls)
           if (
             this.inView(b.x + b.w / 2, b.y + b.h / 2, b.w + 120, b.h + 120) &&
@@ -1562,12 +1748,12 @@
               54,
             );
         for (const u of s.units)
-          if (this.inView(u.x, u.y)) this.objectShadow(c, u);
+          if (!u.care?.inside && this.inView(u.x, u.y)) this.objectShadow(c, u, s);
       }
       if (overview || (ui.mode === "playing" && ui.selectionIds != null)) {
         for (const u of s.units.filter(
           (u) =>
-            u.team === 0 &&
+            u.team === 0 && !u.care?.inside &&
             u.hp > 0 &&
             (ui.selectionIds != null
               ? ui.selectionIds.includes(u.id)
@@ -1590,6 +1776,7 @@
         }
       }
       for (const u of s.units) {
+        if (u.care?.inside) continue;
         const area = E.dangerArea(s, u);
         if (area)
           this.danger(
@@ -1617,12 +1804,12 @@
             c,
             [
               this.p(u.x, u.y, MOUNTS[u.kind] || 19),
-              this.p(u.target.x, u.target.y, 10),
+              this.p(u.target.x, u.target.y),
             ],
             "#f4ae89",
             1.4,
           );
-          ring(
+          this.groundRing(
             c,
             u.target.x,
             u.target.y,
@@ -1650,6 +1837,7 @@
         )
           objects.push({ ...b, wall: true, sort: b.y + b.h });
       for (const u of s.units) {
+        if (u.care?.inside) continue;
         if (this.inView(u.x, u.y))
           objects.push({
             ...u,
@@ -1663,11 +1851,13 @@
       // Knowledge selects whole models; the ground mask must not cut off roofs.
       if (s.fog) {
         c.restore();
-        c = this.c;
-        c.save();
-        this.fogClip(c, s.fog, "visible");
-        this.drawLayer(c, this.groundCanvas);
-        c.restore();
+        if (this.groundCanvas) {
+          c = this.c;
+          c.save();
+          this.fogClip(c, s.fog, "visible");
+          this.drawLayer(c, this.groundCanvas);
+          c.restore();
+        }
       }
       this.drawObjects(c, objects, s, ui, "visible");
       if (overview && ui.placement) this.placementOverlay(c, s, ui.placement);
@@ -1686,7 +1876,11 @@
             Math.hypot(b.tx - start.x, b.ty - start.y) / speed,
           ),
           progress = Math.min(1, b.age / duration),
-          z = E.projectileHeight(b) ?? mount * (1 - progress) + 10 * progress;
+          z =
+            E.projectileHeight(b) ??
+            (owner?.kind === "hero"
+              ? MOUNTS.hero
+              : mount * (1 - progress) + 10 * progress);
         if (b.kind === "missile") {
           const a = Math.atan2(b.vy, b.vx);
           c.save();
@@ -1729,7 +1923,8 @@
         } else if (b.kind === "shell") {
           const arcHeight =
             (b.z0 === undefined ? Math.sin(progress * Math.PI) * 55 : 0) + z;
-          if (this.mapId !== "highlands") ellipse(c, b.x, b.y, 5, 3, "#0004");
+          if (!["highlands", "districts"].includes(this.mapId))
+            ellipse(c, b.x, b.y, 5, 3, "#0004");
           line(
             c,
             [
@@ -1766,7 +1961,7 @@
       // A small outline keeps the scout locatable when a tall cover piece hides the body.
       if (
         !overview &&
-        !menu &&
+        !menu && !hero.care?.inside &&
         (this.covered(hero) ||
           world.walls.some(
             (b) =>
@@ -1819,7 +2014,7 @@
               f.x,
               f.y - this.z(f.x, f.y),
               14 + (f.life / f.max) * 22,
-              "#afe1cc",
+              f.intent === "attack" ? "#ff7771" : f.intent === "repair" ? "#99e6e2" : "#afe1cc",
               1.3,
             );
             c.restore();
@@ -1848,6 +2043,7 @@
           c.restore();
         }
       }
+      if (!menu) this.productionBars(s, ui);
       if (overview) {
         c.font = "9px Segoe UI";
         c.textAlign = "center";
@@ -1876,7 +2072,7 @@
           [s.relay, "УЗЕЛ СВЯЗИ"],
           [s.units.find((u) => u.kind === "citadel"), "ЦИТАДЕЛЬ"],
           [s.units.find((u) => u.kind === "base"), "ПОСАДОЧНЫЙ УЗЕЛ"],
-          [s.terminal, "ТЕРМИНАЛ"],
+          ...(s.terminals || [s.terminal]).map((p) => [p, "ТЕРМИНАЛ"]),
           ...s.units
             .filter((u) => u.kind === "bastion")
             .map((u) => [
@@ -1902,7 +2098,14 @@
         }
       }
       if (!menu && !overview && ui.aim && !ui.touch) {
-        const p = this.screen(ui.aim.x, ui.aim.y);
+        const p = Number.isFinite(ui.aim.z)
+          ? {
+              x: (ui.aim.x - this.camera.x) * this.camera.scale + this.origin.x,
+              y:
+                (ui.aim.y - ui.aim.z - this.camera.y) * this.camera.scale * Y +
+                this.origin.y,
+            }
+          : this.screen(ui.aim.x, ui.aim.y, E.MOUNTS.hero);
         c.strokeStyle = "#d0e4d1aa";
         c.lineWidth = 1;
         for (const [dx, dy] of [
@@ -1952,7 +2155,7 @@
       if (this.planes?.map === this.mapId) return this.planes.list;
       const world = E.map(this.mapId),
         list = [];
-      if (this.mapId !== "highlands")
+      if (!["highlands", "districts"].includes(this.mapId))
         list.push({ x: 0, y: 0, w: world.W, h: world.H, a: 0, b: 0, z: 0 });
       else
         for (let y = 0; y < world.H; y += 40) {
@@ -2116,101 +2319,140 @@
         code = maskCode + (kind === "visible" ? ":" + sources.join(",") : ""),
         cached = this.fogPaths[kind];
       if (cached?.code === code) return cached.path;
-      let path;
+      let path,
+        polygons = [];
       if (kind === "visible") {
         const old = this.sightPaths || new Map();
         this.sightPaths = new Map();
         path = new Path2D();
         fog.observers.forEach((u, i) => {
           const key = this.mapId + ":" + sources[i],
-            projected =
-              old.get(key) ||
-              this.projectFog([
-                E.visionArea(this.mapId, u, u.radius).points.map((p) => [
-                  p.x,
-                  p.y,
-                ]),
-              ]);
-          this.sightPaths.set(key, projected);
+            previous = old.get(key),
+            polygon =
+              previous?.polygon ||
+              E.visionArea(this.mapId, u, u.radius).points.map((p) => [
+                p.x,
+                p.y,
+              ]),
+            projected = previous?.path || this.projectFog([polygon]);
+          this.sightPaths.set(key, { path: projected, polygon });
+          polygons.push(polygon);
           path.addPath(projected);
         });
-      } else path = this.projectFog(fogContours(fog));
+      } else {
+        polygons = fogContours(fog);
+        path = this.projectFog(polygons);
+      }
       const mask = fog[kind];
-      if (this.mapId === "highlands") {
-        if (cached?.maskCode === maskCode) {
-          path.addPath(cached.faces);
-          this.fogPaths[kind] = { ...cached, code, path };
-          return path;
-        }
-        const faces = new Path2D();
-        this.fogHeights ||= Float64Array.from(
-          { length: fog.rows * fog.cols },
-          (_, i) =>
-            this.z(
-              (i % fog.cols) * fog.cell + 20,
-              Math.floor(i / fog.cols) * fog.cell + 20,
-            ),
-        );
-        for (let y = 0; y < fog.rows; y++)
-          for (let x = 0; x < fog.cols; x++)
-            if (mask[y * fog.cols + x]) {
-              const xx = x * fog.cell,
-                yy = y * fog.cell,
-                z = this.fogHeights[y * fog.cols + x],
-                low = this.z(xx + 20, yy + 40.01);
-              if (z > low + 4) faces.rect(xx, yy + 40 - z, 40, z - low);
-            }
-        const blockers = [];
-        for (let y = 1; y < fog.rows; y++)
-          for (let x = 0; x < fog.cols; x++) {
-            if (mask[y * fog.cols + x]) continue;
-            const xx = x * fog.cell,
-              yy = y * fog.cell,
-              z = this.fogHeights[y * fog.cols + x];
-            if (z < 0) continue;
-            let overlaps = false;
-            for (let d = 1; d <= Math.min(5, y); d++)
-              if (
-                mask[(y - d) * fog.cols + x] &&
-                z >
-                  this.fogHeights[(y - d) * fog.cols + x] +
-                    Math.max(1, (d - 1) * 40 - 8)
-              ) {
-                overlaps = true;
-                break;
-              }
-            if (!overlaps) continue;
-            const cut = new Path2D(),
-              p = this.surface(xx, yy);
-            cut.rect(
-              -500,
-              -500,
-              E.terrain.map.W + 1000,
-              E.terrain.map.H + 1000,
-            );
-            cut.moveTo(...p[0]);
-            for (let i = 1; i < 4; i++) cut.lineTo(...p[i]);
-            cut.closePath();
-            blockers.push(cut);
+      if (["highlands", "districts"].includes(this.mapId)) {
+        const terrain = this.fogTerrain(fog),
+          faces = new Path2D(),
+          rows = new Map();
+        for (const edge of terrain.faces) {
+          if (!mask[edge.index]) continue;
+          if (!rows.has(edge.y))
+            rows.set(edge.y, fogIntervals(polygons, edge.y - 0.01));
+          for (const [a, b] of rows.get(edge.y)) {
+            const left = Math.max(a, edge.x),
+              right = Math.min(b, edge.x + fog.cell);
+            if (right > left)
+              faces.rect(
+                left,
+                edge.y - edge.z,
+                right - left,
+                edge.z - edge.low,
+              );
           }
+        }
+        const blockers =
+          cached?.maskCode === maskCode
+            ? cached.blockers
+            : terrain.blockers
+                .filter(
+                  (cell) =>
+                    !mask[cell.index] && cell.behind.some((i) => mask[i]),
+                )
+                .map((cell) => {
+                  if (!cell.cut) {
+                    const cut = (cell.cut = new Path2D()),
+                      p = this.surface(cell.x, cell.y),
+                      world = E.map(this.mapId);
+                    cut.rect(-500, -500, world.W + 1000, world.H + 1000);
+                    cut.moveTo(...p[0]);
+                    for (let i = 1; i < 4; i++) cut.lineTo(...p[i]);
+                    cut.closePath();
+                  }
+                  return cell.cut;
+                });
         path.addPath(faces);
-        this.fogPaths[kind] = { code, path, blockers, faces, maskCode };
+        this.fogPaths[kind] = {
+          code,
+          path,
+          polygons,
+          blockers,
+          faces,
+          maskCode,
+        };
         return path;
       }
-      this.fogPaths[kind] = { code, path };
+      this.fogPaths[kind] = { code, path, polygons };
       return path;
     }
+    fogTerrain(fog) {
+      const key = [this.mapId, fog.cols, fog.rows, fog.cell].join(":");
+      if (this.fogTerrainCache?.key === key) return this.fogTerrainCache;
+      const heights = Float64Array.from(
+          { length: fog.cols * fog.rows },
+          (_, i) =>
+            this.z(
+              (i % fog.cols) * fog.cell + fog.cell / 2,
+              Math.floor(i / fog.cols) * fog.cell + fog.cell / 2,
+            ),
+        ),
+        faces = [],
+        blockers = [];
+      for (let y = 0; y < fog.rows; y++)
+        for (let x = 0; x < fog.cols; x++) {
+          const index = y * fog.cols + x,
+            xx = x * fog.cell,
+            yy = y * fog.cell,
+            z = heights[index],
+            low = this.z(xx + fog.cell / 2, yy + fog.cell + 0.01),
+            behind = [];
+          if (z > low + 4)
+            faces.push({ index, x: xx, y: yy + fog.cell, z, low });
+          if (z < 0) continue;
+          for (let d = 1; d <= Math.min(5, y); d++)
+            if (
+              z >
+              heights[(y - d) * fog.cols + x] +
+                Math.max(1, (d - 1) * fog.cell - 8)
+            )
+              behind.push((y - d) * fog.cols + x);
+          if (behind.length)
+            blockers.push({ index, x: xx, y: yy, behind, cut: null });
+        }
+      return (this.fogTerrainCache = { key, faces, blockers });
+    }
     memory(c, s, ui) {
-      const canvas = this.memoryCanvas;
+      const canvas = this.memoryCanvas,
+        transform = c.getTransform(),
+        width = this.canvas.width,
+        height = this.canvas.height,
+        // Bound the extra raster area to about 25%, including narrow phones.
+        // A large fixed margin made rapidly changing exploration too costly.
+        padding =
+          this.memoryPadding ??
+          Math.min(96, Math.floor(Math.min(width, height) * 0.06));
       if (
-        canvas.width !== this.canvas.width ||
-        canvas.height !== this.canvas.height
+        canvas.width !== width + padding * 2 ||
+        canvas.height !== height + padding * 2
       ) {
-        canvas.width = this.canvas.width;
-        canvas.height = this.canvas.height;
+        canvas.width = width + padding * 2;
+        canvas.height = height + padding * 2;
+        this.memoryKey = null;
       }
       const known = s.fog.memory,
-        transform = c.getTransform(),
         key = JSON.stringify(
           [
             this.mapId,
@@ -2220,14 +2462,13 @@
             transform.b,
             transform.c,
             transform.d,
-            transform.e,
-            transform.f,
             s.fog.exploredCode,
             known.units,
             known.caches,
             known.watch,
             known.relay,
             known.terminal,
+            known.terminals,
             known.campaign?.mines,
             known.campaign?.id,
             known.phase,
@@ -2235,12 +2476,59 @@
           ],
           (name, value) => (name === "seenAt" ? undefined : value),
         );
-      if (this.memoryKey === key) {
-        this.drawLayer(c, canvas);
-        return;
-      }
-      this.memoryKey = key;
-      const m = canvas.getContext("2d"),
+      const anchor = this.memoryAnchor,
+        dx = anchor ? transform.e - anchor.e : Infinity,
+        dy = anchor ? transform.f - anchor.f : Infinity,
+        previous = this.memoryTransform,
+        stable =
+          previous &&
+          previous.a === transform.a &&
+          previous.d === transform.d &&
+          previous.e === transform.e &&
+          previous.f === transform.f;
+      this.memoryTransform = transform;
+      if (
+        this.memoryKey !== key ||
+        Math.abs(dx) > padding ||
+        Math.abs(dy) > padding ||
+        (stable && (dx !== 0 || dy !== 0))
+      ) {
+        this.memoryNeedsRefine = false;
+        this.memoryKey = key;
+        this.memoryAnchor = { e: transform.e, f: transform.f };
+        this.memoryBounds = {
+          left: (-padding - transform.e) / transform.a,
+          right: (width + padding - transform.e) / transform.a,
+          top: (-padding - transform.f) / transform.d,
+          bottom: (height + padding - transform.f) / transform.d,
+        };
+        try {
+          this.paintMemory(canvas.getContext("2d"), s, ui, transform, padding);
+        } catch (error) {
+          this.memoryKey = null;
+          throw error;
+        } finally {
+          this.memoryBounds = null;
+        }
+      } else this.memoryNeedsRefine = dx !== 0 || dy !== 0;
+      c.save();
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.drawImage(
+        canvas,
+        padding - (transform.e - this.memoryAnchor.e),
+        padding - (transform.f - this.memoryAnchor.f),
+        width,
+        height,
+        0,
+        0,
+        width,
+        height,
+      );
+      c.restore();
+    }
+    paintMemory(m, s, ui, transform, padding) {
+      const canvas = m.canvas,
+        known = s.fog.memory,
         world = E.map(s),
         still = {
           ...ui,
@@ -2252,7 +2540,14 @@
         };
       m.setTransform(1, 0, 0, 1, 0, 0);
       m.clearRect(0, 0, canvas.width, canvas.height);
-      m.setTransform(c.getTransform());
+      m.setTransform(
+        transform.a,
+        transform.b,
+        transform.c,
+        transform.d,
+        transform.e + padding,
+        transform.f + padding,
+      );
       m.fillStyle = "#000";
       m.fillRect(-100, -140, world.W + 200, world.H + 280);
       m.save();
@@ -2311,10 +2606,6 @@
       m.fillStyle = "rgba(0,0,0,.52)";
       m.fillRect(-100, -140, world.W + 200, world.H + 280);
       m.restore();
-      c.save();
-      c.setTransform(1, 0, 0, 1, 0, 0);
-      c.drawImage(canvas, 0, 0);
-      c.restore();
     }
     watch(c, s, ui) {
       for (const p of s.watch || []) {
@@ -2341,7 +2632,8 @@
           37,
         );
         c.translate(p.x, p.y - this.z(p.x, p.y));
-        if (this.mapId !== "highlands") ellipse(c, 3, 6, 25, 16, "#06192280");
+        if (!["highlands", "districts"].includes(this.mapId))
+          ellipse(c, 3, 6, 25, 16, "#06192280");
         for (let i = 0; i < 3; i++)
           slab(c, 12, 0, 22, 10, 0, 5, (i * TAU) / 3, MAT.graphite);
         slab(c, 0, 0, 13, 13, 5, 15, 0, MAT.dark);
@@ -2379,7 +2671,7 @@
     industry(c, s, ui) {
       if (!s.campaign) return;
       for (const m of s.campaign.mines) {
-        if (this.mapId !== "highlands")
+        if (!["highlands", "districts"].includes(this.mapId))
           ellipse(c, m.x, m.y + 5, 34, 21, "#071b2866");
         else
           this.shadow(
@@ -2449,7 +2741,7 @@
           u.hp <= 0 ||
           !u.rally ||
           ui.mode !== "tactical" ||
-          u.id !== ui.selectedBuilding
+          (u.id !== ui.selectedBuilding && !ui.selectionIds?.includes(u.id))
         )
           continue;
         c.save();
@@ -2557,7 +2849,7 @@
             "#abcbb65a",
           );
         }
-        if (post?.build === 0) {
+        if (post?.build === 0 && !E.support.enabled(s)) {
           if (overview) ring(c, p.x, p.y, 145, "#a9d9bb20");
           for (const u of s.units)
             if (
@@ -2612,7 +2904,8 @@
           12,
         );
         c.translate(cache.x, cache.y - this.z(cache.x, cache.y));
-        if (this.mapId !== "highlands") ellipse(c, 3, 4, 16, 11, "#0b202970");
+        if (!["highlands", "districts"].includes(this.mapId))
+          ellipse(c, 3, 4, 16, 11, "#0b202970");
         slab(c, 0, 0, 28, 20, 0, 3, 0, MAT.graphite);
         const gold = {
             top: "#b4ae88",
@@ -2663,8 +2956,13 @@
         }
         c.restore();
       }
+      for (const terminal of s.terminals || [s.terminal])
+        this.terminalPanel(c, { ...s, terminal }, ui);
+    }
+    terminalPanel(c, s, ui) {
       if (s.terminal.unknown) return;
-      const terminal = s.terminal,
+      const t = s.t,
+        terminal = s.terminal,
         { x, y } = terminal;
       c.save();
       this.shadow(
@@ -2680,7 +2978,8 @@
         36,
       );
       c.translate(x, y - this.z(x, y));
-      if (this.mapId !== "highlands") ellipse(c, 3, 5, 27, 18, "#071d2670");
+      if (!["highlands", "districts"].includes(this.mapId))
+        ellipse(c, 3, 5, 27, 18, "#071d2670");
       slab(c, 0, 0, 48, 32, 0, 5, 0, MAT.dark);
       slab(c, 0, 0, 31, 24, 5, 10, 0, MAT.enemy);
       for (const side of [-1, 1]) {
@@ -2770,7 +3069,7 @@
         c.lineDashOffset = ui.reduced ? 0 : -t * 18;
         line(
           c,
-          this.mapId === "highlands"
+          ["highlands", "districts"].includes(this.mapId)
             ? [
                 this.p(x, y),
                 this.p(
@@ -2814,7 +3113,8 @@
         36,
       );
       c.translate(x, y - this.z(x, y));
-      if (this.mapId !== "highlands") ellipse(c, 4, 6, 43, 30, "#061d2770");
+      if (!["highlands", "districts"].includes(this.mapId))
+        ellipse(c, 4, 6, 43, 30, "#061d2770");
       ring(c, 0, 0, 43, online ? "#a3d9c947" : "#869a8a29");
       for (let i = 0; i < 3; i++) {
         const a = (i * TAU) / 3;
@@ -2885,7 +3185,9 @@
         f.life += f.type === "order" ? dt : active ? dt : 0;
         const t = f.life / f.max;
         if (t > 1) continue;
-        const color = f.team ? "#e7aa87" : "#afe1cc";
+        const color =
+          f.intent === "attack" ? "#ff7771" : f.intent === "repair" || f.type === "repair-ready"
+            ? "#99e6e2" : f.team ? "#e7aa87" : "#afe1cc";
         c.save();
         c.translate(0, -this.z(f.x, f.y));
         if (f.type === "destroy" || f.type === "blast") {
@@ -2968,6 +3270,10 @@
               ],
               "#ddd5ad",
             );
+        } else if (f.type === "repair-ready") {
+          c.globalAlpha = (1 - t) * 0.7;
+          ring(c, f.x, f.y, 18 + t * 22, color, 1.2);
+          line(c, [[f.x - 5, f.y - 3], [f.x - 1, f.y + 1], [f.x + 7, f.y - 7]], color, 2);
         } else if (f.type === "shield") {
           c.globalAlpha = (1 - t) * 0.55;
           arc(c, f.x, f.y, 65, f.seed, f.seed + Math.PI * 0.7, "#e7bc95", 2);
@@ -3030,8 +3336,19 @@
       }
     }
     reset(s) {
+      this.floorImages.clear();
+      this.floorPixels = 0;
+      this.memoryKey = null;
+      this.memoryAnchor = null;
+      this.memoryTransform = null;
+      this.memoryNeedsRefine = false;
       this.fx = [];
       this.poses.clear();
+      this.modelDeaths.clear();
+      this.modelExits.clear();
+      this.modelCargo.clear();
+      this.modelDeliveries.clear();
+      this.modelClock = s?.t || 0;
       this.unitSprites.clear();
       this.spritePixels = 0;
       this.scars = [];
@@ -3077,26 +3394,7 @@
         (y - this.origin.y) / (next * Y);
     }
     pose(u, s, ui) {
-      let p = this.poses.get(u.id);
-      if (!p) {
-        p = { x: u.x, y: u.y, phase: 0, move: 0, angle: u.angle };
-        this.poses.set(u.id, p);
-      }
-      const dx = u.x - p.x,
-        dy = u.y - p.y,
-        d = Math.hypot(dx, dy);
-      if (d > 0.01 && d < 100) {
-        p.phase += d * 0.13;
-        p.angle = Math.atan2(dy, dx);
-        p.move = Math.min(1, d / (E.C[u.kind].speed * this.frameDt || 1));
-      } else p.move = 0;
-      p.x = u.x;
-      p.y = u.y;
-      return {
-        phase: ui.reduced ? 0 : p.phase,
-        move: ui.reduced ? 0 : p.move,
-        angle: p.angle,
-      };
+      return root.SignalUnitModels.motion(this.poses, u, s.t, ui.reduced);
     }
     wall(c, b, fog, kind) {
       c.save();
@@ -3107,7 +3405,7 @@
         this.z(b.x + b.w / 2, b.y + b.h / 2),
         b.w / 2 + 80,
       );
-      if (this.mapId !== "highlands") {
+      if (!["highlands", "districts"].includes(this.mapId)) {
         c.save();
         if (fog) this.fogClip(c, fog, kind);
         ellipse(
@@ -3328,8 +3626,29 @@
         2.5,
       );
       const e = E.construction.exit(preview),
-        dir = preview.construction.turn ? { x: 1, y: 0 } : { x: 0, y: 1 },
+        dir = E.construction.direction(preview),
         tip = { x: e.x + dir.x * 25, y: e.y + dir.y * 25 };
+      if (preview.kind === "outpost" && preview.site) {
+        const mine =
+          s.campaign.mines.find((m) => m.id === preview.site) ||
+          s.fog?.memory.campaign.mines.find((m) => m.id === preview.site);
+        if (mine) {
+          c.setLineDash([5, 5]);
+          this.groundLine(
+            c,
+            [
+              [e.x, e.y],
+              ...(placement.result.oreRoute?.length
+                ? placement.result.oreRoute.map((p) => [p.x, p.y])
+                : [[mine.x, mine.y]]),
+            ],
+            "#e6c77dbb",
+            1.5,
+          );
+          c.setLineDash([]);
+          this.groundRing(c, mine.x, mine.y, 46, "#e6c77d", 2);
+        }
+      }
       this.groundLine(
         c,
         [
@@ -3363,159 +3682,52 @@
       c.restore();
     }
     constructionModel(c, u, s, ui) {
-      const shape = E.construction.shapes[u.kind],
-        w = shape[0] * 40,
-        h = shape[1] * 40,
-        a = (u.construction.turn * Math.PI) / 2,
-        progress =
-          u.hp <= 0 ? 0 : 1 - u.build / E.development.items(s)[u.kind].time,
-        box = E.construction.rect(u),
-        accent = progress === 1 ? "#abebd0" : "#deb18d";
+      const shape = E.construction.shape(u),
+        frame = {
+          w: shape[0] * 40,
+          h: shape[1] * 40,
+          // Local +Y is the service apron; a quarter turn points it east.
+          a: (-u.construction.turn * Math.PI) / 2,
+          progress:
+            u.hp <= 0
+              ? 0
+              : Math.max(
+                  0,
+                  Math.min(
+                    1,
+                    1 - (u.build || 0) / E.development.items(s)[u.kind].time,
+                  ),
+                ),
+        },
+        box = E.construction.rect(u);
       c.save();
       c.translate(u.x, u.y - this.z(u.x, u.y));
-      slab(c, 0, 0, w - 8, h - 8, 0, 3, a, MAT.graphite);
-      // Foundation seams and the clear service apron also show the true footprint.
-      for (let x = -w / 2 + 20; x < w / 2; x += 40)
-        seam(
-          c,
-          [
-            [x, -h / 2 + 7],
-            [x, h / 2 - 7],
-          ],
-          3,
-          a,
-          "#91b8a62e",
-          1,
-        );
-      seam(
+      unitModels.draw(
         c,
-        [
-          [-w / 2 + 7, h / 2 - 18],
-          [w / 2 - 7, h / 2 - 18],
-        ],
-        4,
-        a,
-        accent,
-        2,
+        u,
+        s,
+        ui,
+        { phase: 0, move: 0, angle: u.angle || 0 },
+        this.muzzle,
+        frame,
+        this.doorOpening(u, s),
+        this.deliveryOpening(u, s),
+        { activity: this.workerActivity.get(u.id), crew: this.buildingActivity.get(u.id) || [] },
       );
-      if (u.hp <= 0) {
-        for (let i = 0; i < 4; i++)
-          slab(
-            c,
-            (i % 2 ? 1 : -1) * w * 0.2,
-            (i < 2 ? -1 : 1) * h * 0.2,
-            25,
-            15,
-            3,
-            5 + i * 2,
-            a,
-            MAT.graphite,
-          );
-        c.restore();
-        return;
-      }
-      const height = 12 + Math.min(1, progress * 1.4) * 26;
-      if (progress > 0.12) {
-        if (u.kind === "barracks") {
-          for (const side of [-1, 1]) {
-            slab(c, side * 27, -8, 38, 67, 3, height, a, MAT.ally);
-            slab(c, side * 27, -10, 31, 57, height + 3, 4, a, MAT.ceramic);
-            for (let y = -27; y < 20; y += 15)
-              seam(
-                c,
-                [
-                  [side * 27 - 12, y],
-                  [side * 27 + 12, y],
-                ],
-                height + 8,
-                a,
-                "#59776f",
-                2,
-              );
-          }
-          slab(c, 0, 14, 16, 21, 3, 9, a, MAT.graphite);
-        } else if (u.kind === "foundry") {
-          slab(c, -10, -9, 104, 69, 3, height, a, MAT.ally);
-          slab(c, -12, -10, 96, 61, height + 3, 5, a, MAT.graphite);
-          for (const x of [-40, -12, 16]) {
-            slab(c, x, -17, 18, 25, height + 8, 8, a, MAT.ceramic);
-            seam(
-              c,
-              [
-                [x - 5, -22],
-                [x + 5, -22],
-              ],
-              height + 17,
-              a,
-              "#a7c7b3",
-              2,
-            );
-          }
-          slab(c, 54, -13, 17, 53, 3, height + 17, a, MAT.graphite);
-          lamp(c, 54, -13, height + 22, a, 3, "#e3b68c");
-          slab(c, -10, 32, 57, 12, 3, 5, a, MAT.ceramic);
-        } else if (u.kind === "arsenal") {
-          slab(c, 0, -6, 95, 42, 3, height, a, MAT.ally);
-          slab(c, 0, -8, 86, 35, height + 3, 5, a, MAT.ceramic);
-          for (const x of [-30, 0, 30])
-            slab(c, x, -9, 17, 23, height + 8, 4, a, MAT.graphite);
-          seam(
-            c,
-            [
-              [-7, -9],
-              [7, -9],
-            ],
-            height + 13,
-            a,
-            accent,
-            3,
-          );
-          seam(
-            c,
-            [
-              [0, -16],
-              [0, -2],
-            ],
-            height + 13,
-            a,
-            accent,
-            3,
-          );
-        } else {
-          slab(c, 0, -7, 58, 58, 3, height, a, MAT.ally);
-          slab(c, 0, -10, 42, 41, height + 3, 6, a, MAT.ceramic);
-          for (const x of [-43, 43]) {
-            slab(c, x, -9, 17, 56, 3, 16, a, MAT.graphite);
-            lamp(c, x, 9, 20, a, 2.5, accent);
-          }
-          slab(c, 0, -12, 9, 9, height + 9, 24, a, MAT.graphite);
-          lamp(c, 0, -12, height + 34, a, 3, accent);
-          if (u.defense) {
-            slab(c, 0, 0, 23, 23, height + 8, 7, u.angle, MAT.ally);
-            slab(c, 20, 0, 33, 6, height + 12, 5, u.angle, MAT.graphite);
-          }
-        }
-      }
-      if (progress < 1) {
-        for (const x of [-w / 2 + 12, w / 2 - 12])
-          for (const y of [-h / 2 + 12, h / 2 - 28])
-            slab(c, x, y, 4, 4, 3, 42, a, MAT.ceramic);
+      if (u.hit > 0 && !ui.reduced && !ui.memory && u.hp > 0)
         seam(
           c,
           [
-            [-w / 2 + 12, -h / 2 + 12],
-            [w / 2 - 12, -h / 2 + 12],
+            [-frame.w * 0.24, frame.h * 0.2],
+            [frame.w * 0.24, frame.h * 0.2],
           ],
-          45,
-          a,
-          "#c9ba96a0",
-          2,
+          7,
+          frame.a,
+          "#d5efdb90",
+          1.5,
         );
-      }
-      for (const x of [-w / 2 + 13, w / 2 - 13])
-        lamp(c, x, h / 2 - 14, 5, a, 2, accent);
       c.restore();
-      if (u.hp < E.C[u.kind].hp || ui.mode === "tactical") {
+      if (u.hp > 0 && (u.hp < E.C[u.kind].hp || ui.mode === "tactical")) {
         const x = u.x - 27,
           y = box.y + box.h - this.z(u.x, u.y) + 9;
         c.fillStyle = "#132e32";
@@ -3524,20 +3736,23 @@
         c.fillRect(
           x,
           y,
-          54 * (u.build > 0 ? progress : u.hp / E.C[u.kind].hp),
+          54 * (u.build > 0 ? frame.progress : u.hp / E.C[u.kind].hp),
           4,
         );
       }
     }
     unit(c, u, s, ui) {
+      const opacity = this.wreckOpacity(u, s);
+      if (!opacity) return;
       c.save();
+      c.globalAlpha *= opacity;
       try {
         this.occlude(c, u.x, u.y, this.z(u.x, u.y), E.C[u.kind].r + 70);
         const pose = ui.memory
           ? { phase: 0, move: 0, angle: u.angle }
           : this.pose(u, s, ui);
         if (
-          this.mapId === "highlands" &&
+          ["highlands", "districts"].includes(this.mapId) &&
           E.C[u.kind].speed > 0 &&
           u.hp > 0 &&
           u.kind !== "drone"
@@ -3560,12 +3775,26 @@
           u.kind,
           u.team,
           u.angle,
-          pose,
+          [
+            pose.phase,
+            pose.move,
+            pose.settle,
+            pose.angle,
+            pose.direction,
+            pose.cycle,
+            ["tank", "mortar"].includes(u.kind)
+              ? [pose.left, pose.right]
+              : null,
+          ],
           u.hp,
           u.defense,
           ui.reduced ? 0 : u.flash,
           !ui.reduced && u.hit > 0,
           u.wind > 0,
+          ["runner", "rocket", "flamer", "bomber"].includes(u.kind) &&
+          (u.wind > 0 || u.combat?.mode === "aim")
+            ? [u.combat?.time ?? u.wind, u.combat?.total]
+            : null,
           u.wind > 0 && u.target
             ? Math.atan2(u.target.y - u.y, u.target.x - u.x)
             : null,
@@ -3577,8 +3806,13 @@
             ? [
                 ui.aim && Math.atan2(ui.aim.y - u.y, ui.aim.x - u.x),
                 s.dashT > 0,
+                s.reload,
+                s.terminal?.channeling,
+                s.terminals?.some((p) => p.channeling),
               ]
             : null,
+          u.kind === "scout" && !ui.reduced ? s.t : null,
+          u.kind === "rocket" ? u.cool > E.C.rocket.rate * 0.5 : null,
           m.a,
           m.d,
           x - left,
@@ -3588,31 +3822,39 @@
         ]);
       let sprite = this.unitSprites.get(u.id);
       if (!sprite) {
-        sprite = { canvas: document.createElement("canvas"), pixels: 0 };
+        sprite = { canvas: null, pixels: 0 };
         this.unitSprites.set(u.id, sprite);
       }
-      if (sprite.key !== key) {
-        const canvas = sprite.canvas;
-        if (canvas.width !== width || canvas.height !== height) {
-          this.spritePixels -= sprite.pixels;
-          canvas.width = width;
-          canvas.height = height;
-          sprite.pixels = width * height;
-          this.spritePixels += sprite.pixels;
+      if (sprite.key !== key && sprite.pending !== key) {
+        // A walking/turning model normally changes every frame. Rasterizing it
+        // into a new image only to copy it once adds work and GPU synchronisation.
+        // Admit exact poses after a repeat; draw changing poses as the same vectors.
+        sprite.pending = key;
+        this.unitModel(c, u, s, ui, pose);
+      } else {
+        if (sprite.key !== key) {
+          const canvas = (sprite.canvas ||= document.createElement("canvas"));
+          if (canvas.width !== width || canvas.height !== height) {
+            this.spritePixels -= sprite.pixels;
+            canvas.width = width;
+            canvas.height = height;
+            sprite.pixels = width * height;
+            this.spritePixels += sprite.pixels;
+          }
+          const b = canvas.getContext("2d");
+          b.setTransform(1, 0, 0, 1, 0, 0);
+          b.clearRect(0, 0, width, height);
+          b.setTransform(m.a, 0, 0, m.d, m.e - left, m.f - top);
+          this.unitModel(b, u, s, ui, pose);
+          sprite.key = key;
         }
-        const b = canvas.getContext("2d");
-        b.setTransform(1, 0, 0, 1, 0, 0);
-        b.clearRect(0, 0, width, height);
-        b.setTransform(m.a, 0, 0, m.d, m.e - left, m.f - top);
-        this.unitModel(b, u, s, ui, pose);
-        sprite.key = key;
+        // Rasterize at the current physical pixel scale and fractional position;
+        // the final integer blit does not rescale or blur the original artwork.
+        c.save();
+        c.setTransform(1, 0, 0, 1, 0, 0);
+        c.drawImage(sprite.canvas, left, top);
+        c.restore();
       }
-      // Rasterize at the current physical pixel scale and fractional position;
-      // the final integer blit does not rescale or blur the original artwork.
-      c.save();
-      c.setTransform(1, 0, 0, 1, 0, 0);
-      c.drawImage(sprite.canvas, left, top);
-      c.restore();
       this.unitSprites.delete(u.id);
       this.unitSprites.set(u.id, sprite);
       while (
@@ -3628,27 +3870,26 @@
       if (u.construction) return this.constructionModel(c, u, s, ui);
       const def = E.C[u.kind],
         r = def.r,
-        dead = u.hp <= 0,
-        p =
+        rawPose =
           pose ||
           (ui.memory
-            ? { phase: 0, move: 0, angle: u.angle }
+            ? { phase: 0, move: 0, angle: u.angle || 0 }
             : this.pose(u, s, ui)),
-        t = ui.reduced ? 0 : ui.mode === "menu" ? this.time : s.t;
-      const aim =
-        u.kind === "hero" && ui.aim
-          ? Math.atan2(ui.aim.y - u.y, ui.aim.x - u.x)
-          : u.combat
-            ? u.combat.angle
-            : u.wind > 0 && u.target
-              ? Math.atan2(u.target.y - u.y, u.target.x - u.x)
-              : u.angle;
-      const accent = u.team ? "#efae8c" : "#a4edd9",
-        recoil = ui.reduced
-          ? 0
-          : Math.sin(Math.min(1, u.flash / 0.1) * Math.PI) * 4;
+        onRamp =
+          ["highlands", "districts"].includes(this.mapId) &&
+          def.speed &&
+          !Number.isInteger(E.terrain.level(u.x, u.y)),
+        p = onRamp
+          ? {
+              ...rawPose,
+              ground: {
+                x: (this.z(u.x + 8, u.y) - this.z(u.x - 8, u.y)) / 16,
+                y: (this.z(u.x, u.y + 8) - this.z(u.x, u.y - 8)) / 16,
+              },
+            }
+          : rawPose;
       c.save();
-      if (this.mapId !== "highlands") {
+      if (!["highlands", "districts"].includes(this.mapId)) {
         c.save();
         if (s.fog) this.fogClip(c, s.fog, ui.memory ? "explored" : "visible");
         ellipse(c, u.x + 4, u.y + 7, r * 1.25, r * 0.85, "#07192270");
@@ -3656,1238 +3897,186 @@
         c.restore();
       }
       c.translate(u.x, u.y - this.z(u.x, u.y));
-      if (dead) {
-        c.save();
-        c.rotate(u.angle);
-        const m = {
-          top: "#3f4c4b",
-          front: "#273638",
-          side: "#152930",
-          edge: "#596860",
-        };
-        plate(
-          c,
-          [
-            [-r, 0],
-            [-r * 0.45, -r * 0.58],
-            [r * 0.72, -r * 0.36],
-            [r, r * 0.38],
-            [0, r * 0.68],
-          ],
-          0,
-          5,
-          0,
-          m,
-        );
-        for (let i = 0; i < 3; i++) {
-          const a = i * 2.5 + u.id;
-          slab(
-            c,
-            Math.cos(a) * r * 0.8,
-            Math.sin(a) * r * 0.6,
-            r * 0.3,
-            5,
-            0,
-            2,
-            a,
-            MAT.graphite,
-          );
-        }
-        seam(
-          c,
-          [
-            [-r * 0.6, -r * 0.2],
-            [0, r * 0.2],
-            [r * 0.45, -r * 0.22],
-          ],
-          6,
-          0,
-          "#13242c",
-          2,
-        );
-        c.restore();
-        c.restore();
-        return;
-      }
-      if (u.kind === "hero" || u.kind === "rifle") {
-        const hero = u.kind === "hero",
-          body = hero ? MAT.ceramic : MAT.ally,
-          gait = Math.sin(p.phase) * 3 * p.move,
-          bob = Math.abs(Math.sin(p.phase)) * 0.8 * p.move;
-        for (const side of [-1, 1]) {
-          const x = side * gait;
-          slab(c, x - 2, side * 6, 13, 6, 0, 3, p.angle, MAT.graphite);
-          slab(c, x - 4, side * 6, 7, 5, 3, 5, p.angle, body);
-          seam(
-            c,
-            [
-              [x - 4, side * 6],
-              [0, side * 5],
-            ],
-            9,
-            p.angle,
-            "#405b5e",
-            3,
-          );
-        }
-        plate(
-          c,
-          [
-            [-10, -7],
-            [0, -10],
-            [9, -6],
-            [11, 0],
-            [8, 7],
-            [-4, 9],
-            [-12, 5],
-          ],
-          10 + bob,
-          6,
-          aim,
-          body,
-        );
-        slab(c, -9, -1, 7, 14, 13 + bob, 5, aim, MAT.graphite);
-        slab(c, -10, -2, 3, 10, 18 + bob, 1, aim, body);
-        for (const side of [-1, 1]) {
-          slab(c, 1, side * 9, 9, 6, 13 + bob, 4, aim, body);
-          slab(
-            c,
-            9 - recoil * 0.3,
-            side * 7,
-            10,
-            4,
-            10 + bob,
-            3,
-            aim,
-            MAT.dark,
-          );
-        }
-        plate(
-          c,
-          [
-            [-2, -5],
-            [5, -5],
-            [9, -2],
-            [9, 3],
-            [4, 5],
-            [-2, 4],
-          ],
-          17 + bob,
-          6,
-          aim,
-          hero ? MAT.ceramic : MAT.graphite,
-        );
-        seam(
-          c,
-          [
-            [6, -3],
-            [8, 0],
-            [6, 3],
-          ],
-          24 + bob,
-          aim,
-          accent,
-          2,
-        );
-        slab(c, 15 - recoil, 6, 20, 4, 12 + bob, 3, aim, MAT.graphite);
-        slab(c, 14 - recoil, 6, 9, 3, 15 + bob, 1, aim, body);
-        slab(c, 24 - recoil, 6, 4, 6, 12 + bob, 3, aim, MAT.dark);
-        lamp(c, -10, -3, 20 + bob, aim, 1.3, accent);
-        if (hero) {
-          seam(
-            c,
-            [
-              [-3, -8],
-              [1, -8],
-            ],
-            17 + bob,
-            aim,
-            "#eaf2df",
-            1.2,
-          );
-          seam(
-            c,
-            [
-              [-12, -6],
-              [-12, 6],
-            ],
-            19 + bob,
-            aim,
-            "#78cdb8",
-            1.2,
-          );
-        }
-        if (u.flash > 0 && !ui.reduced)
-          this.muzzle(c, 26 - recoil, 6, 14 + bob, aim, accent, u.flash);
-        if (hero && s.dashT > 0 && !ui.reduced) {
-          seam(
-            c,
-            [
-              [-18, -7],
-              [-44, -7],
-            ],
-            11,
-            aim,
-            "#a2e7d469",
-            2,
-          );
-          seam(
-            c,
-            [
-              [-18, 6],
-              [-38, 6],
-            ],
-            11,
-            aim,
-            "#a2e7d44f",
-            1.5,
-          );
-        }
-      } else if (u.kind === "artillery") {
-        const a = p.angle;
-        for (const side of [-1, 1]) {
-          slab(c, -3, side * 16, 44, 10, 0, 7, a, MAT.graphite);
-          slab(c, -3, side * 16, 39, 8, 7, 4, a, MAT.ally);
-          for (let i = 0; i < 6; i++)
-            seam(
-              c,
-              [
-                [-21 + i * 7 + (p.phase % 7), side * 16 - 4],
-                [-21 + i * 7 + (p.phase % 7), side * 16 + 4],
-              ],
-              11,
-              a,
-              "#263e43",
-              1.5,
-            );
-        }
-        plate(
-          c,
-          [
-            [-24, -10],
-            [10, -13],
-            [24, -7],
-            [26, 6],
-            [10, 13],
-            [-24, 10],
-          ],
-          6,
-          8,
-          a,
-          MAT.ally,
-        );
-        for (const side of [-1, 1])
-          slab(c, -17, side * 9, 10, 4, 14, 3, a, MAT.ceramic);
-        ellipse(c, 0, -16, 12, 12, "#142c33", "#9eada26b");
-        plate(
-          c,
-          [
-            [-13, -10],
-            [6, -11],
-            [15, -6],
-            [15, 6],
-            [6, 11],
-            [-13, 10],
-          ],
-          16,
-          8,
-          aim,
-          MAT.ceramic,
-        );
-        slab(c, 19 - recoil * 1.6, 0, 33, 8, 19, 5, aim, MAT.graphite);
-        slab(c, 31 - recoil * 1.6, 0, 7, 12, 20, 5, aim, MAT.ally);
-        for (const side of [-1, 1])
-          seam(
-            c,
-            [
-              [5, side * 6],
-              [27 - recoil, side * 6],
-            ],
-            25,
-            aim,
-            "#a9d9c5",
-            1.5,
-          );
-        lamp(c, -8, 0, 25, aim, 2, "#a8e7ce");
-        if (u.flash > 0 && !ui.reduced)
-          this.muzzle(
-            c,
-            37 - recoil * 1.6,
-            0,
-            23,
-            aim,
-            "#e1ebc6",
-            u.flash,
-            1.6,
-          );
-      } else if (
-        ["rocket", "flamer", "bomber", "tank", "mortar"].includes(u.kind)
-      ) {
-        const heavy = ["tank", "mortar"].includes(u.kind),
-          a = heavy ? aim : p.move ? p.angle : aim;
-        if (heavy) {
-          for (const side of [-1, 1]) {
-            slab(c, 0, side * 19, 54, 12, 0, 10, a, MAT.graphite);
-            slab(c, 0, side * 19, 46, 9, 10, 3, a, MAT.enemy);
-            for (let i = -2; i <= 2; i++)
-              seam(
-                c,
-                [
-                  [i * 9, side * 15],
-                  [i * 9 - 2, side * 23],
-                ],
-                14,
-                a,
-                "#8d857466",
-                1.4,
-              );
-          }
-          plate(
-            c,
-            [
-              [-25, -13],
-              [14, -15],
-              [28, -8],
-              [28, 8],
-              [14, 15],
-              [-25, 13],
-            ],
-            8,
-            10,
-            a,
-            MAT.enemy,
-          );
-          slab(c, -10, 0, 14, 22, 18, 4, a, MAT.graphite);
-          for (const side of [-1, 1])
-            lamp(c, 22, side * 12, 16, a, 1.8, accent);
-          if (u.kind === "tank") {
-            plate(
-              c,
-              [
-                [-13, -12],
-                [10, -12],
-                [19, -7],
-                [19, 7],
-                [10, 12],
-                [-13, 12],
-              ],
-              20,
-              10,
-              aim,
-              MAT.copper,
-            );
-            slab(c, 27 - recoil, 0, 32, 7, 23, 6, aim, MAT.graphite);
-            slab(c, 40 - recoil, 0, 7, 11, 24, 5, aim, MAT.enemy);
-            for (const side of [-1, 1])
-              seam(
-                c,
-                [
-                  [11, side * 10],
-                  [18, side * 6],
-                ],
-                31,
-                aim,
-                "#d4b49a",
-                2,
-              );
-            lamp(c, -4, 0, 32, aim, 2, accent);
-          } else {
-            for (const side of [-1, 1])
-              for (const front of [-1, 1]) {
-                const spread = u.wind > 0 ? 36 : 24;
-                seam(
-                  c,
-                  [
-                    [front * 13, side * 11],
-                    [front * spread, side * 27],
-                  ],
-                  5,
-                  a,
-                  "#8e8a79",
-                  4,
-                );
-                slab(
-                  c,
-                  front * spread,
-                  side * 27,
-                  10,
-                  10,
-                  0,
-                  3,
-                  a,
-                  MAT.graphite,
-                );
-              }
-            slab(c, 0, 0, 26, 23, 18, 8, aim, MAT.copper);
-            slab(c, 8 - recoil, 0, 30, 13, 27, 12, aim, MAT.graphite);
-            slab(c, 18 - recoil, 0, 7, 16, 38, 3, aim, MAT.enemy);
-            lamp(c, -11, 0, 30, aim, 2.5, accent);
-          }
-        } else if (u.kind === "bomber") {
-          for (let i = 0; i < 6; i++) {
-            const leg = a + (i * Math.PI) / 3,
-              stride = Math.sin(p.phase + i * Math.PI) * 2 * p.move;
-            seam(
-              c,
-              [
-                [4, 0],
-                [13, 3],
-                [19 + stride, 6],
-              ],
-              4,
-              leg,
-              "#927d6c",
-              3,
-            );
-          }
-          plate(
-            c,
-            [
-              [-12, -6],
-              [-7, -12],
-              [7, -12],
-              [14, 0],
-              [7, 12],
-              [-7, 12],
-              [-12, 6],
-            ],
-            6,
-            9,
-            aim,
-            MAT.graphite,
-          );
-          ellipse(c, 0, -17, 10, 7, "#ac8b73", "#d4b49a");
-          ellipse(c, 0, -18, 5, 4, u.wind ? "#f6d7a4" : "#c98e72");
-          for (const side of [-1, 1])
-            slab(c, -7, side * 7, 10, 6, 16, 4, aim, MAT.enemy);
-        } else {
-          for (const side of [-1, 1]) {
-            slab(
-              c,
-              Math.sin(p.phase) * side * 2 * p.move,
-              side * 10,
-              16,
-              6,
-              0,
-              4,
-              a,
-              MAT.graphite,
-            );
-            seam(
-              c,
-              [
-                [-2, side * 5],
-                [-6, side * 10],
-              ],
-              8,
-              a,
-              "#968673",
-              4,
-            );
-          }
-          plate(
-            c,
-            [
-              [-13, -9],
-              [3, -13],
-              [14, -5],
-              [14, 5],
-              [3, 13],
-              [-13, 9],
-            ],
-            8,
-            12,
-            aim,
-            MAT.enemy,
-          );
-          if (u.kind === "rocket") {
-            for (const side of [-1, 1]) {
-              slab(c, 0, side * 11, 26, 9, 20, 8, aim, MAT.graphite);
-              for (let i = -1; i <= 1; i++)
-                lamp(c, 13, side * 11 + i * 2.2, 24, aim, 1.2, "#d6b392");
-              seam(
-                c,
-                [
-                  [-10, side * 13],
-                  [8, side * 13],
-                ],
-                29,
-                aim,
-                "#9b8270",
-                1.5,
-              );
-            }
-            slab(c, 0, 0, 11, 9, 22, 5, aim, MAT.copper);
-            lamp(c, 7, 0, 28, aim, 2, accent);
-          } else {
-            for (const side of [-1, 1]) {
-              slab(c, -10, side * 8, 12, 10, 15, 15, aim, MAT.copper);
-              for (const x of [-13, -8])
-                seam(
-                  c,
-                  [
-                    [x, side * 8 - 4],
-                    [x, side * 8 + 4],
-                  ],
-                  31,
-                  aim,
-                  "#dfbd944f",
-                  1,
-                );
-            }
-            slab(c, 14 - recoil, 0, 23, 8, 15, 6, aim, MAT.graphite);
-            slab(c, 25 - recoil, 0, 7, 12, 15, 7, aim, MAT.copper);
-            lamp(
-              c,
-              26,
-              0,
-              23,
-              aim,
-              2.7,
-              u.combat?.mode === "fire" ? "#ffe0a3" : accent,
-            );
-          }
-        }
-        if (u.flash > 0 && !ui.reduced && u.kind !== "bomber")
-          this.muzzle(
-            c,
-            heavy ? 42 : 27,
-            0,
-            heavy ? 27 : 21,
-            aim,
-            accent,
-            u.flash,
-            heavy ? 1.4 : 1,
-          );
-      } else if (u.kind === "scout") {
-        const a = p.move ? p.angle : aim;
-        for (const side of [-1, 1]) {
-          slab(c, 0, side * 10, 24, 6, 0, 5, a, MAT.graphite);
-          for (const x of [-7, 7]) lamp(c, x, side * 10, 6, a, 1.1, "#849c91");
-        }
-        plate(
-          c,
-          [
-            [-14, -6],
-            [-2, -11],
-            [12, -6],
-            [16, 0],
-            [12, 6],
-            [-2, 11],
-            [-14, 6],
-          ],
-          5,
-          8,
-          a,
-          MAT.ally,
-        );
-        slab(c, -4, 0, 10, 10, 13, 5, a, MAT.ceramic);
-        slab(c, -4, 0, 4, 4, 18, 9, a, MAT.graphite);
-        plate(
-          c,
-          [
-            [-11, -5],
-            [4, -7],
-            [12, 0],
-            [4, 7],
-            [-11, 5],
-          ],
-          27,
-          4,
-          aim,
-          MAT.ceramic,
-        );
-        lamp(c, 8, 0, 32, aim, 3, "#a4edd9");
-        seam(
-          c,
-          [
-            [-8, -3],
-            [2, -4],
-          ],
-          32,
-          aim,
-          "#344d4a",
-          1.5,
-        );
-      } else if (u.kind === "runner") {
-        const a = p.move ? p.angle : aim;
-        for (const side of [-1, 1])
-          for (const front of [-1, 1]) {
-            const step =
-              Math.sin(p.phase + (side === front ? Math.PI : 0)) * 3 * p.move;
-            seam(
-              c,
-              [
-                [front * 5, side * 4],
-                [front * 12 - step, side * 12],
-                [front * 17 + step, side * 16],
-              ],
-              3,
-              a,
-              "#1a2b32",
-              4.5,
-            );
-            seam(
-              c,
-              [
-                [front * 5, side * 4],
-                [front * 12 - step, side * 12],
-                [front * 17 + step, side * 16],
-              ],
-              6,
-              a,
-              "#aa9280",
-              2.5,
-            );
-            lamp(c, front * 12 - step, side * 12, 7, a, 1, "#c1aa8d");
-          }
-        plate(
-          c,
-          [
-            [-13, 0],
-            [-5, -9],
-            [7, -7],
-            [15, 0],
-            [7, 7],
-            [-5, 9],
-          ],
-          6,
-          7,
-          a,
-          MAT.enemy,
-        );
-        plate(
-          c,
-          [
-            [-8, 0],
-            [-3, -5],
-            [7, 0],
-            [-3, 5],
-          ],
-          13,
-          3,
-          a,
-          MAT.graphite,
-        );
-        for (const side of [-1, 1])
-          seam(
-            c,
-            [
-              [8, side * 4],
-              [18 + (u.wind > 0 ? 3 : 0), side * 7],
-              [21, side * 3],
-            ],
-            9,
-            a,
-            "#c5a18a",
-            2,
-          );
-        lamp(c, 11, 0, 14, a, 2.3, accent);
-        seam(
-          c,
-          [
-            [-6, 0],
-            [3, 0],
-          ],
-          17,
-          a,
-          "#b88a73",
-          1,
-        );
-      } else if (["sentinel", "warden"].includes(u.kind)) {
-        if (u.kind === "warden") {
-          slab(c, 0, 0, 34, 27, 0, 8, aim, MAT.copper);
-          lamp(c, -9, 0, 30, aim, 3, accent);
-        }
-        const gait = Math.sin(p.phase) * 2 * p.move;
-        for (const side of [-1, 1]) {
-          slab(
-            c,
-            -2 + gait * side,
-            side * 10,
-            13,
-            5,
-            0,
-            3,
-            p.angle,
-            MAT.graphite,
-          );
-          seam(
-            c,
-            [
-              [0, side * 5],
-              [-4, side * 9],
-              [-2 + gait * side, side * 10],
-            ],
-            8,
-            p.angle,
-            "#9a8d78",
-            3,
-          );
-        }
-        plate(
-          c,
-          [
-            [-12, -8],
-            [0, -12],
-            [13, -5],
-            [13, 5],
-            [0, 12],
-            [-12, 8],
-          ],
-          10,
-          10,
-          aim,
-          MAT.enemy,
-        );
-        slab(c, -8, 0, 7, 13, 20, 3, aim, MAT.graphite);
-        for (const side of [-1, 1])
-          slab(c, -1, side * 10, 12, 5, 18, 4, aim, MAT.copper);
-        plate(
-          c,
-          [
-            [1, -6],
-            [9, -5],
-            [13, 0],
-            [9, 5],
-            [1, 6],
-          ],
-          20,
-          5,
-          aim,
-          MAT.graphite,
-        );
-        lamp(c, 10, 0, 25, aim, 3, accent);
-        slab(c, 20 - recoil, 0, 18, 5, 13, 5, aim, MAT.dark);
-        seam(
-          c,
-          [
-            [12, -2],
-            [24 - recoil, -2],
-          ],
-          19,
-          aim,
-          "#b7a18a",
-          1,
-        );
-        if (u.wind > 0) lamp(c, 17, 0, 19, aim, 2, "#ffe0b4");
-        if (u.flash > 0 && !ui.reduced)
-          this.muzzle(c, 29 - recoil, 0, 17, aim, accent, u.flash);
-      } else if (u.kind === "turret") {
-        for (let i = 0; i < 3; i++) {
-          const a = (i * TAU) / 3;
-          slab(c, 17, 0, 24, 10, 0, 5, a, MAT.graphite);
-          slab(c, 18, 0, 18, 7, 5, 4, a, MAT.enemy);
-        }
-        plate(
-          c,
-          [
-            [-16, -10],
-            [0, -18],
-            [16, -10],
-            [16, 10],
-            [0, 18],
-            [-16, 10],
-          ],
-          6,
-          8,
-          0,
-          MAT.enemy,
-        );
-        slab(c, 0, 0, 28, 25, 14, 10, aim, MAT.copper);
-        slab(c, -5, 0, 19, 19, 24, 4, aim, MAT.enemy);
-        for (const side of [-1, 1]) {
-          slab(c, 20 - recoil, side * 7, 33, 5, 20, 5, aim, MAT.graphite);
-          slab(c, 29 - recoil, side * 7, 6, 7, 20, 5, aim, MAT.copper);
-        }
-        lamp(c, 7, 0, 29, aim, 3, u.wind > 0 ? "#ffe2b5" : accent);
-        if (u.flash > 0 && !ui.reduced)
-          this.muzzle(c, 38 - recoil, 0, 24, aim, accent, u.flash, 1.3);
-      } else if (u.kind === "drone") {
-        const a = p.move ? p.angle : aim,
-          bob = ui.reduced ? 0 : Math.sin(t * 5 + u.id) * 0.8;
-        for (const side of [-1, 1]) {
-          slab(c, 0, side * 7, 14, 3, 2, 3, a, MAT.graphite);
-          lamp(c, -5, side * 7, 6, a, 1, accent);
-        }
-        slab(c, 0, 0, 15, 11, 5 + bob, 6, a, MAT.ally);
-        slab(c, 3, 0, 7, 8, 11 + bob, 2, a, MAT.ceramic);
-        lamp(c, 8, 0, 9 + bob, a, 1.5, accent);
-        if (u.cargo) {
-          slab(c, -5, 0, 8, 8, 12 + bob, 5, a, {
-            ...MAT.ally,
-            top: "#c2bc91",
-            front: "#8f986d",
-          });
-        }
-      } else if (["barracks", "foundry"].includes(u.kind)) {
-        const heavy = u.kind === "foundry",
-          wide = heavy ? 68 : 58,
-          deep = heavy ? 48 : 40;
-        if (u.build > 0)
-          c.globalAlpha =
-            0.35 + 0.65 * (1 - u.build / E.development.items(s)[u.kind].time);
-        slab(c, 0, 0, wide + 12, deep + 12, 0, 5, 0, MAT.graphite);
-        slab(c, 0, 0, wide, deep, 5, 18, 0, MAT.ally);
-        slab(c, 0, -8, wide - 8, deep * 0.65, 23, 8, 0, MAT.ceramic);
-        slab(c, 0, deep / 2, wide * 0.65, 4, 5, 18, 0, MAT.dark);
-        for (let i = 0; i < 4; i++)
-          seam(
-            c,
-            [
-              [-wide * 0.3, deep / 2 + 1],
-              [wide * 0.3, deep / 2 + 1],
-            ],
-            8 + i * 4,
-            0,
-            "#69847b",
-            1.5,
-          );
-        for (const side of [-1, 1]) {
-          slab(
-            c,
-            side * (wide / 2 - 5),
-            0,
-            7,
-            deep - 6,
-            25,
-            8,
-            0,
-            MAT.graphite,
-          );
-          lamp(c, side * (wide / 2 - 5), deep / 2 - 3, 27, 0, 2, accent);
-        }
-        if (heavy) {
-          slab(c, -9, -7, 7, 30, 32, 13, 0, MAT.ally);
-          slab(c, 9, -7, 7, 30, 32, 13, 0, MAT.ally);
-          slab(c, 0, -14, 27, 8, 45, 5, 0, MAT.ceramic);
-          if (u.jobs?.length) lamp(c, 0, 0, 34, 0, 3, "#e0bd8a");
-        } else
-          for (let i = 0; i < 3; i++) {
-            slab(c, -15 + i * 15, -9, 9, 13, 31, 3, 0, MAT.dark);
-            seam(
-              c,
-              [
-                [-18 + i * 15, -12],
-                [-12 + i * 15, -12],
-              ],
-              35,
-              0,
-              "#829c8b",
-            );
-          }
-        if (u.jobs?.length) {
-          const job = u.jobs[0],
-            progress = 1 - job.remaining / job.duration;
-          line(
-            c,
-            [
-              [-wide / 2, deep / 2 + 10],
-              [-wide / 2 + wide * progress, deep / 2 + 10],
-            ],
-            "#b5e2c9",
-            2,
-          );
-        }
-        c.globalAlpha = 1;
-      } else if (u.kind === "base") {
-        for (const side of [-1, 1])
-          for (const front of [-1, 1]) {
-            slab(c, front * 31, side * 25, 21, 12, 0, 4, 0, MAT.graphite);
-            slab(c, front * 25, side * 20, 12, 12, 4, 9, 0, MAT.ally);
-          }
-        plate(
-          c,
-          [
-            [-37, -18],
-            [-23, -33],
-            [23, -33],
-            [38, -18],
-            [38, 19],
-            [23, 31],
-            [-23, 31],
-            [-37, 18],
-          ],
-          5,
-          13,
-          0,
-          MAT.ally,
-        );
-        plate(
-          c,
-          [
-            [-25, -22],
-            [-15, -29],
-            [17, -29],
-            [28, -15],
-            [25, 22],
-            [-24, 22],
-          ],
-          18,
-          17,
-          0,
-          MAT.ceramic,
-        );
-        plate(
-          c,
-          [
-            [-17, -20],
-            [15, -20],
-            [21, -10],
-            [16, 4],
-            [-16, 4],
-            [-21, -10],
-          ],
-          35,
-          3,
-          0,
-          MAT.graphite,
-        );
-        seam(
-          c,
-          [
-            [-12, -17],
-            [12, -17],
-            [15, -10],
-          ],
-          39,
-          0,
-          "#a6ded1",
-          2,
-        );
-        for (const side of [-1, 1]) {
-          slab(c, side * 32, 1, 12, 30, 15, 8, 0, MAT.graphite);
-          for (let i = 0; i < 4; i++)
-            seam(
-              c,
-              [
-                [side * 32 - 4, -9 + i * 6],
-                [side * 32 + 4, -9 + i * 6],
-              ],
-              24,
-              0,
-              "#8ba99c",
-              1.4,
-            );
-          lamp(c, side * 32, 15, 24, 0, 2, "#93d8c2");
-        }
-        slab(c, 0, 20, 30, 11, 12, 10, 0, MAT.ally);
-        slab(c, 0, 27, 20, 15, 2, 3, 0, MAT.dark);
-        seam(
-          c,
-          [
-            [-12, 15],
-            [12, 15],
-          ],
-          36,
-          0,
-          "#6c9488",
-          2,
-        );
-        seam(
-          c,
-          [
-            [-23, -20],
-            [-23, -20],
-          ],
-          50,
-          0,
-          "#bfd0c4",
-          1,
-        );
-        line(
-          c,
-          [
-            [-23, -53],
-            [-23, -77],
-            [-16, -83],
-          ],
-          "#93b2a8",
-          1.5,
-        );
-        ellipse(c, -16, -83, 2, 1.5, "#b4e6d0");
-      } else if (u.kind === "outpost") {
-        const progress =
-            1 -
-            u.build / (s.campaign ? E.development.items(s).outpost.time : 6),
-          height = 10 + progress * 20;
-        for (let i = 0; i < 4; i++) {
-          const a = (i * Math.PI) / 2;
-          slab(c, 22, 0, 23, 10, 0, 4, a, MAT.graphite);
-          slab(c, 19, 0, 15, 8, 4, 5, a, MAT.ally);
-        }
-        slab(c, 0, 0, 36, 31, 4, 8, 0, MAT.ally);
-        if (progress > 0.2) {
-          slab(c, 0, 0, 24, 23, 12, height - 8, 0, MAT.ceramic);
-          slab(c, 0, -1, 15, 16, height + 4, 4, 0, MAT.graphite);
-        }
-        for (const side of [-1, 1]) {
-          slab(c, side * 20, 0, 7, 28, 7, progress * 17, 0, MAT.ally);
-          lamp(
-            c,
-            side * 20,
-            11,
-            10 + progress * 17,
-            0,
-            1.8,
-            progress === 1 ? "#a7ead3" : "#a2a68d",
-          );
-        }
-        line(
-          c,
-          [
-            [0, -height - 5],
-            [0, -height - 18 - progress * 8],
-          ],
-          "#91b3a4",
-          2,
-        );
-        ellipse(
-          c,
-          0,
-          -height - 19 - progress * 8,
-          4,
-          2,
-          progress === 1 ? "#aeead0" : "#76978d",
-        );
-        if (progress < 1) {
-          arc(
-            c,
-            0,
-            0,
-            37,
-            -Math.PI / 2,
-            -Math.PI / 2 + progress * TAU,
-            "#acd9c5",
-            2,
-          );
-          for (const side of [-1, 1])
-            line(
-              c,
-              [
-                [side * 26, -15],
-                [side * 26, -height - 10],
-                [side * 8, -height - 10],
-              ],
-              "#a0cbb66a",
-              1.3,
-            );
-        }
-      } else if (u.kind === "jammer") {
-        for (let i = 0; i < 3; i++) {
-          const a = (i * TAU) / 3;
-          slab(c, 23, 0, 25, 14, 0, 7, a, MAT.dark);
-          slab(c, 17, 0, 16, 12, 7, 12, a, MAT.enemy);
-        }
-        slab(c, 0, 0, 25, 25, 10, 24, 0, MAT.enemy);
-        slab(c, 0, 0, 11, 11, 34, 31, 0, MAT.graphite);
-        const turn = t * 0.3;
-        for (let i = 0; i < 3; i++) {
-          const a = (i * TAU) / 3 + turn;
-          plate(
-            c,
-            [
-              [5, -4],
-              [23, -13],
-              [32, -8],
-              [25, 10],
-              [8, 5],
-            ],
-            58,
-            4,
-            a,
-            MAT.copper,
-          );
-          seam(
-            c,
-            [
-              [10, 0],
-              [25, 0],
-            ],
-            63,
-            a,
-            "#283f42",
-            2,
-          );
-        }
-        ellipse(c, 0, -66, 7, 5, "#132a31", "#b1997f");
-        ellipse(c, 0, -67, 3, 2, "#e7b18c");
-        if (!ui.reduced)
-          arc(c, 0, -63, 17, turn, turn + Math.PI * 1.4, "#d9a48060", 1);
-      } else if (u.kind === "bastion") {
-        slab(c, 0, 0, 86, 64, 0, 9, 0, MAT.graphite);
-        for (const side of [-1, 1]) {
-          slab(c, side * 31, 0, 22, 62, 9, 19, 0, MAT.enemy);
-          slab(c, side * 31, -4, 16, 43, 28, 7, 0, MAT.copper);
-          for (let i = 0; i < 4; i++)
-            seam(
-              c,
-              [
-                [side * 31 - 5, -16 + i * 9],
-                [side * 31 + 5, -16 + i * 9],
-              ],
-              36,
-              0,
-              "#24383d",
-              2,
-            );
-        }
-        plate(
-          c,
-          [
-            [-25, -23],
-            [16, -23],
-            [29, -8],
-            [29, 21],
-            [-25, 21],
-          ],
-          12,
-          23,
-          0,
-          MAT.dark,
-        );
-        slab(c, 0, -1, 27, 29, 35, 10, aim, MAT.enemy);
-        for (const side of [-1, 1]) {
-          slab(c, 27 - recoil, side * 8, 42, 6, 41, 5, aim, MAT.graphite);
-          slab(c, 47 - recoil, side * 8, 8, 8, 41, 5, aim, MAT.copper);
-          if (u.flash > 0 && !ui.reduced)
-            this.muzzle(
-              c,
-              52 - recoil,
-              side * 8,
-              44,
-              aim,
-              accent,
-              u.flash,
-              1.1,
-            );
-        }
-        seam(
-          c,
-          [
-            [-18, 16],
-            [-18, -6],
-          ],
-          35,
-          0,
-          "#899589",
-          2,
-        );
-        lamp(c, -18, 16, 59, 0, 2, accent);
-        for (const side of [-1, 1]) lamp(c, side * 32, 25, 29, 0, 2, accent);
-      } else if (u.kind === "citadel") {
-        for (let i = 0; i < 4; i++) {
-          const a = (i * Math.PI) / 2 + Math.PI / 4;
-          slab(c, 40, 0, 27, 20, 0, 10, a, MAT.graphite);
-          slab(c, 34, 0, 18, 17, 10, 20, a, MAT.enemy);
-          lamp(c, 35, 0, 31, a, 2, accent);
-        }
-        plate(
-          c,
-          [
-            [-38, -18],
-            [-20, -36],
-            [22, -36],
-            [38, -18],
-            [38, 18],
-            [20, 36],
-            [-20, 36],
-            [-38, 18],
-          ],
-          7,
-          19,
-          0,
-          MAT.dark,
-        );
-        plate(
-          c,
-          [
-            [-30, -17],
-            [-15, -30],
-            [16, -30],
-            [30, -17],
-            [30, 17],
-            [16, 29],
-            [-16, 29],
-            [-30, 17],
-          ],
-          26,
-          23,
-          0,
-          MAT.enemy,
-        );
-        slab(c, 0, 0, 28, 24, 49, 11, 0, MAT.graphite);
-        for (const side of [-1, 1]) {
-          slab(c, side * 24, 0, 11, 34, 49, 8, 0, MAT.copper);
-          for (let i = 0; i < 3; i++)
-            seam(
-              c,
-              [
-                [side * 24 - 3, -10 + i * 8],
-                [side * 24 + 3, -10 + i * 8],
-              ],
-              58,
-              0,
-              "#2d3437",
-              2,
-            );
-        }
-        lamp(
-          c,
-          0,
-          10,
-          61,
-          0,
-          4,
-          (s.fog ? !u.shielded : s.terminal.window > 0) ? "#9ce0cd" : accent,
-        );
-        slab(c, 30 - recoil, 0, 56, 10, 59, 7, aim, MAT.graphite);
-        slab(c, 53 - recoil, 0, 9, 15, 59, 7, aim, MAT.copper);
-        if (u.flash > 0 && !ui.reduced)
-          this.muzzle(c, 60 - recoil, 0, 64, aim, accent, u.flash, 1.6);
-        if (u.kind === "citadel" && (s.fog ? u.shielded : E.shielded(s))) {
-          for (let i = 0; i < 4; i++) {
-            const a = (i * Math.PI) / 2 + 0.12;
-            arc(c, 0, 0, 65, a, a + 1.32, "#d8ab8270", 1.5);
-          }
-          ellipse(c, 0, -27, 65, 69, null, "#b499792d");
-          arc(c, 0, -27, 65, -Math.PI * 0.9, -Math.PI * 0.12, "#e1b68d36");
-        }
-      }
-      if (u.defense) {
-        const z = u.kind === "base" ? 40 : 35;
-        slab(c, 0, 0, 24, 22, z, 5, 0, MAT.graphite);
-        slab(c, 0, 0, 18, 17, z + 5, 7, aim, MAT.ally);
-        for (const side of [-1, 1]) {
-          slab(c, 19 - recoil, side * 6, 30, 4, z + 9, 4, aim, MAT.graphite);
-          slab(c, 31 - recoil, side * 6, 6, 6, z + 9, 4, aim, MAT.ceramic);
-          if (u.flash > 0 && !ui.reduced)
-            this.muzzle(
-              c,
-              35 - recoil,
-              side * 6,
-              z + 11,
-              aim,
-              accent,
-              u.flash,
-              0.8,
-            );
-        }
-        lamp(c, -6, 0, z + 13, aim, 1.8, accent);
-      }
-      if (u.hit > 0 && !ui.reduced) {
+      unitModels.draw(
+        c,
+        u,
+        s,
+        ui,
+        p,
+        this.muzzle,
+        null,
+        this.doorOpening(u, s),
+        this.deliveryOpening(u, s),
+        { activity: this.workerActivity.get(u.id), crew: this.buildingActivity.get(u.id) || [] },
+      );
+      if (u.hp > 0 && u.hit > 0 && !ui.reduced && !ui.memory)
         ring(c, 0, 0, r + 3, u.team ? "#f0c9a780" : "#c1f2d980", 1.5);
-      }
       c.restore();
-      if (u.hp < def.hp || ui.mode === "tactical") {
+      if (u.hp > 0 && (u.hp < def.hp || ui.mode === "tactical")) {
         c.save();
         c.translate(u.x, u.y - this.z(u.x, u.y) + r + 11);
         c.fillStyle = "#102832";
         c.fillRect(-r, 0, r * 2, 3);
         c.fillStyle = u.team ? "#d29c83" : "#9cd8c7";
-        c.fillRect(-r, 0, (r * 2 * u.hp) / def.hp, 3);
+        c.fillRect(-r, 0, (r * 2 * Math.max(0, u.hp)) / def.hp, 3);
         c.restore();
       }
+    }
+    productionBars(s, ui) {
+      if (!s.campaign) return;
+      const c = this.c,
+        items = E.development.items(s);
+      c.save();
+      c.font = "10px Segoe UI, sans-serif";
+      c.textAlign = "center";
+      for (const u of s.units) {
+        if (
+          u.team ||
+          u.hp <= 0 ||
+          !["base", "outpost", "barracks", "foundry", "arsenal"].includes(
+            u.kind,
+          ) ||
+          !this.inView(u.x, u.y)
+        )
+          continue;
+        const box = u.construction && E.construction.rect(u),
+          p = this.screen(u.x, u.y),
+          width = Math.max(
+            36,
+            Math.min(156, (box?.w || E.C[u.kind].r * 3) * this.camera.scale),
+          ),
+          y =
+            p.y + ((box?.h / 2 || E.C[u.kind].r) + 16) * this.camera.scale * Y,
+          job = u.jobs?.[0];
+        const crew = this.buildingActivity.get(u.id)?.filter((v) => v.kind === "repair") || [];
+        let progress = 0,
+          label = "Очередь пуста",
+          color = "#9edcc6";
+        if (u.build > 0) {
+          progress = 1 - u.build / items[u.kind].time;
+          label =
+            (u.construction?.builderId === null
+              ? "Ожидает дрона · "
+              : "Стройка · ") +
+            Math.floor(progress * 100) +
+            "%";
+          color = "#d5c491";
+        } else if (crew.length) {
+          progress = u.hp / E.C[u.kind].hp;
+          const active = crew.filter((v) => v.active).length;
+          label = active ? "Ремонт · " + Math.ceil(progress * 100) + "%" :
+            crew.some((v) => v.waiting) ? "Ремонт: нет сплава" : "Зонд в пути";
+          if (job) label += " · очередь " + u.jobs.length;
+          color = active ? "#a7e8e0" : "#d5c491";
+        } else if (job) {
+          progress = 1 - job.remaining / job.duration;
+          label =
+            (items[job.action]?.label || job.action) +
+            " · " +
+            (job.remaining ? Math.ceil(job.remaining) + " с" : "Выход занят");
+        } else if (["base", "outpost"].includes(u.kind)) {
+          const n = s.units.filter(
+            (w) =>
+              w.kind === "drone" &&
+              w.hp > 0 &&
+              w.node === u.id &&
+              !w.buildingId && !w.workerTask,
+          ).length;
+          label = "Добыча · " + n + " дрона";
+          progress = n ? 1 : 0;
+        } else if (u.kind === "arsenal") label = "Нет исследований";
+        const patients = u.kind === "outpost" ? E.support.occupants(s, u.id) : [];
+        if (patients.length) {
+          const inside = patients.filter((v) => v.care.inside).length;
+          const health = patients.reduce((sum, v) => sum + v.hp / E.C[v.kind].hp, 0) / patients.length;
+          c.fillStyle = "#102a25f0";
+          c.fillRect(p.x - width / 2 - 3, y - 24, width + 6, 17);
+          c.fillStyle = "#72c9ab";
+          c.fillRect(p.x - width / 2, y - 10, width * health, 2);
+          c.fillStyle = "#c1efdd";
+          c.fillText(width >= 90 ? "+ Лечение " + inside + "/" + patients.length : "+ " + inside + "/" + patients.length, p.x, y - 13);
+        }
+        c.fillStyle = "#07171ee8";
+        c.fillRect(p.x - width / 2 - 3, y - 3, width + 6, width >= 66 ? 23 : 9);
+        c.fillStyle = "#334b4b";
+        c.fillRect(p.x - width / 2, y, width, 4);
+        c.fillStyle = color;
+        c.fillRect(
+          p.x - width / 2,
+          y,
+          width * Math.max(0, Math.min(1, progress)),
+          4,
+        );
+        if (width >= 66) {
+          while (label.length > 2 && c.measureText(label).width > width)
+            label = label.slice(0, -2) + "…";
+          c.fillStyle = "#d0e2d6";
+          c.fillText(label, p.x, y + 16);
+        }
+      }
+      c.restore();
+    }
+    serviceActivity(s) {
+      this.workerActivity.clear();
+      this.buildingActivity.clear();
+      if (!s.campaign) return;
+      let lookup;
+      for (const worker of s.units) {
+        if (!worker.buildingId && worker.workerTask?.kind !== "repair") continue;
+        const activity = E.construction.activity(s, worker,
+          lookup ||= new Map(s.units.map((u) => [u.id, u])));
+        if (!activity) continue;
+        this.workerActivity.set(worker.id, activity);
+        const crew = this.buildingActivity.get(activity.target.id) || [];
+        crew.push(activity);
+        this.buildingActivity.set(activity.target.id, crew);
+      }
+    }
+    deliveryActivity(s) {
+      const seen = new Set();
+      for (const u of s.units) {
+        if (u.kind !== "drone" || u.hp <= 0) continue;
+        seen.add(u.id);
+        const previous = this.modelCargo.get(u.id);
+        if (
+          previous?.cargo > 0 &&
+          u.cargo === 0 &&
+          previous.node === u.node &&
+          s.t > previous.time &&
+          s.t - previous.time < 0.5
+        ) {
+          const node = s.units.find(
+            (n) =>
+              n.id === u.node &&
+              n.hp > 0 &&
+              ["base", "outpost"].includes(n.kind),
+          );
+          if (node && E.dist(node, u) < 180)
+            this.modelDeliveries.set(node.id, s.t);
+        }
+        this.modelCargo.set(u.id, { cargo: u.cargo, node: u.node, time: s.t });
+      }
+      for (const id of this.modelCargo.keys())
+        if (!seen.has(id)) this.modelCargo.delete(id);
+      for (const [id, at] of this.modelDeliveries)
+        if (s.t < at || s.t - at > 0.8) this.modelDeliveries.delete(id);
+    }
+    deliveryOpening(u, s) {
+      const at = this.modelDeliveries.get(u.id);
+      return at === undefined
+        ? 0
+        : Math.sin(Math.max(0, 1 - (s.t - at) / 0.8) * Math.PI);
+    }
+    doorOpening(u, s) {
+      const key = u.x + ":" + u.y,
+        at = this.modelExits.get(key);
+      if (at === undefined) return 0;
+      const remaining = 1 - (s.t - at) / 0.85;
+      if (remaining <= 0) {
+        this.modelExits.delete(key);
+        return 0;
+      }
+      return Math.sin((Math.min(1, remaining) * Math.PI) / 2);
     }
     muzzle(c, x, y, z, a, color, flash, size = 1) {
       const p = point(x, y, z, a);
@@ -4917,5 +4106,6 @@
       c.restore();
     }
   }
+  View.artwork = unitModels;
   root.SignalView = View;
 })(window);

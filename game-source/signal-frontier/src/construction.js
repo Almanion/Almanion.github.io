@@ -6,13 +6,33 @@
     barracks: [3, 3],
     foundry: [4, 3],
     arsenal: [3, 2],
-    outpost: [3, 3],
+    outpost: [4, 4],
   });
-  const enabled = (s) => s?.campaign?.id === "frontier-8";
+  const enabled = (s) => ["frontier-8", "frontier-9"].includes(s?.campaign?.id);
+  // Existing saves retain their reserved 3x3 area; new extractors reserve 4x4.
+  const shape = (u) =>
+    u.kind === "outpost" && u.construction?.footprint === undefined
+      ? [3, 3]
+      : SHAPES[u.kind];
+  const DIRECTIONS = [
+    { x: 0, y: 1 },
+    { x: 1, y: 0 },
+    { x: 0, y: -1 },
+    { x: -1, y: 0 },
+  ];
+  const direction = (u) =>
+    DIRECTIONS[typeof u === "number" ? u : u.construction.turn];
+  function advance(u, p, forward, side = 0) {
+    const d = direction(u);
+    return {
+      x: p.x + d.x * forward + d.y * side,
+      y: p.y + d.y * forward - d.x * side,
+    };
+  }
   function rect(u) {
-    const size = Object.hasOwn(SHAPES, u.kind) ? SHAPES[u.kind] : null;
+    const size = Object.hasOwn(SHAPES, u.kind) ? shape(u) : null;
     if (!size || !u.construction) return null;
-    const [cols, rows] = u.construction.turn ? [size[1], size[0]] : size;
+    const [cols, rows] = u.construction.turn % 2 ? [size[1], size[0]] : size;
     return {
       x: u.x - (cols * CELL) / 2,
       y: u.y - (rows * CELL) / 2,
@@ -31,15 +51,272 @@
     p.x - radius < b.x + b.w &&
     p.y + radius > b.y &&
     p.y - radius < b.y + b.h;
+  const SERVICE = Object.freeze({ rate: 12, material: 8, crew: 4 });
+  const repairable = (u) =>
+    u && !u.team && u.hp > 0 && !u.build &&
+    ["base", "outpost", "barracks", "foundry", "arsenal"].includes(u.kind);
   function create(E) {
     const worlds = new WeakMap(),
       graphs = new Map();
+    function resumeWorker(s, u) {
+      if (u.buildingId) {
+        const site = s.units.find((b) => b.id === u.buildingId);
+        if (site?.construction?.builderId === u.id)
+          site.construction.builderId = null;
+      }
+      u.buildingId = null;
+      delete u.workerTask;
+      u.path = [];
+      u.order = u.target = null;
+      u.work = u.cargo ? "return" : "out";
+      u.workTime = 0;
+      delete u.workTarget;
+    }
+    function contact(target, p) {
+      const b = rect(target);
+      if (b)
+        return {
+          x: E.clamp(p.x, b.x, b.x + b.w),
+          y: E.clamp(p.y, b.y, b.y + b.h),
+        };
+      const a = Math.atan2(p.y - target.y, p.x - target.x),
+        r = E.C[target.kind].r * 0.8;
+      return { x: target.x + Math.cos(a) * r, y: target.y + Math.sin(a) * r };
+    }
+    function servicePoints(target) {
+      const b = rect(target), gap = E.C.drone.r + 9, points = [];
+      if (b) {
+        for (let i = 0; i < 5; i++) {
+          const q = (i + 0.5) / 5;
+          points.push(
+            { x: b.x + b.w * q, y: b.y + b.h + gap },
+            { x: b.x - gap, y: b.y + b.h * q },
+            { x: b.x + b.w * q, y: b.y - gap },
+            { x: b.x + b.w + gap, y: b.y + b.h * q },
+          );
+        }
+      } else {
+        const r = E.C[target.kind].r + gap;
+        for (let i = 0; i < 12; i++) {
+          const a = i * Math.PI / 6;
+          points.push({ x: target.x + Math.cos(a) * r, y: target.y + Math.sin(a) * r });
+        }
+      }
+      return points;
+    }
+    function serviceRoute(s, worker, target, reserved = []) {
+      const nav = world(s), radius = E.C.drone.r,
+        points = servicePoints(target).sort((a, b) => E.dist(worker, a) - E.dist(worker, b));
+      for (const p of points) {
+        if (!E.free(p.x, p.y, radius + 2, nav) ||
+            reserved.some((q) => E.dist(p, q) < radius * 2 + 6)) continue;
+        const path = E.pathTo(worker, p, radius);
+        if (E.dist(worker, p) <= 8 || (path.length && E.dist(path.at(-1), p) < 1))
+          return { point: p, path };
+      }
+      return null;
+    }
+    function repairOffer(s, id, ids = null) {
+      const target = s.units.find((u) => u.id === Number(id)),
+        fail = (reason) => ({ allowed: false, reason, cost: 0 });
+      if (!s.campaign || s.status !== "playing") return fail("ended");
+      if (!repairable(target)) return fail("repair-target");
+      if (target.hp >= E.C[target.kind].hp) return fail("intact");
+      const chosen = ids && new Set(ids),
+        assigned = s.units.filter((w) => w.hp > 0 && w.workerTask?.kind === "repair" &&
+          w.workerTask.targetId === target.id && !chosen?.has(w.id)),
+        reserved = assigned.map((w) => w.workerTask.point),
+        workers = s.units.filter((w) => w.kind === "drone" && !w.team && w.hp > 0 &&
+          (chosen ? chosen.has(w.id) : !w.buildingId && w.workerTask?.kind !== "repair"))
+          .sort((a, b) => E.dist(a, target) - E.dist(b, target) || a.id - b.id),
+        plans = [];
+      if (assigned.length >= SERVICE.crew) return fail("repair-crew");
+      for (const worker of workers) {
+        if (plans.length + assigned.length >= SERVICE.crew) break;
+        const route = serviceRoute(s, worker, target, reserved);
+        if (!route) continue;
+        plans.push({ worker, task: { kind: "repair", targetId: target.id,
+          point: route.point, retry: 0, credit: 0 }, path: route.path });
+        reserved.push(route.point);
+        if (!chosen) break;
+      }
+      return plans.length
+        ? { allowed: true, cost: 0, plans, target, intent: "repair" }
+        : fail(workers.length ? "builder-route" : "builder");
+    }
+    function applyWorkerOrder(s, offer, notify = true) {
+      if (offer.construction) {
+        const result = assign(s, offer.construction, offer.worker.id);
+        if (result.allowed && notify)
+          E.emit(s, "order", offer.target.x, offer.target.y, { intent: "build" });
+        return result;
+      }
+      for (const { worker, task, path } of offer.plans) {
+        const previous = worker.workerTask;
+        if (task.kind === "repair" && previous?.kind === "repair") {
+          // Repeated right clicks must not throw away already paid material.
+          task.credit = previous.credit;
+          if (previous.targetId === task.targetId && E.dist(previous.point, task.point) < 0.01)
+            continue;
+        }
+        resumeWorker(s, worker);
+        worker.workerTask = task;
+        worker.path = path;
+        worker.work = task.kind === "repair" ? "repair" : "move";
+      }
+      if (notify) E.emit(s, "order", offer.target.x, offer.target.y, { intent: offer.intent });
+      return { allowed: true, cost: 0, workers: offer.plans.length };
+    }
+    function repair(s, id, ids = null) {
+      const offer = repairOffer(s, id, ids);
+      return offer.allowed ? applyWorkerOrder(s, offer) : offer;
+    }
+    function stopRepair(s, id) {
+      if (s.status !== "playing") return { allowed: false, reason: "ended", cost: 0 };
+      const workers = s.units.filter((w) => w.hp > 0 && w.workerTask?.kind === "repair" &&
+        w.workerTask.targetId === Number(id));
+      for (const w of workers) resumeWorker(s, w);
+      return { allowed: !!workers.length, reason: workers.length ? null : "order", cost: 0 };
+    }
+    function workerOrder(s, ids, point, targetId = null, commit = true) {
+      const chosen = new Set(ids),
+        workers = s.units.filter((u) => chosen.has(u.id) && u.kind === "drone" && !u.team && u.hp > 0),
+        target = s.units.find((u) => u.id === targetId && u.hp > 0);
+      if (!s.campaign || s.status !== "playing" || !workers.length)
+        return { allowed: false, reason: "builder" };
+      if (target && repairable(target)) {
+        const offer = repairOffer(s, target.id, workers.map((w) => w.id));
+        return offer.allowed && commit ? applyWorkerOrder(s, offer) : offer;
+      }
+      if (target?.construction && target.build > 0 && !target.team) {
+        const offer = replacement(s, target.id, workers[0].id);
+        if (!offer.allowed || !commit) return { ...offer, construction: target.id, target };
+        return assign(s, target.id, workers[0].id);
+      }
+      if (target?.team) return { allowed: false, reason: "repair-target" };
+      const nav = world(s), plans = [], width = Math.ceil(Math.sqrt(workers.length));
+      for (let i = 0; i < workers.length; i++) {
+        const worker = workers[i], p = {
+          x: point.x + (i % width - (width - 1) / 2) * 24,
+          y: point.y + (Math.floor(i / width) - (Math.ceil(workers.length / width) - 1) / 2) * 24,
+        };
+        if (!E.free(p.x, p.y, E.C.drone.r + 2, nav)) continue;
+        const path = E.pathTo(worker, p, E.C.drone.r);
+        if (E.dist(worker, p) <= 8 || (path.length && E.dist(path.at(-1), p) < 1))
+          plans.push({ worker, task: { kind: "move", point: p, retry: 0 }, path });
+      }
+      const offer = { allowed: !!plans.length, reason: plans.length ? null : "builder-route",
+        cost: 0, plans, target: point, intent: "move" };
+      return offer.allowed && commit ? applyWorkerOrder(s, offer) : offer;
+    }
+    function activity(s, worker, lookup = null) {
+      if (worker.kind !== "drone" || worker.hp <= 0 || worker.team) return null;
+      const task = worker.workerTask, id = worker.buildingId || (task?.kind === "repair" && task.targetId),
+        target = id && (lookup ? lookup.get(id) : s.units.find((u) => u.id === id));
+      if (!target || target.hp <= 0) return null;
+      const building = !!worker.buildingId, p = building ? target.construction?.work : task.point;
+      if (!p || (building ? !target.build : !repairable(target) || target.hp >= E.C[target.kind].hp))
+        return null;
+      const arrived = E.dist(worker, p) <= 12,
+        funded = building || task.credit > 1e-8 || s.economy.alloy > 0;
+      return { kind: building ? "build" : "repair", target, point: p,
+        contact: contact(target, p), arrived, active: arrived && funded, waiting: arrived && !funded };
+    }
+    function serviceTick(s, dt) {
+      if (!s.campaign) return;
+      let lookup;
+      for (const worker of s.units) {
+        const task = worker.workerTask;
+        if (!task || worker.hp <= 0) continue;
+        const target = task.kind === "repair" &&
+          (lookup ||= new Map(s.units.map((u) => [u.id, u]))).get(task.targetId);
+        if (task.kind === "repair" && (!repairable(target) || target.hp >= E.C[target.kind].hp)) {
+          resumeWorker(s, worker);
+          continue;
+        }
+        worker.workTime = 0;
+        task.retry = Math.max(0, task.retry - dt);
+        if (E.dist(worker, task.point) > 8) {
+          if (!worker.path.length && task.retry === 0) {
+            if (target && !E.free(task.point.x, task.point.y, E.C.drone.r + 2, world(s))) {
+              const others = s.units.filter((w) => w !== worker && w.hp > 0 &&
+                w.workerTask?.kind === "repair" && w.workerTask.targetId === target.id)
+                .map((w) => w.workerTask.point), route = serviceRoute(s, worker, target, others);
+              if (route) { task.point = route.point; worker.path = route.path; }
+            } else worker.path = E.pathTo(worker, task.point, E.C.drone.r);
+            task.retry = 0.8;
+          }
+          worker.work = task.kind === "repair" ? "repair" : "move";
+          E.follow(worker, dt);
+          continue;
+        }
+        worker.path = [];
+        if (!target) { worker.work = "idle"; continue; }
+        worker.work = "repair";
+        worker.angle = Math.atan2(target.y - worker.y, target.x - worker.x);
+        if (task.credit <= 1e-8) {
+          task.credit = 0;
+          if (s.economy.alloy < 1) continue;
+          s.economy.alloy--;
+          s.economy.spent++;
+          task.credit = SERVICE.material;
+        }
+        const amount = Math.min(SERVICE.rate * dt, task.credit, E.C[target.kind].hp - target.hp);
+        target.hp = Math.min(E.C[target.kind].hp, target.hp + amount);
+        task.credit = Math.max(0, task.credit - amount);
+        if (E.C[target.kind].hp - target.hp < 1e-7) {
+          target.hp = E.C[target.kind].hp;
+          for (const w of s.units)
+            if (w.workerTask?.kind === "repair" && w.workerTask.targetId === target.id)
+              resumeWorker(s, w);
+          E.emit(s, "repair-ready", target.x, target.y);
+        }
+      }
+    }
+    function validateWorkers(s) {
+      const crews = new Map();
+      for (const u of s.units) {
+        const task = u.workerTask;
+        if (!task) {
+          if (u.kind === "drone" && ["repair", "move"].includes(u.work)) return false;
+          continue;
+        }
+        if (!s.campaign || u.kind !== "drone" || u.team || u.hp <= 0 || u.buildingId ||
+            !["move", "repair"].includes(task.kind) || !task.point ||
+            ![task.point.x, task.point.y, task.retry].every(Number.isFinite) ||
+            task.point.x < 0 || task.point.y < 0 || task.point.x > E.map(s).W || task.point.y > E.map(s).H ||
+            task.retry < 0 || task.retry > 0.81 || u.workTime !== 0) return false;
+        if (task.kind === "move") {
+          if (!["idle", "move"].includes(u.work) || task.targetId !== undefined || task.credit !== undefined)
+            return false;
+        } else {
+          const target = s.units.find((b) => b.id === task.targetId);
+          if (!Number.isInteger(task.targetId) || !repairable(target) ||
+              target.hp >= E.C[target.kind].hp || u.work !== "repair" ||
+              !Number.isFinite(task.credit) || task.credit < 0 || task.credit > SERVICE.material ||
+              !servicePoints(target).some((p) => E.dist(p, task.point) < 0.01)) return false;
+          const crew = crews.get(target.id) || [];
+          if (crew.length >= SERVICE.crew || crew.some((p) => E.dist(p, task.point) < 22)) return false;
+          crew.push(task.point);
+          crews.set(target.id, crew);
+        }
+      }
+      return true;
+    }
     function world(s) {
       if (!enabled(s)) return E.map(s);
       if (worlds.has(s)) return worlds.get(s);
       const solid = s.units.filter((u) => u.hp > 0 && u.construction),
         key = solid
-          .map((u) => [u.id, u.x, u.y, u.construction.turn].join(":"))
+          .map((u) =>
+            [
+              u.id,
+              u.x,
+              u.y,
+              u.construction.turn,
+              u.construction.footprint,
+            ].join(":"),
+          )
           .join(",");
       const value = {
         ...E.map(s),
@@ -57,24 +334,22 @@
         !Object.hasOwn(SHAPES, kind) ||
         !Number.isFinite(x) ||
         !Number.isFinite(y) ||
-        ![0, 1].includes(turn)
+        ![0, 1, 2, 3].includes(turn)
       )
         return null;
       const size = SHAPES[kind],
-        [cols, rows] = turn ? [size[1], size[0]] : size;
+        [cols, rows] = turn % 2 ? [size[1], size[0]] : size;
       return {
         kind,
         x: Math.round(x / CELL - cols / 2) * CELL + (cols * CELL) / 2,
         y: Math.round(y / CELL - rows / 2) * CELL + (rows * CELL) / 2,
-        construction: { turn },
+        construction: { turn, ...(kind === "outpost" ? { footprint: 4 } : {}) },
       };
     }
     function exit(u, radius = 20) {
       const b = rect(u),
-        turn = u.construction.turn;
-      return turn
-        ? { x: b.x + b.w + radius + 16, y: u.y }
-        : { x: u.x, y: b.y + b.h + radius + 16 };
+        d = direction(u);
+      return advance(u, u, (d.x ? b.w : b.h) / 2 + radius + 16);
     }
     function support(s, b) {
       const map = E.map(s),
@@ -189,7 +464,7 @@
         return fail("limit");
       if (
         !s.units.some(
-          (u) => u.kind === "drone" && !u.team && u.hp > 0 && !u.buildingId,
+            (u) => u.kind === "drone" && !u.team && u.hp > 0 && !u.buildingId && !u.workerTask,
         )
       )
         return fail("builder");
@@ -201,7 +476,7 @@
         ...s.campaign.mines.map((p) => ({ ...p, r: 32 })),
         ...s.caches.filter((p) => !p.taken).map((p) => ({ ...p, r: 18 })),
         { ...s.relay, r: 75 },
-        { ...s.terminal, r: 75 },
+        ...E.terminalSites(s).map((p) => ({ ...p, r: 75 })),
         ...(E.map(s).posts || []).map((p) => ({ ...p, r: 40 })),
       ];
     }
@@ -245,7 +520,10 @@
         const mine = s.campaign.mines
           .filter(
             (m) =>
-              m.id !== "home" && m.remaining > 0 && E.dist(preview, m) <= 320,
+              m.id !== "home" &&
+              m.remaining > 0 &&
+              E.dist(preview, m) <= 320 &&
+              E.explored(s, 0, m),
           )
           .sort(
             (a, b) =>
@@ -263,19 +541,23 @@
       }
       const work = exit(preview),
         proposed = { ...world(s), walls: [...world(s).walls, b] },
-        beyond = {
-          x: work.x + (preview.construction.turn ? 80 : 0),
-          y: work.y + (preview.construction.turn ? 0 : 80),
-        };
+        beyond = advance(preview, work, 80);
       if (!E.travelClear(work, beyond, 20, proposed)) return fail("exit");
+      let oreRoute = [];
+      if (preview.site) {
+        const mine = s.campaign.mines.find((m) => m.id === preview.site);
+        oreRoute = E.pathTo({ ...work, map: proposed }, mine, E.C.drone.r);
+        if (
+          E.dist(work, mine) > 12 &&
+          (!oreRoute.length || E.dist(oreRoute.at(-1), mine) > 1)
+        )
+          return fail("ore-route");
+      }
       for (const existing of s.units.filter(
         (u) => u.hp > 0 && u.construction,
       )) {
         const p = exit(existing),
-          end = {
-            x: p.x + (existing.construction.turn ? 80 : 0),
-            y: p.y + (existing.construction.turn ? 0 : 80),
-          };
+          end = advance(existing, p, 80);
         if (!E.travelClear(p, end, 20, proposed)) return fail("exit");
       }
       if (!connected(s, b)) return fail("passage");
@@ -286,6 +568,7 @@
             u.hp > 0 &&
             !u.team &&
             !u.buildingId &&
+            !u.workerTask &&
             (!point.builderId || u.id === point.builderId),
         )
         .sort((a, b) => E.dist(a, work) - E.dist(b, work) || a.id - b.id);
@@ -301,6 +584,7 @@
             reason: null,
             preview,
             work,
+            oreRoute,
             builder: worker,
             route,
           };
@@ -337,16 +621,14 @@
       u.angle = (o.preview.construction.turn * Math.PI) / 2;
       u.construction = {
         turn: o.preview.construction.turn,
+        ...(kind === "outpost" ? { footprint: 4 } : {}),
         paid: item.cost,
         builderId: o.builder.id,
         work: o.work,
         cancelled: false,
       };
       if (["barracks", "foundry"].includes(kind))
-        u.rally = {
-          x: o.work.x + (u.construction.turn ? 70 : 0),
-          y: o.work.y + (u.construction.turn ? 0 : 70),
-        };
+        u.rally = advance(u, o.work, 70);
       if (kind === "outpost") {
         u.site = o.preview.site;
         u.salvaged = false;
@@ -371,7 +653,8 @@
           (w) =>
             w.kind === "drone" &&
             w.hp > 0 &&
-            !w.buildingId &&
+            (!w.buildingId || w.id === workerId) &&
+            (!w.workerTask || w.id === workerId) &&
             (!workerId || w.id === workerId),
         )
         .sort(
@@ -397,6 +680,7 @@
       const o = replacement(s, id, workerId);
       if (!o.allowed) return o;
       release(s, o.u);
+      resumeWorker(s, o.worker);
       o.u.construction.builderId = o.worker.id;
       o.worker.buildingId = o.u.id;
       o.worker.work = "build";
@@ -445,6 +729,7 @@
         return;
       }
       worker.path = [];
+      worker.angle = Math.atan2(u.y - worker.y, u.x - worker.x);
       const spent = Math.min(dt, u.build);
       u.build = Math.max(0, u.build - dt);
       u.hp = Math.min(
@@ -458,6 +743,12 @@
       }
     }
     function onDeath(s, u) {
+      if (s.campaign) {
+        if (u.workerTask) resumeWorker(s, u);
+        for (const worker of s.units)
+          if (worker.workerTask?.kind === "repair" && worker.workerTask.targetId === u.id)
+            resumeWorker(s, worker);
+      }
       if (!enabled(s)) return;
       if (u.construction) {
         release(s, u);
@@ -471,6 +762,7 @@
       }
     }
     function validate(s) {
+      if (!validateWorkers(s)) return false;
       if (!enabled(s))
         return !s.units.some(
           (u) => u.construction || u.buildingId || u.kind === "arsenal",
@@ -486,7 +778,9 @@
             price = E.development.items(s)[u.kind].cost;
           if (
             !c ||
-            ![0, 1].includes(c.turn) ||
+            ![0, 1, 2, 3].includes(c.turn) ||
+            (c.footprint !== undefined &&
+              (u.kind !== "outpost" || c.footprint !== 4)) ||
             c.paid !== price ||
             typeof c.cancelled !== "boolean" ||
             !b ||
@@ -560,10 +854,7 @@
       if (paid > s.economy.spent) return false;
       for (const u of s.units.filter((u) => u.hp > 0 && u.construction)) {
         const p = exit(u),
-          end = {
-            x: p.x + (u.construction.turn ? 80 : 0),
-            y: p.y + (u.construction.turn ? 0 : 80),
-          };
+          end = advance(u, p, 80);
         if (!E.travelClear(p, end, 20, world(s))) return false;
       }
       for (const radius of [8, 24]) {
@@ -575,12 +866,16 @@
           u.hp <= 0 ||
           u.construction ||
           !E.C[u.kind].speed ||
+          u.care?.inside ||
           E.free(u.x, u.y, E.C[u.kind].r, world(s)),
       );
     }
     return {
       enabled,
       shapes: SHAPES,
+      shape,
+      direction,
+      advance,
       rect,
       snap,
       exit,
@@ -593,6 +888,16 @@
       cancel,
       tick,
       onDeath,
+      service: SERVICE,
+      repairable,
+      repairOffer,
+      repair,
+      stopRepair,
+      workerOrder,
+      applyWorkerOrder,
+      resumeWorker,
+      serviceTick,
+      activity,
       validate,
       replan,
     };

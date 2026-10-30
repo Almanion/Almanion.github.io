@@ -7,19 +7,24 @@ const files = [
   "index.html",
   "style.css",
   "terrain.js",
+  "districts.js",
   "campaign.js",
   "recon.js",
   "engine.js",
   "construction.js",
+  "support.js",
+  "unit-models.js",
+  "minimap.js",
   "view.js",
   "audio.js",
   "development-ui.js",
   "cloud-core.js",
   "persistence.js",
   "account-ui.js",
+  "selection-ui.js",
   "app.js",
 ];
-const embedded = ["cloud-core.js", "persistence.js", "account-ui.js"];
+const embedded = ["cloud-core.js", "persistence.js", "account-ui.js", "selection-ui.js"];
 function render(root = path.resolve(__dirname, "..")) {
   const source = path.join(root, "game-source/signal-frontier/src"),
     read = (f) =>
@@ -27,12 +32,17 @@ function render(root = path.resolve(__dirname, "..")) {
     out = {};
   for (const file of files) {
     let text = read(file);
-    if (file === "campaign.js") text = read("terrain.js") + "\n;\n" + text;
+    if (file === "campaign.js")
+      text =
+        read("terrain.js") + "\n;\n" + read("districts.js") + "\n;\n" + text;
     if (file === "engine.js")
       text =
-        read("recon.js") + "\n;\n" + read("construction.js") + "\n;\n" + text;
+        read("recon.js") + "\n;\n" + read("construction.js") + "\n;\n" + read("support.js") + "\n;\n" + text;
     if (file === "app.js")
       text = embedded.map(read).join("\n;\n") + "\n;\n" + text;
+    if (file === "view.js")
+      text =
+        read("unit-models.js") + "\n;\n" + read("minimap.js") + "\n;\n" + text;
     if (file.endsWith(".js"))
       text =
         minify_sync(text, {
@@ -50,7 +60,7 @@ function render(root = path.resolve(__dirname, "..")) {
       text = result.styles + "\n";
     } else if (file === "index.html")
       text = text.replace(
-        /^\s*<script src="(?:terrain|recon|construction|cloud-core|persistence|account-ui)\.js[^\"]*" defer><\/script>\n/gm,
+        /^\s*<script src="(?:terrain|districts|recon|construction|support|unit-models|minimap|cloud-core|persistence|account-ui|selection-ui)\.js[^\"]*" defer><\/script>\n/gm,
         "",
       );
     out[file] = text;

@@ -98,8 +98,6 @@ for (const browserType of [chromium, webkit])
           expect(state.economy.alloy).toBe(s.economy.alloy - 130);
           expect(state.t).toBe(s.t);
           await page.locator(".job-select").first().click();
-          await expect(page.locator(".job-detail")).toContainText("Возврат 48");
-          await page.getByRole("button", { name: /Отменить: Боец/ }).click();
           state = await page.evaluate(() => SignalGame.snapshot());
           expect(E.living(state, "barracks").jobs).toHaveLength(1);
           expect(state.economy.alloy).toBe(s.economy.alloy - 82);

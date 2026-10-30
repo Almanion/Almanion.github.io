@@ -39,7 +39,35 @@
     foundry: { hp: 500, r: 34, speed: 0, range: 0, damage: 0, rate: 0 },
     arsenal: { hp: 440, r: 30, speed: 0, range: 0, damage: 0, rate: 0 },
   };
+  // World units: one construction cell is 40. Older operations retain C above.
+  const ENGAGEMENT = Object.freeze(Object.fromEntries([
+    ["hero", 680, 780], ["rifle", 440, 640], ["artillery", 800, 720],
+    ["sentinel", 420, 720], ["runner", 56, 700], ["warden", 500, 780],
+    ["rocket", 620, 820], ["flamer", 240, 720], ["bomber", 64, 740],
+    ["tank", 640, 840], ["mortar", 840, 940],
+    ["scout", 0, 980], ["drone", 0, 240],
+    ["base", 0, 800], ["outpost", 0, 840], ["barracks", 0, 360],
+    ["foundry", 0, 400], ["arsenal", 0, 400], ["jammer", 0, 720],
+    ["turret", 540, 800], ["bastion", 620, 940], ["citadel", 840, 980],
+  ].map(([kind, range, sight]) => [kind, Object.freeze({ range, sight })])));
+  const balanceEligible = (s) => s?.campaign?.id === "frontier-9",
+    balanced = (s) => balanceEligible(s) && s.campaign.balance === 1,
+    rangedStats = Object.freeze(Object.fromEntries(Object.entries(ENGAGEMENT)
+      .map(([kind, values]) => [kind, Object.freeze({ ...C[kind], range: values.range })]))),
+    legacySight = Object.freeze({ hero: 600, scout: 720, rifle: 440, artillery: 480,
+      drone: 180, base: 380, outpost: 380, barracks: 280, foundry: 280, arsenal: 280 });
+  function sightRange(s, u) {
+    return u.care?.inside ? 0 : u.build > 0 ? 120 : balanced(s) ? ENGAGEMENT[u.kind]?.sight || 0 :
+      u.team ? 610 : legacySight[u.kind] || 0;
+  }
+  function detectionRange(s, u) {
+    return balanced(s) ? Math.max(stats(s, u).range, sightRange(s, u)) : u.team ? 610 : 620;
+  }
+  const siegeStats = Object.freeze(Object.fromEntries(["bastion", "citadel"].map((kind) =>
+    [kind, Object.freeze({ ...C[kind], range: kind === "citadel" ? 840 : 860,
+      damage: 54, rate: 6.4, siege: true })])));
   const MOUNTS = Object.freeze({
+    hero: 19.5,
     citadel: 64,
     turret: 24,
     artillery: 23,
@@ -101,28 +129,38 @@
     ],
   };
   const highlandsMap = Terrain.build(expeditionMap.walls);
+  const Districts =
+    typeof module !== "undefined" && module.exports
+      ? require("./districts.js")
+      : root.SignalDistricts;
+  const districtMap = Districts.build(highlandsMap);
   const mapFor = (s) =>
     s?.navigation
       ? s
-      : s === "highlands" ||
-          s?.id === "highlands" ||
-          s?.map === "highlands" ||
-          ["frontier-7", "frontier-8"].includes(s?.campaign?.id)
-        ? highlandsMap
-        : s === "expedition" ||
-            s?.id === "expedition" ||
-            s?.map === "expedition" ||
-            ["frontier-3", "frontier-4", "frontier-5", "frontier-6"].includes(
-              s?.campaign?.id,
-            )
-          ? expeditionMap
-          : s === "frontier" ||
-              s?.id === "frontier" ||
-              s?.campaign ||
-              s?.map === "frontier"
-            ? frontierMap
-            : classicMap;
-  let campaign, recon, construction;
+      : s === "districts" ||
+          s?.id === "districts" ||
+          s?.map === "districts" ||
+          s?.campaign?.id === "frontier-9"
+        ? districtMap
+        : s === "highlands" ||
+            s?.id === "highlands" ||
+            s?.map === "highlands" ||
+            ["frontier-7", "frontier-8"].includes(s?.campaign?.id)
+          ? highlandsMap
+          : s === "expedition" ||
+              s?.id === "expedition" ||
+              s?.map === "expedition" ||
+              ["frontier-3", "frontier-4", "frontier-5", "frontier-6"].includes(
+                s?.campaign?.id,
+              )
+            ? expeditionMap
+            : s === "frontier" ||
+                s?.id === "frontier" ||
+                s?.campaign ||
+                s?.map === "frontier"
+              ? frontierMap
+              : classicMap;
+  let campaign, recon, construction, support;
   const owners = new WeakMap();
   function navigation(value) {
     if (value?.navigation) return value;
@@ -150,7 +188,8 @@
       x <= world.W - r - 24 &&
       y >= r + 24 &&
       y <= world.H - r - 24 &&
-      (world.id !== "highlands" || Terrain.free(x, y, r)) &&
+      (!["highlands", "districts"].includes(world.id) ||
+        Terrain.free(x, y, r)) &&
       !world.walls.some(
         (b) =>
           x + r > b.x && x - r < b.x + b.w && y + r > b.y && y - r < b.y + b.h,
@@ -187,10 +226,11 @@
   const sightCache = new Map();
   function clear(a, b, r = 0) {
     const world = mapFor(a.map || b.map);
-    if (world.id !== "highlands") return wallClear(a, b, r);
+    if (!["highlands", "districts"].includes(world.id))
+      return wallClear(a, b, r);
     // Terrain and neutral cover are immutable. Repeated perception/targeting
     // queries may reuse an exact directed ray; moving endpoints get a new key.
-    const key = [a.x, a.y, b.x, b.y, r].join(":"),
+    const key = [world.id, a.x, a.y, b.x, b.y, r].join(":"),
       known = sightCache.get(key);
     if (known !== undefined) return known;
     const eye = Terrain.height(a.x, a.y) + 24,
@@ -207,7 +247,9 @@
     return result;
   }
   const elevation = (x, y, map) =>
-    mapFor(map).id === "highlands" ? Terrain.height(x, y) : 0;
+    ["highlands", "districts"].includes(mapFor(map).id)
+      ? Terrain.height(x, y)
+      : 0;
   const projectileHeight = (b, age = b.age) =>
     b.z0 === undefined
       ? null
@@ -333,10 +375,18 @@
             "frontier-6",
             "frontier-7",
             "frontier-8",
+            "frontier-9",
           ].includes(mode)
             ? mode
             : "frontier-8",
         );
+  }
+  function terminalSites(s) {
+    return (mapFor(s).terminals || [s.terminal]).map((p) =>
+      p.x === s.terminal.x && p.y === s.terminal.y
+        ? { ...s.terminal }
+        : { ...s.terminal, ...p, charge: 0, window: 0, channeling: false },
+    );
   }
   const hero = (s) => s.units.find((u) => u.id === s.heroId);
   const living = (s, kind) => s.units.find((u) => u.kind === kind && u.hp > 0);
@@ -368,18 +418,14 @@
   function spawnPoint(s, anchor, kind) {
     if (anchor.construction) {
       const origin = construction.exit(anchor, C[kind].r),
-        turn = anchor.construction.turn,
         world = navigation(s);
       for (const ahead of [0, 35, 70])
         for (const side of [0, -35, 35]) {
-          const p = {
-            x: origin.x + (turn ? ahead : side),
-            y: origin.y + (turn ? side : ahead),
-          };
+          const p = construction.advance(anchor, origin, ahead, side);
           if (
             travelClear(origin, p, C[kind].r, world) &&
             !s.units.some(
-              (u) => u.hp > 0 && dist(u, p) < C[u.kind].r + C[kind].r + 4,
+              (u) => u.hp > 0 && !u.care?.inside && dist(u, p) < C[u.kind].r + C[kind].r + 4,
             )
           )
             return p;
@@ -632,7 +678,8 @@
       free(a.x, a.y, r, map) &&
       free(b.x, b.y, r, map) &&
       wallClear({ ...a, map }, b, Math.max(0, r - 1e-7)) &&
-      (mapFor(map).id !== "highlands" || Terrain.travel(a, b, r))
+      (!["highlands", "districts"].includes(mapFor(map).id) ||
+        Terrain.travel(a, b, r))
     );
   }
   function smoothRoute(from, route, r, map) {
@@ -705,6 +752,7 @@
         Math.floor(clamp(to.y, 25, world.H - 25) / cell) * cols +
         Math.floor(clamp(to.x, 25, world.W - 25) / cell);
     if (travelClear(from, to, r, world)) return [{ x: to.x, y: to.y }];
+    const grid = attackGrid(world, r);
     const exits = new Set();
     if (free(to.x, to.y, r, world)) {
       const ex = Math.floor(to.x / cell),
@@ -715,9 +763,8 @@
           x <= Math.min(cols - 1, ex + 2);
           x++
         ) {
-          const p = { x: x * cell + 20, y: y * cell + 20 };
-          if (free(p.x, p.y, r + 3, world) && travelClear(p, to, r, world))
-            exits.add(y * cols + x);
+          const p = grid.point(y * cols + x);
+          if (p && travelClear(p, to, r, world)) exits.add(y * cols + x);
         }
     }
     let reached = false;
@@ -733,8 +780,8 @@
         const k = y * cols + x;
         if (
           k !== start &&
-          free(x * cell + 20, y * cell + 20, r + 3, world) &&
-          travelClear(from, { x: x * cell + 20, y: y * cell + 20 }, r, world)
+          grid.point(k) &&
+          travelClear(from, grid.point(k), r, world)
         ) {
           prev[k] = start;
           queue.push(k);
@@ -756,12 +803,8 @@
         reached = true;
         break;
       }
-      for (const [dx, dy] of [
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-      ]) {
+      for (let direction = 0; direction < 4; direction++) {
+        const [dx, dy] = GRID_STEPS[direction];
         const xx = x + dx,
           yy = y + dy,
           k = yy * cols + xx;
@@ -771,14 +814,11 @@
           yy < 0 ||
           yy >= rows ||
           prev[k] !== -2 ||
-          !free(xx * cell + 20, yy * cell + 20, r + 3, world) ||
-          ((n === start || world.id === "highlands") &&
-            !travelClear(
-              n === start ? from : { x: x * cell + 20, y: y * cell + 20 },
-              { x: xx * cell + 20, y: yy * cell + 20 },
-              r,
-              world,
-            ))
+          !grid.point(k) ||
+          ((n === start || ["highlands", "districts"].includes(world.id)) &&
+            !(n === start
+              ? travelClear(from, grid.point(k), r, world)
+              : grid.link(n, direction, k)))
         )
           continue;
         prev[k] = n;
@@ -798,7 +838,9 @@
   // A bolt collides with two pixels of cover padding. Use the same corridor
   // for AI aiming; visibility alone may see a point while a bolt clips a corner.
   function fireClear(from, target) {
-    if (mapFor(from.map || target.map).id === "highlands") {
+    if (
+      ["highlands", "districts"].includes(mapFor(from.map || target.map).id)
+    ) {
       const arc =
           ["artillery", "mortar", "citadel"].includes(from.kind) ||
           (from.kind === "bastion" && target.kind === "artillery")
@@ -807,7 +849,7 @@
         za = Terrain.height(from.x, from.y) + (MOUNTS[from.kind] || 16),
         zb = Terrain.height(target.x, target.y) + 10;
       if (!Terrain.ray(from, target, za, zb, arc)) return false;
-      return !highlandsMap.walls.some((w) => {
+      return !mapFor(from.map || target.map).walls.some((w) => {
         const t = segmentRect(from.x, from.y, target.x, target.y, w, 2);
         return (
           t !== null &&
@@ -825,34 +867,61 @@
     );
   }
   const attackGrids = new WeakMap();
+  const GRID_STEPS = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+    [1, 1],
+    [1, -1],
+    [-1, 1],
+    [-1, -1],
+  ];
   function attackGrid(map, radius) {
     let cache = attackGrids.get(map);
     if (!cache) attackGrids.set(map, (cache = new Map()));
     if (cache.has(radius)) return cache.get(radius);
     const cols = map.W / 40,
       rows = map.H / 40,
-      points = [],
-      edges = [];
-    for (let y = 0; y < rows; y++)
-      for (let x = 0; x < cols; x++) {
-        const p = { x: x * 40 + 20, y: y * 40 + 20 };
-        points.push(free(p.x, p.y, radius + 3, map) ? p : null);
+      points = new Array(cols * rows),
+      tested = new Uint8Array(points.length),
+      passable = new Uint8Array(points.length),
+      connections = new Array(points.length);
+    // A cold route used to build every cell and every edge on the entire map.
+    // Share exact geometry checks lazily, independently for each footprint and
+    // immutable navigation-world revision (including player construction).
+    const point = (k) => {
+      if (points[k] === undefined) {
+        const p = {
+          x: (k % cols) * 40 + 20,
+          y: Math.floor(k / cols) * 40 + 20,
+        };
+        points[k] = free(p.x, p.y, radius + 3, map) ? p : null;
       }
-    for (let k = 0; k < points.length; k++) {
-      edges[k] = [];
-      if (!points[k]) continue;
+      return points[k];
+    };
+    const link = (k, direction, n) => {
+      const bit = 1 << direction;
+      if (!(tested[k] & bit)) {
+        tested[k] |= bit;
+        if (
+          point(k) &&
+          point(n) &&
+          travelClear(points[k], points[n], radius, map)
+        )
+          passable[k] |= bit;
+      }
+      return !!(passable[k] & bit);
+    };
+    const edges = (k) => {
+      if (connections[k]) return connections[k];
+      const list = [];
+      connections[k] = list;
+      if (!point(k)) return list;
       const x = k % cols,
         y = Math.floor(k / cols);
-      for (const [dx, dy] of [
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-        [1, 1],
-        [1, -1],
-        [-1, 1],
-        [-1, -1],
-      ]) {
+      for (let direction = 0; direction < GRID_STEPS.length; direction++) {
+        const [dx, dy] = GRID_STEPS[direction];
         const xx = x + dx,
           yy = y + dy,
           n = yy * cols + xx;
@@ -861,20 +930,22 @@
           xx < cols &&
           yy >= 0 &&
           yy < rows &&
-          points[n] &&
-          travelClear(points[k], points[n], radius, map)
+          link(k, direction, n)
         )
-          edges[k].push([n, Math.hypot(dx, dy) * 40]);
+          list.push([n, Math.hypot(dx, dy) * 40]);
       }
-    }
-    const grid = { cols, rows, points, edges };
+      return list;
+    };
+    const grid = { cols, rows, points, point, link, edges };
     cache.set(radius, grid);
+    if (cache.size > 16) cache.delete(cache.keys().next().value);
     return grid;
   }
   function firingPath(from, target) {
-    const def = C[from.kind],
-      world = navigation(from),
-      range = from.kind === "scout" ? 650 : def.range * 0.9,
+    const world = navigation(from),
+      state = owners.get(from) || world.state,
+      def = state ? stats(state, from, target) : C[from.kind],
+      range = from.kind === "scout" ? balanced(state) ? sightRange(state, from) * 0.9 : 650 : def.range * 0.9,
       minimum = from.kind === "mortar" ? 240 : 0;
     const goal = (p) =>
       dist(p, target) >= minimum &&
@@ -889,7 +960,7 @@
       };
     if (goal(direct) && travelClear(from, direct, def.r, world))
       return [direct];
-    const { cols, rows, points, edges } = attackGrid(world, def.r);
+    const { cols, rows, points, point, edges } = attackGrid(world, def.r);
     const costs = new Float64Array(points.length).fill(Infinity),
       prev = new Int32Array(points.length).fill(-2),
       heap = [];
@@ -930,7 +1001,7 @@
     for (let y = Math.max(0, sy - 2); y <= Math.min(rows - 1, sy + 2); y++)
       for (let x = Math.max(0, sx - 2); x <= Math.min(cols - 1, sx + 2); x++) {
         const k = y * cols + x;
-        if (points[k] && travelClear(from, points[k], def.r, world)) {
+        if (point(k) && travelClear(from, points[k], def.r, world)) {
           costs[k] = dist(from, points[k]);
           prev[k] = -1;
           push(k, costs[k]);
@@ -944,7 +1015,7 @@
         for (let n = k; n >= 0; n = prev[n]) route.push({ ...points[n] });
         return smoothRoute(from, route.reverse(), def.r, world);
       }
-      for (const [n, step] of edges[k])
+      for (const [n, step] of edges(k))
         if (cost + step < costs[n] - 1e-7) {
           costs[n] = cost + step;
           prev[n] = k;
@@ -1018,7 +1089,7 @@
           spacing,
     }));
     const waiting = [...members],
-      plans = [];
+      plans = [], departures = [];
     for (const slot of slots) {
       waiting.sort((a, b) => dist(a, slot) - dist(b, slot) || a.id - b.id);
       const u = waiting.shift(),
@@ -1027,16 +1098,21 @@
         x: clamp(slot.x, margin, world.W - margin),
         y: clamp(slot.y, margin, world.H - margin),
       };
-      const path = pathTo(u, target, C[u.kind].r);
+      const origin = support.departure(s, u, departures);
+      if (!origin) return false;
+      departures.push({ ...origin, r: C[u.kind].r });
+      const path = pathTo(u.care?.inside ? { ...u, ...origin, map: navigation(s) } : u,
+        target, C[u.kind].r);
       if (!path.length && dist(u, target) > 2) return false;
       plans.push({
         u,
-        path,
+        path, origin,
         target: path.length ? { ...path[path.length - 1] } : { x: u.x, y: u.y },
       });
     }
     // Plan every path before changing any order.
-    for (const { u, path, target } of plans) {
+    for (const { u, path, target, origin } of plans) {
+      support.leave(s, u, origin);
       u.target = null;
       u.order = target;
       u.path = path;
@@ -1059,15 +1135,319 @@
         u.target = { x: target.x, y: target.y, id: target.id };
         u.think = 0;
       }
+    const event = s.events.at(-1);
+    if (event?.type === "order") event.intent = "attack";
+    return true;
+  }
+  const canLead = (u) =>
+    u &&
+    u.team === 0 &&
+    C[u.kind]?.speed > 0 &&
+    (u.kind === "hero" || [1, 2].includes(u.group));
+  function validFollowOrders(s) {
+    const units = new Map(s.units.map((u) => [u.id, u]));
+    for (const u of s.units) {
+      if (u.rally?.followId !== undefined) {
+        const leader = units.get(u.rally.followId);
+        if (
+          !commandableBuilding(u) ||
+          !canLead(leader) ||
+          !Number.isInteger(u.rally.followId)
+        )
+          return false;
+      }
+      const order = u.order;
+      if (order?.followId === undefined) continue;
+      const leader = units.get(order.followId);
+      if (
+        !canLead(u) ||
+        u.kind === "hero" ||
+        !canLead(leader) ||
+        !Number.isInteger(order.followId) ||
+        leader === u ||
+        ![order.followX, order.followY].every(
+          (v) => Number.isFinite(v) && Math.abs(v) <= 512,
+        )
+      )
+        return false;
+      const seen = new Set([u.id]);
+      let current = leader;
+      while (current) {
+        if (seen.has(current.id)) return false;
+        seen.add(current.id);
+        current = units.get(current.order?.followId);
+      }
+    }
+    return true;
+  }
+  function followPoint(s, u, leader, order) {
+    const world = navigation(s),
+      margin = C[u.kind].r + 25;
+    // Rotate an obstructed slot onto the same reachable surface, rather than
+    // stacking escorts on the leader or sending them over a cliff edge.
+    for (const angle of [
+      0,
+      Math.PI / 4,
+      -Math.PI / 4,
+      Math.PI / 2,
+      -Math.PI / 2,
+      (3 * Math.PI) / 4,
+      (-3 * Math.PI) / 4,
+      Math.PI,
+    ]) {
+      const co = Math.cos(angle),
+        si = Math.sin(angle),
+        point = {
+          x: clamp(
+            leader.x + order.followX * co - order.followY * si,
+            margin,
+            world.W - margin,
+          ),
+          y: clamp(
+            leader.y + order.followX * si + order.followY * co,
+            margin,
+            world.H - margin,
+          ),
+        };
+      if (
+        dist(point, leader) >= C[u.kind].r + C[leader.kind].r + 10 &&
+        free(point.x, point.y, C[u.kind].r, world) &&
+        travelClear(leader, point, C[u.kind].r, world)
+      )
+        return point;
+    }
+    // A heavy escort cannot occupy an infantry-only bridge. Wait safely and
+    // retry at decision cadence until its leader returns to reachable ground.
+    return { x: u.x, y: u.y };
+  }
+  function updateFollow(s, u, dt, units) {
+    const order = u.order,
+      leader = units.get(order.followId);
+    u.target = null;
+    if (!canLead(leader) || leader.hp <= 0 || leader.care?.inside) {
+      u.order = null;
+      u.path = [];
+      return;
+    }
+    u.think = Math.max(0, u.think - dt);
+    const ideal = { x: leader.x + order.followX, y: leader.y + order.followY },
+      distance = dist(u, ideal),
+      world = navigation(s),
+      radius = C[u.kind].r;
+    if (
+      u.path.length <= 1 &&
+      distance > 1e-5 &&
+      distance < 180 &&
+      travelClear(leader, ideal, radius, world) &&
+      travelClear(u, ideal, radius, world)
+    ) {
+      // Track a nearby moving slot continuously with an exact clear segment.
+      // This avoids both stop/start motion and a full path search every frame.
+      const point = u.path[0] || (u.path[0] = {});
+      point.x = order.x = ideal.x;
+      point.y = order.y = ideal.y;
+      u.think = 0.4 + (u.id % 5) * 0.03;
+      return;
+    }
+    // Failed or obstructed routes are retried at a bounded decision cadence.
+    if (u.think > 0) return;
+    u.think = 0.4 + (u.id % 5) * 0.03;
+    const point = followPoint(s, u, leader, order);
+    if (dist(u, point) <= 12 && travelClear(u, point, radius, world)) {
+      u.path = [];
+      order.x = u.x;
+      order.y = u.y;
+      return;
+    }
+    if (
+      u.path.length &&
+      dist(order, point) < 28 &&
+      travelClear(u, u.path[0], radius, world)
+    )
+      return;
+    u.path = pathTo(u, point, radius);
+    const end = u.path.at(-1) || u;
+    order.x = end.x;
+    order.y = end.y;
+  }
+  function followUnits(s, ids, leaderId, notify = true) {
+    if (s.status !== "playing" || !Array.isArray(ids)) return false;
+    const units = new Map(s.units.map((u) => [u.id, u])),
+      leader = units.get(leaderId),
+      selected = new Set(ids);
+    if (!canLead(leader) || leader.hp <= 0 || leader.care?.inside) return false;
+    const members = s.units.filter(
+      (u) =>
+        selected.has(u.id) &&
+        canLead(u) &&
+        u.kind !== "hero" &&
+        u !== leader &&
+        u.hp > 0,
+    );
+    if (!members.length) return false;
+    // Clicking a selected group member makes it the new leader. An external
+    // leader may already follow someone else, but the resulting chain must not cycle.
+    if (!selected.has(leader.id)) {
+      const seen = new Set(members.map((u) => u.id));
+      let current = leader;
+      while (current) {
+        if (seen.has(current.id)) return false;
+        seen.add(current.id);
+        current = units.get(current.order?.followId);
+      }
+    }
+    const spacing = Math.max(40, ...members.map((u) => C[u.kind].r * 2 + 12)),
+      width = Math.ceil(Math.sqrt(members.length)),
+      centre = members.reduce(
+        (p, u) => ({
+          x: p.x + u.x / members.length,
+          y: p.y + u.y / members.length,
+        }),
+        { x: 0, y: 0 },
+      ),
+      angle = Math.atan2(leader.y - centre.y, leader.x - centre.x),
+      co = Math.cos(angle),
+      si = Math.sin(angle),
+      gap =
+        C[leader.kind].r + Math.max(...members.map((u) => C[u.kind].r)) + 30;
+    const plans = members.map((u, i) => {
+      const side =
+          ((i % width) -
+            (Math.min(width, members.length - Math.floor(i / width) * width) -
+              1) /
+              2) *
+          spacing,
+        back = gap + Math.floor(i / width) * spacing,
+        scale = Math.min(1, 480 / Math.hypot(side, back));
+      return {
+        u,
+        order: {
+          x: u.x,
+          y: u.y,
+          followId: leader.id,
+          followX: (-co * back - si * side) * scale,
+          followY: (-si * back + co * side) * scale,
+        },
+      };
+    });
+    if (selected.has(leader.id) && leader.order?.followId !== undefined) {
+      leader.order = null;
+      leader.target = null;
+      leader.path = [];
+    }
+    const departures = [];
+    for (const plan of plans) {
+      plan.origin = support.departure(s, plan.u, departures);
+      if (!plan.origin) return false;
+      departures.push({ ...plan.origin, r: C[plan.u.kind].r });
+    }
+    for (const { u, order, origin } of plans) {
+      support.leave(s, u, origin);
+      u.order = order;
+      u.think = 0;
+      updateFollow(s, u, 0, units);
+    }
+    if (notify) emit(s, "order", leader.x, leader.y, { intent: "follow" });
+    return true;
+  }
+  const commandableBuilding = (u) =>
+    u &&
+    u.team === 0 &&
+    ["base", "outpost", "barracks", "foundry", "arsenal"].includes(u.kind);
+  function commandSelection(s, ids, point, targetId = null) {
+    if (
+      s.status !== "playing" ||
+      !Array.isArray(ids) ||
+      !Number.isFinite(point?.x) ||
+      !Number.isFinite(point?.y)
+    )
+      return false;
+    const chosen = new Set(ids),
+      members = s.units.filter(
+        (u) => chosen.has(u.id) && u.hp > 0 && u.team === 0,
+      ),
+      mobile = members.filter((u) => [1, 2].includes(u.group)),
+      buildings = members.filter(commandableBuilding),
+      workers = members.filter((u) => u.kind === "drone"),
+      target =
+        targetId === null
+          ? null
+          : s.units.find((u) => u.id === targetId && u.hp > 0);
+    if (
+      (!mobile.length && !buildings.length && !workers.length) ||
+      (targetId !== null && !target) ||
+      (target?.team && !visible(s, 0, target))
+    )
+      return false;
+    if (support.enabled(s) && support.facility(target) && mobile.length) {
+      const result = support.admit(s, mobile.map((u) => u.id), target.id);
+      const repair = workers.length && construction.workerOrder(s, workers.map((u) => u.id), point, targetId, true);
+      if (result.allowed) for (const u of buildings) u.rally = { ...construction.exit(target) };
+      return result.allowed || !!repair?.allowed;
+    }
+    const workerOffer = workers.length
+      ? construction.workerOrder(s, workers.map((u) => u.id), point, targetId, false)
+      : null;
+    if (!mobile.length && !buildings.length)
+      return workerOffer?.allowed
+        ? construction.applyWorkerOrder(s, workerOffer).allowed
+        : false;
+    const tracking = target && canLead(target),
+      attack = !!target?.team;
+    if (target)
+      point = target.construction
+        ? construction.exit(target)
+        : { x: target.x, y: target.y };
+    const world = mapFor(s);
+    if (point.x < 0 || point.y < 0 || point.x > world.W || point.y > world.H)
+      return false;
+    if (
+      buildings.length &&
+      !tracking &&
+      !mobile.length &&
+      !free(point.x, point.y, 12, navigation(s))
+    )
+      return false;
+    const followers = tracking ? mobile.filter((u) => u !== target) : mobile;
+    if (
+      followers.length &&
+      !(tracking
+        ? followUnits(
+            s,
+            mobile.map((u) => u.id),
+            target.id,
+          )
+        : attack
+          ? attackUnits(
+              s,
+              mobile.map((u) => u.id),
+              target.id,
+            )
+          : orderUnits(
+              s,
+              mobile.map((u) => u.id),
+              point.x,
+              point.y,
+            ))
+    )
+      return false;
+    if (!followers.length && !buildings.length) return false;
+    for (const u of buildings)
+      u.rally = {
+        x: point.x,
+        y: point.y,
+        ...(tracking ? { followId: target.id } : {}),
+      };
+    if (!followers.length)
+      emit(s, "order", point.x, point.y, {
+        intent: attack ? "attack" : tracking ? "follow" : "move",
+      });
+    if (workerOffer?.allowed) construction.applyWorkerOrder(s, workerOffer, false);
     return true;
   }
   function setRally(s, id, x, y) {
     const u = s.units.find(
-      (u) =>
-        u.id === id &&
-        !u.team &&
-        u.hp > 0 &&
-        ["barracks", "foundry"].includes(u.kind),
+      (u) => u.id === id && !u.team && u.hp > 0 && commandableBuilding(u),
     );
     if (
       s.status !== "playing" ||
@@ -1082,6 +1462,7 @@
     return true;
   }
   function move(u, dx, dy) {
+    if (u.care?.inside) return;
     const r = C[u.kind].r,
       map = navigation(u),
       steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 8));
@@ -1120,21 +1501,29 @@
           (target || s.units.find((v) => v.id === u.target?.id))?.kind ===
             "artillery"))
     )
-      return { ...C[u.kind], range: 610, damage: 54, rate: 6.4 };
+      return balanced(s) ? siegeStats[u.kind] : { ...C[u.kind], range: 610, damage: 54, rate: 6.4, siege: true };
     return s.version >= 4 && u.defense && ["base", "outpost"].includes(u.kind)
-      ? { ...C[u.kind], range: 340, damage: 20, rate: 0.9 }
-      : C[u.kind];
+      ? { ...C[u.kind], range: balanced(s) ? u.kind === "outpost" ? 520 : 480 : 340, damage: 20, rate: 0.9 }
+      : balanced(s) ? rangedStats[u.kind] : C[u.kind];
+  }
+  function aimAngle(u, target) {
+    const d = dist(u, target);
+    return (
+      Math.atan2(target.y - u.y, target.x - u.x) -
+      (u.kind === "hero" && d > 1e-6 ? Math.asin(Math.min(5, d * 0.25) / d) : 0)
+    );
   }
   function shoot(s, u, target) {
+    if (u.care?.inside || target.care?.inside) return;
     const def = stats(s, u),
-      a = Math.atan2(target.y - u.y, target.x - u.x);
+      a = aimAngle(u, target);
     u.angle = a;
     u.cool = def.rate;
     u.flash = 0.1;
     const siege =
       campaign.combat(s) &&
       (["mortar", "citadel"].includes(u.kind) ||
-        (u.kind === "bastion" && def.range > 500));
+        (u.kind === "bastion" && def.siege));
     emit(
       s,
       u.kind === "artillery" || siege
@@ -1157,7 +1546,9 @@
     const r =
         s.version >= 4 && u.defense
           ? Math.min(def.r + 9, dist(u, target) / 2)
-          : def.r + 9,
+          : u.kind === "hero"
+            ? Math.min(31, dist(u, target) / 2)
+            : def.r + 9,
       speed =
         u.kind === "rocket"
           ? 260
@@ -1170,8 +1561,16 @@
                 : 800;
     s.bullets.push({
       ...(s.campaign ? { map: mapFor(s).id } : {}),
-      x: u.x + Math.cos(a) * r,
-      y: u.y + Math.sin(a) * r,
+      x:
+        u.x +
+        Math.cos(a) * r -
+        Math.sin(a) *
+          (u.kind === "hero" ? Math.min(5, dist(u, target) * 0.25) : 0),
+      y:
+        u.y +
+        Math.sin(a) * r +
+        Math.cos(a) *
+          (u.kind === "hero" ? Math.min(5, dist(u, target) * 0.25) : 0),
       vx: Math.cos(a) * speed,
       vy: Math.sin(a) * speed,
       life:
@@ -1209,17 +1608,22 @@
       tx: target.x,
       ty: target.y,
       age: 0,
-      ...(mapFor(s).id === "highlands"
+      ...(["highlands", "districts"].includes(mapFor(s).id)
         ? {
             z0: Terrain.height(u.x, u.y) + (MOUNTS[u.kind] || 16),
-            z1: Terrain.height(target.x, target.y) + 10,
+            z1: Number.isFinite(target.z)
+              ? target.z
+              : (Terrain.level(target.x, target.y) < 0
+                  ? Terrain.height(u.x, u.y)
+                  : Terrain.height(target.x, target.y)) +
+                (u.kind === "hero" ? MOUNTS.hero : 10),
             duration: Math.max(0.01, Math.max(0, dist(u, target) - r) / speed),
           }
         : {}),
     });
   }
   function hurt(s, u, damage, attacker) {
-    if (u.hp <= 0) return;
+    if (u.hp <= 0 || u.care?.inside) return;
     if (u.kind === "citadel" && shielded(s)) {
       emit(s, "shield", u.x, u.y);
       return;
@@ -1256,6 +1660,7 @@
     if (u.hp <= 0) {
       u.hp = 0;
       if (s.campaign) campaign.onDeath(s, u);
+      support.onDeath(s, u);
       s.kills += u.team === 1 ? 1 : 0;
       emit(s, "destroy", u.x, u.y, { kind: u.kind, team: u.team });
     }
@@ -1295,7 +1700,7 @@
     steps,
     walls = [
       ...mapFor(s).walls,
-      ...(mapFor(s).id === "highlands"
+      ...(["highlands", "districts"].includes(mapFor(s).id)
         ? Terrain.visionWalls(Terrain.height(origin.x, origin.y) + 6)
         : []),
     ],
@@ -1338,11 +1743,11 @@
     const walls = [
       ...mapFor(s).walls.filter(
         (w) =>
-          mapFor(s).id !== "highlands" ||
+          !["highlands", "districts"].includes(mapFor(s).id) ||
           Terrain.height(w.x + w.w / 2, w.y + w.h / 2) + 54 >=
             Terrain.height(point.x, point.y) + 24,
       ),
-      ...(mapFor(s).id === "highlands"
+      ...(["highlands", "districts"].includes(mapFor(s).id)
         ? Terrain.visionWalls(Terrain.height(point.x, point.y) + 24)
         : []),
     ].filter(
@@ -1381,7 +1786,7 @@
           ...areaArc(
             s,
             u,
-            C.flamer.range,
+            stats(s, u).range,
             u.combat.angle - half,
             u.combat.angle + half,
             24,
@@ -1392,7 +1797,7 @@
     if (u.kind === "bomber") return impactArea(s, u, 92);
     if (
       (["mortar", "citadel"].includes(u.kind) ||
-        (u.kind === "bastion" && stats(s, u).range > 500)) &&
+        (u.kind === "bastion" && stats(s, u).siege)) &&
       u.target
     )
       return impactArea(s, u.target, 78);
@@ -1436,7 +1841,9 @@
     if (dt !== DT) throw Error("Simulation requires the fixed step");
     s.events = [];
     s.t += dt;
+    support.tick(s, input, dt);
     const h = hero(s);
+    if (h.care) input = {};
     const channel =
       input.interact && interaction(s)?.type === "terminal" && s.economy.kit;
     s.dash = Math.max(0, s.dash - dt);
@@ -1451,7 +1858,7 @@
       Number.isFinite(input.aim.x) &&
       Number.isFinite(input.aim.y)
     )
-      h.angle = Math.atan2(input.aim.y - h.y, input.aim.x - h.x);
+      h.angle = aimAngle(h, input.aim);
     if (input.dash && s.dash === 0) {
       const a = len ? Math.atan2(my, mx) : h.angle;
       s.dashX = Math.cos(a);
@@ -1472,12 +1879,25 @@
       s.reload = 1.1;
       emit(s, "reload", h.x, h.y);
     }
+    const combatTeams = campaign.combat(s) ? [[], []] : null;
+    let followLeaders;
+    if (combatTeams)
+      for (const u of s.units) if (u.hp > 0 && !u.care?.inside) combatTeams[u.team].push(u);
     for (const u of s.units) {
       if (u.hp <= 0) continue;
+      if (u.rally?.followId !== undefined) {
+        const leader = (followLeaders ||= new Map(
+          s.units.map((v) => [v.id, v]),
+        )).get(u.rally.followId);
+        if (leader?.hp > 0 && canLead(leader) && !leader.care?.inside)
+          Object.assign(u.rally, { x: leader.x, y: leader.y });
+        else delete u.rally.followId;
+      }
       u.cool = Math.max(0, u.cool - dt);
       u.hit = Math.max(0, u.hit - dt);
       u.repair = Math.max(0, u.repair - dt);
       u.flash = Math.max(0, u.flash - dt);
+      if (u.care) continue;
       if (u.kind === "hero") {
         if (
           input.fire &&
@@ -1486,10 +1906,16 @@
           s.reload === 0 &&
           s.ammo > 0
         ) {
-          shoot(s, u, {
-            x: u.x + Math.cos(u.angle) * 600,
-            y: u.y + Math.sin(u.angle) * 600,
-          });
+          shoot(
+            s,
+            u,
+            input.aim && dist(u, input.aim) > 1
+              ? input.aim
+              : {
+                  x: u.x + Math.cos(u.angle) * 600,
+                  y: u.y + Math.sin(u.angle) * 600,
+                },
+          );
           s.ammo--;
           s.shots++;
           if (s.ammo === 0) s.reload = 1.1;
@@ -1509,7 +1935,14 @@
         continue;
       }
       if (u.kind === "scout") {
-        if (u.target) {
+        if (u.order?.followId !== undefined)
+          updateFollow(
+            s,
+            u,
+            dt,
+            (followLeaders ||= new Map(s.units.map((v) => [v.id, v]))),
+          );
+        else if (u.target) {
           const target = s.units.find((v) => v.id === u.target.id),
             seen = target && visible(s, 0, target);
           if (seen && target.hp > 0)
@@ -1527,10 +1960,12 @@
       }
       const def = stats(s, u);
       if (!def.range || u.build) continue;
-      const opponents = s.units.filter(
+      const opponents = (
+        combatTeams ? combatTeams[1 - u.team] : s.units
+      ).filter(
         (v) =>
           v.team !== u.team &&
-          v.hp > 0 &&
+          !v.care?.inside && v.hp > 0 &&
           !(v.kind === "citadel" && shielded(s)),
       );
       // Campaign enemies choose targets in their own AI. The generic scan
@@ -1541,7 +1976,7 @@
       }
       let target = opponents
         .filter(
-          (v) => dist(u, v) < def.range && clear(u, v) && visible(s, u.team, v),
+          (v) => rangeDistance(u, v) < def.range && clear(u, v) && visible(s, u.team, v, u),
         )
         .sort((a, b) => {
           const score = (v) => {
@@ -1565,7 +2000,16 @@
           return score(a) - score(b);
         })[0];
       if (u.team === 0) {
+        const escorting = u.order?.followId !== undefined;
+        if (escorting)
+          updateFollow(
+            s,
+            u,
+            dt,
+            (followLeaders ||= new Map(s.units.map((v) => [v.id, v]))),
+          );
         if (
+          !escorting &&
           !u.target &&
           target &&
           def.speed &&
@@ -1578,9 +2022,8 @@
           u.think = Math.max(0, u.think - dt);
           const visible =
             preferred &&
-            dist(u, preferred) < 620 &&
-            clear(u, preferred) &&
-            recon.visible(s, 0, preferred);
+            (balanced(s) || (rangeDistance(u, preferred) < 620 && clear(u, preferred))) &&
+            recon.visible(s, 0, preferred, u);
           if (visible) {
             u.target.x = preferred.x;
             u.target.y = preferred.y;
@@ -1589,13 +2032,13 @@
             u.target = null;
           else if (
             visible &&
-            dist(u, preferred) < def.range * 0.92 &&
+            rangeDistance(u, preferred) < def.range * 0.92 &&
             fireClear(u, preferred)
           )
             u.path = [];
           else if (
             !visible &&
-            dist(u, u.target) < 620 &&
+            rangeDistance(u, u.target) < detectionRange(s, u) &&
             clear(u, u.target) &&
             (!fogged(s) || recon.visible(s, 0, u.target))
           ) {
@@ -1607,7 +2050,7 @@
           }
           if (
             visible &&
-            dist(u, preferred) < def.range &&
+            rangeDistance(u, preferred) < def.range &&
             fireClear(u, preferred)
           )
             target = preferred;
@@ -1616,7 +2059,7 @@
         // Movement can change both the angle and the cover corridor this frame.
         if (
           target &&
-          dist(u, target) < def.range &&
+          rangeDistance(u, target) < def.range &&
           fireClear(u, target) &&
           visible(s, 0, target) &&
           u.cool === 0
@@ -1671,7 +2114,7 @@
         );
         if (
           !target ||
-          dist(b, target) > 650 ||
+          dist(b, target) > (balanced(s) ? ENGAGEMENT.rocket.sight : 650) ||
           !clear(b, target, 2) ||
           !visible(s, b.team, target)
         )
@@ -1729,7 +2172,7 @@
         }
       }
       for (const u of s.units) {
-        if (u.hp <= 0 || u.team === b.team) continue;
+        if (u.hp <= 0 || u.care?.inside || u.team === b.team) continue;
         if (u.kind === "hero" && s.dashT > 0) continue;
         const t = u.construction
           ? segmentRect(b.x, b.y, next.x, next.y, construction.rect(u), 2)
@@ -1837,11 +2280,23 @@
   }
   function restore(value) {
     if (value?.fog !== undefined) return null;
-    if ([3, 4, 5, 6, 7, 8, 9, 10].includes(value?.version)) {
+    if ([3, 4, 5, 6, 7, 8, 9, 10, 11].includes(value?.version)) {
       const state = campaign.restore(value);
-      if (!state || !recon.validate(state) || !construction.validate(state))
+      if (
+        !state ||
+        !validFollowOrders(state) ||
+        !recon.validate(state) ||
+        !construction.validate(state) ||
+        !support.validate(state)
+      )
         return null;
       for (const u of state.units) owners.set(u, state);
+      // Validate old knowledge with its original radii before a one-time upgrade.
+      // Current saves remain exact round trips; no position, health or economy changes.
+      if (balanceEligible(state) && state.campaign.balance === undefined) {
+        state.campaign.balance = 1;
+        recon.update(state, true);
+      }
       return state;
     }
     try {
@@ -2098,19 +2553,22 @@
       )
         return null;
       s.events = [];
+      if (!validFollowOrders(s) || !support.validate(s)) return null;
       return s;
     } catch (_) {
       return null;
     }
   }
   const fogged = (s) => recon.enabled(s);
-  const visible = (s, team, p) => recon.visible(s, team, p);
+  const visible = (s, team, p, witness) => recon.visible(s, team, p, witness);
   const explored = (s, team, p) => recon.explored(s, team, p);
   const API = {
+    terminalSites,
     navigation,
     terrain: Terrain,
     elevation,
     projectileHeight,
+    aimAngle,
     travelClear,
     fogged,
     visible,
@@ -2139,11 +2597,16 @@
     order,
     orderUnits,
     attackUnits,
+    followUnits,
+    commandSelection,
     setRally,
     pathTo,
     firingPath,
     fireClear,
     stats,
+    sightRange,
+    detectionRange,
+    balance: Object.freeze({ version: 1, eligible: balanceEligible, enabled: balanced, units: ENGAGEMENT }),
     turnAngle,
     dangerArea,
     impactArea,
@@ -2199,6 +2662,9 @@
     emit,
     spawnPoint,
   });
+  const Support = typeof module !== "undefined" && module.exports ? require("./support.js") : root.SignalSupport;
+  support = Support.create({ ...API, map: mapFor, follow, emit, get development() { return campaign; } });
+  API.support = support;
   API.map = mapFor;
   API.pads = (s) =>
     (s.campaign ? campaign.pads(s) : PADS).filter(

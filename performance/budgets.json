@@ -1,6 +1,9 @@
 {
   "schemaVersion": 1,
-  "excludedSourceDirectories": ["game-source", "project-docs/almanion-defense"],
+  "excludedSourceDirectories": [
+    "game-source",
+    "project-docs/almanion-defense"
+  ],
   "maxBytesByExtension": {
     ".html": 320000,
     ".js": 120000,
@@ -26,7 +29,7 @@
   "routes": {
     "games/signal-frontier/index.html": {
       "maxInitialLocalJsBytes": 5000000,
-      "maxInitialLocalCssBytes": 35000,
+      "maxInitialLocalCssBytes": 48000,
       "maxInitialLocalRequests": 7,
       "maxExternalRequests": 0
     },

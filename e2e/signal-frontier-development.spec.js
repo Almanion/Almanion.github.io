@@ -276,7 +276,6 @@ test("legacy shop keeps purpose, exact cost, duration and prerequisites visible 
   ).toHaveText("Не хватает 40 сплава");
   await expect(page.locator(".production-queue")).toContainText("18 с");
   await page.locator(".job-select").first().click();
-  await page.getByRole("button", { name: /Отменить: Дрон/ }).click();
   await expect(page.locator("#field-alloy")).toHaveText("47");
   await expect(
     page.locator("#" + (await drone.getAttribute("aria-describedby"))),

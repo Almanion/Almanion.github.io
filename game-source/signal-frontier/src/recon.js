@@ -8,7 +8,9 @@
       Object.freeze({ id: "south", x: 1160, y: 1920 }),
     ]);
   const enabled = (s) =>
-    ["frontier-6", "frontier-7", "frontier-8"].includes(s?.campaign?.id);
+    ["frontier-6", "frontier-7", "frontier-8", "frontier-9"].includes(
+      s?.campaign?.id,
+    );
   function create(E) {
     const caches = new WeakMap();
     const size = (s) => {
@@ -38,20 +40,8 @@
       }
       return bits;
     };
-    const VISION = Object.freeze({
-      hero: 600,
-      scout: 720,
-      rifle: 440,
-      artillery: 480,
-      drone: 180,
-      base: 380,
-      outpost: 380,
-      barracks: 280,
-      foundry: 280,
-      arsenal: 280,
-    });
-    function radius(u) {
-      return u.build > 0 ? 120 : u.team ? 610 : VISION[u.kind] || 0;
+    function radius(u, s) {
+      return E.sightRange(s, u);
     }
     function posts(s) {
       return (E.map(s).posts || POSTS).map((p) => {
@@ -59,7 +49,7 @@
           s.units.some(
             (u) =>
               u.team === team &&
-              u.hp > 0 &&
+              u.hp > 0 && !u.care?.inside &&
               [
                 "hero",
                 "rifle",
@@ -87,12 +77,12 @@
     }
     function observers(s, team) {
       const units = s.units
-        .filter((u) => u.team === team && u.hp > 0 && radius(u) > 0)
+        .filter((u) => u.team === team && u.hp > 0 && radius(u, s) > 0)
         .map((u) => ({
           id: u.id,
           x: u.x,
           y: u.y,
-          radius: radius(u),
+          radius: radius(u, s),
           map: E.map(s).id,
         }));
       for (const p of posts(s))
@@ -101,7 +91,7 @@
             id: "post-" + p.id,
             x: p.x,
             y: p.y,
-            radius: 780,
+            radius: E.balance.enabled(s) ? 1080 : 780,
             map: E.map(s).id,
           });
       return units;
@@ -138,28 +128,42 @@
         (u) => Math.hypot(u.x - p.x, u.y - p.y) <= u.radius && E.clear(u, p),
       );
     }
-    function visible(s, team, p) {
-      if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return false;
+    function visible(s, team, p, witness) {
+      if (!p || p.care?.inside || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return false;
       if (!enabled(s)) return true;
       if (s.fog) {
         const k = index(s, p);
         return k >= 0 && !!s.fog.visible[k] && sees(s.fog.observers, p);
       }
       const k = index(s, p);
+      // Enemy perception already has a local observer. A valid witness proves
+      // the same faction-wide result without searching that faction again.
+      // Keep the mask and live cover checks, and fall back for every other case.
+      if (
+        witness &&
+        k >= 0 &&
+        cache(s).visible[team][k] &&
+        witness.team === team &&
+        witness.hp > 0 && !witness.care?.inside &&
+        s.units.includes(witness) &&
+        E.dist(witness, p) <= radius(witness, s) &&
+        E.clear(witness, p)
+      )
+        return true;
       return (
         k >= 0 &&
         !!cache(s).visible[team][k] &&
         (s.units.some(
           (u) =>
             u.team === team &&
-            u.hp > 0 &&
-            E.dist(u, p) <= radius(u) &&
+            u.hp > 0 && !u.care?.inside &&
+            E.dist(u, p) <= radius(u, s) &&
             E.clear(u, p),
         ) ||
           posts(s).some(
             (u) =>
               u.owners[team] &&
-              E.dist(u, p) <= 780 &&
+              E.dist(u, p) <= (E.balance.enabled(s) ? 1080 : 780) &&
               E.clear({ ...u, map: E.map(s).id }, p),
           ))
       );
@@ -238,7 +242,14 @@
           angle: u.angle,
           build: u.build || 0,
           ...(u.construction
-            ? { construction: { turn: u.construction.turn } }
+            ? {
+                construction: {
+                  turn: u.construction.turn,
+                  ...(u.construction.footprint === undefined
+                    ? {}
+                    : { footprint: u.construction.footprint }),
+                },
+              }
             : {}),
           defense: !!u.defense,
           sector: u.sector || null,
@@ -277,11 +288,16 @@
               ? s.relay.stability
               : s.relay.charge,
         },
-        { key: "terminal", type: "terminal", ...s.terminal },
+        ...E.terminalSites(s).map((p, i) => ({
+          key: E.map(s).terminals ? "terminal:" + i : "terminal",
+          type: "terminal",
+          ...p,
+        })),
       ];
     }
     function init(s) {
       if (!enabled(s)) return;
+      caches.delete(s);
       const blank = "0".repeat(size(s).count / 4);
       s.recon = {
         version: 1,
@@ -398,6 +414,7 @@
         watch: get("post"),
         relay: get("relay")[0] || neutral({}),
         terminal: get("terminal")[0] || neutral({}),
+        ...(E.map(s).terminals ? { terminals: get("terminal") } : {}),
         campaign: { ...s.campaign, mines: get("mine"), camps: [], intel: [] },
         fog: { ...fog },
       };
@@ -440,6 +457,9 @@
           .map(({ owners, ...p }) => p),
         relay: neutral(s.relay),
         terminal: neutral(s.terminal),
+        ...(E.map(s).terminals
+          ? { terminals: E.terminalSites(s).filter(can) }
+          : {}),
         campaign: {
           ...s.campaign,
           mines: s.campaign.mines.filter(can),
@@ -484,7 +504,8 @@
           ) ||
           f.sources[t] !== signature(observers(s, t)) ||
           !Array.isArray(f.memory[t]) ||
-          f.memory[t].length > (s.campaign.id === "frontier-8" ? 512 : 128)
+          f.memory[t].length >
+            (["frontier-8", "frontier-9"].includes(s.campaign.id) ? 512 : 128)
         )
           return false;
         const v = decode(f.visible[t]),
@@ -504,11 +525,13 @@
           if (p.type === "unit") {
             if (
               p.construction &&
-              (s.campaign.id !== "frontier-8" ||
+              (!["frontier-8", "frontier-9"].includes(s.campaign.id) ||
                 !["barracks", "foundry", "arsenal", "outpost"].includes(
                   p.kind,
                 ) ||
-                ![0, 1].includes(p.construction.turn))
+                ![0, 1, 2, 3].includes(p.construction.turn) ||
+                (p.construction.footprint !== undefined &&
+                  (p.kind !== "outpost" || p.construction.footprint !== 4)))
             )
               return false;
             const def = E.C[p.kind];

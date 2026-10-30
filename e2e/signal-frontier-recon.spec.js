@@ -223,9 +223,6 @@ for (const type of [chromium, webkit]) {
               ),
             });
           await page.locator(".job-select").first().click();
-          await page
-            .getByRole("button", { name: /Отменить: Дозорный/ })
-            .click();
           state = await page.evaluate(() => SignalGame.snapshot());
           expect(E.living(state, "barracks").jobs).toHaveLength(1);
           expect(state.economy.alloy).toBe(s.economy.alloy - 63);
@@ -352,7 +349,7 @@ test("fatal hit outside other allies sight opens defeat and allows a fresh opera
   );
   await page.locator("#retry").click();
   expect((await page.evaluate(() => SignalGame.snapshot())).campaign.id).toBe(
-    "frontier-8",
+    "frontier-9",
   );
   expect(errors).toEqual([]);
 });

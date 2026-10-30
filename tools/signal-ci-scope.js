@@ -7,10 +7,12 @@ const { execFileSync } = require("node:child_process");
 const presentation = new Set([
   "app.js",
   "development-ui.js",
+  "selection-ui.js",
   "account-ui.js",
   "index.html",
   "style.css",
   "view.js",
+  "minimap.js",
   "audio.js",
 ]);
 const tooling = new Set([
@@ -35,6 +37,7 @@ function classifyPresentation(files) {
 const simulation = new Set([
   "terrain.js",
   "engine.js",
+  "support.js",
   "recon.js",
   "campaign.js",
   "persistence.js",

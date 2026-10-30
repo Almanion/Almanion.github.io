@@ -16,7 +16,7 @@ for (const browserType of [chromium, webkit])
           const page = await browser.newPage({ viewport: { width, height } });
           const errors = [];
           page.on("pageerror", (error) => errors.push(error.message));
-          await page.goto("http://127.0.0.1:4173/games/signal-frontier/");
+          await page.goto("/games/signal-frontier/");
           const result = await page.evaluate((profile) => {
             const canvas = document.createElement("canvas");
             // Keep readback on one raster backend throughout exact image comparisons.

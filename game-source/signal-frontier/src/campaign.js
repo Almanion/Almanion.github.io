@@ -5,8 +5,13 @@
     typeof module !== "undefined" && module.exports
       ? require("./terrain.js")
       : root.SignalTerrain;
+  const Districts =
+    typeof module !== "undefined" && module.exports
+      ? require("./districts.js")
+      : root.SignalDistricts;
+  const mapped = (s) => s?.campaign?.id === "frontier-9";
   const highlands = (s) =>
-    ["frontier-7", "frontier-8"].includes(s?.campaign?.id);
+    ["frontier-7", "frontier-8", "frontier-9"].includes(s?.campaign?.id);
   const PADS = Object.freeze(
     [
       {
@@ -214,6 +219,7 @@
       mines: EXPEDITION_RULES.mines.map(T.point),
       items: Object.freeze({
         ...EXPEDITION_ITEMS,
+        outpost: { ...EXPEDITION_ITEMS.outpost, label: "Экстрактор" },
         arsenal: { cost: 180, time: 45, pop: 0, label: "Арсенал" },
         scout: { cost: 50, time: 18, pop: 1, label: "Дозорный" },
         command: { ...EXPEDITION_ITEMS.command, cost: 520, time: 120 },
@@ -226,6 +232,26 @@
       scoutRest: 220,
       reserve: 36,
       waveMax: 4,
+    }),
+    "frontier-9": Object.freeze({
+      ...EXPEDITION_RULES,
+      version: 11,
+      mines: Districts.mines,
+      items: Object.freeze({
+        ...EXPEDITION_ITEMS,
+        outpost: { ...EXPEDITION_ITEMS.outpost, label: "Экстрактор" },
+        arsenal: { cost: 180, time: 45, pop: 0, label: "Арсенал" },
+        scout: { cost: 50, time: 18, pop: 1, label: "Дозорный" },
+        command: { ...EXPEDITION_ITEMS.command, cost: 520, time: 120 },
+        hack: { ...EXPEDITION_ITEMS.hack, cost: 360, time: 90 },
+        artillery: { ...EXPEDITION_ITEMS.artillery, cost: 300 },
+      }),
+      firstRaid: 210,
+      stagger: 75,
+      raidInterval: 210,
+      scoutRest: 240,
+      reserve: 72,
+      waveMax: 2,
     }),
     "frontier-1": Object.freeze({
       version: 3,
@@ -270,6 +296,7 @@
       "frontier-6",
       "frontier-7",
       "frontier-8",
+      "frontier-9",
     ].includes(s.campaign?.id);
   const extended = (s) =>
     [
@@ -280,6 +307,7 @@
       "frontier-6",
       "frontier-7",
       "frontier-8",
+      "frontier-9",
     ].includes(s.campaign?.id);
   const HIGHLAND_PADS = EXPEDITION_PADS.map((p) => ({
       ...T.point(p),
@@ -294,7 +322,29 @@
     ),
     HIGHLAND_FORTS = FORTS.map(T.point);
   const pads = (s) =>
-    highlands(s) ? HIGHLAND_PADS : expedition(s) ? EXPEDITION_PADS : PADS;
+    mapped(s)
+      ? Districts.mines
+          .filter((m) => m.id !== "home")
+          .map((m) => ({
+            id: m.id,
+            name:
+              Districts.regions.find(
+                (r) =>
+                  m.x >= r.x &&
+                  m.x < r.x + r.w &&
+                  m.y >= r.y &&
+                  m.y < r.y + r.h,
+              )?.name || m.id,
+            x: m.x - 80,
+            y: m.y + 100,
+            oreX: m.x,
+            oreY: m.y,
+          }))
+      : highlands(s)
+        ? HIGHLAND_PADS
+        : expedition(s)
+          ? EXPEDITION_PADS
+          : PADS;
   const buildings = (s) =>
     highlands(s)
       ? HIGHLAND_BUILDINGS
@@ -302,11 +352,21 @@
         ? EXPEDITION_BUILDINGS
         : BUILDINGS;
   const caches = (s) =>
-    highlands(s) ? HIGHLAND_CACHES : expedition(s) ? EXPEDITION_CACHES : CACHES;
+    mapped(s)
+      ? Districts.caches
+      : highlands(s)
+        ? HIGHLAND_CACHES
+        : expedition(s)
+          ? EXPEDITION_CACHES
+          : CACHES;
   const combat = (s) =>
-    ["frontier-5", "frontier-6", "frontier-7", "frontier-8"].includes(
-      s.campaign?.id,
-    );
+    [
+      "frontier-5",
+      "frontier-6",
+      "frontier-7",
+      "frontier-8",
+      "frontier-9",
+    ].includes(s.campaign?.id);
   const SPECIAL = ["rocket", "flamer", "bomber", "tank", "mortar"];
   function create(E) {
     const alive = (s, kind) =>
@@ -364,6 +424,7 @@
       return u;
     }
     function make(profile = "frontier-8") {
+      if (profile === "frontier-9") return makeDistricts();
       const config = PROFILES[profile];
       const s = E.makeClassic();
       s.version = config.version;
@@ -376,6 +437,7 @@
       };
       s.campaign = {
         id: profile,
+        ...(E.balance.eligible({ campaign: { id: profile } }) ? { balance: 1 } : {}),
         tier: 1,
         weapons: false,
         armor: false,
@@ -586,7 +648,86 @@
       E.initializeRecon(s);
       return s;
     }
+    function makeDistricts() {
+      const s = make("frontier-8"),
+        c = s.campaign;
+      c.id = "frontier-9";
+      c.balance = 1;
+      s.version = 11;
+      c.mines = Districts.mines.map((m) => ({ ...m, remaining: m.stock }));
+      s.units = s.units.filter((u) => !u.team);
+      const positions = {
+          hero: [[400, 2400]],
+          base: [[320, 2560]],
+          rifle: [
+            [480, 2420],
+            [520, 2480],
+            [460, 2540],
+          ],
+          drone: [
+            [375, 2610],
+            [265, 2610],
+          ],
+        },
+        index = {};
+      for (const u of s.units) {
+        const p = positions[u.kind][index[u.kind] || 0];
+        index[u.kind] = (index[u.kind] || 0) + 1;
+        u.x = p[0];
+        u.y = p[1];
+        u.map = "districts";
+        u.path = [];
+        delete u.workTarget;
+      }
+      const spawn = (kind, x, y, sector) => {
+        const u = initUnit(E.unit(s, kind, 1, x, y));
+        arm(u);
+        u.sector = ["north", "south"].includes(sector) ? sector : undefined;
+        u.cool = (u.id % 7) * 0.08;
+        u.ai = {
+          home: { x, y },
+          goal: null,
+          seen: null,
+          seenAt: 0,
+          route: 0,
+          role: ["runner", "bomber"].includes(kind) ? "flank" : "line",
+          raid: false,
+          patrol: 0,
+        };
+        return u;
+      };
+      for (const p of Districts.guards) spawn(p.kind, p.x, p.y, p.sector);
+      for (const p of Districts.turrets) spawn("turret", p.x, p.y, p.id);
+      const sources = Districts.bases.map((p) =>
+        spawn(p.kind, p.x, p.y, p.sector),
+      );
+      spawn("jammer", 2320, 1280, "relay");
+      s.caches = Districts.caches.map((p) => ({
+        ...p,
+        taken: false,
+        charge: 0,
+      }));
+      s.relay = { ...s.relay, x: 1880, y: 1640 };
+      s.terminal = { ...s.terminal, ...Districts.terminals[0] };
+      c.camps = sources.map((u, i) => ({
+        source: u.id,
+        reserve: Districts.bases[i].reserve,
+        cooldown: 210 + i * 75,
+        warning: 0,
+        waves: 0,
+        target: null,
+      }));
+      const base = E.living(s, "base");
+      c.intel = [{ id: base.id, x: base.x, y: base.y, seenAt: 0 }];
+      E.construction.replan(s);
+      E.initializeRecon(s);
+      return s;
+    }
     function offer(s, action, site) {
+      if (action === "repair-drone") return E.construction.repairOffer(s, site);
+      if (action === "stop-repair")
+        return { allowed: s.status === "playing" && s.units.some((w) => w.hp > 0 &&
+          w.workerTask?.kind === "repair" && w.workerTask.targetId === Number(site)), cost: 0 };
       if (E.construction.enabled(s)) {
         if (s.status !== "playing")
           return { allowed: false, reason: "ended", cost: 0 };
@@ -746,7 +887,7 @@
           if (s.campaign.tier === 3) return fail("installed");
           if (s.campaign.tier < 2) return fail("network");
           if (ready(s, "outpost").length < 2) return fail("second-node");
-          if (expedition(s) && alive(s, "bastion").length === 2)
+          if (expedition(s) && !mapped(s) && alive(s, "bastion").length === 2)
             return fail("fortress");
           if (!expedition(s) && E.living(s, "jammer") && E.living(s, "turret"))
             return fail("secure");
@@ -785,6 +926,8 @@
       return { allowed: true, reason: null, cost: item.cost, producer, anchor };
     }
     function purchase(s, action, site) {
+      if (action === "repair-drone") return E.construction.repair(s, site);
+      if (action === "stop-repair") return E.construction.stopRepair(s, site);
       if (E.construction.enabled(s)) {
         if (s.status !== "playing")
           return { allowed: false, reason: "ended", cost: 0 };
@@ -892,8 +1035,13 @@
             ),
           );
           if (u.rally) {
-            recruit.order = { ...u.rally };
-            recruit.path = E.pathTo(recruit, u.rally, E.C[recruit.kind].r);
+            if (
+              u.rally.followId === undefined ||
+              !E.followUnits(s, [recruit.id], u.rally.followId, false)
+            ) {
+              recruit.order = { x: u.rally.x, y: u.rally.y };
+              recruit.path = E.pathTo(recruit, u.rally, E.C[recruit.kind].r);
+            }
           }
         }
         E.emit(
@@ -917,9 +1065,10 @@
     }
     function mining(s, dt) {
       for (const u of alive(s, "drone")) {
-        if (u.buildingId) continue;
+        if (u.buildingId || u.workerTask) continue;
         let node = nodes(s).find((n) => n.id === u.node);
         if (!node) {
+          delete u.mineId;
           node =
             nodes(s).find(
               (n) => usedSlots(s, n) < 4 && mineFor(s, n)?.remaining,
@@ -932,7 +1081,7 @@
           u.path = [];
           u.work = u.cargo ? "return" : "out";
         }
-        let mine = mineFor(s, node);
+        let mine = s.campaign.mines.find((m) => m.id === u.mineId) || mineFor(s, node);
         if ((!mine.remaining || workers(s, node).indexOf(u) >= 4) && !u.cargo) {
           const next = nodes(s).find(
             (n) =>
@@ -942,6 +1091,7 @@
           );
           if (next) {
             node = next;
+            delete u.mineId;
             u.node = node.id;
             mine = mineFor(s, node);
             u.path = [];
@@ -958,18 +1108,22 @@
           : { x: node.x, y: node.y - 44 };
         const destination =
           u.fright || u.cargo || !mine.remaining || standby
-            ? {
-                x: deposit.x + (node.construction?.turn ? 0 : offset),
-                y: deposit.y + (node.construction?.turn ? offset : 0),
-              }
+            ? node.construction
+              ? E.construction.advance(node, deposit, 0, offset)
+              : { x: deposit.x + offset, y: deposit.y }
             : { x: mine.x + offset, y: mine.y };
         const goalKey = destination.x + "," + destination.y;
         if (u.workTarget !== goalKey) {
           u.path = [];
           u.workTarget = goalKey;
+          u.miningRetry = 0;
         }
         if (E.dist(u, destination) > 18) {
-          if (!u.path.length) u.path = E.pathTo(u, destination, E.C.drone.r);
+          u.miningRetry = Math.max(0, (u.miningRetry || 0) - dt);
+          if (!u.path.length && !u.miningRetry) {
+            u.path = E.pathTo(u, destination, E.C.drone.r);
+            u.miningRetry = .8;
+          }
           E.follow(u, dt);
           u.work = u.fright ? "shelter" : u.cargo ? "return" : "out";
           u.workTime = 0;
@@ -1000,6 +1154,7 @@
       }
     }
     function interaction(s) {
+      if (E.hero(s).care) return null;
       const h = E.hero(s),
         options = [];
       for (const c of s.caches)
@@ -1017,13 +1172,14 @@
           allowed: true,
           progress: s.relay.charge,
         });
-      if (E.dist(h, s.terminal) < 75)
-        options.push({
-          type: "terminal",
-          target: s.terminal,
-          allowed: s.economy.kit,
-          progress: s.terminal.charge,
-        });
+      for (const terminal of E.terminalSites(s))
+        if (E.dist(h, terminal) < 75)
+          options.push({
+            type: "terminal",
+            target: terminal,
+            allowed: s.economy.kit,
+            progress: s.terminal.charge,
+          });
       return (
         options
           .filter((o) => E.visible(s, 0, o.target))
@@ -1047,7 +1203,7 @@
               .sort((a, b) => E.dist(E.hero(s), a) - E.dist(E.hero(s), b))[0],
             radius: 45,
           };
-        if (expedition(s) && alive(s, "bastion").length === 2)
+        if (expedition(s) && !mapped(s) && alive(s, "bastion").length === 2)
           return {
             id: "fortress",
             target: alive(s, "bastion").sort(
@@ -1082,10 +1238,22 @@
     }
     function strategy(s, input, dt) {
       production(s, dt);
+      E.construction.serviceTick(s, dt);
       mining(s, dt);
       const h = E.hero(s),
         act = interaction(s),
         held = input.interact && s.dashT === 0 && act?.allowed;
+      if (
+        held &&
+        act.type === "terminal" &&
+        (act.target.x !== s.terminal.x || act.target.y !== s.terminal.y)
+      )
+        Object.assign(s.terminal, {
+          x: act.target.x,
+          y: act.target.y,
+          charge: 0,
+          window: 0,
+        });
       s.terminal.channeling = !!(held && act.type === "terminal");
       s.terminal.window = Math.max(0, s.terminal.window - dt);
       for (const cache of s.caches) {
@@ -1112,7 +1280,7 @@
           }
         }
       } else s.terminal.charge = Math.max(0, s.terminal.charge - dt * 0.45);
-      for (const post of ready(s, "outpost"))
+      for (const post of E.construction.enabled(s) ? [] : ready(s, "outpost"))
         for (const u of alive(s))
           if (
             !u.team &&
@@ -1128,6 +1296,7 @@
       const base = E.living(s, "base");
       if (
         base &&
+        !h.care &&
         h.repair === 0 &&
         E.dist(h, base) < 100 &&
         !s.units.some((u) => u.team && u.hp > 0 && E.dist(u, base) < 260)
@@ -1152,10 +1321,11 @@
           (u) =>
             !u.fright &&
             !u.buildingId &&
-            mineFor(
+            !u.workerTask &&
+            (s.campaign.mines.find((m) => m.id === u.mineId) || mineFor(
               s,
               s.units.find((n) => n.id === u.node),
-            )?.remaining,
+            ))?.remaining,
         ).length,
         remaining: ms.reduce((n, m) => n + m.remaining, 0),
         tier: s.campaign.tier,
@@ -1205,7 +1375,7 @@
       return null;
     }
     function aimTime(s, u) {
-      if (u.kind === "bastion" && E.stats(s, u).range <= 500) return 0.7;
+      if (u.kind === "bastion" && !E.stats(s, u).siege) return 0.7;
       return (
         {
           rocket: 0.8,
@@ -1276,7 +1446,7 @@
         } else {
           const siege =
             ["mortar", "citadel"].includes(u.kind) ||
-            (u.kind === "bastion" && def.range > 500);
+            (u.kind === "bastion" && def.siege);
           if (
             locked &&
             (siege || E.fireClear(u, locked)) &&
@@ -1348,37 +1518,222 @@
       u.path = [];
       return true;
     }
+    // These indexes live for one fixed simulation step, never in a save. A
+    // restored operation therefore makes the same decisions as a running one.
+    const enemyFrames = new WeakMap();
+    function enemyFrame(s) {
+      let frame = enemyFrames.get(s);
+      if (
+        frame?.time === s.t &&
+        frame.units === s.units &&
+        frame.count === s.units.length
+      )
+        return frame;
+      frame = {
+        time: s.t,
+        units: s.units,
+        count: s.units.length,
+        cells: new Map(),
+        positions: new Map(),
+        order: new Map(),
+        squads: new Map(),
+        intelShared: false,
+      };
+      for (let i = 0; i < s.units.length; i++) {
+        const u = s.units[i];
+        if (!u.team || u.hp <= 0 || !E.C[u.kind].speed) continue;
+        frame.order.set(u.id, i);
+        indexEnemy(frame, u);
+        if (u.ai?.squad) {
+          let squad = frame.squads.get(u.ai.squad);
+          if (!squad)
+            frame.squads.set(
+              u.ai.squad,
+              (squad = { members: [], speed: Infinity, leader: u }),
+            );
+          squad.members.push(u);
+          squad.speed = Math.min(squad.speed, E.C[u.kind].speed);
+          if (u.id < squad.leader.id) squad.leader = u;
+        }
+      }
+      enemyFrames.set(s, frame);
+      return frame;
+    }
+    function indexEnemy(frame, u) {
+      const key = Math.floor(u.x / 96) + ":" + Math.floor(u.y / 96),
+        previous = frame.positions.get(u.id);
+      if (previous === key) return;
+      if (previous !== undefined) frame.cells.get(previous).delete(u);
+      if (!frame.cells.has(key)) frame.cells.set(key, new Set());
+      frame.cells.get(key).add(u);
+      frame.positions.set(u.id, key);
+    }
+    function neighbors(frame, u) {
+      const found = [],
+        x = Math.floor(u.x / 96),
+        y = Math.floor(u.y / 96);
+      for (let yy = y - 1; yy <= y + 1; yy++)
+        for (let xx = x - 1; xx <= x + 1; xx++)
+          for (const other of frame.cells.get(xx + ":" + yy) || [])
+            if (other !== u && other.hp > 0) found.push(other);
+      // Retain authoritative unit order, including when several neighbors push.
+      return found.sort(
+        (a, b) => frame.order.get(a.id) - frame.order.get(b.id),
+      );
+    }
+    function marchPoint(s, u, squad) {
+      const ai = u.ai;
+      if (!squad || s.t < ai.assembleUntil || ai.regroupUntil > s.t)
+        return null;
+      const leader = squad.leader,
+        route = leader.ai.waypoints;
+      while (route?.length && E.dist(leader, route[0]) < 60) {
+        const passed = route.shift();
+        for (const member of squad.members) {
+          const next = member.ai.waypoints?.[0];
+          if (
+            member !== leader &&
+            next &&
+            next.x === passed.x &&
+            next.y === passed.y
+          )
+            member.ai.waypoints.shift();
+          member.think = 0;
+        }
+      }
+      const goal = route?.[0] || leader.ai.goal;
+      if (!goal || u === leader) return goal;
+      const i = squad.members.indexOf(u),
+        angle = Math.atan2(goal.y - leader.y, goal.x - leader.x),
+        side = (i % 2 ? 1 : -1) * 32,
+        back = Math.ceil(i / 2) * 42,
+        point = {
+          x: goal.x - Math.cos(angle) * back - Math.sin(angle) * side,
+          y: goal.y - Math.sin(angle) * back + Math.cos(angle) * side,
+        };
+      return free(point, E.C[u.kind].r, u.map) ? point : goal;
+    }
+    function setEnemyRoute(s, u, destination, firingRoute) {
+      const radius = E.C[u.kind].r;
+      if (!destination || E.dist(u, destination) < 2) {
+        u.path = [];
+        return;
+      }
+      if (!free(destination, radius, u.map)) return;
+      // An unchanged order should keep consuming its route, not search again.
+      if (
+        u.path.length &&
+        E.dist(u.path.at(-1), destination) < 12 &&
+        E.travelClear(u, u.path[0], radius, E.navigation(u))
+      )
+        return;
+      const route =
+        firingRoute && destination === firingRoute.at(-1)
+          ? firingRoute
+          : E.pathTo(u, destination, radius);
+      // Keep an existing safe route while a new goal has no reachable route.
+      if (
+        route.length ||
+        !u.path.length ||
+        !E.travelClear(u, u.path[0], radius, E.navigation(u))
+      )
+        u.path = route;
+    }
     function enemy(s, u, dt, opponents) {
       const ai = u.ai;
       let def = E.stats(s, u);
       if (!ai) return;
+      const modern = ["frontier-8", "frontier-9"].includes(s.campaign.id),
+        frame = modern ? enemyFrame(s) : null,
+        squad = frame?.squads.get(ai.squad),
+        awareness = E.detectionRange(s, u),
+        homeRange = mapped(s) ? 240 : 470;
       u.think -= dt;
       const visible = opponents.filter(
-        (v) => E.dist(u, v) < 610 && E.clear(u, v) && E.visible(s, 1, v),
+        (v) =>
+          v.hp > 0 &&
+          (E.balance.enabled(s) ? E.rangeDistance(u, v) : E.dist(u, v)) < awareness &&
+          E.clear(u, v) &&
+          E.visible(s, 1, v, modern ? u : undefined),
       );
       // Guards defend their sector; raiding squads can pursue across the map.
       const defend = !ai.raid && def.speed;
       const engage = defend
-        ? visible.filter((v) => E.dist(v, ai.home) < 470)
+        ? visible.filter((v) => E.dist(v, ai.home) < homeRange ||
+            (E.balance.enabled(s) && E.rangeDistance(u, v) < def.range))
         : visible;
-      let target = engage.sort((a, b) => {
-        const score = (v) =>
-          E.dist(u, v) *
-            (v.kind === "artillery" ? 0.7 : v.kind === "drone" ? 0.82 : 1) +
-          (v.kind === "outpost" && u.kind !== "runner" ? 45 : 0);
-        return score(a) - score(b);
-      })[0];
+      const score = (v) =>
+        E.dist(u, v) *
+          (v.kind === "artillery" ? 0.7 : v.kind === "drone" ? 0.82 : 1) +
+        (v.kind === "outpost" && u.kind !== "runner" ? 45 : 0);
+      let target;
+      for (const candidate of engage)
+        if (!target || score(candidate) < score(target)) target = candidate;
+      if (modern && target) {
+        const retained = engage.find((v) => v.id === ai.seen?.id);
+        if (retained && score(retained) <= score(target) * 1.18)
+          target = retained;
+      }
+      // Route transitions are movement events. They must not wait for the
+      // slower tactical decision timer (which previously caused visible rests).
+      if (modern && def.speed && !target && !(ai.seen && s.t - ai.seenAt < 8)) {
+        const route = !ai.raid && mapped(s) ? Districts.patrol(ai.home) : null,
+          angle = ((ai.patrol % 4) * Math.PI) / 2 + (u.id % 2) * 0.4,
+          circle =
+            !ai.raid && !mapped(s)
+              ? {
+                  x: ai.home.x + Math.cos(angle) * 65,
+                  y: ai.home.y + Math.sin(angle) * 65,
+                }
+              : null,
+          point =
+            route?.[ai.patrol % route.length] ||
+            (circle && free(circle, def.r, u.map) ? circle : null);
+        if (point) {
+          if (E.dist(u, point) < 22) {
+            ai.patrol++;
+            u.think = 0;
+          }
+        } else if (
+          ai.raid &&
+          ai.waypoints?.length &&
+          E.dist(u, ai.waypoints[0]) < 60
+        ) {
+          ai.waypoints.shift();
+          u.think = 0;
+        }
+      }
+      const marching =
+          modern &&
+          ai.raid &&
+          !target &&
+          s.t >= ai.assembleUntil &&
+          !(ai.regroupUntil > s.t) &&
+          !(ai.seen && s.t - ai.seenAt < 8),
+        march = marching ? marchPoint(s, u, squad) : null;
+      // Retry blocked orders at the normal decision cadence, not every frame.
+      // Only actual route/state transitions bypass that cadence.
+      if (
+        modern &&
+        ai.raid &&
+        ((s.t >= ai.assembleUntil && s.t - dt < ai.assembleUntil) ||
+          (s.t >= ai.regroupUntil && s.t - dt < ai.regroupUntil))
+      )
+        u.think = 0;
       if (combat(s)) {
         def = E.stats(s, u, target);
         const a = u.combat;
         if (u.kind === "tank") {
+          // A blocked shot needs a new firing lane. Facing the target while
+          // waiting to face that route otherwise prevents any chassis movement.
           const heading =
             a.mode === "aim"
               ? u.target
               : u.path.length &&
                   (!target ||
                     u.cool > 0 ||
-                    E.rangeDistance(u, target) >= def.range)
+                    E.rangeDistance(u, target) >= def.range ||
+                    !E.fireClear(u, target))
                 ? u.path[0]
                 : target;
           a.angle = E.turnAngle(
@@ -1412,9 +1767,11 @@
         u.think = 0.55 + (u.id % 3) * 0.11;
         if (target) record(s, u, target);
         // Nearby visible scouts share observed stationary infrastructure, not hidden unit positions.
-        for (const v of E.fogged(s)
-          ? opponents.filter((v) => E.visible(s, 1, v))
-          : visible)
+        for (const v of frame?.intelShared
+          ? []
+          : E.fogged(s)
+            ? opponents.filter((v) => E.visible(s, 1, v))
+            : visible)
           if (
             ["base", "outpost", "barracks", "foundry", "arsenal"].includes(
               v.kind,
@@ -1422,6 +1779,7 @@
             !s.campaign.intel.some((k) => k.id === v.id)
           )
             s.campaign.intel.push({ id: v.id, x: v.x, y: v.y, seenAt: s.t });
+        if (frame) frame.intelShared = true;
         if (def.speed) {
           let destination = null,
             firingRoute = null;
@@ -1432,9 +1790,13 @@
               destination = position(u, target, 350, side);
             else if (
               u.hp < def.hp * 0.3 &&
-              !["runner", "bomber", "tank"].includes(u.kind)
+              !["runner", "bomber", "tank"].includes(u.kind) &&
+              (!E.balance.enabled(s) || d < def.range * 0.72)
             )
-              destination = position(u, target, Math.max(290, d + 85), side);
+              // Retreat into a useful firing band, rather than repeatedly
+              // crossing the sight boundary without ever shooting again.
+              destination = position(u, target, E.balance.enabled(s)
+                ? Math.min(def.range * 0.9, d + 85) : Math.max(290, d + 85), side);
             else if (
               combat(s) &&
               ["runner", "bomber"].includes(u.kind) &&
@@ -1467,7 +1829,7 @@
           } else if (
             ai.seen &&
             s.t - ai.seenAt < 8 &&
-            (!defend || E.dist(ai.seen, ai.home) < 470)
+            (!defend || E.dist(ai.seen, ai.home) < (E.balance.enabled(s) ? homeRange : 470))
           ) {
             if (!E.fireClear(u, ai.seen)) {
               firingRoute = E.firingPath(u, ai.seen);
@@ -1477,6 +1839,10 @@
             while (ai.waypoints?.length && E.dist(u, ai.waypoints[0]) < 60)
               ai.waypoints.shift();
             destination = ai.waypoints?.[0] || ai.goal;
+          } else if (mapped(s)) {
+            const route = Districts.patrol(ai.home);
+            destination = route ? route[ai.patrol % route.length] : ai.home;
+            if (!modern && route && E.dist(u, destination) < 22) ai.patrol++;
           } else {
             const angle = ((ai.patrol % 4) * Math.PI) / 2 + (u.id % 2) * 0.4;
             const patrol = {
@@ -1484,13 +1850,17 @@
               y: ai.home.y + Math.sin(angle) * 65,
             };
             destination = free(patrol, def.r, u.map) ? patrol : ai.home;
-            if (E.dist(u, destination) < 22) ai.patrol++;
+            if (
+              (!modern || destination === ai.home) &&
+              E.dist(u, destination) < 22
+            )
+              ai.patrol++;
           }
           if (expedition(s) && ai.raid && ai.squad) {
-            const squad = alive(s).filter(
-              (v) => v.team && v.ai?.squad === ai.squad,
-            );
-            const nearby = squad.filter((v) => E.dist(u, v) < 300),
+            const members =
+              squad?.members ||
+              alive(s).filter((v) => v.team && v.ai?.squad === ai.squad);
+            const nearby = members.filter((v) => E.dist(u, v) < 300),
               threat = visible.reduce(
                 (n, v) => n + (E.C[v.kind].damage ? v.hp : 0),
                 0,
@@ -1502,16 +1872,19 @@
               threat > strength * 2.3 &&
               ai.regroupUntil < s.t - 18
             )
-              ai.regroupUntil = s.t + 10;
+              for (const member of modern ? members : [u])
+                member.ai.regroupUntil = s.t + 10;
             if (ai.regroupUntil > s.t) destination = ai.rally;
-            else if (!target && squad.length > 1) {
-              const leader = squad.reduce((a, b) => (a.id < b.id ? a : b));
+            else if (modern && s.t < ai.assembleUntil) destination = ai.rally;
+            else if (modern && march) destination = march;
+            else if (!target && members.length > 1) {
+              const leader = members.reduce((a, b) => (a.id < b.id ? a : b));
               if (leader !== u && E.dist(u, leader) > 160)
                 destination = { x: leader.x, y: leader.y };
               if (
                 leader === u &&
                 s.t < ai.assembleUntil + 30 &&
-                nearby.length < Math.ceil(squad.length * 0.6)
+                nearby.length < Math.ceil(members.length * 0.6)
               )
                 destination = { x: u.x, y: u.y };
             }
@@ -1526,7 +1899,8 @@
               y: ai.home.y + Math.sin(a) * 330,
             };
           }
-          if (destination && free(destination, def.r, u.map))
+          if (modern) setEnemyRoute(s, u, destination, firingRoute);
+          else if (destination && free(destination, def.r, u.map))
             u.path =
               firingRoute && destination === firingRoute.at(-1)
                 ? firingRoute
@@ -1571,10 +1945,20 @@
           u.kind !== "tank" ||
           heading === undefined ||
           Math.cos(heading - u.combat.angle) > Math.cos(0.24)
-        )
-          E.follow(u, dt);
+        ) {
+          let pace = 1;
+          if (marching && squad) {
+            const leader = squad.leader,
+              trailing = E.dist(u, leader) > 200 && u !== leader;
+            pace = trailing ? 1 : Math.min(1, squad.speed / def.speed);
+            if (u === leader && squad.members.some((v) => E.dist(v, u) > 300))
+              pace *= 0.55;
+          }
+          E.follow(u, dt * pace);
+        }
         // Keep a small separation so a whole squad cannot occupy one point or eat one projectile.
-        for (const other of s.units)
+        if (frame) indexEnemy(frame, u);
+        for (const other of frame ? neighbors(frame, u) : s.units)
           if (
             other !== u &&
             other.team &&
@@ -1590,11 +1974,17 @@
                 ((u.y - other.y) / d) * 12 * dt,
               );
           }
+        if (frame) indexEnemy(frame, u);
       }
     }
     function dispatch(s, camp, n, goal) {
       const source = s.units.find((u) => u.id === camp.source);
       if (!source || source.hp <= 0) return;
+      if (mapped(s)) {
+        const active = s.units.filter((u) => u.team && u.hp > 0 && u.ai?.raid);
+        if (new Set(active.map((u) => u.ai.squad)).size >= 2) return;
+        n = Math.min(n, 32 - active.length);
+      }
       let spawned = 0;
       for (let i = 0; i < n && camp.reserve > 0; i++) {
         const mixed =
@@ -1685,6 +2075,26 @@
                 ]
               : [];
         }
+        if (mapped(s))
+          for (const u of members)
+            u.ai.waypoints =
+              source.sector === "north"
+                ? [
+                    { x: 2040, y: 500 },
+                    { x: 840, y: 1400 },
+                    { x: 840, y: 2040 },
+                  ]
+                : source.sector === "south"
+                  ? [
+                      { x: 2160, y: 3320 },
+                      { x: 2160, y: 2400 },
+                      { x: 1440, y: 2040 },
+                    ]
+                  : [
+                      { x: 2760, y: 1880 },
+                      { x: 2200, y: 1900 },
+                      { x: 1440, y: 2040 },
+                    ];
         s.campaign.squadSeq++;
       }
       if (spawned) {
@@ -1701,7 +2111,17 @@
         }
         if (
           expedition(s) &&
-          alive(s).filter((u) => u.team && u.ai?.raid).length >= 42
+          alive(s).filter((u) => u.team && u.ai?.raid).length >=
+            (mapped(s) ? 32 : 42)
+        )
+          continue;
+        if (
+          mapped(s) &&
+          new Set(
+            alive(s)
+              .filter((u) => u.team && u.ai?.raid)
+              .map((u) => u.ai.squad),
+          ).size >= 2
         )
           continue;
         if (camp.warning > 0) {
@@ -1811,6 +2231,7 @@
           c = s?.campaign;
         const config = PROFILES[c?.id];
         if (!config || s.version !== config.version) return null;
+        if (c.balance !== undefined && (!E.balance.eligible(s) || c.balance !== 1)) return null;
         const ITEMS = config.items,
           MINES = config.mines,
           PADS = pads(s),
@@ -1846,9 +2267,17 @@
         )
           return null;
         for (const k of ["hero", "base", "jammer", "citadel", "turret"])
-          if (s.units.filter((u) => u.kind === k).length !== 1) return null;
+          if (
+            s.units.filter((u) => u.kind === k).length !==
+            (mapped(s) && k === "turret" ? 8 : 1)
+          )
+            return null;
         if (expedition(s))
-          for (const f of highlands(s) ? HIGHLAND_FORTS : FORTS) {
+          for (const f of mapped(s)
+            ? Districts.bases.slice(0, 2)
+            : highlands(s)
+              ? HIGHLAND_FORTS
+              : FORTS) {
             const forts = s.units.filter(
               (u) => u.kind === "bastion" && u.sector === f.sector,
             );
@@ -2021,6 +2450,8 @@
                 "gather",
                 "idle",
                 "shelter",
+                "repair",
+                "move",
                 ...(E.construction.enabled(s) ? ["build"] : []),
               ].includes(u.work) ||
               !num(u.workTime, 0, config.gather + 0.01) ||
@@ -2217,15 +2648,31 @@
           t = s.terminal;
         if (
           !r ||
-          r.x !== (highlands(s) ? 2100 : 1320) ||
-          r.y !== (highlands(s) ? 2055 : expedition(s) ? 1370 : 810) ||
+          r.x !== (mapped(s) ? 1880 : highlands(s) ? 2100 : 1320) ||
+          r.y !==
+            (mapped(s)
+              ? 1640
+              : highlands(s)
+                ? 2055
+                : expedition(s)
+                  ? 1370
+                  : 810) ||
           !num(r.charge, 0, 1) ||
           r.online !== (s.phase === 3) ||
           !num(r.stability, 0, 1) ||
           !num(r.started, 0, s.t) ||
           !t ||
-          t.x !== (highlands(s) ? 3300 : expedition(s) ? 2120 : 1780) ||
-          t.y !== (highlands(s) ? 2295 : expedition(s) ? 1530 : 390) ||
+          t.x !==
+            (mapped(s)
+              ? 2800
+              : highlands(s)
+                ? 3300
+                : expedition(s)
+                  ? 2120
+                  : 1780) ||
+          (mapped(s)
+            ? !Districts.terminals.some((p) => p.x === t.x && p.y === t.y)
+            : t.y !== (highlands(s) ? 2295 : expedition(s) ? 1530 : 390)) ||
           !num(t.charge, 0, 1) ||
           !num(t.window, 0, 7) ||
           typeof t.alarm !== "boolean" ||
@@ -2323,7 +2770,11 @@
                     (u) => u.kind === ["jammer", "turret", "citadel"][i],
                   )
               ).id ||
-            !int(camp.reserve, 0, config.reserve) ||
+            !int(
+              camp.reserve,
+              0,
+              mapped(s) ? Districts.bases[i].reserve : config.reserve,
+            ) ||
             !num(
               camp.cooldown,
               0,

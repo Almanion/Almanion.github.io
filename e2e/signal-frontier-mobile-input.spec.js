@@ -21,7 +21,7 @@ for (const [width, height] of [
     page.on("pageerror", (e) => errors.push(e.message));
     try {
       await page.clock.install();
-      await page.goto("http://127.0.0.1:4173/games/signal-frontier/");
+      await page.goto("/games/signal-frontier/");
       await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
       await page.locator("#start").tap();
       await page.locator("#tactical").tap();

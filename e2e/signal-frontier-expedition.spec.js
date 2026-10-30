@@ -96,7 +96,6 @@ for (const browserName of ["chromium", "webkit"])
             s.t,
           );
           await page.locator(".job-select").first().click();
-          await page.getByRole("button", { name: /Отменить: Боец/ }).click();
           await expect(page.locator("#field-alloy")).toHaveText(
             String(before - 17),
           );

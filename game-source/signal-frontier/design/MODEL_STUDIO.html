@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Модели Signal Frontier</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font:
+          16px/1.5 system-ui,
+          sans-serif;
+        color: #d5e0d8;
+        background: #101d24;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      main {
+        max-width: 1180px;
+        margin: auto;
+        padding: 24px;
+      }
+      h1 {
+        font-size: clamp(24px, 4vw, 34px);
+        font-weight: 600;
+        margin: 0 0 5px;
+      }
+      p {
+        margin: 0 0 18px;
+        color: #a7bbb2;
+      }
+      .controls {
+        display: grid;
+        grid-template-columns: 1fr 2fr 1.2fr;
+        gap: 12px;
+        margin: 20px 0 14px;
+      }
+      label {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        gap: 5px;
+        font-size: 14px;
+        color: #b4c8be;
+      }
+      select,
+      button {
+        min-height: 46px;
+        border: 1px solid #456159;
+        border-radius: 10px;
+        color: #e2ece4;
+        background: #20363a;
+        padding: 9px 12px;
+        font: inherit;
+      }
+      select {
+        width: 100%;
+        min-width: 0;
+      }
+      button {
+        cursor: pointer;
+      }
+      button:hover {
+        background: #2b4849;
+      }
+      button:focus-visible,
+      select:focus-visible,
+      input:focus-visible {
+        outline: 3px solid #a4edd9;
+        outline-offset: 3px;
+      }
+      .stage {
+        background: radial-gradient(ellipse at 50% 65%, #20383d, #14262e 70%);
+        border: 1px solid #344d48;
+        border-radius: 16px;
+        overflow: hidden;
+      }
+      #model-canvas {
+        width: 100%;
+        height: 440px;
+        display: block;
+      }
+      .transport {
+        display: grid;
+        grid-template-columns: auto 1fr 1fr;
+        gap: 18px;
+        align-items: center;
+        margin: 15px 0;
+      }
+      input[type="range"] {
+        width: 100%;
+        accent-color: #a4edd9;
+        min-height: 30px;
+      }
+      #state-note {
+        min-height: 48px;
+      }
+      #views {
+        display: grid;
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+        gap: 5px;
+      }
+      .direction {
+        border: 1px solid #344d48;
+        border-radius: 10px;
+        background: #172b31;
+        padding: 0;
+        min-width: 0;
+        overflow: hidden;
+      }
+      .direction canvas {
+        width: 100%;
+        display: block;
+      }
+      .direction[aria-pressed="true"] {
+        border-color: #a4edd9;
+        background: #234039;
+      }
+      .direction span {
+        display: block;
+        padding: 3px;
+        font-size: 12px;
+        color: #b5c6bd;
+      }
+      footer {
+        margin-top: 22px;
+        font-size: 14px;
+        color: #91a69e;
+      }
+      a {
+        color: #a4edd9;
+      }
+      @media (max-width: 650px) {
+        main {
+          padding: 14px;
+        }
+        .controls {
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        }
+        .controls label:nth-child(2) {
+          grid-column: 1/-1;
+          grid-row: 2;
+        }
+        #model-canvas {
+          height: 330px;
+        }
+        .transport {
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        #play {
+          grid-column: 1/-1;
+        }
+        #views {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+      }
+    </style>
+    <script src="../src/terrain.js" defer></script>
+    <script src="../src/districts.js" defer></script>
+    <script src="../src/campaign.js" defer></script>
+    <script src="../src/recon.js" defer></script>
+    <script src="../src/construction.js" defer></script>
+    <script src="../src/engine.js" defer></script>
+    <script src="../src/unit-models.js" defer></script>
+    <script src="../src/view.js" defer></script>
+    <script src="model-studies.js" defer></script>
+    <script src="model-studio.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <h1>Модели Signal Frontier</h1>
+      <p>
+        Походки, рабочие механизмы и восемь направлений. Просмотр работает
+        отдельно от прохождения.
+      </p>
+      <div class="controls">
+        <label
+          >Состав<select id="group">
+            <option value="current">В игре</option>
+            <option value="building">Новые здания</option>
+            <option value="planned">Планируемые объекты</option>
+            <option value="fighter">Будущие бойцы и транспорт</option>
+            <option value="boss">Боссы</option>
+            <option value="air">Авиация</option>
+          </select></label
+        >
+        <label>Модель<select id="model"></select></label>
+        <label
+          >Состояние<select id="mode">
+            <option value="idle">Покой</option>
+            <option value="move">Движение</option>
+            <option value="action">Действие</option>
+            <option value="build">Строительство</option>
+            <option value="damaged">Повреждение</option>
+            <option value="wreck">Обломок</option>
+          </select></label
+        >
+      </div>
+      <div class="stage">
+        <canvas
+          id="model-canvas"
+          role="img"
+          aria-label="Просмотр выбранной модели"
+        ></canvas>
+      </div>
+      <div class="transport">
+        <button id="play" aria-pressed="true">Остановить анимацию</button>
+        <label
+          >Фаза действия<input
+            id="progress"
+            type="range"
+            min="0"
+            max="100"
+            value="50"
+        /></label>
+        <label
+          >Направление<input
+            id="angle"
+            type="range"
+            min="0"
+            max="359"
+            value="315"
+        /></label>
+      </div>
+      <p id="state-note" aria-live="polite"></p>
+      <div id="views" aria-label="Выбор одного из восьми направлений"></div>
+      <footer>
+        Новые модели — визуальные прототипы. Покупка, лечение, гарнизоны,
+        авиация и другие будущие правила вводятся отдельными обновлениями.
+        <a href="MOVEMENT_AND_BUILDINGS.md">Описание движений и зданий</a>
+      </footer>
+    </main>
+  </body>
+</html>
