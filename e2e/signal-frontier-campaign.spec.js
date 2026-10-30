@@ -1,5 +1,5 @@
 "use strict";
-const { selectGroup, memberCard } = require("./helpers/signal-frontier-selection.cjs");
+const { selectGroup, memberCard, deckCard } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect } = require("@playwright/test");
 // Every scenario owns its browser context; long operations can use separate CI workers.
 test.describe.configure({ mode: "parallel" });
@@ -391,7 +391,7 @@ for (const [name, profile] of [
               const before = await page.evaluate(() => SignalGame.snapshot());
               expect(c.site && typeof c.site === "object").toBe(true);
               await page.locator("#develop-tab-build").click();
-              await page.locator("#develop-" + c.action).click();
+              await (await deckCard(page, "develop-" + c.action)).click();
               await expect(page.locator("#placement-panel")).toBeVisible();
               if (
                 (await page
@@ -432,7 +432,7 @@ for (const [name, profile] of [
                 : null;
             const tab =
               ["drone", "outpost", "defense"].includes(c.action) ||
-              (c.action === "repair" &&
+              (["repair", "repair-drone"].includes(c.action) &&
                 ["base", "outpost"].includes(producer?.kind))
                 ? "economy"
                 : ["network", "command", "hack", "weapons", "armor"].includes(
@@ -441,11 +441,15 @@ for (const [name, profile] of [
                   ? "research"
                   : "production";
             await page.locator("#develop-tab-" + tab).click();
-            if (freeBuild && ["drone", "repair", "defense"].includes(c.action)) {
+            if (freeBuild && ["drone", "repair", "repair-drone", "defense"].includes(c.action)) {
               expect(producer).toBeTruthy();
+              if (!["base", "outpost"].includes(producer.kind))
+                await page.locator('[data-production-group="' + producer.kind + '"]').click();
               await page.locator('[data-select="' + producer.id + '"]').click();
               if (c.action === "defense")
                 await page.locator('[data-section="tech"]').click();
+              if (["repair", "repair-drone"].includes(c.action))
+                await page.locator('[data-section="service"]').click();
             }
             if (freeBuild && ["rifle", "scout", "artillery"].includes(c.action))
               await page.locator('[data-production-group="' + (c.action === "artillery" ? "foundry" : "barracks") + '"]').click();
@@ -456,9 +460,8 @@ for (const [name, profile] of [
                     () => SignalEngine.living(SignalGame.snapshot(), "base").id,
                   ))
                 : c.site;
-            const button = page.locator(
-              "#develop-" + c.action + (site ? "-" + site : ""),
-            );
+            const id = "develop-" + c.action + (site && c.action !== "repair-drone" ? "-" + site : ""),
+              button = freeBuild ? await deckCard(page, id) : page.locator("#" + id);
             await expect(button).toBeEnabled();
             await button.click();
             await page.locator("#dock-selection").click();
@@ -552,6 +555,9 @@ for (const [name, profile] of [
           pilot.path = [];
           continue;
         }
+        // This replay reacts at 10 Hz; leave a larger retreat margin than the
+        // simulation pilot that can react on every fixed combat step.
+        if (E.hero(s).hp < 90) pilot.retreat = true;
         const d = pilot.decide(s);
         if (d.commands.length) {
           await issue(d.commands);

@@ -87,7 +87,7 @@
         else if (b.dataset.producerPage) this.producer += Number(b.dataset.producerPage);
         else if (b.dataset.member) {
           const id = Number(b.dataset.member), members = options.members();
-          if (e.detail === 2) options.selectType(members.find((u) => u.id === id)?.kind, e.shiftKey);
+          if (e.detail === 2 && !e.shiftKey && !e.ctrlKey && !e.metaKey) options.selectType(members.find((u) => u.id === id)?.kind, false);
           else if (e.ctrlKey || e.metaKey) {
             const kind = members.find((u) => u.id === id)?.kind;
             options.select(members.filter((u) => u.kind === kind).map((u) => u.id));

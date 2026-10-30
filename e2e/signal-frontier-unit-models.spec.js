@@ -2,6 +2,20 @@
 const { test, expect } = require("@playwright/test");
 const E = require("../game-source/signal-frontier/src/engine");
 
+async function openModelStudio(page, query = "") {
+  // The design studio is a local authoring tool, excluded from the public site.
+  // Serve its real files to these browser checks without publishing source code.
+  const path = require("node:path"),
+    root = path.resolve(__dirname, "../game-source/signal-frontier"),
+    files = new Set(["design/MODEL_STUDIO.html", "design/model-studies.js", "design/model-studio.js",
+      ...["terrain", "districts", "campaign", "recon", "construction", "support", "engine", "unit-models", "view"].map(n => "src/" + n + ".js")]);
+  await page.route("**/game-source/signal-frontier/**", route => {
+    const relative = new URL(route.request().url()).pathname.split("/game-source/signal-frontier/")[1];
+    return files.has(relative) ? route.fulfill({ path: path.join(root, relative), contentType: relative.endsWith(".html") ? "text/html; charset=utf-8" : "text/javascript; charset=utf-8" }) : route.continue();
+  });
+  await page.goto("/game-source/signal-frontier/design/MODEL_STUDIO.html" + query);
+}
+
 async function studio(page) {
   await page.goto("/games/signal-frontier/");
   await page.evaluate(() => {
@@ -591,7 +605,7 @@ test("design studio covers every current model and all 27 visual studies without
 }) => {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/game-source/signal-frontier/design/MODEL_STUDIO.html");
+  await openModelStudio(page);
   await page.waitForFunction(() => window.SignalModelStudio);
   const result = await page.evaluate(() => {
     SignalModelStudio.pause();
@@ -652,9 +666,7 @@ test("the model studio fits a phone and its phase and direction controls freeze 
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(
-    "/game-source/signal-frontier/design/MODEL_STUDIO.html?model=repair",
-  );
+  await openModelStudio(page, "?model=repair");
   await page.waitForFunction(() => window.SignalModelStudio);
   await page.evaluate(() => SignalModelStudio.pause());
   expect(

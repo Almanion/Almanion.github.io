@@ -793,6 +793,8 @@
                 `data-action="repair-drone" data-site="${selected.id}" ${offer.allowed ? "" : "disabled"}`, "repair"),
               ...(crew.length ? [tile("develop-stop-repair", "К добыче", "Отозвать ремонтных зондов",
                 "Собранный груз сохраняется", `data-action="stop-repair" data-site="${selected.id}"`, "alloy")] : []),
+              // Old operations retain their paid repair queue when continued.
+              ...(!E.balance.enabled(s) ? [purchase("repair", selected.id)] : []),
               tile(
                 "",
                 "Точка выхода",

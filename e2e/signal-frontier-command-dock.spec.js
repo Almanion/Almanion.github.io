@@ -91,6 +91,13 @@ test("pause opens the shop directly, combat shares its position and groups prese
   expect(await selected(page)).toEqual(army);
   await page.clock.runFor(500); expect((await snapshot(page)).t).toBeGreaterThan(s.t);
 });
+test("rapid Shift clicks remove portraits without invoking double-click type selection", async ({ page }) => {
+  const { army } = await boot(page);
+  await page.keyboard.press("1");
+  await page.locator(".roster-unit").first().dblclick({ modifiers: ["Shift"] });
+  expect(await selected(page)).toEqual(army.slice(2));
+});
+
 test("building selection leaves combat running; queue progresses, retains focus and cancels immediately", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   const { barracks } = await boot(page);

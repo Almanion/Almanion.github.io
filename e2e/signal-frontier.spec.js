@@ -88,8 +88,12 @@ test("victory, defeat, restart and menu have working exits", async ({
   citadel.hp = 1;
   await fixture(page, s);
   await page.waitForTimeout(600);
-  await expect(page.locator("#artillery-status")).toHaveText("Готова к заказу");
-  const p = await page.evaluate(() => SignalGame.screen(1250, 485));
+  expect(await page.evaluate(() => SignalGame.snapshot().relay.online)).toBe(true);
+  const p = await page.evaluate(() => {
+    const p = SignalGame.screen(1250, 485);
+    p.y -= SignalEngine.MOUNTS.hero * SignalGame.camera().scale * 0.73;
+    return p;
+  });
   await page.mouse.move(p.x, p.y);
   await page.mouse.down();
   await expect(page.locator("#result-content")).toBeVisible();
@@ -309,7 +313,7 @@ for (const browserType of [chromium, webkit])
               w: r.width,
               h: r.height,
               hit: document
-                .elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)
+                .elementFromPoint(r.x + r.width / 2, id.endsWith("-stick") ? 120 : r.y + r.height / 2)
                 ?.closest("button,.stick")?.id,
             };
           });
@@ -322,22 +326,27 @@ for (const browserType of [chromium, webkit])
           expect(r.y + r.h).toBeLessThanOrEqual(size[1] + 1);
           expect(r.hit).toBe(r.id);
         }
-        // Use an actual captured browser pointer; multi-touch is checked separately through Chromium's input protocol.
+        // A connected mouse aims and fires on a touch device; it must not become
+        // a joystick. Native multi-touch dragging has its own CDP check below.
         const x0 = await page.evaluate(() => SignalGame.snapshot().units[0].x);
         const move = await page.locator("#move-stick").boundingBox();
         await page.mouse.move(
           move.x + move.width / 2,
-          move.y + move.height / 2,
+          120,
         );
         await page.mouse.down();
         await page.mouse.move(
           move.x + move.width * 0.8,
-          move.y + move.height / 2,
+          120,
         );
         await page.waitForTimeout(300);
+        expect(await page.evaluate(() => SignalGame.snapshot().units[0].x)).toBeCloseTo(x0, 1);
+        await page.mouse.up();
+        await page.keyboard.down("KeyD");
+        await page.waitForTimeout(300);
+        await page.keyboard.up("KeyD");
         const x1 = await page.evaluate(() => SignalGame.snapshot().units[0].x);
         expect(x1).toBeGreaterThan(x0 + 20);
-        await page.mouse.up();
         const stopped = await page.evaluate(
           () => SignalGame.snapshot().units[0].x,
         );
@@ -346,13 +355,14 @@ for (const browserType of [chromium, webkit])
           await page.evaluate(() => SignalGame.snapshot().units[0].x),
         ).toBeCloseTo(stopped, 1);
         const aim = await page.locator("#aim-stick").boundingBox();
-        await page.mouse.move(aim.x + aim.width / 2, aim.y + aim.height / 2);
+        const shots = await page.evaluate(() => SignalGame.snapshot().shots);
+        await page.mouse.move(aim.x + aim.width / 2, 120);
         await page.mouse.down();
-        await page.mouse.move(aim.x + aim.width * 0.8, aim.y + aim.height / 2);
+        await page.mouse.move(aim.x + aim.width * 0.8, 120);
         await page.waitForTimeout(500);
         expect(
           await page.evaluate(() => SignalGame.snapshot().shots),
-        ).toBeGreaterThan(0);
+        ).toBeGreaterThan(shots);
         await page.mouse.up();
         await page.locator("#tactical").tap();
         const paused = await page.evaluate(() => SignalGame.snapshot().t);
@@ -394,15 +404,15 @@ test("two real emulated touch pointers move and fire together; cancellation rele
     await session.send("Input.dispatchTouchEvent", {
       type: "touchStart",
       touchPoints: [
-        { id: 1, x: m.x + m.width / 2, y: m.y + m.height / 2 },
-        { id: 2, x: a.x + a.width / 2, y: a.y + a.height / 2 },
+        { id: 1, x: m.x + 15, y: 120 },
+        { id: 2, x: a.x + a.width / 2, y: 120 },
       ],
     });
     await session.send("Input.dispatchTouchEvent", {
       type: "touchMove",
       touchPoints: [
-        { id: 1, x: m.x + m.width * 0.8, y: m.y + m.height / 2 },
-        { id: 2, x: a.x + a.width * 0.8, y: a.y + a.height / 2 },
+        { id: 1, x: m.x + 70, y: 120 },
+        { id: 2, x: a.x + a.width * 0.8, y: 120 },
       ],
     });
     await page.waitForTimeout(650);
@@ -505,10 +515,14 @@ for (const routeName of ["siege", "infiltration"])
         let visible = false;
         if (d.input.aim) {
           const p = await page.evaluate(
-            (p) => SignalGame.screen(p.x, p.y),
+            (p) => {
+              const q = SignalGame.screen(p.x, p.y);
+              q.y -= SignalEngine.MOUNTS.hero * SignalGame.camera().scale * 0.73;
+              return { ...q, field: document.elementFromPoint(q.x, q.y)?.id === "field" };
+            },
             d.input.aim,
           );
-          visible = p.x > 20 && p.x < 1420 && p.y > 100 && p.y < 740;
+          visible = p.field;
           if (visible) await page.mouse.move(p.x, p.y);
         }
         if (visible && !firing) {

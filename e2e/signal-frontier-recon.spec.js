@@ -137,6 +137,7 @@ for (const type of [chromium, webkit]) {
           const paused = JSON.stringify(s);
           v.tactical = { overview: true, x: 1100, y: 1280, zoom: 0.4 };
           v.render(s, ui, 1);
+          for (let i = 0; i < 20 && (!v.cameraSettled || v.memoryNeedsRefine); i++) v.render(s, ui, 1);
           const map = v.canvas.toDataURL();
           for (let i = 0; i < 5; i++) v.render(s, ui, 1);
           return {

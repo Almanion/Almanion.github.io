@@ -2456,7 +2456,7 @@ body:not([data-mode="playing"]) .combat-vitals, body:not([data-mode="playing"]) 
   .dock-order-actions button { flex-direction:row; min-height:36px; gap:3px; font-size:10px; }
   .dock-order-actions svg { width:15px; height:15px; }
   #tactical-hint, .production-feedback { display:none; }
-  .production-lock { font-size:9px; }
+  .production-lock { font-size:9px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .roster-detail-head { grid-template-columns:28px minmax(0,1fr); }
   .roster-detail-head > svg { width:28px; }
   .roster-job, .roster-slot { height:44px; }

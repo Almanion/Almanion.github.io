@@ -691,6 +691,10 @@ class ExpeditionPilot {
         return priority(a) - priority(b);
       });
     const target = enemies[0];
+    // Channeling occupies the scout's weapon. If its escort has been lost,
+    // use the open breach to fire, then refresh it before the shield returns.
+    if (interact && target && s.terminal.window > 4 && activeRifles().length < 2)
+      interact = false;
     let aim = target;
     if (target) {
       const prev = this.last[target.id],

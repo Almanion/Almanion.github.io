@@ -68,13 +68,13 @@ for (const browserType of [chromium, webkit])
             const reference = document.createElement("canvas");
             reference.width = v.canvas.width;
             reference.height = v.canvas.height;
-            const c = reference.getContext("2d"),
+            const c = reference.getContext("2d", { willReadFrequently: true }),
               cam = v.camera;
             c.setTransform(v.dpr, 0, 0, v.dpr, 0, 0);
             c.translate(v.origin.x, v.origin.y);
             c.scale(cam.scale, cam.scale * 0.73);
             c.translate(-cam.x, -cam.y);
-            v.wall(c, wall);
+            v.wall(c, wall, E.observe(s).fog, "visible");
             const expected = c.getImageData(
                 0,
                 0,

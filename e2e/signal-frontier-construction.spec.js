@@ -317,6 +317,17 @@ test("selected production services repair a building and protect the base throug
       .some((u) => u.kind === "drone" && u.workerTask?.targetId === barracks.id),
   ).toBe(true);
   expect(E.restore(repairing)).not.toBeNull();
+  // A continued operation from before probe repairs still supports its paid
+  // maintenance queue, with the normal charge and cancellation refund.
+  const offer = E.supplyStatus(repairing, "repair", barracks.id);
+  await (await deckCard(page, "develop-repair-" + barracks.id)).click();
+  const legacyRepair = await page.evaluate(() => SignalGame.snapshot());
+  expect(legacyRepair.economy.spent - repairing.economy.spent).toBe(offer.cost);
+  expect(legacyRepair.units.find((u) => u.id === barracks.id).jobs.some((j) => j.action === "repair")).toBe(true);
+  await page.locator('[data-section="troops"]').click();
+  await page.locator(".job-select").click();
+  const cancelledRepair = await page.evaluate(() => SignalGame.snapshot());
+  expect(cancelledRepair.economy.alloy - legacyRepair.economy.alloy).toBe(Math.floor(offer.cost * 0.75));
   await page.locator("[data-deck-back]").click();
   await page.locator("#develop-tab-economy").click();
   const base = E.living(repairing, "base");
