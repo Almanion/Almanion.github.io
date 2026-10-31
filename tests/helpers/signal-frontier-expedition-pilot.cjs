@@ -130,7 +130,7 @@ class ExpeditionPilot {
                       ? D.usedSlots(planned || s, o.producer) > 0
                       : alive("drone").length
                   )
-                  ? reserve
+                  ? (reserveCommand ? 0 : reserve)
                   : 0
                 : (this.stage && !restartingMine ? D.items(s).drone.cost : 0) +
                   (["outpost", "defense", "hack"].includes(action) ||

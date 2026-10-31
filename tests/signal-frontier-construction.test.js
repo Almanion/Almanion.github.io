@@ -359,6 +359,7 @@ test("the control pilot reserves command research before replacements and can sp
   build(s, "outpost", north);
   // Model the completed defences and earlier paid losses, with an exact ledger.
   for (const u of s.units) if (u.hp > 0 && ["base", "outpost"].includes(u.kind)) u.defense = true;
+  const mining = E.snapshot(s);
   fund(s, s.campaign.mines.reduce((n, m) => n + m.remaining, 0) - 1);
   const wanted = E.development.items(s).command.cost + E.development.items(s).drone.cost;
   s.economy.spent += s.economy.alloy - (wanted - 1);
@@ -375,6 +376,23 @@ test("the control pilot reserves command research before replacements and can sp
   assert(E.purchase(s, command.action, command.site).allowed);
   assert.equal(s.economy.alloy, E.development.items(s).drone.cost);
   restored(s);
+  // Income staffing must remain possible while replacements wait for research.
+  for (const mine of mining.campaign.mines) if (mine.id !== "north") {
+    mining.campaign.deposited += mine.remaining;
+    mining.economy.alloy += mine.remaining;
+    mine.remaining = 0;
+  }
+  mining.economy.spent += mining.economy.alloy - (wanted - 1);
+  mining.economy.alloy = wanted - 1;
+  const worker = mining.units.find(u => u.kind === "drone" && u.hp > 0);
+  assert(E.support.assignResource(mining, [worker.id], "north"));
+  const staffed = mining.units.find(u => u.kind === "outpost" && u.site === "north");
+  assert(E.development.usedSlots(mining, staffed) > 0);
+  restored(mining);
+  const miner = Object.assign(new ExpeditionPilot("siege", 22), { stage: 4, rushCleared: true })
+    .decide(mining).commands.find(c => c.kind === "purchase" && c.action === "drone");
+  assert(miner, "Research must not leave a working mine permanently understaffed");
+  assert(E.purchase(mining, miner.action, miner.site).allowed);
 });
 
 test("the control pilot routes serialized snapshots around buildings and replans after cancellation", () => {
