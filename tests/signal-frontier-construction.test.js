@@ -347,6 +347,36 @@ test("the control pilot spends the recovery budget on one builder and its first 
   restored(s);
 });
 
+test("the control pilot reserves command research before replacements and can spend that reserve", () => {
+  const s = field();
+  fund(s, 2500);
+  s.campaign.tier = 2;
+  build(s, "barracks", E.hero(s));
+  build(s, "outpost", s.campaign.mines.find(m => m.id === "west"));
+  const north = s.campaign.mines.find(m => m.id === "north");
+  Object.assign(E.hero(s), { x: north.x, y: north.y });
+  E.refreshRecon(s);
+  build(s, "outpost", north);
+  // Model the completed defences and earlier paid losses, with an exact ledger.
+  for (const u of s.units) if (u.hp > 0 && ["base", "outpost"].includes(u.kind)) u.defense = true;
+  fund(s, s.campaign.mines.reduce((n, m) => n + m.remaining, 0) - 1);
+  const wanted = E.development.items(s).command.cost + E.development.items(s).drone.cost;
+  s.economy.spent += s.economy.alloy - (wanted - 1);
+  s.economy.alloy = wanted - 1;
+  restored(s);
+  const { ExpeditionPilot } = require("./helpers/signal-frontier-expedition-pilot.cjs"),
+    pilot = Object.assign(new ExpeditionPilot("siege", 22), { stage: 4, rushCleared: true });
+  const before = E.snapshot(s);
+  assert(!pilot.decide(s).commands.some(c => c.kind === "purchase"), "Do not spend the research fund on replacements");
+  assert.deepEqual(E.snapshot(s), before);
+  fund(s, 1);
+  const command = pilot.decide(s).commands.find(c => c.kind === "purchase" && c.action === "command");
+  assert(command, "Do not require the research price twice");
+  assert(E.purchase(s, command.action, command.site).allowed);
+  assert.equal(s.economy.alloy, E.development.items(s).drone.cost);
+  restored(s);
+});
+
 test("the control pilot routes serialized snapshots around buildings and replans after cancellation", () => {
   const s = field();
   fund(s, 400);

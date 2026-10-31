@@ -133,7 +133,8 @@ class ExpeditionPilot {
                   ? reserve
                   : 0
                 : (this.stage && !restartingMine ? D.items(s).drone.cost : 0) +
-                  (["outpost", "defense", "hack"].includes(action) ? 0 : reserve))
+                  (["outpost", "defense", "hack"].includes(action) ||
+                  (action === "command" && reserveCommand) ? 0 : reserve))
         ) {
           planned ||= E.snapshot(s);
           if (!E.purchase(planned, action, site).allowed)
@@ -219,6 +220,11 @@ class ExpeditionPilot {
       this.stage >= 4 &&
       s.campaign.tier === 2 &&
       E.objective(s).id === "command";
+    const reserveCommand = s.campaign.id === "frontier-8" && savingForCommand;
+    // Free-construction replays can lose replacements faster than one remote
+    // miner funds command research. Keep the objective affordable, and let
+    // that purchase consume its own reserve instead of demanding it twice.
+    if (reserveCommand) reserve = Math.max(reserve, D.items(s).command.cost);
     const rifleTarget =
       mapped && this.route === "siege" && this.stage >= 4
         ? 5
