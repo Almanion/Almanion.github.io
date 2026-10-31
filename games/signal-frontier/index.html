@@ -11,14 +11,14 @@
       name="description"
       content="Предел сигнала — тактическая операция на заброшенном кольце."
     />
-    <title>Предел сигнала · Альманион</title>
-    <link rel="stylesheet" href="style.css?v=0.26.2" />
-    <script src="campaign.js?v=0.26.2" defer></script>
-    <script src="engine.js?v=0.26.2" defer></script>
-    <script src="view.js?v=0.26.2" defer></script>
-    <script src="audio.js?v=0.26.2" defer></script>
-    <script src="development-ui.js?v=0.26.2" defer></script>
-    <script src="app.js?v=0.26.2" defer></script>
+    <title>Предел сигнала · Almanion</title>
+    <link rel="stylesheet" href="style.css?v=0.31.0" />
+    <script src="campaign.js?v=0.31.0" defer></script>
+    <script src="engine.js?v=0.31.0" defer></script>
+    <script src="view.js?v=0.31.0" defer></script>
+    <script src="audio.js?v=0.31.0" defer></script>
+    <script src="development-ui.js?v=0.31.0" defer></script>
+    <script src="app.js?v=0.31.0" defer></script>
   </head>
   <body data-mode="menu">
     <canvas
@@ -28,7 +28,7 @@
     <div id="selection-box" hidden aria-hidden="true"></div>
     <div class="vignette" aria-hidden="true"></div>
     <main id="home" class="home">
-      <a class="back" href="/games/">← Игры Альманиона</a>
+      <a class="back" href="/games/">← Игры Almanion</a>
       <div class="home-content">
         <p class="eyebrow">Операция 01 · Пепельный узел</p>
         <h1>Предел<br />сигнала<span>.</span></h1>
@@ -49,8 +49,12 @@
           ><button data-open="settings">Настройки</button
           ><button data-open="account">Аккаунт</button>
         </div>
+        <nav class="renderer-links" aria-label="Версия игры">
+          <a href="?renderer=canvas" data-renderer="canvas">Canvas · классическая</a>
+          <a href="?renderer=babylon" data-renderer="babylon">Babylon · 3D</a>
+        </nav>
       </div>
-      <p class="edition">Первая операция <span>0.26.2</span></p>
+      <p class="edition">Первая операция <span>0.31.0</span></p>
     </main>
     <div id="hud" hidden>
       <header class="topbar">

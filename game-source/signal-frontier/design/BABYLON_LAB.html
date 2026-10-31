@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Предел сигнала · проверка 3D</title>
+  <style>
+    :root{color-scheme:dark;font:14px/1.45 system-ui,sans-serif;color:#dbe8df;background:#0c1920}*{box-sizing:border-box}body{margin:0;overflow:hidden}
+    #field{position:fixed;inset:0;width:100%;height:100%;touch-action:none}header,footer{position:fixed;z-index:2;left:16px;right:16px;background:#10262af0;border:1px solid #48665d80;border-radius:10px;backdrop-filter:blur(8px)}
+    header{top:16px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}h1{font-size:19px;font-weight:550;margin:0}header p{margin:4px 0 0;color:#9cb8ab;font-size:12px}.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    select,button,a{font:inherit;color:inherit;border:1px solid #668d7a66;background:#233c38;border-radius:6px;padding:8px 12px;text-decoration:none}button,a{cursor:pointer}a{background:#9edcc6;color:#102b26}label{display:flex;gap:6px;align-items:center}footer{bottom:16px;padding:12px 18px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}strong{font-variant-numeric:tabular-nums}small{color:#91ac9f}
+    @media(max-width:700px){header{padding:10px;gap:10px}h1{font-size:16px}.controls{gap:6px}select,button,a{padding:7px}label{font-size:12px}footer{font-size:12px;padding:10px}header p{max-width:340px}}
+  </style>
+  <script src="../../../games/signal-frontier/campaign.js"></script>
+  <script src="../../../games/signal-frontier/engine.js"></script>
+  <script src="../../../games/signal-frontier/view.js"></script>
+  <script type="module" src="babylon-lab.js"></script>
+</head>
+<body>
+  <canvas id="field" aria-label="Отдельная сцена проверки отрисовки армии"></canvas>
+  <header>
+    <div><h1>Предел сигнала · проверка 3D</h1><p>Отдельная сцена графики. Прохождение и сохранения не затрагиваются.</p></div>
+    <div class="controls">
+      <label>Режим <select id="renderer"><option value="babylon">3D · Babylon</option><option value="canvas">Canvas 2D</option></select></label>
+      <label>Армия <select id="count"><option>100</option><option>300</option><option>500</option></select></label>
+      <button id="pause" aria-pressed="false">Пауза</button><a href="BABYLON_MODELS.html">Модели</a><a href="../../../games/signal-frontier/?renderer=babylon&v=0.31.0">Открыть игру</a>
+    </div>
+  </header>
+  <footer><span><strong id="fps">—</strong> кадров/с</span><span>95% кадров: <strong id="p95">—</strong> мс</span><span>Отправка кадра: <strong id="cpu">—</strong> мс</span><span>Вызовы GPU: <strong id="draws">—</strong></span><small>Проверяются модели и анимация; стоимость ИИ и поиска пути здесь не измеряется.</small></footer>
+</body></html>

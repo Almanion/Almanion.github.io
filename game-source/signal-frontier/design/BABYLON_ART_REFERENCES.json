@@ -1,0 +1,171 @@
+{
+  "version": "0.31.0",
+  "libraryRevision": 78,
+  "note": "Selected artwork is a shape/material reference. Combat uses articulated 3D geometry, with no reference-image downloads.",
+  "assets": [
+    {
+      "kind": "hero",
+      "title": "Разведчик",
+      "promptId": "MODEL-hero",
+      "source": "files/MODEL-hero/7ad3686b-e3f6-4bbf-aa68-55b19c002b83.png",
+      "sha256": "89ec75ae9cf48ac3ef13728176eb9775647cf1b272f1415e5614a7574537a885",
+      "preview": "reference-previews/hero.webp"
+    },
+    {
+      "kind": "rifle",
+      "title": "Боец",
+      "promptId": "MODEL-rifle",
+      "source": "files/MODEL-rifle/91d49b57-0c5a-415e-800a-7244e358a07f.png",
+      "sha256": "2657c5fb5369cc2ef206fbe3a70e875b043aa5a7421a78355ae5de1431fb9d26",
+      "preview": "reference-previews/rifle.webp"
+    },
+    {
+      "kind": "scout",
+      "title": "Дозорный",
+      "promptId": "MODEL-scout",
+      "source": "files/MODEL-scout/bee76d98-8faa-40d3-81d7-691a5192cfc3.png",
+      "sha256": "5534b7679b680bb4a5d099d5a12446329689808bfc9b3e9b6f966d579d927700",
+      "preview": "reference-previews/scout.webp"
+    },
+    {
+      "kind": "drone",
+      "title": "Зонд",
+      "promptId": "MODEL-drone",
+      "source": "files/MODEL-drone/05ad0535-80c9-4708-8a0b-dba4d021cbfd.png",
+      "sha256": "3a282b50fe3526fb671cffa17bbfdda630ff33a5651815ff63e0c47d909205ed",
+      "preview": "reference-previews/drone.webp"
+    },
+    {
+      "kind": "artillery",
+      "title": "Артиллерия",
+      "promptId": "MODEL-artillery",
+      "source": "files/MODEL-artillery/e8316c82-d581-4f3b-a730-addff9fdb34b.png",
+      "sha256": "e7d8f40ee52199d48b0482059762ab4f930c07dcf8bed4f614f915165bd8aec0",
+      "preview": "reference-previews/artillery.webp"
+    },
+    {
+      "kind": "rocket",
+      "title": "Ракетчик",
+      "promptId": "STYLE-02",
+      "source": "files/STYLE-02/d61c33f4-9b62-4287-aa40-b9e1e22c88b2.png",
+      "sha256": "dd5c97d410e9d4766c19e3dcc678ebd0655a622ce47b8e0a1d29c476c162c581",
+      "preview": "reference-previews/rocket.webp"
+    },
+    {
+      "kind": "runner",
+      "title": "Бегун",
+      "promptId": "STYLE-02",
+      "source": "files/STYLE-02/d61c33f4-9b62-4287-aa40-b9e1e22c88b2.png",
+      "sha256": "dd5c97d410e9d4766c19e3dcc678ebd0655a622ce47b8e0a1d29c476c162c581",
+      "preview": "reference-previews/runner.webp",
+      "derived": true,
+      "note": "Отдельного рисунка бегуна нет. Материалы STYLE-02 и согласованная четырёхногая анатомия."
+    },
+    {
+      "kind": "base",
+      "title": "Командная база",
+      "promptId": "MODEL-base",
+      "source": "files/MODEL-base/54eabfdc-e05f-4a0c-a351-fbab5d84e6c8.png",
+      "sha256": "f687ca14e3518d8df6e8ec12485572522d1164581461a110be0ce89ca794bc4f",
+      "preview": "reference-previews/base.webp"
+    },
+    {
+      "kind": "outpost",
+      "title": "Экстрактор",
+      "promptId": "MODEL-outpost",
+      "source": "files/MODEL-outpost/7dc49dde-821e-49a5-b0c1-adba1f91f2a4.png",
+      "sha256": "23bc0800021f62131df574986be8cd11f8bc6bf53cd9562fdaac9ab938311346",
+      "preview": "reference-previews/outpost.webp"
+    },
+    {
+      "kind": "barracks",
+      "title": "Казармы",
+      "promptId": "MODEL-barracks",
+      "source": "files/MODEL-barracks/fddd39e9-c00f-46d4-b4be-6aeba8ecd3ba.png",
+      "sha256": "f510bb664e41f6ba7e059aa9889a2951dff165c4c0078bae104309fabe73e282",
+      "preview": "reference-previews/barracks.webp"
+    },
+    {
+      "kind": "foundry",
+      "title": "Тяжёлый цех",
+      "promptId": "MODEL-foundry",
+      "source": "files/MODEL-foundry/8a4c5dad-785a-4be6-970b-9cf13c1626e6.png",
+      "sha256": "76f3293a5b24fb0bb5df50595726c68e22a997a050840eebeee97c8214e6c97f",
+      "preview": "reference-previews/foundry.webp"
+    },
+    {
+      "kind": "arsenal",
+      "title": "Арсенал",
+      "promptId": "MODEL-arsenal",
+      "source": "files/MODEL-arsenal/8857a039-87d8-4ff4-878b-5b5697b9df85.png",
+      "sha256": "f1fb3297b80216d35c482c18311fbba4fb60b8aa06335cf6b8861ec0c2ebe211",
+      "preview": "reference-previews/arsenal.webp"
+    },
+    {
+      "kind": "bunker",
+      "title": "Бункер",
+      "promptId": "MODEL-bunker",
+      "source": "files/MODEL-bunker/58244da4-684d-41bf-8c9a-25eba5a88a5b.png",
+      "sha256": "783f7e541596b7a7f9c88b8853ff09091417be292836cec60f93087b9abf20a1",
+      "preview": "reference-previews/bunker.webp"
+    },
+    {
+      "kind": "logistics",
+      "title": "Узел снабжения",
+      "promptId": "MODEL-logistics",
+      "source": "files/MODEL-logistics/db93d502-2a89-4ea9-b2af-b934c2067841.png",
+      "sha256": "021d751744dbc5e39254406c57b52a89eba600842bc132017aba7a7af3050676",
+      "preview": "reference-previews/logistics.webp"
+    },
+    {
+      "kind": "sentinel",
+      "title": "Страж",
+      "promptId": "MODEL-sentinel",
+      "source": "files/MODEL-sentinel/3f130676-598b-484e-85bf-688d59413fc6.png",
+      "sha256": "8730866c9fa3c6f276e586a877e1876cd22bcb189833c1885f661e9489978bfb",
+      "preview": "reference-previews/sentinel.webp"
+    },
+    {
+      "kind": "bastion",
+      "title": "Северный бастион",
+      "promptId": "MODEL-bastion",
+      "source": "files/MODEL-bastion/f69a34fb-8420-42a7-9ad7-c4603a5d25d2.png",
+      "sha256": "022c4b07fbbf2fc9f7101df22143ed6606a096668ef077ca6cd82c92c38dc7ca",
+      "preview": "reference-previews/bastion.webp"
+    },
+    {
+      "kind": "bastion-south",
+      "title": "Южный бастион",
+      "promptId": "MODEL-bastion-south",
+      "source": "files/MODEL-bastion-south/bf53b057-fe62-4d06-afb0-cefd65f32a14.png",
+      "sha256": "bb015f9b01f608ecf5346659060f74afdc9da68211048a3a774d74880188fc3c",
+      "preview": "reference-previews/bastion-south.webp",
+      "engineKind": "bastion",
+      "sector": "south"
+    },
+    {
+      "kind": "turret",
+      "title": "Турель",
+      "promptId": "MODEL-turret",
+      "source": "files/MODEL-turret/b7806364-c24e-44a0-9d0f-cdecb6ba4e4d.png",
+      "sha256": "a0bbfa9f6a6d9d03ebdc2b824cb0b81ab65ed2fd830857f3c53b20a31e993a35",
+      "preview": "reference-previews/turret.webp"
+    },
+    {
+      "kind": "jammer",
+      "title": "Глушитель",
+      "promptId": "MODEL-jammer",
+      "source": "files/MODEL-jammer/7f6c0d77-f27b-456a-a6d6-f299c6df811d.png",
+      "sha256": "38e331c78b8db4002aacc5eb49db6fc744a499514405dc8c55013c21f68f3f04",
+      "preview": "reference-previews/jammer.webp"
+    },
+    {
+      "kind": "citadel",
+      "title": "Цитадель",
+      "promptId": "MODEL-citadel",
+      "source": "files/MODEL-citadel/b9b6e4bb-ef1c-43b9-92b3-b1a7feec8e3c.png",
+      "sha256": "c3f843a63c8de62345480a1d98016d5dd8bd11ee2128d4bbac39e6ca425e09f3",
+      "preview": "reference-previews/citadel.webp"
+    }
+  ]
+}

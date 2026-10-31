@@ -1,9 +1,10 @@
-(function () {
+(async function () {
   "use strict";
+  if(window.SignalGraphics)await window.SignalGraphics.ready;
   const E = window.SignalEngine,
     $ = (id) => document.getElementById(id),
     canvas = $("field"),
-    view = new SignalView(canvas),
+    view = window.SignalGraphics ? window.SignalGraphics.create(canvas) : new SignalView(canvas),
     miniCanvas = $("minimap-canvas"),
     minimap = new SignalMiniMap.MiniMap(miniCanvas),
     KEY = "signal-frontier-v1",
@@ -770,6 +771,7 @@
   }
   function closeDialog() {
     if (storageConflict) return;
+    if(view.lost){notice("Изображение ещё восстанавливается. Игра остаётся на паузе.");return;}
     if (state.status !== "playing" && mode !== "menu") return;
     $("dialog").close();
     document.body.classList.remove("development-open");
@@ -2464,9 +2466,24 @@
   }
   updateHome();
   setMode("menu");
+  if(window.SignalGraphics) {
+    document.documentElement.removeAttribute("data-render-loading");
+    for(const id of ["start","continue","new-game"])$(id).disabled=false;
+    const loading=$("renderer-loading");
+    if(loading) {
+      if(window.SignalGraphics.status.error)loading.textContent="3D-режим недоступен в этом браузере. Открыта обычная версия.";
+      else loading.remove();
+    }
+    window.addEventListener("signal-renderer-lost",()=>{
+      if(mode==="playing"||mode==="tactical")openDialog("pause");
+      notice("Изображение временно недоступно. Игра приостановлена, прогресс сохранён.");
+    });
+    window.addEventListener("signal-renderer-restored",()=>{renderDirty=true;notice("Изображение восстановлено. Можно продолжить операцию.");});
+  }
   requestAnimationFrame(tick);
   // Read-only telemetry supports diagnostics without changing the operation.
   window.SignalGame = Object.freeze({
+    renderer: () => ({ ...(window.SignalGraphics?.status || {active:"canvas"}), details:view.diagnostics?.() || null }),
     snapshot: () => E.snapshot(state),
     observation: () => {
       const p = E.observe(state);

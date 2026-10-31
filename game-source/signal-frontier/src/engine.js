@@ -232,6 +232,12 @@
     );
   }
   function segmentRect(ax, ay, bx, by, b, pad = 0) {
+    // Reject disjoint bounds before clipping. Strict comparisons retain exact
+    // tangent hits, including expanded walls used by movement and projectiles.
+    if ((ax < b.x - pad && bx < b.x - pad) ||
+        (ax > b.x + b.w + pad && bx > b.x + b.w + pad) ||
+        (ay < b.y - pad && by < b.y - pad) ||
+        (ay > b.y + b.h + pad && by > b.y + b.h + pad)) return null;
     let lo = 0,
       hi = 1;
     const dx = bx - ax,
@@ -256,17 +262,27 @@
       (w) => segmentRect(a.x, a.y, b.x, b.y, w, r) !== null,
     );
   }
-  const sightCache = new Map();
+  const sightCache = new Map(), sightKeys = new Array(8192), actorSight = new WeakMap();
+  let nextSightKey = 0;
   function clear(a, b, r = 0) {
     const world = mapFor(a.map || b.map);
     if (!["highlands", "districts"].includes(world.id))
       return wallClear(a, b, r);
     // Terrain and neutral cover are immutable. Repeated perception/targeting
     // queries may reuse an exact directed ray; moving endpoints get a new key.
-    const key = [world.id, a.x, a.y, b.x, b.y, r].join(":"),
-      known = sightCache.get(key);
-    if (known !== undefined) return known;
-    const eye = Terrain.height(a.x, a.y) + 24,
+    // Dense formations revisit more actor pairs than the shared string cache
+    // can retain. Keep a bounded set per source, updating moving pairs in place
+    // instead of allocating and evicting coordinate strings every frame.
+    const actors = a.kind && b.kind,
+      source = actors ? actorSight.get(a) : null,
+      previous = source?.rays?.get(b);
+    if (previous && previous.target === b && previous.map === world.id && previous.r === r &&
+        previous.ax === a.x && previous.ay === a.y && previous.bx === b.x && previous.by === b.y)
+      return previous.result;
+    const key = actors ? null : [world.id, a.x, a.y, b.x, b.y, r].join(":");
+    let result = actors ? undefined : sightCache.get(key);
+    if (result === undefined) {
+      const eye = Terrain.height(a.x, a.y) + 24;
       result =
         Terrain.sight(a, b) &&
         !world.walls.some(
@@ -274,9 +290,30 @@
             segmentRect(a.x, a.y, b.x, b.y, w, r) !== null &&
             Terrain.height(w.x + w.w / 2, w.y + w.h / 2) + 54 >= eye,
         );
-    if (sightCache.size >= 8192)
-      sightCache.delete(sightCache.keys().next().value);
-    sightCache.set(key, result);
+      // A new Map iterator can scan thousands of deleted slots after heavy
+      // combat churn. A fixed ring retains the same FIFO eviction in O(1).
+      if (!actors) {
+        if (sightCache.size >= sightKeys.length)
+          sightCache.delete(sightKeys[nextSightKey]);
+        sightKeys[nextSightKey] = key;
+        nextSightKey = (nextSightKey + 1) % sightKeys.length;
+        sightCache.set(key, result);
+      }
+    }
+    if (actors) {
+      const local = source || { rays: new WeakMap(), targets: new Array(128), next: 0 };
+      if (!source) actorSight.set(a, local);
+      const entry = previous || {};
+      if (!previous) {
+        const oldest = local.targets[local.next];
+        if (oldest) local.rays.delete(oldest);
+        local.targets[local.next] = b;
+        local.next = (local.next + 1) % local.targets.length;
+        local.rays.set(b, entry);
+      }
+      entry.target = b; entry.map = world.id; entry.r = r;
+      entry.ax = a.x; entry.ay = a.y; entry.bx = b.x; entry.by = b.y; entry.result = result;
+    }
     return result;
   }
   const elevation = (x, y, map) =>
@@ -1160,6 +1197,7 @@
     }));
     const waiting = [...members],
       plans = [], departures = [], corridors = new Map(), reserved = [];
+    const nav = navigation(s);
     if (members.length >= 8 && campaign.logistics(s)) {
       const centre = members.reduce((p, u) => ({ x: p.x + u.x / members.length, y: p.y + u.y / members.length }), { x: 0, y: 0 });
       for (const radius of new Set(members.map((u) => C[u.kind].r))) {
@@ -1171,7 +1209,7 @@
       }
     }
     const groupRoute = (u, target) => {
-      const r = C[u.kind].r, world = navigation(s), spine = corridors.get(r);
+      const r = C[u.kind].r, world = nav, spine = corridors.get(r);
       if ((!spine || spine.length < 3) && travelClear(u, target, r, world)) return [{ ...target }];
       if (spine && free(target.x, target.y, r, world)) {
         const starts = spine.map((p, i) => ({ i, d: dist(u, p) }))
@@ -1188,15 +1226,23 @@
       return pathTo(u, target, r);
     };
     for (const slot of slots) {
-      waiting.sort((a, b) => dist(a, slot) - dist(b, slot) || a.id - b.id);
-      const u = waiting.shift(),
+      // Only the nearest member is consumed. Sorting every remaining member
+      // repeats thousands of distance calculations in a large formation.
+      let nearest = 0, distance = dist(waiting[0], slot);
+      for (let i = 1; i < waiting.length; i++) {
+        const d = dist(waiting[i], slot);
+        if (d < distance || (d === distance && waiting[i].id < waiting[nearest].id)) {
+          nearest = i; distance = d;
+        }
+      }
+      const u = waiting.splice(nearest, 1)[0],
         margin = C[u.kind].r + 25;
       let target = {
         x: clamp(slot.x, margin, world.W - margin),
         y: clamp(slot.y, margin, world.H - margin),
       };
       if (corridors.size) {
-        const valid = (p) => free(p.x, p.y, C[u.kind].r, navigation(s)) &&
+        const valid = (p) => free(p.x, p.y, C[u.kind].r, nav) &&
           !reserved.some((q) => dist(p, q) < C[u.kind].r + q.r + 4);
         if (!valid(target)) {
           const wanted = target; target = null;
@@ -1213,7 +1259,7 @@
       const origin = support.departure(s, u, departures);
       if (!origin) return false;
       departures.push({ ...origin, r: C[u.kind].r });
-      const from = u.care?.inside ? { ...u, ...origin, map: navigation(s) } : u,
+      const from = u.care?.inside ? { ...u, ...origin, map: nav } : u,
         path = corridors.size ? groupRoute(from, target) : pathTo(from, target, C[u.kind].r);
       if (!path.length && dist(u, target) > 2) return false;
       plans.push({
@@ -2140,31 +2186,27 @@
         campaign.enemy(s, u, dt, opponents);
         continue;
       }
-      let target = opponents
-        .filter(
-          (v) => rangeDistance(u, v) < def.range && clear(u, v) && visible(s, u.team, v, u),
-        )
-        .sort((a, b) => {
-          const score = (v) => {
-            let value = dist(u, v);
-            if (!campaign.combat(s) || u.team) return value;
-            if (u.kind === "artillery")
-              value -= ["tank", "mortar", "bastion"].includes(v.kind) ? 150 : 0;
-            else {
-              if (v.kind === "bomber" && dist(u, v) < 180) value -= 340;
-              if (v.kind === "flamer" && dist(u, v) < 230) value -= 180;
-              if (["rocket", "mortar"].includes(v.kind)) value -= 75;
-              if (
-                v.kind === "tank" &&
-                Math.cos(Math.atan2(u.y - v.y, u.x - v.x) - v.combat.angle) >
-                  0.42
-              )
-                value += 120;
-            }
-            return value;
-          };
-          return score(a) - score(b);
-        })[0];
+      // Only the best candidate is used. Preserve the stable tie order while
+      // scoring each visible opponent once instead of sorting the entire army.
+      let target, bestScore = Infinity;
+      for (const v of opponents) {
+        if (!(rangeDistance(u, v) < def.range && clear(u, v) && visible(s, u.team, v, u))) continue;
+        const distance = dist(u, v);
+        let score = distance;
+        if (campaign.combat(s) && !u.team) {
+          if (u.kind === "artillery")
+            score -= ["tank", "mortar", "bastion"].includes(v.kind) ? 150 : 0;
+          else {
+            if (v.kind === "bomber" && distance < 180) score -= 340;
+            if (v.kind === "flamer" && distance < 230) score -= 180;
+            if (["rocket", "mortar"].includes(v.kind)) score -= 75;
+            if (v.kind === "tank" &&
+                Math.cos(Math.atan2(u.y - v.y, u.x - v.x) - v.combat.angle) > 0.42)
+              score += 120;
+          }
+        }
+        if (score < bestScore) { target = v; bestScore = score; }
+      }
       if (u.team === 0) {
         const escorting = u.order?.followId !== undefined;
         if (escorting)

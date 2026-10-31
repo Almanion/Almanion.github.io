@@ -3,6 +3,7 @@ const fs = require("node:fs"),
   path = require("node:path"),
   { minify_sync } = require("terser"),
   CleanCSS = require("clean-css");
+const esbuild = require("esbuild");
 const files = [
   "index.html",
   "style.css",
@@ -23,14 +24,25 @@ const files = [
   "account-ui.js",
   "selection-ui.js",
   "app.js",
+  "renderer-loader.js",
+  "babylon-view.js",
+  "babylon-LICENSE.txt",
 ];
-const embedded = ["cloud-core.js", "persistence.js", "account-ui.js", "selection-ui.js"];
+const embedded = ["cloud-core.js", "persistence.js", "account-ui.js", "selection-ui.js", "renderer-loader.js"];
 function render(root = path.resolve(__dirname, "..")) {
   const source = path.join(root, "game-source/signal-frontier/src"),
     read = (f) =>
       fs.readFileSync(path.join(source, f), "utf8").replace(/\r\n/g, "\n"),
     out = {};
   for (const file of files) {
+    if(file === "babylon-LICENSE.txt") {
+      out[file]=fs.readFileSync(path.join(source,"../vendor/BABYLON-LICENSE.txt"),"utf8");continue;
+    }
+    if(file === "babylon-view.js") {
+      out[file]="/*! Babylon.js · Apache-2.0 · see babylon-LICENSE.txt */\n"+esbuild.buildSync({entryPoints:[path.join(source,file)],bundle:true,write:false,minify:true,
+        format:"esm",platform:"browser",target:["es2020"],legalComments:"eof",logLevel:"silent"}).outputFiles[0].text;
+      continue;
+    }
     let text = read(file);
     if (file === "campaign.js")
       text =
@@ -60,7 +72,7 @@ function render(root = path.resolve(__dirname, "..")) {
       text = result.styles + "\n";
     } else if (file === "index.html")
       text = text.replace(
-        /^\s*<script src="(?:terrain|districts|recon|construction|support|unit-models|minimap|cloud-core|persistence|account-ui|selection-ui)\.js[^\"]*" defer><\/script>\n/gm,
+        /^\s*<script src="(?:terrain|districts|recon|construction|support|unit-models|minimap|cloud-core|persistence|account-ui|selection-ui|renderer-loader)\.js[^\"]*" defer><\/script>\n/gm,
         "",
       );
     out[file] = text;

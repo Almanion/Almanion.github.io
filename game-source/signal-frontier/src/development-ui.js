@@ -2,6 +2,7 @@
 (function (root) {
   "use strict";
   const paths = {
+    outpost: '<path d="M2 18V9a4 4 0 0 1 4-4h7a3 3 0 0 1 3 3v10M2 18h20v4H2ZM18 18V6a2 2 0 0 1 4 0v12M20 4V1M6 18v-5h6v5M6 15h6"/><circle cx="12" cy="8" r="2"/><path d="M20 9v4"/>',
     logistics: "<path d=\"M3 21V9h7v12Zm11 0V9h7v12ZM3 14h7m4 0h7M12 3v13M8 4h8M6 18h1m10 0h1\"/><circle cx=\"12\" cy=\"2\" r=\"1\"/>",
     node: '<path d="m12 3 8 5v8l-8 5-8-5V8Zm0 0v6m-8-1 8 5 8-5m-8 5v8"/>',
     bunker: '<path d="M2 21V12l4-6h12l4 6v9ZM2 12h20M10 21v-5h4v5M5 10h3m8 0h3M5 15h2m10 0h2M6 6V4h12v2"/>',

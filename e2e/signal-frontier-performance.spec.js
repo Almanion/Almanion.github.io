@@ -384,5 +384,6 @@ test("reused model geometry matches direct vectors for every model, direction an
   expect(result.errors).toEqual([]);
   expect(result.comparisons).toBe(960);
   expect(result.cache.hits).toBeGreaterThan(1000);
-  expect(result.cache.entries).toBeLessThanOrEqual(512);
+  expect(result.cache.limit).toBe(2048);
+  expect(result.cache.entries).toBeLessThanOrEqual(result.cache.limit);
 });

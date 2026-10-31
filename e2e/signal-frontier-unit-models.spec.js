@@ -347,6 +347,23 @@ test("runner and rocket keep distinct movement, strike and wreck poses without s
     expect(row.poses, `${row.kind} ${row.i}`).toBe(5);
 });
 
+test("artillery tread travel stays visible when a walking phase repeats through the image cache", async ({ page }) => {
+  await studio(page);
+  const rows = await page.evaluate(() => {
+    const u=modelUnit("artillery",{angle:.4}),rows=[];
+    for(const distance of [0,40,80]) {
+      const options={ui:{reduced:false},pose:{angle:.4,phase:.8,move:1,left:distance,right:distance}};
+      for(let i=0;i<3;i++)modelRaster(u,{...options,cached:true});
+      const cached=modelRaster(u,{...options,cached:true}),direct=modelRaster(u,options);
+      let sum=0;for(let i=0;i<cached.length;i++)sum+=Math.abs(cached[i]-direct[i]);
+      rows.push({hash:modelHash(cached),error:sum/cached.length});
+    }
+    return rows;
+  });
+  expect(new Set(rows.map(r=>r.hash)).size).toBe(3);
+  for(const row of rows)expect(row.error).toBeLessThan(.04);
+});
+
 test("construction apron points along the real exit and memory freezes activity and damage", async ({
   page,
 }) => {
@@ -598,6 +615,60 @@ test("receivers move only after an observed cargo transfer and memory does not e
     closed: true,
     pure: true,
   });
+});
+
+test("extractor reuse preserves full footprint, care, doors and assembly in four orientations", async ({ page }) => {
+  await studio(page);
+  const result = await page.evaluate(() => {
+    const v=modelView, s={...modelState,t:2}, rows=[];
+    let paints=0;
+    const original=v.unitModel;
+    v.unitModel=function(...args){paints++;return original.apply(this,args);};
+    const render=(u,ui,cached)=>{
+      const canvas=document.createElement("canvas");canvas.width=canvas.height=384;
+      const c=canvas.getContext("2d",{willReadFrequently:true});
+      c.translate(192.31,220.17);c.scale(1.13,1.13*.73);
+      v[cached?"unitSprite":"unitModel"](c,u,s,ui,{angle:0,phase:0,move:0});
+      return c.getImageData(0,0,384,384).data;
+    };
+    try {
+      for(let turn=0;turn<4;turn++) {
+        const u=modelUnit("outpost",{construction:{turn}}), ui={mode:"tactical",reduced:false};
+        let idleHash;
+        for(const mode of ["idle","care","damage","production","delivery","door","build","memory"]) {
+          u.hp=SignalEngine.C.outpost.hp*(mode==="damage"?.5:1);
+          u.jobs=mode==="production"?[{action:"drone",duration:10,remaining:4}]:[];
+          u.build=mode==="build"?SignalEngine.development.items(s).outpost.time*.55:0;
+          v.infirmaryActivity.set(u.id,mode==="care"||mode==="memory"?[{care:{inside:true}}]:[]);
+          v.modelDeliveries.clear();v.modelExits.clear();
+          if(mode==="delivery")v.modelDeliveries.set(u.id,s.t-.3);
+          if(mode==="door")v.modelExits.set(u.x+":"+u.y,s.t-.2);
+          ui.memory=mode==="memory";
+          for(let i=0;i<3;i++)render(u,ui,true);
+          const before=paints, cached=render(u,ui,true), reused=paints===before,
+            direct=render(u,ui,false),hash=modelHash(cached);
+          let sum=0,border=0;
+          for(let i=0;i<cached.length;i++)sum+=Math.abs(cached[i]-direct[i]);
+          for(let i=3;i<cached.length;i+=4)if(cached[i]>20) {
+            const pixel=(i-3)/4,x=pixel%384,y=Math.floor(pixel/384);
+            if(x<2||y<2||x>381||y>381)border++;
+          }
+          if(mode==="idle")idleHash=hash;
+          rows.push({turn,mode,error:sum/cached.length,border,reused,
+            medicalChanged:mode!=="care"||hash!==idleHash,
+            memoryFrozen:mode!=="memory"||hash===idleHash});
+        }
+      }
+    } finally {v.unitModel=original;}
+    return rows;
+  });
+  for(const row of result) {
+    expect(row.error,`${row.turn} ${row.mode}`).toBeLessThan(.04);
+    expect(row.border).toBe(0);
+    expect(row.medicalChanged).toBe(true);
+    expect(row.memoryFrozen).toBe(true);
+    expect(row.reused).toBe(["idle","care","damage","memory"].includes(row.mode));
+  }
 });
 
 test("design studio covers every current model and all 27 visual studies without changing the engine registry", async ({

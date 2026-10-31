@@ -11,7 +11,7 @@
     conflict: "На устройствах разные операции",
     "account-change": "Выбран другой аккаунт",
     error: "Синхронизация не подтверждена",
-    "signed-out": "Войдите в аккаунт Альманиона",
+    "signed-out": "Войдите в аккаунт Almanion",
   };
   function load() {
     if (root.AlmanionOrbitalAccount?.games?.includes("signalFrontier"))
@@ -44,7 +44,7 @@
       this.enabled = false;
       this.error = "";
       el.innerHTML =
-        '<p class="eyebrow">Альманион</p><h2>Сохранение</h2><p id="account-status" role="status"></p><p id="account-user" class="help-note"></p><button id="account-connect" class="primary">Подключить аккаунт</button><form id="account-login" hidden><label>Почта<input id="account-email" type="email" autocomplete="username" required maxlength="254"></label><label>Пароль<input id="account-password" type="password" autocomplete="current-password" required minlength="6" maxlength="128"></label><button type="submit" class="primary">Войти</button><div class="account-actions"><button type="button" id="account-register">Создать аккаунт</button><button type="button" id="account-reset">Восстановить пароль</button><button type="button" id="account-google">Войти через Google</button></div></form><div id="account-connected" hidden><button id="account-sync" class="primary">Синхронизировать</button><button id="account-signout" class="text-button">Выйти</button></div><div id="account-conflict" hidden><p>Выберите операцию. Перед заменой обе копии сохранятся на этом устройстве.</p><div id="account-copies"></div><button id="account-cloud" class="primary">Продолжить из аккаунта</button><button id="account-local" class="text-button">Оставить эту операцию</button></div><p id="account-message" class="help-note" role="status"></p><button id="account-back" class="text-button">Назад</button>';
+        '<p class="eyebrow">Almanion</p><h2>Сохранение</h2><p id="account-status" role="status"></p><p id="account-user" class="help-note"></p><button id="account-connect" class="primary">Подключить аккаунт</button><form id="account-login" hidden><label>Почта<input id="account-email" type="email" autocomplete="username" required maxlength="254"></label><label>Пароль<input id="account-password" type="password" autocomplete="current-password" required minlength="6" maxlength="128"></label><button type="submit" class="primary">Войти</button><div class="account-actions"><button type="button" id="account-register">Создать аккаунт</button><button type="button" id="account-reset">Восстановить пароль</button><button type="button" id="account-google">Войти через Google</button></div></form><div id="account-connected" hidden><button id="account-sync" class="primary">Синхронизировать</button><button id="account-signout" class="text-button">Выйти</button></div><div id="account-conflict" hidden><p>Выберите операцию. Перед заменой обе копии сохранятся на этом устройстве.</p><div id="account-copies"></div><button id="account-cloud" class="primary">Продолжить из аккаунта</button><button id="account-local" class="text-button">Оставить эту операцию</button></div><p id="account-message" class="help-note" role="status"></p><button id="account-back" class="text-button">Назад</button>';
       this.$ = (id) => el.querySelector("#" + id);
       this.$("account-connect").onclick = () => this.connect();
       this.$("account-back").onclick = options.back;

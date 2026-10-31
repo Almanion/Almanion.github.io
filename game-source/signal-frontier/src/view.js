@@ -1019,7 +1019,7 @@
   class View {
     constructor(canvas, options = {}) {
       this.canvas = canvas;
-      this.c = canvas.getContext("2d", { alpha: false });
+      this.c = canvas.getContext("2d", { alpha: options.alpha === true });
       this.ground = terrain();
       this.mapId = "classic";
       this.tactical = { overview: true, x: 720, y: 500, zoom: 0.95 };
@@ -1043,6 +1043,7 @@
       this.floorImages = new Map();
       this.floorPixels = 0;
       this.unitSprites = new Map();
+      this.shadowShapes = options.cacheShadows === false ? null : new Map();
       this.spritePixels = 0;
       this.fogPaths = {};
       this.scars = [];
@@ -1221,6 +1222,39 @@
         // On uninterrupted flat ground the whole shadow already fits this
         // plane. Avoid a separate GPU clip for every soldier and weapon.
         if (!groups.complete || groups.size !== 1) c.clip(cells);
+        if (this.shadowShapes) {
+          // World position and the receiving plane change only the translation.
+          // Keep the exact silhouette, height and angle; moving a tank need not
+          // rebuild every polygon of its otherwise unchanged shadow.
+          const key = [angle, drop, ...shape.flat()].join(":"),
+            cached = this.shadowShapes.get(key);
+          if (cached && cached !== 1) {
+            c.translate(x, y - z);
+            for (let i = 0; i < cached.length; i++) {
+              c.fillStyle = i === 0 ? "#06141b4d" : i === 1 ? "#06141b28" : "#06141b24";
+              c.fill(cached[i]);
+            }
+            c.restore();
+            continue;
+          }
+          if (cached === 1) {
+            const local = shape.map(([a, b]) => [a * co - b * si, a * si + b * co]),
+              cast = local.map(([a, b]) => [a + drop * 0.7, b + drop * 0.45]),
+              polygon = (points) => {
+                const p = new Path2D();
+                for (let i = 0; i < points.length; i++)
+                  if (i) p.lineTo(...points[i]); else p.moveTo(...points[i]);
+                p.closePath(); return p;
+              };
+            this.shadowShapes.set(key, [polygon(cast), polygon(local), ...local.map((p, i) => {
+              const j = (i + 1) % local.length;
+              return polygon([p, local[j], cast[j], cast[i]]);
+            })]);
+          } else {
+            this.shadowShapes.set(key, 1);
+            if (this.shadowShapes.size > 512) this.shadowShapes.delete(this.shadowShapes.keys().next().value);
+          }
+        }
         const p = footprint.map(([a, b]) => [
           a + drop * 0.7,
           b + drop * 0.45 - z,
@@ -1295,7 +1329,10 @@
         const b = E.construction.rect(u),
           w = b.w * 0.43,
           h = b.h * 0.4;
-        this.shadow(
+        if(u.kind === "outpost") {
+          for(const part of unitModels.shadows(u,{angle:u.angle||0},{w:b.w,h:b.h,a:-u.construction.turn*Math.PI/2}))
+            this.shadow(c,u.x,u.y,part.shape,part.height,part.angle);
+        } else this.shadow(
           c,
           u.x,
           u.y,
@@ -1450,7 +1487,7 @@
       this.scars = this.scars.slice(-40);
       this.fx = this.fx.slice(-96);
     }
-    render(s, ui, dt) {
+    prepareFrame(s, ui, dt) {
       this.spriteFrame = (this.spriteFrame || 0) + 1;
       for (const [id, sprite] of this.unitSprites)
         if ((sprite.lastUsed || 0) < this.spriteFrame - 120) {
@@ -1472,7 +1509,7 @@
       this.deliveryActivity(s);
       this.serviceActivity(s);
       if (this.mapId !== world.id) {
-        this.ground = terrain(world);
+        this.ground = this.makeGround(world);
         this.mapId = world.id;
         this.networkRoute = null;
       }
@@ -1484,7 +1521,6 @@
       const active = ui.mode === "playing" && s.status === "playing";
       if (!ui.reduced && (active || ui.mode === "menu")) this.time += dt;
 
-      let c = this.c;
       const w = this.width,
         h = this.height,
         hero = E.hero(s),
@@ -1642,6 +1678,16 @@
           this.camera[key] = target;
         else this.cameraSettled = false;
       }
+      return { s, world, w, h, hero, mobile, overview, menu, active };
+    }
+    makeGround(world) {
+      return terrain(world);
+    }
+    render(s, ui, dt) {
+      const frame = this.prepareFrame(s, ui, dt),
+        { world, w, h, hero, mobile, overview, menu, active } = frame;
+      s = frame.s;
+      let c = this.c;
       c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
       c.fillStyle = "#0b171d";
       c.fillRect(0, 0, w, h);
@@ -3314,6 +3360,7 @@
       this.modelDeliveries.clear();
       this.modelClock = s?.t || 0;
       this.unitSprites.clear();
+      this.shadowShapes?.clear();
       this.spritePixels = 0;
       this.scars = [];
       this.effectSerial = 0;
@@ -3680,7 +3727,7 @@
         frame,
         this.doorOpening(u, s),
         this.deliveryOpening(u, s),
-        { activity: this.workerActivity.get(u.id), crew: this.buildingActivity.get(u.id) || [], garrison: this.garrisonActivity.get(u.id) || [] },
+        { activity: this.workerActivity.get(u.id), crew: this.buildingActivity.get(u.id) || [], garrison: this.garrisonActivity.get(u.id) || [], patients: this.infirmaryActivity.get(u.id) || [] },
       );
       if (u.hit > 0 && !ui.reduced && !ui.memory && u.hp > 0)
         seam(
@@ -3721,7 +3768,7 @@
           : this.pose(u, s, ui);
         if (
           ["highlands", "districts"].includes(this.mapId) &&
-          E.C[u.kind].speed > 0 &&
+          (E.C[u.kind].speed > 0 || u.kind === "outpost") &&
           u.hp > 0 &&
           u.kind !== "drone"
         )
@@ -3732,15 +3779,26 @@
       }
     }
     unitSprite(c, u, s, ui, pose) {
-      const m = c.getTransform(),
+      // A completed idle extractor can reuse its exact image. Real delivery,
+      // production, construction and repair keep the articulated vector path.
+      if(u.kind === "outpost" && (u.build>0 || u.jobs?.length ||
+        this.buildingActivity.get(u.id)?.length || this.doorOpening(u,s)>0 ||
+        this.deliveryOpening(u,s)>0))return this.unitModel(c,u,s,ui,pose);
+      const footprint = u.construction ? E.construction.rect(u) : null,
+        halfWidth = footprint ? footprint.w/2+24 : 100,
+        upper = footprint ? footprint.h/2+70 : 128,
+        lower = footprint ? footprint.h/2+32 : 64,
+        m = c.getTransform(),
         x = u.x * m.a + m.e,
         y = (u.y - this.z(u.x, u.y)) * m.d + m.f,
-        left = Math.floor(x - 100 * m.a),
-        top = Math.floor(y - 128 * m.d),
-        width = Math.ceil(x + 100 * m.a) - left,
-        height = Math.ceil(y + 64 * m.d) - top,
+        left = Math.floor(x - halfWidth * m.a),
+        top = Math.floor(y - upper * m.d),
+        width = Math.ceil(x + halfWidth * m.a) - left,
+        height = Math.ceil(y + lower * m.d) - top,
         key = JSON.stringify([
           u.kind,
+          u.kind === "outpost" ? [u.construction?.turn,ui.memory,
+            !ui.memory && this.infirmaryActivity.get(u.id)?.some(v=>v.care.inside)] : null,
           u.team,
           u.angle,
           [
@@ -3750,7 +3808,7 @@
             pose.angle,
             pose.direction,
             pose.cycle,
-            ["tank", "mortar"].includes(u.kind)
+            ["tank", "mortar", "artillery"].includes(u.kind)
               ? [pose.left, pose.right]
               : null,
           ],
@@ -3890,7 +3948,7 @@
         null,
         this.doorOpening(u, s),
         this.deliveryOpening(u, s),
-        { activity: this.workerActivity.get(u.id), crew: this.buildingActivity.get(u.id) || [], garrison: this.garrisonActivity.get(u.id) || [] },
+        { activity: this.workerActivity.get(u.id), crew: this.buildingActivity.get(u.id) || [], garrison: this.garrisonActivity.get(u.id) || [], patients: this.infirmaryActivity.get(u.id) || [] },
       );
       if (u.hp > 0 && u.hit > 0 && !ui.reduced && !ui.memory)
         ring(c, 0, 0, r + 3, u.team ? "#f0c9a780" : "#c1f2d980", 1.5);
@@ -4134,5 +4192,6 @@
     }
   }
   View.artwork = unitModels;
+  View.fogContours = fogContours;
   root.SignalView = View;
 })(window);

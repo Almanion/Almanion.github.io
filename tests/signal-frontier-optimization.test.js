@@ -303,4 +303,40 @@ test("the operation pilot intercepts a visible long-range attacker instead of wa
   assert.equal(JSON.stringify(s), before);
   assert(E.restore(s));
 });
+test("reused actor sight follows both moving endpoints and the requested cover margin", () => {
+  const observer = { kind: "rifle", map: "highlands", x: 2100, y: 500 },
+    target = { kind: "tank", map: "highlands", x: 2000, y: 500 };
+  assert(E.clear(observer, target));
+  assert(E.clear(observer, target));
+  target.x = 2500;
+  assert(E.elevation(target.x, target.y, target.map) > E.elevation(observer.x, observer.y, observer.map) + 24);
+  assert(!E.clear(observer, target), "A moving target must not remain visible above a ledge");
+  observer.x = 2600;
+  assert(E.clear(observer, target), "Climbing the ledge must reveal the same target");
+  observer.x = 2100;
+  assert(!E.clear(observer, target));
+  Object.assign(observer, { map: "districts", x: 650, y: 2235 });
+  Object.assign(target, { map: "districts", x: 870, y: 2235 });
+  assert(E.clear(observer, target, 0));
+  assert(!E.clear(observer, target, 14));
+  assert(E.clear(observer, target, 0));
+  observer.map = target.map = "highlands";
+  assert(E.clear(observer, target, 14));
+  observer.map = target.map = "districts";
+  assert(!E.clear(observer, target, 14));
+  const crowd = Array.from({ length: 260 }, (_, i) => ({
+    kind: "rifle", map: "highlands", x: 1800 + (i % 26) * 30, y: 340 + Math.floor(i / 26) * 30,
+  }));
+  observer.map = "highlands";
+  for (let frame = 0; frame < 3; frame++) {
+    observer.x += 7;
+    for (const unit of crowd) {
+      unit.x += frame;
+      assert.equal(E.clear(observer, unit), E.clear(
+        { x: observer.x, y: observer.y, map: observer.map },
+        { x: unit.x, y: unit.y, map: unit.map },
+      ), "Each target in a moving crowd must retain its own exact sight result");
+    }
+  }
+});
 console.log(checks + " optimization checks passed.");

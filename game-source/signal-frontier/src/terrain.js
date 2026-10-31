@@ -121,6 +121,69 @@
         x++
       )
         (cellLinks[y * (W / CELL) + x] ||= []).push(p);
+  // Certify whole flat neighbourhoods once. Links and ledges always keep the
+  // exact sampling path; this is a conservative proof, not rounded geometry.
+  const flatClearance = new Uint16Array(cells.length);
+  for (let cy = 0; cy < H / CELL; cy++)
+    for (let cx = 0; cx < W / CELL; cx++) {
+      const k = cy * (W / CELL) + cx, z = cells[k];
+      if (z < 0 || cellLinks[k]) continue;
+      rings: for (let ring = 1; ring <= 4; ring++) {
+        if (cx < ring || cy < ring || cx + ring >= W / CELL || cy + ring >= H / CELL) break;
+        for (let y = cy - ring; y <= cy + ring; y++)
+          for (let x = cx - ring; x <= cx + ring; x++) {
+            const i = y * (W / CELL) + x;
+            if (cells[i] !== z || cellLinks[i]) break rings;
+          }
+        flatClearance[k] = ring * CELL;
+      }
+    }
+  const footprintDirections = Array.from({ length: 12 }, (_, i) => {
+    const a = (i * Math.PI) / 6;
+    return [Math.cos(a), Math.sin(a)];
+  });
+  // Conservative height bounds for immutable ground, including every ramp
+  // crossing a cell. A sparse table proves clear rays with four lookups; it
+  // never replaces the sampled test when an obstacle could reach the ray.
+  const groundCols = W / CELL, groundRows = H / CELL,
+    groundLogs = new Uint8Array(Math.max(groundCols, groundRows) + 1);
+  for (let i = 2; i < groundLogs.length; i++) groundLogs[i] = groundLogs[i >> 1] + 1;
+  const groundMax = Array.from({ length: groundLogs[groundCols] + 1 }, () => []),
+    bounds = new Int16Array(cells.length);
+  for (let i = 0; i < bounds.length; i++) {
+    let z = cells[i] < 0 ? -48 : cells[i] * STEP;
+    for (const ramp of cellLinks[i] || []) z = Math.max(z, ramp.from * STEP, ramp.to * STEP);
+    bounds[i] = z;
+  }
+  groundMax[0][0] = bounds;
+  for (let xLevel = 0; xLevel < groundMax.length; xLevel++)
+    for (let yLevel = 0; yLevel <= groundLogs[groundRows]; yLevel++) {
+      if (!xLevel && !yLevel) continue;
+      const previous = yLevel ? groundMax[xLevel][yLevel - 1] : groundMax[xLevel - 1][0],
+        offset = yLevel ? (1 << (yLevel - 1)) * groundCols : 1 << (xLevel - 1),
+        table = new Int16Array(cells.length);
+      for (let y = 0; y <= groundRows - (1 << yLevel); y++)
+        for (let x = 0; x <= groundCols - (1 << xLevel); x++) {
+          const i = y * groundCols + x;
+          table[i] = Math.max(previous[i], previous[i + offset]);
+        }
+      groundMax[xLevel][yLevel] = table;
+    }
+  function groundCeiling(a, b) {
+    // Interpolation can round an endpoint across a cell boundary by a few
+    // floating-point bits. Include its neighbour in this conservative proof.
+    const margin = 1e-7,
+      x0 = Math.floor((Math.min(a.x, b.x) - margin) / CELL),
+      y0 = Math.floor((Math.min(a.y, b.y) - margin) / CELL),
+      x1 = Math.floor((Math.max(a.x, b.x) + margin) / CELL),
+      y1 = Math.floor((Math.max(a.y, b.y) + margin) / CELL);
+    if (!(x0 >= 0 && y0 >= 0 && x1 < groundCols && y1 < groundRows)) return Infinity;
+    const xl = groundLogs[x1 - x0 + 1], yl = groundLogs[y1 - y0 + 1],
+      right = x1 + 1 - (1 << xl), bottom = y1 + 1 - (1 << yl),
+      table = groundMax[xl][yl];
+    return Math.max(table[y0 * groundCols + x0], table[y0 * groundCols + right],
+      table[bottom * groundCols + x0], table[bottom * groundCols + right]);
+  }
   function level(x, y) {
     if (x < 0 || y < 0 || x >= W || y >= H) return -1;
     const index = Math.floor(y / CELL) * (W / CELL) + Math.floor(x / CELL),
@@ -144,13 +207,17 @@
   };
   const point = (p) => ({ ...p, x: p.x * 1.5 + 120, y: p.y * 1.5 });
   function free(x, y, r) {
-    const z = height(x, y);
-    if (level(x, y) < 0) return false;
+    const base = level(x, y);
+    if (base < 0) return false;
+    const clearance = flatClearance[Math.floor(y / CELL) * (W / CELL) + Math.floor(x / CELL)];
+    if (r >= 0 && clearance > 0 && r <= clearance) return true;
+    const z = base * STEP;
     for (let i = 0; i < 12; i++) {
-      const a = (i * Math.PI) / 6,
-        xx = x + Math.cos(a) * r,
-        yy = y + Math.sin(a) * r;
-      if (level(xx, yy) < 0 || Math.abs(height(xx, yy) - z) > r * 0.45 + 2)
+      const d = footprintDirections[i],
+        xx = x + d[0] * r,
+        yy = y + d[1] * r,
+        next = level(xx, yy);
+      if (next < 0 || Math.abs(next * STEP - z) > r * 0.45 + 2)
         return false;
     }
     return true;
@@ -174,12 +241,14 @@
     return ray(a, b, eye, eye, 0);
   }
   function ray(a, b, za, zb, arc = 0) {
-    const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 16));
+    if (arc >= 0 && groundCeiling(a, b) <= Math.min(za, zb) - 1) return true;
+    const dx = b.x - a.x, dy = b.y - a.y, dz = zb - za,
+      n = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 16));
     for (let i = 1; i <= n; i++) {
       const t = i / n,
-        x = a.x + (b.x - a.x) * t,
-        y = a.y + (b.y - a.y) * t;
-      if (height(x, y) > za + (zb - za) * t + Math.sin(Math.PI * t) * arc - 1)
+        x = a.x + dx * t,
+        y = a.y + dy * t;
+      if (height(x, y) > za + dz * t + (arc === 0 ? 0 : Math.sin(Math.PI * t) * arc) - 1)
         return false;
     }
     return true;

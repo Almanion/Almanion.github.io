@@ -1,0 +1,298 @@
+{
+  "version": "0.29.0",
+  "date": "2026-10-31",
+  "implementation": "Articulated procedural Canvas models interpreted from design references. Original uploads are retained in the local art library and are not loaded by the game.",
+  "library": "Signal-Frontier-Art-Library",
+  "libraryRevisionAtReview": 26,
+  "models": [
+    {
+      "kind": "outpost",
+      "name": "Экстрактор",
+      "reference": "MODEL-outpost",
+      "file": "files/MODEL-outpost/7dc49dde-821e-49a5-b0c1-adba1f91f2a4.png",
+      "sha256": "23bc0800021f62131df574986be8cd11f8bc6bf53cd9562fdaac9ab938311346",
+      "features": [
+        "rounded pearl receiver",
+        "recessed roof hatch",
+        "common graphite foundation",
+        "right-side power unit",
+        "connected service pipes",
+        "wide loading apron",
+        "short antenna",
+        "mint status lights"
+      ],
+      "states": [
+        "idle",
+        "four construction orientations",
+        "staged assembly with lowering roof",
+        "observed cargo delivery",
+        "real door release",
+        "production",
+        "occupied infirmary",
+        "repair",
+        "damage",
+        "wreck",
+        "frozen fog memory"
+      ],
+      "gameplayFootprint": [
+        4,
+        4
+      ]
+    },
+    {
+      "kind": "rocket",
+      "name": "Ракетчик",
+      "reference": "STYLE-02",
+      "file": "files/STYLE-02/d61c33f4-9b62-4287-aa40-b9e1e22c88b2.png",
+      "sha256": "dd5c97d410e9d4766c19e3dcc678ebd0655a622ce47b8e0a1d29c476c162c581",
+      "features": [
+        "warm cast armour",
+        "graphite mechanical joints",
+        "two articulated legs",
+        "shoulder-mounted cylindrical launcher",
+        "copper muzzle collar",
+        "compact backpack",
+        "amber sensor"
+      ],
+      "states": [
+        "idle",
+        "walk",
+        "turn",
+        "slope contact",
+        "aim and brace",
+        "fire and recoil",
+        "reload hatch",
+        "damage",
+        "wreck",
+        "frozen pause"
+      ],
+      "weaponMountHeight": 24,
+      "cosmeticMuzzle": [
+        26,
+        -6.5
+      ]
+    },
+    {
+      "kind": "runner",
+      "name": "Бегун",
+      "reference": "STYLE-02 faction materials and existing runner anatomy",
+      "dedicatedUploadedReference": false,
+      "features": [
+        "four articulated legs",
+        "continuous warm carapace",
+        "graphite spine",
+        "paired mechanical jaws",
+        "single amber optical slit"
+      ],
+      "states": [
+        "idle",
+        "distance-based diagonal gait",
+        "turn",
+        "slope contact",
+        "attack coil",
+        "strike",
+        "damage",
+        "wreck",
+        "frozen pause"
+      ]
+    },
+    {
+      "kind": "hero",
+      "name": "Разведчик — главный герой",
+      "reference": "MODEL-hero",
+      "file": "files/MODEL-hero/7ad3686b-e3f6-4bbf-aa68-55b19c002b83.png",
+      "sha256": "89ec75ae9cf48ac3ef13728176eb9775647cf1b272f1415e5614a7574537a885",
+      "referenceRevision": 26,
+      "features": [
+        "pearl helmet and shoulder armour",
+        "graphite undersuit and backpack",
+        "mint visor",
+        "two-handed rifle",
+        "articulated knees and boots"
+      ],
+      "states": [
+        "idle",
+        "walk",
+        "strafe",
+        "turn",
+        "aim",
+        "fire and recoil",
+        "reload",
+        "dash",
+        "terminal channel",
+        "damage",
+        "wreck",
+        "frozen pause"
+      ],
+      "weaponMountHeight": 19.5
+    },
+    {
+      "kind": "rifle",
+      "name": "Боец",
+      "reference": "MODEL-rifle",
+      "file": "files/MODEL-rifle/91d49b57-0c5a-415e-800a-7244e358a07f.png",
+      "sha256": "2657c5fb5369cc2ef206fbe3a70e875b043aa5a7421a78355ae5de1431fb9d26",
+      "referenceRevision": 26,
+      "features": [
+        "graphite helmet",
+        "sage ceramic breastplate and shoulders",
+        "mint visor",
+        "compact illuminated backpack",
+        "two-handed rifle"
+      ],
+      "states": [
+        "idle",
+        "walk",
+        "strafe",
+        "turn",
+        "aim",
+        "fire and recoil",
+        "damage",
+        "wreck",
+        "frozen pause"
+      ],
+      "weaponMountHeight": 18
+    },
+    {
+      "kind": "scout",
+      "name": "Дозорный игрока",
+      "reference": "MODEL-scout",
+      "file": "files/MODEL-scout/bee76d98-8faa-40d3-81d7-691a5192cfc3.png",
+      "sha256": "5534b7679b680bb4a5d099d5a12446329689808bfc9b3e9b6f966d579d927700",
+      "referenceRevision": 26,
+      "features": [
+        "four articulated drive pods",
+        "tapered pearl chassis",
+        "raised sensor mast",
+        "independent scanning head",
+        "mint forward sensor",
+        "unarmed"
+      ],
+      "states": [
+        "idle scan",
+        "walk",
+        "turn",
+        "slope contact",
+        "damage",
+        "wreck",
+        "frozen pause",
+        "reduced motion"
+      ]
+    },
+    {
+      "kind": "drone",
+      "name": "Рабочий зонд",
+      "reference": "MODEL-drone",
+      "file": "files/MODEL-drone/05ad0535-80c9-4708-8a0b-dba4d021cbfd.png",
+      "sha256": "3a282b50fe3526fb671cffa17bbfdda630ff33a5651815ff63e0c47d909205ed",
+      "referenceRevision": 26,
+      "features": [
+        "four suspended drive pods",
+        "common pearl receiver shell",
+        "glazed cargo bay with actual 0-4 chunks",
+        "two jointed manipulators and claws",
+        "real construction and repair contact",
+        "unarmed"
+      ],
+      "states": [
+        "idle",
+        "walk",
+        "turn",
+        "cargo 0-4",
+        "mining",
+        "construction",
+        "repair",
+        "waiting",
+        "damage",
+        "wreck",
+        "frozen pause"
+      ]
+    },
+    {
+      "kind": "artillery",
+      "name": "Союзная артиллерия",
+      "reference": "MODEL-artillery",
+      "file": "files/MODEL-artillery/e8316c82-d581-4f3b-a730-addff9fdb34b.png",
+      "sha256": "e7d8f40ee52199d48b0482059762ab4f930c07dcf8bed4f614f915165bd8aec0",
+      "referenceRevision": 26,
+      "features": [
+        "two independently travelling tracks",
+        "pearl common chassis",
+        "turning turret ring",
+        "protected recoil cradle",
+        "graphite long barrel",
+        "pearl muzzle collar"
+      ],
+      "states": [
+        "idle",
+        "track travel",
+        "counterrotation",
+        "turret aim",
+        "fire and recoil",
+        "damage",
+        "wreck",
+        "frozen pause"
+      ],
+      "weaponMountHeight": 23,
+      "visualChassis": "tracked; gameplay dimensions and movement rules unchanged"
+    }
+  ],
+  "constraints": [
+    "Existing world projection and camera are preserved",
+    "References are not flattened or rotated as billboard images",
+    "No simulation or save-format changes",
+    "No gameplay registry additions",
+    "No runtime dependency or raster download",
+    "Prototype implementation is local and unpublished"
+  ],
+  "waves": [
+    {
+      "version": "0.28.0",
+      "libraryRevision": 19,
+      "kinds": [
+        "outpost",
+        "runner",
+        "rocket"
+      ]
+    },
+    {
+      "version": "0.29.0",
+      "libraryRevision": 26,
+      "kinds": [
+        "hero",
+        "rifle",
+        "scout",
+        "drone",
+        "artillery"
+      ]
+    }
+  ],
+  "babylonWave": {
+    "version": "0.31.0",
+    "libraryRevision": 78,
+    "manifest": "BABYLON_ART_REFERENCES.json",
+    "kinds": [
+      "hero",
+      "rifle",
+      "scout",
+      "drone",
+      "artillery",
+      "rocket",
+      "runner",
+      "base",
+      "outpost",
+      "barracks",
+      "foundry",
+      "arsenal",
+      "bunker",
+      "logistics",
+      "sentinel",
+      "bastion",
+      "bastion-south",
+      "turret",
+      "jammer",
+      "citadel"
+    ],
+    "implementation": "Rigid detailed assemblies built once and instanced; original uploads are unchanged."
+  }
+}

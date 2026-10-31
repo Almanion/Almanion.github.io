@@ -205,7 +205,11 @@
         x + Math.cos((i * TAU) / n) * r,
         y + Math.sin((i * TAU) / n) * r,
       ]);
-    const plates =
+    // Five articulated friendly models share more rigid panels than the pilot.
+    // Keep a bounded working set large enough for a full formation; paths are
+    // still admitted only after reuse, and changing limbs do not allocate them.
+    const geometryLimit = 2048,
+      plates =
       typeof Path2D !== "undefined" && options.geometryCache !== false
         ? new Map()
         : null;
@@ -228,9 +232,11 @@
       c.fill(geometry.top);
       c.strokeStyle = material.edge + "80";
       c.stroke(geometry.top);
-      c.strokeStyle = material.edge + "aa";
-      c.lineWidth = 0.7;
-      c.stroke(geometry.edge);
+      if(material.rim!==false) {
+        c.strokeStyle = material.edge + "aa";
+        c.lineWidth = 0.7;
+        c.stroke(geometry.edge);
+      }
     }
     function plate(c, shape, z, depth, angle, material) {
       // Admit a shape only after reuse. Unique animated limbs keep using the
@@ -247,7 +253,7 @@
         }
       } else if (plates) {
         plates.set(key, 1);
-        if (plates.size > 512) plates.delete(plates.keys().next().value);
+        if (plates.size > geometryLimit) plates.delete(plates.keys().next().value);
       }
       const co = Math.cos(angle),
         si = Math.sin(angle),
@@ -262,11 +268,15 @@
         if (depth > 0)
           for (let i = 0; i < base.length; i++) {
             const j = (i + 1) % base.length;
-            if (base[j][0] < base[i][0])
-              geometry.faces.push({
-                path: platePath([base[i], base[j], top[j], top[i]]),
-                front: base[j][1] < base[i][1],
-              });
+            if (base[j][0] < base[i][0]) {
+              const front=base[j][1]<base[i][1];
+              let face=geometry.faces.at(-1);
+              if(!face||face.front!==front) {
+                face={path:new Path2D(),front};geometry.faces.push(face);
+              }
+              face.path.moveTo(...base[i]);face.path.lineTo(...base[j]);
+              face.path.lineTo(...top[j]);face.path.lineTo(...top[i]);face.path.closePath();
+            }
           }
         plates.set(key, geometry);
         cachedPlate(c, geometry, material);
@@ -276,18 +286,23 @@
       // Orthographic extrusion: only edges with a normal toward +Y face the
       // camera. Back faces are fully covered by the roof and front faces.
       // Light comes from world -X, so the left-facing side is the lighter one.
-      if (depth > 0)
+      if (depth > 0) {
+        // Consecutive faces with the same material form one continuous skin.
+        // Preserve painter order, including concave parts, without AA seams
+        // or a separate native fill for every small bevel face.
+        let front=null, pending=false;
+        const flush=()=>{if(pending){c.fillStyle=front?material.front:material.side;c.fill();pending=false;}};
         for (let i = 0; i < base.length; i++) {
           const j = (i + 1) % base.length;
           if (base[j][0] >= base[i][0]) continue;
-          poly(
-            c,
-            [base[i], base[j], top[j], top[i]],
-            base[j][1] < base[i][1] ? material.front : material.side,
-          );
+          const next=base[j][1]<base[i][1];
+          if(!pending||next!==front){flush();c.beginPath();front=next;pending=true;}
+          c.moveTo(...base[i]);c.lineTo(...base[j]);c.lineTo(...top[j]);c.lineTo(...top[i]);c.closePath();
         }
+        flush();
+      }
       poly(c, top, material.top, material.edge + "80");
-      line(c, [top[0], top[1]], material.edge + "aa", 0.7);
+      if(material.rim!==false)line(c, [top[0], top[1]], material.edge + "aa", 0.7);
     }
     function slab(c, x, y, w, h, z, depth, angle, material) {
       plate(
@@ -330,6 +345,90 @@
     function canister(c, x, y, r, z, height, a, material) {
       plate(c, disc(r, x, y), z, height, a, material);
       plate(c, disc(r * 0.76, x, y), z + height, 1, a, dark);
+    }
+    // Pilot art uses connected cast shells rather than a stack of cuboids.
+    // Shared outlines are independent of pose; animated poses keep no raster atlas.
+    const contours = new Map(),
+      pilotMetal = { top: "#aaa18c", front: "#817865", side: "#48504d", edge: "#d9cbb1" },
+      // Ceramic has one continuous satin outline. Avoid a second bright line
+      // on every boot, clamp and tiny panel of the same connected shell.
+      fieldArmor = { top: "#b9c7ba", front: "#8da598", side: "#536d68", edge: "#dce6d7", rim: false },
+      pilotCeramic = { top: "#d9dfd3", front: "#a9b8ab", side: "#637e73", edge: "#f0f2e4", rim: false },
+      ceramicReceiver = { ...pilotCeramic, front: "#30464b", side: "#1a3038" },
+      fieldReceiver = { ...fieldArmor, front: "#30464b", side: "#1a3038" };
+    function rounded(w, h, r, x = 0, y = 0) {
+      r = Math.max(.1, Math.min(r, w / 2, h / 2));
+      const key = [w,h,r].join(":");
+      let shape = contours.get(key);
+      if (!shape) {
+      shape = [];
+      for (const [cx,cy,start] of [[w/2-r,h/2-r,0],[-w/2+r,h/2-r,Math.PI/2],
+        [-w/2+r,-h/2+r,Math.PI],[w/2-r,-h/2+r,Math.PI*1.5]])
+        for (let i=0;i<=3;i++) {
+          const t = start + i * Math.PI / 6;
+          shape.push([cx+Math.cos(t)*r,cy+Math.sin(t)*r]);
+        }
+      if (contours.size >= 96) contours.delete(contours.keys().next().value);
+      contours.set(key,shape);
+      }
+      return x || y ? shape.map(([xx,yy]) => [xx+x,yy+y]) : shape;
+    }
+    function cast(c, x, y, w, h, r, z, depth, a, material, bevel = 1.2) {
+      // Boots, clamps and small access covers are machined parts. The larger
+      // receiver and armour shells keep their continuous rounded silhouette.
+      if(Math.min(w,h)<10)return cap(c,x,y,w,h,z,depth,a,material);
+      // Tiny fasteners and graphite underframes have a satin rim rather than
+      // another machined bevel; the large armour shells carry the form.
+      bevel = Math.min(w,h)<10 || material===dark ? 0 : Math.min(bevel,depth*.6,w*.12,h*.12);
+      // Batch adjacent faces by material. Repeated shells share exact vector
+      // paths independently of their position; moving joints allocate no atlas.
+      const key=plates?["cast",w,h,r,z,depth,a,bevel].join(":"):null,
+        previous=plates?.get(key), origin=point(x,y,0,a);
+      let geometry=previous&&previous!==1?previous:null;
+      if(previous){plates.delete(key);plates.set(key,previous);}
+      else if(plates){plates.set(key,1);if(plates.size>geometryLimit)plates.delete(plates.keys().next().value);}
+      if(!geometry) {
+        const shape=rounded(w,h,r), inset=rounded(w-bevel*2,h-bevel*2,Math.max(.1,r-bevel)),
+          co=Math.cos(a),si=Math.sin(a),
+          base=shape.map(([xx,yy])=>[xx*co-yy*si,xx*si+yy*co-z]),
+          low=base.map(([xx,yy])=>[xx,yy-depth+bevel]),
+          high=inset.map(([xx,yy])=>[xx*co-yy*si,xx*si+yy*co-z-depth]),
+          groups=[[],[],[]];
+        for(let i=0;i<low.length;i++) {
+          const j=(i+1)%low.length,front=low[j][0]<low[i][0];
+          if(front)groups[base[j][1]<base[i][1]?0:1].push([base[i],base[j],low[j],low[i]]);
+          if(bevel)groups[front?0:2].push([low[i],low[j],high[j],high[i]]);
+        }
+        geometry={groups,top:high};
+        if(previous===1) {
+          geometry={paths:groups.map(faces=>{
+            const path=new Path2D();
+            for(const face of faces){path.moveTo(...face[0]);for(let i=1;i<face.length;i++)path.lineTo(...face[i]);path.closePath();}
+            return path;
+          }),top:platePath(high)};
+          plates.set(key,geometry);
+        }
+      } else geometryHits++;
+      c.save();c.translate(origin[0],origin[1]);
+      const colors=[material.front,material.side,material.edge];
+      for(const i of bevel?[2,0,1]:[0,1]) {
+        c.fillStyle=colors[i];
+        if(geometry.paths)c.fill(geometry.paths[i]);
+        else {
+          c.beginPath();
+          for(const face of geometry.groups[i]){c.moveTo(...face[0]);for(let j=1;j<face.length;j++)c.lineTo(...face[j]);c.closePath();}
+          c.fill();
+        }
+      }
+      c.fillStyle=material.top;c.strokeStyle=material.edge+"85";c.lineWidth=.6;
+      if(geometry.paths){c.fill(geometry.top);c.stroke(geometry.top);}
+      else poly(c,geometry.top,material.top,material.edge+"85");
+      c.restore();
+    }
+    function joint(c, v, r, a, material = pilotMetal) {
+      const q=point(v[0],v[1],v[2],a);
+      ellipse(c,q[0],q[1],r+1,r+1,dark.side);
+      ellipse(c,q[0],q[1]-.4,r,r*.84,material.top,material.edge+"85");
     }
     function barrel(c, a, z, length, width, back, material, recoil = 0, y = 0) {
       slab(
@@ -500,128 +599,81 @@
       if (ctx.u.flash > 0 && !ctx.ui.reduced && !ctx.ui.memory)
         ctx.muzzle(c, x, y, z, a, ctx.accent, ctx.u.flash, size);
     }
+    function infantryFeet(c, p, hero) {
+      const wide = hero ? 5.5 : 5,
+        direction = (p.direction ?? p.angle) - p.angle;
+      for (const side of [-1, 1]) {
+        const step = contact(p, side < 0 ? 0 : .5, .62, 3),
+          x = step.x * Math.cos(direction),
+          y = side * wide + step.x * Math.sin(direction),
+          lift = step.lift + ground(p, x, y),
+          knee = [x * .45 + 1.65, side * wide * .85 + (y - side * wide) * .4, 7.5 + lift * .4];
+        cap(c, x + 2, y, 9.5, 6, lift, 2.5, p.angle, dark);
+        bone(c, [x, y, 3 + lift], knee, 3.3, p.angle, hero ? pilotCeramic : fieldArmor);
+        bone(c, knee, [0, side * wide * .55, 13], 4, p.angle, dark);
+        cap(c, knee[0] + .5, knee[1], 4.8, 4.4, knee[2] - .5, 2.6, p.angle, hero ? pilotCeramic : fieldArmor);
+      }
+    }
+    function infantryRifle(c, a, recoil, material, mount) {
+      // Keep X=31, Y=5 and the actual bore height of each infantry weapon.
+      c.save(); c.translate(0, E.MOUNTS.hero - mount);
+      cap(c, 17 - recoil, 5, 18, 5.8, 15.5, 6.3, a, material===pilotCeramic?ceramicReceiver:fieldReceiver);
+      slab(c, 26.5 - recoil, 5, 6, 3, 18, 3, a, dark);
+      cap(c, 29 - recoil, 5, 4, 5, 17, 5, a, material);
+      slab(c, 31.05 - recoil, 5, .3, 2.9, 18.2, 2.6, a, dark);
+      slab(c, 14 - recoil, 5, 4.5, 4, 12, 4, a, dark);
+      slab(c, 16 - recoil, 5, 4.5, 3.5, 21.5, 2, a, dark);
+      lightStrip(c, [[18 - recoil, 7.9], [21 - recoil, 7.9]], 18.5, a, "#a4edd9", 1);
+      c.restore();
+    }
     function person(c, d, hero) {
       const { u, s, ui, p, aim, recoil, accent } = d,
-        material = hero ? ceramic : alloy,
-        bob = Math.abs(Math.sin(p.phase)) * p.move * (hero ? 0.75 : 0.4),
-        z = hero ? 1.5 : 0,
+        material = hero ? pilotCeramic : fieldArmor,
+        mount = E.MOUNTS[u.kind] || 18,
+        bob = Math.abs(Math.sin(p.phase)) * p.move * (hero ? .75 : .4),
         reload = hero && !ui.memory && s.reload > 0,
-        channel =
-          hero &&
-          !ui.memory &&
-          (s.terminal?.channeling || s.terminals?.some((t) => t.channeling)),
+        channel = hero && !ui.memory && (s.terminal?.channeling || s.terminals?.some(t => t.channeling)),
         dash = hero && s.dashT > 0 && !ui.memory,
-        lean = dash ? 2.5 : 0;
-      feet(
-        c,
-        dash ? { ...p, move: p.move * 0.25 } : p,
-        hero ? 5.5 : 5,
-        3.7,
-        material,
-      );
-      cap(c, -1, 0, 12, 12, 10 + bob, 5, p.angle, dark);
-      plate(
-        c,
-        hero
-          ? [
-              [-7, -7],
-              [1, -9],
-              [8, -5],
-              [9, 5],
-              [2, 8],
-              [-7, 6],
-            ]
-          : chamfer(13, 13),
-        14 + bob,
-        8 + z,
-        aim,
-        material,
-      );
-      slab(
-        c,
-        -7 - lean,
-        0,
-        5,
-        hero ? 11 : 8,
-        15 + bob,
-        hero ? 12 : 6,
-        aim,
-        dark,
-      );
-      if (hero) {
-        slab(c, -8 - lean, 0, 3, 9, 18 + bob, 8, aim, ceramic);
-        bone(c, [-10, 0, 20 + bob], [-10, 0, 28 + bob], 1.3, aim, accent);
-        slab(c, 1, -9, 10, 8, 19 + bob, 6, aim, ceramic);
-        slab(c, 2, 8, 7, 5, 18 + bob, 4, aim, alloy);
-        lightStrip(
-          c,
-          [
-            [5, -4],
-            [5, 3],
-          ],
-          24 + bob,
-          aim,
-          "#e4eee2",
-          2,
-        );
-      } else
-        for (const side of [-1, 1])
-          slab(c, 0, side * 7, 7, 4, 18 + bob, 4, aim, material);
-      const hand = reload ? Math.sin(clamp(1 - s.reload / 1.1) * Math.PI) : 0;
-      bone(c, [1, 7, 21 + bob], [10 - recoil, 6, 18], 3, aim, alloy);
-      bone(
-        c,
-        [1, -7, 22 + bob],
-        channel ? [14, -5, 28] : [14 - hand * 9, -1 - hand * 5, 18 - hand * 5],
-        3,
-        aim,
-        material,
-      );
-      if (channel) {
-        slab(c, 9, 6, 12, 4, 15, 3, aim, dark);
-        lamp(c, 15, -5, 28, aim, 1.2, accent);
-      } else {
-        barrel(c, aim, 18, 22, 3.5, 8, material, recoil, 5);
-        slab(c, 13 - recoil, 5, 4, 4, 13, 4, aim, dark);
-        if (reload)
-          slab(c, 9, 1 - hand * 6, 4, 3, 12 - hand * 3, 4, aim, ceramic);
-        flash(c, d, 31 - recoil, 5, 19.5, aim, 0.6);
+        lean = dash ? 2.5 : 0,
+        hand = reload ? Math.sin(clamp(1 - s.reload / 1.1) * Math.PI) : 0;
+      infantryFeet(c, dash ? { ...p, move: p.move * .25 } : p, hero);
+      // Bob the rigid armour as a whole. Its exact local vector paths can be
+      // shared even while walking; the gun and both grips keep their real height.
+      c.save(); c.translate(0, -bob);
+      cap(c, -1, 0, 12, 12, 10, 5, p.angle, dark);
+      // One shaped breastplate connects the neck, waist and shoulder sockets.
+      cast(c, -.5, 0, hero ? 15 : 14, hero ? 15 : 14, 4.6, 14,
+        hero ? 9.5 : 8.2, aim, material, 1.2);
+      cap(c, -8 - lean, 0, 6.5, hero ? 13 : 11, 14, hero ? 14 : 12, aim, dark);
+      cap(c, -8 - lean, 0, 5.5, 9, hero ? 27 : 25, 2, aim, material);
+      lightStrip(c, [[-11 - lean, -3], [-11 - lean, 3]], 21, aim, accent, hero ? 1.8 : 1.3);
+      for (const side of [-1, 1]) {
+        cap(c, -.5, side * 7.5, hero ? 8.5 : 7.5, 5.8, 19, hero ? 6 : 5, aim, material);
+        const elbow = [5, side * 8, 16.5],
+          grip = side > 0 ? [11 - recoil, 5.5, 17.5 - bob] :
+            channel ? [14, -5, 28 - bob] : [21 - hand * 12 - recoil, 3 - hand * 6, 18 - hand * 5 - bob];
+        bone(c, [0, side * 6.5, 21], elbow, 3.8, aim, dark);
+        bone(c, elbow, grip, 3.2, aim, material);
       }
-      cap(
-        c,
-        1 + lean,
-        0,
-        hero ? 11 : 10,
-        9,
-        25 + bob,
-        hero ? 9 : 7,
-        aim,
-        hero ? ceramic : dark,
-      );
-      lightStrip(
-        c,
-        [
-          [6, -3],
-          [6, 3],
-        ],
-        hero ? 31 + bob : 29 + bob,
-        aim,
-        accent,
-        1.6,
-      );
+      c.restore();
+      if (channel) {
+        cap(c, 9, 6, 12, 4, 15, 3, aim, dark);
+        lamp(c, 14, -5, 28, aim, 1.2, accent);
+      } else {
+        infantryRifle(c, aim, recoil, material, mount);
+        if (reload) cap(c, 9, 1 - hand * 6, 4, 3, 12 - hand * 3, 4, aim, material);
+        flash(c, d, 31 - recoil, 5, mount, aim, .6);
+      }
+      // The hero's pearl helmet and taller pack remain distinct at game scale.
+      c.save(); c.translate(0, -bob);
+      cast(c, 1 + lean, 0, hero ? 12 : 10.5, hero ? 10 : 9.5, 3.4,
+        25, hero ? 9 : 7, aim, hero ? pilotCeramic : dark, 1.2);
+      cap(c, 5.4 + lean, 0, 3.4, 7, 25.5, 3, aim, material);
+      lightStrip(c, [[6.6 + lean, -3], [6.6 + lean, 3]], hero ? 31 : 29, aim, accent, 1.6);
+      if (hero) seam(c, [[-1 + lean, -3], [3 + lean, -2]], 34, aim, "#aebeb0", .7);
+      c.restore();
       if (dash && !ui.reduced)
-        for (const side of [-1, 1])
-          lightStrip(
-            c,
-            [
-              [-11, side * 6],
-              [-25, side * 6],
-            ],
-            13,
-            p.angle,
-            "#a4edd94d",
-            1.4,
-          );
+        for (const side of [-1, 1]) lightStrip(c, [[-11, side * 6], [-25, side * 6]], 13, p.angle, "#a4edd94d", 1.4);
     }
     function robot(c, d) {
       const { u, p, aim, accent, recoil } = d,
@@ -721,249 +773,121 @@
         );
     }
     function runner(c, d) {
-      const { p, aim, preparing, progress, recoil, accent } = d,
-        a = preparing ? aim : p.angle,
-        coil = preparing ? progress : 0,
-        strike = recoil * 0.65,
-        bodyZ = 6.5 - coil * 1.7,
-        headX = 9 - coil * 2 + strike;
-      // Diagonal pairs share a phase. The long hind hocks push, while the
-      // shorter front shins reach forward instead of sliding like outriggers.
-      for (const side of [-1, 1])
-        for (const front of [-1, 1]) {
-          const step = contact(
-              preparing ? { ...p, move: 0, settle: 0 } : p,
-              side * front > 0 ? 0 : 0.5,
-              0.58,
-              2.6,
-            ),
-            swing = step.x,
-            lift = step.lift,
-            hip = [front > 0 ? 4 : -6, side * 4.5, bodyZ + 1],
-            knee = [
-              front > 0 ? 7 - swing * 0.2 : -10 - swing * 0.2,
-              side * 8,
-              4.5 + lift * 0.3,
-            ],
-            foot = [
-              front > 0 ? 10 + swing - coil : -11 + swing - coil * 2,
-              side * (front > 0 ? 10 : 9),
-              1 +
-                lift +
-                ground(
-                  p,
-                  front > 0 ? 10 + swing - coil : -11 + swing - coil * 2,
-                  side * (front > 0 ? 10 : 9),
-                  a,
-                ),
-            ];
-          bone(c, hip, knee, 3.3, a, dark);
-          bone(c, knee, foot, 2.5, a, enemy);
-          cap(c, knee[0], knee[1], 4.4, 3.5, knee[2] - 0.8, 2, a, enemy);
-          plate(
-            c,
-            [
-              [foot[0] - 3, foot[1] - 1.5],
-              [foot[0] + 3.5, foot[1] - 1],
-              [foot[0] + 4.2, foot[1]],
-              [foot[0] + 2.5, foot[1] + 1.5],
-              [foot[0] - 3, foot[1] + 1.5],
-            ],
-            foot[2] - 0.6,
-            1.5,
-            a,
-            dark,
-          );
-        }
-      plate(
-        c,
-        [
-          [-10, -5.5],
-          [-2, -7],
-          [6, -4.8],
-          [11, 0],
-          [6, 4.8],
-          [-2, 7],
-          [-10, 5.5],
-        ],
-        bodyZ,
-        3.7,
-        a,
-        dark,
-      );
-      plate(
-        c,
-        [
-          [-9, -4.5],
-          [-4, -6],
-          [2, -5],
-          [7, 0],
-          [2, 5],
-          [-4, 6],
-          [-9, 4.5],
-        ],
-        bodyZ + 3.7,
-        2.8,
-        a,
-        enemy,
-      );
-      // Split back armour leaves the dark articulated spine visible.
-      for (const side of [-1, 1]) {
-        const shell = [
-          [-8, side * 1],
-          [-7, side * 5],
-          [-1, side * 5],
-          [2, side * 1],
-        ];
-        plate(
-          c,
-          side > 0 ? shell.reverse() : shell,
-          bodyZ + 6.5,
-          1.6,
-          a,
-          enemy,
-        );
-        lightStrip(
-          c,
-          [
-            [-6, side * 2],
-            [-2, side * 2],
-          ],
-          bodyZ + 8.3,
-          a,
-          "#3c4946",
-          1.2,
-        );
+      const {p,aim,preparing,progress,recoil,accent}=d,
+        a=preparing?aim:p.angle, coil=preparing?progress:0,
+        strike=recoil*.65, bodyZ=6.8-coil*1.7,
+        gait=preparing?{...p,move:0,settle:0}:p;
+      // One articulated lower frame carries all four limbs. Contact remains
+      // distance based, including the original planted-foot and ramp correction.
+      for (const side of [-1,1]) for (const front of [-1,1]) {
+        const step=contact(gait,side*front>0?0:.5,.58,2.6),
+          hip=[front>0?4:-6,side*4.5,bodyZ+1],
+          knee=[front>0?7-step.x*.2:-10-step.x*.2,side*8,4.5+step.lift*.3],
+          x=front>0?10+step.x-coil:-11+step.x-coil*2,
+          y=side*(front>0?10:9), footZ=1+step.lift+ground(p,x,y,a);
+        bone(c,hip,knee,4.2,a,dark);
+        bone(c,[hip[0]+.5,hip[1],hip[2]+.5],knee,2.8,a,pilotMetal);
+        bone(c,knee,[x,y,footZ+1],2.8,a,dark);
+        cast(c,x+1,y,8,4.7,1.7,footZ-.5,1.8,a,pilotMetal,.5);
+        joint(c,knee,1.5,a,pilotMetal);
       }
-      cap(c, headX, 0, 8, 7, bodyZ + 0.4, 3.6, a, enemy);
-      slab(c, headX + 3.5, 0, 2, 6, bodyZ + 1, 2.7, a, dark);
-      for (const side of [-1, 1])
-        lamp(
-          c,
-          headX + 4,
-          side * 2,
-          bodyZ + 3.5,
-          a,
-          0.85,
-          preparing ? "#f5c293" : accent,
-        );
-      for (const side of [-1, 1]) {
-        const jawX = headX + 4 + strike,
-          spread = 4.7 - coil * 1.5;
-        bone(
-          c,
-          [headX - 1, side * 3, bodyZ + 1],
-          [jawX, side * spread, bodyZ - 1],
-          2.7,
-          a,
-          dark,
-        );
-        bone(
-          c,
-          [jawX, side * spread, bodyZ - 1],
-          [jawX + 4.3, side * 1.6, bodyZ - 2],
-          2.2,
-          a,
-          copper,
-        );
-        slab(c, jawX, side * spread, 3.2, 3, bodyZ - 1.7, 1.6, a, enemy);
+      cast(c,-1.2,0,25,15,5.8,bodyZ,4.1,a,dark,1.3);
+      // The rear carapace and tapered prow share one spine and common shoulder.
+      cast(c,-3.8,0,19,12.8,4.5,bodyZ+3.6,3.8,a,pilotMetal,1.5);
+      plate(c,[[1,-5.4],[7,-4.2],[11.8,-1.8],[12.5,0],[11.8,1.8],[7,4.2],[1,5.4]],
+        bodyZ+3.9,2.8,a,pilotMetal);
+      cast(c,-4,0,10,3.1,1.1,bodyZ+7.4,.8,a,dark,.2);
+      for(const x of [-7,-3])
+        seam(c,[[x,-4.3],[x+1.2,-1.8]],bodyZ+7.6,a,"#736e60",.8);
+      for(const side of [-1,1]) {
+        joint(c,[3.5,side*5.9,bodyZ+3],1.5,a,pilotMetal);
+        const jawX=12+strike-coil*1.8, spread=4.8-coil*1.4;
+        bone(c,[8,side*3.8,bodyZ+2],[jawX,side*spread,bodyZ-.6],3.1,a,dark);
+        plate(c,[[jawX-1.5,side*(spread+1.2)],[jawX+3.3,side*(spread+.5)],
+          [jawX+5.1,side*1.25],[jawX+2,side*1.5],[jawX-.7,side*(spread-1)]],
+          bodyZ-1.2,1.8,a,pilotMetal);
       }
+      // One dark optical slit, with a restrained amber lock signal.
+      cast(c,10.2-coil,0,3.4,6.5,1.5,bodyZ+3.1,2,a,dark,.4);
+      lightStrip(c,[[11.9-coil,-1.7],[11.9-coil,1.7]],bodyZ+5.4,a,
+        preparing?"#f7c592":accent,preparing?1.2+coil*.35:1.2);
     }
     function scout(c, d) {
       const { p, t, accent, ui } = d,
-        sensor =
-          p.angle + (ui.memory || ui.reduced ? 0 : Math.sin(t * 0.75) * 0.16);
-      legs(c, p, 9, 9, 6, alloy, 4, "trot");
-      plate(
-        c,
-        [
-          [-11, -5],
-          [1, -7],
-          [13, 0],
-          [1, 7],
-          [-11, 5],
-        ],
-        5,
-        5,
-        p.angle,
-        alloy,
-      );
-      cap(c, 0, 0, 14, 8, 10, 3, p.angle, ceramic);
-      bone(c, [-5, 0, 12], [-5, 0, 27], 2.3, p.angle, dark);
-      cap(c, -3, 0, 12, 5, 25, 4, sensor, ceramic);
-      lightStrip(
-        c,
-        [
-          [3, -1.5],
-          [3, 1.5],
-        ],
-        28,
-        sensor,
-        accent,
-        1.7,
-      );
+        sensor = p.angle + (ui.memory || ui.reduced ? 0 : Math.sin(t * .75) * .16);
+      for (const side of [-1, 1]) for (const front of [-1, 1]) {
+        const step = contact(p, side * front > 0 ? 0 : .5, .6, 2.5),
+          x = front * 8 + step.x, y = side * 9.5,
+          lift = step.lift + ground(p, x, y),
+          knee = [front * 7 + step.x * .35, side * 7.5, 5.5 + step.lift * .3];
+        bone(c, [front * 4, side * 4, 8], knee, 3.5, p.angle, dark);
+        bone(c, knee, [x, y, 2 + lift], 3, p.angle, fieldArmor);
+        cap(c, x + 1, y, 8, 5.8, lift, 2.8, p.angle, pilotCeramic);
+      }
+      plate(c, [[-12,-6],[-6,-9],[5,-8],[14,-1],[14,1],[5,8],[-6,9],[-12,6]], 5.5, 5, p.angle, fieldArmor);
+      cast(c, -1.5, 0, 21, 16, 4.5, 10.5, 3.5, p.angle, pilotCeramic, .9);
+      lightStrip(c, [[12.5,-2.5],[12.5,2.5]], 10, p.angle, accent, 1.6);
+      plate(c, disc(4,-4,0), 14, 2, p.angle, dark);
+      bone(c, [-4,0,15], [-4,0,28], 3.2, p.angle, dark);
+      seam(c, [[-3.8,0],[-3.8,0]], 23, p.angle, "#72978b", 1.3);
+      // Only the sensor head scans: its bearing rotates around the mast joint.
+      const anchor = point(-4,0,0,p.angle);
+      c.save(); c.translate(anchor[0],anchor[1]);
+      cap(c, 0, 0, 14, 9.5, 27, 3, sensor, dark);
+      cap(c, 0, 0, 13.5, 8.5, 29.5, 4.5, sensor, pilotCeramic);
+      lightStrip(c, [[6.9,-2.2],[6.9,2.2]], 30.8, sensor, accent, 1.8);
+      c.restore();
     }
     function drone(c, d) {
-      const { u, s, p, accent, ui, t } = d,
+      const { u, p, accent, ui, t } = d,
         service = d.activity,
         building = !ui.memory && service?.arrived,
-        mining = !ui.memory && u.work === "gather",
+        mining = !ui.memory && u.work === "gather" && p.move < .05,
         working = building || mining,
-        a = building ? Math.atan2(service.contact.y - u.y, service.contact.x - u.x) : p.angle;
-      legs(c, p, 7, 7, 5, alloy);
-      cap(c, 0, 0, 15, 13, 4, 4, p.angle, alloy);
-      slab(c, -2, 0, 9, 10, 8, 5, p.angle, dark);
-      // A framed open bay makes the four real cargo chunks legible without glow.
-      for (const side of [-1, 1])
-        slab(c, -2, side * 5, 11, 1.5, 8, 6, p.angle, ceramic);
-      for (let i = 0; i < Math.min(4, u.cargo || 0); i++)
-        cap(
-          c,
-          -4 + (i % 2) * 4,
-          -2 + Math.floor(i / 2) * 4,
-          3,
-          3,
-          9,
-          3,
-          p.angle,
-          copper,
-        );
-      for (const side of [-1, 1]) {
-        const reach = building ? Math.max(15, E.dist(u, service.contact)) : 14,
-          sweep = building && service.active && !ui.reduced ? Math.sin(t * 4.5 + u.id) * 2 : 0,
-          height = building ? 9 + sweep : 7,
-          elbow = building ? Math.min(22, reach * 0.6) : working ? 11 : 8;
-        bone(
-          c,
-          [4, side * 5, 8],
-          [elbow, side * (working ? 4 : 7), working ? 14 : 5],
-          2,
-          a,
-          ceramic,
-        );
-        bone(
-          c,
-          [elbow, side * (working ? 4 : 7), working ? 14 : 5],
-          [working ? reach : 10, side * (building ? 1.2 : 3), working ? height : 3],
-          1.5,
-          a,
-          dark,
-        );
+        a = building ? Math.atan2(service.contact.y-u.y,service.contact.x-u.x) : p.angle;
+      // Four suspended drive pods carry the common receiver frame.
+      for (const side of [-1,1]) for (const front of [-1,1]) {
+        const step = contact(p, side*front>0 ? 0 : .5, .78, 1.8),
+          x = front*7+step.x, y=side*8,
+          lift=step.lift+ground(p,x,y),
+          knee=[front*6+step.x*.35,side*6.5,4.5+step.lift*.3];
+        bone(c,[front*4,side*4,6],knee,3,p.angle,dark);
+        bone(c,knee,[x,y,2+lift],2.7,p.angle,fieldArmor);
+        cap(c,x+1,y,7.5,5.5,lift,2.5,p.angle,pilotCeramic);
       }
-      lamp(c, 5, 0, 10, p.angle, 1, accent);
-      if (working) {
-        const extension = ui.reduced ? 1 : 0.6 + 0.4 * Math.sin(t * 12);
-        if (building) {
-          const reach = Math.max(15, E.dist(u, service.contact)),
-            height = 9 + (service.active && !ui.reduced ? Math.sin(t * 4.5 + u.id) * 2 : 0);
-          lamp(c, reach, 0, height, a, 1.4,
-            service.waiting ? "#c7a777" : service.kind === "repair" ? "#99e6e2" : "#e9d1a1");
-          if (service.active)
-            welding(c, point(reach, 0, height, a), t, u.id, ui.reduced, service.kind === "repair");
-        } else lamp(c, 13, 0, 7, a, extension, "#a4edd9");
+      cast(c,0,0,22,18,5.5,4,4,a,dark,.9);
+      cast(c,-.5,0,21,17,4.8,7,5,a,pilotCeramic,1.1);
+      cap(c,-1.5,0,10.5,11,12,1,a,dark);
+      for(let i=0;i<Math.min(4,u.cargo||0);i++)
+        cap(c,-3.5+(i%2)*4,-2.2+Math.floor(i/2)*4.4,3,3.2,13,2.5,a,copper);
+      // The glazing is translucent, so each actual cargo chunk stays visible.
+      poly(c,[[-6.3,-4.8],[3.3,-4.8],[3.3,4.8],[-6.3,4.8]].map(([x,y])=>point(x,y,15.7,a)),"#beded318","#b4d0bf90");
+      lightStrip(c,[[9.6,-2],[9.6,2]],10,a,accent,1.7);
+      for(const side of [-1,1]) {
+        const reach=building?Math.max(15,E.dist(u,service.contact)):15,
+          sweep=building&&service.active&&!ui.reduced?Math.sin(t*4.5+u.id)*2:0,
+          height=building?9+sweep:7,
+          elbow=building?Math.min(22,reach*.6):working?11:10,
+          endX=working?reach:13, endY=side*(building?1.2:working?3:6),
+          endZ=working?height:5,
+          elbowY=side*(working?4:7), elbowZ=working?13:7;
+        bone(c,[7,side*5,8],[elbow,elbowY,elbowZ],3,a,pilotCeramic);
+        bone(c,[elbow,elbowY,elbowZ],[endX,endY,endZ],2,a,dark);
+        const aperture=working?.8:1.5;
+        for(const finger of [-1,1])
+          seam(c,[[endX,endY],[endX+2,endY+finger*aperture],[endX+3.2,endY+finger*.65]],endZ,a,"#425b5b",1.5);
+      }
+      if(working) {
+        const extension=ui.reduced?1:.6+.4*Math.sin(t*12);
+        if(building) {
+          const reach=Math.max(15,E.dist(u,service.contact)),
+            height=9+(service.active&&!ui.reduced?Math.sin(t*4.5+u.id)*2:0);
+          lamp(c,reach,0,height,a,1.4,service.waiting?"#c7a777":service.kind==="repair"?"#99e6e2":"#e9d1a1");
+          if(service.active)welding(c,point(reach,0,height,a),t,u.id,ui.reduced,service.kind==="repair");
+        } else lamp(c,15,0,7,a,extension,accent);
       }
     }
-    // Sparks are a fixed handful of deterministic strokes, not accumulating particles.
+    // Sparks are bounded deterministic strokes, never accumulating particles.
     function welding(c, origin, time, seed, reduced, repair) {
       const color = repair ? "#a7e8e0" : "#f0cb8d";
       ellipse(c, origin[0], origin[1], reduced ? 1.5 : 2.1, 1.1, "#f8f2d7");
@@ -1049,35 +973,41 @@
         lamp(c, carriage, slide, load, a, 1.2, "#e6c795");
       }
     }
-    function artillery(c, d) {
-      const { p, aim, recoil, accent } = d;
-      legs(c, p, 18, 17, 10, alloy);
-      cap(c, -1, 0, 33, 23, 7, 6, p.angle, alloy);
-      slab(c, -12, 0, 10, 18, 13, 8, p.angle, dark);
-      for (const side of [-1, 1])
-        slab(c, -12, side * 6, 7, 5, 21, 2, p.angle, ceramic);
-      canister(c, 0, 0, 7, 13, 6, aim, dark);
-      cap(c, 3, 0, 21, 13, 17, 7, aim, ceramic);
-      barrel(c, aim, E.MOUNTS.artillery, 37, 5, 2, ceramic, recoil);
-      slab(c, 8 - recoil, 0, 13, 11, 26, 3, aim, alloy);
-      lightStrip(
-        c,
-        [
-          [-7, -7],
-          [-7, 7],
-        ],
-        21,
-        p.angle,
-        accent,
-        1.3,
-      );
-      flash(c, d, 40 - recoil, 0, 25, aim, 1.1);
+    function artilleryTracks(c,p,material) {
+      for(const side of [-1,1]) {
+        const y=side*14, lift=ground(p,0,y),
+          travelled=side<0?p.left:p.right,
+          pitch=5.8,shift=(((travelled??p.phase*18/TAU)%pitch)+pitch)%pitch;
+        cap(c,0,y,39,9,1+lift,6,p.angle,dark);
+        cap(c,-1,y,32,7,7+lift,3,p.angle,material);
+        for(let i=0;i<5;i++) {
+          const x=-15+i*pitch+shift;
+          lightStrip(c,[[x,y-3.5],[x,y+3.5]],10.2+lift,p.angle,"#3b5150",1.2);
+        }
+      }
     }
-    function launcherTube(c, a, shift = 0) {
+    function artillery(c,d) {
+      const {p,aim,recoil,accent}=d;
+      artilleryTracks(c,p,pilotCeramic);
+      cast(c,-1,0,33,26,6,6,7,p.angle,pilotCeramic,1.3);
+      cap(c,-12,0,9,16,13,7,p.angle,dark);
+      for(const side of [-1,1])cap(c,-12,side*5,7,4.5,20,2.5,p.angle,pilotCeramic);
+      plate(c,disc(8),13,5,aim,dark);
+      cast(c,0,0,23,19,5.5,17,7.5,aim,pilotCeramic,1.2);
+      // The cradle, breech, barrel and collar share the authoritative bore.
+      cap(c,8-recoil,0,14,12,22,7,aim,fieldArmor);
+      cap(c,15-recoil,0,12,9,20,6,aim,pilotCeramic);
+      slab(c,27-recoil,0,20,5.2,E.MOUNTS.artillery-2.6,5.2,aim,dark);
+      cap(c,37.5-recoil,0,5,8,E.MOUNTS.artillery-3.8,7.6,aim,pilotCeramic);
+      slab(c,40.05-recoil,0,.3,4,E.MOUNTS.artillery-2,4,aim,dark);
+      lightStrip(c,[[-10,-5],[-10,5]],24,aim,accent,1.6);
+      seam(c,[[-7,-5],[-5,-7],[0,-7]],24.8,aim,"#a2b8aa",.7);
+      flash(c,d,40-recoil,0,E.MOUNTS.artillery,aim,1.1);
+    }
+    function launcherTube(c, a, shift = 0, z = E.MOUNTS.rocket, material = pilotMetal) {
       const back = -12 - shift,
         front = 25 - shift,
         y = -6.5,
-        z = E.MOUNTS.rocket,
         radius = 4.1,
         ring = (x, r) =>
           Array.from({ length: 8 }, (_, i) => {
@@ -1100,7 +1030,7 @@
             poly(c, [rear[i], nose[i], nose[j], rear[j]], fill);
           }
         };
-      skin(back, front, radius, enemy);
+      skin(back, front, radius, material);
       skin(back, back + 2.7, radius + 1, dark);
       skin(front - 2.6, front + 0.6, radius + 0.7, copper);
       // Mouth and exhaust are actual octagons in the YZ plane, so the tube
@@ -1134,104 +1064,50 @@
       );
     }
     function rocket(c, d) {
-      const { p, aim, preparing, progress, accent, recoil } = d,
-        brace = preparing ? clamp(progress * 3) : 0;
-      for (const side of [-1, 1]) {
-        const step = contact(
-            preparing ? { ...p, move: 0, settle: 0 } : p,
-            side < 0 ? 0 : 0.5,
-            0.72,
-            1.8,
-          ),
-          swing = step.x,
-          lift =
-            step.lift +
-            ground(p, swing + side * brace * 2.3, side * (6.5 + brace)),
-          foot = [swing + side * brace * 2.3, side * (6.5 + brace), 2 + lift],
-          knee = [2 + swing * 0.25 + brace, side * 6.1, 7.5];
-        slab(c, foot[0] + 2, foot[1], 11, 6, lift, 2.6, p.angle, dark);
-        bone(c, [-2, side * 4.5, 13], knee, 3.7, p.angle, dark);
-        bone(c, knee, foot, 3, p.angle, enemy);
-        cap(c, knee[0], knee[1], 5.5, 5, knee[2] - 0.5, 3, p.angle, enemy);
+      const {p,aim,preparing,progress,accent,recoil}=d,
+        brace=preparing?clamp(progress*3):0,
+        gait=preparing?{...p,move:0,settle:0}:p;
+      for(const side of [-1,1]) {
+        const step=contact(gait,side<0?0:.5,.72,1.8),
+          x=step.x+side*brace*2.3, y=side*(6.5+brace),
+          lift=step.lift+ground(p,x,y),
+          knee=[2+step.x*.25+brace,side*6.1,7.5],
+          ankle=[x,y,2.5+lift];
+        cast(c,x+2,y,11.5,6.3,2,lift,2.7,p.angle,dark,.65);
+        bone(c,[-2,side*4.5,13],knee,4.4,p.angle,pilotMetal);
+        bone(c,knee,ankle,3.5,p.angle,pilotMetal);
+        joint(c,knee,1.5,p.angle,pilotMetal);
       }
-      cap(c, -2, 0, 14, 15, 10, 5, p.angle, dark);
-      plate(
-        c,
-        [
-          [-7, -6],
-          [-2, -8],
-          [5, -6],
-          [7, -1],
-          [4, 7],
-          [-5, 7],
-        ],
-        15,
-        8,
-        aim,
-        enemy,
-      );
-      cap(c, -8, 2, 7, 11, 14, 12, aim, dark);
-      slab(c, -8, 2, 4, 8, 26, 2, aim, enemy);
-      lightStrip(
-        c,
-        [
-          [-9, -1],
-          [-9, 5],
-        ],
-        28,
-        aim,
-        copper.edge,
-        1.1,
-      );
-      // A trunnion and both hands support the launcher at its real mount.
-      cap(c, -1, -7, 11, 8, 16, 4, aim, dark);
-      canister(c, -2, -6.5, 3.4, 18, 3, aim, copper);
-      bone(c, [-1, -7, 20], [-3, -10, 16], 3.4, aim, enemy);
-      bone(c, [-3, -10, 16], [8, -7, 20], 2.8, aim, dark);
-      bone(c, [0, 7, 21], [7, 8, 17], 3.4, aim, enemy);
-      bone(c, [7, 8, 17], [11, -4, 21], 2.8, aim, dark);
-      cap(c, 10, -4, 4.5, 3.5, 20, 2.5, aim, enemy);
-      launcherTube(c, aim, recoil * 0.3);
-      cap(c, 1, 4.5, 11, 10, 23, 2, aim, dark);
-      cap(c, 2, 4.5, 8, 7, 25, 7, aim, enemy);
-      lightStrip(
-        c,
-        [
-          [6, 2.5],
-          [6, 6.5],
-        ],
-        29,
-        aim,
-        accent,
-        1.4,
-      );
-      if (!d.ui.memory && !preparing && d.u.cool > E.C.rocket.rate * 0.5) {
-        slab(c, -4, -10, 9, 2, 28, 5, aim, enemy);
-        slab(c, -4, -7, 9, 4, 28, 1, aim, dark);
+      cast(c,-2,0,14.5,15.5,5,10,5,p.angle,dark,1.5);
+      cast(c,-.3,.2,16,17,5.2,14,10.3,aim,pilotMetal,1.8);
+      seam(c,[[-4,-4],[1,-5],[4,-2]],24.3,aim,"#d6c7a8",.75);
+      cast(c,-8,2,7.7,11.5,2.7,14,11,aim,dark,1.1);
+      cast(c,-8,2,5.7,8.5,2,24,2.5,aim,pilotMetal,.7);
+      lightStrip(c,[[-9,0],[-9,4]],27,aim,accent,1.1);
+      // The load path is visible: shoulder trunnion, elbows and two grips.
+      cast(c,-1,-7,12,8,2.5,16,4.5,aim,dark,.8);
+      joint(c,[-2,-6.5,20],2.3,aim,pilotMetal);
+      bone(c,[-1,-7,20],[-3,-10,16],4,aim,pilotMetal);
+      bone(c,[-3,-10,16],[8,-7,20],2.8,aim,dark);
+      bone(c,[0,7,21],[7,8,17],4,aim,pilotMetal);
+      bone(c,[7,8,17],[11,-4,21],2.8,aim,dark);
+      joint(c,[7,8,17],1.5,aim,pilotMetal);
+      cast(c,10,-4,4.5,3.5,1.3,20,2.5,aim,pilotMetal,.5);
+      launcherTube(c,aim,recoil*.3);
+      // A distinct compact sensor faces along the real firing direction.
+      cast(c,1,4.5,10.5,10,3,23,2,aim,dark,.5);
+      cast(c,2,4.5,8.3,7.5,2.5,25,6.5,aim,pilotMetal,1.2);
+      lightStrip(c,[[6,2.7],[6,6.3]],29,aim,accent,1.5);
+      if(!d.ui.memory&&!preparing&&d.u.cool>E.C.rocket.rate*.5) {
+        cast(c,-4,-10,9,2.3,.8,28,5,aim,pilotMetal,.7);
+        cast(c,-4,-7,9,4,1.2,28,1,aim,dark,.25);
       }
-      bone(c, [3, 8, 20], [9, 8, 24], 2.5, aim, dark);
-      cap(c, 10, 8, 6, 4, 24, 4, aim, dark);
-      lamp(
-        c,
-        13,
-        8,
-        27,
-        aim,
-        preparing ? 1.2 + progress * 0.6 : 0.85,
-        preparing ? "#f5c49d" : accent,
-      );
-      if (preparing)
-        for (let i = 0; i < 3; i++)
-          lamp(
-            c,
-            7 + i * 2.1,
-            6,
-            29,
-            aim,
-            0.65,
-            progress > i / 3 ? "#f1c398" : "#4a4d43",
-          );
-      flash(c, d, 26 - recoil * 0.3, -6.5, E.MOUNTS.rocket, aim, 0.7);
+      bone(c,[3,8,20],[9,8,24],2.5,aim,dark);
+      cast(c,10,8,6.5,4.7,1.9,24,4,aim,dark,.6);
+      lamp(c,13,8,27,aim,preparing?1.2+progress*.6:.85,preparing?"#f5c49d":accent);
+      if(preparing)for(let i=0;i<3;i++)lamp(c,7+i*2.1,6,29,aim,.65,progress>i/3?"#f1c398":"#4a4d43");
+      // All cosmetic recoil stays behind the authoritative muzzle position.
+      flash(c,d,26-recoil*.3,-6.5,E.MOUNTS.rocket,aim,.7);
     }
     function flamer(c, d) {
       const { p, aim, preparing, firing, accent, recoil, progress } = d,
@@ -1391,7 +1267,90 @@
         1.2,
       );
     }
+    function extractor(c, d, frame) {
+      const {u,s,ui,accent}=d, a=frame?.a||0,
+        w=frame?.w||58, h=frame?.h||58,
+        progress=frame?.progress??clamp(1-(u.build||0)/(s.campaign?E.development.items(s).outpost.time:6)),
+        assembling=progress<1, stage=clamp((progress-.12)/.68),
+        roof=clamp((progress-.42)/.43),
+        z=4+19*stage, mainX=-w*.13, mainY=-h*.075,
+        mw=w*.69, mh=h*.68, sideX=w*.34,
+        portalY=mainY+mh*.5, portalW=w*.43,
+        opening=Math.max(d.gate,d.delivery*.75),
+        active=!ui.memory&&!assembling&&!!u.jobs?.length,
+        running=active&&!ui.reduced?Math.sin(d.t*1.8)*.5+.5:.5,
+        patients=d.patients||[];
+      if(assembling)constructionRig(c,d,w,h,a,progress);
+      cast(c,0,0,w-8,h-8,Math.min(w,h)*.115,0,4,a,dark,1.5);
+      // A continuous service apron joins the shell and the real +Y exit.
+      cast(c,-w*.08,h*.34,w*.55,h*.28,5,2,2,a,alloy,.6);
+      if(progress>.12) {
+        cast(c,mainX,mainY,mw,mh,mw*.19,4,z-3,a,alloy,Math.min(3,z*.16));
+        cast(c,sideX,-h*.055,w*.24,h*.71,w*.09,4,Math.max(5,z+5),a,dark,2);
+        // The gallery between the two masses is part of the common lower frame.
+        cast(c,w*.22,-h*.1,w*.12,h*.55,3,6,9,a,dark,1);
+        if(roof>0) {
+          const roofZ=z+1.5+9*(1-roof), roofW=mw-4;
+          cast(c,mainX,mainY,roofW,mh-4,mw*.185,roofZ,4,a,pilotCeramic,2);
+          // Large functional seams replace surface noise and remain legible at play scale.
+          seam(c,[[mainX-mw*.38,-h*.12],[mainX+mw*.27,-h*.12]],roofZ+4.2,a,"#a8b5aa",.8);
+          seam(c,[[mainX-mw*.35,h*.06],[mainX+mw*.32,h*.06]],roofZ+4.2,a,"#a8b5aa",.7);
+          const lidR=Math.max(3,w*.115), lidX=w*.02, lidY=-h*.17;
+          plate(c,disc(lidR+1.6,lidX,lidY,16),roofZ+4,2,a,dark);
+          plate(c,disc(lidR,lidX,lidY,16),roofZ+6,2.5,a,alloy);
+          seam(c,[[lidX-lidR*.55,lidY-lidR*.5],[lidX+lidR*.35,lidY-lidR*.5]],roofZ+8.6,a,"#d6e5d7",.8);
+          cast(c,sideX,-h*.055,w*.2,h*.66,w*.07,z+9,3,a,pilotCeramic,1.5);
+          cast(c,sideX,-h*.055,w*.17,h*.61,w*.055,z+12,2,a,dark,.8);
+          for(let i=0;i<4;i++)lightStrip(c,[[sideX-w*.045,h*.1+i*2.7],[sideX+w*.045,h*.1+i*2.7]],z+14.2,a,"#526862",1);
+          cast(c,sideX,-h*.12,w*.105,h*.13,2,z+14,1,a,alloy,.4);
+          // Short antenna and quiet status lights follow the approved side power unit.
+          const mast=clamp((progress-.66)/.28);
+          bone(c,[sideX,-h*.25,z+13],[sideX,-h*.25,z+13+mast*12],1.7,a,dark);
+          lamp(c,sideX-w*.025,-h*.25,z+15,a,1.5,assembling?"#c6af82":accent);
+          for(const side of [-1,1])lightStrip(c,[[sideX+side*w*.075,-h*.04],[sideX+side*w*.075,h*.07]],z+14.4,a,accent,1.2);
+        }
+        // Curved protected supply pipes physically connect the power unit to the receiver.
+        bone(c,[w*.2,-h*.25,8],[w*.24,-h*.2,12],3.5,a,dark);
+        bone(c,[w*.24,-h*.2,12],[w*.24,h*.12,12],3.5,a,dark);
+        bone(c,[w*.24,h*.12,12],[w*.13,h*.2,8],3.5,a,alloy);
+        // One broad portal is split into loading and patient lanes on a common apron.
+        cast(c,mainX,portalY+1,portalW+8,7,2.2,3,z+2,a,alloy,1.3);
+        slab(c,mainX,portalY+5,portalW,2,5,Math.max(1,z-3),a,dark);
+        if(z>8) {
+          const shutter=(z-5)*(1-opening);
+          if(shutter>.1)slab(c,mainX,portalY+6,portalW-4,1.2,5+(z-5)*opening,shutter,a,dark);
+          for(let i=0;i<3;i++)if((5+i*4)>5+(z-5)*opening)
+            lightStrip(c,[[mainX-portalW*.4,portalY+6.2],[mainX+portalW*.4,portalY+6.2]],5+i*4,a,"#647c73",.85);
+          cast(c,mainX,portalY+5,portalW+4,6,2,z+2,3,a,pilotCeramic,1);
+          lightStrip(c,[[mainX-portalW*.3,portalY+8.1],[mainX+portalW*.3,portalY+8.1]],z+3.5,a,accent,1.5);
+        }
+        for(const side of [-1,1]) {
+          cast(c,mainX+side*(portalW*.5+3),portalY+7,5,13,1.5,3,z+1,a,pilotCeramic,1);
+          lightStrip(c,[[mainX+side*(portalW*.5+3),portalY+11],[mainX+side*(portalW*.5+3),portalY+11]],z*.52,a,accent,1.6);
+        }
+        cast(c,mainX,h*.37,portalW,h*.23,3,3,1.5,a,dark,.5);
+        for(let i=0;i<3;i++)lightStrip(c,[[mainX-portalW*.36,h*.32+i*h*.047],[mainX+portalW*.36,h*.32+i*h*.047]],4.7,a,"#657c73",1);
+        lightStrip(c,[[-w*.34,h*.46],[w*.34,h*.46]],4.6,a,assembling?"#c3ad83":accent,1.7);
+        if(d.delivery) {
+          const offset=d.delivery*h*.14;
+          cast(c,mainX-h*.08,h*.36-offset,7,7,1.7,5,4,a,copper,.6);
+        }
+        if(active)lightStrip(c,[[sideX-w*.035,-h*.04],[sideX+w*.035,-h*.04]],z+15,a,"#9edfc5",1+running*.6);
+        if(patients.some(v=>v.care.inside)) {
+          const x=mainX+portalW*.31;
+          lightStrip(c,[[x-2,h*.24],[x+2,h*.24]],z+6,a,accent,1.3);
+          lightStrip(c,[[x,h*.24-2],[x,h*.24+2]],z+6,a,accent,1.3);
+        }
+      }
+      if(assembling) {
+        // The gantry lowers the assembled receiver roof onto the rising frame.
+        constructionRig(c,d,w,h,a,progress,"carriage");
+        constructionRig(c,d,w,h,a,progress,true);
+      }
+      if(u.defense&&!assembling)defense(c,d,E.MOUNTS.outpost);
+    }
     function building(c, d, frame) {
+      if (d.u.kind === "outpost") return extractor(c, d, frame);
       const { u, s, ui, aim, recoil, accent } = d,
         kind = u.kind,
         a = frame?.a || 0,
@@ -1562,67 +1521,6 @@
               1.8,
             );
           }
-        } else {
-          cap(c, -w * 0.16, -9, bw * 0.53, bh * 0.8, 3, height * 0.6, a, alloy);
-          cap(c, w * 0.26, -bh * 0.15, bw * 0.23, bh * 0.7, 3, 14, a, dark);
-          if (roof) slab(
-            c,
-            -w * 0.16 - bw * 0.215 * (1 - roof),
-            -9,
-            bw * 0.43 * roof,
-            bh * 0.68,
-            height * 0.6 + 3,
-            4,
-            a,
-            ceramic,
-          );
-          // The front receiving bay remains open instead of resembling a turret.
-          slab(c, -w * 0.12, h * 0.18, bw * 0.5, bh * 0.25, 3, 4, a, dark);
-          for (let i = 0; i < 3; i++)
-            slab(
-              c,
-              -w * 0.12,
-              h * 0.18 - i * 4 + d.delivery * 3,
-              bw * 0.42,
-              1.5,
-              7,
-              1,
-              a,
-              alloy,
-            );
-          if (d.delivery) {
-            bone(
-              c,
-              [w * 0.16, h * 0.18, 8],
-              [-w * 0.03, h * 0.18, 10 + d.delivery * 5],
-              2.5,
-              a,
-              alloy,
-            );
-            cap(c, -w * 0.05, h * 0.18, 8, 6, 7 + d.delivery * 3, 4, a, copper);
-          }
-          for (const side of [-1, 1])
-            slab(
-              c,
-              -w * 0.12 + side * bw * 0.23,
-              h * 0.18,
-              3,
-              bh * 0.34,
-              3,
-              6,
-              a,
-              alloy,
-            );
-          bone(
-            c,
-            [w * 0.26, -bh * 0.15, 16],
-            [w * 0.26, -bh * 0.15, 32],
-            2,
-            a,
-            dark,
-          );
-          cap(c, w * 0.26, -bh * 0.15, 9, 5, 31, 3, a, ceramic);
-          lamp(c, w * 0.26, -bh * 0.15, 35, a, 1.4, accent);
         }
         if (["barracks", "foundry"].includes(kind)) {
           const gate = kind === "foundry" ? bw * 0.52 : bw * 0.42,
@@ -2007,45 +1905,78 @@
       const { u } = d,
         r = E.C[u.kind].r,
         a = frame?.a ?? (u.angle || 0);
+      if (u.kind === "outpost") {
+        const w=frame?.w||58,h=frame?.h||58;
+        cast(c,0,0,w-8,h-8,Math.min(w,h)*.115,0,3,a,dark,1);
+        cast(c,-w*.18,-h*.12,w*.55,h*.55,w*.12,3,7,a,wreck,1.5);
+        cast(c,w*.34,-h*.055,w*.24,h*.71,w*.09,3,9,a,dark,1.5);
+        plate(c,disc(w*.115,w*.02,-h*.17,16),10,2,a,wreck);
+        cast(c,-w*.23,h*.2,w*.34,h*.2,4,3,3,a,alloy,.7);
+        cast(c,w*.02,h*.11,w*.25,h*.19,3,3,2,a,wreck,.6);
+        seam(c,[[-w*.4,-h*.04],[-w*.15,-h*.03],[-w*.12,h*.08]],10.4,a,"#1a292c",2);
+        bone(c,[w*.34,-h*.25,12],[w*.4,-h*.12,5],1.7,a,wreck);
+        bone(c,[w*.21,-h*.18,5],[w*.21,h*.12,6],3,a,alloy);
+        return;
+      }
       if (frame) slab(c, 0, 0, frame.w - 8, frame.h - 8, 0, 3, a, dark);
       if (u.kind === "runner") {
-        plate(
-          c,
-          [
-            [-10, -5],
-            [-3, -6],
-            [11, 0],
-            [-3, 6],
-            [-10, 5],
-          ],
-          0,
-          3.5,
-          a,
-          wreck,
-        );
+        cast(c,-1.2,0,25,15,5.8,0,3.5,a,dark,.9);
+        cast(c,-3.8,0,19,12.8,4.5,3,2,a,wreck,.8);
+        seam(c,[[-8,-3],[-4,-2],[-2,3]],5.2,a,"#172c30",1.1);
         for (const side of [-1, 1]) {
           bone(c, [-5, side * 3, 2], [-9, side * 7, 1.5], 2.3, a, dark);
           bone(c, [4, side * 3, 2], [8, side * 7, 1], 2.2, a, wreck);
           bone(c, [10, side * 3, 2], [15, side * 1.8, 1], 1.8, a, wreck);
+          for(const x of [-10,9])cast(c,x,side*9,7,4,1.5,0,1.5,a,wreck,.4);
         }
       } else if (u.kind === "rocket") {
-        cap(c, -1, 2, 17, 9, 0, 4, a, wreck);
-        cap(c, 9, 4, 7, 6, 0, 3, a, dark);
-        for (const side of [-1, 1]) slab(c, -9, side * 5, 9, 3, 0, 2, a, dark);
-        cap(c, 4, -7, 32, 6, 1, 4, a + 0.16, wreck);
-        for (const x of [-10, 18]) slab(c, x, -7, 3, 8, 1, 4, a + 0.16, dark);
-      } else if (["hero", "rifle", "sentinel", "warden"].includes(u.kind)) {
+        cast(c,-1,2,17.5,18.5,5.5,0,4,a,wreck,1.2);
+        cast(c,9,6,8.3,7.5,2.5,0,3,a,dark,.8);
+        for(const side of [-1,1]) {
+          bone(c,[-5,side*4,2],[-12,side*5,1],3.5,a,wreck);
+          cast(c,-13,side*6,10,5,1.5,0,2,a,dark,.5);
+        }
+        launcherTube(c,a+.16,0,5,wreck);
+      } else if (["hero", "rifle"].includes(u.kind)) {
+        cast(c,-1,0,14.5,14,4,0,4,a,wreck,1);
+        cap(c,-8,0,6,u.kind==="hero"?13:11,0,4,a,dark);
+        cap(c,9,1,u.kind==="hero"?11:10,8,0,4.5,a,wreck);
+        for(const side of [-1,1]) {
+          bone(c,[-4,side*4,2],[-11,side*5,1],3,a,dark);
+          cap(c,-12,side*6,8,4.5,0,2,a,wreck);
+        }
+        cap(c,12,7,19,5,1,2.5,a+.12,dark);
+        cap(c,11,7,13,4,3,1.2,a+.12,wreck);
+      } else if (["sentinel", "warden"].includes(u.kind)) {
         cap(c, -1, 1, r * 1.7, r * 0.72, 0, 4, a, wreck);
         slab(c, -r * 0.7, -r * 0.4, r * 0.7, 4, 0, 3, a, dark);
         slab(c, r * 0.3, r * 0.6, r * 0.9, 3, 0, 2, a, dark);
         cap(c, r * 0.85, 0, 7, 7, 0, 4, a, wreck);
-      } else if (["drone", "scout", "bomber"].includes(u.kind)) {
+      } else if (u.kind === "drone") {
+        cast(c,0,0,22,18,5.5,0,3,a,wreck,.8);
+        cap(c,-1.5,0,10.5,11,3,1.5,a,dark);
+        for(const side of [-1,1]) {
+          for(const x of [-8,8])cap(c,x,side*8,7.5,5.5,0,1.5,a,dark);
+          bone(c,[7,side*4,2],[11,side*6,1],2.5,a,wreck);
+          bone(c,[11,side*6,1],[16,side*4,1],1.7,a,dark);
+        }
+        for(let i=0;i<Math.min(4,u.cargo||0);i++)cap(c,-3.5+(i%2)*4,-2.2+Math.floor(i/2)*4.4,3,3.2,4,1,a,wreck);
+      } else if (u.kind === "scout") {
+        plate(c,[[-12,-6],[-6,-9],[5,-8],[14,0],[5,8],[-6,9],[-12,6]],0,3,a,wreck);
+        for(const side of [-1,1])for(const x of [-8,8])cap(c,x,side*9,7,5,0,1.5,a,dark);
+        bone(c,[-4,0,4],[6,5,3],3,a,dark);
+        cap(c,6,5,14,8.5,2,3,a+.2,wreck);
+      } else if (u.kind === "artillery") {
+        artilleryTracks(c,{angle:a,phase:0,move:0,left:0,right:0},wreck);
+        cast(c,-1,0,33,26,6,4,4,a,wreck,1);
+        cap(c,-3,0,23,19,8,4,a+.15,dark);
+        cap(c,19,4,30,5.2,3,3,a+.15,wreck);
+        cap(c,32,4,5,8,2,5,a+.15,dark);
+      } else if (u.kind === "bomber") {
         cap(c, 0, 0, r * 1.6, r * 0.95, 0, 3, a, wreck);
         for (const side of [-1, 1])
           slab(c, side * r * 0.6, side * r * 0.4, 7, 3, 0, 2, a, dark);
-        if (u.kind === "scout")
-          bone(c, [-3, 0, 2], [r * 0.8, 4, 3], 2, a, wreck);
-        if (u.kind === "bomber") plate(c, disc(r * 0.6), 3, 2, a, dark);
+        plate(c, disc(r * .6), 3, 2, a, dark);
       } else if (u.kind === "flamer") {
         cap(c, -1, 0, 23, 20, 0, 5, a, wreck);
         for (const side of [-1, 1]) canister(c, -5, side * 7, 4, 4, 5, a, dark);
@@ -2208,6 +2139,7 @@
           gate: ui.memory ? 0 : gate,
           delivery: ui.memory || ui.reduced ? 0 : delivery,
           activity: ui.memory ? null : service ? service.activity : E.construction.activity(s, u),
+          patients: ui.memory ? [] : service?.patients || [],
           garrison: ui.memory ? [] : service?.garrison || (u.kind === "bunker" ? E.support.occupants(s, u.id) : []),
           crew: ui.memory ? [] : service?.crew || s.units
             .filter((w) => w.kind === "drone" && (w.buildingId === u.id || w.workerTask?.targetId === u.id))
@@ -2223,7 +2155,7 @@
       damage(c, d, frame);
     }
     // Silhouettes use the same dimensions as artwork; sensors have no gun shadow.
-    function shadows(u, p) {
+    function shadows(u, p, frame = null) {
       const r = E.C[u.kind].r,
         a = u.angle || 0,
         gunY = { hero: 5, rifle: 5, sentinel: 7, warden: 12, rocket: -7 }[
@@ -2233,13 +2165,24 @@
         shapes = [],
         add = (shape, height, angle = bodyAngle) =>
           shapes.push({ shape, height, angle });
+      if (u.kind === "outpost") {
+        const w=frame?.w||58,h=frame?.h||58,turn=frame?.a||0,
+          collapsed=u.hp<=0,assembling=u.build>0;
+        add(rounded(w-8,h-8,Math.min(w,h)*.115).map(v=>[...v]),collapsed?3:4,turn);
+        add(rounded(w*.69,h*.68,w*.13,-w*.13,-h*.075),collapsed?10:assembling?18:33,turn);
+        add(rounded(w*.24,h*.71,w*.09,w*.34,-h*.055),collapsed?12:assembling?21:37,turn);
+        if(!collapsed)add([[w*.34-1,-h*.25-1],[w*.34+1,-h*.25-1],
+          [w*.34+1,-h*.25+1],[w*.34-1,-h*.25+1]],assembling?26:48,turn);
+        if(u.defense&&!collapsed)add(chamfer(35,6,1,15,0),51,u.combat?.angle??a);
+        return shapes;
+      }
       if (u.hp <= 0) {
         add(chamfer(r * 1.7, r * 1.1), 5, a);
         if (u.kind === "rocket") add(chamfer(32, 7, 1, 4, -7), 4, a + 0.16);
         return shapes;
       }
       if (u.kind === "rocket") {
-        add(chamfer(14, 17), 23, u.combat?.angle ?? a);
+        add(rounded(17.5,18.5,5.5),24,u.combat?.angle??a);
         add(chamfer(10, 8, 2, 2, 4.5), 32, u.combat?.angle ?? a);
         add(
           [
@@ -2251,7 +2194,11 @@
           28,
           u.combat?.angle ?? a,
         );
-      } else if (["hero", "rifle", "sentinel", "warden"].includes(u.kind)) {
+      } else if (["hero", "rifle"].includes(u.kind)) {
+        add(rounded(15,21,4,-.5,0),25,u.combat?.angle??a);
+        add(chamfer(u.kind==="hero"?12:10.5,10,2,1,0),u.kind==="hero"?34:32,u.combat?.angle??a);
+        add(chamfer(24,6,1,19,5),E.MOUNTS[u.kind]||18,u.combat?.angle??a);
+      } else if (["sentinel", "warden"].includes(u.kind)) {
         add(
           chamfer(u.kind === "warden" ? 24 : 15, u.kind === "warden" ? 27 : 16),
           u.kind === "hero" ? 35 : u.kind === "warden" ? 36 : 32,
@@ -2294,14 +2241,8 @@
           4,
         );
         add(
-          [
-            [-9, -5],
-            [-2, -6],
-            [11, 0],
-            [-2, 6],
-            [-9, 5],
-          ],
-          13,
+          rounded(25,15,5.8,-1.2,0),
+          15,
         );
       } else if (u.kind === "scout") {
         add(
@@ -2314,10 +2255,15 @@
           ],
           12,
         );
-        add(chamfer(11, 5, 1, -4, 0), 29);
+        add(chamfer(14, 9.5, 2, -4, 0), 34);
       } else if (u.kind === "drone") {
-        add(chamfer(17, 15), 13);
-      } else if (["tank", "mortar", "artillery"].includes(u.kind)) {
+        add(rounded(22,18,5.5),16);
+      } else if (u.kind === "artillery") {
+        for(const side of [-1,1])add(chamfer(39,9,2,0,side*14),10);
+        add(rounded(33,26,6,-1,0),13);
+        add(rounded(23,19,5.5),24.5,u.combat?.angle??a);
+        add(chamfer(38,8,1,21,0),26.8,u.combat?.angle??a);
+      } else if (["tank", "mortar"].includes(u.kind)) {
         add(
           chamfer(u.kind === "tank" ? 46 : 35, u.kind === "tank" ? 37 : 32),
           u.kind === "tank" ? 26 : 18,
@@ -2390,7 +2336,7 @@
       draw,
       shadows,
       types: TYPES,
-      geometryStats: () => ({ entries: plates?.size || 0, hits: geometryHits }),
+      geometryStats: () => ({ entries: plates?.size || 0, hits: geometryHits, limit: geometryLimit }),
       // Reused by the separate design studio; prototypes are not loaded by the game.
       toolkit: {
         slab,

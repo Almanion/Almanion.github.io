@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Предел сигнала · модели по рисункам</title>
+  <style>
+    :root{color-scheme:dark;font:14px/1.5 system-ui,sans-serif;color:#deebe3;background:#0b1920}*{box-sizing:border-box}body{margin:0;overflow:hidden}
+    #field{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}header,aside,footer{position:fixed;z-index:2;background:#11272bf5;border:1px solid #72958350;border-radius:12px}
+    header{top:18px;left:18px;right:18px;display:flex;gap:20px;align-items:center;justify-content:space-between;padding:14px 18px}h1{font-size:19px;font-weight:550;margin:0}header p{font-size:12px;color:#99b5a7;margin:3px 0 0}
+    .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}select,button,a{font:inherit;color:inherit;border:1px solid #72958370;background:#233d38;border-radius:6px;padding:8px 10px;text-decoration:none}button,a{cursor:pointer}a{background:#acdcca;color:#142c27}
+    aside{left:18px;top:115px;bottom:135px;width:33%;display:flex;flex-direction:column;padding:18px}aside h2{font-size:13px;font-weight:500;color:#b2cbbe;margin:0}#reference{width:100%;min-height:0;flex:1;object-fit:contain}#reference-note{font-size:12px;color:#96b1a2;margin:8px 0 0}
+    #stage{position:fixed;left:calc(33% + 36px);right:18px;top:115px;bottom:135px;pointer-events:none}#stage-label{position:absolute;left:12px;top:4px;color:#b9d0c3;font-size:13px;z-index:2}
+    footer{left:18px;right:18px;bottom:18px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}label{display:flex;align-items:center;gap:8px}small{display:block;font-size:11px;color:#91ab9f}input[type=range]{accent-color:#aedfcc;width:140px}#stats{font-size:11px;color:#91ab9f;font-variant-numeric:tabular-nums}button[aria-pressed=true]{background:#b7dfcf;color:#152f29}
+    @media(max-width:700px){header{top:10px;left:10px;right:10px;padding:10px;gap:8px;flex-wrap:wrap}h1{font-size:16px}header p{max-width:270px}.controls{gap:6px}select,button,a{padding:6px;font-size:12px}aside{left:10px;top:150px;bottom:auto;height:170px;width:calc(100% - 20px);padding:8px;flex-direction:row;align-items:center;gap:6px}aside h2{display:none}#reference{width:45%;height:150px;flex:none}#reference-note{margin:0;width:50%;font-size:11px}#stage{left:10px;right:10px;top:330px;bottom:125px}#stage-label{font-size:11px;top:0}footer{left:10px;right:10px;bottom:10px;padding:8px;gap:6px;font-size:12px}input[type=range]{width:105px}small{max-width:290px}#stats{display:none}}
+    @media(max-height:550px) and (orientation:landscape){header{top:8px;left:8px;right:8px;padding:6px 12px}h1{font-size:15px}header p{display:none}aside{top:66px;bottom:95px;left:8px;width:28%;height:auto;padding:8px;flex-direction:column}#reference{width:100%;height:auto;flex:1}#reference-note{width:100%;margin:8px 0 0}#stage{top:66px;left:calc(28% + 24px);bottom:95px;right:8px}footer{left:8px;right:8px;bottom:8px;padding:7px 12px}}
+  </style>
+  <script src="../../../games/signal-frontier/campaign.js"></script>
+  <script src="../../../games/signal-frontier/engine.js"></script>
+  <script src="../../../games/signal-frontier/view.js"></script>
+  <script type="module" src="babylon-models.js"></script>
+</head>
+<body>
+  <canvas id="field" aria-label="Объёмная модель из игры"></canvas>
+  <header><div><h1>Модели по выбранным рисункам</h1><p>Слева — ваш образец. Справа — подвижная модель из игры.</p></div><div class="controls"><select id="model" aria-label="Модель"></select><select id="state" aria-label="Состояние"><option value="idle">Покой</option><option value="walk">Движение</option><option value="aim">Подготовка атаки</option><option value="fire">Выстрел</option><option value="reload">Перезарядка</option><option value="work">Работа зонда</option><option value="build">Строительство</option><option value="occupied">Бункер · 4 бойца</option><option value="damage">Повреждение</option><option value="wreck">Обломки</option><option value="memory">Память тумана</option></select><a href="../../../games/signal-frontier/?renderer=babylon&v=0.31.0">В игру</a></div></header>
+  <aside><h2 id="reference-title">Выбранный рисунок</h2><img id="reference" alt="Выбранный пользователем образец модели"><p id="reference-note"></p></aside>
+  <div id="stage"><span id="stage-label">3D · тот же свет и ракурс, что в игре</span></div>
+  <footer><label>Поворот <input id="angle" type="range" min="0" max="359" value="325"><output id="degrees">325°</output></label><button id="pause" aria-pressed="false">Остановить анимацию</button><div><small>Просмотр не изменяет прохождение и сохранения.</small><span id="stats"></span></div></footer>
+</body></html>

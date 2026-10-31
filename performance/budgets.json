@@ -11,6 +11,7 @@
     ".json": 120000
   },
   "maxBytesByPath": {
+    "games/signal-frontier/babylon-view.js": 1300000,
     "games/signal-frontier/view.js": 160000,
     "presentation/index.html": 5000000,
     "geography/index.html": 600000,
@@ -30,7 +31,7 @@
   "routes": {
     "games/signal-frontier/index.html": {
       "maxInitialLocalJsBytes": 5000000,
-        "maxInitialLocalCssBytes": 56000,
+        "maxInitialLocalCssBytes": 57000,
       "maxInitialLocalRequests": 7,
       "maxExternalRequests": 0
     },
