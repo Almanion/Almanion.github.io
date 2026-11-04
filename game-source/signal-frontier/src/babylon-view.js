@@ -10,6 +10,7 @@ import { Parts } from "./babylon/batches.js";
 import { Models } from "./babylon/models.js";
 import { materials } from "./babylon/materials.js";
 import { buildTerrain } from "./babylon/terrain.js";
+import { fogUpdateRect } from "./babylon/fog-updates.js";
 
 const E=globalThis.SignalEngine,Legacy=globalThis.SignalView,Y=.73;
 export class BabylonView extends Legacy {
@@ -32,7 +33,7 @@ export class BabylonView extends Legacy {
       this.models=new Models(this.parts,E,this);this.gpuMap=null;this.timings={};this.fogUploads=0;
       this.lost=false;this.drawnUnits=0;
       this.gpuCanvas.addEventListener("webglcontextlost",()=>{this.lost=true;window.dispatchEvent(new Event("signal-renderer-lost"));});
-      this.gpuCanvas.addEventListener("webglcontextrestored",()=>{this.lost=false;this.maskKey=null;window.dispatchEvent(new Event("signal-renderer-restored"));});
+      this.engine.onContextRestoredObservable.add(()=>{this.parts.restore();this.lost=false;this.maskKey=null;window.dispatchEvent(new Event("signal-renderer-restored"));});
       document.body.dataset.renderer="babylon";
     } catch(error){this.engine?.dispose();this.gpuCanvas.remove();throw error;}
   }
@@ -41,18 +42,25 @@ export class BabylonView extends Legacy {
   reset(s){super.reset(s);this.maskKey=null;this.fogPaths={};}
   fogPath(fog,kind) {
     const sources=fog.observers.map(u=>[u.id,u.x,u.y,u.radius].join(":")),
-      code=this.mapId+":"+fog[kind+"Code"]+(kind==="visible"?":"+sources.join(","):""),old=this.fogPaths[kind];
+      code=this.mapId+":"+(fog.geometryRevision||"")+":"+fog[kind+"Code"]+(kind==="visible"?":"+sources.join(","):""),old=this.fogPaths[kind];
     if(old?.code===code)return old.path;
     let polygons;
     if(kind==="explored")polygons=Legacy.fogContours(fog);
     else {
       const previous=this.sightPaths||new Map();this.sightPaths=new Map();
       polygons=fog.observers.map((u,i)=>{
-        const key=this.mapId+":"+sources[i],polygon=previous.get(key)?.polygon||E.visionArea(this.mapId,u,u.radius).points.map(p=>[p.x,p.y]);
+        const key=this.mapId+":"+(fog.geometryRevision||"")+":"+sources[i],polygon=previous.get(key)?.polygon||E.visionArea(fog.world || this.mapId,u,u.radius).points.map(p=>[p.x,p.y]);
         this.sightPaths.set(key,{polygon});return polygon;
       });
     }
-    this.fogPaths[kind]={code,polygons,path:null};return null;
+    const maskPath=new Path2D(),bounds={left:Infinity,top:Infinity,right:-Infinity,bottom:-Infinity};
+    for(const polygon of polygons){
+      polygon.forEach(([x,y],i)=>{i?maskPath.lineTo(x,y):maskPath.moveTo(x,y);
+        bounds.left=Math.min(bounds.left,x);bounds.top=Math.min(bounds.top,y);
+        bounds.right=Math.max(bounds.right,x);bounds.bottom=Math.max(bounds.bottom,y);});
+      maskPath.closePath();
+    }
+    this.fogPaths[kind]={code,polygons,path:null,maskPath,bounds};return null;
   }
   fogClip(c,fog,kind) {
     this.fogPath(fog,kind);const region=this.fogPaths[kind];
@@ -61,32 +69,72 @@ export class BabylonView extends Legacy {
   map(world) {
     if(this.gpuMap?.id===world.id)return;
     this.gpuMap?.terrain.dispose();this.mask?.dispose();
-    const terrain=buildTerrain(this.scene,this.materials.main,E,world),
-      max=Math.min(2048,this.engine.getCaps().maxTextureSize),scale=max/Math.max(world.W,world.H),
+    const terrain=buildTerrain(this.scene,this.materials.terrain,E,world,()=>{this.memoryNeedsRefine=true;}),
+      max=Math.min(world.id==='districts-east'?Math.ceil(world.W*2048/3840):2048,this.engine.getCaps().maxTextureSize),scale=max/Math.max(world.W,world.H),
       width=Math.ceil(world.W*scale),height=Math.ceil(world.H*scale);
-    this.mask=new DynamicTexture("world-visibility",{width,height},this.scene,false,Texture.BILINEAR_SAMPLINGMODE);
+    // This canvas is read by WebGL on every visibility change. Keeping its
+    // pixels on the CPU avoids a GPU→CPU readback before the texture upload.
+    const maskCanvas=document.createElement("canvas");maskCanvas.width=width;maskCanvas.height=height;
+    this.maskContext=maskCanvas.getContext("2d",{willReadFrequently:true});
+    this.mask=new DynamicTexture("world-visibility",maskCanvas,this.scene,false,Texture.BILINEAR_SAMPLINGMODE);
     this.mask.wrapU=this.mask.wrapV=Texture.CLAMP_ADDRESSMODE;this.mask.hasAlpha=false;
-    this.maskContext=this.mask.getContext();this.maskKey=null;
+    this.maskKey=null;this.fogDirtyTiles=new Set();
     for(const m of Object.values(this.materials)){m.setVector2("mapSize",new Vector2(world.W,world.H));m.setTexture("fogMask",this.mask);}
     this.materials.shadow.setTexture("heightMap",terrain.heightTexture);
     this.gpuMap={id:world.id,world,terrain,width,height};
   }
   visibility(s) {
+    this.fogUploadBytes=0;
     const fog=s.fog,enabled=!!fog;
     this.materials.main.setFloat("fogEnabled",enabled?1:0);this.materials.shadow.setFloat("fogEnabled",enabled?1:0);
+    this.materials.terrain.setFloat("fogEnabled",enabled?1:0);
     if(fog){this.fogPath(fog,"visible");this.fogPath(fog,"explored");}
     const key=enabled?this.fogPaths.visible.code+"|"+this.fogPaths.explored.code:"clear";
-    if(key===this.maskKey)return;
-    const c=this.maskContext,{width,height,world}=this.gpuMap;
-    c.setTransform(1,0,0,1,0,0);c.fillStyle=enabled?"#000":"#ffff00";c.fillRect(0,0,width,height);
+    if(key===this.maskKey){if(this.gpuMap.id==='districts-east')this.uploadFogWindow();return;}
+    const c=this.maskContext,{width,height,world}=this.gpuMap,
+      next=fog?{exploredCode:fog.exploredCode,observers:fog.observers,exploredBounds:this.fogPaths.explored.bounds}:null,
+      rect=this.maskKey?fogUpdateRect(this.maskFog,next,world,width,height):{x:0,y:0,width,height};
+    c.save();c.setTransform(1,0,0,1,0,0);
+    c.fillStyle=enabled?"#000":"#ffff00";c.fillRect(0,0,width,height);
     if(fog) {
       c.scale(width/world.W,height/world.H);
       for(const kind of ["explored","visible"]) {
-        c.beginPath();for(const polygon of this.fogPaths[kind].polygons){polygon.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();}
-        c.fillStyle=kind==="visible"?"#ffff00":"#ff0000";c.fill("nonzero");
+        c.fillStyle=kind==="visible"?"#ffff00":"#ff0000";c.fill(this.fogPaths[kind].maskPath,"nonzero");
       }
     }
-    this.mask.update(false);this.maskKey=key;this.fogUploads++;
+    c.restore();
+    if(!this.maskKey){
+      // Allocate once. Later updates replace pixels without recreating the GPU texture.
+      this.mask.update(false);this.fogUploadBytes=width*height*4;
+      this.fogDirtyTiles.clear();
+    }else{
+      if(world.id==='districts-east'){
+        for(let y=Math.floor(rect.y/256);y<Math.ceil((rect.y+rect.height)/256);y++)for(let x=Math.floor(rect.x/256);x<Math.ceil((rect.x+rect.width)/256);x++)this.fogDirtyTiles.add(y*32+x);
+        this.uploadFogWindow();
+      }else{
+        const pixels=c.getImageData(rect.x,rect.y,rect.width,rect.height).data;
+        this.engine.updateTextureData(this.mask.getInternalTexture(),pixels,rect.x,rect.y,rect.width,rect.height);
+        this.fogUploadBytes=pixels.byteLength;
+      }
+    }
+    this.maskFog=next;
+    this.maskKey=key;this.fogUploads++;
+  }
+  uploadFogWindow(){
+    // Keep the full, exact CPU mask. Synchronize stale GPU tiles before they
+    // enter the camera, including margin for elevated geometry and shadows.
+    // Camera movement alone never repaints fog or uploads an already current tile.
+    const {world,width,height}=this.gpuMap,c=this.camera,scale=c.scale,pad=320,
+      left=(c.x-this.origin.x/scale-pad)*width/world.W,
+      right=(c.x+(this.width-this.origin.x)/scale+pad)*width/world.W,
+      top=(c.y-this.origin.y/(scale*Y)-pad)*height/world.H,
+      bottom=(c.y+(this.height-this.origin.y)/(scale*Y)+pad)*height/world.H;
+    for(const key of this.fogDirtyTiles){
+      const x=key%32*256,y=Math.floor(key/32)*256;
+      if(x>right||x+256<left||y>bottom||y+256<top)continue;
+      const w=Math.min(256,width-x),h=Math.min(256,height-y),pixels=this.maskContext.getImageData(x,y,w,h).data;
+      this.engine.updateTextureData(this.mask.getInternalTexture(),pixels,x,y,w,h);this.fogUploadBytes+=pixels.byteLength;this.fogDirtyTiles.delete(key);
+    }
   }
   syncCamera() {
     const cam=this.camera,scale=cam.scale,
@@ -125,7 +173,10 @@ export class BabylonView extends Legacy {
     const beforeCalls=this.engine._drawCalls?.current||0;
     this.engine.beginFrame();this.scene.render();this.engine.endFrame();this.timings.submit=performance.now()-time;
     this.lastDrawCalls=(this.engine._drawCalls?.current||0)-beforeCalls;
-    this.overlay(s,ui,dt,frame);this.memoryNeedsRefine=!this.scene.isReady();
+    this.overlay(s,ui,dt,frame);
+    // Optional terrain downloads do not keep a paused scene repainting. Only
+    // unfinished visible mesh shaders need another frame; artwork wakes us on load.
+    this.memoryNeedsRefine=this.scene.meshes.some(mesh=>mesh.isEnabled()&&mesh.isVisible&&!mesh.isReady(true));
   }
   overlay(s,ui,dt,frame) {
     const c=this.c,cam=this.camera;
@@ -184,7 +235,7 @@ export class BabylonView extends Legacy {
   diagnostics() {
     return {renderer:"babylon",backend:"WebGL "+this.engine.webGLVersion,version:Engine.Version,
       units:this.drawnUnits,...this.parts.diagnostics(),drawCalls:this.lastDrawCalls||0,
-      terrainTriangles:this.gpuMap?.terrain.triangles||0,fogUploads:this.fogUploads,timings:{...this.timings},lost:this.lost};
+      terrainTriangles:this.gpuMap?.terrain.triangles||0,terrainArt:{...this.gpuMap?.terrain.art},fogUploads:this.fogUploads,fogUploadBytes:this.fogUploadBytes||0,timings:{...this.timings},lost:this.lost};
   }
   dispose(){this.gpuMap?.terrain.dispose();this.mask?.dispose();this.parts?.dispose();this.scene?.dispose();this.engine?.dispose();this.gpuCanvas?.remove();}
 }

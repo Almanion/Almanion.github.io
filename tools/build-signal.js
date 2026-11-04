@@ -9,6 +9,7 @@ const files = [
   "style.css",
   "terrain.js",
   "districts.js",
+  "east.js",
   "campaign.js",
   "recon.js",
   "engine.js",
@@ -16,6 +17,7 @@ const files = [
   "support.js",
   "unit-models.js",
   "minimap.js",
+  "terrain-art.js",
   "view.js",
   "audio.js",
   "development-ui.js",
@@ -40,13 +42,13 @@ function render(root = path.resolve(__dirname, "..")) {
     }
     if(file === "babylon-view.js") {
       out[file]="/*! Babylon.js · Apache-2.0 · see babylon-LICENSE.txt */\n"+esbuild.buildSync({entryPoints:[path.join(source,file)],bundle:true,write:false,minify:true,
-        format:"esm",platform:"browser",target:["es2020"],legalComments:"eof",logLevel:"silent"}).outputFiles[0].text;
+        format:"esm",platform:"browser",target:["es2020"],legalComments:"eof",logLevel:"silent"}).outputFiles[0].text.replace(/[\t ]+$/gm,"");
       continue;
     }
     let text = read(file);
     if (file === "campaign.js")
       text =
-        read("terrain.js") + "\n;\n" + read("districts.js") + "\n;\n" + text;
+        read("terrain.js") + "\n;\n" + read("districts.js") + "\n;\n" + read("east.js") + "\n;\n" + text;
     if (file === "engine.js")
       text =
         read("recon.js") + "\n;\n" + read("construction.js") + "\n;\n" + read("support.js") + "\n;\n" + text;
@@ -54,7 +56,7 @@ function render(root = path.resolve(__dirname, "..")) {
       text = embedded.map(read).join("\n;\n") + "\n;\n" + text;
     if (file === "view.js")
       text =
-        read("unit-models.js") + "\n;\n" + read("minimap.js") + "\n;\n" + text;
+        read("unit-models.js") + "\n;\n" + read("minimap.js") + "\n;\n" + read("terrain-art.js") + "\n;\n" + text;
     if (file.endsWith(".js"))
       text =
         minify_sync(text, {
@@ -72,7 +74,7 @@ function render(root = path.resolve(__dirname, "..")) {
       text = result.styles + "\n";
     } else if (file === "index.html")
       text = text.replace(
-        /^\s*<script src="(?:terrain|districts|recon|construction|support|unit-models|minimap|cloud-core|persistence|account-ui|selection-ui|renderer-loader)\.js[^\"]*" defer><\/script>\n/gm,
+        /^\s*<script src="(?:terrain|districts|east|recon|construction|support|unit-models|minimap|terrain-art|cloud-core|persistence|account-ui|selection-ui|renderer-loader)\.js[^\"]*" defer><\/script>\n/gm,
         "",
       );
     out[file] = text;
@@ -83,8 +85,14 @@ function build(root = path.resolve(__dirname, "..")) {
   const destination = path.join(root, "games/signal-frontier"),
     out = render(root);
   fs.mkdirSync(destination, { recursive: true });
-  for (const [file, text] of Object.entries(out))
-    fs.writeFileSync(path.join(destination, file), text);
+  for (const [file, text] of Object.entries(out)) {
+    const target=path.join(destination,file);
+    // Leave unchanged files alone, including a page currently being served.
+    if(fs.existsSync(target)&&fs.readFileSync(target,"utf8")===text)continue;
+    fs.writeFileSync(target, text);
+  }
+  fs.cpSync(path.join(root,"game-source/signal-frontier/src/assets/terrain"),
+    path.join(destination,"assets/terrain"),{recursive:true});
   return out;
 }
 if (require.main === module) {

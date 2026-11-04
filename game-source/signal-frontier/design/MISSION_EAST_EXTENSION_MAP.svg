@@ -1,0 +1,208 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1200" viewBox="0 0 1700 1200" role="img" aria-labelledby="title desc"><title id="title">Карта продолжения миссии Signal Frontier</title><desc id="desc">Существующая карта слева и пять новых районов справа. Прямой маршрут через укреплённый двор и нижний обход ведут к орбитальному доку.</desc><defs><marker id="arrow" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill="context-stroke"/></marker></defs><g font-family="Segoe UI,Arial,sans-serif">
+<rect x="0" y="0" width="1700" height="1200" fill="#f3f6f7" stroke="none" stroke-width="0"/>
+<text x="55" y="49" font-size="31" fill="#173648" font-weight="700">Signal Frontier · Доставка архива</text>
+<text x="55" y="83" font-size="18" fill="#203c4c" >Проект расширения вправо · 5600 × 3840 · 2 ноября 2026</text>
+<text x="55" y="112" font-size="16" fill="#203c4c" >Сохраняем западную операцию. После цитадели открывается путь к доку — два маршрута и необязательное отключение обороны.</text>
+<g transform="translate(60 150) scale(0.22)">
+<rect x="0" y="0" width="5600" height="3840" fill="#12232e" stroke="none" stroke-width="0"/>
+<rect x="120" y="1760" width="1280" height="1280" fill="#486570" stroke="#a5bac3" stroke-width="5"/>
+<rect x="120" y="120" width="2200" height="1480" fill="#486570" stroke="#a5bac3" stroke-width="5"/>
+<rect x="1520" y="1600" width="1000" height="1040" fill="#486570" stroke="#a5bac3" stroke-width="5"/>
+<rect x="1440" y="1080" width="1680" height="680" fill="#486570" stroke="#a5bac3" stroke-width="5"/>
+<rect x="2320" y="120" width="1200" height="960" fill="#71838b" stroke="#a5bac3" stroke-width="5"/>
+<rect x="2560" y="1440" width="960" height="1200" fill="#71838b" stroke="#a5bac3" stroke-width="5"/>
+<rect x="120" y="3120" width="1640" height="640" fill="#314c58" stroke="#a5bac3" stroke-width="5"/>
+<rect x="2000" y="3120" width="1360" height="640" fill="#486570" stroke="#a5bac3" stroke-width="5"/>
+<rect x="720" y="1480" width="280" height="400" fill="#486570" stroke="#b0c2c8" stroke-width="4"/>
+<rect x="1280" y="1520" width="40" height="320" fill="#486570" stroke="#b0c2c8" stroke-width="4"/>
+<rect x="1320" y="1920" width="280" height="280" fill="#486570" stroke="#b0c2c8" stroke-width="4"/>
+<rect x="1320" y="2440" width="280" height="160" fill="#486570" stroke="#b0c2c8" stroke-width="4"/>
+<rect x="2120" y="360" width="400" height="280" fill="#486570" stroke="#b0c2c8" stroke-width="4"/>
+<rect x="2720" y="920" width="280" height="480" fill="#71838b" stroke="#b0c2c8" stroke-width="4"/>
+<rect x="2280" y="1760" width="440" height="280" fill="#486570" stroke="#b0c2c8" stroke-width="4"/>
+<rect x="2280" y="2320" width="440" height="280" fill="#486570" stroke="#b0c2c8" stroke-width="4"/>
+<rect x="2040" y="2520" width="240" height="720" fill="#486570" stroke="#b0c2c8" stroke-width="4"/>
+<rect x="560" y="2880" width="440" height="440" fill="#486570" stroke="#b0c2c8" stroke-width="4"/>
+<rect x="1560" y="3360" width="640" height="320" fill="#314c58" stroke="#b0c2c8" stroke-width="4"/>
+<rect x="120" y="120" width="240" height="160" fill="#12232e" stroke="none" stroke-width="0"/>
+<rect x="120" y="1440" width="200" height="160" fill="#12232e" stroke="none" stroke-width="0"/>
+<rect x="3320" y="120" width="200" height="160" fill="#12232e" stroke="none" stroke-width="0"/>
+<rect x="3320" y="2520" width="200" height="120" fill="#12232e" stroke="none" stroke-width="0"/>
+<rect x="120" y="3600" width="200" height="160" fill="#12232e" stroke="none" stroke-width="0"/>
+<rect x="3160" y="3600" width="200" height="160" fill="#12232e" stroke="none" stroke-width="0"/>
+<rect x="1120" y="760" width="200" height="240" fill="#12232e" stroke="none" stroke-width="0"/>
+<rect x="3720" y="1640" width="560" height="880" fill="#356e8a" stroke="#a5ddf3" stroke-width="5"/>
+<rect x="3720" y="840" width="1280" height="520" fill="#588da7" stroke="#a5ddf3" stroke-width="5"/>
+<rect x="3720" y="2800" width="1280" height="640" fill="#244c65" stroke="#a5ddf3" stroke-width="5"/>
+<rect x="4360" y="1640" width="560" height="880" fill="#356e8a" stroke="#a5ddf3" stroke-width="5"/>
+<rect x="5040" y="1520" width="440" height="1200" fill="#356e8a" stroke="#a5ddf3" stroke-width="5"/>
+<rect x="3440" y="1960" width="400" height="240" fill="#356e8a" stroke="#b4e3f5" stroke-width="5"/>
+<rect x="3920" y="1280" width="240" height="480" fill="#356e8a" stroke="#b4e3f5" stroke-width="5"/>
+<rect x="4200" y="1960" width="240" height="240" fill="#356e8a" stroke="#b4e3f5" stroke-width="5"/>
+<rect x="4600" y="1280" width="240" height="480" fill="#356e8a" stroke="#b4e3f5" stroke-width="5"/>
+<rect x="3920" y="2400" width="240" height="520" fill="#244c65" stroke="#b4e3f5" stroke-width="5"/>
+<rect x="4920" y="2880" width="480" height="240" fill="#244c65" stroke="#b4e3f5" stroke-width="5"/>
+<rect x="5160" y="2560" width="240" height="440" fill="#244c65" stroke="#b4e3f5" stroke-width="5"/>
+<rect x="4840" y="1960" width="280" height="240" fill="#356e8a" stroke="#b4e3f5" stroke-width="5"/>
+<path d="M3600,0 V3840" stroke="#9db5c2" stroke-width="5" stroke-dasharray="24 24"/>
+<rect x="700" y="2240" width="120" height="40" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="700" y="2760" width="120" height="40" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="600" y="680" width="240" height="160" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="1360" y="800" width="280" height="160" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="1480" y="1200" width="280" height="160" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="520" y="160" width="320" height="40" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="1440" y="360" width="240" height="120" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="1600" y="1800" width="200" height="80" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="2320" y="2160" width="120" height="80" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="240" y="3360" width="480" height="80" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="1360" y="3200" width="240" height="80" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="3000" y="280" width="240" height="160" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="3200" y="640" width="160" height="160" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="2380" y="3200" width="200" height="160" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="3040" y="3440" width="160" height="160" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="2940" y="1520" width="200" height="160" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="3160" y="2320" width="240" height="160" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="2700" y="200" width="120" height="120" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="2520" y="960" width="160" height="40" fill="#1e3441" stroke="#718c97" stroke-width="2"/>
+<rect x="3760" y="1680" width="120" height="160" fill="#162f40" stroke="#99bdcc" stroke-width="3"/>
+<rect x="4200" y="2440" width="80" height="80" fill="#162f40" stroke="#99bdcc" stroke-width="3"/>
+<rect x="3840" y="880" width="240" height="120" fill="#162f40" stroke="#99bdcc" stroke-width="3"/>
+<rect x="4680" y="880" width="240" height="120" fill="#162f40" stroke="#99bdcc" stroke-width="3"/>
+<rect x="3920" y="3280" width="160" height="80" fill="#162f40" stroke="#99bdcc" stroke-width="3"/>
+<rect x="4520" y="2840" width="200" height="80" fill="#162f40" stroke="#99bdcc" stroke-width="3"/>
+<rect x="4360" y="1680" width="80" height="160" fill="#162f40" stroke="#99bdcc" stroke-width="3"/>
+<rect x="4360" y="2320" width="80" height="160" fill="#162f40" stroke="#99bdcc" stroke-width="3"/>
+<rect x="4800" y="2400" width="120" height="80" fill="#162f40" stroke="#99bdcc" stroke-width="3"/>
+<rect x="5040" y="1560" width="120" height="200" fill="#162f40" stroke="#99bdcc" stroke-width="3"/>
+<rect x="5040" y="2360" width="80" height="160" fill="#162f40" stroke="#99bdcc" stroke-width="3"/>
+<rect x="5400" y="2360" width="80" height="160" fill="#162f40" stroke="#99bdcc" stroke-width="3"/>
+<rect x="4640" y="1720" width="160" height="160" fill="#162f40" stroke="#99bdcc" stroke-width="3"/>
+<rect x="4420" y="1020" width="120" height="120" fill="#162f40" stroke="#99bdcc" stroke-width="3"/>
+<polyline points="3320,2080 3960,2080 4560,2080 4960,2080 5280,2080" fill="none" stroke="#ffc67c" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="32 20" marker-end="url(#arrow)"/>
+<polyline points="3960,2080 4040,2320 4040,3040 4880,3040 5280,3040 5280,2560 5280,2200" fill="none" stroke="#83e1c3" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="32 20" marker-end="url(#arrow)"/>
+<polyline points="4000,1840 4040,1200 4480,1200 4720,1200 4720,1600" fill="none" stroke="#b4ceff" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="32 20" marker-end="url(#arrow)"/>
+<circle cx="4160" cy="1960" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4160" cy="2200" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="3880" cy="1880" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4080" cy="2240" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4040" cy="1120" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4600" cy="1160" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4360" cy="1160" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4880" cy="1160" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="3880" cy="3040" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4800" cy="3080" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4240" cy="3000" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4600" cy="3040" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4840" cy="2960" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4480" cy="2000" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4560" cy="2080" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4640" cy="2280" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4480" cy="1880" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4680" cy="2200" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4520" cy="1800" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4560" cy="2360" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4840" cy="2320" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="4840" cy="1840" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="5160" cy="1960" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="5200" cy="2280" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="5360" cy="2200" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="5360" cy="1960" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="5280" cy="1800" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<circle cx="5280" cy="2480" r="15" fill="#ef9e88" stroke="#272d30" stroke-width="3"/>
+<path d="M440,2337 l22,23 l-22,23 l-22,-23 Z" fill="#d3c998" stroke="#12232e" stroke-width="5"/>
+<path d="M840,2537 l22,23 l-22,23 l-22,-23 Z" fill="#d3c998" stroke="#12232e" stroke-width="5"/>
+<path d="M760,377 l22,23 l-22,23 l-22,-23 Z" fill="#d3c998" stroke="#12232e" stroke-width="5"/>
+<path d="M2040,2217 l22,23 l-22,23 l-22,-23 Z" fill="#d3c998" stroke="#12232e" stroke-width="5"/>
+<path d="M2000,1497 l22,23 l-22,23 l-22,-23 Z" fill="#d3c998" stroke="#12232e" stroke-width="5"/>
+<path d="M1000,3497 l22,23 l-22,23 l-22,-23 Z" fill="#d3c998" stroke="#12232e" stroke-width="5"/>
+<path d="M2520,3457 l22,23 l-22,23 l-22,-23 Z" fill="#d3c998" stroke="#12232e" stroke-width="5"/>
+<path d="M3120,777 l22,23 l-22,23 l-22,-23 Z" fill="#d3c998" stroke="#12232e" stroke-width="5"/>
+<path d="M3880,2257 l22,23 l-22,23 l-22,-23 Z" fill="#e6dc9d" stroke="#12232e" stroke-width="5"/>
+<path d="M4520,3217 l22,23 l-22,23 l-22,-23 Z" fill="#e6dc9d" stroke="#12232e" stroke-width="5"/>
+<rect x="2813" y="453" width="54" height="54" fill="#e79b85" stroke="#12232e" stroke-width="5"/>
+<rect x="2733" y="3373" width="54" height="54" fill="#e79b85" stroke="#12232e" stroke-width="5"/>
+<rect x="3133" y="1853" width="54" height="54" fill="#e79b85" stroke="#12232e" stroke-width="5"/>
+<rect x="293" y="2533" width="54" height="54" fill="#a7e4cb" stroke="#12232e" stroke-width="5"/>
+<circle cx="1880" cy="1640" r="24" fill="#c4dcf0" stroke="#12232e" stroke-width="5"/>
+<rect x="4693" y="1773" width="54" height="54" fill="#e79b85" stroke="#12232e" stroke-width="5"/>
+<circle cx="4480" cy="1080" r="24" fill="#d6e5fc" stroke="#12232e" stroke-width="5"/>
+<rect x="3928" y="2020" width="64" height="40" rx="12" fill="#d2f3ff" stroke="#12232e" stroke-width="5"/>
+<rect x="5253" y="2053" width="54" height="54" fill="#d2f3ff" stroke="#12232e" stroke-width="5"/>
+<circle cx="4880" cy="3000" r="24" fill="#d6e5fc" stroke="#12232e" stroke-width="5"/>
+<path d="M4480,2136 l24,44 h-48 Z" fill="#e79b85" stroke="#172c38" stroke-width="4"/>
+<path d="M5360,1696 l24,44 h-48 Z" fill="#e79b85" stroke="#172c38" stroke-width="4"/>
+<rect x="3590" y="1960" width="20" height="240" fill="#ffcf8e" stroke="none" stroke-width="0"/>
+<rect x="4310" y="1960" width="20" height="240" fill="#ffcf8e" stroke="none" stroke-width="0"/>
+<rect x="4990" y="2880" width="20" height="240" fill="#ffcf8e" stroke="none" stroke-width="0"/>
+<text x="220" y="2860" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S01</text>
+<text x="900" y="2820" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S02</text>
+<text x="260" y="1960" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S03</text>
+<text x="980" y="1160" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S04</text>
+<text x="1040" y="340" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S05</text>
+<text x="1840" y="1200" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S06</text>
+<text x="1880" y="1920" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S07</text>
+<text x="2460" y="240" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S08</text>
+<text x="2740" y="2400" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S09</text>
+<text x="880" y="3400" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S10</text>
+<text x="2880" y="3680" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S11</text>
+<text x="2040" y="2840" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S12</text>
+<text x="2720" y="1240" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S13</text>
+<text x="3760" y="1740" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S14</text>
+<text x="4200" y="960" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S15</text>
+<text x="4280" y="3380" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S16</text>
+<text x="4480" y="2460" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S17</text>
+<text x="5120" y="1640" font-size="72" fill="#f0f6f8" font-weight="700" paint-order="stroke" stroke="#1e3442" stroke-width="10">S18</text>
+<text x="3640" y="2010" font-size="46" fill="#e5eef2" text-anchor="middle" paint-order="stroke" stroke="#183241" stroke-width="8">E01</text>
+<text x="3915" y="1520" font-size="46" fill="#e5eef2" text-anchor="middle" paint-order="stroke" stroke="#183241" stroke-width="8">E02</text>
+<text x="4320" y="1960" font-size="46" fill="#e5eef2" text-anchor="middle" paint-order="stroke" stroke="#183241" stroke-width="8">E03</text>
+<text x="4595" y="1520" font-size="46" fill="#e5eef2" text-anchor="middle" paint-order="stroke" stroke="#183241" stroke-width="8">E04</text>
+<text x="3915" y="2660" font-size="46" fill="#e5eef2" text-anchor="middle" paint-order="stroke" stroke="#183241" stroke-width="8">E05</text>
+<text x="5160" y="3000" font-size="46" fill="#e5eef2" text-anchor="middle" paint-order="stroke" stroke="#183241" stroke-width="8">E06</text>
+<text x="5155" y="2780" font-size="46" fill="#e5eef2" text-anchor="middle" paint-order="stroke" stroke="#183241" stroke-width="8">E07</text>
+<text x="4980" y="1960" font-size="46" fill="#e5eef2" text-anchor="middle" paint-order="stroke" stroke="#183241" stroke-width="8">E08</text>
+</g>
+<text x="60" y="137" font-size="12" fill="#5b6f79" text-anchor="middle">0</text>
+<text x="324" y="137" font-size="12" fill="#5b6f79" text-anchor="middle">1200</text>
+<text x="588" y="137" font-size="12" fill="#5b6f79" text-anchor="middle">2400</text>
+<text x="852" y="137" font-size="12" fill="#5b6f79" text-anchor="middle">3600</text>
+<text x="1116" y="137" font-size="12" fill="#5b6f79" text-anchor="middle">4800</text>
+<text x="1292" y="137" font-size="12" fill="#5b6f79" text-anchor="middle">5600</text>
+<text x="51" y="154" font-size="12" fill="#5b6f79" text-anchor="end">0</text>
+<text x="51" y="365.2" font-size="12" fill="#5b6f79" text-anchor="end">960</text>
+<text x="51" y="576.4" font-size="12" fill="#5b6f79" text-anchor="end">1920</text>
+<text x="51" y="787.6" font-size="12" fill="#5b6f79" text-anchor="end">2880</text>
+<text x="51" y="998.8" font-size="12" fill="#5b6f79" text-anchor="end">3840</text>
+<text x="65" y="1020.8" font-size="15" fill="#203c4c" >Запад: существующие районы S01–S13</text>
+<text x="860" y="1020.8" font-size="15" fill="#203c4c" >Восток: новые S14–S18</text>
+<rect x="1318" y="149" width="330" height="845" fill="#e5edf1" stroke="none" stroke-width="0"/>
+<text x="1330" y="181" font-size="23" fill="#163b50" font-weight="700">Пять новых районов</text>
+<text x="1330" y="225" font-size="17" fill="#183e54" font-weight="700">S14  Грузовой шлюз</text>
+<text x="1330" y="253" font-size="14" fill="#203c4c" >Носитель, сбор, восстановление</text>
+<text x="1330" y="277" font-size="14" fill="#203c4c" >4 защитника · жила 1440</text>
+<text x="1330" y="351" font-size="17" fill="#183e54" font-weight="700">S15  Силовая галерея</text>
+<text x="1330" y="379" font-size="14" fill="#203c4c" >Отключает ворота и 2 турели</text>
+<text x="1330" y="403" font-size="14" fill="#203c4c" >4 защитника · необязательно</text>
+<text x="1330" y="477" font-size="17" fill="#183e54" font-weight="700">S16  Сервисная палуба</text>
+<text x="1330" y="505" font-size="14" fill="#203c4c" >Нижний обход и ручная заслонка</text>
+<text x="1330" y="529" font-size="14" fill="#203c4c" >5 защитников · жила 1440</text>
+<text x="1330" y="603" font-size="17" fill="#183e54" font-weight="700">S17  Распределительный двор</text>
+<text x="1330" y="631" font-size="14" fill="#203c4c" >Короткий укреплённый путь</text>
+<text x="1330" y="655" font-size="14" fill="#203c4c" >9 защитников · резерв 24</text>
+<text x="1330" y="729" font-size="17" fill="#183e54" font-weight="700">S18  Орбитальный док</text>
+<text x="1330" y="757" font-size="14" fill="#203c4c" >Два входа, стыковка, передача</text>
+<text x="1330" y="781" font-size="14" fill="#203c4c" >6 защитников · финальная цель</text>
+<text x="1330" y="860" font-size="15" fill="#203c4c" >○ / •   Объект / охрана</text>
+<text x="1330" y="889" font-size="15" fill="#203c4c" >◇   Источник ресурсов</text>
+<text x="1330" y="918" font-size="15" fill="#203c4c" >▰   Носитель архива</text>
+<text x="1330" y="947" font-size="15" fill="#203c4c" >□   База или стыковка</text>
+<text x="1330" y="976" font-size="15" fill="#203c4c" >△   Турель</text>
+<path d="M60,1062 h65" stroke="#ffc67c" stroke-width="7"/>
+<text x="140" y="1068" font-size="17" fill="#203c4c" >Прямой путь</text>
+<path d="M490,1062 h65" stroke="#83e1c3" stroke-width="7"/>
+<text x="570" y="1068" font-size="17" fill="#203c4c" >Нижний обход</text>
+<path d="M920,1062 h65" stroke="#b4ceff" stroke-width="7"/>
+<text x="1000" y="1068" font-size="17" fill="#203c4c" >Подготовка через питание</text>
+<text x="60" y="1110" font-size="17" fill="#203c4c" >Уровни: 0 — нижняя сервисная палуба; 1 — основной настил; 2 — высоты завода, цитадели и силовой галереи.</text>
+<text x="60" y="1143" font-size="16" fill="#203c4c" >28 новых мобильных защитников + максимум 12 местных рейдовых единиц. Резерв конечный. Основные проезды — 240 и шире.</text>
+<text x="60" y="1175" font-size="14" fill="#59707d" >Охрана точками показана только на востоке; западная расстановка сохранена. Полный план — MISSION_EAST_EXTENSION.md.</text>
+</g></svg>

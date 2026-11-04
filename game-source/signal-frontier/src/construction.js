@@ -11,7 +11,7 @@
     outpost: [4, 4],
     logistics: [2, 2],
   });
-  const enabled = (s) => ["frontier-8", "frontier-9"].includes(s?.campaign?.id);
+  const enabled = (s) => ["frontier-8", "frontier-9", "frontier-10"].includes(s?.campaign?.id);
   // Existing saves retain their reserved 3x3 area; new extractors reserve 4x4.
   const shape = (u) =>
     u.kind === "outpost" && u.construction?.footprint === undefined
@@ -188,6 +188,7 @@
       return { allowed: !!workers.length, reason: workers.length ? null : "order", cost: 0 };
     }
     function workerOrder(s, ids, point, targetId = null, commit = true) {
+      if(commit)for(const w of s.units)if(ids.includes(w.id))delete w.eastRepair;
       const chosen = new Set(ids),
         workers = s.units.filter((u) => chosen.has(u.id) && u.kind === "drone" && !u.team && u.hp > 0),
         target = s.units.find((u) => u.id === targetId && u.hp > 0);
@@ -316,7 +317,7 @@
       if (!enabled(s)) return E.map(s);
       if (worlds.has(s)) return worlds.get(s);
       const solid = s.units.filter((u) => u.hp > 0 && u.construction),
-        key = solid
+        key = (E.map(s).revision||"") + solid
           .map((u) =>
             [
               u.id,
@@ -362,19 +363,19 @@
     }
     function support(s, b) {
       const map = E.map(s),
-        z = E.terrain.level(b.x + 1, b.y + 1);
+        z = E.terrainFor(s).level(b.x + 1, b.y + 1);
       if (z < 0 || !Number.isInteger(z)) return false;
       if (map.links.some((p) => intersects(b, p, 12))) return false;
       for (let y = b.y - 12; y <= b.y + b.h + 12; y += 8)
         for (let x = b.x - 12; x <= b.x + b.w + 12; x += 8)
-          if (E.terrain.level(x, y) !== z) return false;
+          if (E.terrainFor(s).level(x, y) !== z) return false;
       return !map.walls.some((w) => intersects(b, w, 12));
     }
     // Two static clearance graphs cover infantry passages and heavy vehicles.
     // Preview checks only remove footprint cells; they do not rebuild terrain.
     function graph(s, radius) {
       const map = E.map(s),
-        key = map.id + ":" + radius;
+        key = map.id + ":" + map.revision + ":" + radius;
       if (graphs.has(key)) return graphs.get(key);
       const cols = map.W / CELL,
         rows = map.H / CELL,
@@ -484,6 +485,7 @@
     }
     function protectedPoints(s) {
       return [
+        ...(s.east?[{x:5280,y:2080,r:100},{x:5360,y:2040,r:75},{x:4880,y:3000,r:75}]:[]),
         ...s.campaign.mines.map((p) => ({ ...p, r: 32 })),
         ...s.caches.filter((p) => !p.taken).map((p) => ({ ...p, r: 18 })),
         { ...s.relay, r: 75 },
@@ -759,6 +761,7 @@
         E.emit(s, "post-ready", u.x, u.y);
       }
     }
+    function invalidate(s){worlds.delete(s);}
     function onDeath(s, u) {
       if (s.campaign) {
         if (u.workerTask) resumeWorker(s, u);
@@ -920,7 +923,7 @@
       serviceTick,
       activity,
       validate,
-      replan,
+      replan, invalidate,
     };
   }
   const api = { create };

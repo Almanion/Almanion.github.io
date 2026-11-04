@@ -6,11 +6,11 @@
   document.querySelector('[data-renderer="'+(requested?'babylon':'canvas')+'"]').setAttribute('aria-current','page');
   if(requested) {
     document.documentElement.dataset.renderLoading="true";
-    for(const id of ["start","continue","new-game"])document.getElementById(id).disabled=true;
+    for(const id of ["start","start-east","continue","new-game"])document.getElementById(id).disabled=true;
     const label=document.createElement("p");label.id="renderer-loading";label.setAttribute("role","status");label.textContent="Готовим 3D-сцену…";
     document.querySelector(".home-content").append(label);
   }
-  const ready=requested?import("./babylon-view.js?v=0.31.0").then(module=>{View=module.BabylonView;}).catch(error=>{status.error=String(error.message||error);}):Promise.resolve();
+  const ready=requested?import("./babylon-view.js?v=0.34.0").then(module=>{View=module.BabylonView;}).catch(error=>{status.error=String(error.message||error);}):Promise.resolve();
   root.SignalGraphics={ready,status,create(canvas){
     try {const view=new View(canvas);status.active=view.rendererId||"canvas";return view;}
     catch(error){status.error=String(error.message||error);status.active="canvas";return new root.SignalView(canvas);}

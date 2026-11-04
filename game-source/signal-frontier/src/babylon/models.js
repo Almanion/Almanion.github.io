@@ -275,6 +275,7 @@ export class Models {
   }
   draw(u,s,ui,memory=false) {
     this.begin(u,s,ui,memory);
+    if(['carrier','archive-gate','power-node','archive-depot'].includes(u.kind)){this.archiveModel();return;}
     if(u.hp<=0){this.wreck();return;}
     if(u.kind==="hero"||u.kind==="rifle")this.infantry();
     else if(u.kind==="sentinel"||u.kind==="warden")this.robot();
@@ -285,6 +286,20 @@ export class Models {
   }
   scenery(s,ui) {
     const base=(p)=>{this.parts.opacity=1;this.u=p;this.floor=this.E.elevation(p.x,p.y,this.view.mapId);this.a=0;this.ui=ui;this.memory=false;this.accent=P.mint;};
+    if(s.east){
+      const e=s.east;
+      for(const p of [{x:5280,y:2080,dock:true},{x:4880,y:3000}]){
+        if(!this.view.inView(p.x,p.y,180)||!this.E.visible(s,0,p))continue;base(p);
+        if(p.dock){this.box(0,0,100,130,0,3,P.dark);for(const side of [-1,1]){this.box(side*43,0,9,130,3,7,P.steel);this.light(side*43,0,3,90,10,1,0,e.upload===1?P.mint:'#81b3c9');}this.box(68,-30,20,24,0,20,P.steel);this.light(68,-30,12,12,20);}
+        else {this.box(0,0,22,22,0,18,P.dark);this.light(0,0,14,14,18,2,0,e.service?P.mint:P.amber);}
+      }
+      for(const gate of (s.fog?.world||this.E.map(s)).walls.filter(w=>w.gate&&w.gate!=='direct')){
+        const p={x:gate.x+gate.w/2,y:gate.y+gate.h/2};if(!this.view.inView(p.x,p.y,180))continue;base(p);
+        const opening=gate.gate==='entrance'&&e.open?clamp((s.t-e.openedAt)/1.2):0;
+        for(const side of [-1,1])this.box(0,side*(gate.h/4+opening*gate.h/2),26,gate.h/2,0,38,P.steel);
+        for(let y=-90;y<=90;y+=60)this.light(14,y,2,18,19,5,0,P.amber);
+      }
+    }
     for(const mine of s.campaign?.mines||[]) {
       if(mine.unknown||!this.view.inView(mine.x,mine.y,130))continue;base(mine);
       const n=mine.remaining>0?5:2;
@@ -296,6 +311,28 @@ export class Models {
       this.box(0,0,32,26,0,5,P.dark);this.disc(0,0,12,5,15,P.steel);
       this.box(0,0,12,12,20,12,P.dark);this.light(0,0,8,8,32,2,0,item.online||item.side===0?P.mint:P.copper);
       for(const side of [-1,1])this.beam([side*17,0,3],[side*12,0,20],3,P.field);
+    }
+  }
+  archiveModel(){
+    const u=this.u;
+    if(u.kind==='carrier'){
+      this.tracks(49,18,u.hp>0?P.field:P.steel);
+      this.box(0,0,47,32,6,9,P.dark);this.box(-2,0,39,28,15,13,P.shell);
+      this.box(1,0,29,24,28,3,P.steel);this.box(-11,0,6,27,17,11,P.field);this.box(11,0,6,27,17,11,P.field);
+      this.light(1,0,19,5,31,1,this.a,u.hp<=0?P.amber:'#83d9f0');
+      for(const side of [-1,1]){this.box(23,side*14,5,5,10,4,P.steel);this.light(25,side*12,2,5,13);}
+      if(u.hp<360)this.box(-13,0,10,19,30,3,P.copper);
+    }else if(u.kind==='archive-gate'){
+      if(u.hp<=0)return;
+      this.a=0;this.box(0,0,25,234,0,38,P.steel);for(const side of [-1,1])this.box(0,side*112,36,16,0,48,P.dark);
+      for(let y=-80;y<=80;y+=40)this.light(-14,y,2,18,18,6,0,P.amber);
+    }else if(u.kind==='power-node'){
+      this.a=0;this.box(0,0,72,72,0,9,P.dark);this.box(0,0,54,54,9,u.hp>0?28:9,P.steel);
+      for(const side of [-1,1])this.box(side*23,0,9,50,22,18,P.field);
+      this.light(0,0,12,42,u.hp>0?38:18,2,0,this.s.east?.power?P.dark:'#83d9f0');
+    }else{
+      this.a=0;this.box(0,0,150,150,0,9,P.dark);this.box(0,-12,132,115,9,u.hp>0?35:7,P.enemy);
+      if(u.hp>0){this.box(0,58,70,16,8,17,P.steel);this.box(0,54,56,5,9,17,P.dark);for(const side of [-1,1])this.light(side*51,0,6,65,44,2,0,P.amber);this.box(-38,-22,26,58,44,5,P.steel);}
     }
   }
 }

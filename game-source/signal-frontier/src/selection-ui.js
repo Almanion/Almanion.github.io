@@ -1,9 +1,10 @@
 /* Bounded, paginated roster. No canvas or per-frame portrait rendering. */
 (function (root) {
   "use strict";
-  const names = { logistics: "Узел снабжения", hero: "Разведчик", rifle: "Боец", scout: "Дозорный", artillery: "Артиллерия", drone: "Зонд",
+  const names = { carrier: "Носитель архива", logistics: "Узел снабжения", hero: "Разведчик", rifle: "Боец", scout: "Дозорный", artillery: "Артиллерия", drone: "Зонд",
     base: "База", outpost: "Экстрактор", barracks: "Казармы", foundry: "Тяжёлый цех", arsenal: "Арсенал", bunker: "Бункер" };
   const shapes = {
+    carrier: '<path d="M8 22h48v26H8ZM15 16h34v28H15ZM9 49h46M12 55h12m16 0h12M23 25h18v10H23Z"/>',
     hero: '<path d="M22 27V15a10 10 0 0 1 20 0v12l-6 5h-8ZM24 8l16 2M21 30l-9 6-5 19h49l-5-19-9-6M21 34l11 8 11-8M24 43v10m16-10v10M11 35V19h8"/><path class="visor" d="M24 19h16v5H24Z"/><path d="m17 51 29-11 3 6-29 11Zm29-11 10-4 3 5-10 5M11 23v7"/>',
     logistics: "<path d=\"M7 55V24h19v31Zm31 0V24h19v31ZM7 35h19m12 0h19M13 44h7m24 0h7M32 13v30M22 13h20M29 7h6M32 7V3\"/><path class=\"visor\" d=\"M12 49h9v4h-9Zm31 0h9v4h-9ZM27 10h10v6H27Z\"/>",
     rifle: '<path d="M21 16 25 6h14l5 10v12l-7 5H28l-7-5ZM22 16h21M25 32l-11 5-6 18h48l-6-18-11-5M24 36l8 7 8-7M22 45v9m20-9v9M12 34V20h7"/><path class="visor" d="M24 20h17v5H24Z"/><path d="m15 51 31-12 3 6-31 12Zm31-12 10-4 3 5-10 5M12 25v6"/>',
@@ -81,7 +82,8 @@
       el.addEventListener("click", (e) => {
         const b = e.target.closest("button");
         if (!b || !el.contains(b)) return;
-        if (b.dataset.rosterView) this.rosterView = b.dataset.rosterView;
+        if(b.dataset.archiveMove){root.SignalEngine.orderUnits(options.state(),[Number(b.dataset.archiveMove)],5280,2080);}
+        else if (b.dataset.rosterView) this.rosterView = b.dataset.rosterView;
         else if (b.dataset.careView) this.careView = this.careView === Number(b.dataset.careView) ? null : Number(b.dataset.careView);
         else if (b.dataset.care) options.care(b.dataset.care, Number(b.dataset.careId));
         else if (b.dataset.rosterPage) this.page += Number(b.dataset.rosterPage);
@@ -169,7 +171,7 @@
         let head = '<div class="roster-detail-head">' + (building ? '<button class="roster-profile" data-inspect="' + u.id + '" aria-label="Развитие: ' + names[u.kind] + '" title="Открыть полное меню здания · тактическая пауза">' : '') + icon(u.kind) + '<div class="roster-identity"><strong>' + names[u.kind] + '</strong><span>' + Math.ceil(u.hp) + ' / ' + max + '</span>' + hp(u) + '</div>' + (building ? '</button>' : '');
         if (buildings.length > 1) head += '<div class="producer-pager"><button data-producer-page="-1" aria-label="Предыдущее выбранное здание">‹</button><small>' + (buildings.indexOf(u) + 1) + '/' + buildings.length + '</small><button data-producer-page="1" aria-label="Следующее выбранное здание">›</button></div>';
         head += '</div>';
-        let body = '';
+        let body = u.kind==='carrier'?'<button class="roster-inspect" data-archive-move="'+u.id+'">Двигаться к доку</button><p>ПКМ по носителю — следовать отрядом. Зонды ремонтируют корпус.</p>':'';
         if (building) {
           body = '<div class="roster-section-heading"><strong>' + (care ? bunker ? 'Гарнизон' : 'Лечение' : u.build ? 'Строительство' : u.kind === 'logistics' ? 'Снабжение' : 'Очередь') + '</strong>';
           if (facility && !bunker) body += '<button class="care-toggle" data-care-view="' + u.id + '" aria-pressed="' + care + '">' + (care ? '‹ Очередь' : 'Лечение ' + patients.length + '/4') + '</button>';
@@ -189,7 +191,7 @@
           else body += queue(s, u) + '<small class="roster-note">' + (jobs.length ? 'Нажмите на заказ для отмены · возврат 75%' : 'Новые заказы появятся здесь') + '</small>';
         } else {
           const stat = E.stats(s, u), task = u.care ? u.care.inside ? u.care.exit ? 'Ожидает свободного выхода' : u.care.garrison ? 'В гарнизоне · дальность и обзор +25%' : 'Лечится · выход автоматически' : u.care.garrison ? 'Идёт в бункер' : 'Идёт на лечение' : u.mineId && !u.workerTask ? 'Добывает ресурс' : u.workerTask?.kind === 'repair' ? 'Ремонтирует здание' : u.buildingId ? 'Строит здание' : u.order?.followId ? 'Следует за ведущим' : u.order ? 'Выполняет приказ' : u.kind === 'hero' ? 'Личное управление' : 'Готов к приказу';
-          body = '<p class="roster-task">' + task + '</p>';
+          body += '<p class="roster-task">' + task + '</p>';
           if (u.care) body += '<button class="roster-inspect" data-care="exit" data-care-id="' + u.id + '">Выйти из ' + (u.care.garrison ? 'бункера' : 'экстрактора') + '</button>';
           else body += '<div class="roster-stats"><span>Урон<b>' + (stat.damage || '—') + '</b></span><span>Дальность<b>' + (stat.range ? (stat.range / 40).toLocaleString('ru-RU', { maximumFractionDigits: 1 }) : '—') + '</b></span><span>Обзор<b>' + (E.sightRange(s, u) / 40).toLocaleString('ru-RU', { maximumFractionDigits: 1 }) + '</b></span></div>';
         }

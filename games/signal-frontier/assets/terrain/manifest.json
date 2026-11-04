@@ -1,0 +1,156 @@
+{
+  "version": "263fa26478e8",
+  "sources": [
+    {
+      "id": "T01",
+      "assetId": "ca49364f-4ec8-4cdc-b793-b6315b008c85",
+      "sha256": "36cf759180efb39d758beaa5a881742409b846ad1188753057562b93b390a0b7",
+      "originalBytes": 3326414
+    },
+    {
+      "id": "T02",
+      "assetId": "1f04c55f-a90d-47d7-a067-a868cd6fecdf",
+      "sha256": "6b37fdebfc996dd22cd6bbdc90f65c79e240e6d8ac24cb7508df7c27771720d9",
+      "originalBytes": 3346471
+    },
+    {
+      "id": "T03",
+      "assetId": "c41a6ebc-1250-47ae-a919-e2937af4cbe8",
+      "sha256": "3aea80b400c6ac0adb9b4215df01d5f4f8d4818f35d34dbe406f4f483d9ea4c3",
+      "originalBytes": 3360557
+    },
+    {
+      "id": "T04",
+      "assetId": "140d3cbd-931e-4e20-bef0-f3505e2873e3",
+      "sha256": "b8d6dae973b133f41ec7a726aae58309b01adb98aecbd6a787e20accccc5d876",
+      "originalBytes": 3859475
+    },
+    {
+      "id": "T05",
+      "assetId": "53edafb4-92d9-4c04-91f7-b5fc91db57de",
+      "sha256": "875cac4f7f2a24ed5ca9f12abb2673efc468107b749b70c6f45c3a700a5cde94",
+      "originalBytes": 3630668
+    },
+    {
+      "id": "T06",
+      "assetId": "85a58bda-e92a-42e3-8362-e433d9b9aebd",
+      "sha256": "242faa793c3e47086dbdbe32b0ef0451d0a28585848bf2767fa7640f763d6587",
+      "originalBytes": 3447025
+    },
+    {
+      "id": "T07",
+      "assetId": "d00e7eca-fe0f-4e23-9191-47931756df58",
+      "sha256": "b83de3247c066829c2090e04caf4668b31fa616ecd7fc544e3cfba93ed962b65",
+      "originalBytes": 3340929
+    },
+    {
+      "id": "T11",
+      "assetId": "467c6a0e-dc36-495a-af6a-9d5ee602ae43",
+      "sha256": "9b3981513b51a67c38ade79e978f70c80fb0a204d61dd79d6b6cae6fccc45a21",
+      "originalBytes": 3291606
+    },
+    {
+      "id": "T12",
+      "assetId": "ba0463c5-e9e2-4bd3-9b21-ab634c6dd076",
+      "sha256": "01c04372426e97bdc12056d6d99d694ca40cf99f37f522dfb77827b3a6674b5c",
+      "originalBytes": 3895225
+    },
+    {
+      "id": "T13",
+      "assetId": "2cbd9858-8fe7-4528-98d9-a0fc836e8d14",
+      "sha256": "589dbe552bb2c4cc606e195266c5a761dd90241ce2fbfc661bcd1c0916b65230",
+      "originalBytes": 4002882
+    },
+    {
+      "id": "T14",
+      "assetId": "0f61acc1-b5e3-4468-a764-43b894720c6f",
+      "sha256": "403dd402775b696e6233a5295a9e72c625f6783ca836b6f0208c355d007f1716",
+      "originalBytes": 3852356
+    },
+    {
+      "id": "D13",
+      "assetId": "26775d61-a74f-4b03-bea8-703941e0797c",
+      "sha256": "0b57b1664ee00f81afdf343efc0440def3a21474ecba101381a9b679d9ea4fea",
+      "originalBytes": 1813677
+    },
+    {
+      "id": "D14",
+      "assetId": "41612a53-0e2b-4537-a9af-55cf90d50d4c",
+      "sha256": "3c9c58873599a6abe37e87693a2234af7cfd435456797828302ffbd3ae00908e",
+      "originalBytes": 1180655
+    },
+    {
+      "id": "D15",
+      "assetId": "d0617c62-d5be-4483-ae26-fbbe3b04fcdd",
+      "sha256": "2a0bb2532e9e733698c988bede17152df82b27a5687bb2298f78f2b3d5f7cb06",
+      "originalBytes": 1165428
+    },
+    {
+      "id": "D16",
+      "assetId": "8146e001-b16c-4c19-a1d1-738dd2b878cb",
+      "sha256": "a29804ff47b146a5b55d0a31466457abbded8ba0b70282398a1677e28d10af30",
+      "originalBytes": 1796354
+    },
+    {
+      "id": "D17",
+      "assetId": "68c54f61-9f36-41b6-bcda-41a3147df5e1",
+      "sha256": "cf1875f9cf1bff41ee9167dae3e45fa016ad0339e8165fd996f57a2ce892b8f7",
+      "originalBytes": 866685
+    },
+    {
+      "id": "D18",
+      "assetId": "697ec198-6e59-47c5-9212-8dc248a8eca1",
+      "sha256": "d9e6d48ce9304d69efc15026bccfe7c31a2ed7f479de30a31b443f5e166a45eb",
+      "originalBytes": 1272046
+    }
+  ],
+  "files": [
+    {
+      "name": "classic.webp",
+      "W": 1440,
+      "H": 1000,
+      "size": 1024,
+      "bytes": 115386,
+      "sha256": "a7246625c301991d3087f5e3f4e458d78bc67caa59617fdfa14445872b827a15"
+    },
+    {
+      "name": "frontier.webp",
+      "W": 1920,
+      "H": 1280,
+      "size": 1024,
+      "bytes": 130458,
+      "sha256": "edfd78ef5f0a3e6468ab1f536c0e31d63416d836fb36945d726537253c4b9ec7"
+    },
+    {
+      "name": "expedition.webp",
+      "W": 2240,
+      "H": 2560,
+      "size": 1024,
+      "bytes": 151358,
+      "sha256": "25f71caec2085e3e02185087bd35ff3f3d7a9eb222307591915d03d1872ed5af"
+    },
+    {
+      "name": "highlands.webp",
+      "W": 3600,
+      "H": 3840,
+      "size": 2048,
+      "bytes": 638936,
+      "sha256": "3cebcc5e93ba57017c7a17fdcfbe787ecb4bb9b847b7545631d98526febbe5b5"
+    },
+    {
+      "name": "districts.webp",
+      "W": 3600,
+      "H": 3840,
+      "size": 2048,
+      "bytes": 641864,
+      "sha256": "abd6a34327037831b554d4b26a424e4a1fb453311e8fca2d70ca11e48add7eec"
+    },
+    {
+      "name": "cliff.webp",
+      "size": 512,
+      "bytes": 47266,
+      "sha256": "cfd58ed513bb78daa710bf81c4247b30cd07bf3876ec1da1c1e0b6dda998dae3"
+    }
+  ],
+  "notes": "Selected uploads; offline continuous surface bake. T08–T10 are model finishes, not terrain. 2048² main map, 512² repeating cliff, mipmaps at runtime. Uploads remain unchanged."
+}

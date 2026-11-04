@@ -5,6 +5,7 @@
     Y = 0.73,
     TAU = Math.PI * 2;
   const MOUNTS = E.MOUNTS;
+  const cliffPatterns = new WeakMap();
   const ORE_ROCK = [[-8,-5],[1,-8],[9,-2],[6,6],[-6,7]],
     LARGE_ORE_ROCK = ORE_ROCK.map(([x,y]) => [x * 1.8, y * 1.8]);
   function poly(c, p, fill, stroke) {
@@ -266,7 +267,29 @@
     c.restore();
     return a;
   }
+  // Shared, static markings: both renderers show the same traversable ramps.
+  function heightAccents(world) {
+    const marks=[],add=(points,color,width)=>marks.push({points,color,width});
+    for(const r of world.links||[]){
+      const alongY=r.axis?r.axis==="y":r.h>r.w,
+        length=alongY?r.h:r.w,span=alongY?r.w:r.h,
+        point=(t,side=0)=>alongY?[r.x+r.w/2+side,r.y+length*t]:[r.x+length*t,r.y+r.h/2+side];
+      for(const side of [-1,1]){
+        const p=[point(.025,side*(span/2-11)),point(.975,side*(span/2-11))];
+        add(p,"#24343e",10);add(p,r.axis?"#7796a8":"#607985",3);
+      }
+      if(!r.axis)continue;
+      for(const t of [.035,.965])add([point(t,-span/2+23),point(t,span/2-23)],"#849ba7",4);
+      const sign=Math.sign(r.to-r.from),half=Math.min(32,span*.13);
+      for(const t of [.25,.5,.75]){
+        const points=[point(t-sign*12/length,-half),point(t+sign*12/length),point(t-sign*12/length,half)];
+        add(points,"#263c49",8);add(points,"#81b3c9",3.5);
+      }
+    }
+    return marks;
+  }
   function highlandGround(world) {
+    const surface = root.SignalTerrainArt?.peek(world.id);
     // Half resolution bounds the terrain texture to 13.7 MiB on phones.
     const a = document.createElement("canvas");
     a.width = world.W / 2;
@@ -277,7 +300,7 @@
     const c = a.getContext("2d");
     c.scale(0.5, 0.5);
     c.translate(0, 160);
-    const T = E.terrain;
+    const T = E.terrainFor(world);
     const faces = [];
     for (let y = 0; y < world.H; y += 40)
       for (let x = 0; x < world.W; x += 40) {
@@ -289,6 +312,8 @@
             x,
             y: y + 40,
             z,
+            za:T.height(x+.01,y+39.99),
+            zb:T.height(x+39.99,y+39.99),
             low: Math.max(-36, south),
             sort: y + 40,
           });
@@ -328,6 +353,16 @@
             [x, y + 40 - T.height(x + 0.01, y + 39.99)],
           ];
         poly(c, p, color);
+        if (surface && (world.id!=="districts-east"||x<3600)) {
+          // One-time terrain cache: world-anchored sampling also follows ramps.
+          // Subpixel overlap prevents hairline cracks between adjacent cells.
+          const sx=surface.width/(world.id==="districts-east"?3600:world.W), sy=surface.height/world.H;
+          c.save();
+          c.transform((p[1][0]-p[0][0])/40,(p[1][1]-p[0][1])/40,
+            (p[3][0]-p[0][0])/40,(p[3][1]-p[0][1])/40,p[0][0],p[0][1]);
+          c.drawImage(surface,(x-.1)*sx,(y-.1)*sy,40.2*sx,40.2*sy,-.1,-.1,40.2,40.2);
+          c.restore();
+        }
         if (
           T.level(x - 0.01, y + 20) < 0 ||
           T.height(x - 0.01, y + 20) < z - 30
@@ -335,11 +370,11 @@
           line(
             c,
             [
-              [x, y - z],
-              [x, y + 40 - z],
+              p[0],
+              p[3],
             ],
-            "#bac7b070",
-            2,
+            "#8ba2af",
+            4,
           );
         if (
           T.level(x + 20, y - 0.01) < 0 ||
@@ -348,63 +383,21 @@
           line(
             c,
             [
-              [x, y - z],
-              [x + 40, y - z],
+              p[0],
+              p[1],
             ],
-            "#c1c9ad85",
-            2,
+            "#9cb3bf",
+            4,
           );
       }
       for (const f of faces) if (f.y === y + 40) cliffFace(c, f);
     }
-    for (const r of world.links) {
-      const alongY = r.h > r.w,
-        cx = r.x + r.w / 2,
-        cy = r.y + r.h / 2;
-      // Restrained metal rails distinguish bridges; ramp chevrons indicate the climb.
-      if (!r.axis) {
-        for (const side of [-1, 1]) {
-          const p = alongY
-            ? [
-                [cx + side * (r.w / 2 - 7), r.y],
-                [cx + side * (r.w / 2 - 7), r.y + r.h],
-              ]
-            : [
-                [r.x, cy + side * (r.h / 2 - 7)],
-                [r.x + r.w, cy + side * (r.h / 2 - 7)],
-              ];
-          line(
-            c,
-            p.map(([x, y]) => [x, y - T.height(x, y)]),
-            "#91a69a",
-            3,
-          );
-        }
-      } else {
-        for (let i = 1; i < 5; i++) {
-          const t = i / 5,
-            x = r.axis === "x" ? r.x + r.w * t : cx,
-            y = r.axis === "y" ? r.y + r.h * t : cy,
-            z = T.height(x, y),
-            dx = r.axis === "x" ? 0 : 18,
-            dy = r.axis === "x" ? 18 : 0;
-          line(
-            c,
-            [
-              [x - dx, y - dy - z],
-              [x + dx, y + dy - z],
-            ],
-            "#c3c9ac65",
-            2,
-          );
-        }
-      }
-    }
+    for(const mark of heightAccents(world))line(c,mark.points.map(([x,y])=>[x,y-T.height(x,y)]),mark.color,mark.width);
     if (world.roads) {
       c.save();
       c.lineCap = "round";
       c.lineJoin = "round";
-      for (const route of world.roads) {
+      for (const route of surface ? [] : world.roads) {
         line(
           c,
           route.map(([x, y]) => [x, y - T.height(x, y)]),
@@ -433,11 +426,23 @@
     return a;
   }
   function cliffFace(c, f) {
+    const texture=root.SignalTerrainArt?.peek("cliff"),za=f.za??f.z,zb=f.zb??f.z;
+    if(texture){
+      c.save();
+      let pattern=cliffPatterns.get(c);
+      if(!pattern){pattern=c.createPattern(texture,"repeat");pattern.setTransform(new DOMMatrix([.5,0,0,.5,0,0]));cliffPatterns.set(c,pattern);}
+      c.translate(0,f.y);
+      const face=[[f.x,-za],[f.x+40,-zb],[f.x+40,-f.low],[f.x,-f.low]];
+      poly(c,face,pattern);poly(c,face,"#10252b42");
+      poly(c,[[f.x,-za],[f.x+40,-zb],[f.x+40,-Math.max(f.low,zb-6)],[f.x,-Math.max(f.low,za-6)]],"#657f8c");
+      line(c,[[f.x,-za],[f.x+40,-zb]],"#a2bac6",2);
+      c.restore();return;
+    }
     poly(
       c,
       [
-        [f.x, f.y - f.z],
-        [f.x + 40, f.y - f.z],
+        [f.x, f.y - za],
+        [f.x + 40, f.y - zb],
         [f.x + 40, f.y - f.low],
         [f.x, f.y - f.low],
       ],
@@ -448,8 +453,8 @@
     line(
       c,
       [
-        [f.x + 2, f.y - f.z],
-        [f.x + 38, f.y - f.z],
+        [f.x + 2, f.y - za],
+        [f.x + 38, f.y - zb],
       ],
       "#b6c3a58c",
       2,
@@ -474,7 +479,7 @@
     );
   }
   function terrain(world = E.map(null)) {
-    if (["highlands", "districts"].includes(world.id))
+    if (["highlands", "districts", "districts-east"].includes(world.id))
       return highlandGround(world);
     const a = document.createElement("canvas");
     a.width = world.W;
@@ -511,6 +516,8 @@
     outline.forEach((p, i) => (i ? c.lineTo(...p) : c.moveTo(...p)));
     c.closePath();
     c.clip();
+    const surface=root.SignalTerrainArt?.peek(world.id);
+    if(surface)c.drawImage(surface,0,0,world.W,world.H);
     // Keep the seeded decoration stream stable without a permanent floor grid.
     for (let y = 24; y < world.H - 20; y += 80)
       for (let x = 24; x < world.W - 20; x += 100) rnd();
@@ -748,37 +755,29 @@
     // Preserve holes, interior knowledge and narrow passages. Boundary cells
     // of a wide region may be trimmed: keeping every stair-step centre would
     // force the display to retain the square sampling grid.
+    // A polygon's bounds stay constant throughout its cell scan.
+    const boundsOf = (points) => {
+      const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);
+      return {left:Math.min(...xs),top:Math.min(...ys),right:Math.max(...xs),bottom:Math.max(...ys)};
+    };
     const cutsCenter = (points) => {
-      const xs = points.map((p) => p[0]),
-        ys = points.map((p) => p[1]);
+      const bounds=boundsOf(points);
       for (
         let y =
-          Math.floor(Math.min(...ys) / fog.cell) * fog.cell + fog.cell / 2;
-        y <= Math.max(...ys);
+          Math.floor(bounds.top / fog.cell) * fog.cell + fog.cell / 2;
+        y <= bounds.bottom;
         y += fog.cell
       )
         for (
           let x =
-            Math.floor(Math.min(...xs) / fog.cell) * fog.cell + fog.cell / 2;
-          x <= Math.max(...xs);
+            Math.floor(bounds.left / fog.cell) * fog.cell + fog.cell / 2;
+          x <= bounds.right;
           x += fog.cell
         ) {
-          const xx = Math.floor(x / fog.cell),
-            yy = Math.floor(y / fog.cell),
-            interior =
-              known(xx - 1, yy) &&
-              known(xx + 1, yy) &&
-              known(xx, yy - 1) &&
-              known(xx, yy + 1),
-            wide = [-1, 1].some((dx) =>
-              [-1, 1].some(
-                (dy) =>
-                  known(xx + dx, yy) &&
-                  known(xx, yy + dy) &&
-                  known(xx + dx, yy + dy),
-              ),
-            );
-          if (known(xx, yy) && wide && !interior) continue;
+          const xx = Math.floor(x / fog.cell), yy = Math.floor(y / fog.cell),
+            interior = known(xx-1,yy)&&known(xx+1,yy)&&known(xx,yy-1)&&known(xx,yy+1),
+            wide = [-1,1].some(dx=>[-1,1].some(dy=>known(xx+dx,yy)&&known(xx,yy+dy)&&known(xx+dx,yy+dy)));
+          if(known(xx,yy)&&wide&&!interior)continue;
           let inside = false;
           for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
             const a = points[j],
@@ -910,16 +909,15 @@
       // corner fillets: long circular arcs must not retain horizontal cell steps.
       // Every added strip is checked against entire unknown cells, not samples.
       const crossesUnknown = (points) => {
-        const xs = points.map((p) => p[0]),
-          ys = points.map((p) => p[1]);
+        const bounds=boundsOf(points);
         for (
-          let y = Math.floor(Math.min(...ys) / fog.cell);
-          y <= Math.floor(Math.max(...ys) / fog.cell);
+          let y = Math.floor(bounds.top / fog.cell);
+          y <= Math.floor(bounds.bottom / fog.cell);
           y++
         )
           for (
-            let x = Math.floor(Math.min(...xs) / fog.cell);
-            x <= Math.floor(Math.max(...xs) / fog.cell);
+            let x = Math.floor(bounds.left / fog.cell);
+            x <= Math.floor(bounds.right / fog.cell);
             x++
           ) {
             if (known(x, y)) continue;
@@ -1020,8 +1018,8 @@
     constructor(canvas, options = {}) {
       this.canvas = canvas;
       this.c = canvas.getContext("2d", { alpha: options.alpha === true });
-      this.ground = terrain();
-      this.mapId = "classic";
+      this.ground = null;
+      this.mapId = null;
       this.tactical = { overview: true, x: 720, y: 500, zoom: 0.95 };
       this.fx = [];
       this.poses = new Map();
@@ -1127,7 +1125,7 @@
       );
     }
     groundPoints(points) {
-      if (!["highlands", "districts"].includes(this.mapId)) return points;
+      if (!["highlands", "districts", "districts-east"].includes(this.mapId)) return points;
       const out = [];
       for (let i = 0; i < points.length; i++) {
         const a = points[Math.max(0, i - 1)],
@@ -1147,7 +1145,7 @@
       line(c, this.groundPoints(points), ...style);
     }
     groundRing(c, x, y, r, color, width = 1) {
-      if (!["highlands", "districts"].includes(this.mapId))
+      if (!["highlands", "districts", "districts-east"].includes(this.mapId))
         return ring(c, x, y, r, color, width);
       const p = [];
       for (let i = 0; i <= 48; i++) {
@@ -1157,8 +1155,8 @@
       this.groundLine(c, p, color, width);
     }
     shadow(c, x, y, shape, height, angle = 0) {
-      if (!["highlands", "districts"].includes(this.mapId)) return;
-      const T = E.terrain,
+      if (!["highlands", "districts", "districts-east"].includes(this.mapId)) return;
+      const T = E.terrainFor(this.mapId),
         base = T.height(x, y),
         co = Math.cos(angle),
         si = Math.sin(angle),
@@ -1291,8 +1289,8 @@
       ];
     }
     occlude(c, x, y, z, r = 90) {
-      if (!["highlands", "districts"].includes(this.mapId)) return;
-      const T = E.terrain;
+      if (!["highlands", "districts", "districts-east"].includes(this.mapId)) return;
+      const T = E.terrainFor(this.mapId);
       for (let yy = Math.ceil(y / 40) * 40; yy < y + 200; yy += 40)
         for (let xx = Math.floor((x - r) / 40) * 40; xx < x + r; xx += 40) {
           if (T.height(xx + 20, yy + 20) <= z + 24) continue;
@@ -1306,12 +1304,13 @@
         }
     }
     covered(u) {
-      if (!["highlands", "districts"].includes(this.mapId)) return false;
+      if (!["highlands", "districts", "districts-east"].includes(this.mapId)) return false;
       const p = this.screen(u.x, u.y),
         q = this.world(p.x, p.y - 30 * this.camera.scale * Y);
       return q.y > u.y + 1 && this.z(q.x, q.y) > this.z(u.x, u.y) + 30;
     }
     wreckOpacity(u, s) {
+      if(u.kind==='carrier')return 1;
       if (u.hp > 0 || !E.C[u.kind].speed || u.kind === "hero") return 1;
       if (!this.modelDeaths.has(u.id)) this.modelDeaths.set(u.id, s.t);
       return Math.max(
@@ -1320,6 +1319,7 @@
       );
     }
     objectShadow(c, u, s) {
+      if(u.kind==='archive-gate')return;
       const opacity = s ? this.wreckOpacity(u, s) : 1;
       if (!opacity) return;
       c.save();
@@ -1366,12 +1366,12 @@
       const a = this.camera;
       const wx = (x - this.origin.x) / a.scale + a.x,
         flat = (y - this.origin.y) / (a.scale * Y) + a.y;
-      if (!["highlands", "districts"].includes(this.mapId))
+      if (!["highlands", "districts", "districts-east"].includes(this.mapId))
         return { x: wx, y: flat };
       let best = null,
         error = Infinity;
       for (let yy = flat - 48; yy <= flat + 144; yy += 2) {
-        if (E.terrain.level(wx, yy) < 0) continue;
+        if (E.terrainFor(this.mapId).level(wx, yy) < 0) continue;
         const d = Math.abs(yy - this.z(wx, yy) - flat);
         if (d < error || (d === error && yy > best)) {
           best = yy;
@@ -1388,12 +1388,12 @@
       const height = E.MOUNTS.hero,
         p = this.world(x, y + height * this.camera.scale * Y),
         z =
-          E.terrain.level(p.x, p.y) < 0
+          E.terrainFor(this.mapId).level(p.x, p.y) < 0
             ? this.z(hero.x, hero.y)
             : this.z(p.x, p.y);
       // In a void use the hero's firing plane; do not tilt a flat shot into
       // the platform just because its cursor is outside walkable terrain.
-      if (E.terrain.level(p.x, p.y) < 0)
+      if (E.terrainFor(this.mapId).level(p.x, p.y) < 0)
         p.y =
           (y - this.origin.y) / (this.camera.scale * Y) +
           this.camera.y +
@@ -1504,7 +1504,7 @@
         this.memoryNeedsRefine = false;
         this.memoryTransform = null;
       }
-      const world = E.map(s);
+      const world = s.fog?.world || E.map(s);
       this.modelClock = s.t;
       this.deliveryActivity(s);
       this.serviceActivity(s);
@@ -1512,6 +1512,12 @@
         this.ground = this.makeGround(world);
         this.mapId = world.id;
         this.networkRoute = null;
+      }
+      if(this.groundArtPending===world.id){
+        this.groundArtPending=null;
+        this.ground=terrain(world);
+        this.floorImages.clear();this.floorPixels=0;
+        this.memoryKey=null;this.memoryTransform=null;this.memoryNeedsRefine=true;
       }
       this.frameDt = dt;
       if (ui.reduced) {
@@ -1551,7 +1557,7 @@
             : h * 0.49,
       };
       if (
-        ["highlands", "districts"].includes(world.id) &&
+        ["highlands", "districts", "districts-east"].includes(world.id) &&
         !overview &&
         !menu &&
         w > h &&
@@ -1568,7 +1574,7 @@
           : this.tactical.zoom
         : menu
           ? Math.max(w / (world.W * 1.25), h / world.H)
-          : ["highlands", "districts"].includes(world.id)
+          : ["highlands", "districts", "districts-east"].includes(world.id)
             ? w < h
               ? Math.min(0.72, Math.max(0.52, w / 600))
               : h < 500
@@ -1607,7 +1613,7 @@
         this.tactical.x = tx;
         this.tactical.y = ty;
       } else if (!overview && !menu) {
-        const high = ["highlands", "districts"].includes(world.id),
+        const high = ["highlands", "districts", "districts-east"].includes(world.id),
           portrait = w < h,
           short = w > h && h < 500;
         // Aim changes the weapon, not the camera. Follow the hero while keeping
@@ -1681,6 +1687,14 @@
       return { s, world, w, h, hero, mobile, overview, menu, active };
     }
     makeGround(world) {
+      if(root.SignalTerrainArt){
+        const requests=[root.SignalTerrainArt.request(world.id),root.SignalTerrainArt.request("cliff")];
+        if(requests.some(r=>r.state==="loading"))Promise.all(requests.map(r=>r.ready)).then(()=>{
+          if(this.mapId===world.id&&requests.some(r=>r.image)){
+            this.groundArtPending=world.id;this.memoryNeedsRefine=true;
+          }
+        });
+      }
       return terrain(world);
     }
     render(s, ui, dt) {
@@ -1741,7 +1755,7 @@
         c.lineDashOffset = ui.reduced ? 0 : -this.time * 15;
         line(
           c,
-          ["highlands", "districts"].includes(this.mapId)
+          ["highlands", "districts", "districts-east"].includes(this.mapId)
             ? (this.networkRoute ||= E.pathTo(
                 s.units.find((u) => u.kind === "base"),
                 { ...s.relay, map: this.mapId },
@@ -1773,7 +1787,7 @@
       this.strategy(c, s, ui);
       this.relay(c, s, ui);
       this.watch(c, s, ui);
-      if (["highlands", "districts"].includes(this.mapId)) {
+      if (["highlands", "districts", "districts-east"].includes(this.mapId)) {
         for (const b of world.walls)
           if (
             this.inView(b.x + b.w / 2, b.y + b.h / 2, b.w + 120, b.h + 120) &&
@@ -1869,7 +1883,8 @@
         }
       }
       const objects = [];
-      for (const b of world.walls)
+      if(s.east)for(const p of [{x:5280,y:2080,dock:true},{x:4880,y:3000}])if(this.inView(p.x,p.y,180)&&E.visible(s,0,p))objects.push({...p,archiveFacility:true,sort:p.y+80});
+      for (const b of world.walls.filter(w=>!w.unitId))
         if (
           this.wallKnown(b, s.fog, "visible") &&
           this.inView(
@@ -1967,7 +1982,7 @@
         } else if (b.kind === "shell") {
           const arcHeight =
             (b.z0 === undefined ? Math.sin(progress * Math.PI) * 55 : 0) + z;
-          if (!["highlands", "districts"].includes(this.mapId))
+          if (!["highlands", "districts", "districts-east"].includes(this.mapId))
             ellipse(c, b.x, b.y, 5, 3, "#0004");
           line(
             c,
@@ -2173,7 +2188,7 @@
       if (this.planes?.map === this.mapId) return this.planes.list;
       const world = E.map(this.mapId),
         list = [];
-      if (!["highlands", "districts"].includes(this.mapId))
+      if (!["highlands", "districts", "districts-east"].includes(this.mapId))
         list.push({ x: 0, y: 0, w: world.W, h: world.H, a: 0, b: 0, z: 0 });
       else
         for (let y = 0; y < world.H; y += 40) {
@@ -2303,6 +2318,7 @@
       return false;
     }
     fogObject(c, object, s, ui, kind) {
+      if(object.archiveFacility){this.archiveFacility(c,object,s);return;}
       if (object.cliff) {
         c.save();
         if (s.fog) this.fogClip(c, s.fog, kind);
@@ -2333,7 +2349,7 @@
       const sources = fog.observers.map((u) =>
           [u.id, u.x, u.y, u.radius].join(":"),
         ),
-        maskCode = this.mapId + ":" + fog[kind + "Code"],
+        maskCode = this.mapId + ":" + (fog.geometryRevision||"") + ":" + fog[kind + "Code"],
         code = maskCode + (kind === "visible" ? ":" + sources.join(",") : ""),
         cached = this.fogPaths[kind];
       if (cached?.code === code) return cached.path;
@@ -2344,11 +2360,11 @@
         this.sightPaths = new Map();
         path = new Path2D();
         fog.observers.forEach((u, i) => {
-          const key = this.mapId + ":" + sources[i],
+          const key = this.mapId + ":" + (fog.geometryRevision||"") + ":" + sources[i],
             previous = old.get(key),
             polygon =
               previous?.polygon ||
-              E.visionArea(this.mapId, u, u.radius).points.map((p) => [
+              E.visionArea(fog.world || this.mapId, u, u.radius).points.map((p) => [
                 p.x,
                 p.y,
               ]),
@@ -2362,7 +2378,7 @@
         path = this.projectFog(polygons);
       }
       const mask = fog[kind];
-      if (["highlands", "districts"].includes(this.mapId)) {
+      if (["highlands", "districts", "districts-east"].includes(this.mapId)) {
         const terrain = this.fogTerrain(fog),
           faces = new Path2D(),
           rows = new Map();
@@ -2480,7 +2496,7 @@
             transform.b,
             transform.c,
             transform.d,
-            s.fog.exploredCode,
+            s.fog.exploredCode, s.fog.geometryRevision,
             known.units,
             known.caches,
             known.watch,
@@ -2576,7 +2592,7 @@
       this.relay(m, known, still);
       this.watch(m, known, still);
       const objects = [
-        ...world.walls
+        ...world.walls.filter(w=>!w.unitId)
           .filter(
             (w) =>
               this.wallKnown(w, s.fog, "explored") &&
@@ -2650,7 +2666,7 @@
           37,
         );
         c.translate(p.x, p.y - this.z(p.x, p.y));
-        if (!["highlands", "districts"].includes(this.mapId))
+        if (!["highlands", "districts", "districts-east"].includes(this.mapId))
           ellipse(c, 3, 6, 25, 16, "#06192280");
         for (let i = 0; i < 3; i++)
           slab(c, 12, 0, 22, 10, 0, 5, (i * TAU) / 3, MAT.graphite);
@@ -2691,7 +2707,7 @@
       const large = E.construction.enabled(s), scale = large ? 1.8 : 1,
         rock = large ? LARGE_ORE_ROCK : ORE_ROCK;
       for (const m of s.campaign.mines) {
-        if (!["highlands", "districts"].includes(this.mapId))
+        if (!["highlands", "districts", "districts-east"].includes(this.mapId))
           ellipse(c, m.x, m.y + 5, 34, 21, "#071b2866");
         else
           this.shadow(
@@ -2914,7 +2930,7 @@
           12,
         );
         c.translate(cache.x, cache.y - this.z(cache.x, cache.y));
-        if (!["highlands", "districts"].includes(this.mapId))
+        if (!["highlands", "districts", "districts-east"].includes(this.mapId))
           ellipse(c, 3, 4, 16, 11, "#0b202970");
         slab(c, 0, 0, 28, 20, 0, 3, 0, MAT.graphite);
         const gold = {
@@ -2988,7 +3004,7 @@
         36,
       );
       c.translate(x, y - this.z(x, y));
-      if (!["highlands", "districts"].includes(this.mapId))
+      if (!["highlands", "districts", "districts-east"].includes(this.mapId))
         ellipse(c, 3, 5, 27, 18, "#071d2670");
       slab(c, 0, 0, 48, 32, 0, 5, 0, MAT.dark);
       slab(c, 0, 0, 31, 24, 5, 10, 0, MAT.enemy);
@@ -3079,7 +3095,7 @@
         c.lineDashOffset = ui.reduced ? 0 : -t * 18;
         line(
           c,
-          ["highlands", "districts"].includes(this.mapId)
+          ["highlands", "districts", "districts-east"].includes(this.mapId)
             ? [
                 this.p(x, y),
                 this.p(
@@ -3123,7 +3139,7 @@
         36,
       );
       c.translate(x, y - this.z(x, y));
-      if (!["highlands", "districts"].includes(this.mapId))
+      if (!["highlands", "districts", "districts-east"].includes(this.mapId))
         ellipse(c, 4, 6, 43, 30, "#061d2770");
       ring(c, 0, 0, 43, online ? "#a3d9c947" : "#869a8a29");
       for (let i = 0; i < 3; i++) {
@@ -3416,7 +3432,7 @@
         this.z(b.x + b.w / 2, b.y + b.h / 2),
         b.w / 2 + 80,
       );
-      if (!["highlands", "districts"].includes(this.mapId)) {
+      if (!["highlands", "districts", "districts-east"].includes(this.mapId)) {
         c.save();
         if (fog) this.fogClip(c, fog, kind);
         ellipse(
@@ -3604,7 +3620,7 @@
         for (let x = minX; x < maxX; x += 40) {
           const z = this.z(x + 20, y + 20);
           if (
-            E.terrain.level(x + 20, y + 20) < 0 ||
+            E.terrainFor(this.mapId).level(x + 20, y + 20) < 0 ||
             [
               [1, 1],
               [39, 1],
@@ -3767,7 +3783,7 @@
           ? { phase: 0, move: 0, angle: u.angle }
           : this.pose(u, s, ui);
         if (
-          ["highlands", "districts"].includes(this.mapId) &&
+          ["highlands", "districts", "districts-east"].includes(this.mapId) &&
           (E.C[u.kind].speed > 0 || u.kind === "outpost") &&
           u.hp > 0 &&
           u.kind !== "drone"
@@ -3908,6 +3924,7 @@
       }
     }
     unitModel(c, u, s, ui, pose) {
+      if(['carrier','archive-gate','power-node','archive-depot'].includes(u.kind))return this.archiveModel(c,u,s);
       if (u.construction) return this.constructionModel(c, u, s, ui);
       const def = E.C[u.kind],
         r = def.r,
@@ -3917,9 +3934,9 @@
             ? { phase: 0, move: 0, angle: u.angle || 0 }
             : this.pose(u, s, ui)),
         onRamp =
-          ["highlands", "districts"].includes(this.mapId) &&
+          ["highlands", "districts", "districts-east"].includes(this.mapId) &&
           def.speed &&
-          !Number.isInteger(E.terrain.level(u.x, u.y)),
+          !Number.isInteger(E.terrainFor(this.mapId).level(u.x, u.y)),
         p = onRamp
           ? {
               ...rawPose,
@@ -3930,7 +3947,7 @@
             }
           : rawPose;
       c.save();
-      if (!["highlands", "districts"].includes(this.mapId)) {
+      if (!["highlands", "districts", "districts-east"].includes(this.mapId)) {
         c.save();
         if (s.fog) this.fogClip(c, s.fog, ui.memory ? "explored" : "visible");
         ellipse(c, u.x + 4, u.y + 7, r * 1.25, r * 0.85, "#07192270");
@@ -3962,6 +3979,28 @@
         c.fillRect(-r, 0, (r * 2 * Math.max(0, u.hp)) / def.hp, 3);
         c.restore();
       }
+    }
+    archiveFacility(c,p,s){
+      c.save();if(s.fog)this.fogClip(c,s.fog,'visible');c.translate(p.x,p.y-this.z(p.x,p.y));
+      if(p.dock){
+        c.fillStyle='#213a47';c.fillRect(-50,-65,100,130);
+        for(const side of [-1,1]){c.fillStyle='#7694a3';c.fillRect(side*43-4,-65,8,130);c.fillStyle=s.east.upload===1?'#a4edd9':'#89c5e2';c.fillRect(side*43-1,-45,2,90);}
+        c.fillStyle='#90afbb';c.fillRect(60,-40,16,18);
+      }else {c.fillStyle='#263e4d';c.fillRect(-11,-11,22,22);c.fillStyle=s.east.service?'#a4edd9':'#dbad88';c.fillRect(-7,-8,14,5);}
+      c.restore();
+    }
+    archiveModel(c,u,s){
+      if(u.hp<=0&&u.kind==='archive-gate')return;
+      c.save();c.translate(u.x,u.y-this.z(u.x,u.y));
+      const shell={top:'#c5d1d4',side:'#6a818c',front:'#4c6471',edge:'#d8e6ec'},dark={top:'#344c5c',side:'#1b303e',front:'#203746',edge:'#668797'},a=u.angle||0;
+      if(u.kind==='carrier'){
+        for(const side of [-1,1])slab(c,0,side*18,48,9,2,7,a,dark);
+        slab(c,0,0,46,31,7,8,a,dark);slab(c,-1,0,38,26,15,13,a,shell);
+        slab(c,0,0,22,5,28,1,a,{...shell,top:u.hp<=0?'#dca785':'#8eddf0'});
+      }else if(u.kind==='archive-gate')slab(c,0,0,26,234,0,38,0,dark);
+      else {const d=u.kind==='archive-depot'?142:70;slab(c,0,0,d,d,0,8,0,dark);slab(c,0,-5,d*.8,d*.7,8,u.hp>0?30:7,0,shell);}
+      c.fillStyle='#12232e';c.fillRect(-28,32,56,4);c.fillStyle=u.hp<=0?'#e2ae83':'#8cdbec';c.fillRect(-28,32,56*Math.max(0,u.hp)/E.C[u.kind].hp,4);
+      c.restore();
     }
     productionBars(s, ui) {
       if (!s.campaign) return;
@@ -4107,6 +4146,13 @@
             occupants = activity.get(worker.care.facility) || [];
           occupants.push(worker); activity.set(worker.care.facility, occupants);
         }
+        if(worker.eastRepair){
+          const target=(lookup ||= new Map(s.units.map(u=>[u.id,u]))).get(worker.eastRepair);
+          if(target){const distance=Math.hypot(worker.x-target.x,worker.y-target.y)||1,
+            activity={kind:'repair',target,point:worker,contact:{x:target.x+(worker.x-target.x)*24/distance,y:target.y+(worker.y-target.y)*24/distance},arrived:distance<=75,active:distance<=75&&target.hp<900,waiting:false};
+            this.workerActivity.set(worker.id,activity);const crew=this.buildingActivity.get(target.id)||[];crew.push(activity);this.buildingActivity.set(target.id,crew);}
+          continue;
+        }
         if (!worker.buildingId && worker.workerTask?.kind !== "repair") continue;
         const activity = E.construction.activity(s, worker,
           lookup ||= new Map(s.units.map((u) => [u.id, u])));
@@ -4193,5 +4239,6 @@
   }
   View.artwork = unitModels;
   View.fogContours = fogContours;
+  View.heightAccents = heightAccents;
   root.SignalView = View;
 })(window);

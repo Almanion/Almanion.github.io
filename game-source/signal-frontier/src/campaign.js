@@ -9,9 +9,11 @@
     typeof module !== "undefined" && module.exports
       ? require("./districts.js")
       : root.SignalDistricts;
-  const mapped = (s) => s?.campaign?.id === "frontier-9";
+  const mapped = (s) => ["frontier-9","frontier-10"].includes(s?.campaign?.id);
+  const East = typeof module !== "undefined" && module.exports ? require("./east.js") : root.SignalEast;
+  const eastern = s => s?.campaign?.id === "frontier-10";
   const highlands = (s) =>
-    ["frontier-7", "frontier-8", "frontier-9"].includes(s?.campaign?.id);
+    ["frontier-7", "frontier-8", "frontier-9", "frontier-10"].includes(s?.campaign?.id);
   const PADS = Object.freeze(
     [
       {
@@ -293,8 +295,10 @@
     items: Object.freeze({ ...PROFILES["frontier-9"].items,
       artillery: Object.freeze({ ...PROFILES["frontier-9"].items.artillery, pop: 4 }),
       logistics: Object.freeze({ cost: 90, time: 24, pop: 0, label: "Узел снабжения" }) }) });
-  const rules = (s) => logistics(s) ? LOGISTICS_RULES : PROFILES[s.campaign?.id] || PROFILES["frontier-1"];
+  const EAST_RULES=Object.freeze({...LOGISTICS_RULES,version:12,mines:East.mines});
+  const rules = (s) => eastern(s) ? EAST_RULES : logistics(s) ? LOGISTICS_RULES : PROFILES[s.campaign?.id] || PROFILES["frontier-1"];
   const items = (s) => rules(s).items;
+  const cacheValue=(s,c)=>eastern(s)&&c.id==="E-C01"?120:eastern(s)&&c.id==="E-C02"?180:rules(s).cache;
   const expedition = (s) =>
     [
       "frontier-3",
@@ -303,7 +307,7 @@
       "frontier-6",
       "frontier-7",
       "frontier-8",
-      "frontier-9",
+      "frontier-9", "frontier-10",
     ].includes(s.campaign?.id);
   const extended = (s) =>
     [
@@ -314,7 +318,7 @@
       "frontier-6",
       "frontier-7",
       "frontier-8",
-      "frontier-9",
+      "frontier-9", "frontier-10",
     ].includes(s.campaign?.id);
   const HIGHLAND_PADS = EXPEDITION_PADS.map((p) => ({
       ...T.point(p),
@@ -330,7 +334,7 @@
     HIGHLAND_FORTS = FORTS.map(T.point);
   const pads = (s) =>
     mapped(s)
-      ? Districts.mines
+      ? (eastern(s)?East.mines:Districts.mines)
           .filter((m) => m.id !== "home")
           .map((m) => ({
             id: m.id,
@@ -360,7 +364,7 @@
         : BUILDINGS;
   const caches = (s) =>
     mapped(s)
-      ? Districts.caches
+      ? (eastern(s)?East.caches:Districts.caches)
       : highlands(s)
         ? HIGHLAND_CACHES
         : expedition(s)
@@ -372,7 +376,7 @@
       "frontier-6",
       "frontier-7",
       "frontier-8",
-      "frontier-9",
+      "frontier-9", "frontier-10",
     ].includes(s.campaign?.id);
   const SPECIAL = ["rocket", "flamer", "bomber", "tank", "mortar"];
   function create(E) {
@@ -437,6 +441,7 @@
       return u;
     }
     function make(profile = "frontier-8") {
+      if (profile === "frontier-10") { const s=makeDistricts();s.campaign.id=profile;s.version=12;for(const u of s.units)u.map="districts-east";return East.initialize(s,E,initUnit,arm); }
       if (profile === "frontier-9") return makeDistricts();
       const config = PROFILES[profile];
       const s = E.makeClassic();
@@ -1086,7 +1091,7 @@
       const depots = nodes(s), byId = new Map(depots.map((u) => [u.id, u])),
         mines = new Map(s.campaign.mines.map((m) => [m.id, m])),
         crews = new Map(s.campaign.mines.map((m) => [m.id, []])),
-        probes = alive(s, "drone").filter((u) => !u.buildingId && !u.workerTask),
+        probes = alive(s, "drone").filter((u) => !u.buildingId && !u.workerTask && !u.eastRepair),
         assignments = new Map();
       for (const u of probes) {
         const node = byId.get(u.node), mine = mines.get(u.mineId) || mineFor(s, node);
@@ -1159,7 +1164,7 @@
         if (u.rally?.followId !== undefined) owners.add(u.rally.followId);
       }
       s.units = s.units.filter((u) => {
-        if (u.hp > 0 || !E.C[u.kind].speed || u.kind === "hero" ||
+        if (u.hp > 0 || !E.C[u.kind].speed || u.kind === "hero" || u.kind === "carrier" ||
           u.deadAt === undefined || s.t - u.deadAt < 15 || owners.has(u.id)) return true;
         if (u.team) s.campaign.retired.enemies++;
         else if (u.group) s.campaign.retired.allies++;
@@ -1258,6 +1263,7 @@
       }
     }
     function interaction(s) {
+      const eastAction=East.interaction(s,E);if(eastAction)return eastAction;
       if (E.hero(s).care) return null;
       const h = E.hero(s),
         options = [];
@@ -1291,6 +1297,7 @@
       );
     }
     function objective(s) {
+      const eastTask=East.objective(s,E);if(eastTask)return eastTask;
       if (extended(s) && s.campaign.tier < 3) {
         const base = E.living(s, "base");
         if (!alive(s, "barracks").length)
@@ -1366,8 +1373,8 @@
           cache.charge = Math.min(1, cache.charge + dt / 1.2);
           if (cache.charge === 1) {
             cache.taken = true;
-            s.economy.alloy += rules(s).cache;
-            E.emit(s, "collect", cache.x, cache.y, { amount: rules(s).cache });
+            s.economy.alloy += cacheValue(s,cache);
+            E.emit(s, "collect", cache.x, cache.y, { amount: cacheValue(s,cache) });
           }
         } else cache.charge = Math.max(0, cache.charge - dt * 0.6);
       }
@@ -1750,7 +1757,7 @@
       const ai = u.ai;
       let def = E.stats(s, u);
       if (!ai) return;
-      const modern = ["frontier-8", "frontier-9"].includes(s.campaign.id),
+      const modern = ["frontier-8", "frontier-9", "frontier-10"].includes(s.campaign.id),
         frame = modern ? enemyFrame(s) : null,
         squad = frame?.squads.get(ai.squad),
         awareness = E.detectionRange(s, u),
@@ -2211,6 +2218,7 @@
       }
     }
     function director(s, dt) {
+      if(s.east?.open)return;
       for (const camp of s.campaign.camps) {
         const source = s.units.find((u) => u.id === camp.source);
         if (!source || source.hp <= 0 || camp.reserve <= 0) {
@@ -2294,6 +2302,7 @@
       }
     }
     function operation(s, input, dt) {
+      East.tick(s,input,dt,E,initUnit,arm);
       director(s, dt);
       const h = E.hero(s);
       if (!E.living(s, "jammer") && s.phase === 0) {
@@ -2337,7 +2346,7 @@
       try {
         const s = JSON.parse(JSON.stringify(value)),
           c = s?.campaign;
-        const config = PROFILES[c?.id] && rules(s);
+        const config = (PROFILES[c?.id] || eastern(s)) && rules(s);
         if (!config || s.version !== config.version) return null;
         if (c.balance !== undefined && (!E.balance.eligible(s) || c.balance !== 1)) return null;
         if (c.logistics !== undefined && (!mapped(s) || c.logistics !== 1)) return null;
@@ -2352,6 +2361,7 @@
           int = (v, min, max) => Number.isInteger(v) && num(v, min, max);
         const point = (p) => p && num(p.x, 0, world.W) && num(p.y, 0, world.H);
         const ally = [
+          "carrier",
           "hero",
           "scout",
           "base",
@@ -2382,7 +2392,7 @@
         for (const k of ["hero", "base", "jammer", "citadel", "turret"])
           if (
             s.units.filter((u) => u.kind === k).length !==
-            (mapped(s) && k === "turret" ? 8 : 1)
+            (mapped(s) && k === "turret" ? eastern(s)?10:8 : 1)
           )
             return null;
         if (expedition(s))
@@ -2410,6 +2420,9 @@
         for (const u of s.units) {
           if (
             !Object.hasOwn(E.C, u.kind) ||
+            (u.eastRepair!==undefined && (!eastern(s)||u.kind!=="drone"||!s.units.some(v=>v.kind==="carrier"&&v.id===u.eastRepair))) ||
+            (u.eastRole!==undefined && (!eastern(s)||!["carrier","gate","depot","power","turret","guard","raid"].includes(u.eastRole))) ||
+            (["carrier","archive-gate","power-node","archive-depot"].includes(u.kind)&&!eastern(s)) ||
             (u.kind === "scout" && !E.fogged(s)) ||
             (!combat(s) &&
               (SPECIAL.includes(u.kind) || u.combat !== undefined)) ||
@@ -2450,7 +2463,8 @@
           if (
             (["rifle", "scout"].includes(u.kind) && u.group !== 1) ||
             (u.kind === "artillery" && u.group !== 2) ||
-            (!["rifle", "scout", "artillery"].includes(u.kind) && u.group !== 0)
+            (u.kind === "carrier" && u.group !== (s.east?.claimed?1:0)) ||
+            (!["rifle", "scout", "carrier", "artillery"].includes(u.kind) && u.group !== 0)
           )
             return null;
           if (
@@ -2754,7 +2768,7 @@
         if (
           eco.alloy !==
           180 +
-            s.caches.filter((v) => v.taken).length * config.cache +
+            s.caches.filter((v) => v.taken).reduce((n,v)=>n+cacheValue(s,v),0) +
             c.deposited +
             eco.recovered -
             eco.spent
@@ -2923,10 +2937,11 @@
           (s.status === "playing" &&
             (!E.hero(s).hp ||
               !E.living(s, "base") ||
-              !E.living(s, "citadel"))) ||
+              (!eastern(s) && !E.living(s, "citadel")))) ||
           (s.status === "won" && E.living(s, "citadel"))
         )
           return null;
+        if(eastern(s) && !East.validate(s,E))return null;
         s.events = [];
         return s;
       } catch (_) {
@@ -2952,7 +2967,7 @@
       mineFor,
       usedSlots,
       ITEMS,
-      items,
+      items, cacheValue,
       rules,
       extended,
       expedition,

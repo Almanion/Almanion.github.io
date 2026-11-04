@@ -85,7 +85,7 @@
     "content": [".json", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".avif"],
     "dead souls": [".css", ".html", ".js", ".json", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".avif", ".txt"],
     "favicons": [".svg", ".png", ".ico"],
-    "games": [".html", ".txt", ".css", ".js"],
+    "games": [".html", ".txt", ".css", ".js", ".json", ".webp"],
     "geography": [".html"],
     "images": [".svg", ".png", ".jpg", ".jpeg", ".webp", ".avif", ".gif"],
     "matcenter": [".js", ".json"],

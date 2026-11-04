@@ -179,7 +179,7 @@
     if (
       mode === "playing" &&
       next === "tactical" &&
-      ["highlands", "districts"].includes(E.map(state).id)
+      ["highlands", "districts", "districts-east"].includes(E.map(state).id)
     ) {
       view.tactical = {
         overview: false,
@@ -249,14 +249,14 @@
     $("new-game").hidden = !saved || saved.status !== "playing";
     $("start").hidden = !!saved && saved.status === "playing";
   }
-  function begin(resume = false) {
+  function begin(resume = false, profile = new URLSearchParams(location.search).get("mission")==="east"?"frontier-10":"frontier-9") {
     minimap.reset();
     if (!resume) {
       controlGroups.clear();
       settings.controlGroups = {};
     }
-    state = resume && saved ? E.restore(saved) : E.make("frontier-9");
-    if (!state) state = E.make("frontier-9");
+    state = resume && saved ? E.restore(saved) : E.make(profile);
+    if (!state) state = E.make(profile);
     development.select();
     group = 1;
     selected = [];
@@ -291,7 +291,7 @@
     if (button) recallGroup(Number(button.dataset.controlGroup), e.shiftKey);
   });
   function selectable(u) {
-    return !u.team && u.hp > 0 &&
+    return !u.team && !(u.kind==='carrier'&&!state.east?.claimed) && u.hp > 0 &&
       ([1, 2].includes(u.group) || u.kind === "drone" ||
         ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(u.kind));
   }
@@ -506,7 +506,7 @@
       .filter((u) => !enemy || E.visible(state, 0, u))
       .filter(
         (u) =>
-          u.hp > 0 && !u.care?.inside &&
+          (u.hp > 0 || (u.kind==="carrier"&&state.east?.claimed)) && !u.care?.inside &&
           (enemy
             ? u.team
             : !u.team &&
@@ -794,10 +794,10 @@
     sound.update(E.observe(state), mode, settings.volume);
     openDialog("result");
     $("result-title").textContent =
-      state.status === "won" ? "Цитадель подавлена" : "Операция потеряна";
+      state.status === "won" ? state.east ? "Архив передан" : "Цитадель подавлена" : "Операция потеряна";
     $("result-description").textContent =
       state.status === "won"
-        ? state.approach === "infiltration"
+        ? state.east ? "Носитель достиг орбитального дока. Архив связи отправлен, операция завершена." : state.approach === "infiltration"
           ? "Обход через терминал. Отряд прошёл оборону под прикрытием взлома."
           : "Осада через узел связи. Коридор для следующей высадки открыт."
         : E.hero(state).hp <= 0
@@ -885,8 +885,8 @@
       hints.expand = "Развитие → Экстрактор · разместите у свободной жилы";
       hints["expand-network"] = "Постройте экстрактор у второй свободной жилы";
     }
-    $("objective-text").textContent = titles[task.id];
-    $("objective-sub").textContent = hints[task.id];
+    $("objective-text").textContent = task.title || titles[task.id];
+    $("objective-sub").textContent = task.hint || hints[task.id];
     if (n !== phase) {
       phase = n;
       if (state.approach === "siege") {
@@ -945,9 +945,9 @@
     $("interact").disabled = !!act && !act.allowed;
     if (act) {
       $("interact-label").textContent =
-        act.type === "cache"
+        act.label ? act.label : act.type === "cache"
           ? "Забрать сплав · +" +
-            (state.campaign ? E.development.rules(state).cache : 40)
+            (state.campaign ? E.development.cacheValue(state,act.target) : 40)
           : act.type === "terminal"
             ? act.allowed
               ? state.terminal.window > 0
@@ -965,7 +965,7 @@
           cache: "m4 9 8-4 8 4v10l-8 3-8-3Zm0 0 8 4 8-4m-8 4v9M12 1v7m-3-3 3 3 3-3",
           relay: "M12 10v10m-4 1h8M8 5a6 6 0 0 0 0 8m8-8a6 6 0 0 1 0 8M5 2a10 10 0 0 0 0 14m14-14a10 10 0 0 1 0 14M12 7v4m-2-2h4",
           terminal: "M8 4H4v16h4m8-16h4v16h-4M9 9l-3 3 3 3m6-6 3 3-3 3m-2-7-2 10",
-        })[act.type]);
+        })[act.type] || "M4 5h16v14H4ZM8 9h8v6H8Z");
       }
     }
     $("interact").classList.toggle("pressed", !!act?.allowed && (input.interact || keys.has("KeyE")));
@@ -1560,7 +1560,7 @@
           state.units.find(
             (u) =>
               u.id === hit.unitId &&
-              u.hp > 0 &&
+              (u.hp > 0 || (u.kind==="carrier"&&state.east?.claimed)) &&
               (!u.team || E.visible(state, 0, u)),
           );
       if (point)
@@ -1613,6 +1613,7 @@
   $("start").onclick = () => begin();
   $("continue").onclick = () => begin(true);
   $("new-game").onclick = () => begin();
+  $("start-east").onclick=()=>begin(false,"frontier-10");
   $("tactical").onclick = toggleTactical;
   $("order-move").onclick = () => {
     cancelMapGesture();
@@ -2376,6 +2377,10 @@
         const events = E.knownEvents(state);
         for (const e of events) {
           if (e.type !== "end") sound.play(e);
+          if(e.type.startsWith("archive-")){save();lastSaved=now;}
+          if(e.type === "archive-open")notice("Цитадель подавлена. Восточный шлюз открыт — заберите носитель архива");
+          if(e.type === "archive-warning")notice("Восточный двор готовит колонну. Можно подавить производство");
+          if(e.type === "archive-claimed")notice("Носитель готов. Выберите маршрут и прикажите двигаться к доку");
           if (e.type === "collect") notice("Сплав +" + e.amount);
           if (e.type === "raid")
             notice(
@@ -2468,7 +2473,7 @@
   setMode("menu");
   if(window.SignalGraphics) {
     document.documentElement.removeAttribute("data-render-loading");
-    for(const id of ["start","continue","new-game"])$(id).disabled=false;
+    for(const id of ["start","start-east","continue","new-game"])$(id).disabled=false;
     const loading=$("renderer-loading");
     if(loading) {
       if(window.SignalGraphics.status.error)loading.textContent="3D-режим недоступен в этом браузере. Открыта обычная версия.";

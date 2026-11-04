@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light"><title>Мастерская моделей · Signal Frontier</title>
+  <link rel="icon" href="data:,"><link rel="stylesheet" href="/style.css"><script src="/reference-plan.js" defer></script><script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Мастерская Signal Frontier">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3 28 10v12L16 29 4 22V10Z M4 10l12 7 12-7M16 17v12" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+      <span><small>SIGNAL FRONTIER</small><strong>Мастерская моделей</strong></span>
+    </a>
+    <div class="top-right"><span id="connection" class="connection">Подключение…</span><button id="storage-button" class="quiet">Где хранятся файлы</button></div>
+  </header>
+  <div id="notice" class="notice" role="status" hidden></div>
+  <div id="upload-progress" class="transfer" role="status" hidden><span></span><progress max="100" value="0"></progress></div>
+  <button id="catalogue-toggle" class="mobile-nav" aria-expanded="false" aria-controls="catalogue">Объекты и материалы <span id="mobile-count"></span></button>
+  <main class="workspace">
+    <aside id="catalogue" class="catalogue" aria-label="Каталог промптов">
+      <div class="catalogue-head"><div><h1>Каталог игры</h1><p id="totals">Загружаем каталог…</p></div><span class="count-badge" id="ready-count">0</span></div>
+      <label class="search"><span class="sr-only">Найти объект</span><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/><path d="m12 12 5 5"/></svg><input id="search" type="search" placeholder="Найти объект или промпт" autocomplete="off"></label>
+      <label class="sr-only" for="category">Раздел</label><select id="category"><option value="">Все разделы</option></select>
+      <div id="status-tabs" class="status-tabs" role="group" aria-label="Готовность"><button data-status="all" aria-pressed="true">Все</button><button data-status="empty" aria-pressed="false">Без файлов</button><button data-status="review" aria-pressed="false">На выборе</button><button data-status="ready" aria-pressed="false">Выбраны</button></div>
+      <div class="list-caption"><span id="list-count"></span><button id="reset-filter" class="text-button" hidden>Сбросить</button></div>
+      <nav id="prompt-list" class="prompt-list" aria-label="Объекты"></nav>
+      <div class="catalogue-foot">Одна страница — один объект.<br>Промпт, материалы и ваши результаты.</div>
+    </aside>
+    <section id="detail" class="detail" aria-label="Выбранный объект"><div class="loading">Открываем мастерскую…</div></section>
+  </main>
+  <dialog id="viewer" class="viewer">
+    <div class="viewer-head"><div><strong id="viewer-title"></strong><small id="viewer-info"></small></div><button id="viewer-close" class="icon-button" aria-label="Закрыть изображение">×</button></div>
+    <div id="viewer-stage" class="viewer-stage checker"><img id="viewer-image" alt=""></div>
+    <div class="viewer-foot"><div class="backgrounds" role="group" aria-label="Подложка изображения"><button data-bg="checker" aria-pressed="true">Прозрачность</button><button data-bg="light" aria-pressed="false">Светлая</button><button data-bg="dark" aria-pressed="false">Тёмная</button></div><a id="viewer-download" class="button secondary" href="#" download>Скачать оригинал</a></div>
+  </dialog>
+  <dialog id="model-viewer" class="viewer model-viewer">
+    <div class="viewer-head"><div><strong id="model-viewer-title"></strong><small>Потяните мышью — вращение · колесо — приближение</small></div><button id="model-viewer-close" class="icon-button" aria-label="Закрыть 3D-просмотр">×</button></div>
+    <div class="model-canvas-stage"><canvas id="model-canvas" aria-label="Интерактивный просмотр модели" tabindex="0"></canvas><p id="model-viewer-status" role="status">Загрузка модели…</p></div>
+    <div class="viewer-foot"><button id="model-reset" class="button secondary">Вернуть общий вид</button><a id="model-download" class="button" href="#" download>Скачать GLB</a></div>
+  </dialog>
+  <dialog id="storage" class="storage-dialog"><div class="viewer-head"><h2>Изображения и модели — на вашем компьютере</h2><button id="storage-close" class="icon-button" aria-label="Закрыть">×</button></div><p>Оригиналы сохраняются сразу после загрузки. Закрытие вкладки или перезапуск мастерской их не удаляет.</p><label for="storage-path">Папка материалов</label><input id="storage-path" readonly><button id="copy-path" class="button secondary">Копировать путь</button><p>Для каждого объекта сохраняется выбранное изображение, связанный с ним GLB и при наличии исходник Blender. Этот список позволяет взять нужную версию для дальнейшей работы над игрой.</p><p class="muted">Выбор варианта не меняет игру автоматически. Архив сохраняет оригиналы. При резервном копировании сохраняйте всю папку материалов вместе с библиотекой.</p></dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>

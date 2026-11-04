@@ -17,7 +17,7 @@ async function boot(page, state) {
     );
   }, state);
   await page.goto("/games/signal-frontier/");
-  await expect(page.locator(".edition")).toContainText("0.31.0");
+  await expect(page.locator(".edition")).toContainText("0.34.0");
   await page.locator("#continue").click();
 }
 for (const [profile, tankPoint, riflePoint] of [

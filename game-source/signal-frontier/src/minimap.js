@@ -6,6 +6,8 @@
       ? require("./engine.js")
       : root.SignalEngine;
   const SYMBOLS = Object.freeze({
+    carrierBroken:{label:"Носитель требует ремонта",color:"#f0bf91",path:"M0-6 5 0 0 6-5 0Z M-2-2 2 2 M2-2-2 2"},
+    carrier:{label:"Носитель архива",color:"#8adff4",path:"M0-6 5 0 0 6-5 0Z M-1-1H1V1H-1Z"},
     hero: { label: "Разведчик", color: "#d6fff0", path: "M0-6 5 5 0 2-5 5Z" },
     ally: {
       label: "Свои бойцы",
@@ -95,12 +97,12 @@
       found.set(key, { key, x: p.x, y: p.y, ...item });
     };
     const unit = (u, memory) => {
-      if (u.hp <= 0 || u.care?.inside || (memory && (!u.team || E.C[u.kind].speed))) return;
+      if ((u.hp <= 0 && u.kind!=="carrier") || u.care?.inside || (memory && (!u.team || E.C[u.kind].speed))) return;
       const building = !E.C[u.kind].speed,
         hero = u.kind === "hero",
         worker = u.kind === "drone";
       add("unit:" + u.id, u, {
-        symbol: hero
+        symbol: u.kind==="carrier"?(u.hp>0&&!s.east?.immobilized?"carrier":"carrierBroken"):hero
           ? "hero"
           : u.team
             ? building
@@ -263,10 +265,10 @@
       c.setTransform(g.scale * d, 0, 0, g.scale * d, g.x * d, g.y * d);
       c.fillStyle = "#294447";
       c.fillRect(0, 0, world.W, world.H);
-      if (["highlands", "districts"].includes(world.id)) {
+      if (["highlands", "districts", "districts-east"].includes(world.id)) {
         for (let y = 0; y < world.H; y += 40)
           for (let x = 0; x < world.W; x += 40) {
-            const level = E.terrain.level(x + 20, y + 20);
+            const level = E.terrainFor(world).level(x + 20, y + 20);
             c.fillStyle =
               level < 0
                 ? "#050c10"

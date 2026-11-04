@@ -1,9 +1,10 @@
 /* One ground surface per coordinate: bridges never conceal a second walkable floor. */
 (function (root) {
   "use strict";
+  function createGeometry(options = {}) {
   const CELL = 40,
     STEP = 72,
-    W = 3600,
+    W = options.W || 3600,
     H = 3840;
   // Districts are connected by explicit links, never by a coincident cliff edge.
   const regions = [
@@ -83,6 +84,10 @@
       to: 1,
     },
   ];
+  regions.push(...(options.regions || []));
+  // Sloped links must win over overlapping flat approaches.
+  links.unshift(...(options.links || []).filter(p=>p.axis));
+  links.push(...(options.links || []).filter(p=>!p.axis));
   const inside = (p, x, y) =>
     x >= p.x && y >= p.y && x < p.x + p.w && y < p.y + p.h;
   const cells = new Int8Array(((W / CELL) * H) / CELL).fill(-1);
@@ -328,6 +333,10 @@
     visionWalls,
     build,
   };
+  return API;
+  }
+  const API = createGeometry();
+  API.create = createGeometry;
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   else root.SignalTerrain = API;
 })(typeof globalThis !== "undefined" ? globalThis : window);

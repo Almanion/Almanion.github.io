@@ -16,6 +16,10 @@
     { x: 1100, y: 100, w: 90, h: 125 },
   ];
   const C = {
+    carrier: {hp:900,r:24,speed:70,range:0,damage:0,rate:0},
+    "archive-gate": {hp:450,r:110,speed:0,range:0,damage:0,rate:0},
+    "power-node": {hp:600,r:40,speed:0,range:0,damage:0,rate:0},
+    "archive-depot": {hp:1000,r:65,speed:0,range:0,damage:0,rate:0},
     hero: { hp: 150, r: 14, speed: 205, range: 620, damage: 24, rate: 0.16 },
     rifle: { hp: 115, r: 12, speed: 125, range: 300, damage: 13, rate: 0.44 },
     artillery: { hp: 220, r: 20, speed: 78, range: 540, damage: 98, rate: 2.6 },
@@ -43,6 +47,7 @@
   };
   // World units: one construction cell is 40. Older operations retain C above.
   const ENGAGEMENT = Object.freeze(Object.fromEntries([
+    ["carrier",0,240],["archive-gate",0,120],["power-node",0,120],["archive-depot",0,300],
     ["hero", 680, 780], ["rifle", 440, 640], ["artillery", 800, 720],
     ["sentinel", 420, 720], ["runner", 56, 700], ["warden", 500, 780],
     ["rocket", 620, 820], ["flamer", 240, 720], ["bomber", 64, 740],
@@ -52,7 +57,7 @@
     ["bunker", 0, 360], ["logistics", 0, 240], ["foundry", 0, 400], ["arsenal", 0, 400], ["jammer", 0, 720],
     ["turret", 540, 800], ["bastion", 620, 940], ["citadel", 840, 980],
   ].map(([kind, range, sight]) => [kind, Object.freeze({ range, sight })])));
-  const balanceEligible = (s) => s?.campaign?.id === "frontier-9",
+  const balanceEligible = (s) => ["frontier-9","frontier-10"].includes(s?.campaign?.id),
     balanced = (s) => balanceEligible(s) && s.campaign.balance === 1,
     rangedStats = Object.freeze(Object.fromEntries(Object.entries(ENGAGEMENT)
       .map(([kind, values]) => [kind, Object.freeze({ ...C[kind], range: values.range })]))),
@@ -62,6 +67,7 @@
     garrisonStats = [C, rangedStats].map((table) => Object.freeze(Object.fromEntries(
       Object.entries(table).map(([kind, def]) => [kind, Object.freeze({ ...def, range: def.range * 1.25 })]))));
   function sightRange(s, u) {
+    if(u.kind==='carrier'&&!s.east?.claimed)return 0;
     if (u.care?.inside && !sheltered(u)) return 0;
     const radius = u.build > 0 ? 120 : balanced(s) ? ENGAGEMENT[u.kind]?.sight || 0 :
       u.team ? 610 : legacySight[u.kind] || 0;
@@ -141,9 +147,12 @@
       ? require("./districts.js")
       : root.SignalDistricts;
   const districtMap = Districts.build(highlandsMap);
+  const East = typeof module !== "undefined" && module.exports ? require("./east.js") : root.SignalEast;
+  const geometryFor = value => (value === "districts-east" || value?.id === "districts-east" || value?.map === "districts-east" || value?.campaign?.id === "frontier-10") ? East.geometry() : Terrain;
   const mapFor = (s) =>
-    s?.navigation
+    (s?.navigation || (s?.id && s?.walls))
       ? s
+      : s === "districts-east" || s?.id === "districts-east" || s?.map === "districts-east" || s?.campaign?.id === "frontier-10" ? East.world(s,districtMap)
       : s === "districts" ||
           s?.id === "districts" ||
           s?.map === "districts" ||
@@ -223,8 +232,8 @@
       x <= world.W - r - 24 &&
       y >= r + 24 &&
       y <= world.H - r - 24 &&
-      (!["highlands", "districts"].includes(world.id) ||
-        Terrain.free(x, y, r)) &&
+      (!["highlands", "districts", "districts-east"].includes(world.id) ||
+        geometryFor(world).free(x, y, r)) &&
       !world.walls.some(
         (b) =>
           x + r > b.x && x - r < b.x + b.w && y + r > b.y && y - r < b.y + b.h,
@@ -265,8 +274,8 @@
   const sightCache = new Map(), sightKeys = new Array(8192), actorSight = new WeakMap();
   let nextSightKey = 0;
   function clear(a, b, r = 0) {
-    const world = mapFor(a.map || b.map);
-    if (!["highlands", "districts"].includes(world.id))
+    const world = mapFor(owners.get(a) || a.map || b.map);
+    if (!["highlands", "districts", "districts-east"].includes(world.id))
       return wallClear(a, b, r);
     // Terrain and neutral cover are immutable. Repeated perception/targeting
     // queries may reuse an exact directed ray; moving endpoints get a new key.
@@ -276,19 +285,19 @@
     const actors = a.kind && b.kind,
       source = actors ? actorSight.get(a) : null,
       previous = source?.rays?.get(b);
-    if (previous && previous.target === b && previous.map === world.id && previous.r === r &&
+    if (previous && previous.target === b && previous.map === world.id+world.revision && previous.r === r &&
         previous.ax === a.x && previous.ay === a.y && previous.bx === b.x && previous.by === b.y)
       return previous.result;
-    const key = actors ? null : [world.id, a.x, a.y, b.x, b.y, r].join(":");
+    const key = actors ? null : [world.id, world.revision, a.x, a.y, b.x, b.y, r].join(":");
     let result = actors ? undefined : sightCache.get(key);
     if (result === undefined) {
-      const eye = Terrain.height(a.x, a.y) + 24;
+      const eye = geometryFor(world).height(a.x, a.y) + 24;
       result =
-        Terrain.sight(a, b) &&
+        geometryFor(world).sight(a, b) &&
         !world.walls.some(
           (w) =>
-            segmentRect(a.x, a.y, b.x, b.y, w, r) !== null &&
-            Terrain.height(w.x + w.w / 2, w.y + w.h / 2) + 54 >= eye,
+            (!w.unitId || (w.unitId!==b.id && w.unitId!==a.id)) && segmentRect(a.x, a.y, b.x, b.y, w, r) !== null &&
+            geometryFor(world).height(w.x + w.w / 2, w.y + w.h / 2) + 54 >= eye,
         );
       // A new Map iterator can scan thousands of deleted slots after heavy
       // combat churn. A fixed ring retains the same FIFO eviction in O(1).
@@ -311,14 +320,14 @@
         local.next = (local.next + 1) % local.targets.length;
         local.rays.set(b, entry);
       }
-      entry.target = b; entry.map = world.id; entry.r = r;
+      entry.target = b; entry.map = world.id+world.revision; entry.r = r;
       entry.ax = a.x; entry.ay = a.y; entry.bx = b.x; entry.by = b.y; entry.result = result;
     }
     return result;
   }
   const elevation = (x, y, map) =>
-    ["highlands", "districts"].includes(mapFor(map).id)
-      ? Terrain.height(x, y)
+    ["highlands", "districts", "districts-east"].includes(mapFor(map).id)
+      ? geometryFor(map).height(x, y)
       : 0;
   const projectileHeight = (b, age = b.age) =>
     b.z0 === undefined
@@ -445,7 +454,7 @@
             "frontier-6",
             "frontier-7",
             "frontier-8",
-            "frontier-9",
+            "frontier-9", "frontier-10",
           ].includes(mode)
             ? mode
             : "frontier-8",
@@ -748,8 +757,8 @@
       free(a.x, a.y, r, map) &&
       free(b.x, b.y, r, map) &&
       wallClear({ ...a, map }, b, Math.max(0, r - 1e-7)) &&
-      (!["highlands", "districts"].includes(mapFor(map).id) ||
-        Terrain.travel(a, b, r))
+      (!["highlands", "districts", "districts-east"].includes(mapFor(map).id) ||
+        geometryFor(map).travel(a, b, r))
     );
   }
   function smoothRoute(from, route, r, map) {
@@ -861,7 +870,7 @@
       bestD = Infinity;
     // A* visits the corridor toward the destination, rather than flooding the
     // whole map for each member of a large order. Keep legacy routes unchanged.
-    const directed = world.id === "districts", heap = [],
+    const directed = ["districts","districts-east"].includes(world.id), heap = [],
       costs = directed ? new Float64Array(cols * rows).fill(Infinity) : null;
     let serial = 0;
     const push = (n, cost) => {
@@ -922,7 +931,7 @@
           yy >= rows ||
           (directed ? costs[k] <= costs[n] + 1 : prev[k] !== -2) ||
           !grid.point(k) ||
-          ((n === start || ["highlands", "districts"].includes(world.id)) &&
+          ((n === start || ["highlands", "districts", "districts-east"].includes(world.id)) &&
             !(n === start
               ? travelClear(from, grid.point(k), r, world)
               : grid.link(n, direction, k)))
@@ -946,22 +955,23 @@
   // for AI aiming; visibility alone may see a point while a bolt clips a corner.
   function fireClear(from, target) {
     if (
-      ["highlands", "districts"].includes(mapFor(from.map || target.map).id)
+      ["highlands", "districts", "districts-east"].includes(mapFor(from.map || target.map).id)
     ) {
       const arc =
           ["artillery", "mortar", "citadel"].includes(from.kind) ||
           (from.kind === "bastion" && target.kind === "artillery")
             ? 110
             : 0,
-        za = Terrain.height(from.x, from.y) + (from.mountHeight ?? MOUNTS[from.kind] ?? 16),
-        zb = Terrain.height(target.x, target.y) + 10;
-      if (!Terrain.ray(from, target, za, zb, arc)) return false;
-      return !mapFor(from.map || target.map).walls.some((w) => {
+        za = geometryFor(from.map || target.map).height(from.x, from.y) + (from.mountHeight ?? MOUNTS[from.kind] ?? 16),
+        zb = geometryFor(from.map || target.map).height(target.x, target.y) + 10;
+      if (!geometryFor(from.map || target.map).ray(from, target, za, zb, arc)) return false;
+      return !mapFor(owners.get(from) || from.map || target.map).walls.some((w) => {
+        if(w.unitId&&(w.unitId===target.id||w.unitId===from.id))return false;
         const t = segmentRect(from.x, from.y, target.x, target.y, w, 2);
         return (
           t !== null &&
           za + (zb - za) * t + Math.sin(t * Math.PI) * arc <
-            Terrain.height(w.x + w.w / 2, w.y + w.h / 2) + 54
+            geometryFor(from.map || target.map).height(w.x + w.w / 2, w.y + w.h / 2) + 54
         );
       });
     }
@@ -1530,7 +1540,11 @@
       target =
         targetId === null
           ? null
-          : s.units.find((u) => u.id === targetId && u.hp > 0);
+          : s.units.find((u) => u.id === targetId && (u.hp > 0 || u.kind==='carrier'));
+    if(s.east?.claimed&&target?.kind==='carrier'&&workers.length){
+      for(const w of workers){w.eastRepair=target.id;w.path=pathTo(w,target,C.drone.r);w.order={x:target.x,y:target.y};}
+      return true;
+    }
     if (
       (!mobile.length && !buildings.length && !workers.length) ||
       (targetId !== null && !target) ||
@@ -1652,6 +1666,7 @@
     }
   }
   function stats(s, u, target = null) {
+    if(s.east?.power&&u.eastRole==='turret')return {...C[u.kind],range:0,damage:0};
     if (sheltered(u)) return garrisonStats[balanced(s) ? 1 : 0][u.kind];
     if (
       campaign.combat(s) &&
@@ -1767,14 +1782,14 @@
       tx: target.x,
       ty: target.y,
       age: 0,
-      ...(["highlands", "districts"].includes(mapFor(s).id)
+      ...(["highlands", "districts", "districts-east"].includes(mapFor(s).id)
         ? {
-            z0: Terrain.height(from.x, from.y) + (from.mountHeight ?? MOUNTS[u.kind] ?? 16),
+            z0: geometryFor(s).height(from.x, from.y) + (from.mountHeight ?? MOUNTS[u.kind] ?? 16),
             z1: Number.isFinite(target.z)
               ? target.z
-              : (Terrain.level(target.x, target.y) < 0
-                  ? Terrain.height(u.x, u.y)
-                  : Terrain.height(target.x, target.y)) +
+              : (geometryFor(s).level(target.x, target.y) < 0
+                  ? geometryFor(s).height(u.x, u.y)
+                  : geometryFor(s).height(target.x, target.y)) +
                 (u.kind === "hero" ? MOUNTS.hero : 10),
             duration: Math.max(0.01, Math.max(0, dist(from, target) - r) / speed),
           }
@@ -1782,6 +1797,7 @@
     });
   }
   function hurt(s, u, damage, attacker) {
+    if(u.kind==='carrier'&&!s.east?.claimed)return;
     if (u.hp <= 0 || u.care?.inside) return;
     if (u.kind === "citadel" && shielded(s)) {
       emit(s, "shield", u.x, u.y);
@@ -1861,8 +1877,8 @@
     steps,
     walls = [
       ...mapFor(s).walls,
-      ...(["highlands", "districts"].includes(mapFor(s).id)
-        ? Terrain.visionWalls(Terrain.height(origin.x, origin.y) + 6)
+      ...(["highlands", "districts", "districts-east"].includes(mapFor(s).id)
+        ? geometryFor(s).visionWalls(geometryFor(s).height(origin.x, origin.y) + 6)
         : []),
     ],
   ) {
@@ -1904,18 +1920,18 @@
   function visionArea(s, point, radius) {
     // Exact positions only: rendering and exploration share the same outline.
     // No rounding of the smooth fog boundary and no reduction in ray count.
-    const key = mapFor(s).id + ":" + point.id + ":" + radius,
+    const key = mapFor(s).id + ":" + mapFor(s).revision + ":" + point.id + ":" + radius,
       previous = visionAreas.get(key);
     if (previous?.x === point.x && previous?.y === point.y) return previous.area;
     const walls = [
       ...mapFor(s).walls.filter(
-        (w) =>
-          !["highlands", "districts"].includes(mapFor(s).id) ||
-          Terrain.height(w.x + w.w / 2, w.y + w.h / 2) + 54 >=
-            Terrain.height(point.x, point.y) + 24,
+        (w) => (!w.unitId || w.unitId!==point.id) && (
+          !["highlands", "districts", "districts-east"].includes(mapFor(s).id) ||
+          geometryFor(s).height(w.x + w.w / 2, w.y + w.h / 2) + 54 >=
+            geometryFor(s).height(point.x, point.y) + 24),
       ),
-      ...(["highlands", "districts"].includes(mapFor(s).id)
-        ? Terrain.visionWalls(Terrain.height(point.x, point.y) + 24)
+      ...(["highlands", "districts", "districts-east"].includes(mapFor(s).id)
+        ? geometryFor(s).visionWalls(geometryFor(s).height(point.x, point.y) + 24)
         : []),
     ].filter(
       (w) =>
@@ -2140,7 +2156,8 @@
           });
         continue;
       }
-      if (u.kind === "scout") {
+      if (u.kind === "scout" || u.kind === "carrier") {
+        if(u.kind === "carrier" && (!s.east?.claimed || s.east.immobilized || s.east.upload>0)){u.path=[];continue;}
         if (u.order?.followId !== undefined)
           updateFollow(
             s,
@@ -2171,7 +2188,7 @@
       ).filter(
         (v) =>
           v.team !== u.team &&
-          !v.care?.inside && v.hp > 0 &&
+          !v.care?.inside && v.hp > 0 && !(v.kind==='carrier'&&!s.east?.claimed) &&
           !(v.kind === "citadel" && shielded(s)),
       );
       // An explicit attack may be on a distant enemy revealed by another ally.
@@ -2341,7 +2358,7 @@
       const next = { x: b.x + b.vx * dt, y: b.y + b.vy * dt };
       if (
         b.z0 !== undefined &&
-        !Terrain.ray(
+        !geometryFor(s).ray(
           b,
           next,
           projectileHeight(b, b.age - dt),
@@ -2374,10 +2391,10 @@
           t <= first &&
           (b.z0 === undefined ||
             projectileHeight(b) <
-              Terrain.height(wall.x + wall.w / 2, wall.y + wall.h / 2) + 54)
+              geometryFor(s).height(wall.x + wall.w / 2, wall.y + wall.h / 2) + 54)
         ) {
           first = t;
-          hit = "wall";
+          hit = wall.unitId ? s.units.find(u=>u.id===wall.unitId) || "wall" : "wall";
         }
       }
       for (const u of nearby(s, 1 - b.team, b, dist(b, next))) {
@@ -2390,7 +2407,7 @@
           t !== null &&
           t < first &&
           (b.z0 === undefined ||
-            Math.abs(projectileHeight(b) - Terrain.height(u.x, u.y) - 18) < 28)
+            Math.abs(projectileHeight(b) - geometryFor(s).height(u.x, u.y) - 18) < 28)
         ) {
           first = t;
           hit = u;
@@ -2474,9 +2491,9 @@
     if (h.hp <= 0 || !living(s, "base")) {
       s.status = "lost";
       emit(s, "end", h.x, h.y);
-    } else if (!living(s, "citadel")) {
+    } else if (!living(s, "citadel") && (!s.east || s.east.upload === 1)) {
       s.status = "won";
-      s.approach = s.terminal.window > 0 ? "infiltration" : "siege";
+      s.approach = s.east?.approach || (s.terminal.window > 0 ? "infiltration" : "siege");
       const endPoint = s.units.find((u) => u.kind === "citadel");
       emit(s, "end", endPoint.x, endPoint.y);
     }
@@ -2492,7 +2509,7 @@
   }
   function restore(value) {
     if (value?.fog !== undefined) return null;
-    if ([3, 4, 5, 6, 7, 8, 9, 10, 11].includes(value?.version)) {
+    if ([3, 4, 5, 6, 7, 8, 9, 10, 11, 12].includes(value?.version)) {
       const state = campaign.restore(value);
       if (
         !state ||
@@ -2778,7 +2795,7 @@
     nearby,
     terminalSites,
     navigation,
-    terrain: Terrain,
+    terrain: Terrain, terrainFor: geometryFor, east: East,
     elevation,
     projectileHeight,
     aimAngle,

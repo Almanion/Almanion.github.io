@@ -54,7 +54,8 @@ class Batch {
       mesh.isPickable=false;mesh.alwaysSelectAsActiveMesh=true;mesh.doNotSyncBoundingInfo=true;
       mesh.renderingGroupId=group;mesh.freezeWorldMatrix();mesh.setEnabled(false);
     }
-    this.capacity=0;this.count=0;this.grow(256);
+    this.capacity=0;this.count=0;this.uploadBytes=0;this.uploadCalls=0;
+    this.dirty={matrix:[Infinity,0],color:[Infinity,0],floorHeight:[Infinity,0]};this.grow(256);
   }
   grow(size) {
     const previous=this.matrices,colors=this.colors,floors=this.floors;
@@ -68,13 +69,32 @@ class Batch {
   }
   put(matrix,color,floor,opacity) {
     if(this.count===this.capacity)this.grow(this.capacity*2);
-    this.matrices.set(matrix,this.count*16);this.colors.set(color,this.count*4);this.colors[this.count*4+3]*=opacity;this.floors[this.count]=floor;this.count++;
+    const m=this.count*16,c=this.count*4;
+    // Compare the actual Float32 values sent to the GPU. A stationary camera
+    // move must not resend every model and shadow, including unused capacity.
+    for(let i=0;i<16;i++)if(this.matrices[m+i]!==matrix[i]){
+      this.matrices[m+i]=matrix[i];this.mark("matrix",m+i);
+    }
+    for(let i=0;i<4;i++){
+      const value=i===3?Math.fround(color[i]*opacity):color[i];
+      if(this.colors[c+i]!==value){this.colors[c+i]=value;this.mark("color",c+i);}
+    }
+    floor=Math.fround(floor);
+    if(this.floors[this.count]!==floor){this.floors[this.count]=floor;this.mark("floorHeight",this.count);}
+    this.count++;
+  }
+  mark(kind,index){const range=this.dirty[kind];range[0]=Math.min(range[0],index);range[1]=Math.max(range[1],index+1);}
+  begin(){this.count=0;this.uploadBytes=0;this.uploadCalls=0;for(const range of Object.values(this.dirty)){range[0]=Infinity;range[1]=0;}}
+  upload(mesh,kind,data){
+    const [start,end]=this.dirty[kind];if(start>=end)return;
+    mesh.thinInstancePartialBufferUpdate(kind,data.subarray(start,end),start);
+    this.uploadBytes+=(end-start)*4;this.uploadCalls++;
   }
   commit() {
     for(const mesh of [this.mesh,this.shadow]) {
       mesh.setEnabled(this.count>0);mesh.thinInstanceCount=this.count;
       if(this.count) {
-        mesh.thinInstanceBufferUpdated("matrix");mesh.thinInstanceBufferUpdated("color");mesh.thinInstanceBufferUpdated("floorHeight");
+        this.upload(mesh,"matrix",this.matrices);this.upload(mesh,"color",this.colors);this.upload(mesh,"floorHeight",this.floors);
       }
     }
   }
@@ -87,7 +107,7 @@ export class Parts {
     this.batches=new Map(["box","cylinder","sphere","rock"].map(k=>[k,new Batch(scene,k,material,shadowMaterial)]));
     this.matrix=new Float32Array(16);this.matrix[15]=1;this.colors=new Map();this.opacity=1;
   }
-  begin(){for(const batch of this.batches.values())batch.count=0;}
+  begin(){for(const batch of this.batches.values())batch.begin();}
   color(hex,memory=false,emission=false) {
     const key=hex+":"+memory+":"+emission;let color=this.colors.get(key);
     if(!color) {
@@ -119,7 +139,9 @@ export class Parts {
     this.batches.get(kind).put(m,this.color(color,memory,emission),floor,this.opacity);
   }
   commit(){for(const b of this.batches.values())b.commit();}
+  restore(){for(const b of this.batches.values())b.grow(b.capacity);}
   diagnostics(){return {batches:this.batches.size,activeBatches:[...this.batches.values()].filter(b=>b.count>0).length,
+    uploadBytes:[...this.batches.values()].reduce((n,b)=>n+b.uploadBytes,0),uploadCalls:[...this.batches.values()].reduce((n,b)=>n+b.uploadCalls,0),
     maxBatches:4+PREFAB_NAMES.length,assemblies:this.batches.size-4,parts:[...this.batches.values()].reduce((n,b)=>n+b.count,0),
     triangles:[...this.batches.values()].reduce((n,b)=>n+b.count*(b.mesh.getTotalIndices()+b.shadow.getTotalIndices())/3,0),
     capacity:[...this.batches.values()].reduce((n,b)=>n+b.capacity,0)};}

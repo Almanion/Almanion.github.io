@@ -8,7 +8,7 @@
       Object.freeze({ id: "south", x: 1160, y: 1920 }),
     ]);
   const enabled = (s) =>
-    ["frontier-6", "frontier-7", "frontier-8", "frontier-9"].includes(
+    ["frontier-6", "frontier-7", "frontier-8", "frontier-9", "frontier-10"].includes(
       s?.campaign?.id,
     );
   function create(E) {
@@ -403,6 +403,7 @@
         get = (type) => mem.filter((p) => p.type === type),
         neutral = (live) => (can(live) ? live : { unknown: true });
       const fog = {
+        world:E.map(s), geometryRevision:E.map(s).revision||"",
         team,
         cell: CELL,
         ...size(s),
@@ -439,7 +440,7 @@
       const observationTask = {
         ...task,
         target:
-          target && can(target)
+          target && (can(target)||task.intel===true)
             ? { x: target.x, y: target.y }
             : rememberedTarget
               ? { x: rememberedTarget.x, y: rememberedTarget.y }
@@ -452,7 +453,7 @@
         units: s.units
           .filter(
             (u) =>
-              (u.team === team && (u.hp > 0 || u.kind === "hero")) || can(u),
+              (u.team === team && !(u.kind==='carrier'&&!s.east?.claimed) && (u.hp > 0 || u.kind === "hero" || u.kind === "carrier")) || can(u),
           )
           .map((u) =>
             u.kind === "citadel" ? { ...u, shielded: E.shielded(s) } : u,
@@ -513,7 +514,7 @@
           f.sources[t] !== signature(observers(s, t)) ||
           !Array.isArray(f.memory[t]) ||
           f.memory[t].length >
-            (["frontier-8", "frontier-9"].includes(s.campaign.id) ? 512 : 128)
+            (["frontier-8", "frontier-9", "frontier-10"].includes(s.campaign.id) ? 512 : 128)
         )
           return false;
         const v = decode(f.visible[t]),
@@ -533,7 +534,7 @@
           if (p.type === "unit") {
             if (
               p.construction &&
-              (!["frontier-8", "frontier-9"].includes(s.campaign.id) ||
+              (!["frontier-8", "frontier-9", "frontier-10"].includes(s.campaign.id) ||
                 !["barracks", "foundry", "arsenal", "outpost", "bunker", "logistics"].includes(
                   p.kind,
                 ) ||
