@@ -98,6 +98,14 @@ test.describe("standalone geography", () => {
             for (const [group, count] of [['1', 3], ['2', 5], ['3', 5], ['4', 5], ['5', 5], ['0', 21]]) {
                 await chooseGroup(page, group);
                 await expect(map.locator('#study-country-key button')).toHaveCount(count);
+                if (group === '2') {
+                    await expect(map.locator('#study-country-key button[data-iso="SWZ"]')).toHaveCount(0);
+                    await map.locator('#study-country-key button[data-iso="BHR"]').click();
+                    await expect(map.locator('#study-selection')).toContainText('Бахре́йн — Мана́ма');
+                    await expect(map.locator('#study-main-map [data-map-label="BHR"]')).toContainText('Мана́ма');
+                    await expect(map.locator('#study-main-map [data-capital="BHR"]')).toHaveAttribute('data-capital-name', 'Мана́ма');
+                    await page.screenshot({ path: info.outputPath(`bahrain-${width}-${dark ? 'dark' : 'light'}.png`), fullPage: true });
+                }
             }
             await map.locator('#study-country-key button[data-iso="PRT"]').click();
             await expect(map.locator('#study-main-map [data-map-label="PRT"]')).toContainText('Лиссабо́н');
