@@ -102,9 +102,10 @@ test("all model types render without mutating an operation and instances stay bo
       ...(SignalEngine.construction.shapes[kind]?{construction:{turn:i%4}}:{})}));
     s.heroId=s.units.find(u=>u.kind==='hero').id;
     s.bullets=[];s.events=[];const saved=JSON.stringify(s);v.reset(s);v.render(s,{mode:'tactical',reduced:true,selectionIds:[]},1/60);
-    return {results,pure:saved===JSON.stringify(s),types:kinds.length,meshes:v.scene.meshes.length,maxMeshes:v.diagnostics().maxBatches*2+1};
+    return {results,pure:saved===JSON.stringify(s),types:kinds.sort(),meshes:v.scene.meshes.length,maxMeshes:v.diagnostics().maxBatches*2+1};
   });
-  expect(results.pure).toBe(true);expect(results.types).toBe(24);expect(results.meshes).toBeLessThanOrEqual(results.maxMeshes);expect(results.maxMeshes).toBeLessThanOrEqual(87);
+  // Cover the canonical registry, including the four eastern archive objects.
+  expect(results.pure).toBe(true);expect(results.types).toEqual(Object.keys(E.C).sort());expect(results.meshes).toBeLessThanOrEqual(results.maxMeshes);expect(results.maxMeshes).toBeLessThanOrEqual(87);
   for(const row of results.results){expect(row.gpu.units).toBe(row.count);expect(row.gpu.batches).toBeGreaterThan(4);expect(row.gpu.batches).toBeLessThanOrEqual(43);expect(row.gpu.drawCalls).toBeLessThanOrEqual(row.gpu.activeBatches*2+1);expect(row.gpu.parts).toBeLessThan(row.count*60+100);}
   expect(results.results.map(r=>r.gpu.batches)).toEqual(Array(4).fill(results.results[0].gpu.batches));
 });
