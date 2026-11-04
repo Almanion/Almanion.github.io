@@ -12,6 +12,8 @@ const presentation = new Set([
   "index.html",
   "style.css",
   "view.js",
+  "babylon-view.js",
+  "renderer-loader.js",
   "minimap.js",
   "audio.js",
 ]);

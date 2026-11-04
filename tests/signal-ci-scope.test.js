@@ -4,6 +4,10 @@ const { classify } = require("../tools/signal-ci-scope");
 const ui = [
   "game-source/signal-frontier/src/app.js",
   "game-source/signal-frontier/src/minimap.js",
+  "game-source/signal-frontier/src/babylon-view.js",
+  "games/signal-frontier/babylon-view.js",
+  "game-source/signal-frontier/src/renderer-loader.js",
+  "games/signal-frontier/renderer-loader.js",
   "games/signal-frontier/development-ui.js",
   "e2e/signal-frontier-buildings.spec.js",
   ".github/workflows/pages.yml",

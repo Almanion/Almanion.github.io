@@ -84,7 +84,7 @@ export class BabylonView extends Legacy {
     this.gpuMap={id:world.id,world,terrain,width,height};
   }
   visibility(s) {
-    this.fogUploadBytes=0;
+    this.fogUploadBytes=0;this.fogPaintPixels=0;
     const fog=s.fog,enabled=!!fog;
     this.materials.main.setFloat("fogEnabled",enabled?1:0);this.materials.shadow.setFloat("fogEnabled",enabled?1:0);
     this.materials.terrain.setFloat("fogEnabled",enabled?1:0);
@@ -95,7 +95,11 @@ export class BabylonView extends Legacy {
       next=fog?{exploredCode:fog.exploredCode,observers:fog.observers,exploredBounds:this.fogPaths.explored.bounds}:null,
       rect=this.maskKey?fogUpdateRect(this.maskFog,next,world,width,height):{x:0,y:0,width,height};
     c.save();c.setTransform(1,0,0,1,0,0);
-    c.fillStyle=enabled?"#000":"#ffff00";c.fillRect(0,0,width,height);
+    // Use the same conservative pixel bounds as the exact texture update.
+    // Keep world-space paths intact so clipping preserves antialias coverage.
+    c.beginPath();c.rect(rect.x,rect.y,rect.width,rect.height);c.clip();
+    c.fillStyle=enabled?"#000":"#ffff00";c.fillRect(rect.x,rect.y,rect.width,rect.height);
+    this.fogPaintPixels=rect.width*rect.height;
     if(fog) {
       c.scale(width/world.W,height/world.H);
       for(const kind of ["explored","visible"]) {
@@ -235,7 +239,7 @@ export class BabylonView extends Legacy {
   diagnostics() {
     return {renderer:"babylon",backend:"WebGL "+this.engine.webGLVersion,version:Engine.Version,
       units:this.drawnUnits,...this.parts.diagnostics(),drawCalls:this.lastDrawCalls||0,
-      terrainTriangles:this.gpuMap?.terrain.triangles||0,terrainArt:{...this.gpuMap?.terrain.art},fogUploads:this.fogUploads,fogUploadBytes:this.fogUploadBytes||0,timings:{...this.timings},lost:this.lost};
+      terrainTriangles:this.gpuMap?.terrain.triangles||0,terrainArt:{...this.gpuMap?.terrain.art},fogUploads:this.fogUploads,fogUploadBytes:this.fogUploadBytes||0,fogPaintPixels:this.fogPaintPixels||0,timings:{...this.timings},lost:this.lost};
   }
   dispose(){this.gpuMap?.terrain.dispose();this.mask?.dispose();this.parts?.dispose();this.scene?.dispose();this.engine?.dispose();this.gpuCanvas?.remove();}
 }

@@ -57,3 +57,42 @@ test("partial visibility uploads exactly match a complete fog redraw",async({pag
  expect(result.rows[1].bytes).toBeLessThan(result.fullSize*.35);
  expect(result.rows[2].bytes).toBeLessThan(result.fullSize*.5);
 });
+
+for(const profile of ['frontier-9','frontier-10'])test('partial CPU fog stays pixel-exact across movement, discovery and gates '+profile,async({page})=>{
+ await page.addInitScript(()=>{
+  localStorage.setItem('signal-frontier-v1',JSON.stringify({settings:{reduced:true,volume:0}}));
+  Object.defineProperty(window,'SignalGraphics',{configurable:true,set(value){const create=value.create;value.create=c=>window.gpuView=create(c);Object.defineProperty(window,'SignalGraphics',{value,configurable:true});}});
+ });
+ await page.goto('/games/signal-frontier/?renderer=babylon');await page.waitForFunction(()=>window.SignalGame);
+ await page.locator('#start').click();await page.waitForFunction(()=>SignalGame.cameraSettled()&&!gpuView.memoryNeedsRefine);
+ const result=await page.evaluate(profile=>{
+  const v=gpuView,E=SignalEngine,s=E.make(profile),h=E.hero(s),rifle=s.units.find(u=>!u.team&&u.kind==='rifle'),ui={mode:'tactical',reduced:true,selectionIds:[]},render=v.render.bind(v),rows=[];
+  v.render=()=>{};v.reset(s);render(s,ui,0);
+  const compare=label=>{
+   E.refreshRecon(s);const before=JSON.stringify(E.snapshot(s));render(s,ui,0);
+   const {width,height}=v.gpuMap,partial=v.maskContext.getImageData(0,0,width,height).data,painted=v.fogPaintPixels;
+   // Reset only the mask cache to obtain the original full-raster reference.
+   v.maskKey=null;render(s,ui,0);const full=v.maskContext.getImageData(0,0,width,height).data;let mismatch=0;
+   for(let i=0;i<full.length;i++)if(partial[i]!==full[i])mismatch++;
+   rows.push({label,mismatch,painted,total:width*height,pure:before===JSON.stringify(E.snapshot(s))});
+  };
+  h.x+=7.25;h.y+=3.5;compare('fractional movement');
+  rifle.hp=0;compare('observer removed');
+  rifle.hp=E.C.rifle.hp;compare('observer returned');
+  if(profile==='frontier-10'){
+   E.living(s,'citadel').hp=0;E.step(s);Object.assign(h,{x:4200,y:2080});compare('eastern entrance');
+   s.units.find(u=>u.eastRole==='power').hp=0;E.step(s);compare('power and gate geometry');
+  }else{h.x+=320;compare('newly explored contour');}
+  h.x+=.35;h.y-=.25;compare('movement inside discovered territory');
+  v.tactical.x+=30;v.camera.x+=30;render(s,ui,0);const cameraPaint=v.fogPaintPixels;
+  v.maskKey=null;compare('context reinitialization');
+  const clear={...E.observe(s),fog:null};v.visibility(clear);const {width,height}=v.gpuMap,a=v.maskContext.getImageData(0,0,width,height).data;
+  v.maskKey=null;v.visibility(clear);const b=v.maskContext.getImageData(0,0,width,height).data;let clearMismatch=0;
+  for(let i=0;i<a.length;i++)if(a[i]!==b[i])clearMismatch++;
+  return {rows,cameraPaint,clearMismatch};
+ },profile);
+ expect(result.rows.every(r=>r.mismatch===0&&r.pure),JSON.stringify(result)).toBe(true);
+ expect(result.rows[0].painted).toBeLessThan(result.rows[0].total*.35);
+ expect(result.rows[1].painted).toBeLessThan(result.rows[1].total*.35);
+ expect(result.cameraPaint).toBe(0);expect(result.clearMismatch).toBe(0);
+});
