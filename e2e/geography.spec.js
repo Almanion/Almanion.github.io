@@ -94,19 +94,19 @@ test.describe("standalone geography", () => {
             await expect(map.locator('#study-country-key button')).toHaveCount(21);
             expect(await map.locator('#study-main-map path[data-iso]').count()).toBeGreaterThan(150);
             await map.locator('#study-main-map g[data-capital="NZL"] circle[fill="transparent"]').first().click();
-            await expect(map.locator('#study-selection')).toContainText('Новая Зеландия — Веллингтон');
+            await expect(map.locator('#study-selection')).toContainText('Но́вая Зела́ндия — Ве́ллингтон');
             for (const [group, count] of [['1', 3], ['2', 5], ['3', 5], ['4', 5], ['5', 5], ['0', 21]]) {
                 await chooseGroup(page, group);
                 await expect(map.locator('#study-country-key button')).toHaveCount(count);
             }
             await map.locator('#study-country-key button[data-iso="PRT"]').click();
-            await expect(map.locator('#study-main-map [data-map-label="PRT"]')).toContainText('Лиссабон');
+            await expect(map.locator('#study-main-map [data-map-label="PRT"]')).toContainText('Лиссабо́н');
             await map.locator('#study-hide').check();
-            await expect(map.locator('#study-selection')).toContainText('Португалия — ?');
-            await expect(map.locator('#study-main-map [data-map-label="PRT"]')).not.toContainText('Лиссабон');
+            await expect(map.locator('#study-selection')).toContainText('Португа́лия — ?');
+            await expect(map.locator('#study-main-map [data-map-label="PRT"]')).not.toContainText('Лиссабо́н');
             await map.locator('#study-reveal').click();
-            await expect(map.locator('#study-selection')).toContainText('Португалия — Лиссабон');
-            await expect(map.locator('#study-main-map [data-map-label="PRT"]')).toContainText('Лиссабон');
+            await expect(map.locator('#study-selection')).toContainText('Португа́лия — Лиссабо́н');
+            await expect(map.locator('#study-main-map [data-map-label="PRT"]')).toContainText('Лиссабо́н');
             expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
             expect(await map.locator('html').evaluate(element => element.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
             expect(errors).toEqual([]);
@@ -118,7 +118,7 @@ test.describe("standalone geography", () => {
             await page.reload();
             await expect(map.locator('#study-country-key button')).toHaveCount(21);
             await expect(map.locator('#study-hide')).toBeChecked();
-            await expect(map.locator('#study-selection')).toContainText('Португалия — Лиссабон');
+            await expect(map.locator('#study-selection')).toContainText('Португа́лия — Лиссабо́н');
             await expect(page.getByRole('link', { name: '← На главную' })).toHaveAttribute('href', '../');
         });
     }
@@ -152,7 +152,7 @@ for (const width of [1366, 390]) for (const format of ['written', 'oral']) {
         await expect(page.locator('#study-check')).toBeDisabled();
         const answers = [
             ['AUT', 'Австрия', 'Вена'], ['PAK', 'Пакистан', 'Исламабад'],
-            ['NGA', 'Нигерия', 'Абуджа'], ['MEX', 'Мексика', 'Мехико'],
+            ['NGA', 'Ниге́рия', 'Абу́джа'], ['MEX', 'Мексика', 'Мехико'],
             ['VEN', 'Венесуэла', 'Каракас']
         ];
         for (const [iso, country, capital] of answers) {
