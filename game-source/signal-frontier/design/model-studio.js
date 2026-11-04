@@ -29,6 +29,10 @@
       turret: "Стационарная установка",
       jammer: "Подавитель",
       citadel: "Цитадель",
+      carrier: "Носитель архива",
+      "archive-gate": "Грузовые ворота",
+      "power-node": "Силовой распределитель",
+      "archive-depot": "Восточный распределительный узел",
     },
     current = Object.keys(names).map((id) => {
       const shape = E.construction.shapes[id];
@@ -67,7 +71,7 @@
     "barracks",
     "foundry",
     "arsenal",
-    "bunker", "logistics",
+    "bunker", "logistics", "carrier",
   ]);
   function sample(c, spec, options = {}) {
     const m = options.mode || mode.value,
@@ -142,7 +146,9 @@
         left: moving ? t * def.speed : 0,
         right: moving ? t * def.speed : 0,
       };
-    if (!def.speed) {
+    if (["carrier", "archive-gate", "power-node", "archive-depot"].includes(id)) {
+      view.archiveModel(c, u, s);
+    } else if (!def.speed) {
       const shape = E.construction.shapes[id],
         frame = shape
           ? { w: shape[0] * 40, h: shape[1] * 40, a, progress: build ? q : 1 }

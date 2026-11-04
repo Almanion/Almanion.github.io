@@ -2127,6 +2127,10 @@ body.placing #field {
 .minimap-legend {
   position: fixed;
   width: min(288px, calc(100vw - 28px));
+  max-height: calc(100vh - 28px);
+  max-height: calc(100dvh - 28px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 12px;
   z-index: 20;
   background: #10262afa;

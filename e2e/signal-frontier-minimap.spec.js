@@ -1,7 +1,8 @@
 "use strict";
 const { selectArmy } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect, chromium, webkit } = require("@playwright/test"),
-  E = require("../game-source/signal-frontier/src/engine");
+  E = require("../game-source/signal-frontier/src/engine"),
+  M = require("../game-source/signal-frontier/src/minimap");
 
 async function boot(page, state) {
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -59,8 +60,12 @@ for (const type of [chromium, webkit])
         expect(legend.y).toBeGreaterThanOrEqual(13);
         expect(legend.x + legend.width).toBeLessThanOrEqual(width - 8);
         expect(legend.y + legend.height).toBeLessThanOrEqual(height - 8);
-        await expect(page.locator("#minimap-symbols > span")).toHaveCount(9);
+        await expect(page.locator("#minimap-symbols > span")).toHaveText(
+          Object.values(M.SYMBOLS).map((symbol) => symbol.label),
+        );
         await page.screenshot({ path: info.outputPath("legend.png") });
+        await page.locator("#minimap-fold").scrollIntoViewIfNeeded();
+        await expect(page.locator("#minimap-fold")).toBeInViewport({ ratio: 1 });
         await page.locator("#minimap-key-close").click();
         if (touch) {
           for (const id of ["map-overview", "map-center", "minimap-key"]) {

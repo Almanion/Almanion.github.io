@@ -8,7 +8,7 @@ async function openModelStudio(page, query = "") {
   const path = require("node:path"),
     root = path.resolve(__dirname, "../game-source/signal-frontier"),
     files = new Set(["design/MODEL_STUDIO.html", "design/model-studies.js", "design/model-studio.js",
-      ...["terrain", "districts", "campaign", "recon", "construction", "support", "engine", "unit-models", "view"].map(n => "src/" + n + ".js")]);
+      ...["terrain", "districts", "east", "campaign", "recon", "construction", "support", "engine", "unit-models", "view"].map(n => "src/" + n + ".js")]);
   await page.route("**/game-source/signal-frontier/**", route => {
     const relative = new URL(route.request().url()).pathname.split("/game-source/signal-frontier/")[1];
     return files.has(relative) ? route.fulfill({ path: path.join(root, relative), contentType: relative.endsWith(".html") ? "text/html; charset=utf-8" : "text/javascript; charset=utf-8" }) : route.continue();
@@ -57,7 +57,8 @@ async function studio(page) {
       canvas.width = canvas.height = 256;
       const c = canvas.getContext("2d", { willReadFrequently: true });
       c.translate(128, 176);
-      c.scale(1.15, 1.15 * 0.73);
+      const scale = u.kind === "archive-gate" ? 0.8 : 1.15;
+      c.scale(scale, scale * 0.73);
       const ui = { mode: "playing", reduced: true, ...options.ui },
         pose = { phase: 0, move: 0, angle: u.angle, ...options.pose },
         s = options.state || modelState;
@@ -80,7 +81,7 @@ test("all current models keep distinct silhouettes at eight directions and do no
 }) => {
   await studio(page);
   const result = await page.evaluate(() => {
-    const types = SignalUnitModels.types,
+    const types = Object.keys(SignalEngine.C),
       before = JSON.stringify(modelState),
       duplicate = [],
       clipped = [],
@@ -713,7 +714,8 @@ test("design studio covers every current model and all 27 visual studies without
                 y = Math.floor((j - 3) / 4 / 256);
               if (x < 2 || x > 253 || y < 2 || y > 253) border++;
             }
-          if (opaque < 20 || border)
+          // Destroyed mission gates disappear to open their physical passage.
+          if ((opaque < 20 && !(spec.id === "archive-gate" && mode === "wreck")) || border)
             failures.push({ id: spec.id, mode, i, opaque, border });
         }
     return {
