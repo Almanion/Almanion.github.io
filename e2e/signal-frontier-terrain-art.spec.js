@@ -9,6 +9,24 @@ async function capture(page){
  }}));
 }
 for(const renderer of ["babylon","canvas"]){
+ test(renderer+": expanded operation loads its complete deck without stretching the western atlas",async({page})=>{
+  await capture(page);const requests=[],errors=[];
+  page.on("request",r=>{if(r.url().includes("/assets/terrain/"))requests.push(new URL(r.url()).pathname);});
+  page.on("pageerror",e=>errors.push(e.message));
+  await page.goto("/games/signal-frontier/?renderer="+renderer+"&mission=east");await page.waitForFunction(()=>window.SignalGame);
+  await page.locator("#start-east").click();
+  await page.waitForFunction(renderer=>renderer==="babylon"?
+   terrainTestView.gpuMap?.terrain.art.ground==="ready"&&terrainTestView.gpuMap?.terrain.art.cliff==="ready":
+   SignalTerrainArt.peek("districts-east")&&SignalTerrainArt.peek("cliff")&&!terrainTestView.groundArtPending,renderer);
+  const size=await page.evaluate(renderer=>{
+   if(renderer==="babylon")return terrainTestView.materials.terrain.getActiveTextures().find(t=>t.url?.includes("/districts-east.webp")).getSize();
+   const image=SignalTerrainArt.peek("districts-east");return {width:image.naturalWidth,height:image.naturalHeight};
+  },renderer);
+  expect(size).toEqual({width:3200,height:2048});
+  expect(requests).toContain("/games/signal-frontier/assets/terrain/districts-east.webp");
+  expect(requests).not.toContain("/games/signal-frontier/assets/terrain/districts.webp");
+  expect(errors).toEqual([]);
+ });
  test(renderer+": delayed materials update a stationary tactical pause and return to idle",async({page})=>{
   await capture(page);const errors=[];page.on("pageerror",e=>errors.push(e.message));
   let release;const gate=new Promise(r=>release=r),requests=[];

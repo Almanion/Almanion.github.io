@@ -2,8 +2,8 @@
 (function(root){
   "use strict";
   const base=new URL("./assets/terrain/",document.currentScript?.src||location.href),
-    version="263fa26478e8",images=new Map();
-  const url=id=>new URL((id==="districts-east"?"districts":id)+".webp?v="+version,base).href;
+    version="15901ce623e4",images=new Map();
+  const url=id=>new URL(id+".webp?v="+version,base).href;
   function request(id){
     if(images.has(id))return images.get(id);
     const entry={image:null,state:"loading"};images.set(id,entry);

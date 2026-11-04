@@ -16,15 +16,19 @@ const presentation = new Set([
   "renderer-loader.js",
   "minimap.js",
   "audio.js",
+  "terrain-art.js",
 ]);
 const tooling = new Set([
   ".github/workflows/pages.yml",
   "tools/signal-ci-scope.js",
   "tests/signal-ci-scope.test.js",
+  "tools/build-signal-terrain-art.js",
 ]);
 function classifyPresentation(files) {
   return files.every((file) => {
     if (tooling.has(file)) return true;
+    if (/^(?:game-source\/signal-frontier\/src|games\/signal-frontier)\/assets\/terrain\/(?:manifest\.json|(?:classic|frontier|expedition|highlands|districts|districts-east|cliff)\.webp)$/.test(file)) return true;
+    if (file === "game-source/signal-frontier/src/babylon/materials.js") return true;
     if (/^game-source\/signal-frontier\/[^/]+\.md$/.test(file)) return true;
     if (/^(e2e|tests)\/signal-frontier[^/]*\.(spec|test)\.js$/.test(file))
       return true;

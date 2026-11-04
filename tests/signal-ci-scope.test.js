@@ -10,6 +10,11 @@ const ui = [
   "games/signal-frontier/renderer-loader.js",
   "games/signal-frontier/development-ui.js",
   "e2e/signal-frontier-buildings.spec.js",
+  "game-source/signal-frontier/src/terrain-art.js",
+  "game-source/signal-frontier/src/babylon/materials.js",
+  "game-source/signal-frontier/src/assets/terrain/manifest.json",
+  "games/signal-frontier/assets/terrain/districts-east.webp",
+  "tools/build-signal-terrain-art.js",
   ".github/workflows/pages.yml",
 ];
 assert.deepEqual(classify(ui), { signalOnly: true, campaign: false });
@@ -40,6 +45,8 @@ for (const file of [
   "playwright.config.js",
   "style-new.css",
   "e2e/global-setup.js",
+  "game-source/signal-frontier/src/assets/terrain/new-logic.js",
+  "game-source/signal-frontier/src/babylon/new-mechanic.js",
 ]) {
   assert.deepEqual(
     classify([...ui, file]),

@@ -1,107 +1,142 @@
 {
-  "version": "263fa26478e8",
+  "version": "15901ce623e4",
+  "libraryRevision": 223,
   "sources": [
     {
       "id": "T01",
-      "assetId": "ca49364f-4ec8-4cdc-b793-b6315b008c85",
-      "sha256": "36cf759180efb39d758beaa5a881742409b846ad1188753057562b93b390a0b7",
-      "originalBytes": 3326414
+      "assetId": "c01d067a-3adf-4d3d-b035-e3c26364bd79",
+      "sha256": "6c020acac37984d47ffefa545202497f3ad83a4b3d7b76bdd81fd22c2a15c57e",
+      "originalBytes": 1177876,
+      "width": 1254,
+      "height": 1254
     },
     {
       "id": "T02",
-      "assetId": "1f04c55f-a90d-47d7-a067-a868cd6fecdf",
-      "sha256": "6b37fdebfc996dd22cd6bbdc90f65c79e240e6d8ac24cb7508df7c27771720d9",
-      "originalBytes": 3346471
+      "assetId": "a66e18a9-173a-4b97-ac67-4808bcfde8df",
+      "sha256": "d9e43554cdde39126c37a72abc56b931f10d9c2e7afc793faa84ed31c027ddb9",
+      "originalBytes": 1791348,
+      "width": 1254,
+      "height": 1254
     },
     {
       "id": "T03",
-      "assetId": "c41a6ebc-1250-47ae-a919-e2937af4cbe8",
-      "sha256": "3aea80b400c6ac0adb9b4215df01d5f4f8d4818f35d34dbe406f4f483d9ea4c3",
-      "originalBytes": 3360557
+      "assetId": "ff9de2e0-b83c-4da6-bf27-f9ca122ca790",
+      "sha256": "3630c970b7fdd8f7a14a6695c245f42fca4102d16b3ad01c8f9c96703aab3147",
+      "originalBytes": 2383623,
+      "width": 1254,
+      "height": 1254
     },
     {
       "id": "T04",
-      "assetId": "140d3cbd-931e-4e20-bef0-f3505e2873e3",
-      "sha256": "b8d6dae973b133f41ec7a726aae58309b01adb98aecbd6a787e20accccc5d876",
-      "originalBytes": 3859475
+      "assetId": "b0e30429-6d25-4df5-9cd5-68ff975425f3",
+      "sha256": "0547b13838041c8050559c7f773af16b8eccd05ddc4e0ebd337441a51437b1b4",
+      "originalBytes": 2314153,
+      "width": 1254,
+      "height": 1254
     },
     {
       "id": "T05",
-      "assetId": "53edafb4-92d9-4c04-91f7-b5fc91db57de",
-      "sha256": "875cac4f7f2a24ed5ca9f12abb2673efc468107b749b70c6f45c3a700a5cde94",
-      "originalBytes": 3630668
+      "assetId": "b7cc5bf3-1eb0-400f-a127-d7a2a8e9e300",
+      "sha256": "680c95d757b3c8f4f1aa1bdc7885f32e9fc5b4b920511e0d789fb5ba3812f756",
+      "originalBytes": 1965038,
+      "width": 1254,
+      "height": 1254
     },
     {
       "id": "T06",
-      "assetId": "85a58bda-e92a-42e3-8362-e433d9b9aebd",
-      "sha256": "242faa793c3e47086dbdbe32b0ef0451d0a28585848bf2767fa7640f763d6587",
-      "originalBytes": 3447025
+      "assetId": "f186c463-21b8-4ed7-9e1f-e5dd2ee8edc5",
+      "sha256": "6d238fdc57de2bfa1249ffbf3d1f460f87099538084ea6e3743fe8bd07b2543b",
+      "originalBytes": 1916533,
+      "width": 1254,
+      "height": 1254
     },
     {
       "id": "T07",
-      "assetId": "d00e7eca-fe0f-4e23-9191-47931756df58",
-      "sha256": "b83de3247c066829c2090e04caf4668b31fa616ecd7fc544e3cfba93ed962b65",
-      "originalBytes": 3340929
+      "assetId": "93532d52-2509-4879-9def-4a14fa3beae3",
+      "sha256": "31c542a1892865303e4f31668215ef0c4b4e34ae727ee33a42758342f1941164",
+      "originalBytes": 2143195,
+      "width": 1254,
+      "height": 1254
     },
     {
       "id": "T11",
-      "assetId": "467c6a0e-dc36-495a-af6a-9d5ee602ae43",
-      "sha256": "9b3981513b51a67c38ade79e978f70c80fb0a204d61dd79d6b6cae6fccc45a21",
-      "originalBytes": 3291606
+      "assetId": "932a7168-bb80-4086-883c-bb361543a96e",
+      "sha256": "e108d1ee70f5d9d2ed0da674889fba97492c1cd21e576134160c1856cccad501",
+      "originalBytes": 1833069,
+      "width": 1254,
+      "height": 1254
     },
     {
       "id": "T12",
-      "assetId": "ba0463c5-e9e2-4bd3-9b21-ab634c6dd076",
-      "sha256": "01c04372426e97bdc12056d6d99d694ca40cf99f37f522dfb77827b3a6674b5c",
-      "originalBytes": 3895225
+      "assetId": "e691ec71-a4bf-4719-9d6d-5d7fed3a2f69",
+      "sha256": "3e617ac7769f957cbbd12218261877e48d873b2993bab1f0bef4911be5f91f36",
+      "originalBytes": 2002264,
+      "width": 1254,
+      "height": 1254
     },
     {
       "id": "T13",
-      "assetId": "2cbd9858-8fe7-4528-98d9-a0fc836e8d14",
-      "sha256": "589dbe552bb2c4cc606e195266c5a761dd90241ce2fbfc661bcd1c0916b65230",
-      "originalBytes": 4002882
+      "assetId": "e0f6e2b1-4571-445d-8733-1941927694b2",
+      "sha256": "9b7bc393b87d69e80956734e9eb6c1ae6a9fd5aff2d3f2d4ce595d91ab4cccb6",
+      "originalBytes": 1946813,
+      "width": 1254,
+      "height": 1254
     },
     {
       "id": "T14",
-      "assetId": "0f61acc1-b5e3-4468-a764-43b894720c6f",
-      "sha256": "403dd402775b696e6233a5295a9e72c625f6783ca836b6f0208c355d007f1716",
-      "originalBytes": 3852356
+      "assetId": "9ae117be-a925-4e4b-945b-4471a09c2722",
+      "sha256": "7d9fdca72c3ca7df7971274374a8de5ff343755c037ebfe691582d9cc46c0d13",
+      "originalBytes": 1937740,
+      "width": 1254,
+      "height": 1254
     },
     {
       "id": "D13",
-      "assetId": "26775d61-a74f-4b03-bea8-703941e0797c",
-      "sha256": "0b57b1664ee00f81afdf343efc0440def3a21474ecba101381a9b679d9ea4fea",
-      "originalBytes": 1813677
+      "assetId": "118039a4-3b7b-4c34-b985-ceb578c741a1",
+      "sha256": "8ef21138b289d7cfeae647e7b174829c1aa50e120fd43b4fa5bf99bf4a9d6098",
+      "originalBytes": 1501733,
+      "width": 1254,
+      "height": 1254
     },
     {
       "id": "D14",
-      "assetId": "41612a53-0e2b-4537-a9af-55cf90d50d4c",
-      "sha256": "3c9c58873599a6abe37e87693a2234af7cfd435456797828302ffbd3ae00908e",
-      "originalBytes": 1180655
+      "assetId": "4cdbd926-544b-4393-828c-5878b8e63103",
+      "sha256": "1dd09cfa26c311b3a99f589f62bec18c2f87a8a05b690d6b8e3b72b27f83247a",
+      "originalBytes": 1063749,
+      "width": 1254,
+      "height": 1254
     },
     {
       "id": "D15",
-      "assetId": "d0617c62-d5be-4483-ae26-fbbe3b04fcdd",
-      "sha256": "2a0bb2532e9e733698c988bede17152df82b27a5687bb2298f78f2b3d5f7cb06",
-      "originalBytes": 1165428
+      "assetId": "83f2415e-e59a-483b-b9f2-2a30bf083b98",
+      "sha256": "d5c5693dfef8b4188681ff76b219905c3b5e2d37193f1c35a02ec466fead21e2",
+      "originalBytes": 828780,
+      "width": 1254,
+      "height": 1254
     },
     {
       "id": "D16",
-      "assetId": "8146e001-b16c-4c19-a1d1-738dd2b878cb",
-      "sha256": "a29804ff47b146a5b55d0a31466457abbded8ba0b70282398a1677e28d10af30",
-      "originalBytes": 1796354
+      "assetId": "ca00cfc6-b45d-47df-a89f-83df15a9b5f4",
+      "sha256": "c11a1a1526a3237dc053aeea6ff2ce2c1c24e91696c12d76d6d992864518870c",
+      "originalBytes": 770493,
+      "width": 1254,
+      "height": 1254
     },
     {
       "id": "D17",
-      "assetId": "68c54f61-9f36-41b6-bcda-41a3147df5e1",
-      "sha256": "cf1875f9cf1bff41ee9167dae3e45fa016ad0339e8165fd996f57a2ce892b8f7",
-      "originalBytes": 866685
+      "assetId": "51d436ab-fcda-48c7-bc2c-ec3e912dc64c",
+      "sha256": "60405cfb479b014956ee60918c62a2b975f5ac7734af27de5c44e4937ef87de2",
+      "originalBytes": 533539,
+      "width": 1254,
+      "height": 1254
     },
     {
       "id": "D18",
-      "assetId": "697ec198-6e59-47c5-9212-8dc248a8eca1",
-      "sha256": "d9e6d48ce9304d69efc15026bccfe7c31a2ed7f479de30a31b443f5e166a45eb",
-      "originalBytes": 1272046
+      "assetId": "10d24515-afac-44e2-8b6a-e9ab63aed3f8",
+      "sha256": "83497f5dd2436902ba0e8d9038a82b0a18704b0b1511c722a43eeb0925acf4aa",
+      "originalBytes": 736747,
+      "width": 1254,
+      "height": 1254
     }
   ],
   "files": [
@@ -109,48 +144,70 @@
       "name": "classic.webp",
       "W": 1440,
       "H": 1000,
+      "width": 1024,
+      "height": 1024,
       "size": 1024,
-      "bytes": 115386,
-      "sha256": "a7246625c301991d3087f5e3f4e458d78bc67caa59617fdfa14445872b827a15"
+      "bytes": 23746,
+      "sha256": "89657df712f1610b412ee7fe39f05548a266ddf465c0a31617d16b41fa9f4c39"
     },
     {
       "name": "frontier.webp",
       "W": 1920,
       "H": 1280,
+      "width": 1024,
+      "height": 1024,
       "size": 1024,
-      "bytes": 130458,
-      "sha256": "edfd78ef5f0a3e6468ab1f536c0e31d63416d836fb36945d726537253c4b9ec7"
+      "bytes": 26716,
+      "sha256": "5542fe72a03aab7bc1646a43a4d0e343ba041b55cb2bfd6297b2b9b43c5ffa61"
     },
     {
       "name": "expedition.webp",
       "W": 2240,
       "H": 2560,
+      "width": 1024,
+      "height": 1024,
       "size": 1024,
-      "bytes": 151358,
-      "sha256": "25f71caec2085e3e02185087bd35ff3f3d7a9eb222307591915d03d1872ed5af"
+      "bytes": 33120,
+      "sha256": "da588e0b6693c8e1d969afd37d041ac0e2030827196475a21ab5b8746088b25a"
     },
     {
       "name": "highlands.webp",
       "W": 3600,
       "H": 3840,
+      "width": 2048,
+      "height": 2048,
       "size": 2048,
-      "bytes": 638936,
-      "sha256": "3cebcc5e93ba57017c7a17fdcfbe787ecb4bb9b847b7545631d98526febbe5b5"
+      "bytes": 112332,
+      "sha256": "778067146262a821baa5c616d91e72a504dbd4ba682704b79520b4ee9c19e018"
     },
     {
       "name": "districts.webp",
       "W": 3600,
       "H": 3840,
+      "width": 2048,
+      "height": 2048,
       "size": 2048,
-      "bytes": 641864,
-      "sha256": "abd6a34327037831b554d4b26a424e4a1fb453311e8fca2d70ca11e48add7eec"
+      "bytes": 115144,
+      "sha256": "5266c0ee3acdb97ce744338a50ff98d1420fed780c64f48068169c7287f47da8"
+    },
+    {
+      "name": "districts-east.webp",
+      "W": 5600,
+      "H": 3840,
+      "width": 3200,
+      "height": 2048,
+      "size": 3200,
+      "bytes": 167108,
+      "sha256": "bfba4e038bb2f09da1597821952d9cdbf77b6605d17a01ba723bc4c0d0d87954"
     },
     {
       "name": "cliff.webp",
+      "width": 512,
+      "height": 512,
       "size": 512,
-      "bytes": 47266,
-      "sha256": "cfd58ed513bb78daa710bf81c4247b30cd07bf3876ec1da1c1e0b6dda998dae3"
+      "bytes": 6008,
+      "sha256": "242640017500d9c50e366f05e8ef3433cccc6e29e2d6e56c155fdbdff2d566ae"
     }
   ],
-  "notes": "Selected uploads; offline continuous surface bake. T08–T10 are model finishes, not terrain. 2048² main map, 512² repeating cliff, mipmaps at runtime. Uploads remain unchanged."
+  "notes": "Selected metallic deck uploads; six offline continuous surface atlases with baked transparent wear. T08–T10 are model finishes, not terrain. 2048² western map; 3200×2048 expanded map preserves density; 512² repeating fascia. Mipmaps at runtime; no live blending or extra draw calls. Uploads remain unchanged."
 }

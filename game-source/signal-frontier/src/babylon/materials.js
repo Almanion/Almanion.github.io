@@ -56,8 +56,7 @@ if(fogEnabled>0.5&&(uv.x<0.0||uv.y<0.0||uv.x>1.0||uv.y>1.0||fog.r<0.02))discard;
 float light=vTerrainLight;
 vec3 rgb=vColor.rgb*light;
 if(vSurface<0.5&&groundReady>0.5){
- if(mapSize.x>4000.0){if(vPosition.x<3600.0)rgb=texture2D(groundMap,vec2(vTerrainUV.x*mapSize.x/3600.0,vTerrainUV.y)).rgb*light;}
- else rgb=texture2D(groundMap,vTerrainUV).rgb*light;
+ rgb=texture2D(groundMap,vTerrainUV).rgb*light;
 }
 else if(vSurface>0.5&&vSurface<1.5&&cliffReady>0.5)rgb=texture2D(cliffMap,vTerrainUV).rgb*light;
 #else

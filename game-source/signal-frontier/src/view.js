@@ -353,10 +353,10 @@
             [x, y + 40 - T.height(x + 0.01, y + 39.99)],
           ];
         poly(c, p, color);
-        if (surface && (world.id!=="districts-east"||x<3600)) {
+        if (surface) {
           // One-time terrain cache: world-anchored sampling also follows ramps.
           // Subpixel overlap prevents hairline cracks between adjacent cells.
-          const sx=surface.width/(world.id==="districts-east"?3600:world.W), sy=surface.height/world.H;
+          const sx=surface.width/world.W, sy=surface.height/world.H;
           c.save();
           c.transform((p[1][0]-p[0][0])/40,(p[1][1]-p[0][1])/40,
             (p[3][0]-p[0][0])/40,(p[3][1]-p[0][1])/40,p[0][0],p[0][1]);
