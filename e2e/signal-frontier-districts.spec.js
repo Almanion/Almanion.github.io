@@ -1,4 +1,5 @@
 "use strict";
+const { editionVersion } = require("./helpers/signal-frontier-version.cjs");
 const { deckCard, revealPoint } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect } = require("@playwright/test"),
   {
@@ -36,7 +37,7 @@ for (const [width, height, touch, engine] of [
         await page.clock.install({ time: new Date("2030-01-01T00:00:00Z") });
         await page.clock.pauseAt(new Date("2030-01-01T00:00:30Z"));
         await page.goto("/games/signal-frontier/");
-        await expect(page.locator(".edition")).toContainText("0.34.1");
+        await expect(page.locator(".edition")).toContainText(editionVersion);
         await page.locator("#start").click();
         const initial = await page.evaluate(() => SignalGame.snapshot());
         expect(initial.campaign.id).toBe("frontier-9");

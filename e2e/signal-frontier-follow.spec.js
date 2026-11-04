@@ -1,4 +1,5 @@
 "use strict";
+const { editionVersion } = require("./helpers/signal-frontier-version.cjs");
 const { selectArmy } = require("./helpers/signal-frontier-selection.cjs");
 const { test, expect } = require("@playwright/test");
 
@@ -16,7 +17,7 @@ async function start(page) {
   await page.clock.install({ time: new Date("2026-10-29T12:00:00Z") });
   await page.clock.pauseAt(new Date("2026-10-29T12:00:01Z"));
   await page.goto("/games/signal-frontier/");
-  await expect(page.locator(".edition")).toContainText("0.34.1");
+  await expect(page.locator(".edition")).toContainText(editionVersion);
   await page.locator("#start").click();
   await selectArmy(page);
   await settle(page);

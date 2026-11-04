@@ -1,4 +1,5 @@
 "use strict";
+const { editionVersion } = require("./helpers/signal-frontier-version.cjs");
 const { test, expect } = require("@playwright/test"),
   { E, scene } = require("../tests/helpers/signal-frontier-tank-fire.cjs");
 async function boot(page, state) {
@@ -17,7 +18,7 @@ async function boot(page, state) {
     );
   }, state);
   await page.goto("/games/signal-frontier/");
-  await expect(page.locator(".edition")).toContainText("0.34.1");
+  await expect(page.locator(".edition")).toContainText(editionVersion);
   await page.locator("#continue").click();
 }
 for (const [profile, tankPoint, riflePoint] of [

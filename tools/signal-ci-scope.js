@@ -27,6 +27,7 @@ const tooling = new Set([
 function classifyPresentation(files) {
   return files.every((file) => {
     if (tooling.has(file)) return true;
+    if (file === "e2e/helpers/signal-frontier-version.cjs") return true;
     if (/^(?:game-source\/signal-frontier\/src|games\/signal-frontier)\/assets\/terrain\/(?:manifest\.json|(?:classic|frontier|expedition|highlands|districts|districts-east|cliff)\.webp)$/.test(file)) return true;
     if (file === "game-source/signal-frontier/src/babylon/materials.js") return true;
     if (/^game-source\/signal-frontier\/[^/]+\.md$/.test(file)) return true;

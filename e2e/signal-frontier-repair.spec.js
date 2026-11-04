@@ -1,4 +1,5 @@
 "use strict";
+const { editionVersion } = require("./helpers/signal-frontier-version.cjs");
 const { test, expect, chromium, webkit } = require("@playwright/test"),
   { E, fund, findSite, frames } = require("../tests/helpers/signal-frontier-construction.cjs");
 function fixture(construction = false) {
@@ -28,7 +29,7 @@ async function boot(page, s, reduced = false) {
     localStorage.setItem("signal-frontier-v1", JSON.stringify({ save: s, settings: { reduced, volume: 0 } }));
   }, { s, reduced });
   await page.goto("/games/signal-frontier/");
-  await expect(page.locator(".edition")).toContainText("0.34.1");
+  await expect(page.locator(".edition")).toContainText(editionVersion);
   await page.locator("#continue").click();
   await page.locator("#tactical").click();
   await page.clock.runFor(250);

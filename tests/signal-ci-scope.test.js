@@ -15,6 +15,7 @@ const ui = [
   "game-source/signal-frontier/src/assets/terrain/manifest.json",
   "games/signal-frontier/assets/terrain/districts-east.webp",
   "tools/build-signal-terrain-art.js",
+  "e2e/helpers/signal-frontier-version.cjs",
   ".github/workflows/pages.yml",
 ];
 assert.deepEqual(classify(ui), { signalOnly: true, campaign: false });
