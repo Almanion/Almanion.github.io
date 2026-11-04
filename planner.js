@@ -24,7 +24,8 @@
     const store = new core.Store();
 
     let state = core.defaultData();
-    let selectedDate = core.dateKey(new Date());
+    const requestedDate = new URLSearchParams(win.location.search).get('date');
+    let selectedDate = requestedDate && Number.isFinite(core.parseDate(requestedDate).getTime()) ? requestedDate : core.dateKey(new Date());
     let currentView = 'today';
     let activeUid = '';
     let authorized = false;
@@ -708,6 +709,7 @@
         if (repeat === 'weekly') common.recurrence.days = Array.from(refs.plannerWeekdays.querySelectorAll('input:checked')).map(function (input) { return Number(input.value); });
         let validation = '';
         if (!Number.isFinite(core.parseDate(common.date).getTime())) validation = 'Укажите корректную дату.';
+        else if (existing && existing.homework && (type !== 'task' || repeat !== 'none')) validation = 'Домашнее задание должно оставаться отдельной задачей без повторений.';
         else if (type === 'event' && refs.plannerItemEnd.value && !refs.plannerItemStart.value) validation = 'Укажите время начала или очистите время окончания для события на весь день.';
         else if (repeat !== 'none' && until && until < common.date) validation = 'Окончание повторений не может быть раньше начала.';
         else if (repeat === 'weekly' && !common.recurrence.days.length) validation = 'Выберите хотя бы один день недели.';
@@ -741,6 +743,7 @@
         else item = Object.assign(common, { target: Math.max(1, num(refs.plannerGoalTarget.value, 1)), current: num(refs.plannerGoalCurrent.value), unit: refs.plannerGoalUnit.value.trim() || 'шагов' });
 
         const collection = TYPE_COLLECTION[type];
+        if (type === 'task' && existing && existing.homework) item.homework = core.clone(existing.homework);
         const updates = {};
         if (editingKind && editingKind !== type) updates[TYPE_COLLECTION[editingKind] + '/' + id] = null;
         updates[collection + '/' + id] = Object.assign(item, { updatedAt: Date.now() });

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <script src="theme-bootstrap.js?v=20260908-1"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="theme-color" content="#5c6fd8">
+    <title>Домашние задания | Almanion</title>
+    <link rel="icon" href="favicons/favicon.svg?v=20260905-1" type="image/svg+xml">
+    <script src="favicon-theme.js?v=20260905-1"></script>
+    <link rel="stylesheet" href="styles/site/index.css?v=20261002-1">
+    <link rel="stylesheet" href="styles/tokens.css?v=20260929-2">
+    <link rel="stylesheet" href="styles/buttons.css?v=20260929-2">
+    <link rel="stylesheet" href="style-new.css?v=20261016-4">
+    <link rel="stylesheet" href="styles/typography.css?v=20261016-4">
+    <link rel="stylesheet" href="styles/planner.css?v=20261104-1">
+    <link rel="stylesheet" href="styles/homework.css?v=20261104-1">
+</head>
+<body class="planner-page homework-page" data-no-math>
+    <script>(function(){try{var p=JSON.parse(localStorage.getItem('siteSettings')||'{}');if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
+    <header class="sidebar-header personal-topbar" id="hwTopbar">
+        <h2><a href="index.html" aria-label="Вернуться на главную"><svg class="home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5c3-1 5 0 8 2 3-2 5-3 8-2v13c-3-1-5 0-8 2-3-2-5-3-8-2zM12 7v13"/></svg><span>Конспекты</span></a></h2>
+        <span class="personal-topbar-context">Личный план</span>
+        <nav class="personal-topbar-links" aria-label="Личные разделы"><a href="planner.html">План</a><a href="homework.html" aria-current="page">ДЗ</a><a href="sport.html">Спорт</a></nav>
+        <div class="sidebar-header-buttons"></div>
+    </header>
+    <section class="personal-gate" id="personalGate" aria-live="polite">
+        <div class="personal-gate-card"><span class="personal-gate-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><p class="personal-gate-kicker">Личный раздел</p><h1 id="personalGateTitle">Проверяем аккаунт…</h1><p id="personalGateText">Домашние задания доступны только владельцу.</p><button id="personalGateLogin" type="button" hidden>Войти</button><a href="index.html">Вернуться на главную</a></div>
+    </section>
+    <main class="hw-shell" id="hwApp" hidden>
+        <header class="hw-heading" id="hwHeading"><div><p class="hw-kicker" id="hwDate"></p><h1>Домашние задания</h1></div><button type="button" class="hw-primary" id="hwAdd"><span aria-hidden="true">＋</span> Добавить</button></header>
+        <div id="personalSyncStatus" class="personal-sync-status"></div>
+        <section class="hw-connection" id="hwConnection"><div><span class="hw-status-dot" aria-hidden="true"></span><strong>eSchool</strong><span>Пока не подключён</span></div><button type="button" id="hwConnectionInfo" aria-expanded="false" aria-controls="hwConnectionText">Подробнее</button><p id="hwConnectionText" hidden>Автоматическая загрузка заданий и проверка отправки ожидают подключения eSchool. Пока можно добавлять задания и отмечать отправку вручную. Напоминания о занятиях настраиваются в плане.</p></section>
+        <nav class="hw-tabs" id="hwTabs" aria-label="Показать задания"><button type="button" data-view="now" aria-pressed="true">Сейчас <span data-count="now">0</span></button><button type="button" data-view="send" aria-pressed="false">Отправить <span data-count="send">0</span></button><button type="button" data-view="all" aria-pressed="false">Все</button><button type="button" data-view="archive" aria-pressed="false">Архив</button></nav>
+        <div class="hw-workspace">
+            <section class="hw-list-pane" id="hwListPane" aria-label="Список заданий">
+                <div class="hw-filters"><label class="hw-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 5 5"/></svg><input type="search" id="hwSearch" aria-label="Поиск заданий" placeholder="Предмет или задание" autocomplete="off"></label><select id="hwSubjectFilter" aria-label="Фильтр по предмету"><option value="">Все предметы</option></select></div>
+                <section class="hw-recommendation" id="hwRecommendation" hidden aria-label="Рекомендация"></section>
+                <div class="hw-list-summary" id="hwListSummary" role="status" aria-live="polite"></div>
+                <div class="hw-list" id="hwList"></div>
+            </section>
+            <aside class="hw-detail" id="hwDetail" aria-label="Подробности задания" tabindex="-1"><div class="hw-detail-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 4H5v17h14V4h-3M9 2h6v4H9zM8 11h8M8 15h5"/></svg><p>Выберите задание</p></div></aside>
+        </div>
+    </main>
+    <dialog class="hw-form-modal" id="hwEditor" aria-labelledby="hwEditorTitle">
+        <form id="hwForm"><header><h2 id="hwEditorTitle">Новое задание</h2><button type="button" class="hw-icon-button" data-close-editor aria-label="Закрыть">×</button></header>
+            <div class="hw-form-body"><input type="hidden" id="hwId"><div class="hw-form-grid">
+                <label>Предмет<input id="hwSubject" list="hwSubjects" maxlength="50" required autocomplete="off"><datalist id="hwSubjects"></datalist></label>
+                <label>Дата сдачи<input id="hwDue" type="date" required></label>
+                <label class="hw-wide">Задание<input id="hwTitle" maxlength="160" required autocomplete="off"></label>
+                <label class="hw-wide">Условие или заметка<textarea id="hwNotes" rows="4" maxlength="1200"></textarea></label>
+                <label>Выполнение<select id="hwProgress"><option value="todo">Не начато</option><option value="doing">В работе</option><option value="done">Готово</option><option value="help">Нужна помощь</option></select></label>
+                <label>Осталось минут<input id="hwMinutes" type="number" min="0" max="480" step="1" value="30" required></label>
+                <label>Всего задач<input id="hwTotal" type="number" min="0" max="200" step="1" value="0"><small>0 — без счётчика</small></label>
+                <label>Решено<input id="hwCompleted" type="number" min="0" max="200" step="1" value="0"></label>
+                <label>Приоритет<select id="hwPriority"><option value="normal">Обычный</option><option value="high">Высокий</option></select></label>
+                <label class="hw-checkbox"><input type="checkbox" id="hwRequiresSubmission"><span>Нужно отправить работу</span></label>
+                <label class="hw-wide">Ссылка на задание в eSchool<input id="hwSourceUrl" type="url" maxlength="512" placeholder="https://app.eschool.center/…"></label>
+            </div><p class="hw-form-error" id="hwFormError" role="alert" hidden></p></div>
+            <footer><button type="button" class="hw-button" data-close-editor>Отмена</button><button type="submit" class="hw-primary">Сохранить</button></footer>
+        </form>
+    </dialog>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js?v=20260903-3"></script><script src="data-sync.js?v=20260908-1"></script><script src="kc-storage.js?v=20260911-1"></script><script src="firebase-analytics.js?v=20260908-1"></script><script src="script.js?v=20260906-1"></script><script src="settings.js?v=20261002-1"></script><script src="account.js?v=20260924-1"></script>
+    <script src="personal-planner-core.js?v=20260925-2"></script><script src="homework-core.js?v=20261104-1"></script><script src="homework.js?v=20261104-1"></script>
+</body>
+</html>

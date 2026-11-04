@@ -645,6 +645,22 @@
             "notes": { ".validate": "newData.isString() && newData.val().length <= 1200" },
             "done": { ".validate": "newData.isBoolean()" },
             "completedDates": { ".validate": "newData.hasChildren() || newData.val() === null" },
+            "homework": {
+              ".validate": "newData.hasChildren(['version', 'subject', 'phase', 'minutes', 'priority', 'requiresSubmission', 'reportedSubmission', 'reportedAt', 'archived', 'total', 'completed', 'sourceUrl']) && newData.child('completed').val() <= newData.child('total').val()",
+              "version": { ".validate": "newData.val() === 1" },
+              "subject": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50" },
+              "phase": { ".validate": "newData.isString() && newData.val().matches(/^(todo|doing|help)$/)" },
+              "minutes": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 480 && newData.val() % 1 === 0" },
+              "priority": { ".validate": "newData.isString() && newData.val().matches(/^(normal|high)$/)" },
+              "requiresSubmission": { ".validate": "newData.isBoolean()" },
+              "reportedSubmission": { ".validate": "newData.isBoolean()" },
+              "reportedAt": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+              "archived": { ".validate": "newData.isBoolean()" },
+              "total": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 200 && newData.val() % 1 === 0" },
+              "completed": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 200 && newData.val() % 1 === 0" },
+              "sourceUrl": { ".validate": "newData.isString() && newData.val().length <= 512 && (newData.val() === '' || newData.val().matches(/^https:\\/\\/app\\.eschool\\.center\\/.*/))" },
+              "$other": { ".validate": false }
+            },
             "createdAt": { ".validate": "newData.isNumber()" },
             "updatedAt": { ".validate": "newData.isNumber()" },
             "$other": { ".validate": false }

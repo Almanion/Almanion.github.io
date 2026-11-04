@@ -179,6 +179,14 @@ function serverTimestamp() {
         assert.strictEqual(await plannerStore.upsert('series', Object.assign({}, entry, { total: 12, solved: null })), true);
         assert.strictEqual(await plannerStore.upsert('goals', Object.assign({}, entry, { id: 'new-goal', target: 10, current: null })), true);
         assert.strictEqual(await plannerStore.upsert('tasks', Object.assign({}, entry, { id: 'new-task', done: null })), true);
+        const homework = require('../homework-core.js').makeTask({ title: 'Тестовое домашнее задание', subject: 'Физика', date: '2026-11-06', minutes: 30, total: 3, completed: 1, status: 'doing', requiresSubmission: true });
+        assert.strictEqual(await plannerStore.upsert('tasks', homework), true);
+        const homeworkRef = ownerDb.ref('plannerUsers/' + plannerCore.OWNER_UID + '/tasks/' + homework.id);
+        await assertFails(homeworkRef.child('homework/completed').set(4));
+        await assertFails(homeworkRef.child('homework/sourceUrl').set('javascript:alert(1)'));
+        await assertFails(homeworkRef.child('homework/verified').set(true));
+        await assertFails(ordinaryDb.ref('plannerUsers/' + plannerCore.OWNER_UID + '/tasks/' + homework.id).once('value'));
+        await assertFails(forgedOwnerDb.ref('plannerUsers/' + plannerCore.OWNER_UID + '/tasks/' + homework.id).once('value'));
         assert.strictEqual(await plannerStore.upsert('events', Object.assign({}, entry, { id: 'new-event', startTime: '', endTime: '', allDay: true, reminderMinutes: [], recurrence: { frequency: 'weekly', interval: 2, days: [3, 6], until: '2026-12-31' } })), true);
         assert.strictEqual(await plannerStore.upsertSport('measurements', { id: 'new-metric', date: '2026-09-25', weight: 70, notes: '' }), true);
         assert.strictEqual(await plannerStore.upsertSport('workouts', { id: 'new-workout', date: '2026-09-25', session: 'A', status: 'completed', programWeek: 1, notes: '', exercises: [] }), true);
