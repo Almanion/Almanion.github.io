@@ -1720,12 +1720,752 @@
           ]
         }
       ]
+    },
+    {
+      "id": "vnutrennyaya-energiya",
+      "type": "subsection",
+      "title": "1.12 Внутренняя энергия. Способы её изменения",
+      "navTitle": "Внутренняя энергия. Способы её изменения",
+      "content": "",
+      "children": [
+        {
+          "id": "thermo-repeat",
+          "type": "reminder",
+          "title": "Повторить",
+          "content": "",
+          "children": [
+            {
+              "id": "thermo-repeat-list",
+              "type": "list",
+              "title": "",
+              "content": "",
+              "children": [],
+              "items": [
+                "Виды теплопередачи (описание + примеры в тетради).",
+                "Тепловые процессы.",
+                "Вся теплота."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "thermo-postulates",
+          "type": "statement",
+          "title": "Постулаты термодинамики",
+          "content": "",
+          "children": [
+            {
+              "id": "thermo-zeroth",
+              "type": "paragraph",
+              "title": "",
+              "content": "Нулевое начало: всякая ТДС, предоставленная самой себе, с течением времени обязательно приходит в состояние ТД равновесия.",
+              "children": []
+            },
+            {
+              "id": "thermo-temperature-postulate",
+              "type": "paragraph",
+              "title": "",
+              "content": "Всякая ТДС, имеющая адиабатические перегородки и находящаяся в ТДР, имеет одну для всей ТДС характеристику состояния — температуру.",
+              "children": []
+            },
+            {
+              "id": "thermo-parameters-postulate",
+              "type": "paragraph",
+              "title": "",
+              "content": "Все внутренние параметры любой ТДС, находящейся в ТДР, суть функции внешних параметров и температуры.",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "thermo-total-energy",
+          "type": "definition",
+          "title": "",
+          "content": "сумма кинетической энергии движения всех тел, входящих в систему, потенциальной энергии взаимодействия их между собой и с внешними телами и энергии, содержащейся внутри тел системы.",
+          "children": [],
+          "term": "Полная энергия ТДС",
+          "separator": "—"
+        },
+        {
+          "id": "thermo-internal-energy",
+          "type": "definition",
+          "title": "",
+          "content": "энергия системы, зависящая только от её термодинамического состояния; не зависит от процесса.",
+          "children": [],
+          "term": "Внутренняя энергия \\(U\\)",
+          "separator": "—"
+        },
+        {
+          "id": "thermo-body-energy",
+          "type": "definition",
+          "title": "",
+          "content": "равна сумме кинетических энергий хаотического движения всех микрочастиц и потенциальных энергий всех микрочастиц друг с другом.",
+          "children": [],
+          "term": "Внутренняя энергия тела",
+          "separator": "—"
+        },
+        {
+          "id": "thermo-energy-components",
+          "type": "properties",
+          "title": "Равна сумме",
+          "content": "",
+          "children": [
+            {
+              "id": "thermo-energy-components-list",
+              "type": "list",
+              "title": "",
+              "content": "",
+              "children": [],
+              "items": [
+                "а) \\(W_{\\text{к}}\\) хаотического движения микрочастиц;",
+                "б) \\(W_{\\text{п}}\\) их взаимодействия;",
+                "в) энергии взаимодействия атомных ядер в молекулах;",
+                "г) энергии электронных оболочек, самих атомов и ионов;",
+                "д) внутриядерной \\(U\\)."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "thermo-state-function",
+          "type": "properties",
+          "title": "Свойство",
+          "content": "Внутренняя энергия — функция состояния системы: приращение внутренней энергии при переходе системы из состояния 1 в состояние 2 не зависит от процесса.",
+          "children": []
+        },
+        {
+          "id": "thermo-ideal-energy",
+          "type": "definition",
+          "title": "",
+          "content": "сумма кинетических энергий хаотического движения микрочастиц системы.",
+          "children": [
+            {
+              "id": "thermo-ideal-energy-formula",
+              "type": "formula",
+              "title": "",
+              "content": "",
+              "children": [],
+              "latex": "\\begin{gathered}U=\\sum_i W_{\\text{к}i}=N\\overline{W}_{\\text{к}},\\\\[5pt]U=U(m_0,\\overline v,N).\\end{gathered}"
+            }
+          ],
+          "term": "Внутренняя энергия ИГ",
+          "separator": "—"
+        },
+        {
+          "id": "thermo-degrees",
+          "type": "definition",
+          "title": "",
+          "content": "число независимых координат, с помощью которых можно однозначно задать положение тела в пространстве.",
+          "children": [],
+          "term": "Число степеней свободы тела",
+          "separator": "—"
+        },
+        {
+          "id": "thermo-equipartition",
+          "type": "theorem",
+          "title": "Теорема о равномерном распределении энергии по степеням свободы",
+          "content": "На каждую степень свободы (поступательную, вращательную) молекулы в среднем приходится энергия, равная \\(\\dfrac{kT}{2}\\).",
+          "children": []
+        },
+        {
+          "id": "thermo-monatomic",
+          "type": "derivation",
+          "title": "Одноатомный газ",
+          "content": "Молекулы движутся поступательно, три степени свободы.\n\\[\\overline{W}_{\\text{к}}=\\frac32kT.\\]\n\\[\\begin{aligned}U&=N\\overline{W}_{\\text{к}}=N\\frac32kT\\\\[5pt]&=\\nu N_A\\frac32kT\\\\[5pt]&=\\boxed{\\frac32\\nu RT}=\\frac32pV.\\end{aligned}\\]",
+          "children": []
+        },
+        {
+          "id": "thermo-diatomic",
+          "type": "derivation",
+          "title": "Двухатомный газ",
+          "content": "Расстояние между атомами не меняется.\n\\[x,\\ y,\\ z,\\ \\varphi_x,\\ \\varphi_z\\quad\\text{— 5 степеней.}\\]\n\\[\\overline{W}_{\\text{к пост}}=\\frac{m_0\\overline{v^2}}2=\\frac32kT.\\]\n\\[\\begin{aligned}\\overline{W}_{\\text{к вращ}}&=\\frac{J_x\\omega_x^2}2+\\frac{J_z\\omega_z^2}2\\\\[5pt]&=kT.\\end{aligned}\\]",
+          "children": [
+            {
+              "id": "thermo-diatomic-picture",
+              "type": "image",
+              "title": "",
+              "content": "",
+              "children": [],
+              "src": "images/notes/physics-10/thermo-diatomic.svg?v=20261104-1",
+              "alt": "Двухатомная молекула: расстояние между частицами не меняется.",
+              "caption": "Двухатомная молекула: расстояние между частицами не меняется."
+            },
+            {
+              "id": "thermo-diatomic-energy",
+              "type": "formula",
+              "title": "",
+              "content": "",
+              "children": [],
+              "latex": "\\begin{aligned}U&=N\\frac52kT=\\nu N_A\\frac52kT\\\\[5pt]&=\\boxed{\\frac52\\nu RT}=\\frac52pV.\\end{aligned}"
+            }
+          ]
+        },
+        {
+          "id": "thermo-polyatomic",
+          "type": "derivation",
+          "title": "Трёхатомный газ и больше (без колебательного движения)",
+          "content": "\\[x,\\ y,\\ z,\\ \\varphi_x,\\ \\varphi_y,\\ \\varphi_z.\\]\n\\[\\overline{W}_{\\text{к п}}=\\frac32kT.\\]\n\\[\\overline{W}_{\\text{к в}}=\\frac{J_x\\omega_x^2}2+\\frac{J_y\\omega_y^2}2+\\frac{J_z\\omega_z^2}2=\\frac32kT.\\]\n\\[\\begin{aligned}U&=N\\frac62kT=\\nu N_A\\frac62kT\\\\[5pt]&=\\boxed{\\frac62\\nu RT}=3pV.\\end{aligned}\\]",
+          "children": []
+        },
+        {
+          "id": "thermo-energy-general",
+          "type": "properties",
+          "title": "Общая формула",
+          "content": "\\[U=\\frac i2\\nu RT=\\frac i2pV.\\]",
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "rabota-gaza",
+      "type": "subsection",
+      "title": "1.13 Работа газа",
+      "navTitle": "Работа газа",
+      "content": "",
+      "children": [
+        {
+          "id": "thermo-work-forces",
+          "type": "paragraph",
+          "title": "",
+          "content": "\\[A^{\\text{ext}}=\\sum_i\\vec F_i\\cdot\\Delta\\vec r_i,\\qquad A^{\\text{int}}=-A^{\\text{ext}}.\\]",
+          "children": []
+        },
+        {
+          "id": "thermo-work-isochoric",
+          "type": "derivation",
+          "title": "Изохорный процесс",
+          "content": "\\[F_{\\text{внеш}}=F_{\\text{газа}}.\\]\n\\[\\begin{gathered}A^{\\text{ext}}=F_{\\text{внеш}}\\cdot\\Delta r=0,\\\\[5pt]A^{\\text{int}}=F_{\\text{газа}}\\cdot\\Delta r=0.\\end{gathered}\\]",
+          "children": []
+        },
+        {
+          "id": "thermo-work-isobaric",
+          "type": "derivation",
+          "title": "Изобарный процесс",
+          "content": "\\[F_{\\text{внеш}}=F_{\\text{газа}}.\\]\n\\[\\begin{aligned}A'&=F_{\\text{г}}\\cdot|\\Delta\\vec r|\\cdot\\cos0^\\circ\\\\[5pt]&=p_{\\text{г}}S(\\ell_2-\\ell_1)=p_{\\text{г}}\\Delta V,\\\\[8pt]A&=F_{\\text{внеш}}\\cdot|\\Delta\\vec r|\\cdot\\cos180^\\circ\\\\[5pt]&=-p_{\\text{г}}S(\\ell_2-\\ell_1)\\\\[5pt]&=-p_{\\text{г}}\\Delta V=-A'.\\end{aligned}\\]\n\\[A'=-A=p\\Delta V.\\]",
+          "children": []
+        },
+        {
+          "id": "thermo-work-definition",
+          "type": "definition",
+          "title": "",
+          "content": "скалярная физическая величина, равная произведению давления газа на изменение объёма при постоянном давлении.",
+          "children": [],
+          "term": "Работа (ТД)",
+          "separator": "—"
+        },
+        {
+          "id": "thermo-work-isothermal",
+          "type": "derivation",
+          "title": "Изотермический процесс",
+          "content": "\\(\\Delta A'\\) — маленькая работа, \\(\\Delta V\\) — изменение объёма.\n\\[\\Delta A'=p\\Delta V,\\qquad pV=\\nu RT.\\]\n\\[\\Delta A'=\\nu RT\\frac{\\Delta V}{V}.\\]\n\\[A'=\\Delta A'_1+\\ldots+\\Delta A'_k=\\sum_i\\nu RT\\frac{\\Delta V_i}{V_i}.\\]\n\\[A'=\\int_{V_1}^{V_2}\\nu RT\\frac{dV}{V}=\\nu RT\\ln\\frac{V_2}{V_1}.\\]\n\\[\\boxed{A'=\\nu RT\\ln\\frac{V_2}{V_1}=-A}.\\]",
+          "children": []
+        },
+        {
+          "id": "thermo-work-area",
+          "type": "proof",
+          "title": "Физический смысл: площадь под графиком p(V) — работа",
+          "content": "Доказательство касается изобарного процесса. Нарисуем график в \\(p(V)\\), найдём площадь: \\(p(V_2-V_1)\\) — попали.\nРазобьём исходный график на малые участки квазипроцесса. ЧТД.",
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "kolichestvo-teploty-pervoe-nachalo",
+      "type": "subsection",
+      "title": "1.14 Количество теплоты. Первое начало термодинамики",
+      "navTitle": "Количество теплоты. Первое начало термодинамики",
+      "content": "",
+      "children": [
+        {
+          "id": "thermo-heat-definition",
+          "type": "definition",
+          "title": "",
+          "content": "внутренняя энергия, которую получает или теряет тело при теплопередаче.",
+          "children": [],
+          "term": "Количество теплоты",
+          "separator": "—"
+        },
+        {
+          "id": "thermo-heat-process",
+          "type": "properties",
+          "title": "Свойство",
+          "content": "Функция процесса, а не функция состояния, т. е. количество теплоты, полученное системой, зависит от способа, которым она была приведена в данное состояние.",
+          "children": []
+        },
+        {
+          "id": "thermo-heat-balance",
+          "type": "derivation",
+          "title": "Уравнение теплового баланса",
+          "content": "\\[\\begin{gathered}U_{\\text{нач}}=U_1+\\ldots+U_N,\\\\[5pt]U_{\\text{кон}}=U'_1+\\ldots+U'_N.\\end{gathered}\\]\n\\[U_{\\text{нач}}=U_{\\text{кон}}.\\]\n\\[U_1+\\ldots+U_N=U'_1+\\ldots+U'_N.\\]\n\\[\\sum_i(U'_i-U_i)=0.\\]\n\\[\\boxed{Q_1+\\ldots+Q_N=0}.\\]",
+          "children": []
+        },
+        {
+          "id": "thermo-joule",
+          "type": "experiment",
+          "title": "Опыт Джоуля",
+          "content": "Сосуд с жидкостью. Опускаясь, грузы перемешивают жидкость (лопатки запрещают свободное вращение), и наблюдаем за температурой.\n\\[\\eta=\\frac AQ,\\qquad A=mgh,\\qquad Q=c_{\\text{в}}m_{\\text{в}}\\Delta t.\\]\n\\[\\eta=4{,}186\\,\\frac{\\text{Дж}}{\\text{кал}}.\\]\nВывод: связь \\(A\\) и \\(Q\\).",
+          "children": [
+            {
+              "id": "thermo-joule-picture",
+              "type": "image",
+              "title": "",
+              "content": "",
+              "children": [],
+              "src": "images/notes/physics-10/thermo-joule.svg?v=20261104-1",
+              "alt": "Опыт Джоуля.",
+              "caption": "Опыт Джоуля."
+            }
+          ]
+        },
+        {
+          "id": "thermo-first-law",
+          "type": "statement",
+          "title": "Первое начало термодинамики",
+          "content": "Количество теплоты, переданное ТДС в результате теплообмена, идёт на приращение внутренней энергии ТДС и работу, совершённую газом над внешними телами.",
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "pervoe-nachalo-izoprotsessy",
+      "type": "subsection",
+      "title": "1.15 Применение первого начала термодинамики к изопроцессам",
+      "navTitle": "Применение первого начала термодинамики к изопроцессам",
+      "content": "",
+      "children": [
+        {
+          "id": "thermo-first-law-isochoric",
+          "type": "derivation",
+          "title": "Изохорный процесс",
+          "content": "\\[\\begin{gathered}Q=\\Delta U+A',\\\\[5pt]\\Delta U=\\frac i2\\nu R\\Delta T.\\end{gathered}\\]\n\\[A'=0\\quad\\Rightarrow\\quad Q=\\Delta U.\\]\n\\[\\begin{aligned}Q&=\\Delta U=\\frac i2\\nu R\\Delta T\\\\[5pt]&=\\frac i2(p_2V-p_1V)\\\\[5pt]&=\\frac i2V\\Delta p.\\end{aligned}\\]",
+          "children": [
+            {
+              "id": "thermo-isochoric-signs",
+              "type": "image",
+              "title": "",
+              "content": "",
+              "children": [],
+              "src": "images/notes/physics-10/thermo-isochoric-signs.svg?v=20261104-1",
+              "alt": "Изохорный процесс: нагревание и охлаждение.",
+              "caption": "Изохорный процесс: нагревание и охлаждение."
+            }
+          ]
+        },
+        {
+          "id": "thermo-first-law-isobaric",
+          "type": "derivation",
+          "title": "Изобарный процесс",
+          "content": "\\[Q=\\Delta U+A'.\\]\n\\[\\begin{aligned}Q&=\\frac i2\\nu R\\Delta T+p\\Delta V\\\\[5pt]&=\\frac{i+2}2p\\Delta V\\\\[5pt]&=\\frac{i+2}2\\nu R\\Delta T.\\end{aligned}\\]",
+          "children": [
+            {
+              "id": "thermo-isobaric-signs",
+              "type": "image",
+              "title": "",
+              "content": "",
+              "children": [],
+              "src": "images/notes/physics-10/thermo-isobaric-signs.svg?v=20261104-1",
+              "alt": "Изобарный процесс: расширение и сжатие.",
+              "caption": "Изобарный процесс: расширение и сжатие."
+            }
+          ]
+        },
+        {
+          "id": "thermo-first-law-isothermal",
+          "type": "derivation",
+          "title": "Изотермический процесс",
+          "content": "\\[Q=\\Delta U+A',\\qquad\\Delta U=0,\\qquad Q=A'.\\]\n\\[Q=A'=\\nu RT\\ln\\frac{V_2}{V_1}=-A.\\]",
+          "children": [
+            {
+              "id": "thermo-isothermal-signs",
+              "type": "image",
+              "title": "",
+              "content": "",
+              "children": [],
+              "src": "images/notes/physics-10/thermo-isothermal-signs.svg?v=20261104-1",
+              "alt": "Изотермический процесс: расширение и сжатие.",
+              "caption": "Изотермический процесс: расширение и сжатие."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "teploemkost-gaza",
+      "type": "subsection",
+      "title": "1.16 Теплоёмкость газа",
+      "navTitle": "Теплоёмкость газа",
+      "content": "",
+      "children": [
+        {
+          "id": "thermo-specific-heat-process",
+          "type": "paragraph",
+          "title": "",
+          "content": "Удельная теплоёмкость газа зависит от процесса.",
+          "children": []
+        },
+        {
+          "id": "thermo-molar-capacity",
+          "type": "definition",
+          "title": "",
+          "content": "количество теплоты, которое надо сообщить одному молю газа для изменения его температуры на 1 К.",
+          "children": [
+            {
+              "id": "thermo-capacity-units",
+              "type": "formula",
+              "title": "",
+              "content": "",
+              "children": [],
+              "latex": "[c]=\\frac{1\\,\\text{Дж}}{1\\,\\text{моль}\\cdot1\\,\\text{К}}."
+            }
+          ],
+          "term": "Молярная теплоёмкость газа",
+          "separator": "—"
+        },
+        {
+          "id": "thermo-capacity-process",
+          "type": "paragraph",
+          "title": "",
+          "content": "Теплоёмкость газа — функция процесса.",
+          "children": []
+        },
+        {
+          "id": "thermo-capacity-v",
+          "type": "derivation",
+          "title": "Молярная теплоёмкость в изохорном процессе",
+          "content": "\\[Q_V=c_V\\nu\\Delta T,\\qquad Q_V=\\Delta U+A'.\\]\n\\[\\begin{gathered}A'=0,\\qquad\\Delta U=\\frac i2\\nu R\\Delta T\\\\[5pt]\\Rightarrow\\quad Q_V=\\frac i2\\nu R\\Delta T.\\end{gathered}\\]\n\\[c_V\\nu\\Delta T=\\frac i2\\nu R\\Delta T.\\]\n\\[\\boxed{c_V=\\frac i2R}.\\]",
+          "children": []
+        },
+        {
+          "id": "thermo-capacity-p",
+          "type": "derivation",
+          "title": "Молярная теплоёмкость в изобарном процессе",
+          "content": "\\[Q_p=c_p\\nu\\Delta T,\\qquad Q_p=\\Delta U+A'.\\]\n\\[A'=p\\Delta V=\\nu R\\Delta T.\\]\n\\[\\Delta U=\\frac i2\\nu R\\Delta T\\quad\\Rightarrow\\quad Q_p=\\frac{i+2}2\\nu R\\Delta T.\\]\n\\[c_p\\nu\\Delta T=\\frac{i+2}2\\nu R\\Delta T.\\]\n\\[\\boxed{c_p=\\frac{i+2}2R}.\\]",
+          "children": []
+        },
+        {
+          "id": "thermo-mayer",
+          "type": "derivation",
+          "title": "Уравнение Майера",
+          "content": "\\[\\begin{aligned}c_p&=\\frac{i+2}2R=\\left(\\frac i2+1\\right)R\\\\[5pt]&=\\frac i2R+R=c_V+R.\\end{aligned}\\]\n\\[\\boxed{c_p=c_V+R}.\\]",
+          "children": []
+        },
+        {
+          "id": "thermo-gamma",
+          "type": "definition",
+          "title": "",
+          "content": "отношение \\(c_p\\) и \\(c_V\\).",
+          "children": [
+            {
+              "id": "thermo-gamma-formula",
+              "type": "formula",
+              "title": "",
+              "content": "",
+              "children": [],
+              "latex": "\\gamma=\\frac{c_p}{c_V}=\\frac{c_V+R}{c_V}=1+\\frac R{c_V}."
+            }
+          ],
+          "term": "Показатель адиабаты",
+          "separator": "—"
+        },
+        {
+          "id": "thermo-capacity-t",
+          "type": "derivation",
+          "title": "Молярная теплоёмкость в изотермическом процессе",
+          "content": "\\[Q_T=c_T\\nu\\Delta T,\\qquad Q_T=\\Delta U+A'.\\]\n\\[A'=\\nu RT\\ln\\frac{V_2}{V_1}.\\]\n\\[\\Delta U=0\\quad\\Rightarrow\\quad Q_T=A'.\\]\n\\[c_T=\\frac{A'}{\\nu\\Delta T},\\qquad\\Delta T=0\\quad\\Rightarrow\\quad c_T=\\infty.\\]",
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "adiabatnyy-protsess",
+      "type": "subsection",
+      "title": "1.17 Адиабатный процесс",
+      "navTitle": "Адиабатный процесс",
+      "content": "",
+      "children": [
+        {
+          "id": "thermo-adiabatic",
+          "type": "definition",
+          "title": "",
+          "content": "термодинамический процесс, происходящий при неизменных массе и составе газа и без теплообмена.",
+          "children": [],
+          "term": "Адиабатный процесс",
+          "separator": "—"
+        },
+        {
+          "id": "thermo-adiabatic-energy",
+          "type": "derivation",
+          "title": "Работа и внутренняя энергия",
+          "content": "\\[\\begin{gathered}Q=0,\\\\[5pt]Q=\\Delta U+A',\\qquad\\Delta U=-A'.\\end{gathered}\\]\nРабота совершается за счёт изменения внутренней энергии.\n\\[\\Delta U=-A'=\\frac i2\\nu R\\Delta T.\\]\nАдиабатное сжатие \\(\\Rightarrow T\\uparrow\\).\nАдиабатное расширение \\(\\Rightarrow T\\downarrow\\).",
+          "children": []
+        },
+        {
+          "id": "thermo-adiabatic-realization",
+          "type": "properties",
+          "title": "Осуществляется двумя способами",
+          "content": "",
+          "children": [
+            {
+              "id": "thermo-adiabatic-realization-list",
+              "type": "list",
+              "title": "",
+              "content": "",
+              "children": [],
+              "ordered": true,
+              "items": [
+                "Проводят в адиабатической системе (например, сосуд Дьюара).",
+                "Осуществляют процесс так, чтобы теплообмен не успел произойти, т. е. быстро."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "thermo-adiabatic-examples",
+          "type": "example",
+          "title": "Примеры",
+          "content": "",
+          "children": [
+            {
+              "id": "thermo-adiabatic-examples-list",
+              "type": "list",
+              "title": "",
+              "content": "",
+              "children": [],
+              "ordered": true,
+              "items": [
+                "Адиабатное сжатие — дизельный двигатель.",
+                "Адиабатное расширение в пустоту (конденсация водяного пара (газировка))."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "thermo-adiabatic-comparison",
+          "type": "image",
+          "title": "",
+          "content": "",
+          "children": [],
+          "src": "images/notes/physics-10/thermo-adiabatic-isothermal.svg?v=20261104-1",
+          "alt": "Адиабата и изотерма.",
+          "caption": "Адиабата и изотерма."
+        },
+        {
+          "id": "thermo-adiabatic-signs",
+          "type": "image",
+          "title": "",
+          "content": "",
+          "children": [],
+          "src": "images/notes/physics-10/thermo-adiabatic-signs.svg?v=20261104-1",
+          "alt": "Адиабатный процесс: сжатие и расширение.",
+          "caption": "Адиабатный процесс: сжатие и расширение."
+        }
+      ]
+    },
+    {
+      "id": "izmerenie-teploemkosti-gaza",
+      "type": "subsection",
+      "title": "1.18 Способы измерения теплоёмкости газа",
+      "navTitle": "Способы измерения теплоёмкости газа",
+      "content": "",
+      "children": [
+        {
+          "id": "thermo-joly",
+          "type": "experiment",
+          "title": "Метод Жоли",
+          "content": "Идея: проведение процесса с изменением температуры газа при постоянном объёме и точное вычисление Q, переданного газу.\nВнутри большого калориметра Жоли находятся две одинаковые сферы, подвешенные на весах. В одну сферу накачивают газ, а вторую сферу оставляют пустой. В камере горячим паром обрабатываются обе сферы. Он конденсируется на них. Сфера с газом обладает большей теплоёмкостью ⇒ на ней больше конденсируется.",
+          "children": [
+            {
+              "id": "thermo-joly-picture",
+              "type": "image",
+              "title": "",
+              "content": "",
+              "children": [],
+              "src": "images/notes/physics-10/thermo-joly.svg?v=20261104-1",
+              "alt": "Метод Жоли.",
+              "caption": "Метод Жоли."
+            },
+            {
+              "id": "thermo-joly-measurement",
+              "type": "paragraph",
+              "title": "",
+              "content": "По показаниям весов определяют, насколько пара больше сконденсировалось. Это пошло на нагрев газа.",
+              "children": []
+            },
+            {
+              "id": "thermo-joly-formula",
+              "type": "formula",
+              "title": "",
+              "content": "",
+              "children": [],
+              "latex": "m_{\\text{п}}r=mc_V(T_2-T_1)."
+            },
+            {
+              "id": "thermo-joly-r",
+              "type": "paragraph",
+              "title": "",
+              "content": "\\(r\\) — удельная теплота парообразования.",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "thermo-regnault",
+          "type": "experiment",
+          "title": "Метод Реньо",
+          "content": "Идея: пропускать исследуемый газ через калориметр с постоянным расходом.\n\\[\\begin{gathered}Q=mc(T_2-T_1),\\\\[5pt]Q=Mc_p\\left(T-\\frac{T_1+T_2}2\\right).\\end{gathered}\\]\n\\[\\overline T=\\frac{T_1+T_2}2.\\]\n\\[mc(T_2-T_1)=Mc_p\\left(T-\\frac{T_1+T_2}2\\right).\\]\n\\[c_p=\\frac{mc(T_2-T_1)}{M\\left(T-\\dfrac{T_1+T_2}2\\right)}.\\]\n\\(m\\) — масса воды, \\(c\\) — её удельная теплоёмкость; \\(T_1\\) и \\(T_2\\) — начальная и конечная температуры воды в калориметре. \\(T\\) — температура газа на входе в змеевик, \\(\\overline T=(T_1+T_2)/2\\) — средняя температура газа на выходе. Измеряем массу прошедшего газа \\(M\\).",
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "uravnenie-puassona-politropnyy-protsess",
+      "type": "subsection",
+      "title": "1.19 Уравнение Пуассона. Политропный процесс",
+      "navTitle": "Уравнение Пуассона. Политропный процесс",
+      "content": "",
+      "children": [
+        {
+          "id": "thermo-capacity-adiabatic",
+          "type": "derivation",
+          "title": "Молярная теплоёмкость в адиабатном процессе",
+          "content": "\\[Q=0=c_{\\text{а}}\\nu\\Delta T,\\qquad c_{\\text{а}}=0.\\]\n\\[0=\\Delta U+A'.\\]\n\\[\\begin{aligned}A'&=-\\Delta U=-c_V\\nu\\Delta T=-\\frac R{\\gamma-1}\\nu\\Delta T\\\\[4pt]&=-\\frac{\\Delta(pV)}{\\gamma-1}=\\frac{p_1V_1-p_2V_2}{\\gamma-1}.\\end{aligned}\\]",
+          "children": []
+        },
+        {
+          "id": "thermo-poisson",
+          "type": "derivation",
+          "title": "Уравнение Пуассона — уравнение адиабатного процесса",
+          "content": "\\[Q=\\Delta U+A'=0,\\qquad A'=p\\Delta V.\\]\n\\[\\Delta U=c_V\\nu\\Delta T=\\frac{c_V\\Delta(pV)}R.\\]\n\\[Rp\\Delta V+c_V(V\\Delta p+p\\Delta V)=0.\\]\n\\[(c_V+R)p\\Delta V+c_VV\\Delta p=0.\\]\n\\[c_p\\frac{\\Delta V}V+c_V\\frac{\\Delta p}p=0.\\]\n\\[\\frac{c_p}{c_V}\\frac{\\Delta V}V+\\frac{\\Delta p}p=0.\\]\n\\[\\gamma\\frac{\\Delta V}V=-\\frac{\\Delta p}p.\\]",
+          "children": [
+            {
+              "id": "thermo-poisson-integration",
+              "type": "paragraph",
+              "title": "",
+              "content": "\\[\\int\\gamma\\frac{dV}V=-\\int\\frac{dp}p\\quad\\Rightarrow\\quad pV^\\gamma=\\mathrm{const}_1.\\]\n\\[p_1V_1^\\gamma=p_2V_2^\\gamma.\\]\n\\[pV=\\nu RT\\quad\\Rightarrow\\quad p=\\nu RTV^{-1}.\\]\n\\[(\\nu RTV^{-1})V^\\gamma=\\mathrm{const}.\\]\n\\[TV^{\\gamma-1}=\\mathrm{const}_2.\\]\n\\[pV=\\nu RT\\quad\\Rightarrow\\quad V=\\nu RTp^{-1}.\\]\n\\[T(\\nu RTp^{-1})^{\\gamma-1}=\\mathrm{const}.\\]\n\\[T^\\gamma p^{1-\\gamma}=\\mathrm{const}_3.\\]",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "thermo-polytropic",
+          "type": "definition",
+          "title": "",
+          "content": "процесс изменения состояния ТДС, происходящий с неизменным количеством вещества так, что теплоёмкость газа остаётся постоянной.",
+          "children": [
+            {
+              "id": "thermo-polytropic-formula",
+              "type": "formula",
+              "title": "",
+              "content": "",
+              "children": [],
+              "latex": "pV^n=\\mathrm{const}\\quad\\Rightarrow\\quad n=\\frac{c-c_p}{c-c_V}."
+            }
+          ],
+          "term": "Политропный процесс",
+          "separator": "—"
+        },
+        {
+          "id": "thermo-polytropic-special",
+          "type": "paragraph",
+          "title": "",
+          "content": "Изученные процессы — частные случаи.",
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "pervoe-nachalo-polnaya-energiya",
+      "type": "subsection",
+      "title": "1.20 Полная энергия ТДС и первое начало термодинамики",
+      "navTitle": "Полная энергия ТДС и первое начало термодинамики",
+      "content": "",
+      "children": [
+        {
+          "id": "thermo-mechanical-total",
+          "type": "paragraph",
+          "title": "",
+          "content": "Полная энергия ТДС и механическая энергия ТДС как целого.",
+          "children": []
+        },
+        {
+          "id": "thermo-mechanical-first-law",
+          "type": "properties",
+          "title": "Первое начало ТД с учётом механической энергии ТДС",
+          "content": "\\[\\Delta W_{\\text{мех}}+\\Delta U=Q+A^{\\text{ext}}.\\]",
+          "children": []
+        },
+        {
+          "id": "thermo-perpetual-motion",
+          "type": "definition",
+          "title": "",
+          "content": "периодически действующее устройство, которое позволяет получать работу без затраты теплоты.",
+          "children": [],
+          "term": "Вечный двигатель первого рода",
+          "separator": "—"
+        },
+        {
+          "id": "thermo-perpetual-impossible",
+          "type": "corollary",
+          "title": "Первое начало ТД",
+          "content": "Невозможно построить вечный двигатель первого рода.",
+          "children": [
+            {
+              "id": "thermo-perpetual-proof",
+              "type": "proof",
+              "title": "Доказательство",
+              "content": "Пусть возможен \\(\\Rightarrow A'\\ne0,\\quad Q=0\\).",
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "metod-klemana-dezorma",
+      "type": "subsection",
+      "title": "1.21 Метод Клемана — Дезорма",
+      "navTitle": "Метод Клемана — Дезорма",
+      "content": "",
+      "children": [
+        {
+          "id": "thermo-clement",
+          "type": "experiment",
+          "title": "Метод Клемана — Дезорма",
+          "content": "1 состояние: \\(p_1,\\ T_0,\\ V_1\\).\n2 состояние: \\(p_0,\\ T,\\ V_2\\). Переход адиабатный.\n3 состояние: \\(p_2,\\ T_0,\\ V_2\\).\nИзмеряем \\(p_1,\\ p_2,\\ p_0\\).",
+          "children": [
+            {
+              "id": "thermo-clement-calculation",
+              "type": "derivation",
+              "title": "Вычисление",
+              "content": "\\[p_1V_1=p_2V_2.\\]\n\\[dV=V_2-V_1,\\qquad dp=p_0-p_1.\\]\n\\[\\gamma\\frac{\\Delta V}V=-\\frac{\\Delta p}p.\\]\n\\[\\gamma p(V_2-V_1)+V(p_0-p_1)=0.\\]\n\\[p\\,dV+V\\,dp=0.\\]\n\\[p(V_2-V_1)+V(p_2-p_1)=0.\\]\n\\[\\boxed{\\gamma=\\frac{p_1-p_0}{p_1-p_2}}.\\]",
+              "children": []
+            },
+            {
+              "id": "thermo-clement-apparatus-text",
+              "type": "paragraph",
+              "title": "",
+              "content": "Установка: стеклянный сосуд, наполненный исследуемым газом.",
+              "children": []
+            },
+            {
+              "id": "thermo-clement-picture",
+              "type": "image",
+              "title": "",
+              "content": "",
+              "children": [],
+              "src": "images/notes/physics-10/thermo-clement-desormes.svg?v=20261104-1",
+              "alt": "Метод Клемана — Дезорма: установка.",
+              "caption": "Метод Клемана — Дезорма: установка."
+            }
+          ]
+        }
+      ]
     }
   ],
   "order": 1,
-  "revision": 14,
+  "revision": 15,
   "createdAt": 1788739200000,
-  "updatedAt": "2026-10-13T22:55:19.455Z",
+  "updatedAt": "2026-11-04T16:29:16.269Z",
   "updatedBy": "codex",
   "reviewStatus": "published"
 }
