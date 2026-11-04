@@ -3,7 +3,12 @@ const assert = require("node:assert/strict"),
   E = require("../game-source/signal-frontier/src/engine"),
   Models = require("../game-source/signal-frontier/src/unit-models");
 const models = Models.create(E, { MAT: {} });
-assert.deepEqual([...Models.types].sort(), Object.keys(E.C).sort());
+// The eastern archive objects use View.archiveModel instead of this painter.
+const archiveTypes = ["carrier", "archive-gate", "power-node", "archive-depot"];
+assert.deepEqual(
+  [...Models.types, ...archiveTypes].sort(),
+  Object.keys(E.C).sort(),
+);
 let checked = 0;
 for (const kind of Models.types)
   for (const hp of [0, E.C[kind].hp])
