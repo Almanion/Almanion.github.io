@@ -1601,11 +1601,7 @@ document.addEventListener('DOMContentLoaded', initExpBottomNav);
         ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
 
         // Двойной клик (десктоп) — зум к точке
-        imgEl.addEventListener('dblclick', function (e) {
-            // A touch double tap may also generate dblclick; wireTouch already zoomed it.
-            if ((e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) || Date.now() - lastTouchAt < 500) return;
-            toggleZoom(e.clientX, e.clientY);
-        });
+        imgEl.addEventListener('dblclick', function (e) { if (Date.now() - lastTouchAt >= 500) toggleZoom(e.clientX, e.clientY); });
         // Колесо мыши — зум
         ov.addEventListener('wheel', function (e) {
             e.preventDefault();
@@ -1634,10 +1630,10 @@ document.addEventListener('DOMContentLoaded', initExpBottomNav);
         function d2(t) { return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); }
 
         imgEl.addEventListener('touchstart', function (e) {
-            var now = Date.now();
-            lastTouchAt = now;
+            lastTouchAt = Date.now();
             imgEl.style.transition = '';
             if (e.touches.length === 2) { mode = 'pinch'; startDist = d2(e.touches); startScale = scale; return; }
+            var now = lastTouchAt;
             if (now - lastTap < 300) { mode = ''; lastTap = 0; toggleZoom(e.touches[0].clientX, e.touches[0].clientY); return; }
             lastTap = now;
             mode = scale > 1 ? 'pan' : 'swipe';
