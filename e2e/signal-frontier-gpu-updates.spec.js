@@ -32,11 +32,21 @@ test("stationary models survive camera motion without repeated GPU uploads; part
  expect(result.counters).toEqual([0,0,0,0]);expect(result.mismatches).toBe(0);expect(result.checks).toBeGreaterThan(10000);
  expect(result.uploads[1]).toBe(0);expect(result.uploads[2]).toBeGreaterThan(0);expect(result.uploads[4]).toBe(0);
 });
-test("partial visibility uploads exactly match a complete fog redraw",async({page})=>{
- await page.addInitScript(()=>{
+for(const transfer of ["pixels","canvas","rejected canvas"])test("partial visibility uploads exactly match a complete fog redraw · "+transfer,async({page})=>{
+ await page.addInitScript(transfer=>{
   localStorage.setItem("signal-frontier-v1",JSON.stringify({settings:{reduced:true,volume:0}}));
-  Object.defineProperty(window,"SignalGraphics",{configurable:true,set(value){const create=value.create;value.create=c=>{window.gpuView=create(c);return gpuView;};Object.defineProperty(window,"SignalGraphics",{value,configurable:true});}});
- });
+  Object.defineProperty(window,"SignalGraphics",{configurable:true,set(value){const create=value.create;value.create=c=>{
+   const v=window.gpuView=create(c);v.canvasFogUpload=transfer!=="pixels";
+   if(transfer==="rejected canvas"){
+    const upload=v.engine.updateTextureData;
+    v.engine.updateTextureData=function(texture,data,...rest){
+     if(data instanceof HTMLCanvasElement)throw Error("unsupported crop");
+     return upload.call(this,texture,data,...rest);
+    };
+   }
+   return v;
+  };Object.defineProperty(window,"SignalGraphics",{value,configurable:true});}});
+ },transfer);
  await page.goto("/games/signal-frontier/?renderer=babylon");await page.waitForFunction(()=>window.SignalGame);
  await page.locator("#start").click();await page.waitForFunction(()=>SignalGame.cameraSettled()&&!gpuView.memoryNeedsRefine);
  const result=await page.evaluate(async()=>{
@@ -45,14 +55,14 @@ test("partial visibility uploads exactly match a complete fog redraw",async({pag
   v.render=()=>{};
   render(s,ui,0);const fullSize=v.gpuMap.width*v.gpuMap.height*4,rows=[];
   for(const action of [()=>{hero.x+=7;hero.y+=5;},()=>{const u=s.units.find(u=>!u.team&&u.kind==="rifle");u.hp=0;},()=>{hero.x+=320;SignalEngine.refreshRecon(s);}]){
-   action();render(s,ui,0);const bytes=v.fogUploadBytes,cpuPartial=v.maskContext.getImageData(0,0,v.gpuMap.width,v.gpuMap.height).data,partial=await v.mask.readPixels();
-   v.maskKey=null;render(s,ui,0);const cpuFull=v.maskContext.getImageData(0,0,v.gpuMap.width,v.gpuMap.height).data,full=await v.mask.readPixels();let mismatch=0,maxDifference=0;const first=[];
-   for(let i=0;i<partial.length;i++)if(partial[i]!==full[i]){mismatch++;maxDifference=Math.max(maxDifference,Math.abs(partial[i]-full[i]));if(first.length<5)first.push([i,partial[i],full[i],cpuPartial[i],cpuFull[i]]);}
+   action();render(s,ui,0);const bytes=v.fogUploadBytes,partial=await v.mask.readPixels();
+   v.maskKey=null;render(s,ui,0);const full=await v.mask.readPixels();let mismatch=0,maxDifference=0;const first=[];
+   for(let i=0;i<partial.length;i++)if(partial[i]!==full[i]){mismatch++;maxDifference=Math.max(maxDifference,Math.abs(partial[i]-full[i]));if(first.length<5)first.push([i,partial[i],full[i]]);}
    rows.push({bytes,mismatch,maxDifference,first});
   }
-  return {fullSize,rows,cpuCanvas:v.maskContext.getContextAttributes().willReadFrequently};
+  return {fullSize,rows,transfer:v.diagnostics().fogTransfer};
  });
- expect(result.cpuCanvas).toBe(true);expect(result.rows.every(r=>r.mismatch===0),JSON.stringify(result)).toBe(true);
+ expect(result.transfer).toBe(transfer==="canvas"?"canvas":"pixels");expect(result.rows.every(r=>r.mismatch===0),JSON.stringify(result)).toBe(true);
  expect(result.rows[0].bytes).toBeLessThan(result.fullSize*.35);
  expect(result.rows[1].bytes).toBeLessThan(result.fullSize*.35);
  expect(result.rows[2].bytes).toBeLessThan(result.fullSize*.5);

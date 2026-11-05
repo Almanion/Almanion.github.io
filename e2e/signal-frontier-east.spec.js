@@ -8,9 +8,9 @@ for(const renderer of ['babylon','canvas'])test('archive operation starts and re
  const result=await page.evaluate(()=>{const s=SignalGame.snapshot();return {id:s.campaign.id,valid:!!SignalEngine.restore(s),width:SignalEngine.map(s).W};});
  expect(result).toEqual({id:'frontier-10',valid:true,width:5600});expect(errors).toEqual([]);
 });
-test('eastern fog uploads exact visible tiles and catches up when the camera moves',async({page})=>{
+for(const direct of [false,true])test('eastern fog uploads exact visible tiles and catches up when the camera moves · '+(direct?'canvas':'pixels'),async({page})=>{
  await page.setViewportSize({width:1280,height:800});
- await page.addInitScript(()=>{localStorage.setItem('signal-frontier-v1',JSON.stringify({settings:{reduced:true,volume:0}}));Object.defineProperty(window,'SignalGraphics',{configurable:true,set(o){const f=o.create;o.create=c=>window.gpuView=f(c);Object.defineProperty(window,'SignalGraphics',{value:o,configurable:true});}})});
+ await page.addInitScript(direct=>{localStorage.setItem('signal-frontier-v1',JSON.stringify({settings:{reduced:true,volume:0}}));Object.defineProperty(window,'SignalGraphics',{configurable:true,set(o){const f=o.create;o.create=c=>{window.gpuView=f(c);gpuView.canvasFogUpload=direct;return gpuView;};Object.defineProperty(window,'SignalGraphics',{value:o,configurable:true});}})},direct);
  await page.goto('/games/signal-frontier/?renderer=babylon&mission=east');await page.waitForFunction(()=>window.SignalGame);await page.locator('#start-east').click();
  await page.waitForFunction(()=>SignalGame.cameraSettled()&&!gpuView.memoryNeedsRefine);
  const result=await page.evaluate(async()=>{

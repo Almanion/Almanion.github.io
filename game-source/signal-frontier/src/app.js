@@ -2422,10 +2422,15 @@
       !view.fx.some((f) => f.type === "order")
     )
       return;
-    if (now + 0.5 < nextDraw) return;
     const frameTime = 1000 / 60;
-    nextDraw +=
-      Math.max(1, Math.floor((now - nextDraw) / frameTime) + 1) * frameTime;
+    if (mode === "tactical" && view.tacticalFrameDue) {
+      if (!view.tacticalFrameDue(now, lastDraw, elapsed * 1000)) return;
+      nextDraw = now + frameTime;
+    } else {
+      if (now + 0.5 < nextDraw) return;
+      nextDraw +=
+        Math.max(1, Math.floor((now - nextDraw) / frameTime) + 1) * frameTime;
+    }
     if (now - lastUI > 80 && (mode === "playing" || renderDirty)) {
       updateUI();
       lastUI = now;

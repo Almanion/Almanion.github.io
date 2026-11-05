@@ -24,6 +24,9 @@ export class BabylonView extends Legacy {
       this.engine=new Engine(this.gpuCanvas,true,{preserveDrawingBuffer:false,stencil:true,alpha:false,powerPreference:"high-performance"},false);
       this.engine.setHardwareScalingLevel(1/this.dpr);this.engine.setSize(this.canvas.width,this.canvas.height);
       if(this.engine.webGLVersion<2)throw Error("Для 3D-режима нужен WebGL 2");
+      // Software WebGL gains nothing from a GPU-to-GPU copy. Keep its exact
+      // CPU raster and typed-array uploads, including headless renderers.
+      this.canvasFogUpload=!/swiftshader|llvmpipe|softpipe|software|basic render|warp/i.test(this.engine.getGlInfo().renderer);
       this.scene=new Scene(this.engine);this.scene.clearColor=new Color4(.025,.055,.075,1);
       for(let group=0;group<4;group++)this.scene.setRenderingAutoClearDepthStencil(group,false);
       this.camera3d=new FreeCamera("shared-camera",new Vector3(0,10000,-10000),this.scene);
@@ -31,6 +34,8 @@ export class BabylonView extends Legacy {
       this.scene.activeCamera=this.camera3d;
       this.materials=materials(this.scene);this.parts=new Parts(this.scene,this.materials.main,this.materials.shadow);
       this.models=new Models(this.parts,E,this);this.gpuMap=null;this.timings={};this.fogUploads=0;
+      this.refreshSamples=new Float32Array(32);this.refreshCount=0;
+      this.cameraStride=1;this.cameraDrawGap=1000/90;
       this.lost=false;this.drawnUnits=0;
       this.gpuCanvas.addEventListener("webglcontextlost",()=>{this.lost=true;window.dispatchEvent(new Event("signal-renderer-lost"));});
       this.engine.onContextRestoredObservable.add(()=>{this.parts.restore();this.lost=false;this.maskKey=null;window.dispatchEvent(new Event("signal-renderer-restored"));});
@@ -38,6 +43,22 @@ export class BabylonView extends Legacy {
     } catch(error){this.engine?.dispose();this.gpuCanvas.remove();throw error;}
   }
   makeGround(){return {faces:[]};}
+  tacticalFrameDue(now,lastDraw,interval) {
+    // Match a whole number of display refreshes. A fixed 60 Hz deadline on
+    // a 144 Hz display alternates two and three refreshes during a steady pan.
+    if(interval>0&&interval<=50){
+      this.refreshSamples[this.refreshCount++]=interval;
+      if(this.refreshCount===this.refreshSamples.length){
+        this.refreshCount=0;
+        const refresh=this.refreshSamples.sort()[8],ratio=(1000/60)/refresh;
+        // Occasional missed callbacks and timestamp jitter should not switch
+        // cadence at the midpoint between two possible display divisors.
+        if(Math.abs(ratio-this.cameraStride)>.58)this.cameraStride=Math.max(1,Math.round(ratio));
+        this.cameraDrawGap=refresh*(this.cameraStride-.5);
+      }
+    }
+    return now-lastDraw>=this.cameraDrawGap;
+  }
   resize(){super.resize();if(this.engine){this.engine.setHardwareScalingLevel(1/this.dpr);this.engine.setSize(this.canvas.width,this.canvas.height);}}
   reset(s){super.reset(s);this.maskKey=null;this.fogPaths={};}
   fogPath(fog,kind) {
@@ -72,10 +93,10 @@ export class BabylonView extends Legacy {
     const terrain=buildTerrain(this.scene,this.materials.terrain,E,world,()=>{this.memoryNeedsRefine=true;}),
       max=Math.min(world.id==='districts-east'?Math.ceil(world.W*2048/3840):2048,this.engine.getCaps().maxTextureSize),scale=max/Math.max(world.W,world.H),
       width=Math.ceil(world.W*scale),height=Math.ceil(world.H*scale);
-    // This canvas is read by WebGL on every visibility change. Keeping its
-    // pixels on the CPU avoids a GPU→CPU readback before the texture upload.
+    // A hardware renderer can upload a crop directly from a drawable canvas.
+    // Request CPU storage only for the path that actually reads pixel arrays.
     const maskCanvas=document.createElement("canvas");maskCanvas.width=width;maskCanvas.height=height;
-    this.maskContext=maskCanvas.getContext("2d",{willReadFrequently:true});
+    this.maskContext=maskCanvas.getContext("2d",{willReadFrequently:!this.canvasFogUpload});
     this.mask=new DynamicTexture("world-visibility",maskCanvas,this.scene,false,Texture.BILINEAR_SAMPLINGMODE);
     this.mask.wrapU=this.mask.wrapV=Texture.CLAMP_ADDRESSMODE;this.mask.hasAlpha=false;
     this.maskKey=null;this.fogDirtyTiles=new Set();
@@ -110,22 +131,43 @@ export class BabylonView extends Legacy {
     if(!this.maskKey){
       // Allocate once. Later updates replace pixels without recreating the GPU texture.
       this.mask.update(false);this.fogUploadBytes=width*height*4;
+      this.checkFogTransfer=true;
       this.fogDirtyTiles.clear();
     }else{
       if(world.id==='districts-east'){
         for(let y=Math.floor(rect.y/256);y<Math.ceil((rect.y+rect.height)/256);y++)for(let x=Math.floor(rect.x/256);x<Math.ceil((rect.x+rect.width)/256);x++)this.fogDirtyTiles.add(y*32+x);
         this.uploadFogWindow();
       }else{
-        const pixels=c.getImageData(rect.x,rect.y,rect.width,rect.height).data;
-        this.engine.updateTextureData(this.mask.getInternalTexture(),pixels,rect.x,rect.y,rect.width,rect.height);
-        this.fogUploadBytes=pixels.byteLength;
+        this.uploadFogRect(rect.x,rect.y,rect.width,rect.height);
       }
     }
     this.maskFog=next;
     this.maskKey=key;this.fogUploads++;
   }
+  uploadFogRect(x,y,width,height) {
+    const c=this.maskContext,texture=this.mask.getInternalTexture();
+    if(this.canvasFogUpload){
+      // WebGL 2 accepts a canvas as the source for texSubImage2D. Babylon
+      // handles the texture binding and orientation for both upload paths.
+      const gl=this.engine._gl;
+      gl.pixelStorei(gl.UNPACK_SKIP_PIXELS,x);gl.pixelStorei(gl.UNPACK_SKIP_ROWS,y);
+      try{
+        this.engine.updateTextureData(texture,c.canvas,x,y,width,height);
+        // Check once per allocation/restore. Some WebGL implementations
+        // reject this overload without throwing a JavaScript exception.
+        if(this.checkFogTransfer&&gl.getError()!==gl.NO_ERROR)this.canvasFogUpload=false;
+        this.checkFogTransfer=false;
+      }catch{this.canvasFogUpload=false;}
+      finally{gl.pixelStorei(gl.UNPACK_SKIP_PIXELS,0);gl.pixelStorei(gl.UNPACK_SKIP_ROWS,0);}
+    }
+    if(!this.canvasFogUpload){
+      const pixels=c.getImageData(x,y,width,height).data;
+      this.engine.updateTextureData(texture,pixels,x,y,width,height);
+    }
+    this.fogUploadBytes+=width*height*4;
+  }
   uploadFogWindow(){
-    // Keep the full, exact CPU mask. Synchronize stale GPU tiles before they
+    // Keep the complete mask. Synchronize stale texture tiles before they
     // enter the camera, including margin for elevated geometry and shadows.
     // Camera movement alone never repaints fog or uploads an already current tile.
     const {world,width,height}=this.gpuMap,c=this.camera,scale=c.scale,pad=320,
@@ -136,8 +178,8 @@ export class BabylonView extends Legacy {
     for(const key of this.fogDirtyTiles){
       const x=key%32*256,y=Math.floor(key/32)*256;
       if(x>right||x+256<left||y>bottom||y+256<top)continue;
-      const w=Math.min(256,width-x),h=Math.min(256,height-y),pixels=this.maskContext.getImageData(x,y,w,h).data;
-      this.engine.updateTextureData(this.mask.getInternalTexture(),pixels,x,y,w,h);this.fogUploadBytes+=pixels.byteLength;this.fogDirtyTiles.delete(key);
+      this.uploadFogRect(x,y,Math.min(256,width-x),Math.min(256,height-y));
+      this.fogDirtyTiles.delete(key);
     }
   }
   syncCamera() {
@@ -239,7 +281,7 @@ export class BabylonView extends Legacy {
   diagnostics() {
     return {renderer:"babylon",backend:"WebGL "+this.engine.webGLVersion,version:Engine.Version,
       units:this.drawnUnits,...this.parts.diagnostics(),drawCalls:this.lastDrawCalls||0,
-      terrainTriangles:this.gpuMap?.terrain.triangles||0,terrainArt:{...this.gpuMap?.terrain.art},fogUploads:this.fogUploads,fogUploadBytes:this.fogUploadBytes||0,fogPaintPixels:this.fogPaintPixels||0,timings:{...this.timings},lost:this.lost};
+      terrainTriangles:this.gpuMap?.terrain.triangles||0,terrainArt:{...this.gpuMap?.terrain.art},fogTransfer:this.canvasFogUpload?"canvas":"pixels",fogUploads:this.fogUploads,fogUploadBytes:this.fogUploadBytes||0,fogPaintPixels:this.fogPaintPixels||0,timings:{...this.timings},lost:this.lost};
   }
   dispose(){this.gpuMap?.terrain.dispose();this.mask?.dispose();this.parts?.dispose();this.scene?.dispose();this.engine?.dispose();this.gpuCanvas?.remove();}
 }

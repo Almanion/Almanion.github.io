@@ -15,6 +15,26 @@ async function captureView(page) {
     }});
   });
 }
+test("tactical camera draws at evenly spaced refreshes and recovers after a missed frame",async({page})=>{
+  await captureView(page);await page.goto(route);await ready(page);
+  const result=await page.evaluate(()=>{
+    const v=gpuTestView,rows=[];
+    let now=0,lastDraw=-1000;
+    for(const hz of [60,144,120,165,240,75,30]){
+      let lastIndex=0;const gaps=new Set();
+      for(let i=0;i<160;i++){
+        const delta=1000/hz+(i%2?.12:-.12);now+=delta;
+        if(!v.tacticalFrameDue(now,lastDraw,delta))continue;
+        if(i>70)gaps.add(i-lastIndex);
+        lastIndex=i;lastDraw=now;
+      }
+      rows.push([...gaps]);
+    }
+    return {rows,late:v.tacticalFrameDue(now+120,lastDraw,120)};
+  });
+  expect(result.rows).toEqual([[1],[2],[2],[3],[4],[1],[1]]);
+  expect(result.late).toBe(true);
+});
 for(const [width,height]of [[1440,900],[390,844],[844,390]])test(`3D field is visible, aligned and frozen in tactical pause ${width}x${height}`,async({page})=>{
   const errors=[];page.on("pageerror",e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.setViewportSize({width,height});await captureView(page);
