@@ -133,6 +133,20 @@ test("3D touch pinch, edge pan, cancellation and rotation keep the paused operat
     expect(await page.evaluate(()=>SignalGame.snapshot())).toEqual(state);
   }finally{await page.close();}
 });
+test("zoom over empty space preserves the projected anchor as well as solid ground",async({page})=>{
+  await captureView(page);await page.goto(route);await ready(page);await page.locator('#start').click();
+  await page.waitForFunction(()=>SignalGame.cameraSettled()&&!gpuTestView.memoryNeedsRefine);
+  const error=await page.evaluate(()=>{
+    const v=gpuTestView,s=SignalEngine.restore(SignalGame.snapshot()),render=v.render.bind(v),ui={mode:'tactical',reduced:false};
+    v.render=()=>{};v.tactical={overview:false,x:1800,y:-72,zoom:1};v.camera={x:1800,y:-72,scale:1};
+    render(s,ui,0);
+    const x=v.origin.x,y=v.origin.y,flatY=v.camera.y;
+    v.zoomAt(1.2,x,y);let error=0;
+    for(let i=0;i<6;i++){render(s,ui,1/72);error=Math.max(error,Math.abs((flatY-v.camera.y)*v.camera.scale*.73+v.origin.y-y));}
+    return error;
+  });
+  expect(error).toBeLessThan(.01);
+});
 for(const [width,height]of [[1440,900],[390,844],[844,390]])test(`3D field is visible, aligned and frozen in tactical pause ${width}x${height}`,async({page})=>{
   const errors=[];page.on("pageerror",e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.setViewportSize({width,height});await captureView(page);

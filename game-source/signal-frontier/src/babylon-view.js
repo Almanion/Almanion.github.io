@@ -119,10 +119,11 @@ export class BabylonView extends Legacy {
     return now-lastDraw>=this.cameraDrawGap;
   }
   zoomAt(factor,x,y) {
-    const point=this.world(x,y),scale=this.tactical.overview?this.camera.scale:this.tactical.zoom,
+    const scale=this.tactical.overview?this.camera.scale:this.tactical.zoom,
       next=E.clamp(scale*factor,this.fitScale||.1,1.7);
     if(!this.zoomAnchor||this.zoomAnchor.x!==x||this.zoomAnchor.y!==y)
-      this.zoomAnchor={x,y,worldX:point.x,worldY:point.y-this.z(point.x,point.y),originX:this.origin.x,originY:this.origin.y};
+      this.zoomAnchor={x,y,worldX:this.camera.x+(x-this.origin.x)/this.camera.scale,
+        worldY:this.camera.y+(y-this.origin.y)/(this.camera.scale*Y),originX:this.origin.x,originY:this.origin.y};
     const a=this.zoomAnchor;
     this.tactical.overview=false;this.tactical.zoom=next;
     this.tactical.x=a.worldX-(x-this.origin.x)/next;
