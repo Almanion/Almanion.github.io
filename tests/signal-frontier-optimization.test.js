@@ -339,4 +339,62 @@ test("reused actor sight follows both moving endpoints and the requested cover m
     }
   }
 });
+test("recreated recon observers retain exact rays through movement and id reuse", () => {
+  const target = { id: 6001, kind: "tank", map: "districts", x: 870, y: 2235 };
+  for (const map of ["districts", "highlands", "districts"]) {
+    target.map = map;
+    for (let i = 0; i < 180; i++) {
+      const observer = { id: 6000, radius: 900, map, x: 650 + i % 4, y: 2235 + i % 11 };
+      target.x = 870 + i % 7;
+      target.y = 2235 + i % 23;
+      for (const margin of [0, 14])
+        assert.equal(E.clear(observer, { ...target }, margin), E.clear(
+          { x: observer.x, y: observer.y, map },
+          { x: target.x, y: target.y, map }, margin,
+        ));
+    }
+  }
+});
+
+test("firing rays follow mounts, arcs, endpoints, maps and newly added cover", () => {
+  const from = { id: 6100, kind: "rifle", map: "districts", x: 650, y: 2255 },
+    target = { id: 6101, kind: "rifle", map: "districts", x: 870, y: 2255 },
+    compare = () => {
+      const expected = E.fireClear({ ...from }, { ...target });
+      assert.equal(E.fireClear(from, target), expected);
+      assert.equal(E.fireClear(from, { ...target }), expected);
+      return expected;
+    };
+  assert(!compare());
+  from.kind = "artillery"; assert(compare());
+  from.kind = "rifle"; assert(!compare());
+  from.mountHeight = 100; assert(compare());
+  delete from.mountHeight; assert(!compare());
+  from.y = target.y = 2305; assert(compare());
+  from.y = target.y = 2255; assert(!compare());
+  from.map = target.map = "highlands"; assert(compare());
+  from.map = target.map = "districts"; assert(!compare());
+  Object.assign(from, { x: 400, y: 2400 });
+  Object.assign(target, { x: 600, y: 2400 });
+  assert(compare());
+  const walls = E.map("districts").walls;
+  walls.push({ x: 490, y: 2380, w: 20, h: 40 });
+  try { assert(!compare()); } finally { walls.pop(); }
+  assert(compare());
+});
+test("a warmed firing lane opens when the eastern power gate changes geometry", () => {
+  const s = E.make("frontier-10"), h = E.hero(s),
+    target = { id: 6200, kind: "rifle", map: "districts-east", x: 4400, y: 2080 };
+  E.living(s, "citadel").hp = 0;
+  E.step(s);
+  Object.assign(h, { x: 4240, y: 2080 });
+  assert(!E.fireClear(h, target));
+  assert(!E.fireClear(h, target));
+  s.east.power = true;
+  E.step(s);
+  assert(E.fireClear(h, target));
+  const restored = E.restore(E.snapshot(s));
+  assert(restored);
+  assert(E.fireClear(E.hero(restored), target));
+});
 console.log(checks + " optimization checks passed.");

@@ -10,7 +10,7 @@
     const label=document.createElement("p");label.id="renderer-loading";label.setAttribute("role","status");label.textContent="Готовим 3D-сцену…";
     document.querySelector(".home-content").append(label);
   }
-  const ready=requested?import("./babylon-view.js?v=0.34.3").then(module=>{View=module.BabylonView;}).catch(error=>{status.error=String(error.message||error);}):Promise.resolve();
+  const ready=requested?import("./babylon-view.js?v=0.34.4").then(module=>{View=module.BabylonView;}).catch(error=>{status.error=String(error.message||error);}):Promise.resolve();
   root.SignalGraphics={ready,status,create(canvas){
     try {const view=new View(canvas);status.active=view.rendererId||"canvas";return view;}
     catch(error){status.error=String(error.message||error);status.active="canvas";return new root.SignalView(canvas);}

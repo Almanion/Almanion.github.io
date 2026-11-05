@@ -123,9 +123,15 @@
         y = Math.floor(p.y / CELL);
       return x >= 0 && y >= 0 && x < cols && y < rows ? y * cols + x : -1;
     }
+    function within(u, p, range) {
+      // Reject distant observers cheaply, then retain the exact circular test
+      // at its boundary before consulting cover and terrain.
+      return Math.abs(u.x - p.x) <= range && Math.abs(u.y - p.y) <= range &&
+        E.dist(u, p) <= range;
+    }
     function sees(list, p) {
       return list.some(
-        (u) => Math.hypot(u.x - p.x, u.y - p.y) <= u.radius && E.clear(u, p),
+        (u) => within(u, p, u.radius) && E.clear(u, p),
       );
     }
     function visible(s, team, p, witness) {
@@ -146,7 +152,7 @@
         witness.team === team &&
         witness.hp > 0 && radius(witness, s) > 0 &&
         s.units.includes(witness) &&
-        E.dist(witness, p) <= radius(witness, s) &&
+        within(witness, p, radius(witness, s)) &&
         E.clear(witness, p)
       )
         return true;
@@ -157,13 +163,13 @@
           (u) =>
             u.team === team &&
             u.hp > 0 && radius(u, s) > 0 &&
-            E.dist(u, p) <= radius(u, s) &&
+            within(u, p, radius(u, s)) &&
             E.clear(u, p),
         ) ||
           posts(s).some(
             (u) =>
               u.owners[team] &&
-              E.dist(u, p) <= (E.balance.enabled(s) ? 1080 : 780) &&
+              within(u, p, E.balance.enabled(s) ? 1080 : 780) &&
               E.clear({ ...u, map: E.map(s).id }, p),
           ))
       );

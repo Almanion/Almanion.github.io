@@ -271,7 +271,8 @@
       (w) => segmentRect(a.x, a.y, b.x, b.y, w, r) !== null,
     );
   }
-  const sightCache = new Map(), sightKeys = new Array(8192), actorSight = new WeakMap();
+  const sightCache = new Map(), sightKeys = new Array(8192), actorSight = new WeakMap(),
+    observerSight = new WeakMap();
   let nextSightKey = 0;
   function clear(a, b, r = 0) {
     const world = mapFor(owners.get(a) || a.map || b.map);
@@ -282,10 +283,21 @@
     // Dense formations revisit more actor pairs than the shared string cache
     // can retain. Keep a bounded set per source, updating moving pairs in place
     // instead of allocating and evicting coordinate strings every frame.
-    const actors = a.kind && b.kind,
-      source = actors ? actorSight.get(a) : null,
-      previous = source?.rays?.get(b);
-    if (previous && previous.target === b && previous.map === world.id+world.revision && previous.r === r &&
+    // Recon descriptors have stable ids but are recreated for each observation.
+    // Keep their bounded ray tables with the immutable world, so perception
+    // can reuse unit targets without building coordinate strings every time.
+    const observer = !a.kind && a.id != null && a.radius > 0 && b.kind && b.id != null;
+    let observerSources;
+    if (observer) {
+      observerSources = observerSight.get(world);
+      if (!observerSources) observerSight.set(world, observerSources = new Map());
+    }
+    const actors = a.kind && b.kind || observer,
+      source = observer ? observerSources.get(a.id) : actors ? actorSight.get(a) : null,
+      targetKey = observer ? b.id : b,
+      previous = source?.rays?.get(targetKey);
+    if (previous && (observer || previous.target === b) && previous.world === world &&
+        previous.revision === world.revision && previous.r === r &&
         previous.ax === a.x && previous.ay === a.y && previous.bx === b.x && previous.by === b.y)
       return previous.result;
     const key = actors ? null : [world.id, world.revision, a.x, a.y, b.x, b.y, r].join(":");
@@ -310,17 +322,22 @@
       }
     }
     if (actors) {
-      const local = source || { rays: new WeakMap(), targets: new Array(128), next: 0 };
-      if (!source) actorSight.set(a, local);
+      const local = source || { rays: observer ? new Map() : new WeakMap(), targets: new Array(128), next: 0 };
+      if (!source) {
+        if (observer) {
+          if (observerSources.size >= 512) observerSources.delete(observerSources.keys().next().value);
+          observerSources.set(a.id, local);
+        } else actorSight.set(a, local);
+      }
       const entry = previous || {};
       if (!previous) {
         const oldest = local.targets[local.next];
         if (oldest) local.rays.delete(oldest);
-        local.targets[local.next] = b;
+        local.targets[local.next] = targetKey;
         local.next = (local.next + 1) % local.targets.length;
-        local.rays.set(b, entry);
+        local.rays.set(targetKey, entry);
       }
-      entry.target = b; entry.map = world.id+world.revision; entry.r = r;
+      entry.target = b; entry.world = world; entry.revision = world.revision; entry.r = r;
       entry.ax = a.x; entry.ay = a.y; entry.bx = b.x; entry.by = b.y; entry.result = result;
     }
     return result;
@@ -953,27 +970,40 @@
   }
   // A bolt collides with two pixels of cover padding. Use the same corridor
   // for AI aiming; visibility alone may see a point while a bolt clips a corner.
+  const fireRays = new WeakMap();
   function fireClear(from, target) {
     if (
       ["highlands", "districts", "districts-east"].includes(mapFor(from.map || target.map).id)
     ) {
-      const arc =
+      const world = mapFor(owners.get(from) || from.map || target.map),
+        geometry = geometryFor(from.map || target.map),
+        arc =
           ["artillery", "mortar", "citadel"].includes(from.kind) ||
           (from.kind === "bastion" && target.kind === "artillery")
             ? 110
             : 0,
-        za = geometryFor(from.map || target.map).height(from.x, from.y) + (from.mountHeight ?? MOUNTS[from.kind] ?? 16),
-        zb = geometryFor(from.map || target.map).height(target.x, target.y) + 10;
-      if (!geometryFor(from.map || target.map).ray(from, target, za, zb, arc)) return false;
-      return !mapFor(owners.get(from) || from.map || target.map).walls.some((w) => {
+        mount = from.mountHeight ?? MOUNTS[from.kind] ?? 16,
+        previous = fireRays.get(from);
+      if (previous && previous.world === world && previous.geometry === geometry &&
+          previous.walls === world.walls && previous.wallCount === world.walls.length && previous.revision === world.revision &&
+          previous.ax === from.x && previous.ay === from.y && previous.bx === target.x && previous.by === target.y &&
+          previous.sourceId === from.id && previous.targetId === target.id && previous.mount === mount && previous.arc === arc)
+        return previous.result;
+      const za = geometry.height(from.x, from.y) + mount,
+        zb = geometry.height(target.x, target.y) + 10,
+        result = geometry.ray(from, target, za, zb, arc) && !world.walls.some((w) => {
         if(w.unitId&&(w.unitId===target.id||w.unitId===from.id))return false;
         const t = segmentRect(from.x, from.y, target.x, target.y, w, 2);
         return (
           t !== null &&
           za + (zb - za) * t + Math.sin(t * Math.PI) * arc <
-            geometryFor(from.map || target.map).height(w.x + w.w / 2, w.y + w.h / 2) + 54
+            geometry.height(w.x + w.w / 2, w.y + w.h / 2) + 54
         );
       });
+      fireRays.set(from, {world,geometry,walls:world.walls,wallCount:world.walls.length,revision:world.revision,
+        ax:from.x,ay:from.y,bx:target.x,by:target.y,
+        sourceId:from.id,targetId:target.id,mount,arc,result});
+      return result;
     }
     return clear(
       from,

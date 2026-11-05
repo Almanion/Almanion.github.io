@@ -1650,6 +1650,7 @@
         cells: new Map(),
         positions: new Map(),
         order: new Map(),
+        neighbors: new Map(),
         squads: new Map(),
         intelShared: false,
       };
@@ -1674,26 +1675,32 @@
       return frame;
     }
     function indexEnemy(frame, u) {
-      const key = Math.floor(u.x / 96) + ":" + Math.floor(u.y / 96),
+      const key = Math.floor(u.x / 96) + 65536 * Math.floor(u.y / 96),
         previous = frame.positions.get(u.id);
       if (previous === key) return;
+      frame.neighbors.clear();
       if (previous !== undefined) frame.cells.get(previous).delete(u);
       if (!frame.cells.has(key)) frame.cells.set(key, new Set());
       frame.cells.get(key).add(u);
       frame.positions.set(u.id, key);
     }
     function neighbors(frame, u) {
-      const found = [],
-        x = Math.floor(u.x / 96),
-        y = Math.floor(u.y / 96);
+      const x = Math.floor(u.x / 96), y = Math.floor(u.y / 96),
+        key = x + 65536 * y, cached = frame.neighbors.get(key);
+      if (cached) return cached;
+      const found = [];
       for (let yy = y - 1; yy <= y + 1; yy++)
         for (let xx = x - 1; xx <= x + 1; xx++)
-          for (const other of frame.cells.get(xx + ":" + yy) || [])
-            if (other !== u && other.hp > 0) found.push(other);
+          for (const other of frame.cells.get(xx + 65536 * yy) || [])
+            found.push(other);
       // Retain authoritative unit order, including when several neighbors push.
-      return found.sort(
+      // The separation loop checks self/death live. Only cell membership
+      // changes invalidate this shared candidate list during the fixed step.
+      found.sort(
         (a, b) => frame.order.get(a.id) - frame.order.get(b.id),
       );
+      frame.neighbors.set(key, found);
+      return found;
     }
     function marchPoint(s, u, squad) {
       const ai = u.ai;
