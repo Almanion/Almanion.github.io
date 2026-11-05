@@ -20,7 +20,7 @@ test("tactical camera draws at evenly spaced refreshes and recovers after a miss
   const result=await page.evaluate(()=>{
     const v=gpuTestView,rows=[];
     let now=0,lastDraw=-1000;
-    for(const hz of [60,144,120,165,240,75,30]){
+    for(const hz of [60,144,120,165,240,75,90,30]){
       let lastIndex=0;const gaps=new Set();
       for(let i=0;i<160;i++){
         const delta=1000/hz+(i%2?.12:-.12);now+=delta;
@@ -32,8 +32,106 @@ test("tactical camera draws at evenly spaced refreshes and recovers after a miss
     }
     return {rows,late:v.tacticalFrameDue(now+120,lastDraw,120)};
   });
-  expect(result.rows).toEqual([[1],[2],[2],[3],[4],[1],[1]]);
+  expect(result.rows).toEqual([[1],[2],[2],[3],[4],[1],[2],[1]]);
   expect(result.late).toBe(true);
+});
+test("3D motion blends between fixed steps without changing the operation or its fog",async({page})=>{
+  await captureView(page);await page.goto(route);await ready(page);
+  const result=await page.evaluate(()=>{
+    const v=gpuTestView,E=SignalEngine,s=E.make('frontier-9'),h=E.hero(s);
+    v.render=()=>{};v.reset(s);
+    E.step(s,{fire:true,aim:{x:900,y:2400}});
+    v.presentation(E.observe(s),{mode:'playing'});
+    v.captureStep(s);
+    const previous={x:h.x,y:h.y,bullet:{...s.bullets[0]}};
+    E.step(s,{x:1,fire:true,aim:{x:900,y:2400}});
+    const snapshot=JSON.stringify(E.snapshot(s)),observed=E.observe(s),points=[];
+    for(const interpolation of [0,.25,.5,.75,1]){
+      const frame=v.presentation(observed,{mode:'playing',interpolation}),hero=E.hero(frame);
+      points.push({x:hero.x,y:hero.y,t:frame.t});
+      if(frame.fog!==observed.fog)throw Error('Fog was replaced by interpolated knowledge');
+    }
+    const half=v.presentation(observed,{mode:'playing',interpolation:.5}),paused=v.presentation(observed,{mode:'tactical',interpolation:.5});
+    v.resetInterpolation();
+    const reset=v.presentation(observed,{mode:'playing',interpolation:.5});
+    return {previous,current:{x:h.x,y:h.y,t:s.t,bullet:s.bullets[0]},points,bullet:half.bullets[0],
+      paused:E.hero(paused).x,reset:E.hero(reset).x,pure:snapshot===JSON.stringify(E.snapshot(s))};
+  });
+  expect(result.pure).toBe(true);
+  for(const [i,p]of result.points.entries()){
+    expect(p.x).toBeCloseTo(result.previous.x+(result.current.x-result.previous.x)*i/4,8);
+    expect(p.t).toBeCloseTo(result.current.t-(1-i/4)*E.DT,8);
+  }
+  expect(result.bullet.x).toBeCloseTo((result.previous.bullet.x+result.current.bullet.x)/2,8);
+  expect(result.paused).toBe(result.current.x);expect(result.reset).toBe(result.current.x);
+});
+
+test("newly visible troops, shelter changes and teleports snap to their observed position",async({page})=>{
+  await captureView(page);await page.goto(route);await ready(page);
+  const result=await page.evaluate(()=>{
+    const v=gpuTestView,E=SignalEngine,s=E.make('frontier-9'),h=E.hero(s),enemy=s.units.find(u=>u.team&&u.kind==='sentinel');
+    v.render=()=>{};v.reset(s);v.presentation(E.observe(s),{mode:'playing'});v.captureStep(s);
+    const previous=h.x;
+    s.t+=E.DT;h.x+=1;Object.assign(enemy,{x:h.x+50,y:h.y});E.refreshRecon(s);
+    const seen=v.presentation(E.observe(s),{mode:'playing',interpolation:.5});
+    const revealed=seen.units.find(u=>u.id===enemy.id)?.x;
+    v.captureStep(s);s.t+=E.DT;h.x+=200;E.refreshRecon(s);
+    const teleport=E.hero(v.presentation(E.observe(s),{mode:'playing',interpolation:.5})).x;
+    v.captureStep(s);s.t+=E.DT;h.x+=1;h.care={inside:true};E.refreshRecon(s);
+    const shelter=E.hero(v.presentation(E.observe(s),{mode:'playing',interpolation:.5})).x;
+    delete h.care;h.angle=Math.PI-.1;h.combat={angle:Math.PI-.1};v.captureStep(s);
+    s.t+=E.DT;h.angle=-Math.PI+.1;h.combat.angle=-Math.PI+.1;E.refreshRecon(s);
+    const rotated=E.hero(v.presentation(E.observe(s),{mode:'playing',interpolation:.5}));
+    return {revealed,enemyX:enemy.x,teleport,expectedTeleport:previous+201,shelter,expectedShelter:h.x,angle:rotated.angle,combatAngle:rotated.combat.angle,sourceCombatAngle:h.combat.angle};
+  });
+  expect(result.revealed).toBe(result.enemyX);expect(result.teleport).toBe(result.expectedTeleport);
+  expect(result.shelter).toBe(result.expectedShelter);
+  expect(Math.abs(result.angle)).toBeCloseTo(Math.PI,8);
+  expect(Math.abs(result.combatAngle)).toBeCloseTo(Math.PI,8);
+  expect(result.sourceCombatAngle).toBe(-Math.PI+.1);
+});
+
+test("rapid zoom keeps the ground anchor stationary throughout easing and accumulates wheel input",async({page})=>{
+  await captureView(page);await page.goto(route);await ready(page);await page.locator('#start').click();
+  await page.waitForFunction(()=>SignalGame.cameraSettled()&&!gpuTestView.memoryNeedsRefine);
+  const result=await page.evaluate(()=>{
+    const v=gpuTestView,s=SignalEngine.restore(SignalGame.snapshot()),ui={mode:'tactical',reduced:false},
+      render=v.render.bind(v);
+    v.render=()=>{};render(s,ui,0);
+    const x=v.origin.x+100,y=v.origin.y-40,point=v.world(x,y),initial=v.tactical.zoom;
+    v.zoomAt(1.1,x,y);v.zoomAt(1.1,x,y);v.zoomAt(1.1,x,y);
+    let error=0;
+    for(let i=0;i<130;i++){render(s,ui,1/72);const p=v.screen(point.x,point.y);error=Math.max(error,Math.hypot(p.x-x,p.y-y));}
+    const settled=v.cameraSettled,zoom=v.camera.scale;
+    v.pan(30,20);render(s,ui,1/72);
+    return {error,zoom,expected:initial*1.1**3,settled,panCancelled:v.zoomAnchor===null,pure:s.t===SignalGame.snapshot().t};
+  });
+  expect(result.error).toBeLessThan(.01);expect(result.zoom).toBeCloseTo(result.expected,4);
+  expect(result.settled).toBe(true);expect(result.panCancelled).toBe(true);expect(result.pure).toBe(true);
+});
+test("3D touch pinch, edge pan, cancellation and rotation keep the paused operation intact",async({browser,browserName})=>{
+  test.skip(browserName!=="chromium","The multi-touch fixture uses Chromium CDP.");
+  const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
+  try{
+    await captureView(page);await page.goto(route);await ready(page);await page.locator('#start').tap();
+    await page.waitForFunction(()=>SignalGame.cameraSettled()&&!gpuTestView.memoryNeedsRefine);
+    const state=await page.evaluate(()=>SignalGame.snapshot()),initial=await page.evaluate(()=>SignalGame.camera()),
+      session=await page.context().newCDPSession(page);
+    await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:1,x:140,y:360},{id:2,x:240,y:420}]});
+    await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:1,x:100,y:340},{id:2,x:280,y:440}]});
+    await page.waitForFunction(scale=>SignalGame.camera().scale>scale+.2,initial.scale);
+    await session.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
+    await page.waitForFunction(()=>SignalGame.cameraSettled());
+    const beforePan=await page.evaluate(()=>SignalGame.camera().x);
+    await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:3,x:386,y:200}]});
+    await page.waitForFunction(x=>SignalGame.camera().x>x+40,beforePan);
+    await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    await page.setViewportSize({width:844,height:390});await page.waitForFunction(()=>SignalGame.cameraSettled());
+    const stopped=await page.evaluate(()=>SignalGame.camera());
+    await page.waitForTimeout(160);
+    expect(await page.evaluate(()=>SignalGame.camera())).toEqual(stopped);
+    expect(await page.evaluate(()=>SignalGame.snapshot())).toEqual(state);
+  }finally{await page.close();}
 });
 for(const [width,height]of [[1440,900],[390,844],[844,390]])test(`3D field is visible, aligned and frozen in tactical pause ${width}x${height}`,async({page})=>{
   const errors=[];page.on("pageerror",e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});

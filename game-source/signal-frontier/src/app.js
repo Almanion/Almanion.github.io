@@ -190,6 +190,7 @@
     }
     resetInput();
     combatFocus = null;
+    view.resetInterpolation?.();
     mode = next;
     document.body.dataset.mode = mode;
     $("home").hidden = mode !== "menu";
@@ -2364,6 +2365,7 @@
           };
         const strength = Math.hypot(moveStick.x, moveStick.y),
           projected = Math.hypot(moveStick.x, moveStick.y / 0.73) || 1;
+        view.captureStep?.(state);
         E.step(state, {
           x: mx + (moveStick.x / projected) * strength,
           y: my + (moveStick.y / 0.73 / projected) * strength,
@@ -2423,7 +2425,7 @@
     )
       return;
     const frameTime = 1000 / 60;
-    if (mode === "tactical" && view.tacticalFrameDue) {
+    if (["playing", "tactical"].includes(mode) && view.tacticalFrameDue) {
       if (!view.tacticalFrameDue(now, lastDraw, elapsed * 1000)) return;
       nextDraw = now + frameTime;
     } else {
@@ -2454,6 +2456,7 @@
         aim,
         reduced: settings.reduced,
         touch: coarse.matches || innerWidth < 700,
+        interpolation: mode === "playing" ? acc / E.DT : null,
       },
       Math.min(0.1, (now - lastDraw) / 1000),
     );

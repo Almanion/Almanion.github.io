@@ -35,7 +35,9 @@ export class BabylonView extends Legacy {
       this.materials=materials(this.scene);this.parts=new Parts(this.scene,this.materials.main,this.materials.shadow);
       this.models=new Models(this.parts,E,this);this.gpuMap=null;this.timings={};this.fogUploads=0;
       this.refreshSamples=new Float32Array(32);this.refreshCount=0;
-      this.cameraStride=1;this.cameraDrawGap=1000/90;
+      this.cameraStride=0;this.refreshPeriod=null;this.cameraDrawGap=1000/90;
+      this.previousUnits=new Map();this.previousBullets=new WeakMap();
+      this.resetInterpolation();
       this.lost=false;this.drawnUnits=0;
       this.gpuCanvas.addEventListener("webglcontextlost",()=>{this.lost=true;window.dispatchEvent(new Event("signal-renderer-lost"));});
       this.engine.onContextRestoredObservable.add(()=>{this.parts.restore();this.lost=false;this.maskKey=null;window.dispatchEvent(new Event("signal-renderer-restored"));});
@@ -43,9 +45,63 @@ export class BabylonView extends Legacy {
     } catch(error){this.engine?.dispose();this.gpuCanvas.remove();throw error;}
   }
   makeGround(){return {faces:[]};}
+  resetInterpolation() {
+    this.previousTime=null;this.visibleUnits=null;this.presentationTime=null;this.zoomAnchor=null;
+  }
+  captureStep(s) {
+    this.previousTime=s.t;
+    for(const u of s.units) {
+      if(u.hp<=0)continue;
+      let p=this.previousUnits.get(u.id);
+      if(!p){p={};this.previousUnits.set(u.id,p);}
+      p.time=s.t;p.kind=u.kind;p.x=u.x;p.y=u.y;p.angle=u.angle||0;
+      p.combatAngle=u.combat?.angle;
+      p.inside=!!u.care?.inside;p.visible=!u.team||!!this.visibleUnits?.has(u.id);
+    }
+    if(this.previousUnits.size>512)for(const [id,p]of this.previousUnits)if(p.time!==s.t)this.previousUnits.delete(id);
+    for(const b of s.bullets) {
+      let p=this.previousBullets.get(b);
+      if(!p){p={};this.previousBullets.set(b,p);}
+      p.time=s.t;p.x=b.x;p.y=b.y;p.age=b.age;
+    }
+  }
+  presentation(s,ui) {
+    const alpha=ui.interpolation;
+    this.presentationTime=s.t;
+    if(ui.mode!=="playing"){this.visibleUnits=null;return s;}
+    const observed=E.fogged(s)&&!s.fog?E.observe(s):s;
+    this.visibleUnits=new Set(observed.units.map(u=>u.id));
+    if(!Number.isFinite(alpha)||alpha<0||alpha>=1||this.previousTime===null||
+        Math.abs(s.t-this.previousTime-E.DT)>1e-7)return s;
+    const world=E.map(s),blend=(a,b)=>a+(b-a)*alpha,
+      units=observed.units.map(u=>{
+        const p=this.previousUnits.get(u.id);
+        // Reveals, spawns, deaths, shelter changes and teleports appear at
+        // their current observed state. Only a continuous live move is blended.
+        if(!p||p.time!==this.previousTime||p.kind!==u.kind||!p.visible||u.hp<=0||
+            p.inside!==!!u.care?.inside)return u;
+        const rotating=Number.isFinite(p.combatAngle)&&Number.isFinite(u.combat?.angle)&&p.combatAngle!==u.combat.angle;
+        if(p.x===u.x&&p.y===u.y&&p.angle===u.angle&&!rotating)return u;
+        if(Math.hypot(u.x-p.x,u.y-p.y)>32||
+            Math.abs(E.elevation(u.x,u.y,world)-E.elevation(p.x,p.y,world))>8)return u;
+        const turn=Math.atan2(Math.sin((u.angle||0)-p.angle),Math.cos((u.angle||0)-p.angle));
+        const next={...u,x:blend(p.x,u.x),y:blend(p.y,u.y),angle:p.angle+turn*alpha};
+        if(rotating){
+          const rotation=Math.atan2(Math.sin(u.combat.angle-p.combatAngle),Math.cos(u.combat.angle-p.combatAngle));
+          next.combat={...u.combat,angle:p.combatAngle+rotation*alpha};
+        }
+        return next;
+      }),
+      bullets=observed.bullets.map(b=>{
+        const p=this.previousBullets.get(b);
+        return p?.time===this.previousTime?{...b,x:blend(p.x,b.x),y:blend(p.y,b.y),age:blend(p.age,b.age)}:b;
+      });
+    this.presentationTime=this.previousTime+E.DT*alpha;
+    return {...observed,units,bullets,t:this.presentationTime};
+  }
   tacticalFrameDue(now,lastDraw,interval) {
-    // Match a whole number of display refreshes. A fixed 60 Hz deadline on
-    // a 144 Hz display alternates two and three refreshes during a steady pan.
+    // Match a whole number of display refreshes in combat and tactical view.
+    // The simulation keeps its fixed step; presentation blends between steps.
     if(interval>0&&interval<=50){
       this.refreshSamples[this.refreshCount++]=interval;
       if(this.refreshCount===this.refreshSamples.length){
@@ -53,14 +109,45 @@ export class BabylonView extends Legacy {
         const refresh=this.refreshSamples.sort()[8],ratio=(1000/60)/refresh;
         // Occasional missed callbacks and timestamp jitter should not switch
         // cadence at the midpoint between two possible display divisors.
-        if(Math.abs(ratio-this.cameraStride)>.58)this.cameraStride=Math.max(1,Math.round(ratio));
+        const changed=this.refreshPeriod!==null&&Math.abs(refresh/this.refreshPeriod-1)>.12;
+        if(!this.cameraStride||changed||Math.abs(ratio-this.cameraStride)>.58)
+          this.cameraStride=Math.max(1,Math.round(ratio));
+        this.refreshPeriod=refresh;
         this.cameraDrawGap=refresh*(this.cameraStride-.5);
       }
     }
     return now-lastDraw>=this.cameraDrawGap;
   }
-  resize(){super.resize();if(this.engine){this.engine.setHardwareScalingLevel(1/this.dpr);this.engine.setSize(this.canvas.width,this.canvas.height);}}
-  reset(s){super.reset(s);this.maskKey=null;this.fogPaths={};}
+  zoomAt(factor,x,y) {
+    const point=this.world(x,y),scale=this.tactical.overview?this.camera.scale:this.tactical.zoom,
+      next=E.clamp(scale*factor,this.fitScale||.1,1.7);
+    if(!this.zoomAnchor||this.zoomAnchor.x!==x||this.zoomAnchor.y!==y)
+      this.zoomAnchor={x,y,worldX:point.x,worldY:point.y-this.z(point.x,point.y),originX:this.origin.x,originY:this.origin.y};
+    const a=this.zoomAnchor;
+    this.tactical.overview=false;this.tactical.zoom=next;
+    this.tactical.x=a.worldX-(x-this.origin.x)/next;
+    this.tactical.y=a.worldY-(y-this.origin.y)/(next*Y);
+    a.targetX=this.tactical.x;a.targetY=this.tactical.y;
+  }
+  pan(x,y){if(x||y)this.zoomAnchor=null;super.pan(x,y);}
+  focus(x,y){this.zoomAnchor=null;super.focus(x,y);}
+  prepareFrame(s,ui,dt) {
+    const frame=super.prepareFrame(s,ui,dt),a=this.zoomAnchor;
+    if(a){
+      if(ui.mode!=="tactical"||ui.selecting||ui.placement||this.tactical.overview||
+          this.origin.x!==a.originX||this.origin.y!==a.originY||
+          this.tactical.x!==a.targetX||this.tactical.y!==a.targetY)this.zoomAnchor=null;
+      else{
+        // Keep the world point under the pointer throughout scale easing.
+        // Independently easing x/y and scale makes that point drift mid-zoom.
+        this.camera.x=a.worldX-(a.x-this.origin.x)/this.camera.scale;
+        this.camera.y=a.worldY-(a.y-this.origin.y)/(this.camera.scale*Y);
+      }
+    }
+    return frame;
+  }
+  resize(){this.zoomAnchor=null;super.resize();if(this.engine){this.engine.setHardwareScalingLevel(1/this.dpr);this.engine.setSize(this.canvas.width,this.canvas.height);}}
+  reset(s){super.reset(s);this.maskKey=null;this.fogPaths={};this.resetInterpolation();this.previousUnits.clear();this.previousBullets=new WeakMap();}
   fogPath(fog,kind) {
     const sources=fog.observers.map(u=>[u.id,u.x,u.y,u.radius].join(":")),
       code=this.mapId+":"+(fog.geometryRevision||"")+":"+fog[kind+"Code"]+(kind==="visible"?":"+sources.join(","):""),old=this.fogPaths[kind];
@@ -198,7 +285,7 @@ export class BabylonView extends Legacy {
   }
   render(s,ui,dt) {
     if(this.lost)return;
-    let time=performance.now();const frame=this.prepareFrame(s,ui,dt);s=frame.s;
+    let time=performance.now();const frame=this.prepareFrame(this.presentation(s,ui),ui,dt);s=frame.s;
     this.timings.prepare=performance.now()-time;time=performance.now();
     this.map(frame.world);this.visibility(s);this.syncCamera();
     this.timings.fog=performance.now()-time;time=performance.now();this.parts.begin();this.drawnUnits=0;
