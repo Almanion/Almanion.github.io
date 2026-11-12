@@ -41,7 +41,7 @@
           "separator": "—"
         }
       ],
-      "navTitle": "1.1 Термодинамический и статистический методы"
+      "navTitle": "Термодинамический и статистический методы"
     },
     {
       "id": "osnovnye-polozheniya-mkt",
@@ -128,7 +128,7 @@
           "separator": "—"
         }
       ],
-      "navTitle": "1.2 Основные положения молекулярно-кинетической теории"
+      "navTitle": "Основные положения молекулярно-кинетической теории"
     },
     {
       "id": "opytnye-obosnovaniya-mkt",
@@ -374,7 +374,7 @@
           "children": []
         }
       ],
-      "navTitle": "1.3 Опытные обоснования молекулярно-кинетической теории"
+      "navTitle": "Опытные обоснования молекулярно-кинетической теории"
     },
     {
       "id": "razmery-i-massy-molekul",
@@ -510,7 +510,7 @@
           "separator": "—"
         }
       ],
-      "navTitle": "1.4 Размеры и массы молекул"
+      "navTitle": "Размеры и массы молекул"
     },
     {
       "id": "osnovnoe-uravnenie-mkt",
@@ -613,7 +613,7 @@
           ]
         }
       ],
-      "navTitle": "1.5 Основное уравнение молекулярно-кинетической теории"
+      "navTitle": "Основное уравнение молекулярно-кинетической теории"
     },
     {
       "id": "temperatura-i-uravnenie-sostoyaniya",
@@ -715,7 +715,7 @@
           "separator": "—"
         }
       ],
-      "navTitle": "1.6 Температура и уравнение состояния"
+      "navTitle": "Температура и уравнение состояния"
     },
     {
       "id": "vzaimodeystvie-molekul",
@@ -836,7 +836,7 @@
           ]
         }
       ],
-      "navTitle": "1.7 Взаимодействие молекул"
+      "navTitle": "Взаимодействие молекул"
     },
     {
       "id": "zakon-daltona",
@@ -877,7 +877,7 @@
           "children": []
         }
       ],
-      "navTitle": "1.8 Закон Дальтона"
+      "navTitle": "Закон Дальтона"
     },
     {
       "id": "izoprotsessy-gazovye-zakony",
@@ -1266,13 +1266,13 @@
           "children": []
         }
       ],
-      "navTitle": "1.9 Изопроцессы. Газовые законы"
+      "navTitle": "Изопроцессы. Газовые законы"
     },
     {
       "id": "raspredelenie-molekul-po-skorostyam",
       "type": "subsection",
       "title": "1.10 Опыты по измерению скоростей молекул. Распределение Максвелла",
-      "navTitle": "1.10 Скорости молекул. Распределение Максвелла",
+      "navTitle": "Скорости молекул. Распределение Максвелла",
       "content": "",
       "children": [
         {
@@ -1632,7 +1632,7 @@
       "id": "temperaturnye-shkaly-i-termodinamicheskie-protsessy",
       "type": "subsection",
       "title": "1.11 Температура. Температурные шкалы и термодинамические процессы",
-      "navTitle": "1.11 Температура и термодинамические процессы",
+      "navTitle": "Температура и термодинамические процессы",
       "content": "",
       "children": [
         {
@@ -2640,7 +2640,8 @@
             }
           ]
         }
-      ]
+      ],
+      "navTitle": "Применение первого начала термодинамики к задачам"
     },
     {
       "id": "vtoroe-nachalo-termodinamiki",
@@ -2951,9 +2952,9 @@
     }
   ],
   "order": 1,
-  "revision": 19,
+  "revision": 20,
   "createdAt": 1788739200000,
-  "updatedAt": "2026-11-12T18:58:03.578Z",
+  "updatedAt": "2026-11-12T19:53:26.279Z",
   "updatedBy": "codex",
   "reviewStatus": "published"
 }

@@ -10,7 +10,7 @@
       "id": "fizicheskie-velichiny-i-izmereniya",
       "type": "subsection",
       "title": "2.1 Физические величины и измерения",
-      "navTitle": "2.1 Физические величины и измерения",
+      "navTitle": "Физические величины и измерения",
       "content": "",
       "children": [
         {
@@ -102,7 +102,7 @@
       "id": "pogreshnosti-izmereniy",
       "type": "subsection",
       "title": "2.2 Погрешности измерений",
-      "navTitle": "2.2 Погрешности измерений",
+      "navTitle": "Погрешности измерений",
       "content": "",
       "children": [
         {
@@ -187,7 +187,7 @@
       "id": "izmeritelnye-pribory",
       "type": "subsection",
       "title": "2.3 Измерительные приборы и их характеристики",
-      "navTitle": "2.3 Измерительные приборы",
+      "navTitle": "Измерительные приборы",
       "content": "",
       "children": [
         {
@@ -264,7 +264,7 @@
       "id": "obrabotka-rezultatov-izmereniy",
       "type": "subsection",
       "title": "2.4 Обработка результатов прямых и косвенных измерений",
-      "navTitle": "2.4 Обработка результатов",
+      "navTitle": "Обработка результатов",
       "content": "",
       "children": [
         {
@@ -349,9 +349,9 @@
     }
   ],
   "order": 2,
-  "revision": 4,
+  "revision": 5,
   "createdAt": 1789894800000,
-  "updatedAt": "2026-10-13T22:31:25.270Z",
+  "updatedAt": "2026-11-12T19:53:26.279Z",
   "updatedBy": "codex",
   "reviewStatus": "published"
 }
