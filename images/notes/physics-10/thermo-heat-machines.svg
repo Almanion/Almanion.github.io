@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 625" role="img" aria-labelledby="title desc">
+<title id="title">Схемы теплового двигателя и холодильной машины</title><desc id="desc">Двигатель получает теплоту от нагревателя, часть отдаёт холодильнику, совершая работу A штрих. Холодильная машина за счёт внешней работы A переносит теплоту от холодильника к нагревателю. На стрелках стоят модули теплот.</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M1.5 1.5 L7 4.5 L1.5 7.5" fill="none" stroke="#263747" stroke-width="1.7"/></marker><marker id="route" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M2 2 L8 5 L2 8" fill="none" stroke="#2366a4" stroke-width="1.8"/></marker><marker id="warm" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M2 2 L8 5 L2 8" fill="none" stroke="#b54b38" stroke-width="1.8"/></marker></defs><style>text{font-family:Arial,Helvetica,sans-serif;font-size:24px;fill:#263747}.math{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:28px}.small{font-size:21px}.heading{font-size:27px;font-weight:600}.wall{stroke:#263747;stroke-width:2.4;fill:none;stroke-linejoin:round;stroke-linecap:round}.axis{stroke:#263747;stroke-width:1.8;fill:none;marker-end:url(#arrow)}.flow{stroke:#2366a4;stroke-width:2.4;fill:none;marker-end:url(#route)}.work{stroke:#263747;stroke-width:2.2;fill:none;marker-end:url(#arrow)}.guide{stroke:#8193a5;stroke-width:1.3;stroke-dasharray:6 6;fill:none}.leader{stroke:#8193a5;stroke-width:1.3;fill:none}</style>
+<rect width="880" height="625" rx="12" fill="#fff"/>
+<text x="440" y="40" class="heading" text-anchor="middle" >Тепловой двигатель и холодильная машина</text>
+<text x="220" y="88" class="" text-anchor="middle" >Тепловой двигатель</text>
+<text x="660" y="88" class="" text-anchor="middle" >Холодильная машина</text>
+<path d="M440 108 V530" class="guide" />
+<rect x="90" y="118" width="260" height="62" rx="8" fill="#fcf0e8" stroke="#263747" stroke-width="2"/>
+<text x="220" y="157" class="" text-anchor="middle" >Нагреватель, T₁</text>
+<circle cx="220" cy="306" r="58" fill="#fff" stroke="#263747" stroke-width="2.3"/>
+<text x="220" y="300" class="" text-anchor="middle" >Рабочее</text>
+<text x="220" y="328" class="" text-anchor="middle" >тело</text>
+<rect x="90" y="430" width="260" height="62" rx="8" fill="#e8f3fa" stroke="#263747" stroke-width="2"/>
+<text x="220" y="469" class="" text-anchor="middle" >Холодильник, T₂</text>
+<rect x="530" y="118" width="260" height="62" rx="8" fill="#fcf0e8" stroke="#263747" stroke-width="2"/>
+<text x="660" y="157" class="" text-anchor="middle" >Нагреватель, T₁</text>
+<circle cx="660" cy="306" r="58" fill="#fff" stroke="#263747" stroke-width="2.3"/>
+<text x="660" y="300" class="" text-anchor="middle" >Рабочее</text>
+<text x="660" y="328" class="" text-anchor="middle" >тело</text>
+<rect x="530" y="430" width="260" height="62" rx="8" fill="#e8f3fa" stroke="#263747" stroke-width="2"/>
+<text x="660" y="469" class="" text-anchor="middle" >Холодильник, T₂</text>
+<path d="M220 180 V248" class="flow" />
+<text x="250" y="223" class="math" text-anchor="start" >|Q₁|</text>
+<path d="M220 364 V430" class="flow" />
+<text x="250" y="406" class="math" text-anchor="start" >|Q₂|</text>
+<path d="M278 306 H412" class="work" />
+<text x="345" y="292" class="math" text-anchor="middle" >A′</text>
+<path d="M660 248 V180" class="flow" />
+<text x="690" y="223" class="math" text-anchor="start" >|Q₁|</text>
+<path d="M660 430 V364" class="flow" />
+<text x="690" y="406" class="math" text-anchor="start" >|Q₂|</text>
+<path d="M474 306 H602" class="work" />
+<text x="537" y="292" class="math" text-anchor="middle" >A</text>
+<text x="220" y="540" class="math" text-anchor="middle" >A′ = |Q₁| − |Q₂|</text>
+<text x="660" y="540" class="math" text-anchor="middle" >A = |Q₁| − |Q₂|</text>
+<text x="440" y="590" class="small" text-anchor="middle" >T₁ &gt; T₂; теплоты на стрелках указаны по модулю</text>
+</svg>
