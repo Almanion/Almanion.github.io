@@ -718,10 +718,6 @@ body:not(.no-hover).experimental .bookmark-btn:hover {
     background: transparent;
 }
 body:not(.no-hover).experimental .copy-block-btn:hover { background: var(--exp-accent-soft); }
-body:not(.no-hover).experimental .bookmark-btn:hover .bookmark-icon {
-    fill: currentColor;
-    transform: scale(1.04);
-}
 body.experimental .bookmark-btn.bookmarked { color: var(--exp-accent); }
 
 /* Кнопка «вверх» и настроек */

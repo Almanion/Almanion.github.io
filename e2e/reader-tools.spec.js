@@ -76,20 +76,27 @@ test.describe('properties block actions', () => {
         await expect(block.locator(':scope > .copy-block-btn')).toHaveCount(1);
         const buttons = block.locator(':scope > :is(.copy-block-btn, .bookmark-btn, .personal-note-btn)');
         await expect(buttons).toHaveCount(3);
-        const rects = await buttons.evaluateAll(nodes => nodes.map(el => { const r = el.getBoundingClientRect(); const icon = el.querySelector('svg').getBoundingClientRect(); return { width: r.width, height: r.height, left: r.left, right: r.right, iconWidth: icon.width, iconHeight: icon.height }; }));
+        const rects = await buttons.evaluateAll(nodes => nodes.map(el => { const r = el.getBoundingClientRect(); const svg = el.querySelector('svg'); const icon = svg.getBoundingClientRect(); const style = getComputedStyle(svg); return { width: r.width, height: r.height, left: r.left, right: r.right, iconWidth: icon.width, iconHeight: icon.height, centerY: icon.top + icon.height / 2, stroke: style.strokeWidth, cap: style.strokeLinecap, join: style.strokeLinejoin }; }));
         for (const r of rects) {
             expect(r.width).toBeGreaterThanOrEqual(44); expect(r.height).toBeGreaterThanOrEqual(44);
             expect(r.iconWidth).toBeLessThanOrEqual(20); expect(r.iconHeight).toBeLessThanOrEqual(20);
+            expect(r.iconWidth).toBeCloseTo(rects[0].iconWidth, 1);
+            expect(r.iconHeight).toBeCloseTo(rects[0].iconHeight, 1);
+            expect(r.centerY).toBeCloseTo(rects[0].centerY, 1);
+            expect(r.stroke).toBe('1.8px'); expect(r.cap).toBe('round'); expect(r.join).toBe('round');
         }
         rects.sort((a, b) => a.left - b.left);
         for (let i = 1; i < rects.length; i++) expect(rects[i].left).toBeGreaterThanOrEqual(rects[i - 1].right - 1);
         await block.locator(':scope > .copy-block-btn').click();
         await expect(block.locator(':scope > .copy-block-btn')).toHaveClass(/is-copied/);
+        expect(await block.locator(':scope > .copy-block-btn svg').evaluate(el => getComputedStyle(el).strokeWidth)).toBe('1.8px');
         expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('Атомный номер');
         await block.locator(':scope > .bookmark-btn').click();
         await expect(block.locator(':scope > .bookmark-btn')).toHaveClass(/bookmarked/);
+        expect(await block.locator(':scope > .bookmark-btn svg').evaluate(el => getComputedStyle(el).fill)).not.toBe('none');
         await block.locator(':scope > .bookmark-btn').click();
         await expect(block.locator(':scope > .bookmark-btn')).not.toHaveClass(/bookmarked/);
+        expect(await block.locator(':scope > .bookmark-btn svg').evaluate(el => getComputedStyle(el).fill)).toBe('none');
         await block.locator(':scope > .personal-note-btn').click();
         await page.locator('#personalNoteText').fill('Properties test note');
         await page.locator('[data-note-save]').click();
@@ -101,6 +108,46 @@ test.describe('properties block actions', () => {
         await expect(block.locator(':scope > .copy-block-btn')).toHaveCount(1);
         await expect(block.locator(':scope > .personal-note-btn')).toHaveClass(/has-note/);
     });
+});
+
+test('block action icons share geometry and hover/focus styling across desktop themes', async ({ page }, info) => {
+    await blockExternal(page);
+    await page.setViewportSize({ width: 1366, height: 900 });
+    await notes(page);
+    await page.waitForFunction(() => window.AlmanionSettings?.ready);
+    const block = page.locator('.definition-box').first();
+    const buttons = block.locator(':scope > :is(.copy-block-btn, .personal-note-btn, .bookmark-btn)');
+    await expect(buttons).toHaveCount(3);
+    for (const theme of ['prism-light', 'prism-dark', 'graphite-light', 'graphite-dark', 'legacy-light', 'legacy-dark']) {
+        await page.evaluate(theme => AlmanionSettings.update(theme.startsWith('legacy') ? { experimental: false, theme: theme.split('-')[1] } : { experimental: true, expMode: theme.split('-')[0], expTheme: theme.split('-')[1] }), theme);
+        await block.hover();
+        await page.waitForTimeout(180);
+        const geometry = await buttons.evaluateAll(nodes => nodes.map(el => {
+            const icon = el.querySelector('svg'), r = icon.getBoundingClientRect(), style = getComputedStyle(icon), button = getComputedStyle(el);
+            return { width: r.width, height: r.height, centerY: r.top + r.height / 2, stroke: style.strokeWidth, cap: style.strokeLinecap, join: style.strokeLinejoin, color: button.color, radius: button.borderRadius };
+        }));
+        for (const item of geometry) {
+            expect(item.width).toBe(16); expect(item.height).toBe(16);
+            expect(item.centerY).toBeCloseTo(geometry[0].centerY, 1);
+            expect(item.stroke).toBe('1.8px'); expect(item.cap).toBe('round'); expect(item.join).toBe('round');
+            expect(item.color).toBe(geometry[0].color); expect(item.radius).toBe('8px');
+        }
+        let hover;
+        for (const button of await buttons.all()) {
+            await button.hover();
+            await page.waitForTimeout(180);
+            const state = await button.evaluate(el => ({ color: getComputedStyle(el).color, background: getComputedStyle(el).backgroundColor, border: getComputedStyle(el).borderColor, transform: getComputedStyle(el).transform, iconTransform: getComputedStyle(el.querySelector('svg')).transform }));
+            hover ||= state;
+            expect(state).toEqual(hover);
+            await page.keyboard.press('Tab');
+            await button.focus();
+            expect(await button.evaluate(el => ({ outline: getComputedStyle(el).outlineStyle, width: getComputedStyle(el).outlineWidth, offset: getComputedStyle(el).outlineOffset }))).toEqual({ outline: 'solid', width: '2px', offset: '2px' });
+        }
+        await page.evaluate(() => document.activeElement?.blur());
+        await block.hover();
+        await page.waitForTimeout(180);
+        await block.screenshot({ path: info.outputPath(`block-actions-${theme}.png`) });
+    }
 });
 
 test('personal notes survive bookmark removal, reload and cannot become public HTML', async ({ page }) => {

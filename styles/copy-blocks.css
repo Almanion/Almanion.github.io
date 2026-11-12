@@ -70,6 +70,66 @@
     right: 3.5rem;
 }
 
+/* One visual treatment for the block's three actions, including deferred tools. */
+html body .main-content .copyable-block > :is(.copy-block-btn, .personal-note-btn, .bookmark-btn) {
+    --block-action-ink: var(--text-secondary);
+    --block-action-emphasis: var(--accent-color);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    top: 0.45rem;
+    width: 26px;
+    height: 26px;
+    min-height: 0;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--block-action-ink);
+    box-shadow: none;
+    line-height: 1;
+    cursor: pointer;
+    transform: none;
+    animation: none;
+    transition: color 150ms ease, background-color 150ms ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+html body .main-content .copyable-block > :is(.personal-note-btn, .bookmark-btn) { opacity: 1; }
+html body .main-content .copyable-block > :is(.copy-block-btn, .personal-note-btn, .bookmark-btn) > svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transform: none;
+}
+html body .main-content .copyable-block > :is(.bookmark-btn.bookmarked, .personal-note-btn.has-note) {
+    --block-action-ink: var(--accent-color);
+    background: color-mix(in srgb, var(--accent-color) 10%, transparent);
+}
+html body .main-content .copyable-block > .copy-block-btn.is-copied { --block-action-ink: var(--success-color); --block-action-emphasis: var(--success-color); }
+html body .main-content .copyable-block > .copy-block-btn.is-error { --block-action-ink: var(--error-color); --block-action-emphasis: var(--error-color); }
+html body .main-content .copyable-block > :is(.copy-block-btn, .personal-note-btn, .bookmark-btn):focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+@media (hover: hover) {
+    body:not(.no-hover) .main-content .copyable-block > :is(.copy-block-btn, .personal-note-btn, .bookmark-btn):hover {
+        color: var(--block-action-emphasis);
+        background: color-mix(in srgb, var(--block-action-emphasis) 10%, transparent);
+        border-color: transparent;
+        box-shadow: none;
+        transform: none;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    html body .main-content .copyable-block > :is(.copy-block-btn, .personal-note-btn, .bookmark-btn) { transition: none; }
+}
+
 @media (max-width: 768px) {
     .copy-block-btn { opacity: 1; transform: none; }
 }
