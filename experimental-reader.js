@@ -68,7 +68,7 @@
                     <span class="exp-reader-part"></span>
                     <span class="exp-reader-count"></span>
                 </div>
-                <div class="exp-reader-progress" role="progressbar" aria-label="Прогресс по разделам" aria-valuemin="1">
+                <div class="exp-reader-progress" role="progressbar" aria-label="Прогресс по подразделам текущего раздела" aria-valuemin="1">
                     <span></span>
                 </div>
             </div>
@@ -398,8 +398,7 @@
         const currentTopic = state.topics[state.index];
         const currentSection = currentTopic.closest('.content-section');
 
-        // При обычном перелистывании достаточно обновить предыдущий и новый
-        // элементы. Полный проход нужен только при первой активации режима.
+        // Update previous/current elements; activation needs a full pass.
         if (Number.isInteger(previousIndex) && previousIndex !== state.index) {
             const previousTopic = state.topics[previousIndex];
             const previousSection = previousTopic && previousTopic.closest('.content-section');
@@ -463,12 +462,14 @@
     function updateReaderUi() {
         const current = state.topics[state.index];
         const part = getPartTitle(current);
-        const currentNumber = state.index + 1;
-        const total = state.topics.length;
+        const sectionTopics = state.topics.filter(topic => topic.parentElement === current.parentElement);
+        const currentNumber = sectionTopics.indexOf(current) + 1;
+        const total = sectionTopics.length;
         const percent = `${(currentNumber / total) * 100}%`;
+        const atEnd = state.index === state.topics.length - 1;
 
         document.body.classList.toggle('exp-reader-at-start', state.index === 0);
-        document.body.classList.toggle('exp-reader-at-end', state.index === total - 1);
+        document.body.classList.toggle('exp-reader-at-end', atEnd);
 
         state.toolbar.querySelector('.exp-reader-part').textContent = part;
         state.toolbar.querySelector('.exp-reader-count').textContent = `${currentNumber} / ${total}`;
@@ -476,11 +477,11 @@
         const progress = state.toolbar.querySelector('.exp-reader-progress');
         progress.setAttribute('aria-valuemax', String(total));
         progress.setAttribute('aria-valuenow', String(currentNumber));
-        progress.setAttribute('aria-valuetext', `Раздел ${currentNumber} из ${total}`);
+        progress.setAttribute('aria-valuetext', `Подраздел ${currentNumber} из ${total}`);
         progress.querySelector('span').style.width = percent;
 
         updateControlState(state.toolbar, 'prev', state.index === 0);
-        updateControlState(state.toolbar, 'next', state.index === total - 1);
+        updateControlState(state.toolbar, 'next', atEnd);
         updateFooterButton('prev', state.index - 1, 'Начало конспекта');
         updateFooterButton('next', state.index + 1, 'Конец конспекта');
         syncSidebarLink(current.id);

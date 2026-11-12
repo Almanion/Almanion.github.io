@@ -8,6 +8,58 @@ async function notes(page) {
     await page.waitForFunction(() => !!window.AlmanionPersonalNotes);
 }
 
+test('reader progress resets per section while next and previous cross section boundaries', async ({ page }) => {
+    const topics = (prefix, count) => Array.from({ length: count }, (_, index) =>
+        `<article class="topic" id="${prefix}-${index + 1}"><h3 class="topic-title">${prefix} ${index + 1}</h3></article>`).join('');
+    await page.route('**/reader-progress-fixture', route => route.fulfill({ contentType: 'text/html; charset=utf-8', body:
+        `<body class="experimental animations-off"><main class="main-content"><section class="content-section"><h2 class="part-title">Молекулярная физика</h2>${topics('molecular', 27)}</section><section class="content-section"><h2 class="part-title">Измерения и погрешности</h2>${topics('measurement', 4)}</section></main><script src="/experimental-reader.js"></script></body>` }));
+    // Exercise the actual reader source without coupling this regression to lesson counts.
+    await page.route('**/experimental-reader.js', route => route.fulfill({ contentType: 'application/javascript; charset=utf-8', path: require.resolve('../experimental-reader.js') }));
+    for (const width of [1366, 360]) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto('/reader-progress-fixture');
+        await page.waitForFunction(() => window.experimentalReader?.isActive());
+        const toolbar = page.locator('.exp-reader-toolbar');
+        const progress = toolbar.locator('[role="progressbar"]');
+        const next = toolbar.locator('[data-reader-action="next"]');
+        const previous = toolbar.locator('[data-reader-action="prev"]');
+        const go = id => page.evaluate(id => experimentalReader.goToId(id, { animate: false }), id);
+        const expectProgress = async (number, total) => {
+            await expect(toolbar.locator('.exp-reader-count')).toHaveText(`${number} / ${total}`);
+            await expect(progress).toHaveAttribute('aria-label', 'Прогресс по подразделам текущего раздела');
+            await expect(progress).toHaveAttribute('aria-valuenow', String(number));
+            await expect(progress).toHaveAttribute('aria-valuemax', String(total));
+            await expect(progress).toHaveAttribute('aria-valuetext', `Подраздел ${number} из ${total}`);
+            const percent = await progress.locator('span').evaluate(span => parseFloat(span.style.width));
+            expect(percent).toBeCloseTo(number / total * 100);
+        };
+        await go('molecular-20');
+        await expectProgress(20, 27);
+        await expect(previous).toBeEnabled(); await expect(next).toBeEnabled();
+        await go('molecular-27');
+        await expectProgress(27, 27);
+        await expect(next).toBeEnabled();
+        await expect(page.locator('body')).not.toHaveClass(/exp-reader-at-end/);
+        await next.click();
+        await expectProgress(1, 4);
+        await expect(toolbar.locator('.exp-reader-part')).toHaveText('Измерения и погрешности');
+        await expect(page).toHaveURL(/#measurement-1$/);
+        await expect(previous).toBeEnabled();
+        await expect(page.locator('body')).not.toHaveClass(/exp-reader-at-start/);
+        await previous.click();
+        await expectProgress(27, 27);
+        await expect(page).toHaveURL(/#molecular-27$/);
+        await go('measurement-4');
+        await expectProgress(4, 4);
+        await expect(next).toBeDisabled();
+        await expect(page.locator('body')).toHaveClass(/exp-reader-at-end/);
+        await go('molecular-1');
+        await expectProgress(1, 27);
+        await expect(previous).toBeDisabled();
+        await expect(page.locator('body')).toHaveClass(/exp-reader-at-start/);
+    }
+});
+
 test.describe('properties block actions', () => {
     test.use({ serviceWorkers: 'block' });
     for (const width of [320, 390]) test(`properties copy, bookmark and note controls fit a ${width}px phone at 125% scale`, async ({ page, context }, info) => {
