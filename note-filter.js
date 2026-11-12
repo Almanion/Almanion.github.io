@@ -36,7 +36,8 @@
         '<span class="note-filter-title">' + (english ? 'Show blocks' : 'Показывать блоки') + '</span>' +
         '<span class="note-filter-count"></span>' +
         '<svg class="note-filter-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>' +
-        '<div class="note-filter-popover"><div class="note-filter-options" role="group" aria-label="' + (english ? 'Block types' : 'Типы блоков') + '"></div>' +
+        '<div class="note-filter-popover"><div class="note-filter-header"><div class="note-filter-heading"><strong>' + (english ? 'Block types' : 'Типы блоков') + '</strong><span class="note-filter-selection" aria-live="polite" aria-atomic="true"></span></div>' +
+        '<p class="note-filter-hint">' + (english ? 'Changes apply immediately' : 'Изменения применяются сразу') + '</p></div><div class="note-filter-options" role="group" aria-label="' + (english ? 'Block types' : 'Типы блоков') + '"></div>' +
         '<div class="note-filter-actions"><button type="button" class="note-filter-reset">' + (english ? 'Show all' : 'Показать всё') + '</button>' +
         '<button type="button" class="note-filter-done">' + (english ? 'Done' : 'Готово') + '</button></div></div>';
     const first = main.querySelector(':scope > .content-section');
@@ -46,6 +47,8 @@
     else main.insertBefore(panel, first);
 
     function apply() {
+        const inputs = Array.from(panel.querySelectorAll('input'));
+        if (selected !== null && inputs.every(input => selected.has(input.value))) selected = null;
         main.querySelectorAll('[data-note-filter-hidden],[data-note-filter-shell]').forEach(el => {
             el.removeAttribute('data-note-filter-hidden');
             el.removeAttribute('data-note-filter-shell');
@@ -95,14 +98,16 @@
                 });
             });
         }
-        panel.querySelectorAll('input').forEach(input => { input.checked = selected === null || selected.has(input.value); });
-        const inputs = Array.from(panel.querySelectorAll('input'));
+        inputs.forEach(input => { input.checked = selected === null || selected.has(input.value); });
         const count = panel.querySelector('.note-filter-count');
         const checked = inputs.filter(input => input.checked).length;
         count.textContent = selected === null ? (english ? 'All' : 'Все') : checked + '/' + inputs.length;
         count.setAttribute('aria-label', english ? checked + ' of ' + inputs.length + ' types selected' : 'Выбрано типов: ' + checked + ' из ' + inputs.length);
+        const selection = panel.querySelector('.note-filter-selection');
+        selection.textContent = checked + '/' + inputs.length;
+        selection.setAttribute('aria-label', count.getAttribute('aria-label'));
         panel.dataset.active = String(selected !== null);
-        panel.querySelector('.note-filter-reset').disabled = selected === null;
+        panel.querySelector('.note-filter-reset').textContent = selected === null ? (english ? 'Hide all' : 'Убрать всё') : (english ? 'Show all' : 'Показать всё');
         window.dispatchEvent(new CustomEvent('almanion:note-filter-changed'));
     }
     function renderOptions() {
@@ -139,10 +144,7 @@
         save();
     });
     panel.querySelector('.note-filter-reset').addEventListener('click', () => {
-        // Reset becomes disabled after restoring all types. Keep focus inside
-        // the picker so this does not accidentally count as leaving the menu.
-        panel.querySelector('.note-filter-done').focus({ preventScroll: true });
-        selected = null; save();
+        selected = selected === null ? new Set() : null; save();
     });
     const summary = panel.querySelector('summary');
     summary.title = english ? 'Show blocks' : 'Показывать блоки';

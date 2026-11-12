@@ -47,7 +47,8 @@ test('checkboxes update immediately, remain open and restore across reload', asy
     const trigger = page.locator('.note-filter summary');
     await expect(page.locator('.note-filter-count')).toHaveText('Все');
     await trigger.click();
-    await expect(page.locator('.note-filter-reset')).toBeDisabled();
+    await expect(page.locator('.note-filter-reset')).toBeEnabled();
+    await expect(page.locator('.note-filter-reset')).toHaveText('Убрать всё');
     const remark = page.locator('.note-filter input[value="remark"]');
     await remark.uncheck();
     await expect(remark).not.toBeChecked();
@@ -62,7 +63,44 @@ test('checkboxes update immediately, remain open and restore across reload', asy
     await expect(page.locator('.note-filter-popover')).toBeVisible();
     await expect(page.locator('.note-filter-count')).toHaveText('Все');
     await expect(remark).toBeChecked();
+    await expect(page.locator('.note-filter-reset')).toHaveText('Убрать всё');
     await expect(page.locator('.remark-box').first()).not.toHaveAttribute('data-note-filter-hidden', '');
+});
+
+test('bulk action toggles all and none, keeps focus and saves an empty selection', async ({ page }, info) => {
+    const trigger = page.locator('.note-filter summary');
+    const bulk = page.locator('.note-filter-reset');
+    const inputs = page.locator('.note-filter input');
+    const total = await inputs.count();
+    await trigger.click();
+    await bulk.click();
+    await expect(bulk).toHaveText('Показать всё');
+    await expect(bulk).toBeFocused();
+    await expect(page.locator('.note-filter-popover')).toBeVisible();
+    await expect(page.locator('.note-filter-count')).toHaveText(`0/${total}`);
+    await expect(page.locator('.note-filter-selection')).toHaveText(`0/${total}`);
+    await expect(page.locator('.note-filter input:checked')).toHaveCount(0);
+    await expect(page.locator('.topic.exp-reader-current .note-filter-empty')).toBeVisible();
+    await page.screenshot({ path: info.outputPath('picker-none.png') });
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('note-block-filter:' + location.pathname)))).toEqual([]);
+    await page.reload();
+    await trigger.click();
+    await expect(page.locator('.note-filter input:checked')).toHaveCount(0);
+    await expect(bulk).toHaveText('Показать всё');
+    await bulk.click();
+    await expect(bulk).toHaveText('Убрать всё');
+    await expect(bulk).toBeFocused();
+    await expect(page.locator('.note-filter input:checked')).toHaveCount(total);
+    await expect(page.locator('[data-note-filter-hidden],.note-filter-empty')).toHaveCount(0);
+    await page.keyboard.press('Space');
+    await expect(bulk).toHaveText('Показать всё');
+    await expect(page.locator('.note-filter input:checked')).toHaveCount(0);
+    await inputs.first().check();
+    await expect(bulk).toHaveText('Показать всё');
+    await page.screenshot({ path: info.outputPath('picker-partial.png') });
+    await bulk.click();
+    await expect(page.locator('.note-filter input:checked')).toHaveCount(total);
+    await expect(page.locator('.note-filter-popover')).toBeVisible();
 });
 
 test('picker closes on Escape, outside click and keyboard focus exit', async ({ page }) => {
@@ -138,5 +176,8 @@ test('English block types and picker controls stay fully localized', async ({ pa
     await expect(page.locator('.note-filter-options')).toContainText('Definitions');
     await expect(page.locator('.note-filter-options')).toContainText('Other text');
     await expect(page.locator('.note-filter-done')).toHaveText('Done');
+    await expect(page.locator('.note-filter-reset')).toHaveText('Hide all');
+    await page.locator('.note-filter-reset').click();
     await expect(page.locator('.note-filter-reset')).toHaveText('Show all');
+    await expect(page.locator('.note-filter input:checked')).toHaveCount(0);
 });
