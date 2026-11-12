@@ -99,12 +99,14 @@ test.describe("standalone geography", () => {
                 await chooseGroup(page, group);
                 await expect(map.locator('#study-country-key button')).toHaveCount(count);
                 if (group === '2') {
-                    await expect(map.locator('#study-country-key button[data-iso="SWZ"]')).toHaveCount(0);
-                    await map.locator('#study-country-key button[data-iso="BHR"]').click();
-                    await expect(map.locator('#study-selection')).toContainText('Бахре́йн — Мана́ма');
-                    await expect(map.locator('#study-main-map [data-map-label="BHR"]')).toContainText('Мана́ма');
-                    await expect(map.locator('#study-main-map [data-capital="BHR"]')).toHaveAttribute('data-capital-name', 'Мана́ма');
-                    await page.screenshot({ path: info.outputPath(`bahrain-${width}-${dark ? 'dark' : 'light'}.png`), fullPage: true });
+                    await expect(map.locator('#study-country-key button[data-iso="BHR"]')).toHaveCount(0);
+                    await map.locator('#study-country-key button[data-iso="SWZ"]').click();
+                    await expect(map.locator('#study-selection')).toContainText('Эсвати́ни — Мбаба́не');
+                    const label = map.locator('#study-main-map [data-map-label="SWZ"]');
+                    for (const capital of ['Мбаба́не', 'Лоба́мба']) {
+                        await expect(label).toContainText(capital);
+                        await expect(map.locator(`#study-main-map [data-capital="SWZ"][data-capital-name="${capital}"]`)).toBeVisible();
+                    }
                 }
             }
             await map.locator('#study-country-key button[data-iso="PRT"]').click();
