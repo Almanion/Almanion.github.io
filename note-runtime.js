@@ -14,7 +14,7 @@
         readerToolsStyles: 'styles/reader-tools.css?v=20261002-2',
         personalNotes: 'personal-notes.js?v=20261018-1',
         offline: 'offline-library.js?v=20261002-2',
-        printStyles: 'styles/print.css?v=20261016-3',
+        printStyles: 'styles/print.css?v=20261113-4',
         filterStyles: 'styles/note-filter.css?v=20261113-1',
         filter: 'note-filter.js?v=20261113-1',
         settings: 'settings.js?v=20261002-1',

@@ -98,6 +98,77 @@ body.experimental .print-export-button:hover {
     border-color: color-mix(in srgb, var(--exp-border) 40%, var(--exp-accent) 60%);
 }
 
+/* Одинаковые действия бокового меню, включая ещё не загруженные инструменты. */
+.sidebar .print-export-menu-slot {
+    display: grid;
+    gap: 8px;
+}
+
+.sidebar .print-export-menu-slot > button:is(.print-export-button, .reader-tool-menu-button) {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.65rem;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    margin: 0;
+    padding: 0.68rem 0.78rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    box-shadow: none;
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: left;
+    cursor: pointer;
+    transform: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.16s ease, background-color 0.16s ease,
+        border-color 0.16s ease, opacity 0.16s ease;
+}
+
+.sidebar .print-export-menu-slot > button:is(.print-export-button, .reader-tool-menu-button) > svg {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    margin: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.sidebar .print-export-menu-slot > button > span {
+    min-width: 0;
+    flex: 1;
+}
+
+.sidebar .print-export-menu-slot .print-export-chevron { display: none; }
+
+body:not(.no-hover) .sidebar .print-export-menu-slot > button:is(.print-export-button, .reader-tool-menu-button):not(:disabled):hover,
+.sidebar .print-export-menu-slot > button:is(.print-export-button, .reader-tool-menu-button):not(:disabled):active {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    border-color: color-mix(in srgb, var(--border-color) 65%, var(--accent-color) 35%);
+}
+
+.sidebar .print-export-menu-slot > button:is(.print-export-button, .reader-tool-menu-button):focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+.sidebar .print-export-menu-slot > button:is(.print-export-button, .reader-tool-menu-button):disabled {
+    opacity: 0.62;
+    cursor: wait;
+    transform: none;
+}
+
 .print-export-button-floating {
     position: fixed;
     right: 1rem;
@@ -422,6 +493,7 @@ body.experimental .print-export-dialog input[type="checkbox"] { accent-color: va
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .sidebar .print-export-menu-slot > button:is(.print-export-button, .reader-tool-menu-button),
     .print-export-button,
     .print-export-overlay,
     .print-export-dialog,
