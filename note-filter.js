@@ -37,7 +37,7 @@
         '<span class="note-filter-count"></span>' +
         '<svg class="note-filter-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>' +
         '<div class="note-filter-popover"><div class="note-filter-header"><div class="note-filter-heading"><strong>' + (english ? 'Block types' : 'Типы блоков') + '</strong><span class="note-filter-selection" aria-live="polite" aria-atomic="true"></span></div>' +
-        '<p class="note-filter-hint">' + (english ? 'Changes apply immediately' : 'Изменения применяются сразу') + '</p></div><div class="note-filter-options" role="group" aria-label="' + (english ? 'Block types' : 'Типы блоков') + '"></div>' +
+        '</div><div class="note-filter-options" role="group" aria-label="' + (english ? 'Block types' : 'Типы блоков') + '"></div>' +
         '<div class="note-filter-actions"><button type="button" class="note-filter-reset">' + (english ? 'Show all' : 'Показать всё') + '</button>' +
         '<button type="button" class="note-filter-done">' + (english ? 'Done' : 'Готово') + '</button></div></div>';
     const first = main.querySelector(':scope > .content-section');
