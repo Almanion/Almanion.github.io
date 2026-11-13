@@ -265,19 +265,21 @@ function initNavigation() {
     const topics = document.querySelectorAll('.topic, .content-section');
     const navGroupToggles = document.querySelectorAll('.nav-group-toggle');
     
-    // Раскрываем все группы по умолчанию
+    // Группы раскрыты при загрузке; состояние не сохраняется.
     document.querySelectorAll('.nav-group').forEach(group => {
         group.classList.add('open');
     });
     
-    // Все группы раскрыты при загрузке, но любую можно свернуть для экономии
-    // места. Состояние намеренно не сохраняется между визитами.
     navGroupToggles.forEach((toggle, index) => {
         const group = toggle.closest('.nav-group');
         const submenu = group?.querySelector(':scope > .nav-submenu');
         if (!group || !submenu) return;
         const icon = toggle.querySelector('.toggle-icon');
-        if (icon) toggle.appendChild(icon);
+        if (icon) {
+            icon.setAttribute('aria-hidden', 'true');
+            icon.innerHTML = '<svg viewBox="0 0 24 24" focusable="false"><path d="m6 9 6 6 6-6"/></svg>';
+            toggle.appendChild(icon);
+        }
         if (!submenu.id) submenu.id = `nav-submenu-${index + 1}`;
         toggle.setAttribute('aria-controls', submenu.id);
         toggle.setAttribute('aria-expanded', 'true');

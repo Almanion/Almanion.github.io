@@ -515,6 +515,10 @@ mark.search-result-term {
 
 /* Компактное оглавление: группы раскрыты при загрузке и могут сворачиваться. */
 .nav-group {
+    --nav-group-rail: 1.05rem;
+    --nav-group-inset: 0.5rem;
+    --nav-group-dot: 0.34rem;
+    --nav-group-end: var(--spacing);
     margin: 0.7rem 0 0.85rem;
 }
 
@@ -538,45 +542,82 @@ mark.search-result-term {
     transition: color 0.15s ease, background-color 0.15s ease;
 }
 
+/* Точка и продолжение линии используют одну ось. Отступы подменю сохраняются. */
+.sidebar .nav-group > :is(.nav-group-toggle, .nav-group-heading) {
+    position: relative;
+    width: calc(100% - 2 * var(--nav-group-inset));
+    margin-inline: var(--nav-group-inset);
+    padding: 0.45rem calc(var(--nav-group-end) - var(--nav-group-inset))
+        0.45rem calc(var(--nav-group-rail) - var(--nav-group-inset) - var(--nav-group-dot) / 2 + 0.5px);
+    border-radius: 12px;
+}
+
 .nav-group-toggle::before,
 .nav-group-heading::before {
     content: '';
-    width: 0.34rem;
-    height: 0.34rem;
+    width: var(--nav-group-dot);
+    height: var(--nav-group-dot);
     flex: 0 0 auto;
     border-radius: 50%;
     background: currentColor;
     opacity: 0.5;
 }
 
+.nav-group-toggle::after,
+.nav-group-heading::after {
+    content: '';
+    position: absolute;
+    left: calc(var(--nav-group-rail) - var(--nav-group-inset));
+    top: calc(50% + var(--nav-group-dot) / 2);
+    bottom: 0;
+    width: 1px;
+    background: var(--border-color);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.14s ease;
+}
+
+.nav-group.open > .nav-group-toggle::after,
+.nav-group.open > .nav-group-heading::after {
+    opacity: 1;
+}
+
 .nav-group-toggle .toggle-icon {
     display: inline-grid;
     width: 1.35rem;
     height: 1.35rem;
+    flex: 0 0 auto;
     margin-left: auto;
     place-items: center;
-    border-radius: 6px;
-    font-size: 0.62rem;
+    font-size: 0;
     transform: rotate(-90deg);
-    transition: transform 0.18s ease, background-color 0.15s ease;
+    transition: transform 0.18s ease;
+}
+
+.nav-group-toggle .toggle-icon svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .nav-group.open > .nav-group-toggle .toggle-icon {
     transform: rotate(0deg);
 }
 
-.nav-group-toggle:hover {
+.nav-group-toggle:hover,
+.nav-group-toggle:focus-visible {
     color: var(--text-primary);
     background: var(--bg-tertiary);
 }
 
-.nav-group-toggle:hover .toggle-icon {
-    background: var(--bg-secondary);
-}
-
 .nav-submenu {
     max-height: 0;
-    margin: 0 0.72rem 0 1.05rem;
+    margin: 0 0.72rem 0 var(--nav-group-rail);
     padding: 0 0 0 0.62rem;
     overflow: hidden;
     visibility: hidden;
@@ -2718,6 +2759,11 @@ input:focus:not(:focus-visible) {
 }
 
 @media (max-width: 768px) {
+    .nav-group {
+        --nav-group-rail: 1rem;
+        --nav-group-end: 0.85rem;
+    }
+
     .nav-group-toggle,
     .nav-group-heading {
         padding: 0.42rem var(--m-pad) 0.46rem;
@@ -2728,7 +2774,7 @@ input:focus:not(:focus-visible) {
     .nav-group.open .nav-submenu,
     .nav-group:not(.open) .nav-submenu {
         margin-right: 0.7rem;
-        margin-left: 1rem;
+        margin-left: var(--nav-group-rail);
         padding-left: 0.56rem;
     }
 
