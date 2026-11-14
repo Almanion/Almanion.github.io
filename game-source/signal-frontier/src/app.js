@@ -907,12 +907,13 @@
     $("matter-counter").hidden = !E.development.matter.enabled(state);
     $("field-matter").textContent = state.economy.matter || 0;
     const economy = state.campaign ? E.development.summary(state) : null;
-    $("field-capacity").textContent = economy
-      ? `${economy.population - economy.armyReserved} / ${economy.capacity}`
-      : selectedUnits().length;
+    $("field-army-used").textContent = economy ? economy.population - economy.armyReserved : selectedUnits().length;
+    $("field-army-denominator").hidden = !economy;
     $("worker-capacity-counter").hidden = !economy;
     if (economy) {
-      $("field-workers").textContent = `${economy.workers} / ${economy.workerCapacity}`;
+      $("field-army-limit").textContent = economy.capacity;
+      $("field-worker-used").textContent = economy.workers;
+      $("field-worker-limit").textContent = economy.workerCapacity;
       for (const [id, reserved, used, capacity] of [
         ["army", economy.armyReserved, economy.population, economy.capacity],
         ["worker", economy.workerReserved, economy.workers + economy.workerReserved, economy.workerCapacity],

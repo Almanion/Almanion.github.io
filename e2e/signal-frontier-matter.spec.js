@@ -39,6 +39,12 @@ async function fits(page) {
       .map((b) => b.textContent);
   }));
   expect(bad).toEqual([]);
+  const overlap = await page.locator(".field-economy").evaluate((el) => {
+    const a = el.getBoundingClientRect(), b = document.getElementById("tactical").getBoundingClientRect();
+    return Math.min(a.right, b.right) > Math.max(a.left, b.left) + 1 &&
+      Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top) + 1;
+  });
+  expect(overlap).toBe(false);
 }
 for (const [width, height, mobile, renderer, engine] of [
   [1440, 900, false, "babylon"], [390, 844, true, "babylon"],
@@ -74,6 +80,15 @@ for (const [width, height, mobile, renderer, engine] of [
     expect(E.development.mineWorkers(await snap(page), s.campaign.mines.find((m) => m.id === "M01"))).toHaveLength(2);
     await page.reload(); await page.locator("#continue").click(); await page.clock.runFor(200);
     expect((await snap(page)).economy.matter).toBe(returned.economy.matter);
+    // Stress the typography without granting resources or changing the operation.
+    const beforeLayout = await snap(page);
+    await page.evaluate(() => {
+      for (const [id, text] of Object.entries({ "field-alloy": "7900", "field-matter": "2660",
+        "field-army-used": "120", "field-army-limit": "120", "field-worker-used": "48", "field-worker-limit": "48" }))
+        document.getElementById(id).textContent = text;
+    });
+    await fits(page); expect(await snap(page)).toEqual(beforeLayout);
+    await page.screenshot({ path: info.outputPath("matter-large-counters.png") });
     expect(errors).toEqual([]);
   } finally { await context.close(); if (extra) await extra.close(); }
 });
