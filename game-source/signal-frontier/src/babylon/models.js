@@ -121,7 +121,7 @@ export class Models {
       mining=!this.memory&&this.u.work==="gather"&&this.pose.move<.05,
       working=arrived||mining,a=arrived?Math.atan2(service.contact.y-this.u.y,service.contact.x-this.u.x):this.a;
     this.prefab('drone-chassis',0,0,0,a);
-    for(let i=0;i<Math.min(4,this.u.cargo||0);i++)this.box(-3.5+i%2*4,-2.2+Math.floor(i/2)*4.4,3,3.2,13,2.5,P.copper,a);
+    for(let i=0;i<Math.min(4,this.u.cargo||0);i++)this.box(-3.5+i%2*4,-2.2+Math.floor(i/2)*4.4,3,3.2,13,2.5,this.u.cargoType === "matter" ? "#b5a0cf" : P.copper,a);
     this.light(9.8,0,.7,4,9,1.5,a);
     const reach=arrived?Math.max(15,this.E.dist(this.u,service.contact)):working?23:19,
       z=arrived?9+(service.active&&!this.ui.reduced?Math.sin(this.s.t*4.5+this.u.id)*2:0):7;
@@ -282,7 +282,7 @@ export class Models {
     else if(u.kind==="runner")this.runner();else if(u.kind==="scout")this.scout();else if(u.kind==="drone")this.drone();
     else if(u.kind==="artillery")this.artillery();else if(u.kind==="rocket")this.rocket();
     else if(u.kind==="tank"||u.kind==="mortar")this.tank();else if(u.kind==="flamer"||u.kind==="bomber")this.specialist();
-    else if(["base","outpost","barracks","foundry","arsenal","bunker","logistics"].includes(u.kind))this.building();else this.fortification();
+    else if(["base","outpost","barracks","foundry","arsenal","bunker","logistics","condenser"].includes(u.kind))this.building();else this.fortification();
   }
   scenery(s,ui) {
     const base=(p)=>{this.parts.opacity=1;this.u=p;this.floor=this.E.elevation(p.x,p.y,this.view.mapId);this.a=0;this.ui=ui;this.memory=false;this.accent=P.mint;};
@@ -302,6 +302,12 @@ export class Models {
     }
     for(const mine of s.campaign?.mines||[]) {
       if(mine.unknown||!this.view.inView(mine.x,mine.y,130))continue;base(mine);
+      if(mine.resource === "matter"){
+        this.disc(0,0,48,0,2,P.dark);this.disc(0,0,34,2,2,"#535268");
+        const n=mine.remaining>0?6:2;
+        for(let i=0;i<n;i++){const a=i*Math.PI/3;this.shape("rock",Math.cos(a)*24,Math.sin(a)*24,12,9,4,8+(i%3)*4,"#a495b8",a);}
+        this.disc(0,0,14,2,1,mine.remaining>0?"#9a87b2":"#39414c");continue;
+      }
       const n=mine.remaining>0?5:2;
       for(let i=0;i<n;i++){const a=i*2.4;this.shape("rock",Math.cos(a)*19,Math.sin(a)*17,21,17,0,16+(i%3)*6,i%2?P.steel:P.field,a);}
     }

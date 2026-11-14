@@ -278,8 +278,9 @@ test("current shop exposes roles, placement cost, locked technology and exact dr
   expect(queued.economy.spent).toBe(170);
   expect(queued.units.find((u) => u.id === base).jobs).toHaveLength(1);
   await page.locator(".job-select").click();
-  await expect(page.locator("#field-alloy")).toHaveText("47");
-  await expect(drone).toContainText("Не хватает 3 сплава");
+  // This new operation has not advanced production in tactical pause.
+  await expect(page.locator("#field-alloy")).toHaveText("60");
+  await expect(drone).toBeEnabled();
   expect(
     E.restore(await page.evaluate(() => SignalGame.snapshot())),
   ).not.toBeNull();

@@ -2416,6 +2416,9 @@ body:not([data-mode="playing"]) .combat-vitals, body:not([data-mode="playing"]) 
 .field-economy > span { position:relative; }
 .field-economy em { position:absolute; top:100%; right:0; padding:2px 4px; border-radius:3px; background:#14272af2; color:#b8d1c3; font-size:9px; font-style:normal; white-space:nowrap; }
 .field-economy .capacity-full strong { color:#e4c38f; }
+.field-economy .matter-counter strong, .matter-cost { color:#c3b2dc; }
+.matter-cost { font-size:10px; font-style:normal; }
+.roster-job[data-purchase="staff-condenser"] { min-height:44px; }
 @media (max-width:380px) {
   .field-economy { gap:5px; padding:5px; }
   .field-economy strong { font-size:12px; }

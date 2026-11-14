@@ -22,6 +22,7 @@
     "arsenal",
     "bunker",
     "logistics",
+    "condenser",
     "bastion",
     "turret",
     "jammer",
@@ -859,7 +860,7 @@
       cast(c,-.5,0,21,17,4.8,7,5,a,pilotCeramic,1.1);
       cap(c,-1.5,0,10.5,11,12,1,a,dark);
       for(let i=0;i<Math.min(4,u.cargo||0);i++)
-        cap(c,-3.5+(i%2)*4,-2.2+Math.floor(i/2)*4.4,3,3.2,13,2.5,a,copper);
+        cap(c,-3.5+(i%2)*4,-2.2+Math.floor(i/2)*4.4,3,3.2,13,2.5,a,u.cargoType === "matter" ? {top:"#b4a1cb",side:"#746983",front:"#635a72",edge:"#d5c3ed"} : copper);
       // The glazing is translucent, so each actual cargo chunk stays visible.
       poly(c,[[-6.3,-4.8],[3.3,-4.8],[3.3,4.8],[-6.3,4.8]].map(([x,y])=>point(x,y,15.7,a)),"#beded318","#b4d0bf90");
       lightStrip(c,[[9.6,-2],[9.6,2]],10,a,accent,1.7);
@@ -1422,6 +1423,19 @@
               "#78988b",
               1.6,
             );
+        } else if (kind === "condenser") {
+          plate(c,disc(w*.28,0,0,20),4,8,a,dark);
+          plate(c,disc(w*.19,0,0,20),12,height*.5,a,fieldArmor);
+          for(const side of [-1,1]){
+            cap(c,side*w*.3,-h*.05,w*.15,h*.58,4,height*.85,a,alloy);
+            if(roof)cap(c,side*w*.3,-h*.05,w*.16,h*.58,height*.85+4,4,a,ceramic);
+            bone(c,[side*w*.3,-h*.23,height],[side*w*.17,-h*.12,height+10],2,a,dark);
+          }
+          if(roof){
+            plate(c,disc(w*.18,0,0,20),height*.5+12,5,a,alloy);
+            plate(c,disc(w*.13,0,0,20),height*.5+17,2,a,{top:"#b4a1cb",side:"#746983",front:"#635a72",edge:"#d5c3ed"});
+            cap(c,0,-h*.15,w*.37,h*.08,height+8,4,a,ceramic);
+          }
         } else if (kind === "logistics") {
           // Two sealed supply racks and a raised signal spine. Construction
           // shares the real scaffold/progress and repair effects of other buildings.
@@ -2084,6 +2098,7 @@
       arsenal: building,
       bunker,
       logistics: building,
+      condenser: building,
       outpost: building,
       turret,
       jammer,
@@ -2165,6 +2180,14 @@
         shapes = [],
         add = (shape, height, angle = bodyAngle) =>
           shapes.push({ shape, height, angle });
+      if (u.kind === "condenser") {
+        const w=frame?.w||58,h=frame?.h||58,turn=frame?.a||0;
+        add(rounded(w-8,h-8,8),3,turn);
+        for(const side of [-1,1])add(rounded(w*.16,h*.58,3,side*w*.3,-h*.05),u.hp>0?32:7,turn);
+        add(disc(w*.19,0,0,16),u.hp>0?34:9,turn);
+        if(u.hp>0)add(chamfer(w*.37,h*.08,1,0,-h*.15),44,turn);
+        return shapes;
+      }
       if (u.kind === "outpost") {
         const w=frame?.w||58,h=frame?.h||58,turn=frame?.a||0,
           collapsed=u.hp<=0,assembling=u.build>0;

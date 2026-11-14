@@ -2707,6 +2707,15 @@
       const large = E.construction.enabled(s), scale = large ? 1.8 : 1,
         rock = large ? LARGE_ORE_ROCK : ORE_ROCK;
       for (const m of s.campaign.mines) {
+        if(m.resource === "matter") {
+          c.save();c.translate(m.x,m.y-this.z(m.x,m.y));
+          ellipse(c,0,0,48,30,"#1c2735");ellipse(c,0,0,33,21,"#60586f");
+          for(let i=0;i<6;i++){const a=i*Math.PI/3,x=Math.cos(a)*26,y=Math.sin(a)*17;
+            c.save();c.translate(x,y);plate(c,rock,0,7+(i%3)*3,a,{top:m.remaining?"#b4a1cb":"#6f687b",side:"#635a72",front:"#4d485b",edge:"#d5c3ed50"});c.restore();}
+          if(ui.mode === "tactical"){c.font="10px Segoe UI";c.textAlign="center";c.fillStyle="#c6b8d9";
+            c.fillText(m.remaining+" ◇ · "+E.development.mineWorkers(s,m).length+"/2",0,54);}
+          c.restore();continue;
+        }
         if (!["highlands", "districts", "districts-east"].includes(this.mapId))
           ellipse(c, m.x, m.y + 5, 34, 21, "#071b2866");
         else
@@ -2882,7 +2891,7 @@
               u.team === 0 &&
               u.hp > 0 &&
               u.hp < E.C[u.kind].hp &&
-              !["outpost", "base", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(
+              !["outpost", "base", "barracks", "foundry", "arsenal", "bunker", "logistics", "condenser"].includes(
                 u.kind,
               ) &&
               u.repair === 0 &&
@@ -4013,7 +4022,7 @@
         if (
           u.team ||
           u.hp <= 0 ||
-          !["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(
+          !["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics", "condenser"].includes(
             u.kind,
           ) ||
           !this.inView(u.x, u.y)
@@ -4064,7 +4073,8 @@
           ).length;
           label = "Добыча · " + n + " дрона";
           progress = n ? 1 : 0;
-        } else if (u.kind === "arsenal") label = "Нет исследований";
+        } else if (u.kind === "condenser") { label = "Материя · " + E.development.mineWorkers(s,E.development.mineFor(s,u)).length + "/2"; progress=1; }
+        else if (u.kind === "arsenal") label = "Нет исследований";
         else if (u.kind === "logistics") { label = "+12 · +4"; progress = 1; }
         else if (u.kind === "bunker") {
           const crew = this.garrisonActivity.get(u.id) || [], inside = crew.filter((v) => v.care.inside).length;

@@ -16,6 +16,7 @@
     weapons: '<path d="m14 2-9 12h6l-1 8 9-12h-6Z"/>',
     armor: '<path d="m12 3 8 3v6c0 5-8 9-8 9S4 17 4 12V6Zm0 4v10"/>',
     repair: '<path d="m14 4 3 3 4-1a6 6 0 0 1-7 7L6 21l-3-3 8-8a6 6 0 0 1 3-7Zm-9 13 2 2"/>',
+    condenser: '<path d="M5 19V7h14v12ZM8 16h8M9 5V3m6 2V3M12 7v6m-3-3 3 3 3-3"/>',
     alloy: '<path d="m12 3 8 9-8 9-8-9Zm-8 9h16M12 3v18"/>',
   };
   const icon = (name) => ["rifle", "scout", "artillery", "drone"].includes(name) && root.SignalSelectionPanel
@@ -136,6 +137,7 @@
       const E = root.SignalEngine,
         s = this.options.state();
       const target = {
+        matter: ["economy"],
         network: ["research", "network"],
         command: ["research", "command"],
         barracks: ["production", "barracks"],
@@ -291,7 +293,7 @@
           .filter(({ j }) => !action || j.action === action);
         if (!jobs.length)
           return '<p class="queue-empty">Очередь свободна <span>0 / 3</span></p>';
-        return `<div class="queue-caption">Очередь ${u.jobs.length} / 3 <span>Нажатие — отмена · возврат 75%</span></div><ol class="production-queue">${jobs.map(({ j, i }) => `<li><button class="job-select" data-job="${u.id}:${j.id}" aria-label="Отменить: ${ITEMS[j.action].label}; вернуть ${Math.floor(j.cost * 0.75)} сплава"><span>${ITEMS[j.action].label}</span><small>${i === 0 ? (ITEMS[j.action].pop && summary.population > summary.capacity ? "Нет мест" : Math.ceil(j.remaining) + " с") : "Ожидает · " + (i + 1)}</small><i style="--progress:${(1 - j.remaining / j.duration) * 100}%"></i></button></li>`).join("")}</ol>`;
+        return `<div class="queue-caption">Очередь ${u.jobs.length} / 3 <span>${D.matter.enabled(s) ? "До начала 100% · после начала 75%" : "Нажатие — отмена · возврат 75%"}</span></div><ol class="production-queue">${jobs.map(({ j, i }) => `<li><button class="job-select" data-job="${u.id}:${j.id}" aria-label="Отменить: ${ITEMS[j.action].label}; вернуть ${D.matter.price({cost:D.matter.refund(s,j).alloy,matter:D.matter.refund(s,j).matter})}"><span>${ITEMS[j.action].label}</span><small>${i === 0 ? (ITEMS[j.action].pop && summary.population > summary.capacity ? "Нет мест" : Math.ceil(j.remaining) + " с") : "Ожидает · " + (i + 1)}</small><i style="--progress:${(1 - j.remaining / j.duration) * 100}%"></i></button></li>`).join("")}</ol>`;
       };
       const descriptions = {
         rifle: "Универсальная пехота · прикрытие и наступление",
@@ -572,6 +574,7 @@
           (items[u.kind]?.label || "Посадочный узел") +
           (u.construction ? " №" + u.id : ""),
         roles = {
+          condenser: "На кратере · 2 зонда · тёмная материя",
           logistics: "+12 снабжения · +4 зонда · 2×2",
           bunker: "4 места · дальность и обзор +25%",
           barracks: "Бойцы и дозорные",
@@ -593,7 +596,7 @@
         reason = (o) =>
           o.reason === "funds"
             ? `Не хватает ${Math.max(0, o.cost - s.economy.alloy)} сплава`
-            : this.options.reason(o.reason);
+            : o.reason === "matter" ? `Не хватает ${Math.max(0, o.matter - (s.economy.matter || 0))} материи` : this.options.reason(o.reason);
       const key = JSON.stringify([
         this.deckView,
         this.tab,
@@ -624,7 +627,7 @@
         return tile(
           "develop-" + kind,
           items[kind].label,
-          `${items[kind].cost} сплава · ${items[kind].time} с`,
+          `${D.matter.price(items[kind])} · ${items[kind].time} с`,
           o.allowed ? roles[kind] : reason(o),
           `data-construct="${kind}" ${o.allowed ? "" : "disabled"}`,
           kind,
@@ -642,7 +645,7 @@
               ? "-" + site
               : ""),
           item.label,
-          done ? "Исследовано" : `${item.cost} сплава · ${item.time} с`,
+          done ? "Исследовано" : `${D.matter.price(item)} · ${item.time} с`,
           done
             ? "Действует всю операцию"
             : o.allowed
@@ -659,13 +662,13 @@
           this.deckView === "group"
             ? `<button class="deck-producer" data-select="${u.id}" title="Открыть панель здания">${name(u)} ›</button>`
             : `<span>${name(u)} · очередь ${u.jobs.length} / 3</span>`;
-        return `<div class="deck-queue-heading">${owner}${cycle ? '<button data-queue-cycle="-1" aria-label="Предыдущее производство">‹</button><button data-queue-cycle="1" aria-label="Следующее производство">›</button>' : ""}<small>Нажатие — отмена · возврат 75%</small></div><div class="free-queue">${[
+        return `<div class="deck-queue-heading">${owner}${cycle ? '<button data-queue-cycle="-1" aria-label="Предыдущее производство">‹</button><button data-queue-cycle="1" aria-label="Следующее производство">›</button>' : ""}<small>${D.matter.enabled(s) ? "До начала 100% · после начала 75%" : "Нажатие — отмена · возврат 75%"}</small></div><div class="free-queue">${[
           0, 1, 2,
         ]
           .map((i) => {
             const j = u.jobs[i];
             return j
-              ? `<button class="job-select" data-job="${u.id}:${j.id}" aria-label="Отменить: ${items[j.action].label} · вернуть ${Math.floor(j.cost * 0.75)} сплава"><span>${items[j.action].label}</span><small>${i ? "Ожидает" : D.supplyBlocked(s, j) ? "Нет снабжения" : j.remaining ? Math.ceil(j.remaining) + " с" : "Выход занят"}</small><i style="--progress:${(1 - j.remaining / j.duration) * 100}%"></i></button>`
+              ? `<button class="job-select" data-job="${u.id}:${j.id}" aria-label="Отменить: ${items[j.action].label} · вернуть ${D.matter.price({cost:D.matter.refund(s,j).alloy,matter:D.matter.refund(s,j).matter})}"><span>${items[j.action].label}</span><small>${i ? "Ожидает" : D.supplyBlocked(s, j) ? "Нет снабжения" : j.remaining ? Math.ceil(j.remaining) + " с" : "Выход занят"}</small><i style="--progress:${(1 - j.remaining / j.duration) * 100}%"></i></button>`
               : '<div class="free-queue-empty">Свободно</div>';
           })
           .join("")}</div>`;
@@ -734,7 +737,7 @@
             tile(
               "",
               "Отменить стройку",
-              `Вернуть ${Math.floor(selected.construction.paid * 0.75)} сплава`,
+              `Вернуть ${-E.supplyStatus(s, "cancel-build", selected.id).cost} сплава`,
               "Площадка освободится",
               `data-action="cancel-build" data-site="${selected.id}"`,
             ),
@@ -758,7 +761,7 @@
               }[selected.kind] || [],
             section =
               this.section === "troops" && !troops.length
-                ? selected.kind === "bunker" ? "care" : selected.kind === "logistics" ? "service" : "tech"
+                ? selected.kind === "bunker" ? "care" : ["logistics", "condenser"].includes(selected.kind) ? "service" : "tech"
                 : this.section;
           sections = `<div class="building-tabs">${troops.length ? `<button data-section="troops" aria-pressed="${section === "troops"}">Выпуск</button>` : ""}${tech.length ? `<button data-section="tech" aria-pressed="${section === "tech"}">Технологии</button>` : ""}${E.support.facility(selected) ? `<button data-section="care" aria-pressed="${section === "care"}">${selected.kind === "bunker" ? "Гарнизон" : "Лечение"}</button>` : ""}<button data-section="service" aria-pressed="${section === "service"}">Здание</button></div>`;
           if (section === "care" && E.support.facility(selected)) {
@@ -781,6 +784,20 @@
                     root.SignalSelectionPanel.icon(u.kind) + '<small class="roster-badge">' + (u.care.inside ? '◆' : '↗') + '</small></button>' :
                     '<span class="free-queue-empty" title="' + title + '">·</span>';
                 }).join('') + '</div>';
+            }
+          } else if (selected.kind === "condenser" && section === "service") {
+            const mine = D.mineFor(s, selected), crew = D.mineWorkers(s, mine).length,
+              o = E.supplyStatus(s, "staff-condenser", selected.id);
+            extra = `<div class="deck-build-status"><strong>Зонды ${crew} / 2 · в кратере ${mine.remaining} материи</strong><small>Прочность ${Math.ceil(selected.hp)} / ${E.C.condenser.hp} · груз поступает после доставки</small></div>`;
+            cards = [tile("develop-staff-condenser", "Назначить зондов", "До двух на кратере",
+              o.allowed ? "Перевести ближайших с добычи сплава" : reason(o),
+              `data-action="staff-condenser" data-site="${selected.id}" ${o.allowed ? "" : "disabled"}`, "drone"),
+              tile("", "Показать на карте", "Перейти к конденсатору", "", `data-focus="${selected.x},${selected.y}"`, "condenser")];
+            if (selected.hp < E.C.condenser.hp) {
+              const repair = C.repairOffer(s, selected.id);
+              cards.push(tile("develop-repair-drone", "Ремонт зондом", "12 прочности/с · 1 сплава за 8",
+                repair.allowed ? "После ремонта вернётся к добыче" : reason(repair),
+                `data-action="repair-drone" data-site="${selected.id}" ${repair.allowed ? "" : "disabled"}`, "repair"));
             }
           } else if (section === "service") {
             const offer = C.repairOffer(s, selected.id),
@@ -882,7 +899,7 @@
         extra = queue(ready[index], ready.length > 1);
       } else if (this.tab === "build") {
         heading = "Стройка";
-        cards = ["barracks", "outpost", ...(D.logistics(s) ? ["logistics"] : []), "bunker", "foundry", "arsenal"].map(construct);
+        cards = ["barracks", "outpost", ...(D.matter.enabled(s) ? ["condenser"] : []), ...(D.logistics(s) ? ["logistics"] : []), "bunker", "foundry", "arsenal"].map(construct);
       } else if (this.tab === "production") {
         heading = "Армия и производство";
         cards = ["barracks", "foundry", "arsenal"].map((kind) => {
@@ -901,9 +918,9 @@
         cards = [
           construct("outpost"),
           ...alive
-            .filter((u) => ["base", "outpost"].includes(u.kind))
+            .filter((u) => ["base", "outpost", "condenser"].includes(u.kind))
             .map((u) => {
-              const workers = alive.filter(
+              const workers = u.kind === "condenser" ? D.mineWorkers(s, D.mineFor(s, u)).length : alive.filter(
                 (w) => w.kind === "drone" && w.node === u.id && !w.buildingId,
               ).length;
               return tile(
@@ -913,12 +930,13 @@
                   ? "Строится · " +
                       Math.floor((1 - u.build / items[u.kind].time) * 100) +
                       "%"
-                  : `Зонды: ${workers} / ${D.miningCapacity(s)}`,
-                "Открыть выпуск и очередь",
+                  : `Зонды: ${workers} / ${D.miningCapacity(s, D.mineFor(s, u))}`,
+                u.kind === "condenser" ? "Рабочие и добыча материи" : "Открыть выпуск и очередь",
                 `data-select="${u.id}"`,
-                "alloy",
+                u.kind === "condenser" ? "condenser" : "alloy",
               );
             }),
+          ...(D.matter.enabled(s) ? [construct("condenser")] : []),
         ];
       } else {
         heading = "Технологии";

@@ -42,6 +42,7 @@
     barracks: { hp: 420, r: 30, speed: 0, range: 0, damage: 0, rate: 0 },
     foundry: { hp: 500, r: 34, speed: 0, range: 0, damage: 0, rate: 0 },
     bunker: { hp: 800, r: 50, speed: 0, range: 0, damage: 0, rate: 0 },
+    condenser: { hp: 420, r: 32, speed: 0, range: 0, damage: 0, rate: 0 },
     logistics: { hp: 360, r: 22, speed: 0, range: 0, damage: 0, rate: 0 },
     arsenal: { hp: 440, r: 30, speed: 0, range: 0, damage: 0, rate: 0 },
   };
@@ -54,7 +55,7 @@
     ["tank", 640, 840], ["mortar", 840, 940],
     ["scout", 0, 980], ["drone", 0, 240],
     ["base", 0, 800], ["outpost", 0, 840], ["barracks", 0, 360],
-    ["bunker", 0, 360], ["logistics", 0, 240], ["foundry", 0, 400], ["arsenal", 0, 400], ["jammer", 0, 720],
+    ["bunker", 0, 360], ["logistics", 0, 240], ["condenser", 0, 400], ["foundry", 0, 400], ["arsenal", 0, 400], ["jammer", 0, 720],
     ["turret", 540, 800], ["bastion", 620, 940], ["citadel", 840, 980],
   ].map(([kind, range, sight]) => [kind, Object.freeze({ range, sight })])));
   const balanceEligible = (s) => ["frontier-9","frontier-10"].includes(s?.campaign?.id),
@@ -458,7 +459,7 @@
     unit(s, "runner", 1, 1320, 120);
     return s;
   }
-  function make(mode = "frontier") {
+  function make(mode = "frontier", options = {}) {
     return mode === "classic"
       ? makeClassic()
       : campaign.make(
@@ -474,7 +475,7 @@
             "frontier-9", "frontier-10",
           ].includes(mode)
             ? mode
-            : "frontier-8",
+            : "frontier-8", options,
         );
   }
   function terminalSites(s) {
@@ -624,6 +625,10 @@
     return { allowed: true, reason: null, cost, anchor, spawn };
   }
   function purchase(s, action, site) {
+    if (action === "staff-condenser") {
+      const o = campaign.offer(s, action, site);
+      return o.allowed ? support.assignResource(s, o.workers, o.mineId) : o;
+    }
     if (s.campaign) {
       const result = campaign.purchase(s, action, site);
       if (result.allowed && fogged(s)) recon.update(s, true);
@@ -1551,7 +1556,7 @@
   const commandableBuilding = (u) =>
     u &&
     u.team === 0 &&
-    ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(u.kind);
+    ["base", "outpost", "condenser", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(u.kind);
   function commandSelection(s, ids, point, targetId = null) {
     if (
       s.status !== "playing" ||
@@ -1571,6 +1576,8 @@
         targetId === null
           ? null
           : s.units.find((u) => u.id === targetId && (u.hp > 0 || u.kind==='carrier'));
+    if (target?.kind === "condenser" && workers.length && !target.build && target.hp === C.condenser.hp)
+      return support.assignResource(s, workers.map((u) => u.id), target.site).allowed;
     if(s.east?.claimed&&target?.kind==='carrier'&&workers.length){
       for(const w of workers){w.eastRepair=target.id;w.path=pathTo(w,target,C.drone.r);w.order={x:target.x,y:target.y};}
       return true;
@@ -2539,7 +2546,7 @@
   }
   function restore(value) {
     if (value?.fog !== undefined) return null;
-    if ([3, 4, 5, 6, 7, 8, 9, 10, 11, 12].includes(value?.version)) {
+    if ([3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].includes(value?.version)) {
       const state = campaign.restore(value);
       if (
         !state ||

@@ -10,6 +10,7 @@
     bunker: [3, 3],
     outpost: [4, 4],
     logistics: [2, 2],
+    condenser: [3, 3],
   });
   const enabled = (s) => ["frontier-8", "frontier-9", "frontier-10"].includes(s?.campaign?.id);
   // Existing saves retain their reserved 3x3 area; new extractors reserve 4x4.
@@ -60,13 +61,18 @@
     Math.max(b.y - p.y, 0, p.y - b.y - b.h),
   );
   const blockedOre = (s, b, kind) => s.campaign.mines.find((m) =>
-    oreDistance(b, m) < (kind === "outpost" ? ORE.setback : ORE.radius + 16));
+    !(kind === "condenser" && m.resource === "matter") && oreDistance(b, m) < (kind === "outpost" ? ORE.setback : ORE.radius + 16));
   const repairable = (u) =>
     u && !u.team && u.hp > 0 && !u.build &&
-    ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(u.kind);
+    ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics", "condenser"].includes(u.kind);
   function create(E) {
     const worlds = new WeakMap(),
       graphs = new Map();
+    // Automatic service orders preserve scarce-resource crews when another
+    // worker can do the job. An explicitly selected worker still obeys.
+    const laborPriority = (s, w) => E.development.matter.enabled(s) &&
+      (s.campaign.mines.find((m) => m.id === w.mineId)?.resource === "matter" ||
+        s.units.some((u) => u.id === w.node && u.kind === "condenser")) ? 1 : 0;
     function resumeWorker(s, u) {
       if (u.buildingId) {
         const site = s.units.find((b) => b.id === u.buildingId);
@@ -137,7 +143,7 @@
         reserved = assigned.map((w) => w.workerTask.point),
         workers = s.units.filter((w) => w.kind === "drone" && !w.team && w.hp > 0 &&
           (chosen ? chosen.has(w.id) : !w.buildingId && w.workerTask?.kind !== "repair"))
-          .sort((a, b) => E.dist(a, target) - E.dist(b, target) || a.id - b.id),
+          .sort((a, b) => laborPriority(s, a) - laborPriority(s, b) || E.dist(a, target) - E.dist(b, target) || a.id - b.id),
         plans = [];
       if (assigned.length >= SERVICE.crew) return fail("repair-crew");
       for (const worker of workers) {
@@ -483,10 +489,10 @@
       if (s.economy.alloy < item.cost) return fail("funds");
       return { allowed: true, reason: null, cost: item.cost, placement: true };
     }
-    function protectedPoints(s) {
+    function protectedPoints(s, ownMine = null) {
       return [
         ...(s.east?[{x:5280,y:2080,r:100},{x:5360,y:2040,r:75},{x:4880,y:3000,r:75}]:[]),
-        ...s.campaign.mines.map((p) => ({ ...p, r: 32 })),
+        ...s.campaign.mines.filter((p) => p.id !== ownMine).map((p) => ({ ...p, r: 32 })),
         ...s.caches.filter((p) => !p.taken).map((p) => ({ ...p, r: 18 })),
         { ...s.relay, r: 75 },
         ...E.terminalSites(s).map((p) => ({ ...p, r: 75 })),
@@ -527,18 +533,25 @@
         )
       )
         return fail("occupied");
+      if (kind === "condenser") {
+        const mine = s.campaign.mines.find((m) => m.resource === "matter" && E.dist(preview, m) <= 40);
+        if (!mine) return fail("matter-site");
+        if (!mine.remaining) return fail("empty-resource");
+        if (s.units.some((u) => u.kind === kind && u.hp > 0 && u.site === mine.id)) return fail("occupied-mine");
+        preview.site = mine.id;
+      }
       const ore = blockedOre(s, b, kind);
       if (ore) {
         if (kind === "outpost") preview.site = ore.id;
         return fail(kind === "outpost" ? "ore-clearance" : "objective-space");
       }
-      if (protectedPoints(s).some((p) => contains(b, p, p.r)))
+      if (protectedPoints(s, kind === "condenser" ? preview.site : null).some((p) => contains(b, p, p.r)))
         return fail("objective-space");
       if (kind === "outpost") {
         const mine = s.campaign.mines
           .filter(
             (m) =>
-              m.id !== "home" &&
+              m.id !== "home" && m.resource !== "matter" &&
               m.remaining > 0 &&
               E.dist(preview, m) <= ORE.range &&
               E.explored(s, 0, m),
@@ -563,7 +576,8 @@
       if (!E.travelClear(work, beyond, 20, proposed)) return fail("exit");
       let oreRoute = [];
       if (preview.site) {
-        const mine = s.campaign.mines.find((m) => m.id === preview.site);
+        const source = s.campaign.mines.find((m) => m.id === preview.site),
+          mine = kind === "condenser" ? beyond : source;
         oreRoute = E.pathTo({ ...work, map: proposed }, mine, E.C.drone.r);
         if (
           E.dist(work, mine) > 12 &&
@@ -589,7 +603,7 @@
             !u.workerTask &&
             (!point.builderId || u.id === point.builderId),
         )
-        .sort((a, b) => E.dist(a, work) - E.dist(b, work) || a.id - b.id);
+        .sort((a, b) => laborPriority(s, a) - laborPriority(s, b) || E.dist(a, work) - E.dist(b, work) || a.id - b.id);
       for (const worker of workers) {
         const route = E.pathTo({ ...worker, map: proposed }, work, E.C.drone.r);
         if (
@@ -648,7 +662,7 @@
       };
       if (["barracks", "foundry"].includes(kind))
         u.rally = advance(u, o.work, 70);
-      if (kind === "outpost") {
+      if (["outpost", "condenser"].includes(kind)) {
         u.site = o.preview.site;
         u.salvaged = false;
       }
@@ -678,6 +692,7 @@
         )
         .sort(
           (a, b) =>
+            laborPriority(s, a) - laborPriority(s, b) ||
             E.dist(a, u.construction.work) - E.dist(b, u.construction.work) ||
             a.id - b.id,
         );
@@ -713,7 +728,7 @@
       );
       if (!u || s.status !== "playing")
         return { allowed: false, reason: "construction" };
-      const amount = Math.floor(u.construction.paid * 0.75);
+      const amount = E.development.matter.buildRefund(s, u, E.development.items(s)[u.kind], E.C[u.kind].hp);
       release(s, u);
       u.hp = 0;
       u.build = 0;
@@ -758,6 +773,7 @@
       );
       if (!u.build) {
         release(s, u);
+        if (u.kind === "condenser") { worker.node = u.id; worker.mineId = u.site; delete worker.workTarget; }
         E.emit(s, "post-ready", u.x, u.y);
       }
     }
@@ -785,7 +801,7 @@
       if (!validateWorkers(s)) return false;
       if (!enabled(s))
         return !s.units.some(
-          (u) => u.construction || u.buildingId || ["arsenal", "bunker", "logistics"].includes(u.kind),
+          (u) => u.construction || u.buildingId || ["arsenal", "bunker", "logistics", "condenser"].includes(u.kind),
         );
       const assigned = new Set(),
         boxes = [],
@@ -836,7 +852,7 @@
             if (
               boxes.some((other) => intersects(b, other, 16)) ||
               (c.resourceSpacing === 1 && blockedOre(s, b, u.kind)) ||
-              protectedPoints(s).some((p) => contains(b, p, p.r)) ||
+              protectedPoints(s, u.kind === "condenser" ? u.site : null).some((p) => contains(b, p, p.r)) ||
               s.units.some(
                 (p) =>
                   p.hp > 0 &&
@@ -855,6 +871,8 @@
             )
           )
             return false;
+          if (u.kind === "condenser" && (!E.development.matter.enabled(s) ||
+            !s.campaign.mines.some((m) => m.resource === "matter" && m.id === u.site && E.dist(u, m) <= 40))) return false;
           paid += price;
         } else if (u.construction) return false;
         if (u.buildingId !== undefined && u.buildingId !== null) {

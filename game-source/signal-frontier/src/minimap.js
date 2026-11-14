@@ -156,7 +156,7 @@
           label:
             p.remaining === 0
               ? "Месторождение исчерпано"
-              : "Сплав: " + p.remaining,
+              : (p.resource === "matter" ? "Тёмная материя: " : "Сплав: ") + p.remaining,
         });
       for (const p of source.caches || []) {
         if (p.taken) {

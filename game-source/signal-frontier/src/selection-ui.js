@@ -1,7 +1,7 @@
 /* Bounded, paginated roster. No canvas or per-frame portrait rendering. */
 (function (root) {
   "use strict";
-  const names = { carrier: "Носитель архива", logistics: "Узел снабжения", hero: "Разведчик", rifle: "Боец", scout: "Дозорный", artillery: "Артиллерия", drone: "Зонд",
+  const names = { condenser: "Конденсатор", carrier: "Носитель архива", logistics: "Узел снабжения", hero: "Разведчик", rifle: "Боец", scout: "Дозорный", artillery: "Артиллерия", drone: "Зонд",
     base: "База", outpost: "Экстрактор", barracks: "Казармы", foundry: "Тяжёлый цех", arsenal: "Арсенал", bunker: "Бункер" };
   const shapes = {
     carrier: '<path d="M8 22h48v26H8ZM15 16h34v28H15ZM9 49h46M12 55h12m16 0h12M23 25h18v10H23Z"/>',
@@ -12,6 +12,7 @@
     artillery: '<rect x="5" y="43" width="52" height="14" rx="7"/><path d="M10 43l6-7h30l7 7M18 36V26a5 5 0 0 1 5-5h13a5 5 0 0 1 5 5v10ZM41 28h14v5H41M55 25h5v11h-5M23 21v-5h10v5"/><path class="visor" d="M20 27h4v7h-4Z"/><circle cx="13" cy="50" r="3"/><circle cx="25" cy="50" r="3"/><circle cx="37" cy="50" r="3"/><circle cx="49" cy="50" r="3"/>',
     drone: '<rect x="12" y="18" width="28" height="28" rx="8"/><rect x="19" y="24" width="14" height="16" rx="2"/><path d="M26 24v16m-7-8h14M15 19l-6-8H4v8l8 8m23-7 3-9h8v8l-8 9M15 45l-6 8H4v-8l8-7m23 7 3 8h8v-8l-8-7M40 26l7-4 6 3m-1-4 7 3v5l-6 1m-13 8 7 4 6-3m-1 4 7-3v-5l-6-1"/><path class="visor" d="M36 29h3v6h-3Z"/>',
     base: '<path d="m32 7 13 9v12l12 7v19H7V35l12-7V16Zm-13 9 13 8 13-8M19 28v14h26V28M7 35l12 7m26 0 12-7"/><path class="visor" d="M27 29h10v13H27Z"/>',
+    condenser: '<path d="M10 54V19h44v35ZM18 46h28M24 19V9m16 10V9M32 25v15m-9-8 9 8 9-8"/><circle class="visor" cx="32" cy="26" r="4"/>',
     outpost: '<path d="M5 47V25a9 9 0 0 1 9-9h21a8 8 0 0 1 8 8v23M5 47h54v10H5ZM43 27h5m-5 11h5M48 47V18a5 5 0 0 1 5-5h1a5 5 0 0 1 5 5v29M54 13V5M51 5h6M14 47V35h21v12M14 40h21"/><circle cx="31" cy="25" r="5"/><path class="visor" d="M19 33h11v3H19Zm32-9h5v12h-5ZM14 51h21v3H14Z"/>',
     bunker: '<path d="M5 56V32l10-14h34l10 14v24ZM5 32h54M25 56V42h14v14M15 18v-6h34v6"/><path class="visor" d="M14 25h8v4h-8Zm28 0h8v4h-8ZM11 38h8v5h-8Zm34 0h8v5h-8Z"/><path d="M9 50h11m24 0h11M29 18v14m6-14v14"/>',
     barracks: '<path d="M6 55V27l26-15 26 15v28ZM14 27l18-10 18 10M32 12V4m0 0h14v7H32"/><path class="visor" d="M25 36h14v19H25Z"/><path d="M13 36h6m26 0h6M13 43h6m26 0h6"/>',
@@ -53,7 +54,7 @@
       const j = u.jobs?.[i];
       if (!j) return '<span class="roster-slot" aria-label="Свободное место очереди"><span>·</span></span>';
       const label = names[j.action] || items[j.action]?.label || j.action, progress = Math.round((1 - j.remaining / j.duration) * 100), blocked = root.SignalEngine.development.supplyBlocked(s, j);
-      return `<button class="roster-job" data-key="j${j.id}" ${mobile ? "data-production-cancel" : "data-cancel-job"}="${u.id}:${j.id}" title="Отменить: ${label} · вернуть ${Math.floor(j.cost * .75)} сплава" aria-label="Отменить: ${label}, вернуть ${Math.floor(j.cost * .75)} сплава">${icon(j.action)}<strong>${label}</strong><span>${i ? "Ожидает" : blocked ? "Нет снабжения" : j.remaining ? Math.ceil(j.remaining) + " с" : "Выход занят"}</span><i style="--progress:${progress}%"></i></button>`;
+      return `<button class="roster-job" data-key="j${j.id}" ${mobile ? "data-production-cancel" : "data-cancel-job"}="${u.id}:${j.id}" title="Отменить: ${label} · вернуть ${root.SignalEngine.development.matter.price({cost:root.SignalEngine.development.matter.refund(s,j).alloy,matter:root.SignalEngine.development.matter.refund(s,j).matter})}" aria-label="Отменить: ${label}, вернуть ${root.SignalEngine.development.matter.price({cost:root.SignalEngine.development.matter.refund(s,j).alloy,matter:root.SignalEngine.development.matter.refund(s,j).matter})}">${icon(j.action)}<strong>${label}</strong><span>${i ? "Ожидает" : blocked ? "Нет снабжения" : j.remaining ? Math.ceil(j.remaining) + " с" : "Выход занят"}</span><i style="--progress:${progress}%"></i></button>`;
     }).join("")}</div>`;
   }
   class SelectionPanel {
@@ -68,7 +69,7 @@
         if (cancel) {
           const result = options.buy("cancel", cancel.dataset.productionCancel);
           this.feedback = { id: Number(cancel.dataset.productionCancel.split(":")[0]), until: performance.now() + 2600,
-            message: result?.allowed ? `Возвращено ${-result.cost} сплава` : this.reason(result?.reason) };
+            message: result?.allowed ? `Возвращено ${root.SignalEngine.development.matter.price({cost:-result.cost,matter:-result.matter})}` : this.reason(result?.reason) };
           this.render(); return;
         }
         const b = e.target.closest("[data-train]");
@@ -76,7 +77,7 @@
         // Revalidate through the normal transaction even if funds or selection changed since the last paint.
         const result = options.buy(b.dataset.train, Number(b.dataset.site));
         this.feedback = { id: Number(b.dataset.site), until: performance.now() + 2600,
-          message: result?.allowed ? names[b.dataset.train] + " · в очереди" : this.reason(result?.reason) };
+          message: result?.allowed ? (b.dataset.train === "staff-condenser" ? "Зонды направлены к кратеру" : names[b.dataset.train] + " · в очереди") : this.reason(result?.reason) };
         this.render();
       });
       el.addEventListener("click", (e) => {
@@ -98,7 +99,7 @@
         } else if (b.dataset.cancelJob) {
           const result = options.buy("cancel", b.dataset.cancelJob);
           this.feedback = { id: Number(b.dataset.cancelJob.split(":")[0]), until: performance.now() + 2600,
-            message: result?.allowed ? `Возвращено ${-result.cost} сплава` : this.reason(result?.reason) };
+            message: result?.allowed ? `Возвращено ${root.SignalEngine.development.matter.price({cost:-result.cost,matter:-result.matter})}` : this.reason(result?.reason) };
         }
         else if (b.dataset.purchase) options.buy(b.dataset.purchase, b.dataset.site);
         else if (b.dataset.inspect) options.inspect(Number(b.dataset.inspect));
@@ -129,8 +130,8 @@
         const item = items[a], offer = E.supplyStatus(s, a, u.id),
           allowed = !u.build && offer.allowed,
           reason = u.build ? "Здание строится" : this.reason(offer.reason),
-          label = `${names[a]} · ${item.cost} сплава · ${item.time} с · ${item.pop ? item.pop + " снабжения · " : ""}${roles[a]}${allowed ? "" : " · " + reason}`;
-        return `<button class="production-card" data-key="train${u.id}-${a}" data-train="${a}" data-site="${u.id}" aria-disabled="${!allowed}" aria-label="${escape(label)}" title="${escape(label)}">${icon(a)}<strong>${names[a]}</strong><span class="production-cost">${alloyIcon}${item.cost}<small>${item.time} с</small></span><span class="production-lock">${allowed ? roles[a] : escape(reason)}</span></button>`;
+          label = `${names[a]} · ${E.development.matter.price(item)} · ${item.time} с · ${item.pop ? item.pop + " снабжения · " : ""}${roles[a]}${allowed ? "" : " · " + reason}`;
+        return `<button class="production-card" data-key="train${u.id}-${a}" data-train="${a}" data-site="${u.id}" aria-disabled="${!allowed}" aria-label="${escape(label)}" title="${escape(label)}">${icon(a)}<strong>${names[a]}</strong><span class="production-cost">${alloyIcon}${item.cost}${item.matter ? `<em class="matter-cost"> ◇ ${item.matter}</em>` : ""}<small>${item.time} с</small></span><span class="production-lock">${allowed ? roles[a] : escape(reason)}</span></button>`;
       }).join("");
       const message = this.feedback && performance.now() < this.feedback.until ? this.feedback.message : "";
       const pager = buildings.length > 1 ? `<div class="production-pager"><button data-production-page="-1" aria-label="Предыдущее производство">‹</button><span>${buildings.indexOf(u) + 1}/${buildings.length}</span><button data-production-page="1" aria-label="Следующее производство">›</button></div>` : "";
@@ -173,9 +174,9 @@
         head += '</div>';
         let body = u.kind==='carrier'?'<button class="roster-inspect" data-archive-move="'+u.id+'">Двигаться к доку</button><p>ПКМ по носителю — следовать отрядом. Зонды ремонтируют корпус.</p>':'';
         if (building) {
-          body = '<div class="roster-section-heading"><strong>' + (care ? bunker ? 'Гарнизон' : 'Лечение' : u.build ? 'Строительство' : u.kind === 'logistics' ? 'Снабжение' : 'Очередь') + '</strong>';
+          body = '<div class="roster-section-heading"><strong>' + (care ? bunker ? 'Гарнизон' : 'Лечение' : u.build ? 'Строительство' : u.kind === 'logistics' ? 'Снабжение' : u.kind === 'condenser' ? 'Добыча' : 'Очередь') + '</strong>';
           if (facility && !bunker) body += '<button class="care-toggle" data-care-view="' + u.id + '" aria-pressed="' + care + '">' + (care ? '‹ Очередь' : 'Лечение ' + patients.length + '/4') + '</button>';
-          else body += ' <span>' + (care ? patients.length + '/4' : u.build || u.kind === 'logistics' ? '' : jobs.length + '/3') + '</span>';
+          else body += ' <span>' + (care ? patients.length + '/4' : u.build || ['logistics', 'condenser'].includes(u.kind) ? '' : jobs.length + '/3') + '</span>';
           body += '</div>';
           if (care) {
             body += '<div class="roster-queue care-slots">' + [0, 1, 2, 3].map((i) => {
@@ -187,8 +188,9 @@
           } else if (u.build) {
             const progress = Math.round((1 - u.build / (items[u.kind]?.time || u.build)) * 100);
             body += '<div class="roster-build"><span>' + progress + '%</span><progress value="' + progress + '" max="100"></progress><small>' + (u.construction?.builderId === null ? 'Ожидает строителя' : 'Зонд работает') + '</small></div>';
-          } else if (u.kind === 'logistics') body += '<p class="roster-task">+12 снабжения армии · +4 зонда</p><div class="roster-stats"><span>Армия<b>' + E.development.capacity(s) + '/120</b></span><span>Зонды<b>' + E.development.workerCapacity(s) + '/48</b></span></div>';
-          else body += queue(s, u) + '<small class="roster-note">' + (jobs.length ? 'Нажмите на заказ для отмены · возврат 75%' : 'Новые заказы появятся здесь') + '</small>';
+          } else if (u.kind === 'condenser') body += '<p class="roster-task">Тёмная материя · зонды ' + E.development.mineWorkers(s, E.development.mineFor(s, u)).length + '/2</p><button class="roster-job" data-purchase="staff-condenser" data-site="' + u.id + '" ' + (E.supplyStatus(s,'staff-condenser',u.id).allowed ? '' : 'disabled') + '>Назначить зондов</button>';
+          else if (u.kind === 'logistics') body += '<p class="roster-task">+12 снабжения армии · +4 зонда</p><div class="roster-stats"><span>Армия<b>' + E.development.capacity(s) + '/120</b></span><span>Зонды<b>' + E.development.workerCapacity(s) + '/48</b></span></div>';
+          else body += queue(s, u) + '<small class="roster-note">' + (jobs.length ? E.development.matter.enabled(s) ? 'Отмена до начала — 100% · после — 75%' : 'Нажмите на заказ для отмены · возврат 75%' : 'Новые заказы появятся здесь') + '</small>';
         } else {
           const stat = E.stats(s, u), task = u.care ? u.care.inside ? u.care.exit ? 'Ожидает свободного выхода' : u.care.garrison ? 'В гарнизоне · дальность и обзор +25%' : 'Лечится · выход автоматически' : u.care.garrison ? 'Идёт в бункер' : 'Идёт на лечение' : u.mineId && !u.workerTask ? 'Добывает ресурс' : u.workerTask?.kind === 'repair' ? 'Ремонтирует здание' : u.buildingId ? 'Строит здание' : u.order?.followId ? 'Следует за ведущим' : u.order ? 'Выполняет приказ' : u.kind === 'hero' ? 'Личное управление' : 'Готов к приказу';
           body += '<p class="roster-task">' + task + '</p>';

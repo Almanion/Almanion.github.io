@@ -352,7 +352,7 @@ export class BabylonView extends Legacy {
       if(mine.unknown||!this.inView(mine.x,mine.y,130))continue;
       c.font="10px Segoe UI";c.textAlign="center";c.fillStyle="#b1c8b8";
       const crew=E.development.logistics(s)?E.development.mineWorkers(s,mine).length:null;
-      c.fillText(String(mine.remaining)+(crew===null?"":" · "+Math.min(6,crew)+"/6"),mine.x,mine.y-this.z(mine.x,mine.y)+54);
+      c.fillText(String(mine.remaining)+(mine.resource==="matter"?" ◇":"")+(crew===null?"":" · "+Math.min(E.development.miningCapacity(s,mine),crew)+"/"+E.development.miningCapacity(s,mine)),mine.x,mine.y-this.z(mine.x,mine.y)+54);
     }
     for(const camp of s.campaign?.camps||[]) {
       const source=s.units.find(u=>u.id===camp.source&&u.hp>0);if(!source)continue;

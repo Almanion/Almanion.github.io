@@ -9,6 +9,7 @@
     typeof module !== "undefined" && module.exports
       ? require("./districts.js")
       : root.SignalDistricts;
+  const Matter = typeof module !== "undefined" && module.exports ? require("./matter.js") : root.SignalMatter;
   const mapped = (s) => ["frontier-9","frontier-10"].includes(s?.campaign?.id);
   const East = typeof module !== "undefined" && module.exports ? require("./east.js") : root.SignalEast;
   const eastern = s => s?.campaign?.id === "frontier-10";
@@ -296,7 +297,8 @@
       artillery: Object.freeze({ ...PROFILES["frontier-9"].items.artillery, pop: 4 }),
       logistics: Object.freeze({ cost: 90, time: 24, pop: 0, label: "Узел снабжения" }) }) });
   const EAST_RULES=Object.freeze({...LOGISTICS_RULES,version:12,mines:East.mines});
-  const rules = (s) => eastern(s) ? EAST_RULES : logistics(s) ? LOGISTICS_RULES : PROFILES[s.campaign?.id] || PROFILES["frontier-1"];
+  const baseRules = (s) => eastern(s) ? EAST_RULES : logistics(s) ? LOGISTICS_RULES : PROFILES[s.campaign?.id] || PROFILES["frontier-1"];
+  const rules = (s) => Matter.enabled(s) ? Matter.rules(baseRules(s)) : baseRules(s);
   const items = (s) => rules(s).items;
   const cacheValue=(s,c)=>eastern(s)&&c.id==="E-C01"?120:eastern(s)&&c.id==="E-C02"?180:rules(s).cache;
   const expedition = (s) =>
@@ -384,7 +386,7 @@
       s.units.filter((u) => u.hp > 0 && (!kind || u.kind === kind));
     const ready = (s, kind) => alive(s, kind).filter((u) => !u.build);
     const nodes = (s) =>
-      alive(s).filter((u) => ["base", "outpost"].includes(u.kind) && !u.build);
+      alive(s).filter((u) => ["base", "outpost", "condenser"].includes(u.kind) && !u.build);
     const mineFor = (s, u) =>
       u &&
       s.campaign.mines.find(
@@ -399,7 +401,7 @@
       queued(s).reduce((n, j) => n + items(s)[j.action].pop, 0);
     const capacity = (s) => logistics(s) ? Math.min(120, 24 + ready(s, "logistics").length * 12) : 6 + ready(s, "outpost").length * 3;
     const workerCapacity = (s) => logistics(s) ? Math.min(48, 16 + ready(s, "logistics").length * 4) : expedition(s) ? 24 : 16;
-    const miningCapacity = (s) => logistics(s) ? 6 : 4;
+    const miningCapacity = (s, mine) => mine?.resource === "matter" ? 2 : logistics(s) ? 6 : 4;
     const activeCount = (s) => logistics(s) ? alive(s).length + queued(s).filter((j) => ["rifle", "scout", "artillery", "drone"].includes(j.action)).length : s.units.length;
     const objectLimit = (s) => logistics(s) ? 512 : rules(s).unitLimit;
     const mineWorkers = (s, mine) => alive(s, "drone").filter((u) => !u.buildingId && !u.workerTask &&
@@ -424,6 +426,7 @@
       const u = initUnit(E.unit(s, "drone", 0, p.x, p.y));
       u.node = node.id;
       u.cargo = 0;
+      if (Matter.enabled(s)) u.cargoType = "alloy";
       u.work = "out";
       u.workTime = 0;
       u.fright = 0;
@@ -440,7 +443,12 @@
       };
       return u;
     }
-    function make(profile = "frontier-8") {
+    function make(profile = "frontier-8", options = {}) {
+      if (options.resources === 2 && ["frontier-9", "frontier-10"].includes(profile)) {
+        const s = Matter.initialize(make(profile), worker);
+        E.refreshRecon(s);
+        return s;
+      }
       if (profile === "frontier-10") { const s=makeDistricts();s.campaign.id=profile;s.version=12;for(const u of s.units)u.map="districts-east";return East.initialize(s,E,initUnit,arm); }
       if (profile === "frontier-9") return makeDistricts();
       const config = PROFILES[profile];
@@ -744,6 +752,7 @@
       return s;
     }
     function offer(s, action, site) {
+      if (action === "staff-condenser") return Matter.staffOffer(s, E, site, { mineWorkers, mineFor });
       if (action === "repair-drone") return E.construction.repairOffer(s, site);
       if (action === "stop-repair")
         return { allowed: s.status === "playing" && s.units.some((w) => w.hp > 0 &&
@@ -768,7 +777,7 @@
           return u
             ? {
                 allowed: true,
-                cost: -Math.floor(u.construction.paid * 0.75),
+                cost: -Matter.buildRefund(s, u, items(s)[u.kind], E.C[u.kind].hp),
                 producer: u,
               }
             : { allowed: false, reason: "construction", cost: 0 };
@@ -776,14 +785,14 @@
       }
       const ITEMS = items(s);
       const item = Object.hasOwn(ITEMS, action) ? ITEMS[action] : null,
-        fail = (reason) => ({ allowed: false, reason, cost: item?.cost || 0 });
+        fail = (reason) => ({ allowed: false, reason, cost: item?.cost || 0, matter: item?.matter || 0 });
       if (s.status !== "playing") return fail("ended");
       if (action === "cancel") {
         const [id, jobId] = String(site).split(":").map(Number),
           producer = alive(s).find((u) => u.id === id),
           job = producer?.jobs?.find((j) => j.id === jobId);
         return job
-          ? { allowed: true, cost: -Math.floor(job.cost * 0.75), producer, job }
+          ? { allowed: true, cost: -Matter.refund(s, job).alloy, matter: -Matter.refund(s, job).matter, producer, job }
           : fail("order");
       }
       if (!item) return fail("unknown");
@@ -842,7 +851,7 @@
             return fail("researching");
         } else if (action === "drone") {
           producer =
-            nodes(s).find((u) => String(u.id) === String(site)) ||
+            nodes(s).find((u) => u.kind !== "condenser" && String(u.id) === String(site)) ||
             (!site ? E.living(s, "base") : null);
           if (!producer) return fail("post");
           if (
@@ -943,7 +952,8 @@
         if ((producer.jobs || []).length >= 3) return fail("queue");
       }
       if (s.economy.alloy < item.cost) return fail("funds");
-      return { allowed: true, reason: null, cost: item.cost, producer, anchor };
+      if ((item.matter || 0) > (s.economy.matter || 0)) return fail("matter");
+      return { allowed: true, reason: null, cost: item.cost, matter: item.matter || 0, producer, anchor };
     }
     function purchase(s, action, site) {
       if (action === "repair-drone") return E.construction.repair(s, site);
@@ -970,12 +980,14 @@
         s.economy.alloy += refund;
         s.economy.recovered += refund;
         s.campaign.refunded += refund;
+        if (Matter.enabled(s)) { s.economy.matter -= o.matter; s.campaign.matter.recovered -= o.matter; }
         E.emit(s, "salvage", o.producer.x, o.producer.y, { amount: refund });
-        return { allowed: true, cost: o.cost };
+        return { allowed: true, cost: o.cost, matter: o.matter };
       }
       const item = items(s)[action];
       s.economy.alloy -= item.cost;
       s.economy.spent += item.cost;
+      if (Matter.enabled(s)) { s.economy.matter -= item.matter; s.campaign.matter.spent += item.matter; }
       if (o.anchor) {
         const u = initUnit(E.unit(s, action, 0, o.anchor.x, o.anchor.y));
         u.build = item.time;
@@ -989,12 +1001,13 @@
           id: ++s.campaign.jobSeq,
           action,
           cost: item.cost,
+          ...(Matter.enabled(s) ? { matter: item.matter } : {}),
           duration: item.time,
           remaining: item.time,
         });
         E.emit(s, "order", o.producer.x, o.producer.y);
       }
-      return { allowed: true, cost: item.cost };
+      return { allowed: true, cost: item.cost, ...(Matter.enabled(s) ? { matter: item.matter } : {}) };
     }
     function supplyBlocked(s, job) {
       return !!(items(s)[job.action]?.pop && population(s) > capacity(s)) ||
@@ -1092,7 +1105,8 @@
         mines = new Map(s.campaign.mines.map((m) => [m.id, m])),
         crews = new Map(s.campaign.mines.map((m) => [m.id, []])),
         probes = alive(s, "drone").filter((u) => !u.buildingId && !u.workerTask && !u.eastRepair),
-        assignments = new Map();
+        assignments = new Map(),
+        threats = Matter.enabled(s) ? Matter.knownThreats(s, E) : null;
       for (const u of probes) {
         const node = byId.get(u.node), mine = mines.get(u.mineId) || mineFor(s, node);
         assignments.set(u.id, { node, mine });
@@ -1102,8 +1116,8 @@
       for (const u of probes) {
         let { node, mine } = assignments.get(u.id);
         const row = mine && crews.get(mine.id), slot = row?.indexOf(u) ?? -1;
-        if (!node || (!u.cargo && (!mine?.remaining || slot >= 6 || slot < 0))) {
-          const available = pairs.filter((p) => crews.get(p.mine.id).length < 6)
+        if (!node || (!u.cargo && (!mine?.remaining || slot >= miningCapacity(s, mine) || slot < 0))) {
+          const available = pairs.filter((p) => p.mine.resource !== "matter" && crews.get(p.mine.id).length < miningCapacity(s, p.mine))
             .sort((a, b) => E.dist(u, a.mine) - E.dist(u, b.mine) || a.node.id - b.node.id);
           const next = available[0];
           if (next) {
@@ -1120,17 +1134,26 @@
           }
         }
         const index = mine ? crews.get(mine.id).indexOf(u) : -1,
-          standby = !mine?.remaining || index < 0 || index >= 6;
-        const threat = E.nearby(s, 1, u, 170).some((v) => E.dist(v, u) < 170 && E.clear(u, v));
+          standby = !mine?.remaining || index < 0 || index >= miningCapacity(s, mine);
+        const hostile = threats ? Matter.threat(s, u, E, threats) : null,
+          threat = Matter.enabled(s) ? !!hostile : E.nearby(s, 1, u, 170).some((v) => E.dist(v, u) < 170 && E.clear(u, v));
         u.fright = threat ? 5 : Math.max(0, u.fright - dt);
+        if (u.miningShelter && !E.free(u.miningShelter.x, u.miningShelter.y, E.C.drone.r, E.navigation(s))) delete u.miningShelter;
+        if (hostile) {
+          const point = Matter.shelter(s, u, node, hostile, E);
+          if (point) u.miningShelter = point;
+        } else if (!u.fright || u.miningShelter?.node !== node.id) delete u.miningShelter;
         const offset = ((index < 0 ? u.id % 6 : index) - 2.5) * 18,
           deposit = node.construction ? E.construction.exit(node, E.C.drone.r) : { x: node.x, y: node.y - 44 };
         let destination = node.construction ? E.construction.advance(node, deposit, 0, offset) : { x: deposit.x + offset, y: deposit.y };
         if (!E.free(destination.x, destination.y, E.C.drone.r, E.navigation(s))) destination = deposit;
+        if (u.fright && u.miningShelter?.node === node.id) destination = u.miningShelter;
         if (!u.fright && !u.cargo && !standby) {
           const a = Math.atan2(deposit.y - mine.y, deposit.x - mine.x) + (index - 2.5) * .3,
             p = { x: mine.x + Math.cos(a) * 70, y: mine.y + Math.sin(a) * 70 };
-          destination = E.free(p.x, p.y, E.C.drone.r, E.navigation(s)) ? p : { x: mine.x + offset, y: mine.y };
+          destination = mine.resource === "matter"
+            ? E.construction.advance(node, deposit, 40, (index - .5) * 30)
+            : E.free(p.x, p.y, E.C.drone.r, E.navigation(s)) ? p : { x: mine.x + offset, y: mine.y };
         }
         const key = destination.x + "," + destination.y;
         if (u.workTarget !== key) { u.path = []; u.workTarget = key; u.miningRetry = 0; }
@@ -1144,12 +1167,14 @@
           u.path = [];
           if (u.fright) { u.work = "shelter"; u.workTime = 0; }
           else if (u.cargo) {
-            s.economy.alloy += u.cargo; s.campaign.deposited += u.cargo;
+            if (u.cargoType === "matter") { s.economy.matter += u.cargo; s.campaign.matter.deposited += u.cargo; }
+            else { s.economy.alloy += u.cargo; s.campaign.deposited += u.cargo; }
             u.cargo = 0; u.work = "out"; u.workTime = 0;
           } else if (!standby) {
             u.work = "gather"; u.workTime += dt;
             if (u.workTime >= rules(s).gather) {
               u.cargo = Math.min(4, mine.remaining); mine.remaining -= u.cargo;
+              if (Matter.enabled(s)) u.cargoType = mine.resource === "matter" ? "matter" : "alloy";
               u.workTime = 0; u.work = "return";
             }
           } else { u.work = "idle"; u.workTime = 0; }
@@ -1330,6 +1355,14 @@
             )[0],
             radius: 50,
           };
+        if (Matter.enabled(s) && !queued(s, "command").length && s.economy.matter < items(s).command.matter) {
+          const mine = s.campaign.mines.filter((m) => m.resource === "matter" && m.remaining)
+            .sort((a, b) => E.dist(E.hero(s), a) - E.dist(E.hero(s), b))[0],
+            node = mine && ready(s, "condenser").find((u) => u.site === mine.id);
+          if (mine) return { id: "matter", target: node || mine, radius: 45,
+            title: node ? "Накопить тёмную материю" : "Развернуть конденсатор",
+            hint: node ? "Добыча · назначьте до двух зондов" : "Добыча · постройте конденсатор на кратере" };
+        }
         if (!queued(s, "command").length)
           return { id: "command", target: base, radius: 60 };
       }
@@ -1395,7 +1428,7 @@
         for (const u of alive(s))
           if (
             !u.team &&
-            !["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(
+            !["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics", "condenser"].includes(
               u.kind,
             ) &&
             u.repair === 0 &&
@@ -1417,7 +1450,8 @@
     function onDeath(s, u) {
       E.construction.onDeath(s, u);
       if (u.kind === "drone") {
-        s.campaign.lostCargo += u.cargo;
+        if (u.cargoType === "matter") s.campaign.matter.lostCargo += u.cargo;
+        else s.campaign.lostCargo += u.cargo;
         u.cargo = 0;
       }
       if (u.jobs) u.jobs = [];
@@ -1441,7 +1475,7 @@
               s.units.find((n) => n.id === u.node),
             ))?.remaining,
         ).length,
-        remaining: ms.reduce((n, m) => n + m.remaining, 0),
+        remaining: ms.filter((m) => m.resource !== "matter").reduce((n, m) => n + m.remaining, 0),
         tier: s.campaign.tier,
       };
     }
@@ -1460,7 +1494,7 @@
       ai.seen = { x: target.x, y: target.y, id: target.id };
       ai.seenAt = s.t;
       if (
-        ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(
+        ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics", "condenser"].includes(
           target.kind,
         )
       ) {
@@ -1894,7 +1928,7 @@
             ? s.units.filter((v) => !v.team && v.hp > 0 && !E.C[v.kind].speed && E.visible(s, 1, v))
             : visible)
           if (
-            ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(
+            ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics", "condenser"].includes(
               v.kind,
             ) &&
             !s.campaign.intel.some((k) => k.id === v.id)
@@ -2355,6 +2389,7 @@
           c = s?.campaign;
         const config = (PROFILES[c?.id] || eastern(s)) && rules(s);
         if (!config || s.version !== config.version) return null;
+        if (!Matter.validate(s, E)) return null;
         if (c.balance !== undefined && (!E.balance.eligible(s) || c.balance !== 1)) return null;
         if (c.logistics !== undefined && (!mapped(s) || c.logistics !== 1)) return null;
         if (logistics(s) && (!c.retired || ![c.retired.allies, c.retired.enemies].every((n) => Number.isSafeInteger(n) && n >= 0 && n <= s.seq))) return null;
@@ -2381,6 +2416,7 @@
           "arsenal",
           "bunker",
           "logistics",
+          "condenser",
         ];
         if (
           !s ||
@@ -2563,6 +2599,7 @@
               !int(job.id, 1, c.jobSeq) ||
               jobIds.has(job.id) ||
               job.cost !== spec.cost ||
+              (Matter.enabled(s) ? job.matter !== spec.matter : job.matter !== undefined) ||
               job.duration !== spec.time ||
               !num(job.remaining, 0, spec.time) ||
               u.build > 0
@@ -2597,7 +2634,8 @@
               (u.hp === 0 && u.cargo !== 0)
             )
               return null;
-            cargo += u.cargo;
+            if (Matter.enabled(s) && !["alloy", "matter"].includes(u.cargoType)) return null;
+            if (u.cargoType !== "matter") cargo += u.cargo;
           }
           if (u.team) {
             if (combat(s)) {
@@ -2672,7 +2710,7 @@
               (u) =>
                 !s.units.some(
                   (n) =>
-                    n.id === u.node && ["base", "outpost"].includes(n.kind),
+                    n.id === u.node && ["base", "outpost", "condenser"].includes(n.kind),
                 ),
             )
         )
@@ -2717,7 +2755,8 @@
             !int(m.remaining, 0, d.stock)
           )
             return null;
-          extracted += m.stock - m.remaining;
+          if (m.resource !== d.resource) return null;
+          if (m.resource !== "matter") extracted += m.stock - m.remaining;
         }
         if (extracted !== c.deposited + c.lostCargo + cargo) return null;
         const eco = s.economy;
@@ -2729,7 +2768,7 @@
           typeof eco.kit !== "boolean" ||
           eco.legacySupport !== false ||
           eco.recovered !== c.refunded ||
-          c.refunded > eco.spent * 0.75
+          c.refunded > eco.spent * (Matter.enabled(s) ? 1 : 0.75)
         )
           return null;
         if (
@@ -2933,7 +2972,7 @@
             !s.units.some(
               (u) =>
                 u.id === known.id &&
-                ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(
+                ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics", "condenser"].includes(
                   u.kind,
                 ),
             ) ||
@@ -2975,7 +3014,7 @@
       usedSlots,
       ITEMS,
       items, cacheValue,
-      rules,
+      rules, matter: Matter,
       extended,
       expedition,
       combat,

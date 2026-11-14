@@ -15,8 +15,8 @@ test('active catalogue matches game models, keeps loaded surface materials and h
   const full=JSON.parse(await fs.readFile(path.join(kit,'prompts.json'),'utf8')),before=JSON.stringify(full),c=curateCatalogue(full);
   const modelIds=Object.keys(require('../game-source/signal-frontier/src/engine').C).map(k=>'MODEL-'+k).concat('MODEL-bastion-south','O01','O02','O03','O04','O05');
   assert.deepEqual(c.entries.filter(e=>e.assetType==='model').map(e=>e.id).sort(),modelIds.sort());
-  assert.deepEqual(c.stats,{models:34,textures:20});assert.equal(c.entries.length,54);
-  assert.equal(new Set(c.entries.map(e=>e.id)).size,54);assert.equal(JSON.stringify(full),before,'Source archive unchanged');
+  assert.deepEqual(c.stats,{models:35,textures:20});assert.equal(c.entries.length,55);
+  assert.equal(new Set(c.entries.map(e=>e.id)).size,55);assert.equal(JSON.stringify(full),before,'Source archive unchanged');
   for(const e of c.entries){
     assert.doesNotMatch(e.id,/^(CARD|STATE|MOTION|PREP|STYLE|BUILD|UI|TECH)-/);
     assert.doesNotMatch(e.prompt,/утвержд[её]н|MODEL-|STYLE-|references\/|камер|ракурс|азимут|градус|°|строго сверху|вправо|влево|входом вниз/);
@@ -41,7 +41,7 @@ test('generation ZIP contains the exact standalone prompt, budget and selected i
   const temp=await fs.mkdtemp(path.join(os.tmpdir(),'signal-kit-test-')),app=await createWorkshop({dataDir:temp});
   await new Promise(r=>app.server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+app.server.address().port;
   try{
-    const state=await(await fetch(base+'/api/state')).json();assert.equal(state.catalogue.count,54);
+    const state=await(await fetch(base+'/api/state')).json();assert.equal(state.catalogue.count,55);
     const headers={'X-Art-Token':state.token},png=new PNG({width:8,height:8});png.data.fill(160);const bytes=PNG.sync.write(png);
     const image=await(await fetch(base+'/api/upload/MODEL-drone',{method:'POST',headers,body:bytes})).json();
     await fetch(base+'/api/prompt/MODEL-drone',{method:'PUT',headers,body:JSON.stringify({selected:image.asset.id})});

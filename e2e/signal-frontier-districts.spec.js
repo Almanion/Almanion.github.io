@@ -41,7 +41,7 @@ for (const [width, height, touch, engine] of [
         await page.locator("#start").click();
         const initial = await page.evaluate(() => SignalGame.snapshot());
         expect(initial.campaign.id).toBe("frontier-9");
-        expect(initial.version).toBe(11);
+        expect(initial.version).toBe(13);
         expect(initial.economy.alloy).toBe(180);
         await page.clock.runFor(100);
         await page.screenshot({ path: info.outputPath("district-home.png") });

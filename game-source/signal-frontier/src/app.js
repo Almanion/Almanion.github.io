@@ -256,8 +256,8 @@
       controlGroups.clear();
       settings.controlGroups = {};
     }
-    state = resume && saved ? E.restore(saved) : E.make(profile);
-    if (!state) state = E.make(profile);
+    state = resume && saved ? E.restore(saved) : E.make(profile, { resources: 2 });
+    if (!state) state = E.make(profile, { resources: 2 });
     development.select();
     group = 1;
     selected = [];
@@ -294,7 +294,7 @@
   function selectable(u) {
     return !u.team && !(u.kind==='carrier'&&!state.east?.claimed) && u.hp > 0 &&
       ([1, 2].includes(u.group) || u.kind === "drone" ||
-        ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(u.kind));
+        ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics", "condenser"].includes(u.kind));
   }
   function refreshControlGroups(members) {
     const live = new Map(state.units.filter(selectable).map((u) => [u.id, u])),
@@ -384,6 +384,7 @@
           arsenal: "Арсенал",
           bunker: "Бункер",
           logistics: "Узел снабжения",
+          condenser: "Конденсатор",
         }[building.kind]
       : onlyWorkers
         ? (workers.length === 1 ? "Зонд" : "Зонды: " + workers.length) +
@@ -680,7 +681,7 @@
             u.team ||
             u.hp <= 0 || u.care?.inside ||
             (![1, 2].includes(u.group) && u.kind !== "drone" &&
-              !["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(
+              !["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics", "condenser"].includes(
                 u.kind,
               ))
           )
@@ -764,6 +765,7 @@
             : state.campaign
               ? "Дроны доставляют сплав из конечных месторождений. Постройте казармы и добывающий узел, затем исследуйте сеть управления. Выберите тяжёлый цех для осады или модуль проникновения. Очереди работают только в бою. Приказ группе задаёт точку сбора подкреплений."
               : "Сплав находится в контейнерах. Опорные пункты восстанавливают отряд; снабжение позволяет выбрать артиллерию или модуль взлома.";
+    if (which === "help" && E.development.matter.enabled(state)) $("economy-help").textContent = "Тёмная материя нужна для III ступени, артиллерии, улучшений и проникновения. Постройте конденсатор на фиолетовом кратере. Строитель после завершения начнёт добычу; в панели конденсатора можно назначить второго зонда. Сплав и материя доставляются отдельно. Отмена ещё не начатого заказа возвращает 100% обоих ресурсов, начатого — 75%. " + $("economy-help").textContent;
     if (which === "settings") {
       $("volume").value = settings.volume;
       $("volume-value").textContent = settings.volume + "%";
@@ -902,6 +904,8 @@
       }
     }
     $("field-alloy").textContent = state.economy.alloy;
+    $("matter-counter").hidden = !E.development.matter.enabled(state);
+    $("field-matter").textContent = state.economy.matter || 0;
     const economy = state.campaign ? E.development.summary(state) : null;
     $("field-capacity").textContent = economy
       ? `${economy.population - economy.armyReserved} / ${economy.capacity}`
@@ -977,6 +981,9 @@
       $("notice").classList.remove("visible");
   }
   const reasons = {
+    matter: "Не хватает тёмной материи · назначьте зонды конденсатору",
+    "matter-site": "Разместите конденсатор на разведанном кратере",
+    "staff-full": "На кратере уже работают два зонда",
     unexplored: "Сначала разведайте площадку",
     "scout-limit": "В отряде уже четыре дозорных",
     network: "Исследуйте сеть управления",
@@ -1184,15 +1191,16 @@
         : "ЛКМ — построить · Shift + ЛКМ — несколько · R — поворот · ПКМ / Esc — отмена";
     measureMapArea();
     const target =
-      kind === "outpost"
+      ["outpost", "condenser"].includes(kind)
         ? state.campaign.mines
             .filter(
               (m) =>
                 m.id !== "home" &&
+                (kind === "condenser" ? m.resource === "matter" : m.resource !== "matter") &&
                 m.remaining > 0 &&
                 E.explored(state, 0, m) &&
                 !state.units.some(
-                  (u) => u.kind === "outpost" && u.hp > 0 && u.site === m.id,
+                  (u) => u.kind === kind && u.hp > 0 && u.site === m.id,
                 ),
             )
             .sort(
@@ -1200,7 +1208,7 @@
             )[0] || E.hero(state)
         : E.hero(state);
     view.focus(target.x, target.y);
-    previewPlacement({ x: target.x + 120, y: target.y - 120 });
+    previewPlacement(kind === "condenser" ? target : { x: target.x + 120, y: target.y - 120 });
     updateUI();
   }
   function confirmPlacement(repeat = false) {
@@ -1252,12 +1260,12 @@
     $(state.campaign ? "development-feedback" : "supply-feedback").textContent =
       state.campaign
         ? result.allowed
-          ? action === "repair-drone"
+          ? action === "staff-condenser" ? "Зонды направлены на добычу материи" : action === "repair-drone"
             ? "Зонд назначен · 12 прочности/с · 1 сплава за 8 прочности"
             : action === "stop-repair"
               ? "Зонды возвращаются к добыче"
           : action === "cancel"
-            ? "Возвращено " + -result.cost + " сплава"
+            ? "Возвращено " + -result.cost + " сплава" + (result.matter ? " · " + -result.matter + " материи" : "")
             : mode === "playing" ? "Заказ принят" : "Заказ принят · продолжится после выхода из паузы"
           : reasons[result.reason] || "Недоступно"
         : result.allowed
@@ -1747,7 +1755,7 @@
         (u) =>
           !u.team &&
           u.hp > 0 &&
-          ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics"].includes(
+          ["base", "outpost", "barracks", "foundry", "arsenal", "bunker", "logistics", "condenser"].includes(
             u.kind,
           ),
       )

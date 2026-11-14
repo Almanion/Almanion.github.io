@@ -304,6 +304,24 @@ function building(kind,roof){
       k.box(0,-2,26,95,91,5,C.ivory,{radius:8,bevel:1.2});k.panel(0,-2,31.1,.8,77,C.sage);
       for(const side of [-1,1])for(const front of [-1,1]){k.box(side*27,front*23,31,26,24,1.2,C.graphite,{radius:6});k.box(side*27,front*23,32.2,23,21,2.2,C.metal,{radius:5});k.disc(side*27,front*23+8,34.5,1.4,.5,C.joint,{shadow:false});}
     }
+  }else if(kind==='condenser'){
+    if(!roof){
+      k.disc(0,0,4,35,7,C.graphite);k.disc(0,0,11,24,10,C.inset);
+      for(const side of [-1,1]){
+        k.box(side*38,-6,4,18,67,24,C.metal,{radius:5});
+        k.tube([side*38,20,20],[side*13,12,20],3,C.graphite);
+        k.box(side*38,27,27,12,6,4,C.ivory);k.light(side*38,27,31.2,8,2,'#b6a7d7');
+      }
+      k.box(0,48,4,44,15,10,C.metal);k.vents(0,48,14.2,30,8,4);
+    }else{
+      k.disc(0,0,21,24,7,C.metal);k.disc(0,0,28,18,3,C.graphite);
+      k.disc(0,0,31,12,3,'#a095bb');k.disc(0,0,34,7,1,C.joint);
+      for(const side of [-1,1]){
+        k.box(side*38,-6,28,19,67,5,C.ivory,{radius:5});k.panel(side*38,-6,33.2,9,43,C.inset);
+        k.tube([side*38,-28,32],[side*22,-14,43],2.5,C.graphite);
+      }
+      k.box(0,-18,40,47,10,6,C.ivory);k.panel(0,-18,46.2,20,4,'#b6a7d7');
+    }
   }else if(kind==='logistics'){
     for(const side of [-1,1]){
       if(!roof){k.box(side*28,-5,4,34,79,24,C.graphite,{radius:6});k.box(side*28,35,4,30,16,23,C.metal);k.light(side*28,35,27.1,19,1.5);}
@@ -323,7 +341,7 @@ const factories={
   'bastion-south-base':()=>defenseBase('bastion-south'),'defense-head':defenseHead,
   'citadel-base':citadel,'citadel-pylon':shieldPylon,
 };
-for(const kind of ['base','outpost','barracks','foundry','arsenal','bunker','logistics'])for(const piece of ['body','roof'])factories[kind+'-'+piece]=()=>building(kind,piece==='roof');
+for(const kind of ['base','outpost','barracks','foundry','arsenal','bunker','logistics','condenser'])for(const piece of ['body','roof'])factories[kind+'-'+piece]=()=>building(kind,piece==='roof');
 for(const side of [-1,1])factories['foundry-roof-'+(side<0?'left':'right')]=()=>{
   const k=new Kit();k.box(side*20,-9,30,37,85,6,C.ivory,{radius:5});k.panel(side*20,-9,36.1,27,65,C.sage);
   k.box(side*1.5,-9,35,1.5,86,2,C.graphite);return k.result();

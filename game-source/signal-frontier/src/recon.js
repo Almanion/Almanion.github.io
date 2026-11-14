@@ -541,7 +541,7 @@
             if (
               p.construction &&
               (!["frontier-8", "frontier-9", "frontier-10"].includes(s.campaign.id) ||
-                !["barracks", "foundry", "arsenal", "outpost", "bunker", "logistics"].includes(
+                !["barracks", "foundry", "arsenal", "outpost", "bunker", "logistics", "condenser"].includes(
                   p.kind,
                 ) ||
                 ![0, 1, 2, 3].includes(p.construction.turn) ||
@@ -580,7 +580,7 @@
               p.type === "mine" &&
               (!Number.isInteger(p.remaining) ||
                 !num(p.remaining, 0, template.stock) ||
-                p.stock !== template.stock)
+                p.stock !== template.stock || p.resource !== template.resource)
             )
               return false;
             if (

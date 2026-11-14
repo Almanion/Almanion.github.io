@@ -21,17 +21,18 @@
       if (!mine.remaining) return fail("empty-resource");
       const chosen = new Set(ids), workers = s.units.filter((u) => chosen.has(u.id) &&
         !u.team && u.hp > 0 && u.kind === "drone"),
-        nodes = E.development.nodes(s).filter((n) => n.kind === "outpost" || mine.id === "home")
+        nodes = E.development.nodes(s).filter((n) => mine.resource === "matter" ? n.kind === "condenser" && n.site === mine.id : n.kind !== "condenser" && (n.kind === "outpost" || mine.id === "home"))
           .sort((a, b) => E.dist(a, mine) - E.dist(b, mine) || a.id - b.id),
         slots = new Map(nodes.map((n) => [n.id, E.development.usedSlots(s, n)]));
       let count = 0, assigned = E.development.logistics(s)
         ? E.development.mineWorkers(s, mine).filter((u) => !chosen.has(u.id)).length : 0;
       for (const u of workers) {
-        if (E.development.logistics(s) && assigned >= E.development.miningCapacity(s)) break;
+        if (E.development.logistics(s) && assigned >= E.development.miningCapacity(s, mine)) break;
         for (const node of nodes) {
           if (!E.development.logistics(s) && slots.get(node.id) - (u.node === node.id ? 1 : 0) >= capacity) continue;
           const entry = node.construction ? E.construction.exit(node, E.C.drone.r) : { x: node.x, y: node.y - 44 },
-            outward = route(s, { ...u, ...entry }, mine), path = route(s, u, u.cargo ? entry : mine);
+            work = mine.resource === "matter" ? E.construction.advance(node, entry, 40, (assigned - .5) * 30) : mine,
+            outward = route(s, { ...u, ...entry }, work), path = route(s, u, u.cargo ? entry : work);
           if (!outward || !path) continue;
           slots.set(u.node, (slots.get(u.node) || 0) - 1);
           slots.set(node.id, slots.get(node.id) + 1);

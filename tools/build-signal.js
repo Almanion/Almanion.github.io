@@ -10,6 +10,7 @@ const files = [
   "terrain.js",
   "districts.js",
   "east.js",
+  "matter.js",
   "campaign.js",
   "recon.js",
   "engine.js",
@@ -48,7 +49,7 @@ function render(root = path.resolve(__dirname, "..")) {
     let text = read(file);
     if (file === "campaign.js")
       text =
-        read("terrain.js") + "\n;\n" + read("districts.js") + "\n;\n" + read("east.js") + "\n;\n" + text;
+        read("terrain.js") + "\n;\n" + read("districts.js") + "\n;\n" + read("east.js") + "\n;\n" + read("matter.js") + "\n;\n" + text;
     if (file === "engine.js")
       text =
         read("recon.js") + "\n;\n" + read("construction.js") + "\n;\n" + read("support.js") + "\n;\n" + text;
@@ -74,7 +75,7 @@ function render(root = path.resolve(__dirname, "..")) {
       text = result.styles + "\n";
     } else if (file === "index.html")
       text = text.replace(
-        /^\s*<script src="(?:terrain|districts|east|recon|construction|support|unit-models|minimap|terrain-art|cloud-core|persistence|account-ui|selection-ui|renderer-loader)\.js[^\"]*" defer><\/script>\n/gm,
+        /^\s*<script src="(?:terrain|districts|east|matter|recon|construction|support|unit-models|minimap|terrain-art|cloud-core|persistence|account-ui|selection-ui|renderer-loader)\.js[^\"]*" defer><\/script>\n/gm,
         "",
       );
     out[file] = text;
