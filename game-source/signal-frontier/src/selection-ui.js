@@ -77,7 +77,7 @@
         // Revalidate through the normal transaction even if funds or selection changed since the last paint.
         const result = options.buy(b.dataset.train, Number(b.dataset.site));
         this.feedback = { id: Number(b.dataset.site), until: performance.now() + 2600,
-          message: result?.allowed ? (b.dataset.train === "staff-condenser" ? "Зонды направлены к кратеру" : names[b.dataset.train] + " · в очереди") : this.reason(result?.reason) };
+          message: result?.allowed ? names[b.dataset.train] + " · в очереди" : this.reason(result?.reason) };
         this.render();
       });
       el.addEventListener("click", (e) => {
