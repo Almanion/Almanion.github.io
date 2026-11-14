@@ -17,6 +17,8 @@ const camp = [1, 134].map(number => ({ number, description: `Лагерная з
 
 async function setup(page, options = {}) {
     const errors = [];
+    let accessGranted = options.allowed !== false;
+    if (options.signedOut) accessGranted = false;
     page.on('pageerror', e => errors.push(e.message));
     await page.route('**/*', async route => {
         const url = new URL(route.request().url());
@@ -25,19 +27,24 @@ async function setup(page, options = {}) {
         }
         if (url.hostname === 'script.google.com') {
             const data = JSON.parse(route.request().postData() || '{}');
+            if (data.action === 'authorizeAccount') {
+                accessGranted = data.password === 'guest-test-password';
+                return route.fulfill({json: {success: accessGranted, allowed: accessGranted, isAdmin: false,
+                    ...(accessGranted ? {} : {error: 'Неверный пароль'})}});
+            }
             const tasks = url.pathname.includes('AKfycbw_') ? summer : (options.tasks || [...legacy, ...future]);
             return route.fulfill({ json: data.action === 'capabilities' ? { success: true, authVersion: options.authVersion || 3 }
-                : data.action === 'accessStatus' ? { success: true, allowed: options.allowed !== false, isAdmin: false }
+                : data.action === 'accessStatus' ? { success: true, allowed: accessGranted, isAdmin: false }
                 : { success: true, tasks: data.action === 'campTasks' ? (options.campTasks || camp)
                     : data.action === 'academicYearTasks' ? (options.yearTasks || []) : tasks, isAdmin: false } });
         }
         if (['127.0.0.1', 'localhost'].includes(url.hostname)) {
-            if (/\/(account|firebase-analytics|analytics)\.js$/.test(url.pathname)) return route.fulfill({ contentType: 'application/javascript', body: '' });
+            if (/\/(firebase-analytics|analytics)\.js$/.test(url.pathname) || (/\/account\.js$/.test(url.pathname) && !options.realAccount)) return route.fulfill({ contentType: 'application/javascript', body: '' });
             return route.continue();
         }
         return route.abort();
     });
-    await page.addInitScript(({ home, dark, old, realMath }) => {
+    await page.addInitScript(({ home, dark, old, realMath, signedOut }) => {
         if (!sessionStorage.getItem('mc-test-initialized')) {
             localStorage.setItem('almanion:visual-defaults:2026-09-05-v1', '1');
             localStorage.setItem('siteSettings', JSON.stringify({ experimental: !old, theme: dark ? 'dark' : 'light', expTheme: dark ? 'dark' : 'light', expMode: 'prism', expDark: !!dark, animationLevel: 'off' }));
@@ -45,7 +52,13 @@ async function setup(page, options = {}) {
             sessionStorage.setItem('mc-test-initialized', '1');
         }
         const user = { uid: 'mc-test', email: 'test@example.com', getIdToken: async () => 'test-token' };
-        const auth = { currentUser: user, async signOut() { auth.currentUser = null; }, onAuthStateChanged(callback) { setTimeout(() => callback(user), 0); return () => {}; } };
+        const guest = { uid: 'mc-guest', isAnonymous: true, getIdToken: async () => 'guest-token' };
+        const authListeners = new Set();
+        const notify = () => authListeners.forEach(callback => callback(auth.currentUser));
+        const auth = { currentUser: signedOut ? (localStorage.getItem('mc-test-guest') ? guest : null) : user,
+            async signInAnonymously() { auth.currentUser = guest; localStorage.setItem('mc-test-guest', '1'); notify(); return {user:guest}; },
+            async signOut() { auth.currentUser = null; localStorage.removeItem('mc-test-guest'); notify(); },
+            onAuthStateChanged(callback) { authListeners.add(callback); setTimeout(() => callback(auth.currentUser), 0); return () => authListeners.delete(callback); } };
         let data = JSON.parse(localStorage.getItem('mc-test-remote') || '{"grade-9__12":{"solved":true,"updatedAt":1}}');
         const callbacks = new Set();
         const snapshot = () => ({ val: () => data });
@@ -66,6 +79,62 @@ async function ready(page) {
     await expect(page.locator('#authOverlay')).toBeHidden();
     await expect(page.locator('#tasksContainer .task-card').first()).toBeVisible();
 }
+
+for (const width of [1280, 375]) {
+    test(`password entry without registration, rejection and session restore at ${width}px`, async ({page}) => {
+        await page.setViewportSize({width,height:800});
+        const errors = await setup(page,{signedOut:true});
+        const sent = [];
+        page.on('request', request => {
+            if (new URL(request.url()).hostname === 'script.google.com') sent.push({url:request.url(),data:JSON.parse(request.postData() || '{}')});
+        });
+        await page.goto('/matcenter.html?grade=grade-10');
+        await expect(page.locator('#authTitle')).toHaveText('Введите пароль');
+        await expect(page.locator('#passwordInput')).toBeVisible();
+        await expect(page.locator('#matcenterAccountLogin')).toBeVisible();
+        await expect(page.locator('#matcenterAccountNote')).toBeHidden();
+        expect(await page.evaluate(() => firebase.auth().currentUser)).toBeNull();
+        await page.locator('#passwordInput').fill('wrong-password');
+        await page.locator('#authSubmit').click();
+        await expect(page.locator('#authError')).toContainText('Неверный пароль');
+        await expect(page.locator('#authOverlay')).toBeVisible();
+        await expect(page.locator('#authTitle')).toHaveText('Введите пароль');
+        expect(sent.some(r=>r.data.action==='authorizeAccount' && r.data.idToken==='guest-token')).toBe(true);
+        await page.locator('#passwordInput').fill('guest-test-password');
+        await page.locator('#authSubmit').click();
+        await ready(page);
+        expect(await page.evaluate(() => firebase.auth().currentUser.isAnonymous)).toBe(true);
+        expect(sent.every(r=>!r.url.includes('password') && !r.url.includes('token='))).toBe(true);
+        expect(await page.evaluate(() => JSON.stringify({...localStorage}))).not.toContain('guest-test-password');
+        const authorizations = sent.filter(r=>r.data.action==='authorizeAccount').length;
+        await page.reload(); await ready(page);
+        expect(sent.filter(r=>r.data.action==='authorizeAccount')).toHaveLength(authorizations);
+        expect(errors).toEqual([]);
+    });
+}
+
+test('password entry preserves an existing registered account', async ({page}) => {
+    const errors = await setup(page,{allowed:false});
+    await page.goto('/matcenter.html?grade=grade-10');
+    await expect(page.locator('#authTitle')).toHaveText('Подтвердите доступ');
+    await page.locator('#passwordInput').fill('guest-test-password');
+    await page.locator('#authSubmit').click(); await ready(page);
+    expect(await page.evaluate(() => firebase.auth().currentUser.uid)).toBe('mc-test');
+    expect(await page.evaluate(() => localStorage.getItem('mc-test-guest'))).toBeNull();
+    expect(errors).toEqual([]);
+});
+
+test('guest password session keeps the real account sign-in available', async ({page}) => {
+    const errors = await setup(page,{signedOut:true,realAccount:true});
+    await page.goto('/matcenter.html?grade=grade-10');
+    await expect(page.locator('#passwordInput')).toBeVisible();
+    await page.locator('#passwordInput').fill('guest-test-password');
+    await page.locator('#authSubmit').click(); await ready(page);
+    await expect(page.locator('#accountBtn')).toHaveAttribute('aria-label', 'Войти в аккаунт');
+    await page.locator('#accountBtn').click();
+    await expect(page.locator('#accForm')).toBeVisible();
+    expect(errors).toEqual([]);
+});
 
 test('published HTML must not reuse the old cached Matcenter runtime for printing',async({page})=>{
     const errors=await setup(page);
@@ -777,7 +846,7 @@ for (const dark of [false, true]) test(`camp menu order and proportional three-d
         await page.setViewportSize({width,height:844});
         await page.goto('/matcenter.html?grade=grade-camp-2026');
         await ready(page);
-        await expect(page.locator('link[href*="styles/matcenter-refresh.css"]')).toHaveAttribute('href', 'styles/matcenter-refresh.css?v=20261013-print2');
+        await expect(page.locator('link[href*="styles/matcenter-refresh.css"]')).toHaveAttribute('href', 'styles/matcenter-refresh.css?v=20261114-password');
         expect(await page.locator('#gradeSwitcher [data-grade]').evaluateAll(els=>els.map(el=>el.dataset.grade))).toEqual(order);
         expect(await page.locator('#mcSidebarGrade option').evaluateAll(els=>els.map(el=>el.value))).toEqual(order);
         const active = page.locator('#gradeSwitcher [data-grade="grade-camp-2026"]');

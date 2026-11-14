@@ -280,6 +280,14 @@ body.matcenter-page #mcPrintButton:disabled { cursor:wait; opacity:.6; }
 .mc-task-part:focus-visible { outline:2px solid var(--accent-color, #818cf8); outline-offset:3px; }
 .mc-task-part:disabled { cursor:wait; opacity:.6; }
 /* The same status accent stays visible in compact and reading modes. */
+#matcenterAccountNote[hidden] { display:none; }
+body.matcenter-page #matcenterAccountLogin {
+    width:auto; align-self:center; margin:0; padding:.4rem .65rem;
+    border:0; border-radius:8px; background:transparent; color:var(--text-secondary);
+    font:inherit; font-size:.9rem; cursor:pointer;
+}
+body.matcenter-page #matcenterAccountLogin:hover { color:var(--text-primary); }
+body.matcenter-page #matcenterAccountLogin:focus-visible { outline:2px solid var(--accent-color,#818cf8); outline-offset:2px; }
 body.matcenter-page .task-card.solved { --mc-status-accent:var(--t-proof,var(--success-color,#16a34a)); }
 body.matcenter-page .task-card.current-series { --mc-status-accent:var(--t-example,#fb923c); }
 body.matcenter-page .task-card.postponed { --mc-status-accent:#ef4444; }

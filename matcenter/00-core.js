@@ -127,7 +127,7 @@ let searchStatusFilter = 'all'; // all | current | postponed | unsolved
 let currentGrade = DEFAULT_GRADE;
 let currentFilter = 'all-tasks';
 let authToken = null;
-let matcenterAuthMode = 'account'; // Только Firebase-аккаунт (v3).
+let matcenterAuthMode = 'account'; // Сервер проверяет UID, в том числе гостевой сессии.
 let lockoutTimer = null;
 let autoRefreshTimer = null; // Таймер автообновления
 let deviceFingerprint = null;
@@ -297,6 +297,17 @@ async function checkMatcenterAccountAccess() {
 }
 
 async function authorizeMatcenterAccount(password) {
+    // Гостевая сессия создаётся только при отправке пароля. Доступ по-прежнему
+    // выдаёт сервер после проверки пароля; сам пароль в браузере не сохраняется.
+    const auth = getMatcenterFirebaseAuth();
+    if (!await waitForMatcenterUser()) {
+        if (!auth || typeof auth.signInAnonymously !== 'function') {
+            const error = new Error('Не удалось начать вход. Обновите страницу и попробуйте снова.');
+            error.code = 'AUTH_UNAVAILABLE';
+            throw error;
+        }
+        await auth.signInAnonymously();
+    }
     const idToken = await getMatcenterIdToken(true);
     const results = await Promise.all([...new Set(TASKS_ENDPOINTS)].map(endpoint =>
         postMatcenterJson(endpoint, { action: 'authorizeAccount', idToken, password })

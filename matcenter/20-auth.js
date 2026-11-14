@@ -1,4 +1,5 @@
 let matcenterAccountGateBusy = false;
+let matcenterPasswordSignInBusy = false;
 
 function showMatcenterAuthMessage(message, isError = true) {
     const authError = document.getElementById('authError');
@@ -20,15 +21,17 @@ function updateMatcenterAuthCopy() {
     if (!title || !note || !accountButton || !passwordInput || !submit) return;
 
     const user = getMatcenterFirebaseAuth()?.currentUser || null;
-    if (!user) {
-        title.textContent = 'Сначала войдите в аккаунт';
-        note.textContent = 'Закладки, решённые задачи и доступ к Матцентру привязываются к одному аккаунту.';
+    if (!user || user.isAnonymous) {
+        title.textContent = 'Введите пароль';
+        note.hidden = true;
         accountButton.hidden = false;
-        accountButton.textContent = 'Войти или зарегистрироваться';
-        passwordInput.hidden = true;
-        submit.hidden = true;
+        accountButton.textContent = 'Войти в аккаунт';
+        passwordInput.hidden = false;
+        submit.hidden = false;
+        submit.querySelector('.submit-text').textContent = 'Войти';
     } else {
         title.textContent = 'Подтвердите доступ';
+        note.hidden = false;
         note.textContent = `Аккаунт ${user.email || 'пользователя'} ещё не подтверждён для Матцентра. Введите пароль один раз.`;
         accountButton.hidden = true;
         passwordInput.hidden = false;
@@ -38,6 +41,7 @@ function updateMatcenterAuthCopy() {
 }
 
 async function refreshMatcenterAccountGate() {
+    if (matcenterPasswordSignInBusy) return;
     if (authToken || matcenterAccountGateBusy) {
         updateMatcenterAuthCopy();
         return;
@@ -98,7 +102,6 @@ async function initAuth() {
         });
     }
 
-    // Сразу вешаем обработчик выхода, чтобы он работал в любом случае
     if (logoutButton && !logoutButton.dataset.listenerAttached) {
         logoutButton.addEventListener('click', () => {
             if (confirm('Вы уверены, что хотите выйти?')) {
@@ -108,40 +111,34 @@ async function initAuth() {
         logoutButton.dataset.listenerAttached = 'true';
     }
 
-    // Доступ всегда проверяется сервером по свежему Firebase ID token.
     if (authToken) {
-        return; // Уже загружено в DOMContentLoaded
+        return;
     }
     
-    // Проверка блокировки при загрузке
     if (isLockedOut()) {
         updateLockoutUI();
-        // Запускаем таймер обновления
         lockoutTimer = setInterval(() => {
             if (!updateLockoutUI()) {
-                // Блокировка снята
                 clearInterval(lockoutTimer);
                 lockoutTimer = null;
             }
         }, 1000);
     }
     
-    // Форма входа
     authForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // Проверяем блокировку
         if (isLockedOut()) {
             updateLockoutUI();
             return;
         }
         
         const password = passwordInput.value;
+        if (matcenterPasswordSignInBusy) return;
+        matcenterPasswordSignInBusy = true;
         
-        // Скрываем ошибку
         authError.style.display = 'none';
         
-        // Показываем спиннер
         submitText.style.display = 'none';
         submitSpinner.style.display = 'flex';
         authSubmit.disabled = true;
@@ -165,23 +162,18 @@ async function initAuth() {
                 showMatcenterDataWarning('Не удалось обновить задачи. Показана последняя сохранённая копия.');
             }
             
-            // 3. Логируем успешную попытку
             addAttemptToHistory(true, deviceFingerprint);
             console.log(isAdmin ? '✅ Успешный вход (АДМИН)' : '✅ Успешный вход');
             
-            // 5. Сбрасываем счётчики
             resetFailedAttempts();
             
-            // 6. Скрываем форму
             hideAuthForm();
             
-            // 7. Перерисовываем задачи чтобы отобразить подсказки
             if (allTasks.length > 0) {
                 refreshCurrentView();
             }
             
         } catch (error) {
-            // Если ошибка:
             authToken = null;
 
             // Network and server failures are not failed password attempts and
@@ -215,22 +207,18 @@ async function initAuth() {
                 return;
             }
             
-            // 1. Логируем неудачную попытку
             addAttemptToHistory(false, deviceFingerprint);
             
-            // 2. Увеличиваем счётчик
             const failedAttempts = getFailedAttempts() + 1;
             setFailedAttempts(failedAttempts);
             
             console.warn(`⚠️ Неудачная попытка входа: ${failedAttempts}/${MAX_FAILED_ATTEMPTS}`);
             
-            // 3. Анимация тряски
             authModal.classList.add('shake');
             setTimeout(() => {
                 authModal.classList.remove('shake');
             }, 400);
             
-            // 4. Проверяем подозрительную активность
             if (detectSuspiciousActivity()) {
                 authError.querySelector('.error-icon').innerHTML = '<span class="eic eic-alert" aria-hidden="true"></span>';
                 authError.querySelector('.error-text').textContent = 
@@ -239,12 +227,10 @@ async function initAuth() {
                 authError.style.background = 'rgba(239, 68, 68, 0.2)';
             }
             
-            // 5. Проверяем, нужно ли блокировать
             if (failedAttempts >= MAX_FAILED_ATTEMPTS) {
                 startLockout();
                 updateLockoutUI();
                 
-                // Запускаем таймер обновления
                 if (lockoutTimer) clearInterval(lockoutTimer);
                 lockoutTimer = setInterval(() => {
                     if (!updateLockoutUI()) {
@@ -253,30 +239,27 @@ async function initAuth() {
                     }
                 }, 1000);
             } else {
-                // Показываем обычную ошибку
                 authError.style.display = 'flex';
                 authError.style.background = 'rgba(239, 68, 68, 0.1)';
                 authError.querySelector('.error-icon').innerHTML = '<span class="eic eic-alert" aria-hidden="true"></span>';
                 authError.querySelector('.error-text').textContent = 
                     `Неверный пароль. Осталось попыток: ${MAX_FAILED_ATTEMPTS - failedAttempts}`;
                 
-                // Возвращаем кнопку в исходное состояние
                 submitText.style.display = 'inline';
                 submitSpinner.style.display = 'none';
                 authSubmit.disabled = false;
                 passwordInput.disabled = false;
             }
             
-            // Очищаем и фокусируем поле
             passwordInput.value = '';
             if (!isLockedOut()) {
                 passwordInput.focus();
             }
+        } finally {
+            matcenterPasswordSignInBusy = false;
         }
     });
     
-    // Обработчик кнопки выхода уже добавлен выше (строка 566-573)
-    // Не дублируем обработчик здесь
 }
 
 function setMatcenterAuthPageLocked(locked) {

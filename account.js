@@ -1204,6 +1204,8 @@
     // ---------- Состояние входа ----------
     auth.onAuthStateChanged(function (u) {
         authStateKnown = true;
+        // Гость Матцентра не является зарегистрированным аккаунтом сайта.
+        if (u && u.isAnonymous) u = null;
         user = u;
         if (kcStorage) kcStorage.setScope(u ? u.uid : 'guest');
         updateButton();

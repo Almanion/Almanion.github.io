@@ -54,7 +54,7 @@
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
-    <link rel="stylesheet" href="styles/matcenter-refresh.css?v=20261013-print2">
+    <link rel="stylesheet" href="styles/matcenter-refresh.css?v=20261114-password">
 </head>
 <body class="matcenter-page">
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -96,9 +96,8 @@
         <div class="auth-modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
             <div class="auth-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
             <h2 id="authTitle">Введите пароль</h2>
-            <p class="matcenter-account-note" id="matcenterAccountNote">Доступ к Матцентру подтверждается отдельно.</p>
+            <p class="matcenter-account-note" id="matcenterAccountNote" hidden>Доступ к Матцентру подтверждается отдельно.</p>
             <form id="authForm">
-                <button type="button" class="auth-submit matcenter-account-login" id="matcenterAccountLogin" hidden>Войти в аккаунт</button>
                 <input
                     type="password"
                     id="passwordInput"
@@ -119,6 +118,7 @@
                         <span class="spinner-dot"></span>
                     </span>
                 </button>
+                <button type="button" class="matcenter-account-login" id="matcenterAccountLogin">Войти в аккаунт</button>
             </form>
             <a class="matcenter-auth-home" href="index.html">Вернуться на главную</a>
         </div>
@@ -287,10 +287,10 @@
     <script defer src="kc-storage.js?v=20260911-1"></script>
 
     <script defer src="script.js?v=20260905-2"></script>
-    <script defer src="matcenter/00-core.js?v=20261010-series1"></script>
+    <script defer src="matcenter/00-core.js?v=20261114-password"></script>
     <script defer src="matcenter/05-math.js?v=20261009-repairs1"></script>
     <script defer src="matcenter/10-security.js?v=20260902-2"></script>
-    <script defer src="matcenter/20-auth.js?v=20261013-print1"></script>
+    <script defer src="matcenter/20-auth.js?v=20261114-password"></script>
     <script defer src="matcenter/25-cache.js?v=20260911-1"></script>
     <script defer src="matcenter/35-workspace-model.js?v=20261013-print2"></script>
     <script defer src="matcenter/30-data.js?v=20261010-series1"></script>
@@ -299,6 +299,6 @@
     <script defer src="matcenter/60-navigation-search.js?v=20261009-repairs1"></script>
     <script defer src="matcenter/65-workspace.js?v=20261013-print3"></script>
     <script defer src="matcenter/runtime.js?v=20261015-sum-limits"></script>
-    <script defer src="account.js?v=20260908-1"></script>
+    <script defer src="account.js?v=20261114-guest"></script>
 </body>
 </html>

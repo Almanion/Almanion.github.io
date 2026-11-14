@@ -234,7 +234,8 @@ function build(options) {
             .replace(/(href=["'](?:styles\/copy-blocks|style-new)\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261113-2$2')
             .replace(/((?:src|href)=["'](?:script\.js|styles\/site\/(?:reader|index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261113-3$2')
             .replace(/((?:src|href)=["'](?:note-runtime\.js|styles\/print\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261113-4$2')
-            .replace(/(src=["'](?:note-runtime|print-export)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261113-5$2');
+            .replace(/(src=["'](?:note-runtime|print-export)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261113-5$2')
+            .replace(/(src=["']account\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261114-guest$2');
         if (updated !== html) fs.writeFileSync(absolute, updated);
     }
     // Status follows published materials, including sections added later by the
