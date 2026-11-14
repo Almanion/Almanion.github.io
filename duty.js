@@ -81,11 +81,7 @@
     }
 
     function todayIso(date) {
-        const value = date instanceof Date ? date : new Date();
-        const year = value.getFullYear();
-        const month = String(value.getMonth() + 1).padStart(2, '0');
-        const day = String(value.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Moscow', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date || new Date());
     }
 
     function addDays(iso, days) {
@@ -941,6 +937,11 @@
         const range = byId('dutyFocusRange');
         const dateBox = byId('dutyFocusDate');
         const share = byId('dutyShareButton');
+        byId('dutyNext').hidden = !(state.current && state.next);
+        if (state.current && state.next) {
+            byId('dutyNextPeople').textContent = state.next.people.join(' + ');
+            byId('dutyNextRange').textContent = formatEntryRange(state.next);
+        }
         focus.classList.toggle('is-current', !!state.current);
         if (!state.focus) {
             label.textContent = 'Расписание пока пусто';
@@ -2050,6 +2051,21 @@
     function init() {
         bindEvents();
         renderAll();
+        const extra = byId('dutyExtraDetails');
+        const dates = [...extra.querySelectorAll('[data-duty-date]')].map(day => day.dataset.dutyDate).sort();
+        let displayedDate;
+        function updateDatedSchedule() {
+            const today = todayIso();
+            if (displayedDate === today) return;
+            displayedDate = today;
+            const past = today > dates.at(-1);
+            byId('dutyExtraTitle').textContent = past ? 'Архив дежурств по дням' : 'Дежурство по дням';
+            extra.open = (!past && today >= dates[0]) || location.hash === '#dutyExtraSchedule';
+            renderFocus();
+        }
+        updateDatedSchedule();
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) updateDatedSchedule(); });
+        root.addEventListener('hashchange', () => { if (location.hash === '#dutyExtraSchedule') extra.open = true; });
         const months = byId('dutyMonthFilters');
         if (months) months.addEventListener('scroll', updateMonthScroll, { passive: true });
         [['dutyMonthsPrev', -1], ['dutyMonthsNext', 1]].forEach(function (control) {

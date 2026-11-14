@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initMath();
     initNavigation();
-    initSearch();
+    window.AlmanionSearch?.init(); // Other note pages load search on first focus.
     initScrollEffects();
     initDerivationToggles();
     initProofToggles();
@@ -403,342 +403,6 @@ function initNavigation() {
 }
 
 // ============================================
-// ПОИСК (Ctrl+F стиль)
-// ============================================
-
-const searchState = {
-    results: [],
-    currentIndex: -1,
-    term: '',
-    panel: null,
-    input: null,
-    debounce: null,
-    active: false,
-    totalResults: 0
-};
-
-function initSearch() {
-    if (window.AlmanionSearch && typeof window.AlmanionSearch.init === 'function') {
-        window.AlmanionSearch.init();
-        return;
-    }
-
-    // На Матцентре используется отдельный поиск в модулях matcenter/.
-    // Здесь отключаем общий полнотекстовый поиск, чтобы не было конфликта обработчиков.
-    if (document.body.classList.contains('matcenter-page')) return;
-
-    const searchInput = document.getElementById('searchInput');
-    if (!searchInput) return;
-
-    searchState.input = searchInput;
-    createSearchResultsPanel(searchInput);
-    searchInput.setAttribute('autocomplete', 'off');
-    searchInput.setAttribute('aria-autocomplete', 'list');
-    searchInput.setAttribute('aria-controls', 'searchResultsPanel');
-    searchInput.setAttribute('aria-expanded', 'false');
-
-    searchInput.addEventListener('input', () => {
-        if (searchState.debounce) clearTimeout(searchState.debounce);
-        const term = searchInput.value.trim();
-        if (term.length < 2) {
-            clearSearchPanel();
-            return;
-        }
-        searchState.debounce = setTimeout(() => {
-            performSearchPanel(term);
-        }, 160);
-    });
-
-    searchInput.addEventListener('keydown', (e) => {
-        if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && searchState.results.length) {
-            e.preventDefault();
-            const delta = e.key === 'ArrowDown' ? 1 : -1;
-            const start = searchState.currentIndex < 0 ? (delta > 0 ? -1 : 0) : searchState.currentIndex;
-            searchState.currentIndex = (start + delta + searchState.results.length) % searchState.results.length;
-            updateSearchResultSelection();
-        } else if (e.key === 'Enter' && searchState.results.length) {
-            e.preventDefault();
-            openSearchResult(searchState.currentIndex < 0 ? 0 : searchState.currentIndex);
-        } else if (e.key === 'Escape') {
-            e.preventDefault();
-            searchInput.value = '';
-            clearSearchPanel();
-            searchInput.blur();
-        }
-    });
-
-    searchInput.addEventListener('focus', () => {
-        if (searchInput.value.trim().length >= 2 && searchState.panel) {
-            searchState.panel.classList.remove('hidden');
-            searchInput.setAttribute('aria-expanded', 'true');
-        }
-    });
-
-    document.addEventListener('click', (event) => {
-        if (!searchState.panel || searchState.panel.classList.contains('hidden')) return;
-        if (event.target.closest('.search-box, .search-results-panel')) return;
-        searchState.panel.classList.add('hidden');
-        searchInput.setAttribute('aria-expanded', 'false');
-    });
-}
-
-const SEARCH_CONTENT_SELECTOR = [
-    '.topic-title', '.definition-box', '.formula-box', '.theorem-box', '.remark-box', '.reminder-box',
-    '.lemma-box', '.example-box', '.statement-box', '.corollary-box', '.properties-box',
-    '.experiment-box', '.derivation-box', '.system-box', '.proof-box',
-    '.accent-word-card',
-    ':scope > p', ':scope > ul > li', ':scope > ol > li'
-].join(', ');
-
-const SEARCH_SEMANTIC_SELECTOR = [
-    '.definition-box', '.formula-box', '.theorem-box', '.remark-box', '.reminder-box', '.lemma-box',
-    '.example-box', '.statement-box', '.corollary-box', '.properties-box',
-    '.experiment-box', '.derivation-box', '.system-box', '.proof-box', '.accent-word-card'
-].join(', ');
-
-function createSearchResultsPanel(input) {
-    if (document.getElementById('searchResultsPanel')) {
-        searchState.panel = document.getElementById('searchResultsPanel');
-        return;
-    }
-    const panel = document.createElement('div');
-    panel.id = 'searchResultsPanel';
-    panel.className = 'search-results-panel hidden';
-    panel.setAttribute('role', 'region');
-    panel.setAttribute('aria-label', 'Результаты поиска');
-    panel.innerHTML =
-        '<div class="search-results-head"><strong></strong>' +
-            '<button type="button" class="search-results-close" aria-label="Закрыть результаты"><span class="eic eic-x" aria-hidden="true"></span></button>' +
-        '</div>' +
-        '<div class="search-results-list" role="listbox"></div>';
-    input.closest('.search-box').insertAdjacentElement('afterend', panel);
-    panel.querySelector('.search-results-close').addEventListener('click', () => {
-        input.value = '';
-        clearSearchPanel();
-        input.focus();
-    });
-    searchState.panel = panel;
-}
-
-function normalizeSearchText(value) {
-    return String(value || '').toLocaleLowerCase('ru-RU').replace(/ё/g, 'е');
-}
-
-function readableSearchText(element) {
-    const clone = element.cloneNode(true);
-    clone.querySelectorAll('.katex').forEach(node => {
-        const annotation = node.querySelector('annotation[encoding="application/x-tex"]');
-        const source = annotation ? annotation.textContent.trim() : '';
-        node.replaceWith(document.createTextNode(source ? ' ' + source + ' ' : ''));
-    });
-    clone.querySelectorAll('button, script, style, [aria-hidden="true"]').forEach(node => node.remove());
-    return String(clone.textContent || '').replace(/\s+/g, ' ').trim();
-}
-
-function countSearchOccurrences(text, term) {
-    let count = 0;
-    let pos = 0;
-    while ((pos = text.indexOf(term, pos)) !== -1) { count++; pos += Math.max(1, term.length); }
-    return count;
-}
-
-function searchResultKind(element) {
-    if (element.classList.contains('accent-word-card')) return 'Ударение';
-    const labels = [
-        ['definition-box', 'Определение'], ['formula-box', 'Формула'], ['theorem-box', 'Теорема'],
-        ['remark-box', 'Замечание'], ['reminder-box', 'Напоминание'], ['lemma-box', 'Лемма'], ['example-box', 'Пример'],
-        ['statement-box', 'Утверждение'], ['corollary-box', 'Следствие'], ['properties-box', 'Свойства'],
-        ['experiment-box', 'Опыт'], ['derivation-box', 'Вывод'], ['system-box', 'Система'],
-        ['proof-box', 'Доказательство'], ['topic-title', 'Раздел']
-    ];
-    const found = labels.find(([className]) => element.classList.contains(className));
-    return found ? found[1] : 'Текст';
-}
-
-function buildSearchSnippet(text, normalizedTerm) {
-    const normalized = normalizeSearchText(text);
-    const index = normalized.indexOf(normalizedTerm);
-    const radius = 58;
-    const start = Math.max(0, index - radius);
-    const end = Math.min(text.length, index + normalizedTerm.length + radius);
-    const prefix = start > 0 ? '…' : '';
-    const suffix = end < text.length ? '…' : '';
-    const before = text.slice(start, index);
-    const match = text.slice(index, index + normalizedTerm.length);
-    const after = text.slice(index + normalizedTerm.length, end);
-    return prefix + escapeSearchHtml(before) + '<mark class="search-result-term">' +
-        escapeSearchHtml(match) + '</mark>' + escapeSearchHtml(after) + suffix;
-}
-
-function performSearchPanel(rawTerm) {
-    clearHighlights();
-    const normalizedTerm = normalizeSearchText(rawTerm.trim());
-    searchState.term = normalizedTerm;
-    searchState.results = [];
-    searchState.currentIndex = -1;
-    searchState.active = true;
-
-    const seen = new Set();
-    document.querySelectorAll('.main-content .topic[id]').forEach(topic => {
-        const title = topic.querySelector('.topic-title');
-        const topicName = title ? readableSearchText(title) : (topic.id || 'Раздел');
-        topic.querySelectorAll(SEARCH_CONTENT_SELECTOR).forEach(element => {
-            if (element.hasAttribute('data-stress-clone')) return;
-            if (seen.has(element)) return;
-            const semanticParent = element.parentElement && element.parentElement.closest(SEARCH_SEMANTIC_SELECTOR);
-            if (semanticParent && semanticParent !== element) return;
-            const text = readableSearchText(element);
-            const normalized = normalizeSearchText(text);
-            if (!text || !normalized.includes(normalizedTerm)) return;
-            seen.add(element);
-            searchState.results.push({
-                element,
-                topic,
-                topicName,
-                kind: searchResultKind(element),
-                text,
-                occurrences: countSearchOccurrences(normalized, normalizedTerm)
-            });
-        });
-    });
-
-    searchState.totalResults = searchState.results.length;
-    searchState.results = searchState.results.slice(0, 60);
-    renderSearchResults();
-}
-
-function renderSearchResults() {
-    const panel = searchState.panel;
-    if (!panel) return;
-    const head = panel.querySelector('.search-results-head strong');
-    const list = panel.querySelector('.search-results-list');
-    const total = searchState.totalResults;
-    head.textContent = total
-        ? (total > searchState.results.length ? searchState.results.length + ' из ' + total : total) + ' ' + pluralSearch(total, 'результат', 'результата', 'результатов')
-        : 'Ничего не найдено';
-    list.innerHTML = '';
-
-    searchState.results.forEach((result, index) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'search-result-item';
-        button.dataset.index = String(index);
-        button.setAttribute('role', 'option');
-        button.setAttribute('aria-selected', 'false');
-        button.innerHTML =
-            '<span class="search-result-meta"><strong>' + escapeSearchHtml(result.topicName) + '</strong>' +
-                '<small>' + escapeSearchHtml(result.kind) + (result.occurrences > 1 ? ' · ' + result.occurrences : '') + '</small></span>' +
-            '<span class="search-result-snippet">' + buildSearchSnippet(result.text, searchState.term) + '</span>';
-        button.addEventListener('click', () => openSearchResult(index));
-        list.appendChild(button);
-    });
-
-    panel.classList.remove('hidden');
-    searchState.input?.setAttribute('aria-expanded', 'true');
-}
-
-function pluralSearch(n, one, few, many) {
-    if (n % 10 === 1 && n % 100 !== 11) return one;
-    if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return few;
-    return many;
-}
-
-function updateSearchResultSelection() {
-    if (!searchState.panel) return;
-    searchState.panel.querySelectorAll('.search-result-item').forEach((button, index) => {
-        const active = index === searchState.currentIndex;
-        button.classList.toggle('active', active);
-        button.setAttribute('aria-selected', String(active));
-        if (active) button.scrollIntoView({ block: 'nearest' });
-    });
-}
-
-function highlightSearchResult(element, term) {
-    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
-        acceptNode(node) {
-            const parent = node.parentElement;
-            if (!parent || parent.closest('.katex, button, script, style, noscript')) return NodeFilter.FILTER_REJECT;
-            return normalizeSearchText(node.textContent).includes(term) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-        }
-    });
-    const nodes = [];
-    while (walker.nextNode()) nodes.push(walker.currentNode);
-    let first = null;
-    nodes.forEach(node => {
-        const text = node.textContent;
-        const normalized = normalizeSearchText(text);
-        const fragment = document.createDocumentFragment();
-        let pos = 0;
-        let index;
-        while ((index = normalized.indexOf(term, pos)) !== -1) {
-            if (index > pos) fragment.appendChild(document.createTextNode(text.slice(pos, index)));
-            const mark = document.createElement('mark');
-            mark.className = 'search-hl';
-            mark.textContent = text.slice(index, index + term.length);
-            if (!first) { first = mark; mark.classList.add('search-hl-active'); }
-            fragment.appendChild(mark);
-            pos = index + term.length;
-        }
-        if (pos < text.length) fragment.appendChild(document.createTextNode(text.slice(pos)));
-        node.parentNode.replaceChild(fragment, node);
-    });
-    return first;
-}
-
-function openSearchResult(index) {
-    const result = searchState.results[index];
-    if (!result) return;
-    searchState.currentIndex = index;
-    updateSearchResultSelection();
-    clearHighlights();
-
-    if (window.experimentalReader && window.experimentalReader.isActive()) {
-        window.experimentalReader.revealElement(result.element, { source: 'search', animate: false, scroll: false });
-    }
-    if (typeof window.closeMobileMenu === 'function') window.closeMobileMenu();
-
-    requestAnimationFrame(() => {
-        const mark = highlightSearchResult(result.element, searchState.term);
-        (mark || result.element).scrollIntoView({ behavior: 'smooth', block: 'center' });
-        result.element.classList.add('search-target-pulse');
-        setTimeout(() => result.element.classList.remove('search-target-pulse'), 1100);
-    });
-}
-
-function clearSearchPanel() {
-    if (searchState.debounce) clearTimeout(searchState.debounce);
-    clearHighlights();
-    searchState.results = [];
-    searchState.currentIndex = -1;
-    searchState.term = '';
-    searchState.totalResults = 0;
-    searchState.active = false;
-    if (searchState.panel) searchState.panel.classList.add('hidden');
-    searchState.input?.setAttribute('aria-expanded', 'false');
-}
-
-function escapeSearchHtml(s) {
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-}
-
-function clearHighlights() {
-    document.querySelectorAll('mark.search-hl').forEach(mark => {
-        const parent = mark.parentNode;
-        if (!parent) return;
-        mark.replaceWith(document.createTextNode(mark.textContent));
-        parent.normalize();
-    });
-}
-
-function removeHighlights(element) {
-    if (!element) return;
-    element.querySelectorAll('mark.search-hl').forEach(mark => {
-        mark.replaceWith(document.createTextNode(mark.textContent));
-    });
-    element.normalize();
-}
-
-// ============================================
 // ЭФФЕКТЫ ПРИ СКРОЛЛЕ
 // ============================================
 
@@ -858,6 +522,18 @@ function initProofToggles() {
 // МОБИЛЬНОЕ МЕНЮ
 // ============================================
 
+let mobileMenuOpener = null;
+function mobileMenuButton() {
+    return [...document.querySelectorAll('#expBottomNav [aria-controls="sidebar"], #menuToggle')].find(button => button.getClientRects().length);
+}
+
+function syncSidebarVisibility(sidebar) {
+    const mobile = window.innerWidth <= 768;
+    const open = sidebar.classList.contains('open');
+    sidebar.inert = document.body.classList.contains('matcenter-auth-open') || (mobile ? !open : sidebar.classList.contains('collapsed'));
+    document.querySelectorAll('#menuToggle, #expBottomNav [aria-controls="sidebar"]').forEach(button => button.setAttribute('aria-expanded', String(open)));
+}
+
 function initMobileMenu() {
     // Guard: вешаем document.click только один раз. При повторных вызовах
     // не будем устраивать дубли обработчиков (которые приводили к "двойному закрытию").
@@ -882,9 +558,17 @@ function initMobileMenu() {
         document.body.appendChild(overlay);
     }
     
-    menuToggle.addEventListener('click', () => {
-        openMobileMenu();
+    menuToggle.setAttribute('aria-controls', sidebar.id);
+    syncSidebarVisibility(sidebar);
+    matchMedia('(max-width: 768px)').addEventListener('change', event => {
+        const focusInside = sidebar.contains(document.activeElement);
+        const collapsed = !event.matches && _safeGet('sidebarCollapsed') === 'true';
+        sidebar.classList.toggle('collapsed', collapsed);
+        document.body.classList.toggle('sidebar-collapsed', collapsed);
+        closeMobileMenu(false);
+        if (focusInside && sidebar.inert) (event.matches ? mobileMenuButton() : document.querySelector('.sidebar-expand-btn'))?.focus({ preventScroll: true });
     });
+    menuToggle.addEventListener('click', () => openMobileMenu(menuToggle));
     
     closeSidebar.addEventListener('click', () => {
         closeMobileMenu();
@@ -915,10 +599,12 @@ function initMobileMenu() {
     });
 }
 
-function openMobileMenu() {
+function openMobileMenu(opener) {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.querySelector('.sidebar-overlay');
     
+    if (!sidebar || document.body.classList.contains('matcenter-auth-open')) return;
+    if (!sidebar.classList.contains('open')) mobileMenuOpener = opener || mobileMenuButton();
     sidebar.classList.add('open');
     sidebar.classList.remove('collapsed');
     sidebar.style.transform = '';
@@ -929,22 +615,29 @@ function openMobileMenu() {
     if (window.innerWidth <= 768) {
         document.body.classList.add('sidebar-open');
     }
+    syncSidebarVisibility(sidebar);
+    const first = [...sidebar.querySelectorAll('#closeSidebar, button, a[href], input')].find(el => !el.disabled && el.getClientRects().length);
+    first?.focus({ preventScroll: true });
 }
 
-function closeMobileMenu() {
+function closeMobileMenu(restoreFocus = true) {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.querySelector('.sidebar-overlay');
     
+    const wasOpen = sidebar?.classList.contains('open');
     if (sidebar) {
         sidebar.classList.remove('open');
         sidebar.classList.remove('exp-search-on'); // сбрасываем «режим поиска» в меню
         sidebar.style.transform = '';
+        syncSidebarVisibility(sidebar);
     }
     if (overlay) {
         overlay.classList.remove('active');
     }
 
     document.body.classList.remove('sidebar-open');
+    if (wasOpen && restoreFocus && mobileMenuOpener?.getClientRects().length) mobileMenuOpener.focus({ preventScroll: true });
+    mobileMenuOpener = null;
 }
 
 function initBottomSheetSwipe() {
@@ -1104,6 +797,7 @@ function initSidebarCollapse() {
         sidebar.classList.add('collapsed');
         document.body.classList.add('sidebar-collapsed');
     }
+    syncSidebarVisibility(sidebar);
     
     collapseBtn.addEventListener('click', () => {
         collapseSidebar();
@@ -1121,6 +815,8 @@ function collapseSidebar() {
     sidebar.classList.add('collapsed');
     document.body.classList.add('sidebar-collapsed');
     _safeSet('sidebarCollapsed', 'true');
+    syncSidebarVisibility(sidebar);
+    document.querySelector('.sidebar-expand-btn')?.focus({ preventScroll: true });
 }
 
 function expandSidebar() {
@@ -1130,6 +826,8 @@ function expandSidebar() {
     sidebar.classList.remove('collapsed');
     document.body.classList.remove('sidebar-collapsed');
     _safeSet('sidebarCollapsed', 'false');
+    syncSidebarVisibility(sidebar);
+    sidebar.querySelector('.sidebar-collapse-btn')?.focus({ preventScroll: true });
 }
 
 function toggleSidebar() {
@@ -1153,6 +851,11 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         const searchInput = document.getElementById('searchInput');
         if (searchInput) {
+            if (window.innerWidth <= 768 && searchInput.closest('#sidebar')) {
+                const searchButton = document.querySelector('#expBottomNav [aria-label="Поиск"]');
+                if (searchButton?.getClientRects().length) { searchButton.click(); return; }
+                openMobileMenu(mobileMenuButton());
+            }
             searchInput.focus();
             searchInput.select();
         }
@@ -1520,12 +1223,12 @@ function initExpBottomNav() {
         }
         clickById('bookmarksBtn');
     }
-    function toggleMenu() {
+    function toggleMenu(event) {
         const sb = document.getElementById('sidebar');
         if (sb && sb.classList.contains('open')) { if (window.closeMobileMenu) window.closeMobileMenu(); }
-        else if (window.openMobileMenu) window.openMobileMenu();
+        else if (window.openMobileMenu) window.openMobileMenu(event.currentTarget);
     }
-    function openSearch() {
+    function openSearch(event) {
         if (document.body.classList.contains('matcenter-page')) {
             const mobileInput = document.getElementById('mobileSearchInput') || document.getElementById('searchInput');
             if (mobileInput) {
@@ -1536,10 +1239,10 @@ function initExpBottomNav() {
         }
         const sb = document.getElementById('sidebar');
         if (sb) sb.classList.add('exp-search-on'); // временно показать строку поиска в меню
-        if (window.openMobileMenu) window.openMobileMenu();
+        if (window.openMobileMenu) window.openMobileMenu(event.currentTarget);
         setTimeout(function () {
             const s = document.getElementById('searchInput');
-            if (s) { s.scrollIntoView({ block: 'center' }); s.focus(); }
+            if (s && sb?.classList.contains('open')) { s.scrollIntoView({ block: 'center' }); s.focus(); }
         }, 90);
     }
 
@@ -1569,6 +1272,10 @@ function initExpBottomNav() {
         b.type = 'button';
         b.className = 'exp-bn-item';
         b.setAttribute('aria-label', it.label);
+        if (it.act === toggleMenu || (it.act === openSearch && !isMatcenter)) {
+            b.setAttribute('aria-controls', 'sidebar');
+            b.setAttribute('aria-expanded', 'false');
+        }
         b.innerHTML = it.icon + '<span class="exp-bn-label">' + it.label + '</span>';
         // Останавливаем всплытие: иначе глобальный «клик вне меню → закрыть»
         // тут же закроет только что открытое меню.

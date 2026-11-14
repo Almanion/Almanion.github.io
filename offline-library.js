@@ -14,7 +14,7 @@
                 const entry = await (await index.match(request)).json();
                 if (entry.cacheName?.startsWith(PREFIX) && await caches.has(entry.cacheName)) {
                     const pack = await caches.open(entry.cacheName);
-                    if ((await pack.keys()).length === entry.fileCount) result[entry.id] = entry;
+                    if (/^[a-z0-9-]+\.html$/.test(entry.page) && await pack.match('/' + entry.page) && (await pack.keys()).length === entry.fileCount) result[entry.id] = entry;
                 }
             } catch (_) {}
         }
@@ -43,7 +43,8 @@
         if (!dialog) return;
         const rows = dialog.querySelector('.offline-subjects');
         const active = location.pathname.split('/').pop();
-        const ordered = catalogue.slice().sort((a, b) => Number(b.page === active) - Number(a.page === active));
+        const retired = Object.values(installed).filter(pack => !catalogue.some(subject => subject.id === pack.id));
+        const ordered = catalogue.concat(retired).sort((a, b) => Number(b.page === active) - Number(a.page === active));
         rows.innerHTML = ordered.map(subject => {
             const pack = installed[subject.id], current = pack && pack.version === subject.version;
             const loading = job?.id === subject.id;
@@ -52,7 +53,8 @@
             return '<article data-offline-subject="' + esc(subject.id) + '" class="offline-subject' + (current ? ' is-ready' : '') + '">' +
                 '<div class="offline-subject-mark">' + (current ? checkIcon : downloadIcon) + '</div><div class="offline-subject-copy"><h3>' + esc(subject.title) + '</h3><div><span class="offline-subject-state">' + state + '</span><span>' + bytesLabel(subject.bytes) + '</span></div>' +
                 (loading ? '<progress max="100" value="' + percent + '" aria-label="Загрузка ' + esc(subject.title) + '"></progress>' : '') + '</div><div class="offline-subject-actions">' +
-                (loading ? '<button type="button" data-offline-cancel>Отменить</button>' : current ? '<a href="' + esc(subject.page) + '">Читать</a>' : '<button type="button" class="reader-tool-primary" data-offline-download="' + esc(subject.id) + '"' + (job || !navigator.onLine ? ' disabled' : '') + '>' + (pack ? 'Обновить' : 'Скачать') + '</button>') +
+                (pack ? '<a href="/' + esc(pack.page) + '">Читать</a>' : '') +
+                (loading ? '<button type="button" data-offline-cancel>Отменить</button>' : current ? '' : '<button type="button" class="reader-tool-primary" data-offline-download="' + esc(subject.id) + '"' + (job || !navigator.onLine ? ' disabled' : '') + '>' + (pack ? 'Обновить' : 'Скачать') + '</button>') +
                 (pack && !loading ? '<button type="button" class="reader-tool-icon" data-offline-remove="' + esc(subject.id) + '" aria-label="Удалить загрузку ' + esc(subject.title) + '" title="Удалить с устройства">' + svg('<path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V3h6v4"/>') + '</button>' : '') + '</div></article>';
         }).join('');
         const packs = Object.values(installed);
@@ -207,4 +209,17 @@
         try { await load(); render(); } catch (_) { dialog.querySelector('.offline-subjects').replaceChildren(); announce('Не удалось получить список предметов. Проверьте сеть и откройте окно снова.', true); }
     }
     window.AlmanionOffline = { open, download, installedPacks };
+    const saved = document.getElementById('offlineSaved');
+    if (saved && 'caches' in window) installedPacks().then(packs => {
+        const list = saved.querySelector('ul');
+        for (const pack of Object.values(packs).sort((a, b) => a.title.localeCompare(b.title, 'ru'))) {
+            const link = document.createElement('a');
+            link.href = '/' + pack.page;
+            link.textContent = pack.title;
+            const row = document.createElement('li');
+            row.append(link);
+            list.append(row);
+        }
+        saved.hidden = !list.childElementCount;
+    }).catch(() => {});
 })();

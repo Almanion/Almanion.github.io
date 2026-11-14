@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "assets": [
-    "/",
+    "/offline-library.js",
     "/index.html",
     "/offline.html",
     "/manifest.json",

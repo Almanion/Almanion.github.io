@@ -168,6 +168,7 @@
         'Удалить': 'Remove',
         'Перейти к блоку': 'Go to block',
         'Поиск по конспектам': 'Search notes',
+        'Этот раздел': 'This section',
         'Весь сайт': 'Entire site',
         'Эта страница': 'This page',
         'Ничего не найдено': 'No results',

@@ -26,7 +26,7 @@ jobs:
       contents: read
       actions: read
     outputs:
-      signal_only: ${{ steps.scope.outputs.signal_only }}
+      suite: ${{ steps.scope.outputs.suite }}
       campaign: ${{ steps.scope.outputs.campaign }}
     steps:
       - uses: actions/checkout@v7
@@ -45,7 +45,7 @@ jobs:
 
   build:
     needs: scope
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
       contents: read
@@ -62,6 +62,7 @@ jobs:
           cache: npm
 
       - name: Set up Java for Firebase rules tests
+        if: needs.scope.outputs.suite != 'content'
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -74,7 +75,7 @@ jobs:
         uses: actions/cache@v6.1.0
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-all-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('node_modules/playwright-core/package.json') }}
+          key: playwright-all-ubuntu24-${{ runner.arch }}-${{ hashFiles('node_modules/playwright-core/package.json') }}
 
       - name: Use upstream Ubuntu packages
         run: |
@@ -87,23 +88,36 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
 
       - name: Verify Firebase access rules
+        if: needs.scope.outputs.suite != 'content'
         run: npm run test:rules
 
       - name: Test, build, and validate
+        env:
+          ALMANION_TEST_SUITE: ${{ needs.scope.outputs.suite }}
         run: npm run ci
 
       - name: Verify native tab navigation
+        if: needs.scope.outputs.suite != 'reader' && needs.scope.outputs.suite != 'content'
         run: npx playwright test e2e/game-pages.spec.js --grep "Control and middle" --workers 1
 
       - name: Check Signal desktop and mobile interfaces
-        if: needs.scope.outputs.signal_only == 'true'
+        if: needs.scope.outputs.suite == 'signal'
         run: >-
-          npx playwright test signal-frontier game-pages --grep-invert "long (siege|infiltration): full operation"
+          npx playwright test signal-frontier game-pages --grep-invert "long (siege|infiltration): full operation|Control and middle clicks"
+
+      - name: Check educational pages
+        if: needs.scope.outputs.suite == 'reader'
+        run: npx playwright test '[/\\](?!game[.-]|signal-|orbital-)[^/\\]+\.spec\.js$'
+
+      - name: Verify published lesson content in the readers, search, study and print
+        if: needs.scope.outputs.suite == 'content'
+        run: >-
+          npx playwright test '[/\\](note-reading|note-filter|knowledge-tables|experiment-notebook|reader-tools|selection-definitions|site-improvements|print-(structure|pagination)|watch(-feed)?|home-redesign)\.spec\.js$'
 
       - name: Check all desktop and mobile interfaces
-        if: needs.scope.outputs.signal_only != 'true'
+        if: needs.scope.outputs.suite == 'all' || needs.scope.outputs.suite == 'web'
         run: >-
-          npx playwright test --grep-invert "long (siege|infiltration): full operation"
+          npx playwright test --grep-invert "long (siege|infiltration): full operation|Control and middle clicks"
 
       - name: Preserve failed interface diagnostics
         if: failure()
@@ -135,7 +149,7 @@ jobs:
     needs: scope
     if: needs.scope.outputs.campaign == 'true'
     name: Complete ${{ matrix.route }} (${{ matrix.profile }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # frontier-8 also verifies the complete finite-resource simulation before UI replay.
     timeout-minutes: 60
     strategy:
@@ -164,7 +178,7 @@ jobs:
         uses: actions/cache@v6.1.0
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('node_modules/playwright-core/package.json') }}
+          key: playwright-chromium-ubuntu24-${{ runner.arch }}-${{ hashFiles('node_modules/playwright-core/package.json') }}
 
       - name: Use upstream Ubuntu packages
         run: |

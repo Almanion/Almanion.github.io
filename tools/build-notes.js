@@ -137,6 +137,16 @@ function buildSubject(root, output, subject) {
         ? sections.map(renderSectionContent).join('\n\n')
         : renderEmptySubject(subject);
     let html = fs.readFileSync(sourcePath, 'utf8');
+    if (html.includes('<!-- NOTE_MATH_START -->')) {
+        const math = /\\[(\[]|\$[^$\n]+\$|<math[\s>]/.test(content);
+        const assets = math ? [
+            '<link rel="stylesheet" href="vendor/katex/katex.min.css">',
+            '<script defer src="vendor/katex/katex.min.js"></script>',
+            '<script defer src="vendor/katex/contrib/auto-render.min.js"></script>'
+        ].join('\n') : '';
+        html = replaceMarked(html, '<!-- NOTE_MATH_START -->', '<!-- NOTE_MATH_END -->', assets, subject.page);
+        html = html.replace(/<body\b[^>]*>/i, tag => tag.replace(/\sdata-no-math\b/, '').replace(/>$/, math ? '>' : ' data-no-math>'));
+    }
     html = replaceMarked(html, MARKERS.navStart, MARKERS.navEnd, nav, subject.page);
     html = replaceMarked(html, MARKERS.contentStart, MARKERS.contentEnd, content, subject.page);
     fs.mkdirSync(path.dirname(targetPath), { recursive: true });

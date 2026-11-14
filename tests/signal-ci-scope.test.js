@@ -18,9 +18,9 @@ const ui = [
   "e2e/helpers/signal-frontier-version.cjs",
   ".github/workflows/pages.yml",
 ];
-assert.deepEqual(classify(ui), { signalOnly: true, campaign: false });
+assert.deepEqual(classify(ui), { suite: "signal", campaign: false });
 assert.deepEqual(classify(ui, { forceCampaign: true }), {
-  signalOnly: true,
+  suite: "all",
   campaign: true,
 });
 for (const file of [
@@ -37,7 +37,7 @@ for (const file of [
   ]) {
     assert.deepEqual(
       classify([...ui, root + file]),
-      { signalOnly: file !== "new-mechanic.js", campaign: true },
+      { suite: file === "new-mechanic.js" ? "all" : "signal", campaign: true },
       file,
     );
   }
@@ -51,16 +51,16 @@ for (const file of [
 ]) {
   assert.deepEqual(
     classify([...ui, file]),
-    { signalOnly: false, campaign: true },
+    { suite: "all", campaign: true },
     file,
   );
 }
 assert.deepEqual(
   classify([...ui, "tests/helpers/signal-frontier-expedition-pilot.cjs"]),
-  { signalOnly: true, campaign: true },
+  { suite: "signal", campaign: true },
 );
 assert.deepEqual(classify(ui, { known: false }), {
-  signalOnly: false,
+  suite: "all",
   campaign: true,
 });
 for (const file of [
@@ -70,15 +70,27 @@ for (const file of [
 ])
   assert.deepEqual(
     classify([...ui, file]),
-    { signalOnly: false, campaign: false },
+    { suite: "all", campaign: true },
     file,
   );
-assert.deepEqual(classify([]), { signalOnly: false, campaign: true });
+assert.deepEqual(classify([]), { suite: "all", campaign: true });
 assert.deepEqual(classify(["game-source/signal-frontier/README.md"]), {
-  signalOnly: true,
+  suite: "signal",
   campaign: false,
 });
 const fs = require("node:fs");
+const note = "content/physics-10/sections/optika.json";
+assert.deepEqual(classify([note, "images/notes/physics-10/optika.svg"]), { suite: "content", campaign: false });
+assert.deepEqual(classify([note, "note-filter.js"]), { suite: "reader", campaign: false });
+assert.deepEqual(classify([note], { forceCampaign: true }), { suite: "all", campaign: true });
+assert.deepEqual(classify([note, "sw.js"]), { suite: "web", campaign: false });
+assert.deepEqual(classify([note, "game-source/signal-frontier/src/engine.js"]), { suite: "all", campaign: true });
+assert.deepEqual(classify([note, "unreviewed.js"]), { suite: "all", campaign: true });
+assert.deepEqual(classify(["tools/signal-ci-scope.js"]), { suite: "all", campaign: true });
+const readerTests = require("../tools/run-tests").listTests(".", "reader");
+assert.ok(readerTests.some(file => file.endsWith("signal-ci-scope.test.js")));
+assert.ok(readerTests.some(file => file.endsWith("reader-tools.test.js")));
+assert.ok(!readerTests.some(file => file.endsWith("signal-frontier-long-operation.test.js")));
 const workflow = fs.readFileSync(".github/workflows/pages.yml", "utf8");
 assert.match(workflow, /needs: \[scope, build, campaign\]/);
 assert.match(workflow, /needs\.build\.result == 'success'/);

@@ -30,6 +30,9 @@ if (site) {
     assert.match(fs.readFileSync(site+'/physics-10.html','utf8'),/note-runtime\.js\?v=\d{8}-\d+/);
     assert.match(fs.readFileSync(site+'/watch/index.html','utf8'),/experiment-notebook\.js/);
     const offline = JSON.parse(fs.readFileSync(site+'/offline-library.json'));
-    assert.ok(offline.subjects.every(subject=>subject.files.some(file=>file.url==='/experiment-notebook.js')));
+    for (const subject of offline.subjects) {
+        const page = fs.readFileSync(site + '/' + subject.page, 'utf8');
+        assert.equal(subject.files.some(file => file.url === '/experiment-notebook.js'), /\bexperiment-box\b/.test(page), subject.id);
+    }
 }
 console.log('experiment notebook schema, safe rendering, source identity, watch extraction and offline assets passed');

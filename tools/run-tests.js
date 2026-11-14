@@ -9,16 +9,17 @@ function compareNames(left, right) {
     return left === right ? 0 : (left < right ? -1 : 1);
 }
 
-function listTests(root) {
+function listTests(root, suite = 'all') {
     const testsRoot = path.join(root, 'tests');
     return fs.readdirSync(testsRoot, { withFileTypes: true })
         .filter(entry => entry.isFile() && entry.name.endsWith('.test.js'))
+        .filter(entry => !['content', 'reader', 'web'].includes(suite) || entry.name === 'signal-ci-scope.test.js' || !/^(?:game[.-]|orbital-|signal-)/.test(entry.name))
         .map(entry => path.join('tests', entry.name))
         .sort(compareNames);
 }
 
 function run(root, options = {}) {
-    const tests = listTests(root);
+    const tests = listTests(root, process.env.ALMANION_TEST_SUITE);
     if (!tests.length) throw new Error('No tests/*.test.js files were found.');
 
     let failures = 0;

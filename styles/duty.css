@@ -311,17 +311,45 @@ body:not(.no-hover) .duty-share-button:hover {
 }
 
 .duty-extra-heading {
-    margin-bottom: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .25rem .75rem;
+    padding: .65rem .15rem;
+    cursor: pointer;
+    list-style: none;
 }
+.duty-extra-heading::-webkit-details-marker { display: none; }
+.duty-extra-heading::after {
+    content: '';
+    width: .48rem;
+    height: .48rem;
+    margin: 0 .35rem 0 auto;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+}
+.duty-extra-schedule details[open] .duty-extra-heading::after { transform: rotate(225deg); }
+.duty-extra-schedule details[open] .duty-extra-grid { margin-top: .65rem; }
+.duty-next:not([hidden]) {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: .3rem .8rem;
+    padding-top: .8rem;
+    border-top: 1px solid var(--border-color);
+}
+.duty-next .duty-focus-label, .duty-next .duty-focus-range { margin: 0; }
 
 .duty-extra-heading h2 {
-    margin: 0 0 0.4rem;
+    margin: 0;
     font-size: clamp(1.2rem, 2.4vw, 1.5rem);
     font-weight: 700;
     letter-spacing: -0.025em;
 }
 
-.duty-extra-heading p {
+.duty-extra-heading span {
     margin: 0;
     color: var(--text-secondary);
     font-size: 0.85rem;

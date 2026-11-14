@@ -59,22 +59,36 @@ function signalFile(file) {
   );
   return !!asset && simulation.has(asset[1]);
 }
+// These sources only feed the educational pages. A new or shared path falls
+// back to the full suite until its dependencies have been reviewed.
+function isReaderFile(file) {
+  return /^content\/(?:subjects\.json$|[\w-]+\/(?:manifest\.json$|sections\/[\w-]+\.json$))/.test(file)
+    || /^(?:physics(?:-10|-exam)?|chemistry(?:-10)?|math|geometry(?:-formulas)?|russian-ege|likbez|literature-10|duty-10-1|offline)\.html$/.test(file)
+    || /^(?:script|note-runtime|experimental-reader|search|offline-library|russian-ege|english-ui|duty|note-filter|experiment-notebook|knowledge-check|bookmarks|print-export|pdf-download)\.js$/.test(file)
+    || /^(?:search-index|definition-index)\.json$/.test(file)
+    || /^styles\/(?:duty|reader-tools|note-filter|print|site\/20-layout-content)\.css$/.test(file)
+    || /^tools\/build-(?:notes|offline)\.js$/.test(file)
+    || /^(?:e2e|tests)\/(?:reader-tools|site-improvements|network-resilience|duty-extra|russian-ege|experiment-notebook|offline-catalogue)\.(?:spec|test)\.js$/.test(file)
+    || file === "matcenter/20-auth.js";
+}
+const routing = new Set([".github/workflows/pages.yml", "tools/signal-ci-scope.js", "tests/signal-ci-scope.test.js", "tools/run-tests.js"]);
+const offlineFiles = new Set(["sw.js", "performance/sw-shell.json", "tests/service-worker-resilience.test.js"]);
+function isNoteContent(file) {
+  return /^content\/[\w-]+\/(?:manifest\.json|sections\/[\w-]+\.json)$/.test(file)
+    || /^images\/notes\/.+\.(?:svg|png|jpe?g|webp)$/.test(file);
+}
 function classify(files, { known = true, forceCampaign = false } = {}) {
-  const signalOnly = known && files.length > 0 && files.every(signalFile);
-  // Shared build/dependency changes still run the entire site's browser suite.
-  // The engine simulations and generated-file checks remain unconditional.
-  const sharedBuild = new Set([
-    "package.json",
-    "package-lock.json",
-    "tools/build-signal.js",
-  ]);
-  const replay =
-    !known ||
-    !files.length ||
-    files.some(
-      (file) => !sharedBuild.has(file) && !classifyPresentation([file]),
-    );
-  return { signalOnly, campaign: forceCampaign || replay };
+  const changed = files.filter(file => !routing.has(file));
+  if (forceCampaign || !known || !changed.length) return { suite: "all", campaign: true };
+  if (changed.every(isNoteContent)) return { suite: "content", campaign: false };
+  const readerOnly = changed.every(file => isReaderFile(file) || isNoteContent(file));
+  if (readerOnly) return { suite: "reader", campaign: false };
+  if (changed.every(file => isReaderFile(file) || isNoteContent(file) || offlineFiles.has(file))) return { suite: "web", campaign: false };
+  const signalOnly = changed.every(signalFile);
+  // Worker changes can affect the games' offline navigation, but do not
+  // change a campaign's rules. Keep their normal browser and unit coverage.
+  const needsReplay = changed.some(file => !isReaderFile(file) && !isNoteContent(file) && !classifyPresentation([file]) && !offlineFiles.has(file));
+  return { suite: signalOnly ? "signal" : "all", campaign: needsReplay };
 }
 async function publishedBase(env, fetcher = fetch) {
   if (env.SCOPE_BASE) return env.SCOPE_BASE;
@@ -137,7 +151,7 @@ async function run() {
   if (process.env.GITHUB_OUTPUT)
     fs.appendFileSync(
       process.env.GITHUB_OUTPUT,
-      `signal_only=${scope.signalOnly}\ncampaign=${scope.campaign}\n`,
+      `suite=${scope.suite}\ncampaign=${scope.campaign}\n`,
     );
   return scope;
 }

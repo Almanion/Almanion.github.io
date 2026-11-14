@@ -28,14 +28,50 @@ test('study and export load on first intent; displayed formulas are study cards'
 });
 
 test('search includes physics 10 even with an old cached index', async ({ page }) => {
+    const requests = [];
+    page.on('request', request => { if (new URL(request.url()).pathname === '/search-index.json') requests.push(request.url()); });
     await page.addInitScript(() => sessionStorage.setItem('almanion_search_prebuilt_v3', JSON.stringify({ entries: [{ page: 'physics.html', id: 'old', title: 'Old', text: 'Old' }] })));
-    await page.goto('/physics-10.html');
+    await page.goto('/physics-10.html#fizicheskie-velichiny-i-izmereniya');
     await page.locator('#searchInput').fill('Термодинамический');
-    await expect(page.locator('#searchResultsPanel')).toContainText('Термодинамический');
+    await expect(page.locator('[data-search-scope="section"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#searchResultsPanel')).toContainText('Ничего не найдено');
     await page.locator('[data-search-scope="page"]').click();
     await expect(page.locator('#searchResultsPanel')).toContainText('Термодинамический');
+    expect(requests).toHaveLength(0);
+    await page.locator('[data-search-scope="all"]').click();
+    await expect(page.locator('.search-result-item').first()).toBeVisible();
+    expect(requests).toHaveLength(1);
+    await page.locator('[data-search-scope="page"]').click();
     await page.locator('.search-result-item').filter({ hasText: 'Термодинамический и статистический методы' }).first().click();
     await expect(page).toHaveURL(/#metody-molekulyarnoy-fiziki$/);
+});
+
+test('mobile menu and search own keyboard focus only while open', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/physics-10.html');
+    const sidebar = page.locator('#sidebar');
+    const menu = page.locator('#expBottomNav [aria-label="Меню"]');
+    await expect(sidebar).toHaveJSProperty('inert', true);
+    await menu.focus();
+    await page.keyboard.press('Enter');
+    await expect(menu).toHaveAttribute('aria-expanded', 'true');
+    await expect.poll(() => sidebar.evaluate(el => el.contains(document.activeElement))).toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeFocused();
+    await expect(sidebar).toHaveJSProperty('inert', true);
+    const search = page.locator('#expBottomNav [aria-label="Поиск"]');
+    await search.click();
+    await expect(page.locator('#searchInput')).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(search).toBeFocused();
+    await menu.click();
+    await page.setViewportSize({ width: 1200, height: 844 });
+    await expect(sidebar).not.toHaveClass(/\bopen\b/);
+    await expect(sidebar).toHaveJSProperty('inert', false);
+    await page.locator('#searchInput').focus();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(sidebar).toHaveJSProperty('inert', true);
+    await expect(menu).toBeFocused();
 });
 
 test('closed settings cannot take keyboard focus, open settings trap and restore it', async ({ page }) => {

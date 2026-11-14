@@ -270,6 +270,7 @@ function setMatcenterAuthPageLocked(locked) {
         element.inert = locked;
         if (locked) element.setAttribute('aria-hidden', 'true');
         else element.removeAttribute('aria-hidden');
+        if (!locked && element.id === 'sidebar' && typeof syncSidebarVisibility === 'function') syncSidebarVisibility(element);
     });
 }
 

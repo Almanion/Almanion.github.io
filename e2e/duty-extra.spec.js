@@ -13,7 +13,7 @@ const assignments = [
 test.use({ serviceWorkers: 'block' });
 test.beforeEach(async ({ page }) => {
     await page.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());
-    await page.clock.install({ time: new Date('2026-10-18T12:00:00+03:00') });
+    await page.clock.install({ time: new Date('2026-10-19T12:00:00+03:00') });
 });
 
 test('the dated daily duty matches the supplied assignments and remains independent of the annual schedule', async ({ page }) => {
@@ -41,6 +41,24 @@ test('the dated daily duty matches the supplied assignments and remains independ
     await page.locator('#dutySearchInput').fill('Близнец');
     await expect(extra.locator('.duty-extra-day')).toHaveCount(5);
     await expect(extra.locator('[data-duty-date="2026-10-19"] ul li')).toHaveText(assignments[0].people);
+});
+
+test('current and next shifts precede the collapsed daily archive', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-11-14T12:00:00+03:00'));
+    await page.goto('/duty-10-1.html');
+    await expect(page.locator('#dutyFocusLabel')).toHaveText('Сейчас дежурят');
+    await expect(page.locator('#dutyNext')).toBeVisible();
+    const people = await page.locator('#dutyNextPeople').innerText();
+    expect(people.length).toBeGreaterThan(0);
+    expect(people).not.toBe(await page.locator('#dutyFocusTitle').innerText());
+    const extra = page.locator('#dutyExtraDetails');
+    await expect(extra).toHaveJSProperty('open', false);
+    await extra.locator('summary').click();
+    await expect(extra.locator('.duty-extra-day').first()).toBeVisible();
+    await page.clock.setFixedTime(new Date('2027-01-04T12:00:00+03:00'));
+    await page.reload();
+    await expect(page.locator('#dutyFocusLabel')).toHaveText('Следующее дежурство');
+    await expect(page.locator('#dutyNext')).toBeHidden();
 });
 
 for (const dark of [false, true]) {

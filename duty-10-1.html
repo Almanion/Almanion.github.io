@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
-    <link rel="stylesheet" href="styles/duty.css?v=20261018-1">
+    <link rel="stylesheet" href="styles/duty.css?v=20261114">
 </head>
 <body class="duty-page" data-no-math>
     <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -60,13 +60,19 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.4"/><circle cx="6" cy="12" r="2.4"/><circle cx="18" cy="19" r="2.4"/><path d="m8.1 10.8 7.8-4.6M8.1 13.2l7.8 4.6"/></svg>
                 <span>Поделиться</span>
             </button>
+            <div class="duty-next" id="dutyNext" hidden>
+                <span class="duty-focus-label">Следом дежурят</span>
+                <strong id="dutyNextPeople"></strong>
+                <span class="duty-focus-range" id="dutyNextRange"></span>
+            </div>
         </section>
 
         <section class="duty-extra-schedule" id="dutyExtraSchedule" aria-labelledby="dutyExtraTitle">
-            <div class="duty-extra-heading">
+            <details id="dutyExtraDetails">
+            <summary class="duty-extra-heading">
                 <h2 id="dutyExtraTitle">Дежурство по дням</h2>
-                <p>19–24 октября 2026 · Отдельно от основного графика</p>
-            </div>
+                <span>19–24 октября 2026</span>
+            </summary>
             <div class="duty-extra-grid">
                 <article class="duty-extra-day" data-duty-date="2026-10-19">
                     <h3>Понедельник</h3>
@@ -122,6 +128,7 @@
                     </ul>
                 </article>
             </div>
+            </details>
         </section>
 
         <section class="duty-schedule" aria-labelledby="dutyScheduleTitle">
@@ -275,6 +282,6 @@
     <script src="script.js?v=20260906-1"></script>
     <script src="settings.js?v=20261002-1"></script>
     <script src="account.js?v=20260908-1"></script>
-    <script src="duty.js?v=20261003-1"></script>
+    <script src="duty.js?v=20261114"></script>
 </body>
 </html>

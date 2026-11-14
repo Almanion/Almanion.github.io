@@ -171,7 +171,8 @@ async function networkFirst(request, fallbackUrl) {
 
 async function offlineResponse(request, fallbackUrl) {
     return await pinnedResponse(request) || await freshCachedResponse(request)
-        || (fallbackUrl ? await caches.match(fallbackUrl) : null);
+        || (new URL(request.url).pathname === '/' ? await freshCachedResponse(new Request(new URL('/index.html', request.url))) : null)
+        || (fallbackUrl ? await (await caches.open(APP_SHELL_CACHE)).match(fallbackUrl) : null);
 }
 
 async function staleWhileRevalidate(request, event) {
@@ -189,21 +190,23 @@ async function staleWhileRevalidate(request, event) {
     return await pinnedResponse(request) || response || new Response('', { status: 504, statusText: 'Offline' });
 }
 
-async function pinnedResponse(request) {
-    if (!offlinePacks) {
-        const index = await caches.open(OFFLINE_INDEX);
-        offlinePacks = [];
-        for (const key of await index.keys()) {
-            if (!new URL(key.url).pathname.startsWith('/__offline/')) continue;
-            try {
-                const record = await (await index.match(key)).json();
-                if (record.cacheName?.startsWith(OFFLINE_PREFIX)) offlinePacks.push(record);
-            } catch (_) {}
-        }
-        offlinePacks.sort((a, b) => b.downloadedAt - a.downloadedAt);
+async function readPackIndex() {
+    const index = await caches.open(OFFLINE_INDEX);
+    const records = [];
+    for (const key of await index.keys()) {
+        if (!new URL(key.url).pathname.startsWith('/__offline/')) continue;
+        try {
+            const record = await (await index.match(key)).json();
+            if (record.cacheName?.startsWith(OFFLINE_PREFIX)) records.push(record);
+        } catch (_) {}
     }
+    return records.sort((a, b) => b.downloadedAt - a.downloadedAt);
+}
+
+async function pinnedResponse(request) {
+    if (!offlinePacks) offlinePacks = readPackIndex().catch(() => { offlinePacks = null; return []; });
     const url = new URL(request.url); url.search = ''; url.hash = '';
-    for (const record of offlinePacks) {
+    for (const record of await offlinePacks) {
         if (!await caches.has(record.cacheName)) continue;
         const cache = await caches.open(record.cacheName);
         const response = await cache.match(url.href);

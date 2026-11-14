@@ -20,7 +20,8 @@
         panel: null,
         list: null,
         count: null,
-        scope: 'all',
+        scope: 'page',
+        request: 0,
         index: [],
         indexPromise: null,
         results: [],
@@ -74,8 +75,8 @@
 
     function entriesFromDocument(doc, page) {
         let nodes = Array.from(doc.querySelectorAll('.topic[id], .accent-word-card[id]'))
-            .filter(node => !node.matches('.topic') || !node.querySelector('.accent-word-card[id]'));
-        if (!nodes.length) nodes = Array.from(doc.querySelectorAll('.content-section[id]'));
+            .filter(node => !node.matches('.topic') || !node.querySelector('.accent-word-card'));
+        if (!nodes.length) nodes = doc.matches?.('.content-section[id]') ? [doc] : Array.from(doc.querySelectorAll('.content-section[id]'));
 
         return nodes.map((node, order) => {
             const heading = node.matches('.accent-word-card')
@@ -182,6 +183,13 @@
         return state.indexPromise;
     }
 
+    function currentSection() {
+        const reading = document.querySelector('.content-section.exp-reader-section-current');
+        if (reading) return reading;
+        const sections = Array.from(document.querySelectorAll('.main-content .content-section:not(.notes-empty-state)'));
+        return sections.find(section => section.getBoundingClientRect().bottom > innerHeight * 0.25) || sections.at(-1);
+    }
+
     function createPanel() {
         const existing = document.getElementById('searchResultsPanel');
         if (existing) existing.remove();
@@ -191,14 +199,19 @@
         panel.className = 'search-results-panel hidden site-search-panel';
         panel.setAttribute('role', 'region');
         panel.setAttribute('aria-label', 'Результаты поиска');
+        const section = currentSection();
+        state.scope = section ? 'section' : 'page';
+        const scopes = [];
+        if (section) scopes.push(['section', 'Этот раздел']);
+        if (!section || document.querySelectorAll('.main-content .content-section:not(.notes-empty-state)').length > 1) scopes.push(['page', 'Эта страница']);
+        scopes.push(['all', 'Весь сайт']);
         panel.innerHTML = `
             <div class="search-results-head">
                 <strong class="site-search-count">Поиск по конспектам</strong>
                 <button type="button" class="search-results-close" aria-label="Закрыть">×</button>
             </div>
             <div class="site-search-scope" role="group" aria-label="Область поиска">
-                <button type="button" class="active" data-search-scope="all" aria-pressed="true">Весь сайт</button>
-                <button type="button" data-search-scope="page" aria-pressed="false">Эта страница</button>
+                ${scopes.map(([id, label]) => `<button type="button" class="${id === state.scope ? 'active' : ''}" data-search-scope="${id}" aria-pressed="${id === state.scope}">${label}</button>`).join('')}
             </div>
             <div class="search-results-list" role="listbox"></div>`;
 
@@ -228,6 +241,7 @@
     }
 
     function close() {
+        state.request++;
         state.panel?.classList.add('hidden');
         state.input?.setAttribute('aria-expanded', 'false');
         state.selected = -1;
@@ -323,15 +337,18 @@
         }
 
         show();
-        state.count.textContent = 'Индексируем конспекты…';
-        state.list.innerHTML = '<div class="site-search-empty">Первый поиск может занять несколько секунд.</div>';
-        const requestQuery = state.query;
-        await ensureIndex();
-        if (requestQuery !== state.query) return;
-
-        const currentPage = pagePath(location.pathname);
-        const ranked = state.index
-            .filter(entry => state.scope === 'all' || entry.page === currentPage)
+        const request = ++state.request;
+        let entries;
+        if (state.scope === 'all') {
+            state.count.textContent = 'Индексируем конспекты…';
+            state.list.replaceChildren();
+            entries = await ensureIndex();
+            if (request !== state.request) return;
+        } else {
+            const root = state.scope === 'section' ? currentSection() || document : document;
+            entries = entriesFromDocument(root, { path: pagePath(location.pathname), label: document.querySelector('.page-header h1')?.textContent || document.title });
+        }
+        const ranked = entries
             .map(entry => ({ entry, score: scoreEntry(entry, tokens) }))
             .filter(item => item.score >= 0)
             .sort((a, b) => b.score - a.score || a.entry.title.localeCompare(b.entry.title, 'ru'));

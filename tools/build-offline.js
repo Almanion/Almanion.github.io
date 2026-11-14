@@ -16,7 +16,11 @@ function build({ root, site }) {
     });
     fs.cpSync(path.join(dist, 'fonts'), path.join(vendor, 'fonts'), { recursive: true });
     fs.copyFileSync(path.join(katexRoot, 'LICENSE'), path.join(vendor, 'LICENSE.txt'));
-    const catalogue = subjects.map(subject => {
+    const catalogue = [];
+    for (const subject of subjects) {
+        const manifestPath = 'content/' + subject.id + '/manifest.json';
+        const manifest = JSON.parse(fs.readFileSync(path.join(site, manifestPath), 'utf8'));
+        if (!manifest.sections.length) continue;
         const assets = new Map();
         function add(url, source) {
             const clean = url.replace(/[?#].*$/, '');
@@ -44,19 +48,18 @@ function build({ root, site }) {
             }
         }
         add('/' + subject.page, subject.page);
-        OPTIONAL.concat('experiment-notebook.js').forEach(file => add('/' + file, file));
+        OPTIONAL.forEach(file => add('/' + file, file));
+        if (/\bexperiment-box\b/.test(fs.readFileSync(path.join(site, subject.page), 'utf8'))) add('/experiment-notebook.js', 'experiment-notebook.js');
         ['index.html', 'offline.html', 'content/subjects.json', 'search-index.json', 'definition-index.json', 'selection-definitions.js', 'styles/selection-definitions.css', 'manifest.json'].forEach(file => add('/' + file, file));
-        const manifestPath = 'content/' + subject.id + '/manifest.json';
         add('/' + manifestPath, manifestPath);
-        const manifest = JSON.parse(fs.readFileSync(path.join(site, manifestPath), 'utf8'));
         (manifest.sections || []).forEach(entry => {
             const sectionPath = 'content/' + subject.id + '/sections/' + (typeof entry === 'string' ? entry : entry.id) + '.json';
             add('/' + sectionPath, sectionPath);
         });
         const files = Array.from(assets.values()).sort((a, b) => a.url.localeCompare(b.url, 'en'));
         const version = hash(JSON.stringify(files)).slice(0, 20);
-        return { id: subject.id, title: subject.title, page: subject.page, version, bytes: files.reduce((sum, file) => sum + file.bytes, 0), files };
-    });
+        catalogue.push({ id: subject.id, title: subject.title, page: subject.page, version, bytes: files.reduce((sum, file) => sum + file.bytes, 0), files });
+    }
     const manifest = { schemaVersion: 1, subjects: catalogue };
     fs.writeFileSync(path.join(site, 'offline-library.json'), JSON.stringify(manifest));
     return manifest;

@@ -233,7 +233,7 @@ test('offline library downloads a complete subject; math and images survive a ne
     await blockExternal(page);
     await page.goto('/physics-10.html');
     await page.locator('#offlineLibraryButton').click();
-    await expect(page.locator('.offline-subject')).toHaveCount(9);
+    await expect(page.locator('[data-offline-subject="physics-10"]')).toBeVisible();
     await page.evaluate(() => window.AlmanionOffline.download('physics-10'));
     await expect(page.locator('[data-offline-subject="physics-10"]')).toHaveClass(/is-ready/);
     await page.setViewportSize({ width: 360, height: 780 });
@@ -241,6 +241,13 @@ test('offline library downloads a complete subject; math and images survive a ne
     await page.screenshot({ path: testInfo.outputPath('offline-library-mobile.png') });
     await page.keyboard.press('Escape');
     await context.setOffline(true);
+    await page.goto('/unvisited/notes.html');
+    await expect(page.getByRole('heading', { name: 'Скачанные конспекты' })).toBeVisible();
+    const savedPhysics = page.locator('#offlineSaved a[href="/physics-10.html"]');
+    await expect(savedPhysics).toContainText('Физика');
+    await expect(page.locator('#offlineSaved a')).toHaveCount(1);
+    await savedPhysics.click();
+    await expect(page).toHaveURL(/\/physics-10\.html(#.*)?$/);
     await page.goto('/physics-10.html?offline-test=1#temperatura-i-uravnenie-sostoyaniya');
     await expect(page.locator('.katex').first()).toBeAttached();
     await expect.poll(() => page.evaluate(() => document.fonts.check('16px KaTeX_Main'))).toBe(true);
@@ -259,7 +266,7 @@ test('failed offline replacement preserves the previously downloaded copy', asyn
     test.setTimeout(120000);
     await blockExternal(page); await page.goto('/physics-10.html');
     await page.locator('#offlineLibraryButton').click();
-    await expect(page.locator('.offline-subject')).toHaveCount(9);
+    await expect(page.locator('[data-offline-subject="physics-10"]')).toBeVisible();
     await page.evaluate(() => window.AlmanionOffline.download('physics-10'));
     const before = await page.evaluate(async () => (await window.AlmanionOffline.installedPacks())['physics-10']);
     expect(before).toBeTruthy();
@@ -280,7 +287,7 @@ test('cancelling an offline update preserves the old complete package', async ({
     test.setTimeout(120000);
     await blockExternal(page); await page.goto('/physics-10.html');
     await page.locator('#offlineLibraryButton').click();
-    await expect(page.locator('.offline-subject')).toHaveCount(9);
+    await expect(page.locator('[data-offline-subject="physics-10"]')).toBeVisible();
     await page.evaluate(() => window.AlmanionOffline.download('physics-10'));
     const before = await page.evaluate(async () => (await window.AlmanionOffline.installedPacks())['physics-10']);
     let pending = 0;
@@ -302,7 +309,7 @@ test('cancelling an offline update preserves the old complete package', async ({
 test('offline download can be cancelled while service worker preparation is stalled', async ({ page }) => {
     await blockExternal(page); await notes(page);
     await page.locator('#offlineLibraryButton').click();
-    await expect(page.locator('.offline-subject')).toHaveCount(9);
+    await expect(page.locator('[data-offline-subject="physics-10"]')).toBeVisible();
     await page.evaluate(() => {
         navigator.serviceWorker.register = () => Promise.resolve({});
         Object.defineProperty(navigator.serviceWorker, 'ready', { configurable: true, value: new Promise(() => {}) });
@@ -317,7 +324,7 @@ test('offline download can be cancelled while service worker preparation is stal
 test('reading dialogs fit narrow screens and both site themes', async ({ page }, testInfo) => {
     await blockExternal(page); await notes(page);
     await page.locator('#offlineLibraryButton').click();
-    await expect(page.locator('.offline-subject')).toHaveCount(9);
+    await expect(page.locator('[data-offline-subject="physics-10"]')).toBeVisible();
     await page.evaluate(() => window.AlmanionNoteRuntime.ensure('settings'));
     for (const theme of ['dark', 'light']) {
         await page.evaluate(theme => { siteSettings.expTheme = theme; applyExperimental(); }, theme);

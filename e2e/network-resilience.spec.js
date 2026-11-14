@@ -78,7 +78,7 @@ test('PDF, bookmarks, personal notes and offline library work while Firebase SDK
     await expect(page.locator('#printExportButton')).toBeEnabled();
     await page.keyboard.press('Escape');
     await page.locator('#offlineLibraryButton').click();
-    await expect(page.locator('.offline-subject')).toHaveCount(9);
+    await expect(page.locator('[data-offline-subject="physics-10"]')).toBeVisible();
     await page.keyboard.press('Escape');
     expect(await page.evaluate(() => !!window.AlmanionAccount)).toBe(false);
     await cloud.release();

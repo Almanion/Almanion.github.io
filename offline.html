@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#2563eb">
     <title>Almanion — офлайн</title>
+    <script defer src="/offline-library.js"></script>
     <style>
         :root {
             color-scheme: light dark;
@@ -86,6 +87,19 @@
             padding: 0.78rem 1.05rem;
             text-decoration: none;
         }
+        #offlineSaved { margin: 1.25rem 0; text-align: left; }
+        #offlineSaved h2 { font-size: 1rem; }
+        #offlineSaved ul { list-style: none; padding: 0; }
+        #offlineSaved a {
+            display: block;
+            padding: .65rem 0;
+            color: var(--text);
+            background: transparent;
+            border-bottom: 1px solid var(--border);
+            border-radius: 0;
+            text-decoration: underline;
+            text-underline-offset: .2em;
+        }
     </style>
 </head>
 <body>
@@ -99,7 +113,10 @@
             </svg>
         </div>
         <h1>Сейчас нет соединения</h1>
-        <p>Приложение Almanion откроет уже сохранённые страницы, а новые конспекты и задачи подтянутся автоматически, когда интернет вернётся.</p>
+        <section id="offlineSaved" hidden aria-labelledby="offlineSavedTitle">
+            <h2 id="offlineSavedTitle">Скачанные конспекты</h2>
+            <ul></ul>
+        </section>
         <button type="button" onclick="location.reload()">Попробовать снова</button>
     </main>
 </body>

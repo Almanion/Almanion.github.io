@@ -11,7 +11,6 @@ const page = fs.readFileSync(path.join(root, 'russian-ege.html'), 'utf8');
 const home = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const searchPages = JSON.parse(fs.readFileSync(path.join(root, 'performance', 'search-pages.json'), 'utf8'));
 const searchClient = fs.readFileSync(path.join(root, 'search.js'), 'utf8');
-const localSearch = fs.readFileSync(path.join(root, 'script.js'), 'utf8');
 const knowledgeCheck = fs.readFileSync(path.join(root, 'knowledge-check.js'), 'utf8');
 const russianRuntime = fs.readFileSync(path.join(root, 'russian-ege.js'), 'utf8');
 
@@ -53,9 +52,8 @@ assert.doesNotMatch(home, /m11\.2 8\.75 1\.85-1\.15/, 'the Russian subject icon 
 
 assert.ok(searchPages.some(item => item.path === 'russian-ege.html'), 'site search must index the new subject');
 assert.match(searchClient, /\.accent-word-card\[id\]/);
-assert.match(localSearch, /accent-word-card/);
-assert.match(localSearch, /hasAttribute\('data-stress-clone'\)/,
-    'local search must not show the same stress word twice through the All subsection');
+assert.match(searchClient, /!node\.querySelector\('\.accent-word-card'\)/,
+    'local search must skip group entries, including the All subsection with cloned words');
 const entries = SearchIndex.parseEntries(page, { path: 'russian-ege.html', label: 'Русский язык ЕГЭ' });
 assert.ok(entries.some(entry => entry.id === 'stress-001' && entry.title === 'агЕнт'));
 assert.ok(entries.some(entry => entry.id === 'stress-255' && entry.title === 'экспЕрт'));
