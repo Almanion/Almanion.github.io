@@ -907,21 +907,24 @@
     $("matter-counter").hidden = !E.development.matter.enabled(state);
     $("field-matter").textContent = state.economy.matter || 0;
     const economy = state.campaign ? E.development.summary(state) : null;
-    $("field-army-used").textContent = economy ? economy.population - economy.armyReserved : selectedUnits().length;
     $("field-army-denominator").hidden = !economy;
     $("worker-capacity-counter").hidden = !economy;
-    if (economy) {
-      $("field-army-limit").textContent = economy.capacity;
-      $("field-worker-used").textContent = economy.workers;
-      $("field-worker-limit").textContent = economy.workerCapacity;
-      for (const [id, reserved, used, capacity] of [
-        ["army", economy.armyReserved, economy.population, economy.capacity],
-        ["worker", economy.workerReserved, economy.workers + economy.workerReserved, economy.workerCapacity],
+    if (!economy) {
+      $("field-army-used").textContent = selectedUnits().length;
+    } else {
+      for (const [id, assigned, reserved, capacity] of [
+        ["army", economy.population - economy.armyReserved, economy.armyReserved, economy.capacity],
+        ["worker", economy.workers, economy.workerReserved, economy.workerCapacity],
       ]) {
-        $(id + "-reserved").hidden = !reserved;
-        $(id + "-reserved").textContent = "+" + reserved + " в очереди";
-        $(id + "-capacity-counter").classList.toggle("capacity-full", used >= capacity);
-        $(id + "-capacity-counter").title = `${used} занято с очередью из ${capacity}` +
+        const used = assigned + reserved;
+        $("field-" + id + "-used").textContent = assigned;
+        $("field-" + id + "-limit").textContent = capacity;
+        const queue = $(id + "-reserved");
+        queue.hidden = !reserved;
+        queue.textContent = "+" + reserved + " в очереди";
+        const counter = $(id + "-capacity-counter");
+        counter.classList.toggle("capacity-full", used >= capacity);
+        counter.title = `${used} занято с очередью из ${capacity}` +
           (E.development.logistics(state) ? ` · максимум ${id === "army" ? 120 : 48}` : "");
       }
     }
