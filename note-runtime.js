@@ -18,7 +18,8 @@
         filterStyles: 'styles/note-filter.css?v=20261113-5',
         filter: 'note-filter.js?v=20261113-5',
         settings: 'settings.js?v=20261002-1',
-        search: 'search.js?v=20261114',
+        searchText: 'search-text.js?v=1',
+        search: 'search.js?v=20261114-2',
         print: 'print-export.js?v=20261113-1',
         knowledge: 'knowledge-check.js?v=20261016-1',
         newyear: 'newyear.js?v=20261002-1',
@@ -100,9 +101,9 @@
 
     function loadSettings() { return Promise.all([loadStyle('featureStyles'), loadScript('settings')]); }
     function loadSearch() {
-        return loadScript('search').then(function () {
-            if (window.AlmanionSearch && typeof window.AlmanionSearch.init === 'function') window.AlmanionSearch.init();
-        });
+        return loadScript('searchText')
+            .then(() => loadScript('search'))
+            .then(() => window.AlmanionSearch.init());
     }
     function loadFirebase() {
         return (window.firebase && typeof window.firebase.initializeApp === 'function' ? Promise.resolve() : loadScript('firebaseApp'))

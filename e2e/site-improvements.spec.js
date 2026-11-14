@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { parseEntries } = require('../performance/build-search-index');
 
 test.beforeEach(async ({ page }) => {
     await page.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());
@@ -165,4 +166,25 @@ test('PDF keeps inline SVG illustrations and rejects bad layout without hanging'
     });
     expect(result).toMatchObject({ type: 'application/pdf', header: '%PDF-', rejected: true });
     expect(result.bytes).toBeGreaterThan(1000);
+});
+
+test.describe('Formula search', () => {
+    test.use({ serviceWorkers: 'block' }); // Requests must reach the fixture index.
+    for (const path of ['physics-10.html', 'geometry-formulas.html']) {
+        test('formula text matches the generated index on ' + path, async ({ page }) => {
+            const topic = '<article class="topic" id="formula-check"><h3 class="topic-title">Расчёт напряжения</h3>'
+                + '<p>Отношение $\\frac{240}{12}$ и корень $\\sqrt{121}$.</p></article>';
+            const entries = parseEntries(topic, { path, label: 'Формулы' });
+            await page.route('**/search-index.json', route => route.fulfill({ json: { schemaVersion: 1, entries } }));
+            await page.goto('/' + path);
+            await page.locator('.main-content .content-section').first().evaluate((section, html) => section.insertAdjacentHTML('beforeend', html), topic);
+            await page.locator('#searchInput').fill('240/12');
+            const result = page.locator('.search-result-item').filter({ hasText: 'Расчёт напряжения' });
+            await expect(result).toContainText('240/12 и корень √(121)');
+            await page.locator('[data-search-scope="all"]').click();
+            await expect(result).toContainText('240/12 и корень √(121)');
+            await result.click();
+            await expect(page).toHaveURL(/#formula-check$/);
+        });
+    }
 });

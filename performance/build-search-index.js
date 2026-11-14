@@ -4,6 +4,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { plainText } = require('../search-text');
 
 const VOID_ELEMENTS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
 const IGNORED_ELEMENTS = new Set(['script', 'style', 'button', 'noscript', 'template']);
@@ -28,17 +29,7 @@ function attribute(source, name) {
 }
 
 function cleanText(value) {
-    return decodeEntities(value)
-        .replace(/\\(?:begin|end)\{[^}]+\}/g, ' ')
-        .replace(/\\(?:left|right|displaystyle|textstyle|limits)\b/g, '')
-        .replace(/\\(?:text|mathrm|mathbf|operatorname)\{([^{}]*)\}/g, '$1')
-        .replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g, '$1/$2')
-        .replace(/\\sqrt\{([^{}]*)\}/g, '√($1)')
-        .replace(/\\[a-zA-Z]+\*?/g, ' ')
-        .replace(/[{}$]/g, '')
-        .replace(/\s*[_^]\s*/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
+    return plainText(decodeEntities(value));
 }
 
 function parseStartTag(token) {
@@ -66,13 +57,13 @@ function parseEntries(html, page) {
 
     function finishFrame(frame) {
         (frame.headingEntries || []).forEach(entry => {
-            if (!entry.title) entry.title = cleanText(entry.heading.join(' '));
+            if (!entry.title) entry.title = plainText(entry.heading.join(' '));
             entry.heading = [];
         });
         if (frame.entry) {
             const index = activeEntries.lastIndexOf(frame.entry);
             if (index >= 0) activeEntries.splice(index, 1);
-            const text = cleanText(frame.entry.text.join(' '));
+            const text = plainText(frame.entry.text.join(' '));
             if (!frame.entry.title && frame.entry.accentWord) frame.entry.title = text;
             if (frame.entry.id && text && !frame.entry.hasAccentChildren) {
                 entries.push({

@@ -3,6 +3,7 @@
 (function () {
     'use strict';
 
+    const { plainText } = window.AlmanionSearchText;
     const FALLBACK_INDEX_VERSION = '2026-10-02';
     const CACHE_KEY = 'almanion_search_prebuilt_v3';
     const PAGES = [
@@ -40,21 +41,6 @@
             .trim();
     }
 
-    function displayText(value) {
-        return String(value || '')
-            .replace(/\\(?:begin|end)\{[^}]+\}/g, ' ')
-            .replace(/\\(?:left|right|displaystyle|textstyle|limits)\b/g, '')
-            .replace(/\\(?:text|mathrm|mathbf|operatorname)\{([^{}]*)\}/g, '$1')
-            .replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g, '$1/$2')
-            .replace(/\\sqrt\{([^{}]*)\}/g, '√($1)')
-            .replace(/\\(?:alpha|beta|gamma|delta|theta|lambda|mu|pi|sigma|omega)\b/gi, ' ')
-            .replace(/\\[a-zA-Z]+\*?/g, ' ')
-            .replace(/[{}$]/g, '')
-            .replace(/\s*[_^]\s*/g, '')
-            .replace(/\s+/g, ' ')
-            .trim();
-    }
-
     function pagePath(value) {
         try {
             const pathname = new URL(value, location.href).pathname;
@@ -70,7 +56,7 @@
             'script', 'style', '.bookmark-btn', '.copy-block-btn', '.formula-copy-btn',
             '.toggle-derivation', '.toggle-proof', '.katex-html', '.MathJax_Preview'
         ].join(',')).forEach(item => item.remove());
-        return displayText(clone.textContent);
+        return plainText(clone.textContent);
     }
 
     function entriesFromDocument(doc, page) {
@@ -82,7 +68,7 @@
             const heading = node.matches('.accent-word-card')
                 ? node.querySelector('.accent-word')
                 : node.querySelector('.topic-title, .part-title, h1, h2, h3');
-            const title = displayText(heading?.textContent) || `Раздел ${order + 1}`;
+            const title = plainText(heading?.textContent) || `Раздел ${order + 1}`;
             const text = textFromNode(node);
             return {
                 page: page.path,
@@ -117,8 +103,8 @@
     }
 
     function normalizeIndexEntry(entry) {
-        const title = displayText(entry?.title);
-        const text = displayText(entry?.text);
+        const title = plainText(entry?.title);
+        const text = plainText(entry?.text);
         return {
             page: pagePath(entry?.page),
             subject: String(entry?.subject || ''),

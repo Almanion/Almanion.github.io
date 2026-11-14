@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
-const OPTIONAL = ['settings.js', 'bookmarks.js', 'personal-notes.js', 'offline-library.js', 'data-sync.js', 'account.js', 'firebase-config.js', 'knowledge-check.js', 'search.js', 'note-filter.js', 'safe-html.js', 'styles/bookmarks.css', 'styles/reader-tools.css', 'styles/site/features.css', 'styles/note-filter.css', 'vendor/ts-fsrs.umd.js'];
+const OPTIONAL = ['settings.js', 'bookmarks.js', 'personal-notes.js', 'offline-library.js', 'data-sync.js', 'account.js', 'firebase-config.js', 'knowledge-check.js', 'search.js', 'search-text.js', 'note-filter.js', 'safe-html.js', 'styles/bookmarks.css', 'styles/reader-tools.css', 'styles/site/features.css', 'styles/note-filter.css', 'vendor/ts-fsrs.umd.js'];
 function build({ root, site }) {
     const subjects = JSON.parse(fs.readFileSync(path.join(root, 'content/subjects.json'), 'utf8'));
     const katexRoot = path.dirname(require.resolve('katex/package.json'));

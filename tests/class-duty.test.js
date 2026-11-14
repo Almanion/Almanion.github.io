@@ -91,7 +91,9 @@ async function testTourAccessHelper(accountSource) {
 
 async function run() {
     const page = read('duty-10-1.html');
-    const client = read('duty.js');
+    const model = read('duty.js');
+    const view = read('duty/view.js');
+    const editor = read('duty/editor.js');
     const css = read(path.join('styles', 'duty.css'));
     const home = read('index.html');
     const account = read('account.js');
@@ -103,7 +105,8 @@ async function run() {
     // Public page and asset wiring.
     assert.match(home, /href="duty-10-1\.html"/);
     assert.match(page, /styles\/duty\.css\?v=/);
-    assert.match(page, /duty\.js\?v=/);
+    const dutyScripts = [...page.matchAll(/<script src="(duty(?:\/(?:view|editor))?\.js)\?v=/g)].map(match => match[1]);
+    assert.deepEqual(dutyScripts, ['duty.js', 'duty/editor.js', 'duty/view.js']);
     assert.match(page, /account\.js\?v=/);
     assert.match(page, /id="dutyEditButton"[^>]*hidden/);
     assert.match(page, /id="dutyEditorOverlay"[^>]*hidden[^>]*aria-hidden="true"/);
@@ -119,37 +122,37 @@ async function run() {
     assert.match(css, /\.duty-editor\s*\{[\s\S]*?grid-template-areas:/);
     assert.match(css, /\.duty-editor-content\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?overflow-y:\s*auto;/);
     assert.match(css, /\.duty-topbar \.sidebar-header-buttons\s*\{[\s\S]*?border-radius:\s*999px;/);
-    assert.match(client, /byId\('dutyEditorContent'\)\.scrollTop\s*=\s*0/);
-    assert.match(client, /byId\('dutyCalendarAddMergeButton'\)/);
-    assert.match(client, /event\.key\s*!==\s*'Tab'/, 'the modal editor must trap keyboard focus');
+    assert.match(editor, /byId\('dutyEditorContent'\)\.scrollTop\s*=\s*0/);
+    assert.match(editor, /byId\('dutyCalendarAddMergeButton'\)/);
+    assert.match(editor, /event\.key\s*!==\s*'Tab'/, 'the modal editor must trap keyboard focus');
     assert.match(
-        client,
+        editor,
         /entry\.segments\s*=\s*isIsoDate\(entry\.start\)[\s\S]*?\?\s*\[\{\s*start:\s*entry\.start,\s*end:\s*entry\.end\s*\}\][\s\S]*?:\s*\[\]/,
         'an invalid direct date edit must clear stale segments so validation cannot silently publish the old range'
     );
     assert.match(
-        client,
+        editor,
         /input\.value\s*=\s*currentSegments\[segmentIndex\]\[field\]/,
         'an invalid segmented date edit must roll the visible field back to the preserved model value'
     );
 
     const pageIds = new Set(Array.from(page.matchAll(/\bid="([^"]+)"/g), match => match[1]));
-    const requiredIds = new Set(Array.from(client.matchAll(/byId\('([^']+)'\)/g), match => match[1]));
+    const requiredIds = new Set(Array.from((view + editor).matchAll(/byId\('([^']+)'\)/g), match => match[1]));
     assert.deepEqual(
         Array.from(requiredIds).filter(id => !pageIds.has(id)),
         [],
-        'every direct duty.js DOM dependency must exist in the page'
+        'every direct duty DOM dependency must exist in the page'
     );
 
     // The schedule renderer must treat names and notes as text, not markup from Firebase.
-    assert.match(client, /item\.textContent\s*=\s*person/);
-    assert.match(client, /note\.textContent\s*=\s*entry\.note/);
-    assert.doesNotMatch(client, /\.innerHTML\s*=/, 'duty data must not be rendered through innerHTML');
+    assert.match(view, /item\.textContent\s*=\s*person/);
+    assert.match(view, /note\.textContent\s*=\s*entry\.note/);
+    assert.doesNotMatch(view + editor, /\.innerHTML\s*=/, 'duty data must not be rendered through innerHTML');
 
-    // Pure schedule helpers are exposed before the browser-only part of duty.js.
+    // The same schedule model runs on the home page and during the watch build.
     const sandbox = {};
     vm.createContext(sandbox);
-    vm.runInContext(client, sandbox, { filename: 'duty.js' });
+    vm.runInContext(model, sandbox, { filename: 'duty.js' });
     const Duty = sandbox.AlmanionDuty;
     assert.ok(Duty, 'AlmanionDuty helpers are unavailable');
     assert.equal(Duty.DATA_PATH, 'classDuty/grade10_1');

@@ -73,6 +73,7 @@
     "safe-html.js",
     "search-index.json",
     "search.js",
+    "search-text.js",
     "settings.js",
     "sport.html",
     "sport.js",
@@ -86,6 +87,7 @@
   "directories": {
     "constructor": [".css", ".html", ".js", ".json", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".avif"],
     "content": [".json", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".avif"],
+    "duty": [".js"],
     "dead souls": [".css", ".html", ".js", ".json", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".avif", ".txt"],
     "favicons": [".svg", ".png", ".ico"],
     "games": [".html", ".txt", ".css", ".js", ".json", ".webp"],

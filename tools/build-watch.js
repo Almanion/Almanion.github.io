@@ -2,7 +2,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const vm = require('node:vm');
 const Search = require('../performance/build-search-index');
 const VOID = new Set(['br', 'hr', 'img', 'input', 'meta', 'link', 'source', 'wbr', 'area', 'embed', 'col']);
 const TYPES = ['definition', 'theorem', 'lemma', 'statement', 'formula', 'corollary', 'properties', 'proof', 'derivation', 'experiment', 'remark', 'example', 'exercise', 'reminder', 'system'];
@@ -128,9 +127,9 @@ function build({ root, site }) {
             grades: id === 'russian-ege' ? [10, 11] : /-10$/.test(id) ? [10] : id === 'physics-exam' ? [11] : [9],
             extra: ['likbez', 'geometry-formulas'].includes(id) });
     }
-    const context = {};
-    vm.runInNewContext(fs.readFileSync(path.join(root, 'duty.js'), 'utf8'), context, { timeout:1000 });
-    const duty = { schemaVersion:1, entries:context.AlmanionDuty.normalizeSchedule(context.AlmanionDuty.DEFAULT_SCHEDULE).entries.map(entry => ({ start:entry.start, end:entry.end, people:entry.people, segments:entry.segments })) };
+    const schedule = require(path.resolve(root, 'duty.js'));
+    const entries = schedule.normalizeSchedule(schedule.DEFAULT_SCHEDULE).entries;
+    const duty = { schemaVersion: 1, entries: entries.map(({ start, end, people, segments }) => ({ start, end, people, segments })) };
     const dutyContent = JSON.stringify(duty), dutyFile = 'duty-' + hash(dutyContent) + '.json';
     fs.writeFileSync(path.join(directory, dutyFile), dutyContent + '\n');
     const database = fs.readFileSync(path.join(root, 'firebase-config.js'), 'utf8').match(/databaseURL:\s*["']([^"']+)["']/)[1];

@@ -109,3 +109,91 @@ for (const dark of [false, true]) {
         }
     });
 }
+
+test('duty editors can restore a draft, resolve a newer revision and publish it', async ({ page }) => {
+    // Only the Firebase and account boundaries are replaced. The page and editor run as shipped.
+    await page.route('**/account.js*', route => route.fulfill({ body: '', contentType: 'text/javascript' }));
+    await page.route('**/firebase-analytics.js*', route => route.fulfill({ body: '', contentType: 'text/javascript' }));
+    await page.addInitScript(() => {
+        const user = { uid: 'duty-test-editor' };
+        let cloud;
+        let onValue;
+        const snapshot = () => ({ val: () => cloud });
+        const writes = [];
+        const ref = {
+            on(event, listener) {
+                onValue = listener;
+                cloud = { ...window.AlmanionDuty.DEFAULT_SCHEDULE, revision: 3 };
+                onValue(snapshot());
+            },
+            once: async () => snapshot(),
+            async set(value) {
+                cloud = value;
+                writes.push(value);
+                onValue(snapshot());
+            }
+        };
+        const database = { ref: () => ref };
+        window.AlmanionAccount = { database, getUser: () => null, hasDutyEditorAccess: async account => account.uid === user.uid };
+        window.firebase = { database: Object.assign(() => database, { ServerValue: { TIMESTAMP: Date.now() } }) };
+        window.dutyFixture = {
+            writes,
+            signIn(uid) {
+                window.dispatchEvent(new CustomEvent('almanion-account-ready', { detail: { user: { uid } } }));
+            },
+            publishNewerRevision() {
+                cloud = { ...cloud, revision: cloud.revision + 1 };
+                onValue(snapshot());
+            }
+        };
+    });
+    await page.goto('/duty-10-1.html');
+    const edit = page.locator('#dutyEditButton');
+    const overlay = page.locator('#dutyEditorOverlay');
+    const note = overlay.locator('[data-field="note"]').first();
+    const people = overlay.locator('[data-field="people"]').first();
+    const notice = page.locator('#dutyEditorNotice');
+    await expect(page.locator('#dutySyncStatus')).toContainText('Синхронизировано');
+    await expect(edit).toBeHidden();
+    await page.evaluate(() => window.dutyFixture.signIn('reader'));
+    await expect(edit).toBeHidden();
+    await page.evaluate(() => window.dutyFixture.signIn('duty-test-editor'));
+    await edit.click();
+    await note.fill('Первая смена');
+    await page.locator('#dutyEditorClose').click();
+    await page.reload();
+    await page.evaluate(() => window.dutyFixture.signIn('duty-test-editor'));
+    await edit.click();
+    await expect(note).toHaveValue('Первая смена');
+    await expect(page.locator('#dutyDraftState')).toContainText('Восстановлен черновик');
+
+    const originalPeople = await people.inputValue();
+    await people.fill('');
+    await page.locator('#dutyEditorSave').click();
+    await expect(page.locator('#dutyEditorError')).toBeVisible();
+    expect(await page.evaluate(() => window.dutyFixture.writes.length)).toBe(0);
+    await people.fill(originalPeople);
+
+    await page.evaluate(() => window.dutyFixture.publishNewerRevision());
+    await expect(notice).toBeVisible();
+    await page.locator('#dutyUseCloudButton').click();
+    await expect(note).not.toHaveValue('Первая смена');
+    await note.fill('Уточнённая смена');
+    await page.evaluate(() => window.dutyFixture.publishNewerRevision());
+    await page.locator('#dutyKeepDraftButton').click();
+    await expect(note).toHaveValue('Уточнённая смена');
+    await page.locator('#dutyEditorSave').click();
+    await expect(overlay).toBeHidden();
+    const writes = await page.evaluate(() => window.dutyFixture.writes);
+    expect(writes).toHaveLength(1);
+    expect(writes[0]).toMatchObject({ version: 2, revision: 6, updatedBy: 'duty-test-editor' });
+    expect(Object.values(writes[0].entries).some(entry => entry.note === 'Уточнённая смена')).toBe(true);
+    await page.locator('#dutyMonthFilters').getByRole('button', { name: 'Весь год', exact: true }).click();
+    await expect(page.locator('#dutyGroups')).toContainText('Уточнённая смена');
+    const draftKey = 'almanion:class-duty:grade10_1:draft:v2:duty-test-editor';
+    expect(await page.evaluate(key => localStorage.getItem(key), draftKey)).toBeNull();
+    await edit.click();
+    await page.evaluate(() => window.dutyFixture.signIn('reader'));
+    await expect(overlay).toBeHidden();
+    await expect(edit).toBeHidden();
+});

@@ -212,10 +212,10 @@ function build(options) {
     for (const file of walkFiles(output).filter(file => file.endsWith('.html'))) {
         const absolute = path.join(output, file);
         const html = fs.readFileSync(absolute, 'utf8');
-        const updated = html.replace(/((?:src|href)=["'](?:(?:note-runtime|settings|bookmarks|script|print-export|experimental-reader|home-dashboard|duty)\.js|constructor\/(?:index|publication)\.(?:js|css)|styles\/(?:admin|copy-blocks|home-dashboard|print)\.css|styles\/site\/(?:reader|index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261006-1$2')
+        const updated = html.replace(/((?:src|href)=["'](?:(?:note-runtime|settings|bookmarks|script|print-export|experimental-reader|home-dashboard)\.js|constructor\/(?:index|publication)\.(?:js|css)|styles\/(?:admin|copy-blocks|home-dashboard|print)\.css|styles\/site\/(?:reader|index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261006-1$2')
             .replace(/(src=["'](?:note-runtime|print-export)\.js)\?v=20261006-1(["'])/g, '$1?v=20261007-1$2')
             .replace(/((?:src|href)=["'](?:settings\.js|home-dashboard\.js|styles\/home-dashboard\.css))\?v=20261006-1(["'])/g, '$1?v=20261009-1$2')
-            .replace(/((?:src|href)=["'](?:script\.js|duty\.js|home-dashboard\.js|styles\/home-dashboard\.css|styles\/site\/index\.css))\?v=202610(?:06-1|09-1)(["'])/g, '$1?v=20261009-2$2')
+            .replace(/((?:src|href)=["'](?:script\.js|home-dashboard\.js|styles\/home-dashboard\.css|styles\/site\/index\.css))\?v=202610(?:06-1|09-1)(["'])/g, '$1?v=20261009-2$2')
             .replace(/(src=["']script\.js)\?v=20261009-2(["'])/g, '$1?v=20261009-4$2')
             // Matcenter owns its version in source HTML. Do not downgrade a
             // new feature to a stale service-worker cache key.
@@ -229,12 +229,13 @@ function build(options) {
             .replace(/((?:src|href)=["'](?:(?:note-runtime|print-export)\.js|styles\/print\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261016-3$2')
             .replace(/(href=["'](?:style-new|styles\/typography)\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261016-4$2')
             .replace(/((?:src|href)=["'](?:(?:note-runtime|account|bookmarks|personal-notes|home-motion)\.js|styles\/(?:site\/index|home-dashboard)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261018-1$2')
-            .replace(/(src=["']home-dashboard\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261023-1$2')
+            .replace(/(src=["']home-dashboard\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261114-2$2')
             .replace(/(src=["'](?:note-runtime|print-export)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261113-1$2')
             .replace(/(href=["'](?:styles\/copy-blocks|style-new)\.css)(?:\?[^"']*)?(["'])/g, '$1?v=20261113-2$2')
             .replace(/((?:src|href)=["'](?:script\.js|styles\/site\/(?:reader|index)\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261113-3$2')
             .replace(/((?:src|href)=["'](?:note-runtime\.js|styles\/print\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261113-4$2')
-            .replace(/(src=["'](?:note-runtime|print-export)\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261113-5$2')
+            .replace(/(src=["']print-export\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261113-5$2')
+            .replace(/(src=["']note-runtime\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261114-2$2')
             .replace(/(src=["']account\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261114-guest$2');
         if (updated !== html) fs.writeFileSync(absolute, updated);
     }

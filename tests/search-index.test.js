@@ -2,7 +2,21 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { parseEntries, build } = require('../performance/build-search-index');
+const { parseEntries, build, cleanText } = require('../performance/build-search-index');
+
+const { plainText } = require('../search-text');
+
+for (const [formula, expected] of [
+    ['', ''],
+    ['  Объём   сосуда  ', 'Объём сосуда'],
+    ['$\\frac{240}{12}$, \\sqrt{121}', '240/12, √(121)'],
+    ['\\begin{aligned}\\left(\\mathrm{Fe}_2\\right)^3\\end{aligned}', '(Fe2)3'],
+    ['\\alpha + \\Gamma = \\operatorname{const}', '+ = const']
+]) {
+    assert.equal(plainText(formula), expected);
+    assert.equal(cleanText(formula), expected);
+}
+assert.equal(cleanText('x&nbsp;&lt;&nbsp;\\sqrt{121}'), 'x < √(121)');
 
 const root = path.join(__dirname, '..');
 const client = fs.readFileSync(path.join(root, 'search.js'), 'utf8');
@@ -15,6 +29,9 @@ const parsed = parseEntries(`
         <button class="bookmark-btn">Не индексировать</button>
         <span class="katex-html">duplicate formula</span>
     </article>`, { path: 'physics.html', label: 'Физика' });
+
+const [entityExample] = parseEntries('<article class="topic" id="entity">&amp;lt; и &lt;</article>', { path: 'math.html', label: 'Алгебра' });
+assert.equal(entityExample.text, '&lt; и <');
 
 assert.strictEqual(parsed.length, 1);
 assert.strictEqual(parsed[0].id, 'law');

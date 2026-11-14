@@ -149,7 +149,7 @@
             if (win.AlmanionDuty) ready();
             else {
                 const script = doc.createElement('script');
-                script.src = 'duty.js?v=20261009-2';
+                script.src = 'duty.js?v=20261114-2';
                 script.onload = ready;
                 doc.head.appendChild(script);
             }
