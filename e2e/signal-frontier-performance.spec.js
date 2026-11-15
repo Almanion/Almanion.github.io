@@ -318,6 +318,7 @@ test("reused model geometry matches direct vectors for every model, direction an
                 "foundry",
                 "arsenal",
                 "barracks",
+                "condenser",
               ].includes(kind)
                 ? 0
                 : 1,

@@ -689,7 +689,7 @@ test("design studio covers every current model and all 27 visual studies without
       failures = [];
     for (const spec of all)
       for (let i = 0; i < 8; i++)
-        for (const mode of ["idle", "move", "action", "damaged", "wreck"]) {
+        for (const mode of ["idle", "move", "action", "build", "damaged", "wreck"]) {
           c.setTransform(1, 0, 0, 1, 0, 0);
           c.clearRect(0, 0, 256, 256);
           const scale = Math.min(

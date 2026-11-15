@@ -3,7 +3,7 @@
   const E = root.SignalEngine,
     view = new root.SignalView(document.createElement("canvas")),
     studies = root.SignalModelStudies.create(root.SignalView.artwork),
-    state = E.make("frontier-9"),
+    state = E.make("frontier-9", { resources: 2 }),
     names = {
       hero: "Герой",
       rifle: "Стрелок",
@@ -72,7 +72,7 @@
     "barracks",
     "foundry",
     "arsenal",
-    "bunker", "logistics", "carrier",
+    "bunker", "logistics", "carrier", "condenser",
   ]);
   function sample(c, spec, options = {}) {
     const m = options.mode || mode.value,
