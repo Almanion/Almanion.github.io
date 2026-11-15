@@ -382,7 +382,8 @@ test("reused model geometry matches direct vectors for every model, direction an
     contentType: "application/json",
   });
   expect(result.errors).toEqual([]);
-  expect(result.comparisons).toBe(960);
+  const models = require("../game-source/signal-frontier/src/unit-models");
+  expect(result.comparisons).toBe(models.types.length * 8 * 5);
   expect(result.cache.hits).toBeGreaterThan(1000);
   expect(result.cache.limit).toBe(2048);
   expect(result.cache.entries).toBeLessThanOrEqual(result.cache.limit);

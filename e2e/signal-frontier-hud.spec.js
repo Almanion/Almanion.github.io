@@ -57,8 +57,14 @@ for (const type of [chromium, webkit]) for (const [width, height] of [[1440, 900
       expect(await page.locator("#health-fill").evaluate((e) => e.style.transform)).toBe("scaleX(0.5)");
       await expect(page.locator("#ammo-meter")).toHaveAttribute("aria-valuenow", "6");
       expect(await page.locator("#ammo-fill").evaluate((e) => e.style.transform)).toBe("scaleX(0.5)");
-      const resource = await page.locator(".resource-crystal").boundingBox();
-      expect(resource.width).toBeLessThanOrEqual(25);
+      const resource = page.locator(".resource-crystal");
+      await expect(page.locator("#field-alloy")).toBeVisible();
+      if (width <= 430) {
+        await expect(resource).toBeHidden();
+      } else {
+        await expect(resource).toBeVisible();
+        expect((await resource.boundingBox()).width).toBeLessThanOrEqual(25);
+      }
       await page.screenshot({ path: info.outputPath("hud-battle.png") });
       if (mobile) await page.locator("#reload").tap(); else await page.locator("#reload").click();
       await page.clock.runFor(350);

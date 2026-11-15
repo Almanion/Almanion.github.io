@@ -52,7 +52,7 @@ for (const [width, height, mobile, renderer, engine] of [
   [390, 844, true, "canvas", "webkit"],
 ]) test(`two prices, fixed purchase position and exact refunds ${width}x${height} ${engine || renderer}`, async ({ browser }, info) => {
   test.setTimeout(90000);
-  const extra = engine ? await webkit.launch() : null,
+  const extra = engine ? await webkit.launch({ args: [] }) : null,
     context = await (extra || browser).newContext({ viewport: { width, height }, hasTouch: mobile, isMobile: mobile }),
     page = await context.newPage(), errors = [], { s, foundry, condenser } = fixture();
   page.on("pageerror", (e) => errors.push(e.message));

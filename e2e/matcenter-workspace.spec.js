@@ -99,11 +99,11 @@ for (const width of [1280, 375]) {
         await expect(page.locator('#authError')).toContainText('Неверный пароль');
         await expect(page.locator('#authOverlay')).toBeVisible();
         await expect(page.locator('#authTitle')).toHaveText('Введите пароль');
-        expect(sent.some(r=>r.data.action==='authorizeAccount' && r.data.idToken==='guest-token')).toBe(true);
         await page.locator('#passwordInput').fill('guest-test-password');
         await page.locator('#authSubmit').click();
         await ready(page);
         expect(await page.evaluate(() => firebase.auth().currentUser.isAnonymous)).toBe(true);
+        await expect.poll(() => sent.some(r => r.data.action === 'authorizeAccount' && r.data.idToken === 'guest-token')).toBe(true);
         expect(sent.every(r=>!r.url.includes('password') && !r.url.includes('token='))).toBe(true);
         expect(await page.evaluate(() => JSON.stringify({...localStorage}))).not.toContain('guest-test-password');
         const authorizations = sent.filter(r=>r.data.action==='authorizeAccount').length;

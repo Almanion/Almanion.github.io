@@ -8,7 +8,7 @@ async function openModelStudio(page, query = "") {
   const path = require("node:path"),
     root = path.resolve(__dirname, "../game-source/signal-frontier"),
     files = new Set(["design/MODEL_STUDIO.html", "design/model-studies.js", "design/model-studio.js",
-      ...["terrain", "districts", "east", "campaign", "recon", "construction", "support", "engine", "unit-models", "view"].map(n => "src/" + n + ".js")]);
+      ...["terrain", "districts", "east", "matter", "campaign", "recon", "construction", "support", "engine", "unit-models", "view"].map(n => "src/" + n + ".js")]);
   await page.route("**/game-source/signal-frontier/**", route => {
     const relative = new URL(route.request().url()).pathname.split("/game-source/signal-frontier/")[1];
     return files.has(relative) ? route.fulfill({ path: path.join(root, relative), contentType: relative.endsWith(".html") ? "text/html; charset=utf-8" : "text/javascript; charset=utf-8" }) : route.continue();

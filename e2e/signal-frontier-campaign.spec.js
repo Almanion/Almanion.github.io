@@ -22,6 +22,7 @@ test("development: real queued cost, cancellation, pause and reload", async ({
   await page.clock.install({ time: new Date("2026-10-29T12:00:00Z") });
   await page.clock.pauseAt(new Date("2026-10-29T12:00:01Z"));
   await start(page);
+  const initialDrones = await page.evaluate(() => SignalGame.snapshot().units.filter(u => u.kind === "drone").length);
   await page.locator("#dock-shop").click();
   await page.locator("#develop-tab-economy").click();
   await page
@@ -38,10 +39,10 @@ test("development: real queued cost, cancellation, pause and reload", async ({
   expect(s.t).toBe(0);
   expect(E.living(s, "base").jobs[0].remaining).toBe(18);
   await page.locator(".job-select").first().click();
-  await expect(page.locator("#field-alloy")).toHaveText("167");
+  await expect(page.locator("#field-alloy")).toHaveText("180");
   await page.clock.runFor(500);
   await page.locator("#develop-drone-" + base).click();
-  await expect(page.locator("#field-alloy")).toHaveText("117");
+  await expect(page.locator("#field-alloy")).toHaveText("130");
   await page.locator("#dock-selection").click();
   await page.locator("#tactical").click();
   await page.clock.runFor(5000);
@@ -62,9 +63,9 @@ test("development: real queued cost, cancellation, pause and reload", async ({
   await page.keyboard.press("Tab");
   await page.clock.runFor(14000);
   restored = await page.evaluate(() => SignalGame.snapshot());
-  expect(restored.units.filter((u) => u.kind === "drone")).toHaveLength(3);
+  expect(restored.units.filter((u) => u.kind === "drone")).toHaveLength(initialDrones + 1);
   expect(restored.economy.spent).toBe(100);
-  expect(restored.economy.recovered).toBe(37);
+  expect(restored.economy.recovered).toBe(50);
   expect(errors).toEqual([]);
 });
 

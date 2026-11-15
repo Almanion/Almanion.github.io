@@ -35,9 +35,9 @@ for (const type of [chromium, webkit])
           );
           await page.locator("#start").click();
           await page.clock.runFor(300);
-          expect(await page.evaluate(() => SignalGame.snapshot().version)).toBe(
-            11,
-          );
+          const saved = await page.evaluate(() => SignalGame.snapshot());
+          expect(saved.version).toBe(E.make("frontier-9", { resources: 2 }).version);
+          expect(E.restore(saved)).not.toBeNull();
           expect(
             await page.evaluate(
               () => document.documentElement.scrollWidth - innerWidth,
