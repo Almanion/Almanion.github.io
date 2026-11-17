@@ -236,7 +236,7 @@ function build(options) {
             .replace(/((?:src|href)=["'](?:note-runtime\.js|styles\/print\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261113-4$2')
             .replace(/(src=["']print-export\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261113-5$2')
             .replace(/(src=["']note-runtime\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261114-2$2')
-            .replace(/(src=["']account\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261114-guest$2');
+            .replace(/(src=["']account\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261117-contests$2');
         if (updated !== html) fs.writeFileSync(absolute, updated);
     }
     // Status follows published materials, including sections added later by the

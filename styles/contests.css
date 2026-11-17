@@ -1,0 +1,72 @@
+.contests-page {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.contests-page [hidden] { display: none !important; }
+.contests-page #settingsButton { display: none !important; }
+.contests-page .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.contests-topbar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 14px max(20px, calc((100vw - 1160px) / 2)); background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); }
+.contests-topbar h2 { margin: 0; font-size: 18px; }
+.contests-topbar h2 a { display: flex; align-items: center; gap: 10px; color: var(--text-primary); text-decoration: none; }
+.contests-topbar .home-icon { width: 22px; height: 22px; color: var(--accent-color, #7c7eff); }
+.contests-topbar .sidebar-header-buttons { position: static; display: flex; border-radius: 999px; overflow: hidden; }
+.contests-topbar .sidebar-header-buttons > button { width: 39px; height: 39px; min-width: 39px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
+.contests-topbar .sidebar-header-buttons svg { width: 20px; height: 20px; }
+.contests-shell { width: min(1160px, calc(100% - 48px)); margin: 48px auto 80px; }
+.contests-shell h1 { margin: 0 0 30px; font-size: clamp(30px, 5vw, 46px); letter-spacing: -0.035em; }
+.contest-gate { display: grid; justify-items: center; align-content: center; gap: 18px; min-height: 380px; padding: 40px 20px; border: 1px solid var(--border-color); border-radius: 24px; background: var(--bg-secondary); text-align: center; }
+.contest-gate > svg { width: 30px; height: 30px; color: var(--text-secondary); }
+.contest-gate h2 { margin: 0; font-size: 24px; }
+.contest-gate p { margin: 0; color: var(--text-secondary); }
+.contest-gate a, .contest-meta a { color: var(--accent-color, #7c7eff); text-underline-offset: 4px; }
+.contest-toolbar { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; }
+.contest-toolbar label { min-width: 0; }
+.contest-search { flex: 1; min-width: 180px !important; }
+.contest-toolbar input, .contest-toolbar select { width: 100%; height: 46px; min-width: 0; padding: 0 14px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-secondary); color: var(--text-primary); font: inherit; font-size: 14px; }
+.contest-toolbar input:focus-visible, .contest-toolbar select:focus-visible { outline: 2px solid var(--accent-color, #7c7eff); outline-offset: 2px; }
+.contest-toolbar button { min-height: 46px; padding: 0 16px; border-radius: 12px; }
+.contest-meta { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin: 14px 0 26px; font-size: 13px; color: var(--text-secondary); }
+.contest-meta p { margin: 0; }
+.contest-meta .is-error { color: var(--text-primary); }
+.contest-section { margin-bottom: 32px; border: 1px solid var(--border-color); border-radius: 20px; background: var(--bg-secondary); overflow: hidden; }
+.contest-section-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 22px 24px; }
+.contest-title { color: var(--text-primary); text-decoration: none; font-size: 20px; font-weight: 650; overflow-wrap: anywhere; }
+.contest-title:hover { text-decoration: underline; text-underline-offset: 4px; }
+.contest-count { color: var(--text-secondary); font-size: 13px; white-space: nowrap; }
+.contest-table-scroll { overflow-x: auto; }
+.contest-table-scroll table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
+.contest-table-scroll th, .contest-table-scroll td { text-align: center; padding: 18px 16px; border-top: 1px solid var(--border-color); min-width: 65px; }
+.contest-table-scroll thead th { color: var(--text-secondary); font-size: 12px; font-weight: 550; }
+.contest-table-scroll th:first-child { text-align: left; padding-left: 24px; position: sticky; left: 0; background: var(--bg-secondary); min-width: 160px; }
+.contest-table-scroll tbody th { font-weight: 550; }
+.contest-total { font-weight: 650; border-left: 1px solid var(--border-color); }
+.contest-table-scroll tr:hover td, .contest-table-scroll tr:hover th { background: color-mix(in srgb, var(--text-primary) 3%, var(--bg-secondary)); }
+.contest-people { display: none; }
+.contest-empty { padding: 50px 20px; text-align: center; color: var(--text-secondary); }
+
+@media (max-width: 640px) {
+    .contests-topbar { padding: 10px 16px; }
+    .contests-shell { width: calc(100% - 28px); margin-top: 28px; }
+    .contests-shell h1 { margin-bottom: 24px; }
+    .contest-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+    .contest-search { grid-column: 1 / -1; min-width: 0 !important; }
+    #contestSelectionLabel { grid-column: 1 / -1; }
+    .contest-meta { font-size: 12px; margin-bottom: 20px; }
+    .contest-section-header { padding: 18px; }
+    .contest-title { font-size: 18px; }
+    .contest-section { border-radius: 16px; }
+    .contest-table-scroll { display: none; }
+    .contest-people { display: block; }
+    .contest-person { padding: 16px 18px 18px; border-top: 1px solid var(--border-color); }
+    .contest-person-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .contest-person-header h3 { margin: 0; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+    .contest-person-total { margin: 0; display: flex; align-items: baseline; gap: 7px; white-space: nowrap; }
+    .contest-person-total dt { font-size: 11px; color: var(--text-secondary); }
+    .contest-person-total dd { margin: 0; font-size: 21px; font-weight: 600; }
+    .contest-scores { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 18px 0 0; }
+    .contest-scores > div { display: grid; gap: 5px; padding: 10px 4px; border-radius: 10px; background: var(--bg-primary); text-align: center; }
+    .contest-scores dt { font-size: 12px; color: var(--text-secondary); overflow-wrap: anywhere; }
+    .contest-scores dd { margin: 0; font-size: 17px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+}

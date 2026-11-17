@@ -822,7 +822,12 @@
         slot.hidden = slot.childElementCount === 0;
     }
 
+    function updateContestsLinks(allowed) {
+        document.querySelectorAll('[data-contests-link]').forEach(link => { link.hidden = !allowed; });
+    }
+
     function updateHomeAccessLinks() {
+        updateContestsLinks(false);
         const slot = document.getElementById('homePrivilegedActions');
         if (!slot) return;
         const checkedUser = user;
@@ -833,6 +838,7 @@
         const owner = checkedUser.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
         if (owner) {
             renderHomeAccessLinks(slot, true, true, true);
+            updateContestsLinks(!checkedUser.isAnonymous && !!checkedUser.email);
             return;
         }
 
@@ -841,6 +847,7 @@
             if (generation !== homeAccessGeneration || user !== checkedUser || !slot.isConnected) return;
             const roles = snapshot.val() || {};
             renderHomeAccessLinks(slot, roles.contentEditor === true, roles.siteAdmin === true, false);
+            updateContestsLinks(!checkedUser.isAnonymous && !!checkedUser.email && roles.contestsAccess === true);
         };
         homeRolesRef = rolesRef;
         homeRolesHandler = handleRoles;
@@ -1236,6 +1243,7 @@
     window.addEventListener('pagehide', function (event) {
         if (!event.persisted) return;
         homeAccessGeneration++;
+        updateContestsLinks(false);
         detachHomeRolesListener();
         const slot = document.getElementById('homePrivilegedActions');
         if (slot) clearHomeAccessLinks(slot);

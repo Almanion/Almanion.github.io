@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Контесты | Almanion</title>
+    <script src="theme-bootstrap.js?v=20260908-1"></script>
+    <link rel="icon" href="favicons/favicon.svg" type="image/svg+xml">
+    <script src="favicon-theme.js?v=20260905-1"></script>
+    <link rel="stylesheet" href="styles/site/index.css?v=20261002-1">
+    <link rel="stylesheet" href="styles/tokens.css?v=20260929-2">
+    <link rel="stylesheet" href="styles/buttons.css?v=20260929-2">
+    <link rel="stylesheet" href="style-new.css?v=20261113-2">
+    <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
+    <link rel="stylesheet" href="styles/contests.css?v=1">
+</head>
+<body class="contests-page" data-no-math>
+    <script>(function(){try{var p=JSON.parse(localStorage.getItem('siteSettings')||'{}');if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
+    <header class="sidebar-header contests-topbar">
+        <h2><a href="index.html" aria-label="Вернуться на главную"><svg class="home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.75 5.25c3.25-.85 5.9-.22 8.25 1.55v12.05c-2.35-1.77-5-2.4-8.25-1.55V5.25Z"/><path d="M20.25 5.25c-3.25-.85-5.9-.22-8.25 1.55v12.05c2.35-1.77 5-2.4 8.25-1.55V5.25Z"/></svg><span>Almanion</span></a></h2>
+        <div class="sidebar-header-buttons"></div>
+    </header>
+    <main class="contests-shell">
+        <h1>Контесты</h1>
+        <section id="contestGate" class="contest-gate" aria-live="polite">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <h2 id="contestGateTitle">Проверяем доступ</h2>
+            <p id="contestGateMessage"></p>
+            <button type="button" class="btn btn-primary" id="contestLogin" hidden>Войти</button>
+            <a href="index.html">На главную</a>
+        </section>
+        <div id="contestContent" hidden>
+            <div class="contest-toolbar">
+                <label class="contest-search"><span class="sr-only">Поиск участника</span><input id="contestSearch" type="search" placeholder="Участник" autocomplete="off"></label>
+                <label id="contestSelectionLabel" hidden><span class="sr-only">Контест</span><select id="contestSelection"></select></label>
+                <label><span class="sr-only">Сортировка</span><select id="contestOrder"><option value="source">Порядок таблицы</option><option value="name">По имени</option><option value="total">По сумме баллов</option></select></label>
+                <button type="button" class="btn btn-outline" id="contestRefresh">Обновить</button>
+            </div>
+            <div class="contest-meta"><p id="contestStatus" role="status"></p><a id="contestSource" target="_blank" rel="noopener noreferrer">Google Таблица ↗</a></div>
+            <div id="contestResults"></div>
+            <p id="contestEmpty" class="contest-empty" hidden></p>
+        </div>
+    </main>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+    <script src="firebase-config.js?v=20260903-3"></script>
+    <script src="data-sync.js?v=20260908-1"></script>
+    <script src="script.js?v=20261113-3"></script>
+    <script src="settings.js?v=20261002-1"></script>
+    <script src="account.js?v=20261117-contests"></script>
+    <script src="contests-core.js?v=1"></script>
+    <script src="contests.js?v=1"></script>
+</body>
+</html>

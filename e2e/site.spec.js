@@ -371,7 +371,16 @@ test('admin controls stay interactive after dialogs and list changes', async fun
                 push: function (value) { return value === undefined ? { key: 'mock-key' } : Promise.resolve(); },
                 set: function () { return Promise.resolve(); },
                 remove: function () { return Promise.resolve(); },
-                update: function () { return Promise.resolve(); }
+                update: function (updates) {
+                    for (const [key, value] of Object.entries(updates)) {
+                        const parts = [path, key].filter(Boolean).join('/').split('/');
+                        let parent = values;
+                        for (const part of parts.slice(0, -1)) parent = parent[part] ||= {};
+                        if (value === null) delete parent[parts.at(-1)];
+                        else parent[parts.at(-1)] = value;
+                    }
+                    return Promise.resolve();
+                }
             };
             return reference;
         }
@@ -443,8 +452,10 @@ test('admin controls stay interactive after dialogs and list changes', async fun
 
     await page.locator('#adminRolesList .btn', { hasText: 'Изменить' }).click();
     await expect(page.locator('#adminRoleAccount')).toHaveValue('editor@example.com');
+    await page.locator('#contestsAccessRole').check();
     await page.locator('#adminRoleForm button[type="submit"]').click();
     await expect(page.locator('#adminRoleForm button[type="submit"]')).toBeEnabled();
+    await expect(page.locator('#adminRolesList .admin-role-row').filter({ hasText: 'editor@example.com' })).toContainText('Контесты');
 
     await page.locator('[data-admin-command="open-direct-message"]').first().click();
     await page.locator('[data-admin-command="dm-mode"][data-admin-value="poll"]').click();

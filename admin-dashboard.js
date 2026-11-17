@@ -452,6 +452,7 @@
         byId('dutyEditorRole').checked = role.dutyEditor === true;
         byId('tourEditorRole').checked = role.tourEditor === true;
         byId('englishAccessRole').checked = role.englishAccess === true;
+        byId('contestsAccessRole').checked = role.contestsAccess === true;
         byId('adminRoleAccount').focus();
     }
 
@@ -480,7 +481,7 @@
         ownerIdentity.append(ownerEmail, ownerCaption);
         const ownerBadges = document.createElement('div');
         ownerBadges.className = 'admin-role-badges';
-        ownerBadges.append(roleBadge('Владелец', true), roleBadge('Сайт'), roleBadge('Матцентр'), roleBadge('Редактор'), roleBadge('Дежурство'), roleBadge('Турслёт'), roleBadge('Английский'));
+        ownerBadges.append(roleBadge('Владелец', true), roleBadge('Сайт'), roleBadge('Матцентр'), roleBadge('Редактор'), roleBadge('Дежурство'), roleBadge('Турслёт'), roleBadge('Английский'), roleBadge('Контесты'));
         ownerRow.append(ownerIdentity, ownerBadges);
         list.appendChild(ownerRow);
 
@@ -488,7 +489,7 @@
             return String((adminRoles[a] || {}).email || '').localeCompare(String((adminRoles[b] || {}).email || ''), 'ru');
         }).forEach(function (uid) {
             const role = adminRoles[uid] || {};
-            if (!role.siteAdmin && !role.matcenterAdmin && !role.contentEditor && !role.dutyEditor && !role.tourEditor && !role.englishAccess) return;
+            if (!role.siteAdmin && !role.matcenterAdmin && !role.contentEditor && !role.dutyEditor && !role.tourEditor && !role.englishAccess && !role.contestsAccess) return;
             if (uid === SITE_OWNER_UID) return;
             const account = accountDirectory[uid] || {};
             const row = document.createElement('div');
@@ -508,6 +509,7 @@
             if (role.dutyEditor) badges.appendChild(roleBadge('Дежурство'));
             if (role.tourEditor) badges.appendChild(roleBadge('Турслёт'));
             if (role.englishAccess) badges.appendChild(roleBadge('Английский'));
+            if (role.contestsAccess) badges.appendChild(roleBadge('Контесты'));
             const edit = document.createElement('button');
             edit.type = 'button';
             edit.className = 'btn btn-outline btn-sm';
@@ -562,6 +564,7 @@
         const dutyEditor = byId('dutyEditorRole').checked;
         const tourEditor = byId('tourEditorRole').checked;
         const englishAccess = byId('englishAccessRole').checked;
+        const contestsAccess = byId('contestsAccessRole').checked;
         const saveButton = event.currentTarget.querySelector('button[type="submit"]');
         setButtonPending(saveButton, true, 'Сохранение…');
         try {
@@ -573,6 +576,7 @@
                 dutyEditor: dutyEditor,
                 tourEditor: tourEditor,
                 englishAccess: englishAccess,
+                contestsAccess: contestsAccess,
                 updatedAt: firebase.database.ServerValue.TIMESTAMP,
                 updatedBy: user.uid
             };
@@ -582,7 +586,8 @@
                 contentEditor && 'contentEditor',
                 dutyEditor && 'dutyEditor',
                 tourEditor && 'tourEditor',
-                englishAccess && 'englishAccess'
+                englishAccess && 'englishAccess',
+                contestsAccess && 'contestsAccess'
             ].filter(Boolean);
             const auditKey = db.ref('auditLog').push().key;
             const updates = {};
@@ -596,7 +601,7 @@
             };
             await db.ref().update(updates);
             byId('adminRoleForm').reset();
-            showAdminToast(siteAdmin || matcenterAdmin || contentEditor || dutyEditor || tourEditor || englishAccess ? 'Роли пользователя сохранены' : 'Все дополнительные роли отозваны');
+            showAdminToast(siteAdmin || matcenterAdmin || contentEditor || dutyEditor || tourEditor || englishAccess || contestsAccess ? 'Роли пользователя сохранены' : 'Все дополнительные роли отозваны');
             await loadRoleManager(user);
         } catch (error) {
             console.error('Save admin roles:', error);
