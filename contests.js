@@ -318,17 +318,39 @@
         roleRef = null;
     }
 
-    function onAccount(user) {
+    function linkToken() {
+        const token = new URLSearchParams(location.hash.slice(1)).get('access') || '';
+        return /^[a-f0-9]{64}$/.test(token) ? token : '';
+    }
+
+    function getDatabase() {
+        if (window.AlmanionAccount?.database) return window.AlmanionAccount.database;
+        try {
+            if (!window.firebase || typeof firebaseConfig === 'undefined') return null;
+            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+            return firebase.database();
+        } catch (_) { return null; }
+    }
+
+    function onAccount(user, skipLink = false) {
         detach();
         byId('contestSearch').value = '';
         byId('contestLogin').textContent = 'Войти';
         gate('Проверяем доступ', '', false);
-        if (!user || user.isAnonymous || !user.email) {
-            gate('Войдите в аккаунт', 'Доступ к таблице открывает владелец сайта.', true);
+        const token = !skipLink && linkToken();
+        const failedLink = skipLink || new URLSearchParams(location.hash.slice(1)).has('access');
+        const registered = user && !user.isAnonymous && user.email;
+        if (!token && !registered) {
+            gate(failedLink ? 'Ссылка недействительна' : 'Войдите в аккаунт', failedLink ? 'Попросите новую ссылку или войдите в аккаунт с доступом.' : 'Войдите в аккаунт с доступом или откройте общую ссылку.', true);
             return;
         }
         const current = generation;
-        const db = window.AlmanionAccount.database;
+        const db = getDatabase();
+        if (!db) {
+            gate('Не удалось подключиться', 'Проверьте соединение и повторите попытку.', true);
+            byId('contestLogin').textContent = 'Повторить';
+            return;
+        }
         accessTimeout = setTimeout(() => {
             if (current !== generation || config) return;
             gate('Не удалось проверить доступ', 'Проверьте соединение и повторите попытку.', true);
@@ -339,11 +361,15 @@
             clearTimeout(accessTimeout);
             sourceRef?.off();
             sourceRef = null;
-            gate('Доступ закрыт', 'Попросите владельца открыть доступ к контестам для вашего аккаунта.', false);
+            if (token) {
+                onAccount(window.AlmanionAccount?.getUser() || user, true);
+                return;
+            }
+            gate(failedLink ? 'Ссылка недействительна' : 'Доступ закрыт', failedLink ? 'Попросите новую ссылку или войдите в аккаунт с доступом.' : 'Попросите владельца открыть доступ к контестам для вашего аккаунта.', failedLink);
         }
         function subscribe() {
             if (sourceRef || current !== generation) return;
-            const reference = db.ref('contestTable');
+            const reference = db.ref(token ? 'contestLinks/' + token : 'contestTable');
             sourceRef = reference;
             reference.on('value', snapshot => {
                 if (current !== generation || sourceRef !== reference) return;
@@ -361,6 +387,7 @@
                 byId('contestEmpty').hidden = true;
                 config = next;
                 if (!config) {
+                    if (token) { denied(); return; }
                     gate('Таблица подключается', 'Подключение ещё не настроено.', false);
                     return;
                 }
@@ -371,7 +398,7 @@
                 refresh();
             }, () => { if (sourceRef === reference) denied(); });
         }
-        if (user.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2') subscribe();
+        if (token || user.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2') subscribe();
         else {
             roleRef = db.ref('adminRoles/' + user.uid + '/contestsAccess');
             roleRef.on('value', snapshot => {
@@ -400,12 +427,17 @@
             if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) clearNote();
         });
         byId('contestLogin').addEventListener('click', () => {
+            if (byId('contestLogin').textContent === 'Повторить') {
+                if (getDatabase()) onAccount(window.AlmanionAccount?.getUser());
+                else location.reload();
+                return;
+            }
             if (!window.AlmanionAccount) {
                 location.reload();
                 return;
             }
             const user = window.AlmanionAccount.getUser();
-            if (user && !user.isAnonymous && user.email) onAccount(user);
+            if (user && !user.isAnonymous && user.email && byId('contestGateTitle').textContent !== 'Ссылка недействительна') onAccount(user);
             else window.AlmanionAccount.openLogin();
         });
         byId('contestReset').addEventListener('click', () => {
@@ -418,15 +450,16 @@
         byId('contestSelection').addEventListener('change', render);
         byId('contestOrder').addEventListener('change', render);
         window.addEventListener('almanion-account-ready', event => onAccount(event.detail?.user));
+        window.addEventListener('hashchange', () => onAccount(window.AlmanionAccount?.getUser()));
         window.addEventListener('pagehide', () => { detach(); gate('Проверяем доступ', '', false); });
         window.addEventListener('pageshow', event => { if (event.persisted) onAccount(window.AlmanionAccount?.getUser()); });
         window.addEventListener('offline', () => { if (config) status(lastUpdated ? 'Нет сети · показаны загруженные результаты' : 'Нет сети · подключитесь и обновите таблицу', 'error'); });
         window.addEventListener('online', () => { if (!document.hidden) refresh(); });
         document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - lastAttempt >= 60000) refresh(); });
         setInterval(() => { if (!document.hidden && navigator.onLine && Date.now() - lastAttempt >= 60000) refresh(); }, 60000);
-        if (window.AlmanionAccount) onAccount(window.AlmanionAccount.getUser());
+        if (window.AlmanionAccount || linkToken()) onAccount(window.AlmanionAccount?.getUser());
         setTimeout(() => {
-            if (window.AlmanionAccount) return;
+            if (window.AlmanionAccount || config || sourceRef) return;
             gate('Не удалось подключить аккаунт', 'Проверьте соединение и повторите попытку.', true);
             byId('contestLogin').textContent = 'Повторить';
         }, 12000);

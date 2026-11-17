@@ -6,6 +6,8 @@
     let accountDirectoryLoading = false;
     let accountDirectory = {};
     let adminRoles = {};
+    let contestShareGeneration = 0;
+    let contestShareBusy = false;
 
     function byId(id) { return document.getElementById(id); }
 
@@ -611,7 +613,95 @@
         }
     }
 
+    function clearContestSharing() {
+        contestShareGeneration++;
+        byId('contestSharingSection').hidden = true;
+        byId('contestShareUrl').value = '';
+    }
+
+    async function loadContestSharing() {
+        const user = auth.currentUser;
+        if (!isOwner(user)) { clearContestSharing(); return; }
+        const current = ++contestShareGeneration;
+        byId('contestSharingSection').hidden = false;
+        try {
+            const snapshot = await db.ref('contestSharing').once('value');
+            if (current !== contestShareGeneration || !isOwner(auth.currentUser)) return;
+            const state = snapshot.val() || {};
+            const active = state.enabled === true && /^[a-f0-9]{64}$/.test(state.token || '');
+            byId('contestShareStatus').textContent = active ? 'Включён — просмотр без входа' : 'Выключен';
+            byId('contestShareUrl').value = active ? 'https://almanion.github.io/contests.html#access=' + state.token : '';
+            byId('contestShareField').hidden = !active;
+            byId('contestShareEnable').hidden = active;
+            byId('contestShareRotate').hidden = !active;
+            byId('contestShareDisable').hidden = !active;
+        } catch (_) {
+            if (current !== contestShareGeneration) return;
+            byId('contestShareStatus').textContent = 'Не удалось проверить ссылку';
+            byId('contestShareUrl').value = '';
+            showAdminToast('Не удалось загрузить настройки ссылки', true);
+        }
+    }
+
+    async function changeContestSharing(enabled) {
+        if (contestShareBusy || !isOwner(auth.currentUser)) return;
+        contestShareBusy = true;
+        const user = auth.currentUser;
+        const buttons = byId('contestSharingSection').querySelectorAll('button');
+        buttons.forEach(button => { button.disabled = true; });
+        try {
+            const [previous, source] = await Promise.all([
+                db.ref('contestSharing').once('value'),
+                enabled ? db.ref('contestTable').once('value') : Promise.resolve(null)
+            ]);
+            if (!isOwner(auth.currentUser) || auth.currentUser.uid !== user.uid) return;
+            const old = previous.val() || {};
+            const updates = {};
+            if (/^[a-f0-9]{64}$/.test(old.token || '')) updates['contestLinks/' + old.token] = null;
+            let token = old.token || '';
+            if (enabled) {
+                const config = source.val();
+                if (!config?.spreadsheetId) throw new Error('Source not configured');
+                token = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte => byte.toString(16).padStart(2, '0')).join('');
+                updates['contestLinks/' + token] = config;
+            }
+            updates.contestSharing = { enabled, token, updatedAt: firebase.database.ServerValue.TIMESTAMP, updatedBy: user.uid };
+            const auditKey = db.ref('auditLog').push().key;
+            updates['auditLog/' + auditKey] = {
+                actorUid: user.uid, action: enabled ? 'contest_link_created' : 'contest_link_disabled',
+                targetUid: user.uid, summary: enabled ? 'Contest link enabled or replaced' : 'Contest link revoked',
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            };
+            await db.ref().update(updates);
+            await loadContestSharing();
+            showAdminToast(enabled ? 'Новая ссылка готова' : 'Доступ по ссылке отключён');
+        } catch (_) {
+            showAdminToast('Не удалось изменить доступ по ссылке', true);
+        } finally {
+            contestShareBusy = false;
+            buttons.forEach(button => { button.disabled = false; });
+        }
+    }
+
+    async function copyContestLink() {
+        await loadContestSharing();
+        const input = byId('contestShareUrl');
+        if (!input.value || !isOwner(auth.currentUser)) return;
+        try {
+            await navigator.clipboard.writeText(input.value);
+            showAdminToast('Ссылка скопирована');
+        } catch (_) {
+            input.focus();
+            input.select();
+            showAdminToast(document.execCommand('copy') ? 'Ссылка скопирована' : 'Скопируйте выделенную ссылку');
+        }
+    }
+
     function initControls() {
+        byId('contestShareEnable').addEventListener('click', () => changeContestSharing(true));
+        byId('contestShareRotate').addEventListener('click', () => changeContestSharing(true));
+        byId('contestShareDisable').addEventListener('click', () => changeContestSharing(false));
+        byId('contestShareCopy').addEventListener('click', copyContestLink);
         const refresh = byId('refreshUsageBtn');
         if (refresh) refresh.addEventListener('click', function () { loadUsageAnalytics(true); });
         const refreshAccounts = byId('refreshRegisteredAccountsBtn');
@@ -629,6 +719,7 @@
 
     initControls();
     auth.onAuthStateChanged(async function (user) {
+        clearContestSharing();
         if (!user) return;
         let hasSiteAccess = isOwner(user);
         if (!hasSiteAccess) {
@@ -643,5 +734,6 @@
         loadUsageAnalytics(false);
         loadAccountDirectory(false);
         loadRoleManager(user);
+        if (isOwner(user)) loadContestSharing();
     });
 })();

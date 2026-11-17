@@ -4,6 +4,7 @@
   "publicReads": {
     "classDuty/grade10_1": "true",
     "classTour/grade10_1/autumn2026": "true",
+    "contestLinks/$token": "$token.matches(/^[a-f0-9]{64}$/) && root.child('contestSharing/enabled').val() === true && root.child('contestSharing/token').val() === $token && data.exists()",
     "polls": "true",
     "publicTickets": "true"
   },

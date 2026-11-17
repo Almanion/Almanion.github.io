@@ -469,6 +469,11 @@ body.admin-page.admin-dialog-open { overflow: hidden; }
 .admin-toast-stack { position: fixed; right: 1rem; bottom: 1rem; z-index: 10000; display: grid; gap: .55rem; width: min(360px, calc(100vw - 2rem)); }
 .admin-toast { padding: .78rem .9rem; border: 1px solid var(--border); border-radius: 11px; background: color-mix(in srgb, var(--bg-card) 96%, transparent); color: var(--text); box-shadow: var(--exp-shadow-md, 0 8px 24px rgba(0,0,0,.15)); font-size: .8rem; line-height: 1.45; animation: adminToastIn .18s ease-out; }
 .admin-toast.is-error { border-color: color-mix(in srgb, var(--danger) 38%, var(--border)); color: var(--danger); }
+.contest-share-field { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; margin-bottom: 1rem; }
+.contest-share-field input { flex: 1 1 240px; width: 100%; min-width: 0; padding: .75rem; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; font-size: .85rem; }
+.contest-share-actions { display: flex; flex-wrap: wrap; gap: .65rem; }
+#contestSharingSection[hidden], #contestSharingSection [hidden] { display: none !important; }
+#contestSharingSection .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 @keyframes adminToastIn { from { opacity: 0; transform: translateY(5px); } }
 
 @media (max-width: 1180px) {

@@ -15,19 +15,25 @@ async function setup(page, allowed = true) {
         let sourceCallback;
         let user = allowed ? { uid: 'viewer', email: 'viewer@example.test' } : null;
         let role = true;
+        let shared = true;
         const config = { title: 'Контесты', spreadsheetId: 'example-contest-sheet', apiKey: 'read-only-example-key', range: "'Scores'!A1:Z1000", totalColumn: 5 };
         const db = { ref(path) {
             return {
-                on(event, callback) {
+                on(event, callback, failed) {
                     listeners.set(path, callback);
-                    if (path === 'contestTable') sourceCallback = callback;
-                    callback({ val: () => path === 'contestTable' ? config : role });
+                    if (path.startsWith('contestLinks/') && path !== 'contestLinks/' + 'a'.repeat(64)) { failed?.({ code: 'PERMISSION_DENIED' }); return; }
+                    if (path === 'contestTable' || path.startsWith('contestLinks/')) sourceCallback = callback;
+                    callback({ val: () => path === 'contestTable' ? config : path.startsWith('contestLinks/') ? (shared ? config : null) : role });
                 },
                 off() { listeners.delete(path); }
             };
         } };
         window.AlmanionAccount = { database: db, getUser: () => user, openLogin: () => { window.loginOpened = true; } };
         window.contestFixture = {
+            share(value) {
+                shared = value;
+                listeners.get('contestLinks/' + 'a'.repeat(64))?.({ val: () => shared ? config : null });
+            },
             replaySource() { sourceCallback?.({ val: () => config }); },
             access(value) {
                 role = value;
@@ -325,5 +331,50 @@ test('formatting failure does not hide scores, and revocation aborts the second 
     await page.evaluate(() => window.contestFixture.access(false));
     finish();
     await expect(page.locator('#contestGateTitle')).toHaveText('Доступ закрыт');
+    await expect(page.locator('#contestResults')).toBeEmpty();
+});
+
+test('shared link opens without login, clears on revocation and never persists the code', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await setup(page, false);
+    await page.goto('/contests.html#access=' + 'a'.repeat(64));
+    await expect(page.locator('#contestStatus')).toContainText('Обновлено');
+    await expect(page.locator('#contestResults')).toContainText('Алексей');
+    expect(await page.evaluate(() => window.loginOpened)).not.toBe(true);
+    expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toContain('a'.repeat(64));
+    // Logging out does not revoke the separate bearer link.
+    await page.evaluate(() => window.contestFixture.signOut());
+    await expect(page.locator('#contestResults')).toContainText('Алексей');
+    await page.evaluate(() => window.contestFixture.share(false));
+    await expect(page.locator('#contestGateTitle')).toHaveText('Ссылка недействительна');
+    await expect(page.locator('#contestResults')).toBeEmpty();
+    await expect(page.locator('#contestSource')).not.toHaveAttribute('href');
+    await page.evaluate(() => window.contestFixture.replaySource());
+    await expect(page.locator('#contestResults')).toBeEmpty();
+});
+
+test('invalid links cannot request results', async ({ page }) => {
+    await setup(page, false);
+    const requests = [];
+    page.on('request', request => { if (request.url().includes('sheets.googleapis.com')) requests.push(request.url()); });
+    await page.goto('/contests.html#access=' + 'b'.repeat(64));
+    await expect(page.locator('#contestGateTitle')).toHaveText('Ссылка недействительна');
+    expect(requests).toHaveLength(0);
+    await page.locator('#contestLogin').click();
+    expect(await page.evaluate(() => window.loginOpened)).toBe(true);
+});
+
+test('an assigned account can still open an expired shared link', async ({ page }) => {
+    await setup(page, true);
+    await page.goto('/contests.html#access=' + 'b'.repeat(64));
+    await expect(page.locator('#contestResults')).toContainText('Алексей');
+});
+
+test('removing a link from the address closes guest access', async ({ page }) => {
+    await setup(page, false);
+    await page.goto('/contests.html#access=' + 'a'.repeat(64));
+    await expect(page.locator('#contestResults')).toContainText('Алексей');
+    await page.evaluate(() => { location.hash = ''; });
+    await expect(page.locator('#contestGateTitle')).toHaveText('Войдите в аккаунт');
     await expect(page.locator('#contestResults')).toBeEmpty();
 });

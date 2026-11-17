@@ -707,6 +707,52 @@
       }
     },
 
+    "contestSharing": {
+      ".read": "auth != null && auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2'",
+      ".write": "auth != null && auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2'",
+      ".validate": "newData.hasChildren(['token', 'enabled', 'updatedAt', 'updatedBy'])",
+      "token": {
+        ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{64}$/)"
+      },
+      "enabled": {
+        ".validate": "newData.isBoolean()"
+      },
+      "updatedAt": {
+        ".validate": "newData.isNumber() && newData.val() === now"
+      },
+      "updatedBy": {
+        ".validate": "newData.isString() && newData.val() === auth.uid"
+      },
+      "$other": {
+        ".validate": false
+      }
+    },
+    "contestLinks": {
+      "$token": {
+        ".read": "$token.matches(/^[a-f0-9]{64}$/) && root.child('contestSharing/enabled').val() === true && root.child('contestSharing/token').val() === $token && data.exists()",
+        ".write": "auth != null && auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2'",
+        ".validate": "$token.matches(/^[a-f0-9]{64}$/) && newData.hasChildren(['title', 'spreadsheetId', 'apiKey', 'range', 'totalColumn']) && newData.child('title').val() === root.child('contestTable/title').val() && newData.child('spreadsheetId').val() === root.child('contestTable/spreadsheetId').val() && newData.child('apiKey').val() === root.child('contestTable/apiKey').val() && newData.child('range').val() === root.child('contestTable/range').val() && newData.child('totalColumn').val() === root.child('contestTable/totalColumn').val()",
+        "title": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100"
+        },
+        "spreadsheetId": {
+          ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{20,120}$/)"
+        },
+        "apiKey": {
+          ".validate": "newData.isString() && newData.val().length >= 20 && newData.val().length <= 100"
+        },
+        "range": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 150"
+        },
+        "totalColumn": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 77 && newData.val() % 1 === 0"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+
     "contestTable": {
       ".read": "auth != null && auth.token.email != null && auth.token.firebase.sign_in_provider !== 'anonymous' && (auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2' || root.child('adminRoles').child(auth.uid).child('contestsAccess').val() === true)",
       ".write": "auth != null && auth.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2'",

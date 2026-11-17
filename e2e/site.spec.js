@@ -319,6 +319,7 @@ test('admin controls stay interactive after dialogs and list changes', async fun
             adminRoles: {
                 'editor-1': { email: 'editor@example.com', contentEditor: true }
             },
+            contestTable: { title: 'Контесты', spreadsheetId: 'test-sheet-identifier-0123456789', apiKey: 'test-read-only-key-0123456789', range: "'Scores'!A1:Z1000", totalColumn: 5 },
             presence: {
                 session1: { visitorId: 'visitor-1', page: '/physics-10.html', timestamp: Date.now(), userAgent: 'Desktop' }
             },
@@ -456,6 +457,16 @@ test('admin controls stay interactive after dialogs and list changes', async fun
     await page.locator('#adminRoleForm button[type="submit"]').click();
     await expect(page.locator('#adminRoleForm button[type="submit"]')).toBeEnabled();
     await expect(page.locator('#adminRolesList .admin-role-row').filter({ hasText: 'editor@example.com' })).toContainText('Контесты');
+    await page.locator('#contestShareEnable').click();
+    await expect(page.locator('#contestShareStatus')).toContainText('Включён');
+    const firstLink = await page.locator('#contestShareUrl').inputValue();
+    expect(firstLink).toMatch(/^https:\/\/almanion\.github\.io\/contests\.html#access=[a-f0-9]{64}$/);
+    await page.locator('#contestShareRotate').click();
+    await expect(page.locator('#contestShareUrl')).not.toHaveValue(firstLink);
+    await page.locator('#contestShareDisable').click();
+    await expect(page.locator('#contestShareStatus')).toHaveText('Выключен');
+    await expect(page.locator('#contestShareUrl')).toHaveValue('');
+    await expect(page.locator('#contestShareField')).toBeHidden();
 
     await page.locator('[data-admin-command="open-direct-message"]').first().click();
     await page.locator('[data-admin-command="dm-mode"][data-admin-value="poll"]').click();

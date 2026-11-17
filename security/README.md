@@ -8,6 +8,15 @@ changes without a matching review of the baseline.
 There are no anonymous writes in the current baseline. Public reads are limited
 to the published duty schedule, active polls, and public tickets.
 
+The owner explicitly requested account-free contest viewing for anyone holding a
+shared link. `contestLinks/$token` is an intentional bearer-protected read. Each
+link uses 256 random bits, the registry and current-token metadata cannot be
+listed anonymously, and a grant exposes only the contest source configuration.
+There are no anonymous writes. The owner can atomically replace or delete the
+grant; the previous link is then denied and active viewers clear their results.
+Emulator tests cover guessing, enumeration, writes, rotation and revocation.
+The ordinary `contestTable` path still requires an assigned registered account.
+
 ## Implemented foundation
 
 1. Ordinary signed-out visitors use Firebase Anonymous Auth in a secondary app;
