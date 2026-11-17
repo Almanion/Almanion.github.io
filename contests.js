@@ -8,6 +8,7 @@
     let sourceRef = null;
     let roleRef = null;
     let request = null;
+    let accessTimeout = 0;
     let generation = 0;
     let lastUpdated = 0;
 
@@ -151,6 +152,7 @@
 
     function detach() {
         generation++;
+        clearTimeout(accessTimeout);
         request?.abort();
         request = null;
         sourceRef?.off();
@@ -170,8 +172,14 @@
         }
         const current = generation;
         const db = window.AlmanionAccount.database;
+        accessTimeout = setTimeout(() => {
+            if (current !== generation || config) return;
+            gate('Не удалось проверить доступ', 'Проверьте соединение и повторите попытку.', true);
+            byId('contestLogin').textContent = 'Повторить';
+        }, 12000);
         function denied() {
             if (current !== generation) return;
+            clearTimeout(accessTimeout);
             sourceRef?.off();
             sourceRef = null;
             gate('Доступ закрыт', 'Попросите владельца открыть доступ к контестам для вашего аккаунта.', false);
@@ -181,6 +189,7 @@
             sourceRef = db.ref('contestTable');
             sourceRef.on('value', snapshot => {
                 if (current !== generation) return;
+                clearTimeout(accessTimeout);
                 request?.abort();
                 request = null;
                 contests = [];
@@ -212,8 +221,13 @@
 
     function init() {
         byId('contestLogin').addEventListener('click', () => {
-            if (window.AlmanionAccount) window.AlmanionAccount.openLogin();
-            else location.reload();
+            if (!window.AlmanionAccount) {
+                location.reload();
+                return;
+            }
+            const user = window.AlmanionAccount.getUser();
+            if (user && !user.isAnonymous && user.email) onAccount(user);
+            else window.AlmanionAccount.openLogin();
         });
         byId('contestRefresh').addEventListener('click', refresh);
         byId('contestSearch').addEventListener('input', render);

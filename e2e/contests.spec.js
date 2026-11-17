@@ -110,3 +110,22 @@ test('revocation cancels an in-flight response and refresh errors keep current r
     await expect(page.locator('#contestGateTitle')).toHaveText('Доступ закрыт');
     await expect(page.locator('#contestResults')).toBeEmpty();
 });
+
+test('a stalled access check has a retry and can recover', async ({ page }) => {
+    await page.clock.install();
+    await setup(page);
+    await page.addInitScript(() => {
+        const database = window.AlmanionAccount.database;
+        window.resumeContestConnection = database.ref;
+        database.ref = () => ({ on() {}, off() {} });
+    });
+    await page.goto('/contests.html');
+    await expect(page.locator('#contestGateTitle')).toHaveText('Проверяем доступ');
+    await page.clock.fastForward(13000);
+    await expect(page.locator('#contestGateTitle')).toHaveText('Не удалось проверить доступ');
+    await expect(page.locator('#contestLogin')).toHaveText('Повторить');
+    await page.evaluate(() => { window.AlmanionAccount.database.ref = window.resumeContestConnection; });
+    await page.locator('#contestLogin').click();
+    await expect(page.locator('#contestContent')).toBeVisible();
+    await expect(page.locator('#contestResults')).toContainText('Алексей');
+});
