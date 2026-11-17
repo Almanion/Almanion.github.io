@@ -186,9 +186,10 @@
         }
         function subscribe() {
             if (sourceRef || current !== generation) return;
-            sourceRef = db.ref('contestTable');
-            sourceRef.on('value', snapshot => {
-                if (current !== generation) return;
+            const reference = db.ref('contestTable');
+            sourceRef = reference;
+            reference.on('value', snapshot => {
+                if (current !== generation || sourceRef !== reference) return;
                 clearTimeout(accessTimeout);
                 request?.abort();
                 request = null;
@@ -207,7 +208,7 @@
                 const link = byId('contestSource');
                 link.href = 'https://docs.google.com/spreadsheets/d/' + encodeURIComponent(config.spreadsheetId) + '/edit';
                 refresh();
-            }, denied);
+            }, () => { if (sourceRef === reference) denied(); });
         }
         if (user.uid === '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2') subscribe();
         else {

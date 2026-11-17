@@ -95,6 +95,13 @@ const workflow = fs.readFileSync(".github/workflows/pages.yml", "utf8");
 assert.match(workflow, /needs: \[scope, build, campaign\]/);
 assert.match(workflow, /needs\.build\.result == 'success'/);
 assert.match(workflow, /needs\.scope\.result == 'success'/);
+assert.deepEqual(classify([
+  "contests.html", "contests.js", "contests-core.js",
+  "styles/contests.css", "e2e/contests.spec.js", "tests/contests.test.js",
+]), { suite: "reader", campaign: false });
+assert.deepEqual(classify(["contests.js", "firebase/database.rules.json"]), {
+  suite: "all", campaign: true,
+});
 assert.match(
   workflow,
   /needs\.scope\.outputs\.campaign == 'false' && needs\.campaign\.result == 'skipped'/,

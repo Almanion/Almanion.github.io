@@ -12,6 +12,7 @@ async function setup(page, allowed = true) {
     });
     await page.addInitScript(({ allowed }) => {
         const listeners = new Map();
+        let sourceCallback;
         let user = allowed ? { uid: 'viewer', email: 'viewer@example.test' } : null;
         let role = true;
         const config = { title: 'Контесты', spreadsheetId: 'example-contest-sheet', apiKey: 'read-only-example-key', range: "'Scores'!A1:Z1000", totalColumn: 5 };
@@ -19,6 +20,7 @@ async function setup(page, allowed = true) {
             return {
                 on(event, callback) {
                     listeners.set(path, callback);
+                    if (path === 'contestTable') sourceCallback = callback;
                     callback({ val: () => path === 'contestTable' ? config : role });
                 },
                 off() { listeners.delete(path); }
@@ -26,6 +28,7 @@ async function setup(page, allowed = true) {
         } };
         window.AlmanionAccount = { database: db, getUser: () => user, openLogin: () => { window.loginOpened = true; } };
         window.contestFixture = {
+            replaySource() { sourceCallback?.({ val: () => config }); },
             access(value) {
                 role = value;
                 listeners.get('adminRoles/viewer/contestsAccess')?.({ val: () => role });
@@ -74,6 +77,9 @@ for (const [width, dark] of [[360, false], [1366, false], [390, true], [1366, tr
         await expect(page.locator('#contestGateTitle')).toHaveText('Доступ закрыт');
         await expect(page.locator('#contestResults')).toBeEmpty();
         await expect(page.locator('#contestSource')).not.toHaveAttribute('href');
+        await page.evaluate(() => window.contestFixture.replaySource());
+        await expect(page.locator('#contestGateTitle')).toHaveText('Доступ закрыт');
+        await expect(page.locator('#contestResults')).toBeEmpty();
         await page.evaluate(() => window.contestFixture.access(true));
         await expect(page.locator('#contestContent')).toBeVisible();
         await page.evaluate(() => window.contestFixture.signOut());

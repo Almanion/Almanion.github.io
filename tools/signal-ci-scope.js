@@ -63,13 +63,14 @@ function signalFile(file) {
 // back to the full suite until its dependencies have been reviewed.
 function isReaderFile(file) {
   return /^content\/(?:subjects\.json$|[\w-]+\/(?:manifest\.json$|sections\/[\w-]+\.json$))/.test(file)
-    || /^(?:physics(?:-10|-exam)?|chemistry(?:-10)?|math|geometry(?:-formulas)?|russian-ege|likbez|literature-10|duty-10-1|offline)\.html$/.test(file)
+    || /^(?:physics(?:-10|-exam)?|chemistry(?:-10)?|math|geometry(?:-formulas)?|russian-ege|likbez|literature-10|duty-10-1|offline|contests)\.html$/.test(file)
     || /^(?:script|note-runtime|experimental-reader|search(?:-text)?|offline-library|russian-ege|english-ui|duty|note-filter|experiment-notebook|knowledge-check|bookmarks|print-export|pdf-download)\.js$/.test(file)
     || /^(?:search-index|definition-index)\.json$/.test(file)
     || /^duty\/(?:view|editor)\.js$/.test(file)
-    || /^styles\/(?:duty|reader-tools|note-filter|print|site\/20-layout-content)\.css$/.test(file)
+    || /^contests(?:-core)?\.js$/.test(file)
+    || /^styles\/(?:duty|contests|reader-tools|note-filter|print|site\/20-layout-content)\.css$/.test(file)
     || /^tools\/build-(?:notes|offline)\.js$/.test(file)
-    || /^(?:e2e|tests)\/(?:reader-tools|site-improvements|network-resilience|duty-extra|russian-ege|experiment-notebook|offline-catalogue)\.(?:spec|test)\.js$/.test(file)
+    || /^(?:e2e|tests)\/(?:reader-tools|site-improvements|network-resilience|duty-extra|russian-ege|experiment-notebook|offline-catalogue|contests)\.(?:spec|test)\.js$/.test(file)
     || file === "matcenter/20-auth.js";
 }
 const routing = new Set([".github/workflows/pages.yml", "tools/signal-ci-scope.js", "tests/signal-ci-scope.test.js", "tools/run-tests.js"]);
