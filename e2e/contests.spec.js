@@ -47,6 +47,7 @@ async function setup(page, allowed = true) {
         row('SCHOOL26DAY1')
     ] }] }] };
     await page.route('https://sheets.googleapis.com/**', route => route.fulfill({ json: data }));
+    return data;
 }
 
 for (const [width, dark] of [[360, false], [1366, false], [390, true], [1366, true]]) {
@@ -134,4 +135,118 @@ test('a stalled access check has a retry and can recover', async ({ page }) => {
     await page.locator('#contestLogin').click();
     await expect(page.locator('#contestContent')).toBeVisible();
     await expect(page.locator('#contestResults')).toContainText('Алексей');
+});
+
+test('mobile comparison keeps names visible, supports sorting and remembers the view', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 740 });
+    await setup(page);
+    await page.goto('/contests.html');
+    await expect(page.locator('.contest-people')).toBeVisible();
+    await page.getByRole('button', { name: 'Таблица', exact: true }).click();
+    const scroll = page.locator('.contest-table-scroll');
+    await expect(scroll).toBeVisible();
+    await page.evaluate(() => { document.querySelector('.contest-table-scroll').scrollLeft = 240; });
+    const left = await page.locator('tbody th').first().boundingBox();
+    const frame = await scroll.boundingBox();
+    expect(Math.abs(left.x - frame.x)).toBeLessThan(2);
+    await page.getByRole('button', { name: 'Итого: по убыванию баллов' }).click();
+    await expect(page.locator('tbody tr').first()).toContainText('Алексей');
+    await expect(page.locator('#contestOrder')).toHaveValue('total');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThan(2);
+    await page.reload();
+    await expect(scroll).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Таблица', exact: true })).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('notes are touch and keyboard accessible, remain stable on refresh and disappear on revocation', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const data = await setup(page);
+    data.sheets[0].data[0].rowData[1].values[3].note = 'Разбор\n<script>bad()</script>';
+    await page.goto('/contests.html');
+    const note = page.locator('.contest-people').getByRole('button', { name: /Алексей, c: 30/ });
+    await note.click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.locator('#contestNoteText')).toHaveText('Разбор\n<script>bad()</script>');
+    expect(await page.locator('#contestNoteText script').count()).toBe(0);
+    await page.evaluate(() => document.getElementById('contestRefresh').click());
+    await expect(page.locator('#contestStatus')).toContainText('Обновлено');
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toBeHidden();
+    await expect(note).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.evaluate(() => window.contestFixture.access(false));
+    await expect(page.getByRole('dialog')).toBeHidden();
+    await expect(page.locator('#contestNoteText')).toBeEmpty();
+});
+
+test('polling preserves the DOM, scrolling and filters; changed scores replace only the results', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 800 });
+    const data = await setup(page);
+    await page.goto('/contests.html');
+    await expect(page.locator('#contestStatus')).toContainText('Обновлено');
+    await page.getByRole('button', { name: 'Таблица', exact: true }).click();
+    await page.locator('#contestSearch').fill('алекс');
+    await page.evaluate(() => {
+        window.originalContestTable = document.querySelector('table');
+        document.querySelector('.contest-table-scroll').scrollLeft = 180;
+    });
+    await page.locator('#contestRefresh').click();
+    await expect(page.locator('#contestStatus')).toContainText('Обновлено');
+    expect(await page.evaluate(() => window.originalContestTable === document.querySelector('table'))).toBe(true);
+    const left = await page.locator('.contest-table-scroll').evaluate(node => node.scrollLeft);
+    data.sheets[0].data[0].rowData[1].values[5].formattedValue = '150';
+    await page.locator('#contestRefresh').click();
+    await expect(page.locator('tbody')).toContainText('150');
+    await expect(page.locator('#contestSearch')).toHaveValue('алекс');
+    expect(await page.locator('.contest-table-scroll').evaluate(node => node.scrollLeft)).toBe(left);
+    await page.locator('#contestSearch').fill('неизвестный');
+    await expect(page.locator('#contestEmpty')).toContainText('Участники не найдены');
+    await page.getByRole('button', { name: 'Сбросить поиск' }).click();
+    await expect(page.locator('tbody')).toContainText('Мария');
+    await expect(page.locator('#contestSearch')).toBeFocused();
+});
+
+test('offline results stay available and refresh when the connection returns', async ({ page, context }) => {
+    const data = await setup(page);
+    await page.goto('/contests.html');
+    await expect(page.locator('#contestStatus')).toContainText('Обновлено');
+    await context.setOffline(true);
+    await expect(page.locator('#contestStatus')).toContainText('Нет сети');
+    await expect(page.locator('#contestResults')).toContainText('Алексей');
+    await page.locator('#contestRefresh').click();
+    await expect(page.locator('#contestStatus')).toContainText('Нет сети');
+    data.sheets[0].data[0].rowData[1].values[5].formattedValue = '200';
+    await context.setOffline(false);
+    await expect(page.locator('tbody')).toContainText('200');
+    await expect(page.locator('#contestStatus')).toContainText('Обновлено');
+});
+
+test('multiple contests, missing totals, long names and loading errors work without overflow', async ({ page }, info) => {
+    await page.setViewportSize({ width: 320, height: 740 });
+    const data = await setup(page);
+    const rows = data.sheets[0].data[0].rowData;
+    rows[1].values[0].formattedValue = 'ОченьДлиннаяФамилияБезПробеловОченьДлиннаяФамилия';
+    rows.push({ values: [{ formattedValue: 'https://example.test/contest/2' }, { formattedValue: 'Длинное название задачи' }] });
+    rows.push({ values: [{ formattedValue: 'Мария' }, { formattedValue: '42' }] });
+    rows.push({ values: [{ formattedValue: 'Тур 2' }] });
+    await page.goto('/contests.html');
+    await expect(page.locator('.contest-section')).toHaveCount(2);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThan(2);
+    expect(await page.locator('.contest-person-total .contest-score').first().evaluate(node => node.getBoundingClientRect().height / parseFloat(getComputedStyle(node).lineHeight))).toBeLessThan(1.8);
+    await page.screenshot({ path: info.outputPath('contests-long-mobile.png'), fullPage: true });
+    await page.locator('#contestSelection').selectOption({ label: 'Тур 2' });
+    await expect(page.locator('.contest-section')).toHaveCount(1);
+    await expect(page.locator('.contest-title')).toHaveText('Тур 2');
+    await expect(page.locator('.contest-rank')).toHaveCount(0);
+    await page.locator('#contestRefresh').click();
+    await expect(page.locator('#contestStatus')).toContainText('Обновлено');
+    await expect(page.locator('.contest-title')).toHaveText('Тур 2');
+    await page.route('https://sheets.googleapis.com/**', route => route.fulfill({ status: 503, body: 'Unavailable' }));
+    await page.reload();
+    await expect(page.locator('#contestStatus')).toContainText('Не удалось загрузить');
+    await expect(page.locator('#contestLoading')).toBeHidden();
+    await expect(page.locator('#contestEmpty')).toBeHidden();
+    await expect(page.locator('#contestRefresh')).toBeEnabled();
 });

@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="styles/buttons.css?v=20260929-2">
     <link rel="stylesheet" href="style-new.css?v=20261113-2">
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
-    <link rel="stylesheet" href="styles/contests.css?v=1">
+    <link rel="stylesheet" href="styles/contests.css?v=2">
 </head>
 <body class="contests-page" data-no-math>
     <script>(function(){try{var p=JSON.parse(localStorage.getItem('siteSettings')||'{}');if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
@@ -22,7 +22,7 @@
         <div class="sidebar-header-buttons"></div>
     </header>
     <main class="contests-shell">
-        <h1>Контесты</h1>
+        <div class="contests-heading"><h1>Контесты</h1></div>
         <section id="contestGate" class="contest-gate" aria-live="polite">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
             <h2 id="contestGateTitle">Проверяем доступ</h2>
@@ -31,17 +31,30 @@
             <a href="index.html">На главную</a>
         </section>
         <div id="contestContent" hidden>
-            <div class="contest-toolbar">
-                <label class="contest-search"><span class="sr-only">Поиск участника</span><input id="contestSearch" type="search" placeholder="Участник" autocomplete="off"></label>
-                <label id="contestSelectionLabel" hidden><span class="sr-only">Контест</span><select id="contestSelection"></select></label>
-                <label><span class="sr-only">Сортировка</span><select id="contestOrder"><option value="source">Порядок таблицы</option><option value="name">По имени</option><option value="total">По сумме баллов</option></select></label>
-                <button type="button" class="btn btn-outline" id="contestRefresh">Обновить</button>
+            <div class="contest-controls">
+                <div class="contest-toolbar">
+                    <label class="contest-search"><span class="sr-only">Поиск участника</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><input id="contestSearch" type="search" placeholder="Найти участника" autocomplete="off"></label>
+                    <label id="contestSelectionLabel" hidden><span class="sr-only">Контест</span><select id="contestSelection"></select></label>
+                    <label class="contest-order"><span class="sr-only">Сортировка</span><select id="contestOrder"><option value="source">Порядок таблицы</option><option value="name">По имени</option><option value="total">По сумме баллов</option></select></label>
+                </div>
+                <div class="contest-tools">
+                    <div class="contest-view" role="group" aria-label="Вид результатов">
+                        <button type="button" data-contest-view="table" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M10 4v16M3 15h18"/></svg>Таблица</button>
+                        <button type="button" data-contest-view="cards" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="7" height="16" rx="2"/><rect x="14" y="4" width="7" height="16" rx="2"/></svg>Карточки</button>
+                    </div>
+                    <button type="button" class="contest-refresh" id="contestRefresh"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/></svg><span>Обновить</span></button>
+                </div>
             </div>
-            <div class="contest-meta"><p id="contestStatus" role="status"></p><a id="contestSource" target="_blank" rel="noopener noreferrer">Google Таблица ↗</a></div>
+            <div class="contest-meta"><p id="contestStatus" role="status"></p><a id="contestSource" target="_blank" rel="noopener noreferrer">Открыть Google Таблицу ↗</a></div>
+            <div id="contestLoading" class="contest-loading" hidden aria-hidden="true"><span></span><span></span><span></span></div>
             <div id="contestResults"></div>
-            <p id="contestEmpty" class="contest-empty" hidden></p>
+            <div id="contestEmpty" class="contest-empty" hidden><p id="contestEmptyMessage"></p><button type="button" id="contestReset" hidden>Сбросить поиск</button></div>
         </div>
     </main>
+    <dialog id="contestNote" class="contest-note" aria-labelledby="contestNoteTitle">
+        <div class="contest-note-header"><h2 id="contestNoteTitle"></h2><button type="button" id="contestNoteClose" aria-label="Закрыть примечание">×</button></div>
+        <p id="contestNoteScore" class="contest-note-score"></p><p id="contestNoteText"></p>
+    </dialog>
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
@@ -50,7 +63,7 @@
     <script src="script.js?v=20261113-3"></script>
     <script src="settings.js?v=20261002-1"></script>
     <script src="account.js?v=20261117-contests"></script>
-    <script src="contests-core.js?v=1"></script>
-    <script src="contests.js?v=3"></script>
+    <script src="contests-core.js?v=2"></script>
+    <script src="contests.js?v=4"></script>
 </body>
 </html>
