@@ -102,6 +102,16 @@ assert.deepEqual(classify([
 assert.deepEqual(classify(["contests.js", "firebase/database.rules.json"]), {
   suite: "all", campaign: true,
 });
+const admin = [
+  "admin.html", "admin-app.js", "admin-dashboard.js", "admin-dialogs.js",
+  "styles/admin.css", "e2e/admin-workspace.spec.js", "e2e/helpers/admin-fixture.cjs",
+  "e2e/site.spec.js", "tests/admin-structure.test.js", "tests/admin-login.test.js",
+  "tests/analytics-identity.test.js",
+];
+assert.deepEqual(classify(admin), { suite: "reader", campaign: false });
+for (const file of ["firebase/database.rules.json", "games/signal-frontier/engine.js", "admin-new.js"]) {
+  assert.deepEqual(classify([...admin, file]), { suite: "all", campaign: true });
+}
 assert.match(
   workflow,
   /needs\.scope\.outputs\.campaign == 'false' && needs\.campaign\.result == 'skipped'/,

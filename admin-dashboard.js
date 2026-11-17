@@ -6,10 +6,62 @@
     let accountDirectoryLoading = false;
     let accountDirectory = {};
     let adminRoles = {};
+    let rolesLoaded = false;
     let contestShareGeneration = 0;
     let contestShareBusy = false;
+    let dashboardGeneration = 0;
+    const viewScroll = new Map();
+    let activeView = 'overview';
 
     function byId(id) { return document.getElementById(id); }
+
+    function selectView(name, options = {}) {
+        if (!byId('view-' + name)) name = 'overview';
+        viewScroll.set(activeView, window.scrollY);
+        activeView = name;
+        document.querySelectorAll('.admin-view').forEach(panel => {
+            panel.hidden = panel.id !== 'view-' + name;
+        });
+        document.querySelectorAll('[role="tab"][data-admin-view]').forEach(tab => {
+            const selected = tab.dataset.adminView === name;
+            tab.setAttribute('aria-selected', String(selected));
+            tab.tabIndex = selected ? 0 : -1;
+        });
+        if (options.history && location.hash !== '#' + name) history.pushState(null, '', '#' + name);
+        if (options.scroll) window.scrollTo({ top: viewScroll.get(name) || 0, behavior: 'instant' });
+        if (options.focus) byId('view-' + name).querySelector('h1').focus({ preventScroll: true });
+    }
+
+    function initNavigation() {
+        const tabs = [...document.querySelectorAll('[role="tab"][data-admin-view]')];
+        const tablist = document.querySelector('.admin-nav-tabs');
+        const mobile = matchMedia('(max-width: 760px)');
+        const orientation = () => tablist.setAttribute('aria-orientation', mobile.matches ? 'horizontal' : 'vertical');
+        orientation();
+        mobile.addEventListener('change', orientation);
+        byId('adminDate').textContent = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+        selectView(location.hash.slice(1));
+        window.addEventListener('hashchange', () => selectView(location.hash.slice(1), { scroll: true }));
+        document.addEventListener('click', event => {
+            const button = event.target.closest('[data-admin-view]');
+            if (!button) return;
+            event.preventDefault();
+            selectView(button.dataset.adminView, { history: true, scroll: true, focus: button.getAttribute('role') !== 'tab' });
+        });
+        tablist.addEventListener('keydown', event => {
+            const index = tabs.indexOf(event.target);
+            if (index < 0) return;
+            let next;
+            if (['ArrowRight', 'ArrowDown'].includes(event.key)) next = (index + 1) % tabs.length;
+            else if (['ArrowLeft', 'ArrowUp'].includes(event.key)) next = (index + tabs.length - 1) % tabs.length;
+            else if (event.key === 'Home') next = 0;
+            else if (event.key === 'End') next = tabs.length - 1;
+            else return;
+            event.preventDefault();
+            tabs[next].focus();
+            selectView(tabs[next].dataset.adminView, { history: true, scroll: true });
+        });
+    }
 
     function setButtonPending(button, pending, pendingLabel) {
         if (!button) return;
@@ -245,6 +297,7 @@
 
     async function loadUsageAnalytics(showFeedback) {
         if (analyticsLoading) return;
+        const current = dashboardGeneration;
         analyticsLoading = true;
         const button = byId('refreshUsageBtn');
         setButtonPending(button, true, 'Обновление…');
@@ -256,6 +309,7 @@
             const vitalSnapshots = await Promise.all(days.map(function (day) {
                 return db.ref('webVitals/' + day.key).once('value');
             }));
+            if (current !== dashboardGeneration) return;
             const analyticsDays = days.map(function (day, index) {
                 return Object.assign({}, day, { sessions: flattenSessions(snapshots[index].val()) });
             });
@@ -310,11 +364,14 @@
             renderWebVitals(vitals);
             if (showFeedback) showAdminToast('Аналитика обновлена');
         } catch (error) {
+            if (current !== dashboardGeneration) return;
             console.error('Admin analytics:', error);
             showAdminToast('Не удалось загрузить расширенную аналитику', true);
         } finally {
-            analyticsLoading = false;
-            setButtonPending(button, false);
+            if (current === dashboardGeneration) {
+                analyticsLoading = false;
+                setButtonPending(button, false);
+            }
         }
     }
 
@@ -406,6 +463,16 @@
             meta.append(lastSeen, uid);
 
             row.append(avatar, identity, meta);
+            if (isOwner(auth.currentUser) && entry.uid !== SITE_OWNER_UID) {
+                const edit = document.createElement('button');
+                edit.type = 'button';
+                edit.className = 'btn btn-outline btn-sm account-access-button';
+                edit.textContent = 'Доступ';
+                edit.disabled = !rolesLoaded;
+                edit.setAttribute('aria-label', 'Настроить доступ: ' + entry.account.email);
+                edit.addEventListener('click', () => fillRoleForm(entry.uid));
+                row.appendChild(edit);
+            }
             list.appendChild(row);
         });
         root.appendChild(list);
@@ -413,23 +480,28 @@
 
     async function loadAccountDirectory(showFeedback) {
         if (accountDirectoryLoading) return;
+        const current = dashboardGeneration;
         accountDirectoryLoading = true;
         const button = byId('refreshRegisteredAccountsBtn');
         setButtonPending(button, true, 'Обновление…');
         try {
             const snapshot = await db.ref('accountDirectory').once('value');
+            if (current !== dashboardGeneration) return;
             accountDirectory = snapshot.val() || {};
             renderRegisteredAccounts();
             updateAccountDatalist();
             if (showFeedback) showAdminToast('Список аккаунтов обновлён');
         } catch (error) {
+            if (current !== dashboardGeneration) return;
             console.error('Account directory:', error);
             const root = byId('registeredAccountsList');
             if (root) root.innerHTML = '<div class="no-data">Не удалось загрузить аккаунты</div>';
             showAdminToast('Не удалось загрузить список аккаунтов', true);
         } finally {
-            accountDirectoryLoading = false;
-            setButtonPending(button, false);
+            if (current === dashboardGeneration) {
+                accountDirectoryLoading = false;
+                setButtonPending(button, false);
+            }
         }
     }
 
@@ -445,6 +517,7 @@
     }
 
     function fillRoleForm(uid) {
+        if (!isOwner(auth.currentUser) || !rolesLoaded) return;
         const account = accountDirectory[uid] || {};
         const role = adminRoles[uid] || {};
         byId('adminRoleAccount').value = account.email || uid;
@@ -455,7 +528,10 @@
         byId('tourEditorRole').checked = role.tourEditor === true;
         byId('englishAccessRole').checked = role.englishAccess === true;
         byId('contestsAccessRole').checked = role.contestsAccess === true;
-        byId('adminRoleAccount').focus();
+        byId('adminRoleSelection').textContent = account.email || uid;
+        byId('adminRolesSection').classList.add('is-editing');
+        byId('adminRolesSection').scrollIntoView({ block: 'start', behavior: 'instant' });
+        byId('adminRoleAccount').focus({ preventScroll: true });
     }
 
     function roleBadge(text, owner) {
@@ -523,7 +599,18 @@
         root.appendChild(list);
     }
 
+    function setRolesReady(ready) {
+        rolesLoaded = ready;
+        byId('adminRoleForm').querySelectorAll('input, button').forEach(control => {
+            control.disabled = !ready;
+        });
+        document.querySelectorAll('.account-access-button').forEach(button => {
+            button.disabled = !ready;
+        });
+    }
+
     async function loadRoleManager(user) {
+        const current = dashboardGeneration;
         const section = byId('adminRolesSection');
         if (!section) return;
         if (!isOwner(user)) {
@@ -531,26 +618,32 @@
             return;
         }
         section.hidden = false;
+        setRolesReady(false);
         try {
             const results = await Promise.all([
                 db.ref('accountDirectory').once('value'),
                 db.ref('adminRoles').once('value')
             ]);
+            if (current !== dashboardGeneration || !isOwner(auth.currentUser)) return;
             accountDirectory = results[0].val() || {};
             adminRoles = results[1].val() || {};
+            setRolesReady(true);
             updateAccountDatalist();
             renderRegisteredAccounts();
             renderAdminRoles();
         } catch (error) {
+            if (current !== dashboardGeneration) return;
             console.error('Admin roles:', error);
+            byId('adminRolesList').textContent = 'Не удалось загрузить права. Обновите список аккаунтов.';
             showAdminToast('Не удалось загрузить список администраторов', true);
         }
     }
 
     async function saveAdminRoles(event) {
         event.preventDefault();
+        const current = dashboardGeneration;
         const user = auth.currentUser;
-        if (!isOwner(user)) return;
+        if (!isOwner(user) || !rolesLoaded) return;
         const target = findAccount(byId('adminRoleAccount').value);
         if (!target) {
             showAdminToast('Аккаунт не найден. Пользователю нужно хотя бы один раз войти на сайт.', true);
@@ -602,19 +695,28 @@
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             };
             await db.ref().update(updates);
+            if (current !== dashboardGeneration) return;
             byId('adminRoleForm').reset();
+            byId('adminRoleSelection').textContent = '';
+            byId('adminRolesSection').classList.remove('is-editing');
             showAdminToast(siteAdmin || matcenterAdmin || contentEditor || dutyEditor || tourEditor || englishAccess || contestsAccess ? 'Роли пользователя сохранены' : 'Все дополнительные роли отозваны');
             await loadRoleManager(user);
         } catch (error) {
+            if (current !== dashboardGeneration) return;
             console.error('Save admin roles:', error);
             showAdminToast('Не удалось сохранить права', true);
         } finally {
-            setButtonPending(saveButton, false);
+            if (current === dashboardGeneration) {
+                setButtonPending(saveButton, false);
+                saveButton.disabled = !rolesLoaded;
+            }
         }
     }
 
     function clearContestSharing() {
         contestShareGeneration++;
+        contestShareBusy = false;
+        byId('contestSharingSection').querySelectorAll('button').forEach(button => { button.disabled = false; });
         byId('contestSharingSection').hidden = true;
         byId('contestShareUrl').value = '';
     }
@@ -645,6 +747,7 @@
 
     async function changeContestSharing(enabled) {
         if (contestShareBusy || !isOwner(auth.currentUser)) return;
+        const current = dashboardGeneration;
         contestShareBusy = true;
         const user = auth.currentUser;
         const buttons = byId('contestSharingSection').querySelectorAll('button');
@@ -654,7 +757,7 @@
                 db.ref('contestSharing').once('value'),
                 enabled ? db.ref('contestTable').once('value') : Promise.resolve(null)
             ]);
-            if (!isOwner(auth.currentUser) || auth.currentUser.uid !== user.uid) return;
+            if (current !== dashboardGeneration || !isOwner(auth.currentUser) || auth.currentUser.uid !== user.uid) return;
             const old = previous.val() || {};
             const updates = {};
             if (/^[a-f0-9]{64}$/.test(old.token || '')) updates['contestLinks/' + old.token] = null;
@@ -673,13 +776,17 @@
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             };
             await db.ref().update(updates);
+            if (current !== dashboardGeneration) return;
             await loadContestSharing();
+            if (current !== dashboardGeneration) return;
             showAdminToast(enabled ? 'Новая ссылка готова' : 'Доступ по ссылке отключён');
         } catch (_) {
-            showAdminToast('Не удалось изменить доступ по ссылке', true);
+            if (current === dashboardGeneration) showAdminToast('Не удалось изменить доступ по ссылке', true);
         } finally {
-            contestShareBusy = false;
-            buttons.forEach(button => { button.disabled = false; });
+            if (current === dashboardGeneration) {
+                contestShareBusy = false;
+                buttons.forEach(button => { button.disabled = false; });
+            }
         }
     }
 
@@ -698,6 +805,13 @@
     }
 
     function initControls() {
+        initNavigation();
+        byId('adminRoleReset').addEventListener('click', () => {
+            byId('adminRoleForm').reset();
+            byId('adminRoleSelection').textContent = '';
+            byId('adminRolesSection').classList.remove('is-editing');
+            byId('adminRoleAccount').focus();
+        });
         byId('contestShareEnable').addEventListener('click', () => changeContestSharing(true));
         byId('contestShareRotate').addEventListener('click', () => changeContestSharing(true));
         byId('contestShareDisable').addEventListener('click', () => changeContestSharing(false));
@@ -705,7 +819,10 @@
         const refresh = byId('refreshUsageBtn');
         if (refresh) refresh.addEventListener('click', function () { loadUsageAnalytics(true); });
         const refreshAccounts = byId('refreshRegisteredAccountsBtn');
-        if (refreshAccounts) refreshAccounts.addEventListener('click', function () { loadAccountDirectory(true); });
+        if (refreshAccounts) refreshAccounts.addEventListener('click', function () {
+            loadAccountDirectory(true);
+            if (isOwner(auth.currentUser) && !rolesLoaded) loadRoleManager(auth.currentUser);
+        });
         const accountSearch = byId('registeredAccountsSearch');
         if (accountSearch) accountSearch.addEventListener('input', renderRegisteredAccounts);
         const roleForm = byId('adminRoleForm');
@@ -719,6 +836,21 @@
 
     initControls();
     auth.onAuthStateChanged(async function (user) {
+        const current = ++dashboardGeneration;
+        analyticsLoading = false;
+        accountDirectoryLoading = false;
+        accountDirectory = {};
+        adminRoles = {};
+        ['refreshUsageBtn', 'refreshRegisteredAccountsBtn'].forEach(id => setButtonPending(byId(id), false));
+        setButtonPending(byId('adminRoleForm').querySelector('button[type="submit"]'), false);
+        setRolesReady(false);
+        byId('adminRolesSection').hidden = true;
+        byId('adminRolesSection').classList.remove('is-editing');
+        byId('registeredAccountsCount').textContent = '—';
+        byId('registeredAccountsSearch').value = '';
+        byId('adminRoleForm').reset();
+        byId('adminRoleSelection').textContent = '';
+        ['registeredAccountsList', 'adminRolesList', 'accountDirectoryOptions', 'usageTrend', 'deviceBreakdown', 'trafficSources', 'identityBreakdown', 'browserContextBreakdown', 'topPages', 'webVitalsSummary'].forEach(id => byId(id).replaceChildren());
         clearContestSharing();
         if (!user) return;
         let hasSiteAccess = isOwner(user);
@@ -730,7 +862,7 @@
                 hasSiteAccess = false;
             }
         }
-        if (!hasSiteAccess || !auth.currentUser || auth.currentUser.uid !== user.uid) return;
+        if (current !== dashboardGeneration || !hasSiteAccess || !auth.currentUser || auth.currentUser.uid !== user.uid) return;
         loadUsageAnalytics(false);
         loadAccountDirectory(false);
         loadRoleManager(user);

@@ -32,891 +32,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Админ-панель | Almanion</title>
     <meta name="robots" content="noindex, nofollow">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        :root {
-            --bg: #0f172a;
-            --bg-card: #1e293b;
-            --bg-input: #0f172a;
-            --text: #f1f5f9;
-            --text-secondary: #a8b8cc;
-            --accent: #3b82f6;
-            --accent-hover: #60a5fa;
-            --border: #334155;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-        }
-
-        body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-        }
-
-        /* ============ ЭКРАН ВХОДА ============ */
-        .login-screen {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 1rem;
-        }
-
-        .login-card {
-            background: var(--bg-card);
-            border-radius: 16px;
-            padding: 2.5rem;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-        }
-
-        .login-card h1 {
-            text-align: center;
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .login-card p {
-            text-align: center;
-            color: var(--text-secondary);
-            margin-bottom: 2rem;
-            font-size: 0.9rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.25rem;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            margin-bottom: 0.4rem;
-            font-weight: 600;
-        }
-
-        .form-group input, .form-group textarea, .form-group select {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 2px solid var(--border);
-            border-radius: 10px;
-            background: var(--bg-input);
-            color: var(--text);
-            font-size: 1rem;
-            font-family: inherit;
-            transition: border-color 0.2s;
-        }
-
-        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: inherit;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-            width: 100%;
-        }
-
-        .btn-primary:hover {
-            background: var(--accent-hover);
-        }
-
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #dc2626;
-        }
-
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #16a34a;
-        }
-
-        .btn-outline {
-            background: transparent;
-            color: var(--text-secondary);
-            border: 2px solid var(--border);
-        }
-
-        .btn-outline:hover {
-            border-color: var(--text-secondary);
-            color: var(--text);
-        }
-
-        .btn-sm {
-            padding: 0.5rem 1rem;
-            font-size: 0.85rem;
-        }
-
-        .login-error {
-            color: var(--danger);
-            text-align: center;
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            display: none;
-        }
-
-        /* ============ DASHBOARD ============ */
-        .dashboard {
-            display: none;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1.5rem;
-        }
-
-        .dashboard-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .dashboard-header h1 {
-            font-size: 1.6rem;
-        }
-
-        .dashboard-header .header-actions {
-            display: flex;
-            gap: 0.75rem;
-            align-items: center;
-        }
-
-        /* ============ СТАТИСТИКА ============ */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1.25rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: var(--bg-card);
-            border-radius: 14px;
-            padding: 1.5rem;
-            border: 1px solid var(--border);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 3px;
-        }
-
-        .stat-card.online::before { background: var(--success); }
-        .stat-card.unique::before { background: var(--accent); }
-        .stat-card.today::before { background: var(--warning); }
-        .stat-card.pages::before { background: #a78bfa; }
-
-        .stat-card .stat-icon {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-card .stat-value {
-            font-size: 2.2rem;
-            font-weight: 800;
-            line-height: 1;
-            margin-bottom: 0.3rem;
-        }
-
-        .stat-card.online .stat-value { color: var(--success); }
-        .stat-card.unique .stat-value { color: var(--accent); }
-        .stat-card.today .stat-value { color: var(--warning); }
-        .stat-card.pages .stat-value { color: #a78bfa; }
-
-        .stat-card .stat-label {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        /* ============ СЕКЦИИ ============ */
-        .section {
-            background: var(--bg-card);
-            border-radius: 14px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border: 1px solid var(--border);
-        }
-
-        .section-title {
-            font-size: 1.15rem;
-            font-weight: 700;
-            margin-bottom: 1.25rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        /* ============ ТАБЛИЦА ОНЛАЙН ============ */
-        .online-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .online-table th, .online-table td {
-            padding: 0.7rem 1rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
-            font-size: 0.9rem;
-        }
-
-        .online-table th {
-            color: var(--text-secondary);
-            font-weight: 600;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .online-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .online-table .device-badge {
-            display: inline-block;
-            padding: 0.2rem 0.6rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .device-mobile {
-            background: rgba(249, 115, 22, 0.15);
-            color: #fb923c;
-        }
-
-        .device-desktop {
-            background: rgba(59, 130, 246, 0.15);
-            color: #60a5fa;
-        }
-
-        .page-badge {
-            display: inline-block;
-            padding: 0.2rem 0.6rem;
-            border-radius: 6px;
-            background: rgba(255,255,255,0.05);
-            font-size: 0.85rem;
-        }
-
-        .no-data {
-            text-align: center;
-            color: var(--text-secondary);
-            padding: 2rem;
-            font-size: 0.95rem;
-        }
-
-        /* ============ СОЗДАНИЕ ОПРОСА ============ */
-        .poll-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .options-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .option-row {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .option-row input {
-            flex: 1;
-        }
-
-        .option-row .remove-option {
-            width: 36px;
-            height: 36px;
-            border: none;
-            background: rgba(239, 68, 68, 0.15);
-            color: var(--danger);
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1.1rem;
-            transition: background 0.2s;
-            flex-shrink: 0;
-        }
-
-        .option-row .remove-option:hover {
-            background: rgba(239, 68, 68, 0.3);
-        }
-
-        .add-option-btn {
-            align-self: flex-start;
-            padding: 0.5rem 1rem;
-            border: 2px dashed var(--border);
-            background: transparent;
-            color: var(--text-secondary);
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-family: inherit;
-            transition: all 0.2s;
-        }
-
-        .add-option-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .poll-actions {
-            display: flex;
-            gap: 0.75rem;
-            justify-content: flex-end;
-        }
-
-        /* ============ АКТИВНЫЕ ОПРОСЫ ============ */
-        .poll-card {
-            background: var(--bg-input);
-            border-radius: 12px;
-            padding: 1.25rem;
-            margin-bottom: 1rem;
-            border: 1px solid var(--border);
-        }
-
-        .poll-card-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-            gap: 1rem;
-        }
-
-        .poll-card h4 {
-            font-size: 1.05rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .poll-card .poll-status {
-            display: inline-block;
-            padding: 0.2rem 0.6rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .poll-active {
-            background: rgba(34, 197, 94, 0.15);
-            color: var(--success);
-        }
-
-        .poll-closed {
-            background: rgba(148, 163, 184, 0.15);
-            color: var(--text-secondary);
-        }
-
-        .poll-results {
-            display: flex;
-            flex-direction: column;
-            gap: 0.6rem;
-        }
-
-        .poll-result-row {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .poll-result-label {
-            min-width: 120px;
-            font-size: 0.9rem;
-            flex-shrink: 0;
-        }
-
-        .poll-result-bar-container {
-            flex: 1;
-            height: 24px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 6px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .poll-result-bar {
-            height: 100%;
-            border-radius: 6px;
-            transition: width 0.5s ease;
-            min-width: 2px;
-        }
-
-        .poll-result-bar.c0 { background: var(--accent); }
-        .poll-result-bar.c1 { background: var(--success); }
-        .poll-result-bar.c2 { background: var(--warning); }
-        .poll-result-bar.c3 { background: #a78bfa; }
-        .poll-result-bar.c4 { background: #f472b6; }
-        .poll-result-bar.c5 { background: #34d399; }
-
-        .poll-result-count {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            min-width: 50px;
-            text-align: right;
-        }
-
-        /* ============ RESPONSIVE ============ */
-        @media (max-width: 768px) {
-            .dashboard-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .online-table {
-                font-size: 0.8rem;
-            }
-
-            .online-table th, .online-table td {
-                padding: 0.5rem;
-            }
-
-            .poll-result-label {
-                min-width: 80px;
-                font-size: 0.8rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* ============ LOADING ============ */
-        .pulse {
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .status-dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--success);
-            margin-right: 0.5rem;
-            animation: pulse 1.5s infinite;
-        }
-
-        /* ============ ИМЕНОВАНИЕ ПОСЕТИТЕЛЕЙ ============ */
-        .visitor-name {
-            cursor: pointer;
-            padding: 0.15rem 0.4rem;
-            border-radius: 4px;
-            transition: background 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
-        .visitor-name:hover {
-            background: rgba(255,255,255,0.08);
-        }
-
-        .visitor-name .name-label {
-            font-weight: 600;
-            color: var(--accent-hover);
-        }
-
-        .visitor-name .name-id {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            opacity: 0.6;
-        }
-
-        .visitor-name .edit-icon {
-            font-size: 0.7rem;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .visitor-name:hover .edit-icon {
-            opacity: 0.6;
-        }
-
-        /* ============ КНОПКА ДЕЙСТВИЙ ============ */
-        .action-btn {
-            width: 32px;
-            height: 32px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255,255,255,0.05);
-            color: var(--text-secondary);
-        }
-
-        .action-btn:hover {
-            background: rgba(59, 130, 246, 0.2);
-            color: var(--accent-hover);
-        }
-
-        /* ============ МОДАЛЬНОЕ ОКНО ============ */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.6);
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-            backdrop-filter: blur(4px);
-        }
-
-        .modal {
-            background: var(--bg-card);
-            border-radius: 16px;
-            padding: 2rem;
-            max-width: 500px;
-            width: 100%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-            border: 1px solid var(--border);
-        }
-
-        .modal h3 {
-            font-size: 1.2rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 0.75rem;
-            justify-content: flex-end;
-            margin-top: 1.5rem;
-        }
-
-        /* ============ ДЕТАЛИ ОПРОСА ============ */
-        .poll-details-toggle {
-            background: none;
-            border: none;
-            color: var(--accent);
-            cursor: pointer;
-            font-size: 0.8rem;
-            font-family: inherit;
-            padding: 0.3rem 0;
-            transition: color 0.2s;
-        }
-
-        .poll-details-toggle:hover {
-            color: var(--accent-hover);
-        }
-
-        .poll-voter-list {
-            margin-top: 0.75rem;
-            padding: 0.75rem;
-            background: rgba(255,255,255,0.03);
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            display: none;
-        }
-
-        .poll-voter-list.open {
-            display: block;
-        }
-
-        .poll-voter-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.4rem 0.5rem;
-            font-size: 0.85rem;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-        }
-
-        .poll-voter-row:last-child {
-            border-bottom: none;
-        }
-
-        .poll-voter-name {
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .poll-voter-answer {
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-        }
-
-        /* ============ ВЫБОР ПОЛУЧАТЕЛЯ ============ */
-        .target-selector {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            margin-bottom: 1rem;
-        }
-
-        .target-chip {
-            padding: 0.3rem 0.7rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            border: 1px solid var(--border);
-            background: var(--bg-input);
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .target-chip.selected {
-            border-color: var(--accent);
-            background: rgba(59, 130, 246, 0.15);
-            color: var(--accent-hover);
-        }
-
-        .target-chip:hover {
-            border-color: var(--accent);
-        }
-
-        /* ============ ПРОФИЛЬ ПОСЕТИТЕЛЯ ============ */
-        .profile-modal {
-            max-width: 580px;
-            max-height: 85vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .profile-modal .modal-body {
-            overflow-y: auto;
-            flex: 1 1 auto;
-            min-height: 0;
-            margin: 0 -2rem;
-            padding: 0 2rem 1rem;
-            scrollbar-width: thin;
-        }
-
-        .profile-modal .modal-body::-webkit-scrollbar { width: 4px; }
-        .profile-modal .modal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-        .profile-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .profile-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            background: rgba(59,130,246,0.15);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.4rem;
-            flex-shrink: 0;
-        }
-
-        .profile-info h3 {
-            font-size: 1.15rem;
-            margin: 0 0 0.2rem 0;
-        }
-
-        .profile-info .profile-id {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            font-family: monospace;
-        }
-
-        .profile-section {
-            margin-bottom: 1.25rem;
-        }
-
-        .profile-section-title {
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-secondary);
-            margin-bottom: 0.6rem;
-        }
-
-        .history-item {
-            padding: 0.65rem 0.75rem;
-            border-radius: 8px;
-            background: rgba(255,255,255,0.03);
-            margin-bottom: 0.5rem;
-            border: 1px solid rgba(255,255,255,0.04);
-        }
-
-        .history-item .history-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.3rem;
-        }
-
-        .history-item .history-type {
-            font-size: 0.75rem;
-            padding: 0.15rem 0.5rem;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-
-        .history-type-msg {
-            background: rgba(59,130,246,0.15);
-            color: var(--accent-hover);
-        }
-
-        .history-type-poll {
-            background: rgba(167,139,250,0.15);
-            color: #a78bfa;
-        }
-
-        .history-type-vote {
-            background: rgba(34,197,94,0.15);
-            color: var(--success);
-        }
-
-        .history-type-dm-poll {
-            background: rgba(249,115,22,0.15);
-            color: #fb923c;
-        }
-
-        .history-item .history-time {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-
-        .history-item .history-text {
-            font-size: 0.9rem;
-            line-height: 1.5;
-        }
-
-        .history-item .history-answer {
-            margin-top: 0.25rem;
-            font-size: 0.85rem;
-            color: var(--success);
-            font-weight: 600;
-        }
-
-        .history-empty {
-            text-align: center;
-            color: var(--text-secondary);
-            padding: 1rem;
-            font-size: 0.9rem;
-        }
-
-        /* Скроллбар */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-        /* Инлайн-иконки (замена эмодзи) */
-        .eic { display:inline-block; width:1.05em; height:1.05em; vertical-align:-0.18em; background-color:currentColor; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center; -webkit-mask-size:contain; mask-size:contain; -webkit-mask-image:var(--eic-img); mask-image:var(--eic-img); flex-shrink:0; }
-        .eic-lock { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E"); }
-        .eic-chart { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 20V10'/%3E%3Cpath d='M12 20V4'/%3E%3Cpath d='M6 20v-6'/%3E%3C/svg%3E"); }
-        .eic-dot { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='6' fill='black'/%3E%3C/svg%3E"); }
-        .eic-users { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='9' cy='7' r='4'/%3E%3Cpath d='M23 21v-2a4 4 0 0 0-3-3.87'/%3E%3Cpath d='M16 3.13a4 4 0 0 1 0 7.75'/%3E%3C/svg%3E"); }
-        .eic-search { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-4-4'/%3E%3C/svg%3E"); }
-        .eic-user { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E"); }
-        .eic-calendar { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4'/%3E%3Cpath d='M8 2v4'/%3E%3Cpath d='M3 10h18'/%3E%3C/svg%3E"); }
-        .eic-file { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 2v6h6'/%3E%3C/svg%3E"); }
-        .eic-pen { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z'/%3E%3C/svg%3E"); }
-        .eic-megaphone { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11l16-6v14L3 13z'/%3E%3Cpath d='M11.5 16.5a2.5 2.5 0 0 1-4.9-.8'/%3E%3C/svg%3E"); }
-        .eic-book { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z'/%3E%3Cpath d='M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z'/%3E%3C/svg%3E"); }
-        .eic-gear { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'/%3E%3C/svg%3E"); }
-        .eic-trash { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6h18'/%3E%3Cpath d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/%3E%3C/svg%3E"); }
-        .eic-refresh { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M23 4v6h-6'/%3E%3Cpath d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'/%3E%3C/svg%3E"); }
-        .eic-send { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 2 11 13'/%3E%3Cpath d='M22 2 15 22l-4-9-9-4z'/%3E%3C/svg%3E"); }
-        .eic-phone { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='2' width='14' height='20' rx='2'/%3E%3Cpath d='M12 18h.01'/%3E%3C/svg%3E"); }
-        .eic-laptop { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='12' rx='2'/%3E%3Cpath d='M2 20h20'/%3E%3C/svg%3E"); }
-        .eic-mail { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='4' width='20' height='16' rx='2'/%3E%3Cpath d='m22 7-10 5L2 7'/%3E%3C/svg%3E"); }
-        .eic-chat { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z'/%3E%3C/svg%3E"); }
-        .eic-clip { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/%3E%3Crect x='8' y='2' width='8' height='4' rx='1'/%3E%3C/svg%3E"); }
-        .eic-check { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E"); }
-        .eic-x { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='M6 6l12 12'/%3E%3C/svg%3E"); }
-        .eic-warn { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E"); }
-        .eic-alert { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 8v4'/%3E%3Cpath d='M12 16h.01'/%3E%3C/svg%3E"); }
-        .eic-clock { --eic-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpolyline points='12 6 12 12 16 14'/%3E%3C/svg%3E"); }
-    </style>
     <link rel="stylesheet" href="style-new.css?v=20260929-2">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="styles/typography.css?v=20261002-1">
-    <link rel="stylesheet" href="styles/admin.css?v=20261117-sharing">
+    <link rel="stylesheet" href="styles/admin.css?v=20261118-workspace">
 </head>
 <body class="admin-page">
-    <script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
-
-    <!-- ============ ЭКРАН ВХОДА ============ -->
-    <div class="login-screen" id="loginScreen">
-        <div class="login-card">
-            <h1><span class="eic eic-lock" aria-hidden="true"></span> Админ-панель</h1>
-            <p>Управление сайтом и аналитика</p>
-            <div class="form-group">
-                <label for="loginEmail">Email</label>
-                <input type="email" id="loginEmail" autocomplete="email">
-            </div>
-            <div class="form-group">
-                <label for="loginPassword">Пароль</label>
-                <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
-            </div>
-            <button class="btn btn-primary" id="loginBtn" type="button">Войти</button>
-            <p class="login-error" id="loginError"></p>
-        </div>
+<script>(function(){try{var s=localStorage.getItem('siteSettings');var p=s?JSON.parse(s):{};if(p.experimental!==false){document.body.classList.add('experimental',p.expMode==='graphite'?'exp-graphite':'exp-prism');if(p.expDark)document.body.classList.add('exp-dark');}else{var t=document.documentElement.dataset.theme;if(t&&t!=='light')document.body.classList.add(t+'-theme');}}catch(e){}})();</script>
+<div class="login-screen" id="loginScreen">
+    <div class="login-card">
+        <a class="admin-login-home" href="index.html">← На главную</a>
+        <div class="admin-login-icon"><span class="eic eic-lock" aria-hidden="true"></span></div>
+        <h1>Панель управления</h1>
+        <div class="form-group"><label for="loginEmail">Email</label><input type="email" id="loginEmail" autocomplete="email" inputmode="email" required></div>
+        <div class="form-group"><label for="loginPassword">Пароль</label><input type="password" id="loginPassword" autocomplete="current-password" required></div>
+        <button class="btn btn-primary" id="loginBtn" type="button">Войти</button><p class="login-error" id="loginError" role="alert"></p>
     </div>
-
-    <!-- ============ DASHBOARD ============ -->
-    <div class="dashboard" id="dashboard">
-        <div class="dashboard-header">
-            <div class="admin-header-identity">
-                <a class="admin-home-link" href="index.html" aria-label="На главную"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.75 5.25c3.25-.85 5.9-.22 8.25 1.55v12.05c-2.35-1.77-5-2.4-8.25-1.55V5.25Z"/><path d="M20.25 5.25c-3.25-.85-5.9-.22-8.25 1.55v12.05c2.35-1.77 5-2.4 8.25-1.55V5.25Z"/><path d="M12 6.8v12.05M7.25 4.8v4.5l1.6-.9 1.6.9V5.75"/></svg><span>Almanion</span></a>
-                <span class="admin-header-divider" aria-hidden="true"></span>
-                <h1><span class="eic eic-chart" aria-hidden="true"></span> Панель управления</h1>
-            </div>
-            <div class="header-actions">
-                <span style="font-size: 0.85rem; color: var(--text-secondary);" id="adminEmail"></span>
-                <button class="btn btn-outline btn-sm" id="logoutBtn" type="button">Выйти</button>
-            </div>
-        </div>
-
-        <!-- Статистика -->
-        <div class="stats-grid">
+</div>
+<div class="dashboard" id="dashboard">
+    <header class="dashboard-header"><div class="admin-header-identity"><a class="admin-home-link" href="index.html" aria-label="На главную"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.75 5.25c3.25-.85 5.9-.22 8.25 1.55v12.05c-2.35-1.77-5-2.4-8.25-1.55V5.25Z"></path><path d="M20.25 5.25c-3.25-.85-5.9-.22-8.25 1.55v12.05c2.35-1.77 5-2.4 8.25-1.55V5.25Z"></path><path d="M12 6.8v12.05M7.25 4.8v4.5l1.6-.9 1.6.9V5.75"></path></svg><span>Almanion</span></a><span class="admin-header-divider" aria-hidden="true"></span><span class="admin-header-label">Управление</span></div><div class="header-actions"><span id="adminEmail"></span><button class="btn btn-outline btn-sm" id="logoutBtn" type="button">Выйти</button></div></header>
+    <div class="admin-workspace">
+        <nav class="admin-navigation" aria-label="Разделы панели"><div class="admin-nav-tabs" role="tablist" aria-label="Панель управления" aria-orientation="vertical"><button id="tab-overview" class="admin-nav-item" role="tab" type="button" aria-controls="view-overview" aria-selected="true" tabindex="0" data-admin-view="overview"><span class="eic eic-chart" aria-hidden="true"></span><span>Обзор</span></button>
+<button id="tab-users" class="admin-nav-item" role="tab" type="button" aria-controls="view-users" aria-selected="false" tabindex="-1" data-admin-view="users"><span class="eic eic-users" aria-hidden="true"></span><span class="admin-nav-full">Пользователи</span><span class="admin-nav-short">Аккаунты</span></button>
+<button id="tab-analytics" class="admin-nav-item" role="tab" type="button" aria-controls="view-analytics" aria-selected="false" tabindex="-1" data-admin-view="analytics"><span class="eic eic-calendar" aria-hidden="true"></span><span>Статистика</span></button>
+<button id="tab-polls" class="admin-nav-item" role="tab" type="button" aria-controls="view-polls" aria-selected="false" tabindex="-1" data-admin-view="polls"><span class="eic eic-chat" aria-hidden="true"></span><span>Опросы</span></button>
+<button id="tab-data" class="admin-nav-item" role="tab" type="button" aria-controls="view-data" aria-selected="false" tabindex="-1" data-admin-view="data"><span class="eic eic-gear" aria-hidden="true"></span><span>Данные</span></button></div><a class="admin-nav-home" href="index.html">← Открыть сайт</a></nav>
+        <main class="admin-main">
+            <section class="admin-view" id="view-overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="0"><div class="admin-view-heading"><h1 tabindex="-1">Обзор</h1><span class="admin-date" id="adminDate"></span></div><div class="stats-grid">
             <div class="stat-card online">
                 <div class="stat-icon"><span class="eic eic-dot" aria-hidden="true"></span></div>
                 <div class="stat-value" id="onlineCount">—</div>
@@ -952,11 +94,79 @@
                 <div class="stat-value" id="returningRate">—</div>
                 <div class="stat-label">Аккаунты вернулись за неделю</div>
             </div>
-        </div>
+        </div><div class="admin-shortcuts"><button class="admin-shortcut" type="button" data-admin-view="users"><span class="eic eic-users" aria-hidden="true"></span><span>Пользователи и доступ</span><span class="shortcut-arrow" aria-hidden="true">↗</span></button><button class="admin-shortcut" type="button" data-admin-view="polls"><span class="eic eic-pen" aria-hidden="true"></span><span>Создать опрос</span><span class="shortcut-arrow" aria-hidden="true">↗</span></button><a class="admin-shortcut" href="constructor.html"><span class="eic eic-book" aria-hidden="true"></span><span>Конструктор</span><span class="shortcut-arrow" aria-hidden="true">↗</span></a></div><div class="section">
+            <div class="section-title">
+                <span class="status-dot"></span>
+                Посетители онлайн
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="online-table" id="onlineTable">
+                    <thead>
+                        <tr>
+                            <th>Посетитель</th>
+                            <th>Страница</th>
+                            <th>Устройство</th>
+                            <th>Время</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="onlineTableBody">
+                        <tr><td colspan="5" class="no-data">Загрузка...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div></section>
+            <section class="admin-view" id="view-users" role="tabpanel" aria-labelledby="tab-users" tabindex="0" hidden><div class="admin-view-heading"><h1 tabindex="-1">Пользователи</h1></div><div class="section registered-accounts-section" id="registeredAccountsSection">
+            <div class="section-heading-row registered-accounts-heading">
+                <div>
 
-        <p class="analytics-identity-note"><strong>Как читать числа:</strong> аккаунт соответствует одному Firebase UID. Анонимный профиль — это отдельное хранилище браузера, а не гарантированно отдельный человек; инкогнито и встроенный браузер Telegram могут создать новый профиль. Поэтому общий показатель «уникальные люди» намеренно не вычисляется.</p>
+                    <div class="section-title"><span class="eic eic-users" aria-hidden="true"></span> Аккаунты <span class="registered-accounts-count" id="registeredAccountsCount">—</span></div>
+                </div>
+                <button class="btn btn-outline btn-sm" id="refreshRegisteredAccountsBtn" type="button">Обновить</button>
+            </div>
 
-        <div class="section admin-usage-section">
+            <label class="registered-accounts-search" for="registeredAccountsSearch">
+                <span class="eic eic-search" aria-hidden="true"></span>
+                <input id="registeredAccountsSearch" type="search" placeholder="Поиск по почте или имени" autocomplete="off">
+            </label>
+            <div id="registeredAccountsList"><div class="no-data">Загрузка...</div></div>
+        </div><div class="section admin-roles-section" id="adminRolesSection" hidden="">
+            <div class="section-kicker">Только владелец</div>
+            <div class="section-title"><span class="eic eic-lock" aria-hidden="true"></span> Роли доступа</div>
+            <p class="section-description">Публиковать конспекты может только владелец.</p>
+            <form class="admin-role-form" id="adminRoleForm">
+                <div class="form-group admin-role-account-field">
+                    <label for="adminRoleAccount">Аккаунт пользователя</label>
+                    <input id="adminRoleAccount" list="accountDirectoryOptions" placeholder="Email или Firebase UID" autocomplete="off" required="">
+                    <datalist id="accountDirectoryOptions"></datalist>
+                </div>
+                <label class="admin-role-check"><input type="checkbox" id="siteAdminRole"> <span><b>Администратор сайта</b><small>Аналитика, посетители, сообщения и опросы</small></span></label>
+                <label class="admin-role-check"><input type="checkbox" id="matcenterAdminRole"> <span><b>Администратор Матцентра</b><small>Статусы задач и подсказки</small></span></label>
+                <label class="admin-role-check"><input type="checkbox" id="contentEditorRole"> <span><b>Редактор конспектов</b><small>Создание и редактирование новых разделов</small></span></label>
+                <label class="admin-role-check"><input type="checkbox" id="dutyEditorRole"> <span><b>Редактор дежурства</b><small>Изменение списка дежурства 10-1</small></span></label>
+                <label class="admin-role-check"><input type="checkbox" id="tourEditorRole"> <span><b>Редактор турслёта</b><small>Участники, палатки, мероприятия и питание класса 10-1</small></span></label>
+                <label class="admin-role-check"><input type="checkbox" id="contestsAccessRole"> <span><b>Доступ к контестам</b><small>Просмотр таблицы результатов</small></span></label>
+                <label class="admin-role-check"><input type="checkbox" id="englishAccessRole"> <span><b>Доступ к английскому</b><small>Закрытый словарь в разделе «Дополнительно»</small></span></label>
+                <div class="admin-role-footer"><span id="adminRoleSelection" aria-live="polite"></span><button class="btn btn-outline" id="adminRoleReset" type="button">Сбросить</button><button class="btn btn-primary admin-role-save" type="submit">Сохранить роли</button></div>
+            </form>
+
+            <h3 class="admin-subheading">Назначенные права</h3><div id="adminRolesList"><div class="no-data">Загрузка...</div></div>
+        </div><div class="section" id="contestSharingSection" hidden="">
+            <div class="section-kicker">Только владелец</div>
+            <div class="section-title">Контесты · доступ по ссылке</div>
+            <p id="contestShareStatus" class="section-description" role="status">Загрузка…</p>
+            <div id="contestShareField" class="contest-share-field" hidden="">
+                <label for="contestShareUrl" class="sr-only">Ссылка для просмотра контестов</label>
+                <input id="contestShareUrl" type="text" readonly="" autocomplete="off" spellcheck="false">
+                <button type="button" class="btn btn-primary btn-sm" id="contestShareCopy">Скопировать</button>
+            </div>
+            <div class="contest-share-actions">
+                <button type="button" class="btn btn-primary btn-sm" id="contestShareEnable">Включить доступ по ссылке</button>
+                <button type="button" class="btn btn-outline btn-sm" id="contestShareRotate" hidden="" title="Старая ссылка перестанет работать">Заменить ссылку</button>
+                <button type="button" class="btn btn-danger btn-sm" id="contestShareDisable" hidden="">Отключить ссылку</button>
+            </div>
+        </div></section>
+            <section class="admin-view" id="view-analytics" role="tabpanel" aria-labelledby="tab-analytics" tabindex="0" hidden><div class="admin-view-heading"><h1 tabindex="-1">Статистика</h1></div><details class="admin-explanation"><summary>Как считаются посетители</summary><p class="analytics-identity-note"><strong>Как читать числа:</strong> аккаунт соответствует одному Firebase UID. Анонимный профиль — это отдельное хранилище браузера, а не гарантированно отдельный человек; инкогнито и встроенный браузер Telegram могут создать новый профиль. Поэтому общий показатель «уникальные люди» намеренно не вычисляется.</p></details><div class="section admin-usage-section">
             <div class="section-heading-row">
                 <div>
                     <div class="section-kicker">Последние 14 дней</div>
@@ -994,102 +204,7 @@
                     <div id="webVitalsSummary"><div class="no-data">Загрузка...</div></div>
                 </div>
             </div>
-        </div>
-
-        <div class="section registered-accounts-section" id="registeredAccountsSection">
-            <div class="section-heading-row registered-accounts-heading">
-                <div>
-                    <div class="section-kicker">Firebase Authentication</div>
-                    <div class="section-title"><span class="eic eic-users" aria-hidden="true"></span> Зарегистрированные аккаунты <span class="registered-accounts-count" id="registeredAccountsCount">—</span></div>
-                </div>
-                <button class="btn btn-outline btn-sm" id="refreshRegisteredAccountsBtn" type="button">Обновить</button>
-            </div>
-            <p class="section-description">Почты аккаунтов, которые хотя бы один раз вошли на сайт после включения каталога пользователей.</p>
-            <label class="registered-accounts-search" for="registeredAccountsSearch">
-                <span class="eic eic-search" aria-hidden="true"></span>
-                <input id="registeredAccountsSearch" type="search" placeholder="Найти по почте, имени или UID" autocomplete="off">
-            </label>
-            <div id="registeredAccountsList"><div class="no-data">Загрузка...</div></div>
-        </div>
-
-        <!-- Кто онлайн -->
-        <div class="section">
-            <div class="section-title">
-                <span class="status-dot"></span>
-                Посетители онлайн
-            </div>
-            <div style="overflow-x: auto;">
-                <table class="online-table" id="onlineTable">
-                    <thead>
-                        <tr>
-                            <th>Посетитель</th>
-                            <th>Страница</th>
-                            <th>Устройство</th>
-                            <th>Время</th>
-                            <th>Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody id="onlineTableBody">
-                        <tr><td colspan="5" class="no-data">Загрузка...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Создание опроса -->
-        <div class="section">
-            <div class="section-title"><span class="eic eic-pen" aria-hidden="true"></span> Создать опрос</div>
-            <div class="poll-form" id="pollForm">
-                <div class="form-group">
-                    <label>Вопрос</label>
-                    <input type="text" id="pollQuestion" placeholder="Что вы думаете о новом дизайне?">
-                </div>
-                <div class="form-group">
-                    <label>Описание (необязательно)</label>
-                    <input type="text" id="pollDescription" placeholder="Краткое пояснение к опросу...">
-                </div>
-                <div class="form-group">
-                    <label>Варианты ответов</label>
-                    <div class="options-list" id="optionsList">
-                        <div class="option-row">
-                            <input type="text" placeholder="Вариант 1" class="poll-option">
-                            <button class="remove-option" type="button" data-admin-command="poll-remove-option" title="Удалить вариант" aria-label="Удалить вариант 1">×</button>
-                        </div>
-                        <div class="option-row">
-                            <input type="text" placeholder="Вариант 2" class="poll-option">
-                            <button class="remove-option" type="button" data-admin-command="poll-remove-option" title="Удалить вариант" aria-label="Удалить вариант 2">×</button>
-                        </div>
-                    </div>
-                    <button class="add-option-btn" id="addOptionBtn" type="button" data-admin-command="poll-add-option">+ Добавить вариант</button>
-                </div>
-                <div class="poll-actions">
-                    <button class="btn btn-success" id="sendPollBtn" type="button" data-admin-command="send-poll"><span class="eic eic-send" aria-hidden="true"></span> Отправить опрос</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Массовое сообщение всем онлайн -->
-        <div class="section">
-            <div class="section-title"><span class="eic eic-megaphone" aria-hidden="true"></span> Сообщение всем онлайн</div>
-            <div class="form-group">
-                <textarea id="broadcastText" rows="2" placeholder="Текст сообщения для всех, кто сейчас на сайте..." style="resize:vertical;"></textarea>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:0.8rem; color:var(--text-secondary);">Получат: <strong id="broadcastCount">0</strong> человек</span>
-                <button class="btn btn-primary btn-sm" id="broadcastBtn" type="button" data-admin-command="send-broadcast"><span class="eic eic-megaphone" aria-hidden="true"></span> Отправить всем</button>
-            </div>
-        </div>
-
-        <!-- Активные опросы -->
-        <div class="section">
-            <div class="section-title"><span class="eic eic-chart" aria-hidden="true"></span> Опросы и результаты</div>
-            <div id="pollsList">
-                <div class="no-data">Загрузка...</div>
-            </div>
-        </div>
-
-        <!-- Журнал всех посетителей -->
-        <div class="section" id="allVisitorsSection">
+        </div><div class="section" id="allVisitorsSection">
             <div class="admin-collapsible-heading">
                 <div class="section-title"><span class="eic eic-book" aria-hidden="true"></span> Все посетители</div>
                 <button class="btn btn-outline btn-sm admin-collapse-button" id="allVisitorsToggle" type="button" data-admin-command="visitors-toggle" aria-expanded="true" aria-controls="allVisitorsBody"><span aria-hidden="true">−</span><span class="admin-collapse-label">Скрыть</span></button>
@@ -1104,65 +219,65 @@
                     <div class="no-data">Нажмите кнопку для загрузки</div>
                 </div>
             </div>
-        </div>
-
-        <!-- Управление данными -->
-        <div class="section admin-roles-section" id="adminRolesSection" hidden>
-            <div class="section-kicker">Только владелец</div>
-            <div class="section-title"><span class="eic eic-lock" aria-hidden="true"></span> Роли доступа</div>
-            <p class="section-description">Назначайте доступ отдельно к панели сайта, Матцентру, редактированию конспектов, списку дежурства, подготовке турслёта и закрытому разделу английского. Публиковать материалы может только владелец.</p>
-            <form class="admin-role-form" id="adminRoleForm">
-                <div class="form-group admin-role-account-field">
-                    <label for="adminRoleAccount">Аккаунт пользователя</label>
-                    <input id="adminRoleAccount" list="accountDirectoryOptions" placeholder="Email или Firebase UID" autocomplete="off" required>
-                    <datalist id="accountDirectoryOptions"></datalist>
+        </div></section>
+            <section class="admin-view" id="view-polls" role="tabpanel" aria-labelledby="tab-polls" tabindex="0" hidden><div class="admin-view-heading"><h1 tabindex="-1">Опросы и сообщения</h1></div><div class="admin-poll-layout"><div class="section">
+            <div class="section-title"><span class="eic eic-pen" aria-hidden="true"></span> Создать опрос</div>
+            <div class="poll-form" id="pollForm">
+                <div class="form-group">
+                    <label for="pollQuestion">Вопрос</label>
+                    <input type="text" id="pollQuestion" placeholder="Что вы думаете о новом дизайне?">
                 </div>
-                <label class="admin-role-check"><input type="checkbox" id="siteAdminRole"> <span><b>Администратор сайта</b><small>Аналитика, посетители, сообщения и опросы</small></span></label>
-                <label class="admin-role-check"><input type="checkbox" id="matcenterAdminRole"> <span><b>Администратор Матцентра</b><small>Статусы задач и подсказки</small></span></label>
-                <label class="admin-role-check"><input type="checkbox" id="contentEditorRole"> <span><b>Редактор конспектов</b><small>Создание и редактирование новых разделов</small></span></label>
-                <label class="admin-role-check"><input type="checkbox" id="dutyEditorRole"> <span><b>Редактор дежурства</b><small>Изменение списка дежурства 10-1</small></span></label>
-                <label class="admin-role-check"><input type="checkbox" id="tourEditorRole"> <span><b>Редактор турслёта</b><small>Участники, палатки, мероприятия и питание класса 10-1</small></span></label>
-                <label class="admin-role-check"><input type="checkbox" id="contestsAccessRole"> <span><b>Доступ к контестам</b><small>Просмотр таблицы результатов</small></span></label>
-                <label class="admin-role-check"><input type="checkbox" id="englishAccessRole"> <span><b>Доступ к английскому</b><small>Закрытый словарь в разделе «Дополнительно»</small></span></label>
-                <button class="btn btn-primary admin-role-save" type="submit">Сохранить роли</button>
-            </form>
-            <p class="section-description"><a href="constructor.html">Открыть конструктор конспектов →</a></p>
-            <div id="adminRolesList"><div class="no-data">Загрузка...</div></div>
-        </div>
-
-        <div class="section" id="contestSharingSection" hidden>
-            <div class="section-kicker">Только владелец</div>
-            <div class="section-title">Контесты · доступ по ссылке</div>
-            <p id="contestShareStatus" class="section-description" role="status">Загрузка…</p>
-            <div id="contestShareField" class="contest-share-field" hidden>
-                <label for="contestShareUrl" class="sr-only">Ссылка для просмотра контестов</label>
-                <input id="contestShareUrl" type="text" readonly autocomplete="off" spellcheck="false">
-                <button type="button" class="btn btn-primary btn-sm" id="contestShareCopy">Скопировать</button>
+                <div class="form-group">
+                    <label for="pollDescription">Описание (необязательно)</label>
+                    <input type="text" id="pollDescription" placeholder="Краткое пояснение к опросу...">
+                </div>
+                <div class="form-group">
+                    <label>Варианты ответов</label>
+                    <div class="options-list" id="optionsList">
+                        <div class="option-row">
+                            <input type="text" placeholder="Вариант 1" aria-label="Вариант 1" class="poll-option">
+                            <button class="remove-option" type="button" data-admin-command="poll-remove-option" title="Удалить вариант" aria-label="Удалить вариант 1">×</button>
+                        </div>
+                        <div class="option-row">
+                            <input type="text" placeholder="Вариант 2" aria-label="Вариант 2" class="poll-option">
+                            <button class="remove-option" type="button" data-admin-command="poll-remove-option" title="Удалить вариант" aria-label="Удалить вариант 2">×</button>
+                        </div>
+                    </div>
+                    <button class="add-option-btn" id="addOptionBtn" type="button" data-admin-command="poll-add-option">+ Добавить вариант</button>
+                </div>
+                <div class="poll-actions">
+                    <button class="btn btn-success" id="sendPollBtn" type="button" data-admin-command="send-poll"><span class="eic eic-send" aria-hidden="true"></span> Отправить опрос</button>
+                </div>
             </div>
-            <div class="contest-share-actions">
-                <button type="button" class="btn btn-primary btn-sm" id="contestShareEnable">Включить доступ по ссылке</button>
-                <button type="button" class="btn btn-outline btn-sm" id="contestShareRotate" hidden title="Старая ссылка перестанет работать">Заменить ссылку</button>
-                <button type="button" class="btn btn-danger btn-sm" id="contestShareDisable" hidden>Отключить ссылку</button>
+        </div><div class="section">
+            <div class="section-title"><span class="eic eic-chart" aria-hidden="true"></span> Опросы и результаты</div>
+            <div id="pollsList">
+                <div class="no-data">Загрузка...</div>
             </div>
-        </div>
-
-        <div class="section">
-            <div class="section-title"><span class="eic eic-gear" aria-hidden="true"></span> Управление данными</div>
-            <div style="display:flex; flex-wrap:wrap; gap:0.75rem;">
-                <button class="btn btn-outline btn-sm" type="button" data-admin-command="clear-daily-stats"><span class="eic eic-trash" aria-hidden="true"></span> Очистить дневную статистику</button>
-                <button class="btn btn-outline btn-sm" type="button" data-admin-command="clear-presence"><span class="eic eic-refresh" aria-hidden="true"></span> Сбросить онлайн</button>
-                <button class="btn btn-danger btn-sm" type="button" data-admin-command="clear-all-data"><span class="eic eic-warn" aria-hidden="true"></span> Удалить ВСЕ данные</button>
+        </div></div><div class="section">
+            <div class="section-title"><span class="eic eic-megaphone" aria-hidden="true"></span> Сообщение всем онлайн</div>
+            <div class="form-group">
+                <textarea id="broadcastText" rows="2" aria-label="Сообщение всем онлайн" placeholder="Текст сообщения для всех, кто сейчас на сайте..." style="resize:vertical;"></textarea>
             </div>
-        </div>
+            <div class="admin-broadcast-actions">
+                <span style="font-size:0.8rem; color:var(--text-secondary);">Получат: <strong id="broadcastCount">0</strong> человек</span>
+                <button class="btn btn-primary btn-sm" id="broadcastBtn" type="button" data-admin-command="send-broadcast"><span class="eic eic-megaphone" aria-hidden="true"></span> Отправить всем</button>
+            </div>
+        </div></section>
+            <section class="admin-view" id="view-data" role="tabpanel" aria-labelledby="tab-data" tabindex="0" hidden><div class="admin-view-heading"><h1 tabindex="-1">Данные</h1></div><div class="section"><h2 class="section-title">Обслуживание</h2>
+        <div class="admin-data-row"><div><h3>Список онлайн</h3><p>Активные подключения появятся снова автоматически.</p></div><button class="btn btn-outline" type="button" data-admin-command="clear-presence">Сбросить онлайн</button></div>
+        <div class="admin-data-row"><div><h3>Дневная статистика</h3><p>Удалить счётчики активности за все дни.</p></div><button class="btn btn-outline" type="button" data-admin-command="clear-daily-stats">Очистить статистику</button></div></div>
+        <div class="section admin-danger-zone"><h2 class="section-title">Удаление данных</h2><p class="section-description">Аналитика, посетители, сообщения и опросы. Роли и конспекты сохранятся.</p><button class="btn btn-danger" type="button" data-admin-command="clear-all-data">Удалить аналитические данные</button></div></section>
+        </main>
     </div>
-
+</div>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-database-compat.js"></script>
     <script src="firebase-config.js?v=20260903-3"></script>
-    <script src="admin-dialogs.js?v=20260912-2"></script>
-    <script src="admin-app.js?v=20261009-4"></script>
-    <script src="admin-dashboard.js?v=20261117-sharing"></script>
+    <script src="admin-dialogs.js?v=20261118-workspace"></script>
+    <script src="admin-app.js?v=20261118-workspace"></script>
+    <script src="admin-dashboard.js?v=20261118-workspace"></script>
 </body>
 </html>

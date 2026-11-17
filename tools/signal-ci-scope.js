@@ -59,10 +59,19 @@ function signalFile(file) {
   );
   return !!asset && simulation.has(asset[1]);
 }
+// Admin assets are loaded only by admin.html. Keep their browser, access-rule
+// and non-game unit checks without replaying unrelated game campaigns.
+const adminFiles = new Set([
+  "admin.html", "admin-app.js", "admin-dashboard.js", "admin-dialogs.js",
+  "styles/admin.css", "e2e/admin-workspace.spec.js", "e2e/helpers/admin-fixture.cjs",
+  "e2e/site.spec.js", "tests/admin-structure.test.js", "tests/admin-login.test.js",
+  "tests/analytics-identity.test.js",
+]);
 // These sources only feed the educational pages. A new or shared path falls
 // back to the full suite until its dependencies have been reviewed.
 function isReaderFile(file) {
-  return /^content\/(?:subjects\.json$|[\w-]+\/(?:manifest\.json$|sections\/[\w-]+\.json$))/.test(file)
+  return adminFiles.has(file)
+    || /^content\/(?:subjects\.json$|[\w-]+\/(?:manifest\.json$|sections\/[\w-]+\.json$))/.test(file)
     || /^(?:physics(?:-10|-exam)?|chemistry(?:-10)?|math|geometry(?:-formulas)?|russian-ege|likbez|literature-10|duty-10-1|offline|contests)\.html$/.test(file)
     || /^(?:script|note-runtime|experimental-reader|search(?:-text)?|offline-library|russian-ege|english-ui|duty|note-filter|experiment-notebook|knowledge-check|bookmarks|print-export|pdf-download)\.js$/.test(file)
     || /^(?:search-index|definition-index)\.json$/.test(file)

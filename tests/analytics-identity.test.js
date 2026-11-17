@@ -25,7 +25,8 @@ assert.match(analytics, /webVitals\//,
 assert.doesNotMatch(analytics, /const visitorId = getVisitorId\(\)/,
     'the active identity must no longer be a random localStorage identifier');
 assert.match(admin, /Зарегистрированные аккаунты/);
-assert.match(adminApp, /db\.ref\('accountDirectory'\)\.on\('value'/);
+assert.match(adminApp, /observeAdmin\('accountDirectory'/);
+assert.match(adminApp, /reference\.on\('value', listener/);
 assert.match(adminApp, /Object\.entries\(data\)\.filter/,
     'registered accounts must be counted by stable UID records rather than deduplicated emails');
 assert.doesNotMatch(adminApp, /accountEmails/,

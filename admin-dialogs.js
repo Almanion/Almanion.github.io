@@ -229,6 +229,9 @@
 
     window.AdminUI = Object.freeze({
         notify: notify,
+        dismiss: function () {
+            if (activeDialog && typeof activeDialog.finish === 'function') activeDialog.finish(activeDialog.cancelValue, true);
+        },
         alert: function (message, title) {
             return openDialog({ title: title || 'Сообщение', message: message, confirmLabel: 'Понятно', cancelLabel: 'Закрыть' });
         },

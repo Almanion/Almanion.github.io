@@ -17,6 +17,47 @@ const auth = firebase.auth();
 const db = firebase.database();
 const SITE_OWNER_EMAIL = 'dmb23930@gmail.com';
 const SITE_OWNER_UID = '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
+const adminListeners = new Map();
+let presenceTimer = null;
+
+function observeAdmin(path, callback, onError, orderBy) {
+    const previous = adminListeners.get(path);
+    if (previous) previous.ref.off('value', previous.callback);
+    const reference = orderBy ? db.ref(path).orderByChild(orderBy) : db.ref(path);
+    const generation = adminAuthCheckGeneration;
+    const listener = snapshot => {
+        if (generation === adminAuthCheckGeneration && auth.currentUser) callback(snapshot);
+    };
+    reference.on('value', listener, error => {
+        if (generation === adminAuthCheckGeneration && auth.currentUser && onError) onError(error);
+    });
+    adminListeners.set(path, { ref: reference, callback: listener });
+    return listener;
+}
+
+function resetDashboardSession() {
+    adminListeners.forEach(item => item.ref.off('value', item.callback));
+    adminListeners.clear();
+    clearInterval(presenceTimer);
+    presenceTimer = null;
+    dashboardInitialized = false;
+    visitorNamesCache = {};
+    lastOnlineSnapshot = null;
+    onlineVisitorIds = [];
+    lastVisitorsSnapshot = null;
+    visitorsListener = null;
+    visitorsWasLoaded = false;
+    presenceLoaded = false;
+    AdminUI.dismiss();
+    closeLegacyModal();
+    document.getElementById('adminEmail').textContent = '';
+    document.getElementById('loginPassword').value = '';
+    ['pollQuestion', 'pollDescription', 'broadcastText'].forEach(id => { document.getElementById(id).value = ''; });
+    document.querySelectorAll('.poll-option').forEach(input => { input.value = ''; });
+    document.getElementById('adminToastStack')?.replaceChildren();
+    document.querySelectorAll('.stat-value').forEach(element => { element.textContent = '—'; });
+    ['onlineTableBody', 'allVisitorsList', 'pollsList'].forEach(id => document.getElementById(id).replaceChildren());
+}
 
 // ============================================
 // КЭШ ИМЁН ПОСЕТИТЕЛЕЙ
@@ -25,7 +66,7 @@ const SITE_OWNER_UID = '2M2ZdLQcJAhluPjUVFNJ6MyQrdH2';
 let visitorNamesCache = {};
 
 function loadVisitorNames() {
-    db.ref('visitorNames').on('value', (snapshot) => {
+    observeAdmin('visitorNames', (snapshot) => {
         visitorNamesCache = snapshot.val() || {};
         // Перерисовываем таблицы при обновлении имён
         if (lastOnlineSnapshot) renderOnlineTable(lastOnlineSnapshot);
@@ -119,6 +160,9 @@ let adminAuthCheckGeneration = 0;
 
 auth.onAuthStateChanged(async (user) => {
     const generation = ++adminAuthCheckGeneration;
+    resetDashboardSession();
+    dashboard.style.display = 'none';
+    loginScreen.style.display = 'flex';
     if (user) {
         loginBtn.disabled = true;
         loginBtn.textContent = 'Проверка доступа...';
@@ -227,15 +271,15 @@ function refreshOnlineUsers() {
 }
 
 function listenOnlineUsers() {
-    db.ref('.info/serverTimeOffset').on('value', snapshot => {
+    observeAdmin('.info/serverTimeOffset', snapshot => {
         presenceClockOffset = Number(snapshot.val()) || 0;
         refreshOnlineUsers();
     });
-    db.ref('.info/connected').on('value', snapshot => {
+    observeAdmin('.info/connected', snapshot => {
         presenceConnected = snapshot.val() === true;
         refreshOnlineUsers();
     });
-    db.ref('presence').on('value', (snapshot) => {
+    observeAdmin('presence', (snapshot) => {
         const data = snapshot.val() || {};
         lastOnlineSnapshot = data;
 
@@ -247,7 +291,7 @@ function listenOnlineUsers() {
         refreshOnlineUsers();
     });
     // Expire disconnected visitors even when no new snapshot arrives.
-    setInterval(refreshOnlineUsers, 10000);
+    presenceTimer = setInterval(refreshOnlineUsers, 10000);
 }
 
 function renderOnlineTable(data, available = presenceLoaded && presenceConnected) {
@@ -290,11 +334,11 @@ function renderOnlineTable(data, available = presenceLoaded && presenceConnected
                </button>`;
 
         return `<tr>
-            <td>${nameHtml}</td>
-            <td><span class="page-badge">${escapeHtml(pageDisplay)}</span></td>
-            <td><span class="device-badge ${deviceClass}">${deviceLabel}</span></td>
-            <td style="color:var(--text-secondary)">${timeAgo}</td>
-            <td style="white-space:nowrap;">
+            <td data-label="Посетитель">${nameHtml}</td>
+            <td data-label="Страница"><span class="page-badge">${escapeHtml(pageDisplay)}</span></td>
+            <td data-label="Устройство"><span class="device-badge ${deviceClass}">${deviceLabel}</span></td>
+            <td data-label="Время" style="color:var(--text-secondary)">${timeAgo}</td>
+            <td data-label="Действия" style="white-space:nowrap;">
                 <button class="action-btn" type="button" data-admin-command="open-visitor-profile" data-admin-value="${encodedVisitorId}" title="Профиль посетителя"><span class="eic eic-clip" aria-hidden="true"></span></button>
                 <button class="action-btn" type="button" data-admin-command="open-direct-message" data-admin-value="${encodedVisitorId}" title="Написать сообщение"><span class="eic eic-mail" aria-hidden="true"></span></button>
             </td>
@@ -313,7 +357,7 @@ function getTimeAgo(timestamp) {
 
 // --- Уникальные посетители ---
 function loadUniqueVisitors() {
-    db.ref('accountDirectory').on('value', (snapshot) => {
+    observeAdmin('accountDirectory', (snapshot) => {
         const data = snapshot.val() || {};
         const accountCount = Object.entries(data).filter(([uid, account]) => (
             uid && account && typeof account === 'object' && typeof account.email === 'string'
@@ -326,7 +370,7 @@ function loadUniqueVisitors() {
 function loadTodayVisitors() {
     const now = new Date();
     const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-    db.ref('dailyStats/' + today).on('value', (snapshot) => {
+    observeAdmin('dailyStats/' + today, (snapshot) => {
         const data = snapshot.val() || {};
         const identities = Object.values(data).filter(value => value && typeof value === 'object');
         const accounts = identities.filter(value => value.authProvider && value.authProvider !== 'anonymous').length;
@@ -716,7 +760,10 @@ function updatePollOptionLabels() {
     document.querySelectorAll('#optionsList .option-row').forEach((row, index) => {
         const input = row.querySelector('.poll-option');
         const button = row.querySelector('.remove-option');
-        if (input) input.placeholder = `Вариант ${index + 1}`;
+        if (input) {
+            input.placeholder = `Вариант ${index + 1}`;
+            input.setAttribute('aria-label', input.placeholder);
+        }
         if (button) button.setAttribute('aria-label', `Удалить вариант ${index + 1}`);
     });
 }
@@ -793,7 +840,12 @@ function sendPoll() {
 
 // --- Список опросов ---
 function listenPolls() {
-    db.ref('polls').orderByChild('createdAt').on('value', (snapshot) => {
+    observeAdmin('polls', (snapshot) => {
+        for (const [path, listener] of adminListeners) {
+            if (!path.startsWith('pollResponses/')) continue;
+            listener.ref.off('value', listener.callback);
+            adminListeners.delete(path);
+        }
         const pollsList = document.getElementById('pollsList');
         const polls = [];
 
@@ -836,11 +888,11 @@ function listenPolls() {
         }).join('');
 
         polls.forEach(poll => loadPollResults(poll));
-    });
+    }, undefined, 'createdAt');
 }
 
 function loadPollResults(poll) {
-    db.ref('pollResponses/' + poll.id).on('value', (snapshot) => {
+    observeAdmin('pollResponses/' + poll.id, (snapshot) => {
         const responses = snapshot.val() || {};
         const container = document.getElementById('results-' + poll.id);
         if (!container) return;
@@ -1043,7 +1095,7 @@ function loadAllVisitors(period) {
     container.innerHTML = '<div class="no-data pulse">Загрузка...</div>';
 
     // Подписываемся на real-time обновления
-    visitorsListener = db.ref('visitors').on('value', (snap) => {
+    visitorsListener = observeAdmin('visitors', (snap) => {
         lastVisitorsSnapshot = snap.val() || {};
         renderAllVisitors(lastVisitorsSnapshot, visitorsListPeriod);
     }, (error) => {
@@ -1051,25 +1103,8 @@ function loadAllVisitors(period) {
         container.innerHTML = '<div class="no-data">Не удалось загрузить список посетителей</div>';
     });
 
-    // Подсветим активную кнопку
-    document.querySelectorAll('#allVisitorsList').forEach(() => {
-        const section = container.closest('.section');
-        if (section) {
-            section.querySelectorAll('.btn-outline').forEach(btn => {
-                btn.style.background = '';
-                btn.style.color = '';
-                btn.style.borderColor = '';
-            });
-            // Подсветка через data-period невозможна, подсветим по тексту
-            const labels = { all: 'Все', today: 'Сегодня', week: 'За неделю' };
-            section.querySelectorAll('.btn-outline').forEach(btn => {
-                if (btn.textContent.trim() === labels[period]) {
-                    btn.style.background = 'rgba(59,130,246,0.15)';
-                    btn.style.color = 'var(--accent-hover)';
-                    btn.style.borderColor = 'var(--accent)';
-                }
-            });
-        }
+    document.querySelectorAll('[data-admin-command="load-visitors"]').forEach(button => {
+        button.setAttribute('aria-pressed', String(button.dataset.adminValue === period));
     });
 }
 
@@ -1126,15 +1161,15 @@ function renderAllVisitors(data, period) {
                         const isOnline = onlineVisitorIds.includes(v.id);
                         const onlineDot = isOnline ? '<span class="status-dot" style="margin-right:0.3rem;"></span>' : '';
                         return `<tr>
-                            <td>
+                            <td data-label="Посетитель">
                                 ${onlineDot}<button class="visitor-name" type="button" style="${nameClass}" data-admin-command="rename-visitor" data-admin-value="${encodedVisitorId}" title="Переименовать">
                                     ${escapeHtml(displayName)}
                                 </button>
                             </td>
-                            <td style="color:var(--text-secondary); font-size:0.85rem;">${time}</td>
-                            <td style="text-align:center;" title="${v.authProvider === 'anonymous' ? 'Анонимный браузер' : (v.authProvider === 'legacy' ? 'Старая запись' : 'Аккаунт')}${v.browserContext === 'telegram' ? ' · Telegram' : ''}">${v.pageViews}</td>
-                            <td><span class="page-badge">${escapeHtml(page)}</span></td>
-                            <td style="white-space:nowrap;">
+                            <td data-label="Последний визит" style="color:var(--text-secondary); font-size:0.85rem;">${time}</td>
+                            <td data-label="Просмотры" style="text-align:center;" title="${v.authProvider === 'anonymous' ? 'Анонимный браузер' : (v.authProvider === 'legacy' ? 'Старая запись' : 'Аккаунт')}${v.browserContext === 'telegram' ? ' · Telegram' : ''}">${v.pageViews}</td>
+                            <td data-label="Страница"><span class="page-badge">${escapeHtml(page)}</span></td>
+                            <td data-label="Действия" style="white-space:nowrap;">
                                 <button class="action-btn" type="button" data-admin-command="open-visitor-profile" data-admin-value="${encodedVisitorId}" title="Профиль"><span class="eic eic-clip" aria-hidden="true"></span></button>
                                 <button class="action-btn" type="button" data-admin-command="open-direct-message" data-admin-value="${encodedVisitorId}" title="Написать"><span class="eic eic-mail" aria-hidden="true"></span></button>
                                 <button class="action-btn" type="button" data-admin-command="delete-visitor" data-admin-value="${encodedVisitorId}" title="Удалить" style="color:var(--danger);"><span class="eic eic-trash" aria-hidden="true"></span></button>
