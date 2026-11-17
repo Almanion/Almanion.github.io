@@ -73,6 +73,10 @@
 .contest-rank { display: inline-grid; place-items: center; flex: 0 0 28px; height: 28px; border-radius: 8px; background: var(--bg-primary); color: var(--text-secondary); font-size: 12px; font-weight: 550; font-variant-numeric: tabular-nums; }
 .contest-score { display: inline-flex; align-items: center; justify-content: center; position: relative; min-width: 38px; min-height: 36px; padding: 4px 7px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--text-primary); font: inherit; font-variant-numeric: tabular-nums; line-height: 1.4; overflow-wrap: anywhere; }
 .contest-score.is-positive { background: var(--contest-soft); font-weight: 650; }
+.contest-score[data-sheet-color] {
+    background: color-mix(in srgb, hsl(var(--score-hue) 64% 48%) 15%, var(--bg-secondary));
+    border-color: color-mix(in srgb, hsl(var(--score-hue) 64% 48%) 35%, var(--border-color));
+}
 .contest-score.is-empty { color: var(--text-secondary); }
 .contest-score.has-note { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 5px; }
 .contest-score.has-note::after { position: absolute; content: ''; top: 3px; right: 3px; width: 4px; height: 4px; border-radius: 50%; background: var(--contest-accent); }

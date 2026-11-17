@@ -81,10 +81,14 @@
     function scoreValue(person, column) {
         const cell = person.cells[column.index];
         const text = cell?.text || '—';
-        const score = core.numericScore(cell?.text);
+        const score = core.scoreNumber(cell);
         const value = element(cell?.note ? 'button' : 'span', text, 'contest-score');
         value.classList.toggle('is-positive', score !== null && score > 0);
         value.classList.toggle('is-empty', !cell?.text);
+        if (!column.total && cell?.text && Number.isFinite(cell?.hue)) {
+            value.dataset.sheetColor = '';
+            value.style.setProperty('--score-hue', String(cell.hue));
+        }
         if (cell?.note) {
             value.type = 'button';
             value.classList.add('has-note');
@@ -250,10 +254,29 @@
             url.searchParams.set('key', config.apiKey);
             url.searchParams.set('includeGridData', 'true');
             url.searchParams.set('ranges', config.range);
-            url.searchParams.set('fields', 'sheets(properties(sheetId,title,hidden),data(rowData(values(formattedValue,hyperlink,note))))');
+            url.searchParams.set('prettyPrint', 'false');
+            url.searchParams.set('fields', 'properties(title),sheets(properties(sheetId,title,hidden),data(startRow,startColumn,rowData(values(formattedValue,effectiveValue,hyperlink,note))))');
             const response = await fetch(url, { signal: controller.signal, credentials: 'omit', cache: 'no-store' });
             if (!response.ok) throw new Error('HTTP ' + response.status);
             const data = await response.json();
+            if (current !== generation || request !== controller || !config) return;
+            // Request colors only within populated cells. Asking for effectiveFormat
+            // across the configured 1000-row range expands defaults to megabytes.
+            let hasFormatting = true;
+            const ranges = core.formatRanges(data);
+            if (ranges.length) {
+                const formattingUrl = new URL(url);
+                formattingUrl.searchParams.delete('ranges');
+                ranges.forEach(range => formattingUrl.searchParams.append('ranges', range));
+                formattingUrl.searchParams.set('fields', 'sheets(properties(sheetId),data(startRow,startColumn,rowData(values(formattedValue,effectiveFormat(backgroundColor,backgroundColorStyle)))))');
+                try {
+                    const formatting = await fetch(formattingUrl, { signal: controller.signal, credentials: 'omit', cache: 'no-store' });
+                    if (!formatting.ok) throw new Error('HTTP ' + formatting.status);
+                    core.mergeFormats(data, await formatting.json());
+                } catch (_) {
+                    hasFormatting = false;
+                }
+            }
             if (current !== generation || request !== controller || !config) return;
             const next = core.parseSpreadsheet(data, config);
             // An unchanged poll must not rebuild focused controls or reset table scrolling.
@@ -269,7 +292,8 @@
                 clearNote();
             }
             lastUpdated = Date.now();
-            updatedStatus();
+            if (hasFormatting) updatedStatus();
+            else status('Баллы обновлены; цвета временно недоступны.', 'error');
             if (changed) render();
             else byId('contestEmpty').hidden = byId('contestResults').childElementCount > 0;
         } catch (_) {

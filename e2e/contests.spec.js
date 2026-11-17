@@ -250,3 +250,80 @@ test('multiple contests, missing totals, long names and loading errors work with
     await expect(page.locator('#contestEmpty')).toBeHidden();
     await expect(page.locator('#contestRefresh')).toBeEnabled();
 });
+
+for (const dark of [false, true]) {
+    test('updated source titles, totals and colors render in both views dark=' + dark, async ({ page }, info) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+        const data = await setup(page);
+        data.properties = { title: 'Контест 2026 · День 2 — результаты' };
+        data.sheets[0].properties.title = 'Scores';
+        const rows = data.sheets[0].data[0].rowData;
+        rows[0].values[5] = { formattedValue: 'Сумма' };
+        const formatting = structuredClone(data);
+        const colors = [{ red: 0.96, green: 0.8, blue: 0.8 }, null, { red: 1, green: 0.95, blue: 0.8 }, { red: 0.85, green: 0.92, blue: 0.83 }];
+        formatting.sheets[0].data[0].rowData[1].values.forEach((cell, index) => {
+            if (colors[index - 1]) cell.effectiveFormat = { backgroundColor: colors[index - 1] };
+        });
+        const ranges = [];
+        await page.route('https://sheets.googleapis.com/**', route => {
+            const url = new URL(route.request().url());
+            if (url.searchParams.get('fields').includes('effectiveFormat')) {
+                ranges.push(url.searchParams.getAll('ranges'));
+                return route.fulfill({ json: formatting });
+            }
+            return route.fulfill({ json: data });
+        });
+        await page.addInitScript(dark => {
+            localStorage.setItem('almanion:visual-defaults:2026-09-05-v1', '1');
+            localStorage.setItem('siteSettings', JSON.stringify({ visualDefaultsVersion: 1, experimental: true, expMode: 'prism', expTheme: dark ? 'dark' : 'light', expDark: dark, animationLevel: 'off' }));
+        }, dark);
+        await page.goto('/contests.html');
+        await expect(page.locator('#contestStatus')).toContainText('Обновлено');
+        await expect(page.locator('.contest-title')).toHaveText(data.properties.title);
+        expect(ranges).toEqual([["'Scores'!B1:F4"]]);
+        const cards = page.locator('.contest-people');
+        await expect(cards.locator('[data-sheet-color]')).toHaveCount(3);
+        await expect(cards.locator('.contest-person-total').first()).toContainText('Сумма');
+        const backgrounds = await cards.locator('[data-sheet-color]').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).backgroundColor));
+        expect(new Set(backgrounds).size).toBe(3);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThan(2);
+        await page.screenshot({ path: info.outputPath('updated-source-mobile.png'), fullPage: true });
+        await page.getByRole('button', { name: 'Таблица', exact: true }).click();
+        await page.setViewportSize({ width: 1366, height: 900 });
+        await expect(page.locator('tbody [data-sheet-color]')).toHaveCount(3);
+        await page.screenshot({ path: info.outputPath('updated-source-desktop.png'), fullPage: true });
+        // A color-only edit must be reflected, even when scores did not change.
+        formatting.sheets[0].data[0].rowData[1].values[1].effectiveFormat.backgroundColor = colors[3];
+        await page.locator('#contestRefresh').click();
+        await expect(page.locator('tbody [data-sheet-color]').first()).toHaveAttribute('style', /107/);
+    });
+}
+
+test('formatting failure does not hide scores, and revocation aborts the second request', async ({ page }) => {
+    const data = await setup(page);
+    data.sheets[0].properties.title = 'Scores';
+    await page.route('https://sheets.googleapis.com/**', route => {
+        const formatting = new URL(route.request().url()).searchParams.get('fields').includes('effectiveFormat');
+        return formatting ? route.fulfill({ status: 503, body: 'Unavailable' }) : route.fulfill({ json: data });
+    });
+    await page.goto('/contests.html');
+    await expect(page.locator('#contestStatus')).toContainText('цвета временно недоступны');
+    await expect(page.locator('#contestResults')).toContainText('130');
+    let finish;
+    const delayed = new Promise(resolve => { finish = resolve; });
+    let started;
+    const secondRequest = new Promise(resolve => { started = resolve; });
+    await page.route('https://sheets.googleapis.com/**', async route => {
+        if (new URL(route.request().url()).searchParams.get('fields').includes('effectiveFormat')) {
+            started();
+            await delayed;
+        }
+        await route.fulfill({ json: data }).catch(() => {});
+    });
+    await page.locator('#contestRefresh').click();
+    await secondRequest;
+    await page.evaluate(() => window.contestFixture.access(false));
+    finish();
+    await expect(page.locator('#contestGateTitle')).toHaveText('Доступ закрыт');
+    await expect(page.locator('#contestResults')).toBeEmpty();
+});

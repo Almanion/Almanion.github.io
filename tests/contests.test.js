@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { parseSpreadsheet, filterPeople, safeLink, numericScore, rankPeople } = require('../contests-core');
+const { parseSpreadsheet, filterPeople, safeLink, numericScore, rankPeople, sheetColor, formatRanges, mergeFormats } = require('../contests-core');
 const row = (...values) => ({ values: values.map(value => ({ formattedValue: value })) });
 const spreadsheet = { sheets: [{ properties: { sheetId: 0 }, data: [{ rowData: [
     row('https://example.test/contest/1', 'a', 'b', 'c', 'd'),
@@ -49,3 +49,50 @@ assert.equal(parseSpreadsheet(padded, { totalColumn: 5 })[0].columns.length, 5, 
 padded.sheets[0].data[0].rowData[0].values[1].hyperlink = 'https://example.test/problem/1';
 assert.equal(parseSpreadsheet(padded, { totalColumn: 5 })[0].columns[0].link, 'https://example.test/problem/1');
 console.log('Contest scores: locale parsing, tied places, blanks after negative scores and trailing formatting passed');
+
+const updated = { properties: { title: 'Контест 2026 · День 2' }, sheets: [{ properties: { sheetId: 4, title: "Тур '26" }, data: [{ rowData: [
+    row('https://example.test/contest/3', 'A', 'B', 'C', 'D', 'E', 'Сумма'),
+    row('Первый', '0', '45', '55', '100', '21', '221 балл'),
+    row('Второй', '100', '0', '0', '0', '0', '100 баллов'),
+    row('TEST26DAY2')
+] }] }] };
+updated.sheets[0].data[0].rowData[1].values[6].effectiveValue = { numberValue: 221 };
+updated.sheets[0].data[0].rowData[2].values[6].effectiveValue = { numberValue: 100 };
+const adapted = parseSpreadsheet(updated, { totalColumn: 5 })[0];
+assert.equal(adapted.title, 'Контест 2026 · День 2');
+assert.equal(adapted.totalColumn, 6, 'named total overrides legacy fixed column');
+assert.equal(adapted.columns[4].total, false, 'task E is not a total');
+assert.equal(adapted.columns.at(-1).label, 'Сумма');
+assert.deepEqual([...rankPeople(adapted).values()], [1, 2], 'use original numeric values, keeping formatted labels');
+assert.deepEqual(formatRanges(updated), ["'Тур ''26'!B1:G4"]);
+assert.deepEqual(formatRanges({ sheets: [] }), []);
+const hiddenSource = structuredClone(updated);
+hiddenSource.sheets[0].properties.hidden = true;
+assert.deepEqual(formatRanges(hiddenSource), []);
+const offset = structuredClone(updated);
+offset.sheets[0].data[0].startRow = 9;
+offset.sheets[0].data[0].startColumn = 25;
+assert.deepEqual(formatRanges(offset), ["'Тур ''26'!AA10:AF13"]);
+
+const colored = (text, backgroundColor) => ({ formattedValue: text, effectiveFormat: { backgroundColor } });
+const colors = { red: { red: 0.96, green: 0.8, blue: 0.8 }, yellow: { red: 1, green: 0.95, blue: 0.8 }, green: { red: 0.85, green: 0.92, blue: 0.83 } };
+const overlay = { sheets: [{ properties: { sheetId: 4 }, data: [{ startRow: 1, startColumn: 1, rowData: [{ values: [
+    colored('0', colors.red), colored('45', colors.yellow), colored('55', colors.yellow), colored('100', colors.green)
+] }] }] }] };
+mergeFormats(updated, overlay);
+const styled = parseSpreadsheet(updated, { totalColumn: 5 })[0];
+assert.equal(styled.people[0].cells[1].hue, 0);
+assert.equal(styled.people[0].cells[2].hue, 45);
+assert.equal(styled.people[0].cells[4].hue, 107);
+assert.equal(sheetColor(colored('0', { red: 1, green: 1, blue: 1 })), null);
+assert.equal(sheetColor(colored('0', { red: 0.95, green: 0.95, blue: 0.95 })), null);
+assert.equal(sheetColor({ effectiveFormat: { backgroundColorStyle: { rgbColor: colors.green } } }), 107);
+const changed = structuredClone(updated);
+delete changed.sheets[0].data[0].rowData[1].values[1].effectiveFormat;
+changed.sheets[0].data[0].rowData[1].values[1].formattedValue = '100';
+mergeFormats(changed, overlay);
+assert.equal(changed.sheets[0].data[0].rowData[1].values[1].effectiveFormat, undefined, 'ignore formatting for values edited between requests');
+const noTotal = structuredClone(updated);
+noTotal.sheets[0].data[0].rowData[0].values[6].formattedValue = 'F';
+assert.equal(parseSpreadsheet(noTotal, { totalColumn: 5 })[0].totalColumn, -1, 'a labeled task cannot silently become a total');
+console.log('Updated tables: titles, relocated totals, numeric values, bounded formatting, colors and concurrent edits passed');
