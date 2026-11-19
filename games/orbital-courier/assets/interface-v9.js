@@ -129,7 +129,7 @@
       if (!initializedLive) initLive();
       setText($('liveState'), mode === 'review' ? 'Запись' : A.paused ? 'Пауза' : 'Полёт');
       setText($('liveVelocity'), P.dockVelocity(s, A.level()).speed.toFixed(0) + ' ед./с');
-      setText($('liveDock'), 'Радиус стыковки: ' + P.captureRadius(A.level(), A.stats()).toFixed(1));
+      setText($('liveDock'), l.rules?.maxDockSpeed ? `При стыковке — до ${l.rules.maxDockSpeed} ед./с` : 'Радиус стыковки: ' + P.captureRadius(A.level(), A.stats()).toFixed(1));
       setText($('liveCargo'), O.Routes.collected(A.level(), s) + ' / ' + O.Routes.cargoIds(A.level(), s).length);
       setText($('liveOrbits'), (s.flybyIndex || 0) + ' / ' + (l.flybys?.length || 0));
       setText($('livePortals'), (s.portalIndex || 0) + ' / ' + (l.portalOrder?.length || 0));
@@ -161,9 +161,17 @@
     setText($('mobileNext'), nextReady ? 'Дальше ↗' : 'Маршруты ↗');
     $('mobileLaunch').classList.toggle('primary', !delivered);
     $('mobileDock').classList.toggle('delivered', delivered);
-    setText($('mobileReadoutLabel'), mode === 'aiming' ? 'Курс' : mode === 'running' ? (A.paused ? 'Пауза' : 'Полёт') : A.lastResult?.training ? 'Тренировка' : delivered ? 'Доставлено' : 'Разбор');
+    const limit = mode === 'aiming' && l.rules?.maxLaunchSpeed;
+    const overLimit = !!limit && A.speed > limit;
+    const limitText = !limit ? '' : overLimit ? `Скорость выше лимита ${limit} ед./с` : `Лимит старта по контракту — ${limit} ед./с`;
+    $('launchLimit').hidden = !limit;
+    $('launchLimit').classList.toggle('over-limit', overLimit);
+    $('launchLimit').querySelector('button').hidden = !overLimit;
+    setText($('launchLimitText'), limitText);
+    $('mobileReadout').classList.toggle('over-limit', overLimit);
+    setText($('mobileReadoutLabel'), overLimit ? `Выше лимита ${limit} ед./с` : mode === 'aiming' ? 'Курс' : mode === 'running' ? (A.paused ? 'Пауза' : 'Полёт') : A.lastResult?.training ? 'Тренировка' : delivered ? 'Доставлено' : 'Разбор');
     setText($('mobileReadoutValue'), mode === 'aiming' ? `${A.angle.toFixed(1)}°  /  ${A.speed} ед./с` : mode === 'running' ? `${s.t.toFixed(1)} с  ·  груз ${O.Routes.collected(A.level(),s)} / ${O.Routes.cargoIds(A.level(),s).length}` : `${A.state.t.toFixed(2)} с  ·  ${A.lastResult?.training ? 'можно повторить' : delivered ? '+' + A.lastResult.totalCredits + ' ◈' : 'найти причину'}`);
-    $('mobileReadout').setAttribute('aria-label', mode === 'review' ? 'Открыть разбор и перемотку рейса' : 'Открыть точный пульт');
+    $('mobileReadout').setAttribute('aria-label', overLimit ? `Старт ${A.speed} ед./с, по контракту до ${limit}. Открыть точный пульт` : mode === 'review' ? 'Открыть разбор и перемотку рейса' : 'Открыть точный пульт');
     setText($('mobileSpeed'), '×' + A.timeScale);
     const nextDesktop = $('nextLevelButton');
     if (nextDesktop) {
@@ -323,6 +331,16 @@
   function retryNow() {
     const camera = {...A.camera}; A.closeModal(); closeSheet(false); A.retry();
     A.camera = camera; clampCamera(); sync();
+  }
+  function useLaunchLimit() {
+    const limit = A.level().rules?.maxLaunchSpeed, state = A.state;
+    if (!limit || A.transitioning || (state && state.reason !== 'fuel')) return;
+    const angle = state?.launchAngle ?? A.angle;
+    if (state) retryNow();
+    if (!aiming()) return;
+    A.setAim(angle, Math.floor(limit));
+    const focus = mobile() && !drawer.open ? $('mobileReadout') : $('speedRange');
+    focus.focus({preventScroll:true});
   }
 
   // Numeric input commits once, tolerates comma and restores invalid intermediate text.
@@ -553,7 +571,7 @@
     'ui:map-menu':mapMenu,'ui:shortcuts':shortcuts,'ui:fullscreen':fullscreen,
     'ui:field':()=>{A.actions['toggle-grid']();mapMenu();},
     'ui:ship':()=>{const s=A.displayState()||A.level().start;A.camera={zoom:2.2,cx:s.x,cy:s.y};clampCamera();A.closeModal();sync();},
-    'ui:retry-confirm':retryNow
+    'ui:retry-confirm':retryNow,'ui:limit-speed':useLaunchLimit
   };
   Object.assign(A.actions,custom);
   A.actions.help=()=>A.openModal('Один запуск. Точный маршрут.', '<p>Выбери угол и скорость, затем нажми <b>«Запуск»</b>. Дальше капсулу ведёт притяжение планет.</p><div class="info-box"><b>Строка маршрута над картой</b> открывает порядок облётов, порталов, доставок и условия медалей. На телефоне числа курса внизу открывают точный пульт; после рейса там же — подробный разбор.</div><p><b>Курс / Обзор</b> переключают действие на карте. Масштаб — кнопками, колесом или двумя пальцами. Угол принимает точку и запятую; кнопки + / − можно удерживать.</p><p>Запиши удачные параметры в <b>A/B</b>. После рейса можно перемотать запись и сравнить с предыдущей попыткой. Повтор бесплатный.</p><div class="modal-actions"><button class="button quiet" data-action="ui:shortcuts">Клавиши и жесты</button><button class="button primary" data-action="close">Понятно</button></div>');

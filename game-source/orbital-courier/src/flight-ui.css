@@ -39,3 +39,44 @@ body[data-page=play][data-flight=aiming] #play .telemetry{display:none}
  #play .panel-actions{padding-top:12px}
  #play .precision-row{margin-top:6px}
 }
+
+/* Contract limits follow the speed control into the phone's cockpit sheet. */
+.launch-limit{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;padding-inline:10px;border-inline-start:2px solid #667182;color:#b3bcc9;font:12px/1.4 var(--sans)}
+.launch-limit.over-limit{color:#ffd0a8;border-color:#ebb382}
+.launch-limit button{min-height:44px;padding:0 12px;border:1px solid #976f52;border-radius:8px;background:#302924;color:#ffdabd;font:500 13px var(--sans)}
+#play .mobile-options.over-limit{box-shadow:inset 3px 0 #ebb382}
+#play .mobile-options.over-limit small{display:block;color:#ffd0a8;font:500 11px/1.15 var(--sans);letter-spacing:0}
+
+.failure-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:center;gap:clamp(24px,5vw,72px);padding:clamp(16px,4vh,42px) 0}
+.failure-contract{font:12px/1.5 var(--sans);color:#b0b7c2}
+#play .failure-copy h2{font-size:clamp(27px,3.2vw,42px);line-height:1.09;margin:9px 0 6px;text-wrap:balance}
+.failure-copy .failure-event,#modal .failure-report .failure-event{margin:0;color:#d4ae91;font:500 13px/1.5 var(--sans);font-variant-numeric:tabular-nums}
+.failure-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin:16px 0 0;border-block:1px solid #ffffff29}
+.failure-facts>div{min-width:0;padding:11px 10px 11px 0}
+.failure-facts>div+div{padding-left:15px;border-inline-start:1px solid #ffffff22}
+.failure-facts dt{color:#b5bdca;font:12px/1.45 var(--sans)}
+.failure-facts dd{margin:4px 0 0;color:#f2dccb;font:550 clamp(18px,2vw,26px)/1.2 var(--sans);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.failure-facts>div+div dd{color:#e3e8f1}
+.failure-facts small{color:#c0c4cd;font:400 12px var(--sans);white-space:nowrap}
+.flight-quantity{white-space:nowrap}
+.failure-copy .failure-advice,#modal .failure-report .failure-advice{max-width:52ch;margin:14px 0 0;color:#e0e3e9;font:15px/1.5 var(--sans)}
+.failure-layout .completion-docking{width:100%;align-self:center}
+.failure-layout .completion-docking figcaption{display:flex;font-size:12px}
+.failure-layout .completion-docking figcaption strong{display:inline;font-size:12px}
+.failure-breakdown{margin:0;border-top:1px solid #ffffff28}
+.failure-breakdown>summary{min-height:48px;font:500 14px var(--sans)}
+.failure-breakdown .completion-detail-body{max-width:620px}
+.failure-actions .button{min-width:0;white-space:normal;min-height:44px}
+@media(max-width:999px) and (orientation:portrait){
+ .failure-layout{display:flex;flex-direction:column;align-items:stretch;gap:17px;padding:10px 0 16px}
+ .failure-layout .completion-docking{width:100%;max-width:380px;align-self:start}
+ #play .failure-copy h2{margin:6px 0;font-size:clamp(25px,6.8vw,31px)}
+ .failure-facts{margin-top:11px}.failure-facts>div{padding-block:8px}
+ .failure-copy .failure-advice{margin-top:10px;font-size:14px}
+}
+@media(max-height:480px) and (orientation:landscape){
+ .failure-layout{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:20px;padding:5px 0 10px}
+ #play .failure-copy h2{font-size:24px;margin:3px 0}
+ .failure-facts{margin-top:7px}.failure-facts>div{padding-block:5px}
+ .failure-copy .failure-advice{margin-top:8px;font-size:13px}
+}

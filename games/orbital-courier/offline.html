@@ -1988,6 +1988,47 @@ body[data-page=play][data-flight=aiming] #play .telemetry{display:none}
  #play .precision-row{margin-top:6px}
 }
 
+/* Contract limits follow the speed control into the phone's cockpit sheet. */
+.launch-limit{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;padding-inline:10px;border-inline-start:2px solid #667182;color:#b3bcc9;font:12px/1.4 var(--sans)}
+.launch-limit.over-limit{color:#ffd0a8;border-color:#ebb382}
+.launch-limit button{min-height:44px;padding:0 12px;border:1px solid #976f52;border-radius:8px;background:#302924;color:#ffdabd;font:500 13px var(--sans)}
+#play .mobile-options.over-limit{box-shadow:inset 3px 0 #ebb382}
+#play .mobile-options.over-limit small{display:block;color:#ffd0a8;font:500 11px/1.15 var(--sans);letter-spacing:0}
+
+.failure-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:center;gap:clamp(24px,5vw,72px);padding:clamp(16px,4vh,42px) 0}
+.failure-contract{font:12px/1.5 var(--sans);color:#b0b7c2}
+#play .failure-copy h2{font-size:clamp(27px,3.2vw,42px);line-height:1.09;margin:9px 0 6px;text-wrap:balance}
+.failure-copy .failure-event,#modal .failure-report .failure-event{margin:0;color:#d4ae91;font:500 13px/1.5 var(--sans);font-variant-numeric:tabular-nums}
+.failure-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin:16px 0 0;border-block:1px solid #ffffff29}
+.failure-facts>div{min-width:0;padding:11px 10px 11px 0}
+.failure-facts>div+div{padding-left:15px;border-inline-start:1px solid #ffffff22}
+.failure-facts dt{color:#b5bdca;font:12px/1.45 var(--sans)}
+.failure-facts dd{margin:4px 0 0;color:#f2dccb;font:550 clamp(18px,2vw,26px)/1.2 var(--sans);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.failure-facts>div+div dd{color:#e3e8f1}
+.failure-facts small{color:#c0c4cd;font:400 12px var(--sans);white-space:nowrap}
+.flight-quantity{white-space:nowrap}
+.failure-copy .failure-advice,#modal .failure-report .failure-advice{max-width:52ch;margin:14px 0 0;color:#e0e3e9;font:15px/1.5 var(--sans)}
+.failure-layout .completion-docking{width:100%;align-self:center}
+.failure-layout .completion-docking figcaption{display:flex;font-size:12px}
+.failure-layout .completion-docking figcaption strong{display:inline;font-size:12px}
+.failure-breakdown{margin:0;border-top:1px solid #ffffff28}
+.failure-breakdown>summary{min-height:48px;font:500 14px var(--sans)}
+.failure-breakdown .completion-detail-body{max-width:620px}
+.failure-actions .button{min-width:0;white-space:normal;min-height:44px}
+@media(max-width:999px) and (orientation:portrait){
+ .failure-layout{display:flex;flex-direction:column;align-items:stretch;gap:17px;padding:10px 0 16px}
+ .failure-layout .completion-docking{width:100%;max-width:380px;align-self:start}
+ #play .failure-copy h2{margin:6px 0;font-size:clamp(25px,6.8vw,31px)}
+ .failure-facts{margin-top:11px}.failure-facts>div{padding-block:8px}
+ .failure-copy .failure-advice{margin-top:10px;font-size:14px}
+}
+@media(max-height:480px) and (orientation:landscape){
+ .failure-layout{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:20px;padding:5px 0 10px}
+ #play .failure-copy h2{font-size:24px;margin:3px 0}
+ .failure-facts{margin-top:7px}.failure-facts>div{padding-block:5px}
+ .failure-copy .failure-advice{margin-top:8px;font-size:13px}
+}
+
 </style></head>
 <body class="ui9">
 <noscript>Для игры нужно включить JavaScript. Интернет и установка библиотек не нужны.</noscript>
@@ -2074,8 +2115,9 @@ body[data-page=play][data-flight=aiming] #play .telemetry{display:none}
           <div id="coursePane" role="tabpanel" aria-labelledby="courseTab">
             <div class="aim-controls">
               <div class="control" data-control="angle"><div class="number-wrap"><button aria-label="Уменьшить угол" data-action="angle-down">−</button><div class="control-value"><label for="angleInput">Направление · °</label><input id="angleInput" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" spellcheck="false" aria-label="Угол запуска" value="0"/></div><button aria-label="Увеличить угол" data-action="angle-up">+</button></div><input type="range" id="angleRange" min="-180" max="180" step="0.1" value="0" aria-label="Угол запуска, ползунок"/></div>
-              <div class="control" data-control="speed"><div class="number-wrap"><button aria-label="Уменьшить скорость" data-action="speed-down">−</button><div class="control-value"><label for="speedInput">Скорость · ед./с</label><input id="speedInput" type="text" inputmode="numeric" enterkeyhint="done" autocomplete="off" spellcheck="false" aria-label="Скорость запуска" value="200"/></div><button aria-label="Увеличить скорость" data-action="speed-up">+</button></div><input type="range" id="speedRange" min="60" max="250" step="1" value="200" aria-label="Скорость запуска, ползунок"/></div>
+              <div class="control" data-control="speed"><div class="number-wrap"><button aria-label="Уменьшить скорость" data-action="speed-down">−</button><div class="control-value"><label for="speedInput">Скорость · ед./с</label><input id="speedInput" type="text" inputmode="numeric" enterkeyhint="done" autocomplete="off" spellcheck="false" aria-label="Скорость запуска" aria-describedby="launchLimitText" value="200"/></div><button aria-label="Увеличить скорость" data-action="speed-up">+</button></div><input type="range" id="speedRange" min="60" max="250" step="1" value="200" aria-label="Скорость запуска, ползунок" aria-describedby="launchLimitText"/></div>
             </div>
+            <div id="launchLimit" class="launch-limit" hidden><span id="launchLimitText" role="status"></span><button type="button" data-action="ui:limit-speed" hidden>Снизить</button></div>
             <div class="aim-feedback" id="aimFeedback" role="status" hidden></div>
             <div class="precision-row"><button class="precision-button" data-action="fine-aim" id="fineAimButton" aria-pressed="false" aria-describedby="fineAimHelp">Точно</button><div><span id="fineAimCaption">Шаг 0,5° / 2 ед.</span><small id="fineAimHelp" hidden>Прицел в 5 раз плавнее</small></div></div>
           </div>
@@ -4361,25 +4403,8 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     $('gravityCaption').textContent=stats().gravity?`Радиус захвата: ${stats().gravity}`:'Захват не установлен';
     renderCourseMemory();updateMedalStates();O.UI9?.sync();
   }
-  function renderRoute(){if(O.V8)return O.V8.updateRoute(true);
-    const l=level(),legs=l.flybys||[];$('routePanel').hidden=!legs.length;
-    $('routeSteps').innerHTML=legs.map((f,i)=>`<li data-leg="${i}"><span class="route-number">${i+1}</span><div><b>${l.planets[f.planet].name} <em>${f.direction>0?'↻':'↺'}</em></b><small class="route-value">${f.degrees}°</small></div></li>`).join('');
-    updateRoute();
-  }
-  function updateRoute(){if(O.V8)return O.V8.updateRoute();
-    const portals=level().portalOrder||[];$('portalProgress').hidden=!portals.length;
-    $('portalProgress').innerHTML=portals.map((id,i)=>`<span class="${i<(app.state?.portalIndex||0)?'done':''}">${i<(app.state?.portalIndex||0)?'✓':'◎'} ${id} <small>вход → выход</small></span>`).join('')+'<button class="text-button" data-action="portal-help">Как работает?</button>';
-    const legs=level().flybys||[],s=app.state,indexNow=s?.flybyIndex||0,leg=legs[indexNow];
-    $('activeStep').textContent=s?.status==='won'?'Маршрут завершён':(s?.portalIndex||0)<Math.min(indexNow,portals.length)?`Перейти через портал ${portals[s?.portalIndex||0]}`:leg?`${level().planets[leg.planet].name} ${leg.direction>0?'↻':'↺'} · ${Math.min(leg.degrees,Math.floor(P.deg(s?.flybyAngle||0)))}° / ${leg.degrees}°`:(s?.gateIndex||0)<(level().gates?.length||0)?`Кольцо ${(s?.gateIndex||0)+1} из ${level().gates.length}`:(s?.portalIndex||0)<portals.length?`Перейти через портал ${portals[s?.portalIndex||0]}`:'Доставить груз на станцию';
-    $('planCounter').textContent=legs.length?`${indexNow}/${legs.length}`:'';
-    if(!legs.length)return;
-    const index=app.state?.flybyIndex||0;
-    $('routeStatus').textContent=`${index} / ${legs.length} манёвра`;
-    for(const el of $('routeSteps').children){const i=+el.dataset.leg,done=i<index,active=i===index;
-      el.classList.toggle('done',done);el.classList.toggle('active',active);
-      el.querySelector('.route-value').textContent=done?'✓ Пройден':active?`${Math.min(legs[i].degrees,Math.floor(P.deg(app.state?.flybyAngle||0)))}° / ${legs[i].degrees}°`:`${legs[i].degrees}°`;
-    }
-  }
+  function renderRoute(){O.V8?.updateRoute(true);}
+  function updateRoute(){O.V8?.updateRoute();}
   function routeHelp(){
     openModal('Гравитационный маршрут',`<p>Нужно облететь указанные планеты <strong>по порядку и в направлении стрелок</strong>. Каждый манёвр — больше половины оборота вокруг отдельной планеты, а не просто касание кольца.</p><p>Пунктирная окружность у активной планеты — зона манёвра. Дуга растёт, пока капсула остаётся внутри. Выход сбрасывает только текущую дугу; уже завершённые сохраняются.</p><p>Кольца задают ветви маршрута. После всех облётов и колец доставь три контейнера на станцию. Прямой перелёт и большой круг вокруг всей системы не заменяют отдельные манёвры.</p><div class="info-box">Грузы находятся на разных ветвях. Сначала добейся правильной формы траектории, затем уточняй угол шагом 0,1° и скорость шагом 1. Мышью или пальцем можно грубо задать направление.</div><div class="modal-actions"><button class="button primary" data-action="close">К маршруту</button></div>`,'ПЛАН ПОЛЁТА');
   }
@@ -4399,12 +4424,13 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     $('medalLegend').textContent=app.assisted?'Тренировка: медали не выдаются':app.state?.status==='won'?'Итог рейса · перемотка не меняет награды':'Засчитываются только после доставки';
   }
   function updateObjectives(){
-    const l=level(),r=G.viewRecord(app.profile,l.id),rules=l.rules||{};
+    const l=level(),r=G.viewRecord(app.profile,l.id),route=O.Routes.view(l,app.state,app.branchView),rules=route.rules||{};
     $('objectivesList').innerHTML=O.Medals.describe(l,app.state,app.speed,r,app.assisted,stats()).map((d,i)=>`<article role="button" tabindex="0" id="medal-${d.key}" class="medal-card" data-state="pending"><div class="medal-symbol">${medalIcon(O.Medals.rules(l)[i].type)}</div><div class="medal-copy"><div class="medal-name"><h3>${d.title}</h3><span class="medal-archive"></span></div><p class="medal-condition">${d.condition}</p><div class="medal-readout"><strong class="medal-detail"></strong><span class="medal-live"></span></div><div class="medal-track"><i></i></div></div></article>`).join('');
     updateMedalStates();
     const req=[];
-    if(l.gates?.length)req.push(`Кольца: ${Array.from({length:l.gates.length},(_,i)=>i+1).join(' → ')}`);
-    if(rules.minCargo)req.push(`Обязательный груз: ${rules.minCargo}`);
+    if(route.gates?.length)req.push(`Кольца: ${Array.from({length:route.gates.length},(_,i)=>i+1).join(' → ')}`);
+    const required=Math.max(rules.minCargo||0,route.minCargo||0);
+    if(required)req.push(`Обязательный груз: ${required}`);
     if(rules.captureCap)req.push(`Радиус приёма: ${rules.captureCap} ед.`);
     if(rules.maxDockSpeed)req.push(`${l.target.motion?'Относительная скорость':'Скорость у станции'} ≤ ${rules.maxDockSpeed}`);
     if(rules.maxLaunchSpeed)req.push(`Старт ≤ ${rules.maxLaunchSpeed} ед./с`);
@@ -4413,10 +4439,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     const cap=Math.floor(E.baseReward(l)*(app.profile.difficulty==='pro'?1.7:1));
     $('contractReward').textContent=`до ${Math.max(0,cap-r.paid)} ◈`;
   }
-  function medalHelp(){if(O.V8)return O.V8.medalHelp();
-    const l=level();
-    openModal('Медали — три отдельные цели',`<div class="medal-help-grid"><p><strong>Доставка.</strong> Выполни обязательные облёты, кольца, порталы и требования станции, затем пристыкуйся.</p><p><strong>Экономный старт.</strong> Успешно доставь капсулу со стартовой скоростью не выше <b>${l.parSpeed} ед./с</b>. Скорость в середине полёта на эту медаль не влияет.</p><p><strong>Полный груз.</strong> Привези все ${l.cargo.length} контейнера <b>в одном рейсе</b>. Притягиваемый груз ещё не находится на борту.</p></div><div class="info-box">Полоса показывает текущую попытку. Метка «В коллекции» относится к прошлым доставкам и не означает, что цель выполнена сейчас. На неудачном рейсе и в тренировке новые медали не выдаются. Рейтинг и денежный рекорд рассчитываются отдельно.</div><div class="modal-actions"><button class="button primary" data-action="close">К маршруту</button></div>`,'ЦЕЛИ РЕЙСА');
-  }
+  function medalHelp(){O.V8?.medalHelp();}
   function loadLevel(id){
     if(!Number.isInteger(id)||id<0||id>=L.length||!G.unlocked(app.profile,id)){toast(L[id]?lockReason(L[id]):'Контракт недоступен.',true);return;}
     if(O.Navigation?.beforeLevel(id))return;
@@ -4461,9 +4484,9 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
       app.lastResult=result;save('contract');updateProfileUI();updateObjectives();sound.play('win');burst(s.x,s.y,skin().color,45);
       setStage(result.training?'ТРЕНИРОВКА ЗАВЕРШЕНА':'ДОСТАВЛЕНО',result.training?'Демонстрация без наград. Для зачёта выбери самостоятельный рейс.':'Оценка рейса определяет оплату. Повторные выплаты — только за улучшение.');
       if(app.storageOK&&G.rank(app.profile).index>before.index)toast(`Новый ранг: ${G.rank(app.profile).name}!`);
-      if(O.Review){O.Review.finish(s,app.trail,level());O.V8.showResult(result);}else showWin(result);
+      if(O.Review&&O.V8){O.Review.finish(s,app.trail,level());O.V8.showResult(result);}else showWin(result);
     }else{
-      sound.play('fail');burst(s.x,s.y,'#ff9f86',32);setStage('МАРШРУТ НЕ ЗАВЕРШЁН','Ничего не потеряно. Измени направление или скорость и попробуй снова.');if(O.Review){O.Review.finish(s,app.trail,level());O.V8.showResult(null);}else showFail();
+      sound.play('fail');burst(s.x,s.y,'#ff9f86',32);setStage('МАРШРУТ НЕ ЗАВЕРШЁН');if(O.Review&&O.V8){O.Review.finish(s,app.trail,level());O.V8.showResult(null);}else showFail();
     }
   }
   function showWin(r){
@@ -4474,9 +4497,8 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     openModal(r.training?'Тренировочный рейс завершён':'Контракт принят',`<div class="grade-block"><strong class="grade-${q.grade}">${q.grade}</strong><div><b>${q.score}/100</b><span>${q.mode==='pro'?'ПРО · множитель 1,7':'Обычный рейс'}</span></div>${starHTML(mask)}</div>${training}<div class="quality-breakdown">${bars}</div><div class="result-summary"><div><span>ДОПЛАТА</span><b>+${r.totalCredits} <small>◈</small></b></div><div><span>ДАННЫЕ</span><b>+${r.data} <small>⬡</small></b></div><div><span>ПОЛЁТ</span><b>${s.t.toFixed(2)} <small>с</small></b></div></div><div class="result-rewards"><div>Стоимость этого результата<strong>${q.potential} ◈</strong></div><div>Ранее выплаченные деньги не повторяются<strong>${r.training?'тренировка':`${r.paid} ◈ всего`}</strong></div><div>Опыт<strong>+${r.totalXP} XP</strong></div></div>${r.awards.map(a=>`<div class="award-chip">${a.icon} ${a.name} · +${a.xp} XP</div>`).join('')}<div class="modal-actions"><button class="button quiet" data-action="retry">Ещё раз ↺</button><button class="button quiet" data-action="nav" data-page="hangar">В ангар</button>${!r.training?`<button class="button primary" data-action="next">${C.adjacent(l.id,1)<0?'Все маршруты':'Дальше ↗'}</button>`:''}</div>`,'ПРОТОКОЛ ДОСТАВКИ');
   }
   function showFail(){
-    const reason=app.state.reason;
-    const messages={portals:'Не выполнен порядок переходов. Войди в тёмные порталы в указанном порядке: A → B → C, если они есть на карте. Светлые кольца являются выходами.', 'portal-loop':'Нестабильная цепочка переходов. Измени курс.',flybys:'Не завершена последовательность облётов. Станция принимает груз только после всех манёвров. Порядок и направление указаны в плане под картой. Выход из зоны текущей планеты сбрасывает незавершённую дугу.',planet:'Капсула встретилась с поверхностью планеты. Попробуй более широкую дугу или другую стартовую скорость.',asteroid:'На пути оказался астероид. Он не притягивает капсулу, но столкновение с ним прерывает рейс.',boundary:'Капсула вышла за пределы навигационной карты. Уменьши скорость или скорректируй угол.',timeout:'Истекло время полёта. Капсула могла попасть на слишком длинную орбиту — измени стартовый импульс.',numeric:'Расчёт остановлен из-за некорректного состояния. Повтори запуск.',gates:'Не пройдены все контрольные кольца по порядку. Зелёное кольцо уже зачтено; оранжевое — следующее.',manifest:'Недостаточно груза для этого контракта. Сверь обязательный минимум; притягиваемый, но не захваченный груз ещё не находится на борту.',fuel:'Превышен лимит стартового импульса контракта.',overspeed:'Станция не приняла капсулу: скорость захода выше допуска. Измени импульс или дугу.',window:'Прибытие вне временного окна. Показанный интервал относится ко времени симуляции, а не к часам телефона.'};
-    openModal('Ещё один точный импульс',`<p>${messages[reason]||'Маршрут не завершён.'}</p><div class="info-box">Попытки бесплатны. Серая линия покажет предыдущий маршрут, а пунктир — начало нового.</div><div class="modal-actions"><button class="button quiet" data-action="hint">Помощь диспетчера</button><button class="button primary" data-action="retry">Ещё раз ↺</button></div>`,'ПОЛЁТ ПРЕРВАН');
+    if(O.V8&&O.Review?.active)return O.V8.showReport();
+    openModal('Полёт прерван',`<p>${escape(O.Review?.diagnosis(level(),app.state)||'Проверь угол и скорость перед следующим запуском.')}</p><div class="modal-actions"><button class="button primary" data-action="retry">Изменить курс</button></div>`, 'РАЗБОР РЕЙСА');
   }
   function updateTelemetry(){
     updateRoute();updateMedalStates();O.V8?.sync();const s=displayState();$('flightTime').innerHTML=`${(s?.t||0).toFixed(2)} <small>с</small>`;
@@ -4523,9 +4545,6 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     setStage('ТРЕНИРОВКА · БЕЗ НАГРАД',`Пример${course.branch?' ветви '+course.branch:''}: ${course.angle}° / ${course.speed} ед./с. Для зачётного рейса нажми «Заново».`);
     toast('Точный курс установлен. Этот запуск — без наград.');
   }
-  function showHelp(){
-    openModal('Точнее курс. Дороже результат.',`<div class="help-steps"><div class="help-step"><span>01</span><p><strong>Настрой угол и скорость.</strong>На компьютере тяни мышью от капсулы. На телефоне веди пальцем по карте или используй кнопки ±. Точный режим даёт шаг 0,1°.</p></div><div class="help-step"><span>02</span><p><strong>Выбери обычный режим или ПРО.</strong>В ПРО станция уже, обязателен груз, прогноз на 40% короче. Потенциальная оплата выше, но повторно выплачивается только улучшение рекорда.</p></div><div class="help-step"><span>03</span><p><strong>Выполни контракт.</strong>На экспертных маршрутах нужны кольца по порядку, заданный груз, иногда — время и скорость прибытия. Эти требования видны до старта.</p></div></div><div class="info-box"><strong>Собственная гравитация:</strong> купи гравитационный захват I. Попав в поле, контейнер реально летит к кораблю. Пока он не достиг капсулы, он не засчитан. Через планеты груз не проходит. Прокачка повышает и радиус, и силу поля.</div><p>Кредиты — за лучший результат контракта. Данные ⬡ — за высокий балл и ПРО. Старшие ступени дороги: выбирай специализацию. Пересборка возвращает фактические затраты по чекам.</p><p>Ошибки бесплатны. Точная подсказка доступна в тренировке, которая не даёт наград. Условия открытия указаны в каталоге. Новые развилки и многоадресные рейсы открываются после 20 доставок. Орбиты начинаются при запуске и сбрасываются при повторе; при перехвате важна относительная скорость.</p><p><kbd>Пробел</kbd> запуск / пауза · <kbd>R</kbd> повтор · <kbd>G</kbd> поле · <kbd>←</kbd><kbd>→</kbd> угол · <kbd>↑</kbd><kbd>↓</kbd> скорость.</p><div class="modal-actions"><button class="button primary" data-action="close">К полёту ↗</button></div>`,'ИНСТРУКТАЖ');
-  }
   function showSettings(){if(O.V8)return O.V8.settings();
     const s=app.profile.settings;
     const options=[['sound','Звуковые сигналы','Синтезированные эффекты, без фоновой музыки.'],['grid','Поле тяготения','Показывать направление ускорения в разных точках.'],['ghost','След предыдущей попытки','Серая линия помогает уточнять маршрут.'],['reducedMotion','Меньше анимаций','Меньше декоративного движения. Планеты, станция и груз продолжают двигаться по правилам игры.']];
@@ -4567,7 +4586,7 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
     'route-help':routeHelp,maneuvers:()=>{app.campaignSector=7;go('campaign');},nav:b=>go(b.dataset.page), 'force-nav':b=>go(b.dataset.page,true),close:closeModal,
     continue:()=>C.count(app.profile)===C.order.length?go('campaign'):travelToLevel(G.nextLevel(app.profile)),
     mission:b=>travelToLevel(+b.dataset.id), 'return-flight':()=>loadLevel(G.unlocked(app.profile,app.profile.lastLevel)?app.profile.lastLevel:G.nextLevel(app.profile)),
-    launch,retry,pause,help:showHelp,settings:showSettings,hint:()=>showHint(false),'exact-hint':()=>showHint(true),'apply-solution':applySolution,
+    launch,retry,pause,settings:showSettings,hint:()=>showHint(false),'exact-hint':()=>showHint(true),'apply-solution':applySolution,
     'angle-down':()=>setAim(app.angle-(app.profile.settings.fineAim?0.1:0.5),app.speed),'angle-up':()=>setAim(app.angle+(app.profile.settings.fineAim?0.1:0.5),app.speed),
     'speed-down':()=>setAim(app.angle,app.speed-(app.profile.settings.fineAim?1:2)),'speed-up':()=>setAim(app.angle,app.speed+(app.profile.settings.fineAim?1:2)),
     'toggle-grid':()=>{app.profile.settings.grid=!app.profile.settings.grid;save();syncControls();},
@@ -4705,25 +4724,121 @@ O.Medals={mask,describe,rules,meets};if(typeof module!=='undefined'&&module.expo
 (function(root){'use strict';const O=root.Orbital;let recording=null,active=null;const memory=new Map(),key=()=>O.App.currentId+':'+O.App.profile.difficulty;
 function snapshot(s){return {...s,cargo:s.cargo.slice(),teleports:[],cargoBodies:s.cargoBodies.map(c=>({...c,trail:[]})),branchProgress:structuredClone(s.branchProgress||{}),dropEvents:(s.dropEvents||[]).map(x=>({...x}))};}
 function start(s){active=null;recording={key:key(),angle:s.launchAngle,speed:s.launchSpeed,frames:[snapshot(s)],resets:[]};}
-function observe(a,b,l){if(!recording)return;if(a.flybyAngle>0&&b.flybyAngle===0&&a.flybyIndex===b.flybyIndex){const v=O.Routes.view(l,a),leg=v.flybys?.[a.flybyIndex];if(leg)recording.resets.push({t:b.t,planet:l.planets[leg.planet].name,degrees:O.Physics.deg(a.flybyAngle),goal:leg.degrees});}if(recording.frames.length<2400&&(b.t-recording.frames.at(-1).t>=.05||b.status!=='flying'))recording.frames.push(snapshot(b));}
-function finish(s,points,level){const d=recording||{key:key(),angle:s.launchAngle,speed:s.launchSpeed,frames:[],resets:[]};if(d.frames.at(-1)?.t!==s.t)d.frames.push(snapshot(s));d.points=points.map(p=>({...p}));d.final=snapshot(s);d.level=level;const prev=memory.get(key())||[];memory.delete(key());memory.set(key(),[...prev,d].slice(-2));while(memory.size>4)memory.delete(memory.keys().next().value);recording=null;active={data:d,index:d.frames.length-1,compare:false};}
+function observe(a,b,l){if(!recording)return;if(a.flybyAngle>0&&b.flybyAngle===0&&a.flybyIndex===b.flybyIndex){const v=O.Routes.view(l,a),leg=v.flybys?.[a.flybyIndex];if(leg)recording.resets.push({t:b.t,leg:a.flybyIndex,branch:v.activeBranch,degrees:O.Physics.deg(a.flybyAngle)});}if(recording.frames.length<2400&&(b.t-recording.frames.at(-1).t>=.05||b.status!=='flying'))recording.frames.push(snapshot(b));}
+function finish(s,points,level){const d=recording||{key:key(),angle:s.launchAngle,speed:s.launchSpeed,frames:[],resets:[]};d.final=snapshot(s);if(d.frames.at(-1)?.t===s.t)d.frames[d.frames.length-1]=d.final;else d.frames.push(d.final);d.points=points.map(p=>({...p}));d.level=level;const prev=memory.get(key())||[];memory.delete(key());memory.set(key(),[...prev,d].slice(-2));while(memory.size>4)memory.delete(memory.keys().next().value);recording=null;active={data:d,index:d.frames.length-1,compare:false};}
 function prior(){return active?(memory.get(active.data.key)||[]).at(-2):null;}function clearView(){active=null;recording=null;}function selectTime(t){if(!active)return;let a=0,b=active.data.frames.length-1;while(a<b){let m=Math.ceil((a+b)/2);if(active.data.frames[m].t<=t)a=m;else b=m-1;}active.index=a;}function setCompare(){if(active)active.compare=!active.compare;}
 function renderModel(){if(!active)return null;const s=active.data.frames[active.index];return{state:s,trail:active.data.points.filter(p=>(p.t||0)<=s.t),ghost:active.compare?prior()?.points:null};}
-function diagnosis(l,s){if(!s)return '';if(s.status==='won'&&l.placement)return 'Гравитационная трасса пройдена: '+s.gateIndex+' контрольных кольца, груз '+s.cargo.length+' / '+l.cargo.length+'.';if(s.status==='won')return `${s.branchId?'Ветвь '+s.branchId+'. ':''}Доставка: ${s.flybyIndex} облётов, ${s.portalIndex} переходов${l.stops?.length?', '+s.dropIndex+' промежуточных адреса':''}.`;const reasons={planet:'Столкновение с планетой',asteroid:'Столкновение с астероидом',wreck:'Столкновение с обломком станции','ice-debris':'Столкновение с ледяной грядой',boundary:'Выход за границу карты',timeout:'Истёк срок рейса',manifest:'Недостаточно обязательного груза',branch:'Не закончена допустимая ветвь',deliveries:'Не обслужены все получатели','drop-speed':'Слишком высокая скорость передачи посылки',fuel:'Превышен физический предел старта',overspeed:'Превышена скорость стыковки',window:'Встреча вне окна приёма',portals:'Не завершены переходы',gates:'Не пройдены кольца',flybys:'Не завершены облёты'};let result=`${reasons[s.reason]||'Рейс не завершён'}. Момент ${s.t.toFixed(2)} с.`,v=O.Routes.view(l,s),leg=v.flybys?.[s.flybyIndex],last=active?.data.resets.at(-1);if(leg)result+=` Выполнено ${s.flybyIndex} / ${v.flybys.length} облётов. ${last?`Последний сброс: ${last.planet}, ${Math.floor(last.degrees)}° из ${last.goal}° на ${last.t.toFixed(2)} с.`:`Цель: ${l.planets[leg.planet].name}, ${Math.floor(O.Physics.deg(s.flybyAngle))}° / ${leg.degrees}°.`}`;return result;}
-O.Review={start,observe,finish,prior,clearView,selectTime,setCompare,renderModel,diagnosis,get active(){return active;}};
+const decimal = new Intl.NumberFormat('ru-RU', {maximumFractionDigits: 2});
+const num = value => decimal.format(value);
+// Keep a marginal miss visible even when the displayed numbers round to the same value.
+function compared(value, limit) {
+  if (value !== limit && num(value) === num(limit)) return (value > limit ? '> ' : '< ') + num(limit);
+  return num(value);
+}
+
+function failureReport(level, s, resets = []) {
+  const l = O.Routes.view(level, s), rules = l.rules || {}, P = O.Physics;
+  function report(title, event, advice, facts = []) {
+    return {title, event: event + ' · ' + num(s.t) + ' с', advice, facts};
+  }
+  const station = 'Прибытие на станцию';
+  switch (s.reason) {
+    case 'fuel': {
+      const limit = rules.maxLaunchSpeed;
+      return report('Слишком высокая скорость старта', station,
+        `Снизь скорость запуска хотя бы на ${num(s.launchSpeed - limit)} ед./с. Станция проверяет её при стыковке.`,
+        [['На старте', num(s.launchSpeed), 'ед./с'], ['Лимит контракта', num(limit), 'ед./с']]);
+    }
+    case 'overspeed':
+      return report('Слишком быстрый заход', station,
+        'Подбери более пологий заход или снизь стартовую скорость. При стыковке важна скорость капсулы относительно станции.',
+        [['Относительно станции', compared(s.dockSpeed ?? P.dockVelocity(s, l).speed, rules.maxDockSpeed), 'ед./с'], ['Допустимо до', num(rules.maxDockSpeed), 'ед./с']]);
+    case 'window': {
+      const [opens, closes] = rules.window, early = s.t < opens;
+      return report(early ? 'Станция ещё не открылась' : 'Окно приёма закрылось', station,
+        early ? 'Удлини дугу подлёта, чтобы прибыть после открытия окна.' : 'Сократи дугу подлёта, чтобы успеть до закрытия окна.',
+        [['Прибытие', compared(s.t, early ? opens : closes), 'с'], ['Окно приёма', num(opens) + '–' + num(closes), 'с']]);
+    }
+    case 'manifest': {
+      const count = O.Routes.collected(level, s), required = Math.max(rules.minCargo || 0, l.minCargo || 0);
+      return report('Не хватает груза', station,
+        l.activeBranch ? `Проложи курс через контейнеры ветви ${l.activeBranch} до подлёта к станции.` : 'Проведи капсулу ближе к контейнерам до подлёта к станции. Груз засчитывается, когда он на борту.',
+        [['На борту по маршруту', count], ['Требуется', required]]);
+    }
+    case 'gates':
+      return report('Пропущено контрольное кольцо', station, `Пройди кольцо № ${s.gateIndex + 1} по порядку, прежде чем лететь к станции.`,
+        [['Пройдено колец', s.gateIndex], ['Всего на маршруте', l.gates.length]]);
+    case 'portals':
+      return report('Пропущен переход', station, `Направь капсулу в тёмный вход портала ${l.portalOrder[s.portalIndex]}. Светлое кольцо отмечает выход.`,
+        [['Пройдено переходов', s.portalIndex], ['Всего на маршруте', l.portalOrder.length]]);
+    case 'flybys': {
+      const leg = l.flybys[s.flybyIndex], name = l.planets[leg.planet].name;
+      const reset = resets.findLast(r => r.leg === s.flybyIndex && r.branch === l.activeBranch);
+      const sweep = Math.floor(P.deg(s.flybyAngle));
+      const facts = !sweep && reset ? [['Дуга перед сбросом', Math.floor(reset.degrees), '°'], ['Требуется', leg.degrees, '°']] :
+        [['Набранная дуга', sweep, '°'], ['Требуется', leg.degrees, '°']];
+      return report('Не завершён облёт', station,
+        `Удержи капсулу в зоне планеты «${name}» ${leg.direction > 0 ? 'по часовой стрелке' : 'против часовой стрелки'} до конца дуги.`, facts);
+    }
+    case 'branch':
+      return report('Ветвь маршрута не выбрана', station, 'Пройди через первый входной портал одной из ветвей, затем следуй её маршруту.');
+    case 'deliveries': {
+      const stop = l.stops[s.dropIndex];
+      return report('Пропущен получатель', station, `Сначала доставь посылку по адресу «${stop.name || stop.id}».`,
+        [['Обслужено адресов', s.dropIndex], ['Всего на маршруте', l.stops.length]]);
+    }
+    case 'drop-speed': {
+      const stop = l.stops[s.dropIndex], at = P.bodyAt(stop, s.t);
+      const relative = Math.hypot(s.vx - (at.vx || 0), s.vy - (at.vy || 0));
+      return report('Слишком быстрая передача груза', 'У получателя «' + (stop.name || stop.id) + '»',
+        'Измени курс так, чтобы сблизиться с получателем на меньшей скорости.',
+        [['Скорость сближения', compared(relative, stop.maxSpeed), 'ед./с'], ['Допустимо до', num(stop.maxSpeed), 'ед./с']]);
+    }
+    case 'planet': {
+      const body = l.planets.map(p => P.bodyAt(p, s.t)).find(p => Math.hypot(s.x - p.x, s.y - p.y) <= p.r + P.SHIP_RADIUS + .01);
+      return report('Столкновение с планетой', 'Удар',
+        'Смести угол запуска, чтобы дуга огибала поверхность с большим запасом.',
+        body?.name ? [['Планета', body.name], ['Угол запуска', num(s.launchAngle), '°']] : []);
+    }
+    case 'asteroid': return report('На пути оказался астероид', 'Удар', 'Смести угол запуска так, чтобы траектория прошла в стороне от астероида.');
+    case 'wreck': return report('Столкновение с обломком станции', 'Удар', 'Измени угол запуска и проведи капсулу вокруг обломка.');
+    case 'ice-debris': return report('Столкновение с ледяной грядой', 'Удар', 'Обогни край ледяной гряды. Проверь на записи, с какой стороны капсула подошла к преграде.');
+    case 'boundary': return report('Капсула вышла за край карты', 'Выход за границу', 'Посмотри на последний изгиб траектории и поверни стартовый курс к внутренней части карты.');
+    case 'timeout': {
+      const target = P.bodyAt(l.target, s.t);
+      return report('Время рейса истекло', 'Конец полёта', 'Попробуй более короткую дугу к станции. Долгий оборот вокруг планеты расходует время рейса.',
+        [['Лимит рейса', num(l.timeLimit || 24), 'с'], ['До центра станции', num(Math.hypot(s.x - target.x, s.y - target.y)), 'ед.']]);
+    }
+    case 'portal-loop': return report('Капсула зациклилась в порталах', 'Остановка полёта', 'Измени угол входа в первый портал, чтобы выйти из цепочки переходов.');
+    case 'numeric': return report('Расчёт полёта прерван', 'Остановка расчёта', 'Запусти рейс ещё раз. Если остановка повторится, сохрани угол и скорость для проверки.');
+    default: return report('Полёт прерван', 'Конец полёта', 'Открой запись и проверь последний участок траектории.');
+  }
+}
+function diagnosis(l,s){
+  if(!s || s.status==='flying')return '';
+  if(s.status!=='won'){const r=failureReport(l,s,active?.data.resets);return r.title+'. '+r.event+'. '+r.advice;}
+  if(l.placement)return 'Гравитационная трасса пройдена: '+s.gateIndex+' контрольных кольца, груз '+s.cargo.length+' / '+l.cargo.length+'.';
+  return `${s.branchId?'Ветвь '+s.branchId+'. ':''}Доставка: ${s.flybyIndex} облётов, ${s.portalIndex} переходов${l.stops?.length?', '+s.dropIndex+' промежуточных адреса':''}.`;
+}
+O.Review={start,observe,finish,prior,clearView,selectTime,setCompare,renderModel,diagnosis,failureReport,get active(){return active;}};
 })(typeof globalThis!=='undefined'?globalThis:window);
 
 </script><script>
 /* Responsive presentation, briefing and history. No equations of motion here. */
 (function(root){'use strict';const O=root.Orbital,A=O.App,G=O.Progress,P=O.Physics,R=O.Routes,E=O.Economy,L=O.LEVELS,$=id=>document.getElementById(id),$$=q=>[...document.querySelectorAll(q)],money=n=>Math.round(n).toLocaleString('ru-RU'),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let category='all',filter='all',query='',tab='flight',cache='',pending=false;
-function layout(){pending=false;if(O.UI9)return O.UI9.layout();if(A.screen!=='play')return;let main=document.querySelector('main'),height=Math.max(180,(root.visualViewport?.height||innerHeight)-Math.max(0,main.getBoundingClientRect().top));if(Math.abs(main.getBoundingClientRect().height-height)>1)main.style.height=height+'px';const box=$('mapViewport'),stage=box.querySelector('.stage');stage.style.width=Math.max(1,box.clientWidth-2)+'px';stage.style.height=Math.max(1,box.clientHeight-2)+'px';}
+function layout(){pending=false;O.UI9?.layout();}
 function schedule(){if(!pending){pending=true;requestAnimationFrame(layout);}}new ResizeObserver(schedule).observe($('mapViewport'));root.addEventListener('resize',schedule);root.visualViewport?.addEventListener('resize',schedule);
 function restoreSaveWarning(){const warning=$('saveWarning');if(warning?.closest('#resultScreen'))document.querySelector('main').before(warning);}
 function collapse(){document.querySelector('.flight-panel').classList.remove('nav-expanded');}function onPage(page){if(page!=='play'){restoreSaveWarning();document.querySelector('main').style.height='';document.body.removeAttribute('data-flight');collapse();}else schedule();}function onLevel(){restoreSaveWarning();O.Review.clearView();$('flightReview').hidden=true;cache='';collapse();$('flightPlan').open=false;sync();updateRoute();schedule();}
-function sync(){if(O.UI9)return O.UI9.sync();if(A.screen!=='play')return;let m=!A.state?'aiming':A.state.status==='flying'?'running':'review';if(document.body.dataset.flight!==m){document.body.dataset.flight=m;schedule();}const s=A.displayState(),l=A.level();$('liveFlightPanel').hidden=m==='aiming';if(m!=='aiming')$('liveFlightPanel').innerHTML=`<div class="flight-fact"><small>ОТНОСИТЕЛЬНАЯ СКОРОСТЬ</small><strong>${P.dockVelocity(s,l).speed.toFixed(0)} ед./с</strong>Допуск ${P.captureRadius(l,A.stats()).toFixed(1)} ед.</div><div class="flight-fact">${s?.branchId?'Ветвь '+s.branchId:'Один запуск'}<strong>${l.stops?.length?`${s.dropIndex} / ${l.stops.length} адреса`:`${R.collected(l,s)} / ${R.cargoIds(l,s).length} на борту`}</strong></div>`;}
+function sync(){O.UI9?.sync();}
 function updateRoute(force=false){const raw=A.level(),s=A.displayState(),l=R.view(raw,s,A.branchView),legs=l.flybys||[],index=s?.flybyIndex||0,ps=l.portalOrder||[],pi=s?.portalIndex||0,key=l.id+':'+l.activeBranch+':'+A.profile.difficulty;
 if(force||cache!==key){cache=key;$('routePanel').hidden=!legs.length;$('routeSteps').innerHTML=legs.map((f,i)=>`<li data-leg="${i}"><span class="route-number">${i+1}</span><div><b>${esc(l.planets[f.planet].name)} ${f.direction>0?'↻':'↺'}</b><small class="route-value">${f.degrees}°</small></div></li>`).join('');let proof=G.record(A.profile,l.id).routes||[];$('branchPicker').innerHTML=raw.branches?.length?raw.branches.map(b=>`<button class="branch-card ${b.id===l.activeBranch?'active':''}" data-action="v8:branch" data-branch="${b.id}"><strong>${b.id} · ${b.name} ${proof.includes(b.id)?'✓':''}</strong><small>${b.flybys.map(f=>`${l.planets[f.planet].name} ${f.direction>0?'↻':'↺'}`).join(' → ')}</small><small>${b.portalOrder.join(' → ')} · три контейнера</small></button>`).join('')+'<p class="branch-guide">Одна общая карта. Карточка меняет только подсветку, не физику. Ветвь фиксируется первым фактическим переходом. Слоты A/B в пульте — память чисел, а не выбор ветви.</p>':'';}
-const st=l.stops?.[s?.dropIndex||0],ready=st&&index>=(st.afterFlybys||0)&&pi>=(st.afterPortals||0),leg=legs[index];let next='Финальная доставка на станцию';if(s?.status==='won')next='Маршрут завершён';else if(ready)next=`Адрес ${st.id} · ${st.name}`;else if(pi<Math.min(index,ps.length))next=`Переход ${ps[pi]} · скорость сохраняется`;else if(leg)next=`${l.activeBranch?l.activeBranch+' · ':''}${l.planets[leg.planet].name} ${leg.direction>0?'↻':'↺'} · ${Math.min(leg.degrees,Math.floor(P.deg(s?.flybyAngle||0)))}° / ${leg.degrees}°`;else if((s?.gateIndex||0)<(l.gates?.length||0))next=`Кольцо ${(s?.gateIndex||0)+1} / ${l.gates.length}`;
+const st=l.stops?.[s?.dropIndex||0],ready=st&&index>=(st.afterFlybys||0)&&pi>=(st.afterPortals||0),leg=legs[index];let next='Финальная доставка на станцию';if(s?.status==='won')next='Маршрут завершён';else if(ready)next=`Адрес ${st.id} · ${st.name}`;else if(pi<ps.length&&(!leg||pi<index))next=`Переход ${ps[pi]} · скорость сохраняется`;else if(leg)next=`${l.activeBranch?l.activeBranch+' · ':''}${l.planets[leg.planet].name} ${leg.direction>0?'↻':'↺'} · ${Math.min(leg.degrees,Math.floor(P.deg(s?.flybyAngle||0)))}° / ${leg.degrees}°`;else if((s?.gateIndex||0)<(l.gates?.length||0))next=`Кольцо ${(s?.gateIndex||0)+1} / ${l.gates.length}`;
+else {
+  const required=Math.max(l.rules?.minCargo||0,l.minCargo||0);
+  const collected=R.collected(raw,s,A.branchView);
+  if(collected<required)next=`Собери обязательный груз · ${collected} / ${required}`;
+}
 $('activeStep').textContent=next;$('planCounter').textContent=legs.length?index+'/'+legs.length:'';$('routeStatus').textContent=index+' / '+legs.length+' облётов';for(let el of $('routeSteps').children){let i=+el.dataset.leg;el.classList.toggle('done',i<index);el.classList.toggle('active',i===index);el.querySelector('.route-value').textContent=i<index?'✓ Пройден':i===index?`${Math.min(legs[i].degrees,Math.floor(P.deg(s?.flybyAngle||0)))}° / ${legs[i].degrees}°`:legs[i].degrees+'°';}
 $('portalProgress').hidden=!ps.length;$('portalProgress').innerHTML=ps.map((id,i)=>`<span class="${i<pi?'done':''}">${i<pi?'✓':'◎'} ${id}</span>`).join('')+'<button class="text-button" data-action="portal-help">Правила переходов</button>';$('stopProgress').innerHTML=(l.stops||[]).map((d,i)=>`<span class="stop-chip ${i<(s?.dropIndex||0)?'done':''}">${i<(s?.dropIndex||0)?'✓':'▣'} ${d.id} · ${esc(d.name)}</span>`).join('');}
 function medalHelp(){let l=A.level();A.openModal('Три цели контракта',O.Medals.describe(l,A.state,A.speed,G.viewRecord(A.profile,l.id),A.assisted,A.stats()).map(d=>`<div class="info-box"><strong>${d.title}</strong><p>${d.condition}</p><small>${d.detail}. ${d.archive?'Архивная медаль сохранена, новое условие ещё не подтверждено.':d.earned?'Актуальная медаль получена.':'Новая цель.'}</small></div>`).join('')+'<p>Медаль исследователя накапливает прохождения обеих ветвей. Остальные цели проверяются в одном успешном рейсе. Тренировки не дают наград.</p><div class="modal-actions"><button class="button primary" data-action="close">Понятно</button></div>');}
@@ -4736,44 +4851,82 @@ function resultView(view){
   sync();schedule();
   (view==='analysis'?$('resultBack'):wasAnalysis?$('resultReview'):$('resultTitle')).focus({preventScroll:true});
 }
+function failureDetails(report){
+  const facts = report.facts.map(([label,value,unit]) =>
+    `<div><dt>${esc(label)}</dt><dd>${esc(value)}${unit ? ' <small>'+esc(unit)+'</small>' : ''}</dd></div>`).join('');
+  const advice = esc(report.advice).replace(/(\d+(?:,\d+)? ед\.\/с)/g,'<span class="flight-quantity">$1</span>');
+  return `<p class="failure-event">${esc(report.event)}</p>${facts ? '<dl class="failure-facts">'+facts+'</dl>' : ''}<p class="failure-advice">${advice}</p>`;
+}
+function retryButton(state,level,{summary=false,training=false}={}) {
+  const limited=state.reason==='fuel', won=state.status==='won' && !training;
+  const label=limited ? `Снизить до ${Math.floor(level.rules.maxLaunchSpeed)} ед./с` :
+    training ? 'Без подсказки ↗' : won ? 'Ещё раз ↺' : 'Изменить курс';
+  return `<button class="button ${won?'quiet':'primary'}" ${summary?'id="resultRetry"':''} data-action="${limited?'ui:limit-speed':'retry'}">${label}</button>`;
+}
+function failedSummary(level,state,report,medalList,cargo){
+  const mode = state.assisted ? ' · Тренировка' : state.mode === 'pro' ? ' · ПРО' : '';
+  return `<div class="failure-layout"><section class="failure-copy">
+    <div class="failure-contract">Контракт ${O.Campaign.number(level.id)} · ${esc(level.name)}${mode}</div>
+    <h2 id="resultTitle" tabindex="-1">${esc(report.title)}</h2>${failureDetails(report)}</section>
+    ${O.DockingPreview.markup()}</div>
+    <details class="completion-breakdown failure-breakdown"><summary>Параметры рейса и медали<span aria-hidden="true">＋</span></summary><div class="completion-detail-body">
+    <div class="completion-detail-facts"><span>Угол запуска <b>${esc(state.launchAngle.toLocaleString('ru-RU'))}°</b></span><span>Скорость запуска <b>${state.launchSpeed} ед./с</b></span><span>Груз на борту <b>${cargo}</b></span></div>
+    ${medalList}<button class="text-button" data-action="hint">Подсказка по маршруту</button></div></details>`;
+}
+function seekRecording(t){
+  O.Review.selectTime(t);
+  const recorded = O.Review.active.data.frames[O.Review.active.index].t;
+  const stamp = recorded.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})+' с';
+  $('reviewStamp').textContent = stamp;
+  $('reviewRange').setAttribute('aria-valuetext',stamp);
+}
+function showReport(){
+  if(A.lastResult)return A.showWin(A.lastResult);
+  const flight=O.Review.active?.data;if(!flight)return;
+  const report=O.Review.failureReport(flight.level,flight.final,flight.resets);
+  A.openModal(esc(report.title), `<div class="failure-report">${failureDetails(report)}</div>
+    <div class="modal-actions failure-actions"><button class="button quiet" data-action="v8:review-event">Показать на записи</button>${retryButton(flight.final,flight.level)}</div>`, 'РАЗБОР РЕЙСА');
+}
 function showResult(result){
   const s=A.state,l=A.level(),won=s.status==='won',training=!!result?.training,delivered=won&&!training;
   const q=result?.quality,rank=G.rank(A.profile),next=O.Campaign.adjacent(A.currentId,1);
   const medals=O.Medals.describe(l,s,s.launchSpeed,G.viewRecord(A.profile,l.id),training,A.stats());
-  const diagnosis=O.Review.diagnosis(l,s),cargo=`${R.collected(l,s)} / ${R.cargoIds(l,s).length}`;
-  const title=training?'Тренировка завершена':won?'Посылка на месте.':'Попробуем другой курс.';
-  const subtitle=training?'Повтори маршрут самостоятельно, чтобы получить награды.':won?(A.storageOK?'Доставка подтверждена. Результат и награды сохранены.':'Доставка подтверждена. Запись не удалась — скачай копию прогресса.') :diagnosis;
+  const failure=won?null:O.Review.failureReport(l,s,O.Review.active.data.resets);
+  const diagnosis=won?O.Review.diagnosis(l,s):failure.title+' · '+failure.event,cargo=`${R.collected(l,s)} / ${R.cargoIds(l,s).length}`;
+  const title=training?'Тренировка завершена':'Посылка на месте.';
+  const subtitle=training?'Повтори маршрут самостоятельно, чтобы получить награды.':A.storageOK?'Доставка подтверждена. Результат и награды сохранены.':'Доставка подтверждена. Запись не удалась — скачай копию прогресса.';
   const medalCount=medals.filter(m=>m.state==='won').length;
-  const payment=delivered?(result.first?'Первая доставка по этому контракту.':result.totalCredits?'Доплата за улучшение результата.':'Результат уже оплачен. Новая доплата — за улучшение рекорда.'):(training?'Тренировка не начисляет награды.':A.storageOK?'Попытки бесплатны. Прогресс сохранён.':'Попытки бесплатны. Скачай копию прогресса: запись на устройстве недоступна.');
-  const lossDescription=training?'':diagnosis.split('. ')[0]+'. ';
+  const payment=delivered?(result.first?'Первая доставка по этому контракту.':result.totalCredits?'Доплата за улучшение результата.':'Результат уже оплачен. Новая доплата — за улучшение рекорда.'):'Тренировка не начисляет награды.';
+  const medalList=`<div class="completion-medals">${medals.map((m,i)=>`<article class="completion-medal" data-state="${m.state}"><span class="completion-medal-icon" aria-hidden="true">${O.MedalArt.svg(O.Medals.rules(l)[i].type)}</span><div><div class="completion-medal-heading"><h4>${esc(m.title)}</h4><span>${training?'Без зачёта':m.state==='won'?(result.newMask&m.bit?'Новая':'✓ Выполнено'):m.earned?'Есть ранее':'Не получена'}</span></div><p>${esc(m.condition)}</p><small>${esc(m.detail)}</small></div></article>`).join('')}</div>`;
   const career=`<div class="completion-career"><span>ТВОЙ РАНГ</span><strong>${esc(rank.name)}</strong><div class="completion-rank-track"><i style="width:${rank.next?P.clamp((A.profile.xp-rank.xp)/(rank.next.xp-rank.xp)*100,0,100):100}%"></i></div><small>${rank.next?`${money(Math.max(0,rank.next.xp-A.profile.xp))} XP до ранга «${esc(rank.next.name)}»`:'Достигнут высший ранг'}</small></div>`;
   collapse();restoreSaveWarning();$('flightPlan').open=false;$('flightReview').hidden=false;
   $('resultScreen').hidden=false;$('resultScreen').dataset.outcome=training?'training':won?'won':'failed';
-  $('resultScreen').innerHTML=`<div class="completion-scroll">
+  const content=failure?failedSummary(l,s,failure,medalList,cargo):`
     <header class="completion-hero">
-      <div class="completion-copy"><div class="completion-kicker"><span class="completion-signal" aria-hidden="true"></span>${training?'УЧЕБНЫЙ РЕЙС':won?'ДОСТАВКА ПОДТВЕРЖДЕНА':'СВЯЗЬ С КАПСУЛОЙ ПРЕРВАНА'}<span class="completion-mode">${s.mode==='pro'?'PRO ×1,7':'ОБЫЧНЫЙ РЕЙС'}</span></div>
+      <div class="completion-copy"><div class="completion-kicker"><span class="completion-signal" aria-hidden="true"></span>${training?'УЧЕБНЫЙ РЕЙС':'ДОСТАВКА ПОДТВЕРЖДЕНА'}<span class="completion-mode">${s.mode==='pro'?'PRO ×1,7':'ОБЫЧНЫЙ РЕЙС'}</span></div>
       <h2 id="resultTitle" tabindex="-1">${title}</h2><p>${esc(subtitle)}</p>
       <div class="completion-route"><span>КОНТРАКТ ${String(O.Campaign.number(l.id)).padStart(2,'0')}</span><strong>${esc(l.name)}</strong></div></div>
-      <div class="completion-visual">${O.DockingPreview.markup()}<div class="completion-seal" aria-label="${won?`Оценка ${q.grade}, ${q.score} из 100`:'Попытка без потерь'}"><div class="completion-seal-orbit" aria-hidden="true"></div><span>${won?'КАЧЕСТВО РЕЙСА':'НОВАЯ ПОПЫТКА'}</span><strong>${won?q.grade:'↗'}</strong><b>${won?`${q.score}<small> / 100</small>`:'Без потерь'}</b></div></div>
+      <div class="completion-visual">${O.DockingPreview.markup()}<div class="completion-seal" aria-label="Оценка ${q.grade}, ${q.score} из 100"><div class="completion-seal-orbit" aria-hidden="true"></div><span>КАЧЕСТВО РЕЙСА</span><strong>${q.grade}</strong><b>${q.score}<small> / 100</small></b></div></div>
     </header>
     <div class="completion-facts" aria-label="Параметры завершённого рейса"><div><span>Время</span><strong>${s.t.toFixed(2)} <small>с</small></strong></div><div><span>Груз</span><strong>${cargo} <small>конт.</small></strong></div><div><span>Стартовый угол</span><strong>${s.launchAngle.toFixed(1)}<small>°</small></strong></div><div><span>Стартовая скорость</span><strong>${s.launchSpeed} <small>ед./с</small></strong></div></div>
     <div class="completion-grid"><div class="completion-main">
       <section class="completion-goals" aria-labelledby="resultGoalsTitle"><div class="completion-section-title"><h3 id="resultGoalsTitle">${training?'Цели маршрута':'Медали рейса'}</h3><span>${training?'Без зачёта':`${medalCount} из ${medals.length}`}</span></div>
-      <div class="completion-medals">${medals.map((m,i)=>`<article class="completion-medal" data-state="${m.state}"><span class="completion-medal-icon" aria-hidden="true">${O.MedalArt.svg(O.Medals.rules(l)[i].type)}</span><div><div class="completion-medal-heading"><h4>${esc(m.title)}</h4><span>${training?'Без зачёта':m.state==='won'?(result.newMask&m.bit?'Новая':'✓ Выполнено'):m.earned?'Есть ранее':'Не получена'}</span></div><p>${esc(m.condition)}</p><small>${esc(m.detail)}</small></div></article>`).join('')}</div></section>
+      ${medalList}</section>
       ${result?.awards.length?`<details class="completion-awards"><summary id="resultAwardsTitle"><span>Новые достижения <b>+${result.awards.length}</b></span><span>+${result.awards.reduce((n,a)=>n+a.xp,0)} XP <i aria-hidden="true">⌄</i></span></summary>${result.awards.map(a=>`<div class="award-chip"><span aria-hidden="true">${a.icon}</span><strong>${esc(a.name)}</strong><b>+${a.xp} XP</b></div>`).join('')}</details>`:''}
       <details class="completion-breakdown"><summary>Подробности рейса <span aria-hidden="true">＋</span></summary>
       <div class="completion-detail-body"><p>${esc(subtitle)}</p><div class="completion-detail-facts"><span>Стартовый угол <b>${s.launchAngle.toFixed(1)}°</b></span><span>Стартовая скорость <b>${s.launchSpeed} ед./с</b></span></div>
-      ${won?`<h4>Оценка ${q.score} / 100</h4><div class="completion-quality">${Object.entries(q.parts).map(([key,value])=>`<div><span>${{cargo:'Груз · 50%',precision:'Стыковка · 20%',fuel:'Импульс · 15%',pace:'Темп · 15%'}[key]}</span><meter min="0" max="100" value="${Math.round(value*100)}" aria-label="${{cargo:'Груз',precision:'Стыковка',fuel:'Импульс',pace:'Темп'}[key]}"></meter><b>${Math.round(value*100)}%</b></div>`).join('')}</div>`:`<div class="completion-advice"><p>Меняй один параметр за попытку — так легче найти нужную траекторию.</p><button class="text-button" data-action="hint">Помощь с маршрутом →</button></div>`}
+      <h4>Оценка ${q.score} / 100</h4><div class="completion-quality">${Object.entries(q.parts).map(([key,value])=>`<div><span>${{cargo:'Груз · 50%',precision:'Стыковка · 20%',fuel:'Импульс · 15%',pace:'Темп · 15%'}[key]}</span><meter min="0" max="100" value="${Math.round(value*100)}" aria-label="${{cargo:'Груз',precision:'Стыковка',fuel:'Импульс',pace:'Темп'}[key]}"></meter><b>${Math.round(value*100)}%</b></div>`).join('')}</div>
       <h4>Условия медалей</h4>${medals.map(m=>`<p><b>${esc(m.title)}</b><br>${esc(m.condition)}<br><small>${esc(m.detail)} · ${esc(m.status)}</small></p>`).join('')}
       ${delivered?`<h4>Расчёт наград</h4><p>${esc(payment)}</p><div class="completion-ledger"><span>Стоимость результата <b>${q.potential} ◈</b></span><span>Выплачено по контракту <b>${result.paid} ◈</b></span></div>`:''}${career}<button class="completion-hangar text-button" data-action="nav" data-page="hangar">В ангар <span>↗</span></button></div></details>
     </div><aside class="completion-receipt" aria-labelledby="resultRewardTitle"><div class="completion-section-title"><h3 id="resultRewardTitle">${delivered?'Начислено за рейс':'Можно пробовать снова'}</h3><span aria-hidden="true">${delivered?'↗':'↺'}</span></div>
-      ${delivered?`<div class="completion-credits"><span>Кредиты</span><strong>+${money(result.totalCredits)} <small>◈</small></strong></div><div class="completion-resources"><div><span>Данные</span><strong>+${result.data} <small>⬡</small></strong></div><div><span>Опыт</span><strong>+${result.totalXP} <small>XP</small></strong></div></div><p class="completion-payment">${esc(payment)}</p>`:`<div class="completion-no-loss"><strong>${training?'Без наград':'Ничего не потеряно'}</strong><p>${esc(lossDescription+payment)}</p></div>`}
+      ${delivered?`<div class="completion-credits"><span>Кредиты</span><strong>+${money(result.totalCredits)} <small>◈</small></strong></div><div class="completion-resources"><div><span>Данные</span><strong>+${result.data} <small>⬡</small></strong></div><div><span>Опыт</span><strong>+${result.totalXP} <small>XP</small></strong></div></div><p class="completion-payment">${esc(payment)}</p>`:`<div class="completion-no-loss"><strong>Без наград</strong><p>${esc(payment)}</p></div>`}
     </aside></div>
-    ${delivered?`<div class="completion-next-note"><span>${next<0?'ЭКСПЕДИЦИЯ ПРОДОЛЖАЕТСЯ':'СЛЕДУЮЩИЙ КОНТРАКТ'}</span><strong>${next<0?'Выбери маршрут или улучши прежний рекорд':esc(L[next].name)}</strong></div>`:''}
-    </div><footer class="completion-actions"><button class="button quiet" id="resultReview" data-action="v8:analysis">Разбор полёта <span>↗</span></button>${next>=0||!delivered?`<button class="button quiet" id="resultContracts" data-action="nav" data-page="campaign">К контрактам</button>`:''}<button class="cloud-header result-cloud" data-action="cloud-result" aria-label="Прогресс и аккаунт"><span aria-hidden="true">☁</span><span class="cloud-label">На устройстве</span></button><div class="completion-actions-main"><button class="button ${delivered?'quiet':'primary'}" id="resultRetry" data-action="retry">${delivered?'Ещё раз ↺':training?'Без подсказки ↗':'Изменить курс ↗'}</button>${delivered?`<button class="button primary" id="resultNext" data-action="next" aria-label="${next<0?'Все маршруты':'Следующий контракт: '+esc(L[next].name)}">${next<0?'Все маршруты':'Дальше'} <span>→</span></button>`:''}</div></footer>`;
-  $('flightReview').innerHTML=`<div class="review-title"><strong>Запись рейса</strong><span>${s.launchAngle.toFixed(1)}° / ${s.launchSpeed} ед./с</span></div><p class="review-summary">${esc(diagnosis)}</p><div class="review-controls"><div id="reviewTimelineHome"><div class="review-timeline" id="reviewTimeline"><span class="review-stamp" id="reviewStamp">${s.t.toFixed(2)} с</span><input id="reviewRange" type="range" min="0" max="${s.t}" step=".05" value="${s.t}" aria-label="Время уже выполненного рейса"></div></div><button data-action="v8:compare" aria-pressed="false" ${O.Review.prior()?'':'disabled'}>Сравнить попытки</button><button data-action="v8:report">${won?'Подробности наград':'Причина неудачи'}</button></div><p id="reviewComparison" class="review-comparison">${O.Review.prior()?'Сравни траекторию с предыдущей попыткой.':'После следующего запуска здесь можно сравнить две попытки.'}</p>`;
-  $('reviewRange').addEventListener('input',e=>{O.Review.selectTime(+e.target.value);$('reviewStamp').textContent=O.Review.renderModel().state.t.toFixed(2)+' с';});
-  $('resultAnalysisBar').querySelector('div span').textContent=training?'Тренировка · награды не начисляются':delivered?(A.storageOK?'Доставка подтверждена · награды сохранены':'Доставка подтверждена · скачай копию прогресса'):'Неудачная попытка · ничего не потеряно';
+    ${delivered?`<div class="completion-next-note"><span>${next<0?'ЭКСПЕДИЦИЯ ПРОДОЛЖАЕТСЯ':'СЛЕДУЮЩИЙ КОНТРАКТ'}</span><strong>${next<0?'Выбери маршрут или улучши прежний рекорд':esc(L[next].name)}</strong></div>`:''}`;
+  $('resultScreen').innerHTML=`<div class="completion-scroll">${content}</div><footer class="completion-actions"><button class="button quiet" id="resultReview" data-action="v8:analysis">${failure?'Запись полёта':'Разбор полёта'} <span>↗</span></button>${next>=0||!delivered?`<button class="button quiet" id="resultContracts" data-action="nav" data-page="campaign">К контрактам</button>`:''}<button class="cloud-header result-cloud" data-action="cloud-result" aria-label="Прогресс и аккаунт"><span aria-hidden="true">☁</span><span class="cloud-label">На устройстве</span></button><div class="completion-actions-main">${retryButton(s,l,{summary:true,training})}${delivered?`<button class="button primary" id="resultNext" data-action="next" aria-label="${next<0?'Все маршруты':'Следующий контракт: '+esc(L[next].name)}">${next<0?'Все маршруты':'Дальше'} <span>→</span></button>`:''}</div></footer>`;
+  $('flightReview').innerHTML=`<div class="review-title"><strong>Запись рейса</strong><span>${s.launchAngle.toFixed(1)}° / ${s.launchSpeed} ед./с</span></div><p class="review-summary">${esc(diagnosis)}</p><div class="review-controls"><div id="reviewTimelineHome"><div class="review-timeline" id="reviewTimeline"><span class="review-stamp" id="reviewStamp"></span><input id="reviewRange" type="range" min="0" max="${s.t}" step="any" value="${s.t}" aria-label="Время уже выполненного рейса"></div></div><button data-action="v8:compare" aria-pressed="false" ${O.Review.prior()?'':'disabled'}>Сравнить попытки</button><button data-action="v8:report">${won?'Подробности наград':'Причина неудачи'}</button></div><p id="reviewComparison" class="review-comparison">${O.Review.prior()?'Сравни траекторию с предыдущей попыткой.':'После следующего запуска здесь можно сравнить две попытки.'}</p>`;
+  seekRecording(s.t);
+  $('reviewRange').addEventListener('input',e=>seekRecording(+e.target.value));
+  $('resultAnalysisBar').querySelector('div span').textContent=training?'Тренировка · награды не начисляются':delivered?(A.storageOK?'Доставка подтверждена · награды сохранены':'Доставка подтверждена · скачай копию прогресса'):failure.title;
   resultView('summary');O.UI9?.onResult();O.Cloud?.refresh();
   O.DockingPreview.mount($('resultScreen'),{level:l,state:s,trail:O.Review.active?.data.points||A.trail,stats:A.stats(),color:G.SKINS.find(skin=>skin.id===A.profile.skin)?.color,trailStyle:A.profile.trail,shipModel:A.profile.model,appearance:O.Fleet.appearance(A.profile)});
 }
@@ -4811,11 +4964,15 @@ function settings(t=tab){
 function resetConfirm(){A.openModal('Удалить прогресс?','<p>Экспортированные копии останутся целыми. Для подтверждения введи <b>СБРОС</b>.</p><input id="resetWord" class="reset-word" autocomplete="off"><div class="modal-actions"><button class="button quiet" data-action="close">Отмена</button><button class="button danger" id="resetFinal" data-action="reset" disabled>Удалить профиль</button></div>');$('resetWord').addEventListener('input',e=>$('resetFinal').disabled=e.target.value.trim()!=='СБРОС');}
 function economy(){A.openModal('Экономика '+O.Campaign.order.length+' контрактов','<p>Каждый контракт хранит один денежный рекорд: обе ветви и ПРО делят максимум. Повтор приносит только рост стоимости результата. Ошибки бесплатны.</p><p>Пять ступеней требуют 2 / 8 / 20 / 40 / 64 завершённых контракта и 0 / 2 / 5 / 9 / 14 данных.</p><p>Цена — округлённое вверх до 5 значение B × t<sup>1,88</sup> × (1 + 0,025N) × (1 − скидка). Исследования дают до 8% скидки. Покупки и возвраты записываются по фактическим чекам.</p><p>Высшие ступени предполагают специализацию, а не выкуп всех модулей. За достижения — только опыт.</p><div class="modal-actions"><button class="button primary" data-action="close">Понятно</button></div>');}
 function zoom(f){const c=A.camera;c.zoom=P.clamp(c.zoom*f,1,4);const edge=Math.max(28,64/c.zoom);c.cx=P.clamp(c.cx,600/c.zoom-edge,1200-600/c.zoom+edge);c.cy=P.clamp(c.cy,350/c.zoom-edge,700-350/c.zoom+edge);}
-const actions={'v8:analysis':()=>resultView('analysis'),'v8:summary':()=>resultView('summary'),'v8:panel':()=>document.querySelector('.flight-panel').classList.toggle('nav-expanded'),'v8:branch':b=>{if(A.state)return A.toast('Ветвь определяется фактическим полётом.');A.branchView=b.dataset.branch;cache='';A.updateObjectives();updateRoute();},'v8:award-category':b=>{category=b.dataset.category;renderAwards();},'v8:award-filter':b=>{filter=b.dataset.filter;renderAwards();},'v8:settings-tab':b=>settings(b.dataset.tab),'v8:reset-confirm':resetConfirm,'v8:zoom-in':()=>zoom(1.25),'v8:zoom-out':()=>zoom(.8),'v8:zoom-reset':()=>{A.camera={zoom:1,cx:600,cy:350};},'v8:fullscreen':async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();schedule();}catch{A.toast('Браузер не разрешил полноэкранный режим.');}},'v8:report':()=>{if(A.lastResult)A.showWin(A.lastResult);else A.openModal('Разбор рейса',`<p>${esc(O.Review.diagnosis(A.level(),A.state))}</p><p>Просмотри место ошибки. Не меняй сразу оба параметра: сравнивай результат одной корректировки.</p><div class="modal-actions"><button class="button quiet" data-action="close">К записи</button><button class="button primary" data-action="retry">Ещё раз ↺</button></div>`);},'v8:compare':b=>{if(!O.Review.prior())return;O.Review.setCompare();b.setAttribute('aria-pressed',String(O.Review.active.compare));const prev=O.Review.prior(),now=O.Review.active.data;$('reviewComparison').textContent=O.Review.active.compare?`Пунктир — предыдущий (${prev.angle}° / ${prev.speed}), голубая линия — текущий (${now.angle}° / ${now.speed}). Δ угла ${(now.angle-prev.angle).toFixed(1)}°, Δ скорости ${now.speed-prev.speed}.${JSON.stringify(prev.level?.layout)!==JSON.stringify(now.level?.layout)?' Планеты в предыдущей попытке стояли иначе.':''}`:'Сравнение скрыто.';}};
+const actions={'v8:analysis':()=>resultView('analysis'),'v8:summary':()=>resultView('summary'),'v8:panel':()=>document.querySelector('.flight-panel').classList.toggle('nav-expanded'),'v8:branch':b=>{if(A.state)return A.toast('Ветвь определяется фактическим полётом.');A.branchView=b.dataset.branch;cache='';A.updateObjectives();updateRoute();},'v8:award-category':b=>{category=b.dataset.category;renderAwards();},'v8:award-filter':b=>{filter=b.dataset.filter;renderAwards();},'v8:settings-tab':b=>settings(b.dataset.tab),'v8:reset-confirm':resetConfirm,'v8:zoom-in':()=>zoom(1.25),'v8:zoom-out':()=>zoom(.8),'v8:zoom-reset':()=>{A.camera={zoom:1,cx:600,cy:350};},'v8:fullscreen':async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();schedule();}catch{A.toast('Браузер не разрешил полноэкранный режим.');}},'v8:report':showReport,'v8:review-event':()=>{
+  const flight=O.Review.active?.data;if(!flight)return;
+  A.closeModal();if(document.body.dataset.resultView!=='analysis')resultView('analysis');
+  $('reviewRange').value=flight.final.t;seekRecording(flight.final.t);$('reviewRange').focus();
+},'v8:compare':b=>{if(!O.Review.prior())return;O.Review.setCompare();b.setAttribute('aria-pressed',String(O.Review.active.compare));const prev=O.Review.prior(),now=O.Review.active.data;$('reviewComparison').textContent=O.Review.active.compare?`Пунктир — предыдущий (${prev.angle}° / ${prev.speed}), голубая линия — текущий (${now.angle}° / ${now.speed}). Δ угла ${(now.angle-prev.angle).toFixed(1)}°, Δ скорости ${now.speed-prev.speed}.${JSON.stringify(prev.level?.layout)!==JSON.stringify(now.level?.layout)?' Планеты в предыдущей попытке стояли иначе.':''}`:'Сравнение скрыто.';}};
 document.addEventListener('click',e=>{let b=e.target.closest('[data-action]');if(b&&!b.disabled)actions[b.dataset.action]?.(b);});$('objectivesList').addEventListener('click',medalHelp);$('objectivesList').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();medalHelp();}});$('awardSearch').addEventListener('input',e=>{query=e.target.value.trim().toLowerCase();renderAwards();});document.addEventListener('change',e=>{if(e.target.id==='shopLevelSelect'){A.shopLevel=+e.target.value;A.renderHangar();}if(e.target.id==='shopModeSelect'){A.shopMode=e.target.value;A.renderHangar();}});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(b?.dataset.action==='personal:clear'){query='';filter='all';category='all';$('awardSearch').value='';renderAwards();$('awardSearch').focus();}if(b?.matches('.settings-tabs button,.achievement-categories button')){const selector=b.dataset.tab?'#settings-'+b.dataset.tab:'[data-action="v8:award-category"][data-category="'+b.dataset.category+'"]';requestAnimationFrame(()=>document.querySelector(selector)?.focus({preventScroll:true}));}});
 document.addEventListener('keydown',e=>{if(!e.target.matches('.settings-tabs [role=tab]')||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();e.stopPropagation();const keys=['flight','display','control','save'],i=keys.indexOf(e.target.dataset.tab),n=e.key==='Home'?0:e.key==='End'?3:(i+(['ArrowLeft','ArrowUp'].includes(e.key)?3:1))%4;settings(keys[n]);$('settings-'+keys[n]).focus();});
-O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderShop,settings,resetConfirm,economy,layout};schedule();
+O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,showReport,renderAwards,renderShop,settings,resetConfirm,economy,layout};schedule();
 })(typeof globalThis!=='undefined'?globalThis:window);
 
 </script><script>
@@ -4950,7 +5107,7 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
       if (!initializedLive) initLive();
       setText($('liveState'), mode === 'review' ? 'Запись' : A.paused ? 'Пауза' : 'Полёт');
       setText($('liveVelocity'), P.dockVelocity(s, A.level()).speed.toFixed(0) + ' ед./с');
-      setText($('liveDock'), 'Радиус стыковки: ' + P.captureRadius(A.level(), A.stats()).toFixed(1));
+      setText($('liveDock'), l.rules?.maxDockSpeed ? `При стыковке — до ${l.rules.maxDockSpeed} ед./с` : 'Радиус стыковки: ' + P.captureRadius(A.level(), A.stats()).toFixed(1));
       setText($('liveCargo'), O.Routes.collected(A.level(), s) + ' / ' + O.Routes.cargoIds(A.level(), s).length);
       setText($('liveOrbits'), (s.flybyIndex || 0) + ' / ' + (l.flybys?.length || 0));
       setText($('livePortals'), (s.portalIndex || 0) + ' / ' + (l.portalOrder?.length || 0));
@@ -4982,9 +5139,17 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
     setText($('mobileNext'), nextReady ? 'Дальше ↗' : 'Маршруты ↗');
     $('mobileLaunch').classList.toggle('primary', !delivered);
     $('mobileDock').classList.toggle('delivered', delivered);
-    setText($('mobileReadoutLabel'), mode === 'aiming' ? 'Курс' : mode === 'running' ? (A.paused ? 'Пауза' : 'Полёт') : A.lastResult?.training ? 'Тренировка' : delivered ? 'Доставлено' : 'Разбор');
+    const limit = mode === 'aiming' && l.rules?.maxLaunchSpeed;
+    const overLimit = !!limit && A.speed > limit;
+    const limitText = !limit ? '' : overLimit ? `Скорость выше лимита ${limit} ед./с` : `Лимит старта по контракту — ${limit} ед./с`;
+    $('launchLimit').hidden = !limit;
+    $('launchLimit').classList.toggle('over-limit', overLimit);
+    $('launchLimit').querySelector('button').hidden = !overLimit;
+    setText($('launchLimitText'), limitText);
+    $('mobileReadout').classList.toggle('over-limit', overLimit);
+    setText($('mobileReadoutLabel'), overLimit ? `Выше лимита ${limit} ед./с` : mode === 'aiming' ? 'Курс' : mode === 'running' ? (A.paused ? 'Пауза' : 'Полёт') : A.lastResult?.training ? 'Тренировка' : delivered ? 'Доставлено' : 'Разбор');
     setText($('mobileReadoutValue'), mode === 'aiming' ? `${A.angle.toFixed(1)}°  /  ${A.speed} ед./с` : mode === 'running' ? `${s.t.toFixed(1)} с  ·  груз ${O.Routes.collected(A.level(),s)} / ${O.Routes.cargoIds(A.level(),s).length}` : `${A.state.t.toFixed(2)} с  ·  ${A.lastResult?.training ? 'можно повторить' : delivered ? '+' + A.lastResult.totalCredits + ' ◈' : 'найти причину'}`);
-    $('mobileReadout').setAttribute('aria-label', mode === 'review' ? 'Открыть разбор и перемотку рейса' : 'Открыть точный пульт');
+    $('mobileReadout').setAttribute('aria-label', overLimit ? `Старт ${A.speed} ед./с, по контракту до ${limit}. Открыть точный пульт` : mode === 'review' ? 'Открыть разбор и перемотку рейса' : 'Открыть точный пульт');
     setText($('mobileSpeed'), '×' + A.timeScale);
     const nextDesktop = $('nextLevelButton');
     if (nextDesktop) {
@@ -5144,6 +5309,16 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
   function retryNow() {
     const camera = {...A.camera}; A.closeModal(); closeSheet(false); A.retry();
     A.camera = camera; clampCamera(); sync();
+  }
+  function useLaunchLimit() {
+    const limit = A.level().rules?.maxLaunchSpeed, state = A.state;
+    if (!limit || A.transitioning || (state && state.reason !== 'fuel')) return;
+    const angle = state?.launchAngle ?? A.angle;
+    if (state) retryNow();
+    if (!aiming()) return;
+    A.setAim(angle, Math.floor(limit));
+    const focus = mobile() && !drawer.open ? $('mobileReadout') : $('speedRange');
+    focus.focus({preventScroll:true});
   }
 
   // Numeric input commits once, tolerates comma and restores invalid intermediate text.
@@ -5374,7 +5549,7 @@ O.V8={onLevel,onPage,sync,updateRoute,medalHelp,showResult,renderAwards,renderSh
     'ui:map-menu':mapMenu,'ui:shortcuts':shortcuts,'ui:fullscreen':fullscreen,
     'ui:field':()=>{A.actions['toggle-grid']();mapMenu();},
     'ui:ship':()=>{const s=A.displayState()||A.level().start;A.camera={zoom:2.2,cx:s.x,cy:s.y};clampCamera();A.closeModal();sync();},
-    'ui:retry-confirm':retryNow
+    'ui:retry-confirm':retryNow,'ui:limit-speed':useLaunchLimit
   };
   Object.assign(A.actions,custom);
   A.actions.help=()=>A.openModal('Один запуск. Точный маршрут.', '<p>Выбери угол и скорость, затем нажми <b>«Запуск»</b>. Дальше капсулу ведёт притяжение планет.</p><div class="info-box"><b>Строка маршрута над картой</b> открывает порядок облётов, порталов, доставок и условия медалей. На телефоне числа курса внизу открывают точный пульт; после рейса там же — подробный разбор.</div><p><b>Курс / Обзор</b> переключают действие на карте. Масштаб — кнопками, колесом или двумя пальцами. Угол принимает точку и запятую; кнопки + / − можно удерживать.</p><p>Запиши удачные параметры в <b>A/B</b>. После рейса можно перемотать запись и сравнить с предыдущей попыткой. Повтор бесплатный.</p><div class="modal-actions"><button class="button quiet" data-action="ui:shortcuts">Клавиши и жесты</button><button class="button primary" data-action="close">Понятно</button></div>');

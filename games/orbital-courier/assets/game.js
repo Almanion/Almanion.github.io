@@ -235,25 +235,8 @@
     $('gravityCaption').textContent=stats().gravity?`Радиус захвата: ${stats().gravity}`:'Захват не установлен';
     renderCourseMemory();updateMedalStates();O.UI9?.sync();
   }
-  function renderRoute(){if(O.V8)return O.V8.updateRoute(true);
-    const l=level(),legs=l.flybys||[];$('routePanel').hidden=!legs.length;
-    $('routeSteps').innerHTML=legs.map((f,i)=>`<li data-leg="${i}"><span class="route-number">${i+1}</span><div><b>${l.planets[f.planet].name} <em>${f.direction>0?'↻':'↺'}</em></b><small class="route-value">${f.degrees}°</small></div></li>`).join('');
-    updateRoute();
-  }
-  function updateRoute(){if(O.V8)return O.V8.updateRoute();
-    const portals=level().portalOrder||[];$('portalProgress').hidden=!portals.length;
-    $('portalProgress').innerHTML=portals.map((id,i)=>`<span class="${i<(app.state?.portalIndex||0)?'done':''}">${i<(app.state?.portalIndex||0)?'✓':'◎'} ${id} <small>вход → выход</small></span>`).join('')+'<button class="text-button" data-action="portal-help">Как работает?</button>';
-    const legs=level().flybys||[],s=app.state,indexNow=s?.flybyIndex||0,leg=legs[indexNow];
-    $('activeStep').textContent=s?.status==='won'?'Маршрут завершён':(s?.portalIndex||0)<Math.min(indexNow,portals.length)?`Перейти через портал ${portals[s?.portalIndex||0]}`:leg?`${level().planets[leg.planet].name} ${leg.direction>0?'↻':'↺'} · ${Math.min(leg.degrees,Math.floor(P.deg(s?.flybyAngle||0)))}° / ${leg.degrees}°`:(s?.gateIndex||0)<(level().gates?.length||0)?`Кольцо ${(s?.gateIndex||0)+1} из ${level().gates.length}`:(s?.portalIndex||0)<portals.length?`Перейти через портал ${portals[s?.portalIndex||0]}`:'Доставить груз на станцию';
-    $('planCounter').textContent=legs.length?`${indexNow}/${legs.length}`:'';
-    if(!legs.length)return;
-    const index=app.state?.flybyIndex||0;
-    $('routeStatus').textContent=`${index} / ${legs.length} манёвра`;
-    for(const el of $('routeSteps').children){const i=+el.dataset.leg,done=i<index,active=i===index;
-      el.classList.toggle('done',done);el.classList.toggle('active',active);
-      el.querySelector('.route-value').textContent=done?'✓ Пройден':active?`${Math.min(legs[i].degrees,Math.floor(P.deg(app.state?.flybyAngle||0)))}° / ${legs[i].degrees}°`:`${legs[i].degrees}°`;
-    }
-  }
+  function renderRoute(){O.V8?.updateRoute(true);}
+  function updateRoute(){O.V8?.updateRoute();}
   function routeHelp(){
     openModal('Гравитационный маршрут',`<p>Нужно облететь указанные планеты <strong>по порядку и в направлении стрелок</strong>. Каждый манёвр — больше половины оборота вокруг отдельной планеты, а не просто касание кольца.</p><p>Пунктирная окружность у активной планеты — зона манёвра. Дуга растёт, пока капсула остаётся внутри. Выход сбрасывает только текущую дугу; уже завершённые сохраняются.</p><p>Кольца задают ветви маршрута. После всех облётов и колец доставь три контейнера на станцию. Прямой перелёт и большой круг вокруг всей системы не заменяют отдельные манёвры.</p><div class="info-box">Грузы находятся на разных ветвях. Сначала добейся правильной формы траектории, затем уточняй угол шагом 0,1° и скорость шагом 1. Мышью или пальцем можно грубо задать направление.</div><div class="modal-actions"><button class="button primary" data-action="close">К маршруту</button></div>`,'ПЛАН ПОЛЁТА');
   }
@@ -273,12 +256,13 @@
     $('medalLegend').textContent=app.assisted?'Тренировка: медали не выдаются':app.state?.status==='won'?'Итог рейса · перемотка не меняет награды':'Засчитываются только после доставки';
   }
   function updateObjectives(){
-    const l=level(),r=G.viewRecord(app.profile,l.id),rules=l.rules||{};
+    const l=level(),r=G.viewRecord(app.profile,l.id),route=O.Routes.view(l,app.state,app.branchView),rules=route.rules||{};
     $('objectivesList').innerHTML=O.Medals.describe(l,app.state,app.speed,r,app.assisted,stats()).map((d,i)=>`<article role="button" tabindex="0" id="medal-${d.key}" class="medal-card" data-state="pending"><div class="medal-symbol">${medalIcon(O.Medals.rules(l)[i].type)}</div><div class="medal-copy"><div class="medal-name"><h3>${d.title}</h3><span class="medal-archive"></span></div><p class="medal-condition">${d.condition}</p><div class="medal-readout"><strong class="medal-detail"></strong><span class="medal-live"></span></div><div class="medal-track"><i></i></div></div></article>`).join('');
     updateMedalStates();
     const req=[];
-    if(l.gates?.length)req.push(`Кольца: ${Array.from({length:l.gates.length},(_,i)=>i+1).join(' → ')}`);
-    if(rules.minCargo)req.push(`Обязательный груз: ${rules.minCargo}`);
+    if(route.gates?.length)req.push(`Кольца: ${Array.from({length:route.gates.length},(_,i)=>i+1).join(' → ')}`);
+    const required=Math.max(rules.minCargo||0,route.minCargo||0);
+    if(required)req.push(`Обязательный груз: ${required}`);
     if(rules.captureCap)req.push(`Радиус приёма: ${rules.captureCap} ед.`);
     if(rules.maxDockSpeed)req.push(`${l.target.motion?'Относительная скорость':'Скорость у станции'} ≤ ${rules.maxDockSpeed}`);
     if(rules.maxLaunchSpeed)req.push(`Старт ≤ ${rules.maxLaunchSpeed} ед./с`);
@@ -287,10 +271,7 @@
     const cap=Math.floor(E.baseReward(l)*(app.profile.difficulty==='pro'?1.7:1));
     $('contractReward').textContent=`до ${Math.max(0,cap-r.paid)} ◈`;
   }
-  function medalHelp(){if(O.V8)return O.V8.medalHelp();
-    const l=level();
-    openModal('Медали — три отдельные цели',`<div class="medal-help-grid"><p><strong>Доставка.</strong> Выполни обязательные облёты, кольца, порталы и требования станции, затем пристыкуйся.</p><p><strong>Экономный старт.</strong> Успешно доставь капсулу со стартовой скоростью не выше <b>${l.parSpeed} ед./с</b>. Скорость в середине полёта на эту медаль не влияет.</p><p><strong>Полный груз.</strong> Привези все ${l.cargo.length} контейнера <b>в одном рейсе</b>. Притягиваемый груз ещё не находится на борту.</p></div><div class="info-box">Полоса показывает текущую попытку. Метка «В коллекции» относится к прошлым доставкам и не означает, что цель выполнена сейчас. На неудачном рейсе и в тренировке новые медали не выдаются. Рейтинг и денежный рекорд рассчитываются отдельно.</div><div class="modal-actions"><button class="button primary" data-action="close">К маршруту</button></div>`,'ЦЕЛИ РЕЙСА');
-  }
+  function medalHelp(){O.V8?.medalHelp();}
   function loadLevel(id){
     if(!Number.isInteger(id)||id<0||id>=L.length||!G.unlocked(app.profile,id)){toast(L[id]?lockReason(L[id]):'Контракт недоступен.',true);return;}
     if(O.Navigation?.beforeLevel(id))return;
@@ -335,9 +316,9 @@
       app.lastResult=result;save('contract');updateProfileUI();updateObjectives();sound.play('win');burst(s.x,s.y,skin().color,45);
       setStage(result.training?'ТРЕНИРОВКА ЗАВЕРШЕНА':'ДОСТАВЛЕНО',result.training?'Демонстрация без наград. Для зачёта выбери самостоятельный рейс.':'Оценка рейса определяет оплату. Повторные выплаты — только за улучшение.');
       if(app.storageOK&&G.rank(app.profile).index>before.index)toast(`Новый ранг: ${G.rank(app.profile).name}!`);
-      if(O.Review){O.Review.finish(s,app.trail,level());O.V8.showResult(result);}else showWin(result);
+      if(O.Review&&O.V8){O.Review.finish(s,app.trail,level());O.V8.showResult(result);}else showWin(result);
     }else{
-      sound.play('fail');burst(s.x,s.y,'#ff9f86',32);setStage('МАРШРУТ НЕ ЗАВЕРШЁН','Ничего не потеряно. Измени направление или скорость и попробуй снова.');if(O.Review){O.Review.finish(s,app.trail,level());O.V8.showResult(null);}else showFail();
+      sound.play('fail');burst(s.x,s.y,'#ff9f86',32);setStage('МАРШРУТ НЕ ЗАВЕРШЁН');if(O.Review&&O.V8){O.Review.finish(s,app.trail,level());O.V8.showResult(null);}else showFail();
     }
   }
   function showWin(r){
@@ -348,9 +329,8 @@
     openModal(r.training?'Тренировочный рейс завершён':'Контракт принят',`<div class="grade-block"><strong class="grade-${q.grade}">${q.grade}</strong><div><b>${q.score}/100</b><span>${q.mode==='pro'?'ПРО · множитель 1,7':'Обычный рейс'}</span></div>${starHTML(mask)}</div>${training}<div class="quality-breakdown">${bars}</div><div class="result-summary"><div><span>ДОПЛАТА</span><b>+${r.totalCredits} <small>◈</small></b></div><div><span>ДАННЫЕ</span><b>+${r.data} <small>⬡</small></b></div><div><span>ПОЛЁТ</span><b>${s.t.toFixed(2)} <small>с</small></b></div></div><div class="result-rewards"><div>Стоимость этого результата<strong>${q.potential} ◈</strong></div><div>Ранее выплаченные деньги не повторяются<strong>${r.training?'тренировка':`${r.paid} ◈ всего`}</strong></div><div>Опыт<strong>+${r.totalXP} XP</strong></div></div>${r.awards.map(a=>`<div class="award-chip">${a.icon} ${a.name} · +${a.xp} XP</div>`).join('')}<div class="modal-actions"><button class="button quiet" data-action="retry">Ещё раз ↺</button><button class="button quiet" data-action="nav" data-page="hangar">В ангар</button>${!r.training?`<button class="button primary" data-action="next">${C.adjacent(l.id,1)<0?'Все маршруты':'Дальше ↗'}</button>`:''}</div>`,'ПРОТОКОЛ ДОСТАВКИ');
   }
   function showFail(){
-    const reason=app.state.reason;
-    const messages={portals:'Не выполнен порядок переходов. Войди в тёмные порталы в указанном порядке: A → B → C, если они есть на карте. Светлые кольца являются выходами.', 'portal-loop':'Нестабильная цепочка переходов. Измени курс.',flybys:'Не завершена последовательность облётов. Станция принимает груз только после всех манёвров. Порядок и направление указаны в плане под картой. Выход из зоны текущей планеты сбрасывает незавершённую дугу.',planet:'Капсула встретилась с поверхностью планеты. Попробуй более широкую дугу или другую стартовую скорость.',asteroid:'На пути оказался астероид. Он не притягивает капсулу, но столкновение с ним прерывает рейс.',boundary:'Капсула вышла за пределы навигационной карты. Уменьши скорость или скорректируй угол.',timeout:'Истекло время полёта. Капсула могла попасть на слишком длинную орбиту — измени стартовый импульс.',numeric:'Расчёт остановлен из-за некорректного состояния. Повтори запуск.',gates:'Не пройдены все контрольные кольца по порядку. Зелёное кольцо уже зачтено; оранжевое — следующее.',manifest:'Недостаточно груза для этого контракта. Сверь обязательный минимум; притягиваемый, но не захваченный груз ещё не находится на борту.',fuel:'Превышен лимит стартового импульса контракта.',overspeed:'Станция не приняла капсулу: скорость захода выше допуска. Измени импульс или дугу.',window:'Прибытие вне временного окна. Показанный интервал относится ко времени симуляции, а не к часам телефона.'};
-    openModal('Ещё один точный импульс',`<p>${messages[reason]||'Маршрут не завершён.'}</p><div class="info-box">Попытки бесплатны. Серая линия покажет предыдущий маршрут, а пунктир — начало нового.</div><div class="modal-actions"><button class="button quiet" data-action="hint">Помощь диспетчера</button><button class="button primary" data-action="retry">Ещё раз ↺</button></div>`,'ПОЛЁТ ПРЕРВАН');
+    if(O.V8&&O.Review?.active)return O.V8.showReport();
+    openModal('Полёт прерван',`<p>${escape(O.Review?.diagnosis(level(),app.state)||'Проверь угол и скорость перед следующим запуском.')}</p><div class="modal-actions"><button class="button primary" data-action="retry">Изменить курс</button></div>`, 'РАЗБОР РЕЙСА');
   }
   function updateTelemetry(){
     updateRoute();updateMedalStates();O.V8?.sync();const s=displayState();$('flightTime').innerHTML=`${(s?.t||0).toFixed(2)} <small>с</small>`;
@@ -397,9 +377,6 @@
     setStage('ТРЕНИРОВКА · БЕЗ НАГРАД',`Пример${course.branch?' ветви '+course.branch:''}: ${course.angle}° / ${course.speed} ед./с. Для зачётного рейса нажми «Заново».`);
     toast('Точный курс установлен. Этот запуск — без наград.');
   }
-  function showHelp(){
-    openModal('Точнее курс. Дороже результат.',`<div class="help-steps"><div class="help-step"><span>01</span><p><strong>Настрой угол и скорость.</strong>На компьютере тяни мышью от капсулы. На телефоне веди пальцем по карте или используй кнопки ±. Точный режим даёт шаг 0,1°.</p></div><div class="help-step"><span>02</span><p><strong>Выбери обычный режим или ПРО.</strong>В ПРО станция уже, обязателен груз, прогноз на 40% короче. Потенциальная оплата выше, но повторно выплачивается только улучшение рекорда.</p></div><div class="help-step"><span>03</span><p><strong>Выполни контракт.</strong>На экспертных маршрутах нужны кольца по порядку, заданный груз, иногда — время и скорость прибытия. Эти требования видны до старта.</p></div></div><div class="info-box"><strong>Собственная гравитация:</strong> купи гравитационный захват I. Попав в поле, контейнер реально летит к кораблю. Пока он не достиг капсулы, он не засчитан. Через планеты груз не проходит. Прокачка повышает и радиус, и силу поля.</div><p>Кредиты — за лучший результат контракта. Данные ⬡ — за высокий балл и ПРО. Старшие ступени дороги: выбирай специализацию. Пересборка возвращает фактические затраты по чекам.</p><p>Ошибки бесплатны. Точная подсказка доступна в тренировке, которая не даёт наград. Условия открытия указаны в каталоге. Новые развилки и многоадресные рейсы открываются после 20 доставок. Орбиты начинаются при запуске и сбрасываются при повторе; при перехвате важна относительная скорость.</p><p><kbd>Пробел</kbd> запуск / пауза · <kbd>R</kbd> повтор · <kbd>G</kbd> поле · <kbd>←</kbd><kbd>→</kbd> угол · <kbd>↑</kbd><kbd>↓</kbd> скорость.</p><div class="modal-actions"><button class="button primary" data-action="close">К полёту ↗</button></div>`,'ИНСТРУКТАЖ');
-  }
   function showSettings(){if(O.V8)return O.V8.settings();
     const s=app.profile.settings;
     const options=[['sound','Звуковые сигналы','Синтезированные эффекты, без фоновой музыки.'],['grid','Поле тяготения','Показывать направление ускорения в разных точках.'],['ghost','След предыдущей попытки','Серая линия помогает уточнять маршрут.'],['reducedMotion','Меньше анимаций','Меньше декоративного движения. Планеты, станция и груз продолжают двигаться по правилам игры.']];
@@ -441,7 +418,7 @@
     'route-help':routeHelp,maneuvers:()=>{app.campaignSector=7;go('campaign');},nav:b=>go(b.dataset.page), 'force-nav':b=>go(b.dataset.page,true),close:closeModal,
     continue:()=>C.count(app.profile)===C.order.length?go('campaign'):travelToLevel(G.nextLevel(app.profile)),
     mission:b=>travelToLevel(+b.dataset.id), 'return-flight':()=>loadLevel(G.unlocked(app.profile,app.profile.lastLevel)?app.profile.lastLevel:G.nextLevel(app.profile)),
-    launch,retry,pause,help:showHelp,settings:showSettings,hint:()=>showHint(false),'exact-hint':()=>showHint(true),'apply-solution':applySolution,
+    launch,retry,pause,settings:showSettings,hint:()=>showHint(false),'exact-hint':()=>showHint(true),'apply-solution':applySolution,
     'angle-down':()=>setAim(app.angle-(app.profile.settings.fineAim?0.1:0.5),app.speed),'angle-up':()=>setAim(app.angle+(app.profile.settings.fineAim?0.1:0.5),app.speed),
     'speed-down':()=>setAim(app.angle,app.speed-(app.profile.settings.fineAim?1:2)),'speed-up':()=>setAim(app.angle,app.speed+(app.profile.settings.fineAim?1:2)),
     'toggle-grid':()=>{app.profile.settings.grid=!app.profile.settings.grid;save();syncControls();},
