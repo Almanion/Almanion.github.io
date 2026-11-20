@@ -1,13 +1,11 @@
 'use strict';
 const { test, expect } = require('@playwright/test');
 const model = require('../matcenter/35-workspace-model.js');
-const path = require('node:path');
-const katexDist = path.dirname(require.resolve('katex'));
 test.use({ serviceWorkers: 'block' });
 const legacy = Array.from({ length: 130 }, (_, i) => ({ number: i + 1, grade: 'grade-9',
     description: `Условие задачи ${i + 1}: найдите радиус окружности. $x^2=4$.`, hint: 'Закрытая подсказка', status: 'Н' }));
 const future = [1, 2].flatMap(s => [1, 2, 12].map(number => ({ number, grade: 'grade-10',
-    description: `Будущая задача ${number}: две окружности.`, hint: 'Не открывать автоматически', status: 'Н',
+    description: `Будущая задача ${number}: две окружности радиуса $r=2$.`, hint: 'Не открывать автоматически', status: 'Н',
     taskId: `new-${s}-${number}`, seriesId: `2026-${s}`, seriesTitle: `Серия ${s}. Геометрия`, seriesDate: `2026-09-${25 + s}` })));
 const summer = [{ number: 1, description: 'Летняя задача', grade: 'grade-summer-9-10' }];
 const camp = [1, 134].map(number => ({ number, description: `Лагерная задача ${number}: $x^2+1$.`, grade: 'grade-camp-2026',
@@ -22,9 +20,6 @@ async function setup(page, options = {}) {
     page.on('pageerror', e => errors.push(e.message));
     await page.route('**/*', async route => {
         const url = new URL(route.request().url());
-        if (options.realMath && url.hostname === 'cdn.jsdelivr.net' && url.pathname.includes('/katex@')) {
-            return route.fulfill({path:path.join(katexDist,url.pathname.split('/dist/')[1])});
-        }
         if (url.hostname === 'script.google.com') {
             const data = JSON.parse(route.request().postData() || '{}');
             if (data.action === 'authorizeAccount') {
@@ -44,7 +39,7 @@ async function setup(page, options = {}) {
         }
         return route.abort();
     });
-    await page.addInitScript(({ home, dark, old, realMath, signedOut }) => {
+    await page.addInitScript(({ home, dark, old, signedOut }) => {
         if (!sessionStorage.getItem('mc-test-initialized')) {
             localStorage.setItem('almanion:visual-defaults:2026-09-05-v1', '1');
             localStorage.setItem('siteSettings', JSON.stringify({ experimental: !old, theme: dark ? 'dark' : 'light', expTheme: dark ? 'dark' : 'light', expMode: 'prism', expDark: !!dark, animationLevel: 'off' }));
@@ -71,7 +66,6 @@ async function setup(page, options = {}) {
         authFactory.Auth = { Persistence: { LOCAL: 'local', SESSION: 'session', NONE: 'none' } };
         auth.setPersistence = async () => {};
         window.firebase = { apps: [{}], app: () => ({ options: {} }), initializeApp() {}, auth: authFactory, database };
-        if (!realMath) window.renderMathInElement = el => { el.dataset.mathChecked = 'true'; };
     }, options);
     return errors;
 }
@@ -419,7 +413,7 @@ for (const dark of [false,true]) test(`new-year series and independent part prog
         {number:53,taskId:'g10-2026-t053',seriesId:'g10-2026-s05',seriesTitle:'Серия 5',parts:'["a","b"]',status:'От'},
         {number:110,taskId:'g10-2026-t110',seriesId:'g10-2026-s12',seriesTitle:'Серия 12',parts:['a','b'],status:'Н'}
     ].map(task=>({...task,grade:'grade-10',academicYear:'2026/2027',description:'Сохранённый текст: a) $x^2$; b) $y^2$; c) $z^2$.'}));
-    const errors = await setup(page,{dark,realMath:true,tasks:[],yearTasks});
+    const errors = await setup(page,{dark,tasks:[],yearTasks});
     await page.setViewportSize({width:1440,height:1000});
     await page.goto('/matcenter.html?grade=grade-10&view=reading');
     await ready(page);
@@ -516,7 +510,7 @@ for (const dark of [false,true]) test(`real KaTeX renders legacy indices and del
     const raw = 'Рассмотрите a_{n+1}, na_{n+1}, a_n. Обычное a1 остаётся прежним.';
     const tasks = [{number:854,grade:'grade-9',description:raw,status:'Н'},
         {number:855,grade:'grade-9',description:'Формула $\\frac{1}{2}+x^2$ и текст <img src=x onerror=alert(1)>.',status:'Н'}];
-    const errors = await setup(page,{dark,realMath:true,tasks});
+    const errors = await setup(page,{dark,tasks});
     for (const width of [1440,320]) {
         await page.setViewportSize({width,height:844});
         await page.goto('/matcenter.html?grade=grade-9&view=reading');
@@ -718,7 +712,9 @@ test('compact layout, opt-in series, legacy progress, reading and exact archive 
     await expect(page.locator('#solvedTotal')).toHaveText('3');
     await page.locator('[data-mc-view="reading"]').click();
     await expect(page.locator('#tasksContainer .task-card.open')).toHaveCount(3);
-    await expect(page.locator('#tasksContainer .task-description').first()).toHaveAttribute('data-math-checked', 'true');
+    const firstFormula = page.locator('#tasksContainer .task-description').first().locator('.katex');
+    await expect(firstFormula).toBeVisible();
+    await expect(firstFormula.locator('annotation')).toHaveText('r=2');
     await expect(page.locator('#tasksContainer .hint-toggle').first()).toHaveAttribute('aria-expanded', 'false');
     await page.locator('[data-mc-view="compact"]').click();
     await expect(page.locator('#tasksContainer .task-card.open')).toHaveCount(0);
