@@ -1247,7 +1247,6 @@ body:not(.no-hover) .derivation-box:hover {
     margin-top: 1rem;
     padding-top: 1rem;
     border-top: 1px solid var(--derivation-border);
-    animation: fadeIn 0.3s ease;
 }
 
 .derivation-content.show {
@@ -1462,7 +1461,6 @@ body:not(.no-hover) .proof-box:hover {
     margin-top: 1rem;
     padding-top: 1rem;
     border-top: 1px solid var(--proof-border);
-    animation: fadeIn 0.3s ease;
 }
 
 .proof-content.show {
@@ -2546,10 +2544,20 @@ em {
                 transform 0.3s ease;
 }
 
-/* РџР»Р°РІРЅРѕРµ РїРѕСЏРІР»РµРЅРёРµ СЌР»РµРјРµРЅС‚РѕРІ РїСЂРё СЃРєСЂРѕР»Р»Рµ - Р°РЅРёРјР°С†РёСЏ РѕС‚РєР»СЋС‡РµРЅР° */
-.fade-in {
-    opacity: 1;
-    transform: translateY(0);
+@media screen and (prefers-reduced-motion: no-preference) {
+    :root:not([data-page-motion="off"]) body:not(.animations-off) .topic > [data-note-entrance] {
+        --enter-y: 0px;
+        --enter-opacity: 0.91;
+        animation: almanion-element-in var(--enter-duration) var(--enter-ease) backwards;
+        animation-delay: calc(var(--note-enter-order, 0) * var(--enter-stagger));
+    }
+
+    .topic > [data-note-entrance="next"] { --enter-x: var(--enter-distance); }
+    .topic > [data-note-entrance="prev"] { --enter-x: calc(-1 * var(--enter-distance)); }
+    :root:not([data-page-motion="off"]) body:not(.animations-off) .topic > [data-note-entrance="scroll"] {
+        --enter-y: var(--enter-distance);
+        --enter-opacity: 0.94;
+    }
 }
 
 /* РџРѕРґСЃРІРµС‚РєР° РїСЂРё РїРѕРёСЃРєРµ */

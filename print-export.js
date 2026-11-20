@@ -577,7 +577,7 @@
         }
         if (!document.querySelector('script[src^="note-filter.js"]')) {
             const script = document.createElement('script');
-            script.src = 'note-filter.js?v=20261113-5'; document.head.appendChild(script);
+            script.src = 'note-filter.js?v=20261121-1'; document.head.appendChild(script);
         }
         collectCatalogue();
         createLauncher();

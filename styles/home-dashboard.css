@@ -458,7 +458,6 @@ body.home-quick-dialog-open {
     color: var(--text-primary);
     background: var(--bg-primary);
     box-shadow: 0 26px 80px rgba(8, 12, 24, 0.26);
-    animation: home-quick-dialog-in 190ms var(--home-motion-out, ease-out) both;
 }
 
 .home-quick-dialog-header {
@@ -710,13 +709,6 @@ body.home-quick-dialog-open {
     outline: 2px solid color-mix(in srgb, var(--accent-color) 72%, white);
     outline-offset: 2px;
 }
-
-@keyframes home-quick-dialog-in {
-    from { opacity: 0; transform: translateY(8px) scale(0.99); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-
 
 @media (max-width: 1000px) {
     body.home-page .home-content-grid { grid-template-columns: minmax(0, 1fr) 230px; gap: 24px; }

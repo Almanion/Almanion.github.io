@@ -8,7 +8,7 @@
     let accountServicesStarted = false;
     const versions = {
         experiments: 'experiment-notebook.js?v=20261014-1',
-        featureStyles: 'styles/site/features.css?v=20261002-1',
+        featureStyles: 'styles/site/features.css?v=20261121-1',
         bookmarksStyles: 'styles/bookmarks.css?v=20260920-2',
         editorStyles: 'styles/note-editor.css?v=20260929-2',
         readerToolsStyles: 'styles/reader-tools.css?v=20261002-2',
@@ -16,11 +16,11 @@
         offline: 'offline-library.js?v=20261114',
         printStyles: 'styles/print.css?v=20261113-4',
         filterStyles: 'styles/note-filter.css?v=20261113-5',
-        filter: 'note-filter.js?v=20261113-5',
+        filter: 'note-filter.js?v=20261121-1',
         settings: 'settings.js?v=20261002-1',
         searchText: 'search-text.js?v=1',
         search: 'search.js?v=20261114-2',
-        print: 'print-export.js?v=20261113-1',
+        print: 'print-export.js?v=20261121-1',
         knowledge: 'knowledge-check.js?v=20261016-1',
         newyear: 'newyear.js?v=20261002-1',
         firebaseApp: 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js',

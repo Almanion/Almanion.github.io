@@ -143,8 +143,10 @@
         if (selected.size === panel.querySelectorAll('input').length) selected = null;
         save();
     });
-    panel.querySelector('.note-filter-reset').addEventListener('click', () => {
+    panel.querySelector('.note-filter-options').tabIndex = -1;
+    panel.querySelector('.note-filter-reset').addEventListener('click', event => {
         selected = selected === null ? new Set() : null; save();
+        event.currentTarget.focus({ preventScroll: true });
     });
     const summary = panel.querySelector('summary');
     summary.title = english ? 'Show blocks' : 'Показывать блоки';
@@ -160,15 +162,12 @@
         if (!panel.open || event.key !== 'Escape') return;
         event.preventDefault(); event.stopPropagation(); close(true);
     }, true);
-    panel.addEventListener('focusout', event => {
-        if (event.relatedTarget) {
-            if (!panel.contains(event.relatedTarget)) close(false);
-        } else {
-            // Focusin follows focusout; a microtask can run between the two and
-            // prematurely hide a checkbox or the Done button being focused.
-            setTimeout(() => { if (panel.open && !panel.contains(document.activeElement)) close(false); }, 0);
-        }
+    // A layout update can briefly leave WebKit without a focused element.
+    // Dismiss only when focus actually arrives outside, or the window loses focus.
+    document.addEventListener('focusin', event => {
+        if (panel.open && !panel.contains(event.target)) close(false);
     });
+    window.addEventListener('blur', () => { if (panel.open) close(false); });
     // Match the available screen space, including reading zoom and the mobile dock.
     // Only the options scroll; the two footer actions remain reachable.
     let fitFrame = 0;

@@ -1,4 +1,8 @@
 :root {
+    --enter-ease: cubic-bezier(0.2, 0.75, 0.2, 1);
+    --enter-duration: 210ms;
+    --enter-distance: 7px;
+    --enter-stagger: 16ms;
     --success-color: #116b32;
     --success-hover: #15803d;
     --success-rgb: 17, 107, 50;
@@ -12,6 +16,53 @@
     --info-color: var(--accent-color);
     --info-hover: var(--accent-hover);
     --text-color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+    :root {
+        --enter-duration: 180ms;
+        --enter-distance: 5px;
+        --enter-stagger: 12ms;
+    }
+}
+
+:root[data-page-motion="medium"],
+body.animations-medium {
+    --enter-duration: 110ms;
+    --enter-distance: 0px;
+    --enter-stagger: 0ms;
+}
+
+/* Individual translate leaves hover, drag and positioning transforms intact. */
+@keyframes almanion-element-in {
+    from {
+        opacity: var(--enter-opacity, 0.86);
+        translate: var(--enter-x, 0px) var(--enter-y, var(--enter-distance));
+    }
+    to { opacity: 1; translate: 0 0; }
+}
+
+@keyframes almanion-backdrop-in {
+    from { background-color: transparent; }
+}
+
+/* Keep the scrim independent so opening a dialog never fades its text twice. */
+body .auth-overlay:has(> .account-modal),
+body .auth-overlay > .account-modal:not(.shake) {
+    animation: none;
+}
+
+@media screen and (prefers-reduced-motion: no-preference) {
+    :root:not([data-page-motion="off"]) body:not(.animations-off) :is(.settings-modal:not(.hidden), .auth-overlay:has(> .account-modal):not(.hidden)) {
+        animation: almanion-backdrop-in var(--enter-duration) ease-out;
+    }
+
+    :root:not([data-page-motion="off"]) body:not(.animations-off) :is(.settings-modal:not(.hidden) .settings-modal-content, .auth-overlay:not(.hidden) > .account-modal:not(.shake), .home-quick-dialog-panel, .note-filter[open] > .note-filter-popover) {
+        animation: almanion-element-in var(--enter-duration) var(--enter-ease);
+    }
+
+    .note-filter-popover { --enter-y: calc(var(--enter-distance) * -0.65); }
+    .note-filter-popover[data-side="up"] { --enter-y: calc(var(--enter-distance) * 0.65); }
 }
 
 body.dark-theme,

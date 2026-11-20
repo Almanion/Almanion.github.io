@@ -144,6 +144,8 @@
 
         panels.forEach(function (panel) {
             panel.hidden = panel !== target;
+            if (panel === target && settings.animate && motionAllowed()) panel.dataset.gradeEntered = 'true';
+            else delete panel.dataset.gradeEntered;
         });
 
         if (tabList) tabList.dataset.activeGrade = grade;
@@ -151,6 +153,16 @@
         currentGrade = grade;
         try { localStorage.setItem('homeGrade', grade); } catch (_) { /* storage may be unavailable */ }
     }
+
+    function finishGradeEntrance(event) {
+        if (event.target === event.currentTarget && event.animationName === 'almanion-element-in') {
+            delete event.currentTarget.dataset.gradeEntered;
+        }
+    }
+    panels.forEach(function (panel) {
+        panel.addEventListener('animationend', finishGradeEntrance);
+        panel.addEventListener('animationcancel', finishGradeEntrance);
+    });
 
     function moveTab(from, offset) {
         var index = tabs.indexOf(from);
@@ -191,5 +203,5 @@
             if (tabList) tabList.classList.add('home-tabs-ready');
         });
     });
-    initialEntranceTimer = window.setTimeout(finishInitialEntrance, 240);
+    initialEntranceTimer = window.setTimeout(finishInitialEntrance, 320);
 }());

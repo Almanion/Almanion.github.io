@@ -3,7 +3,6 @@
 
     const state = {
         active: false,
-        animating: false,
         index: 0,
         topics: [],
         sections: [],
@@ -11,12 +10,8 @@
         toolbar: null,
         controls: null,
         footer: null,
-        enterTimer: 0,
         rapidTimer: 0,
-        transitionGeneration: 0,
-        transitionAnimation: null,
-        animatedTopic: null,
-        lastNavigationAt: 0,
+        lastNavigationAt: -Infinity,
         sidebarLinks: new Map(),
         activeSidebarLink: null,
         swipe: null
@@ -170,22 +165,14 @@
     }
 
     function deactivateReader() {
-        clearReaderTimers();
         window.clearTimeout(state.rapidTimer);
         state.rapidTimer = 0;
-        if (state.transitionAnimation) {
-            state.transitionAnimation.cancel();
-            state.transitionAnimation = null;
-        }
-        state.animatedTopic = null;
         cancelSwipe();
         state.active = false;
-        state.animating = false;
         state.toolbar.hidden = true;
         state.footer.hidden = true;
         document.body.classList.remove(
             'exp-reader-active',
-            'exp-reader-transitioning',
             'exp-reader-rapid',
             'exp-reader-at-start',
             'exp-reader-at-end'
@@ -199,10 +186,6 @@
         state.topics.forEach(topic => {
             topic.classList.remove(
                 'exp-reader-current',
-                'exp-reader-enter-next',
-                'exp-reader-enter-prev',
-                'exp-reader-leave-next',
-                'exp-reader-leave-prev',
                 'exp-reader-dragging'
             );
             topic.style.removeProperty('--exp-reader-drag-x');
@@ -265,107 +248,21 @@
 
         const previousIndex = state.index;
         const direction = nextIndex > previousIndex ? 'next' : 'prev';
-        const animate = settings.animate && !prefersReducedReaderMotion();
         const now = performance.now();
         const rapid = !!settings.rapid
-            || ((settings.source === 'keyboard' || settings.source === 'controls')
-                && now - state.lastNavigationAt < 130);
+            || now - state.lastNavigationAt < 150;
         state.lastNavigationAt = now;
 
-        // Commit immediately; cancel only the active transition.
-        cancelReaderTransition();
         setRapidNavigationState(rapid);
-
         const readerScrollTop = settings.scroll ? getReaderScrollTop() : null;
-        const commit = () => {
-            state.index = nextIndex;
-            applyTopicVisibility(previousIndex);
-            prepareTopic(state.topics[state.index]);
-            updateReaderUi();
-            if (settings.updateHash) updateLocationHash();
-            if (readerScrollTop !== null) scrollToReader(readerScrollTop);
-            return state.topics[state.index];
-        };
-
-        if (!animate) {
-            commit();
-            return true;
-        }
-
-        const generation = ++state.transitionGeneration;
-        state.animating = true;
-        document.body.classList.add('exp-reader-transitioning');
-
-        const incoming = commit();
-        startReaderTransition(incoming, direction, rapid, generation);
+        const step = ['keyboard', 'controls', 'swipe'].includes(settings.source);
+        state.index = nextIndex;
+        applyTopicVisibility(previousIndex);
+        prepareTopic(state.topics[nextIndex], settings.animate && step && !rapid ? direction : null);
+        updateReaderUi();
+        if (settings.updateHash) updateLocationHash();
+        if (readerScrollTop !== null) scrollToReader(readerScrollTop);
         return true;
-    }
-
-    function startReaderTransition(incoming, direction, rapid, generation) {
-        const offset = direction === 'next' ? 1 : -1;
-        const duration = rapid ? 72 : getReaderEnterDuration();
-        state.animatedTopic = incoming;
-
-        if (typeof incoming.animate === 'function') {
-            const animation = incoming.animate([
-                {
-                    opacity: rapid ? 0.74 : 0.38,
-                    transform: `translate3d(${offset * (rapid ? 2 : 7)}px, 0, 0)`
-                },
-                { opacity: 1, transform: 'translate3d(0, 0, 0)' }
-            ], {
-                duration,
-                easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-                fill: 'both'
-            });
-            state.transitionAnimation = animation;
-            animation.finished.then(() => {
-                if (generation !== state.transitionGeneration) return;
-                animation.cancel();
-                state.transitionAnimation = null;
-                state.animatedTopic = null;
-                finishReaderTransition();
-            }).catch(() => {});
-            return;
-        }
-
-        incoming.classList.add(`exp-reader-enter-${direction}`);
-        if (rapid) incoming.classList.add('exp-reader-enter-rapid');
-        state.enterTimer = window.setTimeout(() => {
-            if (generation !== state.transitionGeneration) return;
-            incoming.classList.remove(`exp-reader-enter-${direction}`, 'exp-reader-enter-rapid');
-            state.animatedTopic = null;
-            finishReaderTransition();
-        }, duration);
-    }
-
-    function cancelReaderTransition() {
-        state.transitionGeneration++;
-        clearReaderTimers();
-        if (state.transitionAnimation) {
-            state.transitionAnimation.cancel();
-            state.transitionAnimation = null;
-        }
-        if (state.animatedTopic) {
-            state.animatedTopic.classList.remove(
-                'exp-reader-enter-next',
-                'exp-reader-enter-prev',
-                'exp-reader-enter-rapid'
-            );
-            state.animatedTopic = null;
-        }
-        state.animating = false;
-        document.body.classList.remove('exp-reader-transitioning');
-    }
-
-    function finishReaderTransition() {
-        state.animating = false;
-        document.body.classList.remove('exp-reader-transitioning');
-    }
-
-    function clearReaderTimers() {
-        window.clearTimeout(state.enterTimer);
-        state.enterTimer = 0;
     }
 
     function setRapidNavigationState(rapid) {
@@ -383,15 +280,6 @@
             state.toolbar.querySelector('.exp-reader-status').setAttribute('aria-live', 'polite');
             state.rapidTimer = 0;
         }, 160);
-    }
-
-    function prefersReducedReaderMotion() {
-        return document.body.classList.contains('animations-off')
-            || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    }
-
-    function getReaderEnterDuration() {
-        return document.body.classList.contains('animations-medium') ? 110 : 170;
     }
 
     function applyTopicVisibility(previousIndex) {
@@ -444,11 +332,11 @@
         if ('inert' in element) element.inert = inert;
     }
 
-    function prepareTopic(topic) {
+    function prepareTopic(topic, entrance = null) {
         if (!topic) return;
         if (window.AlmanionMath) window.AlmanionMath.render(topic);
         window.dispatchEvent(new CustomEvent('almanion:topic-visible', {
-            detail: { topic }
+            detail: { topic, entrance }
         }));
 
         // Warm only the adjacent topic; keep the initial page render lazy.

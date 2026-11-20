@@ -1336,13 +1336,10 @@ body.dark-theme .telegram-welcome-message {
     align-items: center;
     justify-content: center;
     z-index: 10110; /* выше плавающих кнопок (study-mode-toggle 10050, FAB-ов), иначе они вылезают поверх модалки */
-    opacity: 1;
-    transition: opacity 0.3s ease;
 }
 
 .settings-modal.hidden {
     visibility: hidden;
-    opacity: 0;
     pointer-events: none;
 }
 
@@ -1358,10 +1355,6 @@ body.dark-theme .telegram-welcome-message {
     display: flex;
     flex-direction: column;
     transition: background-color 0.3s ease;
-}
-
-.settings-modal:not(.hidden) .settings-modal-content {
-    animation: modalSlideIn 0.28s ease-out;
 }
 
 .settings-modal-body::-webkit-scrollbar {
@@ -1942,8 +1935,7 @@ body.animations-medium .task-card {
 }
 
 /* Окна появляются спокойно — простое проявление, без масштабирования/пружины */
-body.animations-medium .settings-modal:not(.hidden) .settings-modal-content,
-body.animations-medium .auth-modal,
+body.animations-medium .auth-modal:not(.account-modal),
 body.animations-medium .hint-modal {
     animation-name: fadeIn !important;
     animation-timing-function: var(--ease-out) !important;
@@ -2158,7 +2150,7 @@ body.dark-theme .settings-button-sidebar:hover {
         max-height: 88vh;
         max-height: 88dvh;
         border-radius: 16px 16px 0 0;
-        animation: slideUpSheet 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+        --enter-y: calc(var(--enter-distance) * 1.5);
     }
 
     .settings-modal-content::before {

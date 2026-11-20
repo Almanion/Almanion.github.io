@@ -9,12 +9,13 @@ const root = path.join(__dirname, '..');
 const page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const client = fs.readFileSync(path.join(root, 'home-motion.js'), 'utf8');
 const styles = fs.readFileSync(path.join(root, 'styles', 'home-motion.css'), 'utf8');
+const tokens = fs.readFileSync(path.join(root, 'styles', 'tokens.css'), 'utf8');
 const dashboardStyles = fs.readFileSync(path.join(root, 'styles', 'home-dashboard.css'), 'utf8');
 const mobileStyles = fs.readFileSync(path.join(root, 'styles', 'mobile-overrides.css'), 'utf8');
 const shell = JSON.parse(fs.readFileSync(path.join(root, 'performance', 'sw-shell.json'), 'utf8')).assets;
 
-assert.match(page, /styles\/home-motion\.css\?v=20261120-navigation/, 'home motion stylesheet must be versioned');
-assert.match(page, /home-motion\.js\?v=20261120-navigation/, 'homepage motion changes must invalidate the previous controller');
+assert.match(page, /styles\/home-motion\.css\?v=20261121-1/, 'home motion stylesheet must be versioned');
+assert.match(page, /home-motion\.js\?v=20261121-1/, 'homepage motion changes must invalidate the previous controller');
 assert.doesNotMatch(page, /card\.style\.animationDelay/, 'cards must not inherit a global inline stagger');
 
 ['9', '10', '11', 'Archive'].forEach(grade => {
@@ -45,14 +46,15 @@ assert.match(client, /requestAnimationFrame\(function \(\) \{\s*window\.requestA
 assert.match(client, /finishInitialEntrance/, 'card stagger must be limited to the initial page entrance');
 
 assert.match(styles, /body\.home-page \.subjects-grid > \.subject-card/);
-assert.match(styles, /var\(--home-card-order\) \* 9ms/, 'visible card stagger must be short and local');
-assert.match(styles, /@keyframes home-card-in\s*\{\s*from \{ opacity: 0\.92;/, 'subject links must be readable from the first frame');
-assert.match(styles, /home-motion-initial \.grade-panel:not\(\[hidden\]\)/, 'card stagger must only run during initial entrance');
+assert.match(styles, /nth-child\(n \+ 5\) \{ --home-card-order: 4; \}/, 'the stagger stops growing after four intervals');
+assert.match(styles, /animation-delay: calc\(var\(--home-card-order, 0\) \* var\(--enter-stagger\)\)/);
+assert.match(tokens, /opacity: var\(--enter-opacity, 0\.86\)/, 'links are readable even in the first frame');
+assert.match(styles, /home-motion-initial[^{]*\.grade-panel:not\(\[hidden\]\)/, 'card stagger is limited to first entry');
 assert.match(styles, /grade-tabs:not\(\.home-tabs-ready\)::before[\s\S]*transition: none/);
-assert.match(styles, /opacity: 0\.92; transform: translate3d\(var\(--home-grade-shift, 0px\)/,
-    'class switch must start with a soft directional crossfade');
-assert.match(styles, /animations-medium\.home-page \.grade-panel:not\(\[hidden\]\)[\s\S]*animation-duration: 85ms/,
-    'medium motion must be shorter than the full transition');
+assert.match(styles, /\.grade-panel\[data-grade-entered\]:not\(\[hidden\]\)\s*{[\s\S]*?--enter-x: var\(--home-grade-shift, 0px\)/,
+    'only an explicit class change moves the panel');
+assert.match(tokens, /body\.animations-medium\s*{[^}]*--enter-distance: 0px;[^}]*--enter-stagger: 0ms;/,
+    'medium entrances have no travel or stagger');
 assert.match(styles, /animations-medium\.home-page \.grade-tabs::before[\s\S]*transition-duration: 180ms, 160ms, 160ms/,
     'the grade indicator must also be shorter in medium motion');
 assert.match(dashboardStyles, /\.subject-card::before\s*\{[\s\S]*?background: var\(--subject-color\);[\s\S]*?color: var\(--subject-color\);/,

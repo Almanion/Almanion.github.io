@@ -436,26 +436,91 @@ function initScrollEffects() {
         });
     }
     
-    // Плавное появление элементов
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('fade-in', 'visible');
+    initNoteEntrances();
+}
+
+function initNoteEntrances() {
+    const main = document.querySelector('main.main-content');
+    if (!main || !window.IntersectionObserver) return;
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const seen = new WeakSet();
+    const playing = new Set();
+    // Only outer blocks move. Headings, nested proofs and their figures stay together.
+    const blocks = ':is([data-note-block], .definition-box, .formula-box, .theorem-box, .proof-box, .experiment-box, .example-box, .remark-box, .english-word-list, p, ul, ol, figure, table, blockquote, details):not(h2, h3, h4, h5, h6, [hidden])';
+    let observer;
+    let scope;
+    let level;
+
+    function clearBlock(block) {
+        delete block.dataset.noteEntrance;
+        block.style.removeProperty('--note-enter-order');
+        playing.delete(block);
+    }
+
+    function finished(event) {
+        if (event.animationName === 'almanion-element-in' && playing.has(event.target)) {
+            clearBlock(event.target);
+        }
+    }
+    main.addEventListener('animationend', finished);
+    main.addEventListener('animationcancel', finished);
+
+    function motionLevel() {
+        const setting = document.documentElement.dataset.pageMotion;
+        if (reduced.matches || setting === 'off' || document.body.classList.contains('animations-off')) return 'off';
+        return setting === 'medium' || document.body.classList.contains('animations-medium') ? 'medium' : 'max';
+    }
+
+    function watch(topic, direction = null, refresh = false) {
+        const nextScope = topic || main;
+        const nextLevel = motionLevel();
+        if (!refresh && nextScope === scope && nextLevel === level) return;
+        observer?.disconnect();
+        observer = null;
+        playing.forEach(clearBlock);
+        scope = nextScope;
+        level = nextLevel;
+        if (level === 'off' || (level === 'medium' && !direction)) return;
+
+        const children = scope.querySelectorAll((topic ? ':scope > ' : '.topic > ') + blocks);
+        if (!children.length) return;
+        let first = true;
+        const current = new IntersectionObserver(entries => {
+            if (current !== observer) return;
+            let order = 0;
+            for (const entry of entries) {
+                if (!entry.isIntersecting) continue;
+                const block = entry.target;
+                current.unobserve(block);
+                const fresh = !seen.has(block);
+                seen.add(block);
+                const bounds = entry.rootBounds;
+                const atEdge = bounds && entry.boundingClientRect.top >= bounds.bottom - Math.min(120, bounds.height * 0.22);
+                const effect = first ? direction : (fresh && atEdge && level === 'max' ? 'scroll' : null);
+                if (!effect || order >= 3 || block.matches(':focus-within, :target')) continue;
+                block.style.setProperty('--note-enter-order', String(order++));
+                block.dataset.noteEntrance = effect;
+                playing.add(block);
             }
+            first = false;
+            if (level === 'medium') current.disconnect();
         });
-    }, observerOptions);
-    
-    // Поддерживаем оба варианта: .topic и .content-section
-    const topics = document.querySelectorAll('.topic, .content-section');
-    topics.forEach(topic => {
-        topic.classList.add('fade-in');
-        observer.observe(topic);
-    });
+        observer = current;
+        children.forEach(block => current.observe(block));
+    }
+
+    function sync() { watch(main.querySelector('.topic.exp-reader-current')); }
+    window.addEventListener('almanion:topic-visible', event => watch(event.detail.topic, event.detail.entrance));
+    window.addEventListener('experimental-mode-changed', () => queueMicrotask(sync));
+    window.addEventListener('almanion-settings-changed', () => queueMicrotask(sync));
+    window.addEventListener('almanion-settings-applied', () => queueMicrotask(sync));
+    const refresh = () => watch(main.querySelector('.topic.exp-reader-current'), null, true);
+    window.addEventListener('almanion:content-ready', refresh);
+    window.addEventListener('almanion:note-filter-changed', refresh);
+    window.addEventListener('pagehide', () => playing.forEach(clearBlock));
+    reduced.addEventListener?.('change', sync);
+    requestAnimationFrame(sync);
 }
 
 // ============================================
