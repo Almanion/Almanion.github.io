@@ -9,10 +9,15 @@ try {
     fs.mkdirSync(path.join(site, 'styles'), { recursive: true });
     const original = '<link rel="stylesheet" href="styles/index.css?v=old"><link rel="stylesheet" href="legacy.css"><link rel="stylesheet" href="https://example.test/font.css">';
     fs.writeFileSync(path.join(site, 'index.html'), original);
+    const subject = '<link rel="stylesheet" href="legacy.css?v=another"><link rel="stylesheet" href="reader-only.css">';
+    fs.writeFileSync(path.join(site, 'physics.html'), subject);
     fs.writeFileSync(path.join(site, 'styles/index.css'), '@import url("./child.css?v=old") screen;\nbody{color:black}');
     fs.writeFileSync(path.join(site, 'styles/child.css'), '.icon{background:url(../images/icon.svg#star)}');
     fs.writeFileSync(path.join(site, 'legacy.css'), '.x{background:url(images/a.png)}.y{filter:url(#filter)}');
     const first = Styles.build(site);
+    assert.equal(fs.readFileSync(path.join(site, 'physics.html'), 'utf8'),
+        subject.replace('legacy.css?v=another', first.get('/legacy.css')),
+        'shared CSS must have the same URL in the directory and the subject');
     assert.match(first.get('/styles/index.css'), /^\/styles\/index\.[a-f\d]{16}\.css$/);
     assert.match(first.get('/legacy.css'), /^\/styles\/releases\/legacy\.[a-f\d]{16}\.css$/);
     const read = url => fs.readFileSync(path.join(site, url.replace(/^\//, '')), 'utf8');

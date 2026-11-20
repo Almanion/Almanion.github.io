@@ -1156,29 +1156,19 @@ function showCopyState(button, content, className) {
 // СОХРАНЕНИЕ ПОЗИЦИИ СКРОЛЛА
 // ============================================
 
-window.addEventListener('beforeunload', () => {
+window.addEventListener('pagehide', () => {
     const key = 'scrollPosition_' + location.pathname;
     _safeSet(key, window.pageYOffset);
 });
 
 window.addEventListener('load', () => {
+    // Let fragment links and the browser's Back/Forward restoration take precedence.
+    if (location.hash || window.scrollY || performance.getEntriesByType('navigation')[0]?.type === 'back_forward') return;
     const key = 'scrollPosition_' + location.pathname;
     const savedPosition = _safeGet(key);
     if (savedPosition) {
         const n = parseInt(savedPosition, 10);
         if (Number.isFinite(n)) window.scrollTo(0, n);
-    }
-});
-
-// ============================================
-// АНИМАЦИЯ ПРИ ЗАГРУЗКЕ
-// ============================================
-
-// Убираем потенциальное мерцание - устанавливаем opacity только если он не был установлен
-window.addEventListener('load', () => {
-    if (!document.body.style.opacity) {
-        document.body.style.transition = 'opacity 0.5s ease';
-        document.body.style.opacity = '1';
     }
 });
 

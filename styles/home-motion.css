@@ -18,16 +18,16 @@ body.home-page .home-footer {
 }
 
 body.home-page .home-header h1 {
-    animation: home-title-in 380ms var(--home-motion-out) both;
+    animation: home-title-in 165ms var(--home-motion-out) both;
 }
 
 body.home-page .home-header h1 svg {
     transform-origin: 50% 55%;
-    animation: home-mark-in 420ms 35ms var(--home-motion-out) both;
+    animation: home-mark-in 165ms var(--home-motion-out) both;
 }
 
 body.home-page .stats {
-    animation: home-soft-in 300ms 45ms var(--home-motion-out) both;
+    animation: home-soft-in 150ms var(--home-motion-out) both;
 }
 
 body.home-page .grade-tabs {
@@ -36,7 +36,7 @@ body.home-page .grade-tabs {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     isolation: isolate;
-    animation: home-soft-in 300ms 75ms var(--home-motion-out) both;
+    animation: home-soft-in 150ms var(--home-motion-out) both;
 }
 
 body.home-page .grade-tabs::before {
@@ -96,7 +96,7 @@ body.home-page .grade-tab:active {
 }
 
 body.home-page .grade-panel:not([hidden]) {
-    animation: home-panel-in 205ms var(--home-motion-out) both;
+    animation: home-panel-in 135ms var(--home-motion-out) both;
 }
 
 body.home-page .subjects-grid > .subject-card {
@@ -116,20 +116,16 @@ body.home-page .subjects-grid > .subject-card:nth-child(n + 6) { --home-card-ord
 
 body.home-page.home-motion-initial .grade-panel:not([hidden]) .subjects-grid > .subject-card,
 body.home-page.home-motion-initial .extra-section .subjects-grid > .subject-card {
-    animation: home-card-in 330ms var(--home-motion-out) both;
-    animation-delay: calc(90ms + var(--home-card-order) * 38ms);
+    animation: home-card-in 155ms var(--home-motion-out) both;
+    animation-delay: calc(var(--home-card-order) * 9ms);
 }
 
 body.home-page .extra-section .section-title {
-    animation: home-soft-in 300ms 150ms var(--home-motion-out) both;
+    animation: home-soft-in 150ms var(--home-motion-out) both;
 }
 
 body.home-page .class-section .section-title {
-    animation: home-soft-in 280ms 125ms var(--home-motion-out) both;
-}
-
-body.home-page.home-motion-initial .extra-section .subjects-grid > .subject-card {
-    animation-delay: calc(185ms + var(--home-card-order) * 38ms);
+    animation: home-soft-in 150ms var(--home-motion-out) both;
 }
 
 body.home-page .subject-card::before {
@@ -184,50 +180,50 @@ body.home-page .home-editor-link:focus-visible {
 }
 
 body.home-page .home-footer {
-    animation: home-soft-in 300ms 230ms var(--home-motion-out) both;
+    animation: home-soft-in 150ms var(--home-motion-out) both;
 }
 
 body.home-page .home-editor-link:not([hidden]) {
-    animation: home-action-in 240ms var(--home-motion-out) both;
+    animation: home-action-in 145ms var(--home-motion-out) both;
 }
 
 body.home-page .settings-button,
 body.home-page .account-btn.home-account-btn {
-    animation: home-corner-in 280ms var(--home-motion-out) both;
+    animation: home-corner-in 145ms var(--home-motion-out) both;
 }
 
 @keyframes home-title-in {
-    from { opacity: 0; transform: translateY(-8px); }
+    from { opacity: 0.9; transform: translateY(-2px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes home-mark-in {
-    from { opacity: 0; transform: translateY(2px) scale(0.94); }
+    from { opacity: 0.85; transform: scale(0.98); }
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes home-soft-in {
-    from { opacity: 0; transform: translateY(6px); }
+    from { opacity: 0.92; transform: translateY(2px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes home-card-in {
-    from { opacity: 0; transform: translateY(8px); }
+    from { opacity: 0.92; transform: translateY(2px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes home-action-in {
-    from { opacity: 0; transform: translateY(4px); }
+    from { opacity: 0.92; transform: translateY(2px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes home-corner-in {
-    from { opacity: 0; transform: scale(0.94); }
+    from { opacity: 0.9; transform: scale(0.98); }
     to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes home-panel-in {
-    from { opacity: 0.58; transform: translate3d(var(--home-grade-shift, 0px), 0, 0); }
+    from { opacity: 0.92; transform: translate3d(var(--home-grade-shift, 0px), 0, 0); }
     68% { opacity: 1; }
     to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
@@ -241,18 +237,18 @@ body.animations-medium.home-page .subject-card,
 body.animations-medium.home-page .class-section .section-title,
 body.animations-medium.home-page .extra-section .section-title,
 body.animations-medium.home-page .home-footer {
-    animation-duration: 220ms;
+    animation-duration: 100ms;
     animation-delay: 0ms;
 }
 
 body.animations-medium.home-page .home-editor-link:not([hidden]),
 body.animations-medium.home-page .settings-button,
 body.animations-medium.home-page .account-btn.home-account-btn {
-    animation-duration: 180ms;
+    animation-duration: 100ms;
 }
 
 body.animations-medium.home-page .grade-panel:not([hidden]) {
-    animation-duration: 160ms;
+    animation-duration: 85ms;
 }
 
 body.animations-medium.home-page .grade-tabs::before {

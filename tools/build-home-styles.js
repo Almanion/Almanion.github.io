@@ -44,15 +44,25 @@ function build(site) {
         visiting.delete(file);
         return '/' + output;
     }
-    const home = path.join(site, 'index.html');
-    const html = fs.readFileSync(home, 'utf8').replace(/<link\b[^>]*>/gi, tag => {
-        if (!/\brel=["']stylesheet["']/i.test(tag)) return tag;
-        return tag.replace(/\bhref=(["'])([^"']+)\1/i, (all, quote, value) => {
-            const file = local('index.html', value);
-            return file ? 'href=' + quote + stylesheet(file) + quote : all;
+    function rewritePage(page) {
+        const target = path.join(site, page);
+        const original = fs.readFileSync(target, 'utf8');
+        const html = original.replace(/<link\b[^>]*>/gi, tag => {
+            if (!/\brel=["']stylesheet["']/i.test(tag)) return tag;
+            return tag.replace(/\bhref=(["'])([^"']+)\1/i, (all, quote, value) => {
+                const file = local(page, value);
+                if (!file) return all;
+                const shared = paths.get('/' + file);
+                if (!shared && page !== 'index.html' && file !== 'styles/site/reader.css') return all;
+                return 'href=' + quote + (shared || stylesheet(file)) + quote;
+            });
         });
-    });
-    fs.writeFileSync(home, html);
+        if (html !== original) fs.writeFileSync(target, html);
+    }
+    rewritePage('index.html');
+    for (const page of fs.readdirSync(site)) {
+        if (page.endsWith('.html') && page !== 'index.html') rewritePage(page);
+    }
     return paths;
 }
 

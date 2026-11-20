@@ -191,5 +191,5 @@
             if (tabList) tabList.classList.add('home-tabs-ready');
         });
     });
-    initialEntranceTimer = window.setTimeout(finishInitialEntrance, 650);
+    initialEntranceTimer = window.setTimeout(finishInitialEntrance, 240);
 }());

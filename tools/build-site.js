@@ -209,6 +209,7 @@ function build(options) {
     }
     // Invalidate only the changed reading utilities. Existing service workers
     // may still hold earlier query-versioned copies during a deployment.
+    const transitionStyle = fs.readFileSync(path.join(output, 'styles/page-transitions.css'), 'utf8');
     for (const file of walkFiles(output).filter(file => file.endsWith('.html'))) {
         const absolute = path.join(output, file);
         const html = fs.readFileSync(absolute, 'utf8');
@@ -236,8 +237,25 @@ function build(options) {
             .replace(/((?:src|href)=["'](?:note-runtime\.js|styles\/print\.css))(?:\?[^"']*)?(["'])/g, '$1?v=20261113-4$2')
             .replace(/(src=["']print-export\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261113-5$2')
             .replace(/(src=["']note-runtime\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261114-2$2')
-            .replace(/(src=["']account\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261117-contests$2');
-        if (updated !== html) fs.writeFileSync(absolute, updated);
+            .replace(/(src=["']account\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261117-contests$2')
+            .replace(/(src=["']script\.js)(?:\?[^"']*)?(["'])/g, '$1?v=20261120-navigation$2');
+        let published = updated;
+        // The browser decides whether to take a navigation snapshot before
+        // deferred scripts run. Make the opt-in available with the first bytes of HTML.
+        const transitionLink = /[ \t]*<link rel="stylesheet" href="styles\/page-transitions\.css[^"]*">\n/;
+        if (!file.includes('/') && transitionLink.test(published)) {
+            published = published.replace(transitionLink, '').replace(/(<meta charset="UTF-8">)/i,
+                (_, charset) => charset + '\n    <style data-page-transitions>\n' + transitionStyle + '    </style>');
+        }
+        // OfflineLibrary already ships the distribution and its fonts. Use that
+        // same copy online, while raw notes opened directly from disk keep their CDN URLs.
+        if (!file.includes('/') && updated.includes('cdn.jsdelivr.net/npm/katex@')) {
+            published = published.replace(/((?:href|src)=["'])https:\/\/cdn\.jsdelivr\.net\/npm\/katex@[\d.]+\/dist\/(katex\.min\.(?:css|js)|contrib\/auto-render\.min\.js)(["'])/g, '$1vendor/katex/$2$3');
+            if (!published.includes('cdn.jsdelivr.net/npm/')) {
+                published = published.replace(/<link rel="preconnect" href="https:\/\/cdn\.jsdelivr\.net" crossorigin>/g, '');
+            }
+        }
+        if (published !== html) fs.writeFileSync(absolute, published);
     }
     // Status follows published materials, including sections added later by the
     // editor. Do not advertise an empty subject as active.

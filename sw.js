@@ -59,14 +59,14 @@ self.addEventListener('fetch', function (event) {
         return;
     }
     if (request.mode === 'navigate' || url.pathname.endsWith('.html')) {
-        event.respondWith(networkFirst(request, '/offline.html'));
+        event.respondWith(networkFirst(request, '/offline.html', event));
         return;
     }
     if (isStaticAsset(request, url)) {
         event.respondWith(staleWhileRevalidate(request, event));
         return;
     }
-    event.respondWith(networkFirst(request));
+    event.respondWith(networkFirst(request, null, event));
 });
 
 async function precacheAppShell() {
@@ -152,11 +152,22 @@ function isStaticAsset(request, url) {
     return /\.(?:css|js|mjs|svg|png|jpg|jpeg|webp|gif|ico|woff2?|ttf|otf|json)$/i.test(url.pathname);
 }
 
-async function networkFirst(request, fallbackUrl) {
+function fetchAndCache(request, event, timeoutMs) {
+    const fetched = timeoutMs ? fetchWithTimeout(request, timeoutMs) : fetch(request);
+    // Clone as soon as headers arrive, before the browser starts reading its stream.
+    const write = fetched.then(async response => {
+        if (!response.ok && response.type !== 'opaque') return;
+        const copy = response.clone();
+        if (await cacheableResponse(request, copy)) await storeRuntimeResponse(request, copy);
+    }).catch(() => {}); // A cache failure must never discard a successful network response.
+    if (event) event.waitUntil(write);
+    return fetched;
+}
+
+async function networkFirst(request, fallbackUrl, event) {
     try {
-        const response = await fetchWithTimeout(request, NETWORK_TIMEOUT_MS);
+        const response = await fetchAndCache(request, event, NETWORK_TIMEOUT_MS);
         if (response.status >= 500) return await offlineResponse(request, fallbackUrl) || response;
-        if (await cacheableResponse(request, response)) await storeRuntimeResponse(request, response.clone());
         return response;
     } catch (_) {
         const cached = await offlineResponse(request, fallbackUrl);
@@ -176,16 +187,15 @@ async function offlineResponse(request, fallbackUrl) {
 }
 
 async function staleWhileRevalidate(request, event) {
-    const cached = await freshCachedResponse(request);
-    const fetched = fetch(request).then(async function (response) {
-        if (await cacheableResponse(request, response)) await storeRuntimeResponse(request, response.clone());
-        return response;
-    }).catch(function () { return null; });
-    // Finish refreshes after returning a cached response. Offline packs are
-    // fallbacks, not overrides of newer online resources.
-    if (event) event.waitUntil(fetched);
+    const url = new URL(request.url);
+    const immutable = url.origin === self.location.origin && /\.[a-f0-9]{16}\.css$/.test(url.pathname);
+    const lookup = freshCachedResponse(request).catch(() => null);
+    // Other URLs can change in place, so refresh those alongside the cache lookup.
+    const fetchAsset = () => fetchAndCache(request, event).catch(() => null);
+    const fetched = immutable ? null : fetchAsset();
+    const cached = await lookup;
     if (cached) return cached;
-    const response = await fetched;
+    const response = await (fetched || fetchAsset());
     if (response && response.status < 500) return response;
     return await pinnedResponse(request) || response || new Response('', { status: 504, statusText: 'Offline' });
 }
@@ -247,11 +257,11 @@ async function fetchWithTimeout(request, timeoutMs) {
     }
 }
 
-async function timestampedResponse(response) {
+function timestampedResponse(response) {
     if (response.type === 'opaque') return response;
     const headers = new Headers(response.headers);
     headers.set('x-almanion-cached-at', String(Date.now()));
-    return new Response(await response.blob(), {
+    return new Response(response.body, {
         status: response.status,
         statusText: response.statusText,
         headers: headers
@@ -260,8 +270,8 @@ async function timestampedResponse(response) {
 
 async function storeRuntimeResponse(request, response) {
     const cache = await caches.open(RUNTIME_CACHE);
-    await cache.put(request, await timestampedResponse(response));
-    await pruneRuntimeCache(cache);
+    await cache.put(request, timestampedResponse(response));
+    await trimRuntimeCache(cache);
 }
 
 async function freshCachedResponse(request) {
@@ -280,8 +290,8 @@ async function freshCachedResponse(request) {
     return response;
 }
 
-async function pruneRuntimeCache(existingCache) {
-    const cache = existingCache || await caches.open(RUNTIME_CACHE);
+async function pruneRuntimeCache() {
+    const cache = await caches.open(RUNTIME_CACHE);
     const keys = await cache.keys();
     const expired = [];
     for (const key of keys) {
@@ -290,6 +300,10 @@ async function pruneRuntimeCache(existingCache) {
         if (cachedAt && Date.now() - cachedAt > RUNTIME_MAX_AGE_MS) expired.push(key);
     }
     await Promise.all(expired.map(function (key) { return cache.delete(key); }));
+    await trimRuntimeCache(cache);
+}
+
+async function trimRuntimeCache(cache) {
     const remaining = await cache.keys();
     const overflow = remaining.length - RUNTIME_MAX_ENTRIES;
     if (overflow > 0) {

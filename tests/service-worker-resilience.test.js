@@ -60,6 +60,16 @@ function harness({ manifest = { version: 'new', shell: assets }, importFailure =
         caches, run, stores,
         fetch: fn => { fetchImpl = fn; },
         failPut: fn => { putFailure = fn; },
+        request(url) {
+            let response;
+            const work = [];
+            listeners.get('fetch')({
+                request: new WorkerRequest(url),
+                respondWith(value) { response = value; },
+                waitUntil(value) { work.push(value); }
+            });
+            return { response, settled: () => Promise.all(work) };
+        },
         async seed(name, url, text) { await (await caches.open(name)).put(url, new Response(text)); },
         async activate() {
             let promise;
@@ -167,6 +177,40 @@ function harness({ manifest = { version: 'new', shell: assets }, importFailure =
         'a genuine 404 must not masquerade as a cached successful page');
 
     const pack = harness();
+    const online = harness();
+    let finishBody;
+    online.fetch(async () => new Response(new ReadableStream({
+        start(controller) {
+            controller.enqueue(new TextEncoder().encode('first paragraph'));
+            finishBody = () => controller.close();
+        }
+    })));
+    const navigation = online.request('/lesson.html');
+    try {
+        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('HTML was held by the cache')), 200));
+        const headers = await Promise.race([navigation.response, timeout]);
+        const chunk = await Promise.race([headers.body.getReader().read(), timeout]);
+        assert.equal(new TextDecoder().decode(chunk.value), 'first paragraph');
+    } finally { finishBody(); }
+    await navigation.settled();
+    online.fetch(async () => { throw new Error('offline'); });
+    assert.equal(await (await online.request('/lesson.html').response).text(), 'first paragraph');
+
+    online.failPut(() => true);
+    online.fetch(async () => new Response('live page'));
+    const quota = online.request('/new.html');
+    assert.equal(await (await quota.response).text(), 'live page');
+    await quota.settled();
+    online.failPut(null);
+    const immutable = '/styles/tokens.0123456789abcdef.css';
+    await online.seed(shell, immutable, 'cached sheet');
+    let refreshes = 0;
+    online.fetch(async () => { refreshes++; return new Response('new sheet'); });
+    assert.equal(await (await online.request(immutable).response).text(), 'cached sheet');
+    assert.equal(refreshes, 0);
+    assert.equal(await (await online.request(immutable.replace('0123', 'aaaa')).response).text(), 'new sheet');
+    assert.equal(refreshes, 1);
+
     await pack.seed('almanion-offline-index-v1', '/__offline/subject', JSON.stringify({ cacheName: 'almanion-offline-pack-subject', downloadedAt: 1 }));
     await pack.seed('almanion-offline-pack-subject', '/book.js', 'downloaded subject script');
     pack.fetch(async () => new Response('server failure', { status: 503 }));

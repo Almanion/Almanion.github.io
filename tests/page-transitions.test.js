@@ -1,89 +1,95 @@
 'use strict';
 
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
-
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
 const root = path.join(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'page-transitions.js'), 'utf8');
-const css = fs.readFileSync(path.join(root, 'styles', 'page-transitions.css'), 'utf8');
-const pageListeners = new Map();
-const rootClasses = new Set();
-let assignedUrl = '';
-let prevented = false;
-
-const context = {
-    URL,
-    Set,
-    localStorage: { getItem: () => JSON.stringify({ animationLevel: 'max' }) },
-    sessionStorage: {
-        values: new Map(),
-        getItem(key) { return this.values.get(key) || null; },
-        setItem(key, value) { this.values.set(key, value); },
-        removeItem(key) { this.values.delete(key); }
-    },
+const css = fs.readFileSync(path.join(root, 'styles/page-transitions.css'), 'utf8');
+const location = new URL('https://example.test/notes/index.html');
+const listeners = new Map();
+const hints = [];
+const timers = new Map();
+const dataset = {};
+let nextTimer = 0;
+let level = 'max';
+const motion = { matches: false };
+const navigator = { onLine: true, connection: { effectiveType: '4g' } };
+const listen = (name, callback) => listeners.set(name, callback);
+vm.runInNewContext(source, {
+    URL, location, navigator, localStorage: { getItem: () => JSON.stringify({ animationLevel: level }) },
+    window: { matchMedia: () => motion, addEventListener: listen },
     document: {
-        readyState: 'complete',
-        documentElement: {
-            classList: {
-                add: name => rootClasses.add(name),
-                remove: name => rootClasses.delete(name),
-                toggle: (name, enabled) => enabled ? rootClasses.add(name) : rootClasses.delete(name)
-            },
-            setAttribute() {},
-            removeAttribute() {}
-        },
-        addEventListener: (name, callback) => pageListeners.set(name, callback)
-    }
-};
-context.window = {
-    location: {
-        href: 'https://almanion.github.io/index.html',
-        origin: 'https://almanion.github.io',
-        pathname: '/index.html',
-        search: '',
-        assign: url => { assignedUrl = url; }
+        documentElement: { dataset }, addEventListener: listen, createElement: () => ({}),
+        head: { appendChild: hint => hints.push(hint.href) }
     },
-    matchMedia: () => ({ matches: false }),
-    setTimeout: callback => { callback(); return 1; },
-    addEventListener: (name, callback) => pageListeners.set('window:' + name, callback)
-};
-
-vm.runInNewContext(source, context, { filename: 'page-transitions.js' });
-
-const link = {
-    href: 'https://almanion.github.io/physics.html',
-    target: '',
-    hasAttribute: () => false
-};
-pageListeners.get('click')({
-    defaultPrevented: false,
-    button: 0,
-    metaKey: false,
-    ctrlKey: false,
-    shiftKey: false,
-    altKey: false,
-    target: { closest: () => link },
-    preventDefault: () => { prevented = true; }
+    setTimeout(fn) { timers.set(++nextTimer, fn); return nextTimer; },
+    clearTimeout: id => timers.delete(id)
 });
+const flush = () => { for (const fn of timers.values()) fn(); timers.clear(); };
+function hover(href, options = {}) {
+    const link = {
+        href: new URL(href, location).href, target: options.target || '',
+        hasAttribute: name => name === 'download' && !!options.download, matches: () => true,
+        contains: node => node === link
+    };
+    const type = options.type || 'pointerover';
+    listeners.get(type)({ type, target: { closest: () => link }, pointerType: options.pointerType || 'mouse' });
+}
 
-assert.strictEqual(prevented, true);
-assert.strictEqual(assignedUrl, link.href);
-assert.ok(rootClasses.has('site-page-leaving'));
-assert.ok(css.includes('@view-transition'));
-assert.ok(css.includes('prefers-reduced-motion: reduce'));
+assert.equal(listeners.has('click'), false, 'navigation, history and modified clicks belong to the browser');
+assert.equal(hints.length, 0, 'opening a page must not download other documents');
+hover('math.html');
+listeners.get('pointerout')({ relatedTarget: null });
+flush();
+for (const url of ['#section', 'admin.html', 'english.html', 'matcenter.html', 'math.html?key=abc',
+    'https://elsewhere.test/notes/math.html', '../notes-copy/math.html', 'other/math.html']) {
+    hover(url); flush();
+}
+for (const options of [{ target: '_blank' }, { download: true }, { pointerType: 'touch' }]) {
+    hover('physics.html', options); flush();
+}
+for (const state of [{ effectiveType: 'slow-2g' }, { saveData: true }]) {
+    navigator.connection = state; hover('physics.html'); flush();
+}
+navigator.connection = {};
+assert.deepEqual(hints, []);
+hover('math.html#one'); flush();
+hover('math.html#two'); flush();
+hover('physics.html', { type: 'focusin' }); flush();
+hover('chemistry.html'); flush();
+assert.deepEqual(hints, ['https://example.test/notes/math.html', 'https://example.test/notes/physics.html']);
+let skipped = 0;
+const event = { viewTransition: { skipTransition() { skipped++; } } };
+listeners.get('pageswap')(event);
+level = 'medium'; listeners.get('almanion-settings-applied')();
+assert.equal(dataset.pageMotion, 'medium');
+level = 'off'; listeners.get('pagereveal')(event);
+assert.equal(dataset.pageMotion, 'off');
+level = 'max'; motion.matches = true; listeners.get('pageswap')(event);
+assert.equal(skipped, 2);
 
-const transitionPages = [
-    'index.html', 'physics.html', 'physics-10.html', 'physics-exam.html',
-    'chemistry.html', 'chemistry-10.html', 'math.html', 'geometry.html',
-    'geometry-formulas.html', 'likbez.html', 'literature-10.html', 'english.html', 'matcenter.html',
-    'duty-10-1.html', 'tour-10-1.html'
-];
-transitionPages.forEach(file => {
-    const html = fs.readFileSync(path.join(root, file), 'utf8');
-    assert.ok(html.includes('styles/page-transitions.css'), file + ': transition stylesheet is missing');
-    assert.ok(html.includes('page-transitions.js'), file + ': transition script is missing');
-});
-
-console.log('cross-page transitions: all tests passed');
+assert.match(css, /prefers-reduced-motion: no-preference/);
+assert.match(css, /types: site-page/);
+for (const page of ['index', 'physics-10', 'english', 'matcenter', 'duty-10-1', 'tour-10-1',
+    'admin', 'constructor', 'contests', 'homework', 'planner', 'sport']) {
+    const html = fs.readFileSync(path.join(root, page + '.html'), 'utf8');
+    assert.match(html, /<script defer src="page-transitions\.js/, page);
+    assert.match(html, /styles\/page-transitions\.css/, page);
+}
+if (process.env.ALMANION_TEST_SITE) {
+    const site = process.env.ALMANION_TEST_SITE;
+    const read = page => fs.readFileSync(path.join(site, page + '.html'), 'utf8');
+    const home = read('index');
+    const physics = read('physics-10');
+    for (const html of [home, physics, read('admin')]) {
+        const optIn = html.indexOf('<style data-page-transitions>');
+        assert.ok(optIn > 0 && optIn < html.indexOf('src="theme-bootstrap.js'), 'the snapshot opt-in must arrive with the page');
+    }
+    const shared = home.match(/href="(\/styles\/releases\/style-new\.[a-f\d]{16}\.css)"/)[1];
+    assert.ok(physics.includes('href="' + shared + '"'));
+    assert.ok(physics.includes('src="vendor/katex/katex.min.js"'));
+    assert.ok(!physics.includes('cdn.jsdelivr.net/npm/katex'));
+}
+console.log('native navigation, motion preferences and deliberate public-page warmup passed');

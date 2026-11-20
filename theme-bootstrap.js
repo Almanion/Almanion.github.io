@@ -66,6 +66,7 @@
 
     function applyEarlyTheme(settings) {
         var root = document.documentElement;
+        root.dataset.pageMotion = settings.animationLevel;
         if (settings.experimental !== false) {
             var mode = settings.expMode === 'graphite' ? 'graphite' : 'prism';
             root.dataset.exp = mode + (settings.expDark ? '-dark' : '-light');
