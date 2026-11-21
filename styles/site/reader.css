@@ -45,12 +45,51 @@
     border-radius: 12px;
     background: var(--bg-secondary);
 }
-.exp-reader-footer-next.is-pulling {
-    outline: 2px solid var(--accent-color);
-    outline-offset: -2px;
-    background-image: linear-gradient(to right, color-mix(in srgb, var(--accent-color) 18%, transparent) calc(var(--reader-pull) * 100%), transparent 0);
+@media screen {
+    body.exp-reader-active .main-content { min-height: 100svh; }
+}
+.reader-pull-preview {
+    height: calc(var(--pull-space, 0px) + var(--pull-distance, 0px));
+    overflow: hidden;
+    pointer-events: none;
+    user-select: none;
+    text-align: center;
+}
+.reader-pull-preview strong {
+    display: block;
+    max-width: 42ch;
+    margin: var(--pull-space, 0px) auto 0;
+    padding: .35rem .85rem;
+    color: var(--text-primary);
+    font-size: calc(clamp(1.25rem, 2.4vw, 1.5rem) * var(--note-scale, 1));
+    line-height: 1.23;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+    opacity: clamp(0, calc(var(--pull-progress, 0) * 2.25), 1);
+}
+.reader-pull-preview strong::before {
+    content: "";
+    display: block;
+    width: 1.8rem;
+    height: 2px;
+    margin: 0 auto .5rem;
+    border-radius: 2px;
+    background: var(--accent-color);
+}
+.reader-pulling { overflow-anchor: none; }
+@media screen and (prefers-reduced-motion: no-preference) {
+    .reader-pull-motion .exp-reader-current {
+        transform-origin: center bottom;
+        scale: 1 var(--pull-stretch, 1);
+    }
+    .reader-pull-motion .reader-pull-preview strong {
+        transform: translateY(calc(.65rem * (1 - var(--pull-progress, 0)))) scale(calc(.82 + .18 * var(--pull-progress, 0)));
+    }
+    .reader-pull-motion.reader-pull-returning :is(.exp-reader-current, .reader-pull-preview, .reader-pull-preview strong) {
+        transition: height 180ms ease-out, scale 180ms ease-out, transform 180ms ease-out, opacity 110ms ease-out;
+    }
 }
 @media (max-width: 768px) {
     .reader-course-switch { width: auto; padding-inline: var(--m-pad, .85rem); }
 }
-@media print { .reader-course-switch, .stress-alphabet { display: none !important; } }
+@media print { .reader-course-switch, .stress-alphabet, .reader-pull-preview { display: none !important; } }

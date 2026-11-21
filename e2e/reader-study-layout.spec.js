@@ -128,6 +128,72 @@ test('the alphabet jumps to the first matching stress word, above the fold and c
     expect(await words.count()).toBe(count);
 });
 
+async function scrollToBottom(page, offset = 0) {
+    return page.evaluate(px => {
+        const root = document.scrollingElement;
+        window.scrollTo({ top: root.scrollHeight - root.clientHeight - px, behavior: 'instant' });
+        return window.scrollY;
+    }, offset);
+}
+
+test('the wheel reveals the next title, waits for another scroll and ignores momentum', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/physics-10.html#izoprotsessy-gazovye-zakony');
+    const current = page.locator('article.exp-reader-current');
+    const preview = page.locator('.reader-pull-preview');
+    const nextTitle = await page.locator('.exp-reader-footer-next strong').innerText();
+    await scrollToBottom(page, 45);
+    await page.mouse.move(850, 845);
+    for (let step = 0; step < 3; step++) await page.mouse.wheel(0, 120);
+    await expect(preview).toBeHidden();
+    await expect(current).toHaveAttribute('id', 'izoprotsessy-gazovye-zakony');
+
+    await scrollToBottom(page);
+    await page.waitForTimeout(300); // A new wheel gesture, after the scroll that reached the bottom.
+    await page.mouse.wheel(0, 120);
+    await expect(preview).toBeVisible();
+    await expect(preview).toHaveText(nextTitle);
+    await expect(current).toHaveAttribute('id', 'izoprotsessy-gazovye-zakony');
+    await expect(preview).toBeHidden(); // An abandoned wheel preview settles back.
+
+    await page.mouse.wheel(0, 120);
+    await expect(preview).toBeVisible();
+    await page.evaluate(() => {
+        window.addEventListener('wheel', event => {
+            // Deliver the momentum tail in the same burst even when CI is recording a heavy page.
+            const target = document.elementFromPoint(event.clientX, event.clientY);
+            const tail = new WheelEvent('wheel', { deltaY: 24, bubbles: true, cancelable: true });
+            window.readerConsumedMomentum = !target.dispatchEvent(tail);
+        }, { once: true, passive: true });
+    });
+    await page.mouse.wheel(0, 120);
+    await expect(current.locator('.topic-title')).toHaveText(nextTitle);
+    expect(await page.evaluate(() => window.readerConsumedMomentum)).toBe(true);
+});
+
+test('a short tablet topic reveals its successor from the bottom margin with reduced motion', async ({ page }) => {
+    await page.setViewportSize({ width: 820, height: 1180 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/physics-10.html');
+    const preview = page.locator('.reader-pull-preview');
+    const current = page.locator('article.exp-reader-current');
+    await expect(current).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    const origin = await scrollToBottom(page);
+    const nextTitle = await page.locator('.exp-reader-footer-next strong').innerText();
+    await page.mouse.move(410, 1130);
+    await page.mouse.wheel(0, 65);
+    await expect(preview).toHaveText(nextTitle);
+    // Settings can finish loading during the pull and reapply the current reader mode.
+    await page.evaluate(() => window.dispatchEvent(new Event('experimental-mode-changed')));
+    await expect(preview.locator('strong')).toBeInViewport();
+    await expect(preview.locator('strong')).toHaveCSS('transform', 'none');
+    await expect(current).toHaveCSS('scale', 'none');
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(origin + 10);
+    await page.mouse.wheel(0, 80);
+    await expect(current.locator('.topic-title')).toHaveText(nextTitle);
+});
+
 test.describe('touch reader', () => {
     test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
     test('a fresh upward pull at the bottom advances exactly once', async ({ page, browserName }) => {
@@ -136,7 +202,7 @@ test.describe('touch reader', () => {
         const current = page.locator('article.exp-reader-current');
         const ids = await page.locator('.main-content .content-section > .topic[id]').evaluateAll(nodes => nodes.map(n => n.id));
         const client = await page.context().newCDPSession(page);
-        async function pull(distance) {
+        async function start() {
             const point = await page.evaluate(() => {
                 for (let y = innerHeight - 100; y > 180; y -= 12) {
                     for (const x of [40, 120, innerWidth / 2]) {
@@ -147,29 +213,49 @@ test.describe('touch reader', () => {
                 throw Error('There is no reading area for the touch');
             });
             await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
-            for (let i = 1; i <= 6; i++) {
-                await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: point.x, y: point.y - distance * i / 6 }] });
-            }
-            await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+            return {
+                move: dy => client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: point.x, y: point.y - dy }] }),
+                end: () => client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }),
+                cancel: () => client.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] })
+            };
         }
-        async function bottom(offset = 0) {
-            await page.evaluate(px => {
-                const page = document.scrollingElement;
-                window.scrollTo({ top: page.scrollHeight - page.clientHeight - px, behavior: 'instant' });
-            }, offset);
+        async function pull(distance) {
+            const drag = await start();
+            for (let i = 1; i <= 6; i++) await drag.move(distance * i / 6);
+            await drag.end();
         }
+        const preview = page.locator('.reader-pull-preview');
+        const title = preview.locator('strong');
         await expect(current).toHaveAttribute('id', ids[0]);
-        await bottom(65);
+        await scrollToBottom(page, 65);
         await pull(130);
         await expect(current).toHaveAttribute('id', ids[0]);
-        await bottom();
-        await pull(35);
+        const origin = await scrollToBottom(page);
+        const partial = await start();
+        await partial.move(30);
+        await expect(title).toHaveText(await page.locator('.exp-reader-footer-next strong').innerText());
+        const small = await title.boundingBox();
+        await partial.move(80);
+        expect((await title.boundingBox()).width).toBeGreaterThan(small.width);
+        expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(origin + 30);
         await expect(current).toHaveAttribute('id', ids[0]);
-        await pull(105);
+        await partial.cancel();
+        await expect(preview).toBeHidden();
+        expect(Math.abs(await page.evaluate(() => window.scrollY) - origin)).toBeLessThan(3);
+
+        const full = await start();
+        await full.move(32);
+        await full.move(78);
+        await expect(current).toHaveAttribute('id', ids[0]);
+        await full.move(110);
+        await expect(current).toHaveAttribute('id', ids[1]);
+        await full.move(145);
+        await full.end();
         await expect(current).toHaveAttribute('id', ids[1]);
         await page.evaluate(last => window.experimentalReader.goToId(last), ids.at(-1));
-        await bottom();
+        await scrollToBottom(page);
         await pull(115);
+        await expect(preview).toBeHidden();
         await expect(current).toHaveAttribute('id', ids.at(-1));
     });
 });

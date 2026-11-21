@@ -173,60 +173,203 @@
         bindBottomPull(main);
     }
 
+    function createPullPreview(main) {
+        const preview = document.createElement('div');
+        preview.className = 'reader-pull-preview';
+        preview.hidden = true;
+        preview.setAttribute('aria-hidden', 'true'); // The next button already names the destination.
+        preview.dataset.printExclude = 'true';
+        const title = document.createElement('strong');
+        preview.append(title);
+        state.footer.after(preview);
+
+        let origin = 0;
+        let travel = 0;
+        let topic = null;
+        let closeTimer;
+
+        function hide() {
+            if (!topic) return;
+            window.clearTimeout(closeTimer);
+            preview.hidden = true;
+            preview.removeAttribute('style');
+            main.classList.remove('reader-pulling', 'reader-pull-motion', 'reader-pull-returning');
+            topic.style.removeProperty('--pull-stretch');
+            topic = null;
+        }
+
+        function open() {
+            hide();
+            const page = document.scrollingElement;
+            origin = Math.min(page.scrollTop, page.scrollHeight - page.clientHeight);
+            title.textContent = getTopicTitle(state.topics[state.index + 1]);
+            topic = state.topics[state.index];
+            preview.hidden = false;
+            main.classList.add('reader-pulling');
+            main.classList.toggle('reader-pull-motion', document.documentElement.dataset.pageMotion !== 'off'
+                && !document.body.classList.contains('animations-off'));
+            // Start the reveal at the viewport edge even when the entire topic fits on a tablet.
+            const inset = parseFloat(getComputedStyle(main).paddingBottom) || 0;
+            const space = Math.max(0, page.clientHeight - inset - preview.getBoundingClientRect().top);
+            preview.style.setProperty('--pull-space', space + 'px');
+            travel = Math.max(76, title.offsetHeight + 18);
+        }
+
+        function draw(progress) {
+            if (!topic || main.classList.contains('reader-pull-returning')) open();
+            // Resistance increases as the pull approaches the threshold.
+            const distance = Math.round(travel * progress * (1.4 - 0.4 * progress));
+            preview.style.setProperty('--pull-distance', distance + 'px');
+            preview.style.setProperty('--pull-progress', progress);
+            topic.style.setProperty('--pull-stretch', 1 + 0.014 * progress);
+            window.scrollTo({ top: origin + distance, behavior: 'instant' });
+        }
+
+        function release() {
+            if (!topic || main.classList.contains('reader-pull-returning')) return;
+            main.classList.add('reader-pull-returning');
+            preview.style.setProperty('--pull-distance', '0px');
+            preview.style.setProperty('--pull-progress', '0');
+            topic.style.removeProperty('--pull-stretch');
+            // Collapsing the scroll range returns the page to its original position.
+            closeTimer = window.setTimeout(hide, 210);
+        }
+        return { draw, release, hide };
+    }
+
     function bindBottomPull(main) {
-        const threshold = 76;
-        let pull = null;
-        const next = state.footer.querySelector('[data-reader-action="next"]');
-        const atBottom = () => {
+        const threshold = 100;
+        const wheelPause = 240;
+        const preview = createPullPreview(main);
+        let touch = null;
+        let consumeTouch = false;
+        let wheelDistance = 0;
+        let lastWheel = -Infinity;
+        let wheelMode = 'scroll';
+        let wheelTimer;
+
+        function atBottom() {
             const page = document.scrollingElement;
             return page && page.scrollHeight - page.scrollTop - page.clientHeight <= 4;
-        };
-        function reset() {
-            pull = null;
-            next.style.removeProperty('--reader-pull');
-            next.classList.remove('is-pulling');
         }
+
         function canPull() {
-            return state.active && state.index + 1 < state.topics.length && atBottom()
+            return state.active && state.index + 1 < state.topics.length
                 && (window.visualViewport?.scale || 1) <= 1.01 && !window.getSelection()?.toString()
                 && !document.body.classList.contains('sidebar-open')
-                && !document.querySelector('dialog[open], .auth-overlay:not(.hidden), .settings-modal:not(.hidden), .lightbox-overlay.open');
+                && !document.querySelector('dialog[open], .note-filter[open], .auth-overlay:not(.hidden), .settings-modal:not(.hidden), .lightbox-overlay.open');
         }
-        main.addEventListener('touchstart', event => {
-            reset();
-            if (event.touches.length !== 1 || !canPull()) return;
-            if (event.target.closest(SWIPE_BLOCK_SELECTOR) && !event.target.closest('.exp-reader-footer-button')) return;
-            for (let el = event.target; el && el !== main; el = el.parentElement) {
-                if (el.scrollHeight > el.clientHeight + 2 && /auto|scroll/.test(getComputedStyle(el).overflowY)) return;
+
+        function eligibleTarget(target) {
+            if (target.closest(SWIPE_BLOCK_SELECTOR) && !target.closest('.exp-reader-footer-button')) return false;
+            for (let el = target; el && el !== main; el = el.parentElement) {
+                if (el.scrollHeight > el.clientHeight + 2 && /auto|scroll/.test(getComputedStyle(el).overflowY)) return false;
             }
-            const touch = event.touches[0];
-            pull = { x: touch.clientX, y: touch.clientY, id: touch.identifier, index: state.index };
-        }, { passive: true });
-        function distance(touch) {
-            const up = pull.y - touch.clientY;
-            return up > Math.abs(pull.x - touch.clientX) * 1.5 ? up : 0;
+            return true;
         }
-        main.addEventListener('touchmove', event => {
-            if (!pull) return;
-            const touch = event.touches[0];
-            if (event.touches.length !== 1 || touch.identifier !== pull.id
-                || Math.abs(touch.clientX - pull.x) > Math.max(26, Math.abs(touch.clientY - pull.y))) return reset();
-            const up = distance(touch);
-            next.classList.toggle('is-pulling', up > 12);
-            next.style.setProperty('--reader-pull', Math.min(1, up / threshold));
-        }, { passive: true });
-        main.addEventListener('touchend', event => {
-            if (!pull) return;
-            const touch = event.changedTouches[0];
-            const advance = !event.touches.length && touch.identifier === pull.id && state.index === pull.index
-                && distance(touch) >= threshold && canPull();
+
+        function move(distance) {
+            if (distance < threshold) {
+                preview.draw(distance / threshold);
+                return false;
+            }
+            return goToIndex(state.index + 1, { source: 'pull' });
+        }
+
+        function reset() {
+            touch = null;
+            wheelDistance = 0;
+            wheelMode = 'scroll';
+            window.clearTimeout(wheelTimer);
+            preview.hide();
+        }
+        state.cancelPull = reset;
+        for (const type of ['almanion:topic-visible', 'pagehide', 'orientationchange']) {
+            window.addEventListener(type, reset);
+        }
+
+        main.addEventListener('touchstart', event => {
+            main.removeEventListener('touchmove', onTouchMove);
             reset();
-            if (advance) {
+            consumeTouch = false;
+            if (event.touches.length !== 1 || !atBottom() || !canPull() || !eligibleTarget(event.target)) return;
+            const finger = event.touches[0];
+            touch = { id: finger.identifier, x: finger.clientX, y: finger.clientY, pulling: false };
+            main.addEventListener('touchmove', onTouchMove, { passive: false });
+        }, { passive: true });
+
+        function onTouchMove(event) {
+            if (consumeTouch && event.touches.length === 1) {
                 if (event.cancelable) event.preventDefault();
-                goToIndex(state.index + 1, { source: 'swipe' });
+                return;
+            }
+            if (!touch) return;
+            const finger = event.touches[0];
+            if (event.touches.length !== 1 || finger.identifier !== touch.id || !canPull()) return reset();
+            const up = touch.y - finger.clientY;
+            const across = Math.abs(touch.x - finger.clientX);
+            if (up < -8 || (across > 12 && across * 1.5 > up)) return reset();
+            if (!touch.pulling) {
+                if (up < 8) return;
+                // Even a single coalesced move must reveal the title before it can turn the page.
+                touch.offset = Math.max(0, up - (threshold - 20));
+            }
+            if (!event.cancelable) return reset();
+            event.preventDefault();
+            touch.pulling = true;
+            consumeTouch = move(Math.max(0, up - touch.offset));
+        }
+
+        function finishTouch(event) {
+            main.removeEventListener('touchmove', onTouchMove);
+            if ((consumeTouch || touch?.pulling) && event.cancelable) event.preventDefault();
+            if (event.type === 'touchend' && touch?.pulling && !event.touches.length && canPull()) {
+                const finger = event.changedTouches[0];
+                const up = touch.y - finger.clientY;
+                const reached = up - touch.offset >= threshold && up > Math.abs(touch.x - finger.clientX) * 1.5;
+                if (finger.identifier === touch.id && reached) move(threshold);
+            }
+            touch = null;
+            consumeTouch = false;
+            preview.release();
+        }
+        main.addEventListener('touchend', finishTouch, { passive: false });
+        main.addEventListener('touchcancel', finishTouch, { passive: false });
+
+        main.addEventListener('wheel', event => {
+            const now = performance.now();
+            if (now - lastWheel > wheelPause) wheelMode = atBottom() ? 'pull' : 'scroll';
+            lastWheel = now;
+            const modified = event.ctrlKey || event.shiftKey || event.altKey || event.metaKey;
+            if (modified || event.deltaY <= 0 || Math.abs(event.deltaX) > event.deltaY || !event.cancelable) {
+                wheelMode = 'scroll';
+                if (wheelDistance) reset();
+                return;
+            }
+            // Momentum from reaching the bottom or turning a page is still the original scroll.
+            if (wheelMode === 'turned') {
+                event.preventDefault();
+                return;
+            }
+            if (wheelMode !== 'pull' || touch || !canPull()) return;
+            if (!wheelDistance && (!atBottom() || !eligibleTarget(event.target))) {
+                wheelMode = 'scroll';
+                return;
+            }
+            event.preventDefault();
+            const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1;
+            wheelDistance += Math.min(event.deltaY * unit, threshold / 2);
+            window.clearTimeout(wheelTimer);
+            if (move(wheelDistance)) {
+                wheelMode = 'turned';
+                lastWheel = performance.now();
+            } else {
+                wheelTimer = window.setTimeout(() => {
+                    wheelDistance = 0;
+                    preview.release();
+                }, 800);
             }
         }, { passive: false });
-        main.addEventListener('touchcancel', reset, { passive: true });
     }
 
     function syncExperimentalReader() {
@@ -256,6 +399,7 @@
         window.clearTimeout(state.rapidTimer);
         state.rapidTimer = 0;
         cancelSwipe();
+        state.cancelPull();
         state.active = false;
         state.toolbar.hidden = true;
         state.footer.hidden = true;
@@ -336,6 +480,7 @@
 
         const previousIndex = state.index;
         const direction = nextIndex > previousIndex ? 'next' : 'prev';
+        const entrance = settings.source === 'pull' ? 'scroll' : direction;
         const now = performance.now();
         const rapid = !!settings.rapid
             || now - state.lastNavigationAt < 150;
@@ -343,10 +488,10 @@
 
         setRapidNavigationState(rapid);
         const readerScrollTop = settings.scroll ? getReaderScrollTop() : null;
-        const step = ['keyboard', 'controls', 'swipe'].includes(settings.source);
+        const step = ['keyboard', 'controls', 'swipe', 'pull'].includes(settings.source);
         state.index = nextIndex;
         applyTopicVisibility(previousIndex);
-        prepareTopic(state.topics[nextIndex], settings.animate && step && !rapid ? direction : null);
+        prepareTopic(state.topics[nextIndex], settings.animate && step && !rapid ? entrance : null);
         updateReaderUi();
         if (settings.updateHash) updateLocationHash();
         if (readerScrollTop !== null) scrollToReader(readerScrollTop);
