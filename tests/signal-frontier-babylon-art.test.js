@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),Module=require('node:module'),esbuild=require('esbuild');
 const source=path.resolve('game-source/signal-frontier/src/babylon/prefabs.js'),compiled=esbuild.transformSync(fs.readFileSync(source,'utf8'),{format:'cjs',target:'node20'}),moduleFile=new Module(source,module);
 moduleFile._compile(compiled.code,source);const {PREFAB_NAMES,prefabData,Kit}=moduleFile.exports;
-assert.equal(PREFAB_NAMES.length,42);assert.ok(PREFAB_NAMES.includes('medic-armour'));let triangles=0,shadowTriangles=0;
+assert.equal(PREFAB_NAMES.length,43);assert.ok(PREFAB_NAMES.includes('medic-armour'));assert.ok(PREFAB_NAMES.includes('shield-plate'));let triangles=0,shadowTriangles=0;
 for(const name of PREFAB_NAMES){
  const model=prefabData(name);assert.equal(model,prefabData(name),name+': immutable geometry must be reused');
  for(const part of ['solid','shadow']){

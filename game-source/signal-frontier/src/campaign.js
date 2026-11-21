@@ -381,7 +381,7 @@
       "frontier-9", "frontier-10",
     ].includes(s.campaign?.id);
   const SPECIAL = ["rocket", "flamer", "bomber", "tank", "mortar"];
-  const recruits = ["rifle", "medic", "scout", "artillery", "drone"];
+  const recruits = ["rifle", "medic", "shield", "scout", "artillery", "drone"];
   function create(E) {
     const alive = (s, kind) =>
       s.units.filter((u) => u.hp > 0 && (!kind || u.kind === kind));
@@ -802,6 +802,7 @@
         [
           "rifle",
           "medic",
+          "shield",
           "scout",
           "artillery",
           "drone",
@@ -865,7 +866,7 @@
           if (!E.construction.enabled(s) && !mineFor(s, producer)?.remaining)
             return fail("exhausted");
         } else if (E.construction.enabled(s)) {
-          const kind = ["rifle", "scout", "medic"].includes(action)
+          const kind = ["rifle", "scout", "medic", "shield"].includes(action)
             ? "barracks"
             : action === "artillery"
               ? "foundry"
@@ -910,7 +911,7 @@
           if (!ready(s, "outpost").length) return fail("expansion");
         }
         if (
-          ["hack", "weapons", "armor", "artillery", "medic"].includes(action) &&
+          ["hack", "weapons", "armor", "artillery", "medic", "shield"].includes(action) &&
           s.campaign.tier < 2
         )
           return fail("network");
@@ -2412,6 +2413,7 @@
           "outpost",
           "rifle",
           "medic",
+          "shield",
           "artillery",
           "drone",
           "barracks",
@@ -2471,6 +2473,11 @@
             (["carrier","archive-gate","power-node","archive-depot"].includes(u.kind)&&!eastern(s)) ||
             (u.kind === "scout" && !E.fogged(s)) ||
             (u.kind === "medic" && (!Matter.enabled(s) || c.tier < 2 || u.target !== null)) ||
+            (u.kind === "shield" ? !Matter.enabled(s) || c.tier < 2 || !u.guard ||
+              !num(u.guard.angle, -Math.PI, Math.PI) || !num(u.guard.lift, 0, 1) ||
+              !num(u.guard.scan, 0, .29) || !num(u.guard.pulse, 0, E.support.plate.pulse) ||
+              !int(u.guard.watch, 0, s.seq) ||
+              (u.care && (u.guard.lift || u.guard.scan || u.guard.watch || u.guard.pulse)) : u.guard !== undefined) ||
             (!combat(s) &&
               (SPECIAL.includes(u.kind) || u.combat !== undefined)) ||
             (!u.team && u.combat !== undefined) ||
@@ -2508,10 +2515,10 @@
           )
             return null;
           if (
-            (["rifle", "scout", "medic"].includes(u.kind) && u.group !== 1) ||
+            (["rifle", "scout", "medic", "shield"].includes(u.kind) && u.group !== 1) ||
             (u.kind === "artillery" && u.group !== 2) ||
             (u.kind === "carrier" && u.group !== (s.east?.claimed?1:0)) ||
-            (!["rifle", "scout", "medic", "carrier", "artillery"].includes(u.kind) && u.group !== 0)
+            (!["rifle", "scout", "medic", "shield", "carrier", "artillery"].includes(u.kind) && u.group !== 0)
           )
             return null;
           if (
@@ -2583,7 +2590,7 @@
                   barracks: [
                     "rifle",
                     "scout",
-                    ...(Matter.enabled(s) && c.tier >= 2 ? ["medic"] : []),
+                    ...(Matter.enabled(s) && c.tier >= 2 ? ["medic", "shield"] : []),
                     ...(!E.construction.enabled(s) ? ["weapons"] : []),
                     ...(extended(s) ? ["repair"] : []),
                   ],

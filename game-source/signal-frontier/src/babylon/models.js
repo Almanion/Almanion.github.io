@@ -37,7 +37,7 @@ export class Models {
   foot(x,y,w,d,lift,color=P.shell,a=this.a) {
     const p=this.point(x,y,0,a),ground=this.E.elevation(p[0],p[1],this.view.mapId)-this.floor,
       z=lift+Math.max(-7,Math.min(7,ground));
-    if(!this.u.team&&['hero','rifle','medic','scout','drone'].includes(this.u.kind))this.prefab('drive-pod',x,y,z,a,w/9.5,d/6,1);
+    if(!this.u.team&&['hero','rifle','medic','shield','scout','drone'].includes(this.u.kind))this.prefab('drive-pod',x,y,z,a,w/9.5,d/6,1);
     else if(this.u.kind==='sentinel')this.prefab('sentinel-boot',x,y,z,a,w/9.5,d/6,1);
     else {this.box(x+1,y,w,d,z,2.5,P.dark,a);this.box(x+1,y,w*.7,d*.7,z+2.5,1.6,color,a);}
     return z;
@@ -58,14 +58,26 @@ export class Models {
       bob=Math.abs(Math.sin(p.phase))*p.move*.6,reload=hero&&!this.memory?this.s.reload:0,
       hand=reload?Math.sin(clamp(1-reload/1.1)*Math.PI):0,
       channel=hero&&!this.memory&&(this.s.terminal?.channeling||this.s.terminals?.some(t=>t.channeling));
+    const brace=this.u.guard?.lift||0;
     for(const side of [-1,1]) {
       const st=this.step(side<0?0:.5,.62,3),direction=(p.direction??this.a)-this.a,
-        x=st.x*Math.cos(direction)+(side>0?-4:4)*(1-p.move),y=side*5+st.x*Math.sin(direction),
+        x=st.x*Math.cos(direction)*(1-brace*.3)+(side>0?-4:4)*(1-p.move)+side*brace*3,y=side*(5+2*brace)+st.x*Math.sin(direction),
         lift=this.foot(x,y,9.5,6,st.lift,material),knee=[x*.45+1.7,side*4.5,7.5+lift*.4];
       this.beam([x,y,lift+3],knee,3.4,material);this.beam(knee,[0,side*3,13],4,P.dark);this.joint(...knee,2.1,P.dark);
       this.box(knee[0]+.5,knee[1],4.8,4.4,knee[2]-.5,2.6,material);
     }
     this.box(-1,0,12,12,10+bob,5,P.dark);
+    if(this.u.kind==="shield"){
+      const guard=globalThis.SignalUnitModels.shieldPose(this.u,this.ui.reduced),face=this.u.guard?.angle??a,
+        r=this.recoil*.5,mount=this.E.MOUNTS.shield;
+      this.prefab('rifle-armour',0,0,bob,face,1.05,1.16,1);
+      this.beam([0,6,21],[5,10,14],4,P.steel,a);this.beam([5,10,14],[12-r,3,mount-1],3,P.dark,a);
+      this.box(15-r,2,13,5,mount-3,5,P.field,a);this.box(22-r,0,6,4,mount-1.5,3,P.dark,a);this.flash(25-r,0,mount,a,.6);
+      this.beam([0,-6,20],[guard.x,guard.y-3,17],4,P.steel,guard.a);
+      this.prefab('shield-plate',guard.x,guard.y,guard.z,guard.a);
+      if(this.u.guard?.pulse)this.light(guard.x+4,guard.y,2,7,guard.z+25,1,guard.a,"#efffea");
+      return;
+    }
     if(this.u.kind==="medic"){
       const pulse=this.u.flash>0&&!this.memory,tip=pulse?15:5;
       this.prefab('medic-armour',0,0,bob,a);
@@ -278,6 +290,7 @@ export class Models {
     } else {
       this.box(-1,0,r*1.4,r*1.2,3,4,P.steel);for(const side of [-1,1])this.beam([-3,side*3,2],[-r,side*7,1],3,P.dark);
       if(this.u.kind==="scout"){this.beam([-4,0,4],[7,5,3],2.5,P.dark);this.box(7,5,14,8,2,3,P.steel,this.a+.2);}
+      else if(this.u.kind==="shield"){this.box(0,-14,24,17,0,3,P.steel,this.a+.37);this.box(0,-14,17,3,3,1,P.field,this.a+.37);}
       else if(this.u.kind==="medic"){this.box(-6,-4,15,7,3,4,P.dark,this.a+.24);this.beam([1,5,3],[8,10,1],2.5,P.steel);}
       else if(!["drone","runner","bomber"].includes(this.u.kind))this.beam([3,6,3],[this.u.kind==="rocket"?28:24,8,2],this.u.kind==="rocket"?7:3,P.dark);
     }
@@ -289,7 +302,7 @@ export class Models {
     this.begin(u,s,ui,memory);
     if(['carrier','archive-gate','power-node','archive-depot'].includes(u.kind)){this.archiveModel();return;}
     if(u.hp<=0){this.wreck();return;}
-    if(u.kind==="hero"||u.kind==="rifle"||u.kind==="medic")this.infantry();
+    if(u.kind==="hero"||u.kind==="rifle"||u.kind==="medic"||u.kind==="shield")this.infantry();
     else if(u.kind==="sentinel"||u.kind==="warden")this.robot();
     else if(u.kind==="runner")this.runner();else if(u.kind==="scout")this.scout();else if(u.kind==="drone")this.drone();
     else if(u.kind==="artillery")this.artillery();else if(u.kind==="rocket")this.rocket();

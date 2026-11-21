@@ -184,7 +184,7 @@
       const interval =
         type === "field-heal" ? .22 : type === "shot"
           ? 0.045
-          : ["hit", "spark", "shield"].includes(type)
+          : ["hit", "spark", "shield", "shield-block"].includes(type)
             ? 0.07
             : 0.035;
       if (now - (this.last[key] ?? -100) < interval || this.voices.size >= 24)
@@ -337,6 +337,9 @@
       } else if (type === "hurt") {
         noise(680, 180, 0.16, 0.12);
         tone(105, 60, 0.19, 0.14);
+      } else if (type === "shield-block") {
+        noise(2800, 850, .055, .048, 0, "bandpass");
+        tone(390, 215, .085, .039, 0, "triangle");
       } else if (type === "shield") {
         tone(620, 360, 0.23, 0.075);
         tone(934, 670, 0.18, 0.035);

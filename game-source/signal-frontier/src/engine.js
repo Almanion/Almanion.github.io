@@ -23,6 +23,7 @@
     hero: { hp: 150, r: 14, speed: 205, range: 620, damage: 24, rate: 0.16 },
     rifle: { hp: 115, r: 12, speed: 125, range: 300, damage: 13, rate: 0.44 },
     medic: { hp: 90, r: 12, speed: 140, range: 0, damage: 0, rate: 0 },
+    shield: { hp: 115, r: 16, speed: 110, range: 280, damage: 9, rate: .72 },
     artillery: { hp: 220, r: 20, speed: 78, range: 540, damage: 98, rate: 2.6 },
     sentinel: { hp: 90, r: 13, speed: 82, range: 310, damage: 10, rate: 1.35 },
     runner: { hp: 55, r: 11, speed: 145, range: 48, damage: 13, rate: 0.85 },
@@ -54,7 +55,7 @@
     ["sentinel", 420, 720], ["runner", 56, 700], ["warden", 500, 780],
     ["rocket", 620, 820], ["flamer", 240, 720], ["bomber", 64, 740],
     ["tank", 640, 840], ["mortar", 840, 940],
-    ["scout", 0, 980], ["medic", 0, 580], ["drone", 0, 240],
+    ["scout", 0, 980], ["medic", 0, 580], ["shield", 280, 640], ["drone", 0, 240],
     ["base", 0, 800], ["outpost", 0, 840], ["barracks", 0, 360],
     ["bunker", 0, 360], ["logistics", 0, 240], ["condenser", 0, 400], ["foundry", 0, 400], ["arsenal", 0, 400], ["jammer", 0, 720],
     ["turret", 540, 800], ["bastion", 620, 940], ["citadel", 840, 980],
@@ -63,7 +64,7 @@
     balanced = (s) => balanceEligible(s) && s.campaign.balance === 1,
     rangedStats = Object.freeze(Object.fromEntries(Object.entries(ENGAGEMENT)
       .map(([kind, values]) => [kind, Object.freeze({ ...C[kind], range: values.range })]))),
-    legacySight = Object.freeze({ hero: 600, scout: 720, rifle: 440, artillery: 480,
+    legacySight = Object.freeze({ hero: 600, scout: 720, rifle: 440, shield: 440, artillery: 480,
       bunker: 280, drone: 180, base: 380, outpost: 380, barracks: 280, foundry: 280, arsenal: 280 });
   const sheltered = (u) => u.care?.inside && u.care.garrison === true,
     garrisonStats = [C, rangedStats].map((table) => Object.freeze(Object.fromEntries(
@@ -83,6 +84,7 @@
       damage: 54, rate: 6.4, siege: true })])));
   const MOUNTS = Object.freeze({
     hero: 19.5,
+    shield: 16,
     citadel: 64,
     turret: 24,
     artillery: 23,
@@ -399,6 +401,7 @@
       think: 0,
     };
     if (s.campaign) u.map = mapFor(s).id;
+    if (kind === "shield") u.guard = { angle: u.angle, lift: 0, pulse: 0, scan: 0, watch: 0 };
     owners.set(u, s);
     s.units.push(u);
     return u;
@@ -1242,8 +1245,21 @@
         (Math.floor(i / width) - (Math.ceil(members.length / width) - 1) / 2) *
           spacing,
     }));
-    const waiting = [...members],
+    const shields = members.filter((u) => u.guard), mixed = shields.length > 0 && shields.length < members.length,
+      line = mixed ? members.filter((u) => !u.guard) : [...members],
       plans = [], departures = [], corridors = new Map(), reserved = [];
+    if (mixed) {
+      // The long axis of the formation points along the order. Even a pair
+      // moving due north gets a distinct front and rear slot.
+      const dx = x - members.reduce((sum, u) => sum + u.x, 0) / members.length,
+        dy = y - members.reduce((sum, u) => sum + u.y, 0) / members.length,
+        a = dx || dy ? Math.atan2(dy, dx) : shields[0].guard.angle, co = Math.cos(a), si = Math.sin(a);
+      slots.sort((a, b) => b.x - a.x);
+      for (const slot of slots) {
+        const forward = slot.x - x, side = slot.y - y;
+        slot.x = x + forward * co - side * si; slot.y = y + forward * si + side * co;
+      }
+    }
     const nav = navigation(s);
     if (members.length >= 8 && campaign.logistics(s)) {
       const centre = members.reduce((p, u) => ({ x: p.x + u.x / members.length, y: p.y + u.y / members.length }), { x: 0, y: 0 });
@@ -1273,6 +1289,7 @@
       return pathTo(u, target, r);
     };
     for (const slot of slots) {
+      const waiting = mixed && shields.length ? shields : line;
       // Only the nearest member is consumed. Sorting every remaining member
       // repeats thousands of distance calculations in a large formation.
       let nearest = 0, distance = dist(waiting[0], slot);
@@ -1336,6 +1353,7 @@
     if (!line.length || !orderUnits(s, medics.length ? line.map((u) => u.id) : ids, target.x, target.y)) return false;
     for (const u of line) {
       u.target = { x: target.x, y: target.y, id: target.id };
+      if (u.guard) u.guard.scan = 0;
       u.think = 0;
     }
     if (medics.length) {
@@ -1695,7 +1713,8 @@
     }
   }
   function follow(u, dt) {
-    let distance = C[u.kind].speed * dt;
+    const speed = C[u.kind].speed;
+    let distance = (u.guard ? speed + (support.plate.speed - speed) * u.guard.lift : speed) * dt;
     // Consume the exact travel budget, including small arc segments: no corner
     // skipping, overshoot or frame-rate-dependent speed near the destination.
     while (u.path.length && distance > 1e-8) {
@@ -1867,20 +1886,26 @@
       if (u.kind === "bastion") damage *= 0.6;
       if (["turret", "jammer"].includes(u.kind)) damage *= 0.8;
     }
+    const blocked = u.guard && support.facesBolt(u, attacker);
+    if (blocked) {
+      damage *= 1 - support.plate.reduction;
+      u.guard.pulse = support.plate.pulse;
+      emit(s, "shield-block", attacker.x, attacker.y, { team: u.team });
+    }
     if (
       s.campaign?.armor &&
       !u.team &&
-      ["hero", "rifle", "medic", "artillery"].includes(u.kind)
+      ["hero", "rifle", "medic", "shield", "artillery"].includes(u.kind)
     )
       damage *= 0.85;
     if (s.version >= 4 && u.defense) damage *= 0.35;
     u.hp -= damage;
-    u.hit = 0.14;
+    if (!blocked) u.hit = 0.14;
     u.repair = 3;
     if (u.kind === "hero") {
       s.damageTaken += damage;
       emit(s, "hurt", u.x, u.y);
-    } else emit(s, "hit", u.x, u.y, { team: u.team });
+    } else if (!blocked) emit(s, "hit", u.x, u.y, { team: u.team });
     if (u.hp <= 0) {
       u.hp = 0;
       if (campaign.logistics(s)) u.deadAt = s.t;
@@ -2162,6 +2187,7 @@
       u.hit = Math.max(0, u.hit - dt);
       u.repair = Math.max(0, u.repair - dt);
       u.flash = Math.max(0, u.flash - dt);
+      if (u.guard) u.guard.pulse = Math.max(0, u.guard.pulse - dt);
       if (u.care) {
         if (!sheltered(u) || u.care.exit) continue;
         if (u.kind !== "hero") {
@@ -2335,6 +2361,7 @@
           )
             target = preferred;
         }
+        if (u.guard) support.turnShield(s, u, opponents, dt);
         if (u.path.length) follow(u, dt);
         // Movement can change both the angle and the cover corridor this frame.
         if (
@@ -2455,9 +2482,13 @@
       for (const u of nearby(s, 1 - b.team, b, dist(b, next))) {
         if (u.hp <= 0 || u.care?.inside || u.team === b.team) continue;
         if (u.kind === "hero" && s.dashT > 0) continue;
-        const t = u.construction
+        let t = u.construction
           ? segmentRect(b.x, b.y, next.x, next.y, construction.rect(u), 2)
           : segmentCircle(b, next, u, C[u.kind].r + 2);
+        if (u.guard) {
+          const plate = support.plateContact(u, b, next);
+          if (plate !== null && (t === null || plate < t)) t = plate;
+        }
         if (
           t !== null &&
           t < first &&
@@ -2623,6 +2654,7 @@
           [
             "scout",
             "medic",
+            "shield",
             "warden",
             "bastion",
             "rocket",
@@ -2631,7 +2663,7 @@
             "tank",
             "mortar",
           ].includes(u.kind) ||
-          u.combat !== undefined ||
+          u.combat !== undefined || u.guard !== undefined ||
           ![0, 1].includes(u.team) ||
           !Number.isInteger(u.id) ||
           ids.has(u.id) ||
@@ -2936,6 +2968,7 @@
   API.construction = construction;
   campaign = Campaign.create({
     ...API,
+    get support() { return support; },
     makeClassic,
     initializeRecon: (s) => recon.init(s),
     map: mapFor,

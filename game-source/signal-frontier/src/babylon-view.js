@@ -322,6 +322,7 @@ export class BabylonView extends Legacy {
       const selected=!u.team&&(ui.selectionIds!=null?ui.selectionIds.includes(u.id):ui.mode==="tactical"&&u.group===ui.group);
       if(selected) {
         this.groundRing(c,u.x,u.y,E.C[u.kind].r+10,"#c8edda",2);
+        if(u.guard)this.shieldArc(c,u);
         if(ui.mode==="tactical"&&u.path?.length){c.setLineDash([5,7]);this.groundLine(c,[[u.x,u.y],...u.path.map(p=>[p.x,p.y])],"#b6e6d17a",2);c.setLineDash([]);const p=u.path.at(-1);this.groundRing(c,p.x,p.y,12,"#c8edda",2);}
         if(ui.mode==="tactical"&&u.rally){c.setLineDash([5,8]);this.groundLine(c,[[u.x,u.y],[u.rally.x,u.rally.y]],"#b2d6bf65",1);c.setLineDash([]);this.groundRing(c,u.rally.x,u.rally.y,14,"#b2d6bf",1.5);}
         if(ui.mode==="tactical"&&u.construction){const b=E.construction.rect(u);this.groundLine(c,[[b.x,b.y],[b.x+b.w,b.y],[b.x+b.w,b.y+b.h],[b.x,b.y+b.h],[b.x,b.y]],"#c8edda",2);}

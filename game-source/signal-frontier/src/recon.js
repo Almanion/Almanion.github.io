@@ -54,6 +54,7 @@
                 "hero",
                 "rifle",
                 "medic",
+                "shield",
                 "scout",
                 "artillery",
                 "runner",

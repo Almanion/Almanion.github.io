@@ -8,6 +8,7 @@
       hero: "Герой",
       rifle: "Стрелок",
       medic: "Полевой медик",
+      shield: "Щитоносец",
       scout: "Дозорный игрока",
       drone: "Рабочий дрон",
       artillery: "Артиллерия",
@@ -47,8 +48,8 @@
         height: id === "citadel" ? 80 : id === "base" ? 70 : 50,
       };
     }),
-    all = [...current, ...studies.specs.map((spec) => spec.id === "medic"
-      ? { ...spec, id: "study-medic", study: spec.id, name: "Медик · эскиз" } : spec)],
+    all = [...current, ...studies.specs.map((spec) => ["medic", "shield"].includes(spec.id)
+      ? { ...spec, id: "study-" + spec.id, study: spec.id, name: spec.name + " · эскиз" } : spec)],
     $ = (id) => document.getElementById(id),
     canvas = $("model-canvas"),
     group = $("group"),
@@ -67,6 +68,7 @@
     "hero",
     "rifle",
     "medic",
+    "shield",
     "scout",
     "drone",
     "artillery",
@@ -114,6 +116,8 @@
         angle: a,
         wind: action ? total * (1 - q) : 0,
         flash: id === "medic" && action ? E.support.fieldCare.pulse : 0,
+        ...(id === "shield" ? { guard: { angle: a, lift: action ? Math.min(1, q * 3) : 0,
+          pulse: action && q > .65 && q < .75 ? E.support.plate.pulse : 0 } } : {}),
         hit: 0,
         build: build ? E.development.items(state)[id].time * (1 - q) : 0,
         jobs:

@@ -1154,6 +1154,15 @@
       }
       this.groundLine(c, p, color, width);
     }
+    shieldArc(c, u) {
+      if (u.guard?.lift !== 1) return;
+      const arc = [], half = E.support.plate.halfAngle, r = E.C.shield.r + 13;
+      for (let i = 0; i <= 12; i++) {
+        const a = u.guard.angle + (i / 6 - 1) * half;
+        arc.push([u.x + Math.cos(a) * r, u.y + Math.sin(a) * r]);
+      }
+      this.groundLine(c, arc, "#b9edd2", 3);
+    }
     shadow(c, x, y, shape, height, angle = 0) {
       if (!["highlands", "districts", "districts-east"].includes(this.mapId)) return;
       const T = E.terrainFor(this.mapId),
@@ -1435,7 +1444,7 @@
       for (const e of events) {
         if (
           e.type === "care-door" || (e.type === "reinforce" &&
-          ["rifle", "medic", "scout", "artillery", "drone"].includes(e.action))
+          ["rifle", "medic", "shield", "scout", "artillery", "drone"].includes(e.action))
         ) {
           this.modelExits.set(e.x + ":" + e.y, this.modelClock || 0);
           if (this.modelExits.size > 128)
@@ -1465,6 +1474,7 @@
             "post-ready",
             "repair-ready",
             "field-heal",
+            "shield-block",
             "salvage",
             "breach",
           ].includes(e.type)
@@ -1473,7 +1483,7 @@
             ...e,
             seed,
             life: 0,
-            max: e.type === "field-heal" ? E.support.fieldCare.pulse : ["destroy", "blast"].includes(e.type)
+            max: e.type === "shield-block" ? E.support.plate.pulse : e.type === "field-heal" ? E.support.fieldCare.pulse : ["destroy", "blast"].includes(e.type)
               ? 1.1
               : e.type === "order"
                 ? 0.8
@@ -1819,6 +1829,7 @@
               : u.group === ui.group),
         )) {
           this.groundRing(c, u.x, u.y, E.C[u.kind].r + 10, "#c8edda", 2);
+          if (u.guard) this.shieldArc(c, u);
           if (overview && u.path.length) {
             c.save();
             c.setLineDash([5, 7]);
@@ -3226,7 +3237,13 @@
             ? "#99e6e2" : f.team ? "#e7aa87" : "#afe1cc";
         c.save();
         c.translate(0, -this.z(f.x, f.y));
-        if (f.type === "field-heal") {
+        if (f.type === "shield-block") {
+          c.globalAlpha = 1 - t;
+          for (let i = 0; i < 3; i++) {
+            const a = f.seed + i * TAU / 3, dx = Math.cos(a), dy = Math.sin(a), r = 2 + 7 * t;
+            line(c, [[f.x+dx*r,f.y-19+dy*r],[f.x+dx*(r+3),f.y-19+dy*(r+3)]], "#e0f5d8", 1.3);
+          }
+        } else if (f.type === "field-heal") {
           const medic = s.units.find((u) => u.id === f.medic), patient = s.units.find((u) => u.id === f.patient);
           if (medic?.hp > 0 && medic.flash > 0 && patient?.hp > 0 && !medic.care && !patient.care &&
               E.dist(medic, patient) <= E.support.fieldCare.range) {
@@ -3852,6 +3869,7 @@
           ],
           u.hp,
           u.defense,
+          u.guard ? [u.guard.angle, u.guard.lift, u.guard.pulse > 0] : null,
           u.kind === "medic" ? u.flash > 0 : ui.reduced ? 0 : u.flash,
           !ui.reduced && u.hit > 0,
           u.wind > 0,

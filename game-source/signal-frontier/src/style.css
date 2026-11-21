@@ -2348,8 +2348,9 @@ body.issuing-order #touch-controls .stick { pointer-events:none; opacity:.25; }
 .production-heading > span { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .production-heading > small { font-size:10px; color:var(--console-muted); }
 .production-grid { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); gap:6px; min-height:0; flex:1; }
-.trio > .production-card { grid-template-columns:1fr; grid-template-rows:auto auto 1fr; }
-.trio > .production-card > svg { display:none; }
+.dock-orders:has(.multi) { min-width:min(100%,284px); }
+.multi > .production-card { grid-template-columns:1fr; grid-template-rows:auto auto 1fr; }
+.multi > .production-card > svg { display:none; }
 .production-card { display:grid; grid-template-columns:30px minmax(0,1fr); grid-template-rows:1fr 1fr auto; align-items:center; column-gap:6px; padding:5px; min-width:0; min-height:50px; text-align:left; border:1px solid #7fa08760; border-radius:6px; background:#1b332d; overflow:hidden; }
 .production-card:hover, .production-card:focus-visible { background:#2b4b3e; border-color:#afd3af; }
 .production-card[aria-disabled="true"] { background:#1b2b2e; border-color:#82938b40; }
@@ -2479,7 +2480,7 @@ body:not([data-mode="playing"]) .combat-vitals, body:not([data-mode="playing"]) 
   .roster-detail-head { grid-template-columns:28px minmax(0,1fr); }
   .roster-detail-head > svg { width:28px; }
   .roster-job, .roster-slot { height:44px; }
-  .roster-note { display:none; }
+  .roster-note:not(.plate-note) { display:none; }
   .roster-stats b { font-size:15px; }
   .minimap .map-tools { position:static; width:auto; border:0; border-bottom:1px solid #617f7455; background:none; }
   .minimap .map-tools button { height:36px; }
@@ -2505,7 +2506,6 @@ body:not([data-mode="playing"]) .combat-vitals, body:not([data-mode="playing"]) 
   .command-dock[data-mobile-view="production"] .dock-orders { flex:1; min-height:0; border:0; }
   #combat-production { flex:1; gap:3px; }
   .production-heading { min-height:14px; font-size:11px; }
-  .production-grid { flex:1; }
   .production-card { grid-template-columns:30px minmax(0,1fr); grid-template-rows:16px 16px auto; min-height:54px; padding:3px 6px; column-gap:7px; }
   .production-card > svg { width:30px; height:30px; }
   .production-card > strong { font-size:11px; }
@@ -2517,8 +2517,7 @@ body:not([data-mode="playing"]) .combat-vitals, body:not([data-mode="playing"]) 
   .production-queue .roster-job > svg { width:22px; height:22px; grid-row:auto; }
   .production-queue .roster-job span { font-size:10px; }
   .production-feedback { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
-  #selection-content { padding:7px 9px; gap:3px; }
-  #selection-content { --identity-width:90px; --identity-gap:9px; }
+  #selection-content { padding:7px 9px; gap:3px; --identity-width:105px; --identity-gap:9px; }
   .roster-detail-head { grid-template-columns:28px minmax(0,1fr); gap:5px; }
   .roster-detail-head > svg { width:28px; height:32px; }
   .roster-detail-head strong { font-size:11px; }
@@ -2528,7 +2527,7 @@ body:not([data-mode="playing"]) .combat-vitals, body:not([data-mode="playing"]) 
   .roster-detail-body { gap:4px; padding-left:9px; }
   .roster-section-heading { min-height:24px; font-size:11px; }
   .roster-job, .roster-slot { height:44px; }
-  .roster-note { display:none; }
+  .roster-note:not(.plate-note) { display:none; }
   .roster-task { font-size:11px; margin:0 0 4px; }
   .roster-stats { gap:12px; font-size:10px; }
   .roster-stats b { font-size:15px; margin-top:3px; }
